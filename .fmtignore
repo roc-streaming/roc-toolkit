@@ -1,0 +1,3 @@
+src/tests/au_audio/test_delayer.cpp
+src/tests/au_netio/test_transceiver.cpp
+src/tests/au_netio/test_udp.cpp

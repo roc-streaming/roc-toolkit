@@ -1,0 +1,39 @@
+PROJECT_NAME            = roc
+PROJECT_BRIEF           =
+
+QUIET                   = YES
+RECURSIVE               = YES
+
+INPUT                   = src/modules
+STRIP_FROM_PATH         = src/modules
+FILE_PATTERNS           = *.h
+
+FULL_PATH_NAMES         = YES
+SOURCE_BROWSER          = YES
+
+JAVADOC_AUTOBRIEF       = YES
+QT_AUTOBRIEF            = YES
+MULTILINE_CPP_IS_BRIEF  = YES
+
+ALWAYS_DETAILED_SEC     = NO
+BRIEF_MEMBER_DESC       = YES
+REPEAT_BRIEF            = NO
+
+HIDE_UNDOC_CLASSES      = NO
+HIDE_UNDOC_MEMBERS      = NO
+STRIP_CODE_COMMENTS     = NO
+
+EXTRACT_PRIVATE         = NO
+
+WARN_IF_UNDOCUMENTED    = YES
+WARN_IF_DOC_ERROR       = YES
+WARN_NO_PARAMDOC        = NO
+
+OUTPUT_DIRECTORY        =
+HTML_OUTPUT             = doc/doxygen
+HTML_DYNAMIC_SECTIONS   = NO
+SEARCHENGINE            = NO
+GENERATE_LATEX          = NO
+
+OUTPUT_LANGUAGE         = English
+DOXYFILE_ENCODING       = UTF-8

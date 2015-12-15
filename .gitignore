@@ -1,0 +1,7 @@
+bin
+build
+doc/doxygen
+__pycache__
+*.pyc
+.sconsign.dblite
+.copyright

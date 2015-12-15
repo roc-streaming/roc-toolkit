@@ -1,0 +1,27 @@
+---
+BasedOnStyle: WebKit   # http://www.webkit.org/coding/coding-style.html
+
+Standard: Cpp03
+
+UseTab: Never
+IndentWidth: 4
+ColumnLimit: 90
+MaxEmptyLinesToKeep: 1
+PenaltyBreakComment: 0
+
+ConstructorInitializerAllOnOneLineOrOnePerLine: false
+AllowShortFunctionsOnASingleLine: false
+
+KeepEmptyLinesAtTheStartOfBlocks: false
+NamespaceIndentation: None
+
+BreakBeforeBinaryOperators: NonAssignment
+BreakBeforeBraces: Attach
+
+BinPackArguments: true
+BinPackParameters: false
+
+AlignAfterOpenBracket: true
+AlignTrailingComments: true
+
+AllowShortFunctionsOnASingleLine: None
