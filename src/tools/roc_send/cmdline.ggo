@@ -1,0 +1,22 @@
+package "roc-send"
+usage "roc-send [OPTIONS] ADDRESS"
+
+args "--unamed-opts=ADDRESS"
+
+section "Options"
+    option "verbose"          v "Increase verbosity level (may be used multiple times)"
+        multiple optional
+    option "source"           s "Source address (default is INADDR_ANY)" string optional
+    option "input"            i "Input file or device" string optional
+    option "type"             t "Input codec or driver" string optional
+    option "no-fec"           - "Disable FEC" flag off
+    option "no-interleaving"  - "Disable packet interleaving" flag off
+    option "no-timing"        - "Disable timing" flag off
+    option "loss-rate"        - "Set percentage of packets to be lost, [0; 100]"
+        int optional
+    option "delay-rate"       - "Set percentage of packets to be delayed, [0; 100]"
+        int optional
+    option "delay"            - "Set delay time, ms" int optional
+
+text "
+ADDRESS should have a form of `[IP]:PORT'. IP defaults to 0.0.0.0."

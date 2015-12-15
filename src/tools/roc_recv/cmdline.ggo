@@ -1,0 +1,17 @@
+package "roc-recv"
+usage "roc-recv [OPTIONS] ADDRESS"
+
+args "--unamed-opts=ADDRESS"
+
+section "Options"
+    option "verbose"        v "Increase verbosity level (may be used multiple times)"
+        multiple optional
+    option "output"         o "Output file or device" string optional
+    option "type"           t "Output codec or driver" string optional
+    option "no-fec"         - "Disable FEC" flag off
+    option "no-resampling"  - "Disable resampling" flag off
+    option "no-timing"      - "Disable timing" flag off
+    option "beep"           - "Enable beep" flag off
+
+text "
+ADDRESS should have a form of `[IP]:PORT'. IP defaults to 0.0.0.0."
