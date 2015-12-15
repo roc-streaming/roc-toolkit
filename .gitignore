@@ -5,3 +5,6 @@ __pycache__
 *.pyc
 .sconsign.dblite
 .copyright
+
+# vim
+*.sw[op]
