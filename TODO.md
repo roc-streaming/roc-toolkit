@@ -26,6 +26,7 @@ Advanced features
 - [ ] Dynamic latency adjustment
 - [ ] Compression (probably [Opus](https://www.opus-codec.org/))
 - [ ] Encryption (probably [SRTP](https://en.wikipedia.org/wiki/Secure_Real-time_Transport_Protocol))
+- [ ] Take a look at [RaptorQ](https://tools.ietf.org/html/rfc6330) and [OpenRQ](https://github.com/openrq-team/OpenRQ)
 - [ ] Take a look at various IoT protocols (e.g. [IoTivity](https://www.iotivity.org/))
 
 Ports
