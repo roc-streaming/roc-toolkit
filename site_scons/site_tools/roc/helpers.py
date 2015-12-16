@@ -93,6 +93,26 @@ def ClangDB(env, build_dir, pattern, compiler):
         pattern,
         compiler)
 
+def Doxygen(env, output_dir, sources):
+    target = os.path.join(env.Dir(output_dir).path, '.done')
+
+    if 'DOXYGEN' in env.Dictionary():
+        doxygen = env['DOXYGEN']
+    else:
+        doxygen = 'doxygen'
+
+    env.Command(target, sources, SCons.Action.CommandAction(
+        '%s %s/wrappers/doxygen.py %s %s %s %s' % (
+            env.Python(),
+            env.Dir(os.path.dirname(__file__)).path,
+            env.Dir('#').path,
+            output_dir,
+            target,
+            doxygen),
+        cmdstr = env.Pretty('DOXYGEN', output_dir, 'purple')))
+
+    return target
+
 def GenGetOpt(env, source, ver):
     source = env.File(source)
     source_name = os.path.splitext(os.path.basename(source.path))[0]
@@ -119,4 +139,5 @@ def Init(env):
     env.AddMethod(Python, 'Python')
     env.AddMethod(CompilerVersion, 'CompilerVersion')
     env.AddMethod(ClangDB, 'ClangDB')
+    env.AddMethod(Doxygen, 'Doxygen')
     env.AddMethod(GenGetOpt, 'GenGetOpt')

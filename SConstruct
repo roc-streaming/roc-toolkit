@@ -8,10 +8,16 @@ env = Environment(ENV=os.environ, tools=[
     'roc',
 ])
 
-AddOption('--werror',
+AddOption('--enable-werror',
           dest='werror',
           action='store_true',
-          help='enable -Werror option')
+          help='enable -Werror compiler option')
+
+AddOption('--with-doxygen',
+          dest='with_doxygen',
+          choices=['yes', 'no'],
+          default='yes' if env.Which('doxygen') else 'no',
+          help='enable doxygen documentation generation')
 
 AddOption('--with-openfec',
           dest='with_openfec',
@@ -268,6 +274,7 @@ env.AlwaysBuild(
     env.Alias('clean', [], [
         env.DeleteDir('#bin'),
         env.DeleteDir('#build'),
+        env.DeleteDir('#doc/doxygen'),
     ]))
 
 env.AlwaysBuild(
@@ -320,6 +327,14 @@ env.AlwaysBuild(
             env.Pretty('TIDY', 'src', 'yellow')
         )))
 
+if 'doxygen' in COMMAND_LINE_TARGETS or (
+        GetOption('with_doxygen') == 'yes' and not set(COMMAND_LINE_TARGETS).intersection(
+            ['tidy'])):
+        env.AlwaysBuild(
+            env.Alias('doxygen', env.Doxygen(
+                    'doc/doxygen',
+                    ['Doxyfile'] + env.RecursiveGlob('#src', ['*.h']))))
+
 # performance tuning
 env.Decider('MD5-timestamp')
 env.SetOption('implicit_cache', 1)
@@ -335,7 +350,7 @@ if 'clean' in COMMAND_LINE_TARGETS:
     if COMMAND_LINE_TARGETS != ['clean']:
         env.Die("combining 'clean' with other targets is not supported")
 
-if not set(COMMAND_LINE_TARGETS).intersection(['clean', 'fmt']):
+if not set(COMMAND_LINE_TARGETS).intersection(['clean', 'fmt', 'doxygen']):
     env.SConscript('src/SConscript',
                 variant_dir=build_dir,
                 duplicate=0)
