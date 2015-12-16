@@ -5,7 +5,12 @@ import os
 import os.path
 import json
 import fnmatch
-import fcntl
+import fcntl # FIXME: works only in posix
+
+if len(sys.argv) < 6:
+   print("usage: clangdb.py ROOT_DIR BUILD_DIR PATTERN COMPILER COMPILER_ARGS...",
+         file=sys.stderr)
+   exit(1)
 
 project_dir = os.path.abspath(sys.argv[1])
 build_dir = os.path.abspath(sys.argv[2])

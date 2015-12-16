@@ -85,7 +85,7 @@ def CompilerVersion(env, compiler):
     return tuple(map(int, m.group(1).split('.')))
 
 def ClangDB(env, build_dir, pattern, compiler):
-    return "%s %s/clangdb.py %s %s '%s' %s" % (
+    return '%s %s/wrappers/clangdb.py %s %s "%s" %s' % (
         env.Python(),
         env.Dir(os.path.dirname(__file__)).path,
         env.Dir('#').path,
