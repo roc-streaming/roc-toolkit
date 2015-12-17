@@ -34,6 +34,10 @@ def Pretty(env, command, args, color):
     else:
         return '$CMDLINE'
 
+def IsPretty(env):
+    global COMPACT
+    return COMPACT
+
 def Init(env):
     global COMPACT
 
@@ -42,6 +46,7 @@ def Init(env):
             COMPACT = True
 
     env.AddMethod(Pretty, 'Pretty')
+    env.AddMethod(IsPretty, 'IsPretty')
 
     if COMPACT:
         env.AddMethod(_Subst, 'subst_target_source')

@@ -21,6 +21,10 @@
 #include "roc_packet/units.h"
 #include "roc_fec/iblock_encoder.h"
 
+extern "C" {
+#include <of_openfec_api.h>
+}
+
 #ifndef OF_USE_ENCODER
 #error OF_USE_ENCODER undefined
 #endif
@@ -28,10 +32,6 @@
 #ifndef OF_USE_LDPC_STAIRCASE_CODEC
 #error OF_USE_LDPC_STAIRCASE_CODEC undefined
 #endif
-
-extern "C" {
-#include <of_openfec_api.h>
-}
 
 namespace roc {
 namespace fec {

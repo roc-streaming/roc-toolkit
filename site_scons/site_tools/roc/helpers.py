@@ -3,17 +3,13 @@ from __future__ import print_function
 import sys
 import os
 import os.path
+import shutil
 import fnmatch
 import copy
 import re
 import subprocess
 
 import SCons.Script
-
-def DeleteDir(env, path):
-    path = env.Dir(path).path
-    command = 'rm -rf %s' % path
-    return env.Action(command, env.Pretty('RM', path, 'red'))
 
 def Die(env, fmt, *args):
     print('error: ' + (fmt % args).strip() + '\n', file=sys.stderr)
@@ -101,6 +97,9 @@ def Doxygen(env, output_dir, sources):
     else:
         doxygen = 'doxygen'
 
+    if not env.Which(doxygen):
+        env.Die("doxygen not found in PATH (looked for `%s')" % doxygen)
+
     env.Command(target, sources, SCons.Action.CommandAction(
         '%s %s/wrappers/doxygen.py %s %s %s %s' % (
             env.Python(),
@@ -114,6 +113,14 @@ def Doxygen(env, output_dir, sources):
     return target
 
 def GenGetOpt(env, source, ver):
+    if 'GENGETOPT' in env.Dictionary():
+        gengetopt = env['GENGETOPT']
+    else:
+        gengetopt = 'gengetopt'
+
+    if not env.Which(gengetopt):
+        env.Die("gengetopt not found in PATH (looked for `%s')" % gengetopt)
+
     source = env.File(source)
     source_name = os.path.splitext(os.path.basename(source.path))[0]
     target = [
@@ -122,7 +129,8 @@ def GenGetOpt(env, source, ver):
     ]
 
     env.Command(target, source, SCons.Action.CommandAction(
-        'gengetopt -F %s --output-dir=%s --set-version=%s < %s' % (
+        '%s -F %s --output-dir=%s --set-version=%s < %s' % (
+            gengetopt,
             source_name,
             os.path.dirname(source.path),
             ver,
@@ -131,8 +139,85 @@ def GenGetOpt(env, source, ver):
 
     return [env.Object(target[0])]
 
+def ThridParty(env, toolchain, name, includes=[]):
+    if not os.path.exists('3rdparty/%s.done' % name):
+        if env.IsPretty():
+            suffix = '>build.log 2>&1'
+        else:
+            suffix = ''
+        if env.Execute(
+            SCons.Action.CommandAction(
+                '%s scripts/3rdparty.py 3rdparty "%s" %s%s' % (
+                    env.Python(),
+                    toolchain,
+                    name,
+                    suffix),
+                cmdstr = env.Pretty('MAKE', name, 'yellow'))):
+            env.Die("can't make `%s', see `build.log' for details", name)
+
+    if not includes:
+        includes = ['']
+
+    for s in includes:
+        env.Prepend(CPPPATH=[
+            '3rdparty/%s/include/%s' % (name, s)
+        ])
+
+    for lib in env.RecursiveGlob('3rdparty/%s/lib' % name, 'lib*'):
+        env.Append(LIBS=[env.File(lib)])
+
+def DeleteDir(env, path):
+    path = env.Dir(path).path
+    def remove(*args, **kw):
+        if os.path.exists(path):
+            shutil.rmtree(path)
+    return env.Action(remove, env.Pretty('RM', path, 'red'))
+
+def TryParseConfig(env, cmd):
+    if 'PKG_CONFIG' in env.Dictionary():
+        pkg_config = env['PKG_CONFIG']
+    elif env.Which('pkg-config'):
+        pkg_config = 'pkg-config'
+    else:
+        return False
+
+    try:
+        env.ParseConfig('%s %s' % (pkg_config, cmd))
+        return True
+    except:
+        return False
+
+def CheckLibWithHeaderExpr(context, libs, headers, language, expr):
+    if not isinstance(libs, list):
+        libs = [libs]
+
+    if not isinstance(headers, list):
+        headers = [headers]
+
+    suffix = '.%s' % language
+    includes = '\n'.join(['#include <%s>' % h for h in ['stdio.h'] + headers])
+    src = """
+%s
+
+int main() {
+    printf("%%d\\n", (int)(%s));
+    return 0;
+}
+""" % (includes, expr)
+
+    context.Message("Checking for %s library %s... " % (
+        language.upper(), libs[0]))
+
+    err, out = context.RunProg(src, suffix)
+
+    if not err and out.strip() != '0':
+        context.Result('yes')
+        return True
+    else:
+        context.Result('no')
+        return False
+
 def Init(env):
-    env.AddMethod(DeleteDir, 'DeleteDir')
     env.AddMethod(Die, 'Die')
     env.AddMethod(RecursiveGlob, 'RecursiveGlob')
     env.AddMethod(Which, 'Which')
@@ -141,3 +226,9 @@ def Init(env):
     env.AddMethod(ClangDB, 'ClangDB')
     env.AddMethod(Doxygen, 'Doxygen')
     env.AddMethod(GenGetOpt, 'GenGetOpt')
+    env.AddMethod(ThridParty, 'ThridParty')
+    env.AddMethod(DeleteDir, 'DeleteDir')
+    env.AddMethod(TryParseConfig, 'TryParseConfig')
+    env.CustomTests = {
+        'CheckLibWithHeaderExpr': CheckLibWithHeaderExpr,
+    }

@@ -39,17 +39,17 @@ def AddTest(env, name, exe, cmd=None):
         env.Requires(target, t)
 
     # This target should be run after all previous tests.
-    for t in env['ROC_TESTS']:
+    for t in env['_ROC_TESTS']:
         env.Requires(target, t)
 
     # Add target to test list.
-    env['ROC_TESTS'] += [testname]
+    env['_ROC_TESTS'] += [testname]
 
     # 'test' target depends on this target.
     env.Depends('test', target)
 
 def Init(env):
-    env['ROC_TESTS'] = []
+    env['_ROC_TESTS'] = []
 
     env.AlwaysBuild(env.Alias('test', [], env.Action('')))
     env.AddMethod(AddTest, 'AddTest')

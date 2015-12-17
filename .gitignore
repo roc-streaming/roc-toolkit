@@ -1,10 +1,21 @@
+# build results
 bin
 build
 doc/doxygen
+
+# python
 __pycache__
 *.pyc
+
+# scons
 .sconsign.dblite
-.copyright
+.sconf_temp
+config.log
+build.log
 
 # vim
 *.sw[op]
+
+# misc
+3rdparty
+.copyright

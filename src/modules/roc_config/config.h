@@ -58,7 +58,7 @@
 #define ROC_CONFIG_DEFAULT_RENDERER_LATENCY (ROC_CONFIG_DEFAULT_PACKET_SAMPLES * 27)
 
 //! Start delay for audio output (sample buffers per channel).
-#define ROC_CONFIG_DEFAULT_PLAYER_LATENCY 1
+#define ROC_CONFIG_DEFAULT_PLAYER_LATENCY 10
 
 //! Audio packet size including header.
 #define ROC_CONFIG_DEFAULT_PACKET_SIZE (ROC_CONFIG_DEFAULT_PACKET_SAMPLES * 4 + 12)

@@ -2,6 +2,7 @@ import re
 import os
 import os.path
 import platform
+import SCons.Script
 
 env = Environment(ENV=os.environ, tools=[
     'default',
@@ -9,21 +10,48 @@ env = Environment(ENV=os.environ, tools=[
 ])
 
 AddOption('--enable-werror',
-          dest='werror',
+          dest='enable_werror',
           action='store_true',
           help='enable -Werror compiler option')
 
-AddOption('--with-doxygen',
-          dest='with_doxygen',
-          choices=['yes', 'no'],
-          default='yes' if env.Which('doxygen') else 'no',
-          help='enable doxygen documentation generation')
+AddOption('--disable-tools',
+          dest='disable_tools',
+          action='store_true',
+          help='disable tools building')
+
+AddOption('--disable-tests',
+          dest='disable_tests',
+          action='store_true',
+          help='disable tests building')
+
+AddOption('--disable-doc',
+          dest='disable_doc',
+          action='store_true',
+          help='disable doxygen documentation generation')
 
 AddOption('--with-openfec',
           dest='with_openfec',
           choices=['yes', 'no'],
           default='yes',
-          help='enable OpenFEC implementation for LDPC-Staircase codecs')
+          help='use OpenFEC for LDPC-Staircase codecs')
+
+AddOption('--with-sox',
+          dest='with_sox',
+          choices=['yes', 'no'],
+          default='yes',
+          help='use SoX for audio input/output')
+
+AddOption('--with-3rdparty',
+          dest='with_3rdparty',
+          action='store',
+          type='string',
+          help='download and build 3rdparty libraries')
+
+AddOption('--with-targets',
+          dest='with_targets',
+          action='store',
+          type='string',
+          help='overwrite targets to use')
 
 supported_platforms = [
     'linux',
@@ -54,15 +82,15 @@ compiler = ARGUMENTS.get('compiler', '')
 target_platform, target_arch = target.split('_', 1)
 
 if not target_platform in supported_platforms:
-    env.Die("unknown target platform `%s' in `%s', expected on of: %s",
+    env.Die("unknown target platform `%s' in `%s', expected one of: %s",
             target_platform, target, ', '.join(supported_platforms))
 
 if not target_arch in supported_archs:
-    env.Die("unknown target arch `%s' in `%s', expected on of: %s",
+    env.Die("unknown target arch `%s' in `%s', expected one of: %s",
             target_arch, target, ', '.join(supported_archs))
 
 if not variant in supported_variants:
-    env.Die("unknown variant `%s', expected on of: %s",
+    env.Die("unknown variant `%s', expected one of: %s",
             variant, ', '.join(supported_variants))
 
 if not compiler:
@@ -72,7 +100,7 @@ if not compiler:
         compiler = 'gcc'
 
 if not compiler in supported_compilers:
-    env.Die("unknown compiler `%s', expected on of: %s",
+    env.Die("unknown compiler `%s', expected one of: %s",
             compiler, ', '.join(supported_compilers))
 
 if not toolchain:
@@ -112,6 +140,18 @@ if toolchain:
     for var in ['CC', 'CXX', 'LD', 'AR', 'RANLIB']:
         env[var] = '%s-%s' % (toolchain, env[var])
 
+for var in ['CC', 'CXX', 'LD', 'AR', 'RANLIB', 'GENGETOPT', 'DOXYGEN', 'PKG_CONFIG']:
+    if var in os.environ:
+        env[var] = os.environ[var]
+
+for var in ['CFLAGS', 'CXXFLAGS', 'LDFLAGS']:
+    if var in os.environ:
+        if var == 'LDFLAGS':
+            tvar = 'LINKFLAGS'
+        else:
+            tvar = var
+        env.Prepend(**{tvar: os.environ[var]})
+
 if compiler == 'clang':
     for var in ['CC', 'CXX']:
         env[var] = env.ClangDB(build_dir, '*.cpp', env[var])
@@ -119,48 +159,117 @@ if compiler == 'clang':
 env['ROC_VERSION'] = '0.1'
 env['ROC_TARGETS'] = []
 
-if target_platform in ['linux']:
-    env.Append(ROC_TARGETS=[
-        'target_posix',
-        'target_stdio',
-        'target_gnu',
-        'target_uv',
-        'target_sox',
-    ])
+if GetOption('with_targets'):
+    for t in GetOption('with_targets').split(','):
+        env['ROC_TARGETS'] += ['target_%s' % t]
+else:
+    if target_platform in ['linux']:
+        env.Append(ROC_TARGETS=[
+            'target_posix',
+            'target_stdio',
+            'target_gnu',
+            'target_uv',
+        ])
 
-if GetOption('with_openfec') == 'yes':
-    env.Append(ROC_TARGETS=[
-        'target_openfec',
-    ])
+    if GetOption('with_openfec') == 'yes':
+        env.Append(ROC_TARGETS=[
+            'target_openfec',
+        ])
 
-if 'target_posix' in env['ROC_TARGETS']:
-    env.Append(CPPDEFINES=[('_POSIX_C_SOURCE', '200809')])
+    if GetOption('with_sox') == 'yes':
+        env.Append(ROC_TARGETS=[
+            'target_sox',
+        ])
+    else:
+        if not GetOption('disable_tools'):
+            env.Die("--with-sox=no currently requires --disable-tools option")
 
 env.Append(LIBS=[])
 
-if 'target_uv' in env['ROC_TARGETS']:
-    env.Append(LIBS=[
-        'uv'
-    ])
+if not GetOption('with_3rdparty'):
+    getdeps = []
+else:
+    getdeps = ['target_%s' % t for t in GetOption('with_3rdparty').split(',')]
+    if 'target_all' in getdeps:
+        getdeps = env['ROC_TARGETS']
+        if not GetOption('disable_tests'):
+            getdeps += ['target_cpputest']
 
-if 'target_sox' in env['ROC_TARGETS']:
-    env.Append(LIBS=[
-        'sox'
-    ])
+SCons.SConf.dryrun = 0 # configure even in dry run mode
+conf = Configure(env, custom_tests=env.CustomTests)
+
+if 'target_uv' in env['ROC_TARGETS']:
+    if 'target_uv' in getdeps:
+        env.ThridParty(toolchain, 'uv-1.4.2')
+    else:
+        env.TryParseConfig('--cflags --libs libuv')
+
+        if host == target:
+            if not conf.CheckLibWithHeaderExpr(
+                'uv', 'uv.h', 'c', expr='UV_VERSION_MAJOR >= 1 && UV_VERSION_MINOR >= 4'):
+                env.Die("libuv >= 1.4 not found (see `config.log' for details)")
+        else:
+            if not conf.CheckLibWithHeader('uv', 'uv.h', 'c'):
+                env.Die("libuv not found (see `config.log' for details)")
 
 if 'target_openfec' in env['ROC_TARGETS']:
-    env.Append(CPPDEFINES=[
-        'OF_USE_ENCODER',
-        'OF_USE_DECODER',
-        'OF_USE_LDPC_STAIRCASE_CODEC',
-    ])
-    env.Append(CPPPATH=[
-        '/usr/include/openfec/lib_common',
-        '/usr/include/openfec/lib_stable',
-    ])
-    env.Append(LIBS=[
-        'openfec',
-    ])
+    if 'target_openfec' in getdeps:
+        env.ThridParty(toolchain, 'openfec-1.4.2', includes=[
+            'lib_common',
+            'lib_stable',
+        ])
+    else:
+        if not env.TryParseConfig('--silence-errors --cflags --libs openfec') \
+          and host == target:
+            for prefix in ['/usr/local', '/usr']:
+                if os.path.exists('%s/include/openfec' % prefix):
+                    env.Append(CPPPATH=[
+                        '%s/include/openfec' % prefix,
+                        '%s/include/openfec/lib_common' % prefix,
+                        '%s/include/openfec/lib_stable' % prefix,
+                    ])
+                    env.Append(LIBPATH=[
+                        '%s/lib' % prefix,
+                    ])
+                    break
+
+        if not conf.CheckLibWithHeader('openfec', 'of_openfec_api.h', 'c'):
+            env.Die("openfec not found (see `config.log' for details)")
+
+        if not conf.CheckDeclaration('OF_USE_ENCODER', '#include <of_openfec_api.h>', 'c'):
+            env.Die("openfec has no encoder support (OF_USE_ENCODER)")
+
+        if not conf.CheckDeclaration('OF_USE_DECODER', '#include <of_openfec_api.h>', 'c'):
+            env.Die("openfec has no encoder support (OF_USE_DECODER)")
+
+        if not conf.CheckDeclaration('OF_USE_LDPC_STAIRCASE_CODEC',
+                                     '#include <of_openfec_api.h>', 'c'):
+            env.Die(
+                "openfec has no LDPC-Staircase codec support (OF_USE_LDPC_STAIRCASE_CODEC)")
+
+if 'target_sox' in env['ROC_TARGETS']:
+    if 'target_sox' in getdeps:
+        env.ThridParty(toolchain, 'sox-14.4.2')
+        conf.CheckLib('asound')
+    else:
+        env.TryParseConfig('--cflags --libs sox')
+
+        if not conf.CheckLibWithHeader('sox', 'sox.h', 'c'):
+            env.Die("libsox not found (see `config.log' for details)")
+
+if not GetOption('disable_tests'):
+    if 'target_cpputest' in getdeps:
+        env.ThridParty(toolchain, 'cpputest-3.6')
+    else:
+        env.TryParseConfig('--cflags --libs cpputest')
+
+        if not conf.CheckLibWithHeader('CppUTest', 'CppUTest/TestHarness.h', 'cxx'):
+            env.Die("CppUTest not found (see `config.log' for details)")
+
+env = conf.Finish()
+
+if 'target_posix' in env['ROC_TARGETS']:
+    env.Append(CPPDEFINES=[('_POSIX_C_SOURCE', '200809')])
 
 for t in env['ROC_TARGETS']:
     env.Append(CPPDEFINES=['ROC_' + t.upper()])
@@ -177,7 +286,7 @@ if compiler in ['gcc', 'clang']:
         env.Append(CXXFLAGS=[
             '-fno-rtti',
         ])
-    if GetOption('werror'):
+    if GetOption('enable_werror'):
         env.Append(CXXFLAGS=[
             '-Werror'
         ])
@@ -277,8 +386,10 @@ env.AlwaysBuild(
         env.DeleteDir('#doc/doxygen'),
     ]))
 
-env.AlwaysBuild(
-    env.Alias('fmt', [], [
+fmt = []
+
+if env.Which('clang-format') and env.CompilerVersion('clang-format') >= (3, 6):
+    fmt += [
         env.Action(
             'clang-format -i %s' % ' '.join(map(str,
                 env.RecursiveGlob(
@@ -287,19 +398,27 @@ env.AlwaysBuild(
             )),
             env.Pretty('FMT', 'src', 'yellow')
         ),
-        env.Action(
-            '%s scripts/format.py src/modules' % env.Python(),
-            env.Pretty('FMT', 'src/modules', 'yellow')
-        ),
-        env.Action(
-            '%s scripts/format.py src/tests' % env.Python(),
-            env.Pretty('FMT', 'src/tests', 'yellow')
-        ),
-        env.Action(
-            '%s scripts/format.py src/tools' % env.Python(),
-            env.Pretty('FMT', 'src/tools', 'yellow')
-        ),
-    ]))
+    ]
+elif 'fmt' in COMMAND_LINE_TARGETS:
+    print("warning: clang-format >= 3.6 not found")
+
+fmt += [
+    env.Action(
+        '%s scripts/format.py src/modules' % env.Python(),
+        env.Pretty('FMT', 'src/modules', 'yellow')
+    ),
+    env.Action(
+        '%s scripts/format.py src/tests' % env.Python(),
+        env.Pretty('FMT', 'src/tests', 'yellow')
+    ),
+    env.Action(
+        '%s scripts/format.py src/tools' % env.Python(),
+        env.Pretty('FMT', 'src/tools', 'yellow')
+    ),
+]
+
+env.AlwaysBuild(
+    env.Alias('fmt', [], fmt))
 
 env.AlwaysBuild(
     env.Alias('tidy', [env.Dir('#')],
@@ -328,7 +447,7 @@ env.AlwaysBuild(
         )))
 
 if 'doxygen' in COMMAND_LINE_TARGETS or (
-        GetOption('with_doxygen') == 'yes' and not set(COMMAND_LINE_TARGETS).intersection(
+        not GetOption('disable_doc') and not set(COMMAND_LINE_TARGETS).intersection(
             ['tidy'])):
         env.AlwaysBuild(
             env.Alias('doxygen', env.Doxygen(
@@ -346,9 +465,8 @@ env.SConsignFile(os.path.join(env.Dir('#').abspath, '.sconsign.dblite'))
 
 Export('env')
 
-if 'clean' in COMMAND_LINE_TARGETS:
-    if COMMAND_LINE_TARGETS != ['clean']:
-        env.Die("combining 'clean' with other targets is not supported")
+if 'clean' in COMMAND_LINE_TARGETS and COMMAND_LINE_TARGETS != ['clean']:
+    env.Die("combining 'clean' with other targets is not supported")
 
 if not set(COMMAND_LINE_TARGETS).intersection(['clean', 'fmt', 'doxygen']):
     env.SConscript('src/SConscript',
