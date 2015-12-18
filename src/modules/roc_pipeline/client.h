@@ -116,7 +116,7 @@ protected:
 
     //! Create output packet writer.
     //! @remarks
-    //!  Calls make_fec_writer() if EnableFEC option is set.
+    //!  Calls make_fec_writer() if EnableLDPC option is set.
     virtual packet::IPacketWriter* make_packet_writer();
 
     //! Create FEC encoder.

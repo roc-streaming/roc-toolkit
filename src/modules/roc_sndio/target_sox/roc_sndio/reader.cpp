@@ -193,7 +193,7 @@ void Reader::stop() {
 }
 
 void Reader::run() {
-    roc_log(LOG_TRACE, "reader: started thread");
+    roc_log(LOG_TRACE, "reader: starting thread");
 
     if (!chain_) {
         roc_panic("reader: thread is started before open() returnes success");
@@ -298,6 +298,10 @@ void Reader::write_(const sox_sample_t* buf, size_t bufsz, bool eof) {
 }
 
 void Reader::close_() {
+    if (chain_ || input_) {
+        output_.write(audio::ISampleBufferConstSlice());
+    }
+
     if (chain_) {
         sox_delete_effects_chain(chain_);
         chain_ = NULL;

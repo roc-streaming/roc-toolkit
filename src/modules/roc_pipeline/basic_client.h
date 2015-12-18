@@ -15,7 +15,8 @@
 
 #include "roc_core/noncopyable.h"
 #include "roc_core/thread.h"
-#include "roc_core/atomic.h"
+
+#include "roc_datagram/idatagram_writer.h"
 
 #include "roc_audio/isample_buffer_reader.h"
 #include "roc_audio/isample_buffer_writer.h"
@@ -38,18 +39,9 @@ public:
     //!  Fetches one sample buffer from input reader.
     bool tick();
 
-    //! Stop thread.
-    //! @remarks
-    //!  May be called from any thread. After this call, subsequent join()
-    //!  call will return as soon as current tick() returns.
-    //! @note
-    //!  This methods is not aware of pipeline components that may block
-    //!  tick() and hence can not interrupt them.
-    void stop();
-
 protected:
     //! Initialize client.
-    BasicClient(const ClientConfig& config);
+    BasicClient(const ClientConfig& config, datagram::IDatagramWriter& datagram_writer);
 
     //! Run client thread.
     virtual void run();
@@ -69,7 +61,7 @@ private:
     audio::ISampleBufferReader* audio_reader_;
     audio::ISampleBufferWriter* audio_writer_;
 
-    core::Atomic stop_;
+    datagram::IDatagramWriter& datagram_writer_;
 };
 
 } // namespace pipeline

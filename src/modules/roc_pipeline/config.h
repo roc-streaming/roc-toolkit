@@ -28,8 +28,8 @@ enum Options {
     //! Use scaler and resamplers (server).
     EnableResampling = (1 << 0),
 
-    //! Use FEC encoder/decoder (server, client).
-    EnableFEC = (1 << 1),
+    //! Use LDPC FEC encoder/decoder (server, client).
+    EnableLDPC = (1 << 1),
 
     //! Use interleaver (client).
     EnableInterleaving = (1 << 2),
@@ -37,8 +37,11 @@ enum Options {
     //! Constrain input/output speed (server, client).
     EnableTiming = (1 << 3),
 
-    //! Insert beep instead of missing samples.
-    EnableBeep = (1 << 4)
+    //! Insert beep instead of missing samples (server).
+    EnableBeep = (1 << 4),
+
+    //! Terminate server when first client disconects (server).
+    EnableOneshot = (1 << 5)
 };
 
 //! Server config.

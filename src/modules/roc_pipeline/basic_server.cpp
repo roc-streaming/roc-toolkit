@@ -56,20 +56,23 @@ const ServerConfig& BasicServer::config() const {
 }
 
 void BasicServer::destroy_sessions() {
-    roc_log(LOG_DEBUG, "server: destroying all sessions");
-
     if (!audio_sink_) {
         roc_panic_if(sessions_.size() != 0);
         return;
     }
 
-    BasicSessionPtr next_session;
+    if (sessions_.size() != 0) {
+        roc_log(LOG_DEBUG, "server: destroying %u sessions", (unsigned)sessions_.size());
 
-    for (BasicSessionPtr session = sessions_.front(); session; session = next_session) {
-        next_session = sessions_.next(*session);
-        sessions_.remove(*session);
+        BasicSessionPtr next_session;
 
-        session->detach(*audio_sink_);
+        for (BasicSessionPtr session = sessions_.front(); session;
+             session = next_session) {
+            next_session = sessions_.next(*session);
+            sessions_.remove(*session);
+
+            session->detach(*audio_sink_);
+        }
     }
 }
 
@@ -101,16 +104,27 @@ void BasicServer::run() {
         }
     }
 
-    roc_log(LOG_DEBUG, "server: terminating thread");
+    roc_log(LOG_DEBUG, "server: finishing thread");
+
+    if (audio_writer_) {
+        audio_writer_->write(audio::ISampleBufferConstSlice());
+    }
 }
 
 bool BasicServer::tick(size_t n_datagrams, size_t n_buffers, size_t n_samples) {
     make_pipeline_();
 
     fetch_datagrams_(n_datagrams);
-    update_sessions_();
 
-    return generate_audio_(n_buffers, n_samples);
+    if (!update_sessions_()) {
+        return false;
+    }
+
+    if (!generate_audio_(n_buffers, n_samples)) {
+        return false;
+    }
+
+    return true;
 }
 
 void BasicServer::stop() {
@@ -223,7 +237,7 @@ const BasicServer::Port* BasicServer::find_port_(const datagram::Address& addres
     return NULL;
 }
 
-void BasicServer::update_sessions_() {
+bool BasicServer::update_sessions_() {
     BasicSessionPtr next_session;
 
     for (BasicSessionPtr session = sessions_.front(); session; session = next_session) {
@@ -235,8 +249,14 @@ void BasicServer::update_sessions_() {
 
             session->detach(*audio_sink_);
             sessions_.remove(*session);
+
+            if ((config().options & EnableOneshot) && sessions_.size() == 0) {
+                return false;
+            }
         }
     }
+
+    return true;
 }
 
 bool BasicServer::generate_audio_(size_t n_buffers, size_t n_samples) {

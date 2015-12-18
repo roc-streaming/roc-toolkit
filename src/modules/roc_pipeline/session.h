@@ -67,7 +67,7 @@ protected:
 
     //! Create packet reader.
     //! @remarks
-    //!  Calls make_fec_decoder() if EnableFEC options is set.
+    //!  Calls make_fec_decoder() if EnableLDPC options is set.
     virtual packet::IPacketReader* make_packet_reader();
 
     //! Create FEC decoder.

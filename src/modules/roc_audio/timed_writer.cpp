@@ -29,19 +29,17 @@ TimedWriter::TimedWriter(ISampleBufferWriter& output,
 }
 
 void TimedWriter::write(const ISampleBufferConstSlice& buffer) {
-    if (!buffer) {
-        roc_panic("attempting to write null buffer to timed writer");
+    if (buffer) {
+        if (n_samples_ == 0) {
+            start_ms_ = core::timestamp_ms();
+        } else {
+            const uint64_t sleep_ms = n_samples_ * 1000 / rate_;
+
+            core::sleep_until_ms(start_ms_ + sleep_ms);
+        }
+
+        n_samples_ += buffer.size();
     }
-
-    if (n_samples_ == 0) {
-        start_ms_ = core::timestamp_ms();
-    } else {
-        const uint64_t sleep_ms = n_samples_ * 1000 / rate_;
-
-        core::sleep_until_ms(start_ms_ + sleep_ms);
-    }
-
-    n_samples_ += buffer.size();
 
     output_.write(buffer);
 }

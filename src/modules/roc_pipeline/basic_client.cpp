@@ -15,10 +15,12 @@
 namespace roc {
 namespace pipeline {
 
-BasicClient::BasicClient(const ClientConfig& cfg)
+BasicClient::BasicClient(const ClientConfig& cfg,
+                         datagram::IDatagramWriter& datagram_writer)
     : config_(cfg)
     , audio_reader_(NULL)
-    , audio_writer_(NULL) {
+    , audio_writer_(NULL)
+    , datagram_writer_(datagram_writer) {
 }
 
 const ClientConfig& BasicClient::config() const {
@@ -28,13 +30,15 @@ const ClientConfig& BasicClient::config() const {
 void BasicClient::run() {
     roc_log(LOG_DEBUG, "client: starting thread");
 
-    while (!stop_) {
+    for (;;) {
         if (!tick()) {
             break;
         }
     }
 
-    roc_log(LOG_DEBUG, "client: terminating thread");
+    roc_log(LOG_DEBUG, "client: finishing thread");
+
+    datagram_writer_.write(NULL);
 }
 
 bool BasicClient::tick() {
@@ -59,10 +63,6 @@ bool BasicClient::tick() {
     audio_writer_->write(buffer);
 
     return true;
-}
-
-void BasicClient::stop() {
-    stop_ = true;
 }
 
 } // namespace pipeline

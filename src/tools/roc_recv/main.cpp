@@ -43,14 +43,17 @@ int main(int argc, char** argv) {
     }
 
     pipeline::ServerConfig config;
-    if (!args.no_fec_flag) {
-        config.options |= pipeline::EnableFEC;
+    if (args.fec_arg == fec_arg_ldpc) {
+        config.options |= pipeline::EnableLDPC;
     }
-    if (!args.no_resampling_flag) {
+    if (args.resampling_arg == resampling_arg_yes) {
         config.options |= pipeline::EnableResampling;
     }
-    if (!args.no_timing_flag) {
+    if (args.timing_arg == timing_arg_yes) {
         config.options |= pipeline::EnableTiming;
+    }
+    if (args.oneshot_flag) {
+        config.options |= pipeline::EnableOneshot;
     }
     if (args.beep_flag) {
         config.options |= pipeline::EnableBeep;
@@ -62,7 +65,7 @@ int main(int argc, char** argv) {
 
     netio::Transceiver trx;
     if (!trx.add_udp_receiver(addr, dgm_queue)) {
-        roc_log(LOG_ERROR, "can't register receiving address: %s",
+        roc_log(LOG_ERROR, "can't register udp receiver: %s",
                 datagram::address_to_str(addr).c_str());
         return 1;
     }
@@ -72,20 +75,22 @@ int main(int argc, char** argv) {
 
     sndio::Writer writer(sample_queue);
     if (!writer.open(args.output_arg, args.type_arg)) {
-        roc_log(LOG_ERROR, "can't open output writer: name=%s type=%s", args.output_arg,
+        roc_log(LOG_ERROR, "can't open output file/device: %s %s", args.output_arg,
                 args.type_arg);
         return 1;
     }
 
-    writer.start();
-    server.start();
     trx.start();
 
-    // TODO: wait ^C
+    writer.start();
 
-    trx.join();
+    server.start();
     server.join();
+
     writer.join();
+
+    trx.stop();
+    trx.join();
 
     return 0;
 }

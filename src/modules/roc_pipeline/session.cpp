@@ -41,7 +41,7 @@ packet::IPacketReader* Session::make_packet_reader() {
 
     renderer.add_tuner(*watchdog);
 
-    if (config().options & EnableFEC) {
+    if (config().options & EnableLDPC) {
         packet_reader = make_fec_decoder(packet_reader);
     }
 

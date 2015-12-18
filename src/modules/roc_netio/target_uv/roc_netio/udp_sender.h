@@ -21,6 +21,7 @@
 #include "roc_core/array.h"
 #include "roc_core/list.h"
 #include "roc_core/spin_mutex.h"
+#include "roc_core/atomic.h"
 
 #include "roc_datagram/address.h"
 #include "roc_datagram/idatagram_writer.h"
@@ -40,7 +41,7 @@ public:
     ~UDPSender();
 
     //! Attach to event loop.
-    void attach(uv_loop_t&);
+    void attach(uv_loop_t&, uv_async_t& eof);
 
     //! Detach from event loop.
     void detach(uv_loop_t&);
@@ -66,15 +67,21 @@ private:
     void close_port_(Port& port);
     Port* find_port_(const datagram::Address& address);
 
+    void check_eof_();
+
     UDPDatagramPtr read_();
 
     core::Array<Port, MaxPorts> ports_;
 
     uv_loop_t* loop_;
     uv_async_t async_;
+    uv_async_t* eof_;
 
     core::List<UDPDatagram> list_;
     core::SpinMutex mutex_;
+
+    core::Atomic terminate_;
+    core::Atomic pending_;
 
     unsigned number_;
 };

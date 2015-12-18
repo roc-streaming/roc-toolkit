@@ -79,7 +79,7 @@ void Writer::stop() {
 }
 
 void Writer::run() {
-    roc_log(LOG_TRACE, "writer: started thread");
+    roc_log(LOG_TRACE, "writer: starting thread");
 
     if (!output_) {
         roc_panic("writer: thread is started before open() returnes success");
@@ -109,6 +109,8 @@ void Writer::loop_() {
             roc_log(LOG_DEBUG, "writer: got empty buffer, exiting");
             break;
         }
+
+        n_bufs_++;
 
         const packet::sample_t* samples = buffer.data();
         size_t n_samples = buffer.size();

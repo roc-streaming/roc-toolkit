@@ -18,7 +18,7 @@ namespace pipeline {
 Client::Client(audio::ISampleBufferReader& audio_reader,
                datagram::IDatagramWriter& datagram_writer,
                const ClientConfig& cfg)
-    : BasicClient(cfg)
+    : BasicClient(cfg, datagram_writer)
     , input_reader(audio_reader)
     , packet_sender(datagram_writer)
     , packet_composer(NULL) {
@@ -77,7 +77,7 @@ packet::IPacketWriter* Client::make_packet_writer() {
         packet_writer = new (interleaver) packet::Interleaver(*packet_writer);
     }
 
-    if (config().options & EnableFEC) {
+    if (config().options & EnableLDPC) {
         packet_writer = make_fec_encoder(packet_writer);
     }
 

@@ -20,6 +20,7 @@ namespace netio {
 
 UDPSender::UDPSender()
     : loop_(NULL)
+    , eof_(NULL)
     , number_(0) {
 }
 
@@ -29,7 +30,7 @@ UDPSender::~UDPSender() {
     }
 }
 
-void UDPSender::attach(uv_loop_t& loop) {
+void UDPSender::attach(uv_loop_t& loop, uv_async_t& eof) {
     core::SpinMutex::Lock lock(mutex_);
 
     roc_log(LOG_TRACE, "udp sender: attaching to event loop");
@@ -37,6 +38,7 @@ void UDPSender::attach(uv_loop_t& loop) {
     roc_panic_if(loop_);
 
     loop_ = &loop;
+    eof_ = &eof;
 
     if (int err = uv_async_init(loop_, &async_, async_cb_)) {
         roc_panic("udp sender: uv_async_init(): [%s] %s", uv_err_name(err),
@@ -60,6 +62,7 @@ void UDPSender::detach(uv_loop_t& loop) {
     uv_close((uv_handle_t*)&async_, NULL);
 
     loop_ = NULL;
+    eof_ = NULL;
 }
 
 bool UDPSender::add_port(const datagram::Address& address) {
@@ -135,34 +138,37 @@ UDPSender::Port* UDPSender::find_port_(const datagram::Address& address) {
 }
 
 void UDPSender::write(const datagram::IDatagramPtr& dgm) {
-    if (!dgm) {
-        roc_panic("udp sender: attempting to write null datagram");
+    if (dgm) {
+        if (dgm->type() != UDPDatagram::Type) {
+            roc_panic("udp sender: attempting to write datagram of wrong type"
+                      " (use Transceiver::udp_composer() to create datagrams"
+                      " suitable for this sender)");
+        }
+
+        if (!dgm->buffer()) {
+            roc_log(LOG_TRACE, "udp sender: ignoring datagram with empty buffer");
+            return;
+        }
+
+        UDPDatagram& udp_datagram = static_cast<UDPDatagram&>(*dgm);
+
+        core::SpinMutex::Lock lock(mutex_);
+
+        // uv_async_t may be closed in detach() from event loop thread.
+        // In this case, loop_ will be set to null.
+        if (!loop_) {
+            roc_log(LOG_ERROR, "udp sender:"
+                               " dropping datagram, not attached to event loop");
+            return;
+        }
+
+        list_.append(udp_datagram);
+
+        ++pending_;
+    } else {
+        roc_log(LOG_DEBUG, "udp sender: got null datagram, terminating");
+        terminate_ = true;
     }
-
-    if (dgm->type() != UDPDatagram::Type) {
-        roc_panic("udp sender: attempting to write datagram of wrong type"
-                  " (use Transceiver::udp_composer() to create datagrams"
-                  " suitable for this sender)");
-    }
-
-    if (!dgm->buffer()) {
-        roc_log(LOG_TRACE, "udp sender: ignoring datagram with empty buffer");
-        return;
-    }
-
-    UDPDatagram& udp_datagram = static_cast<UDPDatagram&>(*dgm);
-
-    core::SpinMutex::Lock lock(mutex_);
-
-    // uv_async_t may be closed in detach() from event loop thread.
-    // In this case, loop_ will be set to null.
-    if (!loop_) {
-        roc_log(LOG_ERROR, "udp sender:"
-                           " dropping datagram, not attached to event loop");
-        return;
-    }
-
-    list_.append(udp_datagram);
 
     if (int err = uv_async_send(&async_)) {
         roc_panic("udp sender: uv_async_send(): [%s] %s", uv_err_name(err),
@@ -214,6 +220,8 @@ void UDPSender::async_cb_(uv_async_t* handle) {
         buf.base = (char*)const_cast<uint8_t*>(buffer.data());
         buf.len = buffer.size();
 
+        dgm->request().data = &self;
+
         if (int err = uv_udp_send(&dgm->request(), &port->handle, &buf, 1,
                                   (sockaddr*)&inet_addr, send_cb_)) {
             roc_log(LOG_ERROR, "udp sender: uv_udp_send(): [%s] %s", uv_err_name(err),
@@ -224,10 +232,14 @@ void UDPSender::async_cb_(uv_async_t* handle) {
         // Will be decremented in send_cb_().
         dgm->incref();
     }
+
+    self.check_eof_();
 }
 
 void UDPSender::send_cb_(uv_udp_send_t* req, int status) {
     roc_panic_if_not(req);
+
+    UDPSender& self = *(UDPSender*)req->data;
 
     // To preventr leak, capture smart pointer before returning.
     UDPDatagramPtr dgm = UDPDatagram::container_of(req);
@@ -245,6 +257,18 @@ void UDPSender::send_cb_(uv_udp_send_t* req, int status) {
                 datagram::address_to_str(dgm->sender()).c_str(),
                 datagram::address_to_str(dgm->receiver()).c_str(),
                 (long)dgm->buffer().size(), uv_err_name(status), uv_strerror(status));
+    }
+
+    --self.pending_;
+    self.check_eof_();
+}
+
+void UDPSender::check_eof_() {
+    if (terminate_ && pending_ == 0) {
+        if (int err = uv_async_send(eof_)) {
+            roc_panic("udp sender: uv_async_send(): [%s] %s", uv_err_name(err),
+                      uv_strerror(err));
+        }
     }
 }
 

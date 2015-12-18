@@ -151,6 +151,8 @@ TEST(read_write, empty) {
         reader.start();
         reader.join();
 
+        CHECK(!output.read());
+
         LONGS_EQUAL(0, output.size());
     }
 }
@@ -188,6 +190,8 @@ TEST(read_write, samples) {
 
         reader.join();
 
+        CHECK(!output.read());
+
         LONGS_EQUAL(0, output.size());
     }
 }
@@ -215,6 +219,8 @@ TEST(read_write, reader_stop_before) {
     reader.start();
     reader.join();
 
+    CHECK(!output.read());
+
     LONGS_EQUAL(0, output.size());
 }
 
@@ -241,7 +247,7 @@ TEST(read_write, writer_bad_args) {
         Queue input;
         Writer writer(input, ChannelMask);
 
-        CHECK(!writer.open("/some/bad/file"));
+        CHECK(!writer.open("/bad/file"));
     }
 
     {
@@ -270,7 +276,7 @@ TEST(read_write, reader_bad_args) {
         Queue output;
         Reader reader(output, composer(), ChannelMask, NumSamples);
 
-        CHECK(!reader.open("/some/bad/file"));
+        CHECK(!reader.open("/bad/file"));
     }
 
     {
@@ -325,6 +331,8 @@ TEST(read_write, resample) {
         writer.join();
     }
 
+    CHECK(!scaled2x.read());
+
     LONGS_EQUAL(0, scaled2x.size());
 
     Queue scaled1x;
@@ -358,7 +366,7 @@ TEST(read_write, remap_channels) {
         reader.join();
     }
 
-    LONGS_EQUAL(NumBufs * 2, queue.size());
+    LONGS_EQUAL(NumBufs * 2 + 1, queue.size());
 
     for (size_t p = 0; p < NumBufs * 2; p++) {
         ISampleBufferConstSlice buffer = queue.read();
@@ -373,6 +381,8 @@ TEST(read_write, remap_channels) {
             rd_pos += Step;
         }
     }
+
+    CHECK(!queue.read());
 }
 
 } // namespace test

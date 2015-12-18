@@ -39,25 +39,25 @@ int main(int argc, char** argv) {
     datagram::Address src_addr;
     if (args.source_given) {
         if (!netio::parse_address(args.source_arg, src_addr)) {
-            roc_log(LOG_ERROR, "can't parse src address: %s", args.source_arg);
+            roc_log(LOG_ERROR, "can't parse source address: %s", args.source_arg);
             return 1;
         }
     }
 
     datagram::Address dst_addr;
     if (!netio::parse_address(args.inputs[0], dst_addr)) {
-        roc_log(LOG_ERROR, "can't parse dst address: %s", args.inputs[0]);
+        roc_log(LOG_ERROR, "can't parse destination address: %s", args.inputs[0]);
         return 1;
     }
 
     pipeline::ClientConfig config;
-    if (!args.no_fec_flag) {
-        config.options |= pipeline::EnableFEC;
+    if (args.fec_arg == fec_arg_ldpc) {
+        config.options |= pipeline::EnableLDPC;
     }
-    if (!args.no_interleaving_flag) {
+    if (args.interleaving_arg == interleaving_arg_yes) {
         config.options |= pipeline::EnableInterleaving;
     }
-    if (!args.no_timing_flag) {
+    if (args.timing_arg == timing_arg_yes) {
         config.options |= pipeline::EnableTiming;
     }
     if (args.loss_rate_given) {
@@ -73,14 +73,14 @@ int main(int argc, char** argv) {
 
     sndio::Reader reader(sample_queue);
     if (!reader.open(args.input_arg, args.type_arg)) {
-        roc_log(LOG_ERROR, "can't open input reader: name=%s type=%s", args.input_arg,
+        roc_log(LOG_ERROR, "can't open input file/device: %s %s", args.input_arg,
                 args.type_arg);
         return 1;
     }
 
     netio::Transceiver trx;
     if (!trx.add_udp_sender(src_addr)) {
-        roc_log(LOG_ERROR, "can't register sending address: %s",
+        roc_log(LOG_ERROR, "can't register udp sender: %s",
                 datagram::address_to_str(src_addr).c_str());
         return 1;
     }
@@ -91,18 +91,14 @@ int main(int argc, char** argv) {
     client.set_receiver(dst_addr);
 
     trx.start();
+
     client.start();
+
     reader.start();
-
-    // TODO: wait ^C
-
     reader.join();
 
-    // FIXME
-    client.stop();
-    trx.stop();
-
     client.join();
+
     trx.join();
 
     return 0;

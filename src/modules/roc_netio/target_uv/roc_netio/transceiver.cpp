@@ -26,15 +26,15 @@ Transceiver::Transceiver(core::IByteBufferComposer& buf_composer,
                   uv_strerror(err));
     }
 
-    udp_receiver_.attach(loop_);
-    udp_sender_.attach(loop_);
-
     if (int err = uv_async_init(&loop_, &async_, async_cb_)) {
         roc_panic("transceiver: uv_async_init(): [%s] %s", uv_err_name(err),
                   uv_strerror(err));
     }
 
     async_.data = this;
+
+    udp_receiver_.attach(loop_);
+    udp_sender_.attach(loop_, async_);
 }
 
 Transceiver::~Transceiver() {
@@ -45,7 +45,7 @@ Transceiver::~Transceiver() {
     // If there are opened handles (probably because thread was never started and
     // joined and thus close_() wasn't called), we should schedule close and
     // quickly run the loop to wait all opened handles to be closed. Otherwise,
-    // uv_loop_close() may return EBUSY.
+    // uv_loop_close() may fail with EBUSY.
     if (uv_loop_alive(&loop_)) {
         close_();
         Transceiver::run(); // non-virtual call from dtor
@@ -83,14 +83,14 @@ datagram::IDatagramWriter& Transceiver::udp_sender() {
 }
 
 void Transceiver::run() {
-    roc_log(LOG_DEBUG, "transceiver: starting thread");
+    roc_log(LOG_DEBUG, "transceiver: starting event loop");
 
     int err = uv_run(&loop_, UV_RUN_DEFAULT);
     if (err != 0) {
         roc_log(LOG_DEBUG, "transceiver: uv_run() returned non-zero");
     }
 
-    roc_log(LOG_DEBUG, "transceiver: finishing thread");
+    roc_log(LOG_DEBUG, "transceiver: finishing event loop");
 }
 
 void Transceiver::stop() {

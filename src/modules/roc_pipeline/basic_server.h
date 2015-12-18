@@ -122,7 +122,7 @@ private:
     bool create_session_and_store_(const datagram::IDatagram&);
     const Port* find_port_(const datagram::Address&);
 
-    void update_sessions_();
+    bool update_sessions_();
     bool generate_audio_(size_t n_buffers, size_t n_samples);
 
     core::Array<Port, MaxPorts> ports_;
