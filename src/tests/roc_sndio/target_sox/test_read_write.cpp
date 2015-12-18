@@ -43,7 +43,11 @@ enum {
 
 const sample_t Step = 0.0001f, Epsilon = 0.00001f;
 
-typedef SampleBufferQueue<1> Queue;
+struct Queue : SampleBufferQueue {
+    Queue()
+        : SampleBufferQueue(0, false) {
+    }
+};
 
 } // namespace
 
@@ -292,11 +296,11 @@ TEST(read_write, overwrite_file) {
 }
 
 TEST(read_write, resample) {
-    const size_t NumBufs = 20, MaxBufs = 50;
+    const size_t NumBufs = 20;
 
     write_file(NumBufs, ChannelMask, SampleRate);
 
-    SampleBufferQueue<MaxBufs> scaled2x(0);
+    Queue scaled2x;
 
     {
         Reader reader(scaled2x, composer(), ChannelMask, NumSamples, SampleRate * 2);
@@ -323,7 +327,7 @@ TEST(read_write, resample) {
 
     LONGS_EQUAL(0, scaled2x.size());
 
-    SampleBufferQueue<MaxBufs> scaled1x(0);
+    Queue scaled1x;
 
     {
         Reader reader(scaled1x, composer(), ChannelMask, NumSamples, SampleRate);
@@ -339,11 +343,11 @@ TEST(read_write, resample) {
 }
 
 TEST(read_write, remap_channels) {
-    const size_t NumBufs = 20, MaxBufs = 50;
+    const size_t NumBufs = 20;
 
     write_file(NumBufs, ChLeft, SampleRate);
 
-    SampleBufferQueue<MaxBufs> queue(0);
+    Queue queue;
 
     {
         Reader reader(queue, composer(), ChLeft | ChRight, NumSamples, SampleRate);

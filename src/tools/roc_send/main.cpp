@@ -68,7 +68,7 @@ int main(int argc, char** argv) {
         config.random_delay_time = (size_t)args.delay_arg;
     }
 
-    audio::SampleBufferQueue<> sample_queue;
+    audio::SampleBufferQueue sample_queue;
     rtp::Composer rtp_composer;
 
     sndio::Reader reader(sample_queue);

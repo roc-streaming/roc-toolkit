@@ -57,7 +57,7 @@ int main(int argc, char** argv) {
     }
 
     datagram::DatagramQueue dgm_queue;
-    audio::SampleBufferQueue<> sample_queue;
+    audio::SampleBufferQueue sample_queue;
     rtp::Parser rtp_parser;
 
     netio::Transceiver trx;

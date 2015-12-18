@@ -27,83 +27,44 @@ namespace roc {
 namespace audio {
 
 //! Sample buffer queue.
-//! @tparam MaxSz is maximum queue size; should be >= 1.
-template <size_t MaxSz = ROC_CONFIG_DEFAULT_PLAYER_LATENCY>
 class SampleBufferQueue : public ISampleBufferReader,
                           public ISampleBufferWriter,
                           public core::NonCopyable<> {
 public:
     //! Construct empty queue.
     //! @remarks
-    //!  First read() call will block until at least @p start_threshold
-    //!  buffers are queued.
-    SampleBufferQueue(size_t start_threshold = MaxSz)
-        : rd_sem_(0)
-        , wr_sem_(MaxSz)
-        , countdown_(start_threshold) {
-    }
+    //!  - If @p max_size is zero, maximum possible size is used.
+    //!  - If @p wait_full is true, first read() call will block until
+    //!    queue becomes full first time.
+    SampleBufferQueue(size_t max_size = ROC_CONFIG_DEFAULT_PLAYER_LATENCY,
+                      bool wait_full = true);
 
     //! Read buffer.
     //! @remarks
     //!  Blocks until there is at least one buffer in queue. If
     //!  this is first read() call, blocks until there are at
     //!  least @p start_threshold buffers in queue.
-    virtual ISampleBufferConstSlice read() {
-        rd_sem_.pend();
-
-        ISampleBufferConstSlice buffer;
-
-        {
-            core::SpinMutex::Lock lock(mutex_);
-
-            buffer = cb_.shift();
-        }
-
-        wr_sem_.post();
-
-        return buffer;
-    }
+    virtual ISampleBufferConstSlice read();
 
     //! Write buffer.
     //! @remarks
     //!  Blocks until there are less than MaxSz buffers in queue.
-    virtual void write(const ISampleBufferConstSlice& buffer) {
-        wr_sem_.pend();
-
-        bool post = false;
-
-        {
-            core::SpinMutex::Lock lock(mutex_);
-
-            cb_.push(buffer);
-
-            if (countdown_ != 0) {
-                countdown_--;
-            }
-
-            post = (countdown_ == 0);
-        }
-
-        if (post) {
-            rd_sem_.post();
-        }
-    }
+    virtual void write(const ISampleBufferConstSlice& buffer);
 
     //! Get current queue size.
-    size_t size() const {
-        core::SpinMutex::Lock lock(mutex_);
-
-        return cb_.size();
-    }
+    size_t size() const;
 
 private:
+    enum { MaxBuffers = ROC_CONFIG_MAX_PLAYER_LATENCY };
+
+    const size_t max_size_;
+    size_t countdown_;
+
     core::Semaphore rd_sem_;
     core::Semaphore wr_sem_;
 
-    core::CircularBuffer<ISampleBufferConstSlice, MaxSz> cb_;
+    core::CircularBuffer<ISampleBufferConstSlice, MaxBuffers> cb_;
     core::SpinMutex mutex_;
-
-    size_t countdown_;
 };
 
 } // namespace audio
