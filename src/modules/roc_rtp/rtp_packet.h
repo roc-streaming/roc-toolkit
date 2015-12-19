@@ -41,6 +41,9 @@ public:
     //! Get RTP header.
     RTP_Header& header();
 
+    //! Get RTP extension header.
+    const RTP_ExtentionHeader* ext_header() const;
+
     //! Get RTP payload.
     core::IByteBufferConstSlice payload() const;
 

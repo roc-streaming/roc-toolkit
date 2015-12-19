@@ -69,7 +69,7 @@ bool RTP_Packet::parse(const core::IByteBufferConstSlice& buffer) {
 
     if (hdr.has_extension()) {
         const RTP_ExtentionHeader& ext =
-            *(const RTP_ExtentionHeader*)(buffer.data() + hdr_size);
+            *(const RTP_ExtentionHeader*)(buffer.data() + hdr.header_size());
 
         hdr_size += ext.data_size();
     }
@@ -132,16 +132,34 @@ RTP_Header& RTP_Packet::header() {
     return *(RTP_Header*)mut_buffer_().data();
 }
 
+const RTP_ExtentionHeader* RTP_Packet::ext_header() const {
+    roc_panic_if_not(buffer_);
+
+    if (header().has_extension()) {
+        return (const RTP_ExtentionHeader*)(buffer_.data() + header().header_size());
+    } else {
+        return NULL;
+    }
+}
+
 core::IByteBufferConstSlice RTP_Packet::payload() const {
     roc_panic_if_not(buffer_);
 
-    return core::IByteBufferConstSlice(buffer_, payload_off_, payload_size_);
+    if (payload_size_) {
+        return core::IByteBufferConstSlice(buffer_, payload_off_, payload_size_);
+    } else {
+        return core::IByteBufferConstSlice();
+    }
 }
 
 core::IByteBufferSlice RTP_Packet::payload() {
     roc_panic_if_not(buffer_);
 
-    return core::IByteBufferSlice(mut_buffer_(), payload_off_, payload_size_);
+    if (payload_size_) {
+        return core::IByteBufferSlice(mut_buffer_(), payload_off_, payload_size_);
+    } else {
+        return core::IByteBufferSlice();
+    }
 }
 
 void RTP_Packet::set_payload_size(size_t size) {

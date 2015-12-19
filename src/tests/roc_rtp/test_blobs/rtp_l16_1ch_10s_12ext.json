@@ -1,0 +1,26 @@
+{
+    "header_size": 12,
+    "extension_size": 12,
+    "payload_size": 20,
+    "padding_size": 0,
+
+    "version": 2,
+    "padding": 0,
+    "extension": 1,
+    "pt": 11,
+    "marker": 0,
+    "seqnum": 54321,
+    "ts": 123456789,
+    "ssrc": 500,
+    "csrc": [],
+
+    "ext_type": 5,
+    "ext_data": "abcdefgh",
+
+    "num_channels": 1,
+    "num_samples": 10,
+    "samplebits": 16,
+    "samples": [
+        [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    ]
+}

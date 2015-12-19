@@ -80,8 +80,6 @@ public:
 
     //! Get number of elements in slice.
     size_t size() const {
-        check_();
-
         return size_;
     }
 

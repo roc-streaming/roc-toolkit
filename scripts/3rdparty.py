@@ -61,8 +61,8 @@ def freplace(path, pat, to):
 def touch(path):
     open(path, 'w').close()
 
-if len(sys.argv) < 4:
-    print("usage: 3rdparty.py WORKDIR TOOLCHAIN NAME")
+if len(sys.argv) != 4
+    print("usage: 3rdparty.py workdir toolchain name")
     exit(1)
 
 workdir = os.path.abspath(sys.argv[1])

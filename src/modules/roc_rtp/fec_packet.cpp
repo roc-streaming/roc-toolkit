@@ -71,8 +71,8 @@ core::IByteBufferConstSlice FECPacket::payload() const {
 }
 
 void FECPacket::set_payload(const uint8_t* data, size_t size) {
-    if (!data) {
-        roc_panic("rtp fec packet: data is null");
+    if (!data && size) {
+        roc_panic("rtp fec packet: data is null, size is non-null");
     }
 
     packet_.set_payload_size(size);

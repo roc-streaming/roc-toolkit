@@ -30,7 +30,11 @@ def is_test(path):
 def make_guard(path):
     dirpath, basename = os.path.split(path)
     dirname = os.path.basename(dirpath)
-    return '_'.join([dirname, basename]).replace('.', '_').upper() + '_'
+    if not dirname.startswith('roc_'):
+        arr = [os.path.basename(os.path.dirname(dirpath)), dirname, basename]
+    else:
+        arr = [dirname, basename]
+    return '_'.join(arr).replace('.', '_').upper() + '_'
 
 def make_doxygen_path(path):
     path = '/'.join(path.split(os.sep))
@@ -49,7 +53,7 @@ def format_file(output, path):
     with open(path) as fp:
         lines = fp.read().splitlines()
 
-    has_copyright, has_doxygen, has_guard = False, False, False
+    has_copyright, has_doxygen, has_guard, is_autogen = False, False, False, False
 
     section = 'copyright'
     brief = 'TODO'
@@ -71,9 +75,11 @@ def format_file(output, path):
                 continue
 
         if section == 'copyright':
-            if not has_copyright \
-              and re.match(r'^\s*/?\*\s*(Copyright|Mozilla)', line) \
-              and not re.search(r'TODO', line):
+            if not has_copyright:
+              if re.match(r'^\s*/?\*.*AUTO-GENERATED.*', line):
+                  is_autogen = True
+
+              if is_autogen or re.match(r'^\s*/?\*\s*(Copyright|Mozilla)', line):
                 has_copyright = True
                 for p in pre:
                     fprint(p)
@@ -98,7 +104,7 @@ def format_file(output, path):
                 continue
 
             if re.match(r'^\s*//!', line):
-                if not is_header(path) or is_test(path):
+                if not is_header(path) or is_test(path) or is_autogen:
                     continue
 
                 if re.match(r'^\s*//!\s*@file', line):
@@ -109,7 +115,7 @@ def format_file(output, path):
                 has_doxygen = True
                 continue
             else:
-                if is_test(path):
+                if is_test(path) or is_autogen:
                     section = 'guard' if is_header(path) else 'body'
                 else:
                     if not has_doxygen:

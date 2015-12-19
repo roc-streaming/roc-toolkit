@@ -39,7 +39,7 @@ void print_packet(const IAudioPacket& p, bool body) {
                 if (n % MaxPerLine == 0) {
                     fprintf(stderr, "\n ");
                 }
-                fprintf(stderr, " %.2f", (double)s);
+                fprintf(stderr, " %.3f", (double)s);
             }
 
             fprintf(stderr, "\n");

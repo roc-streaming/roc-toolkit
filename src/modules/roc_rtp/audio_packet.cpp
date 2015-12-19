@@ -63,7 +63,10 @@ void AudioPacket::set_size(packet::channel_mask_t ch_mask, size_t n_samples) {
 
     packet_.header().set_payload_type(format_->pt);
     packet_.set_payload_size(format_->size(n_samples));
-    format_->clear(packet_.payload().data(), n_samples);
+
+    if (n_samples) {
+        format_->clear(packet_.payload().data(), n_samples);
+    }
 
     roc_panic_if(channels() != ch_mask);
     roc_panic_if(num_samples() != n_samples);
