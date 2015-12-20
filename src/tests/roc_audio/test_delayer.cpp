@@ -25,18 +25,19 @@ enum { ChMask = 0x3, NumChannels = 2, NumSamples = 100, NumPackets = 5 };
 
 } // namespace
 
-TEST_GROUP(delayer){
-    IAudioPacketPtr make(seqnum_t sn){ IAudioPacketPtr packet = new_audio_packet();
+TEST_GROUP(delayer) {
+    IAudioPacketPtr make(seqnum_t sn) {
+        IAudioPacketPtr packet = new_audio_packet();
 
-packet->set_seqnum(sn);
-packet->set_timestamp(packet::timestamp_t(sn* NumSamples));
+        packet->set_seqnum(sn);
+        packet->set_timestamp(packet::timestamp_t(sn* NumSamples));
 
-sample_t samples[NumSamples * NumChannels] = {};
-packet->set_size(ChMask, NumSamples);
-packet->write_samples(ChMask, 0, samples, NumSamples);
+        sample_t samples[NumSamples * NumChannels] = {};
+        packet->set_size(ChMask, NumSamples);
+        packet->write_samples(ChMask, 0, samples, NumSamples);
 
-return packet;
-}
+        return packet;
+    }
 };
 
 TEST(delayer, no_delay) {

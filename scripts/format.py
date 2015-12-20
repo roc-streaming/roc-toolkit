@@ -49,7 +49,7 @@ def format_file(output, path):
     with open(path) as fp:
         lines = fp.read().splitlines()
 
-    has_copyright, has_doxygen = False, False
+    has_copyright, has_doxygen, has_guard = False, False, False
 
     section = 'copyright'
     brief = 'TODO'
@@ -126,9 +126,13 @@ def format_file(output, path):
         if section == 'guard':
             m = re.match(r'#(ifndef|define)', line)
             if m:
+                has_guard = True
                 fprint('#%s %s' % (m.group(1), make_guard(path)))
                 continue
             else:
+                if not has_guard:
+                    fprint('#ifndef %s' % make_guard(path))
+                    fprint('#define %s' % make_guard(path))
                 fprint('')
                 section = 'body'
 

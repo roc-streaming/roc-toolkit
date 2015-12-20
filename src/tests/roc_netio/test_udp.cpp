@@ -26,83 +26,84 @@ enum { NumIterations = 20, NumPackets = 10, BufferSize = 125 };
 
 } // namespace
 
-TEST_GROUP(udp){ Address make_address(int number){ Address addr;
-addr.ip[0] = 127;
-addr.ip[1] = 0;
-addr.ip[2] = 0;
-addr.ip[3] = 1;
-addr.port = port_t(10000 + number);
-return addr;
-}
-
-core::IByteBufferConstSlice make_buffer(int number, int base) {
-    core::IByteBufferPtr buff = default_buffer_composer().compose();
-    CHECK(buff);
-
-    buff->set_size(BufferSize);
-
-    for (int n = 0; n < BufferSize; n++) {
-        buff->data()[n] = uint8_t((base * number + n) & 0xff);
+TEST_GROUP(udp) {
+    Address make_address(int number){ Address addr;
+        addr.ip[0] = 127;
+        addr.ip[1] = 0;
+        addr.ip[2] = 0;
+        addr.ip[3] = 1;
+        addr.port = port_t(10000 + number);
+        return addr;
     }
 
-    return *buff;
-}
+    core::IByteBufferConstSlice make_buffer(int number, int base) {
+        core::IByteBufferPtr buff = default_buffer_composer().compose();
+        CHECK(buff);
 
-void send_datagram(
-    Transceiver& tx, Address tx_addr, Address rx_addr, int number, int base) {
-    //
-    IDatagramPtr dgm = tx.udp_composer().compose();
-    CHECK(dgm);
+        buff->set_size(BufferSize);
 
-    dgm->set_sender(tx_addr);
-    dgm->set_receiver(rx_addr);
-    dgm->set_buffer(make_buffer(number, base));
-
-    tx.udp_sender().write(dgm);
-}
-
-void wait_datagram(DatagramBlockingQueue& queue,
-                   Address tx_addr,
-                   Address rx_addr,
-                   int number,
-                   int base) {
-    //
-    IDatagramConstPtr dgm = queue.read();
-    CHECK(dgm);
-
-    expect_address(tx_addr, dgm->sender());
-    expect_address(rx_addr, dgm->receiver());
-    expect_buffer(number, base, dgm->buffer());
-}
-
-void expect_address(const Address& expected, const Address& actual) {
-    LONGS_EQUAL(expected.ip[0], actual.ip[0]);
-    LONGS_EQUAL(expected.ip[1], actual.ip[1]);
-    LONGS_EQUAL(expected.ip[2], actual.ip[2]);
-    LONGS_EQUAL(expected.ip[3], actual.ip[3]);
-    LONGS_EQUAL(expected.port, actual.port);
-    CHECK(expected == actual);
-}
-
-void expect_buffer(int number, int base, core::IByteBufferConstSlice actual) {
-    core::IByteBufferConstSlice expected = make_buffer(number, base);
-
-    LONGS_EQUAL(expected.size(), actual.size());
-
-    for (size_t n = 0; n < expected.size(); n++) {
-        uint8_t val_expected = expected.data()[n];
-        uint8_t val_actual = actual.data()[n];
-
-        if (val_expected != val_actual) {
-            roc_log(LOG_ERROR, "unexpected byte at pos %u (datagram # %d):", (unsigned)n,
-                    number);
-
-            actual.print();
+        for (int n = 0; n < BufferSize; n++) {
+            buff->data()[n] = uint8_t((base * number + n) & 0xff);
         }
 
-        LONGS_EQUAL(val_expected, val_actual);
+        return *buff;
     }
-}
+
+    void send_datagram(
+        Transceiver& tx, Address tx_addr, Address rx_addr, int number, int base) {
+        //
+        IDatagramPtr dgm = tx.udp_composer().compose();
+        CHECK(dgm);
+
+        dgm->set_sender(tx_addr);
+        dgm->set_receiver(rx_addr);
+        dgm->set_buffer(make_buffer(number, base));
+
+        tx.udp_sender().write(dgm);
+    }
+
+    void wait_datagram(DatagramBlockingQueue& queue,
+                       Address tx_addr,
+                       Address rx_addr,
+                       int number,
+                       int base) {
+        //
+        IDatagramConstPtr dgm = queue.read();
+        CHECK(dgm);
+
+        expect_address(tx_addr, dgm->sender());
+        expect_address(rx_addr, dgm->receiver());
+        expect_buffer(number, base, dgm->buffer());
+    }
+
+    void expect_address(const Address& expected, const Address& actual) {
+        LONGS_EQUAL(expected.ip[0], actual.ip[0]);
+        LONGS_EQUAL(expected.ip[1], actual.ip[1]);
+        LONGS_EQUAL(expected.ip[2], actual.ip[2]);
+        LONGS_EQUAL(expected.ip[3], actual.ip[3]);
+        LONGS_EQUAL(expected.port, actual.port);
+        CHECK(expected == actual);
+    }
+
+    void expect_buffer(int number, int base, core::IByteBufferConstSlice actual) {
+        core::IByteBufferConstSlice expected = make_buffer(number, base);
+
+        LONGS_EQUAL(expected.size(), actual.size());
+
+        for (size_t n = 0; n < expected.size(); n++) {
+            uint8_t val_expected = expected.data()[n];
+            uint8_t val_actual = actual.data()[n];
+
+            if (val_expected != val_actual) {
+                roc_log(LOG_ERROR, "unexpected byte at pos %u (datagram # %d):",
+                        (unsigned)n, number);
+
+                actual.print();
+            }
+
+            LONGS_EQUAL(val_expected, val_actual);
+        }
+    }
 };
 
 TEST(udp, one_sender_one_receiver_single_thread) {

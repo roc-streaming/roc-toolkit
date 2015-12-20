@@ -20,14 +20,15 @@ namespace test {
 using namespace netio;
 using namespace datagram;
 
-TEST_GROUP(transceiver){ Address make_address(int number){ Address addr;
-addr.ip[0] = 127;
-addr.ip[1] = 0;
-addr.ip[2] = 0;
-addr.ip[3] = 1;
-addr.port = port_t(10000 + number);
-return addr;
-}
+TEST_GROUP(transceiver) {
+    Address make_address(int number){ Address addr;
+        addr.ip[0] = 127;
+        addr.ip[1] = 0;
+        addr.ip[2] = 0;
+        addr.ip[3] = 1;
+        addr.port = port_t(10000 + number);
+        return addr;
+    }
 };
 
 TEST(transceiver, no_thread) {
