@@ -29,6 +29,14 @@ Advanced features
 - [ ] Take a look at [RaptorQ](https://tools.ietf.org/html/rfc6330) and [OpenRQ](https://github.com/openrq-team/OpenRQ)
 - [ ] Take a look at various IoT protocols (e.g. [IoTivity](https://www.iotivity.org/))
 
+Video support
+-------------
+
+- [ ] Implement video packet formats (RTP)
+- [ ] Implement video processing elements (complementing `audio::Streamer`, `audio::Resampler`, etc)
+- [ ] Adopt `roc_pipeline` for video
+- [ ] Add video input/output support
+
 Ports
 -----
 
@@ -55,3 +63,7 @@ Applications
 - [ ] Implement relay tool (a.k.a. retranslator) that forwards incoming traffic to next hop, adding features
   like FEC, retransmission, compression, etc. This may be useful to improve quality of RTP trafic from
   other clients or probably pulseaudio trafic.
+
+#### Jabber
+
+- [ ] We could implement plugin for some IM with audio support to enhance quality of service (Jingle? SIP?)
