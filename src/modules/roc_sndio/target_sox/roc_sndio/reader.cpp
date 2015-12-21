@@ -36,7 +36,7 @@ void add_effect(sox_effects_chain_t* chain,
         roc_panic("sox_create_effect(): can't create '%s' effect", name);
     }
 
-    int err = sox_effect_options(effect, argc, (char**)argv);
+    int err = sox_effect_options(effect, argc, const_cast<char**>(argv));
     if (err != SOX_SUCCESS) {
         roc_panic("sox_effect_options(): can't set '%s' effect options: %s", name,
                   sox_strerror(err));

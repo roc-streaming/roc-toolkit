@@ -15,7 +15,7 @@ namespace roc {
 namespace audio {
 
 SampleBufferQueue::SampleBufferQueue(size_t max_size, bool wait_full)
-    : max_size_(max_size ? max_size : MaxBuffers)
+    : max_size_(max_size ? max_size : (size_t)MaxBuffers)
     , countdown_(wait_full ? max_size_ : 0)
     , rd_sem_(0)
     , wr_sem_(max_size_) {
