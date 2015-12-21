@@ -118,8 +118,11 @@ def GenGetOpt(env, source, ver):
     else:
         gengetopt = 'gengetopt'
 
-    if not env.Which(gengetopt):
-        env.Die("gengetopt not found in PATH (looked for `%s')" % gengetopt)
+    if os.path.exists(env.File(gengetopt).abspath):
+        gengetopt = env.File(gengetopt).path
+    else:
+        if not env.Which(gengetopt):
+            env.Die("gengetopt not found in PATH (looked for `%s')" % gengetopt)
 
     source = env.File(source)
     source_name = os.path.splitext(os.path.basename(source.path))[0]
@@ -140,30 +143,25 @@ def GenGetOpt(env, source, ver):
     return [env.Object(target[0])]
 
 def ThridParty(env, toolchain, name, includes=[]):
-    if not os.path.exists('3rdparty/%s.done' % name):
-        if env.IsPretty():
-            suffix = '>build.log 2>&1'
-        else:
-            suffix = ''
+    if not os.path.exists(os.path.join('3rdparty', name, 'commit')):
         if env.Execute(
             SCons.Action.CommandAction(
-                '%s scripts/3rdparty.py 3rdparty "%s" %s%s' % (
+                '%s scripts/3rdparty.py 3rdparty "%s" %s' % (
                     env.Python(),
                     toolchain,
-                    name,
-                    suffix),
-                cmdstr = env.Pretty('MAKE', name, 'yellow'))):
-            env.Die("can't make `%s', see `build.log' for details", name)
+                    name),
+                cmdstr = env.Pretty('GET', name, 'yellow'))):
+            env.Die("can't make `%s', see `3rdparty/%s/build.log' for details" % (name, name))
 
     if not includes:
         includes = ['']
 
     for s in includes:
         env.Prepend(CPPPATH=[
-            '3rdparty/%s/include/%s' % (name, s)
+            '#3rdparty/%s/include/%s' % (name, s)
         ])
 
-    for lib in env.RecursiveGlob('3rdparty/%s/lib' % name, 'lib*'):
+    for lib in env.RecursiveGlob('#3rdparty/%s/lib' % name, 'lib*'):
         env.Append(LIBS=[env.File(lib)])
 
 def DeleteDir(env, path):

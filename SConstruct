@@ -184,16 +184,25 @@ else:
         if not GetOption('disable_tools'):
             env.Die("--with-sox=no currently requires --disable-tools option")
 
+env.Append(CXXFLAGS=[])
+env.Append(CPPDEFINES=[])
+env.Append(CPPPATH=[])
+env.Append(LIBPATH=[])
 env.Append(LIBS=[])
 
 if not GetOption('with_3rdparty'):
     getdeps = []
 else:
     getdeps = ['target_%s' % t for t in GetOption('with_3rdparty').split(',')]
+
     if 'target_all' in getdeps:
         getdeps = env['ROC_TARGETS']
+
         if not GetOption('disable_tests'):
             getdeps += ['target_cpputest']
+
+        if not GetOption('disable_tools'):
+            getdeps += ['target_gengetopt']
 
 SCons.SConf.dryrun = 0 # configure even in dry run mode
 conf = Configure(env, custom_tests=env.CustomTests)
@@ -250,23 +259,45 @@ if 'target_openfec' in env['ROC_TARGETS']:
 if 'target_sox' in env['ROC_TARGETS']:
     if 'target_sox' in getdeps:
         env.ThridParty(toolchain, 'sox-14.4.2')
-        conf.CheckLib('asound')
+
+        for lib in [
+                'z', 'ltdl', 'magic',
+                'sndfile', 'gsm', 'FLAC',
+                'vorbis', 'vorbisenc', 'vorbisfile', 'ogg',
+                'mad', 'mp3lame',
+                'asound',
+                'pulse', 'pulse-simple']:
+            conf.CheckLib(lib)
     else:
         env.TryParseConfig('--cflags --libs sox')
 
         if not conf.CheckLibWithHeader('sox', 'sox.h', 'c'):
             env.Die("libsox not found (see `config.log' for details)")
 
-if not GetOption('disable_tests'):
-    if 'target_cpputest' in getdeps:
-        env.ThridParty(toolchain, 'cpputest-3.6')
-    else:
-        env.TryParseConfig('--cflags --libs cpputest')
+if 'target_gengetopt' in getdeps:
+    env.ThridParty(toolchain, 'gengetopt-2.22.6')
 
-        if not conf.CheckLibWithHeader('CppUTest', 'CppUTest/TestHarness.h', 'cxx'):
-            env.Die("CppUTest not found (see `config.log' for details)")
+    ggo_bin = env.RecursiveGlob('#3rdparty/gengetopt-2.22.6/bin', '*')
+    if not ggo_bin:
+        env.Die("can't get getgetopt?")
+
+    env['GENGETOPT'] = ggo_bin[0]
 
 env = conf.Finish()
+
+if not GetOption('disable_tests'):
+    test_env = env.Clone()
+    test_conf = Configure(test_env, custom_tests=test_env.CustomTests)
+
+    if 'target_cpputest' in getdeps:
+        test_env.ThridParty(toolchain, 'cpputest-3.6')
+    else:
+        test_env.TryParseConfig('--cflags --libs cpputest')
+
+        if not test_conf.CheckLibWithHeader('CppUTest', 'CppUTest/TestHarness.h', 'cxx'):
+            test_env.Die("CppUTest not found (see `config.log' for details)")
+
+    test_env = test_conf.Finish()
 
 if 'target_posix' in env['ROC_TARGETS']:
     env.Append(CPPDEFINES=[('_POSIX_C_SOURCE', '200809')])
@@ -275,7 +306,6 @@ for t in env['ROC_TARGETS']:
     env.Append(CPPDEFINES=['ROC_' + t.upper()])
 
 env.Append(LIBPATH=['#bin'])
-env.Append(CPPPATH=[])
 
 if compiler in ['gcc', 'clang']:
     env.Append(CXXFLAGS=[
@@ -367,17 +397,23 @@ if compiler == 'clang':
 
 if compiler in ['gcc', 'clang']:
     env.Prepend(
-        CXXFLAGS=[('-isystem', path) for path in \
+        CXXFLAGS=[('-isystem', env.Dir(path).path) for path in \
                   env['CPPPATH'] + ['%s/tools' % build_dir]])
 
-env['TEST_CPPDEFINES'] = [('CPPUTEST_USE_MEM_LEAK_DETECTION', '0')]
-env['TEST_CXXFLAGS'] = []
-env['TEST_LIBS'] = ['CppUTest']
+if not GetOption('disable_tests'):
+    for var in ['CXXFLAGS', 'CPPDEFINES', 'CPPPATH', 'LIBPATH', 'LIBS']:
+        env['TEST_' + var] = [p for p in test_env[var] if not p in env[var]]
 
-if compiler == 'clang':
-    env.Append(TEST_CXXFLAGS=[
-        '-Wno-weak-vtables',
-    ])
+    env['TEST_CPPDEFINES'] += [('CPPUTEST_USE_MEM_LEAK_DETECTION', '0')]
+
+    if compiler in ['gcc', 'clang']:
+        env.Prepend(
+            TEST_CXXFLAGS=[('-isystem', env.Dir(path).path) for path in env['TEST_CPPPATH']])
+
+    if compiler == 'clang':
+        env.AppendUnique(TEST_CXXFLAGS=[
+            '-Wno-weak-vtables',
+        ])
 
 env.AlwaysBuild(
     env.Alias('clean', [], [
@@ -449,7 +485,7 @@ env.AlwaysBuild(
 if 'doxygen' in COMMAND_LINE_TARGETS or (
         not GetOption('disable_doc')
         and not set(COMMAND_LINE_TARGETS).intersection(['tidy', 'fmt'])
-        and env.Which('doxygen')
+        and env.Which(env['DOXYGEN'] if 'DOXYGEN' in env.Dictionary() else 'doxygen')
     ):
         env.AlwaysBuild(
             env.Alias('doxygen', env.Doxygen(
