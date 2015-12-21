@@ -447,8 +447,10 @@ env.AlwaysBuild(
         )))
 
 if 'doxygen' in COMMAND_LINE_TARGETS or (
-        not GetOption('disable_doc') and not set(COMMAND_LINE_TARGETS).intersection(
-            ['tidy'])):
+        not GetOption('disable_doc')
+        and not set(COMMAND_LINE_TARGETS).intersection(['tidy', 'fmt'])
+        and env.Which('doxygen')
+    ):
         env.AlwaysBuild(
             env.Alias('doxygen', env.Doxygen(
                     'doc/doxygen',
