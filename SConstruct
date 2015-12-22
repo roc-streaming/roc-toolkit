@@ -277,11 +277,8 @@ if 'target_sox' in env['ROC_TARGETS']:
 if 'target_gengetopt' in getdeps:
     env.ThridParty(toolchain, 'gengetopt-2.22.6')
 
-    ggo_bin = env.RecursiveGlob('#3rdparty/gengetopt-2.22.6/bin', '*')
-    if not ggo_bin:
-        env.Die("can't get getgetopt?")
-
-    env['GENGETOPT'] = ggo_bin[0]
+    env['GENGETOPT'] = env.File(
+        '#3rdparty/gengetopt-2.22.6/bin/gengetopt' + env['PROGSUFFIX'])
 
 env = conf.Finish()
 

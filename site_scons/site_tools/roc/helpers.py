@@ -115,14 +115,15 @@ def Doxygen(env, output_dir, sources):
 def GenGetOpt(env, source, ver):
     if 'GENGETOPT' in env.Dictionary():
         gengetopt = env['GENGETOPT']
+
     else:
         gengetopt = 'gengetopt'
 
-    if os.path.exists(env.File(gengetopt).abspath):
-        gengetopt = env.File(gengetopt).path
-    else:
+    if isinstance(gengetopt, str):
         if not env.Which(gengetopt):
             env.Die("gengetopt not found in PATH (looked for `%s')" % gengetopt)
+    else:
+        gengetopt = env.File(gengetopt).path
 
     source = env.File(source)
     source_name = os.path.splitext(os.path.basename(source.path))[0]
