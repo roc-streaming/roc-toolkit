@@ -24,7 +24,8 @@ Advanced features
 - [ ] Retransmission (probably [RFC 4588](https://tools.ietf.org/html/rfc4588) and
 [RFC 4585](https://tools.ietf.org/html/rfc4585))
 - [ ] Dynamic latency adjustment
-- [ ] Compression (probably [Opus](https://www.opus-codec.org/))
+- [ ] Compression ([lossless](https://en.wikipedia.org/wiki/Lossless_compression#Audio) and lossy,
+probably [Opus](https://www.opus-codec.org/))
 - [ ] Encryption (probably [SRTP](https://en.wikipedia.org/wiki/Secure_Real-time_Transport_Protocol))
 - [ ] Take a look at [RaptorQ](https://tools.ietf.org/html/rfc6330) and [OpenRQ](https://github.com/openrq-team/OpenRQ)
 - [ ] Take a look at various IoT protocols (e.g. [IoTivity](https://www.iotivity.org/))
