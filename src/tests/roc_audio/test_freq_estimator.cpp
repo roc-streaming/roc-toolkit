@@ -20,11 +20,9 @@ using namespace audio;
 
 namespace {
 
-const size_t FE_AIM = ROC_CONFIG_DEFAULT_RENDERER_LATENCY;
+enum { Aim = ROC_CONFIG_DEFAULT_RENDERER_LATENCY, Iterations = 1000 };
 
-const size_t FE_N_ITERATIONS = 1000;
-
-const double EPSILON = 1e-6;
+const double Epsilon = 1e-6;
 
 } // namespace
 
@@ -33,28 +31,28 @@ TEST_GROUP(freq_estimator) {
 };
 
 TEST(freq_estimator, initial) {
-    DOUBLES_EQUAL(1.0, fe.freq_coeff(), EPSILON);
+    DOUBLES_EQUAL(1.0, fe.freq_coeff(), Epsilon);
 }
 
 TEST(freq_estimator, aim_queue_size) {
-    for (size_t n = 0; n < FE_N_ITERATIONS; n++) {
-        fe.update(FE_AIM);
+    for (size_t n = 0; n < Iterations; n++) {
+        fe.update(Aim);
     }
 
-    DOUBLES_EQUAL(1.0, fe.freq_coeff(), EPSILON);
+    DOUBLES_EQUAL(1.0, fe.freq_coeff(), Epsilon);
 }
 
 TEST(freq_estimator, large_queue_size) {
-    for (size_t n = 0; n < FE_N_ITERATIONS; n++) {
-        fe.update(FE_AIM * 2);
+    for (size_t n = 0; n < Iterations; n++) {
+        fe.update(Aim * 2);
     }
 
     CHECK(fe.freq_coeff() > 1.0f);
 }
 
 TEST(freq_estimator, small_queue_size) {
-    for (size_t n = 0; n < FE_N_ITERATIONS; n++) {
-        fe.update(FE_AIM / 2);
+    for (size_t n = 0; n < Iterations; n++) {
+        fe.update(Aim / 2);
     }
 
     CHECK(fe.freq_coeff() < 1.0f);

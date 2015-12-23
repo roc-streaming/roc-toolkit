@@ -19,7 +19,7 @@
 namespace roc {
 namespace test {
 
-template <size_t MAX_PACKETS, size_t NUM_SAMPLES, int CH_NUM, int CH_MASK>
+template <size_t MaxPackets, size_t NumSamples, int ChNum, int ChMask>
 class TestAudioPacketReader : public audio::IAudioPacketReader {
 public:
     TestAudioPacketReader()
@@ -32,7 +32,7 @@ public:
     }
 
     virtual packet::IAudioPacketConstPtr read(packet::channel_t ch) {
-        LONGS_EQUAL(CH_NUM, ch);
+        LONGS_EQUAL(ChNum, ch);
 
         if (pos_ == max_) {
             return NULL;
@@ -42,25 +42,25 @@ public:
     }
 
     void add(packet::timestamp_t timestamp, packet::sample_t value) {
-        CHECK(max_ != MAX_PACKETS);
+        CHECK(max_ != MaxPackets);
 
         packet::IAudioPacketPtr packet = new_audio_packet();
 
-        packet::sample_t samples[NUM_SAMPLES];
+        packet::sample_t samples[NumSamples];
 
-        for (size_t n = 0; n < NUM_SAMPLES; n++) {
+        for (size_t n = 0; n < NumSamples; n++) {
             samples[n] = value;
         }
 
         packet->set_timestamp(timestamp);
-        packet->set_size(CH_MASK, NUM_SAMPLES);
-        packet->write_samples((1 << CH_NUM), 0, samples, NUM_SAMPLES);
+        packet->set_size(ChMask, NumSamples);
+        packet->write_samples((1 << ChNum), 0, samples, NumSamples);
 
         packets_[max_++] = packet;
     }
 
 private:
-    packet::IAudioPacketPtr packets_[MAX_PACKETS];
+    packet::IAudioPacketPtr packets_[MaxPackets];
     size_t pos_;
     size_t max_;
 };

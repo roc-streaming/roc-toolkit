@@ -65,6 +65,10 @@ bool Client::tick() {
 }
 
 void Client::flush() {
+    if (splitter_) {
+        splitter_->flush();
+    }
+
     if (interleaver_) {
         interleaver_->flush();
     }

@@ -22,18 +22,14 @@ using namespace audio;
 
 namespace {
 
-const int FRAME_SIZE = ROC_CONFIG_RESAMPLER_FRAME_SAMPLES;
+enum { FrameSize = ROC_CONFIG_RESAMPLER_FRAME_SAMPLES };
 
-const float INVALID_SCALING = FRAME_SIZE;
-
-const int TEST_OUTPUT_SAMPLES = FRAME_SIZE * 100 + 1;
-
-const int TEST_INPUT_SAMPLES = TEST_OUTPUT_SAMPLES + (FRAME_SIZE * 3);
+enum { OutSamples = FrameSize * 100 + 1, InSamples = OutSamples + (FrameSize * 3) };
 
 } // namespace
 
 TEST_GROUP(resampler) {
-    TestStreamReader<TEST_INPUT_SAMPLES> reader;
+    TestStreamReader<InSamples> reader;
 
     core::ScopedPtr<Resampler> resampler;
 
@@ -42,31 +38,33 @@ TEST_GROUP(resampler) {
     }
 
     void expect_buffers(size_t num_buffers, size_t sz, int value) {
-        read_buffers<TEST_INPUT_SAMPLES>(*resampler, num_buffers, sz, value);
+        read_buffers<InSamples>(*resampler, num_buffers, sz, value);
     }
 };
 
 TEST(resampler, invalid_scaling) {
-    CHECK(!resampler->set_scaling(INVALID_SCALING));
+    enum { InvalidScaling = FrameSize };
+
+    CHECK(!resampler->set_scaling(InvalidScaling));
 }
 
 TEST(resampler, no_scaling_one_read) {
     CHECK(resampler->set_scaling(1.0f));
 
-    reader.add(TEST_INPUT_SAMPLES, 333);
+    reader.add(InSamples, 333);
 
-    expect_buffers(1, TEST_OUTPUT_SAMPLES, 333);
+    expect_buffers(1, OutSamples, 333);
 }
 
 TEST(resampler, no_scaling_multiple_reads) {
     CHECK(resampler->set_scaling(1.0f));
 
-    for (int n = 0; n < TEST_INPUT_SAMPLES; n++) {
+    for (int n = 0; n < InSamples; n++) {
         reader.add(1, n);
     }
 
-    for (int n = 0; n < TEST_OUTPUT_SAMPLES; n++) {
-        expect_buffers(1, 1, FRAME_SIZE + n);
+    for (int n = 0; n < OutSamples; n++) {
+        expect_buffers(1, 1, FrameSize + n);
     }
 }
 

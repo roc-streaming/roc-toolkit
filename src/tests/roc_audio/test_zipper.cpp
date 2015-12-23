@@ -20,11 +20,9 @@ using namespace audio;
 
 namespace {
 
-const size_t TEST_BUFSZ = 100;
+enum { BufSz = 100, MaxSamples = 1000 };
 
-const size_t TEST_MAX_SAMPLES = 1000;
-
-typedef TestStreamReader<TEST_MAX_SAMPLES> TestReader;
+typedef TestStreamReader<MaxSamples> TestReader;
 
 } // namespace
 
@@ -35,13 +33,13 @@ TEST_GROUP(zipper) {
     Zipper zipper;
 
     void add_input(TestReader & reader, size_t number) {
-        for (size_t n = 0; n < TEST_BUFSZ; n++) {
+        for (size_t n = 0; n < BufSz; n++) {
             reader.add(1, int(n * number));
         }
     }
 
     void expect_output(ISampleBuffer & buf, size_t total, size_t number) {
-        for (size_t n = 0; n < TEST_BUFSZ; n++) {
+        for (size_t n = 0; n < BufSz; n++) {
             long actual = (long)buf.data()[n * total + number - 1];
             long expected = (long)(n * number);
 
@@ -50,7 +48,7 @@ TEST_GROUP(zipper) {
     }
 
     ISampleBufferPtr read_buffer(size_t bufsz) {
-        ISampleBufferPtr buf = new_buffer<TEST_MAX_SAMPLES>(bufsz);
+        ISampleBufferPtr buf = new_buffer<MaxSamples>(bufsz);
 
         zipper.read(*buf);
         return buf;
@@ -58,9 +56,9 @@ TEST_GROUP(zipper) {
 };
 
 TEST(zipper, no_readers) {
-    ISampleBufferPtr buf = read_buffer(TEST_BUFSZ);
+    ISampleBufferPtr buf = read_buffer(BufSz);
 
-    expect_data(buf->data(), TEST_BUFSZ, 0);
+    expect_data(buf->data(), BufSz, 0);
 }
 
 TEST(zipper, one_reader) {
@@ -68,7 +66,7 @@ TEST(zipper, one_reader) {
 
     add_input(reader1, 1);
 
-    ISampleBufferPtr buf = read_buffer(TEST_BUFSZ);
+    ISampleBufferPtr buf = read_buffer(BufSz);
 
     expect_output(*buf, 1, 1);
 }
@@ -80,7 +78,7 @@ TEST(zipper, two_readers) {
     add_input(reader1, 1);
     add_input(reader2, 2);
 
-    ISampleBufferPtr buf = read_buffer(TEST_BUFSZ * 2);
+    ISampleBufferPtr buf = read_buffer(BufSz * 2);
 
     expect_output(*buf, 2, 1);
     expect_output(*buf, 2, 2);
@@ -93,14 +91,14 @@ TEST(zipper, remove_reader) {
     add_input(reader1, 1);
     add_input(reader2, 2);
 
-    read_buffer(TEST_BUFSZ * 2);
+    read_buffer(BufSz * 2);
 
     zipper.remove(reader2);
 
     add_input(reader1, 1);
     add_input(reader2, 2);
 
-    ISampleBufferPtr buf = read_buffer(TEST_BUFSZ);
+    ISampleBufferPtr buf = read_buffer(BufSz);
 
     expect_output(*buf, 1, 1);
 }

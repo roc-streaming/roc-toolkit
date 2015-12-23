@@ -51,6 +51,11 @@ public:
     //!  format for all enabled channels.
     virtual void write(const ISampleBufferConstSlice& buffer);
 
+    //! Flush buffered packet.
+    //! @remarks
+    //!  Packet is padded with zero samples to match fixed size.
+    void flush();
+
 private:
     bool create_packet_();
 

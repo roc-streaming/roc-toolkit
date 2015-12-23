@@ -20,7 +20,7 @@
 namespace roc {
 namespace test {
 
-template <size_t MAX_PACKETS> class TestPacketReader : public packet::IPacketReader {
+template <size_t MaxPackets> class TestPacketReader : public packet::IPacketReader {
 public:
     TestPacketReader()
         : pos_(0)
@@ -40,7 +40,7 @@ public:
     }
 
     void add() {
-        CHECK(max_ != MAX_PACKETS);
+        CHECK(max_ != MaxPackets);
 
         packets_[max_++] = new_audio_packet();
     }
@@ -55,7 +55,7 @@ public:
     }
 
 private:
-    packet::IPacketPtr packets_[MAX_PACKETS];
+    packet::IPacketPtr packets_[MaxPackets];
     size_t pos_;
     size_t max_;
 };

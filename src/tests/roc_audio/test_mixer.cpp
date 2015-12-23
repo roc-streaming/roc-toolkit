@@ -21,64 +21,62 @@ using namespace audio;
 
 namespace {
 
-const size_t TEST_BUFSZ = 100;
-
-const size_t TEST_MAX_SAMPLES = 1000;
+enum { BufSz = 100, MaxSamples = 1000 };
 
 } // namespace
 
 TEST_GROUP(mixer) {
-    TestStreamReader<TEST_MAX_SAMPLES> reader1;
-    TestStreamReader<TEST_MAX_SAMPLES> reader2;
+    TestStreamReader<MaxSamples> reader1;
+    TestStreamReader<MaxSamples> reader2;
 
     Mixer mixer;
 
     void expect_output(size_t sz, int value) {
-        read_buffers<TEST_MAX_SAMPLES>(mixer, 1, sz, value);
+        read_buffers<MaxSamples>(mixer, 1, sz, value);
     }
 };
 
 TEST(mixer, no_readers) {
-    expect_output(TEST_BUFSZ, 0);
+    expect_output(BufSz, 0);
 }
 
 TEST(mixer, one_reader) {
     mixer.add(reader1);
 
-    reader1.add(TEST_BUFSZ, 111);
+    reader1.add(BufSz, 111);
 
-    expect_output(TEST_BUFSZ, 111);
+    expect_output(BufSz, 111);
 }
 
 TEST(mixer, two_readers) {
     mixer.add(reader1);
     mixer.add(reader2);
 
-    reader1.add(TEST_BUFSZ, 111);
-    reader2.add(TEST_BUFSZ, 222);
+    reader1.add(BufSz, 111);
+    reader2.add(BufSz, 222);
 
-    expect_output(TEST_BUFSZ, 333);
+    expect_output(BufSz, 333);
 }
 
 TEST(mixer, remove_reader) {
     mixer.add(reader1);
     mixer.add(reader2);
 
-    reader1.add(TEST_BUFSZ, 11);
-    reader2.add(TEST_BUFSZ, 22);
-    expect_output(TEST_BUFSZ, 33);
+    reader1.add(BufSz, 11);
+    reader2.add(BufSz, 22);
+    expect_output(BufSz, 33);
 
     mixer.remove(reader2);
 
-    reader1.add(TEST_BUFSZ, 44);
-    reader2.add(TEST_BUFSZ, 55);
-    expect_output(TEST_BUFSZ, 44);
+    reader1.add(BufSz, 44);
+    reader2.add(BufSz, 55);
+    expect_output(BufSz, 44);
 
     mixer.remove(reader1);
 
-    reader1.add(TEST_BUFSZ, 77);
-    reader2.add(TEST_BUFSZ, 88);
-    expect_output(TEST_BUFSZ, 0);
+    reader1.add(BufSz, 77);
+    reader2.add(BufSz, 88);
+    expect_output(BufSz, 0);
 }
 
 } // namespace test

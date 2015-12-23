@@ -19,11 +19,11 @@
 namespace roc {
 namespace test {
 
-template <size_t MAXSZ> class TestStreamReader : public audio::IStreamReader {
+template <size_t MaxSz> class TestStreamReader : public audio::IStreamReader {
 public:
     TestStreamReader()
         : stream_pos_(0) {
-        stream_ = new_buffer<MAXSZ>(0);
+        stream_ = new_buffer<MaxSz>(0);
     }
 
     virtual void read(const audio::ISampleBufferSlice& out) {

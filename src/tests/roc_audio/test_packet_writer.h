@@ -20,7 +20,7 @@
 namespace roc {
 namespace test {
 
-template <size_t MAX_PACKETS> class TestPacketWriter : public packet::IPacketWriter {
+template <size_t MaxPackets> class TestPacketWriter : public packet::IPacketWriter {
 public:
     virtual void write(const packet::IPacketPtr& pkt) {
         CHECK(pkt);
@@ -38,7 +38,7 @@ public:
     }
 
 private:
-    core::Array<packet::IPacketPtr, MAX_PACKETS> packets_;
+    core::Array<packet::IPacketPtr, MaxPackets> packets_;
 };
 
 } // namespace test

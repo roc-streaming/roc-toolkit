@@ -103,7 +103,7 @@ public:
     //!  Fetches one sample buffer from input reader.
     bool tick();
 
-    //! Flush buffered packets.
+    //! Flush buffered samples and packets.
     void flush();
 
 private:

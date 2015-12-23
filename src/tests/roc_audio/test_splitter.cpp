@@ -27,22 +27,16 @@ using namespace packet;
 
 namespace {
 
-const channel_t CH_0 = 0, CH_1 = 1;
+enum { NumCh = 2, ChMask = 0x3 };
 
-const channel_mask_t TEST_CHANNELS = (1 << CH_0) | (1 << CH_1);
+enum { NumPackets = 100, NumBufs = 20, NumSamples = NumBufs * 13 };
 
-const size_t TEST_N_PACKETS = 100;
-const size_t TEST_N_BUFS = 20;
-
-const size_t TEST_N_CH = 2;
-const size_t TEST_N_SAMPLES = TEST_N_BUFS * 13;
-
-const long TEST_MAX_VAL = 100;
+enum { MaxVal = 100 };
 
 } // namespace
 
 TEST_GROUP(splitter) {
-    TestPacketWriter<TEST_N_PACKETS> writer;
+    TestPacketWriter<NumPackets> writer;
     rtp::Composer composer;
 
     core::ScopedPtr<Splitter> splitter;
@@ -53,7 +47,7 @@ TEST_GROUP(splitter) {
     size_t sample_num;
 
     void setup() {
-        splitter.reset(new Splitter(writer, composer, TEST_N_SAMPLES, TEST_CHANNELS));
+        splitter.reset(new Splitter(writer, composer, NumSamples, ChMask));
         pkt_num = 0;
     }
 
@@ -61,13 +55,13 @@ TEST_GROUP(splitter) {
         LONGS_EQUAL(writer.num_packets(), pkt_num);
     }
 
-    ISampleBufferConstPtr make_buffer(size_t num, size_t n_samples) {
-        ISampleBufferPtr buff = new_buffer<TEST_N_SAMPLES * TEST_N_CH * TEST_N_PACKETS>(
-            n_samples * TEST_N_CH);
+    ISampleBufferConstPtr make_buffer(size_t num, size_t n_samples, size_t n_trunc = 0) {
+        ISampleBufferPtr buff = new_buffer<NumSamples * NumCh * NumPackets>(
+            (n_samples - n_trunc) * NumCh);
 
         for (size_t n = 0; n < buff->size(); n++) {
             buff->data()[n] =
-                sample_t((num * n_samples * TEST_N_CH + n) % TEST_MAX_VAL) / TEST_MAX_VAL;
+                sample_t((num * n_samples * NumCh + n) % MaxVal) / MaxVal;
         }
 
         return buff;
@@ -84,11 +78,11 @@ TEST_GROUP(splitter) {
         return static_cast<IAudioPacket*>(packet.get());
     }
 
-    void read_packet() {
+    void read_packet(size_t n_pad = 0) {
         IAudioPacketPtr packet = get_packet(pkt_num);
 
-        LONGS_EQUAL(TEST_CHANNELS, packet->channels());
-        LONGS_EQUAL(TEST_N_SAMPLES, packet->num_samples());
+        LONGS_EQUAL(ChMask, packet->channels());
+        LONGS_EQUAL(NumSamples, packet->num_samples());
         CHECK(!packet->marker());
 
         if (pkt_num == 0) {
@@ -99,29 +93,33 @@ TEST_GROUP(splitter) {
             LONGS_EQUAL(ts, packet->timestamp());
         }
 
-        sample_t samples[TEST_N_SAMPLES * TEST_N_CH] = {};
+        sample_t samples[NumSamples * NumCh] = {};
+        size_t pos = 0;
 
-        LONGS_EQUAL(TEST_N_SAMPLES,
-                    packet->read_samples(TEST_CHANNELS, 0, samples, TEST_N_SAMPLES));
+        LONGS_EQUAL(NumSamples,
+                    packet->read_samples(ChMask, 0, samples, NumSamples));
 
-        for (size_t n = 0; n < TEST_N_SAMPLES * TEST_N_CH; n++) {
-            DOUBLES_EQUAL(sample_t(sample_num % TEST_MAX_VAL) / TEST_MAX_VAL, //
-                          samples[n],                                         //
-                          0.0001);
+        for (; pos < (NumSamples - n_pad) * NumCh; pos++) {
+            DOUBLES_EQUAL(sample_t(sample_num % MaxVal) / MaxVal, samples[pos], 0.0001);
+            sample_num++;
+        }
+
+        for (; pos < NumSamples * NumCh; pos++) {
+            DOUBLES_EQUAL(0, samples[pos], 0);
             sample_num++;
         }
 
         sn++;
-        ts += TEST_N_SAMPLES;
+        ts += NumSamples;
         pkt_num++;
     }
 };
 
 TEST(splitter, one_buffer_one_packet) {
-    for (size_t bn = 0; bn < TEST_N_BUFS; bn++) {
+    for (size_t bn = 0; bn < NumBufs; bn++) {
         LONGS_EQUAL(bn, writer.num_packets());
 
-        ISampleBufferConstPtr buf = make_buffer(bn, TEST_N_SAMPLES);
+        ISampleBufferConstPtr buf = make_buffer(bn, NumSamples);
 
         splitter->write(*buf);
 
@@ -132,27 +130,26 @@ TEST(splitter, one_buffer_one_packet) {
 }
 
 TEST(splitter, one_buffer_multiple_packets) {
-    ISampleBufferConstPtr buf = make_buffer(0, TEST_N_SAMPLES * TEST_N_PACKETS);
+    ISampleBufferConstPtr buf = make_buffer(0, NumSamples * NumPackets);
 
     splitter->write(*buf);
 
-    LONGS_EQUAL(TEST_N_PACKETS, writer.num_packets());
+    LONGS_EQUAL(NumPackets, writer.num_packets());
 
-    for (size_t pn = 0; pn < TEST_N_PACKETS; pn++) {
+    for (size_t pn = 0; pn < NumPackets; pn++) {
         read_packet();
     }
 }
 
 TEST(splitter, multiple_buffers_one_packet) {
-    CHECK(TEST_N_SAMPLES % TEST_N_BUFS == 0);
+    CHECK(NumSamples % NumBufs == 0);
 
-    for (size_t pn = 0; pn < TEST_N_PACKETS; pn++) {
-        //
-        for (size_t bn = 0; bn < TEST_N_BUFS; bn++) {
+    for (size_t pn = 0; pn < NumPackets; pn++) {
+        for (size_t bn = 0; bn < NumBufs; bn++) {
             LONGS_EQUAL(pn, writer.num_packets());
 
             ISampleBufferConstPtr buf =
-                make_buffer(pn * TEST_N_BUFS + bn, TEST_N_SAMPLES / TEST_N_BUFS);
+                make_buffer(pn * NumBufs + bn, NumSamples / NumBufs);
 
             splitter->write(*buf);
         }
@@ -164,14 +161,12 @@ TEST(splitter, multiple_buffers_one_packet) {
 }
 
 TEST(splitter, multiple_buffers_multiple_packets) {
-    const size_t n_samples = (TEST_N_SAMPLES - 1);
+    const size_t n_samples = (NumSamples - 1);
 
-    const size_t n_packets = (n_samples * TEST_N_BUFS / TEST_N_SAMPLES);
+    const size_t n_packets = (n_samples * NumBufs / NumSamples);
 
-    for (size_t bn = 0; bn < TEST_N_BUFS; bn++) {
-        //
+    for (size_t bn = 0; bn < NumBufs; bn++) {
         ISampleBufferConstPtr buf = make_buffer(bn, n_samples);
-
         splitter->write(*buf);
     }
 
@@ -180,6 +175,25 @@ TEST(splitter, multiple_buffers_multiple_packets) {
     for (size_t pn = 0; pn < n_packets; pn++) {
         read_packet();
     }
+}
+
+TEST(splitter, flush) {
+    enum { Padding = 10 };
+
+    splitter->write(*make_buffer(0, NumSamples));
+    splitter->write(*make_buffer(1, NumSamples));
+    splitter->write(*make_buffer(2, NumSamples, Padding));
+
+    LONGS_EQUAL(2, writer.num_packets());
+
+    read_packet();
+    read_packet();
+
+    splitter->flush();
+
+    LONGS_EQUAL(3, writer.num_packets());
+
+    read_packet(Padding);
 }
 
 } // namespace test

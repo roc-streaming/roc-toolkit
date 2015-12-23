@@ -66,12 +66,18 @@ void Splitter::write(const ISampleBufferConstSlice& buffer) {
         buffer_pos += (ns * n_channels_);
 
         if (n_samples_ == n_packet_samples_) {
-            output_.write(packet_);
-            packet_ = NULL;
-            n_samples_ = 0;
-            seqnum_++;
-            timestamp_ += n_packet_samples_;
+            flush();
         }
+    }
+}
+
+void Splitter::flush() {
+    if (packet_) {
+        output_.write(packet_);
+        packet_ = NULL;
+        n_samples_ = 0;
+        seqnum_++;
+        timestamp_ += n_packet_samples_;
     }
 }
 
