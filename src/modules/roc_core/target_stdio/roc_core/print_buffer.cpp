@@ -22,12 +22,12 @@ void print_value(uint8_t v) {
 }
 
 void print_value(float v) {
-    printf(" %.2f", (double)v);
+    printf(" %.4f", (double)v);
 }
 
 template <class T>
 void print_data(const char* type, const T* data, size_t size, size_t max_size) {
-    enum { MaxPerLine = 12 };
+    enum { MaxPerLine = 10 };
 
     if (data == NULL) {
         printf("buffer(%s): <null>", type);

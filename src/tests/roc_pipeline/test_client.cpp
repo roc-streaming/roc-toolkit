@@ -9,7 +9,6 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "roc_config/config.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_rtp/composer.h"
 #include "roc_datagram/datagram_queue.h"

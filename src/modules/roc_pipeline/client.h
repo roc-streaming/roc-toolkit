@@ -103,6 +103,9 @@ public:
     //!  Fetches one sample buffer from input reader.
     bool tick();
 
+    //! Flush buffered packets.
+    void flush();
+
 private:
     virtual void run();
 
@@ -116,16 +119,16 @@ private:
     packet::PacketSender packet_sender_;
     packet::IPacketComposer& packet_composer_;
 
-    core::Maybe<packet::Wrecker> wrecker;
-    core::Maybe<packet::Interleaver> interleaver;
+    core::Maybe<packet::Wrecker> wrecker_;
+    core::Maybe<packet::Interleaver> interleaver_;
 
 #ifdef ROC_TARGET_OPENFEC
-    core::Maybe<fec::LDPC_BlockEncoder> fec_ldpc_encoder;
-    core::Maybe<fec::Encoder> fec_encoder;
+    core::Maybe<fec::LDPC_BlockEncoder> fec_ldpc_encoder_;
+    core::Maybe<fec::Encoder> fec_encoder_;
 #endif
 
-    core::Maybe<audio::Splitter> splitter;
-    core::Maybe<audio::TimedWriter> timed_writer;
+    core::Maybe<audio::Splitter> splitter_;
+    core::Maybe<audio::TimedWriter> timed_writer_;
 
     audio::ISampleBufferReader& audio_reader_;
     audio::ISampleBufferWriter& audio_writer_;

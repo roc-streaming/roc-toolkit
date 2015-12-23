@@ -47,6 +47,8 @@ void Client::run() {
 
     roc_log(LOG_DEBUG, "client: finishing thread");
 
+    flush();
+
     datagram_writer_.write(NULL);
 }
 
@@ -62,15 +64,21 @@ bool Client::tick() {
     return (bool)buffer;
 }
 
+void Client::flush() {
+    if (interleaver_) {
+        interleaver_->flush();
+    }
+}
+
 audio::ISampleBufferWriter* Client::make_audio_writer_() {
     packet::IPacketWriter* packet_writer = make_packet_writer_();
     roc_panic_if(!packet_writer);
 
-    audio::ISampleBufferWriter* audio_writer = new (splitter) audio::Splitter(
+    audio::ISampleBufferWriter* audio_writer = new (splitter_) audio::Splitter(
         *packet_writer, packet_composer_, config_.samples_per_packet, config_.channels);
 
     if (config_.options & EnableTiming) {
-        audio_writer = new (timed_writer)
+        audio_writer = new (timed_writer_)
             audio::TimedWriter(*audio_writer, config_.channels, config_.sample_rate);
     }
 
@@ -81,14 +89,14 @@ packet::IPacketWriter* Client::make_packet_writer_() {
     packet::IPacketWriter* packet_writer = &packet_sender_;
 
     if (config_.random_loss_rate || config_.random_delay_rate) {
-        packet_writer = new (wrecker) packet::Wrecker(*packet_writer);
+        packet_writer = new (wrecker_) packet::Wrecker(*packet_writer);
 
-        wrecker->set_random_loss(config_.random_loss_rate);
-        wrecker->set_random_delay(config_.random_delay_rate, config_.random_delay_time);
+        wrecker_->set_random_loss(config_.random_loss_rate);
+        wrecker_->set_random_delay(config_.random_delay_rate, config_.random_delay_time);
     }
 
     if (config_.options & EnableInterleaving) {
-        packet_writer = new (interleaver) packet::Interleaver(*packet_writer);
+        packet_writer = new (interleaver_) packet::Interleaver(*packet_writer);
     }
 
     if (config_.options & EnableLDPC) {
@@ -100,10 +108,10 @@ packet::IPacketWriter* Client::make_packet_writer_() {
 
 #ifdef ROC_TARGET_OPENFEC
 packet::IPacketWriter* Client::make_fec_encoder_(packet::IPacketWriter* packet_writer) {
-    new (fec_ldpc_encoder) fec::LDPC_BlockEncoder(*config_.byte_buffer_composer);
+    new (fec_ldpc_encoder_) fec::LDPC_BlockEncoder(*config_.byte_buffer_composer);
 
-    return new (fec_encoder)
-        fec::Encoder(*fec_ldpc_encoder, *packet_writer, packet_composer_);
+    return new (fec_encoder_)
+        fec::Encoder(*fec_ldpc_encoder_, *packet_writer, packet_composer_);
 }
 #else
 packet::IPacketWriter* Client::make_fec_encoder(packet::IPacketWriter* packet_writer) {
