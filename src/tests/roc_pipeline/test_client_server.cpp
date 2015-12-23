@@ -143,6 +143,7 @@ TEST(client_server, interleaving) {
     flow_client_server();
 }
 
+#ifdef ROC_TARGET_OPENFEC
 TEST(client_server, ldpc_only_client) {
     init_client(EnableLDPC);
     init_server(0);
@@ -178,6 +179,7 @@ TEST(client_server, ldpc_interleaving_random_loss) {
     init_server(EnableLDPC);
     flow_client_server();
 }
+#endif // ROC_TARGET_OPENFEC
 
 } // namespace test
 } // namespace roc
