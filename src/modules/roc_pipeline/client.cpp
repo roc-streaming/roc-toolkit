@@ -17,89 +17,99 @@ namespace pipeline {
 
 Client::Client(audio::ISampleBufferReader& audio_reader,
                datagram::IDatagramWriter& datagram_writer,
-               const ClientConfig& cfg)
-    : BasicClient(cfg, datagram_writer)
-    , input_reader(audio_reader)
-    , packet_sender(datagram_writer)
-    , packet_composer(NULL) {
-}
-
-void Client::set_composers(packet::IPacketComposer& pkt_composer,
-                           datagram::IDatagramComposer& dgm_composer) {
-    packet_composer = &pkt_composer;
-    packet_sender.set_composer(dgm_composer);
+               datagram::IDatagramComposer& datagram_composer,
+               packet::IPacketComposer& packet_composer,
+               const ClientConfig& config)
+    : config_(config)
+    , packet_sender_(datagram_writer, datagram_composer)
+    , packet_composer_(packet_composer)
+    , audio_reader_(audio_reader)
+    , audio_writer_(*make_audio_writer_())
+    , datagram_writer_(datagram_writer) {
 }
 
 void Client::set_sender(const datagram::Address& address) {
-    packet_sender.set_sender(address);
+    packet_sender_.set_sender(address);
 }
 
 void Client::set_receiver(const datagram::Address& address) {
-    packet_sender.set_receiver(address);
+    packet_sender_.set_receiver(address);
 }
 
-audio::ISampleBufferReader* Client::make_audio_reader() {
-    return &input_reader;
+void Client::run() {
+    roc_log(LOG_DEBUG, "client: starting thread");
+
+    for (;;) {
+        if (!tick()) {
+            break;
+        }
+    }
+
+    roc_log(LOG_DEBUG, "client: finishing thread");
+
+    datagram_writer_.write(NULL);
 }
 
-audio::ISampleBufferWriter* Client::make_audio_writer() {
-    packet::IPacketWriter* packet_writer = make_packet_writer();
-    if (!packet_writer) {
-        roc_panic("client: make_packet_writer() returned null");
+bool Client::tick() {
+    audio::ISampleBufferConstSlice buffer = audio_reader_.read();
+
+    if (buffer) {
+        audio_writer_.write(buffer);
+    } else {
+        roc_log(LOG_DEBUG, "client: audio reader returned null");
     }
 
-    if (!packet_composer) {
-        roc_panic("client: set_composers() was not called");
-    }
+    return (bool)buffer;
+}
+
+audio::ISampleBufferWriter* Client::make_audio_writer_() {
+    packet::IPacketWriter* packet_writer = make_packet_writer_();
+    roc_panic_if(!packet_writer);
 
     audio::ISampleBufferWriter* audio_writer = new (splitter) audio::Splitter(
-        *packet_writer, *packet_composer, config().samples_per_packet, config().channels);
+        *packet_writer, packet_composer_, config_.samples_per_packet, config_.channels);
 
-    if (config().options & EnableTiming) {
+    if (config_.options & EnableTiming) {
         audio_writer = new (timed_writer)
-            audio::TimedWriter(*audio_writer, config().channels, config().sample_rate);
+            audio::TimedWriter(*audio_writer, config_.channels, config_.sample_rate);
     }
 
     return audio_writer;
 }
 
-packet::IPacketWriter* Client::make_packet_writer() {
-    packet::IPacketWriter* packet_writer = &packet_sender;
+packet::IPacketWriter* Client::make_packet_writer_() {
+    packet::IPacketWriter* packet_writer = &packet_sender_;
 
-    if (config().random_loss_rate || config().random_delay_rate) {
+    if (config_.random_loss_rate || config_.random_delay_rate) {
         packet_writer = new (wrecker) packet::Wrecker(*packet_writer);
 
-        wrecker->set_random_loss(config().random_loss_rate);
-        wrecker->set_random_delay(config().random_delay_rate, config().random_delay_time);
+        wrecker->set_random_loss(config_.random_loss_rate);
+        wrecker->set_random_delay(config_.random_delay_rate, config_.random_delay_time);
     }
 
-    if (config().options & EnableInterleaving) {
+    if (config_.options & EnableInterleaving) {
         packet_writer = new (interleaver) packet::Interleaver(*packet_writer);
     }
 
-    if (config().options & EnableLDPC) {
-        packet_writer = make_fec_encoder(packet_writer);
+    if (config_.options & EnableLDPC) {
+        packet_writer = make_fec_encoder_(packet_writer);
     }
 
     return packet_writer;
 }
 
 #ifdef ROC_TARGET_OPENFEC
-
-packet::IPacketWriter* Client::make_fec_encoder(packet::IPacketWriter* packet_writer) {
-    new (fec_ldpc_encoder) fec::LDPC_BlockEncoder(*config().byte_buffer_composer);
+packet::IPacketWriter* Client::make_fec_encoder_(packet::IPacketWriter* packet_writer) {
+    new (fec_ldpc_encoder) fec::LDPC_BlockEncoder(*config_.byte_buffer_composer);
 
     return new (fec_encoder)
-        fec::Encoder(*fec_ldpc_encoder, *packet_writer, *packet_composer);
+        fec::Encoder(*fec_ldpc_encoder, *packet_writer, packet_composer_);
 }
-
 #else
-
 packet::IPacketWriter* Client::make_fec_encoder(packet::IPacketWriter* packet_writer) {
     roc_log(LOG_ERROR, "client: OpenFEC support not enabled, disabling fec encoder");
     return packet_writer;
 }
-
 #endif
 
 } // namespace pipeline

@@ -13,12 +13,23 @@
 #ifndef ROC_PIPELINE_SERVER_H_
 #define ROC_PIPELINE_SERVER_H_
 
+#include "roc_core/noncopyable.h"
 #include "roc_core/maybe.h"
+#include "roc_core/thread.h"
+#include "roc_core/atomic.h"
 
+#include "roc_datagram/idatagram.h"
+#include "roc_datagram/idatagram_reader.h"
+
+#include "roc_packet/ipacket_parser.h"
+
+#include "roc_audio/isample_buffer_writer.h"
+#include "roc_audio/isink.h"
 #include "roc_audio/channel_muxer.h"
 #include "roc_audio/timed_writer.h"
 
-#include "roc_pipeline/basic_server.h"
+#include "roc_pipeline/session_manager.h"
+#include "roc_pipeline/config.h"
 
 namespace roc {
 namespace pipeline {
@@ -40,17 +51,6 @@ namespace pipeline {
 //!    tick() in an infinite loop.
 //!
 //!  - Alternatively, user may periodically call tick().
-//!
-//! @b Customizing
-//!  - User may provide custom ServerConfig with non-default options,
-//!    channel mask, sizes, pools, etc.
-//!
-//!  - User may inherit BasicSession or Session and implement non-default
-//!    session pipeline. To employ custom session implementation, user
-//!    should set appropriate session pool in config, which acts as a factory.
-//!
-//!  - User may inherit BasicServer or Server and implement non-default
-//!    server pipeline.
 //!
 //! @b Pipeline
 //!
@@ -79,8 +79,8 @@ namespace pipeline {
 //!    - Requests audio sink to generate samples. During this process,
 //!      previously stored packets are transformed into audio stream.
 //!
-//! @see ServerConfig, BasicServer, BasicSession
-class Server : public BasicServer {
+//! @see ServerConfig, Session
+class Server : public core::Thread, public core::NonCopyable<> {
 public:
     //! Initialize server.
     //!
@@ -88,40 +88,46 @@ public:
     //!  - @p datagram_reader specifies input datagram queue;
     //!  - @p audio_writer specifies output sample queue;
     //!  - @p config specifies server and session configuration.
-    //!
-    //! @note
-    //!  If @p audio_writer blocks, tick() will also block when writing
-    //!  output samples.
     Server(datagram::IDatagramReader& datagram_reader,
            audio::ISampleBufferWriter& audio_writer,
            const ServerConfig& config = ServerConfig());
 
-    ~Server();
+    //! Get number of active sessions.
+    size_t num_sessions() const;
 
-protected:
-    //! Create datagram reader.
-    virtual datagram::IDatagramReader* make_datagram_reader();
+    //! Register port.
+    //! @remarks
+    //!  When datagram received with destination @p address, session will
+    //!  use @p parser to create packet from datagram. If no port registered
+    //!  for address, datagrams to that address will be dropped.
+    void add_port(const datagram::Address& address, packet::IPacketParser& parser);
 
-    //! Create audio sink.
-    virtual audio::ISink* make_audio_sink();
+    //! Process input datagrams.
+    //! @remarks
+    //!  Fetches no more than @p n_datagrams from input datagram reader
+    //!  and generates @p n_buffers sample buffers of @p n_samples samples.
+    bool tick(size_t n_datagrams, size_t n_buffers, size_t n_samples);
 
-    //! Create audio reader.
-    virtual audio::IStreamReader* make_audio_reader();
+    //! Stop thread.
+    //! @remarks
+    //!  May be called from any thread. After this call, subsequent join()
+    //!  call will return as soon as current tick() returns.
+    void stop();
 
-    //! Create audio writer.
-    virtual audio::ISampleBufferWriter* make_audio_writer();
+private:
+    virtual void run();
 
-    //! Input datagram reader.
-    datagram::IDatagramReader& input_reader;
+    const ServerConfig config_;
+    const size_t n_channels_;
+    core::Atomic stop_;
 
-    //! Output audio writer.
-    audio::ISampleBufferWriter& output_writer;
+    datagram::IDatagramReader& datagram_reader_;
+    audio::ISampleBufferWriter* audio_writer_;
 
-    //! Audio sink and audio reader.
-    audio::ChannelMuxer channel_muxer;
+    audio::ChannelMuxer channel_muxer_;
+    core::Maybe<audio::TimedWriter> timed_writer_;
 
-    //! Constrains output speed.
-    core::Maybe<audio::TimedWriter> timed_writer;
+    SessionManager session_manager_;
 };
 
 } // namespace pipeline

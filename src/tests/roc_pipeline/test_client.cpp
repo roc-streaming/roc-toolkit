@@ -53,9 +53,9 @@ TEST_GROUP(client) {
         config.channels = ChannelMask;
         config.samples_per_packet = PktSamples;
 
-        client.reset(new Client(input, output, config));
+        client.reset(
+            new Client(input, output, datagram_composer, packet_composer, config));
 
-        client->set_composers(packet_composer, datagram_composer);
         client->set_sender(new_address(PacketStream::SrcPort));
         client->set_receiver(new_address(PacketStream::DstPort));
     }

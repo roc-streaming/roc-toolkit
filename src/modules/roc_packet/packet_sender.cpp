@@ -15,15 +15,10 @@
 namespace roc {
 namespace packet {
 
-PacketSender::PacketSender(datagram::IDatagramWriter& writer)
+PacketSender::PacketSender(
+    datagram::IDatagramWriter& writer, datagram::IDatagramComposer& composer)
     : writer_(writer)
-    , composer_(NULL) {
-}
-
-void PacketSender::set_composer(datagram::IDatagramComposer& composer) {
-    roc_panic_if_not(&composer);
-
-    composer_ = &composer;
+    , composer_(composer) {
 }
 
 void PacketSender::set_sender(const datagram::Address& address) {
@@ -39,11 +34,7 @@ void PacketSender::write(const IPacketPtr& packet) {
         roc_panic("packet sender: packet is null");
     }
 
-    if (!composer_) {
-        roc_panic("packet sender: datagram composer is not set");
-    }
-
-    datagram::IDatagramPtr dgm = composer_->compose();
+    datagram::IDatagramPtr dgm = composer_.compose();
     if (!dgm) {
         roc_log(LOG_ERROR, "packet sender: can't allocate datagram, dropping packet");
         return;

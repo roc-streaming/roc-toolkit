@@ -85,8 +85,9 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    pipeline::Client client(sample_queue, trx.udp_sender(), config);
-    client.set_composers(rtp_composer, trx.udp_composer());
+    pipeline::Client client(
+        sample_queue, trx.udp_sender(), trx.udp_composer(), rtp_composer, config);
+
     client.set_sender(src_addr);
     client.set_receiver(dst_addr);
 

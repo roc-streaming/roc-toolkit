@@ -14,11 +14,12 @@
 #define ROC_PIPELINE_CONFIG_H_
 
 #include "roc_config/config.h"
+#include "roc_core/ipool.h"
+#include "roc_core/heap_pool.h"
 #include "roc_datagram/default_buffer_composer.h"
 #include "roc_packet/units.h"
 #include "roc_audio/sample_buffer.h"
 #include "roc_pipeline/session.h"
-#include "roc_pipeline/session_composer.h"
 
 namespace roc {
 namespace pipeline {
@@ -58,7 +59,7 @@ struct ServerConfig {
         , max_session_packets(ROC_CONFIG_MAX_SESSION_PACKETS)
         , byte_buffer_composer(&datagram::default_buffer_composer())
         , sample_buffer_composer(&audio::default_buffer_composer())
-        , session_composer(&default_session_composer()) {
+        , session_pool(&core::HeapPool<Session>::instance()) {
     }
 
     //! Bitmask of enabled session options.
@@ -91,8 +92,8 @@ struct ServerConfig {
     //! Composer for sample buffers.
     audio::ISampleBufferComposer* sample_buffer_composer;
 
-    //! Session composer.
-    IBasicSessionComposer* session_composer;
+    //! Session pool.
+    core::IPool<Session>* session_pool;
 };
 
 //! Client config.

@@ -34,10 +34,9 @@ public:
     //!
     //! @b Parameters
     //!  - @p writer specifies output writer for constructed datagrams.
-    PacketSender(datagram::IDatagramWriter& writer);
-
-    //! Set datagram composer.
-    void set_composer(datagram::IDatagramComposer& composer);
+    //!  - @p composer us used to construct output datagrams.
+    PacketSender(datagram::IDatagramWriter& writer,
+                 datagram::IDatagramComposer& composer);
 
     //! Set sender address for constructed datagrams.
     void set_sender(const datagram::Address&);
@@ -52,7 +51,7 @@ public:
 
 private:
     datagram::IDatagramWriter& writer_;
-    datagram::IDatagramComposer* composer_;
+    datagram::IDatagramComposer& composer_;
 
     datagram::Address sender_;
     datagram::Address receiver_;

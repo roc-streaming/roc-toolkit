@@ -13,7 +13,6 @@
 #include "roc_audio/isample_buffer_writer.h"
 #include "roc_audio/isink.h"
 #include "roc_audio/ituner.h"
-#include "roc_audio/irenderer.h"
 
 namespace roc {
 namespace audio {
@@ -34,9 +33,6 @@ ISink::~ISink() {
 }
 
 ITuner::~ITuner() {
-}
-
-IRenderer::~IRenderer() {
 }
 
 } // namespace audio

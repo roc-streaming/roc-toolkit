@@ -16,108 +16,149 @@
 namespace roc {
 namespace pipeline {
 
-Session::Session(core::IPool<Session>& pool)
-    : BasicSession()
-    , pool_(pool) {
+Session::Session(const ServerConfig& config,
+                 const datagram::Address& address, packet::IPacketParser& parser)
+    : config_(config)
+    , address_(address)
+    , packet_parser_(parser)
+    , streamers_(MaxChannels)
+    , resamplers_(MaxChannels)
+    , readers_(MaxChannels) {
+    //
+    if (!config_.session_pool) {
+        roc_panic("session: session pool is null");
+    }
+
+    make_pipeline_();
 }
 
 void Session::free() {
-    pool_.destroy(*this);
+    config_.session_pool->destroy(*this);
 }
 
-packet::IPacketConstWriter* Session::make_packet_writer() {
-    return &router;
+const datagram::Address& Session::address() const {
+    return address_;
 }
 
-packet::IPacketReader* Session::make_packet_reader() {
-    packet::IPacketReader* packet_reader =
-        new (audio_packet_queue) packet::PacketQueue(config().max_session_packets);
-
-    router.add_route(packet::IAudioPacket::Type, *audio_packet_queue);
-
-    packet_reader = new (delayer) audio::Delayer(*packet_reader, config().latency);
-
-    packet_reader = new (watchdog) audio::Watchdog(*packet_reader, config().timeout);
-
-    renderer.add_tuner(*watchdog);
-
-    if (config().options & EnableLDPC) {
-        packet_reader = make_fec_decoder(packet_reader);
+bool Session::store(const datagram::IDatagram& dgm) {
+    packet::IPacketConstPtr packet = packet_parser_.parse(dgm.buffer());
+    if (!packet) {
+        roc_log(LOG_TRACE, "session: dropping datagram: can't parse");
+        return false;
     }
 
-    return packet_reader;
+    router_.write(packet);
+    return true;
 }
 
-audio::IRenderer* Session::make_audio_renderer() {
-    packet::IPacketReader* packet_reader = make_packet_reader();
-    if (!packet_reader) {
-        roc_panic("session: make_packet_reader() returned null");
+bool Session::update() {
+    audio::ITuner* tuner = tuners_.front();
+
+    for (; tuner != NULL; tuner = tuners_.next(*tuner)) {
+        if (!tuner->update()) {
+            roc_log(LOG_DEBUG, "session: tuner failed to update, terminating session");
+            return false;
+        }
     }
 
-    if (config().options & EnableResampling) {
-        packet_reader = new (scaler) audio::Scaler(*packet_reader, *audio_packet_queue);
+    return true;
+}
 
-        renderer.add_tuner(*scaler);
+void Session::attach(audio::ISink& sink) {
+    roc_log(LOG_TRACE, "session: attaching readers to sink");
+
+    for (size_t ch = 0; ch < readers_.size(); ch++) {
+        if (readers_[ch]) {
+            sink.attach(packet::channel_t(ch), *readers_[ch]);
+        }
+    }
+}
+
+void Session::detach(audio::ISink& sink) {
+    roc_log(LOG_TRACE, "session: detaching readers from sink");
+
+    for (size_t ch = 0; ch < readers_.size(); ch++) {
+        if (readers_[ch]) {
+            sink.detach(packet::channel_t(ch), *readers_[ch]);
+        }
+    }
+}
+
+void Session::make_pipeline_() {
+    packet::IPacketReader* packet_reader = make_packet_reader_();
+    roc_panic_if(!packet_reader);
+
+    if (config_.options & EnableResampling) {
+        packet_reader = new (scaler_) audio::Scaler(*packet_reader, *audio_packet_queue_);
+        tuners_.append(*scaler_);
     }
 
     audio::IAudioPacketReader* audio_packet_reader =
-        new (chanalyzer) audio::Chanalyzer(*packet_reader, config().channels);
+        new (chanalyzer_) audio::Chanalyzer(*packet_reader, config_.channels);
 
     for (packet::channel_t ch = 0; ch < MaxChannels; ch++) {
-        if ((config().channels & (1 << ch)) == 0) {
+        if ((config_.channels & (1 << ch)) == 0) {
             continue;
         }
 
-        audio::IStreamReader* stream_reader = make_stream_reader(audio_packet_reader, ch);
-        if (!stream_reader) {
-            roc_panic("session: make_stream_reader() returned null");
-        }
-
-        renderer.set_reader(ch, *stream_reader);
+        readers_[ch] = make_stream_reader_(audio_packet_reader, ch);
+        roc_panic_if(!readers_[ch]);
     }
-
-    return &renderer;
 }
 
 audio::IStreamReader*
-Session::make_stream_reader(audio::IAudioPacketReader* audio_packet_reader,
-                            packet::channel_t ch) {
+Session::make_stream_reader_(audio::IAudioPacketReader* audio_packet_reader,
+                             packet::channel_t ch) {
     //
-    audio::IStreamReader* stream_reader = new (streamers[ch])
-        audio::Streamer(*audio_packet_reader, ch, config().options & EnableBeep);
+    audio::IStreamReader* stream_reader = new (streamers_[ch])
+        audio::Streamer(*audio_packet_reader, ch, config_.options & EnableBeep);
 
-    if (config().options & EnableResampling) {
-        roc_panic_if_not(scaler);
+    if (config_.options & EnableResampling) {
+        roc_panic_if_not(scaler_);
 
-        stream_reader = new (resamplers[ch])
-            audio::Resampler(*stream_reader, *config().sample_buffer_composer);
+        stream_reader = new (resamplers_[ch])
+            audio::Resampler(*stream_reader, *config_.sample_buffer_composer);
 
-        scaler->add_resampler(*resamplers[ch]);
+        scaler_->add_resampler(*resamplers_[ch]);
     }
 
     return stream_reader;
 }
 
-#ifdef ROC_TARGET_OPENFEC
+packet::IPacketReader* Session::make_packet_reader_() {
+    packet::IPacketReader* packet_reader =
+        new (audio_packet_queue_) packet::PacketQueue(config_.max_session_packets);
 
-packet::IPacketReader* Session::make_fec_decoder(packet::IPacketReader* packet_reader) {
-    //
-    new (fec_packet_queue) packet::PacketQueue(config().max_session_packets);
-    new (fec_ldpc_decoder) fec::LDPC_BlockDecoder(*config().byte_buffer_composer);
+    router_.add_route(packet::IAudioPacket::Type, *audio_packet_queue_);
 
-    router.add_route(packet::IFECPacket::Type, *fec_packet_queue);
+    packet_reader = new (delayer_) audio::Delayer(*packet_reader, config_.latency);
+    packet_reader = new (watchdog_) audio::Watchdog(*packet_reader, config_.timeout);
 
-    return new (fec_decoder) fec::Decoder(*fec_ldpc_decoder, *packet_reader,
-                                          *fec_packet_queue, packet_parser());
-}
+    tuners_.append(*watchdog_);
 
-#else
+    if (config_.options & EnableLDPC) {
+        packet_reader = make_fec_decoder_(packet_reader);
+    }
 
-packet::IPacketReader* Session::make_fec_decoder(packet::IPacketReader* packet_reader) {
-    roc_log(LOG_ERROR, "session: OpenFEC support not enabled, disabling fec decoder");
     return packet_reader;
 }
 
+#ifdef ROC_TARGET_OPENFEC
+packet::IPacketReader* Session::make_fec_decoder_(packet::IPacketReader* packet_reader) {
+    //
+    new (fec_packet_queue_) packet::PacketQueue(config_.max_session_packets);
+    new (fec_ldpc_decoder_) fec::LDPC_BlockDecoder(*config_.byte_buffer_composer);
+
+    router_.add_route(packet::IFECPacket::Type, *fec_packet_queue_);
+
+    return new (fec_decoder_) fec::Decoder(*fec_ldpc_decoder_, *packet_reader,
+                                           *fec_packet_queue_, packet_parser_);
+}
+#else
+packet::IPacketReader* Session::make_fec_decoder_(packet::IPacketReader* packet_reader) {
+    roc_log(LOG_ERROR, "session: OpenFEC support not enabled, disabling fec decoder");
+    return packet_reader;
+}
 #endif
 
 } // namespace pipeline

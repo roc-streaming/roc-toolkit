@@ -13,8 +13,9 @@
 #ifndef ROC_PIPELINE_CLIENT_H_
 #define ROC_PIPELINE_CLIENT_H_
 
-#include "roc_config/config.h"
+#include "roc_core/noncopyable.h"
 #include "roc_core/maybe.h"
+#include "roc_core/thread.h"
 
 #include "roc_datagram/idatagram_composer.h"
 #include "roc_datagram/idatagram_writer.h"
@@ -30,10 +31,12 @@
 #include "roc_fec/ldpc_block_encoder.h"
 #endif
 
+#include "roc_audio/isample_buffer_reader.h"
+#include "roc_audio/isample_buffer_writer.h"
 #include "roc_audio/splitter.h"
 #include "roc_audio/timed_writer.h"
 
-#include "roc_pipeline/basic_client.h"
+#include "roc_pipeline/config.h"
 
 namespace roc {
 namespace pipeline {
@@ -56,13 +59,6 @@ namespace pipeline {
 //!
 //!  - Alternatively, user may periodically call tick().
 //!
-//! @b Customizing
-//!  - User may provide custom ClientConfig with non-default options, channel
-//!    mask, sizes, pools, etc.
-//!
-//!  - User may inherit BasicClient or Client and implement non-default
-//!    pipeline construction.
-//!
 //! @b Pipeline
 //!
 //!   Client pipeline consists of several steps:
@@ -79,77 +75,62 @@ namespace pipeline {
 //!   <i> Generating datagrams </i>
 //!   - Generate datagram for every packet and add it to output queue.
 //!
-//! @see ClientConfig, BasicClient
-class Client : public BasicClient {
+//! @see ClientConfig
+class Client : public core::Thread, public core::NonCopyable<> {
 public:
     //! Initialize client.
     //!
     //! @b Parameters
     //!  - @p audio_reader specifies input sample queue;
     //!  - @p datagram_writer specifies output datagram queue;
+    //!  - @p datagram_composer is used to construc output datagrams;
+    //!  - @p packet_composer is used to construc output packets;
     //!  - @p config specifies client configuration.
-    //!
-    //! @note
-    //!  If @p audio_reader blocks, tick() will also block when reading
-    //!  input samples.
     Client(audio::ISampleBufferReader& audio_reader,
            datagram::IDatagramWriter& datagram_writer,
+           datagram::IDatagramComposer& datagram_composer,
+           packet::IPacketComposer& packet_composer,
            const ClientConfig& config = ClientConfig());
 
-    //! Set packet and datagram composers.
-    virtual void set_composers(packet::IPacketComposer&, datagram::IDatagramComposer&);
-
     //! Set datagram sender address.
-    virtual void set_sender(const datagram::Address&);
+    void set_sender(const datagram::Address&);
 
     //! Set datagram receiver address.
-    virtual void set_receiver(const datagram::Address&);
+    void set_receiver(const datagram::Address&);
 
-protected:
-    //! Create input audio reader.
-    virtual audio::ISampleBufferReader* make_audio_reader();
-
-    //! Create output audio reader.
+    //! Process input samples.
     //! @remarks
-    //!  Calls make_packet_writer().
-    virtual audio::ISampleBufferWriter* make_audio_writer();
+    //!  Fetches one sample buffer from input reader.
+    bool tick();
 
-    //! Create output packet writer.
-    //! @remarks
-    //!  Calls make_fec_writer() if EnableLDPC option is set.
-    virtual packet::IPacketWriter* make_packet_writer();
+private:
+    virtual void run();
 
-    //! Create FEC encoder.
-    packet::IPacketWriter* make_fec_encoder(packet::IPacketWriter*);
+    audio::ISampleBufferWriter* make_audio_writer_();
 
-    //! Reads input samples.
-    audio::ISampleBufferReader& input_reader;
+    packet::IPacketWriter* make_packet_writer_();
+    packet::IPacketWriter* make_fec_encoder_(packet::IPacketWriter*);
 
-    //! Sends outgoing packets to output datagram queue.
-    packet::PacketSender packet_sender;
+    const ClientConfig config_;
 
-    //! Creates outgoing packets.
-    packet::IPacketComposer* packet_composer;
+    packet::PacketSender packet_sender_;
+    packet::IPacketComposer& packet_composer_;
 
-    //! Wrecks output packets.
     core::Maybe<packet::Wrecker> wrecker;
-
-    //! Reorders outgoing packets.
     core::Maybe<packet::Interleaver> interleaver;
 
 #ifdef ROC_TARGET_OPENFEC
-    //! FEC codec implementation.
     core::Maybe<fec::LDPC_BlockEncoder> fec_ldpc_encoder;
-
-    //! Encodes FEC packets.
     core::Maybe<fec::Encoder> fec_encoder;
 #endif
 
-    //! Splits audio stream into packets.
     core::Maybe<audio::Splitter> splitter;
-
-    //! Constrains processing speed.
     core::Maybe<audio::TimedWriter> timed_writer;
+
+    audio::ISampleBufferReader& audio_reader_;
+    audio::ISampleBufferWriter& audio_writer_;
+
+    datagram::IDatagramWriter& datagram_writer_;
 };
 
 } // namespace pipeline
