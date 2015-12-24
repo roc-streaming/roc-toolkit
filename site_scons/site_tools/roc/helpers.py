@@ -234,6 +234,16 @@ int main() {
         context.Result('no')
         return False
 
+def CheckProg(context, prog):
+    context.Message("Checking for executable %s... " % prog)
+
+    if context.env.Which(prog):
+        context.Result('yes')
+        return True
+    else:
+        context.Result('no')
+        return False
+
 def Init(env):
     env.AddMethod(Die, 'Die')
     env.AddMethod(RecursiveGlob, 'RecursiveGlob')
@@ -248,4 +258,5 @@ def Init(env):
     env.AddMethod(TryParseConfig, 'TryParseConfig')
     env.CustomTests = {
         'CheckLibWithHeaderExpr': CheckLibWithHeaderExpr,
+        'CheckProg': CheckProg,
     }

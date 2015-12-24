@@ -190,89 +190,116 @@ env.Append(CPPPATH=[])
 env.Append(LIBPATH=[])
 env.Append(LIBS=[])
 
-if not GetOption('with_3rdparty'):
-    getdeps = []
-else:
+alldeps = env['ROC_TARGETS']
+getdeps = []
+
+if not GetOption('disable_tools'):
+    alldeps += ['target_gengetopt']
+
+if not GetOption('disable_tests'):
+    alldeps += ['target_cpputest']
+
+if GetOption('with_3rdparty'):
     getdeps = ['target_%s' % t for t in GetOption('with_3rdparty').split(',')]
 
     if 'target_all' in getdeps:
-        getdeps = env['ROC_TARGETS']
+        getdeps = alldeps
 
-        if not GetOption('disable_tests'):
-            getdeps += ['target_cpputest']
-
-        if not GetOption('disable_tools'):
-            getdeps += ['target_gengetopt']
+extdeps = set(alldeps) - set(getdeps)
 
 SCons.SConf.dryrun = 0 # configure even in dry run mode
 conf = Configure(env, custom_tests=env.CustomTests)
 
-if 'target_uv' in env['ROC_TARGETS']:
-    if 'target_uv' in getdeps:
-        env.ThridParty(toolchain, 'uv-1.4.2')
+if 'target_uv' in extdeps:
+    env.TryParseConfig('--cflags --libs libuv')
+
+    if host == target:
+        if not conf.CheckLibWithHeaderExpr(
+            'uv', 'uv.h', 'c', expr='UV_VERSION_MAJOR >= 1 && UV_VERSION_MINOR >= 4'):
+            env.Die("libuv >= 1.4 not found (see `config.log' for details)")
     else:
-        env.TryParseConfig('--cflags --libs libuv')
+        if not conf.CheckLibWithHeader('uv', 'uv.h', 'c'):
+            env.Die("libuv not found (see `config.log' for details)")
 
-        if host == target:
-            if not conf.CheckLibWithHeaderExpr(
-                'uv', 'uv.h', 'c', expr='UV_VERSION_MAJOR >= 1 && UV_VERSION_MINOR >= 4'):
-                env.Die("libuv >= 1.4 not found (see `config.log' for details)")
-        else:
-            if not conf.CheckLibWithHeader('uv', 'uv.h', 'c'):
-                env.Die("libuv not found (see `config.log' for details)")
+if 'target_openfec' in extdeps:
+    if not env.TryParseConfig('--silence-errors --cflags --libs openfec') \
+      and host == target:
+        for prefix in ['/usr/local', '/usr']:
+            if os.path.exists('%s/include/openfec' % prefix):
+                env.Append(CPPPATH=[
+                    '%s/include/openfec' % prefix,
+                    '%s/include/openfec/lib_common' % prefix,
+                    '%s/include/openfec/lib_stable' % prefix,
+                ])
+                env.Append(LIBPATH=[
+                    '%s/lib' % prefix,
+                ])
+                break
 
-if 'target_openfec' in env['ROC_TARGETS']:
-    if 'target_openfec' in getdeps:
-        env.ThridParty(toolchain, 'openfec-1.4.2', includes=[
-            'lib_common',
-            'lib_stable',
-        ])
+    if not conf.CheckLibWithHeader('openfec', 'of_openfec_api.h', 'c'):
+        env.Die("openfec not found (see `config.log' for details)")
+
+    if not conf.CheckDeclaration('OF_USE_ENCODER', '#include <of_openfec_api.h>', 'c'):
+        env.Die("openfec has no encoder support (OF_USE_ENCODER)")
+
+    if not conf.CheckDeclaration('OF_USE_DECODER', '#include <of_openfec_api.h>', 'c'):
+        env.Die("openfec has no encoder support (OF_USE_DECODER)")
+
+    if not conf.CheckDeclaration('OF_USE_LDPC_STAIRCASE_CODEC',
+                                 '#include <of_openfec_api.h>', 'c'):
+        env.Die(
+            "openfec has no LDPC-Staircase codec support (OF_USE_LDPC_STAIRCASE_CODEC)")
+
+if 'target_sox' in extdeps:
+    env.TryParseConfig('--cflags --libs sox')
+
+    if not conf.CheckLibWithHeader('sox', 'sox.h', 'c'):
+        env.Die("libsox not found (see `config.log' for details)")
+
+if 'target_gengetopt' in extdeps:
+    if 'GENGETOPT' in env.Dictionary():
+        gengetopt = env['GENGETOPT']
     else:
-        if not env.TryParseConfig('--silence-errors --cflags --libs openfec') \
-          and host == target:
-            for prefix in ['/usr/local', '/usr']:
-                if os.path.exists('%s/include/openfec' % prefix):
-                    env.Append(CPPPATH=[
-                        '%s/include/openfec' % prefix,
-                        '%s/include/openfec/lib_common' % prefix,
-                        '%s/include/openfec/lib_stable' % prefix,
-                    ])
-                    env.Append(LIBPATH=[
-                        '%s/lib' % prefix,
-                    ])
-                    break
+        gengetopt = 'gengetopt'
 
-        if not conf.CheckLibWithHeader('openfec', 'of_openfec_api.h', 'c'):
-            env.Die("openfec not found (see `config.log' for details)")
+    if not conf.CheckProg(gengetopt):
+        env.Die("gengetopt not found in PATH (looked for `%s')" % gengetopt)
 
-        if not conf.CheckDeclaration('OF_USE_ENCODER', '#include <of_openfec_api.h>', 'c'):
-            env.Die("openfec has no encoder support (OF_USE_ENCODER)")
+env = conf.Finish()
 
-        if not conf.CheckDeclaration('OF_USE_DECODER', '#include <of_openfec_api.h>', 'c'):
-            env.Die("openfec has no encoder support (OF_USE_DECODER)")
+test_env = env.Clone()
+test_conf = Configure(test_env, custom_tests=test_env.CustomTests)
 
-        if not conf.CheckDeclaration('OF_USE_LDPC_STAIRCASE_CODEC',
-                                     '#include <of_openfec_api.h>', 'c'):
-            env.Die(
-                "openfec has no LDPC-Staircase codec support (OF_USE_LDPC_STAIRCASE_CODEC)")
+if 'target_cpputest' in extdeps:
+    test_env.TryParseConfig('--cflags --libs cpputest')
 
-if 'target_sox' in env['ROC_TARGETS']:
-    if 'target_sox' in getdeps:
-        env.ThridParty(toolchain, 'sox-14.4.2')
+    if not test_conf.CheckLibWithHeader('CppUTest', 'CppUTest/TestHarness.h', 'cxx'):
+        test_env.Die("CppUTest not found (see `config.log' for details)")
 
-        for lib in [
-                'z', 'ltdl', 'magic',
-                'sndfile', 'gsm', 'FLAC',
-                'vorbis', 'vorbisenc', 'vorbisfile', 'ogg',
-                'mad', 'mp3lame',
-                'asound',
-                'pulse', 'pulse-simple']:
-            conf.CheckLib(lib)
-    else:
-        env.TryParseConfig('--cflags --libs sox')
+test_env = test_conf.Finish()
 
-        if not conf.CheckLibWithHeader('sox', 'sox.h', 'c'):
-            env.Die("libsox not found (see `config.log' for details)")
+conf = Configure(env, custom_tests=env.CustomTests)
+
+if 'target_uv' in getdeps:
+    env.ThridParty(toolchain, 'uv-1.4.2')
+
+if 'target_openfec' in getdeps:
+    env.ThridParty(toolchain, 'openfec-1.4.2', includes=[
+        'lib_common',
+        'lib_stable',
+    ])
+
+if 'target_sox' in getdeps:
+    env.ThridParty(toolchain, 'sox-14.4.2')
+
+    for lib in [
+            'z', 'ltdl', 'magic',
+            'sndfile', 'gsm', 'FLAC',
+            'vorbis', 'vorbisenc', 'vorbisfile', 'ogg',
+            'mad', 'mp3lame',
+            'asound',
+            'pulse', 'pulse-simple']:
+        conf.CheckLib(lib)
 
 if 'target_gengetopt' in getdeps:
     env.ThridParty(toolchain, 'gengetopt-2.22.6')
@@ -282,19 +309,8 @@ if 'target_gengetopt' in getdeps:
 
 env = conf.Finish()
 
-if not GetOption('disable_tests'):
-    test_env = env.Clone()
-    test_conf = Configure(test_env, custom_tests=test_env.CustomTests)
-
-    if 'target_cpputest' in getdeps:
-        test_env.ThridParty(toolchain, 'cpputest-3.6')
-    else:
-        test_env.TryParseConfig('--cflags --libs cpputest')
-
-        if not test_conf.CheckLibWithHeader('CppUTest', 'CppUTest/TestHarness.h', 'cxx'):
-            test_env.Die("CppUTest not found (see `config.log' for details)")
-
-    test_env = test_conf.Finish()
+if 'target_cpputest' in getdeps:
+    test_env.ThridParty(toolchain, 'cpputest-3.6')
 
 if 'target_posix' in env['ROC_TARGETS']:
     env.Append(CPPDEFINES=[('_POSIX_C_SOURCE', '200809')])
@@ -405,7 +421,8 @@ if not GetOption('disable_tests'):
 
     if compiler in ['gcc', 'clang']:
         env.Prepend(
-            TEST_CXXFLAGS=[('-isystem', env.Dir(path).path) for path in env['TEST_CPPPATH']])
+            TEST_CXXFLAGS=[
+                ('-isystem', env.Dir(path).path) for path in env['TEST_CPPPATH']])
 
     if compiler == 'clang':
         env.AppendUnique(TEST_CXXFLAGS=[
