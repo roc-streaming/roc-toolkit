@@ -8,8 +8,8 @@ section "Options"
     option "verbose" v "Increase verbosity level (may be used multiple times)"
         multiple optional
 
-    option "output" o "Output file or device" string optional
-    option "type" t "Output codec or driver" string optional
+    option "output" o "Output file or device" typestr="NAME" string optional
+    option "type" t "Output codec or driver" typestr="TYPE" string optional
 
     option "fec" - "Enable/disable FEC decoding"
         values="ldpc","no" default="ldpc" enum optional
@@ -26,4 +26,27 @@ section "Options"
     option "beep" - "Enable beep on packet loss" flag off
 
 text "
-ADDRESS should have a form of `[IP]:PORT'. IP defaults to 0.0.0.0."
+Address:
+  ADDRESS should be in form of `[IP]:PORT'. IP defaults to 0.0.0.0.
+
+Output:
+  Arguments for `--output' and `--type' options are passed to SoX:
+    NAME specifies file or device name
+    TYPE specifies file or device type
+
+Examples:
+  start server listening on all interfaces on UDP port `12345':
+    $ roc-recv -vv :12345
+
+  start server listening on particular interface:
+    $ roc-recv -vv 192.168.0.3:12345
+
+  output to ALSA default device:
+    $ roc-recv -vv :12345 -t alsa
+    or
+    $ roc-recv -vv :12345 -t alsa -o default
+
+  output to file:
+    $ roc-recv -vv :12345 -o record.wav
+    or
+    $ roc-recv -vv :12345 -o record.wav -t wav"

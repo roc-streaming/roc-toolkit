@@ -8,11 +8,11 @@ section "Options"
     option "verbose" v "Increase verbosity level (may be used multiple times)"
         multiple optional
 
-    option "source" s "Source address (default is 0.0.0.0, i.e. INADDR_ANY)"
-        string optional
+    option "source" s "Source address (default is 0.0.0.0:0, i.e. INADDR_ANY and random port)"
+        typestr="ADDRESS" string optional
 
-    option "input" i "Input file or device" string optional
-    option "type" t "Input codec or driver" string optional
+    option "input" i "Input file or device" typestr="NAME" string optional
+    option "type" t "Input codec or driver" typestr="TYPE" string optional
 
     option "fec" - "Enable/disable FEC encoding"
         values="ldpc","no" default="ldpc" enum optional
@@ -33,4 +33,27 @@ section "Options"
         dependon="delay-rate" int optional
 
 text "
-ADDRESS should have a form of `IP:PORT'."
+Address:
+  ADDRESS should be in form of `[IP]:PORT'. IP defaults to 0.0.0.0.
+
+Output:
+  Arguments for `--input' and `--type' options are passed to SoX:
+    NAME specifies file or device name
+    TYPE specifies file or device type
+
+Examples:
+  send wav file:
+    $ roc-send -vv <server_ip>:<server_port> -i song.wav
+    or
+    $ roc-send -vv <server_ip>:<server_port> -i song.wav -t wav
+
+  capture sound from default driver and device:
+    $ roc-send -vv <server_ip>:<server_port>
+
+  capture sound from default ALSA device:
+    $ roc-send -vv <server_ip>:<server_port> -t alsa
+    or
+    $ roc-send -vv <server_ip>:<server_port> -t alsa -i default
+
+  capture sound from specific pulseaudio device:
+    $ roc-send -vv <server_ip>:<server_port> -t pulseaudio -i <device>"
