@@ -27,16 +27,14 @@ def _Subst(env, string, raw=1, target=None, source=None, conv=None, executor=Non
         lvars.update(executor.get_lvars())
     return SCons.Subst.scons_subst(string, env, raw, target, source, gvars, lvars, conv)
 
-def Pretty(env, command, args, color):
+def Pretty(env, command, args, color, cmdline=None):
     global COMPACT
     if COMPACT:
         return ' %s%8s%s   %s' % (COLORS[color], command, COLORS['end'], args)
+    elif cmdline:
+        return cmdline
     else:
         return '$CMDLINE'
-
-def IsPretty(env):
-    global COMPACT
-    return COMPACT
 
 def Init(env):
     global COMPACT
@@ -46,7 +44,6 @@ def Init(env):
             COMPACT = True
 
     env.AddMethod(Pretty, 'Pretty')
-    env.AddMethod(IsPretty, 'IsPretty')
 
     if COMPACT:
         env.AddMethod(_Subst, 'subst_target_source')

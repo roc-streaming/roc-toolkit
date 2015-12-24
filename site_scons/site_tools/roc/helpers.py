@@ -185,10 +185,10 @@ def ThridParty(env, toolchain, name, includes=[]):
 
 def DeleteDir(env, path):
     path = env.Dir(path).path
-    def remove(*args, **kw):
+    def rmtree(target, source, env):
         if os.path.exists(path):
             shutil.rmtree(path)
-    return env.Action(remove, env.Pretty('RM', path, 'red'))
+    return env.Action(rmtree, env.Pretty('RM', path, 'red', 'rm(%s)' % path))
 
 def TryParseConfig(env, cmd):
     if 'PKG_CONFIG' in env.Dictionary():

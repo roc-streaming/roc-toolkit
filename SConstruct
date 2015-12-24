@@ -11,6 +11,15 @@ env = Environment(ENV=os.environ, tools=[
     'roc',
 ])
 
+# performance tuning
+env.Decider('MD5-timestamp')
+env.SetOption('implicit_cache', 1)
+env.SourceCode('.', None)
+
+# provide absolute path to force single sconsign file
+# per-directory sconsign files seems to be buggy with generated sources
+env.SConsignFile(os.path.join(env.Dir('#').abspath, '.sconsign.dblite'))
+
 AddOption('--enable-werror',
           dest='enable_werror',
           action='store_true',
@@ -56,6 +65,65 @@ AddOption('--with-targets',
           help='overwrite targets to use')
 
 if GetOption('help'):
+    Return()
+
+if 'clean' in COMMAND_LINE_TARGETS and COMMAND_LINE_TARGETS != ['clean']:
+    env.Die("combining 'clean' with other targets is not allowed")
+
+env.AlwaysBuild(
+    env.Alias('clean', [], [
+        env.DeleteDir('#bin'),
+        env.DeleteDir('#build'),
+        env.DeleteDir('#doc/doxygen'),
+        env.DeleteDir('#3rdparty'),
+        env.DeleteDir('#.sconf_cache'),
+    ]))
+
+if 'doxygen' in COMMAND_LINE_TARGETS or (
+        not GetOption('disable_doc')
+        and not set(COMMAND_LINE_TARGETS).intersection(['tidy', 'fmt'])
+        and env.Which(env['DOXYGEN'] if 'DOXYGEN' in env.Dictionary() else 'doxygen')
+    ):
+        env.AlwaysBuild(
+            env.Alias('doxygen', env.Doxygen(
+                    'doc/doxygen',
+                    ['Doxyfile'] + env.RecursiveGlob('#src', ['*.h']))))
+
+fmt = []
+
+if env.Which('clang-format') and env.CompilerVersion('clang-format') >= (3, 6):
+    fmt += [
+        env.Action(
+            'clang-format -i %s' % ' '.join(map(str,
+                env.RecursiveGlob(
+                    '#src', ['*.h', '*.cpp'],
+                    exclude=open(env.File('#.fmtignore').path).read().split())
+            )),
+            env.Pretty('FMT', 'src', 'yellow')
+        ),
+    ]
+elif 'fmt' in COMMAND_LINE_TARGETS:
+    print("warning: clang-format >= 3.6 not found")
+
+fmt += [
+    env.Action(
+        '%s scripts/format.py src/modules' % env.Python(),
+        env.Pretty('FMT', 'src/modules', 'yellow')
+    ),
+    env.Action(
+        '%s scripts/format.py src/tests' % env.Python(),
+        env.Pretty('FMT', 'src/tests', 'yellow')
+    ),
+    env.Action(
+        '%s scripts/format.py src/tools' % env.Python(),
+        env.Pretty('FMT', 'src/tools', 'yellow')
+    ),
+]
+
+env.AlwaysBuild(
+    env.Alias('fmt', [], fmt))
+
+if set(COMMAND_LINE_TARGETS).intersection(['clean', 'fmt', 'doxygen']):
     Return()
 
 supported_platforms = [
@@ -122,6 +190,8 @@ if compiler == 'gcc':
     env['LD'] = 'g++'
     env['AR'] = 'ar'
     env['RANLIB'] = 'ranlib'
+
+    gcc_ver = env.CompilerVersion(env['CC'])
 
 if compiler == 'clang':
     env['CC'] = 'clang'
@@ -379,19 +449,19 @@ if compiler == 'gcc':
         '-Wno-system-headers',
     ])
 
-    if env.CompilerVersion(env['CC']) >= (4, 8):
+    if gcc_ver >= (4, 8):
         env.Append(CXXFLAGS=[
             '-Wdouble-promotion',
         ])
 
-        if variant == 'debug':
-            flags = [
-                '-fsanitize=undefined',
-            ]
+    if gcc_ver >= (4, 9) and variant == 'debug':
+        flags = [
+            '-fsanitize=undefined',
+        ]
 
-            env.Append(CFLAGS=flags)
-            env.Append(CXXFLAGS=flags)
-            env.Append(LINKFLAGS=flags)
+        env.Append(CFLAGS=flags)
+        env.Append(CXXFLAGS=flags)
+        env.Append(LINKFLAGS=flags)
 
 if compiler == 'clang':
     env.Append(CXXFLAGS=[
@@ -441,49 +511,6 @@ if not GetOption('disable_tests'):
         ])
 
 env.AlwaysBuild(
-    env.Alias('clean', [], [
-        env.DeleteDir('#bin'),
-        env.DeleteDir('#build'),
-        env.DeleteDir('#doc/doxygen'),
-        env.DeleteDir('#3rdparty'),
-        env.DeleteDir('#.sconf_cache'),
-    ]))
-
-fmt = []
-
-if env.Which('clang-format') and env.CompilerVersion('clang-format') >= (3, 6):
-    fmt += [
-        env.Action(
-            'clang-format -i %s' % ' '.join(map(str,
-                env.RecursiveGlob(
-                    '#src', ['*.h', '*.cpp'],
-                    exclude=open(env.File('#.fmtignore').path).read().split())
-            )),
-            env.Pretty('FMT', 'src', 'yellow')
-        ),
-    ]
-elif 'fmt' in COMMAND_LINE_TARGETS:
-    print("warning: clang-format >= 3.6 not found")
-
-fmt += [
-    env.Action(
-        '%s scripts/format.py src/modules' % env.Python(),
-        env.Pretty('FMT', 'src/modules', 'yellow')
-    ),
-    env.Action(
-        '%s scripts/format.py src/tests' % env.Python(),
-        env.Pretty('FMT', 'src/tests', 'yellow')
-    ),
-    env.Action(
-        '%s scripts/format.py src/tools' % env.Python(),
-        env.Pretty('FMT', 'src/tools', 'yellow')
-    ),
-]
-
-env.AlwaysBuild(
-    env.Alias('fmt', [], fmt))
-
-env.AlwaysBuild(
     env.Alias('tidy', [env.Dir('#')],
         env.Action(
             "clang-tidy -p %s -checks='%s' -header-filter='src/.*' %s" % (
@@ -509,31 +536,7 @@ env.AlwaysBuild(
             env.Pretty('TIDY', 'src', 'yellow')
         )))
 
-if 'doxygen' in COMMAND_LINE_TARGETS or (
-        not GetOption('disable_doc')
-        and not set(COMMAND_LINE_TARGETS).intersection(['tidy', 'fmt'])
-        and env.Which(env['DOXYGEN'] if 'DOXYGEN' in env.Dictionary() else 'doxygen')
-    ):
-        env.AlwaysBuild(
-            env.Alias('doxygen', env.Doxygen(
-                    'doc/doxygen',
-                    ['Doxyfile'] + env.RecursiveGlob('#src', ['*.h']))))
-
-# performance tuning
-env.Decider('MD5-timestamp')
-env.SetOption('implicit_cache', 1)
-env.SourceCode('.', None)
-
-# provide absolute path to force single sconsign file
-# per-directory sconsign files seems to be buggy with generated sources
-env.SConsignFile(os.path.join(env.Dir('#').abspath, '.sconsign.dblite'))
-
 Export('env')
 
-if 'clean' in COMMAND_LINE_TARGETS and COMMAND_LINE_TARGETS != ['clean']:
-    env.Die("combining 'clean' with other targets is not supported")
-
-if not set(COMMAND_LINE_TARGETS).intersection(['clean', 'fmt', 'doxygen']):
-    env.SConscript('src/SConscript',
-                variant_dir=build_dir,
-                duplicate=0)
+env.SConscript('src/SConscript',
+            variant_dir=build_dir, duplicate=0)

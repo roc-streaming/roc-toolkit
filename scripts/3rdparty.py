@@ -29,8 +29,11 @@ def rmpath(path):
 def download(url, path):
     print('[download] %s' % url)
     rmpath(path)
-    # workaround for SSL certificate error
-    ssl._create_default_https_context = ssl._create_unverified_context
+    try:
+        # workaround for SSL certificate error
+        ssl._create_default_https_context = ssl._create_unverified_context
+    except:
+        pass
     archive = urllib2.urlopen(url)
     with open(path, 'wb') as fp:
         fp.write(archive.read())
