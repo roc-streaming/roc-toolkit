@@ -17,9 +17,9 @@ namespace roc {
 namespace pipeline {
 
 Session::Session(const ServerConfig& config,
-                 const datagram::Address& address, packet::IPacketParser& parser)
+                 const datagram::Address& addr, packet::IPacketParser& parser)
     : config_(config)
-    , address_(address)
+    , address_(addr)
     , packet_parser_(parser)
     , streamers_(MaxChannels)
     , resamplers_(MaxChannels)
