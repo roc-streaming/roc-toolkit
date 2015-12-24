@@ -154,19 +154,26 @@ bool Reader::open(const char* name, const char* type) {
     }
 
     if ((size_t)input_->signal.rate != (size_t)out_signal_.rate) {
-        const char* gain_args[] = {
+        const char* gain_h_args[] = {
             "-h",
         };
 
         add_effect(chain_, "gain", &input_->signal, &out_signal_,
-                   ROC_ARRAY_SIZE(gain_args), gain_args);
+                   ROC_ARRAY_SIZE(gain_h_args), gain_h_args);
 
         const char* rate_args[] = {
-            "-Q", "7", "-b", "99.7",
+            "-b", "99.7", "-v"
         };
 
         add_effect(chain_, "rate", &input_->signal, &out_signal_,
                    ROC_ARRAY_SIZE(rate_args), rate_args);
+
+        const char* gain_r_args[] = {
+            "-r",
+        };
+
+        add_effect(chain_, "gain", &input_->signal, &out_signal_,
+                   ROC_ARRAY_SIZE(gain_r_args), gain_r_args);
     }
 
     {
