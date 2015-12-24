@@ -55,6 +55,9 @@ AddOption('--with-targets',
           type='string',
           help='overwrite targets to use')
 
+if GetOption('help'):
+    Return()
+
 supported_platforms = [
     'linux',
 ]
@@ -442,6 +445,8 @@ env.AlwaysBuild(
         env.DeleteDir('#bin'),
         env.DeleteDir('#build'),
         env.DeleteDir('#doc/doxygen'),
+        env.DeleteDir('#3rdparty'),
+        env.DeleteDir('#.sconf_cache'),
     ]))
 
 fmt = []
