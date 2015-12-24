@@ -4,6 +4,8 @@ import os.path
 import platform
 import SCons.Script
 
+SCons.SConf.dryrun = 0 # configure even in dry run mode
+
 env = Environment(ENV=os.environ, tools=[
     'default',
     'roc',
@@ -152,6 +154,13 @@ for var in ['CFLAGS', 'CXXFLAGS', 'LDFLAGS']:
             tvar = var
         env.Prepend(**{tvar: os.environ[var]})
 
+conf = Configure(env, custom_tests=env.CustomTests)
+
+for var in ['CC', 'CXX', 'LD', 'AR', 'RANLIB']:
+    conf.CheckProg(env[var])
+
+env = conf.Finish()
+
 if compiler == 'clang':
     for var in ['CC', 'CXX']:
         env[var] = env.ClangDB(build_dir, '*.cpp', env[var])
@@ -207,7 +216,6 @@ if GetOption('with_3rdparty'):
 
 extdeps = set(alldeps) - set(getdeps)
 
-SCons.SConf.dryrun = 0 # configure even in dry run mode
 conf = Configure(env, custom_tests=env.CustomTests)
 
 if 'target_uv' in extdeps:

@@ -5,6 +5,7 @@ import os
 import shutil
 import fnmatch
 import urllib2
+import ssl
 import tarfile
 import fileinput
 
@@ -28,6 +29,8 @@ def rmpath(path):
 def download(url, path):
     print('[download] %s' % url)
     rmpath(path)
+    # workaround for SSL certificate error
+    ssl._create_default_https_context = ssl._create_unverified_context
     archive = urllib2.urlopen(url)
     with open(path, 'wb') as fp:
         fp.write(archive.read())
