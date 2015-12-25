@@ -1,3 +1,5 @@
+![](doc/roc.png)
+
 # Roc: real-time audio streaming over network
 
 Roc is a library and tools for real-time streaming of high-quality audio over unreliable network.
@@ -75,7 +77,7 @@ Contributions are always welcome! Please read [HACKING](HACKING.md) for general 
 Licensing
 ---------
 
-Roc source code is licensed under [MPL-2.0](https://www.mozilla.org/en-US/MPL/2.0/), see [LICENSE](LICENSE).
+Roc source code is licensed under [MPL-2.0](https://www.mozilla.org/en-US/MPL/2.0/), see [LICENSE](LICENSE). [Roc logo](doc/roc.png) by [botanicahouse](https://www.instagram.com/botanicahouse/) is licensed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).
 
 Issues with external dependencies:
 * Roc may be configured to use LDPC-Staircase codec from OpenFEC, which is licensed under [CeCILL](http://openfec.org/patents.html), GPL-like and GPL-compatible license. When Roc is built with OpenFEC support enabled, it must be distributed under lincense compatible with CeCILL.
