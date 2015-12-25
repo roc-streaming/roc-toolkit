@@ -11,7 +11,7 @@ Goals:
 Roadmap for upcoming 0.1 release
 --------------------------------
 
-Work in progress. See also [opened issues](https://github.com/roc-project/roc/issues) and [TODO](TODO.md) for current and future plans.
+Work in progress. See also [open issues](https://github.com/roc-project/roc/issues) and [TODO](TODO.md) for current and future plans.
 
 - [ ] api: public API for client and server
 - [x] stack: client/server libraries and tools
@@ -66,11 +66,11 @@ Supported protocols
 Contributing
 ------------
 
-Contributions are always welcome! Please read [HACKING](HACKING.md) for general hints and look at [TODO](TODO.md) and [opened issues](https://github.com/roc-project/roc/issues) to figure out what's going on.
+Contributions are always welcome! Please read [HACKING](HACKING.md) for general hints and look at [TODO](TODO.md) and [open issues](https://github.com/roc-project/roc/issues) to figure out what's going on.
 
 * If you'd like to report a bug, ask a question, or suggest a feature, feel free to [create an issue](https://help.github.com/articles/creating-an-issue/).
 
-* If you'd like to implement a feature, it's recommended to comment corresponding issue or open a new one to ensure that it fits in Roc design and nobody else is already working on it. Then, just create a [pull request](https://help.github.com/articles/using-pull-requests/).
+* If you'd like to implement a feature, it's recommended to comment corresponding issue or create a new one to ensure that it fits in Roc design and nobody else is already working on it. Then, just create a [pull request](https://help.github.com/articles/using-pull-requests/).
 
 Licensing
 ---------
