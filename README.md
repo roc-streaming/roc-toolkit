@@ -79,3 +79,8 @@ Roc source code is licensed under [MPL-2.0](https://www.mozilla.org/en-US/MPL/2.
 
 Issues with external dependencies:
 * Roc may be configured to use LDPC-Staircase codec from OpenFEC, which is licensed under [CeCILL](http://openfec.org/patents.html), GPL-like and GPL-compatible license. When Roc is built with OpenFEC support enabled, it must be distributed under lincense compatible with CeCILL.
+
+Authors
+-------
+
+See [AUTHORS](AUTHORS).
