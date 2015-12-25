@@ -56,12 +56,11 @@ TEST_GROUP(splitter) {
     }
 
     ISampleBufferConstPtr make_buffer(size_t num, size_t n_samples, size_t n_trunc = 0) {
-        ISampleBufferPtr buff = new_buffer<NumSamples * NumCh * NumPackets>(
-            (n_samples - n_trunc) * NumCh);
+        ISampleBufferPtr buff =
+            new_buffer<NumSamples * NumCh * NumPackets>((n_samples - n_trunc) * NumCh);
 
         for (size_t n = 0; n < buff->size(); n++) {
-            buff->data()[n] =
-                sample_t((num * n_samples * NumCh + n) % MaxVal) / MaxVal;
+            buff->data()[n] = sample_t((num * n_samples * NumCh + n) % MaxVal) / MaxVal;
         }
 
         return buff;
@@ -96,8 +95,7 @@ TEST_GROUP(splitter) {
         sample_t samples[NumSamples * NumCh] = {};
         size_t pos = 0;
 
-        LONGS_EQUAL(NumSamples,
-                    packet->read_samples(ChMask, 0, samples, NumSamples));
+        LONGS_EQUAL(NumSamples, packet->read_samples(ChMask, 0, samples, NumSamples));
 
         for (; pos < (NumSamples - n_pad) * NumCh; pos++) {
             DOUBLES_EQUAL(sample_t(sample_num % MaxVal) / MaxVal, samples[pos], 0.0001);

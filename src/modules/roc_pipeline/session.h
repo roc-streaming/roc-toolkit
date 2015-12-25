@@ -87,8 +87,8 @@ private:
 
     void make_pipeline_();
 
-    audio::IStreamReader* make_stream_reader_(
-        audio::IAudioPacketReader*, packet::channel_t);
+    audio::IStreamReader* make_stream_reader_(audio::IAudioPacketReader*,
+                                              packet::channel_t);
 
     packet::IPacketReader* make_packet_reader_();
     packet::IPacketReader* make_fec_decoder_(packet::IPacketReader*);

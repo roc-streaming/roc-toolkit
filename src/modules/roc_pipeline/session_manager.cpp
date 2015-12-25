@@ -129,7 +129,7 @@ bool SessionManager::create_session_and_store_(const datagram::IDatagram& dgm) {
 
     if (!session->store(dgm)) {
         roc_log(LOG_TRACE, "session manager:"
-                " ignoring session: can't store first datagram");
+                           " ignoring session: can't store first datagram");
         return false;
     }
 

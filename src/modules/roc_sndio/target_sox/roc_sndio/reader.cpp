@@ -161,9 +161,7 @@ bool Reader::open(const char* name, const char* type) {
         add_effect(chain_, "gain", &input_->signal, &out_signal_,
                    ROC_ARRAY_SIZE(gain_h_args), gain_h_args);
 
-        const char* rate_args[] = {
-            "-b", "99.7", "-v"
-        };
+        const char* rate_args[] = { "-b", "99.7", "-v" };
 
         add_effect(chain_, "rate", &input_->signal, &out_signal_,
                    ROC_ARRAY_SIZE(rate_args), rate_args);

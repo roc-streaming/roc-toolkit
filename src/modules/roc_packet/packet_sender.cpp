@@ -15,8 +15,8 @@
 namespace roc {
 namespace packet {
 
-PacketSender::PacketSender(
-    datagram::IDatagramWriter& writer, datagram::IDatagramComposer& composer)
+PacketSender::PacketSender(datagram::IDatagramWriter& writer,
+                           datagram::IDatagramComposer& composer)
     : writer_(writer)
     , composer_(composer) {
 }
