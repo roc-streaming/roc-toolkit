@@ -3,16 +3,14 @@ Howto
 
 **Ubuntu 14.04 and Debian Jessie**
 
-```
-# for Roc
-$ apt-get install g++ pkg-config scons gengetopt doxygen libsox-dev
+    # for Roc
+    $ apt-get install g++ pkg-config scons gengetopt doxygen libsox-dev
 
-# for 3rd-parties
-$ apt-get install libtool autoconf automake make cmake
+    # for 3rd-parties
+    $ apt-get install libtool autoconf automake make cmake
 
-# build everything
-$ scons --with-3rdparty=uv,openfec,cpputest
-```
+    # build everything
+    $ scons --with-3rdparty=uv,openfec,cpputest
 
 Dependencies
 ------------
@@ -42,10 +40,8 @@ Dependencies
 Building
 --------
 
-```
-$ scons --help
-$ scons <options> <arguments> <build-targets>
-```
+    $ scons --help
+    $ scons <options> <arguments> <build-targets>
 
 After building, tools and libraries are inside `bin/` directory.
 
@@ -87,48 +83,32 @@ Examples
 
 Automatically detect platform and compiler, and build everything:
 
-```
-$ scons -Q
-```
+    $ scons -Q
 
 Also build and run tests:
 
-```
-$ scons -Q test
-```
+    $ scons -Q test
 
 Select compiler and build variant:
 
-```
-$ scons -Q compiler=gcc variant=debug test
-```
+    $ scons -Q compiler=gcc variant=debug test
 
 Build specific module (see [modules](src/modules/) directory):
 
-```
-$ scons -Q roc_audio
-```
+    $ scons -Q roc_audio
 
 And run tests:
 
-```
-$ scons -Q test/roc_audio
-```
+    $ scons -Q test/roc_audio
 
 Download and build libuv, OpenFEC and CppUTest, then build everything:
 
-```
-$ scons -Q --with-3rdparty=uv,openfec,cpputest
-```
+    $ scons -Q --with-3rdparty=uv,openfec,cpputest
 
 Download and build all external dependencies:
 
-```
-$ scons -Q --with-3rdparty=all
-```
+    $ scons -Q --with-3rdparty=all
 
 Minimal build:
 
-```
-$ scons -Q --disable-tools --disable-tests --disable-doc --with-openfec=no --with-sox=no
-```
+    $ scons -Q --disable-tools --disable-tests --disable-doc --with-openfec=no --with-sox=no
