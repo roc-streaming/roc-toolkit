@@ -22,7 +22,7 @@ namespace roc {
 namespace core {
 
 //! Semaphore.
-class Semaphore : NonCopyable<> {
+class Semaphore : public NonCopyable<> {
 public:
     //! Initialize semaphore with given counter value.
     explicit Semaphore(size_t counter = 0) {

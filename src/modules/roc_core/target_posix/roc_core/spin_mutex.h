@@ -24,7 +24,7 @@ namespace roc {
 namespace core {
 
 //! Spinlock mutex.
-class SpinMutex : NonCopyable<> {
+class SpinMutex : public NonCopyable<> {
 public:
     //! Scoped lock.
     typedef ScopedLock<SpinMutex> Lock;
