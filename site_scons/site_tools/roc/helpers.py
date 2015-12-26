@@ -71,14 +71,23 @@ def Python(env):
         return sys.executable
 
 def CompilerVersion(env, compiler):
-    proc = subprocess.Popen([compiler, '--version'],
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.STDOUT)
-    line = proc.stdout.readline()
-    m = re.search('([0-9]\.[0-9.]+)', line)
-    if not m:
-        return (0)
-    return tuple(map(int, m.group(1).split('.')))
+    try:
+        proc = subprocess.Popen([compiler, '--version'],
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.STDOUT)
+    except:
+        return None
+
+    while 1:
+        line = proc.stdout.readline()
+        if not line:
+            break
+
+        m = re.search('([0-9]\.[0-9.]+)', line)
+        if m:
+            return tuple(map(int, m.group(1).split('.')))
+
+    return None
 
 def ClangDB(env, build_dir, pattern, compiler):
     return '%s %s/wrappers/clangdb.py %s %s "%s" %s' % (

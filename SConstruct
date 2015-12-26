@@ -172,6 +172,15 @@ if not compiler:
     else:
         compiler = 'gcc'
 
+if '-' in compiler:
+    compiler, compiler_ver = compiler.split('-')
+    compiler_ver = tuple(map(int, compiler_ver.split('.')))
+else:
+    compiler_ver = env.CompilerVersion(compiler)
+
+if not compiler_ver or len(compiler_ver) < 2:
+    env.Die("can't detect compiler version")
+
 if not compiler in supported_compilers:
     env.Die("unknown compiler `%s', expected one of: %s",
             compiler, ', '.join(supported_compilers))
@@ -180,9 +189,7 @@ if not toolchain:
     if host != target:
         env.Die("toolchain option is required when cross-compiling")
 
-build_dir = 'build/%s/%s' % (
-    '-'.join([s for s in [target, toolchain, compiler] if s]),
-    variant)
+conf = Configure(env, custom_tests=env.CustomTests)
 
 if compiler == 'gcc':
     env['CC'] = 'gcc'
@@ -191,8 +198,6 @@ if compiler == 'gcc':
     env['AR'] = 'ar'
     env['RANLIB'] = 'ranlib'
 
-    gcc_ver = env.CompilerVersion(env['CC'])
-
 if compiler == 'clang':
     env['CC'] = 'clang'
     env['CXX'] = 'clang++'
@@ -200,24 +205,52 @@ if compiler == 'clang':
     env['AR'] = 'llvm-ar'
     env['RANLIB'] = 'llvm-ranlib'
 
-    clang_ver = env.CompilerVersion(env['CC'])[:2]
-
-    for var in ['AR', 'RANLIB']:
-        versioned = '%s-%s' % (env[var], '.'.join(map(str, clang_ver)))
-
-        if env.Which(versioned):
-            env[var] = versioned
-
-    if clang_ver < (3, 6):
+    if compiler_ver[:2] < (3, 6):
         env['RANLIB'] = 'ranlib'
-
-if toolchain:
-    for var in ['CC', 'CXX', 'LD', 'AR', 'RANLIB']:
-        env[var] = '%s-%s' % (toolchain, env[var])
 
 for var in ['CC', 'CXX', 'LD', 'AR', 'RANLIB', 'GENGETOPT', 'DOXYGEN', 'PKG_CONFIG']:
     if var in os.environ:
         env[var] = os.environ[var]
+
+for var in ['CC', 'CXX', 'LD', 'AR', 'RANLIB']:
+    if var in os.environ:
+        conf.CheckProg(env[var])
+    else:
+        unversioned = (env[var] in ['ar', 'ranlib'])
+
+        if toolchain:
+            env[var] = '%s-%s' % (toolchain, env[var])
+
+        if unversioned:
+            continue
+
+        search_versions = [
+            compiler_ver[:3],
+            compiler_ver[:2],
+        ]
+
+        default_ver = env.CompilerVersion(env[var])
+
+        if default_ver and default_ver[:len(compiler_ver)] == compiler_ver:
+            search_versions += [default_ver]
+
+        for ver in reversed(sorted(set(search_versions))):
+            tool = '%s-%s' % (env[var], '.'.join(map(str, ver)))
+            if env.Which(tool):
+                env[var] = tool
+                break
+
+        conf.CheckProg(env[var])
+
+        actual_ver = env.CompilerVersion(env[var])
+        if actual_ver:
+            actual_ver = actual_ver[:len(compiler_ver)]
+
+        if actual_ver != compiler_ver:
+            env.Die("can't use `%s' (actual version is %s, requested version is %s)" % (
+                env[var],
+                actual_ver,
+                compiler_ver))
 
 for var in ['CFLAGS', 'CXXFLAGS', 'LDFLAGS']:
     if var in os.environ:
@@ -227,12 +260,14 @@ for var in ['CFLAGS', 'CXXFLAGS', 'LDFLAGS']:
             tvar = var
         env.Prepend(**{tvar: os.environ[var]})
 
-conf = Configure(env, custom_tests=env.CustomTests)
-
-for var in ['CC', 'CXX', 'LD', 'AR', 'RANLIB']:
-    conf.CheckProg(env[var])
-
 env = conf.Finish()
+
+# get full version
+compiler_ver = env.CompilerVersion(env['CXX'])
+
+build_dir = 'build/%s/%s' % (
+    '-'.join([s for s in [target, toolchain, compiler, '.'.join(map(str, compiler_ver))] if s]),
+    variant)
 
 if compiler == 'clang':
     for var in ['CC', 'CXX']:
@@ -449,12 +484,12 @@ if compiler == 'gcc':
         '-Wno-system-headers',
     ])
 
-    if gcc_ver >= (4, 8):
+    if compiler_ver[:2] >= (4, 8):
         env.Append(CXXFLAGS=[
             '-Wdouble-promotion',
         ])
 
-    if gcc_ver >= (4, 9) and variant == 'debug':
+    if compiler_ver[:2] >= (4, 9) and variant == 'debug':
         flags = [
             '-fsanitize=undefined',
         ]
@@ -480,7 +515,7 @@ if compiler == 'clang':
         '-Wno-system-headers',
     ])
 
-    if clang_ver >= (3, 6):
+    if compiler_ver[:2] >= (3, 6):
         env.Append(CXXFLAGS=[
             '-Wno-reserved-id-macro',
         ])

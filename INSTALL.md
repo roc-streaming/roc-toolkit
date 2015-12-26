@@ -61,7 +61,7 @@ After building, tools and libraries are inside `bin/` directory.
 **Arguments**:
 * `variant=debug|release` - select build variant
 * `target=linux` - select target platform; currently only `linux` is supported
-* `compiler=gcc|clang` - select compiler to use
+* `compiler=<compiler>[-<version>]` - select compiler and version to use; currently, only `gcc` and `clang` are supported
 * `toolchain=<prefix>` - select toolchain prefix added to compiler, linker and other tools
 
 **Build targets:**
@@ -92,6 +92,11 @@ Also build and run tests:
 Select compiler and build variant:
 
     $ scons -Q compiler=gcc variant=debug test
+
+Select specific compiler version:
+
+    $ scons -Q compiler=gcc-4.8
+    $ scons -Q compiler=gcc-4.8.5
 
 Build specific module (see [modules](src/modules/) directory):
 
