@@ -18,7 +18,7 @@ Work in progress. See also [open issues](https://github.com/roc-project/roc/issu
 - [ ] api: public API for client and server
 - [x] stack: client/server libraries and tools
 - [ ] documentation: API, doxygen, wiki
-- [ ] protocols: RTP/RTCP support
+- [ ] protocols: RTP support
 - [x] audio formats: uncompressed 16-bit linear PCM
 - [x] latency: dynamic resampling in server
 - [x] QoS: LDPC forward error correction
