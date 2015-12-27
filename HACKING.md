@@ -69,11 +69,13 @@ Please try to follow conventions bellow when contributing.
 
     Ensure you code builds with `--enable-werror` option with major compilers, preferrably `clang` and `gcc`. Running `scons tidy` may be useful. See details in [INSTALL](INSTALL.md).
 
+* **Tests**
+
+    Write unit tests for non-trivial components. Before comitting, run `scons test` to ensure that existing tests are not broken. See details in [INSTALL](INSTALL.md).
+
 * **Debugging**
 
     Use `roc_panic()` to die gracefully when component's contract is broken. Use `roc_log()` to make debugging your code by other people easier.
-
-    Write unit tests for non-trivial components.
 
 * **Code style**
 
