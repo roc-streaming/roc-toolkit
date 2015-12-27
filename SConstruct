@@ -87,7 +87,8 @@ if 'doxygen' in COMMAND_LINE_TARGETS or (
         env.AlwaysBuild(
             env.Alias('doxygen', env.Doxygen(
                     'doc/doxygen',
-                    ['Doxyfile'] + env.RecursiveGlob('#src', ['*.h']))))
+                    ['Doxyfile'] + env.RecursiveGlob('#src', ['*.h']),
+                    werror=GetOption('enable_werror'))))
 
 fmt = []
 
