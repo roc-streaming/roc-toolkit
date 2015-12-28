@@ -19,3 +19,4 @@ build.log
 # misc
 3rdparty
 .copyright
+*.vpp~*
