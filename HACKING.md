@@ -36,8 +36,6 @@ These are objectives, not strict rules. World is complex, people are tired, and 
 
     * Ensure your interfaces are minimal, clean, and documented.
 
-    * Ensure each component does one thing and does it well.
-
     * Prefer simple interfaces and smart implementations, rather than bloated interfaces and lazy implementations.
 
     * Do your best to keep interface contract straightforward.
