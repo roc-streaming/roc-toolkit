@@ -41,8 +41,9 @@ def download(url, path):
 def extract(path, dirname):
     print('[extract] %s' % path)
     rmpath(dirname)
-    with tarfile.open(path, 'r') as tar:
-        tar.extractall('.')
+    tar = tarfile.open(path, 'r')
+    tar.extractall('.')
+    tar.close()
 
 def execute(cmd, log):
     print('[execute] %s' % cmd)

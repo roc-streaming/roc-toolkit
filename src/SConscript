@@ -7,7 +7,11 @@ import collections
 import json
 
 with open(env.File('build-deps.json').srcnode().abspath) as fp:
-    BUILD_DEPS = json.loads(fp.read(), object_pairs_hook=collections.OrderedDict)
+    fp_json = fp.read()
+    try:
+        BUILD_DEPS = json.loads(fp_json, object_pairs_hook=collections.OrderedDict)
+    except:
+        BUILD_DEPS = json.loads(fp_json)
 
 ROOT_DIR = env.Dir('#').abspath
 
