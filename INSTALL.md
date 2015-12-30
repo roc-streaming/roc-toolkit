@@ -1,7 +1,7 @@
 Howto
 -----
 
-**Ubuntu 14.04 and Debian Jessie**
+**Ubuntu 14.04 and Debian 8.2 (Jessie)**
 
     # for Roc
     $ apt-get install g++ pkg-config scons gengetopt doxygen graphviz libsox-dev
@@ -23,7 +23,7 @@ Howto
     # build and test
     $ scons --with-3rdparty=openfec test
 
-**Fedora 22 and later**
+**Fedora 22 and later, OpenSUSE**
 
     # for Roc
     $ dnf install gcc-c++ pkgconfig scons gengetopt doxygen graphviz libuv-devel sox-devel
@@ -33,6 +33,8 @@ Howto
 
     # build and test
     $ scons --with-3rdparty=openfec,cpputest test
+
+Change `dnf` to `zypper` for OpenSUSE.
 
 Dependencies
 ------------
@@ -132,7 +134,7 @@ Download and build libuv, OpenFEC and CppUTest, then build everything:
 
     $ scons -Q --with-3rdparty=uv,openfec,cpputest
 
-Download and build all external dependencies:
+Download and build all external dependencies, then build everything:
 
     $ scons -Q --with-3rdparty=all
 

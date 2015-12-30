@@ -65,15 +65,17 @@ Please try to follow conventions bellow when contributing.
 
 * **Warnings**
 
-    Ensure you code builds with `--enable-werror` option with major compilers, preferrably `clang` and `gcc`. Running `scons tidy` may be useful. See details in [INSTALL](INSTALL.md).
+    If possible, ensure you code builds with `--enable-werror` option with major compilers, preferrably recent `clang` and `gcc`. Running `scons tidy` may be also useful. See details in [INSTALL](INSTALL.md).
 
 * **Tests**
 
     Write unit tests for non-trivial components. Before comitting, run `scons test` to ensure that existing tests are not broken. See details in [INSTALL](INSTALL.md).
 
-* **Debugging**
+* **Error handling**
 
     Use `roc_panic()` to die gracefully when component's contract is broken. Use `roc_log()` to make debugging your code easier for others.
+    
+    We don't use exceptions and avoid returning error codes. Use `roc_panic()` and `roc_log()` and prefrer boolean or null return values.
 
 * **Code style**
 
@@ -97,7 +99,7 @@ Branching
 * **Branches**
 
     There are two main branches:
-    * `master` is a [protected](https://help.github.com/articles/about-protected-branches/) branch for code tested on all supported platforms. Public releases are tagged commits in `master` branch. History in always kept linear in this branch.
+    * `master` is a [protected branch](https://help.github.com/articles/about-protected-branches/) for code tested on all supported platforms. Public releases are tagged commits in `master` branch. History is always linear (no non-fast-forward merges) in this branch.
     * `develop` is an unstable development branch. Changes from `develop` are merged into `master` when they are ready. This branch is periodically rebased and force-pushed, so be careful when pulling!
 
     Additionally, feature branches may be created for long-standing development. They are like `develop` branch, but may be incomplete, broken, etc. for a longer time.
