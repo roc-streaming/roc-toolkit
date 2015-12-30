@@ -12,6 +12,28 @@ Howto
     # build everything
     $ scons --with-3rdparty=uv,openfec,cpputest
 
+**Ubuntu 15.10 and later**
+
+    # for Roc
+    $ apt-get install g++ pkg-config scons gengetopt doxygen graphviz libuv1-dev libsox-dev libcpputest-dev
+
+    # for 3rd-parties
+    $ apt-get install make cmake
+
+    # build everything
+    $ scons --with-3rdparty=openfec
+
+**Fedora 23**
+
+    # for Roc
+    $ dnf install gcc-c++ pkgconfig scons gengetopt doxygen graphviz libuv-devel sox-devel
+
+    # for 3rd-parties
+    $ dnf install make cmake
+
+    # build everything
+    $ scons --with-3rdparty=openfec,cpputest
+
 Dependencies
 ------------
 
