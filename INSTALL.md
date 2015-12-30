@@ -4,7 +4,7 @@ Howto
 **Ubuntu 14.04 and Debian Jessie**
 
     # for Roc
-    $ apt-get install g++ pkg-config scons gengetopt doxygen libsox-dev
+    $ apt-get install g++ pkg-config scons gengetopt doxygen graphviz libsox-dev
 
     # for 3rd-parties
     $ apt-get install libtool autoconf automake make cmake
@@ -21,7 +21,7 @@ Dependencies
 * scons
 * pkg-config (optional, if you want installed dependencies to be auto-detected)
 * gengetopt (optional, if you want to build tools)
-* doxygen (optional, if you want to build documentation)
+* doxygen, graphviz (optional, if you want to build documentation)
 * clang-tidy (optional, if you want to run static analyzer)
 * clang-format >= 3.6 (optional, if you want to format code)
 * libtool, autoconf, automake, make, cmake (optional, if you want to download and build external dependencies automatically)
