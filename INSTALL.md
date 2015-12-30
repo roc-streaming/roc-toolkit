@@ -53,7 +53,7 @@ Dependencies
 **Runtime:**
 * [libuv](http://libuv.org) >= 1.4
 * [OpenFEC](http://openfec.org) (optional but recommended, for LDPC-Staircase FEC codec)
-* [SoX](http://sox.sourceforge.net) (optional, if you want to build tools)
+* [SoX](http://sox.sourceforge.net) >= 14.4.0 (optional, if you want to build tools)
 * [CppUTest](http://cpputest.github.io) (optional, if you want to build tests)
 
 **Notes:**

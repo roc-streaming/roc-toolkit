@@ -380,8 +380,14 @@ if 'target_openfec' in extdeps:
 if 'target_sox' in extdeps:
     env.TryParseConfig('--cflags --libs sox')
 
-    if not conf.CheckLibWithHeaderUniq('sox', 'sox.h', 'c'):
-        env.Die("libsox not found (see `config.log' for details)")
+    if host == target:
+        if not conf.CheckLibWithHeaderExpr(
+                'sox', 'sox.h', 'c',
+                expr='SOX_LIB_VERSION_CODE >= SOX_LIB_VERSION(14, 4, 0)'):
+            env.Die("libsox >= 14.4.0 not found (see `config.log' for details)")
+    else:
+        if not conf.CheckLibWithHeaderUniq('sox', 'sox.h', 'c'):
+            env.Die("libsox not found (see `config.log' for details)")
 
 if 'target_gengetopt' in extdeps:
     if 'GENGETOPT' in env.Dictionary():
