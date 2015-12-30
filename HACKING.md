@@ -100,7 +100,7 @@ Branching
 
     There are two main branches:
     * `master` is a [protected branch](https://help.github.com/articles/about-protected-branches/) for code tested on all supported platforms. Public releases are tagged commits in `master` branch. History is always linear (no non-fast-forward merges) in this branch.
-    * `develop` is an unstable development branch. Changes from `develop` are merged into `master` when they are ready. This branch is periodically rebased and force-pushed, so be careful when pulling!
+    * `develop` is an unstable development branch. Changes from `develop` are merged into `master` when they are ready. This branch is periodically rebased and force-pushed, use `git pull --rebase` instead of `git pull`.
 
     Additionally, feature branches may be created for long-standing development. They are like `develop` branch, but may be incomplete, broken, etc. for a longer time.
 
