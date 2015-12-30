@@ -9,8 +9,8 @@ Howto
     # for 3rd-parties
     $ apt-get install libtool autoconf automake make cmake
 
-    # build everything
-    $ scons --with-3rdparty=uv,openfec,cpputest
+    # build and test
+    $ scons --with-3rdparty=uv,openfec,cpputest test
 
 **Ubuntu 15.10 and later**
 
@@ -20,10 +20,10 @@ Howto
     # for 3rd-parties
     $ apt-get install make cmake
 
-    # build everything
-    $ scons --with-3rdparty=openfec
+    # build and test
+    $ scons --with-3rdparty=openfec test
 
-**Fedora 23**
+**Fedora 22 and later**
 
     # for Roc
     $ dnf install gcc-c++ pkgconfig scons gengetopt doxygen graphviz libuv-devel sox-devel
@@ -31,8 +31,8 @@ Howto
     # for 3rd-parties
     $ dnf install make cmake
 
-    # build everything
-    $ scons --with-3rdparty=openfec,cpputest
+    # build and test
+    $ scons --with-3rdparty=openfec,cpputest test
 
 Dependencies
 ------------
