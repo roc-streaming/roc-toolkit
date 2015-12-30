@@ -453,6 +453,9 @@ for t in env['ROC_TARGETS']:
 
 env.Append(LIBPATH=['#bin'])
 
+if target_platform in ['linux']:
+    env.AppendUnique(LIBS=['rt'])
+
 if compiler in ['gcc', 'clang']:
     env.Append(CXXFLAGS=[
         '-std=c++98',
@@ -482,7 +485,6 @@ if compiler == 'gcc':
     env.Append(CXXFLAGS=[
         '-Wall',
         '-Wextra',
-        '-Wabi',
         '-Winit-self',
         '-Wshadow',
         '-Wcast-qual',
@@ -504,6 +506,7 @@ if compiler == 'gcc':
     if compiler_ver[:2] >= (4, 8):
         env.Append(CXXFLAGS=[
             '-Wdouble-promotion',
+            '-Wabi',
         ])
 
     if compiler_ver[:2] >= (4, 9) and variant == 'debug':
