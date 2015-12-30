@@ -242,6 +242,7 @@ int main() {
 
     if not err and out.strip() != '0':
         context.Result('yes')
+        context.env.Append(LIBS=libs)
         return True
     else:
         context.Result('no')
