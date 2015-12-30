@@ -193,6 +193,13 @@ def ThridParty(env, toolchain, name, includes=[]):
     for lib in env.RecursiveGlob('#3rdparty/%s/lib' % name, 'lib*'):
         env.Append(LIBS=[env.File(lib)])
 
+def DeleteFile(env, path):
+    path = env.File(path).path
+    def rmfile(target, source, env):
+        if os.path.exists(path):
+            os.remove(path)
+    return env.Action(rmfile, env.Pretty('RM', path, 'red', 'rm(%s)' % path))
+
 def DeleteDir(env, path):
     path = env.Dir(path).path
     def rmtree(target, source, env):
@@ -271,6 +278,7 @@ def Init(env):
     env.AddMethod(Doxygen, 'Doxygen')
     env.AddMethod(GenGetOpt, 'GenGetOpt')
     env.AddMethod(ThridParty, 'ThridParty')
+    env.AddMethod(DeleteFile, 'DeleteFile')
     env.AddMethod(DeleteDir, 'DeleteDir')
     env.AddMethod(TryParseConfig, 'TryParseConfig')
     env.CustomTests = {

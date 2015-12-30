@@ -77,6 +77,8 @@ env.AlwaysBuild(
         env.DeleteDir('#doc/doxygen'),
         env.DeleteDir('#3rdparty'),
         env.DeleteDir('#.sconf_temp'),
+        env.DeleteFile('#.sconsign.dblite'),
+        env.DeleteFile('#config.log'),
     ]))
 
 if 'doxygen' in COMMAND_LINE_TARGETS or (
