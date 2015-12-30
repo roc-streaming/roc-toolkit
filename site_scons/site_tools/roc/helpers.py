@@ -83,7 +83,7 @@ def CompilerVersion(env, compiler):
         if not line:
             break
 
-        m = re.search('([0-9]\.[0-9.]+)', line)
+        m = re.search('([0-9]+\.[0-9]+\.[0-9]+)', line)
         if m:
             return tuple(map(int, m.group(1).split('.')))
 
@@ -215,11 +215,14 @@ def TryParseConfig(env, cmd):
         return False
 
 def CheckLibWithHeaderExpr(context, libs, headers, language, expr):
+    if not isinstance(headers, list):
+        headers = [headers]
+
     if not isinstance(libs, list):
         libs = [libs]
 
-    if not isinstance(headers, list):
-        headers = [headers]
+    name = libs[0]
+    libs = [l for l in libs if not l in context.env['LIBS']]
 
     suffix = '.%s' % language
     includes = '\n'.join(['#include <%s>' % h for h in ['stdio.h'] + headers])
@@ -233,7 +236,7 @@ int main() {
 """ % (includes, expr)
 
     context.Message("Checking for %s library %s... " % (
-        language.upper(), libs[0]))
+        language.upper(), name))
 
     err, out = context.RunProg(src, suffix)
 
@@ -243,6 +246,9 @@ int main() {
     else:
         context.Result('no')
         return False
+
+def CheckLibWithHeaderUniq(context, libs, headers, language):
+    return CheckLibWithHeaderExpr(context, libs, headers, language, '1')
 
 def CheckProg(context, prog):
     context.Message("Checking for executable %s... " % prog)
@@ -268,5 +274,6 @@ def Init(env):
     env.AddMethod(TryParseConfig, 'TryParseConfig')
     env.CustomTests = {
         'CheckLibWithHeaderExpr': CheckLibWithHeaderExpr,
+        'CheckLibWithHeaderUniq': CheckLibWithHeaderUniq,
         'CheckProg': CheckProg,
     }

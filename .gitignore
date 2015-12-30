@@ -13,6 +13,9 @@ __pycache__
 config.log
 build.log
 
+# doxygen
+doxygen_*.db
+
 # vim
 *.sw[op]
 

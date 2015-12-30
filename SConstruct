@@ -76,7 +76,7 @@ env.AlwaysBuild(
         env.DeleteDir('#build'),
         env.DeleteDir('#doc/doxygen'),
         env.DeleteDir('#3rdparty'),
-        env.DeleteDir('#.sconf_cache'),
+        env.DeleteDir('#.sconf_temp'),
     ]))
 
 if 'doxygen' in COMMAND_LINE_TARGETS or (
@@ -213,9 +213,12 @@ for var in ['CC', 'CXX', 'LD', 'AR', 'RANLIB', 'GENGETOPT', 'DOXYGEN', 'PKG_CONF
     if var in os.environ:
         env[var] = os.environ[var]
 
+checked = set()
+
 for var in ['CC', 'CXX', 'LD', 'AR', 'RANLIB']:
     if var in os.environ:
-        conf.CheckProg(env[var])
+        if not env[var] in checked:
+            conf.CheckProg(env[var])
     else:
         unversioned = (env[var] in ['ar', 'ranlib'])
 
@@ -241,17 +244,21 @@ for var in ['CC', 'CXX', 'LD', 'AR', 'RANLIB']:
                 env[var] = tool
                 break
 
-        conf.CheckProg(env[var])
+        if not env[var] in checked:
+            conf.CheckProg(env[var])
 
-        actual_ver = env.CompilerVersion(env[var])
-        if actual_ver:
-            actual_ver = actual_ver[:len(compiler_ver)]
+            actual_ver = env.CompilerVersion(env[var])
+            if actual_ver:
+                actual_ver = actual_ver[:len(compiler_ver)]
 
-        if actual_ver != compiler_ver:
-            env.Die("can't use `%s' (actual version is %s, requested version is %s)" % (
-                env[var],
-                actual_ver,
-                compiler_ver))
+            if actual_ver != compiler_ver:
+                env.Die(
+                    "can't use `%s' (actual version is %s, requested version is %s)" % (
+                        env[var],
+                        actual_ver,
+                        compiler_ver))
+
+    checked.add(env[var])
 
 for var in ['CFLAGS', 'CXXFLAGS', 'LDFLAGS']:
     if var in os.environ:
@@ -267,7 +274,8 @@ env = conf.Finish()
 compiler_ver = env.CompilerVersion(env['CXX'])
 
 build_dir = 'build/%s/%s' % (
-    '-'.join([s for s in [target, toolchain, compiler, '.'.join(map(str, compiler_ver))] if s]),
+    '-'.join([s for s in [
+        target, toolchain, compiler, '.'.join(map(str, compiler_ver))] if s]),
     variant)
 
 if compiler == 'clang':
@@ -335,7 +343,7 @@ if 'target_uv' in extdeps:
             'uv', 'uv.h', 'c', expr='UV_VERSION_MAJOR >= 1 && UV_VERSION_MINOR >= 4'):
             env.Die("libuv >= 1.4 not found (see `config.log' for details)")
     else:
-        if not conf.CheckLibWithHeader('uv', 'uv.h', 'c'):
+        if not conf.CheckLibWithHeaderUniq('uv', 'uv.h', 'c'):
             env.Die("libuv not found (see `config.log' for details)")
 
 if 'target_openfec' in extdeps:
@@ -353,7 +361,7 @@ if 'target_openfec' in extdeps:
                 ])
                 break
 
-    if not conf.CheckLibWithHeader('openfec', 'of_openfec_api.h', 'c'):
+    if not conf.CheckLibWithHeaderUniq('openfec', 'of_openfec_api.h', 'c'):
         env.Die("openfec not found (see `config.log' for details)")
 
     if not conf.CheckDeclaration('OF_USE_ENCODER', '#include <of_openfec_api.h>', 'c'):
@@ -370,7 +378,7 @@ if 'target_openfec' in extdeps:
 if 'target_sox' in extdeps:
     env.TryParseConfig('--cflags --libs sox')
 
-    if not conf.CheckLibWithHeader('sox', 'sox.h', 'c'):
+    if not conf.CheckLibWithHeaderUniq('sox', 'sox.h', 'c'):
         env.Die("libsox not found (see `config.log' for details)")
 
 if 'target_gengetopt' in extdeps:
@@ -390,7 +398,7 @@ test_conf = Configure(test_env, custom_tests=test_env.CustomTests)
 if 'target_cpputest' in extdeps:
     test_env.TryParseConfig('--cflags --libs cpputest')
 
-    if not test_conf.CheckLibWithHeader('CppUTest', 'CppUTest/TestHarness.h', 'cxx'):
+    if not test_conf.CheckLibWithHeaderUniq('CppUTest', 'CppUTest/TestHarness.h', 'cxx'):
         test_env.Die("CppUTest not found (see `config.log' for details)")
 
 test_env = test_conf.Finish()
@@ -491,13 +499,17 @@ if compiler == 'gcc':
         ])
 
     if compiler_ver[:2] >= (4, 9) and variant == 'debug':
-        flags = [
-            '-fsanitize=undefined',
-        ]
+        conf = Configure(env, custom_tests=env.CustomTests)
+        flags = []
+
+        if conf.CheckLib('ubsan'):
+            flags += ['-fsanitize=undefined']
 
         env.Append(CFLAGS=flags)
         env.Append(CXXFLAGS=flags)
         env.Append(LINKFLAGS=flags)
+
+        env = conf.Finish()
 
 if compiler == 'clang':
     env.Append(CXXFLAGS=[
