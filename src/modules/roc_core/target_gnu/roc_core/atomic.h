@@ -26,23 +26,30 @@ public:
 
     //! Atomic load.
     operator long() const {
-        return __atomic_load_n(&value_, __ATOMIC_SEQ_CST);
+        return __sync_add_and_fetch(&value_, 0);
     }
 
     //! Atomic store.
-    long operator=(long v) {
-        __atomic_store_n(&value_, v, __ATOMIC_SEQ_CST);
+    //! @remarks
+    //!  Only boolean values may be implemented in a cross-platform way
+    //!  using GCC legacy __sync builtins.
+    long operator=(bool v) {
+        if (v) {
+            __sync_lock_test_and_set(&value_, 1);
+        } else {
+            __sync_and_and_fetch(&value_, 0);
+        }
         return v;
     }
 
     //! Atomic increment.
     long operator++() {
-        return __atomic_add_fetch(&value_, 1, __ATOMIC_SEQ_CST);
+        return __sync_add_and_fetch(&value_, 1);
     }
 
     //! Atomic decrement.
     long operator--() {
-        return __atomic_sub_fetch(&value_, 1, __ATOMIC_SEQ_CST);
+        return __sync_sub_and_fetch(&value_, 1);
     }
 
     //! Atomic test-and-set.
@@ -50,11 +57,7 @@ public:
     //!  Atomically sets value to non-zero and returns '0' if previous value
     //!  was '0' or '1' otherwise.
     long test_and_set() {
-        long expected = 0;
-        return __atomic_compare_exchange_n(&value_, &expected, 1, false, __ATOMIC_SEQ_CST,
-                                           __ATOMIC_SEQ_CST)
-            ? 0
-            : 1;
+        return __sync_bool_compare_and_swap(&value_, 0, 1) ? 0 : 1;
     }
 
 private:
