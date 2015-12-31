@@ -314,8 +314,38 @@ TEST(fec_codec_integration, interleaver) {
     }
 }
 
-IGNORE_TEST(fec_codec_integration, decoding_when_multiple_blocks_in_queue) {
-    // TODO
+TEST(fec_codec_integration, decoding_when_multiple_blocks_in_queue) {
+    enum { N_BLKS = 3 };
+
+    BlockEncoder block_encoder;
+    BlockDecoder block_decoder;
+    rtp::Parser parser;
+
+    Encoder encoder(block_encoder, pckt_disp, composer);
+    Decoder decoder(block_decoder, pckt_disp.get_data_reader(),
+                    pckt_disp.get_fec_reader(), parser);
+
+    for (size_t block_num = 0; block_num < N_BLKS; ++block_num) {
+        fill_all_packets(N_DATA_PACKETS * block_num, N_DATA_PACKETS * N_BLKS);
+
+        for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
+            encoder.write(data_packets[i]);
+        }
+    }
+
+    CHECK(pckt_disp.get_data_size() == N_DATA_PACKETS*N_BLKS);
+    CHECK(pckt_disp.get_fec_size() == N_FEC_PACKETS*N_BLKS);
+
+    for (size_t block_num = 0; block_num < N_BLKS; ++block_num) {
+         for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
+            IPacketConstPtr p = decoder.read();
+            CHECK(p);
+            check_audio_packet(p, N_DATA_PACKETS * block_num + i,
+                               N_DATA_PACKETS * N_BLKS);
+        }
+
+        pckt_disp.reset();
+    }    
 }
 
 IGNORE_TEST(fec_codec_integration, decoding_late_packet) {
