@@ -49,6 +49,7 @@ TEST_GROUP(splitter) {
     void setup() {
         splitter.reset(new Splitter(writer, composer, NumSamples, ChMask));
         pkt_num = 0;
+        sample_num = 0;
     }
 
     void teardown() {
