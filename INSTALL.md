@@ -105,6 +105,7 @@ After building, tools and libraries are inside `bin/` directory.
 * `--disable-tools` - don't build tools
 * `--disable-tests` - don't build tests
 * `--disable-doc` - don't build documentation
+* `--disable-sanitizers` - don't use GCC/clang sanitizers
 * `--with-openfec=yes|no` - enable/disable LDPC-Staircase codec from OpenFEC for (required for FEC support)
 * `--with-sox=yes|no` - enable/disable audio I/O using SoX (required to build tools)
 * `--with-3rdparty=uv,openfec,sox,gengetopt,cpputest` or `--with-3rdparty=all` -  automatically download and build specific or all external dependencies (static linking is used in this case)

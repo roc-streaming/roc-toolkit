@@ -40,6 +40,11 @@ AddOption('--disable-doc',
           action='store_true',
           help='disable doxygen documentation generation')
 
+AddOption('--disable-sanitizers',
+          dest='disable_sanitizers',
+          action='store_true',
+          help='disable GCC/clang sanitizers')
+
 AddOption('--with-openfec',
           dest='with_openfec',
           choices=['yes', 'no'],
@@ -521,19 +526,6 @@ if compiler == 'gcc':
             '-Wabi',
         ])
 
-    if compiler_ver[:2] >= (4, 9) and variant == 'debug':
-        conf = Configure(env, custom_tests=env.CustomTests)
-        flags = []
-
-        if conf.CheckLib('ubsan'):
-            flags += ['-fsanitize=undefined']
-
-        env.Append(CFLAGS=flags)
-        env.Append(CXXFLAGS=flags)
-        env.Append(LINKFLAGS=flags)
-
-        env = conf.Finish()
-
 if compiler == 'clang':
     env.Append(CXXFLAGS=[
         '-Weverything',
@@ -561,6 +553,25 @@ if compiler == 'clang':
         ])
 
 if compiler in ['gcc', 'clang']:
+    if not GetOption('disable_sanitizers') \
+      and host == target \
+      and variant == 'debug' and (
+        (compiler == 'gcc' and compiler_ver[:2] >= (4, 9)) or
+        (compiler == 'clang' and compiler_ver[:2] >= (3, 6))):
+        conf = Configure(env, custom_tests=env.CustomTests)
+        flags = []
+
+        if conf.CheckLib('ubsan'):
+            flags += [
+                '-fsanitize=undefined',
+            ]
+
+        env.Append(CFLAGS=flags)
+        env.Append(CXXFLAGS=flags)
+        env.Append(LINKFLAGS=flags)
+
+        env = conf.Finish()
+
     env.Prepend(
         CXXFLAGS=[('-isystem', env.Dir(path).path) for path in \
                   env['CPPPATH'] + ['%s/tools' % build_dir]])
