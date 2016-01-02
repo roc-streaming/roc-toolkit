@@ -43,6 +43,8 @@ if len(sys.argv) != 1:
     print("usage: generate_headers.py")
     exit(1)
 
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
 for in_json in glob.glob("*.json"):
     in_name = re.sub("\.json$", "", in_json)
     in_blob = in_name + ".blob"
