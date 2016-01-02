@@ -32,7 +32,9 @@ public:
         : magic_(MAGIC_)
         , size_(0)
         , pool_(pool) {
-        memset(buff_, GUARD_, sizeof(buff_));
+        //
+        memset(&storage_, GUARD_, sizeof(storage_));
+        check_guards_();
     }
 
     ~DefaultBuffer() {
@@ -41,14 +43,13 @@ public:
 
     //! Get buffer data.
     virtual T* data() {
-        return (buff_ + 1);
+        return storage_.data;
     }
 
     //! Get buffer data.
     virtual const T* data() const {
         check_guards_();
-
-        return (buff_ + 1);
+        return storage_.data;
     }
 
     //! Get maximum allowed number of elements.
@@ -84,11 +85,14 @@ public:
     }
 
     //! Restore existing buffer by pointer to its data.
-    static DefaultBuffer* container_of(T* data) {
-        if (data == NULL) {
+    static DefaultBuffer* container_of(T* data_ptr) {
+        if (data_ptr == NULL) {
             roc_panic("attempting to pass null to container_of");
         }
-        DefaultBuffer* buff = ROC_CONTAINER_OF(data - 1, DefaultBuffer, buff_);
+
+        DefaultBuffer* buff = ROC_CONTAINER_OF(
+            ROC_CONTAINER_OF(data_ptr, Storage, data), DefaultBuffer, storage_);
+
         buff->check_guards_();
         return buff;
     }
@@ -102,20 +106,16 @@ private:
     static const size_t MAGIC_ = 0xdeadbeaf;
     static const uint8_t GUARD_ = 0xcc;
 
-    T* payload_() {
-        return (buff_ + 1);
-    }
-
     uint8_t* head_guard_() {
-        return ((uint8_t*)payload_()) - 1;
+        return ((uint8_t*)&storage_.data[0]) - 1;
     }
 
     uint8_t* tail_guard_() {
-        return (uint8_t*)(payload_() + MaxSz);
+        return (uint8_t*)(storage_.data + MaxSz);
     }
 
     uint8_t* size_guard_() {
-        return (uint8_t*)(payload_() + size_);
+        return (uint8_t*)(storage_.data + size_);
     }
 
     void setup_guards_() {
@@ -148,10 +148,16 @@ private:
     }
 
 private:
+    struct Storage {
+        uint64_t head_guard; // uint64_t forces maximum alignment for data
+        T data[MaxSz];
+        uint8_t tail_guard;
+    };
+
     size_t magic_;
     size_t size_;
 
-    T buff_[MaxSz + 2]; // +2 for guards
+    Storage storage_;
 
     IPool<DefaultBuffer>& pool_;
 };
