@@ -22,9 +22,6 @@
 //! Structure's fields are packed.
 #define ROC_ATTR_PACKED __attribute__((packed))
 
-//! Implements C++11 'alignas(alignof(type)'.
-#define ROC_ALIGN_AS(type) __attribute__((aligned(__alignof__(type))))
-
 //! Function gets printf-like arguments.
 #define ROC_ATTR_PRINTF(n_fmt_arg, n_var_arg)                                            \
     __attribute__((format(printf, n_fmt_arg, n_var_arg)))
