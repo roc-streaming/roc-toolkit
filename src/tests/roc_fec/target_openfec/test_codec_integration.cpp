@@ -333,11 +333,11 @@ TEST(fec_codec_integration, decoding_when_multiple_blocks_in_queue) {
         }
     }
 
-    CHECK(pckt_disp.get_data_size() == N_DATA_PACKETS*N_BLKS);
-    CHECK(pckt_disp.get_fec_size() == N_FEC_PACKETS*N_BLKS);
+    CHECK(pckt_disp.get_data_size() == N_DATA_PACKETS * N_BLKS);
+    CHECK(pckt_disp.get_fec_size() == N_FEC_PACKETS * N_BLKS);
 
     for (size_t block_num = 0; block_num < N_BLKS; ++block_num) {
-         for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
+        for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
             IPacketConstPtr p = decoder.read();
             CHECK(p);
             check_audio_packet(p, N_DATA_PACKETS * block_num + i,
@@ -345,7 +345,7 @@ TEST(fec_codec_integration, decoding_when_multiple_blocks_in_queue) {
         }
 
         pckt_disp.reset();
-    }    
+    }
 }
 
 IGNORE_TEST(fec_codec_integration, decoding_late_packet) {
