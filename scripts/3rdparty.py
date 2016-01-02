@@ -155,8 +155,10 @@ elif name == 'cpputest':
             'cpputest-%s' % ver)
     os.chdir('cpputest-%s' % ver)
     # disable memory leak detection which is too hard to use properly
-    execute('./configure --enable-static --disable-memory-leak-detection --target=%s' % (
-        toolchain), logfile)
+    # disable warnings, since CppUTest uses -Werror and may fail to build on old GCC
+    execute('CXXFLAGS="-w" '
+        './configure --enable-static --disable-memory-leak-detection --target=%s' % (
+            toolchain), logfile)
     execute('make -j', logfile)
     install('include', os.path.join(workdir, fullname, 'include'))
     install('lib/libCppUTest.a', os.path.join(workdir, fullname, 'lib'))
