@@ -494,14 +494,18 @@ if compiler == 'gcc':
         '-Wformat=2',
         '-Wformat-security',
         '-Wstrict-null-sentinel',
-        '-Wlogical-op',
-        '-Wmissing-declarations',
-        '-Woverlength-strings',
         '-Wctor-dtor-privacy',
         '-Wnon-virtual-dtor',
         '-Wno-invalid-offsetof',
         '-Wno-system-headers',
     ])
+
+    if compiler_ver[:2] >= (4, 4):
+        env.Append(CXXFLAGS=[
+            '-Wlogical-op',
+            '-Wmissing-declarations',
+            '-Woverlength-strings',
+        ])
 
     if compiler_ver[:2] >= (4, 8):
         env.Append(CXXFLAGS=[
