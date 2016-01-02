@@ -262,10 +262,11 @@ for var in ['CC', 'CXX', 'LD', 'AR', 'RANLIB']:
 
             if actual_ver != compiler_ver:
                 env.Die(
-                    "can't use `%s' (actual version is %s, requested version is %s)" % (
+                    "can't detect %s: `%s' not found in PATH, `%s' version is %s" % (
+                        var,
+                        '%s-%s' % (env[var], '.'.join(map(str, compiler_ver))),
                         env[var],
-                        actual_ver,
-                        compiler_ver))
+                        actual_ver))
 
     checked.add(env[var])
 
