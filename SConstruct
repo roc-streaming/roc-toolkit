@@ -81,16 +81,23 @@ env.AlwaysBuild(
         env.DeleteFile('#config.log'),
     ]))
 
-if 'doxygen' in COMMAND_LINE_TARGETS or (
-        not GetOption('disable_doc')
-        and not set(COMMAND_LINE_TARGETS).intersection(['tidy', 'fmt'])
-        and env.Which(env['DOXYGEN'] if 'DOXYGEN' in env.Dictionary() else 'doxygen')
-    ):
-        env.AlwaysBuild(
-            env.Alias('doxygen', env.Doxygen(
-                    'doc/doxygen',
-                    ['Doxyfile'] + env.RecursiveGlob('#src', ['*.h']),
-                    werror=GetOption('enable_werror'))))
+if not 'DOXYGEN' in env.Dictionary():
+    env['DOXYGEN'] = 'doxygen'
+
+if 'doxygen' in COMMAND_LINE_TARGETS:
+    enable_doxygen = True
+else:
+    enable_doxygen = not GetOption('disable_doc') \
+      and not set(COMMAND_LINE_TARGETS).intersection(['tidy', 'fmt']) \
+      and env.Which(env['DOXYGEN']) \
+      and env.CompilerVersion(env['DOXYGEN'])[:2] >= (1, 6)
+
+if enable_doxygen:
+    env.AlwaysBuild(
+        env.Alias('doxygen', env.Doxygen(
+                'doc/doxygen',
+                ['Doxyfile'] + env.RecursiveGlob('#src', ['*.h']),
+                werror=GetOption('enable_werror'))))
 
 fmt = []
 

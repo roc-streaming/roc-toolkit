@@ -73,7 +73,7 @@ Dependencies
 * scons
 * pkg-config (optional, if you want installed dependencies to be auto-detected)
 * gengetopt (optional, if you want to build tools)
-* doxygen, graphviz (optional, if you want to build documentation)
+* doxygen >= 1.6, graphviz (optional, if you want to build documentation)
 * clang-tidy (optional, if you want to run static analyzer)
 * clang-format >= 3.6 (optional, if you want to format code)
 * libtool, autoconf, automake, make, cmake (optional, if you want to download and build external dependencies automatically)
