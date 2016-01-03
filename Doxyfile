@@ -34,6 +34,7 @@ HTML_OUTPUT             = doc/doxygen
 HTML_DYNAMIC_SECTIONS   = NO
 SEARCHENGINE            = NO
 GENERATE_LATEX          = NO
+DOT_GRAPH_MAX_NODES     = 1000
 
 OUTPUT_LANGUAGE         = English
 DOXYFILE_ENCODING       = UTF-8
