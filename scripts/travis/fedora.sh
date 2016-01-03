@@ -1,9 +1,11 @@
 #! /bin/bash
-set -x
+run() {
+    echo "# $*" && "$@" || exit 1
+}
 
-dnf install -y gcc-c++ pkgconfig scons gengetopt doxygen graphviz libuv-devel sox-devel
-dnf install -y make cmake
+run dnf install -y gcc-c++ pkgconfig scons gengetopt doxygen graphviz libuv-devel sox-devel
+run dnf install -y make cmake
 
-scons clean
-scons --enable-werror --with-3rdparty=openfec,cpputest variant=debug test
-scons --enable-werror --with-3rdparty=openfec,cpputest variant=release test
+run scons clean
+run scons --enable-werror --with-3rdparty=openfec,cpputest variant=debug test
+run scons --enable-werror --with-3rdparty=openfec,cpputest variant=release test
