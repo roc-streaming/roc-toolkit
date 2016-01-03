@@ -15,6 +15,8 @@ Status
 
 [![travis](https://travis-ci.org/roc-project/roc.svg?branch=develop)](https://travis-ci.org/roc-project/roc)
 
+See [HACKING](HACKING.md#ci) for details on CI builds.
+
 Roadmap for upcoming 0.1 release
 --------------------------------
 

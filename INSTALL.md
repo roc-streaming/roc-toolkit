@@ -1,7 +1,7 @@
 Howto
 -----
 
-See [`scripts/travis`](scripts/travis) directory for actual build instructions examples on various distros.
+See [HACKING](HACKING.md#ci) for details on continuous integration builds. [Dockerfiles](https://github.com/roc-project/docker-ci) and [travis scripts](scripts/travis) may be used as an example of build commands for various distros.
 
 **Ubuntu 14.04 and later, Debian Jessie**
 

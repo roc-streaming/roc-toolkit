@@ -109,3 +109,25 @@ Branching
     Create pull requests for `develop` branch, not for `master` branch, which is the default.
 
     If your changes are far from complete but it's make sense to share them and keep in the main repository, create pull request for a feature branch instead. If there is no feature branch fitting your needs, feel free to create an issue and ask to create a new branch.
+
+CI
+--
+
+* **Linux**
+
+    Travis is configured to build `master` and `develop` branches and pull requests to them. Builds are runned on several Linux distros using Docker. Docker images are prepared using Docker Hub [automated builds](https://docs.docker.com/docker-hub/builds/).
+
+    Links:
+     * [Roc on Docker Hub](https://hub.docker.com/u/rocproject/)
+     * [Roc on Travis](https://travis-ci.org/roc-project)
+     * [Our Dockerfiles on GitHub](https://github.com/roc-project/docker-ci)
+     * [Travis configuration](.travis.yml)
+     * [Travis scripts](scripts/travis)
+
+    You can also run CI builds locally, e.g.:
+
+    ```
+    $ docker pull rocproject/ci-fedora
+    $ docker run -ti --rm -v "${PWD}:${PWD}" -w "${PWD}" rocproject/ci-fedora \
+        scons --with-3rdparty=openfec,cpputest variant=debug test
+    ```
