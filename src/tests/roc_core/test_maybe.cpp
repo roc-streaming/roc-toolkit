@@ -27,7 +27,6 @@ struct Object {
     volatile size_t value;
 
     Object() {
-        CHECK(value != TEST_INITIALIZED);
         value = TEST_INITIALIZED;
     }
 
