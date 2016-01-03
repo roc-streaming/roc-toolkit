@@ -115,7 +115,7 @@ CI
 
 * **Linux**
 
-    Travis is configured to build `master` and `develop` branches and pull requests to them. Builds are runned on several Linux distros using Docker. Docker images are prepared using Docker Hub [automated builds](https://docs.docker.com/docker-hub/builds/).
+    Travis is configured to build `master` and `develop` branches and pull requests to them. Builds are runned on several Linux distros and compilers using Docker. Docker images are prepared using Docker Hub [automated builds](https://docs.docker.com/docker-hub/builds/).
 
     Links:
      * [Roc on Docker Hub](https://hub.docker.com/u/rocproject/)
@@ -128,6 +128,8 @@ CI
 
     ```
     $ docker pull rocproject/ci-fedora
-    $ docker run -ti --rm -v "${PWD}:${PWD}" -w "${PWD}" rocproject/ci-fedora \
+    $ docker run -ti --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" rocproject/ci-fedora \
         scons --with-3rdparty=openfec,cpputest variant=debug test
     ```
+
+    Docker images contain uptodate distros with preinstalled dependencies. They are triggered for rebuilt automatically when `Dockerfile` on GitHub changes or mainline docker image is updated. E.g., `ci-fedora` is updated when official `fedora` docker image is updated.
