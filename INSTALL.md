@@ -1,7 +1,7 @@
 Howto
 -----
 
-See [HACKING](HACKING.md#ci) for details on continuous integration builds. [Dockerfiles](https://github.com/roc-project/docker-ci) and [travis scripts](scripts/travis) may be used as an example of build commands for various distros.
+[Dockerfiles](https://github.com/roc-project/docker-ci) and [travis scripts](scripts/travis) used for [CI builds](HACKING.md#ci) may be used as example of build commands for several Linux distros.
 
 **Ubuntu 14.04 and later, Debian Jessie**
 
@@ -35,6 +35,34 @@ See [HACKING](HACKING.md#ci) for details on continuous integration builds. [Dock
 
     # build and test
     $ scons --with-3rdparty=openfec,cpputest test
+
+**Centos 7 and later**
+
+    # for developer packages
+    $ yum install epel-release
+
+    # for Roc
+    $ yum install gcc-c++ pkgconfig scons gengetopt doxygen graphviz sox-devel
+
+    # for 3rd-parties
+    $ yum install libtool autoconf automake make cmake
+
+    # build and test
+    $ scons --with-3rdparty=uv,openfec,cpputest test
+
+**Centos 5**
+
+    # for developer packages
+    $ yum install epel-release
+
+    # for Roc
+    $ yum install gcc-c++ pkgconfig scons python26
+
+    # for 3rd-parties
+    $ yum install libtool autoconf automake make cmake
+
+    # build and test
+    $ python26 /usr/bin/scons --with-3rdparty=uv,openfec,sox,gengetopt,cpputest test
 
 Dependencies
 ------------
