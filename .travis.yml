@@ -16,6 +16,7 @@ before_install:
     - docker pull rocproject/ci-debian
     - docker pull rocproject/ci-ubuntu:14.04
     - docker pull rocproject/ci-ubuntu:16.04
+    - docker pull rocproject/ci-ubuntu:nodep
     - docker pull rocproject/ci-centos:5
     - docker pull rocproject/ci-centos:7
 
@@ -24,6 +25,7 @@ script:
     - scripts/travis/docker.sh rocproject/ci-debian scripts/travis/debian.sh
     - scripts/travis/docker.sh rocproject/ci-ubuntu:14.04 scripts/travis/ubuntu-14.04.sh
     - scripts/travis/docker.sh rocproject/ci-ubuntu:16.04 scripts/travis/ubuntu-16.04.sh
+    - scripts/travis/docker.sh rocproject/ci-ubuntu:nodep scripts/travis/ubuntu-nodep.sh
     - scripts/travis/docker.sh rocproject/ci-centos:5 scripts/travis/centos-5.sh
     - scripts/travis/docker.sh rocproject/ci-centos:7 scripts/travis/centos-7.sh
     - cat build.status
