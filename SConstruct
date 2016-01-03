@@ -526,6 +526,11 @@ if compiler == 'gcc':
             '-Wabi',
         ])
 
+    if compiler_ver[:2] < (4, 6):
+        env.Append(CXXFLAGS=[
+            '-fno-strict-aliasing',
+        ])
+
 if compiler == 'clang':
     env.Append(CXXFLAGS=[
         '-Weverything',
