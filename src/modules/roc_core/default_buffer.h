@@ -107,7 +107,7 @@ private:
     static const uint8_t GUARD_ = 0xcc;
 
     uint8_t* head_guard_() {
-        return ((uint8_t*)&storage_.data[0]) - 1;
+        return ((uint8_t*)&storage_.head_guard) + offsetof(Storage, data) - 1;
     }
 
     uint8_t* tail_guard_() {
