@@ -1,7 +1,9 @@
 Howto
 -----
 
-**Ubuntu 14.04 and Debian Jessie**
+See [`scripts/travis`](scripts/travis) directory for actual build instructions examples on various distros.
+
+**Ubuntu 14.04 and later, Debian Jessie**
 
     # for Roc
     $ apt-get install g++ pkg-config scons gengetopt doxygen graphviz libsox-dev
@@ -33,36 +35,6 @@ Howto
 
     # build and test
     $ scons --with-3rdparty=openfec,cpputest test
-
-This should also work for other uptodate RPM-based distros. For OpenSUSE, change `dnf` to `zypper`.
-
-**Centos 7 and later**
-
-    # for developer packages
-    $ yum install epel-release
-
-    # for Roc
-    $ yum install gcc-c++ pkgconfig scons gengetopt doxygen graphviz sox-devel
-
-    # for 3rd-parties
-    $ yum install libtool autoconf automake make cmake
-
-    # build and test
-    $ scons --with-3rdparty=uv,openfec,cpputest test
-
-**Centos 5**
-
-    # for developer packages
-    $ yum install epel-release
-
-    # for Roc
-    $ yum install gcc-c++ pkgconfig scons python26
-
-    # for 3rd-parties
-    $ yum install libtool autoconf automake make cmake
-
-    # build and test
-    $ python26 /usr/bin/scons --with-3rdparty=uv,openfec,sox,gengetopt,cpputest test
 
 Dependencies
 ------------

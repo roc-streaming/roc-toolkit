@@ -10,6 +10,11 @@ Goals:
 * portability;
 * relying on open, standard protocols.
 
+Status
+------
+
+[![travis](https://travis-ci.org/roc-project/roc.svg?branch=develop)](https://travis-ci.org/roc-project/roc)
+
 Roadmap for upcoming 0.1 release
 --------------------------------
 

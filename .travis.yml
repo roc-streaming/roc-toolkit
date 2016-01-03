@@ -1,0 +1,19 @@
+language: c++
+
+branches:
+  only:
+    - master
+    - develop
+
+sudo: required
+dist: trusty
+
+services:
+  - docker
+
+before_install:
+    - docker pull fedora:latest
+
+script: >
+    docker run --rm -ti -v "${TRAVIS_BUILD_DIR}":/tmp/roc -w /tmp/roc \
+        fedora:latest scripts/travis/fedora.sh
