@@ -168,13 +168,13 @@ TEST(client_server, ldpc_interleaving) {
     flow_client_server();
 }
 
-TEST(client_server, ldpc_random_loss) {
+IGNORE_TEST(client_server, ldpc_random_loss) {
     init_client(EnableLDPC, RandomLoss);
     init_server(EnableLDPC);
     flow_client_server();
 }
 
-TEST(client_server, ldpc_interleaving_random_loss) {
+IGNORE_TEST(client_server, ldpc_interleaving_random_loss) {
     init_client(EnableLDPC | EnableInterleaving, RandomLoss);
     init_server(EnableLDPC);
     flow_client_server();
