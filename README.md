@@ -13,9 +13,14 @@ Goals:
 Status
 ------
 
-[![travis](https://travis-ci.org/roc-project/roc.svg?branch=develop)](https://travis-ci.org/roc-project/roc)
+Docker images used in Travis are availale on [Docker Hub](https://hub.docker.com/u/rocproject/). See [HACKING](HACKING.md#ci) for details.
 
-See [HACKING](HACKING.md#ci) for details on CI builds.
+[![](https://img.shields.io/github/release/roc-project/roc.svg)](https://github.com/roc-project/roc/releases/latest)
+
+Branch    | Linux
+--------- | -----
+`master`  | [![](https://travis-ci.org/roc-project/roc.svg?branch=master)](https://travis-ci.org/roc-project/roc)
+`develop` | [![](https://travis-ci.org/roc-project/roc.svg?branch=develop)](https://travis-ci.org/roc-project/roc)
 
 Roadmap for upcoming 0.1 release
 --------------------------------

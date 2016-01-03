@@ -74,7 +74,7 @@ Please try to follow conventions bellow when contributing.
 * **Error handling**
 
     Use `roc_panic()` to die gracefully when component's contract is broken. Use `roc_log()` to make debugging your code easier for others.
-    
+
     We don't use exceptions and avoid returning error codes. Use `roc_panic()` and `roc_log()` and prefrer boolean or null return values.
 
 * **Code style**
@@ -120,9 +120,9 @@ CI
     Links:
      * [Roc on Docker Hub](https://hub.docker.com/u/rocproject/)
      * [Roc on Travis](https://travis-ci.org/roc-project)
-     * [Our Dockerfiles on GitHub](https://github.com/roc-project/docker-ci)
-     * [Travis configuration](.travis.yml)
-     * [Travis scripts](scripts/travis)
+     * [Our dockerfiles on GitHub](https://github.com/roc-project/docker-ci)
+     * [Our travis configuration](.travis.yml)
+     * [Our travis scripts](scripts/travis)
 
     You can also run CI builds locally, e.g.:
 
@@ -133,3 +133,15 @@ CI
     ```
 
     Docker images contain uptodate distros with preinstalled dependencies. They are triggered for rebuilt automatically when `Dockerfile` on GitHub changes or mainline docker image is updated. E.g., `ci-fedora` is updated when official `fedora` docker image is updated.
+
+    Configured builds:
+
+    Image           | Platforms   | Compilers
+    --------------- | ----------- | ---------
+    `fedora:latest` | x86_64      | *default*
+    `debian:stable` | x86_64      | *default*
+    `ubuntu:14.04`  | x86_64      | gcc-4.4, gcc-4.6
+    `ubuntu:16.06`  | x86_64      | gcc-4.8, gcc-4.9, gcc-5.x, clang-3.4, clang-3.6, clang-3.7
+    `ubuntu:nodep`  | x86_64      | *default*
+    `centos:5`      | x86_64      | gcc-4.1
+    `centos:7`      | x86_64      | *default*
