@@ -193,7 +193,7 @@ if '-' in compiler:
 else:
     compiler_ver = env.CompilerVersion(compiler)
 
-if not compiler_ver or len(compiler_ver) < 2:
+if not compiler_ver:
     env.Die("can't detect compiler version")
 
 if not compiler in supported_compilers:
