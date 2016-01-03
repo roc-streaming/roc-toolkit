@@ -563,19 +563,25 @@ if compiler in ['gcc', 'clang']:
       and variant == 'debug' and (
         (compiler == 'gcc' and compiler_ver[:2] >= (4, 9)) or
         (compiler == 'clang' and compiler_ver[:2] >= (3, 6))):
-        conf = Configure(env, custom_tests=env.CustomTests)
-        flags = []
 
-        if conf.CheckLib('ubsan'):
-            flags += [
-                '-fsanitize=undefined',
-            ]
+        san_env = env.Clone()
+        san_conf = Configure(san_env, custom_tests=env.CustomTests)
 
-        env.Append(CFLAGS=flags)
-        env.Append(CXXFLAGS=flags)
-        env.Append(LINKFLAGS=flags)
+        flags = [
+            '-fsanitize=undefined',
+        ]
 
-        env = conf.Finish()
+        san_env.Append(CFLAGS=flags)
+        san_env.Append(CXXFLAGS=flags)
+        san_env.Append(LINKFLAGS=flags)
+
+        if san_conf.CheckLib('ubsan'):
+            env.Append(LIBS=['ubsan'])
+            env.Append(CFLAGS=flags)
+            env.Append(CXXFLAGS=flags)
+            env.Append(LINKFLAGS=flags)
+
+        san_conf.Finish()
 
     env.Prepend(
         CXXFLAGS=[('-isystem', env.Dir(path).path) for path in \
