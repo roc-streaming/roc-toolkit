@@ -26,3 +26,4 @@ script:
     - scripts/travis/docker.sh rocproject/ci-ubuntu:16.04 scripts/travis/ubuntu-16.04.sh
     - scripts/travis/docker.sh rocproject/ci-centos:5 scripts/travis/centos-5.sh
     - scripts/travis/docker.sh rocproject/ci-centos:7 scripts/travis/centos-7.sh
+    - cat build.status
