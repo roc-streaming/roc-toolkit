@@ -13,7 +13,12 @@ services:
 
 before_install:
     - docker pull fedora:latest
+    - docker pull debian:stable
 
-script: >
-    docker run --rm -ti -v "${TRAVIS_BUILD_DIR}":/tmp/roc -w /tmp/roc \
-        fedora:latest scripts/travis/fedora.sh
+script:
+    - >
+        docker run --rm -ti -v "${TRAVIS_BUILD_DIR}":/tmp/roc -w /tmp/roc \
+            fedora:latest scripts/travis/fedora.sh
+    - >
+        docker run --rm -ti -v "${TRAVIS_BUILD_DIR}":/tmp/roc -w /tmp/roc \
+            debian:stable scripts/travis/debian.sh
