@@ -10,7 +10,6 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-#include "roc_core/time.h"
 #include "roc_core/log.h"
 
 namespace roc {
@@ -20,8 +19,6 @@ namespace {
 
 LogLevel g_log_level = LOG_ERROR;
 LogHandler g_log_handler = NULL;
-
-static uint64_t start_ts = timestamp_ms();
 
 } // namespace
 
