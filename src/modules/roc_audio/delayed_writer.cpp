@@ -1,0 +1,45 @@
+/*
+ * Copyright (c) 2015 Victor Gaydov
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+
+#include "roc_core/log.h"
+#include "roc_audio/delayed_writer.h"
+
+namespace roc {
+namespace audio {
+
+DelayedWriter::DelayedWriter(ISampleBufferWriter& output,
+                             packet::channel_mask_t channels,
+                             size_t latency)
+    : output_(output)
+    , latency_(latency * packet::num_channels(channels))
+    , pending_(0)
+    , flushed_(false) {
+}
+
+void DelayedWriter::write(const ISampleBufferConstSlice& buffer) {
+    if (flushed_) {
+        output_.write(buffer);
+    } else {
+        queue_.append(buffer);
+        pending_ += buffer.size();
+
+        if (pending_ >= latency_ || !buffer) {
+            roc_log(LOG_TRACE, "delayed writer: starting output: latency=%lu pending=%lu",
+                    (unsigned long)latency_, (unsigned long)pending_);
+
+            for (size_t n = 0; n < queue_.size(); n++) {
+                output_.write(queue_[n]);
+            }
+
+            flushed_ = true;
+        }
+    }
+}
+
+} // namespace audio
+} // namespace roc
