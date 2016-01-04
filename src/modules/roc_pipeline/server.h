@@ -27,6 +27,7 @@
 #include "roc_audio/isink.h"
 #include "roc_audio/channel_muxer.h"
 #include "roc_audio/timed_writer.h"
+#include "roc_audio/delayed_writer.h"
 
 #include "roc_pipeline/session_manager.h"
 #include "roc_pipeline/config.h"
@@ -117,22 +118,17 @@ public:
 private:
     virtual void run();
 
-    void loop_();
-    void eof_();
-
-    bool zero_tick_();
-
     const ServerConfig config_;
     const size_t n_channels_;
 
     core::Atomic stop_;
 
-    datagram::IDatagramReader& datagram_reader_;
-    audio::ISampleBufferWriter& audio_writer_;
-    audio::ISampleBufferWriter* output_writer_;
-
     audio::ChannelMuxer channel_muxer_;
     core::Maybe<audio::TimedWriter> timed_writer_;
+    audio::DelayedWriter delayed_writer_;
+
+    datagram::IDatagramReader& datagram_reader_;
+    audio::ISampleBufferWriter* audio_writer_;
 
     SessionManager session_manager_;
 };

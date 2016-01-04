@@ -92,6 +92,7 @@ TEST_GROUP(client_server) {
         config.channels = ChannelMask;
         config.session_timeout = MaxBuffers * BufSamples;
         config.session_latency = BufSamples;
+        config.output_latency = 0;
         config.samples_per_tick = BufSamples;
 
         server.reset(new Server(network, output, config));

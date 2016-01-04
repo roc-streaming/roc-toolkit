@@ -65,6 +65,7 @@ TEST_GROUP(server) {
         config.channels = ChannelMask;
         config.session_timeout = TimeoutTicks * TickSamples;
         config.session_latency = LatencySamples;
+        config.output_latency = 0;
         config.samples_per_tick = TickSamples;
 
         server.reset(new Server(input, output, config));
