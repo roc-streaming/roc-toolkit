@@ -33,11 +33,21 @@
     (ROC_CONFIG_MAX_SESSIONS * ROC_CONFIG_MAX_SESSION_QUEUES                             \
      * ROC_CONFIG_MAX_SESSION_PACKETS)
 
-//! Number of rendering ticks to wait before terminating session without packets.
-#define ROC_CONFIG_DEFAULT_SESSION_TIMEOUT 100
+//! Maximum number of sample buffers.
+#define ROC_CONFIG_MAX_SAMPLE_BUFFERS 100
 
 //! Maximum number of audio channels.
 #define ROC_CONFIG_MAX_CHANNELS 2
+
+//! Maximum allowed delta between two consecutive packets' seqnums.
+#define ROC_CONFIG_MAX_SN_JUMP 100
+
+//! Maximum allowed delta between two consecutive packets' timestamps.
+#define ROC_CONFIG_MAX_TS_JUMP                                                           \
+    (ROC_CONFIG_MAX_SN_JUMP * ROC_CONFIG_DEFAULT_PACKET_SAMPLES)
+
+//! Number of rendering ticks to wait before terminating session without packets.
+#define ROC_CONFIG_DEFAULT_SESSION_TIMEOUT 100
 
 //! Bitmask of enabled audio channels.
 #define ROC_CONFIG_DEFAULT_CHANNEL_MASK 0x3
@@ -49,7 +59,7 @@
 #define ROC_CONFIG_DEFAULT_PACKET_SAMPLES 320
 
 //! Number of audio samples per rendering tick (per channel).
-#define ROC_CONFIG_DEFAULT_TICK_SAMPLES 256
+#define ROC_CONFIG_DEFAULT_SERVER_TICK_SAMPLES 256
 
 //! Number of audio sampler per resampler frame.
 //! @remarks
@@ -60,9 +70,6 @@
 
 //! Start delay for audio renderer (samples per channel).
 #define ROC_CONFIG_DEFAULT_RENDERER_LATENCY (ROC_CONFIG_DEFAULT_PACKET_SAMPLES * 27)
-
-//! Maximum delay for audio output (sample buffers per channel).
-#define ROC_CONFIG_MAX_PLAYER_LATENCY 100
 
 //! Start delay for audio output (sample buffers per channel).
 #define ROC_CONFIG_DEFAULT_PLAYER_LATENCY 20
@@ -75,12 +82,5 @@
 
 //! Number of FEC packets in block.
 #define ROC_CONFIG_DEFAULT_FEC_BLOCK_REDUNDANT_PACKETS 10
-
-//! Maximum allowed delta between two consecutive packets' seqnums.
-#define ROC_CONFIG_MAX_SN_JUMP 100
-
-//! Maximum allowed delta between two consecutive packets' timestamps.
-#define ROC_CONFIG_MAX_TS_JUMP                                                           \
-    (ROC_CONFIG_MAX_SN_JUMP * ROC_CONFIG_DEFAULT_PACKET_SAMPLES)
 
 #endif // ROC_CONFIG_CONFIG_H_

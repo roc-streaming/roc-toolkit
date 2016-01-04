@@ -43,8 +43,9 @@ typedef SampleBufferTraits::Composer ISampleBufferComposer;
 
 //! Default composer for sample buffers.
 static inline ISampleBufferComposer& default_buffer_composer() {
-    return SampleBufferTraits:: //
-        default_composer<ROC_CONFIG_MAX_CHANNELS * ROC_CONFIG_DEFAULT_TICK_SAMPLES>();
+    return SampleBufferTraits::
+        default_composer<ROC_CONFIG_MAX_CHANNELS
+                         * ROC_CONFIG_DEFAULT_SERVER_TICK_SAMPLES>();
 }
 
 } // namespace audio

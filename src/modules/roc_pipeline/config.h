@@ -52,7 +52,7 @@ struct ServerConfig {
         : options(opts)
         , channels(ROC_CONFIG_DEFAULT_CHANNEL_MASK)
         , sample_rate(ROC_CONFIG_DEFAULT_SAMPLE_RATE)
-        , samples_per_tick(ROC_CONFIG_DEFAULT_TICK_SAMPLES)
+        , samples_per_tick(ROC_CONFIG_DEFAULT_SERVER_TICK_SAMPLES)
         , latency(ROC_CONFIG_DEFAULT_RENDERER_LATENCY)
         , timeout(ROC_CONFIG_DEFAULT_SESSION_TIMEOUT)
         , max_sessions(ROC_CONFIG_MAX_SESSIONS)

@@ -55,7 +55,7 @@ public:
     size_t size() const;
 
 private:
-    enum { MaxBuffers = ROC_CONFIG_MAX_PLAYER_LATENCY };
+    enum { MaxBuffers = ROC_CONFIG_MAX_SAMPLE_BUFFERS };
 
     const size_t max_size_;
     size_t countdown_;
