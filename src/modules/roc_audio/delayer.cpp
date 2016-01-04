@@ -36,7 +36,7 @@ packet::IPacketConstPtr Delayer::read() {
 
     if (delay_ != 0) {
         const packet::timestamp_t qs = queue_size_();
-        if (qs < delay_) {
+        if (qs <= delay_) {
             return NULL;
         }
 

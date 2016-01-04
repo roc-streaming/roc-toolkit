@@ -55,7 +55,7 @@ TEST(delayer, no_delay) {
 
 TEST(delayer, delay1) {
     PacketQueue queue;
-    Delayer delayer(queue, NumSamples * NumPackets);
+    Delayer delayer(queue, NumSamples * (NumPackets - 1));
 
     IAudioPacketPtr packets[NumPackets];
 
@@ -82,7 +82,7 @@ TEST(delayer, delay1) {
 
 TEST(delayer, delay2) {
     PacketQueue queue;
-    Delayer delayer(queue, NumSamples * NumPackets);
+    Delayer delayer(queue, NumSamples * (NumPackets - 1));
 
     IAudioPacketPtr packets[NumPackets];
 
@@ -100,7 +100,7 @@ TEST(delayer, delay2) {
 
 TEST(delayer, late_duplicates) {
     PacketQueue queue;
-    Delayer delayer(queue, NumSamples * NumPackets);
+    Delayer delayer(queue, NumSamples * (NumPackets - 1));
 
     IAudioPacketPtr packets[NumPackets];
 
