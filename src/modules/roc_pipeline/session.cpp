@@ -90,9 +90,9 @@ void Session::make_pipeline_() {
     roc_panic_if(!packet_reader);
 
     if (config_.options & EnableResampling) {
-        packet_reader = new (scaler_)
-            audio::Scaler(*packet_reader, *audio_packet_queue_,
-                          (packet::timestamp_t)config_.session_latency);
+        packet_reader =
+            new (scaler_) audio::Scaler(*packet_reader, *audio_packet_queue_,
+                                        (packet::timestamp_t)config_.session_latency);
 
         tuners_.append(*scaler_);
     }
@@ -139,9 +139,8 @@ packet::IPacketReader* Session::make_packet_reader_() {
     packet_reader = new (delayer_)
         audio::Delayer(*packet_reader, (packet::timestamp_t)config_.session_latency);
 
-    packet_reader = new (watchdog_)
-        audio::Watchdog(*packet_reader,
-                        config_.session_timeout / config_.samples_per_tick);
+    packet_reader = new (watchdog_) audio::Watchdog(
+        *packet_reader, config_.session_timeout / config_.samples_per_tick);
 
     tuners_.append(*watchdog_);
 

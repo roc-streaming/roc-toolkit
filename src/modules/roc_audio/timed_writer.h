@@ -23,8 +23,8 @@ namespace roc {
 namespace audio {
 
 //! Timed writer.
-//!
-//! Constrains writing speed to specified sample rate.
+//! @remarks
+//!  Constrains writing speed to specified sample rate.
 class TimedWriter : public ISampleBufferWriter, public core::NonCopyable<> {
 public:
     //! Initialize.
