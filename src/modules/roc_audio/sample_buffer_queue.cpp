@@ -14,17 +14,11 @@
 namespace roc {
 namespace audio {
 
-SampleBufferQueue::SampleBufferQueue(size_t max_size, bool wait_full)
-    : max_size_(max_size ? max_size : (size_t)MaxBuffers)
-    , countdown_(wait_full ? max_size_ : 0)
-    , rd_sem_(0)
-    , wr_sem_(max_size_) {
-    roc_log(LOG_TRACE, "sample buffer queue: max_size=%u countdown=%u",
-            (unsigned)max_size_, (unsigned)countdown_);
-
-    if (max_size_ > MaxBuffers) {
-        roc_panic("sample buffer queue: max_size should be <= %u", (unsigned)MaxBuffers);
-    }
+SampleBufferQueue::SampleBufferQueue()
+    : rd_sem_(0)
+    , wr_sem_(MaxBuffers) {
+    roc_log(LOG_TRACE, "sample buffer queue: max_size=%u",
+            (unsigned)MaxBuffers);
 }
 
 ISampleBufferConstSlice SampleBufferQueue::read() {
@@ -46,27 +40,13 @@ ISampleBufferConstSlice SampleBufferQueue::read() {
 void SampleBufferQueue::write(const ISampleBufferConstSlice& buffer) {
     wr_sem_.pend();
 
-    size_t post = 0;
-
     {
         core::SpinMutex::Lock lock(mutex_);
 
         cb_.push(buffer);
-
-        if (countdown_ != 0) {
-            countdown_--;
-
-            if (countdown_ == 0) {
-                post = max_size_;
-            }
-        } else {
-            post = 1;
-        }
     }
 
-    for (; post > 0; post--) {
-        rd_sem_.post();
-    }
+    rd_sem_.post();
 }
 
 size_t SampleBufferQueue::size() const {
