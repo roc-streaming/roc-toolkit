@@ -21,6 +21,19 @@
 
 using namespace roc;
 
+namespace {
+
+bool check_ge(const char* option, int value, int min_value) {
+    if (value < min_value) {
+        roc_log(LOG_ERROR,
+                "invalid `--%s=%d': should be >= %d", option, value, min_value);
+        return false;
+    }
+    return true;
+}
+
+} // namespace
+
 int main(int argc, char** argv) {
     gengetopt_args_info args;
 
@@ -58,18 +71,32 @@ int main(int argc, char** argv) {
     if (args.beep_flag) {
         config.options |= pipeline::EnableBeep;
     }
-    if (args.latency_given) {
-        if (args.latency_arg < 0) {
-            roc_log(LOG_ERROR, "invalid `--latency %d': should be >= 0",
-                    args.latency_arg);
+    if (args.session_timeout_given) {
+        if (!check_ge("session-timeout", args.session_timeout_arg, 0)) {
             return 1;
         }
-        config.session_latency = (packet::timestamp_t)args.latency_arg;
+        config.session_timeout = (size_t)args.session_timeout_arg;
+    }
+    if (args.session_latency_given) {
+        if (!check_ge("session-latency", args.session_latency_arg, 0)) {
+            return 1;
+        }
+        config.session_latency = (size_t)args.session_latency_arg;
+    }
+    if (args.output_latency_given) {
+        if (!check_ge("output-latency", args.output_latency_arg, 0)) {
+            return 1;
+        }
+        config.output_latency = (size_t)args.output_latency_arg;
+    }
+    if (args.output_frame_given) {
+        if (!check_ge("output-frame", args.output_frame_arg, 0)) {
+            return 1;
+        }
+        config.samples_per_tick = (size_t)args.output_frame_arg;
     }
     if (args.resampler_frame_given) {
-        if (args.resampler_frame_arg < 0) {
-            roc_log(LOG_ERROR, "invalid `--resampler-frame %d': should be >= 0",
-                    args.resampler_frame_arg);
+        if (!check_ge("resampler-frame", args.resampler_frame_arg, 0)) {
             return 1;
         }
         config.samples_per_resampler_frame = (size_t)args.resampler_frame_arg;

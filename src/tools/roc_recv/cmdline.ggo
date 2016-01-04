@@ -20,13 +20,22 @@ section "Options"
     option "timing" - "Enabled/disable pipeline timing"
         values="yes","no" default="yes" enum optional
 
-    option "latency" l "Playback latency as number of samples"
-        int optional
-
     option "oneshot" 1 "Exit when last connected client disconnects"
         flag off
 
     option "beep" - "Enable beep on packet loss" flag off
+
+    option "session-timeout" - "Session timeout as number of samples"
+        int optional
+
+    option "session-latency" - "Session latency as number of samples"
+        int optional
+
+    option "output-latency" - "Output latency as number of samples"
+        int optional
+
+    option "output-frame" - "Number of samples per output frame"
+        int optional
 
     option "resampler-frame" - "Number of samples per resampler frame"
         int optional
