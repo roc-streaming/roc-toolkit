@@ -66,6 +66,14 @@ int main(int argc, char** argv) {
         }
         config.latency = (packet::timestamp_t)args.latency_arg;
     }
+    if (args.resampler_frame_given) {
+        if (args.resampler_frame_arg < 0) {
+            roc_log(LOG_ERROR, "invalid `--resampler-frame %d': should be >= 0",
+                    args.resampler_frame_arg);
+            return 1;
+        }
+        config.samples_per_resampler_frame = (size_t)args.resampler_frame_arg;
+    }
 
     datagram::DatagramQueue dgm_queue;
     audio::SampleBufferQueue sample_queue;
