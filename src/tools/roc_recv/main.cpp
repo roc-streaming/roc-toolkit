@@ -58,6 +58,14 @@ int main(int argc, char** argv) {
     if (args.beep_flag) {
         config.options |= pipeline::EnableBeep;
     }
+    if (args.latency_given) {
+        if (args.latency_arg < 0) {
+            roc_log(LOG_ERROR, "invalid `--latency %d': should be >= 0",
+                    args.latency_arg);
+            return 1;
+        }
+        config.latency = (packet::timestamp_t)args.latency_arg;
+    }
 
     datagram::DatagramQueue dgm_queue;
     audio::SampleBufferQueue sample_queue;

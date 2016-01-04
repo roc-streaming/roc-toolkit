@@ -20,6 +20,9 @@ section "Options"
     option "timing" - "Enabled/disable pipeline timing"
         values="yes","no" default="yes" enum optional
 
+    option "latency" l "Playback latency as number of samples"
+        int optional
+
     option "oneshot" 1 "Exit when last connected client disconnects"
         flag off
 
