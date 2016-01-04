@@ -120,7 +120,8 @@ Session::make_stream_reader_(audio::IAudioPacketReader* audio_packet_reader,
         roc_panic_if_not(scaler_);
 
         stream_reader = new (resamplers_[ch])
-            audio::Resampler(*stream_reader, *config_.sample_buffer_composer);
+            audio::Resampler(*stream_reader, *config_.sample_buffer_composer,
+                             config_.samples_per_resampler_frame);
 
         scaler_->add_resampler(*resamplers_[ch]);
     }

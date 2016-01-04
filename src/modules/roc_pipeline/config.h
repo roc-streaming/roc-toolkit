@@ -53,6 +53,7 @@ struct ServerConfig {
         , channels(ROC_CONFIG_DEFAULT_CHANNEL_MASK)
         , sample_rate(ROC_CONFIG_DEFAULT_SAMPLE_RATE)
         , samples_per_tick(ROC_CONFIG_DEFAULT_SERVER_TICK_SAMPLES)
+        , samples_per_resampler_frame(ROC_CONFIG_DEFAULT_RESAMPLER_FRAME_SAMPLES)
         , latency(ROC_CONFIG_DEFAULT_RENDERER_LATENCY)
         , timeout(ROC_CONFIG_DEFAULT_SESSION_TIMEOUT)
         , max_sessions(ROC_CONFIG_MAX_SESSIONS)
@@ -73,6 +74,9 @@ struct ServerConfig {
 
     //! Number of samples per server tick.
     size_t samples_per_tick;
+
+    //! Number of samples per resampler frame.
+    size_t samples_per_resampler_frame;
 
     //! Playback latency as number of samples.
     packet::timestamp_t latency;

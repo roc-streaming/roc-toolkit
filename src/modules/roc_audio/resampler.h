@@ -32,9 +32,11 @@ public:
     //!
     //! @b Parameters
     //!  - @p reader specifies input audio stream used in read();
-    //!  - @p composer is used to construct temporary buffers.
+    //!  - @p composer is used to construct temporary buffers;
+    //!  - @p frame_size is number of samples per resampler frame.
     explicit Resampler(IStreamReader& reader,
-                       ISampleBufferComposer& composer = default_buffer_composer());
+                       ISampleBufferComposer& composer = default_buffer_composer(),
+                       size_t frame_size = ROC_CONFIG_DEFAULT_RESAMPLER_FRAME_SAMPLES);
 
     //! Fills buffer of samples with new sampling frequency.
     //! @remarks
@@ -70,6 +72,13 @@ private:
     sample_t* prev_frame_;
     sample_t* curr_frame_;
     sample_t* next_frame_;
+
+    // Frame size.
+    // (frame_size_ / st_Nwindow) is maximum allowed scaling ratio.
+    const size_t frame_size_;
+
+    // Frame size in Q8.24.
+    const fixedpoint_t qt_frame_size_;
 
     // Time position of output sample in terms of input samples indexes.
     // For example 0 -- time position of first sample in curr_frame_.

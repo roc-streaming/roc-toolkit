@@ -88,33 +88,30 @@ const fixedpoint_t G_qt_half_window_len = float_to_fixedpoint(G_ft_half_window_l
 
 const fixedpoint_t G_qt_epsilon = float_to_fixedpoint(5e-8f);
 
-// Frame size.
-// (G_frame_size / st_Nwindow) is maximum allowed scaling ratio.
-const size_t G_frame_size = ROC_CONFIG_DEFAULT_RESAMPLER_FRAME_SAMPLES;
-
-// Frame size in Q8.24.
-const fixedpoint_t G_qt_frame_size = G_frame_size << FRACT_BIT_COUNT;
-
 } // namespace
 
-Resampler::Resampler(IStreamReader& reader, ISampleBufferComposer& composer)
+Resampler::Resampler(IStreamReader& reader,
+                     ISampleBufferComposer& composer,
+                     size_t frame_size)
     : reader_(reader)
     , window_(3)
+    , frame_size_(frame_size)
+    , qt_frame_size_(fixedpoint_t(frame_size_ << FRACT_BIT_COUNT))
     , qt_sample_(0)
     , qt_dt_(0)
     , scaling_(0) {
     // Half window must fit into one frame.
-    roc_panic_if_not(G_qt_frame_size >= G_qt_half_window_len);
+    roc_panic_if_not(qt_frame_size_ >= G_qt_half_window_len);
 
     init_window_(composer);
 
-    set_scaling(1.0f);
+    roc_panic_if_not(set_scaling(1.0f));
 }
 
 bool Resampler::set_scaling(float scaling) {
     // Window's size changes according to scaling. If new window size
     // doesnt fit to the frames size -- deny changes.
-    if (st_Nwindow * scaling >= G_frame_size) {
+    if (st_Nwindow * scaling >= frame_size_) {
         return false;
     }
     scaling_ = scaling;
@@ -133,8 +130,8 @@ void Resampler::read(const ISampleBufferSlice& buff) {
     }
 
     for (size_t n = 0; n < buff_size; n++) {
-        if (qt_sample_ >= G_qt_frame_size) {
-            qt_sample_ -= G_qt_frame_size;
+        if (qt_sample_ >= qt_frame_size_) {
+            qt_sample_ -= qt_frame_size_;
             renew_window_();
         }
 
@@ -150,7 +147,7 @@ void Resampler::init_window_(ISampleBufferComposer& composer) {
         if (!(window_[n] = composer.compose())) {
             roc_panic("resampler: can't compose buffer in constructor");
         }
-        window_[n]->set_size(G_frame_size);
+        window_[n]->set_size(frame_size_);
     }
 
     prev_frame_ = NULL;
@@ -159,7 +156,7 @@ void Resampler::init_window_(ISampleBufferComposer& composer) {
 }
 
 void Resampler::renew_window_() {
-    roc_panic_if(st_Nwindow * scaling_ >= G_frame_size);
+    roc_panic_if(st_Nwindow * scaling_ >= frame_size_);
 
     // scaling_ may change every frame so it have to be smooth.
     qt_dt_ = float_to_fixedpoint(scaling_);
@@ -171,7 +168,7 @@ void Resampler::renew_window_() {
     } else {
         window_.rotate(1);
         reader_.read(*window_.back());
-        roc_panic_if(window_.back()->size() != G_frame_size);
+        roc_panic_if(window_.back()->size() != frame_size_);
     }
 
     prev_frame_ = window_[0]->data();
@@ -184,7 +181,7 @@ sample_t Resampler::resample_() {
     size_t ind_begin_prev;
 
     // Window lasts till that index.
-    const size_t ind_end_prev = G_frame_size;
+    const size_t ind_end_prev = frame_size_;
 
     size_t ind_begin_cur;
     size_t ind_end_cur;
@@ -200,25 +197,25 @@ sample_t Resampler::resample_() {
     }
 
     ind_begin_prev = (qt_sample_ > G_qt_half_window_len)
-        ? G_frame_size
-        : qceil(qt_sample_ + (G_qt_frame_size - G_qt_half_window_len));
+        ? frame_size_
+        : qceil(qt_sample_ + (qt_frame_size_ - G_qt_half_window_len));
 
     ind_begin_cur = (qt_sample_ > G_qt_half_window_len)
         ? qceil(qt_sample_ - G_qt_half_window_len)
         : 0;
 
-    ind_end_cur = ((qt_sample_ + G_qt_half_window_len) > G_qt_frame_size)
-        ? G_frame_size
+    ind_end_cur = ((qt_sample_ + G_qt_half_window_len) > qt_frame_size_)
+        ? frame_size_
         : qfloor(qt_sample_ + G_qt_half_window_len);
 
-    ind_end_next = ((qt_sample_ + G_qt_half_window_len) > G_qt_frame_size)
-        ? qfloor(qt_sample_ + G_qt_half_window_len - G_qt_frame_size)
+    ind_end_next = ((qt_sample_ + G_qt_half_window_len) > qt_frame_size_)
+        ? qfloor(qt_sample_ + G_qt_half_window_len - qt_frame_size_)
         : 0;
 
     // Counter inside window.
     // t_sinc = t_sample - ceil( t_sample - st_Nwindow + 1/st_Nwindow_interp )
-    fixedpoint_t qt_sinc_cur = G_qt_frame_size + qt_sample_
-        - (((G_qt_frame_size + qt_sample_ - G_qt_half_window_len) & INTEGER_PART_MASK)
+    fixedpoint_t qt_sinc_cur = qt_frame_size_ + qt_sample_
+        - (((qt_frame_size_ + qt_sample_ - G_qt_half_window_len) & INTEGER_PART_MASK)
            + G_qt_one);
 
     // sinc_table defined in positive half-plane, so at the begining of the window

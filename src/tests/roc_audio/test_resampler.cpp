@@ -22,7 +22,7 @@ using namespace audio;
 
 namespace {
 
-enum { FrameSize = ROC_CONFIG_DEFAULT_RESAMPLER_FRAME_SAMPLES };
+enum { FrameSize = ROC_CONFIG_DEFAULT_RESAMPLER_FRAME_SAMPLES * 2 };
 
 enum { OutSamples = FrameSize * 100 + 1, InSamples = OutSamples + (FrameSize * 3) };
 
@@ -34,7 +34,7 @@ TEST_GROUP(resampler) {
     core::ScopedPtr<Resampler> resampler;
 
     void setup() {
-        resampler.reset(new Resampler(reader));
+        resampler.reset(new Resampler(reader, default_buffer_composer(), FrameSize));
     }
 
     void expect_buffers(size_t num_buffers, size_t sz, int value) {
