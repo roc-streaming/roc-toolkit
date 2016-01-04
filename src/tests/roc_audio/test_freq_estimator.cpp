@@ -20,21 +20,23 @@ using namespace audio;
 
 namespace {
 
-enum { Aim = ROC_CONFIG_DEFAULT_RENDERER_LATENCY, Iterations = 1000 };
+enum { Aim = ROC_CONFIG_DEFAULT_RENDERER_LATENCY * 2, Iterations = 1000 };
 
 const double Epsilon = 1e-6;
 
 } // namespace
 
-TEST_GROUP(freq_estimator) {
-    FreqEstimator fe;
-};
+TEST_GROUP(freq_estimator){};
 
 TEST(freq_estimator, initial) {
+    FreqEstimator fe(Aim);
+
     DOUBLES_EQUAL(1.0, fe.freq_coeff(), Epsilon);
 }
 
 TEST(freq_estimator, aim_queue_size) {
+    FreqEstimator fe(Aim);
+
     for (size_t n = 0; n < Iterations; n++) {
         fe.update(Aim);
     }
@@ -43,6 +45,8 @@ TEST(freq_estimator, aim_queue_size) {
 }
 
 TEST(freq_estimator, large_queue_size) {
+    FreqEstimator fe(Aim);
+
     for (size_t n = 0; n < Iterations; n++) {
         fe.update(Aim * 2);
     }
@@ -51,6 +55,8 @@ TEST(freq_estimator, large_queue_size) {
 }
 
 TEST(freq_estimator, small_queue_size) {
+    FreqEstimator fe(Aim);
+
     for (size_t n = 0; n < Iterations; n++) {
         fe.update(Aim / 2);
     }

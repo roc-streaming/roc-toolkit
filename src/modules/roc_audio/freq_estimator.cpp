@@ -7,8 +7,6 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_config/config.h"
-
 #include "roc_audio/freq_estimator.h"
 #include "roc_audio/freq_estimator_decim10_coeff.h"
 
@@ -30,9 +28,6 @@ const sample_t G_p = 100e-8f;
 
 // Integral gain of PI-controller.
 const sample_t G_i = 0.5e-8f;
-
-// XXX: this value is actually hardcoded into current implementation.
-const sample_t G_aim = ROC_CONFIG_DEFAULT_RENDERER_LATENCY;
 
 // Calculates dot product of arrays IR of filter (@p coeff) and input array (@p samples).
 //
@@ -57,15 +52,16 @@ sample_t dot_prod(const sample_t* coeff,
 
 } // namespace
 
-FreqEstimator::FreqEstimator()
-    : dec1_ind_(0)
+FreqEstimator::FreqEstimator(packet::timestamp_t aim_queue_size)
+    : aim_(aim_queue_size)
+    , dec1_ind_(0)
     , dec2_ind_(0)
     , samples_counter_(0)
     , accum_(0)
     , coeff_(1) {
     for (size_t i = 0; i < G_decim_len; i++) {
-        dec1_casc_buff_[i] = G_aim;
-        dec2_casc_buff_[i] = G_aim;
+        dec1_casc_buff_[i] = aim_;
+        dec2_casc_buff_[i] = aim_;
     }
 }
 
@@ -110,8 +106,8 @@ void FreqEstimator::update(packet::timestamp_t queue_size) {
 }
 
 float FreqEstimator::fast_controller_(const sample_t input) {
-    accum_ = accum_ + input - G_aim;
-    return 1 + G_p * (input - G_aim) + G_i * accum_;
+    accum_ = accum_ + input - aim_;
+    return 1 + G_p * (input - aim_) + G_i * accum_;
 }
 
 } // namespace audio

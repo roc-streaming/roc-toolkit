@@ -90,7 +90,9 @@ void Session::make_pipeline_() {
     roc_panic_if(!packet_reader);
 
     if (config_.options & EnableResampling) {
-        packet_reader = new (scaler_) audio::Scaler(*packet_reader, *audio_packet_queue_);
+        packet_reader = new (scaler_)
+            audio::Scaler(*packet_reader, *audio_packet_queue_, config_.latency);
+
         tuners_.append(*scaler_);
     }
 

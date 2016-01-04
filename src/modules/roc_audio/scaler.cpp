@@ -31,6 +31,7 @@ Scaler::Scaler(packet::IPacketReader& reader,
     : reader_(reader)
     , queue_(queue)
     , aim_queue_size_(aim_queue_size)
+    , freq_estimator_(aim_queue_size)
     , timer_(ReportInterval)
     , started_(false) {
 }
