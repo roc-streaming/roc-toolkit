@@ -90,7 +90,7 @@ TEST_GROUP(client_server) {
 
         config.options = options;
         config.channels = ChannelMask;
-        config.session_timeout = MaxBuffers;
+        config.session_timeout = MaxBuffers * BufSamples;
         config.session_latency = BufSamples;
         config.samples_per_tick = BufSamples;
 

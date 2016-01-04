@@ -63,7 +63,7 @@ TEST_GROUP(server) {
 
         config.options = ServerOptions;
         config.channels = ChannelMask;
-        config.session_timeout = TimeoutTicks;
+        config.session_timeout = TimeoutTicks * TickSamples;
         config.session_latency = LatencySamples;
         config.samples_per_tick = TickSamples;
 

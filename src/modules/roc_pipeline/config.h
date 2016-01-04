@@ -85,7 +85,7 @@ struct ServerConfig {
     //! Session latency as number of samples.
     size_t session_latency;
 
-    //! Number of ticks without packets after wich session is terminated.
+    //! Timeout after which session is terminated as number of samples.
     size_t session_timeout;
 
     //! Maximum number of active sessions.

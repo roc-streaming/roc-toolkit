@@ -25,7 +25,7 @@ using namespace packet;
 TEST_GROUP(watchdog) {
     enum {
         NumSamples = 103,
-        Timeout = ROC_CONFIG_DEFAULT_SESSION_TIMEOUT * 2,
+        Timeout = 33,
         SnJump = ROC_CONFIG_MAX_SN_JUMP,
         TsJump = ROC_CONFIG_MAX_TS_JUMP
     };

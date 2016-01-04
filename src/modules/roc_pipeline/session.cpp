@@ -140,7 +140,8 @@ packet::IPacketReader* Session::make_packet_reader_() {
         audio::Delayer(*packet_reader, (packet::timestamp_t)config_.session_latency);
 
     packet_reader = new (watchdog_)
-        audio::Watchdog(*packet_reader, config_.session_timeout);
+        audio::Watchdog(*packet_reader,
+                        config_.session_timeout / config_.samples_per_tick);
 
     tuners_.append(*watchdog_);
 

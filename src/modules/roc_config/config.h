@@ -46,9 +46,6 @@
 #define ROC_CONFIG_MAX_TS_JUMP                                                           \
     (ROC_CONFIG_MAX_SN_JUMP * ROC_CONFIG_DEFAULT_PACKET_SAMPLES)
 
-//! Number of rendering ticks to wait before terminating session without packets.
-#define ROC_CONFIG_DEFAULT_SESSION_TIMEOUT 100
-
 //! Bitmask of enabled audio channels.
 #define ROC_CONFIG_DEFAULT_CHANNEL_MASK 0x3
 
@@ -68,10 +65,13 @@
 //!  doesn't affect allowed packet size or tick size.
 #define ROC_CONFIG_DEFAULT_RESAMPLER_FRAME_SAMPLES 96
 
-//! Start delay for audio renderer (samples per channel).
+//! Session timeout (number of samples per channel).
+#define ROC_CONFIG_DEFAULT_SESSION_TIMEOUT (ROC_CONFIG_DEFAULT_SERVER_TICK_SAMPLES * 100)
+
+//! Latency audio renderer (samples per channel).
 #define ROC_CONFIG_DEFAULT_SESSION_LATENCY (ROC_CONFIG_DEFAULT_PACKET_SAMPLES * 27)
 
-//! Start delay for audio output (samples per channel).
+//! Latency for audio output (samples per channel).
 #define ROC_CONFIG_DEFAULT_OUTPUT_LATENCY (ROC_CONFIG_DEFAULT_PACKET_SAMPLES * 20)
 
 //! Audio packet size including header.
