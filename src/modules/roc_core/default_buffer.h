@@ -90,8 +90,8 @@ public:
             roc_panic("attempting to pass null to container_of");
         }
 
-        DefaultBuffer* buff = ROC_CONTAINER_OF(
-            ROC_CONTAINER_OF(data_ptr, Storage, data), DefaultBuffer, storage_);
+        DefaultBuffer* buff = ROC_CONTAINER_OF(ROC_CONTAINER_OF(data_ptr, Storage, data),
+                                               DefaultBuffer, storage_);
 
         buff->check_guards_();
         return buff;
