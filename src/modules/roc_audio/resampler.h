@@ -13,8 +13,6 @@
 #ifndef ROC_AUDIO_RESAMPLER_H_
 #define ROC_AUDIO_RESAMPLER_H_
 
-#include "roc_config/config.h"
-
 #include "roc_core/noncopyable.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/circular_buffer.h"
@@ -26,19 +24,21 @@ namespace roc {
 namespace audio {
 
 //! Resamples audio stream with non-integer dynamically changing factor.
-//!
-//! Typicaly being used with factor close to 1 ( 0.9 < factor < 1.1 ).
+//! @remarks
+//!  Typicaly being used with factor close to 1 ( 0.9 < factor < 1.1 ).
 class Resampler : public IStreamReader, public core::NonCopyable<> {
 public:
     //! Initialize.
     //!
-    //! @p reader specifies input audio stream used in read().
+    //! @b Parameters
+    //!  - @p reader specifies input audio stream used in read();
+    //!  - @p composer is used to construct temporary buffers.
     explicit Resampler(IStreamReader& reader,
                        ISampleBufferComposer& composer = default_buffer_composer());
 
     //! Fills buffer of samples with new sampling frequency.
-    //!
-    //! Calculates everything during this call so it may take time.
+    //! @remarks
+    //!  Calculates everything during this call so it may take time.
     virtual void read(const ISampleBufferSlice&);
 
     //! Set new resample factor.
@@ -60,28 +60,25 @@ private:
     void init_window_(ISampleBufferComposer&);
     void renew_window_();
 
-private:
-    //! Input stream.
+    // Input stream.
     IStreamReader& reader_;
 
-    //! Input stream window (3 frames).
+    // Input stream window (3 frames).
     core::CircularBuffer<ISampleBufferPtr, 3> window_;
 
-    //! Pointers to 3 frames of stream window.
+    // Pointers to 3 frames of stream window.
     sample_t* prev_frame_;
     sample_t* curr_frame_;
     sample_t* next_frame_;
 
-private:
-    //! Time position of output sample in terms of input samples indexes.
-    //!
-    //! For example 0 -- time position of first sample in curr_frame_.
+    // Time position of output sample in terms of input samples indexes.
+    // For example 0 -- time position of first sample in curr_frame_.
     fixedpoint_t qt_sample_;
 
-    //! Time distance between two output samples, equals to resampling factor.
+    // Time distance between two output samples, equals to resampling factor.
     fixedpoint_t qt_dt_;
 
-    //! Resampling factor.
+    // Resampling factor.
     float scaling_;
 };
 

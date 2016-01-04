@@ -51,8 +51,12 @@
 //! Number of audio samples per rendering tick (per channel).
 #define ROC_CONFIG_DEFAULT_TICK_SAMPLES 256
 
-//! Number of audio sampler per resampler frame (per channel).
-#define ROC_CONFIG_RESAMPLER_FRAME_SAMPLES 96
+//! Number of audio sampler per resampler frame.
+//! @remarks
+//!  Allowed values are limited with resampler implementation. This parameter
+//!  affects minimum required latency and maximum allowed scaling ratio. It
+//!  doesn't affect allowed packet size or tick size.
+#define ROC_CONFIG_DEFAULT_RESAMPLER_FRAME_SAMPLES 96
 
 //! Start delay for audio renderer (samples per channel).
 #define ROC_CONFIG_DEFAULT_RENDERER_LATENCY (ROC_CONFIG_DEFAULT_PACKET_SAMPLES * 27)

@@ -31,7 +31,7 @@ typedef int32_t signed_fixedpoint_t;
 const uint32_t INTEGER_PART_MASK = 0xFF000000;
 const uint32_t FRACT_PART_MASK = 0x00FFFFFF;
 const uint32_t FRACT_BIT_COUNT = 24;
-const uint32_t FRACT_BIT_TO_INDEX = 6; // Number of bits in Nwindow_interp.
+const uint32_t FRACT_BIT_TO_INDEX = 6; // Number of bits in st_Nwindow_interp.
 
 // One in terms of Q8.24.
 const fixedpoint_t G_qt_one = 1 << FRACT_BIT_COUNT;
@@ -79,20 +79,21 @@ inline sample_t sinc(const fixedpoint_t x, const float fract_x) {
     return hl + fract_x * (hh - hl);
 }
 
-// Frame size.
-const size_t FrameSize = ROC_CONFIG_RESAMPLER_FRAME_SAMPLES;
-
-// Frame size in Q8.24.
-const fixedpoint_t G_qt_frame_size = FrameSize << FRACT_BIT_COUNT;
-
 //! How many input samples fits into length of half window.
 const float G_ft_half_window_len =
-    ((float)Nwindow - 1 + ((float)Nwindow_interp - 1) / (float)Nwindow_interp);
+    ((float)st_Nwindow - 1 + ((float)st_Nwindow_interp - 1) / (float)st_Nwindow_interp);
 
 // G_ft_half_window_len in Q8.24.
 const fixedpoint_t G_qt_half_window_len = float_to_fixedpoint(G_ft_half_window_len);
 
 const fixedpoint_t G_qt_epsilon = float_to_fixedpoint(5e-8f);
+
+// Frame size.
+// (G_frame_size / st_Nwindow) is maximum allowed scaling ratio.
+const size_t G_frame_size = ROC_CONFIG_DEFAULT_RESAMPLER_FRAME_SAMPLES;
+
+// Frame size in Q8.24.
+const fixedpoint_t G_qt_frame_size = G_frame_size << FRACT_BIT_COUNT;
 
 } // namespace
 
@@ -113,7 +114,7 @@ Resampler::Resampler(IStreamReader& reader, ISampleBufferComposer& composer)
 bool Resampler::set_scaling(float scaling) {
     // Window's size changes according to scaling. If new window size
     // doesnt fit to the frames size -- deny changes.
-    if (Nwindow * scaling >= FrameSize) {
+    if (st_Nwindow * scaling >= G_frame_size) {
         return false;
     }
     scaling_ = scaling;
@@ -149,7 +150,7 @@ void Resampler::init_window_(ISampleBufferComposer& composer) {
         if (!(window_[n] = composer.compose())) {
             roc_panic("resampler: can't compose buffer in constructor");
         }
-        window_[n]->set_size(FrameSize);
+        window_[n]->set_size(G_frame_size);
     }
 
     prev_frame_ = NULL;
@@ -158,7 +159,7 @@ void Resampler::init_window_(ISampleBufferComposer& composer) {
 }
 
 void Resampler::renew_window_() {
-    roc_panic_if(Nwindow * scaling_ >= FrameSize);
+    roc_panic_if(st_Nwindow * scaling_ >= G_frame_size);
 
     // scaling_ may change every frame so it have to be smooth.
     qt_dt_ = float_to_fixedpoint(scaling_);
@@ -170,7 +171,7 @@ void Resampler::renew_window_() {
     } else {
         window_.rotate(1);
         reader_.read(*window_.back());
-        roc_panic_if(window_.back()->size() != FrameSize);
+        roc_panic_if(window_.back()->size() != G_frame_size);
     }
 
     prev_frame_ = window_[0]->data();
@@ -183,7 +184,7 @@ sample_t Resampler::resample_() {
     size_t ind_begin_prev;
 
     // Window lasts till that index.
-    const size_t ind_end_prev = FrameSize;
+    const size_t ind_end_prev = G_frame_size;
 
     size_t ind_begin_cur;
     size_t ind_end_cur;
@@ -199,7 +200,7 @@ sample_t Resampler::resample_() {
     }
 
     ind_begin_prev = (qt_sample_ > G_qt_half_window_len)
-        ? FrameSize
+        ? G_frame_size
         : qceil(qt_sample_ + (G_qt_frame_size - G_qt_half_window_len));
 
     ind_begin_cur = (qt_sample_ > G_qt_half_window_len)
@@ -207,7 +208,7 @@ sample_t Resampler::resample_() {
         : 0;
 
     ind_end_cur = ((qt_sample_ + G_qt_half_window_len) > G_qt_frame_size)
-        ? FrameSize
+        ? G_frame_size
         : qfloor(qt_sample_ + G_qt_half_window_len);
 
     ind_end_next = ((qt_sample_ + G_qt_half_window_len) > G_qt_frame_size)
@@ -215,7 +216,7 @@ sample_t Resampler::resample_() {
         : 0;
 
     // Counter inside window.
-    // t_sinc = t_sample - ceil( t_sample - Nwindow + 1/Nwindow_interp )
+    // t_sinc = t_sample - ceil( t_sample - st_Nwindow + 1/st_Nwindow_interp )
     fixedpoint_t qt_sinc_cur = G_qt_frame_size + qt_sample_
         - (((G_qt_frame_size + qt_sample_ - G_qt_half_window_len) & INTEGER_PART_MASK)
            + G_qt_one);

@@ -19,10 +19,10 @@ namespace roc {
 namespace audio {
 
 //! Half of size of input signal window.
-const size_t Nwindow = 64;
+const size_t st_Nwindow = 64;
 
 //! How many tables values fits between sinc's zeros.
-const size_t Nwindow_interp = 64;
+const size_t st_Nwindow_interp = 64;
 
 //! Sinc table in range [0; Nwindow*Nwindow_interp]
 const float sinc_table[4096] = {
