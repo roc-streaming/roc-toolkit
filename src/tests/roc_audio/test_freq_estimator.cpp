@@ -20,7 +20,7 @@ using namespace audio;
 
 namespace {
 
-enum { Aim = ROC_CONFIG_DEFAULT_RENDERER_LATENCY * 2, Iterations = 1000 };
+enum { Aim = ROC_CONFIG_DEFAULT_SESSION_LATENCY * 2, Iterations = 1000 };
 
 const double Epsilon = 1e-6;
 

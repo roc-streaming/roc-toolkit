@@ -22,7 +22,8 @@ Server::Server(datagram::IDatagramReader& datagram_reader,
     : config_(config)
     , n_channels_(packet::num_channels(config_.channels))
     , datagram_reader_(datagram_reader)
-    , audio_writer_(&audio_writer)
+    , audio_writer_(audio_writer)
+    , output_writer_(&audio_writer)
     , channel_muxer_(config_.channels, *config_.sample_buffer_composer)
     , session_manager_(config_, channel_muxer_) {
     //
@@ -47,8 +48,8 @@ Server::Server(datagram::IDatagramReader& datagram_reader,
     }
 
     if (config_.options & EnableTiming) {
-        audio_writer_ = new (timed_writer_)
-            audio::TimedWriter(*audio_writer_, config_.channels, config_.sample_rate);
+        output_writer_ = new (timed_writer_)
+            audio::TimedWriter(audio_writer_, config_.channels, config_.sample_rate);
     }
 }
 
@@ -63,29 +64,19 @@ void Server::add_port(const datagram::Address& address, packet::IPacketParser& p
 void Server::run() {
     roc_log(LOG_DEBUG, "server: starting thread");
 
-    const size_t n_datagrams = config_.max_sessions * config_.max_session_packets;
-    const size_t n_buffers = 1;
-    const size_t n_samples = config_.samples_per_tick;
-
-    while (!stop_) {
-        if (!tick(n_datagrams, n_buffers, n_samples)) {
-            break;
-        }
-    }
+    loop_();
 
     roc_log(LOG_DEBUG, "server: finishing thread");
 
-    audio_writer_->write(audio::ISampleBufferConstSlice());
+    eof_();
 }
 
 void Server::stop() {
     stop_ = true;
 }
 
-bool Server::tick(size_t n_datagrams, size_t n_buffers, size_t n_samples) {
-    roc_panic_if(n_samples * n_channels_ == 0);
-
-    for (size_t n = 0; n < n_datagrams; n++) {
+bool Server::tick() {
+    for (size_t n = 0; n < config_.max_sessions * config_.max_session_packets; n++) {
         if (datagram::IDatagramConstPtr dgm = datagram_reader_.read()) {
             session_manager_.store(*dgm);
         } else {
@@ -97,20 +88,65 @@ bool Server::tick(size_t n_datagrams, size_t n_buffers, size_t n_samples) {
         return false;
     }
 
-    for (size_t n = 0; n < n_buffers; n++) {
-        audio::ISampleBufferPtr buffer = config_.sample_buffer_composer->compose();
-        if (!buffer) {
-            roc_log(LOG_ERROR, "server: can't compose sample buffer");
-            return false;
-        }
-
-        buffer->set_size(n_samples * n_channels_);
-
-        channel_muxer_.read(*buffer);
-        audio_writer_->write(*buffer);
+    audio::ISampleBufferPtr buffer = config_.sample_buffer_composer->compose();
+    if (!buffer) {
+        roc_log(LOG_ERROR, "server: can't compose sample buffer");
+        return false;
     }
 
+    buffer->set_size(config_.samples_per_tick * n_channels_);
+
+    channel_muxer_.read(*buffer);
+    output_writer_->write(*buffer);
+
     return true;
+}
+
+bool Server::zero_tick_() {
+    audio::ISampleBufferPtr buffer = config_.sample_buffer_composer->compose();
+    if (!buffer) {
+        roc_log(LOG_ERROR, "server: can't compose sample buffer");
+        return false;
+    }
+
+    buffer->set_size(config_.samples_per_tick * n_channels_);
+    buffer->zeroise();
+
+    // Send buffer to audio writer instead of output writer, since
+    // we don't want to use TimedWriter here.
+    audio_writer_.write(*buffer);
+
+    return true;
+}
+
+void Server::loop_() {
+    for (size_t n = 0; n < config_.output_latency / config_.samples_per_tick; n++) {
+        if (stop_) {
+            return;
+        }
+
+        if (!zero_tick_()) {
+            return;
+        }
+    }
+
+    roc_log(LOG_TRACE,
+            "server: starting rendering: output_latency=%u, session_latency=%u",
+            (unsigned)config_.output_latency, (unsigned)config_.session_latency);
+
+    for (;;) {
+        if (stop_) {
+            return;
+        }
+
+        if (!tick()) {
+            return;
+        }
+    }
+}
+
+void Server::eof_() {
+    output_writer_->write(audio::ISampleBufferConstSlice());
 }
 
 } // namespace pipeline

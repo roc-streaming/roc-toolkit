@@ -64,7 +64,7 @@ int main(int argc, char** argv) {
                     args.latency_arg);
             return 1;
         }
-        config.latency = (packet::timestamp_t)args.latency_arg;
+        config.session_latency = (packet::timestamp_t)args.latency_arg;
     }
     if (args.resampler_frame_given) {
         if (args.resampler_frame_arg < 0) {

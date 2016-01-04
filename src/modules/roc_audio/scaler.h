@@ -46,7 +46,7 @@ public:
     //!    object as @p reader.
     Scaler(packet::IPacketReader& reader,
            packet::PacketQueue const& queue,
-           packet::timestamp_t aim_queue_size = ROC_CONFIG_DEFAULT_RENDERER_LATENCY);
+           packet::timestamp_t aim_queue_size = ROC_CONFIG_DEFAULT_SESSION_LATENCY);
 
     //! Update stream.
     //! @remarks

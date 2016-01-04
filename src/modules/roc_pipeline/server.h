@@ -104,9 +104,9 @@ public:
 
     //! Process input datagrams.
     //! @remarks
-    //!  Fetches no more than @p n_datagrams from input datagram reader
-    //!  and generates @p n_buffers sample buffers of @p n_samples samples.
-    bool tick(size_t n_datagrams, size_t n_buffers, size_t n_samples);
+    //!  Fetches datagrams from input datagram reader and generates next
+    //!  sample buffer.
+    bool tick();
 
     //! Stop thread.
     //! @remarks
@@ -117,12 +117,19 @@ public:
 private:
     virtual void run();
 
+    void loop_();
+    void eof_();
+
+    bool zero_tick_();
+
     const ServerConfig config_;
     const size_t n_channels_;
+
     core::Atomic stop_;
 
     datagram::IDatagramReader& datagram_reader_;
-    audio::ISampleBufferWriter* audio_writer_;
+    audio::ISampleBufferWriter& audio_writer_;
+    audio::ISampleBufferWriter* output_writer_;
 
     audio::ChannelMuxer channel_muxer_;
     core::Maybe<audio::TimedWriter> timed_writer_;

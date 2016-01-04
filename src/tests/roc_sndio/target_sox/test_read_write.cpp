@@ -43,11 +43,7 @@ enum {
 
 const sample_t Step = 0.0001f, Epsilon = 0.00001f;
 
-struct Queue : SampleBufferQueue {
-    Queue()
-        : SampleBufferQueue(0, false) {
-    }
-};
+typedef SampleBufferQueue Queue;
 
 } // namespace
 

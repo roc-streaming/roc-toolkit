@@ -31,35 +31,41 @@ TEST_GROUP(server) {
         // No FEC and resampling.
         ServerOptions = 0,
 
-        // Number of samples in every channel per read.
-        ReadBufsz = SampleStream::ReadBufsz,
+        // Number of samples in every channel per tick.
+        TickSamples = SampleStream::ReadBufsz,
 
         // Number of samples in every channel per packet.
-        PktSamples = (ReadBufsz * 5),
+        PktSamples = TickSamples * 5,
 
-        // Number of packets enought to start rendering.
-        NumPackets = (ROC_CONFIG_DEFAULT_RENDERER_LATENCY / PktSamples + 1),
-
-        // Maximum number of packets.
-        MaxPackets = ROC_CONFIG_MAX_SESSION_PACKETS,
+        // Latency.
+        LatencySamples = PktSamples * 10,
 
         // Number of ticks without packets after wich session is terminated.
-        Timeout = ROC_CONFIG_DEFAULT_SESSION_TIMEOUT * 2
+        TimeoutTicks = LatencySamples / PktSamples * 7,
+
+        // Number of packets enought to start rendering.
+        EnoughPackets = LatencySamples / PktSamples + 1,
+
+        // Maximum number of packets.
+        MaxPackets = ROC_CONFIG_MAX_SESSION_PACKETS
     };
 
-    SampleQueue<(MaxPackets + 1) * PktSamples / ReadBufsz> output;
+    SampleQueue<(MaxPackets + 1) * PktSamples / TickSamples> output;
 
     datagram::DatagramQueue input;
 
     rtp::Parser parser;
 
-    ServerConfig config;
     core::ScopedPtr<Server> server;
 
     void setup() {
+        ServerConfig config;
+
         config.options = ServerOptions;
         config.channels = ChannelMask;
-        config.timeout = Timeout;
+        config.session_timeout = TimeoutTicks;
+        config.session_latency = LatencySamples;
+        config.samples_per_tick = TickSamples;
 
         server.reset(new Server(input, output, config));
     }
@@ -72,13 +78,12 @@ TEST_GROUP(server) {
         server->add_port(new_address(port), parser);
     }
 
-    void tick(size_t n_samples) {
-        const size_t n_datagrams =
-            ROC_CONFIG_MAX_SESSION_PACKETS * ROC_CONFIG_MAX_SESSIONS * 2;
+    void render(size_t n_samples) {
+        CHECK(n_samples % TickSamples == 0);
 
-        CHECK(n_samples % ReadBufsz == 0);
-
-        CHECK(server->tick(n_datagrams, n_samples / ReadBufsz, ReadBufsz));
+        for (size_t n = 0; n < n_samples / TickSamples; n++) {
+            CHECK(server->tick());
+        }
     }
 
     void expect_num_sessions(size_t n_sessions) {
@@ -89,25 +94,25 @@ TEST_GROUP(server) {
 TEST(server, no_sessions) {
     SampleStream ss;
 
-    for (size_t n = 0; n < NumPackets; n++) {
-        tick(ReadBufsz);
+    for (size_t n = 0; n < EnoughPackets; n++) {
+        render(TickSamples);
         expect_num_sessions(0);
 
-        ss.read_zeros(output, ReadBufsz);
+        ss.read_zeros(output, TickSamples);
     }
 }
 
 TEST(server, no_parsers) {
     PacketStream ps;
-    ps.write(input, NumPackets, PktSamples);
+    ps.write(input, EnoughPackets, PktSamples);
 
     SampleStream ss;
 
-    for (size_t n = 0; n < NumPackets; n++) {
-        tick(ReadBufsz);
+    for (size_t n = 0; n < EnoughPackets; n++) {
+        render(TickSamples);
         expect_num_sessions(0);
 
-        ss.read_zeros(output, ReadBufsz);
+        ss.read_zeros(output, TickSamples);
     }
 }
 
@@ -115,13 +120,13 @@ TEST(server, one_session) {
     add_port(PacketStream::DstPort);
 
     PacketStream ps;
-    ps.write(input, NumPackets, PktSamples);
+    ps.write(input, EnoughPackets, PktSamples);
 
-    tick(NumPackets * PktSamples);
+    render(EnoughPackets * PktSamples);
     expect_num_sessions(1);
 
     SampleStream ss;
-    ss.read(output, NumPackets * PktSamples);
+    ss.read(output, EnoughPackets * PktSamples);
 }
 
 TEST(server, one_session_long_run) {
@@ -130,13 +135,13 @@ TEST(server, one_session_long_run) {
     add_port(PacketStream::DstPort);
 
     PacketStream ps;
-    ps.write(input, NumPackets, PktSamples);
+    ps.write(input, EnoughPackets, PktSamples);
 
     SampleStream ss;
 
     for (size_t i = 0; i < NumIterations; i++) {
-        for (size_t p = 0; p < NumPackets; p++) {
-            tick(PktSamples);
+        for (size_t p = 0; p < EnoughPackets; p++) {
+            render(PktSamples);
             expect_num_sessions(1);
 
             ss.read(output, PktSamples);
@@ -151,15 +156,15 @@ TEST(server, wait_min_input_size) {
     PacketStream ps;
     SampleStream ss;
 
-    for (size_t p = 0; p < NumPackets; p++) {
-        tick(PktSamples);
+    for (size_t p = 0; p < EnoughPackets; p++) {
+        render(PktSamples);
         ss.read_zeros(output, PktSamples);
 
         ps.write(input, 1, PktSamples);
     }
 
-    tick(NumPackets * PktSamples);
-    ss.read(output, NumPackets * PktSamples);
+    render(EnoughPackets * PktSamples);
+    ss.read(output, EnoughPackets * PktSamples);
 }
 
 TEST(server, wait_min_input_size_timeout) {
@@ -170,45 +175,42 @@ TEST(server, wait_min_input_size_timeout) {
 
     SampleStream ss;
 
-    for (size_t n = 0; n < Timeout - 1; n++) {
-        tick(PktSamples);
+    for (size_t n = 0; n < TimeoutTicks - 1; n++) {
+        render(TickSamples);
         expect_num_sessions(1);
 
-        ss.read_zeros(output, PktSamples);
+        ss.read_zeros(output, TickSamples);
     }
 
-    tick(PktSamples);
+    render(TickSamples);
     expect_num_sessions(0);
 
-    ss.read_zeros(output, PktSamples);
+    ss.read_zeros(output, TickSamples);
 }
 
 TEST(server, wait_next_packet_timeout) {
     add_port(PacketStream::DstPort);
 
     PacketStream ps;
-    ps.write(input, NumPackets, PktSamples);
-
     SampleStream ss;
 
-    for (size_t p = 0; p < NumPackets; p++) {
-        tick(PktSamples);
+    ps.write(input, EnoughPackets, PktSamples);
+
+    for (size_t p = 0; p < EnoughPackets; p++) {
+        render(PktSamples);
         expect_num_sessions(1);
 
         ss.read(output, PktSamples);
     }
 
-    for (size_t n = 0; n < Timeout; n++) {
-        tick(PktSamples);
-        expect_num_sessions(1);
+    size_t n_ticks = 0;
 
-        ss.read_zeros(output, PktSamples);
+    for (; server->num_sessions() != 0; n_ticks++) {
+        render(TickSamples);
+        ss.read_zeros(output, TickSamples);
     }
 
-    tick(PktSamples);
-    expect_num_sessions(0);
-
-    ss.read_zeros(output, PktSamples);
+    CHECK(n_ticks < TimeoutTicks);
 }
 
 TEST(server, two_sessions_synchronous) {
@@ -220,15 +222,15 @@ TEST(server, two_sessions_synchronous) {
     ps1.src += 1;
     ps2.src += 2;
 
-    ps1.write(input, NumPackets, PktSamples);
-    ps2.write(input, NumPackets, PktSamples);
+    ps1.write(input, EnoughPackets, PktSamples);
+    ps2.write(input, EnoughPackets, PktSamples);
 
-    tick(NumPackets * PktSamples);
+    render(EnoughPackets * PktSamples);
     expect_num_sessions(2);
 
     SampleStream ss;
     ss.set_sessions(2);
-    ss.read(output, NumPackets * PktSamples);
+    ss.read(output, EnoughPackets * PktSamples);
 }
 
 TEST(server, two_sessions_overlapping) {
@@ -236,27 +238,27 @@ TEST(server, two_sessions_overlapping) {
 
     PacketStream ps1;
     ps1.src++;
-    ps1.write(input, NumPackets, PktSamples);
+    ps1.write(input, EnoughPackets, PktSamples);
 
-    tick(NumPackets * PktSamples);
+    render(EnoughPackets * PktSamples);
     expect_num_sessions(1);
 
     SampleStream ss;
-    ss.read(output, NumPackets * PktSamples);
+    ss.read(output, EnoughPackets * PktSamples);
 
     PacketStream ps2 = ps1;
     ps2.src++;
     ps2.sn += 10;
     ps2.ts += 10 * PktSamples;
 
-    ps1.write(input, NumPackets, PktSamples);
-    ps2.write(input, NumPackets, PktSamples);
+    ps1.write(input, EnoughPackets, PktSamples);
+    ps2.write(input, EnoughPackets, PktSamples);
 
-    tick(NumPackets * PktSamples);
+    render(EnoughPackets * PktSamples);
     expect_num_sessions(2);
 
     ss.set_sessions(2);
-    ss.read(output, NumPackets * PktSamples);
+    ss.read(output, EnoughPackets * PktSamples);
 }
 
 TEST(server, two_sessions_two_parsers) {
@@ -271,15 +273,15 @@ TEST(server, two_sessions_two_parsers) {
     add_port(ps1.dst);
     add_port(ps2.dst);
 
-    ps1.write(input, NumPackets, PktSamples);
-    ps2.write(input, NumPackets, PktSamples);
+    ps1.write(input, EnoughPackets, PktSamples);
+    ps2.write(input, EnoughPackets, PktSamples);
 
-    tick(NumPackets * PktSamples);
+    render(EnoughPackets * PktSamples);
     expect_num_sessions(2);
 
     SampleStream ss;
     ss.set_sessions(2);
-    ss.read(output, NumPackets * PktSamples);
+    ss.read(output, EnoughPackets * PktSamples);
 }
 
 TEST(server, drop_above_max_sessions) {
@@ -292,7 +294,7 @@ TEST(server, drop_above_max_sessions) {
         ps.src += n;
         ps.write(input, 1, PktSamples);
 
-        tick(PktSamples);
+        render(PktSamples);
         expect_num_sessions(n + 1);
     }
 
@@ -302,7 +304,7 @@ TEST(server, drop_above_max_sessions) {
     ps.src += MaxSessions;
     ps.write(input, 1, PktSamples);
 
-    tick(PktSamples);
+    render(PktSamples);
     expect_num_sessions(MaxSessions);
 
     output.clear();
@@ -314,13 +316,13 @@ TEST(server, drop_above_max_packets) {
     PacketStream ps;
     ps.write(input, MaxPackets + 1, PktSamples);
 
-    tick(MaxPackets * PktSamples);
+    render(MaxPackets * PktSamples);
 
     SampleStream ss;
     ss.read(output, MaxPackets * PktSamples);
 
     ps.write(input, 1, PktSamples);
-    tick(PktSamples * 2);
+    render(PktSamples * 2);
 
     ss.read_zeros(output, PktSamples);
     ss.advance(PktSamples);
@@ -334,12 +336,12 @@ TEST(server, seqnum_overflow) {
     PacketStream ps;
     ps.sn = packet::seqnum_t(-1) - 3;
 
-    ps.write(input, NumPackets, PktSamples);
+    ps.write(input, EnoughPackets, PktSamples);
 
-    tick(NumPackets * PktSamples);
+    render(EnoughPackets * PktSamples);
 
     SampleStream ss;
-    ss.read(output, NumPackets * PktSamples);
+    ss.read(output, EnoughPackets * PktSamples);
 }
 
 TEST(server, seqnum_reorder) {
@@ -348,19 +350,19 @@ TEST(server, seqnum_reorder) {
     PacketStream ps;
     ps.sn = 10000;
     ps.ts = 100000;
-    ps.value += PktSamples * (NumPackets - 1);
+    ps.value += PktSamples * (EnoughPackets - 1);
 
-    for (size_t p = NumPackets; p > 0; p--) {
+    for (size_t p = EnoughPackets; p > 0; p--) {
         input.write(ps.make(PktSamples));
         ps.sn--;
         ps.ts -= PktSamples;
         ps.value -= PktSamples;
     }
 
-    tick(NumPackets * PktSamples);
+    render(EnoughPackets * PktSamples);
 
     SampleStream ss;
-    ss.read(output, NumPackets * PktSamples);
+    ss.read(output, EnoughPackets * PktSamples);
 }
 
 TEST(server, seqnum_drop_late) {
@@ -369,7 +371,7 @@ TEST(server, seqnum_drop_late) {
     add_port(PacketStream::DstPort);
 
     PacketStream ps;
-    ps.write(input, NumPackets - NumDelayed, PktSamples);
+    ps.write(input, EnoughPackets - NumDelayed, PktSamples);
 
     // store position of delayed packets
     PacketStream delayed = ps;
@@ -380,13 +382,13 @@ TEST(server, seqnum_drop_late) {
     ps.value += NumDelayed * PktSamples;
 
     // write more packets
-    ps.write(input, NumPackets, PktSamples);
-    tick(NumPackets * PktSamples);
+    ps.write(input, EnoughPackets, PktSamples);
+    render(EnoughPackets * PktSamples);
 
     SampleStream ss;
 
     // read samples before delayed packets
-    ss.read(output, (NumPackets - NumDelayed) * PktSamples);
+    ss.read(output, (EnoughPackets - NumDelayed) * PktSamples);
 
     // read zeros instead of delayed packets
     ss.read_zeros(output, NumDelayed * PktSamples);
@@ -394,13 +396,13 @@ TEST(server, seqnum_drop_late) {
 
     // write delayed packets
     delayed.write(input, NumDelayed, PktSamples);
-    tick(NumPackets * PktSamples * 2);
+    render(EnoughPackets * PktSamples * 2);
 
     // read samples after delayed packets (delayed packets are ignored)
-    ss.read(output, NumPackets * PktSamples);
+    ss.read(output, EnoughPackets * PktSamples);
 
     // ensure there are no more samples
-    ss.read_zeros(output, NumPackets * PktSamples);
+    ss.read_zeros(output, EnoughPackets * PktSamples);
 }
 
 TEST(server, seqnum_ignore_gap) {
@@ -409,15 +411,15 @@ TEST(server, seqnum_ignore_gap) {
     add_port(PacketStream::DstPort);
 
     PacketStream ps;
-    ps.write(input, NumPackets, PktSamples);
+    ps.write(input, EnoughPackets, PktSamples);
 
     ps.sn += Gap;
-    ps.write(input, NumPackets, PktSamples);
+    ps.write(input, EnoughPackets, PktSamples);
 
-    tick(NumPackets * 2 * PktSamples);
+    render(EnoughPackets * 2 * PktSamples);
 
     SampleStream ss;
-    ss.read(output, NumPackets * 2 * PktSamples);
+    ss.read(output, EnoughPackets * 2 * PktSamples);
 }
 
 TEST(server, seqnum_shutdown_on_jump) {
@@ -426,23 +428,23 @@ TEST(server, seqnum_shutdown_on_jump) {
     add_port(PacketStream::DstPort);
 
     PacketStream ps;
-    ps.write(input, NumPackets, PktSamples);
+    ps.write(input, EnoughPackets, PktSamples);
 
     ps.sn += Jump;
-    ps.write(input, NumPackets, PktSamples);
+    ps.write(input, EnoughPackets, PktSamples);
 
-    tick(NumPackets * PktSamples + ReadBufsz);
+    render(EnoughPackets * PktSamples + TickSamples);
     expect_num_sessions(1);
 
     SampleStream ss;
 
-    ss.read(output, NumPackets * PktSamples);
-    ss.read_zeros(output, ReadBufsz);
+    ss.read(output, EnoughPackets * PktSamples);
+    ss.read_zeros(output, TickSamples);
 
-    tick(ReadBufsz);
+    render(TickSamples);
     expect_num_sessions(0);
 
-    ss.read_zeros(output, ReadBufsz);
+    ss.read_zeros(output, TickSamples);
 }
 
 TEST(server, timestamp_overflow) {
@@ -451,41 +453,41 @@ TEST(server, timestamp_overflow) {
     PacketStream ps;
     ps.ts = packet::timestamp_t(-1) - 33;
 
-    ps.write(input, NumPackets, PktSamples);
+    ps.write(input, EnoughPackets, PktSamples);
 
-    tick(NumPackets * PktSamples);
+    render(EnoughPackets * PktSamples);
 
     SampleStream ss;
-    ss.read(output, NumPackets * PktSamples);
+    ss.read(output, EnoughPackets * PktSamples);
 }
 
 TEST(server, timestamp_zeros_on_late) {
     add_port(PacketStream::DstPort);
 
     PacketStream ps;
-    ps.write(input, NumPackets, PktSamples);
+    ps.write(input, EnoughPackets, PktSamples);
 
     packet::timestamp_t late = ps.ts;
 
     ps.ts += PktSamples;
     ps.value += PktSamples;
-    ps.write(input, NumPackets, PktSamples);
+    ps.write(input, EnoughPackets, PktSamples);
 
     ps.ts = late;
     ps.write(input, 1, PktSamples);
 
-    tick((NumPackets * 3 + 1) * PktSamples);
+    render((EnoughPackets * 3 + 1) * PktSamples);
 
     SampleStream ss;
 
-    ss.read(output, NumPackets * PktSamples);
+    ss.read(output, EnoughPackets * PktSamples);
 
     ss.read_zeros(output, PktSamples);
     ss.advance(PktSamples);
 
-    ss.read(output, NumPackets * PktSamples);
+    ss.read(output, EnoughPackets * PktSamples);
 
-    ss.read_zeros(output, NumPackets * PktSamples);
+    ss.read_zeros(output, EnoughPackets * PktSamples);
 }
 
 TEST(server, timestamp_zeros_on_gap) {
@@ -494,23 +496,23 @@ TEST(server, timestamp_zeros_on_gap) {
     add_port(PacketStream::DstPort);
 
     PacketStream ps;
-    ps.write(input, NumPackets, PktSamples);
+    ps.write(input, EnoughPackets, PktSamples);
 
     ps.ts += Gap * PktSamples;
     ps.value += Gap * PktSamples;
 
-    ps.write(input, NumPackets, PktSamples);
+    ps.write(input, EnoughPackets, PktSamples);
 
-    tick((NumPackets * 2 + Gap) * PktSamples);
+    render((EnoughPackets * 2 + Gap) * PktSamples);
 
     SampleStream ss;
 
-    ss.read(output, NumPackets * PktSamples);
+    ss.read(output, EnoughPackets * PktSamples);
 
     ss.read_zeros(output, Gap * PktSamples);
     ss.advance(Gap * PktSamples);
 
-    ss.read(output, NumPackets * PktSamples);
+    ss.read(output, EnoughPackets * PktSamples);
 }
 
 TEST(server, timestamp_overlapping) {
@@ -519,19 +521,19 @@ TEST(server, timestamp_overlapping) {
     add_port(PacketStream::DstPort);
 
     PacketStream ps;
-    ps.write(input, NumPackets, PktSamples);
+    ps.write(input, EnoughPackets, PktSamples);
 
     ps.ts -= Overlap;
     ps.value -= Overlap;
 
-    ps.write(input, NumPackets, PktSamples);
+    ps.write(input, EnoughPackets, PktSamples);
     ps.write(input, 1, PktSamples - Overlap);
 
-    tick((NumPackets * 2 + 1) * PktSamples);
+    render((EnoughPackets * 2 + 1) * PktSamples);
 
     SampleStream ss;
 
-    ss.read(output, NumPackets * 2 * PktSamples);
+    ss.read(output, EnoughPackets * 2 * PktSamples);
     ss.read_zeros(output, PktSamples);
 }
 
@@ -541,30 +543,29 @@ TEST(server, timestamp_shutdown_on_jump) {
     add_port(PacketStream::DstPort);
 
     PacketStream ps;
-    ps.write(input, NumPackets, PktSamples);
+    ps.write(input, EnoughPackets, PktSamples);
 
     ps.ts += Jump;
-    ps.write(input, NumPackets, PktSamples);
+    ps.write(input, EnoughPackets, PktSamples);
 
-    tick((NumPackets + 1) * PktSamples);
+    render(EnoughPackets * PktSamples);
     expect_num_sessions(1);
 
     SampleStream ss;
-    ss.read(output, NumPackets * PktSamples);
-    ss.read_zeros(output, PktSamples);
+    ss.read(output, EnoughPackets * PktSamples);
 
-    tick(PktSamples);
+    render(PktSamples);
     expect_num_sessions(0);
 
     ss.read_zeros(output, PktSamples);
 }
 
 TEST(server, tiny_packets) {
-    CHECK(ReadBufsz % 2 == 0);
+    CHECK(TickSamples % 2 == 0);
 
     enum {
-        TinyPacketSamples = ReadBufsz / 2,
-        TinyPackets = NumPackets * (PktSamples / TinyPacketSamples)
+        TinyPacketSamples = TickSamples / 2,
+        TinyPackets = EnoughPackets * (PktSamples / TinyPacketSamples)
     };
 
     add_port(PacketStream::DstPort);
@@ -572,7 +573,7 @@ TEST(server, tiny_packets) {
     PacketStream ps;
     ps.write(input, TinyPackets, TinyPacketSamples);
 
-    tick(TinyPackets * TinyPacketSamples);
+    render(TinyPackets * TinyPacketSamples);
 
     SampleStream ss;
     ss.read(output, TinyPackets * TinyPacketSamples);
@@ -589,12 +590,12 @@ TEST(server, non_aligned_packets) {
     ps.write(input, 1, PktSamples);
     ps.write(input, 1, PktSamples / 2);
 
-    ps.write(input, NumPackets - 2, PktSamples);
+    ps.write(input, EnoughPackets - 2, PktSamples);
 
-    tick(NumPackets * PktSamples);
+    render(EnoughPackets * PktSamples);
 
     SampleStream ss;
-    ss.read(output, NumPackets * PktSamples);
+    ss.read(output, EnoughPackets * PktSamples);
 }
 
 TEST(server, corrupted_packet_drop_new_session) {
@@ -606,13 +607,13 @@ TEST(server, corrupted_packet_drop_new_session) {
 
     input.write(corrupted);
 
-    tick(ReadBufsz);
+    render(TickSamples);
     expect_num_sessions(0);
 
     IDatagramPtr good = ps.make(1);
     input.write(good);
 
-    tick(ReadBufsz);
+    render(TickSamples);
     expect_num_sessions(1);
 
     output.clear();
@@ -622,17 +623,17 @@ TEST(server, corrupted_packet_ignore_in_existing_session) {
     add_port(PacketStream::DstPort);
 
     PacketStream ps;
-    ps.write(input, NumPackets, PktSamples);
+    ps.write(input, EnoughPackets, PktSamples);
 
     IDatagramPtr corrupted = ps.make(*new_byte_buffer<1>());
     input.write(corrupted);
 
-    ps.write(input, NumPackets, PktSamples);
+    ps.write(input, EnoughPackets, PktSamples);
 
-    tick(NumPackets * 2 * PktSamples);
+    render(EnoughPackets * 2 * PktSamples);
 
     SampleStream ss;
-    ss.read(output, NumPackets * 2 * PktSamples);
+    ss.read(output, EnoughPackets * 2 * PktSamples);
 }
 
 } // namespace test

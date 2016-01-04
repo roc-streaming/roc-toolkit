@@ -54,8 +54,9 @@ struct ServerConfig {
         , sample_rate(ROC_CONFIG_DEFAULT_SAMPLE_RATE)
         , samples_per_tick(ROC_CONFIG_DEFAULT_SERVER_TICK_SAMPLES)
         , samples_per_resampler_frame(ROC_CONFIG_DEFAULT_RESAMPLER_FRAME_SAMPLES)
-        , latency(ROC_CONFIG_DEFAULT_RENDERER_LATENCY)
-        , timeout(ROC_CONFIG_DEFAULT_SESSION_TIMEOUT)
+        , output_latency(ROC_CONFIG_DEFAULT_OUTPUT_LATENCY)
+        , session_latency(ROC_CONFIG_DEFAULT_SESSION_LATENCY)
+        , session_timeout(ROC_CONFIG_DEFAULT_SESSION_TIMEOUT)
         , max_sessions(ROC_CONFIG_MAX_SESSIONS)
         , max_session_packets(ROC_CONFIG_MAX_SESSION_PACKETS)
         , byte_buffer_composer(&datagram::default_buffer_composer())
@@ -78,11 +79,14 @@ struct ServerConfig {
     //! Number of samples per resampler frame.
     size_t samples_per_resampler_frame;
 
-    //! Playback latency as number of samples.
-    packet::timestamp_t latency;
+    //! Output latency as number of samples.
+    size_t output_latency;
+
+    //! Session latency as number of samples.
+    size_t session_latency;
 
     //! Number of ticks without packets after wich session is terminated.
-    size_t timeout;
+    size_t session_timeout;
 
     //! Maximum number of active sessions.
     size_t max_sessions;

@@ -90,8 +90,9 @@ TEST_GROUP(client_server) {
 
         config.options = options;
         config.channels = ChannelMask;
-        config.latency = BufSamples;
-        config.timeout = MaxBuffers;
+        config.session_timeout = MaxBuffers;
+        config.session_latency = BufSamples;
+        config.samples_per_tick = BufSamples;
 
         server.reset(new Server(network, output, config));
 
@@ -118,7 +119,7 @@ TEST_GROUP(client_server) {
         SampleStream so;
 
         for (size_t n = 0; n < MaxBuffers; n++) {
-            CHECK(server->tick(PacketsPerTick, 1, BufSamples));
+            CHECK(server->tick());
 
             LONGS_EQUAL(1, output.size());
 

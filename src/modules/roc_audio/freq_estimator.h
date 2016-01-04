@@ -29,7 +29,7 @@ public:
     //! @b Parameters
     //!  - @p aim_queue_size defines queue size we want to archive.
     FreqEstimator(
-        packet::timestamp_t aim_queue_size = ROC_CONFIG_DEFAULT_RENDERER_LATENCY);
+        packet::timestamp_t aim_queue_size = ROC_CONFIG_DEFAULT_SESSION_LATENCY);
 
     //! Compute new value of frequency coefficient.
     void update(packet::timestamp_t queue_size);

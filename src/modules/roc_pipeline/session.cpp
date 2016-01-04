@@ -91,7 +91,8 @@ void Session::make_pipeline_() {
 
     if (config_.options & EnableResampling) {
         packet_reader = new (scaler_)
-            audio::Scaler(*packet_reader, *audio_packet_queue_, config_.latency);
+            audio::Scaler(*packet_reader, *audio_packet_queue_,
+                          (packet::timestamp_t)config_.session_latency);
 
         tuners_.append(*scaler_);
     }
@@ -135,8 +136,11 @@ packet::IPacketReader* Session::make_packet_reader_() {
 
     router_.add_route(packet::IAudioPacket::Type, *audio_packet_queue_);
 
-    packet_reader = new (delayer_) audio::Delayer(*packet_reader, config_.latency);
-    packet_reader = new (watchdog_) audio::Watchdog(*packet_reader, config_.timeout);
+    packet_reader = new (delayer_)
+        audio::Delayer(*packet_reader, (packet::timestamp_t)config_.session_latency);
+
+    packet_reader = new (watchdog_)
+        audio::Watchdog(*packet_reader, config_.session_timeout);
 
     tuners_.append(*watchdog_);
 
