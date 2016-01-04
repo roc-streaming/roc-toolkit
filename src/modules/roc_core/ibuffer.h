@@ -45,6 +45,9 @@ public:
     //!  No constructor or destructor is called for buffer elements.
     virtual void set_size(size_t size) = 0;
 
+    //! Fill buffer with zeros.
+    virtual void zeroise() = 0;
+
     //! Check buffer integrity.
     //! @remarks
     //!  Calls roc_panic() if buffer is corrupted.
