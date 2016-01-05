@@ -24,6 +24,14 @@ void FECPacket::free() {
     pool_.destroy(*this);
 }
 
+packet::source_t FECPacket::source() const {
+    return packet_.header().ssrc();
+}
+
+void FECPacket::set_source(packet::source_t s) {
+    packet_.header().set_ssrc(s);
+}
+
 packet::seqnum_t FECPacket::seqnum() const {
     return packet_.header().seqnum();
 }

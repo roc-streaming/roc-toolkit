@@ -99,6 +99,7 @@ TEST_GROUP(rtp_packet) {
         LONGS_EQUAL(
             0, memcmp(buffer.data(), packet->raw_data().data(), test.packet_size));
 
+        LONGS_EQUAL(test.ssrc, packet->source());
         LONGS_EQUAL(test.seqnum, packet->seqnum());
         LONGS_EQUAL(test.marker, packet->marker());
         LONGS_EQUAL(test.ts, packet->timestamp());

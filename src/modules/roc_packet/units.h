@@ -18,6 +18,9 @@
 namespace roc {
 namespace packet {
 
+//! Packet source ID identifying client stream.
+typedef uint32_t source_t;
+
 //! Packet sequence number in client stream.
 typedef uint16_t seqnum_t;
 

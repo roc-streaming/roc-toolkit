@@ -37,6 +37,15 @@ public:
     //!  (e.g. rtp::AudioPacket) returns it's own unique identifier.
     virtual PacketType type() const = 0;
 
+    //! Get packet source ID identifying client stream.
+    //! @remarks
+    //!  Sequence numbers and timestamp are numbered independently inside
+    //!  different client streams.
+    virtual source_t source() const = 0;
+
+    //! Set packet source ID.
+    virtual void set_source(source_t) = 0;
+
     //! Get packet sequence number in client stream.
     //! @remarks
     //!  Packets are numbered sequentaly in every stream, starting from some

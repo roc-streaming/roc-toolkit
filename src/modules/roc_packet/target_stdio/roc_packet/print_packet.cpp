@@ -20,9 +20,9 @@ void print_packet(const IAudioPacket& p, bool body) {
     channel_mask_t channels = p.channels();
     size_t ns = p.num_samples();
 
-    fprintf(stderr, "packet(audio): m=%d, sn=%u, ts=%lu, ch=0x%x, ns=%u\n",
-            (int)p.marker(), (unsigned)p.seqnum(), (unsigned long)p.timestamp(),
-            (unsigned)channels, (unsigned)ns);
+    fprintf(stderr, "packet(audio): src=%lu m=%d, sn=%u, ts=%lu, ch=0x%x, ns=%u\n",
+            (unsigned long)p.source(), (int)p.marker(), (unsigned)p.seqnum(),
+            (unsigned long)p.timestamp(), (unsigned)channels, (unsigned)ns);
 
     if (!body) {
         return;
@@ -52,9 +52,10 @@ void print_packet(const IFECPacket& p, bool body) {
 
     core::IByteBufferConstSlice payload = p.payload();
 
-    fprintf(stderr, "packet(fec): m=%d, sn=%u, data_blk=%u, fec_blk=%u, payload=%u\n",
-            (int)p.marker(), (unsigned)p.seqnum(), (unsigned)p.data_blknum(),
-            (unsigned)p.fec_blknum(), (unsigned)payload.size());
+    fprintf(
+        stderr, "packet(fec): src=%lu m=%d, sn=%u, data_blk=%u, fec_blk=%u, payload=%u\n",
+        (unsigned long)p.source(), (int)p.marker(), (unsigned)p.seqnum(),
+        (unsigned)p.data_blknum(), (unsigned)p.fec_blknum(), (unsigned)payload.size());
 
     if (!body) {
         return;

@@ -27,6 +27,12 @@ public:
     //! Initialize.
     FECPacket(core::IPool<FECPacket>&, const RTP_Packet&);
 
+    //! Get packet source ID.
+    virtual packet::source_t source() const;
+
+    //! Set packet source ID.
+    virtual void set_source(packet::source_t);
+
     //! Get packet sequence number.
     virtual packet::seqnum_t seqnum() const;
 

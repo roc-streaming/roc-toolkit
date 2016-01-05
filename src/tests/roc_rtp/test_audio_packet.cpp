@@ -71,6 +71,7 @@ TEST(audio_packet, compose_empty) {
 
         IAudioPacketPtr p = compose();
 
+        LONGS_EQUAL(0, p->source());
         LONGS_EQUAL(0, p->seqnum());
         CHECK(!p->marker());
         LONGS_EQUAL(0, p->timestamp());
@@ -91,10 +92,12 @@ TEST(audio_packet, compose_full) {
 
         IAudioPacketPtr p = compose();
 
+        p->set_source(3456776543);
         p->set_seqnum(12345);
         p->set_marker(true);
         p->set_timestamp(123456789);
 
+        LONGS_EQUAL(3456776543, p->source());
         LONGS_EQUAL(12345, p->seqnum());
         CHECK(p->marker());
         LONGS_EQUAL(123456789, p->timestamp());
@@ -123,6 +126,7 @@ TEST(audio_packet, compose_parse) {
 
         IAudioPacketPtr p1 = compose();
 
+        p1->set_source(3456776543);
         p1->set_seqnum(12345);
         p1->set_marker(true);
         p1->set_timestamp(123456789);
@@ -133,6 +137,7 @@ TEST(audio_packet, compose_parse) {
 
         IAudioPacketConstPtr p2 = parse(p1->raw_data());
 
+        LONGS_EQUAL(3456776543, p2->source());
         LONGS_EQUAL(12345, p2->seqnum());
         CHECK(p2->marker());
         LONGS_EQUAL(123456789, p2->timestamp());

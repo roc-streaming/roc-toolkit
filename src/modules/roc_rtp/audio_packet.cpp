@@ -29,6 +29,14 @@ void AudioPacket::free() {
     pool_.destroy(*this);
 }
 
+packet::source_t AudioPacket::source() const {
+    return packet_.header().ssrc();
+}
+
+void AudioPacket::set_source(packet::source_t s) {
+    packet_.header().set_ssrc(s);
+}
+
 packet::seqnum_t AudioPacket::seqnum() const {
     return packet_.header().seqnum();
 }
