@@ -67,7 +67,7 @@ bool detect_defaults(const char** name, const char** type) {
         return false;
     }
 
-    roc_log(LOG_TRACE, "detected defaults: name=%s, type=%s", *name, *type);
+    roc_log(LOG_TRACE, "detected defaults: name=%s type=%s", *name, *type);
     return true;
 }
 

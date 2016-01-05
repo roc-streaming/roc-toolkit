@@ -62,7 +62,7 @@ void Server::add_port(const datagram::Address& address, packet::IPacketParser& p
 }
 
 void Server::run() {
-    roc_log(LOG_DEBUG, "server: starting thread: output_latency=%u, session_latency=%u",
+    roc_log(LOG_DEBUG, "server: starting thread: output_latency=%u session_latency=%u",
             (unsigned)config_.output_latency, (unsigned)config_.session_latency);
 
     while (!stop_) {

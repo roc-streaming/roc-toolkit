@@ -179,7 +179,7 @@ void Streamer::update_packet_() {
     }
 
     if (first_packet_) {
-        roc_log(LOG_TRACE, "streamer: got first packet: ch = %d zero_samples = %lu",
+        roc_log(LOG_TRACE, "streamer: got first packet: ch=%d zero_samples=%lu",
                 (int)channel_, (unsigned long)zero_samples_);
 
         timestamp_ = pkt_timestamp;
