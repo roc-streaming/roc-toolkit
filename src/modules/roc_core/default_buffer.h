@@ -74,14 +74,6 @@ public:
         *size_guard_() = GUARD_;
     }
 
-    //! Fill buffer with zeros.
-    virtual void zeroise() {
-        check_guards_();
-        if (size_ > 0) {
-            memset(storage_.data, 0, size_ * sizeof(T));
-        }
-    }
-
     //! Check buffer integrity.
     virtual void check() const {
         check_guards_();
