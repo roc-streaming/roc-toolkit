@@ -19,7 +19,7 @@ DelayedWriter::DelayedWriter(ISampleBufferWriter& output,
     , n_ch_(packet::num_channels(channels))
     , latency_(latency * n_ch_)
     , pending_(0)
-    , flushed_(false) {
+    , flushed_(latency_ == 0) {
 }
 
 void DelayedWriter::write(const ISampleBufferConstSlice& buffer) {
