@@ -45,6 +45,7 @@ private:
     enum { MaxBuffers = ROC_CONFIG_MAX_SAMPLE_BUFFERS };
 
     ISampleBufferWriter& output_;
+    const size_t n_ch_;
     const size_t latency_;
     size_t pending_;
     bool flushed_;

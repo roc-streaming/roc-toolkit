@@ -16,7 +16,8 @@ DelayedWriter::DelayedWriter(ISampleBufferWriter& output,
                              packet::channel_mask_t channels,
                              size_t latency)
     : output_(output)
-    , latency_(latency * packet::num_channels(channels))
+    , n_ch_(packet::num_channels(channels))
+    , latency_(latency * n_ch_)
     , pending_(0)
     , flushed_(false) {
 }
@@ -30,7 +31,7 @@ void DelayedWriter::write(const ISampleBufferConstSlice& buffer) {
 
         if (pending_ >= latency_ || !buffer) {
             roc_log(LOG_TRACE, "delayed writer: starting output: latency=%lu pending=%lu",
-                    (unsigned long)latency_, (unsigned long)pending_);
+                    (unsigned long)latency_ / n_ch_, (unsigned long)pending_ / n_ch_);
 
             for (size_t n = 0; n < queue_.size(); n++) {
                 output_.write(queue_[n]);
