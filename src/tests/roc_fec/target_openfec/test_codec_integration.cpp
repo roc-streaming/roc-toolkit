@@ -10,7 +10,6 @@
 #include <CppUTest/TestHarness.h>
 
 #include <set>
-#include <cstdio>
 
 #include "roc_core/log.h"
 
@@ -353,6 +352,10 @@ IGNORE_TEST(fec_codec_integration, decoding_late_packet) {
 }
 
 IGNORE_TEST(fec_codec_integration, get_packets_before_marker_bit) {
+    // TODO
+}
+
+IGNORE_TEST(fec_codec_integration, repair_wrong_source_or_seqnum) {
     // TODO
 }
 

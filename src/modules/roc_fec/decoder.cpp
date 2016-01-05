@@ -36,6 +36,8 @@ Decoder::Decoder(IBlockDecoder& block_decoder,
     , can_repair_(false)
     , next_packet_(0)
     , cur_block_sn_(0)
+    , has_source_(false)
+    , source_(0)
     , n_packets_(0) {
 }
 
@@ -53,6 +55,10 @@ packet::IPacketConstPtr Decoder::read_() {
     if (!decoding_started_) {
         packet::IPacketConstPtr pp = data_queue_.head();
         if (pp) {
+            if (!has_source_) {
+                source_ = pp->source();
+                has_source_ = true;
+            }
             cur_block_sn_ = pp->seqnum();
             skip_fec_packets_();
         }
@@ -157,7 +163,12 @@ void Decoder::try_repair_() {
 
         packet::IPacketConstPtr pp = parser_.parse(buffer);
         if (!pp) {
-            roc_log(LOG_TRACE, "decoder: dropping unparsable defecated packet");
+            roc_log(LOG_TRACE, "decoder: dropping unparsable repaired packet");
+            continue;
+        }
+
+        if (!check_packet_(pp, n)) {
+            roc_log(LOG_TRACE, "decoder: dropping unexpected repaired packet");
             continue;
         }
 
@@ -166,6 +177,27 @@ void Decoder::try_repair_() {
 
     block_decoder_.reset();
     can_repair_ = false;
+}
+
+bool Decoder::check_packet_(const packet::IPacketConstPtr& pp, size_t pos) {
+    roc_panic_if_not(has_source_);
+
+    if (pp->source() != source_) {
+        roc_log(LOG_FLOOD,
+                "decoder: repaired packet has bad source id: got=%lu expected=%lu",
+                (unsigned long)pp->source(), (unsigned long)source_);
+        return false;
+    }
+
+    if (pp->seqnum() != packet::seqnum_t(cur_block_sn_ + pos)) {
+        roc_log(LOG_FLOOD,
+                "decoder: repaired packet has bad seqnum: got=%lu expected=%lu",
+                (unsigned long)pp->seqnum(),
+                (unsigned long)packet::seqnum_t(cur_block_sn_ + pos));
+        return false;
+    }
+
+    return true;
 }
 
 void Decoder::fetch_packets_() {

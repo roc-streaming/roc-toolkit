@@ -63,6 +63,7 @@ private:
 
     void next_block_();
     void try_repair_();
+    bool check_packet_(const packet::IPacketConstPtr&, size_t pos);
 
     void fetch_packets_();
     void update_packets_();
@@ -89,6 +90,9 @@ private:
 
     size_t next_packet_;
     packet::seqnum_t cur_block_sn_;
+
+    bool has_source_;
+    packet::source_t source_;
 
     unsigned n_packets_;
 };
