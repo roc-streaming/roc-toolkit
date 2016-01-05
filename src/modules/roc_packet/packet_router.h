@@ -25,30 +25,51 @@ namespace roc {
 namespace packet {
 
 //! Packet router.
+//! @remarks
+//!  Routes packets to multiple writers by source ID. For every route,
+//!  source ID may be auto-detected from first packing of matching type.
 class PacketRouter : public IPacketConstWriter, public core::NonCopyable<> {
 public:
     //! Add route for packets of given type.
     void add_route(PacketType type, IPacketConstWriter& writer);
 
+    //! Check if there is a route already associated with packet's source ID.
+    //! @returns
+    //!  true if there is a route for given source ID.
+    bool may_route(const IPacketConstPtr&) const;
+
+    //! Check if there is a route that may be associated packet's source ID.
+    //! @returns
+    //!  true if there is a route without source ID and with matching
+    //!  packet type.
+    bool may_autodetect_route(const IPacketConstPtr&) const;
+
     //! Write packet.
-    //!
     //! @remarks
-    //!  If route found for packet's type, packet is stored in route's writer.
-    //!  Otherwise, packet is dropped.
+    //!  If route found for packet's source id, packet is sent to corresponding
+    //!  writer. Otherwise, packet is dropped.
     virtual void write(const IPacketConstPtr&);
 
 private:
     static const size_t MaxRoutes = ROC_CONFIG_MAX_SESSION_QUEUES;
 
     struct Route {
+        bool has_source;
+        source_t source;
         PacketType type;
         IPacketConstWriter* writer;
 
         Route()
-            : type(NULL)
+            : has_source(false)
+            , source(0)
+            , type(NULL)
             , writer(NULL) {
         }
     };
+
+    const Route* find_route_(source_t) const;
+    const Route* detect_route_(const IPacketConstPtr&) const;
+    Route* detect_route_(const IPacketConstPtr&);
 
     core::Array<Route, MaxRoutes> routes_;
 };

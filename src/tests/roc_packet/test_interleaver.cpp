@@ -19,7 +19,11 @@ namespace test {
 
 using namespace packet;
 
-TEST_GROUP(interleaver){};
+TEST_GROUP(interleaver) {
+    IPacketPtr new_packet(seqnum_t sn) {
+        return new_audio_packet(0, sn, 0);
+    }
+};
 
 // Fill Interleaver with multiple of its internal memory size.
 TEST(interleaver, read_write) {

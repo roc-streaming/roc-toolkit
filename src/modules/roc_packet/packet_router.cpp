@@ -39,17 +39,77 @@ void PacketRouter::add_route(PacketType type, IPacketConstWriter& writer) {
     routes_.append(r);
 }
 
-void PacketRouter::write(const IPacketConstPtr& packet) {
-    const PacketType type = packet->type();
+bool PacketRouter::may_route(const IPacketConstPtr& packet) const {
+    return find_route_(packet->source());
+}
 
-    for (size_t n = 0; n < routes_.size(); n++) {
-        if (routes_[n].type == type) {
-            routes_[n].writer->write(packet);
-            return;
+bool PacketRouter::may_autodetect_route(const IPacketConstPtr& packet) const {
+    return detect_route_(packet) != NULL;
+}
+
+void PacketRouter::write(const IPacketConstPtr& packet) {
+    if (!packet) {
+        roc_panic("packet router: attempting to write null packet");
+    }
+
+    if (const Route* route = find_route_(packet->source())) {
+        if (route->type == packet->type()) {
+            route->writer->write(packet);
+        } else {
+            roc_log(LOG_TRACE,
+                    "packet router: packet type mistamatch for route, dropping packet");
         }
+        return;
+    }
+
+    if (Route* route = detect_route_(packet)) {
+        roc_log(LOG_DEBUG,
+                "packet router: auto-detected route for new packet: route=%u src=%lu ",
+                (unsigned)(route - &routes_[0]), (unsigned long)packet->source());
+        route->has_source = true;
+        route->source = packet->source();
+        route->writer->write(packet);
+        return;
     }
 
     roc_log(LOG_TRACE, "packet router: no route for packet found, dropping packet");
+}
+
+const PacketRouter::Route* PacketRouter::find_route_(source_t source) const {
+    for (size_t n = 0; n < routes_.size(); n++) {
+        if (!routes_[n].has_source) {
+            continue;
+        }
+
+        if (routes_[n].source == source) {
+            return &routes_[n];
+        }
+    }
+
+    return NULL;
+}
+
+const PacketRouter::Route*
+PacketRouter::detect_route_(const IPacketConstPtr& packet) const {
+    //
+    const PacketType type = packet->type();
+
+    for (size_t n = 0; n < routes_.size(); n++) {
+        if (routes_[n].has_source) {
+            continue;
+        }
+
+        if (routes_[n].type == type) {
+            return &routes_[n];
+        }
+    }
+
+    return NULL;
+}
+
+PacketRouter::Route* PacketRouter::detect_route_(const IPacketConstPtr& packet) {
+    return const_cast<Route*>(
+        static_cast<const PacketRouter*>(this)->detect_route_(packet));
 }
 
 } // namespace packet

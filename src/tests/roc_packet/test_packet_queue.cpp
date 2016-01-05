@@ -18,7 +18,11 @@ namespace test {
 
 using namespace packet;
 
-TEST_GROUP(packet_queue){};
+TEST_GROUP(packet_queue) {
+    IPacketPtr new_packet(seqnum_t sn) {
+        return new_audio_packet(0, sn, 0);
+    }
+};
 
 TEST(packet_queue, empty) {
     PacketQueue queue;

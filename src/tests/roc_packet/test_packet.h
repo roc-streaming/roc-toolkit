@@ -19,8 +19,9 @@
 namespace roc {
 namespace test {
 
-static inline packet::IAudioPacketPtr new_packet(packet::seqnum_t sn,
-                                                 packet::timestamp_t ts = 0) {
+static inline packet::IAudioPacketPtr new_audio_packet(packet::source_t src,
+                                                       packet::seqnum_t sn = 0,
+                                                       packet::timestamp_t ts = 0) {
     static rtp::Composer composer;
 
     packet::IPacketPtr packet = composer.compose(packet::IAudioPacket::Type);
@@ -28,10 +29,26 @@ static inline packet::IAudioPacketPtr new_packet(packet::seqnum_t sn,
 
     packet::IAudioPacketPtr audio = static_cast<packet::IAudioPacket*>(packet.get());
 
+    audio->set_source(src);
     audio->set_seqnum(sn);
     audio->set_timestamp(ts);
 
     return audio;
+}
+
+static inline packet::IFECPacketPtr new_fec_packet(packet::source_t src,
+                                                   packet::seqnum_t sn = 0) {
+    static rtp::Composer composer;
+
+    packet::IPacketPtr packet = composer.compose(packet::IFECPacket::Type);
+    CHECK(packet);
+
+    packet::IFECPacketPtr fec = static_cast<packet::IFECPacket*>(packet.get());
+
+    fec->set_source(src);
+    fec->set_seqnum(sn);
+
+    return fec;
 }
 
 } // namespace test
