@@ -21,6 +21,7 @@ Encoder::Encoder(IBlockEncoder& block_encoder,
     : block_encoder_(block_encoder)
     , packet_output_(output)
     , packet_composer_(composer)
+    , source_((packet::source_t)core::random(packet::source_t(-1)))
     , cur_block_seqnum_(0)
     , cur_session_fec_seqnum_((packet::seqnum_t)core::random(packet::seqnum_t(-1)))
     , cur_data_pack_i_(0) {
@@ -73,11 +74,12 @@ packet::IFECPacketPtr Encoder::make_fec_packet_(const core::IByteBufferConstSlic
     roc_panic_if(p->type() != packet::IFECPacket::Type);
 
     if (packet::IFECPacketPtr fec_p = static_cast<packet::IFECPacket*>(p.get())) {
+        fec_p->set_source(source_);
+        fec_p->set_seqnum(seqnum);
         fec_p->set_marker(marker_bit);
         fec_p->set_data_blknum(block_data_seqnum);
         fec_p->set_fec_blknum(block_fec_seqnum);
         fec_p->set_payload(buff.data(), buff.size());
-        fec_p->set_seqnum(seqnum);
         return fec_p;
     } else {
         return NULL;

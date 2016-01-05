@@ -26,6 +26,7 @@ Splitter::Splitter(packet::IPacketWriter& output,
     , channels_(channels)
     , n_channels_(packet::num_channels(channels))
     , n_packet_samples_(samples)
+    , source_((packet::source_t)core::random(packet::source_t(-1)))
     , seqnum_((packet::seqnum_t)core::random(packet::seqnum_t(-1)))
     , timestamp_((packet::timestamp_t)core::random(packet::timestamp_t(-1)))
     , n_samples_(0) {
@@ -96,6 +97,7 @@ bool Splitter::create_packet_() {
 
     packet_ = static_cast<packet::IAudioPacket*>(pp.get());
 
+    packet_->set_source(source_);
     packet_->set_seqnum(seqnum_);
     packet_->set_timestamp(timestamp_);
     packet_->set_size(channels_, n_packet_samples_);

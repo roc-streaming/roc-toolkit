@@ -396,7 +396,8 @@ TEST(fec_codec_integration, decoding_late_packet)
 
 TEST(fec_codec_integration, get_packets_before_marker_bit) {
 
-    // 1. Fill second half of block and whole block with one loss after. So that there is 10-19 and 20-39 seqnums in packet queue.
+    // 1. Fill second half of block and whole block with one loss after, so that there
+    //    is 10-19 and 20-39 seqnums in packet queue.
     // 2. Check that we've got every packet including lost one.
 
     BlockEncoder block_encoder;
@@ -437,8 +438,11 @@ TEST(fec_codec_integration, get_packets_before_marker_bit) {
     CHECK(pckt_disp.get_data_size() == 0);
 }
 
-TEST(fec_codec_integration, repair_wrong_source_or_seqnum) {
+IGNORE_TEST(fec_codec_integration, encode_source_id) {
+    // TODO
+}
 
+TEST(fec_codec_integration, decode_wrong_source_id_or_seqnum) {
     // Spoil seqnum in packet and lost it. Check if decoder wouldn't restore it.
 
     BlockEncoder block_encoder;
@@ -464,7 +468,7 @@ TEST(fec_codec_integration, repair_wrong_source_or_seqnum) {
         check_audio_packet(p, i < 10 ? i : i + 1,
                            N_DATA_PACKETS);
     }
-    CHECK(pckt_disp.get_data_size() == 0);    
+    CHECK(pckt_disp.get_data_size() == 0);
 }
 
 } // namespace test

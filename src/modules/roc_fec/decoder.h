@@ -31,8 +31,8 @@ namespace roc {
 namespace fec {
 
 //! FEC decoder.
-//!
-//! Reads data and FEC packets from input queues and restores missing data packets.
+//! @remarks
+//!  Reads data and FEC packets from input queues and restores missing data packets.
 class Decoder : public packet::IPacketReader, public core::NonCopyable<> {
 public:
     //! Initialize.

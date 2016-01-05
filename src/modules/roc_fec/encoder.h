@@ -30,9 +30,9 @@ namespace roc {
 namespace fec {
 
 //! FEC encoder.
-//!
-//! Writes data packets to output queue, generates additional FEC packets and
-//! writes them to output queue too.
+//! @remarks
+//!  Writes data packets to output queue, generates additional FEC packets and
+//!  writes them to output queue too.
 class Encoder : public packet::IPacketWriter, public core::NonCopyable<> {
 public:
     //! Initialize.
@@ -66,6 +66,8 @@ private:
 
     packet::IPacketWriter& packet_output_;
     packet::IPacketComposer& packet_composer_;
+
+    const packet::source_t source_;
 
     packet::seqnum_t cur_block_seqnum_;
     packet::seqnum_t cur_session_fec_seqnum_;

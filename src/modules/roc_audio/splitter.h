@@ -28,9 +28,9 @@ namespace roc {
 namespace audio {
 
 //! Splitter.
-//!
-//! Splits audio stream into sequence of audio packets and writes
-//! them to output packet writer.
+//! @remarks
+//!  Splits audio stream into sequence of audio packets and writes
+//!  them to output packet writer.
 class Splitter : public ISampleBufferWriter, public core::NonCopyable<> {
 public:
     //! Initializer.
@@ -67,6 +67,7 @@ private:
     const size_t n_packet_samples_;
 
     packet::IAudioPacketPtr packet_;
+    const packet::source_t source_;
     packet::seqnum_t seqnum_;
     packet::timestamp_t timestamp_;
 

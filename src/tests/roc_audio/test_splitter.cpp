@@ -41,6 +41,7 @@ TEST_GROUP(splitter) {
 
     core::ScopedPtr<Splitter> splitter;
 
+    source_t src;
     seqnum_t sn;
     timestamp_t ts;
     size_t pkt_num;
@@ -86,9 +87,11 @@ TEST_GROUP(splitter) {
         CHECK(!packet->marker());
 
         if (pkt_num == 0) {
+            src = packet->source();
             sn = packet->seqnum();
             ts = packet->timestamp();
         } else {
+            LONGS_EQUAL(src, packet->source());
             LONGS_EQUAL(sn, packet->seqnum());
             LONGS_EQUAL(ts, packet->timestamp());
         }
