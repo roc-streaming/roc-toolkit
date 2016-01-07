@@ -97,11 +97,6 @@ void FreqEstimator::update(packet::timestamp_t queue_size) {
         dec2_ind_ = (dec2_ind_ + 1) & G_decim_len_mask;
     }
 
-#if 0
-    coeff_ = dot_prod(
-        decim_10_h, dec1_casc_buff_, dec1_ind_, G_decim_len, G_decim_len_mask);
-#endif
-
     dec1_ind_ = (dec1_ind_ + 1) & G_decim_len_mask;
 }
 
