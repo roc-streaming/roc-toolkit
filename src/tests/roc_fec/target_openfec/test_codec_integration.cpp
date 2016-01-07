@@ -347,16 +347,90 @@ TEST(fec_codec_integration, decoding_when_multiple_blocks_in_queue) {
     }
 }
 
-IGNORE_TEST(fec_codec_integration, decoding_late_packet) {
-    // TODO
+TEST(fec_codec_integration, decoding_late_packet)
+{
+    // 1. Fill all packets in block except one lost packet.
+    // 2. Read first part of block till lost packet.
+    // 3. Receive one missing packet.
+    // 4. Read and check latter block part.
+
+    BlockEncoder block_encoder;
+    BlockDecoder block_decoder;
+    rtp::Parser parser;
+
+    Encoder encoder(block_encoder, pckt_disp, composer);
+    Decoder decoder(block_decoder, pckt_disp.get_data_reader(),
+                    pckt_disp.get_fec_reader(), parser);
+
+    fill_all_packets( 0, N_DATA_PACKETS);
+    for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
+        // Loosing packet #10
+        if( i == 10)
+            continue;
+        encoder.write(data_packets[i]);
+    }
+    CHECK(pckt_disp.get_data_size() == N_DATA_PACKETS-1);
+
+    // Check 0-9 packets.
+    for (size_t i = 0; i < 10; ++i) {
+        IPacketConstPtr p = decoder.read();
+        CHECK(p);
+        check_audio_packet(p, i,
+                           N_DATA_PACKETS);
+    }
+
+    // Receive packet #10
+    encoder.write(data_packets[10]);
+
+    for (size_t i = 10; i < N_DATA_PACKETS; ++i) {
+        IPacketConstPtr p = decoder.read();
+        CHECK(p);
+        check_audio_packet(p, i,
+                           N_DATA_PACKETS);
+    }
 }
 
 IGNORE_TEST(fec_codec_integration, get_packets_before_marker_bit) {
-    // TODO
+
+    // 1. Fill second half of block and whole block with one loss after. So that there is 10-19 and 20-39 seqnums in packet queue.
+    // 2. Check that we've got every packet including lost one.
+
+    BlockEncoder block_encoder;
+    BlockDecoder block_decoder;
+    rtp::Parser parser;
+
+    Encoder encoder(block_encoder, pckt_disp, composer);
+    Decoder decoder(block_decoder, pckt_disp.get_data_reader(),
+                    pckt_disp.get_fec_reader(), parser);
+
+    fill_all_packets( 0, N_DATA_PACKETS * 2);
+    for (size_t i = 10; i < N_DATA_PACKETS; ++i) {
+        encoder.write(data_packets[i]);
+    }
+
+    fill_all_packets( N_DATA_PACKETS, N_DATA_PACKETS * 2);
+    pckt_disp.lose(3);
+
+    for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
+        encoder.write(data_packets[i]);
+    }
+
+    for (size_t i = 10; i < N_DATA_PACKETS; ++i) {
+        IPacketConstPtr p = decoder.read();
+        CHECK(p);
+        check_audio_packet(p, i,
+                           N_DATA_PACKETS * 2);
+    }
+    // CHECK(pckt_disp.get_data_size() == N_DATA_PACKETS);
+    for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
+        IPacketConstPtr p = decoder.read();
+        CHECK(p);
+        check_audio_packet(p, i + N_DATA_PACKETS,
+                           N_DATA_PACKETS * 2);
+    }
 }
 
 IGNORE_TEST(fec_codec_integration, repair_wrong_source_or_seqnum) {
-    // TODO
 }
 
 } // namespace test
