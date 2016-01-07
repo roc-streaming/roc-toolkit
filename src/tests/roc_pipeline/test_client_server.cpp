@@ -147,38 +147,38 @@ TEST(client_server, interleaving) {
 
 #ifdef ROC_TARGET_OPENFEC
 TEST(client_server, ldpc_only_client) {
-    init_client(EnableLDPC);
+    init_client(EnableFEC);
     init_server(0);
     flow_client_server();
 }
 
 TEST(client_server, ldpc_only_server) {
     init_client(0);
-    init_server(EnableLDPC);
+    init_server(EnableFEC);
     flow_client_server();
 }
 
 TEST(client_server, ldpc) {
-    init_client(EnableLDPC);
-    init_server(EnableLDPC);
+    init_client(EnableFEC);
+    init_server(EnableFEC);
     flow_client_server();
 }
 
 TEST(client_server, ldpc_interleaving) {
-    init_client(EnableLDPC | EnableInterleaving);
-    init_server(EnableLDPC);
+    init_client(EnableFEC | EnableInterleaving);
+    init_server(EnableFEC);
     flow_client_server();
 }
 
 IGNORE_TEST(client_server, ldpc_random_loss) {
-    init_client(EnableLDPC, RandomLoss);
-    init_server(EnableLDPC);
+    init_client(EnableFEC, RandomLoss);
+    init_server(EnableFEC);
     flow_client_server();
 }
 
 IGNORE_TEST(client_server, ldpc_interleaving_random_loss) {
-    init_client(EnableLDPC | EnableInterleaving, RandomLoss);
-    init_server(EnableLDPC);
+    init_client(EnableFEC | EnableInterleaving, RandomLoss);
+    init_server(EnableFEC);
     flow_client_server();
 }
 #endif // ROC_TARGET_OPENFEC

@@ -30,7 +30,7 @@ enum Options {
     EnableResampling = (1 << 0),
 
     //! Use LDPC FEC encoder/decoder (server, client).
-    EnableLDPC = (1 << 1),
+    EnableFEC = (1 << 1),
 
     //! Use interleaver (client).
     EnableInterleaving = (1 << 2),

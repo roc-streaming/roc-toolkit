@@ -52,7 +52,7 @@ int main(int argc, char** argv) {
 
     pipeline::ClientConfig config;
     if (args.fec_arg == fec_arg_ldpc) {
-        config.options |= pipeline::EnableLDPC;
+        config.options |= pipeline::EnableFEC;
     }
     if (args.interleaving_arg == interleaving_arg_yes) {
         config.options |= pipeline::EnableInterleaving;

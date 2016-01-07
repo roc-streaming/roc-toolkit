@@ -57,7 +57,7 @@ int main(int argc, char** argv) {
 
     pipeline::ServerConfig config;
     if (args.fec_arg == fec_arg_ldpc) {
-        config.options |= pipeline::EnableLDPC;
+        config.options |= pipeline::EnableFEC;
     }
     if (args.resampling_arg == resampling_arg_yes) {
         config.options |= pipeline::EnableResampling;

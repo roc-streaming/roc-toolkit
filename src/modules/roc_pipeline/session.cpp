@@ -144,7 +144,7 @@ packet::IPacketReader* Session::make_packet_reader_() {
 
     tuners_.append(*watchdog_);
 
-    if (config_.options & EnableLDPC) {
+    if (config_.options & EnableFEC) {
         packet_reader = make_fec_decoder_(packet_reader);
     }
 

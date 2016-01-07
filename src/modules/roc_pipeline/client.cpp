@@ -103,7 +103,7 @@ packet::IPacketWriter* Client::make_packet_writer_() {
         packet_writer = new (interleaver_) packet::Interleaver(*packet_writer);
     }
 
-    if (config_.options & EnableLDPC) {
+    if (config_.options & EnableFEC) {
         packet_writer = make_fec_encoder_(packet_writer);
     }
 
