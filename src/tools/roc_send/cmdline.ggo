@@ -15,7 +15,7 @@ section "Options"
     option "type" t "Input codec or driver" typestr="TYPE" string optional
 
     option "fec" - "Enable/disable FEC encoding"
-        values="ldpc","no" default="ldpc" enum optional
+        values="enable","no" default="enable" enum optional
 
     option "interleaving" - "Enable/disable packet interleaving"
         values="yes","no" default="yes" enum optional

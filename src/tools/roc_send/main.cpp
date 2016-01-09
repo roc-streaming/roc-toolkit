@@ -51,7 +51,7 @@ int main(int argc, char** argv) {
     }
 
     pipeline::ClientConfig config;
-    if (args.fec_arg == fec_arg_ldpc) {
+    if (args.fec_arg == fec_arg_enable) {
         config.options |= pipeline::EnableFEC;
     }
     if (args.interleaving_arg == interleaving_arg_yes) {
