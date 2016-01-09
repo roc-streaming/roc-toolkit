@@ -54,6 +54,9 @@ public:
     //!  packets and return repaired packet.
     virtual packet::IPacketConstPtr read();
 
+    //! Did decoder catch block beginning?
+    bool is_started() const;    
+
 private:
     static const size_t N_DATA_PACKETS = ROC_CONFIG_DEFAULT_FEC_BLOCK_DATA_PACKETS;
     static const size_t N_FEC_PACKETS = ROC_CONFIG_DEFAULT_FEC_BLOCK_REDUNDANT_PACKETS;
@@ -71,6 +74,7 @@ private:
     void update_data_packets_();
     void update_fec_packets_();
 
+    //! Drops early packets from fec_queue_ until meets packets from current block or later.
     void skip_fec_packets_();
 
     IBlockDecoder& block_decoder_;

@@ -116,6 +116,10 @@ public:
         lost_packet_nums_.insert(n);
     }
 
+    void clear_losses() {
+        lost_packet_nums_.clear();
+    }
+
 private:
     size_t packet_num_;
 
@@ -390,7 +394,7 @@ TEST(fec_codec_integration, decoding_late_packet)
     }
 }
 
-IGNORE_TEST(fec_codec_integration, get_packets_before_marker_bit) {
+TEST(fec_codec_integration, get_packets_before_marker_bit) {
 
     // 1. Fill second half of block and whole block with one loss after. So that there is 10-19 and 20-39 seqnums in packet queue.
     // 2. Check that we've got every packet including lost one.
@@ -403,34 +407,64 @@ IGNORE_TEST(fec_codec_integration, get_packets_before_marker_bit) {
     Decoder decoder(block_decoder, pckt_disp.get_data_reader(),
                     pckt_disp.get_fec_reader(), parser);
 
+    // Sending first block except first packet with marker bit.
     fill_all_packets( 0, N_DATA_PACKETS * 2);
-    for (size_t i = 10; i < N_DATA_PACKETS; ++i) {
-        encoder.write(data_packets[i]);
-    }
-
-    fill_all_packets( N_DATA_PACKETS, N_DATA_PACKETS * 2);
-    pckt_disp.lose(3);
-
+    pckt_disp.lose(0);
     for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
         encoder.write(data_packets[i]);
     }
 
-    for (size_t i = 10; i < N_DATA_PACKETS; ++i) {
+    // Sending second block with start packet with marker bit.
+    pckt_disp.clear_losses();
+    fill_all_packets( N_DATA_PACKETS, N_DATA_PACKETS * 2);
+    // Loose one packe just to check if FEC is working correctly from the first block.
+    pckt_disp.lose(3);
+    for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
+        encoder.write(data_packets[i]);
+    }
+
+    // Receive every sent packet and the repaired one.
+    for (size_t i = 1; i < N_DATA_PACKETS*2; ++i) {
         IPacketConstPtr p = decoder.read();
-        CHECK(p);
+        if( i < N_DATA_PACKETS ){
+            CHECK( !decoder.is_started() );
+        } else {
+            CHECK( decoder.is_started() );
+        }
         check_audio_packet(p, i,
                            N_DATA_PACKETS * 2);
     }
-    // CHECK(pckt_disp.get_data_size() == N_DATA_PACKETS);
-    for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
-        IPacketConstPtr p = decoder.read();
-        CHECK(p);
-        check_audio_packet(p, i + N_DATA_PACKETS,
-                           N_DATA_PACKETS * 2);
-    }
+    CHECK(pckt_disp.get_data_size() == 0);
 }
 
-IGNORE_TEST(fec_codec_integration, repair_wrong_source_or_seqnum) {
+TEST(fec_codec_integration, repair_wrong_source_or_seqnum) {
+
+    // Spoil seqnum in packet and lost it. Check if decoder wouldn't restore it.
+
+    BlockEncoder block_encoder;
+    BlockDecoder block_decoder;
+    rtp::Parser parser;
+
+    Encoder encoder(block_encoder, pckt_disp, composer);
+    Decoder decoder(block_decoder, pckt_disp.get_data_reader(),
+                    pckt_disp.get_fec_reader(), parser);
+
+    // Sending first block except first packet with marker bit.
+    fill_all_packets(0, N_DATA_PACKETS);
+    pckt_disp.lose(10);
+    data_packets[10]->set_seqnum(666);
+    for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
+        encoder.write(data_packets[i]);
+    }
+    // Receive every sent packet and the repaired one.
+    for (size_t i = 0; i < N_DATA_PACKETS-1; ++i) {
+        IPacketConstPtr p = decoder.read();
+
+        // Check that we don't get 10th packet.
+        check_audio_packet(p, i < 10 ? i : i + 1,
+                           N_DATA_PACKETS);
+    }
+    CHECK(pckt_disp.get_data_size() == 0);    
 }
 
 } // namespace test
