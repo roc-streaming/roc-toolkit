@@ -67,7 +67,8 @@ private:
     packet::IPacketWriter& packet_output_;
     packet::IPacketComposer& packet_composer_;
 
-    const packet::source_t source_;
+    packet::source_t source_;
+    bool first_packet_;
 
     packet::seqnum_t cur_block_seqnum_;
     packet::seqnum_t cur_session_fec_seqnum_;

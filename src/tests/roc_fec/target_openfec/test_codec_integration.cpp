@@ -95,6 +95,10 @@ public:
         return fec_queue_.size();
     }
 
+    IPacketConstPtr get_fec_head() {
+        return fec_queue_.head();
+    }
+
     //! Clears both queues.
     void reset() {
         const size_t data_packets_n = data_queue_.size();
@@ -438,8 +442,36 @@ TEST(fec_codec_integration, get_packets_before_marker_bit) {
     CHECK(pckt_disp.get_data_size() == 0);
 }
 
-IGNORE_TEST(fec_codec_integration, encode_source_id) {
-    // TODO
+TEST(fec_codec_integration, encode_source_id) {
+    source_t data_source = 555;
+
+    for (size_t n = 0; n < 5; n++) {
+        BlockEncoder block_encoder;
+        Encoder encoder(block_encoder, pckt_disp, composer);
+
+        fill_all_packets(0, N_DATA_PACKETS);
+
+        for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
+            data_packets[i]->set_source(data_source);
+            encoder.write(data_packets[i]);
+        }
+
+        const source_t fec_source = pckt_disp.get_fec_head()->source();
+
+        CHECK(fec_source != data_source);
+
+        for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
+            LONGS_EQUAL(data_source, pckt_disp.get_data_reader().read()->source());
+        }
+
+        for (size_t i = 0; i < N_FEC_PACKETS; ++i) {
+            LONGS_EQUAL(fec_source, pckt_disp.get_fec_reader().read()->source());
+        }
+
+        pckt_disp.reset();
+
+        data_source = fec_source;
+    }
 }
 
 TEST(fec_codec_integration, decode_wrong_source_id_or_seqnum) {
@@ -456,7 +488,7 @@ TEST(fec_codec_integration, decode_wrong_source_id_or_seqnum) {
     // Sending first block except first packet with marker bit.
     fill_all_packets(0, N_DATA_PACKETS);
     pckt_disp.lose(10);
-    data_packets[10]->set_seqnum(666);
+    data_packets[10]->set_seqnum(data_packets[0]->seqnum() + 1);
     for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
         encoder.write(data_packets[i]);
     }

@@ -8,6 +8,7 @@
  */
 
 #include "roc_core/random.h"
+#include "roc_core/panic.h"
 #include "roc_core/log.h"
 
 #include "roc_fec/encoder.h"
@@ -21,13 +22,24 @@ Encoder::Encoder(IBlockEncoder& block_encoder,
     : block_encoder_(block_encoder)
     , packet_output_(output)
     , packet_composer_(composer)
-    , source_((packet::source_t)core::random(packet::source_t(-1)))
+    , source_(0)
+    , first_packet_(true)
     , cur_block_seqnum_(0)
     , cur_session_fec_seqnum_((packet::seqnum_t)core::random(packet::seqnum_t(-1)))
     , cur_data_pack_i_(0) {
 }
 
 void Encoder::write(const packet::IPacketPtr& p) {
+    roc_panic_if_not(p);
+
+    if (first_packet_) {
+        first_packet_ = false;
+        do {
+            source_ = (packet::source_t)core::random(packet::source_t(-1));
+        }
+        while (source_ == p->source());
+    }
+
     if (cur_data_pack_i_ == 0) {
         cur_block_seqnum_ = p->seqnum();
         p->set_marker(true);
