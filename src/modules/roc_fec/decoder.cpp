@@ -30,8 +30,8 @@ Decoder::Decoder(IBlockDecoder& block_decoder,
     , parser_(parser)
     , data_queue_(0)
     , fec_queue_(0)
-    , data_packets_(N_DATA_PACKETS)
-    , fec_packets_(N_FEC_PACKETS)
+    , data_block_(N_DATA_PACKETS)
+    , fec_block_(N_FEC_PACKETS)
     , decoding_started_(false)
     , can_repair_(false)
     , next_packet_(0)
@@ -84,25 +84,25 @@ packet::IPacketConstPtr Decoder::read_() {
 packet::IPacketConstPtr Decoder::get_next_packet_() {
     update_packets_();
 
-    packet::IPacketConstPtr pp = data_packets_[next_packet_];
+    packet::IPacketConstPtr pp = data_block_[next_packet_];
 
     do {
         if (!pp) {
             try_repair_();
 
             size_t pos;
-            for (pos = next_packet_; pos < data_packets_.size(); pos++) {
-                if (data_packets_[pos]) {
+            for (pos = next_packet_; pos < data_block_.size(); pos++) {
+                if (data_block_[pos]) {
                     break;
                 }
             }
 
-            if (pos == data_packets_.size()) {
+            if (pos == data_block_.size()) {
                 if (data_queue_.size() == 0) {
                     return NULL;
                 }
             } else {
-                pp = data_packets_[pos++];
+                pp = data_block_[pos++];
             }
 
             next_packet_ = pos;
@@ -110,7 +110,7 @@ packet::IPacketConstPtr Decoder::get_next_packet_() {
             next_packet_++;
         }
 
-        if (next_packet_ == data_packets_.size()) {
+        if (next_packet_ == data_block_.size()) {
             next_block_();
         }
     } while (!pp);
@@ -121,15 +121,15 @@ packet::IPacketConstPtr Decoder::get_next_packet_() {
 void Decoder::next_block_() {
     roc_log(LOG_FLOOD, "decoder: next block: sn=%lu", (unsigned long)cur_block_sn_);
 
-    for (size_t n = 0; n < data_packets_.size(); n++) {
-        data_packets_[n] = NULL;
+    for (size_t n = 0; n < data_block_.size(); n++) {
+        data_block_[n] = NULL;
     }
 
-    for (size_t n = 0; n < fec_packets_.size(); n++) {
-        fec_packets_[n] = NULL;
+    for (size_t n = 0; n < fec_block_.size(); n++) {
+        fec_block_[n] = NULL;
     }
 
-    cur_block_sn_ += data_packets_.size();
+    cur_block_sn_ += data_block_.size();
     next_packet_ = 0;
 
     can_repair_ = false;
@@ -141,22 +141,22 @@ void Decoder::try_repair_() {
         return;
     }
 
-    for (size_t n = 0; n < data_packets_.size(); n++) {
-        if (!data_packets_[n]) {
+    for (size_t n = 0; n < data_block_.size(); n++) {
+        if (!data_block_[n]) {
             continue;
         }
-        block_decoder_.write(n, data_packets_[n]->raw_data());
+        block_decoder_.write(n, data_block_[n]->raw_data());
     }
 
-    for (size_t n = 0; n < fec_packets_.size(); n++) {
-        if (!fec_packets_[n]) {
+    for (size_t n = 0; n < fec_block_.size(); n++) {
+        if (!fec_block_[n]) {
             continue;
         }
-        block_decoder_.write(data_packets_.size() + n, fec_packets_[n]->payload());
+        block_decoder_.write(data_block_.size() + n, fec_block_[n]->payload());
     }
 
-    for (size_t n = 0; n < data_packets_.size(); n++) {
-        if (data_packets_[n]) {
+    for (size_t n = 0; n < data_block_.size(); n++) {
+        if (data_block_[n]) {
             continue;
         }
 
@@ -176,7 +176,7 @@ void Decoder::try_repair_() {
             continue;
         }
 
-        data_packets_[n] = pp;
+        data_block_[n] = pp;
     }
 
     block_decoder_.reset();
@@ -205,7 +205,7 @@ bool Decoder::check_packet_(const packet::IPacketConstPtr& pp, size_t pos) {
 }
 
 void Decoder::fetch_packets_() {
-    while (data_queue_.size() <= data_packets_.size() * 2) {
+    while (data_queue_.size() <= data_block_.size() * 2) {
         if (packet::IPacketConstPtr pp = data_reader_.read()) {
             data_queue_.write(pp);
         } else {
@@ -213,7 +213,7 @@ void Decoder::fetch_packets_() {
         }
     }
 
-    while (fec_queue_.size() <= fec_packets_.size() * 2) {
+    while (fec_queue_.size() <= fec_block_.size() * 2) {
         if (packet::IPacketConstPtr pp = fec_reader_.read()) {
             if (pp->type() != packet::IFECPacket::Type) {
                 roc_panic("decoder: fec reader returned packet of wrong type");
@@ -239,7 +239,7 @@ void Decoder::update_data_packets_() {
             break;
         }
 
-        if (!SEQ_IS_BEFORE(pp->seqnum(), cur_block_sn_ + data_packets_.size())) {
+        if (!SEQ_IS_BEFORE(pp->seqnum(), cur_block_sn_ + data_block_.size())) {
             break;
         }
 
@@ -256,9 +256,9 @@ void Decoder::update_data_packets_() {
 
         const size_t p_num = SEQ_SUBTRACT(pp->seqnum(), cur_block_sn_);
 
-        if (!data_packets_[p_num]) {
+        if (!data_block_[p_num]) {
             can_repair_ = true;
-            data_packets_[p_num] = pp;
+            data_block_[p_num] = pp;
             n_added++;
         }
     }
@@ -280,7 +280,7 @@ void Decoder::update_fec_packets_() {
 
         packet::IFECPacketConstPtr fp = static_cast<const packet::IFECPacket*>(pp.get());
 
-        if (!SEQ_IS_BEFORE(fp->data_blknum(), cur_block_sn_ + data_packets_.size())) {
+        if (!SEQ_IS_BEFORE(fp->data_blknum(), cur_block_sn_ + data_block_.size())) {
             break;
         }
 
@@ -305,9 +305,9 @@ void Decoder::update_fec_packets_() {
 
         const size_t p_num = SEQ_SUBTRACT(fp->seqnum(), fp->fec_blknum());
 
-        if (!fec_packets_[p_num]) {
+        if (!fec_block_[p_num]) {
             can_repair_ = true;
-            fec_packets_[p_num] = fp;
+            fec_block_[p_num] = fp;
             n_added++;
         }
     }

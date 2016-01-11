@@ -55,7 +55,7 @@ public:
     virtual packet::IPacketConstPtr read();
 
     //! Did decoder catch block beginning?
-    bool is_started() const;    
+    bool is_started() const;
 
 private:
     static const size_t N_DATA_PACKETS = ROC_CONFIG_DEFAULT_FEC_BLOCK_DATA_PACKETS;
@@ -86,8 +86,8 @@ private:
     packet::PacketQueue data_queue_;
     packet::PacketQueue fec_queue_;
 
-    core::Array<packet::IPacketConstPtr, N_DATA_PACKETS> data_packets_;
-    core::Array<packet::IFECPacketConstPtr, N_FEC_PACKETS> fec_packets_;
+    core::Array<packet::IPacketConstPtr, N_DATA_PACKETS> data_block_;
+    core::Array<packet::IFECPacketConstPtr, N_FEC_PACKETS> fec_block_;
 
     bool decoding_started_;
     bool can_repair_;
