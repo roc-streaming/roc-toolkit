@@ -36,8 +36,7 @@ void Encoder::write(const packet::IPacketPtr& p) {
         first_packet_ = false;
         do {
             source_ = (packet::source_t)core::random(packet::source_t(-1));
-        }
-        while (source_ == p->source());
+        } while (source_ == p->source());
     }
 
     if (cur_data_pack_i_ == 0) {

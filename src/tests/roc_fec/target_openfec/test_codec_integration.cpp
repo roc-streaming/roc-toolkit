@@ -355,8 +355,7 @@ TEST(fec_codec_integration, decoding_when_multiple_blocks_in_queue) {
     }
 }
 
-TEST(fec_codec_integration, decoding_late_packet)
-{
+TEST(fec_codec_integration, decoding_late_packet) {
     // 1. Fill all packets in block except one lost packet.
     // 2. Read first part of block till lost packet.
     // 3. Receive one missing packet.
@@ -370,21 +369,20 @@ TEST(fec_codec_integration, decoding_late_packet)
     Decoder decoder(block_decoder, pckt_disp.get_data_reader(),
                     pckt_disp.get_fec_reader(), parser);
 
-    fill_all_packets( 0, N_DATA_PACKETS);
+    fill_all_packets(0, N_DATA_PACKETS);
     for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
         // Loosing packet #10
-        if( i == 10)
+        if (i == 10)
             continue;
         encoder.write(data_packets[i]);
     }
-    CHECK(pckt_disp.get_data_size() == N_DATA_PACKETS-1);
+    CHECK(pckt_disp.get_data_size() == N_DATA_PACKETS - 1);
 
     // Check 0-9 packets.
     for (size_t i = 0; i < 10; ++i) {
         IPacketConstPtr p = decoder.read();
         CHECK(p);
-        check_audio_packet(p, i,
-                           N_DATA_PACKETS);
+        check_audio_packet(p, i, N_DATA_PACKETS);
     }
 
     // Receive packet #10
@@ -393,13 +391,11 @@ TEST(fec_codec_integration, decoding_late_packet)
     for (size_t i = 10; i < N_DATA_PACKETS; ++i) {
         IPacketConstPtr p = decoder.read();
         CHECK(p);
-        check_audio_packet(p, i,
-                           N_DATA_PACKETS);
+        check_audio_packet(p, i, N_DATA_PACKETS);
     }
 }
 
 TEST(fec_codec_integration, get_packets_before_marker_bit) {
-
     // 1. Fill second half of block and whole block with one loss after, so that there
     //    is 10-19 and 20-39 seqnums in packet queue.
     // 2. Check that we've got every packet including lost one.
@@ -413,7 +409,7 @@ TEST(fec_codec_integration, get_packets_before_marker_bit) {
                     pckt_disp.get_fec_reader(), parser);
 
     // Sending first block except first packet with marker bit.
-    fill_all_packets( 0, N_DATA_PACKETS * 2);
+    fill_all_packets(0, N_DATA_PACKETS * 2);
     pckt_disp.lose(0);
     for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
         encoder.write(data_packets[i]);
@@ -421,7 +417,7 @@ TEST(fec_codec_integration, get_packets_before_marker_bit) {
 
     // Sending second block with start packet with marker bit.
     pckt_disp.clear_losses();
-    fill_all_packets( N_DATA_PACKETS, N_DATA_PACKETS * 2);
+    fill_all_packets(N_DATA_PACKETS, N_DATA_PACKETS * 2);
     // Loose one packe just to check if FEC is working correctly from the first block.
     pckt_disp.lose(3);
     for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
@@ -429,15 +425,14 @@ TEST(fec_codec_integration, get_packets_before_marker_bit) {
     }
 
     // Receive every sent packet and the repaired one.
-    for (size_t i = 1; i < N_DATA_PACKETS*2; ++i) {
+    for (size_t i = 1; i < N_DATA_PACKETS * 2; ++i) {
         IPacketConstPtr p = decoder.read();
-        if( i < N_DATA_PACKETS ){
-            CHECK( !decoder.is_started() );
+        if (i < N_DATA_PACKETS) {
+            CHECK(!decoder.is_started());
         } else {
-            CHECK( decoder.is_started() );
+            CHECK(decoder.is_started());
         }
-        check_audio_packet(p, i,
-                           N_DATA_PACKETS * 2);
+        check_audio_packet(p, i, N_DATA_PACKETS * 2);
     }
     CHECK(pckt_disp.get_data_size() == 0);
 }
@@ -493,12 +488,11 @@ TEST(fec_codec_integration, decode_wrong_source_id_or_seqnum) {
         encoder.write(data_packets[i]);
     }
     // Receive every sent packet and the repaired one.
-    for (size_t i = 0; i < N_DATA_PACKETS-1; ++i) {
+    for (size_t i = 0; i < N_DATA_PACKETS - 1; ++i) {
         IPacketConstPtr p = decoder.read();
 
         // Check that we don't get 10th packet.
-        check_audio_packet(p, i < 10 ? i : i + 1,
-                           N_DATA_PACKETS);
+        check_audio_packet(p, i < 10 ? i : i + 1, N_DATA_PACKETS);
     }
     CHECK(pckt_disp.get_data_size() == 0);
 }

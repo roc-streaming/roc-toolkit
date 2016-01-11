@@ -74,7 +74,8 @@ private:
     void update_data_packets_();
     void update_fec_packets_();
 
-    //! Drops early packets from fec_queue_ until meets packets from current block or later.
+    // Drops early packets from fec_queue_ until meets packets from current block
+    // or later.
     void skip_fec_packets_();
 
     IBlockDecoder& block_decoder_;
