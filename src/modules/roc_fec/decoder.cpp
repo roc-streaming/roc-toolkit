@@ -205,9 +205,7 @@ bool Decoder::check_packet_(const packet::IPacketConstPtr& pp, size_t pos) {
 }
 
 void Decoder::fetch_packets_() {
-    while (data_queue_.size() <= data_packets_.size() * 2 ||
-            (data_packets_.size() <= N_DATA_PACKETS && data_packets_.size() > 0)
-            ) {
+    while (data_queue_.size() <= data_packets_.size() * 2) {
         if (packet::IPacketConstPtr pp = data_reader_.read()) {
             data_queue_.write(pp);
         } else {
