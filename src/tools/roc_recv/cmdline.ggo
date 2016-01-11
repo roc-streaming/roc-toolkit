@@ -12,7 +12,7 @@ section "Options"
     option "type" t "Output codec or driver" typestr="TYPE" string optional
 
     option "fec" - "Enable/disable FEC decoding"
-        values="enable","no" default="enable" enum optional
+        values="yes","no" default="yes" enum optional
 
     option "resampling" - "Enabled/disable resampling"
         values="yes","no" default="yes" enum optional
