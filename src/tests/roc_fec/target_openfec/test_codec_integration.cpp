@@ -437,30 +437,47 @@ TEST(fec_codec_integration, get_packets_before_marker_bit) {
     CHECK(pckt_disp.get_data_size() == 0);
 }
 
-TEST(fec_codec_integration, encode_source_id) {
+TEST(fec_codec_integration, encode_source_id_and_seqnum) {
+    enum { N_BLKS = 3 };
+
     source_t data_source = 555;
 
     for (size_t n = 0; n < 5; n++) {
         BlockEncoder block_encoder;
         Encoder encoder(block_encoder, pckt_disp, composer);
 
-        fill_all_packets(0, N_DATA_PACKETS);
+        source_t fec_source = 0;
+        seqnum_t fec_seqnum = 0;
 
-        for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
-            data_packets[i]->set_source(data_source);
-            encoder.write(data_packets[i]);
-        }
+        for (size_t block_num = 0; block_num < N_BLKS; ++block_num) {
+            fill_all_packets(N_DATA_PACKETS * block_num, N_DATA_PACKETS * N_BLKS);
 
-        const source_t fec_source = pckt_disp.get_fec_head()->source();
+            for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
+                data_packets[i]->set_source(data_source);
+            }
 
-        CHECK(fec_source != data_source);
+            for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
+                encoder.write(data_packets[i]);
+            }
 
-        for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
-            LONGS_EQUAL(data_source, pckt_disp.get_data_reader().read()->source());
-        }
+            if (block_num == 0) {
+                fec_source = pckt_disp.get_fec_head()->source();
+                fec_seqnum = pckt_disp.get_fec_head()->seqnum();
 
-        for (size_t i = 0; i < N_FEC_PACKETS; ++i) {
-            LONGS_EQUAL(fec_source, pckt_disp.get_fec_reader().read()->source());
+            }
+
+            CHECK(fec_source != data_source);
+
+            for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
+                LONGS_EQUAL(data_source, pckt_disp.get_data_reader().read()->source());
+            }
+
+            for (size_t i = 0; i < N_FEC_PACKETS; ++i) {
+                IPacketConstPtr p = pckt_disp.get_fec_reader().read();
+                LONGS_EQUAL(fec_source, p->source());
+                LONGS_EQUAL(fec_seqnum, p->seqnum());
+                fec_seqnum++;
+            }
         }
 
         pckt_disp.reset();
@@ -469,8 +486,9 @@ TEST(fec_codec_integration, encode_source_id) {
     }
 }
 
-TEST(fec_codec_integration, decode_wrong_source_id_or_seqnum) {
-    // Spoil seqnum in packet and lost it. Check if decoder wouldn't restore it.
+TEST(fec_codec_integration, decode_bad_source_id_or_seqnum) {
+    // Spoil source id or seqnum in packet and lose it.
+    // Check that decoder wouldn't restore it.
 
     BlockEncoder block_encoder;
     BlockDecoder block_decoder;
@@ -480,20 +498,25 @@ TEST(fec_codec_integration, decode_wrong_source_id_or_seqnum) {
     Decoder decoder(block_decoder, pckt_disp.get_data_reader(),
                     pckt_disp.get_fec_reader(), parser);
 
-    // Sending first block except first packet with marker bit.
     fill_all_packets(0, N_DATA_PACKETS);
-    pckt_disp.lose(10);
-    data_packets[10]->set_seqnum(data_packets[0]->seqnum() + 1);
+
+    pckt_disp.lose(5);  // should be rejected (bad source id)
+    pckt_disp.lose(9);  // should be rejected (bad seqnum)
+    pckt_disp.lose(14); // should be rapaired
+
+    data_packets[5]->set_source(data_packets[5]->source() + 1);
+    data_packets[9]->set_source(data_packets[9]->seqnum() + 1);
+
     for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
         encoder.write(data_packets[i]);
     }
-    // Receive every sent packet and the repaired one.
-    for (size_t i = 0; i < N_DATA_PACKETS - 1; ++i) {
-        IPacketConstPtr p = decoder.read();
 
-        // Check that we don't get 10th packet.
-        check_audio_packet(p, i < 10 ? i : i + 1, N_DATA_PACKETS);
+    for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
+        if (i != 5 && i != 9) {
+            check_audio_packet(decoder.read(), i, N_DATA_PACKETS);
+        }
     }
+
     CHECK(pckt_disp.get_data_size() == 0);
 }
 
