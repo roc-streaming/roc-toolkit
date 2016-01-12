@@ -35,25 +35,21 @@ Video support
 -------------
 
 - [ ] Implement video packet formats (RTP)
-- [ ] Implement video processing elements (complementing `audio::Streamer`, `audio::Resampler`, etc)
+- [ ] Implement video processing elements (complementing `audio::Streamer`, `audio::Resampler`, etc.)
 - [ ] Adopt `roc_pipeline` for video
 - [ ] Add video input/output support
 
 Ports
 -----
 
-- [ ] Various Linux and *nix distros
+- [x] Various Linux distros
 - [ ] Notably, Raspberry Pi (Raspbian)
+- [ ] Other *nix distros
 - [ ] Mac OS X
 - [ ] Windows
 
 Applications
 ------------
-
-#### GStreamer
-
-- [ ] GStreamer plugin (using `roc` as network transport)
-- [ ] User app prototype using our GStreamer plugin to connect local source and remote sink
 
 #### Pulseaudio 
 
@@ -65,7 +61,3 @@ Applications
 - [ ] Implement relay tool (a.k.a. retranslator) that forwards incoming traffic to next hop, adding features
   like FEC, retransmission, compression, etc. This may be useful to improve quality of RTP trafic from
   other clients or probably pulseaudio trafic.
-
-#### Jabber
-
-- [ ] We could implement plugin for some IM with audio support to enhance quality of service (Jingle? SIP?)
