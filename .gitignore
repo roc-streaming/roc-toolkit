@@ -2,10 +2,7 @@
 bin
 build
 doc/doxygen
-
-# python
-__pycache__
-*.pyc
+3rdparty
 
 # scons
 .sconsign.dblite
@@ -15,11 +12,15 @@ build.log
 
 # doxygen
 doxygen_*.db
+doxygen_*.tmp
+
+# python
+__pycache__
+*.pyc
 
 # vim
 *.sw[op]
 
 # misc
-3rdparty
 .copyright
 *.vpp~*
