@@ -463,7 +463,6 @@ TEST(fec_codec_integration, encode_source_id_and_seqnum) {
             if (block_num == 0) {
                 fec_source = pckt_disp.get_fec_head()->source();
                 fec_seqnum = pckt_disp.get_fec_head()->seqnum();
-
             }
 
             CHECK(fec_source != data_source);
