@@ -185,6 +185,7 @@ packet::IPacketReader* Session::make_fec_decoder_(packet::IPacketReader* packet_
 #else
 packet::IPacketReader* Session::make_fec_decoder_(packet::IPacketReader* packet_reader) {
     roc_log(LOG_ERROR, "session: OpenFEC support not enabled, disabling fec decoder");
+    (void)packet_parser_;
     return packet_reader;
 }
 #endif

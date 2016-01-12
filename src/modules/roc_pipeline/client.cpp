@@ -118,7 +118,7 @@ packet::IPacketWriter* Client::make_fec_encoder_(packet::IPacketWriter* packet_w
         fec::Encoder(*fec_ldpc_encoder_, *packet_writer, packet_composer_);
 }
 #else
-packet::IPacketWriter* Client::make_fec_encoder(packet::IPacketWriter* packet_writer) {
+packet::IPacketWriter* Client::make_fec_encoder_(packet::IPacketWriter* packet_writer) {
     roc_log(LOG_ERROR, "client: OpenFEC support not enabled, disabling fec encoder");
     return packet_writer;
 }
