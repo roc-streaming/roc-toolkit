@@ -20,9 +20,7 @@ namespace roc {
 namespace core {
 
 errno_to_str::errno_to_str() {
-    if (strerror_r(errno, buffer, sizeof(buffer) - 1) == -1) {
-        buffer[0] = '\0';
-    }
+    errno_to_str(errno);
 }
 
 errno_to_str::errno_to_str(int err) {
