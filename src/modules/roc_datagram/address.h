@@ -38,6 +38,11 @@ struct Address {
     bool operator==(const Address& other) const {
         return (memcmp(ip, other.ip, sizeof(ip)) == 0 && port == other.port);
     }
+
+    //! Compare addresses.
+    bool operator!=(const Address& other) const {
+        return !(*this == other);
+    }
 };
 
 } // namespace datagram

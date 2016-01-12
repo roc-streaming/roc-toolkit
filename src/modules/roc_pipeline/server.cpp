@@ -84,7 +84,7 @@ void Server::stop() {
 bool Server::tick() {
     for (size_t n = 0; n < config_.max_sessions * config_.max_session_packets; n++) {
         if (datagram::IDatagramConstPtr dgm = datagram_reader_.read()) {
-            session_manager_.store(*dgm);
+            session_manager_.route(*dgm);
         } else {
             break;
         }

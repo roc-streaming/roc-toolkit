@@ -17,10 +17,12 @@ namespace roc {
 namespace pipeline {
 
 Session::Session(const ServerConfig& config,
-                 const datagram::Address& addr,
+                 const datagram::Address& send_addr,
+                 const datagram::Address& recv_addr,
                  packet::IPacketParser& parser)
     : config_(config)
-    , address_(addr)
+    , send_addr_(send_addr)
+    , recv_addr_(recv_addr)
     , packet_parser_(parser)
     , streamers_(MaxChannels)
     , resamplers_(MaxChannels)
@@ -37,19 +39,30 @@ void Session::free() {
     config_.session_pool->destroy(*this);
 }
 
-const datagram::Address& Session::address() const {
-    return address_;
+const datagram::Address& Session::sender() const {
+    return send_addr_;
 }
 
-bool Session::store(const datagram::IDatagram& dgm) {
-    packet::IPacketConstPtr packet = packet_parser_.parse(dgm.buffer());
-    if (!packet) {
-        roc_log(LOG_TRACE, "session: dropping datagram: can't parse");
+bool Session::may_route(const datagram::IDatagram& dgm,
+                        const packet::IPacketConstPtr& packet) const {
+    if (dgm.sender() != send_addr_ || dgm.receiver() != recv_addr_) {
         return false;
+    } else {
+        return router_.may_route(packet);
     }
+}
 
+bool Session::may_autodetect_route(const datagram::IDatagram& dgm,
+                                   const packet::IPacketConstPtr& packet) const {
+    if (dgm.sender() != send_addr_ || dgm.receiver() != recv_addr_) {
+        return false;
+    } else {
+        return router_.may_autodetect_route(packet);
+    }
+}
+
+void Session::route(const packet::IPacketConstPtr& packet) {
     router_.write(packet);
-    return true;
 }
 
 bool Session::update() {

@@ -37,6 +37,7 @@ public:
 
     long value;
 
+    packet::source_t sid;
     packet::seqnum_t sn;
     packet::timestamp_t ts;
 
@@ -44,6 +45,7 @@ public:
         : dst(DstPort)
         , src(SrcPort)
         , value(1)
+        , sid(0)
         , sn(0)
         , ts(0) {
     }
@@ -118,6 +120,7 @@ public:
             v++;
         }
 
+        packet->set_source(sid);
         packet->set_seqnum(sn);
         packet->set_timestamp(ts);
         packet->set_size(ChannelMask, n_pkt_samples);

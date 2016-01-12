@@ -41,12 +41,25 @@ void SessionManager::add_port(const datagram::Address& address,
     ports_.append(port);
 }
 
-bool SessionManager::store(const datagram::IDatagram& dgm) {
-    if (find_session_and_store_(dgm)) {
+bool SessionManager::route(const datagram::IDatagram& dgm) {
+    const Port* port = find_port_(dgm.receiver());
+    if (port == NULL) {
+        roc_log(LOG_TRACE, "session manager: dropping datagram: no parser for %s",
+                datagram::address_to_str(dgm.receiver()).c_str());
+        return false;
+    }
+
+    packet::IPacketConstPtr packet = port->parser->parse(dgm.buffer());
+    if (!packet) {
+        roc_log(LOG_TRACE, "session manager: dropping datagram: can't parse");
+        return false;
+    }
+
+    if (find_session_and_store_(dgm, packet)) {
         return true;
     }
 
-    if (create_session_and_store_(dgm)) {
+    if (create_session_and_store_(dgm, packet, *port->parser)) {
         return true;
     }
 
@@ -61,7 +74,7 @@ bool SessionManager::update() {
 
         if (!session->update()) {
             roc_log(LOG_DEBUG, "session manager: removing session %s",
-                    datagram::address_to_str(session->address()).c_str());
+                    datagram::address_to_str(session->sender()).c_str());
 
             session->detach(audio_sink_);
             sessions_.remove(*session);
@@ -89,11 +102,20 @@ void SessionManager::destroy_sessions_() {
     }
 }
 
-bool SessionManager::find_session_and_store_(const datagram::IDatagram& dgm) {
+bool SessionManager::find_session_and_store_(const datagram::IDatagram& dgm,
+                                             const packet::IPacketConstPtr& packet) {
     for (SessionPtr session = sessions_.front(); session;
          session = sessions_.next(*session)) {
-        if (session->address() == dgm.sender()) {
-            session->store(dgm);
+        if (session->may_route(dgm, packet)) {
+            session->route(packet);
+            return true;
+        }
+    }
+
+    for (SessionPtr session = sessions_.front(); session;
+         session = sessions_.next(*session)) {
+        if (session->may_autodetect_route(dgm, packet)) {
+            session->route(packet);
             return true;
         }
     }
@@ -101,7 +123,9 @@ bool SessionManager::find_session_and_store_(const datagram::IDatagram& dgm) {
     return false;
 }
 
-bool SessionManager::create_session_and_store_(const datagram::IDatagram& dgm) {
+bool SessionManager::create_session_and_store_(const datagram::IDatagram& dgm,
+                                               const packet::IPacketConstPtr& packet,
+                                               packet::IPacketParser& parser) {
     if (sessions_.size() >= config_.max_sessions) {
         roc_log(LOG_DEBUG, "session manager: dropping datagram:"
                            " maximum number of session limit reached (%u sessions)",
@@ -109,30 +133,18 @@ bool SessionManager::create_session_and_store_(const datagram::IDatagram& dgm) {
         return false;
     }
 
-    const Port* port = find_port_(dgm.receiver());
-    if (port == NULL) {
-        roc_log(LOG_TRACE, "session manager: dropping datagram: no parser for %s",
-                datagram::address_to_str(dgm.receiver()).c_str());
-        return false;
-    }
-
     roc_log(LOG_DEBUG, "session manager: creating session %s",
             datagram::address_to_str(dgm.sender()).c_str());
 
-    SessionPtr session =
-        new (*config_.session_pool) Session(config_, dgm.sender(), *port->parser);
+    SessionPtr session = new (*config_.session_pool)
+        Session(config_, dgm.sender(), dgm.receiver(), parser);
 
     if (!session) {
         roc_log(LOG_DEBUG, "session manager: can't get session from pool");
         return false;
     }
 
-    if (!session->store(dgm)) {
-        roc_log(LOG_TRACE, "session manager:"
-                           " ignoring session: can't store first datagram");
-        return false;
-    }
-
+    session->route(packet);
     session->attach(audio_sink_);
     sessions_.append(*session);
 

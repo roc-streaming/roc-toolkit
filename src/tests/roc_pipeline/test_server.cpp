@@ -262,17 +262,82 @@ TEST(server, two_sessions_overlapping) {
     ss.read(output, EnoughPackets * PktSamples);
 }
 
-TEST(server, two_sessions_two_parsers) {
+TEST(server, two_sessions_2sendaddr_1recvaddr_1source) {
+    // Two sessions has:
+    //  - different source addresses
+    //  - same destination addresses
+    //  - same source ids
+
     PacketStream ps1;
-    ps1.src += 1;
-    ps1.dst += 1;
+    ps1.sid = 11;
+    ps1.src = 22;
+    ps1.dst = 33;
 
     PacketStream ps2;
-    ps2.src += 2;
-    ps2.dst += 2;
+    ps1.sid = 11;
+    ps2.src = 44;
+    ps2.dst = 33;
+
+    add_port(ps1.dst);
+
+    ps1.write(input, EnoughPackets, PktSamples);
+    ps2.write(input, EnoughPackets, PktSamples);
+
+    render(EnoughPackets * PktSamples);
+    expect_num_sessions(2);
+
+    SampleStream ss;
+    ss.set_sessions(2);
+    ss.read(output, EnoughPackets * PktSamples);
+}
+
+TEST(server, two_sessions_1sendaddr_2recvaddr_1source) {
+    // Two sessions has:
+    //  - same source addresses
+    //  - different destination addresses
+    //  - same source ids
+
+    PacketStream ps1;
+    ps1.sid = 11;
+    ps1.src = 22;
+    ps1.dst = 33;
+
+    PacketStream ps2;
+    ps1.sid = 11;
+    ps2.src = 22;
+    ps2.dst = 44;
 
     add_port(ps1.dst);
     add_port(ps2.dst);
+
+    ps1.write(input, EnoughPackets, PktSamples);
+    ps2.write(input, EnoughPackets, PktSamples);
+
+    render(EnoughPackets * PktSamples);
+    expect_num_sessions(2);
+
+    SampleStream ss;
+    ss.set_sessions(2);
+    ss.read(output, EnoughPackets * PktSamples);
+}
+
+TEST(server, two_sessions_1sendaddr_1recvaddr_2source) {
+    // Two sessions has:
+    //  - same source addresses
+    //  - same destination addresses
+    //  - different source ids
+
+    PacketStream ps1;
+    ps1.sid = 11;
+    ps1.src = 33;
+    ps1.dst = 33;
+
+    PacketStream ps2;
+    ps1.sid = 22;
+    ps2.src = 33;
+    ps2.dst = 33;
+
+    add_port(ps1.dst);
 
     ps1.write(input, EnoughPackets, PktSamples);
     ps2.write(input, EnoughPackets, PktSamples);

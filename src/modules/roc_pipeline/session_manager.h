@@ -43,9 +43,9 @@ public:
     //! Register port.
     void add_port(const datagram::Address&, packet::IPacketParser&);
 
-    //! Store datagram into proper session.
+    //! Route datagram to proper session.
     //! @returns false if datagram was dropped.
-    bool store(const datagram::IDatagram&);
+    bool route(const datagram::IDatagram&);
 
     //! Update sessions.
     //! @returns false if server should be terminated.
@@ -65,8 +65,12 @@ private:
 
     void destroy_sessions_();
 
-    bool find_session_and_store_(const datagram::IDatagram&);
-    bool create_session_and_store_(const datagram::IDatagram&);
+    bool find_session_and_store_(const datagram::IDatagram&,
+                                 const packet::IPacketConstPtr&);
+
+    bool create_session_and_store_(const datagram::IDatagram&,
+                                   const packet::IPacketConstPtr&,
+                                   packet::IPacketParser&);
 
     const Port* find_port_(const datagram::Address&);
 

@@ -59,15 +59,23 @@ struct ServerConfig;
 class Session : public core::RefCnt, public core::ListNode {
 public:
     //! Create session.
-    Session(const ServerConfig&, const datagram::Address&, packet::IPacketParser&);
+    Session(const ServerConfig& config,
+            const datagram::Address& send_addr,
+            const datagram::Address& recv_addr,
+            packet::IPacketParser& parser);
 
-    //! Get client address.
-    const datagram::Address& address() const;
+    //! Get sender address.
+    const datagram::Address& sender() const;
 
-    //! Parse datagram and add it to internal storage.
-    //! @returns
-    //!  true if datagram was successfully parsed and stored.
-    bool store(const datagram::IDatagram&);
+    //! Check if packet may be routed to this session.
+    bool may_route(const datagram::IDatagram&, const packet::IPacketConstPtr&) const;
+
+    //! Check if there is a new route may be created from packet for with session.
+    bool may_autodetect_route(const datagram::IDatagram&,
+                              const packet::IPacketConstPtr&) const;
+
+    //! Route packet to a proper queue.
+    void route(const packet::IPacketConstPtr&);
 
     //! Update renderer state.
     //! @returns
@@ -94,7 +102,8 @@ private:
     packet::IPacketReader* make_fec_decoder_(packet::IPacketReader*);
 
     const ServerConfig& config_;
-    const datagram::Address address_;
+    const datagram::Address send_addr_;
+    const datagram::Address recv_addr_;
     packet::IPacketParser& packet_parser_;
 
     core::Maybe<packet::PacketQueue> audio_packet_queue_;
