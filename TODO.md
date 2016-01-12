@@ -17,6 +17,7 @@ Basic features
 - [ ] Finish RTP support (*work in progress*)
 - [ ] Minimal RTCP support
 - [ ] Session negotiation (probably  [RTSP](https://en.wikipedia.org/wiki/Real_Time_Streaming_Protocol))
+- [ ] Support more than two channels (should be easy)
 
 Advanced features
 -----------------
