@@ -144,6 +144,11 @@ bool SessionManager::create_session_and_store_(const datagram::IDatagram& dgm,
         return false;
     }
 
+    if (!session->may_autodetect_route(dgm, packet)) {
+        roc_log(LOG_DEBUG, "session manager: can't route packet to new session");
+        return false;
+    }
+
     session->route(packet);
     session->attach(audio_sink_);
     sessions_.append(*session);
