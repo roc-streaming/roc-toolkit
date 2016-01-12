@@ -75,16 +75,21 @@ if GetOption('help'):
 if 'clean' in COMMAND_LINE_TARGETS and COMMAND_LINE_TARGETS != ['clean']:
     env.Die("combining 'clean' with other targets is not allowed")
 
-env.AlwaysBuild(
-    env.Alias('clean', [], [
-        env.DeleteDir('#bin'),
-        env.DeleteDir('#build'),
-        env.DeleteDir('#doc/doxygen'),
-        env.DeleteDir('#3rdparty'),
-        env.DeleteDir('#.sconf_temp'),
-        env.DeleteFile('#.sconsign.dblite'),
-        env.DeleteFile('#config.log'),
-    ]))
+clean = [
+    env.DeleteDir('#bin'),
+    env.DeleteDir('#build'),
+    env.DeleteDir('#doc/doxygen'),
+    env.DeleteDir('#3rdparty'),
+    env.DeleteDir('#.sconf_temp'),
+    env.DeleteFile('#.sconsign.dblite'),
+    env.DeleteFile('#config.log'),
+]
+
+env.AlwaysBuild(env.Alias('clean', [], clean))
+
+if env.GetOption('clean'):
+    env.Execute(clean)
+    Return()
 
 if not 'DOXYGEN' in env.Dictionary():
     env['DOXYGEN'] = 'doxygen'
