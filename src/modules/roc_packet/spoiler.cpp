@@ -11,26 +11,26 @@
 #include "roc_core/time.h"
 #include "roc_core/panic.h"
 
-#include "roc_packet/wrecker.h"
+#include "roc_packet/spoiler.h"
 
 namespace roc {
 namespace packet {
 
-Wrecker::Wrecker(IPacketWriter& writer)
+Spoiler::Spoiler(IPacketWriter& writer)
     : writer_(writer)
     , loss_rate_(0)
     , delay_rate_(0)
     , delay_ms_(0) {
 }
 
-void Wrecker::set_random_loss(size_t rate) {
+void Spoiler::set_random_loss(size_t rate) {
     if (rate > 100) {
         roc_panic("random loss rate should be in range [0; 100]");
     }
     loss_rate_ = rate;
 }
 
-void Wrecker::set_random_delay(size_t rate, size_t ms) {
+void Spoiler::set_random_delay(size_t rate, size_t ms) {
     if (rate > 100) {
         roc_panic("random delay rate should be in range [0; 100]");
     }
@@ -38,7 +38,7 @@ void Wrecker::set_random_delay(size_t rate, size_t ms) {
     delay_ms_ = ms;
 }
 
-void Wrecker::write(const IPacketPtr& packet) {
+void Spoiler::write(const IPacketPtr& packet) {
     if (core::random(100) < loss_rate_) {
         return;
     }

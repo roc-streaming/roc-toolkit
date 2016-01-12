@@ -93,10 +93,10 @@ packet::IPacketWriter* Client::make_packet_writer_() {
     packet::IPacketWriter* packet_writer = &packet_sender_;
 
     if (config_.random_loss_rate || config_.random_delay_rate) {
-        packet_writer = new (wrecker_) packet::Wrecker(*packet_writer);
+        packet_writer = new (spoiler_) packet::Spoiler(*packet_writer);
 
-        wrecker_->set_random_loss(config_.random_loss_rate);
-        wrecker_->set_random_delay(config_.random_delay_rate, config_.random_delay_time);
+        spoiler_->set_random_loss(config_.random_loss_rate);
+        spoiler_->set_random_delay(config_.random_delay_rate, config_.random_delay_time);
     }
 
     if (config_.options & EnableInterleaving) {

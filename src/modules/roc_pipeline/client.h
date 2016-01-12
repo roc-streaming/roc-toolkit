@@ -22,7 +22,7 @@
 
 #include "roc_packet/ipacket_composer.h"
 #include "roc_packet/packet_sender.h"
-#include "roc_packet/wrecker.h"
+#include "roc_packet/spoiler.h"
 #include "roc_packet/interleaver.h"
 
 #include "roc_fec/encoder.h"
@@ -119,7 +119,7 @@ private:
     packet::PacketSender packet_sender_;
     packet::IPacketComposer& packet_composer_;
 
-    core::Maybe<packet::Wrecker> wrecker_;
+    core::Maybe<packet::Spoiler> spoiler_;
     core::Maybe<packet::Interleaver> interleaver_;
 
 #ifdef ROC_TARGET_OPENFEC

@@ -7,11 +7,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_packet/wrecker.h
-//! @brief Packet wrecker.
+//! @file roc_packet/spoiler.h
+//! @brief Packet spoiler.
 
-#ifndef ROC_PACKET_WRECKER_H_
-#define ROC_PACKET_WRECKER_H_
+#ifndef ROC_PACKET_SPOILER_H_
+#define ROC_PACKET_SPOILER_H_
 
 #include "roc_core/noncopyable.h"
 
@@ -20,11 +20,13 @@
 namespace roc {
 namespace packet {
 
-//! Packet wrecker.
-class Wrecker : public IPacketWriter, public core::NonCopyable<> {
+//! Packet spoiler.
+//! @remarks
+//!  Emulates random losses and delays.
+class Spoiler : public IPacketWriter, public core::NonCopyable<> {
 public:
     //! Constructor.
-    Wrecker(IPacketWriter& writer);
+    Spoiler(IPacketWriter& writer);
 
     //! Set packet loss rate.
     //! @remarks
@@ -50,4 +52,4 @@ private:
 } // namespace packet
 } // namespace roc
 
-#endif // ROC_PACKET_WRECKER_H_
+#endif // ROC_PACKET_SPOILER_H_
