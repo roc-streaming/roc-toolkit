@@ -159,8 +159,15 @@ packet::IPacketReader* Session::make_fec_decoder_(packet::IPacketReader* packet_
 
     router_.add_route(packet::IFECPacket::Type, *fec_packet_queue_);
 
-    return new (fec_decoder_) fec::Decoder(*fec_ldpc_decoder_, *packet_reader,
-                                           *fec_packet_queue_, packet_parser_);
+    packet_reader = new (fec_decoder_) fec::Decoder(*fec_ldpc_decoder_, *packet_reader,
+                                                    *fec_packet_queue_, packet_parser_);
+
+    packet_reader = new (fec_watchdog_) packet::Watchdog(
+        *packet_reader, config_.session_timeout / config_.samples_per_tick);
+
+    monitors_.append(*fec_watchdog_);
+
+    return packet_reader;
 }
 #else
 packet::IPacketReader* Session::make_fec_decoder_(packet::IPacketReader* packet_reader) {

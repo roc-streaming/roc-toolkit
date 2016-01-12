@@ -106,6 +106,7 @@ private:
 #ifdef ROC_TARGET_OPENFEC
     core::Maybe<fec::LDPC_BlockDecoder> fec_ldpc_decoder_;
     core::Maybe<fec::Decoder> fec_decoder_;
+    core::Maybe<packet::Watchdog> fec_watchdog_;
 #endif
 
     core::Maybe<audio::Chanalyzer> chanalyzer_;
