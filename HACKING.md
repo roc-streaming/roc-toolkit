@@ -142,8 +142,8 @@ CI
     --------------- | ----------- | ---------
     `fedora:latest` | x86_64      | *default*
     `debian:stable` | x86_64      | *default*
-    `ubuntu:14.04`  | x86_64      | gcc-4.4, gcc-4.6
-    `ubuntu:16.06`  | x86_64      | gcc-4.8, gcc-4.9, gcc-5.x, clang-3.4, clang-3.6, clang-3.7
+    `ubuntu:14.04`  | x86_64      | gcc-4.4, gcc-4.6, clang-3.4
+    `ubuntu:16.06`  | x86_64      | gcc-4.8, gcc-4.9, gcc-5.x, clang-3.6, clang-3.7
     `ubuntu:nodep`  | x86_64      | *default*
     `centos:5`      | x86_64      | gcc-4.1
     `centos:7`      | x86_64      | *default*
