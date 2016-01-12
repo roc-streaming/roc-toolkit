@@ -1,8 +1,10 @@
-HACKING
-=======
+CONTRIBUTING
+============
 
-Objectives
-----------
+This document contains information useful when contributing to Roc.
+
+Manifest
+--------
 
 These are objectives, not strict rules. World is complex, people are tired, and objectives are not always met. But we try to keep them in mind.
 
@@ -26,7 +28,7 @@ These are objectives, not strict rules. World is complex, people are tired, and 
 
     * Don't fall into #ifdef hell. Instead, isolate platform-dependent code in separate classes and move them to platform-specific subdirectories.
 
-    * Ensure your methods are short and have self-explaining names.
+    * Ensure your methods have self-explaining names and are short.
 
     * As usual, don't optimize before profiling. Instead, try to structure your code so that optimizations will be obvious and isolated.
 
@@ -53,7 +55,7 @@ Please try to follow conventions bellow when contributing.
 
 * **Dependencies**
 
-    We don't use STL, boost, or so, to keep code transparent, manageable and lightweight. Avoid introducing unnecessary external dependencies. But when it's necessay or obviously useful, try to make it optional.
+    We don't use STL and boost. Avoid introducing unnecessary external dependencies. But when it's necessay or obviously useful, try to make it optional. Prefer using cross-platform libraries.
 
 * **Targets**
 
@@ -117,7 +119,7 @@ CI
 
 * **Linux**
 
-    Travis is configured to build `master` and `develop` branches and pull requests to them. Builds are runned on several Linux distros and compilers using Docker. Docker images are prepared using Docker Hub [automated builds](https://docs.docker.com/docker-hub/builds/).
+    Travis is configured to build `master` and `develop` branches and pull requests to them. Builds are running on several Linux distros and compilers using Docker. Docker images are prepared using Docker Hub [automated builds](https://docs.docker.com/docker-hub/builds/).
 
     Links:
      * [Roc on Docker Hub](https://hub.docker.com/u/rocproject/)

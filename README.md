@@ -13,7 +13,7 @@ Goals:
 Status
 ------
 
-Docker images used in Travis are availale on [Docker Hub](https://hub.docker.com/u/rocproject/). See [HACKING](HACKING.md#ci) for details.
+Docker images used in Travis are availale on [Docker Hub](https://hub.docker.com/u/rocproject/). See [CI](CONTRIBUTING.md#ci) for details.
 
 Branch    | Linux
 --------- | -----
@@ -78,11 +78,11 @@ Supported protocols
 Contributing
 ------------
 
-Contributions are always welcome! Please read [HACKING](HACKING.md) for general hints and look at [TODO](TODO.md) and [open issues](https://github.com/roc-project/roc/issues) to figure out what's going on.
+Contributions are always welcome! Please read [CONTRIBUTING](CONTRIBUTING.md) for general hints and look at [TODO](TODO.md) and [open issues](https://github.com/roc-project/roc/issues) to figure out what's going on.
 
 * If you'd like to report a bug, ask a question, or suggest a feature, feel free to [create an issue](https://help.github.com/articles/creating-an-issue/).
 
-* If you'd like to implement a feature, it's recommended to comment corresponding issue or create a new one to ensure that it fits in Roc design and nobody else is already working on it. Then, just create a [pull request](https://help.github.com/articles/using-pull-requests/).
+* If you'd like to submit a patch, it's recommended to comment corresponding issue or create a new one to ensure that your work fits in Roc design and nobody else is already implementing it. Then, just create a [pull request](https://help.github.com/articles/using-pull-requests/).
 
 Licensing
 ---------

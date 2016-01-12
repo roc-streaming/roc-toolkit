@@ -1,8 +1,6 @@
 Howto
 -----
 
-[Dockerfiles](https://github.com/roc-project/docker-ci) and [travis scripts](scripts/travis) used for [CI builds](HACKING.md#ci) may be used as example of build commands for several Linux distros.
-
 **Ubuntu 14.04 and later, Debian Jessie**
 
     # for Roc
