@@ -24,16 +24,6 @@ class IAudioPacket : public packet::IPacket {
 public:
     virtual ~IAudioPacket();
 
-    //! Get packet timestamp (number of first sample of packet).
-    //!
-    //! Packet timestamp is increased by num_samples() for each packet in stream.
-    //! @note
-    //!  Timestamp overflow may occur, use ROC_IS_BEFORE() macro to compare them.
-    virtual timestamp_t timestamp() const = 0;
-
-    //! Set packet timestamp.
-    virtual void set_timestamp(timestamp_t) = 0;
-
     //! Get bitmask of channels present in packet.
     virtual channel_mask_t channels() const = 0;
 

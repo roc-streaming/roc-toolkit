@@ -50,10 +50,10 @@ public:
     virtual packet::IPacketConstPtr read();
 
 private:
-    bool detect_jump_(const packet::IAudioPacket*);
+    bool detect_jump_(const packet::IPacketConstPtr&);
 
     packet::IPacketReader& reader_;
-    packet::IAudioPacketConstPtr prev_;
+    packet::IPacketConstPtr prev_;
 
     size_t timeout_;
     size_t countdown_;

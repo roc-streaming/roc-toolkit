@@ -57,9 +57,20 @@ public:
     //! Set packet sequence number.
     virtual void set_seqnum(seqnum_t) = 0;
 
+    //! Get packet timestamp.
+    //! @remarks
+    //!  Timestamp meaning depends on packet type. For audio packet, it may be
+    //!  used to define number of first sample in packet.
+    //! @note
+    //!  Timestamp overflow may occur, use ROC_IS_BEFORE() macro to compare them.
+    virtual timestamp_t timestamp() const = 0;
+
+    //! Set packet timestamp.
+    virtual void set_timestamp(timestamp_t) = 0;
+
     //! Get packet marker bit.
     //! @remarks
-    //!  Marker bit can be interpreted differently by dirrerent modules.
+    //!  Marker bit meaning depends on packet type.
     virtual bool marker() const = 0;
 
     //! Set packet marker bit.

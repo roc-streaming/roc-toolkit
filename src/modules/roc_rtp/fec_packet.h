@@ -39,6 +39,12 @@ public:
     //! Set packet sequence number.
     virtual void set_seqnum(packet::seqnum_t);
 
+    //! Get packet timestamp.
+    virtual packet::timestamp_t timestamp() const;
+
+    //! Set packet timestamp.
+    virtual void set_timestamp(packet::timestamp_t);
+
     //! Get packet marker bit.
     virtual bool marker() const;
 

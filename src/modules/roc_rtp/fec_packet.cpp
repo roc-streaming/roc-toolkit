@@ -40,6 +40,15 @@ void FECPacket::set_seqnum(packet::seqnum_t sn) {
     packet_.header().set_seqnum(sn);
 }
 
+packet::timestamp_t FECPacket::timestamp() const {
+    // FIXME
+    return 0;
+}
+
+void FECPacket::set_timestamp(packet::timestamp_t) {
+    // FIXME
+}
+
 bool FECPacket::marker() const {
     return packet_.header().seqnum();
 }

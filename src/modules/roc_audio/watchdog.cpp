@@ -55,29 +55,22 @@ packet::IPacketConstPtr Watchdog::read() {
         return NULL;
     }
 
-    packet::IPacketConstPtr pp = reader_.read();
-    if (!pp) {
+    packet::IPacketConstPtr packet = reader_.read();
+    if (!packet) {
         return NULL;
     }
 
-    if (pp->type() != packet::IAudioPacket::Type) {
-        roc_log(LOG_TRACE, "watchdog: ignoring non-audio packet");
-    }
-
-    const packet::IAudioPacket* audio =
-        static_cast<const packet::IAudioPacket*>(pp.get());
-
-    if (detect_jump_(audio)) {
+    if (detect_jump_(packet)) {
         alive_ = false;
         return NULL;
     }
 
     has_packets_ = true;
 
-    return pp;
+    return packet;
 }
 
-bool Watchdog::detect_jump_(const packet::IAudioPacket* next) {
+bool Watchdog::detect_jump_(const packet::IPacketConstPtr& next) {
     if (prev_) {
         packet::signed_seqnum_t sn_dist = SEQ_SUBTRACT(prev_->seqnum(), next->seqnum());
 

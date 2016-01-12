@@ -45,20 +45,20 @@ void AudioPacket::set_seqnum(packet::seqnum_t sn) {
     packet_.header().set_seqnum(sn);
 }
 
-bool AudioPacket::marker() const {
-    return packet_.header().marker();
-}
-
-void AudioPacket::set_marker(bool m) {
-    packet_.header().set_marker(m);
-}
-
 packet::timestamp_t AudioPacket::timestamp() const {
     return packet_.header().timestamp();
 }
 
 void AudioPacket::set_timestamp(packet::timestamp_t ts) {
     packet_.header().set_timestamp(ts);
+}
+
+bool AudioPacket::marker() const {
+    return packet_.header().marker();
+}
+
+void AudioPacket::set_marker(bool m) {
+    packet_.header().set_marker(m);
 }
 
 void AudioPacket::set_size(packet::channel_mask_t ch_mask, size_t n_samples) {

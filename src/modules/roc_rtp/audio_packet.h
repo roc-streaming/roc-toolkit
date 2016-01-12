@@ -40,17 +40,17 @@ public:
     //! Set packet sequence number.
     virtual void set_seqnum(packet::seqnum_t);
 
-    //! Get packet marker bit.
-    virtual bool marker() const;
-
-    //! Set packet marker bit.
-    virtual void set_marker(bool);
-
     //! Get packet timestamp.
     virtual packet::timestamp_t timestamp() const;
 
     //! Set packet timestamp.
     virtual void set_timestamp(packet::timestamp_t);
+
+    //! Get packet marker bit.
+    virtual bool marker() const;
+
+    //! Set packet marker bit.
+    virtual void set_marker(bool);
 
     //! Get bitmask of channels present in packet.
     virtual packet::channel_mask_t channels() const;
