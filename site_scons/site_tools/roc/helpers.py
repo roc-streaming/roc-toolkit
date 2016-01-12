@@ -78,14 +78,15 @@ def CompilerVersion(env, compiler):
     except:
         return None
 
-    while 1:
-        line = proc.stdout.readline()
-        if not line:
-            break
+    text = ' '.join(proc.stdout.readlines())
 
-        m = re.search('([0-9]+\.[0-9]+\.[0-9]+)', line)
-        if m:
-            return tuple(map(int, m.group(1).split('.')))
+    m = re.search(r'(\b[0-9]+\.[0-9]+\.[0-9]+\b)', text)
+    if m:
+        return tuple(map(int, m.group(1).split('.')))
+
+    m = re.search(r'(\b[0-9]+\.[0-9]+\b)', text)
+    if m:
+        return tuple(map(int, m.group(1).split('.')))
 
     return None
 
