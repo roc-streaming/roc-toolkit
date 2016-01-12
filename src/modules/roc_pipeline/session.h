@@ -28,9 +28,10 @@
 
 #include "roc_packet/ipacket_parser.h"
 #include "roc_packet/ipacket_writer.h"
+#include "roc_packet/imonitor.h"
+#include "roc_packet/watchdog.h"
 #include "roc_packet/packet_queue.h"
 #include "roc_packet/packet_router.h"
-#include "roc_packet/imonitor.h"
 
 #include "roc_fec/decoder.h"
 
@@ -39,7 +40,6 @@
 #endif
 
 #include "roc_audio/isink.h"
-#include "roc_audio/watchdog.h"
 #include "roc_audio/delayer.h"
 #include "roc_audio/chanalyzer.h"
 #include "roc_audio/streamer.h"
@@ -101,7 +101,7 @@ private:
     core::Maybe<packet::PacketQueue> fec_packet_queue_;
 
     core::Maybe<audio::Delayer> delayer_;
-    core::Maybe<audio::Watchdog> watchdog_;
+    core::Maybe<packet::Watchdog> watchdog_;
 
 #ifdef ROC_TARGET_OPENFEC
     core::Maybe<fec::LDPC_BlockDecoder> fec_ldpc_decoder_;

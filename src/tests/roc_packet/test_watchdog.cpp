@@ -11,15 +11,15 @@
 
 #include "roc_config/config.h"
 #include "roc_core/scoped_ptr.h"
-#include "roc_packet/packet_queue.h"
-#include "roc_audio/watchdog.h"
 
-#include "test_helpers.h"
+#include "roc_packet/packet_queue.h"
+#include "roc_packet/watchdog.h"
+
+#include "test_packet.h"
 
 namespace roc {
 namespace test {
 
-using namespace audio;
 using namespace packet;
 
 TEST_GROUP(watchdog) {
@@ -38,14 +38,9 @@ TEST_GROUP(watchdog) {
         watchdog.reset(new Watchdog(queue, Timeout));
     }
 
-    IPacketConstPtr add_packet(size_t sn, size_t ts) {
-        IAudioPacketPtr pkt = new_audio_packet();
-
-        pkt->set_seqnum(seqnum_t(sn));
-        pkt->set_timestamp(timestamp_t(ts));
-
+    IPacketConstPtr add_packet(seqnum_t sn, timestamp_t ts) {
+        IAudioPacketPtr pkt = new_audio_packet(0, sn, ts);
         queue.write(pkt);
-
         return pkt;
     }
 };
@@ -60,7 +55,7 @@ TEST(watchdog, read) {
 
     IPacketConstPtr packets[NumPackets];
 
-    for (size_t n = 0; n < NumPackets; n++) {
+    for (seqnum_t n = 0; n < NumPackets; n++) {
         packets[n] = add_packet(n, n * NumSamples);
     }
 
@@ -76,7 +71,7 @@ TEST(watchdog, read) {
 TEST(watchdog, timeout) {
     enum { NumPackets = 7 };
 
-    for (size_t n = 0; n < NumPackets; n++) {
+    for (seqnum_t n = 0; n < NumPackets; n++) {
         IPacketConstPtr packet = add_packet(n, n * NumSamples);
         CHECK(watchdog->update());
         CHECK(watchdog->read() == packet);

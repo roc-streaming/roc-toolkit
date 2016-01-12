@@ -11,16 +11,16 @@
 #include "roc_core/log.h"
 #include "roc_core/math.h"
 
-#include "roc_audio/watchdog.h"
+#include "roc_packet/watchdog.h"
 
-#define SEQ_IS_BEFORE(a, b) ROC_IS_BEFORE(packet::signed_seqnum_t, a, b)
-#define SEQ_SUBTRACT(a, b) ROC_SUBTRACT(packet::signed_seqnum_t, a, b)
-#define TS_SUBTRACT(a, b) ROC_SUBTRACT(packet::signed_timestamp_t, a, b)
+#define SEQ_IS_BEFORE(a, b) ROC_IS_BEFORE(signed_seqnum_t, a, b)
+#define SEQ_SUBTRACT(a, b) ROC_SUBTRACT(signed_seqnum_t, a, b)
+#define TS_SUBTRACT(a, b) ROC_SUBTRACT(signed_timestamp_t, a, b)
 
 namespace roc {
-namespace audio {
+namespace packet {
 
-Watchdog::Watchdog(packet::IPacketReader& reader, size_t timeout)
+Watchdog::Watchdog(IPacketReader& reader, size_t timeout)
     : reader_(reader)
     , timeout_(timeout)
     , countdown_(timeout)
@@ -50,12 +50,12 @@ bool Watchdog::update() {
     return true;
 }
 
-packet::IPacketConstPtr Watchdog::read() {
+IPacketConstPtr Watchdog::read() {
     if (!alive_) {
         return NULL;
     }
 
-    packet::IPacketConstPtr packet = reader_.read();
+    IPacketConstPtr packet = reader_.read();
     if (!packet) {
         return NULL;
     }
@@ -70,9 +70,9 @@ packet::IPacketConstPtr Watchdog::read() {
     return packet;
 }
 
-bool Watchdog::detect_jump_(const packet::IPacketConstPtr& next) {
+bool Watchdog::detect_jump_(const IPacketConstPtr& next) {
     if (prev_) {
-        packet::signed_seqnum_t sn_dist = SEQ_SUBTRACT(prev_->seqnum(), next->seqnum());
+        signed_seqnum_t sn_dist = SEQ_SUBTRACT(prev_->seqnum(), next->seqnum());
 
         if (ROC_ABS(sn_dist) > ROC_CONFIG_MAX_SN_JUMP) {
             roc_log(LOG_DEBUG, "watchdog: too long seqnum jump:"
@@ -84,8 +84,7 @@ bool Watchdog::detect_jump_(const packet::IPacketConstPtr& next) {
     }
 
     if (prev_) {
-        packet::signed_timestamp_t ts_dist =
-            TS_SUBTRACT(prev_->timestamp(), next->timestamp());
+        signed_timestamp_t ts_dist = TS_SUBTRACT(prev_->timestamp(), next->timestamp());
 
         if (ROC_ABS(ts_dist) > ROC_CONFIG_MAX_TS_JUMP) {
             roc_log(LOG_DEBUG, "watchdog: too long timestamp jump:"
@@ -103,5 +102,5 @@ bool Watchdog::detect_jump_(const packet::IPacketConstPtr& next) {
     return false;
 }
 
-} // namespace audio
+} // namespace packet
 } // namespace roc
