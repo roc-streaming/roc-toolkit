@@ -30,6 +30,7 @@
 #include "roc_packet/ipacket_writer.h"
 #include "roc_packet/packet_queue.h"
 #include "roc_packet/packet_router.h"
+#include "roc_packet/imonitor.h"
 
 #include "roc_fec/decoder.h"
 
@@ -37,7 +38,6 @@
 #include "roc_fec/ldpc_block_decoder.h"
 #endif
 
-#include "roc_audio/ituner.h"
 #include "roc_audio/isink.h"
 #include "roc_audio/watchdog.h"
 #include "roc_audio/delayer.h"
@@ -114,7 +114,7 @@ private:
     core::Maybe<audio::Scaler> scaler_;
     packet::PacketRouter router_;
 
-    core::List<audio::ITuner, core::NoOwnership> tuners_;
+    core::List<packet::IMonitor, core::NoOwnership> monitors_;
     core::Array<audio::IStreamReader*, MaxChannels> readers_;
 };
 

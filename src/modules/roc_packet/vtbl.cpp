@@ -12,6 +12,7 @@
 #include "roc_packet/ipacket_reader.h"
 #include "roc_packet/ipacket_writer.h"
 #include "roc_packet/ipacket.h"
+#include "roc_packet/imonitor.h"
 
 namespace roc {
 namespace packet {
@@ -32,6 +33,9 @@ IPacketConstWriter::~IPacketConstWriter() {
 }
 
 IPacket::~IPacket() {
+}
+
+IMonitor::~IMonitor() {
 }
 
 } // namespace packet

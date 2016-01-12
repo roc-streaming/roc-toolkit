@@ -7,29 +7,29 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_audio/ituner.h
-//! @brief Tuner interface.
+//! @file roc_packet/imonitor.h
+//! @brief Monitor interface.
 
-#ifndef ROC_AUDIO_ITUNER_H_
-#define ROC_AUDIO_ITUNER_H_
+#ifndef ROC_PACKET_IMONITOR_H_
+#define ROC_PACKET_IMONITOR_H_
 
 #include "roc_core/list_node.h"
-#include "roc_packet/iaudio_packet.h"
 
 namespace roc {
-namespace audio {
+namespace packet {
 
-//! Tuner interface.
-class ITuner : public core::ListNode {
+//! Monitor interface.
+class IMonitor : public core::ListNode {
 public:
-    virtual ~ITuner();
+    virtual ~IMonitor();
 
-    //! Update stream.
-    //! @returns false if stream is broken and should be destroyed.
+    //! Update session.
+    //! @returns
+    //!  false if session is broken and should be destroyed.
     virtual bool update() = 0;
 };
 
-} // namespace audio
+} // namespace packet
 } // namespace roc
 
-#endif // ROC_AUDIO_ITUNER_H_
+#endif // ROC_PACKET_IMONITOR_H_

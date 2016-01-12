@@ -53,11 +53,11 @@ bool Session::store(const datagram::IDatagram& dgm) {
 }
 
 bool Session::update() {
-    audio::ITuner* tuner = tuners_.front();
+    packet::IMonitor* monitor = monitors_.front();
 
-    for (; tuner != NULL; tuner = tuners_.next(*tuner)) {
-        if (!tuner->update()) {
-            roc_log(LOG_DEBUG, "session: tuner failed to update, terminating session");
+    for (; monitor != NULL; monitor = monitors_.next(*monitor)) {
+        if (!monitor->update()) {
+            roc_log(LOG_DEBUG, "session: monitor requested session termination");
             return false;
         }
     }
@@ -94,7 +94,7 @@ void Session::make_pipeline_() {
             new (scaler_) audio::Scaler(*packet_reader, *audio_packet_queue_,
                                         (packet::timestamp_t)config_.session_latency);
 
-        tuners_.append(*scaler_);
+        monitors_.append(*scaler_);
     }
 
     audio::IAudioPacketReader* audio_packet_reader =
@@ -142,7 +142,7 @@ packet::IPacketReader* Session::make_packet_reader_() {
     packet_reader = new (watchdog_) audio::Watchdog(
         *packet_reader, config_.session_timeout / config_.samples_per_tick);
 
-    tuners_.append(*watchdog_);
+    monitors_.append(*watchdog_);
 
     if (config_.options & EnableFEC) {
         packet_reader = make_fec_decoder_(packet_reader);

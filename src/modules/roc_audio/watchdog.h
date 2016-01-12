@@ -15,9 +15,10 @@
 
 #include "roc_config/config.h"
 #include "roc_core/noncopyable.h"
+
 #include "roc_packet/ipacket_reader.h"
 #include "roc_packet/iaudio_packet.h"
-#include "roc_audio/ituner.h"
+#include "roc_packet/imonitor.h"
 
 namespace roc {
 namespace audio {
@@ -27,7 +28,9 @@ namespace audio {
 //! Triggers undesirable stream state and terminates rendering:
 //!  - if there are no new packets during long period;
 //!  - if long timestamp or seqnum jump occured.
-class Watchdog : public ITuner, public packet::IPacketReader, public core::NonCopyable<> {
+class Watchdog : public packet::IMonitor,
+                 public packet::IPacketReader,
+                 public core::NonCopyable<> {
 public:
     //! Initialize.
     //!

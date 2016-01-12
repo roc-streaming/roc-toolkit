@@ -22,8 +22,8 @@
 #include "roc_packet/ipacket_reader.h"
 #include "roc_packet/iaudio_packet.h"
 #include "roc_packet/packet_queue.h"
+#include "roc_packet/imonitor.h"
 
-#include "roc_audio/ituner.h"
 #include "roc_audio/freq_estimator.h"
 #include "roc_audio/resampler.h"
 
@@ -34,7 +34,9 @@ namespace audio {
 //! @remarks
 //!  Monitors queue size, passes it to FreqEstimator to recompute scaling,
 //!  and passes updated scaling to connected resamplers.
-class Scaler : public ITuner, public packet::IPacketReader, public core::NonCopyable<> {
+class Scaler : public packet::IMonitor,
+               public packet::IPacketReader,
+               public core::NonCopyable<> {
 public:
     //! Initialize.
     //!

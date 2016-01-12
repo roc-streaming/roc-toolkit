@@ -12,7 +12,6 @@
 #include "roc_audio/isample_buffer_reader.h"
 #include "roc_audio/isample_buffer_writer.h"
 #include "roc_audio/isink.h"
-#include "roc_audio/ituner.h"
 
 namespace roc {
 namespace audio {
@@ -30,9 +29,6 @@ ISampleBufferWriter::~ISampleBufferWriter() {
 }
 
 ISink::~ISink() {
-}
-
-ITuner::~ITuner() {
 }
 
 } // namespace audio
