@@ -38,8 +38,8 @@ TEST_GROUP(watchdog) {
         watchdog.reset(new Watchdog(queue, Timeout));
     }
 
-    IPacketConstPtr add_packet(seqnum_t sn, timestamp_t ts) {
-        IAudioPacketPtr pkt = new_audio_packet(0, sn, ts);
+    IPacketConstPtr add_packet(source_t src, seqnum_t sn, timestamp_t ts) {
+        IAudioPacketPtr pkt = new_audio_packet(src, sn, ts);
         queue.write(pkt);
         return pkt;
     }
@@ -56,7 +56,7 @@ TEST(watchdog, read) {
     IPacketConstPtr packets[NumPackets];
 
     for (seqnum_t n = 0; n < NumPackets; n++) {
-        packets[n] = add_packet(n, n * NumSamples);
+        packets[n] = add_packet(0, n, n * NumSamples);
     }
 
     for (size_t n = 0; n < NumPackets; n++) {
@@ -72,7 +72,7 @@ TEST(watchdog, timeout) {
     enum { NumPackets = 7 };
 
     for (seqnum_t n = 0; n < NumPackets; n++) {
-        IPacketConstPtr packet = add_packet(n, n * NumSamples);
+        IPacketConstPtr packet = add_packet(0, n, n * NumSamples);
         CHECK(watchdog->update());
         CHECK(watchdog->read() == packet);
     }
@@ -82,7 +82,7 @@ TEST(watchdog, timeout) {
         CHECK(!watchdog->read());
     }
 
-    add_packet(NumPackets, NumPackets * NumSamples);
+    add_packet(0, NumPackets, NumPackets * NumSamples);
 
     CHECK(!watchdog->update());
     CHECK(!watchdog->read());
@@ -92,11 +92,11 @@ TEST(watchdog, seqnum_overflow) {
     const seqnum_t sn1 = seqnum_t(-1) - SnJump / 2;
     const seqnum_t sn2 = seqnum_t(sn1 + SnJump);
 
-    IPacketConstPtr p1 = add_packet(sn1, NumSamples * 2);
+    IPacketConstPtr p1 = add_packet(0, sn1, NumSamples * 2);
     CHECK(watchdog->read() == p1);
     CHECK(watchdog->update());
 
-    IPacketConstPtr p2 = add_packet(sn2, NumSamples * 3);
+    IPacketConstPtr p2 = add_packet(0, sn2, NumSamples * 3);
     CHECK(watchdog->read() == p2);
     CHECK(watchdog->update());
 }
@@ -105,11 +105,11 @@ TEST(watchdog, seqnum_jump_gt) {
     const seqnum_t sn1 = seqnum_t(-1) - SnJump / 2;
     const seqnum_t sn2 = seqnum_t(sn1 + SnJump + 1);
 
-    IPacketConstPtr p1 = add_packet(sn1, NumSamples * 2);
+    IPacketConstPtr p1 = add_packet(0, sn1, NumSamples * 2);
     CHECK(watchdog->read() == p1);
     CHECK(watchdog->update());
 
-    IPacketConstPtr p2 = add_packet(sn2, NumSamples * 3);
+    IPacketConstPtr p2 = add_packet(0, sn2, NumSamples * 3);
     CHECK(!watchdog->read());
     CHECK(!watchdog->update());
 }
@@ -118,11 +118,11 @@ TEST(watchdog, seqnum_jump_lt) {
     const seqnum_t sn1 = seqnum_t(-1) - SnJump / 2;
     const seqnum_t sn2 = seqnum_t(sn1 + SnJump + 1);
 
-    IPacketConstPtr p1 = add_packet(sn2, NumSamples * 3);
+    IPacketConstPtr p1 = add_packet(0, sn2, NumSamples * 3);
     CHECK(watchdog->read() == p1);
     CHECK(watchdog->update());
 
-    IPacketConstPtr p2 = add_packet(sn1, NumSamples * 2);
+    IPacketConstPtr p2 = add_packet(0, sn1, NumSamples * 2);
     CHECK(!watchdog->read());
     CHECK(!watchdog->update());
 }
@@ -132,15 +132,15 @@ TEST(watchdog, seqnum_late) {
     const seqnum_t sn2 = 50;
     const seqnum_t sn3 = sn2 + SnJump + 1;
 
-    IPacketConstPtr p1 = add_packet(sn1, NumSamples * 2);
+    IPacketConstPtr p1 = add_packet(0, sn1, NumSamples * 2);
     CHECK(watchdog->read() == p1);
     CHECK(watchdog->update());
 
-    IPacketConstPtr p2 = add_packet(sn2, NumSamples * 3);
+    IPacketConstPtr p2 = add_packet(0, sn2, NumSamples * 3);
     CHECK(watchdog->read() == p2);
     CHECK(watchdog->update());
 
-    IPacketConstPtr p3 = add_packet(sn3, NumSamples * 4);
+    IPacketConstPtr p3 = add_packet(0, sn3, NumSamples * 4);
     CHECK(watchdog->read() == p3);
     CHECK(watchdog->update());
 }
@@ -149,11 +149,11 @@ TEST(watchdog, timestamp_overflow) {
     const timestamp_t ts1 = timestamp_t(-1) - TsJump / 2;
     const timestamp_t ts2 = ts1 + TsJump;
 
-    IPacketConstPtr p1 = add_packet(2, ts1);
+    IPacketConstPtr p1 = add_packet(0, 2, ts1);
     CHECK(watchdog->read() == p1);
     CHECK(watchdog->update());
 
-    IPacketConstPtr p2 = add_packet(3, ts2);
+    IPacketConstPtr p2 = add_packet(0, 3, ts2);
     CHECK(watchdog->read() == p2);
     CHECK(watchdog->update());
 }
@@ -162,11 +162,11 @@ TEST(watchdog, timestamp_jump_gt) {
     const timestamp_t ts1 = timestamp_t(-1) - TsJump / 2;
     const timestamp_t ts2 = ts1 + TsJump + 1;
 
-    IPacketConstPtr p1 = add_packet(2, ts1);
+    IPacketConstPtr p1 = add_packet(0, 2, ts1);
     CHECK(watchdog->read() == p1);
     CHECK(watchdog->update());
 
-    IPacketConstPtr p2 = add_packet(3, ts2);
+    IPacketConstPtr p2 = add_packet(0, 3, ts2);
     CHECK(!watchdog->read());
     CHECK(!watchdog->update());
 }
@@ -175,11 +175,11 @@ TEST(watchdog, timestamp_jump_lt) {
     const timestamp_t ts1 = timestamp_t(-1) - TsJump / 2;
     const timestamp_t ts2 = ts1 + TsJump + 1;
 
-    IPacketConstPtr p1 = add_packet(2, ts2);
+    IPacketConstPtr p1 = add_packet(0, 2, ts2);
     CHECK(watchdog->read() == p1);
     CHECK(watchdog->update());
 
-    IPacketConstPtr p2 = add_packet(3, ts1);
+    IPacketConstPtr p2 = add_packet(0, 3, ts1);
     CHECK(!watchdog->read());
     CHECK(!watchdog->update());
 }
@@ -189,15 +189,25 @@ TEST(watchdog, timestamp_late) {
     const timestamp_t ts2 = 50;
     const timestamp_t ts3 = ts2 + TsJump + 1;
 
-    IPacketConstPtr p1 = add_packet(1, ts1);
+    IPacketConstPtr p1 = add_packet(0, 1, ts1);
     CHECK(watchdog->read() == p1);
     CHECK(watchdog->update());
 
-    IPacketConstPtr p2 = add_packet(2, ts2);
+    IPacketConstPtr p2 = add_packet(0, 2, ts2);
     CHECK(watchdog->read() == p2);
     CHECK(watchdog->update());
 
-    IPacketConstPtr p3 = add_packet(3, ts3);
+    IPacketConstPtr p3 = add_packet(0, 3, ts3);
+    CHECK(!watchdog->read());
+    CHECK(!watchdog->update());
+}
+
+TEST(watchdog, source_id_jump) {
+    IPacketConstPtr p1 = add_packet(111, 1, 1);
+    CHECK(watchdog->read() == p1);
+    CHECK(watchdog->update());
+
+    IPacketConstPtr p2 = add_packet(222, 2, 2);
     CHECK(!watchdog->read());
     CHECK(!watchdog->update());
 }

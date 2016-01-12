@@ -72,6 +72,12 @@ IPacketConstPtr Watchdog::read() {
 
 bool Watchdog::detect_jump_(const IPacketConstPtr& next) {
     if (prev_) {
+        if (prev_->source() != next->source()) {
+            roc_log(LOG_DEBUG, "watchdog: source id jump: prev=%lu next=%lu",
+                    (unsigned long)prev_->source(), (unsigned long)next->source());
+            return true;
+        }
+
         signed_seqnum_t sn_dist = SEQ_SUBTRACT(prev_->seqnum(), next->seqnum());
 
         if (ROC_ABS(sn_dist) > ROC_CONFIG_MAX_SN_JUMP) {
@@ -81,9 +87,7 @@ bool Watchdog::detect_jump_(const IPacketConstPtr& next) {
                     (long)sn_dist);
             return true;
         }
-    }
 
-    if (prev_) {
         signed_timestamp_t ts_dist = TS_SUBTRACT(prev_->timestamp(), next->timestamp());
 
         if (ROC_ABS(ts_dist) > ROC_CONFIG_MAX_TS_JUMP) {
