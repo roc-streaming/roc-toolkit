@@ -69,9 +69,9 @@ public:
         }
 
         if (p->type() == IAudioPacket::Type) {
-            data_queue_.write(p);
+            data_stock_.write(p);
         } else if (IFECPacket::Type) {
-            fec_queue_.write(p);
+            fec_stock_.write(p);
         }
 
         if (++packet_num_ >= N_DATA_PACKETS + N_FEC_PACKETS) {
@@ -88,11 +88,11 @@ public:
     }
 
     size_t get_data_size() {
-        return data_queue_.size();
+        return data_stock_.size() + data_queue_.size();
     }
 
     size_t get_fec_size() {
-        return fec_queue_.size();
+        return fec_stock_.size() + fec_queue_.size();
     }
 
     IPacketConstPtr get_fec_head() {
@@ -124,11 +124,41 @@ public:
         lost_packet_nums_.clear();
     }
 
+    void release_all() {
+        while( data_stock_.head() ){
+            data_queue_.write( data_stock_.read() );
+        }
+        while( fec_stock_.head() ){
+            fec_queue_.write( fec_stock_.read() );
+        }
+    }
+
+    bool pop_fec() {
+        IPacketConstPtr p;
+        if( !(p = fec_stock_.read()) ){
+            return false;
+        }
+        fec_queue_.write( p );
+        return true;
+    }
+
+    bool pop_data() {
+        IPacketConstPtr p;
+        if( !(p = data_stock_.read()) ){
+            return false;
+        }
+        data_queue_.write( p );
+        return true;
+    }
+
 private:
     size_t packet_num_;
 
     PacketQueue data_queue_;
+    PacketQueue data_stock_;
+
     PacketQueue fec_queue_;
+    PacketQueue fec_stock_;
 
     std::set<size_t> lost_packet_nums_;
 };
@@ -210,6 +240,7 @@ TEST(fec_codec_integration, encode) {
     for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
         encoder.write(data_packets[i]);
     }
+    pckt_disp.release_all();
 
     CHECK(pckt_disp.get_data_size() == N_DATA_PACKETS);
     CHECK(pckt_disp.get_fec_size() == N_FEC_PACKETS);
@@ -235,6 +266,7 @@ TEST(fec_codec_integration, 1_loss) {
     for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
         encoder.write(data_packets[i]);
     }
+    pckt_disp.release_all();
 
     LONGS_EQUAL(N_DATA_PACKETS - 1, pckt_disp.get_data_size());
     LONGS_EQUAL(N_FEC_PACKETS, pckt_disp.get_fec_size());
@@ -269,6 +301,7 @@ TEST(fec_codec_integration, multiblocks_1_loss) {
         for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
             encoder.write(data_packets[i]);
         }
+        pckt_disp.release_all();
 
         if (lost_sq == size_t(-1)) {
             CHECK(pckt_disp.get_data_size() == N_DATA_PACKETS);
@@ -311,6 +344,7 @@ TEST(fec_codec_integration, interleaver) {
         many_packets[i] = fill_one_packet(i, N_PACKETS);
         encoder.write(many_packets[i]);
     }
+    pckt_disp.release_all();
 
     intrl.flush();
 
@@ -339,6 +373,7 @@ TEST(fec_codec_integration, decoding_when_multiple_blocks_in_queue) {
             encoder.write(data_packets[i]);
         }
     }
+    pckt_disp.release_all();
 
     CHECK(pckt_disp.get_data_size() == N_DATA_PACKETS * N_BLKS);
     CHECK(pckt_disp.get_fec_size() == N_FEC_PACKETS * N_BLKS);
@@ -376,6 +411,7 @@ TEST(fec_codec_integration, decoding_late_packet) {
             continue;
         encoder.write(data_packets[i]);
     }
+    pckt_disp.release_all();
     CHECK(pckt_disp.get_data_size() == N_DATA_PACKETS - 1);
 
     // Check 0-9 packets.
@@ -387,6 +423,7 @@ TEST(fec_codec_integration, decoding_late_packet) {
 
     // Receive packet #10
     encoder.write(data_packets[10]);
+    pckt_disp.pop_data();
 
     for (size_t i = 10; i < N_DATA_PACKETS; ++i) {
         IPacketConstPtr p = decoder.read();
@@ -423,6 +460,7 @@ TEST(fec_codec_integration, get_packets_before_marker_bit) {
     for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
         encoder.write(data_packets[i]);
     }
+    pckt_disp.release_all();
 
     // Receive every sent packet and the repaired one.
     for (size_t i = 1; i < N_DATA_PACKETS * 2; ++i) {
@@ -459,6 +497,7 @@ TEST(fec_codec_integration, encode_source_id_and_seqnum) {
             for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
                 encoder.write(data_packets[i]);
             }
+            pckt_disp.release_all();
 
             if (block_num == 0) {
                 fec_source = pckt_disp.get_fec_head()->source();
@@ -509,6 +548,42 @@ TEST(fec_codec_integration, decode_bad_source_id_or_seqnum) {
     for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
         encoder.write(data_packets[i]);
     }
+    pckt_disp.release_all();
+
+    for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
+        if (i != 5 && i != 9) {
+            check_audio_packet(decoder.read(), i, N_DATA_PACKETS);
+        }
+    }
+
+    CHECK(pckt_disp.get_data_size() == 0);
+}
+
+TEST(fec_codec_integration, multitime_decode) {
+    // 
+    // Check that decoder wouldn't restore it.
+
+    BlockEncoder block_encoder;
+    BlockDecoder block_decoder;
+    rtp::Parser parser;
+
+    Encoder encoder(block_encoder, pckt_disp, composer);
+    Decoder decoder(block_decoder, pckt_disp.get_data_reader(),
+                    pckt_disp.get_fec_reader(), parser);
+
+    fill_all_packets(0, N_DATA_PACKETS);
+
+    pckt_disp.lose(5);  // should be rejected (bad source id)
+    pckt_disp.lose(9);  // should be rejected (bad seqnum)
+    pckt_disp.lose(14); // should be rapaired
+
+    data_packets[5]->set_source(data_packets[5]->source() + 1);
+    data_packets[9]->set_source(data_packets[9]->seqnum() + 1);
+
+    for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
+        encoder.write(data_packets[i]);
+    }
+    pckt_disp.release_all();
 
     for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
         if (i != 5 && i != 9) {
