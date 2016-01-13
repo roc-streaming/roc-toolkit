@@ -3,7 +3,7 @@ CONTRIBUTING
 
 This document contains information useful when contributing to Roc.
 
-Don't be afraid you are not following all of the recommendations bellow; someone will assist you when reviewing a pull request.
+Don't be afraid not to follow all of the recommendations bellow; someone will assist you when reviewing a pull request.
 
 Manifest
 --------
