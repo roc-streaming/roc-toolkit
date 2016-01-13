@@ -560,8 +560,10 @@ TEST(fec_codec_integration, decode_bad_source_id_or_seqnum) {
 }
 
 TEST(fec_codec_integration, multitime_decode) {
-    // 
-    // Check that decoder wouldn't restore it.
+    // 1. Loose two distant packets and hold every fec packets in block.
+    // 2. Detect first loss.
+    // 3. Transmit fec packets.
+    // 4. Check remaining data packets including lost one.
 
     BlockEncoder block_encoder;
     BlockDecoder block_decoder;
@@ -573,26 +575,28 @@ TEST(fec_codec_integration, multitime_decode) {
 
     fill_all_packets(0, N_DATA_PACKETS);
 
-    pckt_disp.lose(5);  // should be rejected (bad source id)
-    pckt_disp.lose(9);  // should be rejected (bad seqnum)
-    pckt_disp.lose(14); // should be rapaired
-
-    data_packets[5]->set_source(data_packets[5]->source() + 1);
-    data_packets[9]->set_source(data_packets[9]->seqnum() + 1);
+    pckt_disp.lose(5);
+    pckt_disp.lose(15);
 
     for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
         encoder.write(data_packets[i]);
+        pckt_disp.pop_data();
     }
-    pckt_disp.release_all();
 
     for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
-        if (i != 5 && i != 9) {
+        if (i != 5 && i != 15) {
+            check_audio_packet(decoder.read(), i, N_DATA_PACKETS);
+        // The moment of truth.
+        } else if(i == 15){
+            // Get FEC packets. Decoder must try to decode once more.
+            pckt_disp.release_all();
             check_audio_packet(decoder.read(), i, N_DATA_PACKETS);
         }
     }
 
     CHECK(pckt_disp.get_data_size() == 0);
 }
+
 
 } // namespace test
 } // namespace roc
