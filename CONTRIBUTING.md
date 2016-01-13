@@ -24,19 +24,19 @@ These are objectives, not strict rules. World is complex, people are tired, and 
 
     Write neat code.
 
-    * Ensure your code compiles without warnings and is properly formatted. Run static analyzer from time to time, and fix its warnings too (well, if it's not going mad).
+    * Fix compiler warnings and format your code. Run static analyzer from time to time, and fix its warnings too (well, if it's not going mad).
 
-    * Don't fall into #ifdef hell. Instead, isolate platform-dependent code in separate classes and move them to platform-specific subdirectories.
+    * Prefer platform-specific directories to #ifdef-s.
 
-    * Ensure your methods have self-explaining names and are short.
+    * Avoid large classes and functions.
 
-    * As usual, don't optimize before profiling. Instead, try to structure your code so that optimizations will be obvious and isolated.
+    * Don't optimize before profiling. Instead, try to structure your code so that optimizations would be obvious and isolated.
 
-* **Keep interfaces simple**
+* **Keep interfaces clear**
 
     Write modular code with simple and well-defined interfaces.
 
-    * Ensure your interfaces are minimal, clean, and documented.
+    * Ensure your interfaces are minimal, clear, and documented.
 
     * Prefer simple interfaces and smart implementations, rather than bloated interfaces and lazy implementations.
 
@@ -79,7 +79,7 @@ Please try to follow conventions bellow when contributing.
 
     We don't use exceptions and avoid returning error codes. Use `roc_panic()` and `roc_log()` and prefrer boolean or null return values.
 
-* **Multithreading**
+* **Multi-threading**
 
     Avoid extensive communications between threads and sharing mutable objects. See details [on wiki](https://github.com/roc-project/roc/wiki/Overview#threads).
 
