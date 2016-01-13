@@ -5,7 +5,7 @@ Public API
 ----------
 
 - [ ] Implement public API for `roc`
-- [ ] Add documentation
+- [ ] Documentat API
 
 Basic features
 --------------
@@ -24,7 +24,9 @@ Advanced features
 
 - [ ] Retransmission (probably [RFC 4588](https://tools.ietf.org/html/rfc4588) and
 [RFC 4585](https://tools.ietf.org/html/rfc4585))
-- [ ] Dynamic latency adjustment
+- [ ] Dynamic latency adjustment (requires RTCP)
+- [ ] Dynamic adjustment of FEC code rate  (requires RTCP and [XRs](https://tools.ietf.org/html/rfc5725))
+- [ ] Congestion control
 - [ ] Compression ([lossless](https://en.wikipedia.org/wiki/Lossless_compression#Audio) and lossy,
 probably [Opus](https://www.opus-codec.org/))
 - [ ] Encryption (probably [SRTP](https://en.wikipedia.org/wiki/Secure_Real-time_Transport_Protocol))
