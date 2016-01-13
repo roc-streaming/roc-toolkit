@@ -79,6 +79,10 @@ Please try to follow conventions bellow when contributing.
 
     We don't use exceptions and avoid returning error codes. Use `roc_panic()` and `roc_log()` and prefrer boolean or null return values.
 
+* **Multithreading**
+
+    Avoid extensive communications between threads and sharing mutable objects. See details [on wiki](https://github.com/roc-project/roc/wiki/Overview#threads).
+
 * **Code style**
 
     Source code is periodically formatted using [`format.py`](scripts/format.py) script and `clang-format` with [`.clang-format`](.clang-format) config.
