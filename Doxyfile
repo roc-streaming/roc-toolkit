@@ -1,12 +1,12 @@
-PROJECT_NAME            = roc
+PROJECT_NAME            =
 PROJECT_BRIEF           =
 
 QUIET                   = YES
 RECURSIVE               = YES
 
-INPUT                   = src/modules
+INPUT                   = src/modules doc/main.dox
 STRIP_FROM_PATH         = src/modules
-FILE_PATTERNS           = *.h
+FILE_PATTERNS           = *.h *.dox
 
 FULL_PATH_NAMES         = YES
 SOURCE_BROWSER          = YES
@@ -15,9 +15,9 @@ JAVADOC_AUTOBRIEF       = YES
 QT_AUTOBRIEF            = YES
 MULTILINE_CPP_IS_BRIEF  = YES
 
-ALWAYS_DETAILED_SEC     = NO
+ALWAYS_DETAILED_SEC     = YES
 BRIEF_MEMBER_DESC       = YES
-REPEAT_BRIEF            = NO
+REPEAT_BRIEF            = YES
 
 HIDE_UNDOC_CLASSES      = NO
 HIDE_UNDOC_MEMBERS      = NO
@@ -30,11 +30,14 @@ WARN_IF_DOC_ERROR       = YES
 WARN_NO_PARAMDOC        = NO
 
 OUTPUT_DIRECTORY        =
-HTML_OUTPUT             = doc/doxygen
-HTML_DYNAMIC_SECTIONS   = NO
-SEARCHENGINE            = NO
 GENERATE_LATEX          = NO
 DOT_GRAPH_MAX_NODES     = 1000
+HTML_OUTPUT             = doc/doxygen
+
+HTML_DYNAMIC_SECTIONS   = NO
+DISABLE_INDEX           = NO
+GENERATE_TREEVIEW       = YES
+SEARCHENGINE            = YES
 
 OUTPUT_LANGUAGE         = English
 DOXYFILE_ENCODING       = UTF-8
