@@ -133,15 +133,6 @@ public:
         }
     }
 
-    bool pop_fec() {
-        IPacketConstPtr p;
-        if( !(p = fec_stock_.read()) ){
-            return false;
-        }
-        fec_queue_.write( p );
-        return true;
-    }
-
     bool pop_data() {
         IPacketConstPtr p;
         if( !(p = data_stock_.read()) ){
@@ -406,30 +397,37 @@ TEST(fec_codec_integration, decoding_late_packet) {
 
     fill_all_packets(0, N_DATA_PACKETS);
     for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
-        // Loosing packet #10
-        if (i == 10)
+        // Hold from #7 to #10
+        if (i >= 7 && i <= 10)
             continue;
         encoder.write(data_packets[i]);
     }
     pckt_disp.release_all();
-    CHECK(pckt_disp.get_data_size() == N_DATA_PACKETS - 1);
+    CHECK(pckt_disp.get_data_size() == N_DATA_PACKETS - (10-7+1));
 
-    // Check 0-9 packets.
-    for (size_t i = 0; i < 10; ++i) {
+    // Check 0-7 packets.
+    for (size_t i = 0; i < 7; ++i) {
         IPacketConstPtr p = decoder.read();
-        CHECK(p);
-        check_audio_packet(p, i, N_DATA_PACKETS);
     }
-
-    // Receive packet #10
+    // Receive packet #9 and #10
+    encoder.write(data_packets[9]);
     encoder.write(data_packets[10]);
     pckt_disp.pop_data();
+    pckt_disp.pop_data();
 
-    for (size_t i = 10; i < N_DATA_PACKETS; ++i) {
+    for (size_t i = 9; i < N_DATA_PACKETS; ++i) {
         IPacketConstPtr p = decoder.read();
         CHECK(p);
         check_audio_packet(p, i, N_DATA_PACKETS);
+        // Receive late packet that Decoder have to throw away.
+        if(i == 10){
+            encoder.write(data_packets[7]);
+            encoder.write(data_packets[8]);
+            pckt_disp.pop_data();
+            pckt_disp.pop_data();
+        }
     }
+    LONGS_EQUAL(0, pckt_disp.get_data_size());
 }
 
 TEST(fec_codec_integration, get_packets_before_marker_bit) {
