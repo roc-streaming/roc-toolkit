@@ -597,6 +597,38 @@ TEST(fec_codec_integration, multitime_decode) {
     CHECK(pckt_disp.get_data_size() == 0);
 }
 
+TEST(fec_codec_integration, delayed_packets) {
+    // 1. Fill first half of block.
+    // 2. Check that we receive only this first 10 packets.
+    // 3. Send remaining packets.
+    // 4. Receive and check it.
+
+    BlockEncoder block_encoder;
+    BlockDecoder block_decoder;
+    rtp::Parser parser;
+
+    Encoder encoder(block_encoder, pckt_disp, composer);
+    Decoder decoder(block_decoder, pckt_disp.get_data_reader(),
+                    pckt_disp.get_fec_reader(), parser);
+
+    fill_all_packets(0, N_DATA_PACKETS);
+
+    for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
+        encoder.write(data_packets[i]);
+    }
+    for (size_t i = 0; i < 10; ++i) {
+        pckt_disp.pop_data();
+    }
+
+    for (size_t i = 0; i < 10; ++i) {
+        check_audio_packet(decoder.read(), i, N_DATA_PACKETS);
+    }
+    CHECK( !decoder.read() );
+    pckt_disp.release_all();
+    for (size_t i = 10; i < N_DATA_PACKETS; ++i) {
+        check_audio_packet(decoder.read(), i, N_DATA_PACKETS);
+    }    
+}
 
 } // namespace test
 } // namespace roc
