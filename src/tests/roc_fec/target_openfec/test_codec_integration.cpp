@@ -560,7 +560,7 @@ TEST(fec_codec_integration, decode_bad_source_id_or_seqnum) {
 }
 
 TEST(fec_codec_integration, multitime_decode) {
-    // 1. Loose two distant packets and hold every fec packets in block.
+    // 1. Loose two distant packets and hold every fec packets in first block, receive second full block.
     // 2. Detect first loss.
     // 3. Transmit fec packets.
     // 4. Check remaining data packets including lost one.
@@ -573,7 +573,7 @@ TEST(fec_codec_integration, multitime_decode) {
     Decoder decoder(block_decoder, pckt_disp.get_data_reader(),
                     pckt_disp.get_fec_reader(), parser);
 
-    fill_all_packets(0, N_DATA_PACKETS);
+    fill_all_packets(0, N_DATA_PACKETS*2);
 
     pckt_disp.lose(5);
     pckt_disp.lose(15);
@@ -583,18 +583,27 @@ TEST(fec_codec_integration, multitime_decode) {
         pckt_disp.pop_data();
     }
 
+    fill_all_packets(N_DATA_PACKETS, N_DATA_PACKETS*2);
+    for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
+        encoder.write(data_packets[i]);
+        pckt_disp.pop_data();
+    }
+
     for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
         if (i != 5 && i != 15) {
-            check_audio_packet(decoder.read(), i, N_DATA_PACKETS);
+            check_audio_packet(decoder.read(), i, N_DATA_PACKETS*2);
         // The moment of truth.
         } else if(i == 15){
             // Get FEC packets. Decoder must try to decode once more.
             pckt_disp.release_all();
-            check_audio_packet(decoder.read(), i, N_DATA_PACKETS);
+            check_audio_packet(decoder.read(), i, N_DATA_PACKETS*2);
         }
     }
+    for( size_t i = 0; i < N_DATA_PACKETS; ++i ){
+            check_audio_packet(decoder.read(), i+N_DATA_PACKETS, N_DATA_PACKETS*2);
+    }
 
-    CHECK(pckt_disp.get_data_size() == 0);
+    LONGS_EQUAL(0, pckt_disp.get_data_size());
 }
 
 TEST(fec_codec_integration, delayed_packets) {
