@@ -503,7 +503,6 @@ if compiler == 'gcc':
     env.Append(CXXFLAGS=[
         '-Wall',
         '-Wextra',
-        '-Winit-self',
         '-Wshadow',
         '-Wcast-qual',
         '-Wcast-align',
