@@ -541,7 +541,7 @@ TEST(fec_codec_integration, decode_bad_source_id_or_seqnum) {
     pckt_disp.lose(14); // should be rapaired
 
     data_packets[5]->set_source(data_packets[5]->source() + 1);
-    data_packets[9]->set_source(data_packets[9]->seqnum() + 1);
+    data_packets[9]->set_seqnum(data_packets[9]->seqnum() + 1);
 
     for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
         encoder.write(data_packets[i]);
