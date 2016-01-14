@@ -125,20 +125,20 @@ public:
     }
 
     void release_all() {
-        while( data_stock_.head() ){
-            data_queue_.write( data_stock_.read() );
+        while (data_stock_.head()) {
+            data_queue_.write(data_stock_.read());
         }
-        while( fec_stock_.head() ){
-            fec_queue_.write( fec_stock_.read() );
+        while (fec_stock_.head()) {
+            fec_queue_.write(fec_stock_.read());
         }
     }
 
     bool pop_data() {
         IPacketConstPtr p;
-        if( !(p = data_stock_.read()) ){
+        if (!(p = data_stock_.read())) {
             return false;
         }
-        data_queue_.write( p );
+        data_queue_.write(p);
         return true;
     }
 
@@ -398,12 +398,13 @@ TEST(fec_codec_integration, decoding_late_packet) {
     fill_all_packets(0, N_DATA_PACKETS);
     for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
         // Hold from #7 to #10
-        if (i >= 7 && i <= 10)
+        if (i >= 7 && i <= 10) {
             continue;
+        }
         encoder.write(data_packets[i]);
     }
     pckt_disp.release_all();
-    CHECK(pckt_disp.get_data_size() == N_DATA_PACKETS - (10-7+1));
+    CHECK(pckt_disp.get_data_size() == N_DATA_PACKETS - (10 - 7 + 1));
 
     // Check 0-7 packets.
     for (size_t i = 0; i < 7; ++i) {
@@ -420,7 +421,7 @@ TEST(fec_codec_integration, decoding_late_packet) {
         CHECK(p);
         check_audio_packet(p, i, N_DATA_PACKETS);
         // Receive late packet that Decoder have to throw away.
-        if(i == 10){
+        if (i == 10) {
             encoder.write(data_packets[7]);
             encoder.write(data_packets[8]);
             pckt_disp.pop_data();
@@ -558,7 +559,8 @@ TEST(fec_codec_integration, decode_bad_source_id_or_seqnum) {
 }
 
 TEST(fec_codec_integration, multitime_decode) {
-    // 1. Loose two distant packets and hold every fec packets in first block, receive second full block.
+    // 1. Loose two distant packets and hold every fec packets in first block, receive
+    // second full block.
     // 2. Detect first loss.
     // 3. Transmit fec packets.
     // 4. Check remaining data packets including lost one.
@@ -571,7 +573,7 @@ TEST(fec_codec_integration, multitime_decode) {
     Decoder decoder(block_decoder, pckt_disp.get_data_reader(),
                     pckt_disp.get_fec_reader(), parser);
 
-    fill_all_packets(0, N_DATA_PACKETS*2);
+    fill_all_packets(0, N_DATA_PACKETS * 2);
 
     pckt_disp.lose(5);
     pckt_disp.lose(15);
@@ -581,7 +583,7 @@ TEST(fec_codec_integration, multitime_decode) {
         pckt_disp.pop_data();
     }
 
-    fill_all_packets(N_DATA_PACKETS, N_DATA_PACKETS*2);
+    fill_all_packets(N_DATA_PACKETS, N_DATA_PACKETS * 2);
     for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
         encoder.write(data_packets[i]);
         pckt_disp.pop_data();
@@ -589,16 +591,16 @@ TEST(fec_codec_integration, multitime_decode) {
 
     for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
         if (i != 5 && i != 15) {
-            check_audio_packet(decoder.read(), i, N_DATA_PACKETS*2);
-        // The moment of truth.
-        } else if(i == 15){
+            check_audio_packet(decoder.read(), i, N_DATA_PACKETS * 2);
+            // The moment of truth.
+        } else if (i == 15) {
             // Get FEC packets. Decoder must try to decode once more.
             pckt_disp.release_all();
-            check_audio_packet(decoder.read(), i, N_DATA_PACKETS*2);
+            check_audio_packet(decoder.read(), i, N_DATA_PACKETS * 2);
         }
     }
-    for( size_t i = 0; i < N_DATA_PACKETS; ++i ){
-            check_audio_packet(decoder.read(), i+N_DATA_PACKETS, N_DATA_PACKETS*2);
+    for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
+        check_audio_packet(decoder.read(), i + N_DATA_PACKETS, N_DATA_PACKETS * 2);
     }
 
     LONGS_EQUAL(0, pckt_disp.get_data_size());
@@ -630,11 +632,11 @@ TEST(fec_codec_integration, delayed_packets) {
     for (size_t i = 0; i < 10; ++i) {
         check_audio_packet(decoder.read(), i, N_DATA_PACKETS);
     }
-    CHECK( !decoder.read() );
+    CHECK(!decoder.read());
     pckt_disp.release_all();
     for (size_t i = 10; i < N_DATA_PACKETS; ++i) {
         check_audio_packet(decoder.read(), i, N_DATA_PACKETS);
-    }    
+    }
 }
 
 } // namespace test
