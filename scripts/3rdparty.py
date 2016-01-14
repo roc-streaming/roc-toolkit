@@ -106,14 +106,12 @@ elif name == 'openfec':
     extract('openfec_v%s.tar.gz' % ver,
             'openfec_v%s' % ver)
     os.chdir('openfec_v%s' % ver)
-    freplace('CMakeLists.txt', '-O4', '-O2') # workaround segfault on gcc 4.9
     freplace('src/CMakeLists.txt', 'SHARED', 'STATIC')
     os.mkdir('build')
     os.chdir('build')
     execute('cmake .. ' + ' '.join([
         '-DCMAKE_SYSTEM_NAME=%s' % toolchain,
         '-DCMAKE_BUILD_TYPE=Release',
-        '-DCMAKE_C_FLAGS_RELEASE:STRING="-O2"', # workaround segfault on gcc 4.9
         '-DDEBUG:STRING=OFF', # disable debug logs
         ]), logfile)
     execute('make -j', logfile)

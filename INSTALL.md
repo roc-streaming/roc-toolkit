@@ -83,8 +83,6 @@ Dependencies
 * [CppUTest](http://cpputest.github.io) (optional, if you want to build tests)
 
 **Notes:**
-* If you use OpenFEC with and GCC 4.9, build it with `-O2` optimization level or lower
-  (it segfaults with `-O4`)
 * if you use CppUTest-3.4 or earlier, build it with `--disable-memory-leak-detection` option
 
 Building
