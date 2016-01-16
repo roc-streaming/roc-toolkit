@@ -23,6 +23,9 @@ section "Options"
     option "timing" - "Enable/disable pipeline timing"
         values="yes","no" default="yes" enum optional
 
+    option "rate" - "Sample rate (Hz)"
+        int optional
+
     option "loss-rate" - "Set percentage of packets to be randomly lost, [0; 100]"
         int optional
 

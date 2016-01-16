@@ -21,6 +21,28 @@
 
 using namespace roc;
 
+namespace {
+
+bool check_ge(const char* option, int value, int min_value) {
+    if (value < min_value) {
+        roc_log(LOG_ERROR, "invalid `--%s=%d': should be >= %d", option, value,
+                min_value);
+        return false;
+    }
+    return true;
+}
+
+bool check_range(const char* option, int value, int min_value, int max_value) {
+    if (value < min_value || value > max_value) {
+        roc_log(LOG_ERROR, "invalid `--%s=%d': should be in range [%d; %d]",
+                option, value, min_value, max_value);
+        return false;
+    }
+    return true;
+}
+
+} // namespace
+
 int main(int argc, char** argv) {
     gengetopt_args_info args;
 
@@ -60,10 +82,25 @@ int main(int argc, char** argv) {
     if (args.timing_arg == timing_arg_yes) {
         config.options |= pipeline::EnableTiming;
     }
+    if (args.rate_given) {
+        if (!check_ge("rate", args.rate_arg, 1)) {
+            return 1;
+        }
+        config.sample_rate = (size_t)args.rate_arg;
+    }
     if (args.loss_rate_given) {
+        if (!check_range("loss-rate", args.loss_rate_arg, 0, 100)) {
+            return 1;
+        }
         config.random_loss_rate = (size_t)args.loss_rate_arg;
     }
     if (args.delay_rate_given) {
+        if (!check_range("delay-rate", args.delay_rate_arg, 0, 100)) {
+            return 1;
+        }
+        if (!check_ge("delay", args.delay_arg, 0)) {
+            return 1;
+        }
         config.random_delay_rate = (size_t)args.delay_rate_arg;
         config.random_delay_time = (size_t)args.delay_arg;
     }
@@ -71,7 +108,12 @@ int main(int argc, char** argv) {
     audio::SampleBufferQueue sample_queue;
     rtp::Composer rtp_composer;
 
-    sndio::Reader reader(sample_queue);
+    sndio::Reader reader(sample_queue,
+                         audio::default_buffer_composer(),
+                         config.channels,
+                         config.samples_per_packet / 2,
+                         config.sample_rate);
+
     if (!reader.open(args.input_arg, args.type_arg)) {
         roc_log(LOG_ERROR, "can't open input file/device: %s %s", args.input_arg,
                 args.type_arg);

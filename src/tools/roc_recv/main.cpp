@@ -71,6 +71,12 @@ int main(int argc, char** argv) {
     if (args.beep_flag) {
         config.options |= pipeline::EnableBeep;
     }
+    if (args.rate_given) {
+        if (!check_ge("rate", args.rate_arg, 1)) {
+            return 1;
+        }
+        config.sample_rate = (size_t)args.rate_arg;
+    }
     if (args.session_timeout_given) {
         if (!check_ge("session-timeout", args.session_timeout_arg, 0)) {
             return 1;
@@ -116,7 +122,7 @@ int main(int argc, char** argv) {
     pipeline::Server server(dgm_queue, sample_queue, config);
     server.add_port(addr, rtp_parser);
 
-    sndio::Writer writer(sample_queue);
+    sndio::Writer writer(sample_queue, config.channels, config.sample_rate);
     if (!writer.open(args.output_arg, args.type_arg)) {
         roc_log(LOG_ERROR, "can't open output file/device: %s %s", args.output_arg,
                 args.type_arg);

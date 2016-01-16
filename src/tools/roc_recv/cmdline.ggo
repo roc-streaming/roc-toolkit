@@ -25,6 +25,9 @@ section "Options"
 
     option "beep" - "Enable beep on packet loss" flag off
 
+    option "rate" - "Sample rate (Hz)"
+        int optional
+
     option "session-timeout" - "Session timeout as number of samples"
         int optional
 
