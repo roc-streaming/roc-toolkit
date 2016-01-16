@@ -41,16 +41,16 @@ Decoder::Decoder(IBlockDecoder& block_decoder,
     , n_packets_(0) {
 }
 
+bool Decoder::is_started() const {
+    return decoding_started_;
+}
+
 packet::IPacketConstPtr Decoder::read() {
     packet::IPacketConstPtr pp = read_();
     if (pp) {
         n_packets_++;
     }
     return pp;
-}
-
-bool Decoder::is_started() const {
-    return decoding_started_;
 }
 
 packet::IPacketConstPtr Decoder::read_() {

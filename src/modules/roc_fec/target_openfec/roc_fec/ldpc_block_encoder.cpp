@@ -60,6 +60,14 @@ void LDPC_BlockEncoder::write(size_t index, const core::IByteBufferConstSlice& b
                   (unsigned long)N_DATA_PACKETS);
     }
 
+    if (!buffer) {
+        roc_panic("ldpc encoder: NULL buffer");
+    }
+
+    if ((uintptr_t)buffer.data() % 8 != 0) {
+        roc_panic("ldpc encoder: buffer data should be 8-byte aligned");
+    }
+
     // const_cast<> is OK since OpenFEC will not modify this buffer.
     sym_tab_[index] = const_cast<uint8_t*>(buffer.data());
     buffers_[index] = buffer;
