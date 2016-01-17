@@ -70,8 +70,8 @@ void AudioPacket::set_marker(bool m) {
 
 void AudioPacket::set_size(packet::channel_mask_t ch_mask,
                            size_t n_samples,
-                           size_t rate) {
-    if (const RTP_AudioFormat* format = get_audio_format_cr(ch_mask, rate)) {
+                           size_t sample_rate) {
+    if (const RTP_AudioFormat* format = get_audio_format_cr(ch_mask, sample_rate)) {
         format_ = format;
     } else {
         roc_panic("rtp audio packet: no supported format for channel mask 0x%xu",
