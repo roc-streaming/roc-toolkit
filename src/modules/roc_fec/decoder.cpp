@@ -32,7 +32,8 @@ Decoder::Decoder(IBlockDecoder& block_decoder,
     , fec_queue_(0)
     , data_block_(N_DATA_PACKETS)
     , fec_block_(N_FEC_PACKETS)
-    , decoding_started_(false)
+    , is_alive_(true)
+    , is_started_(false)
     , can_repair_(false)
     , next_packet_(0)
     , cur_block_sn_(0)
@@ -42,21 +43,29 @@ Decoder::Decoder(IBlockDecoder& block_decoder,
 }
 
 bool Decoder::is_started() const {
-    return decoding_started_;
+    return is_started_;
+}
+
+bool Decoder::is_alive() const {
+    return is_alive_;
 }
 
 packet::IPacketConstPtr Decoder::read() {
+    if (!is_alive_) {
+        return NULL;
+    }
     packet::IPacketConstPtr pp = read_();
     if (pp) {
         n_packets_++;
     }
-    return pp;
+    // Check if is_alive_ changed.
+    return (is_alive_ ? pp : NULL);
 }
 
 packet::IPacketConstPtr Decoder::read_() {
     fetch_packets_();
 
-    if (!decoding_started_) {
+    if (!is_started_) {
         packet::IPacketConstPtr pp = data_queue_.head();
         if (pp) {
             if (!has_source_) {
@@ -75,7 +84,7 @@ packet::IPacketConstPtr Decoder::read_() {
                            " n_packets_before=%u blk_sn=%lu",
                 n_packets_, (unsigned long)cur_block_sn_);
 
-        decoding_started_ = true;
+        is_started_ = true;
     }
 
     return get_next_packet_();
@@ -187,10 +196,12 @@ bool Decoder::check_packet_(const packet::IPacketConstPtr& pp, size_t pos) {
     roc_panic_if_not(has_source_);
 
     if (pp->source() != source_) {
-        roc_log(LOG_FLOOD,
-                "decoder: repaired packet has bad source id: got=%lu expected=%lu",
+        roc_log(LOG_FLOOD, "decoder: repaired packet has bad source id, shutting down:"
+                           " got=%lu expected=%lu",
                 (unsigned long)pp->source(), (unsigned long)source_);
-        return false;
+        // We've repaired packet from someone else's session; shutdown decoder now.
+        // This will force Watchdog to shutdown entire session after timeout.
+        return (is_alive_ = false);
     }
 
     if (pp->seqnum() != packet::seqnum_t(cur_block_sn_ + pos)) {

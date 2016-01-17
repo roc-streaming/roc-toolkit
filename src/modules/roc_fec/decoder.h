@@ -57,6 +57,9 @@ public:
     //! Did decoder catch block beginning?
     bool is_started() const;
 
+    //! Is decoder alive?
+    bool is_alive() const;
+
 private:
     static const size_t N_DATA_PACKETS = ROC_CONFIG_DEFAULT_FEC_BLOCK_DATA_PACKETS;
     static const size_t N_FEC_PACKETS = ROC_CONFIG_DEFAULT_FEC_BLOCK_REDUNDANT_PACKETS;
@@ -90,7 +93,8 @@ private:
     core::Array<packet::IPacketConstPtr, N_DATA_PACKETS> data_block_;
     core::Array<packet::IFECPacketConstPtr, N_FEC_PACKETS> fec_block_;
 
-    bool decoding_started_;
+    bool is_alive_;
+    bool is_started_;
     bool can_repair_;
 
     size_t next_packet_;

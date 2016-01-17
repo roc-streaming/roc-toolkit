@@ -525,8 +525,8 @@ TEST(fec_codec_integration, encode_source_id_and_seqnum) {
     }
 }
 
-TEST(fec_codec_integration, decode_bad_source_id_or_seqnum) {
-    // Spoil source id or seqnum in packet and lose it.
+TEST(fec_codec_integration, decode_bad_seqnum) {
+    // Spoil seqnum in packet and lose it.
     // Check that decoder wouldn't restore it.
 
     BlockEncoder block_encoder;
@@ -539,11 +539,9 @@ TEST(fec_codec_integration, decode_bad_source_id_or_seqnum) {
 
     fill_all_packets(0, N_DATA_PACKETS);
 
-    pckt_disp.lose(5);  // should be rejected (bad source id)
     pckt_disp.lose(9);  // should be rejected (bad seqnum)
     pckt_disp.lose(14); // should be rapaired
 
-    data_packets[5]->set_source(data_packets[5]->source() + 1);
     data_packets[9]->set_seqnum(data_packets[9]->seqnum() + 1);
 
     for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
@@ -552,9 +550,45 @@ TEST(fec_codec_integration, decode_bad_source_id_or_seqnum) {
     pckt_disp.release_all();
 
     for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
-        if (i != 5 && i != 9) {
+        if (i != 9) {
             check_audio_packet(decoder.read(), i, N_DATA_PACKETS);
         }
+    }
+
+    CHECK(pckt_disp.get_data_size() == 0);
+}
+
+TEST(fec_codec_integration, decode_bad_source_id) {
+    // Spoil source id in packet and lose it.
+    // Check that decoder would shutdown.
+
+    BlockEncoder block_encoder;
+    BlockDecoder block_decoder;
+    rtp::Parser parser;
+
+    Encoder encoder(block_encoder, pckt_disp, composer);
+    Decoder decoder(block_decoder, pckt_disp.get_data_reader(),
+                    pckt_disp.get_fec_reader(), parser);
+
+    fill_all_packets(0, N_DATA_PACKETS);
+
+    pckt_disp.lose(5); // should shutdown decoder (bad source id)
+
+    data_packets[5]->set_source(data_packets[5]->source() + 1);
+
+    for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
+        encoder.write(data_packets[i]);
+    }
+    pckt_disp.release_all();
+
+    for (size_t i = 0; i < 5; ++i) {
+        check_audio_packet(decoder.read(), i, N_DATA_PACKETS);
+        CHECK(decoder.is_alive());
+    }
+
+    for (size_t i = 5; i < N_DATA_PACKETS; ++i) {
+        CHECK(!decoder.read());
+        CHECK(!decoder.is_alive());
     }
 
     CHECK(pckt_disp.get_data_size() == 0);
