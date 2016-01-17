@@ -34,8 +34,8 @@ bool check_ge(const char* option, int value, int min_value) {
 
 bool check_range(const char* option, int value, int min_value, int max_value) {
     if (value < min_value || value > max_value) {
-        roc_log(LOG_ERROR, "invalid `--%s=%d': should be in range [%d; %d]",
-                option, value, min_value, max_value);
+        roc_log(LOG_ERROR, "invalid `--%s=%d': should be in range [%d; %d]", option,
+                value, min_value, max_value);
         return false;
     }
     return true;
@@ -108,11 +108,8 @@ int main(int argc, char** argv) {
     audio::SampleBufferQueue sample_queue;
     rtp::Composer rtp_composer;
 
-    sndio::Reader reader(sample_queue,
-                         audio::default_buffer_composer(),
-                         config.channels,
-                         config.samples_per_packet / 2,
-                         config.sample_rate);
+    sndio::Reader reader(sample_queue, audio::default_buffer_composer(), config.channels,
+                         config.samples_per_packet / 2, config.sample_rate);
 
     if (!reader.open(args.input_arg, args.type_arg)) {
         roc_log(LOG_ERROR, "can't open input file/device: %s %s", args.input_arg,
