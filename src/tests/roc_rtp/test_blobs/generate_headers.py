@@ -121,6 +121,7 @@ static RTP_PacketTest %s = {
         print_number("num_channels", meta["num_channels"])
         print_number("num_samples", meta["num_samples"])
         print_number("samplebits", meta["samplebits"])
+        print_number("samplerate", meta["samplerate"])
 
         print()
         print_comment("samples")

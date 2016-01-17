@@ -20,6 +20,7 @@
     "num_channels": 2,
     "num_samples": 320,
     "samplebits": 16,
+    "samplerate": 44100,
     "samples": [
         [
             -22, -23, -24, -25, -26, -26, -27, -27, -27, -27, -28,

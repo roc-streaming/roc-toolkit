@@ -45,6 +45,9 @@ public:
     //! Set packet timestamp.
     virtual void set_timestamp(packet::timestamp_t);
 
+    //! Get packet rate.
+    virtual size_t rate() const;
+
     //! Get packet marker bit.
     virtual bool marker() const;
 

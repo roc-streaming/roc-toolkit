@@ -45,6 +45,8 @@ const size_t N_CH = 2;
 const int LEFT = (1 << 0);
 const int RIGHT = (1 << 1);
 
+const size_t RATE = ROC_CONFIG_DEFAULT_SAMPLE_RATE;
+
 const double EPSILON = 0.0001;
 
 typedef LDPC_BlockEncoder BlockEncoder;
@@ -188,7 +190,7 @@ TEST_GROUP(fec_codec_integration) {
 
         IAudioPacket* audio_packet = (IAudioPacket*)packet.get();
         audio_packet->set_seqnum((seqnum_t)sn);
-        audio_packet->set_size(LEFT | RIGHT, N_SAMPLES);
+        audio_packet->set_size(LEFT | RIGHT, N_SAMPLES, RATE);
         audio_packet->write_samples(LEFT | RIGHT, 0, samples, N_SAMPLES);
 
         return packet;

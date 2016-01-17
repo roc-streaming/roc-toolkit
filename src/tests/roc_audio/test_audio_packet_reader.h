@@ -22,6 +22,8 @@ namespace test {
 template <size_t MaxPackets, size_t NumSamples, int ChNum, int ChMask>
 class TestAudioPacketReader : public audio::IAudioPacketReader {
 public:
+    enum { Rate = ROC_CONFIG_DEFAULT_SAMPLE_RATE };
+
     TestAudioPacketReader()
         : pos_(0)
         , max_(0) {
@@ -53,7 +55,7 @@ public:
         }
 
         packet->set_timestamp(timestamp);
-        packet->set_size(ChMask, NumSamples);
+        packet->set_size(ChMask, NumSamples, Rate);
         packet->write_samples((1 << ChNum), 0, samples, NumSamples);
 
         packets_[max_++] = packet;

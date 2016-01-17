@@ -53,6 +53,13 @@ void AudioPacket::set_timestamp(packet::timestamp_t ts) {
     packet_.header().set_timestamp(ts);
 }
 
+size_t AudioPacket::rate() const {
+    if (!format_) {
+        roc_panic("rtp audio packet: audio format isn't set, forgot set_size()?");
+    }
+    return format_->rate;
+}
+
 bool AudioPacket::marker() const {
     return packet_.header().marker();
 }
@@ -61,8 +68,10 @@ void AudioPacket::set_marker(bool m) {
     packet_.header().set_marker(m);
 }
 
-void AudioPacket::set_size(packet::channel_mask_t ch_mask, size_t n_samples) {
-    if (const RTP_AudioFormat* format = get_audio_format_ch(ch_mask)) {
+void AudioPacket::set_size(packet::channel_mask_t ch_mask,
+                           size_t n_samples,
+                           size_t rate) {
+    if (const RTP_AudioFormat* format = get_audio_format_cr(ch_mask, rate)) {
         format_ = format;
     } else {
         roc_panic("rtp audio packet: no supported format for channel mask 0x%xu",

@@ -22,6 +22,8 @@ namespace {
 
 enum { MaxCh = 2, NumSamples = 237, Guard = 7 };
 
+enum { Rate = ROC_CONFIG_DEFAULT_SAMPLE_RATE };
+
 const double Epsilon = 0.0001f;
 
 } // namespace
@@ -76,10 +78,11 @@ TEST(audio_packet, compose_empty) {
         CHECK(!p->marker());
         LONGS_EQUAL(0, p->timestamp());
 
-        p->set_size(ch_mask, 0);
+        p->set_size(ch_mask, 0, Rate);
 
         LONGS_EQUAL(ch_mask, p->channels());
         LONGS_EQUAL(0, p->num_samples());
+        LONGS_EQUAL(Rate, p->rate());
 
         sample_t samples[MaxCh] = {};
         LONGS_EQUAL(0, p->read_samples(ch_mask, 0, samples, 1));
@@ -102,10 +105,11 @@ TEST(audio_packet, compose_full) {
         CHECK(p->marker());
         LONGS_EQUAL(123456789, p->timestamp());
 
-        p->set_size(ch_mask, NumSamples);
+        p->set_size(ch_mask, NumSamples, Rate);
 
         LONGS_EQUAL(ch_mask, p->channels());
         LONGS_EQUAL(NumSamples, p->num_samples());
+        LONGS_EQUAL(Rate, p->rate());
 
         write_samples(p, num_ch, NumSamples);
 
@@ -131,7 +135,7 @@ TEST(audio_packet, compose_parse) {
         p1->set_marker(true);
         p1->set_timestamp(123456789);
 
-        p1->set_size(ch_mask, NumSamples);
+        p1->set_size(ch_mask, NumSamples, Rate);
 
         write_samples(p1, num_ch, NumSamples);
 
@@ -144,6 +148,7 @@ TEST(audio_packet, compose_parse) {
 
         LONGS_EQUAL(ch_mask, p2->channels());
         LONGS_EQUAL(NumSamples, p2->num_samples());
+        LONGS_EQUAL(Rate, p2->rate());
 
         {
             sample_t samples[NumSamples * MaxCh] = {};
@@ -161,7 +166,7 @@ TEST(audio_packet, read_one_channel) {
         const channel_mask_t ch_mask = (1 << num_ch) - 1;
 
         IAudioPacketPtr p = compose();
-        p->set_size(ch_mask, NumSamples);
+        p->set_size(ch_mask, NumSamples, Rate);
 
         write_samples(p, num_ch, NumSamples);
 
@@ -181,7 +186,7 @@ TEST(audio_packet, read_offset_and_length) {
         const channel_mask_t ch_mask = (1 << num_ch) - 1;
 
         IAudioPacketPtr p = compose();
-        p->set_size(ch_mask, NumSamples);
+        p->set_size(ch_mask, NumSamples, Rate);
 
         write_samples(p, num_ch, NumSamples);
 
@@ -226,7 +231,7 @@ TEST(audio_packet, read_more_than_size) {
         const channel_mask_t ch_mask = (1 << num_ch) - 1;
 
         IAudioPacketPtr p = compose();
-        p->set_size(ch_mask, NumSamples);
+        p->set_size(ch_mask, NumSamples, Rate);
 
         write_samples(p, num_ch, NumSamples);
 
@@ -263,7 +268,7 @@ TEST(audio_packet, write_one_channel) {
         const channel_mask_t ch_mask = (1 << num_ch) - 1;
 
         IAudioPacketPtr p = compose();
-        p->set_size(ch_mask, NumSamples);
+        p->set_size(ch_mask, NumSamples, Rate);
 
         for (size_t ch = 0; ch < num_ch; ch++) {
             {
@@ -307,7 +312,7 @@ TEST(audio_packet, write_offset_and_length) {
         const channel_mask_t ch_mask = (1 << num_ch) - 1;
 
         IAudioPacketPtr p = compose();
-        p->set_size(ch_mask, NumSamples);
+        p->set_size(ch_mask, NumSamples, Rate);
 
         {
             sample_t samples[10 * MaxCh] = {};

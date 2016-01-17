@@ -57,6 +57,9 @@ TEST_GROUP(fec_packet) {
 TEST(fec_packet, compose_empty) {
     IFECPacketPtr p = compose();
 
+    LONGS_EQUAL(0, p->timestamp());
+    LONGS_EQUAL(0, p->rate());
+
     LONGS_EQUAL(0, p->source());
     LONGS_EQUAL(0, p->seqnum());
 
@@ -78,6 +81,9 @@ TEST(fec_packet, compose_full) {
 
     p->set_data_blknum(54321);
     p->set_fec_blknum(44444);
+
+    LONGS_EQUAL(0, p->timestamp());
+    LONGS_EQUAL(0, p->rate());
 
     LONGS_EQUAL(1122334455, p->source());
     LONGS_EQUAL(12345, p->seqnum());
@@ -103,6 +109,9 @@ TEST(fec_packet, compose_parse) {
     set_payload(p1);
 
     IFECPacketConstPtr p2 = parse(p1->raw_data());
+
+    LONGS_EQUAL(0, p2->timestamp());
+    LONGS_EQUAL(0, p2->rate());
 
     LONGS_EQUAL(1122334455, p2->source());
     LONGS_EQUAL(12345, p2->seqnum());

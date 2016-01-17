@@ -78,8 +78,9 @@ audio::ISampleBufferWriter* Client::make_audio_writer_() {
     packet::IPacketWriter* packet_writer = make_packet_writer_();
     roc_panic_if(!packet_writer);
 
-    audio::ISampleBufferWriter* audio_writer = new (splitter_) audio::Splitter(
-        *packet_writer, packet_composer_, config_.samples_per_packet, config_.channels);
+    audio::ISampleBufferWriter* audio_writer = new (splitter_)
+        audio::Splitter(*packet_writer, packet_composer_, config_.samples_per_packet,
+                        config_.channels, config_.sample_rate);
 
     if (config_.options & EnableTiming) {
         audio_writer = new (timed_writer_)

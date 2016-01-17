@@ -28,6 +28,9 @@ struct RTP_AudioFormat {
     //! Bitmask of supported channels.
     packet::channel_mask_t channels;
 
+    //! Sample rate.
+    size_t rate;
+
     //! Get number of samples in packet.
     size_t (*n_samples)(size_t payload_size);
 
@@ -55,8 +58,8 @@ struct RTP_AudioFormat {
 //! Get audio format from payload type.
 const RTP_AudioFormat* get_audio_format_pt(uint8_t pt);
 
-//! Get audio format from channel mask.
-const RTP_AudioFormat* get_audio_format_ch(packet::channel_mask_t ch);
+//! Get audio format from channel mask and sample rate.
+const RTP_AudioFormat* get_audio_format_cr(packet::channel_mask_t ch, size_t rate);
 
 } // namespace rtp
 } // namespace roc

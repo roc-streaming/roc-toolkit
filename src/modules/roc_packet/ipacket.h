@@ -68,6 +68,12 @@ public:
     //! Set packet timestamp.
     virtual void set_timestamp(timestamp_t) = 0;
 
+    //! Get packet rate.
+    //! @returns
+    //!  Number of timestamp units per second or 0 if timestamp is meaningless
+    //!  for this packet.
+    virtual size_t rate() const = 0;
+
     //! Get packet marker bit.
     //! @remarks
     //!  Marker bit meaning depends on packet type.

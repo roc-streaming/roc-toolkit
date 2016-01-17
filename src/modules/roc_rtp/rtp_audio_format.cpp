@@ -31,13 +31,17 @@ const RTP_AudioFormat* get_audio_format_pt(uint8_t pt) {
     return NULL;
 }
 
-const RTP_AudioFormat* get_audio_format_ch(packet::channel_mask_t ch) {
+const RTP_AudioFormat* get_audio_format_cr(packet::channel_mask_t ch, size_t rate) {
     switch (ch) {
     case 0x1:
-        return &RTP_AudioFormat_L16_Mono;
+        if (RTP_AudioFormat_L16_Mono.rate == rate) {
+            return &RTP_AudioFormat_L16_Mono;
+        }
 
     case 0x3:
-        return &RTP_AudioFormat_L16_Stereo;
+        if (RTP_AudioFormat_L16_Stereo.rate == rate) {
+            return &RTP_AudioFormat_L16_Stereo;
+        }
 
     default:
         break;

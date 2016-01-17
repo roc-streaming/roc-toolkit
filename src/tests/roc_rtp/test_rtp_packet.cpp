@@ -103,6 +103,7 @@ TEST_GROUP(rtp_packet) {
         LONGS_EQUAL(test.seqnum, packet->seqnum());
         LONGS_EQUAL(test.marker, packet->marker());
         LONGS_EQUAL(test.ts, packet->timestamp());
+        LONGS_EQUAL(test.samplerate, packet->rate());
 
         LONGS_EQUAL((1 << test.num_channels) - 1, packet->channels());
         LONGS_EQUAL(test.num_samples, packet->num_samples());

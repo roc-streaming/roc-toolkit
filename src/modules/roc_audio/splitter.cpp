@@ -20,12 +20,14 @@ namespace audio {
 Splitter::Splitter(packet::IPacketWriter& output,
                    packet::IPacketComposer& composer,
                    size_t samples,
-                   packet::channel_mask_t channels)
+                   packet::channel_mask_t channels,
+                   size_t rate)
     : output_(output)
     , composer_(composer)
     , channels_(channels)
     , n_channels_(packet::num_channels(channels))
     , n_packet_samples_(samples)
+    , rate_(rate)
     , source_((packet::source_t)core::random(packet::source_t(-1)))
     , seqnum_((packet::seqnum_t)core::random(packet::seqnum_t(-1)))
     , timestamp_((packet::timestamp_t)core::random(packet::timestamp_t(-1)))
@@ -100,7 +102,7 @@ bool Splitter::create_packet_() {
     packet_->set_source(source_);
     packet_->set_seqnum(seqnum_);
     packet_->set_timestamp(timestamp_);
-    packet_->set_size(channels_, n_packet_samples_);
+    packet_->set_size(channels_, n_packet_samples_, rate_);
 
     return true;
 }

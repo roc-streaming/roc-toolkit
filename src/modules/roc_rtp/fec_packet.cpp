@@ -49,6 +49,10 @@ void FECPacket::set_timestamp(packet::timestamp_t) {
     // FIXME
 }
 
+size_t FECPacket::rate() const {
+    return 0;
+}
+
 bool FECPacket::marker() const {
     return packet_.header().seqnum();
 }

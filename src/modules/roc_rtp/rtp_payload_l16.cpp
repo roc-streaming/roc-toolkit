@@ -119,6 +119,7 @@ const RTP_AudioFormat RTP_AudioFormat_L16_Stereo = {
     //
     RTP_PT_L16_STEREO,         //
     0x3,                       //
+    44100,                     //
     pcm_n_samples<int16_t, 2>, //
     pcm_size<int16_t, 2>,      //
     pcm_read<int16_t, 2>,      //
@@ -132,6 +133,7 @@ const RTP_AudioFormat RTP_AudioFormat_L16_Mono = {
     //
     RTP_PT_L16_MONO,           //
     0x1,                       //
+    44100,                     //
     pcm_n_samples<int16_t, 1>, //
     pcm_size<int16_t, 1>,      //
     pcm_read<int16_t, 1>,      //

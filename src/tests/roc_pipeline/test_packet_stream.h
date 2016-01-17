@@ -123,7 +123,7 @@ public:
         packet->set_source(sid);
         packet->set_seqnum(sn);
         packet->set_timestamp(ts);
-        packet->set_size(ChannelMask, n_pkt_samples);
+        packet->set_size(ChannelMask, n_pkt_samples, SampleRate);
         packet->write_samples(ChannelMask, 0, samples, n_pkt_samples);
 
         return make(packet->raw_data());

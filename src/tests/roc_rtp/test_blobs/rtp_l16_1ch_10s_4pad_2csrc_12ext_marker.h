@@ -48,6 +48,7 @@ static RTP_PacketTest rtp_l16_1ch_10s_4pad_2csrc_12ext_marker = {
   /* num_channels     */ 1,
   /* num_samples      */ 10,
   /* samplebits       */ 16,
+  /* samplerate       */ 44100,
 
   /* samples          */ {
     /* channel #0       */ { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 },

@@ -46,6 +46,9 @@ public:
     //! Set packet timestamp.
     virtual void set_timestamp(packet::timestamp_t);
 
+    //! Get packet rate.
+    virtual size_t rate() const;
+
     //! Get packet marker bit.
     virtual bool marker() const;
 
@@ -58,8 +61,8 @@ public:
     //! Get number of samples in packet.
     virtual size_t num_samples() const;
 
-    //! Set channel mask and number of samples per channel.
-    virtual void set_size(packet::channel_mask_t ch_mask, size_t n_samples);
+    //! Set channel mask, number of samples per channel and sample rate.
+    virtual void set_size(packet::channel_mask_t ch_mask, size_t n_samples, size_t rate);
 
     //! Read samples from packet.
     virtual size_t read_samples(packet::channel_mask_t ch_mask,

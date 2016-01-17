@@ -44,6 +44,7 @@ struct RTP_PacketTest {
     size_t num_channels;
     size_t num_samples;
     size_t samplebits;
+    size_t samplerate;
     long samples[MaxCh][MaxSamples];
 };
 

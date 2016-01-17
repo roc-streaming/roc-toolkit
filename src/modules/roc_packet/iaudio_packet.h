@@ -30,8 +30,8 @@ public:
     //! Get number of samples in packet.
     virtual size_t num_samples() const = 0;
 
-    //! Set channel mask and number of samples per channel.
-    virtual void set_size(channel_mask_t ch_mask, size_t n_samples) = 0;
+    //! Set channel mask, number of samples per channel and sample rate.
+    virtual void set_size(channel_mask_t ch_mask, size_t n_samples, size_t rate) = 0;
 
     //! Read samples from packet.
     //!

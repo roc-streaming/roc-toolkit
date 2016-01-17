@@ -43,7 +43,8 @@ public:
     Splitter(packet::IPacketWriter& output,
              packet::IPacketComposer& composer,
              size_t samples = ROC_CONFIG_DEFAULT_PACKET_SAMPLES,
-             packet::channel_mask_t channels = ROC_CONFIG_DEFAULT_CHANNEL_MASK);
+             packet::channel_mask_t channels = ROC_CONFIG_DEFAULT_CHANNEL_MASK,
+             size_t rate = ROC_CONFIG_DEFAULT_SAMPLE_RATE);
 
     //! Write samples.
     //! @remarks
@@ -65,6 +66,7 @@ private:
     const packet::channel_mask_t channels_;
     const size_t n_channels_;
     const size_t n_packet_samples_;
+    const size_t rate_;
 
     packet::IAudioPacketPtr packet_;
     const packet::source_t source_;

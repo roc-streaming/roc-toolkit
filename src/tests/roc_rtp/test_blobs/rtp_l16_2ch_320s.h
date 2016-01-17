@@ -151,6 +151,7 @@ static RTP_PacketTest rtp_l16_2ch_320s = {
   /* num_channels     */ 2,
   /* num_samples      */ 320,
   /* samplebits       */ 16,
+  /* samplerate       */ 44100,
 
   /* samples          */ {
     /* channel #0       */ {

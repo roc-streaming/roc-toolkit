@@ -23,6 +23,8 @@ namespace {
 
 enum { ChMask = 0x3, NumChannels = 2, NumSamples = 100, NumPackets = 5 };
 
+enum { Rate = ROC_CONFIG_DEFAULT_SAMPLE_RATE };
+
 } // namespace
 
 TEST_GROUP(delayer) {
@@ -33,7 +35,7 @@ TEST_GROUP(delayer) {
         packet->set_timestamp(packet::timestamp_t(sn* NumSamples));
 
         sample_t samples[NumSamples * NumChannels] = {};
-        packet->set_size(ChMask, NumSamples);
+        packet->set_size(ChMask, NumSamples, Rate);
         packet->write_samples(ChMask, 0, samples, NumSamples);
 
         return packet;

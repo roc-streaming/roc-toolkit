@@ -10,6 +10,8 @@
 #ifndef ROC_PIPELINE_TEST_CONFIG_H_
 #define ROC_PIPELINE_TEST_CONFIG_H_
 
+#include "roc_config/config.h"
+
 namespace roc {
 namespace test {
 
@@ -21,7 +23,10 @@ enum {
     ChannelMask = 0x3,
 
     // Sample wrap.
-    MaxSampleValue = 10000
+    MaxSampleValue = 10000,
+
+    // Sample rate.
+    SampleRate = ROC_CONFIG_DEFAULT_SAMPLE_RATE
 };
 
 } // namespace test
