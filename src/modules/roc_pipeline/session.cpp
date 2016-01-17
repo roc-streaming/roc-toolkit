@@ -153,7 +153,8 @@ packet::IPacketReader* Session::make_packet_reader_() {
         audio::Delayer(*packet_reader, (packet::timestamp_t)config_.session_latency);
 
     packet_reader = new (watchdog_) packet::Watchdog(
-        *packet_reader, config_.session_timeout / config_.samples_per_tick);
+        *packet_reader, config_.session_timeout / config_.samples_per_tick,
+        config_.sample_rate);
 
     monitors_.append(*watchdog_);
 
@@ -176,7 +177,8 @@ packet::IPacketReader* Session::make_fec_decoder_(packet::IPacketReader* packet_
                                                     *fec_packet_queue_, packet_parser_);
 
     packet_reader = new (fec_watchdog_) packet::Watchdog(
-        *packet_reader, config_.session_timeout / config_.samples_per_tick);
+        *packet_reader, config_.session_timeout / config_.samples_per_tick,
+        config_.sample_rate);
 
     monitors_.append(*fec_watchdog_);
 

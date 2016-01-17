@@ -26,6 +26,7 @@ TEST_GROUP(watchdog) {
     enum {
         NumSamples = 103,
         Timeout = 33,
+        Rate = ROC_CONFIG_DEFAULT_SAMPLE_RATE,
         SnJump = ROC_CONFIG_MAX_SN_JUMP,
         TsJump = ROC_CONFIG_MAX_TS_JUMP
     };
@@ -35,11 +36,12 @@ TEST_GROUP(watchdog) {
     core::ScopedPtr<Watchdog> watchdog;
 
     void setup() {
-        watchdog.reset(new Watchdog(queue, Timeout));
+        watchdog.reset(new Watchdog(queue, Timeout, Rate));
     }
 
     IPacketConstPtr add_packet(source_t src, seqnum_t sn, timestamp_t ts) {
         IAudioPacketPtr pkt = new_audio_packet(src, sn, ts);
+        pkt->set_size(0x1, 1, Rate);
         queue.write(pkt);
         return pkt;
     }

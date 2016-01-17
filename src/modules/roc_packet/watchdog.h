@@ -36,8 +36,12 @@ public:
     //!  - @p reader is input packet reader; packets from @p reader
     //!    are returned from read();
     //!  - @p timeout is maximum allowed number of renderer ticks
-    //!    without new packets before renderer termination.
-    Watchdog(IPacketReader& reader, size_t timeout = ROC_CONFIG_DEFAULT_SESSION_TIMEOUT);
+    //!    without new packets before renderer termination;
+    //!  - @p rate is allowed rate for input packets; packets with
+    //!    other rate are dropped.
+    Watchdog(IPacketReader& reader,
+             size_t timeout = ROC_CONFIG_DEFAULT_SESSION_TIMEOUT,
+             size_t rate = ROC_CONFIG_DEFAULT_SAMPLE_RATE);
 
     //! Update stream.
     //! @returns
@@ -55,6 +59,7 @@ private:
     IPacketReader& reader_;
     IPacketConstPtr prev_;
 
+    const size_t rate_;
     size_t timeout_;
     size_t countdown_;
 

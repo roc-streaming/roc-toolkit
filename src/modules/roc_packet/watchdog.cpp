@@ -20,8 +20,9 @@
 namespace roc {
 namespace packet {
 
-Watchdog::Watchdog(IPacketReader& reader, size_t timeout)
+Watchdog::Watchdog(IPacketReader& reader, size_t timeout, size_t rate)
     : reader_(reader)
+    , rate_(rate)
     , timeout_(timeout)
     , countdown_(timeout)
     , has_packets_(false)
@@ -57,6 +58,12 @@ IPacketConstPtr Watchdog::read() {
 
     IPacketConstPtr packet = reader_.read();
     if (!packet) {
+        return NULL;
+    }
+
+    if (packet->rate() != rate_) {
+        roc_log(LOG_DEBUG, "watchdog: unexpected rate: got=%u expected=%u",
+                (unsigned)packet->rate(), (unsigned)rate_);
         return NULL;
     }
 
