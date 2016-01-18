@@ -41,19 +41,23 @@ inline fixedpoint_t float_to_fixedpoint(const float t) {
     return (fixedpoint_t)(t * (float)G_qt_one);
 }
 
+inline size_t fixedpoint_to_size(const fixedpoint_t t){
+    return (t >> FRACT_BIT_COUNT) & 0xFF;
+}
+
 // Rounds x (Q8.24) upward.
 inline fixedpoint_t qceil(const fixedpoint_t x) {
     if ((x & FRACT_PART_MASK) == 0) {
-        return (0xFF & (x >> FRACT_BIT_COUNT));
+        return x & INTEGER_PART_MASK;
     } else {
-        return (0xFF & (x >> FRACT_BIT_COUNT)) + 1;
+        return (x & INTEGER_PART_MASK) + G_qt_one;
     }
 }
 
 // Rounds x (Q8.24) downward.
 inline fixedpoint_t qfloor(const fixedpoint_t x) {
     // Just remove fractional part.
-    return 0xFF & (x >> FRACT_BIT_COUNT);
+    return x & INTEGER_PART_MASK;
 }
 
 // Returns fractional part of x in f32.
@@ -88,6 +92,8 @@ const fixedpoint_t G_qt_half_window_len = float_to_fixedpoint(G_ft_half_window_l
 
 const fixedpoint_t G_qt_epsilon = float_to_fixedpoint(5e-8f);
 
+const fixedpoint_t G_default_sample = float_to_fixedpoint(0.0/128.0);
+
 } // namespace
 
 Resampler::Resampler(IStreamReader& reader,
@@ -97,11 +103,14 @@ Resampler::Resampler(IStreamReader& reader,
     , window_(3)
     , frame_size_(frame_size)
     , qt_frame_size_(fixedpoint_t(frame_size_ << FRACT_BIT_COUNT))
-    , qt_sample_(float_to_fixedpoint(63.0/64.0))
+    , qt_sample_(G_default_sample)
     , qt_dt_(0)
     , scaling_(0) {
     // Half window must fit into one frame.
     roc_panic_if_not(qt_frame_size_ >= G_qt_half_window_len);
+
+    // Check if frame_size_ fits to fixedpoint type.
+    roc_panic_if( (uint64_t)qt_frame_size_ + (uint64_t)G_qt_half_window_len >= (INTEGER_PART_MASK + FRACT_PART_MASK) );
 
     init_window_(composer);
 
@@ -125,7 +134,7 @@ void Resampler::read(const ISampleBufferSlice& buff) {
     size_t buff_size = buff.size();
 
     if (curr_frame_ == NULL) {
-        qt_sample_ = float_to_fixedpoint(63.0/64.0);
+        qt_sample_ = G_default_sample;
         renew_window_();
     }
 
@@ -136,7 +145,9 @@ void Resampler::read(const ISampleBufferSlice& buff) {
         }
 
         buff_data[n] = resample_();
-        qt_sample_ += qt_dt_;
+        // XXX:
+        // qt_sample_ += qt_dt_;
+        qt_sample_ += G_qt_one;
     }
 }
 
@@ -196,27 +207,26 @@ sample_t Resampler::resample_() {
         qt_sample_ += G_qt_one;
     }
 
-    ind_begin_prev = (qt_sample_ > G_qt_half_window_len)
+    ind_begin_prev = (qt_sample_ >= G_qt_half_window_len)
         ? frame_size_
-        : qceil(qt_sample_ + (qt_frame_size_ - G_qt_half_window_len));
+        : fixedpoint_to_size(qceil(qt_sample_ + (qt_frame_size_ - G_qt_half_window_len)));
 
-    ind_begin_cur = (qt_sample_ > G_qt_half_window_len)
-        ? qceil(qt_sample_ - G_qt_half_window_len)
+    ind_begin_cur = (qt_sample_ >= G_qt_half_window_len)
+        ? fixedpoint_to_size(qceil(qt_sample_ - G_qt_half_window_len))
         : 0;
 
     ind_end_cur = ((qt_sample_ + G_qt_half_window_len) > qt_frame_size_)
         ? frame_size_
-        : qfloor(qt_sample_ + G_qt_half_window_len);
+        : fixedpoint_to_size(qfloor(qt_sample_ + G_qt_half_window_len));
 
     ind_end_next = ((qt_sample_ + G_qt_half_window_len) > qt_frame_size_)
-        ? qfloor(qt_sample_ + G_qt_half_window_len - qt_frame_size_)
+        ? fixedpoint_to_size(qfloor(qt_sample_ + G_qt_half_window_len - qt_frame_size_))
         : 0;
 
     // Counter inside window.
     // t_sinc = t_sample - ceil( t_sample - st_Nwindow + 1/st_Nwindow_interp )
     fixedpoint_t qt_sinc_cur = qt_frame_size_ + qt_sample_
-        - (((qt_frame_size_ + qt_sample_ - 0x40000000) & INTEGER_PART_MASK)
-           + G_qt_one);
+        - qceil(qt_frame_size_ + qt_sample_ - G_qt_half_window_len);
 
     // sinc_table defined in positive half-plane, so at the begining of the window
     // qt_sinc_cur starts decreasing and after we cross 0 it will be increasing
