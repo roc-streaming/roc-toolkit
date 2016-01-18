@@ -10,10 +10,9 @@
 #include <CppUTest/TestHarness.h>
 
 #include "roc_core/scoped_ptr.h"
-
 #include "roc_audio/streamer.h"
 
-#include "test_audio_packet_reader.h"
+#include "test_packet_reader.h"
 
 namespace roc {
 namespace test {
@@ -28,15 +27,33 @@ enum { ChNum = 1, ChMask = 0x3 };
 
 enum { NumSamples = 20, NumPackets = 100, BufSz = NumSamples * NumPackets };
 
+enum { Rate = ROC_CONFIG_DEFAULT_SAMPLE_RATE };
+
 } // namespace
 
 TEST_GROUP(streamer) {
-    TestAudioPacketReader<NumPackets, NumSamples, ChNum, ChMask> reader;
+    TestPacketReader<NumPackets> reader;
 
     core::ScopedPtr<Streamer> streamer;
 
     void setup() {
         streamer.reset(new Streamer(reader, ChNum));
+    }
+
+    void add_packet(packet::timestamp_t timestamp, packet::sample_t value) {
+        packet::IAudioPacketPtr packet = new_audio_packet();
+
+        packet::sample_t samples[NumSamples];
+
+        for (size_t n = 0; n < NumSamples; n++) {
+            samples[n] = value;
+        }
+
+        packet->set_timestamp(timestamp);
+        packet->set_size(ChMask, NumSamples, Rate);
+        packet->write_samples((1 << ChNum), 0, samples, NumSamples);
+
+        reader.add(packet);
     }
 
     void expect_buffers(size_t num_buffers, size_t sz, packet::sample_t value) {
@@ -45,20 +62,20 @@ TEST_GROUP(streamer) {
 };
 
 TEST(streamer, one_packet_one_read) {
-    reader.add(0, 0.333f);
+    add_packet(0, 0.333f);
 
     expect_buffers(1, NumSamples, 0.333f);
 }
 
 TEST(streamer, one_packet_multiple_reads) {
-    reader.add(0, 0.333f);
+    add_packet(0, 0.333f);
 
     expect_buffers(NumSamples, 1, 0.333f);
 }
 
 TEST(streamer, multiple_packets_one_read) {
     for (size_t n = 0; n < NumPackets; n++) {
-        reader.add(NumSamples * (timestamp_t)n, 0.333f);
+        add_packet(NumSamples * (timestamp_t)n, 0.333f);
     }
 
     expect_buffers(1, NumPackets * NumSamples, 0.333f);
@@ -67,9 +84,9 @@ TEST(streamer, multiple_packets_one_read) {
 TEST(streamer, multiple_packets_multiple_reads) {
     CHECK(NumSamples % 10 == 0);
 
-    reader.add(NumSamples * 1, 0.333f);
-    reader.add(NumSamples * 2, 0.444f);
-    reader.add(NumSamples * 3, 0.555f);
+    add_packet(NumSamples * 1, 0.333f);
+    add_packet(NumSamples * 2, 0.444f);
+    add_packet(NumSamples * 3, 0.555f);
 
     expect_buffers(10, NumSamples / 10, 0.333f);
     expect_buffers(10, NumSamples / 10, 0.444f);
@@ -81,9 +98,9 @@ TEST(streamer, timestamp_overflow) {
     timestamp_t ts1 = ts2 - NumSamples;
     timestamp_t ts3 = ts2 + NumSamples;
 
-    reader.add(ts1, 0.333f);
-    reader.add(ts2, 0.444f);
-    reader.add(ts3, 0.555f);
+    add_packet(ts1, 0.333f);
+    add_packet(ts2, 0.444f);
+    add_packet(ts3, 0.555f);
 
     expect_buffers(NumSamples, 1, 0.333f);
     expect_buffers(NumSamples, 1, 0.444f);
@@ -95,9 +112,9 @@ TEST(streamer, drop_late_packets) {
     timestamp_t ts2 = NumSamples * 1;
     timestamp_t ts3 = NumSamples * 3;
 
-    reader.add(ts1, 0.111f);
-    reader.add(ts2, 0.222f);
-    reader.add(ts3, 0.333f);
+    add_packet(ts1, 0.111f);
+    add_packet(ts2, 0.222f);
+    add_packet(ts3, 0.333f);
 
     expect_buffers(NumSamples, 1, 0.111f);
     expect_buffers(NumSamples, 1, 0.333f);
@@ -108,9 +125,9 @@ TEST(streamer, drop_late_packets_timestamp_overflow) {
     timestamp_t ts2 = ts1 - NumSamples;
     timestamp_t ts3 = ts1 + NumSamples;
 
-    reader.add(ts1, 0.111f);
-    reader.add(ts2, 0.222f);
-    reader.add(ts3, 0.333f);
+    add_packet(ts1, 0.111f);
+    add_packet(ts2, 0.222f);
+    add_packet(ts3, 0.333f);
 
     expect_buffers(NumSamples, 1, 0.111f);
     expect_buffers(NumSamples, 1, 0.333f);
@@ -121,15 +138,15 @@ TEST(streamer, zeros_no_packets) {
 }
 
 TEST(streamer, zeros_no_next_packet) {
-    reader.add(0, 0.333f);
+    add_packet(0, 0.333f);
 
     expect_buffers(1, NumSamples, 0.333f);
     expect_buffers(1, NumSamples, 0.000f);
 }
 
 TEST(streamer, zeros_between_packets) {
-    reader.add(NumSamples * 1, 0.111f);
-    reader.add(NumSamples * 3, 0.333f);
+    add_packet(NumSamples * 1, 0.111f);
+    add_packet(NumSamples * 3, 0.333f);
 
     expect_buffers(NumSamples, 1, 0.111f);
     expect_buffers(NumSamples, 1, 0.000f);
@@ -141,8 +158,8 @@ TEST(streamer, zeros_between_packets_timestamp_overflow) {
     timestamp_t ts1 = ts2 - NumSamples;
     timestamp_t ts3 = ts2 + NumSamples;
 
-    reader.add(ts1, 0.111f);
-    reader.add(ts3, 0.333f);
+    add_packet(ts1, 0.111f);
+    add_packet(ts3, 0.333f);
 
     expect_buffers(NumSamples, 1, 0.111f);
     expect_buffers(NumSamples, 1, 0.000f);
@@ -152,7 +169,7 @@ TEST(streamer, zeros_between_packets_timestamp_overflow) {
 TEST(streamer, zeros_after_packet) {
     CHECK(NumSamples % 2 == 0);
 
-    reader.add(0, 0.333f);
+    add_packet(0, 0.333f);
 
     ISampleBufferPtr buf1 = new_buffer<BufSz>(NumSamples / 2);
     ISampleBufferPtr buf2 = new_buffer<BufSz>(NumSamples);
@@ -168,7 +185,7 @@ TEST(streamer, zeros_after_packet) {
 TEST(streamer, packet_after_zeros) {
     expect_buffers(NumSamples, 1, 0.000f);
 
-    reader.add(0, 0.111f);
+    add_packet(0, 0.111f);
 
     expect_buffers(NumSamples, 1, 0.111f);
 }
@@ -182,9 +199,9 @@ TEST(streamer, overlapping_packets) {
     timestamp_t ts2 = N / 2;
     timestamp_t ts3 = N;
 
-    reader.add(ts1, 0.111f);
-    reader.add(ts2, 0.222f);
-    reader.add(ts3, 0.333f);
+    add_packet(ts1, 0.111f);
+    add_packet(ts2, 0.222f);
+    add_packet(ts3, 0.333f);
 
     expect_buffers(N, 1, 0.111f);
     expect_buffers(N / 2, 1, 0.222f);

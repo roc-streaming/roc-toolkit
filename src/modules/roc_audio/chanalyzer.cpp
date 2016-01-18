@@ -26,25 +26,40 @@ Chanalyzer::Chanalyzer(packet::IPacketReader& packet_reader,
     if (channel_mask_ == 0) {
         roc_panic("chanalyzer: can't construct with zero channel mask");
     }
+
+    for (packet::channel_t ch = 0; ch < MaxChannels; ch++) {
+        new (readers_.allocate()) Reader(this, ch);
+    }
 }
 
-packet::IAudioPacketConstPtr Chanalyzer::read(packet::channel_t ch) {
+packet::IPacketReader& Chanalyzer::reader(packet::channel_t ch) {
     if ((channel_mask_ & (1 << ch)) == 0) {
-        roc_panic("chanalyzer: can't read channel not in channel mask "
+        roc_panic("chanalyzer: can't get reader for channel not in channel mask "
                   "(channel = %u, channel_mask = 0x%x)",
                   (unsigned)ch, (unsigned)channel_mask_);
     }
 
-    if (packets_.size() == 0 || head_[ch] == packets_.back()) {
+    return readers_[ch];
+}
+
+packet::IPacketConstPtr Chanalyzer::Reader::read() {
+    roc_panic_if(!chanalyzer_);
+    return chanalyzer_->read_(ch_);
+}
+
+packet::IPacketConstPtr Chanalyzer::read_(packet::channel_t ch) {
+    roc_panic_if((channel_mask_ & (1 << ch)) == 0);
+
+    if (packet_list_.size() == 0 || head_[ch] == packet_list_.back()) {
         if (!append_()) {
             return NULL;
         }
     }
 
     if (head_[ch]) {
-        head_[ch] = packets_.next(*head_[ch]);
+        head_[ch] = packet_list_.next(*head_[ch]);
     } else {
-        head_[ch] = packets_.front();
+        head_[ch] = packet_list_.front();
     }
 
     roc_panic_if(!head_[ch]);
@@ -61,31 +76,20 @@ packet::IAudioPacketConstPtr Chanalyzer::read(packet::channel_t ch) {
 }
 
 bool Chanalyzer::append_() {
-    packet::IPacketConstPtr packet;
+    packet::IPacketConstPtr packet = packet_reader_.read();
 
-    for (;;) {
-        if (!(packet = packet_reader_.read())) {
-            return false;
-        }
-
-        if (packet->type() == packet::IAudioPacket::Type) {
-            break;
-        }
-
-        roc_log(LOG_TRACE, "chanalyzer: skipping non-audio packet from reader");
+    if (!packet) {
+        return false;
     }
 
-    packet::IAudioPacketConstPtr audio =
-        static_cast<const packet::IAudioPacket*>(packet.get());
-
-    packets_.append(*audio);
+    packet_list_.append(*packet);
     return true;
 }
 
 void Chanalyzer::shift_() {
-    roc_panic_if(packets_.size() < 2);
+    roc_panic_if(packet_list_.size() < 2);
 
-    packets_.remove(*packets_.front());
+    packet_list_.remove(*packet_list_.front());
 
     min_shift_pos_++;
     shift_mask_ = 0;

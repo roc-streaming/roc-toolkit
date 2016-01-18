@@ -41,7 +41,7 @@ TEST_GROUP(chanalyzer) {
 TEST(chanalyzer, read_one_packet) {
     reader.add();
 
-    reader.expect_returned(0, chanalyzer->read(Ch0));
+    reader.expect_returned(0, chanalyzer->reader(Ch0).read());
 
     LONGS_EQUAL(1, reader.num_returned());
 }
@@ -49,8 +49,8 @@ TEST(chanalyzer, read_one_packet) {
 TEST(chanalyzer, read_two_packets) {
     reader.add();
 
-    reader.expect_returned(0, chanalyzer->read(Ch0));
-    reader.expect_returned(0, chanalyzer->read(Ch1));
+    reader.expect_returned(0, chanalyzer->reader(Ch0).read());
+    reader.expect_returned(0, chanalyzer->reader(Ch1).read());
 
     LONGS_EQUAL(1, reader.num_returned());
 }
@@ -66,8 +66,8 @@ TEST(chanalyzer, read_two_packets_multiple_times) {
         for (size_t n = 0; n < NumPackets; n++) {
             LONGS_EQUAL(n, reader.num_returned());
 
-            reader.expect_returned(n, chanalyzer->read(Ch0));
-            reader.expect_returned(n, chanalyzer->read(Ch1));
+            reader.expect_returned(n, chanalyzer->reader(Ch0).read());
+            reader.expect_returned(n, chanalyzer->reader(Ch1).read());
         }
 
         LONGS_EQUAL(NumPackets, reader.num_returned());
@@ -89,7 +89,7 @@ TEST(chanalyzer, read_multiple_packets) {
         for (size_t n = 0; n < NumPackets / n_reads; n++) {
             for (packet::channel_t ch = 0; ch < NumCh; ch++) {
                 for (size_t p = 0; p < n_reads; p++) {
-                    reader.expect_returned(pos + p, chanalyzer->read(ch));
+                    reader.expect_returned(pos + p, chanalyzer->reader(ch).read());
                 }
             }
             pos += n_reads;
@@ -101,16 +101,16 @@ TEST(chanalyzer, read_multiple_packets) {
 TEST(chanalyzer, read_null) {
     reader.add();
 
-    reader.expect_returned(0, chanalyzer->read(Ch0));
-    reader.expect_returned(0, chanalyzer->read(Ch1));
+    reader.expect_returned(0, chanalyzer->reader(Ch0).read());
+    reader.expect_returned(0, chanalyzer->reader(Ch1).read());
 
-    CHECK(chanalyzer->read(Ch0) == packet::IAudioPacketPtr());
-    CHECK(chanalyzer->read(Ch1) == packet::IAudioPacketPtr());
+    CHECK(chanalyzer->reader(Ch0).read() == packet::IAudioPacketPtr());
+    CHECK(chanalyzer->reader(Ch1).read() == packet::IAudioPacketPtr());
 
     reader.add();
 
-    reader.expect_returned(1, chanalyzer->read(Ch0));
-    reader.expect_returned(1, chanalyzer->read(Ch1));
+    reader.expect_returned(1, chanalyzer->reader(Ch0).read());
+    reader.expect_returned(1, chanalyzer->reader(Ch1).read());
 
     LONGS_EQUAL(2, reader.num_returned());
 }

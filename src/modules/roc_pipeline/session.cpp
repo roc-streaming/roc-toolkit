@@ -110,25 +110,22 @@ void Session::make_pipeline_() {
         monitors_.append(*scaler_);
     }
 
-    audio::IAudioPacketReader* audio_packet_reader =
-        new (chanalyzer_) audio::Chanalyzer(*packet_reader, config_.channels);
+    new (chanalyzer_) audio::Chanalyzer(*packet_reader, config_.channels);
 
     for (packet::channel_t ch = 0; ch < MaxChannels; ch++) {
         if ((config_.channels & (1 << ch)) == 0) {
             continue;
         }
-
-        readers_[ch] = make_stream_reader_(audio_packet_reader, ch);
+        readers_[ch] = make_stream_reader_(chanalyzer_->reader(ch), ch);
         roc_panic_if(!readers_[ch]);
     }
 }
 
-audio::IStreamReader*
-Session::make_stream_reader_(audio::IAudioPacketReader* audio_packet_reader,
-                             packet::channel_t ch) {
+audio::IStreamReader* Session::make_stream_reader_(packet::IPacketReader& packet_reader,
+                                                   packet::channel_t ch) {
     //
     audio::IStreamReader* stream_reader = new (streamers_[ch])
-        audio::Streamer(*audio_packet_reader, ch, config_.options & EnableBeep);
+        audio::Streamer(packet_reader, ch, config_.options & EnableBeep);
 
     if (config_.options & EnableResampling) {
         roc_panic_if_not(scaler_);

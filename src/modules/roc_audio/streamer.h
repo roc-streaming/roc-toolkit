@@ -16,9 +16,10 @@
 #include "roc_core/noncopyable.h"
 #include "roc_core/timer.h"
 
+#include "roc_packet/ipacket_reader.h"
+#include "roc_packet/iaudio_packet.h"
 #include "roc_packet/units.h"
 
-#include "roc_audio/iaudio_packet_reader.h"
 #include "roc_audio/istream_reader.h"
 
 namespace roc {
@@ -41,7 +42,7 @@ public:
     //!  - @p reader is input queue of audio packets;
     //!  - @p channel is channel number for which packets should be read;
     //!  - @p beep defines whether missing samples should be replaces with a beep.
-    Streamer(IAudioPacketReader& reader, packet::channel_t channel, bool beep = false);
+    Streamer(packet::IPacketReader& reader, packet::channel_t channel, bool beep = false);
 
     //! Read samples.
     virtual void read(const ISampleBufferSlice&);
@@ -50,13 +51,14 @@ private:
     typedef packet::sample_t sample_t;
 
     void update_packet_();
+    packet::IAudioPacketConstPtr read_packet_();
 
     sample_t* read_samples_(sample_t* begin, sample_t* end);
 
     sample_t* read_packet_samples_(sample_t* begin, sample_t* end);
     sample_t* read_missing_samples_(sample_t* begin, sample_t* end);
 
-    IAudioPacketReader& reader_;
+    packet::IPacketReader& reader_;
     packet::channel_t channel_;
 
     packet::IAudioPacketConstPtr packet_;

@@ -42,7 +42,7 @@ inline void write_beep(sample_t* buf, size_t bufsz) {
 
 } // namespace
 
-Streamer::Streamer(IAudioPacketReader& reader, packet::channel_t channel, bool beep)
+Streamer::Streamer(packet::IPacketReader& reader, packet::channel_t channel, bool beep)
     : reader_(reader)
     , channel_(channel)
     , packet_pos_(0)
@@ -109,7 +109,14 @@ sample_t* Streamer::read_packet_samples_(sample_t* buff_ptr, sample_t* buff_end)
     const size_t ret =
         packet_->read_samples((1 << channel_), packet_pos_, buff_ptr, num_samples);
 
-    roc_panic_if_not(ret == num_samples);
+    if (ret != num_samples) {
+        packet_->print(true);
+        roc_panic("streamer: unexpected # of samples from packet:"
+                  " ret=%lu ns=%lu pos=%lu",
+                  (unsigned long)ret,         //
+                  (unsigned long)num_samples, //
+                  (unsigned long)packet_pos_);
+    }
 
     timestamp_ += timestamp_t(num_samples);
     packet_pos_ += timestamp_t(num_samples);
@@ -150,7 +157,7 @@ void Streamer::update_packet_() {
     timestamp_t pkt_timestamp = 0;
     unsigned n_dropped = 0;
 
-    while ((packet_ = reader_.read(channel_))) {
+    while ((packet_ = read_packet_())) {
         pkt_timestamp = packet_->timestamp();
 
         if (first_packet_) {
@@ -191,6 +198,19 @@ void Streamer::update_packet_() {
     } else {
         packet_pos_ = 0;
     }
+}
+
+packet::IAudioPacketConstPtr Streamer::read_packet_() {
+    packet::IPacketConstPtr pp = reader_.read();
+    if (!pp) {
+        return NULL;
+    }
+
+    if (pp->type() != packet::IAudioPacket::Type) {
+        roc_panic("streamer: got unexpected non-audio packet from reader");
+    }
+
+    return static_cast<const packet::IAudioPacket*>(pp.get());
 }
 
 } // namespace audio

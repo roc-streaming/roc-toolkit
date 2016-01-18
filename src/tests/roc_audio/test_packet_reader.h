@@ -39,10 +39,9 @@ public:
         pos_ = 0;
     }
 
-    void add() {
+    void add(const packet::IPacketPtr& packet = new_audio_packet()) {
         CHECK(max_ != MaxPackets);
-
-        packets_[max_++] = new_audio_packet();
+        packets_[max_++] = packet;
     }
 
     size_t num_returned() const {
