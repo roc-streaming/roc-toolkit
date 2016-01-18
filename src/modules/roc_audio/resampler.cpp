@@ -81,7 +81,7 @@ inline sample_t sinc(const fixedpoint_t x, const float fract_x) {
 
 //! How many input samples fits into length of half window.
 const float G_ft_half_window_len =
-    ((float)st_Nwindow - 1 + ((float)st_Nwindow_interp - 1) / (float)st_Nwindow_interp);
+    ((float)st_Nwindow);
 
 // G_ft_half_window_len in Q8.24.
 const fixedpoint_t G_qt_half_window_len = float_to_fixedpoint(G_ft_half_window_len);
@@ -97,7 +97,7 @@ Resampler::Resampler(IStreamReader& reader,
     , window_(3)
     , frame_size_(frame_size)
     , qt_frame_size_(fixedpoint_t(frame_size_ << FRACT_BIT_COUNT))
-    , qt_sample_(0)
+    , qt_sample_(float_to_fixedpoint(63.0/64.0))
     , qt_dt_(0)
     , scaling_(0) {
     // Half window must fit into one frame.
@@ -125,7 +125,7 @@ void Resampler::read(const ISampleBufferSlice& buff) {
     size_t buff_size = buff.size();
 
     if (curr_frame_ == NULL) {
-        qt_sample_ = 0;
+        qt_sample_ = float_to_fixedpoint(63.0/64.0);
         renew_window_();
     }
 
@@ -215,7 +215,7 @@ sample_t Resampler::resample_() {
     // Counter inside window.
     // t_sinc = t_sample - ceil( t_sample - st_Nwindow + 1/st_Nwindow_interp )
     fixedpoint_t qt_sinc_cur = qt_frame_size_ + qt_sample_
-        - (((qt_frame_size_ + qt_sample_ - G_qt_half_window_len) & INTEGER_PART_MASK)
+        - (((qt_frame_size_ + qt_sample_ - 0x40000000) & INTEGER_PART_MASK)
            + G_qt_one);
 
     // sinc_table defined in positive half-plane, so at the begining of the window
