@@ -72,13 +72,15 @@ inline float fractional(const fixedpoint_t x) {
 // that's why there are two arguments in this function: integer part and fractional
 // part of time coordinate.
 inline sample_t sinc(const fixedpoint_t x, const float fract_x) {
+    roc_panic_if( x > (st_Nwindow << FRACT_BIT_COUNT) );
+
     // Tables index smaller than to x
     const sample_t hl =
-        sinc_table[((x >> (FRACT_BIT_COUNT - FRACT_BIT_TO_INDEX)) & 0xFFF)];
+        sinc_table[(x >> (FRACT_BIT_COUNT - FRACT_BIT_TO_INDEX))];
 
     // Tables index next to x
     const sample_t hh =
-        sinc_table[((x >> (FRACT_BIT_COUNT - FRACT_BIT_TO_INDEX)) & 0xFFF) + 1];
+        sinc_table[(x >> (FRACT_BIT_COUNT - FRACT_BIT_TO_INDEX)) + 1];
 
     return hl + fract_x * (hh - hl);
 }
@@ -92,7 +94,7 @@ const fixedpoint_t G_qt_half_window_len = float_to_fixedpoint(G_ft_half_window_l
 
 const fixedpoint_t G_qt_epsilon = float_to_fixedpoint(5e-8f);
 
-const fixedpoint_t G_default_sample = float_to_fixedpoint(0.0/128.0);
+const fixedpoint_t G_default_sample = float_to_fixedpoint(0);
 
 } // namespace
 
@@ -145,9 +147,7 @@ void Resampler::read(const ISampleBufferSlice& buff) {
         }
 
         buff_data[n] = resample_();
-        // XXX:
-        // qt_sample_ += qt_dt_;
-        qt_sample_ += G_qt_one;
+        qt_sample_ += qt_dt_;
     }
 }
 
@@ -210,18 +210,22 @@ sample_t Resampler::resample_() {
     ind_begin_prev = (qt_sample_ >= G_qt_half_window_len)
         ? frame_size_
         : fixedpoint_to_size(qceil(qt_sample_ + (qt_frame_size_ - G_qt_half_window_len)));
+    roc_panic_if( ind_begin_prev > frame_size_ );
 
     ind_begin_cur = (qt_sample_ >= G_qt_half_window_len)
         ? fixedpoint_to_size(qceil(qt_sample_ - G_qt_half_window_len))
         : 0;
+    roc_panic_if( ind_begin_cur > frame_size_ );
 
     ind_end_cur = ((qt_sample_ + G_qt_half_window_len) > qt_frame_size_)
         ? frame_size_
         : fixedpoint_to_size(qfloor(qt_sample_ + G_qt_half_window_len));
+    roc_panic_if( ind_end_cur > frame_size_ );
 
     ind_end_next = ((qt_sample_ + G_qt_half_window_len) > qt_frame_size_)
         ? fixedpoint_to_size(qfloor(qt_sample_ + G_qt_half_window_len - qt_frame_size_))
         : 0;
+    roc_panic_if( ind_end_next > frame_size_ );
 
     // Counter inside window.
     // t_sinc = t_sample - ceil( t_sample - st_Nwindow + 1/st_Nwindow_interp )
@@ -258,6 +262,7 @@ sample_t Resampler::resample_() {
 
     ++i;
 
+    roc_panic_if( i > frame_size_ );
     // Run through right side of the window, increasing qt_sinc_cur.
     qt_sinc_inc = -qt_sinc_inc;
 
