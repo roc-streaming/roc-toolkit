@@ -108,11 +108,12 @@ Resampler::Resampler(IStreamReader& reader,
     , qt_sample_(G_default_sample)
     , qt_dt_(0)
     , scaling_(0) {
-    // Half window must fit into one frame.
-    roc_panic_if_not(qt_frame_size_ >= G_qt_half_window_len);
 
-    // Check if frame_size_ fits to fixedpoint type.
-    roc_panic_if( (uint64_t)qt_frame_size_ + (uint64_t)G_qt_half_window_len >= (INTEGER_PART_MASK + FRACT_PART_MASK) );
+    if(G_qt_half_window_len >= qt_frame_size_)
+        roc_panic("Half window of resamplers IR must fit into one frame.");
+
+    if((uint64_t)qt_frame_size_ + (uint64_t)G_qt_half_window_len >= (INTEGER_PART_MASK + FRACT_PART_MASK))
+        roc_panic("frame_size_ doesn't fit to integral part of fixedpoint type.");
 
     init_window_(composer);
 
