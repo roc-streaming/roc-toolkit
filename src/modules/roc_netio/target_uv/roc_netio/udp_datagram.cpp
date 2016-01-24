@@ -13,9 +13,7 @@
 namespace roc {
 namespace netio {
 
-static char udp_datagram_type;
-
-const datagram::DatagramType UDPDatagram::Type = &udp_datagram_type;
+const datagram::DatagramType UDPDatagram::Type = "roc::netio::UDPDatagram";
 
 UDPDatagram::UDPDatagram(core::IPool<UDPDatagram>& pool)
     : pool_(pool) {
