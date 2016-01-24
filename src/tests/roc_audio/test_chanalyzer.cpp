@@ -104,8 +104,8 @@ TEST(chanalyzer, read_null) {
     reader.expect_returned(0, chanalyzer->reader(Ch0).read());
     reader.expect_returned(0, chanalyzer->reader(Ch1).read());
 
-    CHECK(chanalyzer->reader(Ch0).read() == packet::IAudioPacketPtr());
-    CHECK(chanalyzer->reader(Ch1).read() == packet::IAudioPacketPtr());
+    CHECK(chanalyzer->reader(Ch0).read() == packet::IPacketPtr());
+    CHECK(chanalyzer->reader(Ch1).read() == packet::IPacketPtr());
 
     reader.add();
 

@@ -90,9 +90,9 @@ packet::timestamp_t Scaler::queue_size_() const {
         return 0;
     }
 
-    packet::timestamp_t head_ts = head_->timestamp();
-    packet::timestamp_t tail_ts = tail_->timestamp() //
-        + (packet::timestamp_t)tail_->num_samples();
+    packet::timestamp_t head_ts = head_->rtp()->timestamp();
+    packet::timestamp_t tail_ts = tail_->rtp()->timestamp() //
+        + (packet::timestamp_t)tail_->audio()->num_samples();
 
     packet::signed_timestamp_t dist = TS_SUBTRACT(tail_ts, head_ts);
 
@@ -101,28 +101,29 @@ packet::timestamp_t Scaler::queue_size_() const {
     return (packet::timestamp_t)dist;
 }
 
-void Scaler::update_packet_(packet::IAudioPacketConstPtr& prev,
+void Scaler::update_packet_(packet::IPacketConstPtr& prev,
                             const packet::IPacketConstPtr& next) {
     if (!next) {
         return;
     }
 
-    if (next->type() != packet::IAudioPacket::Type) {
-        roc_panic("scaler: got packet of wrong type from (expected audio packet)");
+    if (!next->rtp()) {
+        roc_panic("scaler: got unexpected packet w/o RTP header");
     }
 
-    const packet::IAudioPacket* next_ap =
-        static_cast<const packet::IAudioPacket*>(next.get());
+    if (!next->audio()) {
+        roc_panic("scaler: got unexpected packet w/o audio payload");
+    }
 
-    if (prev && TS_IS_BEFORE(next_ap->timestamp(), prev->timestamp())) {
+    if (prev && TS_IS_BEFORE(next->rtp()->timestamp(), prev->rtp()->timestamp())) {
         return;
     }
 
-    if (head_ && TS_IS_BEFORE(next_ap->timestamp(), head_->timestamp())) {
+    if (head_ && TS_IS_BEFORE(next->rtp()->timestamp(), head_->rtp()->timestamp())) {
         return;
     }
 
-    prev = next_ap;
+    prev = next;
 }
 
 } // namespace audio

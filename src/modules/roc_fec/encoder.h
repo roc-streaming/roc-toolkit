@@ -22,7 +22,6 @@
 #include "roc_packet/ipacket_writer.h"
 #include "roc_packet/ipacket_composer.h"
 #include "roc_packet/ipacket.h"
-#include "roc_packet/ifec_packet.h"
 
 #include "roc_fec/iblock_encoder.h"
 
@@ -53,11 +52,11 @@ public:
 
 private:
     //! Create FEC-packet.
-    packet::IFECPacketPtr make_fec_packet_(const core::IByteBufferConstSlice& buff,
-                                           const packet::seqnum_t block_data_seqnum,
-                                           const packet::seqnum_t block_fec_seqnum,
-                                           const packet::seqnum_t seqnum,
-                                           const bool marker_bit);
+    packet::IPacketPtr make_fec_packet_(const core::IByteBufferConstSlice& buff,
+                                        const packet::seqnum_t block_data_seqnum,
+                                        const packet::seqnum_t block_fec_seqnum,
+                                        const packet::seqnum_t seqnum,
+                                        const bool marker_bit);
 
     IBlockEncoder& block_encoder_;
 

@@ -18,7 +18,7 @@
 #include "roc_core/heap_pool.h"
 #include "roc_packet/ipacket_parser.h"
 #include "roc_rtp/audio_packet.h"
-#include "roc_rtp/fec_packet.h"
+#include "roc_rtp/container_packet.h"
 
 namespace roc {
 namespace rtp {
@@ -28,14 +28,15 @@ class Parser : public packet::IPacketParser, public core::NonCopyable<> {
 public:
     //! Initialize.
     Parser(core::IPool<AudioPacket>& audio_pool = core::HeapPool<AudioPacket>::instance(),
-           core::IPool<FECPacket>& fec_pool = core::HeapPool<FECPacket>::instance());
+           core::IPool<ContainerPacket>& container_pool =
+               core::HeapPool<ContainerPacket>::instance());
 
     //! Parse packet.
     virtual packet::IPacketConstPtr parse(const core::IByteBufferConstSlice& buffer);
 
 private:
     core::IPool<AudioPacket>& audio_pool_;
-    core::IPool<FECPacket>& fec_pool_;
+    core::IPool<ContainerPacket>& container_pool_;
 };
 
 } // namespace rtp

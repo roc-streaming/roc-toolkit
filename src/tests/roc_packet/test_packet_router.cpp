@@ -36,7 +36,7 @@ TEST(packet_router, one_route) {
     PacketRouter router;
     PacketQueue queue_a;
 
-    router.add_route(IAudioPacket::Type, queue_a);
+    router.add_route(queue_a, IPacket::HasAudio);
 
     IPacketConstPtr pa1 = new_audio_packet(1);
     IPacketConstPtr pa2 = new_audio_packet(2);
@@ -79,8 +79,8 @@ TEST(packet_router, two_routes) {
     PacketQueue queue_a;
     PacketQueue queue_f;
 
-    router.add_route(IAudioPacket::Type, queue_a);
-    router.add_route(IFECPacket::Type, queue_f);
+    router.add_route(queue_a, IPacket::HasAudio);
+    router.add_route(queue_f, IPacket::HasFEC);
 
     IPacketConstPtr pa1 = new_audio_packet(1);
     IPacketConstPtr pa2 = new_audio_packet(2);

@@ -61,9 +61,14 @@ IPacketConstPtr Watchdog::read() {
         return NULL;
     }
 
-    if (packet->rate() != rate_) {
+    if (!packet->rtp()) {
+        roc_log(LogInfo, "watchdog: unexpected non-RTP packet");
+        return NULL;
+    }
+
+    if (packet->rtp()->rate() != rate_) {
         roc_log(LogInfo, "watchdog: unexpected rate: got=%u expected=%u",
-                (unsigned)packet->rate(), (unsigned)rate_);
+                (unsigned)packet->rtp()->rate(), (unsigned)rate_);
         return NULL;
     }
 
@@ -78,35 +83,39 @@ IPacketConstPtr Watchdog::read() {
 }
 
 bool Watchdog::detect_jump_(const IPacketConstPtr& next) {
+    const IHeaderRTP* nh = next->rtp();
+    const IHeaderRTP* ph = NULL;
+
     if (prev_) {
-        if (prev_->source() != next->source()) {
+        ph = prev_->rtp();
+        if (ph->source() != nh->source()) {
             roc_log(LogInfo, "watchdog: source id jump: prev=%lu next=%lu",
-                    (unsigned long)prev_->source(), (unsigned long)next->source());
+                    (unsigned long)ph->source(), (unsigned long)nh->source());
             return true;
         }
 
-        signed_seqnum_t sn_dist = SEQ_SUBTRACT(prev_->seqnum(), next->seqnum());
+        signed_seqnum_t sn_dist = SEQ_SUBTRACT(nh->seqnum(), ph->seqnum());
 
         if (ROC_ABS(sn_dist) > ROC_CONFIG_MAX_SN_JUMP) {
             roc_log(LogInfo, "watchdog: too long seqnum jump:"
                              " prev=%lu next=%lu dist=%ld",
-                    (unsigned long)prev_->seqnum(), (unsigned long)next->seqnum(),
+                    (unsigned long)ph->seqnum(), (unsigned long)nh->seqnum(),
                     (long)sn_dist);
             return true;
         }
 
-        signed_timestamp_t ts_dist = TS_SUBTRACT(prev_->timestamp(), next->timestamp());
+        signed_timestamp_t ts_dist = TS_SUBTRACT(nh->timestamp(), ph->timestamp());
 
         if (ROC_ABS(ts_dist) > ROC_CONFIG_MAX_TS_JUMP) {
             roc_log(LogInfo, "watchdog: too long timestamp jump:"
                              " prev=%lu next=%lu dist=%ld",
-                    (unsigned long)prev_->timestamp(), (unsigned long)next->timestamp(),
+                    (unsigned long)ph->timestamp(), (unsigned long)nh->timestamp(),
                     (long)ts_dist);
             return true;
         }
     }
 
-    if (!prev_ || SEQ_IS_BEFORE(prev_->seqnum(), next->seqnum())) {
+    if (!prev_ || SEQ_IS_BEFORE(ph->seqnum(), nh->seqnum())) {
         prev_ = next;
     }
 

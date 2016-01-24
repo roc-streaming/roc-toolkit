@@ -14,7 +14,7 @@
 
 #include "roc_core/math.h"
 
-#include "roc_packet/iaudio_packet.h"
+#include "roc_packet/ipacket.h"
 #include "roc_rtp/composer.h"
 
 #include "roc_audio/sample_buffer.h"
@@ -38,14 +38,14 @@ template <size_t BufSz> static inline audio::ISampleBufferPtr new_buffer(size_t 
     return buf;
 }
 
-inline packet::IAudioPacketPtr new_audio_packet() {
+inline packet::IPacketPtr new_audio_packet() {
     static rtp::Composer composer;
 
-    packet::IPacketPtr packet = composer.compose(packet::IAudioPacket::Type);
+    packet::IPacketPtr packet = composer.compose(packet::IPacket::HasAudio);
     CHECK(packet);
-    CHECK(packet->type() == packet::IAudioPacket::Type);
+    CHECK(packet->audio());
 
-    return static_cast<packet::IAudioPacket*>(packet.get());
+    return packet;
 }
 
 static inline void

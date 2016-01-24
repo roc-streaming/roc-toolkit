@@ -10,7 +10,7 @@
 #include "roc_core/panic.h"
 #include "roc_core/log.h"
 
-#include "roc_packet/iaudio_packet.h"
+#include "roc_packet/ipacket.h"
 #include "roc_audio/delayer.h"
 
 namespace roc {
@@ -28,9 +28,14 @@ packet::IPacketConstPtr Delayer::read() {
     }
 
     while (packet::IPacketConstPtr packet = reader_.read()) {
-        if (packet->type() != packet::IAudioPacket::Type) {
-            roc_panic("delayer: got packet of wrong type (expected audio packet)");
+        if (!packet->rtp()) {
+            roc_panic("delayer: got unexpected packet w/o RTP header");
         }
+
+        if (!packet->audio()) {
+            roc_panic("delayer: got unexpected packet w/o audio payload");
+        }
+
         queue_.write(packet);
     }
 
@@ -57,15 +62,11 @@ packet::timestamp_t Delayer::queue_size_() const {
         return 0;
     }
 
-    const packet::IAudioPacket* head =
-        static_cast<const packet::IAudioPacket*>(queue_.head().get());
+    packet::timestamp_t head = queue_.head()->rtp()->timestamp();
+    packet::timestamp_t tail = queue_.tail()->rtp()->timestamp()
+        + (packet::timestamp_t)queue_.tail()->audio()->num_samples();
 
-    const packet::IAudioPacket* tail =
-        static_cast<const packet::IAudioPacket*>(queue_.tail().get());
-
-    return (packet::timestamp_t)ROC_SUBTRACT(packet::signed_timestamp_t,
-                                             tail->timestamp() + tail->num_samples(),
-                                             head->timestamp());
+    return (packet::timestamp_t)ROC_SUBTRACT(packet::signed_timestamp_t, tail, head);
 }
 
 } // namespace audio

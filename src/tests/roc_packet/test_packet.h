@@ -13,42 +13,44 @@
 #include <CppUTest/TestHarness.h>
 
 #include "roc_core/heap_pool.h"
-#include "roc_packet/iaudio_packet.h"
+#include "roc_packet/ipacket.h"
 #include "roc_rtp/composer.h"
 
 namespace roc {
 namespace test {
 
-static inline packet::IAudioPacketPtr new_audio_packet(packet::source_t src,
-                                                       packet::seqnum_t sn = 0,
-                                                       packet::timestamp_t ts = 0) {
+static inline packet::IPacketPtr new_audio_packet(packet::source_t src,
+                                                  packet::seqnum_t sn = 0,
+                                                  packet::timestamp_t ts = 0) {
     static rtp::Composer composer;
 
-    packet::IPacketPtr packet = composer.compose(packet::IAudioPacket::Type);
+    packet::IPacketPtr packet = composer.compose(packet::IPacket::HasAudio);
     CHECK(packet);
 
-    packet::IAudioPacketPtr audio = static_cast<packet::IAudioPacket*>(packet.get());
+    CHECK(packet->rtp());
+    CHECK(packet->audio());
 
-    audio->set_source(src);
-    audio->set_seqnum(sn);
-    audio->set_timestamp(ts);
+    packet->rtp()->set_source(src);
+    packet->rtp()->set_seqnum(sn);
+    packet->rtp()->set_timestamp(ts);
 
-    return audio;
+    return packet;
 }
 
-static inline packet::IFECPacketPtr new_fec_packet(packet::source_t src,
-                                                   packet::seqnum_t sn = 0) {
+static inline packet::IPacketPtr new_fec_packet(packet::source_t src,
+                                                packet::seqnum_t sn = 0) {
     static rtp::Composer composer;
 
-    packet::IPacketPtr packet = composer.compose(packet::IFECPacket::Type);
+    packet::IPacketPtr packet = composer.compose(packet::IPacket::HasFEC);
     CHECK(packet);
 
-    packet::IFECPacketPtr fec = static_cast<packet::IFECPacket*>(packet.get());
+    CHECK(packet->rtp());
+    CHECK(packet->fec());
 
-    fec->set_source(src);
-    fec->set_seqnum(sn);
+    packet->rtp()->set_source(src);
+    packet->rtp()->set_seqnum(sn);
 
-    return fec;
+    return packet;
 }
 
 } // namespace test
