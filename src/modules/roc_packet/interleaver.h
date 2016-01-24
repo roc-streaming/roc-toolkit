@@ -18,9 +18,7 @@
 #include "roc_core/array.h"
 
 #include "roc_packet/ipacket_writer.h"
-#include "roc_packet/ipacket_composer.h"
 #include "roc_packet/ipacket.h"
-#include "roc_packet/ifec_packet.h"
 
 namespace roc {
 namespace packet {
@@ -51,15 +49,13 @@ private:
     //! Initialize tx_seq_ to a new randomized sequence.
     void reinit_seq();
 
-    //! Transmitter.
     packet::IPacketWriter& output_;
-    //! Number of packets in block.
+    // Number of packets in block.
     size_t delay_len_;
     //! Maximum possible number of packets in block.
     static const size_t delay_max_ = 32;
-    //! Tx order.
     size_t tx_seq_[delay_max_];
-    //! Delay line.
+    // Delay line.
     core::Array<packet::IPacketPtr, delay_max_> pack_store_;
 
     size_t next_2_put_, next_2_send_;

@@ -61,7 +61,7 @@ void Splitter::write(const ISampleBufferConstSlice& buffer) {
 
         const size_t ns = ROC_MIN(samples_to_write, n_packet_samples_ - n_samples_);
 
-        packet_->write_samples(channels_, n_samples_, buffer_pos, ns);
+        packet_->audio()->write_samples(channels_, n_samples_, buffer_pos, ns);
 
         n_samples_ += ns;
         samples_to_write -= ns;
@@ -87,22 +87,28 @@ void Splitter::flush() {
 bool Splitter::create_packet_() {
     roc_panic_if_not(n_samples_ == 0);
 
-    packet::IPacketPtr pp = composer_.compose(packet::IAudioPacket::Type);
+    packet::IPacketPtr pp =
+        composer_.compose(packet::IPacket::HasRTP | packet::IPacket::HasAudio);
+
     if (!pp) {
         roc_log(LogError, "splitter: composer returned null");
         return false;
     }
 
-    if (pp->type() != packet::IAudioPacket::Type) {
-        roc_panic("splitter: composer returned packet of wrong type");
+    if (!pp->rtp()) {
+        roc_panic("splitter: composer returned packet w/o RTP header");
     }
 
-    packet_ = static_cast<packet::IAudioPacket*>(pp.get());
+    if (!pp->audio()) {
+        roc_panic("splitter: composer returned packet w/o audio payload");
+    }
 
-    packet_->set_source(source_);
-    packet_->set_seqnum(seqnum_);
-    packet_->set_timestamp(timestamp_);
-    packet_->set_size(channels_, n_packet_samples_, rate_);
+    packet_ = pp;
+
+    packet_->rtp()->set_source(source_);
+    packet_->rtp()->set_seqnum(seqnum_);
+    packet_->rtp()->set_timestamp(timestamp_);
+    packet_->audio()->configure(channels_, n_packet_samples_, rate_);
 
     return true;
 }

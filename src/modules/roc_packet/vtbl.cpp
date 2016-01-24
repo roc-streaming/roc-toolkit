@@ -12,6 +12,10 @@
 #include "roc_packet/ipacket_reader.h"
 #include "roc_packet/ipacket_writer.h"
 #include "roc_packet/ipacket.h"
+#include "roc_packet/iheader_ordering.h"
+#include "roc_packet/iheader_rtp.h"
+#include "roc_packet/iheader_fecframe.h"
+#include "roc_packet/ipayload_audio.h"
 #include "roc_packet/imonitor.h"
 
 namespace roc {
@@ -32,7 +36,16 @@ IPacketWriter::~IPacketWriter() {
 IPacketConstWriter::~IPacketConstWriter() {
 }
 
-IPacket::~IPacket() {
+IHeaderOrdering::~IHeaderOrdering() {
+}
+
+IHeaderRTP::~IHeaderRTP() {
+}
+
+IHeaderFECFrame::~IHeaderFECFrame() {
+}
+
+IPayloadAudio::~IPayloadAudio() {
 }
 
 IMonitor::~IMonitor() {

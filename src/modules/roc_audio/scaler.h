@@ -20,7 +20,7 @@
 #include "roc_core/timer.h"
 
 #include "roc_packet/ipacket_reader.h"
-#include "roc_packet/iaudio_packet.h"
+#include "roc_packet/ipacket.h"
 #include "roc_packet/packet_queue.h"
 #include "roc_packet/imonitor.h"
 
@@ -70,15 +70,16 @@ private:
     enum { MaxChannels = ROC_CONFIG_MAX_CHANNELS };
 
     packet::timestamp_t queue_size_() const;
-    void update_packet_(packet::IAudioPacketConstPtr& prev,
+
+    void update_packet_(packet::IPacketConstPtr& prev,
                         const packet::IPacketConstPtr& next);
 
     packet::IPacketReader& reader_;
     packet::PacketQueue const& queue_;
     packet::timestamp_t aim_queue_size_;
 
-    packet::IAudioPacketConstPtr head_;
-    packet::IAudioPacketConstPtr tail_;
+    packet::IPacketConstPtr head_;
+    packet::IPacketConstPtr tail_;
 
     FreqEstimator freq_estimator_;
 

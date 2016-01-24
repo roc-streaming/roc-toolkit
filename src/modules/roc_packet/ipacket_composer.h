@@ -30,19 +30,8 @@ public:
     //!
     //! @remarks
     //!  All fields of returned packet are set to default values (usually
-    //!  zeros). Caller can downcast packet to derived interface and
-    //!  configure packet's fields.
-    //!
-    //! @b Example usage
-    //!  @code
-    //!   if (IPacketPtr packet = composer.compose(IAudioPacket::Type)) {
-    //!       roc_panic_if_not(packet->type() == IAudioPacket::Type);
-    //!
-    //!       IAudioPacketPtr audio = static_cast<IAudioPacket*>(packet.get());
-    //!       audio->set_timestamp(123);
-    //!   }
-    //!  @endcode
-    virtual IPacketPtr compose(PacketType type) = 0;
+    //!  zeros).
+    virtual IPacketPtr compose(int options) = 0;
 };
 
 } // namespace packet

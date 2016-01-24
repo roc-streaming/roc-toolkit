@@ -11,7 +11,7 @@
 #include "roc_core/panic.h"
 #include "roc_core/log.h"
 #include "roc_core/byte_order.h"
-#include "roc_rtp/rtp_audio_format.h"
+#include "roc_rtp/audio_format.h"
 
 namespace roc {
 namespace rtp {
@@ -113,9 +113,9 @@ template <class Sample, size_t NumCh> void pcm_clear(void* payload, size_t n_sam
 
 } // namespace
 
-extern const RTP_AudioFormat RTP_AudioFormat_L16_Stereo;
+extern const AudioFormat AudioFormat_L16_Stereo;
 
-const RTP_AudioFormat RTP_AudioFormat_L16_Stereo = {
+const AudioFormat AudioFormat_L16_Stereo = {
     //
     RTP_PT_L16_STEREO,         //
     0x3,                       //
@@ -127,9 +127,9 @@ const RTP_AudioFormat RTP_AudioFormat_L16_Stereo = {
     pcm_clear<int16_t, 2>      //
 };
 
-extern const RTP_AudioFormat RTP_AudioFormat_L16_Mono;
+extern const AudioFormat AudioFormat_L16_Mono;
 
-const RTP_AudioFormat RTP_AudioFormat_L16_Mono = {
+const AudioFormat AudioFormat_L16_Mono = {
     //
     RTP_PT_L16_MONO,           //
     0x1,                       //

@@ -70,22 +70,22 @@ public:
         CHECK(dgm->sender() == new_address(SrcPort));
         CHECK(dgm->receiver() == new_address(DstPort));
 
-        packet::IAudioPacketConstPtr packet = parse_packet(*dgm);
+        packet::IPacketConstPtr packet = parse_packet(*dgm);
         CHECK(packet);
 
         if (value == 1) {
-            sn = packet->seqnum();
-            ts = packet->timestamp();
+            sn = packet->rtp()->seqnum();
+            ts = packet->rtp()->timestamp();
         }
 
-        LONGS_EQUAL(sn, packet->seqnum());
-        LONGS_EQUAL(ts, packet->timestamp());
-        LONGS_EQUAL(ChannelMask, packet->channels());
-        LONGS_EQUAL(n_pkt_samples, packet->num_samples());
+        LONGS_EQUAL(sn, packet->rtp()->seqnum());
+        LONGS_EQUAL(ts, packet->rtp()->timestamp());
+        LONGS_EQUAL(ChannelMask, packet->audio()->channels());
+        LONGS_EQUAL(n_pkt_samples, packet->audio()->num_samples());
 
         packet::sample_t samples[MaxSamples * NumChannels] = {};
-        LONGS_EQUAL(n_pkt_samples,
-                    packet->read_samples(ChannelMask, 0, samples, n_pkt_samples));
+        LONGS_EQUAL(n_pkt_samples, packet->audio()->read_samples(ChannelMask, 0, samples,
+                                                                 n_pkt_samples));
 
         size_t pos = 0;
         for (size_t n = 0; n < n_pkt_samples; n++) {
@@ -108,7 +108,7 @@ public:
     datagram::IDatagramPtr make(size_t n_pkt_samples) const {
         CHECK(n_pkt_samples < MaxSamples);
 
-        packet::IAudioPacketPtr packet = new_packet();
+        packet::IPacketPtr packet = new_packet();
 
         packet::sample_t samples[MaxSamples * NumChannels] = {};
         size_t pos = 0;
@@ -120,11 +120,11 @@ public:
             v++;
         }
 
-        packet->set_source(sid);
-        packet->set_seqnum(sn);
-        packet->set_timestamp(ts);
-        packet->set_size(ChannelMask, n_pkt_samples, SampleRate);
-        packet->write_samples(ChannelMask, 0, samples, n_pkt_samples);
+        packet->rtp()->set_source(sid);
+        packet->rtp()->set_seqnum(sn);
+        packet->rtp()->set_timestamp(ts);
+        packet->audio()->configure(ChannelMask, n_pkt_samples, SampleRate);
+        packet->audio()->write_samples(ChannelMask, 0, samples, n_pkt_samples);
 
         return make(packet->raw_data());
     }

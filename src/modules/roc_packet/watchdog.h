@@ -17,7 +17,7 @@
 #include "roc_core/noncopyable.h"
 
 #include "roc_packet/ipacket_reader.h"
-#include "roc_packet/iaudio_packet.h"
+#include "roc_packet/ipacket.h"
 #include "roc_packet/imonitor.h"
 
 namespace roc {

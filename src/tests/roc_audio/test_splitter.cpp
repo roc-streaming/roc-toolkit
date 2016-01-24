@@ -13,7 +13,7 @@
 #include "roc_core/scoped_ptr.h"
 #include "roc_core/log.h"
 #include "roc_rtp/composer.h"
-#include "roc_packet/iaudio_packet.h"
+#include "roc_packet/ipacket.h"
 #include "roc_audio/splitter.h"
 
 #include "test_packet_writer.h"
@@ -68,38 +68,37 @@ TEST_GROUP(splitter) {
         return buff;
     }
 
-    IAudioPacketPtr get_packet(size_t n) {
+    IPacketPtr get_packet(size_t n) {
         IPacketPtr packet = writer.packet(n);
 
         CHECK(packet);
-        CHECK(packet->type() == IAudioPacket::Type);
+        CHECK(packet->audio());
 
-        roc_panic_if_not(packet->type() == IAudioPacket::Type);
-
-        return static_cast<IAudioPacket*>(packet.get());
+        return packet;
     }
 
     void read_packet(size_t n_pad = 0) {
-        IAudioPacketPtr packet = get_packet(pkt_num);
+        IPacketPtr packet = get_packet(pkt_num);
 
-        LONGS_EQUAL(ChMask, packet->channels());
-        LONGS_EQUAL(NumSamples, packet->num_samples());
-        CHECK(!packet->marker());
+        LONGS_EQUAL(ChMask, packet->audio()->channels());
+        LONGS_EQUAL(NumSamples, packet->audio()->num_samples());
+        CHECK(!packet->rtp()->marker());
 
         if (pkt_num == 0) {
-            src = packet->source();
-            sn = packet->seqnum();
-            ts = packet->timestamp();
+            src = packet->rtp()->source();
+            sn = packet->rtp()->seqnum();
+            ts = packet->rtp()->timestamp();
         } else {
-            LONGS_EQUAL(src, packet->source());
-            LONGS_EQUAL(sn, packet->seqnum());
-            LONGS_EQUAL(ts, packet->timestamp());
+            LONGS_EQUAL(src, packet->rtp()->source());
+            LONGS_EQUAL(sn, packet->rtp()->seqnum());
+            LONGS_EQUAL(ts, packet->rtp()->timestamp());
         }
 
         sample_t samples[NumSamples * NumCh] = {};
         size_t pos = 0;
 
-        LONGS_EQUAL(NumSamples, packet->read_samples(ChMask, 0, samples, NumSamples));
+        LONGS_EQUAL(NumSamples,
+                    packet->audio()->read_samples(ChMask, 0, samples, NumSamples));
 
         for (; pos < (NumSamples - n_pad) * NumCh; pos++) {
             DOUBLES_EQUAL(sample_t(sample_num % MaxVal) / MaxVal, samples[pos], 0.0001);

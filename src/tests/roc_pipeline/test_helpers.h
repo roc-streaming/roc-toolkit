@@ -13,7 +13,7 @@
 #include <CppUTest/TestHarness.h>
 
 #include "roc_core/heap_pool.h"
-#include "roc_packet/iaudio_packet.h"
+#include "roc_packet/ipacket.h"
 #include "roc_rtp/composer.h"
 #include "roc_rtp/parser.h"
 #include "roc_datagram/idatagram.h"
@@ -62,24 +62,24 @@ inline datagram::Address new_address(datagram::port_t port) {
     return addr;
 }
 
-inline packet::IAudioPacketPtr new_packet() {
+inline packet::IPacketPtr new_packet() {
     static rtp::Composer composer;
 
-    packet::IPacketPtr packet = composer.compose(packet::IAudioPacket::Type);
+    packet::IPacketPtr packet = composer.compose(packet::IPacket::HasAudio);
     CHECK(packet);
-    CHECK(packet->type() == packet::IAudioPacket::Type);
+    CHECK(packet->audio());
 
-    return static_cast<packet::IAudioPacket*>(packet.get());
+    return packet;
 }
 
-inline packet::IAudioPacketConstPtr parse_packet(const datagram::IDatagram& dgm) {
+inline packet::IPacketConstPtr parse_packet(const datagram::IDatagram& dgm) {
     static rtp::Parser parser;
 
     packet::IPacketConstPtr packet = parser.parse(dgm.buffer());
     CHECK(packet);
-    CHECK(packet->type() == packet::IAudioPacket::Type);
+    CHECK(packet->audio());
 
-    return static_cast<const packet::IAudioPacket*>(packet.get());
+    return packet;
 }
 
 } // namespace test

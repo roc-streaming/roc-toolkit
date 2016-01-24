@@ -20,7 +20,7 @@
 #include "roc_packet/units.h"
 #include "roc_packet/ipacket_writer.h"
 #include "roc_packet/ipacket_composer.h"
-#include "roc_packet/iaudio_packet.h"
+#include "roc_packet/ipacket.h"
 
 #include "roc_audio/isample_buffer_writer.h"
 
@@ -68,7 +68,7 @@ private:
     const size_t n_packet_samples_;
     const size_t rate_;
 
-    packet::IAudioPacketPtr packet_;
+    packet::IPacketPtr packet_;
     const packet::source_t source_;
     packet::seqnum_t seqnum_;
     packet::timestamp_t timestamp_;

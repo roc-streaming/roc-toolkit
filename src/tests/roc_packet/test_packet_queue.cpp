@@ -169,7 +169,7 @@ TEST(packet_queue, many_duplicates) {
     LONGS_EQUAL(num_packets, queue.size());
 
     for (seqnum_t n = 0; n < num_packets; n++) {
-        CHECK(queue.read()->seqnum() == n);
+        CHECK(queue.read()->rtp()->seqnum() == n);
     }
 
     LONGS_EQUAL(0, queue.size());

@@ -17,7 +17,7 @@
 #include "roc_core/timer.h"
 
 #include "roc_packet/ipacket_reader.h"
-#include "roc_packet/iaudio_packet.h"
+#include "roc_packet/ipacket.h"
 #include "roc_packet/units.h"
 
 #include "roc_audio/istream_reader.h"
@@ -51,7 +51,8 @@ private:
     typedef packet::sample_t sample_t;
 
     void update_packet_();
-    packet::IAudioPacketConstPtr read_packet_();
+
+    packet::IPacketConstPtr read_packet_();
 
     sample_t* read_samples_(sample_t* begin, sample_t* end);
 
@@ -61,7 +62,7 @@ private:
     packet::IPacketReader& reader_;
     packet::channel_t channel_;
 
-    packet::IAudioPacketConstPtr packet_;
+    packet::IPacketConstPtr packet_;
     packet::timestamp_t packet_pos_;
 
     packet::timestamp_t timestamp_;

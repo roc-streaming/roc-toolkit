@@ -1,5 +1,4 @@
 /*
- * Copyright (c) 2015 Mikhail Baranov
  * Copyright (c) 2015 Victor Gaydov
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -7,21 +6,18 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_packet/target_stdio/roc_packet/print_packet.h
-//! @brief Print packet to stdout.
-
-#ifndef ROC_PACKET_PRINT_PACKET_H_
-#define ROC_PACKET_PRINT_PACKET_H_
-
 #include "roc_packet/ipacket.h"
+#include "roc_packet/print_packet.h"
 
 namespace roc {
 namespace packet {
 
-//! Print packet to stderr.
-void print_packet(const IPacket&, bool print_payload);
+IPacket::~IPacket() {
+}
+
+void IPacket::print(bool print_payload) const {
+    print_packet(*this, print_payload);
+}
 
 } // namespace packet
 } // namespace roc
-
-#endif // ROC_PACKET_PRINT_PACKET_H_

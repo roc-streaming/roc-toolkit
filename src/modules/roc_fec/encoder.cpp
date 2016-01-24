@@ -29,24 +29,28 @@ Encoder::Encoder(IBlockEncoder& block_encoder,
     , cur_data_pack_i_(0) {
 }
 
-void Encoder::write(const packet::IPacketPtr& p) {
-    roc_panic_if_not(p);
+void Encoder::write(const packet::IPacketPtr& pp) {
+    roc_panic_if_not(pp);
+
+    if (!pp->rtp()) {
+        roc_panic("encoder: unexpected packet w/o RTP header");
+    }
 
     if (first_packet_) {
         first_packet_ = false;
         do {
             source_ = (packet::source_t)core::random(packet::source_t(-1));
-        } while (source_ == p->source());
+        } while (source_ == pp->rtp()->source());
     }
 
     if (cur_data_pack_i_ == 0) {
-        cur_block_seqnum_ = p->seqnum();
-        p->set_marker(true);
+        cur_block_seqnum_ = pp->rtp()->seqnum();
+        pp->rtp()->set_marker(true);
     }
 
-    packet_output_.write(p);
+    packet_output_.write(pp);
 
-    block_encoder_.write(cur_data_pack_i_, p->raw_data());
+    block_encoder_.write(cur_data_pack_i_, pp->raw_data());
 
     if (++cur_data_pack_i_ >= block_encoder_.n_data_packets()) {
         // Calculate redundant packet of this block.
@@ -54,12 +58,12 @@ void Encoder::write(const packet::IPacketPtr& p) {
 
         // Send redundant packets.
         for (packet::seqnum_t i = 0; i < block_encoder_.n_fec_packets(); ++i) {
-            packet::IFECPacketPtr fec_p = make_fec_packet_(
+            packet::IPacketPtr fp = make_fec_packet_(
                 block_encoder_.read(i), cur_block_seqnum_, cur_session_fec_seqnum_,
                 cur_session_fec_seqnum_ + i, i == 0);
 
-            if (fec_p) {
-                packet_output_.write(fec_p);
+            if (fp) {
+                packet_output_.write(fp);
             } else {
                 roc_log(LogDebug, "fec encoder: can't create fec packet");
             }
@@ -71,30 +75,30 @@ void Encoder::write(const packet::IPacketPtr& p) {
     }
 }
 
-packet::IFECPacketPtr Encoder::make_fec_packet_(const core::IByteBufferConstSlice& buff,
-                                                const packet::seqnum_t block_data_seqnum,
-                                                const packet::seqnum_t block_fec_seqnum,
-                                                const packet::seqnum_t seqnum,
-                                                const bool marker_bit) {
+packet::IPacketPtr Encoder::make_fec_packet_(const core::IByteBufferConstSlice& buff,
+                                             const packet::seqnum_t block_data_seqnum,
+                                             const packet::seqnum_t block_fec_seqnum,
+                                             const packet::seqnum_t seqnum,
+                                             const bool marker_bit) {
     if (!buff) {
         return NULL;
     }
 
-    packet::IPacketPtr p = packet_composer_.compose(packet::IFECPacket::Type);
+    packet::IPacketPtr pp = packet_composer_.compose(packet::IPacket::HasFEC);
 
-    roc_panic_if(p->type() != packet::IFECPacket::Type);
+    roc_panic_if_not(pp->rtp());
+    roc_panic_if_not(pp->fec());
 
-    if (packet::IFECPacketPtr fec_p = static_cast<packet::IFECPacket*>(p.get())) {
-        fec_p->set_source(source_);
-        fec_p->set_seqnum(seqnum);
-        fec_p->set_marker(marker_bit);
-        fec_p->set_data_blknum(block_data_seqnum);
-        fec_p->set_fec_blknum(block_fec_seqnum);
-        fec_p->set_payload(buff.data(), buff.size());
-        return fec_p;
-    } else {
-        return NULL;
-    }
+    pp->rtp()->set_source(source_);
+    pp->rtp()->set_seqnum(seqnum);
+    pp->rtp()->set_marker(marker_bit);
+
+    pp->fec()->set_data_blknum(block_data_seqnum);
+    pp->fec()->set_fec_blknum(block_fec_seqnum);
+
+    pp->set_payload(buff.data(), buff.size());
+
+    return pp;
 }
 
 } // namespace fec
