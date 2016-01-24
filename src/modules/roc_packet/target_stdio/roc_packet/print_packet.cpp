@@ -14,61 +14,66 @@
 namespace roc {
 namespace packet {
 
-void print_packet(const IAudioPacket& p, bool body) {
+void print_packet(const IPacket& p, bool print_payload) {
     enum { MaxPerLine = 10 };
 
-    channel_mask_t channels = p.channels();
-    size_t ns = p.num_samples();
+    fprintf(stderr, "packet: raw_sz=%lu payload_sz=%lu",
+            (unsigned long)p.raw_data().size(), //
+            (unsigned long)p.payload().size());
 
-    fprintf(stderr, "packet(audio): src=%lu m=%d, sn=%u, ts=%lu, ch=0x%x, ns=%u\n",
-            (unsigned long)p.source(), (int)p.marker(), (unsigned)p.seqnum(),
-            (unsigned long)p.timestamp(), (unsigned)channels, (unsigned)ns);
-
-    if (!body) {
-        return;
+    if (p.rtp()) {
+        fprintf(stderr, " rtp: src=%lu m=%d, sn=%u, ts=%lu\n",
+                (unsigned long)p.rtp()->source(), //
+                (int)p.rtp()->marker(),           //
+                (unsigned)p.rtp()->seqnum(),      //
+                (unsigned long)p.rtp()->timestamp());
     }
 
-    for (channel_t ch = 0; ch < sizeof(channels) * 8; ch++) {
-        if (channels & (1 << ch)) {
-            fprintf(stderr, " ch %u:", (unsigned)ch);
+    if (p.fec()) {
+        fprintf(stderr, " fec: data_blk=%u, fec_blk=%u\n",
+                (unsigned)p.fec()->data_blknum(), //
+                (unsigned)p.fec()->fec_blknum());
 
-            for (size_t n = 0; n < ns; n++) {
-                sample_t s = 0;
-                p.read_samples((1 << ch), n, &s, 1);
-
+        if (print_payload) {
+            for (size_t n = 0; n < p.payload().size(); n++) {
                 if (n % MaxPerLine == 0) {
-                    fprintf(stderr, "\n ");
+                    fprintf(stderr, "\n  ");
                 }
-                fprintf(stderr, " %.3f", (double)s);
+                fprintf(stderr, " %02x", (unsigned)p.payload().data()[n]);
             }
 
             fprintf(stderr, "\n");
         }
     }
-}
 
-void print_packet(const IFECPacket& p, bool body) {
-    enum { MaxPerLine = 16 };
+    if (p.audio()) {
+        channel_mask_t channels = p.audio()->channels();
+        size_t ns = p.audio()->num_samples();
 
-    core::IByteBufferConstSlice payload = p.payload();
+        fprintf(stderr, " audio: ch=0x%x, ns=%u\n",
+                (unsigned)channels, //
+                (unsigned)ns);
 
-    fprintf(
-        stderr, "packet(fec): src=%lu m=%d, sn=%u, data_blk=%u, fec_blk=%u, payload=%u\n",
-        (unsigned long)p.source(), (int)p.marker(), (unsigned)p.seqnum(),
-        (unsigned)p.data_blknum(), (unsigned)p.fec_blknum(), (unsigned)payload.size());
+        if (print_payload) {
+            for (channel_t ch = 0; ch < sizeof(channels) * 8; ch++) {
+                if (channels & (1 << ch)) {
+                    fprintf(stderr, "  ch %u:", (unsigned)ch);
 
-    if (!body) {
-        return;
-    }
+                    for (size_t n = 0; n < ns; n++) {
+                        sample_t s = 0;
+                        p.audio()->read_samples((1 << ch), n, &s, 1);
 
-    for (size_t n = 0; n < payload.size(); n++) {
-        if (n % MaxPerLine == 0) {
-            fprintf(stderr, "\n ");
+                        if (n % MaxPerLine == 0) {
+                            fprintf(stderr, "\n  ");
+                        }
+                        fprintf(stderr, " %.3f", (double)s);
+                    }
+
+                    fprintf(stderr, "\n");
+                }
+            }
         }
-        fprintf(stderr, " %02x", (unsigned)payload.data()[n]);
     }
-
-    fprintf(stderr, "\n");
 }
 
 } // namespace packet

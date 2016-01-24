@@ -24,6 +24,68 @@ void FECPacket::free() {
     pool_.destroy(*this);
 }
 
+int FECPacket::options() const {
+    return (HasOrder | HasRTP | HasFEC);
+}
+
+const packet::IHeaderOrdering* FECPacket::order() const {
+    return this;
+}
+
+const packet::IHeaderRTP* FECPacket::rtp() const {
+    return this;
+}
+
+packet::IHeaderRTP* FECPacket::rtp() {
+    return this;
+}
+
+const packet::IHeaderFECFrame* FECPacket::fec() const {
+    return this;
+}
+
+packet::IHeaderFECFrame* FECPacket::fec() {
+    return this;
+}
+
+const packet::IPayloadAudio* FECPacket::audio() const {
+    return NULL;
+}
+
+packet::IPayloadAudio* FECPacket::audio() {
+    return NULL;
+}
+
+core::IByteBufferConstSlice FECPacket::raw_data() const {
+    return packet_.raw_data();
+}
+
+core::IByteBufferConstSlice FECPacket::payload() const {
+    return packet_.payload();
+}
+
+void FECPacket::set_payload(const uint8_t* data, size_t size) {
+    if (!data && size) {
+        roc_panic("rtp fec packet: data is null, size is non-null");
+    }
+
+    packet_.set_payload_size(size);
+
+    if (size > 0) {
+        memcpy(packet_.payload().data(), data, size);
+    }
+}
+
+bool FECPacket::is_same_flow(const packet::IPacket& other) const {
+    roc_panic_if_not(other.rtp());
+    return source() == other.rtp()->source();
+}
+
+bool FECPacket::is_before(const packet::IPacket& other) const {
+    roc_panic_if_not(other.rtp());
+    return ROC_IS_BEFORE(packet::signed_seqnum_t, seqnum(), other.rtp()->seqnum());
+}
+
 packet::source_t FECPacket::source() const {
     return packet_.header().ssrc();
 }
@@ -85,26 +147,6 @@ void FECPacket::set_fec_blknum(packet::seqnum_t sn) {
     ts &= 0x0000ffff;
     ts |= uint32_t((sn & 0xffff) << 16);
     packet_.header().set_timestamp(ts);
-}
-
-core::IByteBufferConstSlice FECPacket::payload() const {
-    return packet_.payload();
-}
-
-void FECPacket::set_payload(const uint8_t* data, size_t size) {
-    if (!data && size) {
-        roc_panic("rtp fec packet: data is null, size is non-null");
-    }
-
-    packet_.set_payload_size(size);
-
-    if (size > 0) {
-        memcpy(packet_.payload().data(), data, size);
-    }
-}
-
-core::IByteBufferConstSlice FECPacket::raw_data() const {
-    return packet_.raw_data();
 }
 
 } // namespace rtp

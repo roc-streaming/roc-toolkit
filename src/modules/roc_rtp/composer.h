@@ -34,7 +34,7 @@ public:
         core::IByteBufferComposer& buffer_composer = datagram::default_buffer_composer());
 
     //! Compose packet.
-    virtual packet::IPacketPtr compose(packet::PacketType type);
+    virtual packet::IPacketPtr compose(int options);
 
 private:
     core::IPool<AudioPacket>& audio_pool_;

@@ -28,15 +28,15 @@ enum { Rate = ROC_CONFIG_DEFAULT_SAMPLE_RATE };
 } // namespace
 
 TEST_GROUP(delayer) {
-    IAudioPacketPtr make(seqnum_t sn) {
-        IAudioPacketPtr packet = new_audio_packet();
+    IPacketPtr make(seqnum_t sn) {
+        IPacketPtr packet = new_audio_packet();
 
-        packet->set_seqnum(sn);
-        packet->set_timestamp(packet::timestamp_t(sn* NumSamples));
+        packet->rtp()->set_seqnum(sn);
+        packet->rtp()->set_timestamp(packet::timestamp_t(sn* NumSamples));
 
         sample_t samples[NumSamples * NumChannels] = {};
-        packet->set_size(ChMask, NumSamples, Rate);
-        packet->write_samples(ChMask, 0, samples, NumSamples);
+        packet->audio()->configure(ChMask, NumSamples, Rate);
+        packet->audio()->write_samples(ChMask, 0, samples, NumSamples);
 
         return packet;
     }
@@ -59,7 +59,7 @@ TEST(delayer, delay1) {
     PacketQueue queue;
     Delayer delayer(queue, NumSamples * (NumPackets - 1));
 
-    IAudioPacketPtr packets[NumPackets];
+    IPacketPtr packets[NumPackets];
 
     for (seqnum_t n = 0; n < NumPackets; n++) {
         CHECK(!delayer.read());
@@ -86,7 +86,7 @@ TEST(delayer, delay2) {
     PacketQueue queue;
     Delayer delayer(queue, NumSamples * (NumPackets - 1));
 
-    IAudioPacketPtr packets[NumPackets];
+    IPacketPtr packets[NumPackets];
 
     for (seqnum_t n = 0; n < NumPackets; n++) {
         packets[n] = make(n);
@@ -104,7 +104,7 @@ TEST(delayer, late_duplicates) {
     PacketQueue queue;
     Delayer delayer(queue, NumSamples * (NumPackets - 1));
 
-    IAudioPacketPtr packets[NumPackets];
+    IPacketPtr packets[NumPackets];
 
     for (seqnum_t n = 0; n < NumPackets; n++) {
         packets[n] = make(n);

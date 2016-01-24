@@ -31,12 +31,13 @@ const double Epsilon = 0.00001;
 } // namespace
 
 TEST_GROUP(rtp_packet) {
-    IAudioPacketConstPtr parse(const core::IByteBufferConstSlice& buff) {
+    IPacketConstPtr parse(const core::IByteBufferConstSlice& buff) {
         rtp::Parser parser;
         IPacketConstPtr packet = parser.parse(buff);
         CHECK(packet);
-        CHECK(packet->type() == IAudioPacket::Type);
-        return static_cast<const IAudioPacket*>(packet.get());
+        CHECK(packet->rtp());
+        CHECK(packet->audio());
+        return packet;
     }
 
     core::IByteBufferPtr make_buffer(const RTP_PacketTest& test) {
@@ -92,26 +93,27 @@ TEST_GROUP(rtp_packet) {
     void test_audio_packet(const RTP_PacketTest& test) {
         core::IByteBufferConstSlice buffer = *make_buffer(test);
 
-        IAudioPacketConstPtr packet = parse(buffer);
+        IPacketConstPtr packet = parse(buffer);
 
         CHECK(packet->raw_data());
         LONGS_EQUAL(test.packet_size, packet->raw_data().size());
         LONGS_EQUAL(
             0, memcmp(buffer.data(), packet->raw_data().data(), test.packet_size));
 
-        LONGS_EQUAL(test.ssrc, packet->source());
-        LONGS_EQUAL(test.seqnum, packet->seqnum());
-        LONGS_EQUAL(test.marker, packet->marker());
-        LONGS_EQUAL(test.ts, packet->timestamp());
-        LONGS_EQUAL(test.samplerate, packet->rate());
+        LONGS_EQUAL(test.ssrc, packet->rtp()->source());
+        LONGS_EQUAL(test.seqnum, packet->rtp()->seqnum());
+        LONGS_EQUAL(test.marker, packet->rtp()->marker());
+        LONGS_EQUAL(test.ts, packet->rtp()->timestamp());
+        LONGS_EQUAL(test.samplerate, packet->rtp()->rate());
 
-        LONGS_EQUAL((1 << test.num_channels) - 1, packet->channels());
-        LONGS_EQUAL(test.num_samples, packet->num_samples());
+        LONGS_EQUAL((1 << test.num_channels) - 1, packet->audio()->channels());
+        LONGS_EQUAL(test.num_samples, packet->audio()->num_samples());
 
         for (size_t ch = 0; ch < test.num_channels; ch++) {
             sample_t samples[MaxSamples] = {};
             LONGS_EQUAL(test.num_samples,
-                        packet->read_samples((1 << ch), 0, samples, test.num_samples));
+                        packet->audio()->read_samples(
+                            (1 << ch), 0, samples, test.num_samples));
 
             for (size_t ns = 0; ns < test.num_samples; ns++) {
                 double s = (double)test.samples[ch][ns] / (1 << (test.samplebits - 1));

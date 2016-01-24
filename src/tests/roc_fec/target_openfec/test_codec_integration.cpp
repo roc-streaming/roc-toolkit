@@ -19,7 +19,7 @@
 #include "roc_fec/of_block_encoder.h"
 #include "roc_fec/of_block_decoder.h"
 
-#include "roc_packet/iaudio_packet.h"
+#include "roc_packet/ipacket.h"
 #include "roc_packet/packet_queue.h"
 #include "roc_packet/interleaver.h"
 
@@ -70,9 +70,9 @@ public:
             return;
         }
 
-        if (p->type() == IAudioPacket::Type) {
+        if (p->audio()) {
             data_stock_.write(p);
-        } else if (IFECPacket::Type) {
+        } else if (p->fec()) {
             fec_stock_.write(p);
         }
 
@@ -181,7 +181,7 @@ TEST_GROUP(fec_codec_integration) {
     }
 
     IPacketPtr fill_one_packet(size_t sn, size_t n_pkts) {
-        IPacketPtr packet = composer.compose(IAudioPacket::Type);
+        IPacketPtr packet = composer.compose(IPacket::HasAudio);
         CHECK(packet);
 
         sample_t samples[N_SAMPLES * N_CH] = {};
@@ -194,28 +194,27 @@ TEST_GROUP(fec_codec_integration) {
             samples[n + 1] = -s;
         }
 
-        IAudioPacket* audio_packet = (IAudioPacket*)packet.get();
-        audio_packet->set_seqnum((seqnum_t)sn);
-        audio_packet->set_size(LEFT | RIGHT, N_SAMPLES, RATE);
-        audio_packet->write_samples(LEFT | RIGHT, 0, samples, N_SAMPLES);
+        packet->rtp()->set_seqnum((seqnum_t)sn);
+
+        packet->audio()->configure(LEFT | RIGHT, N_SAMPLES, RATE);
+        packet->audio()->write_samples(LEFT | RIGHT, 0, samples, N_SAMPLES);
 
         return packet;
     }
 
     void check_audio_packet(IPacketConstPtr packet, size_t sn, size_t n_pkts) {
         CHECK(packet);
-        const IAudioPacket* audio_packet = (const IAudioPacket*)packet.get();
 
         sample_t left[N_SAMPLES] = {};
         sample_t right[N_SAMPLES] = {};
 
-        LONGS_EQUAL((seqnum_t)sn, audio_packet->seqnum());
+        LONGS_EQUAL((seqnum_t)sn, packet->rtp()->seqnum());
 
-        CHECK(audio_packet->num_samples() == N_SAMPLES);
-        CHECK(audio_packet->channels() == (LEFT | RIGHT));
+        CHECK(packet->audio()->num_samples() == N_SAMPLES);
+        CHECK(packet->audio()->channels() == (LEFT | RIGHT));
 
-        CHECK(audio_packet->read_samples(LEFT, 0, left, N_SAMPLES) == N_SAMPLES);
-        CHECK(audio_packet->read_samples(RIGHT, 0, right, N_SAMPLES) == N_SAMPLES);
+        CHECK(packet->audio()->read_samples(LEFT, 0, left, N_SAMPLES) == N_SAMPLES);
+        CHECK(packet->audio()->read_samples(RIGHT, 0, right, N_SAMPLES) == N_SAMPLES);
 
         for (size_t n = 0; n < N_SAMPLES; ++n) {
             sample_t s =
@@ -504,7 +503,7 @@ TEST(fec_codec_integration, encode_source_id_and_seqnum) {
             fill_all_packets(N_DATA_PACKETS * block_num, N_DATA_PACKETS * N_BLKS);
 
             for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
-                data_packets[i]->set_source(data_source);
+                data_packets[i]->rtp()->set_source(data_source);
             }
 
             for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
@@ -513,20 +512,21 @@ TEST(fec_codec_integration, encode_source_id_and_seqnum) {
             pckt_disp.release_all();
 
             if (block_num == 0) {
-                fec_source = pckt_disp.get_fec_head()->source();
-                fec_seqnum = pckt_disp.get_fec_head()->seqnum();
+                fec_source = pckt_disp.get_fec_head()->rtp()->source();
+                fec_seqnum = pckt_disp.get_fec_head()->rtp()->seqnum();
             }
 
             CHECK(fec_source != data_source);
 
             for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
-                LONGS_EQUAL(data_source, pckt_disp.get_data_reader().read()->source());
+                LONGS_EQUAL(data_source,
+                            pckt_disp.get_data_reader().read()->rtp()->source());
             }
 
             for (size_t i = 0; i < N_FEC_PACKETS; ++i) {
                 IPacketConstPtr p = pckt_disp.get_fec_reader().read();
-                LONGS_EQUAL(fec_source, p->source());
-                LONGS_EQUAL(fec_seqnum, p->seqnum());
+                LONGS_EQUAL(fec_source, p->rtp()->source());
+                LONGS_EQUAL(fec_seqnum, p->rtp()->seqnum());
                 fec_seqnum++;
             }
         }
@@ -555,7 +555,7 @@ TEST(fec_codec_integration, decode_bad_seqnum) {
     pckt_disp.lose(9);  // should be rejected (bad seqnum)
     pckt_disp.lose(14); // should be rapaired
 
-    data_packets[9]->set_seqnum(data_packets[9]->seqnum() + 1);
+    data_packets[9]->rtp()->set_seqnum(data_packets[9]->rtp()->seqnum() + 1);
 
     for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
         encoder.write(data_packets[i]);
@@ -588,7 +588,7 @@ TEST(fec_codec_integration, decode_bad_source_id) {
 
     pckt_disp.lose(5); // should shutdown decoder (bad source id)
 
-    data_packets[5]->set_source(data_packets[5]->source() + 1);
+    data_packets[5]->rtp()->set_source(data_packets[5]->rtp()->source() + 1);
 
     for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
         encoder.write(data_packets[i]);

@@ -41,7 +41,7 @@ TEST_GROUP(streamer) {
     }
 
     void add_packet(packet::timestamp_t timestamp, packet::sample_t value) {
-        packet::IAudioPacketPtr packet = new_audio_packet();
+        packet::IPacketPtr packet = new_audio_packet();
 
         packet::sample_t samples[NumSamples];
 
@@ -49,9 +49,9 @@ TEST_GROUP(streamer) {
             samples[n] = value;
         }
 
-        packet->set_timestamp(timestamp);
-        packet->set_size(ChMask, NumSamples, Rate);
-        packet->write_samples((1 << ChNum), 0, samples, NumSamples);
+        packet->rtp()->set_timestamp(timestamp);
+        packet->audio()->configure(ChMask, NumSamples, Rate);
+        packet->audio()->write_samples((1 << ChNum), 0, samples, NumSamples);
 
         reader.add(packet);
     }

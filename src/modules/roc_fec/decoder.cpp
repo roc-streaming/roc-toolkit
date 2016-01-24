@@ -69,14 +69,14 @@ packet::IPacketConstPtr Decoder::read_() {
         packet::IPacketConstPtr pp = data_queue_.head();
         if (pp) {
             if (!has_source_) {
-                source_ = pp->source();
+                source_ = pp->rtp()->source();
                 has_source_ = true;
             }
-            cur_block_sn_ = pp->seqnum();
+            cur_block_sn_ = pp->rtp()->seqnum();
             skip_fec_packets_();
         }
 
-        if (!pp || !pp->marker()) {
+        if (!pp || !pp->rtp()->marker()) {
             return data_queue_.read();
         }
 
@@ -195,18 +195,23 @@ void Decoder::try_repair_() {
 bool Decoder::check_packet_(const packet::IPacketConstPtr& pp, size_t pos) {
     roc_panic_if_not(has_source_);
 
-    if (pp->source() != source_) {
+    if (!pp->rtp()) {
+        roc_log(LogTrace, "decoder: repaired unexcpeted non-RTP packet");
+        return false;
+    }
+
+    if (pp->rtp()->source() != source_) {
         roc_log(LogTrace, "decoder: repaired packet has bad source id, shutting down:"
                           " got=%lu expected=%lu",
-                (unsigned long)pp->source(), (unsigned long)source_);
+                (unsigned long)pp->rtp()->source(), (unsigned long)source_);
         // We've repaired packet from someone else's session; shutdown decoder now.
         // This will force Watchdog to shutdown entire session after timeout.
         return (is_alive_ = false);
     }
 
-    if (pp->seqnum() != packet::seqnum_t(cur_block_sn_ + pos)) {
+    if (pp->rtp()->seqnum() != packet::seqnum_t(cur_block_sn_ + pos)) {
         roc_log(LogTrace, "decoder: repaired packet has bad seqnum: got=%lu expected=%lu",
-                (unsigned long)pp->seqnum(),
+                (unsigned long)pp->rtp()->seqnum(),
                 (unsigned long)packet::seqnum_t(cur_block_sn_ + pos));
         return false;
     }
@@ -225,9 +230,6 @@ void Decoder::fetch_packets_() {
 
     while (fec_queue_.size() <= fec_block_.size() * 2) {
         if (packet::IPacketConstPtr pp = fec_reader_.read()) {
-            if (pp->type() != packet::IFECPacket::Type) {
-                roc_panic("decoder: fec reader returned packet of wrong type");
-            }
             fec_queue_.write(pp);
         } else {
             break;
@@ -249,22 +251,27 @@ void Decoder::update_data_packets_() {
             break;
         }
 
-        if (!SEQ_IS_BEFORE(pp->seqnum(), cur_block_sn_ + data_block_.size())) {
+        const packet::IHeaderRTP* rtp = pp->rtp();
+        if (!rtp) {
+            roc_panic("decoder: unexpected data packet w/o RTP header");
+        }
+
+        if (!SEQ_IS_BEFORE(rtp->seqnum(), cur_block_sn_ + data_block_.size())) {
             break;
         }
 
         data_queue_.read();
         n_fetched++;
 
-        if (SEQ_IS_BEFORE(pp->seqnum(), cur_block_sn_)) {
+        if (SEQ_IS_BEFORE(rtp->seqnum(), cur_block_sn_)) {
             roc_log(LogDebug, "decoder: dropping data packet from previous block:"
                               " blk_sn=%lu pkt_sn=%lu",
-                    (unsigned long)cur_block_sn_, (unsigned long)pp->seqnum());
+                    (unsigned long)cur_block_sn_, (unsigned long)rtp->seqnum());
             n_dropped++;
             continue;
         }
 
-        const size_t p_num = SEQ_SUBTRACT(pp->seqnum(), cur_block_sn_);
+        const size_t p_num = SEQ_SUBTRACT(rtp->seqnum(), cur_block_sn_);
 
         if (!data_block_[p_num]) {
             can_repair_ = true;
@@ -288,36 +295,44 @@ void Decoder::update_fec_packets_() {
             break;
         }
 
-        packet::IFECPacketConstPtr fp = static_cast<const packet::IFECPacket*>(pp.get());
+        const packet::IHeaderRTP* rtp = pp->rtp();
+        if (!rtp) {
+            roc_panic("decoder: unexpected fec packet w/o RTP header");
+        }
 
-        if (!SEQ_IS_BEFORE(fp->data_blknum(), cur_block_sn_ + data_block_.size())) {
+        const packet::IHeaderFECFrame* fec = pp->fec();
+        if (!fec) {
+            roc_panic("decoder: unexpected fec packet w/o FECFRAME header");
+        }
+
+        if (!SEQ_IS_BEFORE(fec->data_blknum(), cur_block_sn_ + data_block_.size())) {
             break;
         }
 
         fec_queue_.read();
         n_fetched++;
 
-        if (SEQ_IS_BEFORE(fp->data_blknum(), cur_block_sn_)) {
+        if (SEQ_IS_BEFORE(fec->data_blknum(), cur_block_sn_)) {
             roc_log(LogDebug, "decoder: dropping fec packet from previous block:"
                               " blk_sn=%lu pkt_data_blk=%lu",
-                    (unsigned long)cur_block_sn_, (unsigned long)fp->data_blknum());
+                    (unsigned long)cur_block_sn_, (unsigned long)fec->data_blknum());
             n_dropped++;
             continue;
         }
 
-        if (!SEQ_IS_BEFORE_EQ(fp->fec_blknum(), fp->seqnum())) {
+        if (!SEQ_IS_BEFORE_EQ(fec->fec_blknum(), rtp->seqnum())) {
             roc_log(LogDebug, "decoder: dropping invalid fec packet:"
                               " pkt_sn=%lu pkt_fec_blk=%lu",
-                    (unsigned long)fp->seqnum(), (unsigned long)fp->fec_blknum());
+                    (unsigned long)rtp->seqnum(), (unsigned long)fec->fec_blknum());
             n_dropped++;
             continue;
         }
 
-        const size_t p_num = SEQ_SUBTRACT(fp->seqnum(), fp->fec_blknum());
+        const size_t p_num = SEQ_SUBTRACT(rtp->seqnum(), fec->fec_blknum());
 
         if (!fec_block_[p_num]) {
             can_repair_ = true;
-            fec_block_[p_num] = fp;
+            fec_block_[p_num] = pp;
             n_added++;
         }
     }
@@ -337,15 +352,18 @@ void Decoder::skip_fec_packets_() {
             break;
         }
 
-        packet::IFECPacketConstPtr fp = static_cast<const packet::IFECPacket*>(pp.get());
+        const packet::IHeaderFECFrame* fec = pp->fec();
+        if (!fec) {
+            roc_panic("decoder: unexpected fec packet w/o FECFRAME header");
+        }
 
-        if (!SEQ_IS_BEFORE(fp->data_blknum(), cur_block_sn_)) {
+        if (!SEQ_IS_BEFORE(fec->data_blknum(), cur_block_sn_)) {
             break;
         }
 
         roc_log(LogDebug, "decoder: dropping fec packet, decoding not started:"
                           " min_sn=%lu pkt_data_blk=%lu",
-                (unsigned long)cur_block_sn_, (unsigned long)fp->data_blknum());
+                (unsigned long)cur_block_sn_, (unsigned long)fec->data_blknum());
 
         fec_queue_.read();
         n_skipped++;

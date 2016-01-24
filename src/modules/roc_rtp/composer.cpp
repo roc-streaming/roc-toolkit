@@ -22,7 +22,7 @@ Composer::Composer(core::IPool<AudioPacket>& audio_pool,
     , buffer_composer_(buffer_composer) {
 }
 
-packet::IPacketPtr Composer::compose(packet::PacketType type) {
+packet::IPacketPtr Composer::compose(int options) {
     core::IByteBufferPtr buffer = buffer_composer_.compose();
     if (!buffer) {
         roc_log(LogError, "rtp composer: can't allocate buffer");
@@ -32,16 +32,16 @@ packet::IPacketPtr Composer::compose(packet::PacketType type) {
     RTP_Packet rtp_packet;
     rtp_packet.compose(buffer);
 
-    if (type == packet::IAudioPacket::Type) {
+    if (options & packet::IPacket::HasAudio) {
         return new (audio_pool_) AudioPacket(audio_pool_, rtp_packet, NULL);
     }
 
-    if (type == packet::IFECPacket::Type) {
+    if (options & packet::IPacket::HasFEC) {
         rtp_packet.header().set_payload_type(123); // FIXME
         return new (fec_pool_) FECPacket(fec_pool_, rtp_packet);
     }
 
-    roc_log(LogError, "rtp composer: bad packet type");
+    roc_log(LogError, "rtp composer: bad packet options");
     return NULL;
 }
 

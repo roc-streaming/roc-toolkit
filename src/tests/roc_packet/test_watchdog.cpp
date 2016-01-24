@@ -40,8 +40,8 @@ TEST_GROUP(watchdog) {
     }
 
     IPacketConstPtr add_packet(source_t src, seqnum_t sn, timestamp_t ts) {
-        IAudioPacketPtr pkt = new_audio_packet(src, sn, ts);
-        pkt->set_size(0x1, 1, Rate);
+        IPacketPtr pkt = new_audio_packet(src, sn, ts);
+        pkt->audio()->configure(0x1, 1, Rate);
         queue.write(pkt);
         return pkt;
     }

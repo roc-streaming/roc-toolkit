@@ -144,7 +144,8 @@ packet::IPacketReader* Session::make_packet_reader_() {
     packet::IPacketReader* packet_reader =
         new (audio_packet_queue_) packet::PacketQueue(config_.max_session_packets);
 
-    router_.add_route(packet::IAudioPacket::Type, *audio_packet_queue_);
+    router_.add_route(*audio_packet_queue_,
+                      packet::IPacket::HasOrder | packet::IPacket::HasAudio);
 
     packet_reader = new (delayer_)
         audio::Delayer(*packet_reader, (packet::timestamp_t)config_.session_latency);
@@ -168,7 +169,8 @@ packet::IPacketReader* Session::make_fec_decoder_(packet::IPacketReader* packet_
     new (fec_packet_queue_) packet::PacketQueue(config_.max_session_packets);
     new (fec_ldpc_decoder_) fec::OFBlockDecoder(config_.fec, *config_.byte_buffer_composer);
 
-    router_.add_route(packet::IFECPacket::Type, *fec_packet_queue_);
+    router_.add_route(*fec_packet_queue_,
+                      packet::IPacket::HasOrder | packet::IPacket::HasFEC);
 
     packet_reader = new (fec_decoder_) fec::Decoder(*fec_ldpc_decoder_, *packet_reader,
                                                     *fec_packet_queue_, packet_parser_);

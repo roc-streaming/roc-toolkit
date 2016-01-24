@@ -13,8 +13,6 @@
 
 #include "roc_packet/packet_queue.h"
 
-#define SEQ_IS_BEFORE(a, b) ROC_IS_BEFORE(signed_seqnum_t, a, b)
-
 namespace roc {
 namespace packet {
 
@@ -36,6 +34,10 @@ void PacketQueue::write(const IPacketConstPtr& packet) {
         roc_panic("packet queue: attempting to add null packet");
     }
 
+    if (!packet->order()) {
+        roc_panic("packet queue: attempting to add packet w/o ordering interface");
+    }
+
     if (max_size_ > 0 && list_.size() == max_size_) {
         roc_log(LogDebug, "packet queue: queue is full, dropping packet:"
                           " max_size=%u",
@@ -46,14 +48,12 @@ void PacketQueue::write(const IPacketConstPtr& packet) {
     IPacketConstPtr before = list_.front();
 
     for (; before; before = list_.next(*before)) {
-        if (SEQ_IS_BEFORE(packet->seqnum(), before->seqnum())) {
+        if (packet->order()->is_before(*before)) {
             continue;
         }
 
-        if (packet->seqnum() == before->seqnum()) {
-            roc_log(LogDebug, "packet queue: dropping duplicate packet:"
-                              " pkt_seqnum=%u",
-                    (unsigned)packet->seqnum());
+        if (!before->order()->is_before(*packet)) {
+            roc_log(LogDebug, "packet queue: dropping duplicate packet");
             return;
         }
 

@@ -61,9 +61,9 @@ TEST(interleaver, read_write) {
     for (size_t i = 0; i < total_packets_num; i++) {
         IPacketConstPtr p = receiver.read();
         CHECK(p);
-        CHECK(p->seqnum() < total_packets_num);
-        CHECK(!packets_ctr[p->seqnum()]);
-        packets_ctr[p->seqnum()] = true;
+        CHECK(p->rtp()->seqnum() < total_packets_num);
+        CHECK(!packets_ctr[p->rtp()->seqnum()]);
+        packets_ctr[p->rtp()->seqnum()] = true;
     }
 
     // Nothing left in receiver.

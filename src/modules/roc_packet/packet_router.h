@@ -30,8 +30,8 @@ namespace packet {
 //!  source ID may be auto-detected from first packing of matching type.
 class PacketRouter : public IPacketConstWriter, public core::NonCopyable<> {
 public:
-    //! Add route for packets of given type.
-    void add_route(PacketType type, IPacketConstWriter& writer);
+    //! Add route for packets with given options.
+    void add_route(IPacketConstWriter& writer, int options);
 
     //! Check if there is a route already associated with packet's source ID.
     //! @returns
@@ -54,20 +54,20 @@ private:
     static const size_t MaxRoutes = ROC_CONFIG_MAX_SESSION_QUEUES;
 
     struct Route {
-        bool has_source;
-        source_t source;
-        PacketType type;
+        int options;
+        IPacketConstPtr packet;
         IPacketConstWriter* writer;
 
         Route()
-            : has_source(false)
-            , source(0)
-            , type(NULL)
+            : options(0)
+            , packet()
             , writer(NULL) {
         }
     };
 
-    const Route* find_route_(source_t) const;
+    const Route* find_route_(const IPacketConstPtr&) const;
+    Route* find_route_(const IPacketConstPtr&);
+
     const Route* detect_route_(const IPacketConstPtr&) const;
     Route* detect_route_(const IPacketConstPtr&);
 

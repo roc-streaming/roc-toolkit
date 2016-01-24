@@ -18,77 +18,62 @@
 #include "roc_core/refcnt.h"
 #include "roc_core/shared_ptr.h"
 
-#include "roc_packet/units.h"
+#include "roc_packet/iheader_ordering.h"
+#include "roc_packet/iheader_rtp.h"
+#include "roc_packet/iheader_fecframe.h"
+#include "roc_packet/ipayload_audio.h"
 
 namespace roc {
 namespace packet {
 
-//! Packet type.
-typedef const void* PacketType;
-
 //! Packet interface.
 class IPacket : public core::RefCnt, public core::ListNode {
 public:
+    //! Packet options.
+    enum {
+        HasOrder = (1 << 0), //!< Packet contains ordering/routing information.
+        HasRTP = (1 << 1),   //!< Packet contains RTP header.
+        HasFEC = (1 << 2),   //!< Packet contains FECFRAME header.
+        HasAudio = (1 << 3)  //!< Packet contains audio payload.
+    };
+
     virtual ~IPacket();
 
-    //! Get packet type.
-    //! @remarks
-    //!  Each derived interface (e.g., IAudioPacket), but not implementation
-    //!  (e.g. rtp::AudioPacket) returns it's own unique identifier.
-    virtual PacketType type() const = 0;
+    //! Get packet options.
+    virtual int options() const = 0;
 
-    //! Get packet source ID identifying client stream.
-    //! @remarks
-    //!  Sequence numbers and timestamp are numbered independently inside
-    //!  different client streams.
-    virtual source_t source() const = 0;
+    //! Get abstract header for ordering/routing (if there is one).
+    virtual const IHeaderOrdering* order() const = 0;
 
-    //! Set packet source ID.
-    virtual void set_source(source_t) = 0;
+    //! Get RTP header (if there is one).
+    virtual const IHeaderRTP* rtp() const = 0;
 
-    //! Get packet sequence number in client stream.
-    //! @remarks
-    //!  Packets are numbered sequentaly in every stream, starting from some
-    //!  random value.
-    //! @note
-    //!  Seqnum overflow may occur, use ROC_IS_BEFORE() macro to compare them.
-    virtual seqnum_t seqnum() const = 0;
+    //! Get RTP header (if there is one).
+    virtual IHeaderRTP* rtp() = 0;
 
-    //! Set packet sequence number.
-    virtual void set_seqnum(seqnum_t) = 0;
+    //! Get FECFRAME header (if there is one).
+    virtual const IHeaderFECFrame* fec() const = 0;
 
-    //! Get packet timestamp.
-    //! @remarks
-    //!  Timestamp meaning depends on packet type. For audio packet, it may be
-    //!  used to define number of first sample in packet.
-    //! @note
-    //!  Timestamp overflow may occur, use ROC_IS_BEFORE() macro to compare them.
-    virtual timestamp_t timestamp() const = 0;
+    //! Get FECFRAME header (if there is one).
+    virtual IHeaderFECFrame* fec() = 0;
 
-    //! Set packet timestamp.
-    virtual void set_timestamp(timestamp_t) = 0;
+    //! Get audio payload (if there is one).
+    virtual const IPayloadAudio* audio() const = 0;
 
-    //! Get packet rate.
-    //! @returns
-    //!  Number of timestamp units per second or 0 if timestamp is meaningless
-    //!  for this packet.
-    virtual size_t rate() const = 0;
-
-    //! Get packet marker bit.
-    //! @remarks
-    //!  Marker bit meaning depends on packet type.
-    virtual bool marker() const = 0;
-
-    //! Set packet marker bit.
-    virtual void set_marker(bool) = 0;
+    //! Get audio payload (if there is one).
+    virtual IPayloadAudio* audio() = 0;
 
     //! Get packet data buffer (containing header and payload).
-    //! @remarks
-    //!  Never returns empty slice.
     virtual core::IByteBufferConstSlice raw_data() const = 0;
 
-    //! Print packet to stdout.
-    virtual void print(bool body = false) const = 0;
+    //! Get packet payload.
+    virtual core::IByteBufferConstSlice payload() const = 0;
+
+    //! Set payload data and size.
+    virtual void set_payload(const uint8_t* data, size_t size) = 0;
+
+    //! Print packet to stderr.
+    virtual void print(bool print_payload = false) const;
 };
 
 //! Packet smart pointer.

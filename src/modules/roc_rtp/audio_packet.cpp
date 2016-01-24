@@ -29,6 +29,71 @@ void AudioPacket::free() {
     pool_.destroy(*this);
 }
 
+int AudioPacket::options() const {
+    return (HasOrder | HasRTP | HasAudio);
+}
+
+const packet::IHeaderOrdering* AudioPacket::order() const {
+    return this;
+}
+
+const packet::IHeaderRTP* AudioPacket::rtp() const {
+    return this;
+}
+
+packet::IHeaderRTP* AudioPacket::rtp() {
+    return this;
+}
+
+const packet::IHeaderFECFrame* AudioPacket::fec() const {
+    return NULL;
+}
+
+packet::IHeaderFECFrame* AudioPacket::fec() {
+    return NULL;
+}
+
+const packet::IPayloadAudio* AudioPacket::audio() const {
+    return this;
+}
+
+packet::IPayloadAudio* AudioPacket::audio() {
+    return this;
+}
+
+core::IByteBufferConstSlice AudioPacket::raw_data() const {
+    if (!format_) {
+        roc_panic("rtp audio packet: audio format isn't set, forgot configure()?");
+    }
+    return packet_.raw_data();
+}
+
+core::IByteBufferConstSlice AudioPacket::payload() const {
+    return packet_.payload();
+}
+
+void AudioPacket::set_payload(const uint8_t* data, size_t size) {
+    if (!data && size) {
+        roc_panic("rtp fec packet: data is null, size is non-null");
+    }
+
+    packet_.set_payload_size(size);
+
+    if (size > 0) {
+        memcpy(packet_.payload().data(), data, size);
+    }
+}
+
+bool AudioPacket::is_same_flow(const packet::IPacket& other) const {
+    roc_panic_if_not(other.rtp());
+    return source() == other.rtp()->source();
+}
+
+bool AudioPacket::is_before(const packet::IPacket& other) const {
+    roc_panic_if_not(other.rtp());
+    return ROC_IS_BEFORE(packet::signed_seqnum_t, seqnum(), other.rtp()->seqnum());
+}
+
 packet::source_t AudioPacket::source() const {
     return packet_.header().ssrc();
 }
@@ -55,7 +120,7 @@ void AudioPacket::set_timestamp(packet::timestamp_t ts) {
 
 size_t AudioPacket::rate() const {
     if (!format_) {
-        roc_panic("rtp audio packet: audio format isn't set, forgot set_size()?");
+        roc_panic("rtp audio packet: audio format isn't set, forgot configure()?");
     }
     return format_->rate;
 }
@@ -68,9 +133,9 @@ void AudioPacket::set_marker(bool m) {
     packet_.header().set_marker(m);
 }
 
-void AudioPacket::set_size(packet::channel_mask_t ch_mask,
-                           size_t n_samples,
-                           size_t sample_rate) {
+void AudioPacket::configure(packet::channel_mask_t ch_mask,
+                            size_t n_samples,
+                            size_t sample_rate) {
     if (const RTP_AudioFormat* format = get_audio_format_cr(ch_mask, sample_rate)) {
         format_ = format;
     } else {
@@ -91,14 +156,14 @@ void AudioPacket::set_size(packet::channel_mask_t ch_mask,
 
 packet::channel_mask_t AudioPacket::channels() const {
     if (!format_) {
-        roc_panic("rtp audio packet: audio format isn't set, forgot set_size()?");
+        roc_panic("rtp audio packet: audio format isn't set, forgot configure()?");
     }
     return format_->channels;
 }
 
 size_t AudioPacket::num_samples() const {
     if (!format_) {
-        roc_panic("rtp audio packet: audio format isn't set, forgot set_size()?");
+        roc_panic("rtp audio packet: audio format isn't set, forgot configure()?");
     }
     return format_->n_samples(packet_.payload().size());
 }
@@ -108,7 +173,7 @@ size_t AudioPacket::read_samples(packet::channel_mask_t ch_mask,
                                  packet::sample_t* samples,
                                  size_t n_samples) const {
     if (!format_) {
-        roc_panic("rtp audio packet: audio format isn't set, forgot set_size()?");
+        roc_panic("rtp audio packet: audio format isn't set, forgot configure()?");
     }
 
     if (!samples) {
@@ -132,7 +197,7 @@ void AudioPacket::write_samples(packet::channel_mask_t ch_mask,
                                 const packet::sample_t* samples,
                                 size_t n_samples) {
     if (!format_) {
-        roc_panic("rtp audio packet: audio format isn't set, forgot set_size()?");
+        roc_panic("rtp audio packet: audio format isn't set, forgot configure()?");
     }
 
     if (!samples) {
@@ -154,13 +219,6 @@ void AudioPacket::write_samples(packet::channel_mask_t ch_mask,
     if (n_samples && ch_mask) {
         format_->write(packet_.payload().data(), offset, ch_mask, samples, n_samples);
     }
-}
-
-core::IByteBufferConstSlice AudioPacket::raw_data() const {
-    if (!format_) {
-        roc_panic("rtp audio packet: audio format isn't set, forgot set_size()?");
-    }
-    return packet_.raw_data();
 }
 
 } // namespace rtp

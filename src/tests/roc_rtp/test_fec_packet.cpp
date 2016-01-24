@@ -22,21 +22,23 @@ TEST_GROUP(fec_packet) {
     rtp::Composer composer;
     rtp::Parser parser;
 
-    IFECPacketPtr compose() {
-        IPacketPtr packet = composer.compose(IFECPacket::Type);
+    IPacketPtr compose() {
+        IPacketPtr packet = composer.compose(IPacket::HasFEC);
         CHECK(packet);
-        CHECK(packet->type() == IFECPacket::Type);
-        return static_cast<IFECPacket*>(packet.get());
+        CHECK(packet->rtp());
+        CHECK(packet->fec());
+        return packet;
     }
 
-    IFECPacketConstPtr parse(const core::IByteBufferConstSlice& buff) {
+    IPacketConstPtr parse(const core::IByteBufferConstSlice& buff) {
         IPacketConstPtr packet = parser.parse(buff);
         CHECK(packet);
-        CHECK(packet->type() == IFECPacket::Type);
-        return static_cast<const IFECPacket*>(packet.get());
+        CHECK(packet->rtp());
+        CHECK(packet->fec());
+        return packet;
     }
 
-    void set_payload(const IFECPacketPtr& packet) {
+    void set_payload(const IPacketPtr& packet) {
         uint8_t data[PayloadSz] = {};
         for (size_t n = 0; n < PayloadSz; n++) {
             data[n] = (uint8_t)n;
@@ -44,7 +46,7 @@ TEST_GROUP(fec_packet) {
         packet->set_payload(data, PayloadSz);
     }
 
-    void check_payload(const IFECPacketConstPtr& packet) {
+    void check_payload(const IPacketConstPtr& packet) {
         core::IByteBufferConstSlice buff = packet->payload();
         CHECK(buff);
         LONGS_EQUAL(PayloadSz, buff.size());
@@ -55,70 +57,70 @@ TEST_GROUP(fec_packet) {
 };
 
 TEST(fec_packet, compose_empty) {
-    IFECPacketPtr p = compose();
+    IPacketPtr p = compose();
 
-    LONGS_EQUAL(0, p->timestamp());
-    LONGS_EQUAL(0, p->rate());
+    LONGS_EQUAL(0, p->rtp()->timestamp());
+    LONGS_EQUAL(0, p->rtp()->rate());
 
-    LONGS_EQUAL(0, p->source());
-    LONGS_EQUAL(0, p->seqnum());
+    LONGS_EQUAL(0, p->rtp()->source());
+    LONGS_EQUAL(0, p->rtp()->seqnum());
 
-    CHECK(!p->marker());
+    CHECK(!p->rtp()->marker());
 
-    LONGS_EQUAL(0, p->data_blknum());
-    LONGS_EQUAL(0, p->fec_blknum());
+    LONGS_EQUAL(0, p->fec()->data_blknum());
+    LONGS_EQUAL(0, p->fec()->fec_blknum());
 
     p->set_payload(NULL, 0);
     CHECK(!p->payload());
 }
 
 TEST(fec_packet, compose_full) {
-    IFECPacketPtr p = compose();
+    IPacketPtr p = compose();
 
-    p->set_source(1122334455);
-    p->set_seqnum(12345);
-    p->set_marker(true);
+    p->rtp()->set_source(1122334455);
+    p->rtp()->set_seqnum(12345);
+    p->rtp()->set_marker(true);
 
-    p->set_data_blknum(54321);
-    p->set_fec_blknum(44444);
+    p->fec()->set_data_blknum(54321);
+    p->fec()->set_fec_blknum(44444);
 
-    LONGS_EQUAL(0, p->timestamp());
-    LONGS_EQUAL(0, p->rate());
+    LONGS_EQUAL(0, p->rtp()->timestamp());
+    LONGS_EQUAL(0, p->rtp()->rate());
 
-    LONGS_EQUAL(1122334455, p->source());
-    LONGS_EQUAL(12345, p->seqnum());
-    CHECK(p->marker());
+    LONGS_EQUAL(1122334455, p->rtp()->source());
+    LONGS_EQUAL(12345, p->rtp()->seqnum());
+    CHECK(p->rtp()->marker());
 
-    LONGS_EQUAL(54321, p->data_blknum());
-    LONGS_EQUAL(44444, p->fec_blknum());
+    LONGS_EQUAL(54321, p->fec()->data_blknum());
+    LONGS_EQUAL(44444, p->fec()->fec_blknum());
 
     set_payload(p);
     check_payload(p);
 }
 
 TEST(fec_packet, compose_parse) {
-    IFECPacketPtr p1 = compose();
+    IPacketPtr p1 = compose();
 
-    p1->set_source(1122334455);
-    p1->set_seqnum(12345);
-    p1->set_marker(true);
+    p1->rtp()->set_source(1122334455);
+    p1->rtp()->set_seqnum(12345);
+    p1->rtp()->set_marker(true);
 
-    p1->set_data_blknum(54321);
-    p1->set_fec_blknum(44444);
+    p1->fec()->set_data_blknum(54321);
+    p1->fec()->set_fec_blknum(44444);
 
     set_payload(p1);
 
-    IFECPacketConstPtr p2 = parse(p1->raw_data());
+    IPacketConstPtr p2 = parse(p1->raw_data());
 
-    LONGS_EQUAL(0, p2->timestamp());
-    LONGS_EQUAL(0, p2->rate());
+    LONGS_EQUAL(0, p2->rtp()->timestamp());
+    LONGS_EQUAL(0, p2->rtp()->rate());
 
-    LONGS_EQUAL(1122334455, p2->source());
-    LONGS_EQUAL(12345, p2->seqnum());
-    CHECK(p2->marker());
+    LONGS_EQUAL(1122334455, p2->rtp()->source());
+    LONGS_EQUAL(12345, p2->rtp()->seqnum());
+    CHECK(p2->rtp()->marker());
 
-    LONGS_EQUAL(54321, p2->data_blknum());
-    LONGS_EQUAL(44444, p2->fec_blknum());
+    LONGS_EQUAL(54321, p2->fec()->data_blknum());
+    LONGS_EQUAL(44444, p2->fec()->fec_blknum());
 
     check_payload(p2);
 }

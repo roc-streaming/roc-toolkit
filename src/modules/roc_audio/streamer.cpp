@@ -78,7 +78,7 @@ sample_t* Streamer::read_samples_(sample_t* buff_ptr, sample_t* buff_end) {
     update_packet_();
 
     if (packet_) {
-        timestamp_t next_timestamp = (packet_->timestamp() + packet_pos_);
+        timestamp_t next_timestamp = (packet_->rtp()->timestamp() + packet_pos_);
 
         if (timestamp_ != next_timestamp) {
             roc_panic_if_not(TS_IS_BEFORE(timestamp_, next_timestamp));
@@ -101,13 +101,13 @@ sample_t* Streamer::read_samples_(sample_t* buff_ptr, sample_t* buff_end) {
 }
 
 sample_t* Streamer::read_packet_samples_(sample_t* buff_ptr, sample_t* buff_end) {
-    const size_t pkt_samples = (size_t)(packet_->num_samples() - packet_pos_);
+    const size_t pkt_samples = (size_t)(packet_->audio()->num_samples() - packet_pos_);
     const size_t max_samples = (size_t)(buff_end - buff_ptr);
 
     const size_t num_samples = ROC_MIN(pkt_samples, max_samples);
 
-    const size_t ret =
-        packet_->read_samples((1 << channel_), packet_pos_, buff_ptr, num_samples);
+    const size_t ret = packet_->audio()->read_samples((1 << channel_), packet_pos_,
+                                                      buff_ptr, num_samples);
 
     if (ret != num_samples) {
         packet_->print(true);
@@ -122,7 +122,7 @@ sample_t* Streamer::read_packet_samples_(sample_t* buff_ptr, sample_t* buff_end)
     packet_pos_ += timestamp_t(num_samples);
     packet_samples_ += num_samples;
 
-    if (packet_pos_ == packet_->num_samples()) {
+    if (packet_pos_ == packet_->audio()->num_samples()) {
         packet_.reset();
     }
 
@@ -158,20 +158,20 @@ void Streamer::update_packet_() {
     unsigned n_dropped = 0;
 
     while ((packet_ = read_packet_())) {
-        pkt_timestamp = packet_->timestamp();
+        pkt_timestamp = packet_->rtp()->timestamp();
 
         if (first_packet_) {
             break;
         }
 
-        if (TS_IS_BEFORE(timestamp_, pkt_timestamp + packet_->num_samples())) {
+        if (TS_IS_BEFORE(timestamp_, pkt_timestamp + packet_->audio()->num_samples())) {
             break;
         }
 
         roc_log(LogDebug, "streamer: dropping late packet:"
                           " ch=%d ts=%lu pkt_ts=%lu pkt_ns=%lu",
                 (int)channel_, (unsigned long)timestamp_, (unsigned long)pkt_timestamp,
-                (unsigned long)packet_->num_samples());
+                (unsigned long)packet_->audio()->num_samples());
 
         n_dropped++;
     }
@@ -200,17 +200,21 @@ void Streamer::update_packet_() {
     }
 }
 
-packet::IAudioPacketConstPtr Streamer::read_packet_() {
+packet::IPacketConstPtr Streamer::read_packet_() {
     packet::IPacketConstPtr pp = reader_.read();
     if (!pp) {
         return NULL;
     }
 
-    if (pp->type() != packet::IAudioPacket::Type) {
-        roc_panic("streamer: got unexpected non-audio packet from reader");
+    if (!pp->rtp()) {
+        roc_panic("streamer: unexpected packet w/o RTP header");
     }
 
-    return static_cast<const packet::IAudioPacket*>(pp.get());
+    if (!pp->audio()) {
+        roc_panic("streamer: unexpected packet w/o audio payload");
+    }
+
+    return pp;
 }
 
 } // namespace audio

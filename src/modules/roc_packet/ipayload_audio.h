@@ -1,5 +1,4 @@
 /*
- * Copyright (c) 2015 Mikhail Baranov
  * Copyright (c) 2015 Victor Gaydov
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -7,22 +6,21 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_packet/iaudio_packet.h
-//! @brief Audio packet interface.
+//! @file roc_packet/ipayload_audio.h
+//! @brief Audio payload interface.
 
-#ifndef ROC_PACKET_IAUDIO_PACKET_H_
-#define ROC_PACKET_IAUDIO_PACKET_H_
+#ifndef ROC_PACKET_IPAYLOAD_AUDIO_H_
+#define ROC_PACKET_IPAYLOAD_AUDIO_H_
 
-#include "roc_packet/ipacket.h"
 #include "roc_packet/units.h"
 
 namespace roc {
 namespace packet {
 
-//! Audio packet interface.
-class IAudioPacket : public packet::IPacket {
+//! Audio payload interface.
+class IPayloadAudio {
 public:
-    virtual ~IAudioPacket();
+    virtual ~IPayloadAudio();
 
     //! Get bitmask of channels present in packet.
     virtual channel_mask_t channels() const = 0;
@@ -31,7 +29,7 @@ public:
     virtual size_t num_samples() const = 0;
 
     //! Set channel mask, number of samples per channel and sample rate.
-    virtual void set_size(channel_mask_t ch_mask, size_t n_samples, size_t rate) = 0;
+    virtual void configure(channel_mask_t ch_mask, size_t n_samples, size_t rate) = 0;
 
     //! Read samples from packet.
     //!
@@ -75,26 +73,9 @@ public:
                                size_t offset,
                                const sample_t* samples,
                                size_t n_samples) = 0;
-
-    //! Audio packet type.
-    static const PacketType Type;
-
-    //! Get packet type.
-    virtual PacketType type() const {
-        return Type;
-    }
-
-    //! Print packet to stdout.
-    virtual void print(bool body = false) const;
 };
-
-//! Audio packet smart pointer.
-typedef core::SharedPtr<IAudioPacket> IAudioPacketPtr;
-
-//! Const audio packet smart pointer.
-typedef core::SharedPtr<IAudioPacket const> IAudioPacketConstPtr;
 
 } // namespace packet
 } // namespace roc
 
-#endif // ROC_PACKET_IAUDIO_PACKET_H_
+#endif // ROC_PACKET_IPAYLOAD_AUDIO_H_

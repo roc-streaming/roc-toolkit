@@ -15,7 +15,7 @@
 
 #include "roc_core/noncopyable.h"
 #include "roc_core/ipool.h"
-#include "roc_packet/iaudio_packet.h"
+#include "roc_packet/ipacket.h"
 #include "roc_rtp/rtp_packet.h"
 #include "roc_rtp/rtp_audio_format.h"
 
@@ -23,64 +23,82 @@ namespace roc {
 namespace rtp {
 
 //! RTP audio packet.
-class AudioPacket : public packet::IAudioPacket, public core::NonCopyable<> {
+class AudioPacket : public core::NonCopyable<>,
+                    public packet::IPacket,
+                    private packet::IHeaderOrdering,
+                    private packet::IHeaderRTP,
+                    private packet::IPayloadAudio {
 public:
     //! Initialize.
     AudioPacket(core::IPool<AudioPacket>&, const RTP_Packet&, const RTP_AudioFormat*);
 
-    //! Get packet source ID.
-    virtual packet::source_t source() const;
+    //! Get packet options.
+    virtual int options() const;
 
-    //! Set packet source ID.
+    //! Get ordering header.
+    virtual const packet::IHeaderOrdering* order() const;
+
+    //! Get RTP header.
+    virtual const packet::IHeaderRTP* rtp() const;
+
+    //! Get RTP header.
+    virtual packet::IHeaderRTP* rtp();
+
+    //! Get FECFRAME header.
+    virtual const packet::IHeaderFECFrame* fec() const;
+
+    //! Get FECFRAME header.
+    virtual packet::IHeaderFECFrame* fec();
+
+    //! Get audio payload.
+    virtual const packet::IPayloadAudio* audio() const;
+
+    //! Get audio payload.
+    virtual packet::IPayloadAudio* audio();
+
+    //! Get packet data buffer (containing header and payload).
+    virtual core::IByteBufferConstSlice raw_data() const;
+
+    //! Get payload.
+    virtual core::IByteBufferConstSlice payload() const;
+
+    //! Set payload data and size.
+    virtual void set_payload(const uint8_t* data, size_t size);
+
+private:
+    virtual void free();
+
+    virtual bool is_same_flow(const packet::IPacket& other) const;
+    virtual bool is_before(const packet::IPacket& other) const;
+
+    virtual packet::source_t source() const;
     virtual void set_source(packet::source_t);
 
-    //! Get packet sequence number.
     virtual packet::seqnum_t seqnum() const;
-
-    //! Set packet sequence number.
     virtual void set_seqnum(packet::seqnum_t);
 
-    //! Get packet timestamp.
     virtual packet::timestamp_t timestamp() const;
-
-    //! Set packet timestamp.
     virtual void set_timestamp(packet::timestamp_t);
 
-    //! Get packet rate.
     virtual size_t rate() const;
 
-    //! Get packet marker bit.
     virtual bool marker() const;
-
-    //! Set packet marker bit.
     virtual void set_marker(bool);
 
-    //! Get bitmask of channels present in packet.
     virtual packet::channel_mask_t channels() const;
-
-    //! Get number of samples in packet.
     virtual size_t num_samples() const;
 
-    //! Set channel mask, number of samples per channel and sample rate.
-    virtual void set_size(packet::channel_mask_t ch_mask, size_t n_samples, size_t rate);
+    virtual void configure(packet::channel_mask_t ch_mask, size_t n_samples, size_t rate);
 
-    //! Read samples from packet.
     virtual size_t read_samples(packet::channel_mask_t ch_mask,
                                 size_t offset,
                                 packet::sample_t* samples,
                                 size_t n_samples) const;
 
-    //! Write samples to packet.
     virtual void write_samples(packet::channel_mask_t ch_mask,
                                size_t offset,
                                const packet::sample_t* samples,
                                size_t n_samples);
-
-    //! Get packet data buffer (containing header and payload).
-    virtual core::IByteBufferConstSlice raw_data() const;
-
-private:
-    virtual void free();
 
     RTP_Packet packet_;
     const RTP_AudioFormat* format_;
