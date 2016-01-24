@@ -22,7 +22,7 @@ using namespace audio;
 
 namespace {
 
-enum { FrameSize = ROC_CONFIG_DEFAULT_RESAMPLER_FRAME_SAMPLES * 2-1 };
+enum { FrameSize = ROC_CONFIG_DEFAULT_RESAMPLER_FRAME_SAMPLES * 2 - 1 };
 
 enum { OutSamples = FrameSize * 100 + 1, InSamples = OutSamples + (FrameSize * 3) };
 
