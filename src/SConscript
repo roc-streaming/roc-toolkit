@@ -149,7 +149,7 @@ if not GetOption('disable_tests'):
             depends += BUILD_DEPS['tests'][name]
 
         libs = []
-        for lib in reversed(map(str, depends) + [name]):
+        for lib in [name] + list(reversed(map(str, depends))) + [name]:
             if lib in LIBS:
                 libs.append(lib)
         libs += env['TEST_LIBS'] + env['LIBS']
