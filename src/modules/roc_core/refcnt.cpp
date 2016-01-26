@@ -18,14 +18,19 @@ namespace {
 class LeakDetector {
 public:
     LeakDetector()
-        : counter_(0) {
+        : counter_(0)
+        , enabled_(0) {
     }
 
     ~LeakDetector() {
-        if (counter_ != 0) {
+        if (enabled_ && counter_ != 0) {
             roc_panic("reference countable objects leak detected: n_leaked_objects=%d",
                       (int)counter_);
         }
+    }
+
+    void enable() {
+        enabled_ = true;
     }
 
     void incref() {
@@ -39,11 +44,16 @@ public:
 
 private:
     Atomic counter_;
+    Atomic enabled_;
 };
 
 LeakDetector g_leak_detector;
 
 } // namespace
+
+void RefCnt::enable_leak_detection() {
+    g_leak_detector.enable();
+}
 
 RefCnt::RefCnt()
     : counter_(0) {

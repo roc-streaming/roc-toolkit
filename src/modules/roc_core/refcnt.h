@@ -25,6 +25,12 @@ class RefCnt : public NonCopyable<RefCnt> {
 public:
     RefCnt();
 
+    //! Enable memory leak detection.
+    //! @remarks
+    //!  When enabled, a global object's destructor will abort() if there
+    //!  are RefCnt objects not destroyed yet.
+    static void enable_leak_detection();
+
     //! Get reference counter.
     long getref() const {
         return counter_;
