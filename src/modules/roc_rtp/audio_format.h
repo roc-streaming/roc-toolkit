@@ -7,21 +7,21 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_rtp/rtp_audio_format.h
+//! @file roc_rtp/audio_format.h
 //! @brief RTP audio format.
 
-#ifndef ROC_RTP_RTP_AUDIO_FORMAT_H_
-#define ROC_RTP_RTP_AUDIO_FORMAT_H_
+#ifndef ROC_RTP_AUDIO_FORMAT_H_
+#define ROC_RTP_AUDIO_FORMAT_H_
 
 #include "roc_core/stddefs.h"
 #include "roc_packet/units.h"
-#include "roc_rtp/rtp_header.h"
+#include "roc_rtp/headers.h"
 
 namespace roc {
 namespace rtp {
 
 //! RTP audio format.
-struct RTP_AudioFormat {
+struct AudioFormat {
     //! Payload type.
     RTP_PayloadType pt;
 
@@ -56,12 +56,12 @@ struct RTP_AudioFormat {
 };
 
 //! Get audio format from payload type.
-const RTP_AudioFormat* get_audio_format_pt(uint8_t pt);
+const AudioFormat* get_audio_format_pt(uint8_t pt);
 
 //! Get audio format from channel mask and sample rate.
-const RTP_AudioFormat* get_audio_format_cr(packet::channel_mask_t ch, size_t rate);
+const AudioFormat* get_audio_format_cr(packet::channel_mask_t ch, size_t rate);
 
 } // namespace rtp
 } // namespace roc
 
-#endif // ROC_RTP_RTP_AUDIO_FORMAT_H_
+#endif // ROC_RTP_AUDIO_FORMAT_H_

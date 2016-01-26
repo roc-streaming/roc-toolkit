@@ -7,11 +7,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_rtp/rtp_header.h
+//! @file roc_rtp/headers.h
 //! @brief RTP header.
 
-#ifndef ROC_RTP_RTP_HEADER_H_
-#define ROC_RTP_RTP_HEADER_H_
+#ifndef ROC_RTP_HEADERS_H_
+#define ROC_RTP_HEADERS_H_
 
 #include "roc_core/attributes.h"
 #include "roc_core/stddefs.h"
@@ -250,4 +250,4 @@ public:
 } // namespace rtp
 } // namespace roc
 
-#endif // ROC_RTP_RTP_HEADER_H_
+#endif // ROC_RTP_HEADERS_H_

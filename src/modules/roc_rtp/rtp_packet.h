@@ -16,7 +16,7 @@
 #include "roc_core/stddefs.h"
 #include "roc_core/byte_buffer.h"
 #include "roc_packet/units.h"
-#include "roc_rtp/rtp_header.h"
+#include "roc_rtp/headers.h"
 
 namespace roc {
 namespace rtp {

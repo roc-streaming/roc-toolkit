@@ -9,7 +9,7 @@
 
 #include "roc_core/log.h"
 #include "roc_rtp/parser.h"
-#include "roc_rtp/rtp_audio_format.h"
+#include "roc_rtp/audio_format.h"
 
 namespace roc {
 namespace rtp {
@@ -29,7 +29,7 @@ packet::IPacketConstPtr Parser::parse(const core::IByteBufferConstSlice& buffer)
 
     const uint8_t pt = rtp_packet.header().payload_type();
 
-    if (const RTP_AudioFormat* format = get_audio_format_pt(pt)) {
+    if (const AudioFormat* format = get_audio_format_pt(pt)) {
         return new (audio_pool_) AudioPacket(audio_pool_, rtp_packet, format);
     }
 

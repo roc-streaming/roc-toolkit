@@ -19,7 +19,7 @@ namespace rtp {
 
 AudioPacket::AudioPacket(core::IPool<AudioPacket>& pool,
                          const RTP_Packet& packet,
-                         const RTP_AudioFormat* format)
+                         const AudioFormat* format)
     : packet_(packet)
     , format_(format)
     , pool_(pool) {
@@ -136,7 +136,7 @@ void AudioPacket::set_marker(bool m) {
 void AudioPacket::configure(packet::channel_mask_t ch_mask,
                             size_t n_samples,
                             size_t sample_rate) {
-    if (const RTP_AudioFormat* format = get_audio_format_cr(ch_mask, sample_rate)) {
+    if (const AudioFormat* format = get_audio_format_cr(ch_mask, sample_rate)) {
         format_ = format;
     } else {
         roc_panic("rtp audio packet: no supported format for channel mask 0x%xu",

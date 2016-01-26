@@ -17,7 +17,7 @@
 #include "roc_core/ipool.h"
 #include "roc_packet/ipacket.h"
 #include "roc_rtp/rtp_packet.h"
-#include "roc_rtp/rtp_audio_format.h"
+#include "roc_rtp/audio_format.h"
 
 namespace roc {
 namespace rtp {
@@ -30,7 +30,7 @@ class AudioPacket : public core::NonCopyable<>,
                     private packet::IPayloadAudio {
 public:
     //! Initialize.
-    AudioPacket(core::IPool<AudioPacket>&, const RTP_Packet&, const RTP_AudioFormat*);
+    AudioPacket(core::IPool<AudioPacket>&, const RTP_Packet&, const AudioFormat*);
 
     //! Get packet options.
     virtual int options() const;
@@ -101,7 +101,7 @@ private:
                                size_t n_samples);
 
     RTP_Packet packet_;
-    const RTP_AudioFormat* format_;
+    const AudioFormat* format_;
     core::IPool<AudioPacket>& pool_;
 };
 
