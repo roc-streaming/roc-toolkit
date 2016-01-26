@@ -84,9 +84,6 @@ TEST(fec_packet, compose_full) {
     p->fec()->set_data_blknum(54321);
     p->fec()->set_fec_blknum(44444);
 
-    LONGS_EQUAL(0, p->rtp()->timestamp());
-    LONGS_EQUAL(0, p->rtp()->rate());
-
     LONGS_EQUAL(1122334455, p->rtp()->source());
     LONGS_EQUAL(12345, p->rtp()->seqnum());
     CHECK(p->rtp()->marker());
@@ -111,9 +108,6 @@ TEST(fec_packet, compose_parse) {
     set_payload(p1);
 
     IPacketConstPtr p2 = parse(p1->raw_data());
-
-    LONGS_EQUAL(0, p2->rtp()->timestamp());
-    LONGS_EQUAL(0, p2->rtp()->rate());
 
     LONGS_EQUAL(1122334455, p2->rtp()->source());
     LONGS_EQUAL(12345, p2->rtp()->seqnum());

@@ -7,18 +7,20 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+#include "roc_core/shared_ptr.h"
 #include "roc_core/log.h"
-#include "roc_rtp/rtp_packet.h"
+
 #include "roc_rtp/composer.h"
+#include "roc_rtp/packet.h"
 
 namespace roc {
 namespace rtp {
 
 Composer::Composer(core::IPool<AudioPacket>& audio_pool,
-                   core::IPool<FECPacket>& fec_pool,
+                   core::IPool<ContainerPacket>& container_pool,
                    core::IByteBufferComposer& buffer_composer)
     : audio_pool_(audio_pool)
-    , fec_pool_(fec_pool)
+    , container_pool_(container_pool)
     , buffer_composer_(buffer_composer) {
 }
 
@@ -29,20 +31,27 @@ packet::IPacketPtr Composer::compose(int options) {
         return NULL;
     }
 
-    RTP_Packet rtp_packet;
-    rtp_packet.compose(buffer);
+    core::SharedPtr<Packet> packet;
 
     if (options & packet::IPacket::HasAudio) {
-        return new (audio_pool_) AudioPacket(audio_pool_, rtp_packet, NULL);
+        packet = new (audio_pool_) AudioPacket(audio_pool_, NULL);
     }
 
-    if (options & packet::IPacket::HasFEC) {
-        rtp_packet.header().set_payload_type(123); // FIXME
-        return new (fec_pool_) FECPacket(fec_pool_, rtp_packet);
+    if (options & packet::IPacket::HasFEC) { // FIXME
+        packet = new (container_pool_) ContainerPacket(container_pool_);
     }
 
-    roc_log(LogError, "rtp composer: bad packet options");
-    return NULL;
+        roc_panic("rtp composer: bad options");
+    }
+
+    packet->compose(buffer);
+
+    // FIXME
+    if (packet->fec()) {
+        packet->header().set_payload_type(123);
+    }
+
+    return packet;
 }
 
 } // namespace rtp

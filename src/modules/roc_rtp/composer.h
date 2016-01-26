@@ -19,7 +19,7 @@
 #include "roc_datagram/default_buffer_composer.h"
 #include "roc_packet/ipacket_composer.h"
 #include "roc_rtp/audio_packet.h"
-#include "roc_rtp/fec_packet.h"
+#include "roc_rtp/container_packet.h"
 
 namespace roc {
 namespace rtp {
@@ -30,7 +30,8 @@ public:
     //! Initialize.
     Composer(
         core::IPool<AudioPacket>& audio_pool = core::HeapPool<AudioPacket>::instance(),
-        core::IPool<FECPacket>& fec_pool = core::HeapPool<FECPacket>::instance(),
+        core::IPool<ContainerPacket>& container_pool =
+            core::HeapPool<ContainerPacket>::instance(),
         core::IByteBufferComposer& buffer_composer = datagram::default_buffer_composer());
 
     //! Compose packet.
@@ -38,7 +39,7 @@ public:
 
 private:
     core::IPool<AudioPacket>& audio_pool_;
-    core::IPool<FECPacket>& fec_pool_;
+    core::IPool<ContainerPacket>& container_pool_; // FIXME
 
     core::IByteBufferComposer& buffer_composer_;
 };

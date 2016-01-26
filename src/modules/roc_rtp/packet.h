@@ -7,29 +7,44 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_rtp/fec_packet.h
-//! @brief RTP FEC packet.
+//! @file roc_rtp/packet.h
+//! @brief RTP packet base class.
 
-#ifndef ROC_RTP_FEC_PACKET_H_
-#define ROC_RTP_FEC_PACKET_H_
+#ifndef ROC_RTP_PACKET_H_
+#define ROC_RTP_PACKET_H_
 
-#include "roc_core/noncopyable.h"
+#include "roc_core/stddefs.h"
+#include "roc_core/byte_buffer.h"
 #include "roc_core/ipool.h"
+
 #include "roc_packet/ipacket.h"
-#include "roc_rtp/rtp_packet.h"
+
+#include "roc_rtp/headers.h"
+#include "roc_rtp/audio_format.h"
 
 namespace roc {
 namespace rtp {
 
-//! RTP FEC packet.
-class FECPacket : public core::NonCopyable<>,
-                  public packet::IPacket,
-                  private packet::IHeaderOrdering,
-                  private packet::IHeaderRTP,
-                  private packet::IHeaderFECFrame {
+//! RTP packet base class.
+class Packet : public core::NonCopyable<>,
+               public packet::IPacket,
+               private packet::IHeaderOrdering,
+               private packet::IHeaderRTP {
 public:
-    //! Initialize.
-    FECPacket(core::IPool<FECPacket>&, const RTP_Packet&);
+    //! Initialize empty packet.
+    Packet();
+
+    //! Compose empty packet.
+    //! @remarks
+    //!  Attaches @p buffer to this packet.
+    void compose(const core::IByteBufferPtr& buffer);
+
+    //! Parse packet.
+    //! @remarks
+    //!  Attaches @p buffer to this packet.
+    void parse(const core::IByteBufferConstSlice& buffer,
+               size_t payload_off,
+               size_t payload_size);
 
     //! Get packet options.
     virtual int options() const;
@@ -64,9 +79,22 @@ public:
     //! Set payload data and size.
     virtual void set_payload(const uint8_t* data, size_t size);
 
-private:
-    virtual void free();
+    //! Get payload data.
+    virtual uint8_t* get_payload();
 
+    //! Set payload size.
+    void resize_payload(size_t size);
+
+    //! Get RTP header.
+    const RTP_Header& header() const;
+
+    //! Get RTP header.
+    RTP_Header& header();
+
+    //! Get RTP extension header.
+    const RTP_ExtentionHeader* extension() const;
+
+private:
     virtual bool is_same_flow(const packet::IPacket& other) const;
     virtual bool is_before(const packet::IPacket& other) const;
 
@@ -84,17 +112,15 @@ private:
     virtual bool marker() const;
     virtual void set_marker(bool);
 
-    virtual packet::seqnum_t data_blknum() const;
-    virtual void set_data_blknum(packet::seqnum_t);
+    core::IByteBuffer& mut_buffer_();
 
-    virtual packet::seqnum_t fec_blknum() const;
-    virtual void set_fec_blknum(packet::seqnum_t);
+    size_t payload_off_;
+    size_t payload_size_;
 
-    RTP_Packet packet_;
-    core::IPool<FECPacket>& pool_;
+    core::IByteBufferConstSlice buffer_;
 };
 
 } // namespace rtp
 } // namespace roc
 
-#endif // ROC_RTP_FEC_PACKET_H_
+#endif // ROC_RTP_PACKET_H_
