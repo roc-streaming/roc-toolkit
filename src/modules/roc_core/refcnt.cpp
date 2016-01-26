@@ -23,7 +23,7 @@ public:
 
     ~LeakDetector() {
         if (counter_ != 0) {
-            roc_panic("reference countable objects leak detected (leaked = %d)",
+            roc_panic("reference countable objects leak detected: n_leaked_objects=%d",
                       (int)counter_);
         }
     }
