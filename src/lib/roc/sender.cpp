@@ -15,8 +15,7 @@
 #include "roc_datagram/address_to_str.h"
 #include "roc_datagram/datagram_queue.h"
 #include "roc_audio/sample_buffer_queue.h"
-#include "roc_pipeline/client.h"
-#include "roc_rtp/composer.h"
+#include "roc_pipeline/sender.h"
 #include "roc_netio/transceiver.h"
 #include "roc_netio/inet_address.h"
 
@@ -24,7 +23,7 @@ using namespace roc;
 
 namespace {
 
-bool make_client_config(pipeline::ClientConfig& cc, const roc_config* sc) {
+bool make_client_config(pipeline::SenderConfig& cc, const roc_config* sc) {
     cc = pipeline::ClientConfig(pipeline::EnableInterleaving);
 
     if (sc->options & ROC_API_CONF_DISABLE_FEC) {
@@ -46,13 +45,12 @@ bool make_client_config(pipeline::ClientConfig& cc, const roc_config* sc) {
 } // anonymous
 
 struct roc_sender {
-    roc_sender(const pipeline::ClientConfig& config)
+    roc_sender(const pipeline::SenderConfig& config)
         : buffer_pos_(0)
         , n_bufs_(0)
         , client_(sample_queue_,
                   trx_.udp_sender(),
                   trx_.udp_composer(),
-                  rtp_composer_,
                   config) {
     }
 
@@ -79,8 +77,8 @@ struct roc_sender {
             return false;
         }
 
-        client_.set_sender(src_addr);
-        client_.set_receiver(dst_addr);
+        client_.set_audio_port(src_addr, dst_addr, pipeline::Proto_RTP);
+        client_.set_repair_port(src_addr, dst_addr, pipeline::Proto_RTP);
 
         trx_.start();
         client_.start();
@@ -107,7 +105,7 @@ private:
         audio::ISampleBufferComposer& composer = audio::default_buffer_composer();
 
         const size_t num_ch = 2;
-        const size_t buffer_size = ROC_CONFIG_DEFAULT_SERVER_TICK_SAMPLES * num_ch;
+        const size_t buffer_size = ROC_CONFIG_DEFAULT_RECEIVER_TICK_SAMPLES * num_ch;
 
         if (!buffer_) {
             if (!(buffer_ = composer.compose())) {
@@ -141,18 +139,17 @@ private:
     }
 
     audio::SampleBufferQueue sample_queue_;
-    rtp::Composer rtp_composer_;
 
     audio::ISampleBufferPtr buffer_;
     size_t buffer_pos_;
     size_t n_bufs_;
 
     netio::Transceiver trx_;
-    pipeline::Client client_;
+    pipeline::Sender client_;
 };
 
 roc_sender* roc_sender_new(const roc_config* config) {
-    pipeline::ClientConfig cc;
+    pipeline::SenderConfig cc;
 
     if (!make_client_config(cc, config)) {
         return NULL;

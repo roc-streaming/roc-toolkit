@@ -22,6 +22,7 @@
 #include "roc_datagram/idatagram_reader.h"
 
 #include "roc_packet/ipacket_parser.h"
+#include "roc_rtp/parser.h"
 
 #include "roc_audio/isample_buffer_writer.h"
 #include "roc_audio/isink.h"
@@ -98,10 +99,10 @@ public:
 
     //! Register port.
     //! @remarks
-    //!  When datagram received with destination @p address, session will
-    //!  use @p parser to create packet from datagram. If no port registered
-    //!  for address, datagrams to that address will be dropped.
-    void add_port(const datagram::Address& address, packet::IPacketParser& parser);
+    //!  When datagram received with destination @p address, session will use
+    //!  @p proto protocol parser to create packet from datagram. If no port
+    //!  registered for address, datagrams to that address will be dropped.
+    void add_port(const datagram::Address& address, Protocol proto);
 
     //! Process input datagrams.
     //! @remarks
@@ -129,6 +130,8 @@ private:
 
     datagram::IDatagramReader& datagram_reader_;
     audio::ISampleBufferWriter* audio_writer_;
+
+    rtp::Parser rtp_parser_;
 
     SessionManager session_manager_;
 };

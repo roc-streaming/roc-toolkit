@@ -12,7 +12,6 @@
 #include "roc_datagram/datagram_queue.h"
 #include "roc_audio/sample_buffer_queue.h"
 #include "roc_pipeline/sender.h"
-#include "roc_rtp/composer.h"
 #include "roc_sndio/reader.h"
 #include "roc_netio/transceiver.h"
 #include "roc_netio/inet_address.h"
@@ -130,7 +129,6 @@ int main(int argc, char** argv) {
     }
 
     audio::SampleBufferQueue sample_queue;
-    rtp::Composer rtp_composer;
 
     sndio::Reader reader(sample_queue, audio::default_buffer_composer(), config.channels,
                          config.samples_per_packet / 2, config.sample_rate);
@@ -148,11 +146,10 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    pipeline::Sender sender(sample_queue, trx.udp_sender(), trx.udp_composer(),
-                            rtp_composer, config);
+    pipeline::Sender sender(sample_queue, trx.udp_sender(), trx.udp_composer(), config);
 
-    sender.set_sender(src_addr);
-    sender.set_receiver(dst_addr);
+    sender.set_audio_port(src_addr, dst_addr, pipeline::Proto_RTP);
+    sender.set_repair_port(src_addr, dst_addr, pipeline::Proto_RTP); // FIXME
 
     trx.start();
 
