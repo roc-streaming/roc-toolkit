@@ -13,7 +13,10 @@
 #ifndef ROC_PACKET_PACKET_SENDER_H_
 #define ROC_PACKET_PACKET_SENDER_H_
 
+#include "roc_config/config.h"
+
 #include "roc_core/noncopyable.h"
+#include "roc_core/array.h"
 
 #include "roc_packet/ipacket.h"
 #include "roc_packet/ipacket_writer.h"
@@ -38,11 +41,13 @@ public:
     PacketSender(datagram::IDatagramWriter& writer,
                  datagram::IDatagramComposer& composer);
 
-    //! Set sender address for constructed datagrams.
-    void set_sender(const datagram::Address&);
-
-    //! Set receiver address for constructed datagrams.
-    void set_receiver(const datagram::Address&);
+    //! Add port.
+    //! @remarks
+    //!  Sets datagram @p source and @p destination addresses for packet
+    //!  matching given packet @p options.
+    void add_port(const datagram::Address& source,
+                  const datagram::Address& destination,
+                  int options);
 
     //! Add packet.
     //! @remarks
@@ -50,11 +55,24 @@ public:
     virtual void write(const IPacketPtr&);
 
 private:
+    enum { MaxPorts = ROC_CONFIG_MAX_PORTS };
+
+    struct Port {
+        datagram::Address send_addr;
+        datagram::Address recv_addr;
+        int options;
+
+        Port()
+            : options(0) {
+        }
+    };
+
+    const Port* find_port_(int options) const;
+
     datagram::IDatagramWriter& writer_;
     datagram::IDatagramComposer& composer_;
 
-    datagram::Address sender_;
-    datagram::Address receiver_;
+    core::Array<Port, MaxPorts> ports_;
 };
 
 } // namespace packet
