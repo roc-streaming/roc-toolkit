@@ -56,7 +56,7 @@
 #define ROC_CONFIG_DEFAULT_PACKET_SAMPLES 320
 
 //! Number of audio samples per rendering tick (per channel).
-#define ROC_CONFIG_DEFAULT_SERVER_TICK_SAMPLES 256
+#define ROC_CONFIG_DEFAULT_RECEIVER_TICK_SAMPLES 256
 
 //! Number of audio sampler per resampler frame.
 //! @remarks
@@ -66,7 +66,8 @@
 #define ROC_CONFIG_DEFAULT_RESAMPLER_FRAME_SAMPLES 96
 
 //! Session timeout (number of samples per channel).
-#define ROC_CONFIG_DEFAULT_SESSION_TIMEOUT (ROC_CONFIG_DEFAULT_SERVER_TICK_SAMPLES * 100)
+#define ROC_CONFIG_DEFAULT_SESSION_TIMEOUT                                               \
+    (ROC_CONFIG_DEFAULT_RECEIVER_TICK_SAMPLES * 100)
 
 //! Latency audio renderer (samples per channel).
 #define ROC_CONFIG_DEFAULT_SESSION_LATENCY (ROC_CONFIG_DEFAULT_PACKET_SAMPLES * 27)

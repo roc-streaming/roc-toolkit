@@ -49,17 +49,17 @@
 namespace roc {
 namespace pipeline {
 
-struct ServerConfig;
+struct ReceiverConfig;
 
 //! Session pipeline.
 //! @remarks
-//!  Session object is created for every client connected to server.
+//!  Session object is created in receiver for for every connected sender.
 //!
-//! @see Server.
+//! @see Receiver.
 class Session : public core::RefCnt, public core::ListNode {
 public:
     //! Create session.
-    Session(const ServerConfig& config,
+    Session(const ReceiverConfig& config,
             const datagram::Address& send_addr,
             const datagram::Address& recv_addr,
             packet::IPacketParser& parser);
@@ -100,7 +100,7 @@ private:
     packet::IPacketReader* make_packet_reader_();
     packet::IPacketReader* make_fec_decoder_(packet::IPacketReader*);
 
-    const ServerConfig& config_;
+    const ReceiverConfig& config_;
     const datagram::Address send_addr_;
     const datagram::Address recv_addr_;
     packet::IPacketParser& packet_parser_;

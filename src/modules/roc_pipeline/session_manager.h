@@ -33,7 +33,7 @@ namespace pipeline {
 class SessionManager : public core::NonCopyable<> {
 public:
     //! Initialize session manager.
-    SessionManager(const ServerConfig& config, audio::ISink& sink);
+    SessionManager(const ReceiverConfig& config, audio::ISink& sink);
 
     ~SessionManager();
 
@@ -48,7 +48,7 @@ public:
     bool route(const datagram::IDatagram&);
 
     //! Update sessions.
-    //! @returns false if server should be terminated.
+    //! @returns false if receiver should be terminated.
     bool update();
 
 private:
@@ -74,7 +74,7 @@ private:
 
     const Port* find_port_(const datagram::Address&);
 
-    const ServerConfig config_;
+    const ReceiverConfig config_;
     audio::ISink& audio_sink_;
 
     core::Array<Port, MaxPorts> ports_;

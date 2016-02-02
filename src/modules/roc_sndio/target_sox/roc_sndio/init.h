@@ -43,7 +43,7 @@ enum {
 //!  It's not allowed to call sox_init() twice without paired sox_quit().
 void init(int options = InitOnce | InitSox | InitBufsz | InitLog, //
           size_t bufsz = ROC_CONFIG_MAX_CHANNELS
-              * ROC_CONFIG_DEFAULT_SERVER_TICK_SAMPLES);
+              * ROC_CONFIG_DEFAULT_RECEIVER_TICK_SAMPLES);
 
 } // namespace sndio
 } // namespace roc

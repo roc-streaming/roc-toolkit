@@ -43,7 +43,7 @@ public:
     Reader(audio::ISampleBufferWriter& output,
            audio::ISampleBufferComposer& composer = audio::default_buffer_composer(),
            packet::channel_mask_t channels = ROC_CONFIG_DEFAULT_CHANNEL_MASK,
-           size_t n_samples = ROC_CONFIG_DEFAULT_SERVER_TICK_SAMPLES,
+           size_t n_samples = ROC_CONFIG_DEFAULT_RECEIVER_TICK_SAMPLES,
            size_t sample_rate = ROC_CONFIG_DEFAULT_SAMPLE_RATE);
 
     ~Reader();
