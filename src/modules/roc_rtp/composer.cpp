@@ -41,6 +41,7 @@ packet::IPacketPtr Composer::compose(int options) {
         packet = new (container_pool_) ContainerPacket(container_pool_);
     }
 
+    if (!packet) {
         roc_panic("rtp composer: bad options");
     }
 

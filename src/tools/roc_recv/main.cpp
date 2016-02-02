@@ -12,7 +12,6 @@
 #include "roc_datagram/datagram_queue.h"
 #include "roc_audio/sample_buffer_queue.h"
 #include "roc_pipeline/receiver.h"
-#include "roc_rtp/parser.h"
 #include "roc_sndio/writer.h"
 #include "roc_netio/transceiver.h"
 #include "roc_netio/inet_address.h"
@@ -144,7 +143,6 @@ int main(int argc, char** argv) {
 
     datagram::DatagramQueue dgm_queue;
     audio::SampleBufferQueue sample_queue;
-    rtp::Parser rtp_parser;
 
     netio::Transceiver trx;
     if (!trx.add_udp_receiver(addr, dgm_queue)) {
@@ -154,7 +152,7 @@ int main(int argc, char** argv) {
     }
 
     pipeline::Receiver receiver(dgm_queue, sample_queue, config);
-    receiver.add_port(addr, rtp_parser);
+    receiver.add_port(addr, pipeline::Proto_RTP);
 
     sndio::Writer writer(sample_queue, config.channels, config.sample_rate);
     if (!writer.open(args.output_arg, args.type_arg)) {

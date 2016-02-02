@@ -10,7 +10,6 @@
 #include <CppUTest/TestHarness.h>
 
 #include "roc_core/scoped_ptr.h"
-#include "roc_rtp/composer.h"
 #include "roc_datagram/datagram_queue.h"
 #include "roc_pipeline/sender.h"
 
@@ -40,8 +39,6 @@ TEST_GROUP(sender) {
 
     datagram::DatagramQueue output;
 
-    rtp::Composer packet_composer;
-
     TestDatagramComposer datagram_composer;
 
     SenderConfig config;
@@ -52,11 +49,10 @@ TEST_GROUP(sender) {
         config.channels = ChannelMask;
         config.samples_per_packet = PktSamples;
 
-        sender.reset(
-            new Sender(input, output, datagram_composer, packet_composer, config));
+        sender.reset(new Sender(input, output, datagram_composer, config));
 
-        sender->set_sender(new_address(PacketStream::SrcPort));
-        sender->set_receiver(new_address(PacketStream::DstPort));
+        sender->set_audio_port(new_address(PacketStream::SrcPort),
+                               new_address(PacketStream::DstPort), Proto_RTP);
     }
 
     void teardown() {

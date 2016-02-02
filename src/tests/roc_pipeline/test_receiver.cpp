@@ -11,7 +11,6 @@
 
 #include "roc_config/config.h"
 #include "roc_core/scoped_ptr.h"
-#include "roc_rtp/parser.h"
 #include "roc_datagram/datagram_queue.h"
 #include "roc_pipeline/receiver.h"
 
@@ -54,8 +53,6 @@ TEST_GROUP(receiver) {
 
     datagram::DatagramQueue input;
 
-    rtp::Parser parser;
-
     core::ScopedPtr<Receiver> receiver;
 
     void setup() {
@@ -76,7 +73,7 @@ TEST_GROUP(receiver) {
     }
 
     void add_port(datagram::port_t port) {
-        receiver->add_port(new_address(port), parser);
+        receiver->add_port(new_address(port), Proto_RTP);
     }
 
     void render(size_t n_samples) {
