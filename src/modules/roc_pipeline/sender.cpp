@@ -44,11 +44,9 @@ void Sender::set_audio_port(const datagram::Address& source,
         roc_panic("receiver: bad protocol number %d for audio port", (int)proto);
     }
 
-    // TODO: fec_source_composer_
+    // TODO: also set fec_source_composer_
 
-    // TODO: add multiple ports support to PacketSender
-    packet_sender_.set_sender(source);
-    packet_sender_.set_receiver(destination);
+    packet_sender_.add_port(source, destination, packet::IPacket::HasAudio);
 }
 
 void Sender::set_repair_port(const datagram::Address& source,
@@ -64,9 +62,8 @@ void Sender::set_repair_port(const datagram::Address& source,
         roc_panic("receiver: bad protocol number %d for repair port", (int)proto);
     }
 
-    // TODO: add multiple ports support to PacketSender
-    packet_sender_.set_sender(source);
-    packet_sender_.set_receiver(destination);
+    // FIXME: only repair packets
+    packet_sender_.add_port(source, destination, packet::IPacket::HasFEC);
 }
 
 void Sender::run() {

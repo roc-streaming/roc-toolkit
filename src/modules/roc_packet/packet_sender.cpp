@@ -21,14 +21,6 @@ PacketSender::PacketSender(datagram::IDatagramWriter& writer,
     , composer_(composer) {
 }
 
-void PacketSender::set_sender(const datagram::Address& address) {
-    sender_ = address;
-}
-
-void PacketSender::set_receiver(const datagram::Address& address) {
-    receiver_ = address;
-}
-
 void PacketSender::write(const IPacketPtr& packet) {
     if (!packet) {
         roc_panic("packet sender: packet is null");
@@ -40,11 +32,37 @@ void PacketSender::write(const IPacketPtr& packet) {
         return;
     }
 
+    const Port* port = find_port_(packet->options());
+    if (!port) {
+        roc_panic("packet sender: no port found for packet: options=%x",
+                  (unsigned)packet->options());
+    }
+
     dgm->set_buffer(packet->raw_data());
-    dgm->set_sender(sender_);
-    dgm->set_receiver(receiver_);
+    dgm->set_sender(port->send_addr);
+    dgm->set_receiver(port->recv_addr);
 
     writer_.write(dgm);
+}
+
+void PacketSender::add_port(const datagram::Address& source,
+                            const datagram::Address& destination,
+                            int options) {
+    Port port;
+    port.send_addr = source;
+    port.recv_addr = destination;
+    port.options = options;
+
+    ports_.append(port);
+}
+
+const PacketSender::Port* PacketSender::find_port_(int options) const {
+    for (size_t n = 0; n < ports_.size(); n++) {
+        if ((options & ports_[n].options) == ports_[n].options) {
+            return &ports_[n];
+        }
+    }
+    return NULL;
 }
 
 } // namespace packet
