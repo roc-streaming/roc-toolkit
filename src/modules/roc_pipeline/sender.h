@@ -7,11 +7,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_pipeline/client.h
-//! @brief Client pipeline.
+//! @file roc_pipeline/sender.h
+//! @brief Sender pipeline.
 
-#ifndef ROC_PIPELINE_CLIENT_H_
-#define ROC_PIPELINE_CLIENT_H_
+#ifndef ROC_PIPELINE_SENDER_H_
+#define ROC_PIPELINE_SENDER_H_
 
 #include "roc_core/noncopyable.h"
 #include "roc_core/maybe.h"
@@ -41,7 +41,7 @@
 namespace roc {
 namespace pipeline {
 
-//! Client pipeline.
+//! Sender pipeline.
 //!
 //! Fetches samples from input queue, composes datagrams, and writes them
 //! to output queue.
@@ -54,14 +54,14 @@ namespace pipeline {
 //!    which fetches datagrams from the queue and sends them to remote host.
 //!
 //! @b Invocation
-//!  - User may call start() to start client thread. The thread will call
+//!  - User may call start() to start sender thread. The thread will call
 //!    tick() in an infinite loop.
 //!
 //!  - Alternatively, user may periodically call tick().
 //!
 //! @b Pipeline
 //!
-//!   Client pipeline consists of several steps:
+//!   Sender pipeline consists of several steps:
 //!
 //!   <i> Fetching samples </i>
 //!   - Fetch sample buffers from input queue.
@@ -75,22 +75,22 @@ namespace pipeline {
 //!   <i> Generating datagrams </i>
 //!   - Generate datagram for every packet and add it to output queue.
 //!
-//! @see ClientConfig
-class Client : public core::Thread, public core::NonCopyable<> {
+//! @see SenderConfig
+class Sender : public core::Thread, public core::NonCopyable<> {
 public:
-    //! Initialize client.
+    //! Initialize sender.
     //!
     //! @b Parameters
     //!  - @p audio_reader specifies input sample queue;
     //!  - @p datagram_writer specifies output datagram queue;
     //!  - @p datagram_composer is used to construc output datagrams;
     //!  - @p packet_composer is used to construc output packets;
-    //!  - @p config specifies client configuration.
-    Client(audio::ISampleBufferReader& audio_reader,
+    //!  - @p config specifies sender configuration.
+    Sender(audio::ISampleBufferReader& audio_reader,
            datagram::IDatagramWriter& datagram_writer,
            datagram::IDatagramComposer& datagram_composer,
            packet::IPacketComposer& packet_composer,
-           const ClientConfig& config = ClientConfig());
+           const SenderConfig& config = SenderConfig());
 
     //! Set datagram sender address.
     void set_sender(const datagram::Address&);
@@ -114,7 +114,7 @@ private:
     packet::IPacketWriter* make_packet_writer_();
     packet::IPacketWriter* make_fec_encoder_(packet::IPacketWriter*);
 
-    const ClientConfig config_;
+    const SenderConfig config_;
 
     packet::PacketSender packet_sender_;
     packet::IPacketComposer& packet_composer_;
@@ -139,4 +139,4 @@ private:
 } // namespace pipeline
 } // namespace roc
 
-#endif // ROC_PIPELINE_CLIENT_H_
+#endif // ROC_PIPELINE_SENDER_H_

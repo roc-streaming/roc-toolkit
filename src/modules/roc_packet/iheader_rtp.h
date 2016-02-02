@@ -22,16 +22,16 @@ class IHeaderRTP {
 public:
     virtual ~IHeaderRTP();
 
-    //! Get packet source ID identifying client stream.
+    //! Get packet source ID identifying packet stream.
     //! @remarks
     //!  Sequence numbers and timestamp are numbered independently inside
-    //!  different client streams.
+    //!  different packet streams.
     virtual source_t source() const = 0;
 
     //! Set packet source ID.
     virtual void set_source(source_t) = 0;
 
-    //! Get packet sequence number in client stream.
+    //! Get packet sequence number in packet stream.
     //! @remarks
     //!  Packets are numbered sequentaly in every stream, starting from some
     //!  random value.

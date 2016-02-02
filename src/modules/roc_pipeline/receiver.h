@@ -7,11 +7,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_pipeline/server.h
-//! @brief Server pipeline.
+//! @file roc_pipeline/receiver.h
+//! @brief Receiver pipeline.
 
-#ifndef ROC_PIPELINE_SERVER_H_
-#define ROC_PIPELINE_SERVER_H_
+#ifndef ROC_PIPELINE_RECEIVER_H_
+#define ROC_PIPELINE_RECEIVER_H_
 
 #include "roc_core/noncopyable.h"
 #include "roc_core/maybe.h"
@@ -35,7 +35,7 @@
 namespace roc {
 namespace pipeline {
 
-//! Server pipeline.
+//! Receiver pipeline.
 //!
 //! Fetches datagrams from input queue, manages active sessions and their
 //! storages and renderers, and generates audio stream.
@@ -48,14 +48,14 @@ namespace pipeline {
 //!    which fetches samples from it and sends them to the sound card.
 //!
 //! @b Invocation
-//!  - User may call start() to start server thread. The thread will call
+//!  - User may call start() to start receiver thread. The thread will call
 //!    tick() in an infinite loop.
 //!
 //!  - Alternatively, user may periodically call tick().
 //!
 //! @b Pipeline
 //!
-//!  Server pipeline consists of several steps:
+//!  Receiver pipeline consists of several steps:
 //!
 //!   <i> Fetching datagrams </i>
 //!    - Fetch datagrams from input queue.
@@ -80,18 +80,18 @@ namespace pipeline {
 //!    - Requests audio sink to generate samples. During this process,
 //!      previously stored packets are transformed into audio stream.
 //!
-//! @see ServerConfig, Session
-class Server : public core::Thread, public core::NonCopyable<> {
+//! @see ReceiverConfig, Session
+class Receiver : public core::Thread, public core::NonCopyable<> {
 public:
-    //! Initialize server.
+    //! Initialize receiver.
     //!
     //! @b Parameters
     //!  - @p datagram_reader specifies input datagram queue;
     //!  - @p audio_writer specifies output sample queue;
-    //!  - @p config specifies server and session configuration.
-    Server(datagram::IDatagramReader& datagram_reader,
-           audio::ISampleBufferWriter& audio_writer,
-           const ServerConfig& config = ServerConfig());
+    //!  - @p config specifies receiver and session configuration.
+    Receiver(datagram::IDatagramReader& datagram_reader,
+             audio::ISampleBufferWriter& audio_writer,
+             const ReceiverConfig& config = ReceiverConfig());
 
     //! Get number of active sessions.
     size_t num_sessions() const;
@@ -118,7 +118,7 @@ public:
 private:
     virtual void run();
 
-    const ServerConfig config_;
+    const ReceiverConfig config_;
     const size_t n_channels_;
 
     core::Atomic stop_;
@@ -136,4 +136,4 @@ private:
 } // namespace pipeline
 } // namespace roc
 
-#endif // ROC_PIPELINE_SERVER_H_
+#endif // ROC_PIPELINE_RECEIVER_H_

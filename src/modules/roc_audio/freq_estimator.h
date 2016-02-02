@@ -21,7 +21,7 @@
 namespace roc {
 namespace audio {
 
-//! Evaluates local and client's sampling frequency ratio.
+//! Evaluates sender's frequency to receivers's frequency ratio.
 class FreqEstimator : public core::NonCopyable<> {
 public:
     //! Initialize.

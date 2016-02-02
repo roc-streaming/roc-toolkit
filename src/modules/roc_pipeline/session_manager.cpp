@@ -15,7 +15,7 @@
 namespace roc {
 namespace pipeline {
 
-SessionManager::SessionManager(const ServerConfig& config, audio::ISink& sink)
+SessionManager::SessionManager(const ReceiverConfig& config, audio::ISink& sink)
     : config_(config)
     , audio_sink_(sink) {
 }
