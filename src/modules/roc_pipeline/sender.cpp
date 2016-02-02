@@ -18,22 +18,55 @@ namespace pipeline {
 Sender::Sender(audio::ISampleBufferReader& audio_reader,
                datagram::IDatagramWriter& datagram_writer,
                datagram::IDatagramComposer& datagram_composer,
-               packet::IPacketComposer& packet_composer,
                const SenderConfig& config)
     : config_(config)
+    , rtp_composer_(*config_.rtp_audio_packet_pool,
+                    *config_.rtp_container_packet_pool,
+                    *config_.byte_buffer_composer)
+    , audio_composer_(NULL)
+    , fec_repair_composer_(NULL)
     , packet_sender_(datagram_writer, datagram_composer)
-    , packet_composer_(packet_composer)
     , audio_reader_(audio_reader)
-    , audio_writer_(*make_audio_writer_())
+    , audio_writer_(NULL)
     , datagram_writer_(datagram_writer) {
 }
 
-void Sender::set_sender(const datagram::Address& address) {
-    packet_sender_.set_sender(address);
+void Sender::set_audio_port(const datagram::Address& source,
+                            const datagram::Address& destination,
+                            Protocol proto) {
+    switch (proto) {
+    case Proto_RTP:
+        audio_composer_ = &rtp_composer_;
+        break;
+    }
+
+    if (!audio_composer_) {
+        roc_panic("receiver: bad protocol number %d for audio port", (int)proto);
+    }
+
+    // TODO: fec_source_composer_
+
+    // TODO: add multiple ports support to PacketSender
+    packet_sender_.set_sender(source);
+    packet_sender_.set_receiver(destination);
 }
 
-void Sender::set_receiver(const datagram::Address& address) {
-    packet_sender_.set_receiver(address);
+void Sender::set_repair_port(const datagram::Address& source,
+                             const datagram::Address& destination,
+                             Protocol proto) {
+    switch (proto) {
+    case Proto_RTP:
+        fec_repair_composer_ = &rtp_composer_; // FIXME
+        break;
+    }
+
+    if (!fec_repair_composer_) {
+        roc_panic("receiver: bad protocol number %d for repair port", (int)proto);
+    }
+
+    // TODO: add multiple ports support to PacketSender
+    packet_sender_.set_sender(source);
+    packet_sender_.set_receiver(destination);
 }
 
 void Sender::run() {
@@ -49,14 +82,21 @@ void Sender::run() {
 
     flush();
 
+    // Write EOF.
     datagram_writer_.write(NULL);
 }
 
 bool Sender::tick() {
+    if (!audio_writer_) {
+        if (!(audio_writer_ = make_audio_writer_())) {
+            roc_panic("sender: can't create audio writer");
+        }
+    }
+
     audio::ISampleBufferConstSlice buffer = audio_reader_.read();
 
     if (buffer) {
-        audio_writer_.write(buffer);
+        audio_writer_->write(buffer);
     } else {
         roc_log(LogInfo, "sender: audio reader returned null");
     }
@@ -75,11 +115,15 @@ void Sender::flush() {
 }
 
 audio::ISampleBufferWriter* Sender::make_audio_writer_() {
+    if (!audio_composer_) {
+        roc_panic("sender: audio composer not set, forgot set_audio_port()?");
+    }
+
     packet::IPacketWriter* packet_writer = make_packet_writer_();
     roc_panic_if(!packet_writer);
 
     audio::ISampleBufferWriter* audio_writer = new (splitter_)
-        audio::Splitter(*packet_writer, packet_composer_, config_.samples_per_packet,
+        audio::Splitter(*packet_writer, *audio_composer_, config_.samples_per_packet,
                         config_.channels, config_.sample_rate);
 
     if (config_.options & EnableTiming) {
@@ -114,11 +158,16 @@ packet::IPacketWriter* Sender::make_packet_writer_() {
 
 #ifdef ROC_TARGET_OPENFEC
 packet::IPacketWriter* Sender::make_fec_encoder_(packet::IPacketWriter* packet_writer) {
+
+    if (!fec_repair_composer_) {
+        roc_panic("sender: fec repair composer not set, forgot set_audio_port()?");
+    }
+
     new (fec_ldpc_encoder_) fec::OFBlockEncoder(config_.fec,
                                                     *config_.byte_buffer_composer);
 
     return new (fec_encoder_)
-        fec::Encoder(*fec_ldpc_encoder_, *packet_writer, packet_composer_);
+        fec::Encoder(*fec_ldpc_encoder_, *packet_writer, *fec_repair_composer_);
 }
 #else
 packet::IPacketWriter* Sender::make_fec_encoder_(packet::IPacketWriter* packet_writer) {

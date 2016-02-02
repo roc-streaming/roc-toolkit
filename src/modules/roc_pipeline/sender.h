@@ -31,6 +31,8 @@
 #include "roc_fec/of_block_encoder.h"
 #endif
 
+#include "roc_rtp/composer.h"
+
 #include "roc_audio/isample_buffer_reader.h"
 #include "roc_audio/isample_buffer_writer.h"
 #include "roc_audio/splitter.h"
@@ -84,19 +86,21 @@ public:
     //!  - @p audio_reader specifies input sample queue;
     //!  - @p datagram_writer specifies output datagram queue;
     //!  - @p datagram_composer is used to construc output datagrams;
-    //!  - @p packet_composer is used to construc output packets;
     //!  - @p config specifies sender configuration.
     Sender(audio::ISampleBufferReader& audio_reader,
            datagram::IDatagramWriter& datagram_writer,
            datagram::IDatagramComposer& datagram_composer,
-           packet::IPacketComposer& packet_composer,
            const SenderConfig& config = SenderConfig());
 
-    //! Set datagram sender address.
-    void set_sender(const datagram::Address&);
+    //! Configure port for audio packets.
+    void set_audio_port(const datagram::Address& source,
+                        const datagram::Address& destination,
+                        Protocol proto);
 
-    //! Set datagram receiver address.
-    void set_receiver(const datagram::Address&);
+    //! Configure port for FEC repair packets.
+    void set_repair_port(const datagram::Address& source,
+                         const datagram::Address& destination,
+                         Protocol proto);
 
     //! Process input samples.
     //! @remarks
@@ -116,8 +120,12 @@ private:
 
     const SenderConfig config_;
 
+    rtp::Composer rtp_composer_;
+
+    packet::IPacketComposer* audio_composer_;
+    packet::IPacketComposer* fec_repair_composer_;
+
     packet::PacketSender packet_sender_;
-    packet::IPacketComposer& packet_composer_;
 
     core::Maybe<packet::Spoiler> spoiler_;
     core::Maybe<packet::Interleaver> interleaver_;
@@ -131,7 +139,7 @@ private:
     core::Maybe<audio::TimedWriter> timed_writer_;
 
     audio::ISampleBufferReader& audio_reader_;
-    audio::ISampleBufferWriter& audio_writer_;
+    audio::ISampleBufferWriter* audio_writer_;
 
     datagram::IDatagramWriter& datagram_writer_;
 };

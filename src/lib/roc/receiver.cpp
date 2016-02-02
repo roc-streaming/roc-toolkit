@@ -14,8 +14,7 @@
 #include "roc_datagram/address_to_str.h"
 #include "roc_datagram/datagram_queue.h"
 #include "roc_audio/sample_buffer_queue.h"
-#include "roc_pipeline/server.h"
-#include "roc_rtp/parser.h"
+#include "roc_pipeline/receiver.h"
 #include "roc_netio/transceiver.h"
 #include "roc_netio/inet_address.h"
 
@@ -23,7 +22,7 @@ using namespace roc;
 
 namespace {
 
-bool make_server_config(pipeline::ServerConfig& sc, const roc_config* rc) {
+bool make_server_config(pipeline::ReceiverConfig& sc, const roc_config* rc) {
     sc = pipeline::ServerConfig(pipeline::EnableResampling);
 
     if (rc->options & ROC_API_CONF_DISABLE_FEC) {
@@ -44,7 +43,7 @@ bool make_server_config(pipeline::ServerConfig& sc, const roc_config* rc) {
 } // anonymous
 
 struct roc_receiver {
-    roc_receiver(const pipeline::ServerConfig& config)
+    roc_receiver(const pipeline::ReceiverConfig& config)
         : server_(dgm_queue_, sample_queue_, config)
         , buffer_pos_(0) {
     }
@@ -70,7 +69,7 @@ struct roc_receiver {
             return false;
         }
 
-        server_.add_port(addr, rtp_parser_);
+        server_.add_port(addr, pipeline::Proto_RTP);
 
         trx_.start();
         server_.start();
@@ -113,17 +112,16 @@ private:
     datagram::DatagramQueue dgm_queue_;
     audio::SampleBufferQueue sample_queue_;
 
-    rtp::Parser rtp_parser_;
     netio::Transceiver trx_;
 
-    pipeline::Server server_;
+    pipeline::Receiver server_;
 
     audio::ISampleBufferConstSlice buffer_;
     size_t buffer_pos_;
 };
 
 roc_receiver* roc_receiver_new(const roc_config* rc) {
-    pipeline::ServerConfig sc;
+    pipeline::ReceiverConfig sc;
 
     if (!make_server_config(sc, rc)) {
         return NULL;

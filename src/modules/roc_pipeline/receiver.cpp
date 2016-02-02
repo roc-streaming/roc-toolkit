@@ -25,6 +25,7 @@ Receiver::Receiver(datagram::IDatagramReader& datagram_reader,
     , delayed_writer_(audio_writer, config_.channels, config_.output_latency)
     , datagram_reader_(datagram_reader)
     , audio_writer_(&delayed_writer_)
+    , rtp_parser_(*config_.rtp_audio_packet_pool, *config_.rtp_container_packet_pool)
     , session_manager_(config_, channel_muxer_) {
     //
     if (n_channels_ == 0) {
@@ -57,8 +58,20 @@ size_t Receiver::num_sessions() const {
     return session_manager_.num_sessions();
 }
 
-void Receiver::add_port(const datagram::Address& address, packet::IPacketParser& parser) {
-    session_manager_.add_port(address, parser);
+void Receiver::add_port(const datagram::Address& address, Protocol proto) {
+    packet::IPacketParser* parser = NULL;
+
+    switch (proto) {
+    case Proto_RTP:
+        parser = &rtp_parser_;
+        break;
+    }
+
+    if (!parser) {
+        roc_panic("receiver: unknown protocol number %d", (int)proto);
+    }
+
+    session_manager_.add_port(address, *parser);
 }
 
 void Receiver::run() {
