@@ -35,10 +35,10 @@ namespace {
 enum { ChLeft = (1 << 0), ChRight = (1 << 1) };
 
 enum {
-    NumSamples = ROC_CONFIG_DEFAULT_SERVER_TICK_SAMPLES / 4 + 3, //
-    NumChannels = 2,                                             //
-    ChannelMask = ChLeft | ChRight,                              //
-    SampleRate = 44100                                           //
+    NumSamples = ROC_CONFIG_DEFAULT_RECEIVER_TICK_SAMPLES / 4 + 3,
+    NumChannels = 2,                //
+    ChannelMask = ChLeft | ChRight, //
+    SampleRate = 44100              //
 };
 
 const sample_t Step = 0.0001f, Epsilon = 0.00001f;

@@ -8,7 +8,7 @@
  */
 
 //! @file roc_pipeline/config.h
-//! @brief Client and server config.
+//! @brief Sender and receiver config.
 
 #ifndef ROC_PIPELINE_CONFIG_H_
 #define ROC_PIPELINE_CONFIG_H_
@@ -25,32 +25,32 @@
 namespace roc {
 namespace pipeline {
 
-//! Server and client options.
+//! Receiver and sender options.
 enum Options {
-    //! Use scaler and resamplers (server).
+    //! Use scaler and resamplers (receiver).
     EnableResampling = (1 << 0),
 
-    //! Use interleaver (client).
+    //! Use interleaver (sender).
     EnableInterleaving = (1 << 1),
 
-    //! Constrain input/output speed (server, client).
+    //! Constrain input/output speed (receiver, sender).
     EnableTiming = (1 << 2),
 
-    //! Insert beep instead of missing samples (server).
+    //! Insert beep instead of missing samples (receiver).
     EnableBeep = (1 << 3),
 
-    //! Terminate server when first client disconects (server).
+    //! Terminate receiver when first sender disconects (receiver).
     EnableOneshot = (1 << 4)
 };
 
-//! Server config.
-struct ServerConfig {
+//! Receiver config.
+struct ReceiverConfig {
     //! Construct default config.
-    ServerConfig(int opts = 0)
+    ReceiverConfig(int opts = 0)
         : options(opts)
         , channels(ROC_CONFIG_DEFAULT_CHANNEL_MASK)
         , sample_rate(ROC_CONFIG_DEFAULT_SAMPLE_RATE)
-        , samples_per_tick(ROC_CONFIG_DEFAULT_SERVER_TICK_SAMPLES)
+        , samples_per_tick(ROC_CONFIG_DEFAULT_RECEIVER_TICK_SAMPLES)
         , samples_per_resampler_frame(ROC_CONFIG_DEFAULT_RESAMPLER_FRAME_SAMPLES)
         , output_latency(ROC_CONFIG_DEFAULT_OUTPUT_LATENCY)
         , session_latency(ROC_CONFIG_DEFAULT_SESSION_LATENCY)
@@ -71,7 +71,7 @@ struct ServerConfig {
     //! Number of samples per channel per second.
     size_t sample_rate;
 
-    //! Number of samples per server tick.
+    //! Number of samples per receiver tick.
     size_t samples_per_tick;
 
     //! Number of samples per resampler frame.
@@ -106,10 +106,10 @@ struct ServerConfig {
     core::IPool<Session>* session_pool;
 };
 
-//! Client config.
-struct ClientConfig {
+//! Sender config.
+struct SenderConfig {
     //! Construct default config.
-    ClientConfig(int opts = 0)
+    SenderConfig(int opts = 0)
         : options(opts)
         , channels(ROC_CONFIG_DEFAULT_CHANNEL_MASK)
         , sample_rate(ROC_CONFIG_DEFAULT_SAMPLE_RATE)
@@ -120,7 +120,7 @@ struct ClientConfig {
         , byte_buffer_composer(&datagram::default_buffer_composer()) {
     }
 
-    //! Bitmask of enabled client options.
+    //! Bitmask of enabled sender options.
     int options;
 
     //! Bitmask of enabled channels.

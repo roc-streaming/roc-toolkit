@@ -13,7 +13,7 @@
 #include "roc_core/scoped_ptr.h"
 #include "roc_rtp/parser.h"
 #include "roc_datagram/datagram_queue.h"
-#include "roc_pipeline/server.h"
+#include "roc_pipeline/receiver.h"
 
 #include "test_packet_stream.h"
 #include "test_sample_stream.h"
@@ -26,10 +26,10 @@ using namespace pipeline;
 
 using datagram::IDatagramPtr;
 
-TEST_GROUP(server) {
+TEST_GROUP(receiver) {
     enum {
         // No FEC and resampling.
-        ServerOptions = 0,
+        ReceiverOptions = 0,
 
         // Number of samples in every channel per tick.
         TickSamples = SampleStream::ReadBufsz,
@@ -56,19 +56,19 @@ TEST_GROUP(server) {
 
     rtp::Parser parser;
 
-    core::ScopedPtr<Server> server;
+    core::ScopedPtr<Receiver> receiver;
 
     void setup() {
-        ServerConfig config;
+        ReceiverConfig config;
 
-        config.options = ServerOptions;
+        config.options = ReceiverOptions;
         config.channels = ChannelMask;
         config.session_timeout = TimeoutTicks * TickSamples;
         config.session_latency = LatencySamples;
         config.output_latency = 0;
         config.samples_per_tick = TickSamples;
 
-        server.reset(new Server(input, output, config));
+        receiver.reset(new Receiver(input, output, config));
     }
 
     void teardown() {
@@ -76,23 +76,23 @@ TEST_GROUP(server) {
     }
 
     void add_port(datagram::port_t port) {
-        server->add_port(new_address(port), parser);
+        receiver->add_port(new_address(port), parser);
     }
 
     void render(size_t n_samples) {
         CHECK(n_samples % TickSamples == 0);
 
         for (size_t n = 0; n < n_samples / TickSamples; n++) {
-            CHECK(server->tick());
+            CHECK(receiver->tick());
         }
     }
 
     void expect_num_sessions(size_t n_sessions) {
-        LONGS_EQUAL(n_sessions, server->num_sessions());
+        LONGS_EQUAL(n_sessions, receiver->num_sessions());
     }
 };
 
-TEST(server, no_sessions) {
+TEST(receiver, no_sessions) {
     SampleStream ss;
 
     for (size_t n = 0; n < EnoughPackets; n++) {
@@ -103,7 +103,7 @@ TEST(server, no_sessions) {
     }
 }
 
-TEST(server, no_parsers) {
+TEST(receiver, no_parsers) {
     PacketStream ps;
     ps.write(input, EnoughPackets, PktSamples);
 
@@ -117,7 +117,7 @@ TEST(server, no_parsers) {
     }
 }
 
-TEST(server, one_session) {
+TEST(receiver, one_session) {
     add_port(PacketStream::DstPort);
 
     PacketStream ps;
@@ -130,7 +130,7 @@ TEST(server, one_session) {
     ss.read(output, EnoughPackets * PktSamples);
 }
 
-TEST(server, one_session_long_run) {
+TEST(receiver, one_session_long_run) {
     enum { NumIterations = 10 };
 
     add_port(PacketStream::DstPort);
@@ -151,7 +151,7 @@ TEST(server, one_session_long_run) {
     }
 }
 
-TEST(server, wait_min_input_size) {
+TEST(receiver, wait_min_input_size) {
     add_port(PacketStream::DstPort);
 
     PacketStream ps;
@@ -168,7 +168,7 @@ TEST(server, wait_min_input_size) {
     ss.read(output, EnoughPackets * PktSamples);
 }
 
-TEST(server, wait_min_input_size_timeout) {
+TEST(receiver, wait_min_input_size_timeout) {
     add_port(PacketStream::DstPort);
 
     PacketStream ps;
@@ -189,7 +189,7 @@ TEST(server, wait_min_input_size_timeout) {
     ss.read_zeros(output, TickSamples);
 }
 
-TEST(server, wait_next_packet_timeout) {
+TEST(receiver, wait_next_packet_timeout) {
     add_port(PacketStream::DstPort);
 
     PacketStream ps;
@@ -206,7 +206,7 @@ TEST(server, wait_next_packet_timeout) {
 
     size_t n_ticks = 0;
 
-    for (; server->num_sessions() != 0; n_ticks++) {
+    for (; receiver->num_sessions() != 0; n_ticks++) {
         render(TickSamples);
         ss.read_zeros(output, TickSamples);
     }
@@ -214,7 +214,7 @@ TEST(server, wait_next_packet_timeout) {
     CHECK(n_ticks < TimeoutTicks);
 }
 
-TEST(server, two_sessions_synchronous) {
+TEST(receiver, two_sessions_synchronous) {
     add_port(PacketStream::DstPort);
 
     PacketStream ps1;
@@ -234,7 +234,7 @@ TEST(server, two_sessions_synchronous) {
     ss.read(output, EnoughPackets * PktSamples);
 }
 
-TEST(server, two_sessions_overlapping) {
+TEST(receiver, two_sessions_overlapping) {
     add_port(PacketStream::DstPort);
 
     PacketStream ps1;
@@ -262,7 +262,7 @@ TEST(server, two_sessions_overlapping) {
     ss.read(output, EnoughPackets * PktSamples);
 }
 
-TEST(server, two_sessions_2sendaddr_1recvaddr_1source) {
+TEST(receiver, two_sessions_2sendaddr_1recvaddr_1source) {
     // Two sessions has:
     //  - different source addresses
     //  - same destination addresses
@@ -291,7 +291,7 @@ TEST(server, two_sessions_2sendaddr_1recvaddr_1source) {
     ss.read(output, EnoughPackets * PktSamples);
 }
 
-TEST(server, two_sessions_1sendaddr_2recvaddr_1source) {
+TEST(receiver, two_sessions_1sendaddr_2recvaddr_1source) {
     // Two sessions has:
     //  - same source addresses
     //  - different destination addresses
@@ -321,7 +321,7 @@ TEST(server, two_sessions_1sendaddr_2recvaddr_1source) {
     ss.read(output, EnoughPackets * PktSamples);
 }
 
-TEST(server, two_sessions_1sendaddr_1recvaddr_2source) {
+TEST(receiver, two_sessions_1sendaddr_1recvaddr_2source) {
     // Two sessions has:
     //  - same source addresses
     //  - same destination addresses
@@ -350,7 +350,7 @@ TEST(server, two_sessions_1sendaddr_1recvaddr_2source) {
     ss.read(output, EnoughPackets * PktSamples);
 }
 
-TEST(server, drop_above_max_sessions) {
+TEST(receiver, drop_above_max_sessions) {
     enum { MaxSessions = ROC_CONFIG_MAX_SESSIONS };
 
     add_port(PacketStream::DstPort);
@@ -376,7 +376,7 @@ TEST(server, drop_above_max_sessions) {
     output.clear();
 }
 
-TEST(server, drop_above_max_packets) {
+TEST(receiver, drop_above_max_packets) {
     add_port(PacketStream::DstPort);
 
     PacketStream ps;
@@ -396,7 +396,7 @@ TEST(server, drop_above_max_packets) {
     ss.read(output, PktSamples);
 }
 
-TEST(server, seqnum_overflow) {
+TEST(receiver, seqnum_overflow) {
     add_port(PacketStream::DstPort);
 
     PacketStream ps;
@@ -410,7 +410,7 @@ TEST(server, seqnum_overflow) {
     ss.read(output, EnoughPackets * PktSamples);
 }
 
-TEST(server, seqnum_reorder) {
+TEST(receiver, seqnum_reorder) {
     add_port(PacketStream::DstPort);
 
     PacketStream ps;
@@ -431,7 +431,7 @@ TEST(server, seqnum_reorder) {
     ss.read(output, EnoughPackets * PktSamples);
 }
 
-TEST(server, seqnum_drop_late) {
+TEST(receiver, seqnum_drop_late) {
     enum { NumDelayed = 5 };
 
     add_port(PacketStream::DstPort);
@@ -471,7 +471,7 @@ TEST(server, seqnum_drop_late) {
     ss.read_zeros(output, EnoughPackets * PktSamples);
 }
 
-TEST(server, seqnum_ignore_gap) {
+TEST(receiver, seqnum_ignore_gap) {
     enum { Gap = 33 };
 
     add_port(PacketStream::DstPort);
@@ -488,7 +488,7 @@ TEST(server, seqnum_ignore_gap) {
     ss.read(output, EnoughPackets * 2 * PktSamples);
 }
 
-TEST(server, seqnum_shutdown_on_jump) {
+TEST(receiver, seqnum_shutdown_on_jump) {
     enum { Jump = ROC_CONFIG_MAX_SN_JUMP + 1 };
 
     add_port(PacketStream::DstPort);
@@ -513,7 +513,7 @@ TEST(server, seqnum_shutdown_on_jump) {
     ss.read_zeros(output, TickSamples);
 }
 
-TEST(server, timestamp_overflow) {
+TEST(receiver, timestamp_overflow) {
     add_port(PacketStream::DstPort);
 
     PacketStream ps;
@@ -527,7 +527,7 @@ TEST(server, timestamp_overflow) {
     ss.read(output, EnoughPackets * PktSamples);
 }
 
-TEST(server, timestamp_zeros_on_late) {
+TEST(receiver, timestamp_zeros_on_late) {
     add_port(PacketStream::DstPort);
 
     PacketStream ps;
@@ -556,7 +556,7 @@ TEST(server, timestamp_zeros_on_late) {
     ss.read_zeros(output, EnoughPackets * PktSamples);
 }
 
-TEST(server, timestamp_zeros_on_gap) {
+TEST(receiver, timestamp_zeros_on_gap) {
     enum { Gap = 10 };
 
     add_port(PacketStream::DstPort);
@@ -581,7 +581,7 @@ TEST(server, timestamp_zeros_on_gap) {
     ss.read(output, EnoughPackets * PktSamples);
 }
 
-TEST(server, timestamp_overlapping) {
+TEST(receiver, timestamp_overlapping) {
     enum { Overlap = PktSamples / 2 };
 
     add_port(PacketStream::DstPort);
@@ -603,7 +603,7 @@ TEST(server, timestamp_overlapping) {
     ss.read_zeros(output, PktSamples);
 }
 
-TEST(server, timestamp_shutdown_on_jump) {
+TEST(receiver, timestamp_shutdown_on_jump) {
     enum { Jump = ROC_CONFIG_MAX_TS_JUMP + 1 };
 
     add_port(PacketStream::DstPort);
@@ -626,7 +626,7 @@ TEST(server, timestamp_shutdown_on_jump) {
     ss.read_zeros(output, PktSamples);
 }
 
-TEST(server, tiny_packets) {
+TEST(receiver, tiny_packets) {
     CHECK(TickSamples % 2 == 0);
 
     enum {
@@ -645,7 +645,7 @@ TEST(server, tiny_packets) {
     ss.read(output, TinyPackets * TinyPacketSamples);
 }
 
-TEST(server, non_aligned_packets) {
+TEST(receiver, non_aligned_packets) {
     CHECK(PktSamples % 2 == 0);
 
     add_port(PacketStream::DstPort);
@@ -664,7 +664,7 @@ TEST(server, non_aligned_packets) {
     ss.read(output, EnoughPackets * PktSamples);
 }
 
-TEST(server, corrupted_packet_drop_new_session) {
+TEST(receiver, corrupted_packet_drop_new_session) {
     add_port(PacketStream::DstPort);
 
     PacketStream ps;
@@ -685,7 +685,7 @@ TEST(server, corrupted_packet_drop_new_session) {
     output.clear();
 }
 
-TEST(server, corrupted_packet_ignore_in_existing_session) {
+TEST(receiver, corrupted_packet_ignore_in_existing_session) {
     add_port(PacketStream::DstPort);
 
     PacketStream ps;

@@ -11,7 +11,7 @@
 #include "roc_datagram/address_to_str.h"
 #include "roc_datagram/datagram_queue.h"
 #include "roc_audio/sample_buffer_queue.h"
-#include "roc_pipeline/client.h"
+#include "roc_pipeline/sender.h"
 #include "roc_rtp/composer.h"
 #include "roc_sndio/reader.h"
 #include "roc_netio/transceiver.h"
@@ -71,7 +71,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    pipeline::ClientConfig config;
+    pipeline::SenderConfig config;
     if (args.fec_arg == fec_arg_none) {
         config.fec.codec = roc::fec::NoCodec;
     } else if (args.fec_arg == fec_arg_rs) {
@@ -148,20 +148,20 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    pipeline::Client client(sample_queue, trx.udp_sender(), trx.udp_composer(),
+    pipeline::Sender sender(sample_queue, trx.udp_sender(), trx.udp_composer(),
                             rtp_composer, config);
 
-    client.set_sender(src_addr);
-    client.set_receiver(dst_addr);
+    sender.set_sender(src_addr);
+    sender.set_receiver(dst_addr);
 
     trx.start();
 
-    client.start();
+    sender.start();
 
     reader.start();
     reader.join();
 
-    client.join();
+    sender.join();
 
     trx.join();
 

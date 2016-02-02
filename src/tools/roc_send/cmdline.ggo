@@ -52,17 +52,17 @@ Output:
 
 Examples:
   send wav file:
-    $ roc-send -vv <server_ip>:<server_port> -i song.wav
+    $ roc-send -vv 192.168.0.3:12345 -i song.wav
     or
-    $ roc-send -vv <server_ip>:<server_port> -i song.wav -t wav
+    $ roc-send -vv 192.168.0.3:12345 -i song.wav -t wav
 
   capture sound from default driver and device:
-    $ roc-send -vv <server_ip>:<server_port>
+    $ roc-send -vv 192.168.0.3:12345
 
   capture sound from default ALSA device:
-    $ roc-send -vv <server_ip>:<server_port> -t alsa
+    $ roc-send -vv 192.168.0.3:12345 -t alsa
     or
-    $ roc-send -vv <server_ip>:<server_port> -t alsa -i default
+    $ roc-send -vv 192.168.0.3:12345 -t alsa -i default
 
   capture sound from specific pulseaudio device:
-    $ roc-send -vv <server_ip>:<server_port> -t pulseaudio -i <device>"
+    $ roc-send -vv 192.168.0.3:12345 -t pulseaudio -i <device>"

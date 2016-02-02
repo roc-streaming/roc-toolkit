@@ -59,10 +59,10 @@ Output:
     TYPE specifies file or device type
 
 Examples:
-  start server listening on all interfaces on UDP port `12345':
+  start receiver listening on all interfaces on UDP port `12345':
     $ roc-recv -vv :12345
 
-  start server listening on particular interface:
+  start receiver listening on particular interface:
     $ roc-recv -vv 192.168.0.3:12345
 
   output to ALSA default device:
