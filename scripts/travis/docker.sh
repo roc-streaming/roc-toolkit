@@ -1,6 +1,6 @@
 #! /bin/bash
 ( set -xe;
-  docker run --rm -ti -u "${UID}" -v "${TRAVIS_BUILD_DIR}":/tmp/roc -w /tmp/roc "$@" )
+  docker run --rm -ti -u "${UID}" -v "${TRAVIS_BUILD_DIR}":/opt/roc -w /opt/roc "$@" )
 error=$?
 if [ $error = 0 ]
 then
