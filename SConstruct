@@ -168,7 +168,7 @@ host = '%s_%s' % (
     platform.system().lower(), platform.machine().lower())
 
 target = ARGUMENTS.get('target', host)
-variant = ARGUMENTS.get('variant', 'debug')
+variant = ARGUMENTS.get('variant', 'release')
 toolchain = ARGUMENTS.get('toolchain', '')
 compiler = ARGUMENTS.get('compiler', '')
 
