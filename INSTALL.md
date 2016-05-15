@@ -4,7 +4,7 @@ Howto
 **Ubuntu 14.04 and later, Debian Jessie**
 
     # for Roc
-    $ apt-get install g++ pkg-config scons gengetopt doxygen graphviz libsox-dev
+    $ apt-get install g++ pkg-config scons gengetopt libsox-dev
 
     # for 3rd-parties
     $ apt-get install libtool autoconf automake make cmake
@@ -15,7 +15,7 @@ Howto
 **Ubuntu 15.10 and later**
 
     # for Roc
-    $ apt-get install g++ pkg-config scons gengetopt doxygen graphviz libuv1-dev libsox-dev libcpputest-dev
+    $ apt-get install g++ pkg-config scons gengetopt libuv1-dev libsox-dev libcpputest-dev
 
     # for 3rd-parties
     $ apt-get install make cmake
@@ -26,7 +26,7 @@ Howto
 **Fedora 22 and later**
 
     # for Roc
-    $ dnf install gcc-c++ pkgconfig scons gengetopt doxygen graphviz libuv-devel sox-devel
+    $ dnf install gcc-c++ pkgconfig scons gengetopt libuv-devel sox-devel
 
     # for 3rd-parties
     $ dnf install make cmake
@@ -40,7 +40,7 @@ Howto
     $ yum install epel-release
 
     # for Roc
-    $ yum install gcc-c++ pkgconfig scons gengetopt doxygen graphviz sox-devel
+    $ yum install gcc-c++ pkgconfig scons gengetopt sox-devel
 
     # for 3rd-parties
     $ yum install libtool autoconf automake make cmake
