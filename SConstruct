@@ -150,10 +150,6 @@ supported_platforms = [
     'linux',
 ]
 
-supported_archs = [
-    'x86_64',
-]
-
 supported_compilers = [
     'gcc',
     'clang',
@@ -172,15 +168,15 @@ variant = ARGUMENTS.get('variant', 'release')
 toolchain = ARGUMENTS.get('toolchain', '')
 compiler = ARGUMENTS.get('compiler', '')
 
-target_platform, target_arch = target.split('_', 1)
+try:
+    target_platform, target_arch = target.split('_', 1)
+except:
+    env.Die("bad target `%s', expected {platform}_{arch}", target)
 
-if not target_platform in supported_platforms:
-    env.Die("unknown target platform `%s' in `%s', expected one of: %s",
-            target_platform, target, ', '.join(supported_platforms))
-
-if not target_arch in supported_archs:
-    env.Die("unknown target arch `%s' in `%s', expected one of: %s",
-            target_arch, target, ', '.join(supported_archs))
+if not target_platform in supported_platforms and not GetOption('with_targets'):
+    env.Die(("unknown target platform `%s' in `%s', expected one of: %s\n"+
+             "you should either provide known target platform or --with-targets option"),
+                target_platform, target, ', '.join(supported_platforms))
 
 if not variant in supported_variants:
     env.Die("unknown variant `%s', expected one of: %s",
@@ -198,16 +194,16 @@ if '-' in compiler:
 else:
     compiler_ver = env.CompilerVersion(compiler)
 
-if not compiler_ver:
-    env.Die("can't detect compiler version")
-
 if not compiler in supported_compilers:
     env.Die("unknown compiler `%s', expected one of: %s",
             compiler, ', '.join(supported_compilers))
 
-if not toolchain:
-    if host != target:
-        env.Die("toolchain option is required when cross-compiling")
+if not compiler_ver:
+    env.Die("can't detect compiler version")
+
+if not toolchain and host != target:
+    env.Die(("toolchain option is required when cross-compiling: "+
+            "host is `%s', tagret is `%s'"), host, target)
 
 conf = Configure(env, custom_tests=env.CustomTests)
 
@@ -479,6 +475,9 @@ if compiler in ['gcc', 'clang']:
         '-std=c++98',
         '-fno-exceptions',
     ])
+    env.Append(LINKFLAGS=[
+        '-pthread',
+    ])
     if not(compiler == 'clang' and variant == 'debug'):
         env.Append(CXXFLAGS=[
             '-fno-rtti',
@@ -486,10 +485,6 @@ if compiler in ['gcc', 'clang']:
     if GetOption('enable_werror'):
         env.Append(CXXFLAGS=[
             '-Werror'
-        ])
-    if target_platform in ['linux']:
-        env.Append(LINKFLAGS=[
-            '-pthread',
         ])
     if variant == 'debug':
         env.Append(CXXFLAGS=['-ggdb'])
