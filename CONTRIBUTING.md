@@ -1,7 +1,7 @@
 CONTRIBUTING
 ============
 
-Don't be afraid not to follow all of the recommendations bellow; someone will assist you when reviewing a pull request. See also our [manifesto](https://github.com/roc-project/roc/wiki/Manifesto).
+Don't be afraid not to follow all of the recommendations bellow; someone will assist you when reviewing a pull request. See also our [Coding guidelines](https://github.com/roc-project/roc/wiki/Coding-guidelines).
 
 Conventions
 -----------
@@ -71,41 +71,6 @@ Branching
 
     If your changes are far from complete but it's make sense to share them and keep in the main repository, create pull request for a feature branch instead. If there is no feature branch fitting your needs, feel free to create an issue and ask to create a new branch.
 
-CI
---
+* **Continuous integration**
 
-* **Linux**
-
-    Travis is configured to build `master` and `develop` branches and pull requests to them. Builds are running on several Linux distros and compilers using Docker. Docker images are prepared using Docker Hub [automated builds](https://docs.docker.com/docker-hub/builds/).
-
-    Links:
-     * [Roc on Docker Hub](https://hub.docker.com/u/rocproject/)
-     * [Roc on Travis](https://travis-ci.org/roc-project)
-     * [Our dockerfiles on GitHub](https://github.com/roc-project/docker-ci)
-     * [Our travis configuration](.travis.yml)
-     * [Our travis scripts](scripts/travis)
-
-    You can also run CI builds locally, e.g.:
-
-    ```
-    $ docker pull rocproject/ci-fedora
-    $ docker run -ti --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" rocproject/ci-fedora \
-        scons --with-3rdparty=openfec,cpputest variant=debug test
-    ```
-
-    Docker images contain uptodate distros with preinstalled dependencies. They are triggered for rebuilt automatically when `Dockerfile` on GitHub changes or mainline docker image is updated. E.g., `ci-fedora` is updated when official `fedora` docker image is updated.
-
-    Configured builds:
-
-    Image                        | Based on        | Platforms   | Compilers
-    ---------------------------- | --------------- | ----------- | ---------
-    `rocproject/ci-fedora`       | `fedora:latest` | x86_64      | *default*
-    `rocproject/ci-debian`       | `debian:stable` | x86_64      | *default*
-    `rocproject/ci-ubuntu:14.04` | `ubuntu:14.04`  | x86_64      | gcc-4.4, gcc-4.6, clang-3.4
-    `rocproject/ci-ubuntu:16.04` | `ubuntu:16.06`  | x86_64      | gcc-4.8, gcc-4.9, gcc-5.x, clang-3.6, clang-3.7
-    `rocproject/ci-ubuntu:nodep` | `ubuntu:16.04`  | x86_64      | *default*
-    `rocproject/ci-centos:5`     | `centos:5`      | x86_64      | gcc-4.1
-    `rocproject/ci-centos:7`     | `centos:7`      | x86_64      | *default*
-    `rocproject/ci-empty`        | `ubuntu:16.04`  | x86_64      | *default*
-    `rocproject/cross-raspberry` | `debian:stable` | armv6       | arm-bcm2708hardfp-linux-gnueabi-gcc-4.7
-    `rocproject/cross-linaro`    | `debian:stable` | armv7       | arm-linux-gnueabihf-gcc-4.9
+    CI automatically builds Roc for several platforms. See details [on wiki](https://github.com/roc-project/roc/wiki/Continuous-integration).

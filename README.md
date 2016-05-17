@@ -13,7 +13,7 @@ Goals:
 Status
 ------
 
-Docker images used in Travis are availale on [Docker Hub](https://hub.docker.com/u/rocproject/). See [CI](CONTRIBUTING.md#ci) for details.
+Docker images used in Travis are availale on [Docker Hub](https://hub.docker.com/u/rocproject/). See [Continuous integration](https://github.com/roc-project/roc/wiki/Continuous-integration) page for details.
 
 Branch    | Linux
 --------- | -----
