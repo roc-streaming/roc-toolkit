@@ -1,7 +1,7 @@
 Quick start
 -----------
 
-See detailed building instructions for various platforms [on wiki](https://github.com/roc-project/roc/wiki#building).
+See various examples and recipes inside "Building" section [on wiki](https://github.com/roc-project/roc/wiki#building).
 
 Dependencies
 ------------
