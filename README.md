@@ -42,7 +42,7 @@ Documentation
 Building
 --------
 
-For build instructions, see [INSTALL](INSTALL.md).
+See [wiki](https://github.com/roc-project/roc/wiki#building) (detailed building instructions) and [INSTALL](INSTALL.md) (dependencies and command-line options).
 
 Try it
 ------
