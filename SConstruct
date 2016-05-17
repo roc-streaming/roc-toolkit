@@ -317,6 +317,7 @@ if compiler == 'clang':
     for var in ['CC', 'CXX']:
         env[var] = env.ClangDB(build_dir, '*.cpp', env[var])
 
+env['ROC_BINDIR'] = '#bin/%s' % host
 env['ROC_VERSION'] = '0.1'
 env['ROC_TARGETS'] = []
 
@@ -484,7 +485,7 @@ if 'target_posix' in env['ROC_TARGETS']:
 for t in env['ROC_TARGETS']:
     env.Append(CPPDEFINES=['ROC_' + t.upper()])
 
-env.Append(LIBPATH=['#bin'])
+env.Append(LIBPATH=['#%s' % build_dir])
 
 if platform in ['linux']:
     env.AppendUnique(LIBS=['rt', 'dl'])

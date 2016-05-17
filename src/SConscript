@@ -110,8 +110,7 @@ for name in filter_subdirs(basedir='modules', section='modules'):
 
     defines = env['CPPDEFINES'] + [('ROC_MODULE', name)]
 
-    target = env.Install('#bin',
-        env.StaticLibrary(name, sources, CPPDEFINES=defines))
+    target = env.StaticLibrary(name, sources, CPPDEFINES=defines)
 
     check_dependencies('module', name, target[0], BUILD_DEPS['modules'][name])
 
@@ -154,7 +153,7 @@ if not GetOption('disable_tests'):
                 libs.append(lib)
         libs += env['TEST_LIBS'] + env['LIBS']
 
-        target = env.Install('#bin',
+        target = env.Install(env['ROC_BINDIR'],
             env.Program(exe, sources + test_main,
                         CXXFLAGS=cxxflags,
                         CPPDEFINES=defines,
@@ -164,7 +163,7 @@ if not GetOption('disable_tests'):
 
         check_dependencies('test', name, target[0], depends)
 
-        env.AddTest(name, '#bin/%s' % exe)
+        env.AddTest(name, '%s/%s' % (env['ROC_BINDIR'], exe))
 
 # Build tools
 #
@@ -197,7 +196,7 @@ if not GetOption('disable_tools'):
                 libs.append(lib)
         libs += env['LIBS']
 
-        target = env.Install('#bin',
+        target = env.Install(env['ROC_BINDIR'],
             env.Program(exe, sources,
                         CPPDEFINES=defines,
                         CPPPATH=cpppath,

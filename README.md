@@ -47,7 +47,7 @@ See [wiki](https://github.com/roc-project/roc/wiki#building) (detailed building 
 Try it
 ------
 
-After building, tools are inside `bin/` directory.
+After building, tools are instaleld into `bin/<host>/` directory.
 
 Example usage:
 
