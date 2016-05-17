@@ -1,66 +1,7 @@
-Howto
------
+Quick start
+-----------
 
-**Ubuntu 14.04 and later, Debian Jessie**
-
-    # for Roc
-    $ apt-get install g++ pkg-config scons gengetopt libsox-dev
-
-    # for 3rd-parties
-    $ apt-get install libtool autoconf automake make cmake
-
-    # build and test
-    $ scons --with-3rdparty=uv,openfec,cpputest test
-
-**Ubuntu 15.10 and later**
-
-    # for Roc
-    $ apt-get install g++ pkg-config scons gengetopt libuv1-dev libsox-dev libcpputest-dev
-
-    # for 3rd-parties
-    $ apt-get install make cmake
-
-    # build and test
-    $ scons --with-3rdparty=openfec test
-
-**Fedora 22 and later**
-
-    # for Roc
-    $ dnf install gcc-c++ pkgconfig scons gengetopt libuv-devel sox-devel
-
-    # for 3rd-parties
-    $ dnf install make cmake
-
-    # build and test
-    $ scons --with-3rdparty=openfec,cpputest test
-
-**Centos 7 and later**
-
-    # for developer packages
-    $ yum install epel-release
-
-    # for Roc
-    $ yum install gcc-c++ pkgconfig scons gengetopt sox-devel
-
-    # for 3rd-parties
-    $ yum install libtool autoconf automake make cmake
-
-    # build and test
-    $ scons --with-3rdparty=uv,openfec,cpputest test
-
-**Centos 5**
-
-    # for developer packages
-    $ yum install epel-release
-
-    # for Roc
-    $ yum install gcc-c++ pkgconfig scons python26
-
-    # for 3rd-parties
-    $ yum install libtool autoconf automake make cmake
-
-    # build and test
-    $ python26 /usr/bin/scons --with-3rdparty=uv,openfec,sox,gengetopt,cpputest test
+See detailed building instructions for various platforms [on wiki](https://github.com/roc-project/roc/wiki#building).
 
 Dependencies
 ------------
@@ -167,3 +108,7 @@ Download and build all external dependencies, then build everything:
 Minimal build:
 
     $ scons -Q --disable-tools --disable-tests --disable-doc --with-openfec=no --with-sox=no
+
+Cross-compile to armv7:
+
+    $ scons -Q host=arm-linux-gnueabihf --with-3rdparty=uv,openfec,sox,cpputest
