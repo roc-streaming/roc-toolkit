@@ -9,9 +9,9 @@ import json
 def print_comment(key, indent=1):
     print("%s/* %-16s */ " % (" " * indent * 2, key), end="")
 
-def print_number(key, value):
+def print_uint(key, value):
     print_comment(key)
-    print("%s," % value)
+    print("%su," % value)
 
 def print_bool(key, value):
     print_comment(key)
@@ -92,36 +92,36 @@ static RTP_PacketTest %s = {
         print_blob("raw_data", raw_data)
 
         print()
-        print_number("packet_size", len(raw_data))
-        print_number("header_size", meta["header_size"])
-        print_number("extension_size", meta["extension_size"])
-        print_number("payload_size", meta["payload_size"])
-        print_number("padding_size", meta["padding_size"])
+        print_uint("packet_size", len(raw_data))
+        print_uint("header_size", meta["header_size"])
+        print_uint("extension_size", meta["extension_size"])
+        print_uint("payload_size", meta["payload_size"])
+        print_uint("padding_size", meta["padding_size"])
 
         print()
-        print_number("version", meta["version"])
+        print_uint("version", meta["version"])
         print_bool("padding", meta["padding"])
         print_bool("extension", meta["extension"])
-        print_number("num_csrc", len(meta["csrc"]))
-        print_number("pt", meta["pt"])
+        print_uint("num_csrc", len(meta["csrc"]))
+        print_uint("pt", meta["pt"])
         print_bool("marker", meta["marker"])
 
         print()
-        print_number("seqnum", meta["seqnum"])
-        print_number("ts", meta["ts"])
-        print_number("ssrc", meta["ssrc"])
+        print_uint("seqnum", meta["seqnum"])
+        print_uint("ts", meta["ts"])
+        print_uint("ssrc", meta["ssrc"])
         print_array("csrc", meta["csrc"])
 
         print()
-        print_number("ext_type", meta["ext_type"])
-        print_number("ext_data_size", len(meta["ext_data"]))
+        print_uint("ext_type", meta["ext_type"])
+        print_uint("ext_data_size", len(meta["ext_data"]))
         print_blob("ext_data", meta["ext_data"])
 
         print()
-        print_number("num_channels", meta["num_channels"])
-        print_number("num_samples", meta["num_samples"])
-        print_number("samplebits", meta["samplebits"])
-        print_number("samplerate", meta["samplerate"])
+        print_uint("num_channels", meta["num_channels"])
+        print_uint("num_samples", meta["num_samples"])
+        print_uint("samplebits", meta["samplebits"])
+        print_uint("samplerate", meta["samplerate"])
 
         print()
         print_comment("samples")

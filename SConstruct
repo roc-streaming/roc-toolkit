@@ -526,7 +526,6 @@ if compiler == 'gcc':
         '-Wextra',
         '-Wshadow',
         '-Wcast-qual',
-        '-Wcast-align',
         '-Wfloat-equal',
         '-Wpointer-arith',
         '-Wformat=2',
