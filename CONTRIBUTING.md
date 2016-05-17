@@ -1,10 +1,10 @@
 CONTRIBUTING
 ============
 
+Don't be afraid not to follow all of the recommendations bellow; someone will assist you when reviewing a pull request. See also our [manifesto](https://github.com/roc-project/roc/wiki/Manifesto).
+
 Conventions
 -----------
-
-Don't be afraid not to follow all of the conventions bellow; someone will assist you when reviewing a pull request. See also our [manifesto](https://github.com/roc-project/roc/wiki/Manifesto).
 
 * **Dependencies**
 
