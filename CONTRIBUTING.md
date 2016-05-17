@@ -1,59 +1,10 @@
 CONTRIBUTING
 ============
 
-This document contains information useful when contributing to Roc.
-
-Don't be afraid not to follow all of the recommendations bellow; someone will assist you when reviewing a pull request.
-
-Manifest
---------
-
-These are objectives, not strict rules. World is complex, people are tired, and objectives are not always met. But we try to keep them in mind.
-
-* **Be lightweight**
-
-    Prefer simple solutions to cute ones. Write code that introduces minimum overhead for solving its task. Write code that can easily be optimized, when it becomes necessary.
-
-    * Use straightforward algorithms and data structures if they play well. Is hash table required here, or is linear search enough? In most cases it is, because number of objects is low.
-
-    * Use ascetic memory allocation schemes. Don't use heap if you don't have to. Use memory pools. Use fixed-size arrays instead of dynamic ones, if they play well. Use intrusive lists instead of heap-based ones, if they play well.
-
-* **Be portable**
-
-    Write platform-independent code. If you can't, make platform-dependent part as small as posible and isolate it.
-
-* **Keep code base clean**
-
-    Write neat code.
-
-    * Fix compiler warnings and format your code. Run static analyzer from time to time, and fix its warnings too (well, if it's not going mad).
-
-    * Prefer platform-specific directories to #ifdef-s.
-
-    * Avoid large classes and functions.
-
-    * Don't optimize before profiling. Instead, try to structure your code so that optimizations would be obvious and isolated.
-
-* **Keep interfaces clear**
-
-    Write modular code with simple and well-defined interfaces.
-
-    * Ensure your interfaces are minimal, clear, and documented.
-
-    * Prefer simple interfaces and smart implementations, rather than bloated interfaces and lazy implementations.
-
-    * Do your best to keep interface contract straightforward.
-
-* **Write robust code**
-
-    * Check for corner cases. Check for null pointers and overflows. Add runtime checks for everything that can break your code. If contract is broken, die gracefully with readable error message. Otherwise, ensure that code will continue working correctly.
-
-    * Write unit tests for non-trivial components. Write integration tests. Make your components friendly for testing.
-
 Conventions
 -----------
 
-Please try to follow conventions bellow when contributing.
+Don't be afraid not to follow all of the conventions bellow; someone will assist you when reviewing a pull request. See also our [manifesto](https://github.com/roc-project/roc/wiki/Manifesto).
 
 * **Dependencies**
 
