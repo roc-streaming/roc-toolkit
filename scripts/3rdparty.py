@@ -35,7 +35,11 @@ def download(url, path):
         ssl._create_default_https_context = ssl._create_unverified_context
     except:
         pass
-    archive = urllib2.urlopen(url)
+    try:
+        archive = urllib2.urlopen(url)
+    except Exception as e:
+        print("error: can't download '%s': %s" % (url, e.reason[1]), file=sys.stderr)
+        exit(1)
     with open(path, 'wb') as fp:
         fp.write(archive.read())
 
@@ -81,7 +85,7 @@ def getsysroot(toolchain):
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
         return proc.stdout.read().strip()
     except:
-        print("can't execute '%s'" % ' '.join(cmd), file=sys.stderr)
+        print("error: can't execute '%s'" % ' '.join(cmd), file=sys.stderr)
         exit(1)
 
 def getexports(workdir, deplist):
@@ -95,7 +99,7 @@ def getexports(workdir, deplist):
         ' '.join(['-L%s' % path for path in lib]))
 
 if len(sys.argv) != 5:
-    print("usage: 3rdparty.py workdir toolchain package deplist", file=sys.stderr)
+    print("error: usage: 3rdparty.py workdir toolchain package deplist", file=sys.stderr)
     exit(1)
 
 workdir = os.path.abspath(sys.argv[1])
@@ -204,7 +208,7 @@ elif name == 'cpputest':
     install('include', os.path.join(workdir, fullname, 'include'))
     install('lib/libCppUTest.a', os.path.join(workdir, fullname, 'lib'))
 else:
-    print("unknown 3rdparty '%s'" % fullname, file=sys.stderr)
+    print("error: unknown 3rdparty '%s'" % fullname, file=sys.stderr)
     exit(1)
 
 touch(os.path.join(workdir, fullname, 'commit'))
