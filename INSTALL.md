@@ -108,10 +108,11 @@ After building, tools and libraries are inside `bin/` directory.
 * `--with-targets=posix,stdio,gnu,uv,openfec,sox` - manually select source code directories to be included in build
 
 **Arguments**:
-* `variant=debug|release` - select build variant
-* `target=linux` - select target platform; currently only `linux` is supported
-* `compiler=<compiler>[-<version>]` - select compiler and version to use; currently, only `gcc` and `clang` are supported
-* `toolchain=<prefix>` - select toolchain prefix added to compiler, linker and other tools
+* `build={type}` - the type of system on which Roc is being compiled, e.g. `x86_64-pc-linux-gnu`, autodetected if empty
+* `host={type}` - the type of system on which Roc will run, e.g. `arm-linux-gnueabihf`, set equal to `build` if empty; used as prefix for copiler, linker, and similar tools
+* `platform={name}` - platform name on which Roc will run, e.g. `linux`, autodetected from `host` if empty
+* `compiler={name}` - compiler name, e.g. `gcc` or `clang`
+* `variant=${name}` - build variant, e.g. `release` (default) or `debug`
 
 **Build targets:**
 * *omitted* - build everything
@@ -120,8 +121,8 @@ After building, tools and libraries are inside `bin/` directory.
 * `clean` - remove build results
 * `fmt` - format source code (if [clang-format](http://clang.llvm.org/docs/ClangFormat.html) >= 3.6 is found in PATH, it's used with [.clang-format](.clang-format) config)
 * `tidy` - run clang static analyzer (requires clang-tidy to be installed)
-* `<module>` - build only specific module
-* `test/<module>` - build and run tests only for specific module
+* `{module}` - build only specific module
+* `test/{module}` - build and run tests only for specific module
 
 **Environment variables:**
 * `CC`, `CXX`, `LD`, `AR`, `RANLIB`, `GENGETOPT`, `DOXYGEN`, `PKG_CONFIG` - overwrite tools to use

@@ -160,30 +160,30 @@ supported_variants = [
     'release',
 ]
 
-host = '%s_%s' % (
-    platform.system().lower(), platform.machine().lower())
+# type of system on which Roc is being compiled, e.g. 'x86_64-pc-linux-gnu'
+build = ARGUMENTS.get('build', '')
 
-target = ARGUMENTS.get('target', host)
-variant = ARGUMENTS.get('variant', 'release')
-toolchain = ARGUMENTS.get('toolchain', '')
+# type of system on which Roc will run, e.g. 'arm-linux-gnueabihf'
+host = ARGUMENTS.get('host', '')
+
+# platform name on which Roc will run, e.g. 'linux'
+platform = ARGUMENTS.get('platform', '')
+
+# compiler name, e.g. 'gcc'
 compiler = ARGUMENTS.get('compiler', '')
 
-try:
-    target_platform, target_arch = target.split('_', 1)
-except:
-    env.Die("bad target `%s', expected {platform}_{arch}", target)
+# build variant, e.g. 'debug'
+variant = ARGUMENTS.get('variant', 'release')
 
-if not target_platform in supported_platforms and not GetOption('with_targets'):
-    env.Die(("unknown target platform `%s' in `%s', expected one of: %s\n"+
-             "you should either provide known target platform or --with-targets option"),
-                target_platform, target, ', '.join(supported_platforms))
+# toolchain prefix for compiler, linker, etc.
+toolchain = host
 
 if not variant in supported_variants:
     env.Die("unknown variant `%s', expected one of: %s",
             variant, ', '.join(supported_variants))
 
 if not compiler:
-    if host == target and env.Which('clang'):
+    if not toolchain and env.Which('clang'):
         compiler = 'clang'
     else:
         compiler = 'gcc'
@@ -192,18 +192,38 @@ if '-' in compiler:
     compiler, compiler_ver = compiler.split('-')
     compiler_ver = tuple(map(int, compiler_ver.split('.')))
 else:
-    compiler_ver = env.CompilerVersion(compiler)
+    if toolchain:
+        compiler_ver = env.CompilerVersion('%s-%s' % (toolchain, compiler))
+    else:
+        compiler_ver = env.CompilerVersion(compiler)
 
 if not compiler in supported_compilers:
     env.Die("unknown compiler `%s', expected one of: %s",
             compiler, ', '.join(supported_compilers))
 
 if not compiler_ver:
-    env.Die("can't detect compiler version")
+    env.Die("can't detect compiler version for compiler `%s'",
+            '-'.join([s for s in [toolchain, compiler] if s]))
 
-if not toolchain and host != target:
-    env.Die(("toolchain option is required when cross-compiling: "+
-            "host is `%s', tagret is `%s'"), host, target)
+if not build:
+    build = env.CompilerTarget(compiler)
+    if not build:
+        env.Die(("can't detect system type, please specify `build={type}' manually, "+
+                 "e.g. `build=x86_64-pc-linux-gnu'"))
+
+if not host:
+    host = build
+
+if not platform:
+    if 'linux' in host:
+        platform = 'linux'
+
+if not platform in supported_platforms and not GetOption('with_targets'):
+    env.Die(("unknown platform `%s', expected one of: %s\n"+
+             "you should either use known platform or provide --with-targets option"),
+                platform, ', '.join(supported_platforms))
+
+crosscompile = (host != build)
 
 conf = Configure(env, custom_tests=env.CustomTests)
 
@@ -290,9 +310,8 @@ env = conf.Finish()
 compiler_ver = env.CompilerVersion(env['CXX'])
 
 build_dir = 'build/%s/%s' % (
-    '-'.join([s for s in [
-        target, toolchain, compiler, '.'.join(map(str, compiler_ver))] if s]),
-    variant)
+    host,
+    '-'.join([s for s in [compiler, '.'.join(map(str, compiler_ver)), variant] if s]))
 
 if compiler == 'clang':
     for var in ['CC', 'CXX']:
@@ -305,7 +324,7 @@ if GetOption('with_targets'):
     for t in GetOption('with_targets').split(','):
         env['ROC_TARGETS'] += ['target_%s' % t]
 else:
-    if target_platform in ['linux']:
+    if platform in ['linux']:
         env.Append(ROC_TARGETS=[
             'target_posix',
             'target_stdio',
@@ -354,7 +373,7 @@ conf = Configure(env, custom_tests=env.CustomTests)
 if 'target_uv' in extdeps:
     env.TryParseConfig('--cflags --libs libuv')
 
-    if host == target:
+    if not crosscompile:
         if not conf.CheckLibWithHeaderExpr(
             'uv', 'uv.h', 'c', expr='UV_VERSION_MAJOR >= 1 && UV_VERSION_MINOR >= 4'):
             env.Die("libuv >= 1.4 not found (see `config.log' for details)")
@@ -364,7 +383,7 @@ if 'target_uv' in extdeps:
 
 if 'target_openfec' in extdeps:
     if not env.TryParseConfig('--silence-errors --cflags --libs openfec') \
-      and host == target:
+      and not crosscompile:
         for prefix in ['/usr/local', '/usr']:
             if os.path.exists('%s/include/openfec' % prefix):
                 env.Append(CPPPATH=[
@@ -394,7 +413,7 @@ if 'target_openfec' in extdeps:
 if 'target_sox' in extdeps:
     env.TryParseConfig('--cflags --libs sox')
 
-    if host == target:
+    if not crosscompile:
         if not conf.CheckLibWithHeaderExpr(
                 'sox', 'sox.h', 'c',
                 expr='SOX_LIB_VERSION_CODE >= SOX_LIB_VERSION(14, 4, 0)'):
@@ -428,36 +447,36 @@ test_env = test_conf.Finish()
 conf = Configure(env, custom_tests=env.CustomTests)
 
 if 'target_uv' in getdeps:
-    env.ThridParty(toolchain, 'uv-1.4.2')
+    env.ThirdParty(host, toolchain, 'uv-1.4.2')
 
 if 'target_openfec' in getdeps:
-    env.ThridParty(toolchain, 'openfec-1.4.2', includes=[
+    env.ThirdParty(host, toolchain, 'openfec-1.4.2', includes=[
         'lib_common',
         'lib_stable',
     ])
 
 if 'target_sox' in getdeps:
-    env.ThridParty(toolchain, 'sox-14.4.2')
+    env.ThirdParty(host, toolchain, 'alsa-1.0.29')
+    env.ThirdParty(host, toolchain, 'sox-14.4.2', deps=['alsa-1.0.29'])
 
     for lib in [
             'z', 'ltdl', 'magic',
             'sndfile', 'gsm', 'FLAC',
             'vorbis', 'vorbisenc', 'vorbisfile', 'ogg',
             'mad', 'mp3lame',
-            'asound',
             'pulse', 'pulse-simple']:
         conf.CheckLib(lib)
 
 if 'target_gengetopt' in getdeps:
-    env.ThridParty(toolchain, 'gengetopt-2.22.6')
+    env.ThirdParty(build, "", 'gengetopt-2.22.6')
 
     env['GENGETOPT'] = env.File(
-        '#3rdparty/gengetopt-2.22.6/bin/gengetopt' + env['PROGSUFFIX'])
+        '#3rdparty/%s/gengetopt-2.22.6/bin/gengetopt' % build + env['PROGSUFFIX'])
 
 env = conf.Finish()
 
 if 'target_cpputest' in getdeps:
-    test_env.ThridParty(toolchain, 'cpputest-3.6')
+    test_env.ThirdParty(host, toolchain, 'cpputest-3.6')
 
 if 'target_posix' in env['ROC_TARGETS']:
     env.Append(CPPDEFINES=[('_POSIX_C_SOURCE', '200809')])
@@ -467,8 +486,8 @@ for t in env['ROC_TARGETS']:
 
 env.Append(LIBPATH=['#bin'])
 
-if target_platform in ['linux']:
-    env.AppendUnique(LIBS=['rt'])
+if platform in ['linux']:
+    env.AppendUnique(LIBS=['rt', 'dl'])
 
 if compiler in ['gcc', 'clang']:
     env.Append(CXXFLAGS=[
@@ -558,7 +577,7 @@ if compiler == 'clang':
 
 if compiler in ['gcc', 'clang']:
     if not GetOption('disable_sanitizers') \
-      and host == target \
+      and not crosscompile \
       and variant == 'debug' and (
         (compiler == 'gcc' and compiler_ver[:2] >= (4, 9)) or
         (compiler == 'clang' and compiler_ver[:2] >= (3, 6))):

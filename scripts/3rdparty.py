@@ -8,6 +8,7 @@ import urllib2
 import ssl
 import tarfile
 import fileinput
+import subprocess
 
 printdir = os.path.abspath('.')
 
@@ -72,13 +73,35 @@ def freplace(path, pat, to):
 def touch(path):
     open(path, 'w').close()
 
-if len(sys.argv) != 4:
-    print("usage: 3rdparty.py workdir toolchain name")
+def getsysroot(toolchain):
+    if not toolchain:
+        return ""
+    try:
+        cmd = ['%s-gcc' % toolchain, '-print-sysroot']
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+        return proc.stdout.read().strip()
+    except:
+        print("can't execute '%s'" % ' '.join(cmd), file=sys.stderr)
+        exit(1)
+
+def getexports(workdir, deplist):
+    inc=[]
+    lib=[]
+    for dep in deplist:
+        inc += [os.path.join(workdir, dep, 'include')]
+        lib += [os.path.join(workdir, dep, 'lib')]
+    return 'CFLAGS="%s" LDFLAGS="%s"' % (
+        ' '.join(['-I%s' % path for path in inc]),
+        ' '.join(['-L%s' % path for path in lib]))
+
+if len(sys.argv) != 5:
+    print("usage: 3rdparty.py workdir toolchain package deplist", file=sys.stderr)
     exit(1)
 
 workdir = os.path.abspath(sys.argv[1])
 toolchain = sys.argv[2]
 fullname = sys.argv[3]
+deplist = sys.argv[4].split(':')
 
 logfile = os.path.join(workdir, fullname, 'build.log')
 
@@ -89,13 +112,13 @@ mkpath(os.path.join(workdir, fullname, 'src'))
 os.chdir(os.path.join(workdir, fullname, 'src'))
 
 if name == 'uv':
-    download('https://github.com/libuv/libuv/archive/v%s.tar.gz' % ver,
-             'libuv-%s.tar.gz' % ver)
-    extract('libuv-%s.tar.gz' % ver,
-            'libuv-%s' % ver)
-    os.chdir('libuv-%s' % ver)
+    download('http://dist.libuv.org/dist/v%s/libuv-v%s.tar.gz' % (ver, ver),
+             'libuv-v%s.tar.gz' % ver)
+    extract('libuv-v%s.tar.gz' % ver,
+            'libuv-v%s' % ver)
+    os.chdir('libuv-v%s' % ver)
     execute('./autogen.sh', logfile)
-    execute('./configure --enable-static --target=%s' % toolchain, logfile)
+    execute('./configure --host=%s --enable-static' % toolchain, logfile)
     execute('make -j', logfile)
     install('include', os.path.join(workdir, fullname, 'include'))
     install('.libs/libuv.a', os.path.join(workdir, fullname, 'lib'))
@@ -110,7 +133,8 @@ elif name == 'openfec':
     os.mkdir('build')
     os.chdir('build')
     execute('cmake .. ' + ' '.join([
-        '-DCMAKE_SYSTEM_NAME=%s' % toolchain,
+        '-DCMAKE_C_COMPILER=%s' % '-'.join([s for s in [toolchain, 'gcc'] if s]),
+        '-DCMAKE_FIND_ROOT_PATH=%s' % getsysroot(toolchain),
         '-DCMAKE_BUILD_TYPE=Release',
         '-DDEBUG:STRING=OFF', # disable debug logs
         ]), logfile)
@@ -119,6 +143,23 @@ elif name == 'openfec':
     install('src', os.path.join(workdir, fullname, 'include'),
             ignore=['*.c', '*.txt'])
     install('bin/Release/libopenfec.a', os.path.join(workdir, fullname, 'lib'))
+elif name == 'alsa':
+    download(
+      'ftp://ftp.alsa-project.org/pub/lib/alsa-lib-%s.tar.bz2' % ver,
+        'alsa-lib-%s.tar.bz2' % ver)
+    extract('alsa-lib-%s.tar.bz2' % ver,
+            'alsa-lib-%s' % ver)
+    os.chdir('alsa-lib-%s' % ver)
+    execute('./configure --host=%s %s' % (
+        toolchain, ' '.join([
+            '--enable-static',
+            '--disable-shared',
+            '--disable-python',
+        ])), logfile)
+    execute('make -j', logfile)
+    install('include/alsa',
+            os.path.join(workdir, fullname, 'include', 'alsa'), ignore=['alsa'])
+    install('src/.libs/libasound.a', os.path.join(workdir, fullname, 'lib'))
 elif name == 'sox':
     download(
       'http://vorboss.dl.sourceforge.net/project/sox/sox/%s/sox-%s.tar.gz' % (ver, ver),
@@ -126,8 +167,10 @@ elif name == 'sox':
     extract('sox-%s.tar.gz' % ver,
             'sox-%s' % ver)
     os.chdir('sox-%s' % ver)
-    execute(' ./configure --enable-static --disable-shared --target=%s %s' % (
-        toolchain, ' '.join([
+    execute('%s LIBS="-lpthread -ldl -lrt" ./configure --host=%s %s' % (
+        getexports(workdir, deplist), toolchain, ' '.join([
+            '--enable-static',
+            '--disable-shared',
             '--disable-openmp',
             '--without-id3tag',
             '--without-png',
@@ -155,13 +198,13 @@ elif name == 'cpputest':
     # disable memory leak detection which is too hard to use properly
     # disable warnings, since CppUTest uses -Werror and may fail to build on old GCC
     execute('CXXFLAGS="-w" '
-        './configure --enable-static --disable-memory-leak-detection --target=%s' % (
+        './configure --host=%s --enable-static --disable-memory-leak-detection' % (
             toolchain), logfile)
     execute('make -j', logfile)
     install('include', os.path.join(workdir, fullname, 'include'))
     install('lib/libCppUTest.a', os.path.join(workdir, fullname, 'lib'))
 else:
-    print("unknown 3rdparty '%s'" % fullname)
+    print("unknown 3rdparty '%s'" % fullname, file=sys.stderr)
     exit(1)
 
 touch(os.path.join(workdir, fullname, 'commit'))

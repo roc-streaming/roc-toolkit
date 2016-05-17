@@ -90,6 +90,23 @@ def CompilerVersion(env, compiler):
 
     return None
 
+def CompilerTarget(env, compiler):
+    try:
+        with open(os.devnull, 'w') as null:
+            proc = subprocess.Popen([compiler, '-v', '-E', '-'],
+                                    stdin=null,
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.STDOUT)
+    except:
+        return None
+
+    for line in proc.stdout.readlines():
+        m = re.match(r'^Target:\s*(\S+)', line)
+        if m:
+            return m.group(1)
+
+    return None
+
 def ClangDB(env, build_dir, pattern, compiler):
     return '%s %s/wrappers/clangdb.py %s %s "%s" %s' % (
         env.Python(),
@@ -171,28 +188,30 @@ def GenGetOpt(env, source, ver):
 
     return ret
 
-def ThridParty(env, toolchain, name, includes=[]):
-    if not os.path.exists(os.path.join('3rdparty', name, 'commit')):
+def ThirdParty(env, host, toolchain, name, deps=[], includes=[]):
+    if not os.path.exists(os.path.join('3rdparty', host, name, 'commit')):
         if env.Execute(
             SCons.Action.CommandAction(
-                '%s scripts/3rdparty.py 3rdparty "%s" %s' % (
+                '%s scripts/3rdparty.py "3rdparty/%s" "%s" "%s" "%s"' % (
                     env.Python(),
+                    host,
                     toolchain,
-                    name),
-                cmdstr = env.Pretty('GET', name, 'yellow'))):
-            env.Die("can't make `%s', see `3rdparty/%s/build.log' for details" % (
-                name, name))
+                    name,
+                    ':'.join(deps)),
+                cmdstr = env.Pretty('GET', '%s/%s' % (host, name), 'yellow'))):
+            env.Die("can't make `%s', see `3rdparty/%s/%s/build.log' for details" % (
+                name, host, name))
 
     if not includes:
         includes = ['']
 
     for s in includes:
         env.Prepend(CPPPATH=[
-            '#3rdparty/%s/include/%s' % (name, s)
+            '#3rdparty/%s/%s/include/%s' % (host, name, s)
         ])
 
-    for lib in env.RecursiveGlob('#3rdparty/%s/lib' % name, 'lib*'):
-        env.Append(LIBS=[env.File(lib)])
+    for lib in env.RecursiveGlob('#3rdparty/%s/%s/lib' % (host, name), 'lib*'):
+        env.Prepend(LIBS=[env.File(lib)])
 
 def DeleteFile(env, path):
     path = env.File(path).path
@@ -275,10 +294,11 @@ def Init(env):
     env.AddMethod(Which, 'Which')
     env.AddMethod(Python, 'Python')
     env.AddMethod(CompilerVersion, 'CompilerVersion')
+    env.AddMethod(CompilerTarget, 'CompilerTarget')
     env.AddMethod(ClangDB, 'ClangDB')
     env.AddMethod(Doxygen, 'Doxygen')
     env.AddMethod(GenGetOpt, 'GenGetOpt')
-    env.AddMethod(ThridParty, 'ThridParty')
+    env.AddMethod(ThirdParty, 'ThirdParty')
     env.AddMethod(DeleteFile, 'DeleteFile')
     env.AddMethod(DeleteDir, 'DeleteDir')
     env.AddMethod(TryParseConfig, 'TryParseConfig')
