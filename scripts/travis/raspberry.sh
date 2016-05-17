@@ -1,6 +1,7 @@
 #! /bin/bash
 set -xe
 scons -Q clean
+SYSROOT="/opt/raspberry/arm-bcm2708/arm-bcm2708-linux-gnueabi/arm-bcm2708-linux-gnueabi/sysroot"
 for v in debug release
 do
   PATH="/opt/raspberry/arm-bcm2708/arm-bcm2708hardfp-linux-gnueabi/bin:${PATH}" \
@@ -9,7 +10,6 @@ do
 
   for t in bin/arm-bcm2708hardfp-linux-gnueabi/roc-test-*
   do
-    LD_LIBRARY_PATH="/opt/raspberry/arm-bcm2708/arm-bcm2708-linux-gnueabi/arm-bcm2708-linux-gnueabi/sysroot/lib" \
-      qemu-arm -L "${LD_LIBRARY_PATH}" -cpu arm1176 $t # armv6
+    LD_LIBRARY_PATH="${SYSROOT}/lib" qemu-arm -L "${SYSROOT}" -cpu arm1176 $t # armv6
   done
 done

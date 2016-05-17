@@ -1,6 +1,7 @@
 #! /bin/bash
 set -xe
 scons -Q clean
+SYSROOT="/opt/linaro/arm-linux-gnueabihf/libc"
 for v in debug release
 do
   PATH="/opt/linaro/bin:${PATH}" \
@@ -9,7 +10,6 @@ do
 
   for t in bin/arm-linux-gnueabihf/roc-test-*
   do
-    LD_LIBRARY_PATH="/opt/linaro/arm-linux-gnueabihf/libc/lib" \
-      qemu-arm -L "${LD_LIBRARY_PATH}" -cpu cortex-a15 $t # armv7
+    LD_LIBRARY_PATH="${SYSROOT}/lib" qemu-arm -L "${SYSROOT}" -cpu cortex-a15 $t # armv7
   done
 done
