@@ -175,11 +175,11 @@ compiler = ARGUMENTS.get('compiler', '')
 # build variant, e.g. 'debug'
 variant = ARGUMENTS.get('variant', 'release')
 
-# toolchain prefix for compiler, linker, etc.
+# toolchain prefix for compiler, linker, etc. may be equal to 'host' or empty
 toolchain = host
 
 if not variant in supported_variants:
-    env.Die("unknown variant `%s', expected one of: %s",
+    env.Die("unknown variant '%s', expected one of: %s",
             variant, ', '.join(supported_variants))
 
 if not compiler:
@@ -198,32 +198,12 @@ else:
         compiler_ver = env.CompilerVersion(compiler)
 
 if not compiler in supported_compilers:
-    env.Die("unknown compiler `%s', expected one of: %s",
+    env.Die("unknown compiler '%s', expected one of: %s",
             compiler, ', '.join(supported_compilers))
 
 if not compiler_ver:
-    env.Die("can't detect compiler version for compiler `%s'",
+    env.Die("can't detect compiler version for compiler '%s'",
             '-'.join([s for s in [toolchain, compiler] if s]))
-
-if not build:
-    build = env.CompilerTarget(compiler)
-    if not build:
-        env.Die(("can't detect system type, please specify `build={type}' manually, "+
-                 "e.g. `build=x86_64-pc-linux-gnu'"))
-
-if not host:
-    host = build
-
-if not platform:
-    if 'linux' in host:
-        platform = 'linux'
-
-if not platform in supported_platforms and not GetOption('with_targets'):
-    env.Die(("unknown platform `%s', expected one of: %s\n"+
-             "you should either use known platform or provide --with-targets option"),
-                platform, ', '.join(supported_platforms))
-
-crosscompile = (host != build)
 
 conf = Configure(env, custom_tests=env.CustomTests)
 
@@ -288,7 +268,7 @@ for var in ['CC', 'CXX', 'LD', 'AR', 'RANLIB']:
 
             if actual_ver != compiler_ver:
                 env.Die(
-                    "can't detect %s: `%s' not found in PATH, `%s' version is %s" % (
+                    "can't detect %s: '%s' not found in PATH, '%s' version is %s" % (
                         var,
                         '%s-%s' % (env[var], '.'.join(map(str, compiler_ver))),
                         env[var],
@@ -308,6 +288,32 @@ env = conf.Finish()
 
 # get full version
 compiler_ver = env.CompilerVersion(env['CXX'])
+
+if not build:
+    build = env.CompilerTarget(env['CXX'])
+    if not build:
+        env.Die(("can't detect system type, please specify 'build={type}' manually, "+
+                 "e.g. 'build=x86_64-pc-linux-gnu'"))
+
+if not host:
+    host = build
+
+if not platform:
+    if 'linux' in host:
+        platform = 'linux'
+
+if not GetOption('with_targets'):
+    if not platform:
+        env.Die(("can't detect platform for host '%s', looked for one of: %s\nyou should "+
+                 "provide either known 'platform' argument or '--with-targets' option"),
+                    host, ', '.join(supported_platforms))
+
+    if not platform in supported_platforms:
+        env.Die(("unknown platform '%s', expected one of: %s\nyou should "+
+                 "provide either known 'platform' argument or '--with-targets' option"),
+                    platform, ', '.join(supported_platforms))
+
+crosscompile = (host != build)
 
 build_dir = 'build/%s/%s' % (
     host,
@@ -377,10 +383,10 @@ if 'target_uv' in extdeps:
     if not crosscompile:
         if not conf.CheckLibWithHeaderExpr(
             'uv', 'uv.h', 'c', expr='UV_VERSION_MAJOR >= 1 && UV_VERSION_MINOR >= 4'):
-            env.Die("libuv >= 1.4 not found (see `config.log' for details)")
+            env.Die("libuv >= 1.4 not found (see 'config.log' for details)")
     else:
         if not conf.CheckLibWithHeaderUniq('uv', 'uv.h', 'c'):
-            env.Die("libuv not found (see `config.log' for details)")
+            env.Die("libuv not found (see 'config.log' for details)")
 
 if 'target_openfec' in extdeps:
     if not env.TryParseConfig('--silence-errors --cflags --libs openfec') \
@@ -398,7 +404,7 @@ if 'target_openfec' in extdeps:
                 break
 
     if not conf.CheckLibWithHeaderUniq('openfec', 'of_openfec_api.h', 'c'):
-        env.Die("openfec not found (see `config.log' for details)")
+        env.Die("openfec not found (see 'config.log' for details)")
 
     if not conf.CheckDeclaration('OF_USE_ENCODER', '#include <of_openfec_api.h>', 'c'):
         env.Die("openfec has no encoder support (OF_USE_ENCODER)")
@@ -418,10 +424,10 @@ if 'target_sox' in extdeps:
         if not conf.CheckLibWithHeaderExpr(
                 'sox', 'sox.h', 'c',
                 expr='SOX_LIB_VERSION_CODE >= SOX_LIB_VERSION(14, 4, 0)'):
-            env.Die("libsox >= 14.4.0 not found (see `config.log' for details)")
+            env.Die("libsox >= 14.4.0 not found (see 'config.log' for details)")
     else:
         if not conf.CheckLibWithHeaderUniq('sox', 'sox.h', 'c'):
-            env.Die("libsox not found (see `config.log' for details)")
+            env.Die("libsox not found (see 'config.log' for details)")
 
 if 'target_gengetopt' in extdeps:
     if 'GENGETOPT' in env.Dictionary():
@@ -430,7 +436,7 @@ if 'target_gengetopt' in extdeps:
         gengetopt = 'gengetopt'
 
     if not conf.CheckProg(gengetopt):
-        env.Die("gengetopt not found in PATH (looked for `%s')" % gengetopt)
+        env.Die("gengetopt not found in PATH (looked for '%s')" % gengetopt)
 
 env = conf.Finish()
 
@@ -441,7 +447,7 @@ if 'target_cpputest' in extdeps:
     test_env.TryParseConfig('--cflags --libs cpputest')
 
     if not test_conf.CheckLibWithHeaderUniq('CppUTest', 'CppUTest/TestHarness.h', 'cxx'):
-        test_env.Die("CppUTest not found (see `config.log' for details)")
+        test_env.Die("CppUTest not found (see 'config.log' for details)")
 
 test_env = test_conf.Finish()
 
@@ -512,7 +518,7 @@ if compiler in ['gcc', 'clang']:
     else:
         env.Append(CXXFLAGS=['-O2'])
 else:
-    env.Die("CXXFLAGS setup not implemented for compiler `%s'", compiler)
+    env.Die("CXXFLAGS setup not implemented for compiler '%s'", compiler)
 
 if compiler == 'gcc':
     env.Append(CXXFLAGS=[

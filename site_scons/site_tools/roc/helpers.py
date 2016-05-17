@@ -125,7 +125,7 @@ def Doxygen(env, output_dir, sources, werror=False):
         doxygen = 'doxygen'
 
     if not env.Which(doxygen):
-        env.Die("doxygen not found in PATH (looked for `%s')" % doxygen)
+        env.Die("doxygen not found in PATH (looked for '%s')" % doxygen)
 
     env.Command(target, sources, SCons.Action.CommandAction(
         '%s %s/wrappers/doxygen.py %s %s %s %s %s' % (
@@ -149,7 +149,7 @@ def GenGetOpt(env, source, ver):
 
     if isinstance(gengetopt, str):
         if not env.Which(gengetopt):
-            env.Die("gengetopt not found in PATH (looked for `%s')" % gengetopt)
+            env.Die("gengetopt not found in PATH (looked for '%s')" % gengetopt)
     else:
         gengetopt = env.File(gengetopt).path
 
@@ -199,7 +199,7 @@ def ThirdParty(env, host, toolchain, name, deps=[], includes=[]):
                     name,
                     ':'.join(deps)),
                 cmdstr = env.Pretty('GET', '%s/%s' % (host, name), 'yellow'))):
-            env.Die("can't make `%s', see `3rdparty/%s/%s/build.log' for details" % (
+            env.Die("can't make '%s', see '3rdparty/%s/%s/build.log' for details" % (
                 name, host, name))
 
     if not includes:
