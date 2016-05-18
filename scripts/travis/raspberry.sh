@@ -1,15 +1,17 @@
 #! /bin/bash
 set -xe
+TOOLCHAIN="arm-bcm2708hardfp-linux-gnueabi"
+SYSROOT="/opt/toolchains/${TOOLCHAIN}/${TOOLCHAIN}"
+CPU="arm1176" # armv6
 scons -Q clean
-SYSROOT="/opt/raspberry/arm-bcm2708/arm-bcm2708-linux-gnueabi/arm-bcm2708-linux-gnueabi/sysroot"
 for v in debug release
 do
-  PATH="/opt/raspberry/arm-bcm2708/arm-bcm2708hardfp-linux-gnueabi/bin:${PATH}" \
+  PATH="/opt/toolchains/${TOOLCHAIN}/bin:${PATH}" \
     scons -Q --enable-werror --with-3rdparty=uv,openfec,sox,cpputest \
-      host=arm-bcm2708hardfp-linux-gnueabi variant=$v
+      host=${TOOLCHAIN} variant=$v
 
-  for t in bin/arm-bcm2708hardfp-linux-gnueabi/roc-test-*
+  for t in bin/${TOOLCHAIN}/roc-test-*
   do
-    LD_LIBRARY_PATH="${SYSROOT}/lib" qemu-arm -L "${SYSROOT}" -cpu arm1176 $t # armv6
+    LD_LIBRARY_PATH="${SYSROOT}/lib" qemu-arm -L "${SYSROOT}" -cpu ${CPU} $t
   done
 done
