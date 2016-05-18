@@ -71,24 +71,47 @@ def Python(env):
         return sys.executable
 
 def CompilerVersion(env, compiler):
-    try:
-        proc = subprocess.Popen([compiler, '--version'],
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.STDOUT)
-    except:
+    def getverstr():
+        try:
+            version_formats = [
+                r'(\b[0-9]+\.[0-9]+\.[0-9]+\b)',
+                r'(\b[0-9]+\.[0-9]+\b)',
+            ]
+
+            full_proc = subprocess.Popen([compiler, '--version'],
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.STDOUT)
+
+            full_text = ' '.join(full_proc.stdout.readlines())
+
+            for regex in version_formats:
+                m = re.search(r'clang\s+version\s+'+regex, full_text)
+                if m:
+                    return m.group(1)
+
+            trunc_text = re.sub(r'\([^)]+\)', '', full_text)
+
+            dump_proc = subprocess.Popen([compiler, '-dumpversion'],
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.STDOUT)
+
+            dump_text = ' '.join(dump_proc.stdout.readlines())
+
+            for text in [dump_text, trunc_text, full_text]:
+                for regex in version_formats:
+                    m = re.search(regex, text)
+                    if m:
+                        return m.group(1)
+
+            return None
+        except:
+            pass
+
+    ver = getverstr()
+    if ver:
+        return tuple(map(int, ver.split('.')))
+    else:
         return None
-
-    text = ' '.join(proc.stdout.readlines())
-
-    m = re.search(r'(\b[0-9]+\.[0-9]+\.[0-9]+\b)', text)
-    if m:
-        return tuple(map(int, m.group(1).split('.')))
-
-    m = re.search(r'(\b[0-9]+\.[0-9]+\b)', text)
-    if m:
-        return tuple(map(int, m.group(1).split('.')))
-
-    return None
 
 def CompilerTarget(env, compiler):
     try:
