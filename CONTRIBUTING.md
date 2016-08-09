@@ -8,7 +8,7 @@ Conventions
 
 * **Dependencies**
 
-    We don't use STL and boost. Avoid introducing unnecessary external dependencies. But when it's necessay or obviously useful, try to make it optional. Prefer using cross-platform libraries.
+    We don't use STL and boost. Avoid introducing unnecessary external dependencies. But when it's necessary or obviously useful, try to make it optional. Prefer using cross-platform libraries.
 
 * **Targets**
 
@@ -20,17 +20,17 @@ Conventions
 
 * **Warnings**
 
-    If possible, ensure you code builds with `--enable-werror` option with major compilers, preferrably recent `clang` and `gcc`. Running `scons tidy` may be also useful. See details in [INSTALL](INSTALL.md).
+    If possible, ensure you code builds with `--enable-werror` option with major compilers, preferably recent `clang` and `gcc`. Running `scons tidy` may be also useful. See details in [INSTALL](INSTALL.md).
 
 * **Tests**
 
-    Write unit tests for non-trivial components. Before comitting, run `scons test` to ensure that existing tests are not broken. See details in [INSTALL](INSTALL.md).
+    Write unit tests for non-trivial components. Before committing, run `scons test` to ensure that existing tests are not broken. See details in [INSTALL](INSTALL.md).
 
 * **Error handling**
 
     Use `roc_panic()` to die gracefully when component's contract is broken. Use `roc_log()` to make debugging your code easier for others.
 
-    We don't use exceptions and avoid returning error codes. Use `roc_panic()` and `roc_log()` and prefrer boolean or null return values.
+    We don't use exceptions and avoid returning error codes. Use `roc_panic()` and `roc_log()` and prefer boolean or null return values.
 
 * **Multi-threading**
 
@@ -40,7 +40,7 @@ Conventions
 
     Source code is periodically formatted using [`format.py`](scripts/format.py) script and `clang-format` with [`.clang-format`](.clang-format) config.
 
-    Follow existing code style or better run `scons fmt` before comitting to avoid unnecessary merge conflicts in future. See details in [INSTALL](INSTALL.md).
+    Follow existing code style or better run `scons fmt` before committing to avoid unnecessary merge conflicts in future. See details in [INSTALL](INSTALL.md).
 
 * **Copyright**
 
