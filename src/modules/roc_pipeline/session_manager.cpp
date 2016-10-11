@@ -32,7 +32,7 @@ size_t SessionManager::num_sessions() const {
 
 void SessionManager::add_port(const datagram::Address& address,
                               packet::IPacketParser& parser) {
-    roc_panic_if(&parser == NULL);
+    roc_panic_if((const void*)&parser == NULL);
 
     Port port;
     port.address = address;

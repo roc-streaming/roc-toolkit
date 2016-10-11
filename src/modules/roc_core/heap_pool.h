@@ -57,7 +57,7 @@ public:
 
     //! Check if this object belongs to this pool.
     virtual void check(T& object) {
-        roc_panic_if(&object == NULL);
+        roc_panic_if((const void*)&object == NULL);
     }
 
     //! Get static instance.

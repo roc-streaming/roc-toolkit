@@ -93,7 +93,7 @@ public:
     //! @pre
     //!  @p element should be member of this list.
     Ptr next(T& element) const {
-        roc_panic_if(&element == NULL);
+        roc_panic_if((const void*)&element == NULL);
 
         ListNode::Node* node = element.listnode();
         check_is_member_(node, this);
@@ -127,7 +127,7 @@ public:
     //!  @p element should not be member of any list.
     //!  @p before should be member of this list or NULL.
     void insert(T& element, T* before) {
-        roc_panic_if(&element == NULL);
+        roc_panic_if((const void*)&element == NULL);
 
         ListNode::Node* node_new = element.listnode();
         check_is_member_(node_new, NULL);
@@ -163,7 +163,7 @@ public:
     //! @pre
     //!  @p element should be member of this list.
     void remove(T& element) {
-        roc_panic_if(&element == NULL);
+        roc_panic_if((const void*)&element == NULL);
 
         ListNode::Node* node = element.listnode();
         check_is_member_(node, this);
