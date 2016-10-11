@@ -12,35 +12,20 @@
 #include "roc_core/aligned_storage.h"
 #include "roc_core/maybe.h"
 
+#include "test_object.h"
+
 namespace roc {
 namespace test {
 
 using namespace core;
 
-namespace {
+typedef Maybe<TestObject> TestMaybe;
 
-const size_t TEST_INITIALIZED = 111;
-const size_t TEST_DESTROYED = 222;
-
-struct Object {
-    // Don't optimize-out value reads after destructor call (although it's UB).
-    volatile size_t value;
-
-    Object() {
-        value = TEST_INITIALIZED;
-    }
-
-    ~Object() {
-        CHECK(value == TEST_INITIALIZED);
-        value = TEST_DESTROYED;
+TEST_GROUP(maybe) {
+    void setup() {
+        TestObject::state.clear();
     }
 };
-
-typedef Maybe<Object> TestMaybe;
-
-} // namespace
-
-TEST_GROUP(maybe){};
 
 TEST(maybe, empty) {
     TestMaybe maybe;
@@ -52,14 +37,13 @@ TEST(maybe, empty) {
 TEST(maybe, allocate) {
     TestMaybe maybe;
 
-    Object* obj = new (maybe.allocate()) Object();
+    TestObject* obj = new (maybe.allocate()) TestObject();
 
     CHECK(maybe);
     CHECK(maybe.get() == obj);
     CHECK(&*maybe == obj);
-    CHECK(&maybe->value == &obj->value);
 
-    CHECK(obj->value == TEST_INITIALIZED);
+    CHECK(obj->value() == TestObject::Initialized);
 
     CHECK(&TestMaybe::container_of(*obj) == &maybe);
 }
@@ -67,7 +51,7 @@ TEST(maybe, allocate) {
 TEST(maybe, placement_new) {
     TestMaybe maybe;
 
-    Object* obj = new (maybe) Object();
+    TestObject* obj = new (maybe) TestObject();
 
     CHECK(maybe);
     CHECK(maybe.get() == obj);
@@ -76,37 +60,37 @@ TEST(maybe, placement_new) {
 TEST(maybe, destroy_allocated) {
     AlignedStorage<TestMaybe> storage;
 
-    Object* obj;
+    TestObject* obj;
 
     {
         TestMaybe* maybe = new (storage.mem()) TestMaybe;
 
-        obj = new (maybe->allocate()) Object();
+        obj = new (maybe->allocate()) TestObject();
 
-        CHECK(obj->value == TEST_INITIALIZED);
+        CHECK(obj->value() == TestObject::Initialized);
 
         maybe->~TestMaybe();
     }
 
-    CHECK(obj->value == TEST_DESTROYED);
+    CHECK(obj->value() == TestObject::Destroyed);
 }
 
 TEST(maybe, destroy_not_allocated) {
     AlignedStorage<TestMaybe> storage;
 
-    Object* obj;
+    TestObject* obj;
 
     {
         TestMaybe* maybe = new (storage.mem()) TestMaybe;
 
-        obj = (Object*)maybe->memory();
+        obj = (TestObject*)maybe->memory();
 
-        obj->value = TEST_INITIALIZED;
+        obj->set_value(TestObject::Initialized);
 
         maybe->~TestMaybe();
     }
 
-    CHECK(obj->value == TEST_INITIALIZED);
+    CHECK(obj->value() == TestObject::Initialized);
 }
 
 } // namespace test

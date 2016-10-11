@@ -11,44 +11,28 @@
 
 #include "roc_core/array.h"
 
+#include "test_object.h"
+
 namespace roc {
 namespace test {
 
 using namespace core;
 
-namespace {
-
-const size_t TEST_INITIALIZED = 111;
-const size_t TEST_DESTROYED = 222;
-
-const size_t TEST_N_OBJECTS = 5;
-
-struct Object {
-    // Don't optimize-out value reads after destructor call (although it's UB).
-    volatile size_t value;
-
-    Object(size_t val = TEST_INITIALIZED)
-        : value(val) {
-    }
-
-    ~Object() {
-        value = TEST_DESTROYED;
-    }
+enum {
+    NumTestObjects = 5
 };
 
-typedef Array<Object, TEST_N_OBJECTS> TestArray;
-
-} // namespace
+typedef Array<TestObject, NumTestObjects> TestArray;
 
 TEST_GROUP(array) {
     void* array_mem;
     TestArray* array_ptr;
 
     void setup() {
+        TestObject::state.clear();
+
         array_mem = malloc(sizeof(TestArray));
-
         memset(array_mem, 0, sizeof(TestArray));
-
         array_ptr = new (array_mem) TestArray();
     }
 
@@ -62,29 +46,29 @@ TEST_GROUP(array) {
 
     void expect_value(size_t value, size_t from, size_t to) {
         for (size_t n = from; n < to; n++) {
-            LONGS_EQUAL(value, array().memory()[n].value);
+            LONGS_EQUAL(value, array().memory()[n].value());
         }
     }
 
     void expect_initialized(size_t from, size_t to) {
-        expect_value(TEST_INITIALIZED, from, to);
+        expect_value(TestObject::Initialized, from, to);
     }
 
     void expect_uninitialized(size_t from, size_t to) {
         for (size_t n = from; n < to; n++) {
-            CHECK(array().memory()[n].value != TEST_INITIALIZED);
+            CHECK(array().memory()[n].value() != TestObject::Initialized);
         }
     }
 };
 
 TEST(array, max_size) {
-    LONGS_EQUAL(TEST_N_OBJECTS, array().max_size());
+    LONGS_EQUAL(NumTestObjects, array().max_size());
 }
 
 TEST(array, empty) {
     LONGS_EQUAL(0, array().size());
 
-    expect_uninitialized(0, TEST_N_OBJECTS);
+    expect_uninitialized(0, NumTestObjects);
 }
 
 TEST(array, resize_grow) {
@@ -94,7 +78,7 @@ TEST(array, resize_grow) {
 
     expect_initialized(0, 3);
 
-    expect_uninitialized(3, TEST_N_OBJECTS);
+    expect_uninitialized(3, NumTestObjects);
 }
 
 TEST(array, resize_shrink) {
@@ -108,67 +92,67 @@ TEST(array, resize_shrink) {
 
     expect_initialized(0, 1);
 
-    expect_uninitialized(1, TEST_N_OBJECTS);
+    expect_uninitialized(1, NumTestObjects);
 }
 
 TEST(array, append) {
-    for (size_t n = 0; n < TEST_N_OBJECTS; n++) {
-        array().append(Object(n));
+    for (size_t n = 0; n < NumTestObjects; n++) {
+        array().append(TestObject(n));
 
         LONGS_EQUAL(n + 1, array().size());
 
-        expect_uninitialized(n + 1, TEST_N_OBJECTS);
+        expect_uninitialized(n + 1, NumTestObjects);
     }
 
-    for (size_t n = 0; n < TEST_N_OBJECTS; n++) {
-        LONGS_EQUAL(n, array()[n].value);
+    for (size_t n = 0; n < NumTestObjects; n++) {
+        LONGS_EQUAL(n, array()[n].value());
     }
 }
 
 TEST(array, memory) {
-    array().resize(TEST_N_OBJECTS);
+    array().resize(NumTestObjects);
 
-    for (size_t n = 0; n < TEST_N_OBJECTS; n++) {
+    for (size_t n = 0; n < NumTestObjects; n++) {
         POINTERS_EQUAL(array().memory() + n, &array()[n]);
     }
 }
 
 TEST(array, allocate) {
-    for (size_t n = 0; n < TEST_N_OBJECTS; n++) {
+    for (size_t n = 0; n < NumTestObjects; n++) {
         POINTERS_EQUAL(array().memory() + n, array().allocate());
 
         LONGS_EQUAL(n + 1, array().size());
     }
 
-    expect_uninitialized(0, TEST_N_OBJECTS);
+    expect_uninitialized(0, NumTestObjects);
 }
 
 TEST(array, constructor) {
-    expect_uninitialized(0, TEST_N_OBJECTS);
+    expect_uninitialized(0, NumTestObjects);
 
-    new (array_mem) TestArray(TEST_N_OBJECTS);
+    new (array_mem) TestArray(NumTestObjects);
 
-    expect_initialized(0, TEST_N_OBJECTS);
+    expect_initialized(0, NumTestObjects);
 }
 
 TEST(array, destructor) {
-    array().append(Object(11));
-    array().append(Object(22));
-    array().append(Object(33));
+    array().append(TestObject(11));
+    array().append(TestObject(22));
+    array().append(TestObject(33));
 
     array().~TestArray();
 
-    expect_value(TEST_DESTROYED, 0, 3);
+    expect_value(TestObject::Destroyed, 0, 3);
 
-    expect_value(0, 3, TEST_N_OBJECTS);
+    expect_value(0, 3, NumTestObjects);
 }
 
 TEST(array, front_back) {
-    for (size_t n = 0; n < TEST_N_OBJECTS; n++) {
-        array().append(Object(n));
+    for (size_t n = 0; n < NumTestObjects; n++) {
+        array().append(TestObject(n));
 
-        LONGS_EQUAL(0, array().front().value);
-        LONGS_EQUAL(n, array().back().value);
+        LONGS_EQUAL(0, array().front().value());
+        LONGS_EQUAL(n, array().back().value());
 
         POINTERS_EQUAL(&array()[0], &array().front());
         POINTERS_EQUAL(&array()[n], &array().back());

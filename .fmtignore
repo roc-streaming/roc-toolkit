@@ -1,4 +1,5 @@
 src/tests/roc_core/test_aligned_storage.cpp
+src/tests/roc_core/test_maybe.cpp
 src/tests/roc_packet/test_interleaver.cpp
 src/tests/roc_packet/test_packet_queue.cpp
 src/tests/roc_audio/test_delayer.cpp
