@@ -122,7 +122,7 @@ if name == 'uv':
             'libuv-v%s' % ver)
     os.chdir('libuv-v%s' % ver)
     execute('./autogen.sh', logfile)
-    execute('./configure --host=%s --enable-static' % toolchain, logfile)
+    execute('./configure --host=%s --with-pic --enable-static' % toolchain, logfile)
     execute('make -j', logfile)
     install('include', os.path.join(workdir, fullname, 'include'))
     install('.libs/libuv.a', os.path.join(workdir, fullname, 'lib'))
@@ -145,6 +145,7 @@ elif name == 'openfec':
         '-DCMAKE_C_COMPILER=%s' % '-'.join([s for s in [toolchain, 'gcc'] if s]),
         '-DCMAKE_FIND_ROOT_PATH=%s' % getsysroot(toolchain),
         '-DCMAKE_BUILD_TYPE=Release',
+        '-DCMAKE_POSITION_INDEPENDENT_CODE=ON',
         '-DDEBUG:STRING=OFF', # disable debug logs
         ]), logfile)
     execute('make -j', logfile)
