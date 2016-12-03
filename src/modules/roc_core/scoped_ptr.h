@@ -48,6 +48,16 @@ public:
         }
     }
 
+    //! Get underlying pointer and pass ownership to the caller.
+    T* release() {
+        T *ret = ptr_;
+        if (ret == NULL) {
+            roc_panic("attempting to release null scoped pointer");
+        }
+        ptr_ = NULL;
+        return ret;
+    }
+
     //! Get underlying pointer.
     T* get() const {
         return ptr_;
@@ -61,7 +71,7 @@ public:
     //! Get underlying reference.
     T& operator*() const {
         if (ptr_ == NULL) {
-            roc_panic("attempting to dereference null shared pointer");
+            roc_panic("attempting to dereference null scoped pointer");
         }
         return *ptr_;
     }
