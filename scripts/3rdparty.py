@@ -98,14 +98,16 @@ def getexports(workdir, deplist):
         ' '.join(['-I%s' % path for path in inc]),
         ' '.join(['-L%s' % path for path in lib]))
 
-if len(sys.argv) != 5:
-    print("error: usage: 3rdparty.py workdir toolchain package deplist", file=sys.stderr)
+if len(sys.argv) != 6:
+    print("error: usage: 3rdparty.py workdir toolchain variant package deplist",
+          file=sys.stderr)
     exit(1)
 
 workdir = os.path.abspath(sys.argv[1])
 toolchain = sys.argv[2]
-fullname = sys.argv[3]
-deplist = sys.argv[4].split(':')
+variant = sys.argv[3]
+fullname = sys.argv[4]
+deplist = sys.argv[5].split(':')
 
 name, ver = fullname.split('-')
 
@@ -144,18 +146,29 @@ elif name == 'openfec':
     freplace('src/CMakeLists.txt', 'SHARED', 'STATIC')
     os.mkdir('build')
     os.chdir('build')
-    execute('cmake .. ' + ' '.join([
+    args = [
         '-DCMAKE_C_COMPILER=%s' % '-'.join([s for s in [toolchain, 'gcc'] if s]),
         '-DCMAKE_FIND_ROOT_PATH=%s' % getsysroot(toolchain),
-        '-DCMAKE_BUILD_TYPE=Release',
         '-DCMAKE_POSITION_INDEPENDENT_CODE=ON',
-        '-DDEBUG:STRING=OFF', # disable debug logs
-        ]), logfile)
+        ]
+    if variant == 'debug':
+        dist = 'bin/Debug'
+        args += [
+            '-DCMAKE_BUILD_TYPE=Debug',
+            '-DDEBUG:STRING=ON',
+        ]
+    else:
+        dist = 'bin/Release'
+        args += [
+            '-DCMAKE_BUILD_TYPE=Release',
+            '-DDEBUG:STRING=OFF', # disable debug logs
+        ]
+    execute('cmake .. ' + ' '.join(args), logfile)
     execute('make -j', logfile)
     os.chdir('..')
     install('src', os.path.join(builddir, 'include'),
             ignore=['*.c', '*.txt'])
-    install('bin/Release/libopenfec.a', os.path.join(builddir, 'lib'))
+    install('%s/libopenfec.a' % dist, os.path.join(builddir, 'lib'))
 elif name == 'alsa':
     download(
       'ftp://ftp.alsa-project.org/pub/lib/alsa-lib-%s.tar.bz2' % ver,

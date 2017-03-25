@@ -211,14 +211,15 @@ def GenGetOpt(env, source, ver):
 
     return ret
 
-def ThirdParty(env, host, toolchain, name, deps=[], includes=[]):
+def ThirdParty(env, host, toolchain, variant, name, deps=[], includes=[]):
     if not os.path.exists(os.path.join('3rdparty', host, 'build', name, 'commit')):
         if env.Execute(
             SCons.Action.CommandAction(
-                '%s scripts/3rdparty.py "3rdparty/%s" "%s" "%s" "%s"' % (
+                '%s scripts/3rdparty.py "3rdparty/%s" "%s" "%s" "%s" "%s"' % (
                     env.Python(),
                     host,
                     toolchain,
+                    variant,
                     name,
                     ':'.join(deps)),
                 cmdstr = env.Pretty('GET', '%s/%s' % (host, name), 'yellow'))):

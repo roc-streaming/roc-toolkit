@@ -175,12 +175,16 @@ compiler = ARGUMENTS.get('compiler', '')
 # build variant, e.g. 'debug'
 variant = ARGUMENTS.get('variant', 'release')
 
+# build variant for 3rdparty libraries
+thirdparty_variant = ARGUMENTS.get('3rdparty_variant', 'release')
+
 # toolchain prefix for compiler, linker, etc. may be equal to 'host' or empty
 toolchain = host
 
-if not variant in supported_variants:
-    env.Die("unknown variant '%s', expected one of: %s",
-            variant, ', '.join(supported_variants))
+for v in [variant, thirdparty_variant]:
+    if not variant in supported_variants:
+        env.Die("unknown variant '%s', expected one of: %s",
+                v, ', '.join(supported_variants))
 
 if not compiler:
     if not toolchain and env.Which('clang'):
@@ -454,17 +458,17 @@ test_env = test_conf.Finish()
 conf = Configure(env, custom_tests=env.CustomTests)
 
 if 'target_uv' in getdeps:
-    env.ThirdParty(host, toolchain, 'uv-1.4.2')
+    env.ThirdParty(host, toolchain, thirdparty_variant, 'uv-1.4.2')
 
 if 'target_openfec' in getdeps:
-    env.ThirdParty(host, toolchain, 'openfec-1.4.2', includes=[
+    env.ThirdParty(host, toolchain, thirdparty_variant, 'openfec-1.4.2', includes=[
         'lib_common',
         'lib_stable',
     ])
 
 if 'target_sox' in getdeps:
-    env.ThirdParty(host, toolchain, 'alsa-1.0.29')
-    env.ThirdParty(host, toolchain, 'sox-14.4.2', deps=['alsa-1.0.29'])
+    env.ThirdParty(host, toolchain, thirdparty_variant, 'alsa-1.0.29')
+    env.ThirdParty(host, toolchain, thirdparty_variant, 'sox-14.4.2', deps=['alsa-1.0.29'])
 
     for lib in [
             'z', 'ltdl', 'magic',
@@ -475,7 +479,7 @@ if 'target_sox' in getdeps:
         conf.CheckLib(lib)
 
 if 'target_gengetopt' in getdeps:
-    env.ThirdParty(build, "", 'gengetopt-2.22.6')
+    env.ThirdParty(build, "", thirdparty_variant, 'gengetopt-2.22.6')
 
     env['GENGETOPT'] = env.File(
         '#3rdparty/%s/gengetopt-2.22.6/bin/gengetopt' % build + env['PROGSUFFIX'])
@@ -483,7 +487,7 @@ if 'target_gengetopt' in getdeps:
 env = conf.Finish()
 
 if 'target_cpputest' in getdeps:
-    test_env.ThirdParty(host, toolchain, 'cpputest-3.6')
+    test_env.ThirdParty(host, toolchain, thirdparty_variant, 'cpputest-3.6')
 
 if 'target_posix' in env['ROC_TARGETS']:
     env.Append(CPPDEFINES=[('_POSIX_C_SOURCE', '200809')])
