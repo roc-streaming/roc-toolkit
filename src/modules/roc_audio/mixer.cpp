@@ -16,7 +16,20 @@
 namespace roc {
 namespace audio {
 
-static packet::sample_t clamp(const packet::sample_t x);
+namespace {
+
+packet::sample_t clamp(const packet::sample_t x)
+{
+    if (x > packet::sample_max_val){
+        return packet::sample_max_val;
+    } else if (x < packet::sample_min_val){
+        return packet::sample_min_val;
+    } else {
+        return x;
+    }
+}
+
+} // anonymous
 
 Mixer::Mixer(ISampleBufferComposer& composer) {
     if (!(temp_ = composer.compose())) {
@@ -59,17 +72,6 @@ void Mixer::read(const ISampleBufferSlice& out) {
         for (size_t n = 0; n < out_sz; n++) {
             out_data[n] = clamp(out_data[n] + temp_data[n]);
         }
-    }
-}
-
-packet::sample_t clamp(const packet::sample_t x)
-{
-    if (x > packet::sample_max_val){
-        return packet::sample_max_val;
-    } else if (x < packet::sample_min_val){
-        return packet::sample_min_val;
-    } else {
-        return x;
     }
 }
 
