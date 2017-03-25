@@ -1,7 +1,7 @@
 Quick start
 -----------
 
-See various examples and recipes inside "Building" section [on wiki](https://github.com/roc-project/roc/wiki#building).
+For quick start, see "Building and testing" section [on wiki](https://github.com/roc-project/roc/wiki#building-and-testing).
 
 Dependencies
 ------------
@@ -15,7 +15,7 @@ Dependencies
 * doxygen >= 1.6, graphviz (optional, if you want to build documentation)
 * clang-tidy (optional, if you want to run static analyzer)
 * clang-format >= 3.6 (optional, if you want to format code)
-* libtool, autoconf, automake, make, cmake (optional, if you want to download and build external dependencies automatically)
+* libtool, autoconf, automake, patch, make, cmake (optional, if you want to download and build external dependencies automatically)
 
 **Runtime:**
 * [libuv](http://libuv.org) >= 1.4
@@ -24,7 +24,10 @@ Dependencies
 * [CppUTest](http://cpputest.github.io) (optional, if you want to build tests)
 
 **Notes:**
-* if you use CppUTest-3.4 or earlier, build it with `--disable-memory-leak-detection` option
+* if you use CppUTest 3.4 or earlier, build it with `--disable-memory-leak-detection` option
+* if you use OpenFEC, it's recommended to apply the following patches that are not accepted to upstream yet (they're automatically applied when `--with-3rdparty` option is used):
+  * [openfec-1.4.2-32bit.patch](https://gist.github.com/gavv/4325c090fc21a3033988ad745c03bdff) (fix for 32-bit systems)
+  * [openfec-1.4.2-trace.patch](https://gist.github.com/gavv/8a9d38841778319f9c5045fbb39e3668) (hide errors from stderr)
 
 Building
 --------
