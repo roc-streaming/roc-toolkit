@@ -7,7 +7,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_fec/target_openfec/roc_fec/ldpc_block_decoder.h
+//! @file roc_fec/target_openfec/roc_fec/of_block_decoder.h
 //! @brief Implementation of IBlockDecoder using OpenFEC library.
 
 #ifndef ROC_FEC_LDPC_BLOCK_DECODER_H_
@@ -37,13 +37,13 @@ namespace roc {
 namespace fec {
 
 //! Implementation of IBlockDecoder using OpenFEC library.
-class LDPC_BlockDecoder : public IBlockDecoder, public core::NonCopyable<> {
+class OF_BlockDecoder : public IBlockDecoder, public core::NonCopyable<> {
 public:
     //! Construct.
-    explicit LDPC_BlockDecoder(
+    explicit OF_BlockDecoder(
         core::IByteBufferComposer& composer = datagram::default_buffer_composer());
 
-    virtual ~LDPC_BlockDecoder();
+    virtual ~OF_BlockDecoder();
 
     //! Store encoded buffer to current block at given position.
     virtual void write(size_t index, const core::IByteBufferConstSlice& buffer);
@@ -55,6 +55,8 @@ public:
     virtual void reset();
 
 private:
+    static const of_codec_id_t codec_id_ = OF_CODEC_REED_SOLOMON_GF_2_M_STABLE;
+
     static const size_t N_DATA_PACKETS = ROC_CONFIG_DEFAULT_FEC_BLOCK_DATA_PACKETS;
     static const size_t N_FEC_PACKETS = ROC_CONFIG_DEFAULT_FEC_BLOCK_REDUNDANT_PACKETS;
 
@@ -67,7 +69,12 @@ private:
 
     of_session_t* of_inst_;
     bool of_inst_inited_;
-    of_ldpc_parameters of_inst_params_;
+    of_parameters_t *of_inst_params_;
+
+    union {
+        of_ldpc_parameters ldpc_params_;
+        of_rs_2_m_parameters_t rs_params_;
+    } fec_codec_params_;
 
     core::IByteBufferComposer& composer_;
 

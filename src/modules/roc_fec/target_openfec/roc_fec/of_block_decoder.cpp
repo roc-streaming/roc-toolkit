@@ -10,7 +10,7 @@
 #include "roc_config/config.h"
 #include "roc_core/panic.h"
 #include "roc_core/log.h"
-#include "roc_fec/ldpc_block_decoder.h"
+#include "roc_fec/of_block_decoder.h"
 
 namespace roc {
 namespace fec {
@@ -21,7 +21,7 @@ const size_t SYMB_SZ = ROC_CONFIG_DEFAULT_PACKET_SIZE;
 
 } // namespace
 
-LDPC_BlockDecoder::LDPC_BlockDecoder(core::IByteBufferComposer& composer)
+OF_BlockDecoder::OF_BlockDecoder(core::IByteBufferComposer& composer)
     : of_inst_(NULL)
     , of_inst_inited_(false)
     , composer_(composer)
@@ -30,21 +30,36 @@ LDPC_BlockDecoder::LDPC_BlockDecoder(core::IByteBufferComposer& composer)
     , received_(N_DATA_PACKETS + N_FEC_PACKETS) {
     roc_log(LogDebug, "initializing ldpc decoder");
 
-    of_inst_params_.nb_source_symbols = N_DATA_PACKETS;
-    of_inst_params_.nb_repair_symbols = N_FEC_PACKETS;
-    of_inst_params_.encoding_symbol_length = SYMB_SZ;
-    of_inst_params_.prng_seed = 1297501556;
-    of_inst_params_.N1 = 7;
+    // Use Reed-Solomon Codec.
+    if (codec_id_ == OF_CODEC_REED_SOLOMON_GF_2_M_STABLE){
+        roc_log(LOG_TRACE, "initializing Reed-Solomon decoder");
 
+        fec_codec_params_.rs_params_.m = 8;
+
+        of_inst_params_ = (of_parameters_t*)&fec_codec_params_.rs_params_;
+
+    // Use LDPC-Staircase.
+    } else {
+        roc_log(LOG_TRACE, "initializing LDPC decoder");
+
+        fec_codec_params_.ldpc_params_.prng_seed = 1297501556;
+        fec_codec_params_.ldpc_params_.N1 = 7;
+
+        of_inst_params_ = (of_parameters_t*)&fec_codec_params_.ldpc_params_; 
+    }
+
+    of_inst_params_->nb_source_symbols = N_DATA_PACKETS;
+    of_inst_params_->nb_repair_symbols = N_FEC_PACKETS;
+    of_inst_params_->encoding_symbol_length = SYMB_SZ;
     of_verbosity = 0;
 
-    LDPC_BlockDecoder::reset(); // non-virtual call from ctor
+    OF_BlockDecoder::reset(); // non-virtual call from ctor
 }
 
-LDPC_BlockDecoder::~LDPC_BlockDecoder() {
+OF_BlockDecoder::~OF_BlockDecoder() {
 }
 
-void LDPC_BlockDecoder::write(size_t index, const core::IByteBufferConstSlice& buffer) {
+void OF_BlockDecoder::write(size_t index, const core::IByteBufferConstSlice& buffer) {
     if (index >= N_DATA_PACKETS + N_FEC_PACKETS) {
         roc_panic("ldpc decoder: index out of bounds: index=%lu, size=%lu",
                   (unsigned long)index, (unsigned long)(N_DATA_PACKETS + N_FEC_PACKETS));
@@ -73,7 +88,7 @@ void LDPC_BlockDecoder::write(size_t index, const core::IByteBufferConstSlice& b
     received_[index] = true;
 }
 
-core::IByteBufferConstSlice LDPC_BlockDecoder::repair(size_t index) {
+core::IByteBufferConstSlice OF_BlockDecoder::repair(size_t index) {
     if (!buffers_[index] && !defecation_attempted_) {
         defecation_attempted_ = true;
 
@@ -92,7 +107,7 @@ core::IByteBufferConstSlice LDPC_BlockDecoder::repair(size_t index) {
     return buffers_[index];
 }
 
-void LDPC_BlockDecoder::reset() {
+void OF_BlockDecoder::reset() {
     report_();
 
     packets_rcvd_ = 0;
@@ -102,21 +117,23 @@ void LDPC_BlockDecoder::reset() {
     }
 
     if (OF_STATUS_OK != of_create_codec_instance(
-                            &of_inst_, OF_CODEC_LDPC_STAIRCASE_STABLE, OF_DECODER, 0)) {
+                            &of_inst_, codec_id_, OF_DECODER, 0)) {
         roc_panic("ldpc decoder: of_create_codec_instance() failed");
     }
 
     roc_panic_if(of_inst_ == NULL);
 
     if (OF_STATUS_OK
-        != of_set_fec_parameters(of_inst_, (of_parameters_t*)&of_inst_params_)) {
+        != of_set_fec_parameters(of_inst_, of_inst_params_)) {
         roc_panic("ldpc decoder: of_set_fec_parameters() failed");
     }
 
     of_inst_inited_ = true;
 
     if (OF_STATUS_OK
-        != of_set_callback_functions(of_inst_, source_cb_, repair_cb_, (void*)this)) {
+        != of_set_callback_functions(of_inst_, source_cb_,
+            codec_id_ == OF_CODEC_REED_SOLOMON_GF_2_M_STABLE ? NULL : repair_cb_,
+            (void*)this)) {
         roc_panic("ldpc decoder: of_set_callback_functions() failed");
     }
 
@@ -127,7 +144,7 @@ void LDPC_BlockDecoder::reset() {
     }
 }
 
-void LDPC_BlockDecoder::report_() {
+void OF_BlockDecoder::report_() {
     size_t n_lost = 0, n_repaired = 0;
 
     char status1[N_DATA_PACKETS + 1] = {};
@@ -166,7 +183,7 @@ void LDPC_BlockDecoder::report_() {
             status2);
 }
 
-void* LDPC_BlockDecoder::make_buffer_(const size_t index) {
+void* OF_BlockDecoder::make_buffer_(const size_t index) {
     roc_panic_if_not(index < N_DATA_PACKETS + N_FEC_PACKETS);
 
     if (core::IByteBufferPtr buffer = composer_.compose()) {
@@ -179,15 +196,15 @@ void* LDPC_BlockDecoder::make_buffer_(const size_t index) {
     }
 }
 
-void* LDPC_BlockDecoder::source_cb_(void* context, uint32_t size, uint32_t index) {
+void* OF_BlockDecoder::source_cb_(void* context, uint32_t size, uint32_t index) {
     roc_panic_if(context == NULL);
     roc_panic_if(size != SYMB_SZ);
 
-    LDPC_BlockDecoder& self = *(LDPC_BlockDecoder*)context;
+    OF_BlockDecoder& self = *(OF_BlockDecoder*)context;
     return self.make_buffer_(index);
 }
 
-void* LDPC_BlockDecoder::repair_cb_(void*, uint32_t, uint32_t) {
+void* OF_BlockDecoder::repair_cb_(void*, uint32_t, uint32_t) {
     return NULL;
 }
 
