@@ -43,60 +43,60 @@ TEST(mixer, no_readers) {
 TEST(mixer, one_reader) {
     mixer.add(reader1);
 
-    reader1.add(BufSz, 0.111);
+    reader1.add(BufSz, 0.111f);
 
-    expect_output(BufSz, 0.111);
+    expect_output(BufSz, 0.111f);
 }
 
 TEST(mixer, two_readers) {
     mixer.add(reader1);
     mixer.add(reader2);
 
-    reader1.add(BufSz, 0.111);
-    reader2.add(BufSz, 0.222);
+    reader1.add(BufSz, 0.111f);
+    reader2.add(BufSz, 0.222f);
 
-    expect_output(BufSz, 0.333);
+    expect_output(BufSz, 0.333f);
 }
 
 TEST(mixer, remove_reader) {
     mixer.add(reader1);
     mixer.add(reader2);
 
-    reader1.add(BufSz, 0.11);
-    reader2.add(BufSz, 0.22);
-    expect_output(BufSz, 0.33);
+    reader1.add(BufSz, 0.11f);
+    reader2.add(BufSz, 0.22f);
+    expect_output(BufSz, 0.33f);
 
     mixer.remove(reader2);
 
-    reader1.add(BufSz, 0.44);
-    reader2.add(BufSz, 0.55);
-    expect_output(BufSz, 0.44);
- 
+    reader1.add(BufSz, 0.44f);
+    reader2.add(BufSz, 0.55f);
+    expect_output(BufSz, 0.44f);
+
     mixer.remove(reader1);
- 
-    reader1.add(BufSz, 0.77);
-    reader2.add(BufSz, 0.88);
-    expect_output(BufSz, 0.0);
+
+    reader1.add(BufSz, 0.77f);
+    reader2.add(BufSz, 0.88f);
+    expect_output(BufSz, 0.0f);
 }
 
 TEST(mixer, clamp) {
     mixer.add(reader1);
     mixer.add(reader2);
 
-    reader1.add(BufSz, 0.900);
-    reader2.add(BufSz, 0.101);
+    reader1.add(BufSz, 0.900f);
+    reader2.add(BufSz, 0.101f);
 
-    expect_output(BufSz, 1.0);
+    expect_output(BufSz, 1.0f);
 
-    reader1.add(BufSz, 0.2);
-    reader2.add(BufSz, 1.1);
+    reader1.add(BufSz, 0.2f);
+    reader2.add(BufSz, 1.1f);
 
-    expect_output(BufSz, 1.0);
+    expect_output(BufSz, 1.0f);
 
-    reader1.add(BufSz, -0.2);
-    reader2.add(BufSz, -0.81);
+    reader1.add(BufSz, -0.2f);
+    reader2.add(BufSz, -0.81f);
 
-    expect_output(BufSz, -1.0);
+    expect_output(BufSz, -1.0f);
 }
 
 } // namespace test
