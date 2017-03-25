@@ -52,6 +52,9 @@ public:
     //! Remove input stream.
     void remove(IStreamReader&);
 
+
+    packet::sample_t clamp(const packet::sample_t &x) const;
+
 private:
     core::List<IStreamReader, core::NoOwnership> readers_;
 

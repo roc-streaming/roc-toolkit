@@ -43,40 +43,40 @@ TEST(mixer, no_readers) {
 TEST(mixer, one_reader) {
     mixer.add(reader1);
 
-    reader1.add(BufSz, 111);
+    reader1.add(BufSz, 0.111);
 
-    expect_output(BufSz, 111);
+    expect_output(BufSz, 0.111);
 }
 
 TEST(mixer, two_readers) {
     mixer.add(reader1);
     mixer.add(reader2);
 
-    reader1.add(BufSz, 111);
-    reader2.add(BufSz, 222);
+    reader1.add(BufSz, 0.111);
+    reader2.add(BufSz, 0.222);
 
-    expect_output(BufSz, 333);
+    expect_output(BufSz, 0.333);
 }
 
 TEST(mixer, remove_reader) {
     mixer.add(reader1);
     mixer.add(reader2);
 
-    reader1.add(BufSz, 11);
-    reader2.add(BufSz, 22);
-    expect_output(BufSz, 33);
+    reader1.add(BufSz, 0.11);
+    reader2.add(BufSz, 0.22);
+    expect_output(BufSz, 0.33);
 
     mixer.remove(reader2);
 
-    reader1.add(BufSz, 44);
-    reader2.add(BufSz, 55);
-    expect_output(BufSz, 44);
+    reader1.add(BufSz, 0.44);
+    reader2.add(BufSz, 0.55);
+    expect_output(BufSz, 0.44);
 
     mixer.remove(reader1);
 
-    reader1.add(BufSz, 77);
-    reader2.add(BufSz, 88);
-    expect_output(BufSz, 0);
+    reader1.add(BufSz, 0.77);
+    reader2.add(BufSz, 0.88);
+    expect_output(BufSz, 0.0);
 }
 
 } // namespace test

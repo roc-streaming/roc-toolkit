@@ -42,6 +42,11 @@ typedef uint16_t channel_t;
 //! Audio sample.
 typedef float sample_t;
 
+extern const sample_t sample_max_val;
+
+extern const sample_t sample_min_val;
+
+
 //! Get number of channels in mask.
 static inline size_t num_channels(channel_mask_t ch_mask) {
     size_t n_ch = 0;

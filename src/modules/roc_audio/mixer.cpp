@@ -54,10 +54,22 @@ void Mixer::read(const ISampleBufferSlice& out) {
         packet::sample_t* temp_data = temp_->data();
 
         for (size_t n = 0; n < out_sz; n++) {
-            out_data[n] += temp_data[n];
+            out_data[n] = clamp(out_data[n] + temp_data[n]);
         }
     }
 }
+
+packet::sample_t Mixer::clamp(const packet::sample_t &x) const
+{
+    if (x > packet::sample_max_val){
+        return packet::sample_max_val;
+    } else if (x < packet::sample_min_val){
+        return packet::sample_min_val;
+    } else {
+        return x;
+    }
+}
+
 
 } // namespace audio
 } // namespace roc
