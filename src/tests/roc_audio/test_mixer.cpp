@@ -31,7 +31,7 @@ TEST_GROUP(mixer) {
 
     Mixer mixer;
 
-    void expect_output(size_t sz, int value) {
+    void expect_output(size_t sz, packet::sample_t value) {
         read_buffers<MaxSamples>(mixer, 1, sz, value);
     }
 };
@@ -71,12 +71,32 @@ TEST(mixer, remove_reader) {
     reader1.add(BufSz, 0.44);
     reader2.add(BufSz, 0.55);
     expect_output(BufSz, 0.44);
-
+ 
     mixer.remove(reader1);
-
+ 
     reader1.add(BufSz, 0.77);
     reader2.add(BufSz, 0.88);
     expect_output(BufSz, 0.0);
+}
+
+TEST(mixer, clamp) {
+    mixer.add(reader1);
+    mixer.add(reader2);
+
+    reader1.add(BufSz, 0.900);
+    reader2.add(BufSz, 0.101);
+
+    expect_output(BufSz, 1.0);
+
+    reader1.add(BufSz, 0.2);
+    reader2.add(BufSz, 1.1);
+
+    expect_output(BufSz, 1.0);
+
+    reader1.add(BufSz, -0.2);
+    reader2.add(BufSz, -0.81);
+
+    expect_output(BufSz, -1.0);
 }
 
 } // namespace test

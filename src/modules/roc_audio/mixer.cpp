@@ -12,8 +12,11 @@
 
 #include "roc_audio/mixer.h"
 
+
 namespace roc {
 namespace audio {
+
+static packet::sample_t clamp(const packet::sample_t x);
 
 Mixer::Mixer(ISampleBufferComposer& composer) {
     if (!(temp_ = composer.compose())) {
@@ -59,7 +62,7 @@ void Mixer::read(const ISampleBufferSlice& out) {
     }
 }
 
-packet::sample_t Mixer::clamp(const packet::sample_t &x) const
+packet::sample_t clamp(const packet::sample_t x)
 {
     if (x > packet::sample_max_val){
         return packet::sample_max_val;
@@ -70,6 +73,6 @@ packet::sample_t Mixer::clamp(const packet::sample_t &x) const
     }
 }
 
-
 } // namespace audio
 } // namespace roc
+

@@ -42,8 +42,10 @@ typedef uint16_t channel_t;
 //! Audio sample.
 typedef float sample_t;
 
+//! Maximum possible value of a sample.
 extern const sample_t sample_max_val;
 
+//! Minimum possible value of a sample.
 extern const sample_t sample_min_val;
 
 

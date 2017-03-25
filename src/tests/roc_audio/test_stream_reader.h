@@ -35,7 +35,7 @@ public:
         stream_pos_ += out.size();
     }
 
-    void add(size_t size, int value) {
+    void add(size_t size, packet::sample_t value) {
         size_t oldsz = stream_->size();
 
         stream_->set_size(oldsz + size);
