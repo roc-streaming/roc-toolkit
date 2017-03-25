@@ -186,7 +186,7 @@ elif name == 'alsa':
     install('include/alsa',
             os.path.join(builddir, 'include', 'alsa'), ignore=['alsa'])
     install('src/.libs/libasound.so', os.path.join(builddir, 'lib'))
-    install('src/.libs/libasound.so', libdir)
+    install('src/.libs/libasound.so.2', libdir)
 elif name == 'sox':
     download(
       'http://vorboss.dl.sourceforge.net/project/sox/sox/%s/sox-%s.tar.gz' % (ver, ver),
