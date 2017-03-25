@@ -113,7 +113,7 @@ packet::IPacketWriter* Client::make_packet_writer_() {
 
 #ifdef ROC_TARGET_OPENFEC
 packet::IPacketWriter* Client::make_fec_encoder_(packet::IPacketWriter* packet_writer) {
-    new (fec_ldpc_encoder_) fec::LDPC_BlockEncoder(*config_.byte_buffer_composer);
+    new (fec_ldpc_encoder_) fec::OF_BlockEncoder(*config_.byte_buffer_composer);
 
     return new (fec_encoder_)
         fec::Encoder(*fec_ldpc_encoder_, *packet_writer, packet_composer_);

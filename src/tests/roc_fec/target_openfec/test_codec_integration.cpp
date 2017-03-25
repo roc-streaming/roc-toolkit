@@ -16,8 +16,8 @@
 #include "roc_fec/encoder.h"
 #include "roc_fec/decoder.h"
 
-#include "roc_fec/ldpc_block_encoder.h"
-#include "roc_fec/ldpc_block_decoder.h"
+#include "roc_fec/of_block_encoder.h"
+#include "roc_fec/of_block_decoder.h"
 
 #include "roc_packet/iaudio_packet.h"
 #include "roc_packet/packet_queue.h"
@@ -49,8 +49,8 @@ const size_t RATE = ROC_CONFIG_DEFAULT_SAMPLE_RATE;
 
 const double EPSILON = 0.0001;
 
-typedef LDPC_BlockEncoder BlockEncoder;
-typedef LDPC_BlockDecoder BlockDecoder;
+typedef OF_BlockEncoder BlockEncoder;
+typedef OF_BlockDecoder BlockDecoder;
 
 // Divides packets from Encoder into two queues: data and fec packets,
 // as needed for Decoder.

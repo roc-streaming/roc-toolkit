@@ -28,7 +28,7 @@
 #include "roc_fec/encoder.h"
 
 #ifdef ROC_TARGET_OPENFEC
-#include "roc_fec/ldpc_block_encoder.h"
+#include "roc_fec/of_block_encoder.h"
 #endif
 
 #include "roc_audio/isample_buffer_reader.h"
@@ -123,7 +123,7 @@ private:
     core::Maybe<packet::Interleaver> interleaver_;
 
 #ifdef ROC_TARGET_OPENFEC
-    core::Maybe<fec::LDPC_BlockEncoder> fec_ldpc_encoder_;
+    core::Maybe<fec::OF_BlockEncoder> fec_ldpc_encoder_;
     core::Maybe<fec::Encoder> fec_encoder_;
 #endif
 
