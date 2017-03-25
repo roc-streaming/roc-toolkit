@@ -455,8 +455,6 @@ if 'target_cpputest' in extdeps:
 
 test_env = test_conf.Finish()
 
-conf = Configure(env, custom_tests=env.CustomTests)
-
 if 'target_uv' in getdeps:
     env.ThirdParty(host, toolchain, thirdparty_variant, 'uv-1.4.2')
 
@@ -470,6 +468,8 @@ if 'target_sox' in getdeps:
     env.ThirdParty(host, toolchain, thirdparty_variant, 'alsa-1.0.29')
     env.ThirdParty(host, toolchain, thirdparty_variant, 'sox-14.4.2', deps=['alsa-1.0.29'])
 
+    conf = Configure(env, custom_tests=env.CustomTests)
+
     for lib in [
             'z', 'ltdl', 'magic',
             'sndfile', 'gsm', 'FLAC',
@@ -478,13 +478,13 @@ if 'target_sox' in getdeps:
             'pulse', 'pulse-simple']:
         conf.CheckLib(lib)
 
+    env = conf.Finish()
+
 if 'target_gengetopt' in getdeps:
     env.ThirdParty(build, "", thirdparty_variant, 'gengetopt-2.22.6')
 
     env['GENGETOPT'] = env.File(
-        '#3rdparty/%s/gengetopt-2.22.6/bin/gengetopt' % build + env['PROGSUFFIX'])
-
-env = conf.Finish()
+        '#3rdparty/%s/build/gengetopt-2.22.6/bin/gengetopt' % build + env['PROGSUFFIX'])
 
 if 'target_cpputest' in getdeps:
     test_env.ThirdParty(host, toolchain, thirdparty_variant, 'cpputest-3.6')
