@@ -36,7 +36,7 @@
 #include "roc_fec/decoder.h"
 
 #ifdef ROC_TARGET_OPENFEC
-#include "roc_fec/ldpc_block_decoder.h"
+#include "roc_fec/of_block_decoder.h"
 #endif
 
 #include "roc_audio/isink.h"
@@ -112,7 +112,7 @@ private:
     core::Maybe<packet::Watchdog> watchdog_;
 
 #ifdef ROC_TARGET_OPENFEC
-    core::Maybe<fec::LDPC_BlockDecoder> fec_ldpc_decoder_;
+    core::Maybe<fec::OF_BlockDecoder> fec_ldpc_decoder_;
     core::Maybe<fec::Decoder> fec_decoder_;
     core::Maybe<packet::Watchdog> fec_watchdog_;
 #endif

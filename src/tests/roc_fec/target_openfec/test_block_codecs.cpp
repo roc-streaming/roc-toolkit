@@ -18,8 +18,8 @@
 #include "roc_core/math.h"
 #include "roc_core/array.h"
 
-#include "roc_fec/ldpc_block_encoder.h"
-#include "roc_fec/ldpc_block_decoder.h"
+#include "roc_fec/of_block_encoder.h"
+#include "roc_fec/of_block_decoder.h"
 
 namespace roc {
 namespace test {
@@ -36,8 +36,8 @@ const size_t SYMB_SZ = ROC_CONFIG_DEFAULT_PACKET_SIZE;
 } // namespace
 
 TEST_GROUP(block_codecs) {
-    LDPC_BlockEncoder encoder;
-    LDPC_BlockDecoder decoder;
+    OF_BlockEncoder encoder;
+    OF_BlockDecoder decoder;
 
     core::Array<core::IByteBufferConstSlice, N_DATA_PACKETS + N_FEC_PACKETS> buffers;
 
