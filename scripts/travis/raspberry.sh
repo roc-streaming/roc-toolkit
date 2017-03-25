@@ -12,6 +12,7 @@ do
 
   for t in bin/${TOOLCHAIN}/roc-test-*
   do
-    LD_LIBRARY_PATH="${SYSROOT}/lib" qemu-arm -L "${SYSROOT}" -cpu ${CPU} $t
+    LD_LIBRARY_PATH="${SYSROOT}/lib:${PWD}/3rdparty/${TOOLCHAIN}/lib" \
+      qemu-arm -L "${SYSROOT}" -cpu ${CPU} $t
   done
 done

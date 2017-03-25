@@ -92,8 +92,8 @@ def getexports(workdir, deplist):
     inc=[]
     lib=[]
     for dep in deplist:
-        inc += [os.path.join(workdir, dep, 'include')]
-        lib += [os.path.join(workdir, dep, 'lib')]
+        inc += [os.path.join(workdir, 'build', dep, 'include')]
+        lib += [os.path.join(workdir, 'build', dep, 'lib')]
     return 'CFLAGS="%s" LDFLAGS="%s"' % (
         ' '.join(['-I%s' % path for path in inc]),
         ' '.join(['-L%s' % path for path in lib]))
@@ -107,13 +107,16 @@ toolchain = sys.argv[2]
 fullname = sys.argv[3]
 deplist = sys.argv[4].split(':')
 
-logfile = os.path.join(workdir, fullname, 'build.log')
-
 name, ver = fullname.split('-')
 
-rmpath(os.path.join(workdir, fullname, 'commit'))
-mkpath(os.path.join(workdir, fullname, 'src'))
-os.chdir(os.path.join(workdir, fullname, 'src'))
+builddir = os.path.join(workdir, 'build', fullname)
+libdir = os.path.join(workdir, 'lib')
+
+logfile = os.path.join(builddir, 'build.log')
+
+rmpath(os.path.join(builddir, 'commit'))
+mkpath(os.path.join(builddir, 'src'))
+os.chdir(os.path.join(builddir, 'src'))
 
 if name == 'uv':
     download('http://dist.libuv.org/dist/v%s/libuv-v%s.tar.gz' % (ver, ver),
@@ -124,8 +127,8 @@ if name == 'uv':
     execute('./autogen.sh', logfile)
     execute('./configure --host=%s --with-pic --enable-static' % toolchain, logfile)
     execute('make -j', logfile)
-    install('include', os.path.join(workdir, fullname, 'include'))
-    install('.libs/libuv.a', os.path.join(workdir, fullname, 'lib'))
+    install('include', os.path.join(builddir, 'include'))
+    install('.libs/libuv.a', os.path.join(builddir, 'lib'))
 elif name == 'openfec':
     download(
       'http://openfec.org/files/openfec_v%s.tgz' % ver.replace('.', '_'),
@@ -150,9 +153,9 @@ elif name == 'openfec':
         ]), logfile)
     execute('make -j', logfile)
     os.chdir('..')
-    install('src', os.path.join(workdir, fullname, 'include'),
+    install('src', os.path.join(builddir, 'include'),
             ignore=['*.c', '*.txt'])
-    install('bin/Release/libopenfec.a', os.path.join(workdir, fullname, 'lib'))
+    install('bin/Release/libopenfec.a', os.path.join(builddir, 'lib'))
 elif name == 'alsa':
     download(
       'ftp://ftp.alsa-project.org/pub/lib/alsa-lib-%s.tar.bz2' % ver,
@@ -168,8 +171,9 @@ elif name == 'alsa':
         ])), logfile)
     execute('make -j', logfile)
     install('include/alsa',
-            os.path.join(workdir, fullname, 'include', 'alsa'), ignore=['alsa'])
-    install('src/.libs/libasound.so', os.path.join(workdir, fullname, 'lib'))
+            os.path.join(builddir, 'include', 'alsa'), ignore=['alsa'])
+    install('src/.libs/libasound.so', os.path.join(builddir, 'lib'))
+    install('src/.libs/libasound.so', os.path.join(libdir))
 elif name == 'sox':
     download(
       'http://vorboss.dl.sourceforge.net/project/sox/sox/%s/sox-%s.tar.gz' % (ver, ver),
@@ -186,8 +190,8 @@ elif name == 'sox':
             '--without-png',
         ])), logfile)
     execute('make -j', logfile)
-    install('src/sox.h', os.path.join(workdir, fullname, 'include'))
-    install('src/.libs/libsox.a', os.path.join(workdir, fullname, 'lib'))
+    install('src/sox.h', os.path.join(builddir, 'include'))
+    install('src/.libs/libsox.a', os.path.join(builddir, 'lib'))
 elif name == 'gengetopt':
     download('ftp://ftp.gnu.org/gnu/gengetopt/gengetopt-%s.tar.gz' % ver,
              'gengetopt-%s.tar.gz' % ver)
@@ -196,7 +200,7 @@ elif name == 'gengetopt':
     os.chdir('gengetopt-%s' % ver)
     execute('./configure', logfile)
     execute('make', logfile) # -j is buggy for gengetopt
-    install('src/gengetopt', os.path.join(workdir, fullname, 'bin'))
+    install('src/gengetopt', os.path.join(builddir, 'bin'))
 elif name == 'cpputest':
     download(
         'https://raw.githubusercontent.com/cpputest/cpputest.github.io/' \
@@ -211,10 +215,10 @@ elif name == 'cpputest':
         './configure --host=%s --enable-static --disable-memory-leak-detection' % (
             toolchain), logfile)
     execute('make -j', logfile)
-    install('include', os.path.join(workdir, fullname, 'include'))
-    install('lib/libCppUTest.a', os.path.join(workdir, fullname, 'lib'))
+    install('include', os.path.join(builddir, 'include'))
+    install('lib/libCppUTest.a', os.path.join(builddir, 'lib'))
 else:
     print("error: unknown 3rdparty '%s'" % fullname, file=sys.stderr)
     exit(1)
 
-touch(os.path.join(workdir, fullname, 'commit'))
+touch(os.path.join(builddir, 'commit'))

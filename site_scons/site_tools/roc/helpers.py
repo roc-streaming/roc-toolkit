@@ -212,7 +212,7 @@ def GenGetOpt(env, source, ver):
     return ret
 
 def ThirdParty(env, host, toolchain, name, deps=[], includes=[]):
-    if not os.path.exists(os.path.join('3rdparty', host, name, 'commit')):
+    if not os.path.exists(os.path.join('3rdparty', host, 'build', name, 'commit')):
         if env.Execute(
             SCons.Action.CommandAction(
                 '%s scripts/3rdparty.py "3rdparty/%s" "%s" "%s" "%s"' % (
@@ -222,7 +222,7 @@ def ThirdParty(env, host, toolchain, name, deps=[], includes=[]):
                     name,
                     ':'.join(deps)),
                 cmdstr = env.Pretty('GET', '%s/%s' % (host, name), 'yellow'))):
-            env.Die("can't make '%s', see '3rdparty/%s/%s/build.log' for details" % (
+            env.Die("can't make '%s', see '3rdparty/%s/build/%s/build.log' for details" % (
                 name, host, name))
 
     if not includes:
@@ -230,10 +230,10 @@ def ThirdParty(env, host, toolchain, name, deps=[], includes=[]):
 
     for s in includes:
         env.Prepend(CPPPATH=[
-            '#3rdparty/%s/%s/include/%s' % (host, name, s)
+            '#3rdparty/%s/build/%s/include/%s' % (host, name, s)
         ])
 
-    for lib in env.RecursiveGlob('#3rdparty/%s/%s/lib' % (host, name), 'lib*'):
+    for lib in env.RecursiveGlob('#3rdparty/%s/build/%s/lib' % (host, name), 'lib*'):
         env.Prepend(LIBS=[env.File(lib)])
 
 def DeleteFile(env, path):
