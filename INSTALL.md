@@ -54,6 +54,7 @@ After building, tools and libraries are inside `bin/` directory.
 * `platform={name}` - platform name on which Roc will run, e.g. `linux`, autodetected from `host` if empty
 * `compiler={name}` - compiler name, e.g. `gcc` or `clang`
 * `variant=${name}` - build variant, e.g. `release` (default) or `debug`
+* `3rdparty_variant=${name}` - build variant for dependencies that are built using `--with-3rdparty`, e.g. `release` (default) or `debug` (however some dependencies don't support `debug` variant)
 
 **Build targets:**
 * *omitted* - build everything
