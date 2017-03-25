@@ -138,11 +138,14 @@ elif name == 'openfec':
     extract('openfec_v%s.tar.gz' % ver,
             'openfec_v%s' % ver)
     os.chdir('openfec_v%s' % ver)
-    # temporary fix for 32bit systems (we should send it to upstream)
-    # see https://github.com/roc-project/roc/issues/60
-    download(
-        'https://gist.githubusercontent.com/gavv/485f766810ef614d9ba07c4ff3c105be/raw/55e27a49b81e22f2479263885ccf0746442abba4/openfec-%s-32bit-of_symbol.c' % ver,
-        'src/lib_common/linear_binary_codes_utils/of_symbol.c')
+    # apply patches not accepted to upstream yet
+    patches = [
+        '4325c090fc21a3033988ad745c03bdff',
+        '8a9d38841778319f9c5045fbb39e3668',
+        ]
+    for p in patches:
+        download('https://gist.githubusercontent.com/gavv/%s/raw' % p, '%s.patch' % p)
+        execute('patch -p1 < %s.patch' % p, logfile)
     freplace('src/CMakeLists.txt', 'SHARED', 'STATIC')
     os.mkdir('build')
     os.chdir('build')
