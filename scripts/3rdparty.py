@@ -162,14 +162,14 @@ elif name == 'alsa':
     os.chdir('alsa-lib-%s' % ver)
     execute('./configure --host=%s %s' % (
         toolchain, ' '.join([
-            '--enable-static',
-            '--disable-shared',
+            '--enable-shared',
+            '--disable-static',
             '--disable-python',
         ])), logfile)
     execute('make -j', logfile)
     install('include/alsa',
             os.path.join(workdir, fullname, 'include', 'alsa'), ignore=['alsa'])
-    install('src/.libs/libasound.a', os.path.join(workdir, fullname, 'lib'))
+    install('src/.libs/libasound.so', os.path.join(workdir, fullname, 'lib'))
 elif name == 'sox':
     download(
       'http://vorboss.dl.sourceforge.net/project/sox/sox/%s/sox-%s.tar.gz' % (ver, ver),
