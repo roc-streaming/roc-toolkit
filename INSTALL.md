@@ -42,6 +42,7 @@ After building, tools and libraries are inside `bin/` directory.
 * `-n` - dry run
 * `-j N` - run N jobs in parallel
 * `--enable-werror` - treat warnings as errors
+* `--disable-api` - don't build API libraries
 * `--disable-tools` - don't build tools
 * `--disable-tests` - don't build tests
 * `--disable-doc` - don't build documentation
