@@ -50,7 +50,7 @@ public:
 
     //! Get underlying pointer and pass ownership to the caller.
     T* release() {
-        T *ret = ptr_;
+        T* ret = ptr_;
         if (ret == NULL) {
             roc_panic("attempting to release null scoped pointer");
         }
