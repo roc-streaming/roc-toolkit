@@ -638,6 +638,8 @@ env.AlwaysBuild(
                 build_dir,
                 ','.join([
                     '*',
+                    '-readability-named-parameter',
+                    '-readability-else-after-return',
                     '-google-readability-todo',
                     '-google-readability-function',
                     '-google-readability-casting',
@@ -646,6 +648,7 @@ env.AlwaysBuild(
                     '-google-runtime-int',
                     '-llvm-include-order',
                     '-llvm-header-guard',
+                    '-misc-macro-parentheses',
                     '-misc-use-override',
                     '-clang-analyzer-alpha.core.CastToStruct',
                     '-clang-analyzer-alpha.security.ReturnPtrRange',
