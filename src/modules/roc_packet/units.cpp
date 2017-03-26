@@ -9,6 +9,5 @@
 
 #include "roc_packet/units.h"
 
-
 const roc::packet::sample_t roc::packet::sample_max_val = 1;
 const roc::packet::sample_t roc::packet::sample_min_val = -1;

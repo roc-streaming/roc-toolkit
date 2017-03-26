@@ -18,9 +18,7 @@ namespace test {
 
 using namespace core;
 
-enum {
-    NumTestObjects = 5
-};
+enum { NumTestObjects = 5 };
 
 typedef Array<TestObject, NumTestObjects> TestArray;
 
