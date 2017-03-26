@@ -63,11 +63,11 @@ bool detect_defaults(const char** name, const char** type) {
     }
 
     if (!*name) {
-        roc_log(LOG_ERROR, "can't detect default file/device name");
+        roc_log(LogError, "can't detect default file/device name");
         return false;
     }
 
-    roc_log(LOG_TRACE, "detected defaults: name=%s type=%s", *name, *type);
+    roc_log(LogDebug, "detected defaults: name=%s type=%s", *name, *type);
     return true;
 }
 
@@ -82,14 +82,14 @@ const char* default_driver() {
         const char* drv = driver_list[n];
 
         if (sox_find_format(drv, sox_false)) {
-            roc_log(LOG_TRACE, "selecting default driver %s", drv);
+            roc_log(LogDebug, "selecting default driver %s", drv);
             return (driver = drv);
         } else {
-            roc_log(LOG_TRACE, "driver %s is not supported", drv);
+            roc_log(LogDebug, "driver %s is not supported", drv);
         }
     }
 
-    roc_log(LOG_ERROR, "none of the known drivers supported");
+    roc_log(LogError, "none of the known drivers supported");
     return NULL;
 }
 

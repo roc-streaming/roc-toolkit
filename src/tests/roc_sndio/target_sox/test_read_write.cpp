@@ -237,7 +237,7 @@ TEST(read_write, reader_open_destroy) {
 }
 
 TEST(read_write, writer_bad_args) {
-    LogLevel level = core::set_log_level(LOG_NONE);
+    LogLevel level = core::set_log_level(LogNone);
 
     {
         Queue input;
@@ -264,7 +264,7 @@ TEST(read_write, writer_bad_args) {
 }
 
 TEST(read_write, reader_bad_args) {
-    LogLevel level = core::set_log_level(LOG_NONE);
+    LogLevel level = core::set_log_level(LogNone);
 
     write_file();
 

@@ -31,11 +31,11 @@ bool create_temp_dir(char* path, size_t path_sz) {
         dir = "/tmp";
     }
     if (snprintf(path, path_sz, "%s/XXXXXX", dir) < 0) {
-        roc_log(LOG_ERROR, "snprintf(): %s/XXXXXX: %s", dir, errno_to_str().c_str());
+        roc_log(LogError, "snprintf(): %s/XXXXXX: %s", dir, errno_to_str().c_str());
         return false;
     }
     if (!mkdtemp(path)) {
-        roc_log(LOG_DEBUG, "mkstemp(): %s: %s", path, errno_to_str().c_str());
+        roc_log(LogInfo, "mkstemp(): %s: %s", path, errno_to_str().c_str());
         return false;
     }
     return true;
@@ -44,7 +44,7 @@ bool create_temp_dir(char* path, size_t path_sz) {
 bool remove_dir(const char* path) {
     int ret = rmdir(path);
     if (ret != 0) {
-        roc_log(LOG_DEBUG, "rmdir(): %s: %s", path, errno_to_str().c_str());
+        roc_log(LogInfo, "rmdir(): %s: %s", path, errno_to_str().c_str());
     }
     return (ret == 0);
 }

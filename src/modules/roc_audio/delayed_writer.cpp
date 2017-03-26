@@ -30,7 +30,7 @@ void DelayedWriter::write(const ISampleBufferConstSlice& buffer) {
         pending_ += buffer.size();
 
         if (pending_ >= latency_ || !buffer) {
-            roc_log(LOG_TRACE, "delayed writer: starting output: latency=%lu pending=%lu",
+            roc_log(LogDebug, "delayed writer: starting output: latency=%lu pending=%lu",
                     (unsigned long)latency_ / n_ch_, (unsigned long)pending_ / n_ch_);
 
             for (size_t n = 0; n < queue_.size(); n++) {

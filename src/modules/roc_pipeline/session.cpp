@@ -70,7 +70,7 @@ bool Session::update() {
 
     for (; monitor != NULL; monitor = monitors_.next(*monitor)) {
         if (!monitor->update()) {
-            roc_log(LOG_DEBUG, "session: monitor requested session termination");
+            roc_log(LogInfo, "session: monitor requested session termination");
             return false;
         }
     }
@@ -79,7 +79,7 @@ bool Session::update() {
 }
 
 void Session::attach(audio::ISink& sink) {
-    roc_log(LOG_TRACE, "session: attaching readers to sink");
+    roc_log(LogDebug, "session: attaching readers to sink");
 
     for (size_t ch = 0; ch < readers_.size(); ch++) {
         if (readers_[ch]) {
@@ -89,7 +89,7 @@ void Session::attach(audio::ISink& sink) {
 }
 
 void Session::detach(audio::ISink& sink) {
-    roc_log(LOG_TRACE, "session: detaching readers from sink");
+    roc_log(LogDebug, "session: detaching readers from sink");
 
     for (size_t ch = 0; ch < readers_.size(); ch++) {
         if (readers_[ch]) {
@@ -183,7 +183,7 @@ packet::IPacketReader* Session::make_fec_decoder_(packet::IPacketReader* packet_
 }
 #else
 packet::IPacketReader* Session::make_fec_decoder_(packet::IPacketReader* packet_reader) {
-    roc_log(LOG_ERROR, "session: OpenFEC support not enabled, disabling fec decoder");
+    roc_log(LogError, "session: OpenFEC support not enabled, disabling fec decoder");
     (void)packet_parser_;
     return packet_reader;
 }

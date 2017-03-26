@@ -89,7 +89,7 @@ bool Splitter::create_packet_() {
 
     packet::IPacketPtr pp = composer_.compose(packet::IAudioPacket::Type);
     if (!pp) {
-        roc_log(LOG_ERROR, "splitter: composer returned null");
+        roc_log(LogError, "splitter: composer returned null");
         return false;
     }
 

@@ -83,14 +83,14 @@ datagram::IDatagramWriter& Transceiver::udp_sender() {
 }
 
 void Transceiver::run() {
-    roc_log(LOG_DEBUG, "transceiver: starting event loop");
+    roc_log(LogInfo, "transceiver: starting event loop");
 
     int err = uv_run(&loop_, UV_RUN_DEFAULT);
     if (err != 0) {
-        roc_log(LOG_DEBUG, "transceiver: uv_run() returned non-zero");
+        roc_log(LogInfo, "transceiver: uv_run() returned non-zero");
     }
 
-    roc_log(LOG_DEBUG, "transceiver: finishing event loop");
+    roc_log(LogInfo, "transceiver: finishing event loop");
 }
 
 void Transceiver::stop() {

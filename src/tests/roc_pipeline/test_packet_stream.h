@@ -149,7 +149,7 @@ private:
         packet::sample_t actual = samples[pos];
 
         if (ROC_ABS(actual - expected) > Epsilon) {
-            roc_log(LOG_ERROR, "unexpected sample at pos %u", (unsigned)pos);
+            roc_log(LogError, "unexpected sample at pos %u", (unsigned)pos);
             core::print_buffer(samples, n_samples, n_samples);
         }
 

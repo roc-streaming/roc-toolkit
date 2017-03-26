@@ -17,7 +17,7 @@ namespace audio {
 SampleBufferQueue::SampleBufferQueue()
     : rd_sem_(0)
     , wr_sem_(MaxBuffers) {
-    roc_log(LOG_TRACE, "sample buffer queue: max_size=%u", (unsigned)MaxBuffers);
+    roc_log(LogDebug, "sample buffer queue: max_size=%u", (unsigned)MaxBuffers);
 }
 
 ISampleBufferConstSlice SampleBufferQueue::read() {

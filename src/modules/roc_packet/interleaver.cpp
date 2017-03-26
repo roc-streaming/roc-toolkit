@@ -18,7 +18,7 @@ const size_t Interleaver::tx_seq_[delay_len_] = { 4, 2, 6, 0, 5, 1, 3, 8, 7 };
 Interleaver::Interleaver(packet::IPacketWriter& output)
     : output_(output)
     , pack_store_(delay_len_) {
-    roc_log(LOG_TRACE, "initializing interleaver");
+    roc_log(LogDebug, "initializing interleaver");
 
     next_2_send_ = 0;
     next_2_put_ = 0;

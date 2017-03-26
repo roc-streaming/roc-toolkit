@@ -22,7 +22,7 @@ TEST_GROUP(address) {
     LogLevel level;
 
     void setup() {
-        level = core::set_log_level(LOG_NONE);
+        level = core::set_log_level(LogNone);
     }
 
     void teardown() {

@@ -44,14 +44,14 @@ void SessionManager::add_port(const datagram::Address& address,
 bool SessionManager::route(const datagram::IDatagram& dgm) {
     const Port* port = find_port_(dgm.receiver());
     if (port == NULL) {
-        roc_log(LOG_TRACE, "session manager: dropping datagram: no parser for %s",
+        roc_log(LogDebug, "session manager: dropping datagram: no parser for %s",
                 datagram::address_to_str(dgm.receiver()).c_str());
         return false;
     }
 
     packet::IPacketConstPtr packet = port->parser->parse(dgm.buffer());
     if (!packet) {
-        roc_log(LOG_TRACE, "session manager: dropping datagram: can't parse");
+        roc_log(LogDebug, "session manager: dropping datagram: can't parse");
         return false;
     }
 
@@ -73,7 +73,7 @@ bool SessionManager::update() {
         next_session = sessions_.next(*session);
 
         if (!session->update()) {
-            roc_log(LOG_DEBUG, "session manager: removing session %s",
+            roc_log(LogInfo, "session manager: removing session %s",
                     datagram::address_to_str(session->sender()).c_str());
 
             session->detach(audio_sink_);
@@ -89,7 +89,7 @@ bool SessionManager::update() {
 }
 
 void SessionManager::destroy_sessions_() {
-    roc_log(LOG_DEBUG, "session manager: destroying %u sessions",
+    roc_log(LogInfo, "session manager: destroying %u sessions",
             (unsigned)sessions_.size());
 
     SessionPtr next_session;
@@ -127,25 +127,25 @@ bool SessionManager::create_session_and_store_(const datagram::IDatagram& dgm,
                                                const packet::IPacketConstPtr& packet,
                                                packet::IPacketParser& parser) {
     if (sessions_.size() >= config_.max_sessions) {
-        roc_log(LOG_DEBUG, "session manager: dropping datagram:"
+        roc_log(LogInfo, "session manager: dropping datagram:"
                            " maximum number of session limit reached (%u sessions)",
                 (unsigned)sessions_.size());
         return false;
     }
 
-    roc_log(LOG_DEBUG, "session manager: creating session %s",
+    roc_log(LogInfo, "session manager: creating session %s",
             datagram::address_to_str(dgm.sender()).c_str());
 
     SessionPtr session = new (*config_.session_pool)
         Session(config_, dgm.sender(), dgm.receiver(), parser);
 
     if (!session) {
-        roc_log(LOG_DEBUG, "session manager: can't get session from pool");
+        roc_log(LogInfo, "session manager: can't get session from pool");
         return false;
     }
 
     if (!session->may_autodetect_route(dgm, packet)) {
-        roc_log(LOG_DEBUG, "session manager: can't route packet to new session");
+        roc_log(LogInfo, "session manager: can't route packet to new session");
         return false;
     }
 
