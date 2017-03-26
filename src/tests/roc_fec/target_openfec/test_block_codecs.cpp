@@ -73,11 +73,11 @@ public:
         return true;
     }
 
-    OF_BlockEncoder &encoder() {
+    OFBlockEncoder &encoder() {
         return encoder_;
     }
 
-    OF_BlockDecoder &decoder() {
+    OFBlockDecoder &decoder() {
         return decoder_;
     }
 
@@ -101,8 +101,8 @@ private:
         return *buffer;
     }
 
-    OF_BlockEncoder encoder_;
-    OF_BlockDecoder decoder_;
+    OFBlockEncoder encoder_;
+    OFBlockDecoder decoder_;
 
     codec_buff_t buffers_;
 };
@@ -113,7 +113,7 @@ TEST_GROUP(block_codecs) {
 };
 
 TEST(block_codecs, without_loss) {
-    for (int fec = (int)OF_REED_SOLOMON_2_M; fec != (int)FEC_TYPE_UNDEFINED; ++fec) {
+    for (int fec = (int)ReedSolomon2m; fec != (int)FECTypeUndefined; ++fec) {
         Codec code((fec::fec_codec_type_t)fec);
         code.encode();
         // Sending all packets in block without loss.
@@ -125,7 +125,7 @@ TEST(block_codecs, without_loss) {
 }
 
 TEST(block_codecs, loss_1) {
-    for (int fec = 0; fec < (int)FEC_TYPE_UNDEFINED; ++fec) {
+    for (int fec = 0; fec < (int)FECTypeUndefined; ++fec) {
         Codec code((fec::fec_codec_type_t)fec);
         code.encode();
         // Sending all packets in block with one loss.
@@ -141,7 +141,7 @@ TEST(block_codecs, loss_1) {
 
 TEST(block_codecs, load_test) {
     enum { NumIterations = 20, LossPercent = 10, MaxLoss = 3 };
-    for (int fec = 0; fec < (int)FEC_TYPE_UNDEFINED; ++fec) {
+    for (int fec = 0; fec < (int)FECTypeUndefined; ++fec) {
         Codec code((fec::fec_codec_type_t)fec);
 
         size_t total_loss = 0;

@@ -38,14 +38,14 @@ namespace roc {
 namespace fec {
 
 //! Implementation of IBlockEncoder using OpenFEC library.
-class OF_BlockEncoder : public IBlockEncoder, public core::NonCopyable<> {
+class OFBlockEncoder : public IBlockEncoder, public core::NonCopyable<> {
 public:
     //! Construct.
-    explicit OF_BlockEncoder(
+    explicit OFBlockEncoder(
         core::IByteBufferComposer& composer = datagram::default_buffer_composer(),
-        fec_codec_type_t fec_type = OF_REED_SOLOMON_2_M);
+        fec_codec_type_t fec_type = ReedSolomon2m);
 
-    virtual ~OF_BlockEncoder();
+    virtual ~OFBlockEncoder();
 
     //! Store data buffer to current block at given position.
     virtual void write(size_t index, const core::IByteBufferConstSlice& buffer);

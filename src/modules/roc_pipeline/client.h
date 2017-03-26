@@ -123,7 +123,7 @@ private:
     core::Maybe<packet::Interleaver> interleaver_;
 
 #ifdef ROC_TARGET_OPENFEC
-    core::Maybe<fec::OF_BlockEncoder> fec_ldpc_encoder_;
+    core::Maybe<fec::OFBlockEncoder> fec_ldpc_encoder_;
     core::Maybe<fec::Encoder> fec_encoder_;
 #endif
 

@@ -19,11 +19,11 @@ namespace fec {
 /** \brief Available options of FEC code type. */
 typedef enum {
     //! OpenFEC Reed-Solomon.
-    OF_REED_SOLOMON_2_M,
+    ReedSolomon2m,
     //! OpenFEC LDPC Staircase.
-    OF_LDPC_STAIRCASE,
+    LDPCStaircase,
     //! Maximum for iterating through the enums.
-    FEC_TYPE_UNDEFINED
+    FECTypeUndefined
 } fec_codec_type_t;
 
 } // namespace fec

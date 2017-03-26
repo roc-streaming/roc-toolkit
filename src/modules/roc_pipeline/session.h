@@ -112,7 +112,7 @@ private:
     core::Maybe<packet::Watchdog> watchdog_;
 
 #ifdef ROC_TARGET_OPENFEC
-    core::Maybe<fec::OF_BlockDecoder> fec_ldpc_decoder_;
+    core::Maybe<fec::OFBlockDecoder> fec_ldpc_decoder_;
     core::Maybe<fec::Decoder> fec_decoder_;
     core::Maybe<packet::Watchdog> fec_watchdog_;
 #endif
