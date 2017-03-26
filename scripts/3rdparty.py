@@ -153,6 +153,7 @@ elif name == 'openfec':
         '-DCMAKE_C_COMPILER=%s' % '-'.join([s for s in [toolchain, 'gcc'] if s]),
         '-DCMAKE_FIND_ROOT_PATH=%s' % getsysroot(toolchain),
         '-DCMAKE_POSITION_INDEPENDENT_CODE=ON',
+        '-DCMAKE_C_FLAGS=-fPIC', # for older cmake versions?
         ]
     if variant == 'debug':
         dist = 'bin/Debug'
