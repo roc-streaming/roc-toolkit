@@ -35,16 +35,59 @@ const size_t SYMB_SZ = ROC_CONFIG_DEFAULT_PACKET_SIZE;
 
 } // namespace
 
-TEST_GROUP(block_codecs) {
-    OF_BlockEncoder encoder;
-    OF_BlockDecoder decoder;
-
-    core::Array<core::IByteBufferConstSlice, N_DATA_PACKETS + N_FEC_PACKETS> buffers;
-
-    void setup() {
-        buffers.resize(N_DATA_PACKETS + N_FEC_PACKETS);
+class Codec
+{
+public:
+    Codec(fec_codec_type_t fec_type)
+        : encoder_(datagram::default_buffer_composer(), fec_type)
+        , decoder_(datagram::default_buffer_composer(), fec_type)
+    {
+        buffers_.resize(N_DATA_PACKETS + N_FEC_PACKETS);        
     }
 
+    void encode() {
+        for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
+            buffers_[i] = make_buffer();
+            encoder_.write(i, buffers_[i]);
+        }
+        encoder_.commit();
+        for (size_t i = 0; i < N_FEC_PACKETS; ++i) {
+            buffers_[N_DATA_PACKETS + i] = encoder_.read(i);
+        }
+        encoder_.reset();
+    }
+
+    bool decode() {
+        for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
+            core::IByteBufferConstSlice decoded = decoder_.repair(i);
+            if (!decoded) {
+                return false;
+            }
+
+            LONGS_EQUAL(SYMB_SZ, decoded.size());
+
+            if (memcmp(buffers_[i].data(), decoded.data(), SYMB_SZ) != 0) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    OF_BlockEncoder &encoder() {
+        return encoder_;
+    }
+
+    OF_BlockDecoder &decoder() {
+        return decoder_;
+    }
+
+    typedef core::Array<core::IByteBufferConstSlice, N_DATA_PACKETS + N_FEC_PACKETS> codec_buff_t;
+
+    core::IByteBufferConstSlice &get_buffer(const size_t i) {
+        return buffers_[i];
+    }
+
+private:
     core::IByteBufferConstSlice make_buffer() {
         core::IByteBufferPtr buffer =
             core::ByteBufferTraits::default_composer<SYMB_SZ>().compose();
@@ -58,87 +101,78 @@ TEST_GROUP(block_codecs) {
         return *buffer;
     }
 
-    void encode() {
-        for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
-            buffers[i] = make_buffer();
-            encoder.write(i, buffers[i]);
-        }
-        encoder.commit();
-        for (size_t i = 0; i < N_FEC_PACKETS; ++i) {
-            buffers[N_DATA_PACKETS + i] = encoder.read(i);
-        }
-        encoder.reset();
-    }
+    OF_BlockEncoder encoder_;
+    OF_BlockDecoder decoder_;
 
-    bool decode() {
-        for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
-            core::IByteBufferConstSlice decoded = decoder.repair(i);
-            if (!decoded) {
-                return false;
-            }
+    codec_buff_t buffers_;
+};
 
-            LONGS_EQUAL(SYMB_SZ, decoded.size());
+TEST_GROUP(block_codecs) {
 
-            if (memcmp(buffers[i].data(), decoded.data(), SYMB_SZ) != 0) {
-                return false;
-            }
-        }
-        return true;
-    }
+    void setup() {}
 };
 
 TEST(block_codecs, without_loss) {
-    encode();
-    // Sending all packets in block without loss.
-    for (size_t i = 0; i < N_DATA_PACKETS + N_FEC_PACKETS; ++i) {
-        decoder.write(i, buffers[i]);
+    for (int fec = (int)OF_REED_SOLOMON_2_M; fec != (int)FEC_TYPE_UNDEFINED; ++fec) {
+        Codec code((fec::fec_codec_type_t)fec);
+        code.encode();
+        // Sending all packets in block without loss.
+        for (size_t i = 0; i < N_DATA_PACKETS + N_FEC_PACKETS; ++i) {
+            code.decoder().write(i, code.get_buffer(i));
+        }
+        CHECK(code.decode());
     }
-    CHECK(decode());
 }
 
 TEST(block_codecs, loss_1) {
-    encode();
-    // Sending all packets in block with one loss.
-    for (size_t i = 0; i < N_DATA_PACKETS + N_FEC_PACKETS; ++i) {
-        if (i == 5) {
-            continue;
+    for (int fec = 0; fec < (int)FEC_TYPE_UNDEFINED; ++fec) {
+        Codec code((fec::fec_codec_type_t)fec);
+        code.encode();
+        // Sending all packets in block with one loss.
+        for (size_t i = 0; i < N_DATA_PACKETS + N_FEC_PACKETS; ++i) {
+            if (i == 5) {
+                continue;
+            }
+            code.decoder().write(i, code.get_buffer(i));
         }
-        decoder.write(i, buffers[i]);
+        CHECK(code.decode());
     }
-    CHECK(decode());
 }
 
 TEST(block_codecs, load_test) {
     enum { NumIterations = 20, LossPercent = 10, MaxLoss = 3 };
+    for (int fec = 0; fec < (int)FEC_TYPE_UNDEFINED; ++fec) {
+        Codec code((fec::fec_codec_type_t)fec);
 
-    size_t total_loss = 0;
-    size_t max_loss = 0;
+        size_t total_loss = 0;
+        size_t max_loss = 0;
 
-    size_t total_fails = 0;
+        size_t total_fails = 0;
 
-    for (size_t test_num = 0; test_num < NumIterations; ++test_num) {
-        encode();
-        size_t curr_loss = 0;
-        for (size_t i = 0; i < N_DATA_PACKETS + N_FEC_PACKETS; ++i) {
-            if (core::random(100) < LossPercent && curr_loss <= MaxLoss) {
-                total_loss++;
-                curr_loss++;
-            } else {
-                decoder.write(i, buffers[i]);
+        for (size_t test_num = 0; test_num < NumIterations; ++test_num) {
+            code.encode();
+            size_t curr_loss = 0;
+            for (size_t i = 0; i < N_DATA_PACKETS + N_FEC_PACKETS; ++i) {
+                if (core::random(100) < LossPercent && curr_loss <= MaxLoss) {
+                    total_loss++;
+                    curr_loss++;
+                } else {
+                    code.decoder().write(i, code.get_buffer(i));
+                }
             }
+            max_loss = ROC_MAX(max_loss, curr_loss);
+            if (!code.decode()) {
+                total_fails++;
+            }
+            code.decoder().reset();
         }
-        max_loss = ROC_MAX(max_loss, curr_loss);
-        if (!decode()) {
-            total_fails++;
-        }
-        decoder.reset();
-    }
 
     roc_log(LogInfo, "max losses in block: %u", (uint32_t)max_loss);
     roc_log(LogInfo, "total losses: %u", (uint32_t)total_loss);
     roc_log(LogInfo, "total fails: %u", (uint32_t)total_fails);
 
-    CHECK(total_fails < NumIterations / 2);
+        CHECK(total_fails < NumIterations / 2);
+    }
 }
 
 } // namespace test
