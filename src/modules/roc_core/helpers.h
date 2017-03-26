@@ -35,6 +35,6 @@
 #define ROC_STRINGIZE(s) ROC_STRINGIZE_(s)
 
 //! Get number of elements in static array.
-#define ROC_ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
+#define ROC_ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 
 #endif // ROC_CORE_HELPERS_H_
