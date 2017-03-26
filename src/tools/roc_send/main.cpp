@@ -25,7 +25,7 @@ namespace {
 
 bool check_ge(const char* option, int value, int min_value) {
     if (value < min_value) {
-        roc_log(LOG_ERROR, "invalid `--%s=%d': should be >= %d", option, value,
+        roc_log(LogError, "invalid `--%s=%d': should be >= %d", option, value,
                 min_value);
         return false;
     }
@@ -34,7 +34,7 @@ bool check_ge(const char* option, int value, int min_value) {
 
 bool check_range(const char* option, int value, int min_value, int max_value) {
     if (value < min_value || value > max_value) {
-        roc_log(LOG_ERROR, "invalid `--%s=%d': should be in range [%d; %d]", option,
+        roc_log(LogError, "invalid `--%s=%d': should be in range [%d; %d]", option,
                 value, min_value, max_value);
         return false;
     }
@@ -56,19 +56,19 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    core::set_log_level(LogLevel(LOG_ERROR + args.verbose_given));
+    core::set_log_level(LogLevel(LogError + args.verbose_given));
 
     datagram::Address src_addr;
     if (args.source_given) {
         if (!netio::parse_address(args.source_arg, src_addr)) {
-            roc_log(LOG_ERROR, "can't parse source address: %s", args.source_arg);
+            roc_log(LogError, "can't parse source address: %s", args.source_arg);
             return 1;
         }
     }
 
     datagram::Address dst_addr;
     if (!netio::parse_address(args.inputs[0], dst_addr)) {
-        roc_log(LOG_ERROR, "can't parse destination address: %s", args.inputs[0]);
+        roc_log(LogError, "can't parse destination address: %s", args.inputs[0]);
         return 1;
     }
 
@@ -112,14 +112,14 @@ int main(int argc, char** argv) {
                          config.samples_per_packet / 2, config.sample_rate);
 
     if (!reader.open(args.input_arg, args.type_arg)) {
-        roc_log(LOG_ERROR, "can't open input file/device: %s %s", args.input_arg,
+        roc_log(LogError, "can't open input file/device: %s %s", args.input_arg,
                 args.type_arg);
         return 1;
     }
 
     netio::Transceiver trx;
     if (!trx.add_udp_sender(src_addr)) {
-        roc_log(LOG_ERROR, "can't register udp sender: %s",
+        roc_log(LogError, "can't register udp sender: %s",
                 datagram::address_to_str(src_addr).c_str());
         return 1;
     }

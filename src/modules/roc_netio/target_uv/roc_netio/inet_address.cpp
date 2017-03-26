@@ -45,7 +45,7 @@ void from_inet_address(const sockaddr_in& sa, datagram::Address& addr) {
 
 bool parse_address(const char* input, datagram::Address& result) {
     if (input == NULL) {
-        roc_log(LOG_ERROR, "parse address: string is null");
+        roc_log(LogError, "parse address: string is null");
         return false;
     }
 
@@ -56,7 +56,7 @@ bool parse_address(const char* input, datagram::Address& result) {
 
     if (const char* colon = strrchr(input, ':')) {
         if (size_t(colon - input) > sizeof(buf) - 1) {
-            roc_log(LOG_ERROR, "parse address: string is too long");
+            roc_log(LogError, "parse address: string is too long");
             return false;
         }
         if (colon > input) {
@@ -66,17 +66,17 @@ bool parse_address(const char* input, datagram::Address& result) {
         }
         port = colon[1] ? &colon[1] : NULL;
     } else {
-        roc_log(LOG_ERROR, "parse address: string is not in form '<IP>:<PORT>'");
+        roc_log(LogError, "parse address: string is not in form '<IP>:<PORT>'");
         return false;
     }
 
     if (!port) {
-        roc_log(LOG_ERROR, "parse address: bad port, expected non-empty string");
+        roc_log(LogError, "parse address: bad port, expected non-empty string");
         return false;
     }
 
     if (!isdigit(*port)) {
-        roc_log(LOG_ERROR, "parse address: bad port, expected number");
+        roc_log(LogError, "parse address: bad port, expected number");
         return false;
     }
 
@@ -84,19 +84,19 @@ bool parse_address(const char* input, datagram::Address& result) {
     long port_num = strtol(port, &port_end, 10);
 
     if (port_num == LONG_MAX || port_num == LONG_MIN || !port_end || *port_end) {
-        roc_log(LOG_ERROR, "parse address: bad port, expected positive integer");
+        roc_log(LogError, "parse address: bad port, expected positive integer");
         return false;
     }
 
     if (port_num < 1 || port_num > 65535) {
-        roc_log(LOG_ERROR, "parse address: bad port, expected [1; 65535]");
+        roc_log(LogError, "parse address: bad port, expected [1; 65535]");
         return false;
     }
 
     if (addr) {
         sockaddr_in sa;
         if (int err = uv_ip4_addr(addr, (int)port_num, &sa)) {
-            roc_log(LOG_ERROR, "parse address: uv_ip4_addr(): [%s] %s", uv_err_name(err),
+            roc_log(LogError, "parse address: uv_ip4_addr(): [%s] %s", uv_err_name(err),
                     uv_strerror(err));
             return false;
         }
@@ -106,7 +106,7 @@ bool parse_address(const char* input, datagram::Address& result) {
         result.port = (datagram::port_t)port_num;
     }
 
-    roc_log(LOG_TRACE, "parse address: parsed %s",
+    roc_log(LogDebug, "parse address: parsed %s",
             datagram::address_to_str(result).c_str());
 
     return true;

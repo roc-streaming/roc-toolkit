@@ -26,7 +26,7 @@ LDPC_BlockEncoder::LDPC_BlockEncoder(core::IByteBufferComposer& composer)
     , composer_(composer)
     , sym_tab_(N_DATA_PACKETS + N_FEC_PACKETS)
     , buffers_(N_DATA_PACKETS + N_FEC_PACKETS) {
-    roc_log(LOG_TRACE, "initializing ldpc encoder");
+    roc_log(LogDebug, "initializing ldpc encoder");
 
     of_ldpc_parameters params;
 
@@ -80,7 +80,7 @@ void LDPC_BlockEncoder::commit() {
             sym_tab_[N_DATA_PACKETS + i] = buffer->data();
             buffers_[N_DATA_PACKETS + i] = *buffer;
         } else {
-            roc_log(LOG_TRACE, "ldpc encoder: can't allocate buffer");
+            roc_log(LogDebug, "ldpc encoder: can't allocate buffer");
             sym_tab_[N_DATA_PACKETS + i] = NULL;
         }
     }

@@ -37,7 +37,7 @@ void PacketQueue::write(const IPacketConstPtr& packet) {
     }
 
     if (max_size_ > 0 && list_.size() == max_size_) {
-        roc_log(LOG_TRACE, "packet queue: queue is full, dropping packet:"
+        roc_log(LogDebug, "packet queue: queue is full, dropping packet:"
                            " max_size=%u",
                 (unsigned)max_size_);
         return;
@@ -51,7 +51,7 @@ void PacketQueue::write(const IPacketConstPtr& packet) {
         }
 
         if (packet->seqnum() == before->seqnum()) {
-            roc_log(LOG_TRACE, "packet queue: dropping duplicate packet:"
+            roc_log(LogDebug, "packet queue: dropping duplicate packet:"
                                " pkt_seqnum=%u",
                     (unsigned)packet->seqnum());
             return;

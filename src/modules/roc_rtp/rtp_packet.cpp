@@ -42,7 +42,7 @@ bool RTP_Packet::parse(const core::IByteBufferConstSlice& buffer) {
     }
 
     if (buffer.size() < sizeof(RTP_Header)) {
-        roc_log(LOG_TRACE, "rtp: bad packet, size < %d (rtp preamble)",
+        roc_log(LogDebug, "rtp: bad packet, size < %d (rtp preamble)",
                 (int)sizeof(RTP_Header));
         return false;
     }
@@ -50,7 +50,7 @@ bool RTP_Packet::parse(const core::IByteBufferConstSlice& buffer) {
     const RTP_Header& hdr = *(const RTP_Header*)buffer.data();
 
     if (hdr.version() != RTP_V2) {
-        roc_log(LOG_TRACE, "rtp: bad version, get %d, expected %d", (int)hdr.version(),
+        roc_log(LogDebug, "rtp: bad version, get %d, expected %d", (int)hdr.version(),
                 (int)RTP_V2);
         return false;
     }
@@ -62,7 +62,7 @@ bool RTP_Packet::parse(const core::IByteBufferConstSlice& buffer) {
     }
 
     if (buffer.size() < hdr_size) {
-        roc_log(LOG_TRACE, "rtp: bad packet, size < %d (rtp header + ext header)",
+        roc_log(LogDebug, "rtp: bad packet, size < %d (rtp header + ext header)",
                 (int)hdr_size);
         return false;
     }
@@ -75,7 +75,7 @@ bool RTP_Packet::parse(const core::IByteBufferConstSlice& buffer) {
     }
 
     if (buffer.size() < hdr_size) {
-        roc_log(LOG_TRACE,
+        roc_log(LogDebug,
                 "rtp: bad packet, size < %d (rtp header + ext header + ext data)",
                 (int)hdr_size);
         return false;
@@ -86,19 +86,19 @@ bool RTP_Packet::parse(const core::IByteBufferConstSlice& buffer) {
 
     if (hdr.has_padding()) {
         if (payload_begin == payload_end) {
-            roc_log(LOG_TRACE, "rtp: bad packet, empty payload but padding flag is set");
+            roc_log(LogDebug, "rtp: bad packet, empty payload but padding flag is set");
             return false;
         }
 
         const uint8_t pad_size = payload_end[-1];
 
         if (pad_size == 0) {
-            roc_log(LOG_TRACE, "rtp: bad packet, padding size octet is zero");
+            roc_log(LogDebug, "rtp: bad packet, padding size octet is zero");
             return false;
         }
 
         if (size_t(payload_end - payload_begin) < size_t(pad_size)) {
-            roc_log(LOG_TRACE, "rtp: bad packet, padding size octet > %d (payload size)",
+            roc_log(LogDebug, "rtp: bad packet, padding size octet > %d (payload size)",
                     (int)(payload_end - payload_begin));
             return false;
         }

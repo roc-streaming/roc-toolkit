@@ -50,24 +50,24 @@ Writer::~Writer() {
 }
 
 bool Writer::open(const char* name, const char* type) {
-    roc_log(LOG_TRACE, "writer: opening: name=%s type=%s", name, type);
+    roc_log(LogDebug, "writer: opening: name=%s type=%s", name, type);
 
     if (output_) {
         roc_panic("writer: can't call open() more than once");
     }
 
     if (!detect_defaults(&name, &type)) {
-        roc_log(LOG_ERROR, "can't detect defaults: name=%s type=%s", name, type);
+        roc_log(LogError, "can't detect defaults: name=%s type=%s", name, type);
         return false;
     }
 
-    roc_log(LOG_DEBUG, "writer: name=%s type=%s", name, type);
+    roc_log(LogInfo, "writer: name=%s type=%s", name, type);
 
     sndio::init();
 
     output_ = sox_open_write(name, &out_signal_, NULL, type, NULL, NULL);
     if (!output_) {
-        roc_log(LOG_ERROR, "can't open writer: name=%s type=%s", name, type);
+        roc_log(LogError, "can't open writer: name=%s type=%s", name, type);
         return false;
     }
 
@@ -79,7 +79,7 @@ void Writer::stop() {
 }
 
 void Writer::run() {
-    roc_log(LOG_TRACE, "writer: starting thread");
+    roc_log(LogDebug, "writer: starting thread");
 
     if (!output_) {
         roc_panic("writer: thread is started before open() returnes success");
@@ -88,7 +88,7 @@ void Writer::run() {
     loop_();
     close_();
 
-    roc_log(LOG_TRACE, "writer: finishing thread, wrote %lu buffers",
+    roc_log(LogDebug, "writer: finishing thread, wrote %lu buffers",
             (unsigned long)n_bufs_);
 }
 
@@ -106,7 +106,7 @@ void Writer::loop_() {
     while (!stop_) {
         audio::ISampleBufferConstSlice buffer = input_.read();
         if (!buffer) {
-            roc_log(LOG_DEBUG, "writer: got empty buffer, exiting");
+            roc_log(LogInfo, "writer: got empty buffer, exiting");
             break;
         }
 
@@ -139,7 +139,7 @@ void Writer::loop_() {
 bool Writer::write_(const sox_sample_t* samples, size_t n_samples) {
     if (n_samples > 0) {
         if (sox_write(output_, samples, n_samples) != n_samples) {
-            roc_log(LOG_ERROR, "writer: can't write output buffer, exiting");
+            roc_log(LogError, "writer: can't write output buffer, exiting");
             return false;
         }
     }
@@ -151,7 +151,7 @@ void Writer::close_() {
         return;
     }
 
-    roc_log(LOG_TRACE, "writer: closing output");
+    roc_log(LogDebug, "writer: closing output");
 
     int err = sox_close(output_);
     if (err != SOX_SUCCESS) {

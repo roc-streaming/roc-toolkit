@@ -95,7 +95,7 @@ TEST_GROUP(udp) {
             uint8_t val_actual = actual.data()[n];
 
             if (val_expected != val_actual) {
-                roc_log(LOG_ERROR, "unexpected byte at pos %u (datagram # %d):",
+                roc_log(LogError, "unexpected byte at pos %u (datagram # %d):",
                         (unsigned)n, number);
 
                 actual.print();

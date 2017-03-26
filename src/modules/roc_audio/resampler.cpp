@@ -150,7 +150,7 @@ void Resampler::read(const ISampleBufferSlice& buff) {
 }
 
 void Resampler::init_window_(ISampleBufferComposer& composer) {
-    roc_log(LOG_TRACE, "resampler: initializing window");
+    roc_log(LogDebug, "resampler: initializing window");
 
     for (size_t n = 0; n < window_.size(); n++) {
         if (!(window_[n] = composer.compose())) {

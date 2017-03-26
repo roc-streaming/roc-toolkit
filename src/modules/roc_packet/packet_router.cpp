@@ -56,14 +56,14 @@ void PacketRouter::write(const IPacketConstPtr& packet) {
         if (route->type == packet->type()) {
             route->writer->write(packet);
         } else {
-            roc_log(LOG_TRACE,
+            roc_log(LogDebug,
                     "packet router: packet type mistamatch for route, dropping packet");
         }
         return;
     }
 
     if (Route* route = detect_route_(packet)) {
-        roc_log(LOG_DEBUG,
+        roc_log(LogInfo,
                 "packet router: auto-detected route for new packet: route=%u src=%lu ",
                 (unsigned)(route - &routes_[0]), (unsigned long)packet->source());
         route->has_source = true;
@@ -72,7 +72,7 @@ void PacketRouter::write(const IPacketConstPtr& packet) {
         return;
     }
 
-    roc_log(LOG_TRACE, "packet router: no route for packet found, dropping packet");
+    roc_log(LogDebug, "packet router: no route for packet found, dropping packet");
 }
 
 const PacketRouter::Route* PacketRouter::find_route_(source_t source) const {
