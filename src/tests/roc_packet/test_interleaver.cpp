@@ -30,9 +30,9 @@ TEST(interleaver, read_write) {
     enum { MAX_PACKETS = 100 };
 
     PacketQueue receiver;
-    Interleaver intlrvr(receiver, 10);
+    Interleaver intrlrvr(receiver, 10);
 
-    const size_t total_packets_num = intlrvr.window_size() * 5;
+    const size_t total_packets_num = intrlrvr.window_size() * 5;
 
     // Packets to push to Interleaver.
     core::Array<IPacketPtr, MAX_PACKETS> ppackets(total_packets_num);
@@ -50,7 +50,7 @@ TEST(interleaver, read_write) {
 
     // Push every packet to interleaver.
     for (size_t i = 0; i < total_packets_num; i++) {
-        intlrvr.write(ppackets[i]);
+        intrlrvr.write(ppackets[i]);
     }
 
     // Interleaver must put all packets to its writer because we put pricesly
@@ -68,7 +68,7 @@ TEST(interleaver, read_write) {
 
     // Nothing left in receiver.
     LONGS_EQUAL(0, receiver.size());
-    intlrvr.flush();
+    intrlrvr.flush();
 
     // Nothing left in interleaver.
     LONGS_EQUAL(0, receiver.size());
@@ -81,17 +81,15 @@ TEST(interleaver, read_write) {
 
 TEST(interleaver, flush) {
     PacketQueue receiver;
-    Interleaver intlrvr(receiver, 10);
+    Interleaver intrlrvr(receiver, 10);
 
-    const size_t total_packets_num = intlrvr.window_size() * 5;
+    const size_t total_packets_num = intrlrvr.window_size() * 5;
 
     for (size_t n = 0; n < total_packets_num; n++) {
         IPacketPtr packet = new_packet(seqnum_t(n));
 
-        intlrvr.write(packet);
-        LONGS_EQUAL(0, receiver.size());
-
-        intlrvr.flush();
+        intrlrvr.write(packet);
+        intrlrvr.flush();
         LONGS_EQUAL(1, receiver.size());
 
         CHECK(receiver.read() == packet);
