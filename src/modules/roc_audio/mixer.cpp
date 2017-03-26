@@ -12,17 +12,15 @@
 
 #include "roc_audio/mixer.h"
 
-
 namespace roc {
 namespace audio {
 
 namespace {
 
-packet::sample_t clamp(const packet::sample_t x)
-{
-    if (x > packet::sample_max_val){
+packet::sample_t clamp(const packet::sample_t x) {
+    if (x > packet::sample_max_val) {
         return packet::sample_max_val;
-    } else if (x < packet::sample_min_val){
+    } else if (x < packet::sample_min_val) {
         return packet::sample_min_val;
     } else {
         return x;
@@ -77,4 +75,3 @@ void Mixer::read(const ISampleBufferSlice& out) {
 
 } // namespace audio
 } // namespace roc
-

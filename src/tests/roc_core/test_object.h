@@ -19,10 +19,7 @@ namespace test {
 struct TestObject {
     static std::map<const TestObject*, size_t> state;
 
-    enum {
-        Initialized = 111,
-        Destroyed = 222
-    };
+    enum { Initialized = 111, Destroyed = 222 };
 
     size_t value() const {
         return state[this];
