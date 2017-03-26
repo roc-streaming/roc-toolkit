@@ -89,7 +89,7 @@ bool Watchdog::detect_jump_(const IPacketConstPtr& next) {
 
         if (ROC_ABS(sn_dist) > ROC_CONFIG_MAX_SN_JUMP) {
             roc_log(LogInfo, "watchdog: too long seqnum jump:"
-                               " prev=%lu next=%lu dist=%ld",
+                             " prev=%lu next=%lu dist=%ld",
                     (unsigned long)prev_->seqnum(), (unsigned long)next->seqnum(),
                     (long)sn_dist);
             return true;
@@ -99,7 +99,7 @@ bool Watchdog::detect_jump_(const IPacketConstPtr& next) {
 
         if (ROC_ABS(ts_dist) > ROC_CONFIG_MAX_TS_JUMP) {
             roc_log(LogInfo, "watchdog: too long timestamp jump:"
-                               " prev=%lu next=%lu dist=%ld",
+                             " prev=%lu next=%lu dist=%ld",
                     (unsigned long)prev_->timestamp(), (unsigned long)next->timestamp(),
                     (long)ts_dist);
             return true;

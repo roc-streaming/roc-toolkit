@@ -36,8 +36,7 @@ void DatagramQueue::write(const IDatagramPtr& dgm) {
     }
 
     if (max_size_ != 0 && list_.size() == max_size_) {
-        roc_log(LogDebug,
-                "datagram queue is full, dropping oldest datagram (size = %lu)",
+        roc_log(LogDebug, "datagram queue is full, dropping oldest datagram (size = %lu)",
                 (unsigned long)max_size_);
 
         if (IDatagramPtr head = list_.front()) {

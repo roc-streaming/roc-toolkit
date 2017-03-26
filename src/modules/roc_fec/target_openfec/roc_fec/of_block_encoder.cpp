@@ -21,14 +21,13 @@ const size_t SYMB_SZ = ROC_CONFIG_DEFAULT_PACKET_SIZE;
 
 } // namespace
 
-OFBlockEncoder::OFBlockEncoder(   core::IByteBufferComposer& composer,
-                                    fec_codec_type_t fec_type)
+OFBlockEncoder::OFBlockEncoder(core::IByteBufferComposer& composer,
+                               fec_codec_type_t fec_type)
     : fec_type_(fec_type)
     , of_inst_(NULL)
     , composer_(composer)
     , sym_tab_(N_DATA_PACKETS + N_FEC_PACKETS)
     , buffers_(N_DATA_PACKETS + N_FEC_PACKETS) {
-
     // Use Reed-Solomon Codec.
     if (fec_type_ == ReedSolomon2m) {
         codec_id_ = OF_CODEC_REED_SOLOMON_GF_2_M_STABLE;
@@ -38,7 +37,7 @@ OFBlockEncoder::OFBlockEncoder(   core::IByteBufferComposer& composer,
         fec_codec_params_.rs_params_.m = 8;
 
         of_inst_params_ = (of_parameters_t*)&fec_codec_params_.rs_params_;
-    // Use LDPC-Staircase.
+        // Use LDPC-Staircase.
     } else if (fec_type_ == LDPCStaircase) {
         codec_id_ = OF_CODEC_LDPC_STAIRCASE_STABLE;
 
@@ -47,7 +46,7 @@ OFBlockEncoder::OFBlockEncoder(   core::IByteBufferComposer& composer,
         fec_codec_params_.ldpc_params_.prng_seed = 1297501556;
         fec_codec_params_.ldpc_params_.N1 = 7;
 
-        of_inst_params_ = (of_parameters_t*)&fec_codec_params_.ldpc_params_; 
+        of_inst_params_ = (of_parameters_t*)&fec_codec_params_.ldpc_params_;
     } else {
         roc_panic("OFBlockEncoder: wrong FEC type is chosen.");
     }
@@ -57,8 +56,7 @@ OFBlockEncoder::OFBlockEncoder(   core::IByteBufferComposer& composer,
     of_inst_params_->encoding_symbol_length = SYMB_SZ;
     of_verbosity = 0;
 
-    if (OF_STATUS_OK != of_create_codec_instance(
-                            &of_inst_, codec_id_, OF_ENCODER, 0)) {
+    if (OF_STATUS_OK != of_create_codec_instance(&of_inst_, codec_id_, OF_ENCODER, 0)) {
         roc_panic("OFBlockEncoder: of_create_codec_instance() failed");
     }
 

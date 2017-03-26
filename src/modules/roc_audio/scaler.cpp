@@ -53,7 +53,7 @@ bool Scaler::update() {
         } else {
             started_ = true;
             roc_log(LogInfo, "scaler: received enough samples:"
-                               " queue_size=%lu aim_queue_size=%lu",
+                             " queue_size=%lu aim_queue_size=%lu",
                     (unsigned long)qs, (unsigned long)aim_queue_size_);
         }
     }

@@ -25,8 +25,7 @@ namespace {
 
 bool check_ge(const char* option, int value, int min_value) {
     if (value < min_value) {
-        roc_log(LogError, "invalid `--%s=%d': should be >= %d", option, value,
-                min_value);
+        roc_log(LogError, "invalid `--%s=%d': should be >= %d", option, value, min_value);
         return false;
     }
     return true;
@@ -34,8 +33,8 @@ bool check_ge(const char* option, int value, int min_value) {
 
 bool check_range(const char* option, int value, int min_value, int max_value) {
     if (value < min_value || value > max_value) {
-        roc_log(LogError, "invalid `--%s=%d': should be in range [%d; %d]", option,
-                value, min_value, max_value);
+        roc_log(LogError, "invalid `--%s=%d': should be in range [%d; %d]", option, value,
+                min_value, max_value);
         return false;
     }
     return true;

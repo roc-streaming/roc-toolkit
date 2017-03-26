@@ -27,10 +27,7 @@ namespace {
 bool make_client_config(pipeline::ClientConfig& cc, const roc_sender_config* sc) {
     (void)sc;
 
-    cc = pipeline::ClientConfig(
-        pipeline::EnableInterleaving |
-        pipeline::EnableFEC
-        );
+    cc = pipeline::ClientConfig(pipeline::EnableInterleaving | pipeline::EnableFEC);
 
     return true;
 }
@@ -39,11 +36,14 @@ bool make_client_config(pipeline::ClientConfig& cc, const roc_sender_config* sc)
 
 struct roc_sender {
     roc_sender(const pipeline::ClientConfig& config)
-        : buffer_pos_(0),
-          n_bufs_(0),
-          client_(sample_queue_, trx_.udp_sender(), trx_.udp_composer(), rtp_composer_,
-                  config)
-    {}
+        : buffer_pos_(0)
+        , n_bufs_(0)
+        , client_(sample_queue_,
+                  trx_.udp_sender(),
+                  trx_.udp_composer(),
+                  rtp_composer_,
+                  config) {
+    }
 
     ~roc_sender() {
         sample_queue_.write(audio::ISampleBufferConstSlice());
@@ -54,7 +54,7 @@ struct roc_sender {
         trx_.join();
     }
 
-    bool bind(const char *address) {
+    bool bind(const char* address) {
         datagram::Address src_addr;
         datagram::Address dst_addr;
         if (!netio::parse_address(address, dst_addr)) {
@@ -77,7 +77,7 @@ struct roc_sender {
         return true;
     }
 
-    ssize_t write(const float *samples, size_t n_samples) {
+    ssize_t write(const float* samples, size_t n_samples) {
         size_t sent_samples = 0;
 
         while (sent_samples < n_samples) {
@@ -92,7 +92,7 @@ struct roc_sender {
     }
 
 private:
-    size_t write_packet_(const float *samples, size_t n_samples) {
+    size_t write_packet_(const float* samples, size_t n_samples) {
         audio::ISampleBufferComposer& composer = audio::default_buffer_composer();
 
         const size_t num_ch = 2;
@@ -111,8 +111,7 @@ private:
 
         const size_t samples_2_copy = ROC_MIN(buffer_->size() - buffer_pos_, n_samples);
 
-        memcpy(&buf_samples[buffer_pos_],
-               samples,
+        memcpy(&buf_samples[buffer_pos_], samples,
                samples_2_copy * sizeof(packet::sample_t));
 
         buffer_pos_ += samples_2_copy;
@@ -151,19 +150,20 @@ roc_sender* roc_sender_new(const roc_sender_config* sc) {
     return new roc_sender(cc);
 }
 
-void roc_sender_delete(roc_sender *sender) {
+void roc_sender_delete(roc_sender* sender) {
     roc_panic_if(sender == NULL);
 
     delete sender;
 }
 
-bool roc_sender_bind(roc_sender *sender, const char* address) {
+bool roc_sender_bind(roc_sender* sender, const char* address) {
     roc_panic_if(sender == NULL);
 
     return sender->bind(address);
 }
 
-ssize_t roc_sender_write(roc_sender *sender, const float *samples, const size_t n_samples) {
+ssize_t
+roc_sender_write(roc_sender* sender, const float* samples, const size_t n_samples) {
     roc_panic_if(sender == NULL);
     roc_panic_if(samples == NULL && n_samples != 0);
 
