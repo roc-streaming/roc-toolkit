@@ -20,6 +20,7 @@
 #include "roc_datagram/default_buffer_composer.h"
 #include "roc_packet/units.h"
 #include "roc_fec/iblock_encoder.h"
+#include "roc_fec/fec_type_options.h"
 
 extern "C" {
 #include <of_openfec_api.h>
@@ -41,7 +42,8 @@ class OF_BlockEncoder : public IBlockEncoder, public core::NonCopyable<> {
 public:
     //! Construct.
     explicit OF_BlockEncoder(
-        core::IByteBufferComposer& composer = datagram::default_buffer_composer());
+        core::IByteBufferComposer& composer = datagram::default_buffer_composer(),
+        fec_codec_type_t fec_type = OF_REED_SOLOMON_2_M);
 
     virtual ~OF_BlockEncoder();
 
@@ -58,7 +60,8 @@ public:
     virtual void reset();
 
 private:
-    static const of_codec_id_t codec_id_ = OF_CODEC_REED_SOLOMON_GF_2_M_STABLE;
+    fec_codec_type_t fec_type_;
+    of_codec_id_t codec_id_;
 
     static const size_t N_DATA_PACKETS = ROC_CONFIG_DEFAULT_FEC_BLOCK_DATA_PACKETS;
     static const size_t N_FEC_PACKETS = ROC_CONFIG_DEFAULT_FEC_BLOCK_REDUNDANT_PACKETS;
