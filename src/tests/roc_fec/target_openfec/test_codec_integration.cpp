@@ -49,8 +49,8 @@ const size_t RATE = ROC_CONFIG_DEFAULT_SAMPLE_RATE;
 
 const double EPSILON = 0.0001;
 
-typedef OF_BlockEncoder BlockEncoder;
-typedef OF_BlockDecoder BlockDecoder;
+typedef OFBlockEncoder BlockEncoder;
+typedef OFBlockDecoder BlockDecoder;
 
 // Divides packets from Encoder into two queues: data and fec packets,
 // as needed for Decoder.

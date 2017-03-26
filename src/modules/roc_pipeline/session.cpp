@@ -166,7 +166,7 @@ packet::IPacketReader* Session::make_packet_reader_() {
 packet::IPacketReader* Session::make_fec_decoder_(packet::IPacketReader* packet_reader) {
     //
     new (fec_packet_queue_) packet::PacketQueue(config_.max_session_packets);
-    new (fec_ldpc_decoder_) fec::OF_BlockDecoder(*config_.byte_buffer_composer);
+    new (fec_ldpc_decoder_) fec::OFBlockDecoder(*config_.byte_buffer_composer);
 
     router_.add_route(packet::IFECPacket::Type, *fec_packet_queue_);
 

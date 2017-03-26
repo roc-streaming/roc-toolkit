@@ -22,9 +22,9 @@ Interleaver::Interleaver(packet::IPacketWriter& output, const size_t delay_len)
 
     reinit_seq();
 
-    roc_log(LOG_TRACE, "interleaver block delay_len_: %u", (unsigned)delay_len_);
+    roc_log(LogDebug, "interleaver block delay_len_: %u", (unsigned)delay_len_);
     for (size_t i = 0; i < delay_len_; ++i){
-        roc_log(LOG_TRACE, "\tinterleaver_seq[%u]: %u", (unsigned)i, (unsigned)tx_seq_[i]);
+        roc_log(LogDebug, "\tinterleaver_seq[%u]: %u", (unsigned)i, (unsigned)tx_seq_[i]);
     }
 
     next_2_send_ = 0;
