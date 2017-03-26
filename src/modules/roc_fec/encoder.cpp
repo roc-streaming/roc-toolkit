@@ -61,7 +61,7 @@ void Encoder::write(const packet::IPacketPtr& p) {
             if (fec_p) {
                 packet_output_.write(fec_p);
             } else {
-                roc_log(LOG_TRACE, "fec encoder: can't create fec packet");
+                roc_log(LogDebug, "fec encoder: can't create fec packet");
             }
         }
         cur_session_fec_seqnum_ += N_FEC_PACKETS;

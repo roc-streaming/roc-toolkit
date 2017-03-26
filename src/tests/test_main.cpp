@@ -19,7 +19,7 @@ int main(int argc, const char** argv) {
     roc::core::RefCnt::enable_leak_detection();
 
     if (args.parse(NULL) && args.isVerbose()) {
-        roc::core::set_log_level(roc::LOG_TRACE);
+        roc::core::set_log_level(roc::LogDebug);
     }
 
     MemoryLeakWarningPlugin::turnOffNewDeleteOverloads();

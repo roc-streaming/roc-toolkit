@@ -108,27 +108,27 @@ Reader::~Reader() {
 }
 
 bool Reader::open(const char* name, const char* type) {
-    roc_log(LOG_TRACE, "reader: opening: name=%s type=%s", name, type);
+    roc_log(LogDebug, "reader: opening: name=%s type=%s", name, type);
 
     if (input_) {
         roc_panic("reader: can't call open() more than once");
     }
 
     if (!detect_defaults(&name, &type)) {
-        roc_log(LOG_ERROR, "can't detect defaults: name=%s type=%s", name, type);
+        roc_log(LogError, "can't detect defaults: name=%s type=%s", name, type);
         return false;
     }
 
-    roc_log(LOG_DEBUG, "reader: name=%s type=%s", name, type);
+    roc_log(LogInfo, "reader: name=%s type=%s", name, type);
 
     sndio::init();
 
     if (!(input_ = sox_open_read(name, NULL, NULL, type))) {
-        roc_log(LOG_ERROR, "can't open reader: name=%s type=%s", name, type);
+        roc_log(LogError, "can't open reader: name=%s type=%s", name, type);
         return false;
     }
 
-    roc_log(LOG_DEBUG,
+    roc_log(LogInfo,
             "reader:"
             " in_bits=%lu out_bits=%lu in_rate=%lu out_rate=%lu in_ch=%lu, out_ch=%lu",
             (unsigned long)input_->encoding.bits_per_sample, //
@@ -198,7 +198,7 @@ void Reader::stop() {
 }
 
 void Reader::run() {
-    roc_log(LOG_TRACE, "reader: starting thread");
+    roc_log(LogDebug, "reader: starting thread");
 
     if (!chain_) {
         roc_panic("reader: thread is started before open() returnes success");
@@ -206,12 +206,12 @@ void Reader::run() {
 
     int err = sox_flow_effects(chain_, NULL, NULL);
     if (err != 0) {
-        roc_log(LOG_DEBUG, "sox_flow_effects(): %s", sox_strerror(err));
+        roc_log(LogInfo, "sox_flow_effects(): %s", sox_strerror(err));
     }
 
     close_();
 
-    roc_log(LOG_TRACE, "reader: finishing thread, read %lu buffers",
+    roc_log(LogDebug, "reader: finishing thread, read %lu buffers",
             (unsigned long)n_bufs_);
 }
 
@@ -234,7 +234,7 @@ int Reader::output_cb_(sox_effect_t* eff,
 
     Reader& self = *(Reader*)eff->priv;
     if (self.stop_) {
-        roc_log(LOG_DEBUG, "reader: stopped, exiting");
+        roc_log(LogInfo, "reader: stopped, exiting");
         return SOX_EOF;
     }
 
@@ -255,7 +255,7 @@ void Reader::write_(const sox_sample_t* buf, size_t bufsz, bool eof) {
     while (bufsz != 0) {
         if (!buffer_) {
             if (!(buffer_ = composer_.compose())) {
-                roc_log(LOG_ERROR, "reader: can't compose buffer");
+                roc_log(LogError, "reader: can't compose buffer");
                 return;
             }
 

@@ -68,7 +68,7 @@ void Streamer::read(const ISampleBufferSlice& buffer) {
     roc_panic_if(buff_ptr != buff_end);
 
     if (timer_.expired()) {
-        roc_log(LOG_TRACE, "streamer: ch=%d ts=%lu loss_ratio=%.5lf", (int)channel_,
+        roc_log(LogDebug, "streamer: ch=%d ts=%lu loss_ratio=%.5lf", (int)channel_,
                 (unsigned long)timestamp_,
                 double(missing_samples_) / (missing_samples_ + packet_samples_));
     }
@@ -168,7 +168,7 @@ void Streamer::update_packet_() {
             break;
         }
 
-        roc_log(LOG_TRACE, "streamer: dropping late packet:"
+        roc_log(LogDebug, "streamer: dropping late packet:"
                            " ch=%d ts=%lu pkt_ts=%lu pkt_ns=%lu",
                 (int)channel_, (unsigned long)timestamp_, (unsigned long)pkt_timestamp,
                 (unsigned long)packet_->num_samples());
@@ -177,7 +177,7 @@ void Streamer::update_packet_() {
     }
 
     if (n_dropped != 0) {
-        roc_log(LOG_DEBUG, "streamer: ch=%d fetched=%d dropped=%u", (int)channel_,
+        roc_log(LogInfo, "streamer: ch=%d fetched=%d dropped=%u", (int)channel_,
                 (int)!!packet_, n_dropped);
     }
 
@@ -186,7 +186,7 @@ void Streamer::update_packet_() {
     }
 
     if (first_packet_) {
-        roc_log(LOG_TRACE, "streamer: got first packet: ch=%d zero_samples=%lu",
+        roc_log(LogDebug, "streamer: got first packet: ch=%d zero_samples=%lu",
                 (int)channel_, (unsigned long)zero_samples_);
 
         timestamp_ = pkt_timestamp;

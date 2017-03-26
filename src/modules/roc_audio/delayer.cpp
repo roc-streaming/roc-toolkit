@@ -40,7 +40,7 @@ packet::IPacketConstPtr Delayer::read() {
             return NULL;
         }
 
-        roc_log(LOG_DEBUG,
+        roc_log(LogInfo,
                 "delayer: received enough packets: delay=%lu samples=%lu packets=%lu",
                 (unsigned long)delay_, //
                 (unsigned long)qs,     //

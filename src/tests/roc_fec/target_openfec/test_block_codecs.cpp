@@ -134,9 +134,9 @@ TEST(block_codecs, load_test) {
         decoder.reset();
     }
 
-    roc_log(LOG_DEBUG, "max losses in block: %u", (uint32_t)max_loss);
-    roc_log(LOG_DEBUG, "total losses: %u", (uint32_t)total_loss);
-    roc_log(LOG_DEBUG, "total fails: %u", (uint32_t)total_fails);
+    roc_log(LogInfo, "max losses in block: %u", (uint32_t)max_loss);
+    roc_log(LogInfo, "total losses: %u", (uint32_t)total_loss);
+    roc_log(LogInfo, "total fails: %u", (uint32_t)total_fails);
 
     CHECK(total_fails < NumIterations / 2);
 }

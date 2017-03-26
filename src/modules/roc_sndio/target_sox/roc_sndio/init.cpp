@@ -30,17 +30,17 @@ void message_handler(unsigned slevel,
     switch (slevel) {
     case 0:
     case 1: // fail
-        level = LOG_ERROR;
+        level = LogError;
         break;
 
     case 2: // warn
     case 3: // info
     case 4: // debug
-        level = LOG_DEBUG;
+        level = LogInfo;
         break;
 
     default: // debug_more, debug most
-        level = LOG_TRACE;
+        level = LogDebug;
         break;
     }
 
@@ -64,7 +64,7 @@ void init(int options, size_t bufsz) {
     }
 
     if (options & InitSox) {
-        roc_log(LOG_DEBUG, "initializing sox");
+        roc_log(LogInfo, "initializing sox");
         sox_init();
     }
 

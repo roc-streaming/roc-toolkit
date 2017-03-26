@@ -52,7 +52,7 @@ bool Scaler::update() {
             return true;
         } else {
             started_ = true;
-            roc_log(LOG_DEBUG, "scaler: received enough samples:"
+            roc_log(LogInfo, "scaler: received enough samples:"
                                " queue_size=%lu aim_queue_size=%lu",
                     (unsigned long)qs, (unsigned long)aim_queue_size_);
         }
@@ -63,7 +63,7 @@ bool Scaler::update() {
     const float fc = freq_estimator_.freq_coeff();
 
     if (timer_.expired()) {
-        roc_log(LOG_TRACE, "scaler: queue_size=%05lu freq_coeff=%.5lf", (unsigned long)qs,
+        roc_log(LogDebug, "scaler: queue_size=%05lu freq_coeff=%.5lf", (unsigned long)qs,
                 (double)fc);
     }
 

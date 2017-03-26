@@ -28,7 +28,7 @@ LDPC_BlockDecoder::LDPC_BlockDecoder(core::IByteBufferComposer& composer)
     , buffers_(N_DATA_PACKETS + N_FEC_PACKETS)
     , sym_tab_(N_DATA_PACKETS + N_FEC_PACKETS)
     , received_(N_DATA_PACKETS + N_FEC_PACKETS) {
-    roc_log(LOG_TRACE, "initializing ldpc decoder");
+    roc_log(LogDebug, "initializing ldpc decoder");
 
     of_inst_params_.nb_source_symbols = N_DATA_PACKETS;
     of_inst_params_.nb_repair_symbols = N_FEC_PACKETS;
@@ -158,7 +158,7 @@ void LDPC_BlockDecoder::report_() {
         return;
     }
 
-    roc_log(LOG_TRACE, "ldpc decoder: repaired %u/%u/%u %s %s",
+    roc_log(LogDebug, "ldpc decoder: repaired %u/%u/%u %s %s",
             (unsigned)n_repaired,      //
             (unsigned)n_lost,          //
             (unsigned)buffers_.size(), //
@@ -174,7 +174,7 @@ void* LDPC_BlockDecoder::make_buffer_(const size_t index) {
         buffers_[index] = *buffer;
         return buffer->data();
     } else {
-        roc_log(LOG_TRACE, "ldpc decoder: can't allocate buffer");
+        roc_log(LogDebug, "ldpc decoder: can't allocate buffer");
         return NULL;
     }
 }

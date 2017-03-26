@@ -25,7 +25,7 @@ namespace {
 
 bool check_ge(const char* option, int value, int min_value) {
     if (value < min_value) {
-        roc_log(LOG_ERROR, "invalid `--%s=%d': should be >= %d", option, value,
+        roc_log(LogError, "invalid `--%s=%d': should be >= %d", option, value,
                 min_value);
         return false;
     }
@@ -47,11 +47,11 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    core::set_log_level(LogLevel(LOG_ERROR + args.verbose_given));
+    core::set_log_level(LogLevel(LogError + args.verbose_given));
 
     datagram::Address addr;
     if (!netio::parse_address(args.inputs[0], addr)) {
-        roc_log(LOG_ERROR, "can't parse address: %s", args.inputs[0]);
+        roc_log(LogError, "can't parse address: %s", args.inputs[0]);
         return 1;
     }
 
@@ -114,7 +114,7 @@ int main(int argc, char** argv) {
 
     netio::Transceiver trx;
     if (!trx.add_udp_receiver(addr, dgm_queue)) {
-        roc_log(LOG_ERROR, "can't register udp receiver: %s",
+        roc_log(LogError, "can't register udp receiver: %s",
                 datagram::address_to_str(addr).c_str());
         return 1;
     }
@@ -124,7 +124,7 @@ int main(int argc, char** argv) {
 
     sndio::Writer writer(sample_queue, config.channels, config.sample_rate);
     if (!writer.open(args.output_arg, args.type_arg)) {
-        roc_log(LOG_ERROR, "can't open output file/device: %s %s", args.output_arg,
+        roc_log(LogError, "can't open output file/device: %s %s", args.output_arg,
                 args.type_arg);
         return 1;
     }

@@ -37,7 +37,7 @@ void Client::set_receiver(const datagram::Address& address) {
 }
 
 void Client::run() {
-    roc_log(LOG_DEBUG, "client: starting thread");
+    roc_log(LogInfo, "client: starting thread");
 
     for (;;) {
         if (!tick()) {
@@ -45,7 +45,7 @@ void Client::run() {
         }
     }
 
-    roc_log(LOG_DEBUG, "client: finishing thread");
+    roc_log(LogInfo, "client: finishing thread");
 
     flush();
 
@@ -58,7 +58,7 @@ bool Client::tick() {
     if (buffer) {
         audio_writer_.write(buffer);
     } else {
-        roc_log(LOG_DEBUG, "client: audio reader returned null");
+        roc_log(LogInfo, "client: audio reader returned null");
     }
 
     return (bool)buffer;
@@ -120,7 +120,7 @@ packet::IPacketWriter* Client::make_fec_encoder_(packet::IPacketWriter* packet_w
 }
 #else
 packet::IPacketWriter* Client::make_fec_encoder_(packet::IPacketWriter* packet_writer) {
-    roc_log(LOG_ERROR, "client: OpenFEC support not enabled, disabling fec encoder");
+    roc_log(LogError, "client: OpenFEC support not enabled, disabling fec encoder");
     return packet_writer;
 }
 #endif

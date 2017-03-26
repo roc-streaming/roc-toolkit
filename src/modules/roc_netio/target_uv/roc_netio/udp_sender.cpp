@@ -33,7 +33,7 @@ UDPSender::~UDPSender() {
 void UDPSender::attach(uv_loop_t& loop, uv_async_t& eof) {
     core::SpinMutex::Lock lock(mutex_);
 
-    roc_log(LOG_TRACE, "udp sender: attaching to event loop");
+    roc_log(LogDebug, "udp sender: attaching to event loop");
 
     roc_panic_if(loop_);
 
@@ -51,7 +51,7 @@ void UDPSender::attach(uv_loop_t& loop, uv_async_t& eof) {
 void UDPSender::detach(uv_loop_t& loop) {
     core::SpinMutex::Lock lock(mutex_);
 
-    roc_log(LOG_TRACE, "udp sender: detaching from event loop");
+    roc_log(LogDebug, "udp sender: detaching from event loop");
 
     roc_panic_if(loop_ != &loop);
 
@@ -66,7 +66,7 @@ void UDPSender::detach(uv_loop_t& loop) {
 }
 
 bool UDPSender::add_port(const datagram::Address& address) {
-    roc_log(LOG_DEBUG, "udp sender: adding port %s",
+    roc_log(LogInfo, "udp sender: adding port %s",
             datagram::address_to_str(address).c_str());
 
     if (!loop_) {
@@ -82,7 +82,7 @@ bool UDPSender::add_port(const datagram::Address& address) {
     port->address = address;
 
     if (!open_port_(*port)) {
-        roc_log(LOG_ERROR, "udp sender: can't add port %s",
+        roc_log(LogError, "udp sender: can't add port %s",
                 datagram::address_to_str(address).c_str());
 
         ports_.resize(ports_.size() - 1);
@@ -93,11 +93,11 @@ bool UDPSender::add_port(const datagram::Address& address) {
 }
 
 bool UDPSender::open_port_(Port& port) {
-    roc_log(LOG_TRACE, "udp sender: opening port %s",
+    roc_log(LogDebug, "udp sender: opening port %s",
             datagram::address_to_str(port.address).c_str());
 
     if (int err = uv_udp_init(loop_, &port.handle)) {
-        roc_log(LOG_ERROR, "udp sender: uv_udp_init(): [%s] %s", uv_err_name(err),
+        roc_log(LogError, "udp sender: uv_udp_init(): [%s] %s", uv_err_name(err),
                 uv_strerror(err));
         return false;
     }
@@ -108,7 +108,7 @@ bool UDPSender::open_port_(Port& port) {
     to_inet_address(port.address, inet_addr);
 
     if (int err = uv_udp_bind(&port.handle, (sockaddr*)&inet_addr, UV_UDP_REUSEADDR)) {
-        roc_log(LOG_ERROR, "udp sender: uv_udp_bind(): [%s] %s", uv_err_name(err),
+        roc_log(LogError, "udp sender: uv_udp_bind(): [%s] %s", uv_err_name(err),
                 uv_strerror(err));
         return false;
     }
@@ -121,7 +121,7 @@ void UDPSender::close_port_(Port& port) {
         return;
     }
 
-    roc_log(LOG_TRACE, "udp sender: closing port %s",
+    roc_log(LogDebug, "udp sender: closing port %s",
             datagram::address_to_str(port.address).c_str());
 
     uv_close((uv_handle_t*)&port.handle, NULL);
@@ -146,7 +146,7 @@ void UDPSender::write(const datagram::IDatagramPtr& dgm) {
         }
 
         if (!dgm->buffer()) {
-            roc_log(LOG_TRACE, "udp sender: ignoring datagram with empty buffer");
+            roc_log(LogDebug, "udp sender: ignoring datagram with empty buffer");
             return;
         }
 
@@ -157,7 +157,7 @@ void UDPSender::write(const datagram::IDatagramPtr& dgm) {
         // uv_async_t may be closed in detach() from event loop thread.
         // In this case, loop_ will be set to null.
         if (!loop_) {
-            roc_log(LOG_ERROR, "udp sender:"
+            roc_log(LogError, "udp sender:"
                                " dropping datagram, not attached to event loop");
             return;
         }
@@ -166,7 +166,7 @@ void UDPSender::write(const datagram::IDatagramPtr& dgm) {
 
         ++pending_;
     } else {
-        roc_log(LOG_DEBUG, "udp sender: got null datagram, terminating");
+        roc_log(LogInfo, "udp sender: got null datagram, terminating");
         terminate_ = true;
     }
 
@@ -197,7 +197,7 @@ void UDPSender::async_cb_(uv_async_t* handle) {
 
         self.number_++;
 
-        roc_log(LOG_FLOOD, "udp sender: sending datagram:"
+        roc_log(LogTrace, "udp sender: sending datagram:"
                            " num=%u src=%s dst=%s sz=%ld",
                 self.number_,                                      //
                 datagram::address_to_str(dgm->sender()).c_str(),   //
@@ -206,7 +206,7 @@ void UDPSender::async_cb_(uv_async_t* handle) {
 
         Port* port = self.find_port_(dgm->sender());
         if (!port) {
-            roc_log(LOG_ERROR,
+            roc_log(LogError,
                     "udp sender: dropping datagram, no port added for sender address %s"
                     " (use Transceiver::add_udp_sender() to register sender address)",
                     datagram::address_to_str(dgm->sender()).c_str());
@@ -224,7 +224,7 @@ void UDPSender::async_cb_(uv_async_t* handle) {
 
         if (int err = uv_udp_send(&dgm->request(), &port->handle, &buf, 1,
                                   (sockaddr*)&inet_addr, send_cb_)) {
-            roc_log(LOG_ERROR, "udp sender: uv_udp_send(): [%s] %s", uv_err_name(err),
+            roc_log(LogError, "udp sender: uv_udp_send(): [%s] %s", uv_err_name(err),
                     uv_strerror(err));
             continue;
         }
@@ -252,7 +252,7 @@ void UDPSender::send_cb_(uv_udp_send_t* req, int status) {
     dgm->decref();
 
     if (status < 0) {
-        roc_log(LOG_ERROR, "udp sender:"
+        roc_log(LogError, "udp sender:"
                            " can't send datagram: src=%s dst=%s sz=%ld: [%s] %s",
                 datagram::address_to_str(dgm->sender()).c_str(),
                 datagram::address_to_str(dgm->receiver()).c_str(),

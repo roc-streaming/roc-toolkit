@@ -23,7 +23,7 @@ packet::IPacketConstPtr Parser::parse(const core::IByteBufferConstSlice& buffer)
     RTP_Packet rtp_packet;
 
     if (!rtp_packet.parse(buffer)) {
-        roc_log(LOG_TRACE, "rtp parser: bad packet layout");
+        roc_log(LogDebug, "rtp parser: bad packet layout");
         return NULL;
     }
 
@@ -38,7 +38,7 @@ packet::IPacketConstPtr Parser::parse(const core::IByteBufferConstSlice& buffer)
         return new (fec_pool_) FECPacket(fec_pool_, rtp_packet);
     }
 
-    roc_log(LOG_TRACE, "rtp parser: bad payload type %u", (unsigned)pt);
+    roc_log(LogDebug, "rtp parser: bad payload type %u", (unsigned)pt);
     return NULL;
 }
 

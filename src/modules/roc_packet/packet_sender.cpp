@@ -36,7 +36,7 @@ void PacketSender::write(const IPacketPtr& packet) {
 
     datagram::IDatagramPtr dgm = composer_.compose();
     if (!dgm) {
-        roc_log(LOG_ERROR, "packet sender: can't allocate datagram, dropping packet");
+        roc_log(LogError, "packet sender: can't allocate datagram, dropping packet");
         return;
     }
 

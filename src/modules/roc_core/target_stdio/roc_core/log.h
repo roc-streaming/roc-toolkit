@@ -28,11 +28,11 @@ namespace roc {
 
 //! Log level.
 enum LogLevel {
-    LOG_NONE,  //!< Disable all messages.
-    LOG_ERROR, //!< Error message.
-    LOG_DEBUG, //!< Debug message.
-    LOG_TRACE, //!< Debug message (extra verbosity).
-    LOG_FLOOD  //!< Debug message (too much to read).
+    LogNone,  //!< Disable all messages.
+    LogError, //!< Error message.
+    LogInfo,  //!< Informational message.
+    LogDebug, //!< Debug message.
+    LogTrace  //!< Debug message (extra verbosity).
 };
 
 namespace core {
@@ -56,7 +56,7 @@ LogLevel get_log_level();
 //!  previous log level.
 //!
 //! @note
-//!  Default log level is LOG_ERROR.
+//!  Default log level is LogError.
 LogLevel set_log_level(LogLevel);
 
 //! Set log handler.
