@@ -113,43 +113,6 @@ if enable_doxygen:
                 ['Doxyfile'] + env.RecursiveGlob('#src', ['*.h']),
                 werror=GetOption('enable_werror'))))
 
-fmt = []
-
-if env.Which('clang-format') and env.CompilerVersion('clang-format') >= (3, 6):
-    fmt += [
-        env.Action(
-            'clang-format -i %s' % ' '.join(map(str,
-                env.RecursiveGlob(
-                    '#src', ['*.h', '*.cpp'],
-                    exclude=open(env.File('#.fmtignore').path).read().split())
-            )),
-            env.Pretty('FMT', 'src', 'yellow')
-        ),
-    ]
-elif 'fmt' in COMMAND_LINE_TARGETS:
-    print("warning: clang-format >= 3.6 not found")
-
-fmt += [
-    env.Action(
-        '%s scripts/format.py src/modules' % env.Python(),
-        env.Pretty('FMT', 'src/modules', 'yellow')
-    ),
-    env.Action(
-        '%s scripts/format.py src/tests' % env.Python(),
-        env.Pretty('FMT', 'src/tests', 'yellow')
-    ),
-    env.Action(
-        '%s scripts/format.py src/tools' % env.Python(),
-        env.Pretty('FMT', 'src/tools', 'yellow')
-    ),
-]
-
-env.AlwaysBuild(
-    env.Alias('fmt', [], fmt))
-
-if set(COMMAND_LINE_TARGETS).intersection(['clean', 'fmt', 'doxygen']):
-    Return()
-
 supported_platforms = [
     'linux',
 ]
@@ -664,6 +627,58 @@ env.AlwaysBuild(
             ),
             env.Pretty('TIDY', 'src', 'yellow')
         )))
+
+fmt = []
+
+clang_format_ver = None
+if compiler == 'clang':
+    clang_format_ver = compiler_ver
+elif env.Which('clang'):
+    clang_format_ver = env.CompilerVer('clang')
+
+clang_format_tools = ['clang-format']
+if clang_format_ver:
+    clang_format_tools += ['clang-format-%s' % '-'.join(map(str, clang_format_ver[:2]))]
+
+clang_format = None
+for tool in clang_format_tools:
+    if env.Which(tool):
+        clang_format = tool
+
+if clang_format and env.CompilerVersion(clang_format) >= (3, 6):
+    fmt += [
+        env.Action(
+            '%s -i %s' % (clang_format, ' '.join(map(str,
+                env.RecursiveGlob(
+                    '#src', ['*.h', '*.cpp'],
+                    exclude=open(env.File('#.fmtignore').path).read().split())
+            ))),
+            env.Pretty('FMT', 'src', 'yellow')
+        ),
+    ]
+elif 'fmt' in COMMAND_LINE_TARGETS:
+    print("warning: clang-format >= 3.6 not found")
+
+fmt += [
+    env.Action(
+        '%s scripts/format.py src/modules' % env.Python(),
+        env.Pretty('FMT', 'src/modules', 'yellow')
+    ),
+    env.Action(
+        '%s scripts/format.py src/tests' % env.Python(),
+        env.Pretty('FMT', 'src/tests', 'yellow')
+    ),
+    env.Action(
+        '%s scripts/format.py src/tools' % env.Python(),
+        env.Pretty('FMT', 'src/tools', 'yellow')
+    ),
+]
+
+env.AlwaysBuild(
+    env.Alias('fmt', [], fmt))
+
+if set(COMMAND_LINE_TARGETS).intersection(['clean', 'fmt', 'doxygen']):
+    Return()
 
 Export('env')
 
