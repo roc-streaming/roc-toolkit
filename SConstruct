@@ -115,14 +115,24 @@ if enable_doxygen:
 
 fmt = []
 
-if env.Which('clang-format') and env.CompilerVersion('clang-format') >= (3, 6):
+clang_format_tools = ['clang-format']
+for n in range(6, 10):
+    clang_format_tools += ['clang-format-3.%s' % n]
+
+clang_format = None
+for tool in clang_format_tools:
+    if env.Which(tool):
+        clang_format = tool
+        break
+
+if clang_format and env.CompilerVersion(clang_format) >= (3, 6):
     fmt += [
         env.Action(
-            'clang-format -i %s' % ' '.join(map(str,
+            '%s -i %s' % (clang_format, ' '.join(map(str,
                 env.RecursiveGlob(
                     '#src', ['*.h', '*.cpp'],
                     exclude=open(env.File('#.fmtignore').path).read().split())
-            )),
+            ))),
             env.Pretty('FMT', 'src', 'yellow')
         ),
     ]
