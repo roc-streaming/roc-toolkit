@@ -152,20 +152,21 @@ elif name == 'openfec':
     args = [
         '-DCMAKE_C_COMPILER=%s' % '-'.join([s for s in [toolchain, 'gcc'] if s]),
         '-DCMAKE_FIND_ROOT_PATH=%s' % getsysroot(toolchain),
-        '-DCMAKE_POSITION_INDEPENDENT_CODE=ON',
-        '-DCMAKE_C_FLAGS=-fPIC', # for older cmake versions?
+        '-DCMAKE_POSITION_INDEPENDENT_CODE=ON',     # for newer cmake
         ]
     if variant == 'debug':
         dist = 'bin/Debug'
         args += [
             '-DCMAKE_BUILD_TYPE=Debug',
-            '-DDEBUG:STRING=ON',
+            '-DDEBUG:STRING=ON',                    # enable debug symbols and logs
+            '-DCMAKE_C_FLAGS_DEBUG:STRING=-fPIC',   # for older cmake
         ]
     else:
         dist = 'bin/Release'
         args += [
             '-DCMAKE_BUILD_TYPE=Release',
-            '-DDEBUG:STRING=OFF', # disable debug logs
+            '-DDEBUG:STRING=OFF',                   # disable debug symbols and logs
+            '-DCMAKE_C_FLAGS_RELEASE:STRING=-fPIC', # for older cmake
         ]
     execute('cmake .. ' + ' '.join(args), logfile)
     execute('make -j', logfile)
