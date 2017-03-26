@@ -7,23 +7,16 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @brief C API.
+#include "roc/log.h"
 
-#ifndef ROC_LOG_H_
-#define ROC_LOG_H_
+#include "roc_core/log.h"
 
-#include <stdlib.h>
-#include <stdint.h>
+using namespace roc;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-/* todo* enum */
-void roc_log_set_level(const unsigned int verbosity);
-
-#ifdef __cplusplus
+void roc_log_set_level(roc_log_level level) {
+    core::set_log_level(roc::LogLevel(level));
 }
-#endif
 
-#endif // ROC_LOG_H_
+void roc_log_set_handler(roc_log_handler handler) {
+    core::set_log_handler(core::LogHandler(handler));
+}

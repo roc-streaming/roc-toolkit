@@ -165,6 +165,40 @@ if not GetOption('disable_tests'):
 
         env.AddTest(name, '%s/%s' % (env['ROC_BINDIR'], exe))
 
+# Build API
+#
+if not GetOption('disable_api'):
+    for name in filter_subdirs(basedir='api', section='api'):
+        sources = env.Glob('api/%s/*.cpp' % name)
+
+        cpppath = env['CPPPATH'] + ['api']
+
+        if not sources:
+            continue
+
+        defines = env['CPPDEFINES'] + [('ROC_MODULE', name)]
+
+        shlib = re.sub('roc_', 'roc-', name)
+
+        depends = BUILD_DEPS['api'][name]
+
+        libs = []
+        for lib in reversed(map(str, depends)):
+            if lib in LIBS:
+                libs.append(lib)
+        libs += env['LIBS']
+
+        target = env.Install(env['ROC_BINDIR'],
+            env.SharedLibrary(shlib, sources,
+                        CPPDEFINES=defines,
+                        CPPPATH=cpppath,
+                        LIBS=libs))
+
+        check_dependencies('api', name, target[0], depends)
+
+        env.Alias(name, [target], env.Action(''))
+        env.AlwaysBuild(name)
+
 # Build tools
 #
 if not GetOption('disable_tools'):

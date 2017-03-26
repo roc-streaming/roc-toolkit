@@ -43,17 +43,6 @@
             "roc_config",
             "roc_core",
             "roc_audio"
-        ],
-        "roc_capi": [
-            "roc_core",
-            "roc_datagram",
-            "roc_packet",
-            "roc_fec",
-            "roc_rtp",
-            "roc_audio",
-            "roc_pipeline",
-            "roc_netio",
-            "roc_sndio"
         ]
     },
     "tests": {
@@ -69,6 +58,18 @@
         ],
         "roc_pipeline": [
             "roc_rtp"
+        ]
+    },
+    "api": {
+        "roc": [
+            "roc_core",
+            "roc_datagram",
+            "roc_packet",
+            "roc_fec",
+            "roc_rtp",
+            "roc_audio",
+            "roc_pipeline",
+            "roc_netio"
         ]
     },
     "tools": {
