@@ -10,8 +10,8 @@
 //! @file roc_fec/target_openfec/roc_fec/of_block_decoder.h
 //! @brief Implementation of IBlockDecoder using OpenFEC library.
 
-#ifndef ROC_FEC_LDPC_BLOCK_DECODER_H_
-#define ROC_FEC_LDPC_BLOCK_DECODER_H_
+#ifndef ROC_FEC_OF_BLOCK_DECODER_H_
+#define ROC_FEC_OF_BLOCK_DECODER_H_
 
 #include "roc_config/config.h"
 #include "roc_core/noncopyable.h"
@@ -72,7 +72,7 @@ private:
 
     of_session_t* of_inst_;
     bool of_inst_inited_;
-    of_parameters_t *of_inst_params_;
+    of_parameters_t* of_inst_params_;
 
     union {
         of_ldpc_parameters ldpc_params_;
@@ -93,4 +93,4 @@ private:
 } // namespace fec
 } // namespace roc
 
-#endif // ROC_FEC_LDPC_BLOCK_DECODER_H_
+#endif // ROC_FEC_OF_BLOCK_DECODER_H_

@@ -128,7 +128,7 @@ bool SessionManager::create_session_and_store_(const datagram::IDatagram& dgm,
                                                packet::IPacketParser& parser) {
     if (sessions_.size() >= config_.max_sessions) {
         roc_log(LogInfo, "session manager: dropping datagram:"
-                           " maximum number of session limit reached (%u sessions)",
+                         " maximum number of session limit reached (%u sessions)",
                 (unsigned)sessions_.size());
         return false;
     }

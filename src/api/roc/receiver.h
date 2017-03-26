@@ -18,19 +18,17 @@
 extern "C" {
 #endif
 
-typedef struct roc_receiver_config {
-    int TODO;
-} roc_receiver_config;
+typedef struct roc_receiver_config { int TODO; } roc_receiver_config;
 
 typedef struct roc_receiver roc_receiver;
 
 roc_receiver* roc_receiver_new(const roc_receiver_config* config);
 
-void roc_receiver_delete(roc_receiver *receiver);
+void roc_receiver_delete(roc_receiver* receiver);
 
-bool roc_receiver_bind(roc_receiver *receiver, const char* address);
+bool roc_receiver_bind(roc_receiver* receiver, const char* address);
 
-ssize_t roc_receiver_read(roc_receiver *receiver, float *samples, const size_t n_samples);
+ssize_t roc_receiver_read(roc_receiver* receiver, float* samples, const size_t n_samples);
 
 #ifdef __cplusplus
 }

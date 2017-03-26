@@ -21,8 +21,8 @@ const size_t SYMB_SZ = ROC_CONFIG_DEFAULT_PACKET_SIZE;
 
 } // namespace
 
-OFBlockDecoder::OFBlockDecoder(   core::IByteBufferComposer& composer,
-                                    fec_codec_type_t fec_type)
+OFBlockDecoder::OFBlockDecoder(core::IByteBufferComposer& composer,
+                               fec_codec_type_t fec_type)
     : fec_type_(fec_type)
     , of_inst_(NULL)
     , of_inst_inited_(false)
@@ -41,7 +41,7 @@ OFBlockDecoder::OFBlockDecoder(   core::IByteBufferComposer& composer,
 
         of_inst_params_ = (of_parameters_t*)&fec_codec_params_.rs_params_;
 
-    // Use LDPC-Staircase.
+        // Use LDPC-Staircase.
     } else if (fec_type_ == LDPCStaircase) {
         codec_id_ = OF_CODEC_LDPC_STAIRCASE_STABLE;
         roc_log(LogDebug, "initializing LDPC decoder");
@@ -49,7 +49,7 @@ OFBlockDecoder::OFBlockDecoder(   core::IByteBufferComposer& composer,
         fec_codec_params_.ldpc_params_.prng_seed = 1297501556;
         fec_codec_params_.ldpc_params_.N1 = 7;
 
-        of_inst_params_ = (of_parameters_t*)&fec_codec_params_.ldpc_params_; 
+        of_inst_params_ = (of_parameters_t*)&fec_codec_params_.ldpc_params_;
     } else {
         roc_panic("OFBlockDecoder: wrong FEC type is chosen.");
     }
@@ -122,25 +122,25 @@ void OFBlockDecoder::reset() {
         of_release_codec_instance(of_inst_);
     }
 
-    if (OF_STATUS_OK != of_create_codec_instance(
-                            &of_inst_, codec_id_, OF_DECODER, 0)) {
+    if (OF_STATUS_OK != of_create_codec_instance(&of_inst_, codec_id_, OF_DECODER, 0)) {
         roc_panic("OFBlockDecoder: of_create_codec_instance() failed");
     }
 
     roc_panic_if(of_inst_ == NULL);
 
-    if (OF_STATUS_OK
-        != of_set_fec_parameters(of_inst_, of_inst_params_)) {
+    if (OF_STATUS_OK != of_set_fec_parameters(of_inst_, of_inst_params_)) {
         roc_panic("OFBlockDecoder: of_set_fec_parameters() failed");
     }
 
     of_inst_inited_ = true;
 
-    if (OF_STATUS_OK != of_set_callback_functions(of_inst_, source_cb_,
-            // OpenFEC doesn't repair fec-packets in case of Reed-Solomon FEC
-            // and prints curses to the console if we give him the callback for that.
-            codec_id_ == OF_CODEC_REED_SOLOMON_GF_2_M_STABLE ? NULL : repair_cb_,
-            (void*)this)) {
+    if (OF_STATUS_OK
+        != of_set_callback_functions(
+               of_inst_, source_cb_,
+               // OpenFEC doesn't repair fec-packets in case of Reed-Solomon FEC
+               // and prints curses to the console if we give him the callback for that.
+               codec_id_ == OF_CODEC_REED_SOLOMON_GF_2_M_STABLE ? NULL : repair_cb_,
+               (void*)this)) {
         roc_panic("OFBlockDecoder: of_set_callback_functions() failed");
     }
 
