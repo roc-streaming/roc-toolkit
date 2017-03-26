@@ -18,6 +18,8 @@ Interleaver::Interleaver(packet::IPacketWriter& output, const size_t delay_len)
     : output_(output)
     , delay_len_(delay_len)
     , pack_store_(delay_len) {
+    roc_panic_if(delay_len == 0);
+
     roc_log(LogDebug, "initializing interleaver");
 
     reinit_seq();

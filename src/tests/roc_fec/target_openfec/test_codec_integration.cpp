@@ -325,7 +325,7 @@ TEST(fec_codec_integration, interleaver) {
     BlockDecoder block_decoder;
     rtp::Parser parser;
 
-    Interleaver intrl(pckt_disp);
+    Interleaver intrl(pckt_disp, 10);
 
     Encoder encoder(block_encoder, pckt_disp, composer);
     Decoder decoder(block_decoder, pckt_disp.get_data_reader(),
