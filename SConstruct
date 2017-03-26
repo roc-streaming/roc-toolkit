@@ -24,6 +24,11 @@ AddOption('--enable-werror',
           action='store_true',
           help='enable -Werror compiler option')
 
+AddOption('--disable-api',
+          dest='disable_api',
+          action='store_true',
+          help='disable API building')
+
 AddOption('--disable-tools',
           dest='disable_tools',
           action='store_true',
