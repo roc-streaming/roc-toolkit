@@ -1,7 +1,6 @@
 import re
 import os
 import os.path
-import platform
 import SCons.Script
 
 SCons.SConf.dryrun = 0 # configure even in dry run mode
@@ -328,7 +327,7 @@ if compiler == 'clang':
         env[var] = env.ClangDB(build_dir, '*.cpp', env[var])
 
 env['ROC_BINDIR'] = '#bin/%s' % host
-env['ROC_VERSION'] = '0.1'
+env['ROC_VERSION'] = open(env.File('#.version').path).read().strip()
 env['ROC_TARGETS'] = []
 
 if GetOption('with_targets'):
@@ -354,7 +353,7 @@ else:
         ])
     else:
         if not GetOption('disable_tools'):
-            env.Die("--with-sox=no currently requires --disable-tools option")
+            env.Die("--with-sox=no requires --disable-tools option")
 
 env.Append(CXXFLAGS=[])
 env.Append(CPPDEFINES=[])
