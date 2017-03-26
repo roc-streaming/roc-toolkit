@@ -148,7 +148,7 @@ void UDPReceiver::alloc_cb_(uv_handle_t* handle, size_t size, uv_buf_t* buf) {
 
     if (size > bp->max_size()) {
         roc_log(LogTrace, "udp receiver: truncating buffer size:"
-                           " suggested=%ld max=%ld",
+                          " suggested=%ld max=%ld",
                 (long)size, (long)bp->max_size());
 
         size = bp->max_size();
@@ -225,7 +225,7 @@ void UDPReceiver::recv_cb_(uv_udp_t* handle,
 
     if (flags & UV_UDP_PARTIAL) {
         roc_log(LogDebug, "udp receiver:"
-                           " ignoring partial read: num=%u src=%s dst=%s nread=%ld",
+                          " ignoring partial read: num=%u src=%s dst=%s nread=%ld",
                 self.number_,                                    //
                 datagram::address_to_str(sender_addr).c_str(),   //
                 datagram::address_to_str(port->address).c_str(), //

@@ -23,7 +23,7 @@ Interleaver::Interleaver(packet::IPacketWriter& output, const size_t delay_len)
     reinit_seq();
 
     roc_log(LogDebug, "interleaver block delay_len_: %u", (unsigned)delay_len_);
-    for (size_t i = 0; i < delay_len_; ++i){
+    for (size_t i = 0; i < delay_len_; ++i) {
         roc_log(LogDebug, "\tinterleaver_seq[%u]: %u", (unsigned)i, (unsigned)tx_seq_[i]);
     }
 
@@ -57,15 +57,15 @@ size_t Interleaver::window_size() const {
 }
 
 void Interleaver::reinit_seq() {
-    for (size_t i = 0; i < delay_len_; ++i){
+    for (size_t i = 0; i < delay_len_; ++i) {
         tx_seq_[i] = i;
     }
-    for (size_t i = delay_len_; i > 0; --i){
-        const size_t j = core::random(0, (unsigned int)i-1);
-        const size_t buff = tx_seq_[i-1];
-        tx_seq_[i-1] = tx_seq_[j];
+    for (size_t i = delay_len_; i > 0; --i) {
+        const size_t j = core::random(0, (unsigned int)i - 1);
+        const size_t buff = tx_seq_[i - 1];
+        tx_seq_[i - 1] = tx_seq_[j];
         tx_seq_[j] = buff;
-    }    
+    }
 }
 
 } // namespace packet

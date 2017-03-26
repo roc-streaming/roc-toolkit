@@ -35,14 +35,12 @@ const size_t SYMB_SZ = ROC_CONFIG_DEFAULT_PACKET_SIZE;
 
 } // namespace
 
-class Codec
-{
+class Codec {
 public:
     Codec(fec_codec_type_t fec_type)
         : encoder_(datagram::default_buffer_composer(), fec_type)
-        , decoder_(datagram::default_buffer_composer(), fec_type)
-    {
-        buffers_.resize(N_DATA_PACKETS + N_FEC_PACKETS);        
+        , decoder_(datagram::default_buffer_composer(), fec_type) {
+        buffers_.resize(N_DATA_PACKETS + N_FEC_PACKETS);
     }
 
     void encode() {
@@ -73,17 +71,18 @@ public:
         return true;
     }
 
-    OFBlockEncoder &encoder() {
+    OFBlockEncoder& encoder() {
         return encoder_;
     }
 
-    OFBlockDecoder &decoder() {
+    OFBlockDecoder& decoder() {
         return decoder_;
     }
 
-    typedef core::Array<core::IByteBufferConstSlice, N_DATA_PACKETS + N_FEC_PACKETS> codec_buff_t;
+    typedef core::Array<core::IByteBufferConstSlice, N_DATA_PACKETS + N_FEC_PACKETS>
+        codec_buff_t;
 
-    core::IByteBufferConstSlice &get_buffer(const size_t i) {
+    core::IByteBufferConstSlice& get_buffer(const size_t i) {
         return buffers_[i];
     }
 
@@ -107,9 +106,9 @@ private:
     codec_buff_t buffers_;
 };
 
-TEST_GROUP(block_codecs) {
+TEST_GROUP(block_codecs){
 
-    void setup() {}
+    void setup(){}
 };
 
 TEST(block_codecs, without_loss) {
@@ -167,9 +166,9 @@ TEST(block_codecs, load_test) {
             code.decoder().reset();
         }
 
-    roc_log(LogInfo, "max losses in block: %u", (uint32_t)max_loss);
-    roc_log(LogInfo, "total losses: %u", (uint32_t)total_loss);
-    roc_log(LogInfo, "total fails: %u", (uint32_t)total_fails);
+        roc_log(LogInfo, "max losses in block: %u", (uint32_t)max_loss);
+        roc_log(LogInfo, "total losses: %u", (uint32_t)total_loss);
+        roc_log(LogInfo, "total fails: %u", (uint32_t)total_fails);
 
         CHECK(total_fails < NumIterations / 2);
     }

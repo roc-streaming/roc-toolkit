@@ -10,8 +10,8 @@
 //! @file roc_fec/fec_type_options.h
 //! @brief FEC code type options.
 
-#ifndef ROC_FEC_TYPE_OPTIONS_H_
-#define ROC_FEC_TYPE_OPTIONS_H_
+#ifndef ROC_FEC_FEC_TYPE_OPTIONS_H_
+#define ROC_FEC_FEC_TYPE_OPTIONS_H_
 
 namespace roc {
 namespace fec {
@@ -29,4 +29,4 @@ typedef enum {
 } // namespace fec
 } // namespace roc
 
-#endif // ROC_FEC_TYPE_OPTIONS_H_
+#endif // ROC_FEC_FEC_TYPE_OPTIONS_H_

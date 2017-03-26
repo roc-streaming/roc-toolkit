@@ -81,7 +81,7 @@ packet::IPacketConstPtr Decoder::read_() {
         }
 
         roc_log(LogInfo, "decoder: got marker bit, start decoding:"
-                           " n_packets_before=%u blk_sn=%lu",
+                         " n_packets_before=%u blk_sn=%lu",
                 n_packets_, (unsigned long)cur_block_sn_);
 
         is_started_ = true;
@@ -197,7 +197,7 @@ bool Decoder::check_packet_(const packet::IPacketConstPtr& pp, size_t pos) {
 
     if (pp->source() != source_) {
         roc_log(LogTrace, "decoder: repaired packet has bad source id, shutting down:"
-                           " got=%lu expected=%lu",
+                          " got=%lu expected=%lu",
                 (unsigned long)pp->source(), (unsigned long)source_);
         // We've repaired packet from someone else's session; shutdown decoder now.
         // This will force Watchdog to shutdown entire session after timeout.
@@ -205,8 +205,7 @@ bool Decoder::check_packet_(const packet::IPacketConstPtr& pp, size_t pos) {
     }
 
     if (pp->seqnum() != packet::seqnum_t(cur_block_sn_ + pos)) {
-        roc_log(LogTrace,
-                "decoder: repaired packet has bad seqnum: got=%lu expected=%lu",
+        roc_log(LogTrace, "decoder: repaired packet has bad seqnum: got=%lu expected=%lu",
                 (unsigned long)pp->seqnum(),
                 (unsigned long)packet::seqnum_t(cur_block_sn_ + pos));
         return false;
@@ -259,7 +258,7 @@ void Decoder::update_data_packets_() {
 
         if (SEQ_IS_BEFORE(pp->seqnum(), cur_block_sn_)) {
             roc_log(LogDebug, "decoder: dropping data packet from previous block:"
-                               " blk_sn=%lu pkt_sn=%lu",
+                              " blk_sn=%lu pkt_sn=%lu",
                     (unsigned long)cur_block_sn_, (unsigned long)pp->seqnum());
             n_dropped++;
             continue;
@@ -275,8 +274,8 @@ void Decoder::update_data_packets_() {
     }
 
     if (n_dropped != 0 || n_fetched != n_added) {
-        roc_log(LogInfo, "decoder: data queue: fetched=%u added=%u dropped=%u",
-                n_fetched, n_added, n_dropped);
+        roc_log(LogInfo, "decoder: data queue: fetched=%u added=%u dropped=%u", n_fetched,
+                n_added, n_dropped);
     }
 }
 
@@ -300,7 +299,7 @@ void Decoder::update_fec_packets_() {
 
         if (SEQ_IS_BEFORE(fp->data_blknum(), cur_block_sn_)) {
             roc_log(LogDebug, "decoder: dropping fec packet from previous block:"
-                               " blk_sn=%lu pkt_data_blk=%lu",
+                              " blk_sn=%lu pkt_data_blk=%lu",
                     (unsigned long)cur_block_sn_, (unsigned long)fp->data_blknum());
             n_dropped++;
             continue;
@@ -308,7 +307,7 @@ void Decoder::update_fec_packets_() {
 
         if (!SEQ_IS_BEFORE_EQ(fp->fec_blknum(), fp->seqnum())) {
             roc_log(LogDebug, "decoder: dropping invalid fec packet:"
-                               " pkt_sn=%lu pkt_fec_blk=%lu",
+                              " pkt_sn=%lu pkt_fec_blk=%lu",
                     (unsigned long)fp->seqnum(), (unsigned long)fp->fec_blknum());
             n_dropped++;
             continue;
@@ -324,8 +323,8 @@ void Decoder::update_fec_packets_() {
     }
 
     if (n_dropped != 0 || n_fetched != n_added) {
-        roc_log(LogInfo, "decoder: fec queue: fetched=%u added=%u dropped=%u",
-                n_fetched, n_added, n_dropped);
+        roc_log(LogInfo, "decoder: fec queue: fetched=%u added=%u dropped=%u", n_fetched,
+                n_added, n_dropped);
     }
 }
 
@@ -345,7 +344,7 @@ void Decoder::skip_fec_packets_() {
         }
 
         roc_log(LogDebug, "decoder: dropping fec packet, decoding not started:"
-                           " min_sn=%lu pkt_data_blk=%lu",
+                          " min_sn=%lu pkt_data_blk=%lu",
                 (unsigned long)cur_block_sn_, (unsigned long)fp->data_blknum());
 
         fec_queue_.read();

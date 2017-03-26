@@ -26,8 +26,9 @@ typedef enum roc_log_level {
 } roc_log_level;
 
 //! Log handler.
-typedef void (*roc_log_handler)(
-    roc_log_level level, const char* module, const char* message);
+typedef void (*roc_log_handler)(roc_log_level level,
+                                const char* module,
+                                const char* message);
 
 //! Set maximum log level.
 //!

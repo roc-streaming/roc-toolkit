@@ -158,7 +158,7 @@ void UDPSender::write(const datagram::IDatagramPtr& dgm) {
         // In this case, loop_ will be set to null.
         if (!loop_) {
             roc_log(LogError, "udp sender:"
-                               " dropping datagram, not attached to event loop");
+                              " dropping datagram, not attached to event loop");
             return;
         }
 
@@ -198,7 +198,7 @@ void UDPSender::async_cb_(uv_async_t* handle) {
         self.number_++;
 
         roc_log(LogTrace, "udp sender: sending datagram:"
-                           " num=%u src=%s dst=%s sz=%ld",
+                          " num=%u src=%s dst=%s sz=%ld",
                 self.number_,                                      //
                 datagram::address_to_str(dgm->sender()).c_str(),   //
                 datagram::address_to_str(dgm->receiver()).c_str(), //
@@ -253,7 +253,7 @@ void UDPSender::send_cb_(uv_udp_send_t* req, int status) {
 
     if (status < 0) {
         roc_log(LogError, "udp sender:"
-                           " can't send datagram: src=%s dst=%s sz=%ld: [%s] %s",
+                          " can't send datagram: src=%s dst=%s sz=%ld: [%s] %s",
                 datagram::address_to_str(dgm->sender()).c_str(),
                 datagram::address_to_str(dgm->receiver()).c_str(),
                 (long)dgm->buffer().size(), uv_err_name(status), uv_strerror(status));

@@ -169,7 +169,7 @@ void Streamer::update_packet_() {
         }
 
         roc_log(LogDebug, "streamer: dropping late packet:"
-                           " ch=%d ts=%lu pkt_ts=%lu pkt_ns=%lu",
+                          " ch=%d ts=%lu pkt_ts=%lu pkt_ns=%lu",
                 (int)channel_, (unsigned long)timestamp_, (unsigned long)pkt_timestamp,
                 (unsigned long)packet_->num_samples());
 

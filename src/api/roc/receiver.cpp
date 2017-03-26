@@ -26,10 +26,7 @@ namespace {
 bool make_server_config(pipeline::ServerConfig& sc, const roc_receiver_config* rc) {
     (void)rc;
 
-    sc = pipeline::ServerConfig(
-        pipeline::EnableResampling |
-        pipeline::EnableFEC
-        );
+    sc = pipeline::ServerConfig(pipeline::EnableResampling | pipeline::EnableFEC);
 
     return true;
 }
@@ -38,8 +35,9 @@ bool make_server_config(pipeline::ServerConfig& sc, const roc_receiver_config* r
 
 struct roc_receiver {
     roc_receiver(const pipeline::ServerConfig& config)
-        : server_(dgm_queue_, sample_queue_, config), buffer_pos_(0)
-    {}
+        : server_(dgm_queue_, sample_queue_, config)
+        , buffer_pos_(0) {
+    }
 
     ~roc_receiver() {
         server_.stop();
@@ -49,7 +47,7 @@ struct roc_receiver {
         trx_.join();
     }
 
-    bool bind(const char *address) {
+    bool bind(const char* address) {
         datagram::Address addr;
         if (!netio::parse_address(address, addr)) {
             roc_log(LogError, "can't parse address: %s", address);
@@ -70,8 +68,7 @@ struct roc_receiver {
         return true;
     }
 
-    ssize_t read(float *samples, const size_t n_samples)
-    {
+    ssize_t read(float* samples, const size_t n_samples) {
         size_t received_num = 0;
 
         while (received_num < n_samples) {
@@ -84,11 +81,10 @@ struct roc_receiver {
                 }
             }
 
-            const size_t cur_buff_num = ROC_MIN(
-                buffer_.size() - buffer_pos_, n_samples - received_num);
+            const size_t cur_buff_num =
+                ROC_MIN(buffer_.size() - buffer_pos_, n_samples - received_num);
 
-            memcpy(&samples[received_num],
-                   buffer_.data() + buffer_pos_,
+            memcpy(&samples[received_num], buffer_.data() + buffer_pos_,
                    cur_buff_num * sizeof(packet::sample_t));
 
             received_num += cur_buff_num;
@@ -126,20 +122,21 @@ roc_receiver* roc_receiver_new(const roc_receiver_config* rc) {
     return new roc_receiver(sc);
 }
 
-void roc_receiver_delete(roc_receiver *receiver) {
+void roc_receiver_delete(roc_receiver* receiver) {
     roc_panic_if(receiver == NULL);
 
     delete receiver;
 }
 
-bool roc_receiver_bind(roc_receiver* receiver, const char *address) {
+bool roc_receiver_bind(roc_receiver* receiver, const char* address) {
     roc_panic_if(receiver == NULL);
     roc_panic_if(address == NULL);
 
     return receiver->bind(address);
 }
 
-ssize_t roc_receiver_read(roc_receiver *receiver, float *samples, const size_t n_samples) {
+ssize_t
+roc_receiver_read(roc_receiver* receiver, float* samples, const size_t n_samples) {
     roc_panic_if(receiver == NULL);
     roc_panic_if(samples == NULL && n_samples != 0);
 
