@@ -31,8 +31,9 @@ public:
     //! Initialize.
     //! @remarks
     //!  Interleaver reorders packets passed to write() and writes
-    //!  them to @p output.
-    explicit Interleaver(packet::IPacketWriter&);
+    //!  them to @p output. @p delay_len must not be greater than delay_max_.
+    explicit Interleaver(packet::IPacketWriter&,
+                const size_t delay_len = Interleaver::delay_max_);
 
     //! Write next packet.
     //! @remarks
@@ -48,14 +49,19 @@ public:
     size_t window_size() const;
 
 private:
+    //! Initialize tx_seq_ to a new randomized sequence.
+    void reinit_seq();
+
     //! Transmitter.
     packet::IPacketWriter& output_;
     //! Number of packets in block.
-    static const size_t delay_len_ = 9;
+    size_t delay_len_;
+    //! Maximum possible number of packets in block.
+    static const size_t delay_max_ = 32;
     //! Tx order.
-    static const size_t tx_seq_[delay_len_];
+    size_t tx_seq_[delay_max_];
     //! Delay line.
-    core::Array<packet::IPacketPtr, delay_len_> pack_store_;
+    core::Array<packet::IPacketPtr, delay_max_> pack_store_;
 
     size_t next_2_put_, next_2_send_;
 };

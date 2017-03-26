@@ -30,7 +30,7 @@ TEST(interleaver, read_write) {
     enum { MAX_PACKETS = 100 };
 
     PacketQueue receiver;
-    Interleaver intlrvr(receiver);
+    Interleaver intlrvr(receiver, 10);
 
     const size_t total_packets_num = intlrvr.window_size() * 5;
 
