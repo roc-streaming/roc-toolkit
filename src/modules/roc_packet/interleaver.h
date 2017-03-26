@@ -33,7 +33,7 @@ public:
     //!  Interleaver reorders packets passed to write() and writes
     //!  them to @p output. @p delay_len must not be greater than delay_max_.
     explicit Interleaver(packet::IPacketWriter&,
-                         const size_t delay_len = Interleaver::delay_max_);
+                const size_t delay_len);
 
     //! Write next packet.
     //! @remarks
