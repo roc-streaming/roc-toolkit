@@ -45,7 +45,7 @@ TEST_GROUP(block_codecs) {
         buffers.resize(N_DATA_PACKETS + N_FEC_PACKETS);
     }
 
-    core::IByteBufferConstSlice male_buffer() {
+    core::IByteBufferConstSlice make_buffer() {
         core::IByteBufferPtr buffer =
             core::ByteBufferTraits::default_composer<SYMB_SZ>().compose();
 
@@ -60,7 +60,7 @@ TEST_GROUP(block_codecs) {
 
     void encode() {
         for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
-            buffers[i] = male_buffer();
+            buffers[i] = make_buffer();
             encoder.write(i, buffers[i]);
         }
         encoder.commit();
