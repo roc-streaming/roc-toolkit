@@ -85,7 +85,7 @@ def CompilerVersion(env, compiler):
             full_text = ' '.join(full_proc.stdout.readlines())
 
             for regex in version_formats:
-                m = re.search(r'clang\s+version\s+'+regex, full_text)
+                m = re.search(r'(?:LLVM|clang)\s+version\s+'+regex, full_text)
                 if m:
                     return m.group(1)
 
