@@ -146,19 +146,21 @@ roc_sender* roc_sender_new(const roc_sender_config* sc) {
     if (!make_client_config(cc, sc)) {
         return NULL;
     }
-
+    roc_log(LogInfo, "C API: create roc_sender");
     return new roc_sender(cc);
 }
 
 void roc_sender_delete(roc_sender* sender) {
     roc_panic_if(sender == NULL);
 
+    roc_log(LogInfo, "C API: delete sender");
     delete sender;
 }
 
 bool roc_sender_bind(roc_sender* sender, const char* address) {
     roc_panic_if(sender == NULL);
 
+    roc_log(LogInfo, "C API: bind to \"%s\"", address);
     return sender->bind(address);
 }
 

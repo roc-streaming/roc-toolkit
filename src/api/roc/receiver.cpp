@@ -119,12 +119,14 @@ roc_receiver* roc_receiver_new(const roc_receiver_config* rc) {
         return NULL;
     }
 
+    roc_log(LogInfo, "C API: create roc_receiver");
     return new roc_receiver(sc);
 }
 
 void roc_receiver_delete(roc_receiver* receiver) {
     roc_panic_if(receiver == NULL);
 
+    roc_log(LogInfo, "C API: delete receiver");
     delete receiver;
 }
 
@@ -132,6 +134,7 @@ bool roc_receiver_bind(roc_receiver* receiver, const char* address) {
     roc_panic_if(receiver == NULL);
     roc_panic_if(address == NULL);
 
+    roc_log(LogInfo, "C API: receiver bind to \"%s\"", address);
     return receiver->bind(address);
 }
 
