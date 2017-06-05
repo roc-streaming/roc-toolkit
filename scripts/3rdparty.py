@@ -158,15 +158,20 @@ elif name == 'openfec':
         dist = 'bin/Debug'
         args += [
             '-DCMAKE_BUILD_TYPE=Debug',
-            '-DDEBUG:STRING=ON',                    # enable debug symbols and logs
-            '-DCMAKE_C_FLAGS_DEBUG:STRING=-fPIC',   # for older cmake
+            # enable debug symbols and logs
+            '-DDEBUG:STRING=ON',
+            # -fPIC should be set explicitly in older cmake versions
+            # -ggdb is required for sanitizer traces
+            '-DCMAKE_C_FLAGS_DEBUG:STRING="-fPIC -ggdb"',
         ]
     else:
         dist = 'bin/Release'
         args += [
             '-DCMAKE_BUILD_TYPE=Release',
-            '-DDEBUG:STRING=OFF',                   # disable debug symbols and logs
-            '-DCMAKE_C_FLAGS_RELEASE:STRING=-fPIC', # for older cmake
+            # disable debug symbols and logs
+            '-DDEBUG:STRING=OFF',
+            # -fPIC should be set explicitly in older cmake versions
+            '-DCMAKE_C_FLAGS_RELEASE:STRING=-fPIC',
         ]
     execute('cmake .. ' + ' '.join(args), logfile)
     execute('make -j', logfile)
