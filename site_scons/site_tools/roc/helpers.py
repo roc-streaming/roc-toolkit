@@ -141,6 +141,11 @@ def CompilerTarget(env, compiler):
 
     return None
 
+def LLVMDir(env, version):
+    llvmdir = '/usr/lib/llvm-' + '.'.join(map(str, version[:2]))
+    if os.path.isdir(llvmdir):
+        return llvmdir
+
 def ClangDB(env, build_dir, pattern, compiler):
     return '%s %s/wrappers/clangdb.py %s %s "%s" %s' % (
         env.Python(),
@@ -340,6 +345,7 @@ def Init(env):
     env.AddMethod(Python, 'Python')
     env.AddMethod(CompilerVersion, 'CompilerVersion')
     env.AddMethod(CompilerTarget, 'CompilerTarget')
+    env.AddMethod(LLVMDir, 'LLVMDir')
     env.AddMethod(ClangDB, 'ClangDB')
     env.AddMethod(Doxygen, 'Doxygen')
     env.AddMethod(GenGetOpt, 'GenGetOpt')
