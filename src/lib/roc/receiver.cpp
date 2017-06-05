@@ -22,20 +22,19 @@ using namespace roc;
 
 namespace {
 
-bool make_server_config(pipeline::ReceiverConfig& sc, const roc_config* rc) {
-    sc = pipeline::ServerConfig(pipeline::EnableResampling);
+bool make_receiver_config(pipeline::ReceiverConfig& out, const roc_config* in) {
+    out = pipeline::ReceiverConfig(pipeline::EnableResampling);
 
-    if (rc->options & ROC_API_CONF_DISABLE_FEC) {
-        sc.fec.codec = fec::NoCodec;
-    } else if (rc->options & ROC_API_CONF_RS_CODE) {
-        sc.fec.codec = fec::ReedSolomon2m;
-    } else if (rc->options & ROC_API_CONF_LDPC_CODE) {
-        sc.fec.codec = fec::LDPCStaircase;
+    if (in->options & ROC_API_CONF_DISABLE_FEC) {
+        out.fec.codec = fec::NoCodec;
+    } else if (in->options & ROC_API_CONF_LDPC_CODE) {
+        out.fec.codec = fec::LDPCStaircase;
     } else {
-        // TODO: error
+        out.fec.codec = fec::ReedSolomon2m;
     }
-    sc.fec.n_source_packets = rc->n_source_packets;
-    sc.fec.n_repair_packets = rc->n_repair_packets;
+
+    out.fec.n_source_packets = in->n_source_packets;
+    out.fec.n_repair_packets = in->n_repair_packets;
 
     return true;
 }
@@ -120,15 +119,15 @@ private:
     size_t buffer_pos_;
 };
 
-roc_receiver* roc_receiver_new(const roc_config* rc) {
-    pipeline::ReceiverConfig sc;
+roc_receiver* roc_receiver_new(const roc_config* config) {
+    pipeline::ReceiverConfig c;
 
-    if (!make_server_config(sc, rc)) {
+    if (!make_receiver_config(c, config)) {
         return NULL;
     }
 
     roc_log(LogInfo, "C API: create roc_receiver");
-    return new roc_receiver(sc);
+    return new roc_receiver(c);
 }
 
 void roc_receiver_delete(roc_receiver* receiver) {

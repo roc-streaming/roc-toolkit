@@ -7,7 +7,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_fec/fec_type_options.h
+//! @file roc_fec/config.h
 //! @brief FEC code type options.
 
 #ifndef ROC_FEC_CONFIG_H_
@@ -34,8 +34,8 @@ enum CodecType {
 struct Config {
     Config()
         : codec(NoCodec)
-        , n_source_packets(ROC_CONFIG_MAX_FEC_BLOCK_DATA_PACKETS)
-        , n_repair_packets(ROC_CONFIG_MAX_FEC_BLOCK_REDUNDANT_PACKETS)
+        , n_source_packets(ROC_CONFIG_DEFAULT_FEC_BLOCK_DATA_PACKETS)
+        , n_repair_packets(ROC_CONFIG_DEFAULT_FEC_BLOCK_REDUNDANT_PACKETS)
         , ldpc_prng_seed(1297501556)
         , ldpc_N1(7)
         , rs_m(8)

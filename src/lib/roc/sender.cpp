@@ -23,21 +23,20 @@ using namespace roc;
 
 namespace {
 
-bool make_client_config(pipeline::SenderConfig& cc, const roc_config* sc) {
-    cc = pipeline::ClientConfig(pipeline::EnableInterleaving);
+bool make_sender_config(pipeline::SenderConfig& out, const roc_config* in) {
+    out = pipeline::SenderConfig(pipeline::EnableInterleaving);
 
-    if (sc->options & ROC_API_CONF_DISABLE_FEC) {
-        cc.fec.codec = fec::NoCodec;
-    } else if (sc->options & ROC_API_CONF_RS_CODE) {
-        cc.fec.codec = fec::ReedSolomon2m;
-    } else if (sc->options & ROC_API_CONF_LDPC_CODE) {
-        cc.fec.codec = fec::LDPCStaircase;
+    if (in->options & ROC_API_CONF_DISABLE_FEC) {
+        out.fec.codec = fec::NoCodec;
+    } else if (in->options & ROC_API_CONF_LDPC_CODE) {
+        out.fec.codec = fec::LDPCStaircase;
     } else {
-        // TODO: error
+        out.fec.codec = fec::ReedSolomon2m;
     }
-    cc.samples_per_packet = sc->samples_per_packet;
-    cc.fec.n_source_packets = sc->n_source_packets;
-    cc.fec.n_repair_packets = sc->n_repair_packets;
+    
+    out.samples_per_packet = in->samples_per_packet;
+    out.fec.n_source_packets = in->n_source_packets;
+    out.fec.n_repair_packets = in->n_repair_packets;
 
     return true;
 }
@@ -149,13 +148,13 @@ private:
 };
 
 roc_sender* roc_sender_new(const roc_config* config) {
-    pipeline::SenderConfig cc;
+    pipeline::SenderConfig c;
 
-    if (!make_client_config(cc, config)) {
+    if (!make_sender_config(c, config)) {
         return NULL;
     }
     roc_log(LogInfo, "C API: create roc_sender");
-    return new roc_sender(cc);
+    return new roc_sender(c);
 }
 
 void roc_sender_delete(roc_sender* sender) {
