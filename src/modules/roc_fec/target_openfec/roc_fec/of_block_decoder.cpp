@@ -26,7 +26,6 @@ OFBlockDecoder::OFBlockDecoder(const Config& config, core::IByteBufferComposer& 
     : n_data_packets_(config.n_source_packets)
     , n_fec_packets_(config.n_repair_packets)
     , of_inst_(NULL)
-    , of_inst_inited_(false)
     , composer_(composer)
     , buffers_(config.n_source_packets + config.n_repair_packets)
     , sym_tab_(config.n_source_packets + config.n_repair_packets)
@@ -61,6 +60,9 @@ OFBlockDecoder::OFBlockDecoder(const Config& config, core::IByteBufferComposer& 
 }
 
 OFBlockDecoder::~OFBlockDecoder() {
+    if (of_inst_ != NULL) {
+        of_release_codec_instance(of_inst_);
+    }
 }
 
 void OFBlockDecoder::write(size_t index, const core::IByteBufferConstSlice& buffer) {
@@ -117,8 +119,9 @@ void OFBlockDecoder::reset() {
 
     packets_rcvd_ = 0;
     repair_attempted_ = false;
-    if (of_inst_inited_ && of_inst_) {
+    if (of_inst_ != NULL) {
         of_release_codec_instance(of_inst_);
+        of_inst_ = NULL;
     }
 
     if (OF_STATUS_OK != of_create_codec_instance(&of_inst_, codec_id_, OF_DECODER, 0)) {
@@ -130,8 +133,6 @@ void OFBlockDecoder::reset() {
     if (OF_STATUS_OK != of_set_fec_parameters(of_inst_, of_inst_params_)) {
         roc_panic("OFBlockDecoder: of_set_fec_parameters() failed");
     }
-
-    of_inst_inited_ = true;
 
     if (OF_STATUS_OK
         != of_set_callback_functions(
