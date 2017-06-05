@@ -9,9 +9,9 @@
 
 #include <CppUTest/TestHarness.h>
 
+#include "roc_audio/resampler.h"
 #include "roc_config/config.h"
 #include "roc_core/scoped_ptr.h"
-#include "roc_audio/resampler.h"
 
 #include "test_stream_reader.h"
 

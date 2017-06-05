@@ -13,13 +13,13 @@
 #ifndef ROC_CORE_DEFAULT_BUFFER_H_
 #define ROC_CORE_DEFAULT_BUFFER_H_
 
-#include "roc_core/stddefs.h"
-#include "roc_core/panic.h"
-#include "roc_core/shared_ptr.h"
+#include "roc_core/helpers.h"
 #include "roc_core/ibuffer.h"
 #include "roc_core/ipool.h"
-#include "roc_core/helpers.h"
+#include "roc_core/panic.h"
 #include "roc_core/print_buffer.h"
+#include "roc_core/shared_ptr.h"
+#include "roc_core/stddefs.h"
 
 namespace roc {
 namespace core {

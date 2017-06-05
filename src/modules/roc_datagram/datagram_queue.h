@@ -15,8 +15,8 @@
 
 #include "roc_config/config.h"
 
-#include "roc_core/noncopyable.h"
 #include "roc_core/list.h"
+#include "roc_core/noncopyable.h"
 #include "roc_core/spin_mutex.h"
 
 #include "roc_datagram/idatagram_reader.h"

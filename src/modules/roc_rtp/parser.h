@@ -13,9 +13,9 @@
 #ifndef ROC_RTP_PARSER_H_
 #define ROC_RTP_PARSER_H_
 
-#include "roc_core/noncopyable.h"
-#include "roc_core/ipool.h"
 #include "roc_core/heap_pool.h"
+#include "roc_core/ipool.h"
+#include "roc_core/noncopyable.h"
 #include "roc_packet/ipacket_parser.h"
 #include "roc_rtp/audio_packet.h"
 #include "roc_rtp/container_packet.h"

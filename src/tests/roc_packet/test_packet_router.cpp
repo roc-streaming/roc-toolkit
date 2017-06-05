@@ -8,8 +8,8 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "roc_packet/packet_router.h"
 #include "roc_packet/packet_queue.h"
+#include "roc_packet/packet_router.h"
 
 #include "test_packet.h"
 

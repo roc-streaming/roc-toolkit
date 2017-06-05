@@ -13,10 +13,10 @@
 #ifndef ROC_AUDIO_FREQ_ESTIMATOR_H_
 #define ROC_AUDIO_FREQ_ESTIMATOR_H_
 
+#include "roc_audio/freq_estimator_decim10_len.h"
 #include "roc_config/config.h"
 #include "roc_core/noncopyable.h"
 #include "roc_packet/units.h"
-#include "roc_audio/freq_estimator_decim10_len.h"
 
 namespace roc {
 namespace audio {

@@ -12,15 +12,15 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "roc_core/math.h"
 #include "roc_core/log.h"
+#include "roc_core/math.h"
 #include "roc_packet/units.h"
 
 #include "roc_audio/isample_buffer_reader.h"
 #include "roc_audio/isample_buffer_writer.h"
 
-#include "test_helpers.h"
 #include "test_config.h"
+#include "test_helpers.h"
 
 namespace roc {
 namespace test {

@@ -13,17 +13,17 @@
 #ifndef ROC_PIPELINE_SENDER_H_
 #define ROC_PIPELINE_SENDER_H_
 
-#include "roc_core/noncopyable.h"
 #include "roc_core/maybe.h"
+#include "roc_core/noncopyable.h"
 #include "roc_core/thread.h"
 
 #include "roc_datagram/idatagram_composer.h"
 #include "roc_datagram/idatagram_writer.h"
 
+#include "roc_packet/interleaver.h"
 #include "roc_packet/ipacket_composer.h"
 #include "roc_packet/packet_sender.h"
 #include "roc_packet/spoiler.h"
-#include "roc_packet/interleaver.h"
 
 #include "roc_fec/encoder.h"
 

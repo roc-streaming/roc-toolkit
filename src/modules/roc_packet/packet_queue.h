@@ -13,8 +13,8 @@
 #ifndef ROC_PACKET_PACKET_QUEUE_H_
 #define ROC_PACKET_PACKET_QUEUE_H_
 
-#include "roc_core/noncopyable.h"
 #include "roc_core/list.h"
+#include "roc_core/noncopyable.h"
 
 #include "roc_packet/ipacket.h"
 #include "roc_packet/ipacket_reader.h"

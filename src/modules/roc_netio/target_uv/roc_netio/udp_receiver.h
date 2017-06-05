@@ -17,15 +17,15 @@
 
 #include "roc_config/config.h"
 
-#include "roc_core/noncopyable.h"
 #include "roc_core/array.h"
 #include "roc_core/byte_buffer.h"
+#include "roc_core/noncopyable.h"
 
 #include "roc_datagram/address.h"
 #include "roc_datagram/idatagram_writer.h"
 
-#include "roc_netio/udp_datagram.h"
 #include "roc_netio/udp_composer.h"
+#include "roc_netio/udp_datagram.h"
 
 namespace roc {
 namespace netio {

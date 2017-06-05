@@ -13,8 +13,8 @@
 #ifndef ROC_CORE_IBUFFER_H_
 #define ROC_CORE_IBUFFER_H_
 
-#include "roc_core/stddefs.h"
 #include "roc_core/refcnt.h"
+#include "roc_core/stddefs.h"
 
 namespace roc {
 namespace core {

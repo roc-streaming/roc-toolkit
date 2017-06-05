@@ -15,23 +15,23 @@
 
 #include "roc_config/config.h"
 
-#include "roc_core/shared_ptr.h"
-#include "roc_core/refcnt.h"
-#include "roc_core/list_node.h"
-#include "roc_core/list.h"
 #include "roc_core/array.h"
-#include "roc_core/maybe.h"
 #include "roc_core/ipool.h"
+#include "roc_core/list.h"
+#include "roc_core/list_node.h"
+#include "roc_core/maybe.h"
+#include "roc_core/refcnt.h"
+#include "roc_core/shared_ptr.h"
 
-#include "roc_datagram/idatagram.h"
 #include "roc_datagram/address.h"
+#include "roc_datagram/idatagram.h"
 
+#include "roc_packet/imonitor.h"
 #include "roc_packet/ipacket_parser.h"
 #include "roc_packet/ipacket_writer.h"
-#include "roc_packet/imonitor.h"
-#include "roc_packet/watchdog.h"
 #include "roc_packet/packet_queue.h"
 #include "roc_packet/packet_router.h"
+#include "roc_packet/watchdog.h"
 
 #include "roc_fec/decoder.h"
 
@@ -39,12 +39,12 @@
 #include "roc_fec/of_block_decoder.h"
 #endif
 
-#include "roc_audio/isink.h"
-#include "roc_audio/delayer.h"
 #include "roc_audio/chanalyzer.h"
-#include "roc_audio/streamer.h"
+#include "roc_audio/delayer.h"
+#include "roc_audio/isink.h"
 #include "roc_audio/resampler.h"
 #include "roc_audio/scaler.h"
+#include "roc_audio/streamer.h"
 
 namespace roc {
 namespace pipeline {

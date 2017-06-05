@@ -13,10 +13,10 @@
 #ifndef ROC_CORE_DEFAULT_BUFFER_COMPOSER_H_
 #define ROC_CORE_DEFAULT_BUFFER_COMPOSER_H_
 
-#include "roc_core/ibuffer_composer.h"
-#include "roc_core/ipool.h"
 #include "roc_core/default_buffer.h"
 #include "roc_core/heap_pool.h"
+#include "roc_core/ibuffer_composer.h"
+#include "roc_core/ipool.h"
 
 namespace roc {
 namespace core {

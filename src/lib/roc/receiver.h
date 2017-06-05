@@ -12,8 +12,8 @@
 #ifndef ROC_RECEIVER_H_
 #define ROC_RECEIVER_H_
 
-#include "roc/types.h"
 #include "roc/config.h"
+#include "roc/types.h"
 
 #ifdef __cplusplus
 extern "C" {

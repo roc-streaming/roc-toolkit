@@ -7,11 +7,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include <CppUTest/CommandLineTestRunner.h>
 #include <CppUTest/CommandLineArguments.h>
+#include <CppUTest/CommandLineTestRunner.h>
 
-#include "roc_core/refcnt.h"
 #include "roc_core/log.h"
+#include "roc_core/refcnt.h"
 
 int main(int argc, const char** argv) {
     CommandLineArguments args(argc, argv);

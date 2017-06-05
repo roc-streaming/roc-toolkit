@@ -9,8 +9,8 @@
 
 #include <cstdio>
 
-#include "roc_core/print_buffer.h"
 #include "roc_core/panic.h"
+#include "roc_core/print_buffer.h"
 
 namespace roc {
 namespace core {

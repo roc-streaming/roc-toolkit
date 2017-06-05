@@ -13,12 +13,12 @@
 #ifndef ROC_CORE_LIST_H_
 #define ROC_CORE_LIST_H_
 
-#include "roc_core/stddefs.h"
+#include "roc_core/list_node.h"
 #include "roc_core/noncopyable.h"
+#include "roc_core/ownership.h"
 #include "roc_core/panic.h"
 #include "roc_core/shared_ptr.h"
-#include "roc_core/ownership.h"
-#include "roc_core/list_node.h"
+#include "roc_core/stddefs.h"
 
 namespace roc {
 namespace core {

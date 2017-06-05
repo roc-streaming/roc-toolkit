@@ -13,11 +13,11 @@
 #ifndef ROC_CORE_MAYBE_H_
 #define ROC_CORE_MAYBE_H_
 
-#include "roc_core/noncopyable.h"
-#include "roc_core/helpers.h"
-#include "roc_core/panic.h"
 #include "roc_core/aligned_storage.h"
 #include "roc_core/attributes.h"
+#include "roc_core/helpers.h"
+#include "roc_core/noncopyable.h"
+#include "roc_core/panic.h"
 
 namespace roc {
 namespace core {
@@ -164,7 +164,7 @@ inline void* operator new(size_t size, roc::core::Maybe<T>& maybe) ROC_ATTR_NOTH
 //! @note
 //!  Compiler calls this if ctor throws in a placement new expression.
 template <class T>
-inline void operator delete(void* ptr, roc::core::Maybe<T>& maybe) ROC_ATTR_NOTHROW {
+inline void operator delete(void* ptr, roc::core::Maybe<T>& maybe)ROC_ATTR_NOTHROW {
     using namespace roc;
     roc_panic_if(ptr != maybe.memory());
     maybe.release();

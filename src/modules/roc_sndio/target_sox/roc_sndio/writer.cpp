@@ -7,13 +7,13 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_core/scoped_ptr.h"
-#include "roc_core/panic.h"
 #include "roc_core/log.h"
+#include "roc_core/panic.h"
+#include "roc_core/scoped_ptr.h"
 
-#include "roc_sndio/writer.h"
 #include "roc_sndio/default.h"
 #include "roc_sndio/init.h"
+#include "roc_sndio/writer.h"
 
 namespace roc {
 namespace sndio {

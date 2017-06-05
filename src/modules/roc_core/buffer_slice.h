@@ -14,9 +14,9 @@
 #define ROC_CORE_BUFFER_SLICE_H_
 
 #include "roc_core/ibuffer.h"
-#include "roc_core/shared_ptr.h"
 #include "roc_core/panic.h"
 #include "roc_core/print_buffer.h"
+#include "roc_core/shared_ptr.h"
 
 namespace roc {
 namespace core {

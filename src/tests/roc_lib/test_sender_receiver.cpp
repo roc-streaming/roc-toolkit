@@ -9,9 +9,9 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "roc_core/stddefs.h"
-#include "roc/sender.h"
 #include "roc/receiver.h"
+#include "roc/sender.h"
+#include "roc_core/stddefs.h"
 
 namespace roc {
 namespace test {
@@ -34,8 +34,8 @@ TEST_GROUP(sender_receiver) {
 };
 
 TEST(sender_receiver, open) {
-    roc_receiver *recv = roc_receiver_new(&conf);
-    roc_sender *sndr = roc_sender_new(&conf);
+    roc_receiver* recv = roc_receiver_new(&conf);
+    roc_sender* sndr = roc_sender_new(&conf);
 
     CHECK(roc_receiver_bind(recv, recv_address));
     CHECK(roc_sender_bind(sndr, recv_address));

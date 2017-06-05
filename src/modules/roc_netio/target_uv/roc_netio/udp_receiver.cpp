@@ -8,8 +8,8 @@
  */
 
 #include "roc_core/helpers.h"
-#include "roc_core/panic.h"
 #include "roc_core/log.h"
+#include "roc_core/panic.h"
 
 #include "roc_datagram/address_to_str.h"
 

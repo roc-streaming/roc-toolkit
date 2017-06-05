@@ -7,11 +7,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_core/panic.h"
 #include "roc_core/log.h"
+#include "roc_core/panic.h"
 
-#include "roc_pipeline/session.h"
 #include "roc_pipeline/config.h"
+#include "roc_pipeline/session.h"
 
 namespace roc {
 namespace pipeline {
@@ -167,7 +167,8 @@ packet::IPacketReader* Session::make_packet_reader_() {
 packet::IPacketReader* Session::make_fec_decoder_(packet::IPacketReader* packet_reader) {
     //
     new (fec_packet_queue_) packet::PacketQueue(config_.max_session_packets);
-    new (fec_blk_decoder_) fec::OFBlockDecoder(config_.fec, *config_.byte_buffer_composer);
+    new (fec_blk_decoder_)
+        fec::OFBlockDecoder(config_.fec, *config_.byte_buffer_composer);
 
     router_.add_route(*fec_packet_queue_,
                       packet::IPacket::HasOrder | packet::IPacket::HasFEC);

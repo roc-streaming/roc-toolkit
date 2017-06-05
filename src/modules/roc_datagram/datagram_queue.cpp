@@ -7,8 +7,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_core/log.h"
 #include "roc_datagram/datagram_queue.h"
+#include "roc_core/log.h"
 
 namespace roc {
 namespace datagram {

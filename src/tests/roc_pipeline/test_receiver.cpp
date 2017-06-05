@@ -15,8 +15,8 @@
 #include "roc_pipeline/receiver.h"
 
 #include "test_packet_stream.h"
-#include "test_sample_stream.h"
 #include "test_sample_queue.h"
+#include "test_sample_stream.h"
 
 namespace roc {
 namespace test {

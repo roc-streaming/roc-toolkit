@@ -12,18 +12,18 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "roc_core/print_buffer.h"
 #include "roc_core/log.h"
 #include "roc_core/math.h"
+#include "roc_core/print_buffer.h"
 #include "roc_datagram/address.h"
 #include "roc_packet/units.h"
 
-#include "roc_datagram/idatagram_writer.h"
 #include "roc_datagram/idatagram_reader.h"
+#include "roc_datagram/idatagram_writer.h"
 
-#include "test_helpers.h"
 #include "test_config.h"
 #include "test_datagram.h"
+#include "test_helpers.h"
 
 namespace roc {
 namespace test {

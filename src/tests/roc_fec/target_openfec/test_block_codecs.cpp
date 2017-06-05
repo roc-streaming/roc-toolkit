@@ -11,15 +11,15 @@
 
 #include "roc_config/config.h"
 
-#include "roc_core/byte_buffer.h"
-#include "roc_core/stddefs.h"
-#include "roc_core/log.h"
-#include "roc_core/random.h"
-#include "roc_core/math.h"
 #include "roc_core/array.h"
+#include "roc_core/byte_buffer.h"
+#include "roc_core/log.h"
+#include "roc_core/math.h"
+#include "roc_core/random.h"
+#include "roc_core/stddefs.h"
 
-#include "roc_fec/of_block_encoder.h"
 #include "roc_fec/of_block_decoder.h"
+#include "roc_fec/of_block_encoder.h"
 
 namespace roc {
 namespace test {
@@ -37,7 +37,7 @@ const size_t SYMB_SZ = ROC_CONFIG_DEFAULT_PACKET_SIZE;
 
 class Codec {
 public:
-    Codec(const Config &conf)
+    Codec(const Config& conf)
         : encoder_(conf, datagram::default_buffer_composer())
         , decoder_(conf, datagram::default_buffer_composer()) {
         buffers_.resize(N_DATA_PACKETS + N_FEC_PACKETS);
@@ -106,9 +106,9 @@ private:
     codec_buff_t buffers_;
 };
 
-TEST_GROUP(block_codecs){
+TEST_GROUP(block_codecs) {
     Config config;
-    void setup(){
+    void setup() {
         config.n_source_packets = N_DATA_PACKETS;
         config.n_repair_packets = N_FEC_PACKETS;
     }

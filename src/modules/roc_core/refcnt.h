@@ -13,8 +13,8 @@
 #ifndef ROC_CORE_REFCNT_H_
 #define ROC_CORE_REFCNT_H_
 
-#include "roc_core/noncopyable.h"
 #include "roc_core/atomic.h"
+#include "roc_core/noncopyable.h"
 #include "roc_core/panic.h"
 
 namespace roc {

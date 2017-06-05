@@ -15,9 +15,9 @@
 #include "roc_core/noncopyable.h"
 #include "roc_core/semaphore.h"
 
-#include "roc_datagram/idatagram_writer.h"
-#include "roc_datagram/idatagram_reader.h"
 #include "roc_datagram/datagram_queue.h"
+#include "roc_datagram/idatagram_reader.h"
+#include "roc_datagram/idatagram_writer.h"
 
 namespace roc {
 namespace test {

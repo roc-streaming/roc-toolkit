@@ -7,8 +7,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_core/panic.h"
 #include "roc_core/log.h"
+#include "roc_core/panic.h"
 
 #include "roc_packet/packet_router.h"
 
@@ -57,8 +57,7 @@ void PacketRouter::write(const IPacketConstPtr& packet) {
     }
 
     if (Route* route = detect_route_(packet)) {
-        roc_log(LogInfo,
-                "packet router: auto-detected route for new packet: route=%u",
+        roc_log(LogInfo, "packet router: auto-detected route for new packet: route=%u",
                 (unsigned)(route - &routes_[0]));
         route->packet = packet;
         route->writer->write(packet);

@@ -7,9 +7,9 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+#include "roc_core/panic.h"
 #include "roc_core/random.h"
 #include "roc_core/time.h"
-#include "roc_core/panic.h"
 
 #include "roc_packet/spoiler.h"
 

@@ -13,12 +13,12 @@
 #ifndef ROC_PACKET_INTERLEAVER_H_
 #define ROC_PACKET_INTERLEAVER_H_
 
-#include "roc_core/noncopyable.h"
-#include "roc_core/byte_buffer.h"
 #include "roc_core/array.h"
+#include "roc_core/byte_buffer.h"
+#include "roc_core/noncopyable.h"
 
-#include "roc_packet/ipacket_writer.h"
 #include "roc_packet/ipacket.h"
+#include "roc_packet/ipacket_writer.h"
 
 namespace roc {
 namespace packet {

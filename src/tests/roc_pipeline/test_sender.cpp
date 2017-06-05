@@ -13,10 +13,10 @@
 #include "roc_datagram/datagram_queue.h"
 #include "roc_pipeline/sender.h"
 
-#include "test_packet_stream.h"
-#include "test_sample_stream.h"
-#include "test_sample_queue.h"
 #include "test_datagram.h"
+#include "test_packet_stream.h"
+#include "test_sample_queue.h"
+#include "test_sample_stream.h"
 
 namespace roc {
 namespace test {

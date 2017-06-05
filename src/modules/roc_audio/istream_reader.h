@@ -13,8 +13,8 @@
 #ifndef ROC_AUDIO_ISTREAM_READER_H_
 #define ROC_AUDIO_ISTREAM_READER_H_
 
-#include "roc_core/list_node.h"
 #include "roc_audio/sample_buffer.h"
+#include "roc_core/list_node.h"
 
 namespace roc {
 namespace audio {

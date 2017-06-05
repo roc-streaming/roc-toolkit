@@ -15,13 +15,13 @@
 
 #include "roc_config/config.h"
 
-#include "roc_core/noncopyable.h"
-#include "roc_core/byte_buffer.h"
 #include "roc_core/array.h"
+#include "roc_core/byte_buffer.h"
+#include "roc_core/noncopyable.h"
 
-#include "roc_packet/ipacket_writer.h"
-#include "roc_packet/ipacket_composer.h"
 #include "roc_packet/ipacket.h"
+#include "roc_packet/ipacket_composer.h"
+#include "roc_packet/ipacket_writer.h"
 
 #include "roc_fec/iblock_encoder.h"
 

@@ -7,14 +7,14 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+#include "roc_audio/sample_buffer_queue.h"
 #include "roc_core/log.h"
 #include "roc_datagram/address_to_str.h"
 #include "roc_datagram/datagram_queue.h"
-#include "roc_audio/sample_buffer_queue.h"
+#include "roc_netio/inet_address.h"
+#include "roc_netio/transceiver.h"
 #include "roc_pipeline/receiver.h"
 #include "roc_sndio/writer.h"
-#include "roc_netio/transceiver.h"
-#include "roc_netio/inet_address.h"
 
 #include "roc_recv/cmdline.h"
 
@@ -38,7 +38,6 @@ bool check_range(const char* option, int value, int min_value, int max_value) {
     }
     return true;
 }
-
 
 } // namespace
 
@@ -76,9 +75,9 @@ int main(int argc, char** argv) {
             roc_log(LogError, "`--nbsrc' option should not be used when --fec=none)");
             return 1;
         }
-        if (!check_range(
-              "nbsrc", args.nbsrc_arg, 3, ROC_CONFIG_MAX_FEC_BLOCK_DATA_PACKETS)) {
-            return 1 ;
+        if (!check_range("nbsrc", args.nbsrc_arg, 3,
+                         ROC_CONFIG_MAX_FEC_BLOCK_DATA_PACKETS)) {
+            return 1;
         }
         config.fec.n_source_packets = (size_t)args.nbsrc_arg;
     }
@@ -88,7 +87,7 @@ int main(int argc, char** argv) {
             return 1;
         }
         if (!check_range("nbrpr", args.nbrpr_arg, 1, (int)config.fec.n_source_packets)) {
-            return 1 ;
+            return 1;
         }
         config.fec.n_repair_packets = (size_t)args.nbrpr_arg;
     }

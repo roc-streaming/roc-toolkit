@@ -12,12 +12,12 @@
 
 #include <CppUTest/TestHarness.h>
 
+#include "roc_audio/sample_buffer.h"
 #include "roc_core/heap_pool.h"
+#include "roc_datagram/idatagram.h"
 #include "roc_packet/ipacket.h"
 #include "roc_rtp/composer.h"
 #include "roc_rtp/parser.h"
-#include "roc_datagram/idatagram.h"
-#include "roc_audio/sample_buffer.h"
 
 namespace roc {
 namespace test {

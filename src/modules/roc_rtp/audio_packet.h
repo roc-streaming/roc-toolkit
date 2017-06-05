@@ -13,11 +13,11 @@
 #ifndef ROC_RTP_AUDIO_PACKET_H_
 #define ROC_RTP_AUDIO_PACKET_H_
 
-#include "roc_core/noncopyable.h"
 #include "roc_core/ipool.h"
+#include "roc_core/noncopyable.h"
 #include "roc_packet/ipacket.h"
-#include "roc_rtp/packet.h"
 #include "roc_rtp/audio_format.h"
+#include "roc_rtp/packet.h"
 
 namespace roc {
 namespace rtp {

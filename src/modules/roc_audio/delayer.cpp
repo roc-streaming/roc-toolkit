@@ -7,11 +7,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_core/panic.h"
 #include "roc_core/log.h"
+#include "roc_core/panic.h"
 
-#include "roc_packet/ipacket.h"
 #include "roc_audio/delayer.h"
+#include "roc_packet/ipacket.h"
 
 namespace roc {
 namespace audio {

@@ -14,9 +14,9 @@
 #define ROC_RTP_HEADERS_H_
 
 #include "roc_core/attributes.h"
-#include "roc_core/stddefs.h"
 #include "roc_core/byte_order.h"
 #include "roc_core/panic.h"
+#include "roc_core/stddefs.h"
 
 namespace roc {
 namespace rtp {

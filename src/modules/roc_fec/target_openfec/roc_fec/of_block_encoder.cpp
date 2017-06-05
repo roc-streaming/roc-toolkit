@@ -7,11 +7,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_config/config.h"
-#include "roc_core/panic.h"
-#include "roc_core/log.h"
-#include "roc_core/stddefs.h"
 #include "roc_fec/of_block_encoder.h"
+#include "roc_config/config.h"
+#include "roc_core/log.h"
+#include "roc_core/panic.h"
+#include "roc_core/stddefs.h"
 
 namespace roc {
 namespace fec {
@@ -22,8 +22,7 @@ const size_t SYMB_SZ = ROC_CONFIG_DEFAULT_PACKET_SIZE;
 
 } // namespace
 
-OFBlockEncoder::OFBlockEncoder(const Config &config,
-                                core::IByteBufferComposer& composer)
+OFBlockEncoder::OFBlockEncoder(const Config& config, core::IByteBufferComposer& composer)
     : n_data_packets_(config.n_source_packets)
     , n_fec_packets_(config.n_repair_packets)
     , of_inst_(NULL)

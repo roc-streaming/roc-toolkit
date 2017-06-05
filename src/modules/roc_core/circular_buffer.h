@@ -13,10 +13,10 @@
 #ifndef ROC_CORE_CIRCULAR_BUFFER_H_
 #define ROC_CORE_CIRCULAR_BUFFER_H_
 
+#include "roc_core/aligned_storage.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/panic.h"
 #include "roc_core/stddefs.h"
-#include "roc_core/aligned_storage.h"
 
 namespace roc {
 namespace core {

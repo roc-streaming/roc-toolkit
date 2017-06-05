@@ -9,13 +9,13 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 
-#include "roc_core/stddefs.h"
-#include "roc_core/math.h"
 #include "roc_core/fs.h"
 #include "roc_core/log.h"
+#include "roc_core/math.h"
+#include "roc_core/stddefs.h"
 
 #include "roc_audio/sample_buffer_queue.h"
 

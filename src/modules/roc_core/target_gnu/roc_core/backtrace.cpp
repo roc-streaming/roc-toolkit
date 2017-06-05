@@ -7,11 +7,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 
-#include <execinfo.h>
 #include <cxxabi.h>
+#include <execinfo.h>
 
 #include "roc_core/panic.h"
 
