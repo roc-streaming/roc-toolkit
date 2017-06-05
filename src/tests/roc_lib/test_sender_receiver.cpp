@@ -16,8 +16,7 @@
 namespace roc {
 namespace test {
 
-TEST_GROUP(api) {
-
+TEST_GROUP(sender_receiver) {
     const char* recv_address = "127.0.0.1:6000";
     roc_config conf;
 
@@ -27,9 +26,9 @@ TEST_GROUP(api) {
         conf.n_source_packets = 20;
         conf.n_repair_packets = 10;
     }
-}
+};
 
-TEST(api, open) {
+TEST(sender_receiver, open) {
     roc_receiver *recv = roc_receiver_new(&conf);
     roc_sender *sndr = roc_sender_new(&conf);
 
@@ -40,5 +39,5 @@ TEST(api, open) {
     roc_sender_delete(sndr);
 }
 
-}
-}
+} // namespace test
+} // namespace roc
