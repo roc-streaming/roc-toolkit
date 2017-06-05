@@ -1,242 +1,92 @@
 Import('env')
 
-import os
-import os.path
 import re
-import collections
-import json
 
-with open(env.File('build-deps.json').srcnode().abspath) as fp:
-    fp_json = fp.read()
-    try:
-        BUILD_DEPS = json.loads(fp_json, object_pairs_hook=collections.OrderedDict)
-    except:
-        BUILD_DEPS = json.loads(fp_json)
-
-ROOT_DIR = env.Dir('#').abspath
-
-# Recursively get all dependencies of SCons target.
-def get_target_dependencies(target):
-    for child in target.all_children():
-        path = child.abspath
-        if os.path.commonprefix([path, ROOT_DIR]) != ROOT_DIR:
-            continue
-        yield (str(target), str(child))
-        for dep in get_target_dependencies(child):
-            yield dep
-
-# Detect what modules are direct dependencies of given SCons target.
-def get_module_dependencies(name, target):
-    ret = {}
-    for parent, path in get_target_dependencies(target):
-        if not path.endswith('.h'):
-            continue
-        module = os.path.basename(os.path.dirname(path))
-        if not module.startswith('roc_'):
-            continue
-        if module == name:
-            continue
-        if not path.startswith('modules/%s' % module):
-            continue # skip indirect dependencies
-        if not module in ret:
-            ret[module] = []
-        ret[module].append((parent, env.File(path).path))
-    return ret
-
-# Check that all actual module dependencies are listed in build-deps.json
-# We want all inter-module dependencies to be specified explicitly.
-def check_dependencies(kind, name, target, allowed):
-    modules = get_module_dependencies(name, target)
-    for module, files in modules.items():
-        if not module in allowed:
-            env.Die(("'%s' %s depends on '%s', but it's not listed in build-deps.json\n\n" +
-                     "expected dependencies: %s\n" +
-                     "actual dependencies: %s\n\n" +
-                     "detected usage:\n%s") % (
-                         name,
-                         kind,
-                         module,
-                         ', '.join(allowed),
-                         ', '.join(modules),
-                         ''.join(['  %s -> %s\n' % (a, b) for a, b in files])))
-
-# List subdirectories of given directory.
-def list_subdirs(basedir):
-    for subdir in os.listdir(env.Dir(basedir).srcnode().abspath):
-        path = os.path.join(basedir, subdir)
-        try:
-            if os.path.isdir(env.Dir(path).srcnode().abspath):
-                yield subdir
-        except:
-            pass
-
-# List subdirectories, but only those which specified in build-deps.json
-def filter_subdirs(basedir, section):
-    subdirs = list(list_subdirs(basedir))
-
-    for name in subdirs:
-        if not name in BUILD_DEPS[section]:
-            env.Die("can't find '%s' in '%s' section of build-deps.json" % (
-                name, basedir))
-
-    for name in BUILD_DEPS[section]:
-        if name in subdirs:
-            yield str(name)
-
-# Configure CPPPATH
-#
 env.Append(CPPPATH=['#src/modules'])
 
-for root, dirs, files in os.walk(env.Dir('modules').srcnode().abspath):
-    if os.path.basename(root) in env['ROC_TARGETS']:
-        env.Append(CPPPATH=['#%s' % env.Dir(root).path])
+for targetdir in env.RecursiveGlob('modules', 'target_*'):
+    if targetdir.name in env['ROC_TARGETS']:
+        env.Append(CPPPATH=['#src/%s' % targetdir])
 
-# Build modules
-#
-LIBS = set()
+for moduledir in env.GlobDirs('modules/*'):
+    defines = env['CPPDEFINES'] + [('ROC_MODULE', moduledir.name)]
 
-for name in filter_subdirs(basedir='modules', section='modules'):
-    sources = env.Glob('modules/%s/*.cpp' % name)
-
-    for subdir in list_subdirs('modules/%s' % name):
-        if subdir in env['ROC_TARGETS']:
-            sources += env.RecursiveGlob(
-                'modules/%s/%s/%s' % (name, subdir, name), '*.cpp')
+    sources = env.Glob('%s/*.cpp' % moduledir)
+    for targetdir in env.RecursiveGlob(moduledir, 'target_*'):
+        if targetdir.name in env['ROC_TARGETS']:
+            sources += env.RecursiveGlob(targetdir, '*.cpp')
 
     if not sources:
         continue
 
-    LIBS.add(name)
+    module = env.StaticLibrary(moduledir.name, sources, CPPDEFINES=defines)
+    env.Alias(moduledir.name, [module], env.Action(''))
+    env.AlwaysBuild(moduledir.name)
 
-    defines = env['CPPDEFINES'] + [('ROC_MODULE', name)]
+    env.Append(LIBS=moduledir.name)
+    env.Prepend(LIBS=moduledir.name)
 
-    target = env.StaticLibrary(name, sources, CPPDEFINES=defines)
+if not GetOption('disable_lib'):
+    defines = env['CPPDEFINES'] + [('ROC_MODULE', 'roc_lib')]
+    cpppath = env['CPPPATH'] + ['lib']
+    sources = env.Glob('lib/roc/*.cpp')
 
-    check_dependencies('module', name, target[0], BUILD_DEPS['modules'][name])
+    lib = env.Install(env['ROC_BINDIR'],
+            env.SharedLibrary('roc', sources,
+                CPPDEFINES=defines, CPPPATH=cpppath))
 
-    env.Alias(name, [target], env.Action(''))
-    env.AlwaysBuild(name)
+    env.Alias('libroc', [lib], env.Action(''))
+    env.AlwaysBuild('libroc')
 
-# Build tests
-#
 if not GetOption('disable_tests'):
+    test_defines = env['TEST_CPPDEFINES'] + env['CPPDEFINES']
+    test_cxxflags = env['TEST_CXXFLAGS'] + env['CXXFLAGS']
+    test_cpppath = env['TEST_CPPPATH'] + env['CPPPATH']
+    test_libpath = env['TEST_LIBPATH'] + env['LIBPATH']
+    test_libs = env['TEST_LIBS'] + env['LIBS']
+
     test_main = env.Object('tests/test_main.cpp',
-                           CXXFLAGS=(env['TEST_CXXFLAGS'] + env['CXXFLAGS']),
-                           CPPPATH=(env['TEST_CPPPATH'] + env['CPPPATH']))
+                CXXFLAGS=test_cxxflags, CPPPATH=test_cpppath)
 
-    for name in filter_subdirs(basedir='tests', section='modules'):
-        sources = env.Glob('tests/%s/*.cpp' % name)
+    for testdir in env.GlobDirs('tests/*'):
+        cpppath = test_cpppath + ['#src/%s' % testdir]
+        defines = test_defines + [('ROC_MODULE', '%s_test' % testdir.name)]
 
-        cpppath = env['TEST_CPPPATH'] + env['CPPPATH'] + ['#src/tests/%s' % name]
-        libpath = env['TEST_LIBPATH'] + env['LIBPATH']
+        libs = test_libs[:]
+        if testdir.name == 'roc_lib':
+            libs += ['roc']
 
-        for subdir in list_subdirs('tests/%s' % name):
-            if subdir in env['ROC_TARGETS']:
-                sources += env.RecursiveGlob('tests/%s/%s' % (name, subdir), '*.cpp')
-                cpppath += ['#src/tests/%s/%s' % (name, subdir)]
+        sources = env.Glob('%s/*.cpp' % testdir)
+        for targetdir in env.RecursiveGlob(testdir, 'target_*'):
+            if targetdir.name in env['ROC_TARGETS']:
+                sources += env.RecursiveGlob(targetdir, '*.cpp')
+                cpppath += ['#src/%s' % targetdir]
 
-        if not sources:
-            continue
+        exename = 'roc-test-' + re.sub('roc_', '', testdir.name)
+        env.Install(env['ROC_BINDIR'],
+            env.Program(exename, sources + test_main,
+                CXXFLAGS=test_cxxflags,
+                CPPPATH=cpppath,
+                CPPDEFINES=defines,
+                LIBPATH=test_libpath,
+                LIBS=libs,
+                RPATH=env.Literal('\\$$ORIGIN')))
 
-        cxxflags = env['TEST_CXXFLAGS'] + env['CXXFLAGS']
-        defines = env['TEST_CPPDEFINES'] + env['CPPDEFINES'] + [('ROC_MODULE', 'roc_test')]
+        env.AddTest(testdir.name, '%s/%s' % (env['ROC_BINDIR'], exename))
 
-        exe = '-'.join(['roc', 'test', re.sub('roc_', '', name)])
-
-        depends = BUILD_DEPS['modules'][name]
-        if name in BUILD_DEPS['tests']:
-            depends += BUILD_DEPS['tests'][name]
-
-        libs = []
-        for lib in [name] + list(reversed(map(str, depends))) + [name]:
-            if lib in LIBS:
-                libs.append(lib)
-        libs += env['TEST_LIBS'] + env['LIBS']
-
-        target = env.Install(env['ROC_BINDIR'],
-            env.Program(exe, sources + test_main,
-                        CXXFLAGS=cxxflags,
-                        CPPDEFINES=defines,
-                        CPPPATH=cpppath,
-                        LIBPATH=libpath,
-                        LIBS=libs))
-
-        check_dependencies('test', name, target[0], depends)
-
-        env.AddTest(name, '%s/%s' % (env['ROC_BINDIR'], exe))
-
-# Build API
-#
-if not GetOption('disable_api'):
-    for name in filter_subdirs(basedir='api', section='api'):
-        sources = env.Glob('api/%s/*.cpp' % name)
-
-        cpppath = env['CPPPATH'] + ['api']
-
-        if not sources:
-            continue
-
-        defines = env['CPPDEFINES'] + [('ROC_MODULE', name)]
-
-        shlib = re.sub('roc_', 'roc-', name)
-
-        depends = BUILD_DEPS['api'][name]
-
-        libs = []
-        for lib in reversed(map(str, depends)):
-            if lib in LIBS:
-                libs.append(lib)
-        libs += env['LIBS']
-
-        target = env.Install(env['ROC_BINDIR'],
-            env.SharedLibrary(shlib, sources,
-                        CPPDEFINES=defines,
-                        CPPPATH=cpppath,
-                        LIBS=libs))
-
-        check_dependencies('api', name, target[0], depends)
-
-        env.Alias(name, [target], env.Action(''))
-        env.AlwaysBuild(name)
-
-# Build tools
-#
 if not GetOption('disable_tools'):
-    for name in filter_subdirs(basedir='tools', section='tools'):
-        sources = env.Glob('tools/%s/*.cpp' % name)
+    for tooldir in env.GlobDirs('tools/*'):
+        defines = env['CPPDEFINES'] + [('ROC_MODULE', tooldir.name)]
+        cpppath = env['CPPPATH'] + ['tools', '#src/tools/%s' % tooldir.name]
 
-        for ggo in env.Glob('tools/%s/*.ggo' % name):
+        sources = env.Glob('%s/*.cpp' % tooldir)
+        for ggo in env.Glob('%s/*.ggo' % tooldir):
             sources += env.GenGetOpt(ggo, env['ROC_VERSION'])
 
-        for subdir in list_subdirs('tools/%s' % name):
-            if subdir in env['ROC_TARGETS']:
-                sources += env.RecursiveGlob('tools/%s/%s' % (name, subdir), '*.cpp')
-                cpppath += ['#src/tools/%s/%s' % (name, subdir)]
+        exename = re.sub('roc_', 'roc-', tooldir.name)
+        exe = env.Install(env['ROC_BINDIR'],
+                    env.Program(exename, sources,
+                        CPPDEFINES=defines, CPPPATH=cpppath))
 
-        cpppath = env['CPPPATH'] + ['tools'] + ['#src/tools/%s' % name]
-
-        if not sources:
-            continue
-
-        defines = env['CPPDEFINES'] + [('ROC_MODULE', name)]
-
-        exe = re.sub('roc_', 'roc-', name)
-
-        depends = BUILD_DEPS['tools'][name]
-
-        libs = []
-        for lib in reversed(map(str, depends)):
-            if lib in LIBS:
-                libs.append(lib)
-        libs += env['LIBS']
-
-        target = env.Install(env['ROC_BINDIR'],
-            env.Program(exe, sources,
-                        CPPDEFINES=defines,
-                        CPPPATH=cpppath,
-                        LIBS=libs))
-
-        check_dependencies('tool', name, target[0], depends)
-
-        env.Alias(name, [target], env.Action(''))
-        env.AlwaysBuild(name)
+        env.Alias(exename, [exe], env.Action(''))
+        env.AlwaysBuild(exename)
