@@ -22,35 +22,31 @@ const size_t SYMB_SZ = ROC_CONFIG_DEFAULT_PACKET_SIZE;
 
 } // namespace
 
-OFBlockDecoder::OFBlockDecoder(const FECConfig &fec_config,
+OFBlockDecoder::OFBlockDecoder(const Config &config,
                                 core::IByteBufferComposer& composer)
-    : fec_config_(fec_config)
-    , n_data_packets_(fec_config.n_source_packets)
-    , n_fec_packets_(fec_config.n_repair_packets)
+    : n_data_packets_(config.n_source_packets)
+    , n_fec_packets_(config.n_repair_packets)
     , of_inst_(NULL)
     , of_inst_inited_(false)
     , composer_(composer)
-    , buffers_(fec_config.n_source_packets + fec_config.n_repair_packets)
-    , sym_tab_(fec_config.n_source_packets + fec_config.n_repair_packets)
-    , received_(fec_config.n_source_packets + fec_config.n_repair_packets) {
-    roc_log(LogDebug, "initializing ldpc decoder");
-
-    // Use Reed-Solomon Codec.
-    if (fec_config_.type == ReedSolomon2m) {
+    , buffers_(config.n_source_packets + config.n_repair_packets)
+    , sym_tab_(config.n_source_packets + config.n_repair_packets)
+    , received_(config.n_source_packets + config.n_repair_packets) {
+    if (config.codec == ReedSolomon2m) {
+        // Use Reed-Solomon Codec.
         codec_id_ = OF_CODEC_REED_SOLOMON_GF_2_M_STABLE;
         roc_log(LogDebug, "initializing Reed-Solomon decoder");
 
-        fec_codec_params_.rs_params_.m = fec_config_.rs_m;
+        fec_codec_params_.rs_params_.m = config.rs_m;
 
         of_inst_params_ = (of_parameters_t*)&fec_codec_params_.rs_params_;
-
+    } else if (config.codec == LDPCStaircase) {
         // Use LDPC-Staircase.
-    } else if (fec_config_.type == LDPCStaircase) {
         codec_id_ = OF_CODEC_LDPC_STAIRCASE_STABLE;
         roc_log(LogDebug, "initializing LDPC decoder");
 
-        fec_codec_params_.ldpc_params_.prng_seed = fec_config_.ldpc_prng_seed;
-        fec_codec_params_.ldpc_params_.N1 = fec_config_.ldpc_N1;
+        fec_codec_params_.ldpc_params_.prng_seed = config.ldpc_prng_seed;
+        fec_codec_params_.ldpc_params_.N1 = config.ldpc_N1;
 
         of_inst_params_ = (of_parameters_t*)&fec_codec_params_.ldpc_params_;
     } else {

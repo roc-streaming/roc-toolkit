@@ -24,16 +24,16 @@ using namespace roc;
 namespace {
 
 bool make_server_config(pipeline::ServerConfig& sc, const roc_config* rc) {
+    sc = pipeline::ServerConfig(pipeline::EnableResampling);
 
-    sc = pipeline::ServerConfig(pipeline::EnableResampling | pipeline::EnableFEC);
-
-    if ((rc->options & ROC_API_CONF_DISABLE_FEC) == 0) {
-        sc.options &= (-1) ^ pipeline::EnableFEC;
-    }
-    if (rc->options & ROC_API_CONF_LDPC_CODE) {
-        sc.fec.type = fec::LDPCStaircase;
+    if (rc->options & ROC_API_CONF_DISABLE_FEC) {
+        sc.fec.codec = fec::NoCodec;
+    } else if (rc->options & ROC_API_CONF_RS_CODE) {
+        sc.fec.codec = fec::ReedSolomon2m;
+    } else if (rc->options & ROC_API_CONF_LDPC_CODE) {
+        sc.fec.codec = fec::LDPCStaircase;
     } else {
-        sc.fec.type = fec::ReedSolomon2m;
+        // TODO: error
     }
     sc.fec.n_source_packets = rc->n_source_packets;
     sc.fec.n_repair_packets = rc->n_repair_packets;

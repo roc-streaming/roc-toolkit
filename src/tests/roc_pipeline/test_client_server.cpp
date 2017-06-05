@@ -23,6 +23,12 @@
 namespace roc {
 namespace test {
 
+namespace {
+
+const fec::CodecType Fec = fec::ReedSolomon2m;
+
+} // namespace
+
 using namespace pipeline;
 
 TEST_GROUP(client_server) {
@@ -70,14 +76,15 @@ TEST_GROUP(client_server) {
         LONGS_EQUAL(0, network.size());
     }
 
-    void init_client(int options, size_t random_loss = 0) {
+    void init_client(int options, fec::CodecType codec = fec::NoCodec,
+                                size_t random_loss = 0) {
         ClientConfig config;
 
         config.options = options;
         config.channels = ChannelMask;
         config.samples_per_packet = PktSamples;
         config.random_loss_rate = random_loss;
-        config.fec.type = fec::ReedSolomon2m;
+        config.fec.codec = codec;
         config.fec.n_source_packets = 20;
         config.fec.n_repair_packets = 10;
 
@@ -88,7 +95,7 @@ TEST_GROUP(client_server) {
         client->set_receiver(new_address(ServerPort));
     }
 
-    void init_server(int options) {
+    void init_server(int options, fec::CodecType codec = fec::NoCodec) {
         ServerConfig config;
 
         config.options = options;
@@ -97,7 +104,7 @@ TEST_GROUP(client_server) {
         config.session_latency = BufSamples;
         config.output_latency = 0;
         config.samples_per_tick = BufSamples;
-        config.fec.type = fec::ReedSolomon2m;
+        config.fec.codec = codec;
         config.fec.n_source_packets = 20;
         config.fec.n_repair_packets = 10;
 
@@ -152,39 +159,39 @@ TEST(client_server, interleaving) {
 }
 
 #ifdef ROC_TARGET_OPENFEC
-TEST(client_server, ldpc_only_client) {
-    init_client(EnableFEC);
+TEST(client_server, fec_only_client) {
+    init_client(0, Fec);
     init_server(0);
     flow_client_server();
 }
 
-TEST(client_server, ldpc_only_server) {
+TEST(client_server, fec_only_server) {
     init_client(0);
-    init_server(EnableFEC);
+    init_server(0, Fec);
     flow_client_server();
 }
 
-TEST(client_server, ldpc) {
-    init_client(EnableFEC);
-    init_server(EnableFEC);
+TEST(client_server, fec_both) {
+    init_client(0, Fec);
+    init_server(0, Fec);
     flow_client_server();
 }
 
-TEST(client_server, ldpc_interleaving) {
-    init_client(EnableFEC | EnableInterleaving);
-    init_server(EnableFEC);
+TEST(client_server, fec_interleaving) {
+    init_client(EnableInterleaving, Fec);
+    init_server(0, Fec);
     flow_client_server();
 }
 
-IGNORE_TEST(client_server, ldpc_random_loss) {
-    init_client(EnableFEC, RandomLoss);
-    init_server(EnableFEC);
+TEST(client_server, fec_random_loss) {
+    init_client(0, Fec, RandomLoss);
+    init_server(0, Fec);
     flow_client_server();
 }
 
-IGNORE_TEST(client_server, ldpc_interleaving_random_loss) {
-    init_client(EnableFEC | EnableInterleaving, RandomLoss);
-    init_server(EnableFEC);
+TEST(client_server, fec_interleaving_random_loss) {
+    init_client(EnableInterleaving, Fec, RandomLoss);
+    init_server(0, Fec);
     flow_client_server();
 }
 #endif // ROC_TARGET_OPENFEC

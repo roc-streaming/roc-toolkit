@@ -37,9 +37,9 @@ const size_t SYMB_SZ = ROC_CONFIG_DEFAULT_PACKET_SIZE;
 
 class Codec {
 public:
-    Codec(const FECConfig &fec_conf)
-        : encoder_(fec_conf, datagram::default_buffer_composer())
-        , decoder_(fec_conf, datagram::default_buffer_composer()) {
+    Codec(const Config &conf)
+        : encoder_(conf, datagram::default_buffer_composer())
+        , decoder_(conf, datagram::default_buffer_composer()) {
         buffers_.resize(N_DATA_PACKETS + N_FEC_PACKETS);
     }
 
@@ -107,17 +107,17 @@ private:
 };
 
 TEST_GROUP(block_codecs){
-    FECConfig fec_conf;
+    Config config;
     void setup(){
-        fec_conf.n_source_packets = N_DATA_PACKETS;
-        fec_conf.n_repair_packets = N_FEC_PACKETS;
+        config.n_source_packets = N_DATA_PACKETS;
+        config.n_repair_packets = N_FEC_PACKETS;
     }
 };
 
 TEST(block_codecs, without_loss) {
-    for (int type = ReedSolomon2m; type != FECTypeUndefined; ++type) {
-        fec_conf.type = (fec_codec_type_t)type;
-        Codec code(fec_conf);
+    for (int type = ReedSolomon2m; type != CodecTypeMax; ++type) {
+        config.codec = (CodecType)type;
+        Codec code(config);
         code.encode();
         // Sending all packets in block without loss.
         for (size_t i = 0; i < N_DATA_PACKETS + N_FEC_PACKETS; ++i) {
@@ -128,9 +128,9 @@ TEST(block_codecs, without_loss) {
 }
 
 TEST(block_codecs, loss_1) {
-    for (int type = ReedSolomon2m; type != FECTypeUndefined; ++type) {
-        fec_conf.type = (fec_codec_type_t)type;
-        Codec code(fec_conf);
+    for (int type = ReedSolomon2m; type != CodecTypeMax; ++type) {
+        config.codec = (CodecType)type;
+        Codec code(config);
         code.encode();
         // Sending all packets in block with one loss.
         for (size_t i = 0; i < N_DATA_PACKETS + N_FEC_PACKETS; ++i) {
@@ -145,9 +145,9 @@ TEST(block_codecs, loss_1) {
 
 TEST(block_codecs, load_test) {
     enum { NumIterations = 20, LossPercent = 10, MaxLoss = 3 };
-    for (int type = ReedSolomon2m; type != FECTypeUndefined; ++type) {
-        fec_conf.type = (fec_codec_type_t)type;
-        Codec code(fec_conf);
+    for (int type = ReedSolomon2m; type != CodecTypeMax; ++type) {
+        config.codec = (CodecType)type;
+        Codec code(config);
 
         size_t total_loss = 0;
         size_t max_loss = 0;

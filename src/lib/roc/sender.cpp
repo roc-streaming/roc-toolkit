@@ -25,16 +25,16 @@ using namespace roc;
 namespace {
 
 bool make_client_config(pipeline::ClientConfig& cc, const roc_config* sc) {
+    cc = pipeline::ClientConfig(pipeline::EnableInterleaving);
 
-    cc = pipeline::ClientConfig(pipeline::EnableInterleaving | pipeline::EnableFEC);
-
-    if ((sc->options & ROC_API_CONF_DISABLE_FEC) == 0) {
-        cc.options &= (-1) ^ pipeline::EnableFEC;
-    }
-    if (sc->options & ROC_API_CONF_LDPC_CODE) {
-        cc.fec.type = fec::LDPCStaircase;
+    if (sc->options & ROC_API_CONF_DISABLE_FEC) {
+        cc.fec.codec = fec::NoCodec;
+    } else if (sc->options & ROC_API_CONF_RS_CODE) {
+        cc.fec.codec = fec::ReedSolomon2m;
+    } else if (sc->options & ROC_API_CONF_LDPC_CODE) {
+        cc.fec.codec = fec::LDPCStaircase;
     } else {
-        cc.fec.type = fec::ReedSolomon2m;
+        // TODO: error
     }
     cc.samples_per_packet = sc->samples_per_packet;
     cc.fec.n_source_packets = sc->n_source_packets;
