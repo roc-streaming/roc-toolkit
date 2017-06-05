@@ -28,8 +28,8 @@ using namespace fec;
 
 namespace {
 
-const size_t N_DATA_PACKETS = ROC_CONFIG_DEFAULT_FEC_BLOCK_DATA_PACKETS;
-const size_t N_FEC_PACKETS = ROC_CONFIG_DEFAULT_FEC_BLOCK_REDUNDANT_PACKETS;
+const size_t N_DATA_PACKETS = 20;
+const size_t N_FEC_PACKETS = 10;
 
 const size_t SYMB_SZ = ROC_CONFIG_DEFAULT_PACKET_SIZE;
 
@@ -37,9 +37,9 @@ const size_t SYMB_SZ = ROC_CONFIG_DEFAULT_PACKET_SIZE;
 
 class Codec {
 public:
-    Codec(fec_codec_type_t fec_type)
-        : encoder_(datagram::default_buffer_composer(), fec_type)
-        , decoder_(datagram::default_buffer_composer(), fec_type) {
+    Codec(const FECConfig &fec_conf)
+        : encoder_(fec_conf, datagram::default_buffer_composer())
+        , decoder_(fec_conf, datagram::default_buffer_composer()) {
         buffers_.resize(N_DATA_PACKETS + N_FEC_PACKETS);
     }
 
@@ -107,13 +107,17 @@ private:
 };
 
 TEST_GROUP(block_codecs){
-
-    void setup(){}
+    FECConfig fec_conf;
+    void setup(){
+        fec_conf.n_source_packets = N_DATA_PACKETS;
+        fec_conf.n_repair_packets = N_FEC_PACKETS;
+    }
 };
 
 TEST(block_codecs, without_loss) {
-    for (int fec = (int)ReedSolomon2m; fec != (int)FECTypeUndefined; ++fec) {
-        Codec code((fec::fec_codec_type_t)fec);
+    for (int type = ReedSolomon2m; type != FECTypeUndefined; ++type) {
+        fec_conf.type = (fec_codec_type_t)type;
+        Codec code(fec_conf);
         code.encode();
         // Sending all packets in block without loss.
         for (size_t i = 0; i < N_DATA_PACKETS + N_FEC_PACKETS; ++i) {
@@ -124,8 +128,9 @@ TEST(block_codecs, without_loss) {
 }
 
 TEST(block_codecs, loss_1) {
-    for (int fec = 0; fec < (int)FECTypeUndefined; ++fec) {
-        Codec code((fec::fec_codec_type_t)fec);
+    for (int type = ReedSolomon2m; type != FECTypeUndefined; ++type) {
+        fec_conf.type = (fec_codec_type_t)type;
+        Codec code(fec_conf);
         code.encode();
         // Sending all packets in block with one loss.
         for (size_t i = 0; i < N_DATA_PACKETS + N_FEC_PACKETS; ++i) {
@@ -140,8 +145,9 @@ TEST(block_codecs, loss_1) {
 
 TEST(block_codecs, load_test) {
     enum { NumIterations = 20, LossPercent = 10, MaxLoss = 3 };
-    for (int fec = 0; fec < (int)FECTypeUndefined; ++fec) {
-        Codec code((fec::fec_codec_type_t)fec);
+    for (int type = ReedSolomon2m; type != FECTypeUndefined; ++type) {
+        fec_conf.type = (fec_codec_type_t)type;
+        Codec code(fec_conf);
 
         size_t total_loss = 0;
         size_t max_loss = 0;

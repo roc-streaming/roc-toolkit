@@ -48,12 +48,12 @@ void Encoder::write(const packet::IPacketPtr& p) {
 
     block_encoder_.write(cur_data_pack_i_, p->raw_data());
 
-    if (++cur_data_pack_i_ >= N_DATA_PACKETS) {
+    if (++cur_data_pack_i_ >= block_encoder_.n_data_packets()) {
         // Calculate redundant packet of this block.
         block_encoder_.commit();
 
         // Send redundant packets.
-        for (packet::seqnum_t i = 0; i < N_FEC_PACKETS; ++i) {
+        for (packet::seqnum_t i = 0; i < block_encoder_.n_fec_packets(); ++i) {
             packet::IFECPacketPtr fec_p = make_fec_packet_(
                 block_encoder_.read(i), cur_block_seqnum_, cur_session_fec_seqnum_,
                 cur_session_fec_seqnum_ + i, i == 0);
@@ -64,7 +64,7 @@ void Encoder::write(const packet::IPacketPtr& p) {
                 roc_log(LogDebug, "fec encoder: can't create fec packet");
             }
         }
-        cur_session_fec_seqnum_ += N_FEC_PACKETS;
+        cur_session_fec_seqnum_ += block_encoder_.n_fec_packets();
         cur_data_pack_i_ = 0;
 
         block_encoder_.reset();

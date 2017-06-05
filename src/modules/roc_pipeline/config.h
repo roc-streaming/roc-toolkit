@@ -102,6 +102,10 @@ struct ServerConfig {
 
     //! Session pool.
     core::IPool<Session>* session_pool;
+
+    //! Forward Error Correction code scheme configuration. FEC should
+    //! be enabled by adding flag EnableFEC in the field \ref ClientConfig.options.
+    fec::FECConfig fec;
 };
 
 //! Client config.
@@ -138,6 +142,10 @@ struct ClientConfig {
 
     //! Delay time in milliseconds.
     size_t random_delay_time;
+
+    //! Forward Error Correction code scheme configuration. FEC should
+    //! be enabled by adding flag EnableFEC in the field \ref ClientConfig.options.
+    fec::FECConfig fec;
 
     //! Composer for byte buffers.
     core::IByteBufferComposer* byte_buffer_composer;

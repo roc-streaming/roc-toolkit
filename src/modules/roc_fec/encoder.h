@@ -52,9 +52,6 @@ public:
     virtual void write(const packet::IPacketPtr&);
 
 private:
-    static const size_t N_DATA_PACKETS = ROC_CONFIG_DEFAULT_FEC_BLOCK_DATA_PACKETS;
-    static const size_t N_FEC_PACKETS = ROC_CONFIG_DEFAULT_FEC_BLOCK_REDUNDANT_PACKETS;
-
     //! Create FEC-packet.
     packet::IFECPacketPtr make_fec_packet_(const core::IByteBufferConstSlice& buff,
                                            const packet::seqnum_t block_data_seqnum,

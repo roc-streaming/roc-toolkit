@@ -41,9 +41,8 @@ namespace fec {
 class OFBlockDecoder : public IBlockDecoder, public core::NonCopyable<> {
 public:
     //! Construct.
-    explicit OFBlockDecoder(
-        core::IByteBufferComposer& composer = datagram::default_buffer_composer(),
-        fec_codec_type_t fec_type = ReedSolomon2m);
+    explicit OFBlockDecoder(const FECConfig &fec_config,
+        core::IByteBufferComposer& composer = datagram::default_buffer_composer());
 
     virtual ~OFBlockDecoder();
 
@@ -56,12 +55,20 @@ public:
     //! Reset state and start next block.
     virtual void reset();
 
+    //! Returns the number of data packets.
+    virtual size_t n_data_packets() const;
+
+    //! Returns the number of FEC packets.
+    virtual size_t n_fec_packets() const;
+
 private:
-    fec_codec_type_t fec_type_;
+    const FECConfig &fec_config_;
     of_codec_id_t codec_id_;
 
-    static const size_t N_DATA_PACKETS = ROC_CONFIG_DEFAULT_FEC_BLOCK_DATA_PACKETS;
-    static const size_t N_FEC_PACKETS = ROC_CONFIG_DEFAULT_FEC_BLOCK_REDUNDANT_PACKETS;
+    //! Shortcut for fec_config_.n_source_packets.
+    const size_t n_data_packets_;
+    //! Shortcut for fec_config_.n_repair_packets.
+    const size_t n_fec_packets_;
 
     static void* source_cb_(void* context, uint32_t size, uint32_t index);
     static void* repair_cb_(void* context, uint32_t size, uint32_t index);
@@ -81,11 +88,13 @@ private:
 
     core::IByteBufferComposer& composer_;
 
-    core::Array<core::IByteBufferConstSlice, N_DATA_PACKETS + N_FEC_PACKETS> buffers_;
-    core::Array<void*, N_DATA_PACKETS + N_FEC_PACKETS> sym_tab_;
-    core::Array<bool, N_DATA_PACKETS + N_FEC_PACKETS> received_;
+    //! Shortcut for maximal number of packets we should store.
+    static const size_t max_n_packets_ = ROC_CONFIG_MAX_FEC_BLOCK_DATA_PACKETS + ROC_CONFIG_MAX_FEC_BLOCK_REDUNDANT_PACKETS;
+    core::Array<core::IByteBufferConstSlice, max_n_packets_> buffers_;
+    core::Array<void*, max_n_packets_> sym_tab_;
+    core::Array<bool, max_n_packets_> received_;
 
-    bool defecation_attempted_;
+    bool repair_attempted_;
 
     size_t packets_rcvd_;
 };

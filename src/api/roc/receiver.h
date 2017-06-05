@@ -13,16 +13,15 @@
 #define ROC_RECEIVER_H_
 
 #include "roc/types.h"
+#include "roc/config.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef struct roc_receiver_config { int TODO; } roc_receiver_config;
-
 typedef struct roc_receiver roc_receiver;
 
-roc_receiver* roc_receiver_new(const roc_receiver_config* config);
+roc_receiver* roc_receiver_new(const roc_config* config);
 
 void roc_receiver_delete(roc_receiver* receiver);
 

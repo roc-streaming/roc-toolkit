@@ -32,6 +32,12 @@ public:
 
     //! Reset state and start next block.
     virtual void reset() = 0;
+
+    //! Returns the number of data packets.
+    virtual size_t n_data_packets() const = 0;
+
+    //! Returns the number of FEC packets.
+    virtual size_t n_fec_packets() const = 0;
 };
 
 } // namespace fec

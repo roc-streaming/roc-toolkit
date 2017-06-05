@@ -61,9 +61,6 @@ public:
     bool is_alive() const;
 
 private:
-    static const size_t N_DATA_PACKETS = ROC_CONFIG_DEFAULT_FEC_BLOCK_DATA_PACKETS;
-    static const size_t N_FEC_PACKETS = ROC_CONFIG_DEFAULT_FEC_BLOCK_REDUNDANT_PACKETS;
-
     packet::IPacketConstPtr read_();
     packet::IPacketConstPtr get_next_packet_();
 
@@ -90,8 +87,8 @@ private:
     packet::PacketQueue data_queue_;
     packet::PacketQueue fec_queue_;
 
-    core::Array<packet::IPacketConstPtr, N_DATA_PACKETS> data_block_;
-    core::Array<packet::IFECPacketConstPtr, N_FEC_PACKETS> fec_block_;
+    core::Array<packet::IPacketConstPtr, ROC_CONFIG_MAX_FEC_BLOCK_DATA_PACKETS> data_block_;
+    core::Array<packet::IFECPacketConstPtr, ROC_CONFIG_MAX_FEC_BLOCK_REDUNDANT_PACKETS> fec_block_;
 
     bool is_alive_;
     bool is_started_;
