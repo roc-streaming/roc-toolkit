@@ -14,16 +14,13 @@ section "Options"
     option "input" i "Input file or device" typestr="NAME" string optional
     option "type" t "Input codec or driver" typestr="TYPE" string optional
 
-    option "fec" - "Enable/disable FEC encoding"
-        values="yes","no" default="yes" enum optional
+    option "fec" - "FEC scheme"
+        values="rs","ldpc","none" default="rs" enum optional
 
-    option "fec-type" - "FEC scheme type"
-        values="ldpc","rs" default="rs" enum optional
-
-    option "nbsrc" - "Number of source packets in block"
+    option "nbsrc" - "Number of source packets in FEC block"
         int optional
 
-    option "nbrpr" - "Number of repair packets in block"
+    option "nbrpr" - "Number of repair packets in FEC block"
         int optional
 
     option "interleaving" - "Enable/disable packet interleaving"

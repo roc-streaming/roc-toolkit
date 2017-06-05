@@ -164,12 +164,12 @@ TEST_GROUP(fec_codec_integration) {
 
     IPacketPtr data_packets[N_DATA_PACKETS];
 
-    FECConfig fec_conf;
+    Config config;
 
     void setup() {
-        fec_conf.type = ReedSolomon2m;
-        fec_conf.n_source_packets = N_DATA_PACKETS;
-        fec_conf.n_repair_packets = N_FEC_PACKETS;
+        config.codec = ReedSolomon2m;
+        config.n_source_packets = N_DATA_PACKETS;
+        config.n_repair_packets = N_FEC_PACKETS;
 
         fill_all_packets(0, N_DATA_PACKETS);
     }
@@ -228,8 +228,8 @@ TEST_GROUP(fec_codec_integration) {
 };
 
 TEST(fec_codec_integration, encode) {
-    BlockEncoder block_encoder(fec_conf);
-    BlockDecoder block_decoder(fec_conf);
+    BlockEncoder block_encoder(config);
+    BlockDecoder block_decoder(config);
     rtp::Parser parser;
 
     Encoder encoder(block_encoder, pckt_disp, composer);
@@ -252,8 +252,8 @@ TEST(fec_codec_integration, encode) {
 }
 
 TEST(fec_codec_integration, 1_loss) {
-    BlockEncoder block_encoder(fec_conf);
-    BlockDecoder block_decoder(fec_conf);
+    BlockEncoder block_encoder(config);
+    BlockDecoder block_decoder(config);
 
     rtp::Parser parser;
 
@@ -281,8 +281,8 @@ TEST(fec_codec_integration, 1_loss) {
 TEST(fec_codec_integration, multiblocks_1_loss) {
     enum { N_BLKS = 40 };
 
-    BlockEncoder block_encoder(fec_conf);
-    BlockDecoder block_decoder(fec_conf);
+    BlockEncoder block_encoder(config);
+    BlockDecoder block_decoder(config);
 
     rtp::Parser parser;
 
@@ -329,8 +329,8 @@ TEST(fec_codec_integration, multiblocks_1_loss) {
 TEST(fec_codec_integration, interleaver) {
     enum { N_PACKETS = N_DATA_PACKETS * 30 };
 
-    BlockEncoder block_encoder(fec_conf);
-    BlockDecoder block_decoder(fec_conf);
+    BlockEncoder block_encoder(config);
+    BlockDecoder block_decoder(config);
 
     rtp::Parser parser;
 
@@ -360,8 +360,8 @@ TEST(fec_codec_integration, interleaver) {
 TEST(fec_codec_integration, decoding_when_multiple_blocks_in_queue) {
     enum { N_BLKS = 3 };
 
-    BlockEncoder block_encoder(fec_conf);
-    BlockDecoder block_decoder(fec_conf);
+    BlockEncoder block_encoder(config);
+    BlockDecoder block_decoder(config);
 
     rtp::Parser parser;
 
@@ -399,8 +399,8 @@ TEST(fec_codec_integration, decoding_late_packet) {
     // 3. Receive one missing packet.
     // 4. Read and check latter block part.
 
-    BlockEncoder block_encoder(fec_conf);
-    BlockDecoder block_decoder(fec_conf);
+    BlockEncoder block_encoder(config);
+    BlockDecoder block_decoder(config);
 
     rtp::Parser parser;
 
@@ -449,8 +449,8 @@ TEST(fec_codec_integration, get_packets_before_marker_bit) {
     //    is 10-19 and 20-39 seqnums in packet queue.
     // 2. Check that we've got every packet including lost one.
 
-    BlockEncoder block_encoder(fec_conf);
-    BlockDecoder block_decoder(fec_conf);
+    BlockEncoder block_encoder(config);
+    BlockDecoder block_decoder(config);
 
     rtp::Parser parser;
 
@@ -494,7 +494,7 @@ TEST(fec_codec_integration, encode_source_id_and_seqnum) {
     source_t data_source = 555;
 
     for (size_t n = 0; n < 5; n++) {
-        BlockEncoder block_encoder(fec_conf);
+        BlockEncoder block_encoder(config);
         Encoder encoder(block_encoder, pckt_disp, composer);
 
         source_t fec_source = 0;
@@ -541,8 +541,8 @@ TEST(fec_codec_integration, decode_bad_seqnum) {
     // Spoil seqnum in packet and lose it.
     // Check that decoder wouldn't restore it.
 
-    BlockEncoder block_encoder(fec_conf);
-    BlockDecoder block_decoder(fec_conf);
+    BlockEncoder block_encoder(config);
+    BlockDecoder block_decoder(config);
 
     rtp::Parser parser;
 
@@ -575,8 +575,8 @@ TEST(fec_codec_integration, decode_bad_source_id) {
     // Spoil source id in packet and lose it.
     // Check that decoder would shutdown.
 
-    BlockEncoder block_encoder(fec_conf);
-    BlockDecoder block_decoder(fec_conf);
+    BlockEncoder block_encoder(config);
+    BlockDecoder block_decoder(config);
 
     rtp::Parser parser;
 
@@ -615,8 +615,8 @@ TEST(fec_codec_integration, multitime_decode) {
     // 3. Transmit fec packets.
     // 4. Check remaining data packets including lost one.
 
-    BlockEncoder block_encoder(fec_conf);
-    BlockDecoder block_decoder(fec_conf);
+    BlockEncoder block_encoder(config);
+    BlockDecoder block_decoder(config);
 
     rtp::Parser parser;
 
@@ -663,8 +663,8 @@ TEST(fec_codec_integration, delayed_packets) {
     // 3. Send remaining packets.
     // 4. Receive and check it.
 
-    BlockEncoder block_encoder(fec_conf);
-    BlockDecoder block_decoder(fec_conf);
+    BlockEncoder block_encoder(config);
+    BlockDecoder block_decoder(config);
 
     rtp::Parser parser;
 

@@ -155,7 +155,7 @@ packet::IPacketReader* Session::make_packet_reader_() {
 
     monitors_.append(*watchdog_);
 
-    if (config_.options & EnableFEC) {
+    if (config_.fec.codec != fec::NoCodec) {
         packet_reader = make_fec_decoder_(packet_reader);
     }
 
