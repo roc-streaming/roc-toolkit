@@ -18,6 +18,7 @@
 #include "roc_core/heap_pool.h"
 #include "roc_datagram/default_buffer_composer.h"
 #include "roc_packet/units.h"
+#include "roc_fec/config.h"
 #include "roc_audio/sample_buffer.h"
 #include "roc_pipeline/session.h"
 
@@ -29,20 +30,17 @@ enum Options {
     //! Use scaler and resamplers (server).
     EnableResampling = (1 << 0),
 
-    //! Use LDPC FEC encoder/decoder (server, client).
-    EnableFEC = (1 << 1),
-
     //! Use interleaver (client).
-    EnableInterleaving = (1 << 2),
+    EnableInterleaving = (1 << 1),
 
     //! Constrain input/output speed (server, client).
-    EnableTiming = (1 << 3),
+    EnableTiming = (1 << 2),
 
     //! Insert beep instead of missing samples (server).
-    EnableBeep = (1 << 4),
+    EnableBeep = (1 << 3),
 
     //! Terminate server when first client disconects (server).
-    EnableOneshot = (1 << 5)
+    EnableOneshot = (1 << 4)
 };
 
 //! Server config.
@@ -94,6 +92,10 @@ struct ServerConfig {
     //! Maximum number of queued packets per session.
     size_t max_session_packets;
 
+    //! Forward Error Correction code scheme configuration. FEC should
+    //! be enabled by adding flag EnableFEC in the field \ref ClientConfig.options.
+    fec::Config fec;
+
     //! Composer for byte buffers.
     core::IByteBufferComposer* byte_buffer_composer;
 
@@ -102,10 +104,6 @@ struct ServerConfig {
 
     //! Session pool.
     core::IPool<Session>* session_pool;
-
-    //! Forward Error Correction code scheme configuration. FEC should
-    //! be enabled by adding flag EnableFEC in the field \ref ClientConfig.options.
-    fec::FECConfig fec;
 };
 
 //! Client config.
@@ -145,7 +143,7 @@ struct ClientConfig {
 
     //! Forward Error Correction code scheme configuration. FEC should
     //! be enabled by adding flag EnableFEC in the field \ref ClientConfig.options.
-    fec::FECConfig fec;
+    fec::Config fec;
 
     //! Composer for byte buffers.
     core::IByteBufferComposer* byte_buffer_composer;

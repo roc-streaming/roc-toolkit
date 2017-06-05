@@ -10,29 +10,30 @@
 //! @file roc_fec/fec_type_options.h
 //! @brief FEC code type options.
 
-#ifndef ROC_FEC_FEC_TYPE_OPTIONS_H_
-#define ROC_FEC_FEC_TYPE_OPTIONS_H_
+#ifndef ROC_FEC_CONFIG_H_
+#define ROC_FEC_CONFIG_H_
 
 #include "roc_core/stddefs.h"
 
 namespace roc {
 namespace fec {
 
-/** \brief Available options of FEC code type. */
-typedef enum {
+//! Available options of FEC code type.
+enum CodecType {
+    //! FEC codec is unset.
+    NoCodec,
     //! OpenFEC Reed-Solomon.
     ReedSolomon2m,
     //! OpenFEC LDPC Staircase.
     LDPCStaircase,
-    //! Maximum for iterating through the enums.
-    FECTypeUndefined
-} fec_codec_type_t;
+    //! Maximum for iterating through the enum.
+    CodecTypeMax
+};
 
-/** FEC configuration. */
-struct FECConfig {
-
-    FECConfig()
-        : type(FECTypeUndefined)
+//! FEC configuration.
+struct Config {
+    Config()
+        : codec(NoCodec)
         , n_source_packets(ROC_CONFIG_MAX_FEC_BLOCK_DATA_PACKETS)
         , n_repair_packets(ROC_CONFIG_MAX_FEC_BLOCK_REDUNDANT_PACKETS)
         , ldpc_prng_seed(1297501556)
@@ -40,10 +41,12 @@ struct FECConfig {
         , rs_m(8)
     {}
 
-    //! FEC scheme.
-    fec_codec_type_t type;    
+    //! FEC codec.
+    CodecType codec;
+
     //! Number of data packets in block.
     size_t n_source_packets;
+
     //! Number of FEC packets in block.
     size_t n_repair_packets;
 
@@ -51,13 +54,11 @@ struct FECConfig {
     int32_t ldpc_prng_seed;
     uint8_t ldpc_N1;
 
-
     //! Configuration for ReedSolomon scheme.
     uint16_t rs_m;
 };
 
-
 } // namespace fec
 } // namespace roc
 
-#endif // ROC_FEC_FEC_TYPE_OPTIONS_H_
+#endif // ROC_FEC_CONFIG_H_
