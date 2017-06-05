@@ -23,10 +23,20 @@ using namespace roc;
 
 namespace {
 
-bool make_server_config(pipeline::ServerConfig& sc, const roc_receiver_config* rc) {
-    (void)rc;
+bool make_server_config(pipeline::ServerConfig& sc, const roc_config* rc) {
 
     sc = pipeline::ServerConfig(pipeline::EnableResampling | pipeline::EnableFEC);
+
+    if ((rc->options & ROC_API_CONF_DISABLE_FEC) == 0) {
+        sc.options &= (-1) ^ pipeline::EnableFEC;
+    }
+    if (rc->options & ROC_API_CONF_LDPC_CODE) {
+        sc.fec.type = fec::LDPCStaircase;
+    } else {
+        sc.fec.type = fec::ReedSolomon2m;
+    }
+    sc.fec.n_source_packets = rc->n_source_packets;
+    sc.fec.n_repair_packets = rc->n_repair_packets;
 
     return true;
 }
@@ -112,7 +122,7 @@ private:
     size_t buffer_pos_;
 };
 
-roc_receiver* roc_receiver_new(const roc_receiver_config* rc) {
+roc_receiver* roc_receiver_new(const roc_config* rc) {
     pipeline::ServerConfig sc;
 
     if (!make_server_config(sc, rc)) {

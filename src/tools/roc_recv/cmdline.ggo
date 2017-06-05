@@ -14,6 +14,15 @@ section "Options"
     option "fec" - "Enable/disable FEC decoding"
         values="yes","no" default="yes" enum optional
 
+    option "fec-type" - "FEC scheme type"
+        values="ldpc","rs" default="rs" enum optional
+
+    option "nbsrc" - "Number of source packets in block"
+        int optional
+
+    option "nbrpr" - "Number of repair packets in block"
+        int optional
+
     option "resampling" - "Enabled/disable resampling"
         values="yes","no" default="yes" enum optional
 

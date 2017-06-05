@@ -13,6 +13,8 @@
 #ifndef ROC_FEC_FEC_TYPE_OPTIONS_H_
 #define ROC_FEC_FEC_TYPE_OPTIONS_H_
 
+#include "roc_core/stddefs.h"
+
 namespace roc {
 namespace fec {
 
@@ -25,6 +27,35 @@ typedef enum {
     //! Maximum for iterating through the enums.
     FECTypeUndefined
 } fec_codec_type_t;
+
+/** FEC configuration. */
+struct FECConfig {
+
+    FECConfig()
+        : type(FECTypeUndefined)
+        , n_source_packets(ROC_CONFIG_MAX_FEC_BLOCK_DATA_PACKETS)
+        , n_repair_packets(ROC_CONFIG_MAX_FEC_BLOCK_REDUNDANT_PACKETS)
+        , ldpc_prng_seed(1297501556)
+        , ldpc_N1(7)
+        , rs_m(8)
+    {}
+
+    //! FEC scheme.
+    fec_codec_type_t type;    
+    //! Number of data packets in block.
+    size_t n_source_packets;
+    //! Number of FEC packets in block.
+    size_t n_repair_packets;
+
+    //! Seed for LDPC scheme.
+    int32_t ldpc_prng_seed;
+    uint8_t ldpc_N1;
+
+
+    //! Configuration for ReedSolomon scheme.
+    uint16_t rs_m;
+};
+
 
 } // namespace fec
 } // namespace roc

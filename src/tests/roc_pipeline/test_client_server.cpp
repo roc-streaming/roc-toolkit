@@ -77,6 +77,9 @@ TEST_GROUP(client_server) {
         config.channels = ChannelMask;
         config.samples_per_packet = PktSamples;
         config.random_loss_rate = random_loss;
+        config.fec.type = fec::ReedSolomon2m;
+        config.fec.n_source_packets = 20;
+        config.fec.n_repair_packets = 10;
 
         client.reset(
             new Client(input, network, datagram_composer, packet_composer, config));
@@ -94,6 +97,9 @@ TEST_GROUP(client_server) {
         config.session_latency = BufSamples;
         config.output_latency = 0;
         config.samples_per_tick = BufSamples;
+        config.fec.type = fec::ReedSolomon2m;
+        config.fec.n_source_packets = 20;
+        config.fec.n_repair_packets = 10;
 
         server.reset(new Server(network, output, config));
 

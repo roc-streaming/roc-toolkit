@@ -9,6 +9,7 @@
 
 #include "roc_config/config.h"
 #include "roc_core/panic.h"
+#include "roc_core/stddefs.h"
 #include "roc_core/log.h"
 #include "roc_fec/of_block_decoder.h"
 
@@ -21,41 +22,43 @@ const size_t SYMB_SZ = ROC_CONFIG_DEFAULT_PACKET_SIZE;
 
 } // namespace
 
-OFBlockDecoder::OFBlockDecoder(core::IByteBufferComposer& composer,
-                               fec_codec_type_t fec_type)
-    : fec_type_(fec_type)
+OFBlockDecoder::OFBlockDecoder(const FECConfig &fec_config,
+                                core::IByteBufferComposer& composer)
+    : fec_config_(fec_config)
+    , n_data_packets_(fec_config.n_source_packets)
+    , n_fec_packets_(fec_config.n_repair_packets)
     , of_inst_(NULL)
     , of_inst_inited_(false)
     , composer_(composer)
-    , buffers_(N_DATA_PACKETS + N_FEC_PACKETS)
-    , sym_tab_(N_DATA_PACKETS + N_FEC_PACKETS)
-    , received_(N_DATA_PACKETS + N_FEC_PACKETS) {
+    , buffers_(fec_config.n_source_packets + fec_config.n_repair_packets)
+    , sym_tab_(fec_config.n_source_packets + fec_config.n_repair_packets)
+    , received_(fec_config.n_source_packets + fec_config.n_repair_packets) {
     roc_log(LogDebug, "initializing ldpc decoder");
 
     // Use Reed-Solomon Codec.
-    if (fec_type_ == ReedSolomon2m) {
+    if (fec_config_.type == ReedSolomon2m) {
         codec_id_ = OF_CODEC_REED_SOLOMON_GF_2_M_STABLE;
         roc_log(LogDebug, "initializing Reed-Solomon decoder");
 
-        fec_codec_params_.rs_params_.m = 8;
+        fec_codec_params_.rs_params_.m = fec_config_.rs_m;
 
         of_inst_params_ = (of_parameters_t*)&fec_codec_params_.rs_params_;
 
         // Use LDPC-Staircase.
-    } else if (fec_type_ == LDPCStaircase) {
+    } else if (fec_config_.type == LDPCStaircase) {
         codec_id_ = OF_CODEC_LDPC_STAIRCASE_STABLE;
         roc_log(LogDebug, "initializing LDPC decoder");
 
-        fec_codec_params_.ldpc_params_.prng_seed = 1297501556;
-        fec_codec_params_.ldpc_params_.N1 = 7;
+        fec_codec_params_.ldpc_params_.prng_seed = fec_config_.ldpc_prng_seed;
+        fec_codec_params_.ldpc_params_.N1 = fec_config_.ldpc_N1;
 
         of_inst_params_ = (of_parameters_t*)&fec_codec_params_.ldpc_params_;
     } else {
         roc_panic("OFBlockDecoder: wrong FEC type is chosen.");
     }
 
-    of_inst_params_->nb_source_symbols = N_DATA_PACKETS;
-    of_inst_params_->nb_repair_symbols = N_FEC_PACKETS;
+    of_inst_params_->nb_source_symbols = (uint32_t)n_data_packets_;
+    of_inst_params_->nb_repair_symbols = (uint32_t)n_fec_packets_;
     of_inst_params_->encoding_symbol_length = SYMB_SZ;
     of_verbosity = 0;
 
@@ -66,9 +69,9 @@ OFBlockDecoder::~OFBlockDecoder() {
 }
 
 void OFBlockDecoder::write(size_t index, const core::IByteBufferConstSlice& buffer) {
-    if (index >= N_DATA_PACKETS + N_FEC_PACKETS) {
+    if (index >= n_data_packets_ + n_fec_packets_) {
         roc_panic("OFBlockDecoder: index out of bounds: index=%lu, size=%lu",
-                  (unsigned long)index, (unsigned long)(N_DATA_PACKETS + N_FEC_PACKETS));
+                  (unsigned long)index, (unsigned long)(n_data_packets_ + n_fec_packets_));
     }
 
     if (!buffer) {
@@ -85,7 +88,7 @@ void OFBlockDecoder::write(size_t index, const core::IByteBufferConstSlice& buff
                   (unsigned long)index);
     }
 
-    defecation_attempted_ = false;
+    repair_attempted_ = false;
     ++packets_rcvd_;
 
     // const_cast<> is OK since OpenFEC will not modify this buffer.
@@ -95,10 +98,10 @@ void OFBlockDecoder::write(size_t index, const core::IByteBufferConstSlice& buff
 }
 
 core::IByteBufferConstSlice OFBlockDecoder::repair(size_t index) {
-    if (!buffers_[index] && !defecation_attempted_) {
-        defecation_attempted_ = true;
+    if (!buffers_[index] && !repair_attempted_) {
+        repair_attempted_ = true;
 
-        if ((packets_rcvd_ >= N_DATA_PACKETS)
+        if ((packets_rcvd_ >= n_data_packets_)
             && (of_set_available_symbols(of_inst_, &sym_tab_[0]) != OF_STATUS_OK)) {
             return core::IByteBufferConstSlice();
         }
@@ -117,7 +120,7 @@ void OFBlockDecoder::reset() {
     report_();
 
     packets_rcvd_ = 0;
-    defecation_attempted_ = false;
+    repair_attempted_ = false;
     if (of_inst_inited_ && of_inst_) {
         of_release_codec_instance(of_inst_);
     }
@@ -151,14 +154,26 @@ void OFBlockDecoder::reset() {
     }
 }
 
+size_t OFBlockDecoder::n_data_packets() const {
+    return n_data_packets_;
+}
+
+size_t OFBlockDecoder::n_fec_packets() const {
+    return n_fec_packets_;
+}
+
+
 void OFBlockDecoder::report_() {
     size_t n_lost = 0, n_repaired = 0;
 
-    char status1[N_DATA_PACKETS + 1] = {};
-    char status2[N_FEC_PACKETS + 1] = {};
+    char status1[ROC_CONFIG_MAX_FEC_BLOCK_DATA_PACKETS + 1] = {};
+    char status2[ROC_CONFIG_MAX_FEC_BLOCK_REDUNDANT_PACKETS + 1] = {};
+
+    roc_panic_if(buffers_.size() > 
+            (ROC_CONFIG_MAX_FEC_BLOCK_DATA_PACKETS + ROC_CONFIG_MAX_FEC_BLOCK_REDUNDANT_PACKETS));
 
     for (size_t i = 0; i < buffers_.size(); ++i) {
-        char* status = (i < N_DATA_PACKETS ? &status1[i] : &status2[i - N_DATA_PACKETS]);
+        char* status = (i < n_data_packets_ ? &status1[i] : &status2[i - n_data_packets_]);
 
         if (buffers_[i]) {
             if (received_[i]) {
@@ -169,7 +184,7 @@ void OFBlockDecoder::report_() {
                 n_lost++;
             }
         } else {
-            if (i < N_DATA_PACKETS) {
+            if (i < n_data_packets_) {
                 *status = 'X';
             } else {
                 *status = 'x';
@@ -191,7 +206,7 @@ void OFBlockDecoder::report_() {
 }
 
 void* OFBlockDecoder::make_buffer_(const size_t index) {
-    roc_panic_if_not(index < N_DATA_PACKETS + N_FEC_PACKETS);
+    roc_panic_if_not(index < n_data_packets_ + n_fec_packets_);
 
     if (core::IByteBufferPtr buffer = composer_.compose()) {
         buffer->set_size(SYMB_SZ);

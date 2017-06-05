@@ -10,6 +10,7 @@
 #include "roc_config/config.h"
 #include "roc_core/panic.h"
 #include "roc_core/log.h"
+#include "roc_core/stddefs.h"
 #include "roc_fec/of_block_encoder.h"
 
 namespace roc {
@@ -21,38 +22,40 @@ const size_t SYMB_SZ = ROC_CONFIG_DEFAULT_PACKET_SIZE;
 
 } // namespace
 
-OFBlockEncoder::OFBlockEncoder(core::IByteBufferComposer& composer,
-                               fec_codec_type_t fec_type)
-    : fec_type_(fec_type)
+OFBlockEncoder::OFBlockEncoder(const FECConfig &fec_config,
+                                core::IByteBufferComposer& composer)
+    : fec_config_(fec_config)
+    , n_data_packets_(fec_config.n_source_packets)
+    , n_fec_packets_(fec_config.n_repair_packets)
     , of_inst_(NULL)
     , composer_(composer)
-    , sym_tab_(N_DATA_PACKETS + N_FEC_PACKETS)
-    , buffers_(N_DATA_PACKETS + N_FEC_PACKETS) {
+    , sym_tab_(fec_config.n_source_packets + fec_config.n_repair_packets)
+    , buffers_(fec_config.n_source_packets + fec_config.n_repair_packets) {
     // Use Reed-Solomon Codec.
-    if (fec_type_ == ReedSolomon2m) {
+    if (fec_config_.type == ReedSolomon2m) {
         codec_id_ = OF_CODEC_REED_SOLOMON_GF_2_M_STABLE;
 
         roc_log(LogDebug, "initializing Reed-Solomon encoder");
 
-        fec_codec_params_.rs_params_.m = 8;
+        fec_codec_params_.rs_params_.m = fec_config_.rs_m;
 
         of_inst_params_ = (of_parameters_t*)&fec_codec_params_.rs_params_;
         // Use LDPC-Staircase.
-    } else if (fec_type_ == LDPCStaircase) {
+    } else if (fec_config_.type == LDPCStaircase) {
         codec_id_ = OF_CODEC_LDPC_STAIRCASE_STABLE;
 
         roc_log(LogDebug, "initializing LDPC encoder");
 
-        fec_codec_params_.ldpc_params_.prng_seed = 1297501556;
-        fec_codec_params_.ldpc_params_.N1 = 7;
+        fec_codec_params_.ldpc_params_.prng_seed = fec_config_.ldpc_prng_seed;
+        fec_codec_params_.ldpc_params_.N1 = fec_config_.ldpc_N1;
 
         of_inst_params_ = (of_parameters_t*)&fec_codec_params_.ldpc_params_;
     } else {
         roc_panic("OFBlockEncoder: wrong FEC type is chosen.");
     }
 
-    of_inst_params_->nb_source_symbols = N_DATA_PACKETS;
-    of_inst_params_->nb_repair_symbols = N_FEC_PACKETS;
+    of_inst_params_->nb_source_symbols = (uint32_t)n_data_packets_;
+    of_inst_params_->nb_repair_symbols = (uint32_t)n_fec_packets_;
     of_inst_params_->encoding_symbol_length = SYMB_SZ;
     of_verbosity = 0;
 
@@ -72,9 +75,9 @@ OFBlockEncoder::~OFBlockEncoder() {
 }
 
 void OFBlockEncoder::write(size_t index, const core::IByteBufferConstSlice& buffer) {
-    if (index >= N_DATA_PACKETS) {
+    if (index >= n_data_packets_) {
         roc_panic("OFBlockEncoder: can't write more than %lu data buffers",
-                  (unsigned long)N_DATA_PACKETS);
+                  (unsigned long)n_data_packets_);
     }
 
     if (!buffer) {
@@ -91,18 +94,18 @@ void OFBlockEncoder::write(size_t index, const core::IByteBufferConstSlice& buff
 }
 
 void OFBlockEncoder::commit() {
-    for (size_t i = 0; i < N_FEC_PACKETS; ++i) {
+    for (size_t i = 0; i < n_fec_packets_; ++i) {
         if (core::IByteBufferPtr buffer = composer_.compose()) {
             buffer->set_size(SYMB_SZ);
-            sym_tab_[N_DATA_PACKETS + i] = buffer->data();
-            buffers_[N_DATA_PACKETS + i] = *buffer;
+            sym_tab_[n_data_packets_ + i] = buffer->data();
+            buffers_[n_data_packets_ + i] = *buffer;
         } else {
             roc_log(LogDebug, "OFBlockEncoder can't allocate buffer");
-            sym_tab_[N_DATA_PACKETS + i] = NULL;
+            sym_tab_[n_data_packets_ + i] = NULL;
         }
     }
 
-    for (size_t i = N_DATA_PACKETS; i < N_DATA_PACKETS + N_FEC_PACKETS; ++i) {
+    for (size_t i = n_data_packets_; i < n_data_packets_ + n_fec_packets_; ++i) {
         if (OF_STATUS_OK != of_build_repair_symbol(of_inst_, &sym_tab_[0], (uint32_t)i)) {
             roc_panic("OFBlockEncoder: of_build_repair_symbol() failed");
         }
@@ -110,12 +113,12 @@ void OFBlockEncoder::commit() {
 }
 
 core::IByteBufferConstSlice OFBlockEncoder::read(size_t index) {
-    if (index >= N_FEC_PACKETS) {
+    if (index >= n_fec_packets_) {
         roc_panic("OFBlockEncoder: can't read more than %lu fec buffers",
-                  (unsigned long)N_FEC_PACKETS);
+                  (unsigned long)n_fec_packets_);
     }
 
-    return buffers_[N_DATA_PACKETS + index];
+    return buffers_[n_data_packets_ + index];
 }
 
 void OFBlockEncoder::reset() {
@@ -123,6 +126,14 @@ void OFBlockEncoder::reset() {
         sym_tab_[i] = NULL;
         buffers_[i] = core::IByteBufferConstSlice();
     }
+}
+
+size_t OFBlockEncoder::n_data_packets() const {
+    return n_data_packets_;
+}
+
+size_t OFBlockEncoder::n_fec_packets() const {
+    return n_fec_packets_;
 }
 
 } // namespace fec
