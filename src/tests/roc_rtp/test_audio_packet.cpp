@@ -24,7 +24,7 @@ enum { MaxCh = 2, NumSamples = 237, Guard = 7 };
 
 enum { Rate = ROC_CONFIG_DEFAULT_SAMPLE_RATE };
 
-const double Epsilon = 0.0001f;
+const double Epsilon = 0.0001;
 
 } // namespace
 
