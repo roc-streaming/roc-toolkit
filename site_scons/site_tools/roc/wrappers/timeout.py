@@ -26,4 +26,8 @@ def trap():
 timer = threading.Timer(timeout, trap)
 timer.start()
 
-os._exit(proc.wait())
+try:
+    os._exit(proc.wait())
+except:
+    proc.terminate()
+    os._exit(1)
