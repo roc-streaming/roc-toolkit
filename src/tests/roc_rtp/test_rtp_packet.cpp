@@ -26,7 +26,7 @@ namespace {
 
 enum { MaxSize = 2000, MaxSamples = 500 };
 
-const double Epsilon = 0.00001f;
+const double Epsilon = 0.00001;
 
 } // namespace
 
