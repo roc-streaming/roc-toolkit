@@ -15,15 +15,15 @@
 
 #include "roc_config/config.h"
 
-#include "roc_core/noncopyable.h"
 #include "roc_core/array.h"
+#include "roc_core/noncopyable.h"
 
 #include "roc_packet/ipacket.h"
 #include "roc_packet/ipacket_writer.h"
 
 #include "roc_datagram/idatagram.h"
-#include "roc_datagram/idatagram_writer.h"
 #include "roc_datagram/idatagram_composer.h"
+#include "roc_datagram/idatagram_writer.h"
 
 namespace roc {
 namespace packet {

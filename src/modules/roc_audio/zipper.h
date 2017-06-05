@@ -15,11 +15,11 @@
 
 #include "roc_config/config.h"
 
-#include "roc_core/noncopyable.h"
 #include "roc_core/list.h"
+#include "roc_core/noncopyable.h"
 
-#include "roc_audio/sample_buffer.h"
 #include "roc_audio/istream_reader.h"
+#include "roc_audio/sample_buffer.h"
 
 namespace roc {
 namespace audio {

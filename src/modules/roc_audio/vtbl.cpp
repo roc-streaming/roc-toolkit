@@ -7,10 +7,10 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_audio/istream_reader.h"
 #include "roc_audio/isample_buffer_reader.h"
 #include "roc_audio/isample_buffer_writer.h"
 #include "roc_audio/isink.h"
+#include "roc_audio/istream_reader.h"
 
 namespace roc {
 namespace audio {

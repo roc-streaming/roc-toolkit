@@ -7,10 +7,10 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_core/stddefs.h"
-#include "roc_core/panic.h"
-#include "roc_core/log.h"
 #include "roc_core/byte_order.h"
+#include "roc_core/log.h"
+#include "roc_core/panic.h"
+#include "roc_core/stddefs.h"
 #include "roc_rtp/audio_format.h"
 
 namespace roc {

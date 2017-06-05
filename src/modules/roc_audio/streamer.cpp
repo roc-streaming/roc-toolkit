@@ -9,11 +9,11 @@
 
 #include "roc_config/config.h"
 
-#include "roc_core/stddefs.h"
 #include "roc_core/helpers.h"
-#include "roc_core/math.h"
 #include "roc_core/log.h"
+#include "roc_core/math.h"
 #include "roc_core/panic.h"
+#include "roc_core/stddefs.h"
 
 #include "roc_audio/streamer.h"
 

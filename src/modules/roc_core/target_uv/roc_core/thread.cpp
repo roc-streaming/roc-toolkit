@@ -8,8 +8,8 @@
  */
 
 #include "roc_core/thread.h"
-#include "roc_core/panic.h"
 #include "roc_core/errno_to_str.h"
+#include "roc_core/panic.h"
 
 namespace roc {
 namespace core {

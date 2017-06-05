@@ -38,8 +38,8 @@ struct Config {
         , n_repair_packets(ROC_CONFIG_DEFAULT_FEC_BLOCK_REDUNDANT_PACKETS)
         , ldpc_prng_seed(1297501556)
         , ldpc_N1(7)
-        , rs_m(8)
-    {}
+        , rs_m(8) {
+    }
 
     //! FEC codec.
     CodecType codec;

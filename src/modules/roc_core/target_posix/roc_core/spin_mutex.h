@@ -15,10 +15,10 @@
 
 #include <pthread.h>
 
-#include "roc_core/noncopyable.h"
-#include "roc_core/scoped_lock.h"
-#include "roc_core/panic.h"
 #include "roc_core/errno_to_str.h"
+#include "roc_core/noncopyable.h"
+#include "roc_core/panic.h"
+#include "roc_core/scoped_lock.h"
 
 namespace roc {
 namespace core {

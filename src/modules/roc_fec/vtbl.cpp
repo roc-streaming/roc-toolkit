@@ -7,8 +7,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_fec/iblock_encoder.h"
 #include "roc_fec/iblock_decoder.h"
+#include "roc_fec/iblock_encoder.h"
 
 namespace roc {
 namespace fec {

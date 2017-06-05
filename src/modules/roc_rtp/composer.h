@@ -13,9 +13,9 @@
 #ifndef ROC_RTP_COMPOSER_H_
 #define ROC_RTP_COMPOSER_H_
 
-#include "roc_core/noncopyable.h"
-#include "roc_core/ipool.h"
 #include "roc_core/heap_pool.h"
+#include "roc_core/ipool.h"
+#include "roc_core/noncopyable.h"
 #include "roc_datagram/default_buffer_composer.h"
 #include "roc_packet/ipacket_composer.h"
 #include "roc_rtp/audio_packet.h"

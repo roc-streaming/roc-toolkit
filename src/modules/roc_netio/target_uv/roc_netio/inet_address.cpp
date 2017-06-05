@@ -8,9 +8,9 @@
  */
 
 #include "roc_core/byte_order.h"
-#include "roc_core/stddefs.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
+#include "roc_core/stddefs.h"
 
 #include "roc_datagram/address_to_str.h"
 #include "roc_netio/inet_address.h"

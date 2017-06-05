@@ -15,13 +15,13 @@
 
 #include <uv.h>
 
+#include "roc_core/atomic.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/thread.h"
-#include "roc_core/atomic.h"
 
+#include "roc_datagram/default_buffer_composer.h"
 #include "roc_datagram/idatagram_composer.h"
 #include "roc_datagram/idatagram_writer.h"
-#include "roc_datagram/default_buffer_composer.h"
 
 #include "roc_netio/udp_composer.h"
 #include "roc_netio/udp_receiver.h"

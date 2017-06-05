@@ -16,8 +16,8 @@
 #include "roc_core/noncopyable.h"
 #include "roc_core/timer.h"
 
-#include "roc_packet/ipacket_reader.h"
 #include "roc_packet/ipacket.h"
+#include "roc_packet/ipacket_reader.h"
 #include "roc_packet/units.h"
 
 #include "roc_audio/istream_reader.h"

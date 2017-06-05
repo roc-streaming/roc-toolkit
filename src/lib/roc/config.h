@@ -10,15 +10,15 @@
 //! @brief Roc configuration.
 
 #ifndef ROC_CONFIG_H_
-#define ROC_CONFIG_H_ 
+#define ROC_CONFIG_H_
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define ROC_API_CONF_DISABLE_FEC    1
-#define ROC_API_CONF_LDPC_CODE      2
-#define ROC_API_CONF_RS_CODE        0 
+#define ROC_API_CONF_DISABLE_FEC 1
+#define ROC_API_CONF_LDPC_CODE 2
+#define ROC_API_CONF_RS_CODE 0
 
 typedef struct roc_config {
     unsigned int samples_per_packet;
@@ -32,4 +32,4 @@ typedef struct roc_config {
 }
 #endif
 
-#endif //ROC_CONFIG_H_
+#endif // ROC_CONFIG_H_

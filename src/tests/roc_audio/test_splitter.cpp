@@ -9,15 +9,15 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "roc_config/config.h"
-#include "roc_core/scoped_ptr.h"
-#include "roc_core/log.h"
-#include "roc_rtp/composer.h"
-#include "roc_packet/ipacket.h"
 #include "roc_audio/splitter.h"
+#include "roc_config/config.h"
+#include "roc_core/log.h"
+#include "roc_core/scoped_ptr.h"
+#include "roc_packet/ipacket.h"
+#include "roc_rtp/composer.h"
 
-#include "test_packet_writer.h"
 #include "test_helpers.h"
+#include "test_packet_writer.h"
 
 namespace roc {
 namespace test {

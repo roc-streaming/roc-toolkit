@@ -17,11 +17,11 @@
 
 #include "roc_config/config.h"
 
-#include "roc_core/noncopyable.h"
 #include "roc_core/array.h"
-#include "roc_core/list.h"
-#include "roc_core/spin_mutex.h"
 #include "roc_core/atomic.h"
+#include "roc_core/list.h"
+#include "roc_core/noncopyable.h"
+#include "roc_core/spin_mutex.h"
 
 #include "roc_datagram/address.h"
 #include "roc_datagram/idatagram_writer.h"

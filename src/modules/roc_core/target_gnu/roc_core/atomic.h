@@ -13,6 +13,8 @@
 #ifndef ROC_CORE_ATOMIC_H_
 #define ROC_CORE_ATOMIC_H_
 
+#include "roc_core/noncopyable.h"
+
 namespace roc {
 namespace core {
 

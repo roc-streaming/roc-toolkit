@@ -14,8 +14,8 @@
 #define ROC_CORE_LOG_H_
 
 #include "roc_core/attributes.h"
-#include "roc_core/stddefs.h"
 #include "roc_core/helpers.h"
+#include "roc_core/stddefs.h"
 
 #ifndef ROC_MODULE
 #define ROC_MODULE roc //!< Default module name.

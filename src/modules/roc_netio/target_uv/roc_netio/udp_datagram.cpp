@@ -7,8 +7,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_core/helpers.h"
 #include "roc_netio/udp_datagram.h"
+#include "roc_core/helpers.h"
 
 namespace roc {
 namespace netio {

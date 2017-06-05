@@ -7,11 +7,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+#include "roc_fec/of_block_decoder.h"
 #include "roc_config/config.h"
+#include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_core/stddefs.h"
-#include "roc_core/log.h"
-#include "roc_fec/of_block_decoder.h"
 
 namespace roc {
 namespace fec {
@@ -22,8 +22,7 @@ const size_t SYMB_SZ = ROC_CONFIG_DEFAULT_PACKET_SIZE;
 
 } // namespace
 
-OFBlockDecoder::OFBlockDecoder(const Config &config,
-                                core::IByteBufferComposer& composer)
+OFBlockDecoder::OFBlockDecoder(const Config& config, core::IByteBufferComposer& composer)
     : n_data_packets_(config.n_source_packets)
     , n_fec_packets_(config.n_repair_packets)
     , of_inst_(NULL)
@@ -67,7 +66,8 @@ OFBlockDecoder::~OFBlockDecoder() {
 void OFBlockDecoder::write(size_t index, const core::IByteBufferConstSlice& buffer) {
     if (index >= n_data_packets_ + n_fec_packets_) {
         roc_panic("OFBlockDecoder: index out of bounds: index=%lu, size=%lu",
-                  (unsigned long)index, (unsigned long)(n_data_packets_ + n_fec_packets_));
+                  (unsigned long)index,
+                  (unsigned long)(n_data_packets_ + n_fec_packets_));
     }
 
     if (!buffer) {
@@ -158,18 +158,18 @@ size_t OFBlockDecoder::n_fec_packets() const {
     return n_fec_packets_;
 }
 
-
 void OFBlockDecoder::report_() {
     size_t n_lost = 0, n_repaired = 0;
 
     char status1[ROC_CONFIG_MAX_FEC_BLOCK_DATA_PACKETS + 1] = {};
     char status2[ROC_CONFIG_MAX_FEC_BLOCK_REDUNDANT_PACKETS + 1] = {};
 
-    roc_panic_if(buffers_.size() > 
-            (ROC_CONFIG_MAX_FEC_BLOCK_DATA_PACKETS + ROC_CONFIG_MAX_FEC_BLOCK_REDUNDANT_PACKETS));
+    roc_panic_if(buffers_.size() > (ROC_CONFIG_MAX_FEC_BLOCK_DATA_PACKETS
+                                    + ROC_CONFIG_MAX_FEC_BLOCK_REDUNDANT_PACKETS));
 
     for (size_t i = 0; i < buffers_.size(); ++i) {
-        char* status = (i < n_data_packets_ ? &status1[i] : &status2[i - n_data_packets_]);
+        char* status =
+            (i < n_data_packets_ ? &status1[i] : &status2[i - n_data_packets_]);
 
         if (buffers_[i]) {
             if (received_[i]) {

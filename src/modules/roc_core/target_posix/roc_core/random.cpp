@@ -9,10 +9,10 @@
 
 #include <stdlib.h>
 
-#include "roc_core/random.h"
-#include "roc_core/time.h"
-#include "roc_core/spin_mutex.h"
 #include "roc_core/panic.h"
+#include "roc_core/random.h"
+#include "roc_core/spin_mutex.h"
+#include "roc_core/time.h"
 
 namespace roc {
 namespace core {

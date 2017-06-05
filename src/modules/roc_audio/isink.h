@@ -13,8 +13,8 @@
 #ifndef ROC_AUDIO_ISINK_H_
 #define ROC_AUDIO_ISINK_H_
 
-#include "roc_packet/units.h"
 #include "roc_audio/istream_reader.h"
+#include "roc_packet/units.h"
 
 namespace roc {
 namespace audio {

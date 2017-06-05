@@ -15,14 +15,14 @@
 
 #include "roc_config/config.h"
 
-#include "roc_core/noncopyable.h"
 #include "roc_core/array.h"
+#include "roc_core/noncopyable.h"
 #include "roc_core/timer.h"
 
-#include "roc_packet/ipacket_reader.h"
-#include "roc_packet/ipacket.h"
-#include "roc_packet/packet_queue.h"
 #include "roc_packet/imonitor.h"
+#include "roc_packet/ipacket.h"
+#include "roc_packet/ipacket_reader.h"
+#include "roc_packet/packet_queue.h"
 
 #include "roc_audio/freq_estimator.h"
 #include "roc_audio/resampler.h"

@@ -7,17 +7,17 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include <unistd.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
-#include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 
 #include "roc_core/errno_to_str.h"
-#include "roc_core/log.h"
 #include "roc_core/fs.h"
+#include "roc_core/log.h"
 
 namespace roc {
 namespace core {

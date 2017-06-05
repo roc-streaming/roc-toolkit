@@ -15,10 +15,10 @@
 
 #include "roc_config/config.h"
 
+#include "roc_core/circular_buffer.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/semaphore.h"
 #include "roc_core/spin_mutex.h"
-#include "roc_core/circular_buffer.h"
 
 #include "roc_audio/isample_buffer_reader.h"
 #include "roc_audio/isample_buffer_writer.h"

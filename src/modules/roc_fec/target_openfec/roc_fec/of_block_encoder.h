@@ -14,13 +14,13 @@
 #define ROC_FEC_OF_BLOCK_ENCODER_H_
 
 #include "roc_config/config.h"
-#include "roc_core/noncopyable.h"
-#include "roc_core/byte_buffer.h"
 #include "roc_core/array.h"
+#include "roc_core/byte_buffer.h"
+#include "roc_core/noncopyable.h"
 #include "roc_datagram/default_buffer_composer.h"
-#include "roc_packet/units.h"
-#include "roc_fec/iblock_encoder.h"
 #include "roc_fec/config.h"
+#include "roc_fec/iblock_encoder.h"
+#include "roc_packet/units.h"
 
 extern "C" {
 #include <of_openfec_api.h>
@@ -41,7 +41,8 @@ namespace fec {
 class OFBlockEncoder : public IBlockEncoder, public core::NonCopyable<> {
 public:
     //! Construct.
-    explicit OFBlockEncoder(const Config &config,
+    explicit OFBlockEncoder(
+        const Config& config,
         core::IByteBufferComposer& composer = datagram::default_buffer_composer());
     virtual ~OFBlockEncoder();
 
@@ -82,7 +83,7 @@ private:
 
     //! Shortcut for maximal number of packets we should store.
     static const size_t max_n_packets_ = ROC_CONFIG_MAX_FEC_BLOCK_DATA_PACKETS
-                                       + ROC_CONFIG_MAX_FEC_BLOCK_REDUNDANT_PACKETS;
+        + ROC_CONFIG_MAX_FEC_BLOCK_REDUNDANT_PACKETS;
 
     core::Array<void*, max_n_packets_> sym_tab_;
     core::Array<core::IByteBufferConstSlice, max_n_packets_> buffers_;

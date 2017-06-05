@@ -7,11 +7,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_core/shared_ptr.h"
 #include "roc_core/log.h"
+#include "roc_core/shared_ptr.h"
 
-#include "roc_rtp/parser.h"
 #include "roc_rtp/audio_format.h"
+#include "roc_rtp/parser.h"
 
 namespace roc {
 namespace rtp {

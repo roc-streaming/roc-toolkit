@@ -78,18 +78,18 @@ void FreqEstimator::update(packet::timestamp_t queue_size) {
         /*
          * Time to calculate first decimator's samples.
          */
-        dec2_casc_buff_[dec2_ind_] =
-            dot_prod(decim_10_h, dec1_casc_buff_, dec1_ind_, G_decim_len,
-                     G_decim_len_mask) / decim_10_h_gain;
+        dec2_casc_buff_[dec2_ind_] = dot_prod(decim_10_h, dec1_casc_buff_, dec1_ind_,
+                                              G_decim_len, G_decim_len_mask)
+            / decim_10_h_gain;
 
         if (((samples_counter_ % (G_decim_factor * G_decim_factor)) == 0)) {
             samples_counter_ = 0;
             /*
              * Time to calculate second decimator (and freq estimator's) output.
              */
-            sample_t filtered_queue_len =
-                dot_prod(decim_10_h, dec2_casc_buff_, dec2_ind_, G_decim_len,
-                         G_decim_len_mask) / decim_10_h_gain;
+            sample_t filtered_queue_len = dot_prod(decim_10_h, dec2_casc_buff_, dec2_ind_,
+                                                   G_decim_len, G_decim_len_mask)
+                / decim_10_h_gain;
 
             coeff_ = fast_controller_(filtered_queue_len);
         }

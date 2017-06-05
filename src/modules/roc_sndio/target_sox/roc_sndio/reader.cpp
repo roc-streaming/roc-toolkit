@@ -8,12 +8,12 @@
  */
 
 #include "roc_core/helpers.h"
-#include "roc_core/panic.h"
 #include "roc_core/log.h"
+#include "roc_core/panic.h"
 
-#include "roc_sndio/reader.h"
 #include "roc_sndio/default.h"
 #include "roc_sndio/init.h"
+#include "roc_sndio/reader.h"
 
 namespace roc {
 namespace sndio {

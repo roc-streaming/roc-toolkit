@@ -13,13 +13,13 @@
 #ifndef ROC_CORE_HEAP_POOL_H_
 #define ROC_CORE_HEAP_POOL_H_
 
-#include "roc_core/stddefs.h"
+#include "roc_core/atomic.h"
+#include "roc_core/ipool.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/panic.h"
-#include "roc_core/atomic.h"
 #include "roc_core/shared_ptr.h"
 #include "roc_core/singleton.h"
-#include "roc_core/ipool.h"
+#include "roc_core/stddefs.h"
 
 namespace roc {
 namespace core {
@@ -52,7 +52,7 @@ public:
                 "trying to deallocate more objects than were allocated in heap pool");
         }
         --num_allocated_;
-        delete[](char*)memory;
+        delete[](char*) memory;
     }
 
     //! Check if this object belongs to this pool.

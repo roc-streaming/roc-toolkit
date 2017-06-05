@@ -18,9 +18,9 @@
 #include "roc_core/refcnt.h"
 #include "roc_core/shared_ptr.h"
 
+#include "roc_packet/iheader_fecframe.h"
 #include "roc_packet/iheader_ordering.h"
 #include "roc_packet/iheader_rtp.h"
-#include "roc_packet/iheader_fecframe.h"
 #include "roc_packet/ipayload_audio.h"
 
 namespace roc {

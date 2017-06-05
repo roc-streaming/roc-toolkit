@@ -10,8 +10,8 @@
 #include <CppUTest/TestHarness.h>
 
 #include "roc_core/list.h"
-#include "roc_core/shared_ptr.h"
 #include "roc_core/refcnt.h"
+#include "roc_core/shared_ptr.h"
 
 namespace roc {
 namespace test {

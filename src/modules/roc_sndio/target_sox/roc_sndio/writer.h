@@ -17,9 +17,9 @@
 
 #include "roc_config/config.h"
 
+#include "roc_core/atomic.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/thread.h"
-#include "roc_core/atomic.h"
 
 #include "roc_audio/isample_buffer_reader.h"
 

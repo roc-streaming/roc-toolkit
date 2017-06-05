@@ -7,9 +7,9 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_core/panic.h"
-#include "roc_core/log.h"
 #include "roc_audio/sample_buffer_queue.h"
+#include "roc_core/log.h"
+#include "roc_core/panic.h"
 
 namespace roc {
 namespace audio {

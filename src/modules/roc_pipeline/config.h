@@ -13,16 +13,16 @@
 #ifndef ROC_PIPELINE_CONFIG_H_
 #define ROC_PIPELINE_CONFIG_H_
 
+#include "roc_audio/sample_buffer.h"
 #include "roc_config/config.h"
-#include "roc_core/ipool.h"
 #include "roc_core/heap_pool.h"
+#include "roc_core/ipool.h"
 #include "roc_datagram/default_buffer_composer.h"
-#include "roc_packet/units.h"
 #include "roc_fec/config.h"
+#include "roc_packet/units.h"
+#include "roc_pipeline/session.h"
 #include "roc_rtp/audio_packet.h"
 #include "roc_rtp/container_packet.h"
-#include "roc_audio/sample_buffer.h"
-#include "roc_pipeline/session.h"
 
 namespace roc {
 namespace pipeline {
@@ -114,7 +114,6 @@ struct ReceiverConfig {
 
     //! Composer for sample buffers.
     audio::ISampleBufferComposer* sample_buffer_composer;
-
 
     //! Session pool.
     core::IPool<Session>* session_pool;
