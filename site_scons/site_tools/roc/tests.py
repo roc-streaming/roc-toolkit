@@ -1,4 +1,5 @@
 import SCons.Script
+import os
 import re
 
 def _IsTestEnabled(testname):
@@ -16,7 +17,14 @@ def _GetNonTestTargets(env):
     else:
         yield env.Dir('#')
 
-def AddTest(env, name, exe, cmd=None):
+def _WithTimeout(env, cmd, timeout):
+    return '%s %s/wrappers/timeout.py %s %s' % (
+        env.Python(),
+        env.Dir(os.path.dirname(__file__)).path,
+        timeout,
+        cmd)
+
+def AddTest(env, name, exe, cmd=None, timeout=5*60):
     testname = 'test/%s' % name
 
     if not _IsTestEnabled(testname):
@@ -24,6 +32,8 @@ def AddTest(env, name, exe, cmd=None):
 
     if not cmd:
         cmd = env.File(exe).path
+
+    cmd = _WithTimeout(env, cmd, timeout)
 
     comstr = env.Pretty('TEST', name, 'green')
     target = env.Alias(testname, [], env.Action(cmd, comstr))

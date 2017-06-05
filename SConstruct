@@ -532,8 +532,13 @@ if compiler in ['gcc', 'clang']:
             '-Werror'
         ])
     if variant == 'debug':
-        env.Append(CXXFLAGS=['-ggdb'])
-        env.Append(LINKFLAGS=['-rdynamic'])
+        env.Append(CXXFLAGS=[
+            '-ggdb',
+            '-fno-omit-frame-pointer',
+        ])
+        env.Append(LINKFLAGS=[
+            '-rdynamic'
+        ])
     else:
         env.Append(CXXFLAGS=['-O2'])
 else:
@@ -611,6 +616,7 @@ if compiler in ['gcc', 'clang']:
         san_conf = Configure(san_env, custom_tests=env.CustomTests)
 
         flags = [
+            #'-fsanitize=address',
             '-fsanitize=undefined',
         ]
 
@@ -625,6 +631,10 @@ if compiler in ['gcc', 'clang']:
             env.Append(LINKFLAGS=flags)
 
         san_conf.Finish()
+
+        llvmdir = env.LLVMDir(compiler_ver)
+        if llvmdir:
+            env['ENV']['PATH'] += ':%s/bin' % llvmdir
 
     env.Prepend(
         CXXFLAGS=[('-isystem', env.Dir(path).path) for path in \
