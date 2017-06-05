@@ -13,8 +13,8 @@
 #ifndef ROC_FEC_IBLOCK_DECODER_H_
 #define ROC_FEC_IBLOCK_DECODER_H_
 
-#include "roc_core/stddefs.h"
 #include "roc_core/byte_buffer.h"
+#include "roc_core/stddefs.h"
 
 namespace roc {
 namespace fec {

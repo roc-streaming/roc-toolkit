@@ -14,8 +14,8 @@
 #define ROC_AUDIO_TIMED_WRITER_H_
 
 #include "roc_config/config.h"
-#include "roc_core/stddefs.h"
 #include "roc_core/noncopyable.h"
+#include "roc_core/stddefs.h"
 
 #include "roc_audio/isample_buffer_writer.h"
 

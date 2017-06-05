@@ -13,10 +13,10 @@
 #ifndef ROC_PIPELINE_RECEIVER_H_
 #define ROC_PIPELINE_RECEIVER_H_
 
-#include "roc_core/noncopyable.h"
-#include "roc_core/maybe.h"
-#include "roc_core/thread.h"
 #include "roc_core/atomic.h"
+#include "roc_core/maybe.h"
+#include "roc_core/noncopyable.h"
+#include "roc_core/thread.h"
 
 #include "roc_datagram/idatagram.h"
 #include "roc_datagram/idatagram_reader.h"
@@ -24,14 +24,14 @@
 #include "roc_packet/ipacket_parser.h"
 #include "roc_rtp/parser.h"
 
+#include "roc_audio/channel_muxer.h"
+#include "roc_audio/delayed_writer.h"
 #include "roc_audio/isample_buffer_writer.h"
 #include "roc_audio/isink.h"
-#include "roc_audio/channel_muxer.h"
 #include "roc_audio/timed_writer.h"
-#include "roc_audio/delayed_writer.h"
 
-#include "roc_pipeline/session_manager.h"
 #include "roc_pipeline/config.h"
+#include "roc_pipeline/session_manager.h"
 
 namespace roc {
 namespace pipeline {

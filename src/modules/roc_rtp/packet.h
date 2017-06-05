@@ -13,14 +13,14 @@
 #ifndef ROC_RTP_PACKET_H_
 #define ROC_RTP_PACKET_H_
 
-#include "roc_core/stddefs.h"
 #include "roc_core/byte_buffer.h"
 #include "roc_core/ipool.h"
+#include "roc_core/stddefs.h"
 
 #include "roc_packet/ipacket.h"
 
-#include "roc_rtp/headers.h"
 #include "roc_rtp/audio_format.h"
+#include "roc_rtp/headers.h"
 
 namespace roc {
 namespace rtp {

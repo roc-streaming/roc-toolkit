@@ -13,8 +13,8 @@
 #ifndef ROC_CORE_SINGLETON_H_
 #define ROC_CORE_SINGLETON_H_
 
-#include "roc_core/noncopyable.h"
 #include "roc_core/maybe.h"
+#include "roc_core/noncopyable.h"
 #include "roc_core/spin_mutex.h"
 
 namespace roc {

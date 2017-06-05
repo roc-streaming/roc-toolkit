@@ -12,16 +12,16 @@
 #ifndef ROC_PIPELINE_SESSION_MANAGER_H_
 #define ROC_PIPELINE_SESSION_MANAGER_H_
 
+#include "roc_audio/isink.h"
 #include "roc_config/config.h"
-#include "roc_core/noncopyable.h"
 #include "roc_core/array.h"
 #include "roc_core/list.h"
+#include "roc_core/noncopyable.h"
 #include "roc_datagram/idatagram.h"
 #include "roc_packet/ipacket_parser.h"
-#include "roc_audio/isink.h"
 
-#include "roc_pipeline/session.h"
 #include "roc_pipeline/config.h"
+#include "roc_pipeline/session.h"
 
 namespace roc {
 namespace pipeline {

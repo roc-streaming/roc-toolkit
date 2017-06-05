@@ -9,8 +9,8 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "roc_core/noncopyable.h"
 #include "roc_core/array.h"
+#include "roc_core/noncopyable.h"
 #include "roc_core/slab_pool.h"
 
 namespace roc {

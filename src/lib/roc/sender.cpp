@@ -9,15 +9,15 @@
 
 #include "roc/sender.h"
 
-#include "roc_core/math.h"
+#include "roc_audio/sample_buffer_queue.h"
 #include "roc_core/log.h"
+#include "roc_core/math.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_datagram/address_to_str.h"
 #include "roc_datagram/datagram_queue.h"
-#include "roc_audio/sample_buffer_queue.h"
-#include "roc_pipeline/sender.h"
-#include "roc_netio/transceiver.h"
 #include "roc_netio/inet_address.h"
+#include "roc_netio/transceiver.h"
+#include "roc_pipeline/sender.h"
 
 using namespace roc;
 
@@ -33,7 +33,7 @@ bool make_sender_config(pipeline::SenderConfig& out, const roc_config* in) {
     } else {
         out.fec.codec = fec::ReedSolomon2m;
     }
-    
+
     out.samples_per_packet = in->samples_per_packet;
     out.fec.n_source_packets = in->n_source_packets;
     out.fec.n_repair_packets = in->n_repair_packets;
@@ -47,10 +47,7 @@ struct roc_sender {
     roc_sender(const pipeline::SenderConfig& config)
         : buffer_pos_(0)
         , n_bufs_(0)
-        , client_(sample_queue_,
-                  trx_.udp_sender(),
-                  trx_.udp_composer(),
-                  config) {
+        , client_(sample_queue_, trx_.udp_sender(), trx_.udp_composer(), config) {
     }
 
     ~roc_sender() {

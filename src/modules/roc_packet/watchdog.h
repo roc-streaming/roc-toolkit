@@ -16,9 +16,9 @@
 #include "roc_config/config.h"
 #include "roc_core/noncopyable.h"
 
-#include "roc_packet/ipacket_reader.h"
-#include "roc_packet/ipacket.h"
 #include "roc_packet/imonitor.h"
+#include "roc_packet/ipacket.h"
+#include "roc_packet/ipacket_reader.h"
 
 namespace roc {
 namespace packet {

@@ -9,8 +9,8 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "roc_core/scoped_ptr.h"
 #include "roc_audio/streamer.h"
+#include "roc_core/scoped_ptr.h"
 
 #include "test_packet_reader.h"
 

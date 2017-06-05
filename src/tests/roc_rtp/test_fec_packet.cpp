@@ -8,8 +8,8 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "roc_rtp/parser.h"
 #include "roc_rtp/composer.h"
+#include "roc_rtp/parser.h"
 
 namespace roc {
 namespace test {

@@ -7,8 +7,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_core/panic.h"
 #include "roc_core/log.h"
+#include "roc_core/panic.h"
 
 #include "roc_pipeline/sender.h"
 
@@ -155,13 +155,12 @@ packet::IPacketWriter* Sender::make_packet_writer_() {
 
 #ifdef ROC_TARGET_OPENFEC
 packet::IPacketWriter* Sender::make_fec_encoder_(packet::IPacketWriter* packet_writer) {
-
     if (!fec_repair_composer_) {
         roc_panic("sender: fec repair composer not set, forgot set_audio_port()?");
     }
 
-    new (fec_ldpc_encoder_) fec::OFBlockEncoder(config_.fec,
-                                                    *config_.byte_buffer_composer);
+    new (fec_ldpc_encoder_)
+        fec::OFBlockEncoder(config_.fec, *config_.byte_buffer_composer);
 
     return new (fec_encoder_)
         fec::Encoder(*fec_ldpc_encoder_, *packet_writer, *fec_repair_composer_);

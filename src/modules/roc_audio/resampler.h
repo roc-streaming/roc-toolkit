@@ -13,12 +13,12 @@
 #ifndef ROC_AUDIO_RESAMPLER_H_
 #define ROC_AUDIO_RESAMPLER_H_
 
+#include "roc_core/circular_buffer.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/stddefs.h"
-#include "roc_core/circular_buffer.h"
 
-#include "roc_audio/sample_buffer.h"
 #include "roc_audio/istream_reader.h"
+#include "roc_audio/sample_buffer.h"
 
 namespace roc {
 namespace audio {

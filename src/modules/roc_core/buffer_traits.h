@@ -13,12 +13,12 @@
 #ifndef ROC_CORE_BUFFER_TRAITS_H_
 #define ROC_CORE_BUFFER_TRAITS_H_
 
-#include "roc_core/ibuffer.h"
-#include "roc_core/ibuffer_composer.h"
-#include "roc_core/ipool.h"
 #include "roc_core/buffer_slice.h"
 #include "roc_core/default_buffer.h"
 #include "roc_core/default_buffer_composer.h"
+#include "roc_core/ibuffer.h"
+#include "roc_core/ibuffer_composer.h"
+#include "roc_core/ipool.h"
 #include "roc_core/shared_ptr.h"
 #include "roc_core/singleton.h"
 

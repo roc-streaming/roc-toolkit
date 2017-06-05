@@ -13,9 +13,9 @@
 #ifndef ROC_CORE_SHARED_PTR_H_
 #define ROC_CORE_SHARED_PTR_H_
 
-#include "roc_core/stddefs.h"
-#include "roc_core/panic.h"
 #include "roc_core/ownership.h"
+#include "roc_core/panic.h"
+#include "roc_core/stddefs.h"
 
 namespace roc {
 namespace core {

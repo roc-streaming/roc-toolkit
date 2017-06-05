@@ -15,9 +15,9 @@
 
 #include "roc_config/config.h"
 
-#include "roc_core/noncopyable.h"
 #include "roc_core/array.h"
 #include "roc_core/list.h"
+#include "roc_core/noncopyable.h"
 
 #include "roc_packet/ipacket_reader.h"
 

@@ -11,8 +11,8 @@
 
 #include "roc_audio/mixer.h"
 
-#include "test_stream_reader.h"
 #include "test_helpers.h"
+#include "test_stream_reader.h"
 
 namespace roc {
 namespace test {

@@ -9,14 +9,14 @@
 
 #include "roc/receiver.h"
 
-#include "roc_core/math.h"
+#include "roc_audio/sample_buffer_queue.h"
 #include "roc_core/log.h"
+#include "roc_core/math.h"
 #include "roc_datagram/address_to_str.h"
 #include "roc_datagram/datagram_queue.h"
-#include "roc_audio/sample_buffer_queue.h"
-#include "roc_pipeline/receiver.h"
-#include "roc_netio/transceiver.h"
 #include "roc_netio/inet_address.h"
+#include "roc_netio/transceiver.h"
+#include "roc_pipeline/receiver.h"
 
 using namespace roc;
 

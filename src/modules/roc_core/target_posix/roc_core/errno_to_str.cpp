@@ -11,8 +11,8 @@
 #undef _GNU_SOURCE // Ensure we're using XSI strerror_r(), not GNU one.
 #endif
 
-#include <string.h>
 #include <errno.h>
+#include <string.h>
 
 #include "roc_core/errno_to_str.h"
 

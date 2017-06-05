@@ -7,12 +7,12 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include <time.h>
 #include <errno.h>
+#include <time.h>
 
-#include "roc_core/time.h"
-#include "roc_core/panic.h"
 #include "roc_core/errno_to_str.h"
+#include "roc_core/panic.h"
+#include "roc_core/time.h"
 
 namespace roc {
 namespace core {

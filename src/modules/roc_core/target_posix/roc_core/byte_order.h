@@ -13,10 +13,10 @@
 #ifndef ROC_CORE_BYTE_ORDER_H_
 #define ROC_CORE_BYTE_ORDER_H_
 
-#include <inttypes.h>
-#include <sys/types.h>
-#include <netinet/in.h>
 #include <arpa/inet.h>
+#include <inttypes.h>
+#include <netinet/in.h>
+#include <sys/types.h>
 
 //! Network to host (16 bits).
 #define ROC_NTOH_16(v) ntohs(v)

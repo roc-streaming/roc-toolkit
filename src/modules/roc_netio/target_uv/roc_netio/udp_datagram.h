@@ -15,8 +15,8 @@
 
 #include <uv.h>
 
-#include "roc_core/shared_ptr.h"
 #include "roc_core/ipool.h"
+#include "roc_core/shared_ptr.h"
 #include "roc_datagram/idatagram.h"
 
 namespace roc {

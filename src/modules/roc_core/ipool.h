@@ -14,8 +14,8 @@
 #define ROC_CORE_IPOOL_H_
 
 #include "roc_core/attributes.h"
-#include "roc_core/stddefs.h"
 #include "roc_core/panic.h"
+#include "roc_core/stddefs.h"
 
 namespace roc {
 namespace core {
@@ -65,7 +65,7 @@ inline void* operator new(size_t size, roc::core::IPool<T>& pool) ROC_ATTR_NOTHR
 //! @note
 //!  Compiler calls this if ctor throws in a placement new expression.
 template <class T>
-inline void operator delete(void* ptr, roc::core::IPool<T>& pool) ROC_ATTR_NOTHROW {
+inline void operator delete(void* ptr, roc::core::IPool<T>& pool)ROC_ATTR_NOTHROW {
     using namespace roc;
     pool.deallocate(ptr);
 }

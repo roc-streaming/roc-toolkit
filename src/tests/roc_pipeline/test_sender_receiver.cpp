@@ -11,12 +11,12 @@
 #include "roc_config/config.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_datagram/datagram_queue.h"
-#include "roc_pipeline/sender.h"
 #include "roc_pipeline/receiver.h"
+#include "roc_pipeline/sender.h"
 
-#include "test_sample_stream.h"
-#include "test_sample_queue.h"
 #include "test_datagram.h"
+#include "test_sample_queue.h"
+#include "test_sample_stream.h"
 
 namespace roc {
 namespace test {
@@ -72,7 +72,7 @@ TEST_GROUP(sender_receiver) {
     }
 
     void init_sender(int options, fec::CodecType codec = fec::NoCodec,
-                                size_t random_loss = 0) {
+                     size_t random_loss = 0) {
         SenderConfig config;
 
         config.options = options;

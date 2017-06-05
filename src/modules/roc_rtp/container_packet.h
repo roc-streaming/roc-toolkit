@@ -12,8 +12,8 @@
 #ifndef ROC_RTP_CONTAINER_PACKET_H_
 #define ROC_RTP_CONTAINER_PACKET_H_
 
-#include "roc_core/noncopyable.h"
 #include "roc_core/ipool.h"
+#include "roc_core/noncopyable.h"
 #include "roc_packet/ipacket.h"
 #include "roc_rtp/packet.h"
 

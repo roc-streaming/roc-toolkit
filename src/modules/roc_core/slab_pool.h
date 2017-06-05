@@ -13,13 +13,13 @@
 #ifndef ROC_CORE_SLAB_POOL_H_
 #define ROC_CORE_SLAB_POOL_H_
 
-#include "roc_core/ipool.h"
-#include "roc_core/noncopyable.h"
-#include "roc_core/list.h"
-#include "roc_core/panic.h"
-#include "roc_core/spin_mutex.h"
 #include "roc_core/aligned_storage.h"
 #include "roc_core/helpers.h"
+#include "roc_core/ipool.h"
+#include "roc_core/list.h"
+#include "roc_core/noncopyable.h"
+#include "roc_core/panic.h"
+#include "roc_core/spin_mutex.h"
 
 namespace roc {
 namespace core {

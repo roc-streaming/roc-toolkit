@@ -12,8 +12,8 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "roc_core/noncopyable.h"
 #include "roc_core/circular_buffer.h"
+#include "roc_core/noncopyable.h"
 
 #include "roc_audio/isample_buffer_reader.h"
 #include "roc_audio/isample_buffer_writer.h"

@@ -13,8 +13,8 @@
 #ifndef ROC_NETIO_UDP_COMPOSER_H_
 #define ROC_NETIO_UDP_COMPOSER_H_
 
-#include "roc_core/noncopyable.h"
 #include "roc_core/ipool.h"
+#include "roc_core/noncopyable.h"
 
 #include "roc_datagram/idatagram_composer.h"
 

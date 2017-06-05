@@ -16,12 +16,12 @@
 #include "roc_config/config.h"
 
 #include "roc_core/array.h"
-#include "roc_core/noncopyable.h"
 #include "roc_core/byte_buffer.h"
+#include "roc_core/noncopyable.h"
 
-#include "roc_packet/ipacket_reader.h"
-#include "roc_packet/ipacket_parser.h"
 #include "roc_packet/ipacket.h"
+#include "roc_packet/ipacket_parser.h"
+#include "roc_packet/ipacket_reader.h"
 #include "roc_packet/packet_queue.h"
 
 #include "roc_fec/iblock_decoder.h"
@@ -86,8 +86,10 @@ private:
     packet::PacketQueue data_queue_;
     packet::PacketQueue fec_queue_;
 
-    core::Array<packet::IPacketConstPtr, ROC_CONFIG_MAX_FEC_BLOCK_DATA_PACKETS> data_block_;
-    core::Array<packet::IPacketConstPtr, ROC_CONFIG_MAX_FEC_BLOCK_REDUNDANT_PACKETS> fec_block_;
+    core::Array<packet::IPacketConstPtr, ROC_CONFIG_MAX_FEC_BLOCK_DATA_PACKETS>
+        data_block_;
+    core::Array<packet::IPacketConstPtr, ROC_CONFIG_MAX_FEC_BLOCK_REDUNDANT_PACKETS>
+        fec_block_;
 
     bool is_alive_;
     bool is_started_;

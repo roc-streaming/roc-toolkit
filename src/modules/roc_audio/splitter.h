@@ -17,10 +17,10 @@
 
 #include "roc_core/noncopyable.h"
 
-#include "roc_packet/units.h"
-#include "roc_packet/ipacket_writer.h"
-#include "roc_packet/ipacket_composer.h"
 #include "roc_packet/ipacket.h"
+#include "roc_packet/ipacket_composer.h"
+#include "roc_packet/ipacket_writer.h"
+#include "roc_packet/units.h"
 
 #include "roc_audio/isample_buffer_writer.h"
 
