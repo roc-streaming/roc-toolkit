@@ -24,10 +24,21 @@ using namespace roc;
 
 namespace {
 
-bool make_client_config(pipeline::ClientConfig& cc, const roc_sender_config* sc) {
-    (void)sc;
+bool make_client_config(pipeline::ClientConfig& cc, const roc_config* sc) {
 
     cc = pipeline::ClientConfig(pipeline::EnableInterleaving | pipeline::EnableFEC);
+
+    if ((sc->options & ROC_API_CONF_DISABLE_FEC) == 0) {
+        cc.options &= (-1) ^ pipeline::EnableFEC;
+    }
+    if (sc->options & ROC_API_CONF_LDPC_CODE) {
+        cc.fec.type = fec::LDPCStaircase;
+    } else {
+        cc.fec.type = fec::ReedSolomon2m;
+    }
+    cc.samples_per_packet = sc->samples_per_packet;
+    cc.fec.n_source_packets = sc->n_source_packets;
+    cc.fec.n_repair_packets = sc->n_repair_packets;
 
     return true;
 }
@@ -140,10 +151,10 @@ private:
     pipeline::Client client_;
 };
 
-roc_sender* roc_sender_new(const roc_sender_config* sc) {
+roc_sender* roc_sender_new(const roc_config* config) {
     pipeline::ClientConfig cc;
 
-    if (!make_client_config(cc, sc)) {
+    if (!make_client_config(cc, config)) {
         return NULL;
     }
     roc_log(LogInfo, "C API: create roc_sender");

@@ -75,6 +75,39 @@ int main(int argc, char** argv) {
     if (args.fec_arg == fec_arg_yes) {
         config.options |= pipeline::EnableFEC;
     }
+
+    if (args.fec_type_arg == fec_type_arg_ldpc) {
+        config.fec.type = roc::fec::LDPCStaircase;
+    } else {
+        config.fec.type = roc::fec::ReedSolomon2m;
+    }
+
+    if (args.nbsrc_given) {
+        if ((config.options & pipeline::EnableFEC) == 0) {
+            roc_log(LogError, "Parameter `--nbsrc' couldn't defined if FEC is turned off (define `--fec=yes`)");
+            return 1;
+        }
+        if (!check_range("nbsrc", args.nbsrc_arg, 3, ROC_CONFIG_MAX_FEC_BLOCK_DATA_PACKETS)) {
+            return 1 ;
+        }
+        config.fec.n_source_packets = (size_t)args.nbsrc_arg;
+    } else {
+        config.fec.n_source_packets = ROC_CONFIG_DEFAULT_FEC_BLOCK_DATA_PACKETS;
+    }
+
+    if (args.nbrpr_given) {
+        if ((config.options & pipeline::EnableFEC) == 0) {
+            roc_log(LogError, "Parameter `--nbrpr' couldn't defined if FEC is turned off (define `--fec=yes`)");
+            return 1;
+        }
+        if (!check_range("nbrpr", args.nbrpr_arg, 1, (int)config.fec.n_source_packets)) {
+            return 1 ;
+        }
+        config.fec.n_repair_packets = (size_t)args.nbrpr_arg;
+    } else {
+        config.fec.n_repair_packets = ROC_CONFIG_DEFAULT_FEC_BLOCK_REDUNDANT_PACKETS;
+    }
+
     if (args.interleaving_arg == interleaving_arg_yes) {
         config.options |= pipeline::EnableInterleaving;
     }

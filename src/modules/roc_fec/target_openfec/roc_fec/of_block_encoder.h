@@ -41,10 +41,8 @@ namespace fec {
 class OFBlockEncoder : public IBlockEncoder, public core::NonCopyable<> {
 public:
     //! Construct.
-    explicit OFBlockEncoder(
-        core::IByteBufferComposer& composer = datagram::default_buffer_composer(),
-        fec_codec_type_t fec_type = ReedSolomon2m);
-
+    explicit OFBlockEncoder(const FECConfig &fec_config,
+        core::IByteBufferComposer& composer = datagram::default_buffer_composer());
     virtual ~OFBlockEncoder();
 
     //! Store data buffer to current block at given position.
@@ -59,12 +57,20 @@ public:
     //! Reset state and start next block.
     virtual void reset();
 
+    //! Returns the number of data packets.
+    virtual size_t n_data_packets() const;
+
+    //! Returns the number of FEC packets.
+    virtual size_t n_fec_packets() const;
+
 private:
-    fec_codec_type_t fec_type_;
+    const FECConfig &fec_config_;
     of_codec_id_t codec_id_;
 
-    static const size_t N_DATA_PACKETS = ROC_CONFIG_DEFAULT_FEC_BLOCK_DATA_PACKETS;
-    static const size_t N_FEC_PACKETS = ROC_CONFIG_DEFAULT_FEC_BLOCK_REDUNDANT_PACKETS;
+    //! Shortcut for fec_config_.n_source_packets.
+    const size_t n_data_packets_;
+    //! Shortcut for fec_config_.n_repair_packets.
+    const size_t n_fec_packets_;
 
     of_session_t* of_inst_;
     of_parameters_t* of_inst_params_;
@@ -75,8 +81,10 @@ private:
 
     core::IByteBufferComposer& composer_;
 
-    core::Array<void*, N_DATA_PACKETS + N_FEC_PACKETS> sym_tab_;
-    core::Array<core::IByteBufferConstSlice, N_DATA_PACKETS + N_FEC_PACKETS> buffers_;
+    //! Shortcut for maximal number of packets we should store.
+    static const size_t max_n_packets_ = ROC_CONFIG_MAX_FEC_BLOCK_DATA_PACKETS + ROC_CONFIG_MAX_FEC_BLOCK_REDUNDANT_PACKETS;
+    core::Array<void*, max_n_packets_> sym_tab_;
+    core::Array<core::IByteBufferConstSlice, max_n_packets_> buffers_;
 };
 
 } // namespace fec

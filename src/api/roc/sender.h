@@ -13,16 +13,15 @@
 #define ROC_SENDER_H_
 
 #include "roc/types.h"
+#include "roc/config.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef struct roc_sender_config { int TODO; } roc_sender_config;
-
 typedef struct roc_sender roc_sender;
 
-roc_sender* roc_sender_new(const roc_sender_config* config);
+roc_sender* roc_sender_new(const roc_config* config);
 
 void roc_sender_delete(roc_sender* sender);
 

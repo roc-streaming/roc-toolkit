@@ -83,4 +83,10 @@
 //! Number of FEC packets in block.
 #define ROC_CONFIG_DEFAULT_FEC_BLOCK_REDUNDANT_PACKETS 10
 
+//! Maximal number of data packets in block.
+#define ROC_CONFIG_MAX_FEC_BLOCK_DATA_PACKETS 100
+
+//! Maximal number of FEC packets in block.
+#define ROC_CONFIG_MAX_FEC_BLOCK_REDUNDANT_PACKETS 100
+
 #endif // ROC_CONFIG_CONFIG_H_
