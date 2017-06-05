@@ -52,6 +52,8 @@ struct Config {
 
     //! Seed for LDPC scheme.
     int32_t ldpc_prng_seed;
+
+    //! N1 parameter LDPC scheme.
     uint8_t ldpc_N1;
 
     //! Configuration for ReedSolomon scheme.
