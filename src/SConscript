@@ -8,6 +8,8 @@ for targetdir in env.RecursiveGlob('modules', 'target_*'):
     if targetdir.name in env['ROC_TARGETS']:
         env.Append(CPPPATH=['#src/%s' % targetdir])
 
+modulelibs = []
+
 for moduledir in env.GlobDirs('modules/*'):
     defines = env['CPPDEFINES'] + [('ROC_MODULE', moduledir.name)]
 
@@ -23,8 +25,10 @@ for moduledir in env.GlobDirs('modules/*'):
     env.Alias(moduledir.name, [module], env.Action(''))
     env.AlwaysBuild(moduledir.name)
 
-    env.Append(LIBS=moduledir.name)
-    env.Prepend(LIBS=moduledir.name)
+    modulelibs.append(moduledir.name)
+
+env.Prepend(LIBS=modulelibs)
+env.Prepend(LIBS=modulelibs)
 
 if not GetOption('disable_lib'):
     defines = env['CPPDEFINES'] + [('ROC_MODULE', 'roc_lib')]
