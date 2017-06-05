@@ -105,8 +105,7 @@ struct ReceiverConfig {
     //! Maximum number of queued packets per session.
     size_t max_session_packets;
 
-    //! Forward Error Correction code scheme configuration. FEC should
-    //! be enabled by adding flag EnableFEC in the field \ref ClientConfig.options.
+    //! Forward Error Correction code scheme configuration.
     fec::Config fec;
 
     //! Composer for byte buffers.
@@ -162,8 +161,7 @@ struct SenderConfig {
     //! Delay time in milliseconds.
     size_t random_delay_time;
 
-    //! Forward Error Correction code scheme configuration. FEC should
-    //! be enabled by adding flag EnableFEC in the field \ref ClientConfig.options.
+    //! Forward Error Correction code scheme configuration.
     fec::Config fec;
 
     //! Composer for byte buffers.
