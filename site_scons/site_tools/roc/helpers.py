@@ -17,6 +17,11 @@ def Die(env, fmt, *args):
     print('error: ' + (fmt % args).strip() + '\n', file=sys.stderr)
     SCons.Script.Exit(1)
 
+def GlobDirs(env, pattern):
+    for path in env.Glob(pattern):
+        if os.path.isdir(path.srcnode().abspath):
+            yield path
+
 def RecursiveGlob(env, dirs, patterns, exclude=[]):
     if not isinstance(dirs, list):
         dirs = [dirs]
@@ -32,19 +37,23 @@ def RecursiveGlob(env, dirs, patterns, exclude=[]):
     for pattern in patterns:
         for root in dirs:
             for root, dirnames, filenames in os.walk(env.Dir(root).srcnode().abspath):
-                for filename in fnmatch.filter(filenames, pattern):
-                    cwd = env.Dir('.').srcnode().abspath
+                for names in [dirnames, filenames]:
+                    for name in fnmatch.filter(names, pattern):
+                        cwd = env.Dir('.').srcnode().abspath
 
-                    abspath = os.path.join(root, filename)
-                    relpath = os.path.relpath(abspath, cwd)
+                        abspath = os.path.join(root, name)
+                        relpath = os.path.relpath(abspath, cwd)
 
-                    for ex in exclude:
-                        if fnmatch.fnmatch(relpath, ex):
-                            break
-                        if fnmatch.fnmatch(os.path.basename(relpath), ex):
-                            break
-                    else:
-                        matches.append(env.File(relpath))
+                        for ex in exclude:
+                            if fnmatch.fnmatch(relpath, ex):
+                                break
+                            if fnmatch.fnmatch(os.path.basename(relpath), ex):
+                                break
+                        else:
+                            if names is dirnames:
+                                matches.append(env.Dir(relpath))
+                            else:
+                                matches.append(env.File(relpath))
 
     return matches
 
@@ -325,6 +334,7 @@ def CheckProg(context, prog):
 
 def Init(env):
     env.AddMethod(Die, 'Die')
+    env.AddMethod(GlobDirs, 'GlobDirs')
     env.AddMethod(RecursiveGlob, 'RecursiveGlob')
     env.AddMethod(Which, 'Which')
     env.AddMethod(Python, 'Python')
