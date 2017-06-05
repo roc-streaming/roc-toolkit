@@ -25,34 +25,38 @@ namespace {
 
 const fec::CodecType Fec = fec::ReedSolomon2m;
 
+enum {
+    // Sending port.
+    SenderPort = 501,
+
+    // Receiving port.
+    ReceiverPort = 502,
+
+    // Number of samples in every channel per packet.
+    PktSamples = ROC_CONFIG_DEFAULT_PACKET_SAMPLES,
+
+    // Number of samples in input/output buffers.
+    BufSamples = SampleStream::ReadBufsz,
+
+    // Number of packets to read per tick.
+    PacketsPerTick = 5,
+
+    // Maximum number of sample buffers.
+    MaxBuffers = PktSamples * 100 / BufSamples,
+
+    // FEC block.
+    SourcePkts = 20,
+    RepairPkts = 10,
+
+    // Percentage of packets to be lost.
+    RandomLoss = 1
+};
+
 } // namespace
 
 using namespace pipeline;
 
 TEST_GROUP(sender_receiver) {
-    enum {
-        // Sending port.
-        SenderPort = 501,
-
-        // Receiving port.
-        ReceiverPort = 502,
-
-        // Number of samples in every channel per packet.
-        PktSamples = ROC_CONFIG_DEFAULT_PACKET_SAMPLES,
-
-        // Number of samples in input/output buffers.
-        BufSamples = SampleStream::ReadBufsz,
-
-        // Number of packets to read per tick.
-        PacketsPerTick = 20,
-
-        // Maximum number of sample buffers.
-        MaxBuffers = PktSamples * 100 / BufSamples,
-
-        // Percentage of packets to be lost.
-        RandomLoss = 1
-    };
-
     SampleQueue<MaxBuffers> input;
     SampleQueue<MaxBuffers> output;
 
@@ -80,8 +84,8 @@ TEST_GROUP(sender_receiver) {
         config.samples_per_packet = PktSamples;
         config.random_loss_rate = random_loss;
         config.fec.codec = codec;
-        config.fec.n_source_packets = 20;
-        config.fec.n_repair_packets = 10;
+        config.fec.n_source_packets = SourcePkts;
+        config.fec.n_repair_packets = RepairPkts;
 
         sender.reset(new Sender(input, network, datagram_composer, config));
 
@@ -102,8 +106,8 @@ TEST_GROUP(sender_receiver) {
         config.output_latency = 0;
         config.samples_per_tick = BufSamples;
         config.fec.codec = codec;
-        config.fec.n_source_packets = 20;
-        config.fec.n_repair_packets = 10;
+        config.fec.n_source_packets = SourcePkts;
+        config.fec.n_repair_packets = RepairPkts;
 
         receiver.reset(new Receiver(network, output, config));
 
