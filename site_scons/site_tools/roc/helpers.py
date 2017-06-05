@@ -8,8 +8,10 @@ import fnmatch
 import copy
 import re
 import subprocess
+import hashlib
 
 import SCons.Script
+import SCons.SConf
 
 def Die(env, fmt, *args):
     print('error: ' + (fmt % args).strip() + '\n', file=sys.stderr)
@@ -289,6 +291,15 @@ int main() {
     context.Message("Checking for %s library %s... " % (
         language.upper(), name))
 
+    # Workaround for a SCons bug.
+    # RunProg uses a global incrementing counter for temporary .c file names. The
+    # file name depends on the number of invocations of that function, but not on
+    # the file contents. When the user subsequently invokes scons with different
+    # options, the sequence of file contents passed to RunProg may vary. However,
+    # RunProg may incorrectly use cached results from a previous run saved for
+    # different file contents but the same invocation number. To prevent this, we
+    # monkey patch its global counter with a hashsum of the file contents.
+    SCons.SConf._ac_build_counter = int(hashlib.md5(src).hexdigest(), 16)
     err, out = context.RunProg(src, suffix)
 
     if not err and out.strip() != '0':
