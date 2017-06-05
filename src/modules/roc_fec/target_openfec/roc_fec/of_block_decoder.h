@@ -20,7 +20,7 @@
 #include "roc_datagram/default_buffer_composer.h"
 #include "roc_packet/units.h"
 #include "roc_fec/iblock_decoder.h"
-#include "roc_fec/fec_type_options.h"
+#include "roc_fec/fec_config.h"
 
 extern "C" {
 #include <of_openfec_api.h>
