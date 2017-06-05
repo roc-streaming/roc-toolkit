@@ -78,7 +78,6 @@ private:
     void* make_buffer_(const size_t index);
 
     of_session_t* of_inst_;
-    bool of_inst_inited_;
     of_parameters_t* of_inst_params_;
 
     union {
