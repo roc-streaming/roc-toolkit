@@ -9,19 +9,24 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include <string.h>
+#include "roc_core/stddefs.h"
 #include "roc/sender.h"
 #include "roc/receiver.h"
 
 namespace roc {
 namespace test {
 
+namespace {
+
+const char* recv_address = "127.0.0.1:6000";
+
+} // namespace
+
 TEST_GROUP(sender_receiver) {
-    const char* recv_address = "127.0.0.1:6000";
     roc_config conf;
 
     void setup() {
-        memset(&conf.options, 0, sizeof(roc_config));
+        memset(&conf, 0, sizeof(roc_config));
         conf.samples_per_packet = 320;
         conf.n_source_packets = 20;
         conf.n_repair_packets = 10;

@@ -54,6 +54,7 @@ if not GetOption('disable_tests'):
 
         libs = test_libs[:]
         if testdir.name == 'roc_lib':
+            cpppath += ['#src/lib']
             libs += ['roc']
 
         sources = env.Glob('%s/*.cpp' % testdir)
