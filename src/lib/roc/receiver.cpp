@@ -23,7 +23,7 @@ using namespace roc;
 namespace {
 
 bool make_receiver_config(pipeline::ReceiverConfig& out, const roc_config* in) {
-    out = pipeline::ReceiverConfig(pipeline::EnableResampling);
+    out = pipeline::ReceiverConfig(0);
 
     if (in->options & ROC_API_CONF_DISABLE_FEC) {
         out.fec.codec = fec::NoCodec;
@@ -32,7 +32,22 @@ bool make_receiver_config(pipeline::ReceiverConfig& out, const roc_config* in) {
     } else {
         out.fec.codec = fec::ReedSolomon2m;
     }
+    if (in->options & ROC_API_CONF_RESAMPLER_OFF){
+    } else {
+        out.options |= pipeline::EnableResampling;
+    }
+    if (in->options & ROC_API_CONF_INTERLEAVER_OFF){
+    } else {
+        out.options |= pipeline::EnableInterleaving;
+    }
+    if (in->options & ROC_API_CONF_DISABLE_TIMING){
+    } else {
+        out.options |= pipeline::EnableTiming;
+    }
+    
 
+    out.session_latency = in->latency;
+    out.session_timeout = in->timeout;
     out.fec.n_source_packets = in->n_source_packets;
     out.fec.n_repair_packets = in->n_repair_packets;
 
