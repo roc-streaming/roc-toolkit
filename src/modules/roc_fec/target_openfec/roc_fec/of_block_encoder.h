@@ -65,28 +65,27 @@ public:
     virtual size_t n_fec_packets() const;
 
 private:
+    // max packets in block
+    static const size_t max_packets_ = ROC_CONFIG_MAX_FEC_BLOCK_DATA_PACKETS
+        + ROC_CONFIG_MAX_FEC_BLOCK_REDUNDANT_PACKETS;
+
+    // block size
+    const size_t blk_source_packets_;
+    const size_t blk_repair_packets_;
+
+    of_session_t* of_sess_;
+    of_parameters_t* of_sess_params_;
+
     of_codec_id_t codec_id_;
-
-    //! Shortcut for fec_config_.n_source_packets.
-    const size_t n_data_packets_;
-    //! Shortcut for fec_config_.n_repair_packets.
-    const size_t n_fec_packets_;
-
-    of_session_t* of_inst_;
-    of_parameters_t* of_inst_params_;
     union {
         of_ldpc_parameters ldpc_params_;
         of_rs_2_m_parameters_t rs_params_;
-    } fec_codec_params_;
+    } codec_params_;
 
     core::IByteBufferComposer& composer_;
 
-    //! Shortcut for maximal number of packets we should store.
-    static const size_t max_n_packets_ = ROC_CONFIG_MAX_FEC_BLOCK_DATA_PACKETS
-        + ROC_CONFIG_MAX_FEC_BLOCK_REDUNDANT_PACKETS;
-
-    core::Array<void*, max_n_packets_> sym_tab_;
-    core::Array<core::IByteBufferConstSlice, max_n_packets_> buffers_;
+    core::Array<core::IByteBufferConstSlice, max_packets_> buff_tab_;
+    core::Array<void*, max_packets_> data_tab_;
 };
 
 } // namespace fec
