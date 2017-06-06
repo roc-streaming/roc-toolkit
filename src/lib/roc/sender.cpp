@@ -24,7 +24,7 @@ using namespace roc;
 namespace {
 
 bool make_sender_config(pipeline::SenderConfig& out, const roc_config* in) {
-    out = pipeline::SenderConfig(pipeline::EnableInterleaving);
+    out = pipeline::SenderConfig(0);
 
     if (in->options & ROC_API_CONF_DISABLE_FEC) {
         out.fec.codec = fec::NoCodec;
@@ -32,6 +32,18 @@ bool make_sender_config(pipeline::SenderConfig& out, const roc_config* in) {
         out.fec.codec = fec::LDPCStaircase;
     } else {
         out.fec.codec = fec::ReedSolomon2m;
+    }
+    if (in->options & ROC_API_CONF_RESAMPLER_OFF){
+    } else {
+        out.options |= pipeline::EnableResampling;
+    }
+    if (in->options & ROC_API_CONF_INTERLEAVER_OFF){
+    } else {
+        out.options |= pipeline::EnableInterleaving;
+    }
+    if (in->options & ROC_API_CONF_DISABLE_TIMING){
+    } else {
+        out.options |= pipeline::EnableTiming;
     }
 
     out.samples_per_packet = in->samples_per_packet;
@@ -45,9 +57,10 @@ bool make_sender_config(pipeline::SenderConfig& out, const roc_config* in) {
 
 struct roc_sender {
     roc_sender(const pipeline::SenderConfig& config)
-        : buffer_pos_(0)
+        : config_(config)
+        , buffer_pos_(0)
         , n_bufs_(0)
-        , client_(sample_queue_, trx_.udp_sender(), trx_.udp_composer(), config) {
+        , client_(sample_queue_, trx_.udp_sender(), trx_.udp_composer(), config_) {
     }
 
     ~roc_sender() {
@@ -100,8 +113,7 @@ private:
     size_t write_packet_(const float* samples, size_t n_samples) {
         audio::ISampleBufferComposer& composer = audio::default_buffer_composer();
 
-        const size_t num_ch = 2;
-        const size_t buffer_size = ROC_CONFIG_DEFAULT_RECEIVER_TICK_SAMPLES * num_ch;
+        const size_t buffer_size = config_.samples_per_packet;
 
         if (!buffer_) {
             if (!(buffer_ = composer.compose())) {
@@ -134,6 +146,7 @@ private:
         return samples_2_copy;
     }
 
+    const pipeline::SenderConfig config_;
     audio::SampleBufferQueue sample_queue_;
 
     audio::ISampleBufferPtr buffer_;

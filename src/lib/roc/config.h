@@ -16,16 +16,24 @@
 extern "C" {
 #endif
 
-#define ROC_API_CONF_DISABLE_FEC 1
-#define ROC_API_CONF_LDPC_CODE 2
-#define ROC_API_CONF_RS_CODE 0
+enum RocConfigOpt_t {
+    ROC_API_CONF_DISABLE_FEC = 1,
+    ROC_API_CONF_LDPC_CODE = 2,
+    ROC_API_CONF_RESAMPLER_OFF = 4,
+    ROC_API_CONF_INTERLEAVER_OFF = 8,
+    ROC_API_CONF_DISABLE_TIMING = 16
+};
 
 typedef struct roc_config {
     unsigned int samples_per_packet;
     unsigned int n_source_packets;
     unsigned int n_repair_packets;
+    //! Session latency as number of samples.
+    unsigned int latency;
+    //! Timeout after which session is terminated as number of samples.
+    unsigned int timeout;
 
-    unsigned int options;
+    int options;
 } roc_config;
 
 #ifdef __cplusplus
