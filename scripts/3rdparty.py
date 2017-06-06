@@ -133,26 +133,18 @@ if name == 'uv':
     install('.libs/libuv.a', os.path.join(builddir, 'lib'))
 elif name == 'openfec':
     download(
-      'http://openfec.org/files/openfec_v%s.tgz' % ver.replace('.', '_'),
+      'https://github.com/roc-project/openfec/archive/v%s.tar.gz' % ver,
       'openfec_v%s.tar.gz' % ver)
     extract('openfec_v%s.tar.gz' % ver,
-            'openfec_v%s' % ver)
-    os.chdir('openfec_v%s' % ver)
-    # apply patches not accepted to upstream yet
-    patches = [
-        '4325c090fc21a3033988ad745c03bdff',
-        '8a9d38841778319f9c5045fbb39e3668',
-        ]
-    for p in patches:
-        download('https://gist.githubusercontent.com/gavv/%s/raw' % p, '%s.patch' % p)
-        execute('patch -p1 < %s.patch' % p, logfile)
-    freplace('src/CMakeLists.txt', 'SHARED', 'STATIC')
+            'openfec-%s' % ver)
+    os.chdir('openfec-%s' % ver)
     os.mkdir('build')
     os.chdir('build')
     args = [
         '-DCMAKE_C_COMPILER=%s' % '-'.join([s for s in [toolchain, 'gcc'] if s]),
         '-DCMAKE_FIND_ROOT_PATH=%s' % getsysroot(toolchain),
-        '-DCMAKE_POSITION_INDEPENDENT_CODE=ON',     # for newer cmake
+        '-DCMAKE_POSITION_INDEPENDENT_CODE=ON',
+        '-DBUILD_STATIC_LIBS=ON',
         ]
     if variant == 'debug':
         dist = 'bin/Debug'
@@ -161,7 +153,7 @@ elif name == 'openfec':
             # enable debug symbols and logs
             '-DDEBUG:STRING=ON',
             # -fPIC should be set explicitly in older cmake versions
-            # -ggdb is required for sanitizer traces
+            # -ggdb is required for sanitizer backtrace
             '-DCMAKE_C_FLAGS_DEBUG:STRING="-fPIC -ggdb"',
         ]
     else:
