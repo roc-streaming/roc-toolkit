@@ -1,7 +1,7 @@
 Quick start
 -----------
 
-For quick start, see "Building and testing" section [on wiki](https://github.com/roc-project/roc/wiki#building-and-testing).
+For a quick start, see "Building and testing" section [on wiki](https://github.com/roc-project/roc/wiki#building-and-testing).
 
 Dependencies
 ------------
@@ -10,18 +10,18 @@ Dependencies
 * GCC >= 4.1 or clang >= 3.4
 * python 2.x >= 2.6
 * scons
-* pkg-config (optional, if you want installed dependencies to be auto-detected)
-* gengetopt (optional, if you want to build tools)
-* doxygen >= 1.6, graphviz (optional, if you want to build documentation)
-* clang-tidy (optional, if you want to run static analyzer)
-* clang-format >= 3.6 (optional, if you want to format code)
-* libtool, autoconf, automake, make, cmake (optional, if you want to download and build external dependencies automatically)
+* pkg-config (optional, use if you want installed dependencies to be auto-detected)
+* gengetopt (optional, use if you want to build tools)
+* doxygen >= 1.6, graphviz (optional, use if you want to build internal documentation)
+* clang-tidy (optional, use if you want to run static analyzer)
+* clang-format >= 3.8 (optional, use if you want to format code)
+* libtool, autoconf, automake, make, cmake (optional, use if you want to download and build external dependencies automatically)
 
 **Runtime:**
 * [libuv](http://libuv.org) >= 1.4
-* [OpenFEC](http://openfec.org) (optional but recommended, enable if you want FEC support)
-* [SoX](http://sox.sourceforge.net) >= 14.4.0 (optional, enable if you want to build tools)
-* [CppUTest](http://cpputest.github.io) >= 3.4 (optional, enable if you want to build tests)
+* [OpenFEC](http://openfec.org) (optional but recommended, use if you want FEC support)
+* [SoX](http://sox.sourceforge.net) >= 14.4.0 (optional, use if you want to build tools)
+* [CppUTest](http://cpputest.github.io) >= 3.4 (optional, use if you want to build tests)
 
 **Notes:**
 * If you use CppUTest 3.4 or earlier, build it with `--disable-memory-leak-detection` option. It's leak detection doesn't work for us. Instead, we support building with clang sanitizers which include LeakSanitizer as well.
