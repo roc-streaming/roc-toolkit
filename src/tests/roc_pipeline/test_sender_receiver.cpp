@@ -184,13 +184,13 @@ TEST(sender_receiver, fec_interleaving) {
     flow_sender_receiver();
 }
 
-IGNORE_TEST(sender_receiver, fec_random_loss) {
+TEST(sender_receiver, fec_random_loss) {
     init_sender(0, Fec, RandomLoss);
     init_receiver(0, Fec);
     flow_sender_receiver();
 }
 
-IGNORE_TEST(sender_receiver, fec_interleaving_random_loss) {
+TEST(sender_receiver, fec_interleaving_random_loss) {
     init_sender(EnableInterleaving, Fec, RandomLoss);
     init_receiver(0, Fec);
     flow_sender_receiver();
