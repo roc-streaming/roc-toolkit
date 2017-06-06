@@ -68,7 +68,7 @@ TEST_GROUP(udp) {
                        int number,
                        int base) {
         //
-        IDatagramConstPtr dgm = queue.read();
+        IDatagramPtr dgm = queue.read();
         CHECK(dgm);
 
         expect_address(tx_addr, dgm->sender());

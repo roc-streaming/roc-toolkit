@@ -64,7 +64,7 @@ public:
     void read(datagram::IDatagramReader& reader, size_t n_pkt_samples) {
         CHECK(n_pkt_samples < MaxSamples);
 
-        datagram::IDatagramConstPtr dgm = reader.read();
+        datagram::IDatagramPtr dgm = reader.read();
         CHECK(dgm);
 
         CHECK(dgm->sender() == new_address(SrcPort));
