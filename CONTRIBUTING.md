@@ -20,7 +20,7 @@ Conventions
 
 * **Warnings**
 
-    If possible, ensure you code builds with `--enable-werror` option with major compilers, preferably recent `clang` and `gcc`. Running `scons tidy` may be also useful. See details in [INSTALL](INSTALL.md).
+    If possible, ensure that your code builds with `--enable-werror` option with major compilers, preferably recent `clang` and `gcc`. Running `scons tidy` may be also useful. See details in [INSTALL](INSTALL.md).
 
 * **Tests**
 
@@ -34,19 +34,19 @@ Conventions
 
 * **Multi-threading**
 
-    Avoid extensive communications between threads and sharing mutable objects. See details [on wiki](https://github.com/roc-project/roc/wiki/Overview#threads).
+    Avoid extensive communications between threads and sharing mutable objects. Prefer thread-safe queues and transfer object ownership to them. See details [on wiki](https://github.com/roc-project/roc/wiki/Overview#threads).
 
 * **Code style**
 
     Source code is periodically formatted using [`format.py`](scripts/format.py) script and `clang-format` with [`.clang-format`](.clang-format) config.
 
-    Follow existing code style or better run `scons fmt` before committing to avoid unnecessary merge conflicts in future. See details in [INSTALL](INSTALL.md).
+    Follow existing code style and if possible run `scons fmt` before committing to avoid unnecessary merge conflicts in future. See details in [INSTALL](INSTALL.md).
 
 * **Copyright**
 
     Ensure that copyright and MPL-2 header are present in every file. Run `scons fmt` or `scripts/format.py` to insert them automatically.
 
-    You can create `.copyright` file in the root directory of your working copy to provide non-default copyright header for `scripts/format.py`. Also feel free to add your copyright to a file (before MPL-2 header) when introducing non-trivial changes.
+    You can create `.copyright` file in the root directory of your working copy to provide non-default copyright header for `scripts/format.py`. Feel free to add your copyright when introducing non-trivial changes.
 
 * **Commits**
 
