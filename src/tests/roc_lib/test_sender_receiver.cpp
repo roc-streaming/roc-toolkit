@@ -35,6 +35,7 @@ TEST_GROUP(sender_receiver) {
     void setup() {
         memset(&conf, 0, sizeof(roc_config));
         conf.options = ROC_API_CONF_RESAMPLER_OFF | ROC_API_CONF_INTERLEAVER_OFF;
+        conf.FEC_scheme = roc_config::ReedSolomon2m;
         conf.samples_per_packet = (unsigned int)packet_len;
         conf.n_source_packets = 20;
         conf.n_repair_packets = 10;
