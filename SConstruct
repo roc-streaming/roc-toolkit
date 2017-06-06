@@ -473,7 +473,7 @@ if 'target_uv' in getdeps:
     env.ThirdParty(host, toolchain, thirdparty_variant, 'uv-1.4.2')
 
 if 'target_openfec' in getdeps:
-    env.ThirdParty(host, toolchain, thirdparty_variant, 'openfec-1.4.2', includes=[
+    env.ThirdParty(host, toolchain, thirdparty_variant, 'openfec-1.4.2.1', includes=[
         'lib_common',
         'lib_stable',
     ])
