@@ -38,7 +38,7 @@ public:
         sem_.post();
     }
 
-    virtual datagram::IDatagramConstPtr read() {
+    virtual datagram::IDatagramPtr read() {
         sem_.pend();
         return queue_.read();
     }

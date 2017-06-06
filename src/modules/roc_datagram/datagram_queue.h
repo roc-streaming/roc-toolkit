@@ -38,7 +38,7 @@ public:
     DatagramQueue(size_t max_size = ROC_CONFIG_MAX_DATAGRAMS);
 
     //! Read datagram.
-    virtual IDatagramConstPtr read();
+    virtual IDatagramPtr read();
 
     //! Write datagram.
     virtual void write(const IDatagramPtr&);

@@ -26,7 +26,7 @@ public:
     //! Read datagram.
     //! @returns
     //!  next datagram or NULL if there is no datagrams.
-    virtual IDatagramConstPtr read() = 0;
+    virtual IDatagramPtr read() = 0;
 };
 
 } // namespace datagram

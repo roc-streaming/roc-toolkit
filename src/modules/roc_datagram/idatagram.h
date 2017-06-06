@@ -58,9 +58,6 @@ public:
 //! Datagram smart pointer.
 typedef core::SharedPtr<IDatagram> IDatagramPtr;
 
-//! Const datagram smart pointer.
-typedef core::SharedPtr<IDatagram const> IDatagramConstPtr;
-
 } // namespace datagram
 } // namespace roc
 
