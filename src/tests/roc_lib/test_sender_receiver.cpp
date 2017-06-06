@@ -96,12 +96,12 @@ TEST_GROUP(sender_receiver) {
     void check_sample_arrays(float *original, float *received, const size_t len){
         size_t first_sample = 0;
         for(size_t i = 0; i < len; ++i) {
-            if (first_sample == 0 && fabs(received[i]) < 1e-9) {
+            if (first_sample == 0 && fabs(double(received[i])) < 1e-9) {
                 continue;
             } else if (first_sample == 0) {
                 first_sample = i;
             }
-            if (fabs(original[i - first_sample] - received[i]) > 1e-9) {
+            if (fabs(double(original[i - first_sample] - received[i])) > 1e-9) {
                 char sbuff[64];
                 snprintf(sbuff, sizeof(sbuff), "Failed comparing samples #%lu\n", i);
                 FAIL(sbuff);
