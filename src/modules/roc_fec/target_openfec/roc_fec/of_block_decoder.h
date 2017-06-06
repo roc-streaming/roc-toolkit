@@ -63,41 +63,55 @@ public:
     virtual size_t n_fec_packets() const;
 
 private:
-    of_codec_id_t codec_id_;
+    void update_();
+    void decode_();
 
-    //! Shortcut for fec_config_.n_source_packets.
-    const size_t n_data_packets_;
-    //! Shortcut for fec_config_.n_repair_packets.
-    const size_t n_fec_packets_;
+    bool has_n_packets_(size_t n_packets) const;
+    bool is_optimal_() const;
+
+    void reset_session_();
+    void destroy_session_();
+
+    void report_() const;
+
+    void fix_buffer_(size_t index);
+    void* make_buffer_(size_t index);
 
     static void* source_cb_(void* context, uint32_t size, uint32_t index);
     static void* repair_cb_(void* context, uint32_t size, uint32_t index);
 
-    void report_();
+    // maximum block size
+    static const size_t max_packets_ = ROC_CONFIG_MAX_FEC_BLOCK_DATA_PACKETS
+        + ROC_CONFIG_MAX_FEC_BLOCK_REDUNDANT_PACKETS;
 
-    void* make_buffer_(const size_t index);
+    // block size
+    const size_t blk_source_packets_;
+    const size_t blk_repair_packets_;
 
-    of_session_t* of_inst_;
-    of_parameters_t* of_inst_params_;
-
+    of_codec_id_t codec_id_;
     union {
-        of_ldpc_parameters ldpc_params_;
         of_rs_2_m_parameters_t rs_params_;
-    } fec_codec_params_;
+        of_ldpc_parameters ldpc_params_;
+    } codec_params_;
+
+    // session is recreated for every new block
+    of_session_t* of_sess_;
+    of_parameters_t* of_sess_params_;
 
     core::IByteBufferComposer& composer_;
 
-    //! Shortcut for maximal number of packets we should store.
-    static const size_t max_n_packets_ = ROC_CONFIG_MAX_FEC_BLOCK_DATA_PACKETS
-        + ROC_CONFIG_MAX_FEC_BLOCK_REDUNDANT_PACKETS;
+    // received and repaired source and repair packets
+    core::Array<core::IByteBufferConstSlice, max_packets_> buff_tab_;
 
-    core::Array<core::IByteBufferConstSlice, max_n_packets_> buffers_;
-    core::Array<void*, max_n_packets_> sym_tab_;
-    core::Array<bool, max_n_packets_> received_;
+    // data of received and repaired source and repair packets
+    // points to buff_tab_[x].data() or to memory allocated by OpenFEC
+    core::Array<void*, max_packets_> data_tab_;
 
-    bool repair_attempted_;
+    // true if packet is received, false if it's is lost or repaired
+    core::Array<bool, max_packets_> recv_tab_;
 
-    size_t packets_rcvd_;
+    bool has_new_packets_;
+    bool decoding_finished_;
 };
 
 } // namespace fec
