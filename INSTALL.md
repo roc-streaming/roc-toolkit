@@ -15,19 +15,17 @@ Dependencies
 * doxygen >= 1.6, graphviz (optional, if you want to build documentation)
 * clang-tidy (optional, if you want to run static analyzer)
 * clang-format >= 3.6 (optional, if you want to format code)
-* libtool, autoconf, automake, patch, make, cmake (optional, if you want to download and build external dependencies automatically)
+* libtool, autoconf, automake, make, cmake (optional, if you want to download and build external dependencies automatically)
 
 **Runtime:**
 * [libuv](http://libuv.org) >= 1.4
-* [OpenFEC](http://openfec.org) (optional but recommended, for LDPC-Staircase FEC codec)
-* [SoX](http://sox.sourceforge.net) >= 14.4.0 (optional, if you want to build tools)
-* [CppUTest](http://cpputest.github.io) (optional, if you want to build tests)
+* [OpenFEC](http://openfec.org) (optional but recommended, enable if you want FEC support)
+* [SoX](http://sox.sourceforge.net) >= 14.4.0 (optional, enable if you want to build tools)
+* [CppUTest](http://cpputest.github.io) >= 3.4 (optional, enable if you want to build tests)
 
 **Notes:**
-* if you use CppUTest 3.4 or earlier, build it with `--disable-memory-leak-detection` option
-* if you use OpenFEC, it's recommended to apply the following patches that are not accepted to upstream yet (they're automatically applied when `--with-3rdparty` option is used):
-  * [openfec-1.4.2-32bit.patch](https://gist.github.com/gavv/4325c090fc21a3033988ad745c03bdff) (fix for 32-bit systems)
-  * [openfec-1.4.2-trace.patch](https://gist.github.com/gavv/8a9d38841778319f9c5045fbb39e3668) (hide errors from stderr)
+* If you use CppUTest 3.4 or earlier, build it with `--disable-memory-leak-detection` option. It's leak detection doesn't work for us. Instead, we support building with clang sanitizers which include LeakSanitizer as well.
+* If you use OpenFEC, it's recommended to use [our fork](https://github.com/roc-project/openfec) or manually apply patches from it. It is automatically selected by `--with-3rdparty=openfec` option. The fork contains several bugfixes and minor improvements that are not available in the upstream yet.
 
 Building
 --------
