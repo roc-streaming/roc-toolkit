@@ -616,7 +616,7 @@ if compiler in ['gcc', 'clang']:
         san_conf = Configure(san_env, custom_tests=env.CustomTests)
 
         flags = [
-            #'-fsanitize=address',
+            '-fsanitize=address',
             '-fsanitize=undefined',
         ]
 
