@@ -25,13 +25,6 @@ namespace {
 bool make_receiver_config(pipeline::ReceiverConfig& out, const roc_config* in) {
     out = pipeline::ReceiverConfig(0);
 
-    if (in->options & ROC_API_CONF_DISABLE_FEC) {
-        out.fec.codec = fec::NoCodec;
-    } else if (in->options & ROC_API_CONF_LDPC_CODE) {
-        out.fec.codec = fec::LDPCStaircase;
-    } else {
-        out.fec.codec = fec::ReedSolomon2m;
-    }
     if (in->options & ROC_API_CONF_RESAMPLER_OFF){
     } else {
         out.options |= pipeline::EnableResampling;
@@ -45,6 +38,13 @@ bool make_receiver_config(pipeline::ReceiverConfig& out, const roc_config* in) {
         out.options |= pipeline::EnableTiming;
     }
     
+    if (in->FEC_scheme == roc_config::ReedSolomon2m) {
+        out.fec.codec = fec::ReedSolomon2m;
+    } else if (in->FEC_scheme == roc_config::LDPC) {
+        out.fec.codec = fec::LDPCStaircase;
+    } else {
+        out.fec.codec = fec::ReedSolomon2m;
+    }
 
     out.session_latency = in->latency;
     out.session_timeout = in->timeout;

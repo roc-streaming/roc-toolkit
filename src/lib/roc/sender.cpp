@@ -26,13 +26,6 @@ namespace {
 bool make_sender_config(pipeline::SenderConfig& out, const roc_config* in) {
     out = pipeline::SenderConfig(0);
 
-    if (in->options & ROC_API_CONF_DISABLE_FEC) {
-        out.fec.codec = fec::NoCodec;
-    } else if (in->options & ROC_API_CONF_LDPC_CODE) {
-        out.fec.codec = fec::LDPCStaircase;
-    } else {
-        out.fec.codec = fec::ReedSolomon2m;
-    }
     if (in->options & ROC_API_CONF_RESAMPLER_OFF){
     } else {
         out.options |= pipeline::EnableResampling;
@@ -44,6 +37,14 @@ bool make_sender_config(pipeline::SenderConfig& out, const roc_config* in) {
     if (in->options & ROC_API_CONF_DISABLE_TIMING){
     } else {
         out.options |= pipeline::EnableTiming;
+    }
+
+    if (in->FEC_scheme == roc_config::ReedSolomon2m) {
+        out.fec.codec = fec::ReedSolomon2m;
+    } else if (in->FEC_scheme == roc_config::LDPC) {
+        out.fec.codec = fec::LDPCStaircase;
+    } else {
+        out.fec.codec = fec::ReedSolomon2m;
     }
 
     out.samples_per_packet = in->samples_per_packet;
