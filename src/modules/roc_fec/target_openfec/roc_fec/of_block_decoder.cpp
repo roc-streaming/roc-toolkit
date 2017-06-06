@@ -172,11 +172,9 @@ void OFBlockDecoder::decode_() {
     }
 
     // try to repair more packets
-    if (of_finish_decoding(of_sess_) != OF_STATUS_OK) {
-        roc_panic("block decoder: can't finish decoding");
+    if (of_finish_decoding(of_sess_) == OF_STATUS_OK) {
+        decoding_finished_ = true;
     }
-
-    decoding_finished_ = true;
 }
 
 // note: we have to calculate this every time because OpenFEC
