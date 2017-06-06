@@ -137,7 +137,15 @@ def CompilerTarget(env, compiler):
     for line in proc.stdout.readlines():
         m = re.match(r'^Target:\s*(\S+)', line)
         if m:
-            return m.group(1)
+            parts = m.group(1).split('-')
+            # "system" defaults to "pc" on recent config.guess versions
+            # use the same newer format for all compilers
+            if len(parts) == 3:
+                parts = [parts[0]] + ['pc'] + parts[1:]
+            elif len(parts) == 4:
+                if parts[1] == 'unknown':
+                    parts[1] = 'pc'
+            return '-'.join(parts)
 
     return None
 
