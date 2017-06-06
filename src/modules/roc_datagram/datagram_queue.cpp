@@ -17,7 +17,7 @@ DatagramQueue::DatagramQueue(size_t max_size)
     : max_size_(max_size) {
 }
 
-IDatagramConstPtr DatagramQueue::read() {
+IDatagramPtr DatagramQueue::read() {
     Lock lock(mutex_);
 
     IDatagramPtr dgm = list_.front();
