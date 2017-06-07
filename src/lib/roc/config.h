@@ -18,7 +18,7 @@ extern "C" {
 
 //! Receiver and sender options.
 enum RocConfigOpt_t {
-    //! Turn off resampler in receiver. Might be usefull for 
+    //! Turn off resampler in receiver. Might be usefull for
     //! exact samples transmition.
     ROC_API_CONF_RESAMPLER_OFF = (1 << 0),
 
@@ -47,11 +47,7 @@ typedef struct roc_config {
     unsigned int timeout;
 
     //! FEC scheme type.
-    enum {
-        ReedSolomon2m = 0,
-        LDPC,
-        NO_FEC
-    } FEC_scheme;
+    enum { ReedSolomon2m = 0, LDPC, NO_FEC } FEC_scheme;
 
     //! Containment for RocConfigOpt_t flags.
     int options;
