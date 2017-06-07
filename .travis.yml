@@ -23,12 +23,12 @@ before_install:
     - docker pull rocproject/cross-linaro
 
 script:
+    - scripts/travis/docker.sh rocproject/ci-ubuntu:16.04 scripts/travis/ubuntu-16.04.sh
+    - scripts/travis/docker.sh rocproject/ci-ubuntu:14.04 scripts/travis/ubuntu-14.04.sh
     - scripts/travis/docker.sh rocproject/ci-fedora scripts/travis/fedora.sh
     - scripts/travis/docker.sh rocproject/ci-debian scripts/travis/debian.sh
-    - scripts/travis/docker.sh rocproject/ci-ubuntu:14.04 scripts/travis/ubuntu-14.04.sh
-    - scripts/travis/docker.sh rocproject/ci-ubuntu:16.04 scripts/travis/ubuntu-16.04.sh
-    - scripts/travis/docker.sh rocproject/ci-centos:5 scripts/travis/centos-5.sh
     - scripts/travis/docker.sh rocproject/ci-centos:7 scripts/travis/centos-7.sh
+    - scripts/travis/docker.sh rocproject/ci-centos:5 scripts/travis/centos-5.sh
     - scripts/travis/docker.sh rocproject/ci-empty scripts/travis/empty.sh
     - scripts/travis/docker.sh rocproject/cross-raspberry scripts/travis/raspberry.sh
     - scripts/travis/docker.sh rocproject/cross-linaro scripts/travis/linaro.sh
