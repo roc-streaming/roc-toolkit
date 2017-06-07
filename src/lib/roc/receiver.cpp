@@ -43,7 +43,7 @@ bool make_receiver_config(pipeline::ReceiverConfig& out, const roc_config* in) {
     } else if (in->FEC_scheme == roc_config::LDPC) {
         out.fec.codec = fec::LDPCStaircase;
     } else {
-        out.fec.codec = fec::ReedSolomon2m;
+        out.fec.codec = fec::NoCodec;
     }
 
     out.session_latency = in->latency;
