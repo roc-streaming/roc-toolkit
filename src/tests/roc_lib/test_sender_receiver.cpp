@@ -11,6 +11,7 @@
 
 #include "roc/receiver.h"
 #include "roc/sender.h"
+#include "roc_core/log.h"
 #include "roc/log.h"
 #include "roc_core/stddefs.h"
 #include "roc_datagram/address_to_str.h"
