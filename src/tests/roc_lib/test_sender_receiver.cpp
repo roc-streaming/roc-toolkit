@@ -137,7 +137,7 @@ TEST_GROUP(sender_receiver) {
         while(s_last == 0){
             size_t i = 0;
             ipacket++;
-            CHECK(roc_receiver_read(recv, rx_buff, packet_len) == packet_len);
+            CHECK(roc_receiver_read(recv, rx_buff, packet_len) == (ssize_t)packet_len);
             if (seek_first) {
                 for (; i < packet_len && fabs(double(rx_buff[i])) < 1e-9; i++, s_first++)
                     {}
