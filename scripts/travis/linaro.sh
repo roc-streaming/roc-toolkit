@@ -10,10 +10,12 @@ do
     scons -Q --enable-werror --with-3rdparty=uv,openfec,sox,cpputest \
       host=${TOOLCHAIN} variant=$v
 
-  for t in bin/${TOOLCHAIN}/roc-test-*
-  do
-    LD_LIBRARY_PATH="${SYSROOT}/lib:${PWD}/3rdparty/${TOOLCHAIN}/lib" \
-      python2 site_scons/site_tools/roc/wrappers/timeout.py 300 \
-        qemu-arm -L "${SYSROOT}" -cpu ${CPU} $t
-  done
+  find bin/${TOOLCHAIN} -name 'roc-test-*' \
+    -not -name 'roc-test-lib' |\
+    while read t
+    do
+      LD_LIBRARY_PATH="${SYSROOT}/lib:${PWD}/3rdparty/${TOOLCHAIN}/lib" \
+        python2 site_scons/site_tools/roc/wrappers/timeout.py 300 \
+          qemu-arm -L "${SYSROOT}" -cpu ${CPU} $t
+    done
 done
