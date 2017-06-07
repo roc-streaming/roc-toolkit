@@ -13,6 +13,7 @@ do
   for t in bin/${TOOLCHAIN}/roc-test-*
   do
     LD_LIBRARY_PATH="${SYSROOT}/lib:${PWD}/3rdparty/${TOOLCHAIN}/lib" \
-      qemu-arm -L "${SYSROOT}" -cpu ${CPU} $t
+      python2 site_scons/site_tools/roc/wrappers/timeout.py 300 \
+        qemu-arm -L "${SYSROOT}" -cpu ${CPU} $t
   done
 done
