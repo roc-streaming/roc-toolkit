@@ -153,7 +153,9 @@ TEST_GROUP(sender_receiver) {
                         s_last = inner_cntr + s_first;
                         roc_log(LogInfo,
                             "FINISH: s_first: %lu, s_last: %lu, inner_cntr: %lu",
-                                s_first, s_last, inner_cntr);
+                                (unsigned long)s_first,
+                                (unsigned long)s_last,
+                                (unsigned long)inner_cntr);
                         break;
                     } else if (fabs(double(original[inner_cntr] - rx_buff[i])) > 1e-9) {
                         char sbuff[256];
