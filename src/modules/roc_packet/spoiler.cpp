@@ -39,8 +39,11 @@ void Spoiler::set_random_delay(size_t rate, size_t ms) {
 }
 
 void Spoiler::write(const IPacketPtr& packet) {
-    if (core::random(100) < loss_rate_) {
-        return;
+    // FIXME: remove this when we finish FECFRAME support
+    if (!packet->rtp() || !packet->rtp()->marker()) {
+        if (core::random(100) < loss_rate_) {
+            return;
+        }
     }
     if (core::random(100) < delay_rate_) {
         core::sleep_for_ms(delay_ms_);
