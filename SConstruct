@@ -24,6 +24,11 @@ AddOption('--enable-werror',
           action='store_true',
           help='enable -Werror compiler option')
 
+AddOption('--enable-sanitizers',
+          dest='enable_sanitizers',
+          action='store_true',
+          help='enable GCC/clang sanitizers')
+
 AddOption('--disable-lib',
           dest='disable_lib',
           action='store_true',
@@ -43,11 +48,6 @@ AddOption('--disable-doc',
           dest='disable_doc',
           action='store_true',
           help='disable doxygen documentation generation')
-
-AddOption('--disable-sanitizers',
-          dest='disable_sanitizers',
-          action='store_true',
-          help='disable GCC/clang sanitizers')
 
 AddOption('--with-openfec',
           dest='with_openfec',
@@ -625,12 +625,7 @@ if compiler == 'clang':
         ])
 
 if compiler in ['gcc', 'clang']:
-    if not GetOption('disable_sanitizers') \
-      and not crosscompile \
-      and variant == 'debug' and (
-        (compiler == 'gcc' and compiler_ver[:2] >= (4, 9)) or
-        (compiler == 'clang' and compiler_ver[:2] >= (3, 6))):
-
+    if GetOption('enable_sanitizers'):
         san_env = env.Clone()
         san_conf = Configure(san_env, custom_tests=env.CustomTests)
 
