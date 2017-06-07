@@ -377,7 +377,7 @@ env.Append(LIBPATH=[])
 env.Append(LIBS=[])
 
 lib_env = env.Clone()
-prog_env = env.Clone()
+tool_env = env.Clone()
 test_env = env.Clone()
 
 alldeps = env['ROC_TARGETS']
@@ -446,9 +446,9 @@ if 'target_openfec' in extdeps:
     env = conf.Finish()
 
 if 'target_sox' in extdeps:
-    conf = Configure(prog_env, custom_tests=env.CustomTests)
+    conf = Configure(tool_env, custom_tests=env.CustomTests)
 
-    prog_env.TryParseConfig('--cflags --libs sox')
+    tool_env.TryParseConfig('--cflags --libs sox')
 
     if not crosscompile:
         if not conf.CheckLibWithHeaderExpr(
@@ -459,7 +459,7 @@ if 'target_sox' in extdeps:
         if not conf.CheckLibWithHeaderUniq('sox', 'sox.h', 'c'):
             env.Die("libsox not found (see 'config.log' for details)")
 
-    prog_env = conf.Finish()
+    tool_env = conf.Finish()
 
 if 'target_gengetopt' in extdeps:
     conf = Configure(env, custom_tests=env.CustomTests)
@@ -494,11 +494,11 @@ if 'target_openfec' in getdeps:
     ])
 
 if 'target_sox' in getdeps:
-    prog_env.ThirdParty(host, toolchain, thirdparty_variant, 'alsa-1.0.29')
-    prog_env.ThirdParty(host, toolchain, thirdparty_variant, 'sox-14.4.2',
+    tool_env.ThirdParty(host, toolchain, thirdparty_variant, 'alsa-1.0.29')
+    tool_env.ThirdParty(host, toolchain, thirdparty_variant, 'sox-14.4.2',
         deps=['alsa-1.0.29'])
 
-    conf = Configure(prog_env, custom_tests=env.CustomTests)
+    conf = Configure(tool_env, custom_tests=env.CustomTests)
 
     for lib in [
             'z', 'ltdl', 'magic',
@@ -508,7 +508,7 @@ if 'target_sox' in getdeps:
             'pulse', 'pulse-simple']:
         conf.CheckLib(lib)
 
-    prog_env = conf.Finish()
+    tool_env = conf.Finish()
 
 if 'target_gengetopt' in getdeps:
     env.ThirdParty(build, "", thirdparty_variant, 'gengetopt-2.22.6')
@@ -700,7 +700,7 @@ env.AlwaysBuild(
             env.Pretty('TIDY', 'src', 'yellow')
         )))
 
-Export('env', 'lib_env', 'prog_env', 'test_env')
+Export('env', 'lib_env', 'tool_env', 'test_env')
 
 env.SConscript('src/SConscript',
             variant_dir=build_dir, duplicate=0)

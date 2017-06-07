@@ -1,6 +1,6 @@
 import re
 
-Import('env', 'lib_env', 'prog_env', 'test_env')
+Import('env', 'lib_env', 'tool_env', 'test_env')
 
 env.Append(CPPPATH=['#src/modules'])
 
@@ -12,6 +12,7 @@ modulelibs = []
 
 for moduledir in env.GlobDirs('modules/*'):
     cenv = env.Clone()
+    cenv.AppendVars(tool_env)
     cenv.Append(CPPDEFINES=('ROC_MODULE', moduledir.name))
 
     sources = env.Glob('%s/*.cpp' % moduledir)
@@ -48,7 +49,7 @@ if not GetOption('disable_lib'):
 
 if not GetOption('disable_tests'):
     cenv = env.Clone()
-    cenv.AppendVars(prog_env)
+    cenv.AppendVars(tool_env)
     cenv.AppendVars(test_env)
 
     test_main = cenv.Object('tests/test_main.cpp')
@@ -78,7 +79,7 @@ if not GetOption('disable_tests'):
 if not GetOption('disable_tools'):
     for tooldir in env.GlobDirs('tools/*'):
         cenv = env.Clone()
-        cenv.AppendVars(prog_env)
+        cenv.AppendVars(tool_env)
         cenv.Append(CPPDEFINES=('ROC_MODULE', tooldir.name))
         cenv.Append(CPPPATH=['tools', '#src/tools/%s' % tooldir.name])
 
