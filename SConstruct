@@ -376,6 +376,10 @@ env.Append(CPPPATH=[])
 env.Append(LIBPATH=[])
 env.Append(LIBS=[])
 
+lib_env = env.Clone()
+prog_env = env.Clone()
+test_env = env.Clone()
+
 alldeps = env['ROC_TARGETS']
 getdeps = []
 
@@ -393,9 +397,9 @@ if GetOption('with_3rdparty'):
 
 extdeps = set(alldeps) - set(getdeps)
 
-conf = Configure(env, custom_tests=env.CustomTests)
-
 if 'target_uv' in extdeps:
+    conf = Configure(env, custom_tests=env.CustomTests)
+
     env.TryParseConfig('--cflags --libs libuv')
 
     if not crosscompile:
@@ -406,7 +410,11 @@ if 'target_uv' in extdeps:
         if not conf.CheckLibWithHeaderUniq('uv', 'uv.h', 'c'):
             env.Die("libuv not found (see 'config.log' for details)")
 
+    env = conf.Finish()
+
 if 'target_openfec' in extdeps:
+    conf = Configure(env, custom_tests=env.CustomTests)
+
     if not env.TryParseConfig('--silence-errors --cflags --libs openfec') \
       and not crosscompile:
         for prefix in ['/usr/local', '/usr']:
@@ -435,8 +443,12 @@ if 'target_openfec' in extdeps:
         env.Die(
             "openfec has no LDPC-Staircase codec support (OF_USE_LDPC_STAIRCASE_CODEC)")
 
+    env = conf.Finish()
+
 if 'target_sox' in extdeps:
-    env.TryParseConfig('--cflags --libs sox')
+    conf = Configure(prog_env, custom_tests=env.CustomTests)
+
+    prog_env.TryParseConfig('--cflags --libs sox')
 
     if not crosscompile:
         if not conf.CheckLibWithHeaderExpr(
@@ -447,7 +459,11 @@ if 'target_sox' in extdeps:
         if not conf.CheckLibWithHeaderUniq('sox', 'sox.h', 'c'):
             env.Die("libsox not found (see 'config.log' for details)")
 
+    prog_env = conf.Finish()
+
 if 'target_gengetopt' in extdeps:
+    conf = Configure(env, custom_tests=env.CustomTests)
+
     if 'GENGETOPT' in env.Dictionary():
         gengetopt = env['GENGETOPT']
     else:
@@ -456,18 +472,17 @@ if 'target_gengetopt' in extdeps:
     if not conf.CheckProg(gengetopt):
         env.Die("gengetopt not found in PATH (looked for '%s')" % gengetopt)
 
-env = conf.Finish()
-
-test_env = env.Clone()
-test_conf = Configure(test_env, custom_tests=test_env.CustomTests)
+    env = conf.Finish()
 
 if 'target_cpputest' in extdeps:
+    conf = Configure(test_env, custom_tests=env.CustomTests)
+
     test_env.TryParseConfig('--cflags --libs cpputest')
 
-    if not test_conf.CheckLibWithHeaderUniq('CppUTest', 'CppUTest/TestHarness.h', 'cxx'):
+    if not conf.CheckLibWithHeaderUniq('CppUTest', 'CppUTest/TestHarness.h', 'cxx'):
         test_env.Die("CppUTest not found (see 'config.log' for details)")
 
-test_env = test_conf.Finish()
+    test_env = conf.Finish()
 
 if 'target_uv' in getdeps:
     env.ThirdParty(host, toolchain, thirdparty_variant, 'uv-1.4.2')
@@ -479,10 +494,11 @@ if 'target_openfec' in getdeps:
     ])
 
 if 'target_sox' in getdeps:
-    env.ThirdParty(host, toolchain, thirdparty_variant, 'alsa-1.0.29')
-    env.ThirdParty(host, toolchain, thirdparty_variant, 'sox-14.4.2', deps=['alsa-1.0.29'])
+    prog_env.ThirdParty(host, toolchain, thirdparty_variant, 'alsa-1.0.29')
+    prog_env.ThirdParty(host, toolchain, thirdparty_variant, 'sox-14.4.2',
+        deps=['alsa-1.0.29'])
 
-    conf = Configure(env, custom_tests=env.CustomTests)
+    conf = Configure(prog_env, custom_tests=env.CustomTests)
 
     for lib in [
             'z', 'ltdl', 'magic',
@@ -492,7 +508,7 @@ if 'target_sox' in getdeps:
             'pulse', 'pulse-simple']:
         conf.CheckLib(lib)
 
-    env = conf.Finish()
+    prog_env = conf.Finish()
 
 if 'target_gengetopt' in getdeps:
     env.ThirdParty(build, "", thirdparty_variant, 'gengetopt-2.22.6')
@@ -522,6 +538,9 @@ if compiler in ['gcc', 'clang']:
     ])
     env.Append(LINKFLAGS=[
         '-pthread',
+    ])
+    lib_env.Append(LINKFLAGS=[
+        '-Wl,--version-script=' + env.File('#src/lib/roc.version').path
     ])
     if not(compiler == 'clang' and variant == 'debug'):
         env.Append(CXXFLAGS=[
@@ -640,21 +659,17 @@ if compiler in ['gcc', 'clang']:
         CXXFLAGS=[('-isystem', env.Dir(path).path) for path in \
                   env['CPPPATH'] + ['%s/tools' % build_dir]])
 
-if not GetOption('disable_tests'):
-    for var in ['CXXFLAGS', 'CPPDEFINES', 'CPPPATH', 'LIBPATH', 'LIBS']:
-        env['TEST_' + var] = [p for p in test_env[var] if not p in env[var]]
+test_env.Append(CPPDEFINES=('CPPUTEST_USE_MEM_LEAK_DETECTION', '0'))
 
-    env['TEST_CPPDEFINES'] += [('CPPUTEST_USE_MEM_LEAK_DETECTION', '0')]
+if compiler in ['gcc', 'clang']:
+    test_env.Prepend(CXXFLAGS=[
+            ('-isystem', env.Dir(path).path) for path in test_env['CPPPATH']
+    ])
 
-    if compiler in ['gcc', 'clang']:
-        env.Prepend(
-            TEST_CXXFLAGS=[
-                ('-isystem', env.Dir(path).path) for path in env['TEST_CPPPATH']])
-
-    if compiler == 'clang':
-        env.AppendUnique(TEST_CXXFLAGS=[
-            '-Wno-weak-vtables',
-        ])
+if compiler == 'clang':
+    test_env.AppendUnique(CXXFLAGS=[
+        '-Wno-weak-vtables',
+    ])
 
 env.AlwaysBuild(
     env.Alias('tidy', [env.Dir('#')],
@@ -685,7 +700,7 @@ env.AlwaysBuild(
             env.Pretty('TIDY', 'src', 'yellow')
         )))
 
-Export('env')
+Export('env', 'lib_env', 'prog_env', 'test_env')
 
 env.SConscript('src/SConscript',
             variant_dir=build_dir, duplicate=0)

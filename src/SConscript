@@ -1,6 +1,6 @@
-Import('env')
-
 import re
+
+Import('env', 'lib_env', 'prog_env', 'test_env')
 
 env.Append(CPPPATH=['#src/modules'])
 
@@ -11,8 +11,8 @@ for targetdir in env.RecursiveGlob('modules', 'target_*'):
 modulelibs = []
 
 for moduledir in env.GlobDirs('modules/*'):
-    modenv = env.Clone()
-    modenv.Append(CPPDEFINES=('ROC_MODULE', moduledir.name))
+    cenv = env.Clone()
+    cenv.Append(CPPDEFINES=('ROC_MODULE', moduledir.name))
 
     sources = env.Glob('%s/*.cpp' % moduledir)
     for targetdir in env.RecursiveGlob(moduledir, 'target_*'):
@@ -22,73 +22,73 @@ for moduledir in env.GlobDirs('modules/*'):
     if not sources:
         continue
 
-    module = modenv.StaticLibrary(moduledir.name, sources)
+    module = cenv.StaticLibrary(moduledir.name, sources)
     env.Alias(moduledir.name, [module], env.Action(''))
     env.AlwaysBuild(moduledir.name)
 
     modulelibs.append(moduledir.name)
 
+env.Prepend(LIBS=modulelibs)
+env.Prepend(LIBS=modulelibs)
+
 if not GetOption('disable_lib'):
-    libenv = env.Clone()
-    libenv.Append(CPPDEFINES=('ROC_MODULE', 'roc_lib'))
-    libenv.Append(CPPPATH=['lib'])
-    libenv.Prepend(LIBS=modulelibs+modulelibs)
+    cenv = env.Clone()
+    cenv.AppendVars(lib_env)
+    cenv.Append(CPPDEFINES=('ROC_MODULE', 'roc_lib'))
+    cenv.Append(CPPPATH=['lib'])
 
     sources = env.Glob('lib/roc/*.cpp')
-    lib = env.Install(env['ROC_BINDIR'],
-            libenv.SharedLibrary('roc', sources))
+    lib = cenv.SharedLibrary('roc', sources)
+    env.Depends(lib, '#src/lib/roc.version')
 
-    env.Alias('libroc', [lib], env.Action(''))
+    target = env.Install(env['ROC_BINDIR'], lib)
+
+    env.Alias('libroc', [target], env.Action(''))
     env.AlwaysBuild('libroc')
 
 if not GetOption('disable_tests'):
-    testenv = env.Clone()
-    testenv.Prepend(CPPDEFINES=env['TEST_CPPDEFINES'])
-    testenv.Prepend(CXXFLAGS=env['TEST_CXXFLAGS'])
-    testenv.Prepend(CPPPATH=env['TEST_CPPPATH'])
-    testenv.Prepend(LIBPATH=env['TEST_LIBPATH'])
-    testenv.Prepend(LIBS=env['TEST_LIBS'])
+    cenv = env.Clone()
+    cenv.AppendVars(prog_env)
+    cenv.AppendVars(test_env)
 
-    test_main = testenv.Object('tests/test_main.cpp')
+    test_main = cenv.Object('tests/test_main.cpp')
 
     for testdir in env.GlobDirs('tests/*'):
-        tenv = testenv.Clone()
-        tenv.Append(CPPDEFINES=('ROC_MODULE', '%s_test' % testdir.name))
-        tenv.Append(CPPPATH=['#src/%s' % testdir])
+        ccenv = cenv.Clone()
+        ccenv.Append(CPPDEFINES=('ROC_MODULE', '%s_test' % testdir.name))
+        ccenv.Append(CPPPATH=['#src/%s' % testdir])
 
         if testdir.name == 'roc_lib':
-            tenv.Append(CPPPATH=['#src/lib'])
-            tenv.Prepend(LIBS=['roc'])
-        else:
-            tenv.Prepend(LIBS=modulelibs+modulelibs)
+            ccenv.Append(CPPPATH=['#src/lib'])
+            ccenv.Prepend(LIBS=['roc'])
 
         sources = env.Glob('%s/*.cpp' % testdir)
         for targetdir in env.RecursiveGlob(testdir, 'target_*'):
             if targetdir.name in env['ROC_TARGETS']:
-                tenv.Append(CPPPATH=['#src/%s' % targetdir])
+                ccenv.Append(CPPPATH=['#src/%s' % targetdir])
                 sources += env.RecursiveGlob(targetdir, '*.cpp')
 
         exename = 'roc-test-' + re.sub('roc_', '', testdir.name)
         env.Install(env['ROC_BINDIR'],
-            tenv.Program(exename, sources + test_main,
+            ccenv.Program(exename, sources + test_main,
                 RPATH=env.Literal('\\$$ORIGIN')))
 
         env.AddTest(testdir.name, '%s/%s' % (env['ROC_BINDIR'], exename))
 
 if not GetOption('disable_tools'):
     for tooldir in env.GlobDirs('tools/*'):
-        toolenv = env.Clone()
-        toolenv.Append(CPPDEFINES=('ROC_MODULE', tooldir.name))
-        toolenv.Append(CPPPATH=['tools', '#src/tools/%s' % tooldir.name])
-        toolenv.Prepend(LIBS=modulelibs+modulelibs)
+        cenv = env.Clone()
+        cenv.AppendVars(prog_env)
+        cenv.Append(CPPDEFINES=('ROC_MODULE', tooldir.name))
+        cenv.Append(CPPPATH=['tools', '#src/tools/%s' % tooldir.name])
 
         sources = env.Glob('%s/*.cpp' % tooldir)
         for ggo in env.Glob('%s/*.ggo' % tooldir):
             sources += env.GenGetOpt(ggo, env['ROC_VERSION'])
 
         exename = re.sub('roc_', 'roc-', tooldir.name)
-        exe = env.Install(env['ROC_BINDIR'],
-                    toolenv.Program(exename, sources))
+        target = env.Install(env['ROC_BINDIR'],
+                    cenv.Program(exename, sources))
 
-        env.Alias(exename, [exe], env.Action(''))
+        env.Alias(exename, [target], env.Action(''))
         env.AlwaysBuild(exename)
