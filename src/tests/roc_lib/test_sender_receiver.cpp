@@ -151,13 +151,18 @@ TEST_GROUP(sender_receiver) {
                     if (inner_cntr >= len) {
                         CHECK(fabs(double(rx_buff[i])) < 1e-9);
                         s_last = inner_cntr + s_first;
-                        roc_log(LogInfo, "FINISH: s_first: %lu, s_last: %lu, inner_cntr: %lu",
-                            s_first, s_last, inner_cntr);
+                        roc_log(LogInfo,
+                            "FINISH: s_first: %lu, s_last: %lu, inner_cntr: %lu",
+                                s_first, s_last, inner_cntr);
                         break;
                     } else if (fabs(double(original[inner_cntr] - rx_buff[i])) > 1e-9) {
                         char sbuff[256];
-                        int sbuff_i = snprintf(sbuff, sizeof(sbuff), "Failed comparing samples #%lu\n\npacket_num: %lu\n", inner_cntr, ipacket);
-                        snprintf(&sbuff[sbuff_i], sizeof(sbuff)-(size_t)sbuff_i, "original: %f,\treceived: %f\n", original[inner_cntr], rx_buff[i]);
+                        int sbuff_i = snprintf(sbuff, sizeof(sbuff),
+                            "Failed comparing samples #%lu\n\npacket_num: %lu\n",
+                                (unsigned long)inner_cntr, (unsigned long)ipacket);
+                        snprintf(&sbuff[sbuff_i], sizeof(sbuff)-(size_t)sbuff_i,
+                            "original: %f,\treceived: %f\n",
+                                (double)original[inner_cntr], (double)rx_buff[i]);
                         FAIL(sbuff);
                     } else {
                         inner_cntr++;
