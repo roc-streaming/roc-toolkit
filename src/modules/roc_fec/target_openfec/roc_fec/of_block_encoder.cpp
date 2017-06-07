@@ -99,10 +99,10 @@ void OFBlockEncoder::commit() {
         }
     }
 
-    for (size_t i = blk_source_packets_; 
-            i < blk_source_packets_ + blk_repair_packets_; ++i) {
-        if (OF_STATUS_OK !=
-                of_build_repair_symbol(of_sess_, &data_tab_[0], (uint32_t)i)) {
+    for (size_t i = blk_source_packets_; i < blk_source_packets_ + blk_repair_packets_;
+         ++i) {
+        if (OF_STATUS_OK
+            != of_build_repair_symbol(of_sess_, &data_tab_[0], (uint32_t)i)) {
             roc_panic("block encoder: of_build_repair_symbol() failed");
         }
     }

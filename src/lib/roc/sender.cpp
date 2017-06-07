@@ -26,15 +26,15 @@ namespace {
 bool make_sender_config(pipeline::SenderConfig& out, const roc_config* in) {
     out = pipeline::SenderConfig(0);
 
-    if (in->options & ROC_API_CONF_RESAMPLER_OFF){
+    if (in->options & ROC_API_CONF_RESAMPLER_OFF) {
     } else {
         out.options |= pipeline::EnableResampling;
     }
-    if (in->options & ROC_API_CONF_INTERLEAVER_OFF){
+    if (in->options & ROC_API_CONF_INTERLEAVER_OFF) {
     } else {
         out.options |= pipeline::EnableInterleaving;
     }
-    if (in->options & ROC_API_CONF_DISABLE_TIMING){
+    if (in->options & ROC_API_CONF_DISABLE_TIMING) {
     } else {
         out.options |= pipeline::EnableTiming;
     }
