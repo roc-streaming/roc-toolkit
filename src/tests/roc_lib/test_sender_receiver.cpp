@@ -37,7 +37,7 @@ const char* recv_address = "127.0.0.1:6000";
 TEST_GROUP(sender_receiver) {
     roc_config conf;
     static const size_t packet_len = 640;
-    static const size_t packet_num = 300;
+    static const size_t packet_num = 100;
 
     //! Relays samples with losses.
     class proxy : public datagram::IDatagramWriter {
@@ -110,9 +110,9 @@ TEST_GROUP(sender_receiver) {
         conf.options = ROC_API_CONF_RESAMPLER_OFF | ROC_API_CONF_INTERLEAVER_OFF;
         conf.FEC_scheme = roc_config::ReedSolomon2m;
         conf.samples_per_packet = (unsigned int)packet_len/2;
-        conf.n_source_packets = 20;
-        conf.n_repair_packets = 10;
-        conf.latency = packet_len*50;
+        conf.n_source_packets = 10;
+        conf.n_repair_packets = 5;
+        conf.latency = packet_len*20;
         conf.timeout = packet_len*300;
 
         const float sstep = 1./32768.;
@@ -157,7 +157,7 @@ TEST_GROUP(sender_receiver) {
                     } else if (fabs(double(original[inner_cntr] - rx_buff[i])) > 1e-9) {
                         char sbuff[256];
                         int sbuff_i = snprintf(sbuff, sizeof(sbuff), "Failed comparing samples #%lu\n\npacket_num: %lu\n", inner_cntr, ipacket);
-                        snprintf(&sbuff[sbuff_i], sizeof(sbuff)-sbuff_i, "original: %f,\treceived: %f\n", original[inner_cntr], rx_buff[i]);
+                        snprintf(&sbuff[sbuff_i], sizeof(sbuff)-(size_t)sbuff_i, "original: %f,\treceived: %f\n", original[inner_cntr], rx_buff[i]);
                         FAIL(sbuff);
                     } else {
                         inner_cntr++;
