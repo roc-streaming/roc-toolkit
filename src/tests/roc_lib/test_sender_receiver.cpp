@@ -189,6 +189,7 @@ TEST(sender_receiver, single_bunch) {
     roc_receiver_delete(recv);
 }
 
+#ifdef ROC_TARGET_OPENFEC
 TEST(sender_receiver, test_fec) {
     netio::Transceiver trx;
     const char *relay_addr_str = "127.0.0.1:5998";
@@ -222,6 +223,7 @@ TEST(sender_receiver, test_fec) {
 
     roc_receiver_delete(recv);
 }
+#endif // ROC_TARGET_OPENFEC
 
 } // namespace test
 } // namespace roc
