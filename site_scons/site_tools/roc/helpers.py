@@ -11,6 +11,7 @@ import subprocess
 import hashlib
 
 import SCons.Script
+import SCons.Util
 import SCons.SConf
 
 def Die(env, fmt, *args):
@@ -56,6 +57,12 @@ def RecursiveGlob(env, dirs, patterns, exclude=[]):
                                 matches.append(env.File(relpath))
 
     return matches
+
+def AppendVars(env, src_env):
+    for k, v in src_env.Dictionary().items():
+        if not (isinstance(v, SCons.Util.CLVar) or isinstance(v, list)):
+            continue
+        env.AppendUnique(**{k: v})
 
 def Which(env, prog):
     result = []
@@ -349,6 +356,7 @@ def Init(env):
     env.AddMethod(Die, 'Die')
     env.AddMethod(GlobDirs, 'GlobDirs')
     env.AddMethod(RecursiveGlob, 'RecursiveGlob')
+    env.AddMethod(AppendVars, 'AppendVars')
     env.AddMethod(Which, 'Which')
     env.AddMethod(Python, 'Python')
     env.AddMethod(CompilerVersion, 'CompilerVersion')
