@@ -25,19 +25,19 @@ namespace {
 bool make_receiver_config(pipeline::ReceiverConfig& out, const roc_config* in) {
     out = pipeline::ReceiverConfig(0);
 
-    if (in->options & ROC_API_CONF_RESAMPLER_OFF){
+    if (in->options & ROC_API_CONF_RESAMPLER_OFF) {
     } else {
         out.options |= pipeline::EnableResampling;
     }
-    if (in->options & ROC_API_CONF_INTERLEAVER_OFF){
+    if (in->options & ROC_API_CONF_INTERLEAVER_OFF) {
     } else {
         out.options |= pipeline::EnableInterleaving;
     }
-    if (in->options & ROC_API_CONF_DISABLE_TIMING){
+    if (in->options & ROC_API_CONF_DISABLE_TIMING) {
     } else {
         out.options |= pipeline::EnableTiming;
     }
-    
+
     if (in->FEC_scheme == roc_config::ReedSolomon2m) {
         out.fec.codec = fec::ReedSolomon2m;
     } else if (in->FEC_scheme == roc_config::LDPC) {

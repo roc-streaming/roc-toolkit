@@ -7,8 +7,9 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-extern "C" {
 #include <stdlib.h>
+
+extern "C" {
 #include <of_mem.h>
 }
 
@@ -125,8 +126,8 @@ void OFBlockDecoder::write(size_t index, const core::IByteBufferConstSlice& buff
     recv_tab_[index] = true;
 
     // register new packet and try to repair more packets
-    if (of_decode_with_new_symbol(
-            of_sess_, data_tab_[index], (unsigned int)index) != OF_STATUS_OK) {
+    if (of_decode_with_new_symbol(of_sess_, data_tab_[index], (unsigned int)index)
+        != OF_STATUS_OK) {
         roc_panic("block decoder: can't add packet to OF session");
     }
 }
@@ -253,7 +254,7 @@ void OFBlockDecoder::report_() const {
     char status2[ROC_CONFIG_MAX_FEC_BLOCK_REDUNDANT_PACKETS + 1] = {};
 
     roc_panic_if(buff_tab_.size() > (ROC_CONFIG_MAX_FEC_BLOCK_DATA_PACKETS
-                                    + ROC_CONFIG_MAX_FEC_BLOCK_REDUNDANT_PACKETS));
+                                     + ROC_CONFIG_MAX_FEC_BLOCK_REDUNDANT_PACKETS));
 
     for (size_t i = 0; i < buff_tab_.size(); ++i) {
         char* status =
