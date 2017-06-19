@@ -61,6 +61,7 @@ private:
 
     void init_window_(ISampleBufferComposer&);
     void renew_window_();
+    void fill_sinc();
 
     // Input stream.
     IStreamReader& reader_;
@@ -76,6 +77,10 @@ private:
     // Frame size.
     // (frame_size_ / st_Nwindow) is maximum allowed scaling ratio.
     const size_t frame_size_;
+
+    const size_t window_len_;
+    const size_t window_interp_;
+    Array<sample_t, 524288> sinc_table_;
 
     // Frame size in Q8.24.
     const fixedpoint_t qt_frame_size_;
