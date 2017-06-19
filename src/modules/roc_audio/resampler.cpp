@@ -13,6 +13,9 @@
 #include "roc_audio/resampler.h"
 #include "roc_audio/sinc_table.h"
 
+#define _USE_MATH_DEFINES
+#include <math.h>
+
 namespace roc {
 namespace audio {
 
@@ -101,6 +104,9 @@ Resampler::Resampler(IStreamReader& reader,
     : reader_(reader)
     , window_(3)
     , frame_size_(frame_size)
+    , window_len_(64)
+    , window_interp_(512)
+    , sinc_table_(window_len_ * window_interp_)
     , qt_frame_size_(fixedpoint_t(frame_size_ << FRACT_BIT_COUNT))
     , qt_sample_(G_default_sample)
     , qt_dt_(0)
@@ -113,6 +119,7 @@ Resampler::Resampler(IStreamReader& reader,
         roc_panic("frame_size_ doesn't fit to integral part of fixedpoint type.");
 
     init_window_(composer);
+    fill_sinc();
 
     roc_panic_if_not(set_scaling(1.0f));
 }
@@ -183,6 +190,16 @@ void Resampler::renew_window_() {
     prev_frame_ = window_[0]->data();
     curr_frame_ = window_[1]->data();
     next_frame_ = window_[2]->data();
+}
+
+void Resampler::fill_sinc() {
+    const sample_t sinc_step = 1/(sample_t)window_interp_;
+    sample_t sinc_t = sinc_step ;
+    sinc_table_[0] = 1.0 ;
+    for (size_t i = 1; i < sinc_table_.size(); ++i) {
+        sinc_table_[i] = sin(M_PI * sinc_t)/M_PI./sinc_t
+        sinc_t += sinc_step;
+    }
 }
 
 sample_t Resampler::resample_() {
