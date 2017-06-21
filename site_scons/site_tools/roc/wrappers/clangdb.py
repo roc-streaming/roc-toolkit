@@ -5,24 +5,26 @@ import os
 import os.path
 import json
 import fnmatch
-import fcntl # FIXME: works only in posix
+import fcntl # FIXME: works only on posix
 
-if len(sys.argv) < 6:
-   print("usage: clangdb.py ROOT_DIR BUILD_DIR PATTERN COMPILER COMPILER_ARGS...",
+if len(sys.argv) < 5:
+   print("usage: clangdb.py ROOT_DIR BUILD_DIR COMPILER COMPILER_ARGS...",
          file=sys.stderr)
    exit(1)
 
-project_dir = os.path.abspath(sys.argv[1])
+root_dir = os.path.abspath(sys.argv[1])
 build_dir = os.path.abspath(sys.argv[2])
-pattern = sys.argv[3]
-compiler = sys.argv[4]
-compiler_args = sys.argv[5:]
+compiler = sys.argv[3]
+compiler_args = sys.argv[4:]
 
 source_file = None
 
 for arg in compiler_args:
-    if fnmatch.fnmatch(arg, pattern):
-        source_file = os.path.join(project_dir, arg)
+    for pattern in ['*.c', '*.cpp']:
+        if fnmatch.fnmatch(arg, pattern):
+            source_file = os.path.join(root_dir, arg)
+            break
+    if source_file:
         break
 
 if source_file:
@@ -30,7 +32,7 @@ if source_file:
 
     cmd = {
         "command": "%s %s" % (compiler, ' '.join(compiler_args)),
-        "directory": project_dir,
+        "directory": root_dir,
         "file": source_file,
     }
 
