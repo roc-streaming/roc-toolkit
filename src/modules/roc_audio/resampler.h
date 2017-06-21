@@ -16,6 +16,7 @@
 #include "roc_core/circular_buffer.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/stddefs.h"
+#include "roc_core/array.h"
 
 #include "roc_audio/istream_reader.h"
 #include "roc_audio/sample_buffer.h"
@@ -54,6 +55,7 @@ public:
 
 private:
     typedef uint32_t fixedpoint_t;
+    typedef int32_t signed_fixedpoint_t;
 
     typedef packet::sample_t sample_t;
 
@@ -62,6 +64,7 @@ private:
     void init_window_(ISampleBufferComposer&);
     void renew_window_();
     void fill_sinc();
+    inline sample_t sinc_(const fixedpoint_t x, const float fract_x);
 
     // Input stream.
     IStreamReader& reader_;
@@ -80,7 +83,13 @@ private:
 
     const size_t window_len_;
     const size_t window_interp_;
-    Array<sample_t, 524288> sinc_table_;
+    const size_t window_interp_bits_; //!< The number of bits in window_interp_.
+    core::Array<sample_t, 524288> sinc_table_;
+
+    // G_ft_half_window_len in Q8.24.
+    const fixedpoint_t G_qt_half_window_len_;
+    const fixedpoint_t G_qt_epsilon_;
+    const fixedpoint_t G_default_sample_;
 
     // Frame size in Q8.24.
     const fixedpoint_t qt_frame_size_;
@@ -94,6 +103,9 @@ private:
 
     // Resampling factor.
     float scaling_;
+
+    // The step with which we iterate over the sinc_table_.
+    signed_fixedpoint_t qt_sinc_step_;
 };
 
 } // namespace audio
