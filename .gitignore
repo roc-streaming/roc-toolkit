@@ -10,6 +10,9 @@ doc/doxygen
 config.log
 build.log
 
+# clang
+compile_commands.json
+
 # doxygen
 doxygen_*.db
 doxygen_*.tmp
@@ -17,6 +20,10 @@ doxygen_*.tmp
 # python
 __pycache__
 *.pyc
+
+# emacs
+.#*
+.dir-locals.el
 
 # vim
 *.sw[op]

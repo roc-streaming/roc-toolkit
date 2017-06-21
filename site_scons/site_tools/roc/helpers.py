@@ -65,12 +65,16 @@ def AppendVars(env, src_env):
         env.AppendUnique(**{k: v})
 
 def Which(env, prog):
+    def getenv(name, default):
+        if name in env['ENV']:
+            return env['ENV'][name]
+        return os.environ.get(name, default)
     result = []
-    exts = filter(None, os.environ.get('PATHEXT', '').split(os.pathsep))
-    path = os.environ.get('PATH', None)
+    exts = filter(None, getenv('PATHEXT', '').split(os.pathsep))
+    path = getenv('PATH', None)
     if path is None:
         return []
-    for p in os.environ.get('PATH', '').split(os.pathsep):
+    for p in getenv('PATH', '').split(os.pathsep):
         p = os.path.join(p, prog)
         if os.access(p, os.X_OK):
             result.append(p)
@@ -98,7 +102,8 @@ def CompilerVersion(env, compiler):
 
             full_proc = subprocess.Popen([compiler, '--version'],
                                     stdout=subprocess.PIPE,
-                                    stderr=subprocess.STDOUT)
+                                    stderr=subprocess.STDOUT,
+                                    env=env['ENV'])
 
             full_text = ' '.join(full_proc.stdout.readlines())
 
@@ -111,7 +116,8 @@ def CompilerVersion(env, compiler):
 
             dump_proc = subprocess.Popen([compiler, '-dumpversion'],
                                     stdout=subprocess.PIPE,
-                                    stderr=subprocess.STDOUT)
+                                    stderr=subprocess.STDOUT,
+                                    env=env['ENV'])
 
             dump_text = ' '.join(dump_proc.stdout.readlines())
 
@@ -137,7 +143,8 @@ def CompilerTarget(env, compiler):
             proc = subprocess.Popen([compiler, '-v', '-E', '-'],
                                     stdin=null,
                                     stdout=subprocess.PIPE,
-                                    stderr=subprocess.STDOUT)
+                                    stderr=subprocess.STDOUT,
+                                    env=env['ENV'])
     except:
         return None
 
@@ -157,29 +164,32 @@ def CompilerTarget(env, compiler):
     return None
 
 def LLVMDir(env, version):
-    llvmdir = '/usr/lib/llvm-' + '.'.join(map(str, version[:2]))
-    if os.path.isdir(llvmdir):
-        return llvmdir
+    suffixes = []
+    for n in [3, 2, 1]:
+        v = '.'.join(map(str, version[:n]))
+        suffixes += [
+            '-' + v,
+            '/' + v,
+        ]
+    suffixes += ['']
+    for s in suffixes:
+        llvmdir = '/usr/lib/llvm' + s
+        if os.path.isdir(llvmdir):
+            return llvmdir
 
-def ClangDB(env, build_dir, pattern, compiler):
-    return '%s %s/wrappers/clangdb.py %s %s "%s" %s' % (
+def ClangDB(env, build_dir, compiler):
+    return '%s %s/wrappers/clangdb.py "%s" "%s" "%s"' % (
         env.Python(),
         env.Dir(os.path.dirname(__file__)).path,
         env.Dir('#').path,
         env.Dir(build_dir).path,
-        pattern,
         compiler)
 
 def Doxygen(env, output_dir, sources, werror=False):
     target = os.path.join(env.Dir(output_dir).path, '.done')
 
-    if 'DOXYGEN' in env.Dictionary():
-        doxygen = env['DOXYGEN']
-    else:
-        doxygen = 'doxygen'
-
-    if not env.Which(doxygen):
-        env.Die("doxygen not found in PATH (looked for '%s')" % doxygen)
+    if not env.Which(env['DOXYGEN']):
+        env.Die("doxygen not found in PATH (looked for '%s')" % env['DOXYGEN'])
 
     env.Command(target, sources, SCons.Action.CommandAction(
         '%s %s/wrappers/doxygen.py %s %s %s %s %s' % (
@@ -189,7 +199,7 @@ def Doxygen(env, output_dir, sources, werror=False):
             output_dir,
             target,
             int(werror or 0),
-            doxygen),
+            env['DOXYGEN']),
         cmdstr = env.Pretty('DOXYGEN', output_dir, 'purple')))
 
     return target

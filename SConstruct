@@ -27,7 +27,7 @@ AddOption('--enable-werror',
 AddOption('--enable-sanitizers',
           dest='enable_sanitizers',
           action='store_true',
-          help='enable GCC/clang sanitizers')
+          help='enable GCC/Clang sanitizers')
 
 AddOption('--disable-lib',
           dest='disable_lib',
@@ -87,6 +87,7 @@ clean = [
     env.DeleteDir('#.sconf_temp'),
     env.DeleteFile('#.sconsign.dblite'),
     env.DeleteFile('#config.log'),
+    env.DeleteFile('#compile_commands.json'),
 ]
 
 env.AlwaysBuild(env.Alias('clean', [], clean))
@@ -223,6 +224,10 @@ if not compiler_ver:
     env.Die("can't detect compiler version for compiler '%s'",
             '-'.join([s for s in [toolchain, compiler] if s]))
 
+llvmdir = env.LLVMDir(compiler_ver)
+if llvmdir:
+    env['ENV']['PATH'] += ':%s/bin' % llvmdir
+
 conf = Configure(env, custom_tests=env.CustomTests)
 
 if compiler == 'gcc':
@@ -242,7 +247,8 @@ if compiler == 'clang':
     if compiler_ver[:2] < (3, 6):
         env['RANLIB'] = 'ranlib'
 
-for var in ['CC', 'CXX', 'LD', 'AR', 'RANLIB', 'GENGETOPT', 'DOXYGEN', 'PKG_CONFIG']:
+for var in ['CC', 'CXX', 'LD', 'AR', 'RANLIB',
+            'GENGETOPT', 'DOXYGEN', 'PKG_CONFIG']:
     if var in os.environ:
         env[var] = os.environ[var]
 
@@ -337,9 +343,12 @@ build_dir = 'build/%s/%s' % (
     host,
     '-'.join([s for s in [compiler, '.'.join(map(str, compiler_ver)), variant] if s]))
 
-if compiler == 'clang':
+if compiler in ['gcc', 'clang']:
     for var in ['CC', 'CXX']:
-        env[var] = env.ClangDB(build_dir, '*.cpp', env[var])
+        env[var] = env.ClangDB(build_dir, env[var])
+
+    clangdb = env.Install('#', '%s/compile_commands.json' % build_dir)
+    env.Requires(clangdb, env.Dir('#src'))
 
 env['ROC_BINDIR'] = '#bin/%s' % host
 env['ROC_VERSION'] = open(env.File('#.version').path).read().strip()
@@ -645,10 +654,6 @@ if compiler in ['gcc', 'clang']:
             env.Append(LINKFLAGS=flags)
 
         san_conf.Finish()
-
-        llvmdir = env.LLVMDir(compiler_ver)
-        if llvmdir:
-            env['ENV']['PATH'] += ':%s/bin' % llvmdir
 
     env.Prepend(
         CXXFLAGS=[('-isystem', env.Dir(path).path) for path in \
