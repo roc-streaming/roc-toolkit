@@ -11,7 +11,6 @@
 #include "roc_core/panic.h"
 
 #include "roc_audio/resampler.h"
-#include "roc_audio/sinc_table.h"
 
 // #define _USE_MATH_DEFINES
 #include <math.h>
@@ -80,22 +79,24 @@ Resampler::Resampler(IStreamReader& reader,
                      size_t frame_size)
     : reader_(reader)
     , window_(3)
+    , scaling_(0)
     , frame_size_(frame_size)
     , window_len_(64)
+    , qt_half_sinc_window_len_(float_to_fixedpoint(window_len_))
     , window_interp_(512)
     , window_interp_bits_(9)
     , sinc_table_(window_len_ * window_interp_)
-    , G_qt_half_window_len_(float_to_fixedpoint((float)window_len_))
+    , qt_half_window_len_(float_to_fixedpoint((float)window_len_ * scaling_))
     , G_qt_epsilon_(float_to_fixedpoint(5e-8f))
     , G_default_sample_(float_to_fixedpoint(0))
     , qt_frame_size_(fixedpoint_t(frame_size_ << FRACT_BIT_COUNT))
     , qt_sample_(G_default_sample_)
     , qt_dt_(0)
-    , scaling_(0) {
-    if (G_qt_half_window_len_ >= qt_frame_size_)
+    {
+    if (qt_half_window_len_ >= qt_frame_size_)
         roc_panic("Half window of resamplers IR must fit into one frame.");
 
-    if ((uint64_t)qt_frame_size_ + (uint64_t)G_qt_half_window_len_
+    if ((uint64_t)qt_frame_size_ + (uint64_t)qt_half_window_len_
         >= (INTEGER_PART_MASK + FRACT_PART_MASK))
         roc_panic("frame_size_ doesn't fit to integral part of fixedpoint type.");
 
@@ -108,10 +109,22 @@ Resampler::Resampler(IStreamReader& reader,
 bool Resampler::set_scaling(float scaling) {
     // Window's size changes according to scaling. If new window size
     // doesnt fit to the frames size -- deny changes.
-    if (st_Nwindow * scaling >= frame_size_) {
+    if (window_len_ * scaling >= frame_size_) {
         return false;
     }
     scaling_ = scaling;
+    qt_half_window_len_ = float_to_fixedpoint((float)window_len_);
+
+    // In case of upscaling one should properly shift the edge frequency
+    // of the digital filter.
+    // In both cases it's sensible to decrease the edge frequency to leave
+    // some.
+    if (scaling_ > 1.0f) {
+        qt_sinc_step_ = float_to_sfixedpoint(0.95f/scaling_);
+    } else {
+        qt_sinc_step_ = float_to_sfixedpoint(0.95f);
+    }
+    qt_half_sinc_window_len_ = float_to_fixedpoint(window_len_);
     return true;
 }
 
@@ -153,19 +166,10 @@ void Resampler::init_window_(ISampleBufferComposer& composer) {
 }
 
 void Resampler::renew_window_() {
-    roc_panic_if(st_Nwindow * scaling_ >= frame_size_);
+    roc_panic_if(window_len_ * scaling_ >= frame_size_);
 
     // scaling_ may change every frame so it have to be smooth.
     qt_dt_ = float_to_fixedpoint(scaling_);
-    // In case of upscaling one should properly shift the edge frequency
-    // of the digital filter.
-    // In both cases it's sensible to decrease the edge frequency to leave
-    // some.
-    if (scaling_ > 1.0f) {
-        qt_sinc_step_ = float_to_sfixedpoint(1.0f/scaling_);
-    } else {
-        qt_sinc_step_ = float_to_sfixedpoint(1.0f);
-    }
 
     if (curr_frame_ == NULL) {
         reader_.read(*window_[0]);
@@ -183,11 +187,11 @@ void Resampler::renew_window_() {
 }
 
 void Resampler::fill_sinc() {
-    const sample_t sinc_step = 1/(sample_t)window_interp_;
-    sample_t sinc_t = sinc_step ;
-    sinc_table_[0] = 1.0 ;
+    const sample_t sinc_step = 1.0f/(sample_t)window_interp_;
+    sample_t sinc_t = sinc_step;
+    sinc_table_[0] = 1.0f;
     for (size_t i = 1; i < sinc_table_.size(); ++i) {
-        sinc_table_[i] = (float)(sin((double)(M_PI * (double)sinc_t)) / M_PI) / sinc_t;
+        sinc_table_[i] = (float)(sin(M_PI * (double)sinc_t) / M_PI) / sinc_t;
         sinc_t += sinc_step;
     }
 }
@@ -199,13 +203,13 @@ void Resampler::fill_sinc() {
 // that's why there are two arguments in this function: integer part and fractional
 // part of time coordinate.
 sample_t Resampler::sinc_(const fixedpoint_t x, const float fract_x) {
-    roc_panic_if(x > (st_Nwindow << FRACT_BIT_COUNT));
+    roc_panic_if(x > (window_len_ << FRACT_BIT_COUNT));
 
     // Tables index smaller than to x
-    const sample_t hl = sinc_table[(x >> (FRACT_BIT_COUNT - window_interp_bits_))];
+    const sample_t hl = sinc_table_[(x >> (FRACT_BIT_COUNT - window_interp_bits_))];
 
     // Tables index next to x
-    const sample_t hh = sinc_table[(x >> (FRACT_BIT_COUNT - window_interp_bits_)) + 1];
+    const sample_t hh = sinc_table_[(x >> (FRACT_BIT_COUNT - window_interp_bits_)) + 1];
 
     return hl + fract_x * (hh - hl);
 }
@@ -230,30 +234,30 @@ sample_t Resampler::resample_() {
         qt_sample_ += G_qt_one;
     }
 
-    ind_begin_prev = (qt_sample_ >= G_qt_half_window_len_)
+    ind_begin_prev = (qt_sample_ >= qt_half_window_len_)
         ? frame_size_
-        : fixedpoint_to_size(qceil(qt_sample_ + (qt_frame_size_ - G_qt_half_window_len_)));
+        : fixedpoint_to_size(qceil(qt_sample_ + (qt_frame_size_ - qt_half_window_len_)));
     roc_panic_if(ind_begin_prev > frame_size_);
 
-    ind_begin_cur = (qt_sample_ >= G_qt_half_window_len_)
-        ? fixedpoint_to_size(qceil(qt_sample_ - G_qt_half_window_len_))
+    ind_begin_cur = (qt_sample_ >= qt_half_window_len_)
+        ? fixedpoint_to_size(qceil(qt_sample_ - qt_half_window_len_))
         : 0;
     roc_panic_if(ind_begin_cur > frame_size_);
 
-    ind_end_cur = ((qt_sample_ + G_qt_half_window_len_) > qt_frame_size_)
+    ind_end_cur = ((qt_sample_ + qt_half_window_len_) > qt_frame_size_)
         ? frame_size_
-        : fixedpoint_to_size(qfloor(qt_sample_ + G_qt_half_window_len_));
+        : fixedpoint_to_size(qfloor(qt_sample_ + qt_half_window_len_));
     roc_panic_if(ind_end_cur > frame_size_);
 
-    ind_end_next = ((qt_sample_ + G_qt_half_window_len_) > qt_frame_size_)
-        ? fixedpoint_to_size(qfloor(qt_sample_ + G_qt_half_window_len_ - qt_frame_size_))
+    ind_end_next = ((qt_sample_ + qt_half_window_len_) > qt_frame_size_)
+        ? fixedpoint_to_size(qfloor(qt_sample_ + qt_half_window_len_ - qt_frame_size_))
         : 0;
     roc_panic_if(ind_end_next > frame_size_);
 
     // Counter inside window.
-    // t_sinc = t_sample - ceil( t_sample - st_Nwindow + 1/st_Nwindow_interp )
+    // t_sinc = t_sample - ceil( t_sample - window_len_ + 1/window_interp_ )
     fixedpoint_t qt_sinc_cur = qt_frame_size_ + qt_sample_
-        - qceil(qt_frame_size_ + qt_sample_ - G_qt_half_window_len_);
+        - qceil(qt_frame_size_ + qt_sample_ - qt_half_sinc_window_len_);
 
     // sinc_table defined in positive half-plane, so at the begining of the window
     // qt_sinc_cur starts decreasing and after we cross 0 it will be increasing
