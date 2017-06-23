@@ -85,20 +85,14 @@ Resampler::Resampler(IStreamReader& reader,
     , qt_half_sinc_window_len_(float_to_fixedpoint(window_len_))
     , window_interp_(512)
     , window_interp_bits_(9)
-    , sinc_table_(window_len_ * window_interp_)
-    , qt_half_window_len_(float_to_fixedpoint((float)window_len_ * scaling_))
+    , sinc_table_(window_len_ * window_interp_ + 2)
+    , qt_half_window_len_(float_to_fixedpoint((float)window_len_ / scaling_))
     , G_qt_epsilon_(float_to_fixedpoint(5e-8f))
     , G_default_sample_(float_to_fixedpoint(0))
     , qt_frame_size_(fixedpoint_t(frame_size_ << FRACT_BIT_COUNT))
     , qt_sample_(G_default_sample_)
     , qt_dt_(0)
     {
-    if (qt_half_window_len_ >= qt_frame_size_)
-        roc_panic("Half window of resamplers IR must fit into one frame.");
-
-    if ((uint64_t)qt_frame_size_ + (uint64_t)qt_half_window_len_
-        >= (INTEGER_PART_MASK + FRACT_PART_MASK))
-        roc_panic("frame_size_ doesn't fit to integral part of fixedpoint type.");
 
     init_window_(composer);
     fill_sinc();
@@ -113,16 +107,16 @@ bool Resampler::set_scaling(float scaling) {
         return false;
     }
     scaling_ = scaling;
-    qt_half_window_len_ = float_to_fixedpoint((float)window_len_);
-
     // In case of upscaling one should properly shift the edge frequency
     // of the digital filter.
     // In both cases it's sensible to decrease the edge frequency to leave
     // some.
     if (scaling_ > 1.0f) {
-        qt_sinc_step_ = float_to_sfixedpoint(0.95f/scaling_);
+        qt_sinc_step_ = float_to_sfixedpoint(cutoff_freq_/scaling_);
+        qt_half_window_len_ = float_to_fixedpoint((float)window_len_ / cutoff_freq_ * scaling_);
     } else {
-        qt_sinc_step_ = float_to_sfixedpoint(0.95f);
+        qt_sinc_step_ = float_to_sfixedpoint(cutoff_freq_);
+        qt_half_window_len_ = float_to_fixedpoint((float)window_len_ / cutoff_freq_);
     }
     qt_half_sinc_window_len_ = float_to_fixedpoint(window_len_);
     return true;
@@ -194,6 +188,8 @@ void Resampler::fill_sinc() {
         sinc_table_[i] = (float)(sin(M_PI * (double)sinc_t) / M_PI) / sinc_t;
         sinc_t += sinc_step;
     }
+    sinc_table_[sinc_table_.size()-2] = 0;
+    sinc_table_[sinc_table_.size()-1] = 0;
 }
 
 // Computes sinc value in x position using linear interpolation between

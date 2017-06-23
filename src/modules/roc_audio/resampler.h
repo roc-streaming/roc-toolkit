@@ -109,6 +109,8 @@ private:
 
     // The step with which we iterate over the sinc_table_.
     signed_fixedpoint_t qt_sinc_step_;
+
+    static const sample_t cutoff_freq_ = 1.0f;
 };
 
 } // namespace audio
