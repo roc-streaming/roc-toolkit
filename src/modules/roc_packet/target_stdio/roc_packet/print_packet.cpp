@@ -31,8 +31,8 @@ void print_packet(const IPacket& p, bool print_payload) {
 
     if (p.fec()) {
         fprintf(stderr, " fec: data_blk=%u, fec_blk=%u\n",
-                (unsigned)p.fec()->data_blknum(), //
-                (unsigned)p.fec()->fec_blknum());
+                (unsigned)p.fec()->source_blknum(), //
+                (unsigned)p.fec()->repair_blknum());
 
         if (print_payload) {
             for (size_t n = 0; n < p.payload().size(); n++) {

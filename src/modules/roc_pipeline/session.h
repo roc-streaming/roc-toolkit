@@ -106,7 +106,7 @@ private:
     packet::IPacketParser& packet_parser_;
 
     core::Maybe<packet::PacketQueue> audio_packet_queue_;
-    core::Maybe<packet::PacketQueue> fec_packet_queue_;
+    core::Maybe<packet::PacketQueue> repair_packet_queue_;
 
     core::Maybe<audio::Delayer> delayer_;
     core::Maybe<packet::Watchdog> watchdog_;

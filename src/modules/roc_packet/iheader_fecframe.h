@@ -22,17 +22,17 @@ class IHeaderFECFrame {
 public:
     virtual ~IHeaderFECFrame();
 
-    //! Seqnum of first data packet in block.
-    virtual seqnum_t data_blknum() const = 0;
+    //! Seqnum of first source packet in block.
+    virtual seqnum_t source_blknum() const = 0;
 
-    //! Set seqnum of first data packet in block.
-    virtual void set_data_blknum(seqnum_t) = 0;
+    //! Set seqnum of first source packet in block.
+    virtual void set_source_blknum(seqnum_t) = 0;
 
-    //! Seqnum of first FEC packet in block.
-    virtual seqnum_t fec_blknum() const = 0;
+    //! Seqnum of first repair packet in block.
+    virtual seqnum_t repair_blknum() const = 0;
 
-    //! Set seqnum of first FEC packet in block.
-    virtual void set_fec_blknum(seqnum_t) = 0;
+    //! Set seqnum of first repair packet in block.
+    virtual void set_repair_blknum(seqnum_t) = 0;
 };
 
 } // namespace packet

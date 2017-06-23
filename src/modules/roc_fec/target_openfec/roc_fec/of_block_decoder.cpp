@@ -40,14 +40,14 @@ OFBlockDecoder::OFBlockDecoder(const Config& config, core::IByteBufferComposer& 
     , has_new_packets_(false)
     , decoding_finished_(false) {
     if (config.codec == ReedSolomon2m) {
-        roc_log(LogDebug, "initializing Reed-Solomon decoder");
+        roc_log(LogDebug, "of block decoder: initializing Reed-Solomon decoder");
 
         codec_id_ = OF_CODEC_REED_SOLOMON_GF_2_M_STABLE;
         codec_params_.rs_params_.m = config.rs_m;
 
         of_sess_params_ = (of_parameters_t*)&codec_params_.rs_params_;
     } else if (config.codec == LDPCStaircase) {
-        roc_log(LogDebug, "initializing LDPC decoder");
+        roc_log(LogDebug, "of block decoder: initializing LDPC decoder");
 
         codec_id_ = OF_CODEC_LDPC_STAIRCASE_STABLE;
         codec_params_.ldpc_params_.prng_seed = config.ldpc_prng_seed;
@@ -55,7 +55,7 @@ OFBlockDecoder::OFBlockDecoder(const Config& config, core::IByteBufferComposer& 
 
         of_sess_params_ = (of_parameters_t*)&codec_params_.ldpc_params_;
     } else {
-        roc_panic("block decoder: invalid codec");
+        roc_panic("of block decoder: invalid codec");
     }
 
     of_sess_params_->nb_source_symbols = (uint32_t)blk_source_packets_;
@@ -72,11 +72,11 @@ OFBlockDecoder::~OFBlockDecoder() {
     }
 }
 
-size_t OFBlockDecoder::n_data_packets() const {
+size_t OFBlockDecoder::n_source_packets() const {
     return blk_source_packets_;
 }
 
-size_t OFBlockDecoder::n_fec_packets() const {
+size_t OFBlockDecoder::n_repair_packets() const {
     return blk_repair_packets_;
 }
 
@@ -100,22 +100,22 @@ void OFBlockDecoder::reset() {
 
 void OFBlockDecoder::write(size_t index, const core::IByteBufferConstSlice& buffer) {
     if (index >= blk_source_packets_ + blk_repair_packets_) {
-        roc_panic("block decoder: index out of bounds: index=%lu, size=%lu",
+        roc_panic("of block decoder: index out of bounds: index=%lu, size=%lu",
                   (unsigned long)index,
                   (unsigned long)(blk_source_packets_ + blk_repair_packets_));
     }
 
     if (!buffer) {
-        roc_panic("block decoder: NULL buffer");
+        roc_panic("of block decoder: NULL buffer");
     }
 
     if (buffer.size() != SYMB_SZ) {
-        roc_panic("block decoder: invalid payload size: size=%lu, expected=%lu",
+        roc_panic("of block decoder: invalid payload size: size=%lu, expected=%lu",
                   (unsigned long)buffer.size(), (unsigned long)SYMB_SZ);
     }
 
     if (buff_tab_[index]) {
-        roc_panic("block decoder: can't overwrite buffer: index=%lu",
+        roc_panic("of block decoder: can't overwrite buffer: index=%lu",
                   (unsigned long)index);
     }
 
@@ -128,7 +128,7 @@ void OFBlockDecoder::write(size_t index, const core::IByteBufferConstSlice& buff
     // register new packet and try to repair more packets
     if (of_decode_with_new_symbol(of_sess_, data_tab_[index], (unsigned int)index)
         != OF_STATUS_OK) {
-        roc_panic("block decoder: can't add packet to OF session");
+        roc_panic("of block decoder: can't add packet to OF session");
     }
 }
 
@@ -168,7 +168,7 @@ void OFBlockDecoder::decode_() {
         reset_session_();
 
         if (of_set_available_symbols(of_sess_, &data_tab_[0]) != OF_STATUS_OK) {
-            roc_panic("block decoder: can't add packets to OF session");
+            roc_panic("of block decoder: can't add packets to OF session");
         }
     }
 
@@ -209,13 +209,13 @@ void OFBlockDecoder::reset_session_() {
     }
 
     if (OF_STATUS_OK != of_create_codec_instance(&of_sess_, codec_id_, OF_DECODER, 0)) {
-        roc_panic("block decoder: of_create_codec_instance() failed");
+        roc_panic("of block decoder: of_create_codec_instance() failed");
     }
 
     roc_panic_if(of_sess_ == NULL);
 
     if (OF_STATUS_OK != of_set_fec_parameters(of_sess_, of_sess_params_)) {
-        roc_panic("block decoder: of_set_fec_parameters() failed");
+        roc_panic("of block decoder: of_set_fec_parameters() failed");
     }
 
     if (OF_STATUS_OK
@@ -225,7 +225,7 @@ void OFBlockDecoder::reset_session_() {
                // and prints curses to the console if we give him the callback for that
                codec_id_ == OF_CODEC_REED_SOLOMON_GF_2_M_STABLE ? NULL : repair_cb_,
                (void*)this)) {
-        roc_panic("block decoder: of_set_callback_functions() failed");
+        roc_panic("of block decoder: of_set_callback_functions() failed");
     }
 }
 
@@ -250,11 +250,11 @@ void OFBlockDecoder::destroy_session_() {
 void OFBlockDecoder::report_() const {
     size_t n_lost = 0, n_repaired = 0;
 
-    char status1[ROC_CONFIG_MAX_FEC_BLOCK_DATA_PACKETS + 1] = {};
-    char status2[ROC_CONFIG_MAX_FEC_BLOCK_REDUNDANT_PACKETS + 1] = {};
+    char status1[ROC_CONFIG_MAX_FEC_BLOCK_SOURCE_PACKETS + 1] = {};
+    char status2[ROC_CONFIG_MAX_FEC_BLOCK_REPAIR_PACKETS + 1] = {};
 
-    roc_panic_if(buff_tab_.size() > (ROC_CONFIG_MAX_FEC_BLOCK_DATA_PACKETS
-                                     + ROC_CONFIG_MAX_FEC_BLOCK_REDUNDANT_PACKETS));
+    roc_panic_if(buff_tab_.size() > (ROC_CONFIG_MAX_FEC_BLOCK_SOURCE_PACKETS
+                                     + ROC_CONFIG_MAX_FEC_BLOCK_REPAIR_PACKETS));
 
     for (size_t i = 0; i < buff_tab_.size(); ++i) {
         char* status =
@@ -282,7 +282,7 @@ void OFBlockDecoder::report_() const {
         return;
     }
 
-    roc_log(LogDebug, "OFBlockDecoder repaired %u/%u/%u %s %s",
+    roc_log(LogDebug, "of block decoder: repaired %u/%u/%u %s %s",
             (unsigned)n_repaired,       //
             (unsigned)n_lost,           //
             (unsigned)buff_tab_.size(), //
@@ -306,7 +306,7 @@ void* OFBlockDecoder::make_buffer_(size_t index) {
         buff_tab_[index] = *buffer;
         return buffer->data();
     } else {
-        roc_log(LogDebug, "OF_BlockDecoder: can't allocate buffer");
+        roc_log(LogDebug, "of block decoder: can't allocate buffer");
         return NULL;
     }
 }

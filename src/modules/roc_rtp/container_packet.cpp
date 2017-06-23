@@ -34,12 +34,12 @@ packet::IHeaderFECFrame* ContainerPacket::fec() {
     return this; // FIXME
 }
 
-packet::seqnum_t ContainerPacket::data_blknum() const {
+packet::seqnum_t ContainerPacket::source_blknum() const {
     // FIXME
     return header().timestamp() & 0xffff;
 }
 
-void ContainerPacket::set_data_blknum(packet::seqnum_t sn) {
+void ContainerPacket::set_source_blknum(packet::seqnum_t sn) {
     // FIXME
     uint32_t ts = header().timestamp();
     ts &= 0xffff0000;
@@ -47,12 +47,12 @@ void ContainerPacket::set_data_blknum(packet::seqnum_t sn) {
     header().set_timestamp(ts);
 }
 
-packet::seqnum_t ContainerPacket::fec_blknum() const {
+packet::seqnum_t ContainerPacket::repair_blknum() const {
     // FIXME
     return header().timestamp() >> 16;
 }
 
-void ContainerPacket::set_fec_blknum(packet::seqnum_t sn) {
+void ContainerPacket::set_repair_blknum(packet::seqnum_t sn) {
     // FIXME
     uint32_t ts = header().timestamp();
     ts &= 0x0000ffff;

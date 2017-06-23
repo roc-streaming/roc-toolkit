@@ -143,7 +143,7 @@ packet::IPacketWriter* Sender::make_packet_writer_() {
 
     if (config_.options & EnableInterleaving) {
         packet_writer = new (interleaver_) packet::Interleaver(
-            *packet_writer, ROC_CONFIG_DEFAULT_FEC_BLOCK_REDUNDANT_PACKETS);
+            *packet_writer, ROC_CONFIG_DEFAULT_FEC_BLOCK_REPAIR_PACKETS);
     }
 
     if (config_.fec.codec != fec::NoCodec) {
