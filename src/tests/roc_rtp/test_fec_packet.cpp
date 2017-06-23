@@ -67,8 +67,8 @@ TEST(fec_packet, compose_empty) {
 
     CHECK(!p->rtp()->marker());
 
-    LONGS_EQUAL(0, p->fec()->data_blknum());
-    LONGS_EQUAL(0, p->fec()->fec_blknum());
+    LONGS_EQUAL(0, p->fec()->source_blknum());
+    LONGS_EQUAL(0, p->fec()->repair_blknum());
 
     p->set_payload(NULL, 0);
     CHECK(!p->payload());
@@ -81,15 +81,15 @@ TEST(fec_packet, compose_full) {
     p->rtp()->set_seqnum(12345);
     p->rtp()->set_marker(true);
 
-    p->fec()->set_data_blknum(54321);
-    p->fec()->set_fec_blknum(44444);
+    p->fec()->set_source_blknum(54321);
+    p->fec()->set_repair_blknum(44444);
 
     LONGS_EQUAL(1122334455, p->rtp()->source());
     LONGS_EQUAL(12345, p->rtp()->seqnum());
     CHECK(p->rtp()->marker());
 
-    LONGS_EQUAL(54321, p->fec()->data_blknum());
-    LONGS_EQUAL(44444, p->fec()->fec_blknum());
+    LONGS_EQUAL(54321, p->fec()->source_blknum());
+    LONGS_EQUAL(44444, p->fec()->repair_blknum());
 
     set_payload(p);
     check_payload(p);
@@ -102,8 +102,8 @@ TEST(fec_packet, compose_parse) {
     p1->rtp()->set_seqnum(12345);
     p1->rtp()->set_marker(true);
 
-    p1->fec()->set_data_blknum(54321);
-    p1->fec()->set_fec_blknum(44444);
+    p1->fec()->set_source_blknum(54321);
+    p1->fec()->set_repair_blknum(44444);
 
     set_payload(p1);
 
@@ -113,8 +113,8 @@ TEST(fec_packet, compose_parse) {
     LONGS_EQUAL(12345, p2->rtp()->seqnum());
     CHECK(p2->rtp()->marker());
 
-    LONGS_EQUAL(54321, p2->fec()->data_blknum());
-    LONGS_EQUAL(44444, p2->fec()->fec_blknum());
+    LONGS_EQUAL(54321, p2->fec()->source_blknum());
+    LONGS_EQUAL(44444, p2->fec()->repair_blknum());
 
     check_payload(p2);
 }

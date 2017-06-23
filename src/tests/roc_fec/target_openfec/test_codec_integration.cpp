@@ -36,8 +36,8 @@ using namespace packet;
 
 namespace {
 
-const size_t N_DATA_PACKETS = ROC_CONFIG_DEFAULT_FEC_BLOCK_DATA_PACKETS;
-const size_t N_FEC_PACKETS = ROC_CONFIG_DEFAULT_FEC_BLOCK_REDUNDANT_PACKETS;
+const size_t N_SOURCE_PACKETS = ROC_CONFIG_DEFAULT_FEC_BLOCK_SOURCE_PACKETS;
+const size_t N_REPAIR_PACKETS = ROC_CONFIG_DEFAULT_FEC_BLOCK_REPAIR_PACKETS;
 
 const size_t N_SAMPLES = ROC_CONFIG_DEFAULT_PACKET_SAMPLES;
 const size_t N_CH = 2;
@@ -71,47 +71,47 @@ public:
         }
 
         if (p->audio()) {
-            data_stock_.write(p);
+            source_stock_.write(p);
         } else if (p->fec()) {
-            fec_stock_.write(p);
+            repair_stock_.write(p);
         }
 
-        if (++packet_num_ >= N_DATA_PACKETS + N_FEC_PACKETS) {
+        if (++packet_num_ >= N_SOURCE_PACKETS + N_REPAIR_PACKETS) {
             packet_num_ = 0;
         }
     }
 
-    IPacketReader& get_data_reader() {
-        return data_queue_;
+    IPacketReader& source_reader() {
+        return source_queue_;
     }
 
-    IPacketReader& get_fec_reader() {
-        return fec_queue_;
+    IPacketReader& repair_reader() {
+        return repair_queue_;
     }
 
-    size_t get_data_size() {
-        return data_stock_.size() + data_queue_.size();
+    size_t source_size() {
+        return source_stock_.size() + source_queue_.size();
     }
 
-    size_t get_fec_size() {
-        return fec_stock_.size() + fec_queue_.size();
+    size_t repair_size() {
+        return repair_stock_.size() + repair_queue_.size();
     }
 
-    IPacketConstPtr get_fec_head() {
-        return fec_queue_.head();
+    IPacketConstPtr repair_head() {
+        return repair_queue_.head();
     }
 
     //! Clears both queues.
     void reset() {
-        const size_t data_packets_n = data_queue_.size();
-        const size_t fec_packets_n = fec_queue_.size();
+        const size_t n_source_packets = source_queue_.size();
+        const size_t n_repair_packets = repair_queue_.size();
 
-        for (size_t i = 0; i < data_packets_n; ++i) {
-            data_queue_.read();
+        for (size_t i = 0; i < n_source_packets; ++i) {
+            source_queue_.read();
         }
 
-        for (size_t i = 0; i < fec_packets_n; ++i) {
-            fec_queue_.read();
+        for (size_t i = 0; i < n_repair_packets; ++i) {
+            repair_queue_.read();
         }
 
         packet_num_ = 0;
@@ -127,31 +127,31 @@ public:
     }
 
     void release_all() {
-        while (data_stock_.head()) {
-            data_queue_.write(data_stock_.read());
+        while (source_stock_.head()) {
+            source_queue_.write(source_stock_.read());
         }
-        while (fec_stock_.head()) {
-            fec_queue_.write(fec_stock_.read());
+        while (repair_stock_.head()) {
+            repair_queue_.write(repair_stock_.read());
         }
     }
 
-    bool pop_data() {
+    bool pop_source() {
         IPacketConstPtr p;
-        if (!(p = data_stock_.read())) {
+        if (!(p = source_stock_.read())) {
             return false;
         }
-        data_queue_.write(p);
+        source_queue_.write(p);
         return true;
     }
 
 private:
     size_t packet_num_;
 
-    PacketQueue data_queue_;
-    PacketQueue data_stock_;
+    PacketQueue source_queue_;
+    PacketQueue source_stock_;
 
-    PacketQueue fec_queue_;
-    PacketQueue fec_stock_;
+    PacketQueue repair_queue_;
+    PacketQueue repair_stock_;
 
     std::set<size_t> lost_packet_nums_;
 };
@@ -162,21 +162,21 @@ TEST_GROUP(fec_codec_integration) {
     rtp::Composer composer;
     PacketDispatcher pckt_disp;
 
-    IPacketPtr data_packets[N_DATA_PACKETS];
+    IPacketPtr source_packets[N_SOURCE_PACKETS];
 
     Config config;
 
     void setup() {
         config.codec = ReedSolomon2m;
-        config.n_source_packets = N_DATA_PACKETS;
-        config.n_repair_packets = N_FEC_PACKETS;
+        config.n_source_packets = N_SOURCE_PACKETS;
+        config.n_repair_packets = N_REPAIR_PACKETS;
 
-        fill_all_packets(0, N_DATA_PACKETS);
+        fill_all_packets(0, N_SOURCE_PACKETS);
     }
 
     void fill_all_packets(size_t sn, size_t n_pkts) {
-        for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
-            data_packets[i] = fill_one_packet(sn + i, n_pkts);
+        for (size_t i = 0; i < N_SOURCE_PACKETS; ++i) {
+            source_packets[i] = fill_one_packet(sn + i, n_pkts);
         }
     }
 
@@ -232,21 +232,21 @@ TEST(fec_codec_integration, encode) {
     rtp::Parser parser;
 
     Encoder encoder(block_encoder, pckt_disp, composer);
-    Decoder decoder(block_decoder, pckt_disp.get_data_reader(),
-                    pckt_disp.get_fec_reader(), parser);
+    Decoder decoder(block_decoder, pckt_disp.source_reader(), pckt_disp.repair_reader(),
+                    parser);
 
-    for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
-        encoder.write(data_packets[i]);
+    for (size_t i = 0; i < N_SOURCE_PACKETS; ++i) {
+        encoder.write(source_packets[i]);
     }
     pckt_disp.release_all();
 
-    CHECK(pckt_disp.get_data_size() == N_DATA_PACKETS);
-    CHECK(pckt_disp.get_fec_size() == N_FEC_PACKETS);
+    CHECK(pckt_disp.source_size() == N_SOURCE_PACKETS);
+    CHECK(pckt_disp.repair_size() == N_REPAIR_PACKETS);
 
-    for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
+    for (size_t i = 0; i < N_SOURCE_PACKETS; ++i) {
         IPacketConstPtr p = decoder.read();
         CHECK(p);
-        check_audio_packet(p, i, N_DATA_PACKETS);
+        check_audio_packet(p, i, N_SOURCE_PACKETS);
     }
 }
 
@@ -257,23 +257,23 @@ TEST(fec_codec_integration, 1_loss) {
     rtp::Parser parser;
 
     Encoder encoder(block_encoder, pckt_disp, composer);
-    Decoder decoder(block_decoder, pckt_disp.get_data_reader(),
-                    pckt_disp.get_fec_reader(), parser);
+    Decoder decoder(block_decoder, pckt_disp.source_reader(), pckt_disp.repair_reader(),
+                    parser);
 
     pckt_disp.lose(11);
 
-    for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
-        encoder.write(data_packets[i]);
+    for (size_t i = 0; i < N_SOURCE_PACKETS; ++i) {
+        encoder.write(source_packets[i]);
     }
     pckt_disp.release_all();
 
-    LONGS_EQUAL(N_DATA_PACKETS - 1, pckt_disp.get_data_size());
-    LONGS_EQUAL(N_FEC_PACKETS, pckt_disp.get_fec_size());
+    LONGS_EQUAL(N_SOURCE_PACKETS - 1, pckt_disp.source_size());
+    LONGS_EQUAL(N_REPAIR_PACKETS, pckt_disp.repair_size());
 
-    for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
+    for (size_t i = 0; i < N_SOURCE_PACKETS; ++i) {
         IPacketConstPtr p = decoder.read();
         CHECK(p);
-        check_audio_packet(p, i, N_DATA_PACKETS);
+        check_audio_packet(p, i, N_SOURCE_PACKETS);
     }
 }
 
@@ -286,39 +286,39 @@ TEST(fec_codec_integration, multiblocks_1_loss) {
     rtp::Parser parser;
 
     Encoder encoder(block_encoder, pckt_disp, composer);
-    Decoder decoder(block_decoder, pckt_disp.get_data_reader(),
-                    pckt_disp.get_fec_reader(), parser);
+    Decoder decoder(block_decoder, pckt_disp.source_reader(), pckt_disp.repair_reader(),
+                    parser);
 
     for (size_t block_num = 0; block_num < N_BLKS; ++block_num) {
         size_t lost_sq = size_t(-1);
         if (block_num != 5 && block_num != 21 && block_num != 22) {
-            lost_sq = (block_num + 1) % (N_DATA_PACKETS + N_FEC_PACKETS);
+            lost_sq = (block_num + 1) % (N_SOURCE_PACKETS + N_REPAIR_PACKETS);
             pckt_disp.lose(lost_sq);
         }
 
-        fill_all_packets(N_DATA_PACKETS * block_num, N_DATA_PACKETS * N_BLKS);
+        fill_all_packets(N_SOURCE_PACKETS * block_num, N_SOURCE_PACKETS * N_BLKS);
 
-        for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
-            encoder.write(data_packets[i]);
+        for (size_t i = 0; i < N_SOURCE_PACKETS; ++i) {
+            encoder.write(source_packets[i]);
         }
         pckt_disp.release_all();
 
         if (lost_sq == size_t(-1)) {
-            CHECK(pckt_disp.get_data_size() == N_DATA_PACKETS);
-            CHECK(pckt_disp.get_fec_size() == N_FEC_PACKETS);
-        } else if (lost_sq < N_DATA_PACKETS) {
-            CHECK(pckt_disp.get_data_size() == N_DATA_PACKETS - 1);
-            CHECK(pckt_disp.get_fec_size() == N_FEC_PACKETS);
+            CHECK(pckt_disp.source_size() == N_SOURCE_PACKETS);
+            CHECK(pckt_disp.repair_size() == N_REPAIR_PACKETS);
+        } else if (lost_sq < N_SOURCE_PACKETS) {
+            CHECK(pckt_disp.source_size() == N_SOURCE_PACKETS - 1);
+            CHECK(pckt_disp.repair_size() == N_REPAIR_PACKETS);
         } else {
-            CHECK(pckt_disp.get_data_size() == N_DATA_PACKETS);
-            CHECK(pckt_disp.get_fec_size() == N_FEC_PACKETS - 1);
+            CHECK(pckt_disp.source_size() == N_SOURCE_PACKETS);
+            CHECK(pckt_disp.repair_size() == N_REPAIR_PACKETS - 1);
         }
 
-        for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
+        for (size_t i = 0; i < N_SOURCE_PACKETS; ++i) {
             IPacketConstPtr p = decoder.read();
             CHECK(p);
-            check_audio_packet(p, N_DATA_PACKETS * block_num + i,
-                               N_DATA_PACKETS * N_BLKS);
+            check_audio_packet(p, N_SOURCE_PACKETS * block_num + i,
+                               N_SOURCE_PACKETS * N_BLKS);
         }
 
         pckt_disp.reset();
@@ -326,7 +326,7 @@ TEST(fec_codec_integration, multiblocks_1_loss) {
 }
 
 TEST(fec_codec_integration, interleaver) {
-    enum { N_PACKETS = N_DATA_PACKETS * 30 };
+    enum { N_PACKETS = N_SOURCE_PACKETS * 30 };
 
     BlockEncoder block_encoder(config);
     BlockDecoder block_decoder(config);
@@ -336,8 +336,8 @@ TEST(fec_codec_integration, interleaver) {
     Interleaver intrl(pckt_disp, 10);
 
     Encoder encoder(block_encoder, pckt_disp, composer);
-    Decoder decoder(block_decoder, pckt_disp.get_data_reader(),
-                    pckt_disp.get_fec_reader(), parser);
+    Decoder decoder(block_decoder, pckt_disp.source_reader(), pckt_disp.repair_reader(),
+                    parser);
 
     IPacketPtr many_packets[N_PACKETS];
 
@@ -365,27 +365,27 @@ TEST(fec_codec_integration, decoding_when_multiple_blocks_in_queue) {
     rtp::Parser parser;
 
     Encoder encoder(block_encoder, pckt_disp, composer);
-    Decoder decoder(block_decoder, pckt_disp.get_data_reader(),
-                    pckt_disp.get_fec_reader(), parser);
+    Decoder decoder(block_decoder, pckt_disp.source_reader(), pckt_disp.repair_reader(),
+                    parser);
 
     for (size_t block_num = 0; block_num < N_BLKS; ++block_num) {
-        fill_all_packets(N_DATA_PACKETS * block_num, N_DATA_PACKETS * N_BLKS);
+        fill_all_packets(N_SOURCE_PACKETS * block_num, N_SOURCE_PACKETS * N_BLKS);
 
-        for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
-            encoder.write(data_packets[i]);
+        for (size_t i = 0; i < N_SOURCE_PACKETS; ++i) {
+            encoder.write(source_packets[i]);
         }
     }
     pckt_disp.release_all();
 
-    CHECK(pckt_disp.get_data_size() == N_DATA_PACKETS * N_BLKS);
-    CHECK(pckt_disp.get_fec_size() == N_FEC_PACKETS * N_BLKS);
+    CHECK(pckt_disp.source_size() == N_SOURCE_PACKETS * N_BLKS);
+    CHECK(pckt_disp.repair_size() == N_REPAIR_PACKETS * N_BLKS);
 
     for (size_t block_num = 0; block_num < N_BLKS; ++block_num) {
-        for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
+        for (size_t i = 0; i < N_SOURCE_PACKETS; ++i) {
             IPacketConstPtr p = decoder.read();
             CHECK(p);
-            check_audio_packet(p, N_DATA_PACKETS * block_num + i,
-                               N_DATA_PACKETS * N_BLKS);
+            check_audio_packet(p, N_SOURCE_PACKETS * block_num + i,
+                               N_SOURCE_PACKETS * N_BLKS);
         }
 
         pckt_disp.reset();
@@ -404,43 +404,43 @@ TEST(fec_codec_integration, decoding_late_packet) {
     rtp::Parser parser;
 
     Encoder encoder(block_encoder, pckt_disp, composer);
-    Decoder decoder(block_decoder, pckt_disp.get_data_reader(),
-                    pckt_disp.get_fec_reader(), parser);
+    Decoder decoder(block_decoder, pckt_disp.source_reader(), pckt_disp.repair_reader(),
+                    parser);
 
-    fill_all_packets(0, N_DATA_PACKETS);
-    for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
+    fill_all_packets(0, N_SOURCE_PACKETS);
+    for (size_t i = 0; i < N_SOURCE_PACKETS; ++i) {
         // Hold from #7 to #10
         if (i >= 7 && i <= 10) {
             continue;
         }
-        encoder.write(data_packets[i]);
+        encoder.write(source_packets[i]);
     }
     pckt_disp.release_all();
-    CHECK(pckt_disp.get_data_size() == N_DATA_PACKETS - (10 - 7 + 1));
+    CHECK(pckt_disp.source_size() == N_SOURCE_PACKETS - (10 - 7 + 1));
 
     // Check 0-7 packets.
     for (size_t i = 0; i < 7; ++i) {
         IPacketConstPtr p = decoder.read();
     }
     // Receive packet #9 and #10
-    encoder.write(data_packets[9]);
-    encoder.write(data_packets[10]);
-    pckt_disp.pop_data();
-    pckt_disp.pop_data();
+    encoder.write(source_packets[9]);
+    encoder.write(source_packets[10]);
+    pckt_disp.pop_source();
+    pckt_disp.pop_source();
 
-    for (size_t i = 9; i < N_DATA_PACKETS; ++i) {
+    for (size_t i = 9; i < N_SOURCE_PACKETS; ++i) {
         IPacketConstPtr p = decoder.read();
         CHECK(p);
-        check_audio_packet(p, i, N_DATA_PACKETS);
+        check_audio_packet(p, i, N_SOURCE_PACKETS);
         // Receive late packet that Decoder have to throw away.
         if (i == 10) {
-            encoder.write(data_packets[7]);
-            encoder.write(data_packets[8]);
-            pckt_disp.pop_data();
-            pckt_disp.pop_data();
+            encoder.write(source_packets[7]);
+            encoder.write(source_packets[8]);
+            pckt_disp.pop_source();
+            pckt_disp.pop_source();
         }
     }
-    LONGS_EQUAL(0, pckt_disp.get_data_size());
+    LONGS_EQUAL(0, pckt_disp.source_size());
 }
 
 TEST(fec_codec_integration, get_packets_before_marker_bit) {
@@ -454,37 +454,37 @@ TEST(fec_codec_integration, get_packets_before_marker_bit) {
     rtp::Parser parser;
 
     Encoder encoder(block_encoder, pckt_disp, composer);
-    Decoder decoder(block_decoder, pckt_disp.get_data_reader(),
-                    pckt_disp.get_fec_reader(), parser);
+    Decoder decoder(block_decoder, pckt_disp.source_reader(), pckt_disp.repair_reader(),
+                    parser);
 
     // Sending first block except first packet with marker bit.
-    fill_all_packets(0, N_DATA_PACKETS * 2);
+    fill_all_packets(0, N_SOURCE_PACKETS * 2);
     pckt_disp.lose(0);
-    for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
-        encoder.write(data_packets[i]);
+    for (size_t i = 0; i < N_SOURCE_PACKETS; ++i) {
+        encoder.write(source_packets[i]);
     }
 
     // Sending second block with start packet with marker bit.
     pckt_disp.clear_losses();
-    fill_all_packets(N_DATA_PACKETS, N_DATA_PACKETS * 2);
+    fill_all_packets(N_SOURCE_PACKETS, N_SOURCE_PACKETS * 2);
     // Loose one packe just to check if FEC is working correctly from the first block.
     pckt_disp.lose(3);
-    for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
-        encoder.write(data_packets[i]);
+    for (size_t i = 0; i < N_SOURCE_PACKETS; ++i) {
+        encoder.write(source_packets[i]);
     }
     pckt_disp.release_all();
 
     // Receive every sent packet and the repaired one.
-    for (size_t i = 1; i < N_DATA_PACKETS * 2; ++i) {
+    for (size_t i = 1; i < N_SOURCE_PACKETS * 2; ++i) {
         IPacketConstPtr p = decoder.read();
-        if (i < N_DATA_PACKETS) {
+        if (i < N_SOURCE_PACKETS) {
             CHECK(!decoder.is_started());
         } else {
             CHECK(decoder.is_started());
         }
-        check_audio_packet(p, i, N_DATA_PACKETS * 2);
+        check_audio_packet(p, i, N_SOURCE_PACKETS * 2);
     }
-    CHECK(pckt_disp.get_data_size() == 0);
+    CHECK(pckt_disp.source_size() == 0);
 }
 
 TEST(fec_codec_integration, encode_source_id_and_seqnum) {
@@ -500,31 +500,31 @@ TEST(fec_codec_integration, encode_source_id_and_seqnum) {
         seqnum_t fec_seqnum = 0;
 
         for (size_t block_num = 0; block_num < N_BLKS; ++block_num) {
-            fill_all_packets(N_DATA_PACKETS * block_num, N_DATA_PACKETS * N_BLKS);
+            fill_all_packets(N_SOURCE_PACKETS * block_num, N_SOURCE_PACKETS * N_BLKS);
 
-            for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
-                data_packets[i]->rtp()->set_source(data_source);
+            for (size_t i = 0; i < N_SOURCE_PACKETS; ++i) {
+                source_packets[i]->rtp()->set_source(data_source);
             }
 
-            for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
-                encoder.write(data_packets[i]);
+            for (size_t i = 0; i < N_SOURCE_PACKETS; ++i) {
+                encoder.write(source_packets[i]);
             }
             pckt_disp.release_all();
 
             if (block_num == 0) {
-                fec_source = pckt_disp.get_fec_head()->rtp()->source();
-                fec_seqnum = pckt_disp.get_fec_head()->rtp()->seqnum();
+                fec_source = pckt_disp.repair_head()->rtp()->source();
+                fec_seqnum = pckt_disp.repair_head()->rtp()->seqnum();
             }
 
             CHECK(fec_source != data_source);
 
-            for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
+            for (size_t i = 0; i < N_SOURCE_PACKETS; ++i) {
                 LONGS_EQUAL(data_source,
-                            pckt_disp.get_data_reader().read()->rtp()->source());
+                            pckt_disp.source_reader().read()->rtp()->source());
             }
 
-            for (size_t i = 0; i < N_FEC_PACKETS; ++i) {
-                IPacketConstPtr p = pckt_disp.get_fec_reader().read();
+            for (size_t i = 0; i < N_REPAIR_PACKETS; ++i) {
+                IPacketConstPtr p = pckt_disp.repair_reader().read();
                 LONGS_EQUAL(fec_source, p->rtp()->source());
                 LONGS_EQUAL(fec_seqnum, p->rtp()->seqnum());
                 fec_seqnum++;
@@ -547,28 +547,28 @@ TEST(fec_codec_integration, decode_bad_seqnum) {
     rtp::Parser parser;
 
     Encoder encoder(block_encoder, pckt_disp, composer);
-    Decoder decoder(block_decoder, pckt_disp.get_data_reader(),
-                    pckt_disp.get_fec_reader(), parser);
+    Decoder decoder(block_decoder, pckt_disp.source_reader(), pckt_disp.repair_reader(),
+                    parser);
 
-    fill_all_packets(0, N_DATA_PACKETS);
+    fill_all_packets(0, N_SOURCE_PACKETS);
 
     pckt_disp.lose(9);  // should be rejected (bad seqnum)
     pckt_disp.lose(14); // should be rapaired
 
-    data_packets[9]->rtp()->set_seqnum(data_packets[9]->rtp()->seqnum() + 1);
+    source_packets[9]->rtp()->set_seqnum(source_packets[9]->rtp()->seqnum() + 1);
 
-    for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
-        encoder.write(data_packets[i]);
+    for (size_t i = 0; i < N_SOURCE_PACKETS; ++i) {
+        encoder.write(source_packets[i]);
     }
     pckt_disp.release_all();
 
-    for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
+    for (size_t i = 0; i < N_SOURCE_PACKETS; ++i) {
         if (i != 9) {
-            check_audio_packet(decoder.read(), i, N_DATA_PACKETS);
+            check_audio_packet(decoder.read(), i, N_SOURCE_PACKETS);
         }
     }
 
-    CHECK(pckt_disp.get_data_size() == 0);
+    CHECK(pckt_disp.source_size() == 0);
 }
 
 TEST(fec_codec_integration, decode_bad_source_id) {
@@ -581,31 +581,31 @@ TEST(fec_codec_integration, decode_bad_source_id) {
     rtp::Parser parser;
 
     Encoder encoder(block_encoder, pckt_disp, composer);
-    Decoder decoder(block_decoder, pckt_disp.get_data_reader(),
-                    pckt_disp.get_fec_reader(), parser);
+    Decoder decoder(block_decoder, pckt_disp.source_reader(), pckt_disp.repair_reader(),
+                    parser);
 
-    fill_all_packets(0, N_DATA_PACKETS);
+    fill_all_packets(0, N_SOURCE_PACKETS);
 
     pckt_disp.lose(5); // should shutdown decoder (bad source id)
 
-    data_packets[5]->rtp()->set_source(data_packets[5]->rtp()->source() + 1);
+    source_packets[5]->rtp()->set_source(source_packets[5]->rtp()->source() + 1);
 
-    for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
-        encoder.write(data_packets[i]);
+    for (size_t i = 0; i < N_SOURCE_PACKETS; ++i) {
+        encoder.write(source_packets[i]);
     }
     pckt_disp.release_all();
 
     for (size_t i = 0; i < 5; ++i) {
-        check_audio_packet(decoder.read(), i, N_DATA_PACKETS);
+        check_audio_packet(decoder.read(), i, N_SOURCE_PACKETS);
         CHECK(decoder.is_alive());
     }
 
-    for (size_t i = 5; i < N_DATA_PACKETS; ++i) {
+    for (size_t i = 5; i < N_SOURCE_PACKETS; ++i) {
         CHECK(!decoder.read());
         CHECK(!decoder.is_alive());
     }
 
-    CHECK(pckt_disp.get_data_size() == 0);
+    CHECK(pckt_disp.source_size() == 0);
 }
 
 TEST(fec_codec_integration, multitime_decode) {
@@ -621,40 +621,40 @@ TEST(fec_codec_integration, multitime_decode) {
     rtp::Parser parser;
 
     Encoder encoder(block_encoder, pckt_disp, composer);
-    Decoder decoder(block_decoder, pckt_disp.get_data_reader(),
-                    pckt_disp.get_fec_reader(), parser);
+    Decoder decoder(block_decoder, pckt_disp.source_reader(), pckt_disp.repair_reader(),
+                    parser);
 
-    fill_all_packets(0, N_DATA_PACKETS * 2);
+    fill_all_packets(0, N_SOURCE_PACKETS * 2);
 
     pckt_disp.lose(5);
     pckt_disp.lose(15);
 
-    for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
-        encoder.write(data_packets[i]);
-        pckt_disp.pop_data();
+    for (size_t i = 0; i < N_SOURCE_PACKETS; ++i) {
+        encoder.write(source_packets[i]);
+        pckt_disp.pop_source();
     }
 
-    fill_all_packets(N_DATA_PACKETS, N_DATA_PACKETS * 2);
-    for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
-        encoder.write(data_packets[i]);
-        pckt_disp.pop_data();
+    fill_all_packets(N_SOURCE_PACKETS, N_SOURCE_PACKETS * 2);
+    for (size_t i = 0; i < N_SOURCE_PACKETS; ++i) {
+        encoder.write(source_packets[i]);
+        pckt_disp.pop_source();
     }
 
-    for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
+    for (size_t i = 0; i < N_SOURCE_PACKETS; ++i) {
         if (i != 5 && i != 15) {
-            check_audio_packet(decoder.read(), i, N_DATA_PACKETS * 2);
+            check_audio_packet(decoder.read(), i, N_SOURCE_PACKETS * 2);
             // The moment of truth.
         } else if (i == 15) {
             // Get FEC packets. Decoder must try to decode once more.
             pckt_disp.release_all();
-            check_audio_packet(decoder.read(), i, N_DATA_PACKETS * 2);
+            check_audio_packet(decoder.read(), i, N_SOURCE_PACKETS * 2);
         }
     }
-    for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
-        check_audio_packet(decoder.read(), i + N_DATA_PACKETS, N_DATA_PACKETS * 2);
+    for (size_t i = 0; i < N_SOURCE_PACKETS; ++i) {
+        check_audio_packet(decoder.read(), i + N_SOURCE_PACKETS, N_SOURCE_PACKETS * 2);
     }
 
-    LONGS_EQUAL(0, pckt_disp.get_data_size());
+    LONGS_EQUAL(0, pckt_disp.source_size());
 }
 
 TEST(fec_codec_integration, delayed_packets) {
@@ -669,25 +669,25 @@ TEST(fec_codec_integration, delayed_packets) {
     rtp::Parser parser;
 
     Encoder encoder(block_encoder, pckt_disp, composer);
-    Decoder decoder(block_decoder, pckt_disp.get_data_reader(),
-                    pckt_disp.get_fec_reader(), parser);
+    Decoder decoder(block_decoder, pckt_disp.source_reader(), pckt_disp.repair_reader(),
+                    parser);
 
-    fill_all_packets(0, N_DATA_PACKETS);
+    fill_all_packets(0, N_SOURCE_PACKETS);
 
-    for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
-        encoder.write(data_packets[i]);
+    for (size_t i = 0; i < N_SOURCE_PACKETS; ++i) {
+        encoder.write(source_packets[i]);
     }
     for (size_t i = 0; i < 10; ++i) {
-        pckt_disp.pop_data();
+        pckt_disp.pop_source();
     }
 
     for (size_t i = 0; i < 10; ++i) {
-        check_audio_packet(decoder.read(), i, N_DATA_PACKETS);
+        check_audio_packet(decoder.read(), i, N_SOURCE_PACKETS);
     }
     CHECK(!decoder.read());
     pckt_disp.release_all();
-    for (size_t i = 10; i < N_DATA_PACKETS; ++i) {
-        check_audio_packet(decoder.read(), i, N_DATA_PACKETS);
+    for (size_t i = 10; i < N_SOURCE_PACKETS; ++i) {
+        check_audio_packet(decoder.read(), i, N_SOURCE_PACKETS);
     }
 }
 

@@ -52,11 +52,11 @@ public:
 
 private:
     //! Create FEC-packet.
-    packet::IPacketPtr make_fec_packet_(const core::IByteBufferConstSlice& buff,
-                                        const packet::seqnum_t block_data_seqnum,
-                                        const packet::seqnum_t block_fec_seqnum,
-                                        const packet::seqnum_t seqnum,
-                                        const bool marker_bit);
+    packet::IPacketPtr make_repair_packet_(const core::IByteBufferConstSlice& buff,
+                                           const packet::seqnum_t blk_source_sn,
+                                           const packet::seqnum_t blk_repair_sn,
+                                           const packet::seqnum_t sn,
+                                           const bool marker_bit);
 
     IBlockEncoder& block_encoder_;
 
@@ -66,10 +66,10 @@ private:
     packet::source_t source_;
     bool first_packet_;
 
-    packet::seqnum_t cur_block_seqnum_;
-    packet::seqnum_t cur_session_fec_seqnum_;
+    packet::seqnum_t cur_block_source_sn_;
+    packet::seqnum_t cur_block_repair_sn_;
 
-    size_t cur_data_pack_i_;
+    size_t cur_source_packet_n_;
 };
 
 } // namespace fec

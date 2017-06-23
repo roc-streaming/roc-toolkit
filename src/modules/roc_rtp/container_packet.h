@@ -41,11 +41,11 @@ private:
     virtual void free();
 
     // FIXME
-    virtual packet::seqnum_t data_blknum() const;
-    virtual void set_data_blknum(packet::seqnum_t);
+    virtual packet::seqnum_t source_blknum() const;
+    virtual void set_source_blknum(packet::seqnum_t);
 
-    virtual packet::seqnum_t fec_blknum() const;
-    virtual void set_fec_blknum(packet::seqnum_t);
+    virtual packet::seqnum_t repair_blknum() const;
+    virtual void set_repair_blknum(packet::seqnum_t);
 
     // TODO
     core::IPool<ContainerPacket>& pool_;

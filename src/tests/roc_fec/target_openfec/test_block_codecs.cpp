@@ -28,8 +28,8 @@ using namespace fec;
 
 namespace {
 
-const size_t N_DATA_PACKETS = 20;
-const size_t N_FEC_PACKETS = 10;
+const size_t N_SOURCE_PACKETS = 20;
+const size_t N_REPAIR_PACKETS = 10;
 
 const size_t SYMB_SZ = ROC_CONFIG_DEFAULT_PACKET_SIZE;
 
@@ -40,23 +40,23 @@ public:
     Codec(const Config& conf)
         : encoder_(conf, datagram::default_buffer_composer())
         , decoder_(conf, datagram::default_buffer_composer()) {
-        buffers_.resize(N_DATA_PACKETS + N_FEC_PACKETS);
+        buffers_.resize(N_SOURCE_PACKETS + N_REPAIR_PACKETS);
     }
 
     void encode() {
-        for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
+        for (size_t i = 0; i < N_SOURCE_PACKETS; ++i) {
             buffers_[i] = make_buffer();
             encoder_.write(i, buffers_[i]);
         }
         encoder_.commit();
-        for (size_t i = 0; i < N_FEC_PACKETS; ++i) {
-            buffers_[N_DATA_PACKETS + i] = encoder_.read(i);
+        for (size_t i = 0; i < N_REPAIR_PACKETS; ++i) {
+            buffers_[N_SOURCE_PACKETS + i] = encoder_.read(i);
         }
         encoder_.reset();
     }
 
     bool decode() {
-        for (size_t i = 0; i < N_DATA_PACKETS; ++i) {
+        for (size_t i = 0; i < N_SOURCE_PACKETS; ++i) {
             core::IByteBufferConstSlice decoded = decoder_.repair(i);
             if (!decoded) {
                 return false;
@@ -79,7 +79,7 @@ public:
         return decoder_;
     }
 
-    typedef core::Array<core::IByteBufferConstSlice, N_DATA_PACKETS + N_FEC_PACKETS>
+    typedef core::Array<core::IByteBufferConstSlice, N_SOURCE_PACKETS + N_REPAIR_PACKETS>
         codec_buff_t;
 
     core::IByteBufferConstSlice& get_buffer(const size_t i) {
@@ -109,8 +109,8 @@ private:
 TEST_GROUP(block_codecs) {
     Config config;
     void setup() {
-        config.n_source_packets = N_DATA_PACKETS;
-        config.n_repair_packets = N_FEC_PACKETS;
+        config.n_source_packets = N_SOURCE_PACKETS;
+        config.n_repair_packets = N_REPAIR_PACKETS;
     }
 };
 
@@ -120,7 +120,7 @@ TEST(block_codecs, without_loss) {
         Codec code(config);
         code.encode();
         // Sending all packets in block without loss.
-        for (size_t i = 0; i < N_DATA_PACKETS + N_FEC_PACKETS; ++i) {
+        for (size_t i = 0; i < N_SOURCE_PACKETS + N_REPAIR_PACKETS; ++i) {
             code.decoder().write(i, code.get_buffer(i));
         }
         CHECK(code.decode());
@@ -133,7 +133,7 @@ TEST(block_codecs, loss_1) {
         Codec code(config);
         code.encode();
         // Sending all packets in block with one loss.
-        for (size_t i = 0; i < N_DATA_PACKETS + N_FEC_PACKETS; ++i) {
+        for (size_t i = 0; i < N_SOURCE_PACKETS + N_REPAIR_PACKETS; ++i) {
             if (i == 5) {
                 continue;
             }
@@ -157,7 +157,7 @@ TEST(block_codecs, load_test) {
         for (size_t test_num = 0; test_num < NumIterations; ++test_num) {
             code.encode();
             size_t curr_loss = 0;
-            for (size_t i = 0; i < N_DATA_PACKETS + N_FEC_PACKETS; ++i) {
+            for (size_t i = 0; i < N_SOURCE_PACKETS + N_REPAIR_PACKETS; ++i) {
                 if (core::random(100) < LossPercent && curr_loss <= MaxLoss) {
                     total_loss++;
                     curr_loss++;

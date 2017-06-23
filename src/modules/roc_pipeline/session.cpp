@@ -166,15 +166,15 @@ packet::IPacketReader* Session::make_packet_reader_() {
 #ifdef ROC_TARGET_OPENFEC
 packet::IPacketReader* Session::make_fec_decoder_(packet::IPacketReader* packet_reader) {
     //
-    new (fec_packet_queue_) packet::PacketQueue(config_.max_session_packets);
+    new (repair_packet_queue_) packet::PacketQueue(config_.max_session_packets);
     new (fec_blk_decoder_)
         fec::OFBlockDecoder(config_.fec, *config_.byte_buffer_composer);
 
-    router_.add_route(*fec_packet_queue_,
+    router_.add_route(*repair_packet_queue_,
                       packet::IPacket::HasOrder | packet::IPacket::HasFEC);
 
-    packet_reader = new (fec_decoder_) fec::Decoder(*fec_blk_decoder_, *packet_reader,
-                                                    *fec_packet_queue_, packet_parser_);
+    packet_reader = new (fec_decoder_) fec::Decoder(
+        *fec_blk_decoder_, *packet_reader, *repair_packet_queue_, packet_parser_);
 
     packet_reader = new (fec_watchdog_) packet::Watchdog(
         *packet_reader, config_.session_timeout / config_.samples_per_tick,

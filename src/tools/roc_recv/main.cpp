@@ -76,7 +76,7 @@ int main(int argc, char** argv) {
             return 1;
         }
         if (!check_range("nbsrc", args.nbsrc_arg, 3,
-                         ROC_CONFIG_MAX_FEC_BLOCK_DATA_PACKETS)) {
+                         ROC_CONFIG_MAX_FEC_BLOCK_SOURCE_PACKETS)) {
             return 1;
         }
         config.fec.n_source_packets = (size_t)args.nbsrc_arg;
