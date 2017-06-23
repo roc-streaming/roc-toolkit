@@ -86,8 +86,8 @@ sample_t* Streamer::read_samples_(sample_t* buff_ptr, sample_t* buff_end) {
             size_t mis_samples = (size_t)TS_SUBTRACT(next_timestamp, timestamp_);
             size_t max_samples = (size_t)(buff_end - buff_ptr);
 
-            buff_ptr = read_missing_samples_(buff_ptr, buff_ptr
-                                                 + ROC_MIN(mis_samples, max_samples));
+            buff_ptr = read_missing_samples_(
+                buff_ptr, buff_ptr + ROC_MIN(mis_samples, max_samples));
         }
 
         if (buff_ptr < buff_end) {

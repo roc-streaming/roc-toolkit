@@ -245,8 +245,9 @@ TEST(audio_packet, read_more_than_size) {
             sample_t samples[NumSamples] = {};
 
             for (size_t off = 0; off < NumSamples; off++) {
-                LONGS_EQUAL(NumSamples - off, p->audio()->read_samples(
-                                                  (1 << ch), off, samples, NumSamples));
+                LONGS_EQUAL(
+                    NumSamples - off,
+                    p->audio()->read_samples((1 << ch), off, samples, NumSamples));
 
                 for (size_t ns = off; ns < NumSamples; ns++) {
                     check_sample(samples[ns - off], ns * num_ch + ch);

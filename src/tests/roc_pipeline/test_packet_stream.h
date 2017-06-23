@@ -84,8 +84,9 @@ public:
         LONGS_EQUAL(n_pkt_samples, packet->audio()->num_samples());
 
         packet::sample_t samples[MaxSamples * NumChannels] = {};
-        LONGS_EQUAL(n_pkt_samples, packet->audio()->read_samples(ChannelMask, 0, samples,
-                                                                 n_pkt_samples));
+        LONGS_EQUAL(
+            n_pkt_samples,
+            packet->audio()->read_samples(ChannelMask, 0, samples, n_pkt_samples));
 
         size_t pos = 0;
         for (size_t n = 0; n < n_pkt_samples; n++) {

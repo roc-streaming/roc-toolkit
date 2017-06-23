@@ -106,8 +106,9 @@ private:
         packet::sample_t actual = buffer.data()[pos];
 
         if (ROC_ABS(actual - expected) > Epsilon) {
-            roc_log(LogError, "unexpected sample at pos %u (buffer # %ld):",
-                    (unsigned)pos, n_reads_);
+            roc_log(LogError,
+                    "unexpected sample at pos %u (buffer # %ld):", (unsigned)pos,
+                    n_reads_);
             buffer.print();
         }
 
