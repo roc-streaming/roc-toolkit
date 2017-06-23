@@ -28,6 +28,9 @@ __pycache__
 # vim
 *.sw[op]
 
-# misc
+# ack
+.ackrc
+
+# doc
 .copyright
 *.vpp~*
