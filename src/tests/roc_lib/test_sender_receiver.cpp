@@ -21,7 +21,6 @@
 #include "roc_netio/transceiver.h"
 
 #include <stdio.h>
-#include <stdio.h>
 
 #include <unistd.h>
 
