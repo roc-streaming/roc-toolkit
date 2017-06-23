@@ -30,14 +30,14 @@ OFBlockEncoder::OFBlockEncoder(const Config& config, core::IByteBufferComposer& 
     , buff_tab_(config.n_source_packets + config.n_repair_packets)
     , data_tab_(config.n_source_packets + config.n_repair_packets) {
     if (config.codec == ReedSolomon2m) {
-        roc_log(LogDebug, "initializing Reed-Solomon encoder");
+        roc_log(LogDebug, "of block encoder: initializing Reed-Solomon encoder");
 
         codec_id_ = OF_CODEC_REED_SOLOMON_GF_2_M_STABLE;
         codec_params_.rs_params_.m = config.rs_m;
 
         of_sess_params_ = (of_parameters_t*)&codec_params_.rs_params_;
     } else if (config.codec == LDPCStaircase) {
-        roc_log(LogDebug, "initializing LDPC encoder");
+        roc_log(LogDebug, "of block encoder: initializing LDPC encoder");
 
         codec_id_ = OF_CODEC_LDPC_STAIRCASE_STABLE;
         codec_params_.ldpc_params_.prng_seed = config.ldpc_prng_seed;
@@ -45,7 +45,7 @@ OFBlockEncoder::OFBlockEncoder(const Config& config, core::IByteBufferComposer& 
 
         of_sess_params_ = (of_parameters_t*)&codec_params_.ldpc_params_;
     } else {
-        roc_panic("block encoder: wrong FEC type is chosen.");
+        roc_panic("of block encoder: wrong FEC type is chosen.");
     }
 
     of_sess_params_->nb_source_symbols = (uint32_t)blk_source_packets_;
@@ -54,13 +54,13 @@ OFBlockEncoder::OFBlockEncoder(const Config& config, core::IByteBufferComposer& 
     of_verbosity = 0;
 
     if (OF_STATUS_OK != of_create_codec_instance(&of_sess_, codec_id_, OF_ENCODER, 0)) {
-        roc_panic("block encoder: of_create_codec_instance() failed");
+        roc_panic("of block encoder: of_create_codec_instance() failed");
     }
 
     roc_panic_if(of_sess_ == NULL);
 
     if (OF_STATUS_OK != of_set_fec_parameters(of_sess_, of_sess_params_)) {
-        roc_panic("block encoder: of_set_fec_parameters() failed");
+        roc_panic("of block encoder: of_set_fec_parameters() failed");
     }
 }
 
@@ -70,16 +70,16 @@ OFBlockEncoder::~OFBlockEncoder() {
 
 void OFBlockEncoder::write(size_t index, const core::IByteBufferConstSlice& buffer) {
     if (index >= blk_source_packets_) {
-        roc_panic("block encoder: can't write more than %lu data buffers",
+        roc_panic("of block encoder: can't write more than %lu data buffers",
                   (unsigned long)blk_source_packets_);
     }
 
     if (!buffer) {
-        roc_panic("block encoder: NULL buffer");
+        roc_panic("of block encoder: NULL buffer");
     }
 
     if ((uintptr_t)buffer.data() % 8 != 0) {
-        roc_panic("block encoder: buffer data should be 8-byte aligned");
+        roc_panic("of block encoder: buffer data should be 8-byte aligned");
     }
 
     // const_cast<> is OK since OpenFEC will not modify this buffer.
@@ -94,7 +94,7 @@ void OFBlockEncoder::commit() {
             data_tab_[blk_source_packets_ + i] = buffer->data();
             buff_tab_[blk_source_packets_ + i] = *buffer;
         } else {
-            roc_log(LogDebug, "OFBlockEncoder can't allocate buffer");
+            roc_log(LogDebug, "of block encoder: can't allocate buffer");
             data_tab_[blk_source_packets_ + i] = NULL;
         }
     }
@@ -103,14 +103,14 @@ void OFBlockEncoder::commit() {
          ++i) {
         if (OF_STATUS_OK
             != of_build_repair_symbol(of_sess_, &data_tab_[0], (uint32_t)i)) {
-            roc_panic("block encoder: of_build_repair_symbol() failed");
+            roc_panic("of block encoder: of_build_repair_symbol() failed");
         }
     }
 }
 
 core::IByteBufferConstSlice OFBlockEncoder::read(size_t index) {
     if (index >= blk_repair_packets_) {
-        roc_panic("block encoder: can't read more than %lu fec buffers",
+        roc_panic("of block encoder: can't read more than %lu fec buffers",
                   (unsigned long)blk_repair_packets_);
     }
 
@@ -124,11 +124,11 @@ void OFBlockEncoder::reset() {
     }
 }
 
-size_t OFBlockEncoder::n_data_packets() const {
+size_t OFBlockEncoder::n_source_packets() const {
     return blk_source_packets_;
 }
 
-size_t OFBlockEncoder::n_fec_packets() const {
+size_t OFBlockEncoder::n_repair_packets() const {
     return blk_repair_packets_;
 }
 

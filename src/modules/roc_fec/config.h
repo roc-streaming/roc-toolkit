@@ -22,10 +22,13 @@ namespace fec {
 enum CodecType {
     //! FEC codec is unset.
     NoCodec,
+
     //! OpenFEC Reed-Solomon.
     ReedSolomon2m,
+
     //! OpenFEC LDPC Staircase.
     LDPCStaircase,
+
     //! Maximum for iterating through the enum.
     CodecTypeMax
 };
@@ -34,8 +37,8 @@ enum CodecType {
 struct Config {
     Config()
         : codec(NoCodec)
-        , n_source_packets(ROC_CONFIG_DEFAULT_FEC_BLOCK_DATA_PACKETS)
-        , n_repair_packets(ROC_CONFIG_DEFAULT_FEC_BLOCK_REDUNDANT_PACKETS)
+        , n_source_packets(ROC_CONFIG_DEFAULT_FEC_BLOCK_SOURCE_PACKETS)
+        , n_repair_packets(ROC_CONFIG_DEFAULT_FEC_BLOCK_REPAIR_PACKETS)
         , ldpc_prng_seed(1297501556)
         , ldpc_N1(7)
         , rs_m(8) {

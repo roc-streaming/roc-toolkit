@@ -70,26 +70,27 @@ private:
     void fetch_packets_();
     void update_packets_();
 
-    void update_data_packets_();
-    void update_fec_packets_();
+    void update_source_packets_();
+    void update_repair_packets_();
 
-    // Drops early packets from fec_queue_ until meets packets from current block
-    // or later.
-    void skip_fec_packets_();
+    // drops outdated packets from the repair_queue_ until meets packets from the
+    // current block or later
+    void skip_repair_packets_();
 
     IBlockDecoder& block_decoder_;
 
-    packet::IPacketReader& data_reader_;
-    packet::IPacketReader& fec_reader_;
+    packet::IPacketReader& source_reader_;
+    packet::IPacketReader& repair_reader_;
     packet::IPacketParser& parser_;
 
-    packet::PacketQueue data_queue_;
-    packet::PacketQueue fec_queue_;
+    packet::PacketQueue source_queue_;
+    packet::PacketQueue repair_queue_;
 
-    core::Array<packet::IPacketConstPtr, ROC_CONFIG_MAX_FEC_BLOCK_DATA_PACKETS>
-        data_block_;
-    core::Array<packet::IPacketConstPtr, ROC_CONFIG_MAX_FEC_BLOCK_REDUNDANT_PACKETS>
-        fec_block_;
+    core::Array<packet::IPacketConstPtr, ROC_CONFIG_MAX_FEC_BLOCK_SOURCE_PACKETS>
+        source_block_;
+
+    core::Array<packet::IPacketConstPtr, ROC_CONFIG_MAX_FEC_BLOCK_REPAIR_PACKETS>
+        repair_block_;
 
     bool is_alive_;
     bool is_started_;

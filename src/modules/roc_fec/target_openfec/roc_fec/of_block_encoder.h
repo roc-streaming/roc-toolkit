@@ -44,6 +44,7 @@ public:
     explicit OFBlockEncoder(
         const Config& config,
         core::IByteBufferComposer& composer = datagram::default_buffer_composer());
+
     virtual ~OFBlockEncoder();
 
     //! Store data buffer to current block at given position.
@@ -58,16 +59,16 @@ public:
     //! Reset state and start next block.
     virtual void reset();
 
-    //! Returns the number of data packets.
-    virtual size_t n_data_packets() const;
+    //! Returns the number of source packets in block.
+    virtual size_t n_source_packets() const;
 
-    //! Returns the number of FEC packets.
-    virtual size_t n_fec_packets() const;
+    //! Returns the number of repair packets in block.
+    virtual size_t n_repair_packets() const;
 
 private:
     // max packets in block
-    static const size_t max_packets_ = ROC_CONFIG_MAX_FEC_BLOCK_DATA_PACKETS
-        + ROC_CONFIG_MAX_FEC_BLOCK_REDUNDANT_PACKETS;
+    static const size_t max_packets_ =
+        ROC_CONFIG_MAX_FEC_BLOCK_SOURCE_PACKETS + ROC_CONFIG_MAX_FEC_BLOCK_REPAIR_PACKETS;
 
     // block size
     const size_t blk_source_packets_;
