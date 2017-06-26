@@ -5,7 +5,7 @@ do
   for v in debug release
   do
     scons -Q clean
-    scons -Q --enable-werror \
-       --with-3rdparty=uv,openfec,cpputest compiler=$c variant=$v test
+    scons -Q --enable-werror --with-3rdparty=uv,openfec,cpputest \
+          compiler=$c variant=$v test
   done
 done
