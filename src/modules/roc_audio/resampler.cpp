@@ -31,9 +31,9 @@ typedef uint32_t fixedpoint_t;
 // Signed version of fixedpoint_t.
 typedef int32_t signed_fixedpoint_t;
 
-const uint32_t INTEGER_PART_MASK = 0xFF000000;
-const uint32_t FRACT_PART_MASK = 0x00FFFFFF;
-const uint32_t FRACT_BIT_COUNT = 24;
+const uint32_t INTEGER_PART_MASK = 0xFFF00000;
+const uint32_t FRACT_PART_MASK = 0x000FFFFF;
+const uint32_t FRACT_BIT_COUNT = 20;
 
 // One in terms of Q8.24.
 const fixedpoint_t G_qt_one = 1 << FRACT_BIT_COUNT;
@@ -49,7 +49,7 @@ inline signed_fixedpoint_t float_to_sfixedpoint(const float t) {
 }
 
 inline size_t fixedpoint_to_size(const fixedpoint_t t) {
-    return (t >> FRACT_BIT_COUNT) & 0xFF;
+    return t >> FRACT_BIT_COUNT;
 }
 
 // Rounds x (Q8.24) upward.
@@ -81,7 +81,7 @@ Resampler::Resampler(IStreamReader& reader,
     , window_(3)
     , scaling_(0)
     , frame_size_(frame_size)
-    , window_len_(64)
+    , window_len_(128)
     , qt_half_sinc_window_len_(float_to_fixedpoint(window_len_))
     , window_interp_(512)
     , window_interp_bits_(9)
@@ -92,8 +92,10 @@ Resampler::Resampler(IStreamReader& reader,
     , qt_frame_size_(fixedpoint_t(frame_size_ << FRACT_BIT_COUNT))
     , qt_sample_(G_default_sample_)
     , qt_dt_(0)
+    , cutoff_freq_(1.0f)
     {
 
+    roc_panic_if(((fixedpoint_t)-1 >> FRACT_BIT_COUNT) < frame_size_);
     init_window_(composer);
     fill_sinc();
 
