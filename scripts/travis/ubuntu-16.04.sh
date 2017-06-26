@@ -2,17 +2,13 @@
 set -xe
 
 scons -Q clean
-for c in gcc-5 clang-3.7
-do
- scons -Q --enable-werror --enable-sanitizers \
-    --with-3rdparty=openfec,cpputest compiler=$c variant=debug test
-done
+scons -Q --enable-werror --with-3rdparty=openfec test
 
-scons -Q clean
 for c in gcc-4.8 gcc-4.9 gcc-5 clang-3.6 clang-3.7
 do
  for v in debug release
   do
+    scons -Q clean
     scons -Q --enable-werror --with-3rdparty=openfec \
         compiler=$c variant=$v test
   done
