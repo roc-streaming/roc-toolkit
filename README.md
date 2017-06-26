@@ -1,4 +1,4 @@
-![](doc/images/banner.png)
+![](doc/images/logo.png)
 
 # Roc: real-time audio streaming over network
 
