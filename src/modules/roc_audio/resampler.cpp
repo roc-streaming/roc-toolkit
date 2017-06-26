@@ -81,7 +81,7 @@ Resampler::Resampler(IStreamReader& reader,
     , window_(3)
     , scaling_(0)
     , frame_size_(frame_size)
-    , window_len_(128)
+    , window_len_(64)
     , qt_half_sinc_window_len_(float_to_fixedpoint(window_len_))
     , window_interp_(512)
     , window_interp_bits_(9)
