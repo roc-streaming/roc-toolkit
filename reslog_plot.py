@@ -11,11 +11,11 @@ from optparse import OptionParser
 
 #######################################################################################################################
 
-def Spectrum(s):
+def Spectrum(s, low=0, high=1.0):
     Ftest = scipy.fftpack.fft( s )
     n = round(s.shape[0]/2)
-    xf = np.linspace(0.0, 1.0, n)
-    return xf, np.abs(Ftest[0:n])
+    xf = np.linspace(low, high, n)
+    return xf, 20*np.log10(np.abs(Ftest[0:n])+10**-60)
 
 #######################################################################################################################
 
@@ -34,16 +34,22 @@ if __name__ == "__main__":
 
     data = pd.read_csv(options.file_log, header=None)
     data = data.as_matrix()
-    fsig = list(map(lambda x: np.max([x, 10**-32]), np.abs(scipy.fftpack.fft(data[0]))))
-    f_abs = data[1]
-    f_phase = data[2]
-
-
-    plt.subplot(311)
-    plt.plot( 20*np.log10(fsig))
-    plt.subplot(312)
-    plt.plot(f_abs[0:round(f_abs.shape[0]/2)])
-    plt.subplot(313)
-    plt.plot(f_phase[0:round(f_phase.shape[0]/2)])
+    
+    plt.axis( [0, 2.0, -250, 100])
+    x, y = Spectrum(data[0])
+    plt.plot( x, y, '-o')
+    x, y = Spectrum(data[1], high=2.0)
+    plt.plot(x, y, '-x')
+    plt.grid()
     plt.show()
+    # fsig = data[0]
+    # f_abs = data[1]
+    # f_phase = data[2]
+
+
+    # plt.plot(*Spectrum(fsig))
+    # n = round(f_abs.shape[0]/2)
+    # plt.plot( np.linspace(0,2,n,), f_abs[0:n])
+    # plt.grid()
+    # plt.show()
     
