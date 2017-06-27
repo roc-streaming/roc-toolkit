@@ -25,7 +25,7 @@ using namespace audio;
 
 namespace {
 
-enum { FrameSize = ROC_CONFIG_DEFAULT_RESAMPLER_FRAME_SAMPLES * 2 - 1 };
+enum { FrameSize = ROC_CONFIG_DEFAULT_RESAMPLER_FRAME_SAMPLES};
 
 enum { OutSamples = FrameSize * 100 + 1, InSamples = OutSamples + (FrameSize * 3) };
 
@@ -52,20 +52,23 @@ TEST_GROUP(resampler) {
         resampler->read(*buf);
         LONGS_EQUAL(sig_len, buf->size());
         for (size_t i = 0; i < sig_len; ++i) {
-            spectrum[i*2] = buf->data()[i];
-            spectrum[i*2 + 1] = 0; // imagenary part.
+            spectrum[i] = buf->data()[i];
         }
-        FreqSpectrum(spectrum, sig_len);
+        // for (size_t i = 0; i < sig_len; ++i) {
+        //     spectrum[i*2] = buf->data()[i];
+        //     spectrum[i*2 + 1] = 0; // imagenary part.
+        // }
+        // FreqSpectrum(spectrum, sig_len);
     }
 };
 
-TEST(resampler, invalid_scaling) {
+IGNORE_TEST(resampler, invalid_scaling) {
     enum { InvalidScaling = FrameSize };
 
     CHECK(!resampler->set_scaling(InvalidScaling));
 }
 
-TEST(resampler, no_scaling_one_read) {
+IGNORE_TEST(resampler, no_scaling_one_read) {
     CHECK(resampler->set_scaling(1.0f));
 
     reader.add(InSamples, 333);
@@ -73,7 +76,7 @@ TEST(resampler, no_scaling_one_read) {
     expect_buffers(1, OutSamples, 333);
 }
 
-TEST(resampler, no_scaling_multiple_reads) {
+IGNORE_TEST(resampler, no_scaling_multiple_reads) {
     CHECK(resampler->set_scaling(1.0f));
 
     for (int n = 0; n < InSamples; n++) {
@@ -86,8 +89,9 @@ TEST(resampler, no_scaling_multiple_reads) {
 }
 
 TEST(resampler, upscaling_twice) {
-    CHECK(resampler->set_scaling(2.0f));
+    CHECK(resampler->set_scaling(0.5f));
     double buff[1024*2];
+    size_t i;
 
     FILE *fout = fopen("/tmp/resampler.out", "w+");
     CHECK(fout);
@@ -102,21 +106,25 @@ TEST(resampler, upscaling_twice) {
         if (n*2 < ROC_ARRAY_SIZE(buff)) {
             buff[n*2] = s;
             buff[n*2+1] = 0;
-            fprintf(fout, "%f, ", s);
+            if (n == 0){
+                fprintf(fout, "%.16f", s);
+            } else {
+                fprintf(fout, ", %.16f", s);
+            }
         }
     }
 
     get_sample_spectrum(buff, ROC_ARRAY_SIZE(buff)/2);
 
     fprintf(fout, "\n");
-    for (size_t i = 0; i < ROC_ARRAY_SIZE(buff); i += 2) {
-        fprintf(fout, "%f, ", buff[i]);
+    for (i = 0; i < ROC_ARRAY_SIZE(buff)/2-1; i += 1) {
+        fprintf(fout, "%.16f, ", buff[i]);
     }
-    fprintf(fout, "\n");
-    for (size_t i = 1; i < ROC_ARRAY_SIZE(buff); i += 2) {
-        fprintf(fout, "%f, ", buff[i]);
-    }
-    fprintf(fout, "\n");
+    fprintf(fout, "%.16f\n", buff[i]);
+    // for (i = 1; i < ROC_ARRAY_SIZE(buff)-1; i += 2) {
+    //     fprintf(fout, "%f, ", buff[i]);
+    // }
+    // fprintf(fout, "%f\n", buff[i]);
 
     fclose(fout);
 }
