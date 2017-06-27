@@ -63,7 +63,7 @@
 //!  Allowed values are limited with resampler implementation. This parameter
 //!  affects minimum required latency and maximum allowed scaling ratio. It
 //!  doesn't affect allowed packet size or tick size.
-#define ROC_CONFIG_DEFAULT_RESAMPLER_FRAME_SAMPLES 96
+#define ROC_CONFIG_DEFAULT_RESAMPLER_FRAME_SAMPLES (128/2*3)
 
 //! Session timeout (number of samples per channel).
 #define ROC_CONFIG_DEFAULT_SESSION_TIMEOUT                                               \
