@@ -43,6 +43,20 @@ TEST_GROUP(resampler) {
     void expect_buffers(size_t num_buffers, size_t sz, int value) {
         read_buffers<InSamples>(*resampler, num_buffers, sz, value);
     }
+
+    // Reads signal from the resampler and puts its spectrum into @p spectrum.
+    //
+    // Spectrum must have twice bigger space than the length of the input signal.
+    void get_sample_spectrum(double *spectrum, const size_t sig_len) {
+        audio::ISampleBufferPtr buf = new_buffer<InSamples>(sig_len);
+        resampler->read(*buf);
+        LONGS_EQUAL(sig_len, buf->size());
+        for (size_t i = 0; i < sig_len; ++i) {
+            spectrum[i*2] = buf->data()[i];
+            spectrum[i*2 + 1] = 0; // imagenary part.
+        }
+        FreqSpectrum(spectrum, sig_len);
+    }
 };
 
 TEST(resampler, invalid_scaling) {
@@ -91,7 +105,9 @@ TEST(resampler, upscaling_twice) {
             fprintf(fout, "%f, ", s);
         }
     }
-    FFT(buff, ROC_ARRAY_SIZE(buff)/2);
+
+    get_sample_spectrum(buff, ROC_ARRAY_SIZE(buff)/2);
+
     fprintf(fout, "\n");
     for (size_t i = 0; i < ROC_ARRAY_SIZE(buff); i += 2) {
         fprintf(fout, "%f, ", buff[i]);
