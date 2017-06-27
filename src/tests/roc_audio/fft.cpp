@@ -1,12 +1,4 @@
-/*
-   This computes an in-place complex-to-complex FFT 
-   x and y are the real and imaginary arrays of 2^m points.
-   dir =  1 gives forward transform
-   dir = -1 gives reverse transform 
-*/
-
 #include <algorithm> 
-
 #include <math.h>
 
 void FFT(double *data, unsigned long nn)
@@ -57,5 +49,15 @@ void FFT(double *data, unsigned long nn)
             wi += wi*wpr + wtemp*wpi;
         }
         mmax=istep;
+    }
+}
+
+void FreqSpectrum (double *data, const size_t n) {
+    FFT(data, n);
+    for (size_t i = 0; i < n; ++i) {
+        const double real = data[i*2];
+        const double imag = data[i*2 + 1];
+        data[i*2] = 10*log10(real*real + imag*imag);
+        data[i*2 + 1] = atan2(imag, real);
     }
 }
