@@ -55,7 +55,9 @@ public:
 
 private:
     typedef uint32_t fixedpoint_t;
+    typedef uint64_t long_fixedpoint_t;
     typedef int32_t signed_fixedpoint_t;
+    typedef int64_t signed_long_fixedpoint_t;
 
     typedef packet::sample_t sample_t;
 
