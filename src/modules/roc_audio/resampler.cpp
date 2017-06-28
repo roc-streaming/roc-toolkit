@@ -253,9 +253,10 @@ sample_t Resampler::resample_() {
     roc_panic_if(ind_end_next > frame_size_);
 
     // Counter inside window.
-    // t_sinc = t_sample - ceil( t_sample - window_len_ + 1/window_interp_ )
-    fixedpoint_t qt_sinc_cur = qt_frame_size_ + qt_sample_
-        - qceil(qt_frame_size_ + qt_sample_ - qt_half_sinc_window_len_);
+    // t_sinc = (t_sample - ceil( t_sample - window_len/cutoff*scale )) * sinc_step
+    const long_fixedpoint_t qt_cur_ = qt_frame_size_ + qt_sample_
+        - qceil(qt_frame_size_ + qt_sample_ - qt_half_window_len_);
+    fixedpoint_t qt_sinc_cur = (qt_cur_ * (long_fixedpoint_t)qt_sinc_step_) >> FRACT_BIT_COUNT;
 
     // sinc_table defined in positive half-plane, so at the begining of the window
     // qt_sinc_cur starts decreasing and after we cross 0 it will be increasing
@@ -279,7 +280,7 @@ sample_t Resampler::resample_() {
     i = ind_begin_cur;
 
     accumulator += curr_frame_[i] * sinc_(qt_sinc_cur, f_sinc_cur_fract);
-    while (qt_sinc_cur >= G_qt_one) {
+    while (qt_sinc_cur >= qt_sinc_step_) {
         ++i;
         qt_sinc_cur += (fixedpoint_t)qt_sinc_inc;
         accumulator += curr_frame_[i] * sinc_(qt_sinc_cur, f_sinc_cur_fract);
@@ -296,7 +297,7 @@ sample_t Resampler::resample_() {
     //      ^                  ^
     //      |                  |
     //   -qt_sinc_cur  ->  +qt_sinc_cur     <=> qt_sinc_cur = 1 - qt_sinc_cur
-    qt_sinc_cur = G_qt_one - qt_sinc_cur; // qt_sinc_cur = -qt_sinc_cur + 1;
+    qt_sinc_cur = qt_sinc_step_ - qt_sinc_cur; // qt_sinc_cur = -qt_sinc_cur + 1;
     f_sinc_cur_fract = fractional(qt_sinc_cur << window_interp_bits_);
 
     for (; i < ind_end_cur; ++i) {
