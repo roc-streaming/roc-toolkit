@@ -17,7 +17,6 @@
 #include "roc_core/noncopyable.h"
 #include "roc_core/ownership.h"
 #include "roc_core/panic.h"
-#include "roc_core/shared_ptr.h"
 #include "roc_core/stddefs.h"
 
 namespace roc {
@@ -25,15 +24,18 @@ namespace core {
 
 //! Intrusive doubly-linked list.
 //!
-//! @tparam T defines object type which should inherit ListNode.
-//! @tparam Ownership may be RefCntOwnership, NoOwnership or something else;
-//! it can be used to automatically acquire and release ownership of
-//! object when it is added or removed from list.
+//! @tparam T defines object type, it should inherit ListNode.
+//! @tparam Ownership defines ownership policy which is used to acquire an element
+//! ownership
+//! when it's added to the list and release ownership when it's removed from the list
 template <class T, template <class TT> class Ownership = RefCntOwnership>
 class List : public NonCopyable<> {
-    typedef typename Ownership<T>::SafePtr Ptr;
-
 public:
+    //! Pointer type.
+    //! @remarks
+    //!  either raw or smart pointer depending on the ownership policy.
+    typedef typename Ownership<T>::Pointer Pointer;
+
     //! Initialize empty list.
     List()
         : size_(0) {
@@ -44,16 +46,16 @@ public:
 
     //! Release ownership of containing objects.
     ~List() {
-        ListNode::Node* next_node;
+        ListNode::ListData* next_data;
 
-        for (ListNode::Node* node = head_.next; node != &head_; node = next_node) {
-            roc_panic_if(node == NULL);
-            roc_panic_if(node->list != this);
+        for (ListNode::ListData* data = head_.next; data != &head_; data = next_data) {
+            roc_panic_if(data == NULL);
+            check_is_member_(data, this);
 
-            next_node = node->next;
-            node->list = NULL;
+            next_data = data->next;
+            data->list = NULL;
 
-            Ownership<T>::release(*static_cast<T*>(node->container()));
+            Ownership<T>::release(*static_cast<T*>(data->list_node()));
         }
 
         head_.list = NULL;
@@ -65,23 +67,23 @@ public:
     }
 
     //! Get first list element.
-    //!
-    //! @returns first element or NULL if list is empty.
-    Ptr front() const {
+    //! @returns
+    //!  first element or NULL if list is empty.
+    Pointer front() const {
         if (size_ == 0) {
             return NULL;
         }
-        return static_cast<T*>(head_.next->container());
+        return static_cast<T*>(head_.next->list_node());
     }
 
     //! Get last list element.
-    //!
-    //! @returns last element or NULL if list is empty.
-    Ptr back() const {
+    //! @returns
+    //!  last element or NULL if list is empty.
+    Pointer back() const {
         if (size_ == 0) {
             return NULL;
         }
-        return static_cast<T*>(head_.prev->container());
+        return static_cast<T*>(head_.prev->list_node());
     }
 
     //! Get list element next to given one.
@@ -92,86 +94,57 @@ public:
     //!
     //! @pre
     //!  @p element should be member of this list.
-    Ptr next(T& element) const {
-        roc_panic_if((const void*)&element == NULL);
+    Pointer nextof(T& element) const {
+        ListNode::ListData* data = element.list_data();
+        check_is_member_(data, this);
 
-        ListNode::Node* node = element.listnode();
-        check_is_member_(node, this);
-
-        if (node->next == &head_) {
+        if (data->next == &head_) {
             return NULL;
         }
-        return static_cast<T*>(node->next->container());
+        return static_cast<T*>(data->next->list_node());
     }
 
     //! Append element to list.
     //!
     //! @remarks
-    //!  - Appends @p element to list.
-    //!  - Acquires ownership of @p element.
+    //!  - appends @p element to list
+    //!  - acquires ownership of @p element
     //!
     //! @pre
     //!  @p element should not be member of any list.
-    void append(T& element) {
-        insert(element, NULL);
+    void push_back(T& element) {
+        insert_(element, NULL);
     }
 
     //! Insert element into list.
     //!
     //! @remarks
-    //!  - Inserts @p element before @p before if it's not NULL, or to
-    //!    the end of list otherwise.
-    //!  - Acquires ownership of @p element.
+    //!  - inserts @p element before @p before
+    //!  - acquires ownership of @p element
     //!
     //! @pre
     //!  @p element should not be member of any list.
     //!  @p before should be member of this list or NULL.
-    void insert(T& element, T* before) {
-        roc_panic_if((const void*)&element == NULL);
-
-        ListNode::Node* node_new = element.listnode();
-        check_is_member_(node_new, NULL);
-
-        ListNode::Node* node_before;
-
-        if (before != NULL) {
-            node_before = before->listnode();
-            check_is_member_(node_before, this);
-        } else {
-            node_before = &head_;
-        }
-
-        node_new->next = node_before;
-        node_new->prev = node_before->prev;
-
-        node_before->prev->next = node_new;
-        node_before->prev = node_new;
-
-        node_new->list = this;
-
-        size_++;
-
-        Ownership<T>::acquire(element);
+    void insert_before(T& element, T& before) {
+        insert_(element, &before);
     }
 
     //! Remove element from list.
     //!
     //! @remarks
-    //!  - Removes @p element from list.
-    //!  - Releases ownership of @p element.
+    //!  - removes @p element from list
+    //!  - releases ownership of @p element
     //!
     //! @pre
     //!  @p element should be member of this list.
     void remove(T& element) {
-        roc_panic_if((const void*)&element == NULL);
+        ListNode::ListData* data = element.list_data();
+        check_is_member_(data, this);
 
-        ListNode::Node* node = element.listnode();
-        check_is_member_(node, this);
+        data->prev->next = data->next;
+        data->next->prev = data->prev;
 
-        node->prev->next = node->next;
-        node->next->prev = node->prev;
-
-        node->list = NULL;
+        data->list = NULL;
 
         size_--;
 
@@ -179,14 +152,39 @@ public:
     }
 
 private:
-    static void check_is_member_(const ListNode::Node* node, const List* list) {
-        if (node->list != list) {
-            roc_panic("list element is member of wrong list (expected %p, got %p)",
-                      (const void*)list, (const void*)node->list);
+    static void check_is_member_(const ListNode::ListData* data, const List* list) {
+        if (data->list != list) {
+            roc_panic("list element is member of wrong list: expected %p, got %p",
+                      (const void*)list, (const void*)data->list);
         }
     }
 
-    ListNode::Node head_;
+    void insert_(T& element, T* before) {
+        ListNode::ListData* data_new = element.list_data();
+        check_is_member_(data_new, NULL);
+
+        ListNode::ListData* data_before;
+        if (before != NULL) {
+            data_before = before->list_data();
+            check_is_member_(data_before, this);
+        } else {
+            data_before = &head_;
+        }
+
+        data_new->next = data_before;
+        data_new->prev = data_before->prev;
+
+        data_before->prev->next = data_new;
+        data_before->prev = data_new;
+
+        data_new->list = this;
+
+        size_++;
+
+        Ownership<T>::acquire(element);
+    }
+
+    ListNode::ListData head_;
     size_t size_;
 };
 

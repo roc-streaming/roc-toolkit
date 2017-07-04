@@ -24,8 +24,8 @@ errno_to_str::errno_to_str() {
 }
 
 errno_to_str::errno_to_str(int err) {
-    if (strerror_r(err, buffer, sizeof(buffer) - 1) == -1) {
-        buffer[0] = '\0';
+    if (strerror_r(err, buffer_, sizeof(buffer_) - 1) == -1) {
+        buffer_[0] = '\0';
     }
 }
 

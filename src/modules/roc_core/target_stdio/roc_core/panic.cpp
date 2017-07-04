@@ -11,14 +11,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "roc_core/backtrace.h"
 #include "roc_core/panic.h"
 
 namespace roc {
 namespace core {
 
 namespace {
-
-enum { PANIC_MAX_MSG = 128 };
 
 PanicHandler g_panic_handler = NULL;
 
@@ -28,8 +27,10 @@ void set_panic_handler(PanicHandler handler) {
     g_panic_handler = handler;
 }
 
-void do_panic(const char* module, const char* file, int line, const char* format, ...) {
-    char message[PANIC_MAX_MSG] = {};
+void panic(const char* module, const char* file, int line, const char* format, ...) {
+    enum { MaxSize = 128 };
+
+    char message[MaxSize] = {};
 
     va_list args;
     va_start(args, format);

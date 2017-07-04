@@ -7,18 +7,21 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_core/list_node.h"
-#include "roc_core/panic.h"
+//! @file roc_core/target_gnu/roc_core/backtrace.h
+//! @brief Backtrace printing.
+
+#ifndef ROC_CORE_BACKTRACE_H_
+#define ROC_CORE_BACKTRACE_H_
 
 namespace roc {
 namespace core {
 
-ListNode::~ListNode() {
-    if (list_data_.list != NULL) {
-        roc_panic(
-            "list node: can't call destructor for an element that is still in list");
-    }
-}
+//! Print backtrace to stderr.
+//! @note
+//!  On Linux/GCC, this requires -rdynamic option, which is enabled in debug builds.
+void print_backtrace();
 
 } // namespace core
 } // namespace roc
+
+#endif // ROC_CORE_BACKTRACE_H_

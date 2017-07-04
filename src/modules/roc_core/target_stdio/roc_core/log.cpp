@@ -44,7 +44,7 @@ LogHandler set_log_handler(LogHandler handler) {
     return ret;
 }
 
-void print_message(const char* module, LogLevel level, const char* format, ...) {
+void log(const char* module, LogLevel level, const char* format, ...) {
     if (level > g_log_level || level == LogNone) {
         return;
     }
@@ -59,7 +59,7 @@ void print_message(const char* module, LogLevel level, const char* format, ...) 
     if (g_log_handler) {
         g_log_handler(level, module, message);
     } else {
-        const char* prefix = "?????";
+        const char* prefix = "?";
 
         switch (level) {
         case LogNone:

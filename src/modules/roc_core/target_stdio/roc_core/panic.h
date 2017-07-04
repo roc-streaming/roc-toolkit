@@ -14,10 +14,10 @@
 #define ROC_CORE_PANIC_H_
 
 #include "roc_core/attributes.h"
-#include "roc_core/helpers.h"
+#include "roc_core/macros.h"
 
 #ifndef ROC_MODULE
-#define ROC_MODULE roc //!< Default module name.
+#error "ROC_MODULE not defined"
 #endif
 
 //! Panic if condition is true.
@@ -41,13 +41,13 @@
 //! @remarks
 //!  Never returns and never throws.
 #define roc_panic(...)                                                                   \
-    ::roc::core::do_panic(ROC_STRINGIZE(ROC_MODULE), __FILE__, __LINE__, __VA_ARGS__)
+    ::roc::core::panic(ROC_STRINGIZE(ROC_MODULE), __FILE__, __LINE__, __VA_ARGS__)
 
 namespace roc {
 namespace core {
 
 //! Print error message and terminate program gracefully.
-void do_panic(const char* module, const char* file, int line, const char* format, ...)
+void panic(const char* module, const char* file, int line, const char* format, ...)
     ROC_ATTR_NOTHROW ROC_ATTR_NORETURN ROC_ATTR_PRINTF(4, 5);
 
 //! Panic handler.
@@ -64,12 +64,6 @@ typedef void (*PanicHandler)(const char*);
 //!  suppressed and program is terminated anyway. Our code is not exception
 //!  safe and excpects that roc_panic() never returns.
 void set_panic_handler(PanicHandler handler);
-
-//! Print backtrace to stderr.
-//!
-//! @note
-//!  On Linux/GCC, this requires -rdynamic option, enabled in debug builds.
-void print_backtrace();
 
 } // namespace core
 } // namespace roc

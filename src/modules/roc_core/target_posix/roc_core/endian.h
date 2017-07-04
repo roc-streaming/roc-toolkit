@@ -7,11 +7,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_core/target_posix/roc_core/byte_order.h
+//! @file roc_core/target_posix/roc_core/endian.h
 //! @brief Endian converters.
 
-#ifndef ROC_CORE_BYTE_ORDER_H_
-#define ROC_CORE_BYTE_ORDER_H_
+#ifndef ROC_CORE_ENDIAN_H_
+#define ROC_CORE_ENDIAN_H_
 
 #include <arpa/inet.h>
 #include <inttypes.h>
@@ -19,15 +19,15 @@
 #include <sys/types.h>
 
 //! Network to host (16 bits).
-#define ROC_NTOH_16(v) ntohs(v)
+#define ROC_NTOH_16(v) ntohs(uint16_t(v))
 
 //! Network to host (32 bits).
-#define ROC_NTOH_32(v) ntohl(v)
+#define ROC_NTOH_32(v) ntohl(uint32_t(v))
 
 //! Host to network (16 bits).
-#define ROC_HTON_16(v) htons(v)
+#define ROC_HTON_16(v) htons(uint16_t(v))
 
 //! Host to network (32 bits).
-#define ROC_HTON_32(v) htonl(v)
+#define ROC_HTON_32(v) htonl(uint32_t(v))
 
-#endif // ROC_CORE_BYTE_ORDER_H_
+#endif // ROC_CORE_ENDIAN_H_
