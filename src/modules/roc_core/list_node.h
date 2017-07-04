@@ -13,7 +13,7 @@
 #ifndef ROC_CORE_LIST_NODE_H_
 #define ROC_CORE_LIST_NODE_H_
 
-#include "roc_core/helpers.h"
+#include "roc_core/macros.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/stddefs.h"
 
@@ -21,45 +21,44 @@ namespace roc {
 namespace core {
 
 //! Base class for list element.
-//!
-//! Object should inherit this class to be able to be a member
-//! of List.
+//! @remarks
+//!  Object should inherit this class to be able to be a member of List.
 class ListNode : public NonCopyable<ListNode> {
 public:
-    virtual ~ListNode();
-
     //! List node data.
-    struct Node {
+    struct ListData {
         //! Previous list element.
-        Node* prev;
+        ListData* prev;
 
         //! Next list element.
-        Node* next;
+        ListData* next;
 
         //! The list this node is member of.
-        //!
-        //! NULL if node is not member of any list.
+        //! @remarks
+        //!  NULL if node is not member of any list.
         void* list;
 
-        Node()
+        ListData()
             : prev(NULL)
             , next(NULL)
             , list(NULL) {
         }
 
-        //! Get container object of this node.
-        ListNode* container() {
-            return ROC_CONTAINER_OF(this, ListNode, node_);
+        //! Get ListNode object that contains this ListData object.
+        ListNode* list_node() {
+            return ROC_CONTAINER_OF(this, ListNode, list_data_);
         }
     };
 
+    ~ListNode();
+
     //! Get list node data.
-    Node* listnode() const {
-        return &node_;
+    ListData* list_data() const {
+        return &list_data_;
     }
 
 private:
-    mutable Node node_;
+    mutable ListData list_data_;
 };
 
 } // namespace core

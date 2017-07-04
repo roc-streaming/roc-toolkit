@@ -8,7 +8,7 @@
  */
 
 //! @file roc_core/shared_ptr.h
-//! @brief Intrusive shared pointer.
+//! @brief Shared ownership intrusive pointer.
 
 #ifndef ROC_CORE_SHARED_PTR_H_
 #define ROC_CORE_SHARED_PTR_H_
@@ -20,10 +20,10 @@
 namespace roc {
 namespace core {
 
-//! Intrusive shared pointer.
+//! Shared ownership intrusive pointer.
 //!
 //! @tparam T defines pointee type. It may be const.
-//! @tparam Ownership defines methods to increase and decrease reference counter
+//! @tparam Ownership defines methods to increase and decrease the reference counter
 //! embedded into object. If RefCntOwnership is used, T should inherit RefCnt.
 template <class T, template <class TT> class Ownership = RefCntOwnership>
 class SharedPtr {
@@ -94,7 +94,7 @@ public:
     //! Get underlying reference.
     T& operator*() const {
         if (ptr_ == NULL) {
-            roc_panic("attempting to dereference null shared pointer");
+            roc_panic("shared ptr: attempting to dereference null shared pointer");
         }
         return *ptr_;
     }
@@ -117,7 +117,6 @@ private:
         }
     }
 
-private:
     T* ptr_;
 };
 

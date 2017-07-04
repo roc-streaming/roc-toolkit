@@ -21,15 +21,20 @@ namespace roc {
 namespace core {
 
 //! Base class for reference countable objects.
-class RefCnt : public NonCopyable<RefCnt> {
+//!
+//! @tparam T defines the derived class, which should provide free() method.
+template <class T> class RefCnt : public NonCopyable<RefCnt<T> > {
 public:
-    RefCnt();
+    RefCnt()
+        : counter_(0) {
+    }
 
-    //! Enable memory leak detection.
-    //! @remarks
-    //!  When enabled, a global object's destructor will abort() if there
-    //!  are RefCnt objects not destroyed yet.
-    static void enable_leak_detection();
+    ~RefCnt() {
+        if (counter_ != 0) {
+            roc_panic("refcnt: reference counter is non-zero in destructor, counter=%d",
+                      (int)counter_);
+        }
+    }
 
     //! Get reference counter.
     long getref() const {
@@ -39,7 +44,7 @@ public:
     //! Increment reference counter.
     void incref() const {
         if (counter_ < 0) {
-            roc_panic("attempting to call incref() on freed object");
+            roc_panic("refcnt: attempting to call incref() on freed object");
         }
         ++counter_;
     }
@@ -49,23 +54,14 @@ public:
     //!  Calls free() if reference counter becomes zero.
     void decref() const {
         if (counter_ <= 0) {
-            roc_panic("attempting to call decref() on freed object");
+            roc_panic("refcnt: attempting to call decref() on destroyed object");
         }
-
         if (--counter_ == 0) {
-            const_cast<RefCnt&>(*this).free();
+            static_cast<T*>(const_cast<RefCnt*>(this))->destroy();
         }
     }
 
-protected:
-    virtual ~RefCnt();
-
 private:
-    //! Free object.
-    //! @remarks
-    //!  Invoked when reference counter becomes zero.
-    virtual void free() = 0;
-
     mutable Atomic counter_;
 };
 

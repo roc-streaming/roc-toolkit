@@ -25,32 +25,39 @@ namespace core {
 class Semaphore : public NonCopyable<> {
 public:
     //! Initialize semaphore with given counter value.
-    explicit Semaphore(size_t counter = 0) {
-        if (int err = uv_sem_init(&sem_, (unsigned int)counter)) {
-            roc_panic("uv_sem_init(): [%s] %s", uv_err_name(err), uv_strerror(err));
-        }
-    }
+    explicit Semaphore(size_t counter);
 
-    ~Semaphore() {
-        uv_sem_destroy(&sem_);
-    }
-
-    //! Decrement semaphore counter.
-    //! @remarks
-    //!  Blocks until counter will be greather than zero.
-    void pend() {
-        uv_sem_wait(&sem_);
-    }
+    ~Semaphore();
 
     //! Increment semaphore counter.
     //! @remarks
     //!  Notifies threads that are blocked on pend().
-    void post() {
-        uv_sem_post(&sem_);
-    }
+    void post();
+
+    //! Decrement semaphore counter.
+    //! @remarks
+    //!  Blocks until counter will be greather than zero.
+    void pend();
+
+    //! Try to decrement semaphore counter.
+    //! @remarks
+    //!  Decrements counter if it's greather than zero or returns immediately
+    //!  otherwise.
+    //! @returns
+    //!  true if the counter was decremented.
+    bool try_pend();
+
+    //! Wait until counter becomes non-zero.
+    //! @remarks
+    //!  Blocks until counter becomes non-zero, but doesn't decrement it. It's not
+    //!  guaranteed that the counter is still non-zero when the function returns
+    //!  if there are other threads that may call pend() or try_pend().
+    void wait();
 
 private:
-    uv_sem_t sem_;
+    uv_mutex_t mutex_;
+    uv_cond_t cond_;
+    size_t counter_;
 };
 
 } // namespace core

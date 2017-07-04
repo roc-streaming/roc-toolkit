@@ -11,12 +11,9 @@
 #include <CppUTest/CommandLineTestRunner.h>
 
 #include "roc_core/log.h"
-#include "roc_core/refcnt.h"
 
 int main(int argc, const char** argv) {
     CommandLineArguments args(argc, argv);
-
-    roc::core::RefCnt::enable_leak_detection();
 
     if (args.parse(NULL) && args.isVerbose()) {
         roc::core::set_log_level(roc::LogDebug);

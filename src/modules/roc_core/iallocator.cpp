@@ -1,18 +1,19 @@
 /*
- * Copyright (c) 2015 Mikhail Baranov
- * Copyright (c) 2015 Victor Gaydov
+ * Copyright (c) 2017 Mikhail Baranov
+ * Copyright (c) 2017 Victor Gaydov
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "test_object.h"
+#include "roc_core/iallocator.h"
 
 namespace roc {
-namespace test {
+namespace core {
 
-std::map<const TestObject*, size_t> TestObject::state;
+IAllocator::~IAllocator() {
+}
 
-} // namespace test
+} // namespace core
 } // namespace roc

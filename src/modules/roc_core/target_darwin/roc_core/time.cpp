@@ -45,7 +45,7 @@ void init_steady_factor() {
         roc_panic("mach_timebase_info: %s", mach_error_string(ret));
     }
 
-    steady_factor = (double)info.numer / (uint32_t(info.denom * 1000000));
+    steady_factor = (double)info.numer / info.denom;
 }
 
 } // namespace
@@ -62,17 +62,17 @@ void init_steady_factor() {
  *
  * https://developer.apple.com/library/content/documentation/Darwin/Conceptual/KernelProgramming/Mach/Mach.html#//apple_ref/doc/uid/TP30000905-CH209-TPXREF111
  */
-uint64_t timestamp_ms() {
+nanoseconds_t timestamp() {
     if (int err = pthread_once(&once_control, init_steady_factor)) {
         roc_panic("pthread_once: %s", errno_to_str(err).c_str());
     }
-    return uint64_t(mach_absolute_time() * steady_factor);
+    return nanoseconds_t(mach_absolute_time() * steady_factor);
 }
 
-void sleep_until_ms(uint64_t ms) {
+void sleep_until(nanoseconds_t ns) {
     mach_timespec_t ts;
-    ts.tv_sec = (unsigned int)ms / 1000;
-    ts.tv_nsec = int(ms % 1000 * 1000000);
+    ts.tv_sec = (unsigned int)(ns / 1000000000);
+    ts.tv_nsec = (int)(ns % 1000000000);
 
     kern_return_t ret = KERN_SUCCESS;
     for (;;) {
@@ -95,8 +95,8 @@ void sleep_until_ms(uint64_t ms) {
     }
 }
 
-void sleep_for_ms(uint64_t ms) {
-    sleep_until_ms(timestamp_ms() + ms);
+void sleep_for(nanoseconds_t ns) {
+    sleep_until(timestamp() + ns);
 }
 
 } // namespace core

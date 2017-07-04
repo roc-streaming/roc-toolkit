@@ -14,14 +14,12 @@
 #include "roc_core/shared_ptr.h"
 
 namespace roc {
-namespace test {
-
-using namespace core;
+namespace core {
 
 namespace {
 
-struct Object : RefCnt, ListNode {
-    virtual void free() {
+struct Object : RefCnt<Object>, ListNode {
+    void destroy() {
     }
 };
 
@@ -31,14 +29,14 @@ typedef List<Object, RefCntOwnership> TestList;
 
 TEST_GROUP(list_ownership){};
 
-TEST(list_ownership, append) {
+TEST(list_ownership, push_back) {
     Object obj;
 
     TestList list;
 
     LONGS_EQUAL(0, obj.getref());
 
-    list.append(obj);
+    list.push_back(obj);
 
     LONGS_EQUAL(1, obj.getref());
 }
@@ -49,8 +47,8 @@ TEST(list_ownership, insert) {
 
     TestList list;
 
-    list.insert(obj1, NULL);
-    list.insert(obj2, &obj1);
+    list.push_back(obj1);
+    list.insert_before(obj2, obj1);
 
     LONGS_EQUAL(1, obj1.getref());
     LONGS_EQUAL(1, obj2.getref());
@@ -61,7 +59,7 @@ TEST(list_ownership, remove) {
 
     TestList list;
 
-    list.append(obj);
+    list.push_back(obj);
 
     LONGS_EQUAL(1, obj.getref());
 
@@ -76,7 +74,7 @@ TEST(list_ownership, destructor) {
     {
         TestList list;
 
-        list.append(obj);
+        list.push_back(obj);
 
         LONGS_EQUAL(1, obj.getref());
     }
@@ -89,7 +87,7 @@ TEST(list_ownership, pointers) {
 
     TestList list;
 
-    list.append(obj);
+    list.push_back(obj);
 
     POINTERS_EQUAL(&obj, list.front().get());
     POINTERS_EQUAL(&obj, list.back().get());
@@ -98,5 +96,5 @@ TEST(list_ownership, pointers) {
     LONGS_EQUAL(2, list.back()->getref());
 }
 
-} // namespace test
+} // namespace core
 } // namespace roc

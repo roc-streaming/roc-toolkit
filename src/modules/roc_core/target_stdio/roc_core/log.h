@@ -14,15 +14,15 @@
 #define ROC_CORE_LOG_H_
 
 #include "roc_core/attributes.h"
-#include "roc_core/helpers.h"
+#include "roc_core/macros.h"
 #include "roc_core/stddefs.h"
 
 #ifndef ROC_MODULE
-#define ROC_MODULE roc //!< Default module name.
+#error "ROC_MODULE not defined"
 #endif
 
 //! Print message to log.
-#define roc_log(...) ::roc::core::print_message(ROC_STRINGIZE(ROC_MODULE), __VA_ARGS__)
+#define roc_log(...) ::roc::core::log(ROC_STRINGIZE(ROC_MODULE), __VA_ARGS__)
 
 namespace roc {
 
@@ -41,7 +41,7 @@ namespace core {
 typedef void (*LogHandler)(LogLevel level, const char* module, const char* message);
 
 //! Print message to log.
-void print_message(const char* module, LogLevel level, const char* format, ...)
+void log(const char* module, LogLevel level, const char* format, ...)
     ROC_ATTR_PRINTF(3, 4);
 
 //! Get current maximum log level.

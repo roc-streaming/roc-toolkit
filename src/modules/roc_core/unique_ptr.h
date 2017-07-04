@@ -7,44 +7,56 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_core/scoped_ptr.h
-//! @brief Scoped pointer.
+//! @file roc_core/unique_ptr.h
+//! @brief Unique ownrship pointer.
 
-#ifndef ROC_CORE_SCOPED_PTR_H_
-#define ROC_CORE_SCOPED_PTR_H_
+#ifndef ROC_CORE_UNIQUE_PTR_H_
+#define ROC_CORE_UNIQUE_PTR_H_
 
+#include "roc_core/iallocator.h"
 #include "roc_core/noncopyable.h"
-#include "roc_core/ownership.h"
 #include "roc_core/panic.h"
 #include "roc_core/stddefs.h"
 
 namespace roc {
 namespace core {
 
-//! Scoped pointer.
+//! Unique ownrship pointer.
 //!
 //! @tparam T defines pointee type. It may be const.
-//! @tparam Ownership defines methods to acquire and release ownership of object.
-//! If NewOwnership is used, delete will be called to free object.
-template <class T, template <class TT> class Ownership = NewOwnership>
-class ScopedPtr : public NonCopyable<> {
+//! @tparam Destroyer is used to destroy the object.
+template <class T, class Destroyer = IAllocator> class UniquePtr : public NonCopyable<> {
 public:
-    //! Initialize from raw pointer.
-    explicit ScopedPtr(T* ptr = NULL)
-        : ptr_(ptr) {
-        acquire_();
+    //! Initialize null pointer.
+    UniquePtr()
+        : ptr_(NULL)
+        , destroyer_() {
+    }
+
+    //! Initialize from a raw pointer.
+    UniquePtr(T* ptr, Destroyer& destroyer)
+        : ptr_(ptr)
+        , destroyer_(&destroyer) {
     }
 
     //! Destroy object.
-    ~ScopedPtr() {
-        release_();
+    ~UniquePtr() {
+        destroy_();
     }
 
-    //! Reset pointer to new value.
-    void reset(T* new_ptr = NULL) {
+    //! Reset pointer to null.
+    void reset() {
+        destroy_();
+        ptr_ = NULL;
+        destroyer_ = NULL;
+    }
+
+    //! Reset pointer to a new value.
+    void reset(T* new_ptr, Destroyer& new_destroyer) {
         if (new_ptr != ptr_) {
-            release_();
+            destroy_();
             ptr_ = new_ptr;
+            destroyer_ = &new_destroyer;
         }
     }
 
@@ -52,9 +64,10 @@ public:
     T* release() {
         T* ret = ptr_;
         if (ret == NULL) {
-            roc_panic("attempting to release null scoped pointer");
+            roc_panic("uniqueptr: attempting to release a null pointer");
         }
         ptr_ = NULL;
+        destroyer_ = NULL;
         return ret;
     }
 
@@ -71,7 +84,7 @@ public:
     //! Get underlying reference.
     T& operator*() const {
         if (ptr_ == NULL) {
-            roc_panic("attempting to dereference null scoped pointer");
+            roc_panic("unique ptr: attempting to dereference a null pointer");
         }
         return *ptr_;
     }
@@ -82,23 +95,18 @@ public:
     }
 
 private:
-    void acquire_() {
-        if (ptr_ != NULL) {
-            Ownership<T>::acquire(*ptr_);
+    void destroy_() {
+        if (ptr_) {
+            roc_panic_if(destroyer_ == NULL);
+            destroyer_->destroy(*ptr_);
         }
     }
 
-    void release_() {
-        if (ptr_ != NULL) {
-            Ownership<T>::release(*ptr_);
-        }
-    }
-
-private:
     T* ptr_;
+    Destroyer* destroyer_;
 };
 
 } // namespace core
 } // namespace roc
 
-#endif // ROC_CORE_SCOPED_PTR_H_
+#endif // ROC_CORE_UNIQUE_PTR_H_

@@ -11,6 +11,7 @@
 #include <stdlib.h>
 
 #include "roc_core/errno_to_str.h"
+#include "roc_core/mutex.h"
 #include "roc_core/panic.h"
 #include "roc_core/random.h"
 #include "roc_core/time.h"
@@ -20,12 +21,12 @@ namespace core {
 
 namespace {
 
-pthread_once_t once_control = PTHREAD_ONCE_INIT;
+pthread_once_t rand_once = PTHREAD_ONCE_INIT;
 
 unsigned short rand_seed[3] = {};
 
 void random_init() {
-    uint64_t seed_48 = timestamp_ms();
+    nanoseconds_t seed_48 = timestamp();
     rand_seed[0] = (seed_48 & 0xffff);
     rand_seed[1] = ((seed_48 >> 16) & 0xffff);
     rand_seed[2] = ((seed_48 >> 32) & 0xffff);
@@ -36,7 +37,7 @@ void random_init() {
 // Insecure, but (hopefully?) uniform and thread-safe implementation.
 // See arc4random_uniform() from OpenBSD.
 unsigned random(unsigned from, unsigned to) {
-    if (int err = pthread_once(&once_control, random_init)) {
+    if (int err = pthread_once(&rand_once, random_init)) {
         roc_panic("pthread_once: %s", errno_to_str(err).c_str());
     }
 

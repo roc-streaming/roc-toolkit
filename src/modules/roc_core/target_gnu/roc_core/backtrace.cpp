@@ -13,14 +13,14 @@
 #include <cxxabi.h>
 #include <execinfo.h>
 
-#include "roc_core/panic.h"
+#include "roc_core/backtrace.h"
 
 namespace roc {
 namespace core {
 
-enum { MaxDepth = 128 };
-
 void print_backtrace() {
+    enum { MaxDepth = 128 };
+
     char* names[MaxDepth] = {};
     void* array[MaxDepth] = {};
 
