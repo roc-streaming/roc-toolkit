@@ -1,20 +1,20 @@
 /*
  * THIS FILE IS AUTO-GENERATED USING `generate_headers.py'
  *
- * Input:
+ * Inputs:
  *  - rtp_l16_2ch_320s.json
  *  - rtp_l16_2ch_320s.blob
  */
 
-#ifndef ROC_RTP_TEST_BLOBS_RTP_L16_2CH_320S_H_
-#define ROC_RTP_TEST_BLOBS_RTP_L16_2CH_320S_H_
+#ifndef ROC_RTP_TEST_PACKETS_RTP_L16_2CH_320S_H_
+#define ROC_RTP_TEST_PACKETS_RTP_L16_2CH_320S_H_
 
-#include "test_rtp_packet.h"
+#include "test_packet_info.h"
 
 namespace roc {
-namespace test {
+namespace rtp {
 
-static RTP_PacketTest rtp_l16_2ch_320s = {
+static PacketInfo rtp_l16_2ch_320s = {
   /* raw_data         */ {
     0x80, 0x0a, 0x69, 0x92, 0x01, 0xb0, 0xc8, 0x80, 0xdd, 0xff, 0x5c, 0x52,
     0xff, 0xea, 0xff, 0xea, 0xff, 0xe9, 0xff, 0xe9, 0xff, 0xe8, 0xff, 0xe8,
@@ -215,7 +215,7 @@ static RTP_PacketTest rtp_l16_2ch_320s = {
   },
 };
 
-} // namespace test
+} // namespace rtp
 } // namespace roc
 
-#endif // ROC_RTP_TEST_BLOBS_RTP_L16_2CH_320S_H_
+#endif // ROC_RTP_TEST_PACKETS_RTP_L16_2CH_320S_H_

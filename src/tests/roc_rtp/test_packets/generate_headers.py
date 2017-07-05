@@ -56,7 +56,7 @@ for in_json in glob.glob("*.json"):
     out_h = in_name + ".h"
     print("writing %s" % out_h, file=sys.stderr)
 
-    guard = 'ROC_RTP_TEST_BLOBS_' + out_h.upper().replace('.', '_') + '_'
+    guard = 'ROC_RTP_TEST_PACKETS_' + out_h.upper().replace('.', '_') + '_'
 
     meta = json.loads(open(in_json).read())
 
@@ -68,7 +68,7 @@ for in_json in glob.glob("*.json"):
 /*
  * THIS FILE IS AUTO-GENERATED USING `generate_headers.py'
  *
- * Input:
+ * Inputs:
  *  - %s
  *  - %s
  */
@@ -76,12 +76,12 @@ for in_json in glob.glob("*.json"):
 #ifndef %s
 #define %s
 
-#include "test_rtp_packet.h"
+#include "test_packet_info.h"
 
 namespace roc {
-namespace test {
+namespace rtp {
 
-static RTP_PacketTest %s = {
+static PacketInfo %s = {
         """ % (
             in_json,
             in_blob,
@@ -135,7 +135,7 @@ static RTP_PacketTest %s = {
         print(("""
 };
 
-} // namespace test
+} // namespace rtp
 } // namespace roc
 
 #endif // %s

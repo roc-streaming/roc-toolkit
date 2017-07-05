@@ -13,30 +13,31 @@
 #ifndef ROC_RTP_PARSER_H_
 #define ROC_RTP_PARSER_H_
 
-#include "roc_core/heap_pool.h"
-#include "roc_core/ipool.h"
 #include "roc_core/noncopyable.h"
-#include "roc_packet/ipacket_parser.h"
-#include "roc_rtp/audio_packet.h"
-#include "roc_rtp/container_packet.h"
+#include "roc_packet/iparser.h"
+#include "roc_rtp/format_map.h"
 
 namespace roc {
 namespace rtp {
 
 //! RTP packet parser.
-class Parser : public packet::IPacketParser, public core::NonCopyable<> {
+class Parser : public packet::IParser, public core::NonCopyable<> {
 public:
-    //! Initialize.
-    Parser(core::IPool<AudioPacket>& audio_pool = core::HeapPool<AudioPacket>::instance(),
-           core::IPool<ContainerPacket>& container_pool =
-               core::HeapPool<ContainerPacket>::instance());
+    //! Initialization.
+    //!
+    //! @b Parameters
+    //!  - @p format_map is used to get packet parameters by its
+    //!    payload type
+    //!  - if @p inner_parser is not NULL, it is used to parse the
+    //!    packet payload
+    Parser(const FormatMap& format_map, packet::IParser* inner_parser);
 
-    //! Parse packet.
-    virtual packet::IPacketConstPtr parse(const core::IByteBufferConstSlice& buffer);
+    //! Parse packet from buffer.
+    virtual bool parse(packet::Packet& packet, const core::Slice<uint8_t>& buffer);
 
 private:
-    core::IPool<AudioPacket>& audio_pool_;
-    core::IPool<ContainerPacket>& container_pool_;
+    const FormatMap& format_map_;
+    packet::IParser* inner_parser_;
 };
 
 } // namespace rtp

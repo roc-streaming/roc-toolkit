@@ -1,20 +1,20 @@
 /*
  * THIS FILE IS AUTO-GENERATED USING `generate_headers.py'
  *
- * Input:
+ * Inputs:
  *  - rtp_l16_1ch_10s_4pad_2csrc_12ext_marker.json
  *  - rtp_l16_1ch_10s_4pad_2csrc_12ext_marker.blob
  */
 
-#ifndef ROC_RTP_TEST_BLOBS_RTP_L16_1CH_10S_4PAD_2CSRC_12EXT_MARKER_H_
-#define ROC_RTP_TEST_BLOBS_RTP_L16_1CH_10S_4PAD_2CSRC_12EXT_MARKER_H_
+#ifndef ROC_RTP_TEST_PACKETS_RTP_L16_1CH_10S_4PAD_2CSRC_12EXT_MARKER_H_
+#define ROC_RTP_TEST_PACKETS_RTP_L16_1CH_10S_4PAD_2CSRC_12EXT_MARKER_H_
 
-#include "test_rtp_packet.h"
+#include "test_packet_info.h"
 
 namespace roc {
-namespace test {
+namespace rtp {
 
-static RTP_PacketTest rtp_l16_1ch_10s_4pad_2csrc_12ext_marker = {
+static PacketInfo rtp_l16_1ch_10s_4pad_2csrc_12ext_marker = {
   /* raw_data         */ {
     0xb2, 0x8b, 0xd4, 0x31, 0x07, 0x5b, 0xcd, 0x15, 0x00, 0x00, 0x01, 0xf4,
     0x00, 0x00, 0x02, 0x58, 0x00, 0x00, 0x02, 0x59, 0x00, 0x05, 0x00, 0x02,
@@ -55,7 +55,7 @@ static RTP_PacketTest rtp_l16_1ch_10s_4pad_2csrc_12ext_marker = {
   },
 };
 
-} // namespace test
+} // namespace rtp
 } // namespace roc
 
-#endif // ROC_RTP_TEST_BLOBS_RTP_L16_1CH_10S_4PAD_2CSRC_12EXT_MARKER_H_
+#endif // ROC_RTP_TEST_PACKETS_RTP_L16_1CH_10S_4PAD_2CSRC_12EXT_MARKER_H_

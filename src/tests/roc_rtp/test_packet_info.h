@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2015 Mikhail Baranov
  * Copyright (c) 2015 Victor Gaydov
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -6,15 +7,15 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#ifndef ROC_RTP_TEST_RTP_PACKET_H_
-#define ROC_RTP_TEST_RTP_PACKET_H_
+#ifndef ROC_RTP_TEST_PACKET_INFO_H_
+#define ROC_RTP_TEST_PACKET_INFO_H_
 
 #include "roc_core/stddefs.h"
 
 namespace roc {
-namespace test {
+namespace rtp {
 
-struct RTP_PacketTest {
+struct PacketInfo {
     enum { MaxData = 2000, MaxExt = 32, MaxSrc = 16, MaxCh = 16, MaxSamples = 500 };
 
     uint8_t raw_data[MaxData];
@@ -48,7 +49,7 @@ struct RTP_PacketTest {
     long samples[MaxCh][MaxSamples];
 };
 
-} // namespace test
+} // namespace rtp
 } // namespace roc
 
-#endif // ROC_RTP_TEST_RTP_PACKET_H_
+#endif // ROC_RTP_TEST_PACKET_INFO_H_

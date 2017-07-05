@@ -1,20 +1,20 @@
 /*
  * THIS FILE IS AUTO-GENERATED USING `generate_headers.py'
  *
- * Input:
+ * Inputs:
  *  - rtp_l16_1ch_10s_12ext.json
  *  - rtp_l16_1ch_10s_12ext.blob
  */
 
-#ifndef ROC_RTP_TEST_BLOBS_RTP_L16_1CH_10S_12EXT_H_
-#define ROC_RTP_TEST_BLOBS_RTP_L16_1CH_10S_12EXT_H_
+#ifndef ROC_RTP_TEST_PACKETS_RTP_L16_1CH_10S_12EXT_H_
+#define ROC_RTP_TEST_PACKETS_RTP_L16_1CH_10S_12EXT_H_
 
-#include "test_rtp_packet.h"
+#include "test_packet_info.h"
 
 namespace roc {
-namespace test {
+namespace rtp {
 
-static RTP_PacketTest rtp_l16_1ch_10s_12ext = {
+static PacketInfo rtp_l16_1ch_10s_12ext = {
   /* raw_data         */ {
     0x90, 0x0b, 0xd4, 0x31, 0x07, 0x5b, 0xcd, 0x15, 0x00, 0x00, 0x01, 0xf4,
     0x00, 0x05, 0x00, 0x02, 0x61, 0x62, 0x63, 0x64, 0x65, 0x66, 0x67, 0x68,
@@ -54,7 +54,7 @@ static RTP_PacketTest rtp_l16_1ch_10s_12ext = {
   },
 };
 
-} // namespace test
+} // namespace rtp
 } // namespace roc
 
-#endif // ROC_RTP_TEST_BLOBS_RTP_L16_1CH_10S_12EXT_H_
+#endif // ROC_RTP_TEST_PACKETS_RTP_L16_1CH_10S_12EXT_H_
