@@ -13,35 +13,33 @@
 #ifndef ROC_RTP_COMPOSER_H_
 #define ROC_RTP_COMPOSER_H_
 
-#include "roc_core/heap_pool.h"
-#include "roc_core/ipool.h"
 #include "roc_core/noncopyable.h"
-#include "roc_datagram/default_buffer_composer.h"
-#include "roc_packet/ipacket_composer.h"
-#include "roc_rtp/audio_packet.h"
-#include "roc_rtp/container_packet.h"
+#include "roc_packet/icomposer.h"
 
 namespace roc {
 namespace rtp {
 
 //! RTP packet composer.
-class Composer : public packet::IPacketComposer, public core::NonCopyable<> {
+class Composer : public packet::IComposer, public core::NonCopyable<> {
 public:
-    //! Initialize.
-    Composer(
-        core::IPool<AudioPacket>& audio_pool = core::HeapPool<AudioPacket>::instance(),
-        core::IPool<ContainerPacket>& container_pool =
-            core::HeapPool<ContainerPacket>::instance(),
-        core::IByteBufferComposer& buffer_composer = datagram::default_buffer_composer());
+    //! Initialization.
+    //! @remarks
+    //!  If @p inner_composer is not NULL, it is used to compose the packet payload.
+    Composer(packet::IComposer* inner_composer);
 
-    //! Compose packet.
-    virtual packet::IPacketPtr compose(int options);
+    //! Adjust buffer to align payload.
+    virtual bool
+    align(core::Slice<uint8_t>& buffer, size_t header_size, size_t payload_alignment);
+
+    //! Prepare buffer for composing a packet.
+    virtual bool
+    prepare(packet::Packet& packet, core::Slice<uint8_t>& buffer, size_t payload_size);
+
+    //! Compose packet to buffer.
+    virtual bool compose(packet::Packet& packet);
 
 private:
-    core::IPool<AudioPacket>& audio_pool_;
-    core::IPool<ContainerPacket>& container_pool_; // FIXME
-
-    core::IByteBufferComposer& buffer_composer_;
+    packet::IComposer* inner_composer_;
 };
 
 } // namespace rtp

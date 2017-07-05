@@ -7,52 +7,109 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_core/log.h"
-#include "roc_core/shared_ptr.h"
-
 #include "roc_rtp/composer.h"
-#include "roc_rtp/packet.h"
+#include "roc_core/alignment.h"
+#include "roc_core/log.h"
+#include "roc_rtp/headers.h"
 
 namespace roc {
 namespace rtp {
 
-Composer::Composer(core::IPool<AudioPacket>& audio_pool,
-                   core::IPool<ContainerPacket>& container_pool,
-                   core::IByteBufferComposer& buffer_composer)
-    : audio_pool_(audio_pool)
-    , container_pool_(container_pool)
-    , buffer_composer_(buffer_composer) {
+Composer::Composer(packet::IComposer* inner_composer)
+    : inner_composer_(inner_composer) {
 }
 
-packet::IPacketPtr Composer::compose(int options) {
-    core::IByteBufferPtr buffer = buffer_composer_.compose();
-    if (!buffer) {
-        roc_log(LogError, "rtp composer: can't allocate buffer");
-        return NULL;
+bool Composer::align(core::Slice<uint8_t>& buffer,
+                     size_t header_size,
+                     size_t payload_alignment) {
+    header_size += sizeof(Header);
+
+    if (inner_composer_ == NULL) {
+        const size_t padding = core::padding(header_size, payload_alignment);
+
+        if (buffer.capacity() < padding) {
+            roc_log(LogDebug,
+                    "rtp composer: not enough space for alignment: padding=%lu cap=%lu",
+                    (unsigned long)padding, (unsigned long)buffer.capacity());
+            return false;
+        }
+
+        buffer.resize(padding);
+        buffer = buffer.range(buffer.size(), buffer.size());
+
+        return true;
+    } else {
+        return inner_composer_->align(buffer, header_size, payload_alignment);
+    }
+}
+
+bool Composer::prepare(packet::Packet& packet,
+                       core::Slice<uint8_t>& buffer,
+                       size_t payload_size) {
+    core::Slice<uint8_t> header = buffer.range(0, 0);
+
+    if (header.capacity() < sizeof(Header)) {
+        roc_log(LogDebug,
+                "rtp composer: not enough space for rtp header: size=%lu cap=%lu",
+                (unsigned long)sizeof(Header), (unsigned long)header.capacity());
+        return false;
+    }
+    header.resize(sizeof(Header));
+
+    core::Slice<uint8_t> payload = header.range(header.size(), header.size());
+
+    if (inner_composer_ == NULL) {
+        if (payload.capacity() < payload_size) {
+            roc_log(LogDebug,
+                    "rtp composer: not enough space for rtp payload: size=%lu cap=%lu",
+                    (unsigned long)payload_size, (unsigned long)payload.capacity());
+            return false;
+        }
+        payload.resize(payload_size);
+    } else {
+        if (!inner_composer_->prepare(packet, payload, payload_size)) {
+            return false;
+        }
     }
 
-    core::SharedPtr<Packet> packet;
+    packet.add_flags(packet::Packet::FlagRTP);
 
-    if (options & packet::IPacket::HasAudio) {
-        packet = new (audio_pool_) AudioPacket(audio_pool_, NULL);
+    packet::RTP& rtp = *packet.rtp();
+
+    rtp.header = header;
+    rtp.payload = payload;
+
+    buffer.resize(header.size() + payload.size());
+
+    return true;
+}
+
+bool Composer::compose(packet::Packet& packet) {
+    if (!packet.rtp()) {
+        roc_panic("rtp composer: unexpected non-rtp packet");
     }
 
-    if (options & packet::IPacket::HasFEC) { // FIXME
-        packet = new (container_pool_) ContainerPacket(container_pool_);
+    if (packet.rtp()->header.size() != sizeof(Header)) {
+        roc_panic("rtp composer: unexpected rtp header size");
     }
 
-    if (!packet) {
-        roc_panic("rtp composer: bad options");
+    packet::RTP& rtp = *packet.rtp();
+
+    Header& header = *(Header*)rtp.header.data();
+
+    header.clear();
+    header.set_version(V2);
+    header.set_ssrc(rtp.source);
+    header.set_seqnum(rtp.seqnum);
+    header.set_timestamp(rtp.timestamp);
+    header.set_marker(rtp.marker);
+    header.set_payload_type(PayloadType(rtp.payload_type));
+
+    if (inner_composer_) {
+        return inner_composer_->compose(packet);
     }
 
-    packet->compose(buffer);
-
-    // FIXME
-    if (packet->fec()) {
-        packet->header().set_payload_type(123);
-    }
-
-    return packet;
+    return true;
 }
 
 } // namespace rtp

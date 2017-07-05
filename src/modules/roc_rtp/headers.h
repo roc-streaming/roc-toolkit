@@ -8,13 +8,13 @@
  */
 
 //! @file roc_rtp/headers.h
-//! @brief RTP header.
+//! @brief RTP headers.
 
 #ifndef ROC_RTP_HEADERS_H_
 #define ROC_RTP_HEADERS_H_
 
 #include "roc_core/attributes.h"
-#include "roc_core/byte_order.h"
+#include "roc_core/endian.h"
 #include "roc_core/panic.h"
 #include "roc_core/stddefs.h"
 
@@ -22,14 +22,14 @@ namespace roc {
 namespace rtp {
 
 //! RTP protocol version.
-enum RTP_Version {
-    RTP_V2 = 2 //!< RTP version 2.
+enum Version {
+    V2 = 2 //!< RTP version 2.
 };
 
 //! RTP payload type.
-enum RTP_PayloadType {
-    RTP_PT_L16_STEREO = 10, //!< Audio, 16-bit samples, 2 channels, 44100 Hz.
-    RTP_PT_L16_MONO = 11    //!< Audio, 16-bit samples, 1 channel, 44100 Hz.
+enum PayloadType {
+    PayloadType_L16_Stereo = 10, //!< Audio, 16-bit samples, 2 channels, 44100 Hz.
+    PayloadType_L16_Mono = 11    //!< Audio, 16-bit samples, 1 channel, 44100 Hz.
 };
 
 //! RTP header.
@@ -50,13 +50,13 @@ enum RTP_PayloadType {
 //!   |                             ....                              |
 //!   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //! @endcode
-class ROC_ATTR_PACKED RTP_Header {
+class ROC_ATTR_PACKED Header {
 private:
     enum {
         //! @name RTP protocol version.
         // @{
-        FLAG_VERSION_SHIFT = 6,
-        FLAG_VERSION_MASK = 0x3,
+        Flag_VersionShift = 6,
+        Flag_VersionMask = 0x3,
         // @}
 
         //! @name RTP padding flag.
@@ -64,8 +64,8 @@ private:
         //!  If this flag is set, packet contains padding at the end. Last byte
         //!  contains padding length.
         // @{
-        FLAG_PADDING_SHIFT = 5,
-        FLAG_PADDING_MASK = 0x1,
+        Flag_PaddingShift = 5,
+        Flag_PaddingMask = 0x1,
         // @}
 
         //! @name RTP extension header flag.
@@ -73,35 +73,35 @@ private:
         //!  If this flag is set, packet contains extension header between main
         //!  header and payload.
         // @{
-        FLAG_EXTENSION_SHIFT = 4,
-        FLAG_EXTENSION_MASK = 0x1,
+        Flag_ExtensionShift = 4,
+        Flag_ExtensionMask = 0x1,
         // @}
 
         //! @name Number of CSRC items at the end of RTP header.
         // @{
-        FLAG_CSRC_SHIFT = 0,
-        FLAG_CSRC_MASK = 0xf,
+        Flag_CSRCShift = 0,
+        Flag_CSRCMask = 0xf,
         // @}
 
         //! @name RTP marker bit.
         //! @remarks
         //!  Semantics of marker bit may vary and is defined by profile in use.
         // @{
-        MPT_MARKER_SHIFT = 7,
-        MPT_MARKER_MASK = 0x1,
+        MPT_MarkerShift = 7,
+        MPT_MarkerMask = 0x1,
         // @}
 
         //! @name RTP payload type.
         // @{
-        MPT_PAYLOAD_TYPE_SHIFT = 0,
-        MPT_PAYLOAD_TYPE_MASK = 0x7f
+        MPT_PayloadTypeShift = 0,
+        MPT_PayloadTypeMask = 0x7f
         // @}
     };
 
-    //! Packed flags (FLAG_*).
+    //! Packed flags (Flag_*).
     uint8_t flags_;
 
-    //! Packed marker and payload type fields (MPT_*).
+    //! Packed marker and payload type fields (MPT__*).
     uint8_t mpt_;
 
     //! Sequence number.
@@ -127,52 +127,52 @@ public:
 
     //! Get version.
     uint8_t version() const {
-        return ((flags_ >> FLAG_VERSION_SHIFT) & FLAG_VERSION_MASK);
+        return ((flags_ >> Flag_VersionShift) & Flag_VersionMask);
     }
 
     //! Set version.
-    void set_version(RTP_Version v) {
-        roc_panic_if((v & FLAG_VERSION_MASK) != v);
-        flags_ &= ~(FLAG_VERSION_MASK << FLAG_VERSION_SHIFT);
-        flags_ |= (v << FLAG_VERSION_SHIFT);
+    void set_version(Version v) {
+        roc_panic_if((v & Flag_VersionMask) != v);
+        flags_ &= ~(Flag_VersionMask << Flag_VersionShift);
+        flags_ |= (v << Flag_VersionShift);
     }
 
     //! Get padding flag.
     bool has_padding() const {
-        return (flags_ & (FLAG_PADDING_MASK << FLAG_PADDING_SHIFT));
+        return (flags_ & (Flag_PaddingMask << Flag_PaddingShift));
     }
 
     //! Get extension flag.
     bool has_extension() const {
-        return (flags_ & (FLAG_EXTENSION_MASK << FLAG_EXTENSION_SHIFT));
+        return (flags_ & (Flag_ExtensionMask << Flag_ExtensionShift));
     }
 
     //! Get CSRC array size.
     uint8_t num_csrc() const {
-        return ((flags_ >> FLAG_CSRC_SHIFT) & FLAG_CSRC_MASK);
+        return ((flags_ >> Flag_CSRCShift) & Flag_CSRCMask);
     }
 
     //! Get payload type.
     uint8_t payload_type() const {
-        return ((mpt_ >> MPT_PAYLOAD_TYPE_SHIFT) & MPT_PAYLOAD_TYPE_MASK);
+        return ((mpt_ >> MPT_PayloadTypeShift) & MPT_PayloadTypeMask);
     }
 
     //! Set payload type.
     void set_payload_type(uint8_t pt) {
-        roc_panic_if((pt & MPT_PAYLOAD_TYPE_MASK) != pt);
-        mpt_ &= ~(MPT_PAYLOAD_TYPE_MASK << MPT_PAYLOAD_TYPE_SHIFT);
-        mpt_ |= (pt << MPT_PAYLOAD_TYPE_SHIFT);
+        roc_panic_if((pt & MPT_PayloadTypeMask) != pt);
+        mpt_ &= ~(MPT_PayloadTypeMask << MPT_PayloadTypeShift);
+        mpt_ |= (pt << MPT_PayloadTypeShift);
     }
 
     //! Get marker bit.
     bool marker() const {
-        return (mpt_ & (MPT_MARKER_MASK << MPT_MARKER_SHIFT));
+        return (mpt_ & (MPT_MarkerMask << MPT_MarkerShift));
     }
 
     //! Set marker bit.
     void set_marker(bool m) {
-        mpt_ &= ~(MPT_MARKER_MASK << MPT_MARKER_SHIFT);
-        mpt_ |= ((!!m) << MPT_MARKER_SHIFT);
+        mpt_ &= ~(MPT_MarkerMask << MPT_MarkerShift);
+        mpt_ |= ((!!m) << MPT_MarkerShift);
     }
 
     //! Get sequence number.
@@ -227,7 +227,7 @@ public:
 //!   |                             ....                              |
 //!   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //! @endcode
-class ROC_ATTR_PACKED RTP_ExtentionHeader {
+class ROC_ATTR_PACKED ExtentionHeader {
 private:
     //! Extenson type.
     uint16_t type_;

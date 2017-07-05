@@ -7,55 +7,48 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_core/log.h"
-#include "roc_core/shared_ptr.h"
-
-#include "roc_rtp/audio_format.h"
 #include "roc_rtp/parser.h"
+#include "roc_core/log.h"
+#include "roc_rtp/headers.h"
 
 namespace roc {
 namespace rtp {
 
-Parser::Parser(core::IPool<AudioPacket>& audio_pool,
-               core::IPool<ContainerPacket>& container_pool)
-    : audio_pool_(audio_pool)
-    , container_pool_(container_pool) {
+Parser::Parser(const FormatMap& format_map, packet::IParser* inner_parser)
+    : format_map_(format_map)
+    , inner_parser_(inner_parser) {
 }
 
-packet::IPacketConstPtr Parser::parse(const core::IByteBufferConstSlice& buffer) {
-    if (!buffer) {
-        roc_panic("rtp parser: null buffer");
+bool Parser::parse(packet::Packet& packet, const core::Slice<uint8_t>& buffer) {
+    if (buffer.size() < sizeof(Header)) {
+        roc_log(LogDebug, "rtp parser: bad packet, size < %d (rtp header)",
+                (int)sizeof(Header));
+        return false;
     }
 
-    if (buffer.size() < sizeof(RTP_Header)) {
-        roc_log(LogDebug, "rtp parser: bad packet, size < %d (rtp preamble)",
-                (int)sizeof(RTP_Header));
-        return NULL;
-    }
+    const Header& header = *(const Header*)buffer.data();
 
-    const RTP_Header& header = *(const RTP_Header*)buffer.data();
-
-    if (header.version() != RTP_V2) {
+    if (header.version() != V2) {
         roc_log(LogDebug, "rtp parser: bad version, get %d, expected %d",
-                (int)header.version(), (int)RTP_V2);
-        return NULL;
+                (int)header.version(), (int)V2);
+        return false;
     }
 
     size_t header_size = header.header_size();
 
     if (header.has_extension()) {
-        header_size += sizeof(RTP_ExtentionHeader);
+        header_size += sizeof(ExtentionHeader);
     }
 
     if (buffer.size() < header_size) {
         roc_log(LogDebug, "rtp parser: bad packet, size < %d (rtp header + ext header)",
                 (int)header_size);
-        return NULL;
+        return false;
     }
 
     if (header.has_extension()) {
-        const RTP_ExtentionHeader& extension =
-            *(const RTP_ExtentionHeader*)(buffer.data() + header.header_size());
+        const ExtentionHeader& extension =
+            *(const ExtentionHeader*)(buffer.data() + header.header_size());
 
         header_size += extension.data_size();
     }
@@ -64,60 +57,59 @@ packet::IPacketConstPtr Parser::parse(const core::IByteBufferConstSlice& buffer)
         roc_log(LogDebug,
                 "rtp parser: bad packet, size < %d (rtp header + ext header + ext data)",
                 (int)header_size);
-        return NULL;
+        return false;
     }
 
-    const uint8_t* payload_begin = buffer.data() + header_size;
-    const uint8_t* payload_end = buffer.data() + buffer.size();
+    size_t payload_begin = header_size;
+    size_t payload_end = buffer.size();
 
     if (header.has_padding()) {
         if (payload_begin == payload_end) {
             roc_log(LogDebug,
                     "rtp parser: bad packet, empty payload but padding flag is set");
-            return NULL;
+            return false;
         }
 
-        const uint8_t pad_size = payload_end[-1];
+        const uint8_t pad_size = buffer.data()[payload_end - 1];
 
         if (pad_size == 0) {
             roc_log(LogDebug, "rtp parser: bad packet, padding size octet is zero");
-            return NULL;
+            return false;
         }
 
         if (size_t(payload_end - payload_begin) < size_t(pad_size)) {
             roc_log(LogDebug,
                     "rtp parser: bad packet, padding size octet > %d (payload size)",
                     (int)(payload_end - payload_begin));
-            return NULL;
+            return false;
         }
 
         payload_end -= pad_size;
     }
 
-    const size_t payload_offset = size_t(payload_begin - buffer.data());
-    const size_t payload_size = size_t(payload_end - payload_begin);
+    packet.add_flags(packet::Packet::FlagRTP);
 
-    const uint8_t pt = header.payload_type();
+    packet::RTP& rtp = *packet.rtp();
 
-    core::SharedPtr<Packet> packet;
+    rtp.source = header.ssrc();
+    rtp.seqnum = header.seqnum();
+    rtp.timestamp = header.timestamp();
+    rtp.marker = header.marker();
+    rtp.payload_type = header.payload_type();
+    rtp.header = buffer.range(0, header_size);
+    rtp.payload = buffer.range(payload_begin, payload_end);
 
-    if (const AudioFormat* format = get_audio_format_pt(pt)) {
-        packet = new (audio_pool_) AudioPacket(audio_pool_, format);
+    if (const Format* format = format_map_.format(header.payload_type())) {
+        packet.add_flags(format->flags);
+        rtp.duration = format->duration(rtp);
     }
 
-    if (pt == 123) { // FIXME
-        packet = new (container_pool_) ContainerPacket(container_pool_);
+    if (inner_parser_) {
+        return inner_parser_->parse(packet, rtp.payload);
     }
 
-    if (!packet) {
-        roc_log(LogDebug, "rtp parser: bad payload type %u", (unsigned)pt);
-        return NULL;
-    }
-
-    packet->parse(buffer, payload_offset, payload_size);
-
-    return packet;
+    return true;
 }
 
-} // namespace rtp
+} // namespace packet
 } // namespace roc
