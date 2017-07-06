@@ -114,10 +114,10 @@ bool Resampler::set_scaling(float scaling) {
     // In both cases it's sensible to decrease the edge frequency to leave
     // some.
     if (scaling_ > 1.0f) {
-        qt_sinc_step_ = float_to_sfixedpoint(cutoff_freq_/scaling_);
+        qt_sinc_step_ = float_to_fixedpoint(cutoff_freq_/scaling_);
         qt_half_window_len_ = float_to_fixedpoint((float)window_len_ / cutoff_freq_ * scaling_);
     } else {
-        qt_sinc_step_ = float_to_sfixedpoint(cutoff_freq_);
+        qt_sinc_step_ = float_to_fixedpoint(cutoff_freq_);
         qt_half_window_len_ = float_to_fixedpoint((float)window_len_ / cutoff_freq_);
     }
     qt_half_sinc_window_len_ = float_to_fixedpoint(window_len_);
@@ -183,7 +183,7 @@ void Resampler::renew_window_() {
 }
 
 void Resampler::fill_sinc() {
-    const double sinc_step = 1.0f/(double)window_interp_;
+    const double sinc_step = 1.0/(double)window_interp_;
     double sinc_t = sinc_step;
     sinc_table_[0] = 1.0f;
     for (size_t i = 1; i < sinc_table_.size(); ++i) {
@@ -258,44 +258,39 @@ sample_t Resampler::resample_() {
     // t_sinc = (t_sample - ceil( t_sample - window_len/cutoff*scale )) * sinc_step
     const long_fixedpoint_t qt_cur_ = qt_frame_size_ + qt_sample_
         - qceil(qt_frame_size_ + qt_sample_ - qt_half_window_len_);
-    fixedpoint_t qt_sinc_cur = (qt_cur_ * (long_fixedpoint_t)qt_sinc_step_) >> FRACT_BIT_COUNT;
+    fixedpoint_t qt_sinc_cur = (fixedpoint_t)((qt_cur_ * (long_fixedpoint_t)qt_sinc_step_) >> FRACT_BIT_COUNT);
 
     // sinc_table defined in positive half-plane, so at the begining of the window
     // qt_sinc_cur starts decreasing and after we cross 0 it will be increasing
     // till the end of the window.
-    signed_fixedpoint_t qt_sinc_inc = -qt_sinc_step_;
+    fixedpoint_t qt_sinc_inc = qt_sinc_step_;
 
     // Compute fractional part of time position at the begining. It wont change during
     // the run.
     float f_sinc_cur_fract = fractional(qt_sinc_cur << window_interp_bits_);
     sample_t accumulator = 0;
 
-    size_t i, samples_counter = 0;
+    size_t i;
 
     // Run through previous frame.
     for (i = ind_begin_prev; i < ind_end_prev; ++i) {
         accumulator += prev_frame_[i] * sinc_(qt_sinc_cur, f_sinc_cur_fract);
-        samples_counter++;
-        qt_sinc_cur += (fixedpoint_t)qt_sinc_inc;
+        qt_sinc_cur -= qt_sinc_inc;
     }
 
     // Run through current frame through the left windows side. qt_sinc_cur is decreasing.
     i = ind_begin_cur;
 
     accumulator += curr_frame_[i] * sinc_(qt_sinc_cur, f_sinc_cur_fract);
-    samples_counter++;
     while (qt_sinc_cur >= qt_sinc_step_) {
         ++i;
-        qt_sinc_cur += (fixedpoint_t)qt_sinc_inc;
+        qt_sinc_cur -= qt_sinc_inc;
         accumulator += curr_frame_[i] * sinc_(qt_sinc_cur, f_sinc_cur_fract);
-        samples_counter++;
     }
 
     ++i;
 
     roc_panic_if(i > frame_size_);
-    // Run through right side of the window, increasing qt_sinc_cur.
-    qt_sinc_inc = -qt_sinc_inc;
 
     // Crossing zero -- we just need to switch qt_sinc_cur.
     // -1 ------------ 0 ------------- +1
@@ -305,17 +300,16 @@ sample_t Resampler::resample_() {
     qt_sinc_cur = qt_sinc_step_ - qt_sinc_cur; // qt_sinc_cur = -qt_sinc_cur + 1;
     f_sinc_cur_fract = fractional(qt_sinc_cur << window_interp_bits_);
 
+    // Run through right side of the window, increasing qt_sinc_cur.
     for (; i <= ind_end_cur; ++i) {
         accumulator += curr_frame_[i] * sinc_(qt_sinc_cur, f_sinc_cur_fract);
-        samples_counter++;
-        qt_sinc_cur += (fixedpoint_t)qt_sinc_inc;
+        qt_sinc_cur += qt_sinc_inc;
     }
 
     // Next frames run.
     for (i = ind_begin_next; i < ind_end_next; ++i) {
         accumulator += next_frame_[i] * sinc_(qt_sinc_cur, f_sinc_cur_fract);
-        samples_counter++;
-        qt_sinc_cur += (fixedpoint_t)qt_sinc_inc;
+        qt_sinc_cur += qt_sinc_inc;
     }
 
     return accumulator;

@@ -110,7 +110,7 @@ private:
     fixedpoint_t qt_dt_;
 
     // The step with which we iterate over the sinc_table_.
-    signed_fixedpoint_t qt_sinc_step_;
+    fixedpoint_t qt_sinc_step_;
 
     const sample_t cutoff_freq_;
 };
