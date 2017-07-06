@@ -81,7 +81,7 @@ Resampler::Resampler(IStreamReader& reader,
     , window_(3)
     , scaling_(0)
     , frame_size_(frame_size)
-    , window_len_(128)
+    , window_len_(200)
     , qt_half_sinc_window_len_(float_to_fixedpoint(window_len_))
     , window_interp_(512)
     , window_interp_bits_(9)
@@ -183,11 +183,13 @@ void Resampler::renew_window_() {
 }
 
 void Resampler::fill_sinc() {
-    const sample_t sinc_step = 1.0f/(sample_t)window_interp_;
-    sample_t sinc_t = sinc_step;
+    const double sinc_step = 1.0f/(double)window_interp_;
+    double sinc_t = sinc_step;
     sinc_table_[0] = 1.0f;
     for (size_t i = 1; i < sinc_table_.size(); ++i) {
-        sinc_table_[i] = (float)(sin(M_PI * (double)sinc_t) / M_PI) / sinc_t;
+        // const float window = 1;
+        const double window = 0.54 - 0.46*cos(2*M_PI * ((double)(i-1) / 2.0 / (double)sinc_table_.size() + 0.5));
+        sinc_table_[i] = (float)(sin(M_PI * sinc_t) / M_PI / sinc_t * window);
         sinc_t += sinc_step;
     }
     sinc_table_[sinc_table_.size()-2] = 0;
@@ -243,12 +245,12 @@ sample_t Resampler::resample_() {
     roc_panic_if(ind_begin_cur > frame_size_);
 
     ind_end_cur = ((qt_sample_ + qt_half_window_len_) > qt_frame_size_)
-        ? frame_size_
+        ? frame_size_-1
         : fixedpoint_to_size(qfloor(qt_sample_ + qt_half_window_len_));
     roc_panic_if(ind_end_cur > frame_size_);
 
     ind_end_next = ((qt_sample_ + qt_half_window_len_) > qt_frame_size_)
-        ? fixedpoint_to_size(qfloor(qt_sample_ + qt_half_window_len_ - qt_frame_size_))
+        ? fixedpoint_to_size(qfloor(qt_sample_ + qt_half_window_len_ - qt_frame_size_))+1
         : 0;
     roc_panic_if(ind_end_next > frame_size_);
 
@@ -268,11 +270,12 @@ sample_t Resampler::resample_() {
     float f_sinc_cur_fract = fractional(qt_sinc_cur << window_interp_bits_);
     sample_t accumulator = 0;
 
-    size_t i;
+    size_t i, samples_counter = 0;
 
     // Run through previous frame.
     for (i = ind_begin_prev; i < ind_end_prev; ++i) {
         accumulator += prev_frame_[i] * sinc_(qt_sinc_cur, f_sinc_cur_fract);
+        samples_counter++;
         qt_sinc_cur += (fixedpoint_t)qt_sinc_inc;
     }
 
@@ -280,10 +283,12 @@ sample_t Resampler::resample_() {
     i = ind_begin_cur;
 
     accumulator += curr_frame_[i] * sinc_(qt_sinc_cur, f_sinc_cur_fract);
+    samples_counter++;
     while (qt_sinc_cur >= qt_sinc_step_) {
         ++i;
         qt_sinc_cur += (fixedpoint_t)qt_sinc_inc;
         accumulator += curr_frame_[i] * sinc_(qt_sinc_cur, f_sinc_cur_fract);
+        samples_counter++;
     }
 
     ++i;
@@ -300,14 +305,16 @@ sample_t Resampler::resample_() {
     qt_sinc_cur = qt_sinc_step_ - qt_sinc_cur; // qt_sinc_cur = -qt_sinc_cur + 1;
     f_sinc_cur_fract = fractional(qt_sinc_cur << window_interp_bits_);
 
-    for (; i < ind_end_cur; ++i) {
+    for (; i <= ind_end_cur; ++i) {
         accumulator += curr_frame_[i] * sinc_(qt_sinc_cur, f_sinc_cur_fract);
+        samples_counter++;
         qt_sinc_cur += (fixedpoint_t)qt_sinc_inc;
     }
 
     // Next frames run.
     for (i = ind_begin_next; i < ind_end_next; ++i) {
         accumulator += next_frame_[i] * sinc_(qt_sinc_cur, f_sinc_cur_fract);
+        samples_counter++;
         qt_sinc_cur += (fixedpoint_t)qt_sinc_inc;
     }
 
