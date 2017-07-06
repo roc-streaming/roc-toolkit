@@ -42,6 +42,19 @@ if __name__ == "__main__":
     plt.plot(x, y, '-x')
     plt.grid()
     plt.show()
+
+    # N = 32
+
+    # ideal_sin = np.ones([1, N])*0.5
+    # ideal_sin = np.sin(np.arange(0,N)*np.pi/8)
+
+    # plt.subplot(211)
+    # plt.plot(ideal_sin,'-x')
+    # plt.plot(data[1][:N], '-o')
+    # plt.subplot(212)
+    # plt.plot(data[1][:N]-ideal_sin, '-x')
+    # plt.show()
+
     # fsig = data[0]
     # f_abs = data[1]
     # f_phase = data[2]
