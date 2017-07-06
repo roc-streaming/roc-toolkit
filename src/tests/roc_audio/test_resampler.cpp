@@ -97,6 +97,7 @@ TEST(resampler, upscaling_twice) {
     CHECK(fout);
 
     for (int n = 0; n < InSamples; n++) {
+        // const float s = 0.5;
         const float s = sin(M_PI/4 * double(n));
         // const float s = sin(M_PI/4 * double(n)) + cos(M_PI/32 * double(n));
         // float s = 0;
