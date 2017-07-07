@@ -9,6 +9,7 @@
 
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <CppUTest/TestHarness.h>
 
 #include "roc_audio/resampler.h"
@@ -57,6 +58,33 @@ TEST_GROUP(resampler) {
         }
         FreqSpectrum(spectrum, sig_len);
     }
+
+    // Generates additive white Gaussian Noise samples with zero mean and a standard deviation of 1.
+    // https://www.embeddedrelated.com/showcode/311.php
+    double AWGN_generator() {
+        double temp1;
+        double temp2;
+        double result;
+        int p;
+
+        p = 1;
+
+        while (p > 0) {
+            temp2 = ( rand() / ( (double)RAND_MAX ) );
+
+            if ( temp2 == 0 ) {
+                // temp2 is >= (RAND_MAX / 2)
+                p = 1;
+            } else {
+               p = -1;
+            }
+        }
+
+        temp1 = cos( ( 2.0 * M_PI ) * rand() / ( (double)RAND_MAX ) );
+        result = sqrt( -2.0 * log( temp2 ) ) * temp1;
+
+        return result;    // return the generated random sample to the caller
+    }
 };
 
 IGNORE_TEST(resampler, invalid_scaling) {
@@ -85,7 +113,7 @@ IGNORE_TEST(resampler, no_scaling_multiple_reads) {
     }
 }
 
-TEST(resampler, upscaling_twice) {
+TEST(resampler, upscaling_twice_single) {
     CHECK(resampler->set_scaling(0.5f));
     const size_t sig_len = 2048;
     double buff[sig_len*2];
@@ -105,6 +133,46 @@ TEST(resampler, upscaling_twice) {
         // So here SNR is checked.
         CHECK((buff[n] - buff[main_freq_index]) <= -110 || n == main_freq_index);
     }
+}
+
+TEST(resampler, upscaling_twice_awgn) {
+    CHECK(resampler->set_scaling(2.0f));
+    const size_t sig_len = 2048;
+    double buff[sig_len*2];
+    size_t i;
+
+    FILE *fout = fopen("/tmp/resampler.out", "w+");
+    CHECK(fout);
+
+    for (size_t n = 0; n < InSamples; n++) {
+        const packet::sample_t s = (packet::sample_t)AWGN_generator();
+        reader.add(1, s);
+        if (n*2 < ROC_ARRAY_SIZE(buff)) {
+            buff[n*2] = s;
+            buff[n*2+1] = 0;
+            if (n == 0){
+                fprintf(fout, "%.16f", s);
+            } else {
+                fprintf(fout, ", %.16f", s);
+            }
+        }
+    }
+
+    // Put the spectrum of the resampled signal into buff.
+    // Odd elements are magnitudes in dB, even elements are phases in radians.
+    get_sample_spectrum(buff, sig_len);
+
+    fprintf(fout, "\n");
+    for (i = 0; i < ROC_ARRAY_SIZE(buff)/2-1; i += 1) {
+        fprintf(fout, "%.16f, ", buff[i]);
+    }
+    fprintf(fout, "%.16f\n", buff[i]);
+    // for (i = 1; i < ROC_ARRAY_SIZE(buff)-1; i += 2) {
+    //     fprintf(fout, "%f, ", buff[i]);
+    // }
+    // fprintf(fout, "%f\n", buff[i]);
+
+    fclose(fout);
 }
 
 } // namespace test
