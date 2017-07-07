@@ -92,7 +92,7 @@ Resampler::Resampler(IStreamReader& reader,
     , qt_frame_size_(fixedpoint_t(frame_size_ << FRACT_BIT_COUNT))
     , qt_sample_(G_default_sample_)
     , qt_dt_(0)
-    , cutoff_freq_(1.0f)
+    , cutoff_freq_(0.9f)
     {
 
     roc_panic_if(((fixedpoint_t)-1 >> FRACT_BIT_COUNT) < frame_size_);
@@ -117,8 +117,8 @@ bool Resampler::set_scaling(float scaling) {
         qt_sinc_step_ = float_to_fixedpoint(cutoff_freq_/scaling_);
         qt_half_window_len_ = float_to_fixedpoint((float)window_len_ / cutoff_freq_ * scaling_);
     } else {
-        qt_sinc_step_ = float_to_fixedpoint(cutoff_freq_);
-        qt_half_window_len_ = float_to_fixedpoint((float)window_len_ / cutoff_freq_);
+        qt_sinc_step_ = float_to_fixedpoint(cutoff_freq_/scaling_);
+        qt_half_window_len_ = float_to_fixedpoint((float)window_len_ / cutoff_freq_ * scaling_);
     }
     qt_half_sinc_window_len_ = float_to_fixedpoint(window_len_);
     return true;
