@@ -1,7 +1,6 @@
 import re
 import os
 import os.path
-import platform
 import SCons.Script
 
 SCons.SConf.dryrun = 0 # configure even in dry run mode
@@ -25,6 +24,16 @@ AddOption('--enable-werror',
           action='store_true',
           help='enable -Werror compiler option')
 
+AddOption('--enable-sanitizers',
+          dest='enable_sanitizers',
+          action='store_true',
+          help='enable GCC/Clang sanitizers')
+
+AddOption('--disable-lib',
+          dest='disable_lib',
+          action='store_true',
+          help='disable libroc building')
+
 AddOption('--disable-tools',
           dest='disable_tools',
           action='store_true',
@@ -39,11 +48,6 @@ AddOption('--disable-doc',
           dest='disable_doc',
           action='store_true',
           help='disable doxygen documentation generation')
-
-AddOption('--disable-sanitizers',
-          dest='disable_sanitizers',
-          action='store_true',
-          help='disable GCC/clang sanitizers')
 
 AddOption('--with-openfec',
           dest='with_openfec',
@@ -83,6 +87,7 @@ clean = [
     env.DeleteDir('#.sconf_temp'),
     env.DeleteFile('#.sconsign.dblite'),
     env.DeleteFile('#config.log'),
+    env.DeleteFile('#compile_commands.json'),
 ]
 
 env.AlwaysBuild(env.Alias('clean', [], clean))
@@ -111,14 +116,24 @@ if enable_doxygen:
 
 fmt = []
 
-if env.Which('clang-format') and env.CompilerVersion('clang-format') >= (3, 6):
+clang_format_tools = ['clang-format']
+for n in range(6, 10):
+    clang_format_tools += ['clang-format-3.%s' % n]
+
+clang_format = None
+for tool in clang_format_tools:
+    if env.Which(tool):
+        clang_format = tool
+        break
+
+if clang_format and env.CompilerVersion(clang_format) >= (3, 6):
     fmt += [
         env.Action(
-            'clang-format -i %s' % ' '.join(map(str,
+            '%s -i %s' % (clang_format, ' '.join(map(str,
                 env.RecursiveGlob(
                     '#src', ['*.h', '*.cpp'],
                     exclude=open(env.File('#.fmtignore').path).read().split())
-            )),
+            ))),
             env.Pretty('FMT', 'src', 'yellow')
         ),
     ]
@@ -148,6 +163,7 @@ if set(COMMAND_LINE_TARGETS).intersection(['clean', 'fmt', 'doxygen']):
 
 supported_platforms = [
     'linux',
+    'darwin',
 ]
 
 supported_compilers = [
@@ -209,28 +225,34 @@ if not compiler_ver:
     env.Die("can't detect compiler version for compiler '%s'",
             '-'.join([s for s in [toolchain, compiler] if s]))
 
-conf = Configure(env, custom_tests=env.CustomTests)
+llvmdir = env.LLVMDir(compiler_ver)
+if llvmdir:
+    env['ENV']['PATH'] += ':%s/bin' % llvmdir
 
-if compiler == 'gcc':
-    env['CC'] = 'gcc'
-    env['CXX'] = 'g++'
-    env['LD'] = 'g++'
-    env['AR'] = 'ar'
-    env['RANLIB'] = 'ranlib'
-
-if compiler == 'clang':
-    env['CC'] = 'clang'
-    env['CXX'] = 'clang++'
-    env['LD'] = 'clang++'
-    env['AR'] = 'llvm-ar'
-    env['RANLIB'] = 'llvm-ranlib'
-
-    if compiler_ver[:2] < (3, 6):
-        env['RANLIB'] = 'ranlib'
-
-for var in ['CC', 'CXX', 'LD', 'AR', 'RANLIB', 'GENGETOPT', 'DOXYGEN', 'PKG_CONFIG']:
+for var in ['CC', 'CXX', 'LD', 'AR', 'RANLIB',
+            'GENGETOPT', 'DOXYGEN', 'PKG_CONFIG']:
     if var in os.environ:
         env[var] = os.environ[var]
+
+conf = Configure(env, custom_tests=env.CustomTests)
+
+unversioned = set(['ar', 'ranlib'])
+
+tools = dict()
+
+if compiler == 'gcc':
+    tools['CC'] = ['gcc']
+    tools['CXX'] = ['g++']
+    tools['LD'] = ['g++']
+    tools['AR'] = ['ar']
+    tools['RANLIB'] = ['ranlib']
+
+if compiler == 'clang':
+    tools['CC'] = ['clang']
+    tools['CXX'] = ['clang++']
+    tools['LD'] = ['clang++']
+    tools['AR'] = ['llvm-ar', 'ar']
+    tools['RANLIB'] = ['llvm-ranlib', 'ranlib']
 
 checked = set()
 
@@ -239,44 +261,50 @@ for var in ['CC', 'CXX', 'LD', 'AR', 'RANLIB']:
         if not env[var] in checked:
             conf.CheckProg(env[var])
     else:
-        unversioned = (env[var] in ['ar', 'ranlib'])
+        for tool in tools[var]:
+            if toolchain:
+                tool = '%s-%s' % (toolchain, tool)
 
-        if toolchain:
-            env[var] = '%s-%s' % (toolchain, env[var])
+            if not tool in unversioned:
+                search_versions = [
+                    compiler_ver[:3],
+                    compiler_ver[:2],
+                ]
 
-        if unversioned:
-            continue
+                default_ver = env.CompilerVersion(tool)
 
-        search_versions = [
-            compiler_ver[:3],
-            compiler_ver[:2],
-        ]
+                if default_ver and default_ver[:len(compiler_ver)] == compiler_ver:
+                    search_versions += [default_ver]
 
-        default_ver = env.CompilerVersion(env[var])
+                for ver in reversed(sorted(set(search_versions))):
+                    versioned_tool = '%s-%s' % (tool, '.'.join(map(str, ver)))
+                    if env.Which(versioned_tool):
+                        tool = versioned_tool
+                        break
 
-        if default_ver and default_ver[:len(compiler_ver)] == compiler_ver:
-            search_versions += [default_ver]
-
-        for ver in reversed(sorted(set(search_versions))):
-            tool = '%s-%s' % (env[var], '.'.join(map(str, ver)))
             if env.Which(tool):
                 env[var] = tool
                 break
+        else:
+            env.Die("can't detect %s: looked for any of: %s" % (
+                var,
+                ', '.join(tools[var])))
 
         if not env[var] in checked:
             conf.CheckProg(env[var])
 
-            actual_ver = env.CompilerVersion(env[var])
-            if actual_ver:
-                actual_ver = actual_ver[:len(compiler_ver)]
+            if not tool in unversioned:
+                actual_ver = env.CompilerVersion(env[var])
+                if actual_ver:
+                    actual_ver = actual_ver[:len(compiler_ver)]
 
-            if actual_ver != compiler_ver:
-                env.Die(
-                    "can't detect %s: '%s' not found in PATH, '%s' version is %s" % (
-                        var,
-                        '%s-%s' % (env[var], '.'.join(map(str, compiler_ver))),
-                        env[var],
-                        actual_ver))
+                if actual_ver != compiler_ver:
+                    env.Die(
+                        "can't detect %s: '%s' not found in PATH, '%s' version is %s" % (
+                            var,
+                            '%s-%s' % (tool, '.'.join(map(str, compiler_ver))),
+                            env[var],
+                            actual_ver))
 
     checked.add(env[var])
 
@@ -305,6 +333,8 @@ if not host:
 if not platform:
     if 'linux' in host:
         platform = 'linux'
+    elif 'darwin' in host:
+        platform = 'darwin'
 
 if not GetOption('with_targets'):
     if not platform:
@@ -323,19 +353,22 @@ build_dir = 'build/%s/%s' % (
     host,
     '-'.join([s for s in [compiler, '.'.join(map(str, compiler_ver)), variant] if s]))
 
-if compiler == 'clang':
+if compiler in ['gcc', 'clang']:
     for var in ['CC', 'CXX']:
-        env[var] = env.ClangDB(build_dir, '*.cpp', env[var])
+        env[var] = env.ClangDB(build_dir, env[var])
+
+    clangdb = env.Install('#', '%s/compile_commands.json' % build_dir)
+    env.Requires(clangdb, env.Dir('#src'))
 
 env['ROC_BINDIR'] = '#bin/%s' % host
-env['ROC_VERSION'] = '0.1'
+env['ROC_VERSION'] = open(env.File('#.version').path).read().strip()
 env['ROC_TARGETS'] = []
 
 if GetOption('with_targets'):
     for t in GetOption('with_targets').split(','):
         env['ROC_TARGETS'] += ['target_%s' % t]
 else:
-    if platform in ['linux']:
+    if platform in ['linux', 'darwin']:
         env.Append(ROC_TARGETS=[
             'target_posix',
             'target_stdio',
@@ -354,13 +387,17 @@ else:
         ])
     else:
         if not GetOption('disable_tools'):
-            env.Die("--with-sox=no currently requires --disable-tools option")
+            env.Die("--with-sox=no requires --disable-tools option")
 
 env.Append(CXXFLAGS=[])
 env.Append(CPPDEFINES=[])
 env.Append(CPPPATH=[])
 env.Append(LIBPATH=[])
 env.Append(LIBS=[])
+
+lib_env = env.Clone()
+tool_env = env.Clone()
+test_env = env.Clone()
 
 alldeps = env['ROC_TARGETS']
 getdeps = []
@@ -379,9 +416,9 @@ if GetOption('with_3rdparty'):
 
 extdeps = set(alldeps) - set(getdeps)
 
-conf = Configure(env, custom_tests=env.CustomTests)
-
 if 'target_uv' in extdeps:
+    conf = Configure(env, custom_tests=env.CustomTests)
+
     env.TryParseConfig('--cflags --libs libuv')
 
     if not crosscompile:
@@ -392,7 +429,11 @@ if 'target_uv' in extdeps:
         if not conf.CheckLibWithHeaderUniq('uv', 'uv.h', 'c'):
             env.Die("libuv not found (see 'config.log' for details)")
 
+    env = conf.Finish()
+
 if 'target_openfec' in extdeps:
+    conf = Configure(env, custom_tests=env.CustomTests)
+
     if not env.TryParseConfig('--silence-errors --cflags --libs openfec') \
       and not crosscompile:
         for prefix in ['/usr/local', '/usr']:
@@ -421,8 +462,12 @@ if 'target_openfec' in extdeps:
         env.Die(
             "openfec has no LDPC-Staircase codec support (OF_USE_LDPC_STAIRCASE_CODEC)")
 
+    env = conf.Finish()
+
 if 'target_sox' in extdeps:
-    env.TryParseConfig('--cflags --libs sox')
+    conf = Configure(tool_env, custom_tests=env.CustomTests)
+
+    tool_env.TryParseConfig('--cflags --libs sox')
 
     if not crosscompile:
         if not conf.CheckLibWithHeaderExpr(
@@ -433,7 +478,11 @@ if 'target_sox' in extdeps:
         if not conf.CheckLibWithHeaderUniq('sox', 'sox.h', 'c'):
             env.Die("libsox not found (see 'config.log' for details)")
 
+    tool_env = conf.Finish()
+
 if 'target_gengetopt' in extdeps:
+    conf = Configure(env, custom_tests=env.CustomTests)
+
     if 'GENGETOPT' in env.Dictionary():
         gengetopt = env['GENGETOPT']
     else:
@@ -442,33 +491,33 @@ if 'target_gengetopt' in extdeps:
     if not conf.CheckProg(gengetopt):
         env.Die("gengetopt not found in PATH (looked for '%s')" % gengetopt)
 
-env = conf.Finish()
-
-test_env = env.Clone()
-test_conf = Configure(test_env, custom_tests=test_env.CustomTests)
+    env = conf.Finish()
 
 if 'target_cpputest' in extdeps:
+    conf = Configure(test_env, custom_tests=env.CustomTests)
+
     test_env.TryParseConfig('--cflags --libs cpputest')
 
-    if not test_conf.CheckLibWithHeaderUniq('CppUTest', 'CppUTest/TestHarness.h', 'cxx'):
+    if not conf.CheckLibWithHeaderUniq('CppUTest', 'CppUTest/TestHarness.h', 'cxx'):
         test_env.Die("CppUTest not found (see 'config.log' for details)")
 
-test_env = test_conf.Finish()
+    test_env = conf.Finish()
 
 if 'target_uv' in getdeps:
     env.ThirdParty(host, toolchain, thirdparty_variant, 'uv-1.4.2')
 
 if 'target_openfec' in getdeps:
-    env.ThirdParty(host, toolchain, thirdparty_variant, 'openfec-1.4.2', includes=[
+    env.ThirdParty(host, toolchain, thirdparty_variant, 'openfec-1.4.2.1', includes=[
         'lib_common',
         'lib_stable',
     ])
 
 if 'target_sox' in getdeps:
-    env.ThirdParty(host, toolchain, thirdparty_variant, 'alsa-1.0.29')
-    env.ThirdParty(host, toolchain, thirdparty_variant, 'sox-14.4.2', deps=['alsa-1.0.29'])
+    tool_env.ThirdParty(host, toolchain, thirdparty_variant, 'alsa-1.0.29')
+    tool_env.ThirdParty(host, toolchain, thirdparty_variant, 'sox-14.4.2',
+        deps=['alsa-1.0.29'])
 
-    conf = Configure(env, custom_tests=env.CustomTests)
+    conf = Configure(tool_env, custom_tests=env.CustomTests)
 
     for lib in [
             'z', 'ltdl', 'magic',
@@ -478,7 +527,7 @@ if 'target_sox' in getdeps:
             'pulse', 'pulse-simple']:
         conf.CheckLib(lib)
 
-    env = conf.Finish()
+    tool_env = conf.Finish()
 
 if 'target_gengetopt' in getdeps:
     env.ThirdParty(build, "", thirdparty_variant, 'gengetopt-2.22.6')
@@ -509,6 +558,9 @@ if compiler in ['gcc', 'clang']:
     env.Append(LINKFLAGS=[
         '-pthread',
     ])
+    lib_env.Append(LINKFLAGS=[
+        '-Wl,--version-script=' + env.File('#src/lib/roc.version').path
+    ])
     if not(compiler == 'clang' and variant == 'debug'):
         env.Append(CXXFLAGS=[
             '-fno-rtti',
@@ -518,8 +570,13 @@ if compiler in ['gcc', 'clang']:
             '-Werror'
         ])
     if variant == 'debug':
-        env.Append(CXXFLAGS=['-ggdb'])
-        env.Append(LINKFLAGS=['-rdynamic'])
+        env.Append(CXXFLAGS=[
+            '-ggdb',
+            '-fno-omit-frame-pointer',
+        ])
+        env.Append(LINKFLAGS=[
+            '-rdynamic'
+        ])
     else:
         env.Append(CXXFLAGS=['-O2'])
 else:
@@ -587,16 +644,12 @@ if compiler == 'clang':
         ])
 
 if compiler in ['gcc', 'clang']:
-    if not GetOption('disable_sanitizers') \
-      and not crosscompile \
-      and variant == 'debug' and (
-        (compiler == 'gcc' and compiler_ver[:2] >= (4, 9)) or
-        (compiler == 'clang' and compiler_ver[:2] >= (3, 6))):
-
+    if GetOption('enable_sanitizers'):
         san_env = env.Clone()
         san_conf = Configure(san_env, custom_tests=env.CustomTests)
 
         flags = [
+            '-fsanitize=address',
             '-fsanitize=undefined',
         ]
 
@@ -616,21 +669,17 @@ if compiler in ['gcc', 'clang']:
         CXXFLAGS=[('-isystem', env.Dir(path).path) for path in \
                   env['CPPPATH'] + ['%s/tools' % build_dir]])
 
-if not GetOption('disable_tests'):
-    for var in ['CXXFLAGS', 'CPPDEFINES', 'CPPPATH', 'LIBPATH', 'LIBS']:
-        env['TEST_' + var] = [p for p in test_env[var] if not p in env[var]]
+test_env.Append(CPPDEFINES=('CPPUTEST_USE_MEM_LEAK_DETECTION', '0'))
 
-    env['TEST_CPPDEFINES'] += [('CPPUTEST_USE_MEM_LEAK_DETECTION', '0')]
+if compiler in ['gcc', 'clang']:
+    test_env.Prepend(CXXFLAGS=[
+            ('-isystem', env.Dir(path).path) for path in test_env['CPPPATH']
+    ])
 
-    if compiler in ['gcc', 'clang']:
-        env.Prepend(
-            TEST_CXXFLAGS=[
-                ('-isystem', env.Dir(path).path) for path in env['TEST_CPPPATH']])
-
-    if compiler == 'clang':
-        env.AppendUnique(TEST_CXXFLAGS=[
-            '-Wno-weak-vtables',
-        ])
+if compiler == 'clang':
+    test_env.AppendUnique(CXXFLAGS=[
+        '-Wno-weak-vtables',
+    ])
 
 env.AlwaysBuild(
     env.Alias('tidy', [env.Dir('#')],
@@ -639,6 +688,8 @@ env.AlwaysBuild(
                 build_dir,
                 ','.join([
                     '*',
+                    '-readability-named-parameter',
+                    '-readability-else-after-return',
                     '-google-readability-todo',
                     '-google-readability-function',
                     '-google-readability-casting',
@@ -647,6 +698,7 @@ env.AlwaysBuild(
                     '-google-runtime-int',
                     '-llvm-include-order',
                     '-llvm-header-guard',
+                    '-misc-macro-parentheses',
                     '-misc-use-override',
                     '-clang-analyzer-alpha.core.CastToStruct',
                     '-clang-analyzer-alpha.security.ReturnPtrRange',
@@ -658,7 +710,7 @@ env.AlwaysBuild(
             env.Pretty('TIDY', 'src', 'yellow')
         )))
 
-Export('env')
+Export('env', 'lib_env', 'tool_env', 'test_env')
 
 env.SConscript('src/SConscript',
             variant_dir=build_dir, duplicate=0)
