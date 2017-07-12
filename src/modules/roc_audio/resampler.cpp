@@ -117,8 +117,8 @@ bool Resampler::set_scaling(float scaling) {
         qt_sinc_step_ = float_to_fixedpoint(cutoff_freq_/scaling_);
         qt_half_window_len_ = float_to_fixedpoint((float)window_len_ / cutoff_freq_ * scaling_);
     } else {
-        qt_sinc_step_ = float_to_fixedpoint(cutoff_freq_/scaling_);
-        qt_half_window_len_ = float_to_fixedpoint((float)window_len_ / cutoff_freq_ * scaling_);
+        qt_sinc_step_ = float_to_fixedpoint(cutoff_freq_);
+        qt_half_window_len_ = float_to_fixedpoint((float)window_len_ / cutoff_freq_);
     }
     qt_half_sinc_window_len_ = float_to_fixedpoint(window_len_);
     return true;
@@ -211,7 +211,9 @@ sample_t Resampler::sinc_(const fixedpoint_t x, const float fract_x) {
     // Tables index next to x
     const sample_t hh = sinc_table_[(x >> (FRACT_BIT_COUNT - window_interp_bits_)) + 1];
 
-    return hl + fract_x * (hh - hl);
+    const sample_t result = hl + fract_x * (hh - hl);
+
+    return scaling_ > 1.0f ? result / scaling_ : result;
 }
 
 sample_t Resampler::resample_() {
