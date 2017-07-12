@@ -20,19 +20,23 @@ Branch    | Linux
 `master`  | [![](https://travis-ci.org/roc-project/roc.svg?branch=master)](https://travis-ci.org/roc-project/roc)
 `develop` | [![](https://travis-ci.org/roc-project/roc.svg?branch=develop)](https://travis-ci.org/roc-project/roc)
 
-Roadmap for upcoming 0.1 release
---------------------------------
+Roadmap
+-------
 
-Work in progress. See also [open issues](https://github.com/roc-project/roc/issues) and [TODO](TODO.md) for current and future plans.
+Work in progress! There is no public release yet. See [open issues](https://github.com/roc-project/roc/issues) and [Roadmap](Roadmap.md) for current and future plans.
 
-- [ ] api: public API for client and server
-- [x] stack: client/server libraries and tools
-- [ ] documentation: API, doxygen, wiki
-- [ ] protocols: RTP support
-- [x] audio formats: uncompressed 16-bit linear PCM
-- [x] latency: dynamic resampling in server
-- [x] QoS: LDPC forward error correction
-- [ ] platforms: Linux (including Raspberry Pi), Mac OS X
+The upcoming 0.1 release will include the following features:
+
+- [x] Simple public API for sender and receiver
+- [x] Command line tools for sender and receiver
+- [x] Network I/O
+- [x] Sound I/O (in tools)
+- [x] Audio processing pipeline with dynamic resampling
+- [x] RTP support with uncompressed 16-bit linear PCM
+- [ ] FECFRAME support with Reed-Solomon and LDPC Staircase [FEC](https://en.wikipedia.org/wiki/Forward_error_correction) codes using [OpenFEC](http://openfec.org/)
+- [ ] Documentation
+- [x] Linux support, including Raspberry Pi
+- [ ] MacOS support
 
 Documentation
 -------------
@@ -78,11 +82,11 @@ Supported protocols
 Contributing
 ------------
 
-Contributions are always welcome! Please read [CONTRIBUTING](CONTRIBUTING.md) for general hints and look at [TODO](TODO.md) and [open issues](https://github.com/roc-project/roc/issues) to figure out what's going on.
+Contributions are always welcome! Please read [CONTRIBUTING](CONTRIBUTING.md) for general hints and look at [Roadmap](Roadmap.md) and [open issues](https://github.com/roc-project/roc/issues) to figure out what's going on.
 
 * If you'd like to report a bug, ask a question, or suggest a feature, feel free to [create an issue](https://help.github.com/articles/creating-an-issue/).
 
-* If you'd like to submit a patch, it's recommended to comment corresponding issue or create a new one to ensure that your work fits in Roc design and nobody else is already implementing it. Then, just create a [pull request](https://help.github.com/articles/using-pull-requests/).
+* If you'd like to submit a patch, [create a pull request](https://help.github.com/articles/using-pull-requests/). For non-trivial changes, it may be reasonable to start with discussing the implementation details in an existing or a new issue.
 
 Licensing
 ---------
@@ -90,7 +94,7 @@ Licensing
 Roc source code is licensed under [MPL-2.0](https://www.mozilla.org/en-US/MPL/2.0/), see [LICENSE](LICENSE). [Roc logos](doc/images/) by [botanicahouse](https://www.instagram.com/botanicahouse/) are licensed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).
 
 Issues with external dependencies:
-* Roc may be configured to use LDPC-Staircase codec from OpenFEC, which is licensed under [CeCILL](http://openfec.org/patents.html), GPL-like and GPL-compatible license. When Roc is built with OpenFEC support enabled, it must be distributed under lincense compatible with CeCILL.
+* Roc may be configured to use FEC codec from OpenFEC, which is licensed under [CeCILL](http://openfec.org/patents.html), a GPL-like and GPL-compatible license. When Roc is built with OpenFEC support enabled, it must be distributed under a lincense compatible with CeCILL.
 
 Authors
 -------
