@@ -15,4 +15,6 @@
 #include <stddef.h>
 #include <unistd.h>
 
+#define ROC_API __attribute__((visibility ("default")))
+
 #endif // ROC_TYPES_H_
