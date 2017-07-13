@@ -19,7 +19,7 @@
 #include "roc_core/list.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/panic.h"
-#include "roc_core/spin_mutex.h"
+#include "roc_core/mutex.h"
 
 namespace roc {
 namespace core {
@@ -49,7 +49,7 @@ public:
     virtual void* allocate() {
         ListNode* node;
         {
-            SpinMutex::Lock lock(mutex_);
+            Mutex::Lock lock(mutex_);
             node = free_nodes_.back();
             if (node != NULL) {
                 free_nodes_.remove(*node);
@@ -69,7 +69,7 @@ public:
         Element* elem = container_of_(memory);
         ListNode* node = new (elem->u_node.mem()) ListNode();
         {
-            SpinMutex::Lock lock(mutex_);
+            Mutex::Lock lock(mutex_);
             free_nodes_.append(*node);
         }
     }
@@ -87,7 +87,7 @@ public:
 
     //! Number of free object available in pool.
     size_t available() {
-        SpinMutex::Lock lock(mutex_);
+        Mutex::Lock lock(mutex_);
         return free_nodes_.size();
     }
 
@@ -106,7 +106,7 @@ private:
     Element elements_[Size];
 
     List<ListNode, NoOwnership> free_nodes_;
-    SpinMutex mutex_;
+    Mutex mutex_;
 };
 
 } // namespace core
