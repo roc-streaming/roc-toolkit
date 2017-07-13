@@ -37,11 +37,13 @@ const AudioFormat* get_audio_format_cr(packet::channel_mask_t ch, size_t rate) {
         if (AudioFormat_L16_Mono.rate == rate) {
             return &AudioFormat_L16_Mono;
         }
+        break;
 
     case 0x3:
         if (AudioFormat_L16_Stereo.rate == rate) {
             return &AudioFormat_L16_Stereo;
         }
+        break;
 
     default:
         break;
