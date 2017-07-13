@@ -163,6 +163,7 @@ if set(COMMAND_LINE_TARGETS).intersection(['clean', 'fmt', 'doxygen']):
 
 supported_platforms = [
     'linux',
+    'darwin',
 ]
 
 supported_compilers = [
@@ -228,29 +229,30 @@ llvmdir = env.LLVMDir(compiler_ver)
 if llvmdir:
     env['ENV']['PATH'] += ':%s/bin' % llvmdir
 
-conf = Configure(env, custom_tests=env.CustomTests)
-
-if compiler == 'gcc':
-    env['CC'] = 'gcc'
-    env['CXX'] = 'g++'
-    env['LD'] = 'g++'
-    env['AR'] = 'ar'
-    env['RANLIB'] = 'ranlib'
-
-if compiler == 'clang':
-    env['CC'] = 'clang'
-    env['CXX'] = 'clang++'
-    env['LD'] = 'clang++'
-    env['AR'] = 'llvm-ar'
-    env['RANLIB'] = 'llvm-ranlib'
-
-    if compiler_ver[:2] < (3, 6):
-        env['RANLIB'] = 'ranlib'
-
 for var in ['CC', 'CXX', 'LD', 'AR', 'RANLIB',
             'GENGETOPT', 'DOXYGEN', 'PKG_CONFIG']:
     if var in os.environ:
         env[var] = os.environ[var]
+
+conf = Configure(env, custom_tests=env.CustomTests)
+
+unversioned = set(['ar', 'ranlib'])
+
+tools = dict()
+
+if compiler == 'gcc':
+    tools['CC'] = ['gcc']
+    tools['CXX'] = ['g++']
+    tools['LD'] = ['g++']
+    tools['AR'] = ['ar']
+    tools['RANLIB'] = ['ranlib']
+
+if compiler == 'clang':
+    tools['CC'] = ['clang']
+    tools['CXX'] = ['clang++']
+    tools['LD'] = ['clang++']
+    tools['AR'] = ['llvm-ar', 'ar']
+    tools['RANLIB'] = ['llvm-ranlib', 'ranlib']
 
 checked = set()
 
@@ -259,44 +261,52 @@ for var in ['CC', 'CXX', 'LD', 'AR', 'RANLIB']:
         if not env[var] in checked:
             conf.CheckProg(env[var])
     else:
-        unversioned = (env[var] in ['ar', 'ranlib'])
+        for tool_name in tools[var]:
+            if not toolchain:
+                tool = tool_name
+            else:
+                tool = '%s-%s' % (toolchain, tool_name)
 
-        if toolchain:
-            env[var] = '%s-%s' % (toolchain, env[var])
+            if not tool_name in unversioned:
+                search_versions = [
+                    compiler_ver[:3],
+                    compiler_ver[:2],
+                ]
 
-        if unversioned:
-            continue
+                default_ver = env.CompilerVersion(tool)
 
-        search_versions = [
-            compiler_ver[:3],
-            compiler_ver[:2],
-        ]
+                if default_ver and default_ver[:len(compiler_ver)] == compiler_ver:
+                    search_versions += [default_ver]
 
-        default_ver = env.CompilerVersion(env[var])
+                for ver in reversed(sorted(set(search_versions))):
+                    versioned_tool = '%s-%s' % (tool, '.'.join(map(str, ver)))
+                    if env.Which(versioned_tool):
+                        tool = versioned_tool
+                        break
 
-        if default_ver and default_ver[:len(compiler_ver)] == compiler_ver:
-            search_versions += [default_ver]
-
-        for ver in reversed(sorted(set(search_versions))):
-            tool = '%s-%s' % (env[var], '.'.join(map(str, ver)))
             if env.Which(tool):
                 env[var] = tool
                 break
+        else:
+            env.Die("can't detect %s: looked for any of: %s" % (
+                var,
+                ', '.join(tools[var])))
 
         if not env[var] in checked:
             conf.CheckProg(env[var])
 
-            actual_ver = env.CompilerVersion(env[var])
-            if actual_ver:
-                actual_ver = actual_ver[:len(compiler_ver)]
+            if not tool_name in unversioned:
+                actual_ver = env.CompilerVersion(env[var])
+                if actual_ver:
+                    actual_ver = actual_ver[:len(compiler_ver)]
 
-            if actual_ver != compiler_ver:
-                env.Die(
-                    "can't detect %s: '%s' not found in PATH, '%s' version is %s" % (
-                        var,
-                        '%s-%s' % (env[var], '.'.join(map(str, compiler_ver))),
-                        env[var],
-                        actual_ver))
+                if actual_ver != compiler_ver:
+                    env.Die(
+                        "can't detect %s: '%s' not found in PATH, '%s' version is %s" % (
+                            var,
+                            '%s-%s' % (tool, '.'.join(map(str, compiler_ver))),
+                            env[var],
+                            actual_ver))
 
     checked.add(env[var])
 
@@ -325,6 +335,8 @@ if not host:
 if not platform:
     if 'linux' in host:
         platform = 'linux'
+    elif 'darwin' in host:
+        platform = 'darwin'
 
 if not GetOption('with_targets'):
     if not platform:
@@ -358,7 +370,7 @@ if GetOption('with_targets'):
     for t in GetOption('with_targets').split(','):
         env['ROC_TARGETS'] += ['target_%s' % t]
 else:
-    if platform in ['linux']:
+    if platform in ['linux', 'darwin']:
         env.Append(ROC_TARGETS=[
             'target_posix',
             'target_stdio',
@@ -503,9 +515,15 @@ if 'target_openfec' in getdeps:
     ])
 
 if 'target_sox' in getdeps:
-    tool_env.ThirdParty(host, toolchain, thirdparty_variant, 'alsa-1.0.29')
+    sox_deps = []
+
+    if platform in ['linux']:
+        sox_deps = ['alsa-1.0.29']
+        for dep in sox_deps:
+            tool_env.ThirdParty(host, toolchain, thirdparty_variant, dep)
+
     tool_env.ThirdParty(host, toolchain, thirdparty_variant, 'sox-14.4.2',
-        deps=['alsa-1.0.29'])
+                        sox_deps)
 
     conf = Configure(tool_env, custom_tests=env.CustomTests)
 
@@ -516,6 +534,11 @@ if 'target_sox' in getdeps:
             'mad', 'mp3lame',
             'pulse', 'pulse-simple']:
         conf.CheckLib(lib)
+
+    if platform in ['darwin']:
+        tool_env.Append(LINKFLAGS=[
+            '-Wl,-framework,CoreAudio'
+        ])
 
     tool_env = conf.Finish()
 
@@ -528,7 +551,7 @@ if 'target_gengetopt' in getdeps:
 if 'target_cpputest' in getdeps:
     test_env.ThirdParty(host, toolchain, thirdparty_variant, 'cpputest-3.6')
 
-if 'target_posix' in env['ROC_TARGETS']:
+if 'target_posix' in env['ROC_TARGETS'] and platform not in ['darwin']:
     env.Append(CPPDEFINES=[('_POSIX_C_SOURCE', '200809')])
 
 for t in env['ROC_TARGETS']:
@@ -542,15 +565,19 @@ if platform in ['linux']:
 if compiler in ['gcc', 'clang']:
     env.Append(CXXFLAGS=[
         '-std=c++98',
-        '-fno-exceptions',
-        '-fPIC',
-    ])
-    env.Append(LINKFLAGS=[
         '-pthread',
+        '-fPIC',
+        '-fno-exceptions',
+        '-fvisibility=hidden',
     ])
-    lib_env.Append(LINKFLAGS=[
-        '-Wl,--version-script=' + env.File('#src/lib/roc.version').path
+    env.Append(LIBS=[
+        'pthread',
     ])
+    if platform in ['linux']:
+        lib_env.Append(LINKFLAGS=[
+            '-Wl,--version-script=' + env.File('#src/lib/roc.version').path
+        ])
+
     if not(compiler == 'clang' and variant == 'debug'):
         env.Append(CXXFLAGS=[
             '-fno-rtti',

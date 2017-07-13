@@ -88,15 +88,17 @@ def getsysroot(toolchain):
         print("error: can't execute '%s'" % ' '.join(cmd), file=sys.stderr)
         exit(1)
 
-def getexports(workdir, deplist):
+def makeflags(workdir, deplist, flags):
     inc=[]
     lib=[]
     for dep in deplist:
         inc += [os.path.join(workdir, 'build', dep, 'include')]
         lib += [os.path.join(workdir, 'build', dep, 'lib')]
-    return 'CFLAGS="%s" LDFLAGS="%s"' % (
-        ' '.join(['-I%s' % path for path in inc]),
-        ' '.join(['-L%s' % path for path in lib]))
+
+    cflags = ' '.join(['-I%s' % path for path in inc] + ([flags] if flags else []))
+    ldflags = ' '.join(['-L%s' % path for path in lib])
+
+    return 'CXXFLAGS="%s" CFLAGS="%s" LDFLAGS="%s"' % (cflags, cflags, ldflags)
 
 if len(sys.argv) != 6:
     print("error: usage: 3rdparty.py workdir toolchain variant package deplist",
@@ -126,8 +128,11 @@ if name == 'uv':
     extract('libuv-v%s.tar.gz' % ver,
             'libuv-v%s' % ver)
     os.chdir('libuv-v%s' % ver)
+    freplace('include/uv.h', '__attribute__((visibility("default")))', '')
     execute('./autogen.sh', logfile)
-    execute('./configure --host=%s --with-pic --enable-static' % toolchain, logfile)
+    execute('%s ./configure --host=%s --with-pic --enable-static' % (
+        makeflags(workdir, [], '-fvisibility=hidden'), toolchain),
+        logfile)
     execute('make -j', logfile)
     install('include', os.path.join(builddir, 'include'))
     install('.libs/libuv.a', os.path.join(builddir, 'lib'))
@@ -152,9 +157,9 @@ elif name == 'openfec':
             '-DCMAKE_BUILD_TYPE=Debug',
             # enable debug symbols and logs
             '-DDEBUG:STRING=ON',
-            # -fPIC should be set explicitly in older cmake versions
             # -ggdb is required for sanitizer backtrace
-            '-DCMAKE_C_FLAGS_DEBUG:STRING="-fPIC -ggdb"',
+            # -fPIC should be set explicitly in older cmake versions
+            '-DCMAKE_C_FLAGS_DEBUG:STRING="-ggdb -fPIC -fvisibility=hidden"',
         ]
     else:
         dist = 'bin/Release'
@@ -163,7 +168,7 @@ elif name == 'openfec':
             # disable debug symbols and logs
             '-DDEBUG:STRING=OFF',
             # -fPIC should be set explicitly in older cmake versions
-            '-DCMAKE_C_FLAGS_RELEASE:STRING=-fPIC',
+            '-DCMAKE_C_FLAGS_RELEASE:STRING="-fPIC -fvisibility=hidden"',
         ]
     execute('cmake .. ' + ' '.join(args), logfile)
     execute('make -j', logfile)
@@ -196,13 +201,16 @@ elif name == 'sox':
     extract('sox-%s.tar.gz' % ver,
             'sox-%s' % ver)
     os.chdir('sox-%s' % ver)
-    execute('%s LIBS="-lpthread -ldl -lrt" ./configure --host=%s %s' % (
-        getexports(workdir, deplist), toolchain, ' '.join([
+    execute('%s ./configure --host=%s %s' % (
+        makeflags(workdir, deplist, '-fvisibility=hidden'),
+        toolchain,
+        ' '.join([
             '--enable-static',
             '--disable-shared',
             '--disable-openmp',
             '--without-id3tag',
             '--without-png',
+            '--without-ao',
         ])), logfile)
     execute('make -j', logfile)
     install('src/sox.h', os.path.join(builddir, 'include'))
@@ -226,9 +234,9 @@ elif name == 'cpputest':
     os.chdir('cpputest-%s' % ver)
     # disable memory leak detection which is too hard to use properly
     # disable warnings, since CppUTest uses -Werror and may fail to build on old GCC
-    execute('CXXFLAGS="-w" '
-        './configure --host=%s --enable-static --disable-memory-leak-detection' % (
-            toolchain), logfile)
+    execute('%s ./configure --host=%s --enable-static --disable-memory-leak-detection' % (
+            makeflags(workdir, [], '-w'), toolchain),
+            logfile)
     execute('make -j', logfile)
     install('include', os.path.join(builddir, 'include'))
     install('lib/libCppUTest.a', os.path.join(builddir, 'lib'))
