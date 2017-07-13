@@ -21,7 +21,7 @@
 #include "roc_core/atomic.h"
 #include "roc_core/list.h"
 #include "roc_core/noncopyable.h"
-#include "roc_core/spin_mutex.h"
+#include "roc_core/mutex.h"
 
 #include "roc_datagram/address.h"
 #include "roc_datagram/idatagram_writer.h"
@@ -78,7 +78,7 @@ private:
     uv_async_t* eof_;
 
     core::List<UDPDatagram> list_;
-    core::SpinMutex mutex_;
+    core::Mutex mutex_;
 
     core::Atomic terminate_;
     core::Atomic pending_;

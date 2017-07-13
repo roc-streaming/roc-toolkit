@@ -18,7 +18,7 @@
 #include "roc_core/circular_buffer.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/semaphore.h"
-#include "roc_core/spin_mutex.h"
+#include "roc_core/mutex.h"
 
 #include "roc_audio/isample_buffer_reader.h"
 #include "roc_audio/isample_buffer_writer.h"
@@ -54,7 +54,7 @@ private:
     core::Semaphore wr_sem_;
 
     core::CircularBuffer<ISampleBufferConstSlice, MaxBuffers> cb_;
-    core::SpinMutex mutex_;
+    core::Mutex mutex_;
 };
 
 } // namespace audio

@@ -26,7 +26,7 @@ ISampleBufferConstSlice SampleBufferQueue::read() {
     ISampleBufferConstSlice buffer;
 
     {
-        core::SpinMutex::Lock lock(mutex_);
+        core::Mutex::Lock lock(mutex_);
 
         buffer = cb_.shift();
     }
@@ -40,7 +40,7 @@ void SampleBufferQueue::write(const ISampleBufferConstSlice& buffer) {
     wr_sem_.pend();
 
     {
-        core::SpinMutex::Lock lock(mutex_);
+        core::Mutex::Lock lock(mutex_);
 
         cb_.push(buffer);
     }
@@ -49,7 +49,7 @@ void SampleBufferQueue::write(const ISampleBufferConstSlice& buffer) {
 }
 
 size_t SampleBufferQueue::size() const {
-    core::SpinMutex::Lock lock(mutex_);
+    core::Mutex::Lock lock(mutex_);
 
     return cb_.size();
 }
