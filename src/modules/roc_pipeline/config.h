@@ -54,6 +54,15 @@ enum Option {
     EnableOneshot = (1 << 4)
 };
 
+//! Half of the size of the resamplers window.
+enum ResamplerFIRLen {
+    ResamplerOptPennyless = 16,
+    ResamplerOptCheap = 32,
+    ResamplerOptMild = 64,
+    ResamplerOptHigh = 128,
+    ResamplerOptOverkill = 192
+};
+
 //! Receiver config.
 struct ReceiverConfig {
     //! Construct default config.
@@ -65,6 +74,7 @@ struct ReceiverConfig {
         , samples_per_resampler_frame(ROC_CONFIG_DEFAULT_RESAMPLER_FRAME_SAMPLES)
         , output_latency(ROC_CONFIG_DEFAULT_OUTPUT_LATENCY)
         , session_latency(ROC_CONFIG_DEFAULT_SESSION_LATENCY)
+        , resampler_length(ResamplerOptMild)
         , session_timeout(ROC_CONFIG_DEFAULT_SESSION_TIMEOUT)
         , max_sessions(ROC_CONFIG_MAX_SESSIONS)
         , max_session_packets(ROC_CONFIG_MAX_SESSION_PACKETS)
@@ -95,6 +105,9 @@ struct ReceiverConfig {
 
     //! Session latency as number of samples.
     size_t session_latency;
+
+    //! The length of the resamplers filter IR.
+    ResamplerFIRLen resampler_length;
 
     //! Timeout after which session is terminated as number of samples.
     size_t session_timeout;

@@ -27,6 +27,7 @@ using namespace audio;
 namespace {
 
 enum { FrameSize = ROC_CONFIG_DEFAULT_RESAMPLER_FRAME_SAMPLES};
+enum { ResamplerFIRLen = 200 };
 
 enum { OutSamples = FrameSize * 100 + 1, InSamples = OutSamples + (FrameSize * 3) };
 
@@ -38,7 +39,7 @@ TEST_GROUP(resampler) {
     core::ScopedPtr<Resampler> resampler;
 
     void setup() {
-        resampler.reset(new Resampler(reader, default_buffer_composer(), FrameSize));
+        resampler.reset(new Resampler(reader, default_buffer_composer(), ResamplerFIRLen, FrameSize));
     }
 
     void expect_buffers(size_t num_buffers, size_t sz, int value) {
@@ -167,7 +168,6 @@ TEST(resampler, downsample) {
     CHECK(resampler->set_scaling(1.5f));
     const size_t sig_len = 2048;
     double buff[sig_len*2];
-    size_t i;
 
     for (size_t n = 0; n < InSamples; n++) {
         const packet::sample_t s = (packet::sample_t)sin(M_PI/4 * double(n));
@@ -178,7 +178,7 @@ TEST(resampler, downsample) {
     // Odd elements are magnitudes in dB, even elements are phases in radians.
     get_sample_spectrum(buff, sig_len);
 
-    const size_t main_freq_index = sig_len / 4 *1.5;
+    const size_t main_freq_index = (size_t)round(sig_len / 4 *1.5);
     for (size_t n = 0; n < sig_len / 2; n += 2) {
         // The main sinewave frequency increased by 1.5 as we've downsampled.
         // So here SNR is checked.

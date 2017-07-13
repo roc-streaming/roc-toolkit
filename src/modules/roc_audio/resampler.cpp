@@ -43,11 +43,6 @@ inline fixedpoint_t float_to_fixedpoint(const float t) {
     return (fixedpoint_t)(t * (float)G_qt_one);
 }
 
-// Convert float to signed fixed-point.
-inline signed_fixedpoint_t float_to_sfixedpoint(const float t) {
-    return (signed_fixedpoint_t)(t * (float)G_qt_one);
-}
-
 inline size_t fixedpoint_to_size(const fixedpoint_t t) {
     return t >> FRACT_BIT_COUNT;
 }
@@ -76,12 +71,12 @@ inline float fractional(const fixedpoint_t x) {
 
 Resampler::Resampler(IStreamReader& reader,
                      ISampleBufferComposer& composer,
-                     size_t frame_size)
+                     size_t window_len, size_t frame_size)
     : reader_(reader)
     , window_(3)
     , scaling_(0)
     , frame_size_(frame_size)
-    , window_len_(200)
+    , window_len_(window_len)
     , qt_half_sinc_window_len_(float_to_fixedpoint(window_len_))
     , window_interp_(512)
     , window_interp_bits_(9)

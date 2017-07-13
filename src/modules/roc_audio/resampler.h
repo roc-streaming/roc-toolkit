@@ -37,6 +37,7 @@ public:
     //!  - @p frame_size is number of samples per resampler frame.
     explicit Resampler(IStreamReader& reader,
                        ISampleBufferComposer& composer = default_buffer_composer(),
+                       size_t window_len = 64,
                        size_t frame_size = ROC_CONFIG_DEFAULT_RESAMPLER_FRAME_SAMPLES);
 
     //! Fills buffer of samples with new sampling frequency.
