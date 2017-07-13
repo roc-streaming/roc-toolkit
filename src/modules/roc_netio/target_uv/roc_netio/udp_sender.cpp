@@ -31,7 +31,7 @@ UDPSender::~UDPSender() {
 }
 
 void UDPSender::attach(uv_loop_t& loop, uv_async_t& eof) {
-    core::SpinMutex::Lock lock(mutex_);
+    core::Mutex::Lock lock(mutex_);
 
     roc_log(LogDebug, "udp sender: attaching to event loop");
 
@@ -49,7 +49,7 @@ void UDPSender::attach(uv_loop_t& loop, uv_async_t& eof) {
 }
 
 void UDPSender::detach(uv_loop_t& loop) {
-    core::SpinMutex::Lock lock(mutex_);
+    core::Mutex::Lock lock(mutex_);
 
     roc_log(LogDebug, "udp sender: detaching from event loop");
 
@@ -152,7 +152,7 @@ void UDPSender::write(const datagram::IDatagramPtr& dgm) {
 
         UDPDatagram& udp_datagram = static_cast<UDPDatagram&>(*dgm);
 
-        core::SpinMutex::Lock lock(mutex_);
+        core::Mutex::Lock lock(mutex_);
 
         // uv_async_t may be closed in detach() from event loop thread.
         // In this case, loop_ will be set to null.
@@ -177,7 +177,7 @@ void UDPSender::write(const datagram::IDatagramPtr& dgm) {
 }
 
 UDPDatagramPtr UDPSender::read_() {
-    core::SpinMutex::Lock lock(mutex_);
+    core::Mutex::Lock lock(mutex_);
 
     UDPDatagramPtr dgm = list_.front();
     if (dgm) {

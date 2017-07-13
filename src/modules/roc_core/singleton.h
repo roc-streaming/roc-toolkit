@@ -15,7 +15,7 @@
 
 #include "roc_core/maybe.h"
 #include "roc_core/noncopyable.h"
-#include "roc_core/spin_mutex.h"
+#include "roc_core/mutex.h"
 
 namespace roc {
 namespace core {
@@ -28,7 +28,7 @@ public:
     //!  Implementation doesn't support calling before main(), i.e. before
     //!  static member are constructed.
     static T& instance() {
-        SpinMutex::Lock lock(mutex_);
+        Mutex::Lock lock(mutex_);
         if (!instance_) {
             new (instance_) T();
         }
@@ -36,11 +36,11 @@ public:
     }
 
 private:
-    static SpinMutex mutex_;
+    static Mutex mutex_;
     static Maybe<T> instance_;
 };
 
-template <class T> SpinMutex Singleton<T>::mutex_;
+template <class T> Mutex Singleton<T>::mutex_;
 template <class T> Maybe<T> Singleton<T>::instance_;
 
 } // namespace core
