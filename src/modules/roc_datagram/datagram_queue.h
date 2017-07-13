@@ -17,7 +17,7 @@
 
 #include "roc_core/list.h"
 #include "roc_core/noncopyable.h"
-#include "roc_core/spin_mutex.h"
+#include "roc_core/mutex.h"
 
 #include "roc_datagram/idatagram_reader.h"
 #include "roc_datagram/idatagram_writer.h"
@@ -47,9 +47,9 @@ public:
     size_t size() const;
 
 private:
-    typedef core::SpinMutex::Lock Lock;
+    typedef core::Mutex::Lock Lock;
 
-    core::SpinMutex mutex_;
+    core::Mutex mutex_;
     core::List<IDatagram> list_;
 
     const size_t max_size_;
