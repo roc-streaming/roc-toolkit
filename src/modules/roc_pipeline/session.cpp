@@ -132,7 +132,7 @@ audio::IStreamReader* Session::make_stream_reader_(packet::IPacketReader& packet
 
         stream_reader = new (resamplers_[ch])
             audio::Resampler(*stream_reader, *config_.sample_buffer_composer,
-                             config_.samples_per_resampler_frame);
+                        config_.resampler_length, config_.samples_per_resampler_frame);
 
         scaler_->add_resampler(*resamplers_[ch]);
     }
