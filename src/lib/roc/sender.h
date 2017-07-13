@@ -21,13 +21,13 @@ extern "C" {
 
 typedef struct roc_sender roc_sender;
 
-roc_sender* roc_sender_new(const roc_config* config);
+ROC_API roc_sender* roc_sender_new(const roc_config* config);
 
-void roc_sender_delete(roc_sender* sender);
+ROC_API void roc_sender_delete(roc_sender* sender);
 
-bool roc_sender_bind(roc_sender* sender, const char* address);
+ROC_API bool roc_sender_bind(roc_sender* sender, const char* address);
 
-ssize_t
+ROC_API ssize_t
 roc_sender_write(roc_sender* sender, const float* samples, const size_t n_samples);
 
 #ifdef __cplusplus

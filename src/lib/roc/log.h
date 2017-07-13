@@ -12,6 +12,8 @@
 #ifndef ROC_LOG_H_
 #define ROC_LOG_H_
 
+#include "roc/types.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -37,7 +39,7 @@ typedef void (*roc_log_handler)(roc_log_level level,
 //!
 //! @note
 //!  Default log level is ROC_LOG_ERROR.
-void roc_log_set_level(roc_log_level level);
+ROC_API void roc_log_set_level(roc_log_level level);
 
 //! Set log handler.
 //!
@@ -48,7 +50,7 @@ void roc_log_set_level(roc_log_level level);
 //! @note
 //!  Default log handler is NULL, so that messages are printed to
 //!  stderr by default.
-void roc_log_set_handler(roc_log_handler handler);
+ROC_API void roc_log_set_handler(roc_log_handler handler);
 
 #ifdef __cplusplus
 }

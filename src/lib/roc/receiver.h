@@ -21,13 +21,13 @@ extern "C" {
 
 typedef struct roc_receiver roc_receiver;
 
-roc_receiver* roc_receiver_new(const roc_config* config);
+ROC_API roc_receiver* roc_receiver_new(const roc_config* config);
 
-void roc_receiver_delete(roc_receiver* receiver);
+ROC_API void roc_receiver_delete(roc_receiver* receiver);
 
-bool roc_receiver_bind(roc_receiver* receiver, const char* address);
+ROC_API bool roc_receiver_bind(roc_receiver* receiver, const char* address);
 
-ssize_t roc_receiver_read(roc_receiver* receiver, float* samples, const size_t n_samples);
+ROC_API ssize_t roc_receiver_read(roc_receiver* receiver, float* samples, const size_t n_samples);
 
 #ifdef __cplusplus
 }
