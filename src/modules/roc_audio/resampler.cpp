@@ -7,19 +7,14 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_core/log.h"
-#include "roc_core/panic.h"
-
 #include "roc_audio/resampler.h"
-
-// #define _USE_MATH_DEFINES
-#include <math.h>
-#include "roc_core/math.h"
+#include "roc_core/log.h"
+#include "roc_core/macros.h"
+#include "roc_core/panic.h"
+#include "roc_core/stddefs.h"
 
 namespace roc {
 namespace audio {
-
-using packet::sample_t;
 
 namespace {
 
@@ -69,37 +64,34 @@ inline float fractional(const fixedpoint_t x) {
 
 } // namespace
 
-Resampler::Resampler(IStreamReader& reader,
-                     ISampleBufferComposer& composer,
-                     size_t window_len, size_t frame_size,
+Resampler::Resampler(IReader& reader,
+                     core::BufferPool<sample_t>& buffer_pool,
+                     core::IAllocator& allocator,
+                     const ResamplerConfig& config,
                      packet::channel_mask_t channels)
     : channel_mask_(channels)
     , channels_num_(packet::num_channels(channel_mask_))
     , reader_(reader)
-    , window_(3)
     , scaling_(1.0)
-    , frame_size_(frame_size)
-    , channel_len_(frame_size/channels_num_)
-    , window_len_(window_len)
+    , frame_size_(config.frame_size)
+    , channel_len_(frame_size_ / channels_num_)
+    , window_len_(config.window_size)
     , qt_half_sinc_window_len_(float_to_fixedpoint(window_len_))
     , window_interp_(512)
     , window_interp_bits_(9)
-    , sinc_table_(window_len_ * window_interp_ + 2)
+    , sinc_table_(allocator, window_len_ * window_interp_ + 2)
     , qt_half_window_len_(float_to_fixedpoint((float)window_len_ / scaling_))
-    , G_qt_epsilon_(float_to_fixedpoint(5e-8f))
-    , G_default_sample_(float_to_fixedpoint(0))
+    , qt_epsilon_(float_to_fixedpoint(5e-8f))
+    , default_sample_(float_to_fixedpoint(0))
     , qt_frame_size_(fixedpoint_t(channel_len_ << FRACT_BIT_COUNT))
-    , qt_sample_(G_default_sample_)
+    , qt_sample_(default_sample_)
     , qt_dt_(0)
-    , cutoff_freq_(0.9f)
-    {
-
-    roc_panic_if(frame_size_ != channel_len_*channels_num_);
+    , cutoff_freq_(0.9f) {
+    roc_panic_if(frame_size_ != channel_len_ * channels_num_);
     roc_panic_if(((fixedpoint_t)-1 >> FRACT_BIT_COUNT) < channel_len_);
     roc_panic_if(channels_num_ < 1);
-    init_window_(composer);
+    init_window_(buffer_pool);
     fill_sinc();
-
     roc_panic_if_not(set_scaling(1.0f));
 }
 
@@ -115,8 +107,9 @@ bool Resampler::set_scaling(float scaling) {
     // In both cases it's sensible to decrease the edge frequency to leave
     // some.
     if (scaling_ > 1.0f) {
-        qt_sinc_step_ = float_to_fixedpoint(cutoff_freq_/scaling_);
-        qt_half_window_len_ = float_to_fixedpoint((float)window_len_ / cutoff_freq_ * scaling_);
+        qt_sinc_step_ = float_to_fixedpoint(cutoff_freq_ / scaling_);
+        qt_half_window_len_ =
+            float_to_fixedpoint((float)window_len_ / cutoff_freq_ * scaling_);
     } else {
         qt_sinc_step_ = float_to_fixedpoint(cutoff_freq_);
         qt_half_window_len_ = float_to_fixedpoint((float)window_len_ / cutoff_freq_);
@@ -125,14 +118,14 @@ bool Resampler::set_scaling(float scaling) {
     return true;
 }
 
-void Resampler::read(const ISampleBufferSlice& buff) {
-    sample_t* buff_data = buff.data();
+void Resampler::read(Frame& frame) {
+    sample_t* buff_data = frame.samples.data();
     roc_panic_if(buff_data == NULL);
 
-    size_t buff_size = buff.size();
+    size_t buff_size = frame.samples.size();
 
     if (curr_frame_ == NULL) {
-        qt_sample_ = G_default_sample_;
+        qt_sample_ = default_sample_;
         renew_window_();
     }
 
@@ -142,28 +135,29 @@ void Resampler::read(const ISampleBufferSlice& buff) {
             renew_window_();
         }
 
-        if ((qt_sample_ & FRACT_PART_MASK) < G_qt_epsilon_) {
+        if ((qt_sample_ & FRACT_PART_MASK) < qt_epsilon_) {
             qt_sample_ &= INTEGER_PART_MASK;
-        } else if ((G_qt_one - (qt_sample_ & FRACT_PART_MASK)) < G_qt_epsilon_) {
+        } else if ((G_qt_one - (qt_sample_ & FRACT_PART_MASK)) < qt_epsilon_) {
             qt_sample_ &= INTEGER_PART_MASK;
             qt_sample_ += G_qt_one;
         }
 
         for (size_t channel = 0; channel < channels_num_; ++channel) {
-            buff_data[n+channel] = resample_(channel);
+            buff_data[n + channel] = resample_(channel);
         }
         qt_sample_ += qt_dt_;
     }
 }
 
-void Resampler::init_window_(ISampleBufferComposer& composer) {
+void Resampler::init_window_(core::BufferPool<sample_t>& buffer_pool) {
     roc_log(LogDebug, "resampler: initializing window");
 
-    for (size_t n = 0; n < window_.size(); n++) {
-        if (!(window_[n] = composer.compose())) {
-            roc_panic("resampler: can't compose buffer in constructor");
+    for (size_t n = 0; n < 3; n++) {
+        window_[n].samples = new (buffer_pool) core::Buffer<sample_t>(buffer_pool);
+        if (!window_[n].samples) {
+            roc_panic("resampler: can't allocate buffer");
         }
-        window_[n]->set_size(frame_size_);
+        window_[n].samples.resize(frame_size_);
     }
 
     prev_frame_ = NULL;
@@ -178,32 +172,38 @@ void Resampler::renew_window_() {
     qt_dt_ = float_to_fixedpoint(scaling_);
 
     if (curr_frame_ == NULL) {
-        reader_.read(*window_[0]);
-        reader_.read(*window_[1]);
-        reader_.read(*window_[2]);
+        reader_.read(window_[0]);
+        reader_.read(window_[1]);
+        reader_.read(window_[2]);
     } else {
-        window_.rotate(1);
-        reader_.read(*window_.back());
-        roc_panic_if(window_.back()->size() != channel_len_*channels_num_);
+        Frame temp = window_[0];
+        window_[0] = window_[1];
+        window_[1] = window_[2];
+        window_[2] = temp;
+        reader_.read(window_[2]);
+        roc_panic_if(window_[2].samples.size() != channel_len_ * channels_num_);
     }
 
-    prev_frame_ = window_[0]->data();
-    curr_frame_ = window_[1]->data();
-    next_frame_ = window_[2]->data();
+    prev_frame_ = window_[0].samples.data();
+    curr_frame_ = window_[1].samples.data();
+    next_frame_ = window_[2].samples.data();
 }
 
 void Resampler::fill_sinc() {
-    const double sinc_step = 1.0/(double)window_interp_;
+    sinc_table_.resize(sinc_table_.max_size());
+    const double sinc_step = 1.0 / (double)window_interp_;
     double sinc_t = sinc_step;
     sinc_table_[0] = 1.0f;
     for (size_t i = 1; i < sinc_table_.size(); ++i) {
         // const float window = 1;
-        const double window = 0.54 - 0.46*cos(2*M_PI * ((double)(i-1) / 2.0 / (double)sinc_table_.size() + 0.5));
+        const double window = 0.54
+            - 0.46 * cos(2 * M_PI
+                         * ((double)(i - 1) / 2.0 / (double)sinc_table_.size() + 0.5));
         sinc_table_[i] = (float)(sin(M_PI * sinc_t) / M_PI / sinc_t * window);
         sinc_t += sinc_step;
     }
-    sinc_table_[sinc_table_.size()-2] = 0;
-    sinc_table_[sinc_table_.size()-1] = 0;
+    sinc_table_[sinc_table_.size() - 2] = 0;
+    sinc_table_[sinc_table_.size() - 1] = 0;
 }
 
 // Computes sinc value in x position using linear interpolation between
@@ -254,13 +254,14 @@ sample_t Resampler::resample_(const size_t channel_offset) {
     ind_begin_cur = channelize_index(ind_begin_cur, channel_offset);
 
     ind_end_cur = ((qt_sample_ + qt_half_window_len_) > qt_frame_size_)
-        ? channel_len_-1
+        ? channel_len_ - 1
         : fixedpoint_to_size(qfloor(qt_sample_ + qt_half_window_len_));
     roc_panic_if(ind_end_cur > channel_len_);
     ind_end_cur = channelize_index(ind_end_cur, channel_offset);
 
     ind_end_next = ((qt_sample_ + qt_half_window_len_) > qt_frame_size_)
-        ? fixedpoint_to_size(qfloor(qt_sample_ + qt_half_window_len_ - qt_frame_size_))+1
+        ? fixedpoint_to_size(qfloor(qt_sample_ + qt_half_window_len_ - qt_frame_size_))
+            + 1
         : 0;
     roc_panic_if(ind_end_next > channel_len_);
     ind_end_next = channelize_index(ind_end_next, channel_offset);
@@ -269,7 +270,8 @@ sample_t Resampler::resample_(const size_t channel_offset) {
     // t_sinc = (t_sample - ceil( t_sample - window_len/cutoff*scale )) * sinc_step
     const long_fixedpoint_t qt_cur_ = qt_frame_size_ + qt_sample_
         - qceil(qt_frame_size_ + qt_sample_ - qt_half_window_len_);
-    fixedpoint_t qt_sinc_cur = (fixedpoint_t)((qt_cur_ * (long_fixedpoint_t)qt_sinc_step_) >> FRACT_BIT_COUNT);
+    fixedpoint_t qt_sinc_cur =
+        (fixedpoint_t)((qt_cur_ * (long_fixedpoint_t)qt_sinc_step_) >> FRACT_BIT_COUNT);
 
     // sinc_table defined in positive half-plane, so at the begining of the window
     // qt_sinc_cur starts decreasing and after we cross 0 it will be increasing

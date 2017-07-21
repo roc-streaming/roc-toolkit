@@ -9,20 +9,16 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "roc_config/config.h"
-
 #include "roc_audio/freq_estimator.h"
 
 namespace roc {
-namespace test {
-
-using namespace audio;
+namespace audio {
 
 namespace {
 
-enum { Aim = ROC_CONFIG_DEFAULT_SESSION_LATENCY * 2, Iterations = 1000 };
+enum { Aim = 10000 };
 
-const double Epsilon = 1e-6;
+const float Epsilon = 0.0001f;
 
 } // namespace
 
@@ -37,7 +33,7 @@ TEST(freq_estimator, initial) {
 TEST(freq_estimator, aim_queue_size) {
     FreqEstimator fe(Aim);
 
-    for (size_t n = 0; n < Iterations; n++) {
+    for (size_t n = 0; n < 1000; n++) {
         fe.update(Aim);
     }
 
@@ -47,22 +43,18 @@ TEST(freq_estimator, aim_queue_size) {
 TEST(freq_estimator, large_queue_size) {
     FreqEstimator fe(Aim);
 
-    for (size_t n = 0; n < Iterations; n++) {
+    do {
         fe.update(Aim * 2);
-    }
-
-    CHECK(fe.freq_coeff() > 1.0f);
+    } while (fe.freq_coeff() < 1.01f);
 }
 
 TEST(freq_estimator, small_queue_size) {
     FreqEstimator fe(Aim);
 
-    for (size_t n = 0; n < Iterations; n++) {
+    do {
         fe.update(Aim / 2);
-    }
-
-    CHECK(fe.freq_coeff() < 1.0f);
+    } while (fe.freq_coeff() > 0.99f);
 }
 
-} // namespace test
+} // namespace audio
 } // namespace roc

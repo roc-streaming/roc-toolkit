@@ -13,19 +13,16 @@
 #ifndef ROC_AUDIO_MIXER_H_
 #define ROC_AUDIO_MIXER_H_
 
-#include "roc_config/config.h"
-
+#include "roc_audio/ireader.h"
+#include "roc_audio/units.h"
+#include "roc_core/buffer_pool.h"
 #include "roc_core/list.h"
 #include "roc_core/noncopyable.h"
-
-#include "roc_audio/istream_reader.h"
-#include "roc_audio/sample_buffer.h"
 
 namespace roc {
 namespace audio {
 
 //! Mixer.
-//!
 //! Mixes multiple input streams into one output stream.
 //!
 //! For example, these two input streams:
@@ -38,24 +35,31 @@ namespace audio {
 //! @code
 //!  5, 7, 9, ...
 //! @endcode
-class Mixer : public IStreamReader, public core::NonCopyable<> {
+class Mixer : public IReader, public core::NonCopyable<> {
 public:
     //! Initialize.
-    explicit Mixer(ISampleBufferComposer& composer = default_buffer_composer());
+    //!
+    //! @b Parameters
+    //!  - @p buffer_pool is used to allocate a temporary chunk of samples
+    explicit Mixer(core::BufferPool<sample_t>& buffer_pool);
 
-    //! Read samples from output stream.
-    virtual void read(const ISampleBufferSlice&);
+    //! Read audio frame.
+    //! @remarks
+    //!  Reads samples from every input reader, mixes them, and fills @p frame
+    //!  with the result.
+    virtual void read(Frame& frame);
 
-    //! Add input stream.
-    void add(IStreamReader&);
+    //! Add input reader.
+    void add(IReader&);
 
-    //! Remove input stream.
-    void remove(IStreamReader&);
+    //! Remove input reader.
+    void remove(IReader&);
 
 private:
-    core::List<IStreamReader, core::NoOwnership> readers_;
+    core::BufferPool<sample_t>& buffer_pool_;
 
-    ISampleBufferPtr temp_;
+    core::List<IReader, core::NoOwnership> readers_;
+    Frame temp_;
 };
 
 } // namespace audio
