@@ -13,8 +13,8 @@
 #ifndef ROC_AUDIO_FREQ_ESTIMATOR_H_
 #define ROC_AUDIO_FREQ_ESTIMATOR_H_
 
-#include "roc_audio/freq_estimator_decim10_len.h"
-#include "roc_config/config.h"
+#include "roc_audio/freq_estimator_decim.h"
+#include "roc_audio/units.h"
 #include "roc_core/noncopyable.h"
 #include "roc_packet/units.h"
 
@@ -28,29 +28,25 @@ public:
     //!
     //! @b Parameters
     //!  - @p aim_queue_size defines queue size we want to archive.
-    FreqEstimator(
-        packet::timestamp_t aim_queue_size = ROC_CONFIG_DEFAULT_SESSION_LATENCY);
-
-    //! Compute new value of frequency coefficient.
-    void update(packet::timestamp_t queue_size);
+    FreqEstimator(packet::timestamp_t aim_queue_size);
 
     //! Get current frequecy coefficient.
     float freq_coeff() const;
 
-private:
-    // Sample type.
-    typedef packet::sample_t sample_t;
+    //! Compute new value of frequency coefficient.
+    void update(packet::timestamp_t current_queue_size);
 
+private:
     // Calculate regulator input.
     // `in' is current queue size.
     float fast_controller_(const sample_t in);
 
     const sample_t aim_; // Aim queue size.
 
-    sample_t dec1_casc_buff_[FREQ_EST_DECIM_10_LEN];
+    sample_t dec1_casc_buff_[fe_decim_len];
     size_t dec1_ind_;
 
-    sample_t dec2_casc_buff_[FREQ_EST_DECIM_10_LEN];
+    sample_t dec2_casc_buff_[fe_decim_len];
     size_t dec2_ind_;
 
     size_t samples_counter_; // Input samples counter.

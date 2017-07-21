@@ -13,48 +13,61 @@
 #ifndef ROC_AUDIO_RESAMPLER_H_
 #define ROC_AUDIO_RESAMPLER_H_
 
-#include "roc_core/circular_buffer.h"
+#include "roc_audio/frame.h"
+#include "roc_audio/ireader.h"
+#include "roc_audio/units.h"
+#include "roc_core/array.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/stddefs.h"
-#include "roc_core/array.h"
 #include "roc_packet/units.h"
-
-#include "roc_audio/istream_reader.h"
-#include "roc_audio/sample_buffer.h"
 
 namespace roc {
 namespace audio {
 
+//! Resampler parameters.
+struct ResamplerConfig {
+    //! Resampler internal window length.
+    size_t window_size;
+
+    //! Resampler internal frame size.
+    size_t frame_size;
+
+    ResamplerConfig()
+        : window_size(64)
+        , frame_size(256) {
+    }
+};
+
 //! Resamples audio stream with non-integer dynamically changing factor.
 //! @remarks
 //!  Typicaly being used with factor close to 1 ( 0.9 < factor < 1.1 ).
-class Resampler : public IStreamReader, public core::NonCopyable<> {
+class Resampler : public IReader, public core::NonCopyable<> {
 public:
     //! Initialize.
     //!
     //! @b Parameters
-    //!  - @p reader specifies input audio stream used in read();
-    //!  - @p composer is used to construct temporary buffers;
-    //!  - @p frame_size is number of samples per resampler frame per audio channel.
-    //!  - @p channels is the bitmask of audio channels.
-    explicit Resampler(IStreamReader& reader,
-                       ISampleBufferComposer& composer = default_buffer_composer(),
-                       size_t window_len = 64,
-                       size_t frame_size = ROC_CONFIG_DEFAULT_RESAMPLER_FRAME_SAMPLES,
-                       packet::channel_mask_t channels = 1);
+    //!  - @p reader specifies input audio stream used in read()
+    //!  - @p buffer_pool is used to allocate temporary buffers
+    //!  - @p frame_size is number of samples per resampler frame per audio channel
+    //!  - @p channels is the bitmask of audio channels
+    Resampler(IReader& reader,
+              core::BufferPool<sample_t>& buffer_pool,
+              core::IAllocator& allocator,
+              const ResamplerConfig& config,
+              packet::channel_mask_t channels);
 
-    //! Fills buffer of samples with new sampling frequency.
+    //! Read audio frame.
     //! @remarks
     //!  Calculates everything during this call so it may take time.
-    virtual void read(const ISampleBufferSlice&);
+    virtual void read(Frame&);
 
     //! Set new resample factor.
-    //!
-    //! Resampling algorithm needs some window of input samples. The length of the window
-    //! (length of sinc impulse response) is a compromise between SNR and speed. It
-    //! depends on current resampling factor. So we choose length of input buffers to let
-    //! it handle maximum length of input. If new scaling factor breaks equation this
-    //! function returns false.
+    //! @remarks
+    //!  Resampling algorithm needs some window of input samples. The length of the window
+    //!  (length of sinc impulse response) is a compromise between SNR and speed. It
+    //!  depends on current resampling factor. So we choose length of input buffers to let
+    //!  it handle maximum length of input. If new scaling factor breaks equation this
+    //!  function returns false.
     bool set_scaling(float);
 
 private:
@@ -62,8 +75,6 @@ private:
     typedef uint64_t long_fixedpoint_t;
     typedef int32_t signed_fixedpoint_t;
     typedef int64_t signed_long_fixedpoint_t;
-
-    typedef packet::sample_t sample_t;
 
     const packet::channel_mask_t channel_mask_;
     const size_t channels_num_;
@@ -78,16 +89,16 @@ private:
         return i * channels_num_ + ch_offset;
     }
 
-    void init_window_(ISampleBufferComposer&);
+    void init_window_(core::BufferPool<sample_t>&);
     void renew_window_();
     void fill_sinc();
     inline sample_t sinc_(const fixedpoint_t x, const float fract_x);
 
     // Input stream.
-    IStreamReader& reader_;
+    IReader& reader_;
 
-    // Input stream window (3 frames).
-    core::CircularBuffer<ISampleBufferPtr, 3> window_;
+    // Input stream window.
+    Frame window_[3];
 
     // Pointers to 3 frames of stream window.
     sample_t* prev_frame_;
@@ -96,7 +107,7 @@ private:
 
     //! Resampling factor.
     //!
-    //! s_out_step / s_in_step = Fs_from / Fs_to. 
+    //! s_out_step / s_in_step = Fs_from / Fs_to.
     float scaling_;
 
     // Frame size.
@@ -108,12 +119,12 @@ private:
     fixedpoint_t qt_half_sinc_window_len_;
     const size_t window_interp_;
     const size_t window_interp_bits_; //!< The number of bits in window_interp_.
-    core::Array<sample_t, 524288> sinc_table_;
+    core::Array<sample_t> sinc_table_;
 
-    // G_ft_half_window_len in Q8.24 in terms of input signal.
+    // half window len in Q8.24 in terms of input signal.
     fixedpoint_t qt_half_window_len_;
-    const fixedpoint_t G_qt_epsilon_;
-    const fixedpoint_t G_default_sample_;
+    const fixedpoint_t qt_epsilon_;
+    const fixedpoint_t default_sample_;
 
     // Frame size in Q8.24.
     const fixedpoint_t qt_frame_size_;
