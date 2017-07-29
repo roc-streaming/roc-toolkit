@@ -1,0 +1,83 @@
+/*
+ * Copyright (c) 2017 Mikhail Baranov
+ * Copyright (c) 2017 Victor Gaydov
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+
+//! @file roc_fec/parser.h
+//! @brief FECFRAME packet parser.
+
+#ifndef ROC_FEC_PARSER_H_
+#define ROC_FEC_PARSER_H_
+
+#include "roc_core/log.h"
+#include "roc_core/noncopyable.h"
+#include "roc_fec/headers.h"
+#include "roc_packet/iparser.h"
+
+namespace roc {
+namespace fec {
+
+//! FECFRAME packet parser.
+template <class PayloadID, PayloadID_Type Type, PayloadID_Pos Pos>
+class Parser : public packet::IParser, public core::NonCopyable<> {
+public:
+    //! Initialization.
+    //! @remarks
+    //!  Parses FECFRAME header or footer and passes the rest to @p inner_parser
+    //!  if it's not null.
+    Parser(packet::IParser* inner_parser)
+        : inner_parser_(inner_parser) {
+    }
+
+    //! Parse packet from buffer.
+    virtual bool parse(packet::Packet& packet, const core::Slice<uint8_t>& buffer) {
+        if (buffer.size() < sizeof(PayloadID)) {
+            roc_log(LogDebug, "fec parser: bad packet, size < %d (payload id)",
+                    (int)sizeof(PayloadID));
+            return false;
+        }
+
+        const PayloadID* payload_id;
+        if (Pos == Header) {
+            payload_id = (const PayloadID*)buffer.data();
+        } else {
+            payload_id =
+                (const PayloadID*)(buffer.data() + buffer.size() - sizeof(PayloadID));
+        }
+
+        if (Type == Repair) {
+            packet.add_flags(packet::Packet::FlagRepair);
+        }
+
+        packet.add_flags(packet::Packet::FlagFEC);
+
+        packet::FEC& fec = *packet.fec();
+
+        fec.source_blknum = (packet::seqnum_t)payload_id->sbn();
+        fec.repair_blknum = (packet::seqnum_t)payload_id->k(); // FIXME
+
+        if (Pos == Header) {
+            fec.payload = buffer.range(sizeof(PayloadID), buffer.size());
+        } else {
+            fec.payload = buffer.range(0, buffer.size() - sizeof(PayloadID));
+        }
+
+        if (inner_parser_) {
+            return inner_parser_->parse(packet, fec.payload);
+        }
+
+        return true;
+    }
+
+private:
+    packet::IParser* inner_parser_;
+};
+
+} // namespace fec
+} // namespace roc
+
+#endif // ROC_FEC_PARSER_H_

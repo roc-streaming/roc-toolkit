@@ -7,16 +7,12 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_fec/iblock_decoder.h"
-#include "roc_fec/iblock_encoder.h"
+#include "roc_fec/iencoder.h"
 
 namespace roc {
 namespace fec {
 
-IBlockEncoder::~IBlockEncoder() {
-}
-
-IBlockDecoder::~IBlockDecoder() {
+IEncoder::~IEncoder() {
 }
 
 } // namespace fec
