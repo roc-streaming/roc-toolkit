@@ -18,15 +18,15 @@
 namespace roc {
 namespace fec {
 
-//! Available options of FEC code type.
+//! FEC code type.
 enum CodecType {
-    //! FEC codec is unset.
+    //! FEC is disabled.
     NoCodec,
 
     //! OpenFEC Reed-Solomon.
-    ReedSolomon2m,
+    ReedSolomon8m,
 
-    //! OpenFEC LDPC Staircase.
+    //! OpenFEC LDPC-Staircase.
     LDPCStaircase,
 
     //! Maximum for iterating through the enum.
@@ -35,15 +35,6 @@ enum CodecType {
 
 //! FEC configuration.
 struct Config {
-    Config()
-        : codec(NoCodec)
-        , n_source_packets(ROC_CONFIG_DEFAULT_FEC_BLOCK_SOURCE_PACKETS)
-        , n_repair_packets(ROC_CONFIG_DEFAULT_FEC_BLOCK_REPAIR_PACKETS)
-        , ldpc_prng_seed(1297501556)
-        , ldpc_N1(7)
-        , rs_m(8) {
-    }
-
     //! FEC codec.
     CodecType codec;
 
@@ -61,6 +52,15 @@ struct Config {
 
     //! Configuration for ReedSolomon scheme.
     uint16_t rs_m;
+
+    Config()
+        : codec(NoCodec)
+        , n_source_packets(20)
+        , n_repair_packets(10)
+        , ldpc_prng_seed(1297501556)
+        , ldpc_N1(7)
+        , rs_m(8) {
+    }
 };
 
 } // namespace fec
