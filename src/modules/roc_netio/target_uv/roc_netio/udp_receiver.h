@@ -15,53 +15,41 @@
 
 #include <uv.h>
 
-#include "roc_config/config.h"
-
-#include "roc_core/array.h"
-#include "roc_core/byte_buffer.h"
-#include "roc_core/noncopyable.h"
-
-#include "roc_datagram/address.h"
-#include "roc_datagram/idatagram_writer.h"
-
-#include "roc_netio/udp_composer.h"
-#include "roc_netio/udp_datagram.h"
+#include "roc_core/buffer_pool.h"
+#include "roc_core/iallocator.h"
+#include "roc_core/list_node.h"
+#include "roc_core/refcnt.h"
+#include "roc_packet/address.h"
+#include "roc_packet/iwriter.h"
+#include "roc_packet/packet_pool.h"
 
 namespace roc {
 namespace netio {
 
 //! UDP receiver.
-class UDPReceiver : public core::NonCopyable<> {
+class UDPReceiver : public core::RefCnt<UDPReceiver>, public core::ListNode {
 public:
     //! Initialize.
-    UDPReceiver(core::IByteBufferComposer& buf_composer, UDPComposer& dgm_composer);
+    UDPReceiver(uv_loop_t& event_loop,
+                packet::IWriter& writer,
+                packet::PacketPool& packet_pool,
+                core::BufferPool<uint8_t>& buffer_pool,
+                core::IAllocator& allocator);
 
     //! Destroy.
     ~UDPReceiver();
 
-    //! Attach to event loop.
-    void attach(uv_loop_t&);
+    //! Start receiver.
+    //! @remarks
+    //!  Should be called from the event loop thread.
+    bool start(packet::Address& bind_address);
 
-    //! Detach from event loop.
-    void detach(uv_loop_t&);
-
-    //! Add receiving port.
-    bool add_port(const datagram::Address&, datagram::IDatagramWriter&);
+    //! Asynchronous stop.
+    //! @remarks
+    //!  Should be called from the event loop thread.
+    void stop();
 
 private:
-    enum { MaxPorts = ROC_CONFIG_MAX_PORTS };
-
-    struct Port : core::NonCopyable<> {
-        uv_udp_t handle;
-
-        datagram::Address address;
-        datagram::IDatagramWriter* writer;
-
-        Port()
-            : writer(NULL) {
-        }
-    };
-
     static void alloc_cb_(uv_handle_t* handle, size_t size, uv_buf_t* buf);
     static void recv_cb_(uv_udp_t* handle,
                          ssize_t nread,
@@ -69,16 +57,25 @@ private:
                          const sockaddr* addr,
                          unsigned flags);
 
-    bool open_port_(Port& port);
-    void close_port_(Port& port);
+    friend class core::RefCnt<UDPReceiver>;
 
-    core::Array<Port, MaxPorts> ports_;
-    uv_loop_t* loop_;
+    void destroy();
 
-    core::IByteBufferComposer& buf_composer_;
-    UDPComposer& dgm_composer_;
+    core::IAllocator& allocator_;
 
-    unsigned number_;
+    uv_loop_t& loop_;
+
+    uv_udp_t handle_;
+    bool handle_initialized_;
+
+    packet::Address address_;
+
+    packet::IWriter& writer_;
+
+    packet::PacketPool& packet_pool_;
+    core::BufferPool<uint8_t>& buffer_pool_;
+
+    unsigned packet_counter_;
 };
 
 } // namespace netio
