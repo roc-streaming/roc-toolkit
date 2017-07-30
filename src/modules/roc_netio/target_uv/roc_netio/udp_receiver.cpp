@@ -7,125 +7,101 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_core/helpers.h"
+#include "roc_netio/udp_receiver.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
-
-#include "roc_datagram/address_to_str.h"
-
-#include "roc_netio/inet_address.h"
-#include "roc_netio/udp_receiver.h"
+#include "roc_core/shared_ptr.h"
+#include "roc_packet/address_to_str.h"
 
 namespace roc {
 namespace netio {
 
-UDPReceiver::UDPReceiver(core::IByteBufferComposer& buf_composer,
-                         UDPComposer& dgm_composer)
-    : loop_(NULL)
-    , buf_composer_(buf_composer)
-    , dgm_composer_(dgm_composer)
-    , number_(0) {
+UDPReceiver::UDPReceiver(uv_loop_t& event_loop,
+                         packet::IWriter& writer,
+                         packet::PacketPool& packet_pool,
+                         core::BufferPool<uint8_t>& buffer_pool,
+                         core::IAllocator& allocator)
+    : allocator_(allocator)
+    , loop_(event_loop)
+    , handle_initialized_(false)
+    , writer_(writer)
+    , packet_pool_(packet_pool)
+    , buffer_pool_(buffer_pool)
+    , packet_counter_(0) {
 }
 
 UDPReceiver::~UDPReceiver() {
-    if (loop_) {
-        roc_panic("udp receiver: detach() was not called before destructor");
-    }
+    stop();
 }
 
-void UDPReceiver::attach(uv_loop_t& loop) {
-    roc_log(LogDebug, "udp receiver: attaching to event loop");
-
-    roc_panic_if(loop_);
-
-    loop_ = &loop;
+void UDPReceiver::destroy() {
+    allocator_.destroy(*this);
 }
 
-void UDPReceiver::detach(uv_loop_t& loop) {
-    roc_log(LogDebug, "udp receiver: detaching from event loop");
-
-    roc_panic_if(loop_ != &loop);
-
-    for (size_t n = 0; n < ports_.size(); n++) {
-        close_port_(ports_[n]);
-    }
-
-    loop_ = NULL;
-}
-
-bool UDPReceiver::add_port(const datagram::Address& address,
-                           datagram::IDatagramWriter& writer) {
-    roc_log(LogInfo, "udp receiver: adding port %s",
-            datagram::address_to_str(address).c_str());
-
-    if (!loop_) {
-        roc_panic("udp receiver: not attached to event loop");
-    }
-
-    if (ports_.size() == ports_.max_size()) {
-        roc_panic("udp receiver: can't add more than %ld ports", (long)ports_.max_size());
-    }
-
-    Port* port = new (ports_.allocate()) Port;
-
-    port->address = address;
-    port->writer = &writer;
-
-    if (!open_port_(*port)) {
-        roc_log(LogError, "udp receiver: can't add port %s",
-                datagram::address_to_str(address).c_str());
-
-        ports_.resize(ports_.size() - 1);
-        return false;
-    }
-
-    return true;
-}
-
-bool UDPReceiver::open_port_(Port& port) {
+bool UDPReceiver::start(packet::Address& bind_address) {
     roc_log(LogDebug, "udp receiver: opening port %s",
-            datagram::address_to_str(port.address).c_str());
+            packet::address_to_str(bind_address).c_str());
 
-    if (int err = uv_udp_init(loop_, &port.handle)) {
+    if (int err = uv_udp_init(&loop_, &handle_)) {
         roc_log(LogError, "udp receiver: uv_udp_init(): [%s] %s", uv_err_name(err),
                 uv_strerror(err));
         return false;
     }
 
-    port.handle.data = this;
+    handle_.data = this;
+    handle_initialized_ = true;
 
-    sockaddr_in inet_addr;
-    to_inet_address(port.address, inet_addr);
-
-    if (int err = uv_udp_bind(&port.handle, (sockaddr*)&inet_addr, UV_UDP_REUSEADDR)) {
+    if (int err = uv_udp_bind(&handle_, bind_address.saddr(), UV_UDP_REUSEADDR)) {
         roc_log(LogError, "udp receiver: uv_udp_bind(): [%s] %s", uv_err_name(err),
                 uv_strerror(err));
         return false;
     }
 
-    if (int err = uv_udp_recv_start(&port.handle, alloc_cb_, recv_cb_)) {
+    int addrlen = (int)bind_address.slen();
+    if (int err = uv_udp_getsockname(&handle_, bind_address.saddr(), &addrlen)) {
+        roc_log(LogError, "udp receiver: uv_udp_getsockname(): [%s] %s", uv_err_name(err),
+                uv_strerror(err));
+        return false;
+    }
+
+    if (addrlen != (int)bind_address.slen()) {
+        roc_log(
+            LogError,
+            "udp receiver: uv_udp_getsockname(): unexpected len: got=%lu expected=%lu",
+            (unsigned long)addrlen, (unsigned long)bind_address.slen());
+        return false;
+    }
+
+    if (int err = uv_udp_recv_start(&handle_, alloc_cb_, recv_cb_)) {
         roc_log(LogError, "udp receiver: uv_udp_recv_start(): [%s] %s", uv_err_name(err),
                 uv_strerror(err));
         return false;
     }
 
+    address_ = bind_address;
     return true;
 }
 
-void UDPReceiver::close_port_(Port& port) {
-    if (uv_is_closing((uv_handle_t*)&port.handle)) {
+void UDPReceiver::stop() {
+    if (!handle_initialized_) {
+        return;
+    }
+
+    handle_initialized_ = false;
+
+    if (uv_is_closing((uv_handle_t*)&handle_)) {
         return;
     }
 
     roc_log(LogDebug, "udp receiver: closing port %s",
-            datagram::address_to_str(port.address).c_str());
+            packet::address_to_str(address_).c_str());
 
-    if (int err = uv_udp_recv_stop(&port.handle)) {
+    if (int err = uv_udp_recv_stop(&handle_)) {
         roc_log(LogError, "udp receiver: uv_udp_recv_stop(): [%s] %s", uv_err_name(err),
                 uv_strerror(err));
     }
 
-    uv_close((uv_handle_t*)&port.handle, NULL);
+    uv_close((uv_handle_t*)&handle_, NULL);
 }
 
 void UDPReceiver::alloc_cb_(uv_handle_t* handle, size_t size, uv_buf_t* buf) {
@@ -136,9 +112,11 @@ void UDPReceiver::alloc_cb_(uv_handle_t* handle, size_t size, uv_buf_t* buf) {
 
     UDPReceiver& self = *(UDPReceiver*)handle->data;
 
-    core::IByteBufferPtr bp = self.buf_composer_.compose();
+    core::SharedPtr<core::Buffer<uint8_t> > bp =
+        new (self.buffer_pool_) core::Buffer<uint8_t>(self.buffer_pool_);
+
     if (!bp) {
-        roc_log(LogError, "udp receiver: can't get buffer from pool");
+        roc_log(LogError, "udp receiver: can't allocate buffer");
 
         buf->base = NULL;
         buf->len = 0;
@@ -146,16 +124,15 @@ void UDPReceiver::alloc_cb_(uv_handle_t* handle, size_t size, uv_buf_t* buf) {
         return;
     }
 
-    if (size > bp->max_size()) {
+    if (size > bp->size()) {
         roc_log(LogTrace, "udp receiver: truncating buffer size:"
                           " suggested=%ld max=%ld",
-                (long)size, (long)bp->max_size());
+                (long)size, (long)bp->size());
 
-        size = bp->max_size();
+        size = bp->size();
     }
 
-    bp->set_size(size);
-    bp->incref(); // Will be decremented in recv_cb_().
+    bp->incref(); // will be decremented in recv_cb_()
 
     buf->base = (char*)bp->data();
     buf->len = size;
@@ -164,72 +141,62 @@ void UDPReceiver::alloc_cb_(uv_handle_t* handle, size_t size, uv_buf_t* buf) {
 void UDPReceiver::recv_cb_(uv_udp_t* handle,
                            ssize_t nread,
                            const uv_buf_t* buf,
-                           const sockaddr* inet_addr,
+                           const sockaddr* sockaddr,
                            unsigned flags) {
     roc_panic_if_not(handle);
     roc_panic_if_not(buf);
 
     UDPReceiver& self = *(UDPReceiver*)handle->data;
-    self.number_++;
+    self.packet_counter_++;
 
-    const Port* port = ROC_CONTAINER_OF(handle, Port, handle);
-
-    datagram::Address sender_addr;
-    if (inet_addr) {
-        from_inet_address(*(const sockaddr_in*)inet_addr, sender_addr);
+    packet::Address src_addr;
+    if (sockaddr) {
+        if (!src_addr.set_saddr(sockaddr)) {
+            roc_log(LogError, "udp receiver: can't determine source address");
+        }
     }
 
-    roc_log(LogTrace, "udp receiver: got datagram: num=%u src=%s dst=%s nread=%ld",
-            self.number_,                                    //
-            datagram::address_to_str(sender_addr).c_str(),   //
-            datagram::address_to_str(port->address).c_str(), //
-            (long)nread);
+    roc_log(LogTrace, "udp receiver: got packet: num=%u src=%s dst=%s nread=%ld",
+            self.packet_counter_, packet::address_to_str(src_addr).c_str(),
+            packet::address_to_str(self.address_).c_str(), (long)nread);
 
-    // To preventr leak, capture smart pointer before returning.
-    core::IByteBufferPtr bp = self.buf_composer_.container_of((uint8_t*)buf->base);
+    core::SharedPtr<core::Buffer<uint8_t> > bp =
+        core::Buffer<uint8_t>::container_of(buf->base);
 
-    // Recheck size.
-    roc_panic_if(bp->size() != buf->len);
-
-    // One reference for incref() called from alloc_cb_(),
-    // one more for local smart pointer.
+    // one reference for incref() called from alloc_cb_()
+    // one reference for the shared pointer above
     roc_panic_if(bp->getref() != 2);
 
-    // Decrement reference counter incremented in alloc_cb_().
+    // decrement reference counter incremented in alloc_cb_()
     bp->decref();
 
     if (nread < 0) {
         roc_log(LogError, "udp receiver: network error: num=%u src=%s dst=%s nread=%ld",
-                self.number_,                                    //
-                datagram::address_to_str(sender_addr).c_str(),   //
-                datagram::address_to_str(port->address).c_str(), //
-                (long)nread);
+                self.packet_counter_, packet::address_to_str(src_addr).c_str(),
+                packet::address_to_str(self.address_).c_str(), (long)nread);
         return;
     }
 
     if (nread == 0) {
-        if (inet_addr == NULL) {
+        if (!sockaddr) {
             // no more data for now
         } else {
-            roc_log(LogTrace, "udp receiver: empty datagram: num=%u src=%s dst=%s",
-                    self.number_,                                  //
-                    datagram::address_to_str(sender_addr).c_str(), //
-                    datagram::address_to_str(port->address).c_str());
+            roc_log(LogTrace, "udp receiver: empty packet: num=%u src=%s dst=%s",
+                    self.packet_counter_, packet::address_to_str(src_addr).c_str(),
+                    packet::address_to_str(self.address_).c_str());
         }
         return;
     }
 
-    if (inet_addr == NULL) {
+    if (!sockaddr) {
         roc_panic("udp receiver: unexpected null source address");
     }
 
     if (flags & UV_UDP_PARTIAL) {
         roc_log(LogDebug, "udp receiver:"
                           " ignoring partial read: num=%u src=%s dst=%s nread=%ld",
-                self.number_,                                    //
-                datagram::address_to_str(sender_addr).c_str(),   //
-                datagram::address_to_str(port->address).c_str(), //
-                (long)nread);
+                self.packet_counter_, packet::address_to_str(src_addr).c_str(),
+                packet::address_to_str(self.address_).c_str(), (long)nread);
         return;
     }
 
@@ -238,19 +205,20 @@ void UDPReceiver::recv_cb_(uv_udp_t* handle,
                   (long)bp->size());
     }
 
-    bp->set_size((size_t)nread);
-
-    datagram::IDatagramPtr dgm = self.dgm_composer_.compose();
-    if (!dgm) {
-        roc_log(LogError, "udp receiver: composer returned null");
+    packet::PacketPtr pp = new (self.packet_pool_) packet::Packet(self.packet_pool_);
+    if (!pp) {
+        roc_log(LogError, "udp receiver: can't allocate packet");
         return;
     }
 
-    dgm->set_receiver(port->address);
-    dgm->set_sender(sender_addr);
-    dgm->set_buffer(*bp);
+    pp->add_flags(packet::Packet::FlagUDP);
 
-    port->writer->write(dgm);
+    pp->udp()->src_addr = src_addr;
+    pp->udp()->dst_addr = self.address_;
+
+    pp->set_data(core::Slice<uint8_t>(*bp, 0, (size_t)nread));
+
+    self.writer_.write(pp);
 }
 
 } // namespace netio

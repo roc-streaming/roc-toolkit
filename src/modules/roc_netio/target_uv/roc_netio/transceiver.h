@@ -16,86 +16,96 @@
 #include <uv.h>
 
 #include "roc_core/atomic.h"
-#include "roc_core/noncopyable.h"
+#include "roc_core/buffer_pool.h"
+#include "roc_core/iallocator.h"
+#include "roc_core/list.h"
 #include "roc_core/thread.h"
-
-#include "roc_datagram/default_buffer_composer.h"
-#include "roc_datagram/idatagram_composer.h"
-#include "roc_datagram/idatagram_writer.h"
-
-#include "roc_netio/udp_composer.h"
 #include "roc_netio/udp_receiver.h"
 #include "roc_netio/udp_sender.h"
+#include "roc_packet/address.h"
+#include "roc_packet/iwriter.h"
+#include "roc_packet/packet_pool.h"
 
 namespace roc {
 namespace netio {
 
 //! Network sender/receiver.
-class Transceiver : public core::Thread, public core::NonCopyable<> {
+class Transceiver : public core::Thread {
 public:
     //! Initialize.
-    Transceiver(
-        core::IByteBufferComposer& buf_composer = datagram::default_buffer_composer(),
-        core::IPool<UDPDatagram>& dgm_pool = core::HeapPool<UDPDatagram>::instance());
+    Transceiver(packet::PacketPool& packet_pool,
+                core::BufferPool<uint8_t>& buffer_pool,
+                core::IAllocator& allocator);
 
-    ~Transceiver();
+    virtual ~Transceiver();
+
+    //! Check if trasceiver was successfully constructed.
+    bool valid() const;
 
     //! Add UDP datagram receiver.
-    //! @remarks
-    //!  Datagrams received on @p address will be passed to @p writer.
-    //! @note
-    //!  Writer will be called from network thread.
+    //!
+    //! Creates a new UDP receiver and bind it to @p bind_address. The receiver
+    //! will pass packets to @p writer. Writer will be called from the network
+    //! thread. It should not block.
+    //!
+    //! If IP is zero, INADDR_ANY is used, i.e. the socket is bound to all network
+    //! interfaces. If port is zero, a random free port is selected and written
+    //! back to @p bind_address.
+    //!
+    //! @returns
+    //!  true on success or false if error occured
+    //!
     //! @pre
-    //!  In current implementation, this method should be called before
-    //!  starting thread using start().
-    bool add_udp_receiver(const datagram::Address& address,
-                          datagram::IDatagramWriter& writer);
+    //!  Should be called before start().
+    bool add_udp_receiver(packet::Address& bind_address, packet::IWriter& writer);
 
     //! Add UDP datagram sender.
-    //! @remarks
-    //!  After this call, udp_sender() may be used to send datagrams with
-    //!  @p address set as sender address.
+    //!
+    //! Creates a new UDP sender, bind to @p bind_address, and returns a writer
+    //! that may be used to send packets from this address. Writer may be called
+    //! from any thread. It will not block the caller.
+    //!
+    //! If IP is zero, INADDR_ANY is used, i.e. the socket is bound to all network
+    //! interfaces. If port is zero, a random free port is selected and written
+    //! back to @p bind_address.
+    //!
+    //! @returns
+    //!  a new packet writer on success or null if error occured
+    //!
     //! @pre
-    //!  In current implementation, this method should be called before
-    //!  starting thread using start().
-    bool add_udp_sender(const datagram::Address& address);
+    //!  Should be called before start().
+    packet::IWriter* add_udp_sender(packet::Address& bind_address);
 
-    //! Get UDP datagram composer.
+    //! Asynchronous stop.
     //! @remarks
-    //!  Datagrams passed to udp_sender() should be created using udp_composer().
-    //! @note
-    //!  Returned object may be used from any thread.
-    datagram::IDatagramComposer& udp_composer();
-
-    //! Get UDP datagram sender.
-    //! @remarks
-    //!  Datagrams should be created using udp_composer() and has sender address
-    //!  previously registered with add_udp_sender().
-    //! @note
-    //!  Returned object may be used from any thread.
-    datagram::IDatagramWriter& udp_sender();
-
-    //! Stop thread.
-    //! @remarks
-    //!  May be called from any thread. After this call, subsequent join()
-    //!  call will return soon.
+    //!  Asynchronously stops all receivers and senders. May be called from
+    //!  any thread. Use join() to wait until the stop operation finishes.
     void stop();
 
 private:
-    static void async_cb_(uv_async_t* handle);
+    static void stop_sem_cb_(uv_async_t* handle);
+
+    bool init_();
+    void stop_io_();
+    void close_sem_();
 
     virtual void run();
 
-    void close_();
+    packet::PacketPool& packet_pool_;
+    core::BufferPool<uint8_t>& buffer_pool_;
+    core::IAllocator& allocator_;
 
     uv_loop_t loop_;
-    uv_async_t async_;
+    bool loop_initialized_;
 
-    UDPComposer udp_composer_;
-    UDPReceiver udp_receiver_;
-    UDPSender udp_sender_;
+    uv_async_t stop_sem_;
+    bool stop_sem_initialized_;
 
-    core::Atomic stop_;
+    core::Atomic stopped_;
+    bool valid_;
+
+    core::List<UDPReceiver> receivers_;
+    core::List<UDPSender> senders_;
 };
 
 } // namespace netio

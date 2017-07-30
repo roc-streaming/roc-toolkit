@@ -15,75 +15,73 @@
 
 #include <uv.h>
 
-#include "roc_config/config.h"
-
-#include "roc_core/array.h"
-#include "roc_core/atomic.h"
+#include "roc_core/iallocator.h"
 #include "roc_core/list.h"
-#include "roc_core/noncopyable.h"
+#include "roc_core/list_node.h"
 #include "roc_core/mutex.h"
-
-#include "roc_datagram/address.h"
-#include "roc_datagram/idatagram_writer.h"
-
-#include "roc_netio/udp_datagram.h"
+#include "roc_core/refcnt.h"
+#include "roc_packet/address.h"
+#include "roc_packet/iwriter.h"
 
 namespace roc {
 namespace netio {
 
 //! UDP sender.
-class UDPSender : public datagram::IDatagramWriter, public core::NonCopyable<> {
+class UDPSender : public core::RefCnt<UDPSender>,
+                  public core::ListNode,
+                  public packet::IWriter {
 public:
     //! Initialize.
-    UDPSender();
+    UDPSender(uv_loop_t& event_loop, core::IAllocator& allocator);
 
     //! Destroy.
     ~UDPSender();
 
-    //! Attach to event loop.
-    void attach(uv_loop_t&, uv_async_t& eof);
+    //! Start sender.
+    //! @remarks
+    //!  Should be called from the event loop thread.
+    bool start(packet::Address& bind_address);
 
-    //! Detach from event loop.
-    void detach(uv_loop_t&);
+    //! Asynchronous stop.
+    //! @remarks
+    //!  Should be called from the event loop thread.
+    void stop();
 
-    //! Add sending port.
-    bool add_port(const datagram::Address&);
-
-    //! Write datagram.
-    virtual void write(const datagram::IDatagramPtr&);
+    //! Write packet.
+    //! @remarks
+    //!  May be called from any thread.
+    virtual void write(const packet::PacketPtr&);
 
 private:
-    enum { MaxPorts = ROC_CONFIG_MAX_PORTS };
-
-    struct Port : core::NonCopyable<> {
-        uv_udp_t handle;
-        datagram::Address address;
-    };
-
-    static void async_cb_(uv_async_t* handle);
+    static void write_sem_cb_(uv_async_t* handle);
     static void send_cb_(uv_udp_send_t* req, int status);
 
-    bool open_port_(Port& port);
-    void close_port_(Port& port);
-    Port* find_port_(const datagram::Address& address);
+    friend class core::RefCnt<UDPSender>;
 
-    void check_eof_();
+    void destroy();
 
-    UDPDatagramPtr read_();
+    packet::PacketPtr read_();
+    void close_();
 
-    core::Array<Port, MaxPorts> ports_;
+    core::IAllocator& allocator_;
 
-    uv_loop_t* loop_;
-    uv_async_t async_;
-    uv_async_t* eof_;
+    uv_loop_t& loop_;
 
-    core::List<UDPDatagram> list_;
+    uv_async_t write_sem_;
+    bool write_sem_initialized_;
+
+    uv_udp_t handle_;
+    bool handle_initialized_;
+
+    packet::Address address_;
+
+    core::List<packet::Packet> list_;
     core::Mutex mutex_;
 
-    core::Atomic terminate_;
-    core::Atomic pending_;
+    size_t pending_;
+    bool stopped_;
 
-    unsigned number_;
+    unsigned packet_counter_;
 };
 
 } // namespace netio

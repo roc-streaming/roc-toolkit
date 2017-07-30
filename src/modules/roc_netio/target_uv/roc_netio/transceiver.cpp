@@ -7,34 +7,39 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+#include "roc_netio/transceiver.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
-
-#include "roc_netio/transceiver.h"
+#include "roc_core/shared_ptr.h"
 
 namespace roc {
 namespace netio {
 
-Transceiver::Transceiver(core::IByteBufferComposer& buf_composer,
-                         core::IPool<UDPDatagram>& datagram_pool)
-    : udp_composer_(datagram_pool)
-    , udp_receiver_(buf_composer, udp_composer_)
-    , udp_sender_() {
-    //
+Transceiver::Transceiver(packet::PacketPool& packet_pool,
+                         core::BufferPool<uint8_t>& buffer_pool,
+                         core::IAllocator& allocator)
+    : packet_pool_(packet_pool)
+    , buffer_pool_(buffer_pool)
+    , allocator_(allocator)
+    , loop_initialized_(false)
+    , stop_sem_initialized_(false)
+    , valid_(false) {
     if (int err = uv_loop_init(&loop_)) {
-        roc_panic("transceiver: uv_loop_init(): [%s] %s", uv_err_name(err),
-                  uv_strerror(err));
+        roc_log(LogError, "transceiver: uv_loop_init(): [%s] %s", uv_err_name(err),
+                uv_strerror(err));
+        return;
     }
+    loop_initialized_ = true;
 
-    if (int err = uv_async_init(&loop_, &async_, async_cb_)) {
-        roc_panic("transceiver: uv_async_init(): [%s] %s", uv_err_name(err),
-                  uv_strerror(err));
+    if (int err = uv_async_init(&loop_, &stop_sem_, stop_sem_cb_)) {
+        roc_log(LogError, "transceiver: uv_async_init(): [%s] %s", uv_err_name(err),
+                uv_strerror(err));
+        return;
     }
+    stop_sem_.data = this;
+    stop_sem_initialized_ = true;
 
-    async_.data = this;
-
-    udp_receiver_.attach(loop_);
-    udp_sender_.attach(loop_, async_);
+    valid_ = true;
 }
 
 Transceiver::~Transceiver() {
@@ -42,47 +47,85 @@ Transceiver::~Transceiver() {
         roc_panic("transceiver: thread is not joined before calling destructor");
     }
 
-    // If there are opened handles (probably because thread was never started and
-    // joined and thus close_() wasn't called), we should schedule close and
-    // quickly run the loop to wait all opened handles to be closed. Otherwise,
-    // uv_loop_close() may fail with EBUSY.
-    if (uv_loop_alive(&loop_)) {
-        close_();
-        Transceiver::run(); // non-virtual call from dtor
-    }
+    close_sem_();
 
-    if (int err = uv_loop_close(&loop_)) {
-        roc_panic("transceiver: uv_loop_close(): [%s] %s", uv_err_name(err),
-                  uv_strerror(err));
+    if (loop_initialized_) {
+        // If there are opened handles (probably because thread was never started and
+        // joined and thus close_() wasn't called), we should schedule close and
+        // quickly run the loop to wait all opened handles to be closed. Otherwise,
+        // uv_loop_close() may fail with EBUSY.
+        if (uv_loop_alive(&loop_)) {
+            stop_io_();
+            Transceiver::run(); // non-virtual call from dtor
+        }
+        if (int err = uv_loop_close(&loop_)) {
+            roc_panic("transceiver: uv_loop_close(): [%s] %s", uv_err_name(err),
+                      uv_strerror(err));
+        }
     }
 }
 
-bool Transceiver::add_udp_receiver(const datagram::Address& address,
-                                   datagram::IDatagramWriter& writer) {
+bool Transceiver::valid() const {
+    return valid_;
+}
+
+bool Transceiver::add_udp_receiver(packet::Address& bind_address,
+                                   packet::IWriter& writer) {
     if (joinable()) {
         roc_panic("transceiver: can't call add_udp_receiver() when thread is running");
     }
 
-    return udp_receiver_.add_port(address, writer);
+    if (!valid()) {
+        roc_panic("transceiver: can't use invalid transceiver");
+    }
+
+    core::SharedPtr<UDPReceiver> rp = new (allocator_)
+        UDPReceiver(loop_, writer, packet_pool_, buffer_pool_, allocator_);
+
+    if (!rp) {
+        roc_log(LogError, "transceiver: can't allocate udp receiver");
+        return false;
+    }
+
+    if (!rp->start(bind_address)) {
+        roc_log(LogError, "transceiver: can't start udp receiver");
+        return false;
+    }
+
+    receivers_.push_back(*rp);
+    return true;
 }
 
-bool Transceiver::add_udp_sender(const datagram::Address& address) {
+packet::IWriter* Transceiver::add_udp_sender(packet::Address& bind_address) {
     if (joinable()) {
         roc_panic("transceiver: can't call add_udp_sender() when thread is running");
     }
 
-    return udp_sender_.add_port(address);
-}
+    if (!valid()) {
+        roc_panic("transceiver: can't use invalid transceiver");
+    }
 
-datagram::IDatagramComposer& Transceiver::udp_composer() {
-    return udp_composer_;
-}
+    core::SharedPtr<UDPSender> sp = new (allocator_) UDPSender(loop_, allocator_);
 
-datagram::IDatagramWriter& Transceiver::udp_sender() {
-    return udp_sender_;
+    if (!sp) {
+        roc_log(LogError, "transceiver: can't allocate udp sender");
+        return NULL;
+    }
+
+    if (!sp->start(bind_address)) {
+        roc_log(LogError, "transceiver: can't start udp sender");
+        return NULL;
+    }
+
+    senders_.push_back(*sp);
+    return sp.get();
 }
 
 void Transceiver::run() {
+    if (!valid()) {
+        roc_panic("transceiver: can't use invalid transceiver");
+    }
+
     roc_log(LogInfo, "transceiver: starting event loop");
 
     int err = uv_run(&loop_, UV_RUN_DEFAULT);
@@ -94,32 +137,47 @@ void Transceiver::run() {
 }
 
 void Transceiver::stop() {
+    if (!valid()) {
+        roc_panic("transceiver: can't use invalid transceiver");
+    }
+
     // Ignore subsequent calls, since after first call uv_async_t
     // may be already closed from event loop thread.
-    if (stop_.test_and_set() != 0) {
+    if (stopped_.test_and_set() != 0) {
         return;
     }
 
-    if (int err = uv_async_send(&async_)) {
+    if (int err = uv_async_send(&stop_sem_)) {
         roc_panic("transceiver: uv_async_send(): [%s] %s", uv_err_name(err),
                   uv_strerror(err));
     }
 }
 
-void Transceiver::async_cb_(uv_async_t* handle) {
+void Transceiver::stop_sem_cb_(uv_async_t* handle) {
     roc_panic_if_not(handle);
 
     Transceiver& self = *(Transceiver*)handle->data;
-    self.close_();
+    self.stop_io_();
+    self.close_sem_();
 }
 
-void Transceiver::close_() {
-    // Close all opened handles. This only *schedules* closing; when
-    // all handles are actually closed, uv_run() returns.
-    udp_receiver_.detach(loop_);
-    udp_sender_.detach(loop_);
+void Transceiver::stop_io_() {
+    core::SharedPtr<UDPReceiver> rp;
+    for (rp = receivers_.front(); rp; rp = receivers_.nextof(*rp)) {
+        rp->stop();
+    }
 
-    uv_close((uv_handle_t*)&async_, NULL);
+    core::SharedPtr<UDPSender> sp;
+    for (sp = senders_.front(); sp; sp = senders_.nextof(*sp)) {
+        sp->stop();
+    }
+}
+
+void Transceiver::close_sem_() {
+    if (stop_sem_initialized_) {
+        uv_close((uv_handle_t*)&stop_sem_, NULL);
+        stop_sem_initialized_ = false;
+    }
 }
 
 } // namespace netio
