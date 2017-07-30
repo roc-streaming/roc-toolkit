@@ -7,13 +7,10 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_core/helpers.h"
+#include "roc_sndio/recorder.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
-
 #include "roc_sndio/default.h"
-#include "roc_sndio/init.h"
-#include "roc_sndio/reader.h"
 
 namespace roc {
 namespace sndio {
@@ -28,23 +25,24 @@ void add_effect(sox_effects_chain_t* chain,
                 const char* argv[]) {
     const sox_effect_handler_t* handler = sox_find_effect(name);
     if (!handler) {
-        roc_panic("sox_find_effect(): can't find '%s' effect", name);
+        roc_panic("recorder: sox_find_effect(): can't find '%s' effect", name);
     }
 
     sox_effect_t* effect = sox_create_effect(handler);
     if (!effect) {
-        roc_panic("sox_create_effect(): can't create '%s' effect", name);
+        roc_panic("recorder: sox_create_effect(): can't create '%s' effect", name);
     }
 
     int err = sox_effect_options(effect, argc, const_cast<char**>(argv));
     if (err != SOX_SUCCESS) {
-        roc_panic("sox_effect_options(): can't set '%s' effect options: %s", name,
-                  sox_strerror(err));
+        roc_panic("recorder: sox_effect_options(): can't set '%s' effect options: %s",
+                  name, sox_strerror(err));
     }
 
     err = sox_add_effect(chain, effect, in, out);
     if (err != SOX_SUCCESS) {
-        roc_panic("sox_add_effect(): can't add gain effect: %s", sox_strerror(err));
+        roc_panic("recorder: sox_add_effect(): can't add gain effect: %s",
+                  sox_strerror(err));
     }
 
     free(effect);
@@ -52,39 +50,39 @@ void add_effect(sox_effects_chain_t* chain,
 
 } // namespace
 
-const sox_effect_handler_t Reader::output_handler_ = {
-    "au_sndio_reader_output", //
-    NULL,                     //
-    SOX_EFF_MCHAN,            //
-    NULL,                     //
-    NULL,                     //
-    Reader::output_cb_,       //
-    NULL,                     //
-    NULL,                     //
-    Reader::kill_cb_,         //
-    0                         //
+const sox_effect_handler_t Recorder::output_handler_ = {
+    "roc_output",         //
+    NULL,                 //
+    SOX_EFF_MCHAN,        //
+    NULL,                 //
+    NULL,                 //
+    Recorder::output_cb_, //
+    NULL,                 //
+    NULL,                 //
+    Recorder::kill_cb_,   //
+    0                     //
 };
 
-Reader::Reader(audio::ISampleBufferWriter& output,
-               audio::ISampleBufferComposer& composer,
-               packet::channel_mask_t channels,
-               size_t n_samples,
-               size_t sample_rate)
+Recorder::Recorder(audio::IWriter& output,
+                   core::BufferPool<audio::sample_t>& buffer_pool,
+                   packet::channel_mask_t channels,
+                   size_t n_samples,
+                   size_t sample_rate)
     : input_(NULL)
     , chain_(NULL)
     , output_(output)
-    , composer_(composer) {
+    , buffer_pool_(buffer_pool) {
     size_t n_channels = packet::num_channels(channels);
     if (n_channels == 0) {
-        roc_panic("reader: # of channels is zero");
+        roc_panic("recorder: # of channels is zero");
     }
 
     if (n_samples == 0) {
-        roc_panic("reader: # of samples is zero");
+        roc_panic("recorder: # of samples is zero");
     }
 
     if (sample_rate == 0) {
-        roc_panic("reader: sample rate is zero");
+        roc_panic("recorder: sample rate is zero");
     }
 
     buffer_size_ = n_samples * n_channels;
@@ -99,19 +97,19 @@ Reader::Reader(audio::ISampleBufferWriter& output,
     out_signal_.precision = SOX_SAMPLE_PRECISION;
 }
 
-Reader::~Reader() {
+Recorder::~Recorder() {
     if (joinable()) {
-        roc_panic("reader: destructor is called while thread is still running");
+        roc_panic("recorder: destructor is called while thread is still running");
     }
 
     close_();
 }
 
-bool Reader::open(const char* name, const char* type) {
-    roc_log(LogDebug, "reader: opening: name=%s type=%s", name, type);
+bool Recorder::open(const char* name, const char* type) {
+    roc_log(LogDebug, "recorder: opening: name=%s type=%s", name, type);
 
     if (input_) {
-        roc_panic("reader: can't call open() more than once");
+        roc_panic("recorder: can't call open() more than once");
     }
 
     if (!detect_defaults(&name, &type)) {
@@ -119,27 +117,23 @@ bool Reader::open(const char* name, const char* type) {
         return false;
     }
 
-    roc_log(LogInfo, "reader: name=%s type=%s", name, type);
-
-    sndio::init();
+    roc_log(LogInfo, "recorder: name=%s type=%s", name, type);
 
     if (!(input_ = sox_open_read(name, NULL, NULL, type))) {
-        roc_log(LogError, "can't open reader: name=%s type=%s", name, type);
+        roc_log(LogError, "recorder: can't open reader: name=%s type=%s", name, type);
         return false;
     }
 
     roc_log(LogInfo,
-            "reader:"
+            "recorder:"
             " in_bits=%lu out_bits=%lu in_rate=%lu out_rate=%lu in_ch=%lu, out_ch=%lu",
-            (unsigned long)input_->encoding.bits_per_sample, //
-            (unsigned long)out_signal_.precision,            //
-            (unsigned long)input_->signal.rate,              //
-            (unsigned long)out_signal_.rate,                 //
-            (unsigned long)input_->signal.channels,          //
+            (unsigned long)input_->encoding.bits_per_sample,
+            (unsigned long)out_signal_.precision, (unsigned long)input_->signal.rate,
+            (unsigned long)out_signal_.rate, (unsigned long)input_->signal.channels,
             (unsigned long)out_signal_.channels);
 
     if (!(chain_ = sox_create_effects_chain(&input_->encoding, NULL))) {
-        roc_panic("sox_create_effects_chain() failed");
+        roc_panic("recorder: sox_create_effects_chain() failed");
     }
 
     {
@@ -177,14 +171,15 @@ bool Reader::open(const char* name, const char* type) {
     {
         sox_effect_t* effect = sox_create_effect(&output_handler_);
         if (!effect) {
-            roc_panic("sox_create_effect(): can't create output effect");
+            roc_panic("recorder: sox_create_effect(): can't create output effect");
         }
 
         effect->priv = this;
 
         int err = sox_add_effect(chain_, effect, &out_signal_, &out_signal_);
         if (err != SOX_SUCCESS) {
-            roc_panic("sox_add_effect(): can't add output effect: %s", sox_strerror(err));
+            roc_panic("recorder: sox_add_effect(): can't add output effect: %s",
+                      sox_strerror(err));
         }
 
         free(effect);
@@ -193,53 +188,53 @@ bool Reader::open(const char* name, const char* type) {
     return true;
 }
 
-void Reader::stop() {
+void Recorder::stop() {
     stop_ = 1;
 }
 
-void Reader::run() {
-    roc_log(LogDebug, "reader: starting thread");
+void Recorder::run() {
+    roc_log(LogDebug, "recorder: starting thread");
 
     if (!chain_) {
-        roc_panic("reader: thread is started before open() returnes success");
+        roc_panic("recorder: thread is started before open() returnes success");
     }
 
     int err = sox_flow_effects(chain_, NULL, NULL);
     if (err != 0) {
-        roc_log(LogInfo, "sox_flow_effects(): %s", sox_strerror(err));
+        roc_log(LogInfo, "recorder: sox_flow_effects(): %s", sox_strerror(err));
     }
 
     close_();
 
-    roc_log(LogDebug, "reader: finishing thread, read %lu buffers",
+    roc_log(LogDebug, "recorder: finishing thread, read %lu buffers",
             (unsigned long)n_bufs_);
 }
 
-int Reader::kill_cb_(sox_effect_t* eff) {
-    roc_panic_if_not(eff);
-    roc_panic_if_not(eff->priv);
+int Recorder::kill_cb_(sox_effect_t* eff) {
+    roc_panic_if(!eff);
+    roc_panic_if(!eff->priv);
 
     eff->priv = NULL; // please do not free() us
 
     return SOX_SUCCESS;
 }
 
-int Reader::output_cb_(sox_effect_t* eff,
-                       const sox_sample_t* ibuf,
-                       sox_sample_t* obuf,
-                       size_t* ibufsz,
-                       size_t* obufsz) {
-    roc_panic_if_not(eff);
-    roc_panic_if_not(eff->priv);
+int Recorder::output_cb_(sox_effect_t* eff,
+                         const sox_sample_t* ibuf,
+                         sox_sample_t* obuf,
+                         size_t* ibufsz,
+                         size_t* obufsz) {
+    roc_panic_if(!eff);
+    roc_panic_if(!eff->priv);
 
-    Reader& self = *(Reader*)eff->priv;
+    Recorder& self = *(Recorder*)eff->priv;
     if (self.stop_) {
-        roc_log(LogInfo, "reader: stopped, exiting");
+        roc_log(LogInfo, "recorder: stopped, exiting");
         return SOX_EOF;
     }
 
-    roc_panic_if_not(ibuf);
-    roc_panic_if_not(ibufsz);
+    roc_panic_if(!ibuf);
+    roc_panic_if(!ibufsz);
 
     self.write_(ibuf, *ibufsz, *ibufsz < sox_get_globals()->input_bufsiz);
 
@@ -251,28 +246,21 @@ int Reader::output_cb_(sox_effect_t* eff,
     return SOX_SUCCESS;
 }
 
-void Reader::write_(const sox_sample_t* buf, size_t bufsz, bool eof) {
+void Recorder::write_(const sox_sample_t* buf, size_t bufsz, bool eof) {
     while (bufsz != 0) {
-        if (!buffer_) {
-            if (!(buffer_ = composer_.compose())) {
-                roc_log(LogError, "reader: can't compose buffer");
+        if (!frame_.samples) {
+            frame_.samples =
+                new (buffer_pool_) core::Buffer<audio::sample_t>(buffer_pool_);
+
+            if (!frame_.samples) {
+                roc_log(LogError, "recorder: can't allocate buffer");
                 return;
             }
 
-            if (buffer_size_ > buffer_->max_size()) {
-                roc_panic(
-                    "reader:"
-                    " maximum buffer size should be at least n_channels * n_samples:"
-                    " decoder_bufsz=%lu, max_bufsz=%lu, n_channels=%lu",
-                    (unsigned long)buffer_size_,        //
-                    (unsigned long)buffer_->max_size(), //
-                    (unsigned long)out_signal_.channels);
-            }
-
-            buffer_->set_size(buffer_size_);
+            frame_.samples.resize(buffer_size_);
         }
 
-        packet::sample_t* samples = buffer_->data();
+        audio::sample_t* samples = frame_.samples.data();
 
         SOX_SAMPLE_LOCALS;
 
@@ -292,21 +280,14 @@ void Reader::write_(const sox_sample_t* buf, size_t bufsz, bool eof) {
         }
 
         if (buffer_pos_ == buffer_size_) {
-            output_.write(*buffer_);
-
-            buffer_ = NULL;
+            output_.write(frame_);
             buffer_pos_ = 0;
-
             n_bufs_++;
         }
     }
 }
 
-void Reader::close_() {
-    if (chain_ || input_) {
-        output_.write(audio::ISampleBufferConstSlice());
-    }
-
+void Recorder::close_() {
     if (chain_) {
         sox_delete_effects_chain(chain_);
         chain_ = NULL;
@@ -315,7 +296,7 @@ void Reader::close_() {
     if (input_) {
         int err = sox_close(input_);
         if (err != SOX_SUCCESS) {
-            roc_panic("sox_close(): can't close input: %s", sox_strerror(err));
+            roc_panic("recorder: can't close input: %s", sox_strerror(err));
         }
         input_ = NULL;
     }

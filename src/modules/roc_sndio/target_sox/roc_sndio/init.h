@@ -13,37 +13,11 @@
 #ifndef ROC_SNDIO_INIT_H_
 #define ROC_SNDIO_INIT_H_
 
-#include "roc_config/config.h"
-
 namespace roc {
 namespace sndio {
 
-enum {
-    InitOnce = (1 << 0), //!< Don't init twice.
-    InitSox = (1 << 1),  //!< Call sox_init().
-    InitLog = (1 << 2),  //!< Install SoX log handler.
-    InitBufsz = (1 << 3) //!< Set SoX buffer sizes.
-};
-
 //! Initialize SoX.
-//!
-//! If InitOnce option is set, and sndio::init() was already called
-//! with any options, just return.
-//!
-//! Otherwise:
-//!  - If InitSox option is set, call sox_init().
-//!  - If InitLog option is set, install sox log handler.
-//!  - If InitBufsz option is set, set sox buffer sizes.
-//!
-//! If you need non-default initialization, call init() with desired
-//! options before using this library. Other calls from this library
-//! use InitOnce, thus they will be ignored.
-//!
-//! @note
-//!  It's not allowed to call sox_init() twice without paired sox_quit().
-void init(int options = InitOnce | InitSox | InitBufsz | InitLog, //
-          size_t bufsz = ROC_CONFIG_MAX_CHANNELS
-              * ROC_CONFIG_DEFAULT_RECEIVER_TICK_SAMPLES);
+void init();
 
 } // namespace sndio
 } // namespace roc

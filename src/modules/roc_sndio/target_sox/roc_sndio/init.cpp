@@ -20,6 +20,8 @@ namespace sndio {
 
 namespace {
 
+bool init_done = false;
+
 void message_handler(unsigned slevel,
                      const char* filename,
                      const char* format,
@@ -54,29 +56,18 @@ void message_handler(unsigned slevel,
     roc_log(level, "[sox] %s: %s", filename, message);
 }
 
-bool init_done = false;
-
 } // namespace
 
-void init(int options, size_t bufsz) {
-    if ((options & InitOnce) && init_done) {
+void init() {
+    if (init_done) {
         return;
     }
 
-    if (options & InitSox) {
-        roc_log(LogInfo, "initializing sox");
-        sox_init();
-    }
+    roc_log(LogInfo, "initializing sox");
+    sox_init();
 
-    if (options & InitLog) {
-        sox_get_globals()->verbosity = 100;
-        sox_get_globals()->output_message_handler = message_handler;
-    }
-
-    if (options & InitBufsz) {
-        sox_get_globals()->bufsiz = bufsz;
-        sox_get_globals()->input_bufsiz = bufsz;
-    }
+    sox_get_globals()->verbosity = 100;
+    sox_get_globals()->output_message_handler = message_handler;
 
     init_done = true;
 }
