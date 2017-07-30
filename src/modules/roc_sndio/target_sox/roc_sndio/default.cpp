@@ -9,8 +9,8 @@
 
 #include <sox.h>
 
-#include "roc_core/helpers.h"
 #include "roc_core/log.h"
+#include "roc_core/macros.h"
 #include "roc_core/panic.h"
 
 #include "roc_sndio/default.h"

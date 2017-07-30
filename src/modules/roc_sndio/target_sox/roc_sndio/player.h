@@ -7,42 +7,45 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_sndio/target_sox/roc_sndio/writer.h
+//! @file roc_sndio/target_sox/roc_sndio/player.h
 //! @brief Audio writer.
 
-#ifndef ROC_SNDIO_WRITER_H_
-#define ROC_SNDIO_WRITER_H_
+#ifndef ROC_SNDIO_PLAYER_H_
+#define ROC_SNDIO_PLAYER_H_
 
 #include <sox.h>
 
-#include "roc_config/config.h"
-
 #include "roc_core/atomic.h"
+#include "roc_core/buffer_pool.h"
+#include "roc_core/iallocator.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/thread.h"
-
-#include "roc_audio/isample_buffer_reader.h"
+#include "roc_packet/units.h"
+#include "roc_pipeline/ireceiver.h"
 
 namespace roc {
 namespace sndio {
 
-//! Audio writer.
+//! Audio player.
 //! @remarks
 //!  Reads samples in interleaved format, encodes them and and writes to
 //!  output file or audio driver.
-class Writer : public core::Thread {
+class Player : public core::Thread {
 public:
     //! Initialize.
     //!
     //! @b Parameters
-    //!  - @p input is used to read samples;
-    //!  - @p channels defines bitmask of enabled channels in input buffers;
-    //!  - @p sample_rate defines sample rate of input buffers.
-    Writer(audio::ISampleBufferReader& input,
-           packet::channel_mask_t channels = ROC_CONFIG_DEFAULT_CHANNEL_MASK,
-           size_t sample_rate = ROC_CONFIG_DEFAULT_SAMPLE_RATE);
+    //!  - @p input is used to read samples
+    //!  - @p channels defines bitmask of enabled channels in input buffers
+    //!  - @p sample_rate defines sample rate of input buffers
+    Player(pipeline::IReceiver& input,
+           core::BufferPool<audio::sample_t>& buffer_pool,
+           core::IAllocator& allocator,
+           bool oneshot,
+           packet::channel_mask_t channels,
+           size_t sample_rate);
 
-    ~Writer();
+    virtual ~Player();
 
     //! Open output file or device.
     //!
@@ -73,15 +76,19 @@ private:
     sox_format_t* output_;
     sox_signalinfo_t out_signal_;
 
-    audio::ISampleBufferReader& input_;
+    pipeline::IReceiver& input_;
+
+    core::BufferPool<audio::sample_t>& buffer_pool_;
+    core::IAllocator& allocator_;
 
     size_t clips_;
     size_t n_bufs_;
 
+    const bool oneshot_;
     core::Atomic stop_;
 };
 
 } // namespace sndio
 } // namespace roc
 
-#endif // ROC_SNDIO_WRITER_H_
+#endif // ROC_SNDIO_PLAYER_H_

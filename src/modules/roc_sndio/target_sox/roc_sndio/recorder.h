@@ -7,46 +7,46 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_sndio/target_sox/roc_sndio/reader.h
+//! @file roc_sndio/target_sox/roc_sndio/recorder.h
 //! @brief Audio reader.
 
-#ifndef ROC_SNDIO_READER_H_
-#define ROC_SNDIO_READER_H_
+#ifndef ROC_SNDIO_RECORDER_H_
+#define ROC_SNDIO_RECORDER_H_
 
 #include <sox.h>
 
-#include "roc_config/config.h"
-
+#include "roc_audio/iwriter.h"
 #include "roc_core/atomic.h"
+#include "roc_core/buffer_pool.h"
+#include "roc_core/iallocator.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/thread.h"
-
-#include "roc_audio/isample_buffer_writer.h"
+#include "roc_packet/units.h"
 
 namespace roc {
 namespace sndio {
 
-//! Audio reader.
+//! Audio recorder.
 //! @remarks
 //!  Reads samples from input file or audio driver, decodes them and
 //!  writes buffers to output writer.
-class Reader : public core::Thread {
+class Recorder : public core::Thread {
 public:
     //! Initialize.
     //!
     //! @b Parameters
     //!  - @p output is used to write buffers with decoded samples;
-    //!  - @p composer is used to allocate buffers;
+    //!  - @p buffer_pool is used to allocate buffers;
     //!  - @p n_samples defines number of samples per channel in output buffers;
     //!  - @p channels defines bitmask of enabled channels in output buffers;
     //!  - @p sample_rate defines sample rate of output buffers.
-    Reader(audio::ISampleBufferWriter& output,
-           audio::ISampleBufferComposer& composer = audio::default_buffer_composer(),
-           packet::channel_mask_t channels = ROC_CONFIG_DEFAULT_CHANNEL_MASK,
-           size_t n_samples = ROC_CONFIG_DEFAULT_RECEIVER_TICK_SAMPLES,
-           size_t sample_rate = ROC_CONFIG_DEFAULT_SAMPLE_RATE);
+    Recorder(audio::IWriter& output,
+             core::BufferPool<audio::sample_t>& buffer_pool,
+             packet::channel_mask_t channels,
+             size_t n_samples,
+             size_t sample_rate);
 
-    ~Reader();
+    virtual ~Recorder();
 
     //! Open input file or device.
     //!
@@ -86,10 +86,10 @@ private:
     sox_format_t* input_;
     sox_effects_chain_t* chain_;
 
-    audio::ISampleBufferWriter& output_;
-    audio::ISampleBufferComposer& composer_;
+    audio::IWriter& output_;
+    core::BufferPool<audio::sample_t>& buffer_pool_;
 
-    audio::ISampleBufferPtr buffer_;
+    audio::Frame frame_;
     size_t buffer_pos_;
 
     size_t buffer_size_;
@@ -102,4 +102,4 @@ private:
 } // namespace sndio
 } // namespace roc
 
-#endif // ROC_SNDIO_READER_H_
+#endif // ROC_SNDIO_RECORDER_H_
