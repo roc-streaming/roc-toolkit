@@ -1,124 +1,190 @@
 /*
- * Copyright (c) 2015 Mikhail Baranov
- * Copyright (c) 2015 Victor Gaydov
+ * Copyright (c) 2017 Mikhail Baranov
+ * Copyright (c) 2017 Victor Gaydov
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+#include "roc_pipeline/receiver.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
-#include "roc_datagram/address_to_str.h"
-
-#include "roc_pipeline/receiver.h"
+#include "roc_core/shared_ptr.h"
 
 namespace roc {
 namespace pipeline {
 
-Receiver::Receiver(datagram::IDatagramReader& datagram_reader,
-                   audio::ISampleBufferWriter& audio_writer,
-                   const ReceiverConfig& config)
-    : config_(config)
-    , n_channels_(packet::num_channels(config_.channels))
-    , channel_muxer_(config_.channels, *config_.sample_buffer_composer)
-    , delayed_writer_(audio_writer, config_.channels, config_.output_latency)
-    , datagram_reader_(datagram_reader)
-    , audio_writer_(&delayed_writer_)
-    , rtp_parser_(*config_.rtp_audio_packet_pool, *config_.rtp_container_packet_pool)
-    , session_manager_(config_, channel_muxer_) {
-    //
-    if (n_channels_ == 0) {
-        roc_panic("receiver: channel mask is zero");
+Receiver::Receiver(const ReceiverConfig& config,
+                   const rtp::FormatMap& format_map,
+                   packet::PacketPool& packet_pool,
+                   core::BufferPool<uint8_t>& byte_buffer_pool,
+                   core::BufferPool<audio::sample_t>& sample_buffer_pool,
+                   core::IAllocator& allocator)
+    : format_map_(format_map)
+    , packet_pool_(packet_pool)
+    , byte_buffer_pool_(byte_buffer_pool)
+    , sample_buffer_pool_(sample_buffer_pool)
+    , allocator_(allocator)
+    , packet_queue_(0, false)
+    , mixer_(sample_buffer_pool)
+    , ticker_(config.sample_rate)
+    , config_(config)
+    , timestamp_(0)
+    , num_channels_(packet::num_channels(config.channels)) {
+}
+
+bool Receiver::valid() {
+    return true;
+}
+
+bool Receiver::add_port(const PortConfig& config) {
+    core::SharedPtr<ReceiverPort> port =
+        new (allocator_) ReceiverPort(config, format_map_, allocator_);
+
+    if (!port || !port->valid()) {
+        roc_log(LogError, "receiver: can't create port, initialization failed");
+        return false;
     }
 
-    if (config_.samples_per_tick == 0) {
-        roc_panic("receiver: # of samples per tick is zero");
-    }
-
-    if (!config_.byte_buffer_composer) {
-        roc_panic("receiver: byte buffer composer is null");
-    }
-
-    if (!config_.sample_buffer_composer) {
-        roc_panic("receiver: sample buffer composer is null");
-    }
-
-    if (!config_.session_pool) {
-        roc_panic("receiver: session pool is null");
-    }
-
-    if (config_.options & EnableTiming) {
-        audio_writer_ = new (timed_writer_)
-            audio::TimedWriter(*audio_writer_, config_.channels, config_.sample_rate);
-    }
+    ports_.push_back(*port);
+    return true;
 }
 
 size_t Receiver::num_sessions() const {
-    return session_manager_.num_sessions();
+    return sessions_.size();
 }
 
-void Receiver::add_port(const datagram::Address& address, Protocol proto) {
-    packet::IPacketParser* parser = NULL;
-
-    switch (proto) {
-    case Proto_RTP:
-        parser = &rtp_parser_;
-        break;
-    }
-
-    if (!parser) {
-        roc_panic("receiver: unknown protocol number %d", (int)proto);
-    }
-
-    session_manager_.add_port(address, *parser);
+void Receiver::write(const packet::PacketPtr& packet) {
+    packet_queue_.write(packet);
 }
 
-void Receiver::run() {
-    roc_log(LogInfo, "receiver: starting thread: output_latency=%u session_latency=%u",
-            (unsigned)config_.output_latency, (unsigned)config_.session_latency);
+IReceiver::Status Receiver::read(audio::Frame& frame) {
+    if (config_.timing) {
+        ticker_.wait(timestamp_);
+    }
 
-    while (!stop_) {
-        if (!tick()) {
+    fetch_packets_();
+
+    const Status status = status_();
+
+    mixer_.read(frame);
+    timestamp_ += frame.samples.size() / num_channels_;
+
+    update_sessions_();
+
+    return status;
+}
+
+void Receiver::wait_active() {
+    if (status_() == Active) {
+        return;
+    }
+
+    packet_queue_.wait();
+}
+
+IReceiver::Status Receiver::status_() const {
+    if (sessions_.size() != 0) {
+        return Active;
+    }
+
+    if (packet_queue_.size() != 0) {
+        return Active;
+    }
+
+    return Inactive;
+}
+
+void Receiver::fetch_packets_() {
+    for (;;) {
+        packet::PacketPtr packet = packet_queue_.read();
+        if (!packet) {
             break;
+        }
+
+        if (!parse_packet_(packet)) {
+            roc_log(LogDebug, "receiver: can't parse packet, dropping");
+            continue;
+        }
+
+        if (!route_packet_(packet)) {
+            roc_log(LogDebug, "receiver: can't route packet, dropping");
+            continue;
+        }
+    }
+}
+
+bool Receiver::parse_packet_(const packet::PacketPtr& packet) {
+    core::SharedPtr<ReceiverPort> port;
+
+    for (port = ports_.front(); port; port = ports_.nextof(*port)) {
+        if (port->handle(*packet)) {
+            return true;
         }
     }
 
-    roc_log(LogInfo, "receiver: finishing thread");
-
-    // Write EOF.
-    audio_writer_->write(audio::ISampleBufferConstSlice());
+    return false;
 }
 
-void Receiver::stop() {
-    stop_ = true;
-}
+bool Receiver::route_packet_(const packet::PacketPtr& packet) {
+    core::SharedPtr<ReceiverSession> sess;
 
-bool Receiver::tick() {
-    for (size_t n = 0; n < config_.max_sessions * config_.max_session_packets; n++) {
-        if (datagram::IDatagramPtr dgm = datagram_reader_.read()) {
-            session_manager_.route(*dgm);
-        } else {
-            break;
+    for (sess = sessions_.front(); sess; sess = sessions_.nextof(*sess)) {
+        if (sess->handle(packet)) {
+            return true;
         }
     }
 
-    if (!session_manager_.update()) {
+    return create_session_(packet);
+}
+
+bool Receiver::create_session_(const packet::PacketPtr& packet) {
+    roc_log(LogInfo, "receiver: creating session");
+
+    if (!packet->udp()) {
+        roc_log(LogError, "receiver: can't create session, unexpected non-udp packet");
+        return false;
+    }
+    const packet::Address src_address = packet->udp()->src_addr;
+
+    core::SharedPtr<ReceiverSession> sess = new (allocator_)
+        ReceiverSession(config_.default_session, src_address, format_map_, packet_pool_,
+                        byte_buffer_pool_, sample_buffer_pool_, allocator_);
+
+    if (!sess || !sess->valid()) {
+        roc_log(LogError, "receiver: can't create session, initialization failed");
         return false;
     }
 
-    audio::ISampleBufferPtr buffer = config_.sample_buffer_composer->compose();
-    if (!buffer) {
-        roc_log(LogError, "receiver: can't compose sample buffer");
+    if (!sess->handle(packet)) {
+        roc_log(LogError, "receiver: can't create session, can't handle first packet");
         return false;
     }
 
-    buffer->set_size(config_.samples_per_tick * n_channels_);
-
-    channel_muxer_.read(*buffer);
-    audio_writer_->write(*buffer);
+    mixer_.add(sess->reader());
+    sessions_.push_back(*sess);
 
     return true;
+}
+
+void Receiver::remove_session_(ReceiverSession& sess) {
+    roc_log(LogInfo, "receiver: removing session");
+
+    mixer_.remove(sess.reader());
+    sessions_.remove(sess);
+}
+
+void Receiver::update_sessions_() {
+    core::SharedPtr<ReceiverSession> curr, next;
+
+    for (curr = sessions_.front(); curr; curr = next) {
+        next = sessions_.nextof(*curr);
+
+        if (!curr->update(timestamp_)) {
+            remove_session_(*curr);
+        }
+    }
 }
 
 } // namespace pipeline
