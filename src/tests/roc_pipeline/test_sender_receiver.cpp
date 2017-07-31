@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2015 Mikhail Baranov
  * Copyright (c) 2015 Victor Gaydov
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -8,194 +9,219 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "roc_config/config.h"
-#include "roc_core/scoped_ptr.h"
-#include "roc_datagram/datagram_queue.h"
+#include "roc_core/buffer_pool.h"
+#include "roc_core/heap_allocator.h"
+#include "roc_packet/concurrent_queue.h"
+#include "roc_packet/packet_pool.h"
 #include "roc_pipeline/receiver.h"
 #include "roc_pipeline/sender.h"
+#include "roc_rtp/format_map.h"
 
-#include "test_datagram.h"
-#include "test_sample_queue.h"
-#include "test_sample_stream.h"
+#include "test_frame_reader.h"
+#include "test_frame_writer.h"
 
 namespace roc {
-namespace test {
+namespace pipeline {
 
 namespace {
 
-const fec::CodecType Fec = fec::ReedSolomon2m;
+rtp::PayloadType PayloadType = rtp::PayloadType_L16_Stereo;
 
 enum {
-    // Sending port.
-    SenderPort = 501,
+    MaxBufSize = 4096,
 
-    // Receiving port.
-    ReceiverPort = 502,
+    SampleRate = 44100,
+    ChMask = 0x3,
+    NumCh = 2,
 
-    // Number of samples in every channel per packet.
-    PktSamples = ROC_CONFIG_DEFAULT_PACKET_SAMPLES,
+    SamplesPerFrame = 10,
+    SamplesPerPacket = 40,
+    FramesPerPacket = SamplesPerPacket / SamplesPerFrame,
 
-    // Number of samples in input/output buffers.
-    BufSamples = SampleStream::ReadBufsz,
+    SourcePackets = 5,
+    RepairPackets = 10,
 
-    // Number of packets to read per tick.
-    PacketsPerTick = 5,
+    Latency = SamplesPerPacket * (SourcePackets + RepairPackets),
+    Timeout = Latency * 20,
 
-    // Maximum number of sample buffers.
-    MaxBuffers = PktSamples * 100 / BufSamples,
-
-    // FEC block.
-    SourcePkts = 20,
-    RepairPkts = 10,
-
-    // Percentage of packets to be lost.
-    RandomLoss = 1
+    ManyFrames = Latency / SamplesPerFrame * 5
 };
+
+enum {
+    // enable FEC on sender or receiver
+    FlagFEC = (1 << 0),
+
+    // enable interleaving on sender
+    FlagInterleaving = (1 << 1),
+
+    // enable packet loss on sender
+    FlagLoss = (1 << 2)
+};
+
+core::HeapAllocator allocator;
+core::BufferPool<audio::sample_t> sample_buffer_pool(allocator, MaxBufSize, 1);
+core::BufferPool<uint8_t> byte_buffer_pool(allocator, MaxBufSize, 1);
+packet::PacketPool packet_pool(allocator, 1);
 
 } // namespace
 
-using namespace pipeline;
-
 TEST_GROUP(sender_receiver) {
-    SampleQueue<MaxBuffers> input;
-    SampleQueue<MaxBuffers> output;
+    void send_receive(int sender_flags, int receiver_flags) {
+        rtp::FormatMap format_map;
 
-    datagram::DatagramQueue network;
-    TestDatagramComposer datagram_composer;
+        PortConfig source_port;
+        source_port.address = new_address(1);
+        source_port.protocol = Proto_RTP_RSm8_Source;
 
-    core::ScopedPtr<Sender> sender;
-    core::ScopedPtr<Receiver> receiver;
+        PortConfig repair_port;
+        repair_port.address = new_address(2);
+        repair_port.protocol = Proto_RSm8_Repair;
 
-    void setup() {
+        packet::ConcurrentQueue queue(0, false);
+
+        Sender sender(sender_config(sender_flags, source_port, repair_port),
+                      queue,
+                      queue,
+                      format_map,
+                      packet_pool,
+                      byte_buffer_pool,
+                      allocator);
+
+        CHECK(sender.valid());
+
+        Receiver receiver(receiver_config(receiver_flags),
+                          format_map,
+                          packet_pool,
+                          byte_buffer_pool,
+                          sample_buffer_pool,
+                          allocator);
+
+        CHECK(receiver.valid());
+
+        CHECK(receiver.add_port(source_port));
+        CHECK(receiver.add_port(repair_port));
+
+        FrameWriter frame_writer(sender, sample_buffer_pool);
+
+        for (size_t nf = 0; nf < ManyFrames; nf++) {
+            frame_writer.write_samples(SamplesPerFrame * NumCh);
+        }
+
+        transfer_packets(sender_flags, queue, receiver);
+
+        FrameReader frame_reader(receiver, sample_buffer_pool);
+
+        for (size_t nf = 0; nf < ManyFrames; nf++) {
+            frame_reader.read_samples(SamplesPerFrame * NumCh, 1);
+        }
     }
 
-    void teardown() {
-        LONGS_EQUAL(0, input.size());
-        LONGS_EQUAL(0, output.size());
-        LONGS_EQUAL(0, network.size());
+    void transfer_packets(int flags, packet::IReader& reader, packet::IWriter& writer) {
+        size_t counter = 0;
+
+        while (packet::PacketPtr pp = reader.read()) {
+            if ((flags & FlagLoss) && counter++ % (SourcePackets + RepairPackets) == 1) {
+                continue;
+            }
+
+            writer.write(convert_packet(pp));
+        }
     }
 
-    void init_sender(int options, fec::CodecType codec = fec::NoCodec,
-                     size_t random_loss = 0) {
+    packet::PacketPtr convert_packet(const packet::PacketPtr& pa) {
+        packet::PacketPtr pb = new (packet_pool) packet::Packet (packet_pool);
+        CHECK(pb);
+
+        CHECK(pa->flags() & packet::Packet::FlagUDP);
+        pb->add_flags(packet::Packet::FlagUDP);
+        *pb->udp() = *pa->udp();
+
+        pb->set_data(pa->data());
+
+        return pb;
+    }
+
+    SenderConfig sender_config(int flags,
+                               const PortConfig& source_port,
+                               const PortConfig& repair_port) {
         SenderConfig config;
 
-        config.options = options;
-        config.channels = ChannelMask;
-        config.samples_per_packet = PktSamples;
-        config.random_loss_rate = random_loss;
-        config.fec.codec = codec;
-        config.fec.n_source_packets = SourcePkts;
-        config.fec.n_repair_packets = RepairPkts;
+        config.source_port = source_port;
+        config.repair_port = repair_port;
 
-        sender.reset(new Sender(input, network, datagram_composer, config));
+        config.sample_rate = SampleRate;
+        config.channels = ChMask;
+        config.samples_per_packet = SamplesPerPacket;
 
-        sender->set_audio_port(new_address(SenderPort), new_address(ReceiverPort),
-                               Proto_RTP);
+        config.fec = fec_config(flags);
 
-        sender->set_repair_port(new_address(SenderPort), new_address(ReceiverPort),
-                                Proto_RTP); // FIXME
+        config.interleaving = (flags & FlagInterleaving);
+        config.timing = false;
+
+        return config;
     }
 
-    void init_receiver(int options, fec::CodecType codec = fec::NoCodec) {
+    ReceiverConfig receiver_config(int flags) {
         ReceiverConfig config;
 
-        config.options = options;
-        config.channels = ChannelMask;
-        config.session_timeout = MaxBuffers * BufSamples;
-        config.session_latency = BufSamples;
-        config.output_latency = 0;
-        config.samples_per_tick = BufSamples;
-        config.fec.codec = codec;
-        config.fec.n_source_packets = SourcePkts;
-        config.fec.n_repair_packets = RepairPkts;
+        config.sample_rate = SampleRate;
+        config.channels = ChMask;
 
-        receiver.reset(new Receiver(network, output, config));
+        config.default_session.channels = ChMask;
+        config.default_session.samples_per_packet = SamplesPerPacket;
+        config.default_session.latency = Latency;
+        config.default_session.timeout = Timeout;
+        config.default_session.payload_type = PayloadType;
 
-        receiver->add_port(new_address(ReceiverPort), Proto_RTP);
+        config.default_session.fec = fec_config(flags);
+
+        return config;
     }
 
-    void flow_sender_receiver() {
-        SampleStream si;
+    fec::Config fec_config(int flags) {
+        fec::Config config;
 
-        for (size_t n = 0; n < MaxBuffers; n++) {
-            si.write(input, BufSamples);
+        if (flags & FlagFEC) {
+            config.codec = fec::ReedSolomon8m;
+            config.n_source_packets = SourcePackets;
+            config.n_repair_packets = RepairPackets;
+        } else {
+            config.codec = fec::NoCodec;
         }
 
-        LONGS_EQUAL(MaxBuffers, input.size());
-
-        while (input.size() != 0) {
-            CHECK(sender->tick());
-        }
-
-        sender->flush();
-
-        CHECK(network.size() >= MaxBuffers * BufSamples / PktSamples);
-
-        SampleStream so;
-
-        for (size_t n = 0; n < MaxBuffers; n++) {
-            CHECK(receiver->tick());
-
-            LONGS_EQUAL(1, output.size());
-
-            so.read(output, BufSamples);
-
-            LONGS_EQUAL(0, output.size());
-        }
-
-        LONGS_EQUAL(0, network.size());
+        return config;
     }
 };
 
-TEST(sender_receiver, bare) {
-    init_sender(0);
-    init_receiver(0);
-    flow_sender_receiver();
+TEST(sender_receiver, simple) {
+    send_receive(0, 0);
 }
 
 TEST(sender_receiver, interleaving) {
-    init_sender(EnableInterleaving);
-    init_receiver(0);
-    flow_sender_receiver();
+    send_receive(FlagInterleaving, 0);
 }
 
 #ifdef ROC_TARGET_OPENFEC
-TEST(sender_receiver, fec_only_sender) {
-    init_sender(0, Fec);
-    init_receiver(0);
-    flow_sender_receiver();
+TEST(sender_receiver, fec_sender) {
+    send_receive(FlagFEC, 0);
 }
 
-TEST(sender_receiver, fec_only_receiver) {
-    init_sender(0);
-    init_receiver(0, Fec);
-    flow_sender_receiver();
+TEST(sender_receiver, fec_receiver) {
+    send_receive(0, FlagFEC);
 }
 
-TEST(sender_receiver, fec_both) {
-    init_sender(0, Fec);
-    init_receiver(0, Fec);
-    flow_sender_receiver();
+TEST(sender_receiver, fec) {
+    send_receive(FlagFEC, FlagFEC);
 }
 
 TEST(sender_receiver, fec_interleaving) {
-    init_sender(EnableInterleaving, Fec);
-    init_receiver(0, Fec);
-    flow_sender_receiver();
+    send_receive(FlagFEC | FlagInterleaving, FlagFEC);
 }
 
-TEST(sender_receiver, fec_random_loss) {
-    init_sender(0, Fec, RandomLoss);
-    init_receiver(0, Fec);
-    flow_sender_receiver();
+TEST(sender_receiver, fec_loss) {
+    send_receive(FlagFEC | FlagLoss, FlagFEC);
 }
+#endif //! ROC_TARGET_OPENFEC
 
-TEST(sender_receiver, fec_interleaving_random_loss) {
-    init_sender(EnableInterleaving, Fec, RandomLoss);
-    init_receiver(0, Fec);
-    flow_sender_receiver();
-}
-#endif // ROC_TARGET_OPENFEC
-
-} // namespace test
+} // namespace pipeline
 } // namespace roc

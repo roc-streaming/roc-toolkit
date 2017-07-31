@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2015 Mikhail Baranov
- * Copyright (c) 2015 Victor Gaydov
+ * Copyright (c) 2017 Mikhail Baranov
+ * Copyright (c) 2017 Victor Gaydov
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -13,127 +13,87 @@
 #ifndef ROC_PIPELINE_RECEIVER_H_
 #define ROC_PIPELINE_RECEIVER_H_
 
-#include "roc_core/atomic.h"
-#include "roc_core/maybe.h"
+#include "roc_audio/ireader.h"
+#include "roc_audio/mixer.h"
+#include "roc_core/buffer_pool.h"
+#include "roc_core/iallocator.h"
+#include "roc_core/list.h"
 #include "roc_core/noncopyable.h"
-#include "roc_core/thread.h"
-
-#include "roc_datagram/idatagram.h"
-#include "roc_datagram/idatagram_reader.h"
-
-#include "roc_packet/ipacket_parser.h"
-#include "roc_rtp/parser.h"
-
-#include "roc_audio/channel_muxer.h"
-#include "roc_audio/delayed_writer.h"
-#include "roc_audio/isample_buffer_writer.h"
-#include "roc_audio/isink.h"
-#include "roc_audio/timed_writer.h"
-
+#include "roc_core/unique_ptr.h"
+#include "roc_packet/concurrent_queue.h"
+#include "roc_packet/ireader.h"
+#include "roc_packet/iwriter.h"
+#include "roc_packet/packet_pool.h"
 #include "roc_pipeline/config.h"
-#include "roc_pipeline/session_manager.h"
+#include "roc_pipeline/ireceiver.h"
+#include "roc_pipeline/receiver_port.h"
+#include "roc_pipeline/receiver_session.h"
+#include "roc_rtp/format_map.h"
 
 namespace roc {
 namespace pipeline {
 
 //! Receiver pipeline.
-//!
-//! Fetches datagrams from input queue, manages active sessions and their
-//! storages and renderers, and generates audio stream.
-//!
-//! @b Queues
-//!  - Input datagram queue is usually passed to network thread which writes
-//!    incoming datagrams to it.
-//!
-//!  - Output sample buffer queue is usually passed to audio player thread
-//!    which fetches samples from it and sends them to the sound card.
-//!
-//! @b Invocation
-//!  - User may call start() to start receiver thread. The thread will call
-//!    tick() in an infinite loop.
-//!
-//!  - Alternatively, user may periodically call tick().
-//!
-//! @b Pipeline
-//!
-//!  Receiver pipeline consists of several steps:
-//!
-//!   <i> Fetching datagrams </i>
-//!    - Fetch datagrams from input queue.
-//!
-//!    - Look at datagram's source address and check if a session exists for
-//!      this address; if not, and parser exists for datagram's destination
-//!      address, create new session using session pool.
-//!
-//!    - If new session was created, attach it to audio sink.
-//!
-//!    - If session existed or created, parse packet from datagram and store
-//!      new packet into session.
-//!
-//!   <i> Updating state </i>
-//!    - Update every session state.
-//!
-//!    - If session fails to update its state (probably bacause it detected
-//!      that it's broken or inactive), session is unregistered from
-//!      audio sink and removed.
-//!
-//!   <i> Generating samples </i>
-//!    - Requests audio sink to generate samples. During this process,
-//!      previously stored packets are transformed into audio stream.
-//!
-//! @see ReceiverConfig, Session
-class Receiver : public core::Thread, public core::NonCopyable<> {
+class Receiver : public IReceiver, public packet::IWriter, public core::NonCopyable<> {
 public:
-    //! Initialize receiver.
-    //!
-    //! @b Parameters
-    //!  - @p datagram_reader specifies input datagram queue;
-    //!  - @p audio_writer specifies output sample queue;
-    //!  - @p config specifies receiver and session configuration.
-    Receiver(datagram::IDatagramReader& datagram_reader,
-             audio::ISampleBufferWriter& audio_writer,
-             const ReceiverConfig& config = ReceiverConfig());
+    //! Initialize.
+    Receiver(const ReceiverConfig& config,
+             const rtp::FormatMap& format_map,
+             packet::PacketPool& packet_pool,
+             core::BufferPool<uint8_t>& byte_buffer_pool,
+             core::BufferPool<audio::sample_t>& sample_buffer_pool,
+             core::IAllocator& allocator);
 
-    //! Get number of active sessions.
+    //! Check if the pipeline was successfully constructed.
+    bool valid();
+
+    //! Add receiving port.
+    bool add_port(const PortConfig& config);
+
+    //! Get number of alive sessions.
     size_t num_sessions() const;
 
-    //! Register port.
-    //! @remarks
-    //!  When datagram received with destination @p address, session will use
-    //!  @p proto protocol parser to create packet from datagram. If no port
-    //!  registered for address, datagrams to that address will be dropped.
-    void add_port(const datagram::Address& address, Protocol proto);
+    //! Write packet.
+    virtual void write(const packet::PacketPtr&);
 
-    //! Process input datagrams.
-    //! @remarks
-    //!  Fetches datagrams from input datagram reader and generates next
-    //!  sample buffer.
-    bool tick();
+    //! Read frame and return current receiver status.
+    virtual Status read(audio::Frame&);
 
-    //! Stop thread.
-    //! @remarks
-    //!  May be called from any thread. After this call, subsequent join()
-    //!  call will return as soon as current tick() returns.
-    void stop();
+    //! Wait until the receiver status becomes active.
+    virtual void wait_active();
 
 private:
-    virtual void run();
+    Status status_() const;
 
-    const ReceiverConfig config_;
-    const size_t n_channels_;
+    void fetch_packets_();
 
-    core::Atomic stop_;
+    bool parse_packet_(const packet::PacketPtr& packet);
+    bool route_packet_(const packet::PacketPtr& packet);
 
-    audio::ChannelMuxer channel_muxer_;
-    core::Maybe<audio::TimedWriter> timed_writer_;
-    audio::DelayedWriter delayed_writer_;
+    bool create_session_(const packet::PacketPtr& packet);
+    void remove_session_(ReceiverSession& sess);
 
-    datagram::IDatagramReader& datagram_reader_;
-    audio::ISampleBufferWriter* audio_writer_;
+    void update_sessions_();
 
-    rtp::Parser rtp_parser_;
+    const rtp::FormatMap& format_map_;
 
-    SessionManager session_manager_;
+    packet::PacketPool& packet_pool_;
+    core::BufferPool<uint8_t>& byte_buffer_pool_;
+    core::BufferPool<audio::sample_t>& sample_buffer_pool_;
+    core::IAllocator& allocator_;
+
+    core::List<ReceiverPort> ports_;
+    core::List<ReceiverSession> sessions_;
+
+    packet::ConcurrentQueue packet_queue_;
+
+    audio::Mixer mixer_;
+    core::Ticker ticker_;
+
+    ReceiverConfig config_;
+
+    packet::timestamp_t timestamp_;
+    size_t num_channels_;
 };
 
 } // namespace pipeline

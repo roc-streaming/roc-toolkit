@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2015 Mikhail Baranov
- * Copyright (c) 2015 Victor Gaydov
+ * Copyright (c) 2017 Mikhail Baranov
+ * Copyright (c) 2017 Victor Gaydov
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -8,183 +8,176 @@
  */
 
 //! @file roc_pipeline/config.h
-//! @brief Sender and receiver config.
+//! @brief Pipeline config.
 
 #ifndef ROC_PIPELINE_CONFIG_H_
 #define ROC_PIPELINE_CONFIG_H_
 
-#include "roc_audio/sample_buffer.h"
-#include "roc_config/config.h"
-#include "roc_core/heap_pool.h"
-#include "roc_core/ipool.h"
-#include "roc_datagram/default_buffer_composer.h"
+#include "roc_audio/resampler.h"
+#include "roc_core/stddefs.h"
 #include "roc_fec/config.h"
 #include "roc_packet/units.h"
-#include "roc_pipeline/session.h"
-#include "roc_rtp/audio_packet.h"
-#include "roc_rtp/container_packet.h"
+#include "roc_rtp/headers.h"
+#include "roc_rtp/validator.h"
 
 namespace roc {
 namespace pipeline {
 
-//! Receiver and sender protocols.
+//! Defaults.
+enum {
+    //! Number of samples per second.
+    DefaultSampleRate = 44100,
+
+    //! Channel mask.
+    DefaultChannelMask = 0x3,
+
+    //! Number of samples per packet per channel.
+    DefaultPacketSize = 320
+};
+
+//! Protocol identifier.
 enum Protocol {
-    //! Bare RTP packets.
-    //! @remarks
-    //!  RTP packet with arbitrary payload type, including audio packets
-    //!  and FEC repair packets.
-    Proto_RTP
+    //! Bare RTP.
+    Proto_RTP,
+
+    //! RTP source packet + FECFRAME Reed-Solomon footer (m=8).
+    Proto_RTP_RSm8_Source,
+
+    //! FEC repair packet + FECFRAME Reed-Solomon header (m=8).
+    Proto_RSm8_Repair,
+
+    //! RTP source packet + FECFRAME LDPC footer.
+    Proto_RTP_LDPC_Source,
+
+    //! FEC repair packet + FECFRAME LDPC header.
+    Proto_LDPC_Repair
 };
 
-//! Receiver and sender options.
-enum Option {
-    //! Use scaler and resamplers (receiver).
-    EnableResampling = (1 << 0),
+//! Port parameters.
+//! @remarks
+//!  On receiver, defines a listened port parameters. On sender,
+//!  defines a destination port parameters.
+struct PortConfig {
+    //! Port address.
+    packet::Address address;
 
-    //! Use interleaver (sender).
-    EnableInterleaving = (1 << 1),
+    //! Port protocol.
+    Protocol protocol;
 
-    //! Constrain input/output speed (receiver, sender).
-    EnableTiming = (1 << 2),
-
-    //! Insert beep instead of missing samples (receiver).
-    EnableBeep = (1 << 3),
-
-    //! Terminate receiver when first sender disconects (receiver).
-    EnableOneshot = (1 << 4)
-};
-
-//! Half of the size of the resamplers window.
-enum ResamplerFIRLen {
-    ResamplerOptPennyless = 16,
-    ResamplerOptCheap = 32,
-    ResamplerOptMild = 64,
-    ResamplerOptHigh = 128,
-    ResamplerOptOverkill = 192
-};
-
-//! Receiver config.
-struct ReceiverConfig {
-    //! Construct default config.
-    ReceiverConfig(int opts = 0)
-        : options(opts)
-        , channels(ROC_CONFIG_DEFAULT_CHANNEL_MASK)
-        , sample_rate(ROC_CONFIG_DEFAULT_SAMPLE_RATE)
-        , samples_per_tick(ROC_CONFIG_DEFAULT_RECEIVER_TICK_SAMPLES)
-        , samples_per_resampler_frame(ROC_CONFIG_DEFAULT_RESAMPLER_FRAME_SAMPLES)
-        , output_latency(ROC_CONFIG_DEFAULT_OUTPUT_LATENCY)
-        , session_latency(ROC_CONFIG_DEFAULT_SESSION_LATENCY)
-        , resampler_length(ResamplerOptMild)
-        , session_timeout(ROC_CONFIG_DEFAULT_SESSION_TIMEOUT)
-        , max_sessions(ROC_CONFIG_MAX_SESSIONS)
-        , max_session_packets(ROC_CONFIG_MAX_SESSION_PACKETS)
-        , byte_buffer_composer(&datagram::default_buffer_composer())
-        , sample_buffer_composer(&audio::default_buffer_composer())
-        , session_pool(&core::HeapPool<Session>::instance())
-        , rtp_audio_packet_pool(&core::HeapPool<rtp::AudioPacket>::instance())
-        , rtp_container_packet_pool(&core::HeapPool<rtp::ContainerPacket>::instance()) {
+    PortConfig()
+        : protocol() {
     }
+};
 
-    //! Bitmask of enabled session options.
-    int options;
-
-    //! Bitmask of enabled channels.
+//! Session parameters.
+//! @remarks
+//!  Defines per-session parameters on the receiver side.
+struct SessionConfig {
+    //! Channel mask.
     packet::channel_mask_t channels;
 
-    //! Number of samples per channel per second.
-    size_t sample_rate;
-
-    //! Number of samples per receiver tick.
-    size_t samples_per_tick;
-
-    //! Number of samples per resampler frame.
-    size_t samples_per_resampler_frame;
-
-    //! Output latency as number of samples.
-    size_t output_latency;
-
-    //! Session latency as number of samples.
-    size_t session_latency;
-
-    //! The length of the resamplers filter IR.
-    ResamplerFIRLen resampler_length;
-
-    //! Timeout after which session is terminated as number of samples.
-    size_t session_timeout;
-
-    //! Maximum number of active sessions.
-    size_t max_sessions;
-
-    //! Maximum number of queued packets per session.
-    size_t max_session_packets;
-
-    //! Forward Error Correction code scheme configuration.
-    fec::Config fec;
-
-    //! Composer for byte buffers.
-    core::IByteBufferComposer* byte_buffer_composer;
-
-    //! Composer for sample buffers.
-    audio::ISampleBufferComposer* sample_buffer_composer;
-
-    //! Session pool.
-    core::IPool<Session>* session_pool;
-
-    //! RTP audio packet pool.
-    core::IPool<rtp::AudioPacket>* rtp_audio_packet_pool;
-
-    //! RTP container packet pool.
-    core::IPool<rtp::ContainerPacket>* rtp_container_packet_pool;
-};
-
-//! Sender config.
-struct SenderConfig {
-    //! Construct default config.
-    SenderConfig(int opts = 0)
-        : options(opts)
-        , channels(ROC_CONFIG_DEFAULT_CHANNEL_MASK)
-        , sample_rate(ROC_CONFIG_DEFAULT_SAMPLE_RATE)
-        , samples_per_packet(ROC_CONFIG_DEFAULT_PACKET_SAMPLES)
-        , random_loss_rate(0)
-        , random_delay_rate(0)
-        , random_delay_time(0)
-        , byte_buffer_composer(&datagram::default_buffer_composer())
-        , rtp_audio_packet_pool(&core::HeapPool<rtp::AudioPacket>::instance())
-        , rtp_container_packet_pool(&core::HeapPool<rtp::ContainerPacket>::instance()) {
-    }
-
-    //! Bitmask of enabled sender options.
-    int options;
-
-    //! Bitmask of enabled channels.
-    packet::channel_mask_t channels;
-
-    //! Number of samples per channel per second.
-    size_t sample_rate;
-
-    //! Number of samples per channel per packet.
+    //! Number of samples per packet per channel.
     size_t samples_per_packet;
 
-    //! Percentage of packets to be lost in range [0; 100].
-    size_t random_loss_rate;
+    //! Target latency, number of samples.
+    packet::timestamp_t latency;
 
-    //! Percentage of packets to be delayed in range [0; 100].
-    size_t random_delay_rate;
+    //! Session timeout, number of samples.
+    //! @remarks
+    //!  If there are no new packets during this period, the session is terminated.
+    packet::timestamp_t timeout;
 
-    //! Delay time in milliseconds.
-    size_t random_delay_time;
+    //! RTP payload type for audio packets.
+    rtp::PayloadType payload_type;
 
-    //! Forward Error Correction code scheme configuration.
+    //! FEC scheme parameters.
     fec::Config fec;
 
-    //! Composer for byte buffers.
-    core::IByteBufferComposer* byte_buffer_composer;
+    //! RTP validator parameters.
+    rtp::ValidatorConfig validator;
 
-    //! RTP audio packet pool.
-    core::IPool<rtp::AudioPacket>* rtp_audio_packet_pool;
+    //! Resampler parameters.
+    audio::ResamplerConfig resampler;
 
-    //! RTP container packet pool.
-    core::IPool<rtp::ContainerPacket>* rtp_container_packet_pool;
+    //! FreqEstimator update interval, number of samples
+    packet::timestamp_t fe_update_interval;
+
+    //! Perform resampling to to compensate sender and receiver frequency difference.
+    bool resampling;
+
+    //! Insert weird beeps instead of silence on packet loss.
+    bool beep;
+
+    SessionConfig()
+        : channels(DefaultChannelMask)
+        , samples_per_packet(DefaultPacketSize)
+        , latency(DefaultPacketSize * 27)
+        , timeout(DefaultSampleRate * 2)
+        , payload_type(rtp::PayloadType_L16_Stereo)
+        , fe_update_interval(4096)
+        , resampling(false)
+        , beep(false) {
+    }
+};
+
+//! Receiver parameters.
+struct ReceiverConfig {
+    //! Default parameters for session.
+    SessionConfig default_session;
+
+    //! Sample rate, number of samples for all channels per second.
+    size_t sample_rate;
+
+    //! Channel mask.
+    packet::channel_mask_t channels;
+
+    //! Constrain receiver speed using a CPU timer according to the sample rate.
+    bool timing;
+
+    ReceiverConfig()
+        : sample_rate(DefaultSampleRate)
+        , channels(DefaultChannelMask)
+        , timing(false) {
+    }
+};
+
+//! Sender parameters.
+struct SenderConfig {
+    //! Parameters for the port from which source packets are sent.
+    PortConfig source_port;
+
+    //! Parameters for the port from which repair packets are sent.
+    PortConfig repair_port;
+
+    //! Sample rate, number of samples for all channels per second.
+    size_t sample_rate;
+
+    //! Channel mask.
+    packet::channel_mask_t channels;
+
+    //! Number of samples per packet per channel.
+    size_t samples_per_packet;
+
+    //! Interleave packets.
+    bool interleaving;
+
+    //! Constrain receiver speed using a CPU timer according to the sample rate.
+    bool timing;
+
+    //! RTP payload type for audio packets.
+    rtp::PayloadType payload_type;
+
+    //! FEC scheme parameters.
+    fec::Config fec;
+
+    SenderConfig()
+        : sample_rate(DefaultSampleRate)
+        , channels(DefaultChannelMask)
+        , samples_per_packet(DefaultPacketSize)
+        , interleaving(false)
+        , timing(false)
+        , payload_type(rtp::PayloadType_L16_Stereo) {
+    }
 };
 
 } // namespace pipeline
