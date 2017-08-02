@@ -372,10 +372,20 @@ if GetOption('with_targets'):
 else:
     if platform in ['linux', 'darwin']:
         env.Append(ROC_TARGETS=[
-            'target_posix',
             'target_stdio',
             'target_gnu',
             'target_uv',
+            'target_posix',
+        ])
+
+    if platform in ['linux']:
+        env.Append(ROC_TARGETS=[
+            'target_posixtime',
+        ])
+
+    if platform in ['darwin']:
+        env.Append(ROC_TARGETS=[
+            'target_darwin',
         ])
 
     if GetOption('with_openfec') == 'yes':

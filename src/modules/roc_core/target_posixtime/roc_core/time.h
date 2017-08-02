@@ -7,7 +7,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_core/target_posix/roc_core/time.h
+//! @file roc_core/target_posixtime/roc_core/time.h
 //! @brief Time functions.
 
 #ifndef ROC_CORE_TIME_H_
