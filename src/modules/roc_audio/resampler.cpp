@@ -94,6 +94,7 @@ Resampler::Resampler(IStreamReader& reader,
     {
 
     roc_panic_if(((fixedpoint_t)-1 >> FRACT_BIT_COUNT) < channel_len_);
+    roc_panic_if(channels_num_ < 1);
     init_window_(composer);
     fill_sinc();
 
@@ -298,7 +299,7 @@ sample_t Resampler::resample_(const size_t channel_offset) {
 
     i += channels_num_;
 
-    roc_panic_if(i > channel_len_*channels_num_);
+    roc_panic_if(i > channelize_index(channel_len_, channel_offset));
 
     // Crossing zero -- we just need to switch qt_sinc_cur.
     // -1 ------------ 0 ------------- +1

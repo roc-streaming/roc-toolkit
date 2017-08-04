@@ -35,7 +35,8 @@ public:
     //! @b Parameters
     //!  - @p reader specifies input audio stream used in read();
     //!  - @p composer is used to construct temporary buffers;
-    //!  - @p frame_size is number of samples per resampler frame.
+    //!  - @p frame_size is number of samples per resampler frame per audio channel.
+    //!  - @p channels is the bitmask of audio channels.
     explicit Resampler(IStreamReader& reader,
                        ISampleBufferComposer& composer = default_buffer_composer(),
                        size_t window_len = 64,
