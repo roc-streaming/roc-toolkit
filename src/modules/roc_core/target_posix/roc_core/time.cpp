@@ -156,7 +156,7 @@ void sleep_for_ms(uint64_t ms) {
     ts.tv_sec = ms / 1000;
     ts.tv_nsec = ms % 1000 * 1000000;
 
-    while (nanosleep(&ts, NULL) == -1) {
+    while (nanosleep(&ts, &ts) == -1) {
         if (errno != EINTR) {
             roc_panic("nanosleep: %s", errno_to_str().c_str());
         }
