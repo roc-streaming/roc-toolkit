@@ -59,15 +59,13 @@ void sleep_for_ms(uint64_t ms) {
 #include <mach/mach.h>
 #include <mach/mach_time.h>
 
-#define CLOCK_MONOTONIC SYSTEM_CLOCK
-
 uint64_t timestamp_ms() {
     clock_serv_t cclock;
     mach_timespec_t mts;
 
     // Receive a permission to send a messages to a specified clock service.
     kern_return_t ret =
-        host_get_clock_service(mach_host_self(), CLOCK_MONOTONIC, &cclock);
+        host_get_clock_service(mach_host_self(), SYSTEM_CLOCK, &cclock);
     if (ret != KERN_SUCCESS) {
         roc_panic("host_get_clock_service: %d", ret);
     }
@@ -88,7 +86,7 @@ uint64_t timestamp_ms() {
         roc_panic("mach_port_deallocate: %d", ret);
     }
 
-    return uint64_t(mts.tv_sec * 1000 + ((long)mts.tv_nsec) / 1000000);
+    return uint64_t(mts.tv_sec) * 1000 + uint64_t(mts.tv_nsec) / 1000000;
 }
 
 void sleep_until_ms(uint64_t ms) {
@@ -141,7 +139,7 @@ uint64_t timestamp_ms() {
         roc_panic("gettimeofday: %s", errno_to_str().c_str());
     }
 
-    return uint64_t(tv.tv_sec * 1000 + tv.tv_usec / 1000);
+    return uint64_t(tv.tv_sec) * 1000 + uint64_t(tv.tv_usec) / 1000;
 }
 
 void sleep_until_ms(uint64_t ms) {
