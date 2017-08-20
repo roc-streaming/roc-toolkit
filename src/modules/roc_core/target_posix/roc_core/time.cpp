@@ -59,34 +59,38 @@ void sleep_for_ms(uint64_t ms) {
 #include <mach/mach.h>
 #include <mach/mach_time.h>
 
+/* mach_absolute_time() returns a Mach Time unit - clock ticks. The
+ * length of a tick is a CPU dependent. On most Intel CPUs it probably
+ * will be 1 nanoseconds per tick, but let's not rely on this. Mach
+ * provides a conversation factor that can be used to convert abstract
+ * mach time units to nanoseconds.
+ */
+static double steady_factor() {
+    static double sf = 0;
+    static uint64_t tm_start = 0;
+
+    if (!tm_start) {
+        mach_timebase_info_data_t info;
+        kern_return_t ret = mach_timebase_info(&info);
+        if (ret != KERN_SUCCESS) {
+            roc_panic("mach_timebase_info: %d", ret);
+        }
+        sf = (double) info.numer / info.denom;
+        tm_start = 1;
+    }
+
+    return sf;
+}
+
+/* As Apple mentioned: "The mach_timespec_t API is deprecated in OS X. The
+ * newer and preferred API is based on timer objects that in turn use
+ * AbsoluteTime as the basic data type".
+ *
+ * https://developer.apple.com/library/content/documentation/Darwin/Conceptual/KernelProgramming/Mach/Mach.html#//apple_ref/doc/uid/TP30000905-CH209-TPXREF111
+ */
 uint64_t timestamp_ms() {
-    clock_serv_t cclock;
-    mach_timespec_t mts;
-
-    // Receive a permission to send a messages to a specified clock service.
-    kern_return_t ret =
-        host_get_clock_service(mach_host_self(), SYSTEM_CLOCK, &cclock);
-    if (ret != KERN_SUCCESS) {
-        roc_panic("host_get_clock_service: %d", ret);
-    }
-
-    // man for a clock_get_time promises that it increments monotonically.
-    // https://opensource.apple.com/source/xnu/xnu-2422.1.72/osfmk/man/clock_get_time.html
-    //
-    // But if you really want to call clock_set_time, kernel will return an
-    // error for it.
-    // https://opensource.apple.com/source/xnu/xnu-2422.1.72/osfmk/man/clock_get_time.html
-    ret = clock_get_time(cclock, &mts);
-    if (ret != KERN_SUCCESS) {
-        roc_panic("clock_get_time(CLOCK_MONOTONIC): %d", ret);
-    }
-
-    ret = mach_port_deallocate(mach_task_self(), cclock);
-    if (ret != KERN_SUCCESS) {
-        roc_panic("mach_port_deallocate: %d", ret);
-    }
-
-    return uint64_t(mts.tv_sec) * 1000 + uint64_t(mts.tv_nsec) / 1000000;
+    uint64_t now = uint64_t(mach_absolute_time() * steady_factor());
+    return now / 1000000;
 }
 
 void sleep_until_ms(uint64_t ms) {
