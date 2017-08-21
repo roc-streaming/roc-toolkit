@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2015 Mikhail Baranov
- * Copyright (c) 2015 Victor Gaydov
+ * Copyright (c) 2017 Mikhail Baranov
+ * Copyright (c) 2017 Victor Gaydov
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,41 +17,95 @@ extern "C" {
 #endif
 
 //! Receiver and sender options.
-enum RocConfigOpt_t {
-    //! Turn off resampler in receiver. Might be usefull for
-    //! exact samples transmition.
-    ROC_API_CONF_RESAMPLER_OFF = (1 << 0),
+enum {
+    //! Turn off resampler in receiver.
+    //! Resampler is used to adjust receiver's frequency to sender's frequency.
+    ROC_FLAG_DISABLE_RESAMPLER = (1 << 0),
 
-    //! Turn off interleaver in sender so as to preserve packets order.
-    ROC_API_CONF_INTERLEAVER_OFF = (1 << 1),
+    //! Turn off interleaver in sender.
+    //! Interleaver is used to shuffle packets before sending them to increase
+    //! to increase chances that missing packets will be reconstructed.
+    ROC_FLAG_DISABLE_INTERLEAVER = (1 << 1),
 
-    //! Disables timing in receiver or sender to let user use in synchronous environment.
-    //! See further explanaion and usage examples of both cases in documentation.
-    ROC_API_CONF_DISABLE_TIMING = (1 << 2)
+    //! Turn on timing in receiver or sender.
+    //! Timer is used to constrain the sender or receiver speed to its sample
+    //! rate using a CPU timer.
+    ROC_FLAG_ENABLE_TIMER = (1 << 2)
 };
 
-//! Configuration of sender or receiver.
-typedef struct roc_config {
-    //! Number of samples of both channels in every packet.
+//! Network protocol.
+typedef enum roc_protocol {
+    //! Bare RTP.
+    ROC_PROTO_RTP = 0,
+
+    //! RTP source packet + FECFRAME Reed-Solomon footer (m=8).
+    ROC_PROTO_RTP_RSM8_SOURCE = 1,
+
+    //! FEC repair packet + FECFRAME Reed-Solomon header (m=8).
+    ROC_PROTO_RSM8_REPAIR = 2,
+
+    //! RTP source packet + FECFRAME LDPC footer.
+    ROC_PROTO_RTP_LDPC_SOURCE = 3,
+
+    //! FEC repair packet + FECFRAME LDPC header.
+    ROC_PROTO_LDPC_REPAIR = 4
+} roc_protocol;
+
+//! FEC scheme type.
+typedef enum roc_fec_scheme {
+    //! Reed-Solomon FEC code (m=8).
+    //! Good for small block sizes (below 256 packets).
+    ROC_FEC_RS8M = 0,
+
+    //! LDPC-Staircase FEC code.
+    //! Good for large block sizes (above 1024 packets).
+    ROC_FEC_LDPC_STAIRCASE = 1,
+
+    //! Disable FEC.
+    ROC_FEC_NONE = 2
+} roc_fec_scheme;
+
+//! Sender configuration.
+typedef struct roc_sender_config {
+    //! Number of samples per channel per packet.
     unsigned int samples_per_packet;
 
-    //! Number of data packets per block.
+    //! FEC scheme to use.
+    roc_fec_scheme fec_scheme;
+
+    //! Number of source packets per FEC block.
     unsigned int n_source_packets;
 
-    //! Number of repaier packets (FEC_scheme mustn't be NO_FEC) per block.
+    //! Number of repair packets per FEC block.
     unsigned int n_repair_packets;
 
+    //! A bitmask of ROC_FLAG_* constants.
+    unsigned int flags;
+} roc_sender_config;
+
+//! Receiver configuration.
+typedef struct roc_receiver_config {
     //! Session latency as number of samples.
     unsigned int latency;
+
     //! Timeout after which session is terminated as number of samples.
     unsigned int timeout;
 
-    //! FEC scheme type.
-    enum { ReedSolomon2m = 0, LDPC, NO_FEC } FEC_scheme;
+    //! Number of samples per channel per packet.
+    unsigned int samples_per_packet;
 
-    //! Containment for RocConfigOpt_t flags.
-    int options;
-} roc_config;
+    //! FEC scheme to use.
+    roc_fec_scheme fec_scheme;
+
+    //! Number of source packets per FEC block.
+    unsigned int n_source_packets;
+
+    //! Number of repair packets per FEC block.
+    unsigned int n_repair_packets;
+
+    //! A bitmask of ROC_FLAG_* constants.
+    unsigned int flags;
+} roc_receiver_config;
 
 #ifdef __cplusplus
 }
