@@ -9,112 +9,220 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "roc/log.h"
-#include "roc/receiver.h"
-#include "roc/sender.h"
+#include <stdio.h>
+#include <unistd.h>
+
+#include "roc_core/buffer_pool.h"
+#include "roc_core/heap_allocator.h"
 #include "roc_core/log.h"
 #include "roc_core/random.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/thread.h"
-#include "roc_datagram/address_to_str.h"
-#include "roc_netio/inet_address.h"
 #include "roc_netio/transceiver.h"
+#include "roc_packet/address_to_str.h"
+#include "roc_packet/packet_pool.h"
+#include "roc_packet/parse_address.h"
 
-#include <stdio.h>
-
-#include <unistd.h>
+#include "roc/receiver.h"
+#include "roc/sender.h"
 
 namespace roc {
-namespace test {
 
 namespace {
 
-const char* recv_address = "127.0.0.1:6000";
+enum { MaxBufSize = 4096 };
+
+core::HeapAllocator allocator;
+packet::PacketPool packet_pool(allocator, 1);
+core::BufferPool<uint8_t> byte_buffer_pool(allocator, MaxBufSize, 1);
+
+class Sender : public core::Thread {
+public:
+    Sender(roc_sender_config& config,
+           packet::Address dst_source_addr,
+           packet::Address dst_repair_addr,
+           float* samples,
+           size_t len,
+           size_t frame_size)
+        : samples_(samples)
+        , sz_(len)
+        , frame_size_(frame_size) {
+        packet::Address addr;
+        CHECK(packet::parse_address("127.0.0.1:0", addr));
+        sndr_ = roc_sender_new(&config);
+        CHECK(sndr_);
+        CHECK(roc_sender_bind(sndr_, addr.saddr()) == 0);
+        CHECK(
+            roc_sender_connect(sndr_, ROC_PROTO_RTP_RSM8_SOURCE, dst_source_addr.saddr())
+            == 0);
+        CHECK(roc_sender_connect(sndr_, ROC_PROTO_RSM8_REPAIR, dst_repair_addr.saddr())
+              == 0);
+        CHECK(roc_sender_start(sndr_) == 0);
+    }
+
+    ~Sender() {
+        roc_sender_stop(sndr_);
+        roc_sender_delete(sndr_);
+    }
+
+private:
+    virtual void run() {
+        for (size_t off = 0; off < sz_; off += frame_size_) {
+            if (off + frame_size_ > sz_) {
+                off = sz_ - frame_size_;
+            }
+            const ssize_t ret = roc_sender_write(sndr_, samples_ + off, frame_size_);
+            LONGS_EQUAL(frame_size_, ret);
+        }
+    }
+
+    roc_sender* sndr_;
+    float* samples_;
+    const size_t sz_;
+    const size_t frame_size_;
+};
+
+class Receiver {
+public:
+    Receiver(roc_receiver_config& config) {
+        CHECK(packet::parse_address("127.0.0.1:0", source_addr_));
+        CHECK(packet::parse_address("127.0.0.1:0", repair_addr_));
+        recv_ = roc_receiver_new(&config);
+        CHECK(recv_);
+        CHECK(roc_receiver_bind(recv_, ROC_PROTO_RTP_RSM8_SOURCE, source_addr_.saddr())
+              == 0);
+        CHECK(roc_receiver_bind(recv_, ROC_PROTO_RSM8_REPAIR, repair_addr_.saddr()) == 0);
+        CHECK(roc_receiver_start(recv_) == 0);
+    }
+
+    ~Receiver() {
+        roc_receiver_stop(recv_);
+        roc_receiver_delete(recv_);
+    }
+
+    packet::Address source_addr() {
+        return source_addr_;
+    }
+
+    packet::Address repair_addr() {
+        return repair_addr_;
+    }
+
+    ssize_t read(float* samples, const size_t n_samples) {
+        return roc_receiver_read(recv_, samples, n_samples);
+    }
+
+private:
+    roc_receiver* recv_;
+
+    packet::Address source_addr_;
+    packet::Address repair_addr_;
+};
+
+class Proxy : private packet::IWriter {
+public:
+    Proxy(const packet::Address& dst_source_addr,
+          const packet::Address& dst_repair_addr,
+          const size_t block_size)
+        : trx_(packet_pool, byte_buffer_pool, allocator)
+        , dst_source_addr_(dst_source_addr)
+        , dst_repair_addr_(dst_repair_addr)
+        , block_size_(block_size)
+        , num_(0) {
+        CHECK(packet::parse_address("127.0.0.1:0", send_addr_));
+        CHECK(packet::parse_address("127.0.0.1:0", recv_source_addr_));
+        CHECK(packet::parse_address("127.0.0.1:0", recv_repair_addr_));
+        writer_ = trx_.add_udp_sender(send_addr_);
+        CHECK(writer_);
+        CHECK(trx_.add_udp_receiver(recv_source_addr_, *this));
+        CHECK(trx_.add_udp_receiver(recv_repair_addr_, *this));
+    }
+
+    packet::Address source_addr() {
+        return recv_source_addr_;
+    }
+
+    packet::Address repair_addr() {
+        return recv_repair_addr_;
+    }
+
+    void start() {
+        trx_.start();
+    }
+
+    void stop() {
+        trx_.stop();
+        trx_.join();
+    }
+
+private:
+    virtual void write(const packet::PacketPtr& ptr) {
+        if (num_++ % block_size_ == 1) {
+            return;
+        }
+        ptr->udp()->src_addr = send_addr_;
+        if (ptr->udp()->dst_addr == recv_source_addr_) {
+            ptr->udp()->dst_addr = dst_source_addr_;
+        } else {
+            ptr->udp()->dst_addr = dst_repair_addr_;
+        }
+        writer_->write(ptr);
+    }
+
+    netio::Transceiver trx_;
+
+    packet::Address send_addr_;
+
+    packet::Address recv_source_addr_;
+    packet::Address recv_repair_addr_;
+
+    packet::Address dst_source_addr_;
+    packet::Address dst_repair_addr_;
+
+    packet::IWriter* writer_;
+
+    const size_t block_size_;
+    size_t num_;
+};
 
 } // namespace
 
 TEST_GROUP(sender_receiver) {
-    roc_config conf;
-    static const size_t packet_len = 640;
-    static const size_t packet_num = 100;
+    static const size_t n_channels = 2;
 
-    //! Relays samples with losses.
-    class proxy : public datagram::IDatagramWriter {
-    public:
-        proxy(datagram::IDatagramWriter& datagram_writer,
-              const char* src_addr,
-              const char* dst_addr,
-              const size_t loss_rate)
-            : writer_(datagram_writer)
-            , loss_rate_(loss_rate)
-            , is_first(true) {
-            CHECK(netio::parse_address(src_addr, src_addr_));
-            CHECK(netio::parse_address(dst_addr, dst_addr_));
-        }
-        virtual ~proxy() {
-        }
+    static const size_t n_source_packets = 10;
+    static const size_t n_repair_packets = 5;
 
-        virtual void write(const datagram::IDatagramPtr& ptr) {
-            // FIXME: we can't lost first packet with marker so far,
-            // otherwise block decoder won't be able to find the beginning
-            // of the block. Will be removed when roc will support FECFRAME.
-            if (!is_first && core::random(100) < loss_rate_) {
-                return;
-            } else if (is_first) {
-                is_first = false;
-            }
-            ptr->set_sender(src_addr_);
-            ptr->set_receiver(dst_addr_);
-            writer_.write(ptr);
-        }
+    static const size_t packet_len = 100;
+    static const size_t packet_num = n_source_packets * 5;
 
-    private:
-        datagram::Address src_addr_;
-        datagram::Address dst_addr_;
-        datagram::IDatagramWriter& writer_;
+    static const size_t frame_size = packet_len * 2;
 
-        const size_t loss_rate_;
-        bool is_first;
-    };
-
-    class sender : public core::Thread {
-    public:
-        sender(roc_config& config,
-               const char* dst_address,
-               float* samples,
-               const size_t len)
-            : sndr_(roc_sender_new(&config))
-            , samples_(samples)
-            , sz_(len) {
-            roc_sender_bind(sndr_, dst_address);
-        }
-        virtual ~sender() {
-            roc_sender_delete(sndr_);
-        }
-
-    private:
-        virtual void run() {
-            roc_sender_write(sndr_, samples_, sz_);
-        }
-
-        roc_sender* sndr_;
-        float* samples_;
-        const size_t sz_;
-    };
+    roc_sender_config sender_conf;
+    roc_receiver_config receiver_conf;
 
     static const size_t total_sz = packet_len * packet_num;
     float s2send[total_sz];
     float s2recv[total_sz];
 
     void setup() {
-        memset(&conf, 0, sizeof(roc_config));
-        conf.options = ROC_API_CONF_RESAMPLER_OFF | ROC_API_CONF_INTERLEAVER_OFF;
-        conf.FEC_scheme = roc_config::ReedSolomon2m;
-        conf.samples_per_packet = (unsigned int)packet_len / 2;
-        conf.n_source_packets = 10;
-        conf.n_repair_packets = 5;
-        conf.latency = packet_len * 20;
-        conf.timeout = packet_len * 300;
+        memset(&sender_conf, 0, sizeof(sender_conf));
+        sender_conf.flags |= ROC_FLAG_DISABLE_INTERLEAVER;
+        sender_conf.flags |= ROC_FLAG_ENABLE_TIMER;
+        sender_conf.samples_per_packet = (unsigned int)packet_len / n_channels;
+        sender_conf.fec_scheme = ROC_FEC_RS8M;
+        sender_conf.n_source_packets = n_source_packets;
+        sender_conf.n_repair_packets = n_repair_packets;
+
+        memset(&receiver_conf, 0, sizeof(receiver_conf));
+        receiver_conf.flags |= ROC_FLAG_DISABLE_RESAMPLER;
+        receiver_conf.flags |= ROC_FLAG_ENABLE_TIMER;
+        receiver_conf.samples_per_packet = (unsigned int)packet_len / n_channels;
+        receiver_conf.fec_scheme = ROC_FEC_RS8M;
+        receiver_conf.n_source_packets = n_source_packets;
+        receiver_conf.n_repair_packets = n_repair_packets;
+        receiver_conf.latency = packet_len * 20;
+        receiver_conf.timeout = packet_len * 300;
 
         const float sstep = 1. / 32768.;
         float sval = -1 + sstep;
@@ -127,7 +235,7 @@ TEST_GROUP(sender_receiver) {
         }
     }
 
-    void check_sample_arrays(roc_receiver * recv, float* original, const size_t len) {
+    void check_sample_arrays(Receiver & recv, float* original, const size_t len) {
         float rx_buff[packet_len];
         size_t s_first = 0;
         size_t inner_cntr = 0;
@@ -138,7 +246,7 @@ TEST_GROUP(sender_receiver) {
         while (s_last == 0) {
             size_t i = 0;
             ipacket++;
-            CHECK(roc_receiver_read(recv, rx_buff, packet_len) == (ssize_t)packet_len);
+            LONGS_EQUAL(packet_len, recv.read(rx_buff, packet_len));
             if (seek_first) {
                 for (; i < packet_len && fabs(double(rx_buff[i])) < 1e-9;
                      i++, s_first++) {
@@ -154,7 +262,7 @@ TEST_GROUP(sender_receiver) {
                         CHECK(fabs(double(rx_buff[i])) < 1e-9);
                         s_last = inner_cntr + s_first;
                         roc_log(LogInfo,
-                                "FINISH: s_first: %lu, s_last: %lu, inner_cntr: %lu",
+                                "finish: s_first: %lu, s_last: %lu, inner_cntr: %lu",
                                 (unsigned long)s_first, (unsigned long)s_last,
                                 (unsigned long)inner_cntr);
                         break;
@@ -162,7 +270,7 @@ TEST_GROUP(sender_receiver) {
                         char sbuff[256];
                         int sbuff_i =
                             snprintf(sbuff, sizeof(sbuff),
-                                     "Failed comparing samples #%lu\n\npacket_num: %lu\n",
+                                     "failed comparing samples #%lu\n\npacket_num: %lu\n",
                                      (unsigned long)inner_cntr, (unsigned long)ipacket);
                         snprintf(&sbuff[sbuff_i], sizeof(sbuff) - (size_t)sbuff_i,
                                  "original: %f,\treceived: %f\n",
@@ -177,54 +285,35 @@ TEST_GROUP(sender_receiver) {
     }
 };
 
-TEST(sender_receiver, single_bunch) {
-    roc_receiver* recv = roc_receiver_new(&conf);
-    sender sndr(conf, recv_address, s2send, total_sz);
+TEST(sender_receiver, simple) {
+    Receiver recv(receiver_conf);
 
-    CHECK(roc_receiver_bind(recv, recv_address));
+    Sender sndr(sender_conf, recv.source_addr(), recv.repair_addr(), s2send, total_sz,
+                frame_size);
 
     sndr.start();
     check_sample_arrays(recv, s2send, total_sz);
     sndr.join();
-
-    roc_receiver_delete(recv);
 }
 
 #ifdef ROC_TARGET_OPENFEC
-TEST(sender_receiver, test_fec) {
-    netio::Transceiver trx;
-    const char* relay_addr_str = "127.0.0.1:5998";
-    const char* src_addr_str = "127.0.0.1:5999";
-    proxy relay(trx.udp_sender(), src_addr_str, recv_address, 5);
-    sender sndr(conf, relay_addr_str, s2send, total_sz);
+TEST(sender_receiver, losses) {
+    Receiver recv(receiver_conf);
 
-    roc_receiver* recv = roc_receiver_new(&conf);
+    Proxy proxy(recv.source_addr(), recv.repair_addr(),
+                n_source_packets + n_repair_packets);
 
-    datagram::Address relay_addr;
-    datagram::Address src_addr;
-    datagram::Address dst_addr;
+    Sender sndr(sender_conf, proxy.source_addr(), proxy.repair_addr(), s2send, total_sz,
+                frame_size);
 
-    CHECK(netio::parse_address(relay_addr_str, relay_addr));
-    CHECK(netio::parse_address(src_addr_str, src_addr));
-    CHECK(netio::parse_address(recv_address, dst_addr));
-
-    CHECK(trx.add_udp_sender(src_addr));
-    CHECK(trx.add_udp_receiver(relay_addr, relay));
-
-    trx.start();
-
-    CHECK(roc_receiver_bind(recv, recv_address));
+    proxy.start();
 
     sndr.start();
     check_sample_arrays(recv, s2send, total_sz);
     sndr.join();
 
-    trx.stop();
-    trx.join();
-
-    roc_receiver_delete(recv);
+    proxy.stop();
 }
 #endif // ROC_TARGET_OPENFEC
 
-} // namespace test
 } // namespace roc

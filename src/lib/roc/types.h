@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2015 Mikhail Baranov
- * Copyright (c) 2015 Victor Gaydov
+ * Copyright (c) 2017 Mikhail Baranov
+ * Copyright (c) 2017 Victor Gaydov
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,6 +15,6 @@
 #include <stddef.h>
 #include <unistd.h>
 
-#define ROC_API __attribute__((visibility ("default")))
+#define ROC_API __attribute__((visibility("default")))
 
 #endif // ROC_TYPES_H_

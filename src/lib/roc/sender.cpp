@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2015 Mikhail Baranov
- * Copyright (c) 2015 Victor Gaydov
+ * Copyright (c) 2017 Mikhail Baranov
+ * Copyright (c) 2017 Victor Gaydov
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -9,183 +9,208 @@
 
 #include "roc/sender.h"
 
-#include "roc_audio/sample_buffer_queue.h"
+#include "roc_core/heap_allocator.h"
 #include "roc_core/log.h"
-#include "roc_core/math.h"
-#include "roc_core/scoped_ptr.h"
-#include "roc_datagram/address_to_str.h"
-#include "roc_datagram/datagram_queue.h"
-#include "roc_netio/inet_address.h"
 #include "roc_netio/transceiver.h"
+#include "roc_packet/address_to_str.h"
+#include "roc_packet/parse_address.h"
 #include "roc_pipeline/sender.h"
 
 using namespace roc;
 
 namespace {
 
-bool make_sender_config(pipeline::SenderConfig& out, const roc_config* in) {
-    out = pipeline::SenderConfig(0);
+// TODO: make this configurable
+enum { MaxPacketSize = 2048, MaxFrameSize = 65 * 1024 };
 
-    if (in->options & ROC_API_CONF_RESAMPLER_OFF) {
-    } else {
-        out.options |= pipeline::EnableResampling;
-    }
-    if (in->options & ROC_API_CONF_INTERLEAVER_OFF) {
-    } else {
-        out.options |= pipeline::EnableInterleaving;
-    }
-    if (in->options & ROC_API_CONF_DISABLE_TIMING) {
-    } else {
-        out.options |= pipeline::EnableTiming;
-    }
-
-    if (in->FEC_scheme == roc_config::ReedSolomon2m) {
-        out.fec.codec = fec::ReedSolomon2m;
-    } else if (in->FEC_scheme == roc_config::LDPC) {
-        out.fec.codec = fec::LDPCStaircase;
-    } else {
-        out.fec.codec = fec::NoCodec;
-    }
-
+bool make_sender_config(pipeline::SenderConfig& out, const roc_sender_config* in) {
     out.samples_per_packet = in->samples_per_packet;
+
+    switch ((unsigned)in->fec_scheme) {
+    case ROC_FEC_RS8M:
+        out.fec.codec = fec::ReedSolomon8m;
+        break;
+    case ROC_FEC_LDPC_STAIRCASE:
+        out.fec.codec = fec::LDPCStaircase;
+        break;
+    case ROC_FEC_NONE:
+        out.fec.codec = fec::NoCodec;
+        break;
+    default:
+        return false;
+    }
+
     out.fec.n_source_packets = in->n_source_packets;
     out.fec.n_repair_packets = in->n_repair_packets;
+
+    out.interleaving = !(in->flags & ROC_FLAG_DISABLE_INTERLEAVER);
+    out.timing = (in->flags & ROC_FLAG_ENABLE_TIMER);
 
     return true;
 }
 
-} // anonymous
+bool make_port_config(pipeline::PortConfig& out,
+                      roc_protocol proto,
+                      const struct sockaddr* addr) {
+    switch ((unsigned)proto) {
+    case ROC_PROTO_RTP:
+        out.protocol = pipeline::Proto_RTP;
+        break;
+    case ROC_PROTO_RTP_RSM8_SOURCE:
+        out.protocol = pipeline::Proto_RTP_RSm8_Source;
+        break;
+    case ROC_PROTO_RSM8_REPAIR:
+        out.protocol = pipeline::Proto_RSm8_Repair;
+        break;
+    case ROC_PROTO_RTP_LDPC_SOURCE:
+        out.protocol = pipeline::Proto_RTP_LDPC_Source;
+        break;
+    case ROC_PROTO_LDPC_REPAIR:
+        out.protocol = pipeline::Proto_LDPC_Repair;
+        break;
+    default:
+        return false;
+    }
+
+    if (!out.address.set_saddr(addr)) {
+        return false;
+    }
+
+    return true;
+}
+
+} // namespace
 
 struct roc_sender {
-    roc_sender(const pipeline::SenderConfig& config)
-        : config_(config)
-        , buffer_pos_(0)
-        , n_bufs_(0)
-        , client_(sample_queue_, trx_.udp_sender(), trx_.udp_composer(), config_) {
+    core::HeapAllocator allocator;
+
+    packet::PacketPool packet_pool;
+    core::BufferPool<uint8_t> byte_buffer_pool;
+    core::BufferPool<audio::sample_t> sample_buffer_pool;
+
+    rtp::FormatMap format_map;
+
+    pipeline::SenderConfig config;
+
+    netio::Transceiver trx;
+    core::UniquePtr<pipeline::Sender> sender;
+
+    packet::IWriter* udp_sender;
+
+    roc_sender(pipeline::SenderConfig& cfg)
+        : packet_pool(allocator, 1)
+        , byte_buffer_pool(allocator, MaxPacketSize, 1)
+        , sample_buffer_pool(allocator, MaxFrameSize, 1)
+        , config(cfg)
+        , trx(packet_pool, byte_buffer_pool, allocator)
+        , udp_sender(NULL) {
     }
-
-    ~roc_sender() {
-        sample_queue_.write(audio::ISampleBufferConstSlice());
-
-        client_.join();
-
-        trx_.stop();
-        trx_.join();
-    }
-
-    bool bind(const char* address) {
-        datagram::Address src_addr;
-        datagram::Address dst_addr;
-        if (!netio::parse_address(address, dst_addr)) {
-            roc_log(LogError, "can't parse source address: %s", address);
-            return false;
-        }
-
-        if (!trx_.add_udp_sender(src_addr)) {
-            roc_log(LogError, "can't register udp sender: %s",
-                    datagram::address_to_str(src_addr).c_str());
-            return false;
-        }
-
-        client_.set_audio_port(src_addr, dst_addr, pipeline::Proto_RTP);
-        client_.set_repair_port(src_addr, dst_addr, pipeline::Proto_RTP);
-
-        trx_.start();
-        client_.start();
-
-        return true;
-    }
-
-    ssize_t write(const float* samples, size_t n_samples) {
-        size_t sent_samples = 0;
-
-        while (sent_samples < n_samples) {
-            size_t n = write_packet_(samples + sent_samples, n_samples - sent_samples);
-            if (n == 0) {
-                break;
-            }
-            sent_samples += n;
-        }
-
-        return (ssize_t)sent_samples;
-    }
-
-private:
-    size_t write_packet_(const float* samples, size_t n_samples) {
-        audio::ISampleBufferComposer& composer = audio::default_buffer_composer();
-
-        const size_t buffer_size = config_.samples_per_packet;
-
-        if (!buffer_) {
-            if (!(buffer_ = composer.compose())) {
-                roc_log(LogError, "reader: can't compose buffer");
-                return 0;
-            }
-
-            buffer_->set_size(buffer_size);
-        }
-
-        packet::sample_t* buf_samples = buffer_->data();
-
-        const size_t samples_2_copy = ROC_MIN(buffer_->size() - buffer_pos_, n_samples);
-
-        memcpy(&buf_samples[buffer_pos_], samples,
-               samples_2_copy * sizeof(packet::sample_t));
-
-        buffer_pos_ += samples_2_copy;
-        samples += samples_2_copy;
-
-        if (buffer_pos_ == buffer_->size()) {
-            sample_queue_.write(*buffer_);
-
-            buffer_.reset();
-            buffer_pos_ = 0;
-
-            n_bufs_++;
-        }
-
-        return samples_2_copy;
-    }
-
-    const pipeline::SenderConfig config_;
-    audio::SampleBufferQueue sample_queue_;
-
-    audio::ISampleBufferPtr buffer_;
-    size_t buffer_pos_;
-    size_t n_bufs_;
-
-    netio::Transceiver trx_;
-    pipeline::Sender client_;
 };
 
-roc_sender* roc_sender_new(const roc_config* config) {
+roc_sender* roc_sender_new(const roc_sender_config* config) {
     pipeline::SenderConfig c;
 
     if (!make_sender_config(c, config)) {
         return NULL;
     }
-    roc_log(LogInfo, "C API: create roc_sender");
+
+    roc_log(LogInfo, "roc sender: creating sender");
     return new roc_sender(c);
 }
 
-void roc_sender_delete(roc_sender* sender) {
-    roc_panic_if(sender == NULL);
+int roc_sender_bind(roc_sender* sender, struct sockaddr* src_addr) {
+    roc_panic_if(!sender);
+    roc_panic_if(!src_addr);
+    roc_panic_if(sender->udp_sender);
 
-    roc_log(LogInfo, "C API: delete sender");
-    delete sender;
+    packet::Address addr;
+    if (!addr.set_saddr(src_addr)) {
+        return -1;
+    }
+
+    sender->udp_sender = sender->trx.add_udp_sender(addr);
+    if (!sender->udp_sender) {
+        return -1;
+    }
+
+    memcpy(src_addr, addr.saddr(), addr.slen());
+    return 0;
 }
 
-bool roc_sender_bind(roc_sender* sender, const char* address) {
-    roc_panic_if(sender == NULL);
+int roc_sender_connect(roc_sender* sender,
+                       roc_protocol proto,
+                       const struct sockaddr* dst_addr) {
+    roc_panic_if(!sender);
+    roc_panic_if(!dst_addr);
 
-    roc_log(LogInfo, "C API: bind to \"%s\"", address);
-    return sender->bind(address);
+    pipeline::PortConfig port;
+    if (!make_port_config(port, proto, dst_addr)) {
+        return -1;
+    }
+
+    switch ((unsigned)port.protocol) {
+    case pipeline::Proto_RTP:
+    case pipeline::Proto_RTP_RSm8_Source:
+    case pipeline::Proto_RTP_LDPC_Source:
+        sender->config.source_port = port;
+        break;
+
+    case pipeline::Proto_RSm8_Repair:
+    case pipeline::Proto_LDPC_Repair:
+        sender->config.repair_port = port;
+        break;
+
+    default:
+        return -1;
+    }
+
+    return 0;
+}
+
+int roc_sender_start(roc_sender* sender) {
+    roc_panic_if(!sender);
+    roc_panic_if(sender->sender);
+
+    sender->sender.reset(new (sender->allocator) pipeline::Sender(
+                             sender->config, *sender->udp_sender, *sender->udp_sender,
+                             sender->format_map, sender->packet_pool,
+                             sender->byte_buffer_pool, sender->allocator),
+                         sender->allocator);
+
+    sender->trx.start();
+    return 0;
 }
 
 ssize_t
 roc_sender_write(roc_sender* sender, const float* samples, const size_t n_samples) {
-    roc_panic_if(sender == NULL);
-    roc_panic_if(samples == NULL && n_samples != 0);
+    roc_panic_if(!sender);
+    roc_panic_if(!sender->sender);
+    roc_panic_if(!samples && n_samples != 0);
 
-    return sender->write(samples, n_samples);
+    audio::Frame frame;
+    frame.samples = new (sender->sample_buffer_pool)
+        core::Buffer<audio::sample_t>(sender->sample_buffer_pool);
+
+    frame.samples.resize(n_samples);
+    roc_panic_if(sizeof(float) != sizeof(audio::sample_t));
+    memcpy(frame.samples.data(), samples, n_samples * sizeof(audio::sample_t));
+
+    sender->sender->write(frame);
+
+    return (ssize_t)n_samples;
+}
+
+void roc_sender_stop(roc_sender* sender) {
+    roc_panic_if(!sender);
+    roc_panic_if(!sender->sender);
+
+    sender->trx.stop();
+    sender->trx.join();
+}
+
+void roc_sender_delete(roc_sender* sender) {
+    roc_panic_if(!sender);
+
+    roc_log(LogInfo, "roc sender: deleting sender");
+    delete sender;
 }
