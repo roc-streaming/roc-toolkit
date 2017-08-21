@@ -17,6 +17,8 @@ int main(int argc, const char** argv) {
 
     if (args.parse(NULL) && args.isVerbose()) {
         roc::core::set_log_level(roc::LogDebug);
+    } else {
+        roc::core::set_log_level(roc::LogNone);
     }
 
     MemoryLeakWarningPlugin::turnOffNewDeleteOverloads();
