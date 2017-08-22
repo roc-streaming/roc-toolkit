@@ -14,7 +14,6 @@
 
 #include "roc_core/panic.h"
 #include "roc_core/time.h"
-#include "roc_core/log.h"
 
 namespace roc {
 namespace core {
@@ -50,7 +49,7 @@ uint64_t timestamp_ms() {
         mach_timebase_info_data_t info;
         kern_return_t ret = mach_timebase_info(&info);
         if (ret != KERN_SUCCESS) {
-            roc_panic("mach_timebase_info: %d", ret);
+            roc_panic("mach_timebase_info: %s", mach_error_string(ret));
         }
         steady_factor = (double) info.numer / info.denom;
         tm_start = 1;
