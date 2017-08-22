@@ -15,13 +15,13 @@
 #include "roc_core/panic.h"
 #include "roc_core/time.h"
 
-namespace roc {
-namespace core {
-
 #include <mach/clock.h>
 #include <mach/clock_types.h>
 #include <mach/mach.h>
 #include <mach/mach_time.h>
+
+namespace roc {
+namespace core {
 
 /* As Apple mentioned: "The mach_timespec_t API is deprecated in OS X. The
  * newer and preferred API is based on timer objects that in turn use
@@ -51,7 +51,7 @@ uint64_t timestamp_ms() {
         if (ret != KERN_SUCCESS) {
             roc_panic("mach_timebase_info: %s", mach_error_string(ret));
         }
-        steady_factor = (double) info.numer / info.denom;
+        steady_factor = (double)info.numer / info.denom;
         tm_start = 1;
     }
 
