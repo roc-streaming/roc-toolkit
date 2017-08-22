@@ -59,14 +59,26 @@ void sleep_for_ms(uint64_t ms) {
 #include <mach/mach.h>
 #include <mach/mach_time.h>
 
-/* mach_absolute_time() returns a Mach Time unit - clock ticks. The
- * length of a tick is a CPU dependent. On most Intel CPUs it probably
- * will be 1 nanoseconds per tick, but let's not rely on this. Mach
- * provides a conversation factor that can be used to convert abstract
- * mach time units to nanoseconds.
+/* As Apple mentioned: "The mach_timespec_t API is deprecated in OS X. The
+ * newer and preferred API is based on timer objects that in turn use
+ * AbsoluteTime as the basic data type".
+ *
+ * We still use a function from the old OS X API (clock_sleep), because OS X
+ * API only provides one method to wait until some period (mach_wait_until)
+ * and doesn't allow to select a clock against which the sleep interval is to
+ * be measured to specify the sleep interval as either an absolute or a
+ * relative value.
+ *
+ * https://developer.apple.com/library/content/documentation/Darwin/Conceptual/KernelProgramming/Mach/Mach.html#//apple_ref/doc/uid/TP30000905-CH209-TPXREF111
  */
-static double steady_factor() {
-    static double sf = 0;
+uint64_t timestamp_ms() {
+    /* mach_absolute_time() returns a Mach Time unit - clock ticks. The
+     * length of a tick is a CPU dependent. On most Intel CPUs it probably
+     * will be 1 nanoseconds per tick, but let's not rely on this. Mach
+     * provides a conversation factor that can be used to convert abstract
+     * mach time units to nanoseconds.
+     */
+    static double steady_factor = 0;
     static uint64_t tm_start = 0;
 
     if (!tm_start) {
@@ -75,22 +87,11 @@ static double steady_factor() {
         if (ret != KERN_SUCCESS) {
             roc_panic("mach_timebase_info: %d", ret);
         }
-        sf = (double) info.numer / info.denom;
+        steady_factor = (double) info.numer / info.denom;
         tm_start = 1;
     }
 
-    return sf;
-}
-
-/* As Apple mentioned: "The mach_timespec_t API is deprecated in OS X. The
- * newer and preferred API is based on timer objects that in turn use
- * AbsoluteTime as the basic data type".
- *
- * https://developer.apple.com/library/content/documentation/Darwin/Conceptual/KernelProgramming/Mach/Mach.html#//apple_ref/doc/uid/TP30000905-CH209-TPXREF111
- */
-uint64_t timestamp_ms() {
-    uint64_t now = uint64_t(mach_absolute_time() * steady_factor());
-    return now / 1000000;
+    return uint64_t(mach_absolute_time() * steady_factor) / 1000000;
 }
 
 void sleep_until_ms(uint64_t ms) {
@@ -113,8 +114,8 @@ void sleep_until_ms(uint64_t ms) {
             break;
         }
 
-        if (ret != EINTR) {
-            roc_panic("clock_sleep(TIME_ABSOLUTE): %d", ret);
+        if (ret != KERN_ABORTED) {
+            roc_panic("clock_sleep(TIME_ABSOLUTE): %s", mach_error_string(ret));
         }
     }
 }
@@ -131,8 +132,8 @@ void sleep_for_ms(uint64_t ms) {
             break;
         }
 
-        if (ret != EINTR) {
-            roc_panic("clock_sleep(TIME_RELATIVE): %d", ret);
+        if (ret != KERN_ABORTED) {
+            roc_panic("clock_sleep(TIME_RELATIVE): %s", mach_error_string(ret));
         }
     }
 }
