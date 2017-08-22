@@ -64,6 +64,9 @@ private:
 
     typedef packet::sample_t sample_t;
 
+    const packet::channel_mask_t channel_mask_;
+    const size_t channels_num_;
+
     //! Computes single sample of the particular audio channel.
     //!
     //! @param channel_offset a serial number of the channel
@@ -97,7 +100,7 @@ private:
 
     // Frame size.
     // (frame_size_ / st_Nwindow) is maximum allowed scaling ratio.
-    const size_t frame_size_;
+    const size_t channel_len_;
 
     const size_t window_len_;
     fixedpoint_t qt_half_sinc_window_len_;
@@ -124,8 +127,6 @@ private:
     fixedpoint_t qt_sinc_step_;
 
     const sample_t cutoff_freq_;
-    const packet::channel_mask_t channel_mask_;
-    const size_t channels_num_;
 };
 
 } // namespace audio
