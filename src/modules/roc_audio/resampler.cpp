@@ -73,10 +73,12 @@ Resampler::Resampler(IStreamReader& reader,
                      ISampleBufferComposer& composer,
                      size_t window_len, size_t frame_size,
                      packet::channel_mask_t channels)
-    : reader_(reader)
+    : channel_mask_(channels)
+    , channels_num_(packet::num_channels(channel_mask_))
+    , reader_(reader)
     , window_(3)
     , scaling_(0)
-    , frame_size_(frame_size)
+    , channel_len_(frame_size/channels_num_)
     , window_len_(window_len)
     , qt_half_sinc_window_len_(float_to_fixedpoint(window_len_))
     , window_interp_(512)
@@ -85,15 +87,13 @@ Resampler::Resampler(IStreamReader& reader,
     , qt_half_window_len_(float_to_fixedpoint((float)window_len_ / scaling_))
     , G_qt_epsilon_(float_to_fixedpoint(5e-8f))
     , G_default_sample_(float_to_fixedpoint(0))
-    , qt_frame_size_(fixedpoint_t(frame_size_ << FRACT_BIT_COUNT))
+    , qt_frame_size_(fixedpoint_t(channel_len_ << FRACT_BIT_COUNT))
     , qt_sample_(G_default_sample_)
     , qt_dt_(0)
     , cutoff_freq_(0.9f)
-    , channel_mask_(channels)
-    , channels_num_(packet::num_channels(channel_mask_))
     {
 
-    roc_panic_if(((fixedpoint_t)-1 >> FRACT_BIT_COUNT) < frame_size_);
+    roc_panic_if(((fixedpoint_t)-1 >> FRACT_BIT_COUNT) < channel_len_);
     init_window_(composer);
     fill_sinc();
 
@@ -103,7 +103,7 @@ Resampler::Resampler(IStreamReader& reader,
 bool Resampler::set_scaling(float scaling) {
     // Window's size changes according to scaling. If new window size
     // doesnt fit to the frames size -- deny changes.
-    if (window_len_ * scaling >= frame_size_) {
+    if (window_len_ * scaling >= channel_len_) {
         return false;
     }
     scaling_ = scaling;
@@ -133,14 +133,21 @@ void Resampler::read(const ISampleBufferSlice& buff) {
         renew_window_();
     }
 
-    for (size_t n = 0; n < buff_size; n++) {
+    for (size_t n = 0; n < buff_size; n += channels_num_) {
         if (qt_sample_ >= qt_frame_size_) {
             qt_sample_ -= qt_frame_size_;
             renew_window_();
         }
 
+        if ((qt_sample_ & FRACT_PART_MASK) < G_qt_epsilon_) {
+            qt_sample_ &= INTEGER_PART_MASK;
+        } else if ((G_qt_one - (qt_sample_ & FRACT_PART_MASK)) < G_qt_epsilon_) {
+            qt_sample_ &= INTEGER_PART_MASK;
+            qt_sample_ += G_qt_one;
+        }
+
         for (size_t channel = 0; channel < channels_num_; ++channel) {
-            buff_data[n] = resample_(channel);
+            buff_data[n+channel] = resample_(channel);
         }
         qt_sample_ += qt_dt_;
     }
@@ -153,7 +160,7 @@ void Resampler::init_window_(ISampleBufferComposer& composer) {
         if (!(window_[n] = composer.compose())) {
             roc_panic("resampler: can't compose buffer in constructor");
         }
-        window_[n]->set_size(frame_size_);
+        window_[n]->set_size(channel_len_);
     }
 
     prev_frame_ = NULL;
@@ -162,7 +169,7 @@ void Resampler::init_window_(ISampleBufferComposer& composer) {
 }
 
 void Resampler::renew_window_() {
-    roc_panic_if(window_len_ * scaling_ >= frame_size_);
+    roc_panic_if(window_len_ * scaling_ >= channel_len_);
 
     // scaling_ may change every frame so it have to be smooth.
     qt_dt_ = float_to_fixedpoint(scaling_);
@@ -174,7 +181,7 @@ void Resampler::renew_window_() {
     } else {
         window_.rotate(1);
         reader_.read(*window_.back());
-        roc_panic_if(window_.back()->size() != frame_size_);
+        roc_panic_if(window_.back()->size() != channel_len_);
     }
 
     prev_frame_ = window_[0]->data();
@@ -221,45 +228,38 @@ sample_t Resampler::resample_(const size_t channel_offset) {
     size_t ind_begin_prev;
 
     // Window lasts till that index.
-    const size_t ind_end_prev = frame_size_;
+    const size_t ind_end_prev = channelize_index(channel_len_, channel_offset);
 
     size_t ind_begin_cur;
     size_t ind_end_cur;
 
-    const size_t ind_begin_next = 0;
+    const size_t ind_begin_next = channelize_index(0, channel_offset);
     size_t ind_end_next;
 
-    if ((qt_sample_ & FRACT_PART_MASK) < G_qt_epsilon_) {
-        qt_sample_ &= INTEGER_PART_MASK;
-    } else if ((G_qt_one - (qt_sample_ & FRACT_PART_MASK)) < G_qt_epsilon_) {
-        qt_sample_ &= INTEGER_PART_MASK;
-        qt_sample_ += G_qt_one;
-    }
-
     ind_begin_prev = (qt_sample_ >= qt_half_window_len_)
-        ? frame_size_
+        ? channel_len_
         : fixedpoint_to_size(qceil(qt_sample_ + (qt_frame_size_ - qt_half_window_len_)));
-    // ind_begin_prev is comparable with frame_size_ till we'll convert it to channalyzed
+    // ind_begin_prev is comparable with channel_len_ till we'll convert it to channalyzed
     // presentation.
-    roc_panic_if(ind_begin_prev > frame_size_);
+    roc_panic_if(ind_begin_prev > channel_len_);
     ind_begin_prev = channelize_index(ind_begin_prev, channel_offset);
 
     ind_begin_cur = (qt_sample_ >= qt_half_window_len_)
         ? fixedpoint_to_size(qceil(qt_sample_ - qt_half_window_len_))
         : 0;
-    roc_panic_if(ind_begin_cur > frame_size_);
+    roc_panic_if(ind_begin_cur > channel_len_);
     ind_begin_cur = channelize_index(ind_begin_cur, channel_offset);
 
     ind_end_cur = ((qt_sample_ + qt_half_window_len_) > qt_frame_size_)
-        ? frame_size_-1
+        ? channel_len_-1
         : fixedpoint_to_size(qfloor(qt_sample_ + qt_half_window_len_));
-    roc_panic_if(ind_end_cur > frame_size_);
+    roc_panic_if(ind_end_cur > channel_len_);
     ind_end_cur = channelize_index(ind_end_cur, channel_offset);
 
     ind_end_next = ((qt_sample_ + qt_half_window_len_) > qt_frame_size_)
         ? fixedpoint_to_size(qfloor(qt_sample_ + qt_half_window_len_ - qt_frame_size_))+1
         : 0;
-    roc_panic_if(ind_end_next > frame_size_);
+    roc_panic_if(ind_end_next > channel_len_);
     ind_end_next = channelize_index(ind_end_next, channel_offset);
 
     // Counter inside window.
@@ -298,7 +298,7 @@ sample_t Resampler::resample_(const size_t channel_offset) {
 
     i += channels_num_;
 
-    roc_panic_if(i > frame_size_);
+    roc_panic_if(i > channel_len_*channels_num_);
 
     // Crossing zero -- we just need to switch qt_sinc_cur.
     // -1 ------------ 0 ------------- +1
