@@ -379,7 +379,7 @@ else:
         ]
 
         if platform == 'linux':
-            targets.append('target_posix_time')
+            targets.append('target_posixtime')
         else:
             targets.append('target_darwin')
 
