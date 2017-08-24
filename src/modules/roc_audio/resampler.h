@@ -100,6 +100,7 @@ private:
     float scaling_;
 
     // Frame size.
+    const size_t frame_size_;
     // (frame_size_ / st_Nwindow) is maximum allowed scaling ratio.
     const size_t channel_len_;
 
