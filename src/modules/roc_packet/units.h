@@ -8,7 +8,7 @@
  */
 
 //! @file roc_packet/units.h
-//! @brief Typedefs for various units.
+//! @brief Various units used in packets.
 
 #ifndef ROC_PACKET_UNITS_H_
 #define ROC_PACKET_UNITS_H_
@@ -39,20 +39,13 @@ typedef uint32_t channel_mask_t;
 //! Channel number.
 typedef uint16_t channel_t;
 
-//! Audio sample.
-typedef float sample_t;
-
-//! Maximum possible value of a sample.
-extern const sample_t sample_max_val;
-
-//! Minimum possible value of a sample.
-extern const sample_t sample_min_val;
-
 //! Get number of channels in mask.
 static inline size_t num_channels(channel_mask_t ch_mask) {
     size_t n_ch = 0;
     for (; ch_mask != 0; ch_mask >>= 1) {
-        n_ch++;
+        if (ch_mask & 1) {
+            n_ch++;
+        }
     }
     return n_ch;
 }
