@@ -12,6 +12,8 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "roc_core/atomic.h"
+#include "roc_core/mutex.h"
 #include "roc_core/panic.h"
 #include "roc_core/time.h"
 
@@ -22,6 +24,16 @@
 
 namespace roc {
 namespace core {
+
+namespace {
+
+Mutex mach_time_mutex;
+
+Atomic time_info_init;
+
+double steady_factor = 0;
+
+} // namespace
 
 /* As Apple mentioned: "The mach_timespec_t API is deprecated in OS X. The
  * newer and preferred API is based on timer objects that in turn use
@@ -39,20 +51,23 @@ uint64_t timestamp_ms() {
     /* mach_absolute_time() returns a Mach Time unit - clock ticks. The
      * length of a tick is a CPU dependent. On most Intel CPUs it probably
      * will be 1 nanoseconds per tick, but let's not rely on this. Mach
-     * provides a conversation factor that can be used to convert abstract
+     * provides a transformation factor that can be used to convert abstract
      * mach time units to nanoseconds.
      */
-    static double steady_factor = 0;
-    static uint64_t tm_start = 0;
+    if (!time_info_init) {
+        Mutex::Lock lock(mach_time_mutex);
 
-    if (!tm_start) {
-        mach_timebase_info_data_t info;
-        kern_return_t ret = mach_timebase_info(&info);
-        if (ret != KERN_SUCCESS) {
-            roc_panic("mach_timebase_info: %s", mach_error_string(ret));
+        if (!time_info_init) {
+            mach_timebase_info_data_t info;
+
+            kern_return_t ret = mach_timebase_info(&info);
+            if (ret != KERN_SUCCESS) {
+                roc_panic("mach_timebase_info: %s", mach_error_string(ret));
+            }
+
+            steady_factor = (double)info.numer / info.denom;
+            time_info_init = 1;
         }
-        steady_factor = (double)info.numer / info.denom;
-        tm_start = 1;
     }
 
     return uint64_t(mach_absolute_time() * steady_factor) / 1000000;
@@ -61,7 +76,7 @@ uint64_t timestamp_ms() {
 void sleep_until_ms(uint64_t ms) {
     mach_timespec_t ts;
     ts.tv_sec = (unsigned int)ms / 1000;
-    ts.tv_nsec = ms % 1000 * 1000000;
+    ts.tv_nsec = int(ms % 1000 * 1000000);
 
     kern_return_t ret = KERN_SUCCESS;
     for (;;) {
@@ -87,7 +102,7 @@ void sleep_until_ms(uint64_t ms) {
 void sleep_for_ms(uint64_t ms) {
     mach_timespec_t ts;
     ts.tv_sec = (unsigned int)ms / 1000;
-    ts.tv_nsec = ms % 1000 * 1000000;
+    ts.tv_nsec = int(ms % 1000 * 1000000);
 
     kern_return_t ret = KERN_SUCCESS;
     for (;;) {

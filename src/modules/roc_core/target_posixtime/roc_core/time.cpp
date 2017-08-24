@@ -43,7 +43,7 @@ uint64_t timestamp_ms() {
 void sleep_until_ms(uint64_t ms) {
     timespec ts;
     ts.tv_sec = ms / 1000;
-    ts.tv_nsec = int(ms % 1000 * 1000000);
+    ts.tv_nsec = ms % 1000 * 1000000;
 
     while (clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &ts, NULL) == -1) {
         if (errno != EINTR) {
