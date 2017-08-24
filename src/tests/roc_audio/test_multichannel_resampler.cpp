@@ -26,7 +26,7 @@ using namespace audio;
 
 namespace {
 
-enum { FrameSize = ROC_CONFIG_DEFAULT_RESAMPLER_FRAME_SAMPLES};
+enum { FrameSize = ROC_CONFIG_DEFAULT_RESAMPLER_FRAME_SAMPLES*2};
 enum { ResamplerFIRLen = 200 };
 enum { nChannels = 2 };
 
@@ -40,7 +40,7 @@ TEST_GROUP(multichannel_resampler) {
     core::ScopedPtr<Resampler> resampler;
 
     void setup() {
-        resampler.reset(new Resampler(reader, default_buffer_composer(), ResamplerFIRLen, FrameSize*nChannels, nChannels));
+        resampler.reset(new Resampler(reader, default_buffer_composer(), ResamplerFIRLen, FrameSize, nChannels));
     }
 
     // Reads signal from the resampler and puts its spectrum into @p spectrum.
@@ -94,10 +94,10 @@ TEST(multichannel_resampler, mute_second_channel) {
     size_t i;
 
     for (size_t n = 0; n < InSamples/nChannels; n++) {
-        const packet::sample_t s = (packet::sample_t)AWGN_generator();
+        const packet::sample_t s = (packet::sample_t)sin(M_PI/4 * double(n));
         reader.add(1, s);
         for (size_t k = 0; k < nChannels - 1; k++) {
-            reader.add(1, s);
+            reader.add(1, 0);
         }
     }
 

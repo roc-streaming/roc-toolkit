@@ -78,6 +78,7 @@ Resampler::Resampler(IStreamReader& reader,
     , reader_(reader)
     , window_(3)
     , scaling_(0)
+    , frame_size_(frame_size)
     , channel_len_(frame_size/channels_num_)
     , window_len_(window_len)
     , qt_half_sinc_window_len_(float_to_fixedpoint(window_len_))
@@ -93,6 +94,7 @@ Resampler::Resampler(IStreamReader& reader,
     , cutoff_freq_(0.9f)
     {
 
+    roc_panic_if(frame_size_ != channel_len_*channels_num_);
     roc_panic_if(((fixedpoint_t)-1 >> FRACT_BIT_COUNT) < channel_len_);
     roc_panic_if(channels_num_ < 1);
     init_window_(composer);
@@ -161,7 +163,7 @@ void Resampler::init_window_(ISampleBufferComposer& composer) {
         if (!(window_[n] = composer.compose())) {
             roc_panic("resampler: can't compose buffer in constructor");
         }
-        window_[n]->set_size(channel_len_);
+        window_[n]->set_size(frame_size_);
     }
 
     prev_frame_ = NULL;
@@ -182,7 +184,7 @@ void Resampler::renew_window_() {
     } else {
         window_.rotate(1);
         reader_.read(*window_.back());
-        roc_panic_if(window_.back()->size() != channel_len_);
+        roc_panic_if(window_.back()->size() != channel_len_*channels_num_);
     }
 
     prev_frame_ = window_[0]->data();
