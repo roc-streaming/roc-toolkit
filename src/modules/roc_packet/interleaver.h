@@ -14,49 +14,51 @@
 #define ROC_PACKET_INTERLEAVER_H_
 
 #include "roc_core/array.h"
-#include "roc_core/byte_buffer.h"
+#include "roc_core/iallocator.h"
 #include "roc_core/noncopyable.h"
-
-#include "roc_packet/ipacket.h"
-#include "roc_packet/ipacket_writer.h"
+#include "roc_packet/iwriter.h"
+#include "roc_packet/packet.h"
 
 namespace roc {
 namespace packet {
 
-//! Interleaves packets to transmit in pseudo random order.
-class Interleaver : public packet::IPacketWriter, public core::NonCopyable<> {
+//! Interleaves packets to transmit them in pseudo random order.
+class Interleaver : public IWriter, public core::NonCopyable<> {
 public:
     //! Initialize.
     //! @remarks
     //!  Interleaver reorders packets passed to write() and writes
-    //!  them to @p output. @p delay_len must not be greater than delay_max_.
-    explicit Interleaver(packet::IPacketWriter&, const size_t delay_len);
+    //!  them to @p output.
+    Interleaver(IWriter& writer, core::IAllocator& allocator, size_t block_size);
 
     //! Write next packet.
     //! @remarks
     //!  Packets are written to internal buffer. Buffered packets are
     //!  then reordered and sent to output writer.
-    virtual void write(const packet::IPacketPtr& packet);
+    virtual void write(const PacketPtr& packet);
 
     //! Send all buffered packets to output writer.
     void flush();
 
     //! Maximum delay between writing packet and moment we get it in output
     //! in terms of packets number.
-    size_t window_size() const;
+    size_t block_size() const;
 
 private:
     //! Initialize tx_seq_ to a new randomized sequence.
-    void reinit_seq();
+    void reinit_seq_();
 
-    packet::IPacketWriter& output_;
+    // Output writer.
+    IWriter& writer_;
+
     // Number of packets in block.
-    size_t delay_len_;
-    //! Maximum possible number of packets in block.
-    static const size_t delay_max_ = 32;
-    size_t tx_seq_[delay_max_];
+    size_t block_size_;
+
+    // Output sequence.
+    core::Array<size_t> send_seq_;
+
     // Delay line.
-    core::Array<packet::IPacketPtr, delay_max_> pack_store_;
+    core::Array<PacketPtr> packets_;
 
     size_t next_2_put_, next_2_send_;
 };

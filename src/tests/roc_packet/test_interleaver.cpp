@@ -9,93 +9,105 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "roc_packet/interleaver.h"
-#include "roc_packet/packet_queue.h"
 #include "roc_core/array.h"
-#include "test_packet.h"
+#include "roc_core/heap_allocator.h"
+#include "roc_packet/concurrent_queue.h"
+#include "roc_packet/interleaver.h"
+#include "roc_packet/packet_pool.h"
 
 namespace roc {
-namespace test {
+namespace packet {
 
-using namespace packet;
+namespace {
+
+core::HeapAllocator allocator;
+PacketPool pool(allocator, 1);
+
+} // namespace
 
 TEST_GROUP(interleaver) {
-    IPacketPtr new_packet(seqnum_t sn) {
-        return new_audio_packet(0, sn, 0);
+    PacketPtr new_packet(seqnum_t sn) {
+        PacketPtr packet = new(pool) Packet(pool);
+        CHECK(packet);
+
+        packet->add_flags(Packet::FlagRTP);
+        packet->rtp()->seqnum = sn;
+
+        return packet;
     }
 };
 
 // Fill Interleaver with multiple of its internal memory size.
 TEST(interleaver, read_write) {
-    enum { MAX_PACKETS = 100 };
+    ConcurrentQueue queue(0, false);
+    Interleaver intrlvr(queue, allocator, 10);
 
-    PacketQueue receiver;
-    Interleaver intrlrvr(receiver, 10);
-
-    const size_t total_packets_num = intrlrvr.window_size() * 5;
+    const size_t num_packets = intrlvr.block_size() * 5;
 
     // Packets to push to Interleaver.
-    core::Array<IPacketPtr, MAX_PACKETS> ppackets(total_packets_num);
+    core::Array<PacketPtr> packets(allocator, num_packets);
+    packets.resize(num_packets);
 
     // Checks for received packets.
-    core::Array<bool, MAX_PACKETS> packets_ctr(total_packets_num);
+    core::Array<bool> packets_ctr(allocator, num_packets);
+    packets_ctr.resize(num_packets);
 
-    for (size_t i = 0; i < total_packets_num; i++) {
-        ppackets[i] = new_packet(seqnum_t(i));
+    for (size_t i = 0; i < num_packets; i++) {
+        packets[i] = new_packet(seqnum_t(i));
         packets_ctr[i] = false;
     }
 
     // No packets in interleaver on start.
-    LONGS_EQUAL(0, receiver.size());
+    LONGS_EQUAL(0, queue.size());
 
     // Push every packet to interleaver.
-    for (size_t i = 0; i < total_packets_num; i++) {
-        intrlrvr.write(ppackets[i]);
+    for (size_t i = 0; i < num_packets; i++) {
+        intrlvr.write(packets[i]);
     }
 
     // Interleaver must put all packets to its writer because we put pricesly
-    // integer number of its window_size.
-    LONGS_EQUAL(total_packets_num, receiver.size());
+    // integer number of its block_size.
+    LONGS_EQUAL(num_packets, queue.size());
 
     // Check that packets have different seqnums.
-    for (size_t i = 0; i < total_packets_num; i++) {
-        IPacketConstPtr p = receiver.read();
+    for (size_t i = 0; i < num_packets; i++) {
+        PacketPtr p = queue.read();
         CHECK(p);
-        CHECK(p->rtp()->seqnum() < total_packets_num);
-        CHECK(!packets_ctr[p->rtp()->seqnum()]);
-        packets_ctr[p->rtp()->seqnum()] = true;
+        CHECK(p->rtp()->seqnum < num_packets);
+        CHECK(!packets_ctr[p->rtp()->seqnum]);
+        packets_ctr[p->rtp()->seqnum] = true;
     }
 
-    // Nothing left in receiver.
-    LONGS_EQUAL(0, receiver.size());
-    intrlrvr.flush();
+    // Nothing left in queue.
+    LONGS_EQUAL(0, queue.size());
+    intrlvr.flush();
 
     // Nothing left in interleaver.
-    LONGS_EQUAL(0, receiver.size());
+    LONGS_EQUAL(0, queue.size());
 
     // Did we receive all packets that we've sent.
-    for (size_t i = 0; i < total_packets_num; i++) {
+    for (size_t i = 0; i < num_packets; i++) {
         CHECK(packets_ctr[i]);
     }
 }
 
 TEST(interleaver, flush) {
-    PacketQueue receiver;
-    Interleaver intrlrvr(receiver, 10);
+    ConcurrentQueue queue(0, false);
+    Interleaver intrlvr(queue, allocator, 10);
 
-    const size_t total_packets_num = intrlrvr.window_size() * 5;
+    const size_t num_packets = intrlvr.block_size() * 5;
 
-    for (size_t n = 0; n < total_packets_num; n++) {
-        IPacketPtr packet = new_packet(seqnum_t(n));
+    for (size_t n = 0; n < num_packets; n++) {
+        PacketPtr packet = new_packet(seqnum_t(n));
 
-        intrlrvr.write(packet);
-        intrlrvr.flush();
-        LONGS_EQUAL(1, receiver.size());
+        intrlvr.write(packet);
+        intrlvr.flush();
+        LONGS_EQUAL(1, queue.size());
 
-        CHECK(receiver.read() == packet);
-        LONGS_EQUAL(0, receiver.size());
+        CHECK(queue.read() == packet);
+        LONGS_EQUAL(0, queue.size());
     }
 }
 
-} // namespace test
+} // namespace packet
 } // namespace roc

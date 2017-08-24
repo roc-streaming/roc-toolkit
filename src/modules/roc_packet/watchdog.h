@@ -13,57 +13,45 @@
 #ifndef ROC_PACKET_WATCHDOG_H_
 #define ROC_PACKET_WATCHDOG_H_
 
-#include "roc_config/config.h"
 #include "roc_core/noncopyable.h"
-
-#include "roc_packet/imonitor.h"
-#include "roc_packet/ipacket.h"
-#include "roc_packet/ipacket_reader.h"
+#include "roc_packet/ireader.h"
 
 namespace roc {
 namespace packet {
 
 //! Watchdog.
-//!
-//! Triggers undesirable stream state and terminates rendering:
-//!  - if there are no new packets during long period;
-//!  - if long timestamp or seqnum jump occured.
-class Watchdog : public IMonitor, public IPacketReader, public core::NonCopyable<> {
+//! @remarks
+//!  Terminates session if there are no new packets during a long period of time.
+class Watchdog : public IReader, public core::NonCopyable<> {
 public:
     //! Initialize.
     //!
     //! @b Parameters
     //!  - @p reader is input packet reader; packets from @p reader
     //!    are returned from read();
-    //!  - @p timeout is maximum allowed number of renderer ticks
-    //!    without new packets before renderer termination;
-    //!  - @p rate is allowed rate for input packets; packets with
-    //!    other rate are dropped.
-    Watchdog(IPacketReader& reader,
-             size_t timeout = ROC_CONFIG_DEFAULT_SESSION_TIMEOUT,
-             size_t rate = ROC_CONFIG_DEFAULT_SAMPLE_RATE);
-
-    //! Update stream.
-    //! @returns
-    //!  false if stream is broken and rendering should terminate.
-    virtual bool update();
+    //!  - @p timeout is maximum allowed period without new packets
+    //!    before session termination;
+    Watchdog(IReader& reader, timestamp_t timeout);
 
     //! Read next packet.
     //! @remarks
-    //!  updates stream state and returns next packet from input reader.
-    virtual IPacketConstPtr read();
+    //!  Updates stream state and returns next packet from the input reader.
+    virtual PacketPtr read();
+
+    //! Update stream.
+    //! @returns
+    //!  false if there are no packets during session timeout.
+    bool update(timestamp_t time);
 
 private:
-    bool detect_jump_(const IPacketConstPtr&);
+    IReader& reader_;
 
-    IPacketReader& reader_;
-    IPacketConstPtr prev_;
+    const timestamp_t timeout_;
 
-    const size_t rate_;
-    size_t timeout_;
-    size_t countdown_;
+    timestamp_t update_time_;
+    timestamp_t read_time_;
 
-    bool has_packets_;
+    bool first_;
     bool alive_;
 };
 
