@@ -17,6 +17,7 @@
 #include "roc_core/noncopyable.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/array.h"
+#include "roc_packet/units.h"
 
 #include "roc_audio/istream_reader.h"
 #include "roc_audio/sample_buffer.h"
@@ -34,11 +35,13 @@ public:
     //! @b Parameters
     //!  - @p reader specifies input audio stream used in read();
     //!  - @p composer is used to construct temporary buffers;
-    //!  - @p frame_size is number of samples per resampler frame.
+    //!  - @p frame_size is number of samples per resampler frame per audio channel.
+    //!  - @p channels is the bitmask of audio channels.
     explicit Resampler(IStreamReader& reader,
                        ISampleBufferComposer& composer = default_buffer_composer(),
                        size_t window_len = 64,
-                       size_t frame_size = ROC_CONFIG_DEFAULT_RESAMPLER_FRAME_SAMPLES);
+                       size_t frame_size = ROC_CONFIG_DEFAULT_RESAMPLER_FRAME_SAMPLES,
+                       packet::channel_mask_t channels = 1);
 
     //! Fills buffer of samples with new sampling frequency.
     //! @remarks
@@ -62,7 +65,18 @@ private:
 
     typedef packet::sample_t sample_t;
 
-    sample_t resample_();
+    const packet::channel_mask_t channel_mask_;
+    const size_t channels_num_;
+
+    //! Computes single sample of the particular audio channel.
+    //!
+    //! @param channel_offset a serial number of the channel
+    //!  (e.g. left -- 0, right -- 1, etc.).
+    sample_t resample_(const size_t channel_offset);
+
+    inline size_t channelize_index(const size_t i, const size_t ch_offset) const {
+        return i * channels_num_ + ch_offset;
+    }
 
     void init_window_(ISampleBufferComposer&);
     void renew_window_();
@@ -86,8 +100,9 @@ private:
     float scaling_;
 
     // Frame size.
-    // (frame_size_ / st_Nwindow) is maximum allowed scaling ratio.
     const size_t frame_size_;
+    // (frame_size_ / st_Nwindow) is maximum allowed scaling ratio.
+    const size_t channel_len_;
 
     const size_t window_len_;
     fixedpoint_t qt_half_sinc_window_len_;

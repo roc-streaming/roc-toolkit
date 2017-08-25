@@ -26,7 +26,7 @@ using namespace audio;
 
 namespace {
 
-enum { FrameSize = ROC_CONFIG_DEFAULT_RESAMPLER_FRAME_SAMPLES};
+enum { FrameSize = ROC_CONFIG_DEFAULT_RESAMPLER_FRAME_SAMPLES*2};
 enum { ResamplerFIRLen = 200 };
 
 enum { OutSamples = FrameSize * 100 + 1, InSamples = OutSamples + (FrameSize * 3) };
