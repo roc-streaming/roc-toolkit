@@ -16,6 +16,7 @@
 #include "roc_core/circular_buffer.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/stddefs.h"
+#include "roc_core/array.h"
 
 #include "roc_audio/istream_reader.h"
 #include "roc_audio/sample_buffer.h"
@@ -36,6 +37,7 @@ public:
     //!  - @p frame_size is number of samples per resampler frame.
     explicit Resampler(IStreamReader& reader,
                        ISampleBufferComposer& composer = default_buffer_composer(),
+                       size_t window_len = 64,
                        size_t frame_size = ROC_CONFIG_DEFAULT_RESAMPLER_FRAME_SAMPLES);
 
     //! Fills buffer of samples with new sampling frequency.
@@ -54,6 +56,9 @@ public:
 
 private:
     typedef uint32_t fixedpoint_t;
+    typedef uint64_t long_fixedpoint_t;
+    typedef int32_t signed_fixedpoint_t;
+    typedef int64_t signed_long_fixedpoint_t;
 
     typedef packet::sample_t sample_t;
 
@@ -61,6 +66,8 @@ private:
 
     void init_window_(ISampleBufferComposer&);
     void renew_window_();
+    void fill_sinc();
+    inline sample_t sinc_(const fixedpoint_t x, const float fract_x);
 
     // Input stream.
     IStreamReader& reader_;
@@ -73,9 +80,25 @@ private:
     sample_t* curr_frame_;
     sample_t* next_frame_;
 
+    //! Resampling factor.
+    //!
+    //! s_out_step / s_in_step = Fs_from / Fs_to. 
+    float scaling_;
+
     // Frame size.
     // (frame_size_ / st_Nwindow) is maximum allowed scaling ratio.
     const size_t frame_size_;
+
+    const size_t window_len_;
+    fixedpoint_t qt_half_sinc_window_len_;
+    const size_t window_interp_;
+    const size_t window_interp_bits_; //!< The number of bits in window_interp_.
+    core::Array<sample_t, 524288> sinc_table_;
+
+    // G_ft_half_window_len in Q8.24 in terms of input signal.
+    fixedpoint_t qt_half_window_len_;
+    const fixedpoint_t G_qt_epsilon_;
+    const fixedpoint_t G_default_sample_;
 
     // Frame size in Q8.24.
     const fixedpoint_t qt_frame_size_;
@@ -87,8 +110,10 @@ private:
     // Time distance between two output samples, equals to resampling factor.
     fixedpoint_t qt_dt_;
 
-    // Resampling factor.
-    float scaling_;
+    // The step with which we iterate over the sinc_table_.
+    fixedpoint_t qt_sinc_step_;
+
+    const sample_t cutoff_freq_;
 };
 
 } // namespace audio
