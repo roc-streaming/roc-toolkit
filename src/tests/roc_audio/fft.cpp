@@ -1,5 +1,6 @@
 #include <algorithm> 
 #include <math.h>
+#include "fft.h"
 
 void FFT(double *data, unsigned long nn)
 {
