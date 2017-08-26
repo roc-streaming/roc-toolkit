@@ -12,15 +12,15 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "roc_core/atomic.h"
-#include "roc_core/mutex.h"
-#include "roc_core/panic.h"
-#include "roc_core/time.h"
-
 #include <mach/clock.h>
 #include <mach/clock_types.h>
 #include <mach/mach.h>
 #include <mach/mach_time.h>
+
+#include "roc_core/atomic.h"
+#include "roc_core/mutex.h"
+#include "roc_core/panic.h"
+#include "roc_core/time.h"
 
 namespace roc {
 namespace core {
