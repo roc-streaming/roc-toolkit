@@ -7,40 +7,37 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+#include <pthread.h>
 #include <stdlib.h>
 
+#include "roc_core/errno_to_str.h"
 #include "roc_core/panic.h"
 #include "roc_core/random.h"
 #include "roc_core/time.h"
-#include "roc_core/mutex.h"
 
 namespace roc {
 namespace core {
 
 namespace {
 
-Mutex rand_mutex;
-
-bool rand_init_done = false;
+pthread_once_t once_control = PTHREAD_ONCE_INIT;
 
 unsigned short rand_seed[3] = {};
 
-} // namespace
-
-void random_init(uint64_t seed_48) {
+void random_init() {
+    uint64_t seed_48 = timestamp_ms();
     rand_seed[0] = (seed_48 & 0xffff);
     rand_seed[1] = ((seed_48 >> 16) & 0xffff);
     rand_seed[2] = ((seed_48 >> 32) & 0xffff);
-    rand_init_done = true;
 }
+
+} // namespace
 
 // Insecure, but (hopefully?) uniform and thread-safe implementation.
 // See arc4random_uniform() from OpenBSD.
 unsigned random(unsigned from, unsigned to) {
-    Mutex::Lock lock(rand_mutex);
-
-    if (!rand_init_done) {
-        random_init(timestamp_ms());
+    if (int err = pthread_once(&once_control, random_init)) {
+        roc_panic("pthread_once: %s", errno_to_str(err).c_str());
     }
 
     roc_panic_if_not(from <= to);
