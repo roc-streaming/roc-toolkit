@@ -28,7 +28,7 @@ uint64_t timestamp_ms() {
 
     return uint64_t(ts.tv_sec * 1000 + ts.tv_nsec / 1000000);
 }
-#else
+#else // !CLOCK_MONOTONIC
 uint64_t timestamp_ms() {
     struct timeval tv;
     if (gettimeofday(&tv, NULL) == -1) {
@@ -37,7 +37,7 @@ uint64_t timestamp_ms() {
 
     return uint64_t(tv.tv_sec) * 1000 + uint64_t(tv.tv_usec) / 1000;
 }
-#endif
+#endif // CLOCK_MONOTONIC
 
 #ifdef TIMER_ABSTIME
 void sleep_until_ms(uint64_t ms) {
@@ -63,7 +63,7 @@ void sleep_for_ms(uint64_t ms) {
         }
     }
 }
-#else
+#else // !TIMER_ABSTIME
 void sleep_until_ms(uint64_t ms) {
     uint64_t now = timestamp_ms();
     if (ms > now) {
@@ -82,7 +82,7 @@ void sleep_for_ms(uint64_t ms) {
         }
     }
 }
-#endif
+#endif // TIMER_ABSTIME
 
 } // namespace core
 } // namespace roc
