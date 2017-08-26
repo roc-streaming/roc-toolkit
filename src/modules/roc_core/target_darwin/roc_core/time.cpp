@@ -100,21 +100,8 @@ void sleep_until_ms(uint64_t ms) {
 }
 
 void sleep_for_ms(uint64_t ms) {
-    mach_timespec_t ts;
-    ts.tv_sec = (unsigned int)ms / 1000;
-    ts.tv_nsec = int(ms % 1000 * 1000000);
-
-    kern_return_t ret = KERN_SUCCESS;
-    for (;;) {
-        ret = clock_sleep(MACH_PORT_NULL, TIME_RELATIVE, ts, NULL);
-        if (ret == KERN_SUCCESS) {
-            break;
-        }
-
-        if (ret != KERN_ABORTED) {
-            roc_panic("clock_sleep(TIME_RELATIVE): %s", mach_error_string(ret));
-        }
-    }
+    sleep_until_ms(timestamp_ms() + ms);
 }
+
 } // namespace core
 } // namespace roc
