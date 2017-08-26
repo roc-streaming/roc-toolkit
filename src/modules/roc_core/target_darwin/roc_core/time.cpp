@@ -65,12 +65,12 @@ uint64_t timestamp_ms() {
                 roc_panic("mach_timebase_info: %s", mach_error_string(ret));
             }
 
-            steady_factor = (double)info.numer / info.denom;
+            steady_factor = (double)info.numer / (uint32_t(info.denom * 1000000));
             time_info_init = 1;
         }
     }
 
-    return uint64_t(mach_absolute_time() * steady_factor) / 1000000;
+    return uint64_t(mach_absolute_time() * steady_factor);
 }
 
 void sleep_until_ms(uint64_t ms) {
