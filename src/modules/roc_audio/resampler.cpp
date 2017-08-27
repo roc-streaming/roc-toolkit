@@ -77,7 +77,7 @@ Resampler::Resampler(IStreamReader& reader,
     , channels_num_(packet::num_channels(channel_mask_))
     , reader_(reader)
     , window_(3)
-    , scaling_(0)
+    , scaling_(1.0)
     , frame_size_(frame_size)
     , channel_len_(frame_size/channels_num_)
     , window_len_(window_len)
