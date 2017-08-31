@@ -25,9 +25,11 @@
 namespace roc {
 namespace core {
 
-static pthread_once_t once_control = PTHREAD_ONCE_INIT;
+namespace {
 
-static double steady_factor = 0;
+pthread_once_t once_control = PTHREAD_ONCE_INIT;
+
+double steady_factor = 0;
 
 /* mach_absolute_time() returns a Mach Time unit - clock ticks. The
  * length of a tick is a CPU dependent. On most Intel CPUs it probably
@@ -35,7 +37,7 @@ static double steady_factor = 0;
  * provides a transformation factor that can be used to convert abstract
  * mach time units to nanoseconds.
  */
-static void init_steady_factor() {
+void init_steady_factor() {
     mach_timebase_info_data_t info;
 
     kern_return_t ret = mach_timebase_info(&info);
@@ -45,6 +47,8 @@ static void init_steady_factor() {
 
     steady_factor = (double)info.numer / (uint32_t(info.denom * 1000000));
 }
+
+} // namespace
 
 /* As Apple mentioned: "The mach_timespec_t API is deprecated in OS X. The
  * newer and preferred API is based on timer objects that in turn use
@@ -59,8 +63,8 @@ static void init_steady_factor() {
  * https://developer.apple.com/library/content/documentation/Darwin/Conceptual/KernelProgramming/Mach/Mach.html#//apple_ref/doc/uid/TP30000905-CH209-TPXREF111
  */
 uint64_t timestamp_ms() {
-    if (pthread_once(&once_control, init_steady_factor) == -1) {
-        roc_panic("pthread_once: %s", errno_to_str().c_str());
+    if (int err = pthread_once(&once_control, init_steady_factor)) {
+        roc_panic("pthread_once: %s", errno_to_str(err).c_str());
     }
     return uint64_t(mach_absolute_time() * steady_factor);
 }

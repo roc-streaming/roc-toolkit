@@ -81,7 +81,7 @@ void sleep_until_ms(uint64_t ms) {
     }
 }
 
-#else // !TIMER_ABSTIME && !CLOCK_MONOTONIC
+#else // !(TIMER_ABSTIME && CLOCK_MONOTONIC)
 
 void sleep_until_ms(uint64_t ms) {
     uint64_t now = timestamp_ms();
