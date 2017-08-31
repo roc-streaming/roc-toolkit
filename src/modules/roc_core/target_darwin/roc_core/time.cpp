@@ -8,6 +8,7 @@
  */
 
 #include <errno.h>
+#include <pthread.h>
 #include <sys/time.h>
 #include <time.h>
 #include <unistd.h>
@@ -17,23 +18,33 @@
 #include <mach/mach.h>
 #include <mach/mach_time.h>
 
-#include "roc_core/atomic.h"
-#include "roc_core/mutex.h"
+#include "roc_core/errno_to_str.h"
 #include "roc_core/panic.h"
 #include "roc_core/time.h"
 
 namespace roc {
 namespace core {
 
-namespace {
+static pthread_once_t once_control = PTHREAD_ONCE_INIT;
 
-Mutex mach_time_mutex;
+static double steady_factor = 0;
 
-Atomic time_info_init;
+/* mach_absolute_time() returns a Mach Time unit - clock ticks. The
+ * length of a tick is a CPU dependent. On most Intel CPUs it probably
+ * will be 1 nanoseconds per tick, but let's not rely on this. Mach
+ * provides a transformation factor that can be used to convert abstract
+ * mach time units to nanoseconds.
+ */
+static void init_steady_factor() {
+    mach_timebase_info_data_t info;
 
-double steady_factor = 0;
+    kern_return_t ret = mach_timebase_info(&info);
+    if (ret != KERN_SUCCESS) {
+        roc_panic("mach_timebase_info: %s", mach_error_string(ret));
+    }
 
-} // namespace
+    steady_factor = (double)info.numer / (uint32_t(info.denom * 1000000));
+}
 
 /* As Apple mentioned: "The mach_timespec_t API is deprecated in OS X. The
  * newer and preferred API is based on timer objects that in turn use
@@ -48,28 +59,9 @@ double steady_factor = 0;
  * https://developer.apple.com/library/content/documentation/Darwin/Conceptual/KernelProgramming/Mach/Mach.html#//apple_ref/doc/uid/TP30000905-CH209-TPXREF111
  */
 uint64_t timestamp_ms() {
-    /* mach_absolute_time() returns a Mach Time unit - clock ticks. The
-     * length of a tick is a CPU dependent. On most Intel CPUs it probably
-     * will be 1 nanoseconds per tick, but let's not rely on this. Mach
-     * provides a transformation factor that can be used to convert abstract
-     * mach time units to nanoseconds.
-     */
-    if (!time_info_init) {
-        Mutex::Lock lock(mach_time_mutex);
-
-        if (!time_info_init) {
-            mach_timebase_info_data_t info;
-
-            kern_return_t ret = mach_timebase_info(&info);
-            if (ret != KERN_SUCCESS) {
-                roc_panic("mach_timebase_info: %s", mach_error_string(ret));
-            }
-
-            steady_factor = (double)info.numer / (uint32_t(info.denom * 1000000));
-            time_info_init = 1;
-        }
+    if (pthread_once(&once_control, init_steady_factor) == -1) {
+        roc_panic("pthread_once: %s", errno_to_str().c_str());
     }
-
     return uint64_t(mach_absolute_time() * steady_factor);
 }
 
