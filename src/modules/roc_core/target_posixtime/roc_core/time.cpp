@@ -45,9 +45,10 @@ void sleep_for_ms(uint64_t ms) {
     ts.tv_sec = ms / 1000;
     ts.tv_nsec = ms % 1000 * 1000000;
 
-    while (clock_nanosleep(CLOCK_MONOTONIC, 0, &ts, NULL) == -1) {
-        if (errno != EINTR) {
-            roc_panic("clock_nanosleep(CLOCK_MONOTONIC): %s", errno_to_str().c_str());
+    int err;
+    while ((err = clock_nanosleep(CLOCK_MONOTONIC, 0, &ts, &ts))) {
+        if (err != EINTR) {
+            roc_panic("clock_nanosleep(CLOCK_MONOTONIC): %s", errno_to_str(err).c_str());
         }
     }
 }
@@ -71,9 +72,10 @@ void sleep_until_ms(uint64_t ms) {
     ts.tv_sec = ms / 1000;
     ts.tv_nsec = ms % 1000 * 1000000;
 
-    while (clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &ts, NULL) == -1) {
-        if (errno != EINTR) {
-            roc_panic("clock_nanosleep(CLOCK_MONOTONIC): %s", errno_to_str().c_str());
+    int err;
+    while ((err = clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &ts, NULL))) {
+        if (err != EINTR) {
+            roc_panic("clock_nanosleep(CLOCK_MONOTONIC): %s", errno_to_str(err).c_str());
         }
     }
 }
