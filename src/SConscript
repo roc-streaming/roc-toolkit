@@ -31,6 +31,7 @@ for moduledir in env.GlobDirs('modules/*'):
 
 env.Prepend(LIBS=modulelibs)
 env.Prepend(LIBS=modulelibs)
+env.Prepend(LIBS=modulelibs)
 
 if not GetOption('disable_lib'):
     cenv = env.Clone()
