@@ -1,7 +1,5 @@
 package "roc-recv"
-usage "roc-recv [OPTIONS] ADDRESS"
-
-args "--unamed-opts=ADDRESS"
+usage "roc-recv OPTIONS"
 
 section "Options"
 
@@ -10,6 +8,9 @@ section "Options"
 
     option "output" o "Output file or device" typestr="NAME" string optional
     option "type" t "Output codec or driver" typestr="TYPE" string optional
+
+    option "source" s "Source UDP address" typestr="ADDRESS" string required
+    option "repair" r "Repair UDP address" typestr="ADDRESS" string optional
 
     option "fec" - "FEC scheme"
         values="rs","ldpc","none" default="rs" enum optional
@@ -23,8 +24,8 @@ section "Options"
     option "resampling" - "Enabled/disable resampling"
         values="yes","no" default="yes" enum optional
 
-    option "timing" - "Enabled/disable pipeline timing"
-        values="yes","no" default="yes" enum optional
+    option "timing" - "Enabled/disable CPU timing"
+        values="yes","no" default="no" enum optional
 
     option "oneshot" 1 "Exit when last connected client disconnects"
         flag off
@@ -34,16 +35,13 @@ section "Options"
     option "rate" - "Sample rate (Hz)"
         int optional
 
-    option "session-timeout" - "Session timeout as number of samples"
+    option "timeout" - "Session timeout as number of samples"
         int optional
 
-    option "session-latency" - "Session latency as number of samples"
+    option "latency" - "Session latency as number of samples"
         int optional
 
-    option "output-latency" - "Output latency as number of samples"
-        int optional
-
-    option "output-frame" - "Number of samples per output frame"
+    option "resampler-window" - "Number of samples per resampler window"
         int optional
 
     option "resampler-frame" - "Number of samples per resampler frame"
@@ -51,7 +49,10 @@ section "Options"
 
 text "
 Address:
-  ADDRESS should be in form of `[IP]:PORT'. IP defaults to 0.0.0.0.
+  ADDRESS should be in one of the following forms:
+    - :PORT
+    - IPv4:PORT
+    - [IPv6]:PORT
 
 Output:
   Arguments for `--output' and `--type' options are passed to SoX:
@@ -59,18 +60,18 @@ Output:
     TYPE specifies file or device type
 
 Examples:
-  start receiver listening on all interfaces on UDP port `12345':
-    $ roc-recv -vv :12345
+  start receiver listening on all interfaces on two UDP ports:
+    $ roc-recv -vv -s :12345 -r :12346
 
   start receiver listening on particular interface:
-    $ roc-recv -vv 192.168.0.3:12345
+    $ roc-recv -vv -s 192.168.0.3:12345 -r 192.168.0.3:12346
 
   output to ALSA default device:
-    $ roc-recv -vv :12345 -t alsa
+    $ roc-recv -vv -s :12345 -r :12346 -t alsa
     or
-    $ roc-recv -vv :12345 -t alsa -o default
+    $ roc-recv -vv -s :12345 -r :12346 -t alsa -o default
 
   output to file:
-    $ roc-recv -vv :12345 -o record.wav
+    $ roc-recv -vv -s :12345 -r :12346 -o record.wav
     or
-    $ roc-recv -vv :12345 -o record.wav -t wav"
+    $ roc-recv -vv -s :12345 -r :12346 -o record.wav -t wav"

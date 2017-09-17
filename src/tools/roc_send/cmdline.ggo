@@ -1,18 +1,17 @@
 package "roc-send"
-usage "roc-send [OPTIONS] ADDRESS"
-
-args "--unamed-opts=ADDRESS"
+usage "roc-send OPTIONS"
 
 section "Options"
 
     option "verbose" v "Increase verbosity level (may be used multiple times)"
         multiple optional
 
-  option "source" s "Source address (default is 0.0.0.0:0, i.e. INADDR_ANY and random port)"
-        typestr="ADDRESS" string optional
-
     option "input" i "Input file or device" typestr="NAME" string optional
     option "type" t "Input codec or driver" typestr="TYPE" string optional
+
+    option "source" s "Remote source UDP address" typestr="ADDRESS" string required
+    option "repair" r "Remote repair UDP address" typestr="ADDRESS" string optional
+    option "local" l "Local UDP address" typestr="ADDRESS" string optional
 
     option "fec" - "FEC scheme"
         values="rs","ldpc","none" default="rs" enum optional
@@ -24,7 +23,7 @@ section "Options"
         int optional
 
     option "interleaving" - "Enable/disable packet interleaving"
-        values="yes","no" default="yes" enum optional
+        values="yes","no" default="no" enum optional
 
     option "timing" - "Enable/disable pipeline timing"
         values="yes","no" default="yes" enum optional
@@ -32,18 +31,12 @@ section "Options"
     option "rate" - "Sample rate (Hz)"
         int optional
 
-    option "loss-rate" - "Set percentage of packets to be randomly lost, [0; 100]"
-        int optional
-
-    option "delay-rate" - "Set percentage of packets to be randomly delayed, [0; 100]"
-        dependon="delay" int optional
-
-    option "delay" - "Set delay time, milliseconds"
-        dependon="delay-rate" int optional
-
 text "
 Address:
-  ADDRESS should be in form of `[IP]:PORT'. IP defaults to 0.0.0.0.
+  ADDRESS should be in one of the following forms:
+    - :PORT
+    - IPv4:PORT
+    - [IPv6]:PORT
 
 Output:
   Arguments for `--input' and `--type' options are passed to SoX:
@@ -52,17 +45,17 @@ Output:
 
 Examples:
   send wav file:
-    $ roc-send -vv 192.168.0.3:12345 -i song.wav
+    $ roc-send -vv -s 192.168.0.3:12345 -r 192.168.0.3:12346 -i song.wav
     or
-    $ roc-send -vv 192.168.0.3:12345 -i song.wav -t wav
+    $ roc-send -vv -s 192.168.0.3:12345 -r 192.168.0.3:12346 -i song.wav -t wav
 
   capture sound from default driver and device:
-    $ roc-send -vv 192.168.0.3:12345
+    $ roc-send -vv -s 192.168.0.3:12345 -r 192.168.0.3:12346
 
   capture sound from default ALSA device:
-    $ roc-send -vv 192.168.0.3:12345 -t alsa
+    $ roc-send -vv -s 192.168.0.3:12345 -r 192.168.0.3:12346 -t alsa
     or
-    $ roc-send -vv 192.168.0.3:12345 -t alsa -i default
+    $ roc-send -vv -s 192.168.0.3:12345 -r 192.168.0.3:12346 -t alsa -i default
 
   capture sound from specific pulseaudio device:
-    $ roc-send -vv 192.168.0.3:12345 -t pulseaudio -i <device>"
+    $ roc-send -vv -s 192.168.0.3:12345 -r 192.168.0.3:12346 -t pulseaudio -i <device>"
