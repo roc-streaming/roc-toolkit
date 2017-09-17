@@ -7,14 +7,14 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_audio/sample_buffer_queue.h"
+#include "roc_core/heap_allocator.h"
 #include "roc_core/log.h"
-#include "roc_datagram/address_to_str.h"
-#include "roc_datagram/datagram_queue.h"
-#include "roc_netio/inet_address.h"
 #include "roc_netio/transceiver.h"
+#include "roc_packet/address_to_str.h"
+#include "roc_packet/parse_address.h"
 #include "roc_pipeline/sender.h"
-#include "roc_sndio/reader.h"
+#include "roc_sndio/init.h"
+#include "roc_sndio/recorder.h"
 
 #include "roc_send/cmdline.h"
 
@@ -22,18 +22,11 @@ using namespace roc;
 
 namespace {
 
+enum { MaxPacketSize = 2048, MaxFrameSize = 65 * 1024 };
+
 bool check_ge(const char* option, int value, int min_value) {
     if (value < min_value) {
         roc_log(LogError, "invalid `--%s=%d': should be >= %d", option, value, min_value);
-        return false;
-    }
-    return true;
-}
-
-bool check_range(const char* option, int value, int min_value, int max_value) {
-    if (value < min_value || value > max_value) {
-        roc_log(LogError, "invalid `--%s=%d': should be in range [%d; %d]", option, value,
-                min_value, max_value);
         return false;
     }
     return true;
@@ -49,117 +42,127 @@ int main(int argc, char** argv) {
         return code;
     }
 
-    if (args.inputs_num != 1) {
-        fprintf(stderr, "%s\n", gengetopt_args_info_usage);
-        return 1;
-    }
-
     core::set_log_level(LogLevel(LogError + args.verbose_given));
 
-    datagram::Address src_addr;
+    sndio::init();
+
+    pipeline::SenderConfig config;
+
     if (args.source_given) {
-        if (!netio::parse_address(args.source_arg, src_addr)) {
-            roc_log(LogError, "can't parse source address: %s", args.source_arg);
+        if (!packet::parse_address(args.source_arg, config.source_port.address)) {
+            roc_log(LogError, "can't parse remote source address: %s", args.source_arg);
             return 1;
         }
     }
 
-    datagram::Address dst_addr;
-    if (!netio::parse_address(args.inputs[0], dst_addr)) {
-        roc_log(LogError, "can't parse destination address: %s", args.inputs[0]);
-        return 1;
+    if (args.repair_given) {
+        if (!packet::parse_address(args.repair_arg, config.repair_port.address)) {
+            roc_log(LogError, "can't parse remote repair address: %s", args.repair_arg);
+            return 1;
+        }
     }
 
-    pipeline::SenderConfig config;
-    if (args.fec_arg == fec_arg_none) {
-        config.fec.codec = roc::fec::NoCodec;
-    } else if (args.fec_arg == fec_arg_rs) {
-        config.fec.codec = roc::fec::ReedSolomon2m;
-    } else if (args.fec_arg == fec_arg_ldpc) {
-        config.fec.codec = roc::fec::LDPCStaircase;
+    packet::Address local_addr;
+    if (args.local_given) {
+        if (!packet::parse_address(args.local_arg, local_addr)) {
+            roc_log(LogError, "can't parse local address: %s", args.local_arg);
+            return 1;
+        }
+    } else {
+        packet::parse_address(":0", local_addr);
     }
+
+    switch ((unsigned)args.fec_arg) {
+    case fec_arg_none:
+        config.fec.codec = fec::NoCodec;
+        config.source_port.protocol = pipeline::Proto_RTP;
+        config.repair_port.protocol = pipeline::Proto_RTP;
+        break;
+
+    case fec_arg_rs:
+        config.fec.codec = fec::ReedSolomon8m;
+        config.source_port.protocol = pipeline::Proto_RTP_RSm8_Source;
+        config.repair_port.protocol = pipeline::Proto_RSm8_Repair;
+        break;
+
+    case fec_arg_ldpc:
+        config.fec.codec = fec::LDPCStaircase;
+        config.source_port.protocol = pipeline::Proto_RTP_LDPC_Source;
+        config.repair_port.protocol = pipeline::Proto_LDPC_Repair;
+        break;
+
+    default:
+        break;
+    }
+
     if (args.nbsrc_given) {
         if (config.fec.codec != roc::fec::NoCodec) {
             roc_log(LogError, "`--nbsrc' option should not be used when --fec=none)");
             return 1;
         }
-        if (!check_range("nbsrc", args.nbsrc_arg, 3,
-                         ROC_CONFIG_MAX_FEC_BLOCK_SOURCE_PACKETS)) {
-            return 1;
-        }
         config.fec.n_source_packets = (size_t)args.nbsrc_arg;
     }
+
     if (args.nbrpr_given) {
         if (config.fec.codec != roc::fec::NoCodec) {
             roc_log(LogError, "`--nbrpr' option should not be used when --fec=none");
             return 1;
         }
-        if (!check_range("nbrpr", args.nbrpr_arg, 1, (int)config.fec.n_source_packets)) {
-            return 1;
-        }
         config.fec.n_repair_packets = (size_t)args.nbrpr_arg;
     }
-    if (args.interleaving_arg == interleaving_arg_yes) {
-        config.options |= pipeline::EnableInterleaving;
-    }
-    if (args.timing_arg == timing_arg_yes) {
-        config.options |= pipeline::EnableTiming;
-    }
+
+    config.interleaving = (args.interleaving_arg == interleaving_arg_yes);
+    config.timing = (args.timing_arg == timing_arg_yes);
+
     if (args.rate_given) {
         if (!check_ge("rate", args.rate_arg, 1)) {
             return 1;
         }
-        config.sample_rate = (size_t)args.rate_arg;
-    }
-    if (args.loss_rate_given) {
-        if (!check_range("loss-rate", args.loss_rate_arg, 0, 100)) {
-            return 1;
-        }
-        config.random_loss_rate = (size_t)args.loss_rate_arg;
-    }
-    if (args.delay_rate_given) {
-        if (!check_range("delay-rate", args.delay_rate_arg, 0, 100)) {
-            return 1;
-        }
-        if (!check_ge("delay", args.delay_arg, 0)) {
-            return 1;
-        }
-        config.random_delay_rate = (size_t)args.delay_rate_arg;
-        config.random_delay_time = (size_t)args.delay_arg;
+        config.sample_rate = (packet::timestamp_t)args.rate_arg;
     }
 
-    audio::SampleBufferQueue sample_queue;
+    core::HeapAllocator allocator;
 
-    sndio::Reader reader(sample_queue, audio::default_buffer_composer(), config.channels,
-                         config.samples_per_packet / 2, config.sample_rate);
+    core::BufferPool<uint8_t> byte_buffer_pool(allocator, MaxPacketSize, 1);
+    core::BufferPool<audio::sample_t> sample_buffer_pool(allocator, MaxFrameSize, 1);
+    packet::PacketPool packet_pool(allocator, 1);
 
-    if (!reader.open(args.input_arg, args.type_arg)) {
+    rtp::FormatMap format_map;
+
+    netio::Transceiver trx(packet_pool, byte_buffer_pool, allocator);
+    if (!trx.valid()) {
+        roc_log(LogError, "can't create network transceiver");
+        return 1;
+    }
+
+    packet::IWriter* udp_sender = trx.add_udp_sender(local_addr);
+    if (!udp_sender) {
+        roc_log(LogError, "can't create udp sender");
+        return 1;
+    }
+
+    pipeline::Sender sender(config, *udp_sender, *udp_sender, format_map, packet_pool,
+                            byte_buffer_pool, allocator);
+    if (!sender.valid()) {
+        roc_log(LogError, "can't create sender pipeline");
+        return 1;
+    }
+
+    sndio::Recorder recorder(sender, sample_buffer_pool, config.channels,
+                             config.samples_per_packet, config.sample_rate);
+
+    if (!recorder.open(args.input_arg, args.type_arg)) {
         roc_log(LogError, "can't open input file/device: %s %s", args.input_arg,
                 args.type_arg);
         return 1;
     }
 
-    netio::Transceiver trx;
-    if (!trx.add_udp_sender(src_addr)) {
-        roc_log(LogError, "can't register udp sender: %s",
-                datagram::address_to_str(src_addr).c_str());
-        return 1;
-    }
-
-    pipeline::Sender sender(sample_queue, trx.udp_sender(), trx.udp_composer(), config);
-
-    sender.set_audio_port(src_addr, dst_addr, pipeline::Proto_RTP);
-    sender.set_repair_port(src_addr, dst_addr, pipeline::Proto_RTP); // FIXME
-
     trx.start();
 
-    sender.start();
+    recorder.start();
+    recorder.join();
 
-    reader.start();
-    reader.join();
-
-    sender.join();
-
+    trx.stop();
     trx.join();
 
     return 0;
