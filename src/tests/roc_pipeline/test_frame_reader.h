@@ -57,7 +57,7 @@ public:
         UNSIGNED_LONGS_EQUAL(num_samples, frame.samples.size());
 
         for (size_t n = 0; n < num_samples; n++) {
-            CHECK(frame.samples.data()[n] == 0.0f);
+            DOUBLES_EQUAL(0.0f, frame.samples.data()[n], 1e6);
         }
     }
 

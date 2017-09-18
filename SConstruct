@@ -613,7 +613,6 @@ if compiler == 'gcc':
     env.Append(CXXFLAGS=[
         '-Wall',
         '-Wextra',
-        '-Wshadow',
         '-Wcast-qual',
         '-Wfloat-equal',
         '-Wpointer-arith',

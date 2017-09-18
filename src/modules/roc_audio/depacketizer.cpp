@@ -72,8 +72,7 @@ void Depacketizer::read(Frame& frame) {
         const double total_samples = missing_samples_ + packet_samples_;
 
         roc_log(LogDebug, "depacketizer: ts=%lu loss_ratio=%.5lf",
-                (unsigned long)timestamp_,
-                total_samples != 0.0 ? missing_samples_ / total_samples : 0.0);
+                (unsigned long)timestamp_, missing_samples_ / total_samples);
     }
 }
 
