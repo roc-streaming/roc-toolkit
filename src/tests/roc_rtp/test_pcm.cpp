@@ -83,7 +83,7 @@ TEST_GROUP(pcm) {
         }
 
         for (; n < MaxSamples; n++) {
-            CHECK(output[n] == 0.0f);
+            DOUBLES_EQUAL(0.0f, output[n], 1e6);
         }
     }
 };

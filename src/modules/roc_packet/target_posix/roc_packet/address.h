@@ -30,8 +30,13 @@ public:
     }
 
     //! Get sockaddr struct.
-    sockaddr* saddr() const {
+    sockaddr* saddr() {
         return (sockaddr*)&ss;
+    }
+
+    //! Get sockaddr struct.
+    const sockaddr* saddr() const {
+        return (const sockaddr*)&ss;
     }
 
     //! Get sockaddr struct length.
@@ -41,11 +46,11 @@ public:
 
     //! Copy given sockaddr struct to this address.
     bool set_saddr(const sockaddr* sa) {
-        socklen_t slen = sizeof_(sa->sa_family);
-        if (slen == 0) {
+        socklen_t sz = sizeof_(sa->sa_family);
+        if (sz == 0) {
             return false;
         }
-        memcpy(saddr(), sa, slen);
+        memcpy(saddr(), sa, sz);
         return true;
     }
 
