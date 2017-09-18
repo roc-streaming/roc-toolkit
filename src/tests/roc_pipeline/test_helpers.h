@@ -12,6 +12,8 @@
 
 #include <CppUTest/TestHarness.h>
 
+#include <stdio.h>
+
 #include "roc_audio/units.h"
 #include "roc_core/stddefs.h"
 #include "roc_packet/parse_address.h"

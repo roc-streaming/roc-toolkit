@@ -8,6 +8,7 @@
  */
 
 #include <uv.h>
+#include <stdio.h>
 
 #include "roc_core/endian.h"
 #include "roc_core/errno_to_str.h"
