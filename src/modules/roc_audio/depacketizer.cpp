@@ -69,10 +69,10 @@ void Depacketizer::read(Frame& frame) {
     roc_panic_if(buff_ptr != buff_end);
 
     if (rate_limiter_.allow()) {
-        const double total_samples = missing_samples_ + packet_samples_;
-
+        const size_t total_samples = missing_samples_ + packet_samples_;
         roc_log(LogDebug, "depacketizer: ts=%lu loss_ratio=%.5lf",
-                (unsigned long)timestamp_, missing_samples_ / total_samples);
+                (unsigned long)timestamp_,
+                total_samples != 0 ? (double)missing_samples_ / total_samples : 0.);
     }
 }
 

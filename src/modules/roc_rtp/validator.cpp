@@ -86,7 +86,7 @@ bool Validator::check_(const packet::RTP& prev, const packet::RTP& next) const {
         return false;
     }
 
-    if (next.payload_type != format_.payload_type) {
+    if (next.payload_type != (unsigned)format_.payload_type) {
         roc_log(LogDebug,
                 "rtp validator: unexpected payload type: expected=%u, actual=%u",
                 (unsigned)format_.payload_type, (unsigned)next.payload_type);
