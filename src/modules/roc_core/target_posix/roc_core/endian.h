@@ -19,15 +19,15 @@
 #include <sys/types.h>
 
 //! Network to host (16 bits).
-#define ROC_NTOH_16(v) ntohs(uint16_t(v))
+#define ROC_NTOH_16(v) ntohs(((uint16_t)(v)))
 
 //! Network to host (32 bits).
-#define ROC_NTOH_32(v) ntohl(uint32_t(v))
+#define ROC_NTOH_32(v) ntohl(((uint32_t)(v)))
 
 //! Host to network (16 bits).
-#define ROC_HTON_16(v) htons(uint16_t(v))
+#define ROC_HTON_16(v) htons(((uint16_t)(v)))
 
 //! Host to network (32 bits).
-#define ROC_HTON_32(v) htonl(uint32_t(v))
+#define ROC_HTON_32(v) htonl(((uint32_t)(v)))
 
 #endif // ROC_CORE_ENDIAN_H_
