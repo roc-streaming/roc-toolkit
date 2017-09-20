@@ -4,7 +4,7 @@ Roadmap
 Public API
 ----------
 
-- [ ] Simple API (sample sender and receiver) (*work in progress*)
+- [x] Simple API (sample sender and receiver)
 - [ ] Advanced API (packet encoder and decoder)
 
 Basic features
@@ -13,7 +13,7 @@ Basic features
 - [x] Network I/O
 - [x] Sound I/O
 - [x] Dynamic resampling
-- [ ] RTP support (*work in progress*)
+- [x] RTP support
 - [ ] FECFRAME support with Reed-Solomon and LDPC Staircase [FEC](https://en.wikipedia.org/wiki/Forward_error_correction) codes using [OpenFEC](http://openfec.org/)  (*work in progress*)
 - [ ] RTCP support for receiver feedback
 - [ ] Session negotiation, likely using RTSP/SDP
@@ -25,7 +25,7 @@ Advanced features
 - [ ] Dynamic latency adjustment (requires RTCP)
 - [ ] Dynamic adjustment of FEC code rate  (requires RTCP and [XRs](https://tools.ietf.org/html/rfc5725))
 - [ ] Compression ([lossless](https://en.wikipedia.org/wiki/Lossless_compression#Audio) and lossy,
-probably [Opus](https://www.opus-codec.org/))
+at least [Opus](https://www.opus-codec.org/))
 - [ ] Encryption (probably [SRTP](https://en.wikipedia.org/wiki/Secure_Real-time_Transport_Protocol))
 - [ ] Congestion control
 - [ ] Other FEC codes, notably [RaptorQ](https://tools.ietf.org/html/rfc6330) (see [OpenRQ](https://github.com/openrq-team/OpenRQ))
