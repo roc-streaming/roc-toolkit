@@ -114,7 +114,7 @@ struct SessionConfig {
         , latency(DefaultPacketSize * 27)
         , timeout(DefaultSampleRate * 2)
         , payload_type(rtp::PayloadType_L16_Stereo)
-        , fe_update_interval(4096)
+        , fe_update_interval(256)
         , resampling(false)
         , beep(false) {
     }

@@ -68,13 +68,12 @@ private:
 
     const packet::timestamp_t update_interval_;
     packet::timestamp_t update_time_;
-    packet::timestamp_t start_time_;
 
-    bool has_first_;
-    packet::timestamp_t first_;
+    bool has_head_;
+    packet::timestamp_t head_;
 
-    bool has_last_;
-    packet::timestamp_t last_;
+    bool has_tail_;
+    packet::timestamp_t tail_;
 
     bool started_;
 };

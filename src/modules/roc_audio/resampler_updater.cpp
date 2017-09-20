@@ -30,11 +30,10 @@ ResamplerUpdater::ResamplerUpdater(packet::timestamp_t update_interval,
     , rate_limiter_(LogRate)
     , update_interval_(update_interval)
     , update_time_(0)
-    , start_time_(0)
-    , has_first_(false)
-    , first_(0)
-    , has_last_(false)
-    , last_(0)
+    , has_head_(false)
+    , head_(0)
+    , has_tail_(false)
+    , tail_(0)
     , started_(false) {
 }
 
@@ -54,9 +53,9 @@ void ResamplerUpdater::set_resampler(Resampler& resampler) {
 }
 
 void ResamplerUpdater::write(const packet::PacketPtr& pp) {
-    if (!has_last_ || ROC_UNSIGNED_LE(packet::signed_timestamp_t, last_, pp->end())) {
-        last_ = pp->end();
-        has_last_ = true;
+    if (!has_tail_ || ROC_UNSIGNED_LE(packet::signed_timestamp_t, tail_, pp->end())) {
+        tail_ = pp->end();
+        has_tail_ = true;
     }
     roc_panic_if(!writer_);
     writer_->write(pp);
@@ -65,29 +64,28 @@ void ResamplerUpdater::write(const packet::PacketPtr& pp) {
 packet::PacketPtr ResamplerUpdater::read() {
     roc_panic_if(!reader_);
     packet::PacketPtr pp = reader_->read();
-    if (!has_first_ && pp) {
-        first_ = pp->begin();
-        has_first_ = true;
+    if (!pp) {
+        return NULL;
+    }
+    if (!has_head_ || ROC_UNSIGNED_LE(packet::signed_timestamp_t, head_, pp->begin())) {
+        head_ = pp->begin();
+        has_head_ = true;
     }
     return pp;
 }
 
 bool ResamplerUpdater::update(packet::timestamp_t time) {
-    if (!has_first_ || !has_last_) {
+    if (!has_head_ || !has_tail_) {
         return true;
     }
 
     if (!started_) {
         started_ = true;
-        start_time_ = time;
         update_time_ = time;
     }
 
-    const packet::timestamp_t local_pos = time - start_time_;
-    const packet::timestamp_t remote_pos = last_ - first_;
-
     packet::signed_timestamp_t queue_size =
-        ROC_UNSIGNED_SUB(packet::signed_timestamp_t, remote_pos, local_pos);
+        ROC_UNSIGNED_SUB(packet::signed_timestamp_t, tail_, head_);
 
     if (queue_size < 0) {
         queue_size = 0;
@@ -99,8 +97,7 @@ bool ResamplerUpdater::update(packet::timestamp_t time) {
     }
 
     if (rate_limiter_.allow()) {
-        roc_log(LogDebug, "resampler updater: local=%lu remote=%lu queue=%lu fe=%.5f",
-                (unsigned long)local_pos, (unsigned long)remote_pos,
+        roc_log(LogDebug, "resampler updater: queue_size=%lu fe=%.5f",
                 (unsigned long)queue_size, (double)fe_.freq_coeff());
     }
 
