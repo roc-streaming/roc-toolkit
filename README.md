@@ -20,10 +20,10 @@ Branch    | Linux
 `master`  | [![](https://travis-ci.org/roc-project/roc.svg?branch=master)](https://travis-ci.org/roc-project/roc)
 `develop` | [![](https://travis-ci.org/roc-project/roc.svg?branch=develop)](https://travis-ci.org/roc-project/roc)
 
-Roadmap
--------
+Work in progress!
+-----------------
 
-Work in progress! There is no public release yet. See [open issues](https://github.com/roc-project/roc/issues) and [Roadmap](Roadmap.md) for current and future plans.
+There is no public release yet. See [Roadmap](Roadmap.md) and [open issues](https://github.com/roc-project/roc/issues) for current and future plans.
 
 The upcoming 0.1 release will include the following features:
 
@@ -33,15 +33,17 @@ The upcoming 0.1 release will include the following features:
 - [x] Sound I/O (in tools)
 - [x] Audio processing pipeline with dynamic resampling
 - [x] RTP support with uncompressed 16-bit linear PCM
-- [ ] FECFRAME support with Reed-Solomon and LDPC Staircase [FEC](https://en.wikipedia.org/wiki/Forward_error_correction) codes using [OpenFEC](http://openfec.org/)
+- [ ] FECFRAME support with Reed-Solomon and LDPC-Staircase [FEC](https://en.wikipedia.org/wiki/Forward_error_correction) codes using [OpenFEC](http://openfec.org/)
 - [ ] Documentation
 - [x] Linux support, including Raspberry Pi
-- [ ] MacOS support
+- [ ] Mac OS X support
+- [ ] Proof of concept Roc-based network transport for PulseAudio
 
 Documentation
 -------------
 
 * [Wiki](https://github.com/roc-project/roc/wiki)
+* [API](https://github.com/roc-project/roc/tree/develop/src/lib/roc) (*work in progress*)
 
 Building
 --------
@@ -55,16 +57,16 @@ After building, tools are instaleld into `bin/<host>/` directory.
 
 Example usage:
 
-* Start server listening on all interfaces on UDP port `12345`:
+* Start receiver listening on all interfaces on UDP ports `10001` and `10002`:
 
     ```
-    $ rov-recv -vv :12345
+    $ roc-recv -vv -s :10001 -r :10002
     ```
 
-* Send WAV file to server:
+* Send WAV file to the receiver:
 
     ```
-    $ roc-send -vv -i song.wav <server_ip>:12345
+    $ roc-send -vv -s <receiver_ip>:10001 -r <receiver_ip>:10002 -i file.wav
     ```
 
 See `--help` option for usage details.
@@ -72,12 +74,19 @@ See `--help` option for usage details.
 Supported platforms
 -------------------
 
-Currently only Linux is supported. There are plans to add support for other *nix, Mac OS X, Windows, and embedded platforms like FreeRTOS.
+* Linux
+* Mac OS X (*work in progress*)
+
+There are [plans](https://github.com/roc-project/roc/blob/develop/Roadmap.md) to support other platforms, notably other *nix systems, Android, and maybe some embedded systems like FreeRTOS.
 
 Supported protocols
 -------------------
 
-*work in progress*
+* [RTP](https://tools.ietf.org/html/rfc3550): [A/V Profile](https://tools.ietf.org/html/rfc3551)
+* [FECFRAME](https://tools.ietf.org/html/rfc6363): [Reed-Solomon Scheme](https://tools.ietf.org/html/rfc6865) (*work in progress*)
+* [FECFRAME](https://tools.ietf.org/html/rfc6363): [LDPC-Staircase Scheme](https://tools.ietf.org/html/rfc6816) (*work in progress*)
+
+There are [plans](https://github.com/roc-project/roc/blob/develop/Roadmap.md) to support RTCP, SAP/SDP, and RTSP in upcoming releases.
 
 Contributing
 ------------
