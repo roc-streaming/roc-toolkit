@@ -1,0 +1,12 @@
+# for Roc
+brew "scons"
+brew "gengetopt"
+brew "sox"
+brew "libuv"
+
+# for 3rd-parties
+brew "libtool"
+brew "autoconf"
+brew "automake"
+brew "make"
+brew "cmake"

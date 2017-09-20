@@ -2,34 +2,42 @@ language: generic
 
 branches:
   only:
-    - master
-    - develop
+      - master
+      - develop
 
-sudo: required
-dist: trusty
-
-services:
-  - docker
-
-before_install:
-    - docker pull rocproject/ci-ubuntu:17.04
-    - docker pull rocproject/ci-ubuntu:16.04
-    - docker pull rocproject/ci-ubuntu:14.04
-    - docker pull rocproject/ci-fedora
-    - docker pull rocproject/ci-debian
-    - docker pull rocproject/ci-centos
-    - docker pull rocproject/ci-empty
-    - docker pull rocproject/cross-raspberry
-    - docker pull rocproject/cross-linaro
-
-script:
-    - scripts/travis/docker.sh rocproject/ci-ubuntu:17.04 scripts/travis/ubuntu-17.04.sh
-    - scripts/travis/docker.sh rocproject/ci-ubuntu:16.04 scripts/travis/ubuntu-16.04.sh
-    - scripts/travis/docker.sh rocproject/ci-ubuntu:14.04 scripts/travis/ubuntu-14.04.sh
-    - scripts/travis/docker.sh rocproject/ci-fedora scripts/travis/fedora.sh
-    - scripts/travis/docker.sh rocproject/ci-debian scripts/travis/debian.sh
-    - scripts/travis/docker.sh rocproject/ci-centos scripts/travis/centos.sh
-    - scripts/travis/docker.sh rocproject/ci-empty scripts/travis/empty.sh
-    - scripts/travis/docker.sh rocproject/cross-raspberry scripts/travis/raspberry.sh
-    - scripts/travis/docker.sh rocproject/cross-linaro scripts/travis/linaro.sh
-    - cat build.status
+matrix:
+    include:
+        - os: linux
+          sudo: required
+          dist: trusty
+          services:
+              - docker
+          before_install:
+              - docker pull rocproject/ci-ubuntu:17.04
+              - docker pull rocproject/ci-ubuntu:16.04
+              - docker pull rocproject/ci-ubuntu:14.04
+              - docker pull rocproject/ci-fedora
+              - docker pull rocproject/ci-debian
+              - docker pull rocproject/ci-centos
+              - docker pull rocproject/ci-empty
+              - docker pull rocproject/cross-raspberry
+              - docker pull rocproject/cross-linaro
+          script:
+              - scripts/travis/linux/docker.sh rocproject/ci-ubuntu:17.04 scripts/travis/linux/ubuntu-17.04.sh
+              - scripts/travis/linux/docker.sh rocproject/ci-ubuntu:16.04 scripts/travis/linux/ubuntu-16.04.sh
+              - scripts/travis/linux/docker.sh rocproject/ci-ubuntu:14.04 scripts/travis/linux/ubuntu-14.04.sh
+              - scripts/travis/linux/docker.sh rocproject/ci-fedora scripts/travis/linux/fedora.sh
+              - scripts/travis/linux/docker.sh rocproject/ci-debian scripts/travis/linux/debian.sh
+              - scripts/travis/linux/docker.sh rocproject/ci-centos scripts/travis/linux/centos.sh
+              - scripts/travis/linux/docker.sh rocproject/ci-empty scripts/travis/linux/empty.sh
+              - scripts/travis/linux/docker.sh rocproject/cross-raspberry scripts/travis/linux/raspberry.sh
+              - scripts/travis/linux/docker.sh rocproject/cross-linaro scripts/travis/linux/linaro.sh
+              - cat build.status
+        - os: osx
+          osx_image: xcode7.3
+          script:
+              - scripts/travis/osx/build.sh
+        - os: osx
+          osx_image: xcode9.1
+          script:
+              - scripts/travis/osx/build.sh
