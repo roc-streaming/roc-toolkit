@@ -242,6 +242,8 @@ void OFDecoder::destroy_session_() {
 void OFDecoder::report_() {
     size_t n_lost = 0, n_repaired = 0;
 
+    status_[blk_source_packets_] = ' ';
+
     for (size_t i = 0; i < buff_tab_.size(); ++i) {
         char* status = (i < blk_source_packets_ ? &status_[i] : &status_[i + 1]);
 
