@@ -49,23 +49,16 @@ AddOption('--disable-doc',
           action='store_true',
           help='disable doxygen documentation generation')
 
-AddOption('--with-openfec',
-          dest='with_openfec',
-          choices=['yes', 'no'],
-          default='yes',
-          help='use OpenFEC for LDPC-Staircase codecs')
-
-AddOption('--with-sox',
-          dest='with_sox',
-          choices=['yes', 'no'],
-          default='yes',
-          help='use SoX for audio input/output')
+AddOption('--disable-openfec',
+          dest='disable_openfec',
+          action='store_true',
+          help='disable OpenFEC support required for FEC codes')
 
 AddOption('--with-3rdparty',
           dest='with_3rdparty',
           action='store',
           type='string',
-          help='download and build 3rdparty libraries')
+          help='download and build specified 3rdparty libraries')
 
 AddOption('--with-targets',
           dest='with_targets',
@@ -388,18 +381,15 @@ else:
             'target_darwin',
         ])
 
-    if GetOption('with_openfec') == 'yes':
-        env.Append(ROC_TARGETS=[
-            'target_openfec',
-        ])
-
-    if GetOption('with_sox') == 'yes':
+    if not GetOption('disable_tools'):
         env.Append(ROC_TARGETS=[
             'target_sox',
         ])
-    else:
-        if not GetOption('disable_tools'):
-            env.Die("--with-sox=no requires --disable-tools option")
+
+    if not GetOption('disable_openfec'):
+        env.Append(ROC_TARGETS=[
+            'target_openfec',
+        ])
 
 env.Append(CXXFLAGS=[])
 env.Append(CPPDEFINES=[])
@@ -411,22 +401,31 @@ lib_env = env.Clone()
 tool_env = env.Clone()
 test_env = env.Clone()
 
-alldeps = env['ROC_TARGETS']
-getdeps = []
-
-if not GetOption('disable_tools'):
-    alldeps += ['target_gengetopt']
+# all possible dependencies on this platform
+alldeps = set(env['ROC_TARGETS'])
 
 if not GetOption('disable_tests'):
-    alldeps += ['target_cpputest']
+    alldeps.add('target_cpputest')
+
+if not GetOption('disable_tools'):
+    alldeps.add('target_gengetopt')
+
+    if platform in ['linux']:
+        alldeps.add('target_alsa')
+        alldeps.add('target_pulseaudio')
+
+# dependencies that we should download and build manually
+getdeps = set()
 
 if GetOption('with_3rdparty'):
-    getdeps = ['target_%s' % t for t in GetOption('with_3rdparty').split(',')]
+    for t in GetOption('with_3rdparty').split(','):
+        getdeps.add('target_%s' % t)
 
-    if 'target_all' in getdeps:
-        getdeps = alldeps
+if 'target_all' in getdeps:
+    getdeps = alldeps
 
-extdeps = set(alldeps) - set(getdeps)
+# external dependencies that should be installed on system
+extdeps = alldeps - getdeps
 
 if 'target_uv' in extdeps:
     conf = Configure(env, custom_tests=env.CustomTests)
@@ -524,28 +523,34 @@ if 'target_openfec' in getdeps:
         'lib_stable',
     ])
 
+if 'target_alsa' in getdeps:
+    tool_env.ThirdParty(host, toolchain, thirdparty_variant, 'alsa-1.0.29')
+
+if 'target_pulseaudio' in getdeps:
+    pa_deps = [
+        'ltdl-2.4.6',
+        'json-0.11-20130402',
+        'sndfile-1.0.20',
+        ]
+
+    if 'target_alsa' in getdeps:
+        pa_deps += ['alsa-1.0.29']
+
+    tool_env.ThirdParty(host, toolchain, thirdparty_variant, 'ltdl-2.4.6')
+    tool_env.ThirdParty(host, toolchain, thirdparty_variant, 'json-0.11-20130402')
+    tool_env.ThirdParty(host, toolchain, thirdparty_variant, 'sndfile-1.0.20')
+    tool_env.ThirdParty(host, toolchain, thirdparty_variant, 'pulseaudio-5.0', pa_deps)
+
 if 'target_sox' in getdeps:
     sox_deps = []
 
-    if platform in ['linux']:
-        sox_deps = ['alsa-1.0.29', 'pulseaudio-5.0']
+    if 'target_alsa' in getdeps:
+        sox_deps += ['alsa-1.0.29']
 
-        tool_env.ThirdParty(host, toolchain, thirdparty_variant, 'alsa-1.0.29')
-        tool_env.ThirdParty(host, toolchain, thirdparty_variant, 'ltdl-2.4.6')
-        tool_env.ThirdParty(host, toolchain, thirdparty_variant, 'json-0.11-20130402')
-        tool_env.ThirdParty(host, toolchain, thirdparty_variant, 'sndfile-1.0.20')
-        tool_env.ThirdParty(host, toolchain, thirdparty_variant, 'pulseaudio-5.0',
-                            ['alsa-1.0.29',
-                             'ltdl-2.4.6',
-                             'json-0.11-20130402',
-                             'sndfile-1.0.20'])
+    if 'target_pulseaudio' in getdeps:
+        sox_deps += ['pulseaudio-5.0']
 
-        env.AppendUnique(LINKFLAGS=[
-            '-Wl,-rpath-link,%s' % env.Dir('#3rdparty/%s/rpath' % host).abspath,
-        ])
-
-    tool_env.ThirdParty(host, toolchain, thirdparty_variant, 'sox-14.4.2',
-                        sox_deps)
+    tool_env.ThirdParty(host, toolchain, thirdparty_variant, 'sox-14.4.2', sox_deps)
 
     conf = Configure(tool_env, custom_tests=env.CustomTests)
 
@@ -555,6 +560,19 @@ if 'target_sox' in getdeps:
             'vorbis', 'vorbisenc', 'vorbisfile', 'ogg',
             'mad', 'mp3lame']:
         conf.CheckLib(lib)
+
+    if not 'target_alsa' in getdeps:
+        for lib in [
+                'asound',
+                ]:
+            conf.CheckLib(lib)
+
+    if not 'target_pulseaudio' in getdeps:
+        for lib in [
+                'sndfile',
+                'pulse', 'pulse-simple',
+                ]:
+            conf.CheckLib(lib)
 
     if platform in ['darwin']:
         tool_env.Append(LINKFLAGS=[
@@ -705,6 +723,11 @@ if compiler in ['gcc', 'clang']:
     env.Prepend(
         CXXFLAGS=[('-isystem', env.Dir(path).path) for path in \
                   env['CPPPATH'] + ['%s/tools' % build_dir]])
+
+if platform in ['linux']:
+    tool_env.Append(LINKFLAGS=[
+        '-Wl,-rpath-link,%s' % env.Dir('#3rdparty/%s/rpath' % host).abspath,
+    ])
 
 test_env.Append(CPPDEFINES=('CPPUTEST_USE_MEM_LEAK_DETECTION', '0'))
 

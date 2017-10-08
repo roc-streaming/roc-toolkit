@@ -7,7 +7,7 @@ scons -Q clean
 for v in debug release
 do
   PATH="/opt/toolchains/${TOOLCHAIN}/bin:${PATH}" \
-    scons -Q --enable-werror --with-3rdparty=uv,openfec,sox,cpputest \
+    scons -Q --enable-werror --with-3rdparty=uv,openfec,alsa,pulseaudio,sox,cpputest \
       host=${TOOLCHAIN} variant=$v
 
   find bin/${TOOLCHAIN} -name 'roc-test-*' \
