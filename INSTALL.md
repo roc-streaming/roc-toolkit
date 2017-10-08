@@ -25,40 +25,54 @@ Dependencies
 
 **Notes:**
 * If you use CppUTest 3.4 or earlier, build it with `--disable-memory-leak-detection` option. It's leak detection doesn't work for us. Instead, we support building with clang sanitizers which include LeakSanitizer as well.
-* If you use OpenFEC, it's recommended to use [our fork](https://github.com/roc-project/openfec) or manually apply patches from it. It is automatically selected by `--with-3rdparty=openfec` option. The fork contains several bugfixes and minor improvements that are not available in the upstream yet.
+* If you use OpenFEC, it's recommended to use [our fork](https://github.com/roc-project/openfec) or manually apply patches from it. It is automatically selected by `--build-3rdparty=openfec` option. The fork contains several bugfixes and minor improvements that are not available in the upstream yet.
 
 Building
 --------
 
     $ scons --help
-    $ scons <options> <arguments> <build-targets>
+    $ scons <options> <variables> <targets>
 
 After building, tools and libraries are inside `bin/` directory.
 
-**Options:**
+**Options**
+
 * `-Q` - enable pretty output
 * `-n` - dry run
 * `-j N` - run N jobs in parallel
-* `--enable-werror` - treat warnings as errors
-* `--disable-api` - don't build API libraries
-* `--disable-tools` - don't build tools
-* `--disable-tests` - don't build tests
-* `--disable-doc` - don't build documentation
-* `--disable-sanitizers` - don't use GCC/clang sanitizers
-* `--with-openfec=yes|no` - enable/disable LDPC-Staircase codec from OpenFEC for (required for FEC support)
-* `--with-sox=yes|no` - enable/disable audio I/O using SoX (required to build tools)
-* `--with-3rdparty=uv,openfec,sox,gengetopt,cpputest` or `--with-3rdparty=all` -  automatically download and build specific or all external dependencies (static linking is used in this case)
-* `--with-targets=posix,stdio,gnu,uv,openfec,sox` - manually select source code directories to be included in build
+* `--build=BUILD`- system name where Roc is being compiled, e.g. `x86_64-pc-linux-gnu`, auto-detect if empty
+* `--host=HOST` - system name where Roc will run, e.g. `arm-linux-gnueabihf`, equal to `--build` if empty
+* `--platform=PLATFORM` - platform name where Roc will run, supported values: empty (detect from host), `linux`, `darwin`
+* `--compiler=COMPILER` - compiler name and optional version, e.g. `gcc-4.9`, supported names: empty (detect what available), `gcc`, `clang`
+* `--enable-debug` - enable debug build
+* `--enable-debug-3rdparty` - enable debug build for 3rdparty libraries
+* `--enable-sanitizers` - enable gcc/clang sanitizers
+* `--enable-werror` - enable -Werror compiler option
+* `--disable-lib` - disable libroc building
+* `--disable-tools` - disable tools building
+* `--disable-tests` - disable tests building
+* `--disable-doc` - disable Doxygen documentation generation
+* `--disable-openfec` - disable OpenFEC support required for FEC codes
+* `--build-3rdparty=BUILD_3RDPARTY` - download and build specified 3rdparty libraries, pass a comma-separated list of library names and optional versions, e.g. `uv:1.4.2,openfec`
+* `--override-targets=OVERRIDE_TARGETS` - override targets to use, pass a comma-separated list of target names, e.g. `gnu,posix,uv,openfec,...`
+                                
+**Variables**
 
-**Arguments**:
-* `build={type}` - the type of system on which Roc is being compiled, e.g. `x86_64-pc-linux-gnu`, autodetected if empty
-* `host={type}` - the type of system on which Roc will run, e.g. `arm-linux-gnueabihf`, set equal to `build` if empty; used as prefix for compiler, linker, and similar tools
-* `platform={name}` - platform name on which Roc will run, e.g. `linux`, autodetected from `host` if empty
-* `compiler={name}` - compiler name, e.g. `gcc` or `clang`, autodetected if empty
-* `variant=${name}` - build variant, e.g. `release` (default) or `debug`
-* `3rdparty_variant=${name}` - build variant for dependencies that are built using `--with-3rdparty`, e.g. `release` (default) or `debug` (however only certain some dependencies support `debug` variant)
+These variables can be set either via command line or environment variables.
+* `CC`
+* `CXX`
+* `LD`
+* `AR`
+* `RANLIB`
+* `GENGETOPT`
+* `DOXYGEN`
+* `PKG_CONFIG`
+* `CFLAGS`
+* `CXXFLAGS`
+* `LDFLAGS`
 
-**Build targets:**
+**Targets**
+
 * *omitted* - build everything
 * `test` - build everything and run unit tests
 * `doxygen` - build documentation
@@ -67,10 +81,6 @@ After building, tools and libraries are inside `bin/` directory.
 * `tidy` - run clang static analyzer (requires clang-tidy to be installed)
 * `{module}` - build only specific module
 * `test/{module}` - build and run tests only for specific module
-
-**Environment variables:**
-* `CC`, `CXX`, `LD`, `AR`, `RANLIB`, `GENGETOPT`, `DOXYGEN`, `PKG_CONFIG` - overwrite tools to use
-* `CFLAGS`, `CXXFLAGS`, `LDFLAGS` - additional compiler/linker flags
 
 Examples
 --------
@@ -83,14 +93,14 @@ Also build and run tests:
 
     $ scons -Q test
 
-Select compiler and build variant:
+Select compiler and enable debugging:
 
-    $ scons -Q compiler=gcc variant=debug test
+    $ scons -Q --compiler=gcc --enable-debug --enable-sanitizers test
 
 Select specific compiler version:
 
-    $ scons -Q compiler=gcc-4.8
-    $ scons -Q compiler=gcc-4.8.5
+    $ scons -Q --compiler=gcc-4.8
+    $ scons -Q --compiler=gcc-4.8.5
 
 Build specific module (see [modules](src/modules/) directory):
 
@@ -102,16 +112,16 @@ And run tests:
 
 Download and build libuv, OpenFEC and CppUTest, then build everything:
 
-    $ scons -Q --with-3rdparty=uv,openfec,cpputest
+    $ scons -Q --build-3rdparty=uv,openfec,cpputest
 
 Download and build all external dependencies, then build everything:
 
-    $ scons -Q --with-3rdparty=all
+    $ scons -Q --build-3rdparty=all
 
 Minimal build:
 
-    $ scons -Q --disable-tools --disable-tests --disable-doc --with-openfec=no --with-sox=no
+    $ scons -Q --disable-tools --disable-tests --disable-doc --disable-openfec
 
 Cross-compile to armv7:
 
-    $ scons -Q host=arm-linux-gnueabihf --with-3rdparty=uv,openfec,sox,cpputest
+    $ scons -Q --host=arm-linux-gnueabihf --with-3rdparty=uv,openfec,alsa,pulseaudio,sox,cpputest
