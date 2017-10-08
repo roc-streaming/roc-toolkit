@@ -3,6 +3,32 @@ import os
 import os.path
 import SCons.Script
 
+# supported platform names
+supported_platforms = [
+    'linux',
+    'darwin',
+]
+
+# supported compiler names (without version)
+supported_compilers = [
+    'gcc',
+    'clang',
+]
+
+# 3rdparty library default versions
+thirdparty_versions = {
+    'uv':         '1.4.2',
+    'openfec':    '1.4.2.1',
+    'cpputest':   '3.6',
+    'sox':        '14.4.2',
+    'alsa':       '1.0.29',
+    'pulseaudio': '5.0',
+    'json':       '0.11-20130402',
+    'ltdl':       '2.4.6',
+    'sndfile':    '1.0.20',
+    'gengetopt':  '2.22.6',
+}
+
 SCons.SConf.dryrun = 0 # configure even in dry run mode
 
 env = Environment(ENV=os.environ, tools=[
@@ -19,15 +45,57 @@ env.SourceCode('.', None)
 # per-directory sconsign files seems to be buggy with generated sources
 env.SConsignFile(os.path.join(env.Dir('#').abspath, '.sconsign.dblite'))
 
-AddOption('--enable-werror',
-          dest='enable_werror',
+AddOption('--build',
+          dest='build',
+          action='store',
+          type='string',
+          help=("system name where Roc is being compiled, "+
+                "e.g. 'x86_64-pc-linux-gnu', "+
+                "auto-detect if empty"))
+
+AddOption('--host',
+          dest='host',
+          action='store',
+          type='string',
+          help=("system name where Roc will run, "+
+                "e.g. 'arm-linux-gnueabihf', "+
+                "equal to --build if empty"))
+
+AddOption('--platform',
+          dest='platform',
+          action='store',
+          choices=([''] + supported_platforms),
+          help=("platform name where Roc will run, "+
+            "supported values: empty (detect from host), %s" % (
+              ', '.join(["'%s'" % s for s in supported_platforms]))))
+
+AddOption('--compiler',
+          dest='compiler',
+          action='store',
+          type='string',
+          help=("compiler name and optional version, e.g. 'gcc-4.9', "+
+            "supported names: empty (detect what available), %s" % (
+              ', '.join(["'%s'" % s for s in supported_compilers]))))
+
+AddOption('--enable-debug',
+          dest='enable_debug',
           action='store_true',
-          help='enable -Werror compiler option')
+          help='enable debug build')
+
+AddOption('--enable-debug-3rdparty',
+          dest='enable_debug_3rdparty',
+          action='store_true',
+          help='enable debug build for 3rdparty libraries')
 
 AddOption('--enable-sanitizers',
           dest='enable_sanitizers',
           action='store_true',
-          help='enable GCC/Clang sanitizers')
+          help='enable gcc/clang sanitizers')
+
+AddOption('--enable-werror',
+          dest='enable_werror',
+          action='store_true',
+          help='enable -Werror compiler option')
 
 AddOption('--disable-lib',
           dest='disable_lib',
@@ -47,24 +115,28 @@ AddOption('--disable-tests',
 AddOption('--disable-doc',
           dest='disable_doc',
           action='store_true',
-          help='disable doxygen documentation generation')
+          help='disable Doxygen documentation generation')
 
 AddOption('--disable-openfec',
           dest='disable_openfec',
           action='store_true',
           help='disable OpenFEC support required for FEC codes')
 
-AddOption('--with-3rdparty',
-          dest='with_3rdparty',
+AddOption('--build-3rdparty',
+          dest='build_3rdparty',
           action='store',
           type='string',
-          help='download and build specified 3rdparty libraries')
+          help=("download and build specified 3rdparty libraries, "+
+                "pass a comma-separated list of library names and optional versions, "+
+                "e.g. 'uv:1.4.2,openfec'"))
 
-AddOption('--with-targets',
-          dest='with_targets',
+AddOption('--override-targets',
+          dest='override_targets',
           action='store',
           type='string',
-          help='overwrite targets to use')
+          help=("override targets to use, "+
+                "pass a comma-separated list of target names, "+
+                "e.g. 'gnu,posix,uv,openfec,...'"))
 
 if GetOption('help'):
     Return()
@@ -154,60 +226,23 @@ env.AlwaysBuild(
 if set(COMMAND_LINE_TARGETS).intersection(['clean', 'fmt', 'doxygen']):
     Return()
 
-supported_platforms = [
-    'linux',
-    'darwin',
-]
+build = GetOption('build') or ''
+host = GetOption('host') or ''
+platform = GetOption('platform') or ''
+compiler = GetOption('compiler') or ''
 
-supported_compilers = [
-    'gcc',
-    'clang',
-]
+if GetOption('enable_debug'):
+    variant = 'debug'
+else:
+    variant = 'release'
 
-supported_variants = [
-    'debug',
-    'release',
-]
+if GetOption('enable_debug_3rdparty'):
+    thirdparty_variant = 'debug'
+else:
+    thirdparty_variant = 'release'
 
-# type of system on which Roc is being compiled, e.g. 'x86_64-pc-linux-gnu'
-build = ARGUMENTS.get('build', '')
-
-# type of system on which Roc will run, e.g. 'arm-linux-gnueabihf'
-host = ARGUMENTS.get('host', '')
-
-# platform name on which Roc will run, e.g. 'linux'
-platform = ARGUMENTS.get('platform', '')
-
-# compiler name, e.g. 'gcc'
-compiler = ARGUMENTS.get('compiler', '')
-
-# build variant, e.g. 'debug'
-variant = ARGUMENTS.get('variant', 'release')
-
-# toolchain prefix for compiler, linker, etc. may be equal to 'host' or empty
+# toolchain prefix for compiler, linker, etc
 toolchain = host
-
-# build variant for 3rdparty libraries
-thirdparty_variant = ARGUMENTS.get('3rdparty_variant', 'release')
-
-# 3rdparty library default versions
-thirdparty_versions = {
-    'uv':         '1.4.2',
-    'openfec':    '1.4.2.1',
-    'cpputest':   '3.6',
-    'sox':        '14.4.2',
-    'alsa':       '1.0.29',
-    'pulseaudio': '5.0',
-    'json':       '0.11-20130402',
-    'ltdl':       '2.4.6',
-    'sndfile':    '1.0.20',
-    'gengetopt':  '2.22.6',
-}
-
-for v in [variant, thirdparty_variant]:
-    if not variant in supported_variants:
-        env.Die("unknown variant '%s', expected one of: %s",
-                v, ', '.join(supported_variants))
 
 if not compiler:
     if not toolchain and env.Which('clang'):
@@ -238,8 +273,8 @@ if llvmdir:
 
 for var in ['CC', 'CXX', 'LD', 'AR', 'RANLIB',
             'GENGETOPT', 'DOXYGEN', 'PKG_CONFIG']:
-    if var in os.environ:
-        env[var] = os.environ[var]
+    if env.HasArg(var):
+        env[var] = env.GetArg(var)
 
 conf = Configure(env, custom_tests=env.CustomTests)
 
@@ -264,7 +299,7 @@ if compiler == 'clang':
 checked = set()
 
 for var in ['CC', 'CXX', 'LD', 'AR', 'RANLIB']:
-    if var in os.environ:
+    if env.HasArg(var):
         if not env[var] in checked:
             conf.CheckProg(env[var])
     else:
@@ -318,16 +353,16 @@ for var in ['CC', 'CXX', 'LD', 'AR', 'RANLIB']:
     checked.add(env[var])
 
 for var in ['CFLAGS', 'CXXFLAGS', 'LDFLAGS']:
-    if var in os.environ:
+    if env.HasArg(var):
         if var == 'LDFLAGS':
             tvar = 'LINKFLAGS'
         else:
             tvar = var
-        env.Prepend(**{tvar: os.environ[var]})
+        env.Prepend(**{tvar: env.GetArg(var)})
 
 env = conf.Finish()
 
-# get full version
+# get full compiler version
 compiler_ver = env.CompilerVersion(env['CXX'])
 
 if not build:
@@ -345,16 +380,11 @@ if not platform:
     elif 'darwin' in host:
         platform = 'darwin'
 
-if not GetOption('with_targets'):
+if not GetOption('override_targets'):
     if not platform:
         env.Die(("can't detect platform for host '%s', looked for one of: %s\nyou should "+
-                 "provide either known 'platform' argument or '--with-targets' option"),
+                 "provide either known '--platform' or '--override-targets' option"),
                     host, ', '.join(supported_platforms))
-
-    if not platform in supported_platforms:
-        env.Die(("unknown platform '%s', expected one of: %s\nyou should "+
-                 "provide either known 'platform' argument or '--with-targets' option"),
-                    platform, ', '.join(supported_platforms))
 
 crosscompile = (host != build)
 
@@ -373,8 +403,8 @@ env['ROC_BINDIR'] = '#bin/%s' % host
 env['ROC_VERSION'] = open(env.File('#.version').path).read().strip()
 env['ROC_TARGETS'] = []
 
-if GetOption('with_targets'):
-    for t in GetOption('with_targets').split(','):
+if GetOption('override_targets'):
+    for t in GetOption('override_targets').split(','):
         env['ROC_TARGETS'] += ['target_%s' % t]
 else:
     if platform in ['linux', 'darwin']:
@@ -431,7 +461,7 @@ if not GetOption('disable_tools'):
 # dependencies that we should download and build manually
 getdeps = set()
 
-for t in env.ParseThirdParties(thirdparty_versions, GetOption('with_3rdparty')):
+for t in env.ParseThirdParties(thirdparty_versions, GetOption('build_3rdparty')):
     getdeps.add('target_%s' % t)
 
 if 'target_all' in getdeps:

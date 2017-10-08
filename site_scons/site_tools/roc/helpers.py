@@ -58,6 +58,16 @@ def RecursiveGlob(env, dirs, patterns, exclude=[]):
 
     return matches
 
+def HasArg(env, var):
+    return GetArg(env, var) is not None
+
+def GetArg(env, var):
+    ret = SCons.Script.ARGUMENTS.get(var, None)
+    if ret is None:
+        if var in os.environ:
+            ret = os.environ[var]
+    return ret
+
 def AppendVars(env, src_env):
     for k, v in src_env.Dictionary().items():
         if not (isinstance(v, SCons.Util.CLVar) or isinstance(v, list)):
@@ -388,6 +398,8 @@ def Init(env):
     env.AddMethod(Die, 'Die')
     env.AddMethod(GlobDirs, 'GlobDirs')
     env.AddMethod(RecursiveGlob, 'RecursiveGlob')
+    env.AddMethod(HasArg, 'HasArg')
+    env.AddMethod(GetArg, 'GetArg')
     env.AddMethod(AppendVars, 'AppendVars')
     env.AddMethod(Which, 'Which')
     env.AddMethod(Python, 'Python')
