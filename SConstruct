@@ -184,11 +184,25 @@ compiler = ARGUMENTS.get('compiler', '')
 # build variant, e.g. 'debug'
 variant = ARGUMENTS.get('variant', 'release')
 
+# toolchain prefix for compiler, linker, etc. may be equal to 'host' or empty
+toolchain = host
+
 # build variant for 3rdparty libraries
 thirdparty_variant = ARGUMENTS.get('3rdparty_variant', 'release')
 
-# toolchain prefix for compiler, linker, etc. may be equal to 'host' or empty
-toolchain = host
+# 3rdparty library default versions
+thirdparty_versions = {
+    'uv':         '1.4.2',
+    'openfec':    '1.4.2.1',
+    'cpputest':   '3.6',
+    'sox':        '14.4.2',
+    'alsa':       '1.0.29',
+    'pulseaudio': '5.0',
+    'json':       '0.11-20130402',
+    'ltdl':       '2.4.6',
+    'sndfile':    '1.0.20',
+    'gengetopt':  '2.22.6',
+}
 
 for v in [variant, thirdparty_variant]:
     if not variant in supported_variants:
@@ -417,9 +431,8 @@ if not GetOption('disable_tools'):
 # dependencies that we should download and build manually
 getdeps = set()
 
-if GetOption('with_3rdparty'):
-    for t in GetOption('with_3rdparty').split(','):
-        getdeps.add('target_%s' % t)
+for t in env.ParseThirdParties(thirdparty_versions, GetOption('with_3rdparty')):
+    getdeps.add('target_%s' % t)
 
 if 'target_all' in getdeps:
     getdeps = alldeps
@@ -515,42 +528,45 @@ if 'target_cpputest' in extdeps:
     test_env = conf.Finish()
 
 if 'target_uv' in getdeps:
-    env.ThirdParty(host, toolchain, thirdparty_variant, 'uv-1.4.2')
+    env.ThirdParty(host, toolchain, thirdparty_variant, thirdparty_versions, 'uv')
 
 if 'target_openfec' in getdeps:
-    env.ThirdParty(host, toolchain, thirdparty_variant, 'openfec-1.4.2.1', includes=[
-        'lib_common',
-        'lib_stable',
-    ])
+    env.ThirdParty(host, toolchain, thirdparty_variant, thirdparty_versions, 'openfec',
+                   includes=[
+                    'lib_common',
+                    'lib_stable',
+                    ])
 
 if 'target_alsa' in getdeps:
-    tool_env.ThirdParty(host, toolchain, thirdparty_variant, 'alsa-1.0.29')
+    tool_env.ThirdParty(host, toolchain, thirdparty_variant, thirdparty_versions, 'alsa')
 
 if 'target_pulseaudio' in getdeps:
     pa_deps = [
-        'ltdl-2.4.6',
-        'json-0.11-20130402',
-        'sndfile-1.0.20',
+        'ltdl',
+        'json',
+        'sndfile',
         ]
 
     if 'target_alsa' in getdeps:
-        pa_deps += ['alsa-1.0.29']
+        pa_deps += ['alsa']
 
-    tool_env.ThirdParty(host, toolchain, thirdparty_variant, 'ltdl-2.4.6')
-    tool_env.ThirdParty(host, toolchain, thirdparty_variant, 'json-0.11-20130402')
-    tool_env.ThirdParty(host, toolchain, thirdparty_variant, 'sndfile-1.0.20')
-    tool_env.ThirdParty(host, toolchain, thirdparty_variant, 'pulseaudio-5.0', pa_deps)
+    tool_env.ThirdParty(host, toolchain, thirdparty_variant, thirdparty_versions, 'ltdl')
+    tool_env.ThirdParty(host, toolchain, thirdparty_variant, thirdparty_versions, 'json')
+    tool_env.ThirdParty(host, toolchain, thirdparty_variant, thirdparty_versions, 'sndfile')
+    tool_env.ThirdParty(
+        host, toolchain, thirdparty_variant, thirdparty_versions, 'pulseaudio', pa_deps)
 
 if 'target_sox' in getdeps:
     sox_deps = []
 
     if 'target_alsa' in getdeps:
-        sox_deps += ['alsa-1.0.29']
+        sox_deps += ['alsa']
 
     if 'target_pulseaudio' in getdeps:
-        sox_deps += ['pulseaudio-5.0']
+        sox_deps += ['pulseaudio']
 
-    tool_env.ThirdParty(host, toolchain, thirdparty_variant, 'sox-14.4.2', sox_deps)
+    tool_env.ThirdParty(
+        host, toolchain, thirdparty_variant, thirdparty_versions, 'sox', sox_deps)
 
     conf = Configure(tool_env, custom_tests=env.CustomTests)
 
@@ -582,13 +598,14 @@ if 'target_sox' in getdeps:
     tool_env = conf.Finish()
 
 if 'target_gengetopt' in getdeps:
-    env.ThirdParty(build, "", thirdparty_variant, 'gengetopt-2.22.6')
+    env.ThirdParty(build, "", thirdparty_variant, thirdparty_versions, 'gengetopt')
 
     env['GENGETOPT'] = env.File(
         '#3rdparty/%s/build/gengetopt-2.22.6/bin/gengetopt' % build + env['PROGSUFFIX'])
 
 if 'target_cpputest' in getdeps:
-    test_env.ThirdParty(host, toolchain, thirdparty_variant, 'cpputest-3.6')
+    test_env.ThirdParty(
+        host, toolchain, thirdparty_variant, thirdparty_versions, 'cpputest')
 
 if 'target_posix' in env['ROC_TARGETS'] and platform not in ['darwin']:
     env.Append(CPPDEFINES=[('_POSIX_C_SOURCE', '200809')])

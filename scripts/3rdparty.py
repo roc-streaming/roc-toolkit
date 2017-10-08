@@ -58,7 +58,9 @@ def execute(cmd, log):
     if os.system('%s >>%s 2>&1' % (cmd, log)) != 0:
         exit(1)
 
-def install(src, dst, match=None, ignore=None):
+def install_tree(src, dst, match=None, ignore=None):
+    print('[install] %s' % os.path.relpath(dst, printdir))
+
     def match_patterns(src, names):
         ignorenames = []
         for n in names:
@@ -73,20 +75,25 @@ def install(src, dst, match=None, ignore=None):
                 ignorenames.append(n)
         return set(ignorenames)
 
-    print('[install] %s' % os.path.relpath(dst, printdir))
-    if os.path.isdir(src):
-        if match:
-            ignorefn = match_patterns
-        elif ignore:
-            ignorefn = shutil.ignore_patterns(*ignore)
-        else:
-            ignorefn = None
-        mkpath(os.path.dirname(dst))
-        rmpath(dst)
-        shutil.copytree(src, dst, ignore=ignorefn)
+    if match:
+        ignorefn = match_patterns
+    elif ignore:
+        ignorefn = shutil.ignore_patterns(*ignore)
     else:
+        ignorefn = None
+
+    mkpath(os.path.dirname(dst))
+    rmpath(dst)
+    shutil.copytree(src, dst, ignore=ignorefn)
+
+def install_files(src, dst):
+    print('[install] %s' % os.path.join(
+        os.path.relpath(dst, printdir),
+        os.path.basename(src)))
+
+    for f in glob.glob(src):
         mkpath(dst)
-        shutil.copy(src, dst)
+        shutil.copy(f, dst)
 
 def freplace(path, pat, to):
     print('[patch] %s' % path)
@@ -166,8 +173,8 @@ if name == 'uv':
             '--enable-static',
         ])), logfile)
     execute('make -j', logfile)
-    install('include', os.path.join(builddir, 'include'))
-    install('.libs/libuv.a', os.path.join(builddir, 'lib'))
+    install_tree('include', os.path.join(builddir, 'include'))
+    install_files('.libs/libuv.a', os.path.join(builddir, 'lib'))
 elif name == 'openfec':
     download(
       'https://github.com/roc-project/openfec/archive/v%s.tar.gz' % ver,
@@ -205,9 +212,8 @@ elif name == 'openfec':
     execute('cmake .. ' + ' '.join(args), logfile)
     execute('make -j', logfile)
     os.chdir('..')
-    install('src', os.path.join(builddir, 'include'),
-            match=['*.h'])
-    install('%s/libopenfec.a' % dist, os.path.join(builddir, 'lib'))
+    install_tree('src', os.path.join(builddir, 'include'), match=['*.h'])
+    install_files('%s/libopenfec.a' % dist, os.path.join(builddir, 'lib'))
 elif name == 'alsa':
     download(
       'ftp://ftp.alsa-project.org/pub/lib/alsa-lib-%s.tar.bz2' % ver,
@@ -223,10 +229,11 @@ elif name == 'alsa':
             '--disable-python',
         ])), logfile)
     execute('make -j', logfile)
-    install('include/alsa',
-            os.path.join(builddir, 'include', 'alsa'), ignore=['alsa'])
-    install('src/.libs/libasound.so', os.path.join(builddir, 'lib'))
-    install('src/.libs/libasound.so.2', rpathdir)
+    install_tree('include/alsa',
+            os.path.join(builddir, 'include', 'alsa'),
+            ignore=['alsa'])
+    install_files('src/.libs/libasound.so', os.path.join(builddir, 'lib'))
+    install_files('src/.libs/libasound.so.*', rpathdir)
 elif name == 'ltdl':
     download(
       'ftp://ftp.gnu.org/gnu/libtool/libtool-%s.tar.gz' % ver,
@@ -241,10 +248,10 @@ elif name == 'ltdl':
             '--disable-static',
         ])), logfile)
     execute('make -j', logfile)
-    install('libltdl/ltdl.h', os.path.join(builddir, 'include'))
-    install('libltdl/libltdl', os.path.join(builddir, 'include', 'libltdl'))
-    install('libltdl/.libs/libltdl.so', os.path.join(builddir, 'lib'))
-    install('libltdl/.libs/libltdl.so.7', rpathdir)
+    install_files('libltdl/ltdl.h', os.path.join(builddir, 'include'))
+    install_tree('libltdl/libltdl', os.path.join(builddir, 'include', 'libltdl'))
+    install_files('libltdl/.libs/libltdl.so', os.path.join(builddir, 'lib'))
+    install_files('libltdl/.libs/libltdl.so.*', rpathdir)
 elif name == 'json':
     download(
       'https://github.com/json-c/json-c/archive/json-c-%s.tar.gz' % ver,
@@ -265,10 +272,9 @@ elif name == 'json':
             '--disable-shared',
         ])), logfile)
     execute('make', logfile) # -j is buggy for json-c
-    install('.', os.path.join(builddir, 'include'),
-                              match=['*.h'])
-    install('.libs/libjson.a', os.path.join(builddir, 'lib'))
-    install('.libs/libjson-c.a', os.path.join(builddir, 'lib'))
+    install_tree('.', os.path.join(builddir, 'include'), match=['*.h'])
+    install_files('.libs/libjson.a', os.path.join(builddir, 'lib'))
+    install_files('.libs/libjson-c.a', os.path.join(builddir, 'lib'))
 elif name == 'sndfile':
     download(
       'http://www.mega-nerd.com/libsndfile/files/libsndfile-%s.tar.gz' % ver,
@@ -285,8 +291,8 @@ elif name == 'sndfile':
             '--disable-external-libs',
         ])), logfile)
     execute('make -j', logfile)
-    install('src/sndfile.h', os.path.join(builddir, 'include'))
-    install('src/.libs/libsndfile.a', os.path.join(builddir, 'lib'))
+    install_files('src/sndfile.h', os.path.join(builddir, 'include'))
+    install_files('src/.libs/libsndfile.a', os.path.join(builddir, 'lib'))
 elif name == 'pulseaudio':
     download(
       'https://freedesktop.org/software/pulseaudio/releases/pulseaudio-%s.tar.gz' % ver,
@@ -312,15 +318,14 @@ elif name == 'pulseaudio':
             '--without-caps',
         ])), logfile)
     execute('make -j', logfile)
-    install('src/pulse', os.path.join(builddir, 'include', 'pulse'),
-            match=['*.h'])
-    install('src/.libs/libpulse.so', os.path.join(builddir, 'lib'))
-    install('src/.libs/libpulse.so.0', rpathdir)
-    install('src/.libs/libpulse-simple.so', os.path.join(builddir, 'lib'))
-    install('src/.libs/libpulse-simple.so.0', rpathdir)
+    install_tree('src/pulse', os.path.join(builddir, 'include', 'pulse'), match=['*.h'])
+    install_files('src/.libs/libpulse.so', os.path.join(builddir, 'lib'))
+    install_files('src/.libs/libpulse.so.0', rpathdir)
+    install_files('src/.libs/libpulse-simple.so', os.path.join(builddir, 'lib'))
+    install_files('src/.libs/libpulse-simple.so.0', rpathdir)
     # we don't link with libpulsecommon directly, but it should be available
     # in -rpath-link for linker checks
-    install('src/.libs/libpulsecommon-%s.so' % ver, rpathdir)
+    install_files('src/.libs/libpulsecommon-*.so', rpathdir)
 elif name == 'sox':
     download(
       'http://vorboss.dl.sourceforge.net/project/sox/sox/%s/sox-%s.tar.gz' % (ver, ver),
@@ -340,8 +345,8 @@ elif name == 'sox':
             '--without-ao',
         ])), logfile)
     execute('make -j', logfile)
-    install('src/sox.h', os.path.join(builddir, 'include'))
-    install('src/.libs/libsox.a', os.path.join(builddir, 'lib'))
+    install_files('src/sox.h', os.path.join(builddir, 'include'))
+    install_files('src/.libs/libsox.a', os.path.join(builddir, 'lib'))
 elif name == 'gengetopt':
     download('ftp://ftp.gnu.org/gnu/gengetopt/gengetopt-%s.tar.gz' % ver,
              'gengetopt-%s.tar.gz' % ver)
@@ -350,7 +355,7 @@ elif name == 'gengetopt':
     os.chdir('gengetopt-%s' % ver)
     execute('./configure', logfile)
     execute('make', logfile) # -j is buggy for gengetopt
-    install('src/gengetopt', os.path.join(builddir, 'bin'))
+    install_files('src/gengetopt', os.path.join(builddir, 'bin'))
 elif name == 'cpputest':
     download(
         'https://raw.githubusercontent.com/cpputest/cpputest.github.io/' \
@@ -361,17 +366,17 @@ elif name == 'cpputest':
     os.chdir('cpputest-%s' % ver)
     execute('./configure --host=%s %s %s' % (
             toolchain,
+            # disable warnings, since CppUTest uses -Werror and may fail to
+            # build on old GCC versions
             makeflags(workdir, [], cflags='-w'),
             ' '.join([
-                # disable memory leak detection which is too hard to use properly
                 '--enable-static',
-                # disable warnings, since CppUTest uses -Werror and may fail to
-                # build on old GCC versions
+                # disable memory leak detection which is too hard to use properly
                 '--disable-memory-leak-detection',
             ])), logfile)
     execute('make -j', logfile)
-    install('include', os.path.join(builddir, 'include'))
-    install('lib/libCppUTest.a', os.path.join(builddir, 'lib'))
+    install_tree('include', os.path.join(builddir, 'include'))
+    install_files('lib/libCppUTest.a', os.path.join(builddir, 'lib'))
 else:
     print("error: unknown 3rdparty '%s'" % fullname, file=sys.stderr)
     exit(1)

@@ -252,7 +252,29 @@ def GenGetOpt(env, source, ver):
 
     return ret
 
-def ThirdParty(env, host, toolchain, variant, name, deps=[], includes=[]):
+def ParseThirdParties(env, versions, s):
+    ret = set()
+    if s:
+        for t in s.split(','):
+            tokens = t.split(':', 1)
+            if tokens[0] != 'all':
+                if not tokens[0] in versions:
+                    env.Die("unknown 3rdparty '%s'" % tokens[0])
+                if len(tokens) == 2:
+                    versions[tokens[0]] = tokens[1]
+            ret.add(tokens[0])
+    return ret
+
+def ThirdParty(env, host, toolchain, variant, versions, name, deps=[], includes=[]):
+    def versioned(name):
+        if not name in versions:
+            env.Die("unknown 3rdparty '%s'" % name)
+        return name + '-' + versions[name]
+
+    name = versioned(name)
+    for n in range(len(deps)):
+        deps[n] = versioned(deps[n])
+
     if not os.path.exists(os.path.join('3rdparty', host, 'build', name, 'commit')):
         if env.Execute(
             SCons.Action.CommandAction(
@@ -375,6 +397,7 @@ def Init(env):
     env.AddMethod(ClangDB, 'ClangDB')
     env.AddMethod(Doxygen, 'Doxygen')
     env.AddMethod(GenGetOpt, 'GenGetOpt')
+    env.AddMethod(ParseThirdParties, 'ParseThirdParties')
     env.AddMethod(ThirdParty, 'ThirdParty')
     env.AddMethod(DeleteFile, 'DeleteFile')
     env.AddMethod(DeleteDir, 'DeleteDir')
