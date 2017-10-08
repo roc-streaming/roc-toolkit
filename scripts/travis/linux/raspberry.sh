@@ -14,7 +14,7 @@ do
     -not -name 'roc-test-lib' |\
     while read t
     do
-      LD_LIBRARY_PATH="${SYSROOT}/lib:${PWD}/3rdparty/${TOOLCHAIN}/lib" \
+      LD_LIBRARY_PATH="${SYSROOT}/lib:${PWD}/3rdparty/${TOOLCHAIN}/rpath" \
         python2 site_scons/site_tools/roc/wrappers/timeout.py 300 \
           qemu-arm -L "${SYSROOT}" -cpu ${CPU} $t
     done

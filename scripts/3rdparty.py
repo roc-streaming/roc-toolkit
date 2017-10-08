@@ -3,6 +3,7 @@ from __future__ import print_function
 import sys
 import os
 import shutil
+import glob
 import fnmatch
 import urllib2
 import ssl
@@ -57,14 +58,32 @@ def execute(cmd, log):
     if os.system('%s >>%s 2>&1' % (cmd, log)) != 0:
         exit(1)
 
-def install(src, dst, ignore=None):
+def install(src, dst, match=None, ignore=None):
+    def match_patterns(src, names):
+        ignorenames = []
+        for n in names:
+            if os.path.isdir(os.path.join(src, n)):
+                continue
+            matched = False
+            for m in match:
+                if fnmatch.fnmatch(n, m):
+                    matched = True
+                    break
+            if not matched:
+                ignorenames.append(n)
+        return set(ignorenames)
+
     print('[install] %s' % os.path.relpath(dst, printdir))
     if os.path.isdir(src):
-        if ignore:
-            ignore = shutil.ignore_patterns(*ignore)
+        if match:
+            ignorefn = match_patterns
+        elif ignore:
+            ignorefn = shutil.ignore_patterns(*ignore)
+        else:
+            ignorefn = None
         mkpath(os.path.dirname(dst))
         rmpath(dst)
-        shutil.copytree(src, dst, ignore=ignore)
+        shutil.copytree(src, dst, ignore=ignorefn)
     else:
         mkpath(dst)
         shutil.copy(src, dst)
@@ -88,17 +107,26 @@ def getsysroot(toolchain):
         print("error: can't execute '%s'" % ' '.join(cmd), file=sys.stderr)
         exit(1)
 
-def makeflags(workdir, deplist, flags):
-    inc=[]
-    lib=[]
+def makeflags(workdir, deplist, cflags='', ldflags=''):
+    incdirs=[]
+    libdirs=[]
+
     for dep in deplist:
-        inc += [os.path.join(workdir, 'build', dep, 'include')]
-        lib += [os.path.join(workdir, 'build', dep, 'lib')]
+        incdirs += [os.path.join(workdir, 'build', dep, 'include')]
+        libdirs += [os.path.join(workdir, 'build', dep, 'lib')]
 
-    cflags = ' '.join(['-I%s' % path for path in inc] + ([flags] if flags else []))
-    ldflags = ' '.join(['-L%s' % path for path in lib])
+    cflags = ' '.join(
+        ([cflags] if cflags else []) +
+        ['-I%s' % path for path in incdirs])
 
-    return 'CXXFLAGS="%s" CFLAGS="%s" LDFLAGS="%s"' % (cflags, cflags, ldflags)
+    ldflags = ' '.join(['-L%s' % path for path in libdirs] +
+                       ([ldflags] if ldflags else []))
+
+    return ' '.join([
+        'CXXFLAGS="%s"' % cflags,
+        'CFLAGS="%s"' % cflags,
+        'LDFLAGS="%s"' % ldflags,
+    ])
 
 if len(sys.argv) != 6:
     print("error: usage: 3rdparty.py workdir toolchain variant package deplist",
@@ -111,10 +139,10 @@ variant = sys.argv[3]
 fullname = sys.argv[4]
 deplist = sys.argv[5].split(':')
 
-name, ver = fullname.split('-')
+name, ver = fullname.split('-', 1)
 
 builddir = os.path.join(workdir, 'build', fullname)
-libdir = os.path.join(workdir, 'lib')
+rpathdir = os.path.join(workdir, 'rpath')
 
 logfile = os.path.join(builddir, 'build.log')
 
@@ -130,9 +158,13 @@ if name == 'uv':
     os.chdir('libuv-v%s' % ver)
     freplace('include/uv.h', '__attribute__((visibility("default")))', '')
     execute('./autogen.sh', logfile)
-    execute('%s ./configure --host=%s --with-pic --enable-static' % (
-        makeflags(workdir, [], '-fvisibility=hidden'), toolchain),
-        logfile)
+    execute('./configure --host=%s %s %s' % (
+        toolchain,
+        makeflags(workdir, [], cflags='-fvisibility=hidden'),
+        ' '.join([
+            '--with-pic',
+            '--enable-static',
+        ])), logfile)
     execute('make -j', logfile)
     install('include', os.path.join(builddir, 'include'))
     install('.libs/libuv.a', os.path.join(builddir, 'lib'))
@@ -174,7 +206,7 @@ elif name == 'openfec':
     execute('make -j', logfile)
     os.chdir('..')
     install('src', os.path.join(builddir, 'include'),
-            ignore=['*.c', '*.txt'])
+            match=['*.h'])
     install('%s/libopenfec.a' % dist, os.path.join(builddir, 'lib'))
 elif name == 'alsa':
     download(
@@ -184,7 +216,8 @@ elif name == 'alsa':
             'alsa-lib-%s' % ver)
     os.chdir('alsa-lib-%s' % ver)
     execute('./configure --host=%s %s' % (
-        toolchain, ' '.join([
+        toolchain,
+        ' '.join([
             '--enable-shared',
             '--disable-static',
             '--disable-python',
@@ -193,7 +226,101 @@ elif name == 'alsa':
     install('include/alsa',
             os.path.join(builddir, 'include', 'alsa'), ignore=['alsa'])
     install('src/.libs/libasound.so', os.path.join(builddir, 'lib'))
-    install('src/.libs/libasound.so.2', libdir)
+    install('src/.libs/libasound.so.2', rpathdir)
+elif name == 'ltdl':
+    download(
+      'ftp://ftp.gnu.org/gnu/libtool/libtool-%s.tar.gz' % ver,
+        'libtool-%s.tar.gz' % ver)
+    extract('libtool-%s.tar.gz' % ver,
+            'libtool-%s' % ver)
+    os.chdir('libtool-%s' % ver)
+    execute('./configure --host=%s %s' % (
+        toolchain,
+        ' '.join([
+            '--enable-shared',
+            '--disable-static',
+        ])), logfile)
+    execute('make -j', logfile)
+    install('libltdl/ltdl.h', os.path.join(builddir, 'include'))
+    install('libltdl/libltdl', os.path.join(builddir, 'include', 'libltdl'))
+    install('libltdl/.libs/libltdl.so', os.path.join(builddir, 'lib'))
+    install('libltdl/.libs/libltdl.so.7', rpathdir)
+elif name == 'json':
+    download(
+      'https://github.com/json-c/json-c/archive/json-c-%s.tar.gz' % ver,
+        'json-%s.tar.gz' % ver)
+    extract('json-%s.tar.gz' % ver,
+            'json-c-json-c-%s' % ver)
+    os.chdir('json-c-json-c-%s' % ver)
+    execute('%s ./configure --host=%s %s %s' % (
+        ' '.join([
+            # disable rpl_malloc and rpl_realloc
+            'ac_cv_func_malloc_0_nonnull=yes',
+            'ac_cv_func_realloc_0_nonnull=yes',
+        ]),
+        toolchain,
+        makeflags(workdir, [], cflags='-fPIC -fvisibility=hidden'),
+        ' '.join([
+            '--enable-static',
+            '--disable-shared',
+        ])), logfile)
+    execute('make', logfile) # -j is buggy for json-c
+    install('.', os.path.join(builddir, 'include'),
+                              match=['*.h'])
+    install('.libs/libjson.a', os.path.join(builddir, 'lib'))
+    install('.libs/libjson-c.a', os.path.join(builddir, 'lib'))
+elif name == 'sndfile':
+    download(
+      'http://www.mega-nerd.com/libsndfile/files/libsndfile-%s.tar.gz' % ver,
+        'libsndfile-%s.tar.gz' % ver)
+    extract('libsndfile-%s.tar.gz' % ver,
+            'libsndfile-%s' % ver)
+    os.chdir('libsndfile-%s' % ver)
+    execute('./configure --host=%s %s %s' % (
+        toolchain,
+        makeflags(workdir, [], cflags='-fPIC -fvisibility=hidden'),
+        ' '.join([
+            '--enable-static',
+            '--disable-shared',
+            '--disable-external-libs',
+        ])), logfile)
+    execute('make -j', logfile)
+    install('src/sndfile.h', os.path.join(builddir, 'include'))
+    install('src/.libs/libsndfile.a', os.path.join(builddir, 'lib'))
+elif name == 'pulseaudio':
+    download(
+      'https://freedesktop.org/software/pulseaudio/releases/pulseaudio-%s.tar.gz' % ver,
+        'pulseaudio-%s.tar.gz' % ver)
+    extract('pulseaudio-%s.tar.gz' % ver,
+            'pulseaudio-%s' % ver)
+    os.chdir('pulseaudio-%s' % ver)
+    execute('./configure --host=%s %s %s %s' % (
+        toolchain,
+        makeflags(workdir, deplist),
+        ' '.join([
+            'LIBJSON_CFLAGS=" "',
+            'LIBJSON_LIBS="-ljson-c -ljson"',
+            'LIBSNDFILE_CFLAGS=" "',
+            'LIBSNDFILE_LIBS="-lsndfile"',
+        ]),
+        ' '.join([
+            '--enable-shared',
+            '--disable-static',
+            '--disable-tests',
+            '--disable-manpages',
+            '--disable-webrtc-aec',
+            '--without-caps',
+        ])), logfile)
+    execute('make -j', logfile)
+    install('src/pulse', os.path.join(builddir, 'include', 'pulse'),
+            match=['*.h'])
+    install('src/.libs/libpulse.so', os.path.join(builddir, 'lib'))
+    install('src/.libs/libpulse.so.0', rpathdir)
+    install('src/.libs/libpulse-simple.so', os.path.join(builddir, 'lib'))
+    install('src/.libs/libpulse-simple.so.0', rpathdir)
+    # we don't link with libpulsecommon directly, but it should be available
+    # in -rpath-link for linker checks
+    install('src/.libs/libpulsecommon-%s.so' % ver, rpathdir)
 elif name == 'sox':
     download(
       'http://vorboss.dl.sourceforge.net/project/sox/sox/%s/sox-%s.tar.gz' % (ver, ver),
@@ -201,9 +328,9 @@ elif name == 'sox':
     extract('sox-%s.tar.gz' % ver,
             'sox-%s' % ver)
     os.chdir('sox-%s' % ver)
-    execute('%s ./configure --host=%s %s' % (
-        makeflags(workdir, deplist, '-fvisibility=hidden'),
+    execute('./configure --host=%s %s %s' % (
         toolchain,
+        makeflags(workdir, deplist, cflags='-fvisibility=hidden'),
         ' '.join([
             '--enable-static',
             '--disable-shared',
@@ -232,11 +359,16 @@ elif name == 'cpputest':
     extract('cpputest-%s.tar.gz' % ver,
             'cpputest-%s' % ver)
     os.chdir('cpputest-%s' % ver)
-    # disable memory leak detection which is too hard to use properly
-    # disable warnings, since CppUTest uses -Werror and may fail to build on old GCC
-    execute('%s ./configure --host=%s --enable-static --disable-memory-leak-detection' % (
-            makeflags(workdir, [], '-w'), toolchain),
-            logfile)
+    execute('./configure --host=%s %s %s' % (
+            toolchain,
+            makeflags(workdir, [], cflags='-w'),
+            ' '.join([
+                # disable memory leak detection which is too hard to use properly
+                '--enable-static',
+                # disable warnings, since CppUTest uses -Werror and may fail to
+                # build on old GCC versions
+                '--disable-memory-leak-detection',
+            ])), logfile)
     execute('make -j', logfile)
     install('include', os.path.join(builddir, 'include'))
     install('lib/libCppUTest.a', os.path.join(builddir, 'lib'))

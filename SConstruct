@@ -528,9 +528,21 @@ if 'target_sox' in getdeps:
     sox_deps = []
 
     if platform in ['linux']:
-        sox_deps = ['alsa-1.0.29']
-        for dep in sox_deps:
-            tool_env.ThirdParty(host, toolchain, thirdparty_variant, dep)
+        sox_deps = ['alsa-1.0.29', 'pulseaudio-5.0']
+
+        tool_env.ThirdParty(host, toolchain, thirdparty_variant, 'alsa-1.0.29')
+        tool_env.ThirdParty(host, toolchain, thirdparty_variant, 'ltdl-2.4.6')
+        tool_env.ThirdParty(host, toolchain, thirdparty_variant, 'json-0.11-20130402')
+        tool_env.ThirdParty(host, toolchain, thirdparty_variant, 'sndfile-1.0.20')
+        tool_env.ThirdParty(host, toolchain, thirdparty_variant, 'pulseaudio-5.0',
+                            ['alsa-1.0.29',
+                             'ltdl-2.4.6',
+                             'json-0.11-20130402',
+                             'sndfile-1.0.20'])
+
+        env.AppendUnique(LINKFLAGS=[
+            '-Wl,-rpath-link,%s' % env.Dir('#3rdparty/%s/rpath' % host).abspath,
+        ])
 
     tool_env.ThirdParty(host, toolchain, thirdparty_variant, 'sox-14.4.2',
                         sox_deps)
@@ -538,11 +550,10 @@ if 'target_sox' in getdeps:
     conf = Configure(tool_env, custom_tests=env.CustomTests)
 
     for lib in [
-            'z', 'ltdl', 'magic',
-            'sndfile', 'gsm', 'FLAC',
+            'z', 'magic',
+            'gsm', 'FLAC',
             'vorbis', 'vorbisenc', 'vorbisfile', 'ogg',
-            'mad', 'mp3lame',
-            'pulse', 'pulse-simple']:
+            'mad', 'mp3lame']:
         conf.CheckLib(lib)
 
     if platform in ['darwin']:
