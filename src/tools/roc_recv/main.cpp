@@ -107,11 +107,13 @@ int main(int argc, char** argv) {
     config.timing = (args.timing_arg == timing_arg_yes);
     config.default_session.beep = args.beep_flag;
 
+    size_t sample_rate = 0;
+
     if (args.rate_given) {
         if (!check_ge("rate", args.rate_arg, 1)) {
             return 1;
         }
-        config.sample_rate = (size_t)args.rate_arg;
+        sample_rate = (size_t)args.rate_arg;
     }
 
     if (args.timeout_given) {
@@ -147,6 +149,23 @@ int main(int argc, char** argv) {
     core::BufferPool<uint8_t> byte_buffer_pool(allocator, MaxPacketSize, 1);
     core::BufferPool<audio::sample_t> sample_buffer_pool(allocator, MaxFrameSize, 1);
     packet::PacketPool packet_pool(allocator, 1);
+
+    sndio::Player player(sample_buffer_pool, allocator, args.oneshot_flag,
+                         config.channels, sample_rate);
+
+    if (!player.open(args.output_arg, args.type_arg)) {
+        roc_log(LogError, "can't open output file or device: %s %s", args.output_arg,
+                args.type_arg);
+        return 1;
+    }
+
+    config.sample_rate = player.get_sample_rate();
+
+    if (config.sample_rate == 0) {
+        roc_log(LogError, "can't detect output sample rate, try to set it "
+                "explicitly with --rate option");
+        return 1;
+    }
 
     rtp::FormatMap format_map;
 
@@ -187,18 +206,9 @@ int main(int argc, char** argv) {
         }
     }
 
-    sndio::Player player(receiver, sample_buffer_pool, allocator, args.oneshot_flag,
-                         config.channels, config.sample_rate);
-
-    if (!player.open(args.output_arg, args.type_arg)) {
-        roc_log(LogError, "can't open output file or device: %s %s", args.output_arg,
-                args.type_arg);
-        return 1;
-    }
-
     trx.start();
 
-    player.start();
+    player.start(receiver);
     player.join();
 
     trx.stop();

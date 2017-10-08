@@ -28,6 +28,10 @@ bool make_receiver_config(pipeline::ReceiverConfig& out, const roc_receiver_conf
     out.default_session.timeout = in->timeout;
     out.default_session.samples_per_packet = in->samples_per_packet;
 
+    if (in->sample_rate) {
+        out.sample_rate = in->sample_rate;
+    }
+
     switch ((unsigned)in->fec_scheme) {
     case ROC_FEC_RS8M:
         out.default_session.fec.codec = fec::ReedSolomon8m;

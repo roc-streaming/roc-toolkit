@@ -34,8 +34,11 @@ public:
     //! @b Parameters
     //!  - @p update_interval defines how often to call FreqEstimator, in samples
     //!  - @p aim_queue_size defines FreqEstimator target queue size, in samples
+    //!  - @p sample_rate_coef represents a factor for converting session sample rate to
+    //!       output sample rate of a receiver.
     ResamplerUpdater(packet::timestamp_t update_interval,
-                     packet::timestamp_t aim_queue_size);
+                     packet::timestamp_t aim_queue_size,
+                     const float sample_rate_coef);
 
     //! Set output writer.
     void set_writer(packet::IWriter&);
@@ -76,6 +79,8 @@ private:
     packet::timestamp_t tail_;
 
     bool started_;
+
+    const float sample_rate_coef_;
 };
 
 } // namespace audio

@@ -22,7 +22,8 @@ const core::nanoseconds_t LogRate = 5000000000;
 } // namespace
 
 ResamplerUpdater::ResamplerUpdater(packet::timestamp_t update_interval,
-                                   packet::timestamp_t aim_queue_size)
+                                   packet::timestamp_t aim_queue_size,
+                                   const float sample_rate_coef)
     : writer_(NULL)
     , reader_(NULL)
     , resampler_(NULL)
@@ -34,7 +35,8 @@ ResamplerUpdater::ResamplerUpdater(packet::timestamp_t update_interval,
     , head_(0)
     , has_tail_(false)
     , tail_(0)
-    , started_(false) {
+    , started_(false)
+    , sample_rate_coef_(sample_rate_coef) {
 }
 
 void ResamplerUpdater::set_writer(packet::IWriter& writer) {
@@ -96,13 +98,16 @@ bool ResamplerUpdater::update(packet::timestamp_t time) {
         update_time_ += update_interval_;
     }
 
+    const float adjusted_coef = sample_rate_coef_ * fe_.freq_coeff();
+
     if (rate_limiter_.allow()) {
-        roc_log(LogDebug, "resampler updater: queue_size=%lu fe=%.5f",
-                (unsigned long)queue_size, (double)fe_.freq_coeff());
+        roc_log(LogDebug, "resampler updater: queue_size=%lu fe=%.5f, adjust_fe=%.5f",
+                (unsigned long)queue_size, (double)fe_.freq_coeff(),
+                (double)adjusted_coef);
     }
 
     roc_panic_if(!resampler_);
-    return resampler_->set_scaling(fe_.freq_coeff());
+    return resampler_->set_scaling(adjusted_coef);
 }
 
 } // namespace audio

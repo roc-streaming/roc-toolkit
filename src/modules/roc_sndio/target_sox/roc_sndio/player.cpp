@@ -16,14 +16,12 @@
 namespace roc {
 namespace sndio {
 
-Player::Player(pipeline::IReceiver& input,
-               core::BufferPool<audio::sample_t>& buffer_pool,
+Player::Player(core::BufferPool<audio::sample_t>& buffer_pool,
                core::IAllocator& allocator,
                bool oneshot,
                packet::channel_mask_t channels,
                size_t sample_rate)
     : output_(NULL)
-    , input_(input)
     , buffer_pool_(buffer_pool)
     , allocator_(allocator)
     , clips_(0)
@@ -32,10 +30,6 @@ Player::Player(pipeline::IReceiver& input,
     size_t n_channels = packet::num_channels(channels);
     if (n_channels == 0) {
         roc_panic("player: # of channels is zero");
-    }
-
-    if (sample_rate == 0) {
-        roc_panic("player: sample rate is zero");
     }
 
     memset(&out_signal_, 0, sizeof(out_signal_));
@@ -71,6 +65,23 @@ bool Player::open(const char* name, const char* type) {
         return false;
     }
 
+    unsigned long in_rate = (unsigned long)out_signal_.rate;
+    unsigned long out_rate = (unsigned long)output_->signal.rate;
+
+    if (in_rate != 0 && in_rate != out_rate) {
+        roc_log(LogError,
+                "can't open output file or device with the required sample rate: "
+                "required=%lu suggested=%lu",
+                out_rate, in_rate);
+        return false;
+    }
+
+    roc_log(LogInfo,
+            "player:"
+            " bits=%lu out_rate=%lu in_rate=%lu ch=%lu",
+            (unsigned long)output_->encoding.bits_per_sample, out_rate, in_rate,
+            (unsigned long)output_->signal.channels);
+
     return true;
 }
 
@@ -78,11 +89,27 @@ void Player::stop() {
     stop_ = 1;
 }
 
+void Player::start(pipeline::IReceiver& input) {
+    input_ = &input;
+    core::Thread::start();
+}
+
+size_t Player::get_sample_rate() const {
+    if (!output_) {
+        roc_panic("player: can't get sample rate for non-open output file or device");
+    }
+    return size_t(output_->signal.rate);
+}
+
 void Player::run() {
     roc_log(LogDebug, "player: starting thread");
 
+    if (!input_) {
+        roc_panic("player: thread is started not from the start() call");
+    }
+
     if (!output_) {
-        roc_panic("player: thread is started before open() returnes success");
+        roc_panic("player: thread is started before open() returned success");
     }
 
     loop_();
@@ -115,7 +142,7 @@ void Player::loop_() {
     SOX_SAMPLE_LOCALS;
 
     while (!stop_) {
-        pipeline::IReceiver::Status status = input_.read(frame);
+        pipeline::IReceiver::Status status = input_->read(frame);
 
         if (status == pipeline::IReceiver::Inactive) {
             if (oneshot_ && n_bufs_ != 0) {
