@@ -19,6 +19,7 @@ namespace roc {
 namespace pipeline {
 
 ReceiverSession::ReceiverSession(const SessionConfig& config,
+                                 const size_t out_sample_rate,
                                  const packet::Address& src_address,
                                  const rtp::FormatMap& format_map,
                                  packet::PacketPool& packet_pool,
@@ -28,6 +29,8 @@ ReceiverSession::ReceiverSession(const SessionConfig& config,
     : src_address_(src_address)
     , allocator_(allocator)
     , audio_reader_(NULL) {
+    roc_panic_if(out_sample_rate == 0);
+
     const rtp::Format* format = format_map.format(config.payload_type);
     if (!format) {
         return;
@@ -35,7 +38,8 @@ ReceiverSession::ReceiverSession(const SessionConfig& config,
 
     if (config.resampling) {
         resampler_updater_.reset(new (allocator_) audio::ResamplerUpdater(
-                                     config.fe_update_interval, config.latency),
+                                     config.fe_update_interval, config.latency,
+                                     (float)format->sample_rate / out_sample_rate),
                                  allocator_);
         if (!resampler_updater_) {
             return;

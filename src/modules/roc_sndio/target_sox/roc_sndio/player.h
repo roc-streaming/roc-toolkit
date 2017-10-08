@@ -35,11 +35,9 @@ public:
     //! Initialize.
     //!
     //! @b Parameters
-    //!  - @p input is used to read samples
     //!  - @p channels defines bitmask of enabled channels in input buffers
     //!  - @p sample_rate defines sample rate of input buffers
-    Player(pipeline::IReceiver& input,
-           core::BufferPool<audio::sample_t>& buffer_pool,
+    Player(core::BufferPool<audio::sample_t>& buffer_pool,
            core::IAllocator& allocator,
            bool oneshot,
            packet::channel_mask_t channels,
@@ -60,10 +58,22 @@ public:
     //!  Should be called once before calling start().
     bool open(const char* name, const char* type = NULL);
 
+    //! Start reading samples in a separate thread.
+    //!
+    //! @b Parameters
+    //!  - @p input is used to read samples.
+    void start(pipeline::IReceiver& input);
+
     //! Stop thread.
     //! @remarks
     //!  Can be called from any thread.
     void stop();
+
+    //! Get sample rate of an output file or a device.
+    //!
+    //! @pre
+    //!  Output file or device should be opened.
+    size_t get_sample_rate() const;
 
 private:
     virtual void run();
@@ -76,7 +86,7 @@ private:
     sox_format_t* output_;
     sox_signalinfo_t out_signal_;
 
-    pipeline::IReceiver& input_;
+    pipeline::IReceiver* input_;
 
     core::BufferPool<audio::sample_t>& buffer_pool_;
     core::IAllocator& allocator_;

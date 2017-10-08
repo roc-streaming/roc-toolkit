@@ -105,6 +105,9 @@ typedef struct roc_receiver_config {
 
     //! A bitmask of ROC_FLAG_* constants.
     unsigned int flags;
+
+    //! Number of samples per second per channel.
+    unsigned int sample_rate;
 } roc_receiver_config;
 
 #ifdef __cplusplus

@@ -125,7 +125,7 @@ struct ReceiverConfig {
     //! Default parameters for session.
     SessionConfig default_session;
 
-    //! Sample rate, number of samples for all channels per second.
+    //! Number of samples per second per channel.
     size_t sample_rate;
 
     //! Channel mask.
@@ -149,7 +149,7 @@ struct SenderConfig {
     //! Parameters for the port from which repair packets are sent.
     PortConfig repair_port;
 
-    //! Sample rate, number of samples for all channels per second.
+    //! Number of samples per second per channel.
     size_t sample_rate;
 
     //! Channel mask.

@@ -11,6 +11,7 @@
 
 #include "roc_core/buffer_pool.h"
 #include "roc_core/heap_allocator.h"
+#include "roc_core/macros.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/temp_file.h"
 #include "roc_sndio/init.h"
@@ -115,39 +116,53 @@ TEST_GROUP(player_recorder) {
 };
 
 TEST(player_recorder, player_noop) {
-    MockReceiver receiver;
-    Player player(receiver, buffer_pool, allocator, true, ChMask, SampleRate);
+    Player player(buffer_pool, allocator, true, ChMask, SampleRate);
 }
 
 TEST(player_recorder, player_error) {
-    MockReceiver receiver;
-    Player player(receiver, buffer_pool, allocator, true, ChMask, SampleRate);
+    Player player(buffer_pool, allocator, true, ChMask, SampleRate);
 
     CHECK(!player.open("/bad/file"));
 }
 
 TEST(player_recorder, player_start_stop) {
     MockReceiver receiver;
-    Player player(receiver, buffer_pool, allocator, true, ChMask, SampleRate);
+    Player player(buffer_pool, allocator, true, ChMask, SampleRate);
 
     core::TempFile file("test.wav");
     CHECK(player.open(file.path()));
 
-    player.start();
+    player.start(receiver);
     player.stop();
     player.join();
 }
 
 TEST(player_recorder, player_stop_start) {
     MockReceiver receiver;
-    Player player(receiver, buffer_pool, allocator, true, ChMask, SampleRate);
+    Player player(buffer_pool, allocator, true, ChMask, SampleRate);
 
     core::TempFile file("test.wav");
     CHECK(player.open(file.path()));
 
     player.stop();
-    player.start();
+    player.start(receiver);
     player.join();
+}
+
+TEST(player_recorder, player_open_file_zero_sample_rate) {
+    Player player(buffer_pool, allocator, true, ChMask, 0);
+
+    core::TempFile file("test.wav");
+    CHECK(player.open(file.path()));
+    CHECK(player.get_sample_rate() != 0);
+}
+
+TEST(player_recorder, player_open_file_non_zero_sample_rate) {
+    Player player(buffer_pool, allocator, true, ChMask, SampleRate);
+
+    core::TempFile file("test.wav");
+    CHECK(player.open(file.path()));
+    CHECK(player.get_sample_rate() == SampleRate);
 }
 
 TEST(player_recorder, recorder_noop) {
@@ -168,12 +183,12 @@ TEST(player_recorder, recorder_start_stop) {
     MockReceiver receiver;
     receiver.add(NumSamples);
 
-    Player player(receiver, buffer_pool, allocator, true, ChMask, SampleRate);
+    Player player(buffer_pool, allocator, true, ChMask, SampleRate);
 
     core::TempFile file("test.wav");
     CHECK(player.open(file.path()));
 
-    player.start();
+    player.start(receiver);
     player.join();
 
     MockWriter writer;
@@ -192,12 +207,12 @@ TEST(player_recorder, recorder_stop_start) {
     MockReceiver receiver;
     receiver.add(NumSamples);
 
-    Player player(receiver, buffer_pool, allocator, true, ChMask, SampleRate);
+    Player player(buffer_pool, allocator, true, ChMask, SampleRate);
 
     core::TempFile file("test.wav");
     CHECK(player.open(file.path()));
 
-    player.start();
+    player.start(receiver);
     player.join();
 
     MockWriter writer;
@@ -216,12 +231,12 @@ TEST(player_recorder, write_read) {
     MockReceiver receiver;
     receiver.add(NumSamples);
 
-    Player player(receiver, buffer_pool, allocator, true, ChMask, SampleRate);
+    Player player(buffer_pool, allocator, true, ChMask, SampleRate);
 
     core::TempFile file("test.wav");
     CHECK(player.open(file.path()));
 
-    player.start();
+    player.start(receiver);
     player.join();
 
     CHECK(receiver.num_returned() >= NumSamples - MaxBufSize);
@@ -246,10 +261,10 @@ TEST(player_recorder, overwrite) {
     receiver.add(NumSamples);
 
     {
-        Player player(receiver, buffer_pool, allocator, true, ChMask, SampleRate);
+        Player player(buffer_pool, allocator, true, ChMask, SampleRate);
         CHECK(player.open(file.path()));
 
-        player.start();
+        player.start(receiver);
         player.join();
     }
 
@@ -259,10 +274,10 @@ TEST(player_recorder, overwrite) {
     CHECK(num_returned1 >= NumSamples - MaxBufSize);
 
     {
-        Player player(receiver, buffer_pool, allocator, true, ChMask, SampleRate);
+        Player player(buffer_pool, allocator, true, ChMask, SampleRate);
         CHECK(player.open(file.path()));
 
-        player.start();
+        player.start(receiver);
         player.join();
     }
 
