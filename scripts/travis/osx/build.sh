@@ -1,6 +1,9 @@
 #! /bin/bash
 set -xe
 
+ruby -v
+rvm get stable --auto-dotfiles
+
 brew tap Homebrew/bundle
 brew bundle --file=scripts/travis/osx/Brewfile
 
