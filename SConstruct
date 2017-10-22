@@ -446,31 +446,37 @@ tool_env = env.Clone()
 test_env = env.Clone()
 
 # all possible dependencies on this platform
-alldeps = set(env['ROC_TARGETS'])
+all_dependencies = set(env['ROC_TARGETS'])
 
 if not GetOption('disable_tests'):
-    alldeps.add('target_cpputest')
+    all_dependencies.add('target_cpputest')
 
 if not GetOption('disable_tools'):
-    alldeps.add('target_gengetopt')
+    all_dependencies.add('target_gengetopt')
 
     if platform in ['linux']:
-        alldeps.add('target_alsa')
-        alldeps.add('target_pulseaudio')
+        all_dependencies.add('target_alsa')
+        all_dependencies.add('target_pulseaudio')
 
 # dependencies that we should download and build manually
-getdeps = set()
+download_dependencies = set()
 
-for t in env.ParseThirdParties(thirdparty_versions, GetOption('build_3rdparty')):
-    getdeps.add('target_%s' % t)
+# dependencies that have explicitly provided version
+explicit_version = set()
 
-if 'target_all' in getdeps:
-    getdeps = alldeps
+for name, version in env.ParseThirdParties(GetOption('build_3rdparty')):
+    download_dependencies.add('target_%s' % name)
+    if version:
+        thirdparty_versions[name] = version
+        explicit_version.add(name)
 
-# external dependencies that should be installed on system
-extdeps = alldeps - getdeps
+if 'target_all' in download_dependencies:
+    download_dependencies = all_dependencies
 
-if 'target_uv' in extdeps:
+# dependencies that should be pre-installed on system
+system_dependecies = all_dependencies - download_dependencies
+
+if 'target_uv' in system_dependecies:
     conf = Configure(env, custom_tests=env.CustomTests)
 
     env.TryParseConfig('--cflags --libs libuv')
@@ -485,7 +491,7 @@ if 'target_uv' in extdeps:
 
     env = conf.Finish()
 
-if 'target_openfec' in extdeps:
+if 'target_openfec' in system_dependecies:
     conf = Configure(env, custom_tests=env.CustomTests)
 
     if not env.TryParseConfig('--silence-errors --cflags --libs openfec') \
@@ -518,7 +524,7 @@ if 'target_openfec' in extdeps:
 
     env = conf.Finish()
 
-if 'target_sox' in extdeps:
+if 'target_sox' in system_dependecies:
     conf = Configure(tool_env, custom_tests=env.CustomTests)
 
     tool_env.TryParseConfig('--cflags --libs sox')
@@ -534,7 +540,7 @@ if 'target_sox' in extdeps:
 
     tool_env = conf.Finish()
 
-if 'target_gengetopt' in extdeps:
+if 'target_gengetopt' in system_dependecies:
     conf = Configure(env, custom_tests=env.CustomTests)
 
     if 'GENGETOPT' in env.Dictionary():
@@ -547,7 +553,7 @@ if 'target_gengetopt' in extdeps:
 
     env = conf.Finish()
 
-if 'target_cpputest' in extdeps:
+if 'target_cpputest' in system_dependecies:
     conf = Configure(test_env, custom_tests=env.CustomTests)
 
     test_env.TryParseConfig('--cflags --libs cpputest')
@@ -557,27 +563,32 @@ if 'target_cpputest' in extdeps:
 
     test_env = conf.Finish()
 
-if 'target_uv' in getdeps:
+if 'target_uv' in download_dependencies:
     env.ThirdParty(host, toolchain, thirdparty_variant, thirdparty_versions, 'uv')
 
-if 'target_openfec' in getdeps:
+if 'target_openfec' in download_dependencies:
     env.ThirdParty(host, toolchain, thirdparty_variant, thirdparty_versions, 'openfec',
                    includes=[
                     'lib_common',
                     'lib_stable',
                     ])
 
-if 'target_alsa' in getdeps:
+if 'target_alsa' in download_dependencies:
     tool_env.ThirdParty(host, toolchain, thirdparty_variant, thirdparty_versions, 'alsa')
 
-if 'target_pulseaudio' in getdeps:
+if 'target_pulseaudio' in download_dependencies:
+    if not 'target_pulseaudio' in explicit_version and not crosscompile:
+      pa_ver = env.ToolVersion(['pulseaudio', '--version'])
+      if pa_ver:
+        thirdparty_versions['pulseaudio'] = pa_ver
+
     pa_deps = [
         'ltdl',
         'json',
         'sndfile',
         ]
 
-    if 'target_alsa' in getdeps:
+    if 'target_alsa' in download_dependencies:
         pa_deps += ['alsa']
 
     tool_env.ThirdParty(host, toolchain, thirdparty_variant, thirdparty_versions, 'ltdl')
@@ -586,13 +597,13 @@ if 'target_pulseaudio' in getdeps:
     tool_env.ThirdParty(
         host, toolchain, thirdparty_variant, thirdparty_versions, 'pulseaudio', pa_deps)
 
-if 'target_sox' in getdeps:
+if 'target_sox' in download_dependencies:
     sox_deps = []
 
-    if 'target_alsa' in getdeps:
+    if 'target_alsa' in download_dependencies:
         sox_deps += ['alsa']
 
-    if 'target_pulseaudio' in getdeps:
+    if 'target_pulseaudio' in download_dependencies:
         sox_deps += ['pulseaudio']
 
     tool_env.ThirdParty(
@@ -607,13 +618,13 @@ if 'target_sox' in getdeps:
             'mad', 'mp3lame']:
         conf.CheckLib(lib)
 
-    if not 'target_alsa' in getdeps:
+    if not 'target_alsa' in download_dependencies:
         for lib in [
                 'asound',
                 ]:
             conf.CheckLib(lib)
 
-    if not 'target_pulseaudio' in getdeps:
+    if not 'target_pulseaudio' in download_dependencies:
         for lib in [
                 'sndfile',
                 'pulse', 'pulse-simple',
@@ -627,13 +638,13 @@ if 'target_sox' in getdeps:
 
     tool_env = conf.Finish()
 
-if 'target_gengetopt' in getdeps:
+if 'target_gengetopt' in download_dependencies:
     env.ThirdParty(build, "", thirdparty_variant, thirdparty_versions, 'gengetopt')
 
     env['GENGETOPT'] = env.File(
         '#3rdparty/%s/build/gengetopt-2.22.6/bin/gengetopt' % build + env['PROGSUFFIX'])
 
-if 'target_cpputest' in getdeps:
+if 'target_cpputest' in download_dependencies:
     test_env.ThirdParty(
         host, toolchain, thirdparty_variant, thirdparty_versions, 'cpputest')
 

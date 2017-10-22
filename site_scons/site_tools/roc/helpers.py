@@ -102,6 +102,31 @@ def Python(env):
     else:
         return sys.executable
 
+def CommandOutput(env, command):
+    try:
+        with open(os.devnull, 'w') as null:
+            proc = subprocess.Popen(command,
+                                    stdin=null,
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.STDOUT,
+                                    env=env['ENV'])
+            output = ' '.join(proc.stdout.readlines()).strip()
+            proc.terminate()
+            return output
+    except:
+        return None
+
+def ToolVersion(env, command):
+    text = env.CommandOutput(command)
+    if not text:
+        return None
+
+    m = re.search(r'(\b[0-9][0-9.]+\b)', text)
+    if not m:
+        return None
+
+    return m.group(1)
+
 def CompilerVersion(env, compiler):
     def getverstr():
         try:
@@ -110,12 +135,7 @@ def CompilerVersion(env, compiler):
                 r'(\b[0-9]+\.[0-9]+\b)',
             ]
 
-            full_proc = subprocess.Popen([compiler, '--version'],
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.STDOUT,
-                                    env=env['ENV'])
-
-            full_text = ' '.join(full_proc.stdout.readlines())
+            full_text = env.CommandOutput([compiler, '--version'])
 
             for regex in version_formats:
                 m = re.search(r'(?:LLVM|clang)\s+version\s+'+regex, full_text)
@@ -124,12 +144,7 @@ def CompilerVersion(env, compiler):
 
             trunc_text = re.sub(r'\([^)]+\)', '', full_text)
 
-            dump_proc = subprocess.Popen([compiler, '-dumpversion'],
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.STDOUT,
-                                    env=env['ENV'])
-
-            dump_text = ' '.join(dump_proc.stdout.readlines())
+            dump_text = env.CommandOutput([compiler, '-dumpversion'])
 
             for text in [dump_text, trunc_text, full_text]:
                 for regex in version_formats:
@@ -148,18 +163,12 @@ def CompilerVersion(env, compiler):
         return None
 
 def CompilerTarget(env, compiler):
-    try:
-        with open(os.devnull, 'w') as null:
-            proc = subprocess.Popen([compiler, '-v', '-E', '-'],
-                                    stdin=null,
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.STDOUT,
-                                    env=env['ENV'])
-    except:
+    text = env.CommandOutput([compiler, '-v', '-E', '-'])
+    if not text:
         return None
 
-    for line in proc.stdout.readlines():
-        m = re.match(r'^Target:\s*(\S+)', line)
+    for line in text.splitlines():
+        m = re.search(r'\bTarget:\s*(\S+)', line)
         if m:
             parts = m.group(1).split('-')
             # "system" defaults to "pc" on recent config.guess versions
@@ -262,18 +271,22 @@ def GenGetOpt(env, source, ver):
 
     return ret
 
-def ParseThirdParties(env, versions, s):
-    ret = set()
+def ParseThirdParties(env, s):
+    ret = dict()
     if s:
         for t in s.split(','):
             tokens = t.split(':', 1)
-            if tokens[0] != 'all':
-                if not tokens[0] in versions:
-                    env.Die("unknown 3rdparty '%s'" % tokens[0])
-                if len(tokens) == 2:
-                    versions[tokens[0]] = tokens[1]
-            ret.add(tokens[0])
-    return ret
+
+            name = tokens[0]
+            if name == 'all':
+                continue
+
+            ver = None
+            if len(tokens) == 2:
+                ver = tokens[1]
+
+            ret[name] = ver
+    return ret.items()
 
 def ThirdParty(env, host, toolchain, variant, versions, name, deps=[], includes=[]):
     def versioned(name):
@@ -403,6 +416,8 @@ def Init(env):
     env.AddMethod(AppendVars, 'AppendVars')
     env.AddMethod(Which, 'Which')
     env.AddMethod(Python, 'Python')
+    env.AddMethod(CommandOutput, 'CommandOutput')
+    env.AddMethod(ToolVersion, 'ToolVersion')
     env.AddMethod(CompilerVersion, 'CompilerVersion')
     env.AddMethod(CompilerTarget, 'CompilerTarget')
     env.AddMethod(LLVMDir, 'LLVMDir')
