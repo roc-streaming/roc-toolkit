@@ -278,11 +278,8 @@ def ParseThirdParties(env, s):
             tokens = t.split(':', 1)
 
             name = tokens[0]
-            if name == 'all':
-                continue
-
             ver = None
-            if len(tokens) == 2:
+            if name != 'all' and len(tokens) == 2:
                 ver = tokens[1]
 
             ret[name] = ver
