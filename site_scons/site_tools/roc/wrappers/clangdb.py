@@ -41,6 +41,7 @@ if source_file:
             fcntl.flock(fp.fileno(), fcntl.LOCK_EX)
 
             try:
+                fp.seek(0)
                 db = json.loads(fp.read())
                 db[:]
             except:
