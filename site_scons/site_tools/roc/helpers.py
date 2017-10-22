@@ -288,11 +288,20 @@ def ParseThirdParties(env, s):
             ret[name] = ver
     return ret.items()
 
-def ThirdParty(env, host, toolchain, variant, versions, name, deps=[], includes=[]):
+def ThirdParty(
+        env, host, toolchain, variant, versions, name, deps=[], includes=[], libs=[]):
     def versioned(name):
         if not name in versions:
             env.Die("unknown 3rdparty '%s'" % name)
         return name + '-' + versions[name]
+
+    def needlib(lib):
+        if not libs:
+            return True
+        for name in libs:
+            if fnmatch.fnmatch(os.path.basename(lib), 'lib%s.*' % name):
+                return True
+        return False
 
     name = versioned(name)
     for n in range(len(deps)):
@@ -320,8 +329,13 @@ def ThirdParty(env, host, toolchain, variant, versions, name, deps=[], includes=
             '#3rdparty/%s/build/%s/include/%s' % (host, name, s)
         ])
 
+    env.Prepend(LIBPATH=[
+        '#3rdparty/%s/build/%s/lib' % (host, name)
+        ])
+
     for lib in env.RecursiveGlob('#3rdparty/%s/build/%s/lib' % (host, name), 'lib*'):
-        env.Prepend(LIBS=[env.File(lib)])
+        if needlib(lib.path):
+            env.Prepend(LIBS=[env.File(lib)])
 
 def DeleteFile(env, path):
     path = env.File(path).path

@@ -594,8 +594,8 @@ if 'target_pulseaudio' in download_dependencies:
     tool_env.ThirdParty(host, toolchain, thirdparty_variant, thirdparty_versions, 'ltdl')
     tool_env.ThirdParty(host, toolchain, thirdparty_variant, thirdparty_versions, 'json')
     tool_env.ThirdParty(host, toolchain, thirdparty_variant, thirdparty_versions, 'sndfile')
-    tool_env.ThirdParty(
-        host, toolchain, thirdparty_variant, thirdparty_versions, 'pulseaudio', pa_deps)
+    tool_env.ThirdParty(host, toolchain, thirdparty_variant, thirdparty_versions,
+                        'pulseaudio', deps=pa_deps, libs=['pulse', 'pulse-simple'])
 
 if 'target_sox' in download_dependencies:
     sox_deps = []
