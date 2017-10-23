@@ -1,6 +1,6 @@
 import re
 
-Import('env', 'lib_env', 'tool_env', 'test_env')
+Import('env', 'lib_env', 'gen_env', 'tool_env', 'test_env', 'pulse_env')
 
 env.Append(CPPPATH=['#src/modules'])
 
@@ -87,7 +87,7 @@ if not GetOption('disable_tools'):
         sources = env.Glob('%s/*.cpp' % tooldir)
         objects = []
         for ggo in env.Glob('%s/*.ggo' % tooldir):
-            objects += env.GenGetOpt(ggo, env['ROC_VERSION'])
+            objects += gen_env.GenGetOpt(ggo, env['ROC_VERSION'])
 
         exename = re.sub('roc_', 'roc-', tooldir.name)
         target = env.Install(env['ROC_BINDIR'],

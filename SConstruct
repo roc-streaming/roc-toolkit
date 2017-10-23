@@ -442,8 +442,10 @@ env.Append(LIBPATH=[])
 env.Append(LIBS=[])
 
 lib_env = env.Clone()
+gen_env = env.Clone()
 tool_env = env.Clone()
 test_env = env.Clone()
+pulse_env = env.Clone()
 
 # all possible dependencies on this platform
 all_dependencies = set(env['ROC_TARGETS'])
@@ -641,7 +643,7 @@ if 'target_sox' in download_dependencies:
 if 'target_gengetopt' in download_dependencies:
     env.ThirdParty(build, "", thirdparty_variant, thirdparty_versions, 'gengetopt')
 
-    env['GENGETOPT'] = env.File(
+    gen_env['GENGETOPT'] = env.File(
         '#3rdparty/%s/build/gengetopt-2.22.6/bin/gengetopt' % build + env['PROGSUFFIX'])
 
 if 'target_cpputest' in download_dependencies:
@@ -662,14 +664,20 @@ if platform in ['linux']:
 if compiler in ['gcc', 'clang']:
     env.Append(CXXFLAGS=[
         '-std=c++98',
-        '-pthread',
-        '-fPIC',
         '-fno-exceptions',
         '-fvisibility=hidden',
     ])
+
+    for var in ['CXXFLAGS', 'CFLAGS']:
+        env.Append(**{var: [
+            '-pthread',
+            '-fPIC',
+        ]})
+
     env.Append(LIBS=[
         'pthread',
     ])
+
     if platform in ['linux']:
         lib_env.Append(LINKFLAGS=[
             '-Wl,--version-script=' + env.File('#src/lib/roc.version').path
@@ -679,15 +687,19 @@ if compiler in ['gcc', 'clang']:
         env.Append(CXXFLAGS=[
             '-fno-rtti',
         ])
+
     if GetOption('enable_werror'):
-        env.Append(CXXFLAGS=[
-            '-Werror'
-        ])
+        for var in ['CXXFLAGS', 'CFLAGS']:
+            env.Append(**{var: [
+                '-Werror',
+            ]})
+
     if variant == 'debug':
-        env.Append(CXXFLAGS=[
-            '-ggdb',
-            '-fno-omit-frame-pointer',
-        ])
+        for var in ['CXXFLAGS', 'CFLAGS']:
+            env.Append(**{var: [
+                '-ggdb',
+                '-fno-omit-frame-pointer',
+            ]})
         env.Append(LINKFLAGS=[
             '-rdynamic'
         ])
@@ -697,64 +709,80 @@ else:
     env.Die("CXXFLAGS setup not implemented for compiler '%s'", compiler)
 
 if compiler == 'gcc':
+    for var in ['CXXFLAGS', 'CFLAGS']:
+        env.Append(**{var: [
+            '-Wall',
+            '-Wextra',
+            '-Wcast-qual',
+            '-Wfloat-equal',
+            '-Wpointer-arith',
+            '-Wformat=2',
+            '-Wformat-security',
+            '-Wno-system-headers',
+        ]})
+
     env.Append(CXXFLAGS=[
-        '-Wall',
-        '-Wextra',
-        '-Wcast-qual',
-        '-Wfloat-equal',
-        '-Wpointer-arith',
-        '-Wformat=2',
-        '-Wformat-security',
-        '-Wstrict-null-sentinel',
         '-Wctor-dtor-privacy',
         '-Wnon-virtual-dtor',
+        '-Wstrict-null-sentinel',
         '-Wno-invalid-offsetof',
-        '-Wno-system-headers',
     ])
 
     if compiler_ver[:2] >= (4, 4):
+        for var in ['CXXFLAGS', 'CFLAGS']:
+            env.Append(**{var: [
+                '-Wlogical-op',
+                '-Woverlength-strings',
+            ]})
         env.Append(CXXFLAGS=[
-            '-Wlogical-op',
             '-Wmissing-declarations',
-            '-Woverlength-strings',
         ])
 
     if compiler_ver[:2] >= (4, 8):
-        env.Append(CXXFLAGS=[
-            '-Wdouble-promotion',
-            '-Wabi',
-        ])
+        for var in ['CXXFLAGS', 'CFLAGS']:
+            env.Append(**{var: [
+                '-Wdouble-promotion',
+                '-Wabi',
+            ]})
 
     if compiler_ver[:2] < (4, 6):
-        env.Append(CXXFLAGS=[
-            '-fno-strict-aliasing',
-        ])
+        for var in ['CXXFLAGS', 'CFLAGS']:
+            env.Append(**{var: [
+                '-fno-strict-aliasing',
+            ]})
 
 if compiler == 'clang':
-    env.Append(CXXFLAGS=[
-        '-Weverything',
-        '-Wno-old-style-cast',
-        '-Wno-padded',
-        '-Wno-packed',
-        '-Wno-cast-align',
-        '-Wno-global-constructors',
-        '-Wno-exit-time-destructors',
-        '-Wno-invalid-offsetof',
-        '-Wno-shift-sign-overflow',
-        '-Wno-used-but-marked-unused',
-        '-Wno-format-nonliteral',
-        '-Wno-variadic-macros',
-        '-Wno-system-headers',
+    for var in ['CXXFLAGS', 'CFLAGS']:
+        env.Append(**{var: [
+            '-Weverything',
+            '-Wno-old-style-cast',
+            '-Wno-padded',
+            '-Wno-packed',
+            '-Wno-cast-align',
+            '-Wno-global-constructors',
+            '-Wno-exit-time-destructors',
+            '-Wno-invalid-offsetof',
+            '-Wno-shift-sign-overflow',
+            '-Wno-used-but-marked-unused',
+            '-Wno-format-nonliteral',
+            '-Wno-variadic-macros',
+            '-Wno-system-headers',
+        ]})
+
+    env.Append(CFLAGS=[
+        '-Wno-missing-prototypes',
     ])
 
     if compiler_ver[:2] >= (3, 6):
-        env.Append(CXXFLAGS=[
-            '-Wno-reserved-id-macro',
-        ])
+        for var in ['CXXFLAGS', 'CFLAGS']:
+            env.Append(**{var: [
+                '-Wno-reserved-id-macro',
+            ]})
     else:
-        env.Append(CXXFLAGS=[
-            '-Wno-unreachable-code',
-        ])
+        for var in ['CXXFLAGS', 'CFLAGS']:
+            env.Append(**{var: [
+                '-Wno-unreachable-code',
+            ]})
 
 if compiler in ['gcc', 'clang']:
     if GetOption('enable_sanitizers'):
@@ -778,9 +806,12 @@ if compiler in ['gcc', 'clang']:
 
         san_conf.Finish()
 
-    env.Prepend(
-        CXXFLAGS=[('-isystem', env.Dir(path).path) for path in \
-                  env['CPPPATH'] + ['%s/tools' % build_dir]])
+    for e in [env, lib_env, tool_env, test_env, pulse_env]:
+        for var in ['CXXFLAGS', 'CFLAGS']:
+            e.Prepend(**{var:
+                [('-isystem', env.Dir(path).path) for path in \
+                      e['CPPPATH'] + ['%s/tools' % build_dir]]
+                      })
 
 if platform in ['linux']:
     tool_env.Append(LINKFLAGS=[
@@ -788,11 +819,6 @@ if platform in ['linux']:
     ])
 
 test_env.Append(CPPDEFINES=('CPPUTEST_USE_MEM_LEAK_DETECTION', '0'))
-
-if compiler in ['gcc', 'clang']:
-    test_env.Prepend(CXXFLAGS=[
-            ('-isystem', env.Dir(path).path) for path in test_env['CPPPATH']
-    ])
 
 if compiler == 'clang':
     test_env.AppendUnique(CXXFLAGS=[
@@ -828,7 +854,7 @@ env.AlwaysBuild(
             env.Pretty('TIDY', 'src', 'yellow')
         )))
 
-Export('env', 'lib_env', 'tool_env', 'test_env')
+Export('env', 'lib_env', 'gen_env', 'tool_env', 'test_env', 'pulse_env')
 
 env.SConscript('src/SConscript',
             variant_dir=build_dir, duplicate=0)
