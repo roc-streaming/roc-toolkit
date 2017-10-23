@@ -1,0 +1,311 @@
+/* This file is part of Roc PulseAudio integration.
+ *
+ * Copyright 2017 Victor Gaydov
+ * Copyright 2017 Mikhail Baranov
+ *
+ * Licensed under GNU Lesser General Public License 2.1 or any later version.
+ */
+
+/* config.h from pulseaudio directory (generated after ./configure) */
+#include <config.h>
+
+/* public pulseaudio headers */
+#include <pulse/xmalloc.h>
+
+/* private pulseaudio headers */
+#include <pulsecore/module.h>
+#include <pulsecore/modargs.h>
+#include <pulsecore/namereg.h>
+#include <pulsecore/sink-input.h>
+#include <pulsecore/log.h>
+
+/* roc headers */
+#include <roc/receiver.h>
+
+/* system headers */
+#include <stdlib.h>
+#include <limits.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
+PA_MODULE_AUTHOR("Victor Gaydov & Mikhail Baranov");
+PA_MODULE_DESCRIPTION("Read samples using Roc receiver");
+PA_MODULE_VERSION(PACKAGE_VERSION);
+PA_MODULE_LOAD_ONCE(false);
+PA_MODULE_USAGE(
+        "sink=<name for the sink> "
+        "sink_input_properties=<properties for the sink input> "
+        "local_ip=<local receiver ip> "
+        "local_source_port=<local receiver port for source packets> "
+        "local_repair_port=<local receiver port for repair packets>");
+
+struct roc_sink_input_userdata {
+    pa_module* module;
+    pa_sink_input* sink_input;
+
+    roc_receiver* receiver;
+};
+
+static const char* const roc_sink_input_modargs[] = {
+    "sink",
+    "sink_input_name",
+    "sink_input_properties",
+    "local_ip",
+    "local_source_port",
+    "local_repair_port",
+    NULL
+};
+
+static int parse_address(struct sockaddr_in* addr, const char* ip, const char* port) {
+    char* end = NULL;
+    long port_num = strtol(port, &end, 10);
+    if (port_num < 0 || port_num >= 65536 || !end || *end) {
+        pa_log("invalid port: %s", port);
+        return -1;
+    }
+
+    memset(addr, 0, sizeof(*addr));
+    addr->sin_family = AF_INET;
+    addr->sin_port = htons((uint16_t)port_num);
+
+    if (*ip) {
+        if (inet_pton(AF_INET, ip, &addr->sin_addr) <= 0) {
+            pa_log("invalid ip: %s", ip);
+            return -1;
+        }
+    } else {
+        addr->sin_addr.s_addr = INADDR_ANY;
+    }
+
+    return 0;
+}
+
+static int process_message(
+    pa_msgobject* o, int code, void* data, int64_t offset, pa_memchunk* chunk) {
+    struct roc_sink_input_userdata *u = PA_SINK_INPUT(o)->userdata;
+    pa_assert(u);
+
+    switch (code) {
+    case PA_SINK_INPUT_MESSAGE_GET_LATENCY:
+        /* TODO: we should report internal latency here */
+        *((pa_usec_t*)data) = 0;
+
+        /* don't return, the default handler will add in the extra latency
+         * added by the resampler
+         */
+        break;
+    }
+
+    return pa_sink_input_process_msg(o, code, data, offset, chunk);
+}
+
+static int pop_cb(pa_sink_input* i, size_t length, pa_memchunk* chunk) {
+    pa_sink_input_assert_ref(i);
+
+    struct roc_sink_input_userdata* u = i->userdata;
+    pa_assert(u);
+
+    /* ensure that all chunk fields are set to zero */
+    pa_memchunk_reset(chunk);
+
+    /* allocate memblock */
+    chunk->memblock = pa_memblock_new(u->module->core->mempool, length);
+
+    /* start writing memblock */
+    char *buf = pa_memblock_acquire(chunk->memblock);
+
+    float *samples = (float*)buf;
+    size_t n_samples = length / pa_sample_size(&u->sink_input->sample_spec);
+
+    /* read samples from file to memblock */
+    ssize_t ret = roc_receiver_read(u->receiver, samples, n_samples);
+
+    /* finish writing memblock */
+    pa_memblock_release(chunk->memblock);
+
+    /* handle eof and error */
+    if (ret < 0) {
+        pa_module_unload_request(u->module, true);
+        return -1;
+    }
+
+    /* setup chunk boundaries */
+    chunk->index = 0;
+    chunk->length = (size_t)ret * pa_sample_size(&u->sink_input->sample_spec);
+
+    return 0;
+}
+
+static void rewind_cb(pa_sink_input* i, size_t nbytes) {
+    pa_sink_input_assert_ref(i);
+
+    struct roc_sink_input_userdata* u = i->userdata;
+    pa_assert(u);
+
+    (void)nbytes;
+}
+
+static void kill_cb(pa_sink_input* i) {
+    pa_sink_input_assert_ref(i);
+
+    struct roc_sink_input_userdata* u = i->userdata;
+    pa_assert(u);
+
+    pa_module_unload_request(u->module, true);
+
+    pa_sink_input_unlink(u->sink_input);
+    pa_sink_input_unref(u->sink_input);
+    u->sink_input = NULL;
+}
+
+void pa__done(pa_module*);
+
+int pa__init(pa_module* m) {
+    pa_assert(m);
+
+    /* prepare sample spec and channel map used in this sink */
+    pa_sample_spec sample_spec;
+    sample_spec.format = PA_SAMPLE_FLOAT32LE;
+    sample_spec.rate = 44100;
+    sample_spec.channels = 2;
+
+    pa_channel_map channel_map;
+    pa_channel_map_init_stereo(&channel_map);
+
+    /* get module arguments (key-value list passed to load-module) */
+    pa_modargs *args;
+    if (!(args = pa_modargs_new(m->argument, roc_sink_input_modargs))) {
+        pa_log("failed to parse module arguments");
+        goto error;
+    }
+
+    /* get sink from arguments */
+    pa_sink *sink = pa_namereg_get(
+        m->core, pa_modargs_get_value(args, "sink", NULL), PA_NAMEREG_SINK);
+    if (!sink) {
+        pa_log("sink does not exist");
+        goto error;
+    }
+
+    /* create and initialize module-specific data */
+    struct roc_sink_input_userdata *u =
+        pa_xnew0(struct roc_sink_input_userdata, 1);
+    pa_assert(u);
+    m->userdata = u;
+
+    u->module = m;
+
+    struct sockaddr_in local_source_addr;
+    if (parse_address(&local_source_addr, pa_modargs_get_value(args, "local_ip", ""),
+                      pa_modargs_get_value(args, "local_source_port", ""))
+        < 0) {
+        pa_log("invalid local address for source packets");
+        goto error;
+    }
+
+    struct sockaddr_in local_repair_addr;
+    if (parse_address(&local_repair_addr, pa_modargs_get_value(args, "local_ip", ""),
+                      pa_modargs_get_value(args, "local_repair_port", ""))
+        < 0) {
+        pa_log("invalid local address for repair packets");
+        goto error;
+    }
+
+    roc_receiver_config config;
+    memset(&config, 0, sizeof(config));
+
+    u->receiver = roc_receiver_new(&config);
+    if (!u->receiver) {
+        pa_log("can't create roc receiver");
+        goto error;
+    }
+
+    if (roc_receiver_bind(u->receiver, ROC_PROTO_RTP_RSM8_SOURCE,
+                          (struct sockaddr*)&local_source_addr)
+        != 0) {
+        pa_log("can't connect roc receiver to local address");
+        goto error;
+    }
+
+    if (roc_receiver_bind(u->receiver, ROC_PROTO_RSM8_REPAIR,
+                          (struct sockaddr*)&local_repair_addr)
+        != 0) {
+        pa_log("can't connect roc receiver to local address");
+        goto error;
+    }
+
+    if (roc_receiver_start(u->receiver) != 0) {
+        pa_log("can't start roc receiver");
+        goto error;
+    }
+
+    /* create and initialize sink input */
+    pa_sink_input_new_data data;
+    pa_sink_input_new_data_init(&data);
+    pa_sink_input_new_data_set_sink(&data, sink, false);
+    data.driver = "roc_sink_input";
+    data.module = u->module;
+    pa_sink_input_new_data_set_sample_spec(&data, &sample_spec);
+    pa_sink_input_new_data_set_channel_map(&data, &channel_map);
+
+    pa_proplist_sets(data.proplist, PA_PROP_MEDIA_NAME, "Roc Sink Input");
+
+    if (pa_modargs_get_proplist(
+            args,
+            "sink_input_properties",
+            data.proplist,
+            PA_UPDATE_REPLACE) < 0) {
+        pa_log("invalid sink input properties");
+        pa_sink_input_new_data_done(&data);
+        goto error;
+    }
+
+    pa_sink_input_new(&u->sink_input, u->module->core, &data);
+    pa_sink_input_new_data_done(&data);
+
+    if (!u->sink_input) {
+        pa_log("failed to create sink input");
+        goto error;
+    }
+
+    u->sink_input->userdata = u;
+    u->sink_input->parent.process_msg = process_message;
+    u->sink_input->pop = pop_cb;
+    u->sink_input->process_rewind = rewind_cb;
+    u->sink_input->kill = kill_cb;
+
+    pa_sink_input_put(u->sink_input);
+    pa_modargs_free(args);
+
+    return 0;
+
+error:
+    if (args) {
+        pa_modargs_free(args);
+    }
+    pa__done(m);
+
+    return -1;
+}
+
+void pa__done(pa_module* m) {
+    pa_assert(m);
+
+    struct roc_sink_input_userdata *u = m->userdata;
+    if (!u) {
+        return;
+    }
+
+    if (u->sink_input) {
+        pa_sink_input_unlink(u->sink_input);
+        pa_sink_input_unref(u->sink_input);
+    }
+
+    if (u->receiver) {
+        roc_receiver_stop(u->receiver);
+        roc_receiver_delete(u->receiver);
+    }
+
+    pa_xfree(u);
+}

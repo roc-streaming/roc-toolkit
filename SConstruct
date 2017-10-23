@@ -97,6 +97,11 @@ AddOption('--enable-werror',
           action='store_true',
           help='enable -Werror compiler option')
 
+AddOption('--enable-pulseaudio-modules',
+          dest='enable_pulseaudio_modules',
+          action='store_true',
+          help='enable building of pulseaudio modules')
+
 AddOption('--disable-lib',
           dest='disable_lib',
           action='store_true',
@@ -610,6 +615,12 @@ if 'target_pulseaudio' in download_dependencies:
     tool_env.ThirdParty(host, toolchain, thirdparty_variant, thirdparty_versions, 'sndfile')
     tool_env.ThirdParty(host, toolchain, thirdparty_variant, thirdparty_versions,
                         'pulseaudio', deps=pa_deps, libs=['pulse', 'pulse-simple'])
+
+    pulse_env.ImportThridParty(host, toolchain, thirdparty_versions, 'pulseaudio',
+                               libs=[
+                                   'pulsecore-%s' % thirdparty_versions['pulseaudio'],
+                                   'pulsecommon-%s' % thirdparty_versions['pulseaudio'],
+                                   ])
 
 if 'target_sox' in download_dependencies:
     sox_deps = []

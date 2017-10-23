@@ -318,6 +318,7 @@ elif name == 'pulseaudio':
             '--without-caps',
         ])), logfile)
     execute('make -j', logfile)
+    install_files('config.h', os.path.join(builddir, 'include'))
     install_tree('src/pulse', os.path.join(builddir, 'include', 'pulse'),
                  match=['*.h'])
     install_tree('src/pulsecore', os.path.join(builddir, 'include', 'pulsecore'),
@@ -328,8 +329,7 @@ elif name == 'pulseaudio':
     install_files('src/.libs/libpulse-simple.so.0', rpathdir)
     install_files('src/.libs/libpulsecore-*.so', os.path.join(builddir, 'lib'))
     install_files('src/.libs/libpulsecore-*.so', rpathdir)
-    # we don't link with libpulsecommon directly, but it should be available
-    # in -rpath-link for linker checks
+    install_files('src/.libs/libpulsecommon-*.so', os.path.join(builddir, 'lib'))
     install_files('src/.libs/libpulsecommon-*.so', rpathdir)
 elif name == 'sox':
     download(
