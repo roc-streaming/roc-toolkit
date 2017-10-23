@@ -401,6 +401,18 @@ if compiler in ['gcc', 'clang']:
 
 env['ROC_BINDIR'] = '#bin/%s' % host
 env['ROC_VERSION'] = open(env.File('#.version').path).read().strip()
+
+env['ROC_MODULES'] = [
+    'roc_core',
+    'roc_packet',
+    'roc_audio',
+    'roc_rtp',
+    'roc_fec',
+    'roc_pipeline',
+    'roc_netio',
+    'roc_sndio',
+]
+
 env['ROC_TARGETS'] = []
 
 if GetOption('override_targets'):
