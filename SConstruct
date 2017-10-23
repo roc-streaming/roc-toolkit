@@ -691,6 +691,9 @@ if compiler in ['gcc', 'clang']:
     ])
 
     if platform in ['linux']:
+        env.Append(LINKFLAGS=[
+            '-Wl,--no-undefined',
+        ])
         lib_env.Append(LINKFLAGS=[
             '-Wl,--version-script=' + env.File('#src/lib/roc.version').path
         ])
