@@ -24,7 +24,9 @@ namespace {
 enum { MaxPacketSize = 2048, MaxFrameSize = 65 * 1024 };
 
 bool make_sender_config(pipeline::SenderConfig& out, const roc_sender_config* in) {
-    out.samples_per_packet = in->samples_per_packet;
+    if (in->samples_per_packet) {
+        out.samples_per_packet = in->samples_per_packet;
+    }
 
     switch ((unsigned)in->fec_scheme) {
     case ROC_FEC_RS8M:
@@ -40,8 +42,10 @@ bool make_sender_config(pipeline::SenderConfig& out, const roc_sender_config* in
         return false;
     }
 
-    out.fec.n_source_packets = in->n_source_packets;
-    out.fec.n_repair_packets = in->n_repair_packets;
+    if (in->n_source_packets || in->n_repair_packets) {
+        out.fec.n_source_packets = in->n_source_packets;
+        out.fec.n_repair_packets = in->n_repair_packets;
+    }
 
     out.interleaving = !(in->flags & ROC_FLAG_DISABLE_INTERLEAVER);
     out.timing = (in->flags & ROC_FLAG_ENABLE_TIMER);

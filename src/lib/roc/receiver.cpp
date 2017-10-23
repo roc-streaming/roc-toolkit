@@ -24,9 +24,17 @@ namespace {
 enum { MaxPacketSize = 2048, MaxFrameSize = 65 * 1024 };
 
 bool make_receiver_config(pipeline::ReceiverConfig& out, const roc_receiver_config* in) {
-    out.default_session.latency = in->latency;
-    out.default_session.timeout = in->timeout;
-    out.default_session.samples_per_packet = in->samples_per_packet;
+    if (in->latency) {
+        out.default_session.latency = in->latency;
+    }
+
+    if (in->timeout) {
+        out.default_session.timeout = in->timeout;
+    }
+
+    if (in->samples_per_packet) {
+        out.default_session.samples_per_packet = in->samples_per_packet;
+    }
 
     if (in->sample_rate) {
         out.sample_rate = in->sample_rate;
@@ -46,11 +54,12 @@ bool make_receiver_config(pipeline::ReceiverConfig& out, const roc_receiver_conf
         return false;
     }
 
-    out.default_session.fec.n_source_packets = in->n_source_packets;
-    out.default_session.fec.n_repair_packets = in->n_repair_packets;
+    if (in->n_source_packets || in->n_repair_packets) {
+        out.default_session.fec.n_source_packets = in->n_source_packets;
+        out.default_session.fec.n_repair_packets = in->n_repair_packets;
+    }
 
     out.default_session.resampling = !(in->flags & ROC_FLAG_DISABLE_RESAMPLER);
-
     out.timing = (in->flags & ROC_FLAG_ENABLE_TIMER);
 
     return true;
