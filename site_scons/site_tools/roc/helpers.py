@@ -285,26 +285,19 @@ def ParseThirdParties(env, s):
             ret[name] = ver
     return ret.items()
 
+def _versioned(env, name, versions):
+    if not name in versions:
+        env.Die("unknown 3rdparty '%s'" % name)
+    return name + '-' + versions[name]
+
 def ThirdParty(
-        env, host, toolchain, variant, versions, name, deps=[], includes=[], libs=[]):
-    def versioned(name):
-        if not name in versions:
-            env.Die("unknown 3rdparty '%s'" % name)
-        return name + '-' + versions[name]
+        env, host, toolchain, variant, versions, name, deps=[], includes=[], libs=['*']):
+    vname = _versioned(env, name, versions)
+    vdeps = []
+    for dep in deps:
+        vdeps.append(_versioned(env, dep, versions))
 
-    def needlib(lib):
-        if not libs:
-            return True
-        for name in libs:
-            if fnmatch.fnmatch(os.path.basename(lib), 'lib%s.*' % name):
-                return True
-        return False
-
-    name = versioned(name)
-    for n in range(len(deps)):
-        deps[n] = versioned(deps[n])
-
-    if not os.path.exists(os.path.join('3rdparty', host, 'build', name, 'commit')):
+    if not os.path.exists(os.path.join('3rdparty', host, 'build', vname, 'commit')):
         if env.Execute(
             SCons.Action.CommandAction(
                 '%s scripts/3rdparty.py "3rdparty/%s" "%s" "%s" "%s" "%s"' % (
@@ -312,25 +305,37 @@ def ThirdParty(
                     host,
                     toolchain,
                     variant,
-                    name,
-                    ':'.join(deps)),
-                cmdstr = env.Pretty('GET', '%s/%s' % (host, name), 'yellow'))):
+                    vname,
+                    ':'.join(vdeps)),
+                cmdstr = env.Pretty('GET', '%s/%s' % (host, vname), 'yellow'))):
             env.Die("can't make '%s', see '3rdparty/%s/build/%s/build.log' for details" % (
-                name, host, name))
+                vname, host, vname))
+
+    env.ImportThridParty(
+        host, toolchain, versions, name, includes, libs)
+
+def ImportThridParty(env, host, toolchain, versions, name, includes=[], libs=['*']):
+    def needlib(lib):
+        for name in libs:
+            if fnmatch.fnmatch(os.path.basename(lib), 'lib%s.*' % name):
+                return True
+        return False
+
+    vname = _versioned(env, name, versions)
 
     if not includes:
         includes = ['']
 
     for s in includes:
         env.Prepend(CPPPATH=[
-            '#3rdparty/%s/build/%s/include/%s' % (host, name, s)
+            '#3rdparty/%s/build/%s/include/%s' % (host, vname, s)
         ])
 
     env.Prepend(LIBPATH=[
-        '#3rdparty/%s/build/%s/lib' % (host, name)
+        '#3rdparty/%s/build/%s/lib' % (host, vname)
         ])
 
-    for lib in env.RecursiveGlob('#3rdparty/%s/build/%s/lib' % (host, name), 'lib*'):
+    for lib in env.RecursiveGlob('#3rdparty/%s/build/%s/lib' % (host, vname), 'lib*'):
         if needlib(lib.path):
             env.Prepend(LIBS=[env.File(lib)])
 
@@ -437,6 +442,7 @@ def Init(env):
     env.AddMethod(GenGetOpt, 'GenGetOpt')
     env.AddMethod(ParseThirdParties, 'ParseThirdParties')
     env.AddMethod(ThirdParty, 'ThirdParty')
+    env.AddMethod(ImportThridParty, 'ImportThridParty')
     env.AddMethod(DeleteFile, 'DeleteFile')
     env.AddMethod(DeleteDir, 'DeleteDir')
     env.AddMethod(TryParseConfig, 'TryParseConfig')
