@@ -60,7 +60,6 @@ TEST_GROUP(sender) {
         config.source_port.address = new_address(1);
         config.source_port.protocol = Proto_RTP;
 
-        config.sample_rate = SampleRate;
         config.channels = ChMask;
         config.samples_per_packet = SamplesPerPacket;
 

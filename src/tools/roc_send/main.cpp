@@ -114,13 +114,6 @@ int main(int argc, char** argv) {
     config.interleaving = (args.interleaving_arg == interleaving_arg_yes);
     config.timing = (args.timing_arg == timing_arg_yes);
 
-    if (args.rate_given) {
-        if (!check_ge("rate", args.rate_arg, 1)) {
-            return 1;
-        }
-        config.sample_rate = (packet::timestamp_t)args.rate_arg;
-    }
-
     core::HeapAllocator allocator;
 
     core::BufferPool<uint8_t> byte_buffer_pool(allocator, MaxPacketSize, 1);
@@ -148,8 +141,16 @@ int main(int argc, char** argv) {
         return 1;
     }
 
+    size_t sample_rate = 0;
+    if (args.rate_given) {
+        if (!check_ge("rate", args.rate_arg, 1)) {
+            return 1;
+        }
+        sample_rate = (size_t)args.rate_arg;
+    }
+
     sndio::Recorder recorder(sender, sample_buffer_pool, config.channels,
-                             config.samples_per_packet, config.sample_rate);
+                             config.samples_per_packet, sample_rate);
 
     if (!recorder.open(args.input_arg, args.type_arg)) {
         roc_log(LogError, "can't open input file/device: %s %s", args.input_arg,
