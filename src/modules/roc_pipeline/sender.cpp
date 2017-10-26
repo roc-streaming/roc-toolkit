@@ -25,12 +25,16 @@ Sender::Sender(const SenderConfig& config,
                packet::PacketPool& packet_pool,
                core::BufferPool<uint8_t>& buffer_pool,
                core::IAllocator& allocator)
-    : ticker_(config.sample_rate)
-    , timing_(config.timing)
+    : timing_(config.timing)
     , timestamp_(0)
     , num_channels_(packet::num_channels(config.channels)) {
     const rtp::Format* format = format_map.format(config.payload_type);
     if (!format) {
+        return;
+    }
+
+    ticker_.reset(new (allocator) core::Ticker(format->sample_rate), allocator);
+    if (!ticker_) {
         return;
     }
 
@@ -116,7 +120,7 @@ void Sender::write(audio::Frame& frame) {
     roc_panic_if(!valid());
 
     if (timing_) {
-        ticker_.wait(timestamp_);
+        ticker_->wait(timestamp_);
     }
 
     packetizer_->write(frame);

@@ -81,10 +81,6 @@ Recorder::Recorder(audio::IWriter& output,
         roc_panic("recorder: # of samples is zero");
     }
 
-    if (sample_rate == 0) {
-        roc_panic("recorder: sample rate is zero");
-    }
-
     buffer_size_ = n_samples * n_channels;
     buffer_pos_ = 0;
 
@@ -147,7 +143,8 @@ bool Recorder::open(const char* name, const char* type) {
         add_effect(chain_, "channels", &input_->signal, &out_signal_, 0, NULL);
     }
 
-    if ((size_t)input_->signal.rate != (size_t)out_signal_.rate) {
+    if ((size_t)out_signal_.rate != 0
+        && (size_t)input_->signal.rate != (size_t)out_signal_.rate) {
         const char* gain_h_args[] = {
             "-h",
         };

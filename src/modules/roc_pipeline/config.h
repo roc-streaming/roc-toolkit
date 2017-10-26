@@ -149,9 +149,6 @@ struct SenderConfig {
     //! Parameters for the port from which repair packets are sent.
     PortConfig repair_port;
 
-    //! Number of samples per second per channel.
-    size_t sample_rate;
-
     //! Channel mask.
     packet::channel_mask_t channels;
 
@@ -171,8 +168,7 @@ struct SenderConfig {
     fec::Config fec;
 
     SenderConfig()
-        : sample_rate(DefaultSampleRate)
-        , channels(DefaultChannelMask)
+        : channels(DefaultChannelMask)
         , samples_per_packet(DefaultPacketSize)
         , interleaving(false)
         , timing(false)

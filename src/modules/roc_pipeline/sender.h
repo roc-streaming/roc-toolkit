@@ -65,7 +65,7 @@ private:
     core::UniquePtr<audio::IEncoder> encoder_;
     core::UniquePtr<audio::Packetizer> packetizer_;
 
-    core::Ticker ticker_;
+    core::UniquePtr<core::Ticker> ticker_;
     bool timing_;
 
     packet::timestamp_t timestamp_;

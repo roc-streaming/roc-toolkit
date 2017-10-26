@@ -149,7 +149,6 @@ TEST_GROUP(sender_receiver) {
         config.source_port = source_port;
         config.repair_port = repair_port;
 
-        config.sample_rate = SampleRate;
         config.channels = ChMask;
         config.samples_per_packet = SamplesPerPacket;
 
