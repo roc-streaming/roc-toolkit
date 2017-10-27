@@ -129,6 +129,65 @@ TEST(receiver, no_ports) {
     }
 }
 
+TEST(receiver, no_session_repair_port) {
+    config.repair_port = port1;
+
+    Receiver receiver(config, format_map, packet_pool, byte_buffer_pool,
+                      sample_buffer_pool, allocator);
+
+    CHECK(receiver.valid());
+    CHECK(receiver.add_port(port1));
+
+    PacketWriter packet_writer(receiver, rtp_composer, pcm_encoder, packet_pool,
+                               byte_buffer_pool, PayloadType, src1, port1.address);
+
+    packet_writer.write_packets(ManyPackets, SamplesPerPacket, ChMask);
+
+    FrameReader frame_reader(receiver, sample_buffer_pool);
+
+    for (size_t nf = 0; nf < ManyPackets * FramesPerPacket; nf++) {
+        frame_reader.skip_zeros(SamplesPerFrame * NumCh);
+
+        UNSIGNED_LONGS_EQUAL(0, receiver.num_sessions());
+    }
+}
+
+TEST(receiver, one_session_source_after_repair) {
+    config.repair_port = port1;
+
+    Receiver receiver(config, format_map, packet_pool, byte_buffer_pool,
+                      sample_buffer_pool, allocator);
+
+    CHECK(receiver.valid());
+    CHECK(receiver.add_port(port1));
+
+    PacketWriter repair_packet_writer(receiver, rtp_composer, pcm_encoder, packet_pool,
+                                      byte_buffer_pool, PayloadType, src1, port1.address);
+
+    repair_packet_writer.write_packets(ManyPackets, SamplesPerPacket, ChMask);
+
+    FrameReader frame_reader(receiver, sample_buffer_pool);
+
+    for (size_t nf = 0; nf < ManyPackets * FramesPerPacket; nf++) {
+        frame_reader.skip_zeros(SamplesPerFrame * NumCh);
+
+        UNSIGNED_LONGS_EQUAL(0, receiver.num_sessions());
+    }
+
+    CHECK(receiver.add_port(port2));
+
+    PacketWriter source_packet_writer(receiver, rtp_composer, pcm_encoder, packet_pool,
+                                      byte_buffer_pool, PayloadType, src1, port2.address);
+
+    source_packet_writer.write_packets(ManyPackets, SamplesPerPacket, ChMask);
+
+    for (size_t nf = 0; nf < ManyPackets * FramesPerPacket; nf++) {
+        frame_reader.read_samples(SamplesPerFrame * NumCh, 1);
+
+        UNSIGNED_LONGS_EQUAL(1, receiver.num_sessions());
+    }
+}
+
 TEST(receiver, one_session) {
     Receiver receiver(config, format_map, packet_pool, byte_buffer_pool,
                       sample_buffer_pool, allocator);

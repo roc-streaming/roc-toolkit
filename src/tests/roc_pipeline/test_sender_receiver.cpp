@@ -169,8 +169,10 @@ TEST_GROUP(sender_receiver) {
         return config;
     }
 
-    ReceiverConfig receiver_config(int flags) {
+    ReceiverConfig receiver_config(int flags, PortConfig& repair_port) {
         ReceiverConfig config;
+
+        config.repair_port = repair_port;
 
         config.sample_rate = SampleRate;
         config.channels = ChMask;

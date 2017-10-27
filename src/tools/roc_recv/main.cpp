@@ -46,7 +46,9 @@ int main(int argc, char** argv) {
 
     sndio::init();
 
+    pipeline::ReceiverConfig config;
     pipeline::PortConfig source_port;
+
     if (args.source_given) {
         if (!packet::parse_address(args.source_arg, source_port.address)) {
             roc_log(LogError, "can't parse source address: %s", args.source_arg);
@@ -54,33 +56,30 @@ int main(int argc, char** argv) {
         }
     }
 
-    pipeline::PortConfig repair_port;
     if (args.repair_given) {
-        if (!packet::parse_address(args.repair_arg, repair_port.address)) {
+        if (!packet::parse_address(args.repair_arg, config.repair_port.address)) {
             roc_log(LogError, "can't parse repair address: %s", args.repair_arg);
             return 1;
         }
     }
 
-    pipeline::ReceiverConfig config;
-
     switch ((unsigned)args.fec_arg) {
     case fec_arg_none:
         config.default_session.fec.codec = fec::NoCodec;
         source_port.protocol = pipeline::Proto_RTP;
-        repair_port.protocol = pipeline::Proto_RTP;
+        config.repair_port.protocol = pipeline::Proto_RTP;
         break;
 
     case fec_arg_rs:
         config.default_session.fec.codec = fec::ReedSolomon8m;
         source_port.protocol = pipeline::Proto_RTP_RSm8_Source;
-        repair_port.protocol = pipeline::Proto_RSm8_Repair;
+        config.repair_port.protocol = pipeline::Proto_RSm8_Repair;
         break;
 
     case fec_arg_ldpc:
         config.default_session.fec.codec = fec::LDPCStaircase;
         source_port.protocol = pipeline::Proto_RTP_LDPC_Source;
-        repair_port.protocol = pipeline::Proto_LDPC_Repair;
+        config.repair_port.protocol = pipeline::Proto_LDPC_Repair;
         break;
 
     default:
@@ -194,14 +193,14 @@ int main(int argc, char** argv) {
     }
 
     if (config.default_session.fec.codec != fec::NoCodec) {
-        if (!trx.add_udp_receiver(repair_port.address, receiver)) {
+        if (!trx.add_udp_receiver(config.repair_port.address, receiver)) {
             roc_log(LogError, "can't register udp receiver: %s",
-                    packet::address_to_str(repair_port.address).c_str());
+                    packet::address_to_str(config.repair_port.address).c_str());
             return 1;
         }
-        if (!receiver.add_port(repair_port)) {
+        if (!receiver.add_port(config.repair_port)) {
             roc_log(LogError, "can't add udp port: %s",
-                    packet::address_to_str(repair_port.address).c_str());
+                    packet::address_to_str(config.repair_port.address).c_str());
             return 1;
         }
     }

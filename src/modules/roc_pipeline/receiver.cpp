@@ -152,6 +152,12 @@ bool Receiver::create_session_(const packet::PacketPtr& packet) {
         roc_log(LogError, "receiver: can't create session, unexpected non-udp packet");
         return false;
     }
+
+    if (packet->udp()->dst_addr == config_.repair_port.address) {
+        roc_log(LogInfo, "receiver: can't create session, unexpected repair packet");
+        return false;
+    }
+
     const packet::Address src_address = packet->udp()->src_addr;
 
     core::SharedPtr<ReceiverSession> sess = new (allocator_) ReceiverSession(

@@ -122,6 +122,9 @@ struct SessionConfig {
 
 //! Receiver parameters.
 struct ReceiverConfig {
+    //! Parameters for the port from which repair packets are sent.
+    PortConfig repair_port;
+
     //! Default parameters for session.
     SessionConfig default_session;
 
