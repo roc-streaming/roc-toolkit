@@ -152,11 +152,23 @@ bool Receiver::create_session_(const packet::PacketPtr& packet) {
         roc_log(LogError, "receiver: can't create session, unexpected non-udp packet");
         return false;
     }
+
+    if (!packet->rtp()) {
+        roc_log(LogError, "receiver: can't create session, unexpected non-rtp packet");
+        return false;
+    }
+
+    if (packet->flags() & packet::Packet::FlagRepair) {
+        roc_log(LogDebug, "receiver: dropping repair packet for non-existent session");
+        return false;
+    }
+
     const packet::Address src_address = packet->udp()->src_addr;
 
-    core::SharedPtr<ReceiverSession> sess = new (allocator_) ReceiverSession(
-        config_.default_session, config_.sample_rate, src_address, format_map_,
-        packet_pool_, byte_buffer_pool_, sample_buffer_pool_, allocator_);
+    core::SharedPtr<ReceiverSession> sess = new (allocator_)
+        ReceiverSession(config_.default_session, packet->rtp()->payload_type,
+                        config_.sample_rate, src_address, format_map_, packet_pool_,
+                        byte_buffer_pool_, sample_buffer_pool_, allocator_);
 
     if (!sess || !sess->valid()) {
         roc_log(LogError, "receiver: can't create session, initialization failed");

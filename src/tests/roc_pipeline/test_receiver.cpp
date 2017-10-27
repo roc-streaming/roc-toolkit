@@ -76,7 +76,6 @@ TEST_GROUP(receiver) {
         config.default_session.samples_per_packet = SamplesPerPacket;
         config.default_session.latency = Latency;
         config.default_session.timeout = Timeout;
-        config.default_session.payload_type = PayloadType;
 
         config.default_session.fec.codec = fec::NoCodec;
 

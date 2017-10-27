@@ -25,8 +25,6 @@ namespace pipeline {
 
 namespace {
 
-rtp::PayloadType PayloadType = rtp::PayloadType_L16_Stereo;
-
 enum {
     MaxBufSize = 4096,
 
@@ -48,6 +46,9 @@ enum {
 };
 
 enum {
+    // default flags
+    FlagNone = 0,
+
     // enable FEC on sender or receiver
     FlagFEC = (1 << 0),
 
@@ -55,20 +56,25 @@ enum {
     FlagInterleaving = (1 << 1),
 
     // enable packet loss on sender
-    FlagLoss = (1 << 2)
+    FlagLoss = (1 << 2),
+
+    // drop all source packets
+    FlagDropSource = (1 << 3),
+
+    // drop all repair packets
+    FlagDropRepair = (1 << 4)
 };
 
 core::HeapAllocator allocator;
 core::BufferPool<audio::sample_t> sample_buffer_pool(allocator, MaxBufSize, 1);
 core::BufferPool<uint8_t> byte_buffer_pool(allocator, MaxBufSize, 1);
 packet::PacketPool packet_pool(allocator, 1);
+rtp::FormatMap format_map;
 
 } // namespace
 
 TEST_GROUP(sender_receiver) {
-    void send_receive(int flags) {
-        rtp::FormatMap format_map;
-
+    void send_receive(int flags, size_t num_sessions) {
         packet::ConcurrentQueue queue(0, false);
 
         PortConfig source_port = source_port_config(flags);
@@ -107,7 +113,12 @@ TEST_GROUP(sender_receiver) {
         FrameReader frame_reader(receiver, sample_buffer_pool);
 
         for (size_t nf = 0; nf < ManyFrames; nf++) {
-            frame_reader.read_samples(SamplesPerFrame * NumCh, 1);
+            if (num_sessions == 0) {
+                frame_reader.skip_zeros(SamplesPerFrame * NumCh);
+            } else {
+                frame_reader.read_samples(SamplesPerFrame * NumCh, num_sessions);
+            }
+            UNSIGNED_LONGS_EQUAL(num_sessions, receiver.num_sessions());
         }
     }
 
@@ -119,11 +130,21 @@ TEST_GROUP(sender_receiver) {
                 continue;
             }
 
-            writer.write(convert_packet(pp));
+            if (pp->flags() & packet::Packet::FlagRepair) {
+                if (flags & FlagDropRepair) {
+                    continue;
+                }
+            } else {
+                if (flags & FlagDropSource) {
+                    continue;
+                }
+            }
+
+            writer.write(copy_packet(pp));
         }
     }
 
-    packet::PacketPtr convert_packet(const packet::PacketPtr& pa) {
+    packet::PacketPtr copy_packet(const packet::PacketPtr& pa) {
         packet::PacketPtr pb = new (packet_pool) packet::Packet (packet_pool);
         CHECK(pb);
 
@@ -179,7 +200,6 @@ TEST_GROUP(sender_receiver) {
         config.default_session.samples_per_packet = SamplesPerPacket;
         config.default_session.latency = Latency;
         config.default_session.timeout = Timeout;
-        config.default_session.payload_type = PayloadType;
 
         config.default_session.fec = fec_config(flags);
 
@@ -202,24 +222,32 @@ TEST_GROUP(sender_receiver) {
 };
 
 TEST(sender_receiver, bare) {
-    send_receive(0);
+    send_receive(FlagNone, 1);
 }
 
 TEST(sender_receiver, interleaving) {
-    send_receive(FlagInterleaving);
+    send_receive(FlagInterleaving, 1);
 }
 
 #ifdef ROC_TARGET_OPENFEC
 TEST(sender_receiver, fec) {
-    send_receive(FlagFEC);
+    send_receive(FlagFEC, 1);
 }
 
 TEST(sender_receiver, fec_interleaving) {
-    send_receive(FlagFEC | FlagInterleaving);
+    send_receive(FlagFEC | FlagInterleaving, 1);
 }
 
 TEST(sender_receiver, fec_loss) {
-    send_receive(FlagFEC | FlagLoss);
+    send_receive(FlagFEC | FlagLoss, 1);
+}
+
+TEST(sender_receiver, fec_drop_source) {
+    send_receive(FlagFEC | FlagDropSource, 0);
+}
+
+TEST(sender_receiver, fec_drop_repair) {
+    send_receive(FlagFEC | FlagDropRepair, 1);
 }
 #endif //! ROC_TARGET_OPENFEC
 

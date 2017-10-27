@@ -47,6 +47,7 @@ int main(int argc, char** argv) {
     sndio::init();
 
     pipeline::PortConfig source_port;
+
     if (args.source_given) {
         if (!packet::parse_address(args.source_arg, source_port.address)) {
             roc_log(LogError, "can't parse source address: %s", args.source_arg);

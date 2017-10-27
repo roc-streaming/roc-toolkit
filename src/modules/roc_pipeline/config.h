@@ -87,9 +87,6 @@ struct SessionConfig {
     //!  If there are no new packets during this period, the session is terminated.
     packet::timestamp_t timeout;
 
-    //! RTP payload type for audio packets.
-    rtp::PayloadType payload_type;
-
     //! FEC scheme parameters.
     fec::Config fec;
 
@@ -113,7 +110,6 @@ struct SessionConfig {
         , samples_per_packet(DefaultPacketSize)
         , latency(DefaultPacketSize * 27)
         , timeout(DefaultSampleRate * 2)
-        , payload_type(rtp::PayloadType_L16_Stereo)
         , fe_update_interval(256)
         , resampling(false)
         , beep(false) {
