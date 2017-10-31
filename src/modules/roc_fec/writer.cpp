@@ -62,7 +62,6 @@ void Writer::write(const packet::PacketPtr& pp) {
 
     if (cur_packet_ == 0) {
         cur_block_source_sn_ = pp->rtp()->seqnum;
-        pp->rtp()->marker = true;
     }
 
     if (!source_composer_.compose(*pp)) {
@@ -70,6 +69,8 @@ void Writer::write(const packet::PacketPtr& pp) {
     }
 
     pp->add_flags(packet::Packet::FlagComposed);
+    fill_packet_fec_id_(pp, (packet::seqnum_t)cur_packet_);
+    roc_panic_if_not(ROC_UNSIGNED_LE(packet::signed_seqnum_t, pp->rtp()->seqnum, pp->fec()->blknum + n_source_packets_));
 
     writer_.write(pp);
 
@@ -144,12 +145,17 @@ packet::PacketPtr Writer::make_repair_packet_(packet::seqnum_t n) {
     rtp.marker = (n == 0);
     rtp.payload_type = 123;
 
-    packet::FEC& fec = *packet->fec();
-
-    fec.source_blknum = cur_block_source_sn_;
-    fec.repair_blknum = cur_block_repair_sn_;
+    fill_packet_fec_id_(packet, (packet::seqnum_t)n_source_packets_ + n);
 
     return packet;
+}
+
+void Writer::fill_packet_fec_id_(const packet::PacketPtr &packet, packet::seqnum_t pack_n) {
+    packet::FEC& fec = *packet->fec();
+
+    fec.blknum = cur_block_source_sn_;
+    fec.source_block_length = n_source_packets_;
+    fec.repair_symbol_id = pack_n;
 }
 
 } // namespace fec

@@ -409,7 +409,7 @@ TEST(writer_reader, decoding_when_multiple_blocks_in_queue) {
     }
 }
 
-TEST(writer_reader, decoding_late_packet) {
+IGNORE_TEST(writer_reader, decoding_late_packet) {
     // 1. Fill all packets in block except one lost packet.
     // 2. Read first part of block till lost packet.
     // 3. Receive one missing packet.

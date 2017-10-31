@@ -15,8 +15,9 @@ namespace roc {
 namespace packet {
 
 FEC::FEC()
-    : source_blknum(0)
-    , repair_blknum(0) {
+    : blknum(0)
+    , source_block_length(0)
+    , repair_symbol_id(0) {
 }
 
 int FEC::compare(const FEC& other) const {

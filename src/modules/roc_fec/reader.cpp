@@ -93,11 +93,11 @@ packet::PacketPtr Reader::read_() {
             skip_repair_packets_();
         }
 
-        if (!pp || !pp->rtp()->marker) {
+        if (!pp || pp->fec()->repair_symbol_id > 0) {
             return source_queue_.read();
         }
 
-        roc_log(LogInfo, "fec reader: got marker bit, start decoding:"
+        roc_log(LogInfo, "fec reader: got first packet in a block, start decoding:"
                          " n_packets_before=%u blk_sn=%lu",
                 n_packets_, (unsigned long)cur_block_sn_);
 
@@ -284,11 +284,12 @@ void Reader::update_source_packets_() {
         }
 
         const packet::RTP* rtp = pp->rtp();
+        const packet::FEC* fec = pp->fec();
         if (!rtp) {
             roc_panic("fec reader: unexpected non-rtp source packet");
         }
 
-        if (!seqnum_lt(rtp->seqnum,
+        if (!seqnum_lt(fec->blknum,
                        packet::seqnum_t(cur_block_sn_ + source_block_.size()))) {
             break;
         }
@@ -296,7 +297,7 @@ void Reader::update_source_packets_() {
         source_queue_.read();
         n_fetched++;
 
-        if (seqnum_lt(rtp->seqnum, cur_block_sn_)) {
+        if (seqnum_lt(fec->blknum, cur_block_sn_)) {
             roc_log(LogDebug, "fec reader: dropping source packet from previous block:"
                               " blk_sn=%lu pkt_sn=%lu",
                     (unsigned long)cur_block_sn_, (unsigned long)rtp->seqnum);
@@ -304,7 +305,9 @@ void Reader::update_source_packets_() {
             continue;
         }
 
-        const size_t p_num = seqnum_sub(rtp->seqnum, cur_block_sn_);
+        roc_panic_if(fec->blknum != cur_block_sn_);
+        const size_t p_num = fec->repair_symbol_id;
+        // roc_panic_if(p_num != seqnum_sub(rtp->seqnum, cur_block_sn_));
 
         if (!source_block_[p_num]) {
             can_repair_ = true;
@@ -328,17 +331,12 @@ void Reader::update_repair_packets_() {
             break;
         }
 
-        const packet::RTP* rtp = pp->rtp();
-        if (!rtp) {
-            roc_panic("fec reader: unexpected non-rtp repair packet");
-        }
-
         const packet::FEC* fec = pp->fec();
         if (!fec) {
             roc_panic("fec reader: unexpected non-fec repair packet");
         }
 
-        if (!seqnum_lt(fec->source_blknum,
+        if (!seqnum_lt(fec->blknum,
                        packet::seqnum_t(cur_block_sn_ + source_block_.size()))) {
             break;
         }
@@ -346,23 +344,17 @@ void Reader::update_repair_packets_() {
         repair_queue_.read();
         n_fetched++;
 
-        if (seqnum_lt(fec->source_blknum, cur_block_sn_)) {
+        if (seqnum_lt(fec->blknum, cur_block_sn_)) {
             roc_log(LogDebug, "fec reader: dropping repair packet from previous block:"
                               " blk_sn=%lu pkt_data_blk=%lu",
-                    (unsigned long)cur_block_sn_, (unsigned long)fec->source_blknum);
+                    (unsigned long)cur_block_sn_, (unsigned long)fec->blknum);
             n_dropped++;
             continue;
         }
 
-        if (!seqnum_le(fec->repair_blknum, rtp->seqnum)) {
-            roc_log(LogDebug, "fec reader: dropping invalid repair packet:"
-                              " pkt_sn=%lu pkt_fec_blk=%lu",
-                    (unsigned long)rtp->seqnum, (unsigned long)fec->repair_blknum);
-            n_dropped++;
-            continue;
-        }
-
-        const size_t p_num = seqnum_sub(rtp->seqnum, fec->repair_blknum);
+        roc_panic_if(fec->repair_symbol_id < fec->source_block_length);
+        const size_t p_num = fec->repair_symbol_id - fec->source_block_length;
+        roc_panic_if(p_num >= repair_block_.size());
 
         if (!repair_block_[p_num]) {
             can_repair_ = true;
@@ -391,13 +383,13 @@ void Reader::skip_repair_packets_() {
             roc_panic("fec reader: unexpected non-fec repair packet");
         }
 
-        if (!seqnum_lt(fec->source_blknum, cur_block_sn_)) {
+        if (!seqnum_lt(fec->blknum, cur_block_sn_)) {
             break;
         }
 
         roc_log(LogDebug, "fec reader: dropping repair packet, decoding not started:"
                           " min_sn=%lu pkt_data_blk=%lu",
-                (unsigned long)cur_block_sn_, (unsigned long)fec->source_blknum);
+                (unsigned long)cur_block_sn_, (unsigned long)fec->blknum);
 
         repair_queue_.read();
         n_skipped++;

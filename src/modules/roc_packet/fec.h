@@ -23,10 +23,15 @@ namespace packet {
 //! FECFRAME packet.
 struct FEC {
     //! Seqnum of first source packet in block.
-    seqnum_t source_blknum;
+    seqnum_t blknum;
 
-    //! Seqnum of first repair packet in block.
-    seqnum_t repair_blknum;
+    //! The number of source packet per block.
+    size_t source_block_length;
+
+    //! The index number of the repair packet in block.
+    //!
+    //! Must be source_block_length < repair_symbol_id.
+    size_t repair_symbol_id;
 
     //! FECFRAME header or footer.
     core::Slice<uint8_t> payload_id;
