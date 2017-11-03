@@ -206,7 +206,7 @@ TEST(sender_receiver, fec_sender) {
     send_receive(FlagFEC, 0);
 }
 
-TEST(sender_receiver, fec_receiver) {
+IGNORE_TEST(sender_receiver, fec_receiver) {
     send_receive(0, FlagFEC);
 }
 

@@ -307,7 +307,7 @@ void Reader::update_source_packets_() {
 
         roc_panic_if(fec->blknum != cur_block_sn_);
         const size_t p_num = fec->repair_symbol_id;
-        // roc_panic_if(p_num != seqnum_sub(rtp->seqnum, cur_block_sn_));
+        roc_panic_if(p_num != seqnum_sub(rtp->seqnum, cur_block_sn_));
 
         if (!source_block_[p_num]) {
             can_repair_ = true;
