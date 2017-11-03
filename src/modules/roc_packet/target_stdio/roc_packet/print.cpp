@@ -36,7 +36,7 @@ void print(const Packet& p, int flags) {
     }
 
     if (p.fec()) {
-        fprintf(stderr, "fec: data_blk=%lu, fec_blk=%lu payload=%lu\n",
+        fprintf(stderr, "fec: data_blk/fec_blk=%lu payload=%lu\n",
                 (unsigned long)p.fec()->blknum,
                 (unsigned long)p.fec()->payload.size());
 

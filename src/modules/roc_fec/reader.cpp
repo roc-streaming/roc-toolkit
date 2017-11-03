@@ -21,10 +21,6 @@ inline bool seqnum_lt(packet::seqnum_t a, packet::seqnum_t b) {
     return ROC_UNSIGNED_LT(packet::signed_seqnum_t, a, b);
 }
 
-inline bool seqnum_le(packet::seqnum_t a, packet::seqnum_t b) {
-    return ROC_UNSIGNED_LE(packet::signed_seqnum_t, a, b);
-}
-
 inline packet::seqnum_t seqnum_sub(packet::seqnum_t a, packet::seqnum_t b) {
     return (packet::seqnum_t)ROC_UNSIGNED_SUB(packet::signed_seqnum_t, a, b);
 }
