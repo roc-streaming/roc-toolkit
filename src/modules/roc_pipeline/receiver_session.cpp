@@ -22,6 +22,7 @@ ReceiverSession::ReceiverSession(const SessionConfig& config,
                                  const size_t out_sample_rate,
                                  const packet::Address& src_address,
                                  const rtp::FormatMap& format_map,
+                                 const unsigned int payload_type,
                                  packet::PacketPool& packet_pool,
                                  core::BufferPool<uint8_t>& byte_buffer_pool,
                                  core::BufferPool<audio::sample_t>& sample_buffer_pool,
@@ -31,7 +32,7 @@ ReceiverSession::ReceiverSession(const SessionConfig& config,
     , audio_reader_(NULL) {
     roc_panic_if(out_sample_rate == 0);
 
-    const rtp::Format* format = format_map.format(config.payload_type);
+    const rtp::Format* format = format_map.format(payload_type);
     if (!format) {
         return;
     }
