@@ -82,7 +82,17 @@ bool Player::open(const char* name, const char* type) {
             (unsigned long)output_->encoding.bits_per_sample, out_rate, in_rate,
             (unsigned long)output_->signal.channels);
 
+    is_io_file_ = !(output_->handler.flags & SOX_FILE_DEVICE);
+
     return true;
+}
+
+bool Player::is_io_file() const {
+    if (!output_) {
+        roc_panic("player: can't determine if output is file or not "
+                  "for non-open output file or device");
+    }
+    return is_io_file_;
 }
 
 void Player::stop() {

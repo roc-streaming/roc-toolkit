@@ -149,6 +149,15 @@ TEST(player_recorder, player_stop_start) {
     player.join();
 }
 
+TEST(player_recorder, player_open_file) {
+    Player player(buffer_pool, allocator, true, ChMask, 0);
+
+    core::TempFile file("test.wav");
+    CHECK(player.open(file.path()));
+
+    CHECK(player.is_io_file());
+}
+
 TEST(player_recorder, player_open_file_zero_sample_rate) {
     Player player(buffer_pool, allocator, true, ChMask, 0);
 

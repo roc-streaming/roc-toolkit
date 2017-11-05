@@ -75,6 +75,9 @@ public:
     //!  Output file or device should be opened.
     size_t get_sample_rate() const;
 
+    //! Returns true if output is a real file.
+    bool is_io_file() const;
+
 private:
     virtual void run();
 
@@ -96,6 +99,8 @@ private:
 
     const bool oneshot_;
     core::Atomic stop_;
+
+    bool is_io_file_;
 };
 
 } // namespace sndio
