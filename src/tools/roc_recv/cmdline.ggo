@@ -24,9 +24,6 @@ section "Options"
     option "resampling" - "Enabled/disable resampling"
         values="yes","no" default="yes" enum optional
 
-    option "timing" - "Enabled/disable CPU timing"
-        values="yes","no" default="no" enum optional
-
     option "oneshot" 1 "Exit when last connected client disconnects"
         flag off
 

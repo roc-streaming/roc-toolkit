@@ -104,7 +104,6 @@ int main(int argc, char** argv) {
     }
 
     config.default_session.resampling = (args.resampling_arg == resampling_arg_yes);
-    config.timing = (args.timing_arg == timing_arg_yes);
     config.default_session.beep = args.beep_flag;
 
     size_t sample_rate = 0;
@@ -159,6 +158,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
+    config.timing = player.is_io_file();
     config.sample_rate = player.get_sample_rate();
 
     if (config.sample_rate == 0) {
