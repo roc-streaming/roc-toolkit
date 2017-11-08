@@ -191,14 +191,16 @@ roc_sender_write(roc_sender* sender, const float* samples, const size_t n_sample
     roc_panic_if(!sender->sender);
     roc_panic_if(!samples && n_samples != 0);
 
-    audio::Frame frame;
-    frame.samples = new (sender->sample_buffer_pool)
-        core::Buffer<audio::sample_t>(sender->sample_buffer_pool);
+    core::Slice<audio::sample_t> buf(
+        new (sender->sample_buffer_pool)
+            core::Buffer<audio::sample_t>(sender->sample_buffer_pool));
 
-    frame.samples.resize(n_samples);
+    buf.resize(n_samples);
+
     roc_panic_if(sizeof(float) != sizeof(audio::sample_t));
-    memcpy(frame.samples.data(), samples, n_samples * sizeof(audio::sample_t));
+    memcpy(buf.data(), samples, n_samples * sizeof(audio::sample_t));
 
+    audio::Frame frame(buf);
     sender->sender->write(frame);
 
     return (ssize_t)n_samples;

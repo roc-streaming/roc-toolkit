@@ -140,10 +140,7 @@ public:
             }
         }
 
-        Frame frame;
-        frame.samples = buf;
-
-        return frame;
+        return Frame(buf);
     }
 
 private:

@@ -53,12 +53,11 @@ TEST_GROUP(resampler) {
     // Reads signal from the resampler and puts its spectrum into @p spectrum.
     // Spectrum must have twice bigger space than the length of the input signal.
     void get_sample_spectrum1(IReader & reader, double* spectrum, const size_t sig_len) {
-        Frame frame;
-        frame.samples = new_buffer(sig_len);
+        Frame frame(new_buffer(sig_len));
         reader.read(frame);
-        UNSIGNED_LONGS_EQUAL(sig_len, frame.samples.size());
+        UNSIGNED_LONGS_EQUAL(sig_len, frame.samples().size());
         for (size_t i = 0; i < sig_len; ++i) {
-            spectrum[i * 2] = (double)frame.samples.data()[i];
+            spectrum[i * 2] = (double)frame.samples().data()[i];
             spectrum[i * 2 + 1] = 0; // imaginary part
         }
         FreqSpectrum(spectrum, sig_len);
@@ -69,15 +68,14 @@ TEST_GROUP(resampler) {
     void get_sample_spectrum2(IReader & reader, double* spectrum1, double* spectrum2,
                               size_t sig_len) {
         enum { nChannels = 2 };
-        Frame frame;
-        frame.samples = new_buffer(sig_len);
+        Frame frame(new_buffer(sig_len));
         reader.read(frame);
-        UNSIGNED_LONGS_EQUAL(sig_len, frame.samples.size());
+        UNSIGNED_LONGS_EQUAL(sig_len, frame.samples().size());
         size_t i = 0;
         for (; i < sig_len / nChannels; ++i) {
-            spectrum1[i * 2] = (double)frame.samples.data()[i * nChannels];
+            spectrum1[i * 2] = (double)frame.samples().data()[i * nChannels];
             spectrum1[i * 2 + 1] = 0; // imaginary part
-            spectrum2[i * 2] = (double)frame.samples.data()[i * nChannels + 1];
+            spectrum2[i * 2] = (double)frame.samples().data()[i * nChannels + 1];
             spectrum2[i * 2 + 1] = 0; // imaginary part
         }
         memset(&spectrum1[i * 2], 0, (sig_len * 2 - i * 2) * sizeof(double));

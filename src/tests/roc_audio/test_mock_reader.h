@@ -26,12 +26,12 @@ public:
     }
 
     virtual void read(Frame& frame) {
-        CHECK(pos_ + frame.samples.size() <= size_);
+        CHECK(pos_ + frame.samples().size() <= size_);
 
-        memcpy(frame.samples.data(), samples_ + pos_,
-               frame.samples.size() * sizeof(sample_t));
+        memcpy(frame.samples().data(), samples_ + pos_,
+               frame.samples().size() * sizeof(sample_t));
 
-        pos_ += frame.samples.size();
+        pos_ += frame.samples().size();
     }
 
     void add(size_t size, sample_t value) {

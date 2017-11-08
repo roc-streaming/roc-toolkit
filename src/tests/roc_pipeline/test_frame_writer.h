@@ -30,18 +30,19 @@ public:
     }
 
     void write_samples(size_t num_samples) {
-        audio::Frame frame;
-        frame.samples = new (pool_) core::Buffer<audio::sample_t>(pool_);
-        frame.samples.resize(num_samples);
+        core::Slice<audio::sample_t> samples(new (pool_)
+                                                 core::Buffer<audio::sample_t>(pool_));
+        samples.resize(num_samples);
+        audio::Frame frame(samples);
 
         for (size_t n = 0; n < num_samples; n++) {
-            frame.samples.data()[n] = nth_sample(offset_);
+            frame.samples().data()[n] = nth_sample(offset_);
             offset_++;
         }
 
         writer_.write(frame);
 
-        UNSIGNED_LONGS_EQUAL(num_samples, frame.samples.size());
+        UNSIGNED_LONGS_EQUAL(num_samples, frame.samples().size());
     }
 
 private:

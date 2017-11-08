@@ -51,16 +51,16 @@ Depacketizer::Depacketizer(packet::IReader& reader,
 }
 
 void Depacketizer::read(Frame& frame) {
-    if (!frame.samples) {
+    if (!frame.samples()) {
         roc_panic("depacketizer: unexpected null slice");
     }
 
-    if (frame.samples.size() % num_channels_ != 0) {
+    if (frame.samples().size() % num_channels_ != 0) {
         roc_panic("depacketizer: unexpected frame size");
     }
 
-    sample_t* buff_ptr = frame.samples.data();
-    sample_t* buff_end = frame.samples.data() + frame.samples.size();
+    sample_t* buff_ptr = frame.samples().data();
+    sample_t* buff_end = frame.samples().data() + frame.samples().size();
 
     while (buff_ptr < buff_end) {
         buff_ptr = read_samples_(buff_ptr, buff_end);

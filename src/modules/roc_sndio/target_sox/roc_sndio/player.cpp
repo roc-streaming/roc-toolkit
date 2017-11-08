@@ -141,12 +141,14 @@ void Player::loop_() {
     sox_sample_t* outbuf = outptr.get();
     size_t outbuf_pos = 0;
 
-    audio::Frame frame;
-    frame.samples = new (buffer_pool_) core::Buffer<audio::sample_t>(buffer_pool_);
-    if (!frame.samples) {
+    core::Slice<audio::sample_t> buf(new (buffer_pool_)
+                                         core::Buffer<audio::sample_t>(buffer_pool_));
+    buf.resize(outbuf_sz);
+
+    audio::Frame frame(buf);
+    if (!frame.samples()) {
         roc_panic("player: can't allocate input buffer");
     }
-    frame.samples.resize(outbuf_sz);
 
     SOX_SAMPLE_LOCALS;
 
@@ -162,8 +164,8 @@ void Player::loop_() {
             n_bufs_++;
         }
 
-        const audio::sample_t* samples = frame.samples.data();
-        size_t n_samples = frame.samples.size();
+        const audio::sample_t* samples = frame.samples().data();
+        size_t n_samples = frame.samples().size();
         roc_panic_if(n_samples != outbuf_sz);
 
         while (n_samples > 0) {

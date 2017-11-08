@@ -59,7 +59,8 @@ private:
     core::BufferPool<sample_t>& buffer_pool_;
 
     core::List<IReader, core::NoOwnership> readers_;
-    Frame temp_;
+
+    core::Slice<sample_t> samples_buf_;
 };
 
 } // namespace audio

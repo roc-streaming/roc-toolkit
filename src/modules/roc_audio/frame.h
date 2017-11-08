@@ -20,9 +20,43 @@ namespace roc {
 namespace audio {
 
 //! Audio frame.
-struct Frame {
-    //! Frame samples.
-    core::Slice<sample_t> samples;
+class Frame {
+public:
+    //! Construct empty frame.
+    Frame();
+
+    //! Construct frame from samples.
+    Frame(const core::Slice<sample_t>& samples);
+
+    //! Frame flags.
+    enum {
+        //! Set if no packets were extracted to the frame when the frame was built.
+        FlagEmpty = (1 << 0),
+
+        //! Set if some queued packets were regarded as outdated and dropped when the
+        //! frame was built.
+        FlagSkip = (1 << 1)
+    };
+
+    //! Add flags.
+    void add_flags(unsigned flags);
+
+    //! Returns true if frame has no packets.
+    bool is_empty() const;
+
+    //! Returns true if some packets were dropped when frame was built.
+    bool has_skip() const;
+
+    //! Get frame samples.
+    const core::Slice<sample_t>& samples() const;
+
+    //! Set frame samples.
+    void set_samples(const core::Slice<sample_t>& samples);
+
+private:
+    core::Slice<sample_t> samples_;
+
+    unsigned flags_;
 };
 
 } // namespace audio

@@ -914,12 +914,11 @@ TEST(receiver, status) {
     PacketWriter packet_writer(receiver, rtp_composer, pcm_encoder, packet_pool,
                                byte_buffer_pool, PayloadType, src1, port1.address);
 
-    audio::Frame frame;
+    core::Slice<audio::sample_t> samples(
+        new (sample_buffer_pool) core::Buffer<audio::sample_t>(sample_buffer_pool));
 
-    frame.samples =
-        new (sample_buffer_pool) core::Buffer<audio::sample_t>(sample_buffer_pool);
-
-    frame.samples.resize(FramesPerPacket * NumCh);
+    samples.resize(FramesPerPacket * NumCh);
+    audio::Frame frame(samples);
 
     CHECK(receiver.read(frame) == IReceiver::Inactive);
 
