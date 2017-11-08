@@ -248,19 +248,20 @@ int Recorder::output_cb_(sox_effect_t* eff,
 
 void Recorder::write_(const sox_sample_t* buf, size_t bufsz, bool eof) {
     while (bufsz != 0) {
-        if (!frame_.samples) {
-            frame_.samples =
-                new (buffer_pool_) core::Buffer<audio::sample_t>(buffer_pool_);
+        if (!frame_.samples()) {
+            core::Slice<audio::sample_t> samples(
+                new (buffer_pool_) core::Buffer<audio::sample_t>(buffer_pool_));
+            samples.resize(buffer_size_);
 
-            if (!frame_.samples) {
+            frame_.set_samples(samples);
+
+            if (!frame_.samples()) {
                 roc_log(LogError, "recorder: can't allocate buffer");
                 return;
             }
-
-            frame_.samples.resize(buffer_size_);
         }
 
-        audio::sample_t* samples = frame_.samples.data();
+        audio::sample_t* samples = frame_.samples().data();
 
         SOX_SAMPLE_LOCALS;
 

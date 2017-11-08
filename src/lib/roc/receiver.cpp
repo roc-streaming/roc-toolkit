@@ -167,15 +167,16 @@ roc_receiver_read(roc_receiver* receiver, float* samples, const size_t n_samples
     roc_panic_if(!receiver);
     roc_panic_if(!samples && n_samples != 0);
 
-    audio::Frame frame;
-    frame.samples = new (receiver->sample_buffer_pool)
-        core::Buffer<audio::sample_t>(receiver->sample_buffer_pool);
+    core::Slice<audio::sample_t> buf(
+        new (receiver->sample_buffer_pool)
+            core::Buffer<audio::sample_t>(receiver->sample_buffer_pool));
+    buf.resize(n_samples);
 
-    frame.samples.resize(n_samples);
+    audio::Frame frame(buf);
     receiver->receiver.read(frame);
 
     roc_panic_if(sizeof(float) != sizeof(audio::sample_t));
-    memcpy(samples, frame.samples.data(), n_samples * sizeof(audio::sample_t));
+    memcpy(samples, frame.samples().data(), n_samples * sizeof(audio::sample_t));
 
     return (ssize_t)n_samples;
 }

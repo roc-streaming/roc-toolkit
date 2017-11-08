@@ -76,10 +76,10 @@ TEST_GROUP(depacketizer) {
     }
 
     Frame new_frame(size_t sz) {
-        Frame frame;
-        frame.samples =
+        core::Slice<sample_t> samples =
             new (sample_buffer_pool) core::Buffer<sample_t>(sample_buffer_pool);
-        frame.samples.resize(sz * NumCh);
+        samples.resize(sz * NumCh);
+        Frame frame(samples);
         return frame;
     }
 
@@ -93,8 +93,8 @@ TEST_GROUP(depacketizer) {
         Frame frame = new_frame(sz);
         depacketizer.read(frame);
 
-        UNSIGNED_LONGS_EQUAL(sz * NumCh, frame.samples.size());
-        expect_values(frame.samples.data(), sz * NumCh, value);
+        UNSIGNED_LONGS_EQUAL(sz * NumCh, frame.samples().size());
+        expect_values(frame.samples().data(), sz * NumCh, value);
     }
 };
 
@@ -264,9 +264,9 @@ TEST(depacketizer, zeros_after_packet) {
     dp.read(f1);
     dp.read(f2);
 
-    expect_values(f1.samples.data(), SamplesPerPacket / 2 * NumCh, 0.11f);
-    expect_values(f2.samples.data(), SamplesPerPacket / 2 * NumCh, 0.11f);
-    expect_values(f2.samples.data() + SamplesPerPacket / 2 * NumCh,
+    expect_values(f1.samples().data(), SamplesPerPacket / 2 * NumCh, 0.11f);
+    expect_values(f2.samples().data(), SamplesPerPacket / 2 * NumCh, 0.11f);
+    expect_values(f2.samples().data() + SamplesPerPacket / 2 * NumCh,
                   SamplesPerPacket / 2 * NumCh, 0.00f);
 }
 

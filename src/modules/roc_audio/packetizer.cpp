@@ -40,16 +40,16 @@ Packetizer::Packetizer(packet::IWriter& writer,
 }
 
 void Packetizer::write(Frame& frame) {
-    if (!frame.samples) {
+    if (!frame.samples()) {
         roc_panic("packetizer: unexpected null slice");
     }
 
-    if (frame.samples.size() % num_channels_ != 0) {
+    if (frame.samples().size() % num_channels_ != 0) {
         roc_panic("packetizer: unexpected frame size");
     }
 
-    const sample_t* buffer_ptr = frame.samples.data();
-    size_t buffer_samples = frame.samples.size() / num_channels_;
+    const sample_t* buffer_ptr = frame.samples().data();
+    size_t buffer_samples = frame.samples().size() / num_channels_;
 
     while (buffer_samples != 0) {
         if (!packet_) {
