@@ -47,7 +47,8 @@ Depacketizer::Depacketizer(packet::IReader& reader,
     , packet_samples_(0)
     , rate_limiter_(LogRate)
     , first_packet_(true)
-    , beep_(beep) {
+    , beep_(beep)
+    , dropped_packets_(0) {
 }
 
 void Depacketizer::read(Frame& frame) {
@@ -62,11 +63,16 @@ void Depacketizer::read(Frame& frame) {
     sample_t* buff_ptr = frame.samples().data();
     sample_t* buff_end = frame.samples().data() + frame.samples().size();
 
+    const size_t dropped_packets = dropped_packets_;
+    const packet::timestamp_t missing_samples = missing_samples_;
+
     while (buff_ptr < buff_end) {
         buff_ptr = read_samples_(buff_ptr, buff_end);
     }
 
     roc_panic_if(buff_ptr != buff_end);
+
+    set_frame_flags_(frame, dropped_packets, missing_samples);
 
     if (rate_limiter_.allow()) {
         const size_t total_samples = missing_samples_ + packet_samples_;
@@ -173,6 +179,8 @@ void Depacketizer::update_packet_() {
     if (n_dropped != 0) {
         roc_log(LogDebug, "depacketizer: fetched=%d dropped=%u", (int)!!packet_,
                 n_dropped);
+
+        dropped_packets_ += n_dropped;
     }
 
     if (!packet_) {
@@ -206,6 +214,20 @@ packet::PacketPtr Depacketizer::read_packet_() {
     }
 
     return pp;
+}
+
+void Depacketizer::set_frame_flags_(Frame& frame,
+                                    const size_t dropped_packets,
+                                    const packet::timestamp_t missing_samples) {
+    if (dropped_packets != dropped_packets_) {
+        frame.add_flags(Frame::FlagSkip);
+    }
+
+    const size_t diff = num_channels_ * (size_t)(missing_samples_ - missing_samples);
+
+    if (diff == frame.samples().size()) {
+        frame.add_flags(Frame::FlagEmpty);
+    }
 }
 
 } // namespace audio

@@ -50,6 +50,10 @@ private:
     sample_t* read_packet_samples_(sample_t* buff_ptr, sample_t* buff_end);
     sample_t* read_missing_samples_(sample_t* buff_ptr, sample_t* buff_end);
 
+    void set_frame_flags_(Frame& frame,
+                          const size_t dropped_packets,
+                          const packet::timestamp_t zero_samples);
+
     void update_packet_();
     packet::PacketPtr read_packet_();
 
@@ -72,6 +76,8 @@ private:
 
     bool first_packet_;
     bool beep_;
+
+    size_t dropped_packets_;
 };
 
 } // namespace audio

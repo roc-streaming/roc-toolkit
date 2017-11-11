@@ -98,7 +98,7 @@ private:
     IReader& reader_;
 
     // Input stream window.
-    Frame window_[3];
+    core::Slice<sample_t> window_[3];
 
     // Pointers to 3 frames of stream window.
     sample_t* prev_frame_;
