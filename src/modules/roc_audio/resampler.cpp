@@ -157,8 +157,8 @@ void Resampler::init_window_(core::BufferPool<sample_t>& buffer_pool) {
                                           core::Buffer<sample_t>(buffer_pool));
         samples.resize(frame_size_);
 
-        window_[n].set_samples(samples);
-        if (!window_[n].samples()) {
+        window_[n] = samples;
+        if (!window_[n]) {
             roc_panic("resampler: can't allocate buffer");
         }
     }
@@ -175,21 +175,25 @@ void Resampler::renew_window_() {
     qt_dt_ = float_to_fixedpoint(scaling_);
 
     if (curr_frame_ == NULL) {
-        reader_.read(window_[0]);
-        reader_.read(window_[1]);
-        reader_.read(window_[2]);
+        for (size_t n = 0; n < ROC_ARRAY_SIZE(window_); ++n) {
+            Frame frame(window_[n]);
+            reader_.read(frame);
+        }
     } else {
-        Frame temp = window_[0];
+        core::Slice<sample_t> temp = window_[0];
         window_[0] = window_[1];
         window_[1] = window_[2];
         window_[2] = temp;
-        reader_.read(window_[2]);
-        roc_panic_if(window_[2].samples().size() != channel_len_ * channels_num_);
+
+        Frame frame(window_[2]);
+        reader_.read(frame);
+
+        roc_panic_if(frame.samples().size() != channel_len_ * channels_num_);
     }
 
-    prev_frame_ = window_[0].samples().data();
-    curr_frame_ = window_[1].samples().data();
-    next_frame_ = window_[2].samples().data();
+    prev_frame_ = window_[0].data();
+    curr_frame_ = window_[1].data();
+    next_frame_ = window_[2].data();
 }
 
 void Resampler::fill_sinc() {

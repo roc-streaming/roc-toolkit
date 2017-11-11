@@ -144,15 +144,14 @@ void Player::loop_() {
     core::Slice<audio::sample_t> buf(new (buffer_pool_)
                                          core::Buffer<audio::sample_t>(buffer_pool_));
     buf.resize(outbuf_sz);
-
-    audio::Frame frame(buf);
-    if (!frame.samples()) {
+    if (!buf) {
         roc_panic("player: can't allocate input buffer");
     }
 
     SOX_SAMPLE_LOCALS;
 
     while (!stop_) {
+        audio::Frame frame(buf);
         pipeline::IReceiver::Status status = input_->read(frame);
 
         if (status == pipeline::IReceiver::Inactive) {

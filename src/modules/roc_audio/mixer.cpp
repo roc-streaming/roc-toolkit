@@ -57,8 +57,9 @@ void Mixer::read(Frame& frame) {
     temp_buf_.resize(out_sz);
     memset(out_data, 0, out_sz * sizeof(sample_t));
 
-    Frame temp(temp_buf_);
     for (IReader* rp = readers_.front(); rp; rp = readers_.nextof(*rp)) {
+        Frame temp(temp_buf_);
+
         rp->read(temp);
         roc_panic_if(temp.samples().size() != out_sz);
 
