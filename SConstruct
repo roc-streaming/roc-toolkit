@@ -175,11 +175,11 @@ if not 'DOXYGEN' in env.Dictionary():
 
 if 'doxygen' in COMMAND_LINE_TARGETS:
     enable_doxygen = True
+elif GetOption('disable_doc') or set(COMMAND_LINE_TARGETS).intersection(['tidy', 'fmt']):
+    enable_doxygen = False
 else:
-    enable_doxygen = not GetOption('disable_doc') \
-      and not set(COMMAND_LINE_TARGETS).intersection(['tidy', 'fmt']) \
-      and env.Which(env['DOXYGEN']) \
-      and env.CompilerVersion(env['DOXYGEN'])[:2] >= (1, 6)
+    doxygen_version = env.CompilerVersion(env['DOXYGEN'])
+    enable_doxygen = doxygen_version and doxygen_version[:2] >= (1, 6)
 
 if enable_doxygen:
     env.AlwaysBuild(
