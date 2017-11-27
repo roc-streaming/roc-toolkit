@@ -22,15 +22,14 @@ Frame::Frame(const core::Slice<sample_t>& samples)
 }
 
 void Frame::add_flags(unsigned fl) {
+    if (flags_ & fl) {
+        roc_panic("frame: can't add flag more than once");
+    }
     flags_ |= fl;
 }
 
-bool Frame::is_empty() const {
-    return flags_ & FlagEmpty;
-}
-
-bool Frame::has_skip() const {
-    return flags_ & FlagSkip;
+unsigned Frame::flags() const {
+    return flags_;
 }
 
 const core::Slice<sample_t>& Frame::samples() const {
@@ -38,6 +37,9 @@ const core::Slice<sample_t>& Frame::samples() const {
 }
 
 void Frame::set_samples(const core::Slice<sample_t>& samples) {
+    if (samples_) {
+        roc_panic("frame: can't set samples more than once");
+    }
     samples_ = samples;
 }
 

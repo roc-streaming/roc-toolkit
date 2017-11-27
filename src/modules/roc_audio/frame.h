@@ -26,7 +26,7 @@ public:
     Frame();
 
     //! Construct frame from samples.
-    Frame(const core::Slice<sample_t>& samples);
+    explicit Frame(const core::Slice<sample_t>& samples);
 
     //! Frame flags.
     enum {
@@ -41,11 +41,8 @@ public:
     //! Add flags.
     void add_flags(unsigned flags);
 
-    //! Returns true if frame has no packets.
-    bool is_empty() const;
-
-    //! Returns true if some packets were dropped when frame was built.
-    bool has_skip() const;
+    //! Get flags.
+    unsigned flags() const;
 
     //! Get frame samples.
     const core::Slice<sample_t>& samples() const;
@@ -55,7 +52,6 @@ public:
 
 private:
     core::Slice<sample_t> samples_;
-
     unsigned flags_;
 };
 
