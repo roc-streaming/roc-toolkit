@@ -66,7 +66,6 @@ private:
     core::UniquePtr<audio::Packetizer> packetizer_;
 
     core::UniquePtr<core::Ticker> ticker_;
-    bool timing_;
 
     packet::timestamp_t timestamp_;
     size_t num_channels_;
