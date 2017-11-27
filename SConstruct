@@ -706,9 +706,10 @@ if compiler in ['gcc', 'clang']:
     ])
 
     if platform in ['linux']:
-        env.Append(LINKFLAGS=[
-            '-Wl,--no-undefined',
-        ])
+        if not GetOption('enable_sanitizers'):
+            env.Append(LINKFLAGS=[
+                '-Wl,--no-undefined',
+            ])
         lib_env.Append(LINKFLAGS=[
             '-Wl,--version-script=' + env.File('#src/lib/roc.version').path
         ])
@@ -816,25 +817,27 @@ if compiler == 'clang':
 
 if compiler in ['gcc', 'clang']:
     if GetOption('enable_sanitizers'):
-        san_env = env.Clone()
-        san_conf = Configure(san_env, custom_tests=env.CustomTests)
+        sanitizers = {
+            'undefined': 'ubsan',
+            'address':   'asan',
+        }
 
-        flags = [
-            '-fsanitize=address',
-            '-fsanitize=undefined',
-        ]
+        for name, lib in sanitizers.items():
+            san_env = env.Clone()
+            san_conf = Configure(san_env, custom_tests=env.CustomTests)
 
-        san_env.Append(CFLAGS=flags)
-        san_env.Append(CXXFLAGS=flags)
-        san_env.Append(LINKFLAGS=flags)
+            flags = ['-fsanitize=%s' % name]
 
-        if san_conf.CheckLib('ubsan'):
-            env.Append(LIBS=['ubsan'])
-            env.Append(CFLAGS=flags)
-            env.Append(CXXFLAGS=flags)
-            env.Append(LINKFLAGS=flags)
+            san_env.Append(CFLAGS=flags)
+            san_env.Append(CXXFLAGS=flags)
+            san_env.Append(LINKFLAGS=flags)
 
-        san_conf.Finish()
+            if san_conf.CheckLib(lib):
+                env.AppendUnique(CFLAGS=flags)
+                env.AppendUnique(CXXFLAGS=flags)
+                env.AppendUnique(LINKFLAGS=flags)
+
+            san_conf.Finish()
 
     for e in [env, lib_env, tool_env, test_env, pulse_env]:
         for var in ['CXXFLAGS', 'CFLAGS']:
