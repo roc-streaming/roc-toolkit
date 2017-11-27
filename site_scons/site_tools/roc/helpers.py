@@ -110,7 +110,8 @@ def CommandOutput(env, command):
                                     stdout=subprocess.PIPE,
                                     stderr=subprocess.STDOUT,
                                     env=env['ENV'])
-            output = ' '.join(proc.stdout.readlines()).strip()
+            lines = [s.decode() for s in proc.stdout.readlines()]
+            output = str(' '.join(lines).strip())
             proc.terminate()
             return output
     except:
@@ -399,7 +400,7 @@ int main() {
     # RunProg may incorrectly use cached results from a previous run saved for
     # different file contents but the same invocation number. To prevent this, we
     # monkey patch its global counter with a hashsum of the file contents.
-    SCons.SConf._ac_build_counter = int(hashlib.md5(src).hexdigest(), 16)
+    SCons.SConf._ac_build_counter = int(hashlib.md5(src.encode()).hexdigest(), 16)
     err, out = context.RunProg(src, suffix)
 
     if not err and out.strip() != '0':

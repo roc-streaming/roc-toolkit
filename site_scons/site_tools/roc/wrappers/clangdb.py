@@ -57,7 +57,8 @@ if source_file:
             fp.seek(0)
             fp.truncate()
             fp.write(json.dumps(db, indent=2))
-    except Exception, e:
+    except:
+        e = sys.exc_info()[1]
         print("error: unable to write clangdb to %s" % db_path, file=sys.stderr)
         print(str(e), file=sys.stderr)
 

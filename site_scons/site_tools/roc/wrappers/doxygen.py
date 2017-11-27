@@ -21,7 +21,8 @@ except:
 
 try:
     os.makedirs(output_dir)
-except OSError, e:
+except OSError:
+    e = sys.exc_info()[1]
     if e.errno != errno.EEXIST:
         print("error: unable to create '%s' directory" % output_dir, file=sys.stderr)
         print(str(e), file=sys.stderr)
@@ -57,7 +58,8 @@ if err:
 
 try:
     open(touch_file, 'w').close()
-except Exception, e:
+except:
+    e = sys.exc_info()[1]
     print("error: unable to touch '%s' file" % touch_file, file=sys.stderr)
     print(str(e), file=sys.stderr)
 

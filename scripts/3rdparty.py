@@ -1,15 +1,20 @@
 #! /usr/bin/python2
 from __future__ import print_function
+
 import sys
 import os
 import shutil
 import glob
 import fnmatch
-import urllib2
 import ssl
 import tarfile
 import fileinput
 import subprocess
+
+try:
+    from urllib.request import urlopen
+except ImportError:
+    from urllib2 import urlopen
 
 printdir = os.path.abspath('.')
 
@@ -37,7 +42,7 @@ def download(url, path):
     except:
         pass
     try:
-        archive = urllib2.urlopen(url)
+        archive = urlopen(url)
     except Exception as e:
         print("error: can't download '%s': %s" % (url, e.reason[1]), file=sys.stderr)
         exit(1)
