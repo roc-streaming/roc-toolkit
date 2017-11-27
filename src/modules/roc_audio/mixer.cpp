@@ -29,18 +29,20 @@ sample_t clamp(const sample_t x) {
 
 } // namespace
 
-Mixer::Mixer(core::BufferPool<sample_t>& buffer_pool)
-    : buffer_pool_(buffer_pool) {
+Mixer::Mixer(core::BufferPool<sample_t>& buffer_pool) {
+    temp_buf_ = new (buffer_pool) core::Buffer<sample_t>(buffer_pool);
+    if (!temp_buf_) {
+        roc_log(LogError, "mixer: can't allocate temporary buffer");
+        return;
+    }
+}
+
+bool Mixer::valid() const {
+    return temp_buf_;
 }
 
 void Mixer::read(Frame& frame) {
-    if (!samples_buf_) {
-        samples_buf_ = new (buffer_pool_) core::Buffer<sample_t>(buffer_pool_);
-        if (!samples_buf_) {
-            roc_log(LogError, "mixer: can't allocate temporary buffer");
-            return;
-        }
-    }
+    roc_panic_if(!valid());
 
     const size_t out_sz = frame.samples().size();
     if (out_sz == 0) {
@@ -52,10 +54,10 @@ void Mixer::read(Frame& frame) {
         roc_panic("mixer: null data");
     }
 
-    samples_buf_.resize(out_sz);
+    temp_buf_.resize(out_sz);
     memset(out_data, 0, out_sz * sizeof(sample_t));
 
-    Frame temp(samples_buf_);
+    Frame temp(temp_buf_);
     for (IReader* rp = readers_.front(); rp; rp = readers_.nextof(*rp)) {
         rp->read(temp);
         roc_panic_if(temp.samples().size() != out_sz);

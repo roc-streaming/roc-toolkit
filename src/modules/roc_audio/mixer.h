@@ -43,6 +43,9 @@ public:
     //!  - @p buffer_pool is used to allocate a temporary chunk of samples
     explicit Mixer(core::BufferPool<sample_t>& buffer_pool);
 
+    //! Check if the mixer was succefully constructed.
+    bool valid() const;
+
     //! Read audio frame.
     //! @remarks
     //!  Reads samples from every input reader, mixes them, and fills @p frame
@@ -56,11 +59,8 @@ public:
     void remove(IReader&);
 
 private:
-    core::BufferPool<sample_t>& buffer_pool_;
-
     core::List<IReader, core::NoOwnership> readers_;
-
-    core::Slice<sample_t> samples_buf_;
+    core::Slice<sample_t> temp_buf_;
 };
 
 } // namespace audio

@@ -94,6 +94,8 @@ private:
 
     packet::timestamp_t timestamp_;
     size_t num_channels_;
+
+    bool valid_;
 };
 
 } // namespace pipeline

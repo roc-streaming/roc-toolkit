@@ -31,11 +31,17 @@ Receiver::Receiver(const ReceiverConfig& config,
     , ticker_(config.sample_rate)
     , config_(config)
     , timestamp_(0)
-    , num_channels_(packet::num_channels(config.channels)) {
+    , num_channels_(packet::num_channels(config.channels))
+    , valid_(false) {
+    if (!mixer_.valid()) {
+        roc_log(LogError, "receiver: can't construct mixer");
+        return;
+    }
+    valid_ = true;
 }
 
 bool Receiver::valid() {
-    return true;
+    return valid_;
 }
 
 bool Receiver::add_port(const PortConfig& config) {
