@@ -73,10 +73,13 @@ public:
     //!
     //! @pre
     //!  Output file or device should be opened.
-    size_t get_sample_rate() const;
+    size_t sample_rate() const;
 
     //! Returns true if output is a real file.
-    bool is_io_file() const;
+    //!
+    //! @pre
+    //!  Output file or device should be opened.
+    bool is_file() const;
 
 private:
     virtual void run();
@@ -98,9 +101,8 @@ private:
     size_t n_bufs_;
 
     const bool oneshot_;
+    bool is_file_;
     core::Atomic stop_;
-
-    bool is_io_file_;
 };
 
 } // namespace sndio

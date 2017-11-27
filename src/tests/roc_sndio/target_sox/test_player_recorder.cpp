@@ -155,7 +155,7 @@ TEST(player_recorder, player_open_file) {
     core::TempFile file("test.wav");
     CHECK(player.open(file.path()));
 
-    CHECK(player.is_io_file());
+    CHECK(player.is_file());
 }
 
 TEST(player_recorder, player_open_file_zero_sample_rate) {
@@ -163,7 +163,7 @@ TEST(player_recorder, player_open_file_zero_sample_rate) {
 
     core::TempFile file("test.wav");
     CHECK(player.open(file.path()));
-    CHECK(player.get_sample_rate() != 0);
+    CHECK(player.sample_rate() != 0);
 }
 
 TEST(player_recorder, player_open_file_non_zero_sample_rate) {
@@ -171,7 +171,7 @@ TEST(player_recorder, player_open_file_non_zero_sample_rate) {
 
     core::TempFile file("test.wav");
     CHECK(player.open(file.path()));
-    CHECK(player.get_sample_rate() == SampleRate);
+    CHECK(player.sample_rate() == SampleRate);
 }
 
 TEST(player_recorder, recorder_noop) {

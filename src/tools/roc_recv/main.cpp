@@ -158,8 +158,8 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    config.timing = player.is_io_file();
-    config.sample_rate = player.get_sample_rate();
+    config.timing = player.is_file();
+    config.sample_rate = player.sample_rate();
 
     if (config.sample_rate == 0) {
         roc_log(LogError, "can't detect output sample rate, try to set it "

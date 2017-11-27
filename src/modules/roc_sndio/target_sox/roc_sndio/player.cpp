@@ -26,7 +26,8 @@ Player::Player(core::BufferPool<audio::sample_t>& buffer_pool,
     , allocator_(allocator)
     , clips_(0)
     , n_bufs_(0)
-    , oneshot_(oneshot) {
+    , oneshot_(oneshot)
+    , is_file_(false) {
     size_t n_channels = packet::num_channels(channels);
     if (n_channels == 0) {
         roc_panic("player: # of channels is zero");
@@ -65,6 +66,8 @@ bool Player::open(const char* name, const char* type) {
         return false;
     }
 
+    is_file_ = !(output_->handler.flags & SOX_FILE_DEVICE);
+
     unsigned long in_rate = (unsigned long)out_signal_.rate;
     unsigned long out_rate = (unsigned long)output_->signal.rate;
 
@@ -76,23 +79,12 @@ bool Player::open(const char* name, const char* type) {
         return false;
     }
 
-    roc_log(LogInfo,
-            "player:"
-            " bits=%lu out_rate=%lu in_rate=%lu ch=%lu",
+    roc_log(LogInfo, "player:"
+                     " bits=%lu out_rate=%lu in_rate=%lu ch=%lu is_file=%d",
             (unsigned long)output_->encoding.bits_per_sample, out_rate, in_rate,
-            (unsigned long)output_->signal.channels);
-
-    is_io_file_ = !(output_->handler.flags & SOX_FILE_DEVICE);
+            (unsigned long)output_->signal.channels, (int)is_file_);
 
     return true;
-}
-
-bool Player::is_io_file() const {
-    if (!output_) {
-        roc_panic("player: can't determine if output is file or not "
-                  "for non-open output file or device");
-    }
-    return is_io_file_;
 }
 
 void Player::stop() {
@@ -104,11 +96,18 @@ void Player::start(pipeline::IReceiver& input) {
     core::Thread::start();
 }
 
-size_t Player::get_sample_rate() const {
+size_t Player::sample_rate() const {
     if (!output_) {
-        roc_panic("player: can't get sample rate for non-open output file or device");
+        roc_panic("player: sample_rate: non-open output file or device");
     }
     return size_t(output_->signal.rate);
+}
+
+bool Player::is_file() const {
+    if (!output_) {
+        roc_panic("player: is_file: non-open output file or device");
+    }
+    return is_file_;
 }
 
 void Player::run() {
