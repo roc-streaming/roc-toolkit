@@ -10,6 +10,9 @@ doc/doxygen
 config.log
 build.log
 
+# travis
+build.status
+
 # clang
 compile_commands.json
 
