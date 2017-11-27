@@ -45,6 +45,10 @@ env.SourceCode('.', None)
 # per-directory sconsign files seems to be buggy with generated sources
 env.SConsignFile(os.path.join(env.Dir('#').abspath, '.sconsign.dblite'))
 
+# we always use -fPIC, so object files built for static and shared
+# libraries are no different
+env['STATIC_AND_SHARED_OBJECTS_ARE_THE_SAME'] = 1
+
 AddOption('--build',
           dest='build',
           action='store',

@@ -26,11 +26,11 @@
 #include <roc/sender.h>
 
 /* system headers */
-#include <stdlib.h>
-#include <limits.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <arpa/inet.h>
+
+/* local headers */
+#include "roc_helpers.h"
 
 PA_MODULE_AUTHOR("Victor Gaydov & Mikhail Baranov");
 PA_MODULE_DESCRIPTION("Write samples using Roc sender");
@@ -65,30 +65,6 @@ static const char* const roc_sink_modargs[] = {
     "remote_repair_port",
     NULL
 };
-
-static int parse_address(struct sockaddr_in* addr, const char* ip, const char* port) {
-    char* end = NULL;
-    long port_num = strtol(port, &end, 10);
-    if (port_num < 0 || port_num >= 65536 || !end || *end) {
-        pa_log("invalid port: %s", port);
-        return -1;
-    }
-
-    memset(addr, 0, sizeof(*addr));
-    addr->sin_family = AF_INET;
-    addr->sin_port = htons((uint16_t)port_num);
-
-    if (*ip) {
-        if (inet_pton(AF_INET, ip, &addr->sin_addr) <= 0) {
-            pa_log("invalid ip: %s", ip);
-            return -1;
-        }
-    } else {
-        addr->sin_addr.s_addr = INADDR_ANY;
-    }
-
-    return 0;
-}
 
 static int process_message(
     pa_msgobject* o, int code, void* data, int64_t offset, pa_memchunk* chunk) {
@@ -259,25 +235,21 @@ int pa__init(pa_module* m) {
     pa_thread_mq_init(&u->thread_mq, m->core->mainloop, u->rtpoll);
 
     struct sockaddr_in local_addr;
-    if (parse_address(&local_addr, pa_modargs_get_value(args, "local_ip", ""), "0")
-        < 0) {
-        pa_log("invalid local address");
+    if (parse_address(&local_addr, args, "local_ip", DEFAULT_IP, NULL, "0") < 0) {
         goto error;
     }
 
     struct sockaddr_in remote_source_addr;
-    if (parse_address(&remote_source_addr, pa_modargs_get_value(args, "remote_ip", ""),
-                      pa_modargs_get_value(args, "remote_source_port", ""))
+    if (parse_address(&remote_source_addr, args, "remote_ip", "", "remote_source_port",
+                      DEFAULT_SOURCE_PORT)
         < 0) {
-        pa_log("invalid remote address for source packets");
         goto error;
     }
 
     struct sockaddr_in remote_repair_addr;
-    if (parse_address(&remote_repair_addr, pa_modargs_get_value(args, "remote_ip", ""),
-                      pa_modargs_get_value(args, "remote_repair_port", ""))
+    if (parse_address(&remote_repair_addr, args, "remote_ip", "", "remote_repair_port",
+                      DEFAULT_REPAIR_PORT)
         < 0) {
-        pa_log("invalid remote address for repair packets");
         goto error;
     }
 
@@ -322,11 +294,11 @@ int pa__init(pa_module* m) {
     data.module = m;
     pa_sink_new_data_set_name(
         &data,
-        pa_modargs_get_value(args, "sink_name", "roc_sink"));
+        pa_modargs_get_value(args, "sink_name", "roc_sender"));
     pa_sink_new_data_set_sample_spec(&data, &sample_spec);
     pa_sink_new_data_set_channel_map(&data, &channel_map);
 
-    pa_proplist_sets(data.proplist, PA_PROP_DEVICE_DESCRIPTION, "Roc Sink");
+    pa_proplist_sets(data.proplist, PA_PROP_DEVICE_DESCRIPTION, "Roc Sender");
 
     if (pa_modargs_get_proplist(
             args,
@@ -355,7 +327,7 @@ int pa__init(pa_module* m) {
     pa_sink_set_rtpoll(u->sink, u->rtpoll);
 
     /* start thread for sink event loop and sample reader */
-    if (!(u->thread = pa_thread_new("roc_sink", thread_loop, u))) {
+    if (!(u->thread = pa_thread_new("roc_sender", thread_loop, u))) {
         pa_log("failed to create thread");
         goto error;
     }

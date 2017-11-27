@@ -23,11 +23,11 @@
 #include <roc/receiver.h>
 
 /* system headers */
-#include <stdlib.h>
-#include <limits.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <arpa/inet.h>
+
+/* local headers */
+#include "roc_helpers.h"
 
 PA_MODULE_AUTHOR("Victor Gaydov & Mikhail Baranov");
 PA_MODULE_DESCRIPTION("Read samples using Roc receiver");
@@ -56,30 +56,6 @@ static const char* const roc_sink_input_modargs[] = {
     "local_repair_port",
     NULL
 };
-
-static int parse_address(struct sockaddr_in* addr, const char* ip, const char* port) {
-    char* end = NULL;
-    long port_num = strtol(port, &end, 10);
-    if (port_num < 0 || port_num >= 65536 || !end || *end) {
-        pa_log("invalid port: %s", port);
-        return -1;
-    }
-
-    memset(addr, 0, sizeof(*addr));
-    addr->sin_family = AF_INET;
-    addr->sin_port = htons((uint16_t)port_num);
-
-    if (*ip) {
-        if (inet_pton(AF_INET, ip, &addr->sin_addr) <= 0) {
-            pa_log("invalid ip: %s", ip);
-            return -1;
-        }
-    } else {
-        addr->sin_addr.s_addr = INADDR_ANY;
-    }
-
-    return 0;
-}
 
 static int process_message(
     pa_msgobject* o, int code, void* data, int64_t offset, pa_memchunk* chunk) {
@@ -197,18 +173,16 @@ int pa__init(pa_module* m) {
     u->module = m;
 
     struct sockaddr_in local_source_addr;
-    if (parse_address(&local_source_addr, pa_modargs_get_value(args, "local_ip", ""),
-                      pa_modargs_get_value(args, "local_source_port", ""))
+    if (parse_address(&local_source_addr, args, "local_ip", DEFAULT_IP,
+                      "local_source_port", DEFAULT_SOURCE_PORT)
         < 0) {
-        pa_log("invalid local address for source packets");
         goto error;
     }
 
     struct sockaddr_in local_repair_addr;
-    if (parse_address(&local_repair_addr, pa_modargs_get_value(args, "local_ip", ""),
-                      pa_modargs_get_value(args, "local_repair_port", ""))
+    if (parse_address(&local_repair_addr, args, "local_ip", DEFAULT_IP,
+                      "local_repair_port", DEFAULT_REPAIR_PORT)
         < 0) {
-        pa_log("invalid local address for repair packets");
         goto error;
     }
 
@@ -244,12 +218,12 @@ int pa__init(pa_module* m) {
     pa_sink_input_new_data data;
     pa_sink_input_new_data_init(&data);
     pa_sink_input_new_data_set_sink(&data, sink, false);
-    data.driver = "roc_sink_input";
+    data.driver = "roc_receiver";
     data.module = u->module;
     pa_sink_input_new_data_set_sample_spec(&data, &sample_spec);
     pa_sink_input_new_data_set_channel_map(&data, &channel_map);
 
-    pa_proplist_sets(data.proplist, PA_PROP_MEDIA_NAME, "Roc Sink Input");
+    pa_proplist_sets(data.proplist, PA_PROP_MEDIA_NAME, "Roc Receiver");
 
     if (pa_modargs_get_proplist(
             args,

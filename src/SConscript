@@ -101,17 +101,18 @@ if not GetOption('disable_tools'):
         env.AlwaysBuild(exename)
 
 if GetOption('enable_pulseaudio_modules'):
+    cenv = env.Clone()
+    cenv.AppendVars(pulse_env)
+    cenv.Append(CPPPATH=['lib'])
+    cenv.Append(LIBS=['roc'])
+
+    helpers = cenv.Object('pulse/roc_helpers.c')
     targets = []
 
-    for source in env.Glob('pulse/*.c'):
-        cenv = env.Clone()
-        cenv.AppendVars(pulse_env)
-        cenv.Append(CPPPATH=['lib'])
-        cenv.Append(LIBS=['roc'])
-
+    for source in env.Glob('pulse/module-*.c'):
         module = os.path.splitext(source.name)[0]
 
-        modulelib = cenv.SharedLibrary(module, [source], LIBPREFIX='')
+        modulelib = cenv.SharedLibrary(module, [source, helpers], LIBPREFIX='')
         env.Depends(modulelib, libroc)
 
         targets.append(
