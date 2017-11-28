@@ -66,20 +66,15 @@ packet::PacketPool packet_pool(allocator, 1);
 } // namespace
 
 TEST_GROUP(sender_receiver) {
-    void send_receive(int sender_flags, int receiver_flags) {
+    void send_receive(int flags) {
         rtp::FormatMap format_map;
-
-        PortConfig source_port;
-        source_port.address = new_address(1);
-        source_port.protocol = Proto_RTP_RSm8_Source;
-
-        PortConfig repair_port;
-        repair_port.address = new_address(2);
-        repair_port.protocol = Proto_RSm8_Repair;
 
         packet::ConcurrentQueue queue(0, false);
 
-        Sender sender(sender_config(sender_flags, source_port, repair_port),
+        PortConfig source_port = source_port_config(flags);
+        PortConfig repair_port = repair_port_config(flags);
+
+        Sender sender(sender_config(flags, source_port, repair_port),
                       queue,
                       queue,
                       format_map,
@@ -89,7 +84,7 @@ TEST_GROUP(sender_receiver) {
 
         CHECK(sender.valid());
 
-        Receiver receiver(receiver_config(receiver_flags),
+        Receiver receiver(receiver_config(flags),
                           format_map,
                           packet_pool,
                           byte_buffer_pool,
@@ -107,7 +102,7 @@ TEST_GROUP(sender_receiver) {
             frame_writer.write_samples(SamplesPerFrame * NumCh);
         }
 
-        transfer_packets(sender_flags, queue, receiver);
+        transfer_packets(flags, queue, receiver);
 
         FrameReader frame_reader(receiver, sample_buffer_pool);
 
@@ -139,6 +134,20 @@ TEST_GROUP(sender_receiver) {
         pb->set_data(pa->data());
 
         return pb;
+    }
+
+    PortConfig source_port_config(int flags) {
+        PortConfig port;
+        port.address = new_address(1);
+        port.protocol = (flags & FlagFEC) ? Proto_RTP_RSm8_Source : Proto_RTP;
+        return port;
+    }
+
+    PortConfig repair_port_config(int flags) {
+        PortConfig port;
+        port.address = new_address(2);
+        port.protocol = (flags & FlagFEC) ? Proto_RSm8_Repair : Proto_RTP;
+        return port;
     }
 
     SenderConfig sender_config(int flags,
@@ -192,33 +201,25 @@ TEST_GROUP(sender_receiver) {
     }
 };
 
-TEST(sender_receiver, simple) {
-    send_receive(0, 0);
+TEST(sender_receiver, bare) {
+    send_receive(0);
 }
 
 TEST(sender_receiver, interleaving) {
-    send_receive(FlagInterleaving, 0);
+    send_receive(FlagInterleaving);
 }
 
 #ifdef ROC_TARGET_OPENFEC
-TEST(sender_receiver, fec_sender) {
-    send_receive(FlagFEC, 0);
-}
-
-IGNORE_TEST(sender_receiver, fec_receiver) {
-    send_receive(0, FlagFEC);
-}
-
 TEST(sender_receiver, fec) {
-    send_receive(FlagFEC, FlagFEC);
+    send_receive(FlagFEC);
 }
 
 TEST(sender_receiver, fec_interleaving) {
-    send_receive(FlagFEC | FlagInterleaving, FlagFEC);
+    send_receive(FlagFEC | FlagInterleaving);
 }
 
 TEST(sender_receiver, fec_loss) {
-    send_receive(FlagFEC | FlagLoss, FlagFEC);
+    send_receive(FlagFEC | FlagLoss);
 }
 #endif //! ROC_TARGET_OPENFEC
 
