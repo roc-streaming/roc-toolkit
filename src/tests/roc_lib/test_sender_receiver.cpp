@@ -30,7 +30,20 @@ namespace roc {
 
 namespace {
 
-enum { MaxBufSize = 4096 };
+enum {
+    MaxBufSize = 4096,
+
+    NumChans = 2,
+
+    SourcePackets = 10,
+    RepairPackets = 5,
+
+    NumPackets = SourcePackets * 5,
+
+    PacketSamples = 100,
+    FrameSamples = PacketSamples * 2,
+    TotalSamples = PacketSamples * NumPackets
+};
 
 core::HeapAllocator allocator;
 packet::PacketPool packet_pool(allocator, 1);
@@ -84,7 +97,13 @@ private:
 
 class Receiver {
 public:
-    Receiver(roc_receiver_config& config) {
+    Receiver(roc_receiver_config& config,
+             const float* samples,
+             size_t len,
+             size_t frame_size)
+        : samples_(samples)
+        , sz_(len)
+        , frame_size_(frame_size) {
         CHECK(packet::parse_address("127.0.0.1:0", source_addr_));
         CHECK(packet::parse_address("127.0.0.1:0", repair_addr_));
         recv_ = roc_receiver_new(&config);
@@ -108,15 +127,67 @@ public:
         return repair_addr_;
     }
 
-    ssize_t read(float* samples, const size_t n_samples) {
-        return roc_receiver_read(recv_, samples, n_samples);
+    void run() {
+        float rx_buff[MaxBufSize];
+        size_t s_first = 0;
+        size_t inner_cntr = 0;
+        bool seek_first = true;
+        size_t s_last = 0;
+
+        size_t ipacket = 0;
+        while (s_last == 0) {
+            size_t i = 0;
+            ipacket++;
+            LONGS_EQUAL(frame_size_, roc_receiver_read(recv_, rx_buff, frame_size_));
+            if (seek_first) {
+                for (; i < frame_size_ && is_zero_(rx_buff[i]); i++, s_first++) {
+                }
+                CHECK(s_first < sz_);
+                if (i < frame_size_) {
+                    seek_first = false;
+                }
+            }
+            if (!seek_first) {
+                for (; i < frame_size_; i++) {
+                    if (inner_cntr >= sz_) {
+                        CHECK(is_zero_(rx_buff[i]));
+                        s_last = inner_cntr + s_first;
+                        roc_log(LogInfo,
+                                "finish: s_first: %lu, s_last: %lu, inner_cntr: %lu",
+                                (unsigned long)s_first, (unsigned long)s_last,
+                                (unsigned long)inner_cntr);
+                        break;
+                    } else if (!is_zero_(samples_[inner_cntr] - rx_buff[i])) {
+                        char sbuff[256];
+                        int sbuff_i =
+                            snprintf(sbuff, sizeof(sbuff),
+                                     "failed comparing sample #%lu\n\npacket_num: %lu\n",
+                                     (unsigned long)inner_cntr, (unsigned long)ipacket);
+                        snprintf(&sbuff[sbuff_i], sizeof(sbuff) - (size_t)sbuff_i,
+                                 "original: %f,\treceived: %f\n",
+                                 (double)samples_[inner_cntr], (double)rx_buff[i]);
+                        FAIL(sbuff);
+                    } else {
+                        inner_cntr++;
+                    }
+                }
+            }
+        }
     }
 
 private:
+    static inline bool is_zero_(float s) {
+        return fabs(double(s)) < 1e-9;
+    }
+
     roc_receiver* recv_;
 
     packet::Address source_addr_;
     packet::Address repair_addr_;
+
+    const float* samples_;
+    const size_t sz_;
+    const size_t frame_size_;
 };
 
 class Proxy : private packet::IWriter {
@@ -158,6 +229,7 @@ public:
 private:
     virtual void write(const packet::PacketPtr& ptr) {
         if (num_++ % block_size_ == 1) {
+            // packet loss
             return;
         }
         ptr->udp()->src_addr = send_addr_;
@@ -188,129 +260,72 @@ private:
 } // namespace
 
 TEST_GROUP(sender_receiver) {
-    static const size_t n_channels = 2;
-
-    static const size_t n_source_packets = 10;
-    static const size_t n_repair_packets = 5;
-
-    static const size_t packet_len = 100;
-    static const size_t packet_num = n_source_packets * 5;
-
-    static const size_t frame_size = packet_len * 2;
-
     roc_sender_config sender_conf;
     roc_receiver_config receiver_conf;
 
-    static const size_t total_sz = packet_len * packet_num;
-    float s2send[total_sz];
-    float s2recv[total_sz];
+    float samples[TotalSamples];
 
     void setup() {
         memset(&sender_conf, 0, sizeof(sender_conf));
         sender_conf.flags |= ROC_FLAG_DISABLE_INTERLEAVER;
         sender_conf.flags |= ROC_FLAG_ENABLE_TIMER;
-        sender_conf.samples_per_packet = (unsigned int)packet_len / n_channels;
+        sender_conf.samples_per_packet = (unsigned int)PacketSamples / NumChans;
         sender_conf.fec_scheme = ROC_FEC_RS8M;
-        sender_conf.n_source_packets = n_source_packets;
-        sender_conf.n_repair_packets = n_repair_packets;
+        sender_conf.n_source_packets = SourcePackets;
+        sender_conf.n_repair_packets = RepairPackets;
 
         memset(&receiver_conf, 0, sizeof(receiver_conf));
         receiver_conf.flags |= ROC_FLAG_DISABLE_RESAMPLER;
         receiver_conf.flags |= ROC_FLAG_ENABLE_TIMER;
-        receiver_conf.samples_per_packet = (unsigned int)packet_len / n_channels;
+        receiver_conf.samples_per_packet = (unsigned int)PacketSamples / NumChans;
         receiver_conf.fec_scheme = ROC_FEC_RS8M;
-        receiver_conf.n_source_packets = n_source_packets;
-        receiver_conf.n_repair_packets = n_repair_packets;
-        receiver_conf.latency = packet_len * 20;
-        receiver_conf.timeout = packet_len * 300;
+        receiver_conf.n_source_packets = SourcePackets;
+        receiver_conf.n_repair_packets = RepairPackets;
+        receiver_conf.latency = PacketSamples * 20;
+        receiver_conf.timeout = PacketSamples * 300;
 
+        init_samples();
+    }
+
+    void init_samples() {
         const float sstep = 1. / 32768.;
         float sval = -1 + sstep;
-        for (size_t i = 0; i < total_sz; ++i) {
-            s2send[i] = sval;
+        for (size_t i = 0; i < TotalSamples; ++i) {
+            samples[i] = sval;
             sval += sstep;
             if (sval >= 1) {
                 sval = -1 + sstep;
             }
         }
     }
-
-    void check_sample_arrays(Receiver & recv, float* original, const size_t len) {
-        float rx_buff[packet_len];
-        size_t s_first = 0;
-        size_t inner_cntr = 0;
-        bool seek_first = true;
-        size_t s_last = 0;
-
-        size_t ipacket = 0;
-        while (s_last == 0) {
-            size_t i = 0;
-            ipacket++;
-            LONGS_EQUAL(packet_len, recv.read(rx_buff, packet_len));
-            if (seek_first) {
-                for (; i < packet_len && fabs(double(rx_buff[i])) < 1e-9;
-                     i++, s_first++) {
-                }
-                CHECK(s_first < len);
-                if (i < packet_len) {
-                    seek_first = false;
-                }
-            }
-            if (!seek_first) {
-                for (; i < packet_len; i++) {
-                    if (inner_cntr >= len) {
-                        CHECK(fabs(double(rx_buff[i])) < 1e-9);
-                        s_last = inner_cntr + s_first;
-                        roc_log(LogInfo,
-                                "finish: s_first: %lu, s_last: %lu, inner_cntr: %lu",
-                                (unsigned long)s_first, (unsigned long)s_last,
-                                (unsigned long)inner_cntr);
-                        break;
-                    } else if (fabs(double(original[inner_cntr] - rx_buff[i])) > 1e-9) {
-                        char sbuff[256];
-                        int sbuff_i =
-                            snprintf(sbuff, sizeof(sbuff),
-                                     "failed comparing samples #%lu\n\npacket_num: %lu\n",
-                                     (unsigned long)inner_cntr, (unsigned long)ipacket);
-                        snprintf(&sbuff[sbuff_i], sizeof(sbuff) - (size_t)sbuff_i,
-                                 "original: %f,\treceived: %f\n",
-                                 (double)original[inner_cntr], (double)rx_buff[i]);
-                        FAIL(sbuff);
-                    } else {
-                        inner_cntr++;
-                    }
-                }
-            }
-        }
-    }
 };
 
 TEST(sender_receiver, simple) {
-    Receiver recv(receiver_conf);
+    Receiver receiver(receiver_conf, samples, TotalSamples, FrameSamples);
 
-    Sender sndr(sender_conf, recv.source_addr(), recv.repair_addr(), s2send, total_sz,
-                frame_size);
+    Sender sender(sender_conf, receiver.source_addr(), receiver.repair_addr(), samples,
+                  TotalSamples, FrameSamples);
 
-    sndr.start();
-    check_sample_arrays(recv, s2send, total_sz);
-    sndr.join();
+    sender.start();
+    receiver.run();
+    sender.join();
 }
 
 #ifdef ROC_TARGET_OPENFEC
 TEST(sender_receiver, losses) {
-    Receiver recv(receiver_conf);
+    Receiver receiver(receiver_conf, samples, TotalSamples, FrameSamples);
 
-    Proxy proxy(recv.source_addr(), recv.repair_addr(),
-                n_source_packets + n_repair_packets);
+    Proxy proxy(receiver.source_addr(), receiver.repair_addr(),
+                SourcePackets + RepairPackets);
 
-    Sender sndr(sender_conf, proxy.source_addr(), proxy.repair_addr(), s2send, total_sz,
-                frame_size);
+    Sender sender(sender_conf, proxy.source_addr(), proxy.repair_addr(), samples,
+                  TotalSamples, FrameSamples);
 
     proxy.start();
 
-    sndr.start();
-    check_sample_arrays(recv, s2send, total_sz);
-    sndr.join();
+    sender.start();
+    receiver.run();
+    sender.join();
 
     proxy.stop();
 }
