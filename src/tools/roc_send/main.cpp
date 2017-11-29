@@ -120,6 +120,23 @@ int main(int argc, char** argv) {
     core::BufferPool<audio::sample_t> sample_buffer_pool(allocator, MaxFrameSize, 1);
     packet::PacketPool packet_pool(allocator, 1);
 
+    size_t sample_rate = 0;
+    if (args.rate_given) {
+        if (!check_ge("rate", args.rate_arg, 1)) {
+            return 1;
+        }
+        sample_rate = (size_t)args.rate_arg;
+    }
+
+    sndio::Recorder recorder(sample_buffer_pool, config.channels,
+                             config.samples_per_packet, sample_rate);
+
+    if (!recorder.open(args.input_arg, args.type_arg)) {
+        roc_log(LogError, "can't open input file/device: %s %s", args.input_arg,
+                args.type_arg);
+        return 1;
+    }
+
     rtp::FormatMap format_map;
 
     netio::Transceiver trx(packet_pool, byte_buffer_pool, allocator);
@@ -141,26 +158,9 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    size_t sample_rate = 0;
-    if (args.rate_given) {
-        if (!check_ge("rate", args.rate_arg, 1)) {
-            return 1;
-        }
-        sample_rate = (size_t)args.rate_arg;
-    }
-
-    sndio::Recorder recorder(sender, sample_buffer_pool, config.channels,
-                             config.samples_per_packet, sample_rate);
-
-    if (!recorder.open(args.input_arg, args.type_arg)) {
-        roc_log(LogError, "can't open input file/device: %s %s", args.input_arg,
-                args.type_arg);
-        return 1;
-    }
-
     trx.start();
 
-    recorder.start();
+    recorder.start(sender);
     recorder.join();
 
     trx.stop();

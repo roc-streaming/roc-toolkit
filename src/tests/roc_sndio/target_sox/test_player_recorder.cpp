@@ -175,13 +175,11 @@ TEST(player_recorder, player_open_file_non_zero_sample_rate) {
 }
 
 TEST(player_recorder, recorder_noop) {
-    MockWriter writer;
-    Recorder recorder(writer, buffer_pool, ChMask, FrameSize, SampleRate);
+    Recorder recorder(buffer_pool, ChMask, FrameSize, SampleRate);
 }
 
 TEST(player_recorder, recorder_error) {
-    MockWriter writer;
-    Recorder recorder(writer, buffer_pool, ChMask, FrameSize, SampleRate);
+    Recorder recorder(buffer_pool, ChMask, FrameSize, SampleRate);
 
     CHECK(!recorder.open("/bad/file"));
 }
@@ -200,12 +198,13 @@ TEST(player_recorder, recorder_start_stop) {
     player.start(receiver);
     player.join();
 
-    MockWriter writer;
-    Recorder recorder(writer, buffer_pool, ChMask, FrameSize, SampleRate);
+    Recorder recorder(buffer_pool, ChMask, FrameSize, SampleRate);
 
     CHECK(recorder.open(file.path()));
 
-    recorder.start();
+    MockWriter writer;
+
+    recorder.start(writer);
     recorder.stop();
     recorder.join();
 }
@@ -224,13 +223,14 @@ TEST(player_recorder, recorder_stop_start) {
     player.start(receiver);
     player.join();
 
-    MockWriter writer;
-    Recorder recorder(writer, buffer_pool, ChMask, FrameSize, SampleRate);
+    Recorder recorder(buffer_pool, ChMask, FrameSize, SampleRate);
 
     CHECK(recorder.open(file.path()));
 
+    MockWriter writer;
+
     recorder.stop();
-    recorder.start();
+    recorder.start(writer);
     recorder.join();
 }
 
@@ -250,12 +250,13 @@ TEST(player_recorder, write_read) {
 
     CHECK(receiver.num_returned() >= NumSamples - MaxBufSize);
 
-    MockWriter writer;
-    Recorder recorder(writer, buffer_pool, ChMask, FrameSize, SampleRate);
+    Recorder recorder(buffer_pool, ChMask, FrameSize, SampleRate);
 
     CHECK(recorder.open(file.path()));
 
-    recorder.start();
+    MockWriter writer;
+
+    recorder.start(writer);
     recorder.join();
 
     writer.check(0, receiver.num_returned());
@@ -293,12 +294,13 @@ TEST(player_recorder, overwrite) {
     size_t num_returned2 = receiver.num_returned() - num_returned1;
     CHECK(num_returned1 >= NumSamples - MaxBufSize);
 
-    MockWriter writer;
-    Recorder recorder(writer, buffer_pool, ChMask, FrameSize, SampleRate);
+    Recorder recorder(buffer_pool, ChMask, FrameSize, SampleRate);
 
     CHECK(recorder.open(file.path()));
 
-    recorder.start();
+    MockWriter writer;
+
+    recorder.start(writer);
     recorder.join();
 
     writer.check(num_returned1, num_returned2);
