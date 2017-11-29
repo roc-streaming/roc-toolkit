@@ -63,14 +63,12 @@ const sox_effect_handler_t Recorder::output_handler_ = {
     0                     //
 };
 
-Recorder::Recorder(audio::IWriter& output,
-                   core::BufferPool<audio::sample_t>& buffer_pool,
+Recorder::Recorder(core::BufferPool<audio::sample_t>& buffer_pool,
                    packet::channel_mask_t channels,
                    size_t n_samples,
                    size_t sample_rate)
     : input_(NULL)
     , chain_(NULL)
-    , output_(output)
     , buffer_pool_(buffer_pool) {
     size_t n_channels = packet::num_channels(channels);
     if (n_channels == 0) {
@@ -189,11 +187,20 @@ void Recorder::stop() {
     stop_ = 1;
 }
 
+void Recorder::start(audio::IWriter& output) {
+    output_ = &output;
+    core::Thread::start();
+}
+
 void Recorder::run() {
     roc_log(LogDebug, "recorder: starting thread");
 
     if (!chain_) {
         roc_panic("recorder: thread is started before open() returnes success");
+    }
+
+    if (!output_) {
+        roc_panic("recorder: thread is started not from the start() call");
     }
 
     int err = sox_flow_effects(chain_, NULL, NULL);
@@ -278,7 +285,7 @@ void Recorder::write_(const sox_sample_t* buf, size_t bufsz, bool eof) {
         }
 
         if (buffer_pos_ == buffer_size_) {
-            output_.write(frame_);
+            output_->write(frame_);
             buffer_pos_ = 0;
             n_bufs_++;
         }

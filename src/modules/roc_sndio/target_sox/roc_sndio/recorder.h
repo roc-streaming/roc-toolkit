@@ -35,13 +35,11 @@ public:
     //! Initialize.
     //!
     //! @b Parameters
-    //!  - @p output is used to write buffers with decoded samples;
     //!  - @p buffer_pool is used to allocate buffers;
     //!  - @p n_samples defines number of samples per channel in output buffers;
     //!  - @p channels defines bitmask of enabled channels in output buffers;
     //!  - @p sample_rate defines sample rate of output buffers.
-    Recorder(audio::IWriter& output,
-             core::BufferPool<audio::sample_t>& buffer_pool,
+    Recorder(core::BufferPool<audio::sample_t>& buffer_pool,
              packet::channel_mask_t channels,
              size_t n_samples,
              size_t sample_rate);
@@ -66,6 +64,12 @@ public:
     //!  Can be called from any thread.
     void stop();
 
+    //! Start writing samples in a separate thread.
+    //!
+    //! @b Parameters
+    //!  - @p output is used to write buffers with decoded samples.
+    void start(audio::IWriter& output);
+
 private:
     virtual void run();
 
@@ -86,7 +90,7 @@ private:
     sox_format_t* input_;
     sox_effects_chain_t* chain_;
 
-    audio::IWriter& output_;
+    audio::IWriter* output_;
     core::BufferPool<audio::sample_t>& buffer_pool_;
 
     audio::Frame frame_;
