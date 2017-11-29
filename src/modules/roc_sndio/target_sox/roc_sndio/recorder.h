@@ -70,6 +70,12 @@ public:
     //!  - @p output is used to write buffers with decoded samples.
     void start(audio::IWriter& output);
 
+    //! Returns true if input is a real file.
+    //!
+    //! @pre
+    //!  Input file or device should be opened.
+    bool is_file() const;
+
 private:
     virtual void run();
 
@@ -99,6 +105,7 @@ private:
     size_t buffer_size_;
     size_t clips_;
     size_t n_bufs_;
+    bool is_file_;
 
     core::Atomic stop_;
 };

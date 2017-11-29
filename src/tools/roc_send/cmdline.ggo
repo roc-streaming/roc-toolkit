@@ -25,9 +25,6 @@ section "Options"
     option "interleaving" - "Enable/disable packet interleaving"
         values="yes","no" default="no" enum optional
 
-    option "timing" - "Enable/disable pipeline timing"
-        values="yes","no" default="yes" enum optional
-
     option "rate" - "Sample rate (Hz)"
         int optional
 
