@@ -112,7 +112,6 @@ int main(int argc, char** argv) {
     }
 
     config.interleaving = (args.interleaving_arg == interleaving_arg_yes);
-    config.timing = (args.timing_arg == timing_arg_yes);
 
     core::HeapAllocator allocator;
 
@@ -136,6 +135,7 @@ int main(int argc, char** argv) {
                 args.type_arg);
         return 1;
     }
+    config.timing = recorder.is_file();
 
     rtp::FormatMap format_map;
 

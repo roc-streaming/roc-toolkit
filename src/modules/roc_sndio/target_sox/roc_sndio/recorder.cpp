@@ -69,7 +69,8 @@ Recorder::Recorder(core::BufferPool<audio::sample_t>& buffer_pool,
                    size_t sample_rate)
     : input_(NULL)
     , chain_(NULL)
-    , buffer_pool_(buffer_pool) {
+    , buffer_pool_(buffer_pool)
+    , is_file_(false) {
     size_t n_channels = packet::num_channels(channels);
     if (n_channels == 0) {
         roc_panic("recorder: # of channels is zero");
@@ -118,13 +119,16 @@ bool Recorder::open(const char* name, const char* type) {
         return false;
     }
 
+    is_file_ = !(input_->handler.flags & SOX_FILE_DEVICE);
+
     roc_log(LogInfo,
             "recorder:"
-            " in_bits=%lu out_bits=%lu in_rate=%lu out_rate=%lu in_ch=%lu, out_ch=%lu",
+            " in_bits=%lu out_bits=%lu in_rate=%lu out_rate=%lu"
+            " in_ch=%lu, out_ch=%lu, is_file=%d",
             (unsigned long)input_->encoding.bits_per_sample,
             (unsigned long)out_signal_.precision, (unsigned long)input_->signal.rate,
             (unsigned long)out_signal_.rate, (unsigned long)input_->signal.channels,
-            (unsigned long)out_signal_.channels);
+            (unsigned long)out_signal_.channels, (int)is_file_);
 
     if (!(chain_ = sox_create_effects_chain(&input_->encoding, NULL))) {
         roc_panic("recorder: sox_create_effects_chain() failed");
@@ -181,6 +185,13 @@ bool Recorder::open(const char* name, const char* type) {
     }
 
     return true;
+}
+
+bool Recorder::is_file() const {
+    if (!input_) {
+        roc_panic("recorder: is_file: non-open input file or device");
+    }
+    return is_file_;
 }
 
 void Recorder::stop() {
