@@ -20,9 +20,11 @@
 #include "roc_core/thread.h"
 #include "roc_netio/transceiver.h"
 #include "roc_packet/address_to_str.h"
+#include "roc_packet/concurrent_queue.h"
 #include "roc_packet/packet_pool.h"
 #include "roc_packet/parse_address.h"
 
+#include "roc/log.h"
 #include "roc/receiver.h"
 #include "roc/sender.h"
 
@@ -38,11 +40,12 @@ enum {
     SourcePackets = 10,
     RepairPackets = 5,
 
-    NumPackets = SourcePackets * 5,
-
     PacketSamples = 100,
     FrameSamples = PacketSamples * 2,
-    TotalSamples = PacketSamples * NumPackets
+    TotalSamples = PacketSamples * SourcePackets * 5,
+
+    Latency = PacketSamples * SourcePackets * 3 / NumChans,
+    Timeout = TotalSamples * 10
 };
 
 core::HeapAllocator allocator;
@@ -142,7 +145,7 @@ public:
             if (seek_first) {
                 for (; i < frame_size_ && is_zero_(rx_buff[i]); i++, s_first++) {
                 }
-                CHECK(s_first < sz_);
+                CHECK(s_first < Timeout);
                 if (i < frame_size_) {
                     seek_first = false;
                 }
@@ -152,7 +155,7 @@ public:
                     if (inner_cntr >= sz_) {
                         CHECK(is_zero_(rx_buff[i]));
                         s_last = inner_cntr + s_first;
-                        roc_log(LogInfo,
+                        roc_log(LogDebug,
                                 "finish: s_first: %lu, s_last: %lu, inner_cntr: %lu",
                                 (unsigned long)s_first, (unsigned long)s_last,
                                 (unsigned long)inner_cntr);
@@ -194,12 +197,16 @@ class Proxy : private packet::IWriter {
 public:
     Proxy(const packet::Address& dst_source_addr,
           const packet::Address& dst_repair_addr,
-          const size_t block_size)
+          size_t n_source_packets,
+          size_t n_repair_packets)
         : trx_(packet_pool, byte_buffer_pool, allocator)
         , dst_source_addr_(dst_source_addr)
         , dst_repair_addr_(dst_repair_addr)
-        , block_size_(block_size)
-        , num_(0) {
+        , source_queue_(0, false)
+        , repair_queue_(0, false)
+        , n_source_packets_(n_source_packets)
+        , n_repair_packets_(n_repair_packets)
+        , pos_(0) {
         CHECK(packet::parse_address("127.0.0.1:0", send_addr_));
         CHECK(packet::parse_address("127.0.0.1:0", recv_source_addr_));
         CHECK(packet::parse_address("127.0.0.1:0", recv_repair_addr_));
@@ -227,18 +234,42 @@ public:
     }
 
 private:
-    virtual void write(const packet::PacketPtr& ptr) {
-        if (num_++ % block_size_ == 1) {
-            // packet loss
-            return;
-        }
-        ptr->udp()->src_addr = send_addr_;
-        if (ptr->udp()->dst_addr == recv_source_addr_) {
-            ptr->udp()->dst_addr = dst_source_addr_;
+    virtual void write(const packet::PacketPtr& pp) {
+        pp->udp()->src_addr = send_addr_;
+
+        if (pp->udp()->dst_addr == recv_source_addr_) {
+            pp->udp()->dst_addr = dst_source_addr_;
+            source_queue_.write(pp);
         } else {
-            ptr->udp()->dst_addr = dst_repair_addr_;
+            pp->udp()->dst_addr = dst_repair_addr_;
+            repair_queue_.write(pp);
         }
-        writer_->write(ptr);
+
+        for (;;) {
+            const size_t block_pos = pos_ % (n_source_packets_ + n_repair_packets_);
+
+            if (block_pos < n_source_packets_) {
+                if (!send_packet_(source_queue_, block_pos == 1)) {
+                    return;
+                }
+            } else {
+                if (!send_packet_(repair_queue_, false)) {
+                    return;
+                }
+            }
+        }
+    }
+
+    bool send_packet_(packet::ConcurrentQueue& queue, bool drop) {
+        packet::PacketPtr pp = queue.read();
+        if (!pp) {
+            return false;
+        }
+        pos_++;
+        if (!drop) {
+            writer_->write(pp);
+        }
+        return true;
     }
 
     netio::Transceiver trx_;
@@ -251,10 +282,15 @@ private:
     packet::Address dst_source_addr_;
     packet::Address dst_repair_addr_;
 
+    packet::ConcurrentQueue source_queue_;
+    packet::ConcurrentQueue repair_queue_;
+
     packet::IWriter* writer_;
 
-    const size_t block_size_;
-    size_t num_;
+    const size_t n_source_packets_;
+    const size_t n_repair_packets_;
+
+    size_t pos_;
 };
 
 } // namespace
@@ -266,6 +302,13 @@ TEST_GROUP(sender_receiver) {
     float samples[TotalSamples];
 
     void setup() {
+        roc_log_set_level((roc_log_level)core::get_log_level());
+
+        init_config();
+        init_samples();
+    }
+
+    void init_config() {
         memset(&sender_conf, 0, sizeof(sender_conf));
         sender_conf.flags |= ROC_FLAG_DISABLE_INTERLEAVER;
         sender_conf.flags |= ROC_FLAG_ENABLE_TIMER;
@@ -281,10 +324,8 @@ TEST_GROUP(sender_receiver) {
         receiver_conf.fec_scheme = ROC_FEC_RS8M;
         receiver_conf.n_source_packets = SourcePackets;
         receiver_conf.n_repair_packets = RepairPackets;
-        receiver_conf.latency = PacketSamples * 20;
-        receiver_conf.timeout = PacketSamples * 300;
-
-        init_samples();
+        receiver_conf.latency = Latency;
+        receiver_conf.timeout = Timeout;
     }
 
     void init_samples() {
@@ -315,8 +356,8 @@ TEST(sender_receiver, simple) {
 TEST(sender_receiver, losses) {
     Receiver receiver(receiver_conf, samples, TotalSamples, FrameSamples);
 
-    Proxy proxy(receiver.source_addr(), receiver.repair_addr(),
-                SourcePackets + RepairPackets);
+    Proxy proxy(receiver.source_addr(), receiver.repair_addr(), SourcePackets,
+                RepairPackets);
 
     Sender sender(sender_conf, proxy.source_addr(), proxy.repair_addr(), samples,
                   TotalSamples, FrameSamples);
