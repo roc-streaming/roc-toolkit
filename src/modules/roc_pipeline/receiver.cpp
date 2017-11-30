@@ -153,8 +153,8 @@ bool Receiver::create_session_(const packet::PacketPtr& packet) {
         return false;
     }
 
-    if (packet->udp()->dst_addr == config_.repair_port.address) {
-        roc_log(LogInfo, "receiver: can't create session, unexpected repair packet");
+    if (packet->flags() & packet::Packet::FlagRepair) {
+        roc_log(LogDebug, "receiver: dropping repair packet for non-existent session");
         return false;
     }
 
