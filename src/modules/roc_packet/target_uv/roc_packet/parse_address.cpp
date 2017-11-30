@@ -98,7 +98,6 @@ bool parse_address(const char* input, Address& result) {
         }
     }
 
-    roc_log(LogDebug, "parse address: parsed %s", address_to_str(result).c_str());
     return true;
 }
 

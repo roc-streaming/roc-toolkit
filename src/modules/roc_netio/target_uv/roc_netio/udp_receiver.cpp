@@ -39,9 +39,6 @@ void UDPReceiver::destroy() {
 }
 
 bool UDPReceiver::start(packet::Address& bind_address) {
-    roc_log(LogDebug, "udp receiver: opening port %s",
-            packet::address_to_str(bind_address).c_str());
-
     if (int err = uv_udp_init(&loop_, &handle_)) {
         roc_log(LogError, "udp receiver: uv_udp_init(): [%s] %s", uv_err_name(err),
                 uv_strerror(err));
@@ -78,6 +75,9 @@ bool UDPReceiver::start(packet::Address& bind_address) {
         return false;
     }
 
+    roc_log(LogInfo, "udp receiver: opened port %s",
+            packet::address_to_str(bind_address).c_str());
+
     address_ = bind_address;
     return true;
 }
@@ -93,7 +93,7 @@ void UDPReceiver::stop() {
         return;
     }
 
-    roc_log(LogDebug, "udp receiver: closing port %s",
+    roc_log(LogInfo, "udp receiver: closing port %s",
             packet::address_to_str(address_).c_str());
 
     if (int err = uv_udp_recv_stop(&handle_)) {
@@ -107,8 +107,6 @@ void UDPReceiver::stop() {
 void UDPReceiver::alloc_cb_(uv_handle_t* handle, size_t size, uv_buf_t* buf) {
     roc_panic_if_not(handle);
     roc_panic_if_not(buf);
-
-    roc_log(LogTrace, "udp receiver: allocating buffer: size=%ld", (long)size);
 
     UDPReceiver& self = *(UDPReceiver*)handle->data;
 
@@ -125,10 +123,6 @@ void UDPReceiver::alloc_cb_(uv_handle_t* handle, size_t size, uv_buf_t* buf) {
     }
 
     if (size > bp->size()) {
-        roc_log(LogTrace, "udp receiver: truncating buffer size:"
-                          " suggested=%ld max=%ld",
-                (long)size, (long)bp->size());
-
         size = bp->size();
     }
 
@@ -156,7 +150,7 @@ void UDPReceiver::recv_cb_(uv_udp_t* handle,
         }
     }
 
-    roc_log(LogTrace, "udp receiver: got packet: num=%u src=%s dst=%s nread=%ld",
+    roc_log(LogTrace, "udp receiver: received packet: num=%u src=%s dst=%s nread=%ld",
             self.packet_counter_, packet::address_to_str(src_addr).c_str(),
             packet::address_to_str(self.address_).c_str(), (long)nread);
 

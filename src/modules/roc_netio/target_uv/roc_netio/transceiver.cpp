@@ -126,14 +126,14 @@ void Transceiver::run() {
         roc_panic("transceiver: can't use invalid transceiver");
     }
 
-    roc_log(LogInfo, "transceiver: starting event loop");
+    roc_log(LogDebug, "transceiver: starting event loop");
 
     int err = uv_run(&loop_, UV_RUN_DEFAULT);
     if (err != 0) {
         roc_log(LogInfo, "transceiver: uv_run() returned non-zero");
     }
 
-    roc_log(LogInfo, "transceiver: finishing event loop");
+    roc_log(LogDebug, "transceiver: finishing event loop");
 }
 
 void Transceiver::stop() {

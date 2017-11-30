@@ -32,8 +32,8 @@ PacketPtr DelayedReader::read() {
             return NULL;
         }
 
-        roc_log(LogInfo, "delayed reader: "
-                         "received enough packets: delay=%lu samples=%lu packets=%lu",
+        roc_log(LogDebug, "delayed reader: "
+                          "received enough packets: delay=%lu samples=%lu packets=%lu",
                 (unsigned long)delay_, (unsigned long)qs, (unsigned long)queue_.size());
 
         delay_ = 0;

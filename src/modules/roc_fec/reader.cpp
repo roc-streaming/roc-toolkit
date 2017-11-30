@@ -93,8 +93,8 @@ packet::PacketPtr Reader::read_() {
             return source_queue_.read();
         }
 
-        roc_log(LogInfo, "fec reader: got first packet in a block, start decoding:"
-                         " n_packets_before=%u blk_sn=%lu",
+        roc_log(LogDebug, "fec reader: got first packet in a block, start decoding:"
+                          " n_packets_before=%u blk_sn=%lu",
                 n_packets_, (unsigned long)cur_block_sn_);
 
         is_started_ = true;
@@ -216,19 +216,19 @@ bool Reader::check_packet_(const packet::PacketPtr& pp, size_t pos) {
     roc_panic_if_not(has_source_);
 
     if (!pp->rtp()) {
-        roc_log(LogTrace, "fec reader: repaired unexcpeted non-rtp packet");
+        roc_log(LogDebug, "fec reader: repaired unexcpeted non-rtp packet");
         return false;
     }
 
     if (pp->rtp()->source != source_) {
-        roc_log(LogTrace, "fec reader: repaired packet has bad source id, shutting down:"
+        roc_log(LogDebug, "fec reader: repaired packet has bad source id, shutting down:"
                           " got=%lu expected=%lu",
                 (unsigned long)pp->rtp()->source, (unsigned long)source_);
         return (is_alive_ = false);
     }
 
     if (pp->rtp()->seqnum != packet::seqnum_t(cur_block_sn_ + pos)) {
-        roc_log(LogTrace,
+        roc_log(LogDebug,
                 "fec reader: repaired packet has bad seqnum: got=%lu expected=%lu",
                 (unsigned long)pp->rtp()->seqnum,
                 (unsigned long)packet::seqnum_t(cur_block_sn_ + pos));
@@ -313,7 +313,7 @@ void Reader::update_source_packets_() {
     }
 
     if (n_dropped != 0 || n_fetched != n_added) {
-        roc_log(LogInfo, "fec reader: source queue: fetched=%u added=%u dropped=%u",
+        roc_log(LogDebug, "fec reader: source queue: fetched=%u added=%u dropped=%u",
                 n_fetched, n_added, n_dropped);
     }
 }
@@ -360,7 +360,7 @@ void Reader::update_repair_packets_() {
     }
 
     if (n_dropped != 0 || n_fetched != n_added) {
-        roc_log(LogInfo, "fec reader: repair queue: fetched=%u added=%u dropped=%u",
+        roc_log(LogDebug, "fec reader: repair queue: fetched=%u added=%u dropped=%u",
                 n_fetched, n_added, n_dropped);
     }
 }
@@ -392,7 +392,7 @@ void Reader::skip_repair_packets_() {
     }
 
     if (n_skipped != 0) {
-        roc_log(LogInfo, "fec reader: repair queue: skipped=%u", n_skipped);
+        roc_log(LogDebug, "fec reader: repair queue: skipped=%u", n_skipped);
     }
 }
 

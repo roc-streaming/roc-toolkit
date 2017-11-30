@@ -171,7 +171,7 @@ void Depacketizer::update_packet_() {
     }
 
     if (n_dropped != 0) {
-        roc_log(LogInfo, "depacketizer: fetched=%d dropped=%u", (int)!!packet_,
+        roc_log(LogDebug, "depacketizer: fetched=%d dropped=%u", (int)!!packet_,
                 n_dropped);
     }
 

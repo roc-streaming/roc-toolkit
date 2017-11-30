@@ -44,9 +44,6 @@ bool UDPSender::start(packet::Address& bind_address) {
     write_sem_.data = this;
     write_sem_initialized_ = true;
 
-    roc_log(LogDebug, "udp sender: opening port %s",
-            packet::address_to_str(bind_address).c_str());
-
     if (int err = uv_udp_init(&loop_, &handle_)) {
         roc_log(LogError, "udp sender: uv_udp_init(): [%s] %s", uv_err_name(err),
                 uv_strerror(err));
@@ -76,6 +73,9 @@ bool UDPSender::start(packet::Address& bind_address) {
         return false;
     }
 
+    roc_log(LogInfo, "udp sender: opened port %s",
+            packet::address_to_str(bind_address).c_str());
+
     stopped_ = false;
     address_ = bind_address;
     return true;
@@ -94,7 +94,7 @@ void UDPSender::stop() {
 void UDPSender::close_() {
     if (handle_initialized_) {
         if (!uv_is_closing((uv_handle_t*)&handle_)) {
-            roc_log(LogDebug, "udp sender: closing port %s",
+            roc_log(LogInfo, "udp sender: closing port %s",
                     packet::address_to_str(address_).c_str());
             uv_close((uv_handle_t*)&handle_, NULL);
         }
@@ -158,7 +158,7 @@ void UDPSender::write_sem_cb_(uv_async_t* handle) {
 
         self.packet_counter_++;
 
-        roc_log(LogTrace, "udp sender: sending datagram: num=%u src=%s dst=%s sz=%ld",
+        roc_log(LogTrace, "udp sender: sending packet: num=%u src=%s dst=%s sz=%ld",
                 self.packet_counter_, packet::address_to_str(self.address_).c_str(),
                 packet::address_to_str(udp.dst_addr).c_str(), (long)pp->data().size());
 
@@ -197,7 +197,7 @@ void UDPSender::send_cb_(uv_udp_send_t* req, int status) {
 
     if (status < 0) {
         roc_log(LogError, "udp sender:"
-                          " can't send datagram: src=%s dst=%s sz=%ld: [%s] %s",
+                          " can't send packet: src=%s dst=%s sz=%ld: [%s] %s",
                 packet::address_to_str(self.address_).c_str(),
                 packet::address_to_str(pp->udp()->dst_addr).c_str(),
                 (long)pp->data().size(), uv_err_name(status), uv_strerror(status));
