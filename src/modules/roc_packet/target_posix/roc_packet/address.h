@@ -16,6 +16,7 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 
+#include "roc_core/endian.h"
 #include "roc_core/stddefs.h"
 
 namespace roc {
@@ -26,22 +27,22 @@ class Address {
 public:
     //! Construct invalid address.
     Address() {
-        memset(&ss, 0, sizeof(ss));
+        memset(&ss_, 0, sizeof(ss_));
     }
 
     //! Get sockaddr struct.
     sockaddr* saddr() {
-        return (sockaddr*)&ss;
+        return (sockaddr*)&ss_;
     }
 
     //! Get sockaddr struct.
     const sockaddr* saddr() const {
-        return (const sockaddr*)&ss;
+        return (const sockaddr*)&ss_;
     }
 
     //! Get sockaddr struct length.
     socklen_t slen() const {
-        return sizeof_(ss.ss_family);
+        return sizeof_(ss_.ss_family);
     }
 
     //! Copy given sockaddr struct to this address.
@@ -52,6 +53,20 @@ public:
         }
         memcpy(saddr(), sa, sz);
         return true;
+    }
+
+    //! Get address port.
+    //! @remarks
+    //!  Returns -1 if this is not an internet address.
+    int port() const {
+        switch (ss_.ss_family) {
+        case AF_INET:
+            return ROC_NTOH_16(((const sockaddr_in*)&ss_)->sin_port);
+        case AF_INET6:
+            return ROC_NTOH_16(((const sockaddr_in6*)&ss_)->sin6_port);
+        default:
+            return -1;
+        }
     }
 
     //! Compare addresses.
@@ -82,7 +97,7 @@ private:
         }
     }
 
-    sockaddr_storage ss;
+    sockaddr_storage ss_;
 };
 
 } // namespace packet

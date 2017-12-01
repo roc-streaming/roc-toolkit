@@ -34,6 +34,19 @@ TEST(address, ipv6) {
     STRCMP_EQUAL("[2001:db8::1]:123", address_to_str(addr).c_str());
 }
 
+TEST(address, port) {
+    Address addr1;
+    LONGS_EQUAL(-1, addr1.port());
+
+    Address addr2;
+    CHECK(parse_address("1.2.3.4:0", addr2));
+    LONGS_EQUAL(0, addr2.port());
+
+    Address addr3;
+    CHECK(parse_address("1.2.3.4:123", addr3));
+    LONGS_EQUAL(123, addr3.port());
+}
+
 TEST(address, eq) {
     Address addr1;
     CHECK(parse_address("1.2.3.4:123", addr1));

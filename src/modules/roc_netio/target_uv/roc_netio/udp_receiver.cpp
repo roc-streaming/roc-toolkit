@@ -48,7 +48,12 @@ bool UDPReceiver::start(packet::Address& bind_address) {
     handle_.data = this;
     handle_initialized_ = true;
 
-    if (int err = uv_udp_bind(&handle_, bind_address.saddr(), UV_UDP_REUSEADDR)) {
+    unsigned flags = 0;
+    if (bind_address.port() > 0) {
+        flags |= UV_UDP_REUSEADDR;
+    }
+
+    if (int err = uv_udp_bind(&handle_, bind_address.saddr(), flags)) {
         roc_log(LogError, "udp receiver: uv_udp_bind(): [%s] %s", uv_err_name(err),
                 uv_strerror(err));
         return false;
