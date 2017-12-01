@@ -166,8 +166,8 @@ bool Receiver::create_session_(const packet::PacketPtr& packet) {
     const packet::Address src_address = packet->udp()->src_addr;
 
     core::SharedPtr<ReceiverSession> sess = new (allocator_)
-        ReceiverSession(config_.default_session, config_.sample_rate, src_address,
-                        format_map_, packet->rtp()->payload_type, packet_pool_,
+        ReceiverSession(config_.default_session, packet->rtp()->payload_type,
+                        config_.sample_rate, src_address, format_map_, packet_pool_,
                         byte_buffer_pool_, sample_buffer_pool_, allocator_);
 
     if (!sess || !sess->valid()) {
