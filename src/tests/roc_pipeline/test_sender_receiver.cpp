@@ -62,13 +62,11 @@ core::HeapAllocator allocator;
 core::BufferPool<audio::sample_t> sample_buffer_pool(allocator, MaxBufSize, 1);
 core::BufferPool<uint8_t> byte_buffer_pool(allocator, MaxBufSize, 1);
 packet::PacketPool packet_pool(allocator, 1);
-
+rtp::FormatMap format_map;
 } // namespace
 
 TEST_GROUP(sender_receiver) {
     void send_receive(int flags) {
-        rtp::FormatMap format_map;
-
         packet::ConcurrentQueue queue(0, false);
 
         PortConfig source_port = source_port_config(flags);
@@ -199,6 +197,51 @@ TEST_GROUP(sender_receiver) {
 
         return config;
     }
+
+    void read_queued_packets(packet::ConcurrentQueue& queue,
+            packet::ConcurrentQueue& source_queue,
+            packet::ConcurrentQueue& repair_queue) {
+
+        int idx = 0;
+        for (;;) {
+            if (source_queue.size() == 0 && repair_queue.size() == 0) {
+                break;
+            }
+
+            if (idx++ % 2 == 0) {
+                if (packet::PacketPtr pp = source_queue.read()) {
+                    queue.write(pp);
+                    continue;
+                }
+
+                while (packet::PacketPtr pp = repair_queue.read()) {
+                    queue.write(pp);
+                }
+            } else {
+                if (packet::PacketPtr pp = repair_queue.read()) {
+                    queue.write(pp);
+                    continue;
+                }
+
+                while (packet::PacketPtr pp = source_queue.read()) {
+                    queue.write(pp);
+                }
+            }
+        }
+    }
+
+    void transfer_and_read_packets(int flags, size_t num_sessions, Receiver& receiver,
+                                   packet::IReader& reader) {
+
+        transfer_packets(flags, reader, receiver);
+        FrameReader frame_reader(receiver, sample_buffer_pool);
+
+        for (size_t nf = 0; nf < ManyFrames; nf++) {
+            frame_reader.read_samples(SamplesPerFrame * NumCh, num_sessions);
+        }
+
+        CHECK(receiver.num_sessions() == num_sessions);
+    }
 };
 
 TEST(sender_receiver, bare) {
@@ -220,6 +263,58 @@ TEST(sender_receiver, fec_interleaving) {
 
 TEST(sender_receiver, fec_loss) {
     send_receive(FlagFEC | FlagLoss);
+}
+
+TEST(sender_receiver, one_session_drop_leading_repair_packets) {
+    packet::ConcurrentQueue queue(0, false);
+
+    PortConfig source_port = source_port_config(FlagFEC);
+    PortConfig repair_port = repair_port_config(FlagFEC);
+
+    Sender sender(sender_config(FlagFEC, source_port, repair_port),
+                  queue,
+                  queue,
+                  format_map,
+                  packet_pool,
+                  byte_buffer_pool,
+                  allocator);
+
+    CHECK(sender.valid());
+
+    Receiver receiver(receiver_config(FlagFEC),
+                      format_map,
+                      packet_pool,
+                      byte_buffer_pool,
+                      sample_buffer_pool,
+                      allocator);
+
+    CHECK(receiver.valid());
+
+    CHECK(receiver.add_port(source_port));
+    CHECK(receiver.add_port(repair_port));
+
+    FrameWriter frame_writer(sender, sample_buffer_pool);
+
+    for (size_t nf = 0; nf < ManyFrames; nf++) {
+        frame_writer.write_samples(SamplesPerFrame * NumCh);
+    }
+
+    packet::ConcurrentQueue source_queue(0, false);
+    packet::ConcurrentQueue repair_queue(0, false);
+
+    while (packet::PacketPtr pp = queue.read()) {
+        if (pp->flags() & packet::Packet::FlagRepair) {
+            repair_queue.write(pp);
+        } else {
+            source_queue.write(pp);
+        }
+    }
+
+    queue.write(repair_queue.read());
+    transfer_and_read_packets(FlagFEC, 0, receiver, queue);
+
+    read_queued_packets(queue, source_queue, repair_queue);
+    transfer_and_read_packets(FlagFEC, 1, receiver, queue);
 }
 #endif //! ROC_TARGET_OPENFEC
 
