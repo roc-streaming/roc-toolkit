@@ -158,6 +158,11 @@ bool Receiver::create_session_(const packet::PacketPtr& packet) {
         return false;
     }
 
+    if (!packet->rtp()) {
+        roc_log(LogError, "receiver: can't create session, unexpected non-rtp packet");
+        return false;
+    }
+
     const packet::Address src_address = packet->udp()->src_addr;
 
     core::SharedPtr<ReceiverSession> sess = new (allocator_)
