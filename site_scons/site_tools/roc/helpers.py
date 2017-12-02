@@ -332,13 +332,14 @@ def ImportThridParty(env, host, toolchain, versions, name, includes=[], libs=['*
             '#3rdparty/%s/build/%s/include/%s' % (host, vname, s)
         ])
 
-    env.Prepend(LIBPATH=[
-        '#3rdparty/%s/build/%s/lib' % (host, vname)
-        ])
+    libdir = '#3rdparty/%s/build/%s/lib' % (host, vname)
 
-    for lib in env.RecursiveGlob('#3rdparty/%s/build/%s/lib' % (host, vname), 'lib*'):
-        if needlib(lib.path):
-            env.Prepend(LIBS=[env.File(lib)])
+    if os.path.isdir(env.Dir(libdir).abspath):
+        env.Prepend(LIBPATH=[libdir])
+
+        for lib in env.RecursiveGlob(libdir, 'lib*'):
+            if needlib(lib.path):
+                env.Prepend(LIBS=[env.File(lib)])
 
 def DeleteFile(env, path):
     path = env.File(path).path
