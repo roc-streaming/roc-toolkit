@@ -42,9 +42,9 @@ enum {
 
     PacketSamples = 100,
     FrameSamples = PacketSamples * 2,
-    TotalSamples = PacketSamples * SourcePackets * 5,
+    TotalSamples = PacketSamples * SourcePackets * 3,
 
-    Latency = PacketSamples * SourcePackets * 3 / NumChans,
+    Latency = TotalSamples / NumChans,
     Timeout = TotalSamples * 10
 };
 
