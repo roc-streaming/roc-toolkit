@@ -131,6 +131,13 @@ AddOption('--disable-openfec',
           action='store_true',
           help='disable OpenFEC support required for FEC codes')
 
+AddOption('--with-pulseaudio',
+          dest='with_pulseaudio',
+          action='store',
+          type='string',
+          help=("path to the fully built pulseaudio source directory used when "+
+                "building pulseaudio modules"))
+
 AddOption('--build-3rdparty',
           dest='build_3rdparty',
           action='store',
@@ -477,6 +484,7 @@ if not GetOption('disable_tests'):
 if not GetOption('disable_tools'):
     all_dependencies.add('target_gengetopt')
 
+if not GetOption('disable_tools') or GetOption('enable_pulseaudio_modules'):
     if platform in ['linux']:
         all_dependencies.add('target_alsa')
         all_dependencies.add('target_pulseaudio')
@@ -546,6 +554,25 @@ if 'target_openfec' in system_dependecies:
             "openfec has no LDPC-Staircase codec support (OF_USE_LDPC_STAIRCASE_CODEC)")
 
     env = conf.Finish()
+
+if 'target_pulseaudio' in system_dependecies and GetOption('enable_pulseaudio_modules'):
+    pa_dir = GetOption('with_pulseaudio')
+    if not pa_dir:
+        env.Die('--enable-pulseaudio-modules requires either --with-pulseaudio=PATH'+
+                ' or --build-3rdparty=pulseaudio')
+
+    pulse_env.Append(CPPPATH=[
+        pa_dir,
+        pa_dir + '/src',
+    ])
+
+    for lib in ['libpulsecore-*.so', 'libpulsecommon-*.so']:
+        path = '%s/src/.libs/%s' % (pa_dir, lib)
+        libs = env.Glob(path)
+        if not libs:
+            env.Die(("can't find %s, seems like --with-pulseaudio doesn't point"+
+                    " to a properly built pulseaudio source tree") % path)
+        pulse_env.Append(LIBS=libs)
 
 if 'target_sox' in system_dependecies:
     conf = Configure(tool_env, custom_tests=env.CustomTests)
