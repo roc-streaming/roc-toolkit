@@ -58,10 +58,10 @@ public:
            packet::Address dst_source_addr,
            packet::Address dst_repair_addr,
            float* samples,
-           size_t len,
+           size_t total_samples,
            size_t frame_size)
         : samples_(samples)
-        , sz_(len)
+        , total_samples_(total_samples)
         , frame_size_(frame_size) {
         packet::Address addr;
         CHECK(packet::parse_address("127.0.0.1:0", addr));
@@ -83,9 +83,9 @@ public:
 
 private:
     virtual void run() {
-        for (size_t off = 0; off < sz_; off += frame_size_) {
-            if (off + frame_size_ > sz_) {
-                off = sz_ - frame_size_;
+        for (size_t off = 0; off < total_samples_; off += frame_size_) {
+            if (off + frame_size_ > total_samples_) {
+                off = total_samples_ - frame_size_;
             }
             const ssize_t ret = roc_sender_write(sndr_, samples_ + off, frame_size_);
             LONGS_EQUAL(frame_size_, ret);
@@ -94,7 +94,7 @@ private:
 
     roc_sender* sndr_;
     float* samples_;
-    const size_t sz_;
+    const size_t total_samples_;
     const size_t frame_size_;
 };
 
@@ -102,10 +102,10 @@ class Receiver {
 public:
     Receiver(roc_receiver_config& config,
              const float* samples,
-             size_t len,
+             size_t total_samples,
              size_t frame_size)
         : samples_(samples)
-        , sz_(len)
+        , total_samples_(total_samples)
         , frame_size_(frame_size) {
         CHECK(packet::parse_address("127.0.0.1:0", source_addr_));
         CHECK(packet::parse_address("127.0.0.1:0", repair_addr_));
@@ -132,46 +132,46 @@ public:
 
     void run() {
         float rx_buff[MaxBufSize];
-        size_t s_first = 0;
-        size_t inner_cntr = 0;
-        bool seek_first = true;
-        size_t s_last = 0;
 
-        size_t ipacket = 0;
-        while (s_last == 0) {
+        size_t leading_zeros = 0;
+        size_t sample_num = 0;
+        size_t frame_num = 0;
+
+        bool seek_first = true;
+        bool finish = false;
+
+        while (!finish) {
             size_t i = 0;
-            ipacket++;
+            frame_num++;
             LONGS_EQUAL(frame_size_, roc_receiver_read(recv_, rx_buff, frame_size_));
             if (seek_first) {
-                for (; i < frame_size_ && is_zero_(rx_buff[i]); i++, s_first++) {
+                for (; i < frame_size_ && is_zero_(rx_buff[i]); i++, leading_zeros++) {
                 }
-                CHECK(s_first < Timeout);
+                CHECK(leading_zeros < Timeout);
                 if (i < frame_size_) {
                     seek_first = false;
                 }
             }
             if (!seek_first) {
                 for (; i < frame_size_; i++) {
-                    if (inner_cntr >= sz_) {
+                    if (sample_num >= total_samples_) {
                         CHECK(is_zero_(rx_buff[i]));
-                        s_last = inner_cntr + s_first;
-                        roc_log(LogDebug,
-                                "finish: s_first: %lu, s_last: %lu, inner_cntr: %lu",
-                                (unsigned long)s_first, (unsigned long)s_last,
-                                (unsigned long)inner_cntr);
+                        finish = true;
+                        roc_log(LogDebug, "finish: leading_zeros: %lu, num_samples: %lu",
+                                (unsigned long)leading_zeros, (unsigned long)sample_num);
                         break;
-                    } else if (!is_zero_(samples_[inner_cntr] - rx_buff[i])) {
+                    } else if (!is_zero_(samples_[sample_num] - rx_buff[i])) {
                         char sbuff[256];
                         int sbuff_i =
                             snprintf(sbuff, sizeof(sbuff),
-                                     "failed comparing sample #%lu\n\npacket_num: %lu\n",
-                                     (unsigned long)inner_cntr, (unsigned long)ipacket);
+                                     "failed comparing sample #%lu\n\nframe_num: %lu\n",
+                                     (unsigned long)sample_num, (unsigned long)frame_num);
                         snprintf(&sbuff[sbuff_i], sizeof(sbuff) - (size_t)sbuff_i,
                                  "original: %f,\treceived: %f\n",
-                                 (double)samples_[inner_cntr], (double)rx_buff[i]);
+                                 (double)samples_[sample_num], (double)rx_buff[i]);
                         FAIL(sbuff);
                     } else {
-                        inner_cntr++;
+                        sample_num++;
                     }
                 }
             }
@@ -189,7 +189,7 @@ private:
     packet::Address repair_addr_;
 
     const float* samples_;
-    const size_t sz_;
+    const size_t total_samples_;
     const size_t frame_size_;
 };
 
