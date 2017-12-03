@@ -17,13 +17,13 @@ namespace core {
 
 namespace {
 
-LogLevel g_log_level = LogError;
-LogHandler g_log_handler = NULL;
+LogLevel log_level = LogError;
+LogHandler log_handler = NULL;
 
 } // namespace
 
 LogLevel get_log_level() {
-    return g_log_level;
+    return log_level;
 }
 
 LogLevel set_log_level(LogLevel level) {
@@ -33,19 +33,19 @@ LogLevel set_log_level(LogLevel level) {
     if ((int)level > LogTrace) {
         level = LogTrace;
     }
-    LogLevel ret = g_log_level;
-    g_log_level = level;
+    LogLevel ret = log_level;
+    log_level = level;
     return ret;
 }
 
 LogHandler set_log_handler(LogHandler handler) {
-    LogHandler ret = g_log_handler;
-    g_log_handler = handler;
+    LogHandler ret = log_handler;
+    log_handler = handler;
     return ret;
 }
 
 void log(const char* module, LogLevel level, const char* format, ...) {
-    if (level > g_log_level || level == LogNone) {
+    if (level > log_level || level == LogNone) {
         return;
     }
 
@@ -56,8 +56,8 @@ void log(const char* module, LogLevel level, const char* format, ...) {
     vsnprintf(message, sizeof(message) - 1, format, args);
     va_end(args);
 
-    if (g_log_handler) {
-        g_log_handler(level, module, message);
+    if (log_handler) {
+        log_handler(level, module, message);
     } else {
         const char* prefix = "?";
 
