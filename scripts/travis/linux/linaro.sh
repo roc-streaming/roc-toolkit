@@ -10,8 +10,9 @@ scons -Q clean
 PATH="/opt/toolchains/${TOOLCHAIN}/bin:${PATH}" \
     scons -Q \
     --enable-werror \
-    --host=${TOOLCHAIN} \
-    --build-3rdparty=uv,openfec,alsa,pulseaudio,sox,cpputest
+    --enable-pulseaudio-modules \
+    --build-3rdparty=uv,openfec,alsa,pulseaudio,sox,cpputest \
+    --host=${TOOLCHAIN}
 
 find bin/${TOOLCHAIN} -name 'roc-test-*' \
      -not -name 'roc-test-lib' |\
