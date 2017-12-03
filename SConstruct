@@ -556,10 +556,17 @@ if 'target_openfec' in system_dependecies:
     env = conf.Finish()
 
 if 'target_pulseaudio' in system_dependecies and GetOption('enable_pulseaudio_modules'):
+    conf = Configure(pulse_env, custom_tests=env.CustomTests)
+
+    if not conf.CheckLibWithHeaderUniq('ltdl', 'ltdl.h', 'c'):
+        env.Die("ltdl not found (see 'config.log' for details)")
+
+    pulse_env = conf.Finish()
+
     pa_dir = GetOption('with_pulseaudio')
     if not pa_dir:
-        env.Die('--enable-pulseaudio-modules requires either --with-pulseaudio=PATH'+
-                ' or --build-3rdparty=pulseaudio')
+        env.Die('--enable-pulseaudio-modules requires either --with-pulseaudio'+
+                'or --build-3rdparty=pulseaudio')
 
     pulse_env.Append(CPPPATH=[
         pa_dir,
@@ -570,8 +577,7 @@ if 'target_pulseaudio' in system_dependecies and GetOption('enable_pulseaudio_mo
         path = '%s/src/.libs/%s' % (pa_dir, lib)
         libs = env.Glob(path)
         if not libs:
-            env.Die(("can't find %s, seems like --with-pulseaudio doesn't point"+
-                    " to a properly built pulseaudio source tree") % path)
+            env.Die("can't find %s" % path)
         pulse_env.Append(LIBS=libs)
 
 if 'target_sox' in system_dependecies:
@@ -647,6 +653,7 @@ if 'target_pulseaudio' in download_dependencies:
     tool_env.ThirdParty(host, toolchain, thirdparty_variant, thirdparty_versions,
                         'pulseaudio', deps=pa_deps, libs=['pulse', 'pulse-simple'])
 
+    pulse_env.ImportThridParty(host, toolchain, thirdparty_versions, 'ltdl')
     pulse_env.ImportThridParty(host, toolchain, thirdparty_versions, 'pulseaudio',
                                libs=[
                                    'pulsecore-%s' % thirdparty_versions['pulseaudio'],
