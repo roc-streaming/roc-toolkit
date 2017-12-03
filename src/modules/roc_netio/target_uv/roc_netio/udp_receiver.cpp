@@ -146,18 +146,17 @@ void UDPReceiver::recv_cb_(uv_udp_t* handle,
     roc_panic_if_not(buf);
 
     UDPReceiver& self = *(UDPReceiver*)handle->data;
-    self.packet_counter_++;
 
     packet::Address src_addr;
     if (sockaddr) {
         if (!src_addr.set_saddr(sockaddr)) {
-            roc_log(LogError, "udp receiver: can't determine source address");
+            roc_log(
+                LogError,
+                "udp receiver: can't determine source address: num=%u dst=%s nread=%ld",
+                self.packet_counter_, packet::address_to_str(self.address_).c_str(),
+                (long)nread);
         }
     }
-
-    roc_log(LogTrace, "udp receiver: received packet: num=%u src=%s dst=%s nread=%ld",
-            self.packet_counter_, packet::address_to_str(src_addr).c_str(),
-            packet::address_to_str(self.address_).c_str(), (long)nread);
 
     core::SharedPtr<core::Buffer<uint8_t> > bp =
         core::Buffer<uint8_t>::container_of(buf->base);
@@ -199,8 +198,14 @@ void UDPReceiver::recv_cb_(uv_udp_t* handle,
         return;
     }
 
+    self.packet_counter_++;
+
+    roc_log(LogTrace, "udp receiver: received packet: num=%u src=%s dst=%s nread=%ld",
+            self.packet_counter_, packet::address_to_str(src_addr).c_str(),
+            packet::address_to_str(self.address_).c_str(), (long)nread);
+
     if ((size_t)nread > bp->size()) {
-        roc_panic("udp receiver: unexpected buffer size (got %ld, max %ld)", (long)nread,
+        roc_panic("udp receiver: unexpected buffer size: got %ld, max %ld", (long)nread,
                   (long)bp->size());
     }
 
