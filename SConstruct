@@ -633,10 +633,10 @@ if 'target_alsa' in download_dependencies:
     tool_env.ThirdParty(host, toolchain, thirdparty_variant, thirdparty_versions, 'alsa')
 
 if 'target_pulseaudio' in download_dependencies:
-    if not 'target_pulseaudio' in explicit_version and not crosscompile:
-      pa_ver = env.ToolVersion(['pulseaudio', '--version'])
-      if pa_ver:
-        thirdparty_versions['pulseaudio'] = pa_ver
+    if not 'pulseaudio' in explicit_version and not crosscompile:
+        pa_ver = env.ToolVersion(['pulseaudio', '--version'])
+        if pa_ver:
+            thirdparty_versions['pulseaudio'] = pa_ver
 
     pa_deps = [
         'ltdl',
