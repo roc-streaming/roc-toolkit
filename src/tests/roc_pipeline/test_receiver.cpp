@@ -227,13 +227,11 @@ TEST(receiver, initial_latency_timeout) {
 
     FrameReader frame_reader(receiver, sample_buffer_pool);
 
-    packet_writer.write_packets(1, SamplesPerPacket, ChMask);
+    packet_writer.write_packets(NumPackets, SamplesPerPacket, ChMask);
 
-    for (size_t np = 0; np < NumPackets; np++) {
-        for (size_t nf = 0; nf < FramesPerPacket; nf++) {
-            frame_reader.skip_zeros(SamplesPerFrame * NumCh);
-        }
-
+    size_t it = (NumPackets * SamplesPerPacket) / SamplesPerFrame;
+    for (size_t nf = 0; nf < (it * 2) - 1; nf++) {
+        frame_reader.skip_zeros(SamplesPerFrame * NumCh);
         UNSIGNED_LONGS_EQUAL(1, receiver.num_sessions());
     }
 

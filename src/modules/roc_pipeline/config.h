@@ -87,6 +87,11 @@ struct SessionConfig {
     //!  If there are no new packets during this period, the session is terminated.
     packet::timestamp_t timeout;
 
+    //! Window during which frames with a skip flag are detected.
+    //! @remarks
+    //!  If at least one frame has this flag, the session should be terminated.
+    size_t skip_window_sz;
+
     //! FEC scheme parameters.
     fec::Config fec;
 
@@ -110,6 +115,7 @@ struct SessionConfig {
         , samples_per_packet(DefaultPacketSize)
         , latency(DefaultPacketSize * 27)
         , timeout(DefaultSampleRate * 2)
+        , skip_window_sz(5)
         , fe_update_interval(256)
         , resampling(false)
         , beep(false) {
