@@ -1,18 +1,18 @@
 /*
- * Copyright (c) 2015 Roc authors
+ * Copyright (c) 2018 Roc authors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_packet/watchdog.h"
+#include "roc_audio/watchdog.h"
 #include "roc_core/log.h"
 
 namespace roc {
-namespace packet {
+namespace audio {
 
-Watchdog::Watchdog(IReader& reader, timestamp_t timeout)
+Watchdog::Watchdog(IReader& reader, packet::timestamp_t timeout)
     : reader_(reader)
     , timeout_(timeout)
     , update_time_(0)
@@ -21,22 +21,21 @@ Watchdog::Watchdog(IReader& reader, timestamp_t timeout)
     , alive_(true) {
 }
 
-PacketPtr Watchdog::read() {
+void Watchdog::read(Frame& frame) {
     if (!alive_) {
-        return NULL;
+        return;
     }
 
-    PacketPtr packet = reader_.read();
-    if (!packet) {
-        return NULL;
+    reader_.read(frame);
+
+    if (frame.flags() & audio::Frame::FlagEmpty) {
+        return;
     }
 
     read_time_ = update_time_;
-
-    return packet;
 }
 
-bool Watchdog::update(timestamp_t time) {
+bool Watchdog::update(packet::timestamp_t time) {
     if (!alive_) {
         return false;
     }
@@ -60,5 +59,5 @@ bool Watchdog::update(timestamp_t time) {
     return true;
 }
 
-} // namespace packet
+} // namespace audio
 } // namespace roc
