@@ -7,8 +7,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include <uv.h>
 #include <stdio.h>
+#include <uv.h>
 
 #include "roc_core/endian.h"
 #include "roc_core/errno_to_str.h"

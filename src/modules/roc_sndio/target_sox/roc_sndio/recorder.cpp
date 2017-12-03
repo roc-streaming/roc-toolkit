@@ -121,10 +121,9 @@ bool Recorder::open(const char* name, const char* type) {
 
     is_file_ = !(input_->handler.flags & SOX_FILE_DEVICE);
 
-    roc_log(LogInfo,
-            "recorder:"
-            " in_bits=%lu out_bits=%lu in_rate=%lu out_rate=%lu"
-            " in_ch=%lu, out_ch=%lu, is_file=%d",
+    roc_log(LogInfo, "recorder:"
+                     " in_bits=%lu out_bits=%lu in_rate=%lu out_rate=%lu"
+                     " in_ch=%lu, out_ch=%lu, is_file=%d",
             (unsigned long)input_->encoding.bits_per_sample,
             (unsigned long)out_signal_.precision, (unsigned long)input_->signal.rate,
             (unsigned long)out_signal_.rate, (unsigned long)input_->signal.channels,

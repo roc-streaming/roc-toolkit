@@ -64,7 +64,7 @@ private:
     const size_t payload_size_;
 
     packet::PacketPtr make_repair_packet_(packet::seqnum_t n);
-    void fill_packet_fec_id_(const packet::PacketPtr &packet, packet::seqnum_t n);
+    void fill_packet_fec_id_(const packet::PacketPtr& packet, packet::seqnum_t n);
 
     IEncoder& encoder_;
     packet::IWriter& writer_;

@@ -64,10 +64,10 @@ void Writer::write(const packet::PacketPtr& pp) {
         cur_block_source_sn_ = pp->rtp()->seqnum;
     }
 
-
     pp->add_flags(packet::Packet::FlagComposed);
     fill_packet_fec_id_(pp, (packet::seqnum_t)cur_packet_);
-    roc_panic_if_not(ROC_UNSIGNED_LE(packet::signed_seqnum_t, pp->rtp()->seqnum, pp->fec()->blknum + n_source_packets_));
+    roc_panic_if_not(ROC_UNSIGNED_LE(packet::signed_seqnum_t, pp->rtp()->seqnum,
+                                     pp->fec()->blknum + n_source_packets_));
 
     if (!source_composer_.compose(*pp)) {
         roc_panic("fec writer: can't compose packet");
@@ -150,7 +150,8 @@ packet::PacketPtr Writer::make_repair_packet_(packet::seqnum_t n) {
     return packet;
 }
 
-void Writer::fill_packet_fec_id_(const packet::PacketPtr &packet, packet::seqnum_t pack_n) {
+void Writer::fill_packet_fec_id_(const packet::PacketPtr& packet,
+                                 packet::seqnum_t pack_n) {
     packet::FEC& fec = *packet->fec();
 
     fec.blknum = cur_block_source_sn_;

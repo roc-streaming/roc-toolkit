@@ -150,7 +150,7 @@ TEST(resampler, upscaling_twice_single) {
 // Check upsampling quality and the cut-off band with white noise.
 #ifdef ROC_TARGET_DARWIN
 IGNORE_TEST(resampler, upscaling_twice_awgn) {
-#else // !ROC_TARGET_DARWIN
+#else  // !ROC_TARGET_DARWIN
 TEST(resampler, upscaling_twice_awgn) {
 #endif // ROC_TARGET_DARWIN
 

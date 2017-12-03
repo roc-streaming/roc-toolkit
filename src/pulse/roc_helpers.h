@@ -16,8 +16,8 @@
 #include <roc/log.h>
 
 /* system headers */
-#include <sys/socket.h>
 #include <netinet/in.h>
+#include <sys/socket.h>
 
 #define DEFAULT_IP "0.0.0.0"
 #define DEFAULT_SOURCE_PORT "10001"

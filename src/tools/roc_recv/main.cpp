@@ -164,7 +164,7 @@ int main(int argc, char** argv) {
 
     if (config.sample_rate == 0) {
         roc_log(LogError, "can't detect output sample rate, try to set it "
-                "explicitly with --rate option");
+                          "explicitly with --rate option");
         return 1;
     }
 
