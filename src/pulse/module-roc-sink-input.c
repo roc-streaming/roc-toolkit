@@ -20,6 +20,7 @@
 #include <pulsecore/log.h>
 
 /* roc headers */
+#include <roc/log.h>
 #include <roc/receiver.h>
 
 /* system headers */
@@ -139,6 +140,10 @@ void pa__done(pa_module*);
 
 int pa__init(pa_module* m) {
     pa_assert(m);
+
+    /* setup logs */
+    roc_log_set_level(ROC_LOG_DEBUG);
+    roc_log_set_handler(log_handler);
 
     /* prepare sample spec and channel map used in this sink */
     pa_sample_spec sample_spec;

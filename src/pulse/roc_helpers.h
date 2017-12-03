@@ -12,6 +12,9 @@
 /* private pulseaudio headers */
 #include <pulsecore/modargs.h>
 
+/* roc headers */
+#include <roc/log.h>
+
 /* system headers */
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -19,6 +22,8 @@
 #define DEFAULT_IP "0.0.0.0"
 #define DEFAULT_SOURCE_PORT "10001"
 #define DEFAULT_REPAIR_PORT "10002"
+
+void log_handler(roc_log_level level, const char* module, const char* message);
 
 int parse_address(struct sockaddr_in* addr,
                   pa_modargs* args,

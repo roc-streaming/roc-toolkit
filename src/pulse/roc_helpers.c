@@ -16,6 +16,26 @@
 /* local headers */
 #include "roc_helpers.h"
 
+void log_handler(roc_log_level level, const char* module, const char* message) {
+    switch (level) {
+    case ROC_LOG_NONE:
+        return;
+
+    case ROC_LOG_ERROR:
+        pa_log_level_meta(PA_LOG_ERROR, module, -1, NULL, "%s", message);
+        return;
+
+    case ROC_LOG_INFO:
+        pa_log_level_meta(PA_LOG_INFO, module, -1, NULL, "%s", message);
+        return;
+
+    case ROC_LOG_DEBUG:
+    case ROC_LOG_TRACE:
+        pa_log_level_meta(PA_LOG_DEBUG, module, -1, NULL, "%s", message);
+        return;
+    }
+}
+
 int parse_address(struct sockaddr_in* addr,
                   pa_modargs* args,
                   const char* ip_arg,
