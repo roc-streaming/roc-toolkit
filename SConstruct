@@ -784,6 +784,7 @@ if compiler == 'gcc':
             '-Wformat=2',
             '-Wformat-security',
             '-Wno-system-headers',
+            '-Wno-psabi',
         ]})
 
     env.Append(CXXFLAGS=[

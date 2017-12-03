@@ -12,6 +12,7 @@
 #ifndef ROC_TYPES_H_
 #define ROC_TYPES_H_
 
+#include <netinet/in.h>
 #include <stddef.h>
 #include <unistd.h>
 
