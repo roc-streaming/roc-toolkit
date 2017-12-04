@@ -316,5 +316,45 @@ TEST(sorted_queue, overflow_out_of_order) {
     CHECK(!queue.read());
 }
 
+TEST(sorted_queue, latest) {
+    SortedQueue queue(0);
+
+    PacketPtr p1 = new_packet(1);
+    PacketPtr p2 = new_packet(3);
+    PacketPtr p3 = new_packet(2);
+    PacketPtr p4 = new_packet(4);
+
+    LONGS_EQUAL(0, queue.size());
+    CHECK(!queue.latest());
+
+    queue.write(p1);
+    LONGS_EQUAL(1, queue.size());
+    CHECK(queue.latest() == p1);
+
+    queue.write(p2);
+    LONGS_EQUAL(2, queue.size());
+    CHECK(queue.latest() == p2);
+
+    queue.write(p3);
+    LONGS_EQUAL(3, queue.size());
+    CHECK(queue.latest() == p2);
+
+    CHECK(queue.read());
+    LONGS_EQUAL(2, queue.size());
+    CHECK(queue.latest() == p2);
+
+    CHECK(queue.read());
+    LONGS_EQUAL(1, queue.size());
+    CHECK(queue.latest() == p2);
+
+    CHECK(queue.read());
+    LONGS_EQUAL(0, queue.size());
+    CHECK(queue.latest() == p2);
+
+    queue.write(p4);
+    LONGS_EQUAL(1, queue.size());
+    CHECK(queue.latest() == p4);
+}
+
 } // namespace packet
 } // namespace roc

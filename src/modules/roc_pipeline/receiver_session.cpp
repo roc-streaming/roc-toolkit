@@ -30,21 +30,9 @@ ReceiverSession::ReceiverSession(const SessionConfig& config,
     : src_address_(src_address)
     , allocator_(allocator)
     , audio_reader_(NULL) {
-    roc_panic_if(out_sample_rate == 0);
-
     const rtp::Format* format = format_map.format(payload_type);
     if (!format) {
         return;
-    }
-
-    if (config.resampling) {
-        resampler_updater_.reset(new (allocator_) audio::ResamplerUpdater(
-                                     config.fe_update_interval, config.latency,
-                                     (float)format->sample_rate / out_sample_rate),
-                                 allocator_);
-        if (!resampler_updater_) {
-            return;
-        }
     }
 
     queue_router_.reset(new (allocator_) packet::Router(allocator_, 2), allocator_);
@@ -58,11 +46,6 @@ ReceiverSession::ReceiverSession(const SessionConfig& config,
     }
 
     packet::IWriter* pwriter = source_queue_.get();
-
-    if (config.resampling) {
-        resampler_updater_->set_writer(*pwriter);
-        pwriter = resampler_updater_.get();
-    }
 
     if (!queue_router_->add_route(*pwriter, packet::Packet::FlagAudio)) {
         return;
@@ -140,11 +123,6 @@ ReceiverSession::ReceiverSession(const SessionConfig& config,
     }
 #endif // ROC_TARGET_OPENFEC
 
-    if (config.resampling) {
-        resampler_updater_->set_reader(*preader);
-        preader = resampler_updater_.get();
-    }
-
     decoder_.reset(format->new_decoder(allocator_), allocator_);
     if (!decoder_) {
         return;
@@ -167,8 +145,16 @@ ReceiverSession::ReceiverSession(const SessionConfig& config,
         if (!resampler_) {
             return;
         }
-        resampler_updater_->set_resampler(*resampler_);
         areader = resampler_.get();
+    }
+
+    latency_monitor_.reset(new (allocator_) audio::LatencyMonitor(
+                               *source_queue_, *depacketizer_, resampler_.get(),
+                               config.fe_update_interval, config.latency,
+                               format->sample_rate, out_sample_rate),
+                           allocator_);
+    if (!latency_monitor_ || !latency_monitor_->valid()) {
+        return;
     }
 
     audio_reader_ = areader;
@@ -213,8 +199,8 @@ bool ReceiverSession::update(packet::timestamp_t time) {
         }
     }
 
-    if (resampler_updater_) {
-        if (!resampler_updater_->update(time)) {
+    if (latency_monitor_) {
+        if (!latency_monitor_->update(time)) {
             return false;
         }
     }

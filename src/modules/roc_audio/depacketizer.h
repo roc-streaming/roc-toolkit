@@ -44,6 +44,14 @@ public:
     //! Read audio frame.
     virtual void read(Frame& frame);
 
+    //! Did depacketizer catch first packet?
+    bool is_started() const;
+
+    //! Get next timestamp to be rendered.
+    //! @pre
+    //!  is_started() should return true
+    packet::timestamp_t timestamp() const;
+
 private:
     void read_frame_(Frame& frame);
 

@@ -63,8 +63,16 @@ public:
     //!  Returned packet is not removed from the queue.
     PacketPtr tail() const;
 
+    //! Get the latest packet that were ever added to the queue.
+    //! @remarks
+    //!  Returns null if the queue never has any packets. Otherwise, returns
+    //!  the latest ever added packet, even if that packet is not currently
+    //!  in the queue. Returned packet is not removed from the queue.
+    PacketPtr latest() const;
+
 private:
     core::List<Packet> list_;
+    PacketPtr latest_;
     const size_t max_size_;
 };
 

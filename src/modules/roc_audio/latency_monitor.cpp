@@ -1,0 +1,141 @@
+/*
+ * Copyright (c) 2017 Mikhail Baranov
+ * Copyright (c) 2017 Victor Gaydov
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+
+#include "roc_audio/latency_monitor.h"
+#include "roc_core/log.h"
+#include "roc_core/macros.h"
+#include "roc_core/panic.h"
+
+namespace roc {
+namespace audio {
+
+namespace {
+
+const core::nanoseconds_t LogRate = 5000000000;
+
+} // namespace
+
+LatencyMonitor::LatencyMonitor(const packet::SortedQueue& queue,
+                               const Depacketizer& depacketizer,
+                               Resampler* resampler,
+                               packet::timestamp_t update_interval,
+                               packet::timestamp_t target_latency,
+                               size_t input_sample_rate,
+                               size_t output_sample_rate)
+    : queue_(queue)
+    , depacketizer_(depacketizer)
+    , resampler_(resampler)
+    , fe_(target_latency)
+    , rate_limiter_(LogRate)
+    , update_interval_(update_interval)
+    , update_time_(0)
+    , has_update_time_(false)
+    , target_latency_(target_latency)
+    , sample_rate_coef_(0.f)
+    , valid_(false) {
+    if (resampler_) {
+        if (!init_resampler_(input_sample_rate, output_sample_rate)) {
+            return;
+        }
+    }
+    valid_ = true;
+}
+
+bool LatencyMonitor::valid() const {
+    return valid_;
+}
+
+bool LatencyMonitor::update(packet::timestamp_t time) {
+    const packet::timestamp_t latency = latency_();
+
+    if (latency == 0) {
+        return true;
+    }
+
+    if (resampler_) {
+        return update_resampler_(time, latency);
+    }
+
+    return true;
+}
+
+packet::timestamp_t LatencyMonitor::latency_() const {
+    if (!depacketizer_.is_started()) {
+        return 0;
+    }
+
+    const packet::timestamp_t head = depacketizer_.timestamp();
+
+    packet::PacketPtr latest = queue_.latest();
+    if (!latest) {
+        return 0;
+    }
+
+    const packet::timestamp_t tail = latest->end();
+
+    packet::signed_timestamp_t latency =
+        ROC_UNSIGNED_SUB(packet::signed_timestamp_t, tail, head);
+
+    if (latency <= 0) {
+        return 0;
+    }
+
+    return (packet::timestamp_t)latency;
+}
+
+bool LatencyMonitor::init_resampler_(size_t input_sample_rate,
+                                     size_t output_sample_rate) {
+    if (input_sample_rate == 0 || output_sample_rate == 0) {
+        roc_log(LogError, "latency monitor: invalid sample rates: input=%lu output=%lu",
+                (unsigned long)input_sample_rate, (unsigned long)output_sample_rate);
+        return false;
+    }
+
+    sample_rate_coef_ = (float)input_sample_rate / output_sample_rate;
+
+    if (!resampler_->set_scaling(sample_rate_coef_)) {
+        roc_log(LogError, "latency monitor: scaling factor out of bounds: scaling=%.2f",
+                (double)sample_rate_coef_);
+        return false;
+    }
+
+    return true;
+}
+
+bool LatencyMonitor::update_resampler_(packet::timestamp_t time,
+                                       packet::timestamp_t latency) {
+    if (!has_update_time_) {
+        has_update_time_ = true;
+        update_time_ = time;
+    }
+
+    while (time >= update_time_) {
+        fe_.update(latency);
+        update_time_ += update_interval_;
+    }
+
+    const float adjusted_coef = sample_rate_coef_ * fe_.freq_coeff();
+
+    if (rate_limiter_.allow()) {
+        roc_log(LogDebug, "latency monitor: latency=%lu target=%lu fe=%.5f adj_fe=%.5f",
+                (unsigned long)latency, (unsigned long)target_latency_,
+                (double)fe_.freq_coeff(), (double)adjusted_coef);
+    }
+
+    if (!resampler_->set_scaling(adjusted_coef)) {
+        roc_log(LogDebug, "latency monitor: scaling factor out of bounds: scaling=%.2f",
+                (double)adjusted_coef);
+        return false;
+    }
+
+    return true;
+}
+
+} // namespace audio
+} // namespace roc

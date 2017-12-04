@@ -134,10 +134,10 @@ TEST(depacketizer, multiple_packets_one_read) {
 TEST(depacketizer, multiple_packets_multiple_reads) {
     enum { FramesPerPacket = 10 };
 
+    CHECK(SamplesPerPacket % FramesPerPacket== 0);
+
     packet::ConcurrentQueue queue(0, false);
     Depacketizer dp(queue, pcm_decoder, ChMask, false);
-
-    CHECK(SamplesPerPacket % FramesPerPacket== 0);
 
     queue.write(new_packet(1 * SamplesPerPacket, 0.11f));
     queue.write(new_packet(2 * SamplesPerPacket, 0.22f));
@@ -251,10 +251,10 @@ TEST(depacketizer, zeros_between_packets_timestamp_overflow) {
 }
 
 TEST(depacketizer, zeros_after_packet) {
+    CHECK(SamplesPerPacket % 2 == 0);
+
     packet::ConcurrentQueue queue(0, false);
     Depacketizer dp(queue, pcm_decoder, ChMask, false);
-
-    CHECK(SamplesPerPacket % 2 == 0);
 
     queue.write(new_packet(0, 0.11f));
 
@@ -282,10 +282,10 @@ TEST(depacketizer, packet_after_zeros) {
 }
 
 TEST(depacketizer, overlapping_packets) {
+    CHECK(SamplesPerPacket % 2 == 0);
+
     packet::ConcurrentQueue queue(0, false);
     Depacketizer dp(queue, pcm_decoder, ChMask, false);
-
-    CHECK(SamplesPerPacket % 2 == 0);
 
     packet::timestamp_t ts1 = 0;
     packet::timestamp_t ts2 = SamplesPerPacket / 2;
@@ -368,6 +368,52 @@ TEST(depacketizer, frame_flags_empty) {
     dp.read(frame);
 
     CHECK(frame.flags() & Frame::FlagEmpty);
+}
+
+TEST(depacketizer, timestamp) {
+    enum {
+        StartTimestamp = 1000,
+        NumPackets = 3,
+        FramesPerPacket = 10,
+        SamplesPerFrame = SamplesPerPacket / FramesPerPacket
+    };
+
+    CHECK(SamplesPerPacket % FramesPerPacket== 0);
+
+    packet::ConcurrentQueue queue(0, false);
+    Depacketizer dp(queue, pcm_decoder, ChMask, false);
+
+    for (size_t n = 0; n < NumPackets * FramesPerPacket; n++) {
+        expect_output(dp, SamplesPerFrame, 0.0f);
+
+        CHECK(!dp.is_started());
+        UNSIGNED_LONGS_EQUAL(0, dp.timestamp());
+    }
+
+    for (size_t n = 0; n < NumPackets; n++) {
+        queue.write(
+            new_packet(StartTimestamp + packet::timestamp_t(n * SamplesPerPacket), 0.1f));
+    }
+
+    packet::timestamp_t ts = StartTimestamp;
+
+    for (size_t n = 0; n < NumPackets * FramesPerPacket; n++) {
+        expect_output(dp, SamplesPerFrame, 0.1f);
+
+        ts += SamplesPerFrame;
+
+        CHECK(dp.is_started());
+        UNSIGNED_LONGS_EQUAL(ts, dp.timestamp());
+    }
+
+    for (size_t n = 0; n < NumPackets * FramesPerPacket; n++) {
+        expect_output(dp, SamplesPerFrame, 0.0f);
+
+        ts += SamplesPerFrame;
+
+        CHECK(dp.is_started());
+        UNSIGNED_LONGS_EQUAL(ts, dp.timestamp());
+    }
 }
 
 } // namespace audio

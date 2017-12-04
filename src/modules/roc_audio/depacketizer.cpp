@@ -51,6 +51,17 @@ Depacketizer::Depacketizer(packet::IReader& reader,
     , dropped_packets_(0) {
 }
 
+bool Depacketizer::is_started() const {
+    return !first_packet_;
+}
+
+packet::timestamp_t Depacketizer::timestamp() const {
+    if (first_packet_) {
+        return 0;
+    }
+    return timestamp_;
+}
+
 void Depacketizer::read(Frame& frame) {
     const size_t prev_dropped_packets = dropped_packets_;
     const packet::timestamp_t prev_missing_samples = missing_samples_;

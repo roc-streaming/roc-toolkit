@@ -16,8 +16,8 @@
 #include "roc_audio/depacketizer.h"
 #include "roc_audio/idecoder.h"
 #include "roc_audio/ireader.h"
+#include "roc_audio/latency_monitor.h"
 #include "roc_audio/resampler.h"
-#include "roc_audio/resampler_updater.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/list_node.h"
@@ -104,7 +104,8 @@ private:
     core::UniquePtr<audio::Depacketizer> depacketizer_;
 
     core::UniquePtr<audio::Resampler> resampler_;
-    core::UniquePtr<audio::ResamplerUpdater> resampler_updater_;
+
+    core::UniquePtr<audio::LatencyMonitor> latency_monitor_;
 };
 
 } // namespace pipeline

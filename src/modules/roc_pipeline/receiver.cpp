@@ -71,13 +71,12 @@ IReceiver::Status Receiver::read(audio::Frame& frame) {
     }
 
     fetch_packets_();
+    update_sessions_();
 
     const Status status = status_();
 
     mixer_.read(frame);
     timestamp_ += frame.samples().size() / num_channels_;
-
-    update_sessions_();
 
     return status;
 }

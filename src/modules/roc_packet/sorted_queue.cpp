@@ -39,6 +39,10 @@ void SortedQueue::write(const PacketPtr& packet) {
         return;
     }
 
+    if (!latest_ || latest_->compare(*packet) <= 0) {
+        latest_ = packet;
+    }
+
     PacketPtr pos = list_.front();
 
     for (; pos; pos = list_.nextof(*pos)) {
@@ -73,6 +77,10 @@ PacketPtr SortedQueue::head() const {
 
 PacketPtr SortedQueue::tail() const {
     return list_.front();
+}
+
+PacketPtr SortedQueue::latest() const {
+    return latest_;
 }
 
 } // namespace packet
