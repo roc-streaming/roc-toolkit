@@ -189,76 +189,6 @@ TEST(depacketizer, drop_late_packets) {
     expect_output(dp, SamplesPerPacket, 0.33f);
 }
 
-TEST(depacketizer, frame_has_dropped_packets_at_the_end) {
-    packet::ConcurrentQueue queue(0, false);
-    Depacketizer dp(queue, pcm_decoder, ChMask, false);
-
-    const packet::timestamp_t ts1 = SamplesPerPacket * 3;
-    const packet::timestamp_t ts2 = SamplesPerPacket * 2;
-    const packet::timestamp_t ts3 = SamplesPerPacket * 1;
-
-    queue.write(new_packet(ts1, 0.11f));
-    queue.write(new_packet(ts2, 0.22f));
-    queue.write(new_packet(ts3, 0.33f));
-
-    Frame frame = new_frame(SamplesPerPacket * 3);
-    dp.read(frame);
-
-    CHECK(frame.flags() & Frame::FlagSkip);
-}
-
-TEST(depacketizer, frame_has_dropped_packets_in_the_middle) {
-    packet::ConcurrentQueue queue(0, false);
-    Depacketizer dp(queue, pcm_decoder, ChMask, false);
-
-    const packet::timestamp_t ts1 = SamplesPerPacket * 3;
-    const packet::timestamp_t ts2 = SamplesPerPacket * 2;
-    const packet::timestamp_t ts3 = SamplesPerPacket * 4;
-
-    queue.write(new_packet(ts1, 0.11f));
-    queue.write(new_packet(ts2, 0.22f));
-    queue.write(new_packet(ts3, 0.33f));
-
-    Frame frame = new_frame(SamplesPerPacket * 3);
-    dp.read(frame);
-
-    CHECK(frame.flags() & Frame::FlagSkip);
-}
-
-TEST(depacketizer, frame_has_no_dropped_packets) {
-    packet::ConcurrentQueue queue(0, false);
-    Depacketizer dp(queue, pcm_decoder, ChMask, false);
-
-    const packet::timestamp_t ts1 = SamplesPerPacket;
-    const packet::timestamp_t ts2 = SamplesPerPacket * 2;
-
-    queue.write(new_packet(ts1, 0.11f));
-    queue.write(new_packet(ts2, 0.22f));
-
-    Frame frame = new_frame(SamplesPerPacket * 2);
-    dp.read(frame);
-
-    CHECK(!(frame.flags() & Frame::FlagSkip));
-}
-
-TEST(depacketizer, empty_frame) {
-    packet::ConcurrentQueue queue(0, false);
-    Depacketizer dp(queue, pcm_decoder, ChMask, false);
-
-    const packet::timestamp_t ts1 = SamplesPerPacket;
-    queue.write(new_packet(ts1, 0.11f));
-
-    Frame frame = new_frame(SamplesPerPacket);
-    dp.read(frame);
-
-    CHECK(!(frame.flags() & Frame::FlagEmpty));
-
-    frame = new_frame(SamplesPerPacket);
-    dp.read(frame);
-
-    CHECK(frame.flags() & Frame::FlagEmpty);
-}
-
 TEST(depacketizer, drop_late_packets_timestamp_overflow) {
     packet::ConcurrentQueue queue(0, false);
     Depacketizer dp(queue, pcm_decoder, ChMask, false);
@@ -368,6 +298,76 @@ TEST(depacketizer, overlapping_packets) {
     expect_output(dp, SamplesPerPacket, 0.11f);
     expect_output(dp, SamplesPerPacket / 2, 0.22f);
     expect_output(dp, SamplesPerPacket / 2, 0.33f);
+}
+
+TEST(depacketizer, frame_flags_dropped_packets_end) {
+    packet::ConcurrentQueue queue(0, false);
+    Depacketizer dp(queue, pcm_decoder, ChMask, false);
+
+    const packet::timestamp_t ts1 = SamplesPerPacket * 3;
+    const packet::timestamp_t ts2 = SamplesPerPacket * 2;
+    const packet::timestamp_t ts3 = SamplesPerPacket * 1;
+
+    queue.write(new_packet(ts1, 0.11f));
+    queue.write(new_packet(ts2, 0.22f));
+    queue.write(new_packet(ts3, 0.33f));
+
+    Frame frame = new_frame(SamplesPerPacket * 3);
+    dp.read(frame);
+
+    CHECK(frame.flags() & Frame::FlagSkip);
+}
+
+TEST(depacketizer, frame_flags_dropped_packets_middle) {
+    packet::ConcurrentQueue queue(0, false);
+    Depacketizer dp(queue, pcm_decoder, ChMask, false);
+
+    const packet::timestamp_t ts1 = SamplesPerPacket * 3;
+    const packet::timestamp_t ts2 = SamplesPerPacket * 2;
+    const packet::timestamp_t ts3 = SamplesPerPacket * 4;
+
+    queue.write(new_packet(ts1, 0.11f));
+    queue.write(new_packet(ts2, 0.22f));
+    queue.write(new_packet(ts3, 0.33f));
+
+    Frame frame = new_frame(SamplesPerPacket * 3);
+    dp.read(frame);
+
+    CHECK(frame.flags() & Frame::FlagSkip);
+}
+
+TEST(depacketizer, frame_flags_no_dropped_packets) {
+    packet::ConcurrentQueue queue(0, false);
+    Depacketizer dp(queue, pcm_decoder, ChMask, false);
+
+    const packet::timestamp_t ts1 = SamplesPerPacket;
+    const packet::timestamp_t ts2 = SamplesPerPacket * 2;
+
+    queue.write(new_packet(ts1, 0.11f));
+    queue.write(new_packet(ts2, 0.22f));
+
+    Frame frame = new_frame(SamplesPerPacket * 2);
+    dp.read(frame);
+
+    CHECK(!(frame.flags() & Frame::FlagSkip));
+}
+
+TEST(depacketizer, frame_flags_empty) {
+    packet::ConcurrentQueue queue(0, false);
+    Depacketizer dp(queue, pcm_decoder, ChMask, false);
+
+    const packet::timestamp_t ts1 = SamplesPerPacket;
+    queue.write(new_packet(ts1, 0.11f));
+
+    Frame frame = new_frame(SamplesPerPacket);
+    dp.read(frame);
+
+    CHECK(!(frame.flags() & Frame::FlagEmpty));
+
+    frame = new_frame(SamplesPerPacket);
+    dp.read(frame);
+
+    CHECK(frame.flags() & Frame::FlagEmpty);
 }
 
 } // namespace audio

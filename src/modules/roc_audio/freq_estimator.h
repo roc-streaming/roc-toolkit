@@ -27,21 +27,21 @@ public:
     //! Initialize.
     //!
     //! @b Parameters
-    //!  - @p aim_queue_size defines queue size we want to archive.
-    FreqEstimator(packet::timestamp_t aim_queue_size);
+    //!  - @p target_latency defines latency we want to archive.
+    FreqEstimator(packet::timestamp_t target_latency);
 
     //! Get current frequecy coefficient.
     float freq_coeff() const;
 
     //! Compute new value of frequency coefficient.
-    void update(packet::timestamp_t current_queue_size);
+    void update(packet::timestamp_t current_latency);
 
 private:
     // Calculate regulator input.
     // `in' is current queue size.
     float fast_controller_(const sample_t in);
 
-    const sample_t aim_; // Aim queue size.
+    const sample_t target_; // Target latency.
 
     sample_t dec1_casc_buff_[fe_decim_len];
     size_t dec1_ind_;

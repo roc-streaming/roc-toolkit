@@ -16,7 +16,7 @@ namespace audio {
 
 namespace {
 
-enum { Aim = 10000 };
+enum { Target = 10000 };
 
 const float Epsilon = 0.0001f;
 
@@ -25,34 +25,34 @@ const float Epsilon = 0.0001f;
 TEST_GROUP(freq_estimator){};
 
 TEST(freq_estimator, initial) {
-    FreqEstimator fe(Aim);
+    FreqEstimator fe(Target);
 
     DOUBLES_EQUAL(1.0, fe.freq_coeff(), Epsilon);
 }
 
 TEST(freq_estimator, aim_queue_size) {
-    FreqEstimator fe(Aim);
+    FreqEstimator fe(Target);
 
     for (size_t n = 0; n < 1000; n++) {
-        fe.update(Aim);
+        fe.update(Target);
     }
 
     DOUBLES_EQUAL(1.0, fe.freq_coeff(), Epsilon);
 }
 
 TEST(freq_estimator, large_queue_size) {
-    FreqEstimator fe(Aim);
+    FreqEstimator fe(Target);
 
     do {
-        fe.update(Aim * 2);
+        fe.update(Target * 2);
     } while (fe.freq_coeff() < 1.01f);
 }
 
 TEST(freq_estimator, small_queue_size) {
-    FreqEstimator fe(Aim);
+    FreqEstimator fe(Target);
 
     do {
-        fe.update(Aim / 2);
+        fe.update(Target / 2);
     } while (fe.freq_coeff() > 0.99f);
 }
 

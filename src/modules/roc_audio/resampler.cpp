@@ -31,11 +31,11 @@ const uint32_t FRACT_PART_MASK = 0x000FFFFF;
 const uint32_t FRACT_BIT_COUNT = 20;
 
 // One in terms of Q8.24.
-const fixedpoint_t G_qt_one = 1 << FRACT_BIT_COUNT;
+const fixedpoint_t qt_one = 1 << FRACT_BIT_COUNT;
 
 // Convert float to fixed-point.
 inline fixedpoint_t float_to_fixedpoint(const float t) {
-    return (fixedpoint_t)(t * (float)G_qt_one);
+    return (fixedpoint_t)(t * (float)qt_one);
 }
 
 inline size_t fixedpoint_to_size(const fixedpoint_t t) {
@@ -47,7 +47,7 @@ inline fixedpoint_t qceil(const fixedpoint_t x) {
     if ((x & FRACT_PART_MASK) == 0) {
         return x & INTEGER_PART_MASK;
     } else {
-        return (x & INTEGER_PART_MASK) + G_qt_one;
+        return (x & INTEGER_PART_MASK) + qt_one;
     }
 }
 
@@ -59,7 +59,7 @@ inline fixedpoint_t qfloor(const fixedpoint_t x) {
 
 // Returns fractional part of x in f32.
 inline float fractional(const fixedpoint_t x) {
-    return (float)(x & FRACT_PART_MASK) * ((float)1. / (float)G_qt_one);
+    return (float)(x & FRACT_PART_MASK) * ((float)1. / (float)qt_one);
 }
 
 } // namespace
@@ -137,9 +137,9 @@ void Resampler::read(Frame& frame) {
 
         if ((qt_sample_ & FRACT_PART_MASK) < qt_epsilon_) {
             qt_sample_ &= INTEGER_PART_MASK;
-        } else if ((G_qt_one - (qt_sample_ & FRACT_PART_MASK)) < qt_epsilon_) {
+        } else if ((qt_one - (qt_sample_ & FRACT_PART_MASK)) < qt_epsilon_) {
             qt_sample_ &= INTEGER_PART_MASK;
-            qt_sample_ += G_qt_one;
+            qt_sample_ += qt_one;
         }
 
         for (size_t channel = 0; channel < channels_num_; ++channel) {

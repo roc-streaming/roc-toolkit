@@ -41,19 +41,19 @@ sample_t dot_prod(const sample_t* coeff,
 
 } // namespace
 
-FreqEstimator::FreqEstimator(packet::timestamp_t aim_queue_size)
-    : aim_(aim_queue_size)
+FreqEstimator::FreqEstimator(packet::timestamp_t target_latency)
+    : target_(target_latency)
     , dec1_ind_(0)
     , dec2_ind_(0)
     , samples_counter_(0)
     , accum_(0)
     , coeff_(1) {
     if (fe_decim_len % 2 != 0) {
-        roc_panic("decim_len should be power of two");
+        roc_panic("freq estimator: decim_len should be power of two");
     }
     for (size_t i = 0; i < fe_decim_len; i++) {
-        dec1_casc_buff_[i] = aim_;
-        dec2_casc_buff_[i] = aim_;
+        dec1_casc_buff_[i] = target_;
+        dec2_casc_buff_[i] = target_;
     }
 }
 
@@ -61,10 +61,10 @@ float FreqEstimator::freq_coeff() const {
     return coeff_;
 }
 
-void FreqEstimator::update(packet::timestamp_t queue_size) {
+void FreqEstimator::update(packet::timestamp_t current_latency) {
     samples_counter_++;
 
-    dec1_casc_buff_[dec1_ind_] = (sample_t)queue_size;
+    dec1_casc_buff_[dec1_ind_] = (sample_t)current_latency;
 
     if ((samples_counter_ % fe_decim_factor) == 0) {
         // Time to calculate first decimator's samples.
@@ -89,8 +89,8 @@ void FreqEstimator::update(packet::timestamp_t queue_size) {
 }
 
 float FreqEstimator::fast_controller_(const sample_t input) {
-    accum_ = accum_ + input - aim_;
-    return 1 + P * (input - aim_) + I * accum_;
+    accum_ = accum_ + input - target_;
+    return 1 + P * (input - target_) + I * accum_;
 }
 
 } // namespace audio

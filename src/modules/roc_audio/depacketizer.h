@@ -45,6 +45,8 @@ public:
     virtual void read(Frame& frame);
 
 private:
+    void read_frame_(Frame& frame);
+
     sample_t* read_samples_(sample_t* buff_ptr, sample_t* buff_end);
 
     sample_t* read_packet_samples_(sample_t* buff_ptr, sample_t* buff_end);

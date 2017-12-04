@@ -52,6 +52,24 @@ Depacketizer::Depacketizer(packet::IReader& reader,
 }
 
 void Depacketizer::read(Frame& frame) {
+    const size_t prev_dropped_packets = dropped_packets_;
+    const packet::timestamp_t prev_missing_samples = missing_samples_;
+
+    read_frame_(frame);
+
+    set_frame_flags_(frame, prev_dropped_packets, prev_missing_samples);
+
+    if (rate_limiter_.allow()) {
+        const size_t total_samples = missing_samples_ + packet_samples_;
+        const double loss_ratio =
+            total_samples != 0 ? (double)missing_samples_ / total_samples : 0.;
+
+        roc_log(LogDebug, "depacketizer: ts=%lu loss_ratio=%.5lf",
+                (unsigned long)timestamp_, loss_ratio);
+    }
+}
+
+void Depacketizer::read_frame_(Frame& frame) {
     if (!frame.samples()) {
         roc_panic("depacketizer: unexpected null slice");
     }
@@ -63,23 +81,11 @@ void Depacketizer::read(Frame& frame) {
     sample_t* buff_ptr = frame.samples().data();
     sample_t* buff_end = frame.samples().data() + frame.samples().size();
 
-    const size_t dropped_packets = dropped_packets_;
-    const packet::timestamp_t missing_samples = missing_samples_;
-
     while (buff_ptr < buff_end) {
         buff_ptr = read_samples_(buff_ptr, buff_end);
     }
 
     roc_panic_if(buff_ptr != buff_end);
-
-    set_frame_flags_(frame, dropped_packets, missing_samples);
-
-    if (rate_limiter_.allow()) {
-        const size_t total_samples = missing_samples_ + packet_samples_;
-        roc_log(LogDebug, "depacketizer: ts=%lu loss_ratio=%.5lf",
-                (unsigned long)timestamp_,
-                total_samples != 0 ? (double)missing_samples_ / total_samples : 0.);
-    }
 }
 
 sample_t* Depacketizer::read_samples_(sample_t* buff_ptr, sample_t* buff_end) {
@@ -92,11 +98,11 @@ sample_t* Depacketizer::read_samples_(sample_t* buff_ptr, sample_t* buff_end) {
             roc_panic_if_not(
                 ROC_UNSIGNED_LT(packet::signed_timestamp_t, timestamp_, next_timestamp));
 
-            size_t mis_samples =
+            const size_t mis_samples =
                 num_channels_ * (size_t)ROC_UNSIGNED_SUB(packet::signed_timestamp_t,
                                                          next_timestamp, timestamp_);
 
-            size_t max_samples = (size_t)(buff_end - buff_ptr);
+            const size_t max_samples = (size_t)(buff_end - buff_ptr);
 
             buff_ptr = read_missing_samples_(
                 buff_ptr, buff_ptr + ROC_MIN(mis_samples, max_samples));
@@ -130,7 +136,7 @@ sample_t* Depacketizer::read_packet_samples_(sample_t* buff_ptr, sample_t* buff_
 }
 
 sample_t* Depacketizer::read_missing_samples_(sample_t* buff_ptr, sample_t* buff_end) {
-    size_t num_samples = (size_t)(buff_end - buff_ptr) / num_channels_;
+    const size_t num_samples = (size_t)(buff_end - buff_ptr) / num_channels_;
 
     if (beep_) {
         write_beep(buff_ptr, num_samples * num_channels_);
@@ -217,17 +223,17 @@ packet::PacketPtr Depacketizer::read_packet_() {
 }
 
 void Depacketizer::set_frame_flags_(Frame& frame,
-                                    const size_t dropped_packets,
-                                    const packet::timestamp_t missing_samples) {
-    if (dropped_packets != dropped_packets_) {
+                                    const size_t prev_dropped_packets,
+                                    const packet::timestamp_t prev_missing_samples) {
+    if (prev_dropped_packets != dropped_packets_) {
         frame.add_flags(Frame::FlagSkip);
     }
 
-    const size_t diff =
+    const size_t zero_samples =
         num_channels_ * (size_t)ROC_UNSIGNED_SUB(packet::signed_timestamp_t,
-                                                 missing_samples_, missing_samples);
+                                                 missing_samples_, prev_missing_samples);
 
-    if (diff == frame.samples().size()) {
+    if (zero_samples == frame.samples().size()) {
         frame.add_flags(Frame::FlagEmpty);
     }
 }
