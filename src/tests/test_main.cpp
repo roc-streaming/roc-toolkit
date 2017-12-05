@@ -10,6 +10,7 @@
 #include <CppUTest/CommandLineArguments.h>
 #include <CppUTest/CommandLineTestRunner.h>
 
+#include "roc_core/exit.h"
 #include "roc_core/log.h"
 
 int main(int argc, const char** argv) {
@@ -23,5 +24,10 @@ int main(int argc, const char** argv) {
 
     MemoryLeakWarningPlugin::turnOffNewDeleteOverloads();
 
-    return CommandLineTestRunner::RunAllTests(argc, argv);
+    const int code = CommandLineTestRunner::RunAllTests(argc, argv);
+    if (code != 0) {
+        roc::core::exit_immediately(code);
+    }
+
+    return 0;
 }
