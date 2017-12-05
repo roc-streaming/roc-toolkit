@@ -18,6 +18,7 @@
 #include "roc_audio/ireader.h"
 #include "roc_audio/latency_monitor.h"
 #include "roc_audio/resampler.h"
+#include "roc_audio/watchdog.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/list_node.h"
@@ -33,7 +34,6 @@
 #include "roc_packet/packet_pool.h"
 #include "roc_packet/router.h"
 #include "roc_packet/sorted_queue.h"
-#include "roc_packet/watchdog.h"
 #include "roc_pipeline/config.h"
 #include "roc_rtp/format_map.h"
 #include "roc_rtp/parser.h"
@@ -92,13 +92,12 @@ private:
 
     core::UniquePtr<packet::DelayedReader> delayed_reader_;
     core::UniquePtr<rtp::Validator> validator_;
-    core::UniquePtr<packet::Watchdog> watchdog_;
+    core::UniquePtr<audio::Watchdog> watchdog_;
 
     core::UniquePtr<rtp::Parser> fec_parser_;
     core::UniquePtr<fec::IDecoder> fec_decoder_;
     core::UniquePtr<fec::Reader> fec_reader_;
     core::UniquePtr<rtp::Validator> fec_validator_;
-    core::UniquePtr<packet::Watchdog> fec_watchdog_;
 
     core::UniquePtr<audio::IDecoder> decoder_;
     core::UniquePtr<audio::Depacketizer> depacketizer_;

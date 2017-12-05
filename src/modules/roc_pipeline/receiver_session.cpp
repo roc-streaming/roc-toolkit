@@ -67,13 +67,6 @@ ReceiverSession::ReceiverSession(const SessionConfig& config,
     }
     preader = validator_.get();
 
-    watchdog_.reset(new (allocator_) packet::Watchdog(*preader, config.timeout),
-                    allocator_);
-    if (!watchdog_) {
-        return;
-    }
-    preader = watchdog_.get();
-
 #ifdef ROC_TARGET_OPENFEC
     if (config.fec.codec != fec::NoCodec) {
         repair_queue_.reset(new (allocator_) packet::SortedQueue(0), allocator_);
@@ -113,13 +106,6 @@ ReceiverSession::ReceiverSession(const SessionConfig& config,
             return;
         }
         preader = fec_validator_.get();
-
-        fec_watchdog_.reset(new (allocator_) packet::Watchdog(*preader, config.timeout),
-                            allocator_);
-        if (!fec_watchdog_) {
-            return;
-        }
-        preader = fec_watchdog_.get();
     }
 #endif // ROC_TARGET_OPENFEC
 
@@ -136,6 +122,14 @@ ReceiverSession::ReceiverSession(const SessionConfig& config,
     }
 
     audio::IReader* areader = depacketizer_.get();
+
+    watchdog_.reset(new (allocator_)
+                        audio::Watchdog(*areader, config.timeout, config.skip_window_sz),
+                    allocator_);
+    if (!watchdog_) {
+        return;
+    }
+    areader = watchdog_.get();
 
     if (config.resampling) {
         resampler_.reset(new (allocator_)
@@ -189,12 +183,6 @@ bool ReceiverSession::update(packet::timestamp_t time) {
 
     if (watchdog_) {
         if (!watchdog_->update(time)) {
-            return false;
-        }
-    }
-
-    if (fec_watchdog_) {
-        if (!fec_watchdog_->update(time)) {
             return false;
         }
     }
