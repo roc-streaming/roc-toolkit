@@ -198,8 +198,12 @@ TEST_GROUP(sender_receiver) {
 
         config.default_session.channels = ChMask;
         config.default_session.samples_per_packet = SamplesPerPacket;
+
         config.default_session.latency = Latency;
         config.default_session.timeout = Timeout;
+
+        config.default_session.latency_monitor.min_latency_factor = -100;
+        config.default_session.latency_monitor.max_latency_factor = +100;
 
         config.default_session.fec = fec_config(flags);
 

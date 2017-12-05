@@ -24,7 +24,7 @@ const core::nanoseconds_t LogRate = 5000000000;
 LatencyMonitor::LatencyMonitor(const packet::SortedQueue& queue,
                                const Depacketizer& depacketizer,
                                Resampler* resampler,
-                               packet::timestamp_t update_interval,
+                               const LatencyMonitorConfig& config,
                                packet::timestamp_t target_latency,
                                size_t input_sample_rate,
                                size_t output_sample_rate)
@@ -33,17 +33,23 @@ LatencyMonitor::LatencyMonitor(const packet::SortedQueue& queue,
     , resampler_(resampler)
     , fe_(target_latency)
     , rate_limiter_(LogRate)
-    , update_interval_(update_interval)
     , update_time_(0)
     , has_update_time_(false)
+    , config_(config)
     , target_latency_(target_latency)
-    , sample_rate_coef_(0.f)
+    , sample_rate_coeff_(0.f)
     , valid_(false) {
+    roc_log(LogDebug,
+            "latency monitor: initializing: target_latency=%lu in_rate=%lu out_rate=%lu",
+            (unsigned long)target_latency_, (unsigned long)input_sample_rate,
+            (unsigned long)output_sample_rate);
+
     if (resampler_) {
         if (!init_resampler_(input_sample_rate, output_sample_rate)) {
             return;
         }
     }
+
     valid_ = true;
 }
 
@@ -52,41 +58,44 @@ bool LatencyMonitor::valid() const {
 }
 
 bool LatencyMonitor::update(packet::timestamp_t time) {
-    const packet::timestamp_t latency = latency_();
+    packet::signed_timestamp_t latency = 0;
 
-    if (latency == 0) {
+    if (!get_latency_(latency)) {
         return true;
     }
 
+    if (!check_latency_(latency)) {
+        return false;
+    }
+
     if (resampler_) {
-        return update_resampler_(time, latency);
+        if (latency < 0) {
+            latency = 0;
+        }
+        if (!update_resampler_(time, (packet::timestamp_t)latency)) {
+            return false;
+        }
     }
 
     return true;
 }
 
-packet::timestamp_t LatencyMonitor::latency_() const {
+bool LatencyMonitor::get_latency_(packet::signed_timestamp_t& latency) const {
     if (!depacketizer_.is_started()) {
-        return 0;
+        return false;
     }
 
     const packet::timestamp_t head = depacketizer_.timestamp();
 
     packet::PacketPtr latest = queue_.latest();
     if (!latest) {
-        return 0;
+        return false;
     }
 
     const packet::timestamp_t tail = latest->end();
 
-    packet::signed_timestamp_t latency =
-        ROC_UNSIGNED_SUB(packet::signed_timestamp_t, tail, head);
-
-    if (latency <= 0) {
-        return 0;
-    }
-
-    return (packet::timestamp_t)latency;
+    latency = ROC_UNSIGNED_SUB(packet::signed_timestamp_t, tail, head);
+    return true;
 }
 
 bool LatencyMonitor::init_resampler_(size_t input_sample_rate,
@@ -97,11 +106,11 @@ bool LatencyMonitor::init_resampler_(size_t input_sample_rate,
         return false;
     }
 
-    sample_rate_coef_ = (float)input_sample_rate / output_sample_rate;
+    sample_rate_coeff_ = (float)input_sample_rate / output_sample_rate;
 
-    if (!resampler_->set_scaling(sample_rate_coef_)) {
-        roc_log(LogError, "latency monitor: scaling factor out of bounds: scaling=%.2f",
-                (double)sample_rate_coef_);
+    if (!resampler_->set_scaling(sample_rate_coeff_)) {
+        roc_log(LogError, "latency monitor: scaling factor out of bounds: scaling=%.5f",
+                (double)sample_rate_coeff_);
         return false;
     }
 
@@ -117,20 +126,70 @@ bool LatencyMonitor::update_resampler_(packet::timestamp_t time,
 
     while (time >= update_time_) {
         fe_.update(latency);
-        update_time_ += update_interval_;
+        update_time_ += config_.fe_update_interval;
     }
 
-    const float adjusted_coef = sample_rate_coef_ * fe_.freq_coeff();
+    const float freq_coeff = fe_.freq_coeff();
+
+    if (!check_scaling_(freq_coeff)) {
+        return false;
+    }
+
+    const float adjusted_coeff = sample_rate_coeff_ * freq_coeff;
 
     if (rate_limiter_.allow()) {
         roc_log(LogDebug, "latency monitor: latency=%lu target=%lu fe=%.5f adj_fe=%.5f",
                 (unsigned long)latency, (unsigned long)target_latency_,
-                (double)fe_.freq_coeff(), (double)adjusted_coef);
+                (double)freq_coeff, (double)adjusted_coeff);
     }
 
-    if (!resampler_->set_scaling(adjusted_coef)) {
-        roc_log(LogDebug, "latency monitor: scaling factor out of bounds: scaling=%.2f",
-                (double)adjusted_coef);
+    if (!resampler_->set_scaling(adjusted_coeff)) {
+        roc_log(LogDebug,
+                "latency monitor: scaling factor out of bounds: fe=%.5f adj_fe=%.5f",
+                (double)freq_coeff, (double)adjusted_coeff);
+        return false;
+    }
+
+    return true;
+}
+
+bool LatencyMonitor::check_latency_(packet::signed_timestamp_t latency) const {
+    const packet::signed_timestamp_t min_latency =
+        packet::signed_timestamp_t(target_latency_ * config_.min_latency_factor);
+
+    const packet::signed_timestamp_t max_latency =
+        packet::signed_timestamp_t(target_latency_ * config_.max_latency_factor);
+
+    if (latency < min_latency) {
+        roc_log(LogDebug, "latency monitor: latency out of bounds: latency=%ld, min=%ld",
+                (long)latency, (long)min_latency);
+        return false;
+    }
+
+    if (latency > max_latency) {
+        roc_log(LogDebug, "latency monitor: latency out of bounds: latency=%ld, max=%ld",
+                (long)latency, (long)max_latency);
+        return false;
+    }
+
+    return true;
+}
+
+bool LatencyMonitor::check_scaling_(float freq_coeff) const {
+    const float min_coeff = 1.0f - config_.max_scaling_delta;
+    const float max_coeff = 1.0f + config_.max_scaling_delta;
+
+    if (freq_coeff < min_coeff) {
+        roc_log(LogDebug,
+                "latency monitor: scaling factor out of bounds: fe=%.5f, min_fe=%.5f",
+                (double)freq_coeff, (double)min_coeff);
+        return false;
+    }
+
+    if (freq_coeff > max_coeff) {
+        roc_log(LogDebug,
+                "latency monitor: scaling factor out of bounds: fe=%.5f, max_fe=%.5f",
+                (double)freq_coeff, (double)max_coeff);
         return false;
     }
 

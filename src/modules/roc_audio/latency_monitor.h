@@ -24,26 +24,51 @@
 namespace roc {
 namespace audio {
 
+//! Parameters for latency monitor.
+struct LatencyMonitorConfig {
+    //! FreqEstimator update interval, number of samples
+    packet::timestamp_t fe_update_interval;
+
+    //! Maximum allowed freq_coeff delta around one.
+    //! For example, 0.01 allows freq_coeff values in range [0.99; 0.01].
+    float max_scaling_delta;
+
+    //! Minimum allowed latency, relative to the target latency.
+    //! For example, -1 allows latencies above -target_latency.
+    float min_latency_factor;
+
+    //! Maximum allowed latency, relative to the target latency.
+    //! For example, +2 allows latencies below 2*target_latency.
+    float max_latency_factor;
+
+    LatencyMonitorConfig()
+        : fe_update_interval(256)
+        , max_scaling_delta(0.01f)
+        , min_latency_factor(-1.f)
+        , max_latency_factor(+2.f) {
+    }
+};
+
 //! Session latency monitor.
 //!  - calculates session latency
 //!  - calculates session scaling factor and passes it to resampler
-//!  - shutdowns session if the latency becomes too much
+//!  - shutdowns session if the latency becomes too much or too low
 //!  - shutdowns session if the scaling factor becomes too much or too low
 class LatencyMonitor : public core::NonCopyable<> {
 public:
     //! Constructor.
     //!
     //! @b Parameters
-    //!  - @p queue and @p depacketizer are used to calculate latency
+    //!  - @p queue and @p depacketizer are used to calculate the latency
     //!  - @p resampler is used to set the scaling factor, may be null
-    //!  - @p update_interval defines how often to call FreqEstimator, in samples
+    //!  - @p config defines various miscellaneous parameters
     //!  - @p target_latency defines FreqEstimator target latency, in samples
     //!  - @p input_sample_rate is the sample rate of the input packets
     //!  - @p output_sample_rate is the sample rate of the output frames
     LatencyMonitor(const packet::SortedQueue& queue,
                    const Depacketizer& depacketizer,
                    Resampler* resampler,
-                   packet::timestamp_t update_interval,
+                   const LatencyMonitorConfig& config,
                    packet::timestamp_t target_latency,
                    size_t input_sample_rate,
                    size_t output_sample_rate);
@@ -57,10 +82,13 @@ public:
     bool update(packet::timestamp_t time);
 
 private:
-    packet::timestamp_t latency_() const;
+    bool get_latency_(packet::signed_timestamp_t& latency) const;
 
     bool init_resampler_(size_t input_sample_rate, size_t output_sample_rate);
     bool update_resampler_(packet::timestamp_t time, packet::timestamp_t latency);
+
+    bool check_latency_(packet::signed_timestamp_t latency) const;
+    bool check_scaling_(float scaling) const;
 
     const packet::SortedQueue& queue_;
     const Depacketizer& depacketizer_;
@@ -69,12 +97,12 @@ private:
 
     core::RateLimiter rate_limiter_;
 
-    const packet::timestamp_t update_interval_;
     packet::timestamp_t update_time_;
     bool has_update_time_;
 
+    const LatencyMonitorConfig config_;
     const packet::timestamp_t target_latency_;
-    float sample_rate_coef_;
+    float sample_rate_coeff_;
 
     bool valid_;
 };

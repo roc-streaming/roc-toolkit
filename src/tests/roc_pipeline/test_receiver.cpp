@@ -74,6 +74,7 @@ TEST_GROUP(receiver) {
 
         config.default_session.channels = ChMask;
         config.default_session.samples_per_packet = SamplesPerPacket;
+
         config.default_session.latency = Latency;
         config.default_session.timeout = Timeout;
 
@@ -81,6 +82,9 @@ TEST_GROUP(receiver) {
 
         config.default_session.validator.max_sn_jump = MaxSnJump;
         config.default_session.validator.max_ts_jump = MaxTsJump * 1000 / SampleRate;
+
+        config.default_session.latency_monitor.min_latency_factor = -100;
+        config.default_session.latency_monitor.max_latency_factor = +100;
 
         src1 = new_address(1);
         src2 = new_address(2);

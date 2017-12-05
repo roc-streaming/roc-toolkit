@@ -150,7 +150,7 @@ ReceiverSession::ReceiverSession(const SessionConfig& config,
 
     latency_monitor_.reset(new (allocator_) audio::LatencyMonitor(
                                *source_queue_, *depacketizer_, resampler_.get(),
-                               config.fe_update_interval, config.latency,
+                               config.latency_monitor, config.latency,
                                format->sample_rate, out_sample_rate),
                            allocator_);
     if (!latency_monitor_ || !latency_monitor_->valid()) {

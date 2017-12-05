@@ -13,6 +13,7 @@
 #ifndef ROC_PIPELINE_CONFIG_H_
 #define ROC_PIPELINE_CONFIG_H_
 
+#include "roc_audio/latency_monitor.h"
 #include "roc_audio/resampler.h"
 #include "roc_core/stddefs.h"
 #include "roc_fec/config.h"
@@ -93,11 +94,11 @@ struct SessionConfig {
     //! RTP validator parameters.
     rtp::ValidatorConfig validator;
 
+    //! LatencyMonitor parameters.
+    audio::LatencyMonitorConfig latency_monitor;
+
     //! Resampler parameters.
     audio::ResamplerConfig resampler;
-
-    //! FreqEstimator update interval, number of samples
-    packet::timestamp_t fe_update_interval;
 
     //! Perform resampling to to compensate sender and receiver frequency difference.
     bool resampling;
@@ -110,7 +111,6 @@ struct SessionConfig {
         , samples_per_packet(DefaultPacketSize)
         , latency(DefaultPacketSize * 27)
         , timeout(DefaultSampleRate * 2)
-        , fe_update_interval(256)
         , resampling(false)
         , beep(false) {
     }
