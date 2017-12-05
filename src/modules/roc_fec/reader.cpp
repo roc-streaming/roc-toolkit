@@ -294,7 +294,7 @@ void Reader::update_source_packets_() {
         n_fetched++;
 
         if (seqnum_lt(fec->blknum, cur_block_sn_)) {
-            roc_log(LogDebug, "fec reader: dropping source packet from previous block:"
+            roc_log(LogTrace, "fec reader: dropping source packet from previous block:"
                               " blk_sn=%lu pkt_sn=%lu",
                     (unsigned long)cur_block_sn_, (unsigned long)rtp->seqnum);
             n_dropped++;
@@ -341,7 +341,7 @@ void Reader::update_repair_packets_() {
         n_fetched++;
 
         if (seqnum_lt(fec->blknum, cur_block_sn_)) {
-            roc_log(LogDebug, "fec reader: dropping repair packet from previous block:"
+            roc_log(LogTrace, "fec reader: dropping repair packet from previous block:"
                               " blk_sn=%lu pkt_data_blk=%lu",
                     (unsigned long)cur_block_sn_, (unsigned long)fec->blknum);
             n_dropped++;
@@ -366,7 +366,7 @@ void Reader::update_repair_packets_() {
 }
 
 void Reader::skip_repair_packets_() {
-    unsigned n_skipped = 0;
+    unsigned n_dropped = 0;
 
     for (;;) {
         packet::PacketPtr pp = repair_queue_.head();
@@ -383,16 +383,16 @@ void Reader::skip_repair_packets_() {
             break;
         }
 
-        roc_log(LogDebug, "fec reader: dropping repair packet, decoding not started:"
+        roc_log(LogTrace, "fec reader: dropping repair packet, decoding not started:"
                           " min_sn=%lu pkt_data_blk=%lu",
                 (unsigned long)cur_block_sn_, (unsigned long)fec->blknum);
 
         repair_queue_.read();
-        n_skipped++;
+        n_dropped++;
     }
 
-    if (n_skipped != 0) {
-        roc_log(LogDebug, "fec reader: repair queue: skipped=%u", n_skipped);
+    if (n_dropped != 0) {
+        roc_log(LogDebug, "fec reader: repair queue: dropped=%u", n_dropped);
     }
 }
 
