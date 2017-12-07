@@ -24,7 +24,7 @@ void print(const Packet& p, int flags) {
     }
 
     if (p.rtp()) {
-        fprintf(stderr, "rtp: src=%lu m=%d, sn=%lu, ts=%lu dur=%lu pt=%u payload=%lu\n",
+        fprintf(stderr, "rtp: src=%lu m=%d sn=%lu ts=%lu dur=%lu pt=%u payload=%lu\n",
                 (unsigned long)p.rtp()->source, (int)p.rtp()->marker,
                 (unsigned long)p.rtp()->seqnum, (unsigned long)p.rtp()->timestamp,
                 (unsigned long)p.rtp()->duration, (unsigned int)p.rtp()->payload_type,
@@ -36,7 +36,7 @@ void print(const Packet& p, int flags) {
     }
 
     if (p.fec()) {
-        fprintf(stderr, "fec: data_blk/fec_blk=%lu payload=%lu\n",
+        fprintf(stderr, "fec: blk=%lu payload=%lu\n",
                 (unsigned long)p.fec()->blknum, (unsigned long)p.fec()->payload.size());
 
         if ((flags & PrintPayload) && p.fec()->payload) {
