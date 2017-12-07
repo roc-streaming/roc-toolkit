@@ -18,32 +18,68 @@ namespace packet {
 DelayedReader::DelayedReader(IReader& reader, timestamp_t delay)
     : reader_(reader)
     , queue_(0)
-    , delay_(delay) {
+    , delay_(delay)
+    , started_(false) {
+    roc_log(LogDebug, "delayed reader: initializing: delay=%lu", (unsigned long)delay_);
 }
 
 PacketPtr DelayedReader::read() {
-    if (delay_ != 0) {
-        while (PacketPtr packet = reader_.read()) {
-            queue_.write(packet);
-        }
-
-        const timestamp_t qs = queue_size_();
-        if (qs < delay_) {
+    if (!started_) {
+        if (!fetch_packets_()) {
             return NULL;
         }
 
-        roc_log(LogDebug, "delayed reader: "
-                          "received enough packets: delay=%lu samples=%lu packets=%lu",
-                (unsigned long)delay_, (unsigned long)qs, (unsigned long)queue_.size());
-
-        delay_ = 0;
+        started_ = true;
     }
 
     if (queue_.size() != 0) {
-        return queue_.read();
-    } else {
-        return reader_.read();
+        return read_queued_packet_();
     }
+
+    return reader_.read();
+}
+
+bool DelayedReader::fetch_packets_() {
+    while (PacketPtr pp = reader_.read()) {
+        queue_.write(pp);
+    }
+
+    const timestamp_t qs = queue_size_();
+    if (qs < delay_) {
+        return false;
+    }
+
+    roc_log(LogDebug,
+            "delayed reader: initial queue: delay=%lu queue=%lu packets=%lu",
+            (unsigned long)delay_, (unsigned long)qs, (unsigned long)queue_.size());
+
+    return true;
+}
+
+PacketPtr DelayedReader::read_queued_packet_() {
+    PacketPtr pp;
+
+    timestamp_t qs = 0;
+
+    for (;;) {
+        pp = queue_.read();
+
+        const timestamp_t new_qs = queue_size_();
+        if (new_qs < delay_) {
+            break;
+        }
+
+        qs = new_qs;
+    }
+
+    if (qs != 0) {
+        roc_log(LogDebug,
+                "delayed reader: trimmed queue: delay=%lu queue=%lu packets=%lu",
+                (unsigned long)delay_, (unsigned long)qs,
+                (unsigned long)(queue_.size() + 1));
+    }
+
+    return pp;
 }
 
 timestamp_t DelayedReader::queue_size_() const {
@@ -51,14 +87,16 @@ timestamp_t DelayedReader::queue_size_() const {
         return 0;
     }
 
-    const signed_timestamp_t queue_sz = ROC_UNSIGNED_SUB(
+    const signed_timestamp_t qs = ROC_UNSIGNED_SUB(
         signed_timestamp_t, queue_.tail()->end(), queue_.head()->begin());
 
-    if (queue_sz < 0) {
-        roc_panic("delayed reader: unexpected negative queue size");
+    if (qs < 0) {
+        roc_log(LogError, "delayed reader: unexpected negative queue size: %ld",
+                (long)qs);
+        return 0;
     }
 
-    return (timestamp_t)queue_sz;
+    return (timestamp_t)qs;
 }
 
 } // namespace packet

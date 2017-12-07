@@ -80,6 +80,10 @@ public:
         source_ = source;
     }
 
+    packet::seqnum_t seqnum() const {
+        return seqnum_;
+    }
+
     void set_seqnum(packet::seqnum_t seqnum) {
         seqnum_ = seqnum;
     }

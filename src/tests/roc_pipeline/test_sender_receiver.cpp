@@ -19,6 +19,7 @@
 
 #include "test_frame_reader.h"
 #include "test_frame_writer.h"
+#include "test_packet_sender.h"
 
 namespace roc {
 namespace pipeline {
@@ -36,13 +37,13 @@ enum {
     SamplesPerPacket = 40,
     FramesPerPacket = SamplesPerPacket / SamplesPerFrame,
 
-    SourcePackets = 5,
-    RepairPackets = 10,
+    SourcePackets = 10,
+    RepairPackets = 5,
 
-    Latency = SamplesPerPacket * (SourcePackets + RepairPackets),
+    Latency = SamplesPerPacket * SourcePackets,
     Timeout = Latency * 20,
 
-    ManyFrames = Latency / SamplesPerFrame * 5
+    ManyFrames = Latency / SamplesPerFrame * 10
 };
 
 enum {
@@ -108,21 +109,26 @@ TEST_GROUP(sender_receiver) {
             frame_writer.write_samples(SamplesPerFrame * NumCh);
         }
 
-        transfer_packets(flags, queue, receiver);
+        PacketSender packet_sender(packet_pool, receiver);
+
+        filter_packets(flags, queue, packet_sender);
 
         FrameReader frame_reader(receiver, sample_buffer_pool);
 
-        for (size_t nf = 0; nf < ManyFrames; nf++) {
-            if (num_sessions == 0) {
-                frame_reader.skip_zeros(SamplesPerFrame * NumCh);
-            } else {
+        packet_sender.deliver(Latency / SamplesPerPacket);
+
+        for (size_t np = 0; np < ManyFrames / FramesPerPacket; np++) {
+            for (size_t nf = 0; nf < FramesPerPacket; nf++) {
                 frame_reader.read_samples(SamplesPerFrame * NumCh, num_sessions);
+
+                UNSIGNED_LONGS_EQUAL(num_sessions, receiver.num_sessions());
             }
-            UNSIGNED_LONGS_EQUAL(num_sessions, receiver.num_sessions());
+
+            packet_sender.deliver(1);
         }
     }
 
-    void transfer_packets(int flags, packet::IReader& reader, packet::IWriter& writer) {
+    void filter_packets(int flags, packet::IReader& reader, packet::IWriter& writer) {
         size_t counter = 0;
 
         while (packet::PacketPtr pp = reader.read()) {
@@ -140,21 +146,8 @@ TEST_GROUP(sender_receiver) {
                 }
             }
 
-            writer.write(copy_packet(pp));
+            writer.write(pp);
         }
-    }
-
-    packet::PacketPtr copy_packet(const packet::PacketPtr& pa) {
-        packet::PacketPtr pb = new (packet_pool) packet::Packet (packet_pool);
-        CHECK(pb);
-
-        CHECK(pa->flags() & packet::Packet::FlagUDP);
-        pb->add_flags(packet::Packet::FlagUDP);
-        *pb->udp() = *pa->udp();
-
-        pb->set_data(pa->data());
-
-        return pb;
     }
 
     PortConfig source_port_config(int flags) {

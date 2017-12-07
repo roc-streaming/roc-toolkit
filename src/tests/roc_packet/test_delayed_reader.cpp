@@ -52,7 +52,7 @@ TEST(delayed_reader, no_delay) {
     }
 }
 
-TEST(delayed_reader, delay1) {
+TEST(delayed_reader, delay) {
     ConcurrentQueue queue(0, false);
     DelayedReader dr(queue, NumSamples * (NumPackets - 1));
 
@@ -79,7 +79,7 @@ TEST(delayed_reader, delay1) {
     CHECK(!dr.read());
 }
 
-TEST(delayed_reader, delay2) {
+TEST(delayed_reader, instant) {
     ConcurrentQueue queue(0, false);
     DelayedReader dr(queue, NumSamples * (NumPackets - 1));
 
@@ -91,6 +91,24 @@ TEST(delayed_reader, delay2) {
     }
 
     for (seqnum_t n = 0; n < NumPackets; n++) {
+        CHECK(dr.read() == packets[n]);
+    }
+
+    CHECK(!dr.read());
+}
+
+TEST(delayed_reader, trim) {
+    ConcurrentQueue queue(0, false);
+    DelayedReader dr(queue, NumSamples * (NumPackets - 1));
+
+    PacketPtr packets[NumPackets * 2];
+
+    for (seqnum_t n = 0; n < NumPackets * 2; n++) {
+        packets[n] = new_packet(n);
+        queue.write(packets[n]);
+    }
+
+    for (seqnum_t n = NumPackets; n < NumPackets * 2; n++) {
         CHECK(dr.read() == packets[n]);
     }
 

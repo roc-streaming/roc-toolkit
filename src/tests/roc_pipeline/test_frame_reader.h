@@ -64,6 +64,10 @@ public:
         }
     }
 
+    void set_offset(size_t offset) {
+        offset_ = uint8_t(offset);
+    }
+
 private:
     IReceiver& receiver_;
     core::BufferPool<audio::sample_t>& pool_;
