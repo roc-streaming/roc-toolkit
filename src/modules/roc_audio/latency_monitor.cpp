@@ -98,6 +98,43 @@ bool LatencyMonitor::get_latency_(packet::signed_timestamp_t& latency) const {
     return true;
 }
 
+bool LatencyMonitor::check_latency_(packet::signed_timestamp_t latency) const {
+    const packet::signed_timestamp_t min_latency =
+        packet::signed_timestamp_t(target_latency_ * config_.min_latency_factor);
+
+    const packet::signed_timestamp_t max_latency =
+        packet::signed_timestamp_t(target_latency_ * config_.max_latency_factor);
+
+    if (latency < min_latency) {
+        roc_log(LogDebug, "latency monitor: latency out of bounds: latency=%ld, min=%ld",
+                (long)latency, (long)min_latency);
+        return false;
+    }
+
+    if (latency > max_latency) {
+        roc_log(LogDebug, "latency monitor: latency out of bounds: latency=%ld, max=%ld",
+                (long)latency, (long)max_latency);
+        return false;
+    }
+
+    return true;
+}
+
+float LatencyMonitor::trim_scaling_(float freq_coeff) const {
+    const float min_coeff = 1.0f - config_.max_scaling_delta;
+    const float max_coeff = 1.0f + config_.max_scaling_delta;
+
+    if (freq_coeff < min_coeff) {
+        return min_coeff;
+    }
+
+    if (freq_coeff > max_coeff) {
+        return max_coeff;
+    }
+
+    return freq_coeff;
+}
+
 bool LatencyMonitor::init_resampler_(size_t input_sample_rate,
                                      size_t output_sample_rate) {
     if (input_sample_rate == 0 || output_sample_rate == 0) {
@@ -130,66 +167,21 @@ bool LatencyMonitor::update_resampler_(packet::timestamp_t time,
     }
 
     const float freq_coeff = fe_.freq_coeff();
-
-    if (!check_scaling_(freq_coeff)) {
-        return false;
-    }
-
-    const float adjusted_coeff = sample_rate_coeff_ * freq_coeff;
+    const float trimmed_coeff = trim_scaling_(freq_coeff);
+    const float adjusted_coeff = sample_rate_coeff_ * trimmed_coeff;
 
     if (rate_limiter_.allow()) {
-        roc_log(LogDebug, "latency monitor: latency=%lu target=%lu fe=%.5f adj_fe=%.5f",
-                (unsigned long)latency, (unsigned long)target_latency_,
-                (double)freq_coeff, (double)adjusted_coeff);
+        roc_log(
+            LogDebug,
+            "latency monitor: latency=%lu target=%lu fe=%.5f trim_fe=%.5f adj_fe=%.5f",
+            (unsigned long)latency, (unsigned long)target_latency_, (double)freq_coeff,
+            (double)trimmed_coeff, (double)adjusted_coeff);
     }
 
     if (!resampler_->set_scaling(adjusted_coeff)) {
         roc_log(LogDebug,
                 "latency monitor: scaling factor out of bounds: fe=%.5f adj_fe=%.5f",
                 (double)freq_coeff, (double)adjusted_coeff);
-        return false;
-    }
-
-    return true;
-}
-
-bool LatencyMonitor::check_latency_(packet::signed_timestamp_t latency) const {
-    const packet::signed_timestamp_t min_latency =
-        packet::signed_timestamp_t(target_latency_ * config_.min_latency_factor);
-
-    const packet::signed_timestamp_t max_latency =
-        packet::signed_timestamp_t(target_latency_ * config_.max_latency_factor);
-
-    if (latency < min_latency) {
-        roc_log(LogDebug, "latency monitor: latency out of bounds: latency=%ld, min=%ld",
-                (long)latency, (long)min_latency);
-        return false;
-    }
-
-    if (latency > max_latency) {
-        roc_log(LogDebug, "latency monitor: latency out of bounds: latency=%ld, max=%ld",
-                (long)latency, (long)max_latency);
-        return false;
-    }
-
-    return true;
-}
-
-bool LatencyMonitor::check_scaling_(float freq_coeff) const {
-    const float min_coeff = 1.0f - config_.max_scaling_delta;
-    const float max_coeff = 1.0f + config_.max_scaling_delta;
-
-    if (freq_coeff < min_coeff) {
-        roc_log(LogDebug,
-                "latency monitor: scaling factor out of bounds: fe=%.5f, min_fe=%.5f",
-                (double)freq_coeff, (double)min_coeff);
-        return false;
-    }
-
-    if (freq_coeff > max_coeff) {
-        roc_log(LogDebug,
-                "latency monitor: scaling factor out of bounds: fe=%.5f, max_fe=%.5f",
-                (double)freq_coeff, (double)max_coeff);
         return false;
     }
 

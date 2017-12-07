@@ -51,9 +51,10 @@ struct LatencyMonitorConfig {
 
 //! Session latency monitor.
 //!  - calculates session latency
-//!  - calculates session scaling factor and passes it to resampler
-//!  - shutdowns session if the latency becomes too much or too low
-//!  - shutdowns session if the scaling factor becomes too much or too low
+//!  - calculates session scaling factor
+//!  - trims scaling factor to the allowed range
+//!  - updates resampler scaling
+//!  - shutdowns session if the latency goes out of bounds
 class LatencyMonitor : public core::NonCopyable<> {
 public:
     //! Constructor.
@@ -83,12 +84,12 @@ public:
 
 private:
     bool get_latency_(packet::signed_timestamp_t& latency) const;
+    bool check_latency_(packet::signed_timestamp_t latency) const;
+
+    float trim_scaling_(float scaling) const;
 
     bool init_resampler_(size_t input_sample_rate, size_t output_sample_rate);
     bool update_resampler_(packet::timestamp_t time, packet::timestamp_t latency);
-
-    bool check_latency_(packet::signed_timestamp_t latency) const;
-    bool check_scaling_(float scaling) const;
 
     const packet::SortedQueue& queue_;
     const Depacketizer& depacketizer_;
