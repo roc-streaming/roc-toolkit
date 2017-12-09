@@ -64,11 +64,11 @@ packet::timestamp_t Depacketizer::timestamp() const {
 
 void Depacketizer::read(Frame& frame) {
     const size_t prev_dropped_packets = dropped_packets_;
-    const packet::timestamp_t prev_missing_samples = missing_samples_;
+    const packet::timestamp_t prev_packet_samples = packet_samples_;
 
     read_frame_(frame);
 
-    set_frame_flags_(frame, prev_dropped_packets, prev_missing_samples);
+    set_frame_flags_(frame, prev_dropped_packets, prev_packet_samples);
 
     if (rate_limiter_.allow()) {
         const size_t total_samples = missing_samples_ + packet_samples_;
@@ -109,9 +109,9 @@ sample_t* Depacketizer::read_samples_(sample_t* buff_ptr, sample_t* buff_end) {
             roc_panic_if_not(
                 ROC_UNSIGNED_LT(packet::signed_timestamp_t, timestamp_, next_timestamp));
 
-            const size_t mis_samples =
-                num_channels_ * (size_t)ROC_UNSIGNED_SUB(packet::signed_timestamp_t,
-                                                         next_timestamp, timestamp_);
+            const size_t mis_samples = num_channels_
+                * (size_t)ROC_UNSIGNED_SUB(packet::signed_timestamp_t, next_timestamp,
+                                           timestamp_);
 
             const size_t max_samples = (size_t)(buff_end - buff_ptr);
 
@@ -235,17 +235,16 @@ packet::PacketPtr Depacketizer::read_packet_() {
 
 void Depacketizer::set_frame_flags_(Frame& frame,
                                     const size_t prev_dropped_packets,
-                                    const packet::timestamp_t prev_missing_samples) {
-    if (prev_dropped_packets != dropped_packets_) {
-        frame.add_flags(Frame::FlagSkip);
+                                    const packet::timestamp_t prev_packet_samples) {
+    const size_t packet_samples = num_channels_
+        * (size_t)ROC_UNSIGNED_SUB(packet::signed_timestamp_t, packet_samples_,
+                                   prev_packet_samples);
+    if (packet_samples == 0) {
+        frame.add_flags(Frame::FlagEmpty);
     }
 
-    const size_t zero_samples =
-        num_channels_ * (size_t)ROC_UNSIGNED_SUB(packet::signed_timestamp_t,
-                                                 missing_samples_, prev_missing_samples);
-
-    if (zero_samples == frame.samples().size()) {
-        frame.add_flags(Frame::FlagEmpty);
+    if (prev_dropped_packets != dropped_packets_) {
+        frame.add_flags(Frame::FlagSkip);
     }
 }
 
