@@ -61,8 +61,8 @@ private:
     sample_t* read_missing_samples_(sample_t* buff_ptr, sample_t* buff_end);
 
     void set_frame_flags_(Frame& frame,
-                          const size_t dropped_packets,
-                          const packet::timestamp_t zero_samples);
+                          const size_t prev_dropped_packets,
+                          const packet::timestamp_t prev_packet_samples);
 
     void update_packet_();
     packet::PacketPtr read_packet_();
