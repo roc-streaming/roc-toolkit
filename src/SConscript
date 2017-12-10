@@ -36,9 +36,9 @@ if not GetOption('disable_lib'):
     cenv = env.Clone()
     cenv.AppendVars(lib_env)
     cenv.Append(CPPDEFINES=('ROC_MODULE', 'roc_lib'))
-    cenv.Append(CPPPATH=['lib'])
+    cenv.Append(CPPPATH=['lib/include'])
 
-    sources = env.Glob('lib/roc/*.cpp')
+    sources = env.Glob('lib/src/*.cpp')
     libroc = cenv.SharedLibrary('roc', sources)
     env.Depends(libroc, '#src/lib/roc.version')
 
@@ -62,7 +62,7 @@ if not GetOption('disable_tests'):
         ccenv.Append(CPPPATH=['#src/%s' % testdir])
 
         if testname == 'roc_lib':
-            ccenv.Append(CPPPATH=['#src/lib'])
+            ccenv.Append(CPPPATH=['lib/include'])
             ccenv.Prepend(LIBS=['roc'])
 
         sources = env.Glob('%s/*.cpp' % testdir)
@@ -103,7 +103,7 @@ if not GetOption('disable_tools'):
 if GetOption('enable_pulseaudio_modules'):
     cenv = env.Clone()
     cenv.AppendVars(pulse_env)
-    cenv.Append(CPPPATH=['lib'])
+    cenv.Append(CPPPATH=['lib/include'])
     cenv.Append(LIBS=['roc'])
 
     helpers = cenv.Object('pulse/roc_helpers.c')
