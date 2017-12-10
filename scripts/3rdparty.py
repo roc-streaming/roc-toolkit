@@ -119,7 +119,18 @@ def getsysroot(toolchain):
         print("error: can't execute '%s'" % ' '.join(cmd), file=sys.stderr)
         exit(1)
 
-def makeflags(workdir, deplist, cflags='', ldflags=''):
+def isgnu(toolchain):
+    if toolchain:
+        cmd = ['%s-ld' % toolchain, '-v']
+    else:
+        cmd = ['ld', '-v']
+    try:
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+        return 'GNU' in proc.stdout.read().strip()
+    except:
+        return False
+
+def makeflags(workdir, toolchain, deplist, cflags='', ldflags=''):
     incdirs=[]
     libdirs=[]
 
@@ -127,17 +138,17 @@ def makeflags(workdir, deplist, cflags='', ldflags=''):
         incdirs += [os.path.join(workdir, 'build', dep, 'include')]
         libdirs += [os.path.join(workdir, 'build', dep, 'lib')]
 
-    cflags = ' '.join(
-        ([cflags] if cflags else []) +
-        ['-I%s' % path for path in incdirs])
+    cflags = ([cflags] if cflags else []) + ['-I%s' % path for path in incdirs]
 
-    ldflags = ' '.join(['-L%s' % path for path in libdirs] +
-                       ([ldflags] if ldflags else []))
+    ldflags = ['-L%s' % path for path in libdirs] + ([ldflags] if ldflags else [])
+
+    if isgnu(toolchain):
+        ldflags += ['-Wl,-rpath-link=%s' % path for path in libdirs]
 
     return ' '.join([
-        'CXXFLAGS="%s"' % cflags,
-        'CFLAGS="%s"' % cflags,
-        'LDFLAGS="%s"' % ldflags,
+        'CXXFLAGS="%s"' % ' '.join(cflags),
+        'CFLAGS="%s"' % ' '.join(cflags),
+        'LDFLAGS="%s"' % ' '.join(ldflags),
     ])
 
 if len(sys.argv) != 6:
@@ -172,7 +183,7 @@ if name == 'uv':
     execute('./autogen.sh', logfile)
     execute('./configure --host=%s %s %s' % (
         toolchain,
-        makeflags(workdir, [], cflags='-fvisibility=hidden'),
+        makeflags(workdir, toolchain, [], cflags='-fvisibility=hidden'),
         ' '.join([
             '--with-pic',
             '--enable-static',
@@ -271,7 +282,7 @@ elif name == 'json':
             'ac_cv_func_realloc_0_nonnull=yes',
         ]),
         toolchain,
-        makeflags(workdir, [], cflags='-fPIC -fvisibility=hidden'),
+        makeflags(workdir, toolchain, [], cflags='-fPIC -fvisibility=hidden'),
         ' '.join([
             '--enable-static',
             '--disable-shared',
@@ -289,7 +300,7 @@ elif name == 'sndfile':
     os.chdir('libsndfile-%s' % ver)
     execute('./configure --host=%s %s %s' % (
         toolchain,
-        makeflags(workdir, [], cflags='-fPIC -fvisibility=hidden'),
+        makeflags(workdir, toolchain, [], cflags='-fPIC -fvisibility=hidden'),
         ' '.join([
             '--enable-static',
             '--disable-shared',
@@ -307,7 +318,7 @@ elif name == 'pulseaudio':
     os.chdir('pulseaudio-%s' % ver)
     execute('./configure --host=%s %s %s %s' % (
         toolchain,
-        makeflags(workdir, deplist),
+        makeflags(workdir, toolchain, deplist),
         ' '.join([
             'LIBJSON_CFLAGS=" "',
             'LIBJSON_LIBS="-ljson-c -ljson"',
@@ -345,7 +356,7 @@ elif name == 'sox':
     os.chdir('sox-%s' % ver)
     execute('./configure --host=%s %s %s' % (
         toolchain,
-        makeflags(workdir, deplist, cflags='-fvisibility=hidden'),
+        makeflags(workdir, toolchain, deplist, cflags='-fvisibility=hidden'),
         ' '.join([
             '--enable-static',
             '--disable-shared',
@@ -378,7 +389,7 @@ elif name == 'cpputest':
             toolchain,
             # disable warnings, since CppUTest uses -Werror and may fail to
             # build on old GCC versions
-            makeflags(workdir, [], cflags='-w'),
+            makeflags(workdir, toolchain, [], cflags='-w'),
             ' '.join([
                 '--enable-static',
                 # disable memory leak detection which is too hard to use properly
