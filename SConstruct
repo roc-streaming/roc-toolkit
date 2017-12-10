@@ -726,7 +726,6 @@ if compiler in ['gcc', 'clang']:
     env.Append(CXXFLAGS=[
         '-std=c++98',
         '-fno-exceptions',
-        '-fvisibility=hidden',
     ])
 
     for var in ['CXXFLAGS', 'CFLAGS']:
@@ -769,7 +768,10 @@ if compiler in ['gcc', 'clang']:
             '-rdynamic'
         ])
     else:
-        env.Append(CXXFLAGS=['-O2'])
+        env.Append(CXXFLAGS=[
+            '-fvisibility=hidden',
+            '-O2',
+        ])
 else:
     env.Die("CXXFLAGS setup not implemented for compiler '%s'", compiler)
 
