@@ -99,21 +99,15 @@ bool LatencyMonitor::get_latency_(packet::signed_timestamp_t& latency) const {
 }
 
 bool LatencyMonitor::check_latency_(packet::signed_timestamp_t latency) const {
-    const packet::signed_timestamp_t min_latency =
-        packet::signed_timestamp_t(target_latency_ * config_.min_latency_factor);
-
-    const packet::signed_timestamp_t max_latency =
-        packet::signed_timestamp_t(target_latency_ * config_.max_latency_factor);
-
-    if (latency < min_latency) {
-        roc_log(LogDebug, "latency monitor: latency out of bounds: latency=%ld, min=%ld",
-                (long)latency, (long)min_latency);
+    if (latency < config_.min_latency) {
+        roc_log(LogDebug, "latency monitor: latency out of bounds: latency=%ld min=%ld",
+                (long)latency, (long)config_.min_latency);
         return false;
     }
 
-    if (latency > max_latency) {
-        roc_log(LogDebug, "latency monitor: latency out of bounds: latency=%ld, max=%ld",
-                (long)latency, (long)max_latency);
+    if (latency > config_.max_latency) {
+        roc_log(LogDebug, "latency monitor: latency out of bounds: latency=%ld max=%ld",
+                (long)latency, (long)config_.max_latency);
         return false;
     }
 

@@ -29,13 +29,19 @@ section "Options"
 
     option "beep" - "Enable beep on packet loss" flag off
 
-    option "rate" - "Sample rate (Hz)"
+    option "rate" - "Override output sample rate (Hz)"
         int optional
 
     option "timeout" - "Session timeout as number of samples"
         int optional
 
     option "latency" - "Session latency as number of samples"
+        int optional
+
+    option "min-latency" - "Minimum session latency as number of samples"
+        int optional
+
+    option "max-latency" - "Maximum session latency as number of samples"
         int optional
 
     option "resampler-window" - "Number of samples per resampler window"

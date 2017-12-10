@@ -60,7 +60,7 @@ ReceiverSession::ReceiverSession(const SessionConfig& config,
     }
     preader = delayed_reader_.get();
 
-    validator_.reset(new (allocator_) rtp::Validator(*preader, *format, config.validator),
+    validator_.reset(new (allocator_) rtp::Validator(*preader, *format, config.rtp_validator),
                      allocator_);
     if (!validator_) {
         return;
@@ -107,7 +107,7 @@ ReceiverSession::ReceiverSession(const SessionConfig& config,
         preader = fec_reader_.get();
 
         fec_validator_.reset(new (allocator_)
-                                 rtp::Validator(*preader, *format, config.validator),
+                                 rtp::Validator(*preader, *format, config.rtp_validator),
                              allocator_);
         if (!fec_validator_) {
             return;
@@ -129,7 +129,7 @@ ReceiverSession::ReceiverSession(const SessionConfig& config,
     }
 
     depacketizer_.reset(new (allocator_) audio::Depacketizer(
-                            *preader, *decoder_, config.channels, config.beep),
+                            *preader, *decoder_, config.channels, config.beeping),
                         allocator_);
     if (!depacketizer_) {
         return;

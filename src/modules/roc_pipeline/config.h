@@ -33,7 +33,13 @@ enum {
     DefaultChannelMask = 0x3,
 
     //! Number of samples per packet per channel.
-    DefaultPacketSize = 320
+    DefaultPacketSize = 320,
+
+    //! Minum latency relative to target latency.
+    DefaultMinLatency = -1,
+
+    //! Maximum latency relative to target latency.
+    DefaultMaxLatency = 2
 };
 
 //! Protocol identifier.
@@ -92,7 +98,7 @@ struct SessionConfig {
     fec::Config fec;
 
     //! RTP validator parameters.
-    rtp::ValidatorConfig validator;
+    rtp::ValidatorConfig rtp_validator;
 
     //! LatencyMonitor parameters.
     audio::LatencyMonitorConfig latency_monitor;
@@ -104,7 +110,7 @@ struct SessionConfig {
     bool resampling;
 
     //! Insert weird beeps instead of silence on packet loss.
-    bool beep;
+    bool beeping;
 
     SessionConfig()
         : channels(DefaultChannelMask)
@@ -112,7 +118,11 @@ struct SessionConfig {
         , latency(DefaultPacketSize * 27)
         , timeout(DefaultSampleRate * 2)
         , resampling(false)
-        , beep(false) {
+        , beeping(false) {
+        latency_monitor.min_latency =
+            (packet::signed_timestamp_t)latency * DefaultMinLatency;
+        latency_monitor.max_latency =
+            (packet::signed_timestamp_t)latency * DefaultMaxLatency;
     }
 };
 

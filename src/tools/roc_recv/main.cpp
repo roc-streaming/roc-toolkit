@@ -24,14 +24,6 @@ namespace {
 
 enum { MaxPacketSize = 2048, MaxFrameSize = 65 * 1024 };
 
-bool check_ge(const char* option, int value, int min_value) {
-    if (value < min_value) {
-        roc_log(LogError, "invalid `--%s=%d': should be >= %d", option, value, min_value);
-        return false;
-    }
-    return true;
-}
-
 } // namespace
 
 int main(int argc, char** argv) {
@@ -105,40 +97,71 @@ int main(int argc, char** argv) {
     }
 
     config.default_session.resampling = (args.resampling_arg == resampling_arg_yes);
-    config.default_session.beep = args.beep_flag;
+    config.default_session.beeping = args.beep_flag;
 
     size_t sample_rate = 0;
 
     if (args.rate_given) {
-        if (!check_ge("rate", args.rate_arg, 1)) {
+        if (args.rate_arg <= 0) {
+            roc_log(LogError, "invalid --rate: should be > 0");
             return 1;
         }
         sample_rate = (size_t)args.rate_arg;
     }
 
     if (args.timeout_given) {
-        if (!check_ge("timeout", args.timeout_arg, 0)) {
+        if (args.timeout_arg < 0) {
+            roc_log(LogError, "invalid --timeout: should be >= 0");
             return 1;
         }
         config.default_session.timeout = (packet::timestamp_t)args.timeout_arg;
     }
 
     if (args.latency_given) {
-        if (!check_ge("latency", args.latency_arg, 0)) {
+        if (args.latency_arg < 0) {
+            roc_log(LogError, "invalid --latency: should be >= 0");
             return 1;
         }
         config.default_session.latency = (packet::timestamp_t)args.latency_arg;
     }
 
+    if (args.min_latency_given) {
+        if (args.min_latency_arg > (int)config.default_session.latency) {
+            roc_log(LogError, "invalid --min-latency: should be <= --latency");
+            return 1;
+        }
+        config.default_session.latency_monitor.min_latency =
+            (packet::signed_timestamp_t)args.min_latency_arg;
+    } else {
+        config.default_session.latency_monitor.min_latency =
+            (packet::signed_timestamp_t)config.default_session.latency
+            * pipeline::DefaultMinLatency;
+    }
+
+    if (args.max_latency_given) {
+        if (args.max_latency_arg < (int)config.default_session.latency) {
+            roc_log(LogError, "invalid --max-latency: should be >= --latency");
+            return 1;
+        }
+        config.default_session.latency_monitor.max_latency =
+            (packet::signed_timestamp_t)args.max_latency_arg;
+    } else {
+        config.default_session.latency_monitor.max_latency =
+            (packet::signed_timestamp_t)config.default_session.latency
+            * pipeline::DefaultMaxLatency;
+    }
+
     if (args.resampler_window_given) {
-        if (!check_ge("resampler-window", args.resampler_window_arg, 0)) {
+        if (args.resampler_window_arg <= 0) {
+            roc_log(LogError, "invalid --resampler-window: should be > 0");
             return 1;
         }
         config.default_session.resampler.window_size = (size_t)args.resampler_window_arg;
     }
 
     if (args.resampler_frame_given) {
-        if (!check_ge("resampler-frame", args.resampler_frame_arg, 0)) {
+        if (args.resampler_window_arg <= 0) {
+            roc_log(LogError, "invalid --resampler-frame: should be > 0");
             return 1;
         }
         config.default_session.resampler.frame_size = (size_t)args.resampler_frame_arg;

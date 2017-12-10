@@ -26,6 +26,12 @@ enum { MaxPacketSize = 2048, MaxFrameSize = 65 * 1024 };
 bool make_receiver_config(pipeline::ReceiverConfig& out, const roc_receiver_config* in) {
     if (in->latency) {
         out.default_session.latency = in->latency;
+
+        out.default_session.latency_monitor.min_latency =
+            (packet::signed_timestamp_t)in->latency * pipeline::DefaultMinLatency;
+
+        out.default_session.latency_monitor.max_latency =
+            (packet::signed_timestamp_t)in->latency * pipeline::DefaultMaxLatency;
     }
 
     if (in->timeout) {

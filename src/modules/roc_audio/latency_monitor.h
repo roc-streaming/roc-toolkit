@@ -29,23 +29,24 @@ struct LatencyMonitorConfig {
     //! FreqEstimator update interval, number of samples
     packet::timestamp_t fe_update_interval;
 
+    //! Minimum allowed latency.
+    //! If the latency goes out of bounds, the session is terminated.
+    packet::signed_timestamp_t min_latency;
+
+    //! Maximum allowed latency.
+    //! If the latency goes out of bounds, the session is terminated.
+    packet::signed_timestamp_t max_latency;
+
     //! Maximum allowed freq_coeff delta around one.
-    //! For example, 0.01 allows freq_coeff values in range [0.99; 0.01].
+    //! If the scaling goes out of bounds, it is trimmed.
+    //! For example, 0.01 allows freq_coeff values in range [0.99; 1.01].
     float max_scaling_delta;
-
-    //! Minimum allowed latency, relative to the target latency.
-    //! For example, -1 allows latencies above -target_latency.
-    float min_latency_factor;
-
-    //! Maximum allowed latency, relative to the target latency.
-    //! For example, +2 allows latencies below 2*target_latency.
-    float max_latency_factor;
 
     LatencyMonitorConfig()
         : fe_update_interval(256)
-        , max_scaling_delta(0.01f)
-        , min_latency_factor(-1.f)
-        , max_latency_factor(+2.f) {
+        , min_latency(0)
+        , max_latency(0)
+        , max_scaling_delta(0.005f) {
     }
 };
 
