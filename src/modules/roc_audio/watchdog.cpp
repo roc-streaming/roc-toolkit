@@ -45,17 +45,32 @@ bool Watchdog::update(packet::timestamp_t time) {
         first_ = false;
     }
 
-    update_time_ = time;
-
-    if (update_time_ - read_time_ >= timeout_) {
-        roc_log(LogInfo,
-                "watchdog: timeout reached: update_time=%lu read_time=%lu timeout=%lu",
-                (unsigned long)update_time_, (unsigned long)read_time_,
-                (unsigned long)timeout_);
+    if (has_all_frames_empty_(time)) {
         alive_ = false;
         return false;
     }
 
+    update_time_ = time;
+    return true;
+}
+
+void Watchdog::check_frame_empty_(const Frame& frame) {
+    if (frame.flags() & audio::Frame::FlagEmpty) {
+        return;
+    }
+
+    read_time_ = update_time_;
+}
+
+bool Watchdog::has_all_frames_empty_(const packet::timestamp_t update_time) const {
+    if (update_time - read_time_ < timeout_) {
+        return false;
+    }
+
+    roc_log(LogInfo,
+            "watchdog: timeout reached: update_time=%lu read_time=%lu timeout=%lu",
+            (unsigned long)update_time, (unsigned long)read_time_,
+            (unsigned long)timeout_);
     return true;
 }
 

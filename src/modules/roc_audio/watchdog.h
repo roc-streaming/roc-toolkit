@@ -43,6 +43,9 @@ public:
     bool update(packet::timestamp_t time);
 
 private:
+    void check_frame_empty_(const Frame& frame);
+    bool has_all_frames_empty_(const packet::timestamp_t update_time) const;
+
     IReader& reader_;
 
     const packet::timestamp_t timeout_;
