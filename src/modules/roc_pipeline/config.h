@@ -96,6 +96,16 @@ struct SessionConfig {
     //!  If there are no new packets during this period, the session is terminated.
     packet::timestamp_t timeout;
 
+    //! Window during which not fully filled frames that have dropped packets
+    //! are detected.
+    packet::timestamp_t drop_window_sz;
+
+    //! Maximum allowed number of consecutive windows that can contain frames that aren't
+    //! fully filled and contain dropped packets.
+    //! @remarks
+    //!  If this number is exceeded the session should be terminated.
+    packet::timestamp_t max_drop_window_num;
+
     //! FEC scheme parameters.
     fec::Config fec;
 
@@ -119,6 +129,8 @@ struct SessionConfig {
         , samples_per_packet(DefaultPacketSize)
         , latency(DefaultPacketSize * 27)
         , timeout(DefaultSampleRate * 2)
+        , drop_window_sz(DefaultSampleRate / 100)
+        , max_drop_window_num(DefaultSampleRate / 10)
         , resampling(false)
         , beeping(false) {
         latency_monitor.min_latency =
