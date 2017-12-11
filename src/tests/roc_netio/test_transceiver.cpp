@@ -113,5 +113,27 @@ TEST(transceiver, add_start_stop) {
     trx.join();
 }
 
+TEST(transceiver, start_add_stop) {
+    packet::ConcurrentQueue queue(0, true);
+
+    Transceiver trx(packet_pool, buffer_pool, allocator);
+
+    CHECK(trx.valid());
+
+    trx.start();
+
+    packet::Address tx_addr;
+    packet::Address rx_addr;
+
+    CHECK(packet::parse_address(":0", tx_addr));
+    CHECK(packet::parse_address(":0", rx_addr));
+
+    CHECK(trx.add_udp_sender(tx_addr));
+    CHECK(trx.add_udp_receiver(rx_addr, queue));
+
+    trx.stop();
+    trx.join();
+}
+
 } // namespace netio
 } // namespace roc

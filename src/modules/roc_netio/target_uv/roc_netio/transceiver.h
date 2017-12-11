@@ -15,10 +15,12 @@
 
 #include <uv.h>
 
-#include "roc_core/atomic.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/list.h"
+#include "roc_core/list_node.h"
+#include "roc_core/mutex.h"
+#include "roc_core/semaphore.h"
 #include "roc_core/thread.h"
 #include "roc_netio/udp_receiver.h"
 #include "roc_netio/udp_sender.h"
@@ -30,7 +32,7 @@ namespace roc {
 namespace netio {
 
 //! Network sender/receiver.
-class Transceiver : public core::Thread {
+class Transceiver : private core::Thread {
 public:
     //! Initialize.
     Transceiver(packet::PacketPool& packet_pool,
@@ -41,6 +43,22 @@ public:
 
     //! Check if trasceiver was successfully constructed.
     bool valid() const;
+
+    //! Start background thread.
+    //! @remarks
+    //!  Should be called once.
+    void start();
+
+    //! Asynchronous stop.
+    //! @remarks
+    //!  Asynchronously stops all receivers and senders. May be called from
+    //!  any thread. Use join() to wait until the background thread finishes.
+    void stop();
+
+    //! Wait until background thread finishes.
+    //! @remarks
+    //!  Should be called once.
+    void join();
 
     //! Add UDP datagram receiver.
     //!
@@ -54,9 +72,6 @@ public:
     //!
     //! @returns
     //!  true on success or false if error occured
-    //!
-    //! @pre
-    //!  Should be called before start().
     bool add_udp_receiver(packet::Address& bind_address, packet::IWriter& writer);
 
     //! Add UDP datagram sender.
@@ -71,29 +86,47 @@ public:
     //!
     //! @returns
     //!  a new packet writer on success or null if error occured
-    //!
-    //! @pre
-    //!  Should be called before start().
     packet::IWriter* add_udp_sender(packet::Address& bind_address);
 
-    //! Asynchronous stop.
-    //! @remarks
-    //!  Asynchronously stops all receivers and senders. May be called from
-    //!  any thread. Use join() to wait until the stop operation finishes.
-    void stop();
-
 private:
+    struct Task : core::ListNode {
+        bool (Transceiver::*fn)(Task&);
+
+        packet::Address* address;
+        packet::IWriter* writer;
+
+        bool result;
+        core::Semaphore done;
+
+        Task()
+            : fn(NULL)
+            , address(NULL)
+            , writer(NULL)
+            , result(false)
+            , done(0) {
+        }
+    };
+
+    static void task_sem_cb_(uv_async_t* handle);
     static void stop_sem_cb_(uv_async_t* handle);
 
-    bool init_();
-    void stop_io_();
+    virtual void run();
+
+    void stop_();
     void close_sem_();
 
-    virtual void run();
+    void process_tasks_();
+    void run_task_(Task&);
+
+    bool add_udp_receiver_(Task&);
+    bool add_udp_sender_(Task&);
 
     packet::PacketPool& packet_pool_;
     core::BufferPool<uint8_t>& buffer_pool_;
     core::IAllocator& allocator_;
+
+    bool valid_;
+    bool stopped_;
 
     uv_loop_t loop_;
     bool loop_initialized_;
@@ -101,11 +134,15 @@ private:
     uv_async_t stop_sem_;
     bool stop_sem_initialized_;
 
-    core::Atomic stopped_;
-    bool valid_;
+    uv_async_t task_sem_;
+    bool task_sem_initialized_;
+
+    core::List<Task, core::NoOwnership> tasks_;
 
     core::List<UDPReceiver> receivers_;
     core::List<UDPSender> senders_;
+
+    core::Mutex mutex_;
 };
 
 } // namespace netio
