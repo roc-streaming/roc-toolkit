@@ -24,7 +24,7 @@ namespace core {
 //! Semaphore.
 class Semaphore : public NonCopyable<> {
 public:
-    //! Initialize semaphore with given counter value.
+    //! Initialize semaphore with the given initial counter value.
     explicit Semaphore(size_t counter);
 
     ~Semaphore();
@@ -37,6 +37,7 @@ public:
     //! Decrement semaphore counter.
     //! @remarks
     //!  Blocks until counter will be greather than zero.
+    //!  The order of waking up blocked pends is not guaranteed.
     void pend();
 
     //! Try to decrement semaphore counter.
