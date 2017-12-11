@@ -87,15 +87,6 @@ bool Player::open(const char* name, const char* type) {
     return true;
 }
 
-void Player::stop() {
-    stop_ = 1;
-}
-
-void Player::start(pipeline::IReceiver& input) {
-    input_ = &input;
-    core::Thread::start();
-}
-
 size_t Player::sample_rate() const {
     if (!output_) {
         roc_panic("player: sample_rate: non-open output file or device");
@@ -108,6 +99,19 @@ bool Player::is_file() const {
         roc_panic("player: is_file: non-open output file or device");
     }
     return is_file_;
+}
+
+void Player::start(pipeline::IReceiver& input) {
+    input_ = &input;
+    Thread::start();
+}
+
+void Player::stop() {
+    stop_ = 1;
+}
+
+void Player::join() {
+    Thread::join();
 }
 
 void Player::run() {

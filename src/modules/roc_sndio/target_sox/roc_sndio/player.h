@@ -30,7 +30,7 @@ namespace sndio {
 //! @remarks
 //!  Reads samples in interleaved format, encodes them and and writes to
 //!  output file or audio driver.
-class Player : public core::Thread {
+class Player : private core::Thread {
 public:
     //! Initialize.
     //!
@@ -56,18 +56,7 @@ public:
     //!
     //! @pre
     //!  Should be called once before calling start().
-    bool open(const char* name, const char* type = NULL);
-
-    //! Start reading samples in a separate thread.
-    //!
-    //! @b Parameters
-    //!  - @p input is used to read samples.
-    void start(pipeline::IReceiver& input);
-
-    //! Stop thread.
-    //! @remarks
-    //!  Can be called from any thread.
-    void stop();
+    bool open(const char* name, const char* type);
 
     //! Get sample rate of an output file or a device.
     //!
@@ -80,6 +69,22 @@ public:
     //! @pre
     //!  Output file or device should be opened.
     bool is_file() const;
+
+    //! Start reading samples in a separate thread.
+    //!
+    //! @b Parameters
+    //!  - @p input is used to read samples.
+    void start(pipeline::IReceiver& input);
+
+    //! Stop thread.
+    //! @remarks
+    //!  Can be called from any thread.
+    void stop();
+
+    //! Wait until background thread finishes.
+    //! @remarks
+    //!  Should be called once.
+    void join();
 
 private:
     virtual void run();

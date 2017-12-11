@@ -30,7 +30,7 @@ namespace sndio {
 //! @remarks
 //!  Reads samples from input file or audio driver, decodes them and
 //!  writes buffers to output writer.
-class Recorder : public core::Thread {
+class Recorder : private core::Thread {
 public:
     //! Initialize.
     //!
@@ -57,12 +57,13 @@ public:
     //!
     //! @pre
     //!  Should be called once before calling start().
-    bool open(const char* name = NULL, const char* type = NULL);
+    bool open(const char* name, const char* type);
 
-    //! Stop thread.
-    //! @remarks
-    //!  Can be called from any thread.
-    void stop();
+    //! Returns true if input is a real file.
+    //!
+    //! @pre
+    //!  Input file or device should be opened.
+    bool is_file() const;
 
     //! Start writing samples in a separate thread.
     //!
@@ -70,11 +71,15 @@ public:
     //!  - @p output is used to write buffers with decoded samples.
     void start(audio::IWriter& output);
 
-    //! Returns true if input is a real file.
-    //!
-    //! @pre
-    //!  Input file or device should be opened.
-    bool is_file() const;
+    //! Stop thread.
+    //! @remarks
+    //!  Can be called from any thread.
+    void stop();
+
+    //! Wait until background thread finishes.
+    //! @remarks
+    //!  Should be called once.
+    void join();
 
 private:
     virtual void run();

@@ -193,13 +193,17 @@ bool Recorder::is_file() const {
     return is_file_;
 }
 
+void Recorder::start(audio::IWriter& output) {
+    output_ = &output;
+    Thread::start();
+}
+
 void Recorder::stop() {
     stop_ = 1;
 }
 
-void Recorder::start(audio::IWriter& output) {
-    output_ = &output;
-    core::Thread::start();
+void Recorder::join() {
+    Thread::join();
 }
 
 void Recorder::run() {

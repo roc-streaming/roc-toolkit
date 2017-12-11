@@ -122,7 +122,7 @@ TEST(player_recorder, player_noop) {
 TEST(player_recorder, player_error) {
     Player player(buffer_pool, allocator, true, ChMask, SampleRate);
 
-    CHECK(!player.open("/bad/file"));
+    CHECK(!player.open("/bad/file", NULL));
 }
 
 TEST(player_recorder, player_start_stop) {
@@ -130,7 +130,7 @@ TEST(player_recorder, player_start_stop) {
     Player player(buffer_pool, allocator, true, ChMask, SampleRate);
 
     core::TempFile file("test.wav");
-    CHECK(player.open(file.path()));
+    CHECK(player.open(file.path(), NULL));
 
     player.start(receiver);
     player.stop();
@@ -142,7 +142,7 @@ TEST(player_recorder, player_stop_start) {
     Player player(buffer_pool, allocator, true, ChMask, SampleRate);
 
     core::TempFile file("test.wav");
-    CHECK(player.open(file.path()));
+    CHECK(player.open(file.path(), NULL));
 
     player.stop();
     player.start(receiver);
@@ -153,7 +153,7 @@ TEST(player_recorder, player_open_file) {
     Player player(buffer_pool, allocator, true, ChMask, 0);
 
     core::TempFile file("test.wav");
-    CHECK(player.open(file.path()));
+    CHECK(player.open(file.path(), NULL));
 
     CHECK(player.is_file());
 }
@@ -162,7 +162,7 @@ TEST(player_recorder, player_open_file_zero_sample_rate) {
     Player player(buffer_pool, allocator, true, ChMask, 0);
 
     core::TempFile file("test.wav");
-    CHECK(player.open(file.path()));
+    CHECK(player.open(file.path(), NULL));
     CHECK(player.sample_rate() != 0);
 }
 
@@ -170,7 +170,7 @@ TEST(player_recorder, player_open_file_non_zero_sample_rate) {
     Player player(buffer_pool, allocator, true, ChMask, SampleRate);
 
     core::TempFile file("test.wav");
-    CHECK(player.open(file.path()));
+    CHECK(player.open(file.path(), NULL));
     CHECK(player.sample_rate() == SampleRate);
 }
 
@@ -181,7 +181,7 @@ TEST(player_recorder, recorder_noop) {
 TEST(player_recorder, recorder_error) {
     Recorder recorder(buffer_pool, ChMask, FrameSize, SampleRate);
 
-    CHECK(!recorder.open("/bad/file"));
+    CHECK(!recorder.open("/bad/file", NULL));
 }
 
 TEST(player_recorder, recorder_start_stop) {
@@ -193,14 +193,14 @@ TEST(player_recorder, recorder_start_stop) {
     Player player(buffer_pool, allocator, true, ChMask, SampleRate);
 
     core::TempFile file("test.wav");
-    CHECK(player.open(file.path()));
+    CHECK(player.open(file.path(), NULL));
 
     player.start(receiver);
     player.join();
 
     Recorder recorder(buffer_pool, ChMask, FrameSize, SampleRate);
 
-    CHECK(recorder.open(file.path()));
+    CHECK(recorder.open(file.path(), NULL));
 
     MockWriter writer;
 
@@ -218,14 +218,14 @@ TEST(player_recorder, recorder_stop_start) {
     Player player(buffer_pool, allocator, true, ChMask, SampleRate);
 
     core::TempFile file("test.wav");
-    CHECK(player.open(file.path()));
+    CHECK(player.open(file.path(), NULL));
 
     player.start(receiver);
     player.join();
 
     Recorder recorder(buffer_pool, ChMask, FrameSize, SampleRate);
 
-    CHECK(recorder.open(file.path()));
+    CHECK(recorder.open(file.path(), NULL));
 
     MockWriter writer;
 
@@ -243,7 +243,7 @@ TEST(player_recorder, write_read) {
     Player player(buffer_pool, allocator, true, ChMask, SampleRate);
 
     core::TempFile file("test.wav");
-    CHECK(player.open(file.path()));
+    CHECK(player.open(file.path(), NULL));
 
     player.start(receiver);
     player.join();
@@ -252,7 +252,7 @@ TEST(player_recorder, write_read) {
 
     Recorder recorder(buffer_pool, ChMask, FrameSize, SampleRate);
 
-    CHECK(recorder.open(file.path()));
+    CHECK(recorder.open(file.path(), NULL));
 
     MockWriter writer;
 
@@ -272,7 +272,7 @@ TEST(player_recorder, overwrite) {
 
     {
         Player player(buffer_pool, allocator, true, ChMask, SampleRate);
-        CHECK(player.open(file.path()));
+        CHECK(player.open(file.path(), NULL));
 
         player.start(receiver);
         player.join();
@@ -285,7 +285,7 @@ TEST(player_recorder, overwrite) {
 
     {
         Player player(buffer_pool, allocator, true, ChMask, SampleRate);
-        CHECK(player.open(file.path()));
+        CHECK(player.open(file.path(), NULL));
 
         player.start(receiver);
         player.join();
@@ -296,7 +296,7 @@ TEST(player_recorder, overwrite) {
 
     Recorder recorder(buffer_pool, ChMask, FrameSize, SampleRate);
 
-    CHECK(recorder.open(file.path()));
+    CHECK(recorder.open(file.path(), NULL));
 
     MockWriter writer;
 
