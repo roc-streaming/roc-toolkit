@@ -24,14 +24,6 @@ namespace {
 
 enum { MaxPacketSize = 2048, MaxFrameSize = 65 * 1024 };
 
-bool check_ge(const char* option, int value, int min_value) {
-    if (value < min_value) {
-        roc_log(LogError, "invalid `--%s=%d': should be >= %d", option, value, min_value);
-        return false;
-    }
-    return true;
-}
-
 } // namespace
 
 int main(int argc, char** argv) {
@@ -96,16 +88,24 @@ int main(int argc, char** argv) {
     }
 
     if (args.nbsrc_given) {
-        if (config.fec.codec != roc::fec::NoCodec) {
-            roc_log(LogError, "`--nbsrc' option should not be used when --fec=none)");
+        if (config.fec.codec == fec::NoCodec) {
+            roc_log(LogError, "--nbsrc can't be used when --fec=none)");
+            return 1;
+        }
+        if (args.nbsrc_arg <= 0) {
+            roc_log(LogError, "invalid --nbsrc: should be > 0");
             return 1;
         }
         config.fec.n_source_packets = (size_t)args.nbsrc_arg;
     }
 
     if (args.nbrpr_given) {
-        if (config.fec.codec != roc::fec::NoCodec) {
-            roc_log(LogError, "`--nbrpr' option should not be used when --fec=none");
+        if (config.fec.codec == fec::NoCodec) {
+            roc_log(LogError, "--nbrpr can't be used when --fec=none");
+            return 1;
+        }
+        if (args.nbrpr_arg <= 0) {
+            roc_log(LogError, "invalid --nbrpr: should be > 0");
             return 1;
         }
         config.fec.n_repair_packets = (size_t)args.nbrpr_arg;
@@ -121,7 +121,8 @@ int main(int argc, char** argv) {
 
     size_t sample_rate = 0;
     if (args.rate_given) {
-        if (!check_ge("rate", args.rate_arg, 1)) {
+        if (args.rate_arg <= 0) {
+            roc_log(LogError, "invalid --rate: should be > 0");
             return 1;
         }
         sample_rate = (size_t)args.rate_arg;

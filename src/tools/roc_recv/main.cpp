@@ -81,16 +81,24 @@ int main(int argc, char** argv) {
     }
 
     if (args.nbsrc_given) {
-        if (config.default_session.fec.codec != fec::NoCodec) {
-            roc_log(LogError, "`--nbsrc' option should not be used when --fec=none)");
+        if (config.default_session.fec.codec == fec::NoCodec) {
+            roc_log(LogError, "--nbsrc can't be used when --fec=none)");
+            return 1;
+        }
+        if (args.nbsrc_arg <= 0) {
+            roc_log(LogError, "invalid --nbsrc: should be > 0");
             return 1;
         }
         config.default_session.fec.n_source_packets = (size_t)args.nbsrc_arg;
     }
 
     if (args.nbrpr_given) {
-        if (config.default_session.fec.codec != fec::NoCodec) {
-            roc_log(LogError, "`--nbrpr' option should not be used when --fec=none");
+        if (config.default_session.fec.codec == fec::NoCodec) {
+            roc_log(LogError, "--nbrpr can't be used when --fec=none");
+            return 1;
+        }
+        if (args.nbrpr_arg <= 0) {
+            roc_log(LogError, "invalid --nbrpr: should be > 0");
             return 1;
         }
         config.default_session.fec.n_repair_packets = (size_t)args.nbrpr_arg;
