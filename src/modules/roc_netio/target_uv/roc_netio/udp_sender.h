@@ -47,6 +47,9 @@ public:
     //!  Should be called from the event loop thread.
     void stop();
 
+    //! Get bind address.
+    const packet::Address& address() const;
+
     //! Write packet.
     //! @remarks
     //!  May be called from any thread.

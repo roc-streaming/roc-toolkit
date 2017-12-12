@@ -49,6 +49,9 @@ public:
     //!  Should be called from the event loop thread.
     void stop();
 
+    //! Get bind address.
+    const packet::Address& address() const;
+
 private:
     static void alloc_cb_(uv_handle_t* handle, size_t size, uv_buf_t* buf);
     static void recv_cb_(uv_udp_t* handle,

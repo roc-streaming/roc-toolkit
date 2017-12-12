@@ -135,5 +135,66 @@ TEST(transceiver, start_add_stop) {
     trx.join();
 }
 
+TEST(transceiver, add_remove) {
+    packet::ConcurrentQueue queue(0, true);
+
+    Transceiver trx(packet_pool, buffer_pool, allocator);
+
+    CHECK(trx.valid());
+
+    packet::Address tx_addr;
+    packet::Address rx_addr;
+
+    CHECK(packet::parse_address(":0", tx_addr));
+    CHECK(packet::parse_address(":0", rx_addr));
+
+    UNSIGNED_LONGS_EQUAL(0, trx.num_ports());
+
+    CHECK(trx.add_udp_sender(tx_addr));
+    UNSIGNED_LONGS_EQUAL(1, trx.num_ports());
+
+    CHECK(trx.add_udp_receiver(rx_addr, queue));
+    UNSIGNED_LONGS_EQUAL(2, trx.num_ports());
+
+    trx.remove_port(tx_addr);
+    UNSIGNED_LONGS_EQUAL(1, trx.num_ports());
+
+    trx.remove_port(rx_addr);
+    UNSIGNED_LONGS_EQUAL(0, trx.num_ports());
+}
+
+TEST(transceiver, start_add_remove) {
+    packet::ConcurrentQueue queue(0, true);
+
+    Transceiver trx(packet_pool, buffer_pool, allocator);
+
+    CHECK(trx.valid());
+
+    trx.start();
+
+    packet::Address tx_addr;
+    packet::Address rx_addr;
+
+    CHECK(packet::parse_address(":0", tx_addr));
+    CHECK(packet::parse_address(":0", rx_addr));
+
+    UNSIGNED_LONGS_EQUAL(0, trx.num_ports());
+
+    CHECK(trx.add_udp_sender(tx_addr));
+    UNSIGNED_LONGS_EQUAL(1, trx.num_ports());
+
+    CHECK(trx.add_udp_receiver(rx_addr, queue));
+    UNSIGNED_LONGS_EQUAL(2, trx.num_ports());
+
+    trx.remove_port(tx_addr);
+    UNSIGNED_LONGS_EQUAL(1, trx.num_ports());
+
+    trx.remove_port(rx_addr);
+    UNSIGNED_LONGS_EQUAL(0, trx.num_ports());
+
+    trx.stop();
+    trx.join();
+}
+
 } // namespace netio
 } // namespace roc

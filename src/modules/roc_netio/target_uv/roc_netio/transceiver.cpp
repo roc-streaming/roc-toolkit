@@ -11,6 +11,7 @@
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_core/shared_ptr.h"
+#include "roc_packet/address_to_str.h"
 
 namespace roc {
 namespace netio {
@@ -117,6 +118,12 @@ void Transceiver::join() {
     Thread::join();
 }
 
+size_t Transceiver::num_ports() const {
+    core::Mutex::Lock lock(mutex_);
+
+    return receivers_.size() + senders_.size();
+}
+
 bool Transceiver::add_udp_receiver(packet::Address& bind_address,
                                    packet::IWriter& writer) {
     if (!valid()) {
@@ -146,6 +153,24 @@ packet::IWriter* Transceiver::add_udp_sender(packet::Address& bind_address) {
     run_task_(task);
 
     return task.writer;
+}
+
+void Transceiver::remove_port(packet::Address& bind_address) {
+    if (!valid()) {
+        roc_panic("transceiver: can't use invalid transceiver");
+    }
+
+    Task task;
+    task.fn = &Transceiver::remove_port_;
+    task.address = &bind_address;
+    task.writer = NULL;
+
+    run_task_(task);
+
+    if (!task.result) {
+        roc_panic("transceiver: can't remove unknown port %s",
+                  packet::address_to_str(bind_address).c_str());
+    }
 }
 
 void Transceiver::run() {
@@ -183,13 +208,13 @@ void Transceiver::stop_() {
     // cancel enqueued tasks
     process_tasks_();
 
-    core::SharedPtr<UDPReceiver> rp;
-    for (rp = receivers_.front(); rp; rp = receivers_.nextof(*rp)) {
+    for (core::SharedPtr<UDPReceiver> rp = receivers_.front(); rp;
+         rp = receivers_.nextof(*rp)) {
         rp->stop();
     }
 
-    core::SharedPtr<UDPSender> sp;
-    for (sp = senders_.front(); sp; sp = senders_.nextof(*sp)) {
+    for (core::SharedPtr<UDPSender> sp = senders_.front(); sp;
+         sp = senders_.nextof(*sp)) {
         sp->stop();
     }
 }
@@ -281,6 +306,28 @@ bool Transceiver::add_udp_sender_(Task& task) {
     task.writer = sp.get();
 
     return true;
+}
+
+bool Transceiver::remove_port_(Task& task) {
+    for (core::SharedPtr<UDPReceiver> rp = receivers_.front(); rp;
+         rp = receivers_.nextof(*rp)) {
+        if (rp->address() == *task.address) {
+            rp->stop();
+            receivers_.remove(*rp);
+            return true;
+        }
+    }
+
+    for (core::SharedPtr<UDPSender> sp = senders_.front(); sp;
+         sp = senders_.nextof(*sp)) {
+        if (sp->address() == *task.address) {
+            sp->stop();
+            senders_.remove(*sp);
+            return true;
+        }
+    }
+
+    return false;
 }
 
 } // namespace netio

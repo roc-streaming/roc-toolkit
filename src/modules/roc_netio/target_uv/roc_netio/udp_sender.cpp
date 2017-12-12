@@ -96,20 +96,8 @@ void UDPSender::stop() {
     }
 }
 
-void UDPSender::close_() {
-    if (handle_initialized_) {
-        if (!uv_is_closing((uv_handle_t*)&handle_)) {
-            roc_log(LogInfo, "udp sender: closing port %s",
-                    packet::address_to_str(address_).c_str());
-            uv_close((uv_handle_t*)&handle_, NULL);
-        }
-        handle_initialized_ = false;
-    }
-
-    if (write_sem_initialized_) {
-        uv_close((uv_handle_t*)&write_sem_, NULL);
-        write_sem_initialized_ = false;
-    }
+const packet::Address& UDPSender::address() const {
+    return address_;
 }
 
 void UDPSender::write(const packet::PacketPtr& pp) {
@@ -140,17 +128,6 @@ void UDPSender::write(const packet::PacketPtr& pp) {
         roc_panic("udp sender: uv_async_send(): [%s] %s", uv_err_name(err),
                   uv_strerror(err));
     }
-}
-
-packet::PacketPtr UDPSender::read_() {
-    core::Mutex::Lock lock(mutex_);
-
-    packet::PacketPtr pp = list_.front();
-    if (pp) {
-        list_.remove(*pp);
-    }
-
-    return pp;
 }
 
 void UDPSender::write_sem_cb_(uv_async_t* handle) {
@@ -214,6 +191,33 @@ void UDPSender::send_cb_(uv_udp_send_t* req, int status) {
 
     if (self.stopped_ && self.pending_ == 0) {
         self.close_();
+    }
+}
+
+packet::PacketPtr UDPSender::read_() {
+    core::Mutex::Lock lock(mutex_);
+
+    packet::PacketPtr pp = list_.front();
+    if (pp) {
+        list_.remove(*pp);
+    }
+
+    return pp;
+}
+
+void UDPSender::close_() {
+    if (handle_initialized_) {
+        if (!uv_is_closing((uv_handle_t*)&handle_)) {
+            roc_log(LogInfo, "udp sender: closing port %s",
+                    packet::address_to_str(address_).c_str());
+            uv_close((uv_handle_t*)&handle_, NULL);
+        }
+        handle_initialized_ = false;
+    }
+
+    if (write_sem_initialized_) {
+        uv_close((uv_handle_t*)&write_sem_, NULL);
+        write_sem_initialized_ = false;
     }
 }
 

@@ -60,7 +60,10 @@ public:
     //!  Should be called once.
     void join();
 
-    //! Add UDP datagram receiver.
+    //! Get number of receiver and sender ports.
+    size_t num_ports() const;
+
+    //! Add UDP datagram receiver port.
     //!
     //! Creates a new UDP receiver and bind it to @p bind_address. The receiver
     //! will pass packets to @p writer. Writer will be called from the network
@@ -74,7 +77,7 @@ public:
     //!  true on success or false if error occured
     bool add_udp_receiver(packet::Address& bind_address, packet::IWriter& writer);
 
-    //! Add UDP datagram sender.
+    //! Add UDP datagram sender port.
     //!
     //! Creates a new UDP sender, bind to @p bind_address, and returns a writer
     //! that may be used to send packets from this address. Writer may be called
@@ -87,6 +90,9 @@ public:
     //! @returns
     //!  a new packet writer on success or null if error occured
     packet::IWriter* add_udp_sender(packet::Address& bind_address);
+
+    //! Remove sender or receiver.
+    void remove_port(packet::Address& bind_address);
 
 private:
     struct Task : core::ListNode {
@@ -120,6 +126,7 @@ private:
 
     bool add_udp_receiver_(Task&);
     bool add_udp_sender_(Task&);
+    bool remove_port_(Task&);
 
     packet::PacketPool& packet_pool_;
     core::BufferPool<uint8_t>& buffer_pool_;

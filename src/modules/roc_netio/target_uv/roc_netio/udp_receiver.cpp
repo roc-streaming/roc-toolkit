@@ -109,6 +109,10 @@ void UDPReceiver::stop() {
     uv_close((uv_handle_t*)&handle_, NULL);
 }
 
+const packet::Address& UDPReceiver::address() const {
+    return address_;
+}
+
 void UDPReceiver::alloc_cb_(uv_handle_t* handle, size_t size, uv_buf_t* buf) {
     roc_panic_if_not(handle);
     roc_panic_if_not(buf);
