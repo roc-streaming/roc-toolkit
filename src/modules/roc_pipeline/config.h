@@ -149,10 +149,10 @@ struct ReceiverConfig {
 
 //! Sender parameters.
 struct SenderConfig {
-    //! Parameters for the port from which source packets are sent.
+    //! Parameters for the port to which source packets are sent.
     PortConfig source_port;
 
-    //! Parameters for the port from which repair packets are sent.
+    //! Parameters for the port to which repair packets are sent.
     PortConfig repair_port;
 
     //! Channel mask.
