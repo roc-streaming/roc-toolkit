@@ -24,6 +24,7 @@
 #include "roc_packet/packet_pool.h"
 #include "roc_packet/parse_address.h"
 
+#include "roc/context.h"
 #include "roc/log.h"
 #include "roc/receiver.h"
 #include "roc/sender.h"
@@ -52,9 +53,31 @@ core::HeapAllocator allocator;
 packet::PacketPool packet_pool(allocator, 1);
 core::BufferPool<uint8_t> byte_buffer_pool(allocator, MaxBufSize, 1);
 
+class Context : public core::NonCopyable<> {
+public:
+    Context() {
+        ctx_ = roc_context_open(NULL);
+        CHECK(ctx_);
+        CHECK(roc_context_start(ctx_) == 0);
+    }
+
+    ~Context() {
+        roc_context_stop(ctx_);
+        roc_context_close(ctx_);
+    }
+
+    roc_context* get() {
+        return ctx_;
+    }
+
+private:
+    roc_context* ctx_;
+};
+
 class Sender : public core::Thread {
 public:
-    Sender(roc_sender_config& config,
+    Sender(Context& context,
+           roc_sender_config& config,
            packet::Address dst_source_addr,
            packet::Address dst_repair_addr,
            float* samples,
@@ -65,7 +88,7 @@ public:
         , frame_size_(frame_size) {
         packet::Address addr;
         CHECK(packet::parse_address("127.0.0.1:0", addr));
-        sndr_ = roc_sender_new(&config);
+        sndr_ = roc_sender_open(context.get(), &config);
         CHECK(sndr_);
         CHECK(roc_sender_bind(sndr_, addr.saddr()) == 0);
         CHECK(
@@ -73,12 +96,10 @@ public:
             == 0);
         CHECK(roc_sender_connect(sndr_, ROC_PROTO_RSM8_REPAIR, dst_repair_addr.saddr())
               == 0);
-        CHECK(roc_sender_start(sndr_) == 0);
     }
 
     ~Sender() {
-        roc_sender_stop(sndr_);
-        roc_sender_delete(sndr_);
+        roc_sender_close(sndr_);
     }
 
 private:
@@ -100,7 +121,8 @@ private:
 
 class Receiver {
 public:
-    Receiver(roc_receiver_config& config,
+    Receiver(Context& context,
+             roc_receiver_config& config,
              const float* samples,
              size_t total_samples,
              size_t frame_size)
@@ -109,17 +131,15 @@ public:
         , frame_size_(frame_size) {
         CHECK(packet::parse_address("127.0.0.1:0", source_addr_));
         CHECK(packet::parse_address("127.0.0.1:0", repair_addr_));
-        recv_ = roc_receiver_new(&config);
+        recv_ = roc_receiver_open(context.get(), &config);
         CHECK(recv_);
         CHECK(roc_receiver_bind(recv_, ROC_PROTO_RTP_RSM8_SOURCE, source_addr_.saddr())
               == 0);
         CHECK(roc_receiver_bind(recv_, ROC_PROTO_RSM8_REPAIR, repair_addr_.saddr()) == 0);
-        CHECK(roc_receiver_start(recv_) == 0);
     }
 
     ~Receiver() {
-        roc_receiver_stop(recv_);
-        roc_receiver_delete(recv_);
+        roc_receiver_close(recv_);
     }
 
     packet::Address source_addr() {
@@ -342,10 +362,12 @@ TEST_GROUP(sender_receiver) {
 };
 
 TEST(sender_receiver, simple) {
-    Receiver receiver(receiver_conf, samples, TotalSamples, FrameSamples);
+    Context context;
 
-    Sender sender(sender_conf, receiver.source_addr(), receiver.repair_addr(), samples,
-                  TotalSamples, FrameSamples);
+    Receiver receiver(context, receiver_conf, samples, TotalSamples, FrameSamples);
+
+    Sender sender(context, sender_conf, receiver.source_addr(), receiver.repair_addr(),
+                  samples, TotalSamples, FrameSamples);
 
     sender.start();
     receiver.run();
@@ -354,12 +376,14 @@ TEST(sender_receiver, simple) {
 
 #ifdef ROC_TARGET_OPENFEC
 TEST(sender_receiver, losses) {
-    Receiver receiver(receiver_conf, samples, TotalSamples, FrameSamples);
+    Context context;
+
+    Receiver receiver(context, receiver_conf, samples, TotalSamples, FrameSamples);
 
     Proxy proxy(receiver.source_addr(), receiver.repair_addr(), SourcePackets,
                 RepairPackets);
 
-    Sender sender(sender_conf, proxy.source_addr(), proxy.repair_addr(), samples,
+    Sender sender(context, sender_conf, proxy.source_addr(), proxy.repair_addr(), samples,
                   TotalSamples, FrameSamples);
 
     proxy.start();

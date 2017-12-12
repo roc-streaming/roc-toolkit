@@ -7,21 +7,14 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc/receiver.h"
+#include "private.h"
 
-#include "roc_core/heap_allocator.h"
 #include "roc_core/log.h"
-#include "roc_netio/transceiver.h"
-#include "roc_packet/address_to_str.h"
-#include "roc_packet/parse_address.h"
-#include "roc_pipeline/receiver.h"
+#include "roc_core/panic.h"
 
 using namespace roc;
 
 namespace {
-
-// TODO: make this configurable
-enum { MaxPacketSize = 2048, MaxFrameSize = 65 * 1024 };
 
 bool make_receiver_config(pipeline::ReceiverConfig& out, const roc_receiver_config* in) {
     if (in->latency) {
@@ -103,41 +96,28 @@ bool make_port_config(pipeline::PortConfig& out,
 
 } // namespace
 
-struct roc_receiver {
-    core::HeapAllocator allocator;
+roc_receiver::roc_receiver(roc_context& ctx, pipeline::ReceiverConfig& cfg)
+    : context(ctx)
+    , receiver(cfg,
+               format_map,
+               context.packet_pool,
+               context.byte_buffer_pool,
+               context.sample_buffer_pool,
+               context.allocator) {
+}
 
-    packet::PacketPool packet_pool;
-    core::BufferPool<uint8_t> byte_buffer_pool;
-    core::BufferPool<audio::sample_t> sample_buffer_pool;
+roc_receiver* roc_receiver_open(roc_context* context, const roc_receiver_config* config) {
+    roc_panic_if_not(context);
 
-    rtp::FormatMap format_map;
-
-    pipeline::Receiver receiver;
-    netio::Transceiver trx;
-
-    roc_receiver(pipeline::ReceiverConfig& config)
-        : packet_pool(allocator, 1)
-        , byte_buffer_pool(allocator, MaxPacketSize, 1)
-        , sample_buffer_pool(allocator, MaxFrameSize, 1)
-        , receiver(config,
-                   format_map,
-                   packet_pool,
-                   byte_buffer_pool,
-                   sample_buffer_pool,
-                   allocator)
-        , trx(packet_pool, byte_buffer_pool, allocator) {
-    }
-};
-
-roc_receiver* roc_receiver_new(const roc_receiver_config* config) {
     pipeline::ReceiverConfig c;
-
-    if (!make_receiver_config(c, config)) {
-        return NULL;
+    if (config) {
+        if (!make_receiver_config(c, config)) {
+            return NULL;
+        }
     }
 
     roc_log(LogInfo, "roc receiver: creating receiver");
-    return new roc_receiver(c);
+    return new(std::nothrow) roc_receiver(*context, c);
 }
 
 int roc_receiver_bind(roc_receiver* receiver, roc_protocol proto, struct sockaddr* addr) {
@@ -149,7 +129,7 @@ int roc_receiver_bind(roc_receiver* receiver, roc_protocol proto, struct sockadd
         return -1;
     }
 
-    if (!receiver->trx.add_udp_receiver(port.address, receiver->receiver)) {
+    if (!receiver->context.trx.add_udp_receiver(port.address, receiver->receiver)) {
         return -1;
     }
 
@@ -161,21 +141,14 @@ int roc_receiver_bind(roc_receiver* receiver, roc_protocol proto, struct sockadd
     return 0;
 }
 
-int roc_receiver_start(roc_receiver* receiver) {
-    roc_panic_if(receiver == NULL);
-
-    receiver->trx.start();
-    return 0;
-}
-
 ssize_t
 roc_receiver_read(roc_receiver* receiver, float* samples, const size_t n_samples) {
     roc_panic_if(!receiver);
     roc_panic_if(!samples && n_samples != 0);
 
     core::Slice<audio::sample_t> buf(
-        new (receiver->sample_buffer_pool)
-            core::Buffer<audio::sample_t>(receiver->sample_buffer_pool));
+        new (receiver->context.sample_buffer_pool)
+            core::Buffer<audio::sample_t>(receiver->context.sample_buffer_pool));
     buf.resize(n_samples);
 
     audio::Frame frame(buf);
@@ -187,15 +160,10 @@ roc_receiver_read(roc_receiver* receiver, float* samples, const size_t n_samples
     return (ssize_t)n_samples;
 }
 
-void roc_receiver_stop(roc_receiver* receiver) {
+void roc_receiver_close(roc_receiver* receiver) {
     roc_panic_if(!receiver);
 
-    receiver->trx.stop();
-    receiver->trx.join();
-}
-
-void roc_receiver_delete(roc_receiver* receiver) {
-    roc_panic_if(!receiver);
+    // TODO: remove from trx
 
     roc_log(LogInfo, "roc receiver: deleting receiver");
     delete receiver;

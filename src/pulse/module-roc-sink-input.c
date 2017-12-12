@@ -13,19 +13,20 @@
 #include <pulse/xmalloc.h>
 
 /* private pulseaudio headers */
-#include <pulsecore/module.h>
+#include <pulsecore/log.h>
 #include <pulsecore/modargs.h>
+#include <pulsecore/module.h>
 #include <pulsecore/namereg.h>
 #include <pulsecore/sink-input.h>
-#include <pulsecore/log.h>
 
 /* roc headers */
+#include <roc/context.h>
 #include <roc/log.h>
 #include <roc/receiver.h>
 
 /* system headers */
-#include <sys/socket.h>
 #include <netinet/in.h>
+#include <sys/socket.h>
 
 /* local headers */
 #include "roc_helpers.h"
@@ -45,6 +46,7 @@ struct roc_sink_input_userdata {
     pa_module* module;
     pa_sink_input* sink_input;
 
+    roc_context* context;
     roc_receiver* receiver;
 };
 
@@ -191,10 +193,19 @@ int pa__init(pa_module* m) {
         goto error;
     }
 
-    roc_receiver_config config;
-    memset(&config, 0, sizeof(config));
+    roc_context_config context_config;
+    memset(&context_config, 0, sizeof(context_config));
 
-    u->receiver = roc_receiver_new(&config);
+    u->context = roc_context_open(&context_config);
+    if (!u->context) {
+        pa_log("can't create roc context");
+        goto error;
+    }
+
+    roc_receiver_config receiver_config;
+    memset(&receiver_config, 0, sizeof(receiver_config));
+
+    u->receiver = roc_receiver_open(u->context, &receiver_config);
     if (!u->receiver) {
         pa_log("can't create roc receiver");
         goto error;
@@ -214,7 +225,7 @@ int pa__init(pa_module* m) {
         goto error;
     }
 
-    if (roc_receiver_start(u->receiver) != 0) {
+    if (roc_context_start(u->context) != 0) {
         pa_log("can't start roc receiver");
         goto error;
     }
@@ -286,8 +297,12 @@ void pa__done(pa_module* m) {
     }
 
     if (u->receiver) {
-        roc_receiver_stop(u->receiver);
-        roc_receiver_delete(u->receiver);
+        roc_receiver_close(u->receiver);
+    }
+
+    if (u->context) {
+        roc_context_stop(u->context);
+        roc_context_close(u->context);
     }
 
     pa_xfree(u);

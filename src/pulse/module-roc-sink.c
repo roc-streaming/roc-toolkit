@@ -10,25 +10,26 @@
 #include <config.h>
 
 /* public pulseaudio headers */
-#include <pulse/xmalloc.h>
 #include <pulse/rtclock.h>
+#include <pulse/xmalloc.h>
 
 /* private pulseaudio headers */
-#include <pulsecore/module.h>
-#include <pulsecore/modargs.h>
-#include <pulsecore/sink.h>
-#include <pulsecore/thread.h>
-#include <pulsecore/thread-mq.h>
-#include <pulsecore/rtpoll.h>
 #include <pulsecore/log.h>
+#include <pulsecore/modargs.h>
+#include <pulsecore/module.h>
+#include <pulsecore/rtpoll.h>
+#include <pulsecore/sink.h>
+#include <pulsecore/thread-mq.h>
+#include <pulsecore/thread.h>
 
 /* roc headers */
+#include <roc/context.h>
 #include <roc/log.h>
 #include <roc/sender.h>
 
 /* system headers */
-#include <sys/socket.h>
 #include <netinet/in.h>
+#include <sys/socket.h>
 
 /* local headers */
 #include "roc_helpers.h"
@@ -54,6 +55,8 @@ struct roc_sink_userdata {
     pa_thread_mq thread_mq;
 
     uint64_t rendered_bytes;
+
+    roc_context* context;
     roc_sender* sender;
 };
 
@@ -258,11 +261,20 @@ int pa__init(pa_module* m) {
         goto error;
     }
 
-    roc_sender_config config;
-    memset(&config, 0, sizeof(config));
-    config.flags |= ROC_FLAG_DISABLE_INTERLEAVER;
+    roc_context_config context_config;
+    memset(&context_config, 0, sizeof(context_config));
 
-    u->sender = roc_sender_new(&config);
+    u->context = roc_context_open(&context_config);
+    if (!u->context) {
+        pa_log("can't create roc context");
+        goto error;
+    }
+
+    roc_sender_config sender_config;
+    memset(&sender_config, 0, sizeof(sender_config));
+    sender_config.flags |= ROC_FLAG_DISABLE_INTERLEAVER;
+
+    u->sender = roc_sender_open(u->context, &sender_config);
     if (!u->sender) {
         pa_log("can't create roc sender");
         goto error;
@@ -287,7 +299,7 @@ int pa__init(pa_module* m) {
         goto error;
     }
 
-    if (roc_sender_start(u->sender) != 0) {
+    if (roc_context_start(u->context) != 0) {
         pa_log("can't start roc sender");
         goto error;
     }
@@ -379,8 +391,12 @@ void pa__done(pa_module* m) {
     }
 
     if (u->sender) {
-        roc_sender_stop(u->sender);
-        roc_sender_delete(u->sender);
+        roc_sender_close(u->sender);
+    }
+
+    if (u->context) {
+        roc_context_stop(u->context);
+        roc_context_close(u->context);
     }
 
     pa_xfree(u);

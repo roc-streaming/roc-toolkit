@@ -7,21 +7,14 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc/sender.h"
+#include "private.h"
 
-#include "roc_core/heap_allocator.h"
 #include "roc_core/log.h"
-#include "roc_netio/transceiver.h"
-#include "roc_packet/address_to_str.h"
-#include "roc_packet/parse_address.h"
-#include "roc_pipeline/sender.h"
+#include "roc_core/panic.h"
 
 using namespace roc;
 
 namespace {
-
-// TODO: make this configurable
-enum { MaxPacketSize = 2048, MaxFrameSize = 65 * 1024 };
 
 bool make_sender_config(pipeline::SenderConfig& out, const roc_sender_config* in) {
     if (in->samples_per_packet) {
@@ -85,55 +78,38 @@ bool make_port_config(pipeline::PortConfig& out,
 
 } // namespace
 
-struct roc_sender {
-    core::HeapAllocator allocator;
+roc_sender::roc_sender(roc_context& ctx, pipeline::SenderConfig& cfg)
+    : context(ctx)
+    , config(cfg)
+    , writer(NULL) {
+}
 
-    packet::PacketPool packet_pool;
-    core::BufferPool<uint8_t> byte_buffer_pool;
-    core::BufferPool<audio::sample_t> sample_buffer_pool;
+roc_sender* roc_sender_open(roc_context* context, const roc_sender_config* config) {
+    roc_panic_if_not(context);
 
-    rtp::FormatMap format_map;
-
-    pipeline::SenderConfig config;
-
-    netio::Transceiver trx;
-    core::UniquePtr<pipeline::Sender> sender;
-
-    packet::IWriter* udp_sender;
-
-    roc_sender(pipeline::SenderConfig& cfg)
-        : packet_pool(allocator, 1)
-        , byte_buffer_pool(allocator, MaxPacketSize, 1)
-        , sample_buffer_pool(allocator, MaxFrameSize, 1)
-        , config(cfg)
-        , trx(packet_pool, byte_buffer_pool, allocator)
-        , udp_sender(NULL) {
-    }
-};
-
-roc_sender* roc_sender_new(const roc_sender_config* config) {
     pipeline::SenderConfig c;
-
-    if (!make_sender_config(c, config)) {
-        return NULL;
+    if (config) {
+        if (!make_sender_config(c, config)) {
+            return NULL;
+        }
     }
 
     roc_log(LogInfo, "roc sender: creating sender");
-    return new roc_sender(c);
+    return new(std::nothrow) roc_sender(*context, c);
 }
 
 int roc_sender_bind(roc_sender* sender, struct sockaddr* src_addr) {
     roc_panic_if(!sender);
     roc_panic_if(!src_addr);
-    roc_panic_if(sender->udp_sender);
+    roc_panic_if(sender->writer);
 
     packet::Address addr;
     if (!addr.set_saddr(src_addr)) {
         return -1;
     }
 
-    sender->udp_sender = sender->trx.add_udp_sender(addr);
-    if (!sender->udp_sender) {
+    sender->writer = sender->context.trx.add_udp_sender(addr);
+    if (!sender->writer) {
         return -1;
     }
 
@@ -146,6 +122,7 @@ int roc_sender_connect(roc_sender* sender,
                        const struct sockaddr* dst_addr) {
     roc_panic_if(!sender);
     roc_panic_if(!dst_addr);
+    roc_panic_if(sender->sender);
 
     pipeline::PortConfig port;
     if (!make_port_config(port, proto, dst_addr)) {
@@ -171,29 +148,31 @@ int roc_sender_connect(roc_sender* sender,
     return 0;
 }
 
-int roc_sender_start(roc_sender* sender) {
-    roc_panic_if(!sender);
-    roc_panic_if(sender->sender);
-
-    sender->sender.reset(new (sender->allocator) pipeline::Sender(
-                             sender->config, *sender->udp_sender, *sender->udp_sender,
-                             sender->format_map, sender->packet_pool,
-                             sender->byte_buffer_pool, sender->allocator),
-                         sender->allocator);
-
-    sender->trx.start();
-    return 0;
-}
-
 ssize_t
 roc_sender_write(roc_sender* sender, const float* samples, const size_t n_samples) {
     roc_panic_if(!sender);
-    roc_panic_if(!sender->sender);
     roc_panic_if(!samples && n_samples != 0);
 
+    if (!sender->sender) {
+        sender->sender.reset(new (sender->context.allocator) pipeline::Sender(
+                                 sender->config, *sender->writer, *sender->writer,
+                                 sender->format_map, sender->context.packet_pool,
+                                 sender->context.byte_buffer_pool,
+                                 sender->context.allocator),
+                             sender->context.allocator);
+
+        if (!sender->sender) {
+            return -1;
+        }
+    }
+
+    if (!sender->sender->valid()) {
+        return -1;
+    }
+
     core::Slice<audio::sample_t> buf(
-        new (sender->sample_buffer_pool)
-            core::Buffer<audio::sample_t>(sender->sample_buffer_pool));
+        new (sender->context.sample_buffer_pool)
+            core::Buffer<audio::sample_t>(sender->context.sample_buffer_pool));
 
     buf.resize(n_samples);
 
@@ -206,16 +185,10 @@ roc_sender_write(roc_sender* sender, const float* samples, const size_t n_sample
     return (ssize_t)n_samples;
 }
 
-void roc_sender_stop(roc_sender* sender) {
+void roc_sender_close(roc_sender* sender) {
     roc_panic_if(!sender);
-    roc_panic_if(!sender->sender);
 
-    sender->trx.stop();
-    sender->trx.join();
-}
-
-void roc_sender_delete(roc_sender* sender) {
-    roc_panic_if(!sender);
+    // TODO: remove from trx
 
     roc_log(LogInfo, "roc sender: deleting sender");
     delete sender;

@@ -65,6 +65,18 @@ typedef enum roc_fec_scheme {
     ROC_FEC_NONE = 2
 } roc_fec_scheme;
 
+//! Context configuration.
+typedef struct roc_context_config {
+    //! Maximum number of bytes per packet.
+    unsigned int max_packet_size;
+
+    //! Maximum number of bytes per audio frame.
+    unsigned int max_frame_size;
+
+    //! Allocator chunk size.
+    unsigned int chunk_size;
+} roc_context_config;
+
 //! Sender configuration.
 typedef struct roc_sender_config {
     //! Number of samples per channel per packet.
