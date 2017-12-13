@@ -21,7 +21,7 @@ ReceiverPort::ReceiverPort(const PortConfig& config,
                            const rtp::FormatMap& format_map,
                            core::IAllocator& allocator)
     : allocator_(allocator)
-    , dst_address_(config.address)
+    , config_(config)
     , parser_(NULL) {
     packet::IParser* parser = NULL;
 
@@ -103,6 +103,10 @@ bool ReceiverPort::valid() const {
     return parser_;
 }
 
+const PortConfig& ReceiverPort::config() const {
+    return config_;
+}
+
 bool ReceiverPort::handle(packet::Packet& packet) {
     roc_panic_if(!valid());
 
@@ -111,7 +115,7 @@ bool ReceiverPort::handle(packet::Packet& packet) {
         return false;
     }
 
-    if (udp->dst_addr != dst_address_) {
+    if (udp->dst_addr != config_.address) {
         return false;
     }
 

@@ -38,6 +38,9 @@ public:
     //! Check if the port pipeline was succefully constructed.
     bool valid() const;
 
+    //! Get port config.
+    const PortConfig& config() const;
+
     //! Try to handle packet on this port.
     //! @returns
     //!  true if the packet is dedicated for this port
@@ -50,7 +53,7 @@ private:
 
     core::IAllocator& allocator_;
 
-    const packet::Address dst_address_;
+    const PortConfig config_;
 
     packet::IParser* parser_;
 
