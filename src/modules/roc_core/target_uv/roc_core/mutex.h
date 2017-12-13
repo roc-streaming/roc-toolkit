@@ -30,7 +30,8 @@ public:
 
     Mutex() {
         if (int err = uv_mutex_init(&mutex_)) {
-            roc_panic("uv_mutex_init(): [%s] %s", uv_err_name(err), uv_strerror(err));
+            roc_panic("mutex: uv_mutex_init(): [%s] %s", uv_err_name(err),
+                      uv_strerror(err));
         }
     }
 

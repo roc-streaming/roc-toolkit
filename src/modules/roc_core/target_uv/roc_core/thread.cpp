@@ -15,12 +15,13 @@ namespace roc {
 namespace core {
 
 Thread::Thread()
-    : joinable_(false) {
+    : started_(0)
+    , joinable_(0) {
 }
 
 Thread::~Thread() {
-    if (joinable_) {
-        roc_panic("thread was not joined before calling thread object destructor");
+    if (joinable()) {
+        roc_panic("thread: thread was not joined before calling destructor");
     }
 }
 
@@ -29,27 +30,36 @@ bool Thread::joinable() const {
 }
 
 void Thread::start() {
-    if (joinable_) {
-        roc_panic("attempting to start thread that is already running");
+    Mutex::Lock lock(mutex_);
+
+    if (started_) {
+        roc_panic("thread: can't start thread more than once");
     }
 
     if (int err = uv_thread_create(&thread_, thread_runner_, this)) {
-        roc_panic("uv_thread_create(): [%s] %s", uv_err_name(err), uv_strerror(err));
+        roc_panic("thread: uv_thread_create(): [%s] %s", uv_err_name(err), uv_strerror(err));
     }
 
-    joinable_ = true;
+    started_ = 1;
+    joinable_ = 1;
 }
 
 void Thread::join() {
+    Mutex::Lock lock(mutex_);
+
+    if (!started_) {
+        roc_panic("thread: can't join thread that was not started");
+    }
+
     if (!joinable_) {
-        roc_panic("attempting to join thread that is not started");
+        return;
     }
 
     if (int err = uv_thread_join(&thread_)) {
-        roc_panic("uv_thread_join(): [%s] %s", uv_err_name(err), uv_strerror(err));
+        roc_panic("thread: uv_thread_join(): [%s] %s", uv_err_name(err), uv_strerror(err));
     }
 
-    joinable_ = false;
+    joinable_ = 0;
 }
 
 void Thread::thread_runner_(void* ptr) {

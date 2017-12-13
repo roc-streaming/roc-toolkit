@@ -15,10 +15,12 @@ namespace core {
 Semaphore::Semaphore(size_t counter)
     : counter_(counter) {
     if (int err = uv_mutex_init(&mutex_)) {
-        roc_panic("uv_mutex_init(): [%s] %s", uv_err_name(err), uv_strerror(err));
+        roc_panic("semaphore: uv_mutex_init(): [%s] %s", uv_err_name(err),
+                  uv_strerror(err));
     }
     if (int err = uv_cond_init(&cond_)) {
-        roc_panic("uv_cond_init(): [%s] %s", uv_err_name(err), uv_strerror(err));
+        roc_panic("semaphore: uv_cond_init(): [%s] %s", uv_err_name(err),
+                  uv_strerror(err));
     }
 }
 

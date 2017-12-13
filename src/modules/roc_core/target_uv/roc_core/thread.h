@@ -15,8 +15,9 @@
 
 #include <uv.h>
 
+#include "roc_core/atomic.h"
+#include "roc_core/mutex.h"
 #include "roc_core/noncopyable.h"
-#include "roc_core/panic.h"
 
 namespace roc {
 namespace core {
@@ -51,7 +52,11 @@ private:
     static void thread_runner_(void* ptr);
 
     uv_thread_t thread_;
-    bool joinable_;
+
+    int started_;
+    Atomic joinable_;
+
+    Mutex mutex_;
 };
 
 } // namespace core
