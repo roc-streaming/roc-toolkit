@@ -40,7 +40,6 @@ ROC_API ssize_t roc_receiver_read(roc_receiver* receiver,
                                   const size_t n_samples);
 
 //! Delete previously created receiver.
-//! Receiver should be stopped.
 ROC_API void roc_receiver_close(roc_receiver* receiver);
 
 #ifdef __cplusplus

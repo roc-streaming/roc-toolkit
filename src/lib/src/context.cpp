@@ -85,6 +85,11 @@ void roc_context_stop(roc_context* context) {
 void roc_context_close(roc_context* context) {
     roc_panic_if_not(context);
 
+    if (context->refcount != 0) {
+        roc_panic("roc_context_close: %lu senders/receivers are still using context",
+                  (unsigned long)context->refcount);
+    }
+
     if (context->started && !context->stopped) {
         roc_context_stop(context);
     }

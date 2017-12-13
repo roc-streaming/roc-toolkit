@@ -94,6 +94,13 @@ bool make_port_config(pipeline::PortConfig& out,
     return true;
 }
 
+void close_port(void* arg, const pipeline::PortConfig& port) {
+    roc_panic_if_not(arg);
+    roc_receiver* receiver = (roc_receiver*)arg;
+
+    receiver->context.trx.remove_port(port.address);
+}
+
 } // namespace
 
 roc_receiver::roc_receiver(roc_context& ctx, pipeline::ReceiverConfig& cfg)
@@ -116,8 +123,15 @@ roc_receiver* roc_receiver_open(roc_context* context, const roc_receiver_config*
         }
     }
 
-    roc_log(LogInfo, "roc receiver: creating receiver");
-    return new(std::nothrow) roc_receiver(*context, c);
+    roc_log(LogInfo, "roc receiver: opening receiver");
+
+    roc_receiver* r = new(std::nothrow) roc_receiver(*context, c);
+    if (!r) {
+        return NULL;
+    }
+
+    ++context->refcount;
+    return r;
 }
 
 int roc_receiver_bind(roc_receiver* receiver, roc_protocol proto, struct sockaddr* addr) {
@@ -163,8 +177,11 @@ roc_receiver_read(roc_receiver* receiver, float* samples, const size_t n_samples
 void roc_receiver_close(roc_receiver* receiver) {
     roc_panic_if(!receiver);
 
-    // TODO: remove from trx
+    roc_log(LogInfo, "roc receiver: closing receiver");
 
-    roc_log(LogInfo, "roc receiver: deleting receiver");
+    receiver->receiver.iterate_ports(close_port, receiver);
+
+    --receiver->context.refcount;
+
     delete receiver;
 }

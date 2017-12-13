@@ -94,8 +94,15 @@ roc_sender* roc_sender_open(roc_context* context, const roc_sender_config* confi
         }
     }
 
-    roc_log(LogInfo, "roc sender: creating sender");
-    return new(std::nothrow) roc_sender(*context, c);
+    roc_log(LogInfo, "roc sender: opening sender");
+
+    roc_sender* s = new(std::nothrow) roc_sender(*context, c);
+    if (!s) {
+        return NULL;
+    }
+
+    ++context->refcount;
+    return s;
 }
 
 int roc_sender_bind(roc_sender* sender, struct sockaddr* src_addr) {
@@ -103,17 +110,16 @@ int roc_sender_bind(roc_sender* sender, struct sockaddr* src_addr) {
     roc_panic_if(!src_addr);
     roc_panic_if(sender->writer);
 
-    packet::Address addr;
-    if (!addr.set_saddr(src_addr)) {
+    if (!sender->address.set_saddr(src_addr)) {
         return -1;
     }
 
-    sender->writer = sender->context.trx.add_udp_sender(addr);
+    sender->writer = sender->context.trx.add_udp_sender(sender->address);
     if (!sender->writer) {
         return -1;
     }
 
-    memcpy(src_addr, addr.saddr(), addr.slen());
+    memcpy(src_addr, sender->address.saddr(), sender->address.slen());
     return 0;
 }
 
@@ -188,8 +194,13 @@ roc_sender_write(roc_sender* sender, const float* samples, const size_t n_sample
 void roc_sender_close(roc_sender* sender) {
     roc_panic_if(!sender);
 
-    // TODO: remove from trx
+    roc_log(LogInfo, "roc sender: closing sender");
 
-    roc_log(LogInfo, "roc sender: deleting sender");
+    if (sender->writer) {
+        sender->context.trx.remove_port(sender->address);
+    }
+
+    --sender->context.refcount;
+
     delete sender;
 }

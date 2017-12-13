@@ -15,10 +15,12 @@
 #include "roc/sender.h"
 
 #include "roc_audio/units.h"
+#include "roc_core/atomic.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_core/unique_ptr.h"
 #include "roc_netio/transceiver.h"
+#include "roc_packet/address.h"
 #include "roc_packet/iwriter.h"
 #include "roc_packet/packet_pool.h"
 #include "roc_pipeline/receiver.h"
@@ -36,6 +38,8 @@ struct roc_context {
 
     roc::netio::Transceiver trx;
 
+    roc::core::Atomic refcount;
+
     bool started;
     bool stopped;
 };
@@ -50,6 +54,8 @@ struct roc_sender {
 
     roc::core::UniquePtr<roc::pipeline::Sender> sender;
     roc::packet::IWriter* writer;
+
+    roc::packet::Address address;
 };
 
 struct roc_receiver {
@@ -58,7 +64,6 @@ struct roc_receiver {
     roc_context& context;
 
     roc::rtp::FormatMap format_map;
-
     roc::pipeline::Receiver receiver;
 };
 
