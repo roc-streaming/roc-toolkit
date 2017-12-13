@@ -47,6 +47,11 @@ public:
     //!  Should be called from the event loop thread.
     void stop();
 
+    //! Asynchronous remove.
+    //! @remarks
+    //!  Should be called from the event loop thread.
+    void remove(core::List<UDPSender>& container);
+
     //! Get bind address.
     const packet::Address& address() const;
 
@@ -56,6 +61,7 @@ public:
     virtual void write(const packet::PacketPtr&);
 
 private:
+    static void close_cb_(uv_handle_t* handle);
     static void write_sem_cb_(uv_async_t* handle);
     static void send_cb_(uv_udp_send_t* req, int status);
 
@@ -83,6 +89,8 @@ private:
 
     size_t pending_;
     bool stopped_;
+
+    core::List<UDPSender>* container_;
 
     unsigned packet_counter_;
 };

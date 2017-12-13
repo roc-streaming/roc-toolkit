@@ -236,6 +236,12 @@ public:
         CHECK(trx_.add_udp_receiver(recv_repair_addr_, *this));
     }
 
+    ~Proxy() {
+        trx_.remove_port(send_addr_);
+        trx_.remove_port(recv_source_addr_);
+        trx_.remove_port(recv_repair_addr_);
+    }
+
     packet::Address source_addr() {
         return recv_source_addr_;
     }

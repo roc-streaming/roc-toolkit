@@ -91,8 +91,8 @@ public:
     //!  a new packet writer on success or null if error occured
     packet::IWriter* add_udp_sender(packet::Address& bind_address);
 
-    //! Remove sender or receiver.
-    void remove_port(packet::Address& bind_address);
+    //! Remove sender or receiver port.
+    void remove_port(packet::Address bind_address);
 
 private:
     struct Task : core::ListNode {
@@ -119,7 +119,7 @@ private:
     virtual void run();
 
     void stop_();
-    void close_sem_();
+    void close_();
 
     void process_tasks_();
     void run_task_(Task&);
@@ -127,6 +127,8 @@ private:
     bool add_udp_receiver_(Task&);
     bool add_udp_sender_(Task&);
     bool remove_port_(Task&);
+
+    bool has_port_(const packet::Address& address) const;
 
     packet::PacketPool& packet_pool_;
     core::BufferPool<uint8_t>& buffer_pool_;
@@ -148,6 +150,8 @@ private:
 
     core::List<UDPReceiver> receivers_;
     core::List<UDPSender> senders_;
+
+    size_t num_ports_;
 
     core::Mutex mutex_;
 };

@@ -50,6 +50,9 @@ TEST(transceiver, bind_any) {
 
     CHECK(trx.add_udp_sender(tx_addr));
     CHECK(trx.add_udp_receiver(rx_addr, queue));
+
+    trx.remove_port(tx_addr);
+    trx.remove_port(rx_addr);
 }
 
 TEST(transceiver, bind_lo) {
@@ -67,6 +70,9 @@ TEST(transceiver, bind_lo) {
 
     CHECK(trx.add_udp_sender(tx_addr));
     CHECK(trx.add_udp_receiver(rx_addr, queue));
+
+    trx.remove_port(tx_addr);
+    trx.remove_port(rx_addr);
 }
 
 TEST(transceiver, start_stop) {
@@ -111,6 +117,9 @@ TEST(transceiver, add_start_stop) {
 
     trx.stop();
     trx.join();
+
+    trx.remove_port(tx_addr);
+    trx.remove_port(rx_addr);
 }
 
 TEST(transceiver, start_add_stop) {
@@ -133,6 +142,9 @@ TEST(transceiver, start_add_stop) {
 
     trx.stop();
     trx.join();
+
+    trx.remove_port(tx_addr);
+    trx.remove_port(rx_addr);
 }
 
 TEST(transceiver, add_remove) {
@@ -163,7 +175,7 @@ TEST(transceiver, add_remove) {
     UNSIGNED_LONGS_EQUAL(0, trx.num_ports());
 }
 
-TEST(transceiver, start_add_remove) {
+TEST(transceiver, start_add_remove_stop) {
     packet::ConcurrentQueue queue(0, true);
 
     Transceiver trx(packet_pool, buffer_pool, allocator);
@@ -194,6 +206,77 @@ TEST(transceiver, start_add_remove) {
 
     trx.stop();
     trx.join();
+}
+
+TEST(transceiver, add_start_stop_remove) {
+    packet::ConcurrentQueue queue(0, true);
+
+    Transceiver trx(packet_pool, buffer_pool, allocator);
+
+    CHECK(trx.valid());
+
+    packet::Address tx_addr;
+    packet::Address rx_addr;
+
+    CHECK(packet::parse_address(":0", tx_addr));
+    CHECK(packet::parse_address(":0", rx_addr));
+
+    UNSIGNED_LONGS_EQUAL(0, trx.num_ports());
+
+    CHECK(trx.add_udp_sender(tx_addr));
+    UNSIGNED_LONGS_EQUAL(1, trx.num_ports());
+
+    CHECK(trx.add_udp_receiver(rx_addr, queue));
+    UNSIGNED_LONGS_EQUAL(2, trx.num_ports());
+
+    trx.start();
+
+    trx.stop();
+    trx.join();
+
+    trx.remove_port(tx_addr);
+    UNSIGNED_LONGS_EQUAL(1, trx.num_ports());
+
+    trx.remove_port(rx_addr);
+    UNSIGNED_LONGS_EQUAL(0, trx.num_ports());
+}
+
+TEST(transceiver, add_duplicate) {
+    packet::ConcurrentQueue queue(0, true);
+
+    Transceiver trx(packet_pool, buffer_pool, allocator);
+
+    CHECK(trx.valid());
+
+    packet::Address tx_addr;
+    packet::Address rx_addr;
+
+    CHECK(packet::parse_address(":0", tx_addr));
+    CHECK(packet::parse_address(":0", rx_addr));
+
+    CHECK(trx.add_udp_sender(tx_addr));
+    UNSIGNED_LONGS_EQUAL(1, trx.num_ports());
+
+    CHECK(!trx.add_udp_sender(tx_addr));
+    UNSIGNED_LONGS_EQUAL(1, trx.num_ports());
+
+    CHECK(!trx.add_udp_receiver(tx_addr, queue));
+    UNSIGNED_LONGS_EQUAL(1, trx.num_ports());
+
+    CHECK(trx.add_udp_receiver(rx_addr, queue));
+    UNSIGNED_LONGS_EQUAL(2, trx.num_ports());
+
+    CHECK(!trx.add_udp_sender(rx_addr));
+    UNSIGNED_LONGS_EQUAL(2, trx.num_ports());
+
+    CHECK(!trx.add_udp_receiver(rx_addr, queue));
+    UNSIGNED_LONGS_EQUAL(2, trx.num_ports());
+
+    trx.remove_port(tx_addr);
+    UNSIGNED_LONGS_EQUAL(1, trx.num_ports());
+
+    trx.remove_port(rx_addr);
+    UNSIGNED_LONGS_EQUAL(0, trx.num_ports());
 }
 
 } // namespace netio

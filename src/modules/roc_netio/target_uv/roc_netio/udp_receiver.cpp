@@ -27,11 +27,15 @@ UDPReceiver::UDPReceiver(uv_loop_t& event_loop,
     , writer_(writer)
     , packet_pool_(packet_pool)
     , buffer_pool_(buffer_pool)
+    , container_(NULL)
     , packet_counter_(0) {
 }
 
 UDPReceiver::~UDPReceiver() {
-    stop();
+    if (handle_initialized_) {
+        roc_panic(
+            "udp receiver: receiver was not fully closed before calling destructor");
+    }
 }
 
 void UDPReceiver::destroy() {
@@ -92,8 +96,6 @@ void UDPReceiver::stop() {
         return;
     }
 
-    handle_initialized_ = false;
-
     if (uv_is_closing((uv_handle_t*)&handle_)) {
         return;
     }
@@ -106,11 +108,35 @@ void UDPReceiver::stop() {
                 uv_strerror(err));
     }
 
-    uv_close((uv_handle_t*)&handle_, NULL);
+    uv_close((uv_handle_t*)&handle_, close_cb_);
+}
+
+void UDPReceiver::remove(core::List<UDPReceiver>& container) {
+    roc_panic_if(container_);
+
+    if (handle_initialized_) {
+        stop();
+        container_ = &container;
+        address_ = packet::Address();
+    } else {
+        container.remove(*this);
+    }
 }
 
 const packet::Address& UDPReceiver::address() const {
     return address_;
+}
+
+void UDPReceiver::close_cb_(uv_handle_t* handle) {
+    roc_panic_if_not(handle);
+
+    UDPReceiver& self = *(UDPReceiver*)handle->data;
+
+    self.handle_initialized_ = false;
+
+    if (self.container_) {
+        self.container_->remove(self);
+    }
 }
 
 void UDPReceiver::alloc_cb_(uv_handle_t* handle, size_t size, uv_buf_t* buf) {

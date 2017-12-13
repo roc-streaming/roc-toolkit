@@ -23,11 +23,14 @@ UDPSender::UDPSender(uv_loop_t& event_loop, core::IAllocator& allocator)
     , handle_initialized_(false)
     , pending_(0)
     , stopped_(true)
+    , container_(NULL)
     , packet_counter_(0) {
 }
 
 UDPSender::~UDPSender() {
-    close_();
+    if (handle_initialized_ || write_sem_initialized_) {
+        roc_panic("udp sender: sender was not fully closed before calling destructor");
+    }
 }
 
 void UDPSender::destroy() {
@@ -96,6 +99,18 @@ void UDPSender::stop() {
     }
 }
 
+void UDPSender::remove(core::List<UDPSender>& container) {
+    roc_panic_if(container_);
+
+    if (handle_initialized_ || write_sem_initialized_) {
+        stop();
+        container_ = &container;
+        address_ = packet::Address();
+    } else {
+        container.remove(*this);
+    }
+}
+
 const packet::Address& UDPSender::address() const {
     return address_;
 }
@@ -127,6 +142,26 @@ void UDPSender::write(const packet::PacketPtr& pp) {
     if (int err = uv_async_send(&write_sem_)) {
         roc_panic("udp sender: uv_async_send(): [%s] %s", uv_err_name(err),
                   uv_strerror(err));
+    }
+}
+
+void UDPSender::close_cb_(uv_handle_t* handle) {
+    roc_panic_if_not(handle);
+
+    UDPSender& self = *(UDPSender*)handle->data;
+
+    if (handle == (uv_handle_t*)&self.handle_) {
+        self.handle_initialized_ = false;
+    } else {
+        self.write_sem_initialized_ = false;
+    }
+
+    if (self.handle_initialized_ || self.write_sem_initialized_) {
+        return;
+    }
+
+    if (self.container_) {
+        self.container_->remove(self);
     }
 }
 
@@ -206,18 +241,15 @@ packet::PacketPtr UDPSender::read_() {
 }
 
 void UDPSender::close_() {
-    if (handle_initialized_) {
-        if (!uv_is_closing((uv_handle_t*)&handle_)) {
-            roc_log(LogInfo, "udp sender: closing port %s",
-                    packet::address_to_str(address_).c_str());
-            uv_close((uv_handle_t*)&handle_, NULL);
-        }
-        handle_initialized_ = false;
+    if (handle_initialized_ && !uv_is_closing((uv_handle_t*)&handle_)) {
+        roc_log(LogInfo, "udp sender: closing port %s",
+                packet::address_to_str(address_).c_str());
+
+        uv_close((uv_handle_t*)&handle_, close_cb_);
     }
 
-    if (write_sem_initialized_) {
-        uv_close((uv_handle_t*)&write_sem_, NULL);
-        write_sem_initialized_ = false;
+    if (write_sem_initialized_ && !uv_is_closing((uv_handle_t*)&write_sem_)) {
+        uv_close((uv_handle_t*)&write_sem_, close_cb_);
     }
 }
 

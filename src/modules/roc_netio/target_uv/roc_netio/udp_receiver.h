@@ -17,6 +17,7 @@
 
 #include "roc_core/buffer_pool.h"
 #include "roc_core/iallocator.h"
+#include "roc_core/list.h"
 #include "roc_core/list_node.h"
 #include "roc_core/refcnt.h"
 #include "roc_packet/address.h"
@@ -49,10 +50,16 @@ public:
     //!  Should be called from the event loop thread.
     void stop();
 
+    //! Asynchronous remove.
+    //! @remarks
+    //!  Should be called from the event loop thread.
+    void remove(core::List<UDPReceiver>& container);
+
     //! Get bind address.
     const packet::Address& address() const;
 
 private:
+    static void close_cb_(uv_handle_t* handle);
     static void alloc_cb_(uv_handle_t* handle, size_t size, uv_buf_t* buf);
     static void recv_cb_(uv_udp_t* handle,
                          ssize_t nread,
@@ -72,11 +79,12 @@ private:
     bool handle_initialized_;
 
     packet::Address address_;
-
     packet::IWriter& writer_;
 
     packet::PacketPool& packet_pool_;
     core::BufferPool<uint8_t>& buffer_pool_;
+
+    core::List<UDPReceiver>* container_;
 
     unsigned packet_counter_;
 };

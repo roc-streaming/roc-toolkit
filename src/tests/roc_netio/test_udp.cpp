@@ -107,6 +107,9 @@ TEST(udp, one_sender_one_receiver_single_thread) {
 
     trx.stop();
     trx.join();
+
+    trx.remove_port(tx_addr);
+    trx.remove_port(rx_addr);
 }
 
 TEST(udp, one_sender_one_receiver_separate_threads) {
@@ -143,6 +146,9 @@ TEST(udp, one_sender_one_receiver_separate_threads) {
 
     rx.stop();
     rx.join();
+
+    tx.remove_port(tx_addr);
+    rx.remove_port(rx_addr);
 }
 
 TEST(udp, one_sender_multiple_receivers) {
@@ -197,6 +203,11 @@ TEST(udp, one_sender_multiple_receivers) {
 
     rx23.stop();
     rx23.join();
+
+    tx.remove_port(tx_addr);
+    rx1.remove_port(rx_addr1);
+    rx23.remove_port(rx_addr2);
+    rx23.remove_port(rx_addr3);
 }
 
 TEST(udp, multiple_senders_one_receiver) {
@@ -261,6 +272,11 @@ TEST(udp, multiple_senders_one_receiver) {
 
     rx.stop();
     rx.join();
+
+    tx1.remove_port(tx_addr1);
+    tx23.remove_port(tx_addr2);
+    tx23.remove_port(tx_addr3);
+    rx.remove_port(rx_addr);
 }
 
 } // namespace netio
