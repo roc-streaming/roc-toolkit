@@ -315,7 +315,7 @@ TEST(depacketizer, frame_flags_dropped_packets_end) {
     Frame frame = new_frame(SamplesPerPacket * 3);
     dp.read(frame);
 
-    CHECK(frame.flags() & Frame::FlagSkip);
+    CHECK(frame.flags() & Frame::FlagPacketDrops);
 }
 
 TEST(depacketizer, frame_flags_dropped_packets_middle) {
@@ -333,7 +333,7 @@ TEST(depacketizer, frame_flags_dropped_packets_middle) {
     Frame frame = new_frame(SamplesPerPacket * 3);
     dp.read(frame);
 
-    CHECK(frame.flags() & Frame::FlagSkip);
+    CHECK(frame.flags() & Frame::FlagPacketDrops);
 }
 
 TEST(depacketizer, frame_flags_no_dropped_packets) {
@@ -349,7 +349,7 @@ TEST(depacketizer, frame_flags_no_dropped_packets) {
     Frame frame = new_frame(SamplesPerPacket * 2);
     dp.read(frame);
 
-    CHECK(!(frame.flags() & Frame::FlagSkip));
+    CHECK(!(frame.flags() & Frame::FlagPacketDrops));
 }
 
 TEST(depacketizer, frame_flags_empty) {
