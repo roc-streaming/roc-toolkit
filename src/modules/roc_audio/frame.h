@@ -35,7 +35,10 @@ public:
 
         //! Set if some queued packets were regarded as outdated and dropped when the
         //! frame was built.
-        FlagSkip = (1 << 1)
+        FlagSkip = (1 << 1),
+
+        //! Set if the frame is fully filled with samples from packets.
+        FlagFull = (1 << 2)
     };
 
     //! Add flags.
