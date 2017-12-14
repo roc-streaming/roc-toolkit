@@ -249,7 +249,7 @@ void Depacketizer::set_frame_flags_(Frame& frame,
     }
 
     if (prev_dropped_packets != dropped_packets_) {
-        frame.add_flags(Frame::FlagSkip);
+        frame.add_flags(Frame::FlagPacketDrops);
     }
 }
 
