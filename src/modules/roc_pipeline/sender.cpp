@@ -46,11 +46,13 @@ Sender::Sender(const SenderConfig& config,
         return;
     }
 
-    repair_port_.reset(new (allocator)
+    if (config.repair_port.protocol != Proto_None) {
+        repair_port_.reset(new (allocator)
                            SenderPort(config.repair_port, repair_writer, allocator),
-                       allocator);
-    if (!repair_port_ || !repair_port_->valid()) {
-        return;
+                           allocator);
+        if (!repair_port_ || !repair_port_->valid()) {
+            return;
+        }
     }
 
     router_.reset(new (allocator) packet::Router(allocator, 2), allocator);
@@ -62,12 +64,18 @@ Sender::Sender(const SenderConfig& config,
     if (!router_->add_route(*source_port_, packet::Packet::FlagAudio)) {
         return;
     }
-    if (!router_->add_route(*repair_port_, packet::Packet::FlagRepair)) {
-        return;
+    if (repair_port_) {
+        if (!router_->add_route(*repair_port_, packet::Packet::FlagRepair)) {
+            return;
+        }
     }
 
 #ifdef ROC_TARGET_OPENFEC
     if (config.fec.codec != fec::NoCodec) {
+        if (!repair_port_) {
+            return;
+        }
+
         if (config.interleaving) {
             interleaver_.reset(new (allocator)
                                    packet::Interleaver(*pwriter, allocator,

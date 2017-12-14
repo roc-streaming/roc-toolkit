@@ -44,6 +44,9 @@ enum {
 
 //! Protocol identifier.
 enum Protocol {
+    //! Protocol is not set.
+    Proto_None,
+
     //! Bare RTP.
     Proto_RTP,
 
@@ -72,7 +75,7 @@ struct PortConfig {
     Protocol protocol;
 
     PortConfig()
-        : protocol() {
+        : protocol(Proto_None) {
     }
 };
 
