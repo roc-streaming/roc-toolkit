@@ -27,8 +27,18 @@
 #include "roc_pipeline/sender.h"
 #include "roc_rtp/format_map.h"
 
+bool config_context(roc_context_config& out, const roc_context_config* in);
+
+bool config_sender(roc::pipeline::SenderConfig& out, const roc_sender_config& in);
+
+bool config_receiver(roc::pipeline::ReceiverConfig& out, const roc_receiver_config& in);
+
+bool config_port(roc::pipeline::PortConfig& out,
+                 roc_protocol proto,
+                 const struct sockaddr* addr);
+
 struct roc_context {
-    roc_context(size_t max_packet_size, size_t max_frame_size, size_t chunk_size);
+    roc_context(const roc_context_config& cfg);
 
     roc::core::HeapAllocator allocator;
 
@@ -45,7 +55,7 @@ struct roc_context {
 };
 
 struct roc_sender {
-    roc_sender(roc_context& context, roc::pipeline::SenderConfig& config);
+    roc_sender(roc_context& ctx, roc::pipeline::SenderConfig& cfg);
 
     roc_context& context;
 
@@ -59,7 +69,7 @@ struct roc_sender {
 };
 
 struct roc_receiver {
-    roc_receiver(roc_context& context, roc::pipeline::ReceiverConfig& config);
+    roc_receiver(roc_context& ctx, roc::pipeline::ReceiverConfig& cfg);
 
     roc_context& context;
 

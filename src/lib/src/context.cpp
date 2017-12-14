@@ -10,69 +10,71 @@
 #include "private.h"
 
 #include "roc_core/log.h"
-#include "roc_core/panic.h"
 
 using namespace roc;
 
-namespace {
-
-enum {
-    DefaultMaxPacketSize = 2048,
-    DefaultMaxFrameSize = 64 * 1024,
-    DefaultChunkSize = 128 * 1024
-};
-
-} // namespace
-
-roc_context::roc_context(size_t max_packet_size, size_t max_frame_size, size_t chunk_size)
-    : packet_pool(allocator, chunk_size / max_packet_size)
-    , byte_buffer_pool(allocator, max_packet_size, chunk_size / max_packet_size)
+roc_context::roc_context(const roc_context_config& cfg)
+    : packet_pool(allocator, cfg.chunk_size / cfg.max_packet_size)
+    , byte_buffer_pool(
+          allocator, cfg.max_packet_size, cfg.chunk_size / cfg.max_packet_size)
     , sample_buffer_pool(allocator,
-                         max_frame_size / sizeof(audio::sample_t),
-                         chunk_size / max_frame_size)
+                         cfg.max_frame_size / sizeof(audio::sample_t),
+                         cfg.chunk_size / cfg.max_frame_size)
     , trx(packet_pool, byte_buffer_pool, allocator)
     , started(false)
     , stopped(false) {
 }
 
 roc_context* roc_context_open(const roc_context_config* config) {
-    size_t max_packet_size = DefaultMaxPacketSize;
-    size_t max_frame_size = DefaultMaxFrameSize;
-    size_t chunk_size = DefaultChunkSize;
+    roc_log(LogInfo, "roc_context: opening context");
 
-    if (config) {
-        if (config->max_packet_size) {
-            max_packet_size = config->max_packet_size;
-        }
-        if (config->max_frame_size) {
-            max_frame_size = config->max_frame_size;
-        }
-        if (config->chunk_size) {
-            chunk_size = config->chunk_size;
-        }
+    roc_context_config cconfig;
+    if (!config_context(cconfig, config)) {
+        roc_log(LogError, "roc_context_open: invalid config");
+        return NULL;
     }
 
-    return new(std::nothrow) roc_context(max_packet_size, max_frame_size, chunk_size);
+    roc_context* context = new (std::nothrow) roc_context(cconfig);
+    if (!context) {
+        roc_log(LogError, "roc_context_open: can't allocate roc_context");
+        return NULL;
+    }
+
+    return context;
 }
 
 int roc_context_start(roc_context* context) {
-    roc_panic_if_not(context);
-
-    if (context->started) {
+    if (!context) {
+        roc_log(LogError, "roc_context_start: invalid arguments: context == NULL");
         return -1;
     }
 
-    context->trx.start();
+    if (context->started) {
+        roc_log(LogError, "roc_context_start: context is already started");
+        return -1;
+    }
 
+    roc_log(LogInfo, "roc_context: starting context");
+
+    context->trx.start();
     context->started = true;
 
     return 0;
 }
 
 void roc_context_stop(roc_context* context) {
-    roc_panic_if_not(context);
+    if (!context) {
+        roc_log(LogError, "roc_context_stop: invalid arguments: context == NULL");
+        return;
+    }
 
-    if (!context->started || context->stopped) {
+    if (!context->started) {
+        roc_log(LogDebug, "roc_context_stop: context is not started");
+        return;
+    }
+
+    if (context->stopped) {
+        roc_log(LogDebug, "roc_context_stop: context is already stopped");
         return;
     }
 
@@ -80,14 +82,21 @@ void roc_context_stop(roc_context* context) {
     context->trx.join();
 
     context->stopped = true;
+
+    roc_log(LogInfo, "roc_context: stopped context");
 }
 
-void roc_context_close(roc_context* context) {
-    roc_panic_if_not(context);
+int roc_context_close(roc_context* context) {
+    if (!context) {
+        roc_log(LogError, "roc_context_close: invalid arguments: context == NULL");
+        return -1;
+    }
 
     if (context->refcount != 0) {
-        roc_panic("roc_context_close: %lu senders/receivers are still using context",
-                  (unsigned long)context->refcount);
+        roc_log(LogError,
+                "roc_context_close: context is still in use: refcount=%lu",
+                (unsigned long)context->refcount);
+        return -1;
     }
 
     if (context->started && !context->stopped) {
@@ -95,4 +104,8 @@ void roc_context_close(roc_context* context) {
     }
 
     delete context;
+
+    roc_log(LogInfo, "roc_context: closed context");
+
+    return 0;
 }

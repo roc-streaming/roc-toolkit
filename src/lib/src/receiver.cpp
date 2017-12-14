@@ -10,89 +10,12 @@
 #include "private.h"
 
 #include "roc_core/log.h"
-#include "roc_core/panic.h"
+#include "roc_packet/address_to_str.h"
+#include "roc_pipeline/proto_to_str.h"
 
 using namespace roc;
 
 namespace {
-
-bool make_receiver_config(pipeline::ReceiverConfig& out, const roc_receiver_config* in) {
-    if (in->latency) {
-        out.default_session.latency = in->latency;
-
-        out.default_session.latency_monitor.min_latency =
-            (packet::signed_timestamp_t)in->latency * pipeline::DefaultMinLatency;
-
-        out.default_session.latency_monitor.max_latency =
-            (packet::signed_timestamp_t)in->latency * pipeline::DefaultMaxLatency;
-    }
-
-    if (in->timeout) {
-        out.default_session.timeout = in->timeout;
-    }
-
-    if (in->samples_per_packet) {
-        out.default_session.samples_per_packet = in->samples_per_packet;
-    }
-
-    if (in->sample_rate) {
-        out.sample_rate = in->sample_rate;
-    }
-
-    switch ((unsigned)in->fec_scheme) {
-    case ROC_FEC_RS8M:
-        out.default_session.fec.codec = fec::ReedSolomon8m;
-        break;
-    case ROC_FEC_LDPC_STAIRCASE:
-        out.default_session.fec.codec = fec::LDPCStaircase;
-        break;
-    case ROC_FEC_NONE:
-        out.default_session.fec.codec = fec::NoCodec;
-        break;
-    default:
-        return false;
-    }
-
-    if (in->n_source_packets || in->n_repair_packets) {
-        out.default_session.fec.n_source_packets = in->n_source_packets;
-        out.default_session.fec.n_repair_packets = in->n_repair_packets;
-    }
-
-    out.default_session.resampling = !(in->flags & ROC_FLAG_DISABLE_RESAMPLER);
-    out.timing = (in->flags & ROC_FLAG_ENABLE_TIMER);
-
-    return true;
-}
-
-bool make_port_config(pipeline::PortConfig& out,
-                      roc_protocol proto,
-                      const struct sockaddr* addr) {
-    switch ((unsigned)proto) {
-    case ROC_PROTO_RTP:
-        out.protocol = pipeline::Proto_RTP;
-        break;
-    case ROC_PROTO_RTP_RSM8_SOURCE:
-        out.protocol = pipeline::Proto_RTP_RSm8_Source;
-        break;
-    case ROC_PROTO_RSM8_REPAIR:
-        out.protocol = pipeline::Proto_RSm8_Repair;
-        break;
-    case ROC_PROTO_RTP_LDPC_SOURCE:
-        out.protocol = pipeline::Proto_RTP_LDPC_Source;
-        break;
-    case ROC_PROTO_LDPC_REPAIR:
-        out.protocol = pipeline::Proto_LDPC_Repair;
-        break;
-    default:
-        return false;
-    }
-
-    if (!out.address.set_saddr(addr)) {
-        return false;
-    }
-
-    return true;
-}
 
 void close_port(void* arg, const pipeline::PortConfig& port) {
     roc_panic_if_not(arg);
@@ -114,52 +37,95 @@ roc_receiver::roc_receiver(roc_context& ctx, pipeline::ReceiverConfig& cfg)
 }
 
 roc_receiver* roc_receiver_open(roc_context* context, const roc_receiver_config* config) {
-    roc_panic_if_not(context);
+    roc_log(LogInfo, "roc_receiver: opening receiver");
 
-    pipeline::ReceiverConfig c;
+    if (!context) {
+        roc_log(LogError, "roc_receiver_open: invalid arguments: context == NULL");
+        return NULL;
+    }
+
+    pipeline::ReceiverConfig rconfig;
     if (config) {
-        if (!make_receiver_config(c, config)) {
+        if (!config_receiver(rconfig, *config)) {
+            roc_log(LogError, "roc_receiver_open: invalid config");
             return NULL;
         }
     }
 
-    roc_log(LogInfo, "roc receiver: opening receiver");
+    roc_receiver* receiver = new (context->allocator) roc_receiver(*context, rconfig);
+    if (!receiver) {
+        roc_log(LogError, "roc_receiver_open: can't allocate receiver pipeline");
+        return NULL;
+    }
 
-    roc_receiver* r = new(std::nothrow) roc_receiver(*context, c);
-    if (!r) {
+    if (!receiver->receiver.valid()) {
+        roc_log(LogError, "roc_receiver_open: can't initialize receiver pipeline");
+        context->allocator.destroy(*receiver);
         return NULL;
     }
 
     ++context->refcount;
-    return r;
+    return receiver;
 }
 
 int roc_receiver_bind(roc_receiver* receiver, roc_protocol proto, struct sockaddr* addr) {
-    roc_panic_if(!receiver);
-    roc_panic_if(!addr);
-
-    pipeline::PortConfig port;
-    if (!make_port_config(port, proto, addr)) {
+    if (!receiver) {
+        roc_log(LogError, "roc_receiver_bind: invalid arguments: receiver == NULL");
         return -1;
     }
 
-    if (!receiver->context.trx.add_udp_receiver(port.address, receiver->receiver)) {
+    if (!addr) {
+        roc_log(LogError, "roc_receiver_bind: invalid arguments: addr == NULL");
         return -1;
     }
 
-    if (!receiver->receiver.add_port(port)) {
+    pipeline::PortConfig pconfig;
+    if (!config_port(pconfig, proto, addr)) {
+        roc_log(LogError, "roc_receiver_bind: invalid arguments");
         return -1;
     }
 
-    memcpy(addr, port.address.saddr(), port.address.slen());
+    if (!receiver->context.trx.add_udp_receiver(pconfig.address, receiver->receiver)) {
+        roc_log(LogError, "roc_receiver_bind: bind failed");
+        return -1;
+    }
+
+    if (!receiver->receiver.add_port(pconfig)) {
+        roc_log(LogError, "roc_receiver_bind: can't add pipeline port");
+        return -1;
+    }
+
+    memcpy(addr, pconfig.address.saddr(), pconfig.address.slen());
+
+    roc_log(LogInfo, "roc_receiver: bound to %s %s",
+            packet::address_to_str(pconfig.address).c_str(),
+            pipeline::proto_to_str(pconfig.protocol));
+
     return 0;
 }
 
 ssize_t
 roc_receiver_read(roc_receiver* receiver, float* samples, const size_t n_samples) {
-    roc_panic_if(!receiver);
-    roc_panic_if(!samples && n_samples != 0);
+    if (!receiver) {
+        roc_log(LogError, "roc_receiver_read: invalid arguments: receiver == NULL");
+        return -1;
+    }
 
+    if (n_samples == 0) {
+        return 0;
+    }
+
+    if ((ssize_t)n_samples < 0) {
+        roc_log(LogError, "roc_receiver_read: invalid arguments: too much samples");
+        return -1;
+    }
+
+    if (!samples) {
+        roc_log(LogError, "roc_receiver_read: invalid arguments: samples == NULL");
+        return -1;
+    }
+
+    // FIXME
     core::Slice<audio::sample_t> buf(
         new (receiver->context.sample_buffer_pool)
             core::Buffer<audio::sample_t>(receiver->context.sample_buffer_pool));
@@ -175,13 +141,16 @@ roc_receiver_read(roc_receiver* receiver, float* samples, const size_t n_samples
 }
 
 void roc_receiver_close(roc_receiver* receiver) {
-    roc_panic_if(!receiver);
-
-    roc_log(LogInfo, "roc receiver: closing receiver");
+    if (!receiver) {
+        roc_log(LogError, "roc_receiver_close: invalid arguments: receiver == NULL");
+        return;
+    }
 
     receiver->receiver.iterate_ports(close_port, receiver);
 
     --receiver->context.refcount;
 
-    delete receiver;
+    receiver->context.allocator.destroy(*receiver);
+
+    roc_log(LogInfo, "roc_receiver: closed receiver");
 }

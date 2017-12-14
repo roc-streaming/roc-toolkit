@@ -32,7 +32,7 @@ ROC_API int roc_context_start(roc_context* context);
 ROC_API void roc_context_stop(roc_context* context);
 
 //! Delete context.
-ROC_API void roc_context_close(roc_context* context);
+ROC_API int roc_context_close(roc_context* context);
 
 #ifdef __cplusplus
 }

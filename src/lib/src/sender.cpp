@@ -10,66 +10,93 @@
 #include "private.h"
 
 #include "roc_core/log.h"
-#include "roc_core/panic.h"
+#include "roc_packet/address_to_str.h"
+#include "roc_pipeline/proto_to_str.h"
 
 using namespace roc;
 
 namespace {
 
-bool make_sender_config(pipeline::SenderConfig& out, const roc_sender_config* in) {
-    if (in->samples_per_packet) {
-        out.samples_per_packet = in->samples_per_packet;
+bool init_pipeline(roc_sender* sender) {
+    if (!sender->context.started || sender->context.stopped) {
+        roc_log(LogDebug, "roc_sender: context is not running");
     }
 
-    switch ((unsigned)in->fec_scheme) {
-    case ROC_FEC_RS8M:
-        out.fec.codec = fec::ReedSolomon8m;
-        break;
-    case ROC_FEC_LDPC_STAIRCASE:
-        out.fec.codec = fec::LDPCStaircase;
-        break;
-    case ROC_FEC_NONE:
-        out.fec.codec = fec::NoCodec;
-        break;
-    default:
+    sender->sender.reset(new (sender->context.allocator) pipeline::Sender(
+                             sender->config, *sender->writer, *sender->writer,
+                             sender->format_map, sender->context.packet_pool,
+                             sender->context.byte_buffer_pool, sender->context.allocator),
+                         sender->context.allocator);
+
+    if (!sender->sender) {
+        roc_log(LogError, "roc_sender: can't allocate sender pipeline");
         return false;
     }
 
-    if (in->n_source_packets || in->n_repair_packets) {
-        out.fec.n_source_packets = in->n_source_packets;
-        out.fec.n_repair_packets = in->n_repair_packets;
+    if (!sender->sender->valid()) {
+        roc_log(LogError, "roc_sender: can't initialize sender pipeline");
+        return false;
     }
-
-    out.interleaving = !(in->flags & ROC_FLAG_DISABLE_INTERLEAVER);
-    out.timing = (in->flags & ROC_FLAG_ENABLE_TIMER);
 
     return true;
 }
 
-bool make_port_config(pipeline::PortConfig& out,
-                      roc_protocol proto,
-                      const struct sockaddr* addr) {
-    switch ((unsigned)proto) {
-    case ROC_PROTO_RTP:
-        out.protocol = pipeline::Proto_RTP;
+bool init_port(roc_sender* sender, const pipeline::PortConfig& pconfig) {
+    switch (pconfig.protocol) {
+    case pipeline::Proto_None:
         break;
-    case ROC_PROTO_RTP_RSM8_SOURCE:
-        out.protocol = pipeline::Proto_RTP_RSm8_Source;
-        break;
-    case ROC_PROTO_RSM8_REPAIR:
-        out.protocol = pipeline::Proto_RSm8_Repair;
-        break;
-    case ROC_PROTO_RTP_LDPC_SOURCE:
-        out.protocol = pipeline::Proto_RTP_LDPC_Source;
-        break;
-    case ROC_PROTO_LDPC_REPAIR:
-        out.protocol = pipeline::Proto_LDPC_Repair;
-        break;
-    default:
+
+    case pipeline::Proto_RTP:
+    case pipeline::Proto_RTP_RSm8_Source:
+    case pipeline::Proto_RTP_LDPC_Source:
+        if (sender->config.source_port.protocol != pipeline::Proto_None) {
+            roc_log(LogError, "roc_sender: source port is already connected");
+            return false;
+        }
+
+        sender->config.source_port = pconfig;
+
+        roc_log(LogInfo, "roc_sender: connected source port to %s %s",
+                packet::address_to_str(pconfig.address).c_str(),
+                pipeline::proto_to_str(pconfig.protocol));
+
+        return true;
+
+    case pipeline::Proto_RSm8_Repair:
+    case pipeline::Proto_LDPC_Repair:
+        if (sender->config.repair_port.protocol != pipeline::Proto_None) {
+            roc_log(LogError, "roc_sender: repair port is already connected");
+            return false;
+        }
+
+        if (sender->config.fec.codec == fec::NoCodec) {
+            roc_log(LogError,
+                    "roc_sender: repair port can't be used when fec is disabled");
+            return false;
+        }
+
+        sender->config.repair_port = pconfig;
+
+        roc_log(LogInfo, "roc_sender: connected repair port to %s %s",
+                packet::address_to_str(pconfig.address).c_str(),
+                pipeline::proto_to_str(pconfig.protocol));
+
+        return true;
+    }
+
+    roc_log(LogError, "roc_sender: invalid protocol");
+    return false;
+}
+
+bool check_connected(roc_sender* sender) {
+    if (sender->config.source_port.protocol == pipeline::Proto_None) {
+        roc_log(LogError, "roc_sender: source port is not connected");
         return false;
     }
 
-    if (!out.address.set_saddr(addr)) {
+    if (sender->config.repair_port.protocol == pipeline::Proto_None
+        && sender->config.fec.codec != fec::NoCodec) {
+        roc_log(LogError, "roc_sender: repair port is not connected");
         return false;
     }
 
@@ -85,69 +112,99 @@ roc_sender::roc_sender(roc_context& ctx, pipeline::SenderConfig& cfg)
 }
 
 roc_sender* roc_sender_open(roc_context* context, const roc_sender_config* config) {
-    roc_panic_if_not(context);
+    roc_log(LogInfo, "roc_sender: opening sender");
 
-    pipeline::SenderConfig c;
+    if (!context) {
+        roc_log(LogError, "roc_sender_open: invalid arguments: context == NULL");
+        return NULL;
+    }
+
+    pipeline::SenderConfig sconfig;
     if (config) {
-        if (!make_sender_config(c, config)) {
+        if (!config_sender(sconfig, *config)) {
+            roc_log(LogError, "roc_sender_open: invalid config");
             return NULL;
         }
     }
 
-    roc_log(LogInfo, "roc sender: opening sender");
-
-    roc_sender* s = new(std::nothrow) roc_sender(*context, c);
-    if (!s) {
+    roc_sender* sender = new (context->allocator) roc_sender(*context, sconfig);
+    if (!sender) {
+        roc_log(LogError, "roc_sender_open: can't allocate roc_sender");
         return NULL;
     }
 
     ++context->refcount;
-    return s;
+    return sender;
 }
 
 int roc_sender_bind(roc_sender* sender, struct sockaddr* src_addr) {
-    roc_panic_if(!sender);
-    roc_panic_if(!src_addr);
-    roc_panic_if(sender->writer);
-
-    if (!sender->address.set_saddr(src_addr)) {
+    if (!sender) {
+        roc_log(LogError, "roc_sender_bind: invalid arguments: sender == NULL");
         return -1;
     }
 
-    sender->writer = sender->context.trx.add_udp_sender(sender->address);
+    if (!src_addr) {
+        roc_log(LogError, "roc_sender_bind: invalid arguments: src_addr == NULL");
+        return -1;
+    }
+
+    if (sender->sender) {
+        roc_log(LogError, "roc_sender_bind: can't be called after first write");
+        return -1;
+    }
+
+    if (sender->writer) {
+        roc_log(LogError, "roc_sender_bind: sender is already bound");
+        return -1;
+    }
+
+    packet::Address addr;
+    if (!addr.set_saddr(src_addr)) {
+        roc_log(LogError, "roc_sender_bind: invalid arguments: bad src_addr");
+        return -1;
+    }
+
+    sender->writer = sender->context.trx.add_udp_sender(addr);
     if (!sender->writer) {
+        roc_log(LogError, "roc_sender_bind: bind failed");
         return -1;
     }
 
-    memcpy(src_addr, sender->address.saddr(), sender->address.slen());
+    sender->address = addr;
+    memcpy(src_addr, addr.saddr(), addr.slen());
+
+    roc_log(LogInfo, "roc_sender: bound to %s",
+            packet::address_to_str(sender->address).c_str());
+
     return 0;
 }
 
 int roc_sender_connect(roc_sender* sender,
                        roc_protocol proto,
                        const struct sockaddr* dst_addr) {
-    roc_panic_if(!sender);
-    roc_panic_if(!dst_addr);
-    roc_panic_if(sender->sender);
-
-    pipeline::PortConfig port;
-    if (!make_port_config(port, proto, dst_addr)) {
+    if (!sender) {
+        roc_log(LogError, "roc_sender_connect: invalid arguments: sender == NULL");
         return -1;
     }
 
-    switch ((unsigned)port.protocol) {
-    case pipeline::Proto_RTP:
-    case pipeline::Proto_RTP_RSm8_Source:
-    case pipeline::Proto_RTP_LDPC_Source:
-        sender->config.source_port = port;
-        break;
+    if (!dst_addr) {
+        roc_log(LogError, "roc_sender_connect: invalid arguments: dst_addr == NULL");
+        return -1;
+    }
 
-    case pipeline::Proto_RSm8_Repair:
-    case pipeline::Proto_LDPC_Repair:
-        sender->config.repair_port = port;
-        break;
+    if (sender->sender) {
+        roc_log(LogError, "roc_sender_connect: can't be called after first write");
+        return -1;
+    }
 
-    default:
+    pipeline::PortConfig pconfig;
+    if (!config_port(pconfig, proto, dst_addr)) {
+        roc_log(LogError, "roc_sender_connect: invalid arguments");
+        return -1;
+    }
+
+    if (!init_port(sender, pconfig)) {
+        roc_log(LogError, "roc_sender_connect: connect failed");
         return -1;
     }
 
@@ -156,26 +213,48 @@ int roc_sender_connect(roc_sender* sender,
 
 ssize_t
 roc_sender_write(roc_sender* sender, const float* samples, const size_t n_samples) {
-    roc_panic_if(!sender);
-    roc_panic_if(!samples && n_samples != 0);
+    if (!sender) {
+        roc_log(LogError, "roc_sender_write: invalid arguments: sender == NULL");
+        return -1;
+    }
+
+    if (!sender->writer) {
+        roc_log(LogError, "roc_sender_write: sender is not properly bound");
+        return -1;
+    }
+
+    if (!check_connected(sender)) {
+        roc_log(LogError, "roc_sender_write: sender is not properly connected");
+        return -1;
+    }
 
     if (!sender->sender) {
-        sender->sender.reset(new (sender->context.allocator) pipeline::Sender(
-                                 sender->config, *sender->writer, *sender->writer,
-                                 sender->format_map, sender->context.packet_pool,
-                                 sender->context.byte_buffer_pool,
-                                 sender->context.allocator),
-                             sender->context.allocator);
-
-        if (!sender->sender) {
+        if (!init_pipeline(sender)) {
+            roc_log(LogError, "roc_sender_write: lazy initialization failed");
             return -1;
         }
     }
 
     if (!sender->sender->valid()) {
+        roc_log(LogError, "roc_sender_write: sender is not properly initialized");
         return -1;
     }
 
+    if (n_samples == 0) {
+        return 0;
+    }
+
+    if ((ssize_t)n_samples < 0) {
+        roc_log(LogError, "roc_sender_write: invalid arguments: too much samples");
+        return -1;
+    }
+
+    if (!samples) {
+        roc_log(LogError, "roc_sender_write: invalid arguments: samples == NULL");
+        return -1;
+    }
+
+    // FIXME
     core::Slice<audio::sample_t> buf(
         new (sender->context.sample_buffer_pool)
             core::Buffer<audio::sample_t>(sender->context.sample_buffer_pool));
@@ -192,9 +271,10 @@ roc_sender_write(roc_sender* sender, const float* samples, const size_t n_sample
 }
 
 void roc_sender_close(roc_sender* sender) {
-    roc_panic_if(!sender);
-
-    roc_log(LogInfo, "roc sender: closing sender");
+    if (!sender) {
+        roc_log(LogError, "roc_sender_close: invalid arguments: sender == NULL");
+        return;
+    }
 
     if (sender->writer) {
         sender->context.trx.remove_port(sender->address);
@@ -202,5 +282,7 @@ void roc_sender_close(roc_sender* sender) {
 
     --sender->context.refcount;
 
-    delete sender;
+    sender->context.allocator.destroy(*sender);
+
+    roc_log(LogInfo, "roc_sender: closed sender");
 }
