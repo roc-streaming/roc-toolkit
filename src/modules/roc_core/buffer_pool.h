@@ -29,7 +29,7 @@ public:
         , buff_sz_(buff_sz) {
     }
 
-    //! Get buffer size.
+    //! Get buffer size (number of elements in buffer).
     size_t buffer_size() const {
         return buff_sz_;
     }

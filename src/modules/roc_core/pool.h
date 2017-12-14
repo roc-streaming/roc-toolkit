@@ -16,6 +16,7 @@
 #include "roc_core/alignment.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/list.h"
+#include "roc_core/log.h"
 #include "roc_core/macros.h"
 #include "roc_core/mutex.h"
 #include "roc_core/noncopyable.h"
@@ -44,6 +45,10 @@ public:
         , obj_off_(max_align(sizeof(Chunk)))
         , obj_sz_(max_align(ROC_MAX(sizeof(Elem), obj_sz)))
         , n_objs_(n_objs) {
+        roc_log(LogDebug,
+                "pool: initializing: chunk_size=%lu object_size=%lu objects_per_chunk=%lu",
+                (unsigned long)chunk_off_(n_objs_), (unsigned long)obj_sz_,
+                (unsigned long)n_objs_);
     }
 
     ~Pool() {
@@ -103,7 +108,7 @@ private:
     }
 
     void allocate_chunk_() {
-        void* memory = allocator_.allocate(obj_off_ + obj_sz_ * n_objs_);
+        void* memory = allocator_.allocate(chunk_off_(n_objs_));
         if (memory == NULL) {
             return;
         }
@@ -112,7 +117,7 @@ private:
         chunks_.push_back(*chunk);
 
         for (size_t n = 0; n < n_objs_; n++) {
-            Elem* elem = new ((char*)chunk + obj_off_ + obj_sz_ * n) Elem;
+            Elem* elem = new ((char*)chunk + chunk_off_(n)) Elem;
             free_elems_.push_back(*elem);
         }
     }
@@ -132,6 +137,10 @@ private:
             chunks_.remove(*chunk);
             allocator_.deallocate(chunk);
         }
+    }
+
+    size_t chunk_off_(size_t num_objs) const {
+        return obj_off_ + obj_sz_ * num_objs;
     }
 
     Mutex mutex_;
