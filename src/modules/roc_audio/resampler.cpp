@@ -79,20 +79,34 @@ Resampler::Resampler(IReader& reader,
     , qt_half_sinc_window_len_(float_to_fixedpoint(window_len_))
     , window_interp_(512)
     , window_interp_bits_(9)
-    , sinc_table_(allocator, window_len_ * window_interp_ + 2)
+    , sinc_table_(allocator)
     , qt_half_window_len_(float_to_fixedpoint((float)window_len_ / scaling_))
     , qt_epsilon_(float_to_fixedpoint(5e-8f))
     , default_sample_(float_to_fixedpoint(0))
     , qt_frame_size_(fixedpoint_t(channel_len_ << FRACT_BIT_COUNT))
     , qt_sample_(default_sample_)
     , qt_dt_(0)
-    , cutoff_freq_(0.9f) {
+    , cutoff_freq_(0.9f)
+    , valid_(false) {
     roc_panic_if(frame_size_ != channel_len_ * channels_num_);
     roc_panic_if(((fixedpoint_t)-1 >> FRACT_BIT_COUNT) < channel_len_);
     roc_panic_if(channels_num_ < 1);
-    init_window_(buffer_pool);
-    fill_sinc();
-    roc_panic_if_not(set_scaling(1.0f));
+
+    if (!init_window_(buffer_pool)) {
+        return;
+    }
+    if (!fill_sinc_()) {
+        return;
+    }
+    if (!set_scaling(1.0f)) {
+        return;
+    }
+
+    valid_ = true;
+}
+
+bool Resampler::valid() const {
+    return valid_;
 }
 
 bool Resampler::set_scaling(float scaling) {
@@ -119,6 +133,8 @@ bool Resampler::set_scaling(float scaling) {
 }
 
 void Resampler::read(Frame& frame) {
+    roc_panic_if_not(valid());
+
     sample_t* buff_data = frame.samples().data();
     roc_panic_if(buff_data == NULL);
 
@@ -149,12 +165,17 @@ void Resampler::read(Frame& frame) {
     }
 }
 
-void Resampler::init_window_(core::BufferPool<sample_t>& buffer_pool) {
+bool Resampler::init_window_(core::BufferPool<sample_t>& buffer_pool) {
     roc_log(LogDebug, "resampler: initializing window");
 
     for (size_t n = 0; n < 3; n++) {
         core::Slice<sample_t> samples(new (buffer_pool)
                                           core::Buffer<sample_t>(buffer_pool));
+        if (!samples) {
+            roc_log(LogError, "resampler: can't allocate buffer");
+            return false;
+        }
+
         samples.resize(frame_size_);
 
         window_[n] = samples;
@@ -166,6 +187,8 @@ void Resampler::init_window_(core::BufferPool<sample_t>& buffer_pool) {
     prev_frame_ = NULL;
     curr_frame_ = NULL;
     next_frame_ = NULL;
+
+    return true;
 }
 
 void Resampler::renew_window_() {
@@ -196,10 +219,15 @@ void Resampler::renew_window_() {
     next_frame_ = window_[2].data();
 }
 
-void Resampler::fill_sinc() {
-    sinc_table_.resize(sinc_table_.max_size());
+bool Resampler::fill_sinc_() {
+    if (!sinc_table_.resize(window_len_ * window_interp_ + 2)) {
+        roc_log(LogError, "resampler: can't allocate sinc table");
+        return false;
+    }
+
     const double sinc_step = 1.0 / (double)window_interp_;
     double sinc_t = sinc_step;
+
     sinc_table_[0] = 1.0f;
     for (size_t i = 1; i < sinc_table_.size(); ++i) {
         // const float window = 1;
@@ -211,6 +239,8 @@ void Resampler::fill_sinc() {
     }
     sinc_table_[sinc_table_.size() - 2] = 0;
     sinc_table_[sinc_table_.size() - 1] = 0;
+
+    return true;
 }
 
 // Computes sinc value in x position using linear interpolation between

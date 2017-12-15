@@ -37,8 +37,8 @@ public:
     Codec(const Config& config)
         : encoder_(config, PayloadSize, allocator)
         , decoder_(config, PayloadSize, buffer_pool, allocator)
-        , buffers_(allocator, NumSourcePackets + NumRepairPackets) {
-        buffers_.resize(buffers_.max_size());
+        , buffers_(allocator) {
+        CHECK(buffers_.resize(NumSourcePackets + NumRepairPackets));
     }
 
     void encode() {

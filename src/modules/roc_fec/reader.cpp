@@ -41,44 +41,55 @@ Reader::Reader(const Config& config,
     , packet_pool_(packet_pool)
     , source_queue_(0)
     , repair_queue_(0)
-    , source_block_(allocator, config.n_source_packets)
-    , repair_block_(allocator, config.n_repair_packets)
-    , is_alive_(true)
-    , is_started_(false)
+    , source_block_(allocator)
+    , repair_block_(allocator)
+    , valid_(false)
+    , alive_(true)
+    , started_(false)
     , can_repair_(false)
     , next_packet_(0)
     , cur_block_sn_(0)
     , has_source_(false)
     , source_(0)
     , n_packets_(0) {
-    source_block_.resize(source_block_.max_size());
-    repair_block_.resize(repair_block_.max_size());
+    if (!source_block_.resize(config.n_source_packets)) {
+        return;
+    }
+    if (!repair_block_.resize(config.n_repair_packets)) {
+        return;
+    }
+    valid_ = true;
 }
 
-bool Reader::is_started() const {
-    return is_started_;
+bool Reader::valid() const {
+    return valid_;
 }
 
-bool Reader::is_alive() const {
-    return is_alive_;
+bool Reader::started() const {
+    return started_;
+}
+
+bool Reader::alive() const {
+    return alive_;
 }
 
 packet::PacketPtr Reader::read() {
-    if (!is_alive_) {
+    roc_panic_if_not(valid());
+    if (!alive_) {
         return NULL;
     }
     packet::PacketPtr pp = read_();
     if (pp) {
         n_packets_++;
     }
-    // Check if is_alive_ have changed.
-    return (is_alive_ ? pp : NULL);
+    // Check if alive_ have changed.
+    return (alive_ ? pp : NULL);
 }
 
 packet::PacketPtr Reader::read_() {
     fetch_packets_();
 
-    if (!is_started_) {
+    if (!started_) {
         packet::PacketPtr pp = source_queue_.head();
         if (pp) {
             if (!has_source_) {
@@ -97,7 +108,7 @@ packet::PacketPtr Reader::read_() {
                           " n_packets_before=%u blk_sn=%lu",
                 n_packets_, (unsigned long)cur_block_sn_);
 
-        is_started_ = true;
+        started_ = true;
     }
 
     return get_next_packet_();
@@ -224,7 +235,7 @@ bool Reader::check_packet_(const packet::PacketPtr& pp, size_t pos) {
         roc_log(LogDebug, "fec reader: repaired packet has bad source id, shutting down:"
                           " got=%lu expected=%lu",
                 (unsigned long)pp->rtp()->source, (unsigned long)source_);
-        return (is_alive_ = false);
+        return (alive_ = false);
     }
 
     if (pp->rtp()->seqnum != packet::seqnum_t(cur_block_sn_ + pos)) {

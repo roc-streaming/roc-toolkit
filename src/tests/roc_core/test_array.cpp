@@ -47,63 +47,55 @@ TEST_GROUP(array) {
     HeapAllocator allocator;
 };
 
-TEST(array, max_size) {
-    Array<Object> array(allocator, NumObjects);
-
-    LONGS_EQUAL(NumObjects, array.max_size());
-}
-
 TEST(array, empty) {
-    Array<Object> array(allocator, NumObjects);
+    Array<Object> array(allocator);
 
+    LONGS_EQUAL(0, array.max_size());
     LONGS_EQUAL(0, array.size());
     LONGS_EQUAL(0, Object::n_objects);
 }
 
-TEST(array, resize_grow) {
-    Array<Object> array(allocator, NumObjects);
+TEST(array, grow) {
+    Array<Object> array(allocator);
 
-    array.resize(3);
+    CHECK(array.grow(3));
 
-    LONGS_EQUAL(3, array.size());
-    LONGS_EQUAL(3, Object::n_objects);
+    LONGS_EQUAL(3, array.max_size());
+    LONGS_EQUAL(0, array.size());
+    LONGS_EQUAL(0, Object::n_objects);
+
+    CHECK(array.grow(1));
+
+    LONGS_EQUAL(3, array.max_size());
+    LONGS_EQUAL(0, array.size());
+    LONGS_EQUAL(0, Object::n_objects);
 }
 
-TEST(array, resize_shrink) {
-    Array<Object> array(allocator, NumObjects);
+TEST(array, resize) {
+    Array<Object> array(allocator);
 
-    array.resize(3);
+    CHECK(array.resize(3));
 
+    LONGS_EQUAL(3, array.max_size());
     LONGS_EQUAL(3, array.size());
     LONGS_EQUAL(3, Object::n_objects);
 
     array.resize(1);
 
+    LONGS_EQUAL(3, array.max_size());
     LONGS_EQUAL(1, array.size());
     LONGS_EQUAL(1, Object::n_objects);
 }
 
 TEST(array, push_back) {
-    Array<Object> array(allocator, NumObjects);
+    Array<Object> array(allocator);
+
+    CHECK(array.grow(NumObjects));
 
     for (size_t n = 0; n < NumObjects; n++) {
         array.push_back(Object(n));
 
-        LONGS_EQUAL(n + 1, array.size());
-        LONGS_EQUAL(n + 1, Object::n_objects);
-    }
-
-    for (size_t n = 0; n < NumObjects; n++) {
-        LONGS_EQUAL(n, array[n].value);
-    }
-}
-
-TEST(array, allocate_back) {
-    Array<Object> array(allocator, NumObjects);
-
-    for (size_t n = 0; n < NumObjects; n++) {
-        new (array.allocate_back()) Object(n);
-
+        LONGS_EQUAL(NumObjects, array.max_size());
         LONGS_EQUAL(n + 1, array.size());
         LONGS_EQUAL(n + 1, Object::n_objects);
     }
@@ -114,7 +106,9 @@ TEST(array, allocate_back) {
 }
 
 TEST(array, front_back) {
-    Array<Object> array(allocator, NumObjects);
+    Array<Object> array(allocator);
+
+    CHECK(array.grow(NumObjects));
 
     for (size_t n = 0; n < NumObjects; n++) {
         array.push_back(Object(n));
@@ -131,7 +125,9 @@ TEST(array, constructor_destructor) {
     LONGS_EQUAL(0, allocator.num_allocations());
 
     {
-        Array<Object> array(allocator, NumObjects);
+        Array<Object> array(allocator);
+
+        CHECK(array.grow(3));
 
         array.push_back(Object(1));
         array.push_back(Object(2));
@@ -139,6 +135,14 @@ TEST(array, constructor_destructor) {
 
         LONGS_EQUAL(1, allocator.num_allocations());
         LONGS_EQUAL(3, Object::n_objects);
+
+        CHECK(array.grow(5));
+
+        array.push_back(Object(4));
+        array.push_back(Object(5));
+
+        LONGS_EQUAL(1, allocator.num_allocations());
+        LONGS_EQUAL(5, Object::n_objects);
     }
 
     LONGS_EQUAL(0, allocator.num_allocations());

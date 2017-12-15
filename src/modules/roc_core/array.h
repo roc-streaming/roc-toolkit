@@ -14,6 +14,7 @@
 #define ROC_CORE_ARRAY_H_
 
 #include "roc_core/iallocator.h"
+#include "roc_core/log.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/panic.h"
 #include "roc_core/stddefs.h"
@@ -25,28 +26,19 @@ namespace core {
 template <class T> class Array : public NonCopyable<> {
 public:
     //! Initialize empty array.
-    //!
-    //! @b Parameters
-    //!  - @p allocator is used to allocate a fixed size chunk of memory for array
-    //!  - @p max_sz defines maximum number of elements in array
-    //!
-    //! @remarks
-    //!  The allocation happens exactly once when the array is initialize. The maximum
-    //!  array size can't be changed after initialization.
-    Array(IAllocator& allocator, size_t max_sz)
-        : data_((T*)allocator.allocate(max_sz * sizeof(T)))
+    Array(IAllocator& allocator)
+        : data_(NULL)
         , size_(0)
-        , max_size_(max_sz)
+        , max_size_(0)
         , allocator_(allocator) {
-        if (data_ == NULL) {
-            roc_panic("array: can't allocate memory, size=%lu",
-                      (unsigned long)max_sz * sizeof(T));
-        }
     }
 
     ~Array() {
         resize(0);
-        allocator_.deallocate(data_);
+
+        if (data_) {
+            allocator_.deallocate(data_);
+        }
     }
 
     //! Get maximum number of elements.
@@ -117,14 +109,27 @@ public:
         return data_[size_ - 1];
     }
 
+    //! Append element to array.
+    //! @pre
+    //!  Array size() should be less than max_size().
+    void push_back(const T& value) {
+        if (size_ >= max_size_) {
+            roc_panic("array: attempting to append element to full array (size = %lu)",
+                      (unsigned long)size_);
+        }
+        new (data_ + size_) T(value);
+        size_++;
+    }
+
     //! Set array size.
     //! @remarks
-    //!  @p sz should be less than or equal to max_size().
-    void resize(size_t sz) {
-        if (sz > max_size_) {
-            roc_panic("array: attempting to call to resize() with too large size: "
-                      "sz=%lu, max_size=%lu",
-                      (unsigned long)sz, (unsigned long)max_size_);
+    //!  Calls grow() to ensure that there is enough space in array.
+    //! @returns
+    //!  false if the allocation failed
+    bool resize(size_t sz) {
+        // Move objects to a new memory region if necessary.
+        if (!grow(sz)) {
+            return false;
         }
 
         // Construct objects if size increased.
@@ -132,32 +137,52 @@ public:
             new (data_ + n) T();
         }
 
-        // Destroy objects (in reverse oreder) if size decreased.
+        // Destruct objects (in reverse order) if size decreased.
         for (size_t n = size_; n > sz; n--) {
             data_[n - 1].~T();
         }
 
         size_ = sz;
+
+        return true;
     }
 
-    //! Append element to array.
-    //! @pre
-    //!  Array size() should be less than max_size().
-    void push_back(const T& value) {
-        new (allocate_back()) T(value);
-    }
-
-    //! Allocate uninitialized memory for new element at the end of array.
-    //! @pre
-    //!  Array size() should be less than max_size().
+    //! Increase array maximum size.
+    //! @remarks
+    //!  If @p max_sz is greater than the current maximum size, a larger memory
+    //!  region is allocated and the array elements are copied there.
     //! @returns
-    //!  Memory for new element that will be last in array.
-    void* allocate_back() {
-        if (size_ >= max_size_) {
-            roc_panic("array: attempting to append element to full array (size = %lu)",
-                      (unsigned long)size_);
+    //!  false if the allocation failed
+    bool grow(size_t max_sz) {
+        if (max_sz <= max_size_) {
+            return true;
         }
-        return data_ + size_++;
+
+        T* new_data = (T*)allocator_.allocate(max_sz * sizeof(T));
+        if (!new_data) {
+            roc_log(LogError, "array: can't allocate memory: old_size=%lu new_size=%lu",
+                    (unsigned long)max_size_, (unsigned long)max_sz);
+            return false;
+        }
+
+        // Copy objects.
+        for (size_t n = 0; n < size_; n++) {
+            new (new_data + n) T(data_[n]);
+        }
+
+        // Destruct objects (in reverse order).
+        for (size_t n = size_; n > 0; n--) {
+            data_[n - 1].~T();
+        }
+
+        if (data_) {
+            allocator_.deallocate(data_);
+        }
+
+        data_ = new_data;
+        max_size_ = max_sz;
+
+        return true;
     }
 
 private:

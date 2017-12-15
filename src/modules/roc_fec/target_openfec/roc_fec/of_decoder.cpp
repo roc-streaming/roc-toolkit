@@ -30,16 +30,26 @@ OFDecoder::OFDecoder(const Config& config,
     , of_sess_(NULL)
     , of_sess_params_(NULL)
     , buffer_pool_(buffer_pool)
-    , buff_tab_(allocator, blk_source_packets_ + blk_repair_packets_)
-    , data_tab_(allocator, blk_source_packets_ + blk_repair_packets_)
-    , recv_tab_(allocator, blk_source_packets_ + blk_repair_packets_)
-    , status_(allocator, blk_source_packets_ + blk_repair_packets_ + 2)
+    , buff_tab_(allocator)
+    , data_tab_(allocator)
+    , recv_tab_(allocator)
+    , status_(allocator)
     , has_new_packets_(false)
-    , decoding_finished_(false) {
-    buff_tab_.resize(buff_tab_.max_size());
-    data_tab_.resize(data_tab_.max_size());
-    recv_tab_.resize(recv_tab_.max_size());
-    status_.resize(status_.max_size());
+    , decoding_finished_(false)
+    , valid_(false) {
+    if (!buff_tab_.resize(blk_source_packets_ + blk_repair_packets_)) {
+        return;
+    }
+    if (!data_tab_.resize(blk_source_packets_ + blk_repair_packets_)) {
+        return;
+    }
+    if (!recv_tab_.resize(blk_source_packets_ + blk_repair_packets_)) {
+        return;
+    }
+    if (!status_.resize(blk_source_packets_ + blk_repair_packets_ + 2)) {
+        return;
+    }
+
     if (config.codec == ReedSolomon8m) {
         roc_log(LogDebug, "of decoder: initializing Reed-Solomon decoder");
 
@@ -65,6 +75,8 @@ OFDecoder::OFDecoder(const Config& config,
     of_verbosity = 0;
 
     OFDecoder::reset(); // non-virtual call from ctor
+
+    valid_ = true;
 }
 
 OFDecoder::~OFDecoder() {
@@ -73,7 +85,13 @@ OFDecoder::~OFDecoder() {
     }
 }
 
+bool OFDecoder::valid() const {
+    return valid_;
+}
+
 void OFDecoder::set(size_t index, const core::Slice<uint8_t>& buffer) {
+    roc_panic_if_not(valid());
+
     if (index >= blk_source_packets_ + blk_repair_packets_) {
         roc_panic("of decoder: index out of bounds: index=%lu, size=%lu",
                   (unsigned long)index,
@@ -107,10 +125,13 @@ void OFDecoder::set(size_t index, const core::Slice<uint8_t>& buffer) {
 }
 
 core::Slice<uint8_t> OFDecoder::repair(size_t index) {
+    roc_panic_if_not(valid());
+
     if (!buff_tab_[index]) {
         update_();
         fix_buffer_(index);
     }
+
     return buff_tab_[index];
 }
 

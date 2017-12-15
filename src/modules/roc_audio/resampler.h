@@ -56,6 +56,9 @@ public:
               const ResamplerConfig& config,
               packet::channel_mask_t channels);
 
+    //! Check if object is successfully constructed.
+    bool valid() const;
+
     //! Read audio frame.
     //! @remarks
     //!  Calculates everything during this call so it may take time.
@@ -89,10 +92,11 @@ private:
         return i * channels_num_ + ch_offset;
     }
 
-    void init_window_(core::BufferPool<sample_t>&);
+    bool init_window_(core::BufferPool<sample_t>&);
     void renew_window_();
-    void fill_sinc();
-    inline sample_t sinc_(const fixedpoint_t x, const float fract_x);
+
+    bool fill_sinc_();
+    sample_t sinc_(const fixedpoint_t x, const float fract_x);
 
     // Input stream.
     IReader& reader_;
@@ -140,6 +144,8 @@ private:
     fixedpoint_t qt_sinc_step_;
 
     const sample_t cutoff_freq_;
+
+    bool valid_;
 };
 
 } // namespace audio

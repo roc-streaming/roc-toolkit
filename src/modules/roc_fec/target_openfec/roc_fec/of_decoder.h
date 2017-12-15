@@ -48,6 +48,9 @@ public:
 
     virtual ~OFDecoder();
 
+    //! Check if object is successfully constructed.
+    bool valid() const;
+
     //! Store source or repair packet buffer for current block.
     virtual void set(size_t index, const core::Slice<uint8_t>& buffer);
 
@@ -106,6 +109,8 @@ private:
 
     bool has_new_packets_;
     bool decoding_finished_;
+
+    bool valid_;
 };
 
 } // namespace fec

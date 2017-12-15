@@ -115,6 +115,8 @@ TEST(resampler, invalid_scaling) {
     MockReader reader;
     Resampler resampler(reader, buffer_pool, allocator, config, ChMask);
 
+    CHECK(resampler.valid());
+
     CHECK(!resampler.set_scaling(InvalidScaling));
 }
 
@@ -124,6 +126,8 @@ TEST(resampler, upscaling_twice_single) {
 
     MockReader reader;
     Resampler resampler(reader, buffer_pool, allocator, config, ChMask);
+
+    CHECK(resampler.valid());
 
     CHECK(resampler.set_scaling(0.5f));
 
@@ -159,6 +163,8 @@ TEST(resampler, upscaling_twice_awgn) {
     MockReader reader;
     Resampler resampler(reader, buffer_pool, allocator, config, ChMask);
 
+    CHECK(resampler.valid());
+
     CHECK(resampler.set_scaling(0.5f));
 
     const size_t sig_len = 2048;
@@ -189,6 +195,8 @@ TEST(resampler, downsample) {
     MockReader reader;
     Resampler resampler(reader, buffer_pool, allocator, config, ChMask);
 
+    CHECK(resampler.valid());
+
     CHECK(resampler.set_scaling(1.5f));
     const size_t sig_len = 2048;
     double buff[sig_len * 2];
@@ -216,6 +224,8 @@ TEST(resampler, two_tones_sep_channels) {
 
     MockReader reader;
     Resampler resampler(reader, buffer_pool, allocator, config, ChMask);
+
+    CHECK(resampler.valid());
 
     CHECK(resampler.set_scaling(0.5f));
 

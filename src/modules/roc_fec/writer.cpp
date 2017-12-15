@@ -33,16 +33,25 @@ Writer::Writer(const Config& config,
     , repair_composer_(repair_composer)
     , packet_pool_(packet_pool)
     , buffer_pool_(buffer_pool)
-    , repair_packets_(allocator, config.n_repair_packets)
+    , repair_packets_(allocator)
     , source_(0)
     , first_packet_(true)
     , cur_block_source_sn_(0)
     , cur_block_repair_sn_((packet::seqnum_t)core::random(packet::seqnum_t(-1)))
-    , cur_packet_(0) {
-    repair_packets_.resize(n_repair_packets_);
+    , cur_packet_(0)
+    , valid_(false) {
+    if (!repair_packets_.resize(config.n_repair_packets)) {
+        return;
+    }
+    valid_ = true;
+}
+
+bool Writer::valid() const {
+    return valid_;
 }
 
 void Writer::write(const packet::PacketPtr& pp) {
+    roc_panic_if_not(valid());
     roc_panic_if_not(pp);
 
     if (!pp->rtp()) {

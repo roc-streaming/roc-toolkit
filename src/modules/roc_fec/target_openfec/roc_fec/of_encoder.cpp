@@ -20,10 +20,16 @@ OFEncoder::OFEncoder(const Config& config,
     : blk_source_packets_(config.n_source_packets)
     , blk_repair_packets_(config.n_repair_packets)
     , of_sess_(NULL)
-    , buff_tab_(allocator, config.n_source_packets + config.n_repair_packets)
-    , data_tab_(allocator, config.n_source_packets + config.n_repair_packets) {
-    buff_tab_.resize(buff_tab_.max_size());
-    data_tab_.resize(data_tab_.max_size());
+    , buff_tab_(allocator)
+    , data_tab_(allocator)
+    , valid_(false) {
+    if (!buff_tab_.resize(config.n_source_packets + config.n_repair_packets)) {
+        return;
+    }
+    if (!data_tab_.resize(config.n_source_packets + config.n_repair_packets)) {
+        return;
+    }
+
     if (config.codec == ReedSolomon8m) {
         roc_log(LogDebug, "of encoder: initializing Reed-Solomon encoder");
 
@@ -57,10 +63,16 @@ OFEncoder::OFEncoder(const Config& config,
     if (OF_STATUS_OK != of_set_fec_parameters(of_sess_, of_sess_params_)) {
         roc_panic("of encoder: of_set_fec_parameters() failed");
     }
+
+    valid_ = true;
 }
 
 OFEncoder::~OFEncoder() {
     of_release_codec_instance(of_sess_);
+}
+
+bool OFEncoder::valid() const {
+    return valid_;
 }
 
 size_t OFEncoder::alignment() const {
@@ -68,6 +80,8 @@ size_t OFEncoder::alignment() const {
 }
 
 void OFEncoder::set(size_t index, const core::Slice<uint8_t>& buffer) {
+    roc_panic_if_not(valid());
+
     if (index >= blk_source_packets_ + blk_repair_packets_) {
         roc_panic("of encoder: can't write more than %lu data buffers",
                   (unsigned long)blk_source_packets_);
@@ -87,6 +101,8 @@ void OFEncoder::set(size_t index, const core::Slice<uint8_t>& buffer) {
 }
 
 void OFEncoder::commit() {
+    roc_panic_if_not(valid());
+
     for (size_t i = blk_source_packets_; i < blk_source_packets_ + blk_repair_packets_;
          ++i) {
         if (OF_STATUS_OK
@@ -97,6 +113,8 @@ void OFEncoder::commit() {
 }
 
 void OFEncoder::reset() {
+    roc_panic_if_not(valid());
+
     for (size_t i = 0; i < buff_tab_.size(); ++i) {
         data_tab_[i] = NULL;
         buff_tab_[i] = core::Slice<uint8_t>();

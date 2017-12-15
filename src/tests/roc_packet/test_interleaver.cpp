@@ -42,15 +42,17 @@ TEST(interleaver, read_write) {
     ConcurrentQueue queue(0, false);
     Interleaver intrlvr(queue, allocator, 10);
 
+    CHECK(intrlvr.valid());
+
     const size_t num_packets = intrlvr.block_size() * 5;
 
     // Packets to push to Interleaver.
-    core::Array<PacketPtr> packets(allocator, num_packets);
-    packets.resize(num_packets);
+    core::Array<PacketPtr> packets(allocator);
+    CHECK(packets.resize(num_packets));
 
     // Checks for received packets.
-    core::Array<bool> packets_ctr(allocator, num_packets);
-    packets_ctr.resize(num_packets);
+    core::Array<bool> packets_ctr(allocator);
+    CHECK(packets_ctr.resize(num_packets));
 
     for (size_t i = 0; i < num_packets; i++) {
         packets[i] = new_packet(seqnum_t(i));
@@ -94,6 +96,8 @@ TEST(interleaver, read_write) {
 TEST(interleaver, flush) {
     ConcurrentQueue queue(0, false);
     Interleaver intrlvr(queue, allocator, 10);
+
+    CHECK(intrlvr.valid());
 
     const size_t num_packets = intrlvr.block_size() * 5;
 

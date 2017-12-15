@@ -31,6 +31,9 @@ public:
     //!  them to @p output.
     Interleaver(IWriter& writer, core::IAllocator& allocator, size_t block_size);
 
+    //! Check if object is successfully constructed.
+    bool valid() const;
+
     //! Write next packet.
     //! @remarks
     //!  Packets are written to internal buffer. Buffered packets are
@@ -60,7 +63,10 @@ private:
     // Delay line.
     core::Array<PacketPtr> packets_;
 
-    size_t next_2_put_, next_2_send_;
+    size_t next_2_put_;
+    size_t next_2_send_;
+
+    bool valid_;
 };
 
 } // namespace packet

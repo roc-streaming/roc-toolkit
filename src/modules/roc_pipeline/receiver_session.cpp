@@ -36,7 +36,7 @@ ReceiverSession::ReceiverSession(const SessionConfig& config,
     }
 
     queue_router_.reset(new (allocator_) packet::Router(allocator_, 2), allocator_);
-    if (!queue_router_) {
+    if (!queue_router_ || !queue_router_->valid()) {
         return;
     }
 
@@ -84,13 +84,15 @@ ReceiverSession::ReceiverSession(const SessionConfig& config,
             return;
         }
 
-        fec_decoder_.reset(new (allocator_) fec::OFDecoder(
-                               config.fec, format->size(config.samples_per_packet),
+        core::UniquePtr<fec::OFDecoder> fec_decoder(
+            new (allocator_)
+                fec::OFDecoder(config.fec, format->size(config.samples_per_packet),
                                byte_buffer_pool, allocator_),
-                           allocator_);
-        if (!fec_decoder_) {
+            allocator_);
+        if (!fec_decoder || !fec_decoder->valid()) {
             return;
         }
+        fec_decoder_.reset(fec_decoder.release(), allocator_);
 
         fec_parser_.reset(new (allocator_) rtp::Parser(format_map, NULL), allocator_);
         if (!fec_parser_) {
@@ -101,7 +103,7 @@ ReceiverSession::ReceiverSession(const SessionConfig& config,
                               config.fec, *fec_decoder_, *preader, *repair_queue_,
                               *fec_parser_, packet_pool, allocator_),
                           allocator_);
-        if (!fec_reader_) {
+        if (!fec_reader_ || !fec_reader_->valid()) {
             return;
         }
         preader = fec_reader_.get();
@@ -142,7 +144,7 @@ ReceiverSession::ReceiverSession(const SessionConfig& config,
                              audio::Resampler(*areader, sample_buffer_pool, allocator,
                                               config.resampler, config.channels),
                          allocator_);
-        if (!resampler_) {
+        if (!resampler_ || !resampler_->valid()) {
             return;
         }
         areader = resampler_.get();

@@ -48,16 +48,19 @@ public:
            packet::PacketPool& packet_pool,
            core::IAllocator& allocator);
 
+    //! Check if object is successfully constructed.
+    bool valid() const;
+
+    //! Did decoder catch block beginning?
+    bool started() const;
+
+    //! Is decoder alive?
+    bool alive() const;
+
     //! Read packet.
     //! @remarks
     //!  When a packet loss is detected, try to restore it from repair packets.
     virtual packet::PacketPtr read();
-
-    //! Did decoder catch block beginning?
-    bool is_started() const;
-
-    //! Is decoder alive?
-    bool is_alive() const;
 
 private:
     packet::PacketPtr read_();
@@ -90,8 +93,10 @@ private:
     core::Array<packet::PacketPtr> source_block_;
     core::Array<packet::PacketPtr> repair_block_;
 
-    bool is_alive_;
-    bool is_started_;
+    bool valid_;
+
+    bool alive_;
+    bool started_;
     bool can_repair_;
 
     size_t next_packet_;

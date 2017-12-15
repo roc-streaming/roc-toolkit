@@ -56,7 +56,7 @@ Sender::Sender(const SenderConfig& config,
     }
 
     router_.reset(new (allocator) packet::Router(allocator, 2), allocator);
-    if (!router_) {
+    if (!router_ || !router_->valid()) {
         return;
     }
     packet::IWriter* pwriter = router_.get();
@@ -82,7 +82,7 @@ Sender::Sender(const SenderConfig& config,
                                                        config.fec.n_source_packets
                                                            + config.fec.n_repair_packets),
                                allocator);
-            if (!interleaver_) {
+            if (!interleaver_ || !interleaver_->valid()) {
                 return;
             }
             pwriter = interleaver_.get();
@@ -90,19 +90,20 @@ Sender::Sender(const SenderConfig& config,
 
         const size_t source_packet_size = format->size(config.samples_per_packet);
 
-        fec_encoder_.reset(new (allocator)
-                               fec::OFEncoder(config.fec, source_packet_size, allocator),
-                           allocator);
-        if (!fec_encoder_) {
+        core::UniquePtr<fec::OFEncoder> fec_encoder(
+            new (allocator) fec::OFEncoder(config.fec, source_packet_size, allocator),
+            allocator);
+        if (!fec_encoder || !fec_encoder->valid()) {
             return;
         }
+        fec_encoder_.reset(fec_encoder.release(), allocator);
 
         fec_writer_.reset(new (allocator) fec::Writer(
                               config.fec, source_packet_size, *fec_encoder_, *pwriter,
                               source_port_->composer(), repair_port_->composer(),
                               packet_pool, buffer_pool, allocator),
                           allocator);
-        if (!fec_writer_) {
+        if (!fec_writer_ || !fec_writer_->valid()) {
             return;
         }
         pwriter = fec_writer_.get();

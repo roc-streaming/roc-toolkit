@@ -47,6 +47,9 @@ public:
 
     virtual ~OFEncoder();
 
+    //! Check if object is successfully constructed.
+    bool valid() const;
+
     //! Get buffer alignment requirement.
     virtual size_t alignment() const;
 
@@ -76,6 +79,8 @@ private:
 
     core::Array<core::Slice<uint8_t> > buff_tab_;
     core::Array<void*> data_tab_;
+
+    bool valid_;
 };
 
 } // namespace fec

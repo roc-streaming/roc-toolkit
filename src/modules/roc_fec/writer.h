@@ -52,6 +52,9 @@ public:
            core::BufferPool<uint8_t>& buffer_pool,
            core::IAllocator& allocator);
 
+    //! Check if object is successfully constructed.
+    bool valid() const;
+
     //! Write packet.
     //! @remarks
     //!  - writes the given source packet to the output writer
@@ -84,6 +87,8 @@ private:
     packet::seqnum_t cur_block_repair_sn_;
 
     size_t cur_packet_;
+
+    bool valid_;
 };
 
 } // namespace fec

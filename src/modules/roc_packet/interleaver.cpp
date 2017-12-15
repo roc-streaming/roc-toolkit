@@ -17,43 +17,59 @@ namespace packet {
 Interleaver::Interleaver(IWriter& writer, core::IAllocator& allocator, size_t block_sz)
     : writer_(writer)
     , block_size_(block_sz)
-    , send_seq_(allocator, block_sz)
-    , packets_(allocator, block_sz)
+    , send_seq_(allocator)
+    , packets_(allocator)
     , next_2_put_(0)
-    , next_2_send_(0) {
+    , next_2_send_(0)
+    , valid_(false) {
     roc_panic_if(block_sz == 0);
 
-    send_seq_.resize(block_size_);
-    packets_.resize(block_size_);
+    if (!send_seq_.resize(block_size_)) {
+        return;
+    }
+    if (!packets_.resize(block_size_)) {
+        return;
+    }
 
     reinit_seq_();
 
     roc_log(LogDebug, "initializing interleaver: block_size=%u", (unsigned)block_size_);
 
     for (size_t i = 0; i < block_size_; ++i) {
-        roc_log(LogDebug, "  interleaver_seq[%u]: %u", (unsigned)i,
+        roc_log(LogTrace, "  interleaver_seq[%u]: %u", (unsigned)i,
                 (unsigned)send_seq_[i]);
     }
+
+    valid_ = true;
+}
+
+bool Interleaver::valid() const {
+    return valid_;
 }
 
 void Interleaver::write(const PacketPtr& p) {
+    roc_panic_if_not(valid());
+
     packets_[next_2_put_] = p;
     next_2_put_ = (next_2_put_ + 1) % block_size_;
+
     while (packets_[send_seq_[next_2_send_]]) {
         writer_.write(packets_[send_seq_[next_2_send_]]);
         packets_[send_seq_[next_2_send_]] = NULL;
-
         next_2_send_ = (next_2_send_ + 1) % block_size_;
     }
 }
 
 void Interleaver::flush() {
+    roc_panic_if_not(valid());
+
     for (size_t i = 0; i < block_size_; ++i) {
         if (packets_[i]) {
             writer_.write(packets_[i]);
             packets_[i] = NULL;
         }
     }
+
     next_2_put_ = next_2_send_ = 0;
 }
 

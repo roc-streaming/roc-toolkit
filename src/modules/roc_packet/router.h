@@ -29,6 +29,9 @@ public:
     //! Initialize.
     Router(core::IAllocator& allocator, size_t max_routes);
 
+    //! Check if object is successfully constructed.
+    bool valid() const;
+
     //! Add route.
     //! @remarks
     //!  Packets that has given @p flags set will be routed to @p writer.
@@ -48,6 +51,8 @@ private:
     };
 
     core::Array<Route> routes_;
+
+    bool valid_;
 };
 
 } // namespace packet
