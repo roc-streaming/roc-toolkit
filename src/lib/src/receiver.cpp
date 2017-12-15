@@ -52,7 +52,9 @@ roc_receiver* roc_receiver_open(roc_context* context, const roc_receiver_config*
         }
     }
 
-    roc_receiver* receiver = new (context->allocator) roc_receiver(*context, rconfig);
+    core::UniquePtr<roc_receiver> receiver(
+        new (context->allocator) roc_receiver(*context, rconfig), context->allocator);
+
     if (!receiver) {
         roc_log(LogError, "roc_receiver_open: can't allocate receiver pipeline");
         return NULL;
@@ -60,12 +62,12 @@ roc_receiver* roc_receiver_open(roc_context* context, const roc_receiver_config*
 
     if (!receiver->receiver.valid()) {
         roc_log(LogError, "roc_receiver_open: can't initialize receiver pipeline");
-        context->allocator.destroy(*receiver);
         return NULL;
     }
 
     ++context->refcount;
-    return receiver;
+
+    return receiver.release();
 }
 
 int roc_receiver_bind(roc_receiver* receiver, roc_protocol proto, struct sockaddr* addr) {

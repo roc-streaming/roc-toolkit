@@ -134,6 +134,7 @@ roc_sender* roc_sender_open(roc_context* context, const roc_sender_config* confi
     }
 
     ++context->refcount;
+
     return sender;
 }
 
