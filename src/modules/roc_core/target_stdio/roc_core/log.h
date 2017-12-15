@@ -62,16 +62,9 @@ LogLevel set_log_level(LogLevel);
 //! Set log handler.
 //!
 //! @remarks
-//!  If @p handler is not NULL, messages will be passed to @p handler
-//!  instead of printing to stderr.
-//!
-//! @returns
-//!  previous log handler.
-//!
-//! @note
-//!  Default log handler is NULL, so that messages are printed to
-//!  stderr by default.
-LogHandler set_log_handler(LogHandler handler);
+//!  If @p handler is not NULL, log messages will be passed to @p handler.
+//!  Otherwise, they're printed to stderr.Default log handler is NULL.
+void set_log_handler(LogHandler handler);
 
 } // namespace core
 } // namespace roc

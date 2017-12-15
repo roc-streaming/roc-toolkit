@@ -34,8 +34,7 @@ void random_init() {
 
 } // namespace
 
-// Insecure, but (hopefully?) uniform and thread-safe implementation.
-// See arc4random_uniform() from OpenBSD.
+// Based on arc4random_uniform() from OpenBSD.
 unsigned random(unsigned from, unsigned to) {
     if (int err = pthread_once(&rand_once, random_init)) {
         roc_panic("pthread_once: %s", errno_to_str(err).c_str());

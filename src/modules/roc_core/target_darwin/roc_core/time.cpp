@@ -42,7 +42,7 @@ void init_steady_factor() {
 
     kern_return_t ret = mach_timebase_info(&info);
     if (ret != KERN_SUCCESS) {
-        roc_panic("mach_timebase_info: %s", mach_error_string(ret));
+        roc_panic("time: mach_timebase_info(): %s", mach_error_string(ret));
     }
 
     steady_factor = (double)info.numer / info.denom;
@@ -64,7 +64,7 @@ void init_steady_factor() {
  */
 nanoseconds_t timestamp() {
     if (int err = pthread_once(&once_control, init_steady_factor)) {
-        roc_panic("pthread_once: %s", errno_to_str(err).c_str());
+        roc_panic("time: pthread_once(): %s", errno_to_str(err).c_str());
     }
     return nanoseconds_t(mach_absolute_time() * steady_factor);
 }
@@ -90,7 +90,7 @@ void sleep_until(nanoseconds_t ns) {
         }
 
         if (ret != KERN_ABORTED) {
-            roc_panic("clock_sleep(TIME_ABSOLUTE): %s", mach_error_string(ret));
+            roc_panic("time: clock_sleep(TIME_ABSOLUTE): %s", mach_error_string(ret));
         }
     }
 }

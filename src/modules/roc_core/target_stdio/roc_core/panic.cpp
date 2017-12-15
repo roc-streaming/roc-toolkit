@@ -19,12 +19,12 @@ namespace core {
 
 namespace {
 
-PanicHandler g_panic_handler = NULL;
+PanicHandler panic_handler = NULL;
 
 } // namespace
 
 void set_panic_handler(PanicHandler handler) {
-    g_panic_handler = handler;
+    panic_handler = handler;
 }
 
 void panic(const char* module, const char* file, int line, const char* format, ...) {
@@ -37,8 +37,8 @@ void panic(const char* module, const char* file, int line, const char* format, .
     vsnprintf(message, sizeof(message) - 1, format, args);
     va_end(args);
 
-    if (g_panic_handler) {
-        g_panic_handler(message);
+    if (panic_handler) {
+        panic_handler(message);
     }
 
     fprintf(stderr, "\n%s:%d: error: roc_panic() called\n\n", file, line);

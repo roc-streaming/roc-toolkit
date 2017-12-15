@@ -38,10 +38,8 @@ LogLevel set_log_level(LogLevel level) {
     return ret;
 }
 
-LogHandler set_log_handler(LogHandler handler) {
-    LogHandler ret = log_handler;
+void set_log_handler(LogHandler handler) {
     log_handler = handler;
-    return ret;
 }
 
 void log(const char* module, LogLevel level, const char* format, ...) {

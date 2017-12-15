@@ -23,15 +23,15 @@ namespace core {
 nanoseconds_t timestamp() {
     timespec ts;
     if (clock_gettime(CLOCK_MONOTONIC, &ts) == -1) {
-        roc_panic("clock_gettime(CLOCK_MONOTONIC): %s", errno_to_str().c_str());
+        roc_panic("time: clock_gettime(CLOCK_MONOTONIC): %s", errno_to_str().c_str());
     }
     return nanoseconds_t(ts.tv_sec) * 1000000000 + nanoseconds_t(ts.tv_nsec);
 }
-#else  // !defined(CLOCK_MONOTONIC)
+#else // !defined(CLOCK_MONOTONIC)
 nanoseconds_t timestamp() {
     struct timeval tv;
     if (gettimeofday(&tv, NULL) == -1) {
-        roc_panic("gettimeofday: %s", errno_to_str().c_str());
+        roc_panic("time: gettimeofday(): %s", errno_to_str().c_str());
     }
     return nanoseconds_t(tv.tv_sec) * 1000000000 + nanoseconds_t(tv.tv_usec) * 1000;
 }
@@ -45,18 +45,19 @@ void sleep_for(nanoseconds_t ns) {
     int err;
     while ((err = clock_nanosleep(CLOCK_MONOTONIC, 0, &ts, &ts))) {
         if (err != EINTR) {
-            roc_panic("clock_nanosleep(CLOCK_MONOTONIC): %s", errno_to_str(err).c_str());
+            roc_panic("time: clock_nanosleep(CLOCK_MONOTONIC): %s",
+                      errno_to_str(err).c_str());
         }
     }
 }
-#else  // !defined(CLOCK_MONOTONIC)
+#else // !defined(CLOCK_MONOTONIC)
 void sleep_for(nanoseconds_t ns) {
     timespec ts;
     ts.tv_sec = ns / 1000000000;
     ts.tv_nsec = ns % 1000000000;
     while (nanosleep(&ts, &ts) == -1) {
         if (errno != EINTR) {
-            roc_panic("nanosleep: %s", errno_to_str().c_str());
+            roc_panic("time: nanosleep(): %s", errno_to_str().c_str());
         }
     }
 }
@@ -70,11 +71,12 @@ void sleep_until(nanoseconds_t ns) {
     int err;
     while ((err = clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &ts, NULL))) {
         if (err != EINTR) {
-            roc_panic("clock_nanosleep(CLOCK_MONOTONIC): %s", errno_to_str(err).c_str());
+            roc_panic("time: clock_nanosleep(CLOCK_MONOTONIC): %s",
+                      errno_to_str(err).c_str());
         }
     }
 }
-#else  // !defined(CLOCK_MONOTONIC) || !defined(TIMER_ABSTIME)
+#else // !defined(CLOCK_MONOTONIC) || !defined(TIMER_ABSTIME)
 void sleep_until(nanoseconds_t ns) {
     nanoseconds_t now = timestamp_ns();
     if (ns > now) {
