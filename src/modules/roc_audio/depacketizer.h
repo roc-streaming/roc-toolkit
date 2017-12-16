@@ -45,7 +45,7 @@ public:
     virtual void read(Frame& frame);
 
     //! Did depacketizer catch first packet?
-    bool is_started() const;
+    bool started() const;
 
     //! Get next timestamp to be rendered.
     //! @pre

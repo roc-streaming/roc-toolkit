@@ -300,127 +300,110 @@ TEST(depacketizer, overlapping_packets) {
     expect_output(dp, SamplesPerPacket / 2, 0.33f);
 }
 
-TEST(depacketizer, frame_flags_packet_drops) {
+TEST(depacketizer, frame_flags_empty_full) {
+    enum { PacketsPerFrame = 3 };
+
     packet::ConcurrentQueue queue(0, false);
     Depacketizer dp(queue, pcm_decoder, ChMask, false);
 
-    packet::PacketPtr packets[] = {
-        new_packet(SamplesPerPacket * 3, 0.11f),
-        new_packet(SamplesPerPacket * 1, 0.11f),
-        new_packet(SamplesPerPacket * 2, 0.11f),
-        new_packet(SamplesPerPacket * 6, 0.11f),
-        new_packet(SamplesPerPacket * 2, 0.11f),
-        new_packet(SamplesPerPacket * 3, 0.11f),
+    packet::PacketPtr packets[][PacketsPerFrame] = {
+        {
+            new_packet(SamplesPerPacket * 1, 0.11f),
+            new_packet(SamplesPerPacket * 2, 0.11f),
+            new_packet(SamplesPerPacket * 3, 0.11f),
+        },
+        {
+            NULL,
+            new_packet(SamplesPerPacket * 5, 0.11f),
+            new_packet(SamplesPerPacket * 6, 0.11f),
+        },
+        {
+            new_packet(SamplesPerPacket * 7, 0.11f),
+            NULL,
+            new_packet(SamplesPerPacket * 9, 0.11f),
+        },
+        {
+            new_packet(SamplesPerPacket * 10, 0.11f),
+            new_packet(SamplesPerPacket * 11, 0.11f),
+            NULL,
+        },
+        {
+            NULL,
+            new_packet(SamplesPerPacket * 14, 0.11f),
+            NULL,
+        },
+        {
+            NULL, NULL, NULL,
+        },
+        {
+            new_packet(SamplesPerPacket * 22, 0.11f),
+            new_packet(SamplesPerPacket * 23, 0.11f),
+            new_packet(SamplesPerPacket * 24, 0.11f),
+        },
+        {
+            NULL, NULL, NULL,
+        },
     };
 
     unsigned frame_flags[] = {
         Frame::FlagFull,
-        Frame::FlagPacketDrops | Frame::FlagEmpty,
+        0,
+        0,
+        0,
+        0,
+        Frame::FlagEmpty,
         Frame::FlagEmpty,
         Frame::FlagFull,
-        Frame::FlagPacketDrops | Frame::FlagEmpty,
-        Frame::FlagEmpty,
     };
 
     CHECK(ROC_ARRAY_SIZE(packets) == ROC_ARRAY_SIZE(frame_flags));
 
     for (size_t n = 0; n < ROC_ARRAY_SIZE(packets); n++) {
+        for (size_t p = 0; p < PacketsPerFrame; p++) {
+            if (packets[n][p] != NULL) {
+                queue.write(packets[n][p]);
+            }
+        }
+
+        Frame frame = new_frame(SamplesPerPacket * PacketsPerFrame);
+        dp.read(frame);
+
+        CHECK(frame.flags() == frame_flags[n]);
+    }
+}
+
+TEST(depacketizer, frame_flags_packet_drops) {
+    packet::ConcurrentQueue queue(0, false);
+    Depacketizer dp(queue, pcm_decoder, ChMask, false);
+
+    packet::PacketPtr packets[] = {
+        new_packet(SamplesPerPacket * 4, 0.11f),
+        new_packet(SamplesPerPacket * 1, 0.11f),
+        new_packet(SamplesPerPacket * 2, 0.11f),
+        new_packet(SamplesPerPacket * 5, 0.11f),
+        new_packet(SamplesPerPacket * 6, 0.11f),
+        new_packet(SamplesPerPacket * 3, 0.11f),
+        new_packet(SamplesPerPacket * 8, 0.11f),
+    };
+
+    unsigned frame_flags[] = {
+        Frame::FlagFull,
+        Frame::FlagFull | Frame::FlagPacketDrops,
+        Frame::FlagFull,
+        Frame::FlagEmpty | Frame::FlagPacketDrops,
+        Frame::FlagFull,
+    };
+
+    for (size_t n = 0; n < ROC_ARRAY_SIZE(packets); n++) {
         queue.write(packets[n]);
     }
 
-    for (size_t n = 0; n < ROC_ARRAY_SIZE(packets); n++) {
+    for (size_t n = 0; n < ROC_ARRAY_SIZE(frame_flags); n++) {
         Frame frame = new_frame(SamplesPerPacket);
         dp.read(frame);
 
         CHECK(frame.flags() == frame_flags[n]);
     }
-}
-
-TEST(depacketizer, frame_flags_packet_drops_full) {
-    packet::ConcurrentQueue queue(0, false);
-    Depacketizer dp(queue, pcm_decoder, ChMask, false);
-
-    queue.write(new_packet(2 * SamplesPerPacket, 0.11f));
-    queue.write(new_packet(1 * SamplesPerPacket, 0.33f));
-    queue.write(new_packet(3 * SamplesPerPacket, 0.33f));
-
-    expect_output(dp, SamplesPerPacket, 0.11f);
-    Frame frame = new_frame(SamplesPerPacket);
-    dp.read(frame);
-
-    CHECK(frame.flags() & Frame::FlagPacketDrops);
-    CHECK(frame.flags() & Frame::FlagFull);
-}
-
-TEST(depacketizer, frame_flags_empty_full) {
-    packet::ConcurrentQueue queue(0, false);
-    Depacketizer dp(queue, pcm_decoder, ChMask, false);
-
-    packet::PacketPtr packets[] = {
-        new_packet(SamplesPerPacket, 0.11f),
-        new_packet(SamplesPerPacket * 2, 0.11f),
-        NULL,
-        new_packet(SamplesPerPacket * 5, 0.11f),
-        new_packet(SamplesPerPacket * 7, 0.11f),
-    };
-
-    size_t frame_sizes[] = {
-        SamplesPerPacket,
-        SamplesPerPacket * 2,
-        SamplesPerPacket,
-        SamplesPerPacket * 2,
-        SamplesPerPacket,
-    };
-
-    unsigned frame_flags[] = {
-        Frame::FlagFull,
-        0,
-        Frame::FlagEmpty,
-        0,
-        Frame::FlagFull,
-    };
-
-    CHECK(ROC_ARRAY_SIZE(packets) == ROC_ARRAY_SIZE(frame_sizes));
-    CHECK(ROC_ARRAY_SIZE(frame_sizes) == ROC_ARRAY_SIZE(frame_flags));
-
-    for (size_t n = 0; n < ROC_ARRAY_SIZE(packets); n++) {
-        if (packets[n] != NULL) {
-            queue.write(packets[n]);
-        }
-
-        Frame frame = new_frame(frame_sizes[n]);
-        dp.read(frame);
-
-        CHECK(frame.flags() == frame_flags[n]);
-    }
-}
-
-TEST(depacketizer, frame_flags_packet_between_zeroes) {
-    packet::ConcurrentQueue queue(0, false);
-    Depacketizer dp(queue, pcm_decoder, ChMask, false);
-
-    queue.write(new_packet(1 * SamplesPerPacket, 0.11f));
-    queue.write(new_packet(3 * SamplesPerPacket, 0.22f));
-    queue.write(new_packet(5 * SamplesPerPacket, 0.33f));
-
-    expect_output(dp, SamplesPerPacket, 0.11f);
-
-    Frame frame = new_frame(SamplesPerPacket * 3);
-    dp.read(frame);
-
-    CHECK(!(frame.flags() & Frame::FlagFull));
-    CHECK(!(frame.flags() & Frame::FlagEmpty));
-
-    UNSIGNED_LONGS_EQUAL(3 * SamplesPerPacket * NumCh, frame.samples().size());
-
-    sample_t* buff_ptr = frame.samples().data();
-
-    expect_values(buff_ptr, SamplesPerPacket * NumCh, 0.00f);
-    expect_values(buff_ptr + SamplesPerPacket * NumCh, SamplesPerPacket * NumCh, 0.22f);
-    expect_values(buff_ptr + 2 * SamplesPerPacket * NumCh, SamplesPerPacket * NumCh,
-                  0.00f);
-
-    expect_output(dp, SamplesPerPacket, 0.33f);
 }
 
 TEST(depacketizer, timestamp) {
@@ -439,7 +422,7 @@ TEST(depacketizer, timestamp) {
     for (size_t n = 0; n < NumPackets * FramesPerPacket; n++) {
         expect_output(dp, SamplesPerFrame, 0.0f);
 
-        CHECK(!dp.is_started());
+        CHECK(!dp.started());
         UNSIGNED_LONGS_EQUAL(0, dp.timestamp());
     }
 
@@ -455,7 +438,7 @@ TEST(depacketizer, timestamp) {
 
         ts += SamplesPerFrame;
 
-        CHECK(dp.is_started());
+        CHECK(dp.started());
         UNSIGNED_LONGS_EQUAL(ts, dp.timestamp());
     }
 
@@ -464,7 +447,7 @@ TEST(depacketizer, timestamp) {
 
         ts += SamplesPerFrame;
 
-        CHECK(dp.is_started());
+        CHECK(dp.started());
         UNSIGNED_LONGS_EQUAL(ts, dp.timestamp());
     }
 }

@@ -51,7 +51,7 @@ Depacketizer::Depacketizer(packet::IReader& reader,
     , dropped_packets_(0) {
 }
 
-bool Depacketizer::is_started() const {
+bool Depacketizer::started() const {
     return !first_packet_;
 }
 

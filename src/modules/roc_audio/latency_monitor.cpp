@@ -81,7 +81,7 @@ bool LatencyMonitor::update(packet::timestamp_t time) {
 }
 
 bool LatencyMonitor::get_latency_(packet::signed_timestamp_t& latency) const {
-    if (!depacketizer_.is_started()) {
+    if (!depacketizer_.started()) {
         return false;
     }
 
