@@ -118,6 +118,13 @@ bool Recorder::open(const char* name, const char* type) {
     return true;
 }
 
+size_t Recorder::sample_rate() const {
+    if (!input_) {
+        roc_panic("recorder: sample_rate: non-open input file or device");
+    }
+    return size_t(input_->signal.rate);
+}
+
 bool Recorder::is_file() const {
     if (!input_) {
         roc_panic("recorder: is_file: non-open input file or device");

@@ -145,7 +145,7 @@ TEST(player_recorder, player_stop_start) {
     player.join();
 }
 
-TEST(player_recorder, player_open_file) {
+TEST(player_recorder, player_is_file) {
     Player player(buffer_pool, allocator, true, ChMask, 0);
 
     core::TempFile file("test.wav");
@@ -154,7 +154,7 @@ TEST(player_recorder, player_open_file) {
     CHECK(player.is_file());
 }
 
-TEST(player_recorder, player_open_file_zero_sample_rate) {
+TEST(player_recorder, player_sample_rate_auto) {
     Player player(buffer_pool, allocator, true, ChMask, 0);
 
     core::TempFile file("test.wav");
@@ -162,7 +162,7 @@ TEST(player_recorder, player_open_file_zero_sample_rate) {
     CHECK(player.sample_rate() != 0);
 }
 
-TEST(player_recorder, player_open_file_non_zero_sample_rate) {
+TEST(player_recorder, player_sample_rate_force) {
     Player player(buffer_pool, allocator, true, ChMask, SampleRate);
 
     core::TempFile file("test.wav");
@@ -228,6 +228,69 @@ TEST(player_recorder, recorder_stop_start) {
     recorder.stop();
     recorder.start(writer);
     recorder.join();
+}
+
+TEST(player_recorder, recorder_is_file) {
+    core::TempFile file("test.wav");
+
+    {
+        MockReceiver receiver;
+        receiver.add(MaxBufSize * 10);
+
+        Player player(buffer_pool, allocator, true, ChMask, SampleRate);
+
+        CHECK(player.open(file.path(), NULL));
+
+        player.start(receiver);
+        player.join();
+    }
+
+    Recorder recorder(buffer_pool, ChMask, FrameSize, SampleRate);
+
+    CHECK(recorder.open(file.path(), NULL));
+    CHECK(recorder.is_file());
+}
+
+TEST(player_recorder, recorder_sample_rate_auto) {
+    core::TempFile file("test.wav");
+
+    {
+        MockReceiver receiver;
+        receiver.add(MaxBufSize * 10);
+
+        Player player(buffer_pool, allocator, true, ChMask, SampleRate);
+
+        CHECK(player.open(file.path(), NULL));
+
+        player.start(receiver);
+        player.join();
+    }
+
+    Recorder recorder(buffer_pool, ChMask, FrameSize, 0);
+
+    CHECK(recorder.open(file.path(), NULL));
+    CHECK(recorder.sample_rate() == SampleRate);
+}
+
+TEST(player_recorder, recorder_sample_rate_force) {
+    core::TempFile file("test.wav");
+
+    {
+        MockReceiver receiver;
+        receiver.add(MaxBufSize * 10);
+
+        Player player(buffer_pool, allocator, true, ChMask, SampleRate);
+
+        CHECK(player.open(file.path(), NULL));
+
+        player.start(receiver);
+        player.join();
+    }
+
+    Recorder recorder(buffer_pool, ChMask, FrameSize, SampleRate * 2);
+
+    CHECK(recorder.open(file.path(), NULL));
+    CHECK(recorder.sample_rate() == SampleRate * 2);
 }
 
 TEST(player_recorder, write_read) {

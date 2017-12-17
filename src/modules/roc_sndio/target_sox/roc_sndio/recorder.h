@@ -60,6 +60,12 @@ public:
     //!  Should be called once before calling start().
     bool open(const char* name, const char* type);
 
+    //! Get sample rate of an input file or a device.
+    //!
+    //! @pre
+    //!  Input file or device should be opened.
+    size_t sample_rate() const;
+
     //! Returns true if input is a real file.
     //!
     //! @pre
