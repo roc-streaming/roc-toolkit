@@ -27,7 +27,7 @@ nanoseconds_t timestamp() {
     }
     return nanoseconds_t(ts.tv_sec) * 1000000000 + nanoseconds_t(ts.tv_nsec);
 }
-#else // !defined(CLOCK_MONOTONIC)
+#else  // !defined(CLOCK_MONOTONIC)
 nanoseconds_t timestamp() {
     struct timeval tv;
     if (gettimeofday(&tv, NULL) == -1) {
@@ -50,7 +50,7 @@ void sleep_for(nanoseconds_t ns) {
         }
     }
 }
-#else // !defined(CLOCK_MONOTONIC)
+#else  // !defined(CLOCK_MONOTONIC)
 void sleep_for(nanoseconds_t ns) {
     timespec ts;
     ts.tv_sec = ns / 1000000000;
@@ -76,7 +76,7 @@ void sleep_until(nanoseconds_t ns) {
         }
     }
 }
-#else // !defined(CLOCK_MONOTONIC) || !defined(TIMER_ABSTIME)
+#else  // !defined(CLOCK_MONOTONIC) || !defined(TIMER_ABSTIME)
 void sleep_until(nanoseconds_t ns) {
     nanoseconds_t now = timestamp_ns();
     if (ns > now) {

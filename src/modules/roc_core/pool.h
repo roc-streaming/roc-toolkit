@@ -45,10 +45,11 @@ public:
         , obj_off_(max_align(sizeof(Chunk)))
         , obj_sz_(max_align(ROC_MAX(sizeof(Elem), obj_sz)))
         , n_objs_(n_objs) {
-        roc_log(LogDebug,
-                "pool: initializing: chunk_size=%lu object_size=%lu objects_per_chunk=%lu",
-                (unsigned long)chunk_off_(n_objs_), (unsigned long)obj_sz_,
-                (unsigned long)n_objs_);
+        roc_log(
+            LogDebug,
+            "pool: initializing: chunk_size=%lu object_size=%lu objects_per_chunk=%lu",
+            (unsigned long)chunk_off_(n_objs_), (unsigned long)obj_sz_,
+            (unsigned long)n_objs_);
     }
 
     ~Pool() {

@@ -60,7 +60,8 @@ ReceiverSession::ReceiverSession(const SessionConfig& config,
     }
     preader = delayed_reader_.get();
 
-    validator_.reset(new (allocator_) rtp::Validator(*preader, *format, config.rtp_validator),
+    validator_.reset(new (allocator_)
+                         rtp::Validator(*preader, *format, config.rtp_validator),
                      allocator_);
     if (!validator_) {
         return;

@@ -60,7 +60,7 @@ public:
     virtual void read(Frame& frame);
 
 private:
-    void read_(sample_t *out_data, size_t out_sz);
+    void read_(sample_t* out_data, size_t out_sz);
 
     core::List<IReader, core::NoOwnership> readers_;
     core::Slice<sample_t> temp_buf_;

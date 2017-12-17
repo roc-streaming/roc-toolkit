@@ -49,8 +49,7 @@ bool DelayedReader::fetch_packets_() {
         return false;
     }
 
-    roc_log(LogDebug,
-            "delayed reader: initial queue: delay=%lu queue=%lu packets=%lu",
+    roc_log(LogDebug, "delayed reader: initial queue: delay=%lu queue=%lu packets=%lu",
             (unsigned long)delay_, (unsigned long)qs, (unsigned long)queue_.size());
 
     return true;
@@ -73,10 +72,9 @@ PacketPtr DelayedReader::read_queued_packet_() {
     }
 
     if (qs != 0) {
-        roc_log(LogDebug,
-                "delayed reader: trimmed queue: delay=%lu queue=%lu packets=%lu",
-                (unsigned long)delay_, (unsigned long)qs,
-                (unsigned long)(queue_.size() + 1));
+        roc_log(
+            LogDebug, "delayed reader: trimmed queue: delay=%lu queue=%lu packets=%lu",
+            (unsigned long)delay_, (unsigned long)qs, (unsigned long)(queue_.size() + 1));
     }
 
     return pp;

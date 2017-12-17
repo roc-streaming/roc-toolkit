@@ -13,8 +13,8 @@
 #include <CppUTest/TestHarness.h>
 
 #include "roc_core/noncopyable.h"
-#include "roc_packet/iwriter.h"
 #include "roc_packet/concurrent_queue.h"
+#include "roc_packet/iwriter.h"
 
 namespace roc {
 namespace pipeline {
@@ -32,7 +32,7 @@ public:
     }
 
     void deliver(size_t n_source_packets) {
-        for (size_t np = 0; np < n_source_packets; ) {
+        for (size_t np = 0; np < n_source_packets;) {
             packet::PacketPtr pp = queue_.read();
             if (!pp) {
                 break;
@@ -48,7 +48,7 @@ public:
 
 private:
     packet::PacketPtr copy_packet_(const packet::PacketPtr& pa) {
-        packet::PacketPtr pb = new (pool_) packet::Packet (pool_);
+        packet::PacketPtr pb = new (pool_) packet::Packet(pool_);
         CHECK(pb);
 
         CHECK(pa->flags() & packet::Packet::FlagUDP);

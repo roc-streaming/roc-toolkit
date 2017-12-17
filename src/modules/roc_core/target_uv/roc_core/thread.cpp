@@ -37,7 +37,8 @@ void Thread::start() {
     }
 
     if (int err = uv_thread_create(&thread_, thread_runner_, this)) {
-        roc_panic("thread: uv_thread_create(): [%s] %s", uv_err_name(err), uv_strerror(err));
+        roc_panic("thread: uv_thread_create(): [%s] %s", uv_err_name(err),
+                  uv_strerror(err));
     }
 
     started_ = 1;
@@ -56,7 +57,8 @@ void Thread::join() {
     }
 
     if (int err = uv_thread_join(&thread_)) {
-        roc_panic("thread: uv_thread_join(): [%s] %s", uv_err_name(err), uv_strerror(err));
+        roc_panic("thread: uv_thread_join(): [%s] %s", uv_err_name(err),
+                  uv_strerror(err));
     }
 
     joinable_ = 0;

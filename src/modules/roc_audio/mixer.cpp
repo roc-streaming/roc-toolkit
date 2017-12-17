@@ -70,7 +70,7 @@ void Mixer::read(Frame& frame) {
     }
 }
 
-void Mixer::read_(sample_t *out_data, size_t out_sz) {
+void Mixer::read_(sample_t* out_data, size_t out_sz) {
     roc_panic_if_not(out_data);
 
     temp_buf_.resize(out_sz);

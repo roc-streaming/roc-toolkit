@@ -25,7 +25,8 @@ typedef struct roc_sender roc_sender;
 
 //! Create a new sender.
 //! Returns a new object on success or NULL on error.
-ROC_API roc_sender* roc_sender_open(roc_context* context, const roc_sender_config* config);
+ROC_API roc_sender* roc_sender_open(roc_context* context,
+                                    const roc_sender_config* config);
 
 //! Bind sender to a local port.
 //! If the port is zero, an ephemeral port is selected and written back to addr.

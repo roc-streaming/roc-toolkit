@@ -105,9 +105,9 @@ sample_t* Depacketizer::read_samples_(sample_t* buff_ptr, sample_t* buff_end) {
             roc_panic_if_not(
                 ROC_UNSIGNED_LT(packet::signed_timestamp_t, timestamp_, next_timestamp));
 
-            const size_t mis_samples = num_channels_
-                * (size_t)ROC_UNSIGNED_SUB(packet::signed_timestamp_t, next_timestamp,
-                                           timestamp_);
+            const size_t mis_samples =
+                num_channels_ * (size_t)ROC_UNSIGNED_SUB(packet::signed_timestamp_t,
+                                                         next_timestamp, timestamp_);
 
             const size_t max_samples = (size_t)(buff_end - buff_ptr);
 
@@ -232,9 +232,9 @@ packet::PacketPtr Depacketizer::read_packet_() {
 void Depacketizer::set_frame_flags_(Frame& frame,
                                     const size_t prev_dropped_packets,
                                     const packet::timestamp_t prev_packet_samples) {
-    const size_t packet_samples = num_channels_
-        * (size_t)ROC_UNSIGNED_SUB(packet::signed_timestamp_t, packet_samples_,
-                                   prev_packet_samples);
+    const size_t packet_samples =
+        num_channels_ * (size_t)ROC_UNSIGNED_SUB(packet::signed_timestamp_t,
+                                                 packet_samples_, prev_packet_samples);
 
     if (packet_samples == frame.size()) {
         frame.add_flags(Frame::FlagFull);

@@ -36,8 +36,8 @@ void print(const Packet& p, int flags) {
     }
 
     if (p.fec()) {
-        fprintf(stderr, "fec: blk=%lu payload=%lu\n",
-                (unsigned long)p.fec()->blknum, (unsigned long)p.fec()->payload.size());
+        fprintf(stderr, "fec: blk=%lu payload=%lu\n", (unsigned long)p.fec()->blknum,
+                (unsigned long)p.fec()->payload.size());
 
         if ((flags & PrintPayload) && p.fec()->payload) {
             core::print_bytes(p.fec()->payload.data(), p.fec()->payload.size());

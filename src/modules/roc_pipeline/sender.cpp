@@ -48,7 +48,7 @@ Sender::Sender(const SenderConfig& config,
 
     if (config.repair_port.protocol != Proto_None) {
         repair_port_.reset(new (allocator)
-                           SenderPort(config.repair_port, repair_writer, allocator),
+                               SenderPort(config.repair_port, repair_writer, allocator),
                            allocator);
         if (!repair_port_ || !repair_port_->valid()) {
             return;

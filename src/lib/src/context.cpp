@@ -93,8 +93,7 @@ int roc_context_close(roc_context* context) {
     }
 
     if (context->refcount != 0) {
-        roc_log(LogError,
-                "roc_context_close: context is still in use: refcount=%lu",
+        roc_log(LogError, "roc_context_close: context is still in use: refcount=%lu",
                 (unsigned long)context->refcount);
         return -1;
     }
