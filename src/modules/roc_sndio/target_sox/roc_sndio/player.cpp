@@ -37,6 +37,8 @@ Player::Player(core::BufferPool<audio::sample_t>& buffer_pool,
     out_signal_.rate = sample_rate;
     out_signal_.channels = (unsigned)n_channels;
     out_signal_.precision = SOX_SAMPLE_PRECISION;
+
+    buffer_size_ = sox_get_globals()->bufsiz;
 }
 
 Player::~Player() {
@@ -49,40 +51,17 @@ Player::~Player() {
 bool Player::open(const char* name, const char* type) {
     roc_log(LogDebug, "player: opening: name=%s type=%s", name, type);
 
-    if (output_) {
+    if (buffer_ || output_) {
         roc_panic("player: can't call open() more than once");
     }
 
-    if (!detect_defaults(&name, &type)) {
-        roc_log(LogError, "player: can't detect defaults: name=%s type=%s", name, type);
+    if (!prepare_()) {
         return false;
     }
 
-    roc_log(LogInfo, "player: name=%s type=%s", name, type);
-
-    output_ = sox_open_write(name, &out_signal_, NULL, type, NULL, NULL);
-    if (!output_) {
-        roc_log(LogError, "player: can't open writer: name=%s type=%s", name, type);
+    if (!open_(name, type)) {
         return false;
     }
-
-    is_file_ = !(output_->handler.flags & SOX_FILE_DEVICE);
-
-    unsigned long in_rate = (unsigned long)out_signal_.rate;
-    unsigned long out_rate = (unsigned long)output_->signal.rate;
-
-    if (in_rate != 0 && in_rate != out_rate) {
-        roc_log(LogError,
-                "can't open output file or device with the required sample rate: "
-                "required=%lu suggested=%lu",
-                out_rate, in_rate);
-        return false;
-    }
-
-    roc_log(LogInfo, "player:"
-                     " bits=%lu out_rate=%lu in_rate=%lu ch=%lu is_file=%d",
-            (unsigned long)output_->encoding.bits_per_sample, out_rate, in_rate,
-            (unsigned long)output_->signal.channels, (int)is_file_);
 
     return true;
 }
@@ -132,6 +111,60 @@ void Player::run() {
             (unsigned long)n_bufs_);
 }
 
+bool Player::prepare_() {
+    if (buffer_pool_.buffer_size() < buffer_size_) {
+        roc_log(LogError, "player: buffer size is too small: required=%lu actual=%lu",
+                (unsigned long)buffer_size_, (unsigned long)buffer_pool_.buffer_size());
+        return false;
+    }
+
+    buffer_ = new (buffer_pool_) core::Buffer<audio::sample_t>(buffer_pool_);
+
+    if (!buffer_) {
+        roc_log(LogError, "player: can't allocate buffer");
+        return false;
+    }
+
+    buffer_.resize(buffer_size_);
+
+    return true;
+}
+
+bool Player::open_(const char* name, const char* type) {
+    if (!detect_defaults(&name, &type)) {
+        roc_log(LogError, "player: can't detect defaults: name=%s type=%s", name, type);
+        return false;
+    }
+
+    roc_log(LogInfo, "player: name=%s type=%s", name, type);
+
+    output_ = sox_open_write(name, &out_signal_, NULL, type, NULL, NULL);
+    if (!output_) {
+        roc_log(LogError, "player: can't open writer: name=%s type=%s", name, type);
+        return false;
+    }
+
+    is_file_ = !(output_->handler.flags & SOX_FILE_DEVICE);
+
+    unsigned long in_rate = (unsigned long)out_signal_.rate;
+    unsigned long out_rate = (unsigned long)output_->signal.rate;
+
+    if (in_rate != 0 && in_rate != out_rate) {
+        roc_log(LogError,
+                "can't open output file or device with the required sample rate: "
+                "required=%lu suggested=%lu",
+                out_rate, in_rate);
+        return false;
+    }
+
+    roc_log(LogInfo, "player:"
+                     " bits=%lu out_rate=%lu in_rate=%lu ch=%lu is_file=%d",
+            (unsigned long)output_->encoding.bits_per_sample, out_rate, in_rate,
+            (unsigned long)output_->signal.channels, (int)is_file_);
+
+    return true;
+}
+
 void Player::loop_() {
     const size_t outbuf_sz = sox_get_globals()->bufsiz;
 
@@ -145,17 +178,10 @@ void Player::loop_() {
     sox_sample_t* outbuf = outptr.get();
     size_t outbuf_pos = 0;
 
-    core::Slice<audio::sample_t> buf(new (buffer_pool_)
-                                         core::Buffer<audio::sample_t>(buffer_pool_));
-    buf.resize(outbuf_sz);
-    if (!buf) {
-        roc_panic("player: can't allocate input buffer");
-    }
-
     SOX_SAMPLE_LOCALS;
 
     while (!stop_) {
-        audio::Frame frame(buf);
+        audio::Frame frame(buffer_);
         pipeline::IReceiver::Status status = input_->read(frame);
 
         if (status == pipeline::IReceiver::Inactive) {

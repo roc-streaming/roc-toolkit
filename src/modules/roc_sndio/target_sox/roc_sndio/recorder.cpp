@@ -103,84 +103,16 @@ Recorder::~Recorder() {
 bool Recorder::open(const char* name, const char* type) {
     roc_log(LogDebug, "recorder: opening: name=%s type=%s", name, type);
 
-    if (input_) {
+    if (buffer_ || input_) {
         roc_panic("recorder: can't call open() more than once");
     }
 
-    if (!detect_defaults(&name, &type)) {
-        roc_log(LogError, "can't detect defaults: name=%s type=%s", name, type);
+    if (!prepare_()) {
         return false;
     }
 
-    roc_log(LogInfo, "recorder: name=%s type=%s", name, type);
-
-    if (!(input_ = sox_open_read(name, NULL, NULL, type))) {
-        roc_log(LogError, "recorder: can't open reader: name=%s type=%s", name, type);
+    if (!open_(name, type)) {
         return false;
-    }
-
-    is_file_ = !(input_->handler.flags & SOX_FILE_DEVICE);
-
-    roc_log(LogInfo, "recorder:"
-                     " in_bits=%lu out_bits=%lu in_rate=%lu out_rate=%lu"
-                     " in_ch=%lu, out_ch=%lu, is_file=%d",
-            (unsigned long)input_->encoding.bits_per_sample,
-            (unsigned long)out_signal_.precision, (unsigned long)input_->signal.rate,
-            (unsigned long)out_signal_.rate, (unsigned long)input_->signal.channels,
-            (unsigned long)out_signal_.channels, (int)is_file_);
-
-    if (!(chain_ = sox_create_effects_chain(&input_->encoding, NULL))) {
-        roc_panic("recorder: sox_create_effects_chain() failed");
-    }
-
-    {
-        const char* args[] = { (const char*)input_ };
-
-        add_effect(chain_, "input", &input_->signal, &out_signal_, ROC_ARRAY_SIZE(args),
-                   args);
-    }
-
-    if (input_->signal.channels != out_signal_.channels) {
-        add_effect(chain_, "channels", &input_->signal, &out_signal_, 0, NULL);
-    }
-
-    if ((size_t)out_signal_.rate != 0
-        && (size_t)input_->signal.rate != (size_t)out_signal_.rate) {
-        const char* gain_h_args[] = {
-            "-h",
-        };
-
-        add_effect(chain_, "gain", &input_->signal, &out_signal_,
-                   ROC_ARRAY_SIZE(gain_h_args), gain_h_args);
-
-        const char* rate_args[] = { "-b", "99.7", "-v" };
-
-        add_effect(chain_, "rate", &input_->signal, &out_signal_,
-                   ROC_ARRAY_SIZE(rate_args), rate_args);
-
-        const char* gain_r_args[] = {
-            "-r",
-        };
-
-        add_effect(chain_, "gain", &input_->signal, &out_signal_,
-                   ROC_ARRAY_SIZE(gain_r_args), gain_r_args);
-    }
-
-    {
-        sox_effect_t* effect = sox_create_effect(&output_handler_);
-        if (!effect) {
-            roc_panic("recorder: sox_create_effect(): can't create output effect");
-        }
-
-        effect->priv = this;
-
-        int err = sox_add_effect(chain_, effect, &out_signal_, &out_signal_);
-        if (err != SOX_SUCCESS) {
-            roc_panic("recorder: sox_add_effect(): can't add output effect: %s",
-                      sox_strerror(err));
-        }
-
-        free(effect);
     }
 
     return true;
@@ -264,22 +196,108 @@ int Recorder::output_cb_(sox_effect_t* eff,
     return SOX_SUCCESS;
 }
 
-void Recorder::write_(const sox_sample_t* buf, size_t bufsz, bool eof) {
-    while (bufsz != 0) {
-        if (!frame_.samples()) {
-            core::Slice<audio::sample_t> samples(
-                new (buffer_pool_) core::Buffer<audio::sample_t>(buffer_pool_));
-            samples.resize(buffer_size_);
+bool Recorder::prepare_() {
+    if (buffer_pool_.buffer_size() < buffer_size_) {
+        roc_log(LogError, "recorder: buffer size is too small: required=%lu actual=%lu",
+                (unsigned long)buffer_size_, (unsigned long)buffer_pool_.buffer_size());
+        return false;
+    }
 
-            frame_.set_samples(samples);
+    buffer_ = new (buffer_pool_) core::Buffer<audio::sample_t>(buffer_pool_);
 
-            if (!frame_.samples()) {
-                roc_log(LogError, "recorder: can't allocate buffer");
-                return;
-            }
+    if (!buffer_) {
+        roc_log(LogError, "recorder: can't allocate buffer");
+        return false;
+    }
+
+    buffer_.resize(buffer_size_);
+
+    return true;
+}
+
+bool Recorder::open_(const char* name, const char* type) {
+    if (!detect_defaults(&name, &type)) {
+        roc_log(LogError, "can't detect defaults: name=%s type=%s", name, type);
+        return false;
+    }
+
+    roc_log(LogInfo, "recorder: name=%s type=%s", name, type);
+
+    if (!(input_ = sox_open_read(name, NULL, NULL, type))) {
+        roc_log(LogError, "recorder: can't open reader: name=%s type=%s", name, type);
+        return false;
+    }
+
+    is_file_ = !(input_->handler.flags & SOX_FILE_DEVICE);
+
+    roc_log(LogInfo, "recorder:"
+                     " in_bits=%lu out_bits=%lu in_rate=%lu out_rate=%lu"
+                     " in_ch=%lu, out_ch=%lu, is_file=%d",
+            (unsigned long)input_->encoding.bits_per_sample,
+            (unsigned long)out_signal_.precision, (unsigned long)input_->signal.rate,
+            (unsigned long)out_signal_.rate, (unsigned long)input_->signal.channels,
+            (unsigned long)out_signal_.channels, (int)is_file_);
+
+    if (!(chain_ = sox_create_effects_chain(&input_->encoding, NULL))) {
+        roc_panic("recorder: sox_create_effects_chain() failed");
+    }
+
+    {
+        const char* args[] = { (const char*)input_ };
+
+        add_effect(chain_, "input", &input_->signal, &out_signal_, ROC_ARRAY_SIZE(args),
+                   args);
+    }
+
+    if (input_->signal.channels != out_signal_.channels) {
+        add_effect(chain_, "channels", &input_->signal, &out_signal_, 0, NULL);
+    }
+
+    if ((size_t)out_signal_.rate != 0
+        && (size_t)input_->signal.rate != (size_t)out_signal_.rate) {
+        const char* gain_h_args[] = {
+            "-h",
+        };
+
+        add_effect(chain_, "gain", &input_->signal, &out_signal_,
+                   ROC_ARRAY_SIZE(gain_h_args), gain_h_args);
+
+        const char* rate_args[] = { "-b", "99.7", "-v" };
+
+        add_effect(chain_, "rate", &input_->signal, &out_signal_,
+                   ROC_ARRAY_SIZE(rate_args), rate_args);
+
+        const char* gain_r_args[] = {
+            "-r",
+        };
+
+        add_effect(chain_, "gain", &input_->signal, &out_signal_,
+                   ROC_ARRAY_SIZE(gain_r_args), gain_r_args);
+    }
+
+    {
+        sox_effect_t* effect = sox_create_effect(&output_handler_);
+        if (!effect) {
+            roc_panic("recorder: sox_create_effect(): can't create output effect");
         }
 
-        audio::sample_t* samples = frame_.samples().data();
+        effect->priv = this;
+
+        int err = sox_add_effect(chain_, effect, &out_signal_, &out_signal_);
+        if (err != SOX_SUCCESS) {
+            roc_panic("recorder: sox_add_effect(): can't add output effect: %s",
+                      sox_strerror(err));
+        }
+
+        free(effect);
+    }
+
+    return true;
+}
+
+void Recorder::write_(const sox_sample_t* buf, size_t bufsz, bool eof) {
+    while (bufsz != 0) {
+        audio::sample_t* samples = buffer_.data();
 
         SOX_SAMPLE_LOCALS;
 
@@ -299,7 +317,8 @@ void Recorder::write_(const sox_sample_t* buf, size_t bufsz, bool eof) {
         }
 
         if (buffer_pos_ == buffer_size_) {
-            output_->write(frame_);
+            audio::Frame frame(buffer_);
+            output_->write(frame);
             buffer_pos_ = 0;
             n_bufs_++;
         }

@@ -93,6 +93,8 @@ private:
                           size_t* ibufsz,
                           size_t* obufsz);
 
+    bool prepare_();
+    bool open_(const char* name, const char* type);
     void write_(const sox_sample_t* buf, size_t bufsz, bool eof);
     void close_();
 
@@ -104,7 +106,7 @@ private:
     audio::IWriter* output_;
     core::BufferPool<audio::sample_t>& buffer_pool_;
 
-    audio::Frame frame_;
+    core::Slice<audio::sample_t> buffer_;
     size_t buffer_pos_;
 
     size_t buffer_size_;

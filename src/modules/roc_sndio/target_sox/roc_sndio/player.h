@@ -89,8 +89,9 @@ public:
 private:
     virtual void run();
 
+    bool prepare_();
+    bool open_(const char* name, const char* type);
     void loop_();
-
     bool write_(const sox_sample_t* samples, size_t n_samples);
     void close_();
 
@@ -101,6 +102,9 @@ private:
 
     core::BufferPool<audio::sample_t>& buffer_pool_;
     core::IAllocator& allocator_;
+
+    core::Slice<audio::sample_t> buffer_;
+    size_t buffer_size_;
 
     size_t clips_;
     size_t n_bufs_;

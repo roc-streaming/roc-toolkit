@@ -306,14 +306,22 @@ void OFDecoder::fix_buffer_(size_t index) {
 
 void* OFDecoder::make_buffer_(size_t index) {
     core::Slice<uint8_t> buffer = new (buffer_pool_) core::Buffer<uint8_t>(buffer_pool_);
-    if (buffer) {
-        buffer.resize(payload_size_);
-        buff_tab_[index] = buffer;
-        return buffer.data();
-    } else {
-        roc_log(LogDebug, "of decoder: can't allocate buffer");
+
+    if (!buffer) {
+        roc_log(LogError, "of decoder: can't allocate buffer");
         return NULL;
     }
+
+    if (buffer.capacity() < payload_size_) {
+        roc_log(LogError, "of decoder: packet size too large: size=%lu max=%lu",
+                (unsigned long)payload_size_, (unsigned long)buffer.capacity());
+        return NULL;
+    }
+
+    buffer.resize(payload_size_);
+    buff_tab_[index] = buffer;
+
+    return buffer.data();
 }
 
 // called when OpenFEC allocates a source packet

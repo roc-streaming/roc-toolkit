@@ -168,20 +168,21 @@ void Resampler::read(Frame& frame) {
 bool Resampler::init_window_(core::BufferPool<sample_t>& buffer_pool) {
     roc_log(LogDebug, "resampler: initializing window");
 
-    for (size_t n = 0; n < 3; n++) {
-        core::Slice<sample_t> samples(new (buffer_pool)
-                                          core::Buffer<sample_t>(buffer_pool));
-        if (!samples) {
+    if (buffer_pool.buffer_size() < frame_size_) {
+        roc_log(LogError, "resampler: buffer size too small: required=%lu actual=%lu",
+                (unsigned long)frame_size_, (unsigned long)buffer_pool.buffer_size());
+        return false;
+    }
+
+    for (size_t n = 0; n < ROC_ARRAY_SIZE(window_); n++) {
+        window_[n] = new (buffer_pool) core::Buffer<sample_t>(buffer_pool);
+
+        if (!window_[n]) {
             roc_log(LogError, "resampler: can't allocate buffer");
             return false;
         }
 
-        samples.resize(frame_size_);
-
-        window_[n] = samples;
-        if (!window_[n]) {
-            roc_panic("resampler: can't allocate buffer");
-        }
+        window_[n].resize(frame_size_);
     }
 
     prev_frame_ = NULL;
