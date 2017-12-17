@@ -18,6 +18,7 @@
 #include "roc_core/atomic.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/iallocator.h"
+#include "roc_core/slice.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/thread.h"
 #include "roc_packet/units.h"

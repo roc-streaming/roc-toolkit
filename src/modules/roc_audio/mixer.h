@@ -18,6 +18,7 @@
 #include "roc_core/buffer_pool.h"
 #include "roc_core/list.h"
 #include "roc_core/noncopyable.h"
+#include "roc_core/slice.h"
 
 namespace roc {
 namespace audio {

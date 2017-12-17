@@ -81,16 +81,12 @@ void Depacketizer::read(Frame& frame) {
 }
 
 void Depacketizer::read_frame_(Frame& frame) {
-    if (!frame.samples()) {
-        roc_panic("depacketizer: unexpected null slice");
-    }
-
-    if (frame.samples().size() % num_channels_ != 0) {
+    if (frame.size() % num_channels_ != 0) {
         roc_panic("depacketizer: unexpected frame size");
     }
 
-    sample_t* buff_ptr = frame.samples().data();
-    sample_t* buff_end = frame.samples().data() + frame.samples().size();
+    sample_t* buff_ptr = frame.data();
+    sample_t* buff_end = frame.data() + frame.size();
 
     while (buff_ptr < buff_end) {
         buff_ptr = read_samples_(buff_ptr, buff_end);
@@ -240,7 +236,7 @@ void Depacketizer::set_frame_flags_(Frame& frame,
         * (size_t)ROC_UNSIGNED_SUB(packet::signed_timestamp_t, packet_samples_,
                                    prev_packet_samples);
 
-    if (packet_samples == frame.samples().size()) {
+    if (packet_samples == frame.size()) {
         frame.add_flags(Frame::FlagFull);
     }
 

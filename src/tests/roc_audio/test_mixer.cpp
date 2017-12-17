@@ -38,14 +38,13 @@ TEST_GROUP(mixer) {
     }
 
     void expect_output(Mixer& mixer, size_t sz, sample_t value) {
-        Frame frame(new_buffer(sz));
+        core::Slice<sample_t> buf = new_buffer(sz);
 
+        Frame frame(buf.data(), buf.size());
         mixer.read(frame);
 
-        UNSIGNED_LONGS_EQUAL(sz, frame.samples().size());
-
         for (size_t n = 0; n < sz; n++) {
-            DOUBLES_EQUAL(value, frame.samples().data()[n], 0.0001);
+            DOUBLES_EQUAL(value, frame.data()[n], 0.0001);
         }
     }
 };

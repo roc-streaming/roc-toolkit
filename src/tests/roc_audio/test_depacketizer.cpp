@@ -75,12 +75,12 @@ TEST_GROUP(depacketizer) {
         return pp;
     }
 
-    Frame new_frame(size_t sz) {
-        core::Slice<sample_t> samples =
+    core::Slice<sample_t> new_buffer(size_t n_samples) {
+        core::Slice<sample_t> buffer =
             new (sample_buffer_pool) core::Buffer<sample_t>(sample_buffer_pool);
-        samples.resize(sz * NumCh);
-        Frame frame(samples);
-        return frame;
+        CHECK(buffer);
+        buffer.resize(n_samples * NumCh);
+        return buffer;
     }
 
     void expect_values(const sample_t* samples, size_t num_samples, sample_t value) {
@@ -90,11 +90,22 @@ TEST_GROUP(depacketizer) {
     }
 
     void expect_output(Depacketizer& depacketizer, size_t sz, sample_t value) {
-        Frame frame = new_frame(sz);
+        core::Slice<sample_t> buf = new_buffer(sz);
+
+        Frame frame(buf.data(), buf.size());
         depacketizer.read(frame);
 
-        UNSIGNED_LONGS_EQUAL(sz * NumCh, frame.samples().size());
-        expect_values(frame.samples().data(), sz * NumCh, value);
+        UNSIGNED_LONGS_EQUAL(sz * NumCh, frame.size());
+        expect_values(frame.data(), sz * NumCh, value);
+    }
+
+    void expect_flags(Depacketizer& depacketizer, size_t sz, unsigned int flags) {
+        core::Slice<sample_t> buf = new_buffer(sz);
+
+        Frame frame(buf.data(), buf.size());
+        depacketizer.read(frame);
+
+        UNSIGNED_LONGS_EQUAL(flags, frame.flags());
     }
 };
 
@@ -258,16 +269,19 @@ TEST(depacketizer, zeros_after_packet) {
 
     queue.write(new_packet(0, 0.11f));
 
-    Frame f1 = new_frame(SamplesPerPacket / 2);
-    Frame f2 = new_frame(SamplesPerPacket);
+    core::Slice<sample_t> b1 = new_buffer(SamplesPerPacket / 2);
+    core::Slice<sample_t> b2 = new_buffer(SamplesPerPacket);
+
+    Frame f1(b1.data(), b1.size());
+    Frame f2(b2.data(), b2.size());
 
     dp.read(f1);
     dp.read(f2);
 
-    expect_values(f1.samples().data(), SamplesPerPacket / 2 * NumCh, 0.11f);
-    expect_values(f2.samples().data(), SamplesPerPacket / 2 * NumCh, 0.11f);
-    expect_values(f2.samples().data() + SamplesPerPacket / 2 * NumCh,
-                  SamplesPerPacket / 2 * NumCh, 0.00f);
+    expect_values(f1.data(), SamplesPerPacket / 2 * NumCh, 0.11f);
+    expect_values(f2.data(), SamplesPerPacket / 2 * NumCh, 0.11f);
+    expect_values(f2.data() + SamplesPerPacket / 2 * NumCh, SamplesPerPacket / 2 * NumCh,
+                  0.00f);
 }
 
 TEST(depacketizer, packet_after_zeros) {
@@ -365,10 +379,7 @@ TEST(depacketizer, frame_flags_empty_full) {
             }
         }
 
-        Frame frame = new_frame(SamplesPerPacket * PacketsPerFrame);
-        dp.read(frame);
-
-        CHECK(frame.flags() == frame_flags[n]);
+        expect_flags(dp, SamplesPerPacket * PacketsPerFrame, frame_flags[n]);
     }
 }
 
@@ -399,10 +410,7 @@ TEST(depacketizer, frame_flags_packet_drops) {
     }
 
     for (size_t n = 0; n < ROC_ARRAY_SIZE(frame_flags); n++) {
-        Frame frame = new_frame(SamplesPerPacket);
-        dp.read(frame);
-
-        CHECK(frame.flags() == frame_flags[n]);
+        expect_flags(dp, SamplesPerPacket, frame_flags[n]);
     }
 }
 

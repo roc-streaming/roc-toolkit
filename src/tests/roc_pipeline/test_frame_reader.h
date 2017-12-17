@@ -32,16 +32,14 @@ public:
     void read_samples(size_t num_samples, size_t num_sessions) {
         core::Slice<audio::sample_t> samples(new (pool_)
                                                  core::Buffer<audio::sample_t>(pool_));
+        CHECK(samples);
         samples.resize(num_samples);
-        audio::Frame frame(samples);
 
+        audio::Frame frame(samples.data(), samples.size());
         receiver_.read(frame);
 
-        UNSIGNED_LONGS_EQUAL(num_samples, frame.samples().size());
-
         for (size_t n = 0; n < num_samples; n++) {
-            DOUBLES_EQUAL(nth_sample(offset_) * num_sessions, frame.samples().data()[n],
-                          Epsilon);
+            DOUBLES_EQUAL(nth_sample(offset_) * num_sessions, frame.data()[n], Epsilon);
             offset_++;
         }
     }
@@ -49,18 +47,16 @@ public:
     void skip_zeros(size_t num_samples) {
         core::Slice<audio::sample_t> samples(new (pool_)
                                                  core::Buffer<audio::sample_t>(pool_));
+        CHECK(samples);
+
         samples.resize(num_samples);
-        audio::Frame frame(samples);
+        memset(samples.data(), 0, samples.size() * sizeof(audio::sample_t));
 
-        memset(frame.samples().data(), 0,
-               frame.samples().size() * sizeof(audio::sample_t));
-
+        audio::Frame frame(samples.data(), samples.size());
         receiver_.read(frame);
 
-        UNSIGNED_LONGS_EQUAL(num_samples, frame.samples().size());
-
         for (size_t n = 0; n < num_samples; n++) {
-            DOUBLES_EQUAL(0.0f, frame.samples().data()[n], 1e6);
+            DOUBLES_EQUAL(0.0f, frame.data()[n], 1e6);
         }
     }
 

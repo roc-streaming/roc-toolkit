@@ -14,31 +14,30 @@
 #define ROC_AUDIO_FRAME_H_
 
 #include "roc_audio/units.h"
-#include "roc_core/slice.h"
+#include "roc_core/noncopyable.h"
 
 namespace roc {
 namespace audio {
 
 //! Audio frame.
-class Frame {
+class Frame : public core::NonCopyable<> {
 public:
-    //! Construct empty frame.
-    Frame();
-
     //! Construct frame from samples.
-    explicit Frame(const core::Slice<sample_t>& samples);
+    //! @remarks
+    //!  The pointer is saved in the frame, no copying is performed.
+    Frame(sample_t* data, size_t size);
 
     //! Frame flags.
     enum {
         //! Set if no packets were extracted to the frame when the frame was built.
         FlagEmpty = (1 << 0),
 
-        //! Set if some queued packets were regarded as outdated and dropped when the
-        //! frame was built.
-        FlagPacketDrops = (1 << 1),
-
         //! Set if the frame is fully filled with samples from packets.
-        FlagFull = (1 << 2)
+        FlagFull = (1 << 1),
+
+        //! Set if some queued packets were regarded as outdated and dropped when
+        //! the frame was built.
+        FlagPacketDrops = (1 << 2)
     };
 
     //! Add flags.
@@ -47,14 +46,15 @@ public:
     //! Get flags.
     unsigned flags() const;
 
-    //! Get frame samples.
-    const core::Slice<sample_t>& samples() const;
+    //! Get frame data.
+    sample_t* data() const;
 
-    //! Set frame samples.
-    void set_samples(const core::Slice<sample_t>& samples);
+    //! Get frame data size.
+    size_t size() const;
 
 private:
-    core::Slice<sample_t> samples_;
+    sample_t* data_;
+    size_t size_;
     unsigned flags_;
 };
 

@@ -8,17 +8,18 @@
  */
 
 #include "roc_audio/frame.h"
+#include "roc_core/panic.h"
 
 namespace roc {
 namespace audio {
 
-Frame::Frame()
-    : flags_(0) {
-}
-
-Frame::Frame(const core::Slice<sample_t>& samples)
-    : samples_(samples)
+Frame::Frame(sample_t* data, size_t size)
+    : data_(data)
+    , size_(size)
     , flags_(0) {
+    if (!data) {
+        roc_panic("frame: can't create frame for null data");
+    }
 }
 
 void Frame::add_flags(unsigned fl) {
@@ -32,15 +33,12 @@ unsigned Frame::flags() const {
     return flags_;
 }
 
-const core::Slice<sample_t>& Frame::samples() const {
-    return samples_;
+sample_t* Frame::data() const {
+    return data_;
 }
 
-void Frame::set_samples(const core::Slice<sample_t>& samples) {
-    if (samples_) {
-        roc_panic("frame: can't set samples more than once");
-    }
-    samples_ = samples;
+size_t Frame::size() const {
+    return size_;
 }
 
 } // namespace audio

@@ -135,10 +135,8 @@ bool Resampler::set_scaling(float scaling) {
 void Resampler::read(Frame& frame) {
     roc_panic_if_not(valid());
 
-    sample_t* buff_data = frame.samples().data();
-    roc_panic_if(buff_data == NULL);
-
-    size_t buff_size = frame.samples().size();
+    sample_t* buff_data = frame.data();
+    size_t buff_size = frame.size();
 
     if (curr_frame_ == NULL) {
         qt_sample_ = default_sample_;
@@ -200,7 +198,7 @@ void Resampler::renew_window_() {
 
     if (curr_frame_ == NULL) {
         for (size_t n = 0; n < ROC_ARRAY_SIZE(window_); ++n) {
-            Frame frame(window_[n]);
+            Frame frame(window_[n].data(), window_[n].size());
             reader_.read(frame);
         }
     } else {
@@ -209,10 +207,8 @@ void Resampler::renew_window_() {
         window_[1] = window_[2];
         window_[2] = temp;
 
-        Frame frame(window_[2]);
+        Frame frame(window_[2].data(), window_[2].size());
         reader_.read(frame);
-
-        roc_panic_if(frame.samples().size() != channel_len_ * channels_num_);
     }
 
     prev_frame_ = window_[0].data();

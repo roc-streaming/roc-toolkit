@@ -63,7 +63,8 @@ public:
         , value_(0) {
     }
 
-    void next(packet::PacketPtr pp, size_t padding) {
+    void read(packet::IReader& reader, size_t padding) {
+        packet::PacketPtr pp = reader.read();
         CHECK(pp);
 
         UNSIGNED_LONGS_EQUAL(packet::Packet::FlagRTP | packet::Packet::FlagAudio,
@@ -126,7 +127,7 @@ public:
         : value_(0) {
     }
 
-    Frame next(size_t num_samples) {
+    void write(IWriter& writer, size_t num_samples) {
         core::Slice<sample_t> buf =
             new (sample_buffer_pool) core::Buffer<sample_t>(sample_buffer_pool);
         CHECK(buf);
@@ -140,7 +141,8 @@ public:
             }
         }
 
-        return Frame(buf);
+        Frame frame(buf.data(), buf.size());
+        writer.write(frame);
     }
 
 private:
@@ -165,12 +167,11 @@ TEST(packetizer, one_buffer_one_packet) {
     for (size_t fn = 0; fn < NumFrames; fn++) {
         UNSIGNED_LONGS_EQUAL(0, packet_queue.size());
 
-        Frame frame = frame_maker.next(SamplesPerPacket);
-        packetizer.write(frame);
+        frame_maker.write(packetizer, SamplesPerPacket);
 
         UNSIGNED_LONGS_EQUAL(1, packet_queue.size());
 
-        packet_checker.next(packet_queue.read(), 0);
+        packet_checker.read(packet_queue, 0);
     }
 }
 
@@ -185,11 +186,10 @@ TEST(packetizer, one_buffer_multiple_packets) {
     FrameMaker frame_maker;
     PacketChecker packet_checker;
 
-    Frame frame = frame_maker.next(SamplesPerPacket * NumPackets);
-    packetizer.write(frame);
+    frame_maker.write(packetizer, SamplesPerPacket * NumPackets);
 
     for (size_t pn = 0; pn < NumPackets; pn++) {
-        packet_checker.next(packet_queue.read(), 0);
+        packet_checker.read(packet_queue, 0);
     }
 
     UNSIGNED_LONGS_EQUAL(0, packet_queue.size());
@@ -212,13 +212,12 @@ TEST(packetizer, multiple_buffers_one_packet) {
         for (size_t fn = 0; fn < FramesPerPacket; fn++) {
             UNSIGNED_LONGS_EQUAL(0, packet_queue.size());
 
-            Frame frame = frame_maker.next(SamplesPerPacket / FramesPerPacket);
-            packetizer.write(frame);
+            frame_maker.write(packetizer, SamplesPerPacket / FramesPerPacket);
         }
 
         UNSIGNED_LONGS_EQUAL(1, packet_queue.size());
 
-        packet_checker.next(packet_queue.read(), 0);
+        packet_checker.read(packet_queue, 0);
     }
 }
 
@@ -238,12 +237,11 @@ TEST(packetizer, multiple_buffers_multiple_packets) {
     PacketChecker packet_checker;
 
     for (size_t fn = 0; fn < NumFrames; fn++) {
-        Frame frame = frame_maker.next(NumSamples);
-        packetizer.write(frame);
+        frame_maker.write(packetizer, NumSamples);
     }
 
     for (size_t pn = 0; pn < NumPackets; pn++) {
-        packet_checker.next(packet_queue.read(), 0);
+        packet_checker.read(packet_queue, 0);
     }
 
     UNSIGNED_LONGS_EQUAL(0, packet_queue.size());
@@ -260,25 +258,18 @@ TEST(packetizer, flush) {
     FrameMaker frame_maker;
     PacketChecker packet_checker;
 
-    Frame frame;
-
-    frame = frame_maker.next(SamplesPerPacket);
-    packetizer.write(frame);
-
-    frame = frame_maker.next(SamplesPerPacket);
-    packetizer.write(frame);
-
-    frame = frame_maker.next(SamplesPerPacket - Padding);
-    packetizer.write(frame);
+    frame_maker.write(packetizer, SamplesPerPacket);
+    frame_maker.write(packetizer, SamplesPerPacket);
+    frame_maker.write(packetizer, SamplesPerPacket - Padding);
 
     UNSIGNED_LONGS_EQUAL(2, packet_queue.size());
 
-    packet_checker.next(packet_queue.read(), 0);
-    packet_checker.next(packet_queue.read(), 0);
+    packet_checker.read(packet_queue, 0);
+    packet_checker.read(packet_queue, 0);
 
     packetizer.flush();
 
-    packet_checker.next(packet_queue.read(), Padding);
+    packet_checker.read(packet_queue, Padding);
 
     UNSIGNED_LONGS_EQUAL(0, packet_queue.size());
 }

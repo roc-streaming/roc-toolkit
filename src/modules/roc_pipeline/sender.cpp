@@ -134,7 +134,7 @@ void Sender::write(audio::Frame& frame) {
     }
 
     packetizer_->write(frame);
-    timestamp_ += frame.samples().size() / num_channels_;
+    timestamp_ += frame.size() / num_channels_;
 }
 
 } // namespace pipeline

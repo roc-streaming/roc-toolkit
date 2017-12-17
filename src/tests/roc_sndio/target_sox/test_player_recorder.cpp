@@ -40,14 +40,12 @@ public:
     }
 
     virtual Status read(audio::Frame& frame) {
-        if (pos_ + frame.samples().size() >= size_) {
+        if (pos_ + frame.size() >= size_) {
             return Inactive;
         }
 
-        memcpy(frame.samples().data(), samples_ + pos_,
-               frame.samples().size() * sizeof(audio::sample_t));
-
-        pos_ += frame.samples().size();
+        memcpy(frame.data(), samples_ + pos_, frame.size() * sizeof(audio::sample_t));
+        pos_ += frame.size();
 
         return Active;
     }
@@ -84,12 +82,10 @@ public:
     }
 
     virtual void write(audio::Frame& frame) {
-        CHECK(pos_ + frame.samples().size() < MaxSz);
+        CHECK(pos_ + frame.size() < MaxSz);
 
-        memcpy(samples_ + pos_, frame.samples().data(),
-               frame.samples().size() * sizeof(audio::sample_t));
-
-        pos_ += frame.samples().size();
+        memcpy(samples_ + pos_, frame.data(), frame.size() * sizeof(audio::sample_t));
+        pos_ += frame.size();
     }
 
     void check(size_t offset, size_t size) {

@@ -1069,8 +1069,10 @@ TEST(receiver, status) {
     core::Slice<audio::sample_t> samples(
         new (sample_buffer_pool) core::Buffer<audio::sample_t>(sample_buffer_pool));
 
+    CHECK(samples);
     samples.resize(FramesPerPacket * NumCh);
-    audio::Frame frame(samples);
+
+    audio::Frame frame(samples.data(), samples.size());
 
     CHECK(receiver.read(frame) == IReceiver::Inactive);
 

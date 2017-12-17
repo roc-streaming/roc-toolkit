@@ -181,7 +181,7 @@ void Player::loop_() {
     SOX_SAMPLE_LOCALS;
 
     while (!stop_) {
-        audio::Frame frame(buffer_);
+        audio::Frame frame(buffer_.data(), buffer_.size());
         pipeline::IReceiver::Status status = input_->read(frame);
 
         if (status == pipeline::IReceiver::Inactive) {
@@ -193,9 +193,8 @@ void Player::loop_() {
             n_bufs_++;
         }
 
-        const audio::sample_t* samples = frame.samples().data();
-        size_t n_samples = frame.samples().size();
-        roc_panic_if(n_samples != outbuf_sz);
+        const audio::sample_t* samples = frame.data();
+        size_t n_samples = frame.size();
 
         while (n_samples > 0) {
             for (; outbuf_pos < outbuf_sz && n_samples > 0; outbuf_pos++) {

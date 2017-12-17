@@ -255,17 +255,7 @@ roc_sender_write(roc_sender* sender, const float* samples, const size_t n_sample
         return -1;
     }
 
-    // FIXME
-    core::Slice<audio::sample_t> buf(
-        new (sender->context.sample_buffer_pool)
-            core::Buffer<audio::sample_t>(sender->context.sample_buffer_pool));
-
-    buf.resize(n_samples);
-
-    roc_panic_if(sizeof(float) != sizeof(audio::sample_t));
-    memcpy(buf.data(), samples, n_samples * sizeof(audio::sample_t));
-
-    audio::Frame frame(buf);
+    audio::Frame frame(const_cast<float*>(samples), n_samples);
     sender->sender->write(frame);
 
     return (ssize_t)n_samples;

@@ -18,6 +18,7 @@
 #include "roc_audio/units.h"
 #include "roc_core/array.h"
 #include "roc_core/noncopyable.h"
+#include "roc_core/slice.h"
 #include "roc_core/stddefs.h"
 #include "roc_packet/units.h"
 

@@ -54,8 +54,8 @@ void Mixer::read(Frame& frame) {
 
     const size_t max_read = temp_buf_.capacity();
 
-    sample_t* samples = frame.samples().data();
-    size_t n_samples = frame.samples().size();
+    sample_t* samples = frame.data();
+    size_t n_samples = frame.size();
 
     while (n_samples != 0) {
         size_t n_read = n_samples;
@@ -77,13 +77,10 @@ void Mixer::read_(sample_t *out_data, size_t out_sz) {
     memset(out_data, 0, out_sz * sizeof(sample_t));
 
     for (IReader* rp = readers_.front(); rp; rp = readers_.nextof(*rp)) {
-        Frame temp(temp_buf_);
-
+        Frame temp(temp_buf_.data(), temp_buf_.size());
         rp->read(temp);
-        roc_panic_if(temp.samples().size() != out_sz);
 
-        const sample_t* temp_data = temp.samples().data();
-
+        const sample_t* temp_data = temp.data();
         for (size_t n = 0; n < out_sz; n++) {
             out_data[n] = clamp(out_data[n] + temp_data[n]);
         }

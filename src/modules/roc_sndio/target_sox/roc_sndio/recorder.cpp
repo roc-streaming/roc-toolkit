@@ -317,7 +317,7 @@ void Recorder::write_(const sox_sample_t* buf, size_t bufsz, bool eof) {
         }
 
         if (buffer_pos_ == buffer_size_) {
-            audio::Frame frame(buffer_);
+            audio::Frame frame(buffer_.data(), buffer_.size());
             output_->write(frame);
             buffer_pos_ = 0;
             n_bufs_++;
