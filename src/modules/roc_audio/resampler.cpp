@@ -80,6 +80,7 @@ Resampler::Resampler(IReader& reader,
     , window_interp_(512)
     , window_interp_bits_(9)
     , sinc_table_(allocator)
+    , sinc_table_ptr_(NULL)
     , qt_half_window_len_(float_to_fixedpoint((float)window_len_ / scaling_))
     , qt_epsilon_(float_to_fixedpoint(5e-8f))
     , default_sample_(float_to_fixedpoint(0))
@@ -240,6 +241,8 @@ bool Resampler::fill_sinc_() {
     sinc_table_[sinc_table_.size() - 2] = 0;
     sinc_table_[sinc_table_.size() - 1] = 0;
 
+    sinc_table_ptr_ = &sinc_table_[0];
+
     return true;
 }
 
@@ -255,10 +258,10 @@ sample_t Resampler::sinc_(const fixedpoint_t x, const float fract_x) {
 #endif
 
     // Tables index smaller than to x
-    const sample_t hl = sinc_table_[(x >> (FRACT_BIT_COUNT - window_interp_bits_))];
+    const sample_t hl = sinc_table_ptr_[(x >> (FRACT_BIT_COUNT - window_interp_bits_))];
 
     // Tables index next to x
-    const sample_t hh = sinc_table_[(x >> (FRACT_BIT_COUNT - window_interp_bits_)) + 1];
+    const sample_t hh = sinc_table_ptr_[(x >> (FRACT_BIT_COUNT - window_interp_bits_)) + 1];
 
     const sample_t result = hl + fract_x * (hh - hl);
 

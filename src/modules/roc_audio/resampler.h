@@ -124,7 +124,9 @@ private:
     fixedpoint_t qt_half_sinc_window_len_;
     const size_t window_interp_;
     const size_t window_interp_bits_; //!< The number of bits in window_interp_.
+
     core::Array<sample_t> sinc_table_;
+    const sample_t* sinc_table_ptr_;
 
     // half window len in Q8.24 in terms of input signal.
     fixedpoint_t qt_half_window_len_;
