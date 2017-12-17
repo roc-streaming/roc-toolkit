@@ -92,6 +92,8 @@ private:
     bool init_resampler_(size_t input_sample_rate, size_t output_sample_rate);
     bool update_resampler_(packet::timestamp_t time, packet::timestamp_t latency);
 
+    void report_latency_(packet::timestamp_t latency);
+
     const packet::SortedQueue& queue_;
     const Depacketizer& depacketizer_;
     Resampler* resampler_;

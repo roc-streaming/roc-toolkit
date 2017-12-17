@@ -75,6 +75,8 @@ bool LatencyMonitor::update(packet::timestamp_t time) {
         if (!update_resampler_(time, (packet::timestamp_t)latency)) {
             return false;
         }
+    } else {
+        report_latency_((packet::timestamp_t)latency);
     }
 
     return true;
@@ -180,6 +182,13 @@ bool LatencyMonitor::update_resampler_(packet::timestamp_t time,
     }
 
     return true;
+}
+
+void LatencyMonitor::report_latency_(packet::timestamp_t latency) {
+    if (rate_limiter_.allow()) {
+        roc_log(LogDebug, "latency monitor: latency=%lu target=%lu",
+                (unsigned long)latency, (unsigned long)target_latency_);
+    }
 }
 
 } // namespace audio

@@ -113,6 +113,9 @@ bool Resampler::set_scaling(float scaling) {
     // Window's size changes according to scaling. If new window size
     // doesnt fit to the frames size -- deny changes.
     if (window_len_ * scaling >= channel_len_) {
+        roc_log(LogError, "resampler: scaling does not fit frame size:"
+                          " window=%lu frame=%lu scaling=%.5f",
+                (unsigned long)window_len_, (unsigned long)frame_size_, (double)scaling);
         return false;
     }
     scaling_ = scaling;
