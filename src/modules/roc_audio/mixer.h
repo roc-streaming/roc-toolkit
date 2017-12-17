@@ -46,19 +46,21 @@ public:
     //! Check if the mixer was succefully constructed.
     bool valid() const;
 
-    //! Read audio frame.
-    //! @remarks
-    //!  Reads samples from every input reader, mixes them, and fills @p frame
-    //!  with the result.
-    virtual void read(Frame& frame);
-
     //! Add input reader.
     void add(IReader&);
 
     //! Remove input reader.
     void remove(IReader&);
 
+    //! Read audio frame.
+    //! @remarks
+    //!  Reads samples from every input reader, mixes them, and fills @p frame
+    //!  with the result.
+    virtual void read(Frame& frame);
+
 private:
+    void read_(sample_t *out_data, size_t out_sz);
+
     core::List<IReader, core::NoOwnership> readers_;
     core::Slice<sample_t> temp_buf_;
 };

@@ -25,12 +25,14 @@ enum { BufSz = 100, MaxSz = 1000 };
 
 core::HeapAllocator allocator;
 core::BufferPool<sample_t> buffer_pool(allocator, MaxSz, 1);
+core::BufferPool<sample_t> large_buffer_pool(allocator, MaxSz * 10, 1);
 
 } // namespace
 
 TEST_GROUP(mixer) {
     core::Slice<sample_t> new_buffer(size_t sz) {
-        core::Slice<sample_t> buf = new (buffer_pool) core::Buffer<sample_t>(buffer_pool);
+        core::Slice<sample_t> buf =
+            new (large_buffer_pool) core::Buffer<sample_t>(large_buffer_pool);
         buf.resize(sz);
         return buf;
     }
@@ -55,16 +57,29 @@ TEST(mixer, no_readers) {
 }
 
 TEST(mixer, one_reader) {
-    MockReader reader1;
+    MockReader reader;
 
     Mixer mixer(buffer_pool);
 
-    mixer.add(reader1);
+    mixer.add(reader);
 
-    reader1.add(BufSz, 0.11f);
+    reader.add(BufSz, 0.11f);
     expect_output(mixer, BufSz, 0.11f);
 
-    CHECK(reader1.num_unread() == 0);
+    CHECK(reader.num_unread() == 0);
+}
+
+TEST(mixer, one_reader_large) {
+    MockReader reader;
+
+    Mixer mixer(buffer_pool);
+
+    mixer.add(reader);
+
+    reader.add(MaxSz * 2, 0.11f);
+    expect_output(mixer, MaxSz * 2, 0.11f);
+
+    CHECK(reader.num_unread() == 0);
 }
 
 TEST(mixer, two_readers) {

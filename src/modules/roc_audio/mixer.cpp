@@ -41,18 +41,37 @@ bool Mixer::valid() const {
     return temp_buf_;
 }
 
+void Mixer::add(IReader& reader) {
+    readers_.push_back(reader);
+}
+
+void Mixer::remove(IReader& reader) {
+    readers_.remove(reader);
+}
+
 void Mixer::read(Frame& frame) {
     roc_panic_if(!valid());
 
-    const size_t out_sz = frame.samples().size();
-    if (out_sz == 0) {
-        return;
-    }
+    const size_t max_read = temp_buf_.capacity();
 
-    sample_t* out_data = frame.samples().data();
-    if (!out_data) {
-        roc_panic("mixer: null data");
+    sample_t* samples = frame.samples().data();
+    size_t n_samples = frame.samples().size();
+
+    while (n_samples != 0) {
+        size_t n_read = n_samples;
+        if (n_read > max_read) {
+            n_read = max_read;
+        }
+
+        read_(samples, n_read);
+
+        samples += n_read;
+        n_samples -= n_read;
     }
+}
+
+void Mixer::read_(sample_t *out_data, size_t out_sz) {
+    roc_panic_if_not(out_data);
 
     temp_buf_.resize(out_sz);
     memset(out_data, 0, out_sz * sizeof(sample_t));
@@ -69,14 +88,6 @@ void Mixer::read(Frame& frame) {
             out_data[n] = clamp(out_data[n] + temp_data[n]);
         }
     }
-}
-
-void Mixer::add(IReader& reader) {
-    readers_.push_back(reader);
-}
-
-void Mixer::remove(IReader& reader) {
-    readers_.remove(reader);
 }
 
 } // namespace audio
