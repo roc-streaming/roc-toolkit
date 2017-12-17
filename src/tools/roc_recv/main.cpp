@@ -104,7 +104,7 @@ int main(int argc, char** argv) {
         config.default_session.fec.n_repair_packets = (size_t)args.nbrpr_arg;
     }
 
-    config.default_session.resampling = (args.resampling_arg == resampling_arg_yes);
+    config.default_session.resampling = !args.no_resampling_flag;
     config.default_session.beeping = args.beep_flag;
 
     size_t sample_rate = 0;
@@ -168,7 +168,7 @@ int main(int argc, char** argv) {
     }
 
     if (args.resampler_frame_given) {
-        if (args.resampler_window_arg <= 0) {
+        if (args.resampler_frame_arg <= 0) {
             roc_log(LogError, "invalid --resampler-frame: should be > 0");
             return 1;
         }
@@ -245,6 +245,12 @@ int main(int argc, char** argv) {
 
     trx.stop();
     trx.join();
+
+    trx.remove_port(source_port.address);
+
+    if (config.default_session.fec.codec != fec::NoCodec) {
+        trx.remove_port(repair_port.address);
+    }
 
     return 0;
 }

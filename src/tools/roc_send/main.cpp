@@ -167,5 +167,7 @@ int main(int argc, char** argv) {
     trx.stop();
     trx.join();
 
+    trx.remove_port(local_addr);
+
     return 0;
 }

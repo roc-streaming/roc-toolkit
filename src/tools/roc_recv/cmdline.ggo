@@ -21,17 +21,6 @@ section "Options"
     option "nbrpr" - "Number of repair packets in FEC block"
         int optional
 
-    option "resampling" - "Enabled/disable resampling"
-        values="yes","no" default="yes" enum optional
-
-    option "oneshot" 1 "Exit when last connected client disconnects"
-        flag off
-
-    option "beep" - "Enable beep on packet loss" flag off
-
-    option "rate" - "Override output sample rate (Hz)"
-        int optional
-
     option "timeout" - "Session timeout as number of samples"
         int optional
 
@@ -44,11 +33,21 @@ section "Options"
     option "max-latency" - "Maximum session latency as number of samples"
         int optional
 
+    option "rate" - "Override output sample rate (Hz)"
+        int optional
+
+    option "no-resampling" - "Disable resampling" flag off
+
     option "resampler-window" - "Number of samples per resampler window"
         int optional
 
     option "resampler-frame" - "Number of samples per resampler frame"
         int optional
+
+    option "oneshot" 1 "Exit when last connected client disconnects"
+        flag off
+
+    option "beep" - "Enable beep on packet loss" flag off
 
 text "
 Address:
