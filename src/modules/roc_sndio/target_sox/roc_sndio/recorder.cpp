@@ -83,7 +83,6 @@ Recorder::Recorder(core::BufferPool<audio::sample_t>& buffer_pool,
     buffer_size_ = n_samples * n_channels;
     buffer_pos_ = 0;
 
-    clips_ = 0;
     n_bufs_ = 0;
 
     memset(&out_signal_, 0, sizeof(out_signal_));
@@ -308,11 +307,13 @@ void Recorder::write_(const sox_sample_t* buf, size_t bufsz, bool eof) {
 
         SOX_SAMPLE_LOCALS;
 
+        size_t clips = 0;
+
         for (; buffer_pos_ < buffer_size_; buffer_pos_++) {
             if (bufsz == 0) {
                 break;
             }
-            samples[buffer_pos_] = (float)SOX_SAMPLE_TO_FLOAT_32BIT(*buf, clips_);
+            samples[buffer_pos_] = (float)SOX_SAMPLE_TO_FLOAT_32BIT(*buf, clips);
             buf++;
             bufsz--;
         }

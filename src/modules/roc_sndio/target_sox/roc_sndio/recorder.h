@@ -117,7 +117,6 @@ private:
     size_t buffer_pos_;
 
     size_t buffer_size_;
-    size_t clips_;
     size_t n_bufs_;
     bool is_file_;
 

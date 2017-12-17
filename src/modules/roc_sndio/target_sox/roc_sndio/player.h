@@ -21,6 +21,7 @@
 #include "roc_core/slice.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/thread.h"
+#include "roc_core/unique_ptr.h"
 #include "roc_packet/units.h"
 #include "roc_pipeline/ireceiver.h"
 
@@ -104,10 +105,10 @@ private:
     core::BufferPool<audio::sample_t>& buffer_pool_;
     core::IAllocator& allocator_;
 
-    core::Slice<audio::sample_t> buffer_;
+    core::Slice<audio::sample_t> frame_buffer_;
+    core::UniquePtr<sox_sample_t> sox_buffer_;
     size_t buffer_size_;
 
-    size_t clips_;
     size_t n_bufs_;
 
     const bool oneshot_;

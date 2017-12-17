@@ -10,7 +10,6 @@
 #include "roc_sndio/player.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
-#include "roc_core/unique_ptr.h"
 #include "roc_sndio/default.h"
 
 namespace roc {
@@ -24,7 +23,6 @@ Player::Player(core::BufferPool<audio::sample_t>& buffer_pool,
     : output_(NULL)
     , buffer_pool_(buffer_pool)
     , allocator_(allocator)
-    , clips_(0)
     , n_bufs_(0)
     , oneshot_(oneshot)
     , is_file_(false) {
@@ -51,7 +49,7 @@ Player::~Player() {
 bool Player::open(const char* name, const char* type) {
     roc_log(LogDebug, "player: opening: name=%s type=%s", name, type);
 
-    if (buffer_ || output_) {
+    if (frame_buffer_ || sox_buffer_ || output_) {
         roc_panic("player: can't call open() more than once");
     }
 
@@ -118,14 +116,21 @@ bool Player::prepare_() {
         return false;
     }
 
-    buffer_ = new (buffer_pool_) core::Buffer<audio::sample_t>(buffer_pool_);
+    frame_buffer_ = new (buffer_pool_) core::Buffer<audio::sample_t>(buffer_pool_);
 
-    if (!buffer_) {
-        roc_log(LogError, "player: can't allocate buffer");
+    if (!frame_buffer_) {
+        roc_log(LogError, "player: can't allocate frame buffer");
         return false;
     }
 
-    buffer_.resize(buffer_size_);
+    frame_buffer_.resize(buffer_size_);
+
+    sox_buffer_.reset(new (allocator_) sox_sample_t[buffer_size_], allocator_);
+
+    if (!sox_buffer_) {
+        roc_log(LogError, "player: can't allocate sox buffer");
+        return false;
+    }
 
     return true;
 }
@@ -166,22 +171,15 @@ bool Player::open_(const char* name, const char* type) {
 }
 
 void Player::loop_() {
-    const size_t outbuf_sz = sox_get_globals()->bufsiz;
-
-    core::UniquePtr<sox_sample_t> outptr(new (allocator_) sox_sample_t[outbuf_sz],
-                                         allocator_);
-
-    if (!outptr) {
-        roc_panic("player: can't allocate output buffer");
-    }
-
-    sox_sample_t* outbuf = outptr.get();
-    size_t outbuf_pos = 0;
+    sox_sample_t* soxbuf = sox_buffer_.get();
+    size_t soxbuf_pos = 0;
 
     SOX_SAMPLE_LOCALS;
 
+    size_t clips = 0;
+
     while (!stop_) {
-        audio::Frame frame(buffer_.data(), buffer_.size());
+        audio::Frame frame(frame_buffer_.data(), frame_buffer_.size());
         pipeline::IReceiver::Status status = input_->read(frame);
 
         if (status == pipeline::IReceiver::Inactive) {
@@ -197,22 +195,22 @@ void Player::loop_() {
         size_t n_samples = frame.size();
 
         while (n_samples > 0) {
-            for (; outbuf_pos < outbuf_sz && n_samples > 0; outbuf_pos++) {
-                outbuf[outbuf_pos] = SOX_FLOAT_32BIT_TO_SAMPLE(*samples, clips_);
+            for (; soxbuf_pos < buffer_size_ && n_samples > 0; soxbuf_pos++) {
+                soxbuf[soxbuf_pos] = SOX_FLOAT_32BIT_TO_SAMPLE(*samples, clips);
                 samples++;
                 n_samples--;
             }
 
-            if (outbuf_pos == outbuf_sz) {
-                if (!write_(outbuf, outbuf_sz)) {
+            if (soxbuf_pos == buffer_size_) {
+                if (!write_(soxbuf, soxbuf_pos)) {
                     return;
                 }
-                outbuf_pos = 0;
+                soxbuf_pos = 0;
             }
         }
     }
 
-    if (!write_(outbuf, outbuf_pos)) {
+    if (!write_(soxbuf, soxbuf_pos)) {
         return;
     }
 }
