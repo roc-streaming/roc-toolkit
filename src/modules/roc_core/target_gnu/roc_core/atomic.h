@@ -54,14 +54,6 @@ public:
         return __sync_sub_and_fetch(&value_, 1);
     }
 
-    //! Atomic test-and-set.
-    //! @remarks
-    //!  Atomically sets value to non-zero and returns '0' if previous value
-    //!  was '0' or '1' otherwise.
-    long test_and_set() {
-        return __sync_bool_compare_and_swap(&value_, 0, 1) ? 0 : 1;
-    }
-
 private:
     mutable long value_;
 };
