@@ -159,6 +159,14 @@ int main(int argc, char** argv) {
             * pipeline::DefaultMaxLatency;
     }
 
+    if (args.resampler_interp_given) {
+        if (args.resampler_interp_arg <= 0) {
+            roc_log(LogError, "invalid --resampler-interp: should be > 0");
+            return 1;
+        }
+        config.default_session.resampler.window_interp = (size_t)args.resampler_interp_arg;
+    }
+
     if (args.resampler_window_given) {
         if (args.resampler_window_arg <= 0) {
             roc_log(LogError, "invalid --resampler-window: should be > 0");

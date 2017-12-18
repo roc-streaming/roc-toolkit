@@ -27,14 +27,27 @@ namespace audio {
 
 //! Resampler parameters.
 struct ResamplerConfig {
+    //! Sinc table precision.
+    //! @remarks
+    //!  Affects sync table size.
+    //!  Lower values give lower quality but rarer cache misses.
+    size_t window_interp;
+
     //! Resampler internal window length.
+    //! @remarks
+    //!  Affects sync table size and number of CPU cycles.
+    //!  Lower values give lower quality but higher speed and also rarer cache misses.
     size_t window_size;
 
     //! Resampler internal frame size.
+    //! @remarks
+    //!  Defines how much samples resampler requests from the underlying reader.
+    //!  Lower values give lower latency and lower memory usage.
     size_t frame_size;
 
     ResamplerConfig()
-        : window_size(64)
+        : window_interp(512)
+        , window_size(64)
         , frame_size(256) {
     }
 };
@@ -92,6 +105,8 @@ private:
     inline size_t channelize_index(const size_t i, const size_t ch_offset) const {
         return i * channels_num_ + ch_offset;
     }
+
+    bool check_config_() const;
 
     bool init_window_(core::BufferPool<sample_t>&);
     void renew_window_();

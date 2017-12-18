@@ -38,6 +38,9 @@ section "Options"
 
     option "no-resampling" - "Disable resampling" flag off
 
+    option "resampler-interp" - "Resampler sinc table precision"
+        int optional
+
     option "resampler-window" - "Number of samples per resampler window"
         int optional
 

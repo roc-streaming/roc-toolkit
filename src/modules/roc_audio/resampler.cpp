@@ -62,6 +62,16 @@ inline float fractional(const fixedpoint_t x) {
     return (float)(x & FRACT_PART_MASK) * ((float)1. / (float)qt_one);
 }
 
+// Returns log2(n) assuming that n is a power of two.
+inline size_t calc_bits(size_t n) {
+    size_t c = 0;
+    while ((n & 1) == 0 && c != sizeof(n) * 8) {
+        n >>= 1;
+        c++;
+    }
+    return c;
+}
+
 } // namespace
 
 Resampler::Resampler(IReader& reader,
@@ -77,8 +87,8 @@ Resampler::Resampler(IReader& reader,
     , channel_len_(frame_size_ / channels_num_)
     , window_len_(config.window_size)
     , qt_half_sinc_window_len_(float_to_fixedpoint(window_len_))
-    , window_interp_(512)
-    , window_interp_bits_(9)
+    , window_interp_(config.window_interp)
+    , window_interp_bits_(calc_bits(config.window_interp))
     , sinc_table_(allocator)
     , sinc_table_ptr_(NULL)
     , qt_half_window_len_(float_to_fixedpoint((float)window_len_ / scaling_))
@@ -89,10 +99,9 @@ Resampler::Resampler(IReader& reader,
     , qt_dt_(0)
     , cutoff_freq_(0.9f)
     , valid_(false) {
-    roc_panic_if(frame_size_ != channel_len_ * channels_num_);
-    roc_panic_if(((fixedpoint_t)-1 >> FRACT_BIT_COUNT) < channel_len_);
-    roc_panic_if(channels_num_ < 1);
-
+    if (!check_config_()) {
+        return;
+    }
     if (!init_window_(buffer_pool)) {
         return;
     }
@@ -102,7 +111,6 @@ Resampler::Resampler(IReader& reader,
     if (!set_scaling(1.0f)) {
         return;
     }
-
     valid_ = true;
 }
 
@@ -165,6 +173,37 @@ void Resampler::read(Frame& frame) {
         }
         qt_sample_ += qt_dt_;
     }
+}
+
+bool Resampler::check_config_() const {
+    if (channels_num_ < 1) {
+        roc_log(LogError, "resampler: invalid num_channels: num_channels=%lu",
+                (unsigned long)channels_num_);
+        return false;
+    }
+
+    if (channel_len_ > ((fixedpoint_t)-1 >> FRACT_BIT_COUNT)) {
+        roc_log(LogError,
+                "resampler: frame_size is too much: frame_size=%lu num_channels=%lu",
+                (unsigned long)frame_size_, (unsigned long)channels_num_);
+        return false;
+    }
+
+    if (frame_size_ != channel_len_ * channels_num_) {
+        roc_log(LogError, "resampler: frame_size is not multiple of num_channels:"
+                          " frame_size=%lu num_channels=%lu",
+                (unsigned long)frame_size_, (unsigned long)channels_num_);
+        return false;
+    }
+
+    if (size_t(1 << window_interp_bits_) != window_interp_) {
+        roc_log(LogError,
+                "resampler: window_interp is not power of two: window_interp=%lu",
+                (unsigned long)window_interp_);
+        return false;
+    }
+
+    return true;
 }
 
 bool Resampler::init_window_(core::BufferPool<sample_t>& buffer_pool) {
