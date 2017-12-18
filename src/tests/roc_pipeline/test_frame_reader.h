@@ -56,7 +56,7 @@ public:
         receiver_.read(frame);
 
         for (size_t n = 0; n < num_samples; n++) {
-            DOUBLES_EQUAL(0.0f, frame.data()[n], 1e6);
+            DOUBLES_EQUAL(0.0f, frame.data()[n], Epsilon);
         }
     }
 
