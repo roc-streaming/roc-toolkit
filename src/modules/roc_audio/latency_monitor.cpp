@@ -48,6 +48,14 @@ LatencyMonitor::LatencyMonitor(const packet::SortedQueue& queue,
         if (!init_resampler_(input_sample_rate, output_sample_rate)) {
             return;
         }
+    } else {
+        if (input_sample_rate != output_sample_rate) {
+            roc_log(LogError,
+                    "latency monitor: input and output sample rates must be equal"
+                    " when resampling is disabled: in_rate=%lu, out_rate=%lu",
+                    (unsigned long)input_sample_rate, (unsigned long)output_sample_rate);
+            return;
+        }
     }
 
     valid_ = true;
