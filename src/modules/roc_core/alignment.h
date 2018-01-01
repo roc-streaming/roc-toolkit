@@ -19,6 +19,21 @@
 namespace roc {
 namespace core {
 
+//! A union with maximum possible allignment.
+union MaxAlign {
+    double d;     //!< Double.
+    void (*fp)(); //!< Function pointer.
+};
+
+//! Adjust the given size to be maximum aligned.
+inline size_t max_align(size_t sz) {
+    enum { Align = sizeof(MaxAlign) };
+    if (sz % Align != 0) {
+        sz += Align - sz % Align;
+    }
+    return sz;
+}
+
 //! Calculate padding required for given alignment.
 inline size_t padding(size_t size, size_t alignment) {
     if (alignment == 0) {
@@ -29,15 +44,6 @@ inline size_t padding(size_t size, size_t alignment) {
         new_size += alignment;
     }
     return (new_size - size);
-}
-
-//! Adjust the given size to be maximum aligned.
-inline size_t max_align(size_t sz) {
-    enum { Align = ROC_MAX(sizeof(void (*)()), sizeof(double)) };
-    if (sz % Align != 0) {
-        sz += Align - sz % Align;
-    }
-    return sz;
 }
 
 } // namespace core
