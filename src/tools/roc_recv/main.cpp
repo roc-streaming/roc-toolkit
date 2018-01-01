@@ -34,7 +34,7 @@ int main(int argc, char** argv) {
         return code;
     }
 
-    core::set_log_level(LogLevel(LogError + args.verbose_given));
+    core::Logger::instance().set_level(LogLevel(LogError + args.verbose_given));
 
     sndio::init();
 

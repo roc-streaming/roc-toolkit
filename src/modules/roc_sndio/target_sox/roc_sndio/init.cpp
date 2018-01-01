@@ -46,7 +46,7 @@ void message_handler(unsigned slevel,
         break;
     }
 
-    if (level > core::get_log_level()) {
+    if (level > core::Logger::instance().level()) {
         return;
     }
 

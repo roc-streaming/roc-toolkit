@@ -15,35 +15,41 @@
 namespace roc {
 namespace core {
 
-namespace {
-
-LogLevel log_level = LogError;
-LogHandler log_handler = NULL;
-
-} // namespace
-
-LogLevel get_log_level() {
-    return log_level;
+Logger::Logger()
+    : level_(LogError)
+    , handler_(NULL) {
 }
 
-LogLevel set_log_level(LogLevel level) {
+LogLevel Logger::level() {
+    Mutex::Lock lock(mutex_);
+
+    return level_;
+}
+
+void Logger::set_level(LogLevel level) {
+    Mutex::Lock lock(mutex_);
+
     if ((int)level < LogNone) {
         level = LogNone;
     }
+
     if ((int)level > LogTrace) {
         level = LogTrace;
     }
-    LogLevel ret = log_level;
-    log_level = level;
-    return ret;
+
+    level_ = level;
 }
 
-void set_log_handler(LogHandler handler) {
-    log_handler = handler;
+void Logger::set_handler(LogHandler handler) {
+    Mutex::Lock lock(mutex_);
+
+    handler_ = handler;
 }
 
-void log(const char* module, LogLevel level, const char* format, ...) {
-    if (level > log_level || level == LogNone) {
+void Logger::print(const char* module, LogLevel level, const char* format, ...) {
+    Mutex::Lock lock(mutex_);
+
+    if (level > level_ || level == LogNone) {
         return;
     }
 
@@ -54,8 +60,8 @@ void log(const char* module, LogLevel level, const char* format, ...) {
     vsnprintf(message, sizeof(message) - 1, format, args);
     va_end(args);
 
-    if (log_handler) {
-        log_handler(level, module, message);
+    if (handler_) {
+        handler_(level, module, message);
     } else {
         const char* prefix = "?";
 

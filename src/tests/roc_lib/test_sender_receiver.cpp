@@ -328,7 +328,7 @@ TEST_GROUP(sender_receiver) {
     float samples[TotalSamples];
 
     void setup() {
-        roc_log_set_level((roc_log_level)core::get_log_level());
+        roc_log_set_level((roc_log_level)core::Logger::instance().level());
 
         init_config();
         init_samples();

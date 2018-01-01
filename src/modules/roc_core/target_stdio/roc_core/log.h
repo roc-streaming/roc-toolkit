@@ -15,14 +15,15 @@
 
 #include "roc_core/attributes.h"
 #include "roc_core/macros.h"
-#include "roc_core/stddefs.h"
+#include "roc_core/mutex.h"
+#include "roc_core/singleton.h"
 
 #ifndef ROC_MODULE
 #error "ROC_MODULE not defined"
 #endif
 
 //! Print message to log.
-#define roc_log(...) ::roc::core::log(ROC_STRINGIZE(ROC_MODULE), __VA_ARGS__)
+#define roc_log(...) ::roc::core::Logger::instance().print(ROC_STRINGIZE(ROC_MODULE), __VA_ARGS__)
 
 namespace roc {
 
@@ -40,31 +41,47 @@ namespace core {
 //! Log handler.
 typedef void (*LogHandler)(LogLevel level, const char* module, const char* message);
 
-//! Print message to log.
-void log(const char* module, LogLevel level, const char* format, ...)
-    ROC_ATTR_PRINTF(3, 4);
+//! Logger.
+class Logger : public NonCopyable<> {
+public:
+    //! Get logger instance.
+    static Logger& instance() {
+        return Singleton<Logger>::instance();
+    }
 
-//! Get current maximum log level.
-LogLevel get_log_level();
+    //! Print message to log.
+    void print(const char* module, LogLevel level, const char* format, ...)
+        ROC_ATTR_PRINTF(4, 5);
 
-//! Set maximum log level.
-//!
-//! @remarks
-//!  Messages with higher log level will be dropped.
-//!
-//! @returns
-//!  previous log level.
-//!
-//! @note
-//!  Default log level is LogError.
-LogLevel set_log_level(LogLevel);
+    //! Get current maximum log level.
+    LogLevel level();
 
-//! Set log handler.
-//!
-//! @remarks
-//!  If @p handler is not NULL, log messages will be passed to @p handler.
-//!  Otherwise, they're printed to stderr.Default log handler is NULL.
-void set_log_handler(LogHandler handler);
+    //! Set maximum log level.
+    //!
+    //! @remarks
+    //!  Messages with higher log level will be dropped.
+    //!
+    //! @note
+    //!  Default log level is LogError.
+    void set_level(LogLevel);
+
+    //! Set log handler.
+    //!
+    //! @remarks
+    //!  If @p handler is not NULL, log messages will be passed to @p handler.
+    //!  Otherwise, they're printed to stderr.Default log handler is NULL.
+    void set_handler(LogHandler handler);
+
+private:
+    friend class Singleton<Logger>;
+
+    Logger();
+
+    Mutex mutex_;
+
+    LogLevel level_;
+    LogHandler handler_;
+};
 
 } // namespace core
 } // namespace roc

@@ -14,9 +14,9 @@
 using namespace roc;
 
 void roc_log_set_level(roc_log_level level) {
-    core::set_log_level(roc::LogLevel(level));
+    core::Logger::instance().set_level(roc::LogLevel(level));
 }
 
 void roc_log_set_handler(roc_log_handler handler) {
-    core::set_log_handler(core::LogHandler(handler));
+    core::Logger::instance().set_handler(core::LogHandler(handler));
 }
