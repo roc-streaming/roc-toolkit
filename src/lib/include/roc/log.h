@@ -20,11 +20,11 @@ extern "C" {
 
 //! Log level.
 typedef enum roc_log_level {
-    ROC_LOG_NONE,  //!< Disable all messages.
-    ROC_LOG_ERROR, //!< Error messages.
-    ROC_LOG_INFO,  //!< Informational messages.
-    ROC_LOG_DEBUG, //!< Debug messages.
-    ROC_LOG_TRACE  //!< Debug messages (extra verbosity).
+    ROC_LOG_NONE = 0,  //!< Disable all messages.
+    ROC_LOG_ERROR = 1, //!< Error messages.
+    ROC_LOG_INFO = 2,  //!< Informational messages.
+    ROC_LOG_DEBUG = 3, //!< Debug messages.
+    ROC_LOG_TRACE = 4  //!< Debug messages (extra verbosity).
 } roc_log_level;
 
 //! Log handler.
