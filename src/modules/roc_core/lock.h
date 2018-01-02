@@ -7,28 +7,29 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_core/scoped_lock.h
+//! @file roc_core/lock.h
 //! @brief RAII mutex lock.
 
-#ifndef ROC_CORE_SCOPED_LOCK_H_
-#define ROC_CORE_SCOPED_LOCK_H_
+#ifndef ROC_CORE_LOCK_H_
+#define ROC_CORE_LOCK_H_
 
+#include "roc_core/mutex.h"
 #include "roc_core/noncopyable.h"
 
 namespace roc {
 namespace core {
 
 //! RAII mutex lock.
-template <class Mutex> class ScopedLock : NonCopyable<> {
+class Lock : NonCopyable<> {
 public:
     //! Lock.
-    explicit ScopedLock(const Mutex& mutex)
+    explicit Lock(const Mutex& mutex)
         : mutex_(mutex) {
         mutex_.lock();
     }
 
-    //! Unlock,
-    ~ScopedLock() {
+    //! Unlock.
+    ~Lock() {
         mutex_.unlock();
     }
 
@@ -39,4 +40,4 @@ private:
 } // namespace core
 } // namespace roc
 
-#endif // ROC_CORE_SCOPED_LOCK_H_
+#endif // ROC_CORE_LOCK_H_

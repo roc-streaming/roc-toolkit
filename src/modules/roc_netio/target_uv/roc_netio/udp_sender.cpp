@@ -8,6 +8,7 @@
  */
 
 #include "roc_netio/udp_sender.h"
+#include "roc_core/lock.h"
 #include "roc_core/log.h"
 #include "roc_core/macros.h"
 #include "roc_core/panic.h"
@@ -90,7 +91,7 @@ bool UDPSender::start(packet::Address& bind_address) {
 }
 
 void UDPSender::stop() {
-    core::Mutex::Lock lock(mutex_);
+    core::Lock lock(mutex_);
 
     stopped_ = true;
 
@@ -129,7 +130,7 @@ void UDPSender::write(const packet::PacketPtr& pp) {
     }
 
     {
-        core::Mutex::Lock lock(mutex_);
+        core::Lock lock(mutex_);
 
         if (stopped_) {
             return;
@@ -220,7 +221,7 @@ void UDPSender::send_cb_(uv_udp_send_t* req, int status) {
                 (long)pp->data().size(), uv_err_name(status), uv_strerror(status));
     }
 
-    core::Mutex::Lock lock(self.mutex_);
+    core::Lock lock(self.mutex_);
 
     --self.pending_;
 
@@ -230,7 +231,7 @@ void UDPSender::send_cb_(uv_udp_send_t* req, int status) {
 }
 
 packet::PacketPtr UDPSender::read_() {
-    core::Mutex::Lock lock(mutex_);
+    core::Lock lock(mutex_);
 
     packet::PacketPtr pp = list_.front();
     if (pp) {

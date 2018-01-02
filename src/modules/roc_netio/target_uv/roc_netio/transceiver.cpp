@@ -8,6 +8,7 @@
  */
 
 #include "roc_netio/transceiver.h"
+#include "roc_core/lock.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_core/shared_ptr.h"
@@ -99,7 +100,7 @@ void Transceiver::start() {
         roc_panic("transceiver: can't use invalid transceiver");
     }
 
-    core::Mutex::Lock lock(mutex_);
+    core::Lock lock(mutex_);
 
     Thread::start();
 }
@@ -109,7 +110,7 @@ void Transceiver::stop() {
         roc_panic("transceiver: can't use invalid transceiver");
     }
 
-    core::Mutex::Lock lock(mutex_);
+    core::Lock lock(mutex_);
 
     // Ignore subsequent calls, since stop_sem_ may be already closed
     // from event loop thread.
@@ -130,7 +131,7 @@ void Transceiver::join() {
 }
 
 size_t Transceiver::num_ports() const {
-    core::Mutex::Lock lock(mutex_);
+    core::Lock lock(mutex_);
 
     return num_ports_;
 }
@@ -241,7 +242,7 @@ void Transceiver::close_() {
 
 void Transceiver::run_task_(Task& task) {
     {
-        core::Mutex::Lock lock(mutex_);
+        core::Lock lock(mutex_);
 
         const bool running = joinable();
 
@@ -270,7 +271,7 @@ void Transceiver::run_task_(Task& task) {
 }
 
 void Transceiver::process_tasks_() {
-    core::Mutex::Lock lock(mutex_);
+    core::Lock lock(mutex_);
 
     while (Task* task = tasks_.front()) {
         tasks_.remove(*task);

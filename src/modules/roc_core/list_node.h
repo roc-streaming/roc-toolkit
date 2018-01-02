@@ -15,6 +15,7 @@
 
 #include "roc_core/macros.h"
 #include "roc_core/noncopyable.h"
+#include "roc_core/panic.h"
 #include "roc_core/stddefs.h"
 
 namespace roc {
@@ -50,7 +51,12 @@ public:
         }
     };
 
-    ~ListNode();
+    ~ListNode() {
+        if (list_data_.list != NULL) {
+            roc_panic(
+                "list node: can't call destructor for an element that is still in list");
+        }
+    }
 
     //! Get list node data.
     ListData* list_data() const {

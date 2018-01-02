@@ -8,6 +8,7 @@
  */
 
 #include "roc_packet/concurrent_queue.h"
+#include "roc_core/lock.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 
@@ -47,13 +48,13 @@ void ConcurrentQueue::wait() {
 }
 
 size_t ConcurrentQueue::size() const {
-    core::Mutex::Lock lock(mutex_);
+    core::Lock lock(mutex_);
 
     return list_.size();
 }
 
 PacketPtr ConcurrentQueue::read_nb_() {
-    core::Mutex::Lock lock(mutex_);
+    core::Lock lock(mutex_);
 
     PacketPtr packet = list_.front();
     if (!packet) {
@@ -66,7 +67,7 @@ PacketPtr ConcurrentQueue::read_nb_() {
 }
 
 bool ConcurrentQueue::write_nb_(const PacketPtr& packet) {
-    core::Mutex::Lock lock(mutex_);
+    core::Lock lock(mutex_);
 
     if (max_size_ != 0 && list_.size() == max_size_) {
         roc_log(LogDebug, "concurrent queue: queue is full, dropping packet:"
