@@ -21,8 +21,7 @@ roc_context::roc_context(const roc_context_config& cfg)
                          cfg.max_frame_size / sizeof(audio::sample_t),
                          cfg.chunk_size / cfg.max_frame_size)
     , trx(packet_pool, byte_buffer_pool, allocator)
-    , started(false)
-    , stopped(false) {
+    , counter(0) {
 }
 
 roc_context* roc_context_open(const roc_context_config* config) {
@@ -49,41 +48,28 @@ int roc_context_start(roc_context* context) {
         return -1;
     }
 
-    if (context->started) {
-        roc_log(LogError, "roc_context_start: context is already started");
-        return -1;
-    }
-
     roc_log(LogInfo, "roc_context: starting context");
 
-    context->trx.start();
-    context->started = true;
+    if (!context->trx.start()) {
+        roc_log(LogError, "roc_context_start: can't start thread");
+        return -1;
+    }
 
     return 0;
 }
 
-void roc_context_stop(roc_context* context) {
+int roc_context_stop(roc_context* context) {
     if (!context) {
         roc_log(LogError, "roc_context_stop: invalid arguments: context == NULL");
-        return;
-    }
-
-    if (!context->started) {
-        roc_log(LogDebug, "roc_context_stop: context is not started");
-        return;
-    }
-
-    if (context->stopped) {
-        roc_log(LogDebug, "roc_context_stop: context is already stopped");
-        return;
+        return -1;
     }
 
     context->trx.stop();
     context->trx.join();
 
-    context->stopped = true;
-
     roc_log(LogInfo, "roc_context: stopped context");
+
+    return 0;
 }
 
 int roc_context_close(roc_context* context) {
@@ -92,15 +78,14 @@ int roc_context_close(roc_context* context) {
         return -1;
     }
 
-    if (context->refcount != 0) {
-        roc_log(LogError, "roc_context_close: context is still in use: refcount=%lu",
-                (unsigned long)context->refcount);
+    if (context->counter != 0) {
+        roc_log(LogError, "roc_context_close: context is still in use: counter=%lu",
+                (unsigned long)context->counter);
         return -1;
     }
 
-    if (context->started && !context->stopped) {
-        roc_context_stop(context);
-    }
+    context->trx.stop();
+    context->trx.join();
 
     delete context;
 

@@ -18,10 +18,6 @@ using namespace roc;
 namespace {
 
 bool init_pipeline(roc_sender* sender) {
-    if (!sender->context.started || sender->context.stopped) {
-        roc_log(LogDebug, "roc_sender: context is not running");
-    }
-
     sender->sender.reset(new (sender->context.allocator) pipeline::Sender(
                              sender->config, *sender->writer, *sender->writer,
                              sender->format_map, sender->context.packet_pool,
@@ -133,7 +129,7 @@ roc_sender* roc_sender_open(roc_context* context, const roc_sender_config* confi
         return NULL;
     }
 
-    ++context->refcount;
+    ++context->counter;
 
     return sender;
 }
@@ -261,19 +257,22 @@ roc_sender_write(roc_sender* sender, const float* samples, const size_t n_sample
     return (ssize_t)n_samples;
 }
 
-void roc_sender_close(roc_sender* sender) {
+int roc_sender_close(roc_sender* sender) {
     if (!sender) {
         roc_log(LogError, "roc_sender_close: invalid arguments: sender == NULL");
-        return;
+        return -1;
     }
 
     if (sender->writer) {
         sender->context.trx.remove_port(sender->address);
     }
 
-    --sender->context.refcount;
+    roc_context& context = sender->context;
 
     sender->context.allocator.destroy(*sender);
+    --context.counter;
 
     roc_log(LogInfo, "roc_sender: closed sender");
+
+    return 0;
 }

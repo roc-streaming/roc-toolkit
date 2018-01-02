@@ -48,10 +48,7 @@ struct roc_context {
 
     roc::netio::Transceiver trx;
 
-    roc::core::Atomic refcount;
-
-    bool started;
-    bool stopped;
+    roc::core::Atomic counter;
 };
 
 struct roc_sender {

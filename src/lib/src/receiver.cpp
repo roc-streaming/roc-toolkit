@@ -65,7 +65,7 @@ roc_receiver* roc_receiver_open(roc_context* context, const roc_receiver_config*
         return NULL;
     }
 
-    ++context->refcount;
+    ++context->counter;
 
     return receiver.release();
 }
@@ -133,17 +133,19 @@ roc_receiver_read(roc_receiver* receiver, float* samples, const size_t n_samples
     return (ssize_t)n_samples;
 }
 
-void roc_receiver_close(roc_receiver* receiver) {
+int roc_receiver_close(roc_receiver* receiver) {
     if (!receiver) {
         roc_log(LogError, "roc_receiver_close: invalid arguments: receiver == NULL");
-        return;
+        return -1;
     }
 
+    roc_context& context = receiver->context;
+
     receiver->receiver.iterate_ports(close_port, receiver);
-
-    --receiver->context.refcount;
-
     receiver->context.allocator.destroy(*receiver);
+    --context.counter;
 
     roc_log(LogInfo, "roc_receiver: closed receiver");
+
+    return 0;
 }

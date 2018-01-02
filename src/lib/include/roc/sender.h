@@ -46,7 +46,7 @@ ROC_API ssize_t roc_sender_write(roc_sender* sender,
                                  const size_t n_samples);
 
 //! Delete previously created sender.
-ROC_API void roc_sender_close(roc_sender* sender);
+ROC_API int roc_sender_close(roc_sender* sender);
 
 #ifdef __cplusplus
 }
