@@ -47,7 +47,7 @@ public:
     //! Start background thread.
     //! @remarks
     //!  Should be called once.
-    void start();
+    bool start();
 
     //! Asynchronous stop.
     //! @remarks

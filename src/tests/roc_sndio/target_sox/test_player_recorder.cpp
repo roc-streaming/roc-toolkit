@@ -128,7 +128,7 @@ TEST(player_recorder, player_start_stop) {
     core::TempFile file("test.wav");
     CHECK(player.open(file.path(), NULL));
 
-    player.start(receiver);
+    CHECK(player.start(receiver));
     player.stop();
     player.join();
 }
@@ -141,7 +141,20 @@ TEST(player_recorder, player_stop_start) {
     CHECK(player.open(file.path(), NULL));
 
     player.stop();
-    player.start(receiver);
+    CHECK(player.start(receiver));
+    player.join();
+}
+
+TEST(player_recorder, player_start_start) {
+    MockReceiver receiver;
+    Player player(buffer_pool, allocator, true, ChMask, SampleRate);
+
+    core::TempFile file("test.wav");
+    CHECK(player.open(file.path(), NULL));
+
+    CHECK(player.start(receiver));
+    CHECK(!player.start(receiver));
+    player.stop();
     player.join();
 }
 
@@ -183,16 +196,18 @@ TEST(player_recorder, recorder_error) {
 TEST(player_recorder, recorder_start_stop) {
     enum { NumSamples = MaxBufSize * 10 };
 
-    MockReceiver receiver;
-    receiver.add(NumSamples);
-
-    Player player(buffer_pool, allocator, true, ChMask, SampleRate);
-
     core::TempFile file("test.wav");
-    CHECK(player.open(file.path(), NULL));
 
-    player.start(receiver);
-    player.join();
+    {
+        MockReceiver receiver;
+        receiver.add(NumSamples);
+
+        Player player(buffer_pool, allocator, true, ChMask, SampleRate);
+        CHECK(player.open(file.path(), NULL));
+
+        CHECK(player.start(receiver));
+        player.join();
+    }
 
     Recorder recorder(buffer_pool, ChMask, FrameSize, SampleRate);
 
@@ -200,7 +215,7 @@ TEST(player_recorder, recorder_start_stop) {
 
     MockWriter writer;
 
-    recorder.start(writer);
+    CHECK(recorder.start(writer));
     recorder.stop();
     recorder.join();
 }
@@ -208,16 +223,18 @@ TEST(player_recorder, recorder_start_stop) {
 TEST(player_recorder, recorder_stop_start) {
     enum { NumSamples = MaxBufSize * 10 };
 
-    MockReceiver receiver;
-    receiver.add(NumSamples);
-
-    Player player(buffer_pool, allocator, true, ChMask, SampleRate);
-
     core::TempFile file("test.wav");
-    CHECK(player.open(file.path(), NULL));
 
-    player.start(receiver);
-    player.join();
+    {
+        MockReceiver receiver;
+        receiver.add(NumSamples);
+
+        Player player(buffer_pool, allocator, true, ChMask, SampleRate);
+        CHECK(player.open(file.path(), NULL));
+
+        CHECK(player.start(receiver));
+        player.join();
+    }
 
     Recorder recorder(buffer_pool, ChMask, FrameSize, SampleRate);
 
@@ -226,7 +243,35 @@ TEST(player_recorder, recorder_stop_start) {
     MockWriter writer;
 
     recorder.stop();
-    recorder.start(writer);
+    CHECK(recorder.start(writer));
+    recorder.join();
+}
+
+TEST(player_recorder, recorder_start_start) {
+    enum { NumSamples = MaxBufSize * 10 };
+
+    core::TempFile file("test.wav");
+
+    {
+        MockReceiver receiver;
+        receiver.add(NumSamples);
+
+        Player player(buffer_pool, allocator, true, ChMask, SampleRate);
+        CHECK(player.open(file.path(), NULL));
+
+        CHECK(player.start(receiver));
+        player.join();
+    }
+
+    Recorder recorder(buffer_pool, ChMask, FrameSize, SampleRate);
+
+    CHECK(recorder.open(file.path(), NULL));
+
+    MockWriter writer;
+
+    CHECK(recorder.start(writer));
+    CHECK(!recorder.start(writer));
+    recorder.stop();
     recorder.join();
 }
 
@@ -241,7 +286,7 @@ TEST(player_recorder, recorder_is_file) {
 
         CHECK(player.open(file.path(), NULL));
 
-        player.start(receiver);
+        CHECK(player.start(receiver));
         player.join();
     }
 
@@ -262,7 +307,7 @@ TEST(player_recorder, recorder_sample_rate_auto) {
 
         CHECK(player.open(file.path(), NULL));
 
-        player.start(receiver);
+        CHECK(player.start(receiver));
         player.join();
     }
 
@@ -283,7 +328,7 @@ TEST(player_recorder, recorder_sample_rate_force) {
 
         CHECK(player.open(file.path(), NULL));
 
-        player.start(receiver);
+        CHECK(player.start(receiver));
         player.join();
     }
 
@@ -304,7 +349,7 @@ TEST(player_recorder, write_read) {
     core::TempFile file("test.wav");
     CHECK(player.open(file.path(), NULL));
 
-    player.start(receiver);
+    CHECK(player.start(receiver));
     player.join();
 
     CHECK(receiver.num_returned() >= NumSamples - MaxBufSize);
@@ -315,7 +360,7 @@ TEST(player_recorder, write_read) {
 
     MockWriter writer;
 
-    recorder.start(writer);
+    CHECK(recorder.start(writer));
     recorder.join();
 
     writer.check(0, receiver.num_returned());
@@ -333,7 +378,7 @@ TEST(player_recorder, overwrite) {
         Player player(buffer_pool, allocator, true, ChMask, SampleRate);
         CHECK(player.open(file.path(), NULL));
 
-        player.start(receiver);
+        CHECK(player.start(receiver));
         player.join();
     }
 
@@ -346,7 +391,7 @@ TEST(player_recorder, overwrite) {
         Player player(buffer_pool, allocator, true, ChMask, SampleRate);
         CHECK(player.open(file.path(), NULL));
 
-        player.start(receiver);
+        CHECK(player.start(receiver));
         player.join();
     }
 
@@ -359,7 +404,7 @@ TEST(player_recorder, overwrite) {
 
     MockWriter writer;
 
-    recorder.start(writer);
+    CHECK(recorder.start(writer));
     recorder.join();
 
     writer.check(num_returned1, num_returned2);

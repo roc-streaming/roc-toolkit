@@ -33,7 +33,7 @@ public:
     //! Start thread.
     //! @remarks
     //!  Executes run() in new thread.
-    void start();
+    bool start();
 
     //! Join thread.
     //! @remarks

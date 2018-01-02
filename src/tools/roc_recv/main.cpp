@@ -246,10 +246,19 @@ int main(int argc, char** argv) {
         }
     }
 
-    trx.start();
+    if (!trx.start()) {
+        roc_log(LogError, "can't start transceiver");
+        return 1;
+    }
 
-    player.start(receiver);
-    player.join();
+    int status = 1;
+
+    if (player.start(receiver)) {
+        player.join();
+        status = 0;
+    } else {
+        roc_log(LogError, "can't start player");
+    }
 
     trx.stop();
     trx.join();
@@ -260,5 +269,5 @@ int main(int argc, char** argv) {
         trx.remove_port(repair_port.address);
     }
 
-    return 0;
+    return status;
 }

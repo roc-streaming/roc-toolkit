@@ -76,7 +76,7 @@ public:
     //!
     //! @b Parameters
     //!  - @p input is used to read samples.
-    void start(pipeline::IReceiver& input);
+    bool start(pipeline::IReceiver& input);
 
     //! Stop thread.
     //! @remarks

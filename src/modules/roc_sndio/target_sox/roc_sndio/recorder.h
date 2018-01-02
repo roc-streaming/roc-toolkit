@@ -76,7 +76,7 @@ public:
     //!
     //! @b Parameters
     //!  - @p output is used to write buffers with decoded samples.
-    void start(audio::IWriter& output);
+    bool start(audio::IWriter& output);
 
     //! Stop thread.
     //! @remarks

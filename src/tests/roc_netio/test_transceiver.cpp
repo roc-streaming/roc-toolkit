@@ -80,8 +80,7 @@ TEST(transceiver, start_stop) {
 
     CHECK(trx.valid());
 
-    trx.start();
-
+    CHECK(trx.start());
     trx.stop();
     trx.join();
 }
@@ -92,8 +91,18 @@ TEST(transceiver, stop_start) {
     CHECK(trx.valid());
 
     trx.stop();
+    CHECK(!trx.start());
+    trx.join();
+}
 
-    trx.start();
+TEST(transceiver, start_start) {
+    Transceiver trx(packet_pool, buffer_pool, allocator);
+
+    CHECK(trx.valid());
+
+    CHECK(trx.start());
+    CHECK(!trx.start());
+    trx.stop();
     trx.join();
 }
 
@@ -113,7 +122,7 @@ TEST(transceiver, add_start_stop) {
     CHECK(trx.add_udp_sender(tx_addr));
     CHECK(trx.add_udp_receiver(rx_addr, queue));
 
-    trx.start();
+    CHECK(trx.start());
 
     trx.stop();
     trx.join();
@@ -129,7 +138,7 @@ TEST(transceiver, start_add_stop) {
 
     CHECK(trx.valid());
 
-    trx.start();
+    CHECK(trx.start());
 
     packet::Address tx_addr;
     packet::Address rx_addr;
@@ -182,7 +191,7 @@ TEST(transceiver, start_add_remove_stop) {
 
     CHECK(trx.valid());
 
-    trx.start();
+    CHECK(trx.start());
 
     packet::Address tx_addr;
     packet::Address rx_addr;
@@ -229,7 +238,7 @@ TEST(transceiver, add_start_stop_remove) {
     CHECK(trx.add_udp_receiver(rx_addr, queue));
     UNSIGNED_LONGS_EQUAL(2, trx.num_ports());
 
-    trx.start();
+    CHECK(trx.start());
 
     trx.stop();
     trx.join();

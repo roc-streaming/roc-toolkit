@@ -94,7 +94,7 @@ TEST(udp, one_sender_one_receiver_single_thread) {
 
     CHECK(trx.add_udp_receiver(rx_addr, rx_queue));
 
-    trx.start();
+    CHECK(trx.start());
 
     for (int i = 0; i < NumIterations; i++) {
         for (int p = 0; p < NumPackets; p++) {
@@ -129,8 +129,8 @@ TEST(udp, one_sender_one_receiver_separate_threads) {
 
     CHECK(rx.add_udp_receiver(rx_addr, rx_queue));
 
-    tx.start();
-    rx.start();
+    CHECK(tx.start());
+    CHECK(rx.start());
 
     for (int i = 0; i < NumIterations; i++) {
         for (int p = 0; p < NumPackets; p++) {
@@ -177,10 +177,10 @@ TEST(udp, one_sender_multiple_receivers) {
     CHECK(rx23.add_udp_receiver(rx_addr2, rx_queue2));
     CHECK(rx23.add_udp_receiver(rx_addr3, rx_queue3));
 
-    tx.start();
+    CHECK(tx.start());
 
-    rx1.start();
-    rx23.start();
+    CHECK(rx1.start());
+    CHECK(rx23.start());
 
     for (int i = 0; i < NumIterations; i++) {
         for (int p = 0; p < NumPackets; p++) {
@@ -238,10 +238,10 @@ TEST(udp, multiple_senders_one_receiver) {
     CHECK(rx.valid());
     CHECK(rx.add_udp_receiver(rx_addr, rx_queue));
 
-    tx1.start();
-    tx23.start();
+    CHECK(tx1.start());
+    CHECK(tx23.start());
 
-    rx.start();
+    CHECK(rx.start());
 
     for (int i = 0; i < NumIterations; i++) {
         for (int p = 0; p < NumPackets; p++) {

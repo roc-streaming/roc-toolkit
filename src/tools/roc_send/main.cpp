@@ -159,15 +159,24 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    trx.start();
+    if (!trx.start()) {
+        roc_log(LogError, "can't start transceiver");
+        return 1;
+    }
 
-    recorder.start(sender);
-    recorder.join();
+    int status = 1;
+
+    if (recorder.start(sender)) {
+        recorder.join();
+        status = 0;
+    } else {
+        roc_log(LogError, "can't start recorder");
+    }
 
     trx.stop();
     trx.join();
 
     trx.remove_port(local_addr);
 
-    return 0;
+    return status;
 }

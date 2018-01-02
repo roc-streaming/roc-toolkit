@@ -95,14 +95,19 @@ bool Transceiver::valid() const {
     return valid_;
 }
 
-void Transceiver::start() {
+bool Transceiver::start() {
     if (!valid()) {
         roc_panic("transceiver: can't use invalid transceiver");
     }
 
     core::Lock lock(mutex_);
 
-    Thread::start();
+    if (stopped_) {
+        roc_log(LogError, "tranceiver: can't start stopped transceiver");
+        return false;
+    }
+
+    return Thread::start();
 }
 
 void Transceiver::stop() {

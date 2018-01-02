@@ -131,9 +131,9 @@ bool Recorder::is_file() const {
     return is_file_;
 }
 
-void Recorder::start(audio::IWriter& output) {
+bool Recorder::start(audio::IWriter& output) {
     output_ = &output;
-    Thread::start();
+    return Thread::start();
 }
 
 void Recorder::stop() {

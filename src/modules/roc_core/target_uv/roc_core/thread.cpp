@@ -10,6 +10,7 @@
 #include "roc_core/thread.h"
 #include "roc_core/errno_to_str.h"
 #include "roc_core/lock.h"
+#include "roc_core/log.h"
 #include "roc_core/panic.h"
 
 namespace roc {
@@ -30,27 +31,27 @@ bool Thread::joinable() const {
     return joinable_;
 }
 
-void Thread::start() {
+bool Thread::start() {
     Lock lock(mutex_);
 
     if (started_) {
-        roc_panic("thread: can't start thread more than once");
+        roc_log(LogError, "thread: can't start thread more than once");
+        return false;
     }
 
     if (int err = uv_thread_create(&thread_, thread_runner_, this)) {
-        roc_panic("thread: uv_thread_create(): [%s] %s", uv_err_name(err),
-                  uv_strerror(err));
+        roc_log(LogError, "thread: uv_thread_create(): [%s] %s", uv_err_name(err),
+                uv_strerror(err));
+        return false;
     }
 
     started_ = 1;
     joinable_ = 1;
+
+    return true;
 }
 
 void Thread::join() {
-
-    if (!started_) {
-        roc_panic("thread: can't join thread that was not started");
-    }
     Lock lock(mutex_);
 
     if (!joinable_) {

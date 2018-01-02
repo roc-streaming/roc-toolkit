@@ -78,9 +78,9 @@ bool Player::is_file() const {
     return is_file_;
 }
 
-void Player::start(pipeline::IReceiver& input) {
+bool Player::start(pipeline::IReceiver& input) {
     input_ = &input;
-    Thread::start();
+    return Thread::start();
 }
 
 void Player::stop() {
