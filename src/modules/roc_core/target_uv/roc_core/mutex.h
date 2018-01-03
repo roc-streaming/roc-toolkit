@@ -17,6 +17,7 @@
 
 #include "roc_core/noncopyable.h"
 #include "roc_core/panic.h"
+#include "roc_core/scoped_lock.h"
 
 namespace roc {
 namespace core {
@@ -24,6 +25,9 @@ namespace core {
 //! Mutex.
 class Mutex : public NonCopyable<> {
 public:
+    //! RAII lock.
+    typedef ScopedLock<Mutex> Lock;
+
     Mutex() {
         if (int err = uv_mutex_init(&mutex_)) {
             roc_panic("mutex: uv_mutex_init(): [%s] %s", uv_err_name(err),

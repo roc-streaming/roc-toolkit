@@ -16,7 +16,6 @@
 #include "roc_core/alignment.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/list.h"
-#include "roc_core/lock.h"
 #include "roc_core/log.h"
 #include "roc_core/macros.h"
 #include "roc_core/mutex.h"
@@ -90,7 +89,7 @@ private:
     struct Elem : ListNode {};
 
     Elem* get_elem_() {
-        Lock lock(mutex_);
+        Mutex::Lock lock(mutex_);
 
         if (free_elems_.size() == 0) {
             allocate_chunk_();
@@ -105,7 +104,7 @@ private:
     }
 
     void put_elem_(Elem* elem) {
-        Lock lock(mutex_);
+        Mutex::Lock lock(mutex_);
         free_elems_.push_back(*elem);
     }
 

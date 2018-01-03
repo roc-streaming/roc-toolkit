@@ -10,7 +10,6 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-#include "roc_core/lock.h"
 #include "roc_core/log.h"
 
 namespace roc {
@@ -22,13 +21,13 @@ Logger::Logger()
 }
 
 LogLevel Logger::level() {
-    Lock lock(mutex_);
+    Mutex::Lock lock(mutex_);
 
     return level_;
 }
 
 void Logger::set_level(LogLevel level) {
-    Lock lock(mutex_);
+    Mutex::Lock lock(mutex_);
 
     if ((int)level < LogNone) {
         level = LogNone;
@@ -42,13 +41,13 @@ void Logger::set_level(LogLevel level) {
 }
 
 void Logger::set_handler(LogHandler handler) {
-    Lock lock(mutex_);
+    Mutex::Lock lock(mutex_);
 
     handler_ = handler;
 }
 
 void Logger::print(const char* module, LogLevel level, const char* format, ...) {
-    Lock lock(mutex_);
+    Mutex::Lock lock(mutex_);
 
     if (level > level_ || level == LogNone) {
         return;

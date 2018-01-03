@@ -9,7 +9,6 @@
 
 #include "roc_core/thread.h"
 #include "roc_core/errno_to_str.h"
-#include "roc_core/lock.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 
@@ -32,7 +31,7 @@ bool Thread::joinable() const {
 }
 
 bool Thread::start() {
-    Lock lock(mutex_);
+    Mutex::Lock lock(mutex_);
 
     if (started_) {
         roc_log(LogError, "thread: can't start thread more than once");
@@ -52,7 +51,7 @@ bool Thread::start() {
 }
 
 void Thread::join() {
-    Lock lock(mutex_);
+    Mutex::Lock lock(mutex_);
 
     if (!joinable_) {
         return;
