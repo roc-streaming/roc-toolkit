@@ -38,6 +38,9 @@ enum LogLevel {
 
 namespace core {
 
+//! Default log level.
+const LogLevel DefaultLogLevel = LogError;
+
 //! Log handler.
 typedef void (*LogHandler)(LogLevel level, const char* module, const char* message);
 

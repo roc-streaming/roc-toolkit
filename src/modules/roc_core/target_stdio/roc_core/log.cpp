@@ -16,7 +16,7 @@ namespace roc {
 namespace core {
 
 Logger::Logger()
-    : level_(LogError)
+    : level_(DefaultLogLevel)
     , handler_(NULL) {
 }
 
