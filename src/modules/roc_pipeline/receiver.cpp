@@ -26,13 +26,13 @@ Receiver::Receiver(const ReceiverConfig& config,
     , byte_buffer_pool_(byte_buffer_pool)
     , sample_buffer_pool_(sample_buffer_pool)
     , allocator_(allocator)
-    , packet_queue_(0, false)
     , mixer_(sample_buffer_pool)
     , ticker_(config.sample_rate)
     , config_(config)
     , timestamp_(0)
     , num_channels_(packet::num_channels(config.channels))
-    , valid_(false) {
+    , valid_(false)
+    , active_(false) {
     if (!mixer_.valid()) {
         roc_log(LogError, "receiver: can't construct mixer");
         return;
@@ -45,6 +45,8 @@ bool Receiver::valid() {
 }
 
 bool Receiver::add_port(const PortConfig& config) {
+    core::Mutex::Lock lock(control_mutex_);
+
     core::SharedPtr<ReceiverPort> port =
         new (allocator_) ReceiverPort(config, format_map_, allocator_);
 
@@ -58,6 +60,8 @@ bool Receiver::add_port(const PortConfig& config) {
 }
 
 void Receiver::iterate_ports(void (*fn)(void*, const PortConfig&), void* arg) const {
+    core::Mutex::Lock lock(control_mutex_);
+
     core::SharedPtr<ReceiverPort> port;
 
     for (port = ports_.front(); port; port = ports_.nextof(*port)) {
@@ -66,35 +70,53 @@ void Receiver::iterate_ports(void (*fn)(void*, const PortConfig&), void* arg) co
 }
 
 size_t Receiver::num_sessions() const {
+    core::Mutex::Lock lock(control_mutex_);
+
     return sessions_.size();
 }
 
 void Receiver::write(const packet::PacketPtr& packet) {
-    packet_queue_.write(packet);
+    core::Mutex::Lock lock(control_mutex_);
+
+    const Status status = status_();
+
+    packets_.push_back(*packet);
+
+    if (status != Active) {
+        active_.set(true);
+    }
 }
 
-IReceiver::Status Receiver::read(audio::Frame& frame) {
+void Receiver::read(audio::Frame& frame) {
+    core::Mutex::Lock lock(pipeline_mutex_);
+
     if (config_.timing) {
         ticker_.wait(timestamp_);
     }
 
-    fetch_packets_();
-    update_sessions_();
-
-    const Status status = status_();
+    prepare_();
 
     mixer_.read(frame);
     timestamp_ += frame.size() / num_channels_;
-
-    return status;
 }
 
-void Receiver::wait_active() {
-    if (status_() == Active) {
-        return;
-    }
+IReceiver::Status Receiver::status() const {
+    core::Mutex::Lock lock(control_mutex_);
 
-    packet_queue_.wait();
+    return status_();
+}
+
+void Receiver::wait_active() const {
+    active_.wait();
+}
+
+void Receiver::prepare_() {
+    core::Mutex::Lock lock(control_mutex_);
+
+    fetch_packets_();
+    update_sessions_();
+
+    active_.set(status_() == Active);
 }
 
 IReceiver::Status Receiver::status_() const {
@@ -102,7 +124,7 @@ IReceiver::Status Receiver::status_() const {
         return Active;
     }
 
-    if (packet_queue_.size() != 0) {
+    if (packets_.size() != 0) {
         return Active;
     }
 
@@ -111,10 +133,12 @@ IReceiver::Status Receiver::status_() const {
 
 void Receiver::fetch_packets_() {
     for (;;) {
-        packet::PacketPtr packet = packet_queue_.read();
+        packet::PacketPtr packet = packets_.front();
         if (!packet) {
             break;
         }
+
+        packets_.remove(*packet);
 
         if (!parse_packet_(packet)) {
             roc_log(LogDebug, "receiver: can't parse packet, dropping");

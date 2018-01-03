@@ -18,9 +18,10 @@
 #include "roc_core/buffer_pool.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/list.h"
+#include "roc_core/mutex.h"
 #include "roc_core/noncopyable.h"
+#include "roc_core/trigger.h"
 #include "roc_core/unique_ptr.h"
-#include "roc_packet/concurrent_queue.h"
 #include "roc_packet/ireader.h"
 #include "roc_packet/iwriter.h"
 #include "roc_packet/packet_pool.h"
@@ -59,14 +60,19 @@ public:
     //! Write packet.
     virtual void write(const packet::PacketPtr&);
 
-    //! Read frame and return current receiver status.
-    virtual Status read(audio::Frame&);
+    //! Read frame.
+    virtual void read(audio::Frame&);
+
+    //! Get current receiver status.
+    virtual Status status() const;
 
     //! Wait until the receiver status becomes active.
-    virtual void wait_active();
+    virtual void wait_active() const;
 
 private:
     Status status_() const;
+
+    void prepare_();
 
     void fetch_packets_();
 
@@ -88,7 +94,7 @@ private:
     core::List<ReceiverPort> ports_;
     core::List<ReceiverSession> sessions_;
 
-    packet::ConcurrentQueue packet_queue_;
+    core::List<packet::Packet> packets_;
 
     audio::Mixer mixer_;
     core::Ticker ticker_;
@@ -99,6 +105,11 @@ private:
     size_t num_channels_;
 
     bool valid_;
+
+    core::Mutex control_mutex_;
+    core::Mutex pipeline_mutex_;
+
+    core::Trigger active_;
 };
 
 } // namespace pipeline

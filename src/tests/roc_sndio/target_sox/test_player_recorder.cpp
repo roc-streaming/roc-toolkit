@@ -39,19 +39,21 @@ public:
         , size_(0) {
     }
 
-    virtual Status read(audio::Frame& frame) {
-        if (pos_ + frame.size() >= size_) {
+    virtual Status status() const {
+        if (pos_ >= size_) {
             return Inactive;
+        } else {
+            return Active;
         }
-
-        memcpy(frame.data(), samples_ + pos_, frame.size() * sizeof(audio::sample_t));
-        pos_ += frame.size();
-
-        return Active;
     }
 
-    virtual void wait_active() {
+    virtual void wait_active() const {
         FAIL("not implemented");
+    }
+
+    virtual void read(audio::Frame& frame) {
+        memcpy(frame.data(), samples_ + pos_, frame.size() * sizeof(audio::sample_t));
+        pos_ += frame.size();
     }
 
     void add(size_t size) {

@@ -39,16 +39,16 @@ public:
         Inactive
     };
 
-    //! Read frame and return current receiver status.
-    //! @remarks
-    //!  The returned status corresponds to the returned frame, not to the
-    //!  receiver status after reading this frame.
-    virtual Status read(audio::Frame&) = 0;
+    //! Get current receiver status.
+    virtual Status status() const = 0;
 
     //! Wait until the receiver status becomes active.
     //! @remarks
     //!  Spurious wakeups are possible.
-    virtual void wait_active() = 0;
+    virtual void wait_active() const = 0;
+
+    //! Read frame.
+    virtual void read(audio::Frame&) = 0;
 };
 
 } // namespace pipeline

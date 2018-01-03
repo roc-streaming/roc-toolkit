@@ -1074,14 +1074,19 @@ TEST(receiver, status) {
 
     audio::Frame frame(samples.data(), samples.size());
 
-    CHECK(receiver.read(frame) == IReceiver::Inactive);
+    CHECK(receiver.status() == IReceiver::Inactive);
 
+    receiver.read(frame);
     packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket, ChMask);
 
-    CHECK(receiver.read(frame) == IReceiver::Active);
+    CHECK(receiver.status() == IReceiver::Active);
+
+    receiver.read(frame);
 
     for (;;) {
-        if (receiver.read(frame) == IReceiver::Inactive) {
+        receiver.read(frame);
+
+        if (receiver.status() == IReceiver::Inactive) {
             break;
         }
     }
