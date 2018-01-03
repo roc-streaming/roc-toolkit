@@ -20,9 +20,9 @@
 #include "roc_core/thread.h"
 #include "roc_netio/transceiver.h"
 #include "roc_packet/address_to_str.h"
-#include "roc_packet/concurrent_queue.h"
 #include "roc_packet/packet_pool.h"
 #include "roc_packet/parse_address.h"
+#include "roc_packet/queue.h"
 
 #include "roc/context.h"
 #include "roc/log.h"
@@ -222,8 +222,6 @@ public:
         : trx_(packet_pool, byte_buffer_pool, allocator)
         , dst_source_addr_(dst_source_addr)
         , dst_repair_addr_(dst_repair_addr)
-        , source_queue_(0, false)
-        , repair_queue_(0, false)
         , n_source_packets_(n_source_packets)
         , n_repair_packets_(n_repair_packets)
         , pos_(0) {
@@ -286,8 +284,8 @@ private:
         }
     }
 
-    bool send_packet_(packet::ConcurrentQueue& queue, bool drop) {
-        packet::PacketPtr pp = queue.read();
+    bool send_packet_(packet::IReader& reader, bool drop) {
+        packet::PacketPtr pp = reader.read();
         if (!pp) {
             return false;
         }
@@ -308,8 +306,8 @@ private:
     packet::Address dst_source_addr_;
     packet::Address dst_repair_addr_;
 
-    packet::ConcurrentQueue source_queue_;
-    packet::ConcurrentQueue repair_queue_;
+    packet::Queue source_queue_;
+    packet::Queue repair_queue_;
 
     packet::IWriter* writer_;
 

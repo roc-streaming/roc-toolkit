@@ -11,8 +11,8 @@
 
 #include "roc_core/buffer_pool.h"
 #include "roc_core/heap_allocator.h"
-#include "roc_packet/concurrent_queue.h"
 #include "roc_packet/packet_pool.h"
+#include "roc_packet/queue.h"
 #include "roc_pipeline/sender.h"
 #include "roc_rtp/format_map.h"
 #include "roc_rtp/parser.h"
@@ -69,7 +69,7 @@ TEST_GROUP(sender) {
 };
 
 TEST(sender, write) {
-    packet::ConcurrentQueue queue(0, false);
+    packet::Queue queue;
 
     Sender sender(config, queue, queue, format_map, packet_pool, byte_buffer_pool,
                   allocator);
@@ -99,7 +99,7 @@ TEST(sender, frame_size_small) {
         ManySmallFrames = SmallFramesPerPacket * 20
     };
 
-    packet::ConcurrentQueue queue(0, false);
+    packet::Queue queue;
 
     Sender sender(config, queue, queue, format_map, packet_pool, byte_buffer_pool,
                   allocator);
@@ -129,7 +129,7 @@ TEST(sender, frame_size_large) {
         ManyLargeFrames = 20
     };
 
-    packet::ConcurrentQueue queue(0, false);
+    packet::Queue queue;
 
     Sender sender(config, queue, queue, format_map, packet_pool, byte_buffer_pool,
                   allocator);

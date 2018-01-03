@@ -10,8 +10,8 @@
 #include <CppUTest/TestHarness.h>
 
 #include "roc_core/heap_allocator.h"
-#include "roc_packet/concurrent_queue.h"
 #include "roc_packet/packet_pool.h"
+#include "roc_packet/queue.h"
 #include "roc_packet/watchdog.h"
 
 namespace roc {
@@ -35,7 +35,7 @@ TEST_GROUP(watchdog) {
 TEST(watchdog, no_packets) {
     enum { Timeout = 20 };
 
-    ConcurrentQueue queue(0, false);
+    Queue queue;
     Watchdog watchdog(queue, Timeout);
 
     CHECK(watchdog.update(0));
@@ -45,7 +45,7 @@ TEST(watchdog, no_packets) {
 TEST(watchdog, read) {
     enum { Timeout = 20, NumPackets = Timeout + 5 };
 
-    ConcurrentQueue queue(0, false);
+    Queue queue;
     Watchdog watchdog(queue, Timeout);
 
     PacketPtr packets[NumPackets];
@@ -67,7 +67,7 @@ TEST(watchdog, read) {
 TEST(watchdog, timeout) {
     enum { Timeout = 20, NumPackets = Timeout - 5, Offset = 10000 };
 
-    ConcurrentQueue queue(0, false);
+    Queue queue;
     Watchdog watchdog(queue, Timeout);
 
     for (seqnum_t n = 0; n < NumPackets; n++) {

@@ -31,94 +31,19 @@ TEST_GROUP(concurrent_queue) {
     }
 };
 
-TEST(concurrent_queue, empty) {
-    ConcurrentQueue queue(0, false);
-
-    CHECK(!queue.read());
-
-    LONGS_EQUAL(0, queue.size());
-}
-
-TEST(concurrent_queue, two_packets) {
-    ConcurrentQueue queue(0, false);
+TEST(concurrent_queue, write_read) {
+    ConcurrentQueue queue;
 
     PacketPtr p1 = new_packet();
     PacketPtr p2 = new_packet();
 
     queue.write(p1);
     queue.write(p2);
-
-    LONGS_EQUAL(2, queue.size());
+    queue.write(NULL);
 
     CHECK(queue.read() == p1);
-
-    LONGS_EQUAL(1, queue.size());
-
     CHECK(queue.read() == p2);
-
-    LONGS_EQUAL(0, queue.size());
-
     CHECK(!queue.read());
-
-    LONGS_EQUAL(0, queue.size());
-}
-
-TEST(concurrent_queue, many_packets) {
-    enum { NumPackets = 10 };
-
-    ConcurrentQueue queue(0, false);
-
-    PacketPtr packets[NumPackets];
-
-    for (seqnum_t n = 0; n < NumPackets; n++) {
-        packets[n] = new_packet();
-    }
-
-    for (ssize_t n = 0; n < NumPackets; n++) {
-        queue.write(packets[n]);
-    }
-
-    LONGS_EQUAL(NumPackets, queue.size());
-
-    for (size_t n = 0; n < NumPackets; n++) {
-        CHECK(queue.read() == packets[n]);
-    }
-
-    LONGS_EQUAL(0, queue.size());
-}
-
-TEST(concurrent_queue, max_size) {
-    ConcurrentQueue queue(2, false);
-
-    PacketPtr p1 = new_packet();
-    PacketPtr p2 = new_packet();
-    PacketPtr p3 = new_packet();
-
-    queue.write(p1);
-    queue.write(p2);
-    queue.write(p3);
-
-    LONGS_EQUAL(2, queue.size());
-
-    CHECK(queue.read() == p1);
-
-    LONGS_EQUAL(1, queue.size());
-
-    queue.write(p3);
-
-    LONGS_EQUAL(2, queue.size());
-}
-
-TEST(concurrent_queue, blocking) {
-    ConcurrentQueue queue(0, true);
-
-    PacketPtr p = new_packet();
-
-    queue.write(p);
-
-    queue.wait();
-
-    CHECK(queue.read() == p);
 }
 
 } // namespace packet

@@ -81,7 +81,7 @@ TEST_GROUP(udp) {
 };
 
 TEST(udp, one_sender_one_receiver_single_thread) {
-    packet::ConcurrentQueue rx_queue(0, true);
+    packet::ConcurrentQueue rx_queue;
 
     packet::Address tx_addr = new_address();
     packet::Address rx_addr = new_address();
@@ -113,7 +113,7 @@ TEST(udp, one_sender_one_receiver_single_thread) {
 }
 
 TEST(udp, one_sender_one_receiver_separate_threads) {
-    packet::ConcurrentQueue rx_queue(0, true);
+    packet::ConcurrentQueue rx_queue;
 
     packet::Address tx_addr = new_address();
     packet::Address rx_addr = new_address();
@@ -152,9 +152,9 @@ TEST(udp, one_sender_one_receiver_separate_threads) {
 }
 
 TEST(udp, one_sender_multiple_receivers) {
-    packet::ConcurrentQueue rx_queue1(0, true);
-    packet::ConcurrentQueue rx_queue2(0, true);
-    packet::ConcurrentQueue rx_queue3(0, true);
+    packet::ConcurrentQueue rx_queue1;
+    packet::ConcurrentQueue rx_queue2;
+    packet::ConcurrentQueue rx_queue3;
 
     packet::Address tx_addr = new_address();
 
@@ -211,7 +211,7 @@ TEST(udp, one_sender_multiple_receivers) {
 }
 
 TEST(udp, multiple_senders_one_receiver) {
-    packet::ConcurrentQueue rx_queue(0, true);
+    packet::ConcurrentQueue rx_queue;
 
     packet::Address tx_addr1 = new_address();
     packet::Address tx_addr2 = new_address();

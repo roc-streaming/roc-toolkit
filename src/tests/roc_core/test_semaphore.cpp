@@ -33,7 +33,7 @@ TEST(semaphore, 2_posts_2_pends) {
     sem.pend();
 }
 
-TEST(semaphore, try_pend) {
+TEST(semaphore, try_pend_zero_init) {
     Semaphore sem(0);
 
     CHECK(!sem.try_pend());
@@ -45,16 +45,7 @@ TEST(semaphore, try_pend) {
     CHECK(!sem.try_pend());
 }
 
-TEST(semaphore, wait) {
-    Semaphore sem(0);
-
-    sem.post();
-    sem.wait();
-
-    CHECK(sem.try_pend());
-}
-
-TEST(semaphore, non_zero_init_try_pend) {
+TEST(semaphore, try_pend_non_zero_init) {
     enum { Count = 5 };
 
     Semaphore sem(Count);
@@ -64,13 +55,6 @@ TEST(semaphore, non_zero_init_try_pend) {
     }
 
     CHECK(!sem.try_pend());
-}
-
-TEST(semaphore, non_zero_init_wait_pend) {
-    Semaphore sem(1);
-
-    sem.wait();
-    sem.pend();
 }
 
 } // namespace core

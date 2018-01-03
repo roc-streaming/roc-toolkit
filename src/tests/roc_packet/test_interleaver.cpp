@@ -11,9 +11,9 @@
 
 #include "roc_core/array.h"
 #include "roc_core/heap_allocator.h"
-#include "roc_packet/concurrent_queue.h"
 #include "roc_packet/interleaver.h"
 #include "roc_packet/packet_pool.h"
+#include "roc_packet/queue.h"
 
 namespace roc {
 namespace packet {
@@ -39,7 +39,7 @@ TEST_GROUP(interleaver) {
 
 // Fill Interleaver with multiple of its internal memory size.
 TEST(interleaver, read_write) {
-    ConcurrentQueue queue(0, false);
+    Queue queue;
     Interleaver intrlvr(queue, allocator, 10);
 
     CHECK(intrlvr.valid());
@@ -94,7 +94,7 @@ TEST(interleaver, read_write) {
 }
 
 TEST(interleaver, flush) {
-    ConcurrentQueue queue(0, false);
+    Queue queue;
     Interleaver intrlvr(queue, allocator, 10);
 
     CHECK(intrlvr.valid());

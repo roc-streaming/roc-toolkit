@@ -7,16 +7,14 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_packet/concurrent_queue.h
-//! @brief Concurrent blocking packet queue.
+//! @file roc_packet/queue.h
+//! @brief Packet queue.
 
-#ifndef ROC_PACKET_CONCURRENT_QUEUE_H_
-#define ROC_PACKET_CONCURRENT_QUEUE_H_
+#ifndef ROC_PACKET_QUEUE_H_
+#define ROC_PACKET_QUEUE_H_
 
 #include "roc_core/list.h"
-#include "roc_core/mutex.h"
 #include "roc_core/noncopyable.h"
-#include "roc_core/semaphore.h"
 #include "roc_packet/ireader.h"
 #include "roc_packet/iwriter.h"
 #include "roc_packet/packet.h"
@@ -24,15 +22,12 @@
 namespace roc {
 namespace packet {
 
-//! Concurrent blocking packet queue.
-class ConcurrentQueue : public IReader, public IWriter, public core::NonCopyable<> {
+//! Packet queue.
+class Queue : public IReader, public IWriter, public core::NonCopyable<> {
 public:
-    ConcurrentQueue();
-
     //! Read next packet.
-    //! @remarks
-    //!  Blocks until the queue becomes non-empty and returns the first
-    //!  packet from the queue.
+    //! @returns
+    //!  the first packet in the queue or null if there are no packets.
     virtual PacketPtr read();
 
     //! Add packet to the queue.
@@ -40,13 +35,14 @@ public:
     //!  Adds packet to the end of the queue.
     virtual void write(const PacketPtr& packet);
 
+    //! Get number of packets in queue.
+    size_t size() const;
+
 private:
-    core::Semaphore sem_;
-    core::Mutex mutex_;
     core::List<Packet> list_;
 };
 
 } // namespace packet
 } // namespace roc
 
-#endif // ROC_PACKET_CONCURRENT_QUEUE_H_
+#endif // ROC_PACKET_QUEUE_H_

@@ -7,36 +7,29 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_packet/concurrent_queue.h"
+#include "roc_packet/queue.h"
 
 namespace roc {
 namespace packet {
 
-ConcurrentQueue::ConcurrentQueue()
-    : sem_(0) {
-}
-
-PacketPtr ConcurrentQueue::read() {
-    sem_.pend();
-
-    core::Mutex::Lock lock(mutex_);
-
+PacketPtr Queue::read() {
     PacketPtr packet = list_.front();
-    if (packet) {
-        list_.remove(*packet);
+    if (!packet) {
+        return NULL;
     }
-
+    list_.remove(*packet);
     return packet;
 }
 
-void ConcurrentQueue::write(const PacketPtr& packet) {
-    if (packet) {
-        core::Mutex::Lock lock(mutex_);
-
-        list_.push_back(*packet);
+void Queue::write(const PacketPtr& packet) {
+    if (!packet) {
+        roc_panic("queue: null packet");
     }
+    list_.push_back(*packet);
+}
 
-    sem_.post();
+size_t Queue::size() const {
+    return list_.size();
 }
 
 } // namespace packet

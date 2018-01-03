@@ -10,8 +10,8 @@
 #include <CppUTest/TestHarness.h>
 
 #include "roc_core/heap_allocator.h"
-#include "roc_packet/concurrent_queue.h"
 #include "roc_packet/packet_pool.h"
+#include "roc_packet/queue.h"
 #include "roc_rtp/validator.h"
 
 namespace roc {
@@ -59,14 +59,14 @@ TEST_GROUP(validator) {
 };
 
 TEST(validator, empty) {
-    packet::ConcurrentQueue queue(0, false);
+    packet::Queue queue;
     Validator validator(queue, format, config);
 
     CHECK(!validator.read());
 }
 
 TEST(validator, normal) {
-    packet::ConcurrentQueue queue(0, false);
+    packet::Queue queue;
     Validator validator(queue, format, config);
 
     packet::PacketPtr p1 = new_packet(Pt1, Src1, 1, 1);
@@ -81,7 +81,7 @@ TEST(validator, normal) {
 }
 
 TEST(validator, payload_id_jump) {
-    packet::ConcurrentQueue queue(0, false);
+    packet::Queue queue;
     Validator validator(queue, format, config);
 
     packet::PacketPtr p1 = new_packet(Pt1, Src1, 1, 1);
@@ -96,7 +96,7 @@ TEST(validator, payload_id_jump) {
 }
 
 TEST(validator, source_id_jump) {
-    packet::ConcurrentQueue queue(0, false);
+    packet::Queue queue;
     Validator validator(queue, format, config);
 
     packet::PacketPtr p1 = new_packet(Pt1, Src1, 1, 1);
@@ -118,7 +118,7 @@ TEST(validator, seqnum_no_jump) {
         const packet::seqnum_t sn1 = sns[i];
         const packet::seqnum_t sn2 = packet::seqnum_t(sn1 + MaxSnJump);
 
-        packet::ConcurrentQueue queue(0, false);
+        packet::Queue queue;
         Validator validator(queue, format, config);
 
         packet::PacketPtr p1 = new_packet(Pt1, Src1, sn1, 1);
@@ -141,7 +141,7 @@ TEST(validator, seqnum_jump_up) {
         const packet::seqnum_t sn1 = sns[i];
         const packet::seqnum_t sn2 = packet::seqnum_t(sn1 + MaxSnJump + 1);
 
-        packet::ConcurrentQueue queue(0, false);
+        packet::Queue queue;
         Validator validator(queue, format, config);
 
         packet::PacketPtr p1 = new_packet(Pt1, Src1, sn1, 1);
@@ -164,7 +164,7 @@ TEST(validator, seqnum_jump_down) {
         const packet::seqnum_t sn1 = sns[i];
         const packet::seqnum_t sn2 = packet::seqnum_t(sn1 + MaxSnJump + 1);
 
-        packet::ConcurrentQueue queue(0, false);
+        packet::Queue queue;
         Validator validator(queue, format, config);
 
         packet::PacketPtr p1 = new_packet(Pt1, Src1, sn2, 1);
@@ -184,7 +184,7 @@ TEST(validator, seqnum_late) {
     const packet::seqnum_t sn2 = 50;
     const packet::seqnum_t sn3 = sn2 + MaxSnJump + 1;
 
-    packet::ConcurrentQueue queue(0, false);
+    packet::Queue queue;
     Validator validator(queue, format, config);
 
     packet::PacketPtr p1 = new_packet(Pt1, Src1, sn1, 1);
@@ -210,7 +210,7 @@ TEST(validator, timestamp_no_jump) {
         const packet::timestamp_t ts1 = tss[i];
         const packet::timestamp_t ts2 = ts1 + MaxTsJump;
 
-        packet::ConcurrentQueue queue(0, false);
+        packet::Queue queue;
         Validator validator(queue, format, config);
 
         packet::PacketPtr p1 = new_packet(Pt1, Src1, 1, ts1);
@@ -233,7 +233,7 @@ TEST(validator, timestamp_jump_up) {
         const packet::timestamp_t ts1 = tss[i];
         const packet::timestamp_t ts2 = ts1 + MaxTsJump + 10;
 
-        packet::ConcurrentQueue queue(0, false);
+        packet::Queue queue;
         Validator validator(queue, format, config);
 
         packet::PacketPtr p1 = new_packet(Pt1, Src1, 1, ts1);
@@ -256,7 +256,7 @@ TEST(validator, timestamp_jump_down) {
         const packet::timestamp_t ts1 = tss[i];
         const packet::timestamp_t ts2 = ts1 + MaxTsJump + 10;
 
-        packet::ConcurrentQueue queue(0, false);
+        packet::Queue queue;
         Validator validator(queue, format, config);
 
         packet::PacketPtr p1 = new_packet(Pt1, Src1, 1, ts2);
@@ -276,7 +276,7 @@ TEST(validator, timestamp_late) {
     const packet::timestamp_t ts2 = 50;
     const packet::timestamp_t ts3 = ts2 + MaxTsJump + 1;
 
-    packet::ConcurrentQueue queue(0, false);
+    packet::Queue queue;
     Validator validator(queue, format, config);
 
     packet::PacketPtr p1 = new_packet(Pt1, Src1, 2, ts1);

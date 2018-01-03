@@ -10,8 +10,8 @@
 #include <CppUTest/TestHarness.h>
 
 #include "roc_core/heap_allocator.h"
-#include "roc_packet/concurrent_queue.h"
 #include "roc_packet/packet_pool.h"
+#include "roc_packet/queue.h"
 #include "roc_packet/router.h"
 
 namespace roc {
@@ -53,7 +53,7 @@ TEST(router, one_route) {
 
     CHECK(router.valid());
 
-    ConcurrentQueue queue(0, false);
+    Queue queue;
     CHECK(router.add_route(queue, Packet::FlagAudio));
 
     PacketPtr pa1 = new_packet(0, Packet::FlagAudio);
@@ -84,10 +84,10 @@ TEST(router, two_routes) {
 
     CHECK(router.valid());
 
-    ConcurrentQueue queue_a(0, false);
+    Queue queue_a;
     CHECK(router.add_route(queue_a, Packet::FlagAudio));
 
-    ConcurrentQueue queue_f(0, false);
+    Queue queue_f;
     CHECK(router.add_route(queue_f, Packet::FlagFEC));
 
     PacketPtr pa1 = new_packet(0, Packet::FlagAudio);
@@ -122,7 +122,7 @@ TEST(router, max_routes) {
 
     CHECK(router.valid());
 
-    ConcurrentQueue queue(0, false);
+    Queue queue;
 
     for (size_t n = 0; n < MaxRoutes; n++) {
         CHECK(router.add_route(queue, Packet::FlagAudio));
@@ -136,7 +136,7 @@ TEST(router, same_route_different_sources) {
 
     CHECK(router.valid());
 
-    ConcurrentQueue queue(0, false);
+    Queue queue;
     CHECK(router.add_route(queue, Packet::FlagAudio));
 
     router.write(new_packet(11, Packet::FlagAudio));
@@ -154,10 +154,10 @@ TEST(router, different_routes_same_source) {
 
     CHECK(router.valid());
 
-    ConcurrentQueue queue_a(0, false);
+    Queue queue_a;
     CHECK(router.add_route(queue_a, Packet::FlagAudio));
 
-    ConcurrentQueue queue_f(0, false);
+    Queue queue_f;
     CHECK(router.add_route(queue_f, Packet::FlagFEC));
 
     router.write(new_packet(11, Packet::FlagAudio));
@@ -172,10 +172,10 @@ TEST(router, different_routes_different_sources) {
 
     CHECK(router.valid());
 
-    ConcurrentQueue queue_a(0, false);
+    Queue queue_a;
     CHECK(router.add_route(queue_a, Packet::FlagAudio));
 
-    ConcurrentQueue queue_f(0, false);
+    Queue queue_f;
     CHECK(router.add_route(queue_f, Packet::FlagFEC));
 
     router.write(new_packet(11, Packet::FlagAudio));

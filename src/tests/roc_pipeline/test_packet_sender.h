@@ -13,8 +13,8 @@
 #include <CppUTest/TestHarness.h>
 
 #include "roc_core/noncopyable.h"
-#include "roc_packet/concurrent_queue.h"
 #include "roc_packet/iwriter.h"
+#include "roc_packet/queue.h"
 
 namespace roc {
 namespace pipeline {
@@ -23,8 +23,7 @@ class PacketSender : public packet::IWriter, core::NonCopyable<> {
 public:
     PacketSender(packet::PacketPool& pool, packet::IWriter& writer)
         : pool_(pool)
-        , writer_(writer)
-        , queue_(0, false) {
+        , writer_(writer) {
     }
 
     virtual void write(const packet::PacketPtr& pp) {
@@ -62,7 +61,7 @@ private:
 
     packet::PacketPool& pool_;
     packet::IWriter& writer_;
-    packet::ConcurrentQueue queue_;
+    packet::Queue queue_;
 };
 
 } // namespace pipeline

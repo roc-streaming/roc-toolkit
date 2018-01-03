@@ -10,9 +10,9 @@
 #include <CppUTest/TestHarness.h>
 
 #include "roc_core/heap_allocator.h"
-#include "roc_packet/concurrent_queue.h"
 #include "roc_packet/delayed_reader.h"
 #include "roc_packet/packet_pool.h"
+#include "roc_packet/queue.h"
 
 namespace roc {
 namespace packet {
@@ -40,7 +40,7 @@ TEST_GROUP(delayed_reader) {
 };
 
 TEST(delayed_reader, no_delay) {
-    ConcurrentQueue queue(0, false);
+    Queue queue;
     DelayedReader dr(queue, 0);
 
     CHECK(!dr.read());
@@ -53,7 +53,7 @@ TEST(delayed_reader, no_delay) {
 }
 
 TEST(delayed_reader, delay) {
-    ConcurrentQueue queue(0, false);
+    Queue queue;
     DelayedReader dr(queue, NumSamples * (NumPackets - 1));
 
     PacketPtr packets[NumPackets];
@@ -80,7 +80,7 @@ TEST(delayed_reader, delay) {
 }
 
 TEST(delayed_reader, instant) {
-    ConcurrentQueue queue(0, false);
+    Queue queue;
     DelayedReader dr(queue, NumSamples * (NumPackets - 1));
 
     PacketPtr packets[NumPackets];
@@ -98,7 +98,7 @@ TEST(delayed_reader, instant) {
 }
 
 TEST(delayed_reader, trim) {
-    ConcurrentQueue queue(0, false);
+    Queue queue;
     DelayedReader dr(queue, NumSamples * (NumPackets - 1));
 
     PacketPtr packets[NumPackets * 2];
@@ -116,7 +116,7 @@ TEST(delayed_reader, trim) {
 }
 
 TEST(delayed_reader, late_duplicates) {
-    ConcurrentQueue queue(0, false);
+    Queue queue;
     DelayedReader dr(queue, NumSamples * (NumPackets - 1));
 
     PacketPtr packets[NumPackets];

@@ -36,7 +36,7 @@ TEST(transceiver, noop) {
 }
 
 TEST(transceiver, bind_any) {
-    packet::ConcurrentQueue queue(0, true);
+    packet::ConcurrentQueue queue;
 
     Transceiver trx(packet_pool, buffer_pool, allocator);
 
@@ -56,7 +56,7 @@ TEST(transceiver, bind_any) {
 }
 
 TEST(transceiver, bind_lo) {
-    packet::ConcurrentQueue queue(0, true);
+    packet::ConcurrentQueue queue;
 
     Transceiver trx(packet_pool, buffer_pool, allocator);
 
@@ -107,7 +107,7 @@ TEST(transceiver, start_start) {
 }
 
 TEST(transceiver, add_start_stop) {
-    packet::ConcurrentQueue queue(0, true);
+    packet::ConcurrentQueue queue;
 
     Transceiver trx(packet_pool, buffer_pool, allocator);
 
@@ -132,7 +132,7 @@ TEST(transceiver, add_start_stop) {
 }
 
 TEST(transceiver, start_add_stop) {
-    packet::ConcurrentQueue queue(0, true);
+    packet::ConcurrentQueue queue;
 
     Transceiver trx(packet_pool, buffer_pool, allocator);
 
@@ -157,7 +157,7 @@ TEST(transceiver, start_add_stop) {
 }
 
 TEST(transceiver, add_remove) {
-    packet::ConcurrentQueue queue(0, true);
+    packet::ConcurrentQueue queue;
 
     Transceiver trx(packet_pool, buffer_pool, allocator);
 
@@ -185,7 +185,7 @@ TEST(transceiver, add_remove) {
 }
 
 TEST(transceiver, start_add_remove_stop) {
-    packet::ConcurrentQueue queue(0, true);
+    packet::ConcurrentQueue queue;
 
     Transceiver trx(packet_pool, buffer_pool, allocator);
 
@@ -218,7 +218,7 @@ TEST(transceiver, start_add_remove_stop) {
 }
 
 TEST(transceiver, add_start_stop_remove) {
-    packet::ConcurrentQueue queue(0, true);
+    packet::ConcurrentQueue queue;
 
     Transceiver trx(packet_pool, buffer_pool, allocator);
 
@@ -251,7 +251,7 @@ TEST(transceiver, add_start_stop_remove) {
 }
 
 TEST(transceiver, add_duplicate) {
-    packet::ConcurrentQueue queue(0, true);
+    packet::ConcurrentQueue queue;
 
     Transceiver trx(packet_pool, buffer_pool, allocator);
 

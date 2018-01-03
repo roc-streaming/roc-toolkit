@@ -14,8 +14,8 @@
 #include "roc_audio/packetizer.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/heap_allocator.h"
-#include "roc_packet/concurrent_queue.h"
 #include "roc_packet/packet_pool.h"
+#include "roc_packet/queue.h"
 #include "roc_rtp/composer.h"
 #include "roc_rtp/pcm_decoder.h"
 #include "roc_rtp/pcm_encoder.h"
@@ -156,7 +156,7 @@ TEST_GROUP(packetizer){};
 TEST(packetizer, one_buffer_one_packet) {
     enum { NumFrames = 10 };
 
-    packet::ConcurrentQueue packet_queue(0, false);
+    packet::Queue packet_queue;
 
     Packetizer packetizer(packet_queue, rtp_composer, pcm_encoder, packet_pool,
                           byte_buffer_pool, ChMask, SamplesPerPacket, PayloadType);
@@ -178,7 +178,7 @@ TEST(packetizer, one_buffer_one_packet) {
 TEST(packetizer, one_buffer_multiple_packets) {
     enum { NumPackets = 10 };
 
-    packet::ConcurrentQueue packet_queue(0, false);
+    packet::Queue packet_queue;
 
     Packetizer packetizer(packet_queue, rtp_composer, pcm_encoder, packet_pool,
                           byte_buffer_pool, ChMask, SamplesPerPacket, PayloadType);
@@ -200,7 +200,7 @@ TEST(packetizer, multiple_buffers_one_packet) {
 
     CHECK(SamplesPerPacket % FramesPerPacket == 0);
 
-    packet::ConcurrentQueue packet_queue(0, false);
+    packet::Queue packet_queue;
 
     Packetizer packetizer(packet_queue, rtp_composer, pcm_encoder, packet_pool,
                           byte_buffer_pool, ChMask, SamplesPerPacket, PayloadType);
@@ -228,7 +228,7 @@ TEST(packetizer, multiple_buffers_multiple_packets) {
         NumPackets = (NumSamples * NumFrames / SamplesPerPacket)
     };
 
-    packet::ConcurrentQueue packet_queue(0, false);
+    packet::Queue packet_queue;
 
     Packetizer packetizer(packet_queue, rtp_composer, pcm_encoder, packet_pool,
                           byte_buffer_pool, ChMask, SamplesPerPacket, PayloadType);
@@ -250,7 +250,7 @@ TEST(packetizer, multiple_buffers_multiple_packets) {
 TEST(packetizer, flush) {
     enum { Padding = 10 };
 
-    packet::ConcurrentQueue packet_queue(0, false);
+    packet::Queue packet_queue;
 
     Packetizer packetizer(packet_queue, rtp_composer, pcm_encoder, packet_pool,
                           byte_buffer_pool, ChMask, SamplesPerPacket, PayloadType);

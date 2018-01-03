@@ -16,7 +16,7 @@
 #include <uv.h>
 
 #include "roc_core/noncopyable.h"
-#include "roc_core/panic.h"
+#include "roc_core/stddefs.h"
 
 namespace roc {
 namespace core {
@@ -47,13 +47,6 @@ public:
     //! @returns
     //!  true if the counter was decremented.
     bool try_pend();
-
-    //! Wait until counter becomes non-zero.
-    //! @remarks
-    //!  Blocks until counter becomes non-zero, but doesn't decrement it. It's not
-    //!  guaranteed that the counter is still non-zero when the function returns
-    //!  if there are other threads that may call pend() or try_pend().
-    void wait();
 
 private:
     uv_mutex_t mutex_;

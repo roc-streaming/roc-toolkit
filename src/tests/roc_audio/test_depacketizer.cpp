@@ -14,8 +14,8 @@
 #include "roc_audio/iencoder.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/heap_allocator.h"
-#include "roc_packet/concurrent_queue.h"
 #include "roc_packet/packet_pool.h"
+#include "roc_packet/queue.h"
 #include "roc_rtp/composer.h"
 #include "roc_rtp/pcm_decoder.h"
 #include "roc_rtp/pcm_encoder.h"
@@ -110,7 +110,7 @@ TEST_GROUP(depacketizer) {
 };
 
 TEST(depacketizer, one_packet_one_read) {
-    packet::ConcurrentQueue queue(0, false);
+    packet::Queue queue;
     Depacketizer dp(queue, pcm_decoder, ChMask, false);
 
     queue.write(new_packet(0, 0.11f));
@@ -119,7 +119,7 @@ TEST(depacketizer, one_packet_one_read) {
 }
 
 TEST(depacketizer, one_packet_multiple_reads) {
-    packet::ConcurrentQueue queue(0, false);
+    packet::Queue queue;
     Depacketizer dp(queue, pcm_decoder, ChMask, false);
 
     queue.write(new_packet(0, 0.11f));
@@ -132,7 +132,7 @@ TEST(depacketizer, one_packet_multiple_reads) {
 TEST(depacketizer, multiple_packets_one_read) {
     enum { NumPackets = 10 };
 
-    packet::ConcurrentQueue queue(0, false);
+    packet::Queue queue;
     Depacketizer dp(queue, pcm_decoder, ChMask, false);
 
     for (packet::timestamp_t n = 0; n < NumPackets; n++) {
@@ -147,7 +147,7 @@ TEST(depacketizer, multiple_packets_multiple_reads) {
 
     CHECK(SamplesPerPacket % FramesPerPacket== 0);
 
-    packet::ConcurrentQueue queue(0, false);
+    packet::Queue queue;
     Depacketizer dp(queue, pcm_decoder, ChMask, false);
 
     queue.write(new_packet(1 * SamplesPerPacket, 0.11f));
@@ -168,7 +168,7 @@ TEST(depacketizer, multiple_packets_multiple_reads) {
 }
 
 TEST(depacketizer, timestamp_overflow) {
-    packet::ConcurrentQueue queue(0, false);
+    packet::Queue queue;
     Depacketizer dp(queue, pcm_decoder, ChMask, false);
 
     const packet::timestamp_t ts2 = 0;
@@ -185,7 +185,7 @@ TEST(depacketizer, timestamp_overflow) {
 }
 
 TEST(depacketizer, drop_late_packets) {
-    packet::ConcurrentQueue queue(0, false);
+    packet::Queue queue;
     Depacketizer dp(queue, pcm_decoder, ChMask, false);
 
     const packet::timestamp_t ts1 = SamplesPerPacket * 2;
@@ -201,7 +201,7 @@ TEST(depacketizer, drop_late_packets) {
 }
 
 TEST(depacketizer, drop_late_packets_timestamp_overflow) {
-    packet::ConcurrentQueue queue(0, false);
+    packet::Queue queue;
     Depacketizer dp(queue, pcm_decoder, ChMask, false);
 
     const packet::timestamp_t ts1 = 0;
@@ -217,14 +217,14 @@ TEST(depacketizer, drop_late_packets_timestamp_overflow) {
 }
 
 TEST(depacketizer, zeros_no_packets) {
-    packet::ConcurrentQueue queue(0, false);
+    packet::Queue queue;
     Depacketizer dp(queue, pcm_decoder, ChMask, false);
 
     expect_output(dp, SamplesPerPacket, 0.00f);
 }
 
 TEST(depacketizer, zeros_no_next_packet) {
-    packet::ConcurrentQueue queue(0, false);
+    packet::Queue queue;
     Depacketizer dp(queue, pcm_decoder, ChMask, false);
 
     queue.write(new_packet(0, 0.11f));
@@ -234,7 +234,7 @@ TEST(depacketizer, zeros_no_next_packet) {
 }
 
 TEST(depacketizer, zeros_between_packets) {
-    packet::ConcurrentQueue queue(0, false);
+    packet::Queue queue;
     Depacketizer dp(queue, pcm_decoder, ChMask, false);
 
     queue.write(new_packet(1 * SamplesPerPacket, 0.11f));
@@ -246,7 +246,7 @@ TEST(depacketizer, zeros_between_packets) {
 }
 
 TEST(depacketizer, zeros_between_packets_timestamp_overflow) {
-    packet::ConcurrentQueue queue(0, false);
+    packet::Queue queue;
     Depacketizer dp(queue, pcm_decoder, ChMask, false);
 
     const packet::timestamp_t ts2 = 0;
@@ -264,7 +264,7 @@ TEST(depacketizer, zeros_between_packets_timestamp_overflow) {
 TEST(depacketizer, zeros_after_packet) {
     CHECK(SamplesPerPacket % 2 == 0);
 
-    packet::ConcurrentQueue queue(0, false);
+    packet::Queue queue;
     Depacketizer dp(queue, pcm_decoder, ChMask, false);
 
     queue.write(new_packet(0, 0.11f));
@@ -285,7 +285,7 @@ TEST(depacketizer, zeros_after_packet) {
 }
 
 TEST(depacketizer, packet_after_zeros) {
-    packet::ConcurrentQueue queue(0, false);
+    packet::Queue queue;
     Depacketizer dp(queue, pcm_decoder, ChMask, false);
 
     expect_output(dp, SamplesPerPacket, 0.00f);
@@ -298,7 +298,7 @@ TEST(depacketizer, packet_after_zeros) {
 TEST(depacketizer, overlapping_packets) {
     CHECK(SamplesPerPacket % 2 == 0);
 
-    packet::ConcurrentQueue queue(0, false);
+    packet::Queue queue;
     Depacketizer dp(queue, pcm_decoder, ChMask, false);
 
     packet::timestamp_t ts1 = 0;
@@ -317,7 +317,7 @@ TEST(depacketizer, overlapping_packets) {
 TEST(depacketizer, frame_flags_empty_full) {
     enum { PacketsPerFrame = 3 };
 
-    packet::ConcurrentQueue queue(0, false);
+    packet::Queue queue;
     Depacketizer dp(queue, pcm_decoder, ChMask, false);
 
     packet::PacketPtr packets[][PacketsPerFrame] = {
@@ -384,7 +384,7 @@ TEST(depacketizer, frame_flags_empty_full) {
 }
 
 TEST(depacketizer, frame_flags_packet_drops) {
-    packet::ConcurrentQueue queue(0, false);
+    packet::Queue queue;
     Depacketizer dp(queue, pcm_decoder, ChMask, false);
 
     packet::PacketPtr packets[] = {
@@ -424,7 +424,7 @@ TEST(depacketizer, timestamp) {
 
     CHECK(SamplesPerPacket % FramesPerPacket== 0);
 
-    packet::ConcurrentQueue queue(0, false);
+    packet::Queue queue;
     Depacketizer dp(queue, pcm_decoder, ChMask, false);
 
     for (size_t n = 0; n < NumPackets * FramesPerPacket; n++) {

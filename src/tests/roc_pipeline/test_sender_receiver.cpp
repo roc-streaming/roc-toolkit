@@ -11,8 +11,8 @@
 
 #include "roc_core/buffer_pool.h"
 #include "roc_core/heap_allocator.h"
-#include "roc_packet/concurrent_queue.h"
 #include "roc_packet/packet_pool.h"
+#include "roc_packet/queue.h"
 #include "roc_pipeline/receiver.h"
 #include "roc_pipeline/sender.h"
 #include "roc_rtp/format_map.h"
@@ -76,7 +76,7 @@ rtp::FormatMap format_map;
 
 TEST_GROUP(sender_receiver) {
     void send_receive(int flags, size_t num_sessions) {
-        packet::ConcurrentQueue queue(0, false);
+        packet::Queue queue;
 
         PortConfig source_port = source_port_config(flags);
         PortConfig repair_port = repair_port_config(flags);

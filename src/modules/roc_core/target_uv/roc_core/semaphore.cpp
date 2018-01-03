@@ -8,6 +8,7 @@
  */
 
 #include "roc_core/semaphore.h"
+#include "roc_core/panic.h"
 
 namespace roc {
 namespace core {
@@ -64,16 +65,6 @@ bool Semaphore::try_pend() {
     uv_mutex_unlock(&mutex_);
 
     return ret;
-}
-
-void Semaphore::wait() {
-    uv_mutex_lock(&mutex_);
-
-    while (counter_ == 0) {
-        uv_cond_wait(&cond_, &mutex_);
-    }
-
-    uv_mutex_unlock(&mutex_);
 }
 
 } // namespace core
