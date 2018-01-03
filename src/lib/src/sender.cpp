@@ -145,6 +145,8 @@ int roc_sender_bind(roc_sender* sender, struct sockaddr* src_addr) {
         return -1;
     }
 
+    core::Mutex::Lock lock(sender->mutex);
+
     if (sender->sender) {
         roc_log(LogError, "roc_sender_bind: can't be called after first write");
         return -1;
@@ -189,6 +191,8 @@ int roc_sender_connect(roc_sender* sender,
         return -1;
     }
 
+    core::Mutex::Lock lock(sender->mutex);
+
     if (sender->sender) {
         roc_log(LogError, "roc_sender_connect: can't be called after first write");
         return -1;
@@ -214,6 +218,8 @@ roc_sender_write(roc_sender* sender, const float* samples, const size_t n_sample
         roc_log(LogError, "roc_sender_write: invalid arguments: sender == NULL");
         return -1;
     }
+
+    core::Mutex::Lock lock(sender->mutex);
 
     if (!sender->writer) {
         roc_log(LogError, "roc_sender_write: sender is not properly bound");

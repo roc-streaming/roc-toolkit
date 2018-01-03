@@ -18,6 +18,7 @@
 #include "roc_core/atomic.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/heap_allocator.h"
+#include "roc_core/mutex.h"
 #include "roc_core/unique_ptr.h"
 #include "roc_netio/transceiver.h"
 #include "roc_packet/address.h"
@@ -63,6 +64,8 @@ struct roc_sender {
     roc::packet::IWriter* writer;
 
     roc::packet::Address address;
+
+    roc::core::Mutex mutex;
 };
 
 struct roc_receiver {
