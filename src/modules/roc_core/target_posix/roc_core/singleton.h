@@ -24,8 +24,7 @@ namespace roc {
 namespace core {
 
 //! Singleton.
-template <class T>
-class Singleton : public core::NonCopyable<> {
+template <class T> class Singleton : public core::NonCopyable<> {
 public:
     //! Get singleton instance.
     static T& instance() {
@@ -42,7 +41,7 @@ private:
     };
 
     static void create_() {
-        instance_ = new(storage_.mem) T();
+        instance_ = new (storage_.mem) T();
     }
 
     static pthread_once_t once_;

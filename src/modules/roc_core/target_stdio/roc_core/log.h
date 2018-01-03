@@ -23,7 +23,8 @@
 #endif
 
 //! Print message to log.
-#define roc_log(...) ::roc::core::Logger::instance().print(ROC_STRINGIZE(ROC_MODULE), __VA_ARGS__)
+#define roc_log(...)                                                                     \
+    ::roc::core::Logger::instance().print(ROC_STRINGIZE(ROC_MODULE), __VA_ARGS__)
 
 namespace roc {
 

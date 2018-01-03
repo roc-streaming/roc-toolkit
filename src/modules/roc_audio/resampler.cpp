@@ -300,7 +300,8 @@ sample_t Resampler::sinc_(const fixedpoint_t x, const float fract_x) {
     const sample_t hl = sinc_table_ptr_[(x >> (FRACT_BIT_COUNT - window_interp_bits_))];
 
     // Tables index next to x
-    const sample_t hh = sinc_table_ptr_[(x >> (FRACT_BIT_COUNT - window_interp_bits_)) + 1];
+    const sample_t hh =
+        sinc_table_ptr_[(x >> (FRACT_BIT_COUNT - window_interp_bits_)) + 1];
 
     const sample_t result = hl + fract_x * (hh - hl);
 

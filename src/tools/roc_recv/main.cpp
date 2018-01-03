@@ -164,7 +164,8 @@ int main(int argc, char** argv) {
             roc_log(LogError, "invalid --resampler-interp: should be > 0");
             return 1;
         }
-        config.default_session.resampler.window_interp = (size_t)args.resampler_interp_arg;
+        config.default_session.resampler.window_interp =
+            (size_t)args.resampler_interp_arg;
     }
 
     if (args.resampler_window_given) {
