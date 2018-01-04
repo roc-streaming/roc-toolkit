@@ -179,17 +179,17 @@ void Player::loop_() {
     size_t clips = 0;
 
     while (!stop_) {
-        if (oneshot_ && n_bufs_ != 0) {
-            if (input_->status() == pipeline::IReceiver::Inactive) {
+        if (input_->status() == pipeline::IReceiver::Inactive) {
+            if (oneshot_ && n_bufs_ != 0) {
                 roc_log(LogInfo, "player: got inactive status, exiting");
                 return;
             }
+        } else {
+            n_bufs_++;
         }
 
         audio::Frame frame(frame_buffer_.data(), frame_buffer_.size());
         input_->read(frame);
-
-        n_bufs_++;
 
         const audio::sample_t* samples = frame.data();
         size_t n_samples = frame.size();
