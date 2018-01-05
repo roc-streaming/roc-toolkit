@@ -834,6 +834,7 @@ if compiler == 'clang':
             '-Wno-used-but-marked-unused',
             '-Wno-format-nonliteral',
             '-Wno-variadic-macros',
+            '-Wno-disabled-macro-expansion',
             '-Wno-system-headers',
         ]})
 

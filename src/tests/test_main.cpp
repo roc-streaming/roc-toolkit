@@ -12,8 +12,11 @@
 
 #include "roc_core/exit.h"
 #include "roc_core/log.h"
+#include "roc_core/signal_handler.h"
 
 int main(int argc, const char** argv) {
+    roc::core::SignalHandler sig_handler;
+
     CommandLineArguments args(argc, argv);
 
     if (args.parse(NULL) && args.isVerbose()) {
