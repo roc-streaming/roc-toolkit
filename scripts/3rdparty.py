@@ -130,7 +130,7 @@ def isgnu(toolchain):
     except:
         return False
 
-def makeflags(workdir, toolchain, deplist, cflags='', ldflags=''):
+def makeflags(workdir, toolchain, deplist, cflags='', ldflags='', variant=''):
     incdirs=[]
     libdirs=[]
 
@@ -139,10 +139,19 @@ def makeflags(workdir, toolchain, deplist, cflags='', ldflags=''):
         libdirs += [os.path.join(workdir, 'build', dep, 'lib')]
 
     cflags = ([cflags] if cflags else []) + ['-I%s' % path for path in incdirs]
-
     ldflags = ['-L%s' % path for path in libdirs] + ([ldflags] if ldflags else [])
 
-    if isgnu(toolchain):
+    gnu = isgnu(toolchain)
+
+    if variant == 'debug':
+        if gnu:
+            cflags += ['-ggdb']
+        else:
+            cflags += ['-g']
+    elif variant == 'release':
+        cflags += ['-O2']
+
+    if gnu:
         ldflags += ['-Wl,-rpath-link=%s' % path for path in libdirs]
 
     return ' '.join([
@@ -356,7 +365,7 @@ elif name == 'sox':
     os.chdir('sox-%s' % ver)
     execute('./configure --host=%s %s %s' % (
         toolchain,
-        makeflags(workdir, toolchain, deplist, cflags='-fvisibility=hidden'),
+        makeflags(workdir, toolchain, deplist, cflags='-fvisibility=hidden', variant=variant),
         ' '.join([
             '--enable-static',
             '--disable-shared',
