@@ -17,16 +17,6 @@
 namespace roc {
 namespace core {
 
-namespace {
-
-PanicHandler panic_handler = NULL;
-
-} // namespace
-
-void set_panic_handler(PanicHandler handler) {
-    panic_handler = handler;
-}
-
 void panic(const char* module, const char* file, int line, const char* format, ...) {
     enum { MaxSize = 128 };
 
@@ -36,10 +26,6 @@ void panic(const char* module, const char* file, int line, const char* format, .
     va_start(args, format);
     vsnprintf(message, sizeof(message) - 1, format, args);
     va_end(args);
-
-    if (panic_handler) {
-        panic_handler(message);
-    }
 
     fprintf(stderr, "\n%s:%d: error: roc_panic() called\n\n", file, line);
     fprintf(stderr, "PANIC: %s: %s\n\n", module, message);

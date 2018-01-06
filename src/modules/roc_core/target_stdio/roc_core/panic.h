@@ -50,17 +50,6 @@ namespace core {
 void panic(const char* module, const char* file, int line, const char* format, ...)
     ROC_ATTR_NOTHROW ROC_ATTR_NORETURN ROC_ATTR_PRINTF(4, 5);
 
-//! Panic handler.
-typedef void (*PanicHandler)(const char* message);
-
-//! Set panic handler.
-//!
-//! @remarks
-//!  If @p handler is not NULL, panic message will be passed to the handler.
-//!  Otherwise, panic message is printed to stderr and the program aborted.
-//!  If the handler returns, program is aborted anyway.
-void set_panic_handler(PanicHandler handler);
-
 } // namespace core
 } // namespace roc
 
