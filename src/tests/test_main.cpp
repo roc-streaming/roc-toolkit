@@ -10,12 +10,12 @@
 #include <CppUTest/CommandLineArguments.h>
 #include <CppUTest/CommandLineTestRunner.h>
 
+#include "roc_core/crash.h"
 #include "roc_core/exit.h"
 #include "roc_core/log.h"
-#include "roc_core/signal_handler.h"
 
 int main(int argc, const char** argv) {
-    roc::core::SignalHandler sig_handler;
+    roc::core::CrashHandler crash_handler;
 
     CommandLineArguments args(argc, argv);
 
@@ -29,7 +29,7 @@ int main(int argc, const char** argv) {
 
     const int code = CommandLineTestRunner::RunAllTests(argc, argv);
     if (code != 0) {
-        roc::core::exit_immediately(code);
+        roc::core::fast_exit(code);
     }
 
     return 0;

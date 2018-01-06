@@ -7,30 +7,34 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_core/target_posix/roc_core/signal_handler.h
-//! @brief Signal handler.
+//! @file roc_core/target_posix/roc_core/crash.h
+//! @brief Crash handling.
 
-#ifndef ROC_CORE_SIGNAL_HANDLER_H_
-#define ROC_CORE_SIGNAL_HANDLER_H_
+#ifndef ROC_CORE_CRASH_H_
+#define ROC_CORE_CRASH_H_
 
 #include <signal.h>
 
+#include "roc_core/attributes.h"
 #include "roc_core/noncopyable.h"
 
 namespace roc {
 namespace core {
 
-//! Signal handler.
-class SignalHandler : public core::NonCopyable<> {
+//! Report a crash and abort application.
+void crash(const char* message) ROC_ATTR_NORETURN;
+
+//! Crash handler.
+class CrashHandler : public core::NonCopyable<> {
 public:
     //! Install signal handlers.
-    SignalHandler();
+    CrashHandler();
 
     //! Restore signal handlers.
-    ~SignalHandler();
+    ~CrashHandler();
 
 private:
-    void crash_handler_(int sig);
+    void install_(int sig);
 
     enum { MaxSigs = 8 };
 
@@ -42,4 +46,4 @@ private:
 } // namespace core
 } // namespace roc
 
-#endif // ROC_CORE_SIGNAL_HANDLER_H_
+#endif // ROC_CORE_CRASH_H_

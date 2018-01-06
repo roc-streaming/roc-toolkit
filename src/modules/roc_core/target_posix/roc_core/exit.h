@@ -19,7 +19,7 @@ namespace roc {
 namespace core {
 
 //! Terminate process immediately without calling destructors.
-void exit_immediately(int code) ROC_ATTR_NORETURN;
+void fast_exit(int code) ROC_ATTR_NORETURN;
 
 } // namespace core
 } // namespace roc

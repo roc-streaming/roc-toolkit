@@ -7,9 +7,9 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+#include "roc_core/crash.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_core/log.h"
-#include "roc_core/signal_handler.h"
 #include "roc_netio/transceiver.h"
 #include "roc_packet/address_to_str.h"
 #include "roc_packet/parse_address.h"
@@ -28,7 +28,7 @@ enum { MaxPacketSize = 2048, MaxFrameSize = 65 * 1024 };
 } // namespace
 
 int main(int argc, char** argv) {
-    core::SignalHandler sig_handler;
+    core::CrashHandler crash_handler;
 
     gengetopt_args_info args;
 

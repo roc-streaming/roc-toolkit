@@ -14,7 +14,7 @@
 namespace roc {
 namespace core {
 
-void exit_immediately(int code) {
+void fast_exit(int code) {
     _exit(code);
 }
 

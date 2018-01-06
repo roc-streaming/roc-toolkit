@@ -17,9 +17,21 @@ namespace roc {
 namespace core {
 
 //! Print backtrace to stderr.
-//! @note
-//!  On Linux/GCC, this requires -rdynamic option, which is enabled in debug builds.
+//! @remarks
+//!  This function tries to performs symbol demangling, which uses signal-unsafe
+//!  functions and works only with -rdynamic option (enabled in debug builds).
 void print_backtrace();
+
+//! Print backtrace to stderr (emergency mode).
+//! @remarks
+//!  This function does not use signal-unsafe functions and doesn't perform
+//!  symbol demangling for this reason.
+void print_emergency_backtrace();
+
+//! Print string to stderr (emergency mode).
+//! @remarks
+//!  This function does not use signal-unsafe functions.
+void print_emergency_string(const char* str);
 
 } // namespace core
 } // namespace roc
