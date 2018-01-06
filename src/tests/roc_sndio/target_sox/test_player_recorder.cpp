@@ -52,14 +52,25 @@ public:
     }
 
     virtual void read(audio::Frame& frame) {
-        memcpy(frame.data(), samples_ + pos_, frame.size() * sizeof(audio::sample_t));
-        pos_ += frame.size();
+        size_t ns = frame.size();
+        if (ns > size_ - pos_) {
+            ns = size_ - pos_;
+        }
+
+        if (ns > 0) {
+            memcpy(frame.data(), samples_ + pos_, ns * sizeof(audio::sample_t));
+            pos_ += ns;
+        }
+
+        if (ns < frame.size()) {
+            memset(frame.data() + ns, 0, (frame.size() - ns) * sizeof(audio::sample_t));
+        }
     }
 
-    void add(size_t size) {
-        CHECK(size_ + size < MaxSz);
+    void add(size_t sz) {
+        CHECK(size_ + sz <= MaxSz);
 
-        for (size_t n = 0; n < size; n++) {
+        for (size_t n = 0; n < sz; n++) {
             samples_[size_] = nth_sample(size_);
             size_++;
         }
@@ -84,7 +95,7 @@ public:
     }
 
     virtual void write(audio::Frame& frame) {
-        CHECK(pos_ + frame.size() < MaxSz);
+        CHECK(pos_ + frame.size() <= MaxSz);
 
         memcpy(samples_ + pos_, frame.data(), frame.size() * sizeof(audio::sample_t));
         pos_ += frame.size();
