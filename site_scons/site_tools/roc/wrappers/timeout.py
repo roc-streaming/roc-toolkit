@@ -27,7 +27,11 @@ timer = threading.Timer(timeout, trap)
 timer.start()
 
 try:
-    os._exit(proc.wait())
+    ret = proc.wait()
+    if ret >= 0:
+        os._exit(ret)
+    else:
+        os.kill(os.getpid(), -ret)
 except:
     proc.terminate()
-    os._exit(1)
+    os._exit(127)
