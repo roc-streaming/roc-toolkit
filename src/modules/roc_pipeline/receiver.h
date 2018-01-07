@@ -16,11 +16,11 @@
 #include "roc_audio/ireader.h"
 #include "roc_audio/mixer.h"
 #include "roc_core/buffer_pool.h"
+#include "roc_core/cond.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/list.h"
 #include "roc_core/mutex.h"
 #include "roc_core/noncopyable.h"
-#include "roc_core/trigger.h"
 #include "roc_core/unique_ptr.h"
 #include "roc_packet/ireader.h"
 #include "roc_packet/iwriter.h"
@@ -108,8 +108,7 @@ private:
 
     core::Mutex control_mutex_;
     core::Mutex pipeline_mutex_;
-
-    core::Trigger active_;
+    core::Cond active_cond_;
 };
 
 } // namespace pipeline

@@ -16,11 +16,11 @@
 #include <uv.h>
 
 #include "roc_core/buffer_pool.h"
+#include "roc_core/cond.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/list.h"
 #include "roc_core/list_node.h"
 #include "roc_core/mutex.h"
-#include "roc_core/semaphore.h"
 #include "roc_core/thread.h"
 #include "roc_netio/udp_receiver.h"
 #include "roc_netio/udp_sender.h"
@@ -102,14 +102,19 @@ private:
         packet::IWriter* writer;
 
         bool result;
-        core::Semaphore done;
+        bool done;
+
+        void execute(Transceiver& trx) {
+            result = (trx.*fn)(*this);
+            done = true;
+        }
 
         Task()
             : fn(NULL)
             , address(NULL)
             , writer(NULL)
             , result(false)
-            , done(0) {
+            , done(false) {
         }
     };
 
@@ -154,6 +159,7 @@ private:
     size_t num_ports_;
 
     core::Mutex mutex_;
+    core::Cond cond_;
 };
 
 } // namespace netio

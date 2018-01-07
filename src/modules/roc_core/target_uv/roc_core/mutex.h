@@ -22,6 +22,8 @@
 namespace roc {
 namespace core {
 
+class Cond;
+
 //! Mutex.
 class Mutex : public NonCopyable<> {
 public:
@@ -50,6 +52,8 @@ public:
     }
 
 private:
+    friend class Cond;
+
     mutable uv_mutex_t mutex_;
 };
 

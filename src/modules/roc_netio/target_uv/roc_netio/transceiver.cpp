@@ -27,7 +27,8 @@ Transceiver::Transceiver(packet::PacketPool& packet_pool,
     , loop_initialized_(false)
     , stop_sem_initialized_(false)
     , task_sem_initialized_(false)
-    , num_ports_(0) {
+    , num_ports_(0)
+    , cond_(mutex_) {
     if (int err = uv_loop_init(&loop_)) {
         roc_log(LogError, "transceiver: uv_loop_init(): [%s] %s", uv_err_name(err),
                 uv_strerror(err));
@@ -245,24 +246,22 @@ void Transceiver::close_() {
 }
 
 void Transceiver::run_task_(Task& task) {
-    {
-        core::Mutex::Lock lock(mutex_);
+    core::Mutex::Lock lock(mutex_);
 
-        const bool running = joinable();
+    const bool running = joinable();
 
-        if (!running || stopped_) {
-            // If a stop was scheduled, ensure it have finished.
-            if (running) {
-                mutex_.unlock();
-                join();
-                mutex_.lock();
-            }
-
-            // There is no background thread, so execute task in-place.
-            task.result = (this->*(task.fn))(task);
-            return;
+    if (!running || stopped_) {
+        // If a stop was scheduled, ensure event loop thread have finished.
+        if (running) {
+            mutex_.unlock();
+            join();
+            mutex_.lock();
         }
 
+        // There is no event loop thread, execute task in-place.
+        task.execute(*this);
+    } else {
+        // Schedule task on event loop thread.
         tasks_.push_back(task);
 
         if (int err = uv_async_send(&task_sem_)) {
@@ -271,7 +270,9 @@ void Transceiver::run_task_(Task& task) {
         }
     }
 
-    task.done.pend();
+    while (!task.done) {
+        cond_.wait();
+    }
 }
 
 void Transceiver::process_tasks_() {
@@ -279,9 +280,10 @@ void Transceiver::process_tasks_() {
 
     while (Task* task = tasks_.front()) {
         tasks_.remove(*task);
-        task->result = (this->*(task->fn))(*task);
-        task->done.post();
+        task->execute(*this);
     }
+
+    cond_.broadcast();
 }
 
 bool Transceiver::add_udp_receiver_(Task& task) {

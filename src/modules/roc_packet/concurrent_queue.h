@@ -13,10 +13,10 @@
 #ifndef ROC_PACKET_CONCURRENT_QUEUE_H_
 #define ROC_PACKET_CONCURRENT_QUEUE_H_
 
+#include "roc_core/cond.h"
 #include "roc_core/list.h"
 #include "roc_core/mutex.h"
 #include "roc_core/noncopyable.h"
-#include "roc_core/semaphore.h"
 #include "roc_packet/ireader.h"
 #include "roc_packet/iwriter.h"
 #include "roc_packet/packet.h"
@@ -41,8 +41,8 @@ public:
     virtual void write(const PacketPtr& packet);
 
 private:
-    core::Semaphore sem_;
     core::Mutex mutex_;
+    core::Cond cond_;
     core::List<Packet> list_;
 };
 

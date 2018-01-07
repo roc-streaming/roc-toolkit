@@ -8,35 +8,37 @@
  */
 
 #include "roc_packet/concurrent_queue.h"
+#include "roc_core/panic.h"
 
 namespace roc {
 namespace packet {
 
 ConcurrentQueue::ConcurrentQueue()
-    : sem_(0) {
+    : cond_(mutex_) {
 }
 
 PacketPtr ConcurrentQueue::read() {
-    sem_.pend();
-
     core::Mutex::Lock lock(mutex_);
 
-    PacketPtr packet = list_.front();
-    if (packet) {
-        list_.remove(*packet);
+    PacketPtr packet;
+    while (!(packet = list_.front())) {
+        cond_.wait();
     }
+
+    list_.remove(*packet);
 
     return packet;
 }
 
 void ConcurrentQueue::write(const PacketPtr& packet) {
-    if (packet) {
-        core::Mutex::Lock lock(mutex_);
-
-        list_.push_back(*packet);
+    if (!packet) {
+        roc_panic("concurrent queue: packet is null");
     }
 
-    sem_.post();
+    core::Mutex::Lock lock(mutex_);
+
+    list_.push_back(*packet);
+    cond_.broadcast();
 }
 
 } // namespace packet

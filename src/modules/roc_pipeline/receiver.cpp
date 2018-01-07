@@ -32,7 +32,7 @@ Receiver::Receiver(const ReceiverConfig& config,
     , timestamp_(0)
     , num_channels_(packet::num_channels(config.channels))
     , valid_(false)
-    , active_(false) {
+    , active_cond_(control_mutex_) {
     if (!mixer_.valid()) {
         roc_log(LogError, "receiver: can't construct mixer");
         return;
@@ -78,12 +78,12 @@ size_t Receiver::num_sessions() const {
 void Receiver::write(const packet::PacketPtr& packet) {
     core::Mutex::Lock lock(control_mutex_);
 
-    const Status status = status_();
+    const Status old_status = status_();
 
     packets_.push_back(*packet);
 
-    if (status != Active) {
-        active_.set(true);
+    if (old_status != Active) {
+        active_cond_.broadcast();
     }
 }
 
@@ -107,16 +107,24 @@ IReceiver::Status Receiver::status() const {
 }
 
 void Receiver::wait_active() const {
-    active_.wait();
+    core::Mutex::Lock lock(control_mutex_);
+
+    while (status_() != Active) {
+        active_cond_.wait();
+    }
 }
 
 void Receiver::prepare_() {
     core::Mutex::Lock lock(control_mutex_);
 
+    const Status old_status = status_();
+
     fetch_packets_();
     update_sessions_();
 
-    active_.set(status_() == Active);
+    if (old_status != Active && status_() == Active) {
+        active_cond_.broadcast();
+    }
 }
 
 IReceiver::Status Receiver::status_() const {

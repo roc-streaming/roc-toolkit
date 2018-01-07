@@ -39,11 +39,9 @@ TEST(concurrent_queue, write_read) {
 
     queue.write(p1);
     queue.write(p2);
-    queue.write(NULL);
 
     CHECK(queue.read() == p1);
     CHECK(queue.read() == p2);
-    CHECK(!queue.read());
 }
 
 } // namespace packet
