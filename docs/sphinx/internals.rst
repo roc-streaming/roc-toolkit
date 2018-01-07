@@ -8,6 +8,6 @@ Internals overview
    internals/design
    internals/flow
    internals/fec
-   internals/fe_resampler
+   internals/resampling
    internals/latency
-   internals/network_protocols
+   internals/protocols
