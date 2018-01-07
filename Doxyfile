@@ -1,10 +1,11 @@
-PROJECT_NAME            =
-PROJECT_BRIEF           =
+PROJECT_NAME            = "Roc internal documentation"
+PROJECT_BRIEF           = "Roc: real-time audio streaming over network"
+PROJECT_LOGO            = docs/images/icon80.png
 
 QUIET                   = YES
 RECURSIVE               = YES
 
-INPUT                   = src/modules doc/main.dox
+INPUT                   = src/modules docs/index.dox
 STRIP_FROM_PATH         = src/modules
 FILE_PATTERNS           = *.h *.dox
 
@@ -23,6 +24,7 @@ HIDE_UNDOC_CLASSES      = NO
 HIDE_UNDOC_MEMBERS      = NO
 STRIP_CODE_COMMENTS     = NO
 
+EXTRACT_ALL             = YES
 EXTRACT_PRIVATE         = NO
 
 WARN_IF_UNDOCUMENTED    = YES
@@ -32,7 +34,7 @@ WARN_NO_PARAMDOC        = NO
 OUTPUT_DIRECTORY        =
 GENERATE_LATEX          = NO
 DOT_GRAPH_MAX_NODES     = 1000
-HTML_OUTPUT             = doc/doxygen
+HTML_OUTPUT             = docs/html/doxygen
 
 HTML_DYNAMIC_SECTIONS   = NO
 DISABLE_INDEX           = NO

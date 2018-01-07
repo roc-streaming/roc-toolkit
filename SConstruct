@@ -163,7 +163,7 @@ if 'clean' in COMMAND_LINE_TARGETS and COMMAND_LINE_TARGETS != ['clean']:
 clean = [
     env.DeleteDir('#bin'),
     env.DeleteDir('#build'),
-    env.DeleteDir('#doc/doxygen'),
+    env.DeleteDir('#docs/html'),
     env.DeleteDir('#3rdparty'),
     env.DeleteDir('#.sconf_temp'),
     env.DeleteFile('#.sconsign.dblite'),
@@ -176,6 +176,11 @@ env.AlwaysBuild(env.Alias('clean', [], clean))
 if env.GetOption('clean'):
     env.Execute(clean)
     Return()
+
+for var in ['CC', 'CXX', 'LD', 'AR', 'RANLIB',
+            'GENGETOPT', 'DOXYGEN', 'SPHINX_BUILD', 'PKG_CONFIG']:
+    if env.HasArg(var):
+        env[var] = env.GetArg(var)
 
 if not 'DOXYGEN' in env.Dictionary():
     env['DOXYGEN'] = 'doxygen'
@@ -191,9 +196,31 @@ else:
 if enable_doxygen:
     env.AlwaysBuild(
         env.Alias('doxygen', env.Doxygen(
-                'doc/doxygen',
-                ['Doxyfile'] + env.RecursiveGlob('#src', ['*.h']),
-                werror=GetOption('enable_werror'))))
+            'docs/html/doxygen',
+            (['Doxyfile', 'docs/index.dox'] +
+             env.RecursiveGlob('#src', ['*.h']) +
+            env.RecursiveGlob('#docs/images', ['*'])),
+            werror=GetOption('enable_werror'))))
+
+if not 'SPHINX_BUILD' in env.Dictionary():
+    env['SPHINX_BUILD'] = 'sphinx-build'
+
+if 'sphinx' in COMMAND_LINE_TARGETS:
+    enable_sphinx = True
+elif GetOption('disable_doc') or set(COMMAND_LINE_TARGETS).intersection(['tidy', 'fmt']):
+    enable_sphinx = False
+else:
+    enable_sphinx = bool(env.Which(env['SPHINX_BUILD']))
+
+if enable_sphinx:
+    env.AlwaysBuild(
+        env.Alias('sphinx', env.Sphinx(
+            'build/sphinx',
+            'docs/html/sphinx',
+            'docs/sphinx',
+            (env.RecursiveGlob('docs/sphinx', ['*']) +
+             env.RecursiveGlob('docs/images', ['*'])),
+            werror=GetOption('enable_werror'))))
 
 fmt = []
 
@@ -286,11 +313,6 @@ if not compiler_ver:
 llvmdir = env.LLVMDir(compiler_ver)
 if llvmdir:
     env['ENV']['PATH'] += ':%s/bin' % llvmdir
-
-for var in ['CC', 'CXX', 'LD', 'AR', 'RANLIB',
-            'GENGETOPT', 'DOXYGEN', 'PKG_CONFIG']:
-    if env.HasArg(var):
-        env[var] = env.GetArg(var)
 
 conf = Configure(env, custom_tests=env.CustomTests)
 

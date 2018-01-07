@@ -212,7 +212,7 @@ def Doxygen(env, output_dir, sources, werror=False):
         env.Die("doxygen not found in PATH (looked for '%s')" % env['DOXYGEN'])
 
     env.Command(target, sources, SCons.Action.CommandAction(
-        '%s %s/wrappers/doxygen.py %s %s %s %s %s' % (
+        '%s %s/wrappers/doc.py %s %s %s %s %s' % (
             env.Python(),
             env.Dir(os.path.dirname(__file__)).path,
             env.Dir('#').path,
@@ -221,6 +221,28 @@ def Doxygen(env, output_dir, sources, werror=False):
             int(werror or 0),
             env['DOXYGEN']),
         cmdstr = env.Pretty('DOXYGEN', output_dir, 'purple')))
+
+    return target
+
+def Sphinx(env, build_dir, output_dir, source_dir, sources, werror=False):
+    target = os.path.join(env.Dir(output_dir).path, '.done')
+
+    if not env.Which(env['SPHINX_BUILD']):
+        env.Die("sphinx-build not found in PATH (looked for '%s')" % env['SPHINX_BUILD'])
+
+    env.Command(target, sources, SCons.Action.CommandAction(
+        '%s %s/wrappers/doc.py %s %s %s %s %s -q -b html -d %s %s %s' % (
+            env.Python(),
+            env.Dir(os.path.dirname(__file__)).path,
+            env.Dir('#').path,
+            output_dir,
+            target,
+            int(werror or 0),
+            env['SPHINX_BUILD'],
+            env.Dir(os.path.join(build_dir, source_dir)).path,
+            env.Dir(source_dir).path,
+            env.Dir(output_dir).path),
+        cmdstr = env.Pretty('SPHINX', output_dir, 'purple')))
 
     return target
 
@@ -441,6 +463,7 @@ def Init(env):
     env.AddMethod(LLVMDir, 'LLVMDir')
     env.AddMethod(ClangDB, 'ClangDB')
     env.AddMethod(Doxygen, 'Doxygen')
+    env.AddMethod(Sphinx, 'Sphinx')
     env.AddMethod(GenGetOpt, 'GenGetOpt')
     env.AddMethod(ParseThirdParties, 'ParseThirdParties')
     env.AddMethod(ThirdParty, 'ThirdParty')

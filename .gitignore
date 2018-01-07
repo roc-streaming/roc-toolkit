@@ -1,7 +1,7 @@
 # build results
 bin
 build
-doc/doxygen
+docs/html
 3rdparty
 
 # scons

@@ -12,10 +12,10 @@ try:
     output_dir = sys.argv[2]
     touch_file = sys.argv[3]
     werror = int(sys.argv[4])
-    doxygen_cmd = sys.argv[5:]
+    command = sys.argv[5:]
 except:
    print(
-     "usage: doxygen.py ROOT_DIR OUTPUT_DIR TOUCH_FILE WERROR DOXYGEN [DOXYGEN_ARGS...]",
+     "usage: werror.py ROOT_DIR OUTPUT_DIR TOUCH_FILE WERROR COMMAND [COMMAND_ARGS...]",
          file=sys.stderr)
    exit(1)
 
@@ -32,29 +32,31 @@ try:
 except:
     pass
 
-doxygen = subprocess.Popen(doxygen_cmd, stderr=subprocess.PIPE)
+proc = subprocess.Popen(command, stderr=subprocess.PIPE)
 err = False
 
-for line in doxygen.stderr:
+for line in proc.stderr:
    m = re.match('^([^:]+)(:.*)', line)
    if m:
       line = os.path.relpath(m.group(1), project_dir) + m.group(2)
 
-   if werror and 'warning:' in line:
-       line = line.replace('warning:', 'error:')
+   if werror and re.search('warning:', line, flags=re.I):
+       line = re.sub('warning:', 'error:', line, flags=re.I)
        err = True
    elif 'error:' in line:
        err = True
 
    print(line, file=sys.stderr)
 
-doxygen.wait()
+ret = proc.wait()
 
-if doxygen.returncode != 0:
-    exit(doxygen.returncode)
+if ret > 0:
+    exit(ret)
+elif ret < 0:
+    os.kill(os.getpid(), -ret)
 
 if err:
-    exit(1)
+    exit(127)
 
 try:
     open(touch_file, 'w').close()
