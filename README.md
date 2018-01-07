@@ -1,4 +1,4 @@
-![](doc/images/logo.png)
+![](docs/images/logo.png)
 
 # Roc: real-time audio streaming over network
 
@@ -23,7 +23,7 @@ Branch    | Linux
 Work in progress!
 -----------------
 
-There is no public release yet. See [Roadmap](Roadmap.md) and [open issues](https://github.com/roc-project/roc/issues) for current and future plans.
+There is no public release yet. See [Roadmap](https://roc-project.github.io/docs/development/roadmap.html) and [open issues](https://github.com/roc-project/roc/issues) for current and future plans.
 
 The upcoming 0.1 release will include the following features:
 
@@ -33,11 +33,11 @@ The upcoming 0.1 release will include the following features:
 - [x] Sound I/O (in tools)
 - [x] Audio processing pipeline with dynamic resampling
 - [x] RTP support with uncompressed 16-bit linear PCM
-- [ ] FECFRAME support with Reed-Solomon and LDPC-Staircase [FEC](https://en.wikipedia.org/wiki/Forward_error_correction) codes using [OpenFEC](http://openfec.org/)
+- [x] FECFRAME support with Reed-Solomon and LDPC-Staircase [FEC](https://en.wikipedia.org/wiki/Forward_error_correction) codes using [OpenFEC](http://openfec.org/)
 - [ ] Documentation
 - [x] Linux support, including Raspberry Pi
-- [ ] Mac OS X support
-- [ ] Proof of concept Roc-based network transport for PulseAudio
+- [x] Mac OS X support
+- [x] Proof of concept Roc-based network transport for PulseAudio
 
 Documentation
 -------------
@@ -77,7 +77,7 @@ Supported platforms
 * Linux
 * Mac OS X (*work in progress*)
 
-There are [plans](https://github.com/roc-project/roc/blob/develop/Roadmap.md) to support other platforms, notably other *nix systems, Android, and maybe some embedded systems like FreeRTOS.
+There are plans to support other platforms, notably other *nix systems, Android, and maybe some embedded systems like FreeRTOS.
 
 Supported protocols
 -------------------
@@ -86,12 +86,12 @@ Supported protocols
 * [FECFRAME](https://tools.ietf.org/html/rfc6363): [Reed-Solomon Scheme](https://tools.ietf.org/html/rfc6865) (*work in progress*)
 * [FECFRAME](https://tools.ietf.org/html/rfc6363): [LDPC-Staircase Scheme](https://tools.ietf.org/html/rfc6816) (*work in progress*)
 
-There are [plans](https://github.com/roc-project/roc/blob/develop/Roadmap.md) to support RTCP, SAP/SDP, and RTSP in upcoming releases.
+There are plans to support RTCP, SAP/SDP, and RTSP in upcoming releases.
 
 Contributing
 ------------
 
-Contributions are always welcome! Please read [CONTRIBUTING](CONTRIBUTING.md) for general hints and look at [Roadmap](Roadmap.md) and [open issues](https://github.com/roc-project/roc/issues) to figure out what's going on.
+Contributions are always welcome! Please read [CONTRIBUTING](CONTRIBUTING.md) for general hints and look at [Roadmap](https://roc-project.github.io/docs/development/roadmap.html) and [open issues](https://github.com/roc-project/roc/issues) to figure out what's going on.
 
 * If you'd like to report a bug, ask a question, or suggest a feature, feel free to [create an issue](https://help.github.com/articles/creating-an-issue/).
 
@@ -100,7 +100,7 @@ Contributions are always welcome! Please read [CONTRIBUTING](CONTRIBUTING.md) fo
 Licensing
 ---------
 
-Roc source code is licensed under [MPL-2.0](https://www.mozilla.org/en-US/MPL/2.0/), see [LICENSE](LICENSE). [Roc logos](doc/images/) by [botanicahouse](https://www.instagram.com/botanicahouse/) are licensed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).
+Roc source code is licensed under [MPL-2.0](https://www.mozilla.org/en-US/MPL/2.0/), see [LICENSE](LICENSE). [Roc logos](docs/images/) by [botanicahouse](https://www.instagram.com/botanicahouse/) are licensed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).
 
 Issues with external dependencies:
 * Roc may be configured to use FEC codec from OpenFEC, which is licensed under [CeCILL](http://openfec.org/patents.html), a GPL-like and GPL-compatible license. When Roc is built with OpenFEC support enabled, it must be distributed under a lincense compatible with CeCILL.
