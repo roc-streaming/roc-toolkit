@@ -1,4 +1,55 @@
-/*! @mainpage Roc internal documentation
-
+/** @mainpage Roc internal documentation
     Doxygen-generated documentation for Roc internals.
 */
+
+//! @namespace roc
+//! Root namespace.
+namespace roc {}
+
+namespace roc {
+  //! @namespace roc::core
+  //! Basic building blocks.
+  namepsace core {}
+}
+
+namespace roc {
+  //! @namespace roc::packet
+  //! Packets and packet processing.
+  namepsace packet {}
+}
+
+namespace roc {
+  //! @namespace roc::audio
+  //! Audio frames and audio processing.
+  namepsace audio {}
+}
+
+namespace roc {
+  //! @namespace roc::rtp
+  //! RTP support.
+  namepsace rtp {}
+}
+
+namespace roc {
+  //! @namespace roc::fec
+  //! FEC support.
+  namepsace fec {}
+}
+
+namespace roc {
+  //! @namespace roc::pipeline
+  //! High-level sending/receiving pipelines.
+  namepsace pipeline {}
+}
+
+namespace roc {
+  //! @namespace roc::netio
+  //! Network I/O.
+  namepsace netio {}
+}
+
+namespace roc {
+  //! @namespace roc::sndio
+  //! Sound I/O.
+  namepsace sndio {}
+}
