@@ -178,12 +178,18 @@ if env.GetOption('clean'):
     Return()
 
 for var in ['CC', 'CXX', 'LD', 'AR', 'RANLIB',
-            'GENGETOPT', 'DOXYGEN', 'SPHINX_BUILD', 'PKG_CONFIG']:
+            'GENGETOPT', 'DOXYGEN', 'SPHINX_BUILD', 'BREATHE_APIDOC', 'PKG_CONFIG']:
     if env.HasArg(var):
         env[var] = env.GetArg(var)
 
 if not 'DOXYGEN' in env.Dictionary():
     env['DOXYGEN'] = 'doxygen'
+
+if not 'SPHINX_BUILD' in env.Dictionary():
+    env['SPHINX_BUILD'] = 'sphinx-build'
+
+if not 'BREATHE_APIDOC' in env.Dictionary():
+    env['BREATHE_APIDOC'] = 'breathe-apidoc'
 
 if 'doxygen' in COMMAND_LINE_TARGETS:
     enable_doxygen = True
@@ -194,32 +200,40 @@ else:
     enable_doxygen = doxygen_version and doxygen_version[:2] >= (1, 6)
 
 if enable_doxygen:
-    env.AlwaysBuild(
-        env.Alias('doxygen', env.Doxygen(
-            'docs/html/doxygen',
-            (['Doxyfile', 'docs/index.dox'] +
-             env.RecursiveGlob('#src', ['*.h']) +
-            env.RecursiveGlob('#docs/images', ['*'])),
-            werror=GetOption('enable_werror'))))
-
-if not 'SPHINX_BUILD' in env.Dictionary():
-    env['SPHINX_BUILD'] = 'sphinx-build'
+    doxygen_targets = [
+        env.Doxygen(
+            build_dir='build/docs/modules',
+            output_dir='docs/html/modules',
+            config='src/modules/Doxyfile',
+            sources=(env.RecursiveGlob('#src/modules', ['*.h', '*.dox']) +
+                env.RecursiveGlob('#docs/images', ['*'])),
+            werror=GetOption('enable_werror')),
+        env.Doxygen(
+            build_dir='build/docs/lib',
+            output_dir='docs/html/modules',
+            config='src/lib/Doxyfile',
+            sources=env.RecursiveGlob('#src/lib/include', ['*.h', '*.dox']),
+            werror=GetOption('enable_werror')),
+    ]
+    env.AlwaysBuild(env.Alias('doxygen', doxygen_targets))
 
 if 'sphinx' in COMMAND_LINE_TARGETS:
     enable_sphinx = True
 elif GetOption('disable_doc') or set(COMMAND_LINE_TARGETS).intersection(['tidy', 'fmt']):
     enable_sphinx = False
 else:
-    enable_sphinx = bool(env.Which(env['SPHINX_BUILD']))
+    enable_sphinx = env.Which(env['SPHINX_BUILD']) and env.Which(env['BREATHE_APIDOC'])
 
-if enable_sphinx:
+if enable_doxygen and enable_sphinx:
     env.AlwaysBuild(
         env.Alias('sphinx', env.Sphinx(
-            'build/sphinx',
-            'docs/html/sphinx',
-            'docs/sphinx',
-            (env.RecursiveGlob('docs/sphinx', ['*']) +
-             env.RecursiveGlob('docs/images', ['*'])),
+            build_dir='build',
+            output_dir='docs/html/sphinx',
+            source_dir='docs/sphinx',
+            sources=(env.RecursiveGlob('docs/sphinx', ['*']) +
+                env.RecursiveGlob('docs/images', ['*']) +
+                env.RecursiveGlob('#src/lib/include', ['*.h', '*.dox']) +
+                doxygen_targets),
             werror=GetOption('enable_werror'))))
 
 fmt = []

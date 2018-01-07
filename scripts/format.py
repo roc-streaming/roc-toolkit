@@ -30,7 +30,7 @@ def is_test(path):
 def make_guard(path):
     dirpath, basename = os.path.split(path)
     dirname = os.path.basename(dirpath)
-    if not dirname.startswith('roc_'):
+    if not dirname.startswith('roc_') and dirname != 'roc':
         arr = [os.path.basename(os.path.dirname(dirpath)), dirname, basename]
     else:
         arr = [dirname, basename]
@@ -60,7 +60,13 @@ def format_file(output, path):
     pre = []
 
     if is_header(path):
-        while re.match(r'^\s*(#endif.*)?$', lines[-1]):
+        while re.match(r'^\s*$', lines[-1]):
+            lines.pop()
+
+        if re.match(r'^\s*#\s*endif.*$', lines[-1]):
+            lines.pop()
+
+        while re.match(r'^\s*$', lines[-1]):
             lines.pop()
 
         for line in lines:
@@ -130,7 +136,7 @@ def format_file(output, path):
                         fprint('')
 
         if section == 'guard':
-            m = re.match(r'#(ifndef|define)', line)
+            m = re.match(r'#\s*(ifndef|define)', line)
             if m:
                 has_guard = True
                 fprint('#%s %s' % (m.group(1), make_guard(path)))

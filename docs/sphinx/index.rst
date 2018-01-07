@@ -4,6 +4,7 @@
    contain the root `toctree` directive.
 
 .. image:: ../images/logo.png
+   :scale: 40 %
 
 Roc: real-time audio streaming over network
 *******************************************
@@ -45,4 +46,3 @@ Example usage:
 	``$ roc-send -vv -i song.wav <server_ip>:12345``
 
 See :ref:`roc_send` and :ref:`roc_recv` for usage details.
-

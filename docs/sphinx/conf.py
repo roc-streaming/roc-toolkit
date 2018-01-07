@@ -30,9 +30,12 @@
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['sphinx.ext.autodoc',
+extensions = [
+    'sphinx.ext.autodoc',
     'sphinx.ext.coverage',
-    'sphinx.ext.mathjax']
+    'sphinx.ext.mathjax',
+    'breathe',
+]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -79,12 +82,19 @@ pygments_style = 'sphinx'
 todo_include_todos = False
 
 
+# -- Options for Breathe ----------------------------------------------
+
+breathe_projects = { 'roc': '../../build/docs/lib/xml' }
+
+breathe_default_project = 'roc'
+breathe_domain_by_extension = {'h': 'c'}
+
 # -- Options for HTML output ----------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'sphinxdoc'
+html_theme = 'nature'
 
 html_logo = '../images/logo80.png'
 

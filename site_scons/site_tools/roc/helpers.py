@@ -205,21 +205,23 @@ def ClangDB(env, build_dir, compiler):
         env.Dir(build_dir).path,
         compiler)
 
-def Doxygen(env, output_dir, sources, werror=False):
-    target = os.path.join(env.Dir(output_dir).path, '.done')
+def Doxygen(env, build_dir, output_dir, config, sources, werror=False):
+    target = os.path.join(env.Dir(build_dir).path, '.done')
 
     if not env.Which(env['DOXYGEN']):
         env.Die("doxygen not found in PATH (looked for '%s')" % env['DOXYGEN'])
 
-    env.Command(target, sources, SCons.Action.CommandAction(
-        '%s %s/wrappers/doc.py %s %s %s %s %s' % (
+    env.Command(target, sources + [config], SCons.Action.CommandAction(
+        '%s %s/wrappers/doc.py %s %s %s %s %s %s %s' % (
             env.Python(),
             env.Dir(os.path.dirname(__file__)).path,
             env.Dir('#').path,
-            output_dir,
+            env.Dir(os.path.dirname(config)).path,
+            '%s:%s' % (env.Dir(output_dir).path, env.Dir(output_dir).path),
             target,
             int(werror or 0),
-            env['DOXYGEN']),
+            env['DOXYGEN'],
+            env.File(config).name),
         cmdstr = env.Pretty('DOXYGEN', output_dir, 'purple')))
 
     return target
@@ -231,9 +233,10 @@ def Sphinx(env, build_dir, output_dir, source_dir, sources, werror=False):
         env.Die("sphinx-build not found in PATH (looked for '%s')" % env['SPHINX_BUILD'])
 
     env.Command(target, sources, SCons.Action.CommandAction(
-        '%s %s/wrappers/doc.py %s %s %s %s %s -q -b html -d %s %s %s' % (
+        '%s %s/wrappers/doc.py %s %s %s %s %s %s -q -b html -d %s %s %s' % (
             env.Python(),
             env.Dir(os.path.dirname(__file__)).path,
+            env.Dir('#').path,
             env.Dir('#').path,
             output_dir,
             target,
@@ -244,7 +247,7 @@ def Sphinx(env, build_dir, output_dir, source_dir, sources, werror=False):
             env.Dir(output_dir).path),
         cmdstr = env.Pretty('SPHINX', output_dir, 'purple')))
 
-    return target
+    return env.File(target)
 
 def GenGetOpt(env, source, ver):
     if 'GENGETOPT' in env.Dictionary():
