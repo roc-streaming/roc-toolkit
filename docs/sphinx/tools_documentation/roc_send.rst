@@ -1,7 +1,9 @@
-.. _roc_send:
-
 roc-send
 ********
+
+.. warning::
+
+   This section is under construction.
 
 SYNOPSIS
 ========
@@ -13,13 +15,13 @@ DESCRIPTION
 
 Roc provides two command-line utilities for transmitting audio-content via LAN/WLAN. They're pretty simple but very useful.
 
-Roc-send sends audio-stream from a file to a roc receiver (e.g. roc-recv). 
+Roc-send sends audio-stream from a file to a roc receiver (e.g. roc-recv).
 
 OPTIONS
 =======
 
 -v, --verbose
-	Increase verbosity level (may be used multiple times)
+    Increase verbosity level (may be used multiple times)
 
 -s, --source=ADRESS
     Source address (default is 0.0.0.0:0, i.e. INADDR_ANY and random port)
@@ -31,7 +33,7 @@ OPTIONS
     Input codec or driver
 
 --fec=ENUM
-	FEC scheme  (possible values="rs", "ldpc", "none" default=`rs')
+    FEC scheme  (possible values="rs", "ldpc", "none" default=`rs')
 
 --nbsrc=INT
     Number of source packets in FEC block
@@ -40,22 +42,22 @@ OPTIONS
     Number of repair packets in FEC block
 
 --interleaving=ENUM
-	Enable/disable packet interleaving  (possible values="yes", "no" default=`yes')
+    Enable/disable packet interleaving  (possible values="yes", "no" default=`yes')
 
 --timing=ENUM
-	Enable/disable pipeline timing  (possible values="yes", "no" default=`yes')
+    Enable/disable pipeline timing  (possible values="yes", "no" default=`yes')
 
 --rate=INT
-	Sample rate (Hz)
+    Sample rate (Hz)
 
 --loss-rate=INT
     Set percentage of packets to be randomly lost, [0; 100]
 
 --delay-rate=INT
-	Set percentage of packets to be randomly delayed, [0; 100]
+    Set percentage of packets to be randomly delayed, [0; 100]
 
 --delay=INT
-	Set delay time, milliseconds
+    Set delay time, milliseconds
 
 ADDRESS should be in form of [IP]:PORT. IP defaults to 0.0.0.0.
 
@@ -73,24 +75,24 @@ EXAMPLES
 
 Send wav file:
 
-	``$ roc-send -vv 192.168.0.3:12345 -i song.wav``
+    ``$ roc-send -vv 192.168.0.3:12345 -i song.wav``
 
 or
 
-	``$ roc-send -vv 192.168.0.3:12345 -i song.wav -t wav``
+    ``$ roc-send -vv 192.168.0.3:12345 -i song.wav -t wav``
 
 Capture sound from default driver and device:
 
-	``$ roc-send -vv 192.168.0.3:12345``
+    ``$ roc-send -vv 192.168.0.3:12345``
 
 Capture sound from default ALSA device:
 
-	``$ roc-send -vv 192.168.0.3:12345 -t alsa``
+    ``$ roc-send -vv 192.168.0.3:12345 -t alsa``
 
 or
 
-	``$ roc-send -vv 192.168.0.3:12345 -t alsa -i default``
+    ``$ roc-send -vv 192.168.0.3:12345 -t alsa -i default``
 
 Capture sound from specific pulseaudio device:
 
-	``$ roc-send -vv 192.168.0.3:12345 -t pulseaudio -i <device>``
+    ``$ roc-send -vv 192.168.0.3:12345 -t pulseaudio -i <device>``

@@ -1,7 +1,9 @@
-.. _roc_recv:
-
 roc-recv
 ********
+
+.. warning::
+
+   This section is under construction.
 
 SYNOPSIS
 ========
@@ -18,53 +20,53 @@ Roc-recv receives audio-stream on a particular UDP port, repairs lost packets, a
 OPTIONS
 =======
 
--v, --verbose         
-	Increase verbosity level (may be used multiple times)
+-v, --verbose
+    Increase verbosity level (may be used multiple times)
 
--o, --output=NAME     
-	Output file or device
+-o, --output=NAME
+    Output file or device
 
--t, --type=TYPE       
-	Output codec or driver
+-t, --type=TYPE
+    Output codec or driver
 
---fec=ENUM            
-	FEC scheme  (possible values="rs", "ldpc", "none" default=`rs')
+--fec=ENUM
+    FEC scheme  (possible values="rs", "ldpc", "none" default=`rs')
 
---nbsrc=INT           
-	Number of source packets in FEC block
+--nbsrc=INT
+    Number of source packets in FEC block
 
---nbrpr=INT           
-	Number of repair packets in FEC block
+--nbrpr=INT
+    Number of repair packets in FEC block
 
---resampling=ENUM     
-	Enabled/disable resampling  (possible values="yes", "no" default=`yes')
+--resampling=ENUM
+    Enabled/disable resampling  (possible values="yes", "no" default=`yes')
 
---timing=ENUM         
-	Enabled/disable pipeline timing  (possible values="yes", "no" default=`yes')
+--timing=ENUM
+    Enabled/disable pipeline timing  (possible values="yes", "no" default=`yes')
 
--1, --oneshot         
-	Exit when last connected client disconnects (default=off)
+-1, --oneshot
+    Exit when last connected client disconnects (default=off)
 
---beep                
-	Enable beep on packet loss  (default=off)
+--beep
+    Enable beep on packet loss  (default=off)
 
---rate=INT            
-	Sample rate (Hz)
+--rate=INT
+    Sample rate (Hz)
 
---session-timeout=INT 
-	Session timeout as number of samples
+--session-timeout=INT
+    Session timeout as number of samples
 
---session-latency=INT 
-	Session latency as number of samples
+--session-latency=INT
+    Session latency as number of samples
 
---output-latency=INT  
-	Output latency as number of samples
+--output-latency=INT
+    Output latency as number of samples
 
---output-frame=INT    
-	Number of samples per output frame
+--output-frame=INT
+    Number of samples per output frame
 
---resampler-frame=INT 
-	Number of samples per resampler frame
+--resampler-frame=INT
+    Number of samples per resampler frame
 
 ADDRESS should be in form of [IP]:PORT. IP defaults to 0.0.0.0.
 
@@ -98,9 +100,8 @@ or
 
 Output to file:
 
-	``$ roc-recv -vv :12345 -o record.wav``
+    ``$ roc-recv -vv :12345 -o record.wav``
 
 or
 
     ``$ roc-recv -vv :12345 -o record.wav -t wav``
-

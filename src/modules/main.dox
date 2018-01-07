@@ -1,5 +1,5 @@
-/** @mainpage Roc internal documentation
-    Doxygen-generated documentation for Roc internals.
+/** @mainpage Roc internal modules
+    Doxygen-generated documentation for Roc internal modules.
 */
 
 //! @namespace roc
