@@ -38,7 +38,7 @@ extensions = [
 ]
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+templates_path = []
 
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
@@ -126,7 +126,7 @@ html_static_path = []
 # -- Options for HTMLHelp output ------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'rocdoc'
+htmlhelp_basename = 'roc'
 
 
 # -- Options for LaTeX output ---------------------------------------------
@@ -153,7 +153,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'roc.tex', u'Roc Documentation',
+    (master_doc, 'roc.tex', u'Roc documentation',
      u'Mikhail Baranov, Victor Gaydov', 'manual'),
 ]
 
@@ -163,9 +163,9 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('roc_send', 'roc-send', u'Roc Documentation',
+    ('roc_send', 'roc-send', u'Roc documentation',
      [author], 1),
-    ('roc_recv', 'roc-recv', u'Roc Documentation',
+    ('roc_recv', 'roc-recv', u'Roc documentation',
      [author], 1)
 ]
 
@@ -176,7 +176,7 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'roc', u'Roc Documentation',
-     author, 'roc', 'One line description of project.',
+    (master_doc, 'roc', u'Roc documentation',
+     author, 'roc', 'Real-time audio streaming over network.',
      'Miscellaneous'),
 ]

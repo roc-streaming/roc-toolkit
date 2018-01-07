@@ -9,7 +9,7 @@ Welcome to Roc documentation!
 
    about
    building
-   api_documentation
-   tools_documentation
-   internals_overview
+   api
+   tools
+   internals
    development
