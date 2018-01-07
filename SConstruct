@@ -943,23 +943,37 @@ env.AlwaysBuild(
                 build_dir,
                 ','.join([
                     '*',
+                    '-readability-implicit-bool-cast',
                     '-readability-named-parameter',
                     '-readability-else-after-return',
+                    '-readability-redundant-declaration',
+                    '-readability-inconsistent-declaration-parameter-name',
+                    '-readability-non-const-parameter',
+                    '-modernize-*',
+                    '-cppcoreguidelines-*',
                     '-google-readability-todo',
                     '-google-readability-function',
                     '-google-readability-casting',
                     '-google-explicit-constructor',
                     '-google-build-using-namespace',
                     '-google-runtime-int',
+                    '-google-runtime-references',
                     '-llvm-include-order',
                     '-llvm-header-guard',
                     '-misc-macro-parentheses',
                     '-misc-use-override',
+                    '-misc-unconventional-assign-operator',
+                    '-misc-misplaced-widening-cast',
                     '-clang-analyzer-alpha.core.CastToStruct',
                     '-clang-analyzer-alpha.security.ReturnPtrRange',
+                    '-cert-err58-cpp',
+                    '-cert-msc30-c',
+                    '-cert-msc50-cpp',
+                    '-cert-dcl50-cpp',
                 ]),
-                ' '.join(map(str,
-                             env.RecursiveGlob('#src', '*.cpp')
+                ' '.join(map(str, (env.RecursiveGlob('#src/modules', '*.cpp') +
+                                   env.RecursiveGlob('#src/lib', '*.cpp') +
+                                   env.RecursiveGlob('#src/tools', '*.cpp'))
                 ))
             ),
             env.Pretty('TIDY', 'src', 'yellow')

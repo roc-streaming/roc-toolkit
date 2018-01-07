@@ -111,5 +111,5 @@ bool Parser::parse(packet::Packet& packet, const core::Slice<uint8_t>& buffer) {
     return true;
 }
 
-} // namespace packet
+} // namespace rtp
 } // namespace roc

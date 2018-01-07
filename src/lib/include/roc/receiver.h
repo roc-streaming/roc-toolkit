@@ -39,7 +39,7 @@ roc_receiver_bind(roc_receiver* receiver, roc_protocol proto, struct sockaddr* a
 //! Returns positve number of samples on success or -1 on error.
 ROC_API ssize_t roc_receiver_read(roc_receiver* receiver,
                                   float* samples,
-                                  const size_t n_samples);
+                                  size_t n_samples);
 
 //! Delete previously created receiver.
 ROC_API int roc_receiver_close(roc_receiver* receiver);

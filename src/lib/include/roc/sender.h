@@ -44,7 +44,7 @@ ROC_API int roc_sender_connect(roc_sender* sender,
 //! Returns positve number of samples on success or -1 on error.
 ROC_API ssize_t roc_sender_write(roc_sender* sender,
                                  const float* samples,
-                                 const size_t n_samples);
+                                 size_t n_samples);
 
 //! Delete previously created sender.
 ROC_API int roc_sender_close(roc_sender* sender);

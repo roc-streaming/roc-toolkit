@@ -39,7 +39,7 @@ public:
 private:
     // Calculate regulator input.
     // `in' is current queue size.
-    float fast_controller_(const sample_t in);
+    float fast_controller_(sample_t in);
 
     const sample_t target_; // Target latency.
 

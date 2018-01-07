@@ -49,8 +49,8 @@ class ReceiverSession : public core::RefCnt<ReceiverSession>, public core::ListN
 public:
     //! Initialize.
     ReceiverSession(const SessionConfig& config,
-                    const unsigned int payload_type,
-                    const size_t out_sample_rate,
+                    unsigned int payload_type,
+                    size_t out_sample_rate,
                     const packet::Address& src_address,
                     const rtp::FormatMap& format_map,
                     packet::PacketPool& packet_pool,

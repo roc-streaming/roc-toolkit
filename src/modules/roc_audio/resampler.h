@@ -100,7 +100,7 @@ private:
     //!
     //! @param channel_offset a serial number of the channel
     //!  (e.g. left -- 0, right -- 1, etc.).
-    sample_t resample_(const size_t channel_offset);
+    sample_t resample_(size_t channel_offset);
 
     inline size_t channelize_index(const size_t i, const size_t ch_offset) const {
         return i * channels_num_ + ch_offset;
@@ -112,7 +112,7 @@ private:
     void renew_window_();
 
     bool fill_sinc_();
-    sample_t sinc_(const fixedpoint_t x, const float fract_x);
+    sample_t sinc_(fixedpoint_t x, float fract_x);
 
     // Input stream.
     IReader& reader_;
