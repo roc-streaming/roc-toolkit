@@ -7,6 +7,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+//! @file roc/sender.h
 //! @brief Roc sender.
 
 #ifndef ROC_SENDER_H_

@@ -7,6 +7,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+//! @file roc/types.h
 //! @brief Roc types.
 
 #ifndef ROC_TYPES_H_
@@ -16,6 +17,7 @@
 #include <stddef.h>
 #include <unistd.h>
 
+//! ROC_API.
 #define ROC_API __attribute__((visibility("default")))
 
 #endif // ROC_TYPES_H_
