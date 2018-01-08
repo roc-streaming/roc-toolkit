@@ -79,6 +79,8 @@ roc_core	        Lightweight general-purpose utility classes and wrappers for pl
 	:width: 791 px
 	:alt: Rocs modules layout
 
+.. _targets:
+
 Targets
 =======
 
