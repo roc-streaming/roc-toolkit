@@ -75,7 +75,7 @@ Supported platforms
 -------------------
 
 * Linux
-* Mac OS X (*work in progress*)
+* Mac OS X
 
 There are plans to support other platforms, notably other *nix systems, Android, and maybe some embedded systems like FreeRTOS.
 
@@ -83,27 +83,28 @@ Supported protocols
 -------------------
 
 * [RTP](https://tools.ietf.org/html/rfc3550): [A/V Profile](https://tools.ietf.org/html/rfc3551)
-* [FECFRAME](https://tools.ietf.org/html/rfc6363): [Reed-Solomon Scheme](https://tools.ietf.org/html/rfc6865) (*work in progress*)
-* [FECFRAME](https://tools.ietf.org/html/rfc6363): [LDPC-Staircase Scheme](https://tools.ietf.org/html/rfc6816) (*work in progress*)
+* [FECFRAME](https://tools.ietf.org/html/rfc6363): [Reed-Solomon Scheme](https://tools.ietf.org/html/rfc6865)
+* [FECFRAME](https://tools.ietf.org/html/rfc6363): [LDPC-Staircase Scheme](https://tools.ietf.org/html/rfc6816)
 
 There are plans to support RTCP, SAP/SDP, and RTSP in upcoming releases.
 
 Contributing
 ------------
 
-Contributions are always welcome! Please read [CONTRIBUTING](CONTRIBUTING.md) for general hints and look at [Roadmap](https://roc-project.github.io/docs/development/roadmap.html) and [open issues](https://github.com/roc-project/roc/issues) to figure out what's going on.
+Contributions are always welcome!
 
-* If you'd like to report a bug, ask a question, or suggest a feature, feel free to [create an issue](https://help.github.com/articles/creating-an-issue/).
+Feel free to open issues for bug reports, feature requests, and questions.
 
-* If you'd like to submit a patch, [create a pull request](https://help.github.com/articles/using-pull-requests/). For non-trivial changes, it may be reasonable to start with discussing the implementation details in an existing or a new issue.
+Pull requests are welcome as well. For large features, it may be reasonable to open an issue and discuss the implementation first. [Development](https://roc-project.github.io/docs/development.html) page provides some details about our plans, conventions, workflow, and tools.
 
 Licensing
 ---------
 
-Roc source code is licensed under [MPL-2.0](https://www.mozilla.org/en-US/MPL/2.0/), see [LICENSE](LICENSE). [Roc logos](docs/images/) by [botanicahouse](https://www.instagram.com/botanicahouse/) are licensed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).
+Roc source code is licensed under [MPL-2.0](https://www.mozilla.org/en-US/MPL/2.0/).
 
-Issues with external dependencies:
-* Roc may be configured to use FEC codec from OpenFEC, which is licensed under [CeCILL](http://openfec.org/patents.html), a GPL-like and GPL-compatible license. When Roc is built with OpenFEC support enabled, it must be distributed under a lincense compatible with CeCILL.
+Roc PulseAudio modules are licensed under [LGPL-2.1](https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html). Roc logos provided by [botanicahouse](https://www.instagram.com/botanicahouse/) are licensed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).
+
+Roc by default is configured to use FEC codec from OpenFEC, which is licensed under [CeCILL](http://openfec.org/patents.html), a GPL-like and GPL-compatible license. When Roc is built with OpenFEC support enabled, it must be distributed under a lincense compatible with CeCILL.
 
 Authors
 -------
