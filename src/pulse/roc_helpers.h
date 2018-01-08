@@ -1,7 +1,7 @@
-/* This file is part of Roc PulseAudio integration.
+/*
+ * This file is part of Roc PulseAudio integration.
  *
- * Copyright 2017 Victor Gaydov
- * Copyright 2017 Mikhail Baranov
+ * Copyright (c) 2017 Roc authors
  *
  * Licensed under GNU Lesser General Public License 2.1 or any later version.
  */

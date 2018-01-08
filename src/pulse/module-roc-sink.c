@@ -1,7 +1,7 @@
-/* This file is part of Roc PulseAudio integration.
+/*
+ * This file is part of Roc PulseAudio integration.
  *
- * Copyright 2017 Victor Gaydov
- * Copyright 2017 Mikhail Baranov
+ * Copyright (c) 2017 Roc authors
  *
  * Licensed under GNU Lesser General Public License 2.1 or any later version.
  */
@@ -34,7 +34,7 @@
 /* local headers */
 #include "roc_helpers.h"
 
-PA_MODULE_AUTHOR("Victor Gaydov & Mikhail Baranov");
+PA_MODULE_AUTHOR("Roc authors");
 PA_MODULE_DESCRIPTION("Write samples using Roc sender");
 PA_MODULE_VERSION(PACKAGE_VERSION);
 PA_MODULE_LOAD_ONCE(false);

@@ -5,20 +5,17 @@ import sys
 import fnmatch
 import tempfile
 import shutil
+import datetime
 
 copyright_str = '''
 /*
+ * Copyright (c) %s Roc authors
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-'''
-
-try:
-    with open('.copyright') as fp:
-        copyright_str = fp.read()
-except:
-    pass
+''' % datetime.datetime.now().year
 
 def is_header(path):
     return re.search('\.h$', path)
@@ -27,10 +24,16 @@ def is_test(path):
     _, basename = os.path.split(path)
     return basename.startswith('test_')
 
+def is_lib(path):
+    rootname = os.path.basename(os.path.dirname(os.path.dirname(os.path.abspath(path))))
+    return rootname == 'lib'
+
 def make_guard(path):
     dirpath, basename = os.path.split(path)
     dirname = os.path.basename(dirpath)
-    if not dirname.startswith('roc_') and dirname != 'roc':
+    if is_lib(path):
+        arr = ['roc', basename]
+    elif not dirname.startswith('roc_') and dirname != 'roc':
         arr = [os.path.basename(os.path.dirname(dirpath)), dirname, basename]
     else:
         arr = [dirname, basename]
@@ -75,35 +78,44 @@ def format_file(output, path):
                 brief = m.group(1)
                 break
 
-    for line in lines:
+    while lines:
+        line = lines.pop(0)
+
         if section in ['copyright', 'doxygen', 'guard']:
             if re.match(r'^\s*$', line):
                 continue
 
         if section == 'copyright':
-            if not has_copyright:
-              if re.match(r'^\s*/?\*.*AUTO-GENERATED.*', line):
-                  is_autogen = True
-
-              if is_autogen or re.match(r'^\s*/?\*\s*(Copyright|Mozilla)', line):
-                has_copyright = True
-                for p in pre:
-                    fprint(p)
+            pre += [line]
 
             if re.match(r'^\s*/?\*', line):
-                if has_copyright:
-                    fprint(line)
-                    if re.match(r'^\s*\*/', line):
-                        section = 'doxygen'
+                if re.match(r'^\s*/?\*.*AUTO-GENERATED.*', line):
+                    is_autogen = True
+
+                if re.match(r'^\s*/?\*\s*(Copyright|Mozilla)', line):
+                    has_copyright = True
+
+                if re.match(r'^\s*\*/', line):
+                    if is_autogen or has_copyright:
+                        for p in pre:
+                            fprint(p)
                         fprint('')
-                else:
-                    pre += [line]
-                continue
-            else:
-                if not has_copyright:
+                    else:
+                        fprint(copyright_str.strip())
+                        fprint('')
+
+                        if not has_copyright:
+                            for p in pre:
+                                fprint(p)
+                        fprint('')
+
                     section = 'doxygen'
-                    fprint(copyright_str.strip())
-                    fprint('')
+            else:
+                fprint(copyright_str.strip())
+                fprint('')
+                lines = pre + lines
+                section = 'doxygen'
+                continue
 
         if section == 'doxygen':
             if re.match(r'^\s*/?\*', line) or re.match(r'^\s*//', line):
@@ -121,7 +133,7 @@ def format_file(output, path):
                 has_doxygen = True
                 continue
             else:
-                if is_test(path) or is_autogen:
+                if is_lib(path) or is_test(path) or is_autogen:
                     section = 'guard' if is_header(path) else 'body'
                 else:
                     if not has_doxygen:

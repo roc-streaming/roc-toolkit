@@ -20,6 +20,8 @@
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
 
+import datetime
+
 
 # -- General configuration ------------------------------------------------
 
@@ -51,8 +53,8 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Roc'
-copyright = u'2017, Mikhail Baranov, Victor Gaydov'
-author = u'Mikhail Baranov, Victor Gaydov'
+copyright = u'%s, Roc authors' % datetime.datetime.now().year
+author = u'Roc authors'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -154,7 +156,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'roc.tex', u'Roc documentation',
-     u'Mikhail Baranov, Victor Gaydov', 'manual'),
+     u'Roc authors', 'manual'),
 ]
 
 

@@ -279,6 +279,10 @@ fmt += [
         '%s scripts/format.py src/lib/include' % env.Python(),
         env.Pretty('FMT', 'src/lib/include', 'yellow')
     ),
+    env.Action(
+        '%s scripts/format.py src/lib/src' % env.Python(),
+        env.Pretty('FMT', 'src/lib/src', 'yellow')
+    ),
 ]
 
 env.AlwaysBuild(
