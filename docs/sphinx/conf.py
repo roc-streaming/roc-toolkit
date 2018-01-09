@@ -101,7 +101,7 @@ html_theme = 'nature'
 html_logo = '../images/logo80.png'
 
 html_sidebars = {
-   '**': ['globaltoc.html', 'localtoc.html', 'searchbox.html'],
+   '**': ['globaltoc.html', 'searchbox.html'],
 }
 
 # The name of an image file (relative to this directory) to place at the top

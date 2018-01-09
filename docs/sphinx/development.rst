@@ -6,6 +6,6 @@ Development
 
    development/roadmap
    development/conventions
-   development/scons
+   development/cookbook
    development/git
    development/ci

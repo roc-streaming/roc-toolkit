@@ -1,31 +1,3 @@
-Quick start
------------
-
-For a quick start, see "Building and testing" section [on wiki](https://github.com/roc-project/roc/wiki#building-and-testing).
-
-Dependencies
-------------
-
-**Build-time:**
-* GCC >= 4.1 or clang >= 3.4
-* python 2.x >= 2.6
-* scons
-* pkg-config (optional, use if you want installed dependencies to be auto-detected)
-* gengetopt (optional, use if you want to build tools)
-* doxygen >= 1.6, graphviz (optional, use if you want to build internal documentation)
-* clang-tidy (optional, use if you want to run static analyzer)
-* clang-format >= 3.8 (optional, use if you want to format code)
-* libtool, autoconf, automake, make, cmake (optional, use if you want to download and build external dependencies automatically)
-
-**Runtime:**
-* [libuv](http://libuv.org) >= 1.4
-* [OpenFEC](http://openfec.org) (optional but recommended, use if you want FEC support)
-* [SoX](http://sox.sourceforge.net) >= 14.4.0 (optional, use if you want to build tools)
-* [CppUTest](http://cpputest.github.io) >= 3.4 (optional, use if you want to build tests)
-
-**Notes:**
-* If you use CppUTest 3.4 or earlier, build it with `--disable-memory-leak-detection` option. It's leak detection doesn't work for us. Instead, we support building with clang sanitizers which include LeakSanitizer as well.
-* If you use OpenFEC, it's recommended to use [our fork](https://github.com/roc-project/openfec) or manually apply patches from it. It is automatically selected by `--build-3rdparty=openfec` option. The fork contains several bugfixes and minor improvements that are not available in the upstream yet.
 
 Building
 --------
@@ -55,7 +27,7 @@ After building, tools and libraries are inside `bin/` directory.
 * `--disable-openfec` - disable OpenFEC support required for FEC codes
 * `--build-3rdparty=BUILD_3RDPARTY` - download and build specified 3rdparty libraries, pass a comma-separated list of library names and optional versions, e.g. `uv:1.4.2,openfec`
 * `--override-targets=OVERRIDE_TARGETS` - override targets to use, pass a comma-separated list of target names, e.g. `gnu,posix,uv,openfec,...`
-                                
+
 **Variables**
 
 These variables can be set either via command line or environment variables.

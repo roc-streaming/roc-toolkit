@@ -13,8 +13,6 @@ Goals:
 Status
 ------
 
-Docker images used in Travis are availale on [Docker Hub](https://hub.docker.com/u/rocproject/). See [Continuous integration](https://github.com/roc-project/roc/wiki/Continuous-integration) page for details.
-
 Branch    | Linux
 --------- | -----
 `master`  | [![](https://travis-ci.org/roc-project/roc.svg?branch=master)](https://travis-ci.org/roc-project/roc)
@@ -23,9 +21,7 @@ Branch    | Linux
 Work in progress!
 -----------------
 
-There is no public release yet. See [Roadmap](https://roc-project.github.io/docs/development/roadmap.html) and [open issues](https://github.com/roc-project/roc/issues) for current and future plans.
-
-The upcoming 0.1 release will include the following features:
+There is no public release yet. The upcoming 0.1 release will include the following features:
 
 - [x] Simple public API for sender and receiver
 - [x] Command line tools for sender and receiver
@@ -39,16 +35,18 @@ The upcoming 0.1 release will include the following features:
 - [x] Mac OS X support
 - [x] Proof of concept Roc-based network transport for PulseAudio
 
+See also [Roadmap](https://roc-project.github.io/docs/development/roadmap.html) page.
+
 Documentation
 -------------
 
-* [Wiki](https://github.com/roc-project/roc/wiki)
-* [API](https://github.com/roc-project/roc/tree/develop/src/lib/roc) (*work in progress*)
+* [Roc documentation](https://roc-project.github.io/docs/)
+* [Roc internal modules](https://roc-project.github.io/modules/)
 
 Building
 --------
 
-See examples [on wiki](https://github.com/roc-project/roc/wiki/Building-%28native%29). See also [INSTALL](INSTALL.md) for further details.
+See [Building](https://roc-project.github.io/docs/building.html) page. In particular, [Quick start](https://roc-project.github.io/docs/building/quick_start.html) page provides examples for popular distros.
 
 Try it
 ------
@@ -100,13 +98,11 @@ Pull requests are welcome as well. For large features, it may be reasonable to o
 Licensing
 ---------
 
-Roc source code is licensed under [MPL-2.0](https://www.mozilla.org/en-US/MPL/2.0/).
-
-Roc PulseAudio modules are licensed under [LGPL-2.1](https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html). Roc logos provided by [botanicahouse](https://www.instagram.com/botanicahouse/) are licensed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).
+Roc source code is licensed under [MPL-2.0](https://www.mozilla.org/en-US/MPL/2.0/). Roc PulseAudio modules are licensed under [LGPL-2.1](https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html). Roc logos provided by [botanicahouse](https://www.instagram.com/botanicahouse/) are licensed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).
 
 Roc by default is configured to use FEC codec from OpenFEC, which is licensed under [CeCILL](http://openfec.org/patents.html), a GPL-like and GPL-compatible license. When Roc is built with OpenFEC support enabled, it must be distributed under a lincense compatible with CeCILL.
 
 Authors
 -------
 
-See [AUTHORS](AUTHORS).
+Maintainers and contributors are listed in [AUTHORS](AUTHORS).
