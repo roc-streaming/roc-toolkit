@@ -105,6 +105,10 @@ html_sidebars = {
    '**': ['globaltoc.html', 'searchbox.html'],
 }
 
+html_context = {
+    'css_files': ['_static/roc.css'],
+}
+
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
 # html_logo = '../images/icon.png'
@@ -123,7 +127,7 @@ html_sidebars = {
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = []
+html_static_path = ['_static']
 
 
 # -- Options for HTMLHelp output ------------------------------------------

@@ -1,0 +1,22 @@
+/* roc color overrides */
+
+div.related {
+    background-color: #3A76A4;
+    color: #FFFDAB;
+}
+
+div.footer {
+    background-color: #10212d;
+}
+
+div.body h1 {
+    background-color: #B0C8DB;
+}
+
+div.body h2 {
+    background-color: #C8DAE8;
+}
+
+div.body h3 {
+    background-color: #DEEAF3;
+}
