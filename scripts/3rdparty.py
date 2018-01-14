@@ -125,7 +125,7 @@ def isgnu(toolchain):
     else:
         cmd = ['ld', '-v']
     try:
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         return 'GNU' in proc.stdout.read().strip()
     except:
         return False
