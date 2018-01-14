@@ -53,30 +53,7 @@ section "Options"
     option "beep" - "Enable beep on packet loss" flag off
 
 text "
-Address:
-  ADDRESS should be in one of the following forms:
-    - :PORT
-    - IPv4:PORT
-    - [IPv6]:PORT
-
-Output:
-  Arguments for `--output' and `--type' options are passed to SoX:
-    NAME specifies file or device name
-    TYPE specifies file or device type
-
-Examples:
-  start receiver listening on all interfaces on two UDP ports:
-    $ roc-recv -vv -s :12345 -r :12346
-
-  start receiver listening on particular interface:
-    $ roc-recv -vv -s 192.168.0.3:12345 -r 192.168.0.3:12346
-
-  output to ALSA default device:
-    $ roc-recv -vv -s :12345 -r :12346 -t alsa
-    or
-    $ roc-recv -vv -s :12345 -r :12346 -t alsa -o default
-
-  output to file:
-    $ roc-recv -vv -s :12345 -r :12346 -o record.wav
-    or
-    $ roc-recv -vv -s :12345 -r :12346 -o record.wav -t wav"
+ADDRESS should be in one of the following forms:
+  - :PORT
+  - IPv4:PORT
+  - [IPv6]:PORT"

@@ -2,6 +2,7 @@
 bin
 build
 docs/html
+docs/man
 3rdparty
 
 # scons

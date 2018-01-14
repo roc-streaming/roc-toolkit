@@ -29,30 +29,7 @@ section "Options"
         int optional
 
 text "
-Address:
-  ADDRESS should be in one of the following forms:
-    - :PORT
-    - IPv4:PORT
-    - [IPv6]:PORT
-
-Output:
-  Arguments for `--input' and `--type' options are passed to SoX:
-    NAME specifies file or device name
-    TYPE specifies file or device type
-
-Examples:
-  send wav file:
-    $ roc-send -vv -s 192.168.0.3:12345 -r 192.168.0.3:12346 -i song.wav
-    or
-    $ roc-send -vv -s 192.168.0.3:12345 -r 192.168.0.3:12346 -i song.wav -t wav
-
-  capture sound from default driver and device:
-    $ roc-send -vv -s 192.168.0.3:12345 -r 192.168.0.3:12346
-
-  capture sound from default ALSA device:
-    $ roc-send -vv -s 192.168.0.3:12345 -r 192.168.0.3:12346 -t alsa
-    or
-    $ roc-send -vv -s 192.168.0.3:12345 -r 192.168.0.3:12346 -t alsa -i default
-
-  capture sound from specific pulseaudio device:
-    $ roc-send -vv -s 192.168.0.3:12345 -r 192.168.0.3:12346 -t pulseaudio -i <device>"
+ADDRESS should be in one of the following forms:
+  - :PORT
+  - IPv4:PORT
+  - [IPv6]:PORT"

@@ -24,6 +24,9 @@ Build results are installed into the following directories:
 - ``./3rdparty/<host>/rpath``
     automatically built 3rd-party shared libraries
 
+- ``./docs/man``
+    Manual pages
+
 - ``./docs/html``
     HTML documentation
 

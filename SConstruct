@@ -164,6 +164,7 @@ clean = [
     env.DeleteDir('#bin'),
     env.DeleteDir('#build'),
     env.DeleteDir('#docs/html'),
+    env.DeleteDir('#docs/man'),
     env.DeleteDir('#3rdparty'),
     env.DeleteDir('#.sconf_temp'),
     env.DeleteFile('#.sconsign.dblite'),
@@ -225,16 +226,26 @@ else:
     enable_sphinx = env.Which(env['SPHINX_BUILD']) and env.Which(env['BREATHE_APIDOC'])
 
 if enable_doxygen and enable_sphinx:
-    env.AlwaysBuild(
-        env.Alias('sphinx', env.Sphinx(
+    sphinx_targets = [
+        env.Sphinx(
             build_dir='build',
+            output_type='html',
             output_dir='docs/html/sphinx',
             source_dir='docs/sphinx',
             sources=(env.RecursiveGlob('docs/sphinx', ['*']) +
                 env.RecursiveGlob('docs/images', ['*']) +
                 env.RecursiveGlob('#src/lib/include', ['*.h', '*.dox']) +
                 doxygen_targets),
-            werror=GetOption('enable_werror'))))
+            werror=GetOption('enable_werror')),
+        env.Sphinx(
+            build_dir='build',
+            output_type='man',
+            output_dir='docs/man',
+            source_dir='docs/sphinx',
+            sources=env.RecursiveGlob('docs/sphinx', ['*']),
+            werror=GetOption('enable_werror')),
+    ]
+    env.AlwaysBuild(env.Alias('sphinx', sphinx_targets))
 
 fmt = []
 

@@ -226,14 +226,14 @@ def Doxygen(env, build_dir, output_dir, config, sources, werror=False):
 
     return target
 
-def Sphinx(env, build_dir, output_dir, source_dir, sources, werror=False):
-    target = os.path.join(env.Dir(output_dir).path, '.done')
+def Sphinx(env, output_type, build_dir, output_dir, source_dir, sources, werror=False):
+    target = os.path.join(env.Dir(build_dir).path, source_dir, '.done.'+output_type)
 
     if not env.Which(env['SPHINX_BUILD']):
         env.Die("sphinx-build not found in PATH (looked for '%s')" % env['SPHINX_BUILD'])
 
     env.Command(target, sources, SCons.Action.CommandAction(
-        '%s %s/wrappers/doc.py %s %s %s %s %s %s -q -b html -d %s %s %s' % (
+        '%s %s/wrappers/doc.py %s %s %s %s %s %s -q -b %s -d %s %s %s' % (
             env.Python(),
             env.Dir(os.path.dirname(__file__)).path,
             env.Dir('#').path,
@@ -242,6 +242,7 @@ def Sphinx(env, build_dir, output_dir, source_dir, sources, werror=False):
             target,
             int(werror or 0),
             env['SPHINX_BUILD'],
+            output_type,
             env.Dir(os.path.join(build_dir, source_dir)).path,
             env.Dir(source_dir).path,
             env.Dir(output_dir).path),
