@@ -7,4 +7,5 @@ Building
    building/dependencies
    building/quick_start
    building/cross_compiling
-   building/scons_options
+   building/scons
+   building/examples
