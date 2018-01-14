@@ -1,4 +1,4 @@
-Forward erasure correction codes
+Forward Erasure Correction codes
 ********************************
 
 .. warning::

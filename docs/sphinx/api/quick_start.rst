@@ -9,7 +9,7 @@ Roc provides easy-to-use and flexible C API. Overall complexity is hidden behind
 
 Besides the fact that roc is written in C++, it provides API in terms of plain old C in sake of portability and simplicity.
 
-This guide covers building audio transmission into your application. It is supposed to show a main concept, so see :doc:`reference` for detailed description of functions and structures if need so.
+This guide covers building audio transmission into your application. It is supposed to show a main concept, so see :doc:`/api/reference` for detailed description of functions and structures if need so.
 
 Sender
 ======
