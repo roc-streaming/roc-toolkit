@@ -121,6 +121,11 @@ AddOption('--disable-tests',
           action='store_true',
           help='disable tests building')
 
+AddOption('--disable-examples',
+          dest='disable_examples',
+          action='store_true',
+          help='disable examples building')
+
 AddOption('--disable-doc',
           dest='disable_doc',
           action='store_true',
@@ -775,7 +780,7 @@ for t in env['ROC_TARGETS']:
 env.Append(LIBPATH=['#%s' % build_dir])
 
 if platform in ['linux']:
-    env.AppendUnique(LIBS=['rt', 'dl'])
+    env.AppendUnique(LIBS=['rt', 'dl', 'm'])
 
 if compiler in ['gcc', 'clang']:
     env.Append(CXXFLAGS=[

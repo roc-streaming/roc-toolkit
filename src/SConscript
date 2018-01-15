@@ -1,5 +1,4 @@
 import os.path
-import re
 
 Import('env', 'lib_env', 'gen_env', 'tool_env', 'test_env', 'pulse_env')
 
@@ -47,6 +46,27 @@ if not GetOption('disable_lib'):
     env.Alias('libroc', [target], env.Action(''))
     env.AlwaysBuild('libroc')
 
+if not GetOption('disable_examples'):
+    cenv = env.Clone()
+    cenv.AppendVars(lib_env)
+    cenv.Append(CPPPATH=['lib/include'])
+    cenv.Append(LIBS=['roc'])
+
+    targets = []
+
+    for source in env.Glob('lib/example/*.c'):
+        example = os.path.splitext(source.name)[0]
+        exename = 'roc-example-' + example.replace('_', '-')
+
+        exe = cenv.Program(exename, [source],
+                    RPATH=env.Literal('\\$$ORIGIN'))
+
+        env.Depends(exe, libroc)
+        targets.append(env.Install(env['ROC_BINDIR'], exe))
+
+    env.Alias('examples', targets, env.Action(''))
+    env.AlwaysBuild('examples')
+
 if not GetOption('disable_tests'):
     cenv = env.Clone()
     cenv.AppendVars(tool_env)
@@ -74,7 +94,7 @@ if not GetOption('disable_tests'):
         if not sources:
             continue
 
-        exename = 'roc-test-' + re.sub('roc_', '', testname)
+        exename = 'roc-test-' + testname.replace('roc_', '')
         target = env.Install(env['ROC_BINDIR'],
             ccenv.Program(exename, sources + test_main,
                 RPATH=env.Literal('\\$$ORIGIN')))
@@ -93,7 +113,7 @@ if not GetOption('disable_tools'):
         for ggo in env.Glob('%s/*.ggo' % tooldir):
             objects += gen_env.GenGetOpt(ggo, env['ROC_VERSION'])
 
-        exename = re.sub('roc_', 'roc-', tooldir.name)
+        exename = tooldir.name.replace('roc_', 'roc-')
         target = env.Install(env['ROC_BINDIR'],
                     cenv.Program(exename, sources+objects))
 

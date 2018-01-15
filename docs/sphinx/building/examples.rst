@@ -37,7 +37,7 @@ Minimal build:
 
 .. code::
 
-    $ scons -Q --disable-openfec --disable-tools --disable-tests --disable-doc
+    $ scons -Q --disable-openfec --disable-tools --disable-tests --disable-examples --disable-doc
 
 Developer build:
 

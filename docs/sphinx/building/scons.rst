@@ -58,6 +58,7 @@ Options
   --disable-lib               disable libroc building
   --disable-tools             disable tools building
   --disable-tests             disable tests building
+  --disable-examples          disable examples building
   --disable-doc               disable Doxygen documentation generation
   --disable-openfec           disable OpenFEC support required for FEC codes
   --with-pulseaudio=WITH_PULSEAUDIO
