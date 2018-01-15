@@ -333,7 +333,6 @@ TEST_GROUP(sender_receiver) {
 
     void init_config() {
         memset(&sender_conf, 0, sizeof(sender_conf));
-        sender_conf.flags |= ROC_FLAG_DISABLE_INTERLEAVER;
         sender_conf.flags |= ROC_FLAG_ENABLE_TIMER;
         sender_conf.samples_per_packet = (unsigned int)PacketSamples / NumChans;
         sender_conf.fec_scheme = ROC_FEC_RS8M;

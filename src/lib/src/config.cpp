@@ -88,7 +88,7 @@ bool config_sender(pipeline::SenderConfig& out, const roc_sender_config& in) {
         out.fec.n_repair_packets = in.n_repair_packets;
     }
 
-    out.interleaving = !(in.flags & ROC_FLAG_DISABLE_INTERLEAVER);
+    out.interleaving = (in.flags & ROC_FLAG_ENABLE_INTERLEAVER);
     out.timing = (in.flags & ROC_FLAG_ENABLE_TIMER);
 
     return true;

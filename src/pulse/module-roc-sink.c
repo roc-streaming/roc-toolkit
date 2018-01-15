@@ -272,7 +272,6 @@ int pa__init(pa_module* m) {
 
     roc_sender_config sender_config;
     memset(&sender_config, 0, sizeof(sender_config));
-    sender_config.flags |= ROC_FLAG_DISABLE_INTERLEAVER;
 
     u->sender = roc_sender_open(u->context, &sender_config);
     if (!u->sender) {

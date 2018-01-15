@@ -22,10 +22,10 @@ enum {
     //! Resampler is used to adjust receiver's frequency to sender's frequency.
     ROC_FLAG_DISABLE_RESAMPLER = (1 << 0),
 
-    //! Turn off interleaver in sender.
+    //! Turn on interleaver in sender.
     //! Interleaver is used to shuffle packets before sending them to increase
     //! to increase chances that missing packets will be reconstructed.
-    ROC_FLAG_DISABLE_INTERLEAVER = (1 << 1),
+    ROC_FLAG_ENABLE_INTERLEAVER = (1 << 1),
 
     //! Turn on timing in receiver or sender.
     //! Timer is used to constrain the sender or receiver speed to its sample
