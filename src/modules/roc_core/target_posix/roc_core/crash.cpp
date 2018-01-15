@@ -117,7 +117,10 @@ void CrashHandler::install_(int sig) {
     struct sigaction sa;
     sa.sa_sigaction = signal_handler;
     sa.sa_flags = int(SA_SIGINFO | SA_RESETHAND);
-    sigemptyset(&sa.sa_mask);
+
+    if (sigemptyset(&sa.sa_mask) != 0) {
+        roc_log(LogError, "crash handler: sigemptyset(): %s", errno_to_str().c_str());
+    }
 
     if (sigaction(sig, &sa, &sa_restore_[restore_sz_]) != 0) {
         roc_log(LogError, "crash handler: sigaction(): %s", errno_to_str().c_str());
