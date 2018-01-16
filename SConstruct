@@ -428,6 +428,9 @@ for var in ['CC', 'CXX', 'LD', 'AR', 'RANLIB']:
 
     checked.add(env[var])
 
+env['LINK'] = env['LD']
+env['SHLINK'] = env['LD']
+
 for var in ['CFLAGS', 'CXXFLAGS', 'LDFLAGS']:
     if env.HasArg(var):
         if var == 'LDFLAGS':
