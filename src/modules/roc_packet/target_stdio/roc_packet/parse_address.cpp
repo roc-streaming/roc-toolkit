@@ -6,8 +6,6 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include <uv.h>
-
 #include "roc_core/log.h"
 #include "roc_packet/address_to_str.h"
 #include "roc_packet/parse_address.h"
@@ -72,27 +70,25 @@ bool parse_address(const char* input, Address& result) {
     if (addr[0] == '[') {
         size_t addrlen = strlen(addr);
         if (addr[addrlen - 1] != ']') {
-            roc_log(LogError, "parse address: bad ipv6, expected closing ']'");
+            roc_log(LogError, "parse address: bad IPv6 address: expected closing ']'");
             return false;
         }
 
         char addr6[128] = {};
         if (addrlen - 2 > sizeof(addr6) - 1) {
-            roc_log(LogError, "parse address: bad ipv6, address too long");
+            roc_log(LogError, "parse address: bad IPv6 address: address too long");
             return false;
         }
 
         memcpy(addr6, addr + 1, addrlen - 2);
 
-        if (int err = uv_ip6_addr(addr6, (int)port_num, (sockaddr_in6*)result.saddr())) {
-            roc_log(LogError, "parse address: uv_ip6_addr(): [%s] %s", uv_err_name(err),
-                    uv_strerror(err));
+        if (!result.set_ipv6(addr6, (int)port_num)) {
+            roc_log(LogError, "parse address: bad IPv6 address: %s", addr6);
             return false;
         }
     } else {
-        if (int err = uv_ip4_addr(addr, (int)port_num, (sockaddr_in*)result.saddr())) {
-            roc_log(LogError, "parse address: uv_ip4_addr(): [%s] %s", uv_err_name(err),
-                    uv_strerror(err));
+        if (!result.set_ipv4(addr, (int)port_num)) {
+            roc_log(LogError, "parse address: bad IPv4 address: %s", addr);
             return false;
         }
     }

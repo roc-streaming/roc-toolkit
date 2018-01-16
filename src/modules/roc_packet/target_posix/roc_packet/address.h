@@ -15,7 +15,6 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 
-#include "roc_core/endian.h"
 #include "roc_core/stddefs.h"
 
 namespace roc {
@@ -25,78 +24,50 @@ namespace packet {
 class Address {
 public:
     //! Construct invalid address.
-    Address() {
-        memset(&ss_, 0, sizeof(ss_));
-    }
+    Address();
+
+    //! Set address from sockaddr struct.
+    bool set_saddr(const sockaddr* sa);
+
+    //! Set IPv4 address.
+    bool set_ipv4(const char* ip, int port);
+
+    //! Set IPv6 address.
+    bool set_ipv6(const char* ip, int port);
 
     //! Get sockaddr struct.
-    sockaddr* saddr() {
-        return (sockaddr*)&ss_;
-    }
+    sockaddr* saddr();
 
     //! Get sockaddr struct.
-    const sockaddr* saddr() const {
-        return (const sockaddr*)&ss_;
-    }
+    const sockaddr* saddr() const;
 
     //! Get sockaddr struct length.
-    socklen_t slen() const {
-        return sizeof_(ss_.ss_family);
-    }
+    socklen_t slen() const;
 
-    //! Copy given sockaddr struct to this address.
-    bool set_saddr(const sockaddr* sa) {
-        socklen_t sz = sizeof_(sa->sa_family);
-        if (sz == 0) {
-            return false;
-        }
-        memcpy(saddr(), sa, sz);
-        return true;
-    }
+    //! Get IP version (4 or 6).
+    int version() const;
 
     //! Get address port.
-    //! @remarks
-    //!  Returns -1 if this is not an internet address.
-    int port() const {
-        switch (ss_.ss_family) {
-        case AF_INET:
-            return ROC_NTOH_16(((const sockaddr_in*)&ss_)->sin_port);
-        case AF_INET6:
-            return ROC_NTOH_16(((const sockaddr_in6*)&ss_)->sin6_port);
-        default:
-            return -1;
-        }
-    }
+    int port() const;
+
+    //! Get IP address.
+    bool get_ip(char* buf, size_t bufsz) const;
 
     //! Compare addresses.
-    bool operator==(const Address& other) const {
-        if (slen() != other.slen()) {
-            return false;
-        }
-        if (slen() == 0) {
-            return true;
-        }
-        return memcmp(saddr(), other.saddr(), slen()) == 0;
-    }
+    bool operator==(const Address& other) const;
 
     //! Compare addresses.
-    bool operator!=(const Address& other) const {
-        return !(*this == other);
-    }
+    bool operator!=(const Address& other) const;
 
 private:
-    static socklen_t sizeof_(sa_family_t family) {
-        switch (family) {
-        case AF_INET:
-            return sizeof(sockaddr_in);
-        case AF_INET6:
-            return sizeof(sockaddr_in6);
-        default:
-            return 0;
-        }
-    }
+    static socklen_t sizeof_(sa_family_t family);
 
-    sockaddr_storage ss_;
+    sa_family_t family_() const;
+
+    union {
+        sockaddr_in addr4;
+        sockaddr_in6 addr6;
+    } sa_;
 };
 
 } // namespace packet

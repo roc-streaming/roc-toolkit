@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_packet/target_uv/roc_packet/parse_address.h
+//! @file roc_packet/target_stdio/roc_packet/parse_address.h
 //! @brief Socket address helpers.
 
 #ifndef ROC_PACKET_PARSE_ADDRESS_H_

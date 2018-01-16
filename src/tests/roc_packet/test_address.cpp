@@ -18,22 +18,74 @@ TEST_GROUP(address){};
 
 TEST(address, invalid) {
     Address addr;
+
+    UNSIGNED_LONGS_EQUAL(-1, addr.version());
+    LONGS_EQUAL(-1, addr.port());
+
     STRCMP_EQUAL("", address_to_str(addr).c_str());
 }
 
-TEST(address, ipv4) {
+TEST(address, set_ipv4) {
     Address addr;
-    CHECK(parse_address("1.2.0.255:123", addr));
+    CHECK(addr.set_ipv4("1.2.0.255", 123));
+
+    UNSIGNED_LONGS_EQUAL(4, addr.version());
+    LONGS_EQUAL(123, addr.port());
+
     STRCMP_EQUAL("1.2.0.255:123", address_to_str(addr).c_str());
 }
 
-TEST(address, ipv6) {
+TEST(address, set_ipv6) {
     Address addr;
-    CHECK(parse_address("[2001:db8::1]:123", addr));
+    CHECK(addr.set_ipv6("2001:db8::1", 123));
+
+    UNSIGNED_LONGS_EQUAL(6, addr.version());
+    LONGS_EQUAL(123, addr.port());
+
     STRCMP_EQUAL("[2001:db8::1]:123", address_to_str(addr).c_str());
 }
 
-TEST(address, port) {
+TEST(address, get_ipv4) {
+    Address addr;
+    CHECK(addr.set_ipv4("1.2.0.255", 123));
+
+    char buf[128];
+    CHECK(addr.get_ip(buf, sizeof(buf)));
+
+    STRCMP_EQUAL("1.2.0.255", buf);
+}
+
+TEST(address, get_ipv6) {
+    Address addr;
+    CHECK(addr.set_ipv6("2001:db8::1", 123));
+
+    char buf[128];
+    CHECK(addr.get_ip(buf, sizeof(buf)));
+
+    STRCMP_EQUAL("2001:db8::1", buf);
+}
+
+TEST(address, parse_ipv4) {
+    Address addr;
+    CHECK(parse_address("1.2.0.255:123", addr));
+
+    UNSIGNED_LONGS_EQUAL(4, addr.version());
+    LONGS_EQUAL(123, addr.port());
+
+    STRCMP_EQUAL("1.2.0.255:123", address_to_str(addr).c_str());
+}
+
+TEST(address, parse_ipv6) {
+    Address addr;
+    CHECK(parse_address("[2001:db8::1]:123", addr));
+
+    UNSIGNED_LONGS_EQUAL(6, addr.version());
+    LONGS_EQUAL(123, addr.port());
+
+    STRCMP_EQUAL("[2001:db8::1]:123", address_to_str(addr).c_str());
+}
+
+TEST(address, parse_port) {
     Address addr1;
     LONGS_EQUAL(-1, addr1.port());
 
@@ -44,6 +96,53 @@ TEST(address, port) {
     Address addr3;
     CHECK(parse_address("1.2.3.4:123", addr3));
     LONGS_EQUAL(123, addr3.port());
+}
+
+TEST(address, parse_min_port) {
+    Address addr;
+    CHECK(parse_address("1.2.3.4:0", addr));
+    STRCMP_EQUAL("1.2.3.4:0", address_to_str(addr).c_str());
+}
+
+TEST(address, parse_max_port) {
+    Address addr;
+    CHECK(parse_address("1.2.3.4:65535", addr));
+    STRCMP_EQUAL("1.2.3.4:65535", address_to_str(addr).c_str());
+}
+
+TEST(address, parse_zero) {
+    Address addr;
+    CHECK(parse_address("0.0.0.0:0", addr));
+    STRCMP_EQUAL("0.0.0.0:0", address_to_str(addr).c_str());
+}
+
+TEST(address, parse_empty_ip) {
+    Address addr;
+    CHECK(parse_address(":123", addr));
+    STRCMP_EQUAL("0.0.0.0:123", address_to_str(addr).c_str());
+}
+
+TEST(address, parse_bad_format) {
+    Address addr;
+    CHECK(!parse_address(NULL, addr));
+    CHECK(!parse_address("", addr));
+    CHECK(!parse_address("1.2.3.4", addr));
+    CHECK(!parse_address("1.-2.3.4:123", addr));
+    CHECK(!parse_address("1.a.3.4:123", addr));
+    CHECK(!parse_address("1.2.3.4:", addr));
+    CHECK(!parse_address("1.2.3.4:a", addr));
+    CHECK(!parse_address("1 .2.3.4:123", addr));
+    CHECK(!parse_address("1.2.3.4: 123", addr));
+    CHECK(!parse_address("1.2.3.4:123 ", addr));
+}
+
+TEST(address, parse_bad_range) {
+    Address addr;
+    CHECK(!parse_address(NULL, addr));
+    CHECK(!parse_address("256.1.2.3:123", addr));
+    CHECK(!parse_address("1.2.3.4:65536", addr));
+    CHECK(!parse_address("1.2.3.4:-1", addr));
+    CHECK(!parse_address("1.2.3.4:999999999999999", addr));
 }
 
 TEST(address, eq) {
@@ -66,53 +165,6 @@ TEST(address, eq) {
     CHECK(!(addr1 != addr2));
     CHECK(addr1 != addr3);
     CHECK(addr1 != addr4);
-}
-
-TEST(address, min_port) {
-    Address addr;
-    CHECK(parse_address("1.2.3.4:0", addr));
-    STRCMP_EQUAL("1.2.3.4:0", address_to_str(addr).c_str());
-}
-
-TEST(address, max_port) {
-    Address addr;
-    CHECK(parse_address("1.2.3.4:65535", addr));
-    STRCMP_EQUAL("1.2.3.4:65535", address_to_str(addr).c_str());
-}
-
-TEST(address, zero) {
-    Address addr;
-    CHECK(parse_address("0.0.0.0:0", addr));
-    STRCMP_EQUAL("0.0.0.0:0", address_to_str(addr).c_str());
-}
-
-TEST(address, empty_ip) {
-    Address addr;
-    CHECK(parse_address(":123", addr));
-    STRCMP_EQUAL("0.0.0.0:123", address_to_str(addr).c_str());
-}
-
-TEST(address, bad_format) {
-    Address addr;
-    CHECK(!parse_address(NULL, addr));
-    CHECK(!parse_address("", addr));
-    CHECK(!parse_address("1.2.3.4", addr));
-    CHECK(!parse_address("1.-2.3.4:123", addr));
-    CHECK(!parse_address("1.a.3.4:123", addr));
-    CHECK(!parse_address("1.2.3.4:", addr));
-    CHECK(!parse_address("1.2.3.4:a", addr));
-    CHECK(!parse_address("1 .2.3.4:123", addr));
-    CHECK(!parse_address("1.2.3.4: 123", addr));
-    CHECK(!parse_address("1.2.3.4:123 ", addr));
-}
-
-TEST(address, bad_range) {
-    Address addr;
-    CHECK(!parse_address(NULL, addr));
-    CHECK(!parse_address("256.1.2.3:123", addr));
-    CHECK(!parse_address("1.2.3.4:65536", addr));
-    CHECK(!parse_address("1.2.3.4:-1", addr));
-    CHECK(!parse_address("1.2.3.4:999999999999999", addr));
 }
 
 } // namespace packet

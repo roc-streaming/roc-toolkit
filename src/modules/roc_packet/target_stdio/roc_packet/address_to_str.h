@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_packet/target_uv/roc_packet/address_to_str.h
+//! @file roc_packet/target_stdio/roc_packet/address_to_str.h
 //! @brief Convert network address to string.
 
 #ifndef ROC_PACKET_ADDRESS_TO_STR_H_
