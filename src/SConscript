@@ -48,6 +48,7 @@ if not GetOption('disable_lib'):
 
 if not GetOption('disable_examples'):
     cenv = env.Clone()
+    cenv.AppendVars(tool_env)
     cenv.Append(CPPPATH=['lib/include'])
     cenv.Append(LIBS=['roc'])
 

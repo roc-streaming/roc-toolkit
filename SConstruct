@@ -516,7 +516,7 @@ else:
             'target_darwin',
         ])
 
-    if not GetOption('disable_tools'):
+    if not GetOption('disable_tools') or not GetOption('disable_examples'):
         env.Append(ROC_TARGETS=[
             'target_sox',
         ])
@@ -547,7 +547,9 @@ if not GetOption('disable_tests'):
 if not GetOption('disable_tools'):
     all_dependencies.add('target_gengetopt')
 
-if not GetOption('disable_tools') or GetOption('enable_pulseaudio_modules'):
+if not GetOption('disable_tools') \
+  or not GetOption('disable_examples') \
+  or GetOption('enable_pulseaudio_modules'):
     if platform in ['linux']:
         all_dependencies.add('target_alsa')
         all_dependencies.add('target_pulseaudio')

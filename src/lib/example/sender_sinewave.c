@@ -6,6 +6,18 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+/* Roc sender example.
+ *
+ * This example generates a 5-second sine wave and sends it to the receiver.
+ * Receiver address and ports and other parameters are hardcoded.
+ *
+ * Building:
+ *   gcc sender_sinewave.c -lroc
+ *
+ * Running:
+ *   ./a.out
+ */
+
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,7 +25,12 @@
 
 #include <roc/address.h>
 #include <roc/context.h>
+#include <roc/log.h>
 #include <roc/sender.h>
+
+/* Sender parameters. */
+#define SENDER_IP "0.0.0.0"
+#define SENDER_PORT 0
 
 /* Receiver parameters. */
 #define RECEIVER_IP "127.0.0.1"
@@ -37,8 +54,11 @@
     } while (0)
 
 int main() {
+    /* Enable debug logging. */
+    roc_log_set_level(ROC_LOG_DEBUG);
+
     /* Initialize context config.
-     * We use default values here. */
+     * We use default values. */
     roc_context_config context_config;
     memset(&context_config, 0, sizeof(context_config));
 
@@ -72,10 +92,9 @@ int main() {
 
     /* Bind sender to a random port. */
     roc_address sender_addr;
-    if (roc_address_init(&sender_addr, ROC_AF_AUTO, "0.0.0.0", 0) != 0) {
+    if (roc_address_init(&sender_addr, ROC_AF_AUTO, SENDER_IP, SENDER_PORT) != 0) {
         oops("roc_address_init");
     }
-
     if (roc_sender_bind(sender, &sender_addr) != 0) {
         oops("roc_sender_bind");
     }
@@ -89,7 +108,6 @@ int main() {
         != 0) {
         oops("roc_address_init");
     }
-
     if (roc_sender_connect(sender, ROC_PROTO_RTP_RSM8_SOURCE, &recv_source_addr) != 0) {
         oops("roc_sender_connect");
     }
@@ -103,7 +121,6 @@ int main() {
         != 0) {
         oops("roc_address_init");
     }
-
     if (roc_sender_connect(sender, ROC_PROTO_RSM8_REPAIR, &recv_repair_addr) != 0) {
         oops("roc_sender_connect");
     }
@@ -118,7 +135,7 @@ int main() {
         for (j = 0; j < BUFFER_SIZE / NUM_CHANNELS; j++) {
             float s = (float)sin(2 * PI * SINE_RATE / SAMPLE_RATE * t);
 
-            /* Fill samples for left and right channel. */
+            /* Fill samples for left and right channels. */
             samples[j * 2] = s;
             samples[j * 2 + 1] = -s;
 
