@@ -12,6 +12,7 @@
 #ifndef ROC_SENDER_H_
 #define ROC_SENDER_H_
 
+#include "roc/address.h"
 #include "roc/config.h"
 #include "roc/context.h"
 #include "roc/types.h"
@@ -31,13 +32,13 @@ ROC_API roc_sender* roc_sender_open(roc_context* context,
 //! Bind sender to a local port.
 //! If the port is zero, an ephemeral port is selected and written back to addr.
 //! Returns 0 on success or -1 on error.
-ROC_API int roc_sender_bind(roc_sender* sender, struct sockaddr* src_addr);
+ROC_API int roc_sender_bind(roc_sender* sender, roc_address* src_addr);
 
 //! Connect sender to a remote port.
 //! Returns 0 on success or -1 on error.
 ROC_API int roc_sender_connect(roc_sender* sender,
                                roc_protocol proto,
-                               const struct sockaddr* dst_addr);
+                               const roc_address* dst_addr);
 
 //! Write samples to sender.
 //! Returns positve number of samples on success or -1 on error.

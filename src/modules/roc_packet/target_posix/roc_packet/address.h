@@ -26,6 +26,9 @@ public:
     //! Construct invalid address.
     Address();
 
+    //! Check if the address was properly initialized.
+    bool valid() const;
+
     //! Set address from sockaddr struct.
     bool set_saddr(const sockaddr* sa);
 

@@ -18,11 +18,12 @@
 #include "roc_core/stddefs.h"
 #include "roc_core/thread.h"
 #include "roc_netio/transceiver.h"
+#include "roc_packet/address.h"
 #include "roc_packet/address_to_str.h"
 #include "roc_packet/packet_pool.h"
-#include "roc_packet/parse_address.h"
 #include "roc_packet/queue.h"
 
+#include "roc/address.h"
 #include "roc/context.h"
 #include "roc/log.h"
 #include "roc/receiver.h"
@@ -77,24 +78,21 @@ class Sender : public core::Thread {
 public:
     Sender(Context& context,
            roc_sender_config& config,
-           packet::Address dst_source_addr,
-           packet::Address dst_repair_addr,
+           const roc_address* dst_source_addr,
+           const roc_address* dst_repair_addr,
            float* samples,
            size_t total_samples,
            size_t frame_size)
         : samples_(samples)
         , total_samples_(total_samples)
         , frame_size_(frame_size) {
-        packet::Address addr;
-        CHECK(packet::parse_address("127.0.0.1:0", addr));
+        roc_address addr;
+        CHECK(roc_address_init(&addr, ROC_AF_AUTO, "127.0.0.1", 0) == 0);
         sndr_ = roc_sender_open(context.get(), &config);
         CHECK(sndr_);
-        CHECK(roc_sender_bind(sndr_, addr.saddr()) == 0);
-        CHECK(
-            roc_sender_connect(sndr_, ROC_PROTO_RTP_RSM8_SOURCE, dst_source_addr.saddr())
-            == 0);
-        CHECK(roc_sender_connect(sndr_, ROC_PROTO_RSM8_REPAIR, dst_repair_addr.saddr())
-              == 0);
+        CHECK(roc_sender_bind(sndr_, &addr) == 0);
+        CHECK(roc_sender_connect(sndr_, ROC_PROTO_RTP_RSM8_SOURCE, dst_source_addr) == 0);
+        CHECK(roc_sender_connect(sndr_, ROC_PROTO_RSM8_REPAIR, dst_repair_addr) == 0);
     }
 
     ~Sender() {
@@ -128,25 +126,24 @@ public:
         : samples_(samples)
         , total_samples_(total_samples)
         , frame_size_(frame_size) {
-        CHECK(packet::parse_address("127.0.0.1:0", source_addr_));
-        CHECK(packet::parse_address("127.0.0.1:0", repair_addr_));
+        CHECK(roc_address_init(&source_addr_, ROC_AF_AUTO, "127.0.0.1", 0) == 0);
+        CHECK(roc_address_init(&repair_addr_, ROC_AF_AUTO, "127.0.0.1", 0) == 0);
         recv_ = roc_receiver_open(context.get(), &config);
         CHECK(recv_);
-        CHECK(roc_receiver_bind(recv_, ROC_PROTO_RTP_RSM8_SOURCE, source_addr_.saddr())
-              == 0);
-        CHECK(roc_receiver_bind(recv_, ROC_PROTO_RSM8_REPAIR, repair_addr_.saddr()) == 0);
+        CHECK(roc_receiver_bind(recv_, ROC_PROTO_RTP_RSM8_SOURCE, &source_addr_) == 0);
+        CHECK(roc_receiver_bind(recv_, ROC_PROTO_RSM8_REPAIR, &repair_addr_) == 0);
     }
 
     ~Receiver() {
         roc_receiver_close(recv_);
     }
 
-    packet::Address source_addr() {
-        return source_addr_;
+    const roc_address* source_addr() const {
+        return &source_addr_;
     }
 
-    packet::Address repair_addr() {
-        return repair_addr_;
+    const roc_address* repair_addr() const {
+        return &repair_addr_;
     }
 
     void run() {
@@ -204,8 +201,8 @@ private:
 
     roc_receiver* recv_;
 
-    packet::Address source_addr_;
-    packet::Address repair_addr_;
+    roc_address source_addr_;
+    roc_address repair_addr_;
 
     const float* samples_;
     const size_t total_samples_;
@@ -214,23 +211,29 @@ private:
 
 class Proxy : private packet::IWriter {
 public:
-    Proxy(const packet::Address& dst_source_addr,
-          const packet::Address& dst_repair_addr,
+    Proxy(const roc_address* dst_source_addr,
+          const roc_address* dst_repair_addr,
           size_t n_source_packets,
           size_t n_repair_packets)
         : trx_(packet_pool, byte_buffer_pool, allocator)
-        , dst_source_addr_(dst_source_addr)
-        , dst_repair_addr_(dst_repair_addr)
         , n_source_packets_(n_source_packets)
         , n_repair_packets_(n_repair_packets)
         , pos_(0) {
-        CHECK(packet::parse_address("127.0.0.1:0", send_addr_));
-        CHECK(packet::parse_address("127.0.0.1:0", recv_source_addr_));
-        CHECK(packet::parse_address("127.0.0.1:0", recv_repair_addr_));
+        dst_source_addr_.set_ipv4("127.0.0.1", roc_address_port(dst_source_addr));
+        dst_repair_addr_.set_ipv4("127.0.0.1", roc_address_port(dst_repair_addr));
+        send_addr_.set_ipv4("127.0.0.1", 0);
+        recv_source_addr_.set_ipv4("127.0.0.1", 0);
+        recv_repair_addr_.set_ipv4("127.0.0.1", 0);
         writer_ = trx_.add_udp_sender(send_addr_);
         CHECK(writer_);
         CHECK(trx_.add_udp_receiver(recv_source_addr_, *this));
         CHECK(trx_.add_udp_receiver(recv_repair_addr_, *this));
+        CHECK(roc_address_init(&roc_source_addr_, ROC_AF_AUTO, "127.0.0.1",
+                               recv_source_addr_.port())
+              == 0);
+        CHECK(roc_address_init(&roc_repair_addr_, ROC_AF_AUTO, "127.0.0.1",
+                               recv_repair_addr_.port())
+              == 0);
     }
 
     ~Proxy() {
@@ -239,12 +242,12 @@ public:
         trx_.remove_port(recv_repair_addr_);
     }
 
-    packet::Address source_addr() {
-        return recv_source_addr_;
+    const roc_address* source_addr() const {
+        return &roc_source_addr_;
     }
 
-    packet::Address repair_addr() {
-        return recv_repair_addr_;
+    const roc_address* repair_addr() const {
+        return &roc_repair_addr_;
     }
 
     void start() {
@@ -298,6 +301,9 @@ private:
     netio::Transceiver trx_;
 
     packet::Address send_addr_;
+
+    roc_address roc_source_addr_;
+    roc_address roc_repair_addr_;
 
     packet::Address recv_source_addr_;
     packet::Address recv_repair_addr_;

@@ -17,6 +17,10 @@ Address::Address() {
     memset(&sa_, 0, sizeof(sa_));
 }
 
+bool Address::valid() const {
+    return family_() == AF_INET || family_() == AF_INET6;
+}
+
 bool Address::set_saddr(const sockaddr* sa) {
     const socklen_t sa_size = sizeof_(sa->sa_family);
     if (sa_size == 0) {

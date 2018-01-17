@@ -27,10 +27,6 @@
 #include <roc/log.h>
 #include <roc/sender.h>
 
-/* system headers */
-#include <netinet/in.h>
-#include <sys/socket.h>
-
 /* local headers */
 #include "roc_helpers.h"
 
@@ -242,19 +238,19 @@ int pa__init(pa_module* m) {
     u->rtpoll = pa_rtpoll_new();
     pa_thread_mq_init(&u->thread_mq, m->core->mainloop, u->rtpoll);
 
-    struct sockaddr_in local_addr;
+    roc_address local_addr;
     if (parse_address(&local_addr, args, "local_ip", DEFAULT_IP, NULL, "0") < 0) {
         goto error;
     }
 
-    struct sockaddr_in remote_source_addr;
+    roc_address remote_source_addr;
     if (parse_address(&remote_source_addr, args, "remote_ip", "", "remote_source_port",
                       DEFAULT_SOURCE_PORT)
         < 0) {
         goto error;
     }
 
-    struct sockaddr_in remote_repair_addr;
+    roc_address remote_repair_addr;
     if (parse_address(&remote_repair_addr, args, "remote_ip", "", "remote_repair_port",
                       DEFAULT_REPAIR_PORT)
         < 0) {
@@ -279,21 +275,18 @@ int pa__init(pa_module* m) {
         goto error;
     }
 
-    if (roc_sender_bind(u->sender, (struct sockaddr*)&local_addr) != 0) {
+    if (roc_sender_bind(u->sender, &local_addr) != 0) {
         pa_log("can't bind roc sender to local address");
         goto error;
     }
 
-    if (roc_sender_connect(u->sender, ROC_PROTO_RTP_RSM8_SOURCE,
-                           (struct sockaddr*)&remote_source_addr)
+    if (roc_sender_connect(u->sender, ROC_PROTO_RTP_RSM8_SOURCE, &remote_source_addr)
         != 0) {
         pa_log("can't connect roc sender to remote address");
         goto error;
     }
 
-    if (roc_sender_connect(u->sender, ROC_PROTO_RSM8_REPAIR,
-                           (struct sockaddr*)&remote_repair_addr)
-        != 0) {
+    if (roc_sender_connect(u->sender, ROC_PROTO_RSM8_REPAIR, &remote_repair_addr) != 0) {
         pa_log("can't connect roc sender to remote address");
         goto error;
     }

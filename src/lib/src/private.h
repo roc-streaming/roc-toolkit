@@ -9,6 +9,7 @@
 #ifndef ROC_PRIVATE_H_
 #define ROC_PRIVATE_H_
 
+#include "roc/address.h"
 #include "roc/context.h"
 #include "roc/receiver.h"
 #include "roc/sender.h"
@@ -27,15 +28,17 @@
 #include "roc_pipeline/sender.h"
 #include "roc_rtp/format_map.h"
 
+const roc::packet::Address& address_get(const roc_address* address);
+roc::packet::Address& address_get(roc_address* address);
+
 bool config_context(roc_context_config& out, const roc_context_config* in);
 
 bool config_sender(roc::pipeline::SenderConfig& out, const roc_sender_config& in);
-
 bool config_receiver(roc::pipeline::ReceiverConfig& out, const roc_receiver_config& in);
 
 bool config_port(roc::pipeline::PortConfig& out,
                  roc_protocol proto,
-                 const struct sockaddr* addr);
+                 const roc::packet::Address& addr);
 
 struct roc_context {
     roc_context(const roc_context_config& cfg);

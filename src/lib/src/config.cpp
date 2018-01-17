@@ -145,7 +145,7 @@ bool config_receiver(pipeline::ReceiverConfig& out, const roc_receiver_config& i
 
 bool config_port(pipeline::PortConfig& out,
                  roc_protocol proto,
-                 const struct sockaddr* addr) {
+                 const packet::Address& addr) {
     switch ((unsigned)proto) {
     case ROC_PROTO_RTP:
         out.protocol = pipeline::Proto_RTP;
@@ -167,10 +167,7 @@ bool config_port(pipeline::PortConfig& out,
         return false;
     }
 
-    if (!out.address.set_saddr(addr)) {
-        roc_log(LogError, "roc_config: invalid address");
-        return false;
-    }
+    out.address = addr;
 
     return true;
 }

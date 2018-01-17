@@ -69,14 +69,25 @@ roc_receiver* roc_receiver_open(roc_context* context, const roc_receiver_config*
     return receiver.release();
 }
 
-int roc_receiver_bind(roc_receiver* receiver, roc_protocol proto, struct sockaddr* addr) {
+int roc_receiver_bind(roc_receiver* receiver, roc_protocol proto, roc_address* bind_addr) {
     if (!receiver) {
         roc_log(LogError, "roc_receiver_bind: invalid arguments: receiver == NULL");
         return -1;
     }
 
-    if (!addr) {
+    if (!bind_addr) {
         roc_log(LogError, "roc_receiver_bind: invalid arguments: addr == NULL");
+        return -1;
+    }
+
+    packet::Address& addr = address_get(bind_addr);
+    if (!addr.valid()) {
+        roc_log(LogError, "roc_sender_connect: invalid arguments: invalid address");
+        return -1;
+    }
+
+    if (!receiver->context.trx.add_udp_receiver(addr, receiver->receiver)) {
+        roc_log(LogError, "roc_receiver_bind: bind failed");
         return -1;
     }
 
@@ -86,17 +97,10 @@ int roc_receiver_bind(roc_receiver* receiver, roc_protocol proto, struct sockadd
         return -1;
     }
 
-    if (!receiver->context.trx.add_udp_receiver(pconfig.address, receiver->receiver)) {
-        roc_log(LogError, "roc_receiver_bind: bind failed");
-        return -1;
-    }
-
     if (!receiver->receiver.add_port(pconfig)) {
         roc_log(LogError, "roc_receiver_bind: can't add pipeline port");
         return -1;
     }
-
-    memcpy(addr, pconfig.address.saddr(), pconfig.address.slen());
 
     roc_log(LogInfo, "roc_receiver: bound to %s %s",
             packet::address_to_str(pconfig.address).c_str(),

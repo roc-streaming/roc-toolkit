@@ -133,7 +133,7 @@ roc_sender* roc_sender_open(roc_context* context, const roc_sender_config* confi
     return sender;
 }
 
-int roc_sender_bind(roc_sender* sender, struct sockaddr* src_addr) {
+int roc_sender_bind(roc_sender* sender, roc_address* src_addr) {
     if (!sender) {
         roc_log(LogError, "roc_sender_bind: invalid arguments: sender == NULL");
         return -1;
@@ -141,6 +141,12 @@ int roc_sender_bind(roc_sender* sender, struct sockaddr* src_addr) {
 
     if (!src_addr) {
         roc_log(LogError, "roc_sender_bind: invalid arguments: src_addr == NULL");
+        return -1;
+    }
+
+    packet::Address& addr = address_get(src_addr);
+    if (!addr.valid()) {
+        roc_log(LogError, "roc_sender_bind: invalid arguments: invalid address");
         return -1;
     }
 
@@ -156,12 +162,6 @@ int roc_sender_bind(roc_sender* sender, struct sockaddr* src_addr) {
         return -1;
     }
 
-    packet::Address addr;
-    if (!addr.set_saddr(src_addr)) {
-        roc_log(LogError, "roc_sender_bind: invalid arguments: bad src_addr");
-        return -1;
-    }
-
     sender->writer = sender->context.trx.add_udp_sender(addr);
     if (!sender->writer) {
         roc_log(LogError, "roc_sender_bind: bind failed");
@@ -169,8 +169,6 @@ int roc_sender_bind(roc_sender* sender, struct sockaddr* src_addr) {
     }
 
     sender->address = addr;
-    memcpy(src_addr, addr.saddr(), addr.slen());
-
     roc_log(LogInfo, "roc_sender: bound to %s",
             packet::address_to_str(sender->address).c_str());
 
@@ -179,7 +177,7 @@ int roc_sender_bind(roc_sender* sender, struct sockaddr* src_addr) {
 
 int roc_sender_connect(roc_sender* sender,
                        roc_protocol proto,
-                       const struct sockaddr* dst_addr) {
+                       const roc_address* dst_addr) {
     if (!sender) {
         roc_log(LogError, "roc_sender_connect: invalid arguments: sender == NULL");
         return -1;
@@ -187,6 +185,12 @@ int roc_sender_connect(roc_sender* sender,
 
     if (!dst_addr) {
         roc_log(LogError, "roc_sender_connect: invalid arguments: dst_addr == NULL");
+        return -1;
+    }
+
+    const packet::Address& addr = address_get(dst_addr);
+    if (!addr.valid()) {
+        roc_log(LogError, "roc_sender_connect: invalid arguments: invalid address");
         return -1;
     }
 
@@ -198,7 +202,7 @@ int roc_sender_connect(roc_sender* sender,
     }
 
     pipeline::PortConfig pconfig;
-    if (!config_port(pconfig, proto, dst_addr)) {
+    if (!config_port(pconfig, proto, addr)) {
         roc_log(LogError, "roc_sender_connect: invalid arguments");
         return -1;
     }

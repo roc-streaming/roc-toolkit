@@ -20,6 +20,11 @@ Receiver
 
 .. doxygenfile:: roc/receiver.h
 
+Address
+=======
+
+.. doxygenfile:: roc/address.h
+
 Config
 ======
 

@@ -19,6 +19,8 @@ TEST_GROUP(address){};
 TEST(address, invalid) {
     Address addr;
 
+    CHECK(!addr.valid());
+
     UNSIGNED_LONGS_EQUAL(-1, addr.version());
     LONGS_EQUAL(-1, addr.port());
 
@@ -27,7 +29,9 @@ TEST(address, invalid) {
 
 TEST(address, set_ipv4) {
     Address addr;
+
     CHECK(addr.set_ipv4("1.2.0.255", 123));
+    CHECK(addr.valid());
 
     UNSIGNED_LONGS_EQUAL(4, addr.version());
     LONGS_EQUAL(123, addr.port());
@@ -37,7 +41,9 @@ TEST(address, set_ipv4) {
 
 TEST(address, set_ipv6) {
     Address addr;
+
     CHECK(addr.set_ipv6("2001:db8::1", 123));
+    CHECK(addr.valid());
 
     UNSIGNED_LONGS_EQUAL(6, addr.version());
     LONGS_EQUAL(123, addr.port());
@@ -47,7 +53,9 @@ TEST(address, set_ipv6) {
 
 TEST(address, get_ipv4) {
     Address addr;
+
     CHECK(addr.set_ipv4("1.2.0.255", 123));
+    CHECK(addr.valid());
 
     char buf[128];
     CHECK(addr.get_ip(buf, sizeof(buf)));
@@ -57,7 +65,9 @@ TEST(address, get_ipv4) {
 
 TEST(address, get_ipv6) {
     Address addr;
+
     CHECK(addr.set_ipv6("2001:db8::1", 123));
+    CHECK(addr.valid());
 
     char buf[128];
     CHECK(addr.get_ip(buf, sizeof(buf)));
@@ -67,7 +77,9 @@ TEST(address, get_ipv6) {
 
 TEST(address, parse_ipv4) {
     Address addr;
+
     CHECK(parse_address("1.2.0.255:123", addr));
+    CHECK(addr.valid());
 
     UNSIGNED_LONGS_EQUAL(4, addr.version());
     LONGS_EQUAL(123, addr.port());
@@ -77,7 +89,9 @@ TEST(address, parse_ipv4) {
 
 TEST(address, parse_ipv6) {
     Address addr;
+
     CHECK(parse_address("[2001:db8::1]:123", addr));
+    CHECK(addr.valid());
 
     UNSIGNED_LONGS_EQUAL(6, addr.version());
     LONGS_EQUAL(123, addr.port());

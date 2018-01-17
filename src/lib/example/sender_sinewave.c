@@ -11,10 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <sys/socket.h>
-
+#include <roc/address.h>
 #include <roc/context.h>
 #include <roc/sender.h>
 
@@ -74,43 +71,40 @@ int main() {
     }
 
     /* Bind sender to a random port. */
-    struct sockaddr_in sender_addr;
-    memset(&sender_addr, 0, sizeof(sender_addr));
-    sender_addr.sin_family = AF_INET;
-    sender_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    sender_addr.sin_port = 0;
+    roc_address sender_addr;
+    if (roc_address_init(&sender_addr, ROC_AF_AUTO, "0.0.0.0", 0) != 0) {
+        oops("roc_address_init");
+    }
 
-    if (roc_sender_bind(sender, (struct sockaddr*)&sender_addr) != 0) {
+    if (roc_sender_bind(sender, &sender_addr) != 0) {
         oops("roc_sender_bind");
     }
 
     /* Connect sender to the receiver source (audio) packets port.
      * The receiver should expect packets with RTP header and Reed-Solomon (m=8) FECFRAME
      * Source Payload ID on that port. */
-    struct sockaddr_in recv_source_addr;
-    memset(&recv_source_addr, 0, sizeof(recv_source_addr));
-    recv_source_addr.sin_family = AF_INET;
-    recv_source_addr.sin_addr.s_addr = inet_addr(RECEIVER_IP);
-    recv_source_addr.sin_port = htons(RECEIVER_SOURCE_PORT);
-
-    if (roc_sender_connect(sender, ROC_PROTO_RTP_RSM8_SOURCE,
-                           (struct sockaddr*)&recv_source_addr)
+    roc_address recv_source_addr;
+    if (roc_address_init(&recv_source_addr, ROC_AF_AUTO, RECEIVER_IP,
+                         RECEIVER_SOURCE_PORT)
         != 0) {
+        oops("roc_address_init");
+    }
+
+    if (roc_sender_connect(sender, ROC_PROTO_RTP_RSM8_SOURCE, &recv_source_addr) != 0) {
         oops("roc_sender_connect");
     }
 
     /* Connect sender to the receiver repair (FEC) packets port.
      * The receiver should expect packets with Reed-Solomon (m=8) FECFRAME
      * Repair Payload ID on that port. */
-    struct sockaddr_in recv_repair_addr;
-    memset(&recv_repair_addr, 0, sizeof(recv_repair_addr));
-    recv_repair_addr.sin_family = AF_INET;
-    recv_repair_addr.sin_addr.s_addr = inet_addr(RECEIVER_IP);
-    recv_repair_addr.sin_port = htons(RECEIVER_REPAIR_PORT);
-
-    if (roc_sender_connect(sender, ROC_PROTO_RSM8_REPAIR,
-                           (struct sockaddr*)&recv_repair_addr)
+    roc_address recv_repair_addr;
+    if (roc_address_init(&recv_repair_addr, ROC_AF_AUTO, RECEIVER_IP,
+                         RECEIVER_REPAIR_PORT)
         != 0) {
+        oops("roc_address_init");
+    }
+
+    if (roc_sender_connect(sender, ROC_PROTO_RSM8_REPAIR, &recv_repair_addr) != 0) {
         oops("roc_sender_connect");
     }
 
