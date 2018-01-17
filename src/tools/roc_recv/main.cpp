@@ -117,6 +117,10 @@ int main(int argc, char** argv) {
             return 1;
         }
         sample_rate = (size_t)args.rate_arg;
+    } else {
+        if (!config.default_session.resampling) {
+            sample_rate = pipeline::DefaultSampleRate;
+        }
     }
 
     if (args.timeout_given) {
