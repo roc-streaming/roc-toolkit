@@ -13,7 +13,7 @@
 #define ROC_CONTEXT_H_
 
 #include "roc/config.h"
-#include "roc/types.h"
+#include "roc/platform.h"
 
 #ifdef __cplusplus
 extern "C" {

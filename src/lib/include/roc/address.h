@@ -12,7 +12,7 @@
 #ifndef ROC_ADDRESS_H_
 #define ROC_ADDRESS_H_
 
-#include "roc/types.h"
+#include "roc/platform.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -57,7 +57,8 @@ roc_address_init(roc_address* address, roc_family family, const char* ip, int po
 ROC_API roc_family roc_address_family(const roc_address* address);
 
 //! Get address IP address.
-ROC_API const char* roc_address_ip(const roc_address* address, char* buf, size_t bufsz);
+ROC_API const char*
+roc_address_ip(const roc_address* address, char* buf, roc_size_t bufsz);
 
 //! Get address port.
 ROC_API int roc_address_port(const roc_address* address);

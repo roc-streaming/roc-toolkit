@@ -109,8 +109,8 @@ int roc_receiver_bind(roc_receiver* receiver, roc_protocol proto, roc_address* b
     return 0;
 }
 
-ssize_t
-roc_receiver_read(roc_receiver* receiver, float* samples, const size_t n_samples) {
+roc_ssize_t
+roc_receiver_read(roc_receiver* receiver, float* samples, roc_size_t n_samples) {
     if (!receiver) {
         roc_log(LogError, "roc_receiver_read: invalid arguments: receiver == NULL");
         return -1;

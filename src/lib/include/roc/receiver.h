@@ -15,7 +15,7 @@
 #include "roc/address.h"
 #include "roc/config.h"
 #include "roc/context.h"
-#include "roc/types.h"
+#include "roc/platform.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -37,9 +37,9 @@ roc_receiver_bind(roc_receiver* receiver, roc_protocol proto, roc_address* addr)
 
 //! Read samples from receiver.
 //! Returns positve number of samples on success or -1 on error.
-ROC_API ssize_t roc_receiver_read(roc_receiver* receiver,
-                                  float* samples,
-                                  size_t n_samples);
+ROC_API roc_ssize_t roc_receiver_read(roc_receiver* receiver,
+                                      float* samples,
+                                      roc_size_t n_samples);
 
 //! Delete previously created receiver.
 ROC_API int roc_receiver_close(roc_receiver* receiver);

@@ -215,8 +215,8 @@ int roc_sender_connect(roc_sender* sender,
     return 0;
 }
 
-ssize_t
-roc_sender_write(roc_sender* sender, const float* samples, const size_t n_samples) {
+roc_ssize_t
+roc_sender_write(roc_sender* sender, const float* samples, roc_size_t n_samples) {
     if (!sender) {
         roc_log(LogError, "roc_sender_write: invalid arguments: sender == NULL");
         return -1;

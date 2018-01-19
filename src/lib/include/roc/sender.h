@@ -15,7 +15,7 @@
 #include "roc/address.h"
 #include "roc/config.h"
 #include "roc/context.h"
-#include "roc/types.h"
+#include "roc/platform.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -42,9 +42,9 @@ ROC_API int roc_sender_connect(roc_sender* sender,
 
 //! Write samples to sender.
 //! Returns positve number of samples on success or -1 on error.
-ROC_API ssize_t roc_sender_write(roc_sender* sender,
-                                 const float* samples,
-                                 size_t n_samples);
+ROC_API roc_ssize_t roc_sender_write(roc_sender* sender,
+                                     const float* samples,
+                                     roc_size_t n_samples);
 
 //! Delete previously created sender.
 ROC_API int roc_sender_close(roc_sender* sender);

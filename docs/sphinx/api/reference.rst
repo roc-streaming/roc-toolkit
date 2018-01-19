@@ -34,3 +34,8 @@ Log
 ===
 
 .. doxygenfile:: roc/log.h
+
+Platform
+========
+
+.. doxygenfile:: roc/platform.h

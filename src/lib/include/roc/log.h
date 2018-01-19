@@ -12,7 +12,7 @@
 #ifndef ROC_LOG_H_
 #define ROC_LOG_H_
 
-#include "roc/types.h"
+#include "roc/platform.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -20,7 +20,7 @@ extern "C" {
 
 //! Log level.
 typedef enum roc_log_level {
-    ROC_LOG_NONE = 0,  //!< Disable all messages.
+    ROC_LOG_NONE = 0,  //!< No messages.
     ROC_LOG_ERROR = 1, //!< Error messages.
     ROC_LOG_INFO = 2,  //!< Informational messages.
     ROC_LOG_DEBUG = 3, //!< Debug messages.
