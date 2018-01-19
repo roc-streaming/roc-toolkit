@@ -6,8 +6,10 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc/log.h
-//! @brief Roc log.
+/**
+ * @file roc/log.h
+ * @brief Logger configuration.
+ */
 
 #ifndef ROC_LOG_H_
 #define ROC_LOG_H_
@@ -18,33 +20,78 @@
 extern "C" {
 #endif
 
-//! Log level.
+/** Log level.
+ * @see roc_log_set_level
+ */
 typedef enum roc_log_level {
-    ROC_LOG_NONE = 0,  //!< No messages.
-    ROC_LOG_ERROR = 1, //!< Error messages.
-    ROC_LOG_INFO = 2,  //!< Informational messages.
-    ROC_LOG_DEBUG = 3, //!< Debug messages.
-    ROC_LOG_TRACE = 4  //!< Debug messages (extra verbosity).
+    /** No messages.
+     * Setting this level disables logging completely.
+     */
+    ROC_LOG_NONE = 0,
+
+    /** Error messages.
+     * Setting this level enables logging only when something goes wrong, e.g. a user
+     * operation can't be completed, or there is not enough memory for a new session.
+     */
+    ROC_LOG_ERROR = 1,
+
+    /** Informational messages.
+     * Setting this level enables logging of important high-level events, like binding
+     * a new port or creating a new session.
+     */
+    ROC_LOG_INFO = 2,
+
+    /** Debug messages.
+     * Setting this level enables logging of debug messages that do not affect
+     * performance.
+     */
+    ROC_LOG_DEBUG = 3,
+
+    /** Debug messages (extra verbosity).
+     * Setting this level enables verbose tracing, which may cause significat slow down.
+     */
+    ROC_LOG_TRACE = 4
 } roc_log_level;
 
-//! Log handler.
+/** Log handler.
+ *
+ * @b Parameters
+ *  - @p level defines the message level
+ *  - @p component defines the component that produces the message
+ *  - @p message defines the message text
+ *
+ * @see roc_log_set_handler
+ */
 typedef void (*roc_log_handler)(roc_log_level level,
-                                const char* module,
+                                const char* component,
                                 const char* message);
 
-//! Set maximum log level.
-//! Messages with higher log level will be dropped.
-//! Default log level is ROC_LOG_ERROR.
+/** Set maximum log level.
+ *
+ * Messages with log levels higher than @p level will be dropped.
+ * By default log level is set to ROC_LOG_ERROR.
+ *
+ * @b Thread-safety
+ *  - thread-safe
+ */
 ROC_API void roc_log_set_level(roc_log_level level);
 
-//! Set log handler.
-//! If @p handler is not NULL, messages will be passed to @p handler
-//! instead of printing to stderr. Default log handler is NULL, so
-//! messages are printed to stderr by default.
+/** Set log handler.
+ *
+ * If @p handler is not NULL, messages are passed to the handler. Otherwise, messages are
+ * printed to stderr. By default log handler is set NULL.
+ *
+ * It's guaranteed that the previously set handler, if any, will not be used after this
+ * function returns.
+ *
+ * @b Thread-safety
+ *  - thread-safe
+ *  - @p handler calls are serialized, so the handler itself doesn't need to be thread-safe
+ */
 ROC_API void roc_log_set_handler(roc_log_handler handler);
 
 #ifdef __cplusplus
-}
+} /* extern "C" */
 #endif
 
-#endif // ROC_LOG_H_
+#endif /* ROC_LOG_H_ */
