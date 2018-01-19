@@ -6,13 +6,13 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_core/target_posix/roc_core/singleton.h
+//! @file roc_core/target_uv/roc_core/singleton.h
 //! @brief Singleton.
 
 #ifndef ROC_CORE_SINGLETON_H_
 #define ROC_CORE_SINGLETON_H_
 
-#include <pthread.h>
+#include <uv.h>
 
 #include "roc_core/alignment.h"
 #include "roc_core/errno_to_str.h"
@@ -27,9 +27,7 @@ template <class T> class Singleton : public core::NonCopyable<> {
 public:
     //! Get singleton instance.
     static T& instance() {
-        if (int err = pthread_once(&once_, create_)) {
-            roc_panic("singleton: pthread_once: %s", errno_to_str(err).c_str());
-        }
+        uv_once(&once_, create_);
         return *instance_;
     }
 
@@ -43,12 +41,12 @@ private:
         instance_ = new (storage_.mem) T();
     }
 
-    static pthread_once_t once_;
+    static uv_once_t once_;
     static Storage storage_;
     static T* instance_;
 };
 
-template <class T> pthread_once_t Singleton<T>::once_ = PTHREAD_ONCE_INIT;
+template <class T> uv_once_t Singleton<T>::once_ = UV_ONCE_INIT;
 template <class T> typename Singleton<T>::Storage Singleton<T>::storage_;
 template <class T> T* Singleton<T>::instance_;
 
