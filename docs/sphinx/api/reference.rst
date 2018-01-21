@@ -20,6 +20,11 @@ Receiver
 
 .. doxygenfile:: roc/receiver.h
 
+Frame
+=====
+
+.. doxygenfile:: roc/frame.h
+
 Address
 =======
 

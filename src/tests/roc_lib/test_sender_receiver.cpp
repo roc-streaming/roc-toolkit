@@ -105,8 +105,15 @@ private:
             if (off + frame_size_ > total_samples_) {
                 off = total_samples_ - frame_size_;
             }
-            const ssize_t ret = roc_sender_write(sndr_, samples_ + off, frame_size_);
-            LONGS_EQUAL(frame_size_, ret);
+
+            roc_frame frame;
+            memset(&frame, 0, sizeof(frame));
+
+            frame.samples = samples_ + off;
+            frame.num_samples = frame_size_;
+
+            const int ret = roc_sender_write(sndr_, &frame);
+            LONGS_EQUAL(0, ret);
         }
     }
 
@@ -159,7 +166,15 @@ public:
         while (!finish) {
             size_t i = 0;
             frame_num++;
-            LONGS_EQUAL(frame_size_, roc_receiver_read(recv_, rx_buff, frame_size_));
+
+            roc_frame frame;
+            memset(&frame, 0, sizeof(frame));
+
+            frame.samples = rx_buff;
+            frame.num_samples = frame_size_;
+
+            LONGS_EQUAL(0, roc_receiver_read(recv_, &frame));
+
             if (seek_first) {
                 for (; i < frame_size_ && is_zero_(rx_buff[i]); i++, leading_zeros++) {
                 }
@@ -168,6 +183,7 @@ public:
                     seek_first = false;
                 }
             }
+
             if (!seek_first) {
                 for (; i < frame_size_; i++) {
                     if (sample_num >= total_samples_) {

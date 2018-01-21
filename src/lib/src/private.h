@@ -68,6 +68,8 @@ struct roc_sender {
     roc::packet::Address address;
 
     roc::core::Mutex mutex;
+
+    size_t num_channels;
 };
 
 struct roc_receiver {
@@ -77,6 +79,8 @@ struct roc_receiver {
 
     roc::rtp::FormatMap format_map;
     roc::pipeline::Receiver receiver;
+
+    size_t num_channels;
 };
 
 #endif // ROC_PRIVATE_H_

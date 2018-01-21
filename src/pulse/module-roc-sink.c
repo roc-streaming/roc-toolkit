@@ -89,14 +89,17 @@ static void process_samples(struct roc_sink_userdata* u, uint64_t expected_bytes
         pa_sink_render(u->sink, 0, &chunk);
 
         /* start reading chunk's memblock */
-        const char *buf = pa_memblock_acquire(chunk.memblock);
+        char *buf = pa_memblock_acquire(chunk.memblock);
 
-        const float *samples = (const float*)(buf + chunk.index);
-        const size_t n_samples = chunk.length / pa_sample_size(&u->sink->sample_spec);
+        /* prepare audio frame */
+        roc_frame frame;
+        memset(&frame, 0, sizeof(frame));
+
+        frame.samples = (float*)(buf + chunk.index);
+        frame.num_samples = chunk.length / pa_sample_size(&u->sink->sample_spec);
 
         /* write samples from memblock to roc transmitter */
-        const ssize_t n = roc_sender_write(u->sender, samples, n_samples);
-        if (n != (ssize_t)n_samples) {
+        if (roc_sender_write(u->sender, &frame) != 0) {
             break;
         }
 

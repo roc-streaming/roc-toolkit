@@ -90,17 +90,21 @@ static int pop_cb(pa_sink_input* i, size_t length, pa_memchunk* chunk) {
     /* start writing memblock */
     char *buf = pa_memblock_acquire(chunk->memblock);
 
-    float *samples = (float*)buf;
-    size_t n_samples = length / pa_sample_size(&u->sink_input->sample_spec);
+    /* prepare audio frame */
+    roc_frame frame;
+    memset(&frame, 0, sizeof(frame));
+
+    frame.samples = (float*)buf;
+    frame.num_samples = length / pa_sample_size(&u->sink_input->sample_spec);
 
     /* read samples from file to memblock */
-    ssize_t ret = roc_receiver_read(u->receiver, samples, n_samples);
+    int ret = roc_receiver_read(u->receiver, &frame);
 
     /* finish writing memblock */
     pa_memblock_release(chunk->memblock);
 
     /* handle eof and error */
-    if (ret < 0) {
+    if (ret != 0) {
         pa_module_unload_request(u->module, true);
         return -1;
     }

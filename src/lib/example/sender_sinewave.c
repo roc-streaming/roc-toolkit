@@ -143,7 +143,13 @@ int main() {
         }
 
         /* Write samples to the sender. */
-        if (roc_sender_write(sender, samples, BUFFER_SIZE) != BUFFER_SIZE) {
+        roc_frame frame;
+        memset(&frame, 0, sizeof(frame));
+
+        frame.samples = samples;
+        frame.num_samples = BUFFER_SIZE;
+
+        if (roc_sender_write(sender, &frame) != 0) {
             oops("roc_sender_write");
         }
     }

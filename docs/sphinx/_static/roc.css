@@ -20,3 +20,8 @@ div.body h2 {
 div.body h3 {
     background-color: #DEEAF3;
 }
+
+div.breathe-sectiondef > dl > dt {
+    background-color: #E3E9ED;
+    padding: 4px;
+}

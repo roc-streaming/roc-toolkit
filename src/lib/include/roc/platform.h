@@ -15,7 +15,6 @@
 #define ROC_PLATFORM_H_
 
 #include <stddef.h>
-#include <unistd.h>
 
 #if defined(__GNUC__)
 /** Compiler attribute for an exported API function. */
@@ -23,19 +22,5 @@
 #else /* !__GNUC__ */
 #error "unsupported compiler"
 #endif /* __GNUC__ */
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-/** A type able to represent the size of any object in bytes. */
-typedef size_t roc_size_t;
-
-/** A signed version of roc_size_t. */
-typedef ssize_t roc_ssize_t;
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif
 
 #endif /* ROC_PLATFORM_H_ */

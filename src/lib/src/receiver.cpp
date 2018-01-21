@@ -32,7 +32,8 @@ roc_receiver::roc_receiver(roc_context& ctx, pipeline::ReceiverConfig& cfg)
                context.packet_pool,
                context.byte_buffer_pool,
                context.sample_buffer_pool,
-               context.allocator) {
+               context.allocator)
+    , num_channels(packet::num_channels(cfg.channels)) {
 }
 
 roc_receiver* roc_receiver_open(roc_context* context, const roc_receiver_config* config) {
@@ -109,31 +110,42 @@ int roc_receiver_bind(roc_receiver* receiver, roc_protocol proto, roc_address* b
     return 0;
 }
 
-roc_ssize_t
-roc_receiver_read(roc_receiver* receiver, float* samples, roc_size_t n_samples) {
+int roc_receiver_read(roc_receiver* receiver, roc_frame* frame) {
     if (!receiver) {
         roc_log(LogError, "roc_receiver_read: invalid arguments: receiver == NULL");
         return -1;
     }
 
-    if (n_samples == 0) {
+    if (!frame) {
+        roc_log(LogError, "roc_receiver_read: invalid arguments: frame == NULL");
+        return -1;
+    }
+
+    if (frame->num_samples == 0) {
         return 0;
     }
 
-    if ((ssize_t)n_samples < 0) {
+    if ((ssize_t)frame->num_samples < 0) {
         roc_log(LogError, "roc_receiver_read: invalid arguments: too much samples");
         return -1;
     }
 
-    if (!samples) {
+    if (frame->num_samples % receiver->num_channels != 0) {
+        roc_log(LogError, "roc_sender_write: invalid arguments: # of samples should be "
+                          "multiple of # of channels: num_samples=%lu num_channels=%lu",
+                (unsigned long)frame->num_samples, (unsigned long)receiver->num_channels);
+        return -1;
+    }
+
+    if (!frame->samples) {
         roc_log(LogError, "roc_receiver_read: invalid arguments: samples == NULL");
         return -1;
     }
 
-    audio::Frame frame(samples, n_samples);
-    receiver->receiver.read(frame);
+    audio::Frame audio_frame(frame->samples, frame->num_samples);
+    receiver->receiver.read(audio_frame);
 
-    return (ssize_t)n_samples;
+    return 0;
 }
 
 int roc_receiver_close(roc_receiver* receiver) {

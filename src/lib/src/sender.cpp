@@ -103,7 +103,8 @@ bool check_connected(roc_sender* sender) {
 roc_sender::roc_sender(roc_context& ctx, pipeline::SenderConfig& cfg)
     : context(ctx)
     , config(cfg)
-    , writer(NULL) {
+    , writer(NULL)
+    , num_channels(packet::num_channels(cfg.channels)) {
 }
 
 roc_sender* roc_sender_open(roc_context* context, const roc_sender_config* config) {
@@ -215,8 +216,7 @@ int roc_sender_connect(roc_sender* sender,
     return 0;
 }
 
-roc_ssize_t
-roc_sender_write(roc_sender* sender, const float* samples, roc_size_t n_samples) {
+int roc_sender_write(roc_sender* sender, const roc_frame* frame) {
     if (!sender) {
         roc_log(LogError, "roc_sender_write: invalid arguments: sender == NULL");
         return -1;
@@ -246,24 +246,36 @@ roc_sender_write(roc_sender* sender, const float* samples, roc_size_t n_samples)
         return -1;
     }
 
-    if (n_samples == 0) {
+    if (!frame) {
+        roc_log(LogError, "roc_sender_write: invalid arguments: frame == NULL");
+        return -1;
+    }
+
+    if (frame->num_samples == 0) {
         return 0;
     }
 
-    if ((ssize_t)n_samples < 0) {
+    if ((ssize_t)frame->num_samples < 0) {
         roc_log(LogError, "roc_sender_write: invalid arguments: too much samples");
         return -1;
     }
 
-    if (!samples) {
+    if (frame->num_samples % sender->num_channels != 0) {
+        roc_log(LogError, "roc_sender_write: invalid arguments: # of samples should be "
+                          "multiple of # of channels: num_samples=%lu num_channels=%lu",
+                (unsigned long)frame->num_samples, (unsigned long)sender->num_channels);
+        return -1;
+    }
+
+    if (!frame->samples) {
         roc_log(LogError, "roc_sender_write: invalid arguments: samples == NULL");
         return -1;
     }
 
-    audio::Frame frame(const_cast<float*>(samples), n_samples);
-    sender->sender->write(frame);
+    audio::Frame audio_frame(frame->samples, frame->num_samples);
+    sender->sender->write(audio_frame);
 
-    return (ssize_t)n_samples;
+    return 0;
 }
 
 int roc_sender_close(roc_sender* sender) {

@@ -86,7 +86,7 @@ roc_family roc_address_family(const roc_address* address) {
     return ROC_AF_INVALID;
 }
 
-const char* roc_address_ip(const roc_address* address, char* buf, roc_size_t bufsz) {
+const char* roc_address_ip(const roc_address* address, char* buf, size_t bufsz) {
     if (!address) {
         return NULL;
     }

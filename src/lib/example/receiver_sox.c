@@ -129,29 +129,34 @@ int main() {
 
     /* Receive and play samples. */
     for (;;) {
-        float recv_samples[BUFFER_SIZE];
-
         /* Read samples from receiver.
          * If not enough samples are received, receiver will pad buffer with zeros. */
-        const ssize_t num_samples = roc_receiver_read(receiver, recv_samples, BUFFER_SIZE);
-        if (num_samples != BUFFER_SIZE) {
+        float recv_samples[BUFFER_SIZE];
+
+        roc_frame frame;
+        memset(&frame, 0, sizeof(frame));
+
+        frame.samples = recv_samples;
+        frame.num_samples = BUFFER_SIZE;
+
+        if (roc_receiver_read(receiver, &frame) != 0) {
             break;
         }
 
+        /* Convert samples to SoX format. */
         SOX_SAMPLE_LOCALS;
 
         size_t clips = 0;
         sox_sample_t out_samples[BUFFER_SIZE];
 
-        /* Convert samples to SoX format. */
         ssize_t n;
-        for (n = 0; n < num_samples; n++) {
+        for (n = 0; n < BUFFER_SIZE; n++) {
             out_samples[n] = SOX_FLOAT_32BIT_TO_SAMPLE(recv_samples[n], clips);
         }
 
         /* Play samples.
          * SoX will block us until the output device is ready to accept new samples. */
-        if (sox_write(output, out_samples, (size_t)num_samples) != (size_t)num_samples) {
+        if (sox_write(output, out_samples, BUFFER_SIZE) != BUFFER_SIZE) {
             oops("sox_write");
         }
     }

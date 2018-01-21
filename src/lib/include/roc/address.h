@@ -122,8 +122,7 @@ ROC_API roc_family roc_address_family(const roc_address* address);
  * @b Thread-safety
  *  - not thread-safe
  */
-ROC_API const char*
-roc_address_ip(const roc_address* address, char* buf, roc_size_t bufsz);
+ROC_API const char* roc_address_ip(const roc_address* address, char* buf, size_t bufsz);
 
 /** Get address port.
  *
