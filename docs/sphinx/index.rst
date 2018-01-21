@@ -1,7 +1,7 @@
 Roc documentation
 *****************
 
-Welcome to Roc documentation!
+Welcome to `Roc <https://roc-project.github.io/>`_ documentation!
 
 .. toctree::
    :caption: Table of Contents:

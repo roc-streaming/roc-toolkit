@@ -1,0 +1,51 @@
+@media (min-width: 1000px) {
+    .container {
+        width: 1000px;
+    }
+    .pull-right-wide {
+        text-align: right;
+    }
+}
+
+@media not all and (min-width: 1000px) {
+    .jumbotron {
+        padding-top: 0px;
+    }
+    .synopsis:before {
+        content: ' ';
+        display: block;
+    }
+}
+
+html, body {
+    height: 100%;
+}
+
+.jumbotron {
+    margin-bottom: 0px;
+}
+
+.toplevel {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.btn-primary {
+    background-color: #3A76A4;
+    margin-left: 1px;
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+.logo {
+    padding-top: 30px;
+    padding-left: 20px;
+    padding-right: 20px;
+}
+
+.footer {
+    padding-top: 20px;
+    padding-bottom: 5px;
+}
