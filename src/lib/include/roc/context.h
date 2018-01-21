@@ -6,8 +6,10 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc/context.h
-//! @brief Roc context.
+/**
+ * @file roc/context.h
+ * @brief Roc context.
+ */
 
 #ifndef ROC_CONTEXT_H_
 #define ROC_CONTEXT_H_
@@ -19,23 +21,90 @@
 extern "C" {
 #endif
 
-//! Context.
+/** Roc context.
+ *
+ * Context contains memory allocator and pools, and the network thread. Objects that
+ * need to perform memory allocations or network I/O are attached to a context to do
+ * that. It is allowed both to create a separate context for every object, or to
+ * create a single context shared between multiple objects.
+ *
+ * A context is created using roc_context_open() and destroyed using roc_context_close().
+ * Objects can be attached and detached to an opened context at any moment from any
+ * thread. However, the user should ensure that the context is not closed until there
+ * are no objects attached to the context.
+ *
+ * After creating a context, the user should explicitly start the network thread using
+ * roc_context_start() and eventually stop it using roc_context_stop(). It may be done
+ * both before and after attaching objects to the context, however no network packets
+ * will be sent and received until the thread is started.
+ *
+ * @b Thread-safety
+ *  - can be used concurrently
+ *
+ * @see roc_sender, roc_receiver
+ */
 typedef struct roc_context roc_context;
 
-//! Create a new context.
+/** Open a new context.
+ *
+ * Allocate and initialize a new context.
+ *
+ * @b Parameters
+ *  - @p config defines context parameters. If @p config is NULL, default values are used
+ *    for all parameters. Otherwise, default values are used for parameters set to zero
+ *
+ * @b Returns
+ *  - returns a new context if it was successfully created
+ *  - returns NULL if the arguments are invalid
+ */
 ROC_API roc_context* roc_context_open(const roc_context_config* config);
 
-//! Start background thread.
+/** Start context thread.
+ *
+ * Starts the network thread. May be called only once.
+ *
+ * @b Parameters
+ *  - @p context should point to an opened context
+ *
+ * @b Returns
+ *  - returns zero if the thread was successfully started
+ *  - returns a negative value if the thread was already started once
+ *  - returns a negative value if the arguments are invalid
+ */
 ROC_API int roc_context_start(roc_context* context);
 
-//! Terminate background thread and wait until it finishes.
+/** Stop context thread.
+ *
+ * Stops the network thread if it is running and waits until it finishes. After this
+ * call, no network packets will be sent and received anymore.
+ *
+ * @b Parameters
+ *  - @p context should point to an opened context
+ *
+ * @b Returns
+ *  - returns zero if the thread was successfully stopped or was already stopped
+ *  - returns a negative value if the arguments are invalid
+ */
 ROC_API int roc_context_stop(roc_context* context);
 
-//! Delete context.
+/** Close context.
+ *
+ * Deinitialize and deallocate context. The user should ensure that nobody uses the
+ * context since this function is called. If the network thread is running, it is
+ * automatically stopped. If this function fails, the context is kept opened.
+ *
+ * @b Parameters
+ *  - @p context should point to an opened context
+ *
+ * @b Returns
+ *  - returns zero if the context was successfully closed
+ *  - returns a negative value if the arguments are invalid
+ *  - returns a negative value if there are objects attached to the context
+ */
 ROC_API int roc_context_close(roc_context* context);
 
 #ifdef __cplusplus
-}
+} /* extern "C" */
 #endif
 
-#endif // ROC_CONTEXT_H_
+#endif /* ROC_CONTEXT_H_ */

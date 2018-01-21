@@ -26,7 +26,7 @@ extern "C" {
  * allocating and deallocating the frame and its sample buffer.
  *
  * @b Thread-safety
- *  - not thread-safe
+ *  - should not be used concurrently
  */
 typedef struct roc_frame {
     /** Audio samples.

@@ -31,7 +31,7 @@ typedef enum roc_family {
     /** IPv4 address. */
     ROC_AF_IPv4 = 1,
 
-    /** Pv6 address. */
+    /** IPv6 address. */
     ROC_AF_IPv6 = 2
 } roc_family;
 
@@ -46,7 +46,7 @@ enum {
  * Similar to struct sockaddr.
  *
  * @b Thread-safety
- *  - not thread-safe
+ *  - should not be used concurrently
  */
 typedef struct roc_address {
 #ifndef ROC_DOXYGEN
@@ -81,9 +81,6 @@ typedef struct roc_address {
  * @b Returns
  *  - returns zero if @p address was successfully initialized
  *  - returns a negative value if the arguments are invalid
- *
- * @b Thread-safety
- *  - not thread-safe
  */
 ROC_API int
 roc_address_init(roc_address* address, roc_family family, const char* ip, int port);
@@ -96,9 +93,6 @@ roc_address_init(roc_address* address, roc_family family, const char* ip, int po
  * @b Returns
  *  - returns the address family if no error occurred
  *  - returns ROC_AF_INVALID if the arguments are invalid
- *
- * @b Thread-safety
- *  - not thread-safe
  */
 ROC_API roc_family roc_address_family(const roc_address* address);
 
@@ -118,9 +112,6 @@ ROC_API roc_family roc_address_family(const roc_address* address);
  *  - returns @p buf if the IP address was successfully stored to the @p buf
  *  - returns NULL if the buffer is too small to store the formatted IP address
  *  - returns NULL if the arguments are invalid
- *
- * @b Thread-safety
- *  - not thread-safe
  */
 ROC_API const char* roc_address_ip(const roc_address* address, char* buf, size_t bufsz);
 
@@ -132,9 +123,6 @@ ROC_API const char* roc_address_ip(const roc_address* address, char* buf, size_t
  * @b Returns
  *  - returns a non-negative port number if no error occurred
  *  - returns a negative value if the arguments are invalid
- *
- * @b Thread-safety
- *  - not thread-safe
  */
 ROC_API int roc_address_port(const roc_address* address);
 

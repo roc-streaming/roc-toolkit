@@ -48,7 +48,7 @@ typedef enum roc_log_level {
     ROC_LOG_DEBUG = 3,
 
     /** Debug messages (extra verbosity).
-     * Setting this level enables verbose tracing, which may cause significat slow down.
+     * Setting this level enables verbose tracing, which may cause significant slow down.
      */
     ROC_LOG_TRACE = 4
 } roc_log_level;
@@ -72,7 +72,7 @@ typedef void (*roc_log_handler)(roc_log_level level,
  * By default log level is set to ROC_LOG_ERROR.
  *
  * @b Thread-safety
- *  - thread-safe
+ *  - can be used concurrently
  */
 ROC_API void roc_log_set_level(roc_log_level level);
 
@@ -85,8 +85,8 @@ ROC_API void roc_log_set_level(roc_log_level level);
  * function returns.
  *
  * @b Thread-safety
- *  - thread-safe
- *  - @p handler calls are serialized, so the handler itself doesn't need to be thread-safe
+ *  - can be used concurrently
+ *  - handler calls are serialized, so the handler itself doesn't need to be thread-safe
  */
 ROC_API void roc_log_set_handler(roc_log_handler handler);
 
