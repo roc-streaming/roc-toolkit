@@ -32,11 +32,13 @@ html, body {
     justify-content: space-between;
 }
 
-.btn-primary {
-    background-color: #3A76A4;
-    margin-left: 1px;
-    margin-top: 5px;
+.header {
     margin-bottom: 5px;
+}
+
+.footer {
+    padding-top: 20px;
+    padding-bottom: 5px;
 }
 
 .logo {
@@ -45,7 +47,8 @@ html, body {
     padding-right: 20px;
 }
 
-.footer {
-    padding-top: 20px;
-    padding-bottom: 5px;
+.btn-primary {
+    background-color: #3A76A4;
+    margin-left: 1px;
+    margin-bottom: 5px;
 }
