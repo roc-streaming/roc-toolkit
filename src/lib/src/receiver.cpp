@@ -70,18 +70,18 @@ roc_receiver* roc_receiver_open(roc_context* context, const roc_receiver_config*
     return receiver.release();
 }
 
-int roc_receiver_bind(roc_receiver* receiver, roc_protocol proto, roc_address* bind_addr) {
+int roc_receiver_bind(roc_receiver* receiver, roc_protocol proto, roc_address* address) {
     if (!receiver) {
         roc_log(LogError, "roc_receiver_bind: invalid arguments: receiver == NULL");
         return -1;
     }
 
-    if (!bind_addr) {
+    if (!address) {
         roc_log(LogError, "roc_receiver_bind: invalid arguments: addr == NULL");
         return -1;
     }
 
-    packet::Address& addr = address_get(bind_addr);
+    packet::Address& addr = address_get(address);
     if (!addr.valid()) {
         roc_log(LogError, "roc_sender_connect: invalid arguments: invalid address");
         return -1;
@@ -123,11 +123,6 @@ int roc_receiver_read(roc_receiver* receiver, roc_frame* frame) {
 
     if (frame->num_samples == 0) {
         return 0;
-    }
-
-    if ((ssize_t)frame->num_samples < 0) {
-        roc_log(LogError, "roc_receiver_read: invalid arguments: too much samples");
-        return -1;
     }
 
     if (frame->num_samples % receiver->num_channels != 0) {

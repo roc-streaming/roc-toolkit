@@ -26,6 +26,25 @@ roc_context
 
 .. doxygenfunction:: roc_context_close
 
+roc_sender
+==========
+
+.. code-block:: c
+
+   #include <roc/sender.h>
+
+.. doxygentypedef:: roc_sender
+
+.. doxygenfunction:: roc_sender_open
+
+.. doxygenfunction:: roc_sender_bind
+
+.. doxygenfunction:: roc_sender_connect
+
+.. doxygenfunction:: roc_sender_write
+
+.. doxygenfunction:: roc_sender_close
+
 roc_frame
 =========
 

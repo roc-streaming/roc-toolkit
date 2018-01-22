@@ -69,7 +69,7 @@ typedef void (*roc_log_handler)(roc_log_level level,
 /** Set maximum log level.
  *
  * Messages with log levels higher than @p level will be dropped.
- * By default log level is set to ROC_LOG_ERROR.
+ * By default log level is set to @c ROC_LOG_ERROR.
  *
  * @b Thread-safety
  *  - can be used concurrently

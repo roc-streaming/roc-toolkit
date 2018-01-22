@@ -134,18 +134,18 @@ roc_sender* roc_sender_open(roc_context* context, const roc_sender_config* confi
     return sender;
 }
 
-int roc_sender_bind(roc_sender* sender, roc_address* src_addr) {
+int roc_sender_bind(roc_sender* sender, roc_address* address) {
     if (!sender) {
         roc_log(LogError, "roc_sender_bind: invalid arguments: sender == NULL");
         return -1;
     }
 
-    if (!src_addr) {
-        roc_log(LogError, "roc_sender_bind: invalid arguments: src_addr == NULL");
+    if (!address) {
+        roc_log(LogError, "roc_sender_bind: invalid arguments: address == NULL");
         return -1;
     }
 
-    packet::Address& addr = address_get(src_addr);
+    packet::Address& addr = address_get(address);
     if (!addr.valid()) {
         roc_log(LogError, "roc_sender_bind: invalid arguments: invalid address");
         return -1;
@@ -178,18 +178,18 @@ int roc_sender_bind(roc_sender* sender, roc_address* src_addr) {
 
 int roc_sender_connect(roc_sender* sender,
                        roc_protocol proto,
-                       const roc_address* dst_addr) {
+                       const roc_address* address) {
     if (!sender) {
         roc_log(LogError, "roc_sender_connect: invalid arguments: sender == NULL");
         return -1;
     }
 
-    if (!dst_addr) {
-        roc_log(LogError, "roc_sender_connect: invalid arguments: dst_addr == NULL");
+    if (!address) {
+        roc_log(LogError, "roc_sender_connect: invalid arguments: address == NULL");
         return -1;
     }
 
-    const packet::Address& addr = address_get(dst_addr);
+    const packet::Address& addr = address_get(address);
     if (!addr.valid()) {
         roc_log(LogError, "roc_sender_connect: invalid arguments: invalid address");
         return -1;
@@ -253,11 +253,6 @@ int roc_sender_write(roc_sender* sender, const roc_frame* frame) {
 
     if (frame->num_samples == 0) {
         return 0;
-    }
-
-    if ((ssize_t)frame->num_samples < 0) {
-        roc_log(LogError, "roc_sender_write: invalid arguments: too much samples");
-        return -1;
     }
 
     if (frame->num_samples % sender->num_channels != 0) {

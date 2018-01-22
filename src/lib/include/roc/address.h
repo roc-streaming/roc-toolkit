@@ -61,7 +61,7 @@ typedef struct roc_address {
 /** Initialize address.
  *
  * Parses an IP address from a string representation and initializes @p address.
- * If @p family is ROC_AF_AUTO, the address family is auto-detected from the @p ip
+ * If @p family is @c ROC_AF_AUTO, the address family is auto-detected from the @p ip
  * format. Otherwise, the @p ip format should correspond to the @p family specified.
  *
  * When @p address is used to bind a sender or receiver port, the "0.0.0.0" @p ip may
@@ -74,7 +74,7 @@ typedef struct roc_address {
  *
  * @b Parameters
  *  - @p address should point to a probably uninitialized struct allocated by user
- *  - @p family should be ROC_AF_AUTO, ROC_AF_IPv4, or ROC_AF_IPv6
+ *  - @p family should be @c ROC_AF_AUTO, @c ROC_AF_IPv4, or @c ROC_AF_IPv6
  *  - @p ip should point to a zero-terminated string with a valid IPv4 or IPv6 address
  *  - @p port should be a port number in range [0; 65536)
  *
@@ -92,7 +92,7 @@ roc_address_init(roc_address* address, roc_family family, const char* ip, int po
  *
  * @b Returns
  *  - returns the address family if no error occurred
- *  - returns ROC_AF_INVALID if the arguments are invalid
+ *  - returns @c ROC_AF_INVALID if the arguments are invalid
  */
 ROC_API roc_family roc_address_family(const roc_address* address);
 

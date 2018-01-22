@@ -34,7 +34,7 @@ ROC_API roc_receiver* roc_receiver_open(roc_context* context,
 //! If the port is zero, an ephemeral port is selected and written back to addr.
 //! Returns 0 on success or -1 on error.
 ROC_API int
-roc_receiver_bind(roc_receiver* receiver, roc_protocol proto, roc_address* addr);
+roc_receiver_bind(roc_receiver* receiver, roc_protocol proto, roc_address* address);
 
 //! Read samples from receiver.
 ROC_API int roc_receiver_read(roc_receiver* receiver, roc_frame* frame);

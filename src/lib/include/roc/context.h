@@ -51,7 +51,7 @@ typedef struct roc_context roc_context;
  *
  * @b Parameters
  *  - @p config defines context parameters. If @p config is NULL, default values are used
- *    for all parameters. Otherwise, default values are used for parameters set to zero
+ *    for all parameters. Otherwise, default values are used for parameters set to zero.
  *
  * @b Returns
  *  - returns a new context if it was successfully created
