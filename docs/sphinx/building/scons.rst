@@ -97,17 +97,20 @@ Targets
 `omitted`
     build everything
 
-``test``
-    build everything and run tests
-
 ``clean``
     remove build results
+
+``test``
+    build everything and run tests
 
 ``fmt``
     format source code (requires clang-format)
 
 ``tidy``
     run linter (requires clang-tidy)
+
+``docs``
+    build website (includes ``doxygen`` and ``sphinx`` targets)
 
 ``doxygen``
     build doxygen documentation (requires doxygen and graphviz)

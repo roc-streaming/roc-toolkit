@@ -197,7 +197,7 @@ if not 'SPHINX_BUILD' in env.Dictionary():
 if not 'BREATHE_APIDOC' in env.Dictionary():
     env['BREATHE_APIDOC'] = 'breathe-apidoc'
 
-if 'doxygen' in COMMAND_LINE_TARGETS:
+if set(COMMAND_LINE_TARGETS).intersection(['doxygen', 'docs']):
     enable_doxygen = True
 elif GetOption('disable_doc') or set(COMMAND_LINE_TARGETS).intersection(['tidy', 'fmt']):
     enable_doxygen = False
@@ -209,21 +209,20 @@ if enable_doxygen:
     doxygen_targets = [
         env.Doxygen(
             build_dir='build/docs/modules',
-            output_dir='docs/html/modules',
+            html_dir='docs/html/modules',
             config='src/modules/Doxyfile',
             sources=(env.RecursiveGlob('#src/modules', ['*.h', '*.dox']) +
                 env.RecursiveGlob('#docs/images', ['*'])),
             werror=GetOption('enable_werror')),
         env.Doxygen(
             build_dir='build/docs/lib',
-            output_dir='docs/html/modules',
             config='src/lib/Doxyfile',
             sources=env.RecursiveGlob('#src/lib/include', ['*.h', '*.dox']),
             werror=GetOption('enable_werror')),
     ]
     env.AlwaysBuild(env.Alias('doxygen', doxygen_targets))
 
-if 'sphinx' in COMMAND_LINE_TARGETS:
+if set(COMMAND_LINE_TARGETS).intersection(['sphinx', 'docs']):
     enable_sphinx = True
 elif GetOption('disable_doc') or set(COMMAND_LINE_TARGETS).intersection(['tidy', 'fmt']):
     enable_sphinx = False
@@ -235,7 +234,7 @@ if enable_doxygen and enable_sphinx:
         env.Sphinx(
             build_dir='build',
             output_type='html',
-            output_dir='docs/html/sphinx',
+            output_dir='docs/html/docs',
             source_dir='docs/sphinx',
             sources=(env.RecursiveGlob('docs/sphinx', ['*']) +
                 env.RecursiveGlob('docs/images', ['*']) +
@@ -251,6 +250,15 @@ if enable_doxygen and enable_sphinx:
             werror=GetOption('enable_werror')),
     ]
     env.AlwaysBuild(env.Alias('sphinx', sphinx_targets))
+
+if (enable_doxygen and enable_sphinx) or 'docs' in COMMAND_LINE_TARGETS:
+    docs_targets = [
+        'doxygen',
+        'sphinx',
+        env.Install('docs/html', env.RecursiveGlob('docs/website', ['*'])),
+        env.Install('docs/html', ['docs/images/logo.png']),
+    ]
+    env.AlwaysBuild(env.Alias('docs', docs_targets))
 
 fmt = []
 

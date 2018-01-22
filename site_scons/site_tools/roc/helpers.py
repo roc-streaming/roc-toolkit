@@ -205,11 +205,15 @@ def ClangDB(env, build_dir, compiler):
         env.Dir(build_dir).path,
         compiler)
 
-def Doxygen(env, build_dir, output_dir, config, sources, werror=False):
+def Doxygen(env, build_dir='', html_dir=None, config='', sources=[], werror=False):
     target = os.path.join(env.Dir(build_dir).path, '.done')
 
     if not env.Which(env['DOXYGEN']):
         env.Die("doxygen not found in PATH (looked for '%s')" % env['DOXYGEN'])
+
+    dirs = [env.Dir(build_dir).path]
+    if html_dir:
+        dirs += [env.Dir(html_dir).path]
 
     env.Command(target, sources + [config], SCons.Action.CommandAction(
         '%s %s/wrappers/doc.py %s %s %s %s %s %s %s' % (
@@ -217,12 +221,12 @@ def Doxygen(env, build_dir, output_dir, config, sources, werror=False):
             env.Dir(os.path.dirname(__file__)).path,
             env.Dir('#').path,
             env.Dir(os.path.dirname(config)).path,
-            '%s:%s' % (env.Dir(output_dir).path, env.Dir(output_dir).path),
+            ':'.join(dirs),
             target,
             int(werror or 0),
             env['DOXYGEN'],
             env.File(config).name),
-        cmdstr = env.Pretty('DOXYGEN', output_dir, 'purple')))
+        cmdstr = env.Pretty('DOXYGEN', build_dir, 'purple')))
 
     return target
 

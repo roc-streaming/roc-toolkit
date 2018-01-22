@@ -117,7 +117,14 @@ Build all documentation. Requires doxygen, sphinx, and breathe.
 
 .. code::
 
-   $ scons -Q doxygen sphinx
+   $ scons -Q docs
+
+Build specific parts of documentation:
+
+.. code::
+
+   $ scons -Q doxygen
+   $ scons -Q sphinx
 
 Run doxygen manually:
 

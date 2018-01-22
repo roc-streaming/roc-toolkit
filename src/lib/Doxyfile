@@ -34,10 +34,10 @@ EXPAND_ONLY_PREDEF      = YES
 PREDEFINED              = ROC_API= ROC_DOXYGEN=
 
 OUTPUT_DIRECTORY        = ../../build/docs/lib
-HTML_OUTPUT             = ../../../docs/html/lib
+HTML_OUTPUT             =
 
 GENERATE_XML            = YES
-GENERATE_HTML           = YES
+GENERATE_HTML           = NO
 GENERATE_LATEX          = NO
 
 OUTPUT_LANGUAGE         = English
