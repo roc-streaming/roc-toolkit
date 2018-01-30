@@ -26,9 +26,10 @@ Watchdog::Watchdog(IReader& reader,
     , num_channels_(num_channels)
     , max_drop_window_num_(max_drop_window_num)
     , drop_window_sz_(drop_window_sz)
-    , drop_samples_(0)
-    , frame_samples_(0)
-    , total_drop_(false) {
+    , non_drop_pos_(0)
+    , timestamp_(0)
+    , total_drop_(false)
+    , curr_drop_(false) {
 }
 
 void Watchdog::read(Frame& frame) {
@@ -82,9 +83,9 @@ bool Watchdog::has_dropped_frames_() const {
 
     roc_log(LogInfo,
             "watchdog: too many frames have dropped packets:"
-            " drop_samples=%lu non_drop_samples=%lu"
+            " ts=%lu non_drop_ts=%lu"
             " drop_window_sz=%lu max_drop_window_num=%lu",
-            (unsigned long)drop_samples_, (unsigned long)frame_samples_,
+            (unsigned long)timestamp_, (unsigned long)non_drop_pos_,
             (unsigned long)drop_window_sz_, (unsigned long)max_drop_window_num_);
 
     return true;
@@ -101,51 +102,24 @@ void Watchdog::check_frame_empty_(const Frame& frame) {
 void Watchdog::check_frame_has_dropped_packets_(const Frame& frame) {
     const unsigned flags = frame.flags();
     const size_t num_samples = frame.size() / num_channels_;
+    const bool end_of_window =
+        timestamp_ % drop_window_sz_ + num_samples >= drop_window_sz_;
+
+    timestamp_ += num_samples;
 
     if ((flags & audio::Frame::FlagPacketDrops) && !(flags & audio::Frame::FlagFull)) {
-        add_drop_samples_(num_samples);
-        check_drop_window_exceeded_();
-    } else {
-        update_drop_window_(num_samples);
-        if (!check_drop_window_exceeded_()) {
-            reset_drop_window_();
+        curr_drop_ = true;
+    }
+
+    if (end_of_window) {
+        if (!curr_drop_) {
+            non_drop_pos_ = timestamp_;
         }
+        curr_drop_ = false;
     }
-}
 
-void Watchdog::add_drop_samples_(const size_t num_samples) {
-    drop_samples_ += num_samples + frame_samples_;
-    frame_samples_ = 0;
-}
-
-bool Watchdog::check_drop_window_exceeded_() {
-    if (drop_samples_ >= max_drop_window_num_) {
+    if (timestamp_ - non_drop_pos_ >= max_drop_window_num_) {
         total_drop_ = true;
-    }
-    return total_drop_;
-}
-
-void Watchdog::update_drop_window_(const size_t num_samples) {
-    const packet::timestamp_t left_drop_samples =
-        drop_window_sz_ - drop_samples_ % drop_window_sz_;
-
-    if (left_drop_samples == drop_window_sz_) {
-        frame_samples_ += num_samples;
-        return;
-    }
-
-    if (num_samples <= left_drop_samples) {
-        drop_samples_ += num_samples;
-    } else {
-        drop_samples_ += left_drop_samples;
-        frame_samples_ += num_samples - left_drop_samples;
-    }
-}
-
-void Watchdog::reset_drop_window_() {
-    if (frame_samples_ >= drop_window_sz_) {
-        frame_samples_ = frame_samples_ % drop_window_sz_;
-        drop_samples_ = 0;
     }
 }
 
