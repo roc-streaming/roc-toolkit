@@ -58,10 +58,6 @@ private:
     bool has_dropped_frames_() const;
     void check_frame_empty_(const Frame& frame);
     void check_frame_has_dropped_packets_(const Frame& frame);
-    void add_drop_samples_(const size_t num_samples);
-    bool check_drop_window_exceeded_();
-    void update_drop_window_(const size_t num_samples);
-    void reset_drop_window_();
 
     IReader& reader_;
 
@@ -77,10 +73,11 @@ private:
 
     packet::timestamp_t max_drop_window_num_;
     packet::timestamp_t drop_window_sz_;
-    packet::timestamp_t drop_samples_;
-    packet::timestamp_t frame_samples_;
+    packet::timestamp_t non_drop_pos_;
+    packet::timestamp_t timestamp_;
 
     bool total_drop_;
+    bool curr_drop_;
 };
 
 } // namespace audio
