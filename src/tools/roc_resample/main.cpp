@@ -22,7 +22,7 @@ using namespace roc;
 
 namespace {
 
-enum { MaxFrameSize = 65 * 1024 };
+enum { MaxFrameSize = 65 * 1024, Channels = 0x3 };
 
 } // namespace
 
@@ -41,16 +41,29 @@ int main(int argc, char** argv) {
 
     sndio::sox_setup();
 
-    audio::ResamplerConfig resampler_config;
-
-    packet::channel_mask_t channel_mask = 0x3;
-    size_t sample_rate = (size_t)args.rate_arg;
-    size_t chunk_size = 4096;
-
     core::HeapAllocator allocator;
     core::BufferPool<audio::sample_t> pool(allocator, MaxFrameSize, 1);
 
-    sndio::SoxReader reader(pool, channel_mask, chunk_size, 0);
+    audio::ResamplerConfig resampler_config;
+
+    if (args.interp_given) {
+        resampler_config.window_interp = (size_t)args.interp_arg;
+    }
+
+    if (args.window_given) {
+        resampler_config.window_size = (size_t)args.window_arg;
+    }
+
+    if (args.frame_given) {
+        resampler_config.frame_size = (size_t)args.frame_arg;
+    }
+
+    size_t chunk_size = 0;
+    if (args.chunk_given) {
+        resampler_config.frame_size = (size_t)args.chunk_arg;
+    }
+
+    sndio::SoxReader reader(pool, Channels, chunk_size, 0);
 
     if (!reader.open(args.input_arg, NULL)) {
         roc_log(LogError, "can't open input file: %s", args.input_arg);
@@ -62,11 +75,14 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    if (!args.rate_given) {
-        sample_rate = reader.sample_rate();
+    size_t writer_sample_rate;
+    if (args.rate_given) {
+        writer_sample_rate = (size_t)args.rate_arg;
+    } else {
+        writer_sample_rate = reader.sample_rate();
     }
 
-    sndio::SoxWriter writer(allocator, channel_mask, sample_rate);
+    sndio::SoxWriter writer(allocator, Channels, writer_sample_rate);
 
     if (!writer.open(args.output_arg, NULL)) {
         roc_log(LogError, "can't open output file: %s", args.output_arg);
@@ -78,14 +94,13 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    audio::ResamplerWriter resampler(writer, pool, allocator, resampler_config,
-                                     channel_mask);
+    audio::ResamplerWriter resampler(writer, pool, allocator, resampler_config, Channels);
     if (!resampler.valid()) {
         roc_log(LogError, "can't create resampler");
         return 1;
     }
 
-    if (!resampler.set_scaling((float)reader.sample_rate() / sample_rate)) {
+    if (!resampler.set_scaling((float)reader.sample_rate() / writer_sample_rate)) {
         roc_log(LogError, "can't set resampler scaling");
         return 1;
     }

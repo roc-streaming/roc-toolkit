@@ -76,7 +76,7 @@ SoxReader::SoxReader(core::BufferPool<audio::sample_t>& buffer_pool,
     }
 
     if (n_samples == 0) {
-        roc_panic("sox reader: # of samples is zero");
+        n_samples = sox_get_globals()->bufsiz / n_channels;
     }
 
     buffer_size_ = n_samples * n_channels;

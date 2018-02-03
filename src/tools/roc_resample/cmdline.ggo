@@ -11,3 +11,15 @@ section "Options"
 
     option "rate" r "Output sample rate (Hz)"
         int optional
+
+    option "interp" - "Resampler sinc table precision"
+        int optional
+
+    option "window" - "Number of samples per resampler window"
+        int optional
+
+    option "frame" - "Number of samples per resampler frame"
+        int optional
+
+    option "chunk" - "Number of samples per input frame"
+        int optional
