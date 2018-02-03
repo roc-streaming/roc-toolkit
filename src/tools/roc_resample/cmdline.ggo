@@ -1,0 +1,13 @@
+package "roc-resample"
+usage "roc-resample OPTIONS"
+
+section "Options"
+
+    option "verbose" v "Increase verbosity level (may be used multiple times)"
+        multiple optional
+
+    option "input" i "Input file" typestr="PATH" string required
+    option "output" o "Output file" typestr="PATH" string required
+
+    option "rate" r "Output sample rate (Hz)"
+        int optional
