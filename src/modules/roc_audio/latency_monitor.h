@@ -14,7 +14,7 @@
 
 #include "roc_audio/depacketizer.h"
 #include "roc_audio/freq_estimator.h"
-#include "roc_audio/resampler.h"
+#include "roc_audio/resampler_reader.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/rate_limiter.h"
 #include "roc_packet/sorted_queue.h"
@@ -68,7 +68,7 @@ public:
     //!  - @p output_sample_rate is the sample rate of the output frames
     LatencyMonitor(const packet::SortedQueue& queue,
                    const Depacketizer& depacketizer,
-                   Resampler* resampler,
+                   ResamplerReader* resampler,
                    const LatencyMonitorConfig& config,
                    packet::timestamp_t target_latency,
                    size_t input_sample_rate,
@@ -95,7 +95,7 @@ private:
 
     const packet::SortedQueue& queue_;
     const Depacketizer& depacketizer_;
-    Resampler* resampler_;
+    ResamplerReader* resampler_;
     FreqEstimator fe_;
 
     core::RateLimiter rate_limiter_;

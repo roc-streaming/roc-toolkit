@@ -16,7 +16,7 @@
 #include "roc_audio/idecoder.h"
 #include "roc_audio/ireader.h"
 #include "roc_audio/latency_monitor.h"
-#include "roc_audio/resampler.h"
+#include "roc_audio/resampler_reader.h"
 #include "roc_audio/watchdog.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/iallocator.h"
@@ -101,7 +101,7 @@ private:
     core::UniquePtr<audio::IDecoder> decoder_;
     core::UniquePtr<audio::Depacketizer> depacketizer_;
 
-    core::UniquePtr<audio::Resampler> resampler_;
+    core::UniquePtr<audio::ResamplerReader> resampler_;
 
     core::UniquePtr<audio::LatencyMonitor> latency_monitor_;
 };

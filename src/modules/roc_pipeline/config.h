@@ -13,7 +13,7 @@
 #define ROC_PIPELINE_CONFIG_H_
 
 #include "roc_audio/latency_monitor.h"
-#include "roc_audio/resampler.h"
+#include "roc_audio/resampler_reader.h"
 #include "roc_core/stddefs.h"
 #include "roc_fec/config.h"
 #include "roc_packet/units.h"

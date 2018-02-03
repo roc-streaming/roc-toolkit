@@ -22,7 +22,7 @@ const core::nanoseconds_t LogRate = 5000000000;
 
 LatencyMonitor::LatencyMonitor(const packet::SortedQueue& queue,
                                const Depacketizer& depacketizer,
-                               Resampler* resampler,
+                               ResamplerReader* resampler,
                                const LatencyMonitorConfig& config,
                                packet::timestamp_t target_latency,
                                size_t input_sample_rate,

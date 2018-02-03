@@ -133,9 +133,9 @@ ReceiverSession::ReceiverSession(const SessionConfig& config,
     areader = watchdog_.get();
 
     if (config.resampling) {
-        resampler_.reset(new (allocator_)
-                             audio::Resampler(*areader, sample_buffer_pool, allocator,
-                                              config.resampler, config.channels),
+        resampler_.reset(new (allocator_) audio::ResamplerReader(
+                             *areader, sample_buffer_pool, allocator, config.resampler,
+                             config.channels),
                          allocator_);
         if (!resampler_ || !resampler_->valid()) {
             return;

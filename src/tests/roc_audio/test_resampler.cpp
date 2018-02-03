@@ -9,6 +9,7 @@
 #include <CppUTest/TestHarness.h>
 
 #include "roc_audio/resampler.h"
+#include "roc_audio/resampler_reader.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_core/random.h"
@@ -120,11 +121,11 @@ TEST(resampler, invalid_scaling) {
     enum { ChMask = 0x1, InvalidScaling = FrameSize };
 
     MockReader reader;
-    Resampler resampler(reader, buffer_pool, allocator, config, ChMask);
+    ResamplerReader rr(reader, buffer_pool, allocator, config, ChMask);
 
-    CHECK(resampler.valid());
+    CHECK(rr.valid());
 
-    CHECK(!resampler.set_scaling(InvalidScaling));
+    CHECK(!rr.set_scaling(InvalidScaling));
 }
 
 // Check the quality of upsampled sine-wave.
@@ -132,11 +133,11 @@ TEST(resampler, upscaling_twice_single) {
     enum { ChMask = 0x1 };
 
     MockReader reader;
-    Resampler resampler(reader, buffer_pool, allocator, config, ChMask);
+    ResamplerReader rr(reader, buffer_pool, allocator, config, ChMask);
 
-    CHECK(resampler.valid());
+    CHECK(rr.valid());
 
-    CHECK(resampler.set_scaling(0.5f));
+    CHECK(rr.set_scaling(0.5f));
 
     const size_t sig_len = 2048;
     double buff[sig_len * 2];
@@ -148,7 +149,7 @@ TEST(resampler, upscaling_twice_single) {
 
     // Put the spectrum of the resampled signal into buff.
     // Odd elements are magnitudes in dB, even elements are phases in radians.
-    get_sample_spectrum1(resampler, buff, sig_len);
+    get_sample_spectrum1(rr, buff, sig_len);
 
     const size_t main_freq_index = sig_len / 8;
     for (size_t n = 0; n < sig_len / 2; n += 2) {
@@ -168,11 +169,11 @@ TEST(resampler, upscaling_twice_awgn) {
     enum { ChMask = 0x1 };
 
     MockReader reader;
-    Resampler resampler(reader, buffer_pool, allocator, config, ChMask);
+    ResamplerReader rr(reader, buffer_pool, allocator, config, ChMask);
 
-    CHECK(resampler.valid());
+    CHECK(rr.valid());
 
-    CHECK(resampler.set_scaling(0.5f));
+    CHECK(rr.set_scaling(0.5f));
 
     const size_t sig_len = 2048;
     double buff[sig_len * 2];
@@ -185,7 +186,7 @@ TEST(resampler, upscaling_twice_awgn) {
 
     // Put the spectrum of the resampled signal into buff.
     // Odd elements are magnitudes in dB, even elements are phases in radians.
-    get_sample_spectrum1(resampler, buff, sig_len);
+    get_sample_spectrum1(rr, buff, sig_len);
 
     for (i = 0; i < sig_len - 1; i += 2) {
         if (i <= sig_len * 0.90 / 2) {
@@ -200,11 +201,11 @@ TEST(resampler, downsample) {
     enum { ChMask = 0x1 };
 
     MockReader reader;
-    Resampler resampler(reader, buffer_pool, allocator, config, ChMask);
+    ResamplerReader rr(reader, buffer_pool, allocator, config, ChMask);
 
-    CHECK(resampler.valid());
+    CHECK(rr.valid());
 
-    CHECK(resampler.set_scaling(1.5f));
+    CHECK(rr.set_scaling(1.5f));
     const size_t sig_len = 2048;
     double buff[sig_len * 2];
 
@@ -215,7 +216,7 @@ TEST(resampler, downsample) {
 
     // Put the spectrum of the resampled signal into buff.
     // Odd elements are magnitudes in dB, even elements are phases in radians.
-    get_sample_spectrum1(resampler, buff, sig_len);
+    get_sample_spectrum1(rr, buff, sig_len);
 
     const size_t main_freq_index = (size_t)round(sig_len / 4 * 1.5);
     for (size_t n = 0; n < sig_len / 2; n += 2) {
@@ -230,11 +231,11 @@ TEST(resampler, two_tones_sep_channels) {
     enum { ChMask = 0x3, nChannels = 2 };
 
     MockReader reader;
-    Resampler resampler(reader, buffer_pool, allocator, config, ChMask);
+    ResamplerReader rr(reader, buffer_pool, allocator, config, ChMask);
 
-    CHECK(resampler.valid());
+    CHECK(rr.valid());
 
-    CHECK(resampler.set_scaling(0.5f));
+    CHECK(rr.set_scaling(0.5f));
 
     const size_t sig_len = 2048;
     double buff1[sig_len * 2];
@@ -250,7 +251,7 @@ TEST(resampler, two_tones_sep_channels) {
 
     // Put the spectrum of the resampled signal into buff.
     // Odd elements are magnitudes in dB, even elements are phases in radians.
-    get_sample_spectrum2(resampler, buff1, buff2, sig_len);
+    get_sample_spectrum2(rr, buff1, buff2, sig_len);
 
     const size_t main_freq_index1 = sig_len / 8 / nChannels;
     const size_t main_freq_index2 = sig_len / 16 / nChannels;
