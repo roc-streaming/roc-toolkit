@@ -6,10 +6,10 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_sndio/recorder.h"
+#include "roc_sndio/sox_reader.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
-#include "roc_sndio/default.h"
+#include "roc_sndio/sox.h"
 
 namespace roc {
 namespace sndio {
@@ -24,23 +24,23 @@ void add_effect(sox_effects_chain_t* chain,
                 const char* argv[]) {
     const sox_effect_handler_t* handler = sox_find_effect(name);
     if (!handler) {
-        roc_panic("recorder: sox_find_effect(): can't find '%s' effect", name);
+        roc_panic("sox reader: sox_find_effect(): can't find '%s' effect", name);
     }
 
     sox_effect_t* effect = sox_create_effect(handler);
     if (!effect) {
-        roc_panic("recorder: sox_create_effect(): can't create '%s' effect", name);
+        roc_panic("sox reader: sox_create_effect(): can't create '%s' effect", name);
     }
 
     int err = sox_effect_options(effect, argc, const_cast<char**>(argv));
     if (err != SOX_SUCCESS) {
-        roc_panic("recorder: sox_effect_options(): can't set '%s' effect options: %s",
+        roc_panic("sox reader: sox_effect_options(): can't set '%s' effect options: %s",
                   name, sox_strerror(err));
     }
 
     err = sox_add_effect(chain, effect, in, out);
     if (err != SOX_SUCCESS) {
-        roc_panic("recorder: sox_add_effect(): can't add gain effect: %s",
+        roc_panic("sox reader: sox_add_effect(): can't add gain effect: %s",
                   sox_strerror(err));
     }
 
@@ -49,20 +49,20 @@ void add_effect(sox_effects_chain_t* chain,
 
 } // namespace
 
-const sox_effect_handler_t Recorder::output_handler_ = {
+const sox_effect_handler_t SoxReader::output_handler_ = {
     "roc_output",         //
     NULL,                 //
     SOX_EFF_MCHAN,        //
     NULL,                 //
     NULL,                 //
-    Recorder::output_cb_, //
+    SoxReader::output_cb_, //
     NULL,                 //
     NULL,                 //
-    Recorder::kill_cb_,   //
+    SoxReader::kill_cb_,   //
     0                     //
 };
 
-Recorder::Recorder(core::BufferPool<audio::sample_t>& buffer_pool,
+SoxReader::SoxReader(core::BufferPool<audio::sample_t>& buffer_pool,
                    packet::channel_mask_t channels,
                    size_t n_samples,
                    size_t sample_rate)
@@ -72,11 +72,11 @@ Recorder::Recorder(core::BufferPool<audio::sample_t>& buffer_pool,
     , is_file_(false) {
     size_t n_channels = packet::num_channels(channels);
     if (n_channels == 0) {
-        roc_panic("recorder: # of channels is zero");
+        roc_panic("sox reader: # of channels is zero");
     }
 
     if (n_samples == 0) {
-        roc_panic("recorder: # of samples is zero");
+        roc_panic("sox reader: # of samples is zero");
     }
 
     buffer_size_ = n_samples * n_channels;
@@ -90,19 +90,19 @@ Recorder::Recorder(core::BufferPool<audio::sample_t>& buffer_pool,
     out_signal_.precision = SOX_SAMPLE_PRECISION;
 }
 
-Recorder::~Recorder() {
+SoxReader::~SoxReader() {
     if (joinable()) {
-        roc_panic("recorder: destructor is called while thread is still running");
+        roc_panic("sox reader: destructor is called while thread is still running");
     }
 
     close_();
 }
 
-bool Recorder::open(const char* name, const char* type) {
-    roc_log(LogDebug, "recorder: opening: name=%s type=%s", name, type);
+bool SoxReader::open(const char* name, const char* type) {
+    roc_log(LogDebug, "sox reader: opening: name=%s type=%s", name, type);
 
     if (buffer_ || input_) {
-        roc_panic("recorder: can't call open() more than once");
+        roc_panic("sox reader: can't call open() more than once");
     }
 
     if (!prepare_()) {
@@ -116,56 +116,56 @@ bool Recorder::open(const char* name, const char* type) {
     return true;
 }
 
-size_t Recorder::sample_rate() const {
+size_t SoxReader::sample_rate() const {
     if (!input_) {
-        roc_panic("recorder: sample_rate: non-open input file or device");
+        roc_panic("sox reader: sample_rate: non-open input file or device");
     }
     return size_t(input_->signal.rate);
 }
 
-bool Recorder::is_file() const {
+bool SoxReader::is_file() const {
     if (!input_) {
-        roc_panic("recorder: is_file: non-open input file or device");
+        roc_panic("sox reader: is_file: non-open input file or device");
     }
     return is_file_;
 }
 
-bool Recorder::start(audio::IWriter& output) {
+bool SoxReader::start(audio::IWriter& output) {
     output_ = &output;
     return Thread::start();
 }
 
-void Recorder::stop() {
+void SoxReader::stop() {
     stop_ = 1;
 }
 
-void Recorder::join() {
+void SoxReader::join() {
     Thread::join();
 }
 
-void Recorder::run() {
-    roc_log(LogDebug, "recorder: starting thread");
+void SoxReader::run() {
+    roc_log(LogDebug, "sox reader: starting thread");
 
     if (!chain_) {
-        roc_panic("recorder: thread is started before open() returnes success");
+        roc_panic("sox reader: thread is started before open() returnes success");
     }
 
     if (!output_) {
-        roc_panic("recorder: thread is started not from the start() call");
+        roc_panic("sox reader: thread is started not from the start() call");
     }
 
     int err = sox_flow_effects(chain_, NULL, NULL);
     if (err != 0) {
-        roc_log(LogInfo, "recorder: sox_flow_effects(): %s", sox_strerror(err));
+        roc_log(LogInfo, "sox reader: sox_flow_effects(): %s", sox_strerror(err));
     }
 
     close_();
 
-    roc_log(LogDebug, "recorder: finishing thread, read %lu buffers",
+    roc_log(LogDebug, "sox reader: finishing thread, read %lu buffers",
             (unsigned long)n_bufs_);
 }
 
-int Recorder::kill_cb_(sox_effect_t* eff) {
+int SoxReader::kill_cb_(sox_effect_t* eff) {
     roc_panic_if(!eff);
     roc_panic_if(!eff->priv);
 
@@ -174,7 +174,7 @@ int Recorder::kill_cb_(sox_effect_t* eff) {
     return SOX_SUCCESS;
 }
 
-int Recorder::output_cb_(sox_effect_t* eff,
+int SoxReader::output_cb_(sox_effect_t* eff,
                          const sox_sample_t* ibuf,
                          sox_sample_t* obuf,
                          size_t* ibufsz,
@@ -182,9 +182,9 @@ int Recorder::output_cb_(sox_effect_t* eff,
     roc_panic_if(!eff);
     roc_panic_if(!eff->priv);
 
-    Recorder& self = *(Recorder*)eff->priv;
+    SoxReader& self = *(SoxReader*)eff->priv;
     if (self.stop_) {
-        roc_log(LogInfo, "recorder: stopped, exiting");
+        roc_log(LogInfo, "sox reader: stopped, exiting");
         return SOX_EOF;
     }
 
@@ -201,9 +201,9 @@ int Recorder::output_cb_(sox_effect_t* eff,
     return SOX_SUCCESS;
 }
 
-bool Recorder::prepare_() {
+bool SoxReader::prepare_() {
     if (buffer_pool_.buffer_size() < buffer_size_) {
-        roc_log(LogError, "recorder: buffer size is too small: required=%lu actual=%lu",
+        roc_log(LogError, "sox reader: buffer size is too small: required=%lu actual=%lu",
                 (unsigned long)buffer_size_, (unsigned long)buffer_pool_.buffer_size());
         return false;
     }
@@ -211,7 +211,7 @@ bool Recorder::prepare_() {
     buffer_ = new (buffer_pool_) core::Buffer<audio::sample_t>(buffer_pool_);
 
     if (!buffer_) {
-        roc_log(LogError, "recorder: can't allocate buffer");
+        roc_log(LogError, "sox reader: can't allocate buffer");
         return false;
     }
 
@@ -220,22 +220,22 @@ bool Recorder::prepare_() {
     return true;
 }
 
-bool Recorder::open_(const char* name, const char* type) {
-    if (!detect_defaults(&name, &type)) {
+bool SoxReader::open_(const char* name, const char* type) {
+    if (!sox_defaults(&name, &type)) {
         roc_log(LogError, "can't detect defaults: name=%s type=%s", name, type);
         return false;
     }
 
-    roc_log(LogInfo, "recorder: name=%s type=%s", name, type);
+    roc_log(LogInfo, "sox reader: name=%s type=%s", name, type);
 
     if (!(input_ = sox_open_read(name, NULL, NULL, type))) {
-        roc_log(LogError, "recorder: can't open reader: name=%s type=%s", name, type);
+        roc_log(LogError, "sox reader: can't open reader: name=%s type=%s", name, type);
         return false;
     }
 
     is_file_ = !(input_->handler.flags & SOX_FILE_DEVICE);
 
-    roc_log(LogInfo, "recorder:"
+    roc_log(LogInfo, "sox reader:"
                      " in_bits=%lu out_bits=%lu in_rate=%lu out_rate=%lu"
                      " in_ch=%lu, out_ch=%lu, is_file=%d",
             (unsigned long)input_->encoding.bits_per_sample,
@@ -244,7 +244,7 @@ bool Recorder::open_(const char* name, const char* type) {
             (unsigned long)out_signal_.channels, (int)is_file_);
 
     if (!(chain_ = sox_create_effects_chain(&input_->encoding, NULL))) {
-        roc_panic("recorder: sox_create_effects_chain() failed");
+        roc_panic("sox reader: sox_create_effects_chain() failed");
     }
 
     {
@@ -283,14 +283,14 @@ bool Recorder::open_(const char* name, const char* type) {
     {
         sox_effect_t* effect = sox_create_effect(&output_handler_);
         if (!effect) {
-            roc_panic("recorder: sox_create_effect(): can't create output effect");
+            roc_panic("sox reader: sox_create_effect(): can't create output effect");
         }
 
         effect->priv = this;
 
         int err = sox_add_effect(chain_, effect, &out_signal_, &out_signal_);
         if (err != SOX_SUCCESS) {
-            roc_panic("recorder: sox_add_effect(): can't add output effect: %s",
+            roc_panic("sox reader: sox_add_effect(): can't add output effect: %s",
                       sox_strerror(err));
         }
 
@@ -300,7 +300,7 @@ bool Recorder::open_(const char* name, const char* type) {
     return true;
 }
 
-void Recorder::write_(const sox_sample_t* buf, size_t bufsz, bool eof) {
+void SoxReader::write_(const sox_sample_t* buf, size_t bufsz, bool eof) {
     while (bufsz != 0) {
         audio::sample_t* samples = buffer_.data();
 
@@ -332,7 +332,7 @@ void Recorder::write_(const sox_sample_t* buf, size_t bufsz, bool eof) {
     }
 }
 
-void Recorder::close_() {
+void SoxReader::close_() {
     if (chain_) {
         sox_delete_effects_chain(chain_);
         chain_ = NULL;
@@ -341,7 +341,7 @@ void Recorder::close_() {
     if (input_) {
         int err = sox_close(input_);
         if (err != SOX_SUCCESS) {
-            roc_panic("recorder: can't close input: %s", sox_strerror(err));
+            roc_panic("sox reader: can't close input: %s", sox_strerror(err));
         }
         input_ = NULL;
     }

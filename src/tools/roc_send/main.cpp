@@ -13,8 +13,8 @@
 #include "roc_packet/address_to_str.h"
 #include "roc_packet/parse_address.h"
 #include "roc_pipeline/sender.h"
-#include "roc_sndio/init.h"
-#include "roc_sndio/recorder.h"
+#include "roc_sndio/sox.h"
+#include "roc_sndio/sox_reader.h"
 
 #include "roc_send/cmdline.h"
 
@@ -39,7 +39,7 @@ int main(int argc, char** argv) {
     core::Logger::instance().set_level(
         LogLevel(core::DefaultLogLevel + args.verbose_given));
 
-    sndio::init();
+    sndio::sox_setup();
 
     pipeline::SenderConfig config;
 
@@ -131,15 +131,15 @@ int main(int argc, char** argv) {
         sample_rate = (size_t)args.rate_arg;
     }
 
-    sndio::Recorder recorder(sample_buffer_pool, config.channels,
-                             config.samples_per_packet, sample_rate);
+    sndio::SoxReader reader(sample_buffer_pool, config.channels,
+                            config.samples_per_packet, sample_rate);
 
-    if (!recorder.open(args.input_arg, args.type_arg)) {
+    if (!reader.open(args.input_arg, args.type_arg)) {
         roc_log(LogError, "can't open input file/device: %s %s", args.input_arg,
                 args.type_arg);
         return 1;
     }
-    config.timing = recorder.is_file();
+    config.timing = reader.is_file();
 
     rtp::FormatMap format_map;
 
@@ -169,11 +169,11 @@ int main(int argc, char** argv) {
 
     int status = 1;
 
-    if (recorder.start(sender)) {
-        recorder.join();
+    if (reader.start(sender)) {
+        reader.join();
         status = 0;
     } else {
-        roc_log(LogError, "can't start recorder");
+        roc_log(LogError, "can't start reader");
     }
 
     trx.stop();

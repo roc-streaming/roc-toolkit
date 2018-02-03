@@ -6,45 +6,39 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_sndio/target_sox/roc_sndio/player.h
-//! @brief Audio writer.
+//! @file roc_sndio/target_sox/roc_sndio/sox_writer.h
+//! @brief SoX audio writer.
 
-#ifndef ROC_SNDIO_PLAYER_H_
-#define ROC_SNDIO_PLAYER_H_
+#ifndef ROC_SNDIO_SOX_WRITER_H_
+#define ROC_SNDIO_SOX_WRITER_H_
 
 #include <sox.h>
 
-#include "roc_core/atomic.h"
-#include "roc_core/buffer_pool.h"
+#include "roc_audio/iwriter.h"
 #include "roc_core/iallocator.h"
-#include "roc_core/slice.h"
+#include "roc_core/noncopyable.h"
 #include "roc_core/stddefs.h"
-#include "roc_core/thread.h"
 #include "roc_core/unique_ptr.h"
 #include "roc_packet/units.h"
-#include "roc_pipeline/ireceiver.h"
 
 namespace roc {
 namespace sndio {
 
-//! Audio player.
+//! SoX audio writer.
 //! @remarks
-//!  Reads samples in interleaved format, encodes them and and writes to
-//!  output file or audio driver.
-class Player : private core::Thread {
+//!  Encodes samples them and and writes to output file or audio driver.
+class SoxWriter : public audio::IWriter, public core::NonCopyable<> {
 public:
     //! Initialize.
     //!
     //! @b Parameters
     //!  - @p channels defines bitmask of enabled channels in input buffers
     //!  - @p sample_rate defines sample rate of input buffers
-    Player(core::BufferPool<audio::sample_t>& buffer_pool,
-           core::IAllocator& allocator,
-           bool oneshot,
-           packet::channel_mask_t channels,
-           size_t sample_rate);
+    SoxWriter(core::IAllocator& allocator,
+              packet::channel_mask_t channels,
+              size_t sample_rate);
 
-    virtual ~Player();
+    virtual ~SoxWriter();
 
     //! Open output file or device.
     //!
@@ -71,51 +65,30 @@ public:
     //!  Output file or device should be opened.
     bool is_file() const;
 
-    //! Start reading samples in a separate thread.
-    //!
-    //! @b Parameters
-    //!  - @p input is used to read samples.
-    bool start(pipeline::IReceiver& input);
+    //! Returns recommended frame size.
+    size_t frame_size() const;
 
-    //! Stop thread.
-    //! @remarks
-    //!  Can be called from any thread.
-    void stop();
-
-    //! Wait until background thread finishes.
-    //! @remarks
-    //!  Should be called once.
-    void join();
+    //! Write audio frame.
+    virtual void write(audio::Frame& frame);
 
 private:
-    virtual void run();
-
     bool prepare_();
     bool open_(const char* name, const char* type);
-    void loop_();
-    bool write_(const sox_sample_t* samples, size_t n_samples);
+    void write_(const sox_sample_t* samples, size_t n_samples);
     void close_();
 
     sox_format_t* output_;
     sox_signalinfo_t out_signal_;
 
-    pipeline::IReceiver* input_;
-
-    core::BufferPool<audio::sample_t>& buffer_pool_;
     core::IAllocator& allocator_;
 
-    core::Slice<audio::sample_t> frame_buffer_;
-    core::UniquePtr<sox_sample_t> sox_buffer_;
+    core::UniquePtr<sox_sample_t> buffer_;
     size_t buffer_size_;
 
-    size_t n_bufs_;
-
-    const bool oneshot_;
     bool is_file_;
-    core::Atomic stop_;
 };
 
 } // namespace sndio
 } // namespace roc
 
-#endif // ROC_SNDIO_PLAYER_H_
+#endif // ROC_SNDIO_SOX_WRITER_H_

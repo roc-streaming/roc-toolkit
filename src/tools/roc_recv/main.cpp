@@ -13,8 +13,9 @@
 #include "roc_packet/address_to_str.h"
 #include "roc_packet/parse_address.h"
 #include "roc_pipeline/receiver.h"
-#include "roc_sndio/init.h"
 #include "roc_sndio/player.h"
+#include "roc_sndio/sox.h"
+#include "roc_sndio/sox_writer.h"
 
 #include "roc_recv/cmdline.h"
 
@@ -39,7 +40,7 @@ int main(int argc, char** argv) {
     core::Logger::instance().set_level(
         LogLevel(core::DefaultLogLevel + args.verbose_given));
 
-    sndio::init();
+    sndio::sox_setup();
 
     pipeline::PortConfig source_port;
 
@@ -197,17 +198,16 @@ int main(int argc, char** argv) {
     core::BufferPool<audio::sample_t> sample_buffer_pool(allocator, MaxFrameSize, 1);
     packet::PacketPool packet_pool(allocator, 1);
 
-    sndio::Player player(sample_buffer_pool, allocator, args.oneshot_flag,
-                         config.channels, sample_rate);
+    sndio::SoxWriter writer(allocator, config.channels, sample_rate);
 
-    if (!player.open(args.output_arg, args.type_arg)) {
+    if (!writer.open(args.output_arg, args.type_arg)) {
         roc_log(LogError, "can't open output file or device: %s %s", args.output_arg,
                 args.type_arg);
         return 1;
     }
 
-    config.timing = player.is_file();
-    config.sample_rate = player.sample_rate();
+    config.timing = writer.is_file();
+    config.sample_rate = writer.sample_rate();
 
     if (config.sample_rate == 0) {
         roc_log(LogError, "can't detect output sample rate, try to set it "
@@ -221,6 +221,13 @@ int main(int argc, char** argv) {
                                 sample_buffer_pool, allocator);
     if (!receiver.valid()) {
         roc_log(LogError, "can't create receiver pipeline");
+        return 1;
+    }
+
+    sndio::Player player(sample_buffer_pool, receiver, writer, writer.frame_size(),
+                         args.oneshot_flag);
+    if (!player.valid()) {
+        roc_log(LogError, "can't create player");
         return 1;
     }
 
@@ -261,7 +268,7 @@ int main(int argc, char** argv) {
 
     int status = 1;
 
-    if (player.start(receiver)) {
+    if (player.start()) {
         player.join();
         status = 0;
     } else {

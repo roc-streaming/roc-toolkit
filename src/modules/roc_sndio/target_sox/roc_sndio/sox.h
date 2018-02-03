@@ -6,25 +6,22 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_sndio/target_sox/roc_sndio/default.h
+//! @file roc_sndio/target_sox/roc_sndio/sox.h
 //! @brief Get default driver and device.
 
-#ifndef ROC_SNDIO_DEFAULT_H_
-#define ROC_SNDIO_DEFAULT_H_
+#ifndef ROC_SNDIO_SOX_H_
+#define ROC_SNDIO_SOX_H_
 
 namespace roc {
 namespace sndio {
 
+//! Initialize SoX.
+void sox_setup();
+
 //! Detect defaults for name and type.
-bool detect_defaults(const char** name, const char** type);
-
-//! Get default driver.
-const char* default_driver();
-
-//! Get default device.
-const char* default_device();
+bool sox_defaults(const char** name, const char** type);
 
 } // namespace sndio
 } // namespace roc
 
-#endif // ROC_SNDIO_DEFAULT_H_
+#endif // ROC_SNDIO_SOX_H_

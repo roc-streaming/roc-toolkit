@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_sndio/target_sox/roc_sndio/recorder.h
-//! @brief Audio reader.
+//! @file roc_sndio/target_sox/roc_sndio/sox_reader.h
+//! @brief SoX audio reader.
 
-#ifndef ROC_SNDIO_RECORDER_H_
-#define ROC_SNDIO_RECORDER_H_
+#ifndef ROC_SNDIO_SOX_READER_H_
+#define ROC_SNDIO_SOX_READER_H_
 
 #include <sox.h>
 
@@ -26,11 +26,11 @@
 namespace roc {
 namespace sndio {
 
-//! Audio recorder.
+//! SoX audio reader.
 //! @remarks
 //!  Reads samples from input file or audio driver, decodes them and
 //!  writes buffers to output writer.
-class Recorder : private core::Thread {
+class SoxReader : private core::Thread {
 public:
     //! Initialize.
     //!
@@ -39,12 +39,12 @@ public:
     //!  - @p n_samples defines number of samples per channel in output buffers;
     //!  - @p channels defines bitmask of enabled channels in output buffers;
     //!  - @p sample_rate defines sample rate of output buffers.
-    Recorder(core::BufferPool<audio::sample_t>& buffer_pool,
-             packet::channel_mask_t channels,
-             size_t n_samples,
-             size_t sample_rate);
+    SoxReader(core::BufferPool<audio::sample_t>& buffer_pool,
+              packet::channel_mask_t channels,
+              size_t n_samples,
+              size_t sample_rate);
 
-    virtual ~Recorder();
+    virtual ~SoxReader();
 
     //! Open input file or device.
     //!
@@ -125,4 +125,4 @@ private:
 } // namespace sndio
 } // namespace roc
 
-#endif // ROC_SNDIO_RECORDER_H_
+#endif // ROC_SNDIO_SOX_READER_H_
