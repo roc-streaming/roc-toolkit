@@ -44,23 +44,9 @@ int main(int argc, char** argv) {
     core::HeapAllocator allocator;
     core::BufferPool<audio::sample_t> pool(allocator, MaxFrameSize, 1);
 
-    audio::ResamplerConfig resampler_config;
-
-    if (args.interp_given) {
-        resampler_config.window_interp = (size_t)args.interp_arg;
-    }
-
-    if (args.window_given) {
-        resampler_config.window_size = (size_t)args.window_arg;
-    }
-
-    if (args.frame_given) {
-        resampler_config.frame_size = (size_t)args.frame_arg;
-    }
-
     size_t chunk_size = 0;
     if (args.chunk_given) {
-        resampler_config.frame_size = (size_t)args.chunk_arg;
+        chunk_size = (size_t)args.chunk_arg;
     }
 
     sndio::SoxReader reader(pool, Channels, chunk_size, 0);
@@ -84,14 +70,18 @@ int main(int argc, char** argv) {
 
     sndio::SoxWriter writer(allocator, Channels, writer_sample_rate);
 
-    if (!writer.open(args.output_arg, NULL)) {
-        roc_log(LogError, "can't open output file: %s", args.output_arg);
-        return 1;
+    audio::ResamplerConfig resampler_config;
+
+    if (args.interp_given) {
+        resampler_config.window_interp = (size_t)args.interp_arg;
     }
 
-    if (!writer.is_file()) {
-        roc_log(LogError, "not a file file: %s", args.output_arg);
-        return 1;
+    if (args.window_given) {
+        resampler_config.window_size = (size_t)args.window_arg;
+    }
+
+    if (args.frame_given) {
+        resampler_config.frame_size = (size_t)args.frame_arg;
     }
 
     audio::ResamplerWriter resampler(writer, pool, allocator, resampler_config, Channels);
@@ -102,6 +92,16 @@ int main(int argc, char** argv) {
 
     if (!resampler.set_scaling((float)reader.sample_rate() / writer_sample_rate)) {
         roc_log(LogError, "can't set resampler scaling");
+        return 1;
+    }
+
+    if (!writer.open(args.output_arg, NULL)) {
+        roc_log(LogError, "can't open output file: %s", args.output_arg);
+        return 1;
+    }
+
+    if (!writer.is_file()) {
+        roc_log(LogError, "not a file file: %s", args.output_arg);
         return 1;
     }
 

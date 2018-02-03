@@ -105,9 +105,6 @@ Resampler::Resampler(core::IAllocator& allocator,
     if (!fill_sinc_()) {
         return;
     }
-    if (!set_scaling(1.0f)) {
-        return;
-    }
     valid_ = true;
 }
 
