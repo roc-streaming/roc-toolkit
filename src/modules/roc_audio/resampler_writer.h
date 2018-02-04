@@ -61,23 +61,21 @@ public:
     bool set_scaling(float);
 
 private:
-    bool init_window_(core::BufferPool<sample_t>&);
-    void renew_window_();
+    bool init_(core::BufferPool<sample_t>&);
 
     Resampler resampler_;
-    // Input stream.
     IWriter& writer_;
 
     // Input stream window.
     core::Slice<sample_t> window_[3];
     size_t window_i_;
-    core::Array<sample_t> out_buff_;
-    size_t out_buff_i_;
+
+    // Output window.
+    core::Slice<sample_t> output_;
 
     // Frame size.
     const size_t frame_size_;
 
-    bool buffers_empty_;
     bool valid_;
 };
 

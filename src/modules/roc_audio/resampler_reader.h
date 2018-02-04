@@ -65,7 +65,6 @@ private:
     void renew_window_();
 
     Resampler resampler_;
-    // Input stream.
     IReader& reader_;
 
     // Input stream window.

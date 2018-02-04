@@ -25,17 +25,22 @@ ResamplerReader::ResamplerReader(IReader& reader,
     , frame_size_(config.frame_size)
     , buffers_empty_(true)
     , valid_(false) {
+    if (!resampler_.valid()) {
+        return;
+    }
     if (!init_window_(buffer_pool)) {
         return;
     }
-    valid_ = resampler_.valid();
+    valid_ = true;
 }
 
 bool ResamplerReader::valid() const {
-    return resampler_.valid();
+    return valid_;
 }
 
 bool ResamplerReader::set_scaling(float scaling) {
+    roc_panic_if_not(valid());
+
     return resampler_.set_scaling(scaling);
 }
 
@@ -71,6 +76,7 @@ bool ResamplerReader::init_window_(core::BufferPool<sample_t>& buffer_pool) {
 
         window_[n].resize(frame_size_);
     }
+
     return true;
 }
 
