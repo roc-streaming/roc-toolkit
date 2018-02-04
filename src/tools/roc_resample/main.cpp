@@ -7,6 +7,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+#include "roc_audio/null_writer.h"
+#include "roc_audio/profiling_writer.h"
 #include "roc_audio/resampler_writer.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/crash.h"
@@ -68,7 +70,16 @@ int main(int argc, char** argv) {
         writer_sample_rate = reader.sample_rate();
     }
 
-    sndio::SoxWriter writer(allocator, Channels, writer_sample_rate);
+    sndio::SoxWriter output(allocator, Channels, writer_sample_rate);
+    audio::NullWriter null;
+
+    audio::IWriter* writer;
+    if (args.output_given) {
+        writer = &output;
+    } else {
+        roc_log(LogInfo, "no output given, using null output");
+        writer = &null;
+    }
 
     audio::ResamplerConfig resampler_config;
 
@@ -84,7 +95,7 @@ int main(int argc, char** argv) {
         resampler_config.frame_size = (size_t)args.frame_arg;
     }
 
-    audio::ResamplerWriter resampler(writer, pool, allocator, resampler_config, Channels);
+    audio::ResamplerWriter resampler(*writer, pool, allocator, resampler_config, Channels);
     if (!resampler.valid()) {
         roc_log(LogError, "can't create resampler");
         return 1;
@@ -95,21 +106,26 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    if (!writer.open(args.output_arg, NULL)) {
-        roc_log(LogError, "can't open output file: %s", args.output_arg);
-        return 1;
+    if (args.output_given) {
+        if (!output.open(args.output_arg, NULL)) {
+            roc_log(LogError, "can't open output file: %s", args.output_arg);
+            return 1;
+        }
+
+        if (!output.is_file()) {
+            roc_log(LogError, "not a file file: %s", args.output_arg);
+            return 1;
+        }
     }
 
-    if (!writer.is_file()) {
-        roc_log(LogError, "not a file file: %s", args.output_arg);
-        return 1;
-    }
+    audio::ProfilingWriter profiler(resampler, Channels, reader.sample_rate());
 
     int status = 1;
 
-    if (reader.start(resampler)) {
+    if (reader.start(profiler)) {
         reader.join();
         status = 0;
+        roc_log(LogInfo, "done");
     } else {
         roc_log(LogError, "can't start reader");
     }

@@ -13,6 +13,7 @@
 #define ROC_CORE_TICKER_H_
 
 #include "roc_core/noncopyable.h"
+#include "roc_core/panic.h"
 #include "roc_core/time.h"
 
 namespace roc {
