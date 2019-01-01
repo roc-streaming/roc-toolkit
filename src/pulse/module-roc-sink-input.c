@@ -111,7 +111,7 @@ static int pop_cb(pa_sink_input* i, size_t length, pa_memchunk* chunk) {
 
     /* setup chunk boundaries */
     chunk->index = 0;
-    chunk->length = (size_t)ret * pa_sample_size(&u->sink_input->sample_spec);
+    chunk->length = frame.num_samples * pa_sample_size(&u->sink_input->sample_spec);
 
     return 0;
 }
