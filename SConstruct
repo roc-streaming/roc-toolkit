@@ -915,6 +915,11 @@ if compiler == 'clang':
         '-Wno-missing-prototypes',
     ])
 
+    if compiler_ver[:2] >= (6, 0):
+        for var in ['CXXFLAGS', 'CFLAGS']:
+            env.Append(**{var: [
+                '-Wno-redundant-parens',
+            ]})
     if compiler_ver[:2] >= (3, 6):
         for var in ['CXXFLAGS', 'CFLAGS']:
             env.Append(**{var: [

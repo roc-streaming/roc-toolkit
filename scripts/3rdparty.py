@@ -291,7 +291,7 @@ elif name == 'json':
             'ac_cv_func_realloc_0_nonnull=yes',
         ]),
         toolchain,
-        makeflags(workdir, toolchain, [], cflags='-fPIC -fvisibility=hidden'),
+        makeflags(workdir, toolchain, [], cflags='-w -fPIC -fvisibility=hidden'),
         ' '.join([
             '--enable-static',
             '--disable-shared',
