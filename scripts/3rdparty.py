@@ -16,6 +16,12 @@ try:
 except ImportError:
     from urllib2 import urlopen
 
+try:
+    # workaround for SSL certificate error
+    ssl._create_default_https_context = ssl._create_unverified_context
+except:
+    pass
+
 printdir = os.path.abspath('.')
 
 def mkpath(path):
@@ -33,21 +39,37 @@ def rmpath(path):
     except:
         pass
 
-def download(url, path):
-    print('[download] %s' % url)
-    rmpath(path)
-    try:
-        # workaround for SSL certificate error
-        ssl._create_default_https_context = ssl._create_unverified_context
-    except:
-        pass
-    try:
-        archive = urlopen(url)
-    except Exception as e:
-        print("error: can't download '%s': %s" % (url, e.reason[1]), file=sys.stderr)
-        exit(1)
+def download_urlopen(url, path, log):
+    archive = urlopen(url)
     with open(path, 'wb') as fp:
         fp.write(archive.read())
+
+def download_tool(url, path, log, tool, cmd):
+    print('[%s] %s' % (tool, url))
+    with open(log, 'a+') as fp:
+        print('>>> %s' % cmd, file=fp)
+    if os.system(cmd) != 0:
+        raise
+
+def download_wget(url, path, log):
+    download_tool(url, path, log, 'wget', 'wget "%s" --quiet -O "%s"' % (url, path))
+
+def download_curl(url, path, log):
+    download_tool(url, path, log, 'curl', 'curl -Ls "%s" -o "%s"' % (url, path))
+
+def download(url, path, log):
+    print('[download] %s' % url)
+    rmpath(path)
+    error = None
+    for fn in [download_urlopen, download_curl, download_wget]:
+        try:
+            fn(url, path, log)
+            return
+        except Exception as e:
+            if not error:
+                error = e
+    print("error: can't download '%s': %s" % (url, error), file=sys.stderr)
+    exit(1)
 
 def extract(path, dirname):
     print('[extract] %s' % path)
@@ -184,7 +206,8 @@ os.chdir(os.path.join(builddir, 'src'))
 
 if name == 'uv':
     download('http://dist.libuv.org/dist/v%s/libuv-v%s.tar.gz' % (ver, ver),
-             'libuv-v%s.tar.gz' % ver)
+             'libuv-v%s.tar.gz' % ver,
+             logfile)
     extract('libuv-v%s.tar.gz' % ver,
             'libuv-v%s' % ver)
     os.chdir('libuv-v%s' % ver)
@@ -203,7 +226,8 @@ if name == 'uv':
 elif name == 'openfec':
     download(
       'https://github.com/roc-project/openfec/archive/v%s.tar.gz' % ver,
-      'openfec_v%s.tar.gz' % ver)
+      'openfec_v%s.tar.gz' % ver,
+        logfile)
     extract('openfec_v%s.tar.gz' % ver,
             'openfec-%s' % ver)
     os.chdir('openfec-%s' % ver)
@@ -242,7 +266,8 @@ elif name == 'openfec':
 elif name == 'alsa':
     download(
       'ftp://ftp.alsa-project.org/pub/lib/alsa-lib-%s.tar.bz2' % ver,
-        'alsa-lib-%s.tar.bz2' % ver)
+        'alsa-lib-%s.tar.bz2' % ver,
+        logfile)
     extract('alsa-lib-%s.tar.bz2' % ver,
             'alsa-lib-%s' % ver)
     os.chdir('alsa-lib-%s' % ver)
@@ -262,7 +287,8 @@ elif name == 'alsa':
 elif name == 'ltdl':
     download(
       'ftp://ftp.gnu.org/gnu/libtool/libtool-%s.tar.gz' % ver,
-        'libtool-%s.tar.gz' % ver)
+        'libtool-%s.tar.gz' % ver,
+        logfile)
     extract('libtool-%s.tar.gz' % ver,
             'libtool-%s' % ver)
     os.chdir('libtool-%s' % ver)
@@ -280,7 +306,8 @@ elif name == 'ltdl':
 elif name == 'json':
     download(
       'https://github.com/json-c/json-c/archive/json-c-%s.tar.gz' % ver,
-        'json-%s.tar.gz' % ver)
+        'json-%s.tar.gz' % ver,
+        logfile)
     extract('json-%s.tar.gz' % ver,
             'json-c-json-c-%s' % ver)
     os.chdir('json-c-json-c-%s' % ver)
@@ -303,7 +330,8 @@ elif name == 'json':
 elif name == 'sndfile':
     download(
       'http://www.mega-nerd.com/libsndfile/files/libsndfile-%s.tar.gz' % ver,
-        'libsndfile-%s.tar.gz' % ver)
+        'libsndfile-%s.tar.gz' % ver,
+        logfile)
     extract('libsndfile-%s.tar.gz' % ver,
             'libsndfile-%s' % ver)
     os.chdir('libsndfile-%s' % ver)
@@ -321,7 +349,8 @@ elif name == 'sndfile':
 elif name == 'pulseaudio':
     download(
       'https://freedesktop.org/software/pulseaudio/releases/pulseaudio-%s.tar.gz' % ver,
-        'pulseaudio-%s.tar.gz' % ver)
+        'pulseaudio-%s.tar.gz' % ver,
+        logfile)
     extract('pulseaudio-%s.tar.gz' % ver,
             'pulseaudio-%s' % ver)
     os.chdir('pulseaudio-%s' % ver)
@@ -359,7 +388,8 @@ elif name == 'pulseaudio':
 elif name == 'sox':
     download(
       'http://vorboss.dl.sourceforge.net/project/sox/sox/%s/sox-%s.tar.gz' % (ver, ver),
-      'sox-%s.tar.gz' % ver)
+      'sox-%s.tar.gz' % ver,
+        logfile)
     extract('sox-%s.tar.gz' % ver,
             'sox-%s' % ver)
     os.chdir('sox-%s' % ver)
@@ -379,7 +409,8 @@ elif name == 'sox':
     install_files('src/.libs/libsox.a', os.path.join(builddir, 'lib'))
 elif name == 'gengetopt':
     download('ftp://ftp.gnu.org/gnu/gengetopt/gengetopt-%s.tar.gz' % ver,
-             'gengetopt-%s.tar.gz' % ver)
+             'gengetopt-%s.tar.gz' % ver,
+             logfile)
     extract('gengetopt-%s.tar.gz' % ver,
             'gengetopt-%s' % ver)
     os.chdir('gengetopt-%s' % ver)
@@ -390,7 +421,8 @@ elif name == 'cpputest':
     download(
         'https://raw.githubusercontent.com/cpputest/cpputest.github.io/' \
         'master/releases/cpputest-%s.tar.gz' % ver,
-        'cpputest-%s.tar.gz' % ver)
+        'cpputest-%s.tar.gz' % ver,
+        logfile)
     extract('cpputest-%s.tar.gz' % ver,
             'cpputest-%s' % ver)
     os.chdir('cpputest-%s' % ver)
