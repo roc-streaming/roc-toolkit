@@ -21,7 +21,7 @@ namespace audio {
 
 //! Watchdog.
 //! @remarks
-//!  Terminates session if during some period of time all frames were empty.
+//!  Terminates session if it is considered dead or corrupted.
 class Watchdog : public IReader, public core::NonCopyable<> {
 public:
     //! Initialize.
@@ -29,17 +29,16 @@ public:
     //! @b Parameters
     //!  - @p reader is input frame reader.
     //!  - @p channels defines a set of channels in the output frames.
-    //!  - @p timeout is maximum allowed period with empty frames
-    //!    before session termination.
-    //!  - @p drop_window_sz is a window size during which not fully filled frames that
-    //!    have dropped packets are detected.
-    //!  - @p max_drop_window_num is the maximum allowed number of consecutive windows
-    //!    that can contain frames that aren't fully filled and contain dropped packets.
+    //!  - @p max_silence_duration is the maximum allowed period during which all frames
+    //!    are empty.
+    //!  - @p max_drops_duration is the maximum allowed period during which every drop
+    //!    detection window overlaps with a frame which contains drops.
+    //!  - @p drop_detection_window is the size of the drop detection window.
     Watchdog(IReader& reader,
              const size_t num_channels,
-             packet::timestamp_t timeout,
-             packet::timestamp_t drop_window_sz,
-             packet::timestamp_t max_drop_window_num);
+             packet::timestamp_t max_silence_duration,
+             packet::timestamp_t max_drops_duration,
+             packet::timestamp_t drop_detection_window);
 
     //! Read audio frame.
     //! @remarks
@@ -54,30 +53,30 @@ public:
     bool update(packet::timestamp_t time);
 
 private:
-    bool has_all_frames_empty_(const packet::timestamp_t update_time) const;
-    bool has_dropped_frames_() const;
-    void check_frame_empty_(const Frame& frame);
-    void check_frame_has_dropped_packets_(const Frame& frame);
+    void init_silence_timeout_(packet::timestamp_t update_time);
+    void update_silence_timeout_(const Frame& frame);
+    bool check_silence_timeout_() const;
+
+    void update_drops_timeout_(const Frame& frame, packet::timestamp_t next_read_pos);
+    bool check_drops_timeout_();
 
     IReader& reader_;
 
-    const packet::timestamp_t timeout_;
-
-    packet::timestamp_t update_time_;
-    packet::timestamp_t read_time_;
-
-    bool first_;
-    bool alive_;
-
     const size_t num_channels_;
 
-    packet::timestamp_t max_drop_window_num_;
-    packet::timestamp_t drop_window_sz_;
-    packet::timestamp_t non_drop_pos_;
-    packet::timestamp_t timestamp_;
+    const packet::timestamp_t max_silence_duration_;
+    const packet::timestamp_t max_drops_duration_;
+    const packet::timestamp_t drop_detection_window_;
 
-    bool total_drop_;
-    bool curr_drop_;
+    bool first_update_;
+    bool alive_;
+
+    packet::timestamp_t curr_read_pos_;
+    packet::timestamp_t last_update_time_;
+    packet::timestamp_t last_update_before_silence_;
+    packet::timestamp_t last_read_before_drops_;
+
+    bool drop_in_curr_window_;
 };
 
 } // namespace audio

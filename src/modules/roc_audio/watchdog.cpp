@@ -14,22 +14,21 @@ namespace audio {
 
 Watchdog::Watchdog(IReader& reader,
                    const size_t num_channels,
-                   packet::timestamp_t timeout,
-                   packet::timestamp_t drop_window_sz,
-                   packet::timestamp_t max_drop_window_num)
+                   packet::timestamp_t max_silence_duration,
+                   packet::timestamp_t max_drops_duration,
+                   packet::timestamp_t drop_detection_window)
     : reader_(reader)
-    , timeout_(timeout)
-    , update_time_(0)
-    , read_time_(0)
-    , first_(true)
-    , alive_(true)
     , num_channels_(num_channels)
-    , max_drop_window_num_(max_drop_window_num)
-    , drop_window_sz_(drop_window_sz)
-    , non_drop_pos_(0)
-    , timestamp_(0)
-    , total_drop_(false)
-    , curr_drop_(false) {
+    , max_silence_duration_(max_silence_duration)
+    , max_drops_duration_(max_drops_duration)
+    , drop_detection_window_(drop_detection_window)
+    , first_update_(true)
+    , alive_(true)
+    , curr_read_pos_(0)
+    , last_update_time_(0)
+    , last_update_before_silence_(0)
+    , last_read_before_drops_(0)
+    , drop_in_curr_window_(false) {
 }
 
 void Watchdog::read(Frame& frame) {
@@ -39,8 +38,17 @@ void Watchdog::read(Frame& frame) {
 
     reader_.read(frame);
 
-    check_frame_empty_(frame);
-    check_frame_has_dropped_packets_(frame);
+    const packet::timestamp_t next_read_pos =
+        packet::timestamp_t(curr_read_pos_ + frame.size() / num_channels_);
+
+    update_silence_timeout_(frame);
+    update_drops_timeout_(frame, next_read_pos);
+
+    curr_read_pos_ = next_read_pos;
+
+    if (!check_drops_timeout_()) {
+        alive_ = false;
+    }
 }
 
 bool Watchdog::update(packet::timestamp_t time) {
@@ -48,79 +56,88 @@ bool Watchdog::update(packet::timestamp_t time) {
         return false;
     }
 
-    if (first_) {
-        read_time_ = time;
-        first_ = false;
+    if (first_update_) {
+        init_silence_timeout_(time);
+        first_update_ = false;
     }
 
-    if (has_all_frames_empty_(time) || has_dropped_frames_()) {
+    last_update_time_ = time;
+
+    if (!check_silence_timeout_()) {
         alive_ = false;
         return false;
     }
 
-    update_time_ = time;
     return true;
 }
 
-bool Watchdog::has_all_frames_empty_(const packet::timestamp_t update_time) const {
-    if (update_time - read_time_ < timeout_) {
-        return false;
-    }
-
-    roc_log(LogInfo,
-            "watchdog: timeout reached: all frames were empty:"
-            " update_time=%lu read_time=%lu timeout=%lu",
-            (unsigned long)update_time, (unsigned long)read_time_,
-            (unsigned long)timeout_);
-
-    return true;
+void Watchdog::init_silence_timeout_(packet::timestamp_t update_time) {
+    last_update_before_silence_ = update_time;
 }
 
-bool Watchdog::has_dropped_frames_() const {
-    if (!total_drop_) {
-        return false;
-    }
-
-    roc_log(LogInfo,
-            "watchdog: too many frames have dropped packets:"
-            " ts=%lu non_drop_ts=%lu"
-            " drop_window_sz=%lu max_drop_window_num=%lu",
-            (unsigned long)timestamp_, (unsigned long)non_drop_pos_,
-            (unsigned long)drop_window_sz_, (unsigned long)max_drop_window_num_);
-
-    return true;
-}
-
-void Watchdog::check_frame_empty_(const Frame& frame) {
+void Watchdog::update_silence_timeout_(const Frame& frame) {
     if (frame.flags() & audio::Frame::FlagEmpty) {
         return;
     }
 
-    read_time_ = update_time_;
+    last_update_before_silence_ = last_update_time_;
 }
 
-void Watchdog::check_frame_has_dropped_packets_(const Frame& frame) {
-    const unsigned flags = frame.flags();
-    const size_t num_samples = frame.size() / num_channels_;
-    const bool end_of_window =
-        timestamp_ % drop_window_sz_ + num_samples >= drop_window_sz_;
+bool Watchdog::check_silence_timeout_() const {
+    if (last_update_time_ - last_update_before_silence_ < max_silence_duration_) {
+        return true;
+    }
 
-    timestamp_ += num_samples;
+    roc_log(LogInfo,
+            "watchdog: timeout reached: every frame was empty during timeout:"
+            " last_update_time=%lu last_update_before_empty=%lu max_silence_duration=%lu",
+            (unsigned long)last_update_time_, (unsigned long)last_update_before_silence_,
+            (unsigned long)max_silence_duration_);
+
+    return false;
+}
+
+void Watchdog::update_drops_timeout_(const Frame& frame, packet::timestamp_t next_read_pos) {
+    const unsigned flags = frame.flags();
 
     if ((flags & audio::Frame::FlagPacketDrops) && !(flags & audio::Frame::FlagFull)) {
-        curr_drop_ = true;
+        drop_in_curr_window_ = true;
     }
 
-    if (end_of_window) {
-        if (!curr_drop_) {
-            non_drop_pos_ = timestamp_;
+    const packet::timestamp_t window_start =
+        curr_read_pos_ / drop_detection_window_ * drop_detection_window_;
+
+    const packet::timestamp_t window_end =
+        window_start + drop_detection_window_;
+
+    const bool out_of_window =
+        ROC_UNSIGNED_LE(packet::signed_timestamp_t, window_end, next_read_pos);
+
+    if (out_of_window) {
+        if (!drop_in_curr_window_) {
+            last_read_before_drops_ = next_read_pos;
         }
-        curr_drop_ = false;
+        if (window_end == next_read_pos) {
+            // reset flag if the frame does not affect new window
+            drop_in_curr_window_ = false;
+        }
+    }
+}
+
+bool Watchdog::check_drops_timeout_() {
+    if (curr_read_pos_ - last_read_before_drops_ < max_drops_duration_) {
+        return true;
     }
 
-    if (timestamp_ - non_drop_pos_ >= max_drop_window_num_) {
-        total_drop_ = true;
-    }
+    roc_log(LogInfo,
+            "watchdog: timeout reached: every window had drops during timeout:"
+            " curr_read_pos=%lu last_read_before_drops=%lu"
+            " drop_detection_window=%lu max_drops_duration=%lu",
+            (unsigned long)curr_read_pos_, (unsigned long)last_read_before_drops_,
+            (unsigned long)drop_detection_window_,
+            (unsigned long)max_drops_duration_);
+
+    return false;
 }
 
 } // namespace audio

@@ -130,7 +130,7 @@ int main(int argc, char** argv) {
             roc_log(LogError, "invalid --timeout: should be >= 0");
             return 1;
         }
-        config.default_session.timeout = (packet::timestamp_t)args.timeout_arg;
+        config.default_session.silence_timeout = (packet::timestamp_t)args.timeout_arg;
     }
 
     if (args.latency_given) {

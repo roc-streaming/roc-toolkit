@@ -20,13 +20,14 @@ namespace {
 
 enum {
     MaxBufSize = 5000,
-    Timeout = 20,
     NumCh = 2,
-    SamplesPerFrame = Timeout / 4,
 
-    DropWindowSz = SamplesPerFrame,
-    MaxDropWindowNum = DropWindowSz * 5,
-    MaxDropFrameNum = MaxDropWindowNum / DropWindowSz
+    SilenceTimeout = 20,
+    SamplesPerFrame = SilenceTimeout / 4,
+
+    DropsTimeout = SamplesPerFrame * 5,
+    DropsWindow = SamplesPerFrame,
+    DropWindowsPerTimeout = DropsTimeout / DropsWindow
 };
 
 core::HeapAllocator allocator;
@@ -82,49 +83,49 @@ TEST_GROUP(watchdog) {
 };
 
 TEST(watchdog, first_update_timeout_exceeded) {
-    Watchdog watchdog(test_reader, NumCh, Timeout, DropWindowSz, MaxDropWindowNum);
+    Watchdog watchdog(test_reader, NumCh, SilenceTimeout, DropsTimeout, DropsWindow);
 
-    CHECK(watchdog.update(Timeout * 2));
+    CHECK(watchdog.update(SilenceTimeout * 2));
     check_read(watchdog, true, SamplesPerFrame, 0);
 }
 
 TEST(watchdog, update_timeout) {
-    Watchdog watchdog(test_reader, NumCh, Timeout, DropWindowSz, MaxDropWindowNum);
+    Watchdog watchdog(test_reader, NumCh, SilenceTimeout, DropsTimeout, DropsWindow);
 
     CHECK(watchdog.update(0));
-    CHECK(!watchdog.update(Timeout));
+    CHECK(!watchdog.update(SilenceTimeout));
 }
 
 TEST(watchdog, nth_update_timeout) {
-    Watchdog watchdog(test_reader, NumCh, Timeout, DropWindowSz, MaxDropWindowNum);
+    Watchdog watchdog(test_reader, NumCh, SilenceTimeout, DropsTimeout, DropsWindow);
 
-    for (packet::timestamp_t n = 0; n < Timeout; n++) {
+    for (packet::timestamp_t n = 0; n < SilenceTimeout; n++) {
         CHECK(watchdog.update(n));
     }
 
-    CHECK(!watchdog.update(Timeout));
+    CHECK(!watchdog.update(SilenceTimeout));
 }
 
 TEST(watchdog, empty_frames_timeout) {
-    Watchdog watchdog(test_reader, NumCh, Timeout, DropWindowSz, MaxDropWindowNum);
+    Watchdog watchdog(test_reader, NumCh, SilenceTimeout, DropsTimeout, DropsWindow);
 
-    for (packet::timestamp_t n = 0; n < Timeout; n++) {
+    for (packet::timestamp_t n = 0; n < SilenceTimeout; n++) {
         CHECK(watchdog.update(n));
         check_read(watchdog, true, SamplesPerFrame, Frame::FlagEmpty);
     }
 
-    CHECK(!watchdog.update(Timeout));
+    CHECK(!watchdog.update(SilenceTimeout));
     check_read(watchdog, false, SamplesPerFrame, 0);
 }
 
 TEST(watchdog, empty_frames_no_timeout) {
-    CHECK(Timeout % SamplesPerFrame == 0);
+    CHECK(SilenceTimeout % SamplesPerFrame == 0);
 
-    Watchdog watchdog(test_reader, NumCh, Timeout, DropWindowSz, MaxDropWindowNum);
+    Watchdog watchdog(test_reader, NumCh, SilenceTimeout, DropsTimeout, DropsWindow);
 
-    for (packet::timestamp_t ni = 0; ni < Timeout / SamplesPerFrame; ni++) {
-        const packet::timestamp_t from = ni * Timeout;
-        const packet::timestamp_t to = from + Timeout;
+    for (packet::timestamp_t ni = 0; ni < SilenceTimeout / SamplesPerFrame; ni++) {
+        const packet::timestamp_t from = ni * SilenceTimeout;
+        const packet::timestamp_t to = from + SilenceTimeout;
 
         for (packet::timestamp_t n = from; n < to; n++) {
             CHECK(watchdog.update(n));
@@ -141,104 +142,125 @@ TEST(watchdog, empty_frames_no_timeout) {
 
 TEST(watchdog, packet_drops_equal_frame_sizes) {
     {
-        Watchdog watchdog(test_reader, NumCh, Timeout, DropWindowSz, MaxDropWindowNum);
+        Watchdog watchdog(test_reader, NumCh, SilenceTimeout, DropsTimeout, DropsWindow);
 
-        check_nth_read(watchdog, true, DropWindowSz, MaxDropFrameNum - 1,
+        check_nth_read(watchdog, true, DropsWindow, DropWindowsPerTimeout - 1,
                        Frame::FlagPacketDrops);
 
-        check_read(watchdog, true, DropWindowSz, 0);
-        CHECK(watchdog.update(Timeout));
-        check_read(watchdog, true, DropWindowSz, 0);
+        check_read(watchdog, true, DropsWindow, 0);
+        CHECK(watchdog.update(SilenceTimeout));
+        check_read(watchdog, true, DropsWindow, 0);
     }
     {
-        Watchdog watchdog(test_reader, NumCh, Timeout, DropWindowSz, MaxDropWindowNum);
+        Watchdog watchdog(test_reader, NumCh, SilenceTimeout, DropsTimeout, DropsWindow);
 
-        check_read(watchdog, true, DropWindowSz, 0);
-        check_nth_read(watchdog, true, DropWindowSz, MaxDropFrameNum - 2,
+        check_read(watchdog, true, DropsWindow, 0);
+        check_nth_read(watchdog, true, DropsWindow, DropWindowsPerTimeout - 2,
                        Frame::FlagPacketDrops);
-        check_read(watchdog, true, DropWindowSz, 0);
+        check_read(watchdog, true, DropsWindow, 0);
 
-        CHECK(watchdog.update(Timeout));
-        check_nth_read(watchdog, true, DropWindowSz, MaxDropFrameNum, 0);
+        CHECK(watchdog.update(SilenceTimeout));
+        check_nth_read(watchdog, true, DropsWindow, DropWindowsPerTimeout, 0);
     }
     {
-        Watchdog watchdog(test_reader, NumCh, Timeout, DropWindowSz, MaxDropWindowNum);
+        Watchdog watchdog(test_reader, NumCh, SilenceTimeout, DropsTimeout, DropsWindow);
 
-        check_read(watchdog, true, DropWindowSz, 0);
-        check_nth_read(watchdog, true, DropWindowSz, MaxDropFrameNum - 1,
+        check_read(watchdog, true, DropsWindow, 0);
+        check_nth_read(watchdog, true, DropsWindow, DropWindowsPerTimeout - 1,
                        Frame::FlagPacketDrops);
 
-        CHECK(watchdog.update(Timeout));
+        CHECK(watchdog.update(SilenceTimeout));
 
-        check_read(watchdog, true, DropWindowSz, 0);
+        check_read(watchdog, true, DropsWindow, 0);
     }
     {
-        Watchdog watchdog(test_reader, NumCh, Timeout, DropWindowSz, MaxDropWindowNum);
+        Watchdog watchdog(test_reader, NumCh, SilenceTimeout, DropsTimeout, DropsWindow);
 
-        check_nth_read(watchdog, true, DropWindowSz, MaxDropFrameNum - 1,
+        check_nth_read(watchdog, true, DropsWindow, DropWindowsPerTimeout - 1,
                        Frame::FlagPacketDrops);
-        check_read(watchdog, true, DropWindowSz, Frame::FlagPacketDrops);
+        check_read(watchdog, true, DropsWindow, Frame::FlagPacketDrops);
 
-        CHECK(!watchdog.update(Timeout));
-        check_read(watchdog, false, DropWindowSz, 0);
+        CHECK(!watchdog.update(SilenceTimeout));
+        check_read(watchdog, false, DropsWindow, 0);
     }
 }
 
 TEST(watchdog, frame_flags_empty_packet_drops) {
-    Watchdog watchdog(test_reader, NumCh, Timeout, DropWindowSz, MaxDropWindowNum);
+    Watchdog watchdog(test_reader, NumCh, SilenceTimeout, DropsTimeout, DropsWindow);
 
-    check_read(watchdog, true, DropWindowSz, Frame::FlagPacketDrops);
-    check_read(watchdog, true, DropWindowSz, Frame::FlagEmpty);
+    check_read(watchdog, true, DropsWindow, Frame::FlagPacketDrops);
+    check_read(watchdog, true, DropsWindow, Frame::FlagEmpty);
 
-    CHECK(watchdog.update(Timeout));
+    CHECK(watchdog.update(SilenceTimeout));
 
-    check_read(watchdog, true, DropWindowSz, 0);
+    check_read(watchdog, true, DropsWindow, 0);
 }
 
 TEST(watchdog, frame_flags_full_packet_drops) {
-    Watchdog watchdog(test_reader, NumCh, Timeout, DropWindowSz, MaxDropWindowNum);
+    Watchdog watchdog(test_reader, NumCh, SilenceTimeout, DropsTimeout, DropsWindow);
 
-    check_nth_read(watchdog, true, DropWindowSz, MaxDropFrameNum,
+    check_nth_read(watchdog, true, DropsWindow, DropWindowsPerTimeout,
                    Frame::FlagPacketDrops | Frame::FlagFull);
 
-    CHECK(watchdog.update(Timeout));
+    CHECK(watchdog.update(SilenceTimeout));
 
-    check_nth_read(watchdog, true, DropWindowSz, MaxDropFrameNum, 0);
+    check_nth_read(watchdog, true, DropsWindow, DropWindowsPerTimeout, 0);
 }
 
 TEST(watchdog, packet_drops_mixed_frame_sizes) {
     {
-        Watchdog watchdog(test_reader, NumCh, Timeout, DropWindowSz, MaxDropWindowNum);
+        Watchdog watchdog(test_reader, NumCh, SilenceTimeout, DropsTimeout, DropsWindow);
 
-        check_read(watchdog, true, DropWindowSz * (MaxDropFrameNum - 1),
+        check_read(watchdog, true, DropsWindow * (DropWindowsPerTimeout - 1),
                    Frame::FlagPacketDrops);
-        check_read(watchdog, true, DropWindowSz / 2, Frame::FlagPacketDrops);
-        check_read(watchdog, true, DropWindowSz, 0);
+        check_read(watchdog, true, DropsWindow / 2, Frame::FlagPacketDrops);
+        check_read(watchdog, true, DropsWindow, 0);
 
-        CHECK(!watchdog.update(Timeout));
+        CHECK(!watchdog.update(SilenceTimeout));
     }
     {
-        Watchdog watchdog(test_reader, NumCh, Timeout, DropWindowSz, MaxDropWindowNum);
+        Watchdog watchdog(test_reader, NumCh, SilenceTimeout, DropsTimeout, DropsWindow);
 
-        check_read(watchdog, true, DropWindowSz * (MaxDropFrameNum - 1),
+        check_read(watchdog, true, DropsWindow * (DropWindowsPerTimeout - 1),
                    Frame::FlagPacketDrops);
-        check_read(watchdog, true, DropWindowSz / MaxDropFrameNum, 0);
-        check_read(watchdog, true, (DropWindowSz * 3) / MaxDropFrameNum,
+        check_read(watchdog, true, DropsWindow / DropWindowsPerTimeout, 0);
+        check_read(watchdog, true, (DropsWindow * 3) / DropWindowsPerTimeout,
                    Frame::FlagPacketDrops);
-        check_read(watchdog, true, DropWindowSz / MaxDropFrameNum, 0);
+        check_read(watchdog, true, DropsWindow / DropWindowsPerTimeout, 0);
 
-        CHECK(!watchdog.update(Timeout));
+        CHECK(!watchdog.update(SilenceTimeout));
     }
     {
-        Watchdog watchdog(test_reader, NumCh, Timeout, DropWindowSz, MaxDropWindowNum);
+        Watchdog watchdog(test_reader, NumCh, SilenceTimeout, DropsTimeout, DropsWindow);
 
-        check_read(watchdog, true, DropWindowSz * (MaxDropFrameNum - 1),
+        check_read(watchdog, true, DropsWindow * (DropWindowsPerTimeout - 1),
                    Frame::FlagPacketDrops);
-        check_read(watchdog, true, DropWindowSz / 2, 0);
-        check_read(watchdog, true, (DropWindowSz * 3) / MaxDropFrameNum,
+        check_read(watchdog, true, DropsWindow / 2, 0);
+        check_read(watchdog, true, (DropsWindow * 3) / DropWindowsPerTimeout,
                    Frame::FlagPacketDrops);
 
-        CHECK(!watchdog.update(Timeout));
+        CHECK(!watchdog.update(SilenceTimeout));
+    }
+}
+
+TEST(watchdog, frame_overlaps_drop_window) {
+    {
+        Watchdog watchdog(test_reader, NumCh, SilenceTimeout, DropsTimeout, DropsWindow);
+
+        check_read(watchdog, true, DropsWindow, Frame::FlagPacketDrops);
+        check_read(watchdog, true, DropsWindow, 0);
+        check_read(watchdog, true, DropsTimeout - DropsWindow, Frame::FlagPacketDrops);
+
+        CHECK(watchdog.update(SilenceTimeout));
+    }
+    {
+        Watchdog watchdog(test_reader, NumCh, SilenceTimeout, DropsTimeout, DropsWindow);
+
+        check_read(watchdog, true, DropsWindow + 1, Frame::FlagPacketDrops);
+        check_read(watchdog, true, DropsWindow - 1, 0);
+        check_read(watchdog, true, DropsTimeout - DropsWindow, Frame::FlagPacketDrops);
+
+        CHECK(!watchdog.update(SilenceTimeout));
     }
 }
 

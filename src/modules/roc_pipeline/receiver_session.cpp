@@ -126,8 +126,8 @@ ReceiverSession::ReceiverSession(const SessionConfig& config,
     audio::IReader* areader = depacketizer_.get();
 
     watchdog_.reset(new (allocator_) audio::Watchdog(
-                        *areader, packet::num_channels(config.channels), config.timeout,
-                        config.drop_window_sz, config.max_drop_window_num),
+                        *areader, packet::num_channels(config.channels), config.silence_timeout,
+                        config.drops_timeout, config.drop_detection_window),
                     allocator_);
     if (!watchdog_) {
         return;

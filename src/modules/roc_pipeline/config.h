@@ -91,20 +91,20 @@ struct SessionConfig {
     //! Target latency, number of samples.
     packet::timestamp_t latency;
 
-    //! Session timeout, number of samples.
+    //! Session silence timeout, number of samples.
     //! @remarks
-    //!  If there are no new packets during this period, the session is terminated.
-    packet::timestamp_t timeout;
+    //!  If there is only silency during this period, the session is terminated.
+    packet::timestamp_t silence_timeout;
 
-    //! Window during which not fully filled frames that have dropped packets
-    //! are detected.
-    packet::timestamp_t drop_window_sz;
-
-    //! Maximum allowed number of consecutive windows that can contain frames that aren't
-    //! fully filled and contain dropped packets.
+    //! Session drops timeout, number of samples.
     //! @remarks
-    //!  If this number is exceeded the session should be terminated.
-    packet::timestamp_t max_drop_window_num;
+    //!  If during this period every drop detection window overlaps with a frame
+    //!  with drops, the session is terminated.
+    packet::timestamp_t drops_timeout;
+
+    //! Drop detection window size, number of samples.
+    //! @see drops_timeout.
+    packet::timestamp_t drop_detection_window;
 
     //! FEC scheme parameters.
     fec::Config fec;
@@ -128,9 +128,9 @@ struct SessionConfig {
         : channels(DefaultChannelMask)
         , samples_per_packet(DefaultPacketSize)
         , latency(DefaultPacketSize * 27)
-        , timeout(DefaultSampleRate * 2)
-        , drop_window_sz(DefaultSampleRate / 100)
-        , max_drop_window_num(DefaultSampleRate / 10)
+        , silence_timeout(DefaultSampleRate * 2)
+        , drops_timeout(DefaultSampleRate)
+        , drop_detection_window(DefaultSampleRate / 20)
         , resampling(false)
         , beeping(false) {
         latency_monitor.min_latency =
