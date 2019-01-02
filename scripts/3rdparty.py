@@ -3,6 +3,7 @@ from __future__ import print_function
 
 import sys
 import os
+import os.path
 import shutil
 import glob
 import fnmatch
@@ -39,34 +40,43 @@ def rmpath(path):
     except:
         pass
 
-def download_urlopen(url, path, log):
-    archive = urlopen(url)
-    with open(path, 'wb') as fp:
-        fp.write(archive.read())
+def download_distdir(url, path, log, distdir):
+    distfile = os.path.join(distdir, os.path.basename(path))
+    if not os.path.exists(distfile):
+        raise
+    print('[trying local] %s' % os.path.basename(distfile))
+    with open(distfile, 'rb') as rp:
+        with open(path, 'wb') as wp:
+            wp.write(rp.read())
 
-def download_tool(url, path, log, tool, cmd):
-    print('[%s] %s' % (tool, url))
+def download_urlopen(url, path, log, distdir):
+    rp = urlopen(url)
+    with open(path, 'wb') as wp:
+        wp.write(rp.read())
+
+def download_tool(url, path, log, distdir, tool, cmd):
+    print('[trying %s] %s' % (tool, url))
     with open(log, 'a+') as fp:
         print('>>> %s' % cmd, file=fp)
     if os.system(cmd) != 0:
         raise
 
-def download_wget(url, path, log):
+def download_wget(url, path, log, distdir):
     download_tool(url, path, log, 'wget', 'wget "%s" --quiet -O "%s"' % (url, path))
 
-def download_curl(url, path, log):
+def download_curl(url, path, log, distdir):
     download_tool(url, path, log, 'curl', 'curl -Ls "%s" -o "%s"' % (url, path))
 
-def download(url, path, log):
+def download(url, path, log, distdir):
     print('[download] %s' % url)
     rmpath(path)
     error = None
-    for fn in [download_urlopen, download_curl, download_wget]:
+    for fn in [download_distdir, download_urlopen, download_curl, download_wget]:
         try:
-            fn(url, path, log)
+            fn(url, path, log, distdir)
             return
         except Exception as e:
-            if not error:
+            if fn == download_urlopen:
                 error = e
     print("error: can't download '%s': %s" % (url, error), file=sys.stderr)
     exit(1)
@@ -182,16 +192,17 @@ def makeflags(workdir, toolchain, deplist, cflags='', ldflags='', variant=''):
         'LDFLAGS="%s"' % ' '.join(ldflags),
     ])
 
-if len(sys.argv) != 6:
-    print("error: usage: 3rdparty.py workdir toolchain variant package deplist",
+if len(sys.argv) != 7:
+    print("error: usage: 3rdparty.py workdir distdir toolchain variant package deplist",
           file=sys.stderr)
     exit(1)
 
 workdir = os.path.abspath(sys.argv[1])
-toolchain = sys.argv[2]
-variant = sys.argv[3]
-fullname = sys.argv[4]
-deplist = sys.argv[5].split(':')
+distdir = os.path.abspath(sys.argv[2])
+toolchain = sys.argv[3]
+variant = sys.argv[4]
+fullname = sys.argv[5]
+deplist = sys.argv[6].split(':')
 
 name, ver = fullname.split('-', 1)
 
@@ -207,7 +218,8 @@ os.chdir(os.path.join(builddir, 'src'))
 if name == 'uv':
     download('http://dist.libuv.org/dist/v%s/libuv-v%s.tar.gz' % (ver, ver),
              'libuv-v%s.tar.gz' % ver,
-             logfile)
+             logfile,
+             distdir)
     extract('libuv-v%s.tar.gz' % ver,
             'libuv-v%s' % ver)
     os.chdir('libuv-v%s' % ver)
@@ -227,7 +239,8 @@ elif name == 'openfec':
     download(
       'https://github.com/roc-project/openfec/archive/v%s.tar.gz' % ver,
       'openfec_v%s.tar.gz' % ver,
-        logfile)
+        logfile,
+        distdir)
     extract('openfec_v%s.tar.gz' % ver,
             'openfec-%s' % ver)
     os.chdir('openfec-%s' % ver)
@@ -267,7 +280,8 @@ elif name == 'alsa':
     download(
       'ftp://ftp.alsa-project.org/pub/lib/alsa-lib-%s.tar.bz2' % ver,
         'alsa-lib-%s.tar.bz2' % ver,
-        logfile)
+        logfile,
+        distdir)
     extract('alsa-lib-%s.tar.bz2' % ver,
             'alsa-lib-%s' % ver)
     os.chdir('alsa-lib-%s' % ver)
@@ -288,7 +302,8 @@ elif name == 'ltdl':
     download(
       'ftp://ftp.gnu.org/gnu/libtool/libtool-%s.tar.gz' % ver,
         'libtool-%s.tar.gz' % ver,
-        logfile)
+        logfile,
+        distdir)
     extract('libtool-%s.tar.gz' % ver,
             'libtool-%s' % ver)
     os.chdir('libtool-%s' % ver)
@@ -307,7 +322,8 @@ elif name == 'json':
     download(
       'https://github.com/json-c/json-c/archive/json-c-%s.tar.gz' % ver,
         'json-%s.tar.gz' % ver,
-        logfile)
+        logfile,
+        distdir)
     extract('json-%s.tar.gz' % ver,
             'json-c-json-c-%s' % ver)
     os.chdir('json-c-json-c-%s' % ver)
@@ -331,7 +347,8 @@ elif name == 'sndfile':
     download(
       'http://www.mega-nerd.com/libsndfile/files/libsndfile-%s.tar.gz' % ver,
         'libsndfile-%s.tar.gz' % ver,
-        logfile)
+        logfile,
+        distdir)
     extract('libsndfile-%s.tar.gz' % ver,
             'libsndfile-%s' % ver)
     os.chdir('libsndfile-%s' % ver)
@@ -350,7 +367,8 @@ elif name == 'pulseaudio':
     download(
       'https://freedesktop.org/software/pulseaudio/releases/pulseaudio-%s.tar.gz' % ver,
         'pulseaudio-%s.tar.gz' % ver,
-        logfile)
+        logfile,
+        distdir)
     extract('pulseaudio-%s.tar.gz' % ver,
             'pulseaudio-%s' % ver)
     os.chdir('pulseaudio-%s' % ver)
@@ -389,7 +407,8 @@ elif name == 'sox':
     download(
       'http://vorboss.dl.sourceforge.net/project/sox/sox/%s/sox-%s.tar.gz' % (ver, ver),
       'sox-%s.tar.gz' % ver,
-        logfile)
+        logfile,
+        distdir)
     extract('sox-%s.tar.gz' % ver,
             'sox-%s' % ver)
     os.chdir('sox-%s' % ver)
@@ -410,7 +429,8 @@ elif name == 'sox':
 elif name == 'gengetopt':
     download('ftp://ftp.gnu.org/gnu/gengetopt/gengetopt-%s.tar.gz' % ver,
              'gengetopt-%s.tar.gz' % ver,
-             logfile)
+             logfile,
+             distdir)
     extract('gengetopt-%s.tar.gz' % ver,
             'gengetopt-%s' % ver)
     os.chdir('gengetopt-%s' % ver)
@@ -422,7 +442,8 @@ elif name == 'cpputest':
         'https://raw.githubusercontent.com/cpputest/cpputest.github.io/' \
         'master/releases/cpputest-%s.tar.gz' % ver,
         'cpputest-%s.tar.gz' % ver,
-        logfile)
+        logfile,
+        distdir)
     extract('cpputest-%s.tar.gz' % ver,
             'cpputest-%s' % ver)
     os.chdir('cpputest-%s' % ver)
