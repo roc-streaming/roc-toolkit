@@ -21,16 +21,22 @@ section "Options"
     option "nbrpr" - "Number of repair packets in FEC block"
         int optional
 
-    option "timeout" - "Session timeout as number of samples"
+    option "silence-timeout" - "Session timeout for silence, number of samples"
         int optional
 
-    option "latency" - "Session latency as number of samples"
+    option "drops-timeout" - "Session timeout for constant drops, number of samples"
         int optional
 
-    option "min-latency" - "Minimum session latency as number of samples"
+    option "drops-window" - "Session drops detection window, number of samples"
         int optional
 
-    option "max-latency" - "Maximum session latency as number of samples"
+    option "latency" - "Session target latency, number of samples"
+        int optional
+
+    option "min-latency" - "Session minimum latency, number of samples"
+        int optional
+
+    option "max-latency" - "Session maximum latency, number of samples"
         int optional
 
     option "rate" - "Override output sample rate (Hz)"

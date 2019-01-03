@@ -125,12 +125,31 @@ int main(int argc, char** argv) {
         }
     }
 
-    if (args.timeout_given) {
-        if (args.timeout_arg < 0) {
-            roc_log(LogError, "invalid --timeout: should be >= 0");
+    if (args.silence_timeout_given) {
+        if (args.silence_timeout_arg < 0) {
+            roc_log(LogError, "invalid --silence-timeout: should be >= 0");
             return 1;
         }
-        config.default_session.silence_timeout = (packet::timestamp_t)args.timeout_arg;
+        config.default_session.silence_timeout =
+            (packet::timestamp_t)args.silence_timeout_arg;
+    }
+
+    if (args.drops_timeout_given) {
+        if (args.drops_timeout_arg < 0) {
+            roc_log(LogError, "invalid --drops-timeout: should be >= 0");
+            return 1;
+        }
+        config.default_session.drops_timeout =
+            (packet::timestamp_t)args.drops_timeout_arg;
+    }
+
+    if (args.drops_window_given) {
+        if (args.drops_window_arg < 0) {
+            roc_log(LogError, "invalid --drops-window: should be >= 0");
+            return 1;
+        }
+        config.default_session.drop_detection_window =
+            (packet::timestamp_t)args.drops_window_arg;
     }
 
     if (args.latency_given) {

@@ -53,9 +53,8 @@ public:
     bool update(packet::timestamp_t time);
 
 private:
-    void init_silence_timeout_(packet::timestamp_t update_time);
-    void update_silence_timeout_(const Frame& frame);
-    bool check_silence_timeout_() const;
+    void update_silence_timeout_(const Frame& frame, packet::timestamp_t next_read_pos);
+    bool check_silence_timeout_(packet::timestamp_t pos) const;
 
     void update_drops_timeout_(const Frame& frame, packet::timestamp_t next_read_pos);
     bool check_drops_timeout_();
@@ -68,15 +67,15 @@ private:
     const packet::timestamp_t max_drops_duration_;
     const packet::timestamp_t drop_detection_window_;
 
-    bool first_update_;
-    bool alive_;
-
     packet::timestamp_t curr_read_pos_;
-    packet::timestamp_t last_update_time_;
-    packet::timestamp_t last_update_before_silence_;
-    packet::timestamp_t last_read_before_drops_;
-
+    packet::timestamp_t last_pos_before_silence_;
+    packet::timestamp_t last_pos_before_drops_;
     bool drop_in_curr_window_;
+
+    packet::timestamp_t first_update_pos_;
+    bool have_first_update_pos_;
+
+    bool alive_;
 };
 
 } // namespace audio

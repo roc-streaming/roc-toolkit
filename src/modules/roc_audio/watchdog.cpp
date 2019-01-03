@@ -22,13 +22,18 @@ Watchdog::Watchdog(IReader& reader,
     , max_silence_duration_(max_silence_duration)
     , max_drops_duration_(max_drops_duration)
     , drop_detection_window_(drop_detection_window)
-    , first_update_(true)
-    , alive_(true)
     , curr_read_pos_(0)
-    , last_update_time_(0)
-    , last_update_before_silence_(0)
-    , last_read_before_drops_(0)
-    , drop_in_curr_window_(false) {
+    , last_pos_before_silence_(0)
+    , last_pos_before_drops_(0)
+    , drop_in_curr_window_(false)
+    , first_update_pos_(0)
+    , have_first_update_pos_(false)
+    , alive_(true) {
+    roc_log(LogDebug,
+            "watchdog: initializing: "
+            "max_silence_duration=%lu max_drops_duration=%lu drop_detection_window=%lu",
+            (unsigned long)max_silence_duration, (unsigned long)max_drops_duration,
+            (unsigned long)drop_detection_window);
 }
 
 void Watchdog::read(Frame& frame) {
@@ -41,7 +46,7 @@ void Watchdog::read(Frame& frame) {
     const packet::timestamp_t next_read_pos =
         packet::timestamp_t(curr_read_pos_ + frame.size() / num_channels_);
 
-    update_silence_timeout_(frame);
+    update_silence_timeout_(frame, next_read_pos);
     update_drops_timeout_(frame, next_read_pos);
 
     curr_read_pos_ = next_read_pos;
@@ -51,19 +56,19 @@ void Watchdog::read(Frame& frame) {
     }
 }
 
-bool Watchdog::update(packet::timestamp_t time) {
+bool Watchdog::update(packet::timestamp_t new_update_pos) {
     if (!alive_) {
         return false;
     }
 
-    if (first_update_) {
-        init_silence_timeout_(time);
-        first_update_ = false;
+    if (!have_first_update_pos_) {
+        first_update_pos_ = new_update_pos;
+        have_first_update_pos_ = true;
     }
 
-    last_update_time_ = time;
+    const packet::timestamp_t pos = new_update_pos - first_update_pos_;
 
-    if (!check_silence_timeout_()) {
+    if (!check_silence_timeout_(pos)) {
         alive_ = false;
         return false;
     }
@@ -71,33 +76,46 @@ bool Watchdog::update(packet::timestamp_t time) {
     return true;
 }
 
-void Watchdog::init_silence_timeout_(packet::timestamp_t update_time) {
-    last_update_before_silence_ = update_time;
-}
+void Watchdog::update_silence_timeout_(const Frame& frame, packet::timestamp_t next_read_pos) {
+    if (max_silence_duration_ == 0) {
+        return;
+    }
 
-void Watchdog::update_silence_timeout_(const Frame& frame) {
     if (frame.flags() & audio::Frame::FlagEmpty) {
         return;
     }
 
-    last_update_before_silence_ = last_update_time_;
+    last_pos_before_silence_ = next_read_pos;
 }
 
-bool Watchdog::check_silence_timeout_() const {
-    if (last_update_time_ - last_update_before_silence_ < max_silence_duration_) {
+bool Watchdog::check_silence_timeout_(packet::timestamp_t curr_update_pos) const {
+    if (max_silence_duration_ == 0) {
         return true;
     }
 
-    roc_log(LogInfo,
-            "watchdog: timeout reached: every frame was empty during timeout:"
-            " last_update_time=%lu last_update_before_empty=%lu max_silence_duration=%lu",
-            (unsigned long)last_update_time_, (unsigned long)last_update_before_silence_,
+    if (ROC_UNSIGNED_LE(packet::signed_timestamp_t, curr_update_pos,
+                        last_pos_before_silence_)) {
+        return true;
+    }
+
+    if (curr_update_pos - last_pos_before_silence_ < max_silence_duration_) {
+        return true;
+    }
+
+    roc_log(LogDebug,
+            "watchdog: silence timeout reached: every frame was empty during timeout:"
+            " curr_update_pos=%lu last_pos_before_empty=%lu max_silence_duration=%lu",
+            (unsigned long)curr_update_pos, (unsigned long)last_pos_before_silence_,
             (unsigned long)max_silence_duration_);
 
     return false;
 }
 
 void Watchdog::update_drops_timeout_(const Frame& frame, packet::timestamp_t next_read_pos) {
+    if (max_drops_duration_ == 0) {
+        return;
+    }
+
     const unsigned flags = frame.flags();
 
     if ((flags & audio::Frame::FlagPacketDrops) && !(flags & audio::Frame::FlagFull)) {
@@ -115,7 +133,7 @@ void Watchdog::update_drops_timeout_(const Frame& frame, packet::timestamp_t nex
 
     if (out_of_window) {
         if (!drop_in_curr_window_) {
-            last_read_before_drops_ = next_read_pos;
+            last_pos_before_drops_ = next_read_pos;
         }
         if (window_end == next_read_pos) {
             // reset flag if the frame does not affect new window
@@ -125,15 +143,19 @@ void Watchdog::update_drops_timeout_(const Frame& frame, packet::timestamp_t nex
 }
 
 bool Watchdog::check_drops_timeout_() {
-    if (curr_read_pos_ - last_read_before_drops_ < max_drops_duration_) {
+    if (max_drops_duration_ == 0) {
         return true;
     }
 
-    roc_log(LogInfo,
-            "watchdog: timeout reached: every window had drops during timeout:"
-            " curr_read_pos=%lu last_read_before_drops=%lu"
+    if (curr_read_pos_ - last_pos_before_drops_ < max_drops_duration_) {
+        return true;
+    }
+
+    roc_log(LogDebug,
+            "watchdog: drops timeout reached: every window had drops during timeout:"
+            " curr_read_pos=%lu last_pos_before_drops=%lu"
             " drop_detection_window=%lu max_drops_duration=%lu",
-            (unsigned long)curr_read_pos_, (unsigned long)last_read_before_drops_,
+            (unsigned long)curr_read_pos_, (unsigned long)last_pos_before_drops_,
             (unsigned long)drop_detection_window_,
             (unsigned long)max_drops_duration_);
 

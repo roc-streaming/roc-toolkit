@@ -125,14 +125,17 @@ ReceiverSession::ReceiverSession(const SessionConfig& config,
 
     audio::IReader* areader = depacketizer_.get();
 
-    watchdog_.reset(new (allocator_) audio::Watchdog(
-                        *areader, packet::num_channels(config.channels), config.silence_timeout,
-                        config.drops_timeout, config.drop_detection_window),
-                    allocator_);
-    if (!watchdog_) {
-        return;
+    if (config.silence_timeout != 0 || config.drops_timeout != 0) {
+        watchdog_.reset(new (allocator_) audio::Watchdog(
+                            *areader, packet::num_channels(config.channels),
+                            config.silence_timeout, config.drops_timeout,
+                            config.drop_detection_window),
+                        allocator_);
+        if (!watchdog_) {
+            return;
+        }
+        areader = watchdog_.get();
     }
-    areader = watchdog_.get();
 
     if (config.resampling) {
         resampler_.reset(new (allocator_) audio::ResamplerReader(
