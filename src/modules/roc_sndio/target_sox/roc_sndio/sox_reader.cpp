@@ -50,16 +50,16 @@ void add_effect(sox_effects_chain_t* chain,
 } // namespace
 
 const sox_effect_handler_t SoxReader::output_handler_ = {
-    "roc_output",         //
-    NULL,                 //
-    SOX_EFF_MCHAN,        //
-    NULL,                 //
-    NULL,                 //
+    "roc_output",          //
+    NULL,                  //
+    SOX_EFF_MCHAN,         //
+    NULL,                  //
+    NULL,                  //
     SoxReader::output_cb_, //
-    NULL,                 //
-    NULL,                 //
+    NULL,                  //
+    NULL,                  //
     SoxReader::kill_cb_,   //
-    0                     //
+    0                      //
 };
 
 SoxReader::SoxReader(core::BufferPool<audio::sample_t>& buffer_pool,
@@ -159,6 +159,7 @@ void SoxReader::run() {
         roc_log(LogInfo, "sox reader: sox_flow_effects(): %s", sox_strerror(err));
     }
 
+    flush_();
     close_();
 
     roc_log(LogDebug, "sox reader: finishing thread, read %lu buffers",
@@ -166,6 +167,8 @@ void SoxReader::run() {
 }
 
 int SoxReader::kill_cb_(sox_effect_t* eff) {
+    roc_log(LogDebug, "sox reader: received kill callback");
+
     roc_panic_if(!eff);
     roc_panic_if(!eff->priv);
 
@@ -191,7 +194,7 @@ int SoxReader::output_cb_(sox_effect_t* eff,
     roc_panic_if(!ibuf);
     roc_panic_if(!ibufsz);
 
-    self.write_(ibuf, *ibufsz, *ibufsz < sox_get_globals()->input_bufsiz);
+    self.write_(ibuf, *ibufsz);
 
     (void)obuf;
     if (obufsz) {
@@ -254,30 +257,30 @@ bool SoxReader::open_(const char* name, const char* type) {
                    args);
     }
 
-    if (input_->signal.channels != out_signal_.channels) {
-        add_effect(chain_, "channels", &input_->signal, &out_signal_, 0, NULL);
-    }
-
     if ((size_t)out_signal_.rate != 0
         && (size_t)input_->signal.rate != (size_t)out_signal_.rate) {
-        const char* gain_h_args[] = {
+        const char* gain_args[] = {
             "-h",
         };
 
         add_effect(chain_, "gain", &input_->signal, &out_signal_,
-                   ROC_ARRAY_SIZE(gain_h_args), gain_h_args);
+                   ROC_ARRAY_SIZE(gain_args), gain_args);
 
-        const char* rate_args[] = { "-b", "99.7", "-v" };
+        if (is_file_) {
+            const char* rate_args[] = { "-v", "-b", "99.7" };
 
-        add_effect(chain_, "rate", &input_->signal, &out_signal_,
-                   ROC_ARRAY_SIZE(rate_args), rate_args);
+            add_effect(chain_, "rate", &input_->signal, &out_signal_,
+                       ROC_ARRAY_SIZE(rate_args), rate_args);
+        } else {
+            const char* rate_args[] = { "-q" };
 
-        const char* gain_r_args[] = {
-            "-r",
-        };
+            add_effect(chain_, "rate", &input_->signal, &out_signal_,
+                       ROC_ARRAY_SIZE(rate_args), rate_args);
+        }
+    }
 
-        add_effect(chain_, "gain", &input_->signal, &out_signal_,
-                   ROC_ARRAY_SIZE(gain_r_args), gain_r_args);
+    if (input_->signal.channels != out_signal_.channels) {
+        add_effect(chain_, "channels", &input_->signal, &out_signal_, 0, NULL);
     }
 
     {
@@ -288,7 +291,7 @@ bool SoxReader::open_(const char* name, const char* type) {
 
         effect->priv = this;
 
-        int err = sox_add_effect(chain_, effect, &out_signal_, &out_signal_);
+        int err = sox_add_effect(chain_, effect, &input_->signal, &out_signal_);
         if (err != SOX_SUCCESS) {
             roc_panic("sox reader: sox_add_effect(): can't add output effect: %s",
                       sox_strerror(err));
@@ -300,9 +303,9 @@ bool SoxReader::open_(const char* name, const char* type) {
     return true;
 }
 
-void SoxReader::write_(const sox_sample_t* buf, size_t bufsz, bool eof) {
+void SoxReader::write_(const sox_sample_t* buf, size_t bufsz) {
     while (bufsz != 0) {
-        audio::sample_t* samples = buffer_.data();
+        audio::sample_t* buffer_data = buffer_.data();
 
         SOX_SAMPLE_LOCALS;
 
@@ -312,24 +315,27 @@ void SoxReader::write_(const sox_sample_t* buf, size_t bufsz, bool eof) {
             if (bufsz == 0) {
                 break;
             }
-            samples[buffer_pos_] = (float)SOX_SAMPLE_TO_FLOAT_32BIT(*buf, clips);
+            buffer_data[buffer_pos_] = (float)SOX_SAMPLE_TO_FLOAT_32BIT(*buf, clips);
             buf++;
             bufsz--;
         }
 
-        if (eof) {
-            for (; buffer_pos_ < buffer_size_; buffer_pos_++) {
-                samples[buffer_pos_] = 0;
-            }
-        }
-
         if (buffer_pos_ == buffer_size_) {
-            audio::Frame frame(buffer_.data(), buffer_.size());
-            output_->write(frame);
-            buffer_pos_ = 0;
-            n_bufs_++;
+            flush_();
         }
     }
+}
+
+void SoxReader::flush_() {
+    if (buffer_pos_ == 0) {
+        return;
+    }
+
+    audio::Frame frame(buffer_.data(), buffer_pos_);
+    output_->write(frame);
+
+    buffer_pos_ = 0;
+    n_bufs_++;
 }
 
 void SoxReader::close_() {

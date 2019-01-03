@@ -129,6 +129,8 @@ int main(int argc, char** argv) {
             return 1;
         }
         sample_rate = (size_t)args.rate_arg;
+    } else {
+        sample_rate = pipeline::DefaultSampleRate;
     }
 
     sndio::SoxReader reader(sample_buffer_pool, config.channels,

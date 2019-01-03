@@ -112,7 +112,6 @@ int main(int argc, char** argv) {
     config.default_session.beeping = args.beep_flag;
 
     size_t sample_rate = 0;
-
     if (args.rate_given) {
         if (args.rate_arg <= 0) {
             roc_log(LogError, "invalid --rate: should be > 0");

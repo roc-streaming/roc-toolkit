@@ -135,7 +135,7 @@ bool SoxWriter::open_(const char* name, const char* type) {
         roc_log(
             LogError,
             "sox writer: can't open output file or device with the required sample rate: "
-            "required=%lu suggested=%lu",
+            "required_by_output=%lu requested_by_user=%lu",
             out_rate, in_rate);
         return false;
     }

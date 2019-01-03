@@ -101,7 +101,8 @@ private:
 
     bool prepare_();
     bool open_(const char* name, const char* type);
-    void write_(const sox_sample_t* buf, size_t bufsz, bool eof);
+    void write_(const sox_sample_t* buf, size_t bufsz);
+    void flush_();
     void close_();
 
     sox_signalinfo_t out_signal_;
