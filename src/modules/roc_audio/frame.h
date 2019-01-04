@@ -28,15 +28,14 @@ public:
 
     //! Frame flags.
     enum {
-        //! Set if no packets were extracted to the frame when the frame was built.
-        FlagEmpty = (1 << 0),
+        //! Set if the frame is fully filled with zeros instead of data from packets.
+        FlagBlank = (1 << 0),
 
-        //! Set if the frame is fully filled with samples from packets.
-        FlagFull = (1 << 1),
+        //! Set if the frame is partially filled with zeros instead of data from packets.
+        FlagIncomplete = (1 << 1),
 
-        //! Set if some queued packets were regarded as outdated and dropped when
-        //! the frame was built.
-        FlagPacketDrops = (1 << 2)
+        //! Set if some late packets were dropped while the frame was being built.
+        FlagDrops = (1 << 2)
     };
 
     //! Add flags.

@@ -25,7 +25,7 @@ Watchdog::Watchdog(IReader& reader,
     , curr_read_pos_(0)
     , last_pos_before_silence_(0)
     , last_pos_before_drops_(0)
-    , drop_in_curr_window_(false)
+    , curr_window_flags_(0)
     , first_update_pos_(0)
     , have_first_update_pos_(false)
     , alive_(true) {
@@ -38,6 +38,9 @@ Watchdog::Watchdog(IReader& reader,
 
 void Watchdog::read(Frame& frame) {
     if (!alive_) {
+        if (frame.size() != 0) {
+            memset(frame.data(), 0, frame.size() * sizeof(sample_t));
+        }
         return;
     }
 
@@ -81,7 +84,7 @@ void Watchdog::update_silence_timeout_(const Frame& frame, packet::timestamp_t n
         return;
     }
 
-    if (frame.flags() & audio::Frame::FlagEmpty) {
+    if (frame.flags() & audio::Frame::FlagBlank) {
         return;
     }
 
@@ -103,8 +106,8 @@ bool Watchdog::check_silence_timeout_(packet::timestamp_t curr_update_pos) const
     }
 
     roc_log(LogDebug,
-            "watchdog: silence timeout reached: every frame was empty during timeout:"
-            " curr_update_pos=%lu last_pos_before_empty=%lu max_silence_duration=%lu",
+            "watchdog: silence timeout reached: every frame was blank during timeout:"
+            " curr_update_pos=%lu last_pos_before_silence=%lu max_silence_duration=%lu",
             (unsigned long)curr_update_pos, (unsigned long)last_pos_before_silence_,
             (unsigned long)max_silence_duration_);
 
@@ -116,11 +119,7 @@ void Watchdog::update_drops_timeout_(const Frame& frame, packet::timestamp_t nex
         return;
     }
 
-    const unsigned flags = frame.flags();
-
-    if ((flags & audio::Frame::FlagPacketDrops) && !(flags & audio::Frame::FlagFull)) {
-        drop_in_curr_window_ = true;
-    }
+    curr_window_flags_ |= frame.flags();
 
     const packet::timestamp_t window_start =
         curr_read_pos_ / drop_detection_window_ * drop_detection_window_;
@@ -128,16 +127,14 @@ void Watchdog::update_drops_timeout_(const Frame& frame, packet::timestamp_t nex
     const packet::timestamp_t window_end =
         window_start + drop_detection_window_;
 
-    const bool out_of_window =
-        ROC_UNSIGNED_LE(packet::signed_timestamp_t, window_end, next_read_pos);
-
-    if (out_of_window) {
-        if (!drop_in_curr_window_) {
+    if (ROC_UNSIGNED_LE(packet::signed_timestamp_t, window_end, next_read_pos)) {
+        if ((curr_window_flags_ & (Frame::FlagIncomplete | Frame::FlagDrops)) == 0) {
             last_pos_before_drops_ = next_read_pos;
         }
-        if (window_end == next_read_pos) {
-            // reset flag if the frame does not affect new window
-            drop_in_curr_window_ = false;
+        if (next_read_pos % drop_detection_window_ == 0) {
+            curr_window_flags_ = 0;
+        } else {
+            curr_window_flags_ = frame.flags();
         }
     }
 }

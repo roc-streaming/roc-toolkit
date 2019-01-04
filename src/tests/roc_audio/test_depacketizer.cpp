@@ -313,7 +313,7 @@ TEST(depacketizer, overlapping_packets) {
     expect_output(dp, SamplesPerPacket / 2, 0.33f);
 }
 
-TEST(depacketizer, frame_flags_empty_full) {
+TEST(depacketizer, frame_flags_incompltete_blank) {
     enum { PacketsPerFrame = 3 };
 
     packet::Queue queue;
@@ -359,14 +359,14 @@ TEST(depacketizer, frame_flags_empty_full) {
     };
 
     unsigned frame_flags[] = {
-        Frame::FlagFull,
         0,
+        Frame::FlagIncomplete,
+        Frame::FlagIncomplete,
+        Frame::FlagIncomplete,
+        Frame::FlagIncomplete,
+        Frame::FlagIncomplete | Frame::FlagBlank,
+        Frame::FlagIncomplete | Frame::FlagBlank,
         0,
-        0,
-        0,
-        Frame::FlagEmpty,
-        Frame::FlagEmpty,
-        Frame::FlagFull,
     };
 
     CHECK(ROC_ARRAY_SIZE(packets) == ROC_ARRAY_SIZE(frame_flags));
@@ -382,7 +382,7 @@ TEST(depacketizer, frame_flags_empty_full) {
     }
 }
 
-TEST(depacketizer, frame_flags_packet_drops) {
+TEST(depacketizer, frame_flags_drops) {
     packet::Queue queue;
     Depacketizer dp(queue, pcm_decoder, ChMask, false);
 
@@ -397,11 +397,11 @@ TEST(depacketizer, frame_flags_packet_drops) {
     };
 
     unsigned frame_flags[] = {
-        Frame::FlagFull,
-        Frame::FlagFull | Frame::FlagPacketDrops,
-        Frame::FlagFull,
-        Frame::FlagEmpty | Frame::FlagPacketDrops,
-        Frame::FlagFull,
+        0,                //
+        Frame::FlagDrops, //
+        0,                //
+        Frame::FlagIncomplete | Frame::FlagBlank | Frame::FlagDrops,
+        0,
     };
 
     for (size_t n = 0; n < ROC_ARRAY_SIZE(packets); n++) {

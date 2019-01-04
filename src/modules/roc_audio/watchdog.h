@@ -70,7 +70,8 @@ private:
     packet::timestamp_t curr_read_pos_;
     packet::timestamp_t last_pos_before_silence_;
     packet::timestamp_t last_pos_before_drops_;
-    bool drop_in_curr_window_;
+
+    unsigned curr_window_flags_;
 
     packet::timestamp_t first_update_pos_;
     bool have_first_update_pos_;

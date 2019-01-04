@@ -129,8 +129,8 @@ struct SessionConfig {
         , samples_per_packet(DefaultPacketSize)
         , latency(DefaultPacketSize * 27)
         , silence_timeout(DefaultSampleRate * 2)
-        , drops_timeout(DefaultSampleRate)
-        , drop_detection_window(DefaultSampleRate / 20)
+        , drops_timeout(DefaultSampleRate * 2)
+        , drop_detection_window(DefaultSampleRate / 2)
         , resampling(false)
         , beeping(false) {
         latency_monitor.min_latency =

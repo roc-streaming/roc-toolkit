@@ -235,16 +235,16 @@ void Depacketizer::set_frame_flags_(Frame& frame,
         num_channels_ * (size_t)ROC_UNSIGNED_SUB(packet::signed_timestamp_t,
                                                  packet_samples_, prev_packet_samples);
 
-    if (packet_samples == frame.size()) {
-        frame.add_flags(Frame::FlagFull);
+    if (packet_samples != frame.size()) {
+        frame.add_flags(Frame::FlagIncomplete);
     }
 
     if (packet_samples == 0) {
-        frame.add_flags(Frame::FlagEmpty);
+        frame.add_flags(Frame::FlagBlank);
     }
 
     if (prev_dropped_packets != dropped_packets_) {
-        frame.add_flags(Frame::FlagPacketDrops);
+        frame.add_flags(Frame::FlagDrops);
     }
 }
 
