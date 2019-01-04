@@ -125,7 +125,7 @@ private:
     const size_t channel_len_;
 
     const size_t window_len_;
-    fixedpoint_t qt_half_sinc_window_len_;
+    const fixedpoint_t qt_half_sinc_window_len_;
     const size_t window_interp_;
     const size_t window_interp_bits_; //!< The number of bits in window_interp_.
 

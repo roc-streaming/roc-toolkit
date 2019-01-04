@@ -112,29 +112,50 @@ bool Resampler::valid() const {
     return valid_;
 }
 
-bool Resampler::set_scaling(float scaling) {
+bool Resampler::set_scaling(float new_scaling) {
     // Window's size changes according to scaling. If new window size
-    // doesnt fit to the frames size -- deny changes.
-    if (window_len_ * scaling >= channel_len_) {
-        roc_log(LogError, "resampler: scaling does not fit frame size:"
-                          " window=%lu frame=%lu scaling=%.5f",
-                (unsigned long)window_len_, (unsigned long)window_size_, (double)scaling);
+    // doesn't fit to the frames size -- deny changes.
+    if (window_len_ * new_scaling >= channel_len_) {
+        roc_log(LogError,
+                "resampler: scaling does not fit frame size:"
+                " window=%lu frame=%lu scaling=%.5f",
+                (unsigned long)window_len_, (unsigned long)window_size_,
+                (double)new_scaling);
         return false;
     }
-    scaling_ = scaling;
+
     // In case of upscaling one should properly shift the edge frequency
-    // of the digital filter.
-    // In both cases it's sensible to decrease the edge frequency to leave
-    // some.
-    if (scaling_ > 1.0f) {
-        qt_sinc_step_ = float_to_fixedpoint(cutoff_freq_ / scaling_);
-        qt_half_window_len_ =
-            float_to_fixedpoint((float)window_len_ / cutoff_freq_ * scaling_);
+    // of the digital filter. In both cases it's sensible to decrease the
+    // edge frequency to leave some.
+    if (new_scaling > 1.0f) {
+        const fixedpoint_t new_qt_half_window_len =
+            float_to_fixedpoint((float)window_len_ / cutoff_freq_ * new_scaling);
+
+        // Check that resample_() will not go out of bounds.
+        // Otherwise -- deny changes.
+        const bool out_of_bounds =
+            fixedpoint_to_size(qceil(qt_window_size_ - new_qt_half_window_len))
+                > channel_len_
+            || fixedpoint_to_size(qfloor(new_qt_half_window_len)) + 1 > channel_len_;
+
+        if (out_of_bounds) {
+            roc_log(LogError,
+                    "resampler: scaling does not fit window size:"
+                    " window=%lu frame=%lu scaling=%.5f",
+                    (unsigned long)window_len_, (unsigned long)window_size_,
+                    (double)new_scaling);
+            return false;
+        }
+
+        qt_sinc_step_ = float_to_fixedpoint(cutoff_freq_ / new_scaling);
+        qt_half_window_len_ = new_qt_half_window_len;
     } else {
         qt_sinc_step_ = float_to_fixedpoint(cutoff_freq_);
         qt_half_window_len_ = float_to_fixedpoint((float)window_len_ / cutoff_freq_);
     }
-    qt_half_sinc_window_len_ = float_to_fixedpoint(window_len_);
+
+    scaling_ = new_scaling;
+
     return true;
 }
 
