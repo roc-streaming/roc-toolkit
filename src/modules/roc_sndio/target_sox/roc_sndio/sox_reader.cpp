@@ -257,28 +257,6 @@ bool SoxReader::open_(const char* name, const char* type) {
                    args);
     }
 
-    if ((size_t)out_signal_.rate != 0
-        && (size_t)input_->signal.rate != (size_t)out_signal_.rate) {
-        const char* gain_args[] = {
-            "-h",
-        };
-
-        add_effect(chain_, "gain", &input_->signal, &out_signal_,
-                   ROC_ARRAY_SIZE(gain_args), gain_args);
-
-        if (is_file_) {
-            const char* rate_args[] = { "-v", "-b", "99.7" };
-
-            add_effect(chain_, "rate", &input_->signal, &out_signal_,
-                       ROC_ARRAY_SIZE(rate_args), rate_args);
-        } else {
-            const char* rate_args[] = { "-q" };
-
-            add_effect(chain_, "rate", &input_->signal, &out_signal_,
-                       ROC_ARRAY_SIZE(rate_args), rate_args);
-        }
-    }
-
     if (input_->signal.channels != out_signal_.channels) {
         add_effect(chain_, "channels", &input_->signal, &out_signal_, 0, NULL);
     }

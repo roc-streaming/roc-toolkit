@@ -339,7 +339,7 @@ TEST(writer_reader, reader_sample_rate_auto) {
     CHECK(reader.sample_rate() == SampleRate);
 }
 
-TEST(writer_reader, reader_sample_rate_force) {
+TEST(writer_reader, reader_sample_rate_mismatch) {
     core::TempFile file("test.wav");
 
     {
@@ -357,7 +357,7 @@ TEST(writer_reader, reader_sample_rate_force) {
     SoxReader reader(buffer_pool, ChMask, FrameSize, SampleRate * 2);
 
     CHECK(reader.open(file.path(), NULL));
-    CHECK(reader.sample_rate() == SampleRate * 2);
+    CHECK(reader.sample_rate() == SampleRate);
 }
 
 TEST(writer_reader, write_read) {
