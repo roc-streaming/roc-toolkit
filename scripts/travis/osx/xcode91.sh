@@ -1,6 +1,13 @@
 #! /bin/bash
 set -xe
 
+brew update
+
+brew install "scons"
+brew install "gengetopt"
+brew install "libuv"
+brew install "sox"
+
 scons -Q clean
 
 scons -Q \

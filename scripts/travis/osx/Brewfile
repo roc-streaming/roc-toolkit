@@ -1,4 +1,0 @@
-brew "scons"
-brew "gengetopt"
-brew "sox"
-brew "libuv"
