@@ -22,11 +22,21 @@ section "Options"
     option "nbrpr" - "Number of repair packets in FEC block"
         int optional
 
-    option "interleaving" - "Enable/disable packet interleaving"
-        values="yes","no" default="no" enum optional
-
     option "rate" - "Sample rate (Hz)"
         int optional
+
+    option "no-resampling" - "Disable resampling" flag off
+
+    option "resampler-interp" - "Resampler sinc table precision"
+        int optional
+
+    option "resampler-window" - "Number of samples per resampler window"
+        int optional
+
+    option "resampler-frame" - "Number of samples per resampler frame"
+        int optional
+
+    option "interleaving" - "Enable packet interleaving" flag off
 
 text "
 ADDRESS should be in one of the following forms:

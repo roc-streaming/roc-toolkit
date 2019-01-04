@@ -114,7 +114,32 @@ int main(int argc, char** argv) {
         config.fec.n_repair_packets = (size_t)args.nbrpr_arg;
     }
 
-    config.interleaving = (args.interleaving_arg == interleaving_arg_yes);
+    config.interleaving = args.interleaving_flag;
+    config.resampling = !args.no_resampling_flag;
+
+    if (args.resampler_interp_given) {
+        if (args.resampler_interp_arg <= 0) {
+            roc_log(LogError, "invalid --resampler-interp: should be > 0");
+            return 1;
+        }
+        config.resampler.window_interp = (size_t)args.resampler_interp_arg;
+    }
+
+    if (args.resampler_window_given) {
+        if (args.resampler_window_arg <= 0) {
+            roc_log(LogError, "invalid --resampler-window: should be > 0");
+            return 1;
+        }
+        config.resampler.window_size = (size_t)args.resampler_window_arg;
+    }
+
+    if (args.resampler_frame_given) {
+        if (args.resampler_frame_arg <= 0) {
+            roc_log(LogError, "invalid --resampler-frame: should be > 0");
+            return 1;
+        }
+        config.resampler.frame_size = (size_t)args.resampler_frame_arg;
+    }
 
     core::HeapAllocator allocator;
 
@@ -130,7 +155,9 @@ int main(int argc, char** argv) {
         }
         sample_rate = (size_t)args.rate_arg;
     } else {
-        sample_rate = pipeline::DefaultSampleRate;
+        if (!config.resampling) {
+            sample_rate = pipeline::DefaultSampleRate;
+        }
     }
 
     sndio::SoxReader reader(sample_buffer_pool, config.channels,
@@ -141,7 +168,9 @@ int main(int argc, char** argv) {
                 args.type_arg);
         return 1;
     }
+
     config.timing = reader.is_file();
+    config.sample_rate = reader.sample_rate();
 
     rtp::FormatMap format_map;
 
