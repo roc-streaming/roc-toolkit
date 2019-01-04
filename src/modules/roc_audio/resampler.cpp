@@ -269,10 +269,6 @@ bool Resampler::fill_sinc_() {
 // that's why there are two arguments in this function: integer part and fractional
 // part of time coordinate.
 sample_t Resampler::sinc_(const fixedpoint_t x, const float fract_x) {
-#if 0 // FIXME
-    roc_panic_if(x > (window_len_ << FRACT_BIT_COUNT));
-#endif
-
     // Tables index smaller than to x
     const sample_t hl = sinc_table_ptr_[(x >> (FRACT_BIT_COUNT - window_interp_bits_))];
 
