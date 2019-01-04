@@ -129,7 +129,7 @@ int main(int argc, char** argv) {
             roc_log(LogError, "invalid --silence-timeout: should be >= 0");
             return 1;
         }
-        config.default_session.silence_timeout =
+        config.default_session.watchdog.silence_timeout =
             (packet::timestamp_t)args.silence_timeout_arg;
     }
 
@@ -138,7 +138,7 @@ int main(int argc, char** argv) {
             roc_log(LogError, "invalid --drops-timeout: should be >= 0");
             return 1;
         }
-        config.default_session.drops_timeout =
+        config.default_session.watchdog.drops_timeout =
             (packet::timestamp_t)args.drops_timeout_arg;
     }
 
@@ -147,7 +147,7 @@ int main(int argc, char** argv) {
             roc_log(LogError, "invalid --drops-window: should be >= 0");
             return 1;
         }
-        config.default_session.drop_detection_window =
+        config.default_session.watchdog.drop_detection_window =
             (packet::timestamp_t)args.drops_window_arg;
     }
 

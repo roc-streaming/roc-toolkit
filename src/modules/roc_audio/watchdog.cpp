@@ -14,26 +14,53 @@ namespace audio {
 
 Watchdog::Watchdog(IReader& reader,
                    const size_t num_channels,
-                   packet::timestamp_t max_silence_duration,
-                   packet::timestamp_t max_drops_duration,
-                   packet::timestamp_t drop_detection_window)
+                   const WatchdogConfig& config,
+                   core::IAllocator& allocator)
     : reader_(reader)
     , num_channels_(num_channels)
-    , max_silence_duration_(max_silence_duration)
-    , max_drops_duration_(max_drops_duration)
-    , drop_detection_window_(drop_detection_window)
+    , max_silence_duration_(config.silence_timeout)
+    , max_drops_duration_(config.drops_timeout)
+    , drop_detection_window_(config.drop_detection_window)
     , curr_read_pos_(0)
     , last_pos_before_silence_(0)
     , last_pos_before_drops_(0)
     , curr_window_flags_(0)
     , first_update_pos_(0)
     , have_first_update_pos_(false)
-    , alive_(true) {
+    , status_(allocator)
+    , status_pos_(0)
+    , status_show_(false)
+    , alive_(true)
+    , valid_(false) {
+    if (max_drops_duration_ != 0) {
+        if (drop_detection_window_ == 0 || drop_detection_window_ > max_drops_duration_) {
+            roc_log(LogDebug,
+                    "watchdog: invalid config: "
+                    "drop_detection_window should be in range (0; max_drops_duration]: "
+                    "max_drops_duration=%lu drop_detection_window=%lu",
+                    (unsigned long)max_drops_duration_,
+                    (unsigned long)drop_detection_window_);
+            return;
+        }
+    }
+
+    if (config.frame_status_window != 0) {
+        if (!status_.resize(config.frame_status_window + 1)) {
+            return;
+        }
+    }
+
     roc_log(LogDebug,
             "watchdog: initializing: "
             "max_silence_duration=%lu max_drops_duration=%lu drop_detection_window=%lu",
-            (unsigned long)max_silence_duration, (unsigned long)max_drops_duration,
-            (unsigned long)drop_detection_window);
+            (unsigned long)max_silence_duration_, (unsigned long)max_drops_duration_,
+            (unsigned long)drop_detection_window_);
+
+    valid_ = true;
+}
+
+bool Watchdog::valid() const {
+    return valid_;
 }
 
 void Watchdog::read(Frame& frame) {
@@ -51,10 +78,12 @@ void Watchdog::read(Frame& frame) {
 
     update_silence_timeout_(frame, next_read_pos);
     update_drops_timeout_(frame, next_read_pos);
+    update_status_(frame);
 
     curr_read_pos_ = next_read_pos;
 
     if (!check_drops_timeout_()) {
+        flush_status_();
         alive_ = false;
     }
 }
@@ -72,6 +101,7 @@ bool Watchdog::update(packet::timestamp_t new_update_pos) {
     const packet::timestamp_t pos = new_update_pos - first_update_pos_;
 
     if (!check_silence_timeout_(pos)) {
+        flush_status_();
         alive_ = false;
         return false;
     }
@@ -157,6 +187,56 @@ bool Watchdog::check_drops_timeout_() {
             (unsigned long)max_drops_duration_);
 
     return false;
+}
+
+void Watchdog::update_status_(const Frame& frame) {
+    if (status_.size() == 0) {
+        return;
+    }
+
+    const unsigned flags = frame.flags();
+
+    char symbol = '.';
+
+    if (flags & Frame::FlagBlank) {
+        if (flags & Frame::FlagDrops) {
+            symbol = 'B';
+        } else {
+            symbol = 'b';
+        }
+    } else if (flags & Frame::FlagIncomplete) {
+        if (flags & Frame::FlagDrops) {
+            symbol = 'I';
+        } else {
+            symbol = 'i';
+        }
+    } else if (flags & Frame::FlagDrops) {
+        symbol = 'D';
+    }
+
+    status_[status_pos_] = symbol;
+    status_pos_++;
+    status_show_ = status_show_ || symbol != '.';
+
+    if (status_pos_ == status_.size() - 1) {
+        flush_status_();
+    }
+}
+
+void Watchdog::flush_status_() {
+    if (status_pos_ == 0) {
+        return;
+    }
+
+    if (status_show_) {
+        for (; status_pos_ < status_.size(); status_pos_++) {
+            status_[status_pos_] = '\0';
+        }
+        roc_log(LogDebug, "watchdog: status: %s", &status_[0]);
+    }
+
+    status_pos_ = 0;
+    status_show_ = false;
 }
 
 } // namespace audio

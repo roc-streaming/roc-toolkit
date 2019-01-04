@@ -106,7 +106,7 @@ bool config_receiver(pipeline::ReceiverConfig& out, const roc_receiver_config& i
     }
 
     if (in.timeout) {
-        out.default_session.silence_timeout = in.timeout;
+        out.default_session.watchdog.silence_timeout = in.timeout;
     }
 
     if (in.samples_per_packet) {

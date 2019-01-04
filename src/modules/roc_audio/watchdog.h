@@ -13,11 +13,50 @@
 #define ROC_AUDIO_WATCHDOG_H_
 
 #include "roc_audio/ireader.h"
+#include "roc_core/array.h"
+#include "roc_core/iallocator.h"
 #include "roc_core/noncopyable.h"
 #include "roc_packet/units.h"
 
 namespace roc {
 namespace audio {
+
+//! Watchdog parameters.
+struct WatchdogConfig {
+    //! Session silence timeout, number of samples.
+    //! @remarks
+    //!  Maximum allowed period during which every frame is blank. After this period,
+    //!  the session is terminated. This mechanism allows to detect dead or hanging
+    //!  clients. Set to zero to disable.
+    packet::timestamp_t silence_timeout;
+
+    //! Session drops timeout, number of samples.
+    //! @remarks
+    //!  Maximum allowed period during which every drop detection window overlaps with
+    //!  at least one frame which caused packet drops and with at least one frame which
+    //!  is incomplete (it may be the same frame). After this period, the session is
+    //!  terminated. This mechanism allows to detect the vicious circle when all client
+    //!  packets are a bit late and we are constantly dropping them producing unpleasant
+    //!  noise. Set to zero to disable.
+    packet::timestamp_t drops_timeout;
+
+    //! Drop detection window size, number of samples.
+    //! @see drops_timeout.
+    packet::timestamp_t drop_detection_window;
+
+    //! Frame status window size for logging, number of frames.
+    //! @remarks
+    //!  Used for debug logging. Set to zero to disable.
+    size_t frame_status_window;
+
+    //! Initialize config with default values.
+    WatchdogConfig(packet::timestamp_t sample_rate)
+        : silence_timeout(sample_rate * 2)
+        , drops_timeout(sample_rate * 2)
+        , drop_detection_window(sample_rate / 3)
+        , frame_status_window(20) {
+    }
+};
 
 //! Watchdog.
 //! @remarks
@@ -36,9 +75,11 @@ public:
     //!  - @p drop_detection_window is the size of the drop detection window.
     Watchdog(IReader& reader,
              const size_t num_channels,
-             packet::timestamp_t max_silence_duration,
-             packet::timestamp_t max_drops_duration,
-             packet::timestamp_t drop_detection_window);
+             const WatchdogConfig& config,
+             core::IAllocator& allocator);
+
+    //! Check if object is successfully constructed.
+    bool valid() const;
 
     //! Read audio frame.
     //! @remarks
@@ -59,6 +100,9 @@ private:
     void update_drops_timeout_(const Frame& frame, packet::timestamp_t next_read_pos);
     bool check_drops_timeout_();
 
+    void update_status_(const Frame& frame);
+    void flush_status_();
+
     IReader& reader_;
 
     const size_t num_channels_;
@@ -76,7 +120,12 @@ private:
     packet::timestamp_t first_update_pos_;
     bool have_first_update_pos_;
 
+    core::Array<char> status_;
+    size_t status_pos_;
+    bool status_show_;
+
     bool alive_;
+    bool valid_;
 };
 
 } // namespace audio

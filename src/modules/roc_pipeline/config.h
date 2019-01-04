@@ -13,7 +13,8 @@
 #define ROC_PIPELINE_CONFIG_H_
 
 #include "roc_audio/latency_monitor.h"
-#include "roc_audio/resampler_reader.h"
+#include "roc_audio/resampler.h"
+#include "roc_audio/watchdog.h"
 #include "roc_core/stddefs.h"
 #include "roc_fec/config.h"
 #include "roc_packet/units.h"
@@ -91,21 +92,6 @@ struct SessionConfig {
     //! Target latency, number of samples.
     packet::timestamp_t latency;
 
-    //! Session silence timeout, number of samples.
-    //! @remarks
-    //!  If there is only silency during this period, the session is terminated.
-    packet::timestamp_t silence_timeout;
-
-    //! Session drops timeout, number of samples.
-    //! @remarks
-    //!  If during this period every drop detection window overlaps with a frame
-    //!  with drops, the session is terminated.
-    packet::timestamp_t drops_timeout;
-
-    //! Drop detection window size, number of samples.
-    //! @see drops_timeout.
-    packet::timestamp_t drop_detection_window;
-
     //! FEC scheme parameters.
     fec::Config fec;
 
@@ -114,6 +100,9 @@ struct SessionConfig {
 
     //! LatencyMonitor parameters.
     audio::LatencyMonitorConfig latency_monitor;
+
+    //! Watchdog parameters.
+    audio::WatchdogConfig watchdog;
 
     //! Resampler parameters.
     audio::ResamplerConfig resampler;
@@ -128,9 +117,7 @@ struct SessionConfig {
         : channels(DefaultChannelMask)
         , samples_per_packet(DefaultPacketSize)
         , latency(DefaultPacketSize * 27)
-        , silence_timeout(DefaultSampleRate * 2)
-        , drops_timeout(DefaultSampleRate * 2)
-        , drop_detection_window(DefaultSampleRate / 2)
+        , watchdog(DefaultSampleRate)
         , resampling(false)
         , beeping(false) {
         latency_monitor.min_latency =
