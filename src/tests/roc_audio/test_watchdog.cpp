@@ -93,38 +93,12 @@ TEST_GROUP(watchdog) {
 
 };
 
-TEST(watchdog, silence_timeout_updates_without_reads) {
-    {
-        Watchdog watchdog(test_reader, NumCh, make_config(SilenceTimeout, DropsTimeout),
-                          allocator);
-        CHECK(watchdog.valid());
+TEST(watchdog, silence_timeout_no_frames) {
+    Watchdog watchdog(test_reader, NumCh, make_config(SilenceTimeout, DropsTimeout),
+                      allocator);
+    CHECK(watchdog.valid());
 
-        CHECK(watchdog.update(0));
-        CHECK(watchdog.update(SilenceTimeout - 1));
-        CHECK(!watchdog.update(SilenceTimeout));
-    }
-    {
-        enum { Offset = SilenceTimeout * 10 };
-
-        Watchdog watchdog(test_reader, NumCh, make_config(SilenceTimeout, DropsTimeout),
-                          allocator);
-        CHECK(watchdog.valid());
-
-        CHECK(watchdog.update(Offset));
-        CHECK(watchdog.update(Offset + SilenceTimeout - 1));
-        CHECK(!watchdog.update(Offset + SilenceTimeout));
-    }
-    {
-        Watchdog watchdog(test_reader, NumCh, make_config(SilenceTimeout, DropsTimeout),
-                          allocator);
-        CHECK(watchdog.valid());
-
-        for (packet::timestamp_t n = 0; n < SilenceTimeout; n++) {
-            CHECK(watchdog.update(n));
-        }
-
-        CHECK(!watchdog.update(SilenceTimeout));
-    }
+    CHECK(watchdog.update());
 }
 
 TEST(watchdog, silence_timeout_blank_frames) {
@@ -133,11 +107,11 @@ TEST(watchdog, silence_timeout_blank_frames) {
     CHECK(watchdog.valid());
 
     for (packet::timestamp_t n = 0; n < SilenceTimeout / SamplesPerFrame; n++) {
-        CHECK(watchdog.update(n * SamplesPerFrame));
+        CHECK(watchdog.update());
         check_read(watchdog, true, SamplesPerFrame, Frame::FlagBlank);
     }
 
-    CHECK(!watchdog.update(SilenceTimeout));
+    CHECK(!watchdog.update());
     check_read(watchdog, false, SamplesPerFrame, 0);
 }
 
@@ -148,18 +122,14 @@ TEST(watchdog, silence_timeout_blank_and_non_blank_frames) {
                       allocator);
     CHECK(watchdog.valid());
 
-    packet::timestamp_t ts = 0;
-
     for (unsigned int i = 0; i < 2; i++) {
         for (packet::timestamp_t n = 0; n < (SilenceTimeout / SamplesPerFrame)-1; n++) {
-            CHECK(watchdog.update(ts));
+            CHECK(watchdog.update());
             check_read(watchdog, true, SamplesPerFrame, Frame::FlagBlank);
-            ts += SamplesPerFrame;
         }
 
-        CHECK(watchdog.update(ts));
+        CHECK(watchdog.update());
         check_read(watchdog, true, SamplesPerFrame, 0);
-        ts += SamplesPerFrame;
     }
 }
 
@@ -170,22 +140,22 @@ TEST(watchdog, silence_timeout_disabled) {
         CHECK(watchdog.valid());
 
         for (packet::timestamp_t n = 0; n < SilenceTimeout / SamplesPerFrame; n++) {
-            CHECK(watchdog.update(n * SamplesPerFrame));
+            CHECK(watchdog.update());
             check_read(watchdog, true, SamplesPerFrame, Frame::FlagBlank);
         }
 
-        CHECK(!watchdog.update(SilenceTimeout));
+        CHECK(!watchdog.update());
     }
     {
         Watchdog watchdog(test_reader, NumCh, make_config(0, DropsTimeout), allocator);
         CHECK(watchdog.valid());
 
         for (packet::timestamp_t n = 0; n < SilenceTimeout / SamplesPerFrame; n++) {
-            CHECK(watchdog.update(n * SamplesPerFrame));
+            CHECK(watchdog.update());
             check_read(watchdog, true, SamplesPerFrame, Frame::FlagBlank);
         }
 
-        CHECK(watchdog.update(SilenceTimeout));
+        CHECK(watchdog.update());
     }
 }
 
@@ -199,7 +169,7 @@ TEST(watchdog, drops_timeout_equal_frame_sizes) {
                       Frame::FlagIncomplete | Frame::FlagDrops);
 
         check_read(watchdog, true, DropsWindow, 0);
-        CHECK(watchdog.update(DropsTimeout));
+        CHECK(watchdog.update());
         check_read(watchdog, true, DropsWindow, 0);
     }
     {
@@ -212,7 +182,7 @@ TEST(watchdog, drops_timeout_equal_frame_sizes) {
                       Frame::FlagIncomplete | Frame::FlagDrops);
         check_read(watchdog, true, DropsWindow, 0);
 
-        CHECK(watchdog.update(DropsTimeout));
+        CHECK(watchdog.update());
         check_n_reads(watchdog, true, DropsWindow, DropWindowsPerTimeout, 0);
     }
     {
@@ -224,7 +194,7 @@ TEST(watchdog, drops_timeout_equal_frame_sizes) {
         check_n_reads(watchdog, true, DropsWindow, DropWindowsPerTimeout - 1,
                       Frame::FlagIncomplete | Frame::FlagDrops);
 
-        CHECK(watchdog.update(DropsTimeout));
+        CHECK(watchdog.update());
 
         check_read(watchdog, true, DropsWindow, 0);
     }
@@ -237,7 +207,7 @@ TEST(watchdog, drops_timeout_equal_frame_sizes) {
                       Frame::FlagIncomplete | Frame::FlagDrops);
         check_read(watchdog, true, DropsWindow, Frame::FlagDrops);
 
-        CHECK(!watchdog.update(DropsTimeout));
+        CHECK(!watchdog.update());
         check_read(watchdog, false, DropsWindow, 0);
     }
 }
@@ -253,7 +223,7 @@ TEST(watchdog, drops_timeout_mixed_frame_sizes) {
         check_read(watchdog, true, DropsWindow / 2, 0);
         check_read(watchdog, true, DropsWindow - DropsWindow / 2, 0);
 
-        CHECK(watchdog.update(DropsTimeout));
+        CHECK(watchdog.update());
     }
     {
         Watchdog watchdog(test_reader, NumCh, make_config(SilenceTimeout, DropsTimeout),
@@ -266,7 +236,7 @@ TEST(watchdog, drops_timeout_mixed_frame_sizes) {
                    Frame::FlagIncomplete | Frame::FlagDrops);
         check_read(watchdog, true, DropsWindow - DropsWindow / 2, 0);
 
-        CHECK(!watchdog.update(DropsTimeout));
+        CHECK(!watchdog.update());
     }
     {
         Watchdog watchdog(test_reader, NumCh, make_config(SilenceTimeout, DropsTimeout),
@@ -279,7 +249,7 @@ TEST(watchdog, drops_timeout_mixed_frame_sizes) {
         check_read(watchdog, true, DropsWindow - DropsWindow / 2,
                    Frame::FlagIncomplete | Frame::FlagDrops);
 
-        CHECK(!watchdog.update(DropsTimeout));
+        CHECK(!watchdog.update());
     }
 }
 
@@ -289,13 +259,13 @@ TEST(watchdog, drops_timeout_constant_drops) {
     CHECK(watchdog.valid());
 
     for (packet::timestamp_t n = 0; n < DropWindowsPerTimeout; n++) {
-        CHECK(watchdog.update(DropsWindow*n));
+        CHECK(watchdog.update());
         check_read(watchdog, true, DropsWindow / 2,
                    Frame::FlagIncomplete | Frame::FlagDrops);
         check_read(watchdog, true, DropsWindow - DropsWindow / 2, 0);
     }
 
-    CHECK(!watchdog.update(DropsTimeout));
+    CHECK(!watchdog.update());
 }
 
 TEST(watchdog, drops_timeout_frame_overlaps_with_drop_window) {
@@ -304,65 +274,65 @@ TEST(watchdog, drops_timeout_frame_overlaps_with_drop_window) {
                           allocator);
         CHECK(watchdog.valid());
 
-        CHECK(watchdog.update(0));
+        CHECK(watchdog.update());
 
         check_read(watchdog, true, DropsWindow, Frame::FlagIncomplete | Frame::FlagDrops);
         check_read(watchdog, true, DropsWindow, 0);
         check_read(watchdog, true, DropsTimeout - DropsWindow,
                    Frame::FlagIncomplete | Frame::FlagDrops);
 
-        CHECK(watchdog.update(DropsTimeout + DropsWindow));
+        CHECK(watchdog.update());
     }
     {
         Watchdog watchdog(test_reader, NumCh, make_config(SilenceTimeout, DropsTimeout),
                           allocator);
         CHECK(watchdog.valid());
 
-        CHECK(watchdog.update(0));
+        CHECK(watchdog.update());
 
         check_read(watchdog, true, DropsWindow + 1, Frame::FlagIncomplete | Frame::FlagDrops);
         check_read(watchdog, true, DropsWindow - 1, 0);
         check_read(watchdog, true, DropsTimeout - DropsWindow,
                    Frame::FlagIncomplete | Frame::FlagDrops);
 
-        CHECK(!watchdog.update(DropsTimeout + DropsWindow));
+        CHECK(!watchdog.update());
     }
     {
         Watchdog watchdog(test_reader, NumCh, make_config(SilenceTimeout, DropsTimeout),
                           allocator);
         CHECK(watchdog.valid());
 
-        CHECK(watchdog.update(0));
+        CHECK(watchdog.update());
 
         check_read(watchdog, true, DropsTimeout - DropsWindow, 0);
         check_read(watchdog, true, DropsWindow + 1,
                    Frame::FlagIncomplete | Frame::FlagDrops);
 
-        CHECK(watchdog.update(DropsTimeout + 1));
+        CHECK(watchdog.update());
 
         check_read(watchdog, true, DropsWindow - 1, 0);
         check_read(watchdog, true, DropsTimeout - DropsWindow, 0);
 
-        CHECK(watchdog.update(DropsTimeout * 2));
+        CHECK(watchdog.update());
     }
     {
         Watchdog watchdog(test_reader, NumCh, make_config(SilenceTimeout, DropsTimeout),
                           allocator);
         CHECK(watchdog.valid());
 
-        CHECK(watchdog.update(0));
+        CHECK(watchdog.update());
 
         check_read(watchdog, true, DropsTimeout - DropsWindow, 0);
         check_read(watchdog, true, DropsWindow + 1,
                    Frame::FlagIncomplete | Frame::FlagDrops);
 
-        CHECK(watchdog.update(DropsTimeout + 1));
+        CHECK(watchdog.update());
 
         check_read(watchdog, true, DropsWindow - 1, 0);
         check_read(watchdog, true, DropsTimeout - DropsWindow,
                    Frame::FlagIncomplete | Frame::FlagDrops);
 
-        CHECK(!watchdog.update(DropsTimeout * 2));
+        CHECK(!watchdog.update());
     }
 }
 
@@ -373,24 +343,24 @@ TEST(watchdog, drops_timeout_disabled) {
         CHECK(watchdog.valid());
 
         for (packet::timestamp_t n = 0; n < DropsTimeout / SamplesPerFrame; n++) {
-            CHECK(watchdog.update(n * SamplesPerFrame));
+            CHECK(watchdog.update());
             check_read(watchdog, true, SamplesPerFrame,
                        Frame::FlagIncomplete | Frame::FlagDrops);
         }
 
-        CHECK(!watchdog.update(DropsTimeout));
+        CHECK(!watchdog.update());
     }
     {
         Watchdog watchdog(test_reader, NumCh, make_config(SilenceTimeout, 0), allocator);
         CHECK(watchdog.valid());
 
         for (packet::timestamp_t n = 0; n < DropsTimeout / SamplesPerFrame; n++) {
-            CHECK(watchdog.update(n * SamplesPerFrame));
+            CHECK(watchdog.update());
             check_read(watchdog, true, SamplesPerFrame,
                        Frame::FlagIncomplete | Frame::FlagDrops);
         }
 
-        CHECK(watchdog.update(DropsTimeout));
+        CHECK(watchdog.update());
     }
 }
 

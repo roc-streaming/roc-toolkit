@@ -188,7 +188,7 @@ bool ReceiverSession::update(packet::timestamp_t time) {
     roc_panic_if(!valid());
 
     if (watchdog_) {
-        if (!watchdog_->update(time)) {
+        if (!watchdog_->update()) {
             return false;
         }
     }

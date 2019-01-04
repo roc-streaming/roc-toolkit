@@ -91,11 +91,11 @@ public:
     //!  false if during the session timeout each frame has an empty flag or the maximum
     //!  allowed number of consecutive windows that can contain frames that aren't fully
     //!  filled and contain dropped packets was exceeded.
-    bool update(packet::timestamp_t time);
+    bool update();
 
 private:
     void update_silence_timeout_(const Frame& frame, packet::timestamp_t next_read_pos);
-    bool check_silence_timeout_(packet::timestamp_t pos) const;
+    bool check_silence_timeout_() const;
 
     void update_drops_timeout_(const Frame& frame, packet::timestamp_t next_read_pos);
     bool check_drops_timeout_();
@@ -116,9 +116,6 @@ private:
     packet::timestamp_t last_pos_before_drops_;
 
     unsigned curr_window_flags_;
-
-    packet::timestamp_t first_update_pos_;
-    bool have_first_update_pos_;
 
     core::Array<char> status_;
     size_t status_pos_;
