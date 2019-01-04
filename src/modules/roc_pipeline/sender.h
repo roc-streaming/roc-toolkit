@@ -15,6 +15,7 @@
 #include "roc_audio/iencoder.h"
 #include "roc_audio/iwriter.h"
 #include "roc_audio/packetizer.h"
+#include "roc_audio/resampler_writer.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/noncopyable.h"
@@ -41,7 +42,8 @@ public:
            packet::IWriter& repair_writer,
            const rtp::FormatMap& format_map,
            packet::PacketPool& packet_pool,
-           core::BufferPool<uint8_t>& buffer_pool,
+           core::BufferPool<uint8_t>& byte_buffer_pool,
+           core::BufferPool<audio::sample_t>& sample_buffer_pool,
            core::IAllocator& allocator);
 
     //! Check if the pipeline was successfully constructed.
@@ -63,8 +65,11 @@ private:
 
     core::UniquePtr<audio::IEncoder> encoder_;
     core::UniquePtr<audio::Packetizer> packetizer_;
+    core::UniquePtr<audio::ResamplerWriter> resampler_;
 
     core::UniquePtr<core::Ticker> ticker_;
+
+    audio::IWriter* audio_writer_;
 
     packet::timestamp_t timestamp_;
     size_t num_channels_;

@@ -17,11 +17,12 @@ using namespace roc;
 namespace {
 
 bool init_pipeline(roc_sender* sender) {
-    sender->sender.reset(new (sender->context.allocator) pipeline::Sender(
-                             sender->config, *sender->writer, *sender->writer,
-                             sender->format_map, sender->context.packet_pool,
-                             sender->context.byte_buffer_pool, sender->context.allocator),
-                         sender->context.allocator);
+    sender->sender.reset(
+        new (sender->context.allocator) pipeline::Sender(
+            sender->config, *sender->writer, *sender->writer, sender->format_map,
+            sender->context.packet_pool, sender->context.byte_buffer_pool,
+            sender->context.sample_buffer_pool, sender->context.allocator),
+        sender->context.allocator);
 
     if (!sender->sender) {
         roc_log(LogError, "roc_sender: can't allocate sender pipeline");

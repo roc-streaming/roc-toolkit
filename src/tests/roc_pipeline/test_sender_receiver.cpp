@@ -86,6 +86,7 @@ TEST_GROUP(sender_receiver) {
                       format_map,
                       packet_pool,
                       byte_buffer_pool,
+                      sample_buffer_pool,
                       allocator);
 
         CHECK(sender.valid());

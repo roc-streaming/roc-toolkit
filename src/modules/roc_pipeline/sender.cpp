@@ -22,9 +22,11 @@ Sender::Sender(const SenderConfig& config,
                packet::IWriter& repair_writer,
                const rtp::FormatMap& format_map,
                packet::PacketPool& packet_pool,
-               core::BufferPool<uint8_t>& buffer_pool,
+               core::BufferPool<uint8_t>& byte_buffer_pool,
+               core::BufferPool<audio::sample_t>& sample_buffer_pool,
                core::IAllocator& allocator)
-    : timestamp_(0)
+    : audio_writer_(NULL)
+    , timestamp_(0)
     , num_channels_(packet::num_channels(config.channels)) {
     const rtp::Format* format = format_map.format(config.payload_type);
     if (!format) {
@@ -32,7 +34,7 @@ Sender::Sender(const SenderConfig& config,
     }
 
     if (config.timing) {
-        ticker_.reset(new (allocator) core::Ticker(format->sample_rate), allocator);
+        ticker_.reset(new (allocator) core::Ticker(config.sample_rate), allocator);
         if (!ticker_) {
             return;
         }
@@ -100,7 +102,7 @@ Sender::Sender(const SenderConfig& config,
         fec_writer_.reset(new (allocator) fec::Writer(
                               config.fec, source_packet_size, *fec_encoder_, *pwriter,
                               source_port_->composer(), repair_port_->composer(),
-                              packet_pool, buffer_pool, allocator),
+                              packet_pool, byte_buffer_pool, allocator),
                           allocator);
         if (!fec_writer_ || !fec_writer_->valid()) {
             return;
@@ -116,13 +118,34 @@ Sender::Sender(const SenderConfig& config,
 
     packetizer_.reset(
         new (allocator) audio::Packetizer(*pwriter, source_port_->composer(), *encoder_,
-                                          packet_pool, buffer_pool, config.channels,
+                                          packet_pool, byte_buffer_pool, config.channels,
                                           config.samples_per_packet, config.payload_type),
         allocator);
+    if (!packetizer_) {
+        return;
+    }
+
+    audio::IWriter* awriter = packetizer_.get();
+
+    if (config.resampling && config.sample_rate != format->sample_rate) {
+        resampler_.reset(new (allocator) audio::ResamplerWriter(
+                             *awriter, sample_buffer_pool, allocator, config.resampler,
+                             config.channels),
+                         allocator);
+        if (!resampler_ || !resampler_->valid()) {
+            return;
+        }
+        if (!resampler_->set_scaling(float(config.sample_rate) / format->sample_rate)) {
+            return;
+        }
+        awriter = resampler_.get();
+    }
+
+    audio_writer_ = awriter;
 }
 
 bool Sender::valid() {
-    return packetizer_;
+    return audio_writer_;
 }
 
 void Sender::write(audio::Frame& frame) {
@@ -132,7 +155,7 @@ void Sender::write(audio::Frame& frame) {
         ticker_->wait(timestamp_);
     }
 
-    packetizer_->write(frame);
+    audio_writer_->write(frame);
     timestamp_ += frame.size() / num_channels_;
 }
 

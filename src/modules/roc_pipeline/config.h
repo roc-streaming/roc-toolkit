@@ -156,11 +156,26 @@ struct SenderConfig {
     //! Parameters for the port to which repair packets are sent.
     PortConfig repair_port;
 
+    //! Resampler parameters.
+    audio::ResamplerConfig resampler;
+
+    //! FEC scheme parameters.
+    fec::Config fec;
+
+    //! Number of samples per second per channel.
+    size_t sample_rate;
+
     //! Channel mask.
     packet::channel_mask_t channels;
 
+    //! RTP payload type for audio packets.
+    rtp::PayloadType payload_type;
+
     //! Number of samples per packet per channel.
     size_t samples_per_packet;
+
+    //! Resample frames with a constant ratio.
+    bool resampling;
 
     //! Interleave packets.
     bool interleaving;
@@ -168,18 +183,14 @@ struct SenderConfig {
     //! Constrain receiver speed using a CPU timer according to the sample rate.
     bool timing;
 
-    //! RTP payload type for audio packets.
-    rtp::PayloadType payload_type;
-
-    //! FEC scheme parameters.
-    fec::Config fec;
-
     SenderConfig()
-        : channels(DefaultChannelMask)
+        : sample_rate(DefaultSampleRate)
+        , channels(DefaultChannelMask)
+        , payload_type(rtp::PayloadType_L16_Stereo)
         , samples_per_packet(DefaultPacketSize)
+        , resampling(false)
         , interleaving(false)
-        , timing(false)
-        , payload_type(rtp::PayloadType_L16_Stereo) {
+        , timing(false) {
     }
 };
 

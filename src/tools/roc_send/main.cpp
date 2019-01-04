@@ -158,7 +158,7 @@ int main(int argc, char** argv) {
     }
 
     pipeline::Sender sender(config, *udp_sender, *udp_sender, format_map, packet_pool,
-                            byte_buffer_pool, allocator);
+                            byte_buffer_pool, sample_buffer_pool, allocator);
     if (!sender.valid()) {
         roc_log(LogError, "can't create sender pipeline");
         return 1;

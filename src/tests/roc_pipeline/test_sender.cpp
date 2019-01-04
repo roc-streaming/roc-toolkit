@@ -71,7 +71,7 @@ TEST(sender, write) {
     packet::Queue queue;
 
     Sender sender(config, queue, queue, format_map, packet_pool, byte_buffer_pool,
-                  allocator);
+                  sample_buffer_pool, allocator);
 
     CHECK(sender.valid());
 
@@ -101,7 +101,7 @@ TEST(sender, frame_size_small) {
     packet::Queue queue;
 
     Sender sender(config, queue, queue, format_map, packet_pool, byte_buffer_pool,
-                  allocator);
+                  sample_buffer_pool, allocator);
 
     CHECK(sender.valid());
 
@@ -131,7 +131,7 @@ TEST(sender, frame_size_large) {
     packet::Queue queue;
 
     Sender sender(config, queue, queue, format_map, packet_pool, byte_buffer_pool,
-                  allocator);
+                  sample_buffer_pool, allocator);
 
     CHECK(sender.valid());
 
