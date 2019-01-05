@@ -422,6 +422,7 @@ elif name == 'sox':
             '--without-id3tag',
             '--without-png',
             '--without-ao',
+            '--without-opus',
         ])), logfile)
     execute('make -j', logfile)
     install_files('src/sox.h', os.path.join(builddir, 'include'))
