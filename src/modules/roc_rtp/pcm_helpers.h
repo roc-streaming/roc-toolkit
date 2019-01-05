@@ -41,15 +41,16 @@ template <class Sample, size_t NumCh> size_t pcm_packet_size(size_t num_samples)
 template <class T> T pcm_pack(audio::sample_t);
 
 //! Encode single sample (int16_t).
-template <> int16_t inline pcm_pack(audio::sample_t fs) {
-    const int16_t hs = int16_t(fs * (1 << 15));
-    return (int16_t)ROC_HTON_16(uint16_t(hs));
+template <> int16_t inline pcm_pack(float s) {
+    s *= 32768.0f;
+    s = ROC_MIN(s, +32767.0f);
+    s = ROC_MAX(s, -32768.0f);
+    return (int16_t)ROC_HTON_16(int16_t(s));
 }
 
 //! Decode single sample (int16_t).
-inline audio::sample_t pcm_unpack(int16_t ns) {
-    const int16_t hs = (int16_t)ROC_NTOH_16(uint16_t(ns));
-    return audio::sample_t(hs) / (1 << 15);
+inline float pcm_unpack(int16_t s) {
+    return float((int16_t)ROC_NTOH_16(uint16_t(s))) / 32768.0f;
 }
 
 //! Decode multiple samples.
