@@ -16,6 +16,7 @@
 #include "roc_audio/idecoder.h"
 #include "roc_audio/ireader.h"
 #include "roc_audio/latency_monitor.h"
+#include "roc_audio/poison_reader.h"
 #include "roc_audio/resampler_reader.h"
 #include "roc_audio/watchdog.h"
 #include "roc_core/buffer_pool.h"
@@ -50,6 +51,7 @@ public:
     ReceiverSession(const SessionConfig& config,
                     unsigned int payload_type,
                     size_t out_sample_rate,
+                    bool poisoning,
                     const packet::Address& src_address,
                     const rtp::FormatMap& format_map,
                     packet::PacketPool& packet_pool,
@@ -101,7 +103,10 @@ private:
     core::UniquePtr<audio::IDecoder> decoder_;
     core::UniquePtr<audio::Depacketizer> depacketizer_;
 
+    core::UniquePtr<audio::PoisonReader> resampler_poisoner_;
     core::UniquePtr<audio::ResamplerReader> resampler_;
+
+    core::UniquePtr<audio::PoisonReader> session_poisoner_;
 
     core::UniquePtr<audio::LatencyMonitor> latency_monitor_;
 };

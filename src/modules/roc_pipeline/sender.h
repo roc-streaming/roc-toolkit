@@ -15,6 +15,7 @@
 #include "roc_audio/iencoder.h"
 #include "roc_audio/iwriter.h"
 #include "roc_audio/packetizer.h"
+#include "roc_audio/poison_writer.h"
 #include "roc_audio/resampler_writer.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/iallocator.h"
@@ -65,7 +66,11 @@ private:
 
     core::UniquePtr<audio::IEncoder> encoder_;
     core::UniquePtr<audio::Packetizer> packetizer_;
+
+    core::UniquePtr<audio::PoisonWriter> resampler_poisoner_;
     core::UniquePtr<audio::ResamplerWriter> resampler_;
+
+    core::UniquePtr<audio::PoisonWriter> pipeline_poisoner_;
 
     core::UniquePtr<core::Ticker> ticker_;
 

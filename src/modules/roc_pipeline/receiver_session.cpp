@@ -20,6 +20,7 @@ namespace pipeline {
 ReceiverSession::ReceiverSession(const SessionConfig& config,
                                  const unsigned int payload_type,
                                  const size_t out_sample_rate,
+                                 bool poisoning,
                                  const packet::Address& src_address,
                                  const rtp::FormatMap& format_map,
                                  packet::PacketPool& packet_pool,
@@ -138,6 +139,14 @@ ReceiverSession::ReceiverSession(const SessionConfig& config,
     }
 
     if (config.resampling) {
+        if (poisoning) {
+            resampler_poisoner_.reset(new (allocator_) audio::PoisonReader(*areader),
+                                      allocator_);
+            if (!resampler_poisoner_) {
+                return;
+            }
+            areader = resampler_poisoner_.get();
+        }
         resampler_.reset(new (allocator_) audio::ResamplerReader(
                              *areader, sample_buffer_pool, allocator, config.resampler,
                              config.channels),
@@ -146,6 +155,15 @@ ReceiverSession::ReceiverSession(const SessionConfig& config,
             return;
         }
         areader = resampler_.get();
+    }
+
+    if (poisoning) {
+        session_poisoner_.reset(new (allocator_) audio::PoisonReader(*areader),
+                                allocator_);
+        if (!session_poisoner_) {
+            return;
+        }
+        areader = session_poisoner_.get();
     }
 
     latency_monitor_.reset(new (allocator_) audio::LatencyMonitor(

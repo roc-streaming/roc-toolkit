@@ -56,6 +56,9 @@ section "Options"
     option "oneshot" 1 "Exit when last connected client disconnects"
         flag off
 
+    option "poisoning" - "Enable uninitialized memory poisoning"
+        flag off
+
     option "beeping" - "Enable beeping on packet loss" flag off
 
 text "

@@ -61,6 +61,8 @@ int main(int argc, char** argv) {
 
     pipeline::ReceiverConfig config;
 
+    config.poisoning = args.poisoning_flag;
+
     switch ((unsigned)args.fec_arg) {
     case fec_arg_none:
         config.default_session.fec.codec = fec::NoCodec;

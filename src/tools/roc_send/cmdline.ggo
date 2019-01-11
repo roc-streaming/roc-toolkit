@@ -38,6 +38,9 @@ section "Options"
 
     option "interleaving" - "Enable packet interleaving" flag off
 
+    option "poisoning" - "Enable uninitialized memory poisoning"
+        flag off
+
 text "
 ADDRESS should be in one of the following forms:
   - :PORT
