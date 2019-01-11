@@ -56,7 +56,7 @@ section "Options"
     option "oneshot" 1 "Exit when last connected client disconnects"
         flag off
 
-    option "beep" - "Enable beep on packet loss" flag off
+    option "beeping" - "Enable beeping on packet loss" flag off
 
 text "
 ADDRESS should be in one of the following forms:

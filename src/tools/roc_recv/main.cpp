@@ -109,7 +109,7 @@ int main(int argc, char** argv) {
     }
 
     config.default_session.resampling = !args.no_resampling_flag;
-    config.default_session.beeping = args.beep_flag;
+    config.default_session.beeping = args.beeping_flag;
 
     size_t sample_rate = 0;
     if (args.rate_given) {
