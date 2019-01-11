@@ -128,6 +128,14 @@ Sender::Sender(const SenderConfig& config,
     audio::IWriter* awriter = packetizer_.get();
 
     if (config.resampling && config.sample_rate != format->sample_rate) {
+        if (config.poisoning) {
+            resampler_poisoner_.reset(new (allocator) audio::PoisonWriter(*awriter),
+                                      allocator);
+            if (!resampler_poisoner_) {
+                return;
+            }
+            awriter = resampler_poisoner_.get();
+        }
         resampler_.reset(new (allocator) audio::ResamplerWriter(
                              *awriter, sample_buffer_pool, allocator, config.resampler,
                              config.channels),
@@ -139,6 +147,15 @@ Sender::Sender(const SenderConfig& config,
             return;
         }
         awriter = resampler_.get();
+    }
+
+    if (config.poisoning) {
+        pipeline_poisoner_.reset(new (allocator) audio::PoisonWriter(*awriter),
+                                 allocator);
+        if (!pipeline_poisoner_) {
+            return;
+        }
+        awriter = pipeline_poisoner_.get();
     }
 
     audio_writer_ = awriter;

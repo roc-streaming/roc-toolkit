@@ -141,10 +141,14 @@ struct ReceiverConfig {
     //! Constrain receiver speed using a CPU timer according to the sample rate.
     bool timing;
 
+    //! Fill uninitialized data with large values to make them more noticeable.
+    bool poisoning;
+
     ReceiverConfig()
         : sample_rate(DefaultSampleRate)
         , channels(DefaultChannelMask)
-        , timing(false) {
+        , timing(false)
+        , poisoning(false) {
     }
 };
 
@@ -183,6 +187,9 @@ struct SenderConfig {
     //! Constrain receiver speed using a CPU timer according to the sample rate.
     bool timing;
 
+    //! Fill unitialized data with large values to make them more noticable.
+    bool poisoning;
+
     SenderConfig()
         : sample_rate(DefaultSampleRate)
         , channels(DefaultChannelMask)
@@ -190,7 +197,8 @@ struct SenderConfig {
         , samples_per_packet(DefaultPacketSize)
         , resampling(false)
         , interleaving(false)
-        , timing(false) {
+        , timing(false)
+        , poisoning(false) {
     }
 };
 

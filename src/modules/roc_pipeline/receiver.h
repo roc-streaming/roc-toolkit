@@ -14,6 +14,7 @@
 
 #include "roc_audio/ireader.h"
 #include "roc_audio/mixer.h"
+#include "roc_audio/poison_reader.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/cond.h"
 #include "roc_core/iallocator.h"
@@ -95,15 +96,17 @@ private:
 
     core::List<packet::Packet> packets_;
 
-    audio::Mixer mixer_;
     core::Ticker ticker_;
+
+    core::UniquePtr<audio::Mixer> mixer_;
+    core::UniquePtr<audio::PoisonReader> poisoner_;
+
+    audio::IReader* audio_reader_;
 
     ReceiverConfig config_;
 
     packet::timestamp_t timestamp_;
     size_t num_channels_;
-
-    bool valid_;
 
     core::Mutex control_mutex_;
     core::Mutex pipeline_mutex_;

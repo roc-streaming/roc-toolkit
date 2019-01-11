@@ -116,6 +116,7 @@ int main(int argc, char** argv) {
 
     config.interleaving = args.interleaving_flag;
     config.resampling = !args.no_resampling_flag;
+    config.poisoning = args.poisoning_flag;
 
     if (args.resampler_interp_given) {
         if (args.resampler_interp_arg <= 0) {

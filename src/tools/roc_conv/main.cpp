@@ -8,6 +8,7 @@
  */
 
 #include "roc_audio/null_writer.h"
+#include "roc_audio/poison_writer.h"
 #include "roc_audio/profiling_writer.h"
 #include "roc_audio/resampler_writer.h"
 #include "roc_core/buffer_pool.h"
@@ -79,6 +80,11 @@ int main(int argc, char** argv) {
         writer = &null;
     }
 
+    audio::PoisonWriter resampler_poisoner(*writer);
+    if (args.poisoning_flag) {
+        writer = &resampler_poisoner;
+    }
+
     audio::ResamplerConfig resampler_config;
     if (args.resampler_interp_given) {
         resampler_config.window_interp = (size_t)args.resampler_interp_arg;
@@ -105,6 +111,11 @@ int main(int argc, char** argv) {
 
     audio::ProfilingWriter profiler(*writer, Channels, reader.sample_rate());
     writer = &profiler;
+
+    audio::PoisonWriter pipeline_poisoner(*writer);
+    if (args.poisoning_flag) {
+        writer = &pipeline_poisoner;
+    }
 
     if (args.output_given) {
         if (!output.open(args.output_arg, NULL)) {

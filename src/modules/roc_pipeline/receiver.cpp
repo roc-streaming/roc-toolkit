@@ -25,22 +25,31 @@ Receiver::Receiver(const ReceiverConfig& config,
     , byte_buffer_pool_(byte_buffer_pool)
     , sample_buffer_pool_(sample_buffer_pool)
     , allocator_(allocator)
-    , mixer_(sample_buffer_pool)
     , ticker_(config.sample_rate)
+    , audio_reader_(NULL)
     , config_(config)
     , timestamp_(0)
     , num_channels_(packet::num_channels(config.channels))
-    , valid_(false)
     , active_cond_(control_mutex_) {
-    if (!mixer_.valid()) {
-        roc_log(LogError, "receiver: can't construct mixer");
+    mixer_.reset(new (allocator_) audio::Mixer(sample_buffer_pool), allocator_);
+    if (!mixer_) {
         return;
     }
-    valid_ = true;
+    audio::IReader* areader = mixer_.get();
+
+    if (config.poisoning) {
+        poisoner_.reset(new (allocator_) audio::PoisonReader(*areader), allocator_);
+        if (!poisoner_) {
+            return;
+        }
+        areader = poisoner_.get();
+    }
+
+    audio_reader_ = areader;
 }
 
 bool Receiver::valid() {
-    return valid_;
+    return audio_reader_;
 }
 
 bool Receiver::add_port(const PortConfig& config) {
@@ -95,7 +104,7 @@ void Receiver::read(audio::Frame& frame) {
 
     prepare_();
 
-    mixer_.read(frame);
+    audio_reader_->read(frame);
     timestamp_ += frame.size() / num_channels_;
 }
 
@@ -205,8 +214,8 @@ bool Receiver::create_session_(const packet::PacketPtr& packet) {
 
     core::SharedPtr<ReceiverSession> sess = new (allocator_)
         ReceiverSession(config_.default_session, packet->rtp()->payload_type,
-                        config_.sample_rate, src_address, format_map_, packet_pool_,
-                        byte_buffer_pool_, sample_buffer_pool_, allocator_);
+                        config_.sample_rate, config_.poisoning, src_address, format_map_,
+                        packet_pool_, byte_buffer_pool_, sample_buffer_pool_, allocator_);
 
     if (!sess || !sess->valid()) {
         roc_log(LogError, "receiver: can't create session, initialization failed");
@@ -218,7 +227,7 @@ bool Receiver::create_session_(const packet::PacketPtr& packet) {
         return false;
     }
 
-    mixer_.add(sess->reader());
+    mixer_->add(sess->reader());
     sessions_.push_back(*sess);
 
     return true;
@@ -227,7 +236,7 @@ bool Receiver::create_session_(const packet::PacketPtr& packet) {
 void Receiver::remove_session_(ReceiverSession& sess) {
     roc_log(LogInfo, "receiver: removing session");
 
-    mixer_.remove(sess.reader());
+    mixer_->remove(sess.reader());
     sessions_.remove(sess);
 }
 
