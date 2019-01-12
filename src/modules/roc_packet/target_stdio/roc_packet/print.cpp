@@ -30,7 +30,7 @@ void print(const Packet& p, int flags) {
                 (unsigned long)p.rtp()->payload.size());
 
         if ((flags & PrintPayload) && p.rtp()->payload) {
-            core::print_bytes(p.rtp()->payload.data(), p.rtp()->payload.size());
+            core::print_memory(p.rtp()->payload.data(), p.rtp()->payload.size());
         }
     }
 
@@ -39,7 +39,7 @@ void print(const Packet& p, int flags) {
                 (unsigned long)p.fec()->payload.size());
 
         if ((flags & PrintPayload) && p.fec()->payload) {
-            core::print_bytes(p.fec()->payload.data(), p.fec()->payload.size());
+            core::print_memory(p.fec()->payload.data(), p.fec()->payload.size());
         }
     }
 }

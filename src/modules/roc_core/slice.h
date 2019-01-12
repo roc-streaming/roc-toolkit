@@ -13,6 +13,7 @@
 #define ROC_CORE_SLICE_H_
 
 #include "roc_core/buffer.h"
+#include "roc_core/print.h"
 #include "roc_core/shared_ptr.h"
 
 namespace roc {
@@ -104,6 +105,15 @@ public:
         ret.data_ = data_ + from;
         ret.size_ = to - from;
         return ret;
+    }
+
+    //! Print slice to stderr.
+    void print() const {
+        if (buffer_) {
+            core::print_slice(data_, size_, buffer_->data(), buffer_->size());
+        } else {
+            core::print_slice(data_, size_, NULL, 0);
+        }
     }
 
     //! Convert to bool.

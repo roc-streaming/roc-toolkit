@@ -17,11 +17,23 @@
 namespace roc {
 namespace core {
 
-//! Print bytes to stderr.
-void print_bytes(const uint8_t* data, size_t size);
+//! Print bytes.
+void print_memory(const uint8_t* data, size_t size);
 
-//! Print floats to stderr.
-void print_floats(const float* data, size_t size);
+//! Print floats.
+void print_memory(const float* data, size_t size);
+
+//! Print byte slice.
+void print_slice(const uint8_t* inner,
+                 size_t inner_size,
+                 const uint8_t* outer,
+                 size_t outer_size);
+
+//! Print float slice.
+void print_slice(const float* inner,
+                 size_t inner_size,
+                 const float* outer,
+                 size_t outer_size);
 
 } // namespace core
 } // namespace roc
