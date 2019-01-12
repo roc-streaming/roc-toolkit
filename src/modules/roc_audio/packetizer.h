@@ -59,7 +59,8 @@ public:
     void flush();
 
 private:
-    packet::PacketPtr next_packet_();
+    packet::PacketPtr start_packet_();
+    bool finish_packet_();
 
     packet::IWriter& writer_;
     packet::IComposer& composer_;

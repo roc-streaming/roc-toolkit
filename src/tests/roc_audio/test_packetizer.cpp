@@ -63,7 +63,7 @@ public:
         , value_(0) {
     }
 
-    void read(packet::IReader& reader, size_t padding) {
+    void read(packet::IReader& reader, size_t n_samples) {
         packet::PacketPtr pp = reader.read();
         CHECK(pp);
 
@@ -88,27 +88,21 @@ public:
         sample_t samples[SamplesPerPacket * NumCh] = {};
 
         UNSIGNED_LONGS_EQUAL(
-            SamplesPerPacket,
+            n_samples,
             pcm_decoder.read_samples(*pp, 0, samples, SamplesPerPacket, ChMask));
 
         size_t n = 0;
 
-        for (; n < SamplesPerPacket - padding; n++) {
+        for (; n < n_samples; n++) {
             for (size_t c = 0; c < NumCh; c++) {
                 DOUBLES_EQUAL(nth_sample(value_), samples[n * NumCh + c], Epsilon);
                 value_++;
             }
         }
 
-        for (; n < SamplesPerPacket; n++) {
-            for (size_t c = 0; c < NumCh; c++) {
-                DOUBLES_EQUAL(0, samples[n * NumCh + c], Epsilon);
-            }
-        }
-
         pos_++;
         sn_++;
-        ts_ += SamplesPerPacket;
+        ts_ += n_samples;
     }
 
 private:
@@ -171,7 +165,7 @@ TEST(packetizer, one_buffer_one_packet) {
 
         UNSIGNED_LONGS_EQUAL(1, packet_queue.size());
 
-        packet_checker.read(packet_queue, 0);
+        packet_checker.read(packet_queue, SamplesPerPacket);
     }
 }
 
@@ -189,7 +183,7 @@ TEST(packetizer, one_buffer_multiple_packets) {
     frame_maker.write(packetizer, SamplesPerPacket * NumPackets);
 
     for (size_t pn = 0; pn < NumPackets; pn++) {
-        packet_checker.read(packet_queue, 0);
+        packet_checker.read(packet_queue, SamplesPerPacket);
     }
 
     UNSIGNED_LONGS_EQUAL(0, packet_queue.size());
@@ -217,7 +211,7 @@ TEST(packetizer, multiple_buffers_one_packet) {
 
         UNSIGNED_LONGS_EQUAL(1, packet_queue.size());
 
-        packet_checker.read(packet_queue, 0);
+        packet_checker.read(packet_queue, SamplesPerPacket);
     }
 }
 
@@ -241,14 +235,14 @@ TEST(packetizer, multiple_buffers_multiple_packets) {
     }
 
     for (size_t pn = 0; pn < NumPackets; pn++) {
-        packet_checker.read(packet_queue, 0);
+        packet_checker.read(packet_queue, SamplesPerPacket);
     }
 
     UNSIGNED_LONGS_EQUAL(0, packet_queue.size());
 }
 
 TEST(packetizer, flush) {
-    enum { Padding = 10 };
+    enum { Missing = 10 };
 
     packet::Queue packet_queue;
 
@@ -260,16 +254,16 @@ TEST(packetizer, flush) {
 
     frame_maker.write(packetizer, SamplesPerPacket);
     frame_maker.write(packetizer, SamplesPerPacket);
-    frame_maker.write(packetizer, SamplesPerPacket - Padding);
+    frame_maker.write(packetizer, SamplesPerPacket - Missing);
 
     UNSIGNED_LONGS_EQUAL(2, packet_queue.size());
 
-    packet_checker.read(packet_queue, 0);
-    packet_checker.read(packet_queue, 0);
+    packet_checker.read(packet_queue, SamplesPerPacket);
+    packet_checker.read(packet_queue, SamplesPerPacket);
 
     packetizer.flush();
 
-    packet_checker.read(packet_queue, Padding);
+    packet_checker.read(packet_queue, SamplesPerPacket - Missing);
 
     UNSIGNED_LONGS_EQUAL(0, packet_queue.size());
 }

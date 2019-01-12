@@ -48,7 +48,7 @@ void Packetizer::write(Frame& frame) {
 
     while (buffer_samples != 0) {
         if (!packet_) {
-            if (!(packet_ = next_packet_())) {
+            if (!(packet_ = start_packet_())) {
                 return;
             }
         }
@@ -67,17 +67,22 @@ void Packetizer::write(Frame& frame) {
 }
 
 void Packetizer::flush() {
-    if (!packet_) {
+    if (packet_pos_ == 0) {
         return;
     }
-    writer_.write(packet_);
+
+    if (finish_packet_()) {
+        writer_.write(packet_);
+    }
+
     seqnum_++;
     timestamp_ += (packet::timestamp_t)packet_pos_;
+
     packet_pos_ = 0;
     packet_ = NULL;
 }
 
-packet::PacketPtr Packetizer::next_packet_() {
+packet::PacketPtr Packetizer::start_packet_() {
     packet::PacketPtr packet = new (packet_pool_) packet::Packet(packet_pool_);
     if (!packet) {
         roc_log(LogError, "packetizer: can't allocate packet");
@@ -107,6 +112,19 @@ packet::PacketPtr Packetizer::next_packet_() {
     rtp.payload_type = payload_type_;
 
     return packet;
+}
+
+bool Packetizer::finish_packet_() {
+    if (packet_pos_ == samples_per_packet_) {
+        return true;
+    }
+
+    if (!composer_.truncate(*packet_, encoder_.payload_size(packet_pos_))) {
+        roc_log(LogError, "packetizer: can't truncate packet");
+        return false;
+    }
+
+    return true;
 }
 
 } // namespace audio
