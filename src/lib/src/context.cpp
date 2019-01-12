@@ -13,12 +13,10 @@
 using namespace roc;
 
 roc_context::roc_context(const roc_context_config& cfg)
-    : packet_pool(allocator, cfg.chunk_size / cfg.max_packet_size)
-    , byte_buffer_pool(
-          allocator, cfg.max_packet_size, cfg.chunk_size / cfg.max_packet_size)
-    , sample_buffer_pool(allocator,
-                         cfg.max_frame_size / sizeof(audio::sample_t),
-                         cfg.chunk_size / cfg.max_frame_size)
+    : packet_pool(allocator, cfg.chunk_size, false)
+    , byte_buffer_pool(allocator, cfg.max_packet_size, cfg.chunk_size, false)
+    , sample_buffer_pool(
+          allocator, cfg.max_frame_size / sizeof(audio::sample_t), cfg.chunk_size, false)
     , trx(packet_pool, byte_buffer_pool, allocator)
     , counter(0) {
 }

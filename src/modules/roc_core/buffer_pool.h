@@ -23,18 +23,19 @@ template <class T> class Buffer;
 template <class T> class BufferPool : public Pool<Buffer<T> > {
 public:
     //! Initialization.
-    BufferPool(IAllocator& allocator, size_t buff_sz, size_t n_buffs)
-        : Pool<Buffer<T> >(allocator, sizeof(Buffer<T>) + sizeof(T) * buff_sz, n_buffs)
-        , buff_sz_(buff_sz) {
+    BufferPool(IAllocator& allocator, size_t buff_size, size_t chunk_size, bool poison)
+        : Pool<Buffer<T> >(
+              allocator, sizeof(Buffer<T>) + sizeof(T) * buff_size, chunk_size, poison)
+        , buff_size_(buff_size) {
     }
 
     //! Get buffer size (number of elements in buffer).
     size_t buffer_size() const {
-        return buff_sz_;
+        return buff_size_;
     }
 
 private:
-    size_t buff_sz_;
+    size_t buff_size_;
 };
 
 } // namespace core

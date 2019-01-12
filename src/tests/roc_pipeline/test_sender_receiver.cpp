@@ -26,7 +26,8 @@ namespace pipeline {
 namespace {
 
 enum {
-    MaxBufSize = 4096,
+    MaxBufSize = 500,
+    PoolChunkSize = 10000,
 
     SampleRate = 44100,
     ChMask = 0x3,
@@ -66,9 +67,10 @@ enum {
 };
 
 core::HeapAllocator allocator;
-core::BufferPool<audio::sample_t> sample_buffer_pool(allocator, MaxBufSize, 1);
-core::BufferPool<uint8_t> byte_buffer_pool(allocator, MaxBufSize, 1);
-packet::PacketPool packet_pool(allocator, 1);
+core::BufferPool<audio::sample_t>
+    sample_buffer_pool(allocator, MaxBufSize, PoolChunkSize, true);
+core::BufferPool<uint8_t> byte_buffer_pool(allocator, MaxBufSize, PoolChunkSize, true);
+packet::PacketPool packet_pool(allocator, PoolChunkSize, true);
 rtp::FormatMap format_map;
 
 } // namespace

@@ -18,10 +18,10 @@ namespace packet {
 
 namespace {
 
-enum { NumSamples = 100, NumPackets = 5 };
+enum { NumSamples = 100, NumPackets = 5, PoolChunkSize = 2000 };
 
 core::HeapAllocator allocator;
-PacketPool pool(allocator, 1);
+PacketPool pool(allocator, PoolChunkSize, true);
 
 } // namespace
 

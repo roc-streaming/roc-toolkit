@@ -18,13 +18,20 @@ namespace rtp {
 
 namespace {
 
-core::HeapAllocator allocator;
-packet::PacketPool pool(allocator, 1);
-
 const PayloadType Pt1 = PayloadType_L16_Stereo;
 const PayloadType Pt2 = PayloadType_L16_Mono;
 
-enum { Src1 = 55, Src2 = 77, SampleRate = 10000, MaxSnJump = 100, MaxTsJump = 1000 };
+enum {
+    Src1 = 55,
+    Src2 = 77,
+    SampleRate = 10000,
+    MaxSnJump = 100,
+    MaxTsJump = 1000,
+    PoolChunkSize = 2000
+};
+
+core::HeapAllocator allocator;
+packet::PacketPool pool(allocator, PoolChunkSize, true);
 
 } // namespace
 

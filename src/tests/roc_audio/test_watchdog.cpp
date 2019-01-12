@@ -19,9 +19,10 @@ namespace audio {
 namespace {
 
 enum {
-    MaxBufSize = 5000,
-    NumCh = 2,
+    MaxBufSize = 500,
+    PoolChunkSize = 10000,
 
+    NumCh = 2,
     SamplesPerFrame = 5,
 
     SilenceTimeout = SamplesPerFrame * 4,
@@ -31,7 +32,7 @@ enum {
 };
 
 core::HeapAllocator allocator;
-core::BufferPool<sample_t> sample_buffer_pool(allocator, MaxBufSize, 1);
+core::BufferPool<sample_t> sample_buffer_pool(allocator, MaxBufSize, PoolChunkSize, true);
 
 class TestFrameReader : public IReader, public core::NonCopyable<> {
 public:

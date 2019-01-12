@@ -24,15 +24,18 @@ namespace audio {
 namespace {
 
 enum {
-    MaxSize = 4096,
+    MaxSize = 4000,
+    PoolChunkSize = 20000,
+
     ResamplerFIRLen = 200,
     FrameSize = 512,
+
     OutSamples = FrameSize * 100 + 1,
     InSamples = OutSamples + (FrameSize * 3)
 };
 
 core::HeapAllocator allocator;
-core::BufferPool<sample_t> buffer_pool(allocator, MaxSize, 1);
+core::BufferPool<sample_t> buffer_pool(allocator, MaxSize, PoolChunkSize, true);
 
 } // namespace
 

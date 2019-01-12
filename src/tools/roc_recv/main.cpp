@@ -23,7 +23,7 @@ using namespace roc;
 
 namespace {
 
-enum { MaxPacketSize = 2048, MaxFrameSize = 65 * 1024 };
+enum { MaxPacketSize = 2048, MaxFrameSize = 8192, ChunkSize = 128 * 1024 };
 
 } // namespace
 
@@ -213,10 +213,11 @@ int main(int argc, char** argv) {
     }
 
     core::HeapAllocator allocator;
-
-    core::BufferPool<uint8_t> byte_buffer_pool(allocator, MaxPacketSize, 1);
-    core::BufferPool<audio::sample_t> sample_buffer_pool(allocator, MaxFrameSize, 1);
-    packet::PacketPool packet_pool(allocator, 1);
+    core::BufferPool<uint8_t> byte_buffer_pool(allocator, MaxPacketSize, ChunkSize,
+                                               args.poisoning_flag);
+    core::BufferPool<audio::sample_t> sample_buffer_pool(allocator, MaxFrameSize,
+                                                         ChunkSize, args.poisoning_flag);
+    packet::PacketPool packet_pool(allocator, ChunkSize, args.poisoning_flag);
 
     sndio::SoxWriter writer(allocator, config.output.channels, sample_rate);
 

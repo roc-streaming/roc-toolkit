@@ -26,9 +26,11 @@ namespace rtp {
 
 namespace {
 
+enum { MaxBufSize = PacketInfo::MaxData, PoolChunkSize = MaxBufSize * 4 };
+
 core::HeapAllocator allocator;
-core::BufferPool<uint8_t> buffer_pool(allocator, PacketInfo::MaxData, 1);
-packet::PacketPool packet_pool(allocator, 1);
+core::BufferPool<uint8_t> buffer_pool(allocator, MaxBufSize, PoolChunkSize, true);
+packet::PacketPool packet_pool(allocator, PoolChunkSize, true);
 
 } // namespace
 

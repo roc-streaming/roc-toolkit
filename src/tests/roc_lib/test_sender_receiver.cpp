@@ -34,7 +34,8 @@ namespace roc {
 namespace {
 
 enum {
-    MaxBufSize = 4096,
+    MaxBufSize = 500,
+    PoolChunkSize = 10000,
 
     NumChans = 2,
 
@@ -50,8 +51,8 @@ enum {
 };
 
 core::HeapAllocator allocator;
-packet::PacketPool packet_pool(allocator, 1);
-core::BufferPool<uint8_t> byte_buffer_pool(allocator, MaxBufSize, 1);
+packet::PacketPool packet_pool(allocator, PoolChunkSize, true);
+core::BufferPool<uint8_t> byte_buffer_pool(allocator, MaxBufSize, PoolChunkSize, true);
 
 class Context : public core::NonCopyable<> {
 public:

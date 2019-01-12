@@ -23,10 +23,16 @@ namespace sndio {
 
 namespace {
 
-enum { MaxBufSize = 1024 * 8, SampleRate = 44100, ChMask = 0x3, FrameSize = 512 };
+enum {
+    MaxBufSize = 8192,
+    PoolChunkSize = 65536,
+    SampleRate = 44100,
+    ChMask = 0x3,
+    FrameSize = 512
+};
 
 core::HeapAllocator allocator;
-core::BufferPool<audio::sample_t> buffer_pool(allocator, MaxBufSize, 1);
+core::BufferPool<audio::sample_t> buffer_pool(allocator, MaxBufSize, PoolChunkSize, true);
 
 audio::sample_t nth_sample(size_t n) {
     return audio::sample_t(uint8_t(n)) / audio::sample_t(1 << 8);

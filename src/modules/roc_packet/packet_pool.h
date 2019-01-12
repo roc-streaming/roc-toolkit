@@ -22,8 +22,8 @@ namespace packet {
 class PacketPool : public core::Pool<Packet> {
 public:
     //! Constructor.
-    PacketPool(core::IAllocator& allocator, size_t n_packets)
-        : core::Pool<Packet>(allocator, sizeof(Packet), n_packets) {
+    PacketPool(core::IAllocator& allocator, size_t chunk_size, bool poison)
+        : core::Pool<Packet>(allocator, sizeof(Packet), chunk_size, poison) {
     }
 };
 

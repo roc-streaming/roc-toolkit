@@ -42,9 +42,12 @@ const unsigned PayloadType = rtp::PayloadType_L16_Stereo;
 const size_t RTPPayloadSize = 177;
 const size_t FECPayloadSize = RTPPayloadSize + sizeof(rtp::Header);
 
+const size_t PoolBuffSize = 500;
+const size_t PoolChunkSize = 2000;
+
 core::HeapAllocator allocator;
-core::BufferPool<uint8_t> buffer_pool(allocator, FECPayloadSize * 2, 1);
-packet::PacketPool packet_pool(allocator, 1);
+core::BufferPool<uint8_t> buffer_pool(allocator, PoolBuffSize, PoolChunkSize, true);
+packet::PacketPool packet_pool(allocator, PoolChunkSize, true);
 
 rtp::FormatMap format_map;
 rtp::Parser rtp_parser(format_map, NULL);

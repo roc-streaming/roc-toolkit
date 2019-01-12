@@ -25,7 +25,7 @@ using namespace roc;
 
 namespace {
 
-enum { MaxFrameSize = 65 * 1024, Channels = 0x3 };
+enum { Channels = 0x3, MaxFrameSize = 8192, ChunkSize = 128 * 1024 };
 
 } // namespace
 
@@ -45,7 +45,8 @@ int main(int argc, char** argv) {
     sndio::sox_setup();
 
     core::HeapAllocator allocator;
-    core::BufferPool<audio::sample_t> pool(allocator, MaxFrameSize, 1);
+    core::BufferPool<audio::sample_t> pool(allocator, MaxFrameSize, ChunkSize,
+                                           args.poisoning_flag);
 
     size_t chunk_size = 0;
     if (args.chunk_given) {

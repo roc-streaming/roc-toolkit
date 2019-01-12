@@ -18,10 +18,10 @@ namespace packet {
 
 namespace {
 
-enum { MaxRoutes = 5 };
+enum { MaxRoutes = 5, PoolChunkSize = 2000 };
 
 core::HeapAllocator allocator;
-PacketPool pool(allocator, 1);
+PacketPool pool(allocator, PoolChunkSize, true);
 
 } // namespace
 

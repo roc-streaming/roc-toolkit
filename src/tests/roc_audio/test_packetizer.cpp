@@ -29,8 +29,9 @@ const sample_t Epsilon = 0.00001f;
 enum {
     SamplesPerPacket = 200,
 
-    MaxBufSize = 4096,
     MaxPackets = 100,
+    MaxBufSize = 4000,
+    PoolChunkSize = 20000,
 
     NumCh = 2,
     ChMask = 0x3,
@@ -39,9 +40,9 @@ enum {
 };
 
 core::HeapAllocator allocator;
-core::BufferPool<sample_t> sample_buffer_pool(allocator, MaxBufSize, 1);
-core::BufferPool<uint8_t> byte_buffer_pool(allocator, MaxBufSize, 1);
-packet::PacketPool packet_pool(allocator, 1);
+core::BufferPool<sample_t> sample_buffer_pool(allocator, MaxBufSize, PoolChunkSize, true);
+core::BufferPool<uint8_t> byte_buffer_pool(allocator, MaxBufSize, PoolChunkSize, true);
+packet::PacketPool packet_pool(allocator, PoolChunkSize, true);
 
 rtp::Composer rtp_composer(NULL);
 

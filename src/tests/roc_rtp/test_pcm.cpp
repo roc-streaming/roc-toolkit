@@ -20,13 +20,13 @@ namespace rtp {
 
 namespace {
 
-enum { MaxBufsz = 100, MaxSamples = 100 };
+enum { MaxBufsz = 100, MaxSamples = 100, PoolChunkSize = 2000 };
 
 const float Epsilon = 0.0001f;
 
 core::HeapAllocator allocator;
-core::BufferPool<uint8_t> buffer_pool(allocator, MaxBufsz, 1);
-packet::PacketPool packet_pool(allocator, 1);
+core::BufferPool<uint8_t> buffer_pool(allocator, MaxBufsz, PoolChunkSize, true);
+packet::PacketPool packet_pool(allocator, PoolChunkSize, true);
 
 } // namespace
 

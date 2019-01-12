@@ -20,6 +20,7 @@
 #include "roc_core/mutex.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/panic.h"
+#include "roc_core/stddefs.h"
 
 namespace roc {
 namespace core {
@@ -37,18 +38,22 @@ public:
     //! Initialization.
     //!
     //! @b Parameters
-    //!  - @p obj_sz defines object size in bytes
-    //!  - @p n_objs defines number of objects in a chunk
-    Pool(IAllocator& allocator, size_t obj_sz, size_t n_objs)
+    //!  - @p allocator is used to allocate chunks
+    //!  - @p object_size defines object size in bytes
+    //!  - @p chunk_size defines allocation chunk size in bytes
+    //!  - @p poison enables memory poisoning for debugging
+    Pool(IAllocator& allocator, size_t object_size, size_t chunk_size, bool poison)
         : allocator_(allocator)
-        , obj_off_(max_align(sizeof(Chunk)))
-        , obj_sz_(max_align(ROC_MAX(sizeof(Elem), obj_sz)))
-        , n_objs_(n_objs) {
+        , elem_size_(max_align(ROC_MAX(sizeof(Elem), object_size)))
+        , chunk_hdr_size_(max_align(sizeof(Chunk)))
+        , chunk_n_elems_((ROC_MAX(chunk_size, chunk_hdr_size_) - chunk_hdr_size_)
+                         / elem_size_)
+        , poison_(poison) {
         roc_log(
             LogDebug,
             "pool: initializing: chunk_size=%lu object_size=%lu objects_per_chunk=%lu",
-            (unsigned long)chunk_off_(n_objs_), (unsigned long)obj_sz_,
-            (unsigned long)n_objs_);
+            (unsigned long)chunk_offset_(chunk_n_elems_), (unsigned long)elem_size_,
+            (unsigned long)chunk_n_elems_);
     }
 
     ~Pool() {
@@ -64,7 +69,15 @@ public:
         if (elem == NULL) {
             return NULL;
         }
+
         elem->~Elem();
+
+        if (poison_) {
+            memset(elem, PoisonAllocated, elem_size_);
+        } else {
+            memset(elem, 0, elem_size_);
+        }
+
         return elem;
     }
 
@@ -73,6 +86,11 @@ public:
         if (memory == NULL) {
             roc_panic("pool: null pointer");
         }
+
+        if (poison_) {
+            memset(memory, PoisonDeallocated, elem_size_);
+        }
+
         Elem* elem = new (memory) Elem;
         put_elem_(elem);
     }
@@ -84,6 +102,8 @@ public:
     }
 
 private:
+    enum { PoisonAllocated = 0x7a, PoisonDeallocated = 0x7d };
+
     struct Chunk : ListNode {};
     struct Elem : ListNode {};
 
@@ -94,7 +114,7 @@ private:
             allocate_chunk_();
         }
 
-        Elem* elem = free_elems_.back();
+        Elem* elem = free_elems_.front();
         if (elem != NULL) {
             free_elems_.remove(*elem);
         }
@@ -104,11 +124,11 @@ private:
 
     void put_elem_(Elem* elem) {
         Mutex::Lock lock(mutex_);
-        free_elems_.push_back(*elem);
+        free_elems_.push_front(*elem);
     }
 
     void allocate_chunk_() {
-        void* memory = allocator_.allocate(chunk_off_(n_objs_));
+        void* memory = allocator_.allocate(chunk_offset_(chunk_n_elems_));
         if (memory == NULL) {
             return;
         }
@@ -116,17 +136,17 @@ private:
         Chunk* chunk = new (memory) Chunk;
         chunks_.push_back(*chunk);
 
-        for (size_t n = 0; n < n_objs_; n++) {
-            Elem* elem = new ((char*)chunk + chunk_off_(n)) Elem;
+        for (size_t n = 0; n < chunk_n_elems_; n++) {
+            Elem* elem = new ((char*)chunk + chunk_offset_(n)) Elem;
             free_elems_.push_back(*elem);
         }
     }
 
     void deallocate_all_() {
-        if (free_elems_.size() != chunks_.size() * n_objs_) {
+        if (free_elems_.size() != chunks_.size() * chunk_n_elems_) {
             roc_panic("pool: detected leak, avail=%lu, total=%lu",
                       (unsigned long)free_elems_.size(),
-                      (unsigned long)(chunks_.size() * n_objs_));
+                      (unsigned long)(chunks_.size() * chunk_n_elems_));
         }
 
         while (Elem* elem = free_elems_.front()) {
@@ -139,8 +159,8 @@ private:
         }
     }
 
-    size_t chunk_off_(size_t num_objs) const {
-        return obj_off_ + obj_sz_ * num_objs;
+    size_t chunk_offset_(size_t n) const {
+        return chunk_hdr_size_ + n * elem_size_;
     }
 
     Mutex mutex_;
@@ -149,9 +169,12 @@ private:
     List<Elem, NoOwnership> free_elems_;
 
     IAllocator& allocator_;
-    size_t obj_off_;
-    size_t obj_sz_;
-    size_t n_objs_;
+
+    const size_t elem_size_;
+    const size_t chunk_hdr_size_;
+    const size_t chunk_n_elems_;
+
+    const bool poison_;
 };
 
 } // namespace core
