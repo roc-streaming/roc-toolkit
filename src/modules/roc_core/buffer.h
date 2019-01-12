@@ -25,7 +25,7 @@ public:
     //! Initialize empty buffer.
     explicit Buffer(BufferPool<T>& pool)
         : pool_(pool) {
-        new (data()) T[size()]();
+        new (data()) T[size()];
     }
 
     //! Get buffer data.
