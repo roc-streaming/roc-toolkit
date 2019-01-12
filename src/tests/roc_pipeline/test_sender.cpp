@@ -69,6 +69,7 @@ TEST_GROUP(sender) {
 
         config.interleaving = false;
         config.timing = false;
+        config.poisoning = true;
     }
 };
 

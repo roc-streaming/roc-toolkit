@@ -73,6 +73,10 @@ TEST_GROUP(receiver) {
         config.output.sample_rate = SampleRate;
         config.output.channels = ChMask;
 
+        config.output.resampling = false;
+        config.output.timing = false;
+        config.output.poisoning = true;
+
         config.default_session.channels = ChMask;
         config.default_session.samples_per_packet = SamplesPerPacket;
 

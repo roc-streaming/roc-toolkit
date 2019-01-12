@@ -178,6 +178,7 @@ TEST_GROUP(sender_receiver) {
 
         config.interleaving = (flags & FlagInterleaving);
         config.timing = false;
+        config.poisoning = true;
 
         return config;
     }
@@ -187,6 +188,10 @@ TEST_GROUP(sender_receiver) {
 
         config.output.sample_rate = SampleRate;
         config.output.channels = ChMask;
+
+        config.output.resampling = false;
+        config.output.timing = false;
+        config.output.poisoning = true;
 
         config.default_session.channels = ChMask;
         config.default_session.samples_per_packet = SamplesPerPacket;
