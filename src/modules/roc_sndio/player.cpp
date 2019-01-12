@@ -9,7 +9,6 @@
 #include "roc_sndio/player.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
-#include "roc_sndio/sox.h"
 
 namespace roc {
 namespace sndio {
