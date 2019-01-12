@@ -18,7 +18,9 @@ namespace roc {
 namespace pipeline {
 
 Sender::Sender(const SenderConfig& config,
+               const PortConfig& source_port_config,
                packet::IWriter& source_writer,
+               const PortConfig& repair_port_config,
                packet::IWriter& repair_writer,
                const rtp::FormatMap& format_map,
                packet::PacketPool& packet_pool,
@@ -40,17 +42,15 @@ Sender::Sender(const SenderConfig& config,
         }
     }
 
-    source_port_.reset(new (allocator)
-                           SenderPort(config.source_port, source_writer, allocator),
+    source_port_.reset(new (allocator) SenderPort(source_port_config, source_writer, allocator),
                        allocator);
     if (!source_port_ || !source_port_->valid()) {
         return;
     }
 
-    if (config.repair_port.protocol != Proto_None) {
-        repair_port_.reset(new (allocator)
-                               SenderPort(config.repair_port, repair_writer, allocator),
-                           allocator);
+    if (repair_port_config.protocol != Proto_None) {
+        repair_port_.reset(
+            new (allocator) SenderPort(repair_port_config, repair_writer, allocator), allocator);
         if (!repair_port_ || !repair_port_->valid()) {
             return;
         }

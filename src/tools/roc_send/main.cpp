@@ -43,15 +43,18 @@ int main(int argc, char** argv) {
 
     pipeline::SenderConfig config;
 
+    pipeline::PortConfig source_port;
+    pipeline::PortConfig repair_port;
+
     if (args.source_given) {
-        if (!packet::parse_address(args.source_arg, config.source_port.address)) {
+        if (!packet::parse_address(args.source_arg, source_port.address)) {
             roc_log(LogError, "can't parse remote source address: %s", args.source_arg);
             return 1;
         }
     }
 
     if (args.repair_given) {
-        if (!packet::parse_address(args.repair_arg, config.repair_port.address)) {
+        if (!packet::parse_address(args.repair_arg, repair_port.address)) {
             roc_log(LogError, "can't parse remote repair address: %s", args.repair_arg);
             return 1;
         }
@@ -70,20 +73,20 @@ int main(int argc, char** argv) {
     switch ((unsigned)args.fec_arg) {
     case fec_arg_none:
         config.fec.codec = fec::NoCodec;
-        config.source_port.protocol = pipeline::Proto_RTP;
-        config.repair_port.protocol = pipeline::Proto_RTP;
+        source_port.protocol = pipeline::Proto_RTP;
+        repair_port.protocol = pipeline::Proto_RTP;
         break;
 
     case fec_arg_rs:
         config.fec.codec = fec::ReedSolomon8m;
-        config.source_port.protocol = pipeline::Proto_RTP_RSm8_Source;
-        config.repair_port.protocol = pipeline::Proto_RSm8_Repair;
+        source_port.protocol = pipeline::Proto_RTP_RSm8_Source;
+        repair_port.protocol = pipeline::Proto_RSm8_Repair;
         break;
 
     case fec_arg_ldpc:
         config.fec.codec = fec::LDPCStaircase;
-        config.source_port.protocol = pipeline::Proto_RTP_LDPC_Source;
-        config.repair_port.protocol = pipeline::Proto_LDPC_Repair;
+        source_port.protocol = pipeline::Proto_RTP_LDPC_Source;
+        repair_port.protocol = pipeline::Proto_LDPC_Repair;
         break;
 
     default:
@@ -187,8 +190,9 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    pipeline::Sender sender(config, *udp_sender, *udp_sender, format_map, packet_pool,
-                            byte_buffer_pool, sample_buffer_pool, allocator);
+    pipeline::Sender sender(config, source_port, *udp_sender, repair_port, *udp_sender,
+                            format_map, packet_pool, byte_buffer_pool, sample_buffer_pool,
+                            allocator);
     if (!sender.valid()) {
         roc_log(LogError, "can't create sender pipeline");
         return 1;

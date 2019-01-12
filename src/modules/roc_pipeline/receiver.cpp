@@ -25,11 +25,11 @@ Receiver::Receiver(const ReceiverConfig& config,
     , byte_buffer_pool_(byte_buffer_pool)
     , sample_buffer_pool_(sample_buffer_pool)
     , allocator_(allocator)
-    , ticker_(config.sample_rate)
+    , ticker_(config.output.sample_rate)
     , audio_reader_(NULL)
     , config_(config)
     , timestamp_(0)
-    , num_channels_(packet::num_channels(config.channels))
+    , num_channels_(packet::num_channels(config.output.channels))
     , active_cond_(control_mutex_) {
     mixer_.reset(new (allocator_) audio::Mixer(sample_buffer_pool), allocator_);
     if (!mixer_) {
@@ -37,7 +37,7 @@ Receiver::Receiver(const ReceiverConfig& config,
     }
     audio::IReader* areader = mixer_.get();
 
-    if (config.poisoning) {
+    if (config.output.poisoning) {
         poisoner_.reset(new (allocator_) audio::PoisonReader(*areader), allocator_);
         if (!poisoner_) {
             return;
@@ -98,7 +98,7 @@ void Receiver::write(const packet::PacketPtr& packet) {
 void Receiver::read(audio::Frame& frame) {
     core::Mutex::Lock lock(pipeline_mutex_);
 
-    if (config_.timing) {
+    if (config_.output.timing) {
         ticker_.wait(timestamp_);
     }
 
@@ -212,10 +212,9 @@ bool Receiver::create_session_(const packet::PacketPtr& packet) {
 
     const packet::Address src_address = packet->udp()->src_addr;
 
-    core::SharedPtr<ReceiverSession> sess = new (allocator_)
-        ReceiverSession(config_.default_session, packet->rtp()->payload_type,
-                        config_.sample_rate, config_.poisoning, src_address, format_map_,
-                        packet_pool_, byte_buffer_pool_, sample_buffer_pool_, allocator_);
+    core::SharedPtr<ReceiverSession> sess = new (allocator_) ReceiverSession(
+        config_.default_session, config_.output, packet->rtp()->payload_type, src_address,
+        format_map_, packet_pool_, byte_buffer_pool_, sample_buffer_pool_, allocator_);
 
     if (!sess || !sess->valid()) {
         roc_log(LogError, "receiver: can't create session, initialization failed");

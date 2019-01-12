@@ -114,7 +114,7 @@ bool config_receiver(pipeline::ReceiverConfig& out, const roc_receiver_config& i
     }
 
     if (in.sample_rate) {
-        out.sample_rate = in.sample_rate;
+        out.output.sample_rate = in.sample_rate;
     }
 
     switch ((unsigned)in.fec_scheme) {
@@ -137,8 +137,8 @@ bool config_receiver(pipeline::ReceiverConfig& out, const roc_receiver_config& i
         out.default_session.fec.n_repair_packets = in.n_repair_packets;
     }
 
-    out.default_session.resampling = !(in.flags & ROC_FLAG_DISABLE_RESAMPLER);
-    out.timing = (in.flags & ROC_FLAG_ENABLE_TIMER);
+    out.output.resampling = !(in.flags & ROC_FLAG_DISABLE_RESAMPLER);
+    out.output.timing = (in.flags & ROC_FLAG_ENABLE_TIMER);
 
     return true;
 }

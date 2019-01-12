@@ -39,7 +39,9 @@ class Sender : public audio::IWriter, public core::NonCopyable<> {
 public:
     //! Initialize.
     Sender(const SenderConfig& config,
+           const PortConfig& source_port,
            packet::IWriter& source_writer,
+           const PortConfig& repair_port,
            packet::IWriter& repair_writer,
            const rtp::FormatMap& format_map,
            packet::PacketPool& packet_pool,

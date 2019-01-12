@@ -61,7 +61,7 @@ int main(int argc, char** argv) {
 
     pipeline::ReceiverConfig config;
 
-    config.poisoning = args.poisoning_flag;
+    config.output.poisoning = args.poisoning_flag;
 
     switch ((unsigned)args.fec_arg) {
     case fec_arg_none:
@@ -110,8 +110,8 @@ int main(int argc, char** argv) {
         config.default_session.fec.n_repair_packets = (size_t)args.nbrpr_arg;
     }
 
-    config.default_session.resampling = !args.no_resampling_flag;
-    config.default_session.beeping = args.beeping_flag;
+    config.output.resampling = !args.no_resampling_flag;
+    config.output.beeping = args.beeping_flag;
 
     size_t sample_rate = 0;
     if (args.rate_given) {
@@ -121,7 +121,7 @@ int main(int argc, char** argv) {
         }
         sample_rate = (size_t)args.rate_arg;
     } else {
-        if (!config.default_session.resampling) {
+        if (!config.output.resampling) {
             sample_rate = pipeline::DefaultSampleRate;
         }
     }
@@ -218,7 +218,7 @@ int main(int argc, char** argv) {
     core::BufferPool<audio::sample_t> sample_buffer_pool(allocator, MaxFrameSize, 1);
     packet::PacketPool packet_pool(allocator, 1);
 
-    sndio::SoxWriter writer(allocator, config.channels, sample_rate);
+    sndio::SoxWriter writer(allocator, config.output.channels, sample_rate);
 
     if (!writer.open(args.output_arg, args.type_arg)) {
         roc_log(LogError, "can't open output file or device: %s %s", args.output_arg,
@@ -226,10 +226,10 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    config.timing = writer.is_file();
-    config.sample_rate = writer.sample_rate();
+    config.output.timing = writer.is_file();
+    config.output.sample_rate = writer.sample_rate();
 
-    if (config.sample_rate == 0) {
+    if (config.output.sample_rate == 0) {
         roc_log(LogError, "can't detect output sample rate, try to set it "
                           "explicitly with --rate option");
         return 1;
