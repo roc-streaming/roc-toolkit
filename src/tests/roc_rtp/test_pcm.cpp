@@ -41,6 +41,10 @@ TEST_GROUP(pcm) {
         core::Slice<uint8_t> bp = new (buffer_pool) core::Buffer<uint8_t>(buffer_pool);
         CHECK(bp);
 
+        for (size_t n = 0; n < bp.size(); n++) {
+            bp.data()[n] = 0;
+        }
+
         PCMEncoder<Sample, NumCh> encoder;
         const size_t payload_size = encoder.payload_size(num_samples);
 
