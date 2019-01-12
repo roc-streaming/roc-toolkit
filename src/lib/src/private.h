@@ -60,7 +60,11 @@ struct roc_sender {
     roc_context& context;
 
     roc::rtp::FormatMap format_map;
+
     roc::pipeline::SenderConfig config;
+
+    roc::pipeline::PortConfig source_port;
+    roc::pipeline::PortConfig repair_port;
 
     roc::core::UniquePtr<roc::pipeline::Sender> sender;
     roc::packet::IWriter* writer;

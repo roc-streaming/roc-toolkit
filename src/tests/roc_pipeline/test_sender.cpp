@@ -55,9 +55,12 @@ rtp::PCMDecoder<int16_t, NumCh> pcm_decoder;
 TEST_GROUP(sender) {
     SenderConfig config;
 
+    PortConfig source_port;
+    PortConfig repair_port;
+
     void setup() {
-        config.source_port.address = new_address(1);
-        config.source_port.protocol = Proto_RTP;
+        source_port.address = new_address(1);
+        source_port.protocol = Proto_RTP;
 
         config.channels = ChMask;
         config.samples_per_packet = SamplesPerPacket;
@@ -70,8 +73,8 @@ TEST_GROUP(sender) {
 TEST(sender, write) {
     packet::Queue queue;
 
-    Sender sender(config, queue, queue, format_map, packet_pool, byte_buffer_pool,
-                  sample_buffer_pool, allocator);
+    Sender sender(config, source_port, queue, repair_port, queue, format_map, packet_pool,
+                  byte_buffer_pool, sample_buffer_pool, allocator);
 
     CHECK(sender.valid());
 
@@ -82,7 +85,7 @@ TEST(sender, write) {
     }
 
     PacketReader packet_reader(queue, rtp_parser, pcm_decoder, packet_pool, PayloadType,
-                               config.source_port.address);
+                               source_port.address);
 
     for (size_t np = 0; np < ManyFrames / FramesPerPacket; np++) {
         packet_reader.read_packet(SamplesPerPacket, ChMask);
@@ -100,8 +103,8 @@ TEST(sender, frame_size_small) {
 
     packet::Queue queue;
 
-    Sender sender(config, queue, queue, format_map, packet_pool, byte_buffer_pool,
-                  sample_buffer_pool, allocator);
+    Sender sender(config, source_port, queue, repair_port, queue, format_map, packet_pool,
+                  byte_buffer_pool, sample_buffer_pool, allocator);
 
     CHECK(sender.valid());
 
@@ -112,7 +115,7 @@ TEST(sender, frame_size_small) {
     }
 
     PacketReader packet_reader(queue, rtp_parser, pcm_decoder, packet_pool, PayloadType,
-                               config.source_port.address);
+                               source_port.address);
 
     for (size_t np = 0; np < ManySmallFrames / SmallFramesPerPacket; np++) {
         packet_reader.read_packet(SamplesPerPacket, ChMask);
@@ -130,8 +133,8 @@ TEST(sender, frame_size_large) {
 
     packet::Queue queue;
 
-    Sender sender(config, queue, queue, format_map, packet_pool, byte_buffer_pool,
-                  sample_buffer_pool, allocator);
+    Sender sender(config, source_port, queue, repair_port, queue, format_map, packet_pool,
+                  byte_buffer_pool, sample_buffer_pool, allocator);
 
     CHECK(sender.valid());
 
@@ -142,7 +145,7 @@ TEST(sender, frame_size_large) {
     }
 
     PacketReader packet_reader(queue, rtp_parser, pcm_decoder, packet_pool, PayloadType,
-                               config.source_port.address);
+                               source_port.address);
 
     for (size_t np = 0; np < ManyLargeFrames * PacketsPerLargeFrame; np++) {
         packet_reader.read_packet(SamplesPerPacket, ChMask);

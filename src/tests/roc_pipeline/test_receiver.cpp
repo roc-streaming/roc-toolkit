@@ -68,8 +68,8 @@ TEST_GROUP(receiver) {
     PortConfig port2;
 
     void setup() {
-        config.sample_rate = SampleRate;
-        config.channels = ChMask;
+        config.output.sample_rate = SampleRate;
+        config.output.channels = ChMask;
 
         config.default_session.channels = ChMask;
         config.default_session.samples_per_packet = SamplesPerPacket;

@@ -48,10 +48,9 @@ namespace pipeline {
 class ReceiverSession : public core::RefCnt<ReceiverSession>, public core::ListNode {
 public:
     //! Initialize.
-    ReceiverSession(const SessionConfig& config,
+    ReceiverSession(const ReceiverSessionConfig& session_config,
+                    const ReceiverOutputConfig& output_config,
                     unsigned int payload_type,
-                    size_t out_sample_rate,
-                    bool poisoning,
                     const packet::Address& src_address,
                     const rtp::FormatMap& format_map,
                     packet::PacketPool& packet_pool,

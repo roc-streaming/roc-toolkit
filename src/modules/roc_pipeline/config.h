@@ -79,10 +79,10 @@ struct PortConfig {
     }
 };
 
-//! Session parameters.
+//! Receiver session parameters.
 //! @remarks
 //!  Defines per-session parameters on the receiver side.
-struct SessionConfig {
+struct ReceiverSessionConfig {
     //! Channel mask.
     packet::channel_mask_t channels;
 
@@ -107,19 +107,11 @@ struct SessionConfig {
     //! Resampler parameters.
     audio::ResamplerConfig resampler;
 
-    //! Perform resampling to to compensate sender and receiver frequency difference.
-    bool resampling;
-
-    //! Insert weird beeps instead of silence on packet loss.
-    bool beeping;
-
-    SessionConfig()
+    ReceiverSessionConfig()
         : channels(DefaultChannelMask)
         , samples_per_packet(DefaultPacketSize)
         , latency(DefaultPacketSize * 27)
-        , watchdog(DefaultSampleRate)
-        , resampling(false)
-        , beeping(false) {
+        , watchdog(DefaultSampleRate) {
         latency_monitor.min_latency =
             (packet::signed_timestamp_t)latency * DefaultMinLatency;
         latency_monitor.max_latency =
@@ -127,16 +119,18 @@ struct SessionConfig {
     }
 };
 
-//! Receiver parameters.
-struct ReceiverConfig {
-    //! Default parameters for session.
-    SessionConfig default_session;
-
+//! Receiver output parameters.
+//! @remarks
+//!  Defines common output parameters on the receiver side.
+struct ReceiverOutputConfig {
     //! Number of samples per second per channel.
     size_t sample_rate;
 
     //! Channel mask.
     packet::channel_mask_t channels;
+
+    //! Perform resampling to compensate sender and receiver frequency difference.
+    bool resampling;
 
     //! Constrain receiver speed using a CPU timer according to the sample rate.
     bool timing;
@@ -144,22 +138,30 @@ struct ReceiverConfig {
     //! Fill uninitialized data with large values to make them more noticeable.
     bool poisoning;
 
-    ReceiverConfig()
+    //! Insert weird beeps instead of silence on packet loss.
+    bool beeping;
+
+    ReceiverOutputConfig()
         : sample_rate(DefaultSampleRate)
         , channels(DefaultChannelMask)
+        , resampling(false)
         , timing(false)
-        , poisoning(false) {
+        , poisoning(false)
+        , beeping(false) {
     }
+};
+
+//! Receiver parameters.
+struct ReceiverConfig {
+    //! Default parameters for receiver session.
+    ReceiverSessionConfig default_session;
+
+    //! Parameters for receiver output.
+    ReceiverOutputConfig output;
 };
 
 //! Sender parameters.
 struct SenderConfig {
-    //! Parameters for the port to which source packets are sent.
-    PortConfig source_port;
-
-    //! Parameters for the port to which repair packets are sent.
-    PortConfig repair_port;
-
     //! Resampler parameters.
     audio::ResamplerConfig resampler;
 

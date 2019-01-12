@@ -80,8 +80,10 @@ TEST_GROUP(sender_receiver) {
         PortConfig source_port = source_port_config(flags);
         PortConfig repair_port = repair_port_config(flags);
 
-        Sender sender(sender_config(flags, source_port, repair_port),
+        Sender sender(sender_config(flags),
+                      source_port,
                       queue,
+                      repair_port,
                       queue,
                       format_map,
                       packet_pool,
@@ -164,13 +166,8 @@ TEST_GROUP(sender_receiver) {
         return port;
     }
 
-    SenderConfig sender_config(int flags,
-                               const PortConfig& source_port,
-                               const PortConfig& repair_port) {
+    SenderConfig sender_config(int flags) {
         SenderConfig config;
-
-        config.source_port = source_port;
-        config.repair_port = repair_port;
 
         config.channels = ChMask;
         config.samples_per_packet = SamplesPerPacket;
@@ -186,8 +183,8 @@ TEST_GROUP(sender_receiver) {
     ReceiverConfig receiver_config(int flags) {
         ReceiverConfig config;
 
-        config.sample_rate = SampleRate;
-        config.channels = ChMask;
+        config.output.sample_rate = SampleRate;
+        config.output.channels = ChMask;
 
         config.default_session.channels = ChMask;
         config.default_session.samples_per_packet = SamplesPerPacket;

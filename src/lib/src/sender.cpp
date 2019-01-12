@@ -19,9 +19,10 @@ namespace {
 bool init_pipeline(roc_sender* sender) {
     sender->sender.reset(
         new (sender->context.allocator) pipeline::Sender(
-            sender->config, *sender->writer, *sender->writer, sender->format_map,
-            sender->context.packet_pool, sender->context.byte_buffer_pool,
-            sender->context.sample_buffer_pool, sender->context.allocator),
+            sender->config, sender->source_port, *sender->writer, sender->repair_port,
+            *sender->writer, sender->format_map, sender->context.packet_pool,
+            sender->context.byte_buffer_pool, sender->context.sample_buffer_pool,
+            sender->context.allocator),
         sender->context.allocator);
 
     if (!sender->sender) {
@@ -45,12 +46,12 @@ bool init_port(roc_sender* sender, const pipeline::PortConfig& pconfig) {
     case pipeline::Proto_RTP:
     case pipeline::Proto_RTP_RSm8_Source:
     case pipeline::Proto_RTP_LDPC_Source:
-        if (sender->config.source_port.protocol != pipeline::Proto_None) {
+        if (sender->source_port.protocol != pipeline::Proto_None) {
             roc_log(LogError, "roc_sender: source port is already connected");
             return false;
         }
 
-        sender->config.source_port = pconfig;
+        sender->source_port = pconfig;
 
         roc_log(LogInfo, "roc_sender: connected source port to %s %s",
                 packet::address_to_str(pconfig.address).c_str(),
@@ -60,7 +61,7 @@ bool init_port(roc_sender* sender, const pipeline::PortConfig& pconfig) {
 
     case pipeline::Proto_RSm8_Repair:
     case pipeline::Proto_LDPC_Repair:
-        if (sender->config.repair_port.protocol != pipeline::Proto_None) {
+        if (sender->repair_port.protocol != pipeline::Proto_None) {
             roc_log(LogError, "roc_sender: repair port is already connected");
             return false;
         }
@@ -71,7 +72,7 @@ bool init_port(roc_sender* sender, const pipeline::PortConfig& pconfig) {
             return false;
         }
 
-        sender->config.repair_port = pconfig;
+        sender->repair_port = pconfig;
 
         roc_log(LogInfo, "roc_sender: connected repair port to %s %s",
                 packet::address_to_str(pconfig.address).c_str(),
@@ -85,12 +86,12 @@ bool init_port(roc_sender* sender, const pipeline::PortConfig& pconfig) {
 }
 
 bool check_connected(roc_sender* sender) {
-    if (sender->config.source_port.protocol == pipeline::Proto_None) {
+    if (sender->source_port.protocol == pipeline::Proto_None) {
         roc_log(LogError, "roc_sender: source port is not connected");
         return false;
     }
 
-    if (sender->config.repair_port.protocol == pipeline::Proto_None
+    if (sender->repair_port.protocol == pipeline::Proto_None
         && sender->config.fec.codec != fec::NoCodec) {
         roc_log(LogError, "roc_sender: repair port is not connected");
         return false;

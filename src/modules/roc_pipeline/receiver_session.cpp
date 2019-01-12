@@ -17,10 +17,9 @@
 namespace roc {
 namespace pipeline {
 
-ReceiverSession::ReceiverSession(const SessionConfig& config,
+ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
+                                 const ReceiverOutputConfig& output_config,
                                  const unsigned int payload_type,
-                                 const size_t out_sample_rate,
-                                 bool poisoning,
                                  const packet::Address& src_address,
                                  const rtp::FormatMap& format_map,
                                  packet::PacketPool& packet_pool,
@@ -53,15 +52,16 @@ ReceiverSession::ReceiverSession(const SessionConfig& config,
 
     packet::IReader* preader = source_queue_.get();
 
-    delayed_reader_.reset(
-        new (allocator_) packet::DelayedReader(*preader, config.latency), allocator_);
+    delayed_reader_.reset(new (allocator_)
+                              packet::DelayedReader(*preader, session_config.latency),
+                          allocator_);
     if (!delayed_reader_) {
         return;
     }
     preader = delayed_reader_.get();
 
     validator_.reset(new (allocator_)
-                         rtp::Validator(*preader, *format, config.rtp_validator),
+                         rtp::Validator(*preader, *format, session_config.rtp_validator),
                      allocator_);
     if (!validator_) {
         return;
@@ -69,7 +69,7 @@ ReceiverSession::ReceiverSession(const SessionConfig& config,
     preader = validator_.get();
 
 #ifdef ROC_TARGET_OPENFEC
-    if (config.fec.codec != fec::NoCodec) {
+    if (session_config.fec.codec != fec::NoCodec) {
         repair_queue_.reset(new (allocator_) packet::SortedQueue(0), allocator_);
         if (!repair_queue_) {
             return;
@@ -79,9 +79,9 @@ ReceiverSession::ReceiverSession(const SessionConfig& config,
         }
 
         core::UniquePtr<fec::OFDecoder> fec_decoder(
-            new (allocator_)
-                fec::OFDecoder(config.fec, format->size(config.samples_per_packet),
-                               byte_buffer_pool, allocator_),
+            new (allocator_) fec::OFDecoder(
+                session_config.fec, format->size(session_config.samples_per_packet),
+                byte_buffer_pool, allocator_),
             allocator_);
         if (!fec_decoder || !fec_decoder->valid()) {
             return;
@@ -94,7 +94,7 @@ ReceiverSession::ReceiverSession(const SessionConfig& config,
         }
 
         fec_reader_.reset(new (allocator_) fec::Reader(
-                              config.fec, *fec_decoder_, *preader, *repair_queue_,
+                              session_config.fec, *fec_decoder_, *preader, *repair_queue_,
                               *fec_parser_, packet_pool, allocator_),
                           allocator_);
         if (!fec_reader_ || !fec_reader_->valid()) {
@@ -102,8 +102,8 @@ ReceiverSession::ReceiverSession(const SessionConfig& config,
         }
         preader = fec_reader_.get();
 
-        fec_validator_.reset(new (allocator_)
-                                 rtp::Validator(*preader, *format, config.rtp_validator),
+        fec_validator_.reset(new (allocator_) rtp::Validator(
+                                 *preader, *format, session_config.rtp_validator),
                              allocator_);
         if (!fec_validator_) {
             return;
@@ -117,8 +117,9 @@ ReceiverSession::ReceiverSession(const SessionConfig& config,
         return;
     }
 
-    depacketizer_.reset(new (allocator_) audio::Depacketizer(
-                            *preader, *decoder_, config.channels, config.beeping),
+    depacketizer_.reset(new (allocator_) audio::Depacketizer(*preader, *decoder_,
+                                                             session_config.channels,
+                                                             output_config.beeping),
                         allocator_);
     if (!depacketizer_) {
         return;
@@ -126,11 +127,12 @@ ReceiverSession::ReceiverSession(const SessionConfig& config,
 
     audio::IReader* areader = depacketizer_.get();
 
-    if (config.watchdog.silence_timeout != 0 || config.watchdog.drops_timeout != 0
-        || config.watchdog.frame_status_window != 0) {
+    if (session_config.watchdog.silence_timeout != 0
+        || session_config.watchdog.drops_timeout != 0
+        || session_config.watchdog.frame_status_window != 0) {
         watchdog_.reset(new (allocator_) audio::Watchdog(
-                            *areader, packet::num_channels(config.channels),
-                            config.watchdog, allocator_),
+                            *areader, packet::num_channels(session_config.channels),
+                            session_config.watchdog, allocator_),
                         allocator_);
         if (!watchdog_ || !watchdog_->valid()) {
             return;
@@ -138,8 +140,8 @@ ReceiverSession::ReceiverSession(const SessionConfig& config,
         areader = watchdog_.get();
     }
 
-    if (config.resampling) {
-        if (poisoning) {
+    if (output_config.resampling) {
+        if (output_config.poisoning) {
             resampler_poisoner_.reset(new (allocator_) audio::PoisonReader(*areader),
                                       allocator_);
             if (!resampler_poisoner_) {
@@ -148,8 +150,8 @@ ReceiverSession::ReceiverSession(const SessionConfig& config,
             areader = resampler_poisoner_.get();
         }
         resampler_.reset(new (allocator_) audio::ResamplerReader(
-                             *areader, sample_buffer_pool, allocator, config.resampler,
-                             config.channels),
+                             *areader, sample_buffer_pool, allocator,
+                             session_config.resampler, session_config.channels),
                          allocator_);
         if (!resampler_ || !resampler_->valid()) {
             return;
@@ -157,7 +159,7 @@ ReceiverSession::ReceiverSession(const SessionConfig& config,
         areader = resampler_.get();
     }
 
-    if (poisoning) {
+    if (output_config.poisoning) {
         session_poisoner_.reset(new (allocator_) audio::PoisonReader(*areader),
                                 allocator_);
         if (!session_poisoner_) {
@@ -168,8 +170,8 @@ ReceiverSession::ReceiverSession(const SessionConfig& config,
 
     latency_monitor_.reset(new (allocator_) audio::LatencyMonitor(
                                *source_queue_, *depacketizer_, resampler_.get(),
-                               config.latency_monitor, config.latency,
-                               format->sample_rate, out_sample_rate),
+                               session_config.latency_monitor, session_config.latency,
+                               format->sample_rate, output_config.sample_rate),
                            allocator_);
     if (!latency_monitor_ || !latency_monitor_->valid()) {
         return;
