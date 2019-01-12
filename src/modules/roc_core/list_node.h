@@ -26,26 +26,26 @@ namespace core {
 class ListNode : public NonCopyable<ListNode> {
 public:
     //! List node data.
-    struct ListData {
+    struct ListNodeData {
         //! Previous list element.
-        ListData* prev;
+        ListNodeData* prev;
 
         //! Next list element.
-        ListData* next;
+        ListNodeData* next;
 
         //! The list this node is member of.
         //! @remarks
         //!  NULL if node is not member of any list.
         void* list;
 
-        ListData()
+        ListNodeData()
             : prev(NULL)
             , next(NULL)
             , list(NULL) {
         }
 
         //! Get ListNode object that contains this ListData object.
-        ListNode* list_node() {
+        ListNode* container_of() {
             return ROC_CONTAINER_OF(this, ListNode, list_data_);
         }
     };
@@ -58,12 +58,12 @@ public:
     }
 
     //! Get list node data.
-    ListData* list_data() const {
+    ListNodeData* list_node_data() const {
         return &list_data_;
     }
 
 private:
-    mutable ListData list_data_;
+    mutable ListNodeData list_data_;
 };
 
 } // namespace core

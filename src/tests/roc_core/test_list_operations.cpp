@@ -56,7 +56,7 @@ TEST(list_operations, push_back_many) {
     LONGS_EQUAL(NumObjects, list.size());
 }
 
-TEST(list_operations, iterate) {
+TEST(list_operations, push_back_iterate) {
     for (size_t i = 0; i < NumObjects; ++i) {
         list.push_back(objects[i]);
     }
@@ -64,6 +64,39 @@ TEST(list_operations, iterate) {
     int i = 0;
     for (Object* obj = list.front(); obj != NULL; obj = list.nextof(*obj)) {
         POINTERS_EQUAL(&objects[i++], obj);
+    }
+}
+
+TEST(list_operations, push_front_one) {
+    list.push_front(objects[0]);
+
+    POINTERS_EQUAL(&objects[0], list.front());
+    POINTERS_EQUAL(&objects[0], list.back());
+
+    LONGS_EQUAL(1, list.size());
+}
+
+TEST(list_operations, push_front_many) {
+    for (size_t i = 0; i < NumObjects; ++i) {
+        LONGS_EQUAL(i, list.size());
+
+        list.push_front(objects[i]);
+    }
+
+    POINTERS_EQUAL(&objects[NumObjects - 1], list.front());
+    POINTERS_EQUAL(&objects[0], list.back());
+
+    LONGS_EQUAL(NumObjects, list.size());
+}
+
+TEST(list_operations, push_front_iterate) {
+    for (size_t i = 0; i < NumObjects; ++i) {
+        list.push_front(objects[i]);
+    }
+
+    int i = NumObjects - 1;
+    for (Object* obj = list.front(); obj != NULL; obj = list.nextof(*obj)) {
+        POINTERS_EQUAL(&objects[i--], obj);
     }
 }
 

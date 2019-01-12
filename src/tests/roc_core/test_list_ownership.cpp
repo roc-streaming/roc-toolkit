@@ -40,6 +40,18 @@ TEST(list_ownership, push_back) {
     LONGS_EQUAL(1, obj.getref());
 }
 
+TEST(list_ownership, push_front) {
+    Object obj;
+
+    TestList list;
+
+    LONGS_EQUAL(0, obj.getref());
+
+    list.push_front(obj);
+
+    LONGS_EQUAL(1, obj.getref());
+}
+
 TEST(list_ownership, insert) {
     Object obj1;
     Object obj2;

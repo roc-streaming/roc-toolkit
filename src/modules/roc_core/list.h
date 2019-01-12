@@ -45,16 +45,16 @@ public:
 
     //! Release ownership of containing objects.
     ~List() {
-        ListNode::ListData* next_data;
+        ListNode::ListNodeData* next_data;
 
-        for (ListNode::ListData* data = head_.next; data != &head_; data = next_data) {
+        for (ListNode::ListNodeData* data = head_.next; data != &head_; data = next_data) {
             roc_panic_if(data == NULL);
             check_is_member_(data, this);
 
             next_data = data->next;
             data->list = NULL;
 
-            Ownership<T>::release(*static_cast<T*>(data->list_node()));
+            Ownership<T>::release(*container_of_(data));
         }
 
         head_.list = NULL;
@@ -72,7 +72,7 @@ public:
         if (size_ == 0) {
             return NULL;
         }
-        return static_cast<T*>(head_.next->list_node());
+        return container_of_(head_.next);
     }
 
     //! Get last list element.
@@ -82,7 +82,7 @@ public:
         if (size_ == 0) {
             return NULL;
         }
-        return static_cast<T*>(head_.prev->list_node());
+        return container_of_(head_.prev);
     }
 
     //! Get list element next to given one.
@@ -94,13 +94,29 @@ public:
     //! @pre
     //!  @p element should be member of this list.
     Pointer nextof(T& element) const {
-        ListNode::ListData* data = element.list_data();
+        ListNode::ListNodeData* data = element.list_node_data();
         check_is_member_(data, this);
 
         if (data->next == &head_) {
             return NULL;
         }
-        return static_cast<T*>(data->next->list_node());
+        return container_of_(data->next);
+    }
+
+    //! Prepend element to list.
+    //!
+    //! @remarks
+    //!  - prepends @p element to list
+    //!  - acquires ownership of @p element
+    //!
+    //! @pre
+    //!  @p element should not be member of any list.
+    void push_front(T& element) {
+        if (size_ == 0) {
+            insert_(element, NULL);
+        } else {
+            insert_(element, container_of_(head_.next));
+        }
     }
 
     //! Append element to list.
@@ -137,7 +153,7 @@ public:
     //! @pre
     //!  @p element should be member of this list.
     void remove(T& element) {
-        ListNode::ListData* data = element.list_data();
+        ListNode::ListNodeData* data = element.list_node_data();
         check_is_member_(data, this);
 
         data->prev->next = data->next;
@@ -151,7 +167,11 @@ public:
     }
 
 private:
-    static void check_is_member_(const ListNode::ListData* data, const List* list) {
+    static inline T* container_of_(ListNode::ListNodeData* data) {
+        return static_cast<T*>(data->container_of());
+    }
+
+    static void check_is_member_(const ListNode::ListNodeData* data, const List* list) {
         if (data->list != list) {
             roc_panic("list element is member of wrong list: expected %p, got %p",
                       (const void*)list, (const void*)data->list);
@@ -159,12 +179,12 @@ private:
     }
 
     void insert_(T& element, T* before) {
-        ListNode::ListData* data_new = element.list_data();
+        ListNode::ListNodeData* data_new = element.list_node_data();
         check_is_member_(data_new, NULL);
 
-        ListNode::ListData* data_before;
+        ListNode::ListNodeData* data_before;
         if (before != NULL) {
-            data_before = before->list_data();
+            data_before = before->list_node_data();
             check_is_member_(data_before, this);
         } else {
             data_before = &head_;
@@ -183,7 +203,7 @@ private:
         Ownership<T>::acquire(element);
     }
 
-    ListNode::ListData head_;
+    ListNode::ListNodeData head_;
     size_t size_;
 };
 
