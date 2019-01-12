@@ -14,6 +14,7 @@
 #include "roc_core/buffer_pool.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_core/log.h"
+#include "roc_core/panic.h"
 #include "roc_core/random.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/thread.h"
@@ -114,7 +115,7 @@ private:
             frame.num_samples = frame_size_;
 
             const int ret = roc_sender_write(sndr_, &frame);
-            LONGS_EQUAL(0, ret);
+            roc_panic_if_not(ret == 0);
         }
     }
 
@@ -174,12 +175,12 @@ public:
             frame.samples = rx_buff;
             frame.num_samples = frame_size_;
 
-            LONGS_EQUAL(0, roc_receiver_read(recv_, &frame));
+            roc_panic_if_not(roc_receiver_read(recv_, &frame) == 0);
 
             if (seek_first) {
                 for (; i < frame_size_ && is_zero_(rx_buff[i]); i++, leading_zeros++) {
                 }
-                CHECK(leading_zeros < Timeout);
+                roc_panic_if_not(leading_zeros < Timeout);
                 if (i < frame_size_) {
                     seek_first = false;
                 }
@@ -188,7 +189,7 @@ public:
             if (!seek_first) {
                 for (; i < frame_size_; i++) {
                     if (sample_num >= total_samples_) {
-                        CHECK(is_zero_(rx_buff[i]));
+                        roc_panic_if_not(is_zero_(rx_buff[i]));
                         finish = true;
                         roc_log(LogDebug, "finish: leading_zeros: %lu, num_samples: %lu",
                                 (unsigned long)leading_zeros, (unsigned long)sample_num);
@@ -202,7 +203,7 @@ public:
                         snprintf(&sbuff[sbuff_i], sizeof(sbuff) - (size_t)sbuff_i,
                                  "original: %f,\treceived: %f\n",
                                  (double)samples_[sample_num], (double)rx_buff[i]);
-                        FAIL(sbuff);
+                        roc_panic("%s", sbuff);
                     } else {
                         sample_num++;
                     }
