@@ -843,7 +843,7 @@ if compiler in ['gcc', 'clang']:
     else:
         env.Append(CXXFLAGS=[
             '-fvisibility=hidden',
-            '-O2',
+            '-O3',
         ])
 else:
     env.Die("CXXFLAGS setup not implemented for compiler '%s'", compiler)
