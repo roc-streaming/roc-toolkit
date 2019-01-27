@@ -15,6 +15,7 @@
 #include "roc_core/crash.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_core/log.h"
+#include "roc_core/scoped_destructor.h"
 #include "roc_sndio/sox.h"
 #include "roc_sndio/sox_reader.h"
 #include "roc_sndio/sox_writer.h"
@@ -38,6 +39,9 @@ int main(int argc, char** argv) {
     if (code != 0) {
         return code;
     }
+
+    core::ScopedDestructor<gengetopt_args_info*, cmdline_parser_free>
+        args_destructor(&args);
 
     core::Logger::instance().set_level(
         LogLevel(core::DefaultLogLevel + args.verbose_given));

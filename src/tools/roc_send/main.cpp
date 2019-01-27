@@ -9,6 +9,7 @@
 #include "roc_core/crash.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_core/log.h"
+#include "roc_core/scoped_destructor.h"
 #include "roc_netio/transceiver.h"
 #include "roc_packet/address_to_str.h"
 #include "roc_packet/parse_address.h"
@@ -35,6 +36,9 @@ int main(int argc, char** argv) {
     if (code != 0) {
         return code;
     }
+
+    core::ScopedDestructor<gengetopt_args_info*, cmdline_parser_free>
+        args_destructor(&args);
 
     core::Logger::instance().set_level(
         LogLevel(core::DefaultLogLevel + args.verbose_given));
