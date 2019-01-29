@@ -49,9 +49,10 @@ Options
   --compiler=COMPILER         compiler name and optional version, e.g.
                                 'gcc-4.9', supported names: empty (detect what
                                 available), 'gcc', 'clang'
+  --sanitizers=SANITIZERS     list of gcc/clang sanitizers, supported names:
+                                '', 'all', 'undefined', 'address'
   --enable-debug              enable debug build
   --enable-debug-3rdparty     enable debug build for 3rdparty libraries
-  --enable-sanitizers         enable gcc/clang sanitizers
   --enable-werror             enable -Werror compiler option
   --enable-pulseaudio-modules
                               enable building of pulseaudio modules

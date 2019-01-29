@@ -44,7 +44,7 @@ def download_distdir(url, path, log, distdir):
     distfile = os.path.join(distdir, os.path.basename(path))
     if not os.path.exists(distfile):
         raise
-    print('[trying local] %s' % os.path.basename(distfile))
+    print('[found local] %s' % os.path.basename(distfile))
     with open(distfile, 'rb') as rp:
         with open(path, 'wb') as wp:
             wp.write(rp.read())

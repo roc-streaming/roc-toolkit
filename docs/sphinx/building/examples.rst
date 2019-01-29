@@ -43,7 +43,7 @@ Developer build:
 
 .. code::
 
-    $ scons -Q --enable-werror --enable-debug --enable-sanitizers
+    $ scons -Q --enable-werror --enable-debug --sanitizers=all
 
 Tests
 =====

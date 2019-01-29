@@ -12,7 +12,7 @@ scons -Q clean
 scons -Q \
       --enable-werror \
       --enable-debug \
-      --enable-sanitizers \
+      --sanitizers=address \
       --build-3rdparty=sox,openfec,cpputest \
       test
 

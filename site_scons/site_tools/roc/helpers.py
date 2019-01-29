@@ -302,6 +302,20 @@ def GenGetOpt(env, source, ver):
 
     return ret
 
+def ParseSanitizers(env, s, sanitizers):
+    if not s:
+        return []
+    ret = []
+    for name in s.split(','):
+        if name == 'all':
+            for name in sanitizers:
+                if not name in ret:
+                    ret.append(name)
+        else:
+            if not name in ret:
+                ret.append(name)
+    return ret
+
 def ParseThirdParties(env, s):
     ret = dict()
     if s:
@@ -473,6 +487,7 @@ def Init(env):
     env.AddMethod(Doxygen, 'Doxygen')
     env.AddMethod(Sphinx, 'Sphinx')
     env.AddMethod(GenGetOpt, 'GenGetOpt')
+    env.AddMethod(ParseSanitizers, 'ParseSanitizers')
     env.AddMethod(ParseThirdParties, 'ParseThirdParties')
     env.AddMethod(ThirdParty, 'ThirdParty')
     env.AddMethod(ImportThridParty, 'ImportThridParty')

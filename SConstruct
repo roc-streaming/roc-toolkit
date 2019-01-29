@@ -15,6 +15,12 @@ supported_compilers = [
     'clang',
 ]
 
+# supported sanitizers
+supported_sanitizers = [
+    'undefined',
+    'address',
+]
+
 # 3rdparty library default versions
 thirdparty_versions = {
     'uv':         '1.4.2',
@@ -81,6 +87,14 @@ AddOption('--compiler',
             "supported names: empty (detect what available), %s" % (
               ', '.join(["'%s'" % s for s in supported_compilers]))))
 
+AddOption('--sanitizers',
+          dest='sanitizers',
+          action='store',
+          type='string',
+          help="list of gcc/clang sanitizers, "+
+          "supported names: '', 'all', "+
+          ', '.join(["'%s'" % s for s in supported_sanitizers]))
+
 AddOption('--enable-debug',
           dest='enable_debug',
           action='store_true',
@@ -90,11 +104,6 @@ AddOption('--enable-debug-3rdparty',
           dest='enable_debug_3rdparty',
           action='store_true',
           help='enable debug build for 3rdparty libraries')
-
-AddOption('--enable-sanitizers',
-          dest='enable_sanitizers',
-          action='store_true',
-          help='enable gcc/clang sanitizers')
 
 AddOption('--enable-werror',
           dest='enable_werror',
@@ -812,10 +821,6 @@ if compiler in ['gcc', 'clang']:
     ])
 
     if platform in ['linux']:
-        if not GetOption('enable_sanitizers'):
-            env.Append(LINKFLAGS=[
-                '-Wl,--no-undefined',
-            ])
         lib_env.Append(LINKFLAGS=[
             '-Wl,--version-script=' + env.File('#src/lib/roc.version').path
         ])
@@ -932,35 +937,29 @@ if compiler == 'clang':
             ]})
 
 if compiler in ['gcc', 'clang']:
-    if GetOption('enable_sanitizers'):
-        sanitizers = {
-            'undefined': 'ubsan',
-            'address':   'asan',
-        }
-
-        for name, lib in sanitizers.items():
-            san_env = env.Clone()
-            san_conf = Configure(san_env, custom_tests=env.CustomTests)
-
-            flags = ['-fsanitize=%s' % name]
-
-            san_env.Append(CFLAGS=flags)
-            san_env.Append(CXXFLAGS=flags)
-            san_env.Append(LINKFLAGS=flags)
-
-            if san_conf.CheckLib(lib):
-                env.AppendUnique(CFLAGS=flags)
-                env.AppendUnique(CXXFLAGS=flags)
-                env.AppendUnique(LINKFLAGS=flags)
-
-            san_conf.Finish()
-
     for e in [env, lib_env, tool_env, test_env, pulse_env]:
         for var in ['CXXFLAGS', 'CFLAGS']:
             e.Prepend(**{var:
                 [('-isystem', env.Dir(path).path) for path in \
                       e['CPPPATH'] + ['%s/tools' % build_dir]]
                       })
+
+sanitizers = env.ParseSanitizers(GetOption('sanitizers'), supported_sanitizers)
+if sanitizers:
+    if not compiler in ['gcc', 'clang']:
+        env.Die("sanitizers are not supported for compiler '%s'" % compiler)
+
+    for name in sanitizers:
+        flags = ['-fsanitize=%s' % name]
+
+        env.AppendUnique(CFLAGS=flags)
+        env.AppendUnique(CXXFLAGS=flags)
+        env.AppendUnique(LINKFLAGS=flags)
+else:
+    if platform in ['linux']:
+        env.Append(LINKFLAGS=[
+            '-Wl,--no-undefined',
+        ])
 
 if platform in ['linux']:
     tool_env.Append(LINKFLAGS=[

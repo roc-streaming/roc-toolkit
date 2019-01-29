@@ -13,7 +13,7 @@ scons -Q clean
 scons -Q \
       --enable-werror \
       --enable-debug \
-      --enable-sanitizers \
+      --sanitizers=all \
       --build-3rdparty=openfec,cpputest \
       test
 
