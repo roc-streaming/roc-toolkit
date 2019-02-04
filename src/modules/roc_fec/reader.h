@@ -67,7 +67,7 @@ private:
 
     void next_block_();
     void try_repair_();
-    bool check_packet_(const packet::PacketPtr&, size_t pos);
+    bool check_packet_(const packet::PacketPtr&);
 
     void fetch_packets_();
     void update_packets_();
@@ -75,9 +75,7 @@ private:
     void update_source_packets_();
     void update_repair_packets_();
 
-    // drops outdated packets from the repair_queue_ until meets packets from the
-    // current block or later
-    void skip_repair_packets_();
+    void drop_repair_packets_from_prev_blocks_();
 
     IDecoder& decoder_;
 
@@ -99,7 +97,7 @@ private:
     bool can_repair_;
 
     size_t next_packet_;
-    packet::seqnum_t cur_block_sn_;
+    packet::blknum_t cur_sbn_;
 
     bool has_source_;
     packet::source_t source_;
