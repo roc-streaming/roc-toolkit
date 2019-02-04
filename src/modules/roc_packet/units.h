@@ -87,6 +87,27 @@ static inline size_t num_channels(channel_mask_t ch_mask) {
     return n_ch;
 }
 
+//! FEC block number in a packet stream.
+typedef uint16_t blknum_t;
+
+//! FEC block numbers difference.
+typedef int16_t blknum_diff_t;
+
+//! Compute difference between two FEC block numbers.
+inline blknum_diff_t blknum_diff(blknum_t a, blknum_t b) {
+    return blknum_diff_t(a - b);
+}
+
+//! Check if a is before b taking possible wrap into account.
+inline bool blknum_lt(blknum_t a, blknum_t b) {
+    return blknum_diff(a, b) < 0;
+}
+
+//! Check if a is before or equal to b taking possible wrap into account.
+inline bool blknum_le(blknum_t a, blknum_t b) {
+    return blknum_diff(a, b) <= 0;
+}
+
 } // namespace packet
 } // namespace roc
 

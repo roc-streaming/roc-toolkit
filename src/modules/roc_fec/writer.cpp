@@ -35,7 +35,7 @@ Writer::Writer(const Config& config,
     , repair_packets_(allocator)
     , source_(0)
     , first_packet_(true)
-    , cur_block_source_sn_(0)
+    , cur_sbn_((packet::blknum_t)core::random(packet::blknum_t(-1)))
     , cur_block_repair_sn_((packet::seqnum_t)core::random(packet::seqnum_t(-1)))
     , cur_packet_(0)
     , valid_(false) {
@@ -68,15 +68,8 @@ void Writer::write(const packet::PacketPtr& pp) {
         } while (source_ == pp->rtp()->source);
     }
 
-    if (cur_packet_ == 0) {
-        cur_block_source_sn_ = pp->rtp()->seqnum;
-    }
-
     pp->add_flags(packet::Packet::FlagComposed);
-    fill_packet_fec_id_(pp, (packet::seqnum_t)cur_packet_);
-
-    roc_panic_if_not(packet::seqnum_le(
-        pp->rtp()->seqnum, packet::seqnum_t(pp->fec()->blknum + n_source_packets_)));
+    fill_packet_fec_fields_(pp, (packet::seqnum_t)cur_packet_);
 
     if (!source_composer_.compose(*pp)) {
         roc_panic("fec writer: can't compose packet");
@@ -87,34 +80,42 @@ void Writer::write(const packet::PacketPtr& pp) {
     cur_packet_++;
 
     if (cur_packet_ == n_source_packets_) {
-        for (packet::seqnum_t i = 0; i < n_repair_packets_; i++) {
-            packet::PacketPtr rp = make_repair_packet_(i);
-            if (!rp) {
-                roc_log(LogDebug, "fec writer: can't create repair packet");
-                continue;
-            }
-            repair_packets_[i] = rp;
-            encoder_.set(cur_packet_ + i, rp->fec()->payload);
-        }
-
-        encoder_.commit();
-
-        for (packet::seqnum_t i = 0; i < n_repair_packets_; i++) {
-            packet::PacketPtr rp = repair_packets_[i];
-            if (rp) {
-                writer_.write(repair_packets_[i]);
-                repair_packets_[i] = NULL;
-            }
-        }
-
-        encoder_.reset();
+        handle_next_block_();
 
         cur_block_repair_sn_ += n_repair_packets_;
+        cur_sbn_++;
+
         cur_packet_ = 0;
     }
 }
 
-packet::PacketPtr Writer::make_repair_packet_(packet::seqnum_t n) {
+void Writer::handle_next_block_() {
+    roc_log(LogTrace, "fec writer: next block: sbn=%lu", (unsigned long)cur_sbn_);
+
+    for (packet::seqnum_t i = 0; i < n_repair_packets_; i++) {
+        packet::PacketPtr rp = make_repair_packet_(i);
+        if (!rp) {
+            roc_log(LogDebug, "fec writer: can't create repair packet");
+            continue;
+        }
+        repair_packets_[i] = rp;
+        encoder_.set(n_source_packets_ + i, rp->fec()->payload);
+    }
+
+    encoder_.commit();
+
+    for (packet::seqnum_t i = 0; i < n_repair_packets_; i++) {
+        packet::PacketPtr rp = repair_packets_[i];
+        if (rp) {
+            writer_.write(repair_packets_[i]);
+            repair_packets_[i] = NULL;
+        }
+    }
+
+    encoder_.reset();
+}
+
+packet::PacketPtr Writer::make_repair_packet_(packet::seqnum_t pack_n) {
     packet::PacketPtr packet = new (packet_pool_) packet::Packet(packet_pool_);
     if (!packet) {
         roc_log(LogError, "fec writer: can't allocate packet");
@@ -147,25 +148,29 @@ packet::PacketPtr Writer::make_repair_packet_(packet::seqnum_t n) {
 
     packet->set_data(data);
 
-    packet::RTP& rtp = *packet->rtp();
-
-    rtp.source = source_;
-    rtp.seqnum = cur_block_repair_sn_ + n;
-    rtp.marker = (n == 0);
-    rtp.payload_type = 123;
-
-    fill_packet_fec_id_(packet, (packet::seqnum_t)n_source_packets_ + n);
+    fill_packet_rtp_fields_(packet, cur_block_repair_sn_ + pack_n, (pack_n == 0));
+    fill_packet_fec_fields_(packet, (packet::seqnum_t)n_source_packets_ + pack_n);
 
     return packet;
 }
 
-void Writer::fill_packet_fec_id_(const packet::PacketPtr& packet,
-                                 packet::seqnum_t pack_n) {
+void Writer::fill_packet_rtp_fields_(const packet::PacketPtr& packet,
+                                     packet::seqnum_t sn, bool marker) {
+    packet::RTP& rtp = *packet->rtp();
+
+    rtp.source = source_;
+    rtp.seqnum = sn;
+    rtp.marker = marker;
+    rtp.payload_type = 123;
+}
+
+void Writer::fill_packet_fec_fields_(const packet::PacketPtr& packet,
+                                     packet::seqnum_t pack_n) {
     packet::FEC& fec = *packet->fec();
 
-    fec.blknum = cur_block_source_sn_;
+    fec.source_block_number = cur_sbn_;
     fec.source_block_length = n_source_packets_;
-    fec.repair_symbol_id = pack_n;
+    fec.encoding_symbol_id = pack_n;
 }
 
 } // namespace fec

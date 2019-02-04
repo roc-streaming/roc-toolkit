@@ -34,7 +34,7 @@ Reader::Reader(const Config& config,
     , started_(false)
     , can_repair_(false)
     , next_packet_(0)
-    , cur_block_sn_(0)
+    , cur_sbn_(0)
     , has_source_(false)
     , source_(0)
     , n_packets_(0) {
@@ -82,18 +82,19 @@ packet::PacketPtr Reader::read_() {
                 source_ = pp->rtp()->source;
                 has_source_ = true;
             }
-            cur_block_sn_ = pp->rtp()->seqnum;
-            skip_repair_packets_();
+            cur_sbn_ = pp->fec()->source_block_number;
+            drop_repair_packets_from_prev_blocks_();
         }
 
-        if (!pp || pp->fec()->repair_symbol_id > 0) {
+        if (!pp || pp->fec()->encoding_symbol_id > 0) {
             return source_queue_.read();
         }
 
-        roc_log(LogDebug,
-                "fec reader: got first packet in a block, start decoding:"
-                " n_packets_before=%u blk_sn=%lu",
-                n_packets_, (unsigned long)cur_block_sn_);
+        roc_log(LogDebug, "fec reader: got first packet in a block, start decoding:"
+                          " n_packets_before=%u sn=%lu sbn=%lu",
+                          n_packets_,
+                          (unsigned long)pp->rtp()->seqnum,
+                          (unsigned long)cur_sbn_);
 
         started_ = true;
     }
@@ -139,7 +140,7 @@ packet::PacketPtr Reader::get_next_packet_() {
 }
 
 void Reader::next_block_() {
-    roc_log(LogTrace, "fec reader: next block: sn=%lu", (unsigned long)cur_block_sn_);
+    roc_log(LogTrace, "fec reader: next block: sbn=%lu", (unsigned long)cur_sbn_);
 
     for (size_t n = 0; n < source_block_.size(); n++) {
         source_block_[n] = NULL;
@@ -149,7 +150,7 @@ void Reader::next_block_() {
         repair_block_[n] = NULL;
     }
 
-    cur_block_sn_ += source_block_.size();
+    cur_sbn_++;
     next_packet_ = 0;
 
     can_repair_ = false;
@@ -198,7 +199,7 @@ void Reader::try_repair_() {
 
         pp->set_data(buffer);
 
-        if (!check_packet_(pp, n)) {
+        if (!check_packet_(pp)) {
             roc_log(LogDebug, "fec reader: dropping unexpected repaired packet");
             continue;
         }
@@ -210,11 +211,11 @@ void Reader::try_repair_() {
     can_repair_ = false;
 }
 
-bool Reader::check_packet_(const packet::PacketPtr& pp, size_t pos) {
+bool Reader::check_packet_(const packet::PacketPtr& pp) {
     roc_panic_if_not(has_source_);
 
     if (!pp->rtp()) {
-        roc_log(LogDebug, "fec reader: repaired unexcpeted non-rtp packet");
+        roc_log(LogDebug, "fec reader: repaired unexpected non-rtp packet");
         return false;
     }
 
@@ -224,14 +225,6 @@ bool Reader::check_packet_(const packet::PacketPtr& pp, size_t pos) {
                 " got=%lu expected=%lu",
                 (unsigned long)pp->rtp()->source, (unsigned long)source_);
         return (alive_ = false);
-    }
-
-    if (pp->rtp()->seqnum != packet::seqnum_t(cur_block_sn_ + pos)) {
-        roc_log(LogDebug,
-                "fec reader: repaired packet has bad seqnum: got=%lu expected=%lu",
-                (unsigned long)pp->rtp()->seqnum,
-                (unsigned long)packet::seqnum_t(cur_block_sn_ + pos));
-        return false;
     }
 
     return true;
@@ -284,28 +277,25 @@ void Reader::update_source_packets_() {
             roc_panic("fec reader: unexpected non-rtp source packet");
         }
 
-        if (!packet::seqnum_lt(fec->blknum,
-                               packet::seqnum_t(cur_block_sn_ + source_block_.size()))) {
+        if (!packet::blknum_le(fec->source_block_number, cur_sbn_)) {
             break;
         }
 
         source_queue_.read();
         n_fetched++;
 
-        if (packet::seqnum_lt(fec->blknum, cur_block_sn_)) {
-            roc_log(LogTrace,
-                    "fec reader: dropping source packet from previous block:"
-                    " blk_sn=%lu pkt_sn=%lu",
-                    (unsigned long)cur_block_sn_, (unsigned long)rtp->seqnum);
+        if (packet::blknum_lt(fec->source_block_number, cur_sbn_)) {
+            roc_log(LogTrace, "fec reader: dropping source packet from previous block:"
+                              " cur_sbn=%lu pkt_sbn=%lu pkt_sn=%lu",
+                              (unsigned long)cur_sbn_,
+                              (unsigned long)fec->source_block_number,
+                              (unsigned long)rtp->seqnum);
             n_dropped++;
             continue;
         }
 
-        roc_panic_if(fec->blknum != cur_block_sn_);
-        const size_t p_num = fec->repair_symbol_id;
-
-        roc_panic_if((packet::seqnum_diff_t)p_num
-                     != packet::seqnum_diff(rtp->seqnum, cur_block_sn_));
+        roc_panic_if(fec->source_block_number != cur_sbn_);
+        const size_t p_num = fec->encoding_symbol_id;
 
         if (!source_block_[p_num]) {
             can_repair_ = true;
@@ -334,25 +324,24 @@ void Reader::update_repair_packets_() {
             roc_panic("fec reader: unexpected non-fec repair packet");
         }
 
-        if (!packet::seqnum_lt(fec->blknum,
-                               packet::seqnum_t(cur_block_sn_ + source_block_.size()))) {
+        if (!packet::blknum_le(fec->source_block_number, cur_sbn_)) {
             break;
         }
 
         repair_queue_.read();
         n_fetched++;
 
-        if (packet::seqnum_lt(fec->blknum, cur_block_sn_)) {
-            roc_log(LogTrace,
-                    "fec reader: dropping repair packet from previous block:"
-                    " blk_sn=%lu pkt_data_blk=%lu",
-                    (unsigned long)cur_block_sn_, (unsigned long)fec->blknum);
+        if (packet::blknum_lt(fec->source_block_number, cur_sbn_)) {
+            roc_log(LogTrace, "fec reader: dropping repair packet from previous block:"
+                              " cur_sbn=%lu pkt_sbn=%lu",
+                              (unsigned long)cur_sbn_,
+                              (unsigned long)fec->source_block_number);
             n_dropped++;
             continue;
         }
 
-        roc_panic_if(fec->repair_symbol_id < fec->source_block_length);
-        const size_t p_num = fec->repair_symbol_id - fec->source_block_length;
+        roc_panic_if(fec->encoding_symbol_id < fec->source_block_length);
+        const size_t p_num = fec->encoding_symbol_id - fec->source_block_length;
         roc_panic_if(p_num >= repair_block_.size());
 
         if (!repair_block_[p_num]) {
@@ -368,7 +357,7 @@ void Reader::update_repair_packets_() {
     }
 }
 
-void Reader::skip_repair_packets_() {
+void Reader::drop_repair_packets_from_prev_blocks_() {
     unsigned n_dropped = 0;
 
     for (;;) {
@@ -382,14 +371,15 @@ void Reader::skip_repair_packets_() {
             roc_panic("fec reader: unexpected non-fec repair packet");
         }
 
-        if (!packet::seqnum_lt(fec->blknum, cur_block_sn_)) {
+        if (!packet::blknum_lt(fec->source_block_number, cur_sbn_)) {
             break;
         }
 
         roc_log(LogTrace,
-                "fec reader: dropping repair packet, decoding not started:"
-                " min_sn=%lu pkt_data_blk=%lu",
-                (unsigned long)cur_block_sn_, (unsigned long)fec->blknum);
+                "fec reader: dropping repair packet from previous blocks,"
+                          " decoding not started: cur_sbn=%lu pkt_sbn=%lu",
+                          (unsigned long)cur_sbn_,
+                          (unsigned long)fec->source_block_number);
 
         repair_queue_.read();
         n_dropped++;
