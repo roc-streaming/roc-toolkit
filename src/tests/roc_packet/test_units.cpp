@@ -119,5 +119,49 @@ TEST(units, num_channels) {
     LONGS_EQUAL(3, num_channels(Ch1 | Ch2 | Ch3));
 }
 
+TEST(units, blknum_diff) {
+    const blknum_t v = 65535;
+
+    LONGS_EQUAL(0, blknum_diff(v, v));
+
+    LONGS_EQUAL(+1, blknum_diff(blknum_t(v + 1), v));
+    LONGS_EQUAL(-1, blknum_diff(blknum_t(v - 1), v));
+
+    CHECK(blknum_lt(v / 2, v));
+    CHECK(blknum_diff(v / 2, v) < 0);
+
+    CHECK(!blknum_lt(v / 2 - 1, v));
+    CHECK(blknum_diff(v / 2 - 1, v) > 0);
+}
+
+TEST(units, blknum_lt) {
+    const blknum_t v = 65535;
+
+    CHECK(blknum_lt(blknum_t(v - 1), v));
+    CHECK(blknum_lt(blknum_t(v - 5), v));
+
+    CHECK(!blknum_lt(blknum_t(v + 1), v));
+    CHECK(!blknum_lt(blknum_t(v + 5), v));
+
+    CHECK(blknum_lt(v / 2, v));
+    CHECK(!blknum_lt(v / 2 - 1, v));
+}
+
+TEST(units, blknum_le) {
+    const blknum_t v = 65535;
+
+    CHECK(!blknum_lt(v, v));
+    CHECK(blknum_le(v, v));
+
+    CHECK(blknum_le(blknum_t(v - 1), v));
+    CHECK(blknum_le(blknum_t(v - 5), v));
+
+    CHECK(!blknum_le(blknum_t(v + 1), v));
+    CHECK(!blknum_le(blknum_t(v + 5), v));
+
+    CHECK(blknum_le(v / 2, v));
+    CHECK(!blknum_le(v / 2 - 1, v));
+}
+
 } // namespace packet
 } // namespace roc
