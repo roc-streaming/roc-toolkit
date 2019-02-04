@@ -56,9 +56,9 @@ public:
 
         packet::FEC& fec = *packet.fec();
 
-        fec.blknum = (packet::seqnum_t)payload_id->sbn();
+        fec.source_block_number = (packet::blknum_t)payload_id->sbn();
         fec.source_block_length = payload_id->k();
-        fec.repair_symbol_id = payload_id->esi();
+        fec.encoding_symbol_id = payload_id->esi();
 
         if (Pos == Header) {
             fec.payload = buffer.range(sizeof(PayloadID), buffer.size());

@@ -21,16 +21,28 @@ namespace packet {
 
 //! FECFRAME packet.
 struct FEC {
-    //! Seqnum of first source packet in block.
-    seqnum_t blknum;
+    //! Number of a source block in a packet stream.
+    //!
+    //! @remarks
+    //!  Source block is formed from the source packets.
+    //!  Blocks are numbered sequentially starting from a random number.
+    //!  Block number can wrap.
+    blknum_t source_block_number;
 
-    //! The number of source packet per block.
+    //! Number of source packets in the block to which this packet belongs to.
+    //!
+    //! @remarks
+    //!  Different blocks can have different number of source packets.
     size_t source_block_length;
 
-    //! The index number of the repair packet in block.
+    //! The index number of packet in a block.
     //!
-    //! Must be source_block_length < repair_symbol_id.
-    size_t repair_symbol_id;
+    //! @remarks
+    //!  Source packets are numbered in range [0; k).
+    //!  Repair packets are numbered in range [k; k + n), where
+    //!  k is a number of source packets per block (source_block_length)
+    //!  n is a number of repair packets per block.
+    size_t encoding_symbol_id;
 
     //! FECFRAME header or footer.
     core::Slice<uint8_t> payload_id;

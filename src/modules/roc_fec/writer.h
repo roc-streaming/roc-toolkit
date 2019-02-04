@@ -65,8 +65,11 @@ private:
     const size_t n_repair_packets_;
     const size_t payload_size_;
 
+    void handle_next_block_();
     packet::PacketPtr make_repair_packet_(packet::seqnum_t n);
-    void fill_packet_fec_id_(const packet::PacketPtr& packet, packet::seqnum_t n);
+    void fill_packet_fec_fields_(const packet::PacketPtr& packet, packet::seqnum_t n);
+    void fill_packet_rtp_fields_(const packet::PacketPtr& packet,
+                                 packet::seqnum_t sn, bool marker);
 
     IEncoder& encoder_;
     packet::IWriter& writer_;
@@ -82,7 +85,7 @@ private:
     packet::source_t source_;
     bool first_packet_;
 
-    packet::seqnum_t cur_block_source_sn_;
+    packet::blknum_t cur_sbn_;
     packet::seqnum_t cur_block_repair_sn_;
 
     size_t cur_packet_;
