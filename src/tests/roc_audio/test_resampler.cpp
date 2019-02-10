@@ -43,6 +43,7 @@ TEST_GROUP(resampler) {
     ResamplerConfig config;
 
     void setup() {
+        config.window_interp = 512;
         config.window_size = ResamplerFIRLen;
         config.frame_size = FrameSize;
     }

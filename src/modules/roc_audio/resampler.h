@@ -45,8 +45,8 @@ struct ResamplerConfig {
     size_t frame_size;
 
     ResamplerConfig()
-        : window_interp(512)
-        , window_size(64)
+        : window_interp(128)
+        , window_size(32)
         , frame_size(256) {
     }
 };
