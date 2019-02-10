@@ -6,6 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+#include "roc_audio/resampler_profile.h"
 #include "roc_core/crash.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_core/log.h"
@@ -189,6 +190,26 @@ int main(int argc, char** argv) {
         config.default_session.latency_monitor.max_latency =
             (packet::signed_timestamp_t)config.default_session.latency
             * pipeline::DefaultMaxLatency;
+    }
+
+    switch ((unsigned)args.resampler_profile_arg) {
+    case resampler_profile_arg_low:
+        config.default_session.resampler =
+            audio::resampler_profile(audio::ResamplerProfile_Low);
+        break;
+
+    case resampler_profile_arg_medium:
+        config.default_session.resampler =
+            audio::resampler_profile(audio::ResamplerProfile_Medium);
+        break;
+
+    case resampler_profile_arg_high:
+        config.default_session.resampler =
+            audio::resampler_profile(audio::ResamplerProfile_High);
+        break;
+
+    default:
+        break;
     }
 
     if (args.resampler_interp_given) {

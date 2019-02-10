@@ -8,6 +8,7 @@
 
 #include "private.h"
 
+#include "roc_audio/resampler_profile.h"
 #include "roc_core/log.h"
 
 using namespace roc;
@@ -88,6 +89,21 @@ bool config_sender(pipeline::SenderConfig& out, const roc_sender_config& in) {
         out.fec.n_repair_packets = in.n_repair_packets;
     }
 
+    switch ((unsigned)in.resampler_profile) {
+    case ROC_RESAMPLER_LOW:
+        out.resampler = audio::resampler_profile(audio::ResamplerProfile_Low);
+        break;
+    case ROC_RESAMPLER_MEDIUM:
+        out.resampler = audio::resampler_profile(audio::ResamplerProfile_Medium);
+        break;
+    case ROC_RESAMPLER_HIGH:
+        out.resampler = audio::resampler_profile(audio::ResamplerProfile_High);
+        break;
+    default:
+        break;
+    }
+
+    out.resampling = (in.resampler_profile != ROC_RESAMPLER_DISABLE);
     out.interleaving = (in.flags & ROC_FLAG_ENABLE_INTERLEAVER);
     out.timing = (in.flags & ROC_FLAG_ENABLE_TIMER);
 
@@ -137,7 +153,24 @@ bool config_receiver(pipeline::ReceiverConfig& out, const roc_receiver_config& i
         out.default_session.fec.n_repair_packets = in.n_repair_packets;
     }
 
-    out.output.resampling = !(in.flags & ROC_FLAG_DISABLE_RESAMPLER);
+    switch ((unsigned)in.resampler_profile) {
+    case ROC_RESAMPLER_LOW:
+        out.default_session.resampler =
+            audio::resampler_profile(audio::ResamplerProfile_Low);
+        break;
+    case ROC_RESAMPLER_MEDIUM:
+        out.default_session.resampler =
+            audio::resampler_profile(audio::ResamplerProfile_Medium);
+        break;
+    case ROC_RESAMPLER_HIGH:
+        out.default_session.resampler =
+            audio::resampler_profile(audio::ResamplerProfile_High);
+        break;
+    default:
+        break;
+    }
+
+    out.output.resampling = (in.resampler_profile != ROC_RESAMPLER_DISABLE);
     out.output.timing = (in.flags & ROC_FLAG_ENABLE_TIMER);
 
     return true;

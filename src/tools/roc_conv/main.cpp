@@ -10,6 +10,7 @@
 #include "roc_audio/null_writer.h"
 #include "roc_audio/poison_writer.h"
 #include "roc_audio/profiling_writer.h"
+#include "roc_audio/resampler_profile.h"
 #include "roc_audio/resampler_writer.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/crash.h"
@@ -91,6 +92,22 @@ int main(int argc, char** argv) {
     }
 
     audio::ResamplerConfig resampler_config;
+    switch ((unsigned)args.resampler_profile_arg) {
+    case resampler_profile_arg_low:
+        resampler_config = audio::resampler_profile(audio::ResamplerProfile_Low);
+        break;
+
+    case resampler_profile_arg_medium:
+        resampler_config = audio::resampler_profile(audio::ResamplerProfile_Medium);
+        break;
+
+    case resampler_profile_arg_high:
+        resampler_config = audio::resampler_profile(audio::ResamplerProfile_High);
+        break;
+
+    default:
+        break;
+    }
     if (args.resampler_interp_given) {
         resampler_config.window_interp = (size_t)args.resampler_interp_arg;
     }

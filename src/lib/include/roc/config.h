@@ -18,19 +18,15 @@ extern "C" {
 
 //! Receiver and sender options.
 enum {
-    //! Turn off resampler in receiver.
-    //! Resampler is used to adjust receiver's frequency to sender's frequency.
-    ROC_FLAG_DISABLE_RESAMPLER = (1 << 0),
-
     //! Turn on interleaver in sender.
     //! Interleaver is used to shuffle packets before sending them to increase
     //! to increase chances that missing packets will be reconstructed.
-    ROC_FLAG_ENABLE_INTERLEAVER = (1 << 1),
+    ROC_FLAG_ENABLE_INTERLEAVER = (1 << 0),
 
     //! Turn on timing in receiver or sender.
     //! Timer is used to constrain the sender or receiver speed to its sample
     //! rate using a CPU timer.
-    ROC_FLAG_ENABLE_TIMER = (1 << 2)
+    ROC_FLAG_ENABLE_TIMER = (1 << 1)
 };
 
 //! Network protocol.
@@ -65,6 +61,21 @@ typedef enum roc_fec_scheme {
     ROC_FEC_NONE = 2
 } roc_fec_scheme;
 
+//! Resampler profile.
+typedef enum roc_resampler_profile {
+    //! Medium quality, medium speed.
+    ROC_RESAMPLER_MEDIUM = 0,
+
+    //! Hight quality, low speed.
+    ROC_RESAMPLER_HIGH = 1,
+
+    //! Low quality, fast speed.
+    ROC_RESAMPLER_LOW = 2,
+
+    //! Disable resampler.
+    ROC_RESAMPLER_DISABLE = 3
+} roc_resampler_profile;
+
 //! Context configuration.
 typedef struct roc_context_config {
     //! Maximum number of bytes per packet.
@@ -91,6 +102,9 @@ typedef struct roc_sender_config {
     //! Number of repair packets per FEC block.
     unsigned int n_repair_packets;
 
+    //! Resampler profile to use.
+    roc_resampler_profile resampler_profile;
+
     //! A bitmask of ROC_FLAG_* constants.
     unsigned int flags;
 } roc_sender_config;
@@ -114,6 +128,9 @@ typedef struct roc_receiver_config {
 
     //! Number of repair packets per FEC block.
     unsigned int n_repair_packets;
+
+    //! Resampler profile to use.
+    roc_resampler_profile resampler_profile;
 
     //! A bitmask of ROC_FLAG_* constants.
     unsigned int flags;
