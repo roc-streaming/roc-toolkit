@@ -115,13 +115,12 @@ private:
     size_t out_frame_i_;
 
     //! Resampling factor.
-    //!
     //! s_out_step / s_in_step = Fs_from / Fs_to.
     float scaling_;
 
-    // Frame size.
-    const size_t window_size_;
+    // Window size.
     // (window_size_ / st_Nwindow) is maximum allowed scaling ratio.
+    const size_t window_size_;
     const size_t channel_len_;
 
     const size_t window_len_;
@@ -135,7 +134,6 @@ private:
     // half window len in Q8.24 in terms of input signal.
     fixedpoint_t qt_half_window_len_;
     const fixedpoint_t qt_epsilon_;
-    const fixedpoint_t default_sample_;
 
     // Frame size in Q8.24.
     const fixedpoint_t qt_window_size_;

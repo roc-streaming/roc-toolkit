@@ -93,9 +93,8 @@ Resampler::Resampler(core::IAllocator& allocator,
     , sinc_table_ptr_(NULL)
     , qt_half_window_len_(float_to_fixedpoint((float)window_len_ / scaling_))
     , qt_epsilon_(float_to_fixedpoint(5e-8f))
-    , default_sample_(float_to_fixedpoint(0))
     , qt_window_size_(fixedpoint_t(channel_len_ << FRACT_BIT_COUNT))
-    , qt_sample_(default_sample_)
+    , qt_sample_(float_to_fixedpoint(0))
     , qt_dt_(0)
     , cutoff_freq_(0.9f)
     , valid_(false) {
@@ -105,6 +104,13 @@ Resampler::Resampler(core::IAllocator& allocator,
     if (!fill_sinc_()) {
         return;
     }
+
+    roc_log(LogDebug,
+            "resampler: initializing: "
+            "window_interp=%lu window_size=%lu frame_size=%lu channels_num=%lu",
+            (unsigned long)config.window_interp, (unsigned long)config.window_size,
+            (unsigned long)config.frame_size, (unsigned long)channels_num_);
+
     valid_ = true;
 }
 

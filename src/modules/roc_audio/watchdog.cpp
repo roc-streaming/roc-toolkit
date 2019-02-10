@@ -32,7 +32,7 @@ Watchdog::Watchdog(IReader& reader,
     , valid_(false) {
     if (max_drops_duration_ != 0) {
         if (drop_detection_window_ == 0 || drop_detection_window_ > max_drops_duration_) {
-            roc_log(LogDebug,
+            roc_log(LogError,
                     "watchdog: invalid config: "
                     "drop_detection_window should be in range (0; max_drops_duration]: "
                     "max_drops_duration=%lu drop_detection_window=%lu",
