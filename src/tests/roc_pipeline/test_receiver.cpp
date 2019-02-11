@@ -1076,18 +1076,24 @@ TEST(receiver, status) {
     CHECK(samples);
     samples.resize(FramesPerPacket * NumCh);
 
-    audio::Frame frame(samples.data(), samples.size());
-
     CHECK(receiver.status() == IReceiver::Inactive);
 
-    receiver.read(frame);
+    {
+        audio::Frame frame(samples.data(), samples.size());
+        receiver.read(frame);
+    }
+
     packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket, ChMask);
 
     CHECK(receiver.status() == IReceiver::Active);
 
-    receiver.read(frame);
+    {
+        audio::Frame frame(samples.data(), samples.size());
+        receiver.read(frame);
+    }
 
     for (;;) {
+        audio::Frame frame(samples.data(), samples.size());
         receiver.read(frame);
 
         if (receiver.status() == IReceiver::Inactive) {
