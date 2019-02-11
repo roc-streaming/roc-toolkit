@@ -38,8 +38,8 @@ public:
         FlagDrops = (1 << 2)
     };
 
-    //! Add flags.
-    void add_flags(unsigned flags);
+    //! Set flags.
+    void set_flags(unsigned flags);
 
     //! Get flags.
     unsigned flags() const;

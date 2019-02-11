@@ -21,11 +21,11 @@ Frame::Frame(sample_t* data, size_t size)
     }
 }
 
-void Frame::add_flags(unsigned fl) {
-    if (flags_ & fl) {
-        roc_panic("frame: can't add flag more than once");
+void Frame::set_flags(unsigned fl) {
+    if (flags_) {
+        roc_panic("frame: can't set flags more than once");
     }
-    flags_ |= fl;
+    flags_ = fl;
 }
 
 unsigned Frame::flags() const {

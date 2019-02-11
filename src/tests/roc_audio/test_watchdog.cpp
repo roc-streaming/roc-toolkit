@@ -69,7 +69,7 @@ TEST_GROUP(watchdog) {
         memset(buf.data(), 0xff, buf.size() * sizeof(sample_t));
 
         Frame frame(buf.data(), buf.size());
-        frame.add_flags(frame_flags);
+        frame.set_flags(frame_flags);
 
         reader.read(frame);
 
