@@ -62,6 +62,11 @@ void Mixer::remove(IReader& reader) {
 void Mixer::read(Frame& frame) {
     roc_panic_if(!valid_);
 
+    if (readers_.size() == 1) {
+        readers_.front()->read(frame);
+        return;
+    }
+
     const size_t max_read = temp_buf_.size();
 
     sample_t* samples = frame.data();
