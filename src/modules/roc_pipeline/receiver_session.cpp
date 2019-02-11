@@ -53,7 +53,7 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
     packet::IReader* preader = source_queue_.get();
 
     delayed_reader_.reset(new (allocator_)
-                              packet::DelayedReader(*preader, session_config.latency),
+                              packet::DelayedReader(*preader, session_config.target_latency),
                           allocator_);
     if (!delayed_reader_) {
         return;
@@ -80,7 +80,7 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
 
         core::UniquePtr<fec::OFDecoder> fec_decoder(
             new (allocator_) fec::OFDecoder(
-                session_config.fec, format->size(session_config.samples_per_packet),
+                session_config.fec, format->size(session_config.input_packet_size),
                 byte_buffer_pool, allocator_),
             allocator_);
         if (!fec_decoder || !fec_decoder->valid()) {
@@ -171,7 +171,7 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
 
     latency_monitor_.reset(new (allocator_) audio::LatencyMonitor(
                                *source_queue_, *depacketizer_, resampler_.get(),
-                               session_config.latency_monitor, session_config.latency,
+                               session_config.latency_monitor, session_config.target_latency,
                                format->sample_rate, output_config.sample_rate),
                            allocator_);
     if (!latency_monitor_ || !latency_monitor_->valid()) {

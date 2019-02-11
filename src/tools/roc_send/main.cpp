@@ -24,7 +24,7 @@ using namespace roc;
 
 namespace {
 
-enum { MaxPacketSize = 2048, MaxFrameSize = 8192, ChunkSize = 128 * 1024 };
+enum { MaxPacketSize = 2048, MaxFrameSize = 8192 };
 
 } // namespace
 
@@ -180,7 +180,7 @@ int main(int argc, char** argv) {
     }
 
     sndio::SoxReader reader(sample_buffer_pool, config.channels,
-                            config.samples_per_packet, sample_rate);
+                            config.output_packet_size, sample_rate);
 
     if (!reader.open(args.input_arg, args.type_arg)) {
         roc_log(LogError, "can't open input file/device: %s %s", args.input_arg,

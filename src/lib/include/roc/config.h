@@ -16,19 +16,6 @@
 extern "C" {
 #endif
 
-//! Receiver and sender options.
-enum {
-    //! Turn on interleaver in sender.
-    //! Interleaver is used to shuffle packets before sending them to increase
-    //! to increase chances that missing packets will be reconstructed.
-    ROC_FLAG_ENABLE_INTERLEAVER = (1 << 0),
-
-    //! Turn on timing in receiver or sender.
-    //! Timer is used to constrain the sender or receiver speed to its sample
-    //! rate using a CPU timer.
-    ROC_FLAG_ENABLE_TIMER = (1 << 1)
-};
-
 //! Network protocol.
 typedef enum roc_protocol {
     //! Bare RTP.
@@ -58,7 +45,7 @@ typedef enum roc_fec_scheme {
     ROC_FEC_LDPC_STAIRCASE = 1,
 
     //! Disable FEC.
-    ROC_FEC_NONE = 2
+    ROC_FEC_DISABLE = 2
 } roc_fec_scheme;
 
 //! Resampler profile.
@@ -78,18 +65,24 @@ typedef enum roc_resampler_profile {
 
 //! Context configuration.
 typedef struct roc_context_config {
-    //! Maximum number of bytes per packet.
+    //! Maximum size in bytes of a network packet.
     unsigned int max_packet_size;
 
-    //! Maximum number of bytes per audio frame.
+    //! Maximum size in bytes of an audio frame.
     unsigned int max_frame_size;
-
-    //! Allocator chunk size.
-    unsigned int chunk_size;
 } roc_context_config;
 
 //! Sender configuration.
 typedef struct roc_sender_config {
+    //! Number of samples per second per channel.
+    unsigned int input_sample_rate;
+
+    //! Constrain sending speed to the input sample rate using a CPU timer.
+    unsigned int enable_timing;
+
+    //! Resampler profile to use.
+    roc_resampler_profile resampler_profile;
+
     //! Number of samples per channel per packet.
     unsigned int samples_per_packet;
 
@@ -97,25 +90,32 @@ typedef struct roc_sender_config {
     roc_fec_scheme fec_scheme;
 
     //! Number of source packets per FEC block.
-    unsigned int n_source_packets;
+    unsigned int fec_block_source_packets;
 
     //! Number of repair packets per FEC block.
-    unsigned int n_repair_packets;
+    unsigned int fec_block_repair_packets;
 
-    //! Resampler profile to use.
-    roc_resampler_profile resampler_profile;
-
-    //! A bitmask of ROC_FLAG_* constants.
-    unsigned int flags;
+    //! Shuffle packets before sending them to increase chances that
+    //! missing packets will be reconstructed.
+    unsigned int enable_interleaving;
 } roc_sender_config;
 
 //! Receiver configuration.
 typedef struct roc_receiver_config {
+    //! Number of samples per second per channel.
+    unsigned int output_sample_rate;
+
+    //! Constrain receiving speed to the output sample rate using a CPU timer.
+    unsigned int enable_timing;
+
+    //! Resampler profile to use.
+    roc_resampler_profile resampler_profile;
+
     //! Session latency as number of samples.
-    unsigned int latency;
+    unsigned int target_latency;
 
     //! Timeout after which session is terminated as number of samples.
-    unsigned int timeout;
+    unsigned int silence_timeout;
 
     //! Number of samples per channel per packet.
     unsigned int samples_per_packet;
@@ -124,19 +124,10 @@ typedef struct roc_receiver_config {
     roc_fec_scheme fec_scheme;
 
     //! Number of source packets per FEC block.
-    unsigned int n_source_packets;
+    unsigned int fec_block_source_packets;
 
     //! Number of repair packets per FEC block.
-    unsigned int n_repair_packets;
-
-    //! Resampler profile to use.
-    roc_resampler_profile resampler_profile;
-
-    //! A bitmask of ROC_FLAG_* constants.
-    unsigned int flags;
-
-    //! Number of samples per second per channel.
-    unsigned int sample_rate;
+    unsigned int fec_block_repair_packets;
 } roc_receiver_config;
 
 #ifdef __cplusplus

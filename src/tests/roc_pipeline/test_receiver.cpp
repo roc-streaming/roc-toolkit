@@ -77,9 +77,9 @@ TEST_GROUP(receiver) {
         config.output.poisoning = true;
 
         config.default_session.channels = ChMask;
-        config.default_session.samples_per_packet = SamplesPerPacket;
+        config.default_session.input_packet_size = SamplesPerPacket;
 
-        config.default_session.latency = Latency;
+        config.default_session.target_latency = Latency;
         config.default_session.watchdog.silence_timeout = Timeout;
 
         config.default_session.fec.codec = fec::NoCodec;

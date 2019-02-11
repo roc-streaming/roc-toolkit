@@ -15,8 +15,7 @@ using namespace roc;
 roc_context::roc_context(const roc_context_config& cfg)
     : packet_pool(allocator, false)
     , byte_buffer_pool(allocator, cfg.max_packet_size, false)
-    , sample_buffer_pool(
-          allocator, cfg.max_frame_size / sizeof(audio::sample_t), false)
+    , sample_buffer_pool(allocator, cfg.max_frame_size / sizeof(audio::sample_t), false)
     , trx(packet_pool, byte_buffer_pool, allocator)
     , counter(0) {
 }

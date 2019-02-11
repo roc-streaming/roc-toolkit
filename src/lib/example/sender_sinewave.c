@@ -82,7 +82,7 @@ int main() {
     /* Turn on sender timing.
      * Sender must send packets with steady rate, so we should either implement
      * clocking or ask the library to do so. We choose the second here. */
-    sender_config.flags |= ROC_FLAG_ENABLE_TIMER;
+    sender_config.enable_timing = 1;
 
     /* Create sender. */
     roc_sender* sender = roc_sender_open(context, &sender_config);

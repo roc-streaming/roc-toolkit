@@ -14,51 +14,16 @@
 using namespace roc;
 
 bool config_context(roc_context_config& out, const roc_context_config* in) {
-    enum {
-        DefaultMaxPacketSize = 2048,
-        DefaultMaxFrameSize = 64 * 1024,
-        DefaultChunkSize = 128 * 1024
-    };
-
-    out.max_packet_size = DefaultMaxPacketSize;
-    out.max_frame_size = DefaultMaxFrameSize;
-    out.chunk_size = DefaultChunkSize;
+    out.max_packet_size = 2048;
+    out.max_frame_size = 4096;
 
     if (in) {
         if (in->max_packet_size) {
             out.max_packet_size = in->max_packet_size;
         }
-        if (in->max_frame_size) {
+        if (in->max_frame_size / sizeof(audio::sample_t)) {
             out.max_frame_size = in->max_frame_size;
         }
-        if (in->chunk_size) {
-            out.chunk_size = in->chunk_size;
-        }
-    }
-
-    if (out.chunk_size / out.max_packet_size == 0) {
-        roc_log(LogError, "roc_config: invalid config:"
-                          " (chunk_size / max_packet_size == 0):"
-                          " chunk_size=%lu max_packet_size=%lu",
-                (unsigned long)out.chunk_size, (unsigned long)out.max_packet_size);
-        return false;
-    }
-
-    if (out.chunk_size / out.max_frame_size == 0) {
-        roc_log(LogError, "roc_config: invalid config:"
-                          " (chunk_size / max_frame_size == 0):"
-                          " chunk_size=%lu max_frame_size=%lu",
-                (unsigned long)out.chunk_size, (unsigned long)out.max_frame_size);
-        return false;
-    }
-
-    if (out.max_frame_size / sizeof(audio::sample_t) == 0) {
-        roc_log(LogError, "roc_config: invalid config:"
-                          " (max_frame_size / sizeof(sample_t) == 0):"
-                          " max_frame_size=%lu sizeof(sample_t)=%lu",
-                (unsigned long)out.max_frame_size,
-                (unsigned long)sizeof(audio::sample_t));
-        return false;
     }
 
     return true;
@@ -66,7 +31,11 @@ bool config_context(roc_context_config& out, const roc_context_config* in) {
 
 bool config_sender(pipeline::SenderConfig& out, const roc_sender_config& in) {
     if (in.samples_per_packet) {
-        out.samples_per_packet = in.samples_per_packet;
+        out.output_packet_size = in.samples_per_packet;
+    }
+
+    if (in.input_sample_rate) {
+        out.sample_rate = in.input_sample_rate;
     }
 
     switch ((unsigned)in.fec_scheme) {
@@ -76,7 +45,7 @@ bool config_sender(pipeline::SenderConfig& out, const roc_sender_config& in) {
     case ROC_FEC_LDPC_STAIRCASE:
         out.fec.codec = fec::LDPCStaircase;
         break;
-    case ROC_FEC_NONE:
+    case ROC_FEC_DISABLE:
         out.fec.codec = fec::NoCodec;
         break;
     default:
@@ -84,9 +53,9 @@ bool config_sender(pipeline::SenderConfig& out, const roc_sender_config& in) {
         return false;
     }
 
-    if (in.n_source_packets || in.n_repair_packets) {
-        out.fec.n_source_packets = in.n_source_packets;
-        out.fec.n_repair_packets = in.n_repair_packets;
+    if (in.fec_block_source_packets || in.fec_block_repair_packets) {
+        out.fec.n_source_packets = in.fec_block_source_packets;
+        out.fec.n_repair_packets = in.fec_block_repair_packets;
     }
 
     switch ((unsigned)in.resampler_profile) {
@@ -104,33 +73,33 @@ bool config_sender(pipeline::SenderConfig& out, const roc_sender_config& in) {
     }
 
     out.resampling = (in.resampler_profile != ROC_RESAMPLER_DISABLE);
-    out.interleaving = (in.flags & ROC_FLAG_ENABLE_INTERLEAVER);
-    out.timing = (in.flags & ROC_FLAG_ENABLE_TIMER);
+    out.interleaving = in.enable_interleaving;
+    out.timing = in.enable_timing;
 
     return true;
 }
 
 bool config_receiver(pipeline::ReceiverConfig& out, const roc_receiver_config& in) {
-    if (in.latency) {
-        out.default_session.latency = in.latency;
+    if (in.target_latency) {
+        out.default_session.target_latency = in.target_latency;
 
         out.default_session.latency_monitor.min_latency =
-            (packet::signed_timestamp_t)in.latency * pipeline::DefaultMinLatency;
+            (packet::signed_timestamp_t)in.target_latency * pipeline::DefaultMinLatency;
 
         out.default_session.latency_monitor.max_latency =
-            (packet::signed_timestamp_t)in.latency * pipeline::DefaultMaxLatency;
+            (packet::signed_timestamp_t)in.target_latency * pipeline::DefaultMaxLatency;
     }
 
-    if (in.timeout) {
-        out.default_session.watchdog.silence_timeout = in.timeout;
+    if (in.silence_timeout) {
+        out.default_session.watchdog.silence_timeout = in.silence_timeout;
     }
 
     if (in.samples_per_packet) {
-        out.default_session.samples_per_packet = in.samples_per_packet;
+        out.default_session.input_packet_size = in.samples_per_packet;
     }
 
-    if (in.sample_rate) {
-        out.output.sample_rate = in.sample_rate;
+    if (in.output_sample_rate) {
+        out.output.sample_rate = in.output_sample_rate;
     }
 
     switch ((unsigned)in.fec_scheme) {
@@ -140,7 +109,7 @@ bool config_receiver(pipeline::ReceiverConfig& out, const roc_receiver_config& i
     case ROC_FEC_LDPC_STAIRCASE:
         out.default_session.fec.codec = fec::LDPCStaircase;
         break;
-    case ROC_FEC_NONE:
+    case ROC_FEC_DISABLE:
         out.default_session.fec.codec = fec::NoCodec;
         break;
     default:
@@ -148,9 +117,9 @@ bool config_receiver(pipeline::ReceiverConfig& out, const roc_receiver_config& i
         return false;
     }
 
-    if (in.n_source_packets || in.n_repair_packets) {
-        out.default_session.fec.n_source_packets = in.n_source_packets;
-        out.default_session.fec.n_repair_packets = in.n_repair_packets;
+    if (in.fec_block_source_packets || in.fec_block_repair_packets) {
+        out.default_session.fec.n_source_packets = in.fec_block_source_packets;
+        out.default_session.fec.n_repair_packets = in.fec_block_repair_packets;
     }
 
     switch ((unsigned)in.resampler_profile) {
@@ -171,7 +140,7 @@ bool config_receiver(pipeline::ReceiverConfig& out, const roc_receiver_config& i
     }
 
     out.output.resampling = (in.resampler_profile != ROC_RESAMPLER_DISABLE);
-    out.output.timing = (in.flags & ROC_FLAG_ENABLE_TIMER);
+    out.output.timing = in.enable_timing;
 
     return true;
 }

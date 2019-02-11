@@ -35,6 +35,9 @@ enum {
     //! Number of samples per packet per channel.
     DefaultPacketSize = 320,
 
+    //! Number of samples per frame for all channels.
+    DefaultFrameSize = 640,
+
     //! Minum latency relative to target latency.
     DefaultMinLatency = -1,
 
@@ -79,6 +82,54 @@ struct PortConfig {
     }
 };
 
+//! Sender parameters.
+struct SenderConfig {
+    //! Resampler parameters.
+    audio::ResamplerConfig resampler;
+
+    //! FEC scheme parameters.
+    fec::Config fec;
+
+    //! Number of samples per second per channel.
+    size_t sample_rate;
+
+    //! Channel mask.
+    packet::channel_mask_t channels;
+
+    //! Number of samples for internal frames.
+    size_t internal_frame_size;
+
+    //! Number of samples per packet per channel.
+    size_t output_packet_size;
+
+    //! RTP payload type for audio packets.
+    rtp::PayloadType payload_type;
+
+    //! Resample frames with a constant ratio.
+    bool resampling;
+
+    //! Interleave packets.
+    bool interleaving;
+
+    //! Constrain receiver speed using a CPU timer according to the sample rate.
+    bool timing;
+
+    //! Fill unitialized data with large values to make them more noticable.
+    bool poisoning;
+
+    SenderConfig()
+        : sample_rate(DefaultSampleRate)
+        , channels(DefaultChannelMask)
+        , internal_frame_size(DefaultFrameSize)
+        , output_packet_size(DefaultPacketSize)
+        , payload_type(rtp::PayloadType_L16_Stereo)
+        , resampling(false)
+        , interleaving(false)
+        , timing(false)
+        , poisoning(false) {
+    }
+};
+
 //! Receiver session parameters.
 //! @remarks
 //!  Defines per-session parameters on the receiver side.
@@ -87,10 +138,10 @@ struct ReceiverSessionConfig {
     packet::channel_mask_t channels;
 
     //! Number of samples per packet per channel.
-    size_t samples_per_packet;
+    size_t input_packet_size;
 
     //! Target latency, number of samples.
-    packet::timestamp_t latency;
+    packet::timestamp_t target_latency;
 
     //! FEC scheme parameters.
     fec::Config fec;
@@ -109,13 +160,13 @@ struct ReceiverSessionConfig {
 
     ReceiverSessionConfig()
         : channels(DefaultChannelMask)
-        , samples_per_packet(DefaultPacketSize)
-        , latency(DefaultPacketSize * 27)
+        , input_packet_size(DefaultPacketSize)
+        , target_latency(DefaultPacketSize * 27)
         , watchdog(DefaultSampleRate) {
         latency_monitor.min_latency =
-            (packet::signed_timestamp_t)latency * DefaultMinLatency;
+            (packet::signed_timestamp_t)target_latency * DefaultMinLatency;
         latency_monitor.max_latency =
-            (packet::signed_timestamp_t)latency * DefaultMaxLatency;
+            (packet::signed_timestamp_t)target_latency * DefaultMaxLatency;
     }
 };
 
@@ -147,7 +198,7 @@ struct ReceiverOutputConfig {
     ReceiverOutputConfig()
         : sample_rate(DefaultSampleRate)
         , channels(DefaultChannelMask)
-        , internal_frame_size(DefaultPacketSize)
+        , internal_frame_size(DefaultFrameSize)
         , resampling(false)
         , timing(false)
         , poisoning(false)
@@ -162,50 +213,6 @@ struct ReceiverConfig {
 
     //! Parameters for receiver output.
     ReceiverOutputConfig output;
-};
-
-//! Sender parameters.
-struct SenderConfig {
-    //! Resampler parameters.
-    audio::ResamplerConfig resampler;
-
-    //! FEC scheme parameters.
-    fec::Config fec;
-
-    //! Number of samples per second per channel.
-    size_t sample_rate;
-
-    //! Channel mask.
-    packet::channel_mask_t channels;
-
-    //! RTP payload type for audio packets.
-    rtp::PayloadType payload_type;
-
-    //! Number of samples per packet per channel.
-    size_t samples_per_packet;
-
-    //! Resample frames with a constant ratio.
-    bool resampling;
-
-    //! Interleave packets.
-    bool interleaving;
-
-    //! Constrain receiver speed using a CPU timer according to the sample rate.
-    bool timing;
-
-    //! Fill unitialized data with large values to make them more noticable.
-    bool poisoning;
-
-    SenderConfig()
-        : sample_rate(DefaultSampleRate)
-        , channels(DefaultChannelMask)
-        , payload_type(rtp::PayloadType_L16_Stereo)
-        , samples_per_packet(DefaultPacketSize)
-        , resampling(false)
-        , interleaving(false)
-        , timing(false)
-        , poisoning(false) {
-    }
 };
 
 } // namespace pipeline

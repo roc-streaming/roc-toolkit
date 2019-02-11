@@ -63,7 +63,7 @@ TEST_GROUP(sender) {
         source_port.protocol = Proto_RTP;
 
         config.channels = ChMask;
-        config.samples_per_packet = SamplesPerPacket;
+        config.output_packet_size = SamplesPerPacket;
         config.internal_frame_size = MaxBufSize;
 
         config.interleaving = false;

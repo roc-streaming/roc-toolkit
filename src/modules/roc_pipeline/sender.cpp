@@ -89,7 +89,7 @@ Sender::Sender(const SenderConfig& config,
             pwriter = interleaver_.get();
         }
 
-        const size_t source_packet_size = format->size(config.samples_per_packet);
+        const size_t source_packet_size = format->size(config.output_packet_size);
 
         core::UniquePtr<fec::OFEncoder> fec_encoder(
             new (allocator) fec::OFEncoder(config.fec, source_packet_size, allocator),
@@ -119,7 +119,7 @@ Sender::Sender(const SenderConfig& config,
     packetizer_.reset(
         new (allocator) audio::Packetizer(*pwriter, source_port_->composer(), *encoder_,
                                           packet_pool, byte_buffer_pool, config.channels,
-                                          config.samples_per_packet, config.payload_type),
+                                          config.output_packet_size, config.payload_type),
         allocator);
     if (!packetizer_) {
         return;

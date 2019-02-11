@@ -25,7 +25,7 @@ using namespace roc;
 
 namespace {
 
-enum { MaxPacketSize = 2048, MaxFrameSize = 8192, ChunkSize = 128 * 1024 };
+enum { MaxPacketSize = 2048, MaxFrameSize = 8192 };
 
 } // namespace
 
@@ -163,11 +163,11 @@ int main(int argc, char** argv) {
             roc_log(LogError, "invalid --latency: should be >= 0");
             return 1;
         }
-        config.default_session.latency = (packet::timestamp_t)args.latency_arg;
+        config.default_session.target_latency = (packet::timestamp_t)args.latency_arg;
     }
 
     if (args.min_latency_given) {
-        if (args.min_latency_arg > (int)config.default_session.latency) {
+        if (args.min_latency_arg > (int)config.default_session.target_latency) {
             roc_log(LogError, "invalid --min-latency: should be <= --latency");
             return 1;
         }
@@ -175,12 +175,12 @@ int main(int argc, char** argv) {
             (packet::signed_timestamp_t)args.min_latency_arg;
     } else {
         config.default_session.latency_monitor.min_latency =
-            (packet::signed_timestamp_t)config.default_session.latency
+            (packet::signed_timestamp_t)config.default_session.target_latency
             * pipeline::DefaultMinLatency;
     }
 
     if (args.max_latency_given) {
-        if (args.max_latency_arg < (int)config.default_session.latency) {
+        if (args.max_latency_arg < (int)config.default_session.target_latency) {
             roc_log(LogError, "invalid --max-latency: should be >= --latency");
             return 1;
         }
@@ -188,7 +188,7 @@ int main(int argc, char** argv) {
             (packet::signed_timestamp_t)args.max_latency_arg;
     } else {
         config.default_session.latency_monitor.max_latency =
-            (packet::signed_timestamp_t)config.default_session.latency
+            (packet::signed_timestamp_t)config.default_session.target_latency
             * pipeline::DefaultMaxLatency;
     }
 

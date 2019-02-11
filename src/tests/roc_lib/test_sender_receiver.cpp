@@ -356,22 +356,22 @@ TEST_GROUP(sender_receiver) {
 
     void init_config() {
         memset(&sender_conf, 0, sizeof(sender_conf));
-        sender_conf.flags |= ROC_FLAG_ENABLE_TIMER;
+        sender_conf.enable_timing = 1;
         sender_conf.samples_per_packet = (unsigned int)PacketSamples / NumChans;
         sender_conf.fec_scheme = ROC_FEC_RS8M;
-        sender_conf.n_source_packets = SourcePackets;
-        sender_conf.n_repair_packets = RepairPackets;
+        sender_conf.fec_block_source_packets = SourcePackets;
+        sender_conf.fec_block_repair_packets = RepairPackets;
         sender_conf.resampler_profile = ROC_RESAMPLER_DISABLE;
 
         memset(&receiver_conf, 0, sizeof(receiver_conf));
-        receiver_conf.flags |= ROC_FLAG_ENABLE_TIMER;
+        receiver_conf.enable_timing = 1;
         receiver_conf.samples_per_packet = (unsigned int)PacketSamples / NumChans;
         receiver_conf.fec_scheme = ROC_FEC_RS8M;
-        receiver_conf.n_source_packets = SourcePackets;
-        receiver_conf.n_repair_packets = RepairPackets;
+        receiver_conf.fec_block_source_packets = SourcePackets;
+        receiver_conf.fec_block_repair_packets = RepairPackets;
         receiver_conf.resampler_profile = ROC_RESAMPLER_DISABLE;
-        receiver_conf.latency = Latency;
-        receiver_conf.timeout = Timeout;
+        receiver_conf.target_latency = Latency;
+        receiver_conf.silence_timeout = Timeout;
     }
 
     void init_samples() {
