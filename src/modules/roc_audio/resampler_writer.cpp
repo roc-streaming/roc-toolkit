@@ -22,7 +22,7 @@ ResamplerWriter::ResamplerWriter(IWriter& writer,
                                  packet::channel_mask_t channels)
     : resampler_(allocator, config, channels)
     , writer_(writer)
-    , window_i_(0)
+    , frame_pos_(0)
     , frame_size_(config.frame_size)
     , valid_(false) {
     if (!resampler_.valid()) {
@@ -51,37 +51,37 @@ void ResamplerWriter::write(Frame& input) {
     const size_t input_size = input.size();
     size_t input_pos = 0;
 
-    sample_t *window0_data = window_[0].data();
-    for (; window_i_ < frame_size_ && input_pos < input_size; ++window_i_, ++input_pos) {
-        window0_data[window_i_] = input_data[input_pos];
+    sample_t *frame0_data = frames_[0].data();
+    for (; frame_pos_ < frame_size_ && input_pos < input_size; ++frame_pos_, ++input_pos) {
+        frame0_data[frame_pos_] = input_data[input_pos];
     }
 
-    sample_t *window1_data = window_[1].data();
-    for (; window_i_ < frame_size_ * 2 && input_pos < input_size; ++window_i_, ++input_pos) {
-        window1_data[window_i_ - frame_size_] = input_data[input_pos];
+    sample_t *frame1_data = frames_[1].data();
+    for (; frame_pos_ < frame_size_ * 2 && input_pos < input_size; ++frame_pos_, ++input_pos) {
+        frame1_data[frame_pos_ - frame_size_] = input_data[input_pos];
     }
 
     while (input_pos < input_size) {
-        sample_t *window2_data = window_[2].data();
-        for (; window_i_ < frame_size_ * 3 && input_pos < input_size;
-             ++window_i_, ++input_pos) {
-            window2_data[window_i_ - frame_size_ * 2] = input_data[input_pos];
+        sample_t *frame2_data = frames_[2].data();
+        for (; frame_pos_ < frame_size_ * 3 && input_pos < input_size;
+             ++frame_pos_, ++input_pos) {
+            frame2_data[frame_pos_ - frame_size_ * 2] = input_data[input_pos];
         }
 
         // All three slices are full, resampling frame_size_ samples.
-        if (window_i_ >= frame_size_ * 3) {
-            resampler_.renew_buffers(window_[0], window_[1], window_[2]);
+        if (frame_pos_ >= frame_size_ * 3) {
+            resampler_.renew_buffers(frames_[0], frames_[1], frames_[2]);
 
             Frame out_frame(output_.data(), output_.size());
             while (resampler_.resample_buff(out_frame)) {
                 writer_.write(out_frame);
             }
 
-            window_i_ -= window_[0].size();
-            core::Slice<sample_t> temp = window_[0];
-            window_[0] = window_[1];
-            window_[1] = window_[2];
-            window_[2] = temp;
+            frame_pos_ -= frames_[0].size();
+            core::Slice<sample_t> temp = frames_[0];
+            frames_[0] = frames_[1];
+            frames_[1] = frames_[2];
+            frames_[2] = temp;
         }
     }
 }
@@ -89,22 +89,15 @@ void ResamplerWriter::write(Frame& input) {
 bool ResamplerWriter::init_(core::BufferPool<sample_t>& buffer_pool) {
     roc_log(LogDebug, "resampler writer: initializing window");
 
-    if (buffer_pool.buffer_size() < frame_size_) {
-        roc_log(LogError,
-                "resampler writer: buffer size too small: required=%lu actual=%lu",
-                (unsigned long)frame_size_, (unsigned long)buffer_pool.buffer_size());
-        return false;
-    }
+    for (size_t n = 0; n < ROC_ARRAY_SIZE(frames_); n++) {
+        frames_[n] = new (buffer_pool) core::Buffer<sample_t>(buffer_pool);
 
-    for (size_t n = 0; n < ROC_ARRAY_SIZE(window_); n++) {
-        window_[n] = new (buffer_pool) core::Buffer<sample_t>(buffer_pool);
-
-        if (!window_[n]) {
+        if (!frames_[n]) {
             roc_log(LogError, "resampler writer: can't allocate buffer");
             return false;
         }
 
-        window_[n].resize(frame_size_);
+        frames_[n].resize(frame_size_);
     }
 
     output_ = new (buffer_pool) core::Buffer<sample_t>(buffer_pool);

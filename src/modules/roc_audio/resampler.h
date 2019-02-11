@@ -107,45 +107,40 @@ private:
     bool fill_sinc_();
     sample_t sinc_(fixedpoint_t x, float fract_x);
 
-    // Pointers to 3 frames of stream window.
     sample_t* prev_frame_;
     sample_t* curr_frame_;
     sample_t* next_frame_;
 
-    size_t out_frame_i_;
+    size_t out_frame_pos_;
 
-    //! Resampling factor.
-    //! s_out_step / s_in_step = Fs_from / Fs_to.
     float scaling_;
 
-    // Window size.
-    // (window_size_ / st_Nwindow) is maximum allowed scaling ratio.
-    const size_t window_size_;
-    const size_t channel_len_;
+    const size_t frame_size_;
+    const size_t frame_size_ch_;
 
-    const size_t window_len_;
-    const fixedpoint_t qt_half_sinc_window_len_;
+    const size_t window_size_;
+    const fixedpoint_t qt_half_sinc_window_size_;
+
     const size_t window_interp_;
-    const size_t window_interp_bits_; //!< The number of bits in window_interp_.
+    const size_t window_interp_bits_;
 
     core::Array<sample_t> sinc_table_;
     const sample_t* sinc_table_ptr_;
 
-    // half window len in Q8.24 in terms of input signal.
-    fixedpoint_t qt_half_window_len_;
+    // half window len in Q8.24 in terms of input signal
+    fixedpoint_t qt_half_window_size_;
     const fixedpoint_t qt_epsilon_;
 
-    // Frame size in Q8.24.
-    const fixedpoint_t qt_window_size_;
+    const fixedpoint_t qt_frame_size_;
 
-    // Time position of output sample in terms of input samples indexes.
-    // For example 0 -- time position of first sample in curr_frame_.
+    // time position of output sample in terms of input samples indexes
+    // for example 0 -- time position of first sample in curr_frame_
     fixedpoint_t qt_sample_;
 
-    // Time distance between two output samples, equals to resampling factor.
+    // time distance between two output samples, equals to resampling factor
     fixedpoint_t qt_dt_;
 
-    // The step with which we iterate over the sinc_table_.
+    // the step with which we iterate over the sinc_table_
     fixedpoint_t qt_sinc_step_;
 
     const sample_t cutoff_freq_;

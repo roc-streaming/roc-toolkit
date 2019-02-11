@@ -66,14 +66,10 @@ private:
     Resampler resampler_;
     IWriter& writer_;
 
-    // Input stream window.
-    core::Slice<sample_t> window_[3];
-    size_t window_i_;
-
-    // Output window.
     core::Slice<sample_t> output_;
 
-    // Frame size.
+    core::Slice<sample_t> frames_[3];
+    size_t frame_pos_;
     const size_t frame_size_;
 
     bool valid_;
