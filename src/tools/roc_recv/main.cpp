@@ -229,14 +229,6 @@ int main(int argc, char** argv) {
         config.default_session.resampler.window_size = (size_t)args.resampler_window_arg;
     }
 
-    if (args.resampler_frame_given) {
-        if (args.resampler_frame_arg <= 0) {
-            roc_log(LogError, "invalid --resampler-frame: should be > 0");
-            return 1;
-        }
-        config.default_session.resampler.frame_size = (size_t)args.resampler_frame_arg;
-    }
-
     core::HeapAllocator allocator;
     core::BufferPool<uint8_t> byte_buffer_pool(allocator, MaxPacketSize,
                                                args.poisoning_flag);

@@ -151,7 +151,8 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
         }
         resampler_.reset(new (allocator_) audio::ResamplerReader(
                              *areader, sample_buffer_pool, allocator,
-                             session_config.resampler, session_config.channels),
+                             session_config.resampler, session_config.channels,
+                             output_config.internal_frame_size),
                          allocator_);
         if (!resampler_ || !resampler_->valid()) {
             return;

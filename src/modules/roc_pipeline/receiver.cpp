@@ -31,8 +31,10 @@ Receiver::Receiver(const ReceiverConfig& config,
     , timestamp_(0)
     , num_channels_(packet::num_channels(config.output.channels))
     , active_cond_(control_mutex_) {
-    mixer_.reset(new (allocator_) audio::Mixer(sample_buffer_pool), allocator_);
-    if (!mixer_) {
+    mixer_.reset(new (allocator_)
+                     audio::Mixer(sample_buffer_pool, config.output.internal_frame_size),
+                 allocator_);
+    if (!mixer_ || !mixer_->valid()) {
         return;
     }
     audio::IReader* areader = mixer_.get();

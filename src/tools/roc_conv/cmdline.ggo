@@ -26,8 +26,5 @@ section "Options"
     option "resampler-window" - "Number of samples per resampler window"
         int optional
 
-    option "resampler-frame" - "Number of samples per resampler frame"
-        int optional
-
     option "poisoning" - "Enable uninitialized memory poisoning"
         flag off

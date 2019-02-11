@@ -44,7 +44,6 @@ TEST_GROUP(resampler) {
     void setup() {
         config.window_interp = 512;
         config.window_size = ResamplerFIRLen;
-        config.frame_size = FrameSize;
     }
 
     core::Slice<sample_t> new_buffer(size_t sz) {
@@ -124,7 +123,7 @@ TEST(resampler, invalid_scaling) {
     enum { ChMask = 0x1, InvalidScaling = FrameSize };
 
     MockReader reader;
-    ResamplerReader rr(reader, buffer_pool, allocator, config, ChMask);
+    ResamplerReader rr(reader, buffer_pool, allocator, config, ChMask, FrameSize);
 
     CHECK(rr.valid());
 
@@ -136,7 +135,7 @@ TEST(resampler, upscaling_twice_single) {
     enum { ChMask = 0x1 };
 
     MockReader reader;
-    ResamplerReader rr(reader, buffer_pool, allocator, config, ChMask);
+    ResamplerReader rr(reader, buffer_pool, allocator, config, ChMask, FrameSize);
 
     CHECK(rr.valid());
 
@@ -172,7 +171,7 @@ TEST(resampler, upscaling_twice_awgn) {
     enum { ChMask = 0x1 };
 
     MockReader reader;
-    ResamplerReader rr(reader, buffer_pool, allocator, config, ChMask);
+    ResamplerReader rr(reader, buffer_pool, allocator, config, ChMask, FrameSize);
 
     CHECK(rr.valid());
 
@@ -204,7 +203,7 @@ TEST(resampler, downsample) {
     enum { ChMask = 0x1 };
 
     MockReader reader;
-    ResamplerReader rr(reader, buffer_pool, allocator, config, ChMask);
+    ResamplerReader rr(reader, buffer_pool, allocator, config, ChMask, FrameSize);
 
     CHECK(rr.valid());
 
@@ -234,7 +233,7 @@ TEST(resampler, two_tones_sep_channels) {
     enum { ChMask = 0x3, nChannels = 2 };
 
     MockReader reader;
-    ResamplerReader rr(reader, buffer_pool, allocator, config, ChMask);
+    ResamplerReader rr(reader, buffer_pool, allocator, config, ChMask, FrameSize);
 
     CHECK(rr.valid());
 

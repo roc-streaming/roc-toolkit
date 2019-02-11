@@ -64,6 +64,7 @@ TEST_GROUP(sender) {
 
         config.channels = ChMask;
         config.samples_per_packet = SamplesPerPacket;
+        config.internal_frame_size = MaxBufSize;
 
         config.interleaving = false;
         config.timing = false;

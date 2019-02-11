@@ -28,30 +28,41 @@ sample_t clamp(const sample_t x) {
 
 } // namespace
 
-Mixer::Mixer(core::BufferPool<sample_t>& buffer_pool) {
-    temp_buf_ = new (buffer_pool) core::Buffer<sample_t>(buffer_pool);
+Mixer::Mixer(core::BufferPool<sample_t>& pool, size_t frame_size)
+    : valid_(false) {
+    temp_buf_ = new (pool) core::Buffer<sample_t>(pool);
     if (!temp_buf_) {
         roc_log(LogError, "mixer: can't allocate temporary buffer");
         return;
     }
+    if (temp_buf_.capacity() < frame_size) {
+        roc_log(LogError, "mixer: allocated buffer is too small");
+        return;
+    }
+    temp_buf_.resize(frame_size);
+    valid_ = true;
 }
 
 bool Mixer::valid() const {
-    return temp_buf_;
+    return valid_;
 }
 
 void Mixer::add(IReader& reader) {
+    roc_panic_if(!valid_);
+
     readers_.push_back(reader);
 }
 
 void Mixer::remove(IReader& reader) {
+    roc_panic_if(!valid_);
+
     readers_.remove(reader);
 }
 
 void Mixer::read(Frame& frame) {
-    roc_panic_if(!valid());
+    roc_panic_if(!valid_);
 
-    const size_t max_read = temp_buf_.capacity();
+    const size_t max_read = temp_buf_.size();
 
     sample_t* samples = frame.data();
     size_t n_samples = frame.size();
@@ -69,19 +80,20 @@ void Mixer::read(Frame& frame) {
     }
 }
 
-void Mixer::read_(sample_t* out_data, size_t out_sz) {
-    roc_panic_if_not(out_data);
+void Mixer::read_(sample_t* data, size_t size) {
+    roc_panic_if(!data);
+    roc_panic_if(size == 0);
 
-    temp_buf_.resize(out_sz);
-    memset(out_data, 0, out_sz * sizeof(sample_t));
+    memset(data, 0, size * sizeof(sample_t));
 
     for (IReader* rp = readers_.front(); rp; rp = readers_.nextof(*rp)) {
-        Frame temp(temp_buf_.data(), temp_buf_.size());
-        rp->read(temp);
+        sample_t* temp_data = temp_buf_.data();
 
-        const sample_t* temp_data = temp.data();
-        for (size_t n = 0; n < out_sz; n++) {
-            out_data[n] = clamp(out_data[n] + temp_data[n]);
+        Frame temp_frame(temp_data, size);
+        rp->read(temp_frame);
+
+        for (size_t n = 0; n < size; n++) {
+            data[n] = clamp(data[n] + temp_data[n]);
         }
     }
 }

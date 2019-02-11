@@ -129,6 +129,9 @@ struct ReceiverOutputConfig {
     //! Channel mask.
     packet::channel_mask_t channels;
 
+    //! Number of samples for internal frames.
+    size_t internal_frame_size;
+
     //! Perform resampling to compensate sender and receiver frequency difference.
     bool resampling;
 
@@ -144,6 +147,7 @@ struct ReceiverOutputConfig {
     ReceiverOutputConfig()
         : sample_rate(DefaultSampleRate)
         , channels(DefaultChannelMask)
+        , internal_frame_size(DefaultPacketSize)
         , resampling(false)
         , timing(false)
         , poisoning(false)

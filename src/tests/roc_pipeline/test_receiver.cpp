@@ -70,6 +70,7 @@ TEST_GROUP(receiver) {
     void setup() {
         config.output.sample_rate = SampleRate;
         config.output.channels = ChMask;
+        config.output.internal_frame_size = MaxBufSize;
 
         config.output.resampling = false;
         config.output.timing = false;

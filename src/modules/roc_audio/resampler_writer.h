@@ -41,7 +41,8 @@ public:
                     core::BufferPool<sample_t>& buffer_pool,
                     core::IAllocator& allocator,
                     const ResamplerConfig& config,
-                    packet::channel_mask_t channels);
+                    packet::channel_mask_t channels,
+                    size_t frame_size);
 
     //! Check if object is successfully constructed.
     bool valid() const;

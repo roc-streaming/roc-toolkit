@@ -27,7 +27,12 @@ using namespace roc;
 
 namespace {
 
-enum { Channels = 0x3, MaxFrameSize = 8192, ChunkSize = 128 * 1024 };
+enum {
+    Channels = 0x3,
+    ResamplerFrameSize = 256,
+    MaxFrameSize = 8192,
+    ChunkSize = 128 * 1024
+};
 
 } // namespace
 
@@ -113,11 +118,9 @@ int main(int argc, char** argv) {
     if (args.resampler_window_given) {
         resampler_config.window_size = (size_t)args.resampler_window_arg;
     }
-    if (args.resampler_frame_given) {
-        resampler_config.frame_size = (size_t)args.resampler_frame_arg;
-    }
 
-    audio::ResamplerWriter resampler(*writer, pool, allocator, resampler_config, Channels);
+    audio::ResamplerWriter resampler(*writer, pool, allocator, resampler_config, Channels,
+                                     ResamplerFrameSize);
     if (!args.no_resampling_flag) {
         if (!resampler.valid()) {
             roc_log(LogError, "can't create resampler");

@@ -38,16 +38,9 @@ struct ResamplerConfig {
     //!  Lower values give lower quality but higher speed and also rarer cache misses.
     size_t window_size;
 
-    //! Resampler internal frame size.
-    //! @remarks
-    //!  Defines how much samples resampler requests from the underlying reader.
-    //!  Lower values give lower latency and lower memory usage.
-    size_t frame_size;
-
     ResamplerConfig()
         : window_interp(128)
-        , window_size(32)
-        , frame_size(256) {
+        , window_size(32) {
     }
 };
 
@@ -55,13 +48,10 @@ struct ResamplerConfig {
 class Resampler : public core::NonCopyable<> {
 public:
     //! Initialize.
-    //!
-    //! @b Parameters
-    //!  - @p frame_size is number of samples per resampler frame per audio channel
-    //!  - @p channels is the bitmask of audio channels
     Resampler(core::IAllocator& allocator,
               const ResamplerConfig& config,
-              packet::channel_mask_t channels);
+              packet::channel_mask_t channels,
+              size_t frame_size);
 
     //! Check if object is successfully constructed.
     bool valid() const;

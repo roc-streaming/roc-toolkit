@@ -75,7 +75,8 @@ inline size_t calc_bits(size_t n) {
 
 Resampler::Resampler(core::IAllocator& allocator,
                      const ResamplerConfig& config,
-                     packet::channel_mask_t channels)
+                     packet::channel_mask_t channels,
+                     size_t frame_size)
     : channel_mask_(channels)
     , channels_num_(packet::num_channels(channel_mask_))
     , prev_frame_(NULL)
@@ -83,8 +84,8 @@ Resampler::Resampler(core::IAllocator& allocator,
     , next_frame_(NULL)
     , out_frame_pos_(0)
     , scaling_(1.0)
-    , frame_size_(config.frame_size)
-    , frame_size_ch_(config.frame_size / channels_num_)
+    , frame_size_(frame_size)
+    , frame_size_ch_(frame_size / channels_num_)
     , window_size_(config.window_size)
     , qt_half_sinc_window_size_(float_to_fixedpoint(window_size_))
     , window_interp_(config.window_interp)

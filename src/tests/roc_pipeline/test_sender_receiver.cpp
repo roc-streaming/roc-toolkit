@@ -171,6 +171,7 @@ TEST_GROUP(sender_receiver) {
 
         config.channels = ChMask;
         config.samples_per_packet = SamplesPerPacket;
+        config.internal_frame_size = MaxBufSize;
 
         config.fec = fec_config(flags);
 
@@ -186,6 +187,7 @@ TEST_GROUP(sender_receiver) {
 
         config.output.sample_rate = SampleRate;
         config.output.channels = ChMask;
+        config.output.internal_frame_size = MaxBufSize;
 
         config.output.resampling = false;
         config.output.timing = false;

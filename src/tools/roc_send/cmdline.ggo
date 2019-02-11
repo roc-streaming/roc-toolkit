@@ -36,9 +36,6 @@ section "Options"
     option "resampler-window" - "Number of samples per resampler window"
         int optional
 
-    option "resampler-frame" - "Number of samples per resampler frame"
-        int optional
-
     option "interleaving" - "Enable packet interleaving" flag off
 
     option "poisoning" - "Enable uninitialized memory poisoning"

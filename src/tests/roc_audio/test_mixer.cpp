@@ -49,7 +49,8 @@ TEST_GROUP(mixer) {
 };
 
 TEST(mixer, no_readers) {
-    Mixer mixer(buffer_pool);
+    Mixer mixer(buffer_pool, MaxSz);
+    CHECK(mixer.valid());
 
     expect_output(mixer, BufSz, 0);
 }
@@ -57,7 +58,8 @@ TEST(mixer, no_readers) {
 TEST(mixer, one_reader) {
     MockReader reader;
 
-    Mixer mixer(buffer_pool);
+    Mixer mixer(buffer_pool, MaxSz);
+    CHECK(mixer.valid());
 
     mixer.add(reader);
 
@@ -70,7 +72,8 @@ TEST(mixer, one_reader) {
 TEST(mixer, one_reader_large) {
     MockReader reader;
 
-    Mixer mixer(buffer_pool);
+    Mixer mixer(buffer_pool, MaxSz);
+    CHECK(mixer.valid());
 
     mixer.add(reader);
 
@@ -84,7 +87,8 @@ TEST(mixer, two_readers) {
     MockReader reader1;
     MockReader reader2;
 
-    Mixer mixer(buffer_pool);
+    Mixer mixer(buffer_pool, MaxSz);
+    CHECK(mixer.valid());
 
     mixer.add(reader1);
     mixer.add(reader2);
@@ -102,7 +106,8 @@ TEST(mixer, remove_reader) {
     MockReader reader1;
     MockReader reader2;
 
-    Mixer mixer(buffer_pool);
+    Mixer mixer(buffer_pool, MaxSz);
+    CHECK(mixer.valid());
 
     mixer.add(reader1);
     mixer.add(reader2);
@@ -131,7 +136,8 @@ TEST(mixer, clamp) {
     MockReader reader1;
     MockReader reader2;
 
-    Mixer mixer(buffer_pool);
+    Mixer mixer(buffer_pool, MaxSz);
+    CHECK(mixer.valid());
 
     mixer.add(reader1);
     mixer.add(reader2);

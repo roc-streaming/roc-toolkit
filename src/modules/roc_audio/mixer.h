@@ -14,7 +14,7 @@
 
 #include "roc_audio/ireader.h"
 #include "roc_audio/units.h"
-#include "roc_core/buffer_pool.h"
+#include "roc_core/pool.h"
 #include "roc_core/list.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/slice.h"
@@ -40,8 +40,10 @@ public:
     //! Initialize.
     //!
     //! @b Parameters
-    //!  - @p buffer_pool is used to allocate a temporary chunk of samples
-    explicit Mixer(core::BufferPool<sample_t>& buffer_pool);
+    //!  - @p pool is used to allocate a temporary buffer of samples
+    //!  - @p frame_size defines the temporary buffer size used to read from
+    //!    attached readers
+    explicit Mixer(core::BufferPool<sample_t>& pool, size_t frame_size);
 
     //! Check if the mixer was succefully constructed.
     bool valid() const;
@@ -63,6 +65,8 @@ private:
 
     core::List<IReader, core::NoOwnership> readers_;
     core::Slice<sample_t> temp_buf_;
+
+    bool valid_;
 };
 
 } // namespace audio

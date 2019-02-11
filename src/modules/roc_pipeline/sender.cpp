@@ -138,7 +138,7 @@ Sender::Sender(const SenderConfig& config,
         }
         resampler_.reset(new (allocator) audio::ResamplerWriter(
                              *awriter, sample_buffer_pool, allocator, config.resampler,
-                             config.channels),
+                             config.channels, config.internal_frame_size),
                          allocator);
         if (!resampler_ || !resampler_->valid()) {
             return;
