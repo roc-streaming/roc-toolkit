@@ -20,11 +20,11 @@ namespace netio {
 
 namespace {
 
-enum { MaxBufSize = 500, PoolChunkSize = 10000 };
+enum { MaxBufSize = 500 };
 
 core::HeapAllocator allocator;
-core::BufferPool<uint8_t> buffer_pool(allocator, MaxBufSize, PoolChunkSize, true);
-packet::PacketPool packet_pool(allocator, PoolChunkSize, true);
+core::BufferPool<uint8_t> buffer_pool(allocator, MaxBufSize, true);
+packet::PacketPool packet_pool(allocator, true);
 
 } // namespace
 

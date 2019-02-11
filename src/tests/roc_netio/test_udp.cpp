@@ -20,11 +20,11 @@ namespace netio {
 
 namespace {
 
-enum { NumIterations = 20, NumPackets = 10, BufferSize = 125, PoolChunkSize = 2000 };
+enum { NumIterations = 20, NumPackets = 10, BufferSize = 125 };
 
 core::HeapAllocator allocator;
-core::BufferPool<uint8_t> buffer_pool(allocator, BufferSize, PoolChunkSize, true);
-packet::PacketPool packet_pool(allocator, PoolChunkSize, true);
+core::BufferPool<uint8_t> buffer_pool(allocator, BufferSize, true);
+packet::PacketPool packet_pool(allocator, true);
 
 } // namespace
 

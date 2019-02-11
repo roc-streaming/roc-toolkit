@@ -40,20 +40,16 @@ public:
     //! @b Parameters
     //!  - @p allocator is used to allocate chunks
     //!  - @p object_size defines object size in bytes
-    //!  - @p chunk_size defines allocation chunk size in bytes
     //!  - @p poison enables memory poisoning for debugging
-    Pool(IAllocator& allocator, size_t object_size, size_t chunk_size, bool poison)
+    Pool(IAllocator& allocator, size_t object_size, bool poison)
         : allocator_(allocator)
+        , used_elems_(0)
         , elem_size_(max_align(ROC_MAX(sizeof(Elem), object_size)))
         , chunk_hdr_size_(max_align(sizeof(Chunk)))
-        , chunk_n_elems_((ROC_MAX(chunk_size, chunk_hdr_size_) - chunk_hdr_size_)
-                         / elem_size_)
+        , chunk_n_elems_(1)
         , poison_(poison) {
-        roc_log(
-            LogDebug,
-            "pool: initializing: chunk_size=%lu object_size=%lu objects_per_chunk=%lu",
-            (unsigned long)chunk_offset_(chunk_n_elems_), (unsigned long)elem_size_,
-            (unsigned long)chunk_n_elems_);
+        roc_log(LogDebug, "pool: initializing: object_size=%lu poison=%d",
+                (unsigned long)elem_size_, (int)poison);
     }
 
     ~Pool() {
@@ -84,7 +80,7 @@ public:
     //! Free previously allocated memory.
     void deallocate(void* memory) {
         if (memory == NULL) {
-            roc_panic("pool: null pointer");
+            roc_panic("pool: deallocating null pointer");
         }
 
         if (poison_) {
@@ -117,6 +113,7 @@ private:
         Elem* elem = free_elems_.front();
         if (elem != NULL) {
             free_elems_.remove(*elem);
+            used_elems_++;
         }
 
         return elem;
@@ -124,6 +121,12 @@ private:
 
     void put_elem_(Elem* elem) {
         Mutex::Lock lock(mutex_);
+
+        if (used_elems_ == 0) {
+            roc_panic("pool: unpaired deallocation");
+        }
+
+        used_elems_--;
         free_elems_.push_front(*elem);
     }
 
@@ -140,13 +143,14 @@ private:
             Elem* elem = new ((char*)chunk + chunk_offset_(n)) Elem;
             free_elems_.push_back(*elem);
         }
+
+        chunk_n_elems_ *= 2;
     }
 
     void deallocate_all_() {
-        if (free_elems_.size() != chunks_.size() * chunk_n_elems_) {
-            roc_panic("pool: detected leak, avail=%lu, total=%lu",
-                      (unsigned long)free_elems_.size(),
-                      (unsigned long)(chunks_.size() * chunk_n_elems_));
+        if (used_elems_ != 0) {
+            roc_panic("pool: detected leak: used=%lu free=%lu",
+                      (unsigned long)used_elems_, (unsigned long)free_elems_.size());
         }
 
         while (Elem* elem = free_elems_.front()) {
@@ -165,14 +169,15 @@ private:
 
     Mutex mutex_;
 
+    IAllocator& allocator_;
+
     List<Chunk, NoOwnership> chunks_;
     List<Elem, NoOwnership> free_elems_;
-
-    IAllocator& allocator_;
+    size_t used_elems_;
 
     const size_t elem_size_;
     const size_t chunk_hdr_size_;
-    const size_t chunk_n_elems_;
+    size_t chunk_n_elems_;
 
     const bool poison_;
 };

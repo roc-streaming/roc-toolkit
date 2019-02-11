@@ -50,8 +50,7 @@ int main(int argc, char** argv) {
     sndio::sox_setup();
 
     core::HeapAllocator allocator;
-    core::BufferPool<audio::sample_t> pool(allocator, MaxFrameSize, ChunkSize,
-                                           args.poisoning_flag);
+    core::BufferPool<audio::sample_t> pool(allocator, MaxFrameSize, args.poisoning_flag);
 
     size_t chunk_size = 0;
     if (args.chunk_given) {

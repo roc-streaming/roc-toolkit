@@ -20,12 +20,11 @@ namespace audio {
 
 namespace {
 
-enum { BufSz = 100, MaxSz = 500, PoolChunkSize = 10000 };
+enum { BufSz = 100, MaxSz = 500 };
 
 core::HeapAllocator allocator;
-core::BufferPool<sample_t> buffer_pool(allocator, MaxSz, PoolChunkSize, true);
-core::BufferPool<sample_t>
-    large_buffer_pool(allocator, MaxSz * 10, PoolChunkSize * 10, true);
+core::BufferPool<sample_t> buffer_pool(allocator, MaxSz, true);
+core::BufferPool<sample_t> large_buffer_pool(allocator, MaxSz * 10, true);
 
 } // namespace
 

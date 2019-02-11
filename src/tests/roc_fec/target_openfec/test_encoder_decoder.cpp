@@ -26,10 +26,8 @@ const size_t NumRepairPackets = 10;
 
 const size_t PayloadSize = 251;
 
-const size_t PoolChunkSize = 2000;
-
 core::HeapAllocator allocator;
-core::BufferPool<uint8_t> buffer_pool(allocator, PayloadSize, PoolChunkSize, true);
+core::BufferPool<uint8_t> buffer_pool(allocator, PayloadSize, true);
 
 } // namespace
 

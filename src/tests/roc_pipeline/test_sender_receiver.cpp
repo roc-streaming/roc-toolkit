@@ -27,7 +27,6 @@ namespace {
 
 enum {
     MaxBufSize = 500,
-    PoolChunkSize = 10000,
 
     SampleRate = 44100,
     ChMask = 0x3,
@@ -67,10 +66,9 @@ enum {
 };
 
 core::HeapAllocator allocator;
-core::BufferPool<audio::sample_t>
-    sample_buffer_pool(allocator, MaxBufSize, PoolChunkSize, true);
-core::BufferPool<uint8_t> byte_buffer_pool(allocator, MaxBufSize, PoolChunkSize, true);
-packet::PacketPool packet_pool(allocator, PoolChunkSize, true);
+core::BufferPool<audio::sample_t> sample_buffer_pool(allocator, MaxBufSize, true);
+core::BufferPool<uint8_t> byte_buffer_pool(allocator, MaxBufSize, true);
+packet::PacketPool packet_pool(allocator, true);
 rtp::FormatMap format_map;
 
 } // namespace

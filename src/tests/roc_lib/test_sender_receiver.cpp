@@ -36,7 +36,6 @@ namespace {
 
 enum {
     MaxBufSize = 500,
-    PoolChunkSize = 10000,
 
     NumChans = 2,
 
@@ -52,8 +51,8 @@ enum {
 };
 
 core::HeapAllocator allocator;
-packet::PacketPool packet_pool(allocator, PoolChunkSize, true);
-core::BufferPool<uint8_t> byte_buffer_pool(allocator, MaxBufSize, PoolChunkSize, true);
+packet::PacketPool packet_pool(allocator, true);
+core::BufferPool<uint8_t> byte_buffer_pool(allocator, MaxBufSize, true);
 
 class Context : public core::NonCopyable<> {
 public:

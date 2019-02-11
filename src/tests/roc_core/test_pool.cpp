@@ -40,9 +40,7 @@ TEST_GROUP(pool) {
 };
 
 TEST(pool, allocate_deallocate) {
-    enum { ChunkSize = sizeof(Object) * 5 };
-
-    Pool<Object> pool(allocator, sizeof(Object), ChunkSize, true);
+    Pool<Object> pool(allocator, sizeof(Object), true);
 
     void* memory = pool.allocate();
     CHECK(memory);
@@ -57,9 +55,7 @@ TEST(pool, allocate_deallocate) {
 }
 
 TEST(pool, new_destroy) {
-    enum { ChunkSize = sizeof(Object) * 5 };
-
-    Pool<Object> pool(allocator, sizeof(Object), ChunkSize, true);
+    Pool<Object> pool(allocator, sizeof(Object), true);
 
     Object* object = new (pool) Object;
 
@@ -71,35 +67,46 @@ TEST(pool, new_destroy) {
 }
 
 TEST(pool, new_destroy_many) {
-    enum {
-        NumChunks = 3,
-        ObjectsPerChunk = 5,
-        HeaderSize = 100,
-        ChunkSize = sizeof(Object) * ObjectsPerChunk + HeaderSize
-    };
-
     {
-        Pool<Object> pool(allocator, sizeof(Object), ChunkSize, true);
+        Pool<Object> pool(allocator, sizeof(Object), true);
 
-        Object* objects[ObjectsPerChunk * NumChunks] = {};
+        Object* objects[1 + 2 + 4] = {};
 
         LONGS_EQUAL(0, allocator.num_allocations());
         LONGS_EQUAL(0, Object::n_objects);
 
-        for (size_t n = 0; n < ObjectsPerChunk * NumChunks; n++) {
-            objects[n] = new (pool) Object;
-            CHECK(objects[n]);
+        size_t n_objs = 0;
 
-            LONGS_EQUAL(n / ObjectsPerChunk + 1, allocator.num_allocations());
-            LONGS_EQUAL(n + 1, Object::n_objects);
+        for (; n_objs < 1; n_objs++) {
+            objects[n_objs] = new (pool) Object;
+            CHECK(objects[n_objs]);
         }
 
-        for (size_t n = 0; n < ObjectsPerChunk * NumChunks; n++) {
+        LONGS_EQUAL(1, allocator.num_allocations());
+        LONGS_EQUAL(1, Object::n_objects);
+
+        for (; n_objs < 1+2; n_objs++) {
+            objects[n_objs] = new (pool) Object;
+            CHECK(objects[n_objs]);
+        }
+
+        LONGS_EQUAL(2, allocator.num_allocations());
+        LONGS_EQUAL(1 + 2, Object::n_objects);
+
+        for (; n_objs < 1+2+4; n_objs++) {
+            objects[n_objs] = new (pool) Object;
+            CHECK(objects[n_objs]);
+        }
+
+        LONGS_EQUAL(3, allocator.num_allocations());
+        LONGS_EQUAL(1 + 2 + 4, Object::n_objects);
+
+        for (size_t n = 0; n < n_objs; n++) {
             pool.destroy(*objects[n]);
-
-            LONGS_EQUAL(NumChunks, allocator.num_allocations());
-            LONGS_EQUAL(ObjectsPerChunk * NumChunks - n - 1, Object::n_objects);
         }
+
+        LONGS_EQUAL(3, allocator.num_allocations());
+        LONGS_EQUAL(0, Object::n_objects);
     }
 
     LONGS_EQUAL(0, allocator.num_allocations());

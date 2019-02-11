@@ -31,7 +31,6 @@ enum {
 
     MaxPackets = 100,
     MaxBufSize = 4000,
-    PoolChunkSize = 20000,
 
     NumCh = 2,
     ChMask = 0x3,
@@ -40,9 +39,9 @@ enum {
 };
 
 core::HeapAllocator allocator;
-core::BufferPool<sample_t> sample_buffer_pool(allocator, MaxBufSize, PoolChunkSize, true);
-core::BufferPool<uint8_t> byte_buffer_pool(allocator, MaxBufSize, PoolChunkSize, true);
-packet::PacketPool packet_pool(allocator, PoolChunkSize, true);
+core::BufferPool<sample_t> sample_buffer_pool(allocator, MaxBufSize, true);
+core::BufferPool<uint8_t> byte_buffer_pool(allocator, MaxBufSize, true);
+packet::PacketPool packet_pool(allocator, true);
 
 rtp::Composer rtp_composer(NULL);
 

@@ -25,7 +25,6 @@ namespace {
 
 enum {
     MaxSize = 4000,
-    PoolChunkSize = 20000,
 
     ResamplerFIRLen = 200,
     FrameSize = 512,
@@ -35,7 +34,7 @@ enum {
 };
 
 core::HeapAllocator allocator;
-core::BufferPool<sample_t> buffer_pool(allocator, MaxSize, PoolChunkSize, true);
+core::BufferPool<sample_t> buffer_pool(allocator, MaxSize, true);
 
 } // namespace
 

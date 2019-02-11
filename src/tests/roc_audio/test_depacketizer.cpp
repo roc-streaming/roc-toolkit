@@ -24,19 +24,12 @@ namespace audio {
 
 namespace {
 
-enum {
-    MaxBufSize = 4000,
-    PoolChunkSize = 20000,
-
-    SamplesPerPacket = 200,
-    NumCh = 2,
-    ChMask = 0x3
-};
+enum { MaxBufSize = 4000, SamplesPerPacket = 200, NumCh = 2, ChMask = 0x3 };
 
 core::HeapAllocator allocator;
-core::BufferPool<sample_t> sample_buffer_pool(allocator, MaxBufSize, PoolChunkSize, true);
-core::BufferPool<uint8_t> byte_buffer_pool(allocator, MaxBufSize, PoolChunkSize, true);
-packet::PacketPool packet_pool(allocator, PoolChunkSize, true);
+core::BufferPool<sample_t> sample_buffer_pool(allocator, MaxBufSize, true);
+core::BufferPool<uint8_t> byte_buffer_pool(allocator, MaxBufSize, true);
+packet::PacketPool packet_pool(allocator, true);
 
 rtp::Composer rtp_composer(NULL);
 

@@ -238,11 +238,11 @@ int main(int argc, char** argv) {
     }
 
     core::HeapAllocator allocator;
-    core::BufferPool<uint8_t> byte_buffer_pool(allocator, MaxPacketSize, ChunkSize,
+    core::BufferPool<uint8_t> byte_buffer_pool(allocator, MaxPacketSize,
                                                args.poisoning_flag);
     core::BufferPool<audio::sample_t> sample_buffer_pool(allocator, MaxFrameSize,
-                                                         ChunkSize, args.poisoning_flag);
-    packet::PacketPool packet_pool(allocator, ChunkSize, args.poisoning_flag);
+                                                         args.poisoning_flag);
+    packet::PacketPool packet_pool(allocator, args.poisoning_flag);
 
     sndio::SoxWriter writer(allocator, config.output.channels, sample_rate);
 

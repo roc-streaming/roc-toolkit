@@ -20,7 +20,6 @@ namespace {
 
 enum {
     MaxBufSize = 500,
-    PoolChunkSize = 10000,
 
     NumCh = 2,
     SamplesPerFrame = 5,
@@ -32,7 +31,7 @@ enum {
 };
 
 core::HeapAllocator allocator;
-core::BufferPool<sample_t> sample_buffer_pool(allocator, MaxBufSize, PoolChunkSize, true);
+core::BufferPool<sample_t> sample_buffer_pool(allocator, MaxBufSize, true);
 
 class TestFrameReader : public IReader, public core::NonCopyable<> {
 public:

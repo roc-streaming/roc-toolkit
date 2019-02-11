@@ -17,10 +17,8 @@ namespace packet {
 
 namespace {
 
-enum { PoolChunkSize = 2000 };
-
 core::HeapAllocator allocator;
-PacketPool pool(allocator, PoolChunkSize, true);
+PacketPool pool(allocator, true);
 
 } // namespace
 

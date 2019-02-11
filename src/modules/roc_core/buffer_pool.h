@@ -23,9 +23,8 @@ template <class T> class Buffer;
 template <class T> class BufferPool : public Pool<Buffer<T> > {
 public:
     //! Initialization.
-    BufferPool(IAllocator& allocator, size_t buff_size, size_t chunk_size, bool poison)
-        : Pool<Buffer<T> >(
-              allocator, sizeof(Buffer<T>) + sizeof(T) * buff_size, chunk_size, poison)
+    BufferPool(IAllocator& allocator, size_t buff_size, bool poison)
+        : Pool<Buffer<T> >(allocator, sizeof(Buffer<T>) + sizeof(T) * buff_size, poison)
         , buff_size_(buff_size) {
     }
 

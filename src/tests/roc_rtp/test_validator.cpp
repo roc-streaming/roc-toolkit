@@ -26,12 +26,11 @@ enum {
     Src2 = 77,
     SampleRate = 10000,
     MaxSnJump = 100,
-    MaxTsJump = 1000,
-    PoolChunkSize = 2000
+    MaxTsJump = 1000
 };
 
 core::HeapAllocator allocator;
-packet::PacketPool pool(allocator, PoolChunkSize, true);
+packet::PacketPool pool(allocator, true);
 
 } // namespace
 

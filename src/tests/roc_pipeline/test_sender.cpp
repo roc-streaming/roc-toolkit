@@ -29,7 +29,6 @@ rtp::PayloadType PayloadType = rtp::PayloadType_L16_Stereo;
 
 enum {
     MaxBufSize = 1000,
-    PoolChunkSize = 20000,
 
     SampleRate = 44100,
     ChMask = 0x3,
@@ -43,10 +42,9 @@ enum {
 };
 
 core::HeapAllocator allocator;
-core::BufferPool<audio::sample_t>
-    sample_buffer_pool(allocator, MaxBufSize, PoolChunkSize, true);
-core::BufferPool<uint8_t> byte_buffer_pool(allocator, MaxBufSize, PoolChunkSize, true);
-packet::PacketPool packet_pool(allocator, PoolChunkSize, true);
+core::BufferPool<audio::sample_t> sample_buffer_pool(allocator, MaxBufSize, true);
+core::BufferPool<uint8_t> byte_buffer_pool(allocator, MaxBufSize, true);
+packet::PacketPool packet_pool(allocator, true);
 
 rtp::FormatMap format_map;
 rtp::Parser rtp_parser(format_map, NULL);
