@@ -36,7 +36,7 @@ enum {
     DefaultPacketSize = 320,
 
     //! Number of samples per frame for all channels.
-    DefaultFrameSize = 640,
+    DefaultFrameSize = 320 * 2,
 
     //! Minum latency relative to target latency.
     DefaultMinLatency = -1,
@@ -161,7 +161,7 @@ struct ReceiverSessionConfig {
     ReceiverSessionConfig()
         : channels(DefaultChannelMask)
         , input_packet_size(DefaultPacketSize)
-        , target_latency(DefaultPacketSize * 27)
+        , target_latency(DefaultPacketSize * 30)
         , watchdog(DefaultSampleRate) {
         latency_monitor.min_latency =
             (packet::signed_timestamp_t)target_latency * DefaultMinLatency;
