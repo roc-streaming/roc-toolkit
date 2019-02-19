@@ -199,17 +199,21 @@ bool Resampler::check_config_() const {
         return false;
     }
 
-    if (frame_size_ch_ > ((fixedpoint_t)-1 >> FRACT_BIT_COUNT)) {
-        roc_log(LogError,
-                "resampler: frame_size is too much: frame_size=%lu num_channels=%lu",
-                (unsigned long)frame_size_, (unsigned long)channels_num_);
-        return false;
-    }
-
     if (frame_size_ != frame_size_ch_ * channels_num_) {
         roc_log(LogError, "resampler: frame_size is not multiple of num_channels:"
                           " frame_size=%lu num_channels=%lu",
                 (unsigned long)frame_size_, (unsigned long)channels_num_);
+        return false;
+    }
+
+    const size_t max_frame_size =
+        (((fixedpoint_t)(signed_fixedpoint_t)-1 >> FRACT_BIT_COUNT) + 1) * channels_num_;
+    if (frame_size_ > max_frame_size) {
+        roc_log(LogError,
+                "resampler: frame_size is too much: "
+                "max_frame_size=%lu frame_size=%lu num_channels=%lu",
+                (unsigned long)max_frame_size, (unsigned long)frame_size_,
+                (unsigned long)channels_num_);
         return false;
     }
 
