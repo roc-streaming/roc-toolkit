@@ -84,7 +84,7 @@ typedef struct roc_sender_config {
     roc_resampler_profile resampler_profile;
 
     //! Number of samples per channel per packet.
-    unsigned int samples_per_packet;
+    unsigned int packet_size;
 
     //! FEC scheme to use.
     roc_fec_scheme fec_scheme;
@@ -118,7 +118,7 @@ typedef struct roc_receiver_config {
     unsigned int silence_timeout;
 
     //! Number of samples per channel per packet.
-    unsigned int samples_per_packet;
+    unsigned int packet_size;
 
     //! FEC scheme to use.
     roc_fec_scheme fec_scheme;

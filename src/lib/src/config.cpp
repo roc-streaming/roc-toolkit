@@ -30,8 +30,8 @@ bool config_context(roc_context_config& out, const roc_context_config* in) {
 }
 
 bool config_sender(pipeline::SenderConfig& out, const roc_sender_config& in) {
-    if (in.samples_per_packet) {
-        out.output_packet_size = in.samples_per_packet;
+    if (in.packet_size) {
+        out.output_packet_size = in.packet_size;
     }
 
     if (in.input_sample_rate) {
@@ -94,8 +94,8 @@ bool config_receiver(pipeline::ReceiverConfig& out, const roc_receiver_config& i
         out.default_session.watchdog.silence_timeout = in.silence_timeout;
     }
 
-    if (in.samples_per_packet) {
-        out.default_session.input_packet_size = in.samples_per_packet;
+    if (in.packet_size) {
+        out.default_session.input_packet_size = in.packet_size;
     }
 
     if (in.output_sample_rate) {
