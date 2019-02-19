@@ -12,7 +12,7 @@ section "Options"
     option "rate" r "Output sample rate (Hz)"
         int optional
 
-    option "chunk" - "Number of samples per input frame"
+    option "frame-size" - "Number of samples per audio frame"
         int optional
 
     option "no-resampling" - "Disable resampling" flag off

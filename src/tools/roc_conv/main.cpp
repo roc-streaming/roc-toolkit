@@ -17,6 +17,7 @@
 #include "roc_core/heap_allocator.h"
 #include "roc_core/log.h"
 #include "roc_core/scoped_destructor.h"
+#include "roc_pipeline/config.h"
 #include "roc_sndio/sox.h"
 #include "roc_sndio/sox_reader.h"
 #include "roc_sndio/sox_writer.h"
@@ -52,12 +53,12 @@ int main(int argc, char** argv) {
     core::HeapAllocator allocator;
     core::BufferPool<audio::sample_t> pool(allocator, MaxFrameSize, args.poisoning_flag);
 
-    size_t chunk_size = 0;
-    if (args.chunk_given) {
-        chunk_size = (size_t)args.chunk_arg;
+    size_t frame_size = pipeline::DefaultFrameSize;
+    if (args.frame_size_given) {
+        frame_size = (size_t)args.frame_size_arg;
     }
 
-    sndio::SoxReader reader(pool, Channels, chunk_size, 0);
+    sndio::SoxReader reader(pool, Channels, frame_size, 0);
     if (!reader.open(args.input_arg, NULL)) {
         roc_log(LogError, "can't open input file: %s", args.input_arg);
         return 1;
@@ -115,7 +116,7 @@ int main(int argc, char** argv) {
     }
 
     audio::ResamplerWriter resampler(*writer, pool, allocator, resampler_config, Channels,
-                                     MaxFrameSize);
+                                     frame_size);
     if (!args.no_resampling_flag) {
         if (!resampler.valid()) {
             roc_log(LogError, "can't create resampler");
