@@ -5,7 +5,7 @@ Building
    :maxdepth: 1
 
    building/dependencies
-   building/quick_start
+   building/scons_options
+   building/user_instructions
+   building/developer_instructions
    building/cross_compiling
-   building/scons
-   building/examples

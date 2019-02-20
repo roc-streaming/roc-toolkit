@@ -1,5 +1,5 @@
-Quick start
-***********
+User instructions
+*****************
 
 .. contents:: Jump to:
    :local:

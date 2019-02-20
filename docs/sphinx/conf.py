@@ -172,6 +172,7 @@ latex_documents = [
 man_pages = [
     ('tools/roc_send', 'roc-send', u'send real-time audio', [], 1),
     ('tools/roc_recv', 'roc-recv', u'receive real-time audio', [], 1),
+    ('tools/roc_conv', 'roc-conv', u'convert audio', [], 1),
 ]
 
 

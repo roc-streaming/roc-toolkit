@@ -14,19 +14,24 @@ Send audio-stream from a file or audio device to a Roc receiver.
 Options
 -------
 
--h, --help             Print help and exit
--V, --version          Print version and exit
--v, --verbose          Increase verbosity level (may be used multiple times)
--i, --input=NAME       Input file or device
--t, --type=TYPE        Input codec or driver
--s, --source=ADDRESS   Remote source UDP address
--r, --repair=ADDRESS   Remote repair UDP address
--l, --local=ADDRESS    Local UDP address
---fec=ENUM             FEC scheme  (possible values="rs", "ldpc", "none" default="rs")
---nbsrc=INT            Number of source packets in FEC block
---nbrpr=INT            Number of repair packets in FEC block
---interleaving=ENUM    Enable/disable packet interleaving  (possible values="yes", "no" default="no")
---rate=INT             Sample rate (Hz)
+-h, --help                Print help and exit
+-V, --version             Print version and exit
+-v, --verbose             Increase verbosity level (may be used multiple times)
+-i, --input=NAME          Input file or device
+-t, --type=TYPE           Input codec or driver
+-s, --source=ADDRESS      Remote source UDP address
+-r, --repair=ADDRESS      Remote repair UDP address
+-l, --local=ADDRESS       Local UDP address
+--fec=ENUM                FEC scheme  (possible values="rs", "ldpc", "none" default=`rs')
+--nbsrc=INT               Number of source packets in FEC block
+--nbrpr=INT               Number of repair packets in FEC block
+--rate=INT                Sample rate (Hz)
+--no-resampling           Disable resampling  (default=off)
+--resampler-profile=ENUM  Resampler profile  (possible values="low", "medium", "high" default=`medium')
+--resampler-interp=INT    Resampler sinc table precision
+--resampler-window=INT    Number of samples per resampler window
+--interleaving            Enable packet interleaving  (default=off)
+--poisoning               Enable uninitialized memory poisoning (default=off)
 
 Address
 -------
@@ -87,7 +92,7 @@ Capture sound from specific pulseaudio device:
 SEE ALSO
 ========
 
-:manpage:`roc-recv(1)`, :manpage:`sox(1)`, the Roc web site at https://roc-project.github.io/
+:manpage:`roc-recv(1)`, :manpage:`roc-conv(1)`, :manpage:`sox(1)`, the Roc web site at https://roc-project.github.io/
 
 BUGS
 ====

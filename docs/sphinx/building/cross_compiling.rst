@@ -29,7 +29,7 @@ Use ``--build-3rdparty`` option to let Roc to download and build dependencies. W
 
 If necessary, you can override build tool names and options by setting variables like ``CC`` and ``CFLAGS``.
 
-See :doc:`/building/scons` page for the full list of options and variables.
+See :doc:`/building/scons_options` page for the full list of options and variables.
 
 Raspberry Pi toolchains (Raspberry Pi 1 and later)
 ==================================================

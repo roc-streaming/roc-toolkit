@@ -1,50 +1,9 @@
-Design
-******
+Code structure
+**************
 
 .. warning::
 
    This section is under construction.
-
-Pipelines
-=========
-
-Roc's design is all about pipelines of connected *readers* or *writers*. This pattern is repeated on several levels:
-
-* when processing network datagrams;
-* when processing higher-level packets;
-* when processing audio samples.
-
-Pipeline begins with a *producer* or a *queue*, and ends with a *consumer* or a *queue*. Producer and consumer are connected through a sequence of readers or writers, depending on pipeline direction.
-
-Threads
-=======
-
-There are at most three threads, communicating strictly through thread-safe queues:
-
-* datagram queue;
-* sample buffer queue.
-
-In sender:
-----------
-
-================= ================= =================
-Thread	          Module	        Description
-================= ================= =================
-audio reader	  ``roc_sndio``	        Reads audio stream from input file or device and writes it to sample buffer queue.
-sender pipeline	  ``roc_pipeline``	    Reads sample buffers from queue, packs them into packets, composes datagrams from packets, and writes them to datagram queue.
-network sender	  ``roc_netio``	        Reads datagrams from queue and sends them to receiver.
-================= ================= =================
-
-In receiver:
-------------
-
-================= ================= =================
-Thread	          Module	        Description
-================= ================= =================
-network receive   ``roc_netio``     Receives datagrams and writes them to datagram queue.
-receiver pipeline ``roc_pipeline``  Reads datagrams from queue, parses packets from datagrams, reconstructs audio stream from packets, and writes it to sample buffer queue.
-audio writer      ``roc_sndio``     Reads sample buffers from queue and sends them to output file or device.
-================= ================= =================
 
 Modules
 =======

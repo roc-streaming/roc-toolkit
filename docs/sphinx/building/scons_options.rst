@@ -1,5 +1,5 @@
-SCons
-*****
+SCons options
+*************
 
 .. contents:: Jump to:
    :local:

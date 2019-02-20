@@ -14,27 +14,30 @@ Receive audio-stream on particular UDP port(s), repair lost packets, adjust samp
 Options
 -------
 
--h, --help                  Print help and exit
--V, --version               Print version and exit
--v, --verbose               Increase verbosity level (may be used multiple times)
--o, --output=NAME           Output file or device
--t, --type=TYPE             Output codec or driver
--s, --source=ADDRESS        Source UDP address
--r, --repair=ADDRESS        Repair UDP address
---fec=ENUM                  FEC scheme (possible values="rs", "ldpc", "none" default="rs")
---nbsrc=INT                 Number of source packets in FEC block
---nbrpr=INT                 Number of repair packets in FEC block
---timeout=INT               Session timeout as number of samples
---latency=INT               Session latency as number of samples
---min-latency=INT           Minimum session latency as number of samples
---max-latency=INT           Maximum session latency as number of samples
---rate=INT                  Override output sample rate (Hz)
---no-resampling             Disable resampling (default=off)
---resampler-interp=INT      Resampler sinc table precision
---resampler-window=INT      Number of samples per resampler window
---resampler-frame=INT       Number of samples per resampler frame
--1, --oneshot               Exit when last connected client disconnects (default=off)
---beep                      Enable beep on packet loss (default=off)
+-h, --help                Print help and exit
+-V, --version             Print version and exit
+-v, --verbose             Increase verbosity level (may be used multiple times)
+-o, --output=NAME         Output file or device
+-t, --type=TYPE           Output codec or driver
+-s, --source=ADDRESS      Source UDP address
+-r, --repair=ADDRESS      Repair UDP address
+--fec=ENUM                FEC scheme  (possible values="rs", "ldpc", "none" default=`rs')
+--nbsrc=INT               Number of source packets in FEC block
+--nbrpr=INT               Number of repair packets in FEC block
+--silence-timeout=INT     Session timeout for silence, number of samples
+--drops-timeout=INT       Session timeout for constant drops, number of samples
+--drops-window=INT        Session drops detection window, number of samples
+--latency=INT             Session target latency, number of samples
+--min-latency=INT         Session minimum latency, number of samples
+--max-latency=INT         Session maximum latency, number of samples
+--rate=INT                Override output sample rate (Hz)
+--no-resampling           Disable resampling  (default=off)
+--resampler-profile=ENUM  Resampler profile  (possible values="low", "medium", "high" default=`medium')
+--resampler-interp=INT    Resampler sinc table precision
+--resampler-window=INT    Number of samples per resampler window
+-1, --oneshot                 Exit when last connected client disconnects (default=off)
+--poisoning               Enable uninitialized memory poisoning (default=off)
+--beeping                 Enable beeping on packet loss  (default=off)
 
 Address
 -------
@@ -95,7 +98,7 @@ Or:
 SEE ALSO
 ========
 
-:manpage:`roc-send(1)`, :manpage:`sox(1)`, the Roc web site at https://roc-project.github.io/
+:manpage:`roc-send(1)`, :manpage:`roc-conv(1)`, :manpage:`sox(1)`, the Roc web site at https://roc-project.github.io/
 
 BUGS
 ====

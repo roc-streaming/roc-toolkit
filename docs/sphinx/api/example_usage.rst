@@ -1,5 +1,5 @@
-Quick start
-***********
+Example usage
+*************
 
 .. warning::
 

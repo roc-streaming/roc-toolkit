@@ -1,5 +1,5 @@
-Examples
-********
+Developer instructions
+**********************
 
 .. contents:: Jump to:
    :local:
