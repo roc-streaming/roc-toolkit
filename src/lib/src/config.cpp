@@ -30,23 +30,24 @@ bool config_context(roc_context_config& out, const roc_context_config* in) {
 }
 
 bool config_sender(pipeline::SenderConfig& out, const roc_sender_config& in) {
-    if (in.packet_size) {
-        out.output_packet_size = in.packet_size;
+    if (in.packet_samples) {
+        out.output_packet_samples = in.packet_samples;
     }
 
     if (in.input_sample_rate) {
-        out.sample_rate = in.input_sample_rate;
+        out.input_sample_rate = in.input_sample_rate;
     }
 
     switch ((unsigned)in.fec_scheme) {
+    case ROC_FEC_DISABLE:
+        out.fec.codec = fec::NoCodec;
+        break;
+    case ROC_FEC_DEFAULT:
     case ROC_FEC_RS8M:
         out.fec.codec = fec::ReedSolomon8m;
         break;
     case ROC_FEC_LDPC_STAIRCASE:
         out.fec.codec = fec::LDPCStaircase;
-        break;
-    case ROC_FEC_DISABLE:
-        out.fec.codec = fec::NoCodec;
         break;
     default:
         roc_log(LogError, "roc_config: invalid fec_scheme");
@@ -59,9 +60,12 @@ bool config_sender(pipeline::SenderConfig& out, const roc_sender_config& in) {
     }
 
     switch ((unsigned)in.resampler_profile) {
+    case ROC_RESAMPLER_DISABLE:
+        break;
     case ROC_RESAMPLER_LOW:
         out.resampler = audio::resampler_profile(audio::ResamplerProfile_Low);
         break;
+    case ROC_RESAMPLER_DEFAULT:
     case ROC_RESAMPLER_MEDIUM:
         out.resampler = audio::resampler_profile(audio::ResamplerProfile_Medium);
         break;
@@ -69,12 +73,13 @@ bool config_sender(pipeline::SenderConfig& out, const roc_sender_config& in) {
         out.resampler = audio::resampler_profile(audio::ResamplerProfile_High);
         break;
     default:
-        break;
+        roc_log(LogError, "roc_config: invalid resampler_profile");
+        return false;
     }
 
     out.resampling = (in.resampler_profile != ROC_RESAMPLER_DISABLE);
-    out.interleaving = in.enable_interleaving;
-    out.timing = in.enable_timing;
+    out.interleaving = in.packet_interleaving;
+    out.timing = in.automatic_timing;
 
     return true;
 }
@@ -94,8 +99,8 @@ bool config_receiver(pipeline::ReceiverConfig& out, const roc_receiver_config& i
         out.default_session.watchdog.silence_timeout = in.silence_timeout;
     }
 
-    if (in.packet_size) {
-        out.default_session.input_packet_size = in.packet_size;
+    if (in.packet_samples) {
+        out.default_session.input_packet_size = in.packet_samples;
     }
 
     if (in.output_sample_rate) {
@@ -103,14 +108,15 @@ bool config_receiver(pipeline::ReceiverConfig& out, const roc_receiver_config& i
     }
 
     switch ((unsigned)in.fec_scheme) {
+    case ROC_FEC_DISABLE:
+        out.default_session.fec.codec = fec::NoCodec;
+        break;
+    case ROC_FEC_DEFAULT:
     case ROC_FEC_RS8M:
         out.default_session.fec.codec = fec::ReedSolomon8m;
         break;
     case ROC_FEC_LDPC_STAIRCASE:
         out.default_session.fec.codec = fec::LDPCStaircase;
-        break;
-    case ROC_FEC_DISABLE:
-        out.default_session.fec.codec = fec::NoCodec;
         break;
     default:
         roc_log(LogError, "roc_config: invalid fec_scheme");
@@ -123,10 +129,13 @@ bool config_receiver(pipeline::ReceiverConfig& out, const roc_receiver_config& i
     }
 
     switch ((unsigned)in.resampler_profile) {
+    case ROC_RESAMPLER_DISABLE:
+        break;
     case ROC_RESAMPLER_LOW:
         out.default_session.resampler =
             audio::resampler_profile(audio::ResamplerProfile_Low);
         break;
+    case ROC_RESAMPLER_DEFAULT:
     case ROC_RESAMPLER_MEDIUM:
         out.default_session.resampler =
             audio::resampler_profile(audio::ResamplerProfile_Medium);
@@ -136,11 +145,12 @@ bool config_receiver(pipeline::ReceiverConfig& out, const roc_receiver_config& i
             audio::resampler_profile(audio::ResamplerProfile_High);
         break;
     default:
-        break;
+        roc_log(LogError, "roc_config: invalid resampler_profile");
+        return false;
     }
 
     out.output.resampling = (in.resampler_profile != ROC_RESAMPLER_DISABLE);
-    out.output.timing = in.enable_timing;
+    out.output.timing = in.automatic_timing;
 
     return true;
 }

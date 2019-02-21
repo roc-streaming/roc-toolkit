@@ -179,8 +179,8 @@ int main(int argc, char** argv) {
         }
     }
 
-    sndio::SoxReader reader(sample_buffer_pool, config.channels,
-                            config.output_packet_size, sample_rate);
+    sndio::SoxReader reader(sample_buffer_pool, config.input_channels,
+                            config.output_packet_samples, sample_rate);
 
     if (!reader.open(args.input_arg, args.type_arg)) {
         roc_log(LogError, "can't open input file/device: %s %s", args.input_arg,
@@ -189,7 +189,7 @@ int main(int argc, char** argv) {
     }
 
     config.timing = reader.is_file();
-    config.sample_rate = reader.sample_rate();
+    config.input_sample_rate = reader.sample_rate();
 
     rtp::FormatMap format_map;
 

@@ -169,8 +169,8 @@ TEST_GROUP(sender_receiver) {
     SenderConfig sender_config(int flags) {
         SenderConfig config;
 
-        config.channels = ChMask;
-        config.output_packet_size = SamplesPerPacket;
+        config.input_channels = ChMask;
+        config.output_packet_samples = SamplesPerPacket;
         config.internal_frame_size = MaxBufSize;
 
         config.fec = fec_config(flags);

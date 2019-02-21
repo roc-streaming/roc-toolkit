@@ -84,6 +84,46 @@ roc_address
 
 .. doxygenfunction:: roc_address_port
 
+roc_config
+==========
+
+.. code-block:: c
+
+   #include <roc/config.h>
+
+.. doxygentypedef:: roc_protocol
+   :outline:
+
+.. doxygenenum:: roc_protocol
+
+.. doxygentypedef:: roc_fec_scheme
+   :outline:
+
+.. doxygenenum:: roc_fec_scheme
+
+.. doxygentypedef:: roc_resampler_profile
+   :outline:
+
+.. doxygenenum:: roc_resampler_profile
+
+.. doxygentypedef:: roc_context_config
+   :outline:
+
+.. doxygenstruct:: roc_context_config
+   :members:
+
+.. doxygentypedef:: roc_sender_config
+   :outline:
+
+.. doxygenstruct:: roc_sender_config
+   :members:
+
+.. doxygentypedef:: roc_receiver_config
+   :outline:
+
+.. doxygenstruct:: roc_receiver_config
+   :members:
+
 roc_log
 =======
 

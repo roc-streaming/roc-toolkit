@@ -29,14 +29,14 @@ Sender::Sender(const SenderConfig& config,
                core::IAllocator& allocator)
     : audio_writer_(NULL)
     , timestamp_(0)
-    , num_channels_(packet::num_channels(config.channels)) {
+    , num_channels_(packet::num_channels(config.input_channels)) {
     const rtp::Format* format = format_map.format(config.payload_type);
     if (!format) {
         return;
     }
 
     if (config.timing) {
-        ticker_.reset(new (allocator) core::Ticker(config.sample_rate), allocator);
+        ticker_.reset(new (allocator) core::Ticker(config.input_sample_rate), allocator);
         if (!ticker_) {
             return;
         }
@@ -89,7 +89,7 @@ Sender::Sender(const SenderConfig& config,
             pwriter = interleaver_.get();
         }
 
-        const size_t source_packet_size = format->size(config.output_packet_size);
+        const size_t source_packet_size = format->size(config.output_packet_samples);
 
         core::UniquePtr<fec::OFEncoder> fec_encoder(
             new (allocator) fec::OFEncoder(config.fec, source_packet_size, allocator),
@@ -116,18 +116,18 @@ Sender::Sender(const SenderConfig& config,
         return;
     }
 
-    packetizer_.reset(
-        new (allocator) audio::Packetizer(*pwriter, source_port_->composer(), *encoder_,
-                                          packet_pool, byte_buffer_pool, config.channels,
-                                          config.output_packet_size, config.payload_type),
-        allocator);
+    packetizer_.reset(new (allocator) audio::Packetizer(
+                          *pwriter, source_port_->composer(), *encoder_, packet_pool,
+                          byte_buffer_pool, config.input_channels,
+                          config.output_packet_samples, config.payload_type),
+                      allocator);
     if (!packetizer_) {
         return;
     }
 
     audio::IWriter* awriter = packetizer_.get();
 
-    if (config.resampling && config.sample_rate != format->sample_rate) {
+    if (config.resampling && config.input_sample_rate != format->sample_rate) {
         if (config.poisoning) {
             resampler_poisoner_.reset(new (allocator) audio::PoisonWriter(*awriter),
                                       allocator);
@@ -138,12 +138,12 @@ Sender::Sender(const SenderConfig& config,
         }
         resampler_.reset(new (allocator) audio::ResamplerWriter(
                              *awriter, sample_buffer_pool, allocator, config.resampler,
-                             config.channels, config.internal_frame_size),
+                             config.input_channels, config.internal_frame_size),
                          allocator);
         if (!resampler_ || !resampler_->valid()) {
             return;
         }
-        if (!resampler_->set_scaling(float(config.sample_rate) / format->sample_rate)) {
+        if (!resampler_->set_scaling(float(config.input_sample_rate) / format->sample_rate)) {
             return;
         }
         awriter = resampler_.get();

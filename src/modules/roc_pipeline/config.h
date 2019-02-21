@@ -91,16 +91,16 @@ struct SenderConfig {
     fec::Config fec;
 
     //! Number of samples per second per channel.
-    size_t sample_rate;
+    size_t input_sample_rate;
 
     //! Channel mask.
-    packet::channel_mask_t channels;
+    packet::channel_mask_t input_channels;
 
     //! Number of samples for internal frames.
     size_t internal_frame_size;
 
     //! Number of samples per packet per channel.
-    size_t output_packet_size;
+    size_t output_packet_samples;
 
     //! RTP payload type for audio packets.
     rtp::PayloadType payload_type;
@@ -118,10 +118,10 @@ struct SenderConfig {
     bool poisoning;
 
     SenderConfig()
-        : sample_rate(DefaultSampleRate)
-        , channels(DefaultChannelMask)
+        : input_sample_rate(DefaultSampleRate)
+        , input_channels(DefaultChannelMask)
         , internal_frame_size(DefaultFrameSize)
-        , output_packet_size(DefaultPacketSize)
+        , output_packet_samples(DefaultPacketSize)
         , payload_type(rtp::PayloadType_L16_Stereo)
         , resampling(false)
         , interleaving(false)

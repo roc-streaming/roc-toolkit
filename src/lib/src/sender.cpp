@@ -106,7 +106,7 @@ roc_sender::roc_sender(roc_context& ctx, pipeline::SenderConfig& cfg)
     : context(ctx)
     , config(cfg)
     , writer(NULL)
-    , num_channels(packet::num_channels(cfg.channels)) {
+    , num_channels(packet::num_channels(cfg.input_channels)) {
 }
 
 roc_sender* roc_sender_open(roc_context* context, const roc_sender_config* config) {
