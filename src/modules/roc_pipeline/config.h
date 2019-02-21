@@ -161,7 +161,7 @@ struct ReceiverSessionConfig {
     ReceiverSessionConfig()
         : channels(DefaultChannelMask)
         , input_packet_size(DefaultPacketSize)
-        , target_latency(DefaultPacketSize * 30)
+        , target_latency(DefaultPacketSize * 32)
         , watchdog(DefaultSampleRate) {
         latency_monitor.min_latency =
             (packet::signed_timestamp_t)target_latency * DefaultMinLatency;
