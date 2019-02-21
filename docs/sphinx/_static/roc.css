@@ -1,4 +1,8 @@
-/* roc color overrides */
+/* roc css overrides */
+
+div.body {
+    max-width: 1000px;
+}
 
 div.related {
     background-color: #3A76A4;
