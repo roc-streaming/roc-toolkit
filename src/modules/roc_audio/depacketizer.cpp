@@ -8,7 +8,6 @@
 
 #include "roc_audio/depacketizer.h"
 #include "roc_core/log.h"
-#include "roc_core/macros.h"
 #include "roc_core/panic.h"
 #include "roc_core/stddefs.h"
 
@@ -25,7 +24,7 @@ inline void write_zeros(sample_t* buf, size_t bufsz) {
 
 inline void write_beep(sample_t* buf, size_t bufsz) {
     for (size_t n = 0; n < bufsz; n++) {
-        buf[n] = (sample_t)sin(2 * M_PI / 44100 * 880 * n);
+        buf[n] = (sample_t)std::sin(2 * M_PI / 44100 * 880 * n);
     }
 }
 
@@ -101,17 +100,15 @@ sample_t* Depacketizer::read_samples_(sample_t* buff_ptr, sample_t* buff_end) {
         packet::timestamp_t next_timestamp = (packet_->rtp()->timestamp + packet_pos_);
 
         if (timestamp_ != next_timestamp) {
-            roc_panic_if_not(
-                ROC_UNSIGNED_LT(packet::signed_timestamp_t, timestamp_, next_timestamp));
+            roc_panic_if_not(packet::timestamp_lt(timestamp_, next_timestamp));
 
-            const size_t mis_samples =
-                num_channels_ * (size_t)ROC_UNSIGNED_SUB(packet::signed_timestamp_t,
-                                                         next_timestamp, timestamp_);
+            const size_t mis_samples = num_channels_
+                * (size_t)packet::timestamp_diff(next_timestamp, timestamp_);
 
             const size_t max_samples = (size_t)(buff_end - buff_ptr);
 
             buff_ptr = read_missing_samples_(
-                buff_ptr, buff_ptr + ROC_MIN(mis_samples, max_samples));
+                buff_ptr, buff_ptr + std::min(mis_samples, max_samples));
         }
 
         if (buff_ptr < buff_end) {
@@ -178,7 +175,7 @@ void Depacketizer::update_packet_() {
 
         const packet::timestamp_t pkt_end = pkt_timestamp + packet_->rtp()->duration;
 
-        if (ROC_UNSIGNED_LT(packet::signed_timestamp_t, timestamp_, pkt_end)) {
+        if (packet::timestamp_lt(timestamp_, pkt_end)) {
             break;
         }
 
@@ -207,9 +204,9 @@ void Depacketizer::update_packet_() {
         first_packet_ = false;
     }
 
-    if (ROC_UNSIGNED_LT(packet::signed_timestamp_t, pkt_timestamp, timestamp_)) {
-        packet_pos_ = (packet::timestamp_t)ROC_UNSIGNED_SUB(packet::signed_timestamp_t,
-                                                            timestamp_, pkt_timestamp);
+    if (packet::timestamp_lt(pkt_timestamp, timestamp_)) {
+        packet_pos_ =
+            (packet::timestamp_t)packet::timestamp_diff(timestamp_, pkt_timestamp);
     } else {
         packet_pos_ = 0;
     }
@@ -231,9 +228,8 @@ packet::PacketPtr Depacketizer::read_packet_() {
 void Depacketizer::set_frame_flags_(Frame& frame,
                                     const size_t prev_dropped_packets,
                                     const packet::timestamp_t prev_packet_samples) {
-    const size_t packet_samples =
-        num_channels_ * (size_t)ROC_UNSIGNED_SUB(packet::signed_timestamp_t,
-                                                 packet_samples_, prev_packet_samples);
+    const size_t packet_samples = num_channels_
+        * (size_t)packet::timestamp_diff(packet_samples_, prev_packet_samples);
 
     unsigned flags = 0;
 

@@ -23,20 +23,47 @@ typedef uint32_t source_t;
 //! Packet sequence number in packet stream.
 typedef uint16_t seqnum_t;
 
-//! Packet sequence number (signed version).
-typedef int16_t signed_seqnum_t;
+//! Packet sequence numbers difference.
+typedef int16_t seqnum_diff_t;
 
-//! Audio packet timestamp (number of first sample in packet).
+//! Compute difference between two seqnums.
+inline seqnum_diff_t seqnum_diff(seqnum_t a, seqnum_t b) {
+    return seqnum_diff_t(a - b);
+}
+
+//! Check if a is before b taking possible wrap into account.
+inline bool seqnum_lt(seqnum_t a, seqnum_t b) {
+    return seqnum_diff(a, b) < 0;
+}
+
+//! Check if a is before or equal to b taking possible wrap into account.
+inline bool seqnum_le(seqnum_t a, seqnum_t b) {
+    return seqnum_diff(a, b) <= 0;
+}
+
+//! Audio packet timestamp.
 typedef uint32_t timestamp_t;
 
-//! Audio packet timestamp (signed version).
-typedef int32_t signed_timestamp_t;
+//! Audio packet timestamps difference.
+typedef int32_t timestamp_diff_t;
+
+//! Compute difference between two timestamps.
+inline timestamp_diff_t timestamp_diff(timestamp_t a, timestamp_t b) {
+    return timestamp_diff_t(a - b);
+}
+
+//! Check if a is before b taking possible wrap into account.
+inline bool timestamp_lt(timestamp_t a, timestamp_t b) {
+    return timestamp_diff(a, b) < 0;
+}
+
+//! Check if a is before or equal to b taking possible wrap into account.
+inline bool timestamp_le(timestamp_t a, timestamp_t b) {
+    return timestamp_diff(a, b) <= 0;
+}
 
 //! Bitmask of channels present in audio packet.
 typedef uint32_t channel_mask_t;
-
-//! Channel number.
-typedef uint16_t channel_t;
 
 //! Get number of channels in mask.
 static inline size_t num_channels(channel_mask_t ch_mask) {

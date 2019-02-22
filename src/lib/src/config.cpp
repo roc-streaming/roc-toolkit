@@ -89,10 +89,10 @@ bool config_receiver(pipeline::ReceiverConfig& out, const roc_receiver_config& i
         out.default_session.target_latency = in.target_latency;
 
         out.default_session.latency_monitor.min_latency =
-            (packet::signed_timestamp_t)in.target_latency * pipeline::DefaultMinLatency;
+            (packet::timestamp_diff_t)in.target_latency * pipeline::DefaultMinLatency;
 
         out.default_session.latency_monitor.max_latency =
-            (packet::signed_timestamp_t)in.target_latency * pipeline::DefaultMaxLatency;
+            (packet::timestamp_diff_t)in.target_latency * pipeline::DefaultMaxLatency;
     }
 
     if (in.silence_timeout) {

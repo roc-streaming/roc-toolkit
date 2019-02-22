@@ -12,12 +12,13 @@
 #ifndef ROC_CORE_STDDEFS_H_
 #define ROC_CORE_STDDEFS_H_
 
+#include <algorithm>
+#include <cmath>
 #include <new>
 
 #include <ctype.h>
 #include <inttypes.h>
 #include <limits.h>
-#include <math.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>

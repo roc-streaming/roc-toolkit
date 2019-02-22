@@ -8,7 +8,6 @@
 
 #include "roc_audio/latency_monitor.h"
 #include "roc_core/log.h"
-#include "roc_core/macros.h"
 #include "roc_core/panic.h"
 
 namespace roc {
@@ -65,7 +64,7 @@ bool LatencyMonitor::valid() const {
 }
 
 bool LatencyMonitor::update(packet::timestamp_t time) {
-    packet::signed_timestamp_t latency = 0;
+    packet::timestamp_diff_t latency = 0;
 
     if (!get_latency_(latency)) {
         return true;
@@ -89,7 +88,7 @@ bool LatencyMonitor::update(packet::timestamp_t time) {
     return true;
 }
 
-bool LatencyMonitor::get_latency_(packet::signed_timestamp_t& latency) const {
+bool LatencyMonitor::get_latency_(packet::timestamp_diff_t& latency) const {
     if (!depacketizer_.started()) {
         return false;
     }
@@ -103,11 +102,11 @@ bool LatencyMonitor::get_latency_(packet::signed_timestamp_t& latency) const {
 
     const packet::timestamp_t tail = latest->end();
 
-    latency = ROC_UNSIGNED_SUB(packet::signed_timestamp_t, tail, head);
+    latency = packet::timestamp_diff(tail, head);
     return true;
 }
 
-bool LatencyMonitor::check_latency_(packet::signed_timestamp_t latency) const {
+bool LatencyMonitor::check_latency_(packet::timestamp_diff_t latency) const {
     if (latency < config_.min_latency) {
         roc_log(LogDebug, "latency monitor: latency out of bounds: latency=%ld min=%ld",
                 (long)latency, (long)config_.min_latency);

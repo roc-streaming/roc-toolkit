@@ -17,16 +17,30 @@
 #include <netinet/in.h>
 #include <sys/types.h>
 
+namespace roc {
+namespace core {
+
 //! Network to host (16 bits).
-#define ROC_NTOH_16(v) ntohs(((uint16_t)(v)))
+inline uint16_t ntoh16(uint16_t v) {
+    return ntohs(v);
+}
 
 //! Network to host (32 bits).
-#define ROC_NTOH_32(v) ntohl(((uint32_t)(v)))
+inline uint32_t ntoh32(uint32_t v) {
+    return ntohl(v);
+}
 
 //! Host to network (16 bits).
-#define ROC_HTON_16(v) htons(((uint16_t)(v)))
+inline uint16_t hton16(uint16_t v) {
+    return htons(v);
+}
 
 //! Host to network (32 bits).
-#define ROC_HTON_32(v) htonl(((uint32_t)(v)))
+inline uint32_t hton32(uint32_t v) {
+    return htonl(v);
+}
+
+} // namespace core
+} // namespace roc
 
 #endif // ROC_CORE_ENDIAN_H_

@@ -16,7 +16,6 @@
 #include "roc_core/iallocator.h"
 #include "roc_core/list.h"
 #include "roc_core/log.h"
-#include "roc_core/macros.h"
 #include "roc_core/mutex.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/panic.h"
@@ -44,7 +43,7 @@ public:
     Pool(IAllocator& allocator, size_t object_size, bool poison)
         : allocator_(allocator)
         , used_elems_(0)
-        , elem_size_(max_align(ROC_MAX(sizeof(Elem), object_size)))
+        , elem_size_(max_align(std::max(sizeof(Elem), object_size)))
         , chunk_hdr_size_(max_align(sizeof(Chunk)))
         , chunk_n_elems_(1)
         , poison_(poison) {

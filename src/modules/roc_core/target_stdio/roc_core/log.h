@@ -13,7 +13,6 @@
 #define ROC_CORE_LOG_H_
 
 #include "roc_core/attributes.h"
-#include "roc_core/macros.h"
 #include "roc_core/mutex.h"
 #include "roc_core/singleton.h"
 

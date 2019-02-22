@@ -176,38 +176,38 @@ public:
 
     //! Get sequence number.
     uint16_t seqnum() const {
-        return ROC_NTOH_16(seqnum_);
+        return core::ntoh16(seqnum_);
     }
 
     //! Set sequence number.
     void set_seqnum(uint16_t sn) {
-        seqnum_ = ROC_HTON_16(sn);
+        seqnum_ = core::hton16(sn);
     }
 
     //! Get timestamp.
     uint32_t timestamp() const {
-        return ROC_NTOH_32(timestamp_);
+        return core::ntoh32(timestamp_);
     }
 
     //! Set timestamp.
     void set_timestamp(uint32_t ts) {
-        timestamp_ = ROC_HTON_32(ts);
+        timestamp_ = core::hton32(ts);
     }
 
     //! Get SSRC.
     uint32_t ssrc() const {
-        return ROC_NTOH_32(ssrc_[0]);
+        return core::ntoh32(ssrc_[0]);
     }
 
     //! Set SSRC.
     void set_ssrc(uint32_t s) {
-        ssrc_[0] = ROC_HTON_32(s);
+        ssrc_[0] = core::hton32(s);
     }
 
     //! Get CSRC.
     uint32_t csrc(size_t index) const {
         roc_panic_if(index >= num_csrc());
-        return ROC_NTOH_32(ssrc_[index + 1]);
+        return core::ntoh32(ssrc_[index + 1]);
     }
 };
 
@@ -237,12 +237,12 @@ private:
 public:
     //! Get extension type.
     uint16_t type() const {
-        return ROC_NTOH_16(type_);
+        return core::ntoh16(type_);
     }
 
     //! Get extension data size in bytes (without extension header itself).
     uint32_t data_size() const {
-        return (uint32_t(ROC_NTOH_16(len_)) << 2);
+        return (uint32_t(core::ntoh16(len_)) << 2);
     }
 };
 

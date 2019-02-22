@@ -30,11 +30,11 @@ struct LatencyMonitorConfig {
 
     //! Minimum allowed latency.
     //! If the latency goes out of bounds, the session is terminated.
-    packet::signed_timestamp_t min_latency;
+    packet::timestamp_diff_t min_latency;
 
     //! Maximum allowed latency.
     //! If the latency goes out of bounds, the session is terminated.
-    packet::signed_timestamp_t max_latency;
+    packet::timestamp_diff_t max_latency;
 
     //! Maximum allowed freq_coeff delta around one.
     //! If the scaling goes out of bounds, it is trimmed.
@@ -83,8 +83,8 @@ public:
     bool update(packet::timestamp_t time);
 
 private:
-    bool get_latency_(packet::signed_timestamp_t& latency) const;
-    bool check_latency_(packet::signed_timestamp_t latency) const;
+    bool get_latency_(packet::timestamp_diff_t& latency) const;
+    bool check_latency_(packet::timestamp_diff_t latency) const;
 
     float trim_scaling_(float scaling) const;
 

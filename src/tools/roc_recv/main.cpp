@@ -172,10 +172,10 @@ int main(int argc, char** argv) {
             return 1;
         }
         config.default_session.latency_monitor.min_latency =
-            (packet::signed_timestamp_t)args.min_latency_arg;
+            (packet::timestamp_diff_t)args.min_latency_arg;
     } else {
         config.default_session.latency_monitor.min_latency =
-            (packet::signed_timestamp_t)config.default_session.target_latency
+            (packet::timestamp_diff_t)config.default_session.target_latency
             * pipeline::DefaultMinLatency;
     }
 
@@ -185,10 +185,10 @@ int main(int argc, char** argv) {
             return 1;
         }
         config.default_session.latency_monitor.max_latency =
-            (packet::signed_timestamp_t)args.max_latency_arg;
+            (packet::timestamp_diff_t)args.max_latency_arg;
     } else {
         config.default_session.latency_monitor.max_latency =
-            (packet::signed_timestamp_t)config.default_session.target_latency
+            (packet::timestamp_diff_t)config.default_session.target_latency
             * pipeline::DefaultMaxLatency;
     }
 

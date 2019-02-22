@@ -12,8 +12,8 @@
 #ifndef ROC_PACKET_PACKET_H_
 #define ROC_PACKET_PACKET_H_
 
+#include "roc_core/helpers.h"
 #include "roc_core/list_node.h"
-#include "roc_core/macros.h"
 #include "roc_core/pool.h"
 #include "roc_core/refcnt.h"
 #include "roc_core/shared_ptr.h"

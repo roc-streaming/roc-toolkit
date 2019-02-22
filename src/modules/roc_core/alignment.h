@@ -12,7 +12,6 @@
 #ifndef ROC_CORE_ALIGNMENT_H_
 #define ROC_CORE_ALIGNMENT_H_
 
-#include "roc_core/macros.h"
 #include "roc_core/stddefs.h"
 
 namespace roc {

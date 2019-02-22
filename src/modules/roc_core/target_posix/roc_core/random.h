@@ -17,19 +17,12 @@
 namespace roc {
 namespace core {
 
-//! Initialize random generator with 48-bit seed.
-void random_init(uint64_t seed_48);
-
 //! Get random integer.
-//! @returns value in range [0; upper).
-//! @remarks
-//!  Calls random_init() if it wasn't called yet.
+//! @returns random value in range [0; upper).
 unsigned random(unsigned upper);
 
 //! Get random integer.
-//! @returns value in range [from; to].
-//! @remarks
-//!  Calls random_init() if it wasn't called yet.
+//! @returns random value in range [from; to].
 unsigned random(unsigned from, unsigned to);
 
 } // namespace core

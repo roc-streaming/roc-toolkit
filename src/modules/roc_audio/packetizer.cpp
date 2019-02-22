@@ -8,7 +8,6 @@
 
 #include "roc_audio/packetizer.h"
 #include "roc_core/log.h"
-#include "roc_core/macros.h"
 #include "roc_core/panic.h"
 #include "roc_core/random.h"
 

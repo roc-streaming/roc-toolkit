@@ -143,7 +143,7 @@ void Watchdog::update_drops_timeout_(const Frame& frame, packet::timestamp_t nex
     const packet::timestamp_t window_end =
         window_start + drop_detection_window_;
 
-    if (ROC_UNSIGNED_LE(packet::signed_timestamp_t, window_end, next_read_pos)) {
+    if (packet::timestamp_le(window_end, next_read_pos)) {
         if ((curr_window_flags_ & (Frame::FlagIncomplete | Frame::FlagDrops)) == 0) {
             last_pos_before_drops_ = next_read_pos;
         }

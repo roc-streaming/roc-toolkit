@@ -7,8 +7,8 @@
  */
 
 #include "roc_audio/resampler_reader.h"
+#include "roc_core/helpers.h"
 #include "roc_core/log.h"
-#include "roc_core/macros.h"
 #include "roc_core/panic.h"
 #include "roc_core/stddefs.h"
 

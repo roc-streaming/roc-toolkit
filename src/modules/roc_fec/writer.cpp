@@ -74,8 +74,9 @@ void Writer::write(const packet::PacketPtr& pp) {
 
     pp->add_flags(packet::Packet::FlagComposed);
     fill_packet_fec_id_(pp, (packet::seqnum_t)cur_packet_);
-    roc_panic_if_not(ROC_UNSIGNED_LE(packet::signed_seqnum_t, pp->rtp()->seqnum,
-                                     pp->fec()->blknum + n_source_packets_));
+
+    roc_panic_if_not(packet::seqnum_le(
+        pp->rtp()->seqnum, packet::seqnum_t(pp->fec()->blknum + n_source_packets_)));
 
     if (!source_composer_.compose(*pp)) {
         roc_panic("fec writer: can't compose packet");

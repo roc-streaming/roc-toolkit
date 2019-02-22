@@ -164,9 +164,9 @@ struct ReceiverSessionConfig {
         , target_latency(DefaultPacketSize * 32)
         , watchdog(DefaultSampleRate) {
         latency_monitor.min_latency =
-            (packet::signed_timestamp_t)target_latency * DefaultMinLatency;
+            (packet::timestamp_diff_t)target_latency * DefaultMinLatency;
         latency_monitor.max_latency =
-            (packet::signed_timestamp_t)target_latency * DefaultMaxLatency;
+            (packet::timestamp_diff_t)target_latency * DefaultMaxLatency;
     }
 };
 

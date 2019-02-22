@@ -8,7 +8,6 @@
 
 #include "roc_packet/delayed_reader.h"
 #include "roc_core/log.h"
-#include "roc_core/macros.h"
 #include "roc_core/panic.h"
 
 namespace roc {
@@ -84,8 +83,8 @@ timestamp_t DelayedReader::queue_size_() const {
         return 0;
     }
 
-    const signed_timestamp_t qs = ROC_UNSIGNED_SUB(
-        signed_timestamp_t, queue_.tail()->end(), queue_.head()->begin());
+    const timestamp_diff_t qs =
+        timestamp_diff(queue_.tail()->end(), queue_.head()->begin());
 
     if (qs < 0) {
         roc_log(LogError, "delayed reader: unexpected negative queue size: %ld",

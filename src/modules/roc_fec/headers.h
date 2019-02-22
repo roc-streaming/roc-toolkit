@@ -62,32 +62,32 @@ public:
 
     //! Get source block number.
     uint16_t sbn() const {
-        return ROC_NTOH_16(sbn_);
+        return core::ntoh16(sbn_);
     }
 
     //! Set source block number.
     void set_sbn(uint16_t val) {
-        sbn_ = ROC_HTON_16(val);
+        sbn_ = core::hton16(val);
     }
 
     //! Get encoding symbol ID.
     uint16_t esi() const {
-        return ROC_NTOH_16(esi_);
+        return core::ntoh16(esi_);
     }
 
     //! Set encoding symbol ID.
     void set_esi(uint16_t val) {
-        esi_ = ROC_HTON_16(val);
+        esi_ = core::hton16(val);
     }
 
     //! Get source block length.
     uint16_t k() const {
-        return ROC_NTOH_16(k_);
+        return core::ntoh16(k_);
     }
 
     //! Set source block length.
     void set_k(uint16_t val) {
-        k_ = ROC_HTON_16(val);
+        k_ = core::hton16(val);
     }
 };
 
@@ -124,42 +124,42 @@ public:
 
     //! Get source block number.
     uint16_t sbn() const {
-        return ROC_NTOH_16(sbn_);
+        return core::ntoh16(sbn_);
     }
 
     //! Set source block number.
     void set_sbn(uint16_t val) {
-        sbn_ = ROC_HTON_16(val);
+        sbn_ = core::hton16(val);
     }
 
     //! Get encoding symbol ID.
     uint16_t esi() const {
-        return ROC_NTOH_16(esi_);
+        return core::ntoh16(esi_);
     }
 
     //! Set encoding symbol ID.
     void set_esi(uint16_t val) {
-        esi_ = ROC_HTON_16(val);
+        esi_ = core::hton16(val);
     }
 
     //! Get source block length.
     uint16_t k() const {
-        return ROC_NTOH_16(k_);
+        return core::ntoh16(k_);
     }
 
     //! Set source block length.
     void set_k(uint16_t val) {
-        k_ = ROC_HTON_16(val);
+        k_ = core::hton16(val);
     }
 
     //! Get number encoding symbols.
     uint16_t n() const {
-        return ROC_NTOH_16(n_);
+        return core::ntoh16(n_);
     }
 
     //! Set number encoding symbols.
     void set_n(uint16_t val) {
-        n_ = ROC_HTON_16(val);
+        n_ = core::hton16(val);
     }
 };
 
@@ -217,12 +217,12 @@ public:
 
     //! Get source block length.
     uint16_t k() const {
-        return ROC_NTOH_16(k_);
+        return core::ntoh16(k_);
     }
 
     //! Set source block length.
     void set_k(uint16_t val) {
-        k_ = ROC_HTON_16(val);
+        k_ = core::hton16(val);
     }
 };
 

@@ -145,7 +145,7 @@ TEST(resampler, upscaling_twice_single) {
     double buff[sig_len * 2];
 
     for (size_t n = 0; n < InSamples; n++) {
-        const sample_t s = (sample_t)sin(M_PI / 4 * double(n));
+        const sample_t s = (sample_t)std::sin(M_PI / 4 * double(n));
         reader.add(1, s);
     }
 
@@ -212,7 +212,7 @@ TEST(resampler, downsample) {
     double buff[sig_len * 2];
 
     for (size_t n = 0; n < InSamples; n++) {
-        const sample_t s = (sample_t)sin(M_PI / 4 * double(n));
+        const sample_t s = (sample_t)std::sin(M_PI / 4 * double(n));
         reader.add(1, s);
     }
 
@@ -245,8 +245,8 @@ TEST(resampler, two_tones_sep_channels) {
     size_t i;
 
     for (size_t n = 0; n < InSamples / nChannels; n++) {
-        const sample_t s1 = (sample_t)sin(M_PI / 4 * double(n));
-        const sample_t s2 = (sample_t)sin(M_PI / 8 * double(n));
+        const sample_t s1 = (sample_t)std::sin(M_PI / 4 * double(n));
+        const sample_t s2 = (sample_t)std::sin(M_PI / 8 * double(n));
         reader.add(1, s1);
         reader.add(1, s2);
     }

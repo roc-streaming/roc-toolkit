@@ -6,8 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include <algorithm>
-#include <math.h>
+#include "roc_core/stddefs.h"
 
 #include "test_fft.h"
 
@@ -40,9 +39,9 @@ void FFT(double* data, unsigned long nn) {
     while (n > mmax) {
         istep = mmax << 1;
         theta = -(2 * M_PI / mmax);
-        wtemp = sin(0.5 * theta);
+        wtemp = std::sin(0.5 * theta);
         wpr = -2.0 * wtemp * wtemp;
-        wpi = sin(theta);
+        wpi = std::sin(theta);
         wr = 1.0;
         wi = 0.0;
         for (m = 1; m < mmax; m += 2) {

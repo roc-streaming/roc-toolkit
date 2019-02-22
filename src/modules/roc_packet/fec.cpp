@@ -7,7 +7,6 @@
  */
 
 #include "roc_packet/fec.h"
-#include "roc_core/macros.h"
 #include "roc_core/panic.h"
 
 namespace roc {

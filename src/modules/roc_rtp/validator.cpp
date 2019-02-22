@@ -8,7 +8,6 @@
 
 #include "roc_rtp/validator.h"
 #include "roc_core/log.h"
-#include "roc_core/macros.h"
 
 namespace roc {
 namespace rtp {
@@ -56,10 +55,10 @@ bool Validator::check_(const packet::RTP& prev, const packet::RTP& next) const {
         return false;
     }
 
-    packet::signed_seqnum_t sn_dist =
-        ROC_UNSIGNED_SUB(packet::signed_seqnum_t, next.seqnum, prev.seqnum);
-
-    sn_dist = ROC_ABS(sn_dist);
+    packet::seqnum_diff_t sn_dist = packet::seqnum_diff(next.seqnum, prev.seqnum);
+    if (sn_dist < 0) {
+        sn_dist = -sn_dist;
+    }
 
     if ((size_t)sn_dist > config_.max_sn_jump) {
         roc_log(LogDebug,
@@ -69,10 +68,11 @@ bool Validator::check_(const packet::RTP& prev, const packet::RTP& next) const {
         return false;
     }
 
-    packet::signed_timestamp_t ts_dist =
-        ROC_UNSIGNED_SUB(packet::signed_timestamp_t, next.timestamp, prev.timestamp);
-
-    ts_dist = ROC_ABS(ts_dist);
+    packet::timestamp_diff_t ts_dist =
+        packet::timestamp_diff(next.timestamp, prev.timestamp);
+    if (ts_dist < 0) {
+        ts_dist = -ts_dist;
+    }
 
     size_t ts_dist_1k = (size_t)ts_dist * 1000;
     size_t ts_dist_ms = (size_t)ts_dist_1k / format_.sample_rate;

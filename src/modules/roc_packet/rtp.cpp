@@ -7,7 +7,6 @@
  */
 
 #include "roc_packet/rtp.h"
-#include "roc_core/macros.h"
 
 namespace roc {
 namespace packet {
@@ -22,7 +21,7 @@ RTP::RTP()
 }
 
 int RTP::compare(const RTP& other) const {
-    if (ROC_UNSIGNED_LT(signed_seqnum_t, seqnum, other.seqnum)) {
+    if (seqnum_lt(seqnum, other.seqnum)) {
         return -1;
     } else if (seqnum == other.seqnum) {
         return 0;

@@ -43,14 +43,14 @@ template <class T> T pcm_pack(audio::sample_t);
 //! Encode single sample (int16_t).
 template <> int16_t inline pcm_pack(float s) {
     s *= 32768.0f;
-    s = ROC_MIN(s, +32767.0f);
-    s = ROC_MAX(s, -32768.0f);
-    return (int16_t)ROC_HTON_16(int16_t(s));
+    s = std::min(s, +32767.0f);
+    s = std::max(s, -32768.0f);
+    return (int16_t)core::hton16((uint16_t)(int16_t)s);
 }
 
 //! Decode single sample (int16_t).
 inline float pcm_unpack(int16_t s) {
-    return float((int16_t)ROC_NTOH_16(uint16_t(s))) / 32768.0f;
+    return float((int16_t)core::ntoh16((uint16_t)s)) / 32768.0f;
 }
 
 //! Decode multiple samples.

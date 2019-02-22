@@ -11,7 +11,6 @@
 #include "roc_core/buffer_pool.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_core/log.h"
-#include "roc_core/macros.h"
 #include "roc_core/random.h"
 #include "roc_fec/of_decoder.h"
 #include "roc_fec/of_encoder.h"
@@ -152,7 +151,7 @@ TEST(encoder_decoder, load_test) {
                     code.decoder().set(i, code.get_buffer(i));
                 }
             }
-            max_loss = ROC_MAX(max_loss, curr_loss);
+            max_loss = std::max(max_loss, curr_loss);
             if (!code.decode()) {
                 total_fails++;
             }

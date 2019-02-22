@@ -33,6 +33,12 @@ void random_init() {
 
 } // namespace
 
+unsigned random(unsigned upper) {
+    roc_panic_if_not(upper > 0);
+
+    return random(0, upper - 1);
+}
+
 // Based on arc4random_uniform() from OpenBSD.
 unsigned random(unsigned from, unsigned to) {
     if (int err = pthread_once(&rand_once, random_init)) {
@@ -57,12 +63,6 @@ unsigned random(unsigned from, unsigned to) {
     roc_panic_if_not(ret <= to);
 
     return ret;
-}
-
-unsigned random(unsigned upper) {
-    roc_panic_if_not(upper > 0);
-
-    return random(0, upper - 1);
 }
 
 } // namespace core
