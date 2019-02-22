@@ -95,8 +95,8 @@ bool config_receiver(pipeline::ReceiverConfig& out, const roc_receiver_config& i
             (packet::timestamp_diff_t)in.target_latency * pipeline::DefaultMaxLatency;
     }
 
-    if (in.silence_timeout) {
-        out.default_session.watchdog.silence_timeout = in.silence_timeout;
+    if (in.blank_timeout) {
+        out.default_session.watchdog.blank_timeout = in.blank_timeout;
     }
 
     if (in.packet_samples) {

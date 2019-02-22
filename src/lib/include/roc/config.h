@@ -190,10 +190,10 @@ typedef struct roc_receiver_config {
      */
     unsigned int target_latency;
 
-    /** Silence timeout, in samples.
+    /** Blank timeout, in samples.
      * TODO
      */
-    unsigned int silence_timeout;
+    unsigned int blank_timeout;
 
     /** The size of the packets received from sender.
      * Number of samples per channel per packet. If zero, default value is used.

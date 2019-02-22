@@ -18,11 +18,11 @@ Watchdog::Watchdog(IReader& reader,
                    core::IAllocator& allocator)
     : reader_(reader)
     , num_channels_(num_channels)
-    , max_silence_duration_(config.silence_timeout)
+    , max_blank_duration_(config.blank_timeout)
     , max_drops_duration_(config.drops_timeout)
     , drop_detection_window_(config.drop_detection_window)
     , curr_read_pos_(0)
-    , last_pos_before_silence_(0)
+    , last_pos_before_blank_(0)
     , last_pos_before_drops_(0)
     , curr_window_flags_(0)
     , status_(allocator)
@@ -50,8 +50,8 @@ Watchdog::Watchdog(IReader& reader,
 
     roc_log(LogDebug,
             "watchdog: initializing: "
-            "max_silence_duration=%lu max_drops_duration=%lu drop_detection_window=%lu",
-            (unsigned long)max_silence_duration_, (unsigned long)max_drops_duration_,
+            "max_blank_duration=%lu max_drops_duration=%lu drop_detection_window=%lu",
+            (unsigned long)max_blank_duration_, (unsigned long)max_drops_duration_,
             (unsigned long)drop_detection_window_);
 
     valid_ = true;
@@ -74,7 +74,7 @@ void Watchdog::read(Frame& frame) {
     const packet::timestamp_t next_read_pos =
         packet::timestamp_t(curr_read_pos_ + frame.size() / num_channels_);
 
-    update_silence_timeout_(frame, next_read_pos);
+    update_blank_timeout_(frame, next_read_pos);
     update_drops_timeout_(frame, next_read_pos);
     update_status_(frame);
 
@@ -91,7 +91,7 @@ bool Watchdog::update() {
         return false;
     }
 
-    if (!check_silence_timeout_()) {
+    if (!check_blank_timeout_()) {
         flush_status_();
         alive_ = false;
         return false;
@@ -100,9 +100,9 @@ bool Watchdog::update() {
     return true;
 }
 
-void Watchdog::update_silence_timeout_(const Frame& frame,
-                                       packet::timestamp_t next_read_pos) {
-    if (max_silence_duration_ == 0) {
+void Watchdog::update_blank_timeout_(const Frame& frame,
+                                     packet::timestamp_t next_read_pos) {
+    if (max_blank_duration_ == 0) {
         return;
     }
 
@@ -110,23 +110,23 @@ void Watchdog::update_silence_timeout_(const Frame& frame,
         return;
     }
 
-    last_pos_before_silence_ = next_read_pos;
+    last_pos_before_blank_ = next_read_pos;
 }
 
-bool Watchdog::check_silence_timeout_() const {
-    if (max_silence_duration_ == 0) {
+bool Watchdog::check_blank_timeout_() const {
+    if (max_blank_duration_ == 0) {
         return true;
     }
 
-    if (curr_read_pos_ - last_pos_before_silence_ < max_silence_duration_) {
+    if (curr_read_pos_ - last_pos_before_blank_ < max_blank_duration_) {
         return true;
     }
 
     roc_log(LogDebug,
-            "watchdog: silence timeout reached: every frame was blank during timeout:"
-            " curr_read_pos=%lu last_pos_before_silence=%lu max_silence_duration=%lu",
-            (unsigned long)curr_read_pos_, (unsigned long)last_pos_before_silence_,
-            (unsigned long)max_silence_duration_);
+            "watchdog: blank timeout reached: every frame was blank during timeout:"
+            " curr_read_pos=%lu last_pos_before_blank=%lu max_blank_duration=%lu",
+            (unsigned long)curr_read_pos_, (unsigned long)last_pos_before_blank_,
+            (unsigned long)max_blank_duration_);
 
     return false;
 }

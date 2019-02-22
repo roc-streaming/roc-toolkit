@@ -131,13 +131,13 @@ int main(int argc, char** argv) {
         }
     }
 
-    if (args.silence_timeout_given) {
-        if (args.silence_timeout_arg < 0) {
-            roc_log(LogError, "invalid --silence-timeout: should be >= 0");
+    if (args.blank_timeout_given) {
+        if (args.blank_timeout_arg < 0) {
+            roc_log(LogError, "invalid --blank-timeout: should be >= 0");
             return 1;
         }
-        config.default_session.watchdog.silence_timeout =
-            (packet::timestamp_t)args.silence_timeout_arg;
+        config.default_session.watchdog.blank_timeout =
+            (packet::timestamp_t)args.blank_timeout_arg;
     }
 
     if (args.drops_timeout_given) {

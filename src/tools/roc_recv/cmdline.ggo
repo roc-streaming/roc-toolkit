@@ -21,7 +21,7 @@ section "Options"
     option "nbrpr" - "Number of repair packets in FEC block"
         int optional
 
-    option "silence-timeout" - "Session timeout for silence, number of samples"
+    option "blank-timeout" - "Session timeout for lack of packets, number of samples"
         int optional
 
     option "drops-timeout" - "Session timeout for constant drops, number of samples"

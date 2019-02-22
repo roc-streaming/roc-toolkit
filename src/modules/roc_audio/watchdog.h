@@ -23,12 +23,12 @@ namespace audio {
 
 //! Watchdog parameters.
 struct WatchdogConfig {
-    //! Session silence timeout, number of samples.
+    //! Session blank timeout, number of samples.
     //! @remarks
     //!  Maximum allowed period during which every frame is blank. After this period,
     //!  the session is terminated. This mechanism allows to detect dead or hanging
     //!  clients. Set to zero to disable.
-    packet::timestamp_t silence_timeout;
+    packet::timestamp_t blank_timeout;
 
     //! Session drops timeout, number of samples.
     //! @remarks
@@ -51,7 +51,7 @@ struct WatchdogConfig {
 
     //! Initialize config with default values.
     WatchdogConfig(packet::timestamp_t sample_rate)
-        : silence_timeout(sample_rate * 2)
+        : blank_timeout(sample_rate * 2)
         , drops_timeout(sample_rate * 2)
         , drop_detection_window(sample_rate / 3)
         , frame_status_window(20) {
@@ -64,15 +64,6 @@ struct WatchdogConfig {
 class Watchdog : public IReader, public core::NonCopyable<> {
 public:
     //! Initialize.
-    //!
-    //! @b Parameters
-    //!  - @p reader is input frame reader.
-    //!  - @p channels defines a set of channels in the output frames.
-    //!  - @p max_silence_duration is the maximum allowed period during which all frames
-    //!    are empty.
-    //!  - @p max_drops_duration is the maximum allowed period during which every drop
-    //!    detection window overlaps with a frame which contains drops.
-    //!  - @p drop_detection_window is the size of the drop detection window.
     Watchdog(IReader& reader,
              const size_t num_channels,
              const WatchdogConfig& config,
@@ -94,8 +85,8 @@ public:
     bool update();
 
 private:
-    void update_silence_timeout_(const Frame& frame, packet::timestamp_t next_read_pos);
-    bool check_silence_timeout_() const;
+    void update_blank_timeout_(const Frame& frame, packet::timestamp_t next_read_pos);
+    bool check_blank_timeout_() const;
 
     void update_drops_timeout_(const Frame& frame, packet::timestamp_t next_read_pos);
     bool check_drops_timeout_();
@@ -107,12 +98,12 @@ private:
 
     const size_t num_channels_;
 
-    const packet::timestamp_t max_silence_duration_;
+    const packet::timestamp_t max_blank_duration_;
     const packet::timestamp_t max_drops_duration_;
     const packet::timestamp_t drop_detection_window_;
 
     packet::timestamp_t curr_read_pos_;
-    packet::timestamp_t last_pos_before_silence_;
+    packet::timestamp_t last_pos_before_blank_;
     packet::timestamp_t last_pos_before_drops_;
 
     unsigned curr_window_flags_;
