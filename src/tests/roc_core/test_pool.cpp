@@ -85,7 +85,7 @@ TEST(pool, new_destroy_many) {
         LONGS_EQUAL(1, allocator.num_allocations());
         LONGS_EQUAL(1, Object::n_objects);
 
-        for (; n_objs < 1+2; n_objs++) {
+        for (; n_objs < 1 + 2; n_objs++) {
             objects[n_objs] = new (pool) Object;
             CHECK(objects[n_objs]);
         }
@@ -93,7 +93,7 @@ TEST(pool, new_destroy_many) {
         LONGS_EQUAL(2, allocator.num_allocations());
         LONGS_EQUAL(1 + 2, Object::n_objects);
 
-        for (; n_objs < 1+2+4; n_objs++) {
+        for (; n_objs < 1 + 2 + 4; n_objs++) {
             objects[n_objs] = new (pool) Object;
             CHECK(objects[n_objs]);
         }

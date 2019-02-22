@@ -50,7 +50,7 @@ int roc_address_init(roc_address* address, roc_family family, const char* ip, in
         return -1;
     }
 
-    packet::Address& pa = *new(address_payload(address)) packet::Address;
+    packet::Address& pa = *new (address_payload(address)) packet::Address;
 
     if (family == ROC_AF_AUTO || family == ROC_AF_IPv4) {
         if (pa.set_ipv4(ip, port)) {

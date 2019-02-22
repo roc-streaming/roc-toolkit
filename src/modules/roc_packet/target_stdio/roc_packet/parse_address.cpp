@@ -6,9 +6,9 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+#include "roc_packet/parse_address.h"
 #include "roc_core/log.h"
 #include "roc_packet/address_to_str.h"
-#include "roc_packet/parse_address.h"
 
 namespace roc {
 namespace packet {

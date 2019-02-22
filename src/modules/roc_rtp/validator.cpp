@@ -78,8 +78,9 @@ bool Validator::check_(const packet::RTP& prev, const packet::RTP& next) const {
     size_t ts_dist_ms = (size_t)ts_dist_1k / format_.sample_rate;
 
     if (ts_dist_1k < (size_t)ts_dist || ts_dist_ms > config_.max_ts_jump) {
-        roc_log(LogDebug, "rtp validator:"
-                          " too long timestamp jump: prev=%lu next=%lu dist=%lu,%lums",
+        roc_log(LogDebug,
+                "rtp validator:"
+                " too long timestamp jump: prev=%lu next=%lu dist=%lu,%lums",
                 (unsigned long)prev.timestamp, (unsigned long)next.timestamp,
                 (unsigned long)ts_dist, (unsigned long)ts_dist_ms);
         return false;

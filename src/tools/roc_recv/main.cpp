@@ -39,8 +39,8 @@ int main(int argc, char** argv) {
         return code;
     }
 
-    core::ScopedDestructor<gengetopt_args_info*, cmdline_parser_free>
-        args_destructor(&args);
+    core::ScopedDestructor<gengetopt_args_info*, cmdline_parser_free> args_destructor(
+        &args);
 
     core::Logger::instance().set_level(
         LogLevel(core::DefaultLogLevel + args.verbose_given));
@@ -248,8 +248,9 @@ int main(int argc, char** argv) {
     config.output.sample_rate = writer.sample_rate();
 
     if (config.output.sample_rate == 0) {
-        roc_log(LogError, "can't detect output sample rate, try to set it "
-                          "explicitly with --rate option");
+        roc_log(LogError,
+                "can't detect output sample rate, try to set it "
+                "explicitly with --rate option");
         return 1;
     }
 

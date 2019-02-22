@@ -117,7 +117,6 @@ public:
         return true;
     }
 
-
     //! Truncate packet payload.
     virtual bool truncate(packet::Packet& packet, size_t payload_size) {
         if (!packet.fec()) {

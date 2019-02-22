@@ -52,18 +52,20 @@ void ResamplerWriter::write(Frame& input) {
     const size_t input_size = input.size();
     size_t input_pos = 0;
 
-    sample_t *frame0_data = frames_[0].data();
-    for (; frame_pos_ < frame_size_ && input_pos < input_size; ++frame_pos_, ++input_pos) {
+    sample_t* frame0_data = frames_[0].data();
+    for (; frame_pos_ < frame_size_ && input_pos < input_size;
+         ++frame_pos_, ++input_pos) {
         frame0_data[frame_pos_] = input_data[input_pos];
     }
 
-    sample_t *frame1_data = frames_[1].data();
-    for (; frame_pos_ < frame_size_ * 2 && input_pos < input_size; ++frame_pos_, ++input_pos) {
+    sample_t* frame1_data = frames_[1].data();
+    for (; frame_pos_ < frame_size_ * 2 && input_pos < input_size;
+         ++frame_pos_, ++input_pos) {
         frame1_data[frame_pos_ - frame_size_] = input_data[input_pos];
     }
 
     while (input_pos < input_size) {
-        sample_t *frame2_data = frames_[2].data();
+        sample_t* frame2_data = frames_[2].data();
         for (; frame_pos_ < frame_size_ * 3 && input_pos < input_size;
              ++frame_pos_, ++input_pos) {
             frame2_data[frame_pos_ - frame_size_ * 2] = input_data[input_pos];

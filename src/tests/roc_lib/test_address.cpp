@@ -14,7 +14,7 @@
 
 namespace roc {
 
-TEST_GROUP(address) {};
+TEST_GROUP(address){};
 
 TEST(address, ipv4) {
     char buf[16];

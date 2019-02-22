@@ -18,8 +18,7 @@ namespace roc {
 namespace core {
 
 //! Destroys the object via custom deleter.
-template <class T, void (*Func)(T)>
-class ScopedDestructor : public NonCopyable<> {
+template <class T, void (*Func)(T)> class ScopedDestructor : public NonCopyable<> {
 public:
     //! Initialize.
     ScopedDestructor(T obj)

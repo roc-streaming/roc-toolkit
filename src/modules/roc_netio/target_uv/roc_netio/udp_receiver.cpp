@@ -220,8 +220,9 @@ void UDPReceiver::recv_cb_(uv_udp_t* handle,
     }
 
     if (flags & UV_UDP_PARTIAL) {
-        roc_log(LogDebug, "udp receiver:"
-                          " ignoring partial read: num=%u src=%s dst=%s nread=%ld",
+        roc_log(LogDebug,
+                "udp receiver:"
+                " ignoring partial read: num=%u src=%s dst=%s nread=%ld",
                 self.packet_counter_, packet::address_to_str(src_addr).c_str(),
                 packet::address_to_str(self.address_).c_str(), (long)nread);
         return;

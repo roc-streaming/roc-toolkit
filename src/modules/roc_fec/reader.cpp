@@ -90,8 +90,9 @@ packet::PacketPtr Reader::read_() {
             return source_queue_.read();
         }
 
-        roc_log(LogDebug, "fec reader: got first packet in a block, start decoding:"
-                          " n_packets_before=%u blk_sn=%lu",
+        roc_log(LogDebug,
+                "fec reader: got first packet in a block, start decoding:"
+                " n_packets_before=%u blk_sn=%lu",
                 n_packets_, (unsigned long)cur_block_sn_);
 
         started_ = true;
@@ -218,8 +219,9 @@ bool Reader::check_packet_(const packet::PacketPtr& pp, size_t pos) {
     }
 
     if (pp->rtp()->source != source_) {
-        roc_log(LogDebug, "fec reader: repaired packet has bad source id, shutting down:"
-                          " got=%lu expected=%lu",
+        roc_log(LogDebug,
+                "fec reader: repaired packet has bad source id, shutting down:"
+                " got=%lu expected=%lu",
                 (unsigned long)pp->rtp()->source, (unsigned long)source_);
         return (alive_ = false);
     }
@@ -283,7 +285,7 @@ void Reader::update_source_packets_() {
         }
 
         if (!packet::seqnum_lt(fec->blknum,
-                              packet::seqnum_t(cur_block_sn_ + source_block_.size()))) {
+                               packet::seqnum_t(cur_block_sn_ + source_block_.size()))) {
             break;
         }
 
@@ -291,8 +293,9 @@ void Reader::update_source_packets_() {
         n_fetched++;
 
         if (packet::seqnum_lt(fec->blknum, cur_block_sn_)) {
-            roc_log(LogTrace, "fec reader: dropping source packet from previous block:"
-                              " blk_sn=%lu pkt_sn=%lu",
+            roc_log(LogTrace,
+                    "fec reader: dropping source packet from previous block:"
+                    " blk_sn=%lu pkt_sn=%lu",
                     (unsigned long)cur_block_sn_, (unsigned long)rtp->seqnum);
             n_dropped++;
             continue;
@@ -340,8 +343,9 @@ void Reader::update_repair_packets_() {
         n_fetched++;
 
         if (packet::seqnum_lt(fec->blknum, cur_block_sn_)) {
-            roc_log(LogTrace, "fec reader: dropping repair packet from previous block:"
-                              " blk_sn=%lu pkt_data_blk=%lu",
+            roc_log(LogTrace,
+                    "fec reader: dropping repair packet from previous block:"
+                    " blk_sn=%lu pkt_data_blk=%lu",
                     (unsigned long)cur_block_sn_, (unsigned long)fec->blknum);
             n_dropped++;
             continue;
@@ -382,8 +386,9 @@ void Reader::skip_repair_packets_() {
             break;
         }
 
-        roc_log(LogTrace, "fec reader: dropping repair packet, decoding not started:"
-                          " min_sn=%lu pkt_data_blk=%lu",
+        roc_log(LogTrace,
+                "fec reader: dropping repair packet, decoding not started:"
+                " min_sn=%lu pkt_data_blk=%lu",
                 (unsigned long)cur_block_sn_, (unsigned long)fec->blknum);
 
         repair_queue_.read();

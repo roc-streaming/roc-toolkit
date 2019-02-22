@@ -47,7 +47,8 @@ public:
     ~List() {
         ListNode::ListNodeData* next_data;
 
-        for (ListNode::ListNodeData* data = head_.next; data != &head_; data = next_data) {
+        for (ListNode::ListNodeData* data = head_.next; data != &head_;
+             data = next_data) {
             roc_panic_if(data == NULL);
             check_is_member_(data, this);
 

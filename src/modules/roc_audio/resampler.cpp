@@ -199,8 +199,9 @@ bool Resampler::check_config_() const {
     }
 
     if (frame_size_ != frame_size_ch_ * channels_num_) {
-        roc_log(LogError, "resampler: frame_size is not multiple of num_channels:"
-                          " frame_size=%lu num_channels=%lu",
+        roc_log(LogError,
+                "resampler: frame_size is not multiple of num_channels:"
+                " frame_size=%lu num_channels=%lu",
                 (unsigned long)frame_size_, (unsigned long)channels_num_);
         return false;
     }
@@ -259,8 +260,9 @@ bool Resampler::fill_sinc_() {
     sinc_table_[0] = 1.0f;
     for (size_t i = 1; i < sinc_table_.size(); ++i) {
         const double window = 0.54
-            - 0.46 * std::cos(2 * M_PI
-                         * ((double)(i - 1) / 2.0 / (double)sinc_table_.size() + 0.5));
+            - 0.46
+                * std::cos(2 * M_PI
+                           * ((double)(i - 1) / 2.0 / (double)sinc_table_.size() + 0.5));
         sinc_table_[i] = (float)(std::sin(M_PI * sinc_t) / M_PI / sinc_t * window);
         sinc_t += sinc_step;
     }

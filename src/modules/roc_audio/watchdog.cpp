@@ -100,7 +100,8 @@ bool Watchdog::update() {
     return true;
 }
 
-void Watchdog::update_silence_timeout_(const Frame& frame, packet::timestamp_t next_read_pos) {
+void Watchdog::update_silence_timeout_(const Frame& frame,
+                                       packet::timestamp_t next_read_pos) {
     if (max_silence_duration_ == 0) {
         return;
     }
@@ -130,7 +131,8 @@ bool Watchdog::check_silence_timeout_() const {
     return false;
 }
 
-void Watchdog::update_drops_timeout_(const Frame& frame, packet::timestamp_t next_read_pos) {
+void Watchdog::update_drops_timeout_(const Frame& frame,
+                                     packet::timestamp_t next_read_pos) {
     if (max_drops_duration_ == 0) {
         return;
     }
@@ -140,8 +142,7 @@ void Watchdog::update_drops_timeout_(const Frame& frame, packet::timestamp_t nex
     const packet::timestamp_t window_start =
         curr_read_pos_ / drop_detection_window_ * drop_detection_window_;
 
-    const packet::timestamp_t window_end =
-        window_start + drop_detection_window_;
+    const packet::timestamp_t window_end = window_start + drop_detection_window_;
 
     if (packet::timestamp_le(window_end, next_read_pos)) {
         if ((curr_window_flags_ & (Frame::FlagIncomplete | Frame::FlagDrops)) == 0) {

@@ -63,9 +63,9 @@ const sox_effect_handler_t SoxReader::output_handler_ = {
 };
 
 SoxReader::SoxReader(core::BufferPool<audio::sample_t>& buffer_pool,
-                   packet::channel_mask_t channels,
-                   size_t n_samples,
-                   size_t sample_rate)
+                     packet::channel_mask_t channels,
+                     size_t n_samples,
+                     size_t sample_rate)
     : input_(NULL)
     , chain_(NULL)
     , buffer_pool_(buffer_pool)
@@ -178,10 +178,10 @@ int SoxReader::kill_cb_(sox_effect_t* eff) {
 }
 
 int SoxReader::output_cb_(sox_effect_t* eff,
-                         const sox_sample_t* ibuf,
-                         sox_sample_t* obuf,
-                         size_t* ibufsz,
-                         size_t* obufsz) {
+                          const sox_sample_t* ibuf,
+                          sox_sample_t* obuf,
+                          size_t* ibufsz,
+                          size_t* obufsz) {
     roc_panic_if(!eff);
     roc_panic_if(!eff->priv);
 
@@ -238,9 +238,10 @@ bool SoxReader::open_(const char* name, const char* type) {
 
     is_file_ = !(input_->handler.flags & SOX_FILE_DEVICE);
 
-    roc_log(LogInfo, "sox reader:"
-                     " in_bits=%lu out_bits=%lu in_rate=%lu out_rate=%lu"
-                     " in_ch=%lu, out_ch=%lu, is_file=%d",
+    roc_log(LogInfo,
+            "sox reader:"
+            " in_bits=%lu out_bits=%lu in_rate=%lu out_rate=%lu"
+            " in_ch=%lu, out_ch=%lu, is_file=%d",
             (unsigned long)input_->encoding.bits_per_sample,
             (unsigned long)out_signal_.precision, (unsigned long)input_->signal.rate,
             (unsigned long)out_signal_.rate, (unsigned long)input_->signal.channels,

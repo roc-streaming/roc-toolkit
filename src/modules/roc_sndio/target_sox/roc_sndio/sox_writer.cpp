@@ -114,7 +114,8 @@ bool SoxWriter::prepare_() {
 
 bool SoxWriter::open_(const char* name, const char* type) {
     if (!sox_defaults(&name, &type)) {
-        roc_log(LogError, "sox writer: can't detect defaults: name=%s type=%s", name, type);
+        roc_log(LogError, "sox writer: can't detect defaults: name=%s type=%s", name,
+                type);
         return false;
     }
 
@@ -140,8 +141,9 @@ bool SoxWriter::open_(const char* name, const char* type) {
         return false;
     }
 
-    roc_log(LogInfo, "sox writer:"
-                     " bits=%lu out_rate=%lu in_rate=%lu ch=%lu is_file=%d",
+    roc_log(LogInfo,
+            "sox writer:"
+            " bits=%lu out_rate=%lu in_rate=%lu ch=%lu is_file=%d",
             (unsigned long)output_->encoding.bits_per_sample, out_rate, in_rate,
             (unsigned long)output_->signal.channels, (int)is_file_);
 

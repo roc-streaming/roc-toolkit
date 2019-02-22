@@ -90,7 +90,6 @@ TEST_GROUP(watchdog) {
             check_read(reader, is_read, fsz, frame_flags);
         }
     }
-
 };
 
 TEST(watchdog, silence_timeout_no_frames) {
@@ -123,7 +122,7 @@ TEST(watchdog, silence_timeout_blank_and_non_blank_frames) {
     CHECK(watchdog.valid());
 
     for (unsigned int i = 0; i < 2; i++) {
-        for (packet::timestamp_t n = 0; n < (SilenceTimeout / SamplesPerFrame)-1; n++) {
+        for (packet::timestamp_t n = 0; n < (SilenceTimeout / SamplesPerFrame) - 1; n++) {
             CHECK(watchdog.update());
             check_read(watchdog, true, SamplesPerFrame, Frame::FlagBlank);
         }
@@ -290,7 +289,8 @@ TEST(watchdog, drops_timeout_frame_overlaps_with_drop_window) {
 
         CHECK(watchdog.update());
 
-        check_read(watchdog, true, DropsWindow + 1, Frame::FlagIncomplete | Frame::FlagDrops);
+        check_read(watchdog, true, DropsWindow + 1,
+                   Frame::FlagIncomplete | Frame::FlagDrops);
         check_read(watchdog, true, DropsWindow - 1, 0);
         check_read(watchdog, true, DropsTimeout - DropsWindow,
                    Frame::FlagIncomplete | Frame::FlagDrops);

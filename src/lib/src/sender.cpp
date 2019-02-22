@@ -258,8 +258,9 @@ int roc_sender_write(roc_sender* sender, const roc_frame* frame) {
     }
 
     if (frame->num_samples % sender->num_channels != 0) {
-        roc_log(LogError, "roc_sender_write: invalid arguments: # of samples should be "
-                          "multiple of # of channels: num_samples=%lu num_channels=%lu",
+        roc_log(LogError,
+                "roc_sender_write: invalid arguments: # of samples should be "
+                "multiple of # of channels: num_samples=%lu num_channels=%lu",
                 (unsigned long)frame->num_samples, (unsigned long)sender->num_channels);
         return -1;
     }

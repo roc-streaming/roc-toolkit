@@ -32,8 +32,9 @@ void SortedQueue::write(const PacketPtr& packet) {
     }
 
     if (max_size_ > 0 && list_.size() == max_size_) {
-        roc_log(LogDebug, "sorted queue: queue is full, dropping packet:"
-                          " max_size=%u",
+        roc_log(LogDebug,
+                "sorted queue: queue is full, dropping packet:"
+                " max_size=%u",
                 (unsigned)max_size_);
         return;
     }

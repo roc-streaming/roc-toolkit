@@ -14,7 +14,7 @@
 
 namespace roc {
 
-TEST_GROUP(context) {};
+TEST_GROUP(context){};
 
 TEST(context, ops) {
     {

@@ -42,15 +42,17 @@ Sender::Sender(const SenderConfig& config,
         }
     }
 
-    source_port_.reset(new (allocator) SenderPort(source_port_config, source_writer, allocator),
+    source_port_.reset(new (allocator)
+                           SenderPort(source_port_config, source_writer, allocator),
                        allocator);
     if (!source_port_ || !source_port_->valid()) {
         return;
     }
 
     if (repair_port_config.protocol != Proto_None) {
-        repair_port_.reset(
-            new (allocator) SenderPort(repair_port_config, repair_writer, allocator), allocator);
+        repair_port_.reset(new (allocator)
+                               SenderPort(repair_port_config, repair_writer, allocator),
+                           allocator);
         if (!repair_port_ || !repair_port_->valid()) {
             return;
         }
@@ -143,7 +145,8 @@ Sender::Sender(const SenderConfig& config,
         if (!resampler_ || !resampler_->valid()) {
             return;
         }
-        if (!resampler_->set_scaling(float(config.input_sample_rate) / format->sample_rate)) {
+        if (!resampler_->set_scaling(float(config.input_sample_rate)
+                                     / format->sample_rate)) {
             return;
         }
         awriter = resampler_.get();

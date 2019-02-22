@@ -212,8 +212,9 @@ void UDPSender::send_cb_(uv_udp_send_t* req, int status) {
     pp->decref();
 
     if (status < 0) {
-        roc_log(LogError, "udp sender:"
-                          " can't send packet: src=%s dst=%s sz=%ld: [%s] %s",
+        roc_log(LogError,
+                "udp sender:"
+                " can't send packet: src=%s dst=%s sz=%ld: [%s] %s",
                 packet::address_to_str(self.address_).c_str(),
                 packet::address_to_str(pp->udp()->dst_addr).c_str(),
                 (long)pp->data().size(), uv_err_name(status), uv_strerror(status));
