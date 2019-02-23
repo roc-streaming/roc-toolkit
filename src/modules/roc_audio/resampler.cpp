@@ -182,8 +182,9 @@ bool Resampler::resample_buff(Frame& out) {
             qt_sample_ += qt_one;
         }
 
+        sample_t* out_data = out.data();
         for (size_t channel = 0; channel < channels_num_; ++channel) {
-            out.data()[out_frame_pos_ + channel] = resample_(channel);
+            out_data[out_frame_pos_ + channel] = resample_(channel);
         }
         qt_sample_ += qt_dt_;
     }
