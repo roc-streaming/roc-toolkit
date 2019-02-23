@@ -1,63 +1,115 @@
 Code structure
 **************
 
-.. warning::
+Overview
+========
 
-   This section is under construction.
+Roc consists of the following high-level components:
+
+* **Modules**
+
+  Internal C++ libraries. Other components are based on them. See `Doxygen documentation <https://roc-project.github.io/modules/>`_ for details.
+
+* **Library**
+
+  Public C API (libroc). A stable (not yet) interface for running Roc network sender and receiver. See :doc:`/api` page for details.
+
+* **Tools**
+
+  Command-line tools. A command-line interface for running Roc network sender and receiver, plus performing sound I/O, plus setting some debugging options. See :doc:`/tools` page for details.
+
+* **PulseAudio modules**
+
+  PulseAudio integration. Implement Roc-based network connectivity for PulseAudio.
+
+.. image:: ../../diagrams/components.png
+    :align: center
+    :alt: High-level components
 
 Modules
 =======
 
-Roc has a modular structure. Source code is divided into several modules, and we try to keep inter-module dependencies minimal. Dependencies should be specifies explicitly in ``src/build-deps.json``. If some module use another module, and the dependency is not specified there, build will fail (well, it should).
+Essentially, a module is just a C++ library providing a set of related classes. Every module has its own namespace, include path, and a set of unit tests. Modules may be built separately.
 
-Every module:
+See `Doxygen documentation <https://roc-project.github.io/modules/>`_ for details.
 
-* has its own namespace;
-* has its own source code directory and include path;
-* has its own unit tests;
-* has its own SCons target and may be built separately;
-* is compiled into separate static library.
+Modules can be grouped into several layers:
 
-=================== =================================
-module              Description
-=================== =================================
-``roc_config``	    Global compile-time configuration options.
-roc_core	        Lightweight general-purpose utility classes and wrappers for platform-dependent features.
-``roc_datagram``	Protocol-independent network layer datagram processing (e.g. UDP).
-``roc_packet``	    Protocol-independent application layer packet processing (e.g. RTP).
-``roc_fec``	        FEC codecs. Acts at packet layer.
-``roc_audio``	    Audio stream processing.
-``roc_rtp``	        Implementation of packets for RTP.
-``roc_pipeline``	    Sender and receiver pipelines. Glues roc_datagram, roc_packet, roc_fec, and roc_audio together to convert audio stream to datagrams (sender) or datagrams to audio stream (receiver).
-``roc_sndio``	    Sound I/O. Allows to read or write audio stream from/to file or device.
-``roc_netio``	    Network I/O. Allows to send or receive datagrams.
-=================== =================================
+* network I/O layer (roc_netio)
 
-.. image:: ../../diagrams/modules.png
-	:height: 500
-	:width: 791 px
-	:alt: Rocs modules layout
+* processing layer (roc_pipeline), with two sublayers:
+
+ * packet processing sublayer (roc_packet, roc_rtp, roc_fec)
+
+ * stream processing sublayer (roc_audio)
+
+* sound I/O layer (roc_sndio)
+
+On the receiver, data is transferring from the network layer to the sound layer. Accordingly, on the sender, data is transferring from the sound layer to the network layer.
+
+See :doc:`/internals/data_flow` page for details.
+
+Here is the full list of available modules:
+
+================= =================================
+module            description
+================= =================================
+roc_core          General-purpose building blocks (containers, memory management, multithreading, etc)
+roc_packet        Network packets and packet processing
+roc_rtp           RTP support
+roc_fec           FEC support
+roc_audio         Audio frames and audio processing
+roc_pipeline      High-level sender and receiver pipelines on top of other modules
+roc_netio         Network I/O
+roc_sndio         Sound I/O
+================= =================================
 
 .. _targets:
 
 Targets
 =======
 
-Roc is targeted for multiple platforms and compilers. The major part of source code is platform-independent, however there are also parts that depend on platform or optional third-party libraries.
+Roc supports multiple platforms and compilers. The major part of the source code is platform-independent. However, there are also parts that depend on specific platform features or optional third-party libraries.
 
-To keep code base clean, all platform-dependent code is strictly isolated inside ``target_`` directories. Every such directory corresponds to a feature supported by target platform. When SCons builds the project, it determines target directories to use, depending on target platform and available third-party libraries.
+The platform-dependent code is isolated inside "target" directories. Every target directory corresponds to a feature enabled at compile time. When SCons builds the project, it determines target directories to use, depending on the target platform, available third-party libraries, and command-line options.
 
-Every module can have its own target directories. Headers from all target directories in use are added to include path, and source files are added to build.
+Every module can have its own target directories. Headers from enabled target directories are added to the include path, and source files from enabled target directories are added to the build.
 
-================== =================
-Target             Description
-================== =================
-``target_posix``   Enabled when building for POSIX systems.
-``target_stdio``   Enabled when standard input/output is supported in libc.
-``target_gnu``     Enabled when GNU-compatible compiler is in use (GCC or clang).
-``target_uv``      Enabled when libuv is available.
-``target_openfec`` Enabled when OpenFEC is available.
-``target_sox``     Enabled when SoX is available.
-================== =================
+Currently supported targets are:
 
-Several target directories may contain alternative implementations of the same classes or functions, compatible at the source level. For example, ``class SpinLock`` could have independent declarations and implementations inside ``target_posix`` and ``target_win32``.
+================= =================
+target            description
+================= =================
+target_posix      Enabled for a POSIX OS
+target_posixtime  Enabled for a POSIX OS with time extensions
+target_gnu        Enabled for a GNU-compatible system and compiler
+target_darwin     Enabled for Mac OS
+target_stdio      Enabled if stdio is available in the standard library
+target_openfec    Enabled if OpenFEC is available
+target_uv         Enabled if libuv is available
+target_sox        Enabled if SoX is available
+================= =================
+
+Example directory structure employing targets:
+
+::
+
+    roc_core
+    ├── target_posix
+    │   └── roc_core
+    │       ├── ...
+    │       ├── random.cpp
+    │       └── random.h
+    ├── target_posixtime
+    │   └── roc_core
+    │       ├── ...
+    │       ├── time.cpp
+    │       └── time.h
+    ├── target_darwin
+    │   └── roc_core
+    │       ├── ...
+    │       ├── time.cpp
+    │       └── time.h
+    ├── ...
+    ├── array.h
+    └── list.h

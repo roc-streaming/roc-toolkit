@@ -21,6 +21,9 @@ compile_commands.json
 doxygen_*.db
 doxygen_*.tmp
 
+# dia
+*.dia~
+
 # python
 __pycache__
 *.pyc
