@@ -1,5 +1,5 @@
-Dependncies
-***********
+Dependencies
+************
 
 Build dependencies
 ==================
