@@ -9,5 +9,4 @@ Internals
    internals/data_flow
    internals/fec
    internals/fe_resampler
-   internals/latency
    internals/network_protocols
