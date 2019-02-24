@@ -36,20 +36,19 @@ public:
     void update(packet::timestamp_t current_latency);
 
 private:
-    // Calculate regulator input.
-    // `in' is current queue size.
-    float fast_controller_(sample_t in);
+    bool run_decimators_(packet::timestamp_t current, float& filtered);
+    float run_controller_(float current);
 
-    const sample_t target_; // Target latency.
+    const float target_; // Target latency.
 
-    sample_t dec1_casc_buff_[fe_decim_len];
+    float dec1_casc_buff_[fe_decim_len];
     size_t dec1_ind_;
 
-    sample_t dec2_casc_buff_[fe_decim_len];
+    float dec2_casc_buff_[fe_decim_len];
     size_t dec2_ind_;
 
     size_t samples_counter_; // Input samples counter.
-    sample_t accum_;         // Integrator value.
+    float accum_;         // Integrator value.
 
     float coeff_; // Current frequency coefficient value.
 };

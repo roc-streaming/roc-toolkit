@@ -14,8 +14,8 @@ namespace audio {
 
 namespace {
 
-const sample_t P = 100e-8f; // Proportional gain of PI-controller.
-const sample_t I = 0.5e-8f; // Integral gain of PI-controller.
+const float P = 100e-8f; // Proportional gain of PI-controller.
+const float I = 0.5e-8f; // Integral gain of PI-controller.
 
 // Calculates dot product of arrays IR of filter (@p coeff) and input array (@p samples).
 //
@@ -24,8 +24,8 @@ const sample_t I = 0.5e-8f; // Integral gain of PI-controller.
 // - @p sample_ind index in input array to start from.
 // - @p len How many samples do we need at output.
 // - @p len_mask Bit mask of input array length.
-sample_t dot_prod(const sample_t* coeff,
-                  const sample_t* samples,
+float dot_prod(const float* coeff,
+                  const float* samples,
                   const size_t sample_ind,
                   const size_t len,
                   const size_t len_mask) {
@@ -35,7 +35,7 @@ sample_t dot_prod(const sample_t* coeff,
         accum += (double)coeff[j] * (double)samples[i];
     }
 
-    return (sample_t)accum;
+    return (float)accum;
 }
 
 } // namespace
@@ -60,10 +60,18 @@ float FreqEstimator::freq_coeff() const {
     return coeff_;
 }
 
-void FreqEstimator::update(packet::timestamp_t current_latency) {
+void FreqEstimator::update(packet::timestamp_t current) {
+    float filtered;
+
+    if (run_decimators_(current, filtered)) {
+        coeff_ = run_controller_(filtered);
+    }
+}
+
+bool FreqEstimator::run_decimators_(packet::timestamp_t current, float& filtered) {
     samples_counter_++;
 
-    dec1_casc_buff_[dec1_ind_] = (sample_t)current_latency;
+    dec1_casc_buff_[dec1_ind_] = (float)current;
 
     if ((samples_counter_ % fe_decim_factor) == 0) {
         // Time to calculate first decimator's samples.
@@ -73,23 +81,28 @@ void FreqEstimator::update(packet::timestamp_t current_latency) {
 
         if (((samples_counter_ % (fe_decim_factor * fe_decim_factor)) == 0)) {
             samples_counter_ = 0;
+
             // Time to calculate second decimator (and freq estimator's) output.
-            sample_t filtered_queue_len = dot_prod(fe_decim_h, dec2_casc_buff_, dec2_ind_,
-                                                   fe_decim_len, fe_decim_len_mask)
+            filtered = dot_prod(fe_decim_h, dec2_casc_buff_, dec2_ind_, fe_decim_len,
+                                fe_decim_len_mask)
                 / fe_decim_h_gain;
 
-            coeff_ = fast_controller_(filtered_queue_len);
+            return true;
         }
 
         dec2_ind_ = (dec2_ind_ + 1) & fe_decim_len_mask;
     }
 
     dec1_ind_ = (dec1_ind_ + 1) & fe_decim_len_mask;
+
+    return false;
 }
 
-float FreqEstimator::fast_controller_(const sample_t input) {
-    accum_ = accum_ + input - target_;
-    return 1 + P * (input - target_) + I * accum_;
+float FreqEstimator::run_controller_(float current) {
+    const float error = (current - target_);
+
+    accum_ = accum_ + error;
+    return 1 + P * error + I * accum_;
 }
 
 } // namespace audio
