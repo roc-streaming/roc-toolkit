@@ -23,13 +23,13 @@ Work in progress!
 
 There is no public release yet. The upcoming 0.1 release will include the following features:
 
-- [x] Simple public API for sender and receiver
+- [ ] Public API for sender and receiver
 - [x] Command line tools for sender and receiver
 - [x] Network I/O
 - [x] Sound I/O (in tools)
 - [x] Audio processing pipeline with dynamic resampling
 - [x] RTP support with uncompressed 16-bit linear PCM
-- [x] FECFRAME support with Reed-Solomon and LDPC-Staircase [FEC](https://en.wikipedia.org/wiki/Forward_error_correction) codes using [OpenFEC](http://openfec.org/)
+- [ ] FECFRAME support with Reed-Solomon and LDPC-Staircase [FEC](https://en.wikipedia.org/wiki/Forward_error_correction) codes using [OpenFEC](http://openfec.org/)
 - [ ] Documentation
 - [x] Linux support, including Raspberry Pi
 - [x] Mac OS X support
@@ -46,7 +46,7 @@ Documentation
 Building
 --------
 
-See [Building](https://roc-project.github.io/docs/building.html) page. In particular, [Quick start](https://roc-project.github.io/docs/building/quick_start.html) page provides examples for popular distros.
+See [Building](https://roc-project.github.io/docs/building.html) page. In particular, [User instructions](https://roc-project.github.io/docs/building/user_instructions.html) page provides examples for popular distros.
 
 Try it
 ------
