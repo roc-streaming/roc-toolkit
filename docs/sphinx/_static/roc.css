@@ -44,3 +44,7 @@ dl.function > dt {
     background-color: #EDF0F2;
     padding: 4px 4px 4px 10px;
 }
+
+.highlight {
+    font-size: 90%;
+}
