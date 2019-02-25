@@ -7,7 +7,7 @@
  */
 
 //! @file roc_packet/target_stdio/roc_packet/parse_address.h
-//! @brief Socket address helpers.
+//! @brief Parse network address.
 
 #ifndef ROC_PACKET_PARSE_ADDRESS_H_
 #define ROC_PACKET_PARSE_ADDRESS_H_
