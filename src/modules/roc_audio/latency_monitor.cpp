@@ -15,7 +15,7 @@ namespace audio {
 
 namespace {
 
-const core::nanoseconds_t LogRate = 5000000000;
+const core::nanoseconds_t LogInterval = 5 * core::Second;
 
 } // namespace
 
@@ -30,7 +30,7 @@ LatencyMonitor::LatencyMonitor(const packet::SortedQueue& queue,
     , depacketizer_(depacketizer)
     , resampler_(resampler)
     , fe_(target_latency)
-    , rate_limiter_(LogRate)
+    , rate_limiter_(LogInterval)
     , update_time_(0)
     , has_update_time_(false)
     , config_(config)

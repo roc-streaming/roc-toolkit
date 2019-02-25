@@ -16,7 +16,7 @@ namespace audio {
 
 namespace {
 
-const core::nanoseconds_t LogRate = 20000000000;
+const core::nanoseconds_t LogInterval = 20 * core::Second;
 
 inline void write_zeros(sample_t* buf, size_t bufsz) {
     memset(buf, 0, bufsz * sizeof(sample_t));
@@ -43,7 +43,7 @@ Depacketizer::Depacketizer(packet::IReader& reader,
     , zero_samples_(0)
     , missing_samples_(0)
     , packet_samples_(0)
-    , rate_limiter_(LogRate)
+    , rate_limiter_(LogInterval)
     , first_packet_(true)
     , beep_(beep)
     , dropped_packets_(0) {

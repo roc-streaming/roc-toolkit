@@ -15,7 +15,7 @@ namespace audio {
 
 namespace {
 
-enum { NsPerSec = 1000000000, ReportInterval = NsPerSec };
+const core::nanoseconds_t LogInterval = core::Second;
 
 } // namespace
 
@@ -23,7 +23,7 @@ ProfilingWriter::ProfilingWriter(IWriter& writer,
                                  packet::channel_mask_t channels,
                                  size_t sample_rate)
     : writer_(writer)
-    , rate_limiter_(ReportInterval)
+    , rate_limiter_(LogInterval)
     , avg_speed_(0)
     , avg_len_(0)
     , sample_rate_(sample_rate)
@@ -43,7 +43,7 @@ void ProfilingWriter::write(Frame& frame) {
 
     const core::nanoseconds_t elapsed = write_(frame);
 
-    const double speed = (double)frame.size() / num_channels_ / elapsed * NsPerSec;
+    const double speed = (double)frame.size() / num_channels_ / elapsed * core::Second;
 
     update_(speed);
 }

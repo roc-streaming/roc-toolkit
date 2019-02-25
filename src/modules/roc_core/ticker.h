@@ -22,11 +22,14 @@ namespace core {
 //! Ticker.
 class Ticker : public NonCopyable<> {
 public:
+    //! Number of ticks.
+    typedef uint64_t Ticks;
+
     //! Initialize.
     //! @remarks
     //!  @p freq defines the number of ticks per second.
-    Ticker(uint64_t freq)
-        : ratio_(freq / 1000000000.0)
+    Ticker(Ticks freq)
+        : ratio_(double(freq) / Second)
         , start_(0)
         , started_(false) {
     }
@@ -42,18 +45,18 @@ public:
 
     //! Returns number of ticks elapsed since start.
     //! If ticker is not started yet, it is started automatically.
-    uint64_t elapsed() {
+    Ticks elapsed() {
         if (!started_) {
             start();
             return 0;
         } else {
-            return uint64_t((timestamp() - start_) * ratio_);
+            return Ticks((timestamp() - start_) * ratio_);
         }
     }
 
     //! Wait until the given number of ticks elapses since start.
     //! If ticker is not started yet, it is started automatically.
-    void wait(uint64_t ticks) {
+    void wait(Ticks ticks) {
         if (!started_) {
             start();
         }

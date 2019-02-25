@@ -23,16 +23,19 @@ class RateLimiter : public NonCopyable<> {
 public:
     //! Initialize rate limiter.
     //! @remarks
-    //!  @p period_ns is tick duration in nanoseconds.
-    RateLimiter(nanoseconds_t period_ns)
-        : period_(period_ns)
+    //!  @p period is tick duration in nanoseconds.
+    RateLimiter(nanoseconds_t period)
+        : period_(Ticker::Ticks(period))
         , pos_(0)
-        , ticker_(1000000000) {
+        , ticker_(Second / Nanosecond) {
+        if (period <= 0) {
+            roc_panic("rate limiter: expected positive period, got %ld", (long)period);
+        }
     }
 
     //! Check whether an event is allowed to occur now.
     bool allow() {
-        const uint64_t elapsed = ticker_.elapsed();
+        const Ticker::Ticks elapsed = ticker_.elapsed();
         if (elapsed >= pos_) {
             pos_ = (elapsed / period_ + 1) * period_;
             return true;
@@ -42,8 +45,8 @@ public:
     }
 
 private:
-    const nanoseconds_t period_;
-    nanoseconds_t pos_;
+    const Ticker::Ticks period_;
+    Ticker::Ticks pos_;
     Ticker ticker_;
 };
 
