@@ -26,17 +26,16 @@ namespace core {
 
 namespace {
 
-pthread_once_t once_control = PTHREAD_ONCE_INIT;
+pthread_once_t steady_factor_once = PTHREAD_ONCE_INIT;
 
 double steady_factor = 0;
 
-/* mach_absolute_time() returns a Mach Time unit - clock ticks. The
- * length of a tick is a CPU dependent. On most Intel CPUs it probably
- * will be 1 nanoseconds per tick, but let's not rely on this. Mach
- * provides a transformation factor that can be used to convert abstract
- * mach time units to nanoseconds.
- */
-void init_steady_factor() {
+// mach_absolute_time() returns a Mach Time unit - clock ticks. The
+// length of a tick is a CPU dependent. On most Intel CPUs it probably
+// will be 1 nanoseconds per tick, but let's not rely on this. Mach
+// provides a transformation factor that can be used to convert abstract
+// mach time units to nanoseconds.
+void steady_factor_init() {
     mach_timebase_info_data_t info;
 
     kern_return_t ret = mach_timebase_info(&info);
@@ -49,20 +48,19 @@ void init_steady_factor() {
 
 } // namespace
 
-/* As Apple mentioned: "The mach_timespec_t API is deprecated in OS X. The
- * newer and preferred API is based on timer objects that in turn use
- * AbsoluteTime as the basic data type".
- *
- * We still use a function from the old OS X API (clock_sleep), because OS X
- * API only provides one method to wait until some period (mach_wait_until)
- * and doesn't allow to select a clock against which the sleep interval is to
- * be measured to specify the sleep interval as either an absolute or a
- * relative value.
- *
- * https://developer.apple.com/library/content/documentation/Darwin/Conceptual/KernelProgramming/Mach/Mach.html#//apple_ref/doc/uid/TP30000905-CH209-TPXREF111
- */
+// As Apple mentioned: "The mach_timespec_t API is deprecated in OS X. The
+// newer and preferred API is based on timer objects that in turn use
+// AbsoluteTime as the basic data type".
+//
+// We still use a function from the old OS X API (clock_sleep), because OS X
+// API only provides one method to wait until some period (mach_wait_until)
+// and doesn't allow to select a clock against which the sleep interval is to
+// be measured to specify the sleep interval as either an absolute or a
+// relative value.
+//
+// See "Mach Overview" at developer.apple.com (http://tiny.cc/0vlj3y)
 nanoseconds_t timestamp() {
-    if (int err = pthread_once(&once_control, init_steady_factor)) {
+    if (int err = pthread_once(&steady_factor_once, steady_factor_init)) {
         roc_panic("time: pthread_once(): %s", errno_to_str(err).c_str());
     }
     return nanoseconds_t(mach_absolute_time() * steady_factor);
