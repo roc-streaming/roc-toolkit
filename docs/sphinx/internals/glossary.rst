@@ -93,7 +93,7 @@ FEC
     Forward Error Correction, a technique to reduce packet loss over unreliable or noisy communication channels. The central idea is that the sender adds some sort of redundancy to the data being sent which can be used by the receiver to restore lost packets.
 
 *FECFRAME*
-    A set of specifications incorporating several FEC schemes into RTP.
+    FEC Framework. A set of specifications incorporating several FEC schemes into RTP.
 
 *FEC scheme*
     A specification of the FEC code plus the corresponding format of the source and repair packets.
