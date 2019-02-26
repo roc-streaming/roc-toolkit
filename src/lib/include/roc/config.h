@@ -190,10 +190,27 @@ typedef struct roc_receiver_config {
      */
     unsigned int target_latency;
 
-    /** Blank timeout, in samples.
-     * TODO
+    /** Timeout for the lack of packets, in nanoseconds.
+     * If there are no packets during this period, the session is terminated.
+     * This mechanism allows to detect dead or hanging clients.
+     * If zero, default value is used. If negative, the timeout is disabled.
      */
-    unsigned int blank_timeout;
+    long long no_packets_timeout;
+
+    /** Timeout for frequent packet drops, in nanoseconds.
+     * If there is at least one packet drop every drop_detection_window during this
+     * period, the session is terminated.
+     * This mechanism allows to detect the vicious circle when all client packets
+     * are a bit late and we are constantly dropping them producing unpleasant noise.
+     * If zero, default value is used. If negative, the timeout is disabled.
+     */
+    long long frequent_drops_timeout;
+
+    /** Drop detection window, in nanoseconds.
+     * Used for requent drops timesout if it is enabled.
+     * If negative or zero, default value is used.
+     */
+    long long drop_detection_window;
 
     /** The size of the packets received from sender.
      * Number of samples per channel per packet. If zero, default value is used.

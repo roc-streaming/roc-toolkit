@@ -12,15 +12,27 @@
 namespace roc {
 namespace audio {
 
+namespace {
+
+packet::timestamp_t ns_to_samples(core::nanoseconds_t ns, size_t sample_rate) {
+    if (ns < 0) {
+        return 0;
+    }
+    return packet::timestamp_t(ns * core::nanoseconds_t(sample_rate) / core::Second);
+}
+
+} // namespace
+
 Watchdog::Watchdog(IReader& reader,
                    const size_t num_channels,
                    const WatchdogConfig& config,
+                   size_t sample_rate,
                    core::IAllocator& allocator)
     : reader_(reader)
     , num_channels_(num_channels)
-    , max_blank_duration_(config.blank_timeout)
-    , max_drops_duration_(config.drops_timeout)
-    , drop_detection_window_(config.drop_detection_window)
+    , max_blank_duration_(ns_to_samples(config.no_packets_timeout, sample_rate))
+    , max_drops_duration_(ns_to_samples(config.drops_timeout, sample_rate))
+    , drop_detection_window_(ns_to_samples(config.drop_detection_window, sample_rate))
     , curr_read_pos_(0)
     , last_pos_before_blank_(0)
     , last_pos_before_drops_(0)

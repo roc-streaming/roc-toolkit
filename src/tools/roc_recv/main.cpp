@@ -10,6 +10,7 @@
 #include "roc_core/crash.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_core/log.h"
+#include "roc_core/parse_duration.h"
 #include "roc_core/scoped_destructor.h"
 #include "roc_netio/transceiver.h"
 #include "roc_packet/address_to_str.h"
@@ -131,31 +132,28 @@ int main(int argc, char** argv) {
         }
     }
 
-    if (args.blank_timeout_given) {
-        if (args.blank_timeout_arg < 0) {
-            roc_log(LogError, "invalid --blank-timeout: should be >= 0");
+    if (args.nopkt_timeout_given) {
+        if (!core::parse_duration(args.nopkt_timeout_arg,
+                                  config.default_session.watchdog.no_packets_timeout)) {
+            roc_log(LogError, "invalid --nopkt-timeout");
             return 1;
         }
-        config.default_session.watchdog.blank_timeout =
-            (packet::timestamp_t)args.blank_timeout_arg;
     }
 
     if (args.drops_timeout_given) {
-        if (args.drops_timeout_arg < 0) {
-            roc_log(LogError, "invalid --drops-timeout: should be >= 0");
+        if (!core::parse_duration(args.drops_timeout_arg,
+                                  config.default_session.watchdog.drops_timeout)) {
+            roc_log(LogError, "invalid --drops-timeout");
             return 1;
         }
-        config.default_session.watchdog.drops_timeout =
-            (packet::timestamp_t)args.drops_timeout_arg;
     }
 
     if (args.drops_window_given) {
-        if (args.drops_window_arg < 0) {
-            roc_log(LogError, "invalid --drops-window: should be >= 0");
+        if (!core::parse_duration(args.drops_window_arg,
+                                  config.default_session.watchdog.drop_detection_window)) {
+            roc_log(LogError, "invalid --drops-window");
             return 1;
         }
-        config.default_session.watchdog.drop_detection_window =
-            (packet::timestamp_t)args.drops_window_arg;
     }
 
     if (args.latency_given) {

@@ -897,6 +897,7 @@ if compiler == 'clang':
     for var in ['CXXFLAGS', 'CFLAGS']:
         env.Append(**{var: [
             '-Weverything',
+            '-Wno-system-headers',
             '-Wno-old-style-cast',
             '-Wno-padded',
             '-Wno-packed',
@@ -909,7 +910,7 @@ if compiler == 'clang':
             '-Wno-format-nonliteral',
             '-Wno-variadic-macros',
             '-Wno-disabled-macro-expansion',
-            '-Wno-system-headers',
+            '-Wno-c++11-long-long',
         ]})
 
     env.Append(CFLAGS=[

@@ -21,14 +21,14 @@ section "Options"
     option "nbrpr" - "Number of repair packets in FEC block"
         int optional
 
-    option "blank-timeout" - "Session timeout for lack of packets, number of samples"
-        int optional
+    option "nopkt-timeout" - "Session timeout for lack of packets, TIME units"
+        string optional
 
-    option "drops-timeout" - "Session timeout for constant drops, number of samples"
-        int optional
+    option "drops-timeout" - "Session timeout for constant drops, TIME units"
+        string optional
 
-    option "drops-window" - "Session drops detection window, number of samples"
-        int optional
+    option "drops-window" - "Session drops detection window, TIME units"
+        string optional
 
     option "latency" - "Session target latency, number of samples"
         int optional
@@ -62,7 +62,10 @@ section "Options"
     option "beeping" - "Enable beeping on packet loss" flag off
 
 text "
-ADDRESS should be in one of the following forms:
+ADDRESS should have one of the following forms:
   - :PORT
   - IPv4:PORT
-  - [IPv6]:PORT"
+  - [IPv6]:PORT
+
+TIME should have one of the following forms:
+  123ns, 123us, 123ms, 123s, 123m, 123h"

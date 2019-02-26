@@ -95,8 +95,20 @@ bool config_receiver(pipeline::ReceiverConfig& out, const roc_receiver_config& i
             (packet::timestamp_diff_t)in.target_latency * pipeline::DefaultMaxLatency;
     }
 
-    if (in.blank_timeout) {
-        out.default_session.watchdog.blank_timeout = in.blank_timeout;
+    if (in.no_packets_timeout < 0) {
+        out.default_session.watchdog.no_packets_timeout = 0;
+    } else if (in.no_packets_timeout > 0) {
+        out.default_session.watchdog.no_packets_timeout = in.no_packets_timeout;
+    }
+
+    if (in.frequent_drops_timeout < 0) {
+        out.default_session.watchdog.drops_timeout = 0;
+    } else if (in.no_packets_timeout > 0) {
+        out.default_session.watchdog.drops_timeout = in.frequent_drops_timeout;
+    }
+
+    if (in.drop_detection_window > 0) {
+        out.default_session.watchdog.drop_detection_window = in.drop_detection_window;
     }
 
     if (in.packet_samples) {

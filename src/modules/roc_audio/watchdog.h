@@ -16,6 +16,7 @@
 #include "roc_core/array.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/noncopyable.h"
+#include "roc_core/time.h"
 #include "roc_packet/units.h"
 
 namespace roc {
@@ -23,14 +24,14 @@ namespace audio {
 
 //! Watchdog parameters.
 struct WatchdogConfig {
-    //! Session blank timeout, number of samples.
+    //! Timeout for the lack of packets, nanoseconds.
     //! @remarks
     //!  Maximum allowed period during which every frame is blank. After this period,
     //!  the session is terminated. This mechanism allows to detect dead or hanging
     //!  clients. Set to zero to disable.
-    packet::timestamp_t blank_timeout;
+    core::nanoseconds_t no_packets_timeout;
 
-    //! Session drops timeout, number of samples.
+    //! Timeout for frequent drops, nanoseconds.
     //! @remarks
     //!  Maximum allowed period during which every drop detection window overlaps with
     //!  at least one frame which caused packet drops and with at least one frame which
@@ -38,11 +39,11 @@ struct WatchdogConfig {
     //!  terminated. This mechanism allows to detect the vicious circle when all client
     //!  packets are a bit late and we are constantly dropping them producing unpleasant
     //!  noise. Set to zero to disable.
-    packet::timestamp_t drops_timeout;
+    core::nanoseconds_t drops_timeout;
 
-    //! Drop detection window size, number of samples.
+    //! Drop detection window size, nanoseconds.
     //! @see drops_timeout.
-    packet::timestamp_t drop_detection_window;
+    core::nanoseconds_t drop_detection_window;
 
     //! Frame status window size for logging, number of frames.
     //! @remarks
@@ -50,10 +51,10 @@ struct WatchdogConfig {
     size_t frame_status_window;
 
     //! Initialize config with default values.
-    WatchdogConfig(packet::timestamp_t sample_rate)
-        : blank_timeout(sample_rate * 2)
-        , drops_timeout(sample_rate * 2)
-        , drop_detection_window(sample_rate / 3)
+    WatchdogConfig()
+        : no_packets_timeout(2 * core::Second)
+        , drops_timeout(2 * core::Second)
+        , drop_detection_window(300 * core::Millisecond)
         , frame_status_window(20) {
     }
 };
@@ -67,6 +68,7 @@ public:
     Watchdog(IReader& reader,
              const size_t num_channels,
              const WatchdogConfig& config,
+             size_t sample_rate,
              core::IAllocator& allocator);
 
     //! Check if object is successfully constructed.

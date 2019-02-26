@@ -37,6 +37,7 @@ namespace {
 enum {
     MaxBufSize = 500,
 
+    SampleRate = 44100,
     NumChans = 2,
 
     SourcePackets = 10,
@@ -356,6 +357,7 @@ TEST_GROUP(sender_receiver) {
 
     void init_config() {
         memset(&sender_conf, 0, sizeof(sender_conf));
+        sender_conf.input_sample_rate = SampleRate;
         sender_conf.automatic_timing = 1;
         sender_conf.packet_samples = (unsigned int)PacketSamples / NumChans;
         sender_conf.fec_scheme = ROC_FEC_RS8M;
@@ -364,6 +366,7 @@ TEST_GROUP(sender_receiver) {
         sender_conf.resampler_profile = ROC_RESAMPLER_DISABLE;
 
         memset(&receiver_conf, 0, sizeof(receiver_conf));
+        receiver_conf.output_sample_rate = SampleRate;
         receiver_conf.automatic_timing = 1;
         receiver_conf.packet_samples = (unsigned int)PacketSamples / NumChans;
         receiver_conf.fec_scheme = ROC_FEC_RS8M;
@@ -371,7 +374,7 @@ TEST_GROUP(sender_receiver) {
         receiver_conf.fec_block_repair_packets = RepairPackets;
         receiver_conf.resampler_profile = ROC_RESAMPLER_DISABLE;
         receiver_conf.target_latency = Latency;
-        receiver_conf.blank_timeout = Timeout;
+        receiver_conf.no_packets_timeout = Timeout * 1000000000ul / SampleRate;
     }
 
     void init_samples() {

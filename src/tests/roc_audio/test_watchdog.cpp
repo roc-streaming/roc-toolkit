@@ -24,7 +24,9 @@ enum {
     NumCh = 2,
     SamplesPerFrame = 5,
 
-    BlankTimeout = SamplesPerFrame * 4,
+    SampleRate = 1000,
+
+    NoPacketsTimeout = SamplesPerFrame * 4,
     DropsTimeout = SamplesPerFrame * 5,
     DropsWindow = SamplesPerFrame,
     DropWindowsPerTimeout = DropsTimeout / DropsWindow
@@ -54,12 +56,12 @@ TEST_GROUP(watchdog) {
         return buf;
     }
 
-    WatchdogConfig make_config(packet::timestamp_t blank_timeout,
+    WatchdogConfig make_config(packet::timestamp_t no_packets_timeout,
                                packet::timestamp_t drops_timeout) {
-        WatchdogConfig config(0);
-        config.blank_timeout = blank_timeout;
-        config.drops_timeout = drops_timeout;
-        config.drop_detection_window = DropsWindow;
+        WatchdogConfig config;
+        config.no_packets_timeout = no_packets_timeout * core::Second / SampleRate;
+        config.drops_timeout = drops_timeout * core::Second / SampleRate;
+        config.drop_detection_window = DropsWindow * core::Second / SampleRate;
         return config;
     }
 
@@ -92,20 +94,20 @@ TEST_GROUP(watchdog) {
     }
 };
 
-TEST(watchdog, blank_timeout_no_frames) {
-    Watchdog watchdog(test_reader, NumCh, make_config(BlankTimeout, DropsTimeout),
-                      allocator);
+TEST(watchdog,  no_packets_timeout_no_frames) {
+    Watchdog watchdog(test_reader, NumCh, make_config(NoPacketsTimeout, DropsTimeout),
+                      SampleRate, allocator);
     CHECK(watchdog.valid());
 
     CHECK(watchdog.update());
 }
 
-TEST(watchdog, blank_timeout_blank_frames) {
-    Watchdog watchdog(test_reader, NumCh, make_config(BlankTimeout, DropsTimeout),
-                      allocator);
+TEST(watchdog,  no_packets_timeout_blank_frames) {
+    Watchdog watchdog(test_reader, NumCh, make_config(NoPacketsTimeout, DropsTimeout),
+                      SampleRate, allocator);
     CHECK(watchdog.valid());
 
-    for (packet::timestamp_t n = 0; n < BlankTimeout / SamplesPerFrame; n++) {
+    for (packet::timestamp_t n = 0; n < NoPacketsTimeout / SamplesPerFrame; n++) {
         CHECK(watchdog.update());
         check_read(watchdog, true, SamplesPerFrame, Frame::FlagBlank);
     }
@@ -114,15 +116,15 @@ TEST(watchdog, blank_timeout_blank_frames) {
     check_read(watchdog, false, SamplesPerFrame, 0);
 }
 
-TEST(watchdog, blank_timeout_blank_and_non_blank_frames) {
-    CHECK(BlankTimeout % SamplesPerFrame == 0);
+TEST(watchdog,  no_packets_timeout_blank_and_non_blank_frames) {
+    CHECK(NoPacketsTimeout % SamplesPerFrame == 0);
 
-    Watchdog watchdog(test_reader, NumCh, make_config(BlankTimeout, DropsTimeout),
-                      allocator);
+    Watchdog watchdog(test_reader, NumCh, make_config(NoPacketsTimeout, DropsTimeout),
+                      SampleRate, allocator);
     CHECK(watchdog.valid());
 
     for (unsigned int i = 0; i < 2; i++) {
-        for (packet::timestamp_t n = 0; n < (BlankTimeout / SamplesPerFrame) - 1; n++) {
+        for (packet::timestamp_t n = 0; n < (NoPacketsTimeout / SamplesPerFrame) - 1; n++) {
             CHECK(watchdog.update());
             check_read(watchdog, true, SamplesPerFrame, Frame::FlagBlank);
         }
@@ -132,13 +134,13 @@ TEST(watchdog, blank_timeout_blank_and_non_blank_frames) {
     }
 }
 
-TEST(watchdog, blank_timeout_disabled) {
+TEST(watchdog,  no_packets_timeout_disabled) {
     {
-        Watchdog watchdog(test_reader, NumCh, make_config(BlankTimeout, DropsTimeout),
-                          allocator);
+        Watchdog watchdog(test_reader, NumCh, make_config(NoPacketsTimeout, DropsTimeout),
+                          SampleRate, allocator);
         CHECK(watchdog.valid());
 
-        for (packet::timestamp_t n = 0; n < BlankTimeout / SamplesPerFrame; n++) {
+        for (packet::timestamp_t n = 0; n < NoPacketsTimeout / SamplesPerFrame; n++) {
             CHECK(watchdog.update());
             check_read(watchdog, true, SamplesPerFrame, Frame::FlagBlank);
         }
@@ -146,10 +148,11 @@ TEST(watchdog, blank_timeout_disabled) {
         CHECK(!watchdog.update());
     }
     {
-        Watchdog watchdog(test_reader, NumCh, make_config(0, DropsTimeout), allocator);
+        Watchdog watchdog(test_reader, NumCh, make_config(0, DropsTimeout), SampleRate,
+                          allocator);
         CHECK(watchdog.valid());
 
-        for (packet::timestamp_t n = 0; n < BlankTimeout / SamplesPerFrame; n++) {
+        for (packet::timestamp_t n = 0; n < NoPacketsTimeout / SamplesPerFrame; n++) {
             CHECK(watchdog.update());
             check_read(watchdog, true, SamplesPerFrame, Frame::FlagBlank);
         }
@@ -160,8 +163,8 @@ TEST(watchdog, blank_timeout_disabled) {
 
 TEST(watchdog, drops_timeout_equal_frame_sizes) {
     {
-        Watchdog watchdog(test_reader, NumCh, make_config(BlankTimeout, DropsTimeout),
-                          allocator);
+        Watchdog watchdog(test_reader, NumCh, make_config(NoPacketsTimeout, DropsTimeout),
+                          SampleRate, allocator);
         CHECK(watchdog.valid());
 
         check_n_reads(watchdog, true, DropsWindow, DropWindowsPerTimeout - 1,
@@ -172,8 +175,8 @@ TEST(watchdog, drops_timeout_equal_frame_sizes) {
         check_read(watchdog, true, DropsWindow, 0);
     }
     {
-        Watchdog watchdog(test_reader, NumCh, make_config(BlankTimeout, DropsTimeout),
-                          allocator);
+        Watchdog watchdog(test_reader, NumCh, make_config(NoPacketsTimeout, DropsTimeout),
+                          SampleRate, allocator);
         CHECK(watchdog.valid());
 
         check_read(watchdog, true, DropsWindow, 0);
@@ -185,8 +188,8 @@ TEST(watchdog, drops_timeout_equal_frame_sizes) {
         check_n_reads(watchdog, true, DropsWindow, DropWindowsPerTimeout, 0);
     }
     {
-        Watchdog watchdog(test_reader, NumCh, make_config(BlankTimeout, DropsTimeout),
-                          allocator);
+        Watchdog watchdog(test_reader, NumCh, make_config(NoPacketsTimeout, DropsTimeout),
+                          SampleRate, allocator);
         CHECK(watchdog.valid());
 
         check_read(watchdog, true, DropsWindow, 0);
@@ -198,8 +201,8 @@ TEST(watchdog, drops_timeout_equal_frame_sizes) {
         check_read(watchdog, true, DropsWindow, 0);
     }
     {
-        Watchdog watchdog(test_reader, NumCh, make_config(BlankTimeout, DropsTimeout),
-                          allocator);
+        Watchdog watchdog(test_reader, NumCh, make_config(NoPacketsTimeout, DropsTimeout),
+                          SampleRate, allocator);
         CHECK(watchdog.valid());
 
         check_n_reads(watchdog, true, DropsWindow, DropWindowsPerTimeout - 1,
@@ -213,8 +216,8 @@ TEST(watchdog, drops_timeout_equal_frame_sizes) {
 
 TEST(watchdog, drops_timeout_mixed_frame_sizes) {
     {
-        Watchdog watchdog(test_reader, NumCh, make_config(BlankTimeout, DropsTimeout),
-                          allocator);
+        Watchdog watchdog(test_reader, NumCh, make_config(NoPacketsTimeout, DropsTimeout),
+                          SampleRate, allocator);
         CHECK(watchdog.valid());
 
         check_read(watchdog, true, DropsWindow * (DropWindowsPerTimeout - 1),
@@ -225,8 +228,8 @@ TEST(watchdog, drops_timeout_mixed_frame_sizes) {
         CHECK(watchdog.update());
     }
     {
-        Watchdog watchdog(test_reader, NumCh, make_config(BlankTimeout, DropsTimeout),
-                          allocator);
+        Watchdog watchdog(test_reader, NumCh, make_config(NoPacketsTimeout, DropsTimeout),
+                          SampleRate, allocator);
         CHECK(watchdog.valid());
 
         check_read(watchdog, true, DropsWindow * (DropWindowsPerTimeout - 1),
@@ -238,8 +241,8 @@ TEST(watchdog, drops_timeout_mixed_frame_sizes) {
         CHECK(!watchdog.update());
     }
     {
-        Watchdog watchdog(test_reader, NumCh, make_config(BlankTimeout, DropsTimeout),
-                          allocator);
+        Watchdog watchdog(test_reader, NumCh, make_config(NoPacketsTimeout, DropsTimeout),
+                          SampleRate, allocator);
         CHECK(watchdog.valid());
 
         check_read(watchdog, true, DropsWindow * (DropWindowsPerTimeout - 1),
@@ -253,8 +256,8 @@ TEST(watchdog, drops_timeout_mixed_frame_sizes) {
 }
 
 TEST(watchdog, drops_timeout_constant_drops) {
-    Watchdog watchdog(test_reader, NumCh, make_config(BlankTimeout, DropsTimeout),
-                      allocator);
+    Watchdog watchdog(test_reader, NumCh, make_config(NoPacketsTimeout, DropsTimeout),
+                      SampleRate, allocator);
     CHECK(watchdog.valid());
 
     for (packet::timestamp_t n = 0; n < DropWindowsPerTimeout; n++) {
@@ -269,8 +272,8 @@ TEST(watchdog, drops_timeout_constant_drops) {
 
 TEST(watchdog, drops_timeout_frame_overlaps_with_drop_window) {
     {
-        Watchdog watchdog(test_reader, NumCh, make_config(BlankTimeout, DropsTimeout),
-                          allocator);
+        Watchdog watchdog(test_reader, NumCh, make_config(NoPacketsTimeout, DropsTimeout),
+                          SampleRate, allocator);
         CHECK(watchdog.valid());
 
         CHECK(watchdog.update());
@@ -283,8 +286,8 @@ TEST(watchdog, drops_timeout_frame_overlaps_with_drop_window) {
         CHECK(watchdog.update());
     }
     {
-        Watchdog watchdog(test_reader, NumCh, make_config(BlankTimeout, DropsTimeout),
-                          allocator);
+        Watchdog watchdog(test_reader, NumCh, make_config(NoPacketsTimeout, DropsTimeout),
+                          SampleRate, allocator);
         CHECK(watchdog.valid());
 
         CHECK(watchdog.update());
@@ -298,8 +301,8 @@ TEST(watchdog, drops_timeout_frame_overlaps_with_drop_window) {
         CHECK(!watchdog.update());
     }
     {
-        Watchdog watchdog(test_reader, NumCh, make_config(BlankTimeout, DropsTimeout),
-                          allocator);
+        Watchdog watchdog(test_reader, NumCh, make_config(NoPacketsTimeout, DropsTimeout),
+                          SampleRate, allocator);
         CHECK(watchdog.valid());
 
         CHECK(watchdog.update());
@@ -316,8 +319,8 @@ TEST(watchdog, drops_timeout_frame_overlaps_with_drop_window) {
         CHECK(watchdog.update());
     }
     {
-        Watchdog watchdog(test_reader, NumCh, make_config(BlankTimeout, DropsTimeout),
-                          allocator);
+        Watchdog watchdog(test_reader, NumCh, make_config(NoPacketsTimeout, DropsTimeout),
+                          SampleRate, allocator);
         CHECK(watchdog.valid());
 
         CHECK(watchdog.update());
@@ -338,8 +341,8 @@ TEST(watchdog, drops_timeout_frame_overlaps_with_drop_window) {
 
 TEST(watchdog, drops_timeout_disabled) {
     {
-        Watchdog watchdog(test_reader, NumCh, make_config(BlankTimeout, DropsTimeout),
-                          allocator);
+        Watchdog watchdog(test_reader, NumCh, make_config(NoPacketsTimeout, DropsTimeout),
+                          SampleRate, allocator);
         CHECK(watchdog.valid());
 
         for (packet::timestamp_t n = 0; n < DropsTimeout / SamplesPerFrame; n++) {
@@ -351,7 +354,8 @@ TEST(watchdog, drops_timeout_disabled) {
         CHECK(!watchdog.update());
     }
     {
-        Watchdog watchdog(test_reader, NumCh, make_config(BlankTimeout, 0), allocator);
+        Watchdog watchdog(test_reader, NumCh, make_config(NoPacketsTimeout, 0),
+                          SampleRate, allocator);
         CHECK(watchdog.valid());
 
         for (packet::timestamp_t n = 0; n < DropsTimeout / SamplesPerFrame; n++) {
