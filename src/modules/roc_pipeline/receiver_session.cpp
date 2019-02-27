@@ -80,9 +80,9 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
         }
 
         core::UniquePtr<fec::OFDecoder> fec_decoder(
-            new (allocator_) fec::OFDecoder(
-                session_config.fec, format->size(session_config.packet_samples),
-                byte_buffer_pool, allocator_),
+            new (allocator_) fec::OFDecoder(session_config.fec,
+                                            format->size(session_config.packet_samples),
+                                            byte_buffer_pool, allocator_),
             allocator_);
         if (!fec_decoder || !fec_decoder->valid()) {
             return;

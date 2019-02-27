@@ -8,13 +8,13 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "roc_core/time.h"
 #include "roc_core/parse_duration.h"
+#include "roc_core/time.h"
 
 namespace roc {
 namespace core {
 
-TEST_GROUP(parse_duration) {};
+TEST_GROUP(parse_duration){};
 
 TEST(parse_duration, error) {
     nanoseconds_t result = 0;

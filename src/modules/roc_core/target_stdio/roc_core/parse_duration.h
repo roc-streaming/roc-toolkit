@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_core/target_stdio/roc_core/print.h
+//! @file roc_core/target_stdio/roc_core/parse_duration.h
 //! @brief Parse duration.
 
-#ifndef ROC_CORE_PARSE_TIME_H_
-#define ROC_CORE_PARSE_TIME_H_
+#ifndef ROC_CORE_PARSE_DURATION_H_
+#define ROC_CORE_PARSE_DURATION_H_
 
 #include "roc_core/time.h"
 
@@ -35,4 +35,4 @@ bool parse_duration(const char* string, nanoseconds_t& result);
 } // namespace core
 } // namespace roc
 
-#endif // ROC_CORE_PARSE_TIME_H_
+#endif // ROC_CORE_PARSE_DURATION_H_

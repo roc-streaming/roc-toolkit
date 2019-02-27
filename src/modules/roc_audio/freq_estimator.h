@@ -48,7 +48,7 @@ private:
     size_t dec2_ind_;
 
     size_t samples_counter_; // Input samples counter.
-    float accum_;         // Integrator value.
+    float accum_;            // Integrator value.
 
     float coeff_; // Current frequency coefficient value.
 };

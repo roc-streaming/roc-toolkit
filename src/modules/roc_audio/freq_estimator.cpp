@@ -25,10 +25,10 @@ const float I = 0.5e-8f; // Integral gain of PI-controller.
 // - @p len How many samples do we need at output.
 // - @p len_mask Bit mask of input array length.
 float dot_prod(const float* coeff,
-                  const float* samples,
-                  const size_t sample_ind,
-                  const size_t len,
-                  const size_t len_mask) {
+               const float* samples,
+               const size_t sample_ind,
+               const size_t len,
+               const size_t len_mask) {
     double accum = 0;
 
     for (size_t i = sample_ind, j = 0; j < len; i = (i - 1) & len_mask, ++j) {

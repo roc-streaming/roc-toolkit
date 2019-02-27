@@ -20,7 +20,7 @@ const char* find_suffix(const char* str, size_t str_len, const char* suffix) {
     if (str_len < suffix_len) {
         return NULL;
     }
-    if (strcmp(str+str_len-suffix_len, suffix) != 0) {
+    if (strcmp(str + str_len - suffix_len, suffix) != 0) {
         return NULL;
     }
     return str + str_len - suffix_len;

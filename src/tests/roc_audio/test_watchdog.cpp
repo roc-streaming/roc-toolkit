@@ -60,7 +60,8 @@ TEST_GROUP(watchdog) {
                                packet::timestamp_t broken_playback_timeout) {
         WatchdogConfig config;
         config.no_playback_timeout = no_playback_timeout * core::Second / SampleRate;
-        config.broken_playback_timeout = broken_playback_timeout * core::Second / SampleRate;
+        config.broken_playback_timeout =
+            broken_playback_timeout * core::Second / SampleRate;
         config.breakage_detection_window = BreakageWindow * core::Second / SampleRate;
         return config;
     }
@@ -127,7 +128,8 @@ TEST(watchdog, no_playback_timeout_blank_and_non_blank_frames) {
     CHECK(watchdog.valid());
 
     for (unsigned int i = 0; i < 2; i++) {
-        for (packet::timestamp_t n = 0; n < (NoPlaybackTimeout / SamplesPerFrame) - 1; n++) {
+        for (packet::timestamp_t n = 0; n < (NoPlaybackTimeout / SamplesPerFrame) - 1;
+             n++) {
             CHECK(watchdog.update());
             check_read(watchdog, true, SamplesPerFrame, Frame::FlagBlank);
         }
@@ -291,7 +293,8 @@ TEST(watchdog, broken_playback_timeout_frame_overlaps_with_breakage_window) {
 
         CHECK(watchdog.update());
 
-        check_read(watchdog, true, BreakageWindow, Frame::FlagIncomplete | Frame::FlagDrops);
+        check_read(watchdog, true, BreakageWindow,
+                   Frame::FlagIncomplete | Frame::FlagDrops);
         check_read(watchdog, true, BreakageWindow, 0);
         check_read(watchdog, true, BrokenPlaybackTimeout - BreakageWindow,
                    Frame::FlagIncomplete | Frame::FlagDrops);
@@ -362,7 +365,8 @@ TEST(watchdog, broken_playback_timeout_disabled) {
                           SampleRate, allocator);
         CHECK(watchdog.valid());
 
-        for (packet::timestamp_t n = 0; n < BrokenPlaybackTimeout / SamplesPerFrame; n++) {
+        for (packet::timestamp_t n = 0; n < BrokenPlaybackTimeout / SamplesPerFrame;
+             n++) {
             CHECK(watchdog.update());
             check_read(watchdog, true, SamplesPerFrame,
                        Frame::FlagIncomplete | Frame::FlagDrops);
@@ -375,7 +379,8 @@ TEST(watchdog, broken_playback_timeout_disabled) {
                           SampleRate, allocator);
         CHECK(watchdog.valid());
 
-        for (packet::timestamp_t n = 0; n < BrokenPlaybackTimeout / SamplesPerFrame; n++) {
+        for (packet::timestamp_t n = 0; n < BrokenPlaybackTimeout / SamplesPerFrame;
+             n++) {
             CHECK(watchdog.update());
             check_read(watchdog, true, SamplesPerFrame,
                        Frame::FlagIncomplete | Frame::FlagDrops);
