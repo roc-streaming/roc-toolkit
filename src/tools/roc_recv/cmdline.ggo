@@ -39,7 +39,7 @@ section "Options"
     option "bp-window" - "Session breakage detection window, TIME units"
         string optional
 
-    option "rate" - "Override output sample rate (Hz)"
+    option "rate" - "Override output sample rate, Hz"
         int optional
 
     option "no-resampling" - "Disable resampling" flag off

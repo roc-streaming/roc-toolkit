@@ -9,7 +9,7 @@ section "Options"
     option "input" i "Input file" typestr="PATH" string required
     option "output" o "Output file" typestr="PATH" string optional
 
-    option "rate" r "Output sample rate (Hz)"
+    option "rate" r "Output sample rate, Hz"
         int optional
 
     option "frame-size" - "Number of samples per audio frame"

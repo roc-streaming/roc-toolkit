@@ -22,7 +22,7 @@ section "Options"
     option "nbrpr" - "Number of repair packets in FEC block"
         int optional
 
-    option "rate" - "Sample rate (Hz)"
+    option "rate" - "Sample rate, Hz"
         int optional
 
     option "no-resampling" - "Disable resampling" flag off
