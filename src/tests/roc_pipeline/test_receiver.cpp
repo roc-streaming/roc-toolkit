@@ -92,7 +92,8 @@ TEST_GROUP(receiver) {
             Timeout * core::Second / SampleRate;
 
         config.default_session.rtp_validator.max_sn_jump = MaxSnJump;
-        config.default_session.rtp_validator.max_ts_jump = MaxTsJump * 1000 / SampleRate;
+        config.default_session.rtp_validator.max_ts_jump =
+            MaxTsJump * core::Second / SampleRate;
 
         src1 = new_address(1);
         src2 = new_address(2);

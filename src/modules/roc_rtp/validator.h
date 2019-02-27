@@ -13,6 +13,7 @@
 #define ROC_RTP_VALIDATOR_H_
 
 #include "roc_core/noncopyable.h"
+#include "roc_core/time.h"
 #include "roc_packet/ireader.h"
 #include "roc_rtp/format_map.h"
 
@@ -24,12 +25,12 @@ struct ValidatorConfig {
     //! Maximum allowed delta between two consecutive packet seqnums.
     size_t max_sn_jump;
 
-    //! Maximum allowed delta between two consecutive packet timestamps, in milliseconds.
-    size_t max_ts_jump;
+    //! Maximum allowed delta between two consecutive packet timestamps, in nanoseconds.
+    core::nanoseconds_t max_ts_jump;
 
     ValidatorConfig()
         : max_sn_jump(100)
-        , max_ts_jump(1000) {
+        , max_ts_jump(core::Second) {
     }
 };
 

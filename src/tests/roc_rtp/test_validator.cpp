@@ -35,7 +35,7 @@ TEST_GROUP(validator) {
     void setup() {
         memset(&config, 0, sizeof(config));
         config.max_sn_jump = MaxSnJump;
-        config.max_ts_jump = MaxTsJump * 1000 / SampleRate;
+        config.max_ts_jump = MaxTsJump * core::Second / SampleRate;
 
         memset(&format, 0, sizeof(format));
         format.payload_type = Pt1;
