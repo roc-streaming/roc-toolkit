@@ -78,7 +78,7 @@ Finally, it's worth to mention that the resampler is actually used for two purpo
 * to compensate for the frequency difference between the sender and receiver, as described above;
 * to convert the network sample rate to the soundcard sample rate, e.g. 44100 to 48000.
 
-To achieve this, the scaling factor passed to resampler is actually the sum of two factors:
+To achieve this, the scaling factor passed to resampler is actually a product of two ratios:
 
 * dynamic ratio computed by frequency estimator;
 * static ratio computed from the network and soundcard sample rates.
