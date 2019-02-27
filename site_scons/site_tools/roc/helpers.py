@@ -345,7 +345,7 @@ def ThirdParty(
     if not os.path.exists(os.path.join('3rdparty', host, 'build', vname, 'commit')):
         if env.Execute(
             SCons.Action.CommandAction(
-                '%s scripts/3rdparty.py "3rdparty/%s" "dist" """%s" "%s" "%s" "%s"' % (
+                '%s scripts/3rdparty.py "3rdparty/%s" "vendor" """%s" "%s" "%s" "%s"' % (
                     env.Python(),
                     host,
                     toolchain,

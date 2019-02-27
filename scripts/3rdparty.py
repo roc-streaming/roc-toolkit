@@ -40,40 +40,40 @@ def rmpath(path):
     except:
         pass
 
-def download_distdir(url, path, log, distdir):
-    distfile = os.path.join(distdir, os.path.basename(path))
+def download_vendordir(url, path, log, vendordir):
+    distfile = os.path.join(vendordir, os.path.basename(path))
     if not os.path.exists(distfile):
         raise
-    print('[found local] %s' % os.path.basename(distfile))
+    print('[found vendored] %s' % os.path.basename(distfile))
     with open(distfile, 'rb') as rp:
         with open(path, 'wb') as wp:
             wp.write(rp.read())
 
-def download_urlopen(url, path, log, distdir):
+def download_urlopen(url, path, log, vendordir):
     rp = urlopen(url)
     with open(path, 'wb') as wp:
         wp.write(rp.read())
 
-def download_tool(url, path, log, distdir, tool, cmd):
+def download_tool(url, path, log, vendordir, tool, cmd):
     print('[trying %s] %s' % (tool, url))
     with open(log, 'a+') as fp:
         print('>>> %s' % cmd, file=fp)
     if os.system(cmd) != 0:
         raise
 
-def download_wget(url, path, log, distdir):
+def download_wget(url, path, log, vendordir):
     download_tool(url, path, log, 'wget', 'wget "%s" --quiet -O "%s"' % (url, path))
 
-def download_curl(url, path, log, distdir):
+def download_curl(url, path, log, vendordir):
     download_tool(url, path, log, 'curl', 'curl -Ls "%s" -o "%s"' % (url, path))
 
-def download(url, path, log, distdir):
+def download(url, path, log, vendordir):
     print('[download] %s' % url)
     rmpath(path)
     error = None
-    for fn in [download_distdir, download_urlopen, download_curl, download_wget]:
+    for fn in [download_vendordir, download_urlopen, download_curl, download_wget]:
         try:
-            fn(url, path, log, distdir)
+            fn(url, path, log, vendordir)
             return
         except Exception as e:
             if fn == download_urlopen:
@@ -193,12 +193,12 @@ def makeflags(workdir, toolchain, deplist, cflags='', ldflags='', variant=''):
     ])
 
 if len(sys.argv) != 7:
-    print("error: usage: 3rdparty.py workdir distdir toolchain variant package deplist",
+    print("error: usage: 3rdparty.py workdir vendordir toolchain variant package deplist",
           file=sys.stderr)
     exit(1)
 
 workdir = os.path.abspath(sys.argv[1])
-distdir = os.path.abspath(sys.argv[2])
+vendordir = os.path.abspath(sys.argv[2])
 toolchain = sys.argv[3]
 variant = sys.argv[4]
 fullname = sys.argv[5]
@@ -219,7 +219,7 @@ if name == 'uv':
     download('http://dist.libuv.org/dist/v%s/libuv-v%s.tar.gz' % (ver, ver),
              'libuv-v%s.tar.gz' % ver,
              logfile,
-             distdir)
+             vendordir)
     extract('libuv-v%s.tar.gz' % ver,
             'libuv-v%s' % ver)
     os.chdir('libuv-v%s' % ver)
@@ -240,7 +240,7 @@ elif name == 'openfec':
       'https://github.com/roc-project/openfec/archive/v%s.tar.gz' % ver,
       'openfec_v%s.tar.gz' % ver,
         logfile,
-        distdir)
+        vendordir)
     extract('openfec_v%s.tar.gz' % ver,
             'openfec-%s' % ver)
     os.chdir('openfec-%s' % ver)
@@ -281,7 +281,7 @@ elif name == 'alsa':
       'ftp://ftp.alsa-project.org/pub/lib/alsa-lib-%s.tar.bz2' % ver,
         'alsa-lib-%s.tar.bz2' % ver,
         logfile,
-        distdir)
+        vendordir)
     extract('alsa-lib-%s.tar.bz2' % ver,
             'alsa-lib-%s' % ver)
     os.chdir('alsa-lib-%s' % ver)
@@ -303,7 +303,7 @@ elif name == 'ltdl':
       'ftp://ftp.gnu.org/gnu/libtool/libtool-%s.tar.gz' % ver,
         'libtool-%s.tar.gz' % ver,
         logfile,
-        distdir)
+        vendordir)
     extract('libtool-%s.tar.gz' % ver,
             'libtool-%s' % ver)
     os.chdir('libtool-%s' % ver)
@@ -323,7 +323,7 @@ elif name == 'json':
       'https://github.com/json-c/json-c/archive/json-c-%s.tar.gz' % ver,
         'json-%s.tar.gz' % ver,
         logfile,
-        distdir)
+        vendordir)
     extract('json-%s.tar.gz' % ver,
             'json-c-json-c-%s' % ver)
     os.chdir('json-c-json-c-%s' % ver)
@@ -348,7 +348,7 @@ elif name == 'sndfile':
       'http://www.mega-nerd.com/libsndfile/files/libsndfile-%s.tar.gz' % ver,
         'libsndfile-%s.tar.gz' % ver,
         logfile,
-        distdir)
+        vendordir)
     extract('libsndfile-%s.tar.gz' % ver,
             'libsndfile-%s' % ver)
     os.chdir('libsndfile-%s' % ver)
@@ -368,7 +368,7 @@ elif name == 'pulseaudio':
       'https://freedesktop.org/software/pulseaudio/releases/pulseaudio-%s.tar.gz' % ver,
         'pulseaudio-%s.tar.gz' % ver,
         logfile,
-        distdir)
+        vendordir)
     extract('pulseaudio-%s.tar.gz' % ver,
             'pulseaudio-%s' % ver)
     os.chdir('pulseaudio-%s' % ver)
@@ -408,7 +408,7 @@ elif name == 'sox':
       'http://vorboss.dl.sourceforge.net/project/sox/sox/%s/sox-%s.tar.gz' % (ver, ver),
       'sox-%s.tar.gz' % ver,
         logfile,
-        distdir)
+        vendordir)
     extract('sox-%s.tar.gz' % ver,
             'sox-%s' % ver)
     os.chdir('sox-%s' % ver)
@@ -431,7 +431,7 @@ elif name == 'gengetopt':
     download('ftp://ftp.gnu.org/gnu/gengetopt/gengetopt-%s.tar.gz' % ver,
              'gengetopt-%s.tar.gz' % ver,
              logfile,
-             distdir)
+             vendordir)
     extract('gengetopt-%s.tar.gz' % ver,
             'gengetopt-%s' % ver)
     os.chdir('gengetopt-%s' % ver)
@@ -444,7 +444,7 @@ elif name == 'cpputest':
         'master/releases/cpputest-%s.tar.gz' % ver,
         'cpputest-%s.tar.gz' % ver,
         logfile,
-        distdir)
+        vendordir)
     extract('cpputest-%s.tar.gz' % ver,
             'cpputest-%s' % ver)
     os.chdir('cpputest-%s' % ver)
