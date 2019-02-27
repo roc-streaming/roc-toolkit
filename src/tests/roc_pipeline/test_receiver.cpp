@@ -77,19 +77,22 @@ TEST_GROUP(receiver) {
         config.output.poisoning = true;
 
         config.default_session.channels = ChMask;
-        config.default_session.input_packet_size = SamplesPerPacket;
-
-        config.default_session.target_latency = Latency;
-        config.default_session.watchdog.no_packets_timeout =
-            Timeout * core::Second / SampleRate;
+        config.default_session.packet_samples = SamplesPerPacket;
 
         config.default_session.fec.codec = fec::NoCodec;
 
+        config.default_session.target_latency = Latency * core::Second / SampleRate;
+
+        config.default_session.latency_monitor.min_latency =
+            -Timeout * 10 * core::Second / SampleRate;
+        config.default_session.latency_monitor.max_latency =
+            +Timeout * 10 * core::Second / SampleRate;
+
+        config.default_session.watchdog.no_packets_timeout =
+            Timeout * core::Second / SampleRate;
+
         config.default_session.rtp_validator.max_sn_jump = MaxSnJump;
         config.default_session.rtp_validator.max_ts_jump = MaxTsJump * 1000 / SampleRate;
-
-        config.default_session.latency_monitor.min_latency = -Timeout * 10;
-        config.default_session.latency_monitor.max_latency = +Timeout * 10;
 
         src1 = new_address(1);
         src2 = new_address(2);

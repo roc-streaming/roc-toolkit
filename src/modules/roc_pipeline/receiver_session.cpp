@@ -53,7 +53,8 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
     packet::IReader* preader = source_queue_.get();
 
     delayed_reader_.reset(
-        new (allocator_) packet::DelayedReader(*preader, session_config.target_latency),
+        new (allocator_) packet::DelayedReader(*preader, session_config.target_latency,
+                                               format->sample_rate),
         allocator_);
     if (!delayed_reader_) {
         return;
@@ -80,7 +81,7 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
 
         core::UniquePtr<fec::OFDecoder> fec_decoder(
             new (allocator_) fec::OFDecoder(
-                session_config.fec, format->size(session_config.input_packet_size),
+                session_config.fec, format->size(session_config.packet_samples),
                 byte_buffer_pool, allocator_),
             allocator_);
         if (!fec_decoder || !fec_decoder->valid()) {

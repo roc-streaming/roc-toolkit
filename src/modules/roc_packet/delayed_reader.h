@@ -13,8 +13,10 @@
 #define ROC_PACKET_DELAYED_READER_H_
 
 #include "roc_core/noncopyable.h"
+#include "roc_core/time.h"
 #include "roc_packet/ireader.h"
 #include "roc_packet/sorted_queue.h"
+#include "roc_packet/units.h"
 
 namespace roc {
 namespace packet {
@@ -29,7 +31,8 @@ public:
     //! @b Parameters
     //!  - @p reader is used to read packets
     //!  - @p delay is the delay to insert before first packet
-    DelayedReader(IReader& reader, timestamp_t delay);
+    //!  - @p sample_rate is the number of samples per second in incoming packets
+    DelayedReader(IReader& reader, core::nanoseconds_t delay, size_t sample_rate);
 
     //! Read packet.
     virtual PacketPtr read();

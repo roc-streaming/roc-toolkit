@@ -12,17 +12,6 @@
 namespace roc {
 namespace audio {
 
-namespace {
-
-packet::timestamp_t ns_to_samples(core::nanoseconds_t ns, size_t sample_rate) {
-    if (ns < 0) {
-        return 0;
-    }
-    return packet::timestamp_t(ns * core::nanoseconds_t(sample_rate) / core::Second);
-}
-
-} // namespace
-
 Watchdog::Watchdog(IReader& reader,
                    const size_t num_channels,
                    const WatchdogConfig& config,
@@ -30,9 +19,12 @@ Watchdog::Watchdog(IReader& reader,
                    core::IAllocator& allocator)
     : reader_(reader)
     , num_channels_(num_channels)
-    , max_blank_duration_(ns_to_samples(config.no_packets_timeout, sample_rate))
-    , max_drops_duration_(ns_to_samples(config.drops_timeout, sample_rate))
-    , drop_detection_window_(ns_to_samples(config.drop_detection_window, sample_rate))
+    , max_blank_duration_((packet::timestamp_t)packet::timestamp_from_ns(
+          config.no_packets_timeout, sample_rate))
+    , max_drops_duration_((packet::timestamp_t)packet::timestamp_from_ns(
+          config.drops_timeout, sample_rate))
+    , drop_detection_window_((packet::timestamp_t)packet::timestamp_from_ns(
+          config.drop_detection_window, sample_rate))
     , curr_read_pos_(0)
     , last_pos_before_blank_(0)
     , last_pos_before_drops_(0)
@@ -42,6 +34,16 @@ Watchdog::Watchdog(IReader& reader,
     , status_show_(false)
     , alive_(true)
     , valid_(false) {
+    if (config.no_packets_timeout < 0 || config.drops_timeout < 0
+        || config.drop_detection_window < 0) {
+        roc_log(LogError,
+                "watchdog: invalid config: "
+                "no_packets_timeout=%ld drops_timeout=%ld drop_detection_window=%ld",
+                (long)config.no_packets_timeout, (long)config.drops_timeout,
+                (long)config.drop_detection_window);
+        return;
+    }
+
     if (max_drops_duration_ != 0) {
         if (drop_detection_window_ == 0 || drop_detection_window_ > max_drops_duration_) {
             roc_log(LogError,

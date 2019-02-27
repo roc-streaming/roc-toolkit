@@ -185,10 +185,26 @@ typedef struct roc_receiver_config {
      */
     roc_resampler_profile resampler_profile;
 
-    /** Target latency, in samples.
-     * TODO
+    /** Target latency, in nanoseconds.
+     * The session will not start playing until it accumulates the requesred latency.
+     * Then, if resampler is enabled, the session will adjust the its clock to keep
+     * actual latency as close as close as possible to the target latency.
+     * If positive, default value is used.
      */
-    unsigned int target_latency;
+    long long target_latency;
+
+    /** Minimum latency, in nanoseconds.
+     * If the session becomes less than this value, the session is terminated.
+     * May be negative. Negative latency means that the session is ahead the sender.
+     * If zero, default value is used.
+     */
+    long long min_latency;
+
+    /** Maximum latency, in nanoseconds.
+     * If the session becomes greater than this value, the session is terminated.
+     * If zero, default value is used.
+     */
+    long long max_latency;
 
     /** Timeout for the lack of packets, in nanoseconds.
      * If there are no packets during this period, the session is terminated.

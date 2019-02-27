@@ -21,6 +21,15 @@ section "Options"
     option "nbrpr" - "Number of repair packets in FEC block"
         int optional
 
+    option "latency" - "Session target latency, TIME units"
+        string optional
+
+    option "min-latency" - "Session minimum latency, TIME units"
+        string optional
+
+    option "max-latency" - "Session maximum latency, TIME units"
+        string optional
+
     option "nopkt-timeout" - "Session timeout for lack of packets, TIME units"
         string optional
 
@@ -29,15 +38,6 @@ section "Options"
 
     option "drops-window" - "Session drops detection window, TIME units"
         string optional
-
-    option "latency" - "Session target latency, number of samples"
-        int optional
-
-    option "min-latency" - "Session minimum latency, number of samples"
-        int optional
-
-    option "max-latency" - "Session maximum latency, number of samples"
-        int optional
 
     option "rate" - "Override output sample rate (Hz)"
         int optional

@@ -67,8 +67,6 @@ int main(int argc, char** argv) {
 
     pipeline::ReceiverConfig config;
 
-    config.output.poisoning = args.poisoning_flag;
-
     switch ((unsigned)args.fec_arg) {
     case fec_arg_none:
         config.default_session.fec.codec = fec::NoCodec;
@@ -116,20 +114,34 @@ int main(int argc, char** argv) {
         config.default_session.fec.n_repair_packets = (size_t)args.nbrpr_arg;
     }
 
-    config.output.resampling = !args.no_resampling_flag;
-    config.output.beeping = args.beeping_flag;
-
-    size_t sample_rate = 0;
-    if (args.rate_given) {
-        if (args.rate_arg <= 0) {
-            roc_log(LogError, "invalid --rate: should be > 0");
+    if (args.latency_given) {
+        if (!core::parse_duration(args.latency_arg,
+                                  config.default_session.target_latency)) {
+            roc_log(LogError, "invalid --latency");
             return 1;
         }
-        sample_rate = (size_t)args.rate_arg;
-    } else {
-        if (!config.output.resampling) {
-            sample_rate = pipeline::DefaultSampleRate;
+    }
+
+    if (args.min_latency_given) {
+        if (!core::parse_duration(args.min_latency_arg,
+                                  config.default_session.latency_monitor.min_latency)) {
+            roc_log(LogError, "invalid --min-latency");
+            return 1;
         }
+    } else {
+        config.default_session.latency_monitor.min_latency =
+            config.default_session.target_latency * pipeline::DefaultMinLatencyFactor;
+    }
+
+    if (args.max_latency_given) {
+        if (!core::parse_duration(args.max_latency_arg,
+                                  config.default_session.latency_monitor.max_latency)) {
+            roc_log(LogError, "invalid --max-latency");
+            return 1;
+        }
+    } else {
+        config.default_session.latency_monitor.max_latency =
+            config.default_session.target_latency * pipeline::DefaultMaxLatencyFactor;
     }
 
     if (args.nopkt_timeout_given) {
@@ -156,39 +168,20 @@ int main(int argc, char** argv) {
         }
     }
 
-    if (args.latency_given) {
-        if (args.latency_arg < 0) {
-            roc_log(LogError, "invalid --latency: should be >= 0");
+    size_t sample_rate = 0;
+    if (args.rate_given) {
+        if (args.rate_arg <= 0) {
+            roc_log(LogError, "invalid --rate: should be > 0");
             return 1;
         }
-        config.default_session.target_latency = (packet::timestamp_t)args.latency_arg;
+        sample_rate = (size_t)args.rate_arg;
+    } else {
+        if (!config.output.resampling) {
+            sample_rate = pipeline::DefaultSampleRate;
+        }
     }
 
-    if (args.min_latency_given) {
-        if (args.min_latency_arg > (int)config.default_session.target_latency) {
-            roc_log(LogError, "invalid --min-latency: should be <= --latency");
-            return 1;
-        }
-        config.default_session.latency_monitor.min_latency =
-            (packet::timestamp_diff_t)args.min_latency_arg;
-    } else {
-        config.default_session.latency_monitor.min_latency =
-            (packet::timestamp_diff_t)config.default_session.target_latency
-            * pipeline::DefaultMinLatency;
-    }
-
-    if (args.max_latency_given) {
-        if (args.max_latency_arg < (int)config.default_session.target_latency) {
-            roc_log(LogError, "invalid --max-latency: should be >= --latency");
-            return 1;
-        }
-        config.default_session.latency_monitor.max_latency =
-            (packet::timestamp_diff_t)args.max_latency_arg;
-    } else {
-        config.default_session.latency_monitor.max_latency =
-            (packet::timestamp_diff_t)config.default_session.target_latency
-            * pipeline::DefaultMaxLatency;
-    }
+    config.output.resampling = !args.no_resampling_flag;
 
     switch ((unsigned)args.resampler_profile_arg) {
     case resampler_profile_arg_low:
@@ -226,6 +219,9 @@ int main(int argc, char** argv) {
         }
         config.default_session.resampler.window_size = (size_t)args.resampler_window_arg;
     }
+
+    config.output.poisoning = args.poisoning_flag;
+    config.output.beeping = args.beeping_flag;
 
     core::HeapAllocator allocator;
     core::BufferPool<uint8_t> byte_buffer_pool(allocator, MaxPacketSize,

@@ -85,14 +85,22 @@ bool config_sender(pipeline::SenderConfig& out, const roc_sender_config& in) {
 }
 
 bool config_receiver(pipeline::ReceiverConfig& out, const roc_receiver_config& in) {
-    if (in.target_latency) {
+    if (in.target_latency > 0) {
         out.default_session.target_latency = in.target_latency;
 
         out.default_session.latency_monitor.min_latency =
-            (packet::timestamp_diff_t)in.target_latency * pipeline::DefaultMinLatency;
+            in.target_latency * pipeline::DefaultMinLatencyFactor;
 
         out.default_session.latency_monitor.max_latency =
-            (packet::timestamp_diff_t)in.target_latency * pipeline::DefaultMaxLatency;
+            in.target_latency * pipeline::DefaultMaxLatencyFactor;
+    }
+
+    if (in.min_latency != 0) {
+        out.default_session.latency_monitor.min_latency = in.min_latency;
+    }
+
+    if (in.max_latency != 0) {
+        out.default_session.latency_monitor.max_latency = in.max_latency;
     }
 
     if (in.no_packets_timeout < 0) {
@@ -112,7 +120,7 @@ bool config_receiver(pipeline::ReceiverConfig& out, const roc_receiver_config& i
     }
 
     if (in.packet_samples) {
-        out.default_session.input_packet_size = in.packet_samples;
+        out.default_session.packet_samples = in.packet_samples;
     }
 
     if (in.output_sample_rate) {

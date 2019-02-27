@@ -39,10 +39,10 @@ enum {
     DefaultFrameSize = 320 * 2,
 
     //! Minum latency relative to target latency.
-    DefaultMinLatency = -1,
+    DefaultMinLatencyFactor = -1,
 
     //! Maximum latency relative to target latency.
-    DefaultMaxLatency = 2
+    DefaultMaxLatencyFactor = 2
 };
 
 //! Protocol identifier.
@@ -138,10 +138,10 @@ struct ReceiverSessionConfig {
     packet::channel_mask_t channels;
 
     //! Number of samples per packet per channel.
-    size_t input_packet_size;
+    size_t packet_samples;
 
-    //! Target latency, number of samples.
-    packet::timestamp_t target_latency;
+    //! Target latency, nanoseconds.
+    core::nanoseconds_t target_latency;
 
     //! FEC scheme parameters.
     fec::Config fec;
@@ -160,12 +160,10 @@ struct ReceiverSessionConfig {
 
     ReceiverSessionConfig()
         : channels(DefaultChannelMask)
-        , input_packet_size(DefaultPacketSize)
-        , target_latency(DefaultPacketSize * 32) {
-        latency_monitor.min_latency =
-            (packet::timestamp_diff_t)target_latency * DefaultMinLatency;
-        latency_monitor.max_latency =
-            (packet::timestamp_diff_t)target_latency * DefaultMaxLatency;
+        , packet_samples(DefaultPacketSize)
+        , target_latency(200 * core::Millisecond) {
+        latency_monitor.min_latency = target_latency * DefaultMinLatencyFactor;
+        latency_monitor.max_latency = target_latency * DefaultMaxLatencyFactor;
     }
 };
 

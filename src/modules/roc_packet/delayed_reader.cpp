@@ -13,10 +13,12 @@
 namespace roc {
 namespace packet {
 
-DelayedReader::DelayedReader(IReader& reader, timestamp_t delay)
+DelayedReader::DelayedReader(IReader& reader,
+                             core::nanoseconds_t delay,
+                             size_t sample_rate)
     : reader_(reader)
     , queue_(0)
-    , delay_(delay)
+    , delay_((timestamp_t)timestamp_from_ns(delay, sample_rate))
     , started_(false) {
     roc_log(LogDebug, "delayed reader: initializing: delay=%lu", (unsigned long)delay_);
 }

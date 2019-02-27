@@ -13,6 +13,7 @@
 #define ROC_PACKET_UNITS_H_
 
 #include "roc_core/stddefs.h"
+#include "roc_core/time.h"
 
 namespace roc {
 namespace packet {
@@ -60,6 +61,11 @@ inline bool timestamp_lt(timestamp_t a, timestamp_t b) {
 //! Check if a is before or equal to b taking possible wrap into account.
 inline bool timestamp_le(timestamp_t a, timestamp_t b) {
     return timestamp_diff(a, b) <= 0;
+}
+
+//! Convert nanoseconds to number of samples.
+inline timestamp_diff_t timestamp_from_ns(core::nanoseconds_t ns, size_t sample_rate) {
+    return timestamp_diff_t(ns * core::nanoseconds_t(sample_rate) / core::Second);
 }
 
 //! Bitmask of channels present in audio packet.

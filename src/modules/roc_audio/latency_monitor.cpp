@@ -23,24 +23,45 @@ LatencyMonitor::LatencyMonitor(const packet::SortedQueue& queue,
                                const Depacketizer& depacketizer,
                                ResamplerReader* resampler,
                                const LatencyMonitorConfig& config,
-                               packet::timestamp_t target_latency,
+                               core::nanoseconds_t target_latency,
                                size_t input_sample_rate,
                                size_t output_sample_rate)
     : queue_(queue)
     , depacketizer_(depacketizer)
     , resampler_(resampler)
-    , fe_(target_latency)
+    , fe_((packet::timestamp_t)packet::timestamp_from_ns(target_latency,
+                                                         input_sample_rate))
     , rate_limiter_(LogInterval)
-    , update_time_(0)
-    , has_update_time_(false)
-    , config_(config)
-    , target_latency_(target_latency)
+    , update_interval_((packet::timestamp_t)packet::timestamp_from_ns(
+          config.fe_update_interval, input_sample_rate))
+    , update_pos_(0)
+    , has_update_pos_(false)
+    , target_latency_((packet::timestamp_t)packet::timestamp_from_ns(target_latency,
+                                                                     input_sample_rate))
+    , min_latency_(packet::timestamp_from_ns(config.min_latency, input_sample_rate))
+    , max_latency_(packet::timestamp_from_ns(config.max_latency, input_sample_rate))
+    , max_scaling_delta_(config.max_scaling_delta)
     , sample_rate_coeff_(0.f)
     , valid_(false) {
     roc_log(LogDebug,
             "latency monitor: initializing: target_latency=%lu in_rate=%lu out_rate=%lu",
             (unsigned long)target_latency_, (unsigned long)input_sample_rate,
             (unsigned long)output_sample_rate);
+
+    if (config.fe_update_interval <= 0) {
+        roc_log(LogError, "latency monitor: invalid config: fe_update_interval=%ld",
+                (long)config.fe_update_interval);
+        return;
+    }
+
+    if (target_latency < config.min_latency || target_latency > config.max_latency
+        || target_latency <= 0) {
+        roc_log(LogError,
+                "latency monitor: invalid_config: "
+                "target_latency=%ld min_latency=%ld max_latency=%ld",
+                (long)target_latency, (long)config.min_latency, (long)config.max_latency);
+        return;
+    }
 
     if (resampler_) {
         if (!init_resampler_(input_sample_rate, output_sample_rate)) {
@@ -63,7 +84,7 @@ bool LatencyMonitor::valid() const {
     return valid_;
 }
 
-bool LatencyMonitor::update(packet::timestamp_t time) {
+bool LatencyMonitor::update(packet::timestamp_t pos) {
     packet::timestamp_diff_t latency = 0;
 
     if (!get_latency_(latency)) {
@@ -78,7 +99,7 @@ bool LatencyMonitor::update(packet::timestamp_t time) {
         if (latency < 0) {
             latency = 0;
         }
-        if (!update_resampler_(time, (packet::timestamp_t)latency)) {
+        if (!update_resampler_(pos, (packet::timestamp_t)latency)) {
             return false;
         }
     } else {
@@ -107,15 +128,15 @@ bool LatencyMonitor::get_latency_(packet::timestamp_diff_t& latency) const {
 }
 
 bool LatencyMonitor::check_latency_(packet::timestamp_diff_t latency) const {
-    if (latency < config_.min_latency) {
+    if (latency < min_latency_) {
         roc_log(LogDebug, "latency monitor: latency out of bounds: latency=%ld min=%ld",
-                (long)latency, (long)config_.min_latency);
+                (long)latency, (long)min_latency_);
         return false;
     }
 
-    if (latency > config_.max_latency) {
+    if (latency > max_latency_) {
         roc_log(LogDebug, "latency monitor: latency out of bounds: latency=%ld max=%ld",
-                (long)latency, (long)config_.max_latency);
+                (long)latency, (long)max_latency_);
         return false;
     }
 
@@ -123,8 +144,8 @@ bool LatencyMonitor::check_latency_(packet::timestamp_diff_t latency) const {
 }
 
 float LatencyMonitor::trim_scaling_(float freq_coeff) const {
-    const float min_coeff = 1.0f - config_.max_scaling_delta;
-    const float max_coeff = 1.0f + config_.max_scaling_delta;
+    const float min_coeff = 1.0f - max_scaling_delta_;
+    const float max_coeff = 1.0f + max_scaling_delta_;
 
     if (freq_coeff < min_coeff) {
         return min_coeff;
@@ -156,16 +177,16 @@ bool LatencyMonitor::init_resampler_(size_t input_sample_rate,
     return true;
 }
 
-bool LatencyMonitor::update_resampler_(packet::timestamp_t time,
+bool LatencyMonitor::update_resampler_(packet::timestamp_t pos,
                                        packet::timestamp_t latency) {
-    if (!has_update_time_) {
-        has_update_time_ = true;
-        update_time_ = time;
+    if (!has_update_pos_) {
+        has_update_pos_ = true;
+        update_pos_ = pos;
     }
 
-    while (time >= update_time_) {
+    while (pos >= update_pos_) {
         fe_.update(latency);
-        update_time_ += config_.fe_update_interval;
+        update_pos_ += update_interval_;
     }
 
     const float freq_coeff = fe_.freq_coeff();

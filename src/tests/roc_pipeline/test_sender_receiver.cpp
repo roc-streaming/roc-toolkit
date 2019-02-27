@@ -194,9 +194,9 @@ TEST_GROUP(sender_receiver) {
         config.output.poisoning = true;
 
         config.default_session.channels = ChMask;
-        config.default_session.input_packet_size = SamplesPerPacket;
+        config.default_session.packet_samples = SamplesPerPacket;
 
-        config.default_session.target_latency = Latency;
+        config.default_session.target_latency = Latency * core::Second / SampleRate;
         config.default_session.watchdog.no_packets_timeout =
             Timeout * core::Second / SampleRate;
 

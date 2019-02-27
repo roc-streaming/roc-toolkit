@@ -17,6 +17,7 @@
 #include "roc_audio/resampler_reader.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/rate_limiter.h"
+#include "roc_core/time.h"
 #include "roc_packet/sorted_queue.h"
 #include "roc_packet/units.h"
 
@@ -25,16 +26,17 @@ namespace audio {
 
 //! Parameters for latency monitor.
 struct LatencyMonitorConfig {
-    //! FreqEstimator update interval, number of samples
-    packet::timestamp_t fe_update_interval;
+    //! FreqEstimator update interval, nanoseconds.
+    //! How often to run FreqEstimator and update Resampler scaling.
+    core::nanoseconds_t fe_update_interval;
 
-    //! Minimum allowed latency.
+    //! Minimum allowed latency, nanoseconds.
     //! If the latency goes out of bounds, the session is terminated.
-    packet::timestamp_diff_t min_latency;
+    core::nanoseconds_t min_latency;
 
-    //! Maximum allowed latency.
+    //! Maximum allowed latency, nanoseconds.
     //! If the latency goes out of bounds, the session is terminated.
-    packet::timestamp_diff_t max_latency;
+    core::nanoseconds_t max_latency;
 
     //! Maximum allowed freq_coeff delta around one.
     //! If the scaling goes out of bounds, it is trimmed.
@@ -42,7 +44,7 @@ struct LatencyMonitorConfig {
     float max_scaling_delta;
 
     LatencyMonitorConfig()
-        : fe_update_interval(256)
+        : fe_update_interval(5 * core::Millisecond)
         , min_latency(0)
         , max_latency(0)
         , max_scaling_delta(0.005f) {
@@ -70,7 +72,7 @@ public:
                    const Depacketizer& depacketizer,
                    ResamplerReader* resampler,
                    const LatencyMonitorConfig& config,
-                   packet::timestamp_t target_latency,
+                   core::nanoseconds_t target_latency,
                    size_t input_sample_rate,
                    size_t output_sample_rate);
 
@@ -100,11 +102,15 @@ private:
 
     core::RateLimiter rate_limiter_;
 
-    packet::timestamp_t update_time_;
-    bool has_update_time_;
+    const packet::timestamp_t update_interval_;
+    packet::timestamp_t update_pos_;
+    bool has_update_pos_;
 
-    const LatencyMonitorConfig config_;
     const packet::timestamp_t target_latency_;
+    const packet::timestamp_diff_t min_latency_;
+    const packet::timestamp_diff_t max_latency_;
+
+    const float max_scaling_delta_;
     float sample_rate_coeff_;
 
     bool valid_;
