@@ -170,7 +170,7 @@ TEST_GROUP(sender_receiver) {
         SenderConfig config;
 
         config.input_channels = ChMask;
-        config.output_packet_samples = SamplesPerPacket;
+        config.packet_length = SamplesPerPacket * core::Second / SampleRate;
         config.internal_frame_size = MaxBufSize;
 
         config.fec = fec_config(flags);
@@ -194,7 +194,8 @@ TEST_GROUP(sender_receiver) {
         config.output.poisoning = true;
 
         config.default_session.channels = ChMask;
-        config.default_session.packet_samples = SamplesPerPacket;
+        config.default_session.packet_length =
+            SamplesPerPacket * core::Second / SampleRate;
 
         config.default_session.target_latency = Latency * core::Second / SampleRate;
         config.default_session.watchdog.no_playback_timeout =

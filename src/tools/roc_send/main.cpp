@@ -180,7 +180,7 @@ int main(int argc, char** argv) {
     }
 
     sndio::SoxReader reader(sample_buffer_pool, config.input_channels,
-                            config.output_packet_samples, sample_rate);
+                            config.internal_frame_size, sample_rate);
 
     if (!reader.open(args.input_arg, args.type_arg)) {
         roc_log(LogError, "can't open input file/device: %s %s", args.input_arg,

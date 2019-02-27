@@ -30,7 +30,7 @@ public:
 
     //! Get packet payload size.
     virtual size_t payload_size(size_t num_samples) const {
-        return pcm_payload_size<Sample, NumCh>(num_samples);
+        return pcm_payload_size_from_samples<Sample, NumCh>(num_samples);
     }
 
     //! Write samples to packet.

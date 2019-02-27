@@ -18,10 +18,10 @@ bool config_context(roc_context_config& out, const roc_context_config* in) {
     out.max_frame_size = 4096;
 
     if (in) {
-        if (in->max_packet_size) {
+        if (in->max_packet_size != 0) {
             out.max_packet_size = in->max_packet_size;
         }
-        if (in->max_frame_size / sizeof(audio::sample_t)) {
+        if (in->max_frame_size / sizeof(audio::sample_t) != 0) {
             out.max_frame_size = in->max_frame_size;
         }
     }
@@ -30,11 +30,11 @@ bool config_context(roc_context_config& out, const roc_context_config* in) {
 }
 
 bool config_sender(pipeline::SenderConfig& out, const roc_sender_config& in) {
-    if (in.packet_samples) {
-        out.output_packet_samples = in.packet_samples;
+    if (in.packet_length != 0) {
+        out.packet_length = (core::nanoseconds_t)in.packet_length;
     }
 
-    if (in.input_sample_rate) {
+    if (in.input_sample_rate != 0) {
         out.input_sample_rate = in.input_sample_rate;
     }
 
@@ -85,14 +85,14 @@ bool config_sender(pipeline::SenderConfig& out, const roc_sender_config& in) {
 }
 
 bool config_receiver(pipeline::ReceiverConfig& out, const roc_receiver_config& in) {
-    if (in.target_latency > 0) {
-        out.default_session.target_latency = in.target_latency;
+    if (in.target_latency != 0) {
+        out.default_session.target_latency = (core::nanoseconds_t)in.target_latency;
 
         out.default_session.latency_monitor.min_latency =
-            in.target_latency * pipeline::DefaultMinLatencyFactor;
+            (core::nanoseconds_t)in.target_latency * pipeline::DefaultMinLatencyFactor;
 
         out.default_session.latency_monitor.max_latency =
-            in.target_latency * pipeline::DefaultMaxLatencyFactor;
+            (core::nanoseconds_t)in.target_latency * pipeline::DefaultMaxLatencyFactor;
     }
 
     if (in.min_latency != 0) {
@@ -100,7 +100,8 @@ bool config_receiver(pipeline::ReceiverConfig& out, const roc_receiver_config& i
     }
 
     if (in.max_latency != 0) {
-        out.default_session.latency_monitor.max_latency = in.max_latency;
+        out.default_session.latency_monitor.max_latency =
+            (core::nanoseconds_t)in.max_latency;
     }
 
     if (in.no_playback_timeout < 0) {
@@ -115,16 +116,16 @@ bool config_receiver(pipeline::ReceiverConfig& out, const roc_receiver_config& i
         out.default_session.watchdog.broken_playback_timeout = in.broken_playback_timeout;
     }
 
-    if (in.breakage_detection_window > 0) {
+    if (in.breakage_detection_window != 0) {
         out.default_session.watchdog.breakage_detection_window =
-            in.breakage_detection_window;
+            (core::nanoseconds_t)in.breakage_detection_window;
     }
 
-    if (in.packet_samples) {
-        out.default_session.packet_samples = in.packet_samples;
+    if (in.packet_length != 0) {
+        out.default_session.packet_length = (core::nanoseconds_t)in.packet_length;
     }
 
-    if (in.output_sample_rate) {
+    if (in.output_sample_rate != 0) {
         out.output.sample_rate = in.output_sample_rate;
     }
 

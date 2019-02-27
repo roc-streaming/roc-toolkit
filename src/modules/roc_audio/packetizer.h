@@ -17,9 +17,11 @@
 #include "roc_audio/units.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/noncopyable.h"
+#include "roc_core/time.h"
 #include "roc_packet/icomposer.h"
 #include "roc_packet/iwriter.h"
 #include "roc_packet/packet_pool.h"
+#include "roc_packet/units.h"
 
 namespace roc {
 namespace audio {
@@ -39,7 +41,8 @@ public:
     //!  - @p packet_pool is used to allocate packets
     //!  - @p buffer_pool is used to allocate buffers for packets
     //!  - @p channels defines a set of channels in the input frames
-    //!  - @p samples_per_packet defines number of samples per packet per channel
+    //!  - @p packet_length defines packet length in nanoseconds
+    //!  - @p sample_rate defines number of samples per channel per second
     //!  - @p payload_type defines packet payload type
     Packetizer(packet::IWriter& writer,
                packet::IComposer& composer,
@@ -47,7 +50,8 @@ public:
                packet::PacketPool& packet_pool,
                core::BufferPool<uint8_t>& buffer_pool,
                packet::channel_mask_t channels,
-               size_t samples_per_packet,
+               core::nanoseconds_t packet_length,
+               size_t sample_rate,
                unsigned int payload_type);
 
     //! Write audio frame.

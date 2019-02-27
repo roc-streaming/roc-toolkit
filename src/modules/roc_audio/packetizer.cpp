@@ -20,7 +20,8 @@ Packetizer::Packetizer(packet::IWriter& writer,
                        packet::PacketPool& packet_pool,
                        core::BufferPool<uint8_t>& buffer_pool,
                        packet::channel_mask_t channels,
-                       size_t samples_per_packet,
+                       core::nanoseconds_t packet_length,
+                       size_t sample_rate,
                        unsigned int payload_type)
     : writer_(writer)
     , composer_(composer)
@@ -29,7 +30,8 @@ Packetizer::Packetizer(packet::IWriter& writer,
     , buffer_pool_(buffer_pool)
     , channels_(channels)
     , num_channels_(packet::num_channels(channels))
-    , samples_per_packet_(samples_per_packet)
+    , samples_per_packet_(
+          (packet::timestamp_t)packet::timestamp_from_ns(packet_length, sample_rate))
     , payload_type_(payload_type)
     , packet_pos_(0)
     , source_((packet::source_t)core::random(packet::source_t(-1)))

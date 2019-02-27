@@ -76,10 +76,11 @@ TEST_GROUP(receiver) {
         config.output.timing = false;
         config.output.poisoning = true;
 
-        config.default_session.channels = ChMask;
-        config.default_session.packet_samples = SamplesPerPacket;
-
         config.default_session.fec.codec = fec::NoCodec;
+
+        config.default_session.channels = ChMask;
+        config.default_session.packet_length =
+            SamplesPerPacket * core::Second / SampleRate;
 
         config.default_session.target_latency = Latency * core::Second / SampleRate;
 

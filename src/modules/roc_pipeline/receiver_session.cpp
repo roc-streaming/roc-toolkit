@@ -81,7 +81,7 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
 
         core::UniquePtr<fec::OFDecoder> fec_decoder(
             new (allocator_) fec::OFDecoder(session_config.fec,
-                                            format->size(session_config.packet_samples),
+                                            format->size(session_config.packet_length),
                                             byte_buffer_pool, allocator_),
             allocator_);
         if (!fec_decoder || !fec_decoder->valid()) {

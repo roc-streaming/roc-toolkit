@@ -126,13 +126,13 @@ typedef struct roc_sender_config {
      */
     roc_resampler_profile resampler_profile;
 
-    /** The size of the packets produced by sender.
-     * Number of samples per channel per packet. If zero, default value is used.
+    /** The length of the packets produced by sender, in nanoseconds.
+     * Number of nanoseconds encoded per packet. If zero, default value is used.
      * The samples written to the sender are buffered until the full packet is
      * accumulated or the sender is flushed or closed. Larger number reduces
      * packet overhead but also increases latency.
      */
-    unsigned int packet_samples;
+    unsigned long long packet_length;
 
     /** FEC scheme to use.
      * If non-zero, the sender employs FEC codec to generate redundant packets
@@ -189,9 +189,9 @@ typedef struct roc_receiver_config {
      * The session will not start playing until it accumulates the requesred latency.
      * Then, if resampler is enabled, the session will adjust the its clock to keep
      * actual latency as close as close as possible to the target latency.
-     * If positive, default value is used.
+     * If zero, default value is used.
      */
-    long long target_latency;
+    unsigned long long target_latency;
 
     /** Minimum latency, in nanoseconds.
      * If the session becomes less than this value, the session is terminated.
@@ -204,7 +204,7 @@ typedef struct roc_receiver_config {
      * If the session becomes greater than this value, the session is terminated.
      * If zero, default value is used.
      */
-    long long max_latency;
+    unsigned long long max_latency;
 
     /** Timeout for the lack of playback, in nanoseconds.
      * If there is no playback during this period, the session is terminated.
@@ -225,16 +225,16 @@ typedef struct roc_receiver_config {
     long long broken_playback_timeout;
 
     /** Breakage detection window, in nanoseconds.
-     * If negative or zero, default value is used.
+     * If zero, default value is used.
      * @see broken_playback_timeout.
      */
-    long long breakage_detection_window;
+    unsigned long long breakage_detection_window;
 
-    /** The size of the packets received from sender.
-     * Number of samples per channel per packet. If zero, default value is used.
+    /** The length of the packets received from sender, in nanoseconds.
+     * Number of nanoseconds encoded per packet. If zero, default value is used.
      * Should be set to the same value as on the sender.
      */
-    unsigned int packet_samples;
+    unsigned long long packet_length;
 
     /** FEC scheme to use.
      * If non-zero, the receiver employs FEC codec to restore dropped packets.

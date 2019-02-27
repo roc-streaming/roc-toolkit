@@ -53,7 +53,7 @@ int main(int argc, char** argv) {
     core::HeapAllocator allocator;
     core::BufferPool<audio::sample_t> pool(allocator, MaxFrameSize, args.poisoning_flag);
 
-    size_t frame_size = pipeline::DefaultFrameSize;
+    size_t frame_size = pipeline::DefaultInternalFrameSize;
     if (args.frame_size_given) {
         frame_size = (size_t)args.frame_size_arg;
     }

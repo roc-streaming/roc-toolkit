@@ -23,18 +23,26 @@ namespace rtp {
 
 //! Calculate packet duration.
 template <class Sample, size_t NumCh>
-packet::timestamp_t pcm_duration(const packet::RTP& rtp) {
+packet::timestamp_t pcm_duration_from_header(const packet::RTP& rtp) {
     return packet::timestamp_t(rtp.payload.size() / NumCh / sizeof(Sample));
 }
 
 //! Calculate payload size.
-template <class Sample, size_t NumCh> size_t pcm_payload_size(size_t num_samples) {
+template <class Sample, size_t NumCh>
+size_t pcm_payload_size_from_samples(size_t num_samples) {
     return num_samples * NumCh * sizeof(Sample);
 }
 
 //! Calculate packet size.
-template <class Sample, size_t NumCh> size_t pcm_packet_size(size_t num_samples) {
-    return sizeof(Header) + pcm_payload_size<Sample, NumCh>(num_samples);
+template <class Sample, size_t NumCh, size_t SampleRate>
+size_t pcm_packet_size_from_duration(core::nanoseconds_t duration) {
+    const packet::timestamp_diff_t num_samples =
+        packet::timestamp_from_ns(duration, SampleRate);
+    if (num_samples < 0) {
+        return 0;
+    }
+    return sizeof(Header)
+        + pcm_payload_size_from_samples<Sample, NumCh>((size_t)num_samples);
 }
 
 //! Encode single sample.

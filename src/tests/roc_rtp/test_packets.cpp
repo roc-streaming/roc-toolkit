@@ -69,7 +69,10 @@ TEST_GROUP(packets) {
         UNSIGNED_LONGS_EQUAL(pi.num_samples, format.duration(*packet.rtp()));
 
         if (check_size) {
-            UNSIGNED_LONGS_EQUAL(pi.packet_size, format.size(pi.num_samples));
+            UNSIGNED_LONGS_EQUAL(
+                pi.packet_size,
+                format.size(core::nanoseconds_t(pi.num_samples) * core::Second
+                            / core::nanoseconds_t(format.sample_rate)));
         }
     }
 

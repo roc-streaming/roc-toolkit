@@ -15,6 +15,7 @@
 #include "roc_audio/idecoder.h"
 #include "roc_audio/iencoder.h"
 #include "roc_core/iallocator.h"
+#include "roc_core/time.h"
 #include "roc_packet/rtp.h"
 #include "roc_packet/units.h"
 #include "roc_rtp/headers.h"
@@ -39,8 +40,8 @@ struct Format {
     //! Get packet duration in samples.
     packet::timestamp_t (*duration)(const packet::RTP&);
 
-    //! Get packet size in bytes.
-    size_t (*size)(size_t num_samples);
+    //! Get packet size in bytes for given duration in nanoseconds.
+    size_t (*size)(core::nanoseconds_t duration);
 
     //! Create encoder.
     audio::IEncoder* (*new_encoder)(core::IAllocator& allocator);

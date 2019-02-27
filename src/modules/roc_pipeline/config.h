@@ -16,6 +16,7 @@
 #include "roc_audio/resampler.h"
 #include "roc_audio/watchdog.h"
 #include "roc_core/stddefs.h"
+#include "roc_core/time.h"
 #include "roc_fec/config.h"
 #include "roc_packet/units.h"
 #include "roc_rtp/headers.h"
@@ -24,26 +25,23 @@
 namespace roc {
 namespace pipeline {
 
-//! Defaults.
-enum {
-    //! Number of samples per second.
-    DefaultSampleRate = 44100,
+//! Default sample rate, number of samples per second.
+const size_t DefaultSampleRate = 44100;
 
-    //! Channel mask.
-    DefaultChannelMask = 0x3,
+//! Default channel mask.
+const packet::channel_mask_t DefaultChannelMask = 0x3;
 
-    //! Number of samples per packet per channel.
-    DefaultPacketSize = 320,
+//! Default packet length.
+const core::nanoseconds_t DefaultPacketLength = 7 * core::Millisecond;
 
-    //! Number of samples per frame for all channels.
-    DefaultFrameSize = 320 * 2,
+//! Default internal frame size.
+const size_t DefaultInternalFrameSize = 640;
 
-    //! Minum latency relative to target latency.
-    DefaultMinLatencyFactor = -1,
+//! Default minum latency relative to target latency.
+const int DefaultMinLatencyFactor = -1;
 
-    //! Maximum latency relative to target latency.
-    DefaultMaxLatencyFactor = 2
-};
+//! Default maximum latency relative to target latency.
+const int DefaultMaxLatencyFactor = 2;
 
 //! Protocol identifier.
 enum Protocol {
@@ -99,8 +97,8 @@ struct SenderConfig {
     //! Number of samples for internal frames.
     size_t internal_frame_size;
 
-    //! Number of samples per packet per channel.
-    size_t output_packet_samples;
+    //! Packet length, in nanoseconds.
+    core::nanoseconds_t packet_length;
 
     //! RTP payload type for audio packets.
     rtp::PayloadType payload_type;
@@ -120,8 +118,8 @@ struct SenderConfig {
     SenderConfig()
         : input_sample_rate(DefaultSampleRate)
         , input_channels(DefaultChannelMask)
-        , internal_frame_size(DefaultFrameSize)
-        , output_packet_samples(DefaultPacketSize)
+        , internal_frame_size(DefaultInternalFrameSize)
+        , packet_length(DefaultPacketLength)
         , payload_type(rtp::PayloadType_L16_Stereo)
         , resampling(false)
         , interleaving(false)
@@ -137,8 +135,8 @@ struct ReceiverSessionConfig {
     //! Channel mask.
     packet::channel_mask_t channels;
 
-    //! Number of samples per packet per channel.
-    size_t packet_samples;
+    //! Packet length, in nanoseconds.
+    core::nanoseconds_t packet_length;
 
     //! Target latency, nanoseconds.
     core::nanoseconds_t target_latency;
@@ -160,7 +158,7 @@ struct ReceiverSessionConfig {
 
     ReceiverSessionConfig()
         : channels(DefaultChannelMask)
-        , packet_samples(DefaultPacketSize)
+        , packet_length(DefaultPacketLength)
         , target_latency(200 * core::Millisecond) {
         latency_monitor.min_latency = target_latency * DefaultMinLatencyFactor;
         latency_monitor.max_latency = target_latency * DefaultMaxLatencyFactor;
@@ -195,7 +193,7 @@ struct ReceiverOutputConfig {
     ReceiverOutputConfig()
         : sample_rate(DefaultSampleRate)
         , channels(DefaultChannelMask)
-        , internal_frame_size(DefaultFrameSize)
+        , internal_frame_size(DefaultInternalFrameSize)
         , resampling(false)
         , timing(false)
         , poisoning(false)

@@ -359,7 +359,8 @@ TEST_GROUP(sender_receiver) {
         memset(&sender_conf, 0, sizeof(sender_conf));
         sender_conf.input_sample_rate = SampleRate;
         sender_conf.automatic_timing = 1;
-        sender_conf.packet_samples = (unsigned int)PacketSamples / NumChans;
+        sender_conf.packet_length =
+            PacketSamples * core::Second / (SampleRate * NumChans);
         sender_conf.fec_scheme = ROC_FEC_RS8M;
         sender_conf.fec_block_source_packets = SourcePackets;
         sender_conf.fec_block_repair_packets = RepairPackets;
@@ -368,7 +369,8 @@ TEST_GROUP(sender_receiver) {
         memset(&receiver_conf, 0, sizeof(receiver_conf));
         receiver_conf.output_sample_rate = SampleRate;
         receiver_conf.automatic_timing = 1;
-        receiver_conf.packet_samples = (unsigned int)PacketSamples / NumChans;
+        receiver_conf.packet_length =
+            PacketSamples * core::Second / (SampleRate * NumChans);
         receiver_conf.fec_scheme = ROC_FEC_RS8M;
         receiver_conf.fec_block_source_packets = SourcePackets;
         receiver_conf.fec_block_repair_packets = RepairPackets;

@@ -21,8 +21,8 @@ Format pcm_l16_stereo = {
     /* flags        */ packet::Packet::FlagAudio,
     /* sample_rate  */ 44100,
     /* channel_mask */ 0x3,
-    /* duration     */ &pcm_duration<int16_t, 2>,
-    /* size         */ &pcm_packet_size<int16_t, 2>,
+    /* duration     */ &pcm_duration_from_header<int16_t, 2>,
+    /* size         */ &pcm_packet_size_from_duration<int16_t, 2, 44100>,
     /* new_encoder  */ &PCMEncoder<int16_t, 2>::create,
     /* new_decoder  */ &PCMDecoder<int16_t, 2>::create,
 };
@@ -32,8 +32,8 @@ Format pcm_l16_mono = {
     /* flags        */ packet::Packet::FlagAudio,
     /* sample_rate  */ 44100,
     /* channel_mask */ 0x1,
-    /* duration     */ &pcm_duration<int16_t, 1>,
-    /* size         */ &pcm_packet_size<int16_t, 1>,
+    /* duration     */ &pcm_duration_from_header<int16_t, 1>,
+    /* size         */ &pcm_packet_size_from_duration<int16_t, 1, 44100>,
     /* new_encoder  */ &PCMEncoder<int16_t, 1>::create,
     /* new_decoder  */ &PCMDecoder<int16_t, 1>::create,
 };

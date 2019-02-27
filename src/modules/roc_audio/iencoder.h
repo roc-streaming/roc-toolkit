@@ -25,7 +25,7 @@ class IEncoder {
 public:
     virtual ~IEncoder();
 
-    //! Get packet payload size.
+    //! Get packet payload size for given number of samples.
     virtual size_t payload_size(size_t num_samples) const = 0;
 
     //! Write samples to packet.
