@@ -206,27 +206,29 @@ typedef struct roc_receiver_config {
      */
     long long max_latency;
 
-    /** Timeout for the lack of packets, in nanoseconds.
-     * If there are no packets during this period, the session is terminated.
-     * This mechanism allows to detect dead or hanging clients.
+    /** Timeout for the lack of playback, in nanoseconds.
+     * If there is no playback during this period, the session is terminated.
+     * This mechanism allows to detect dead, hanging, or broken clients
+     * generating invalid packets.
      * If zero, default value is used. If negative, the timeout is disabled.
      */
-    long long no_packets_timeout;
+    long long no_playback_timeout;
 
-    /** Timeout for frequent packet drops, in nanoseconds.
-     * If there is at least one packet drop every drop_detection_window during this
-     * period, the session is terminated.
-     * This mechanism allows to detect the vicious circle when all client packets
-     * are a bit late and we are constantly dropping them producing unpleasant noise.
+    /** Timeout for broken playback, in nanoseconds.
+     * If there the playback is considred broken during this period, the session
+     * is terminated. The playback is broken if it is a breakage detected at every
+     * breakage_detection_window during broken_playback_timeout.
+     * This mechanism allows to detect vicious circles like when all client packets
+     * are a bit late and receiver constantly drops them producing unpleasant noise.
      * If zero, default value is used. If negative, the timeout is disabled.
      */
-    long long frequent_drops_timeout;
+    long long broken_playback_timeout;
 
-    /** Drop detection window, in nanoseconds.
-     * Used for requent drops timesout if it is enabled.
+    /** Breakage detection window, in nanoseconds.
      * If negative or zero, default value is used.
+     * @see broken_playback_timeout.
      */
-    long long drop_detection_window;
+    long long breakage_detection_window;
 
     /** The size of the packets received from sender.
      * Number of samples per channel per packet. If zero, default value is used.

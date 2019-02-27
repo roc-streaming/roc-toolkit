@@ -30,13 +30,13 @@ section "Options"
     option "max-latency" - "Session maximum latency, TIME units"
         string optional
 
-    option "nopkt-timeout" - "Session timeout for lack of packets, TIME units"
+    option "np-timeout" - "Session no playback timeout, TIME units"
         string optional
 
-    option "drops-timeout" - "Session timeout for constant drops, TIME units"
+    option "bp-timeout" - "Session broken playback timeout, TIME units"
         string optional
 
-    option "drops-window" - "Session drops detection window, TIME units"
+    option "bp-window" - "Session breakage detection window, TIME units"
         string optional
 
     option "rate" - "Override output sample rate (Hz)"

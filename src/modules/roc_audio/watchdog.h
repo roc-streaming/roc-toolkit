@@ -27,11 +27,11 @@ struct WatchdogConfig {
     //! Timeout for the lack of packets, nanoseconds.
     //! @remarks
     //!  Maximum allowed period during which every frame is blank. After this period,
-    //!  the session is terminated. This mechanism allows to detect dead or hanging
-    //!  clients. Set to zero to disable.
-    core::nanoseconds_t no_packets_timeout;
+    //!  the session is terminated. This mechanism allows to detect dead, hanging, or
+    //!  broken clients. Set to zero to disable.
+    core::nanoseconds_t no_playback_timeout;
 
-    //! Timeout for frequent drops, nanoseconds.
+    //! Timeout for frequent breakages, nanoseconds.
     //! @remarks
     //!  Maximum allowed period during which every drop detection window overlaps with
     //!  at least one frame which caused packet drops and with at least one frame which
@@ -39,11 +39,11 @@ struct WatchdogConfig {
     //!  terminated. This mechanism allows to detect the vicious circle when all client
     //!  packets are a bit late and we are constantly dropping them producing unpleasant
     //!  noise. Set to zero to disable.
-    core::nanoseconds_t drops_timeout;
+    core::nanoseconds_t broken_playback_timeout;
 
-    //! Drop detection window size, nanoseconds.
-    //! @see drops_timeout.
-    core::nanoseconds_t drop_detection_window;
+    //! Breakage detection window, nanoseconds.
+    //! @see broken_playback_timeout.
+    core::nanoseconds_t breakage_detection_window;
 
     //! Frame status window size for logging, number of frames.
     //! @remarks
@@ -52,9 +52,9 @@ struct WatchdogConfig {
 
     //! Initialize config with default values.
     WatchdogConfig()
-        : no_packets_timeout(2 * core::Second)
-        , drops_timeout(2 * core::Second)
-        , drop_detection_window(300 * core::Millisecond)
+        : no_playback_timeout(2 * core::Second)
+        , broken_playback_timeout(2 * core::Second)
+        , breakage_detection_window(300 * core::Millisecond)
         , frame_status_window(20) {
     }
 };

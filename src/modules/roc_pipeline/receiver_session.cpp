@@ -128,8 +128,8 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
 
     audio::IReader* areader = depacketizer_.get();
 
-    if (session_config.watchdog.no_packets_timeout != 0
-        || session_config.watchdog.drops_timeout != 0
+    if (session_config.watchdog.no_playback_timeout != 0
+        || session_config.watchdog.broken_playback_timeout != 0
         || session_config.watchdog.frame_status_window != 0) {
         watchdog_.reset(new (allocator_) audio::Watchdog(
                             *areader, packet::num_channels(session_config.channels),

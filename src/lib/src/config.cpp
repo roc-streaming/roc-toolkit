@@ -103,20 +103,21 @@ bool config_receiver(pipeline::ReceiverConfig& out, const roc_receiver_config& i
         out.default_session.latency_monitor.max_latency = in.max_latency;
     }
 
-    if (in.no_packets_timeout < 0) {
-        out.default_session.watchdog.no_packets_timeout = 0;
-    } else if (in.no_packets_timeout > 0) {
-        out.default_session.watchdog.no_packets_timeout = in.no_packets_timeout;
+    if (in.no_playback_timeout < 0) {
+        out.default_session.watchdog.no_playback_timeout = 0;
+    } else if (in.no_playback_timeout > 0) {
+        out.default_session.watchdog.no_playback_timeout = in.no_playback_timeout;
     }
 
-    if (in.frequent_drops_timeout < 0) {
-        out.default_session.watchdog.drops_timeout = 0;
-    } else if (in.no_packets_timeout > 0) {
-        out.default_session.watchdog.drops_timeout = in.frequent_drops_timeout;
+    if (in.broken_playback_timeout < 0) {
+        out.default_session.watchdog.broken_playback_timeout = 0;
+    } else if (in.no_playback_timeout > 0) {
+        out.default_session.watchdog.broken_playback_timeout = in.broken_playback_timeout;
     }
 
-    if (in.drop_detection_window > 0) {
-        out.default_session.watchdog.drop_detection_window = in.drop_detection_window;
+    if (in.breakage_detection_window > 0) {
+        out.default_session.watchdog.breakage_detection_window =
+            in.breakage_detection_window;
     }
 
     if (in.packet_samples) {

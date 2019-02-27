@@ -197,7 +197,7 @@ TEST_GROUP(sender_receiver) {
         config.default_session.packet_samples = SamplesPerPacket;
 
         config.default_session.target_latency = Latency * core::Second / SampleRate;
-        config.default_session.watchdog.no_packets_timeout =
+        config.default_session.watchdog.no_playback_timeout =
             Timeout * core::Second / SampleRate;
 
         config.default_session.fec = fec_config(flags);

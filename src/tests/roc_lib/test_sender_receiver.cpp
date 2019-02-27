@@ -374,7 +374,7 @@ TEST_GROUP(sender_receiver) {
         receiver_conf.fec_block_repair_packets = RepairPackets;
         receiver_conf.resampler_profile = ROC_RESAMPLER_DISABLE;
         receiver_conf.target_latency = Latency * 1000000000ul / SampleRate;
-        receiver_conf.no_packets_timeout = Timeout * 1000000000ul / SampleRate;
+        receiver_conf.no_playback_timeout = Timeout * 1000000000ul / SampleRate;
     }
 
     void init_samples() {

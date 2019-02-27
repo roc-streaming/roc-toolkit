@@ -88,7 +88,7 @@ TEST_GROUP(receiver) {
         config.default_session.latency_monitor.max_latency =
             +Timeout * 10 * core::Second / SampleRate;
 
-        config.default_session.watchdog.no_packets_timeout =
+        config.default_session.watchdog.no_playback_timeout =
             Timeout * core::Second / SampleRate;
 
         config.default_session.rtp_validator.max_sn_jump = MaxSnJump;

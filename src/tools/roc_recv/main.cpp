@@ -144,26 +144,28 @@ int main(int argc, char** argv) {
             config.default_session.target_latency * pipeline::DefaultMaxLatencyFactor;
     }
 
-    if (args.nopkt_timeout_given) {
-        if (!core::parse_duration(args.nopkt_timeout_arg,
-                                  config.default_session.watchdog.no_packets_timeout)) {
-            roc_log(LogError, "invalid --nopkt-timeout");
+    if (args.np_timeout_given) {
+        if (!core::parse_duration(args.np_timeout_arg,
+                                  config.default_session.watchdog.no_playback_timeout)) {
+            roc_log(LogError, "invalid --np-timeout");
             return 1;
         }
     }
 
-    if (args.drops_timeout_given) {
-        if (!core::parse_duration(args.drops_timeout_arg,
-                                  config.default_session.watchdog.drops_timeout)) {
-            roc_log(LogError, "invalid --drops-timeout");
+    if (args.bp_timeout_given) {
+        if (!core::parse_duration(
+                args.bp_timeout_arg,
+                config.default_session.watchdog.broken_playback_timeout)) {
+            roc_log(LogError, "invalid --bp-timeout");
             return 1;
         }
     }
 
-    if (args.drops_window_given) {
-        if (!core::parse_duration(args.drops_window_arg,
-                                  config.default_session.watchdog.drop_detection_window)) {
-            roc_log(LogError, "invalid --drops-window");
+    if (args.bp_window_given) {
+        if (!core::parse_duration(
+                args.bp_window_arg,
+                config.default_session.watchdog.breakage_detection_window)) {
+            roc_log(LogError, "invalid --bp-window");
             return 1;
         }
     }
