@@ -39,9 +39,6 @@
 
 /* Sender parameters */
 #define SAMPLE_RATE 44100
-#define NUM_CHANNELS 2
-
-/* Sine wave parameters. */
 #define SINE_RATE 440
 #define NUM_SAMPLES (SAMPLE_RATE * 5)
 #define BUFFER_SIZE 100
@@ -53,31 +50,51 @@
         exit(1);                                                                         \
     } while (0)
 
+static void gensine(float* samples, size_t num_samples) {
+    double t = 0;
+    size_t i;
+    for (i = 0; i < num_samples / 2; i++) {
+        const float s = (float)sin(2 * PI * SINE_RATE / SAMPLE_RATE * t);
+
+        /* Fill samples for left and right channels. */
+        samples[i * 2] = s;
+        samples[i * 2 + 1] = -s;
+
+        t += 1;
+    }
+}
+
 int main() {
     /* Enable debug logging. */
     roc_log_set_level(ROC_LOG_DEBUG);
 
     /* Initialize context config.
-     * We use default values. */
+     * Initialize to zero to use default values for all fields. */
     roc_context_config context_config;
     memset(&context_config, 0, sizeof(context_config));
 
     /* Create context.
-     * Context contains global state like memory pools and the network loop thread.
+     * Context contains memory pools and the network worker thread(s).
      * We need a context to create a sender. */
     roc_context* context = roc_context_open(&context_config);
     if (!context) {
         oops("roc_context_open");
     }
 
-    /* Start context thread. */
+    /* Start context thread(s). */
     if (roc_context_start(context) != 0) {
         oops("roc_context_start");
     }
 
-    /* Initialize sender config. */
+    /* Initialize sender config.
+     * Initialize to zero to use default values for unset fields. */
     roc_sender_config sender_config;
     memset(&sender_config, 0, sizeof(sender_config));
+
+    /* Setup input frame format. */
+    sender_config.frame_sample_rate = SAMPLE_RATE;
+    sender_config.frame_channels = ROC_CHANNEL_SET_STEREO;
+    sender_config.frame_encoding = ROC_FRAME_ENCODING_PCM_FLOAT;
 
     /* Turn on sender timing.
      * Sender must send packets with steady rate, so we should either implement
@@ -126,21 +143,11 @@ int main() {
     }
 
     /* Generate sine wave and write it to the sender. */
-    double t = 0;
-    size_t i, j;
-
+    size_t i;
     for (i = 0; i < NUM_SAMPLES / BUFFER_SIZE; i++) {
+        /* Generate sine wave. */
         float samples[BUFFER_SIZE];
-
-        for (j = 0; j < BUFFER_SIZE / NUM_CHANNELS; j++) {
-            float s = (float)sin(2 * PI * SINE_RATE / SAMPLE_RATE * t);
-
-            /* Fill samples for left and right channels. */
-            samples[j * 2] = s;
-            samples[j * 2 + 1] = -s;
-
-            t += 1;
-        }
+        gensine(samples, BUFFER_SIZE);
 
         /* Write samples to the sender. */
         roc_frame frame;

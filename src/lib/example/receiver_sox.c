@@ -34,13 +34,11 @@
 #define RECEIVER_SOURCE_PORT 10001
 #define RECEIVER_REPAIR_PORT 10002
 
-/* Sender parameters */
-#define SAMPLE_RATE 44100
-#define NUM_CHANNELS 2
-
 /* Player parameters. */
 #define OUTPUT_DEVICE "default"
 #define OUTPUT_TYPE "alsa"
+#define SAMPLE_RATE 44100
+#define NUM_CHANNELS 2
 #define BUFFER_SIZE 1000
 
 #define oops(msg)                                                                        \
@@ -59,19 +57,19 @@ int main() {
     roc_log_set_level(ROC_LOG_DEBUG);
 
     /* Initialize context config.
-     * We use default values. */
+     * Initialize to zero to use default values for all fields. */
     roc_context_config context_config;
     memset(&context_config, 0, sizeof(context_config));
 
     /* Create context.
-     * Context contains global state like memory pools and the network loop thread.
+     * Context contains memory pools and the network worker thread(s).
      * We need a context to create a receiver. */
     roc_context* context = roc_context_open(&context_config);
     if (!context) {
         oops("roc_context_open");
     }
 
-    /* Start context thread. */
+    /* Start context thread(s). */
     if (roc_context_start(context) != 0) {
         oops("roc_context_start");
     }
@@ -80,6 +78,11 @@ int main() {
      * We use default values. */
     roc_receiver_config receiver_config;
     memset(&receiver_config, 0, sizeof(receiver_config));
+
+    /* Setup output frame format. */
+    receiver_config.frame_sample_rate = SAMPLE_RATE;
+    receiver_config.frame_channels = ROC_CHANNEL_SET_STEREO;
+    receiver_config.frame_encoding = ROC_FRAME_ENCODING_PCM_FLOAT;
 
     /* Create receiver. */
     roc_receiver* receiver = roc_receiver_open(context, &receiver_config);

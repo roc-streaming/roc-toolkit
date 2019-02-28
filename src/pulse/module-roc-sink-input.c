@@ -205,6 +205,10 @@ int pa__init(pa_module* m) {
     roc_receiver_config receiver_config;
     memset(&receiver_config, 0, sizeof(receiver_config));
 
+    receiver_config.frame_sample_rate = 44100;
+    receiver_config.frame_channels = ROC_CHANNEL_SET_STEREO;
+    receiver_config.frame_encoding = ROC_FRAME_ENCODING_PCM_FLOAT;
+
     u->receiver = roc_receiver_open(u->context, &receiver_config);
     if (!u->receiver) {
         pa_log("can't create roc receiver");

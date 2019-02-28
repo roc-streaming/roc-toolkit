@@ -47,13 +47,13 @@ extern "C" {
  * communication by the selected sender configuration, and selecting the same protocol
  * for every port at the sender and receiver. Currently, two options are possible:
  *
- *  - If the user disabled the FEC using @c ROC_FEC_NONE FEC scheme, a single RTP stream
+ *  - If the user disabled the FEC using @c ROC_FEC_NONE FEC code, a single RTP stream
  *    is used to transfer the samples. The sender should be connected to a single
  *    @c ROC_PROTO_RTP port.
  *
  *  - Otherwise, a pair of RTP streams is used to transfer the samples, one for the
  *    source (audio) packets, and another for the repair (FEC) packets. Depending on
- *    the selected FEC scheme, the sender should be connected to a pair of
+ *    the selected FEC code, the sender should be connected to a pair of
  *    @c ROC_PROTO_RTP_*_SOURCE and @c ROC_PROTO_*_REPAIR ports.
  *
  * @b Timing

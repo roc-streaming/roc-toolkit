@@ -30,34 +30,48 @@ bool config_context(roc_context_config& out, const roc_context_config* in) {
 }
 
 bool config_sender(pipeline::SenderConfig& out, const roc_sender_config& in) {
+    if (in.frame_sample_rate != 0) {
+        out.input_sample_rate = in.frame_sample_rate;
+    } else {
+        roc_log(LogError, "roc_config: invalid frame_sample_rate");
+        return false;
+    }
+
+    if (in.frame_channels != ROC_CHANNEL_SET_STEREO) {
+        roc_log(LogError, "roc_config: invalid frame_channels");
+        return false;
+    }
+
+    if (in.frame_encoding != ROC_FRAME_ENCODING_PCM_FLOAT) {
+        roc_log(LogError, "roc_config: invalid frame_encoding");
+        return false;
+    }
+
+    if (in.packet_sample_rate != 0 && in.packet_sample_rate != 44100) {
+        roc_log(
+            LogError,
+            "roc_config: invalid packet_sample_rate, only 44100 is currently supported");
+        return false;
+    }
+
+    if (in.packet_channels != 0 && in.packet_channels != ROC_CHANNEL_SET_STEREO) {
+        roc_log(LogError, "roc_config: invalid packet_channels");
+        return false;
+    }
+
+    if (in.packet_encoding != 0 && in.packet_encoding != ROC_PACKET_ENCODING_AVP_L16) {
+        roc_log(LogError, "roc_config: invalid packet_encoding");
+        return false;
+    }
+
     if (in.packet_length != 0) {
         out.packet_length = (core::nanoseconds_t)in.packet_length;
     }
 
-    if (in.input_sample_rate != 0) {
-        out.input_sample_rate = in.input_sample_rate;
-    }
+    out.interleaving = in.packet_interleaving;
+    out.timing = in.automatic_timing;
 
-    switch ((unsigned)in.fec_scheme) {
-    case ROC_FEC_DISABLE:
-        out.fec.codec = fec::NoCodec;
-        break;
-    case ROC_FEC_DEFAULT:
-    case ROC_FEC_RS8M:
-        out.fec.codec = fec::ReedSolomon8m;
-        break;
-    case ROC_FEC_LDPC_STAIRCASE:
-        out.fec.codec = fec::LDPCStaircase;
-        break;
-    default:
-        roc_log(LogError, "roc_config: invalid fec_scheme");
-        return false;
-    }
-
-    if (in.fec_block_source_packets || in.fec_block_repair_packets) {
-        out.fec.n_source_packets = in.fec_block_source_packets;
-        out.fec.n_repair_packets = in.fec_block_repair_packets;
-    }
+    out.resampling = (in.resampler_profile != ROC_RESAMPLER_DISABLE);
 
     switch ((unsigned)in.resampler_profile) {
     case ROC_RESAMPLER_DISABLE:
@@ -77,14 +91,73 @@ bool config_sender(pipeline::SenderConfig& out, const roc_sender_config& in) {
         return false;
     }
 
-    out.resampling = (in.resampler_profile != ROC_RESAMPLER_DISABLE);
-    out.interleaving = in.packet_interleaving;
-    out.timing = in.automatic_timing;
+    switch ((unsigned)in.fec_code) {
+    case ROC_FEC_DISABLE:
+        out.fec.codec = fec::NoCodec;
+        break;
+    case ROC_FEC_DEFAULT:
+    case ROC_FEC_RS8M:
+        out.fec.codec = fec::ReedSolomon8m;
+        break;
+    case ROC_FEC_LDPC_STAIRCASE:
+        out.fec.codec = fec::LDPCStaircase;
+        break;
+    default:
+        roc_log(LogError, "roc_config: invalid fec_scheme");
+        return false;
+    }
+
+    if (in.fec_block_source_packets != 0 || in.fec_block_repair_packets != 0) {
+        out.fec.n_source_packets = in.fec_block_source_packets;
+        out.fec.n_repair_packets = in.fec_block_repair_packets;
+    }
 
     return true;
 }
 
 bool config_receiver(pipeline::ReceiverConfig& out, const roc_receiver_config& in) {
+    if (in.frame_sample_rate != 0) {
+        out.output.sample_rate = in.frame_sample_rate;
+    } else {
+        roc_log(LogError, "roc_config: invalid frame_sample_rate");
+        return false;
+    }
+
+    if (in.frame_channels != ROC_CHANNEL_SET_STEREO) {
+        roc_log(LogError, "roc_config: invalid frame_channels");
+        return false;
+    }
+
+    if (in.frame_encoding != ROC_FRAME_ENCODING_PCM_FLOAT) {
+        roc_log(LogError, "roc_config: invalid frame_encoding");
+        return false;
+    }
+
+    out.output.timing = in.automatic_timing;
+
+    out.output.resampling = (in.resampler_profile != ROC_RESAMPLER_DISABLE);
+
+    switch ((unsigned)in.resampler_profile) {
+    case ROC_RESAMPLER_DISABLE:
+        break;
+    case ROC_RESAMPLER_LOW:
+        out.default_session.resampler =
+            audio::resampler_profile(audio::ResamplerProfile_Low);
+        break;
+    case ROC_RESAMPLER_DEFAULT:
+    case ROC_RESAMPLER_MEDIUM:
+        out.default_session.resampler =
+            audio::resampler_profile(audio::ResamplerProfile_Medium);
+        break;
+    case ROC_RESAMPLER_HIGH:
+        out.default_session.resampler =
+            audio::resampler_profile(audio::ResamplerProfile_High);
+        break;
+    default:
+        roc_log(LogError, "roc_config: invalid resampler_profile");
+        return false;
+    }
+
     if (in.target_latency != 0) {
         out.default_session.target_latency = (core::nanoseconds_t)in.target_latency;
 
@@ -125,11 +198,7 @@ bool config_receiver(pipeline::ReceiverConfig& out, const roc_receiver_config& i
         out.default_session.packet_length = (core::nanoseconds_t)in.packet_length;
     }
 
-    if (in.output_sample_rate != 0) {
-        out.output.sample_rate = in.output_sample_rate;
-    }
-
-    switch ((unsigned)in.fec_scheme) {
+    switch ((unsigned)in.fec_code) {
     case ROC_FEC_DISABLE:
         out.default_session.fec.codec = fec::NoCodec;
         break;
@@ -145,34 +214,10 @@ bool config_receiver(pipeline::ReceiverConfig& out, const roc_receiver_config& i
         return false;
     }
 
-    if (in.fec_block_source_packets || in.fec_block_repair_packets) {
+    if (in.fec_block_source_packets != 0 || in.fec_block_repair_packets != 0) {
         out.default_session.fec.n_source_packets = in.fec_block_source_packets;
         out.default_session.fec.n_repair_packets = in.fec_block_repair_packets;
     }
-
-    switch ((unsigned)in.resampler_profile) {
-    case ROC_RESAMPLER_DISABLE:
-        break;
-    case ROC_RESAMPLER_LOW:
-        out.default_session.resampler =
-            audio::resampler_profile(audio::ResamplerProfile_Low);
-        break;
-    case ROC_RESAMPLER_DEFAULT:
-    case ROC_RESAMPLER_MEDIUM:
-        out.default_session.resampler =
-            audio::resampler_profile(audio::ResamplerProfile_Medium);
-        break;
-    case ROC_RESAMPLER_HIGH:
-        out.default_session.resampler =
-            audio::resampler_profile(audio::ResamplerProfile_High);
-        break;
-    default:
-        roc_log(LogError, "roc_config: invalid resampler_profile");
-        return false;
-    }
-
-    out.output.resampling = (in.resampler_profile != ROC_RESAMPLER_DISABLE);
-    out.output.timing = in.automatic_timing;
 
     return true;
 }

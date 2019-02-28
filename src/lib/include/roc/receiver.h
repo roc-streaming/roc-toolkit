@@ -6,8 +6,10 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc/receiver.h
-//! @brief Roc receiver.
+/**
+ * @file roc/receiver.h
+ * @brief Roc receiver.
+ */
 
 #ifndef ROC_RECEIVER_H_
 #define ROC_RECEIVER_H_
@@ -22,28 +24,35 @@
 extern "C" {
 #endif
 
-//! Receiver.
+/** Roc receiver.
+ * TODO.
+ */
 typedef struct roc_receiver roc_receiver;
 
-//! Create a new receiver.
-//! Returns a new object on success or NULL on error.
+/** Open a new receiver.
+ * TODO.
+ */
 ROC_API roc_receiver* roc_receiver_open(roc_context* context,
                                         const roc_receiver_config* config);
 
-//! Bind a new receiver port.
-//! If the port is zero, an ephemeral port is selected and written back to addr.
-//! Returns 0 on success or -1 on error.
+/** Bind receiver to a local port.
+ * TODO.
+ */
 ROC_API int
 roc_receiver_bind(roc_receiver* receiver, roc_protocol proto, roc_address* address);
 
-//! Read samples from receiver.
+/** Read samples from the receiver.
+ * TODO.
+ */
 ROC_API int roc_receiver_read(roc_receiver* receiver, roc_frame* frame);
 
-//! Delete previously created receiver.
+/** Close receiver.
+ * TODO.
+ */
 ROC_API int roc_receiver_close(roc_receiver* receiver);
 
 #ifdef __cplusplus
-}
+} /* extern "C" */
 #endif
 
-#endif // ROC_RECEIVER_H_
+#endif /* ROC_RECEIVER_H_ */

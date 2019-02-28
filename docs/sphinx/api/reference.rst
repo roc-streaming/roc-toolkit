@@ -45,6 +45,23 @@ roc_sender
 
 .. doxygenfunction:: roc_sender_close
 
+roc_receiver
+============
+
+.. code-block:: c
+
+   #include <roc/receiver.h>
+
+.. doxygentypedef:: roc_receiver
+
+.. doxygenfunction:: roc_receiver_open
+
+.. doxygenfunction:: roc_receiver_bind
+
+.. doxygenfunction:: roc_receiver_read
+
+.. doxygenfunction:: roc_receiver_close
+
 roc_frame
 =========
 
@@ -96,10 +113,25 @@ roc_config
 
 .. doxygenenum:: roc_protocol
 
-.. doxygentypedef:: roc_fec_scheme
+.. doxygentypedef:: roc_fec_code
    :outline:
 
-.. doxygenenum:: roc_fec_scheme
+.. doxygenenum:: roc_fec_code
+
+.. doxygentypedef:: roc_packet_encoding
+   :outline:
+
+.. doxygenenum:: roc_packet_encoding
+
+.. doxygentypedef:: roc_frame_encoding
+   :outline:
+
+.. doxygenenum:: roc_frame_encoding
+
+.. doxygentypedef:: roc_channel_set
+   :outline:
+
+.. doxygenenum:: roc_channel_set
 
 .. doxygentypedef:: roc_resampler_profile
    :outline:

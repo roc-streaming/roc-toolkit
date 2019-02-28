@@ -357,26 +357,30 @@ TEST_GROUP(sender_receiver) {
 
     void init_config() {
         memset(&sender_conf, 0, sizeof(sender_conf));
-        sender_conf.input_sample_rate = SampleRate;
+        sender_conf.frame_sample_rate = SampleRate;
+        sender_conf.frame_channels = ROC_CHANNEL_SET_STEREO;
+        sender_conf.frame_encoding = ROC_FRAME_ENCODING_PCM_FLOAT;
         sender_conf.automatic_timing = 1;
+        sender_conf.resampler_profile = ROC_RESAMPLER_DISABLE;
         sender_conf.packet_length =
-            PacketSamples * core::Second / (SampleRate * NumChans);
-        sender_conf.fec_scheme = ROC_FEC_RS8M;
+            PacketSamples * 1000000000ul / (SampleRate * NumChans);
+        sender_conf.fec_code = ROC_FEC_RS8M;
         sender_conf.fec_block_source_packets = SourcePackets;
         sender_conf.fec_block_repair_packets = RepairPackets;
-        sender_conf.resampler_profile = ROC_RESAMPLER_DISABLE;
 
         memset(&receiver_conf, 0, sizeof(receiver_conf));
-        receiver_conf.output_sample_rate = SampleRate;
+        receiver_conf.frame_sample_rate = SampleRate;
+        receiver_conf.frame_channels = ROC_CHANNEL_SET_STEREO;
+        receiver_conf.frame_encoding = ROC_FRAME_ENCODING_PCM_FLOAT;
         receiver_conf.automatic_timing = 1;
-        receiver_conf.packet_length =
-            PacketSamples * core::Second / (SampleRate * NumChans);
-        receiver_conf.fec_scheme = ROC_FEC_RS8M;
-        receiver_conf.fec_block_source_packets = SourcePackets;
-        receiver_conf.fec_block_repair_packets = RepairPackets;
         receiver_conf.resampler_profile = ROC_RESAMPLER_DISABLE;
         receiver_conf.target_latency = Latency * 1000000000ul / SampleRate;
         receiver_conf.no_playback_timeout = Timeout * 1000000000ul / SampleRate;
+        receiver_conf.packet_length =
+            PacketSamples * 1000000000ul / (SampleRate * NumChans);
+        receiver_conf.fec_code = ROC_FEC_RS8M;
+        receiver_conf.fec_block_source_packets = SourcePackets;
+        receiver_conf.fec_block_repair_packets = RepairPackets;
     }
 
     void init_samples() {
