@@ -154,7 +154,7 @@ int main() {
         memset(&frame, 0, sizeof(frame));
 
         frame.samples = samples;
-        frame.num_samples = BUFFER_SIZE;
+        frame.samples_size = BUFFER_SIZE * sizeof(float);
 
         if (roc_sender_write(sender, &frame) != 0) {
             oops("roc_sender_write");

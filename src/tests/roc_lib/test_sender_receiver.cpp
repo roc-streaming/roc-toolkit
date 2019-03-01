@@ -112,7 +112,7 @@ private:
             memset(&frame, 0, sizeof(frame));
 
             frame.samples = samples_ + off;
-            frame.num_samples = frame_size_;
+            frame.samples_size = frame_size_ * sizeof(float);
 
             const int ret = roc_sender_write(sndr_, &frame);
             roc_panic_if_not(ret == 0);
@@ -173,7 +173,7 @@ public:
             memset(&frame, 0, sizeof(frame));
 
             frame.samples = rx_buff;
-            frame.num_samples = frame_size_;
+            frame.samples_size = frame_size_ * sizeof(float);
 
             roc_panic_if_not(roc_receiver_read(recv_, &frame) == 0);
 

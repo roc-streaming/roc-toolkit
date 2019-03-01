@@ -94,8 +94,8 @@ static int pop_cb(pa_sink_input* i, size_t length, pa_memchunk* chunk) {
     roc_frame frame;
     memset(&frame, 0, sizeof(frame));
 
-    frame.samples = (float*)buf;
-    frame.num_samples = length / pa_sample_size(&u->sink_input->sample_spec);
+    frame.samples = buf;
+    frame.samples_size = length;
 
     /* read samples from file to memblock */
     int ret = roc_receiver_read(u->receiver, &frame);
@@ -111,7 +111,7 @@ static int pop_cb(pa_sink_input* i, size_t length, pa_memchunk* chunk) {
 
     /* setup chunk boundaries */
     chunk->index = 0;
-    chunk->length = frame.num_samples * pa_sample_size(&u->sink_input->sample_spec);
+    chunk->length = frame.samples_size;
 
     return 0;
 }

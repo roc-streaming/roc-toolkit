@@ -23,27 +23,22 @@ extern "C" {
 /** Audio frame.
  *
  * Represents a multichannel sequence of audio samples. The user is responsible for
- * allocating and deallocating the frame and its sample buffer.
+ * allocating and deallocating the frame and the data it is pointing to.
  *
  * @b Thread-safety
  *  - should not be used concurrently
  */
 typedef struct roc_frame {
     /** Audio samples.
-     *
-     * Points to an array of num_samples native endian floating point PCM samples. Sample
-     * values are in range [0; 1]. Sample rate and channel set are defined by the sender
-     * or receiver configuration. Multiple channels are interleaved, e.g. two channels
-     * are encoded as "L R L R ...".
+     * Sample rate, channel set, and encoding are defined by the sender or
+     * receiver parameters.
      */
-    float* samples;
+    void *samples;
 
-    /** Number of samples.
-     *
-     * Defines the number of samples in the sample buffer for all channels. Should be a
-     * multiple of the number of channels.
+    /** Sample buffer size.
+     * Defines the size of samples buffer in bytes.
      */
-    size_t num_samples;
+    size_t samples_size;
 } roc_frame;
 
 #ifdef __cplusplus

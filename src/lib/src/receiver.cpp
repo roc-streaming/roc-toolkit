@@ -121,15 +121,17 @@ int roc_receiver_read(roc_receiver* receiver, roc_frame* frame) {
         return -1;
     }
 
-    if (frame->num_samples == 0) {
+    if (frame->samples_size == 0) {
         return 0;
     }
 
-    if (frame->num_samples % receiver->num_channels != 0) {
+    const size_t step = receiver->num_channels * sizeof(float);
+
+    if (frame->samples_size % step != 0) {
         roc_log(LogError,
-                "roc_sender_write: invalid arguments: # of samples should be "
-                "multiple of # of channels: num_samples=%lu num_channels=%lu",
-                (unsigned long)frame->num_samples, (unsigned long)receiver->num_channels);
+                "roc_receiver_read: invalid arguments: # of samples should be "
+                "multiple of # of %u",
+                (unsigned)step);
         return -1;
     }
 
@@ -138,7 +140,7 @@ int roc_receiver_read(roc_receiver* receiver, roc_frame* frame) {
         return -1;
     }
 
-    audio::Frame audio_frame(frame->samples, frame->num_samples);
+    audio::Frame audio_frame((float*)frame->samples, frame->samples_size / sizeof(float));
     receiver->receiver.read(audio_frame);
 
     return 0;

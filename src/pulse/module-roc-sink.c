@@ -95,8 +95,8 @@ static void process_samples(struct roc_sink_userdata* u, uint64_t expected_bytes
         roc_frame frame;
         memset(&frame, 0, sizeof(frame));
 
-        frame.samples = (float*)(buf + chunk.index);
-        frame.num_samples = chunk.length / pa_sample_size(&u->sink->sample_spec);
+        frame.samples = buf + chunk.index;
+        frame.samples_size = chunk.length;
 
         /* write samples from memblock to roc transmitter */
         if (roc_sender_write(u->sender, &frame) != 0) {
