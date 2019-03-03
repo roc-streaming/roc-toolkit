@@ -107,6 +107,7 @@ html_sidebars = {
 
 html_context = {
     'css_files': ['_static/roc.css'],
+    'script_files': ['/analytics.js'],
 }
 
 # The name of an image file (relative to this directory) to place at the top
