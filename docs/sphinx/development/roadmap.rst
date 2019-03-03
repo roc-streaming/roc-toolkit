@@ -18,17 +18,18 @@ Advanced features
 
 - ☐ Dynamic payload type (requires session negotiation)
 - ☐ Dynamic latency adjustment (requires RTCP)
-- ☐ Dynamic adjustment of FEC block size
+- ☐ Dynamic adjustment of FEC block size (requires RTCP)
 - ☐ Dynamic adjustment of FEC code rate (requires RTCP and XRs from `RFC 5725 <https://tools.ietf.org/html/rfc5725>`_)
+- ☐ Congestion control
+- ☐ Retransmission (probably `RFC 4588 <https://tools.ietf.org/html/rfc4588>`_ and `RFC 4585 <https://tools.ietf.org/html/rfc4585>`_)
+- ☐ More FEC codes (notably `RaptorQ <https://tools.ietf.org/html/rfc6330>`_, see `OpenRQ <https://github.com/openrq-team/OpenRQ>`_ and `orq <https://github.com/olanmatt/orq>`_)
 - ☐ QoS support
 - ☐ Compression (lossless and lossy, at least `Opus <https://www.opus-codec.org/>`_)
 - ☐ Encryption (likely SRTP)
-- ☐ Congestion control
 - ☐ Surround sound
-- ☐ Other FEC codes (notably `RaptorQ <https://tools.ietf.org/html/rfc6330>`_, see `OpenRQ <https://github.com/openrq-team/OpenRQ>`_ and `orq <https://github.com/olanmatt/orq>`_)
-- ☐ Retransmission (probably `RFC 4588 <https://tools.ietf.org/html/rfc4588>`_ and `RFC 4585 <https://tools.ietf.org/html/rfc4585>`_)
-- ☐ OpenMAX support (for hardware acceleration)
+- ☐ Multi-room support (requires some research)
 - ☐ Video support (requires some research)
+- ☐ Hardware acceleration (maybe OpenMAX)
 
 Portability
 ===========
@@ -62,4 +63,5 @@ PulseAudio
 Bindings
 ========
 
-- ☐ Go
+- ☐ Bindings for other languages (maybe)
+- ☐ GStreamer modules (maybe)
