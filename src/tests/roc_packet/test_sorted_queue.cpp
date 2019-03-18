@@ -137,6 +137,44 @@ TEST(sorted_queue, out_of_order) {
     CHECK(!queue.read());
 }
 
+TEST(sorted_queue, out_of_order_many_packets) {
+    enum { NumPackets = 20 };
+
+    SortedQueue queue(0);
+
+    for (packet::seqnum_t n = 0; n < 7; ++n) {
+        queue.write(new_packet(n));
+    }
+
+    for (packet::seqnum_t n = 11; n < NumPackets; ++n) {
+        queue.write(new_packet(n));
+    }
+
+    for (packet::seqnum_t n = 0; n < 7; ++n) {
+        const packet::PacketPtr p = queue.read();
+
+        CHECK(p);
+        CHECK(p->rtp()->seqnum == n);
+    }
+
+    queue.write(new_packet(9));
+    queue.write(new_packet(10));
+
+    for (packet::seqnum_t n = 9; n < NumPackets; ++n) {
+        const packet::PacketPtr p = queue.read();
+
+        CHECK(p->rtp()->seqnum == n);
+
+        if (n == 10) {
+            queue.write(new_packet(8));
+            queue.write(new_packet(7));
+
+            CHECK(queue.read()->rtp()->seqnum == 7);
+            CHECK(queue.read()->rtp()->seqnum == 8);
+        }
+    }
+}
+
 TEST(sorted_queue, one_duplicate) {
     SortedQueue queue(0);
 
