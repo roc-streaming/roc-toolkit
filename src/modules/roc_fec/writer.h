@@ -69,7 +69,7 @@ private:
     packet::PacketPtr make_repair_packet_(packet::seqnum_t n);
     void fill_packet_fec_fields_(const packet::PacketPtr& packet, packet::seqnum_t n);
     void fill_packet_rtp_fields_(const packet::PacketPtr& packet,
-                                 packet::seqnum_t sn, bool marker);
+                                 packet::seqnum_t sn);
 
     IEncoder& encoder_;
     packet::IWriter& writer_;

@@ -303,6 +303,52 @@ TEST(writer_reader, 1_loss) {
     }
 }
 
+TEST(writer_reader, lost_first_packet_in_first_block) {
+    OFEncoder encoder(config, FECPayloadSize, allocator);
+    OFDecoder decoder(config, FECPayloadSize, buffer_pool, allocator);
+
+    CHECK(encoder.valid());
+    CHECK(decoder.valid());
+
+    PacketDispatcher dispatcher;
+
+    Writer writer(config, FECPayloadSize, encoder, dispatcher, source_composer,
+                  repair_composer, packet_pool, buffer_pool, allocator);
+
+    Reader reader(config, decoder, dispatcher.source_reader(), dispatcher.repair_reader(),
+                  rtp_parser, packet_pool, allocator);
+
+    CHECK(writer.valid());
+    CHECK(reader.valid());
+
+    // Sending first block except first packet.
+    fill_all_packets(0);
+    dispatcher.lose(0);
+    for (size_t i = 0; i < NumSourcePackets; ++i) {
+        writer.write(source_packets[i]);
+    }
+
+    // Sending second block lossless.
+    dispatcher.clear_losses();
+    fill_all_packets(NumSourcePackets);
+    for (size_t i = 0; i < NumSourcePackets; ++i) {
+        writer.write(source_packets[i]);
+    }
+    dispatcher.release_all();
+
+    // Receive every sent packet and the repaired one.
+    for (size_t i = 1; i < NumSourcePackets * 2; ++i) {
+        packet::PacketPtr p = reader.read();
+        if (i < NumSourcePackets) {
+            CHECK(!reader.started());
+        } else {
+            CHECK(reader.started());
+        }
+        check_audio_packet(p, i);
+    }
+    CHECK(dispatcher.source_size() == 0);
+}
+
 TEST(writer_reader, multiblocks_1_loss) {
     enum { NumBlocks = 40 };
 
@@ -499,58 +545,6 @@ IGNORE_TEST(writer_reader, decoding_late_packet) {
         }
     }
     LONGS_EQUAL(0, dispatcher.source_size());
-}
-
-TEST(writer_reader, get_packets_before_marker_bit) {
-    // 1. Fill second half of block and whole block with one loss after, so that there
-    //    is 10-19 and 20-39 seqnums in packet queue.
-    // 2. Check that we've got every packet including lost one.
-
-    OFEncoder encoder(config, FECPayloadSize, allocator);
-    OFDecoder decoder(config, FECPayloadSize, buffer_pool, allocator);
-
-    CHECK(encoder.valid());
-    CHECK(decoder.valid());
-
-    PacketDispatcher dispatcher;
-
-    Writer writer(config, FECPayloadSize, encoder, dispatcher, source_composer,
-                  repair_composer, packet_pool, buffer_pool, allocator);
-
-    Reader reader(config, decoder, dispatcher.source_reader(), dispatcher.repair_reader(),
-                  rtp_parser, packet_pool, allocator);
-
-    CHECK(writer.valid());
-    CHECK(reader.valid());
-
-    // Sending first block except first packet with marker bit.
-    fill_all_packets(0);
-    dispatcher.lose(0);
-    for (size_t i = 0; i < NumSourcePackets; ++i) {
-        writer.write(source_packets[i]);
-    }
-
-    // Sending second block with start packet with marker bit.
-    dispatcher.clear_losses();
-    fill_all_packets(NumSourcePackets);
-    // Lose one packe just to check if FEC is working correctly from the first block.
-    dispatcher.lose(3);
-    for (size_t i = 0; i < NumSourcePackets; ++i) {
-        writer.write(source_packets[i]);
-    }
-    dispatcher.release_all();
-
-    // Receive every sent packet and the repaired one.
-    for (size_t i = 1; i < NumSourcePackets * 2; ++i) {
-        packet::PacketPtr p = reader.read();
-        if (i < NumSourcePackets) {
-            CHECK(!reader.started());
-        } else {
-            CHECK(reader.started());
-        }
-        check_audio_packet(p, i);
-    }
-    CHECK(dispatcher.source_size() == 0);
 }
 
 TEST(writer_reader, encode_packet_fields) {
