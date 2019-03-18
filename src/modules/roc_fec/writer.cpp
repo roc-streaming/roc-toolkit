@@ -148,20 +148,18 @@ packet::PacketPtr Writer::make_repair_packet_(packet::seqnum_t pack_n) {
 
     packet->set_data(data);
 
-    fill_packet_rtp_fields_(packet, cur_block_repair_sn_ + pack_n, (pack_n == 0));
+    fill_packet_rtp_fields_(packet, cur_block_repair_sn_ + pack_n);
     fill_packet_fec_fields_(packet, (packet::seqnum_t)n_source_packets_ + pack_n);
 
     return packet;
 }
 
 void Writer::fill_packet_rtp_fields_(const packet::PacketPtr& packet,
-                                     packet::seqnum_t sn, bool marker) {
+                                     packet::seqnum_t sn) {
     packet::RTP& rtp = *packet->rtp();
 
     rtp.source = source_;
     rtp.seqnum = sn;
-    rtp.marker = marker;
-    rtp.payload_type = 123;
 }
 
 void Writer::fill_packet_fec_fields_(const packet::PacketPtr& packet,
