@@ -40,12 +40,14 @@ public:
     }
 
     void encode() {
+        CHECK(encoder_.begin(NumSourcePackets, NumRepairPackets));
+
         for (size_t i = 0; i < NumSourcePackets + NumRepairPackets; ++i) {
             buffers_[i] = make_buffer_();
             encoder_.set(i, buffers_[i]);
         }
-        encoder_.commit();
-        encoder_.reset();
+        encoder_.fill();
+        encoder_.end();
     }
 
     bool decode() {
@@ -105,11 +107,16 @@ TEST(encoder_decoder, without_loss) {
         config.codec = (CodecType)type;
         Codec code(config);
         code.encode();
+
         // Sending all packets in block without loss.
+        CHECK(code.decoder().begin(NumSourcePackets, NumRepairPackets));
+
         for (size_t i = 0; i < NumSourcePackets + NumRepairPackets; ++i) {
             code.decoder().set(i, code.get_buffer(i));
         }
         CHECK(code.decode());
+
+        code.decoder().end();
     }
 }
 
@@ -118,7 +125,10 @@ TEST(encoder_decoder, loss_1) {
         config.codec = (CodecType)type;
         Codec code(config);
         code.encode();
+
         // Sending all packets in block with one loss.
+        CHECK(code.decoder().begin(NumSourcePackets, NumRepairPackets));
+
         for (size_t i = 0; i < NumSourcePackets + NumRepairPackets; ++i) {
             if (i == 5) {
                 continue;
@@ -126,6 +136,8 @@ TEST(encoder_decoder, loss_1) {
             code.decoder().set(i, code.get_buffer(i));
         }
         CHECK(code.decode());
+
+        code.decoder().end();
     }
 }
 
@@ -142,6 +154,9 @@ TEST(encoder_decoder, load_test) {
 
         for (size_t test_num = 0; test_num < NumIterations; ++test_num) {
             code.encode();
+
+            CHECK(code.decoder().begin(NumSourcePackets, NumRepairPackets));
+
             size_t curr_loss = 0;
             for (size_t i = 0; i < NumSourcePackets + NumRepairPackets; ++i) {
                 if (core::random(100) < LossPercent && curr_loss <= MaxLoss) {
@@ -155,7 +170,8 @@ TEST(encoder_decoder, load_test) {
             if (!code.decode()) {
                 total_fails++;
             }
-            code.decoder().reset();
+
+            code.decoder().end();
         }
 
         roc_log(LogInfo, "max losses in block: %u", (uint32_t)max_loss);

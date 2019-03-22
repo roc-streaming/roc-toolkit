@@ -23,14 +23,25 @@ class IDecoder {
 public:
     virtual ~IDecoder();
 
+    //! Start block.
+    //!
+    //! @remarks
+    //!  Performs an initial setup for a block. Should be called before
+    //!  any operations for the block.
+    virtual bool begin(size_t sblen, size_t rblen) = 0;
+
     //! Store source or repair packet buffer for current block.
     virtual void set(size_t index, const core::Slice<uint8_t>& buffer) = 0;
 
     //! Repair source packet buffer.
     virtual core::Slice<uint8_t> repair(size_t index) = 0;
 
-    //! Reset current block.
-    virtual void reset() = 0;
+    //! Finish block.
+    //!
+    //! @remarks
+    //!  Cleanups the resources allocated for the block. Should be called after
+    //!  all operations for the block.
+    virtual void end() = 0;
 };
 
 } // namespace fec
