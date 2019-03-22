@@ -50,16 +50,32 @@ public:
     //! Check if object is successfully constructed.
     bool valid() const;
 
+    //! Start block.
+    //!
+    //! @remarks
+    //!  Performs an initial setup for a block. Should be called before
+    //!  any operations for the block.
+    virtual bool begin(size_t sblen, size_t rblen);
+
     //! Store source or repair packet buffer for current block.
     virtual void set(size_t index, const core::Slice<uint8_t>& buffer);
 
     //! Repair source packet buffer.
     virtual core::Slice<uint8_t> repair(size_t index);
 
-    //! Reset current block.
-    virtual void reset();
+    //! Finish block.
+    //!
+    //! @remarks
+    //!  Cleanups the resources allocated for the block. Should be called after
+    //!  all operations for the block.
+    virtual void end();
 
 private:
+    void update_session_params_(size_t sblen, size_t rblen);
+
+    void reset_tabs_();
+    bool resize_tabs_(size_t size);
+
     void update_();
     void decode_();
 
@@ -77,8 +93,8 @@ private:
     static void* source_cb_(void* context, uint32_t size, uint32_t index);
     static void* repair_cb_(void* context, uint32_t size, uint32_t index);
 
-    const size_t blk_source_packets_;
-    const size_t blk_repair_packets_;
+    size_t sblen_;
+    size_t rblen_;
     const size_t payload_size_;
 
     of_codec_id_t codec_id_;

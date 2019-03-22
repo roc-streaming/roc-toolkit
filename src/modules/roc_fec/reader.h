@@ -63,7 +63,10 @@ public:
 
 private:
     packet::PacketPtr read_();
+    packet::PacketPtr read_first_packet_();
     packet::PacketPtr get_next_packet_();
+
+    bool update_size_(size_t);
 
     void next_block_();
     void try_repair_();

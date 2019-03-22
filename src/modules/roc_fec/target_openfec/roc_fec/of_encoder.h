@@ -52,20 +52,35 @@ public:
     //! Get buffer alignment requirement.
     virtual size_t alignment() const;
 
+    //! Start block.
+    //!
+    //! @remarks
+    //!  Performs an initial setup for a block. Should be called before
+    //!  any operations for the block.
+    virtual bool begin(size_t sblen, size_t rblen);
+
     //! Store packet data for current block.
     virtual void set(size_t index, const core::Slice<uint8_t>& buffer);
 
     //! Fill repair packets.
-    virtual void commit();
+    virtual void fill();
 
-    //! Reset current block.
-    virtual void reset();
+    //! Finish block.
+    //!
+    //! @remarks
+    //!  Cleanups the resources allocated for the block. Should be called after
+    //!  all operations for the block.
+    virtual void end();
 
 private:
+    bool resize_tabs_(size_t size);
+    void reset_session_();
+    void update_session_params_(size_t sblen, size_t rblen);
+
     enum { Alignment = 8 };
 
-    const size_t blk_source_packets_;
-    const size_t blk_repair_packets_;
+    size_t sblen_;
+    size_t rblen_;
 
     of_session_t* of_sess_;
     of_parameters_t* of_sess_params_;

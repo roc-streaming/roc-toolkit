@@ -785,8 +785,8 @@ TEST(writer_reader, drop_outdated_block) {
     Writer writer(config, FECPayloadSize, encoder, dispatcher, source_composer,
                   repair_composer, packet_pool, buffer_pool, allocator);
 
-    Reader reader(config, decoder, dispatcher.source_reader(),
-                  dispatcher.repair_reader(), rtp_parser, packet_pool, allocator);
+    Reader reader(config, decoder, dispatcher.source_reader(), dispatcher.repair_reader(),
+                  rtp_parser, packet_pool, allocator);
 
     CHECK(writer.valid());
     CHECK(reader.valid());
@@ -845,8 +845,8 @@ TEST(writer_reader, repaired_block_numbering) {
     Writer writer(config, FECPayloadSize, encoder, dispatcher, source_composer,
                   repair_composer, packet_pool, buffer_pool, allocator);
 
-    Reader reader(config, decoder, dispatcher.source_reader(),
-                  dispatcher.repair_reader(), rtp_parser, packet_pool, allocator);
+    Reader reader(config, decoder, dispatcher.source_reader(), dispatcher.repair_reader(),
+                  rtp_parser, packet_pool, allocator);
 
     CHECK(writer.valid());
     CHECK(reader.valid());
@@ -895,6 +895,151 @@ TEST(writer_reader, repaired_block_numbering) {
         CHECK(p);
 
         CHECK(p->fec()->source_block_number == sbn + 1);
+    }
+}
+
+TEST(writer_reader, resize_source_block_begin) {
+    OFEncoder encoder(config, FECPayloadSize, allocator);
+    OFDecoder decoder(config, FECPayloadSize, buffer_pool, allocator);
+
+    CHECK(decoder.valid());
+    CHECK(encoder.valid());
+
+    PacketDispatcher dispatcher;
+
+    Writer writer(config, FECPayloadSize, encoder, dispatcher, source_composer,
+                  repair_composer, packet_pool, buffer_pool, allocator);
+    Reader reader(config, decoder, dispatcher.source_reader(), dispatcher.repair_reader(),
+                  rtp_parser, packet_pool, allocator);
+
+    CHECK(reader.valid());
+    CHECK(writer.valid());
+
+    const size_t block_sizes[] = { 15, 25, 35, 43, 33, 23, 13 };
+
+    packet::seqnum_t pack_n = 0;
+
+    for (size_t n = 0; n < ROC_ARRAY_SIZE(block_sizes); ++n) {
+        writer.resize(block_sizes[n]);
+
+        core::Array<packet::PacketPtr> packets(allocator);
+        packets.resize(block_sizes[n]);
+
+        for (size_t i = 0; i < block_sizes[n]; ++i) {
+            packets[i] = fill_one_packet(pack_n);
+            pack_n++;
+        }
+        for (size_t i = 0; i < block_sizes[n]; ++i) {
+            writer.write(packets[i]);
+        }
+
+        dispatcher.release_all();
+
+        for (size_t i = 0; i < block_sizes[n]; ++i) {
+            const packet::PacketPtr p = reader.read();
+
+            CHECK(p);
+            CHECK(p->fec());
+            CHECK(p->fec()->source_block_length == block_sizes[n]);
+        }
+    }
+}
+
+TEST(writer_reader, resize_source_block_middle) {
+    OFEncoder encoder(config, FECPayloadSize, allocator);
+    OFDecoder decoder(config, FECPayloadSize, buffer_pool, allocator);
+
+    CHECK(decoder.valid());
+    CHECK(encoder.valid());
+
+    PacketDispatcher dispatcher;
+
+    Writer writer(config, FECPayloadSize, encoder, dispatcher, source_composer,
+                  repair_composer, packet_pool, buffer_pool, allocator);
+    Reader reader(config, decoder, dispatcher.source_reader(), dispatcher.repair_reader(),
+                  rtp_parser, packet_pool, allocator);
+
+    CHECK(reader.valid());
+    CHECK(writer.valid());
+
+    const size_t block_sizes[] = { 15, 25, 35, 43, 33, 23, 13 };
+
+    packet::seqnum_t pack_n = 0;
+    size_t prev_sblen = NumSourcePackets;
+
+    for (size_t n = 0; n < ROC_ARRAY_SIZE(block_sizes); ++n) {
+        core::Array<packet::PacketPtr> packets(allocator);
+        packets.resize(prev_sblen);
+
+        for (size_t i = 0; i < prev_sblen; ++i) {
+            packets[i] = fill_one_packet(pack_n);
+            pack_n++;
+        }
+
+        // Write first half of the packets.
+        for (size_t i = 0; i < prev_sblen / 2; ++i) {
+            writer.write(packets[i]);
+        }
+
+        // Update source block size.
+        writer.resize(block_sizes[n]);
+
+        // Write the remaining packets.
+        for (size_t i = prev_sblen / 2; i < prev_sblen; ++i) {
+            writer.write(packets[i]);
+        }
+
+        dispatcher.release_all();
+
+        for (size_t i = 0; i < prev_sblen; ++i) {
+            const packet::PacketPtr p = reader.read();
+
+            CHECK(p);
+            CHECK(p->fec());
+            CHECK(p->fec()->source_block_length == prev_sblen);
+        }
+
+        prev_sblen = block_sizes[n];
+    }
+}
+
+TEST(writer_reader, writer_resize_block) {
+    OFEncoder encoder(config, FECPayloadSize, allocator);
+    OFDecoder decoder(config, FECPayloadSize, buffer_pool, allocator);
+
+    CHECK(decoder.valid());
+    CHECK(encoder.valid());
+
+    PacketDispatcher dispatcher;
+
+    Writer writer(config, FECPayloadSize, encoder, dispatcher, source_composer,
+                  repair_composer, packet_pool, buffer_pool, allocator);
+
+    CHECK(writer.valid());
+
+    const size_t block_sizes[] = { 15, 25, 35, 43, 33, 23, 13 };
+
+    packet::seqnum_t pack_n = 0;
+
+    for (size_t n = 0; n < ROC_ARRAY_SIZE(block_sizes); ++n) {
+        writer.resize(block_sizes[n]);
+
+        core::Array<packet::PacketPtr> packets(allocator);
+        packets.resize(block_sizes[n]);
+
+        for (size_t i = 0; i < block_sizes[n]; ++i) {
+            packets[i] = fill_one_packet(pack_n);
+            pack_n++;
+        }
+        for (size_t i = 0; i < block_sizes[n]; ++i) {
+            writer.write(packets[i]);
+        }
+
+        CHECK(dispatcher.source_size() == block_sizes[n]);
+        CHECK(dispatcher.repair_size() == NumRepairPackets);
+
+        dispatcher.release_all();
+        dispatcher.reset();
     }
 }
 

@@ -38,9 +38,6 @@ Reader::Reader(const Config& config,
     , has_source_(false)
     , source_(0)
     , n_packets_(0) {
-    if (!source_block_.resize(config.n_source_packets)) {
-        return;
-    }
     if (!repair_block_.resize(config.n_repair_packets)) {
         return;
     }
@@ -76,30 +73,69 @@ packet::PacketPtr Reader::read_() {
     fetch_packets_();
 
     if (!started_) {
-        packet::PacketPtr pp = source_queue_.head();
-        if (pp) {
-            if (!has_source_) {
-                source_ = pp->rtp()->source;
-                has_source_ = true;
-            }
-            cur_sbn_ = pp->fec()->source_block_number;
-            drop_repair_packets_from_prev_blocks_();
-        }
-
+        packet::PacketPtr pp = read_first_packet_();
         if (!pp || pp->fec()->encoding_symbol_id > 0) {
             return source_queue_.read();
         }
 
-        roc_log(LogDebug, "fec reader: got first packet in a block, start decoding:"
-                          " n_packets_before=%u sn=%lu sbn=%lu",
-                          n_packets_,
-                          (unsigned long)pp->rtp()->seqnum,
-                          (unsigned long)cur_sbn_);
+        roc_log(LogDebug,
+                "fec reader: got first packet in a block, start decoding:"
+                " n_packets_before=%u sn=%lu sbn=%lu",
+                n_packets_, (unsigned long)pp->rtp()->seqnum, (unsigned long)cur_sbn_);
 
         started_ = true;
     }
 
     return get_next_packet_();
+}
+
+packet::PacketPtr Reader::read_first_packet_() {
+    packet::PacketPtr pp = source_queue_.head();
+    if (pp) {
+        if (!has_source_) {
+            source_ = pp->rtp()->source;
+            has_source_ = true;
+        }
+
+        cur_sbn_ = pp->fec()->source_block_number;
+        if (!update_size_(pp->fec()->source_block_length)) {
+            return NULL;
+        }
+
+        drop_repair_packets_from_prev_blocks_();
+    }
+
+    return pp;
+}
+
+bool Reader::update_size_(size_t new_sblen) {
+    const size_t cur_sblen = source_block_.size();
+    if (cur_sblen == new_sblen) {
+        return true;
+    }
+
+    if (next_packet_ != 0) {
+        roc_log(LogDebug,
+                "fec reader: can't update source block size in the middle"
+                " of the current block, shutting down:"
+                " esi=%lu cur_sbl=%lu new_sbl=%lu",
+                (unsigned long)next_packet_, (unsigned long)cur_sblen,
+                (unsigned long)new_sblen);
+        return (alive_ = false);
+    }
+
+    if (!source_block_.resize(new_sblen)) {
+        roc_log(LogDebug,
+                "fec reader: can't resize source block, shutting down:"
+                " cur_sbl=%lu new_sbl=%lu",
+                (unsigned long)cur_sblen, (unsigned long)new_sblen);
+        return (alive_ = false);
+    }
+
+    roc_log(LogDebug, "fec reader: update sblen, cur_sbl=%lu new_sbl=%lu",
+            (unsigned long)cur_sblen, (unsigned long)new_sblen);
+
+    return true;
 }
 
 packet::PacketPtr Reader::get_next_packet_() {
@@ -162,6 +198,15 @@ void Reader::try_repair_() {
         return;
     }
 
+    if (!decoder_.begin(source_block_.size(), repair_block_.size())) {
+        roc_log(LogDebug,
+                "fec reader: can't begin decoder block, shutting down:"
+                " sbl=%lu rbl=%lu",
+                (unsigned long)source_block_.size(), (unsigned long)repair_block_.size());
+        alive_ = false;
+        return;
+    }
+
     for (size_t n = 0; n < source_block_.size(); n++) {
         if (!source_block_[n]) {
             continue;
@@ -207,7 +252,7 @@ void Reader::try_repair_() {
         source_block_[n] = pp;
     }
 
-    decoder_.reset();
+    decoder_.end();
     can_repair_ = false;
 }
 
@@ -288,16 +333,20 @@ void Reader::update_source_packets_() {
         n_fetched++;
 
         if (packet::blknum_lt(fec->source_block_number, cur_sbn_)) {
-            roc_log(LogTrace, "fec reader: dropping source packet from previous block:"
-                              " cur_sbn=%lu pkt_sbn=%lu pkt_sn=%lu",
-                              (unsigned long)cur_sbn_,
-                              (unsigned long)fec->source_block_number,
-                              (unsigned long)rtp->seqnum);
+            roc_log(LogTrace,
+                    "fec reader: dropping source packet from previous block:"
+                    " cur_sbn=%lu pkt_sbn=%lu pkt_sn=%lu",
+                    (unsigned long)cur_sbn_, (unsigned long)fec->source_block_number,
+                    (unsigned long)rtp->seqnum);
             n_dropped++;
             continue;
         }
 
         roc_panic_if(fec->source_block_number != cur_sbn_);
+        if (!update_size_(fec->source_block_length)) {
+            return;
+        }
+
         const size_t p_num = fec->encoding_symbol_id;
 
         if (!source_block_[p_num]) {
@@ -335,10 +384,10 @@ void Reader::update_repair_packets_() {
         n_fetched++;
 
         if (packet::blknum_lt(fec->source_block_number, cur_sbn_)) {
-            roc_log(LogTrace, "fec reader: dropping repair packet from previous block:"
-                              " cur_sbn=%lu pkt_sbn=%lu",
-                              (unsigned long)cur_sbn_,
-                              (unsigned long)fec->source_block_number);
+            roc_log(LogTrace,
+                    "fec reader: dropping repair packet from previous block:"
+                    " cur_sbn=%lu pkt_sbn=%lu",
+                    (unsigned long)cur_sbn_, (unsigned long)fec->source_block_number);
             n_dropped++;
             continue;
         }
@@ -380,9 +429,8 @@ void Reader::drop_repair_packets_from_prev_blocks_() {
 
         roc_log(LogTrace,
                 "fec reader: dropping repair packet from previous blocks,"
-                          " decoding not started: cur_sbn=%lu pkt_sbn=%lu",
-                          (unsigned long)cur_sbn_,
-                          (unsigned long)fec->source_block_number);
+                " decoding not started: cur_sbn=%lu pkt_sbn=%lu",
+                (unsigned long)cur_sbn_, (unsigned long)fec->source_block_number);
 
         repair_queue_.read();
         n_dropped++;
