@@ -54,6 +54,9 @@ public:
     //! Check if object is successfully constructed.
     bool valid() const;
 
+    //! Set number of source packets per block.
+    void resize(size_t sblen);
+
     //! Write packet.
     //! @remarks
     //!  - writes the given source packet to the output writer
@@ -61,15 +64,21 @@ public:
     virtual void write(const packet::PacketPtr&);
 
 private:
-    const size_t n_source_packets_;
-    const size_t n_repair_packets_;
+    size_t cur_sblen_;
+    size_t next_sblen_;
+    const size_t cur_rblen_;
     const size_t payload_size_;
 
-    void handle_next_block_();
+    bool begin_block_();
+    void end_block_();
+    void next_block_();
+
+    void write_source_packet_(const packet::PacketPtr&);
+    void make_repair_packets_();
     packet::PacketPtr make_repair_packet_(packet::seqnum_t n);
+    void encode_repair_packets_();
+    void write_repair_packets_();
     void fill_packet_fec_fields_(const packet::PacketPtr& packet, packet::seqnum_t n);
-    void fill_packet_rtp_fields_(const packet::PacketPtr& packet,
-                                 packet::seqnum_t sn);
 
     IEncoder& encoder_;
     packet::IWriter& writer_;

@@ -23,8 +23,8 @@ OFDecoder::OFDecoder(const Config& config,
                      size_t payload_size,
                      core::BufferPool<uint8_t>& buffer_pool,
                      core::IAllocator& allocator)
-    : blk_source_packets_(config.n_source_packets)
-    , blk_repair_packets_(config.n_repair_packets)
+    : sblen_(0)
+    , rblen_(0)
     , payload_size_(payload_size)
     , of_sess_(NULL)
     , of_sess_params_(NULL)
@@ -36,19 +36,6 @@ OFDecoder::OFDecoder(const Config& config,
     , has_new_packets_(false)
     , decoding_finished_(false)
     , valid_(false) {
-    if (!buff_tab_.resize(blk_source_packets_ + blk_repair_packets_)) {
-        return;
-    }
-    if (!data_tab_.resize(blk_source_packets_ + blk_repair_packets_)) {
-        return;
-    }
-    if (!recv_tab_.resize(blk_source_packets_ + blk_repair_packets_)) {
-        return;
-    }
-    if (!status_.resize(blk_source_packets_ + blk_repair_packets_ + 2)) {
-        return;
-    }
-
     if (config.codec == ReedSolomon8m) {
         roc_log(LogDebug, "of decoder: initializing Reed-Solomon decoder");
 
@@ -68,12 +55,8 @@ OFDecoder::OFDecoder(const Config& config,
         roc_panic("of decoder: invalid codec");
     }
 
-    of_sess_params_->nb_source_symbols = (uint32_t)blk_source_packets_;
-    of_sess_params_->nb_repair_symbols = (uint32_t)blk_repair_packets_;
     of_sess_params_->encoding_symbol_length = (uint32_t)payload_size_;
     of_verbosity = 0;
-
-    OFDecoder::reset(); // non-virtual call from ctor
 
     valid_ = true;
 }
@@ -88,13 +71,28 @@ bool OFDecoder::valid() const {
     return valid_;
 }
 
+bool OFDecoder::begin(size_t sblen, size_t rblen) {
+    roc_panic_if_not(valid());
+
+    if (!resize_tabs_(sblen + rblen)) {
+        return false;
+    }
+
+    sblen_ = sblen;
+    rblen_ = rblen;
+
+    update_session_params_(sblen, rblen);
+    reset_session_();
+
+    return true;
+}
+
 void OFDecoder::set(size_t index, const core::Slice<uint8_t>& buffer) {
     roc_panic_if_not(valid());
 
-    if (index >= blk_source_packets_ + blk_repair_packets_) {
+    if (index >= sblen_ + rblen_) {
         roc_panic("of decoder: index out of bounds: index=%lu, size=%lu",
-                  (unsigned long)index,
-                  (unsigned long)(blk_source_packets_ + blk_repair_packets_));
+                  (unsigned long)index, (unsigned long)(sblen_ + rblen_));
     }
 
     if (!buffer) {
@@ -134,22 +132,46 @@ core::Slice<uint8_t> OFDecoder::repair(size_t index) {
     return buff_tab_[index];
 }
 
-void OFDecoder::reset() {
+void OFDecoder::end() {
     if (of_sess_ != NULL) {
         report_();
         destroy_session_();
     }
 
-    reset_session_();
+    reset_tabs_();
 
     has_new_packets_ = false;
     decoding_finished_ = false;
+}
 
+void OFDecoder::update_session_params_(size_t sblen, size_t rblen) {
+    of_sess_params_->nb_source_symbols = (uint32_t)sblen;
+    of_sess_params_->nb_repair_symbols = (uint32_t)rblen;
+}
+
+void OFDecoder::reset_tabs_() {
     for (size_t i = 0; i < buff_tab_.size(); ++i) {
         buff_tab_[i] = core::Slice<uint8_t>();
         data_tab_[i] = NULL;
         recv_tab_[i] = false;
     }
+}
+
+bool OFDecoder::resize_tabs_(size_t size) {
+    if (!buff_tab_.resize(size)) {
+        return false;
+    }
+    if (!data_tab_.resize(size)) {
+        return false;
+    }
+    if (!recv_tab_.resize(size)) {
+        return false;
+    }
+    if (!status_.resize(size + 2)) {
+        return false;
+    }
+
+    return true;
 }
 
 void OFDecoder::update_() {
@@ -171,12 +193,12 @@ void OFDecoder::decode_() {
         return;
     }
 
-    if (!has_n_packets_(blk_source_packets_)) {
+    if (!has_n_packets_(sblen_)) {
         return;
     }
 
     if (decoding_finished_) {
-        // it's not allowed to decode twice, so we recrate the session
+        // it's not allowed to decode twice, so we recreate the session
         reset_session_();
 
         if (of_set_available_symbols(of_sess_, &data_tab_[0]) != OF_STATUS_OK) {
@@ -232,11 +254,11 @@ void OFDecoder::reset_session_() {
 
     if (OF_STATUS_OK
         != of_set_callback_functions(
-               of_sess_, source_cb_,
-               // OpenFEC doesn't repair fec-packets in case of Reed-Solomon FEC
-               // and prints curses to the console if we give it the callback for that
-               codec_id_ == OF_CODEC_REED_SOLOMON_GF_2_M_STABLE ? NULL : repair_cb_,
-               (void*)this)) {
+            of_sess_, source_cb_,
+            // OpenFEC doesn't repair fec-packets in case of Reed-Solomon FEC
+            // and prints curses to the console if we give it the callback for that
+            codec_id_ == OF_CODEC_REED_SOLOMON_GF_2_M_STABLE ? NULL : repair_cb_,
+            (void*)this)) {
         roc_panic("of decoder: of_set_callback_functions() failed");
     }
 }
@@ -247,7 +269,7 @@ void OFDecoder::destroy_session_() {
 
     // OpenFEC may allocate memory without calling source_cb_()
     // we should free() such memory manually
-    for (size_t i = 0; i < blk_source_packets_; i++) {
+    for (size_t i = 0; i < sblen_; i++) {
         if (data_tab_[i] == NULL) {
             continue;
         }
@@ -262,10 +284,10 @@ void OFDecoder::destroy_session_() {
 void OFDecoder::report_() {
     size_t n_lost = 0, n_repaired = 0;
 
-    status_[blk_source_packets_] = ' ';
+    status_[sblen_] = ' ';
 
     for (size_t i = 0; i < buff_tab_.size(); ++i) {
-        char* status = (i < blk_source_packets_ ? &status_[i] : &status_[i + 1]);
+        char* status = (i < sblen_ ? &status_[i] : &status_[i + 1]);
 
         if (buff_tab_[i] || data_tab_[i]) {
             if (recv_tab_[i]) {
@@ -276,7 +298,7 @@ void OFDecoder::report_() {
                 n_lost++;
             }
         } else {
-            if (i < blk_source_packets_) {
+            if (i < sblen_) {
                 *status = 'X';
             } else {
                 *status = 'x';
