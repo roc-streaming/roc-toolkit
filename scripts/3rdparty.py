@@ -327,12 +327,16 @@ elif name == 'json':
     extract('json-%s.tar.gz' % ver,
             'json-c-json-c-%s' % ver)
     os.chdir('json-c-json-c-%s' % ver)
-    execute('%s ./configure --host=%s %s %s' % (
-        ' '.join([
+    execute('%s --host=%s %s %s' % (
+        ' '.join(filter(None, [
+            # workaround for outdated config.sub
+            'ac_cv_host=%s' % toolchain if toolchain else '',
             # disable rpl_malloc and rpl_realloc
             'ac_cv_func_malloc_0_nonnull=yes',
             'ac_cv_func_realloc_0_nonnull=yes',
-        ]),
+            # configure
+            './configure',
+        ])),
         toolchain,
         makeflags(workdir, toolchain, [], cflags='-w -fPIC -fvisibility=hidden'),
         ' '.join([
@@ -352,7 +356,13 @@ elif name == 'sndfile':
     extract('libsndfile-%s.tar.gz' % ver,
             'libsndfile-%s' % ver)
     os.chdir('libsndfile-%s' % ver)
-    execute('./configure --host=%s %s %s' % (
+    execute('%s --host=%s %s %s' % (
+        ' '.join(filter(None, [
+            # workaround for outdated config.sub
+            'ac_cv_host=%s' % toolchain if toolchain else '',
+            # configure
+            './configure',
+        ])),
         toolchain,
         makeflags(workdir, toolchain, [], cflags='-fPIC -fvisibility=hidden'),
         ' '.join([

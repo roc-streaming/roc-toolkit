@@ -8,10 +8,10 @@ scons -Q \
       --enable-debug \
       --sanitizers=all \
       --build-3rdparty=openfec,cpputest \
-      --compiler=clang-3.9 \
+      --compiler=clang-6.0 \
       test
 
-for c in gcc-6 clang-3.9
+for c in gcc-6 clang-6.0
 do
     scons -Q \
           --enable-werror \

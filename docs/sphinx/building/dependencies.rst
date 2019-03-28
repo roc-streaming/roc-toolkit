@@ -14,10 +14,14 @@ Build dependencies
 Runtime dependencies
 ====================
 
-* `libuv <http://libuv.org>`_ >= 1.4
+* `libuv <http://libuv.org>`_ >= 1.5.0
 * `OpenFEC <http://openfec.org>`_ >= 1.4.2 (optional but recommended, install if you want to enable FEC support)
 * `SoX <http://sox.sourceforge.net>`_ >= 14.4.0 (optional, install if you want to build tools)
 * `PulseAudio <https://www.freedesktop.org/wiki/Software/PulseAudio/>`_ >= 5.0 (optional, install if you want to build PulseAudio modules)
+
+.. warning::
+
+   libuv versions before 1.5.0 may have problems on 64-but ARMs.
 
 .. warning::
 
@@ -34,4 +38,4 @@ Development dependencies
 
 .. warning::
 
-   If you use CppUTest 3.4 or earlier, build it with ``--disable-memory-leak-detection`` option. It's leak detection breaks our code. Note that we support building with clang sanitizers which include LeakSanitizer.
+   If you use CppUTest 3.4 or earlier, build it with ``--disable-memory-leak-detection`` option. This leak detection breaks our code. Note that we support building with clang sanitizers which include LeakSanitizer.

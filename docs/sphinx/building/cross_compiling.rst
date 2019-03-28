@@ -23,7 +23,7 @@ If you want to build toolchain and dependencies manually, you can use tools like
 SCons options
 =============
 
-Use ``--host`` option to specify the toolchain name. This option defines a prefix which is added to all build tools, which should be available in PATH. For example, ``--host=arm-bcm2708hardfp-linux-gnueabi`` means that Roc will expect that ``arm-bcm2708hardfp-linux-gnueabi-gcc``, ``arm-bcm2708hardfp-linux-gnueabi-ld``, etc. are available in PATH.
+Use ``--host`` option to specify the toolchain name. This option defines a prefix which is added to all build tools, which should be available in PATH. For example, ``--host=arm-linux-gnueabihf`` means that Roc will expect that ``arm-linux-gnueabihf-gcc``, ``arm-linux-gnueabihf-ld``, etc. are available in PATH.
 
 Use ``--build-3rdparty`` option to let Roc to download and build dependencies. When it is used with ``--host``, Roc automatically uses the specified toolchain for dependencies.
 
@@ -31,24 +31,23 @@ If necessary, you can override build tool names and options by setting variables
 
 See :doc:`/building/scons_options` page for the full list of options and variables.
 
-Raspberry Pi toolchains (Raspberry Pi 1 and later)
-==================================================
+Raspberry Pi ARMv6 BCM-2708 toolchain (Raspberry Pi 1)
+======================================================
 
 The official Raspberry Pi `tools <https://github.com/raspberrypi/tools>`_ repository contains several arm-bcm2708 prebuilt toolchains. BCM-2708 is a chip family which includes BCM-2835, BCM-2836, and BCM-2837 chips used in various Raspberry Pi models (see `RPi Hardware <https://elinux.org/RPi_Hardware>`_).
 
 The ``arm-bcm2708hardfp-linux-gnueabi`` toolchain can be used for all Raspberry Pi models and likely Raspberry Pi clones too. It supports ARMv6 architecture, but not ARMv7 and ARMv8. Since all these architectures are backward-compatible, this toolchain can be used with all of them, but it can't employ ARMv7 or ARMv8 specific instructions.
 
-Here is how you can build Roc with this toolchain using our `rocproject/cross-raspberry <https://hub.docker.com/r/rocproject/cross-raspberry/>`_ Docker image:
+Here is how you can build Roc with this toolchain using `rocproject/cross-arm-bcm2708hardfp-linux-gnueabi <https://hub.docker.com/r/rocproject/cross-arm-bcm2708hardfp-linux-gnueabi/>`_ Docker image:
 
 .. code::
 
     $ cd /path/to/roc
     $ docker run -ti --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
-      rocproject/cross-raspberry \
-      bash -c '
-        PATH="/opt/toolchains/arm-bcm2708hardfp-linux-gnueabi/bin:${PATH}"
-          scons -Q --build-3rdparty=uv,openfec,sox,cpputest \
-            --host=arm-bcm2708hardfp-linux-gnueabi'
+        rocproject/cross-arm-bcm2708hardfp-linux-gnueabi \
+          scons \
+            --host=arm-bcm2708hardfp-linux-gnueabi \
+            --build-3rdparty=uv,openfec,sox,cpputest
 
 Or you can install the toolchain manually:
 
@@ -77,24 +76,23 @@ Or you can install the toolchain manually:
     $ cd "${ROC_DIR}"
     $ scons --host=arm-bcm2708hardfp-linux-gnueabi --build-3rdparty=uv,openfec,sox,cpputest
 
-Linaro toolchains (Raspberry Pi 2 and later, Orange Pi, Banana Pi)
-==================================================================
+Linaro ARMv7 32-bit toolchain (Raspberry Pi 2, Orange Pi 32-bit models)
+=======================================================================
 
 The Linaro project provides several `toolchains <https://www.linaro.org/downloads/>`_ for different architectures and GCC versions.
 
-The ``arm-linux-gnueabihf`` toolchain can be used Raspberry Pi 2 and later, Orange Pi, Banana Pi, and other boards compatible with ARMv7. It will not work for Raspberry Pi 1, which uses ARMv6.
+The ``arm-linux-gnueabihf`` is a 32-bit ARMv7 Cortex-A hard-float little-endian toolchain. It can be used for Raspberry Pi 2 and later, various 32-bit Orange Pi models (in particular ones based on Allwinner H2 and H3 chips, see `Orange Pi Models <https://sebastien.andrivet.com/en/posts/orange-pi-models/>`_ and `Allwinner SoC Family <http://linux-sunxi.org/Allwinner_SoC_Family>`_), and other boards compatible with ARMv7. It will not work for Raspberry Pi 1, which uses ARMv6.
 
-Here is how you can build Roc with this toolchain using our `rocproject/cross-linaro <https://hub.docker.com/r/rocproject/cross-linaro/>`_ Docker image:
+Here is how you can build Roc with this toolchain using `rocproject/cross-arm-linux-gnueabihf <https://hub.docker.com/r/rocproject/cross-arm-linux-gnueabihf/>`_ Docker image:
 
 .. code::
 
     $ cd /path/to/roc
     $ docker run -ti --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
-      rocproject/cross-linaro \
-      bash -c '
-        PATH="/opt/toolchains/arm-linux-gnueabihf/bin:${PATH}"
-          scons -Q --build-3rdparty=uv,openfec,sox,cpputest \
-            --host=arm-linux-gnueabihf'
+        rocproject/cross-arm-linux-gnueabihf \
+          scons \
+            --host=arm-linux-gnueabihf \
+            --build-3rdparty=uv,openfec,sox,cpputest
 
 Or you can install the toolchain manually:
 
@@ -119,10 +117,51 @@ Or you can install the toolchain manually:
     $ cd "${ROC_DIR}"
     $ scons --host=arm-linux-gnueabihf --build-3rdparty=uv,openfec,sox,cpputest
 
+Linaro ARMv8 64-bit toolchain (Raspberry Pi 3, Orange Pi 64-bit models)
+=======================================================================
+
+The Linaro project provides several `toolchains <https://www.linaro.org/downloads/>`_ for different architectures and GCC versions.
+
+The ``aarch64-linux-gnu`` is a 64-bit ARMv8 Cortex-A little-endian toolchain. It can be used for Raspberry Pi 3, various 64-bit Orange Pi models (in particular ones based on Allwinner H5, H6, and A64 chips, see `Orange Pi Models <https://sebastien.andrivet.com/en/posts/orange-pi-models/>`_ and `Allwinner SoC Family <http://linux-sunxi.org/Allwinner_SoC_Family>`_), and other boards compatible with ARMv8. It will not work for 32-bit versions of Raspberry Pi and Orange Pi.
+
+Here is how you can build Roc with this toolchain using `rocproject/cross-aarch64-linux-gnu <https://hub.docker.com/r/rocproject/cross-aarch64-linux-gnu/>`_ Docker image:
+
+.. code::
+
+    $ cd /path/to/roc
+    $ docker run -ti --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
+        rocproject/cross-aarch64-linux-gnu \
+          scons \
+            --host=aarch64-linux-gnu \
+            --build-3rdparty=uv,openfec,sox,cpputest
+
+Or you can install the toolchain manually:
+
+.. code::
+
+    # setup directories
+    $ TOOLCHAIN_DIR=/path/to/toolchain
+    $ ROC_DIR=/path/to/roc
+
+    # for Roc
+    $ apt-get install g++ scons gengetopt
+
+    # for 3rd-parties
+    $ apt-get install libtool autoconf automake make cmake
+
+    # download toolchain
+    $ wget http://releases.linaro.org/components/toolchain/binaries/7.4-2019.02/aarch64-linux-gnu/gcc-linaro-7.4.1-2019.02-x86_64_aarch64-linux-gnu.tar.xz
+    $ tar -C "${TOOLCHAIN_DIR}" -Jf gcc-linaro-7.4.1-2019.02-x86_64_aarch64-linux-gnu.tar.xz
+    $ export PATH="${TOOLCHAIN_DIR}/gcc-linaro-7.4.1-2019.02-x86_64_aarch64-linux-gnu/bin:${PATH}"
+
+    # build Roc
+    $ cd "${ROC_DIR}"
+    $ scons --host=aarch64-linux-gnu --build-3rdparty=uv,openfec,sox,cpputest
+
 Debian and Ubuntu toolchains
 ============================
 
-Debian and Ubuntu provide packaged toolchains as well, see `CrossToolchains <https://wiki.debian.org/CrossToolchains>`_ page on Debian wiki.
+Debian and Ubuntu provide packaged toolchains as well, described on the `CrossToolchains <https://wiki.debian.org/CrossToolchains>`_ page on Debian wiki.
 
 The ``arm-linux-gnueabihf`` toolchain may be used to cross-compile binaries for ARMv7. However note that the resulting binary will require recent Glibc and probably won't run on Raspbian versions which don't have one.
 
@@ -155,37 +194,38 @@ Here is how you can build Roc with this toolchain on Ubuntu:
     $ cd /path/to/roc
     $ scons --host=arm-linux-gnueabihf --build-3rdparty=uv,openfec,sox,cpputest
 
-Running ARM executables in QEMU
-===============================
+Running cross-compiled tests in QEMU
+====================================
 
-Running an executable on ARMv6 CPU using our `rocproject/cross-raspberry <https://hub.docker.com/r/rocproject/cross-raspberry/>`_ Docker image:
-
-.. code::
-
-    $ cd /path/to/roc
-    $ docker run -ti --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
-      rocproject/cross-raspberry \
-      bash -c '
-        EXECUTABLE="roc-test-core"; \
-        CPU="arm1176"; \
-        TOOLCHAIN="arm-bcm2708hardfp-linux-gnueabi"; \
-        SYSROOT="/opt/toolchains/${TOOLCHAIN}/${TOOLCHAIN}"; \
-        LD_LIBRARY_PATH="${SYSROOT}/lib:${PWD}/3rdparty/${TOOLCHAIN}/lib" \
-          qemu-arm -L "${SYSROOT}" -cpu "${CPU}" \
-            ./bin/${TOOLCHAIN}/${EXECUTABLE}'
-
-Running an executable on ARMv7 CPU using our `rocproject/cross-linaro <https://hub.docker.com/r/rocproject/cross-linaro/>`_ Docker image:
+Running a test on ARMv6 CPU using `rocproject/cross-arm-bcm2708hardfp-linux-gnueabi <https://hub.docker.com/r/rocproject/cross-arm-bcm2708hardfp-linux-gnueabi/>`_ Docker image:
 
 .. code::
 
     $ cd /path/to/roc
     $ docker run -ti --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
-      rocproject/cross-linaro \
-      bash -c '
-        EXECUTABLE="roc-test-core"; \
-        CPU="cortex-a15"; \
-        TOOLCHAIN="arm-linux-gnueabihf"; \
-        SYSROOT="/opt/toolchains/${TOOLCHAIN}/${TOOLCHAIN}"; \
-        LD_LIBRARY_PATH="${SYSROOT}/lib:${PWD}/3rdparty/${TOOLCHAIN}/lib" \
-          qemu-arm -L "${SYSROOT}" -cpu "${CPU}" \
-            ./bin/${TOOLCHAIN}/${EXECUTABLE}'
+        rocproject/cross-arm-bcm2708hardfp-linux-gnueabi \
+          env LD_LIBRARY_PATH="/opt/sysroot/lib:${PWD}/3rdparty/arm-bcm2708hardfp-linux-gnueabi/rpath" \
+            qemu-arm -L /opt/sysroot -cpu arm1176 \
+              ./bin/arm-bcm2708hardfp-linux-gnueabi/roc-test-core
+
+Running a test on ARMv7 CPU using `rocproject/cross-arm-linux-gnueabihf <https://hub.docker.com/r/rocproject/cross-arm-linux-gnueabihf/>`_ Docker image:
+
+.. code::
+
+    $ cd /path/to/roc
+    $ docker run -ti --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
+        rocproject/cross-arm-linux-gnueabihf \
+          env LD_LIBRARY_PATH="/opt/sysroot/lib:${PWD}/3rdparty/arm-linux-gnueabihf/rpath" \
+            qemu-arm -L /opt/sysroot -cpu cortex-a15 \
+              ./bin/arm-linux-gnueabihf/roc-test-core
+
+Running a test on ARMv8 CPU using `rocproject/cross-aarch64-linux-gnu <https://hub.docker.com/r/rocproject/cross-aarch64-linux-gnu/>`_ Docker image:
+
+.. code::
+
+    $ cd /path/to/roc
+    $ docker run -ti --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
+        rocproject/cross-aarch64-linux-gnu \
+          env LD_LIBRARY_PATH="/opt/sysroot/lib:${PWD}/3rdparty/aarch64-linux-gnu/rpath" \
+            qemu-aarch64 -L /opt/sysroot -cpu cortex-a53 \
+              ./bin/aarch64-linux-gnu/roc-test-core

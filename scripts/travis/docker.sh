@@ -1,6 +1,10 @@
 #! /bin/bash
 ( set -xe;
-  docker run --rm -ti -u "${UID}" -v "${TRAVIS_BUILD_DIR}":/opt/roc -w /opt/roc "$@" )
+  docker run --rm -ti \
+         --cap-add SYS_PTRACE \
+         -u "${UID}" \
+         -v "${TRAVIS_BUILD_DIR}":/opt/roc \
+         -w /opt/roc "$@" )
 error=$?
 if [ $error = 0 ]
 then
