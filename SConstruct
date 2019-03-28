@@ -884,7 +884,12 @@ if compiler == 'gcc':
         for var in ['CXXFLAGS', 'CFLAGS']:
             env.Append(**{var: [
                 '-Wdouble-promotion',
-                '-Wabi',
+            ]})
+
+    if compiler_ver[:2] >= (8, 0):
+        for var in ['CXXFLAGS', 'CFLAGS']:
+            env.Append(**{var: [
+                '-Wno-parentheses',
             ]})
 
     if compiler_ver[:2] < (4, 6):

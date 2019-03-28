@@ -67,13 +67,15 @@ public:
 
         elem->~Elem();
 
+        void* memory = elem;
+
         if (poison_) {
-            memset(elem, PoisonAllocated, elem_size_);
+            memset(memory, PoisonAllocated, elem_size_);
         } else {
-            memset(elem, 0, elem_size_);
+            memset(memory, 0, elem_size_);
         }
 
-        return elem;
+        return memory;
     }
 
     //! Free previously allocated memory.
