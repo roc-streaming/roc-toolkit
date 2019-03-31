@@ -1,5 +1,5 @@
 PulseAudio modules
-****************** 
+******************
 
 Overview
 ========
@@ -77,9 +77,9 @@ Roc sink supports several options:
 option                required default        description
 ===================== ======== ============== ==========================================
 sink_name             no       roc_sender     the name of the new sink
-sink_properties       no                      additional sink properties
+sink_properties       no       empty          additional sink properties
 local_ip              no       0.0.0.0        local sender address to bind to
-remote_ip             yes                     remote receiver address
+remote_ip             yes      no             remote receiver address
 remote_source_port    no       10001          remote receiver port for source (audio) packets
 remote_repair_port    no       10002          remote receiver port for repair (FEC) packets
 ===================== ======== ============== ==========================================
@@ -118,7 +118,10 @@ Roc sink input supports several options:
 option                required default        description
 ===================== ======== ============== ==========================================
 sink                  no       <default sink> the name of the sink to connect the new sink input to
-sink_input_properties no                      additional sink input properties
+sink_input_properties no       empty          additional sink input properties
+resampler_profile     no       medium         resampler mode, supported values: disable, high, medium, low
+network_latency_msec  no       200            target network latency in milliseconds
+playback_latency_msec no       40             target playback latency in milliseconds
 local_ip              no       0.0.0.0        local address to bind to
 local_source_port     no       10001          local port for source (audio) packets
 local_repair_port     no       10002          local port for repair (FEC) packets
@@ -150,6 +153,25 @@ Or via the ``pavucontrol`` graphical tool:
 
 .. image:: ../_images/roc_pulse_receiver.png
     :width: 600px
+
+Naming
+======
+
+PulseAudio sinks and sink inputs have name and description. Name is usually used when the sink or sink input is referenced from command-line tools or configuration files, and description is shown in the GUI.
+
+Sink name and description can be configured via ``sink_name`` module argument and ``device.description`` sink property set by ``sink_properties`` module argument:
+
+.. code::
+
+   $ pactl load-module module-roc-sink remote_ip=192.168.1.38 \
+       sink_name=my_name sink_properties=device.description=My-Description
+
+Sink input name and description can be configured via ``sink_input_name`` module argument and ``media.name`` sink input property set by ``sink_input_properties`` module argument:
+
+.. code::
+
+   $ pactl load-module module-roc-sink-input \
+       sink_input_name=my_name sink_input_properties=media.name=My-Description
 
 Interoperability
 ================

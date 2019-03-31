@@ -28,7 +28,7 @@
 #include <roc/sender.h>
 
 /* local headers */
-#include "roc_helpers.h"
+#include "module_helpers.h"
 
 PA_MODULE_AUTHOR("Roc authors");
 PA_MODULE_DESCRIPTION("Write samples using Roc sender");
@@ -214,7 +214,7 @@ int pa__init(pa_module* m) {
 
     /* setup logs */
     roc_log_set_level(ROC_LOG_DEBUG);
-    roc_log_set_handler(log_handler);
+    roc_log_set_handler(rocpa_log_handler);
 
     /* prepare sample spec and channel map used in this sink */
     pa_sample_spec sample_spec;
@@ -242,20 +242,21 @@ int pa__init(pa_module* m) {
     pa_thread_mq_init(&u->thread_mq, m->core->mainloop, u->rtpoll);
 
     roc_address local_addr;
-    if (parse_address(&local_addr, args, "local_ip", DEFAULT_IP, NULL, "0") < 0) {
+    if (rocpa_parse_address(&local_addr, args, "local_ip", ROCPA_DEFAULT_IP, NULL, "0")
+        < 0) {
         goto error;
     }
 
     roc_address remote_source_addr;
-    if (parse_address(&remote_source_addr, args, "remote_ip", "", "remote_source_port",
-                      DEFAULT_SOURCE_PORT)
+    if (rocpa_parse_address(&remote_source_addr, args, "remote_ip", "",
+                            "remote_source_port", ROCPA_DEFAULT_SOURCE_PORT)
         < 0) {
         goto error;
     }
 
     roc_address remote_repair_addr;
-    if (parse_address(&remote_repair_addr, args, "remote_ip", "", "remote_repair_port",
-                      DEFAULT_REPAIR_PORT)
+    if (rocpa_parse_address(&remote_repair_addr, args, "remote_ip", "",
+                            "remote_repair_port", ROCPA_DEFAULT_REPAIR_PORT)
         < 0) {
         goto error;
     }

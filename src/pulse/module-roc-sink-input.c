@@ -25,7 +25,7 @@
 #include <roc/receiver.h>
 
 /* local headers */
-#include "roc_helpers.h"
+#include "module_helpers.h"
 
 PA_MODULE_AUTHOR("Roc authors");
 PA_MODULE_DESCRIPTION("Read samples using Roc receiver");
@@ -34,6 +34,9 @@ PA_MODULE_LOAD_ONCE(false);
 PA_MODULE_USAGE(
         "sink=<name for the sink> "
         "sink_input_properties=<properties for the sink input> "
+        "resampler_profile=<empty>|disable|high|medium|low "
+        "network_latency_msec=<target network latency in milliseconds> "
+        "playback_latency_msec=<target playback latency in milliseconds> "
         "local_ip=<local receiver ip> "
         "local_source_port=<local receiver port for source packets> "
         "local_repair_port=<local receiver port for repair packets>");
@@ -50,6 +53,9 @@ static const char* const roc_sink_input_modargs[] = {
     "sink",
     "sink_input_name",
     "sink_input_properties",
+    "resampler_profile",
+    "network_latency_msec",
+    "playback_latency_msec",
     "local_ip",
     "local_source_port",
     "local_repair_port",
@@ -145,7 +151,7 @@ int pa__init(pa_module* m) {
 
     /* setup logs */
     roc_log_set_level(ROC_LOG_DEBUG);
-    roc_log_set_handler(log_handler);
+    roc_log_set_handler(rocpa_log_handler);
 
     /* prepare sample spec and channel map used in this sink */
     pa_sample_spec sample_spec;
@@ -180,15 +186,15 @@ int pa__init(pa_module* m) {
     u->module = m;
 
     roc_address local_source_addr;
-    if (parse_address(&local_source_addr, args, "local_ip", DEFAULT_IP,
-                      "local_source_port", DEFAULT_SOURCE_PORT)
+    if (rocpa_parse_address(&local_source_addr, args, "local_ip", ROCPA_DEFAULT_IP,
+                            "local_source_port", ROCPA_DEFAULT_SOURCE_PORT)
         < 0) {
         goto error;
     }
 
     roc_address local_repair_addr;
-    if (parse_address(&local_repair_addr, args, "local_ip", DEFAULT_IP,
-                      "local_repair_port", DEFAULT_REPAIR_PORT)
+    if (rocpa_parse_address(&local_repair_addr, args, "local_ip", ROCPA_DEFAULT_IP,
+                            "local_repair_port", ROCPA_DEFAULT_REPAIR_PORT)
         < 0) {
         goto error;
     }
@@ -208,6 +214,18 @@ int pa__init(pa_module* m) {
     receiver_config.frame_sample_rate = 44100;
     receiver_config.frame_channels = ROC_CHANNEL_SET_STEREO;
     receiver_config.frame_encoding = ROC_FRAME_ENCODING_PCM_FLOAT;
+
+    if (rocpa_parse_resampler_profile(&receiver_config.resampler_profile, args,
+                                      "resampler_profile")
+        < 0) {
+        goto error;
+    }
+
+    if (rocpa_parse_duration_msec(&receiver_config.target_latency, 1, args,
+                                  "network_latency_msec", "200")
+        < 0) {
+        goto error;
+    }
 
     u->receiver = roc_receiver_open(u->context, &receiver_config);
     if (!u->receiver) {
@@ -269,8 +287,16 @@ int pa__init(pa_module* m) {
     u->sink_input->pop = pop_cb;
     u->sink_input->process_rewind = rewind_cb;
     u->sink_input->kill = kill_cb;
-
     pa_sink_input_put(u->sink_input);
+
+    unsigned long long playback_latency_us = 0;
+    if (rocpa_parse_duration_msec(&playback_latency_us, 1000, args,
+                                  "playback_latency_msec", "40")
+        < 0) {
+        goto error;
+    }
+    pa_sink_input_set_requested_latency(u->sink_input, playback_latency_us);
+
     pa_modargs_free(args);
 
     return 0;

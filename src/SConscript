@@ -126,7 +126,7 @@ if GetOption('enable_pulseaudio_modules'):
     cenv.Append(CPPPATH=['lib/include'])
     cenv.Append(LIBS=['roc'])
 
-    helpers = cenv.Object('pulse/roc_helpers.c')
+    helpers = cenv.Object('pulse/module_helpers.c')
     targets = []
 
     for source in env.Glob('pulse/module-*.c'):

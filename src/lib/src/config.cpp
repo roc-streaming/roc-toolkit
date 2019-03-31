@@ -10,6 +10,7 @@
 
 #include "roc_audio/resampler_profile.h"
 #include "roc_core/log.h"
+#include "roc_core/stddefs.h"
 
 using namespace roc;
 
@@ -166,6 +167,18 @@ bool config_receiver(pipeline::ReceiverConfig& out, const roc_receiver_config& i
 
         out.default_session.latency_monitor.max_latency =
             (core::nanoseconds_t)in.target_latency * pipeline::DefaultMaxLatencyFactor;
+
+        if (out.default_session.watchdog.no_playback_timeout
+            < out.default_session.latency_monitor.max_latency) {
+            out.default_session.watchdog.no_playback_timeout =
+                out.default_session.latency_monitor.max_latency;
+        }
+
+        if (out.default_session.watchdog.broken_playback_timeout
+            < out.default_session.latency_monitor.max_latency) {
+            out.default_session.watchdog.broken_playback_timeout =
+                out.default_session.latency_monitor.max_latency;
+        }
     }
 
     if (in.min_latency != 0) {
