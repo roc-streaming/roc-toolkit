@@ -170,19 +170,6 @@ int main(int argc, char** argv) {
         }
     }
 
-    size_t sample_rate = 0;
-    if (args.rate_given) {
-        if (args.rate_arg <= 0) {
-            roc_log(LogError, "invalid --rate: should be > 0");
-            return 1;
-        }
-        sample_rate = (size_t)args.rate_arg;
-    } else {
-        if (!config.output.resampling) {
-            sample_rate = pipeline::DefaultSampleRate;
-        }
-    }
-
     config.output.resampling = !args.no_resampling_flag;
 
     switch ((unsigned)args.resampler_profile_arg) {
@@ -220,6 +207,19 @@ int main(int argc, char** argv) {
             return 1;
         }
         config.default_session.resampler.window_size = (size_t)args.resampler_window_arg;
+    }
+
+    size_t sample_rate = 0;
+    if (args.rate_given) {
+        if (args.rate_arg <= 0) {
+            roc_log(LogError, "invalid --rate: should be > 0");
+            return 1;
+        }
+        sample_rate = (size_t)args.rate_arg;
+    } else {
+        if (!config.output.resampling) {
+            sample_rate = pipeline::DefaultSampleRate;
+        }
     }
 
     config.output.poisoning = args.poisoning_flag;

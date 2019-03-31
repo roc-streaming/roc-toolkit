@@ -122,9 +122,7 @@ int main(int argc, char** argv) {
         config.fec.n_repair_packets = (size_t)args.nbrpr_arg;
     }
 
-    config.interleaving = args.interleaving_flag;
     config.resampling = !args.no_resampling_flag;
-    config.poisoning = args.poisoning_flag;
 
     switch ((unsigned)args.resampler_profile_arg) {
     case resampler_profile_arg_low:
@@ -159,13 +157,6 @@ int main(int argc, char** argv) {
         config.resampler.window_size = (size_t)args.resampler_window_arg;
     }
 
-    core::HeapAllocator allocator;
-    core::BufferPool<uint8_t> byte_buffer_pool(allocator, MaxPacketSize,
-                                               args.poisoning_flag);
-    core::BufferPool<audio::sample_t> sample_buffer_pool(allocator, MaxFrameSize,
-                                                         args.poisoning_flag);
-    packet::PacketPool packet_pool(allocator, args.poisoning_flag);
-
     size_t sample_rate = 0;
     if (args.rate_given) {
         if (args.rate_arg <= 0) {
@@ -178,6 +169,16 @@ int main(int argc, char** argv) {
             sample_rate = pipeline::DefaultSampleRate;
         }
     }
+
+    config.interleaving = args.interleaving_flag;
+    config.poisoning = args.poisoning_flag;
+
+    core::HeapAllocator allocator;
+    core::BufferPool<uint8_t> byte_buffer_pool(allocator, MaxPacketSize,
+                                               args.poisoning_flag);
+    core::BufferPool<audio::sample_t> sample_buffer_pool(allocator, MaxFrameSize,
+                                                         args.poisoning_flag);
+    packet::PacketPool packet_pool(allocator, args.poisoning_flag);
 
     sndio::SoxReader reader(sample_buffer_pool, config.input_channels,
                             config.internal_frame_size, sample_rate);
