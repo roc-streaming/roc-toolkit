@@ -7,7 +7,8 @@ branches:
 
 matrix:
   include:
-    - os: linux
+    - name: "Linux x84_64"
+      os: linux
       dist: trusty
       sudo: required
       services:
@@ -20,28 +21,40 @@ matrix:
         - docker pull rocproject/travis-fedora
         - docker pull rocproject/travis-centos
         - docker pull rocproject/travis-min
+      script:
+        - scripts/travis/docker.sh rocproject/travis-ubuntu:18.04 scripts/travis/linux-x86_64/ubuntu-18.04.sh
+        - scripts/travis/docker.sh rocproject/travis-ubuntu:16.04 scripts/travis/linux-x86_64/ubuntu-16.04.sh
+        - scripts/travis/docker.sh rocproject/travis-ubuntu:14.04 scripts/travis/linux-x86_64/ubuntu-14.04.sh
+        - scripts/travis/docker.sh rocproject/travis-debian scripts/travis/linux-x86_64/debian.sh
+        - scripts/travis/docker.sh rocproject/travis-fedora scripts/travis/linux-x86_64/fedora.sh
+        - scripts/travis/docker.sh rocproject/travis-centos scripts/travis/linux-x86_64/centos.sh
+        - scripts/travis/docker.sh rocproject/travis-min scripts/travis/linux-x86_64/min.sh
+        - cat build.status
+
+    - name: "Linux ARM"
+      os: linux
+      dist: trusty
+      sudo: required
+      services:
+        - docker
+      before_install:
         - docker pull rocproject/cross-arm-bcm2708hardfp-linux-gnueabi:gcc-4.7
         - docker pull rocproject/cross-arm-linux-gnueabihf:gcc-4.9
         - docker pull rocproject/cross-aarch64-linux-gnu:gcc-7.4
       script:
-        - scripts/travis/docker.sh rocproject/travis-ubuntu:18.04 scripts/travis/linux/ubuntu-18.04.sh
-        - scripts/travis/docker.sh rocproject/travis-ubuntu:16.04 scripts/travis/linux/ubuntu-16.04.sh
-        - scripts/travis/docker.sh rocproject/travis-ubuntu:14.04 scripts/travis/linux/ubuntu-14.04.sh
-        - scripts/travis/docker.sh rocproject/travis-debian scripts/travis/linux/debian.sh
-        - scripts/travis/docker.sh rocproject/travis-fedora scripts/travis/linux/fedora.sh
-        - scripts/travis/docker.sh rocproject/travis-centos scripts/travis/linux/centos.sh
-        - scripts/travis/docker.sh rocproject/travis-min scripts/travis/linux/min.sh
-        - scripts/travis/docker.sh rocproject/cross-arm-bcm2708hardfp-linux-gnueabi:gcc-4.7 scripts/travis/cross/arm-bcm2708hardfp-linux-gnueabi.sh
-        - scripts/travis/docker.sh rocproject/cross-arm-linux-gnueabihf:gcc-4.9 scripts/travis/cross/arm-linux-gnueabihf.sh
-        - scripts/travis/docker.sh rocproject/cross-aarch64-linux-gnu:gcc-7.4 scripts/travis/cross/aarch64-linux-gnu.sh
+        - scripts/travis/docker.sh rocproject/cross-arm-bcm2708hardfp-linux-gnueabi:gcc-4.7 scripts/travis/linux-arm/arm-bcm2708hardfp-linux-gnueabi.sh
+        - scripts/travis/docker.sh rocproject/cross-arm-linux-gnueabihf:gcc-4.9 scripts/travis/linux-arm/arm-linux-gnueabihf.sh
+        - scripts/travis/docker.sh rocproject/cross-aarch64-linux-gnu:gcc-7.4 scripts/travis/linux-arm/aarch64-linux-gnu.sh
         - cat build.status
 
-    - os: osx
+    - name: "macOS xcode7.3"
+      os: osx
       osx_image: xcode7.3
       script:
-        - scripts/travis/osx/xcode73.sh
+        - scripts/travis/macos/xcode73.sh
 
-    - os: osx
+    - name: "macOS xcode9.1"
+      os: osx
       osx_image: xcode9.1
       script:
-        - scripts/travis/osx/xcode91.sh
+        - scripts/travis/macos/xcode91.sh
