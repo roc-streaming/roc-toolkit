@@ -922,11 +922,6 @@ if compiler == 'clang':
         '-Wno-missing-prototypes',
     ])
 
-    if platform == 'linux' and compiler_ver[:2] >= (6, 0):
-        for var in ['CXXFLAGS', 'CFLAGS']:
-            env.Append(**{var: [
-                '-Wno-redundant-parens',
-            ]})
     if compiler_ver[:2] >= (3, 6):
         for var in ['CXXFLAGS', 'CFLAGS']:
             env.Append(**{var: [
@@ -937,6 +932,20 @@ if compiler == 'clang':
             env.Append(**{var: [
                 '-Wno-unreachable-code',
             ]})
+
+    if platform == 'linux':
+        if compiler_ver[:2] >= (6, 0):
+            for var in ['CXXFLAGS', 'CFLAGS']:
+                env.Append(**{var: [
+                    '-Wno-redundant-parens',
+                ]})
+
+        if compiler_ver[:2] >= (8, 0):
+            for var in ['CXXFLAGS', 'CFLAGS']:
+                env.Append(**{var: [
+                    '-Wno-extra-semi-stmt',
+                    '-Wno-atomic-implicit-seq-cst',
+                ]})
 
 if compiler in ['gcc', 'clang']:
     for e in [env, lib_env, tool_env, test_env, pulse_env]:
