@@ -253,18 +253,21 @@ typedef struct roc_receiver_config {
      */
     unsigned long long target_latency;
 
-    /** Minimum latency, in nanoseconds.
-     * If the session becomes less than this value, the session is terminated.
-     * May be negative. Negative latency means that the session is ahead the sender.
+    /** Maximum delta between current and target latency, in nanoseconds.
+     * If current latency becomes larger than the target latency plus this value, the
+     * session is terminated.
      * If zero, default value is used.
      */
-    long long min_latency;
+    unsigned long long max_latency_overrun;
 
-    /** Maximum latency, in nanoseconds.
-     * If the session becomes greater than this value, the session is terminated.
+    /** Maximum delta between target and current latency, in nanoseconds.
+     * If current latency becomes smaller than the target latency minus this value, the
+     * session is terminated.
+     * May be larger than the target latency because current latency may be nagative,
+     * which means that the playback run ahead of the last packet received from network.
      * If zero, default value is used.
      */
-    unsigned long long max_latency;
+    unsigned long long max_latency_underrun;
 
     /** Timeout for the lack of playback, in nanoseconds.
      * If there is no playback during this period, the session is terminated.

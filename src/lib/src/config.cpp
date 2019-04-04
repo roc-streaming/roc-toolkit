@@ -181,13 +181,16 @@ bool config_receiver(pipeline::ReceiverConfig& out, const roc_receiver_config& i
         }
     }
 
-    if (in.min_latency != 0) {
-        out.default_session.latency_monitor.min_latency = in.min_latency;
+    if (in.max_latency_overrun != 0) {
+        out.default_session.latency_monitor.min_latency =
+            out.default_session.target_latency
+            + (core::nanoseconds_t)in.max_latency_overrun;
     }
 
-    if (in.max_latency != 0) {
+    if (in.max_latency_underrun != 0) {
         out.default_session.latency_monitor.max_latency =
-            (core::nanoseconds_t)in.max_latency;
+            out.default_session.target_latency
+            - (core::nanoseconds_t)in.max_latency_underrun;
     }
 
     if (in.no_playback_timeout < 0) {
