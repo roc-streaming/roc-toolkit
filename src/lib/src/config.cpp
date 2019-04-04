@@ -74,7 +74,7 @@ bool config_sender(pipeline::SenderConfig& out, const roc_sender_config& in) {
 
     out.resampling = (in.resampler_profile != ROC_RESAMPLER_DISABLE);
 
-    switch ((unsigned)in.resampler_profile) {
+    switch ((int)in.resampler_profile) {
     case ROC_RESAMPLER_DISABLE:
         break;
     case ROC_RESAMPLER_LOW:
@@ -92,7 +92,7 @@ bool config_sender(pipeline::SenderConfig& out, const roc_sender_config& in) {
         return false;
     }
 
-    switch ((unsigned)in.fec_code) {
+    switch ((int)in.fec_code) {
     case ROC_FEC_DISABLE:
         out.fec.codec = fec::NoCodec;
         break;
@@ -138,7 +138,7 @@ bool config_receiver(pipeline::ReceiverConfig& out, const roc_receiver_config& i
 
     out.output.resampling = (in.resampler_profile != ROC_RESAMPLER_DISABLE);
 
-    switch ((unsigned)in.resampler_profile) {
+    switch ((int)in.resampler_profile) {
     case ROC_RESAMPLER_DISABLE:
         break;
     case ROC_RESAMPLER_LOW:
@@ -214,7 +214,7 @@ bool config_receiver(pipeline::ReceiverConfig& out, const roc_receiver_config& i
         out.default_session.packet_length = (core::nanoseconds_t)in.packet_length;
     }
 
-    switch ((unsigned)in.fec_code) {
+    switch ((int)in.fec_code) {
     case ROC_FEC_DISABLE:
         out.default_session.fec.codec = fec::NoCodec;
         break;
@@ -241,7 +241,7 @@ bool config_receiver(pipeline::ReceiverConfig& out, const roc_receiver_config& i
 bool config_port(pipeline::PortConfig& out,
                  roc_protocol proto,
                  const packet::Address& addr) {
-    switch ((unsigned)proto) {
+    switch ((int)proto) {
     case ROC_PROTO_RTP:
         out.protocol = pipeline::Proto_RTP;
         break;
