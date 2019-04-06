@@ -23,20 +23,15 @@ extern "C" {
 
 /** Roc context.
  *
- * Context contains memory allocator and pools, and the network thread. Objects that
- * need to perform memory allocations or network I/O are attached to a context to do
- * that. It is allowed both to create a separate context for every object, or to
- * create a single context shared between multiple objects.
+ * Context contains memory pools and network worker thread(s). Other objects that work
+ * with memory and network should be attached to a context. It is allowed both to create
+ * a separate context for every object, or to create a single context shared between
+ * multiple objects.
  *
  * A context is created using roc_context_open() and destroyed using roc_context_close().
  * Objects can be attached and detached to an opened context at any moment from any
  * thread. However, the user should ensure that the context is not closed until there
  * are no objects attached to the context.
- *
- * After creating a context, the user should explicitly start the network thread using
- * roc_context_start() and eventually stop it using roc_context_stop(). It may be done
- * both before and after attaching objects to the context, however no network packets
- * will be sent and received until the thread is started.
  *
  * @b Thread-safety
  *  - can be used concurrently
@@ -47,24 +42,24 @@ typedef struct roc_context roc_context;
 
 /** Open a new context.
  *
- * Allocate and initialize a new context.
+ * Allocates and initializes a new context. May start some background threads.
  *
  * @b Parameters
- *  - @p config defines context parameters. If @p config is NULL, default values are used
- *    for all parameters. Otherwise, default values are used for parameters set to zero.
+ *  - @p config should point to an initialized config
  *
  * @b Returns
  *  - returns a new context if it was successfully created
  *  - returns NULL if the arguments are invalid
- *  - returns NULL if error occured
+ *  - returns NULL if there are not enough resources
  */
 ROC_API roc_context* roc_context_open(const roc_context_config* config);
 
-/** Close context.
+/** Close the context.
  *
- * Deinitialize and deallocate context. The user should ensure that nobody uses the
- * context since this function is called. If the network thread is running, it is
- * automatically stopped. If this function fails, the context is kept opened.
+ * Stops any started background threads, deinitializes and deallocates the context.
+ * The user should ensure that nobody uses the context during and after this call.
+ *
+ * If this function fails, the context is kept opened.
  *
  * @b Parameters
  *  - @p context should point to an opened context

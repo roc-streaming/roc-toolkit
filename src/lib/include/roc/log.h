@@ -42,13 +42,12 @@ typedef enum roc_log_level {
     ROC_LOG_INFO = 2,
 
     /** Debug messages.
-     * Setting this level enables logging of debug messages that do not affect
-     * performance.
+     * Setting this level enables logging of debug messages. Doesn't affect performance.
      */
     ROC_LOG_DEBUG = 3,
 
     /** Debug messages (extra verbosity).
-     * Setting this level enables verbose tracing, which may cause significant slow down.
+     * Setting this level enables verbose tracing. May cause significant slow down.
      */
     ROC_LOG_TRACE = 4
 } roc_log_level;
@@ -69,7 +68,7 @@ typedef void (*roc_log_handler)(roc_log_level level,
 /** Set maximum log level.
  *
  * Messages with log levels higher than @p level will be dropped.
- * By default log level is set to @c ROC_LOG_ERROR.
+ * By default the log level is set to @c ROC_LOG_ERROR.
  *
  * @b Thread-safety
  *  - can be used concurrently
@@ -79,7 +78,7 @@ ROC_API void roc_log_set_level(roc_log_level level);
 /** Set log handler.
  *
  * If @p handler is not NULL, messages are passed to the handler. Otherwise, messages are
- * printed to stderr. By default log handler is set NULL.
+ * printed to stderr. By default the log handler is set to NULL.
  *
  * It's guaranteed that the previously set handler, if any, will not be used after this
  * function returns.

@@ -1,10 +1,6 @@
 Reference
 *********
 
-.. warning::
-
-   This section is under construction.
-
 .. contents:: Index:
    :local:
    :depth: 1
@@ -103,6 +99,11 @@ roc_config
 .. code-block:: c
 
    #include <roc/config.h>
+
+.. doxygentypedef:: roc_port_type
+   :outline:
+
+.. doxygenenum:: roc_port_type
 
 .. doxygentypedef:: roc_protocol
    :outline:

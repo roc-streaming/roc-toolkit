@@ -21,7 +21,7 @@ extern "C" {
 /** Network port type. */
 typedef enum roc_port_type {
     /** Network port for audio source packets.
-     * If FEC is not used, this type of port is used to send audio packets.
+     * If FEC is not used, this type of port is used to send or receive audio packets.
      * If FEC is used, this type of port is used to send or receive FEC source packets
      * containing audio data plus some FEC headers.
      */
@@ -56,25 +56,25 @@ typedef enum roc_protocol {
 /** Forward Error Correction code. */
 typedef enum roc_fec_code {
     /** No FEC code.
-     * Compatible with ROC_PROTO_RTP protocol.
+     * Compatible with @c ROC_PROTO_RTP protocol.
      */
     ROC_FEC_DISABLE = -1,
 
     /** Default FEC code.
-     * Current default is ROC_FEC_RS8M.
+     * Current default is @c ROC_FEC_RS8M.
      */
     ROC_FEC_DEFAULT = 0,
 
     /** Reed-Solomon FEC code (RFC 6865) with m=8.
      * Good for small block sizes (below 256 packets).
-     * Compatible with ROC_PROTO_RTP_RSM8_SOURCE and ROC_PROTO_RSM8_REPAIR
+     * Compatible with @c ROC_PROTO_RTP_RSM8_SOURCE and @c ROC_PROTO_RSM8_REPAIR
      * protocols for source and repair ports.
      */
     ROC_FEC_RS8M = 1,
 
     /** LDPC-Staircase FEC code (RFC 6816).
      * Good for large block sizes (above 1024 packets).
-     * Compatible with ROC_PROTO_RTP_LDPC_SOURCE and ROC_PROTO_LDPC_REPAIR
+     * Compatible with @c ROC_PROTO_RTP_LDPC_SOURCE and @c ROC_PROTO_LDPC_REPAIR
      * protocols for source and repair ports.
      */
     ROC_FEC_LDPC_STAIRCASE = 2
@@ -85,12 +85,12 @@ typedef enum roc_packet_encoding {
     /** PCM signed 16-bit.
      * "L16" encoding from RTP A/V Profile (RFC 3551).
      * Uncompressed samples coded as interleaved 16-bit signed big-endian
-     * integeres in two's complement notation.
+     * integers in two's complement notation.
      */
     ROC_PACKET_ENCODING_AVP_L16 = 2
 } roc_packet_encoding;
 
-/** Frame endoging. */
+/** Frame encoding. */
 typedef enum roc_frame_encoding {
     /** PCM floats.
      * Uncompressed samples coded as floats in range [-1; 1].
@@ -113,11 +113,11 @@ typedef enum roc_resampler_profile {
     ROC_RESAMPLER_DISABLE = -1,
 
     /** Default profile.
-     * Current default is ROC_RESAMPLER_MEDIUM.
+     * Current default is @c ROC_RESAMPLER_MEDIUM.
      */
     ROC_RESAMPLER_DEFAULT = 0,
 
-    /** Hight quality, low speed. */
+    /** High quality, low speed. */
     ROC_RESAMPLER_HIGH = 1,
 
     /** Medium quality, medium speed. */
@@ -138,8 +138,8 @@ typedef struct roc_context_config {
     unsigned int max_packet_size;
 
     /** Maximum size in bytes of an audio frame.
-     * Defines the amount of bytes allocated per intermediate frame in the pipeline.
-     * Does not limit the size of the frames provided by user.
+     * Defines the amount of bytes allocated per intermediate internal frame in the
+     * pipeline. Does not limit the size of the frames provided by user.
      */
     unsigned int max_frame_size;
 } roc_context_config;
@@ -150,7 +150,7 @@ typedef struct roc_context_config {
 typedef struct roc_sender_config {
     /** The rate of the samples in the frames passed to sender.
      * Number of samples per channel per second.
-     * If frame_sample_rate and packet_sample_rate are different,
+     * If @c frame_sample_rate and @c packet_sample_rate are different,
      * resampler should be enabled.
      * Should be set.
      */
@@ -183,10 +183,11 @@ typedef struct roc_sender_config {
     roc_packet_encoding packet_encoding;
 
     /** The length of the packets produced by sender, in nanoseconds.
-     * Number of nanoseconds encoded per packet. If zero, default value is used.
+     * Number of nanoseconds encoded per packet.
      * The samples written to the sender are buffered until the full packet is
      * accumulated or the sender is flushed or closed. Larger number reduces
      * packet overhead but also increases latency.
+     * If zero, default value is used.
      */
     unsigned long long packet_length;
 
@@ -198,32 +199,34 @@ typedef struct roc_sender_config {
 
     /** Enable automatic timing.
      * If non-zero, the sender write operation restricts the write rate according
-     * to the input_sample_rate parameter. If zero, no restrictions are applied.
+     * to the frame_sample_rate parameter. If zero, no restrictions are applied.
      */
     unsigned int automatic_timing;
 
     /** Resampler profile to use.
-     * If non-zero, the sender employs resampler if the input sample rate differs
-     * from the network sample rate.
+     * If non-zero, the sender employs resampler if the frame sample rate differs
+     * from the packet sample rate.
      */
     roc_resampler_profile resampler_profile;
 
     /** FEC code to use.
-     * If non-zero, the sender employs FEC codec to generate redundant packets
-     * which may be used on receiver to restore dropped packets. This requires
-     * both sender and receiver to use two separate source and repair ports.
+     * If non-zero, the sender employs a FEC codec to generate redundant packets
+     * which may be used on receiver to restore lost packets. This requires both
+     * sender and receiver to use two separate source and repair ports.
      */
     roc_fec_code fec_code;
 
     /** Number of source packets per FEC block.
-     * Used if some FEC code is selected. If zero, default value is used.
+     * Used if some FEC code is selected.
      * Larger number increases robustness but also increases latency.
+     * If zero, default value is used.
      */
     unsigned int fec_block_source_packets;
 
     /** Number of repair packets per FEC block.
-     * Used if some FEC code is selected. If zero, default value is used.
+     * Used if some FEC code is selected.
      * Larger number increases robustness but also increases traffic.
+     * If zero, default value is used.
      */
     unsigned int fec_block_repair_packets;
 } roc_sender_config;
@@ -232,39 +235,39 @@ typedef struct roc_sender_config {
  * @see roc_receiver
  */
 typedef struct roc_receiver_config {
-    /** The rate of the samples in the frames returned by the receiver.
+    /** The rate of the samples in the frames returned to the user.
      * Number of samples per channel per second.
      * Should be set.
      */
     unsigned int frame_sample_rate;
 
-    /** The channel set in the frames returned by the receiver.
+    /** The channel set in the frames returned to the user.
      * Should be set.
      */
     roc_channel_set frame_channels;
 
-    /** The sample encoding in the frames returned by the receiver.
+    /** The sample encoding in the frames returned to the user.
      * Should be set.
      */
     roc_frame_encoding frame_encoding;
 
     /** Enable automatic timing.
      * If non-zero, the receiver read operation restricts the read rate according
-     * to the output_sample_rate parameter. If zero, no restrictions are applied.
+     * to the @c frame_sample_rate parameter. If zero, no restrictions are applied.
      */
     unsigned int automatic_timing;
 
     /** Resampler profile to use.
      * If non-zero, the receiver employs resampler for two purposes:
      *  - adjust the sender clock to the receiver clock, which may differ a bit
-     *  - convert the network sample rate to the output sample rate, if necessary
+     *  - convert the packet sample rate to the frame sample rate if they are different
      */
     roc_resampler_profile resampler_profile;
 
     /** Target latency, in nanoseconds.
-     * The session will not start playing until it accumulates the requesred latency.
-     * Then, if resampler is enabled, the session will adjust the its clock to keep
-     * actual latency as close as close as possible to the target latency.
+     * The session will not start playing until it accumulates the requested latency.
+     * Then, if resampler is enabled, the session will adjust its clock to keep actual
+     * latency as close as close as possible to the target latency.
      * If zero, default value is used.
      */
     unsigned long long target_latency;
@@ -279,7 +282,7 @@ typedef struct roc_receiver_config {
     /** Maximum delta between target and current latency, in nanoseconds.
      * If current latency becomes smaller than the target latency minus this value, the
      * session is terminated.
-     * May be larger than the target latency because current latency may be nagative,
+     * May be larger than the target latency because current latency may be negative,
      * which means that the playback run ahead of the last packet received from network.
      * If zero, default value is used.
      */
@@ -294,9 +297,9 @@ typedef struct roc_receiver_config {
     long long no_playback_timeout;
 
     /** Timeout for broken playback, in nanoseconds.
-     * If there the playback is considred broken during this period, the session
-     * is terminated. The playback is broken if it is a breakage detected at every
-     * breakage_detection_window during broken_playback_timeout.
+     * If there the playback is considered broken during this period, the session
+     * is terminated. The playback is broken if there is a breakage detected at every
+     * @c breakage_detection_window during @c broken_playback_timeout.
      * This mechanism allows to detect vicious circles like when all client packets
      * are a bit late and receiver constantly drops them producing unpleasant noise.
      * If zero, default value is used. If negative, the timeout is disabled.

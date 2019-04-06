@@ -109,7 +109,7 @@ ROC_API roc_family roc_address_family(const roc_address* address);
  *  - @p bufsz defines the @p buf size
  *
  * @b Returns
- *  - returns @p buf if the IP address was successfully stored to the @p buf
+ *  - returns @p buf if the IP address was successfully stored into the @p buf
  *  - returns NULL if the buffer is too small to store the formatted IP address
  *  - returns NULL if the arguments are invalid
  */
