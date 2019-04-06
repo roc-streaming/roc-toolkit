@@ -56,36 +56,9 @@ typedef struct roc_context roc_context;
  * @b Returns
  *  - returns a new context if it was successfully created
  *  - returns NULL if the arguments are invalid
+ *  - returns NULL if error occured
  */
 ROC_API roc_context* roc_context_open(const roc_context_config* config);
-
-/** Start context thread.
- *
- * Starts the network thread. May be called only once.
- *
- * @b Parameters
- *  - @p context should point to an opened context
- *
- * @b Returns
- *  - returns zero if the thread was successfully started
- *  - returns a negative value if the thread was already started once
- *  - returns a negative value if the arguments are invalid
- */
-ROC_API int roc_context_start(roc_context* context);
-
-/** Stop context thread.
- *
- * Stops the network thread if it is running and waits until it finishes. After this
- * call, no network packets will be sent and received anymore.
- *
- * @b Parameters
- *  - @p context should point to an opened context
- *
- * @b Returns
- *  - returns zero if the thread was successfully stopped or was already stopped
- *  - returns a negative value if the arguments are invalid
- */
-ROC_API int roc_context_stop(roc_context* context);
 
 /** Close context.
  *

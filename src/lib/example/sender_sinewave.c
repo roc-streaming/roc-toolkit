@@ -81,11 +81,6 @@ int main() {
         oops("roc_context_open");
     }
 
-    /* Start context thread(s). */
-    if (roc_context_start(context) != 0) {
-        oops("roc_context_start");
-    }
-
     /* Initialize sender config.
      * Initialize to zero to use default values for unset fields. */
     roc_sender_config sender_config;
@@ -170,11 +165,6 @@ int main() {
     /* Destroy sender. */
     if (roc_sender_close(sender) != 0) {
         oops("roc_sender_close");
-    }
-
-    /* Wait until all packets are sent and stop the context thread. */
-    if (roc_context_stop(context) != 0) {
-        oops("roc_context_stop");
     }
 
     /* Destroy context. */

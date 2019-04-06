@@ -60,12 +60,10 @@ public:
     Context() {
         ctx_ = roc_context_open(NULL);
         CHECK(ctx_);
-        CHECK(roc_context_start(ctx_) == 0);
     }
 
     ~Context() {
-        roc_context_stop(ctx_);
-        roc_context_close(ctx_);
+        CHECK(roc_context_close(ctx_) == 0);
     }
 
     roc_context* get() {

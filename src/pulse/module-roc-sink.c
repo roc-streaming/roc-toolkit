@@ -302,11 +302,6 @@ int pa__init(pa_module* m) {
         goto error;
     }
 
-    if (roc_context_start(u->context) != 0) {
-        pa_log("can't start roc sender");
-        goto error;
-    }
-
     /* create and initialize sink */
     pa_sink_new_data data;
     pa_sink_new_data_init(&data);
@@ -394,12 +389,15 @@ void pa__done(pa_module* m) {
     }
 
     if (u->sender) {
-        roc_sender_close(u->sender);
+        if (roc_sender_close(u->sender) != 0) {
+            pa_log("failed to close roc sender");
+        }
     }
 
     if (u->context) {
-        roc_context_stop(u->context);
-        roc_context_close(u->context);
+        if (roc_context_close(u->context) != 0) {
+            pa_log("failed to close roc context");
+        }
     }
 
     pa_xfree(u);

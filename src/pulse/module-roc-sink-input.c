@@ -247,11 +247,6 @@ int pa__init(pa_module* m) {
         goto error;
     }
 
-    if (roc_context_start(u->context) != 0) {
-        pa_log("can't start roc receiver");
-        goto error;
-    }
-
     /* create and initialize sink input */
     pa_sink_input_new_data data;
     pa_sink_input_new_data_init(&data);
@@ -327,12 +322,15 @@ void pa__done(pa_module* m) {
     }
 
     if (u->receiver) {
-        roc_receiver_close(u->receiver);
+        if (roc_receiver_close(u->receiver) != 0) {
+            pa_log("failed to close roc receiver");
+        }
     }
 
     if (u->context) {
-        roc_context_stop(u->context);
-        roc_context_close(u->context);
+        if (roc_context_close(u->context) != 0) {
+            pa_log("failed to close roc context");
+        }
     }
 
     pa_xfree(u);

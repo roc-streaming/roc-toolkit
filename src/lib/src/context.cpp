@@ -35,37 +35,16 @@ roc_context* roc_context_open(const roc_context_config* config) {
         return NULL;
     }
 
-    return context;
-}
-
-int roc_context_start(roc_context* context) {
-    if (!context) {
-        roc_log(LogError, "roc_context_start: invalid arguments: context == NULL");
-        return -1;
-    }
-
     roc_log(LogInfo, "roc_context: starting context");
 
     if (!context->trx.start()) {
         roc_log(LogError, "roc_context_start: can't start thread");
-        return -1;
+
+        delete context;
+        return NULL;
     }
 
-    return 0;
-}
-
-int roc_context_stop(roc_context* context) {
-    if (!context) {
-        roc_log(LogError, "roc_context_stop: invalid arguments: context == NULL");
-        return -1;
-    }
-
-    context->trx.stop();
-    context->trx.join();
-
-    roc_log(LogInfo, "roc_context: stopped context");
-
-    return 0;
+    return context;
 }
 
 int roc_context_close(roc_context* context) {

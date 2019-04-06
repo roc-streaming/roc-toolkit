@@ -69,11 +69,6 @@ int main() {
         oops("roc_context_open");
     }
 
-    /* Start context thread(s). */
-    if (roc_context_start(context) != 0) {
-        oops("roc_context_start");
-    }
-
     /* Initialize receiver config.
      * We use default values. */
     roc_receiver_config receiver_config;
@@ -175,11 +170,6 @@ int main() {
     /* Destroy receiver. */
     if (roc_receiver_close(receiver) != 0) {
         oops("roc_receiver_close");
-    }
-
-    /* Stop the context thread. */
-    if (roc_context_stop(context) != 0) {
-        oops("roc_context_stop");
     }
 
     /* Destroy context. */
