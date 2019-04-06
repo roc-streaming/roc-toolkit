@@ -5,9 +5,15 @@ branches:
     - master
     - develop
 
-matrix:
+stages:
+  - name: Build
+  - name: Docs
+    if: branch = master
+
+jobs:
   include:
     - name: "Linux x84_64"
+      stage: Build
       os: linux
       dist: trusty
       sudo: required
@@ -32,6 +38,7 @@ matrix:
         - cat build.status
 
     - name: "Linux ARM"
+      stage: Build
       os: linux
       dist: trusty
       sudo: required
@@ -48,6 +55,7 @@ matrix:
         - cat build.status
 
     - name: "macOS xcode7.3"
+      stage: Build
       os: osx
       osx_image: xcode7.3
       script:
@@ -58,3 +66,8 @@ matrix:
       osx_image: xcode9.1
       script:
         - scripts/travis/macos/xcode91.sh
+
+    - name: "roc-project.github.io"
+      stage: Docs
+      script:
+        - scripts/travis/trigger.sh roc-project%2Froc-project.github.io travis
