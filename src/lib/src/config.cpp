@@ -14,7 +14,7 @@
 
 using namespace roc;
 
-bool config_context(roc_context_config& out, const roc_context_config* in) {
+bool make_context_config(roc_context_config& out, const roc_context_config* in) {
     out.max_packet_size = 2048;
     out.max_frame_size = 4096;
 
@@ -30,7 +30,7 @@ bool config_context(roc_context_config& out, const roc_context_config* in) {
     return true;
 }
 
-bool config_sender(pipeline::SenderConfig& out, const roc_sender_config& in) {
+bool make_sender_config(pipeline::SenderConfig& out, const roc_sender_config& in) {
     if (in.frame_sample_rate != 0) {
         out.input_sample_rate = in.frame_sample_rate;
     } else {
@@ -116,7 +116,7 @@ bool config_sender(pipeline::SenderConfig& out, const roc_sender_config& in) {
     return true;
 }
 
-bool config_receiver(pipeline::ReceiverConfig& out, const roc_receiver_config& in) {
+bool make_receiver_config(pipeline::ReceiverConfig& out, const roc_receiver_config& in) {
     if (in.frame_sample_rate != 0) {
         out.output.sample_rate = in.frame_sample_rate;
     } else {
@@ -238,10 +238,10 @@ bool config_receiver(pipeline::ReceiverConfig& out, const roc_receiver_config& i
     return true;
 }
 
-bool config_port(pipeline::PortConfig& out,
-                 roc_port_type type,
-                 roc_protocol proto,
-                 const packet::Address& addr) {
+bool make_port_config(pipeline::PortConfig& out,
+                      roc_port_type type,
+                      roc_protocol proto,
+                      const packet::Address& addr) {
     switch ((int)type) {
     case ROC_PORT_AUDIO_SOURCE:
         switch ((int)proto) {

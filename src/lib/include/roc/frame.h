@@ -33,7 +33,7 @@ typedef struct roc_frame {
      * Sample rate, channel set, and encoding are defined by the sender or
      * receiver parameters.
      */
-    void *samples;
+    void* samples;
 
     /** Sample buffer size.
      * Defines the size of samples buffer in bytes.

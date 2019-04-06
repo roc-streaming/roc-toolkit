@@ -46,7 +46,7 @@ roc_receiver* roc_receiver_open(roc_context* context, const roc_receiver_config*
 
     pipeline::ReceiverConfig rconfig;
     if (config) {
-        if (!config_receiver(rconfig, *config)) {
+        if (!make_receiver_config(rconfig, *config)) {
             roc_log(LogError, "roc_receiver_open: invalid config");
             return NULL;
         }
@@ -84,7 +84,7 @@ int roc_receiver_bind(roc_receiver* receiver,
         return -1;
     }
 
-    packet::Address& addr = address_get(address);
+    packet::Address& addr = get_address(address);
     if (!addr.valid()) {
         roc_log(LogError, "roc_sender_connect: invalid arguments: invalid address");
         return -1;
@@ -96,7 +96,7 @@ int roc_receiver_bind(roc_receiver* receiver,
     }
 
     pipeline::PortConfig pconfig;
-    if (!config_port(pconfig, type, proto, addr)) {
+    if (!make_port_config(pconfig, type, proto, addr)) {
         roc_log(LogError, "roc_receiver_bind: invalid arguments");
         return -1;
     }

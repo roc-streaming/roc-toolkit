@@ -30,16 +30,16 @@
 #include <roc/receiver.h>
 
 /* Receiver parameters. */
-#define RECEIVER_IP "0.0.0.0"
-#define RECEIVER_SOURCE_PORT 10001
-#define RECEIVER_REPAIR_PORT 10002
+#define EXAMPLE_RECEIVER_IP "0.0.0.0"
+#define EXAMPLE_RECEIVER_SOURCE_PORT 10001
+#define EXAMPLE_RECEIVER_REPAIR_PORT 10002
 
 /* Player parameters. */
-#define OUTPUT_DEVICE "default"
-#define OUTPUT_TYPE "alsa"
-#define SAMPLE_RATE 44100
-#define NUM_CHANNELS 2
-#define BUFFER_SIZE 1000
+#define EXAMPLE_OUTPUT_DEVICE "default"
+#define EXAMPLE_OUTPUT_TYPE "alsa"
+#define EXAMPLE_SAMPLE_RATE 44100
+#define EXAMPLE_NUM_CHANNELS 2
+#define EXAMPLE_BUFFER_SIZE 1000
 
 #define oops(msg)                                                                        \
     do {                                                                                 \
@@ -80,7 +80,7 @@ int main() {
     memset(&receiver_config, 0, sizeof(receiver_config));
 
     /* Setup output frame format. */
-    receiver_config.frame_sample_rate = SAMPLE_RATE;
+    receiver_config.frame_sample_rate = EXAMPLE_SAMPLE_RATE;
     receiver_config.frame_channels = ROC_CHANNEL_SET_STEREO;
     receiver_config.frame_encoding = ROC_FRAME_ENCODING_PCM_FLOAT;
 
@@ -94,8 +94,8 @@ int main() {
      * The receiver will expect packets with RTP header and Reed-Solomon (m=8) FECFRAME
      * Source Payload ID on this port. */
     roc_address recv_source_addr;
-    if (roc_address_init(&recv_source_addr, ROC_AF_AUTO, RECEIVER_IP,
-                         RECEIVER_SOURCE_PORT)
+    if (roc_address_init(&recv_source_addr, ROC_AF_AUTO, EXAMPLE_RECEIVER_IP,
+                         EXAMPLE_RECEIVER_SOURCE_PORT)
         != 0) {
         oops("roc_address_init");
     }
@@ -109,8 +109,8 @@ int main() {
      * The receiver will expect packets with Reed-Solomon (m=8) FECFRAME
      * Repair Payload ID on this port. */
     roc_address recv_repair_addr;
-    if (roc_address_init(&recv_repair_addr, ROC_AF_AUTO, RECEIVER_IP,
-                         RECEIVER_REPAIR_PORT)
+    if (roc_address_init(&recv_repair_addr, ROC_AF_AUTO, EXAMPLE_RECEIVER_IP,
+                         EXAMPLE_RECEIVER_REPAIR_PORT)
         != 0) {
         oops("roc_address_init");
     }
@@ -123,13 +123,13 @@ int main() {
     /* Initialize SoX parameters. */
     sox_signalinfo_t signal_info;
     memset(&signal_info, 0, sizeof(signal_info));
-    signal_info.rate = SAMPLE_RATE;
-    signal_info.channels = NUM_CHANNELS;
+    signal_info.rate = EXAMPLE_SAMPLE_RATE;
+    signal_info.channels = EXAMPLE_NUM_CHANNELS;
     signal_info.precision = SOX_SAMPLE_PRECISION;
 
     /* Open SoX output device. */
     sox_format_t* output =
-        sox_open_write(OUTPUT_DEVICE, &signal_info, NULL, OUTPUT_TYPE, NULL, NULL);
+        sox_open_write(EXAMPLE_OUTPUT_DEVICE, &signal_info, NULL, EXAMPLE_OUTPUT_TYPE, NULL, NULL);
     if (!output) {
         oops("sox_open_write");
     }
@@ -138,13 +138,13 @@ int main() {
     for (;;) {
         /* Read samples from receiver.
          * If not enough samples are received, receiver will pad buffer with zeros. */
-        float recv_samples[BUFFER_SIZE];
+        float recv_samples[EXAMPLE_BUFFER_SIZE];
 
         roc_frame frame;
         memset(&frame, 0, sizeof(frame));
 
         frame.samples = recv_samples;
-        frame.samples_size = BUFFER_SIZE * sizeof(float);
+        frame.samples_size = EXAMPLE_BUFFER_SIZE * sizeof(float);
 
         if (roc_receiver_read(receiver, &frame) != 0) {
             break;
@@ -154,16 +154,16 @@ int main() {
         SOX_SAMPLE_LOCALS;
 
         size_t clips = 0;
-        sox_sample_t out_samples[BUFFER_SIZE];
+        sox_sample_t out_samples[EXAMPLE_BUFFER_SIZE];
 
         ssize_t n;
-        for (n = 0; n < BUFFER_SIZE; n++) {
+        for (n = 0; n < EXAMPLE_BUFFER_SIZE; n++) {
             out_samples[n] = SOX_FLOAT_32BIT_TO_SAMPLE(recv_samples[n], clips);
         }
 
         /* Play samples.
          * SoX will block us until the output device is ready to accept new samples. */
-        if (sox_write(output, out_samples, BUFFER_SIZE) != BUFFER_SIZE) {
+        if (sox_write(output, out_samples, EXAMPLE_BUFFER_SIZE) != EXAMPLE_BUFFER_SIZE) {
             oops("sox_write");
         }
     }

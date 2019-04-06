@@ -25,11 +25,11 @@ char* address_payload(roc_address* address) {
 
 } // namespace
 
-const packet::Address& address_get(const roc_address* address) {
+const packet::Address& get_address(const roc_address* address) {
     return *(const packet::Address*)address_payload(address);
 }
 
-packet::Address& address_get(roc_address* address) {
+packet::Address& get_address(roc_address* address) {
     return *(packet::Address*)address_payload(address);
 }
 
@@ -72,7 +72,7 @@ roc_family roc_address_family(const roc_address* address) {
         return ROC_AF_INVALID;
     }
 
-    const packet::Address& pa = address_get(address);
+    const packet::Address& pa = get_address(address);
 
     switch (pa.version()) {
     case 4:
@@ -95,7 +95,7 @@ const char* roc_address_ip(const roc_address* address, char* buf, size_t bufsz) 
         return NULL;
     }
 
-    const packet::Address& pa = address_get(address);
+    const packet::Address& pa = get_address(address);
 
     if (!pa.get_ip(buf, bufsz)) {
         return NULL;
@@ -109,7 +109,7 @@ int roc_address_port(const roc_address* address) {
         return -1;
     }
 
-    const packet::Address& pa = address_get(address);
+    const packet::Address& pa = get_address(address);
 
     int port = pa.port();
     if (port < 0) {

@@ -29,20 +29,19 @@
 #include <roc/sender.h>
 
 /* Sender parameters. */
-#define SENDER_IP "0.0.0.0"
-#define SENDER_PORT 0
+#define EXAMPLE_SENDER_IP "0.0.0.0"
+#define EXAMPLE_SENDER_PORT 0
 
 /* Receiver parameters. */
-#define RECEIVER_IP "127.0.0.1"
-#define RECEIVER_SOURCE_PORT 10001
-#define RECEIVER_REPAIR_PORT 10002
+#define EXAMPLE_RECEIVER_IP "127.0.0.1"
+#define EXAMPLE_RECEIVER_SOURCE_PORT 10001
+#define EXAMPLE_RECEIVER_REPAIR_PORT 10002
 
-/* Sender parameters */
-#define SAMPLE_RATE 44100
-#define SINE_RATE 440
-#define NUM_SAMPLES (SAMPLE_RATE * 5)
-#define BUFFER_SIZE 100
-#define PI 3.14159265359
+/* Signal parameters */
+#define EXAMPLE_SAMPLE_RATE 44100
+#define EXAMPLE_SINE_RATE 440
+#define EXAMPLE_SINE_SAMPLES (EXAMPLE_SAMPLE_RATE * 5)
+#define EXAMPLE_BUFFER_SIZE 100
 
 #define oops(msg)                                                                        \
     do {                                                                                 \
@@ -54,7 +53,8 @@ static void gensine(float* samples, size_t num_samples) {
     double t = 0;
     size_t i;
     for (i = 0; i < num_samples / 2; i++) {
-        const float s = (float)sin(2 * PI * SINE_RATE / SAMPLE_RATE * t);
+        const float s =
+            (float)sin(2 * 3.14159265359 * EXAMPLE_SINE_RATE / EXAMPLE_SAMPLE_RATE * t);
 
         /* Fill samples for left and right channels. */
         samples[i * 2] = s;
@@ -92,7 +92,7 @@ int main() {
     memset(&sender_config, 0, sizeof(sender_config));
 
     /* Setup input frame format. */
-    sender_config.frame_sample_rate = SAMPLE_RATE;
+    sender_config.frame_sample_rate = EXAMPLE_SAMPLE_RATE;
     sender_config.frame_channels = ROC_CHANNEL_SET_STEREO;
     sender_config.frame_encoding = ROC_FRAME_ENCODING_PCM_FLOAT;
 
@@ -109,7 +109,9 @@ int main() {
 
     /* Bind sender to a random port. */
     roc_address sender_addr;
-    if (roc_address_init(&sender_addr, ROC_AF_AUTO, SENDER_IP, SENDER_PORT) != 0) {
+    if (roc_address_init(&sender_addr, ROC_AF_AUTO, EXAMPLE_SENDER_IP,
+                         EXAMPLE_SENDER_PORT)
+        != 0) {
         oops("roc_address_init");
     }
     if (roc_sender_bind(sender, &sender_addr) != 0) {
@@ -120,8 +122,8 @@ int main() {
      * The receiver should expect packets with RTP header and Reed-Solomon (m=8) FECFRAME
      * Source Payload ID on that port. */
     roc_address recv_source_addr;
-    if (roc_address_init(&recv_source_addr, ROC_AF_AUTO, RECEIVER_IP,
-                         RECEIVER_SOURCE_PORT)
+    if (roc_address_init(&recv_source_addr, ROC_AF_AUTO, EXAMPLE_RECEIVER_IP,
+                         EXAMPLE_RECEIVER_SOURCE_PORT)
         != 0) {
         oops("roc_address_init");
     }
@@ -135,8 +137,8 @@ int main() {
      * The receiver should expect packets with Reed-Solomon (m=8) FECFRAME
      * Repair Payload ID on that port. */
     roc_address recv_repair_addr;
-    if (roc_address_init(&recv_repair_addr, ROC_AF_AUTO, RECEIVER_IP,
-                         RECEIVER_REPAIR_PORT)
+    if (roc_address_init(&recv_repair_addr, ROC_AF_AUTO, EXAMPLE_RECEIVER_IP,
+                         EXAMPLE_RECEIVER_REPAIR_PORT)
         != 0) {
         oops("roc_address_init");
     }
@@ -148,17 +150,17 @@ int main() {
 
     /* Generate sine wave and write it to the sender. */
     size_t i;
-    for (i = 0; i < NUM_SAMPLES / BUFFER_SIZE; i++) {
+    for (i = 0; i < EXAMPLE_SINE_SAMPLES / EXAMPLE_BUFFER_SIZE; i++) {
         /* Generate sine wave. */
-        float samples[BUFFER_SIZE];
-        gensine(samples, BUFFER_SIZE);
+        float samples[EXAMPLE_BUFFER_SIZE];
+        gensine(samples, EXAMPLE_BUFFER_SIZE);
 
         /* Write samples to the sender. */
         roc_frame frame;
         memset(&frame, 0, sizeof(frame));
 
         frame.samples = samples;
-        frame.samples_size = BUFFER_SIZE * sizeof(float);
+        frame.samples_size = EXAMPLE_BUFFER_SIZE * sizeof(float);
 
         if (roc_sender_write(sender, &frame) != 0) {
             oops("roc_sender_write");

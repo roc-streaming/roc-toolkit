@@ -24,7 +24,7 @@ roc_context* roc_context_open(const roc_context_config* config) {
     roc_log(LogInfo, "roc_context: opening context");
 
     roc_context_config cconfig;
-    if (!config_context(cconfig, config)) {
+    if (!make_context_config(cconfig, config)) {
         roc_log(LogError, "roc_context_open: invalid config");
         return NULL;
     }

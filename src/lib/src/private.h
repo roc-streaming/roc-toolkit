@@ -28,18 +28,19 @@
 #include "roc_pipeline/sender.h"
 #include "roc_rtp/format_map.h"
 
-const roc::packet::Address& address_get(const roc_address* address);
-roc::packet::Address& address_get(roc_address* address);
+const roc::packet::Address& get_address(const roc_address* address);
+roc::packet::Address& get_address(roc_address* address);
 
-bool config_context(roc_context_config& out, const roc_context_config* in);
+bool make_context_config(roc_context_config& out, const roc_context_config* in);
 
-bool config_sender(roc::pipeline::SenderConfig& out, const roc_sender_config& in);
-bool config_receiver(roc::pipeline::ReceiverConfig& out, const roc_receiver_config& in);
+bool make_sender_config(roc::pipeline::SenderConfig& out, const roc_sender_config& in);
+bool make_receiver_config(roc::pipeline::ReceiverConfig& out,
+                          const roc_receiver_config& in);
 
-bool config_port(roc::pipeline::PortConfig& out,
-                 roc_port_type type,
-                 roc_protocol proto,
-                 const roc::packet::Address& addr);
+bool make_port_config(roc::pipeline::PortConfig& out,
+                      roc_port_type type,
+                      roc_protocol proto,
+                      const roc::packet::Address& addr);
 
 struct roc_context {
     roc_context(const roc_context_config& cfg);
