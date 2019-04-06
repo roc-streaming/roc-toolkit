@@ -33,7 +33,7 @@ WARN_IF_DOC_ERROR       = YES
 WARN_NO_PARAMDOC        = NO
 
 OUTPUT_DIRECTORY        = ../../build/docs/modules
-HTML_OUTPUT             = ../../../docs/html/modules
+HTML_OUTPUT             = ../../../html/doxygen
 
 GENERATE_LATEX          = NO
 DOT_GRAPH_MAX_NODES     = 1000

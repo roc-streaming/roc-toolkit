@@ -1,9 +1,9 @@
 # build results
 bin
 build
-docs/html
-docs/man
 3rdparty
+html
+man
 
 # scons
 .sconsign.dblite

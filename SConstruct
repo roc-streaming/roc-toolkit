@@ -177,13 +177,14 @@ if 'clean' in COMMAND_LINE_TARGETS and COMMAND_LINE_TARGETS != ['clean']:
 clean = [
     env.DeleteDir('#bin'),
     env.DeleteDir('#build'),
-    env.DeleteDir('#docs/html'),
-    env.DeleteDir('#docs/man'),
     env.DeleteDir('#3rdparty'),
+    env.DeleteDir('#html'),
+    env.DeleteDir('#man'),
     env.DeleteDir('#.sconf_temp'),
     env.DeleteFile('#.sconsign.dblite'),
     env.DeleteFile('#config.log'),
     env.DeleteFile('#compile_commands.json'),
+    env.DeleteFile('#build.status'),
 ]
 
 env.AlwaysBuild(env.Alias('clean', [], clean))
@@ -217,8 +218,8 @@ else:
 if enable_doxygen:
     doxygen_targets = [
         env.Doxygen(
+            html_dir='html/doxygen',
             build_dir='build/docs/modules',
-            html_dir='docs/html/modules',
             config='src/modules/Doxyfile',
             sources=(env.RecursiveGlob('#src/modules', ['*.h', '*.dox']) +
                 env.RecursiveGlob('#docs/images', ['*'])),
@@ -243,7 +244,7 @@ if enable_doxygen and enable_sphinx:
         env.Sphinx(
             build_dir='build',
             output_type='html',
-            output_dir='docs/html/docs',
+            output_dir='html/docs',
             source_dir='docs/sphinx',
             sources=(env.RecursiveGlob('docs/sphinx', ['*']) +
                 env.RecursiveGlob('docs/images', ['*']) +
@@ -253,7 +254,7 @@ if enable_doxygen and enable_sphinx:
         env.Sphinx(
             build_dir='build',
             output_type='man',
-            output_dir='docs/man',
+            output_dir='man',
             source_dir='docs/sphinx',
             sources=env.RecursiveGlob('docs/sphinx', ['*']),
             werror=GetOption('enable_werror')),
@@ -261,13 +262,7 @@ if enable_doxygen and enable_sphinx:
     env.AlwaysBuild(env.Alias('sphinx', sphinx_targets))
 
 if (enable_doxygen and enable_sphinx) or 'docs' in COMMAND_LINE_TARGETS:
-    docs_targets = [
-        'doxygen',
-        'sphinx',
-        env.Install('docs/html', env.RecursiveGlob('docs/website', ['*'])),
-        env.Install('docs/html', ['docs/images/logo.png']),
-    ]
-    env.AlwaysBuild(env.Alias('docs', docs_targets))
+    env.AlwaysBuild(env.Alias('docs', ['doxygen', 'sphinx']))
 
 fmt = []
 
