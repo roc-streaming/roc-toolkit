@@ -312,7 +312,9 @@ fmt += [
 env.AlwaysBuild(
     env.Alias('fmt', [], fmt))
 
-if set(COMMAND_LINE_TARGETS).intersection(['clean', 'fmt', 'doxygen']):
+non_build_targets = ['clean', 'fmt', 'docs', 'shpinx', 'doxygen']
+if set(COMMAND_LINE_TARGETS) \
+  and set(COMMAND_LINE_TARGETS).intersection(non_build_targets) == set(COMMAND_LINE_TARGETS):
     Return()
 
 build = GetOption('build') or ''
