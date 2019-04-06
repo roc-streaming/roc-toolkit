@@ -60,7 +60,7 @@ Frequency estimator directly affects sound quality. It must operate very smoothl
 Resampler
 =========
 
-The main idea of current resampler's implementation was taken from `this paper <https://ccrma.stanford.edu/~jos/resample/resample.pdf>`_. It's pretty hard to compete with this paper in clarity so if you're fond of DSP and such kind of things we'll refer to this paper for the algorithm details It'd be better to describe the rest technical stuff here.
+The main idea of current resampler's implementation was taken from `this paper <https://ccrma.stanford.edu/~jos/resample/resample.pdf>`_. It's pretty hard to compete with this paper in clarity so if you're fond of DSP and such kind of things we'll refer to this paper for the algorithm details. It'd be better to describe the rest technical stuff here.
 
 Internally, resampler operates a moving *window*. An output sample is a function of all samples in the window. The window is implemented on top of three *frames*, stored in a circular buffer. Resampler reads samples from the pipeline frame-by-frame. When the window moves outside the middle frame boundaries, the circular buffer is rotated and the next frame is requested from the pipeline.
 

@@ -20,10 +20,6 @@ roc_context
 
 .. doxygenfunction:: roc_context_open
 
-.. doxygenfunction:: roc_context_start
-
-.. doxygenfunction:: roc_context_stop
-
 .. doxygenfunction:: roc_context_close
 
 roc_sender
