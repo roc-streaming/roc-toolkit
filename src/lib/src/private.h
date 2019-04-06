@@ -37,6 +37,7 @@ bool config_sender(roc::pipeline::SenderConfig& out, const roc_sender_config& in
 bool config_receiver(roc::pipeline::ReceiverConfig& out, const roc_receiver_config& in);
 
 bool config_port(roc::pipeline::PortConfig& out,
+                 roc_port_type type,
                  roc_protocol proto,
                  const roc::packet::Address& addr);
 

@@ -18,6 +18,22 @@
 extern "C" {
 #endif
 
+/** Network port type. */
+typedef enum roc_port_type {
+    /** Network port for audio source packets.
+     * If FEC is not used, this type of port is used to send audio packets.
+     * If FEC is used, this type of port is used to send or receive FEC source packets
+     * containing audio data plus some FEC headers.
+     */
+    ROC_PORT_AUDIO_SOURCE = 1,
+
+    /** Network port for audio repair packets.
+     * If FEC is used, this type of port is used to send or receive FEC repair packets
+     * containing redundant data for audio plus some FEC headers.
+     */
+    ROC_PORT_AUDIO_REPAIR = 2
+} roc_port_type;
+
 /** Network protocol. */
 typedef enum roc_protocol {
     /** Bare RTP (RFC 3550). */

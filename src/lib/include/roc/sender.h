@@ -135,8 +135,10 @@ ROC_API int roc_sender_bind(roc_sender* sender, roc_address* address);
  *  - returns a negative value if the arguments are invalid
  *  - returns a negative value if roc_sender_write() was already called first time
  */
-ROC_API int
-roc_sender_connect(roc_sender* sender, roc_protocol proto, const roc_address* address);
+ROC_API int roc_sender_connect(roc_sender* sender,
+                               roc_port_type type,
+                               roc_protocol proto,
+                               const roc_address* address);
 
 /** Encode and send samples.
  *

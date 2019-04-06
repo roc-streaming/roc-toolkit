@@ -38,8 +38,10 @@ ROC_API roc_receiver* roc_receiver_open(roc_context* context,
 /** Bind receiver to a local port.
  * TODO.
  */
-ROC_API int
-roc_receiver_bind(roc_receiver* receiver, roc_protocol proto, roc_address* address);
+ROC_API int roc_receiver_bind(roc_receiver* receiver,
+                              roc_port_type type,
+                              roc_protocol proto,
+                              roc_address* address);
 
 /** Read samples from the receiver.
  * TODO.

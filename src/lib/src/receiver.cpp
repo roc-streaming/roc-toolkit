@@ -70,7 +70,10 @@ roc_receiver* roc_receiver_open(roc_context* context, const roc_receiver_config*
     return receiver.release();
 }
 
-int roc_receiver_bind(roc_receiver* receiver, roc_protocol proto, roc_address* address) {
+int roc_receiver_bind(roc_receiver* receiver,
+                      roc_port_type type,
+                      roc_protocol proto,
+                      roc_address* address) {
     if (!receiver) {
         roc_log(LogError, "roc_receiver_bind: invalid arguments: receiver == NULL");
         return -1;
@@ -93,7 +96,7 @@ int roc_receiver_bind(roc_receiver* receiver, roc_protocol proto, roc_address* a
     }
 
     pipeline::PortConfig pconfig;
-    if (!config_port(pconfig, proto, addr)) {
+    if (!config_port(pconfig, type, proto, addr)) {
         roc_log(LogError, "roc_receiver_bind: invalid arguments");
         return -1;
     }

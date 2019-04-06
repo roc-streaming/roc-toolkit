@@ -38,43 +38,39 @@ bool init_pipeline(roc_sender* sender) {
     return true;
 }
 
-bool init_port(roc_sender* sender, const pipeline::PortConfig& pconfig) {
-    switch (pconfig.protocol) {
-    case pipeline::Proto_None:
-        break;
-
-    case pipeline::Proto_RTP:
-    case pipeline::Proto_RTP_RSm8_Source:
-    case pipeline::Proto_RTP_LDPC_Source:
+bool set_port(roc_sender* sender,
+              roc_port_type type,
+              const pipeline::PortConfig& pconfig) {
+    switch ((int)type) {
+    case ROC_PORT_AUDIO_SOURCE:
         if (sender->source_port.protocol != pipeline::Proto_None) {
-            roc_log(LogError, "roc_sender: source port is already connected");
+            roc_log(LogError, "roc_sender: audio source port is already set");
             return false;
         }
 
         sender->source_port = pconfig;
 
-        roc_log(LogInfo, "roc_sender: connected source port to %s %s",
+        roc_log(LogInfo, "roc_sender: set audio source port to %s %s",
                 packet::address_to_str(pconfig.address).c_str(),
                 pipeline::proto_to_str(pconfig.protocol));
 
         return true;
 
-    case pipeline::Proto_RSm8_Repair:
-    case pipeline::Proto_LDPC_Repair:
+    case ROC_PORT_AUDIO_REPAIR:
         if (sender->repair_port.protocol != pipeline::Proto_None) {
-            roc_log(LogError, "roc_sender: repair port is already connected");
+            roc_log(LogError, "roc_sender: audio repair port is already set");
             return false;
         }
 
         if (sender->config.fec.codec == fec::NoCodec) {
             roc_log(LogError,
-                    "roc_sender: repair port can't be used when fec is disabled");
+                    "roc_sender: can't set audio repair port when fec is disabled");
             return false;
         }
 
         sender->repair_port = pconfig;
 
-        roc_log(LogInfo, "roc_sender: connected repair port to %s %s",
+        roc_log(LogInfo, "roc_sender: set audio repair port to %s %s",
                 packet::address_to_str(pconfig.address).c_str(),
                 pipeline::proto_to_str(pconfig.protocol));
 
@@ -179,6 +175,7 @@ int roc_sender_bind(roc_sender* sender, roc_address* address) {
 }
 
 int roc_sender_connect(roc_sender* sender,
+                       roc_port_type type,
                        roc_protocol proto,
                        const roc_address* address) {
     if (!sender) {
@@ -205,12 +202,12 @@ int roc_sender_connect(roc_sender* sender,
     }
 
     pipeline::PortConfig pconfig;
-    if (!config_port(pconfig, proto, addr)) {
+    if (!config_port(pconfig, type, proto, addr)) {
         roc_log(LogError, "roc_sender_connect: invalid arguments");
         return -1;
     }
 
-    if (!init_port(sender, pconfig)) {
+    if (!set_port(sender, type, pconfig)) {
         roc_log(LogError, "roc_sender_connect: connect failed");
         return -1;
     }
