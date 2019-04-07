@@ -1,6 +1,7 @@
 #! /bin/bash
-( set -xe;
-  docker run --rm -ti \
+set -euo pipefail;
+( set -x;
+  docker run --rm -t \
          --cap-add SYS_PTRACE \
          -u "${UID}" \
          -v "${TRAVIS_BUILD_DIR}":/opt/roc \

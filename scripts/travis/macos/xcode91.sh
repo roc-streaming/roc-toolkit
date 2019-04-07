@@ -1,5 +1,5 @@
 #! /bin/bash
-set -xe
+set -euxo pipefail
 
 brew update
 

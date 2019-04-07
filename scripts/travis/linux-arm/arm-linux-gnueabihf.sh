@@ -1,5 +1,5 @@
 #! /bin/bash
-set -xe
+set -euxo pipefail
 
 TOOLCHAIN="arm-linux-gnueabihf"
 CPU="cortex-a15" # armv7

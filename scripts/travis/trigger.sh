@@ -1,5 +1,5 @@
 #! /bin/bash
-set -xe
+set -euxo pipefail
 curl -s -X POST \
   -H "Content-Type: application/json" \
   -H "Accept: application/json" \

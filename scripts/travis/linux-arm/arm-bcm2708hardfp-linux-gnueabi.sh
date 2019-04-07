@@ -1,5 +1,5 @@
 #! /bin/bash
-set -xe
+set -euxo pipefail
 
 TOOLCHAIN="arm-bcm2708hardfp-linux-gnueabi"
 CPU="arm1176" # armv6
