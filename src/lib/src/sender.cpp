@@ -16,7 +16,7 @@ using namespace roc;
 
 namespace {
 
-bool init_pipeline(roc_sender* sender) {
+bool sender_init_pipeline(roc_sender* sender) {
     sender->sender.reset(
         new (sender->context.allocator) pipeline::Sender(
             sender->config, sender->source_port, *sender->writer, sender->repair_port,
@@ -38,9 +38,9 @@ bool init_pipeline(roc_sender* sender) {
     return true;
 }
 
-bool set_port(roc_sender* sender,
-              roc_port_type type,
-              const pipeline::PortConfig& pconfig) {
+bool sender_set_port(roc_sender* sender,
+                     roc_port_type type,
+                     const pipeline::PortConfig& port_config) {
     switch ((int)type) {
     case ROC_PORT_AUDIO_SOURCE:
         if (sender->source_port.protocol != pipeline::Proto_None) {
@@ -48,11 +48,11 @@ bool set_port(roc_sender* sender,
             return false;
         }
 
-        sender->source_port = pconfig;
+        sender->source_port = port_config;
 
         roc_log(LogInfo, "roc_sender: set audio source port to %s %s",
-                packet::address_to_str(pconfig.address).c_str(),
-                pipeline::proto_to_str(pconfig.protocol));
+                packet::address_to_str(port_config.address).c_str(),
+                pipeline::proto_to_str(port_config.protocol));
 
         return true;
 
@@ -68,11 +68,11 @@ bool set_port(roc_sender* sender,
             return false;
         }
 
-        sender->repair_port = pconfig;
+        sender->repair_port = port_config;
 
         roc_log(LogInfo, "roc_sender: set audio repair port to %s %s",
-                packet::address_to_str(pconfig.address).c_str(),
-                pipeline::proto_to_str(pconfig.protocol));
+                packet::address_to_str(port_config.address).c_str(),
+                pipeline::proto_to_str(port_config.protocol));
 
         return true;
     }
@@ -81,7 +81,7 @@ bool set_port(roc_sender* sender,
     return false;
 }
 
-bool check_connected(roc_sender* sender) {
+bool sender_check_connected(roc_sender* sender) {
     if (sender->source_port.protocol == pipeline::Proto_None) {
         roc_log(LogError, "roc_sender: source port is not connected");
         return false;
@@ -109,19 +109,22 @@ roc_sender* roc_sender_open(roc_context* context, const roc_sender_config* confi
     roc_log(LogInfo, "roc_sender: opening sender");
 
     if (!context) {
-        roc_log(LogError, "roc_sender_open: invalid arguments: context == NULL");
+        roc_log(LogError, "roc_sender_open: invalid arguments: context is null");
         return NULL;
     }
 
-    pipeline::SenderConfig sconfig;
-    if (config) {
-        if (!make_sender_config(sconfig, *config)) {
-            roc_log(LogError, "roc_sender_open: invalid config");
-            return NULL;
-        }
+    if (!config) {
+        roc_log(LogError, "roc_sender_open: invalid arguments: config is null");
+        return NULL;
     }
 
-    roc_sender* sender = new (context->allocator) roc_sender(*context, sconfig);
+    pipeline::SenderConfig private_config;
+    if (!make_sender_config(private_config, *config)) {
+        roc_log(LogError, "roc_sender_open: invalid arguments: bad config");
+        return NULL;
+    }
+
+    roc_sender* sender = new (context->allocator) roc_sender(*context, private_config);
     if (!sender) {
         roc_log(LogError, "roc_sender_open: can't allocate roc_sender");
         return NULL;
@@ -134,12 +137,12 @@ roc_sender* roc_sender_open(roc_context* context, const roc_sender_config* confi
 
 int roc_sender_bind(roc_sender* sender, roc_address* address) {
     if (!sender) {
-        roc_log(LogError, "roc_sender_bind: invalid arguments: sender == NULL");
+        roc_log(LogError, "roc_sender_bind: invalid arguments: sender is null");
         return -1;
     }
 
     if (!address) {
-        roc_log(LogError, "roc_sender_bind: invalid arguments: address == NULL");
+        roc_log(LogError, "roc_sender_bind: invalid arguments: address is null");
         return -1;
     }
 
@@ -179,12 +182,12 @@ int roc_sender_connect(roc_sender* sender,
                        roc_protocol proto,
                        const roc_address* address) {
     if (!sender) {
-        roc_log(LogError, "roc_sender_connect: invalid arguments: sender == NULL");
+        roc_log(LogError, "roc_sender_connect: invalid arguments: sender is null");
         return -1;
     }
 
     if (!address) {
-        roc_log(LogError, "roc_sender_connect: invalid arguments: address == NULL");
+        roc_log(LogError, "roc_sender_connect: invalid arguments: address is null");
         return -1;
     }
 
@@ -201,13 +204,13 @@ int roc_sender_connect(roc_sender* sender,
         return -1;
     }
 
-    pipeline::PortConfig pconfig;
-    if (!make_port_config(pconfig, type, proto, addr)) {
+    pipeline::PortConfig port_config;
+    if (!make_port_config(port_config, type, proto, addr)) {
         roc_log(LogError, "roc_sender_connect: invalid arguments");
         return -1;
     }
 
-    if (!set_port(sender, type, pconfig)) {
+    if (!sender_set_port(sender, type, port_config)) {
         roc_log(LogError, "roc_sender_connect: connect failed");
         return -1;
     }
@@ -217,7 +220,7 @@ int roc_sender_connect(roc_sender* sender,
 
 int roc_sender_write(roc_sender* sender, const roc_frame* frame) {
     if (!sender) {
-        roc_log(LogError, "roc_sender_write: invalid arguments: sender == NULL");
+        roc_log(LogError, "roc_sender_write: invalid arguments: sender is null");
         return -1;
     }
 
@@ -228,13 +231,13 @@ int roc_sender_write(roc_sender* sender, const roc_frame* frame) {
         return -1;
     }
 
-    if (!check_connected(sender)) {
+    if (!sender_check_connected(sender)) {
         roc_log(LogError, "roc_sender_write: sender is not properly connected");
         return -1;
     }
 
     if (!sender->sender) {
-        if (!init_pipeline(sender)) {
+        if (!sender_init_pipeline(sender)) {
             roc_log(LogError, "roc_sender_write: lazy initialization failed");
             return -1;
         }
@@ -246,7 +249,7 @@ int roc_sender_write(roc_sender* sender, const roc_frame* frame) {
     }
 
     if (!frame) {
-        roc_log(LogError, "roc_sender_write: invalid arguments: frame == NULL");
+        roc_log(LogError, "roc_sender_write: invalid arguments: frame is null");
         return -1;
     }
 
@@ -265,7 +268,7 @@ int roc_sender_write(roc_sender* sender, const roc_frame* frame) {
     }
 
     if (!frame->samples) {
-        roc_log(LogError, "roc_sender_write: invalid arguments: samples == NULL");
+        roc_log(LogError, "roc_sender_write: invalid arguments: samples is null");
         return -1;
     }
 
@@ -277,7 +280,7 @@ int roc_sender_write(roc_sender* sender, const roc_frame* frame) {
 
 int roc_sender_close(roc_sender* sender) {
     if (!sender) {
-        roc_log(LogError, "roc_sender_close: invalid arguments: sender == NULL");
+        roc_log(LogError, "roc_sender_close: invalid arguments: sender is null");
         return -1;
     }
 

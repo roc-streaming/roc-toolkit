@@ -14,17 +14,17 @@
 
 using namespace roc;
 
-bool make_context_config(roc_context_config& out, const roc_context_config* in) {
-    out.max_packet_size = 2048;
-    out.max_frame_size = 4096;
+bool make_context_config(roc_context_config& out, const roc_context_config& in) {
+    if (in.max_packet_size != 0) {
+        out.max_packet_size = in.max_packet_size;
+    } else {
+        out.max_packet_size = 2048;
+    }
 
-    if (in) {
-        if (in->max_packet_size != 0) {
-            out.max_packet_size = in->max_packet_size;
-        }
-        if (in->max_frame_size / sizeof(audio::sample_t) != 0) {
-            out.max_frame_size = in->max_frame_size;
-        }
+    if (in.max_frame_size / sizeof(audio::sample_t) != 0) {
+        out.max_frame_size = in.max_frame_size;
+    } else {
+        out.max_frame_size = 4096;
     }
 
     return true;

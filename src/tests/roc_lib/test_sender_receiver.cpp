@@ -58,7 +58,10 @@ core::BufferPool<uint8_t> byte_buffer_pool(allocator, MaxBufSize, true);
 class Context : public core::NonCopyable<> {
 public:
     Context() {
-        ctx_ = roc_context_open(NULL);
+        roc_context_config config;
+        memset(&config, 0, sizeof(config));
+
+        ctx_ = roc_context_open(&config);
         CHECK(ctx_);
     }
 

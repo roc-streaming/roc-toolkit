@@ -23,13 +23,18 @@ roc_context::roc_context(const roc_context_config& cfg)
 roc_context* roc_context_open(const roc_context_config* config) {
     roc_log(LogInfo, "roc_context: opening context");
 
-    roc_context_config cconfig;
-    if (!make_context_config(cconfig, config)) {
-        roc_log(LogError, "roc_context_open: invalid config");
+    if (!config) {
+        roc_log(LogError, "roc_context_open: invalid arguments: config is null");
         return NULL;
     }
 
-    roc_context* context = new (std::nothrow) roc_context(cconfig);
+    roc_context_config private_config;
+    if (!make_context_config(private_config, *config)) {
+        roc_log(LogError, "roc_context_open: invalid arguments: bad config");
+        return NULL;
+    }
+
+    roc_context* context = new (std::nothrow) roc_context(private_config);
     if (!context) {
         roc_log(LogError, "roc_context_open: can't allocate roc_context");
         return NULL;
@@ -49,7 +54,7 @@ roc_context* roc_context_open(const roc_context_config* config) {
 
 int roc_context_close(roc_context* context) {
     if (!context) {
-        roc_log(LogError, "roc_context_close: invalid arguments: context == NULL");
+        roc_log(LogError, "roc_context_close: invalid arguments: context is null");
         return -1;
     }
 

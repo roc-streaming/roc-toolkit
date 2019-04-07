@@ -16,7 +16,7 @@ using namespace roc;
 
 namespace {
 
-void close_port(void* arg, const pipeline::PortConfig& port) {
+void receiver_close_port(void* arg, const pipeline::PortConfig& port) {
     roc_panic_if_not(arg);
     roc_receiver* receiver = (roc_receiver*)arg;
 
@@ -40,20 +40,24 @@ roc_receiver* roc_receiver_open(roc_context* context, const roc_receiver_config*
     roc_log(LogInfo, "roc_receiver: opening receiver");
 
     if (!context) {
-        roc_log(LogError, "roc_receiver_open: invalid arguments: context == NULL");
+        roc_log(LogError, "roc_receiver_open: invalid arguments: context is null");
         return NULL;
     }
 
-    pipeline::ReceiverConfig rconfig;
-    if (config) {
-        if (!make_receiver_config(rconfig, *config)) {
-            roc_log(LogError, "roc_receiver_open: invalid config");
-            return NULL;
-        }
+    if (!config) {
+        roc_log(LogError, "roc_receiver_open: invalid arguments: config is null");
+        return NULL;
     }
 
-    core::UniquePtr<roc_receiver> receiver(
-        new (context->allocator) roc_receiver(*context, rconfig), context->allocator);
+    pipeline::ReceiverConfig private_config;
+    if (!make_receiver_config(private_config, *config)) {
+        roc_log(LogError, "roc_receiver_open: invalid arguments: bad config");
+        return NULL;
+    }
+
+    core::UniquePtr<roc_receiver> receiver(new (context->allocator)
+                                               roc_receiver(*context, private_config),
+                                           context->allocator);
 
     if (!receiver) {
         roc_log(LogError, "roc_receiver_open: can't allocate receiver pipeline");
@@ -75,18 +79,18 @@ int roc_receiver_bind(roc_receiver* receiver,
                       roc_protocol proto,
                       roc_address* address) {
     if (!receiver) {
-        roc_log(LogError, "roc_receiver_bind: invalid arguments: receiver == NULL");
+        roc_log(LogError, "roc_receiver_bind: invalid arguments: receiver is null");
         return -1;
     }
 
     if (!address) {
-        roc_log(LogError, "roc_receiver_bind: invalid arguments: addr == NULL");
+        roc_log(LogError, "roc_receiver_bind: invalid arguments: address is null");
         return -1;
     }
 
     packet::Address& addr = get_address(address);
     if (!addr.valid()) {
-        roc_log(LogError, "roc_sender_connect: invalid arguments: invalid address");
+        roc_log(LogError, "roc_sender_connect: invalid arguments: bad address");
         return -1;
     }
 
@@ -95,32 +99,32 @@ int roc_receiver_bind(roc_receiver* receiver,
         return -1;
     }
 
-    pipeline::PortConfig pconfig;
-    if (!make_port_config(pconfig, type, proto, addr)) {
-        roc_log(LogError, "roc_receiver_bind: invalid arguments");
+    pipeline::PortConfig port_config;
+    if (!make_port_config(port_config, type, proto, addr)) {
+        roc_log(LogError, "roc_receiver_bind: invalid arguments: bad config");
         return -1;
     }
 
-    if (!receiver->receiver.add_port(pconfig)) {
+    if (!receiver->receiver.add_port(port_config)) {
         roc_log(LogError, "roc_receiver_bind: can't add pipeline port");
         return -1;
     }
 
     roc_log(LogInfo, "roc_receiver: bound to %s %s",
-            packet::address_to_str(pconfig.address).c_str(),
-            pipeline::proto_to_str(pconfig.protocol));
+            packet::address_to_str(port_config.address).c_str(),
+            pipeline::proto_to_str(port_config.protocol));
 
     return 0;
 }
 
 int roc_receiver_read(roc_receiver* receiver, roc_frame* frame) {
     if (!receiver) {
-        roc_log(LogError, "roc_receiver_read: invalid arguments: receiver == NULL");
+        roc_log(LogError, "roc_receiver_read: invalid arguments: receiver is null");
         return -1;
     }
 
     if (!frame) {
-        roc_log(LogError, "roc_receiver_read: invalid arguments: frame == NULL");
+        roc_log(LogError, "roc_receiver_read: invalid arguments: frame is null");
         return -1;
     }
 
@@ -139,7 +143,7 @@ int roc_receiver_read(roc_receiver* receiver, roc_frame* frame) {
     }
 
     if (!frame->samples) {
-        roc_log(LogError, "roc_receiver_read: invalid arguments: samples == NULL");
+        roc_log(LogError, "roc_receiver_read: invalid arguments: samples is null");
         return -1;
     }
 
@@ -151,13 +155,13 @@ int roc_receiver_read(roc_receiver* receiver, roc_frame* frame) {
 
 int roc_receiver_close(roc_receiver* receiver) {
     if (!receiver) {
-        roc_log(LogError, "roc_receiver_close: invalid arguments: receiver == NULL");
+        roc_log(LogError, "roc_receiver_close: invalid arguments: receiver is null");
         return -1;
     }
 
     roc_context& context = receiver->context;
 
-    receiver->receiver.iterate_ports(close_port, receiver);
+    receiver->receiver.iterate_ports(receiver_close_port, receiver);
     receiver->context.allocator.destroy(*receiver);
     --context.counter;
 

@@ -17,7 +17,10 @@ namespace roc {
 TEST_GROUP(context){};
 
 TEST(context, open_close) {
-    roc_context* context = roc_context_open(NULL);
+    roc_context_config config;
+    memset(&config, 0, sizeof(config));
+
+    roc_context* context = roc_context_open(&config);
     CHECK(context);
 
     LONGS_EQUAL(0, roc_context_close(context));

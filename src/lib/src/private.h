@@ -31,7 +31,7 @@
 const roc::packet::Address& get_address(const roc_address* address);
 roc::packet::Address& get_address(roc_address* address);
 
-bool make_context_config(roc_context_config& out, const roc_context_config* in);
+bool make_context_config(roc_context_config& out, const roc_context_config& in);
 
 bool make_sender_config(roc::pipeline::SenderConfig& out, const roc_sender_config& in);
 bool make_receiver_config(roc::pipeline::ReceiverConfig& out,
