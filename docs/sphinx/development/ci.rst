@@ -43,6 +43,15 @@ For example, this will run Fedora build:
 
 .. code::
 
-    $ docker run -ti --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
+    $ docker run -t --rm --cap-add SYS_PTRACE -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
         rocproject/travis-fedora \
           scons --build-3rdparty=openfec,cpputest --enable-debug test
+
+Explanation:
+
+* ``-t`` allocates a pseudo-TTY to enable color output
+* ``--rm`` removes the container when the command exits
+* ``--cap-add SYS_PTRACE`` enables ptracing which is needed for clang sanitizers
+* ``-u "${UID}"`` changes the UID inside the container from root to the current user
+* ``-v "${PWD}:${PWD}"`` mounts the current directory into the container at the same path
+* ``-w "${PWD}"`` chdirs into that directory

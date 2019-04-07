@@ -43,7 +43,7 @@ Here is how you can build Roc with this toolchain using `rocproject/cross-arm-bc
 .. code::
 
     $ cd /path/to/roc
-    $ docker run -ti --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
+    $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
         rocproject/cross-arm-bcm2708hardfp-linux-gnueabi \
           scons \
             --host=arm-bcm2708hardfp-linux-gnueabi \
@@ -88,7 +88,7 @@ Here is how you can build Roc with this toolchain using `rocproject/cross-arm-li
 .. code::
 
     $ cd /path/to/roc
-    $ docker run -ti --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
+    $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
         rocproject/cross-arm-linux-gnueabihf \
           scons \
             --host=arm-linux-gnueabihf \
@@ -129,7 +129,7 @@ Here is how you can build Roc with this toolchain using `rocproject/cross-aarch6
 .. code::
 
     $ cd /path/to/roc
-    $ docker run -ti --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
+    $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
         rocproject/cross-aarch64-linux-gnu \
           scons \
             --host=aarch64-linux-gnu \
@@ -202,7 +202,7 @@ Running a test on ARMv6 CPU using `rocproject/cross-arm-bcm2708hardfp-linux-gnue
 .. code::
 
     $ cd /path/to/roc
-    $ docker run -ti --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
+    $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
         rocproject/cross-arm-bcm2708hardfp-linux-gnueabi \
           env LD_LIBRARY_PATH="/opt/sysroot/lib:${PWD}/3rdparty/arm-bcm2708hardfp-linux-gnueabi/rpath" \
             qemu-arm -L /opt/sysroot -cpu arm1176 \
@@ -213,7 +213,7 @@ Running a test on ARMv7 CPU using `rocproject/cross-arm-linux-gnueabihf <https:/
 .. code::
 
     $ cd /path/to/roc
-    $ docker run -ti --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
+    $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
         rocproject/cross-arm-linux-gnueabihf \
           env LD_LIBRARY_PATH="/opt/sysroot/lib:${PWD}/3rdparty/arm-linux-gnueabihf/rpath" \
             qemu-arm -L /opt/sysroot -cpu cortex-a15 \
@@ -224,7 +224,7 @@ Running a test on ARMv8 CPU using `rocproject/cross-aarch64-linux-gnu <https://h
 .. code::
 
     $ cd /path/to/roc
-    $ docker run -ti --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
+    $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
         rocproject/cross-aarch64-linux-gnu \
           env LD_LIBRARY_PATH="/opt/sysroot/lib:${PWD}/3rdparty/aarch64-linux-gnu/rpath" \
             qemu-aarch64 -L /opt/sysroot -cpu cortex-a53 \
