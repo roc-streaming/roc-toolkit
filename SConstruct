@@ -184,7 +184,6 @@ clean = [
     env.DeleteFile('#.sconsign.dblite'),
     env.DeleteFile('#config.log'),
     env.DeleteFile('#compile_commands.json'),
-    env.DeleteFile('#build.status'),
 ]
 
 env.AlwaysBuild(env.Alias('clean', [], clean))
