@@ -935,12 +935,18 @@ if compiler == 'clang':
                 env.Append(**{var: [
                     '-Wno-redundant-parens',
                 ]})
-
         if compiler_ver[:2] >= (8, 0):
             for var in ['CXXFLAGS', 'CFLAGS']:
                 env.Append(**{var: [
                     '-Wno-extra-semi-stmt',
                     '-Wno-atomic-implicit-seq-cst',
+                ]})
+
+    if platform == 'darwin':
+        if compiler_ver[:2] >= (10, 0):
+            for var in ['CXXFLAGS', 'CFLAGS']:
+                env.Append(**{var: [
+                    '-Wno-redundant-parens',
                 ]})
 
 if compiler in ['gcc', 'clang']:
