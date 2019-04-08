@@ -6,4 +6,4 @@ Development
 
    development/roadmap
    development/guidelines
-   development/ci
+   development/continuous_integration

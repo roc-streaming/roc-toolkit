@@ -16,7 +16,7 @@ Links:
  * `Docker Hub organization <https://hub.docker.com/u/rocproject/>`_
  * `Dockerfiles repo <https://github.com/roc-project/dockerfiles>`_
 
-Travis builds
+Travis images
 =============
 
 ======================================================== ============= ============= ===========================

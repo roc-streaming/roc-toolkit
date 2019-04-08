@@ -10,5 +10,6 @@ Welcome to `Roc <https://roc-project.github.io/>`_ documentation!
    building
    api
    tools
+   portability
    internals
    development

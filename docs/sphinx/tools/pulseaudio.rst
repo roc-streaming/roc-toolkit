@@ -48,7 +48,7 @@ Alternatively, you can `build PulseAudio manually <https://www.freedesktop.org/w
 
    $ scons --enable-pulseaudio-modules --with-pulseaudio=/path/to/pulseaudio ...
 
-See our :doc:`/building` page for details. In particular, :doc:`/building/user_instructions` page provides building examples for popular distros.
+See our :doc:`/building` page for details. In particular, :doc:`/building/user_cookbook` page provides same examples.
 
 Installing
 ==========

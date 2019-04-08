@@ -1,7 +1,7 @@
-Developer instructions
-**********************
+Developer cookbook
+******************
 
-.. contents:: Jump to:
+.. contents:: Table of contents:
    :local:
    :depth: 1
 

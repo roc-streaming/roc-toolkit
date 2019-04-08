@@ -1,7 +1,7 @@
 SCons options
 *************
 
-.. contents:: Jump to:
+.. contents:: Table of contents:
    :local:
    :depth: 1
 
