@@ -384,7 +384,7 @@ elif name == 'pulseaudio':
     os.chdir('pulseaudio-%s' % ver)
     execute('./configure --host=%s %s %s %s' % (
         toolchain,
-        makeflags(workdir, toolchain, deplist),
+        makeflags(workdir, toolchain, deplist, cflags='-w -fomit-frame-pointer -O2'),
         ' '.join([
             'LIBJSON_CFLAGS=" "',
             'LIBJSON_LIBS="-ljson-c -ljson"',
