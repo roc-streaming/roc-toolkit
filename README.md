@@ -23,7 +23,7 @@ Work in progress!
 
 There is no public release yet. The upcoming 0.1 release will include the following features:
 
-- [ ] Public API for sender and receiver
+- [x] Public API for sender and receiver
 - [x] Command line tools for sender and receiver
 - [x] Network I/O
 - [x] Sound I/O (in tools)
@@ -35,18 +35,18 @@ There is no public release yet. The upcoming 0.1 release will include the follow
 - [x] Mac OS X support
 - [x] Proof of concept Roc-based network transport for PulseAudio
 
-See also [Roadmap](https://roc-project.github.io/docs/development/roadmap.html) page.
+See also [Roadmap](https://roc-project.github.io/roc/docs/development/roadmap.html) page.
 
 Documentation
 -------------
 
-* [Roc documentation](https://roc-project.github.io/docs/)
-* [Roc internal modules](https://roc-project.github.io/modules/)
+* [Roc documentation](https://roc-project.github.io/roc/docs/)
+* [Roc internal modules](https://roc-project.github.io/roc/doxygen/)
 
 Building
 --------
 
-See [Building](https://roc-project.github.io/docs/building.html) page. In particular, [User instructions](https://roc-project.github.io/docs/building/user_instructions.html) page provides examples for popular distros.
+See [Building](https://roc-project.github.io/roc/docs/building.html) page. In particular, [User instructions](https://roc-project.github.io/roc/docs/building/user_cookbook.html) page provides examples for popular distros.
 
 Try it
 ------
@@ -93,12 +93,12 @@ Contributions are always welcome!
 
 Feel free to open issues for bug reports, feature requests, and questions.
 
-Pull requests are welcome as well. For large features, it may be reasonable to open an issue and discuss the implementation first. [Development](https://roc-project.github.io/docs/development.html) page provides some details about our plans, conventions, workflow, and tools.
+Pull requests are welcome as well. For large features, it may be reasonable to open an issue and discuss the implementation first. [Development](https://roc-project.github.io/roc/docs/development.html) page provides some details about our plans, conventions, workflow, and tools.
 
 Licensing
 ---------
 
-Roc source code is licensed under [MPL-2.0](https://www.mozilla.org/en-US/MPL/2.0/). Roc PulseAudio modules are licensed under [LGPL-2.1](https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html). Roc logos provided by [botanicahouse](https://www.instagram.com/botanicahouse/) are licensed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).
+Roc source code is licensed under [MPL-2.0](https://www.mozilla.org/en-US/MPL/2.0/). Roc PulseAudio modules are licensed under [LGPL-2.1](https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html).
 
 Roc by default is configured to use FEC codec from OpenFEC, which is licensed under [CeCILL](http://openfec.org/patents.html), a GPL-like and GPL-compatible license. When Roc is built with OpenFEC support enabled, it must be distributed under a lincense compatible with CeCILL.
 
