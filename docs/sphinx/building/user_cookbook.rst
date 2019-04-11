@@ -23,11 +23,17 @@ Ubuntu 16.04 and later
     $ git clone https://github.com/roc-project/roc.git
     $ cd roc
 
-    # libraries, tools, tests
-    $ scons -Q --build-3rdparty=openfec test
+    # build libraries and tools
+    $ scons -Q --build-3rdparty=openfec
 
-    # PulseAudio modules
+    # install libraries and tools
+    $ sudo scons -Q --build-3rdparty=openfec install
+
+    # build libraries, tools, and PulseAudio modules
     $ scons -Q --enable-pulseaudio-modules --build-3rdparty=openfec,pulseaudio
+
+    # install libraries, tools, and PulseAudio modules
+    $ sudo scons -Q --enable-pulseaudio-modules --build-3rdparty=openfec,pulseaudio install
 
 Ubuntu 14.04 and later, Debian Jessie and later
 -----------------------------------------------
@@ -44,11 +50,17 @@ Ubuntu 14.04 and later, Debian Jessie and later
     $ git clone https://github.com/roc-project/roc.git
     $ cd roc
 
-    # libraries, tools, tests
-    $ scons -Q --build-3rdparty=uv,openfec,cpputest test
+    # build libraries and tools
+    $ scons -Q --build-3rdparty=uv,openfec,cpputest
 
-    # PulseAudio modules
+    # install libraries and tools
+    $ sudo scons -Q --build-3rdparty=uv,openfec,cpputest install
+
+    # build libraries, tools, and PulseAudio modules
     $ scons -Q --enable-pulseaudio-modules --build-3rdparty=uv,openfec,pulseaudio,cpputest
+
+    # install libraries, tools, and PulseAudio modules
+    $ sudo scons -Q --enable-pulseaudio-modules --build-3rdparty=uv,openfec,pulseaudio,cpputest install
 
 Fedora 22 and later
 -------------------
@@ -65,11 +77,17 @@ Fedora 22 and later
     $ git clone https://github.com/roc-project/roc.git
     $ cd roc
 
-    # libraries, tools, tests
-    $ scons -Q --build-3rdparty=openfec,cpputest test
+    # build libraries and tools
+    $ scons -Q --build-3rdparty=openfec,cpputest
 
-    # PulseAudio modules
+    # install libraries and tools
+    $ sudo scons -Q --build-3rdparty=openfec,cpputest install
+
+    # build libraries, tools, and PulseAudio modules
     $ scons -Q --enable-pulseaudio-modules --build-3rdparty=openfec,pulseaudio,cpputest
+
+    # install libraries, tools, and PulseAudio modules
+    $ sudo scons -Q --enable-pulseaudio-modules --build-3rdparty=openfec,pulseaudio,cpputest install
 
 Centos 7 and later
 ------------------
@@ -89,11 +107,17 @@ Centos 7 and later
     $ git clone https://github.com/roc-project/roc.git
     $ cd roc
 
-    # libraries, tools, tests
-    $ scons -Q --build-3rdparty=uv,openfec,cpputest test
+    # build libraries and tools
+    $ scons -Q --build-3rdparty=uv,openfec,cpputest
 
-    # PulseAudio modules
+    # install libraries and tools
+    $ sudo scons -Q --build-3rdparty=uv,openfec,cpputest install
+
+    # build libraries, tools, and PulseAudio modules
     $ scons -Q --enable-pulseaudio-modules --build-3rdparty=uv,openfec,pulseaudio,cpputest
+
+    # install libraries, tools, and PulseAudio modules
+    $ sudo scons -Q --enable-pulseaudio-modules --build-3rdparty=uv,openfec,pulseaudio,cpputest install
 
 Linux (cross-compile)
 =====================
@@ -112,7 +136,7 @@ Raspberry Pi 2 and 3
     $ git clone https://github.com/roc-project/roc.git
     $ cd roc
 
-    # libraries, tools, PulseAudio modules
+    # build libraries, tools, and PulseAudio modules
     $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
         rocproject/cross-arm-linux-gnueabihf \
           scons -Q \
@@ -120,10 +144,13 @@ Raspberry Pi 2 and 3
             --host=arm-linux-gnueabihf \
             --build-3rdparty=uv,openfec,alsa,pulseaudio:10.0,sox,cpputest
 
-    # install
+    # install Roc binaries
     $ scp ./bin/arm-linux-gnueabihf/roc-{recv,send,conv} <address>:/usr/bin
-    $ scp ./bin/arm-linux-gnueabihf/libroc.so /usr/lib
+    $ scp ./bin/arm-linux-gnueabihf/libroc.so <address>:/usr/lib
     $ scp ./bin/arm-linux-gnueabihf/module-roc-{sink,sink-input} <address>:/usr/lib/pulse-10.0/modules
+
+    # install Roc dependencies
+    $ ssh <address> apt-get install libasound2 libpulse0 libltdl7
 
 Raspberry Pi 1 and Zero
 -----------------------
@@ -134,7 +161,7 @@ Raspberry Pi 1 and Zero
     $ git clone https://github.com/roc-project/roc.git
     $ cd roc
 
-    # libraries, tools, PulseAudio modules
+    # build libraries, tools, and PulseAudio modules
     $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
         rocproject/cross-arm-bcm2708hardfp-linux-gnueabi \
           scons -Q \
@@ -142,11 +169,14 @@ Raspberry Pi 1 and Zero
             --host=arm-bcm2708hardfp-linux-gnueabi \
             --build-3rdparty=uv,openfec,alsa,pulseaudio:5.0,sox,cpputest
 
-    # install
+    # install Roc binaries
     $ scp ./bin/arm-bcm2708hardfp-linux-gnueabi/roc-{recv,send,conv} <address>:/usr/bin
-    $ scp ./bin/arm-bcm2708hardfp-linux-gnueabi/libroc.so /usr/lib
+    $ scp ./bin/arm-bcm2708hardfp-linux-gnueabi/libroc.so <address>:/usr/lib
     $ scp ./bin/arm-bcm2708hardfp-linux-gnueabi/module-roc-{sink,sink-input} \
         <address>:/usr/lib/pulse-5.0/modules
+
+    # install Roc dependencies
+    $ ssh <address> apt-get install libasound2 libpulse0 libltdl7
 
 Orange Pi 64-bit models
 -----------------------
@@ -157,7 +187,7 @@ Orange Pi 64-bit models
     $ git clone https://github.com/roc-project/roc.git
     $ cd roc
 
-    # libraries, tools, PulseAudio modules
+    # build libraries, tools, and PulseAudio modules
     $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
         rocproject/cross-aarch64-linux-gnu \
           scons -Q \
@@ -165,10 +195,13 @@ Orange Pi 64-bit models
             --host=aarch64-linux-gnu \
             --build-3rdparty=uv,openfec,alsa,pulseaudio:8.0,sox,cpputest
 
-    # install
+    # install Roc binaries
     $ scp ./bin/aarch64-linux-gnu/roc-{recv,send,conv} <address>:/usr/bin
-    $ scp ./bin/aarch64-linux-gnu/libroc.so /usr/lib
+    $ scp ./bin/aarch64-linux-gnu/libroc.so <address>:/usr/lib
     $ scp ./bin/aarch64-linux-gnu/module-roc-{sink,sink-input} <address>:/usr/lib/pulse-8.0/modules
+
+    # install Roc dependencies
+    $ ssh <address> apt-get install libasound2 libpulse0 libltdl7
 
 Orange Pi 32-bit models
 -----------------------
@@ -179,7 +212,7 @@ Orange Pi 32-bit models
     $ git clone https://github.com/roc-project/roc.git
     $ cd roc
 
-    # libraries, tools, PulseAudio modules
+    # build libraries, tools, and PulseAudio modules
     $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
         rocproject/cross-arm-linux-gnueabihf \
           scons -Q \
@@ -187,10 +220,13 @@ Orange Pi 32-bit models
             --host=arm-linux-gnueabihf \
             --build-3rdparty=uv,openfec,alsa,pulseaudio:8.0,sox,cpputest
 
-    # install
+    # install Roc binaries
     $ scp ./bin/arm-linux-gnueabihf/roc-{recv,send,conv} <address>:/usr/bin
-    $ scp ./bin/arm-linux-gnueabihf/libroc.so /usr/lib
+    $ scp ./bin/arm-linux-gnueabihf/libroc.so <address>:/usr/lib
     $ scp ./bin/arm-linux-gnueabihf/module-roc-{sink,sink-input} <address>:/usr/lib/pulse-8.0/modules
+
+    # install Roc dependencies
+    $ ssh <address> apt-get install libasound2 libpulse0 libltdl7
 
 macOS
 =====
@@ -210,8 +246,11 @@ macOS 10.12 and later
     $ git clone https://github.com/roc-project/roc.git
     $ cd roc
 
-    # libraries, tools, tests
-    $ scons -Q --build-3rdparty=openfec,cpputest test
+    # build libraries and tools
+    $ scons -Q --build-3rdparty=openfec,cpputest
+
+    # install libraries and tools
+    $ sudo scons -Q --build-3rdparty=openfec,cpputest install
 
 macOS 10.11 and later
 ---------------------
@@ -228,5 +267,8 @@ macOS 10.11 and later
     $ git clone https://github.com/roc-project/roc.git
     $ cd roc
 
-    # libraries, tools, tests
-    $ scons -Q --build-3rdparty=uv,openfec,sox,cpputest test
+    # build libraries and tools
+    $ scons -Q --build-3rdparty=uv,openfec,sox,cpputest
+
+    # install libraries and tools
+    $ sudo scons -Q --build-3rdparty=uv,openfec,sox,cpputest install

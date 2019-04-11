@@ -4,34 +4,32 @@ roc-send
 SYNOPSIS
 ========
 
-**roc-send** *[OPTIONS]* *ADDRESS*
+**roc-send** *OPTIONS*
 
 DESCRIPTION
 ===========
 
-Send audio-stream from a file or audio device to a Roc receiver.
+Send realtime audio stream from a file or an audio device to network.
 
 Options
 -------
 
--h, --help                Print help and exit
--V, --version             Print version and exit
--v, --verbose             Increase verbosity level (may be used multiple times)
--i, --input=NAME          Input file or device
--t, --type=TYPE           Input codec or driver
--s, --source=ADDRESS      Remote source UDP address
--r, --repair=ADDRESS      Remote repair UDP address
--l, --local=ADDRESS       Local UDP address
---fec=ENUM                FEC scheme  (possible values="rs", "ldpc", "none" default=`rs')
---nbsrc=INT               Number of source packets in FEC block
---nbrpr=INT               Number of repair packets in FEC block
---rate=INT                Sample rate (Hz)
---no-resampling           Disable resampling  (default=off)
---resampler-profile=ENUM  Resampler profile  (possible values="low", "medium", "high" default=`medium')
---resampler-interp=INT    Resampler sinc table precision
---resampler-window=INT    Number of samples per resampler window
---interleaving            Enable packet interleaving  (default=off)
---poisoning               Enable uninitialized memory poisoning (default=off)
+-v, --verbose                 Increase verbosity level (may be used multiple times)
+-i, --input=NAME              Input file or device
+-t, --type=TYPE               Input codec or driver
+-s, --source=ADDRESS          Remote source UDP address
+-r, --repair=ADDRESS          Remote repair UDP address
+-l, --local=ADDRESS           Local UDP address
+--fec=ENUM                    FEC scheme  (possible values="rs", "ldpc", "none" default=`rs')
+--nbsrc=INT                   Number of source packets in FEC block
+--nbrpr=INT                   Number of repair packets in FEC block
+--rate=INT                    Sample rate, Hz
+--no-resampling               Disable resampling  (default=off)
+--resampler-profile=ENUM      Resampler profile  (possible values="low", "medium", "high" default=`medium')
+--resampler-interp=INT        Resampler sinc table precision
+--resampler-window=INT        Number of samples per resampler window
+--interleaving                Enable packet interleaving  (default=off)
+--poisoning                   Enable uninitialized memory poisoning (default=off)
 
 Address
 -------
@@ -57,13 +55,13 @@ Send wav file:
 
 .. code::
 
-    $ roc-send -vv -s 192.168.0.3:12345 -r 192.168.0.3:12346 -i song.wav
+    $ roc-send -vv -s 192.168.0.3:12345 -r 192.168.0.3:12346 -i ./file.wav
 
-Or:
+Send wav from stdin:
 
 .. code::
 
-    $ roc-send -vv -s 192.168.0.3:12345 -r 192.168.0.3:12346 -i song.wav -t wav
+    $ roc-send -vv -s 192.168.0.3:12345 -r 192.168.0.3:12346 -t wav -i - < ./file.wav
 
 Capture sound from default driver and device:
 
@@ -76,12 +74,6 @@ Capture sound from default ALSA device:
 .. code::
 
     $ roc-send -vv -s 192.168.0.3:12345 -r 192.168.0.3:12346 -t alsa
-
-Or:
-
-.. code::
-
-    $ roc-send -vv -s 192.168.0.3:12345 -r 192.168.0.3:12346 -t alsa -i default
 
 Capture sound from specific pulseaudio device:
 

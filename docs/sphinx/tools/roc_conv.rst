@@ -9,7 +9,7 @@ SYNOPSIS
 DESCRIPTION
 ===========
 
-Read audio-stream from a file, transform it, and and write it to a another file.
+Read audio stream from a file, transform it, and and write it to a another file.
 
 Options
 -------

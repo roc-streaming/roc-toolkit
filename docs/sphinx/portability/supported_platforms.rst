@@ -5,30 +5,40 @@ Supported platforms
 
    * :doc:`/development/continuous_integration`
 
-Supported operating systems:
+What is supported
+-----------------
+
+The following platforms are officially supported.
+
+Operating systems:
 
 * GNU/Linux
 * macOS
 
-Supported compilers:
+Compilers:
 
 * GCC (>= 4.4)
 * Clang (>= 3.4)
 
-Tested Linux distributions:
+What is tested
+--------------
+
+The following specific platform configurations are tested on a regular basis.
+
+Linux distributions:
 
 * Ubuntu (18.04, 16.04, 14.04)
 * Debian (stable)
 * Fedora (latest)
 * CentOS (latest)
 
-Tested Xcode versions:
+Xcode versions:
 
 * Xcode 7.3 (macOS 10.11+)
 * Xcode 9.1 (macOS 10.12+)
 * Xcode 10.2 (macOS 10.14+)
 
-Tested hardware architectures:
+Hardware architectures:
 
 * x86_64
 * ARMv6

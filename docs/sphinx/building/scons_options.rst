@@ -38,6 +38,7 @@ Options
   -n                          dry run
   -j N, --jobs=N              allow N parallel jobs at once
 
+  --prefix=PREFIX             installation prefix, /usr by default
   --build=BUILD               system name where Roc is being compiled, e.g.
                                 'x86_64-pc-linux-gnu', auto-detect if empty
   --host=HOST                 system name where Roc will run, e.g.
@@ -98,11 +99,17 @@ Targets
 `omitted`
     build everything
 
+``test``
+    build everything and run tests
+
 ``clean``
     remove build results
 
-``test``
-    build everything and run tests
+``install``
+    install build results into the system
+
+``uninstall``
+    remove build results from the system
 
 ``fmt``
     format source code (requires clang-format)
