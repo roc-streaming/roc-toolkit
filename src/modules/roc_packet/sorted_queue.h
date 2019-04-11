@@ -29,7 +29,7 @@ public:
     //! Construct empty queue.
     //! @remarks
     //!  If @p max_size is non-zero, it specifies maximum number of packets in queue.
-    SortedQueue(size_t max_size);
+    explicit SortedQueue(size_t max_size);
 
     //! Add packet to the queue.
     //! @remarks

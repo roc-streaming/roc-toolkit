@@ -28,7 +28,7 @@ public:
     //! Initialize.
     //! @remarks
     //!  @p freq defines the number of ticks per second.
-    Ticker(Ticks freq)
+    explicit Ticker(Ticks freq)
         : ratio_(double(freq) / Second)
         , start_(0)
         , started_(false) {

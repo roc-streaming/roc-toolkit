@@ -24,7 +24,7 @@ public:
     //! Initialize rate limiter.
     //! @remarks
     //!  @p period is tick duration in nanoseconds.
-    RateLimiter(nanoseconds_t period)
+    explicit RateLimiter(nanoseconds_t period)
         : period_(Ticker::Ticks(period))
         , pos_(0)
         , ticker_(Second / Nanosecond) {

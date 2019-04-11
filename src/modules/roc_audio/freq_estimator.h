@@ -27,7 +27,7 @@ public:
     //!
     //! @b Parameters
     //!  - @p target_latency defines latency we want to archive.
-    FreqEstimator(packet::timestamp_t target_latency);
+    explicit FreqEstimator(packet::timestamp_t target_latency);
 
     //! Get current frequecy coefficient.
     float freq_coeff() const;

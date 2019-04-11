@@ -35,7 +35,7 @@ typedef core::SharedPtr<Packet> PacketPtr;
 class Packet : public core::RefCnt<Packet>, public core::ListNode {
 public:
     //! Constructor.
-    Packet(PacketPool&);
+    explicit Packet(PacketPool&);
 
     //! Packet flags.
     enum {

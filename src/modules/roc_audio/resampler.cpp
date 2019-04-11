@@ -84,7 +84,7 @@ Resampler::Resampler(core::IAllocator& allocator,
     , out_frame_pos_(0)
     , scaling_(1.0)
     , frame_size_(frame_size)
-    , frame_size_ch_(frame_size / channels_num_)
+    , frame_size_ch_(channels_num_ ? frame_size / channels_num_ : 0)
     , window_size_(config.window_size)
     , qt_half_sinc_window_size_(float_to_fixedpoint(window_size_))
     , window_interp_(config.window_interp)
@@ -218,7 +218,7 @@ bool Resampler::check_config_() const {
         return false;
     }
 
-    if (size_t(1 << window_interp_bits_) != window_interp_) {
+    if ((size_t)1 << window_interp_bits_ != window_interp_) {
         roc_log(LogError,
                 "resampler: window_interp is not power of two: window_interp=%lu",
                 (unsigned long)window_interp_);

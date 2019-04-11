@@ -25,7 +25,7 @@ namespace core {
 template <class T> class Array : public NonCopyable<> {
 public:
     //! Initialize empty array.
-    Array(IAllocator& allocator)
+    explicit Array(IAllocator& allocator)
         : data_(NULL)
         , size_(0)
         , max_size_(0)
@@ -53,7 +53,7 @@ public:
     //! Get element at given position.
     T& operator[](size_t index) {
         if (index >= size_) {
-            roc_panic("array: subscript out of range (index = %lu, size = %lu)",
+            roc_panic("array: subscript out of range: index = %lu size = %lu",
                       (unsigned long)index, (unsigned long)size_);
         }
         return data_[index];
@@ -62,7 +62,7 @@ public:
     //! Get element at given position.
     const T& operator[](size_t index) const {
         if (index >= size_) {
-            roc_panic("array: subscript out of range (index = %lu, size = %lu)",
+            roc_panic("array: subscript out of range: index = %lu size = %lu",
                       (unsigned long)index, (unsigned long)size_);
         }
         return data_[index];
@@ -113,7 +113,7 @@ public:
     //!  Array size() should be less than max_size().
     void push_back(const T& value) {
         if (size_ >= max_size_) {
-            roc_panic("array: attempting to append element to full array (size = %lu)",
+            roc_panic("array: attempting to append element to full array: size = %lu",
                       (unsigned long)size_);
         }
         new (data_ + size_) T(value);

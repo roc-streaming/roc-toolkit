@@ -45,7 +45,7 @@ TempFile::TempFile(const char* name) {
         return;
     }
 
-    int fd = open(file_, O_CREAT | O_EXCL | O_RDWR, 0600);
+    int fd = open(file_, O_CREAT | O_EXCL | O_RDWR | O_CLOEXEC, 0600);
     if (fd == -1) {
         roc_log(LogError, "temp file: open: %s: %s", file_, errno_to_str().c_str());
         return;

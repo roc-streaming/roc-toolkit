@@ -23,7 +23,7 @@ namespace audio {
 class PoisonWriter : public IWriter, public core::NonCopyable<> {
 public:
     //! Initialize.
-    PoisonWriter(IWriter& writer);
+    explicit PoisonWriter(IWriter& writer);
 
     //! Write audio frame.
     virtual void write(Frame&);

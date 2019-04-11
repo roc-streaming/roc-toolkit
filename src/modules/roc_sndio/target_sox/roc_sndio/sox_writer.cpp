@@ -98,7 +98,6 @@ void SoxWriter::write(audio::Frame& frame) {
     }
 
     write_(buffer_data, buffer_pos);
-    buffer_pos = 0;
 }
 
 bool SoxWriter::prepare_() {

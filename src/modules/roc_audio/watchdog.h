@@ -66,7 +66,7 @@ class Watchdog : public IReader, public core::NonCopyable<> {
 public:
     //! Initialize.
     Watchdog(IReader& reader,
-             const size_t num_channels,
+             size_t num_channels,
              const WatchdogConfig& config,
              size_t sample_rate,
              core::IAllocator& allocator);
