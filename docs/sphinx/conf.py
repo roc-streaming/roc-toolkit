@@ -60,7 +60,7 @@ author = u'Roc authors'
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
-ver = open(os.path.join(os.path.dirname(__file__), '../../.version')).read().split('.')
+ver = open(os.path.join(os.path.dirname(__file__), '../../.version')).read().strip().split('.')
 # The short X.Y version.
 version = 'Roc %s' % '.'.join(ver[:2])
 # The full version, including alpha/beta/rc tags.

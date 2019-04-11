@@ -46,6 +46,9 @@ if not GetOption('disable_lib'):
     env.Alias('libroc', [target], env.Action(''))
     env.AlwaysBuild('libroc')
 
+    env.AddDistfile(GetOption('prefix'), 'include', '#src/lib/include/roc')
+    env.AddDistfile(GetOption('prefix'), 'lib', target)
+
 if not GetOption('disable_examples'):
     cenv = env.Clone()
     cenv.AppendVars(tool_env)
@@ -120,6 +123,8 @@ if not GetOption('disable_tools'):
         env.Alias(exename, [target], env.Action(''))
         env.AlwaysBuild(exename)
 
+        env.AddDistfile(GetOption('prefix'), 'bin', target)
+
 if GetOption('enable_pulseaudio_modules'):
     cenv = env.Clone()
     cenv.AppendVars(pulse_env)
@@ -135,8 +140,12 @@ if GetOption('enable_pulseaudio_modules'):
         modulelib = cenv.SharedLibrary(module, [source, helpers], LIBPREFIX='')
         env.Depends(modulelib, libroc)
 
-        targets.append(
-            env.Install(env['ROC_BINDIR'], modulelib))
+        target = env.Install(env['ROC_BINDIR'], modulelib)
+        targets.append(target)
+
+        env.AddDistfile(GetOption('prefix'),
+                        'lib/pulse-%s/modules' % env['ROC_PULSE_VERSION'],
+                        target)
 
     env.Alias('pulse', targets, env.Action(''))
     env.AlwaysBuild('pulse')

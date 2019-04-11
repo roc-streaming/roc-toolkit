@@ -55,6 +55,13 @@ env.SConsignFile(os.path.join(env.Dir('#').abspath, '.sconsign.dblite'))
 # libraries are no different
 env['STATIC_AND_SHARED_OBJECTS_ARE_THE_SAME'] = 1
 
+AddOption('--prefix',
+          dest='prefix',
+          action='store',
+          type='string',
+          default='/usr',
+          help="installation prefix, /usr by default")
+
 AddOption('--build',
           dest='build',
           action='store',
@@ -259,6 +266,8 @@ if enable_doxygen and enable_sphinx:
             werror=GetOption('enable_werror')),
     ]
     env.AlwaysBuild(env.Alias('sphinx', sphinx_targets))
+    for man in ['roc-send', 'roc-recv', 'roc-conv']:
+        env.AddDistfile(GetOption('prefix'), 'share/man/man1', '#man/%s.1' % man)
 
 if (enable_doxygen and enable_sphinx) or 'docs' in COMMAND_LINE_TARGETS:
     env.AlwaysBuild(env.Alias('docs', ['doxygen', 'sphinx']))
@@ -720,6 +729,8 @@ if 'target_pulseaudio' in download_dependencies:
 
     if 'target_alsa' in download_dependencies:
         pa_deps += ['alsa']
+
+    env['ROC_PULSE_VERSION'] = thirdparty_versions['pulseaudio']
 
     tool_env.ThirdParty(host, toolchain, thirdparty_variant, thirdparty_versions, 'ltdl')
     tool_env.ThirdParty(host, toolchain, thirdparty_variant, thirdparty_versions, 'json')

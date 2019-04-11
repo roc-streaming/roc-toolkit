@@ -1,6 +1,7 @@
 import roc.pretty
 import roc.helpers
 import roc.tests
+import roc.distfiles
 import roc.parallel
 
 # workaround for python3
@@ -14,6 +15,7 @@ def generate(env):
     pretty.Init(env)
     helpers.Init(env)
     tests.Init(env)
+    distfiles.Init(env)
     parallel.Init(env)
 
 def exists(env):
