@@ -7,4 +7,4 @@ Tools
    tools/roc_send
    tools/roc_recv
    tools/roc_conv
-   tools/pulseaudio
+   tools/pulseaudio_modules

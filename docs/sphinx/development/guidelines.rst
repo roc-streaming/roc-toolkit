@@ -3,7 +3,7 @@ Guidelines
 
 .. contents:: Table of contents:
    :local:
-   :depth: 1
+   :depth: 2
 
 Design
 ======
@@ -39,7 +39,7 @@ In most cases, it is preferred to restrict communications between threads and av
 Error handling
 --------------
 
-We don't use exceptions and error codes. If a component's contract is broken, it should terminate the program gracefully using ``roc_panic()``. A panic is preferred over a crash, so it's recommended to validate contracts when possible. Other errors should be logged carefully using ``roc_log()`` and reported to the upper level. Note that a panic should always mean a bug in Roc. It should not be used to validate data came from the outside world, e.g. from the public API user or from the network.
+We don't use exceptions and error codes. If a component's contract is broken, it should terminate the program gracefully using ``roc_panic()``. A panic is preferred over a crash, so it's recommended to validate contracts when possible. Other errors should be logged carefully using ``roc_log()`` and reported to the upper level. Note that a panic should always mean a bug in our code. It should not be used to validate data from the outside world, e.g. from the user or from the network.
 
 Code style
 ==========
@@ -62,7 +62,7 @@ Header files, classes, public members, and non-static functions should be docume
 Copyrights
 ----------
 
-Source files contain "Roc authors" copyright and MPL-2 header. ``scons fmt`` automatically adds them to all header files. The names of maintainers and contributors are listed in the ``AUTHORS`` file. Feel free to add your name to the list in your pull requests.
+Source files contain "Roc authors" copyright and MPL-2 header. ``scons fmt`` automatically adds them to all source files. The names of maintainers and contributors are listed in the ``AUTHORS`` file. Feel free to add your name to the list in your pull requests.
 
 Version control
 ===============
@@ -76,9 +76,9 @@ The following branches are used:
 
 * develop - Unstable branch where all actual development happens. From time to time it is considered ready and merged into the master branch.
 
-* Custom branches may be created for large work-in-progress features to avoid breaking develop for a long time.
+* Custom branches may be created for large work-in-progress features to avoid breaking the develop branch for a long time.
 
-History is always kept linear in master and develop branches. Not fast-forward merges are not allowed.
+History is always kept linear in the master and develop branches. Not fast-forward merges are not allowed.
 
 Commits
 -------

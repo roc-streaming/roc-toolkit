@@ -1,7 +1,11 @@
 Frequency estimator and resampler
 *********************************
 
-Preface
+.. contents:: Table of contents:
+   :local:
+   :depth: 1
+
+Problem
 =======
 
 If you are going to roll your own media cast software you'll face few non-obvious pitfalls. This page provides a description of these obstacles and measures Roc took to avoid them.

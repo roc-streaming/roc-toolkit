@@ -1,6 +1,10 @@
 Glossary
 ********
 
+.. contents:: Table of contents:
+   :local:
+   :depth: 1
+
 Participants
 ============
 

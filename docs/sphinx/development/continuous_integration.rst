@@ -1,6 +1,10 @@
 Continuous integration
 **********************
 
+.. contents:: Table of contents:
+   :local:
+   :depth: 1
+
 Overview
 ========
 
