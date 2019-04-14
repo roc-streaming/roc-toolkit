@@ -40,8 +40,8 @@ extern "C" {
  *
  * @b Lifecycle
  *
- * A receiver is created using roc_receiver_open(). Then it should be bound to one or
- * multiple local ports using roc_receiver_bind(). After that, the audio stream is
+ * A receiver is created using roc_receiver_open(). Then it should be bound to a single
+ * or multiple local ports using roc_receiver_bind(). After that, the audio stream is
  * iteratively read from the receiver using roc_receiver_read(). When the receiver is not
  * needed anymore, it is destroyed using roc_receiver_close().
  *
@@ -96,8 +96,8 @@ extern "C" {
  *
  * @b Timing
  *
- * Receiver needs to decode samples at a constant rate that is configured when the
- * receiver is created. There are two ways to accomplish this:
+ * Receiver should decode samples at a constant rate that is configured when the receiver
+ * is created. There are two ways to accomplish this:
  *
  *  - If the user enabled the automatic timing feature, the receiver employs a CPU timer
  *    to block reads until it's time to decode the next bunch of samples according to the

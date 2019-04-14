@@ -41,10 +41,10 @@ extern "C" {
  * @b Lifecycle
  *
  * A sender is created using roc_sender_open(). Then it should be bound to a local port
- * using roc_sender_bind() and connected to one or multiple remote receiver ports using
- * roc_sender_connect(). After that, the audio stream is iteratively written to the sender
- * using roc_sender_write(). When the sender is not needed anymore, it is destroyed using
- * roc_sender_close().
+ * using roc_sender_bind() and connected to a single or multiple remote receiver ports
+ * using roc_sender_connect(). After that, the audio stream is iteratively written to the
+ * sender using roc_sender_write(). When the sender is not needed anymore, it is
+ * destroyed using roc_sender_close().
  *
  * @b Ports
  *
@@ -75,8 +75,8 @@ extern "C" {
  *
  * @b Timing
  *
- * Sender need to encode samples at a constant rate that is configured when the sender is
- * created. There are two ways to accomplish this:
+ * Sender should encode samples at a constant rate that is configured when the sender
+ * is created. There are two ways to accomplish this:
  *
  *  - If the user enabled the automatic timing feature, the sender employs a CPU timer
  *    to block writes until it's time to encode the next bunch of samples according to the
