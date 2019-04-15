@@ -134,7 +134,7 @@ When a frame is requested by the sound card, the receiver requests a frame from 
 
 The diagram below illustrates this routing.
 
-.. image:: ../_images/receiver_mux.png
+.. image:: ../_images/receiver_routing.png
     :align: center
     :width: 835px
     :alt: Receiver pipeline
