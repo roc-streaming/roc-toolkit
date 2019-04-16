@@ -10,8 +10,9 @@ Welcome to `Roc <https://roc-project.github.io/>`_ documentation!
 
    about_project
    building
+   running
    api
-   tools
+   manuals
    portability
    internals
    development

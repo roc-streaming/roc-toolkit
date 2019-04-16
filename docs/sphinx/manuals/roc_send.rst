@@ -9,7 +9,7 @@ SYNOPSIS
 DESCRIPTION
 ===========
 
-Send realtime audio stream from a file or an audio device to network.
+Send real-time audio stream from a file or an audio device to a remote receiver.
 
 Options
 -------
@@ -36,9 +36,9 @@ Address
 
 *ADDRESS* should be in one of the following forms:
 
-- :PORT (e.g. ":12345")
-- IPv4:PORT (e.g. "127.0.0.1:12345")
-- [IPv6]:PORT (e.g. "[::1]:12345")
+- :PORT (e.g. ":10001")
+- IPv4:PORT (e.g. "127.0.0.1:10001")
+- [IPv6]:PORT (e.g. "[::1]:10001")
 
 Input
 -----
@@ -51,35 +51,65 @@ Arguments for ``--input`` and ``--type`` options are passed to SoX:
 EXAMPLES
 ========
 
-Send wav file:
+Send WAV file:
 
 .. code::
 
-    $ roc-send -vv -s 192.168.0.3:12345 -r 192.168.0.3:12346 -i ./file.wav
+    $ roc-send -vv -s 192.168.0.3:10001 -r 192.168.0.3:10002 -i ./file.wav
 
-Send wav from stdin:
-
-.. code::
-
-    $ roc-send -vv -s 192.168.0.3:12345 -r 192.168.0.3:12346 -t wav -i - < ./file.wav
-
-Capture sound from default driver and device:
+Send WAV from stdin:
 
 .. code::
 
-    $ roc-send -vv -s 192.168.0.3:12345 -r 192.168.0.3:12346
+    $ roc-send -vv -s 192.168.0.3:10001 -r 192.168.0.3:10002 -t wav -i - < ./file.wav
 
-Capture sound from default ALSA device:
-
-.. code::
-
-    $ roc-send -vv -s 192.168.0.3:12345 -r 192.168.0.3:12346 -t alsa
-
-Capture sound from specific pulseaudio device:
+Capture sound from the default driver and device:
 
 .. code::
 
-    $ roc-send -vv -s 192.168.0.3:12345 -r 192.168.0.3:12346 -t pulseaudio -i <device>
+    $ roc-send -vv -s 192.168.0.3:10001 -r 192.168.0.3:10002
+
+Capture sound from the default ALSA device:
+
+.. code::
+
+    $ roc-send -vv -s 192.168.0.3:10001 -r 192.168.0.3:10002 -t alsa
+
+Capture sound from a specific PulseAudio device:
+
+.. code::
+
+    $ roc-send -vv -s 192.168.0.3:10001 -r 192.168.0.3:10002 -t pulseaudio -i <device>
+
+Bind outgoing sender port to a specific inteface:
+
+.. code::
+
+    $ roc-send -vv -s 192.168.0.3:10001 -r 192.168.0.3:10002 -l 192.168.0.2 -i ./file.wav
+
+Select the LDPC-Staircase FEC scheme and a larger block size:
+
+.. code::
+
+    $ roc-send -vv -s 192.168.0.3:10001 -r 192.168.0.3:10002 -i ./file.wav --fec=ldpc --nbsrc=1000 --nbrpr=500
+
+Disable FEC:
+
+.. code::
+
+    $ roc-send -vv -s 192.168.0.3:10001 -i ./file.wav --fec=none
+
+Force a specific input rate to be requested from on the audio device:
+
+.. code::
+
+    $ roc-send -vv -s 192.168.0.3:10001 -r 192.168.0.3:10002 --rate=44100
+
+Select resampler profile:
+
+.. code::
+
+    $ roc-send -vv -s 192.168.0.3:10001 -r 192.168.0.3:10002 --resampler-profile=high
 
 SEE ALSO
 ========

@@ -171,9 +171,9 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('tools/roc_send', 'roc-send', u'send real-time audio', [], 1),
-    ('tools/roc_recv', 'roc-recv', u'receive real-time audio', [], 1),
-    ('tools/roc_conv', 'roc-conv', u'convert audio', [], 1),
+    ('manuals/roc_send', 'roc-send', u'send real-time audio', [], 1),
+    ('manuals/roc_recv', 'roc-recv', u'receive real-time audio', [], 1),
+    ('manuals/roc_conv', 'roc-conv', u'convert audio', [], 1),
 ]
 
 
@@ -184,6 +184,6 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
     (master_doc, 'roc', u'Roc documentation',
-     author, 'roc', 'Real-time audio streaming over network.',
+     author, 'roc', 'Real-time streaming over the network.',
      'Miscellaneous'),
 ]

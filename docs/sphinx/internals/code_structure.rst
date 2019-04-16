@@ -12,19 +12,19 @@ Roc consists of the following high-level components:
 
 * **Modules**
 
-  Internal C++ libraries. Other components are based on them. See `Doxygen documentation <https://roc-project.github.io/modules/>`_ for details.
+  Internal C++ libraries. Other components are based on them. See `Doxygen documentation <https://roc-project.github.io/roc/doxygen/>`_ for details.
 
 * **Library**
 
-  Public C API (libroc). A stable (not yet) interface for running Roc network sender and receiver. See :doc:`/api` page for details.
+  Public C API (libroc). A stable (not yet) interface for running Roc network sender and receiver. See :doc:`/api` page.
 
 * **Tools**
 
-  Command-line tools. A command-line interface for running Roc network sender and receiver, plus performing sound I/O, plus setting some debugging options. See :doc:`/tools` page for details.
+  Command-line tools. A command-line interface for running Roc network sender and receiver, plus performing sound I/O, plus setting some debugging options. See :doc:`/running/command_line_tools` page.
 
 * **PulseAudio modules**
 
-  PulseAudio integration. Implement Roc-based network connectivity for PulseAudio.
+  PulseAudio integration. Implement Roc-based network connectivity for PulseAudio. See :doc:`/running/pulseaudio_modules` page.
 
 .. image:: ../_images/components.png
     :align: center
@@ -35,7 +35,7 @@ Modules
 
 Essentially, a module is just a C++ library providing a set of related classes. Every module has its own namespace, include path, and a set of unit tests. Modules may be built separately.
 
-See `Doxygen documentation <https://roc-project.github.io/modules/>`_ for details.
+See `Doxygen documentation <https://roc-project.github.io/roc/doxygen/>`_ for details.
 
 Modules can be grouped into several layers:
 

@@ -9,7 +9,7 @@ SYNOPSIS
 DESCRIPTION
 ===========
 
-Receive realtime audio streams from network and write to a file or an audio device.
+Receive real-time audio streams from remote senders and write them to a file or an audio device.
 
 Options
 -------
@@ -41,9 +41,9 @@ Address
 
 *ADDRESS* should be in one of the following forms:
 
-- :PORT (e.g. ":12345")
-- IPv4:PORT (e.g. "127.0.0.1:12345")
-- [IPv6]:PORT (e.g. "[::1]:12345")
+- :PORT (e.g. ":10001")
+- IPv4:PORT (e.g. "127.0.0.1:10001")
+- [IPv6]:PORT (e.g. "[::1]:10001")
 
 Output
 ------
@@ -53,6 +53,12 @@ Arguments for ``--output`` and ``--type`` options are passed to SoX:
 - *NAME* specifies file or device name
 - *TYPE* specifies file or device type
 
+Time
+----
+
+*TIME* should have one of the following forms:
+  123ns, 123us, 123ms, 123s, 123m, 123h
+
 EXAMPLES
 ========
 
@@ -60,37 +66,56 @@ Start receiver listening on all interfaces on two UDP ports:
 
 .. code::
 
-    $ roc-recv -vv -s :12345 -r :12346
+    $ roc-recv -vv -s :10001 -r :10002
 
 Start receiver listening on particular interface:
 
 .. code::
 
-    $ roc-recv -vv -s 192.168.0.3:12345 -r 192.168.0.3:12346
+    $ roc-recv -vv -s 192.168.0.3:10001 -r 192.168.0.3:10002
 
-Output to ALSA default device:
-
-.. code::
-
-    $ roc-recv -vv -s :12345 -r :12346 -t alsa
-
-Output to specific PulseAudio device:
+Output to the default ALSA device:
 
 .. code::
 
-    $ roc-recv -vv -s :12345 -r :12346 -t pulseaudio -o <device>
+    $ roc-recv -vv -s :10001 -r :10002 -t alsa
 
-Output to a file in wav format:
-
-.. code::
-
-    $ roc-recv -vv -s :12345 -r :12346 -o ./file.wav
-
-Output to stdout in wav format:
+Output to a specific PulseAudio device:
 
 .. code::
 
-    $ roc-recv -vv -s :12345 -r :12346 -t wav -o - > ./file.wav
+    $ roc-recv -vv -s :10001 -r :10002 -t pulseaudio -o <device>
+
+Output to a file in WAV format:
+
+.. code::
+
+    $ roc-recv -vv -s :10001 -r :10002 -o ./file.wav
+
+Output to stdout in WAV format:
+
+.. code::
+
+    $ roc-recv -vv -s :10001 -r :10002 -t wav -o - > ./file.wav
+
+Select higher latency and timeouts:
+
+.. code::
+
+    $ roc-recv -vv -s :10001 -r :10002 \
+      --latency=5s --min-latency=-1s --max-latency=10s --np-timeout=10s --bp-timeout=10s
+
+Force a specific output rate to be requested on the audio device:
+
+.. code::
+
+    $ roc-recv -vv -s :10001 -r :10002 --rate=44100
+
+Select resampler profile:
+
+.. code::
+
+    $ roc-recv -vv -s :10001 -r :10002 --resampler-profile=high
 
 SEE ALSO
 ========

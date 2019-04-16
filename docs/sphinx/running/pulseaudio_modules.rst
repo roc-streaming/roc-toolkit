@@ -8,7 +8,7 @@ PulseAudio modules
 Overview
 ========
 
-Roc provides a set of `PulseAudio <https://www.freedesktop.org/wiki/Software/PulseAudio/>`_ modules allowing PulseAudio to use Roc as a transport and improve its service quality over an unreliable network such as 802.11.
+Roc provides a set of `PulseAudio <https://www.freedesktop.org/wiki/Software/PulseAudio/>`_ modules allowing PulseAudio to use Roc as a transport and improve its service quality over an unreliable network such as Wi-Fi.
 
 .. warning::
 
@@ -16,7 +16,7 @@ Roc provides a set of `PulseAudio <https://www.freedesktop.org/wiki/Software/Pul
 
 Advantages over Roc command-line tools:
 
-- Seamless integration into the PulseAudio workflow. The user can connect a local audio stream to a remote audio device using common PulseAudio tools.
+- Seamless integration into the PulseAudio workflow. The user can connect a local audio stream to a remote audio device using common PulseAudio tools like pavucontrol.
 
 - A bit lower latency. Since Roc is integrated into the PulseAudio server, there is no additional communication step between Roc and PulseAudio server.
 
@@ -26,7 +26,7 @@ Advantages over PulseAudio "native" protocol:
 
 - Compatibility with standard protocols. PulseAudio "native" protocol is PulseAudio-specific, while Roc implements a set of standardized RTP-based protocols.
 
-Advantages over PulseAudio builtin RTP support:
+Advantages over PulseAudio built-in RTP support:
 
 - Better service quality over an unreliable network. This is achieved by employing Forward Erasure Correction codes.
 
@@ -52,67 +52,29 @@ Alternatively, you can `build PulseAudio manually <https://www.freedesktop.org/w
 
    $ scons --enable-pulseaudio-modules --with-pulseaudio=/path/to/pulseaudio ...
 
-See our :doc:`/building` page for details. In particular, :doc:`/building/user_cookbook` page provides same examples.
+See our :doc:`/building` page for details. In particular, the :doc:`/building/user_cookbook` page provides examples for popular distros.
 
 Installing
 ==========
 
-Copy (or symlink) Roc PulseAudio modules to the PulseAudio modules directory, e.g.:
+You need to install Roc library and PulseAudio modules into the system.
+
+You can do it by adding "sudo" and "install" to your SCons command:
+
+.. code::
+
+   $ sudo scons --enable-pulseaudio-modules --build-3rdparty=pulseaudio:10.0 ... install
+
+Alternatively, you can copy or symlink the files manually, e.g.:
 
 .. code::
 
    $ cp ./bin/x86_64-pc-linux-gnu/module-roc-sink.so /usr/lib/pulse-10.0/modules/
    $ cp ./bin/x86_64-pc-linux-gnu/module-roc-sink-input.so /usr/lib/pulse-10.0/modules/
-
-Copy (or symlink) Roc C library to the system library directory, e.g.:
-
-.. code::
-
    $ cp ./bin/x86_64-pc-linux-gnu/libroc.so /usr/lib/
 
-Sender
-======
-
-For the sending side, Roc provides ``module-roc-sink`` PulseAudio module. It creates a PulseAudio sink that sends samples written to it to a preconfigured receiver address. You can then connect an audio stream of any running application to that sink, or make it the default sink.
-
-Roc sink supports several options:
-
-===================== ======== ============== ==========================================
-option                required default        description
-===================== ======== ============== ==========================================
-sink_name             no       roc_sender     the name of the new sink
-sink_properties       no       empty          additional sink properties
-local_ip              no       0.0.0.0        local sender address to bind to
-remote_ip             yes      no             remote receiver address
-remote_source_port    no       10001          remote receiver port for source (audio) packets
-remote_repair_port    no       10002          remote receiver port for repair (FEC) packets
-===================== ======== ============== ==========================================
-
-Here is how you can create a Roc sink from command line:
-
-.. code::
-
-   $ pactl load-module module-roc-sink remote_ip=<receiver_ip>
-
-Alternatively, you can add this line to ``/etc/pulse/default.pa`` to create a Roc sink automatically at PulseAudio start:
-
-.. code::
-
-   load-module module-roc-sink remote_ip=<receiver_ip>
-
-You can then connect an audio stream (i.e. a sink input) to the Roc sink via command line:
-
-.. code::
-
-   $ pactl move-sink-input <sink_input_number> roc_sender
-
-Or via the ``pavucontrol`` graphical tool:
-
-.. image:: ../_images/roc_pulse_sender.png
-    :width: 600px
-
-Receiver
-========
+Running receiver
+================
 
 For the receiving side, Roc provides ``module-roc-sink-input`` PulseAudio module. It creates a PulseAudio sink input that receives samples from Roc sender and passes them to the sink it is connected to. You can then connect it to any audio device.
 
@@ -156,6 +118,47 @@ You can then connect the Roc sink input to an audio device (i.e. a sink) via com
 Or via the ``pavucontrol`` graphical tool:
 
 .. image:: ../_images/roc_pulse_receiver.png
+    :width: 600px
+
+Running sender
+==============
+
+For the sending side, Roc provides ``module-roc-sink`` PulseAudio module. It creates a PulseAudio sink that sends samples written to it to a preconfigured receiver address. You can then connect an audio stream of any running application to that sink, or make it the default sink.
+
+Roc sink supports several options:
+
+===================== ======== ============== ==========================================
+option                required default        description
+===================== ======== ============== ==========================================
+sink_name             no       roc_sender     the name of the new sink
+sink_properties       no       empty          additional sink properties
+local_ip              no       0.0.0.0        local sender address to bind to
+remote_ip             yes      no             remote receiver address
+remote_source_port    no       10001          remote receiver port for source (audio) packets
+remote_repair_port    no       10002          remote receiver port for repair (FEC) packets
+===================== ======== ============== ==========================================
+
+Here is how you can create a Roc sink from command line:
+
+.. code::
+
+   $ pactl load-module module-roc-sink remote_ip=<receiver_ip>
+
+Alternatively, you can add this line to ``/etc/pulse/default.pa`` to create a Roc sink automatically at PulseAudio start:
+
+.. code::
+
+   load-module module-roc-sink remote_ip=<receiver_ip>
+
+You can then connect an audio stream (i.e. a sink input) to the Roc sink via command line:
+
+.. code::
+
+   $ pactl move-sink-input <sink_input_number> roc_sender
+
+Or via the ``pavucontrol`` graphical tool:
+
+.. image:: ../_images/roc_pulse_sender.png
     :width: 600px
 
 Naming

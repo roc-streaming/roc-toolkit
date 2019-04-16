@@ -64,7 +64,7 @@ Network type:
 
 * wireless LAN --- yes
 * wired LAN --- yes, still useful even though the network is reliable
-* Internet --- yes
+* Internet --- yes, but no encryption is implemented yet
 
 Media type:
 
@@ -114,8 +114,8 @@ Features
 The Roc toolkit consists of:
 
 * a C library (:doc:`docs </api>`);
-* a set of command-line tools (:doc:`docs </tools>`);
-* a set of PulseAudio modules (:doc:`docs </tools/pulseaudio_modules>`).
+* a set of command-line tools (:doc:`docs </running/command_line_tools>`);
+* a set of PulseAudio modules (:doc:`docs </running/pulseaudio_modules>`).
 
 Supported features:
 
@@ -130,7 +130,7 @@ Supported features:
 Supported network protocols (:doc:`docs </internals/network_protocols>`):
 
 * RTP
-* FECFRAME
+* FECFRAME (FEC Framework for RTP)
 
 Supported audio encodings:
 
@@ -138,8 +138,14 @@ Supported audio encodings:
 
 Supported FEC schemes (:doc:`docs </internals/fec>`):
 
-* Reed-Solomon
-* LDPC-Staircase
+* Reed-Solomon (lower latency, lower rates)
+* LDPC-Staircase (higher latency, higher rates)
+
+Supported resampler profiles:
+
+* low quality / high speed
+* medium quality / medium speed
+* high quality / low speed
 
 Supported platforms (:doc:`docs </portability>`):
 
