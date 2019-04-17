@@ -56,8 +56,17 @@ bool parse_duration(const char* str, nanoseconds_t& result) {
         return false;
     }
 
-    if (str == suffix || !isdigit(*str)) {
-        roc_log(LogError, "parse duration: invalid format, expected <number><suffix>");
+    if (str == suffix) {
+        roc_log(
+            LogError,
+            "parse duration: invalid format, missing number, expected <number><suffix>");
+        return false;
+    }
+
+    if (!isdigit(*str) && *str != '-') {
+        roc_log(
+            LogError,
+            "parse duration: invalid format, not a number, expected <number><suffix>");
         return false;
     }
 
@@ -65,7 +74,9 @@ bool parse_duration(const char* str, nanoseconds_t& result) {
     long number = strtol(str, &number_end, 10);
 
     if (number == LONG_MAX || number == LONG_MIN || !number_end || number_end != suffix) {
-        roc_log(LogError, "parse duration: invalid format, expected <number><suffix>");
+        roc_log(LogError,
+                "parse duration: invalid format, can't parse number, expected "
+                "<number><suffix>");
         return false;
     }
 
