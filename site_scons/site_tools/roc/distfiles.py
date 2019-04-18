@@ -17,7 +17,8 @@ def AddDistfile(env, prefix, subdir, target):
 
     def install(target, source, env):
         if os.path.isdir(src):
-            shutil.rmtree(dst)
+            if os.path.isdir(dst):
+                shutil.rmtree(dst)
             shutil.copytree(src, dst)
         else:
             shutil.copy(src, dst)
