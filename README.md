@@ -77,9 +77,9 @@ Branch    | Status
 Community
 ---------
 
-We're planning to create a mailing list for announcements and discussions.
+We have an announcements and discussion mailing list for users and developers: roc@freelists.org.
 
-Coming soon.
+You can browse the list archive and join the list by visiting [this page](https://www.freelists.org/list/roc). You can also join the list by sending an email to roc-request@freelists.org with "subscribe" in the "Subject" field. You need to join to be able to post.
 
 Contributing
 ------------
