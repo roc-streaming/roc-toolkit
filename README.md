@@ -64,7 +64,7 @@ Coming soon.
 Plans
 -----
 
-See the [roadmap](https://roc-project.github.io/roc/docs/development/roadmap.html).
+See the [roadmap](https://roc-project.github.io/roc/docs/development/roadmap.html) and the [project board](https://github.com/roc-project/roc/projects/2).
 
 Continuous integration
 ----------------------
