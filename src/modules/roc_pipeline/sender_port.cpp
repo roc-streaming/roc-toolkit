@@ -80,18 +80,6 @@ SenderPort::SenderPort(const PortConfig& config,
         break;
     }
 
-    // FIXME
-    switch ((unsigned)config.protocol) {
-    case Proto_LDPC_Repair:
-    case Proto_RSm8_Repair:
-        rtp_composer_.reset(new (allocator) rtp::Composer(composer), allocator);
-        if (!rtp_composer_) {
-            return;
-        }
-        composer = rtp_composer_.get();
-        break;
-    }
-
     composer_ = composer;
 }
 

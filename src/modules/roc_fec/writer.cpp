@@ -138,17 +138,12 @@ packet::PacketPtr Writer::make_repair_packet_(packet::seqnum_t pack_n) {
         return NULL;
     }
 
-    if (!packet->rtp()) {
-        roc_panic("fec writer: unexpected non-rtp composer");
-    }
-
     if (!packet->fec()) {
         roc_panic("fec writer: unexpected non-fec composer");
     }
 
     packet->set_data(data);
 
-    fill_packet_rtp_fields_(packet, cur_block_repair_sn_ + pack_n);
     fill_packet_fec_fields_(packet, (packet::seqnum_t)n_source_packets_ + pack_n);
 
     return packet;

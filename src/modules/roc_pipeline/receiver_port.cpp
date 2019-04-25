@@ -79,18 +79,6 @@ ReceiverPort::ReceiverPort(const PortConfig& config,
         break;
     }
 
-    // FIXME
-    switch ((unsigned)config.protocol) {
-    case Proto_LDPC_Repair:
-    case Proto_RSm8_Repair:
-        rtp_parser_.reset(new (allocator) rtp::Parser(format_map, parser), allocator);
-        if (!rtp_parser_) {
-            return;
-        }
-        parser = rtp_parser_.get();
-        break;
-    }
-
     parser_ = parser;
 }
 

@@ -52,8 +52,7 @@ rtp::FormatMap format_map;
 rtp::Parser rtp_parser(format_map, NULL);
 rtp::Composer rtp_composer(NULL);
 fec::Composer<RSm8_PayloadID, Source, Footer> source_composer(&rtp_composer);
-fec::Composer<RSm8_PayloadID, Repair, Header> repair_composer_inner(NULL);
-rtp::Composer repair_composer(&repair_composer_inner);
+fec::Composer<RSm8_PayloadID, Repair, Header> repair_composer(NULL);
 
 // Divides packets from Encoder into two queues: source and repair packets,
 // as needed for Decoder.
@@ -564,8 +563,6 @@ TEST(writer_reader, encode_packet_fields) {
 
         CHECK(writer.valid());
 
-        packet::source_t fec_source = 0;
-        packet::seqnum_t fec_seqnum = 0;
         packet::blknum_t fec_sbn = 0;
 
         for (size_t block_num = 0; block_num < NumBlocks; ++block_num) {
@@ -583,18 +580,20 @@ TEST(writer_reader, encode_packet_fields) {
             dispatcher.release_all();
 
             if (block_num == 0) {
-                fec_source = dispatcher.repair_head()->rtp()->source;
-                fec_seqnum = dispatcher.repair_head()->rtp()->seqnum;
-                fec_sbn = dispatcher.repair_head()->fec()->source_block_number;
-            }
+                const packet::FEC* fec = dispatcher.repair_head()->fec();
+                CHECK(fec);
 
-            CHECK(fec_source != data_source);
+                fec_sbn = fec->source_block_number;
+            }
 
             for (size_t i = 0; i < NumSourcePackets; ++i) {
                 const packet::PacketPtr p = dispatcher.source_reader().read();
                 CHECK(p);
 
-                LONGS_EQUAL(data_source, p->rtp()->source);
+                const packet::RTP* rtp = p->rtp();
+                CHECK(rtp);
+
+                LONGS_EQUAL(data_source, rtp->source);
 
                 const packet::FEC* fec = p->fec();
                 CHECK(fec);
@@ -610,8 +609,8 @@ TEST(writer_reader, encode_packet_fields) {
                 const packet::PacketPtr p = dispatcher.repair_reader().read();
                 CHECK(p);
 
-                LONGS_EQUAL(fec_source, p->rtp()->source);
-                LONGS_EQUAL(fec_seqnum, p->rtp()->seqnum);
+                const packet::RTP* rtp = p->rtp();
+                CHECK(!rtp);
 
                 const packet::FEC* fec = p->fec();
                 CHECK(fec);
@@ -620,7 +619,6 @@ TEST(writer_reader, encode_packet_fields) {
                 CHECK(fec->source_block_length == NumSourcePackets);
                 UNSIGNED_LONGS_EQUAL(encoding_symbol_id, fec->encoding_symbol_id);
 
-                fec_seqnum++;
                 encoding_symbol_id++;
             }
 
@@ -628,8 +626,6 @@ TEST(writer_reader, encode_packet_fields) {
         }
 
         dispatcher.reset();
-
-        data_source = fec_source;
     }
 }
 
