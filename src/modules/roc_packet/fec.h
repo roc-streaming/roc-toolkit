@@ -21,6 +21,15 @@ namespace packet {
 
 //! FECFRAME packet.
 struct FEC {
+    //! The index number of packet in a block.
+    //!
+    //! @remarks
+    //!  Source packets are numbered in range [0; k).
+    //!  Repair packets are numbered in range [k; k + n), where
+    //!  k is a number of source packets per block (source_block_length)
+    //!  n is a number of repair packets per block.
+    size_t encoding_symbol_id;
+
     //! Number of a source block in a packet stream.
     //!
     //! @remarks
@@ -35,14 +44,13 @@ struct FEC {
     //!  Different blocks can have different number of source packets.
     size_t source_block_length;
 
-    //! The index number of packet in a block.
+    //! Number of source packets and repair in the block to which this packet belongs to.
     //!
     //! @remarks
-    //!  Source packets are numbered in range [0; k).
-    //!  Repair packets are numbered in range [k; k + n), where
-    //!  k is a number of source packets per block (source_block_length)
-    //!  n is a number of repair packets per block.
-    size_t encoding_symbol_id;
+    //!  Different blocks can have different number of packets.
+    //!  Always larger than source_block_length.
+    //!  This field is not supported on all FEC schemes.
+    size_t block_length;
 
     //! FECFRAME header or footer.
     core::Slice<uint8_t> payload_id;

@@ -89,6 +89,15 @@ public:
     void set_k(uint16_t val) {
         k_ = core::hton16(val);
     }
+
+    //! Get number encoding symbols.
+    uint16_t n() const {
+        return 0;
+    }
+
+    //! Set number encoding symbols.
+    void set_n(uint16_t) {
+    }
 };
 
 //! LDPC Repair FEC Payload ID.
@@ -223,6 +232,15 @@ public:
     //! Set source block length.
     void set_k(uint16_t val) {
         k_ = core::hton16(val);
+    }
+
+    //! Get number encoding symbols.
+    uint16_t n() const {
+        return 0;
+    }
+
+    //! Set number encoding symbols.
+    void set_n(uint16_t) {
     }
 };
 

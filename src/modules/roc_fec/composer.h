@@ -159,13 +159,17 @@ public:
         PayloadID& payload_id = *(PayloadID*)fec.payload_id.data();
 
         payload_id.clear();
+
+        roc_panic_if((fec.encoding_symbol_id >> 16) != 0);
+        payload_id.set_esi((uint16_t)fec.encoding_symbol_id);
+
         payload_id.set_sbn(fec.source_block_number);
 
-        roc_panic_if(fec.source_block_length >= (uint16_t)-1);
+        roc_panic_if((fec.source_block_length >> 16) != 0);
         payload_id.set_k((uint16_t)fec.source_block_length);
 
-        roc_panic_if(fec.encoding_symbol_id >= (uint16_t)-1);
-        payload_id.set_esi((uint16_t)fec.encoding_symbol_id);
+        roc_panic_if((fec.block_length >> 16) != 0);
+        payload_id.set_n((uint16_t)fec.block_length);
 
         if (inner_composer_) {
             return inner_composer_->compose(packet);

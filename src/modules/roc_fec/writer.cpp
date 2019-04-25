@@ -166,9 +166,10 @@ void Writer::fill_packet_fec_fields_(const packet::PacketPtr& packet,
                                      packet::seqnum_t pack_n) {
     packet::FEC& fec = *packet->fec();
 
+    fec.encoding_symbol_id = pack_n;
     fec.source_block_number = cur_sbn_;
     fec.source_block_length = n_source_packets_;
-    fec.encoding_symbol_id = pack_n;
+    fec.block_length = n_source_packets_ + n_repair_packets_;
 }
 
 } // namespace fec

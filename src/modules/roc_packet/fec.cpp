@@ -13,9 +13,10 @@ namespace roc {
 namespace packet {
 
 FEC::FEC()
-    : source_block_number(0)
+    : encoding_symbol_id(0)
+    , source_block_number(0)
     , source_block_length(0)
-    , encoding_symbol_id(0) {
+    , block_length(0) {
 }
 
 int FEC::compare(const FEC& other) const {
