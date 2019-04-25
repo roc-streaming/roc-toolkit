@@ -17,13 +17,15 @@ namespace roc {
 namespace packet {
 
 void print(const Packet& p, int flags) {
+    fprintf(stderr, "packet [%p]\n", (const void*)&p);
+
     if (p.udp()) {
-        fprintf(stderr, "udp: src=%s dst=%s\n", address_to_str(p.udp()->src_addr).c_str(),
+        fprintf(stderr, " udp: src=%s dst=%s\n", address_to_str(p.udp()->src_addr).c_str(),
                 address_to_str(p.udp()->dst_addr).c_str());
     }
 
     if (p.rtp()) {
-        fprintf(stderr, "rtp: src=%lu m=%d sn=%lu ts=%lu dur=%lu pt=%u payload=%lu\n",
+        fprintf(stderr, " rtp: src=%lu m=%d sn=%lu ts=%lu dur=%lu pt=%u payload_sz=%lu\n",
                 (unsigned long)p.rtp()->source, (int)p.rtp()->marker,
                 (unsigned long)p.rtp()->seqnum, (unsigned long)p.rtp()->timestamp,
                 (unsigned long)p.rtp()->duration, (unsigned int)p.rtp()->payload_type,
@@ -35,9 +37,11 @@ void print(const Packet& p, int flags) {
     }
 
     if (p.fec()) {
-        fprintf(stderr, "fec: sbn=%lu sblen=%lu payload=%lu\n",
+        fprintf(stderr, " fec: esi=%lu sbn=%lu sblen=%lu blen=%lu payload_sz=%lu\n",
+                (unsigned long)p.fec()->encoding_symbol_id,
                 (unsigned long)p.fec()->source_block_number,
                 (unsigned long)p.fec()->source_block_length,
+                (unsigned long)p.fec()->block_length,
                 (unsigned long)p.fec()->payload.size());
 
         if ((flags & PrintPayload) && p.fec()->payload) {
