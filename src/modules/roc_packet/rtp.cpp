@@ -26,7 +26,7 @@ int RTP::compare(const RTP& other) const {
     } else if (seqnum == other.seqnum) {
         return 0;
     } else {
-        return +1;
+        return 1;
     }
 }
 

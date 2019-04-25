@@ -20,9 +20,19 @@ FEC::FEC()
 }
 
 int FEC::compare(const FEC& other) const {
-    // TODO
-    (void)other;
-    roc_panic("not implemented");
+    if (blknum_lt(source_block_number, other.source_block_number)) {
+        return -1;
+    } else if (source_block_number == other.source_block_number) {
+        if (encoding_symbol_id < other.encoding_symbol_id) {
+            return -1;
+        } else if (encoding_symbol_id == other.encoding_symbol_id) {
+            return 0;
+        } else {
+            return 1;
+        }
+    } else {
+        return 1;
+    }
 }
 
 } // namespace packet
