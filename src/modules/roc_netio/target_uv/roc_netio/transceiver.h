@@ -125,6 +125,8 @@ private:
     void stop_();
     void close_();
 
+    void remove_all_ports_();
+
     void process_tasks_();
     void run_task_(Task&);
 

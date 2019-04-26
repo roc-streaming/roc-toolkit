@@ -60,8 +60,7 @@ Transceiver::~Transceiver() {
     }
 
     if (num_ports_ != 0) {
-        roc_panic("transceiver: %lu port(s) were not removed before calling destructor",
-                  (unsigned long)num_ports_);
+        remove_all_ports_();
     }
 
     close_();
@@ -241,6 +240,24 @@ void Transceiver::close_() {
     if (stop_sem_initialized_) {
         uv_close((uv_handle_t*)&stop_sem_, NULL);
         stop_sem_initialized_ = false;
+    }
+}
+
+void Transceiver::remove_all_ports_() {
+    core::SharedPtr<UDPReceiver> rp = receivers_.front();
+    while (rp) {
+        core::SharedPtr<UDPReceiver> rp_next = receivers_.nextof(*rp);
+        rp->remove(receivers_);
+        rp = rp_next;
+        num_ports_--;
+    }
+
+    core::SharedPtr<UDPSender> sp = senders_.front();
+    while (sp) {
+        core::SharedPtr<UDPSender> sp_next = senders_.nextof(*sp);
+        sp->remove(senders_);
+        sp = sp_next;
+        num_ports_--;
     }
 }
 

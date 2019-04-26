@@ -251,6 +251,59 @@ TEST(transceiver, add_start_stop_remove) {
     UNSIGNED_LONGS_EQUAL(0, trx.num_ports());
 }
 
+TEST(transceiver, add_no_remove) {
+    packet::ConcurrentQueue queue;
+
+    Transceiver trx(packet_pool, buffer_pool, allocator);
+
+    CHECK(trx.valid());
+
+    packet::Address tx1_addr;
+    packet::Address tx2_addr;
+    packet::Address rx1_addr;
+    packet::Address rx2_addr;
+
+    CHECK(packet::parse_address(":0", tx1_addr));
+    CHECK(packet::parse_address(":0", tx2_addr));
+    CHECK(packet::parse_address(":0", rx1_addr));
+    CHECK(packet::parse_address(":0", rx2_addr));
+
+    CHECK(trx.add_udp_sender(tx1_addr));
+    CHECK(trx.add_udp_sender(tx2_addr));
+
+    CHECK(trx.add_udp_receiver(rx1_addr, queue));
+    CHECK(trx.add_udp_receiver(rx2_addr, queue));
+}
+
+TEST(transceiver, add_start_stop_no_remove) {
+    packet::ConcurrentQueue queue;
+
+    Transceiver trx(packet_pool, buffer_pool, allocator);
+
+    CHECK(trx.valid());
+
+    packet::Address tx1_addr;
+    packet::Address tx2_addr;
+    packet::Address rx1_addr;
+    packet::Address rx2_addr;
+
+    CHECK(packet::parse_address(":0", tx1_addr));
+    CHECK(packet::parse_address(":0", tx2_addr));
+    CHECK(packet::parse_address(":0", rx1_addr));
+    CHECK(packet::parse_address(":0", rx2_addr));
+
+    CHECK(trx.add_udp_sender(tx1_addr));
+    CHECK(trx.add_udp_sender(tx2_addr));
+
+    CHECK(trx.add_udp_receiver(rx1_addr, queue));
+    CHECK(trx.add_udp_receiver(rx2_addr, queue));
+
+    CHECK(trx.start());
+
+    trx.stop();
+    trx.join();
+}
+
 TEST(transceiver, add_duplicate) {
     packet::ConcurrentQueue queue;
 
