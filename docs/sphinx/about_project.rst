@@ -10,11 +10,11 @@ Synopsis
 
 Roc is a toolkit for real-time media streaming over the network.
 
-Basically, Roc is a network transport, highly specialized for the real-time streaming use case. The user writes the stream to the one end and reads it from another end, and Roc deals with all the complexity of the task of delivering data in time and with no loss. Encoding, decoding, adjusting rates, restoring losses --- all these are performed transparently under the hood.
+Basically, Roc is a network transport, highly specialized for the real-time streaming use case. The user writes the stream to the one end and reads it from another end, and Roc deals with all the complexity of the task of delivering data in time and with no loss. Encoding, decoding, adjusting rates, restoring losses -- all these are performed transparently under the hood.
 
 The project is conceived as a swiss army knife for real-time streaming. It is designed to support a variety of network protocols, encodings, FEC schemes, and related features. The user can build custom configurations dedicated for specific use cases and choose an appropriate compromise between the quality, robustness, bandwidth, and compatibility issues.
 
-Note that, however, currently the project is still at an early stage of development, and the list of the supported features is not very long. But there's more to come, of course. Contributions are welcome!
+Note that the project is still at an early stage of development, and the list of the supported features is not very long. But there's more to come, of course. Contributions are also welcome!
 
 Rationale
 ---------
@@ -29,7 +29,7 @@ Third, the real-time requirement usually leads to a compromise between various f
 
 Fourth, applications that need real-time streaming usually also need some related features like service announcement and discovery, session negotiation, stream feedback and control, and so on. Such features are not directly related to real-time, but still would be expected to be found in a real-time streaming library.
 
-All of the issues listed above belong to the scope of this project. Some of them are addressed already, and other, hopefully, will be eventually addressed in future releases.
+All of the issues listed above belong to the scope of this project. Some of them are addressed already, and others will be addressed in future releases.
 
 Project goals
 -------------
@@ -39,6 +39,7 @@ Project goals:
 * *real-time* --- allow the user to create real-time streams with guaranteed latency;
 * *good media quality* --- cope even with medium- and high-quality audio streams;
 * *good service quality* --- provide good quality of service even on unreliable networks;
+* *high-level* --- implement a simple high-level API that hides all the complexity of the network transport;
 * *comprehensive toolset* --- support multiple protocols, encodings, schemes, and give the user the full control of them;
 * *portability* --- support multiple operating systems and hardware architectures;
 * *interoperability* --- rely on open, standard protocols.

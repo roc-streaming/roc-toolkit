@@ -22,13 +22,13 @@ Advantages over Roc command-line tools:
 
 Advantages over PulseAudio "native" protocol:
 
-- Accurate latency. PulseAudio "native" protocol uses TCP, while Roc uses RTP, which is better suited for real-time communication than TCP-based protocols.
+- Better service quaility when the latency is low and the network is unreliable. PulseAudio "native" protocol uses TCP, while Roc uses RTP, which is better suited for real-time communication than TCP-based protocols.
 
 - Compatibility with standard protocols. PulseAudio "native" protocol is PulseAudio-specific, while Roc implements a set of standardized RTP-based protocols.
 
 Advantages over PulseAudio built-in RTP support:
 
-- Better service quality over an unreliable network. This is achieved by employing Forward Erasure Correction codes.
+- Better service quaility when the latency is low and the network is unreliable. PulseAudio uses bare RTP, while Roc also employs Forward Erasure Correction extensions.
 
 Building
 ========
