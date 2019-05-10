@@ -16,8 +16,8 @@
 #include "roc_packet/address_to_str.h"
 #include "roc_packet/parse_address.h"
 #include "roc_pipeline/receiver.h"
-#include "roc_sndio/player.h"
-#include "roc_sndio/sox_writer.h"
+#include "roc_sndio/pump.h"
+#include "roc_sndio/sox_sink.h"
 
 #include "roc_recv/cmdline.h"
 
@@ -229,16 +229,16 @@ int main(int argc, char** argv) {
                                                          args.poisoning_flag);
     packet::PacketPool packet_pool(allocator, args.poisoning_flag);
 
-    sndio::SoxWriter writer(allocator, config.output.channels, sample_rate);
+    sndio::SoxSink sink(allocator, config.output.channels, sample_rate);
 
-    if (!writer.open(args.type_arg, args.output_arg)) {
+    if (!sink.open(args.type_arg, args.output_arg)) {
         roc_log(LogError, "can't open output file or device: driver=%s output=%s",
                 args.type_arg, args.output_arg);
         return 1;
     }
 
-    config.output.timing = writer.is_file();
-    config.output.sample_rate = writer.sample_rate();
+    config.output.timing = sink.is_file();
+    config.output.sample_rate = sink.sample_rate();
 
     if (config.output.sample_rate == 0) {
         roc_log(LogError,
@@ -256,10 +256,11 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    sndio::Player player(sample_buffer_pool, receiver, writer, writer.frame_size(),
-                         args.oneshot_flag);
-    if (!player.valid()) {
-        roc_log(LogError, "can't create player");
+    sndio::Pump pump(sample_buffer_pool, receiver, sink, sink.frame_size(),
+                     args.oneshot_flag ? sndio::Pump::ModeOneshot
+                                       : sndio::Pump::ModePermanent);
+    if (!pump.valid()) {
+        roc_log(LogError, "can't create pump");
         return 1;
     }
 
@@ -298,14 +299,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    int status = 1;
-
-    if (player.start()) {
-        player.join();
-        status = 0;
-    } else {
-        roc_log(LogError, "can't start player");
-    }
+    const bool ok = pump.run();
 
     trx.stop();
     trx.join();
@@ -316,5 +310,5 @@ int main(int argc, char** argv) {
         trx.remove_port(repair_port.address);
     }
 
-    return status;
+    return ok ? 0 : 1;
 }

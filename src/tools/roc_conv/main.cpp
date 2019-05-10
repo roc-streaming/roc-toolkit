@@ -1,25 +1,20 @@
 /*
- * Copyright (c) 2015 Mikhail Baranov
- * Copyright (c) 2015 Victor Gaydov
+ * Copyright (c) 2019 Roc authors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_audio/null_writer.h"
-#include "roc_audio/poison_writer.h"
-#include "roc_audio/profiling_writer.h"
 #include "roc_audio/resampler_profile.h"
-#include "roc_audio/resampler_writer.h"
-#include "roc_core/buffer_pool.h"
 #include "roc_core/crash.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_core/log.h"
 #include "roc_core/scoped_destructor.h"
-#include "roc_pipeline/config.h"
-#include "roc_sndio/sox_reader.h"
-#include "roc_sndio/sox_writer.h"
+#include "roc_pipeline/converter.h"
+#include "roc_sndio/pump.h"
+#include "roc_sndio/sox_sink.h"
+#include "roc_sndio/sox_source.h"
 
 #include "roc_conv/cmdline.h"
 
@@ -27,7 +22,7 @@ using namespace roc;
 
 namespace {
 
-enum { MaxFrameSize = 8192, Channels = 0x3 };
+enum { MaxFrameSize = 8192 };
 
 } // namespace
 
@@ -50,110 +45,87 @@ int main(int argc, char** argv) {
     core::HeapAllocator allocator;
     core::BufferPool<audio::sample_t> pool(allocator, MaxFrameSize, args.poisoning_flag);
 
-    size_t frame_size = pipeline::DefaultInternalFrameSize;
+    pipeline::ConverterConfig config;
+
     if (args.frame_size_given) {
-        frame_size = (size_t)args.frame_size_arg;
+        config.internal_frame_size = (size_t)args.frame_size_arg;
     }
 
-    sndio::SoxReader reader(pool, Channels, frame_size, 0);
-    if (!reader.open(NULL, args.input_arg)) {
+    sndio::SoxSource source(allocator, config.input_channels, 0,
+                            config.internal_frame_size);
+    if (!source.open(NULL, args.input_arg)) {
         roc_log(LogError, "can't open input file: %s", args.input_arg);
         return 1;
     }
-    if (!reader.is_file()) {
+    if (!source.is_file()) {
         roc_log(LogError, "not a file: %s", args.input_arg);
         return 1;
     }
 
-    size_t writer_sample_rate;
+    config.input_sample_rate = source.sample_rate();
+
     if (args.rate_given) {
-        writer_sample_rate = (size_t)args.rate_arg;
+        config.output_sample_rate = (size_t)args.rate_arg;
     } else {
-        writer_sample_rate = reader.sample_rate();
+        config.output_sample_rate = config.input_sample_rate;
     }
 
-    sndio::SoxWriter output(allocator, Channels, writer_sample_rate);
-    audio::NullWriter null;
-
-    audio::IWriter* writer;
-    if (args.output_given) {
-        writer = &output;
-    } else {
-        roc_log(LogInfo, "no output given, using null output");
-        writer = &null;
-    }
-
-    audio::PoisonWriter resampler_poisoner(*writer);
-    if (args.poisoning_flag) {
-        writer = &resampler_poisoner;
-    }
-
-    audio::ResamplerConfig resampler_config;
     switch ((unsigned)args.resampler_profile_arg) {
     case resampler_profile_arg_low:
-        resampler_config = audio::resampler_profile(audio::ResamplerProfile_Low);
+        config.resampler = audio::resampler_profile(audio::ResamplerProfile_Low);
         break;
 
     case resampler_profile_arg_medium:
-        resampler_config = audio::resampler_profile(audio::ResamplerProfile_Medium);
+        config.resampler = audio::resampler_profile(audio::ResamplerProfile_Medium);
         break;
 
     case resampler_profile_arg_high:
-        resampler_config = audio::resampler_profile(audio::ResamplerProfile_High);
+        config.resampler = audio::resampler_profile(audio::ResamplerProfile_High);
         break;
 
     default:
         break;
     }
+
     if (args.resampler_interp_given) {
-        resampler_config.window_interp = (size_t)args.resampler_interp_arg;
+        config.resampler.window_interp = (size_t)args.resampler_interp_arg;
     }
     if (args.resampler_window_given) {
-        resampler_config.window_size = (size_t)args.resampler_window_arg;
+        config.resampler.window_size = (size_t)args.resampler_window_arg;
     }
 
-    audio::ResamplerWriter resampler(*writer, pool, allocator, resampler_config, Channels,
-                                     frame_size);
-    if (!args.no_resampling_flag) {
-        if (!resampler.valid()) {
-            roc_log(LogError, "can't create resampler");
-            return 1;
-        }
-        if (!resampler.set_scaling((float)reader.sample_rate() / writer_sample_rate)) {
-            roc_log(LogError, "can't set resampler scaling");
-            return 1;
-        }
-        writer = &resampler;
-    }
+    config.resampling = !args.no_resampling_flag;
+    config.poisoning = args.poisoning_flag;
 
-    audio::ProfilingWriter profiler(*writer, Channels, reader.sample_rate());
-    writer = &profiler;
+    audio::IWriter* output_writer = NULL;
 
-    audio::PoisonWriter pipeline_poisoner(*writer);
-    if (args.poisoning_flag) {
-        writer = &pipeline_poisoner;
-    }
-
+    sndio::SoxSink sink(allocator, config.output_channels, config.output_sample_rate);
     if (args.output_given) {
-        if (!output.open(NULL, args.output_arg)) {
+        if (!sink.open(NULL, args.output_arg)) {
             roc_log(LogError, "can't open output file: %s", args.output_arg);
             return 1;
         }
-        if (!output.is_file()) {
+        if (!sink.is_file()) {
             roc_log(LogError, "not a file: %s", args.output_arg);
             return 1;
         }
+        output_writer = &sink;
     }
 
-    int status = 1;
-
-    if (reader.start(*writer)) {
-        reader.join();
-        status = 0;
-        roc_log(LogInfo, "done");
-    } else {
-        roc_log(LogError, "can't start reader");
+    pipeline::Converter converter(config, output_writer, pool, allocator);
+    if (!converter.valid()) {
+        roc_log(LogError, "can't create converter pipeline");
+        return 1;
     }
 
-    return status;
+    sndio::Pump pump(pool, source, converter, source.frame_size(),
+                     sndio::Pump::ModePermanent);
+    if (!pump.valid()) {
+        roc_log(LogError, "can't create audio pump");
+        return 1;
+    }
+
+    const bool ok = pump.run();
+
+    return ok ? 0 : 1;
 }

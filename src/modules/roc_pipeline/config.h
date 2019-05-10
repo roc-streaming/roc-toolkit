@@ -34,6 +34,9 @@ const packet::channel_mask_t DefaultChannelMask = 0x3;
 //! Default packet length.
 const core::nanoseconds_t DefaultPacketLength = 7 * core::Millisecond;
 
+//! Default latency.
+const core::nanoseconds_t DefaultLatency = 200 * core::Millisecond;
+
 //! Default internal frame size.
 const size_t DefaultInternalFrameSize = 640;
 
@@ -159,7 +162,7 @@ struct ReceiverSessionConfig {
     ReceiverSessionConfig()
         : channels(DefaultChannelMask)
         , packet_length(DefaultPacketLength)
-        , target_latency(200 * core::Millisecond) {
+        , target_latency(DefaultLatency) {
         latency_monitor.min_latency = target_latency * DefaultMinLatencyFactor;
         latency_monitor.max_latency = target_latency * DefaultMaxLatencyFactor;
     }
@@ -208,6 +211,43 @@ struct ReceiverConfig {
 
     //! Parameters for receiver output.
     ReceiverOutputConfig output;
+};
+
+//! Converter parameters.
+struct ConverterConfig {
+    //! Resampler parameters.
+    audio::ResamplerConfig resampler;
+
+    //! Number of samples per second per channel.
+    size_t input_sample_rate;
+
+    //! Number of samples per second per channel.
+    size_t output_sample_rate;
+
+    //! Input channel mask.
+    packet::channel_mask_t input_channels;
+
+    //! Output channel mask.
+    packet::channel_mask_t output_channels;
+
+    //! Number of samples for internal frames.
+    size_t internal_frame_size;
+
+    //! Resample frames with a constant ratio.
+    bool resampling;
+
+    //! Fill unitialized data with large values to make them more noticable.
+    bool poisoning;
+
+    ConverterConfig()
+        : input_sample_rate(DefaultSampleRate)
+        , output_sample_rate(DefaultSampleRate)
+        , input_channels(DefaultChannelMask)
+        , output_channels(DefaultChannelMask)
+        , internal_frame_size(DefaultInternalFrameSize)
+        , resampling(false)
+        , poisoning(false) {
+    }
 };
 
 } // namespace pipeline

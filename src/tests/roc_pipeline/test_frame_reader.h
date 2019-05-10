@@ -13,7 +13,7 @@
 
 #include "roc_core/buffer_pool.h"
 #include "roc_core/noncopyable.h"
-#include "roc_pipeline/ireceiver.h"
+#include "roc_sndio/isource.h"
 
 #include "test_helpers.h"
 
@@ -22,8 +22,8 @@ namespace pipeline {
 
 class FrameReader : public core::NonCopyable<> {
 public:
-    FrameReader(IReceiver& receiver, core::BufferPool<audio::sample_t>& pool)
-        : receiver_(receiver)
+    FrameReader(sndio::ISource& source, core::BufferPool<audio::sample_t>& pool)
+        : source_(source)
         , pool_(pool)
         , offset_(0) {
     }
@@ -35,7 +35,7 @@ public:
         samples.resize(num_samples);
 
         audio::Frame frame(samples.data(), samples.size());
-        receiver_.read(frame);
+        source_.read(frame);
 
         for (size_t n = 0; n < num_samples; n++) {
             DOUBLES_EQUAL(nth_sample(offset_) * num_sessions, frame.data()[n], Epsilon);
@@ -52,7 +52,7 @@ public:
         memset(samples.data(), 0, samples.size() * sizeof(audio::sample_t));
 
         audio::Frame frame(samples.data(), samples.size());
-        receiver_.read(frame);
+        source_.read(frame);
 
         for (size_t n = 0; n < num_samples; n++) {
             DOUBLES_EQUAL(0.0f, frame.data()[n], Epsilon);
@@ -64,7 +64,7 @@ public:
     }
 
 private:
-    IReceiver& receiver_;
+    sndio::ISource& source_;
     core::BufferPool<audio::sample_t>& pool_;
 
     uint8_t offset_;

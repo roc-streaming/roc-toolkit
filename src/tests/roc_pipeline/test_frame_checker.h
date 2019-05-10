@@ -1,0 +1,58 @@
+/*
+ * Copyright (c) 2019 Roc authors
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+
+#ifndef ROC_PIPELINE_TEST_FRAME_CHECKER_H_
+#define ROC_PIPELINE_TEST_FRAME_CHECKER_H_
+
+#include <CppUTest/TestHarness.h>
+
+#include "roc_core/buffer_pool.h"
+#include "roc_core/noncopyable.h"
+#include "roc_sndio/isink.h"
+
+#include "test_helpers.h"
+
+namespace roc {
+namespace pipeline {
+
+class FrameChecker : public sndio::ISink, public core::NonCopyable<> {
+public:
+    FrameChecker()
+        : off_(0)
+        , n_frames_(0)
+        , n_samples_(0) {
+    }
+
+    virtual void write(audio::Frame& frame) {
+        for (size_t n = 0; n < frame.size(); n++) {
+            DOUBLES_EQUAL(frame.data()[n], nth_sample(off_), Epsilon);
+            off_++;
+            n_samples_++;
+        }
+        n_frames_++;
+    }
+
+    void expect_frames(size_t total) {
+        UNSIGNED_LONGS_EQUAL(total, n_frames_);
+    }
+
+    void expect_samples(size_t total) {
+        UNSIGNED_LONGS_EQUAL(total, n_samples_);
+    }
+
+private:
+    uint8_t off_;
+
+    size_t n_frames_;
+    size_t n_samples_;
+};
+
+} // namespace pipeline
+} // namespace roc
+
+#endif // ROC_PIPELINE_TEST_FRAME_CHECKER_H_

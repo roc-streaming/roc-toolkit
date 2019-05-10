@@ -11,9 +11,9 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "roc_audio/iwriter.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/noncopyable.h"
+#include "roc_sndio/isink.h"
 
 #include "test_helpers.h"
 
@@ -22,8 +22,8 @@ namespace pipeline {
 
 class FrameWriter : public core::NonCopyable<> {
 public:
-    FrameWriter(audio::IWriter& writer, core::BufferPool<audio::sample_t>& pool)
-        : writer_(writer)
+    FrameWriter(sndio::ISink& sink, core::BufferPool<audio::sample_t>& pool)
+        : sink_(sink)
         , pool_(pool)
         , offset_(0) {
     }
@@ -40,11 +40,11 @@ public:
         }
 
         audio::Frame frame(samples.data(), samples.size());
-        writer_.write(frame);
+        sink_.write(frame);
     }
 
 private:
-    audio::IWriter& writer_;
+    sndio::ISink& sink_;
     core::BufferPool<audio::sample_t>& pool_;
 
     uint8_t offset_;

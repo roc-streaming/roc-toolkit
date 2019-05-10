@@ -24,11 +24,11 @@ namespace {
 
 const audio::sample_t Epsilon = 0.00001f;
 
-audio::sample_t nth_sample(uint8_t n) {
+inline audio::sample_t nth_sample(uint8_t n) {
     return audio::sample_t(n) / 1024;
 }
 
-packet::Address new_address(int port) {
+inline packet::Address new_address(int port) {
     char str[64];
     snprintf(str, sizeof(str), "127.0.0.1:%d", port);
 

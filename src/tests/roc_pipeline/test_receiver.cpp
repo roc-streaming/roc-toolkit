@@ -1082,7 +1082,7 @@ TEST(receiver, status) {
     CHECK(samples);
     samples.resize(FramesPerPacket * NumCh);
 
-    CHECK(receiver.status() == IReceiver::Inactive);
+    CHECK(receiver.state() == sndio::ISource::Inactive);
 
     {
         audio::Frame frame(samples.data(), samples.size());
@@ -1091,7 +1091,7 @@ TEST(receiver, status) {
 
     packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket, ChMask);
 
-    CHECK(receiver.status() == IReceiver::Active);
+    CHECK(receiver.state() == sndio::ISource::Active);
 
     {
         audio::Frame frame(samples.data(), samples.size());
@@ -1102,7 +1102,7 @@ TEST(receiver, status) {
         audio::Frame frame(samples.data(), samples.size());
         receiver.read(frame);
 
-        if (receiver.status() == IReceiver::Inactive) {
+        if (receiver.state() == sndio::ISource::Inactive) {
             break;
         }
     }

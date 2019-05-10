@@ -13,7 +13,6 @@
 #define ROC_PIPELINE_SENDER_H_
 
 #include "roc_audio/iencoder.h"
-#include "roc_audio/iwriter.h"
 #include "roc_audio/packetizer.h"
 #include "roc_audio/poison_writer.h"
 #include "roc_audio/resampler_writer.h"
@@ -30,12 +29,13 @@
 #include "roc_pipeline/config.h"
 #include "roc_pipeline/sender_port.h"
 #include "roc_rtp/format_map.h"
+#include "roc_sndio/isink.h"
 
 namespace roc {
 namespace pipeline {
 
 //! Sender pipeline.
-class Sender : public audio::IWriter, public core::NonCopyable<> {
+class Sender : public sndio::ISink, public core::NonCopyable<> {
 public:
     //! Initialize.
     Sender(const SenderConfig& config,

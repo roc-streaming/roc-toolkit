@@ -26,16 +26,18 @@
 #include "roc_packet/iwriter.h"
 #include "roc_packet/packet_pool.h"
 #include "roc_pipeline/config.h"
-#include "roc_pipeline/ireceiver.h"
 #include "roc_pipeline/receiver_port.h"
 #include "roc_pipeline/receiver_session.h"
 #include "roc_rtp/format_map.h"
+#include "roc_sndio/isource.h"
 
 namespace roc {
 namespace pipeline {
 
 //! Receiver pipeline.
-class Receiver : public IReceiver, public packet::IWriter, public core::NonCopyable<> {
+class Receiver : public sndio::ISource,
+                 public packet::IWriter,
+                 public core::NonCopyable<> {
 public:
     //! Initialize.
     Receiver(const ReceiverConfig& config,
@@ -61,16 +63,16 @@ public:
     virtual void write(const packet::PacketPtr&);
 
     //! Read frame.
-    virtual void read(audio::Frame&);
+    virtual bool read(audio::Frame&);
 
-    //! Get current receiver status.
-    virtual Status status() const;
+    //! Get current receiver state.
+    virtual State state() const;
 
     //! Wait until the receiver status becomes active.
     virtual void wait_active() const;
 
 private:
-    Status status_() const;
+    State state_() const;
 
     void prepare_();
 

@@ -6,39 +6,40 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_sndio/target_sox/roc_sndio/sox_writer.h
-//! @brief SoX audio writer.
+//! @file roc_sndio/target_sox/roc_sndio/sox_sink.h
+//! @brief SoX sink.
 
-#ifndef ROC_SNDIO_SOX_WRITER_H_
-#define ROC_SNDIO_SOX_WRITER_H_
+#ifndef ROC_SNDIO_SOX_SINK_H_
+#define ROC_SNDIO_SOX_SINK_H_
 
 #include <sox.h>
 
-#include "roc_audio/iwriter.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/unique_ptr.h"
 #include "roc_packet/units.h"
+#include "roc_sndio/isink.h"
 
 namespace roc {
 namespace sndio {
 
-//! SoX audio writer.
+//! SoX sink.
 //! @remarks
-//!  Encodes samples them and and writes to output file or audio driver.
-class SoxWriter : public audio::IWriter, public core::NonCopyable<> {
+//!  Writes samples to output file or device.
+//!  Supports multiple drivers for different file types and audio systems.
+class SoxSink : public ISink, public core::NonCopyable<> {
 public:
     //! Initialize.
     //!
     //! @b Parameters
     //!  - @p channels defines bitmask of enabled channels in input buffers
     //!  - @p sample_rate defines sample rate of input buffers
-    SoxWriter(core::IAllocator& allocator,
-              packet::channel_mask_t channels,
-              size_t sample_rate);
+    SoxSink(core::IAllocator& allocator,
+            packet::channel_mask_t channels,
+            size_t sample_rate);
 
-    virtual ~SoxWriter();
+    virtual ~SoxSink();
 
     //! Open output file or device.
     //!
@@ -91,4 +92,4 @@ private:
 } // namespace sndio
 } // namespace roc
 
-#endif // ROC_SNDIO_SOX_WRITER_H_
+#endif // ROC_SNDIO_SOX_SINK_H_

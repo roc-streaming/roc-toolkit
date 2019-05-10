@@ -15,7 +15,8 @@
 #include "roc_packet/address_to_str.h"
 #include "roc_packet/parse_address.h"
 #include "roc_pipeline/sender.h"
-#include "roc_sndio/sox_reader.h"
+#include "roc_sndio/pump.h"
+#include "roc_sndio/sox_source.h"
 
 #include "roc_send/cmdline.h"
 
@@ -177,17 +178,17 @@ int main(int argc, char** argv) {
                                                          args.poisoning_flag);
     packet::PacketPool packet_pool(allocator, args.poisoning_flag);
 
-    sndio::SoxReader reader(sample_buffer_pool, config.input_channels,
-                            config.internal_frame_size, sample_rate);
+    sndio::SoxSource source(allocator, config.input_channels, sample_rate,
+                            config.internal_frame_size);
 
-    if (!reader.open(args.type_arg, args.input_arg)) {
+    if (!source.open(args.type_arg, args.input_arg)) {
         roc_log(LogError, "can't open input file or device: driver=%s input=%s",
                 args.type_arg, args.input_arg);
         return 1;
     }
 
-    config.timing = reader.is_file();
-    config.input_sample_rate = reader.sample_rate();
+    config.timing = source.is_file();
+    config.input_sample_rate = source.sample_rate();
 
     rtp::FormatMap format_map;
 
@@ -211,24 +212,24 @@ int main(int argc, char** argv) {
         return 1;
     }
 
+    sndio::Pump pump(sample_buffer_pool, source, sender, source.frame_size(),
+                     sndio::Pump::ModePermanent);
+    if (!pump.valid()) {
+        roc_log(LogError, "can't create audio pump");
+        return 1;
+    }
+
     if (!trx.start()) {
         roc_log(LogError, "can't start transceiver");
         return 1;
     }
 
-    int status = 1;
-
-    if (reader.start(sender)) {
-        reader.join();
-        status = 0;
-    } else {
-        roc_log(LogError, "can't start reader");
-    }
+    const bool ok = pump.run();
 
     trx.stop();
     trx.join();
 
     trx.remove_port(local_addr);
 
-    return status;
+    return ok ? 0 : 1;
 }

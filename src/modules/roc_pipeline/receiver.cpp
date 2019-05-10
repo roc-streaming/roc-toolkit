@@ -88,16 +88,16 @@ size_t Receiver::num_sessions() const {
 void Receiver::write(const packet::PacketPtr& packet) {
     core::Mutex::Lock lock(control_mutex_);
 
-    const Status old_status = status_();
+    const State old_state = state_();
 
     packets_.push_back(*packet);
 
-    if (old_status != Active) {
+    if (old_state != Active) {
         active_cond_.broadcast();
     }
 }
 
-void Receiver::read(audio::Frame& frame) {
+bool Receiver::read(audio::Frame& frame) {
     core::Mutex::Lock lock(pipeline_mutex_);
 
     if (config_.output.timing) {
@@ -108,18 +108,20 @@ void Receiver::read(audio::Frame& frame) {
 
     audio_reader_->read(frame);
     timestamp_ += frame.size() / num_channels_;
+
+    return true;
 }
 
-IReceiver::Status Receiver::status() const {
+sndio::ISource::State Receiver::state() const {
     core::Mutex::Lock lock(control_mutex_);
 
-    return status_();
+    return state_();
 }
 
 void Receiver::wait_active() const {
     core::Mutex::Lock lock(control_mutex_);
 
-    while (status_() != Active) {
+    while (state_() != Active) {
         active_cond_.wait();
     }
 }
@@ -127,17 +129,17 @@ void Receiver::wait_active() const {
 void Receiver::prepare_() {
     core::Mutex::Lock lock(control_mutex_);
 
-    const Status old_status = status_();
+    const State old_state = state_();
 
     fetch_packets_();
     update_sessions_();
 
-    if (old_status != Active && status_() == Active) {
+    if (old_state != Active && state_() == Active) {
         active_cond_.broadcast();
     }
 }
 
-IReceiver::Status Receiver::status_() const {
+sndio::ISource::State Receiver::state_() const {
     if (sessions_.size() != 0) {
         return Active;
     }

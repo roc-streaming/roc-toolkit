@@ -6,13 +6,13 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_pipeline/ireceiver.h"
+#include "roc_sndio/isource.h"
 
 namespace roc {
-namespace pipeline {
+namespace sndio {
 
-IReceiver::~IReceiver() {
+ISource::~ISource() {
 }
 
-} // namespace pipeline
+} // namespace sndio
 } // namespace roc
