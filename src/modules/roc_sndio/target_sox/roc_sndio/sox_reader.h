@@ -49,15 +49,15 @@ public:
     //! Open input file or device.
     //!
     //! @b Parameters
-    //!  - @p name is input file or device name, "-" for stdin.
-    //!  - @p type is codec or driver name.
+    //!  - @p driver is input driver name;
+    //!  - @p input is input file or device name, "-" for stdin.
     //!
     //! @remarks
-    //!  If @p name or @p type are NULL, they're autodetected.
+    //!  If @p driver or @p input are NULL, defaults are used.
     //!
     //! @pre
     //!  Should be called once before calling start().
-    bool open(const char* name, const char* type);
+    bool open(const char* driver, const char* input);
 
     //! Get sample rate of an input file or a device.
     //!
@@ -100,7 +100,7 @@ private:
                           size_t* obufsz);
 
     bool prepare_();
-    bool open_(const char* name, const char* type);
+    bool open_(const char* driver, const char* input);
     void write_(const sox_sample_t* buf, size_t bufsz);
     void flush_();
     void close_();

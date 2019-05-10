@@ -14,6 +14,7 @@
 
 #include "roc_core/attributes.h"
 #include "roc_core/mutex.h"
+#include "roc_core/noncopyable.h"
 #include "roc_core/singleton.h"
 
 #ifndef ROC_MODULE

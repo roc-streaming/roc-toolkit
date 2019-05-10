@@ -43,15 +43,15 @@ public:
     //! Open output file or device.
     //!
     //! @b Parameters
-    //!  - @p name is output file or device name, "-" for stdout.
-    //!  - @p type is codec or driver name.
+    //!  - @p driver is output driver name;
+    //!  - @p output is output file or device name, "-" for stdout.
     //!
     //! @remarks
-    //!  If @p name or @p type are NULL, they're autodetected.
+    //!  If @p driver or @p output are NULL, defaults are used.
     //!
     //! @pre
     //!  Should be called once before calling start().
-    bool open(const char* name, const char* type);
+    bool open(const char* driver, const char* output);
 
     //! Get sample rate of an output file or a device.
     //!
@@ -73,7 +73,7 @@ public:
 
 private:
     bool prepare_();
-    bool open_(const char* name, const char* type);
+    bool open_(const char* driver, const char* output);
     void write_(const sox_sample_t* samples, size_t n_samples);
     void close_();
 

@@ -13,7 +13,6 @@
 #include "roc_core/stddefs.h"
 #include "roc_core/temp_file.h"
 #include "roc_sndio/player.h"
-#include "roc_sndio/sox.h"
 #include "roc_sndio/sox_reader.h"
 #include "roc_sndio/sox_writer.h"
 
@@ -117,11 +116,7 @@ private:
 
 } // namespace
 
-TEST_GROUP(writer_reader) {
-    void setup() {
-        sox_setup();
-    }
-};
+TEST_GROUP(writer_reader) {};
 
 TEST(writer_reader, writer_noop) {
     SoxWriter writer(allocator, ChMask, SampleRate);
@@ -130,14 +125,14 @@ TEST(writer_reader, writer_noop) {
 TEST(writer_reader, writer_error) {
     SoxWriter writer(allocator, ChMask, SampleRate);
 
-    CHECK(!writer.open("/bad/file", NULL));
+    CHECK(!writer.open(NULL, "/bad/file"));
 }
 
 TEST(writer_reader, writer_start_stop) {
     SoxWriter writer(allocator, ChMask, SampleRate);
 
     core::TempFile file("test.wav");
-    CHECK(writer.open(file.path(), NULL));
+    CHECK(writer.open(NULL, file.path()));
 
     MockReceiver receiver;
     Player player(buffer_pool, receiver, writer, writer.frame_size(), true);
@@ -151,7 +146,7 @@ TEST(writer_reader, writer_stop_start) {
     SoxWriter writer(allocator, ChMask, SampleRate);
 
     core::TempFile file("test.wav");
-    CHECK(writer.open(file.path(), NULL));
+    CHECK(writer.open(NULL, file.path()));
 
     MockReceiver receiver;
     Player player(buffer_pool, receiver, writer, writer.frame_size(), true);
@@ -165,7 +160,7 @@ TEST(writer_reader, writer_start_start) {
     SoxWriter writer(allocator, ChMask, SampleRate);
 
     core::TempFile file("test.wav");
-    CHECK(writer.open(file.path(), NULL));
+    CHECK(writer.open(NULL, file.path()));
 
     MockReceiver receiver;
     Player player(buffer_pool, receiver, writer, writer.frame_size(), true);
@@ -180,7 +175,7 @@ TEST(writer_reader, writer_is_file) {
     SoxWriter writer(allocator, ChMask, 0);
 
     core::TempFile file("test.wav");
-    CHECK(writer.open(file.path(), NULL));
+    CHECK(writer.open(NULL, file.path()));
 
     CHECK(writer.is_file());
 }
@@ -189,7 +184,7 @@ TEST(writer_reader, writer_sample_rate_auto) {
     SoxWriter writer(allocator, ChMask, 0);
 
     core::TempFile file("test.wav");
-    CHECK(writer.open(file.path(), NULL));
+    CHECK(writer.open(NULL, file.path()));
     CHECK(writer.sample_rate() != 0);
 }
 
@@ -197,7 +192,7 @@ TEST(writer_reader, writer_sample_rate_force) {
     SoxWriter writer(allocator, ChMask, SampleRate);
 
     core::TempFile file("test.wav");
-    CHECK(writer.open(file.path(), NULL));
+    CHECK(writer.open(NULL, file.path()));
     CHECK(writer.sample_rate() == SampleRate);
 }
 
@@ -208,7 +203,7 @@ TEST(writer_reader, reader_noop) {
 TEST(writer_reader, reader_error) {
     SoxReader reader(buffer_pool, ChMask, FrameSize, SampleRate);
 
-    CHECK(!reader.open("/bad/file", NULL));
+    CHECK(!reader.open(NULL, "/bad/file"));
 }
 
 TEST(writer_reader, reader_start_stop) {
@@ -221,7 +216,7 @@ TEST(writer_reader, reader_start_stop) {
         receiver.add(NumSamples);
 
         SoxWriter writer(allocator, ChMask, SampleRate);
-        CHECK(writer.open(file.path(), NULL));
+        CHECK(writer.open(NULL, file.path()));
 
         Player player(buffer_pool, receiver, writer, writer.frame_size(), true);
         CHECK(player.start());
@@ -230,7 +225,7 @@ TEST(writer_reader, reader_start_stop) {
 
     SoxReader reader(buffer_pool, ChMask, FrameSize, SampleRate);
 
-    CHECK(reader.open(file.path(), NULL));
+    CHECK(reader.open(NULL, file.path()));
 
     MockWriter writer;
 
@@ -249,7 +244,7 @@ TEST(writer_reader, reader_stop_start) {
         receiver.add(NumSamples);
 
         SoxWriter writer(allocator, ChMask, SampleRate);
-        CHECK(writer.open(file.path(), NULL));
+        CHECK(writer.open(NULL, file.path()));
 
         Player player(buffer_pool, receiver, writer, writer.frame_size(), true);
         CHECK(player.start());
@@ -258,7 +253,7 @@ TEST(writer_reader, reader_stop_start) {
 
     SoxReader reader(buffer_pool, ChMask, FrameSize, SampleRate);
 
-    CHECK(reader.open(file.path(), NULL));
+    CHECK(reader.open(NULL, file.path()));
 
     MockWriter writer;
 
@@ -277,7 +272,7 @@ TEST(writer_reader, reader_start_start) {
         receiver.add(NumSamples);
 
         SoxWriter writer(allocator, ChMask, SampleRate);
-        CHECK(writer.open(file.path(), NULL));
+        CHECK(writer.open(NULL, file.path()));
 
         Player player(buffer_pool, receiver, writer, writer.frame_size(), true);
         CHECK(player.start());
@@ -286,7 +281,7 @@ TEST(writer_reader, reader_start_start) {
 
     SoxReader reader(buffer_pool, ChMask, FrameSize, SampleRate);
 
-    CHECK(reader.open(file.path(), NULL));
+    CHECK(reader.open(NULL, file.path()));
 
     MockWriter writer;
 
@@ -304,7 +299,7 @@ TEST(writer_reader, reader_is_file) {
         receiver.add(MaxBufSize * 10);
 
         SoxWriter writer(allocator, ChMask, SampleRate);
-        CHECK(writer.open(file.path(), NULL));
+        CHECK(writer.open(NULL, file.path()));
 
         Player player(buffer_pool, receiver, writer, writer.frame_size(), true);
         CHECK(player.start());
@@ -313,7 +308,7 @@ TEST(writer_reader, reader_is_file) {
 
     SoxReader reader(buffer_pool, ChMask, FrameSize, SampleRate);
 
-    CHECK(reader.open(file.path(), NULL));
+    CHECK(reader.open(NULL, file.path()));
     CHECK(reader.is_file());
 }
 
@@ -325,7 +320,7 @@ TEST(writer_reader, reader_sample_rate_auto) {
         receiver.add(MaxBufSize * 10);
 
         SoxWriter writer(allocator, ChMask, SampleRate);
-        CHECK(writer.open(file.path(), NULL));
+        CHECK(writer.open(NULL, file.path()));
 
         Player player(buffer_pool, receiver, writer, writer.frame_size(), true);
         CHECK(player.start());
@@ -334,7 +329,7 @@ TEST(writer_reader, reader_sample_rate_auto) {
 
     SoxReader reader(buffer_pool, ChMask, FrameSize, 0);
 
-    CHECK(reader.open(file.path(), NULL));
+    CHECK(reader.open(NULL, file.path()));
     CHECK(reader.sample_rate() == SampleRate);
 }
 
@@ -346,7 +341,7 @@ TEST(writer_reader, reader_sample_rate_mismatch) {
         receiver.add(MaxBufSize * 10);
 
         SoxWriter writer(allocator, ChMask, SampleRate);
-        CHECK(writer.open(file.path(), NULL));
+        CHECK(writer.open(NULL, file.path()));
 
         Player player(buffer_pool, receiver, writer, writer.frame_size(), true);
         CHECK(player.start());
@@ -355,7 +350,7 @@ TEST(writer_reader, reader_sample_rate_mismatch) {
 
     SoxReader reader(buffer_pool, ChMask, FrameSize, SampleRate * 2);
 
-    CHECK(reader.open(file.path(), NULL));
+    CHECK(reader.open(NULL, file.path()));
     CHECK(reader.sample_rate() == SampleRate);
 }
 
@@ -369,7 +364,7 @@ TEST(writer_reader, write_read) {
 
     {
         SoxWriter writer(allocator, ChMask, SampleRate);
-        CHECK(writer.open(file.path(), NULL));
+        CHECK(writer.open(NULL, file.path()));
 
         Player player(buffer_pool, receiver, writer, writer.frame_size(), true);
         CHECK(player.start());
@@ -379,7 +374,7 @@ TEST(writer_reader, write_read) {
     }
 
     SoxReader reader(buffer_pool, ChMask, FrameSize, SampleRate);
-    CHECK(reader.open(file.path(), NULL));
+    CHECK(reader.open(NULL, file.path()));
 
     MockWriter writer;
     CHECK(reader.start(writer));
@@ -398,7 +393,7 @@ TEST(writer_reader, overwrite) {
 
     {
         SoxWriter writer(allocator, ChMask, SampleRate);
-        CHECK(writer.open(file.path(), NULL));
+        CHECK(writer.open(NULL, file.path()));
 
         Player player(buffer_pool, receiver, writer, writer.frame_size(), true);
         CHECK(player.start());
@@ -412,7 +407,7 @@ TEST(writer_reader, overwrite) {
 
     {
         SoxWriter writer(allocator, ChMask, SampleRate);
-        CHECK(writer.open(file.path(), NULL));
+        CHECK(writer.open(NULL, file.path()));
 
         Player player(buffer_pool, receiver, writer, writer.frame_size(), true);
         CHECK(player.start());
@@ -424,7 +419,7 @@ TEST(writer_reader, overwrite) {
 
     SoxReader reader(buffer_pool, ChMask, FrameSize, SampleRate);
 
-    CHECK(reader.open(file.path(), NULL));
+    CHECK(reader.open(NULL, file.path()));
 
     MockWriter writer;
 

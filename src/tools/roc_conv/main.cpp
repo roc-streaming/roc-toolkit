@@ -18,7 +18,6 @@
 #include "roc_core/log.h"
 #include "roc_core/scoped_destructor.h"
 #include "roc_pipeline/config.h"
-#include "roc_sndio/sox.h"
 #include "roc_sndio/sox_reader.h"
 #include "roc_sndio/sox_writer.h"
 
@@ -48,8 +47,6 @@ int main(int argc, char** argv) {
     core::Logger::instance().set_level(
         LogLevel(core::DefaultLogLevel + args.verbose_given));
 
-    sndio::sox_setup();
-
     core::HeapAllocator allocator;
     core::BufferPool<audio::sample_t> pool(allocator, MaxFrameSize, args.poisoning_flag);
 
@@ -59,7 +56,7 @@ int main(int argc, char** argv) {
     }
 
     sndio::SoxReader reader(pool, Channels, frame_size, 0);
-    if (!reader.open(args.input_arg, NULL)) {
+    if (!reader.open(NULL, args.input_arg)) {
         roc_log(LogError, "can't open input file: %s", args.input_arg);
         return 1;
     }
@@ -138,7 +135,7 @@ int main(int argc, char** argv) {
     }
 
     if (args.output_given) {
-        if (!output.open(args.output_arg, NULL)) {
+        if (!output.open(NULL, args.output_arg)) {
             roc_log(LogError, "can't open output file: %s", args.output_arg);
             return 1;
         }

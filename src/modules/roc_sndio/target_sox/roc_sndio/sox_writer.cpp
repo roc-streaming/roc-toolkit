@@ -9,7 +9,7 @@
 #include "roc_sndio/sox_writer.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
-#include "roc_sndio/sox.h"
+#include "roc_sndio/sox_controller.h"
 
 namespace roc {
 namespace sndio {
@@ -30,15 +30,15 @@ SoxWriter::SoxWriter(core::IAllocator& allocator,
     out_signal_.channels = (unsigned)n_channels;
     out_signal_.precision = SOX_SAMPLE_PRECISION;
 
-    buffer_size_ = sox_get_globals()->bufsiz;
+    buffer_size_ = SoxController::instance().get_globals().bufsiz;
 }
 
 SoxWriter::~SoxWriter() {
     close_();
 }
 
-bool SoxWriter::open(const char* name, const char* type) {
-    roc_log(LogDebug, "sox writer: opening: name=%s type=%s", name, type);
+bool SoxWriter::open(const char* driver, const char* output) {
+    roc_log(LogDebug, "sox writer: opening: driver=%s output=%s", driver, output);
 
     if (buffer_ || output_) {
         roc_panic("sox writer: can't call open() more than once");
@@ -48,7 +48,7 @@ bool SoxWriter::open(const char* name, const char* type) {
         return false;
     }
 
-    if (!open_(name, type)) {
+    if (!open_(driver, output)) {
         return false;
     }
 
@@ -111,18 +111,17 @@ bool SoxWriter::prepare_() {
     return true;
 }
 
-bool SoxWriter::open_(const char* name, const char* type) {
-    if (!sox_defaults(&name, &type)) {
-        roc_log(LogError, "sox writer: can't detect defaults: name=%s type=%s", name,
-                type);
+bool SoxWriter::open_(const char* driver, const char* output) {
+    if (!SoxController::instance().fill_defaults(driver, output)) {
         return false;
     }
 
-    roc_log(LogInfo, "sox writer: name=%s type=%s", name, type);
+    roc_log(LogInfo, "sox writer: driver=%s output=%s", driver, output);
 
-    output_ = sox_open_write(name, &out_signal_, NULL, type, NULL, NULL);
+    output_ = sox_open_write(output, &out_signal_, NULL, driver, NULL, NULL);
     if (!output_) {
-        roc_log(LogError, "sox writer: can't open writer: name=%s type=%s", name, type);
+        roc_log(LogError, "sox writer: can't open writer: driver=%s output=%s", driver,
+                output);
         return false;
     }
 

@@ -9,7 +9,7 @@
 #include "roc_sndio/sox_reader.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
-#include "roc_sndio/sox.h"
+#include "roc_sndio/sox_controller.h"
 
 namespace roc {
 namespace sndio {
@@ -76,7 +76,7 @@ SoxReader::SoxReader(core::BufferPool<audio::sample_t>& buffer_pool,
     }
 
     if (n_samples == 0) {
-        n_samples = sox_get_globals()->bufsiz / n_channels;
+        n_samples = SoxController::instance().get_globals().bufsiz / n_channels;
     }
 
     buffer_size_ = n_samples * n_channels;
@@ -98,8 +98,8 @@ SoxReader::~SoxReader() {
     close_();
 }
 
-bool SoxReader::open(const char* name, const char* type) {
-    roc_log(LogDebug, "sox reader: opening: name=%s type=%s", name, type);
+bool SoxReader::open(const char* driver, const char* input) {
+    roc_log(LogDebug, "sox reader: opening: driver=%s input=%s", driver, input);
 
     if (buffer_ || input_) {
         roc_panic("sox reader: can't call open() more than once");
@@ -109,7 +109,7 @@ bool SoxReader::open(const char* name, const char* type) {
         return false;
     }
 
-    if (!open_(name, type)) {
+    if (!open_(driver, input)) {
         return false;
     }
 
@@ -223,16 +223,16 @@ bool SoxReader::prepare_() {
     return true;
 }
 
-bool SoxReader::open_(const char* name, const char* type) {
-    if (!sox_defaults(&name, &type)) {
-        roc_log(LogError, "can't detect defaults: name=%s type=%s", name, type);
+bool SoxReader::open_(const char* driver, const char* input) {
+    if (!SoxController::instance().fill_defaults(driver, input)) {
         return false;
     }
 
-    roc_log(LogInfo, "sox reader: name=%s type=%s", name, type);
+    roc_log(LogInfo, "sox reader: driver=%s input=%s", driver, input);
 
-    if (!(input_ = sox_open_read(name, NULL, NULL, type))) {
-        roc_log(LogError, "sox reader: can't open reader: name=%s type=%s", name, type);
+    if (!(input_ = sox_open_read(input, NULL, NULL, driver))) {
+        roc_log(LogError, "sox reader: can't open reader: driver=%s input=%s", driver,
+                input);
         return false;
     }
 

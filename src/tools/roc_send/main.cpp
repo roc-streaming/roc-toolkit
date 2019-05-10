@@ -15,7 +15,6 @@
 #include "roc_packet/address_to_str.h"
 #include "roc_packet/parse_address.h"
 #include "roc_pipeline/sender.h"
-#include "roc_sndio/sox.h"
 #include "roc_sndio/sox_reader.h"
 
 #include "roc_send/cmdline.h"
@@ -43,8 +42,6 @@ int main(int argc, char** argv) {
 
     core::Logger::instance().set_level(
         LogLevel(core::DefaultLogLevel + args.verbose_given));
-
-    sndio::sox_setup();
 
     pipeline::SenderConfig config;
 
@@ -183,9 +180,9 @@ int main(int argc, char** argv) {
     sndio::SoxReader reader(sample_buffer_pool, config.input_channels,
                             config.internal_frame_size, sample_rate);
 
-    if (!reader.open(args.input_arg, args.type_arg)) {
-        roc_log(LogError, "can't open input file/device: %s %s", args.input_arg,
-                args.type_arg);
+    if (!reader.open(args.type_arg, args.input_arg)) {
+        roc_log(LogError, "can't open input file or device: driver=%s input=%s",
+                args.type_arg, args.input_arg);
         return 1;
     }
 

@@ -17,7 +17,6 @@
 #include "roc_packet/parse_address.h"
 #include "roc_pipeline/receiver.h"
 #include "roc_sndio/player.h"
-#include "roc_sndio/sox.h"
 #include "roc_sndio/sox_writer.h"
 
 #include "roc_recv/cmdline.h"
@@ -45,8 +44,6 @@ int main(int argc, char** argv) {
 
     core::Logger::instance().set_level(
         LogLevel(core::DefaultLogLevel + args.verbose_given));
-
-    sndio::sox_setup();
 
     pipeline::PortConfig source_port;
 
@@ -234,9 +231,9 @@ int main(int argc, char** argv) {
 
     sndio::SoxWriter writer(allocator, config.output.channels, sample_rate);
 
-    if (!writer.open(args.output_arg, args.type_arg)) {
-        roc_log(LogError, "can't open output file or device: %s %s", args.output_arg,
-                args.type_arg);
+    if (!writer.open(args.type_arg, args.output_arg)) {
+        roc_log(LogError, "can't open output file or device: driver=%s output=%s",
+                args.type_arg, args.output_arg);
         return 1;
     }
 

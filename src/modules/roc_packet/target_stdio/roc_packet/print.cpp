@@ -20,7 +20,8 @@ void print(const Packet& p, int flags) {
     fprintf(stderr, "packet [%p]\n", (const void*)&p);
 
     if (p.udp()) {
-        fprintf(stderr, " udp: src=%s dst=%s\n", address_to_str(p.udp()->src_addr).c_str(),
+        fprintf(stderr, " udp: src=%s dst=%s\n",
+                address_to_str(p.udp()->src_addr).c_str(),
                 address_to_str(p.udp()->dst_addr).c_str());
     }
 
