@@ -8,6 +8,8 @@ for targetdir in env.RecursiveGlob('modules', 'target_*'):
     if targetdir.name in env['ROC_TARGETS']:
         env.Append(CPPPATH=['#src/%s' % targetdir])
 
+modulelibs = []
+
 for module in env['ROC_MODULES']:
     moduledir = 'modules/' + module
 
@@ -27,7 +29,9 @@ for module in env['ROC_MODULES']:
     env.Alias(module, [lib], env.Action(''))
     env.AlwaysBuild(module)
 
-    env.Prepend(LIBS=[lib])
+    modulelibs.insert(0, lib)
+
+env.Prepend(LIBS=modulelibs+list(reversed(modulelibs)))
 
 libroc = None
 
