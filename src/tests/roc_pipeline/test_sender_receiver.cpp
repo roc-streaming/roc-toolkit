@@ -185,13 +185,13 @@ TEST_GROUP(sender_receiver) {
     ReceiverConfig receiver_config(int flags) {
         ReceiverConfig config;
 
-        config.output.sample_rate = SampleRate;
-        config.output.channels = ChMask;
-        config.output.internal_frame_size = MaxBufSize;
+        config.common.output_sample_rate = SampleRate;
+        config.common.output_channels = ChMask;
+        config.common.internal_frame_size = MaxBufSize;
 
-        config.output.resampling = false;
-        config.output.timing = false;
-        config.output.poisoning = true;
+        config.common.resampling = false;
+        config.common.timing = false;
+        config.common.poisoning = true;
 
         config.default_session.channels = ChMask;
         config.default_session.packet_length =

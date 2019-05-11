@@ -118,7 +118,7 @@ bool make_sender_config(pipeline::SenderConfig& out, const roc_sender_config& in
 
 bool make_receiver_config(pipeline::ReceiverConfig& out, const roc_receiver_config& in) {
     if (in.frame_sample_rate != 0) {
-        out.output.sample_rate = in.frame_sample_rate;
+        out.common.output_sample_rate = in.frame_sample_rate;
     } else {
         roc_log(LogError, "roc_config: invalid frame_sample_rate");
         return false;
@@ -134,9 +134,9 @@ bool make_receiver_config(pipeline::ReceiverConfig& out, const roc_receiver_conf
         return false;
     }
 
-    out.output.timing = in.automatic_timing;
+    out.common.timing = in.automatic_timing;
 
-    out.output.resampling = (in.resampler_profile != ROC_RESAMPLER_DISABLE);
+    out.common.resampling = (in.resampler_profile != ROC_RESAMPLER_DISABLE);
 
     switch ((int)in.resampler_profile) {
     case ROC_RESAMPLER_DISABLE:

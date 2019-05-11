@@ -33,7 +33,7 @@ roc_receiver::roc_receiver(roc_context& ctx, pipeline::ReceiverConfig& cfg)
                context.byte_buffer_pool,
                context.sample_buffer_pool,
                context.allocator)
-    , num_channels(packet::num_channels(cfg.output.channels)) {
+    , num_channels(packet::num_channels(cfg.common.output_channels)) {
 }
 
 roc_receiver* roc_receiver_open(roc_context* context, const roc_receiver_config* config) {

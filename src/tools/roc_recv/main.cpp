@@ -73,10 +73,10 @@ int main(int argc, char** argv) {
             roc_log(LogError, "invalid --frame-size: should be > 0");
             return 1;
         }
-        config.output.internal_frame_size = (size_t)args.frame_size_arg;
+        config.common.internal_frame_size = (size_t)args.frame_size_arg;
     }
 
-    sndio::SoxController::instance().set_buffer_size(config.output.internal_frame_size);
+    sndio::SoxController::instance().set_buffer_size(config.common.internal_frame_size);
 
     switch ((unsigned)args.fec_arg) {
     case fec_arg_none:
@@ -181,7 +181,7 @@ int main(int argc, char** argv) {
         }
     }
 
-    config.output.resampling = !args.no_resampling_flag;
+    config.common.resampling = !args.no_resampling_flag;
 
     switch ((unsigned)args.resampler_profile_arg) {
     case resampler_profile_arg_low:
@@ -228,33 +228,33 @@ int main(int argc, char** argv) {
         }
         sample_rate = (size_t)args.rate_arg;
     } else {
-        if (!config.output.resampling) {
+        if (!config.common.resampling) {
             sample_rate = pipeline::DefaultSampleRate;
         }
     }
 
-    config.output.poisoning = args.poisoning_flag;
-    config.output.beeping = args.beeping_flag;
+    config.common.poisoning = args.poisoning_flag;
+    config.common.beeping = args.beeping_flag;
 
     core::HeapAllocator allocator;
     core::BufferPool<uint8_t> byte_buffer_pool(allocator, max_packet_size,
                                                args.poisoning_flag);
     core::BufferPool<audio::sample_t> sample_buffer_pool(
-        allocator, config.output.internal_frame_size, args.poisoning_flag);
+        allocator, config.common.internal_frame_size, args.poisoning_flag);
     packet::PacketPool packet_pool(allocator, args.poisoning_flag);
 
-    sndio::SoxSink sink(allocator, config.output.channels, sample_rate,
-                        config.output.internal_frame_size);
+    sndio::SoxSink sink(allocator, config.common.output_channels, sample_rate,
+                        config.common.internal_frame_size);
     if (!sink.open(args.type_arg, args.output_arg)) {
         roc_log(LogError, "can't open output file or device: driver=%s output=%s",
                 args.type_arg, args.output_arg);
         return 1;
     }
 
-    config.output.timing = sink.is_file();
-    config.output.sample_rate = sink.sample_rate();
+    config.common.timing = sink.is_file();
+    config.common.output_sample_rate = sink.sample_rate();
 
-    if (config.output.sample_rate == 0) {
+    if (config.common.output_sample_rate == 0) {
         roc_log(LogError,
                 "can't detect output sample rate, try to set it "
                 "explicitly with --rate option");

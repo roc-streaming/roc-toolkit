@@ -133,7 +133,7 @@ struct SenderConfig {
 
 //! Receiver session parameters.
 //! @remarks
-//!  Defines per-session parameters on the receiver side.
+//!  Defines per-session receiver parameters.
 struct ReceiverSessionConfig {
     //! Channel mask.
     packet::channel_mask_t channels;
@@ -168,15 +168,15 @@ struct ReceiverSessionConfig {
     }
 };
 
-//! Receiver output parameters.
+//! Receiver common parameters.
 //! @remarks
-//!  Defines common output parameters on the receiver side.
-struct ReceiverOutputConfig {
+//!  Defines receiver parameters common for all sessions.
+struct ReceiverCommonConfig {
     //! Number of samples per second per channel.
-    size_t sample_rate;
+    size_t output_sample_rate;
 
     //! Channel mask.
-    packet::channel_mask_t channels;
+    packet::channel_mask_t output_channels;
 
     //! Number of samples for internal frames.
     size_t internal_frame_size;
@@ -193,9 +193,9 @@ struct ReceiverOutputConfig {
     //! Insert weird beeps instead of silence on packet loss.
     bool beeping;
 
-    ReceiverOutputConfig()
-        : sample_rate(DefaultSampleRate)
-        , channels(DefaultChannelMask)
+    ReceiverCommonConfig()
+        : output_sample_rate(DefaultSampleRate)
+        , output_channels(DefaultChannelMask)
         , internal_frame_size(DefaultInternalFrameSize)
         , resampling(false)
         , timing(false)
@@ -209,8 +209,8 @@ struct ReceiverConfig {
     //! Default parameters for receiver session.
     ReceiverSessionConfig default_session;
 
-    //! Parameters for receiver output.
-    ReceiverOutputConfig output;
+    //! Parameters common for all sessions.
+    ReceiverCommonConfig common;
 };
 
 //! Converter parameters.

@@ -49,7 +49,7 @@ class ReceiverSession : public core::RefCnt<ReceiverSession>, public core::ListN
 public:
     //! Initialize.
     ReceiverSession(const ReceiverSessionConfig& session_config,
-                    const ReceiverOutputConfig& output_config,
+                    const ReceiverCommonConfig& common_config,
                     unsigned int payload_type,
                     const packet::Address& src_address,
                     const rtp::FormatMap& format_map,
