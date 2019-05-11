@@ -245,9 +245,9 @@ int main(int argc, char** argv) {
 
     sndio::SoxSink sink(allocator, config.common.output_channels, sample_rate,
                         config.common.internal_frame_size);
-    if (!sink.open(args.type_arg, args.output_arg)) {
+    if (!sink.open(args.driver_arg, args.output_arg)) {
         roc_log(LogError, "can't open output file or device: driver=%s output=%s",
-                args.type_arg, args.output_arg);
+                args.driver_arg, args.output_arg);
         return 1;
     }
 

@@ -204,9 +204,9 @@ int main(int argc, char** argv) {
     sndio::SoxSource source(allocator, config.input_channels, sample_rate,
                             config.internal_frame_size);
 
-    if (!source.open(args.type_arg, args.input_arg)) {
+    if (!source.open(args.driver_arg, args.input_arg)) {
         roc_log(LogError, "can't open input file or device: driver=%s input=%s",
-                args.type_arg, args.input_arg);
+                args.driver_arg, args.input_arg);
         return 1;
     }
 

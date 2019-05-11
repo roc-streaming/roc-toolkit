@@ -6,8 +6,8 @@ section "Options"
     option "verbose" v "Increase verbosity level (may be used multiple times)"
         multiple optional
 
-    option "output" o "Output file or device" typestr="NAME" string optional
-    option "type" t "Output codec or driver" typestr="TYPE" string optional
+    option "output" o "Output file or device" typestr="OUTPUT" string optional
+    option "driver" d "Output driver" typestr="DRIVER" string optional
 
     option "source" s "Source UDP address" typestr="ADDRESS" string required
     option "repair" r "Repair UDP address" typestr="ADDRESS" string optional
