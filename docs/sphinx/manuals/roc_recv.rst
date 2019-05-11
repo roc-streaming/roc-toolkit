@@ -13,28 +13,59 @@ Receive real-time audio streams from remote senders and write them to a file or 
 
 Options
 -------
--v, --verbose                 Increase verbosity level (may be used multiple times)
--o, --output=NAME             Output file or device
--t, --type=TYPE               Output codec or driver
--s, --source=ADDRESS          Source UDP address
--r, --repair=ADDRESS          Repair UDP address
---fec=ENUM                    FEC scheme  (possible values="rs", "ldpc", "none" default=`rs')
---nbsrc=INT                   Number of source packets in FEC block
---nbrpr=INT                   Number of repair packets in FEC block
---latency=STRING              Session target latency, TIME units
---min-latency=STRING          Session minimum latency, TIME units
---max-latency=STRING          Session maximum latency, TIME units
---np-timeout=STRING           Session no playback timeout, TIME units
---bp-timeout=STRING           Session broken playback timeout, TIME units
---bp-window=STRING            Session breakage detection window, TIME units
---rate=INT                    Override output sample rate, Hz
---no-resampling               Disable resampling  (default=off)
---resampler-profile=ENUM      Resampler profile  (possible values="low", "medium", "high" default=`medium')
---resampler-interp=INT        Resampler sinc table precision
---resampler-window=INT        Number of samples per resampler window
--1, --oneshot                 Exit when last connected client disconnects (default=off)
---poisoning                   Enable uninitialized memory poisoning (default=off)
---beeping                     Enable beeping on packet loss  (default=off)
+
+-h, --help                Print help and exit
+-V, --version             Print version and exit
+-v, --verbose             Increase verbosity level (may be used multiple times)
+-o, --output=OUTPUT       Output file or device
+-d, --driver=DRIVER       Output driver
+-s, --source=ADDRESS      Source UDP address
+-r, --repair=ADDRESS      Repair UDP address
+--fec=ENUM                FEC scheme  (possible values="rs", "ldpc", "none" default=`rs')
+--nbsrc=INT               Number of source packets in FEC block
+--nbrpr=INT               Number of repair packets in FEC block
+--latency=STRING          Session target latency, TIME units
+--min-latency=STRING      Session minimum latency, TIME units
+--max-latency=STRING      Session maximum latency, TIME units
+--np-timeout=STRING       Session no playback timeout, TIME units
+--bp-timeout=STRING       Session broken playback timeout, TIME units
+--bp-window=STRING        Session breakage detection window, TIME units
+--packet-limit=INT        Maximum packet size, in bytes
+--frame-size=INT          Internal frame size, number of samples
+--rate=INT                Override output sample rate, Hz
+--no-resampling           Disable resampling  (default=off)
+--resampler-profile=ENUM  Resampler profile  (possible values="low", "medium", "high" default=`medium')
+--resampler-interp=INT    Resampler sinc table precision
+--resampler-window=INT    Number of samples per resampler window
+-1, --oneshot             Exit when last connected client disconnects (default=off)
+--poisoning               Enable uninitialized memory poisoning (default=off)
+--beeping                 Enable beeping on packet loss  (default=off)
+
+Output
+------
+
+*OUTPUT* should be file name or device name, for example:
+
+- \- (stdout)
+- file.wav (WAV file)
+- default (default output device)
+- front:CARD=PCH,DEV=0 (ALSA device)
+- alsa_output.pci-0000_00_1f.3.analog-stereo (PulseAudio sink)
+
+Interpretation of the device name depends on the selected driver.
+
+If the output is omitted, some default output is selected. If the driver is omitted or it is a device driver, the default output device is seelcted. If the driver is a file driver, the stdout is selected.
+
+Driver
+------
+
+*DRIVER* defines the type of the output file or device, for example:
+
+- wav
+- alsa
+- pulseaudio
+
+If the driver is omitted, some default driver is selected. If the user did specify the output and it is a file with a known extension, the appropriate file driver is selected. Otherwise, the first device driver available on the system is selected.
 
 Address
 -------
@@ -44,14 +75,6 @@ Address
 - :PORT (e.g. ":10001")
 - IPv4:PORT (e.g. "127.0.0.1:10001")
 - [IPv6]:PORT (e.g. "[::1]:10001")
-
-Output
-------
-
-Arguments for ``--output`` and ``--type`` options are passed to SoX:
-
-- *NAME* specifies file or device name
-- *TYPE* specifies file or device type
 
 Time
 ----

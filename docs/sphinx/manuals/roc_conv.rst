@@ -19,8 +19,8 @@ Options
 -v, --verbose             Increase verbosity level (may be used multiple times)
 -i, --input=PATH          Input file
 -o, --output=PATH         Output file
--r, --rate=INT            Output sample rate (Hz)
---frame-size=INT          Number of samples per audio frame
+--frame-size=INT          Internal frame size, number of samples
+-r, --rate=INT            Output sample rate, Hz
 --no-resampling           Disable resampling  (default=off)
 --resampler-profile=ENUM  Resampler profile  (possible values="low", "medium", "high" default=`medium')
 --resampler-interp=INT    Resampler sinc table precision
