@@ -10,6 +10,7 @@
 
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
+#include "roc_core/scoped_lock.h"
 #include "roc_sndio/sox_controller.h"
 
 namespace roc {
@@ -98,13 +99,20 @@ SoxController::SoxController() {
 
     sox_init();
 
-    sox_get_globals()->bufsiz = 8192;
     sox_get_globals()->verbosity = 100;
     sox_get_globals()->output_message_handler = log_handler;
 }
 
-sox_globals_t& SoxController::get_globals() const {
-    return *sox_get_globals();
+void SoxController::set_buffer_size(size_t size) {
+    core::Mutex::Lock lock(mutex_);
+
+    sox_get_globals()->bufsiz = size * sizeof(sox_sample_t);
+}
+
+size_t SoxController::get_buffer_size() const {
+    core::Mutex::Lock lock(mutex_);
+
+    return sox_get_globals()->bufsiz / sizeof(sox_sample_t);
 }
 
 bool SoxController::fill_defaults(const char*& driver, const char*& device) {

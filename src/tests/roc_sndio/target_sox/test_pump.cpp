@@ -42,7 +42,7 @@ TEST(pump, write_read) {
     core::TempFile file("test.wav");
 
     {
-        SoxSink sox_sink(allocator, ChMask, SampleRate);
+        SoxSink sox_sink(allocator, ChMask, SampleRate, FrameSize);
         CHECK(sox_sink.open(NULL, file.path()));
 
         Pump pump(buffer_pool, mock_source, sox_sink, sox_sink.frame_size(),
@@ -74,7 +74,7 @@ TEST(pump, write_overwrite_read) {
     core::TempFile file("test.wav");
 
     {
-        SoxSink sox_sink(allocator, ChMask, SampleRate);
+        SoxSink sox_sink(allocator, ChMask, SampleRate, FrameSize);
         CHECK(sox_sink.open(NULL, file.path()));
 
         Pump pump(buffer_pool, mock_source, sox_sink, sox_sink.frame_size(),
@@ -89,7 +89,7 @@ TEST(pump, write_overwrite_read) {
     CHECK(num_returned1 >= NumSamples - MaxBufSize);
 
     {
-        SoxSink sox_sink(allocator, ChMask, SampleRate);
+        SoxSink sox_sink(allocator, ChMask, SampleRate, FrameSize);
         CHECK(sox_sink.open(NULL, file.path()));
 
         Pump pump(buffer_pool, mock_source, sox_sink, sox_sink.frame_size(),

@@ -16,11 +16,14 @@
 
 #include "roc_core/noncopyable.h"
 #include "roc_core/singleton.h"
+#include "roc_core/mutex.h"
 
 namespace roc {
 namespace sndio {
 
 //! SoxController.
+//! @note
+//!  Always access SoX globals via this class to avoid races.
 class SoxController : public core::NonCopyable<> {
 public:
     //! Get controller instance.
@@ -28,11 +31,15 @@ public:
         return core::Singleton<SoxController>::instance();
     }
 
-    //! Get global options.
+    //! Set internal SoX buffer size.
     //! @remarks
-    //!  Always access SoX globals via this method to ensure that they were
-    //!  already properly initialized (in the singleton constructor).
-    sox_globals_t& get_globals() const;
+    //!  Number of samples for all channels.
+    void set_buffer_size(size_t size);
+
+    //! Get internal SoX buffer size.
+    //! @remarks
+    //!  Number of samples for all channels.
+    size_t get_buffer_size() const;
 
     //! Fill default driver and device if necessary.
     //! @remarks
@@ -43,6 +50,8 @@ private:
     friend class core::Singleton<SoxController>;
 
     SoxController();
+
+    core::Mutex mutex_;
 };
 
 } // namespace sndio

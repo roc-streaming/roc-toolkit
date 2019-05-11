@@ -17,17 +17,12 @@
 #include "roc_packet/parse_address.h"
 #include "roc_pipeline/receiver.h"
 #include "roc_sndio/pump.h"
+#include "roc_sndio/sox_controller.h"
 #include "roc_sndio/sox_sink.h"
 
 #include "roc_recv/cmdline.h"
 
 using namespace roc;
-
-namespace {
-
-enum { MaxPacketSize = 2048, MaxFrameSize = 8192 };
-
-} // namespace
 
 int main(int argc, char** argv) {
     core::CrashHandler crash_handler;
@@ -63,6 +58,25 @@ int main(int argc, char** argv) {
     }
 
     pipeline::ReceiverConfig config;
+
+    size_t max_packet_size = 2048;
+    if (args.packet_limit_given) {
+        if (args.packet_limit_arg <= 0) {
+            roc_log(LogError, "invalid --packet-limit: should be > 0");
+            return 1;
+        }
+        max_packet_size = (size_t)args.packet_limit_arg;
+    }
+
+    if (args.frame_size_given) {
+        if (args.frame_size_arg <= 0) {
+            roc_log(LogError, "invalid --frame-size: should be > 0");
+            return 1;
+        }
+        config.output.internal_frame_size = (size_t)args.frame_size_arg;
+    }
+
+    sndio::SoxController::instance().set_buffer_size(config.output.internal_frame_size);
 
     switch ((unsigned)args.fec_arg) {
     case fec_arg_none:
@@ -223,14 +237,14 @@ int main(int argc, char** argv) {
     config.output.beeping = args.beeping_flag;
 
     core::HeapAllocator allocator;
-    core::BufferPool<uint8_t> byte_buffer_pool(allocator, MaxPacketSize,
+    core::BufferPool<uint8_t> byte_buffer_pool(allocator, max_packet_size,
                                                args.poisoning_flag);
-    core::BufferPool<audio::sample_t> sample_buffer_pool(allocator, MaxFrameSize,
-                                                         args.poisoning_flag);
+    core::BufferPool<audio::sample_t> sample_buffer_pool(
+        allocator, config.output.internal_frame_size, args.poisoning_flag);
     packet::PacketPool packet_pool(allocator, args.poisoning_flag);
 
-    sndio::SoxSink sink(allocator, config.output.channels, sample_rate);
-
+    sndio::SoxSink sink(allocator, config.output.channels, sample_rate,
+                        config.output.internal_frame_size);
     if (!sink.open(args.type_arg, args.output_arg)) {
         roc_log(LogError, "can't open output file or device: driver=%s output=%s",
                 args.type_arg, args.output_arg);

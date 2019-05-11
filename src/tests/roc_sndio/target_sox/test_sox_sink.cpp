@@ -17,7 +17,7 @@ namespace sndio {
 
 namespace {
 
-enum { SampleRate = 44100, ChMask = 0x3 };
+enum { FrameSize = 512, SampleRate = 44100, ChMask = 0x3 };
 
 core::HeapAllocator allocator;
 
@@ -26,26 +26,25 @@ core::HeapAllocator allocator;
 TEST_GROUP(sox_sink){};
 
 TEST(sox_sink, noop) {
-    SoxSink sox_sink(allocator, ChMask, SampleRate);
+    SoxSink sox_sink(allocator, ChMask, SampleRate, FrameSize);
 }
 
 TEST(sox_sink, error) {
-    SoxSink sox_sink(allocator, ChMask, SampleRate);
+    SoxSink sox_sink(allocator, ChMask, SampleRate, FrameSize);
 
     CHECK(!sox_sink.open(NULL, "/bad/file"));
 }
 
 TEST(sox_sink, is_file) {
-    SoxSink sox_sink(allocator, ChMask, 0);
+    SoxSink sox_sink(allocator, ChMask, SampleRate, FrameSize);
 
     core::TempFile file("test.wav");
     CHECK(sox_sink.open(NULL, file.path()));
-
     CHECK(sox_sink.is_file());
 }
 
 TEST(sox_sink, sample_rate_auto) {
-    SoxSink sox_sink(allocator, ChMask, 0);
+    SoxSink sox_sink(allocator, ChMask, 0, FrameSize);
 
     core::TempFile file("test.wav");
     CHECK(sox_sink.open(NULL, file.path()));
@@ -53,7 +52,7 @@ TEST(sox_sink, sample_rate_auto) {
 }
 
 TEST(sox_sink, sample_rate_force) {
-    SoxSink sox_sink(allocator, ChMask, SampleRate);
+    SoxSink sox_sink(allocator, ChMask, SampleRate, FrameSize);
 
     core::TempFile file("test.wav");
     CHECK(sox_sink.open(NULL, file.path()));

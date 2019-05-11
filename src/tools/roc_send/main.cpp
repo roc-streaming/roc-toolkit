@@ -10,23 +10,19 @@
 #include "roc_core/crash.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_core/log.h"
+#include "roc_core/parse_duration.h"
 #include "roc_core/scoped_destructor.h"
 #include "roc_netio/transceiver.h"
 #include "roc_packet/address_to_str.h"
 #include "roc_packet/parse_address.h"
 #include "roc_pipeline/sender.h"
 #include "roc_sndio/pump.h"
+#include "roc_sndio/sox_controller.h"
 #include "roc_sndio/sox_source.h"
 
 #include "roc_send/cmdline.h"
 
 using namespace roc;
-
-namespace {
-
-enum { MaxPacketSize = 2048, MaxFrameSize = 8192 };
-
-} // namespace
 
 int main(int argc, char** argv) {
     core::CrashHandler crash_handler;
@@ -45,6 +41,33 @@ int main(int argc, char** argv) {
         LogLevel(core::DefaultLogLevel + args.verbose_given));
 
     pipeline::SenderConfig config;
+
+    if (args.packet_length_given) {
+        if (!core::parse_duration(args.packet_length_arg,
+                                  config.packet_length)) {
+            roc_log(LogError, "invalid --packet-length");
+            return 1;
+        }
+    }
+
+    size_t max_packet_size = 2048;
+    if (args.packet_limit_given) {
+        if (args.packet_limit_arg <= 0) {
+            roc_log(LogError, "invalid --packet-limit: should be > 0");
+            return 1;
+        }
+        max_packet_size = (size_t)args.packet_limit_arg;
+    }
+
+    if (args.frame_size_given) {
+        if (args.frame_size_arg <= 0) {
+            roc_log(LogError, "invalid --frame-size: should be > 0");
+            return 1;
+        }
+        config.internal_frame_size = (size_t)args.frame_size_arg;
+    }
+
+    sndio::SoxController::instance().set_buffer_size(config.internal_frame_size);
 
     pipeline::PortConfig source_port;
     pipeline::PortConfig repair_port;
@@ -172,10 +195,10 @@ int main(int argc, char** argv) {
     config.poisoning = args.poisoning_flag;
 
     core::HeapAllocator allocator;
-    core::BufferPool<uint8_t> byte_buffer_pool(allocator, MaxPacketSize,
+    core::BufferPool<uint8_t> byte_buffer_pool(allocator, max_packet_size,
                                                args.poisoning_flag);
-    core::BufferPool<audio::sample_t> sample_buffer_pool(allocator, MaxFrameSize,
-                                                         args.poisoning_flag);
+    core::BufferPool<audio::sample_t> sample_buffer_pool(
+        allocator, config.internal_frame_size, args.poisoning_flag);
     packet::PacketPool packet_pool(allocator, args.poisoning_flag);
 
     sndio::SoxSource source(allocator, config.input_channels, sample_rate,

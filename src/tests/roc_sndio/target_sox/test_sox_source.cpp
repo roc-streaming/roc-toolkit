@@ -49,7 +49,7 @@ TEST(sox_source, is_file) {
         MockSource mock_source;
         mock_source.add(MaxBufSize * 10);
 
-        SoxSink sox_sink(allocator, ChMask, SampleRate);
+        SoxSink sox_sink(allocator, ChMask, SampleRate, FrameSize);
         CHECK(sox_sink.open(NULL, file.path()));
 
         Pump pump(buffer_pool, mock_source, sox_sink, sox_sink.frame_size(),
@@ -71,7 +71,7 @@ TEST(sox_source, sample_rate_auto) {
         MockSource mock_source;
         mock_source.add(MaxBufSize * 10);
 
-        SoxSink sox_sink(allocator, ChMask, SampleRate);
+        SoxSink sox_sink(allocator, ChMask, SampleRate, FrameSize);
         CHECK(sox_sink.open(NULL, file.path()));
 
         Pump pump(buffer_pool, mock_source, sox_sink, sox_sink.frame_size(),
@@ -93,7 +93,7 @@ TEST(sox_source, sample_rate_mismatch) {
         MockSource mock_source;
         mock_source.add(MaxBufSize * 10);
 
-        SoxSink sox_sink(allocator, ChMask, SampleRate);
+        SoxSink sox_sink(allocator, ChMask, SampleRate, FrameSize);
         CHECK(sox_sink.open(NULL, file.path()));
 
         Pump pump(buffer_pool, mock_source, sox_sink, sox_sink.frame_size(),

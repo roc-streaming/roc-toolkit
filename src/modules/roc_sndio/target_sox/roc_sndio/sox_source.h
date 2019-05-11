@@ -31,10 +31,6 @@ namespace sndio {
 class SoxSource : public ISource, private core::NonCopyable<> {
 public:
     //! Initialize.
-    //!
-    //! @b Parameters
-    //!  - @p allocator is used to allocate buffers;
-    //!  - @p frame_size defines number of samples per channel in output buffers.
     SoxSource(core::IAllocator& allocator,
               packet::channel_mask_t channels,
               size_t sample_rate,

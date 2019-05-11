@@ -9,10 +9,10 @@ section "Options"
     option "input" i "Input file" typestr="PATH" string required
     option "output" o "Output file" typestr="PATH" string optional
 
-    option "rate" r "Output sample rate, Hz"
+    option "frame-size" - "Internal frame size, number of samples"
         int optional
 
-    option "frame-size" - "Number of samples per audio frame"
+    option "rate" r "Output sample rate, Hz"
         int optional
 
     option "no-resampling" - "Disable resampling" flag off

@@ -39,6 +39,12 @@ section "Options"
     option "bp-window" - "Session breakage detection window, TIME units"
         string optional
 
+    option "packet-limit" - "Maximum packet size, in bytes"
+        int optional
+
+    option "frame-size" - "Internal frame size, number of samples"
+        int optional
+
     option "rate" - "Override output sample rate, Hz"
         int optional
 

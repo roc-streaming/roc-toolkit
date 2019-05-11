@@ -13,18 +13,13 @@
 #include "roc_core/scoped_destructor.h"
 #include "roc_pipeline/converter.h"
 #include "roc_sndio/pump.h"
+#include "roc_sndio/sox_controller.h"
 #include "roc_sndio/sox_sink.h"
 #include "roc_sndio/sox_source.h"
 
 #include "roc_conv/cmdline.h"
 
 using namespace roc;
-
-namespace {
-
-enum { MaxFrameSize = 8192 };
-
-} // namespace
 
 int main(int argc, char** argv) {
     core::CrashHandler crash_handler;
@@ -42,14 +37,21 @@ int main(int argc, char** argv) {
     core::Logger::instance().set_level(
         LogLevel(core::DefaultLogLevel + args.verbose_given));
 
-    core::HeapAllocator allocator;
-    core::BufferPool<audio::sample_t> pool(allocator, MaxFrameSize, args.poisoning_flag);
-
     pipeline::ConverterConfig config;
 
     if (args.frame_size_given) {
+        if (args.frame_size_arg <= 0) {
+            roc_log(LogError, "invalid --frame-size: should be > 0");
+            return 1;
+        }
         config.internal_frame_size = (size_t)args.frame_size_arg;
     }
+
+    sndio::SoxController::instance().set_buffer_size(config.internal_frame_size);
+
+    core::HeapAllocator allocator;
+    core::BufferPool<audio::sample_t> pool(allocator, config.internal_frame_size,
+                                           args.poisoning_flag);
 
     sndio::SoxSource source(allocator, config.input_channels, 0,
                             config.internal_frame_size);
@@ -99,7 +101,8 @@ int main(int argc, char** argv) {
 
     audio::IWriter* output_writer = NULL;
 
-    sndio::SoxSink sink(allocator, config.output_channels, config.output_sample_rate);
+    sndio::SoxSink sink(allocator, config.output_channels, config.output_sample_rate,
+                        config.internal_frame_size);
     if (args.output_given) {
         if (!sink.open(NULL, args.output_arg)) {
             roc_log(LogError, "can't open output file: %s", args.output_arg);

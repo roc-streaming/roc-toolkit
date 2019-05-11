@@ -37,7 +37,8 @@ public:
     //!  - @p sample_rate defines sample rate of input buffers
     SoxSink(core::IAllocator& allocator,
             packet::channel_mask_t channels,
-            size_t sample_rate);
+            size_t sample_rate,
+            size_t frame_size);
 
     virtual ~SoxSink();
 

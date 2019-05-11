@@ -22,7 +22,16 @@ section "Options"
     option "nbrpr" - "Number of repair packets in FEC block"
         int optional
 
-    option "rate" - "Sample rate, Hz"
+    option "packet-length" - "Outgoing packet length, TIME units"
+        string optional
+
+    option "packet-limit" - "Maximum packet size, in bytes"
+        int optional
+
+    option "frame-size" - "Internal frame size, number of samples"
+        int optional
+
+    option "rate" - "Override input sample rate, Hz"
         int optional
 
     option "no-resampling" - "Disable resampling" flag off
@@ -45,4 +54,7 @@ text "
 ADDRESS should be in one of the following forms:
   - :PORT
   - IPv4:PORT
-  - [IPv6]:PORT"
+  - [IPv6]:PORT
+
+TIME should have one of the following forms:
+  123ns, 123us, 123ms, 123s, 123m, 123h"

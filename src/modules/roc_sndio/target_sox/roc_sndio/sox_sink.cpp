@@ -16,7 +16,8 @@ namespace sndio {
 
 SoxSink::SoxSink(core::IAllocator& allocator,
                  packet::channel_mask_t channels,
-                 size_t sample_rate)
+                 size_t sample_rate,
+                 size_t frame_size)
     : output_(NULL)
     , allocator_(allocator)
     , is_file_(false) {
@@ -30,7 +31,11 @@ SoxSink::SoxSink(core::IAllocator& allocator,
     out_signal_.channels = (unsigned)n_channels;
     out_signal_.precision = SOX_SAMPLE_PRECISION;
 
-    buffer_size_ = SoxController::instance().get_globals().bufsiz;
+    if (frame_size != 0) {
+        buffer_size_ = frame_size;
+    } else {
+        buffer_size_ = SoxController::instance().get_buffer_size();
+    }
 }
 
 SoxSink::~SoxSink() {

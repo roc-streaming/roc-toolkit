@@ -27,15 +27,15 @@ SoxSource::SoxSource(core::IAllocator& allocator,
         roc_panic("sox source: # of channels is zero");
     }
 
-    if (frame_size == 0) {
-        frame_size = SoxController::instance().get_globals().bufsiz / n_channels_;
-    }
-
     memset(&in_signal_, 0, sizeof(in_signal_));
     in_signal_.rate = sample_rate;
     in_signal_.precision = SOX_SAMPLE_PRECISION;
 
-    buffer_size_ = frame_size * n_channels_;
+    if (frame_size != 0) {
+        buffer_size_ = frame_size;
+    } else {
+        buffer_size_ = SoxController::instance().get_buffer_size();
+    }
 }
 
 SoxSource::~SoxSource() {
