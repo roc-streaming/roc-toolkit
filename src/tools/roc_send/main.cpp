@@ -43,8 +43,7 @@ int main(int argc, char** argv) {
     pipeline::SenderConfig config;
 
     if (args.packet_length_given) {
-        if (!core::parse_duration(args.packet_length_arg,
-                                  config.packet_length)) {
+        if (!core::parse_duration(args.packet_length_arg, config.packet_length)) {
             roc_log(LogError, "invalid --packet-length");
             return 1;
         }
@@ -178,16 +177,19 @@ int main(int argc, char** argv) {
         config.resampler.window_size = (size_t)args.resampler_window_arg;
     }
 
-    size_t sample_rate = 0;
+    sndio::Config source_config;
+    source_config.channels = config.input_channels;
+    source_config.frame_size = config.internal_frame_size;
+
     if (args.rate_given) {
         if (args.rate_arg <= 0) {
             roc_log(LogError, "invalid --rate: should be > 0");
             return 1;
         }
-        sample_rate = (size_t)args.rate_arg;
+        source_config.sample_rate = (size_t)args.rate_arg;
     } else {
         if (!config.resampling) {
-            sample_rate = pipeline::DefaultSampleRate;
+            source_config.sample_rate = pipeline::DefaultSampleRate;
         }
     }
 
@@ -201,16 +203,14 @@ int main(int argc, char** argv) {
         allocator, config.internal_frame_size, args.poisoning_flag);
     packet::PacketPool packet_pool(allocator, args.poisoning_flag);
 
-    sndio::SoxSource source(allocator, config.input_channels, sample_rate,
-                            config.internal_frame_size);
-
+    sndio::SoxSource source(allocator, source_config);
     if (!source.open(args.driver_arg, args.input_arg)) {
         roc_log(LogError, "can't open input file or device: driver=%s input=%s",
                 args.driver_arg, args.input_arg);
         return 1;
     }
 
-    config.timing = source.is_file();
+    config.timing = !source.has_clock();
     config.input_sample_rate = source.sample_rate();
 
     rtp::FormatMap format_map;
@@ -235,7 +235,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    sndio::Pump pump(sample_buffer_pool, source, sender, source.frame_size(),
+    sndio::Pump pump(sample_buffer_pool, source, sender, config.internal_frame_size,
                      sndio::Pump::ModePermanent);
     if (!pump.valid()) {
         roc_log(LogError, "can't create audio pump");

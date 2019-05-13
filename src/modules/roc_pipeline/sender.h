@@ -52,6 +52,12 @@ public:
     //! Check if the pipeline was successfully constructed.
     bool valid();
 
+    //! Get sink sample rate.
+    virtual size_t sample_rate() const;
+
+    //! Check if the sink has own clock.
+    virtual bool has_clock() const;
+
     //! Write audio frame.
     virtual void write(audio::Frame& frame);
 
@@ -77,6 +83,8 @@ private:
     core::UniquePtr<core::Ticker> ticker_;
 
     audio::IWriter* audio_writer_;
+
+    SenderConfig config_;
 
     packet::timestamp_t timestamp_;
     size_t num_channels_;

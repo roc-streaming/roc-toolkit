@@ -59,17 +59,23 @@ public:
     //! Get number of alive sessions.
     size_t num_sessions() const;
 
-    //! Write packet.
-    virtual void write(const packet::PacketPtr&);
-
-    //! Read frame.
-    virtual bool read(audio::Frame&);
-
     //! Get current receiver state.
     virtual State state() const;
 
     //! Wait until the receiver status becomes active.
     virtual void wait_active() const;
+
+    //! Get source sample rate.
+    virtual size_t sample_rate() const;
+
+    //! Check if the source has own clock.
+    virtual bool has_clock() const;
+
+    //! Write packet.
+    virtual void write(const packet::PacketPtr&);
+
+    //! Read frame.
+    virtual bool read(audio::Frame&);
 
 private:
     State state_() const;

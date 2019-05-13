@@ -23,6 +23,14 @@ public:
         , size_(0) {
     }
 
+    virtual size_t sample_rate() const {
+        return 0;
+    }
+
+    virtual bool has_clock() const {
+        return false;
+    }
+
     virtual State state() const {
         if (pos_ >= size_) {
             return Inactive;

@@ -28,6 +28,7 @@ Sender::Sender(const SenderConfig& config,
                core::BufferPool<audio::sample_t>& sample_buffer_pool,
                core::IAllocator& allocator)
     : audio_writer_(NULL)
+    , config_(config)
     , timestamp_(0)
     , num_channels_(packet::num_channels(config.input_channels)) {
     const rtp::Format* format = format_map.format(config.payload_type);
@@ -166,6 +167,14 @@ Sender::Sender(const SenderConfig& config,
 
 bool Sender::valid() {
     return audio_writer_;
+}
+
+size_t Sender::sample_rate() const {
+    return config_.input_sample_rate;
+}
+
+bool Sender::has_clock() const {
+    return config_.timing;
 }
 
 void Sender::write(audio::Frame& frame) {

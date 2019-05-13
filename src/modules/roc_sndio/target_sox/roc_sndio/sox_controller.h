@@ -14,9 +14,9 @@
 
 #include <sox.h>
 
+#include "roc_core/mutex.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/singleton.h"
-#include "roc_core/mutex.h"
 
 namespace roc {
 namespace sndio {

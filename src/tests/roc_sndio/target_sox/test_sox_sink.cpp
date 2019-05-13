@@ -23,28 +23,37 @@ core::HeapAllocator allocator;
 
 } // namespace
 
-TEST_GROUP(sox_sink){};
+TEST_GROUP(sox_sink) {
+    Config sink_config;
+
+    void setup() {
+        sink_config.channels = ChMask;
+        sink_config.sample_rate = SampleRate;
+        sink_config.frame_size = FrameSize;
+    }
+};
 
 TEST(sox_sink, noop) {
-    SoxSink sox_sink(allocator, ChMask, SampleRate, FrameSize);
+    SoxSink sox_sink(allocator, sink_config);
 }
 
 TEST(sox_sink, error) {
-    SoxSink sox_sink(allocator, ChMask, SampleRate, FrameSize);
+    SoxSink sox_sink(allocator, sink_config);
 
     CHECK(!sox_sink.open(NULL, "/bad/file"));
 }
 
-TEST(sox_sink, is_file) {
-    SoxSink sox_sink(allocator, ChMask, SampleRate, FrameSize);
+TEST(sox_sink, has_clock) {
+    SoxSink sox_sink(allocator, sink_config);
 
     core::TempFile file("test.wav");
     CHECK(sox_sink.open(NULL, file.path()));
-    CHECK(sox_sink.is_file());
+    CHECK(!sox_sink.has_clock());
 }
 
 TEST(sox_sink, sample_rate_auto) {
-    SoxSink sox_sink(allocator, ChMask, 0, FrameSize);
+    sink_config.sample_rate = 0;
+    SoxSink sox_sink(allocator, sink_config);
 
     core::TempFile file("test.wav");
     CHECK(sox_sink.open(NULL, file.path()));
@@ -52,7 +61,8 @@ TEST(sox_sink, sample_rate_auto) {
 }
 
 TEST(sox_sink, sample_rate_force) {
-    SoxSink sox_sink(allocator, ChMask, SampleRate, FrameSize);
+    sink_config.sample_rate = SampleRate;
+    SoxSink sox_sink(allocator, sink_config);
 
     core::TempFile file("test.wav");
     CHECK(sox_sink.open(NULL, file.path()));

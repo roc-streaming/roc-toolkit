@@ -31,7 +31,15 @@ core::BufferPool<audio::sample_t> buffer_pool(allocator, MaxBufSize, true);
 
 } // namespace
 
-TEST_GROUP(pump){};
+TEST_GROUP(pump) {
+    Config config;
+
+    void setup() {
+        config.channels = ChMask;
+        config.sample_rate = SampleRate;
+        config.frame_size = FrameSize;
+    }
+};
 
 TEST(pump, write_read) {
     enum { NumSamples = MaxBufSize * 10 };
@@ -42,18 +50,17 @@ TEST(pump, write_read) {
     core::TempFile file("test.wav");
 
     {
-        SoxSink sox_sink(allocator, ChMask, SampleRate, FrameSize);
+        SoxSink sox_sink(allocator, config);
         CHECK(sox_sink.open(NULL, file.path()));
 
-        Pump pump(buffer_pool, mock_source, sox_sink, sox_sink.frame_size(),
-                  Pump::ModeOneshot);
+        Pump pump(buffer_pool, mock_source, sox_sink, FrameSize, Pump::ModeOneshot);
         CHECK(pump.valid());
         CHECK(pump.run());
 
         CHECK(mock_source.num_returned() >= NumSamples - MaxBufSize);
     }
 
-    SoxSource sox_source(allocator, ChMask, SampleRate, FrameSize);
+    SoxSource sox_source(allocator, config);
     CHECK(sox_source.open(NULL, file.path()));
 
     MockSink mock_writer;
@@ -74,11 +81,10 @@ TEST(pump, write_overwrite_read) {
     core::TempFile file("test.wav");
 
     {
-        SoxSink sox_sink(allocator, ChMask, SampleRate, FrameSize);
+        SoxSink sox_sink(allocator, config);
         CHECK(sox_sink.open(NULL, file.path()));
 
-        Pump pump(buffer_pool, mock_source, sox_sink, sox_sink.frame_size(),
-                  Pump::ModeOneshot);
+        Pump pump(buffer_pool, mock_source, sox_sink, FrameSize, Pump::ModeOneshot);
         CHECK(pump.valid());
         CHECK(pump.run());
     }
@@ -89,11 +95,10 @@ TEST(pump, write_overwrite_read) {
     CHECK(num_returned1 >= NumSamples - MaxBufSize);
 
     {
-        SoxSink sox_sink(allocator, ChMask, SampleRate, FrameSize);
+        SoxSink sox_sink(allocator, config);
         CHECK(sox_sink.open(NULL, file.path()));
 
-        Pump pump(buffer_pool, mock_source, sox_sink, sox_sink.frame_size(),
-                  Pump::ModeOneshot);
+        Pump pump(buffer_pool, mock_source, sox_sink, FrameSize, Pump::ModeOneshot);
         CHECK(pump.valid());
         CHECK(pump.run());
     }
@@ -101,7 +106,7 @@ TEST(pump, write_overwrite_read) {
     size_t num_returned2 = mock_source.num_returned() - num_returned1;
     CHECK(num_returned1 >= NumSamples - MaxBufSize);
 
-    SoxSource sox_source(allocator, ChMask, SampleRate, FrameSize);
+    SoxSource sox_source(allocator, config);
     CHECK(sox_source.open(NULL, file.path()));
 
     MockSink mock_writer;

@@ -14,25 +14,22 @@
 namespace roc {
 namespace sndio {
 
-SoxSink::SoxSink(core::IAllocator& allocator,
-                 packet::channel_mask_t channels,
-                 size_t sample_rate,
-                 size_t frame_size)
+SoxSink::SoxSink(core::IAllocator& allocator, const Config& config)
     : output_(NULL)
     , allocator_(allocator)
     , is_file_(false) {
-    size_t n_channels = packet::num_channels(channels);
+    size_t n_channels = packet::num_channels(config.channels);
     if (n_channels == 0) {
         roc_panic("sox sink: # of channels is zero");
     }
 
     memset(&out_signal_, 0, sizeof(out_signal_));
-    out_signal_.rate = sample_rate;
+    out_signal_.rate = config.sample_rate;
     out_signal_.channels = (unsigned)n_channels;
     out_signal_.precision = SOX_SAMPLE_PRECISION;
 
-    if (frame_size != 0) {
-        buffer_size_ = frame_size;
+    if (config.frame_size != 0) {
+        buffer_size_ = config.frame_size;
     } else {
         buffer_size_ = SoxController::instance().get_buffer_size();
     }
@@ -67,15 +64,11 @@ size_t SoxSink::sample_rate() const {
     return size_t(output_->signal.rate);
 }
 
-bool SoxSink::is_file() const {
+bool SoxSink::has_clock() const {
     if (!output_) {
         roc_panic("sox sink: is_file: non-open output file or device");
     }
-    return is_file_;
-}
-
-size_t SoxSink::frame_size() const {
-    return buffer_size_;
+    return !is_file_;
 }
 
 void SoxSink::write(audio::Frame& frame) {

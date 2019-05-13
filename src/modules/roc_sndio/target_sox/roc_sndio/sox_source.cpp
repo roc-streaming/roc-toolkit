@@ -14,25 +14,22 @@
 namespace roc {
 namespace sndio {
 
-SoxSource::SoxSource(core::IAllocator& allocator,
-                     packet::channel_mask_t channels,
-                     size_t sample_rate,
-                     size_t frame_size)
+SoxSource::SoxSource(core::IAllocator& allocator, const Config& config)
     : input_(NULL)
     , allocator_(allocator)
     , is_file_(false)
     , eof_(false) {
-    n_channels_ = packet::num_channels(channels);
+    n_channels_ = packet::num_channels(config.channels);
     if (n_channels_ == 0) {
         roc_panic("sox source: # of channels is zero");
     }
 
     memset(&in_signal_, 0, sizeof(in_signal_));
-    in_signal_.rate = sample_rate;
+    in_signal_.rate = config.sample_rate;
     in_signal_.precision = SOX_SAMPLE_PRECISION;
 
-    if (frame_size != 0) {
-        buffer_size_ = frame_size;
+    if (config.frame_size != 0) {
+        buffer_size_ = config.frame_size;
     } else {
         buffer_size_ = SoxController::instance().get_buffer_size();
     }
@@ -67,15 +64,11 @@ size_t SoxSource::sample_rate() const {
     return size_t(input_->signal.rate);
 }
 
-bool SoxSource::is_file() const {
+bool SoxSource::has_clock() const {
     if (!input_) {
         roc_panic("sox source: is_file: non-open input file or device");
     }
-    return is_file_;
-}
-
-size_t SoxSource::frame_size() const {
-    return buffer_size_;
+    return !is_file_;
 }
 
 ISource::State SoxSource::state() const {

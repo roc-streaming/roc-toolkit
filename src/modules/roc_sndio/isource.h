@@ -22,6 +22,12 @@ class ISource {
 public:
     virtual ~ISource();
 
+    //! Get source sample rate.
+    virtual size_t sample_rate() const = 0;
+
+    //! Check if the source has own clock.
+    virtual bool has_clock() const = 0;
+
     //! Source state.
     enum State {
         //! Source is active and is producing some sound.

@@ -21,6 +21,12 @@ namespace sndio {
 class ISink : public audio::IWriter {
 public:
     virtual ~ISink();
+
+    //! Get sample rate of the sink.
+    virtual size_t sample_rate() const = 0;
+
+    //! Check if the sink has own clock.
+    virtual bool has_clock() const = 0;
 };
 
 } // namespace sndio

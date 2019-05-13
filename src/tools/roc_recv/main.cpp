@@ -220,16 +220,19 @@ int main(int argc, char** argv) {
         config.default_session.resampler.window_size = (size_t)args.resampler_window_arg;
     }
 
-    size_t sample_rate = 0;
+    sndio::Config sink_config;
+    sink_config.channels = config.common.output_channels;
+    sink_config.frame_size = config.common.internal_frame_size;
+
     if (args.rate_given) {
         if (args.rate_arg <= 0) {
             roc_log(LogError, "invalid --rate: should be > 0");
             return 1;
         }
-        sample_rate = (size_t)args.rate_arg;
+        sink_config.sample_rate = (size_t)args.rate_arg;
     } else {
         if (!config.common.resampling) {
-            sample_rate = pipeline::DefaultSampleRate;
+            sink_config.sample_rate = pipeline::DefaultSampleRate;
         }
     }
 
@@ -243,15 +246,14 @@ int main(int argc, char** argv) {
         allocator, config.common.internal_frame_size, args.poisoning_flag);
     packet::PacketPool packet_pool(allocator, args.poisoning_flag);
 
-    sndio::SoxSink sink(allocator, config.common.output_channels, sample_rate,
-                        config.common.internal_frame_size);
+    sndio::SoxSink sink(allocator, sink_config);
     if (!sink.open(args.driver_arg, args.output_arg)) {
         roc_log(LogError, "can't open output file or device: driver=%s output=%s",
                 args.driver_arg, args.output_arg);
         return 1;
     }
 
-    config.common.timing = sink.is_file();
+    config.common.timing = !sink.has_clock();
     config.common.output_sample_rate = sink.sample_rate();
 
     if (config.common.output_sample_rate == 0) {
@@ -270,9 +272,9 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    sndio::Pump pump(sample_buffer_pool, receiver, sink, sink.frame_size(),
-                     args.oneshot_flag ? sndio::Pump::ModeOneshot
-                                       : sndio::Pump::ModePermanent);
+    sndio::Pump pump(
+        sample_buffer_pool, receiver, sink, config.common.internal_frame_size,
+        args.oneshot_flag ? sndio::Pump::ModeOneshot : sndio::Pump::ModePermanent);
     if (!pump.valid()) {
         roc_log(LogError, "can't create pump");
         return 1;

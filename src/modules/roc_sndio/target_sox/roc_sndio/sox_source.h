@@ -19,6 +19,7 @@
 #include "roc_core/stddefs.h"
 #include "roc_core/unique_ptr.h"
 #include "roc_packet/units.h"
+#include "roc_sndio/config.h"
 #include "roc_sndio/isource.h"
 
 namespace roc {
@@ -31,10 +32,7 @@ namespace sndio {
 class SoxSource : public ISource, private core::NonCopyable<> {
 public:
     //! Initialize.
-    SoxSource(core::IAllocator& allocator,
-              packet::channel_mask_t channels,
-              size_t sample_rate,
-              size_t frame_size);
+    SoxSource(core::IAllocator& allocator, const Config& config);
 
     virtual ~SoxSource();
 
@@ -46,25 +44,13 @@ public:
     //!
     //! @remarks
     //!  If @p driver or @p input are NULL, defaults are used.
-    //!
-    //! @pre
-    //!  Should be called once before calling start().
     bool open(const char* driver, const char* input);
 
     //! Get sample rate of an input file or a device.
-    //!
-    //! @pre
-    //!  Input file or device should be opened.
-    size_t sample_rate() const;
+    virtual size_t sample_rate() const;
 
-    //! Returns true if input is a real file.
-    //!
-    //! @pre
-    //!  Input file or device should be opened.
-    bool is_file() const;
-
-    //! Returns recommended frame size.
-    size_t frame_size() const;
+    //! Check if the source has own clock.
+    virtual bool has_clock() const;
 
     //! Get current source state.
     virtual State state() const;

@@ -17,7 +17,8 @@ Converter::Converter(const ConverterConfig& config,
                      audio::IWriter* output_writer,
                      core::BufferPool<audio::sample_t>& pool,
                      core::IAllocator& allocator)
-    : audio_writer_(NULL) {
+    : audio_writer_(NULL)
+    , config_(config) {
     audio::IWriter* awriter = output_writer;
     if (!awriter) {
         awriter = &null_writer_;
@@ -68,6 +69,14 @@ Converter::Converter(const ConverterConfig& config,
 
 bool Converter::valid() {
     return audio_writer_;
+}
+
+size_t Converter::sample_rate() const {
+    return config_.output_sample_rate;
+}
+
+bool Converter::has_clock() const {
+    return false;
 }
 
 void Converter::write(audio::Frame& frame) {

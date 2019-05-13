@@ -53,14 +53,18 @@ int main(int argc, char** argv) {
     core::BufferPool<audio::sample_t> pool(allocator, config.internal_frame_size,
                                            args.poisoning_flag);
 
-    sndio::SoxSource source(allocator, config.input_channels, 0,
-                            config.internal_frame_size);
+    sndio::Config source_config;
+    source_config.channels = config.input_channels;
+    source_config.sample_rate = 0;
+    source_config.frame_size = config.internal_frame_size;
+
+    sndio::SoxSource source(allocator, source_config);
     if (!source.open(NULL, args.input_arg)) {
-        roc_log(LogError, "can't open input file: %s", args.input_arg);
+        roc_log(LogError, "can't open input: %s", args.input_arg);
         return 1;
     }
-    if (!source.is_file()) {
-        roc_log(LogError, "not a file: %s", args.input_arg);
+    if (source.has_clock()) {
+        roc_log(LogError, "unsupported input: %s", args.input_arg);
         return 1;
     }
 
@@ -101,15 +105,19 @@ int main(int argc, char** argv) {
 
     audio::IWriter* output_writer = NULL;
 
-    sndio::SoxSink sink(allocator, config.output_channels, config.output_sample_rate,
-                        config.internal_frame_size);
+    sndio::Config sink_config;
+    sink_config.channels = config.output_channels;
+    sink_config.sample_rate = config.output_sample_rate;
+    sink_config.frame_size = config.internal_frame_size;
+
+    sndio::SoxSink sink(allocator, sink_config);
     if (args.output_given) {
         if (!sink.open(NULL, args.output_arg)) {
-            roc_log(LogError, "can't open output file: %s", args.output_arg);
+            roc_log(LogError, "can't open output: %s", args.output_arg);
             return 1;
         }
-        if (!sink.is_file()) {
-            roc_log(LogError, "not a file: %s", args.output_arg);
+        if (sink.has_clock()) {
+            roc_log(LogError, "unsupported output: %s", args.output_arg);
             return 1;
         }
         output_writer = &sink;
@@ -121,7 +129,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    sndio::Pump pump(pool, source, converter, source.frame_size(),
+    sndio::Pump pump(pool, source, converter, config.internal_frame_size,
                      sndio::Pump::ModePermanent);
     if (!pump.valid()) {
         roc_log(LogError, "can't create audio pump");

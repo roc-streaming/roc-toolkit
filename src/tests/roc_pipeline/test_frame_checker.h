@@ -28,6 +28,14 @@ public:
         , n_samples_(0) {
     }
 
+    virtual size_t sample_rate() const {
+        return 0;
+    }
+
+    virtual bool has_clock() const {
+        return false;
+    }
+
     virtual void write(audio::Frame& frame) {
         for (size_t n = 0; n < frame.size(); n++) {
             DOUBLES_EQUAL(frame.data()[n], nth_sample(off_), Epsilon);

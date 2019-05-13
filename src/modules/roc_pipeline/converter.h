@@ -37,6 +37,12 @@ public:
     //! Check if the pipeline was successfully constructed.
     bool valid();
 
+    //! Get sink sample rate.
+    virtual size_t sample_rate() const;
+
+    //! Check if the sink has own clock.
+    virtual bool has_clock() const;
+
     //! Write audio frame.
     virtual void write(audio::Frame& frame);
 
@@ -51,6 +57,8 @@ private:
     core::UniquePtr<audio::PoisonWriter> pipeline_poisoner_;
 
     audio::IWriter* audio_writer_;
+
+    ConverterConfig config_;
 };
 
 } // namespace pipeline

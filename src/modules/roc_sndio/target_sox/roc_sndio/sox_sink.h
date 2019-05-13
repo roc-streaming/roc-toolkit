@@ -19,6 +19,7 @@
 #include "roc_core/stddefs.h"
 #include "roc_core/unique_ptr.h"
 #include "roc_packet/units.h"
+#include "roc_sndio/config.h"
 #include "roc_sndio/isink.h"
 
 namespace roc {
@@ -31,14 +32,7 @@ namespace sndio {
 class SoxSink : public ISink, public core::NonCopyable<> {
 public:
     //! Initialize.
-    //!
-    //! @b Parameters
-    //!  - @p channels defines bitmask of enabled channels in input buffers
-    //!  - @p sample_rate defines sample rate of input buffers
-    SoxSink(core::IAllocator& allocator,
-            packet::channel_mask_t channels,
-            size_t sample_rate,
-            size_t frame_size);
+    SoxSink(core::IAllocator& allocator, const Config& config);
 
     virtual ~SoxSink();
 
@@ -50,25 +44,13 @@ public:
     //!
     //! @remarks
     //!  If @p driver or @p output are NULL, defaults are used.
-    //!
-    //! @pre
-    //!  Should be called once before calling start().
     bool open(const char* driver, const char* output);
 
-    //! Get sample rate of an output file or a device.
-    //!
-    //! @pre
-    //!  Output file or device should be opened.
-    size_t sample_rate() const;
+    //! Get sample rate of the sink.
+    virtual size_t sample_rate() const;
 
-    //! Returns true if output is a real file.
-    //!
-    //! @pre
-    //!  Output file or device should be opened.
-    bool is_file() const;
-
-    //! Returns recommended frame size.
-    size_t frame_size() const;
+    //! Check if the sink has own clock.
+    virtual bool has_clock() const;
 
     //! Write audio frame.
     virtual void write(audio::Frame& frame);

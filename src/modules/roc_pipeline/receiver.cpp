@@ -85,6 +85,28 @@ size_t Receiver::num_sessions() const {
     return sessions_.size();
 }
 
+size_t Receiver::sample_rate() const {
+    return config_.common.output_sample_rate;
+}
+
+bool Receiver::has_clock() const {
+    return config_.common.timing;
+}
+
+sndio::ISource::State Receiver::state() const {
+    core::Mutex::Lock lock(control_mutex_);
+
+    return state_();
+}
+
+void Receiver::wait_active() const {
+    core::Mutex::Lock lock(control_mutex_);
+
+    while (state_() != Active) {
+        active_cond_.wait();
+    }
+}
+
 void Receiver::write(const packet::PacketPtr& packet) {
     core::Mutex::Lock lock(control_mutex_);
 
@@ -110,20 +132,6 @@ bool Receiver::read(audio::Frame& frame) {
     timestamp_ += frame.size() / num_channels_;
 
     return true;
-}
-
-sndio::ISource::State Receiver::state() const {
-    core::Mutex::Lock lock(control_mutex_);
-
-    return state_();
-}
-
-void Receiver::wait_active() const {
-    core::Mutex::Lock lock(control_mutex_);
-
-    while (state_() != Active) {
-        active_cond_.wait();
-    }
 }
 
 void Receiver::prepare_() {
