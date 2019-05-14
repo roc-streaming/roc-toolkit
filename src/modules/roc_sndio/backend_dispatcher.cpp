@@ -10,6 +10,10 @@
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 
+#ifdef ROC_TARGET_PULSEAUDIO
+#include "roc_sndio/pulseaudio_backend.h"
+#endif // ROC_TARGET_PULSEAUDIO
+
 #ifdef ROC_TARGET_SOX
 #include "roc_sndio/sox_backend.h"
 #endif // ROC_TARGET_SOX
@@ -19,6 +23,9 @@ namespace sndio {
 
 BackendDispatcher::BackendDispatcher()
     : n_backends_(0) {
+#ifdef ROC_TARGET_PULSEAUDIO
+    add_backend_(PulseaudioBackend::instance());
+#endif // ROC_TARGET_PULSEAUDIO
 #ifdef ROC_TARGET_SOX
     add_backend_(SoxBackend::instance());
 #endif // ROC_TARGET_SOX

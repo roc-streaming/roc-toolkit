@@ -152,6 +152,11 @@ AddOption('--disable-openfec',
           action='store_true',
           help='disable OpenFEC support required for FEC codes')
 
+AddOption('--disable-pulseaudio',
+          dest='disable_pulseaudio',
+          action='store_true',
+          help='disable PulseAudio support in tools')
+
 AddOption('--with-pulseaudio',
           dest='with_pulseaudio',
           action='store',
@@ -528,6 +533,10 @@ else:
         env.Append(ROC_TARGETS=[
             'target_posixtime',
         ])
+        if not GetOption('disable_tools') and not GetOption('disable_pulseaudio'):
+            env.Append(ROC_TARGETS=[
+                'target_pulseaudio',
+            ])
 
     if platform in ['darwin']:
         env.Append(ROC_TARGETS=[
@@ -638,29 +647,40 @@ if 'target_openfec' in system_dependecies:
 
     env = conf.Finish()
 
-if 'target_pulseaudio' in system_dependecies and GetOption('enable_pulseaudio_modules'):
-    conf = Configure(pulse_env, custom_tests=env.CustomTests)
+if 'target_pulseaudio' in system_dependecies:
+    conf = Configure(tool_env, custom_tests=env.CustomTests)
 
-    if not conf.CheckLibWithHeaderUniq('ltdl', 'ltdl.h', 'c'):
-        env.Die("ltdl not found (see 'config.log' for details)")
+    tool_env.TryParseConfig('--cflags --libs libpulse')
 
-    pulse_env = conf.Finish()
+    if not conf.CheckLibWithHeaderUniq('pulse', 'pulse/pulseaudio.h', 'c'):
+        env.Die("libpulse not found (see 'config.log' for details)")
 
-    pa_dir = GetOption('with_pulseaudio')
-    if not pa_dir:
-        env.Die('--enable-pulseaudio-modules requires either --with-pulseaudio'+
-                'or --build-3rdparty=pulseaudio')
+    tool_env = conf.Finish()
 
-    pulse_env.Append(CPPPATH=[
-        pa_dir,
-        pa_dir + '/src',
-    ])
+    if GetOption('enable_pulseaudio_modules'):
+        conf = Configure(pulse_env, custom_tests=env.CustomTests)
 
-    for lib in ['libpulsecore-*.so', 'libpulsecommon-*.so']:
-        path = '%s/src/.libs/%s' % (pa_dir, lib)
-        libs = env.Glob(path)
-        if not libs:
-            env.Die("can't find %s" % path)
+        if not conf.CheckLibWithHeaderUniq('ltdl', 'ltdl.h', 'c'):
+            env.Die("ltdl not found (see 'config.log' for details)")
+
+        pulse_env = conf.Finish()
+
+        pa_dir = GetOption('with_pulseaudio')
+        if not pa_dir:
+            env.Die('--enable-pulseaudio-modules requires either --with-pulseaudio'+
+                    'or --build-3rdparty=pulseaudio')
+
+        pulse_env.Append(CPPPATH=[
+            pa_dir,
+            pa_dir + '/src',
+        ])
+
+        for lib in ['libpulsecore-*.so', 'libpulsecommon-*.so']:
+            path = '%s/src/.libs/%s' % (pa_dir, lib)
+            libs = env.Glob(path)
+            if not libs:
+                env.Die("can't find %s" % path)
+
         pulse_env.Append(LIBS=libs)
 
 if 'target_sox' in system_dependecies:
