@@ -16,8 +16,8 @@ Runtime dependencies
 
 * `libuv <http://libuv.org>`_ >= 1.5.0
 * `OpenFEC <http://openfec.org>`_ >= 1.4.2 (optional but recommended, install if you want to enable FEC support)
-* `SoX <http://sox.sourceforge.net>`_ >= 14.4.0 (optional, install if you want to build tools)
-* `PulseAudio <https://www.freedesktop.org/wiki/Software/PulseAudio/>`_ >= 5.0 (optional, install if you want to build PulseAudio modules)
+* `SoX <http://sox.sourceforge.net>`_ >= 14.4.0 (optional, install if you want SoX backend in tools)
+* `PulseAudio <https://www.freedesktop.org/wiki/Software/PulseAudio/>`_ >= 5.0 (optional, install if you want PulseAudio backend in tools or PulseAudio modules)
 
 .. warning::
 

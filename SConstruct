@@ -152,6 +152,11 @@ AddOption('--disable-openfec',
           action='store_true',
           help='disable OpenFEC support required for FEC codes')
 
+AddOption('--disable-sox',
+          dest='disable_sox',
+          action='store_true',
+          help='disable SoX support in tools')
+
 AddOption('--disable-pulseaudio',
           dest='disable_pulseaudio',
           action='store_true',
@@ -543,7 +548,8 @@ else:
             'target_darwin',
         ])
 
-    if not GetOption('disable_tools') or not GetOption('disable_examples'):
+    if (not GetOption('disable_tools') or not GetOption('disable_examples')) \
+      and not GetOption('disable_sox'):
         env.Append(ROC_TARGETS=[
             'target_sox',
         ])

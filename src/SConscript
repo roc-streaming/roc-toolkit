@@ -65,6 +65,9 @@ if not GetOption('disable_examples'):
         example = os.path.splitext(source.name)[0]
         exename = 'roc-example-' + example.replace('_', '-')
 
+        if example.endswith('_sox') and GetOption('disable_sox'):
+            continue
+
         exe = cenv.Program(exename, [source],
                     RPATH=env.Literal('\\$$ORIGIN'))
 

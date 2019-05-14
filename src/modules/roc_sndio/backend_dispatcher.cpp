@@ -32,6 +32,7 @@ BackendDispatcher::BackendDispatcher()
 }
 
 void BackendDispatcher::set_frame_size(size_t frame_size) {
+    (void)frame_size;
 #ifdef ROC_TARGET_SOX
     SoxBackend::instance().set_frame_size(frame_size);
 #endif // ROC_TARGET_SOX
