@@ -1028,31 +1028,7 @@ env.AlwaysBuild(
         env.Action(
             "clang-tidy -p %s -checks='%s' -header-filter='src/.*' %s" % (
                 build_dir,
-                ','.join([
-                    '*',
-                    '-modernize-*',
-                    '-cppcoreguidelines-*',
-                    '-google-readability-*',
-                    '-hicpp-*',
-                    '-fuchsia-*',
-                    '-cert-*',
-                    '-readability-implicit-bool-conversion',
-                    '-readability-inconsistent-declaration-parameter-name',
-                    '-readability-named-parameter',
-                    '-readability-else-after-return',
-                    '-readability-redundant-declaration',
-                    '-readability-non-const-parameter',
-                    '-google-explicit-constructor',
-                    '-google-build-using-namespace',
-                    '-google-runtime-int',
-                    '-google-runtime-references',
-                    '-llvm-include-order',
-                    '-llvm-header-guard',
-                    '-clang-analyzer-valist.*',
-                    '-misc-unconventional-assign-operator',
-                    '-misc-macro-parentheses',
-                    '-misc-misplaced-widening-cast',
-                ]),
+                ','.join(open(env.File('#.clang-checks').path).read().split()),
                 ' '.join(map(str, (env.RecursiveGlob('#src/modules', '*.cpp') +
                                    env.RecursiveGlob('#src/lib', '*.cpp') +
                                    env.RecursiveGlob('#src/tools', '*.cpp'))
