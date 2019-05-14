@@ -36,6 +36,9 @@ public:
 
     virtual ~SoxSink();
 
+    //! Check if the object was successfully constructed.
+    bool valid() const;
+
     //! Open output file or device.
     //!
     //! @b Parameters
@@ -70,6 +73,7 @@ private:
     size_t buffer_size_;
 
     bool is_file_;
+    bool valid_;
 };
 
 } // namespace sndio

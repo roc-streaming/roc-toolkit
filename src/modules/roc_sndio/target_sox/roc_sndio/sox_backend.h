@@ -27,7 +27,7 @@ namespace sndio {
 //!  Always access SoX globals via this class to avoid races.
 class SoxBackend : public IBackend, core::NonCopyable<> {
 public:
-    //! Get controller instance.
+    //! Get instance.
     static SoxBackend& instance() {
         return core::Singleton<SoxBackend>::instance();
     }

@@ -18,12 +18,19 @@ SoxSource::SoxSource(core::IAllocator& allocator, const Config& config)
     : input_(NULL)
     , allocator_(allocator)
     , is_file_(false)
-    , eof_(false) {
+    , eof_(false)
+    , valid_(false) {
     SoxBackend::instance();
+
+    if (config.latency != 0) {
+        roc_log(LogError, "sox source: setting io latency not supported by sox backend");
+        return;
+    }
 
     n_channels_ = packet::num_channels(config.channels);
     if (n_channels_ == 0) {
-        roc_panic("sox source: # of channels is zero");
+        roc_log(LogError, "sox source: # of channels is zero");
+        return;
     }
 
     memset(&in_signal_, 0, sizeof(in_signal_));
@@ -35,13 +42,21 @@ SoxSource::SoxSource(core::IAllocator& allocator, const Config& config)
     } else {
         buffer_size_ = SoxBackend::instance().get_frame_size();
     }
+
+    valid_ = true;
 }
 
 SoxSource::~SoxSource() {
     close_();
 }
 
+bool SoxSource::valid() const {
+    return valid_;
+}
+
 bool SoxSource::open(const char* driver, const char* input) {
+    roc_panic_if(!valid_);
+
     roc_log(LogInfo, "sox source: opening: driver=%s input=%s", driver, input);
 
     if (buffer_ || input_) {
@@ -60,28 +75,40 @@ bool SoxSource::open(const char* driver, const char* input) {
 }
 
 size_t SoxSource::sample_rate() const {
+    roc_panic_if(!valid_);
+
     if (!input_) {
         roc_panic("sox source: sample_rate: non-open input file or device");
     }
+
     return size_t(input_->signal.rate);
 }
 
 bool SoxSource::has_clock() const {
+    roc_panic_if(!valid_);
+
     if (!input_) {
-        roc_panic("sox source: is_file: non-open input file or device");
+        roc_panic("sox source: has_clock: non-open input file or device");
     }
+
     return !is_file_;
 }
 
 ISource::State SoxSource::state() const {
+    roc_panic_if(!valid_);
+
     return Active;
 }
 
 void SoxSource::wait_active() const {
+    roc_panic_if(!valid_);
+
     // always active
 }
 
 bool SoxSource::read(audio::Frame& frame) {
+    roc_panic_if(!valid_);
+
     if (eof_) {
         return false;
     }

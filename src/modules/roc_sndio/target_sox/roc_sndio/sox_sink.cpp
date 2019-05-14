@@ -17,12 +17,19 @@ namespace sndio {
 SoxSink::SoxSink(core::IAllocator& allocator, const Config& config)
     : output_(NULL)
     , allocator_(allocator)
-    , is_file_(false) {
+    , is_file_(false)
+    , valid_(false) {
     SoxBackend::instance();
+
+    if (config.latency != 0) {
+        roc_log(LogError, "sox sink: setting io latency not supported by sox backend");
+        return;
+    }
 
     size_t n_channels = packet::num_channels(config.channels);
     if (n_channels == 0) {
-        roc_panic("sox sink: # of channels is zero");
+        roc_log(LogError, "sox sink: # of channels is zero");
+        return;
     }
 
     memset(&out_signal_, 0, sizeof(out_signal_));
@@ -35,13 +42,21 @@ SoxSink::SoxSink(core::IAllocator& allocator, const Config& config)
     } else {
         buffer_size_ = SoxBackend::instance().get_frame_size();
     }
+
+    valid_ = true;
 }
 
 SoxSink::~SoxSink() {
     close_();
 }
 
+bool SoxSink::valid() const {
+    return valid_;
+}
+
 bool SoxSink::open(const char* driver, const char* output) {
+    roc_panic_if(!valid_);
+
     roc_log(LogInfo, "sox sink: opening: driver=%s output=%s", driver, output);
 
     if (buffer_ || output_) {
@@ -60,20 +75,28 @@ bool SoxSink::open(const char* driver, const char* output) {
 }
 
 size_t SoxSink::sample_rate() const {
+    roc_panic_if(!valid_);
+
     if (!output_) {
         roc_panic("sox sink: sample_rate: non-open output file or device");
     }
+
     return size_t(output_->signal.rate);
 }
 
 bool SoxSink::has_clock() const {
+    roc_panic_if(!valid_);
+
     if (!output_) {
-        roc_panic("sox sink: is_file: non-open output file or device");
+        roc_panic("sox sink: has_clock: non-open output file or device");
     }
+
     return !is_file_;
 }
 
 void SoxSink::write(audio::Frame& frame) {
+    roc_panic_if(!valid_);
+
     const audio::sample_t* frame_data = frame.data();
     size_t frame_size = frame.size();
 

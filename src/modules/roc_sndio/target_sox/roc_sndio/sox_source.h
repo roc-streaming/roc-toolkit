@@ -36,6 +36,9 @@ public:
 
     virtual ~SoxSource();
 
+    //! Check if the object was successfully constructed.
+    bool valid() const;
+
     //! Open input file or device.
     //!
     //! @b Parameters
@@ -77,6 +80,7 @@ private:
 
     bool is_file_;
     bool eof_;
+    bool valid_;
 };
 
 } // namespace sndio

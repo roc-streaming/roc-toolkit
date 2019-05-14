@@ -9,7 +9,6 @@
 #include <stdio.h>
 
 #include "roc_core/log.h"
-#include "roc_core/panic.h"
 #include "roc_core/scoped_lock.h"
 #include "roc_core/unique_ptr.h"
 #include "roc_sndio/sox_backend.h"
@@ -165,6 +164,10 @@ ISink* SoxBackend::open_sink(core::IAllocator& allocator,
         return NULL;
     }
 
+    if (!sink->valid()) {
+        return NULL;
+    }
+
     if (!sink->open(driver, output)) {
         return NULL;
     }
@@ -183,6 +186,10 @@ ISource* SoxBackend::open_source(core::IAllocator& allocator,
     core::UniquePtr<SoxSource> source(new (allocator) SoxSource(allocator, config),
                                       allocator);
     if (!source) {
+        return NULL;
+    }
+
+    if (!source->valid()) {
         return NULL;
     }
 

@@ -29,11 +29,15 @@ struct Config {
     //! Number of samples per frame, for all channels.
     size_t frame_size;
 
+    //! Requested input or output latency.
+    core::nanoseconds_t latency;
+
     //! Initialize.
     Config()
         : channels(0)
         , sample_rate(0)
-        , frame_size(0) {
+        , frame_size(0)
+        , latency(0) {
     }
 };
 
