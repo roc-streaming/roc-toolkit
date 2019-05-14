@@ -12,13 +12,13 @@
 #include "roc_core/log.h"
 #include "roc_core/parse_duration.h"
 #include "roc_core/scoped_destructor.h"
+#include "roc_core/unique_ptr.h"
 #include "roc_netio/transceiver.h"
 #include "roc_packet/address_to_str.h"
 #include "roc_packet/parse_address.h"
 #include "roc_pipeline/sender.h"
+#include "roc_sndio/backend_dispatcher.h"
 #include "roc_sndio/pump.h"
-#include "roc_sndio/sox_controller.h"
-#include "roc_sndio/sox_source.h"
 
 #include "roc_send/cmdline.h"
 
@@ -66,7 +66,7 @@ int main(int argc, char** argv) {
         config.internal_frame_size = (size_t)args.frame_size_arg;
     }
 
-    sndio::SoxController::instance().set_buffer_size(config.internal_frame_size);
+    sndio::BackendDispatcher::instance().set_frame_size(config.internal_frame_size);
 
     pipeline::PortConfig source_port;
     pipeline::PortConfig repair_port;
@@ -203,15 +203,18 @@ int main(int argc, char** argv) {
         allocator, config.internal_frame_size, args.poisoning_flag);
     packet::PacketPool packet_pool(allocator, args.poisoning_flag);
 
-    sndio::SoxSource source(allocator, source_config);
-    if (!source.open(args.driver_arg, args.input_arg)) {
+    core::UniquePtr<sndio::ISource> source(
+        sndio::BackendDispatcher::instance().open_source(allocator, args.driver_arg,
+                                                         args.input_arg, source_config),
+        allocator);
+    if (!source) {
         roc_log(LogError, "can't open input file or device: driver=%s input=%s",
                 args.driver_arg, args.input_arg);
         return 1;
     }
 
-    config.timing = !source.has_clock();
-    config.input_sample_rate = source.sample_rate();
+    config.timing = !source->has_clock();
+    config.input_sample_rate = source->sample_rate();
 
     rtp::FormatMap format_map;
 
@@ -235,7 +238,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    sndio::Pump pump(sample_buffer_pool, source, sender, config.internal_frame_size,
+    sndio::Pump pump(sample_buffer_pool, *source, sender, config.internal_frame_size,
                      sndio::Pump::ModePermanent);
     if (!pump.valid()) {
         roc_log(LogError, "can't create audio pump");

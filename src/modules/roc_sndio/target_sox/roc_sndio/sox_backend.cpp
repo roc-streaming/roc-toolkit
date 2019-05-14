@@ -11,7 +11,10 @@
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_core/scoped_lock.h"
-#include "roc_sndio/sox_controller.h"
+#include "roc_core/unique_ptr.h"
+#include "roc_sndio/sox_backend.h"
+#include "roc_sndio/sox_sink.h"
+#include "roc_sndio/sox_source.h"
 
 namespace roc {
 namespace sndio {
@@ -36,19 +39,16 @@ const char* select_default_driver() {
         const char* driver = driver_priorities[n];
 
         if (sox_find_format(driver, sox_false)) {
-            roc_log(LogDebug, "selecting default sox driver '%s'", driver);
             return driver;
         }
     }
 
-    roc_log(LogError, "none of the known sox drivers are available");
     return NULL;
 }
 
 const char* select_default_device(const char* driver) {
     const sox_format_handler_t* format = sox_find_format(driver, sox_false);
     if (!format) {
-        roc_log(LogError, "unrecognized sox driver '%s", driver);
         return NULL;
     }
 
@@ -57,6 +57,20 @@ const char* select_default_device(const char* driver) {
     }
 
     return "-";
+}
+
+bool select_defaults(const char*& driver, const char*& device) {
+    if (!device) {
+        if (!driver) {
+            if (!(driver = select_default_driver())) {
+                return false;
+            }
+        }
+        if (!(device = select_default_device(driver))) {
+            return false;
+        }
+    }
+    return true;
 }
 
 void log_handler(unsigned sox_level,
@@ -94,8 +108,8 @@ void log_handler(unsigned sox_level,
 
 } // namespace
 
-SoxController::SoxController() {
-    roc_log(LogInfo, "initializing sox");
+SoxBackend::SoxBackend() {
+    roc_log(LogInfo, "initializing sox backend");
 
     sox_init();
 
@@ -103,31 +117,80 @@ SoxController::SoxController() {
     sox_get_globals()->output_message_handler = log_handler;
 }
 
-void SoxController::set_buffer_size(size_t size) {
+void SoxBackend::set_frame_size(size_t size) {
     core::Mutex::Lock lock(mutex_);
 
     sox_get_globals()->bufsiz = size * sizeof(sox_sample_t);
 }
 
-size_t SoxController::get_buffer_size() const {
+size_t SoxBackend::get_frame_size() const {
     core::Mutex::Lock lock(mutex_);
 
     return sox_get_globals()->bufsiz / sizeof(sox_sample_t);
 }
 
-bool SoxController::fill_defaults(const char*& driver, const char*& device) {
-    if (!device) {
-        if (!driver) {
-            if (!(driver = select_default_driver())) {
-                return false;
-            }
+bool SoxBackend::probe(const char* driver, const char* inout, int flags) {
+    if (!select_defaults(driver, inout)) {
+        return false;
+    }
+
+    const sox_format_handler_t* handler = sox_write_handler(inout, driver, NULL);
+    if (!handler) {
+        return false;
+    }
+
+    if (handler->flags & SOX_FILE_DEVICE) {
+        if ((flags & ProbeDevice) == 0) {
+            return false;
         }
-        if (!(device = select_default_device(driver))) {
+    } else {
+        if ((flags & ProbeFile) == 0) {
             return false;
         }
     }
 
     return true;
+}
+
+ISink* SoxBackend::open_sink(core::IAllocator& allocator,
+                             const char* driver,
+                             const char* output,
+                             const Config& config) {
+    if (!select_defaults(driver, output)) {
+        return NULL;
+    }
+
+    core::UniquePtr<SoxSink> sink(new (allocator) SoxSink(allocator, config), allocator);
+    if (!sink) {
+        return NULL;
+    }
+
+    if (!sink->open(driver, output)) {
+        return NULL;
+    }
+
+    return sink.release();
+}
+
+ISource* SoxBackend::open_source(core::IAllocator& allocator,
+                                 const char* driver,
+                                 const char* input,
+                                 const Config& config) {
+    if (!select_defaults(driver, input)) {
+        return NULL;
+    }
+
+    core::UniquePtr<SoxSource> source(new (allocator) SoxSource(allocator, config),
+                                      allocator);
+    if (!source) {
+        return NULL;
+    }
+
+    if (!source->open(driver, input)) {
+        return NULL;
+    }
+
+    return source.release();
 }
 
 } // namespace sndio

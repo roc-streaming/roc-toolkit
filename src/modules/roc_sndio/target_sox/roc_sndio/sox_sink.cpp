@@ -9,7 +9,7 @@
 #include "roc_sndio/sox_sink.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
-#include "roc_sndio/sox_controller.h"
+#include "roc_sndio/sox_backend.h"
 
 namespace roc {
 namespace sndio {
@@ -18,6 +18,8 @@ SoxSink::SoxSink(core::IAllocator& allocator, const Config& config)
     : output_(NULL)
     , allocator_(allocator)
     , is_file_(false) {
+    SoxBackend::instance();
+
     size_t n_channels = packet::num_channels(config.channels);
     if (n_channels == 0) {
         roc_panic("sox sink: # of channels is zero");
@@ -31,7 +33,7 @@ SoxSink::SoxSink(core::IAllocator& allocator, const Config& config)
     if (config.frame_size != 0) {
         buffer_size_ = config.frame_size;
     } else {
-        buffer_size_ = SoxController::instance().get_buffer_size();
+        buffer_size_ = SoxBackend::instance().get_frame_size();
     }
 }
 
@@ -40,7 +42,7 @@ SoxSink::~SoxSink() {
 }
 
 bool SoxSink::open(const char* driver, const char* output) {
-    roc_log(LogDebug, "sox sink: opening: driver=%s output=%s", driver, output);
+    roc_log(LogInfo, "sox sink: opening: driver=%s output=%s", driver, output);
 
     if (buffer_ || output_) {
         roc_panic("sox sink: can't call open() more than once");
@@ -110,12 +112,6 @@ bool SoxSink::prepare_() {
 }
 
 bool SoxSink::open_(const char* driver, const char* output) {
-    if (!SoxController::instance().fill_defaults(driver, output)) {
-        return false;
-    }
-
-    roc_log(LogInfo, "sox sink: driver=%s output=%s", driver, output);
-
     output_ = sox_open_write(output, &out_signal_, NULL, driver, NULL, NULL);
     if (!output_) {
         roc_log(LogError, "sox sink: can't open writer: driver=%s output=%s", driver,

@@ -11,11 +11,10 @@
 #include "roc_core/heap_allocator.h"
 #include "roc_core/log.h"
 #include "roc_core/scoped_destructor.h"
+#include "roc_core/unique_ptr.h"
 #include "roc_pipeline/converter.h"
+#include "roc_sndio/backend_dispatcher.h"
 #include "roc_sndio/pump.h"
-#include "roc_sndio/sox_controller.h"
-#include "roc_sndio/sox_sink.h"
-#include "roc_sndio/sox_source.h"
 
 #include "roc_conv/cmdline.h"
 
@@ -47,7 +46,7 @@ int main(int argc, char** argv) {
         config.internal_frame_size = (size_t)args.frame_size_arg;
     }
 
-    sndio::SoxController::instance().set_buffer_size(config.internal_frame_size);
+    sndio::BackendDispatcher::instance().set_frame_size(config.internal_frame_size);
 
     core::HeapAllocator allocator;
     core::BufferPool<audio::sample_t> pool(allocator, config.internal_frame_size,
@@ -58,17 +57,20 @@ int main(int argc, char** argv) {
     source_config.sample_rate = 0;
     source_config.frame_size = config.internal_frame_size;
 
-    sndio::SoxSource source(allocator, source_config);
-    if (!source.open(NULL, args.input_arg)) {
+    core::UniquePtr<sndio::ISource> source(
+        sndio::BackendDispatcher::instance().open_source(allocator, NULL, args.input_arg,
+                                                         source_config),
+        allocator);
+    if (!source) {
         roc_log(LogError, "can't open input: %s", args.input_arg);
         return 1;
     }
-    if (source.has_clock()) {
+    if (source->has_clock()) {
         roc_log(LogError, "unsupported input: %s", args.input_arg);
         return 1;
     }
 
-    config.input_sample_rate = source.sample_rate();
+    config.input_sample_rate = source->sample_rate();
 
     if (args.rate_given) {
         config.output_sample_rate = (size_t)args.rate_arg;
@@ -110,17 +112,20 @@ int main(int argc, char** argv) {
     sink_config.sample_rate = config.output_sample_rate;
     sink_config.frame_size = config.internal_frame_size;
 
-    sndio::SoxSink sink(allocator, sink_config);
+    core::UniquePtr<sndio::ISink> sink;
     if (args.output_given) {
-        if (!sink.open(NULL, args.output_arg)) {
+        sink.reset(sndio::BackendDispatcher::instance().open_sink(
+                       allocator, NULL, args.output_arg, sink_config),
+                   allocator);
+        if (!sink) {
             roc_log(LogError, "can't open output: %s", args.output_arg);
             return 1;
         }
-        if (sink.has_clock()) {
+        if (sink->has_clock()) {
             roc_log(LogError, "unsupported output: %s", args.output_arg);
             return 1;
         }
-        output_writer = &sink;
+        output_writer = sink.get();
     }
 
     pipeline::Converter converter(config, output_writer, pool, allocator);
@@ -129,7 +134,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    sndio::Pump pump(pool, source, converter, config.internal_frame_size,
+    sndio::Pump pump(pool, *source, converter, config.internal_frame_size,
                      sndio::Pump::ModePermanent);
     if (!pump.valid()) {
         roc_log(LogError, "can't create audio pump");

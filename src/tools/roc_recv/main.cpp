@@ -12,13 +12,13 @@
 #include "roc_core/log.h"
 #include "roc_core/parse_duration.h"
 #include "roc_core/scoped_destructor.h"
+#include "roc_core/unique_ptr.h"
 #include "roc_netio/transceiver.h"
 #include "roc_packet/address_to_str.h"
 #include "roc_packet/parse_address.h"
 #include "roc_pipeline/receiver.h"
+#include "roc_sndio/backend_dispatcher.h"
 #include "roc_sndio/pump.h"
-#include "roc_sndio/sox_controller.h"
-#include "roc_sndio/sox_sink.h"
 
 #include "roc_recv/cmdline.h"
 
@@ -76,7 +76,8 @@ int main(int argc, char** argv) {
         config.common.internal_frame_size = (size_t)args.frame_size_arg;
     }
 
-    sndio::SoxController::instance().set_buffer_size(config.common.internal_frame_size);
+    sndio::BackendDispatcher::instance().set_frame_size(
+        config.common.internal_frame_size);
 
     switch ((unsigned)args.fec_arg) {
     case fec_arg_none:
@@ -246,15 +247,18 @@ int main(int argc, char** argv) {
         allocator, config.common.internal_frame_size, args.poisoning_flag);
     packet::PacketPool packet_pool(allocator, args.poisoning_flag);
 
-    sndio::SoxSink sink(allocator, sink_config);
-    if (!sink.open(args.driver_arg, args.output_arg)) {
+    core::UniquePtr<sndio::ISink> sink(
+        sndio::BackendDispatcher::instance().open_sink(allocator, args.driver_arg,
+                                                       args.output_arg, sink_config),
+        allocator);
+    if (!sink) {
         roc_log(LogError, "can't open output file or device: driver=%s output=%s",
                 args.driver_arg, args.output_arg);
         return 1;
     }
 
-    config.common.timing = !sink.has_clock();
-    config.common.output_sample_rate = sink.sample_rate();
+    config.common.timing = !sink->has_clock();
+    config.common.output_sample_rate = sink->sample_rate();
 
     if (config.common.output_sample_rate == 0) {
         roc_log(LogError,
@@ -273,7 +277,7 @@ int main(int argc, char** argv) {
     }
 
     sndio::Pump pump(
-        sample_buffer_pool, receiver, sink, config.common.internal_frame_size,
+        sample_buffer_pool, receiver, *sink, config.common.internal_frame_size,
         args.oneshot_flag ? sndio::Pump::ModeOneshot : sndio::Pump::ModePermanent);
     if (!pump.valid()) {
         roc_log(LogError, "can't create pump");

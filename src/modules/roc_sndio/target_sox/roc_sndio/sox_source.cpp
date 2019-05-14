@@ -9,7 +9,7 @@
 #include "roc_sndio/sox_source.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
-#include "roc_sndio/sox_controller.h"
+#include "roc_sndio/sox_backend.h"
 
 namespace roc {
 namespace sndio {
@@ -19,6 +19,8 @@ SoxSource::SoxSource(core::IAllocator& allocator, const Config& config)
     , allocator_(allocator)
     , is_file_(false)
     , eof_(false) {
+    SoxBackend::instance();
+
     n_channels_ = packet::num_channels(config.channels);
     if (n_channels_ == 0) {
         roc_panic("sox source: # of channels is zero");
@@ -31,7 +33,7 @@ SoxSource::SoxSource(core::IAllocator& allocator, const Config& config)
     if (config.frame_size != 0) {
         buffer_size_ = config.frame_size;
     } else {
-        buffer_size_ = SoxController::instance().get_buffer_size();
+        buffer_size_ = SoxBackend::instance().get_frame_size();
     }
 }
 
@@ -40,7 +42,7 @@ SoxSource::~SoxSource() {
 }
 
 bool SoxSource::open(const char* driver, const char* input) {
-    roc_log(LogDebug, "sox source: opening: driver=%s input=%s", driver, input);
+    roc_log(LogInfo, "sox source: opening: driver=%s input=%s", driver, input);
 
     if (buffer_ || input_) {
         roc_panic("sox source: can't call open() more than once");
@@ -137,12 +139,6 @@ bool SoxSource::prepare_() {
 }
 
 bool SoxSource::open_(const char* driver, const char* input) {
-    if (!SoxController::instance().fill_defaults(driver, input)) {
-        return false;
-    }
-
-    roc_log(LogInfo, "sox source: driver=%s input=%s", driver, input);
-
     if (!(input_ = sox_open_read(input, &in_signal_, NULL, driver))) {
         roc_log(LogError, "sox source: can't open: driver=%s input=%s", driver, input);
         return false;
