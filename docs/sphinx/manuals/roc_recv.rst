@@ -24,9 +24,10 @@ Options
 --fec=ENUM                FEC scheme  (possible values="rs", "ldpc", "none" default=`rs')
 --nbsrc=INT               Number of source packets in FEC block
 --nbrpr=INT               Number of repair packets in FEC block
---latency=STRING          Session target latency, TIME units
+--sess-latency=STRING     Session target latency, TIME units
 --min-latency=STRING      Session minimum latency, TIME units
 --max-latency=STRING      Session maximum latency, TIME units
+--io-latency=STRING       Playback target latency, TIME units
 --np-timeout=STRING       Session no playback timeout, TIME units
 --bp-timeout=STRING       Session broken playback timeout, TIME units
 --bp-window=STRING        Session breakage detection window, TIME units

@@ -126,10 +126,10 @@ int main(int argc, char** argv) {
         config.default_session.fec.n_repair_packets = (size_t)args.nbrpr_arg;
     }
 
-    if (args.latency_given) {
-        if (!core::parse_duration(args.latency_arg,
+    if (args.sess_latency_given) {
+        if (!core::parse_duration(args.sess_latency_arg,
                                   config.default_session.target_latency)) {
-            roc_log(LogError, "invalid --latency");
+            roc_log(LogError, "invalid --sess-latency");
             return 1;
         }
     }
@@ -222,8 +222,16 @@ int main(int argc, char** argv) {
     }
 
     sndio::Config sink_config;
+
     sink_config.channels = config.common.output_channels;
     sink_config.frame_size = config.common.internal_frame_size;
+
+    if (args.io_latency_given) {
+        if (!core::parse_duration(args.io_latency_arg, sink_config.latency)) {
+            roc_log(LogError, "invalid --io-latency");
+            return 1;
+        }
+    }
 
     if (args.rate_given) {
         if (args.rate_arg <= 0) {

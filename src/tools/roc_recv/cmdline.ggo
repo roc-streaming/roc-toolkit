@@ -21,13 +21,16 @@ section "Options"
     option "nbrpr" - "Number of repair packets in FEC block"
         int optional
 
-    option "latency" - "Session target latency, TIME units"
+    option "sess-latency" - "Session target latency, TIME units"
         string optional
 
     option "min-latency" - "Session minimum latency, TIME units"
         string optional
 
     option "max-latency" - "Session maximum latency, TIME units"
+        string optional
+
+    option "io-latency" - "Playback target latency, TIME units"
         string optional
 
     option "np-timeout" - "Session no playback timeout, TIME units"

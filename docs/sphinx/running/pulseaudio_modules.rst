@@ -86,8 +86,8 @@ option                required default        description
 sink                  no       <default sink> the name of the sink to connect the new sink input to
 sink_input_properties no       empty          additional sink input properties
 resampler_profile     no       medium         resampler mode, supported values: disable, high, medium, low
-network_latency_msec  no       200            target network latency in milliseconds
-playback_latency_msec no       40             target playback latency in milliseconds
+sess_latency_msec     no       200            target session latency in milliseconds
+io_latency_msec       no       40             target playback latency in milliseconds
 local_ip              no       0.0.0.0        local address to bind to
 local_source_port     no       10001          local port for source (audio) packets
 local_repair_port     no       10002          local port for repair (FEC) packets

@@ -35,8 +35,8 @@ PA_MODULE_USAGE(
         "sink=<name for the sink> "
         "sink_input_properties=<properties for the sink input> "
         "resampler_profile=<empty>|disable|high|medium|low "
-        "network_latency_msec=<target network latency in milliseconds> "
-        "playback_latency_msec=<target playback latency in milliseconds> "
+        "sess_latency_msec=<target network latency in milliseconds> "
+        "io_latency_msec=<target playback latency in milliseconds> "
         "local_ip=<local receiver ip> "
         "local_source_port=<local receiver port for source packets> "
         "local_repair_port=<local receiver port for repair packets>");
@@ -54,8 +54,8 @@ static const char* const roc_sink_input_modargs[] = {
     "sink_input_name",
     "sink_input_properties",
     "resampler_profile",
-    "network_latency_msec",
-    "playback_latency_msec",
+    "sess_latency_msec",
+    "io_latency_msec",
     "local_ip",
     "local_source_port",
     "local_repair_port",
@@ -222,7 +222,7 @@ int pa__init(pa_module* m) {
     }
 
     if (rocpa_parse_duration_msec(&receiver_config.target_latency, 1, args,
-                                  "network_latency_msec", "200")
+                                  "sess_latency_msec", "200")
         < 0) {
         goto error;
     }
@@ -289,7 +289,7 @@ int pa__init(pa_module* m) {
 
     unsigned long long playback_latency_us = 0;
     if (rocpa_parse_duration_msec(&playback_latency_us, 1000, args,
-                                  "playback_latency_msec", "40")
+                                  "io_latency_msec", "40")
         < 0) {
         goto error;
     }
