@@ -14,7 +14,7 @@ Ubuntu 16.04 and later
 .. code::
 
     # for Roc
-    $ sudo apt-get install g++ pkg-config scons gengetopt libuv1-dev libsox-dev libcpputest-dev
+    $ sudo apt-get install g++ pkg-config scons gengetopt libuv1-dev libpulse-dev libsox-dev libcpputest-dev
 
     # for 3rd-parties
     $ sudo apt-get install libtool intltool autoconf automake make cmake
@@ -41,7 +41,7 @@ Ubuntu 14.04 and later, Debian Jessie and later
 .. code::
 
     # for Roc
-    $ sudo apt-get install g++ pkg-config scons gengetopt libsox-dev
+    $ sudo apt-get install g++ pkg-config scons gengetopt libpulse-dev libsox-dev
 
     # for 3rd-parties
     $ sudo apt-get install libtool intltool autoconf automake make cmake
@@ -68,7 +68,7 @@ Fedora 22 and later
 .. code::
 
     # for Roc
-    $ sudo dnf install gcc-c++ pkgconfig scons gengetopt libuv-devel sox-devel
+    $ sudo dnf install gcc-c++ pkgconfig scons gengetopt libuv-devel pulseaudio-libs-devel sox-devel
 
     # for 3rd-parties
     $ sudo dnf install libtool intltool autoconf automake make cmake
@@ -98,7 +98,7 @@ Centos 7 and later
     $ sudo yum install epel-release
 
     # for Roc
-    $ sudo yum install gcc-c++ pkgconfig scons gengetopt sox-devel
+    $ sudo yum install gcc-c++ pkgconfig scons gengetopt pulseaudio-libs-devel sox-devel
 
     # for 3rd-parties
     $ sudo yum install libtool intltool autoconf automake make cmake

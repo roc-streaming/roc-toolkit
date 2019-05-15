@@ -1,5 +1,4 @@
 #! /bin/bash
-set -euo pipefail;
 ( set -x;
   docker run --rm -t \
          --cap-add SYS_PTRACE \
