@@ -17,15 +17,11 @@ namespace sndio {
 SoxSource::SoxSource(core::IAllocator& allocator, const Config& config)
     : input_(NULL)
     , allocator_(allocator)
+    , buffer_size_(config.frame_size)
     , is_file_(false)
     , eof_(false)
     , valid_(false) {
     SoxBackend::instance();
-
-    if (config.latency != 0) {
-        roc_log(LogError, "sox source: setting io latency not supported by sox backend");
-        return;
-    }
 
     n_channels_ = packet::num_channels(config.channels);
     if (n_channels_ == 0) {
@@ -33,15 +29,19 @@ SoxSource::SoxSource(core::IAllocator& allocator, const Config& config)
         return;
     }
 
+    if (config.frame_size == 0) {
+        roc_log(LogError, "sox source: frame size is zero");
+        return;
+    }
+
+    if (config.latency != 0) {
+        roc_log(LogError, "sox source: setting io latency not supported by sox backend");
+        return;
+    }
+
     memset(&in_signal_, 0, sizeof(in_signal_));
     in_signal_.rate = config.sample_rate;
     in_signal_.precision = SOX_SAMPLE_PRECISION;
-
-    if (config.frame_size != 0) {
-        buffer_size_ = config.frame_size;
-    } else {
-        buffer_size_ = SoxBackend::instance().get_frame_size();
-    }
 
     valid_ = true;
 }

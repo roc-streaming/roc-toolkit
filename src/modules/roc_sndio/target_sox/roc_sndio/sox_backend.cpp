@@ -122,12 +122,6 @@ void SoxBackend::set_frame_size(size_t size) {
     sox_get_globals()->bufsiz = size * sizeof(sox_sample_t);
 }
 
-size_t SoxBackend::get_frame_size() const {
-    core::Mutex::Lock lock(mutex_);
-
-    return sox_get_globals()->bufsiz / sizeof(sox_sample_t);
-}
-
 bool SoxBackend::probe(const char* driver, const char* inout, int flags) {
     if (!select_defaults(driver, inout)) {
         return false;

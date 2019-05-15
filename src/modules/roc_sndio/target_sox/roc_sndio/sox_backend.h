@@ -23,8 +23,6 @@ namespace roc {
 namespace sndio {
 
 //! SoX backend.
-//! @note
-//!  Always access SoX globals via this class to avoid races.
 class SoxBackend : public IBackend, core::NonCopyable<> {
 public:
     //! Get instance.
@@ -36,11 +34,6 @@ public:
     //! @remarks
     //!  Number of samples for all channels.
     void set_frame_size(size_t size);
-
-    //! Get internal SoX frame size.
-    //! @remarks
-    //!  Number of samples for all channels.
-    size_t get_frame_size() const;
 
     //! Check whether the backend can handle given input or output.
     virtual bool probe(const char* driver, const char* inout, int flags);

@@ -76,7 +76,7 @@ private:
     core::IAllocator& allocator_;
 
     core::UniquePtr<sox_sample_t> buffer_;
-    size_t buffer_size_;
+    const size_t buffer_size_;
 
     bool is_file_;
     bool eof_;
