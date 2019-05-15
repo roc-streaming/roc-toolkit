@@ -119,6 +119,33 @@ Centos 7 and later
     # install libraries, tools, and PulseAudio modules
     $ sudo scons -Q --enable-pulseaudio-modules --build-3rdparty=uv,openfec,pulseaudio,cpputest install
 
+Arch Linux
+----------
+
+.. code::
+
+    # for Roc
+    $ sudo pacman -S gcc pkgconf scons gengetopt libuv libpulse sox
+
+    # for 3rd-parties
+    $ sudo pacman -S grep gawk libtool intltool autoconf automake make cmake
+
+    # clone repo
+    $ git clone https://github.com/roc-project/roc.git
+    $ cd roc
+
+    # build libraries and tools
+    $ scons -Q --build-3rdparty=openfec,cpputest
+
+    # install libraries and tools
+    $ sudo scons -Q --build-3rdparty=openfec,cpputest install
+
+    # build libraries, tools, and PulseAudio modules
+    $ scons -Q --enable-pulseaudio-modules --build-3rdparty=openfec,pulseaudio,cpputest
+
+    # install libraries, tools, and PulseAudio modules
+    $ sudo scons -Q --enable-pulseaudio-modules --build-3rdparty=openfec,pulseaudio,cpputest install
+
 Linux (cross-compile)
 =====================
 

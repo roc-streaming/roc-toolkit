@@ -34,6 +34,7 @@ jobs:
         - scripts/travis/docker.sh rocproject/travis-debian scripts/travis/linux-x86_64/debian.sh
         - scripts/travis/docker.sh rocproject/travis-fedora scripts/travis/linux-x86_64/fedora.sh
         - scripts/travis/docker.sh rocproject/travis-centos scripts/travis/linux-x86_64/centos.sh
+        - scripts/travis/docker.sh rocproject/travis-archlinux scripts/travis/linux-x86_64/archlinux.sh
         - scripts/travis/docker.sh rocproject/travis-min scripts/travis/linux-x86_64/min.sh
         - cat build.status
 
