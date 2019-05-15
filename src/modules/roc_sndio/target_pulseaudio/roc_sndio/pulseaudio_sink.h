@@ -45,52 +45,65 @@ public:
     virtual void write(audio::Frame& frame);
 
 private:
-    void close_();
-
     static void context_state_cb_(pa_context* context, void* userdata);
+
+    static void
+    sink_info_cb_(pa_context* context, const pa_sink_info* info, int eol, void* userdata);
 
     static void stream_state_cb_(pa_stream* stream, void* userdata);
     static void stream_write_cb_(pa_stream* stream, size_t length, void* userdata);
     static void stream_latency_cb_(pa_stream* stream, void* userdata);
 
-    static void
-    sink_info_cb_(pa_context* context, const pa_sink_info* info, int eol, void* userdata);
+    static void timer_cb_(pa_mainloop_api* mainloop,
+                          pa_time_event* timer,
+                          const struct timeval* tv,
+                          void* userdata);
+
+    bool write_frame_(audio::Frame& frame);
 
     bool check_params_() const;
 
-    void check_started_() const;
-    void check_opened_() const;
+    void ensure_started_() const;
+    void ensure_opened_() const;
 
+    bool start_mainloop_();
+    void stop_mainloop_();
+
+    bool open_();
+    void close_();
     void set_opened_(bool opened);
-    void set_broken_();
-
-    bool start_();
-    bool open_(const char* device);
 
     bool open_context_();
     void close_context_();
 
     bool start_sink_info_op_();
-    void close_sink_info_op_();
+    void cancel_sink_info_op_();
 
     void init_stream_params_(const pa_sink_info& info);
     bool open_stream_();
     void close_stream_();
     ssize_t write_stream_(const audio::sample_t* data, size_t size);
+    ssize_t wait_stream_();
+
+    void start_timer_(core::nanoseconds_t timeout);
+    bool stop_timer_();
 
     const char* device_;
     size_t sample_rate_;
     const size_t num_channels_;
     core::nanoseconds_t latency_;
+    const size_t frame_size_;
 
     bool open_done_;
     bool opened_;
-    bool broken_;
 
     pa_threaded_mainloop* mainloop_;
     pa_context* context_;
     pa_operation* sink_info_op_;
     pa_stream* stream_;
+    pa_time_event* timer_;
+
+    core::nanoseconds_t timer_deadline_;
 
     pa_sample_spec sample_spec_;
     pa_buffer_attr buffer_attrs_;
