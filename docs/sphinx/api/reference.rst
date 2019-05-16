@@ -1,6 +1,10 @@
 Reference
 *********
 
+.. warning::
+
+   There is no compatibility promise until 1.0.0 is released. Small breaking changes are possible.
+
 .. contents:: Index:
    :local:
    :depth: 1

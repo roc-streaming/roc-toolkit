@@ -28,6 +28,7 @@ Advanced features
 - ☐ Retransmission (probably `RFC 4588 <https://tools.ietf.org/html/rfc4588>`_ and `RFC 4585 <https://tools.ietf.org/html/rfc4585>`_)
 - ☐ More FEC codes (notably `RaptorQ <https://tools.ietf.org/html/rfc6330>`_, see `OpenRQ <https://github.com/openrq-team/OpenRQ>`_ and `orq <https://github.com/olanmatt/orq>`_)
 - ☐ QoS support
+- ☐ Packet loss concealment
 - ☐ Compression (lossless and lossy, at least `Opus <https://www.opus-codec.org/>`_)
 - ☐ Encryption (likely SRTP)
 - ☐ Surround sound
