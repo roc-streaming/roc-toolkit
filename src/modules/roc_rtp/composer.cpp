@@ -21,6 +21,10 @@ Composer::Composer(packet::IComposer* inner_composer)
 bool Composer::align(core::Slice<uint8_t>& buffer,
                      size_t header_size,
                      size_t payload_alignment) {
+    if ((unsigned long)buffer.data() % payload_alignment != 0) {
+        roc_panic("rtp composer: unexpected non-aligned buffer");
+    }
+
     header_size += sizeof(Header);
 
     if (inner_composer_ == NULL) {
