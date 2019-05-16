@@ -1054,5 +1054,58 @@ TEST(writer_reader, resize_block_middle) {
     UNSIGNED_LONGS_EQUAL(wr_sn, rd_sn);
 }
 
+TEST(writer_reader, resize_block_losses) {
+    OFEncoder encoder(config, FECPayloadSize, allocator);
+    OFDecoder decoder(config, FECPayloadSize, buffer_pool, allocator);
+
+    CHECK(decoder.valid());
+    CHECK(encoder.valid());
+
+    PacketDispatcher dispatcher;
+
+    Writer writer(config, FECPayloadSize, encoder, dispatcher, source_composer,
+                  repair_composer, packet_pool, buffer_pool, allocator);
+    Reader reader(config, decoder, dispatcher.source_reader(), dispatcher.repair_reader(),
+                  rtp_parser, packet_pool, allocator);
+
+    CHECK(reader.valid());
+    CHECK(writer.valid());
+
+    const size_t block_sizes[] = { 15, 25, 35, 43, 33, 23, 13 };
+
+    packet::seqnum_t wr_sn = 0;
+    packet::seqnum_t rd_sn = 0;
+
+    for (size_t n = 0; n < ROC_ARRAY_SIZE(block_sizes); ++n) {
+        writer.resize(block_sizes[n]);
+
+        core::Array<packet::PacketPtr> packets(allocator);
+        packets.resize(block_sizes[n]);
+
+        for (size_t i = 0; i < block_sizes[n]; ++i) {
+            packets[i] = fill_one_packet(wr_sn);
+            wr_sn++;
+        }
+
+        dispatcher.lose(block_sizes[n] / 2);
+
+        for (size_t i = 0; i < block_sizes[n]; ++i) {
+            writer.write(packets[i]);
+        }
+
+        dispatcher.release_all();
+        dispatcher.clear_losses();
+
+        for (size_t i = 0; i < block_sizes[n]; ++i) {
+            const packet::PacketPtr p = reader.read();
+            CHECK(p);
+            check_audio_packet(p, rd_sn);
+            rd_sn++;
+        }
+    }
+
+    UNSIGNED_LONGS_EQUAL(wr_sn, rd_sn);
+}
+
 } // namespace fec
 } // namespace roc
