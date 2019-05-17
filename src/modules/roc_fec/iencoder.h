@@ -26,6 +26,9 @@ public:
     //! Get buffer alignment requirement.
     virtual size_t alignment() const = 0;
 
+    //! Get the maximum number of encoding symbols for the scheme being used.
+    virtual size_t max_block_length() const = 0;
+
     //! Start block.
     //!
     //! @remarks

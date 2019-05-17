@@ -50,6 +50,9 @@ public:
     //! Check if object is successfully constructed.
     bool valid() const;
 
+    //! Get the maximum number of encoding symbols for the scheme being used.
+    virtual size_t max_block_length() const;
+
     //! Start block.
     //!
     //! @remarks

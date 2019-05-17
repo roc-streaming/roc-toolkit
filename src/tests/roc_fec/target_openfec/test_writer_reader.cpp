@@ -1256,7 +1256,7 @@ TEST(writer_reader, writer_resize_blocks) {
         packet::seqnum_t pack_n = 0;
 
         for (size_t n = 0; n < ROC_ARRAY_SIZE(block_sizes); ++n) {
-            writer.resize(block_sizes[n]);
+            CHECK(writer.resize(block_sizes[n]));
 
             core::Array<packet::PacketPtr> packets(allocator);
             packets.resize(block_sizes[n]);
@@ -1298,13 +1298,16 @@ TEST(writer_reader, resize_block_begin) {
         CHECK(reader.valid());
         CHECK(writer.valid());
 
-        const size_t block_sizes[] = { 15, 25, 35, 43, 33, 23, 13 };
+        const size_t block_sizes[] = {
+            15, 25, 35, 43, 33, 23, 13,
+            encoder.max_block_length() - NumRepairPackets
+        };
 
         packet::seqnum_t wr_sn = 0;
         packet::seqnum_t rd_sn = 0;
 
         for (size_t n = 0; n < ROC_ARRAY_SIZE(block_sizes); ++n) {
-            writer.resize(block_sizes[n]);
+            CHECK(writer.resize(block_sizes[n]));
 
             core::Array<packet::PacketPtr> packets(allocator);
             packets.resize(block_sizes[n]);
@@ -1358,7 +1361,10 @@ TEST(writer_reader, resize_block_middle) {
         CHECK(reader.valid());
         CHECK(writer.valid());
 
-        const size_t block_sizes[] = { 15, 25, 35, 43, 33, 23, 13 };
+        const size_t block_sizes[] = {
+            15, 25, 35, 43, 33, 23, 13,
+            encoder.max_block_length() - NumRepairPackets
+        };
 
         size_t prev_sblen = NumSourcePackets;
 
@@ -1380,7 +1386,7 @@ TEST(writer_reader, resize_block_middle) {
             }
 
             // Update source block size.
-            writer.resize(block_sizes[n]);
+            CHECK(writer.resize(block_sizes[n]));
 
             // Write the remaining packets.
             for (size_t i = prev_sblen / 2; i < prev_sblen; ++i) {
@@ -1435,7 +1441,7 @@ TEST(writer_reader, resize_block_losses) {
         packet::seqnum_t rd_sn = 0;
 
         for (size_t n = 0; n < ROC_ARRAY_SIZE(block_sizes); ++n) {
-            writer.resize(block_sizes[n]);
+            CHECK(writer.resize(block_sizes[n]));
 
             core::Array<packet::PacketPtr> packets(allocator);
             packets.resize(block_sizes[n]);
@@ -1490,7 +1496,7 @@ TEST(writer_reader, error_writer_encode_packet) {
 
         size_t sn = 0;
 
-        writer.resize(BlockSize1);
+        CHECK(writer.resize(BlockSize1));
 
         for (size_t i = 0; i < BlockSize1; ++i) {
             writer.write(fill_one_packet(sn++));
@@ -1501,7 +1507,7 @@ TEST(writer_reader, error_writer_encode_packet) {
         CHECK(dispatcher.repair_size() == NumRepairPackets);
 
         mock_allocator.set_fail(true);
-        writer.resize(BlockSize2);
+        CHECK(writer.resize(BlockSize2));
 
         for (size_t i = 0; i < BlockSize2; ++i) {
             writer.write(fill_one_packet(sn++));
@@ -1542,7 +1548,7 @@ TEST(writer_reader, error_reader_resize_block) {
         size_t sn = 0;
 
         // write first block
-        writer.resize(BlockSize1);
+        CHECK(writer.resize(BlockSize1));
         for (size_t i = 0; i < BlockSize1; ++i) {
             writer.write(fill_one_packet(sn++));
         }
@@ -1559,7 +1565,7 @@ TEST(writer_reader, error_reader_resize_block) {
         }
 
         // write second block
-        writer.resize(BlockSize2);
+        CHECK(writer.resize(BlockSize2));
         for (size_t i = 0; i < BlockSize2; ++i) {
             writer.write(fill_one_packet(sn++));
         }
@@ -1606,7 +1612,7 @@ TEST(writer_reader, error_reader_decode_packet) {
         size_t sn = 0;
 
         // write first block
-        writer.resize(BlockSize1);
+        CHECK(writer.resize(BlockSize1));
         for (size_t i = 0; i < BlockSize1; ++i) {
             writer.write(fill_one_packet(sn++));
         }
@@ -1627,7 +1633,7 @@ TEST(writer_reader, error_reader_decode_packet) {
         dispatcher.lose(10);
 
         // write second block
-        writer.resize(BlockSize2);
+        CHECK(writer.resize(BlockSize2));
         for (size_t i = 0; i < BlockSize2; ++i) {
             writer.write(fill_one_packet(sn++));
         }
@@ -1648,6 +1654,130 @@ TEST(writer_reader, error_reader_decode_packet) {
 
         // reader should get an error from allocator when trying
         // to repair lost packet and shut down
+        CHECK(!reader.read());
+        CHECK(!reader.alive());
+    }
+}
+
+TEST(writer_reader, writer_oversized_block) {
+    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; ++n_scheme) {
+        config.scheme = Test_fec_schemes[n_scheme];
+
+        OFEncoder encoder(config, FECPayloadSize, allocator);
+        OFDecoder decoder(config, FECPayloadSize, buffer_pool, allocator);
+
+        CHECK(encoder.valid());
+        CHECK(decoder.valid());
+
+        CHECK(decoder.max_block_length() == encoder.max_block_length());
+        CHECK(NumSourcePackets + NumRepairPackets < encoder.max_block_length());
+
+        PacketDispatcher dispatcher(NumSourcePackets, NumRepairPackets);
+
+        Writer writer(config, FECPayloadSize, encoder, dispatcher, source_composer(),
+                      repair_composer(), packet_pool, buffer_pool, allocator);
+
+        Reader reader(config, decoder, dispatcher.source_reader(),
+                      dispatcher.repair_reader(), rtp_parser, packet_pool, allocator);
+
+        CHECK(writer.valid());
+        CHECK(reader.valid());
+
+        // try to resize writer with an invalid value
+        CHECK(!writer.resize(encoder.max_block_length() + 1));
+
+        // ensure that the block size was not updated
+        for (size_t n = 0; n < 10; ++n) {
+            fill_all_packets(0);
+
+            // write packets to dispatcher
+            for (size_t i = 0; i < NumSourcePackets; ++i) {
+                writer.write(source_packets[i]);
+            }
+
+            // deliver packets from dispatcher to reader
+            dispatcher.push_written();
+
+            CHECK(dispatcher.source_size() == NumSourcePackets);
+            CHECK(dispatcher.repair_size() == NumRepairPackets);
+
+            // read packets
+            for (size_t i = 0; i < NumSourcePackets; ++i) {
+                packet::PacketPtr p = reader.read();
+                CHECK(p);
+
+                check_audio_packet(p, i);
+                check_restored(p, false);
+
+                CHECK(p->fec()->source_block_length == NumSourcePackets);
+                CHECK(p->fec()->block_length == NumSourcePackets + NumRepairPackets);
+            }
+
+            CHECK(reader.alive());
+            CHECK(dispatcher.source_size() == 0);
+            CHECK(dispatcher.repair_size() == 0);
+        }
+    }
+}
+
+TEST(writer_reader, reader_oversized_block) {
+    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; ++n_scheme) {
+        config.scheme = Test_fec_schemes[n_scheme];
+
+        OFEncoder encoder(config, FECPayloadSize, allocator);
+        OFDecoder decoder(config, FECPayloadSize, buffer_pool, allocator);
+
+        CHECK(encoder.valid());
+        CHECK(decoder.valid());
+
+        CHECK(decoder.max_block_length() == encoder.max_block_length());
+        CHECK((NumSourcePackets + NumRepairPackets) < encoder.max_block_length());
+
+        packet::Queue queue;
+        PacketDispatcher dispatcher(NumSourcePackets, NumRepairPackets);
+
+        // We are going to violates source_block_length field of a FEC packet,
+        // but Reed-Solomon does not allows us to set this field more than 255.
+        // As a result LDPC composer is used.
+        Writer writer(config, FECPayloadSize, encoder, queue, ldpc_source_composer,
+                      ldpc_repair_composer, packet_pool, buffer_pool, allocator);
+
+        Reader reader(config, decoder, dispatcher.source_reader(),
+                      dispatcher.repair_reader(), rtp_parser, packet_pool, allocator);
+
+        CHECK(writer.valid());
+        CHECK(reader.valid());
+
+        fill_all_packets(0);
+
+        // encode packets and write to queue
+        for (size_t i = 0; i < NumSourcePackets; ++i) {
+            writer.write(source_packets[i]);
+        }
+
+        // write packets from queue to dispatcher
+        for (size_t i = 0; i < NumSourcePackets + NumRepairPackets; ++i) {
+            packet::PacketPtr p = queue.read();
+            CHECK(p);
+
+            // update block size at the beginning of the block
+            if (i == 0) {
+                // violates: SBL + RBL <= MAX_NES (for source packets)
+                p->fec()->source_block_length = encoder.max_block_length() + 1;
+                // reset block length to ensure that our packet won't be dropped
+                p->fec()->block_length = 0;
+            }
+
+            dispatcher.write(p);
+        }
+
+        // deliver packets from dispatcher to reader
+        dispatcher.push_written();
+
+        CHECK(dispatcher.source_size() == NumSourcePackets);
+        CHECK(dispatcher.repair_size() == NumRepairPackets);
+
+        // reader should get an error because maximum block size was exceeded
         CHECK(!reader.read());
         CHECK(!reader.alive());
     }

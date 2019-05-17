@@ -55,8 +55,23 @@ bool Writer::alive() const {
     return alive_;
 }
 
-void Writer::resize(size_t sblen) {
-    roc_log(LogDebug, "fec writer: update sblen: cur=%lu next=%lu",
+bool Writer::resize(size_t sblen) {
+    if (cur_sblen_ == sblen) {
+        return true;
+    }
+
+    const size_t new_blen = cur_rblen_ + sblen;
+
+    if (new_blen > encoder_.max_block_length()) {
+        roc_log(LogDebug,
+                "fec writer: can't update block length, maximum value exceeded:"
+                " cur_sbl=%lu cur_rbl=%lu new_sbl=%lu max_blen=%lu",
+                (unsigned long)cur_sblen_, (unsigned long)cur_rblen_,
+                (unsigned long)sblen, (unsigned long)encoder_.max_block_length());
+        return false;
+    }
+
+    roc_log(LogDebug, "fec writer: update block size, cur_sbl=%lu new_sbl=%lu",
             (unsigned long)cur_sblen_, (unsigned long)sblen);
 
     next_sblen_ = sblen;
@@ -64,6 +79,8 @@ void Writer::resize(size_t sblen) {
     if (cur_packet_ == 0) {
         cur_sblen_ = sblen;
     }
+
+    return true;
 }
 
 void Writer::write(const packet::PacketPtr& pp) {
