@@ -23,6 +23,9 @@ class IDecoder {
 public:
     virtual ~IDecoder();
 
+    //! Get the maximum number of encoding symbols for the scheme being used.
+    virtual size_t max_block_length() const = 0;
+
     //! Start block.
     //!
     //! @remarks

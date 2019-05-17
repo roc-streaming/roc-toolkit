@@ -58,7 +58,7 @@ public:
     bool alive() const;
 
     //! Set number of source packets per block.
-    void resize(size_t sblen);
+    bool resize(size_t sblen);
 
     //! Write packet.
     //! @remarks

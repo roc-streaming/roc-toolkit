@@ -175,6 +175,19 @@ bool Reader::update_block_size_(size_t new_sblen) {
         return false;
     }
 
+    const size_t new_blen = new_sblen + repair_block_.size();
+
+    if (new_blen > decoder_.max_block_length()) {
+        roc_log(LogDebug,
+                "fec reader: can't update block length,"
+                " maximum value exceeded: shutting down:"
+                " cur_sbl=%lu cur_rbl=%lu new_sbl=%lu max_blen=%lu",
+                (unsigned long)cur_sblen, (unsigned long)repair_block_.size(),
+                (unsigned long)new_sblen, (unsigned long)decoder_.max_block_length());
+        return (alive_ = false);
+    }
+
+
     if (!source_block_.resize(new_sblen)) {
         roc_log(LogDebug,
                 "fec reader: can't allocate source block table, shutting down:"

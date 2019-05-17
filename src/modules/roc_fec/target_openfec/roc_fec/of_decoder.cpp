@@ -71,6 +71,25 @@ bool OFDecoder::valid() const {
     return valid_;
 }
 
+size_t OFDecoder::max_block_length() const {
+    roc_panic_if_not(valid());
+
+    size_t ret = 0;
+
+    switch((int)codec_id_) {
+    case OF_CODEC_REED_SOLOMON_GF_2_M_STABLE:
+        ret = OF_REED_SOLOMON_MAX_NB_ENCODING_SYMBOLS_DEFAULT;
+        break;
+    case OF_CODEC_LDPC_STAIRCASE_STABLE:
+        ret = OF_LDPC_STAIRCASE_MAX_NB_ENCODING_SYMBOLS_DEFAULT;
+        break;
+    default:
+        roc_panic("unexpected fec scheme");
+    }
+
+    return ret;
+}
+
 bool OFDecoder::begin(size_t sblen, size_t rblen) {
     roc_panic_if_not(valid());
 

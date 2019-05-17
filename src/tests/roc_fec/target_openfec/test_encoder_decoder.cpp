@@ -188,5 +188,20 @@ TEST(encoder_decoder, load_test) {
     }
 }
 
+TEST(encoder_decoder, max_source_block) {
+    size_t test_cases[] = {
+        OF_REED_SOLOMON_MAX_NB_ENCODING_SYMBOLS_DEFAULT,
+        OF_LDPC_STAIRCASE_MAX_NB_ENCODING_SYMBOLS_DEFAULT
+    };
+
+    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; ++n_scheme) {
+        config.scheme = Test_fec_schemes[n_scheme];
+        Codec code(config);
+
+        CHECK(code.encoder().max_block_length() == test_cases[n_scheme]);
+        CHECK(code.decoder().max_block_length() == test_cases[n_scheme]);
+    }
+}
+
 } // namespace fec
 } // namespace roc
