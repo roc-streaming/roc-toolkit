@@ -105,12 +105,16 @@ packet::PacketPtr Packetizer::start_packet_() {
 
     packet->set_data(data);
 
-    packet::RTP& rtp = *packet->rtp();
+    packet::RTP* rtp = packet->rtp();
+    if (!rtp) {
+        roc_log(LogError, "packetizer: unexpected non-rtp packet");
+        return NULL;
+    }
 
-    rtp.source = source_;
-    rtp.seqnum = seqnum_;
-    rtp.timestamp = timestamp_;
-    rtp.payload_type = payload_type_;
+    rtp->source = source_;
+    rtp->seqnum = seqnum_;
+    rtp->timestamp = timestamp_;
+    rtp->payload_type = payload_type_;
 
     return packet;
 }

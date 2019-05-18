@@ -10,7 +10,7 @@
 
 #include "roc_core/log.h"
 #include "roc_packet/address_to_str.h"
-#include "roc_pipeline/proto_to_str.h"
+#include "roc_pipeline/port_to_str.h"
 
 using namespace roc;
 
@@ -50,9 +50,8 @@ bool sender_set_port(roc_sender* sender,
 
         sender->source_port = port_config;
 
-        roc_log(LogInfo, "roc_sender: set audio source port to %s %s",
-                packet::address_to_str(port_config.address).c_str(),
-                pipeline::proto_to_str(port_config.protocol));
+        roc_log(LogInfo, "roc_sender: set audio source port to %s",
+                pipeline::port_to_str(port_config).c_str());
 
         return true;
 
@@ -70,9 +69,8 @@ bool sender_set_port(roc_sender* sender,
 
         sender->repair_port = port_config;
 
-        roc_log(LogInfo, "roc_sender: set audio repair port to %s %s",
-                packet::address_to_str(port_config.address).c_str(),
-                pipeline::proto_to_str(port_config.protocol));
+        roc_log(LogInfo, "roc_sender: set audio repair port to %s",
+                pipeline::port_to_str(port_config).c_str());
 
         return true;
     }

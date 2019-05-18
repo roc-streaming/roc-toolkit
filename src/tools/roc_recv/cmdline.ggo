@@ -9,11 +9,8 @@ section "Options"
     option "output" o "Output file or device" typestr="OUTPUT" string optional
     option "driver" d "Output driver" typestr="DRIVER" string optional
 
-    option "source" s "Source UDP address" typestr="ADDRESS" string required
-    option "repair" r "Repair UDP address" typestr="ADDRESS" string optional
-
-    option "fec" - "FEC scheme"
-        values="rs","ldpc","none" default="rs" enum optional
+    option "source" s "Source port triplet" typestr="PORT" string required
+    option "repair" r "Repair port triplet" typestr="PORT" string optional
 
     option "nbsrc" - "Number of source packets in FEC block"
         int optional
@@ -71,10 +68,17 @@ section "Options"
     option "beeping" - "Enable beeping on packet loss" flag off
 
 text "
-ADDRESS should have one of the following forms:
-  - :PORT
-  - IPv4:PORT
-  - [IPv6]:PORT
+OUTPUT is the file name or device name, depending on the selected DRIVER, e.g.:
+  file.wav; front:CARD=PCH,DEV=0; alsa_input.pci-0000_00_1f.3.analog-stereo;
 
-TIME should have one of the following forms:
-  123ns, 123us, 123ms, 123s, 123m, 123h"
+DRIVER is the type of the output file or device, e.g.:
+  wav; alsa; pulseaudio;
+
+PORT is a triplet PROTOCOL:IPADDR:PORTNUM, e.g.:
+  rtp+rs8m::10001; rtp+rs8m:127.0.0.1:10001; rtp+rs8m:[::1]:10001;
+
+TIME is an integer number with a suffix, e.g.:
+  123ns; 123us; 123ms; 123s; 123m; 123h;
+
+See further details in roc-recv(1) manual page locally or online:
+https://roc-project.github.io/roc/docs/manuals/roc_recv.html"

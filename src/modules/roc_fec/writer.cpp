@@ -140,7 +140,6 @@ void Writer::make_repair_packets_() {
     for (packet::seqnum_t i = 0; i < cur_rblen_; i++) {
         packet::PacketPtr rp = make_repair_packet_(i);
         if (!rp) {
-            roc_log(LogDebug, "fec writer: can't create repair packet");
             continue;
         }
         repair_packets_[i] = rp;
@@ -171,7 +170,8 @@ packet::PacketPtr Writer::make_repair_packet_(packet::seqnum_t pack_n) {
     }
 
     if (!packet->fec()) {
-        roc_panic("fec writer: unexpected non-fec composer");
+        roc_log(LogError, "fec writer: unexpected non-fec packet");
+        return NULL;
     }
 
     packet->set_data(data);

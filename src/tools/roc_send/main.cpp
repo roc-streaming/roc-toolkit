@@ -14,8 +14,7 @@
 #include "roc_core/scoped_destructor.h"
 #include "roc_core/unique_ptr.h"
 #include "roc_netio/transceiver.h"
-#include "roc_packet/address_to_str.h"
-#include "roc_packet/parse_address.h"
+#include "roc_pipeline/parse_port.h"
 #include "roc_pipeline/sender.h"
 #include "roc_sndio/backend_dispatcher.h"
 #include "roc_sndio/pump.h"
@@ -69,53 +68,38 @@ int main(int argc, char** argv) {
     sndio::BackendDispatcher::instance().set_frame_size(config.internal_frame_size);
 
     pipeline::PortConfig source_port;
-    pipeline::PortConfig repair_port;
-
     if (args.source_given) {
-        if (!packet::parse_address(args.source_arg, source_port.address)) {
-            roc_log(LogError, "can't parse remote source address: %s", args.source_arg);
+        if (!pipeline::parse_port(pipeline::Port_AudioSource, args.source_arg,
+                                  source_port)) {
+            roc_log(LogError, "can't parse remote source port: %s", args.source_arg);
             return 1;
         }
     }
 
+    pipeline::PortConfig repair_port;
     if (args.repair_given) {
-        if (!packet::parse_address(args.repair_arg, repair_port.address)) {
-            roc_log(LogError, "can't parse remote repair address: %s", args.repair_arg);
+        if (!pipeline::parse_port(pipeline::Port_AudioRepair, args.repair_arg,
+                                  repair_port)) {
+            roc_log(LogError, "can't parse remote repair port: %s", args.repair_arg);
             return 1;
         }
-    }
-
-    packet::Address local_addr;
-    if (args.local_given) {
-        if (!packet::parse_address(args.local_arg, local_addr)) {
-            roc_log(LogError, "can't parse local address: %s", args.local_arg);
-            return 1;
-        }
-    } else {
-        packet::parse_address(":0", local_addr);
     }
 
     switch ((unsigned)args.fec_arg) {
     case fec_arg_none:
         config.fec.scheme = packet::FEC_None;
-        source_port.protocol = pipeline::Proto_RTP;
-        repair_port.protocol = pipeline::Proto_RTP;
         break;
 
-    case fec_arg_rs:
+    case fec_arg_rs8m:
         config.fec.scheme = packet::FEC_ReedSolomon_M8;
-        source_port.protocol = pipeline::Proto_RTP_RSm8_Source;
-        repair_port.protocol = pipeline::Proto_RSm8_Repair;
         break;
 
     case fec_arg_ldpc:
         config.fec.scheme = packet::FEC_LDPC_Staircase;
-        source_port.protocol = pipeline::Proto_RTP_LDPC_Source;
-        repair_port.protocol = pipeline::Proto_LDPC_Repair;
         break;
 
     default:
-        break;
+        roc_panic("unexpected fec scheme");
     }
 
     if (args.nbsrc_given) {
@@ -158,7 +142,7 @@ int main(int argc, char** argv) {
         break;
 
     default:
-        break;
+        roc_panic("unexpected resampler profile");
     }
 
     if (args.resampler_interp_given) {
@@ -224,6 +208,11 @@ int main(int argc, char** argv) {
         return 1;
     }
 
+    packet::Address local_addr;
+    if (!local_addr.set_ipv4("0.0.0.0", 0)) {
+        roc_panic("can't initialize local address");
+    }
+
     packet::IWriter* udp_sender = trx.add_udp_sender(local_addr);
     if (!udp_sender) {
         roc_log(LogError, "can't create udp sender");
@@ -254,8 +243,6 @@ int main(int argc, char** argv) {
 
     trx.stop();
     trx.join();
-
-    trx.remove_port(local_addr);
 
     return ok ? 0 : 1;
 }

@@ -15,7 +15,7 @@
 
 #include "roc_audio/units.h"
 #include "roc_core/stddefs.h"
-#include "roc_packet/parse_address.h"
+#include "roc_packet/address.h"
 
 namespace roc {
 namespace pipeline {
@@ -29,12 +29,8 @@ inline audio::sample_t nth_sample(uint8_t n) {
 }
 
 inline packet::Address new_address(int port) {
-    char str[64];
-    snprintf(str, sizeof(str), "127.0.0.1:%d", port);
-
     packet::Address addr;
-    CHECK(packet::parse_address(str, addr));
-
+    CHECK(addr.set_ipv4("127.0.0.1", port));
     return addr;
 }
 

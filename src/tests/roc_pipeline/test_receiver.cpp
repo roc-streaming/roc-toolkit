@@ -11,7 +11,6 @@
 #include "roc_core/buffer_pool.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_packet/packet_pool.h"
-#include "roc_packet/parse_address.h"
 #include "roc_pipeline/receiver.h"
 #include "roc_rtp/composer.h"
 #include "roc_rtp/format_map.h"

@@ -14,6 +14,7 @@
 
 #include "roc_audio/iencoder.h"
 #include "roc_core/iallocator.h"
+#include "roc_core/panic.h"
 #include "roc_rtp/pcm_helpers.h"
 
 namespace roc {
@@ -39,9 +40,12 @@ public:
                                  const audio::sample_t* samples,
                                  size_t n_samples,
                                  packet::channel_mask_t channels) {
-        return pcm_write<Sample, NumCh>(packet.rtp()->payload.data(),
-                                        packet.rtp()->payload.size(), offset, samples,
-                                        n_samples, channels);
+        packet::RTP* rtp = packet.rtp();
+        if (!rtp) {
+            roc_panic("unexpected non-rtp packet");
+        }
+        return pcm_write<Sample, NumCh>(rtp->payload.data(), rtp->payload.size(), offset,
+                                        samples, n_samples, channels);
     }
 };
 

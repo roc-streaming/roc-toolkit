@@ -19,6 +19,7 @@
 #include "roc_core/time.h"
 #include "roc_fec/config.h"
 #include "roc_packet/units.h"
+#include "roc_pipeline/port.h"
 #include "roc_rtp/headers.h"
 #include "roc_rtp/validator.h"
 
@@ -46,27 +47,6 @@ const int DefaultMinLatencyFactor = -1;
 //! Default maximum latency relative to target latency.
 const int DefaultMaxLatencyFactor = 2;
 
-//! Protocol identifier.
-enum Protocol {
-    //! Protocol is not set.
-    Proto_None,
-
-    //! Bare RTP.
-    Proto_RTP,
-
-    //! RTP source packet + FECFRAME Reed-Solomon footer (m=8).
-    Proto_RTP_RSm8_Source,
-
-    //! FEC repair packet + FECFRAME Reed-Solomon header (m=8).
-    Proto_RSm8_Repair,
-
-    //! RTP source packet + FECFRAME LDPC footer.
-    Proto_RTP_LDPC_Source,
-
-    //! FEC repair packet + FECFRAME LDPC header.
-    Proto_LDPC_Repair
-};
-
 //! Port parameters.
 //! @remarks
 //!  On receiver, defines a listened port parameters. On sender,
@@ -76,7 +56,7 @@ struct PortConfig {
     packet::Address address;
 
     //! Port protocol.
-    Protocol protocol;
+    PortProtocol protocol;
 
     PortConfig()
         : protocol(Proto_None) {

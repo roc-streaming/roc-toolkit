@@ -9,12 +9,11 @@ section "Options"
     option "input" i "Input file or device" typestr="INPUT" string optional
     option "driver" d "Input driver" typestr="DRIVER" string optional
 
-    option "source" s "Remote source UDP address" typestr="ADDRESS" string required
-    option "repair" r "Remote repair UDP address" typestr="ADDRESS" string optional
-    option "local" l "Local UDP address" typestr="ADDRESS" string optional
+    option "source" s "Remote source port triplet" typestr="PORT" string required
+    option "repair" r "Remote repair port triplet" typestr="PORT" string optional
 
     option "fec" - "FEC scheme"
-        values="rs","ldpc","none" default="rs" enum optional
+        values="rs8m","ldpc","none" default="rs8m" enum optional
 
     option "nbsrc" - "Number of source packets in FEC block"
         int optional
@@ -51,10 +50,17 @@ section "Options"
         flag off
 
 text "
-ADDRESS should be in one of the following forms:
-  - :PORT
-  - IPv4:PORT
-  - [IPv6]:PORT
+INPUT is the file name or device name, depending on the selected DRIVER, e.g.:
+  file.wav; front:CARD=PCH,DEV=0; alsa_input.pci-0000_00_1f.3.analog-stereo;
 
-TIME should have one of the following forms:
-  123ns, 123us, 123ms, 123s, 123m, 123h"
+DRIVER is the type of the input file or device, e.g.:
+  wav; alsa; pulseaudio;
+
+PORT is a triplet PROTOCOL:IPADDR:PORTNUM, e.g.:
+  rtp+rs8m:127.0.0.1:10001; rtp+rs8m:[::1]:10001;
+
+TIME is an integer number with a suffix, e.g.:
+  123ns; 123us; 123ms; 123s; 123m; 123h;
+
+See further details in roc-send(1) manual page locally or online:
+https://roc-project.github.io/roc/docs/manuals/roc_send.html"

@@ -11,9 +11,9 @@
 #include "roc_core/buffer_pool.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_netio/transceiver.h"
+#include "roc_packet/address.h"
 #include "roc_packet/concurrent_queue.h"
 #include "roc_packet/packet_pool.h"
-#include "roc_packet/parse_address.h"
 
 namespace roc {
 namespace netio {
@@ -25,6 +25,12 @@ enum { MaxBufSize = 500 };
 core::HeapAllocator allocator;
 core::BufferPool<uint8_t> buffer_pool(allocator, MaxBufSize, true);
 packet::PacketPool packet_pool(allocator, true);
+
+packet::Address make_address(const char* ip, int port) {
+    packet::Address addr;
+    CHECK(addr.set_ipv4(ip, port));
+    return addr;
+}
 
 } // namespace
 
@@ -43,11 +49,8 @@ TEST(transceiver, bind_any) {
 
     CHECK(trx.valid());
 
-    packet::Address tx_addr;
-    packet::Address rx_addr;
-
-    CHECK(packet::parse_address(":0", tx_addr));
-    CHECK(packet::parse_address(":0", rx_addr));
+    packet::Address tx_addr = make_address("0.0.0.0", 0);
+    packet::Address rx_addr = make_address("0.0.0.0", 0);
 
     CHECK(trx.add_udp_sender(tx_addr));
     CHECK(trx.add_udp_receiver(rx_addr, queue));
@@ -63,11 +66,8 @@ TEST(transceiver, bind_lo) {
 
     CHECK(trx.valid());
 
-    packet::Address tx_addr;
-    packet::Address rx_addr;
-
-    CHECK(packet::parse_address("127.0.0.1:0", tx_addr));
-    CHECK(packet::parse_address("127.0.0.1:0", rx_addr));
+    packet::Address tx_addr = make_address("127.0.0.1", 0);
+    packet::Address rx_addr = make_address("127.0.0.1", 0);
 
     CHECK(trx.add_udp_sender(tx_addr));
     CHECK(trx.add_udp_receiver(rx_addr, queue));
@@ -114,11 +114,8 @@ TEST(transceiver, add_start_stop) {
 
     CHECK(trx.valid());
 
-    packet::Address tx_addr;
-    packet::Address rx_addr;
-
-    CHECK(packet::parse_address(":0", tx_addr));
-    CHECK(packet::parse_address(":0", rx_addr));
+    packet::Address tx_addr = make_address("0.0.0.0", 0);
+    packet::Address rx_addr = make_address("0.0.0.0", 0);
 
     CHECK(trx.add_udp_sender(tx_addr));
     CHECK(trx.add_udp_receiver(rx_addr, queue));
@@ -141,11 +138,8 @@ TEST(transceiver, start_add_stop) {
 
     CHECK(trx.start());
 
-    packet::Address tx_addr;
-    packet::Address rx_addr;
-
-    CHECK(packet::parse_address(":0", tx_addr));
-    CHECK(packet::parse_address(":0", rx_addr));
+    packet::Address tx_addr = make_address("0.0.0.0", 0);
+    packet::Address rx_addr = make_address("0.0.0.0", 0);
 
     CHECK(trx.add_udp_sender(tx_addr));
     CHECK(trx.add_udp_receiver(rx_addr, queue));
@@ -164,11 +158,8 @@ TEST(transceiver, add_remove) {
 
     CHECK(trx.valid());
 
-    packet::Address tx_addr;
-    packet::Address rx_addr;
-
-    CHECK(packet::parse_address(":0", tx_addr));
-    CHECK(packet::parse_address(":0", rx_addr));
+    packet::Address tx_addr = make_address("0.0.0.0", 0);
+    packet::Address rx_addr = make_address("0.0.0.0", 0);
 
     UNSIGNED_LONGS_EQUAL(0, trx.num_ports());
 
@@ -194,11 +185,8 @@ TEST(transceiver, start_add_remove_stop) {
 
     CHECK(trx.start());
 
-    packet::Address tx_addr;
-    packet::Address rx_addr;
-
-    CHECK(packet::parse_address(":0", tx_addr));
-    CHECK(packet::parse_address(":0", rx_addr));
+    packet::Address tx_addr = make_address("0.0.0.0", 0);
+    packet::Address rx_addr = make_address("0.0.0.0", 0);
 
     UNSIGNED_LONGS_EQUAL(0, trx.num_ports());
 
@@ -225,11 +213,8 @@ TEST(transceiver, add_start_stop_remove) {
 
     CHECK(trx.valid());
 
-    packet::Address tx_addr;
-    packet::Address rx_addr;
-
-    CHECK(packet::parse_address(":0", tx_addr));
-    CHECK(packet::parse_address(":0", rx_addr));
+    packet::Address tx_addr = make_address("0.0.0.0", 0);
+    packet::Address rx_addr = make_address("0.0.0.0", 0);
 
     UNSIGNED_LONGS_EQUAL(0, trx.num_ports());
 
@@ -258,15 +243,11 @@ TEST(transceiver, add_no_remove) {
 
     CHECK(trx.valid());
 
-    packet::Address tx1_addr;
-    packet::Address tx2_addr;
-    packet::Address rx1_addr;
-    packet::Address rx2_addr;
+    packet::Address tx1_addr = make_address("0.0.0.0", 0);
+    packet::Address tx2_addr = make_address("0.0.0.0", 0);
 
-    CHECK(packet::parse_address(":0", tx1_addr));
-    CHECK(packet::parse_address(":0", tx2_addr));
-    CHECK(packet::parse_address(":0", rx1_addr));
-    CHECK(packet::parse_address(":0", rx2_addr));
+    packet::Address rx1_addr = make_address("0.0.0.0", 0);
+    packet::Address rx2_addr = make_address("0.0.0.0", 0);
 
     CHECK(trx.add_udp_sender(tx1_addr));
     CHECK(trx.add_udp_sender(tx2_addr));
@@ -282,15 +263,11 @@ TEST(transceiver, add_start_stop_no_remove) {
 
     CHECK(trx.valid());
 
-    packet::Address tx1_addr;
-    packet::Address tx2_addr;
-    packet::Address rx1_addr;
-    packet::Address rx2_addr;
+    packet::Address tx1_addr = make_address("0.0.0.0", 0);
+    packet::Address tx2_addr = make_address("0.0.0.0", 0);
 
-    CHECK(packet::parse_address(":0", tx1_addr));
-    CHECK(packet::parse_address(":0", tx2_addr));
-    CHECK(packet::parse_address(":0", rx1_addr));
-    CHECK(packet::parse_address(":0", rx2_addr));
+    packet::Address rx1_addr = make_address("0.0.0.0", 0);
+    packet::Address rx2_addr = make_address("0.0.0.0", 0);
 
     CHECK(trx.add_udp_sender(tx1_addr));
     CHECK(trx.add_udp_sender(tx2_addr));
@@ -311,11 +288,8 @@ TEST(transceiver, add_duplicate) {
 
     CHECK(trx.valid());
 
-    packet::Address tx_addr;
-    packet::Address rx_addr;
-
-    CHECK(packet::parse_address(":0", tx_addr));
-    CHECK(packet::parse_address(":0", rx_addr));
+    packet::Address tx_addr = make_address("0.0.0.0", 0);
+    packet::Address rx_addr = make_address("0.0.0.0", 0);
 
     CHECK(trx.add_udp_sender(tx_addr));
     UNSIGNED_LONGS_EQUAL(1, trx.num_ports());

@@ -11,9 +11,9 @@
 #include "roc_core/buffer_pool.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_netio/transceiver.h"
+#include "roc_packet/address.h"
 #include "roc_packet/concurrent_queue.h"
 #include "roc_packet/packet_pool.h"
-#include "roc_packet/parse_address.h"
 
 namespace roc {
 namespace netio {
@@ -31,7 +31,7 @@ packet::PacketPool packet_pool(allocator, true);
 TEST_GROUP(udp) {
     packet::Address new_address() {
         packet::Address addr;
-        CHECK(packet::parse_address("127.0.0.1:0", addr));
+        CHECK(addr.set_ipv4("127.0.0.1", 0));
         return addr;
     }
 

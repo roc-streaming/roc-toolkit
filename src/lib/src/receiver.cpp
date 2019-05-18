@@ -10,7 +10,7 @@
 
 #include "roc_core/log.h"
 #include "roc_packet/address_to_str.h"
-#include "roc_pipeline/proto_to_str.h"
+#include "roc_pipeline/port_to_str.h"
 
 using namespace roc;
 
@@ -110,9 +110,8 @@ int roc_receiver_bind(roc_receiver* receiver,
         return -1;
     }
 
-    roc_log(LogInfo, "roc_receiver: bound to %s %s",
-            packet::address_to_str(port_config.address).c_str(),
-            pipeline::proto_to_str(port_config.protocol));
+    roc_log(LogInfo, "roc_receiver: bound to %s",
+            pipeline::port_to_str(port_config).c_str());
 
     return 0;
 }

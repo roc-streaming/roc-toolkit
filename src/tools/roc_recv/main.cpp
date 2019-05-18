@@ -15,7 +15,7 @@
 #include "roc_core/unique_ptr.h"
 #include "roc_netio/transceiver.h"
 #include "roc_packet/address_to_str.h"
-#include "roc_packet/parse_address.h"
+#include "roc_pipeline/parse_port.h"
 #include "roc_pipeline/receiver.h"
 #include "roc_sndio/backend_dispatcher.h"
 #include "roc_sndio/pump.h"
@@ -23,14 +23,6 @@
 #include "roc_recv/cmdline.h"
 
 using namespace roc;
-
-namespace {
-
-void trx_remove_port(void* arg, const pipeline::PortConfig& port) {
-    ((netio::Transceiver*)arg)->remove_port(port.address);
-}
-
-} // namespace
 
 int main(int argc, char** argv) {
     core::CrashHandler crash_handler;
@@ -49,18 +41,19 @@ int main(int argc, char** argv) {
         LogLevel(core::DefaultLogLevel + args.verbose_given));
 
     pipeline::PortConfig source_port;
-
     if (args.source_given) {
-        if (!packet::parse_address(args.source_arg, source_port.address)) {
-            roc_log(LogError, "can't parse source address: %s", args.source_arg);
+        if (!pipeline::parse_port(pipeline::Port_AudioSource, args.source_arg,
+                                  source_port)) {
+            roc_log(LogError, "can't parse source port: %s", args.source_arg);
             return 1;
         }
     }
 
     pipeline::PortConfig repair_port;
     if (args.repair_given) {
-        if (!packet::parse_address(args.repair_arg, repair_port.address)) {
-            roc_log(LogError, "can't parse repair address: %s", args.repair_arg);
+        if (!pipeline::parse_port(pipeline::Port_AudioRepair, args.repair_arg,
+                                  repair_port)) {
+            roc_log(LogError, "can't parse repair port: %s", args.repair_arg);
             return 1;
         }
     }
@@ -87,31 +80,7 @@ int main(int argc, char** argv) {
     sndio::BackendDispatcher::instance().set_frame_size(
         config.common.internal_frame_size);
 
-    switch ((unsigned)args.fec_arg) {
-    case fec_arg_none:
-        source_port.protocol = pipeline::Proto_RTP;
-        repair_port.protocol = pipeline::Proto_RTP;
-        break;
-
-    case fec_arg_rs:
-        source_port.protocol = pipeline::Proto_RTP_RSm8_Source;
-        repair_port.protocol = pipeline::Proto_RSm8_Repair;
-        break;
-
-    case fec_arg_ldpc:
-        source_port.protocol = pipeline::Proto_RTP_LDPC_Source;
-        repair_port.protocol = pipeline::Proto_LDPC_Repair;
-        break;
-
-    default:
-        break;
-    }
-
     if (args.nbsrc_given) {
-        if (args.fec_arg == fec_arg_none) {
-            roc_log(LogError, "--nbsrc can't be used when --fec=none)");
-            return 1;
-        }
         if (args.nbsrc_arg <= 0) {
             roc_log(LogError, "invalid --nbsrc: should be > 0");
             return 1;
@@ -120,10 +89,6 @@ int main(int argc, char** argv) {
     }
 
     if (args.nbrpr_given) {
-        if (args.fec_arg == fec_arg_none) {
-            roc_log(LogError, "--nbrpr can't be used when --fec=none");
-            return 1;
-        }
         if (args.nbrpr_arg <= 0) {
             roc_log(LogError, "invalid --nbrpr: should be > 0");
             return 1;
@@ -314,7 +279,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    if (args.fec_arg != fec_arg_none) {
+    if (args.repair_given) {
         if (!trx.add_udp_receiver(repair_port.address, receiver)) {
             roc_log(LogError, "can't register udp receiver: %s",
                     packet::address_to_str(repair_port.address).c_str());
@@ -336,8 +301,6 @@ int main(int argc, char** argv) {
 
     trx.stop();
     trx.join();
-
-    receiver.iterate_ports(trx_remove_port, &trx);
 
     return ok ? 0 : 1;
 }
