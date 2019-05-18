@@ -107,7 +107,6 @@ TEST(composer, align_outer_header) {
           == 0);
 }
 
-
 TEST(composer, packet_size) {
     enum { BufferSize = 100, Alignment = 8, PayloadSize = 10 };
 
