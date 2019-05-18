@@ -210,11 +210,11 @@ TEST_GROUP(sender_receiver) {
         fec::Config config;
 
         if (flags & FlagFEC) {
-            config.codec = fec::ReedSolomon8m;
+            config.scheme = packet::FEC_ReedSolomon_M8;
             config.n_source_packets = SourcePackets;
             config.n_repair_packets = RepairPackets;
         } else {
-            config.codec = fec::NoCodec;
+            config.scheme = packet::FEC_None;
         }
 
         return config;

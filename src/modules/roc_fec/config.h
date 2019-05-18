@@ -13,29 +13,15 @@
 #define ROC_FEC_CONFIG_H_
 
 #include "roc_core/stddefs.h"
+#include "roc_packet/fec.h"
 
 namespace roc {
 namespace fec {
 
-//! FEC code type.
-enum CodecType {
-    //! FEC is disabled.
-    NoCodec,
-
-    //! OpenFEC Reed-Solomon.
-    ReedSolomon8m,
-
-    //! OpenFEC LDPC-Staircase.
-    LDPCStaircase,
-
-    //! Maximum for iterating through the enum.
-    CodecTypeMax
-};
-
 //! FEC configuration.
 struct Config {
-    //! FEC codec.
-    CodecType codec;
+    //! FEC scheme.
+    packet::FECScheme scheme;
 
     //! Number of data packets in block.
     size_t n_source_packets;
@@ -53,7 +39,7 @@ struct Config {
     uint16_t rs_m;
 
     Config()
-        : codec(NoCodec)
+        : scheme(packet::FEC_None)
         , n_source_packets(20)
         , n_repair_packets(10)
         , ldpc_prng_seed(1297501556)

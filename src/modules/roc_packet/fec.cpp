@@ -13,7 +13,8 @@ namespace roc {
 namespace packet {
 
 FEC::FEC()
-    : encoding_symbol_id(0)
+    : fec_scheme(FEC_None)
+    , encoding_symbol_id(0)
     , source_block_number(0)
     , source_block_length(0)
     , block_length(0) {

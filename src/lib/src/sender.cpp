@@ -62,7 +62,7 @@ bool sender_set_port(roc_sender* sender,
             return false;
         }
 
-        if (sender->config.fec.codec == fec::NoCodec) {
+        if (sender->config.fec.scheme == packet::FEC_None) {
             roc_log(LogError,
                     "roc_sender: can't set audio repair port when fec is disabled");
             return false;
@@ -88,7 +88,7 @@ bool sender_check_connected(roc_sender* sender) {
     }
 
     if (sender->repair_port.protocol == pipeline::Proto_None
-        && sender->config.fec.codec != fec::NoCodec) {
+        && sender->config.fec.scheme != packet::FEC_None) {
         roc_log(LogError, "roc_sender: repair port is not connected");
         return false;
     }

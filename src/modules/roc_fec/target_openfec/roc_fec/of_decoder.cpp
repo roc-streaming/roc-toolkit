@@ -36,14 +36,14 @@ OFDecoder::OFDecoder(const Config& config,
     , has_new_packets_(false)
     , decoding_finished_(false)
     , valid_(false) {
-    if (config.codec == ReedSolomon8m) {
+    if (config.scheme == packet::FEC_ReedSolomon_M8) {
         roc_log(LogDebug, "of decoder: initializing Reed-Solomon decoder");
 
         codec_id_ = OF_CODEC_REED_SOLOMON_GF_2_M_STABLE;
         codec_params_.rs_params_.m = config.rs_m;
 
         of_sess_params_ = (of_parameters_t*)&codec_params_.rs_params_;
-    } else if (config.codec == LDPCStaircase) {
+    } else if (config.scheme == packet::FEC_LDPC_Staircase) {
         roc_log(LogDebug, "of decoder: initializing LDPC decoder");
 
         codec_id_ = OF_CODEC_LDPC_STAIRCASE_STABLE;
@@ -52,7 +52,7 @@ OFDecoder::OFDecoder(const Config& config,
 
         of_sess_params_ = (of_parameters_t*)&codec_params_.ldpc_params_;
     } else {
-        roc_panic("of decoder: invalid codec");
+        roc_panic("of decoder: unexpected fec scheme");
     }
 
     of_sess_params_->encoding_symbol_length = (uint32_t)payload_size_;

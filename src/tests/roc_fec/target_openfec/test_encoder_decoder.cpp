@@ -8,6 +8,8 @@
 
 #include <CppUTest/TestHarness.h>
 
+#include "test_fec_schemes.h"
+
 #include "roc_core/buffer_pool.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_core/log.h"
@@ -103,8 +105,9 @@ TEST_GROUP(encoder_decoder) {
 };
 
 TEST(encoder_decoder, without_loss) {
-    for (int type = ReedSolomon8m; type != CodecTypeMax; ++type) {
-        config.codec = (CodecType)type;
+    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
+        config.scheme = Test_fec_schemes[n_scheme];
+
         Codec code(config);
         code.encode();
 
@@ -121,8 +124,9 @@ TEST(encoder_decoder, without_loss) {
 }
 
 TEST(encoder_decoder, loss_1) {
-    for (int type = ReedSolomon8m; type != CodecTypeMax; ++type) {
-        config.codec = (CodecType)type;
+    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
+        config.scheme = Test_fec_schemes[n_scheme];
+
         Codec code(config);
         code.encode();
 
@@ -143,8 +147,10 @@ TEST(encoder_decoder, loss_1) {
 
 TEST(encoder_decoder, load_test) {
     enum { NumIterations = 20, LossPercent = 10, MaxLoss = 3 };
-    for (int type = ReedSolomon8m; type != CodecTypeMax; ++type) {
-        config.codec = (CodecType)type;
+
+    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
+        config.scheme = Test_fec_schemes[n_scheme];
+
         Codec code(config);
 
         size_t total_loss = 0;

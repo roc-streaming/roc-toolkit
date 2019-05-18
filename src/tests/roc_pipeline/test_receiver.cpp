@@ -76,7 +76,7 @@ TEST_GROUP(receiver) {
         config.common.timing = false;
         config.common.poisoning = true;
 
-        config.default_session.fec.codec = fec::NoCodec;
+        config.default_session.fec.scheme = packet::FEC_None;
 
         config.default_session.channels = ChMask;
         config.default_session.packet_length =

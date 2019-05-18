@@ -75,7 +75,7 @@ Sender::Sender(const SenderConfig& config,
     }
 
 #ifdef ROC_TARGET_OPENFEC
-    if (config.fec.codec != fec::NoCodec) {
+    if (config.fec.scheme != packet::FEC_None) {
         if (!repair_port_) {
             return;
         }

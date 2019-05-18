@@ -70,7 +70,7 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
     preader = validator_.get();
 
 #ifdef ROC_TARGET_OPENFEC
-    if (session_config.fec.codec != fec::NoCodec) {
+    if (session_config.fec.scheme != packet::FEC_None) {
         repair_queue_.reset(new (allocator_) packet::SortedQueue(0), allocator_);
         if (!repair_queue_) {
             return;

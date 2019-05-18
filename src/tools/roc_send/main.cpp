@@ -97,19 +97,19 @@ int main(int argc, char** argv) {
 
     switch ((unsigned)args.fec_arg) {
     case fec_arg_none:
-        config.fec.codec = fec::NoCodec;
+        config.fec.scheme = packet::FEC_None;
         source_port.protocol = pipeline::Proto_RTP;
         repair_port.protocol = pipeline::Proto_RTP;
         break;
 
     case fec_arg_rs:
-        config.fec.codec = fec::ReedSolomon8m;
+        config.fec.scheme = packet::FEC_ReedSolomon_M8;
         source_port.protocol = pipeline::Proto_RTP_RSm8_Source;
         repair_port.protocol = pipeline::Proto_RSm8_Repair;
         break;
 
     case fec_arg_ldpc:
-        config.fec.codec = fec::LDPCStaircase;
+        config.fec.scheme = packet::FEC_LDPC_Staircase;
         source_port.protocol = pipeline::Proto_RTP_LDPC_Source;
         repair_port.protocol = pipeline::Proto_LDPC_Repair;
         break;
@@ -119,7 +119,7 @@ int main(int argc, char** argv) {
     }
 
     if (args.nbsrc_given) {
-        if (config.fec.codec == fec::NoCodec) {
+        if (config.fec.scheme == packet::FEC_None) {
             roc_log(LogError, "--nbsrc can't be used when --fec=none)");
             return 1;
         }
@@ -131,7 +131,7 @@ int main(int argc, char** argv) {
     }
 
     if (args.nbrpr_given) {
-        if (config.fec.codec == fec::NoCodec) {
+        if (config.fec.scheme == packet::FEC_None) {
             roc_log(LogError, "--nbrpr can't be used when --fec=none");
             return 1;
         }

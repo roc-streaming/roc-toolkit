@@ -94,14 +94,14 @@ bool make_sender_config(pipeline::SenderConfig& out, const roc_sender_config& in
 
     switch ((int)in.fec_code) {
     case ROC_FEC_DISABLE:
-        out.fec.codec = fec::NoCodec;
+        out.fec.scheme = packet::FEC_None;
         break;
     case ROC_FEC_DEFAULT:
     case ROC_FEC_RS8M:
-        out.fec.codec = fec::ReedSolomon8m;
+        out.fec.scheme = packet::FEC_ReedSolomon_M8;
         break;
     case ROC_FEC_LDPC_STAIRCASE:
-        out.fec.codec = fec::LDPCStaircase;
+        out.fec.scheme = packet::FEC_LDPC_Staircase;
         break;
     default:
         roc_log(LogError, "roc_config: invalid fec_scheme");
@@ -216,14 +216,14 @@ bool make_receiver_config(pipeline::ReceiverConfig& out, const roc_receiver_conf
 
     switch ((int)in.fec_code) {
     case ROC_FEC_DISABLE:
-        out.default_session.fec.codec = fec::NoCodec;
+        out.default_session.fec.scheme = packet::FEC_None;
         break;
     case ROC_FEC_DEFAULT:
     case ROC_FEC_RS8M:
-        out.default_session.fec.codec = fec::ReedSolomon8m;
+        out.default_session.fec.scheme = packet::FEC_ReedSolomon_M8;
         break;
     case ROC_FEC_LDPC_STAIRCASE:
-        out.default_session.fec.codec = fec::LDPCStaircase;
+        out.default_session.fec.scheme = packet::FEC_LDPC_Staircase;
         break;
     default:
         roc_log(LogError, "roc_config: invalid fec_scheme");
