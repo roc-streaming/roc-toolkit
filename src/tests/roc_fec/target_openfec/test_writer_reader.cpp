@@ -9,6 +9,8 @@
 #include <CppUTest/TestHarness.h>
 #include <set>
 
+#include "test_fec_schemes.h"
+
 #include "roc_core/buffer_pool.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_core/unique_ptr.h"
@@ -169,11 +171,8 @@ TEST_GROUP(writer_reader) {
     Config config;
 
     void setup() {
-        config.codec = ReedSolomon8m;
         config.n_source_packets = NumSourcePackets;
         config.n_repair_packets = NumRepairPackets;
-
-        fill_all_packets(0);
     }
 
     void fill_all_packets(size_t sn) {
@@ -234,256 +233,284 @@ TEST_GROUP(writer_reader) {
     }
 };
 
-TEST(writer_reader, read_write_lossless) {
-    OFEncoder encoder(config, FECPayloadSize, allocator);
-    OFDecoder decoder(config, FECPayloadSize, buffer_pool, allocator);
+TEST(writer_reader, no_losses) {
+    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
+        config.scheme = Test_fec_schemes[n_scheme];
 
-    CHECK(encoder.valid());
-    CHECK(decoder.valid());
+        OFEncoder encoder(config, FECPayloadSize, allocator);
+        OFDecoder decoder(config, FECPayloadSize, buffer_pool, allocator);
 
-    PacketDispatcher dispatcher;
+        CHECK(encoder.valid());
+        CHECK(decoder.valid());
 
-    Writer writer(config, FECPayloadSize, encoder, dispatcher, source_composer,
-                  repair_composer, packet_pool, buffer_pool, allocator);
+        PacketDispatcher dispatcher;
 
-    Reader reader(config, decoder, dispatcher.source_reader(), dispatcher.repair_reader(),
-                  rtp_parser, packet_pool, allocator);
+        Writer writer(config, FECPayloadSize, encoder, dispatcher, source_composer,
+                      repair_composer, packet_pool, buffer_pool, allocator);
 
-    CHECK(writer.valid());
-    CHECK(reader.valid());
+        Reader reader(config, decoder, dispatcher.source_reader(), dispatcher.repair_reader(),
+                      rtp_parser, packet_pool, allocator);
 
-    for (size_t i = 0; i < NumSourcePackets; ++i) {
-        writer.write(source_packets[i]);
-    }
-    dispatcher.release_all();
+        CHECK(writer.valid());
+        CHECK(reader.valid());
 
-    CHECK(dispatcher.source_size() == NumSourcePackets);
-    CHECK(dispatcher.repair_size() == NumRepairPackets);
-
-    for (size_t i = 0; i < NumSourcePackets; ++i) {
-        packet::PacketPtr p = reader.read();
-        CHECK(p);
-        check_audio_packet(p, i);
-    }
-}
-
-TEST(writer_reader, 1_loss) {
-    OFEncoder encoder(config, FECPayloadSize, allocator);
-    OFDecoder decoder(config, FECPayloadSize, buffer_pool, allocator);
-
-    CHECK(encoder.valid());
-    CHECK(decoder.valid());
-
-    PacketDispatcher dispatcher;
-
-    Writer writer(config, FECPayloadSize, encoder, dispatcher, source_composer,
-                  repair_composer, packet_pool, buffer_pool, allocator);
-
-    Reader reader(config, decoder, dispatcher.source_reader(), dispatcher.repair_reader(),
-                  rtp_parser, packet_pool, allocator);
-
-    CHECK(writer.valid());
-    CHECK(reader.valid());
-
-    dispatcher.lose(11);
-
-    for (size_t i = 0; i < NumSourcePackets; ++i) {
-        writer.write(source_packets[i]);
-    }
-    dispatcher.release_all();
-
-    LONGS_EQUAL(NumSourcePackets - 1, dispatcher.source_size());
-    LONGS_EQUAL(NumRepairPackets, dispatcher.repair_size());
-
-    for (size_t i = 0; i < NumSourcePackets; ++i) {
-        packet::PacketPtr p = reader.read();
-        CHECK(p);
-        check_audio_packet(p, i);
-    }
-}
-
-TEST(writer_reader, lost_first_packet_in_first_block) {
-    OFEncoder encoder(config, FECPayloadSize, allocator);
-    OFDecoder decoder(config, FECPayloadSize, buffer_pool, allocator);
-
-    CHECK(encoder.valid());
-    CHECK(decoder.valid());
-
-    PacketDispatcher dispatcher;
-
-    Writer writer(config, FECPayloadSize, encoder, dispatcher, source_composer,
-                  repair_composer, packet_pool, buffer_pool, allocator);
-
-    Reader reader(config, decoder, dispatcher.source_reader(), dispatcher.repair_reader(),
-                  rtp_parser, packet_pool, allocator);
-
-    CHECK(writer.valid());
-    CHECK(reader.valid());
-
-    // Sending first block except first packet.
-    fill_all_packets(0);
-    dispatcher.lose(0);
-    for (size_t i = 0; i < NumSourcePackets; ++i) {
-        writer.write(source_packets[i]);
-    }
-
-    // Sending second block lossless.
-    dispatcher.clear_losses();
-    fill_all_packets(NumSourcePackets);
-    for (size_t i = 0; i < NumSourcePackets; ++i) {
-        writer.write(source_packets[i]);
-    }
-    dispatcher.release_all();
-
-    // Receive every sent packet and the repaired one.
-    for (size_t i = 1; i < NumSourcePackets * 2; ++i) {
-        packet::PacketPtr p = reader.read();
-        if (i < NumSourcePackets) {
-            CHECK(!reader.started());
-        } else {
-            CHECK(reader.started());
-        }
-        check_audio_packet(p, i);
-    }
-    CHECK(dispatcher.source_size() == 0);
-}
-
-TEST(writer_reader, multiblocks_1_loss) {
-    enum { NumBlocks = 40 };
-
-    OFEncoder encoder(config, FECPayloadSize, allocator);
-    OFDecoder decoder(config, FECPayloadSize, buffer_pool, allocator);
-
-    CHECK(encoder.valid());
-    CHECK(decoder.valid());
-
-    PacketDispatcher dispatcher;
-
-    Writer writer(config, FECPayloadSize, encoder, dispatcher, source_composer,
-                  repair_composer, packet_pool, buffer_pool, allocator);
-
-    Reader reader(config, decoder, dispatcher.source_reader(), dispatcher.repair_reader(),
-                  rtp_parser, packet_pool, allocator);
-
-    CHECK(writer.valid());
-    CHECK(reader.valid());
-
-    for (size_t block_num = 0; block_num < NumBlocks; ++block_num) {
-        size_t lost_sq = size_t(-1);
-        if (block_num != 5 && block_num != 21 && block_num != 22) {
-            lost_sq = (block_num + 1) % (NumSourcePackets + NumRepairPackets);
-            dispatcher.lose(lost_sq);
-        }
-
-        fill_all_packets(NumSourcePackets * block_num);
+        fill_all_packets(0);
 
         for (size_t i = 0; i < NumSourcePackets; ++i) {
             writer.write(source_packets[i]);
         }
         dispatcher.release_all();
 
-        if (lost_sq == size_t(-1)) {
-            CHECK(dispatcher.source_size() == NumSourcePackets);
-            CHECK(dispatcher.repair_size() == NumRepairPackets);
-        } else if (lost_sq < NumSourcePackets) {
-            CHECK(dispatcher.source_size() == NumSourcePackets - 1);
-            CHECK(dispatcher.repair_size() == NumRepairPackets);
-        } else {
-            CHECK(dispatcher.source_size() == NumSourcePackets);
-            CHECK(dispatcher.repair_size() == NumRepairPackets - 1);
-        }
+        CHECK(dispatcher.source_size() == NumSourcePackets);
+        CHECK(dispatcher.repair_size() == NumRepairPackets);
 
         for (size_t i = 0; i < NumSourcePackets; ++i) {
             packet::PacketPtr p = reader.read();
             CHECK(p);
-            check_audio_packet(p, NumSourcePackets * block_num + i);
+            check_audio_packet(p, i);
+        }
+    }
+}
+
+TEST(writer_reader, 1_loss) {
+    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
+        config.scheme = Test_fec_schemes[n_scheme];
+
+        OFEncoder encoder(config, FECPayloadSize, allocator);
+        OFDecoder decoder(config, FECPayloadSize, buffer_pool, allocator);
+
+        CHECK(encoder.valid());
+        CHECK(decoder.valid());
+
+        PacketDispatcher dispatcher;
+
+        Writer writer(config, FECPayloadSize, encoder, dispatcher, source_composer,
+                      repair_composer, packet_pool, buffer_pool, allocator);
+
+        Reader reader(config, decoder, dispatcher.source_reader(), dispatcher.repair_reader(),
+                      rtp_parser, packet_pool, allocator);
+
+        CHECK(writer.valid());
+        CHECK(reader.valid());
+
+        fill_all_packets(0);
+
+        dispatcher.lose(11);
+
+        for (size_t i = 0; i < NumSourcePackets; ++i) {
+            writer.write(source_packets[i]);
+        }
+        dispatcher.release_all();
+
+        LONGS_EQUAL(NumSourcePackets - 1, dispatcher.source_size());
+        LONGS_EQUAL(NumRepairPackets, dispatcher.repair_size());
+
+        for (size_t i = 0; i < NumSourcePackets; ++i) {
+            packet::PacketPtr p = reader.read();
+            CHECK(p);
+            check_audio_packet(p, i);
+        }
+    }
+}
+
+TEST(writer_reader, lost_first_packet_in_first_block) {
+    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
+        config.scheme = Test_fec_schemes[n_scheme];
+
+        OFEncoder encoder(config, FECPayloadSize, allocator);
+        OFDecoder decoder(config, FECPayloadSize, buffer_pool, allocator);
+
+        CHECK(encoder.valid());
+        CHECK(decoder.valid());
+
+        PacketDispatcher dispatcher;
+
+        Writer writer(config, FECPayloadSize, encoder, dispatcher, source_composer,
+                      repair_composer, packet_pool, buffer_pool, allocator);
+
+        Reader reader(config, decoder, dispatcher.source_reader(), dispatcher.repair_reader(),
+                      rtp_parser, packet_pool, allocator);
+
+        CHECK(writer.valid());
+        CHECK(reader.valid());
+
+        // Sending first block except first packet.
+        fill_all_packets(0);
+        dispatcher.lose(0);
+        for (size_t i = 0; i < NumSourcePackets; ++i) {
+            writer.write(source_packets[i]);
         }
 
-        dispatcher.reset();
+        // Sending second block lossless.
+        dispatcher.clear_losses();
+        fill_all_packets(NumSourcePackets);
+        for (size_t i = 0; i < NumSourcePackets; ++i) {
+            writer.write(source_packets[i]);
+        }
+        dispatcher.release_all();
+
+        // Receive every sent packet and the repaired one.
+        for (size_t i = 1; i < NumSourcePackets * 2; ++i) {
+            packet::PacketPtr p = reader.read();
+            if (i < NumSourcePackets) {
+                CHECK(!reader.started());
+            } else {
+                CHECK(reader.started());
+            }
+            check_audio_packet(p, i);
+        }
+        CHECK(dispatcher.source_size() == 0);
+    }
+}
+
+TEST(writer_reader, multiple_blocks_1_loss) {
+    enum { NumBlocks = 40 };
+
+    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
+        config.scheme = Test_fec_schemes[n_scheme];
+
+        OFEncoder encoder(config, FECPayloadSize, allocator);
+        OFDecoder decoder(config, FECPayloadSize, buffer_pool, allocator);
+
+        CHECK(encoder.valid());
+        CHECK(decoder.valid());
+
+        PacketDispatcher dispatcher;
+
+        Writer writer(config, FECPayloadSize, encoder, dispatcher, source_composer,
+                      repair_composer, packet_pool, buffer_pool, allocator);
+
+        Reader reader(config, decoder, dispatcher.source_reader(), dispatcher.repair_reader(),
+                      rtp_parser, packet_pool, allocator);
+
+        CHECK(writer.valid());
+        CHECK(reader.valid());
+
+        for (size_t block_num = 0; block_num < NumBlocks; ++block_num) {
+            size_t lost_sq = size_t(-1);
+            if (block_num != 5 && block_num != 21 && block_num != 22) {
+                lost_sq = (block_num + 1) % (NumSourcePackets + NumRepairPackets);
+                dispatcher.lose(lost_sq);
+            }
+
+            fill_all_packets(NumSourcePackets * block_num);
+
+            for (size_t i = 0; i < NumSourcePackets; ++i) {
+                writer.write(source_packets[i]);
+            }
+            dispatcher.release_all();
+
+            if (lost_sq == size_t(-1)) {
+                CHECK(dispatcher.source_size() == NumSourcePackets);
+                CHECK(dispatcher.repair_size() == NumRepairPackets);
+            } else if (lost_sq < NumSourcePackets) {
+                CHECK(dispatcher.source_size() == NumSourcePackets - 1);
+                CHECK(dispatcher.repair_size() == NumRepairPackets);
+            } else {
+                CHECK(dispatcher.source_size() == NumSourcePackets);
+                CHECK(dispatcher.repair_size() == NumRepairPackets - 1);
+            }
+
+            for (size_t i = 0; i < NumSourcePackets; ++i) {
+                packet::PacketPtr p = reader.read();
+                CHECK(p);
+                check_audio_packet(p, NumSourcePackets * block_num + i);
+            }
+
+            dispatcher.reset();
+        }
     }
 }
 
 TEST(writer_reader, interleaver) {
     enum { NumPackets = NumSourcePackets * 30 };
 
-    OFEncoder encoder(config, FECPayloadSize, allocator);
-    OFDecoder decoder(config, FECPayloadSize, buffer_pool, allocator);
+    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
+        config.scheme = Test_fec_schemes[n_scheme];
 
-    CHECK(encoder.valid());
-    CHECK(decoder.valid());
+        OFEncoder encoder(config, FECPayloadSize, allocator);
+        OFDecoder decoder(config, FECPayloadSize, buffer_pool, allocator);
 
-    PacketDispatcher dispatcher;
+        CHECK(encoder.valid());
+        CHECK(decoder.valid());
 
-    packet::Interleaver intrlvr(dispatcher, allocator, 10);
+        PacketDispatcher dispatcher;
 
-    CHECK(intrlvr.valid());
+        packet::Interleaver intrlvr(dispatcher, allocator, 10);
 
-    Writer writer(config, FECPayloadSize, encoder, intrlvr, source_composer,
-                  repair_composer, packet_pool, buffer_pool, allocator);
+        CHECK(intrlvr.valid());
 
-    Reader reader(config, decoder, dispatcher.source_reader(), dispatcher.repair_reader(),
-                  rtp_parser, packet_pool, allocator);
+        Writer writer(config, FECPayloadSize, encoder, intrlvr, source_composer,
+                      repair_composer, packet_pool, buffer_pool, allocator);
 
-    CHECK(writer.valid());
-    CHECK(reader.valid());
+        Reader reader(config, decoder, dispatcher.source_reader(), dispatcher.repair_reader(),
+                      rtp_parser, packet_pool, allocator);
 
-    packet::PacketPtr many_packets[NumPackets];
+        CHECK(writer.valid());
+        CHECK(reader.valid());
 
-    for (size_t i = 0; i < NumPackets; ++i) {
-        many_packets[i] = fill_one_packet(i);
-        writer.write(many_packets[i]);
-    }
-    dispatcher.release_all();
+        packet::PacketPtr many_packets[NumPackets];
 
-    intrlvr.flush();
+        for (size_t i = 0; i < NumPackets; ++i) {
+            many_packets[i] = fill_one_packet(i);
+            writer.write(many_packets[i]);
+        }
+        dispatcher.release_all();
 
-    for (size_t i = 0; i < NumPackets; ++i) {
-        packet::PacketPtr p = reader.read();
-        CHECK(p);
-        check_audio_packet(p, i);
+        intrlvr.flush();
+
+        for (size_t i = 0; i < NumPackets; ++i) {
+            packet::PacketPtr p = reader.read();
+            CHECK(p);
+            check_audio_packet(p, i);
+        }
     }
 }
 
 TEST(writer_reader, decoding_when_multiple_blocks_in_queue) {
     enum { NumBlocks = 3 };
 
-    OFEncoder encoder(config, FECPayloadSize, allocator);
-    OFDecoder decoder(config, FECPayloadSize, buffer_pool, allocator);
+    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
+        config.scheme = Test_fec_schemes[n_scheme];
 
-    CHECK(encoder.valid());
-    CHECK(decoder.valid());
+        OFEncoder encoder(config, FECPayloadSize, allocator);
+        OFDecoder decoder(config, FECPayloadSize, buffer_pool, allocator);
 
-    PacketDispatcher dispatcher;
+        CHECK(encoder.valid());
+        CHECK(decoder.valid());
 
-    Writer writer(config, FECPayloadSize, encoder, dispatcher, source_composer,
-                  repair_composer, packet_pool, buffer_pool, allocator);
+        PacketDispatcher dispatcher;
 
-    Reader reader(config, decoder, dispatcher.source_reader(), dispatcher.repair_reader(),
-                  rtp_parser, packet_pool, allocator);
+        Writer writer(config, FECPayloadSize, encoder, dispatcher, source_composer,
+                      repair_composer, packet_pool, buffer_pool, allocator);
 
-    CHECK(writer.valid());
-    CHECK(reader.valid());
+        Reader reader(config, decoder, dispatcher.source_reader(), dispatcher.repair_reader(),
+                      rtp_parser, packet_pool, allocator);
 
-    for (size_t block_num = 0; block_num < NumBlocks; ++block_num) {
-        fill_all_packets(NumSourcePackets * block_num);
+        CHECK(writer.valid());
+        CHECK(reader.valid());
 
-        for (size_t i = 0; i < NumSourcePackets; ++i) {
-            writer.write(source_packets[i]);
+        for (size_t block_num = 0; block_num < NumBlocks; ++block_num) {
+            fill_all_packets(NumSourcePackets * block_num);
+
+            for (size_t i = 0; i < NumSourcePackets; ++i) {
+                writer.write(source_packets[i]);
+            }
         }
-    }
-    dispatcher.release_all();
+        dispatcher.release_all();
 
-    CHECK(dispatcher.source_size() == NumSourcePackets * NumBlocks);
-    CHECK(dispatcher.repair_size() == NumRepairPackets * NumBlocks);
+        CHECK(dispatcher.source_size() == NumSourcePackets * NumBlocks);
+        CHECK(dispatcher.repair_size() == NumRepairPackets * NumBlocks);
 
-    for (size_t block_num = 0; block_num < NumBlocks; ++block_num) {
-        for (size_t i = 0; i < NumSourcePackets; ++i) {
-            packet::PacketPtr p = reader.read();
-            CHECK(p);
-            check_audio_packet(p, NumSourcePackets * block_num + i);
+        for (size_t block_num = 0; block_num < NumBlocks; ++block_num) {
+            for (size_t i = 0; i < NumSourcePackets; ++i) {
+                packet::PacketPtr p = reader.read();
+                CHECK(p);
+                check_audio_packet(p, NumSourcePackets * block_num + i);
+            }
+
+            dispatcher.reset();
         }
-
-        dispatcher.reset();
     }
 }
 
@@ -492,68 +519,441 @@ IGNORE_TEST(writer_reader, decoding_late_packet) {
     // 2. Read first part of block till lost packet.
     // 3. Receive one missing packet.
     // 4. Read and check latter block part.
+    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
+        config.scheme = Test_fec_schemes[n_scheme];
 
-    OFEncoder encoder(config, FECPayloadSize, allocator);
-    OFDecoder decoder(config, FECPayloadSize, buffer_pool, allocator);
+        OFEncoder encoder(config, FECPayloadSize, allocator);
+        OFDecoder decoder(config, FECPayloadSize, buffer_pool, allocator);
 
-    CHECK(encoder.valid());
-    CHECK(decoder.valid());
+        CHECK(encoder.valid());
+        CHECK(decoder.valid());
 
-    PacketDispatcher dispatcher;
+        PacketDispatcher dispatcher;
 
-    Writer writer(config, FECPayloadSize, encoder, dispatcher, source_composer,
-                  repair_composer, packet_pool, buffer_pool, allocator);
+        Writer writer(config, FECPayloadSize, encoder, dispatcher, source_composer,
+                      repair_composer, packet_pool, buffer_pool, allocator);
 
-    Reader reader(config, decoder, dispatcher.source_reader(), dispatcher.repair_reader(),
-                  rtp_parser, packet_pool, allocator);
+        Reader reader(config, decoder, dispatcher.source_reader(), dispatcher.repair_reader(),
+                      rtp_parser, packet_pool, allocator);
 
-    CHECK(writer.valid());
-    CHECK(reader.valid());
+        CHECK(writer.valid());
+        CHECK(reader.valid());
 
-    fill_all_packets(0);
-    for (size_t i = 0; i < NumSourcePackets; ++i) {
-        // Hold from #7 to #10
-        if (i >= 7 && i <= 10) {
-            continue;
+        fill_all_packets(0);
+        for (size_t i = 0; i < NumSourcePackets; ++i) {
+            // Hold from #7 to #10
+            if (i >= 7 && i <= 10) {
+                continue;
+            }
+            writer.write(source_packets[i]);
         }
-        writer.write(source_packets[i]);
-    }
-    dispatcher.release_all();
-    CHECK(dispatcher.source_size() == NumSourcePackets - (10 - 7 + 1));
+        dispatcher.release_all();
+        CHECK(dispatcher.source_size() == NumSourcePackets - (10 - 7 + 1));
 
-    // Check 0-7 packets.
-    for (size_t i = 0; i < 7; ++i) {
-        packet::PacketPtr p = reader.read();
-    }
-    // Receive packet #9 and #10
-    writer.write(source_packets[9]);
-    writer.write(source_packets[10]);
-    dispatcher.pop_source();
-    dispatcher.pop_source();
-
-    for (size_t i = 9; i < NumSourcePackets; ++i) {
-        packet::PacketPtr p = reader.read();
-        CHECK(p);
-        check_audio_packet(p, i);
-        // Receive late packet that Reader have to throw away.
-        if (i == 10) {
-            writer.write(source_packets[7]);
-            writer.write(source_packets[8]);
-            dispatcher.pop_source();
-            dispatcher.pop_source();
+        // Check 0-7 packets.
+        for (size_t i = 0; i < 7; ++i) {
+            packet::PacketPtr p = reader.read();
         }
+        // Receive packet #9 and #10
+        writer.write(source_packets[9]);
+        writer.write(source_packets[10]);
+        dispatcher.pop_source();
+        dispatcher.pop_source();
+
+        for (size_t i = 9; i < NumSourcePackets; ++i) {
+            packet::PacketPtr p = reader.read();
+            CHECK(p);
+            check_audio_packet(p, i);
+            // Receive late packet that Reader have to throw away.
+            if (i == 10) {
+                writer.write(source_packets[7]);
+                writer.write(source_packets[8]);
+                dispatcher.pop_source();
+                dispatcher.pop_source();
+            }
+        }
+        LONGS_EQUAL(0, dispatcher.source_size());
     }
-    LONGS_EQUAL(0, dispatcher.source_size());
 }
 
 TEST(writer_reader, encode_packet_fields) {
     enum { NumBlocks = 3 };
 
-    packet::source_t data_source = 555;
+    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
+        config.scheme = Test_fec_schemes[n_scheme];
 
-    for (size_t n = 0; n < 5; n++) {
+        packet::source_t data_source = 555;
+
+        for (size_t n = 0; n < 5; n++) {
+            OFEncoder encoder(config, FECPayloadSize, allocator);
+
+            CHECK(encoder.valid());
+
+            PacketDispatcher dispatcher;
+
+            Writer writer(config, FECPayloadSize, encoder, dispatcher, source_composer,
+                          repair_composer, packet_pool, buffer_pool, allocator);
+
+            CHECK(writer.valid());
+
+            packet::blknum_t fec_sbn = 0;
+
+            for (size_t block_num = 0; block_num < NumBlocks; ++block_num) {
+                size_t encoding_symbol_id = 0;
+
+                fill_all_packets(NumSourcePackets * block_num);
+
+                for (size_t i = 0; i < NumSourcePackets; ++i) {
+                    source_packets[i]->rtp()->source = data_source;
+                }
+
+                for (size_t i = 0; i < NumSourcePackets; ++i) {
+                    writer.write(source_packets[i]);
+                }
+                dispatcher.release_all();
+
+                if (block_num == 0) {
+                    const packet::FEC* fec = dispatcher.repair_head()->fec();
+                    CHECK(fec);
+
+                    fec_sbn = fec->source_block_number;
+                }
+
+                for (size_t i = 0; i < NumSourcePackets; ++i) {
+                    const packet::PacketPtr p = dispatcher.source_reader().read();
+                    CHECK(p);
+
+                    const packet::RTP* rtp = p->rtp();
+                    CHECK(rtp);
+
+                    LONGS_EQUAL(data_source, rtp->source);
+
+                    const packet::FEC* fec = p->fec();
+                    CHECK(fec);
+
+                    LONGS_EQUAL(fec_sbn, fec->source_block_number);
+                    CHECK(fec->source_block_length == NumSourcePackets);
+                    UNSIGNED_LONGS_EQUAL(encoding_symbol_id, fec->encoding_symbol_id);
+
+                    encoding_symbol_id++;
+                }
+
+                for (size_t i = 0; i < NumRepairPackets; ++i) {
+                    const packet::PacketPtr p = dispatcher.repair_reader().read();
+                    CHECK(p);
+
+                    const packet::RTP* rtp = p->rtp();
+                    CHECK(!rtp);
+
+                    const packet::FEC* fec = p->fec();
+                    CHECK(fec);
+
+                    LONGS_EQUAL(fec_sbn, fec->source_block_number);
+                    CHECK(fec->source_block_length == NumSourcePackets);
+                    UNSIGNED_LONGS_EQUAL(encoding_symbol_id, fec->encoding_symbol_id);
+
+                    encoding_symbol_id++;
+                }
+
+                fec_sbn++;
+            }
+
+            dispatcher.reset();
+        }
+    }
+}
+
+TEST(writer_reader, decode_bad_source_id) {
+    // Spoil source id in packet and lose it.
+    // Check that decoder would shutdown.
+    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
+        config.scheme = Test_fec_schemes[n_scheme];
+
         OFEncoder encoder(config, FECPayloadSize, allocator);
+        OFDecoder decoder(config, FECPayloadSize, buffer_pool, allocator);
 
+        CHECK(encoder.valid());
+        CHECK(decoder.valid());
+
+        PacketDispatcher dispatcher;
+
+        Writer writer(config, FECPayloadSize, encoder, dispatcher, source_composer,
+                      repair_composer, packet_pool, buffer_pool, allocator);
+
+        Reader reader(config, decoder, dispatcher.source_reader(), dispatcher.repair_reader(),
+                      rtp_parser, packet_pool, allocator);
+
+        CHECK(writer.valid());
+        CHECK(reader.valid());
+
+        fill_all_packets(0);
+
+        dispatcher.lose(5); // should shutdown reader (bad source id)
+
+        source_packets[5]->rtp()->source = source_packets[5]->rtp()->source + 1;
+
+        for (size_t i = 0; i < NumSourcePackets; ++i) {
+            writer.write(source_packets[i]);
+        }
+        dispatcher.release_all();
+
+        for (size_t i = 0; i < 5; ++i) {
+            check_audio_packet(reader.read(), i);
+            CHECK(reader.alive());
+        }
+
+        for (size_t i = 5; i < NumSourcePackets; ++i) {
+            CHECK(!reader.read());
+            CHECK(!reader.alive());
+        }
+
+        CHECK(dispatcher.source_size() == 0);
+    }
+}
+
+TEST(writer_reader, multitime_decode) {
+    // 1. Lose two distant packets and hold every fec packets in first block,
+    //    receive second full block.
+    // 2. Detect first loss.
+    // 3. Transmit fec packets.
+    // 4. Check remaining data packets including lost one.
+    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
+        config.scheme = Test_fec_schemes[n_scheme];
+
+        OFEncoder encoder(config, FECPayloadSize, allocator);
+        OFDecoder decoder(config, FECPayloadSize, buffer_pool, allocator);
+
+        CHECK(encoder.valid());
+        CHECK(decoder.valid());
+
+        PacketDispatcher dispatcher;
+
+        Writer writer(config, FECPayloadSize, encoder, dispatcher, source_composer,
+                      repair_composer, packet_pool, buffer_pool, allocator);
+
+        Reader reader(config, decoder, dispatcher.source_reader(), dispatcher.repair_reader(),
+                      rtp_parser, packet_pool, allocator);
+
+        CHECK(writer.valid());
+        CHECK(reader.valid());
+
+        fill_all_packets(0);
+
+        dispatcher.lose(5);
+        dispatcher.lose(15);
+
+        for (size_t i = 0; i < NumSourcePackets; ++i) {
+            writer.write(source_packets[i]);
+            dispatcher.pop_source();
+        }
+
+        fill_all_packets(NumSourcePackets);
+        for (size_t i = 0; i < NumSourcePackets; ++i) {
+            writer.write(source_packets[i]);
+            dispatcher.pop_source();
+        }
+
+        for (size_t i = 0; i < NumSourcePackets; ++i) {
+            if (i != 5 && i != 15) {
+                check_audio_packet(reader.read(), i);
+                // The moment of truth.
+            } else if (i == 15) {
+                // Get FEC packets. Reader must try to decode once more.
+                dispatcher.release_all();
+                check_audio_packet(reader.read(), i);
+            }
+        }
+        for (size_t i = 0; i < NumSourcePackets; ++i) {
+            check_audio_packet(reader.read(), i + NumSourcePackets);
+        }
+
+        LONGS_EQUAL(0, dispatcher.source_size());
+    }
+}
+
+TEST(writer_reader, delayed_packets) {
+    // 1. Fill first half of block.
+    // 2. Check that we receive only this first 10 packets.
+    // 3. Send remaining packets.
+    // 4. Receive and check it.
+    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
+        config.scheme = Test_fec_schemes[n_scheme];
+
+        OFEncoder encoder(config, FECPayloadSize, allocator);
+        OFDecoder decoder(config, FECPayloadSize, buffer_pool, allocator);
+
+        CHECK(encoder.valid());
+        CHECK(decoder.valid());
+
+        PacketDispatcher dispatcher;
+
+        Writer writer(config, FECPayloadSize, encoder, dispatcher, source_composer,
+                      repair_composer, packet_pool, buffer_pool, allocator);
+
+        Reader reader(config, decoder, dispatcher.source_reader(), dispatcher.repair_reader(),
+                      rtp_parser, packet_pool, allocator);
+
+        CHECK(writer.valid());
+        CHECK(reader.valid());
+
+        fill_all_packets(0);
+
+        for (size_t i = 0; i < NumSourcePackets; ++i) {
+            writer.write(source_packets[i]);
+        }
+        for (size_t i = 0; i < 10; ++i) {
+            dispatcher.pop_source();
+        }
+
+        for (size_t i = 0; i < 10; ++i) {
+            check_audio_packet(reader.read(), i);
+        }
+        CHECK(!reader.read());
+        dispatcher.release_all();
+        for (size_t i = 10; i < NumSourcePackets; ++i) {
+            check_audio_packet(reader.read(), i);
+        }
+    }
+}
+
+TEST(writer_reader, drop_outdated_block) {
+    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
+        config.scheme = Test_fec_schemes[n_scheme];
+
+        OFEncoder encoder(config, FECPayloadSize, allocator);
+        OFDecoder decoder(config, FECPayloadSize, buffer_pool, allocator);
+
+        CHECK(encoder.valid());
+        CHECK(decoder.valid());
+
+        PacketDispatcher dispatcher;
+
+        Writer writer(config, FECPayloadSize, encoder, dispatcher, source_composer,
+                      repair_composer, packet_pool, buffer_pool, allocator);
+
+        Reader reader(config, decoder, dispatcher.source_reader(), dispatcher.repair_reader(),
+                      rtp_parser, packet_pool, allocator);
+
+        CHECK(writer.valid());
+        CHECK(reader.valid());
+
+        // Send first block.
+        fill_all_packets(NumSourcePackets);
+        for (size_t n = 0; n < NumSourcePackets; ++n) {
+            writer.write(source_packets[n]);
+        }
+
+        // Send outdated block.
+        fill_all_packets(0);
+        for (size_t n = 0; n < NumSourcePackets; ++n) {
+            writer.write(source_packets[n]);
+        }
+
+        // Send next block.
+        fill_all_packets(NumSourcePackets * 2);
+        for (size_t n = 0; n < NumSourcePackets; ++n) {
+            writer.write(source_packets[n]);
+        }
+
+        dispatcher.release_all();
+
+        // Read first block.
+        const packet::PacketPtr first_packet = reader.read();
+        CHECK(first_packet);
+
+        const packet::blknum_t sbn = first_packet->fec()->source_block_number;
+
+        for (size_t n = 1; n < NumSourcePackets; ++n) {
+            const packet::PacketPtr p = reader.read();
+            CHECK(p);
+
+            CHECK(p->fec()->source_block_number == sbn);
+        }
+
+        // Read second block.
+        for (size_t n = 0; n < NumSourcePackets; ++n) {
+            const packet::PacketPtr p = reader.read();
+            CHECK(p);
+
+            CHECK(p->fec()->source_block_number == sbn + 1);
+        }
+    }
+}
+
+TEST(writer_reader, repaired_block_numbering) {
+    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
+        config.scheme = Test_fec_schemes[n_scheme];
+
+        OFEncoder encoder(config, FECPayloadSize, allocator);
+        OFDecoder decoder(config, FECPayloadSize, buffer_pool, allocator);
+
+        CHECK(encoder.valid());
+        CHECK(decoder.valid());
+
+        PacketDispatcher dispatcher;
+
+        Writer writer(config, FECPayloadSize, encoder, dispatcher, source_composer,
+                      repair_composer, packet_pool, buffer_pool, allocator);
+
+        Reader reader(config, decoder, dispatcher.source_reader(), dispatcher.repair_reader(),
+                      rtp_parser, packet_pool, allocator);
+
+        CHECK(writer.valid());
+        CHECK(reader.valid());
+
+        const size_t lost_packet_n = 7;
+
+        // Write first block lossy.
+        fill_all_packets(0);
+        dispatcher.lose(lost_packet_n);
+
+        for (size_t n = 0; n < NumSourcePackets; ++n) {
+            writer.write(source_packets[n]);
+        }
+
+        dispatcher.clear_losses();
+
+        // Write second block lossless.
+        fill_all_packets(NumSourcePackets);
+
+        for (size_t n = 0; n < NumSourcePackets; ++n) {
+            writer.write(source_packets[n]);
+        }
+
+        dispatcher.release_all();
+
+        // Read first block.
+        const packet::PacketPtr first_packet = reader.read();
+        CHECK(first_packet);
+
+        const packet::blknum_t sbn = first_packet->fec()->source_block_number;
+
+        for (size_t n = 1; n < NumSourcePackets; ++n) {
+            const packet::PacketPtr p = reader.read();
+            CHECK(p);
+
+            if (n == lost_packet_n) {
+                check_audio_packet(p, n);
+            } else {
+                CHECK(p->fec()->source_block_number == sbn);
+            }
+        }
+
+        // Read second block.
+        for (size_t n = 0; n < NumSourcePackets; ++n) {
+            const packet::PacketPtr p = reader.read();
+            CHECK(p);
+
+            CHECK(p->fec()->source_block_number == sbn + 1);
+        }
+    }
+}
+
+TEST(writer_reader, writer_block_sizes) {
+    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
+        config.scheme = Test_fec_schemes[n_scheme];
+
+        OFEncoder encoder(config, FECPayloadSize, allocator);
         CHECK(encoder.valid());
 
         PacketDispatcher dispatcher;
@@ -563,548 +963,215 @@ TEST(writer_reader, encode_packet_fields) {
 
         CHECK(writer.valid());
 
-        packet::blknum_t fec_sbn = 0;
+        const size_t block_sizes[] = { 15, 25, 35, 43, 33, 23, 13 };
 
-        for (size_t block_num = 0; block_num < NumBlocks; ++block_num) {
-            size_t encoding_symbol_id = 0;
+        packet::seqnum_t pack_n = 0;
 
-            fill_all_packets(NumSourcePackets * block_num);
+        for (size_t n = 0; n < ROC_ARRAY_SIZE(block_sizes); ++n) {
+            writer.resize(block_sizes[n]);
 
-            for (size_t i = 0; i < NumSourcePackets; ++i) {
-                source_packets[i]->rtp()->source = data_source;
+            core::Array<packet::PacketPtr> packets(allocator);
+            packets.resize(block_sizes[n]);
+
+            for (size_t i = 0; i < block_sizes[n]; ++i) {
+                packets[i] = fill_one_packet(pack_n);
+                pack_n++;
+            }
+            for (size_t i = 0; i < block_sizes[n]; ++i) {
+                writer.write(packets[i]);
             }
 
-            for (size_t i = 0; i < NumSourcePackets; ++i) {
-                writer.write(source_packets[i]);
-            }
+            CHECK(dispatcher.source_size() == block_sizes[n]);
+            CHECK(dispatcher.repair_size() == NumRepairPackets);
+
             dispatcher.release_all();
-
-            if (block_num == 0) {
-                const packet::FEC* fec = dispatcher.repair_head()->fec();
-                CHECK(fec);
-
-                fec_sbn = fec->source_block_number;
-            }
-
-            for (size_t i = 0; i < NumSourcePackets; ++i) {
-                const packet::PacketPtr p = dispatcher.source_reader().read();
-                CHECK(p);
-
-                const packet::RTP* rtp = p->rtp();
-                CHECK(rtp);
-
-                LONGS_EQUAL(data_source, rtp->source);
-
-                const packet::FEC* fec = p->fec();
-                CHECK(fec);
-
-                LONGS_EQUAL(fec_sbn, fec->source_block_number);
-                CHECK(fec->source_block_length == NumSourcePackets);
-                UNSIGNED_LONGS_EQUAL(encoding_symbol_id, fec->encoding_symbol_id);
-
-                encoding_symbol_id++;
-            }
-
-            for (size_t i = 0; i < NumRepairPackets; ++i) {
-                const packet::PacketPtr p = dispatcher.repair_reader().read();
-                CHECK(p);
-
-                const packet::RTP* rtp = p->rtp();
-                CHECK(!rtp);
-
-                const packet::FEC* fec = p->fec();
-                CHECK(fec);
-
-                LONGS_EQUAL(fec_sbn, fec->source_block_number);
-                CHECK(fec->source_block_length == NumSourcePackets);
-                UNSIGNED_LONGS_EQUAL(encoding_symbol_id, fec->encoding_symbol_id);
-
-                encoding_symbol_id++;
-            }
-
-            fec_sbn++;
+            dispatcher.reset();
         }
-
-        dispatcher.reset();
-    }
-}
-
-TEST(writer_reader, decode_bad_source_id) {
-    // Spoil source id in packet and lose it.
-    // Check that decoder would shutdown.
-
-    OFEncoder encoder(config, FECPayloadSize, allocator);
-    OFDecoder decoder(config, FECPayloadSize, buffer_pool, allocator);
-
-    CHECK(encoder.valid());
-    CHECK(decoder.valid());
-
-    PacketDispatcher dispatcher;
-
-    Writer writer(config, FECPayloadSize, encoder, dispatcher, source_composer,
-                  repair_composer, packet_pool, buffer_pool, allocator);
-
-    Reader reader(config, decoder, dispatcher.source_reader(), dispatcher.repair_reader(),
-                  rtp_parser, packet_pool, allocator);
-
-    CHECK(writer.valid());
-    CHECK(reader.valid());
-
-    fill_all_packets(0);
-
-    dispatcher.lose(5); // should shutdown reader (bad source id)
-
-    source_packets[5]->rtp()->source = source_packets[5]->rtp()->source + 1;
-
-    for (size_t i = 0; i < NumSourcePackets; ++i) {
-        writer.write(source_packets[i]);
-    }
-    dispatcher.release_all();
-
-    for (size_t i = 0; i < 5; ++i) {
-        check_audio_packet(reader.read(), i);
-        CHECK(reader.alive());
-    }
-
-    for (size_t i = 5; i < NumSourcePackets; ++i) {
-        CHECK(!reader.read());
-        CHECK(!reader.alive());
-    }
-
-    CHECK(dispatcher.source_size() == 0);
-}
-
-TEST(writer_reader, multitime_decode) {
-    // 1. Lose two distant packets and hold every fec packets in first block,
-    //    receive second full block.
-    // 2. Detect first loss.
-    // 3. Transmit fec packets.
-    // 4. Check remaining data packets including lost one.
-
-    OFEncoder encoder(config, FECPayloadSize, allocator);
-    OFDecoder decoder(config, FECPayloadSize, buffer_pool, allocator);
-
-    CHECK(encoder.valid());
-    CHECK(decoder.valid());
-
-    PacketDispatcher dispatcher;
-
-    Writer writer(config, FECPayloadSize, encoder, dispatcher, source_composer,
-                  repair_composer, packet_pool, buffer_pool, allocator);
-
-    Reader reader(config, decoder, dispatcher.source_reader(), dispatcher.repair_reader(),
-                  rtp_parser, packet_pool, allocator);
-
-    CHECK(writer.valid());
-    CHECK(reader.valid());
-
-    fill_all_packets(0);
-
-    dispatcher.lose(5);
-    dispatcher.lose(15);
-
-    for (size_t i = 0; i < NumSourcePackets; ++i) {
-        writer.write(source_packets[i]);
-        dispatcher.pop_source();
-    }
-
-    fill_all_packets(NumSourcePackets);
-    for (size_t i = 0; i < NumSourcePackets; ++i) {
-        writer.write(source_packets[i]);
-        dispatcher.pop_source();
-    }
-
-    for (size_t i = 0; i < NumSourcePackets; ++i) {
-        if (i != 5 && i != 15) {
-            check_audio_packet(reader.read(), i);
-            // The moment of truth.
-        } else if (i == 15) {
-            // Get FEC packets. Reader must try to decode once more.
-            dispatcher.release_all();
-            check_audio_packet(reader.read(), i);
-        }
-    }
-    for (size_t i = 0; i < NumSourcePackets; ++i) {
-        check_audio_packet(reader.read(), i + NumSourcePackets);
-    }
-
-    LONGS_EQUAL(0, dispatcher.source_size());
-}
-
-TEST(writer_reader, delayed_packets) {
-    // 1. Fill first half of block.
-    // 2. Check that we receive only this first 10 packets.
-    // 3. Send remaining packets.
-    // 4. Receive and check it.
-
-    OFEncoder encoder(config, FECPayloadSize, allocator);
-    OFDecoder decoder(config, FECPayloadSize, buffer_pool, allocator);
-
-    CHECK(encoder.valid());
-    CHECK(decoder.valid());
-
-    PacketDispatcher dispatcher;
-
-    Writer writer(config, FECPayloadSize, encoder, dispatcher, source_composer,
-                  repair_composer, packet_pool, buffer_pool, allocator);
-
-    Reader reader(config, decoder, dispatcher.source_reader(), dispatcher.repair_reader(),
-                  rtp_parser, packet_pool, allocator);
-
-    CHECK(writer.valid());
-    CHECK(reader.valid());
-
-    fill_all_packets(0);
-
-    for (size_t i = 0; i < NumSourcePackets; ++i) {
-        writer.write(source_packets[i]);
-    }
-    for (size_t i = 0; i < 10; ++i) {
-        dispatcher.pop_source();
-    }
-
-    for (size_t i = 0; i < 10; ++i) {
-        check_audio_packet(reader.read(), i);
-    }
-    CHECK(!reader.read());
-    dispatcher.release_all();
-    for (size_t i = 10; i < NumSourcePackets; ++i) {
-        check_audio_packet(reader.read(), i);
-    }
-}
-
-TEST(writer_reader, drop_outdated_block) {
-    OFEncoder encoder(config, FECPayloadSize, allocator);
-    OFDecoder decoder(config, FECPayloadSize, buffer_pool, allocator);
-
-    CHECK(encoder.valid());
-    CHECK(decoder.valid());
-
-    PacketDispatcher dispatcher;
-
-    Writer writer(config, FECPayloadSize, encoder, dispatcher, source_composer,
-                  repair_composer, packet_pool, buffer_pool, allocator);
-
-    Reader reader(config, decoder, dispatcher.source_reader(), dispatcher.repair_reader(),
-                  rtp_parser, packet_pool, allocator);
-
-    CHECK(writer.valid());
-    CHECK(reader.valid());
-
-    // Send first block.
-    fill_all_packets(NumSourcePackets);
-    for (size_t n = 0; n < NumSourcePackets; ++n) {
-        writer.write(source_packets[n]);
-    }
-
-    // Send outdated block.
-    fill_all_packets(0);
-    for (size_t n = 0; n < NumSourcePackets; ++n) {
-        writer.write(source_packets[n]);
-    }
-
-    // Send next block.
-    fill_all_packets(NumSourcePackets * 2);
-    for (size_t n = 0; n < NumSourcePackets; ++n) {
-        writer.write(source_packets[n]);
-    }
-
-    dispatcher.release_all();
-
-    // Read first block.
-    const packet::PacketPtr first_packet = reader.read();
-    CHECK(first_packet);
-
-    const packet::blknum_t sbn = first_packet->fec()->source_block_number;
-
-    for (size_t n = 1; n < NumSourcePackets; ++n) {
-        const packet::PacketPtr p = reader.read();
-        CHECK(p);
-
-        CHECK(p->fec()->source_block_number == sbn);
-    }
-
-    // Read second block.
-    for (size_t n = 0; n < NumSourcePackets; ++n) {
-        const packet::PacketPtr p = reader.read();
-        CHECK(p);
-
-        CHECK(p->fec()->source_block_number == sbn + 1);
-    }
-}
-
-TEST(writer_reader, repaired_block_numbering) {
-    OFEncoder encoder(config, FECPayloadSize, allocator);
-    OFDecoder decoder(config, FECPayloadSize, buffer_pool, allocator);
-
-    CHECK(encoder.valid());
-    CHECK(decoder.valid());
-
-    PacketDispatcher dispatcher;
-
-    Writer writer(config, FECPayloadSize, encoder, dispatcher, source_composer,
-                  repair_composer, packet_pool, buffer_pool, allocator);
-
-    Reader reader(config, decoder, dispatcher.source_reader(), dispatcher.repair_reader(),
-                  rtp_parser, packet_pool, allocator);
-
-    CHECK(writer.valid());
-    CHECK(reader.valid());
-
-    const size_t lost_packet_n = 7;
-
-    // Write first block lossy.
-    fill_all_packets(0);
-    dispatcher.lose(lost_packet_n);
-
-    for (size_t n = 0; n < NumSourcePackets; ++n) {
-        writer.write(source_packets[n]);
-    }
-
-    dispatcher.clear_losses();
-
-    // Write second block lossless.
-    fill_all_packets(NumSourcePackets);
-
-    for (size_t n = 0; n < NumSourcePackets; ++n) {
-        writer.write(source_packets[n]);
-    }
-
-    dispatcher.release_all();
-
-    // Read first block.
-    const packet::PacketPtr first_packet = reader.read();
-    CHECK(first_packet);
-
-    const packet::blknum_t sbn = first_packet->fec()->source_block_number;
-
-    for (size_t n = 1; n < NumSourcePackets; ++n) {
-        const packet::PacketPtr p = reader.read();
-        CHECK(p);
-
-        if (n == lost_packet_n) {
-            check_audio_packet(p, n);
-        } else {
-            CHECK(p->fec()->source_block_number == sbn);
-        }
-    }
-
-    // Read second block.
-    for (size_t n = 0; n < NumSourcePackets; ++n) {
-        const packet::PacketPtr p = reader.read();
-        CHECK(p);
-
-        CHECK(p->fec()->source_block_number == sbn + 1);
-    }
-}
-
-TEST(writer_reader, writer_block_sizes) {
-    OFEncoder encoder(config, FECPayloadSize, allocator);
-    CHECK(encoder.valid());
-
-    PacketDispatcher dispatcher;
-
-    Writer writer(config, FECPayloadSize, encoder, dispatcher, source_composer,
-                  repair_composer, packet_pool, buffer_pool, allocator);
-
-    CHECK(writer.valid());
-
-    const size_t block_sizes[] = { 15, 25, 35, 43, 33, 23, 13 };
-
-    packet::seqnum_t pack_n = 0;
-
-    for (size_t n = 0; n < ROC_ARRAY_SIZE(block_sizes); ++n) {
-        writer.resize(block_sizes[n]);
-
-        core::Array<packet::PacketPtr> packets(allocator);
-        packets.resize(block_sizes[n]);
-
-        for (size_t i = 0; i < block_sizes[n]; ++i) {
-            packets[i] = fill_one_packet(pack_n);
-            pack_n++;
-        }
-        for (size_t i = 0; i < block_sizes[n]; ++i) {
-            writer.write(packets[i]);
-        }
-
-        CHECK(dispatcher.source_size() == block_sizes[n]);
-        CHECK(dispatcher.repair_size() == NumRepairPackets);
-
-        dispatcher.release_all();
-        dispatcher.reset();
     }
 }
 
 TEST(writer_reader, resize_block_begin) {
-    OFEncoder encoder(config, FECPayloadSize, allocator);
-    OFDecoder decoder(config, FECPayloadSize, buffer_pool, allocator);
+    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
+        config.scheme = Test_fec_schemes[n_scheme];
 
-    CHECK(decoder.valid());
-    CHECK(encoder.valid());
+        OFEncoder encoder(config, FECPayloadSize, allocator);
+        OFDecoder decoder(config, FECPayloadSize, buffer_pool, allocator);
 
-    PacketDispatcher dispatcher;
+        CHECK(decoder.valid());
+        CHECK(encoder.valid());
 
-    Writer writer(config, FECPayloadSize, encoder, dispatcher, source_composer,
-                  repair_composer, packet_pool, buffer_pool, allocator);
-    Reader reader(config, decoder, dispatcher.source_reader(), dispatcher.repair_reader(),
-                  rtp_parser, packet_pool, allocator);
+        PacketDispatcher dispatcher;
 
-    CHECK(reader.valid());
-    CHECK(writer.valid());
+        Writer writer(config, FECPayloadSize, encoder, dispatcher, source_composer,
+                      repair_composer, packet_pool, buffer_pool, allocator);
+        Reader reader(config, decoder, dispatcher.source_reader(), dispatcher.repair_reader(),
+                      rtp_parser, packet_pool, allocator);
 
-    const size_t block_sizes[] = { 15, 25, 35, 43, 33, 23, 13 };
+        CHECK(reader.valid());
+        CHECK(writer.valid());
 
-    packet::seqnum_t wr_sn = 0;
-    packet::seqnum_t rd_sn = 0;
+        const size_t block_sizes[] = { 15, 25, 35, 43, 33, 23, 13 };
 
-    for (size_t n = 0; n < ROC_ARRAY_SIZE(block_sizes); ++n) {
-        writer.resize(block_sizes[n]);
+        packet::seqnum_t wr_sn = 0;
+        packet::seqnum_t rd_sn = 0;
 
-        core::Array<packet::PacketPtr> packets(allocator);
-        packets.resize(block_sizes[n]);
+        for (size_t n = 0; n < ROC_ARRAY_SIZE(block_sizes); ++n) {
+            writer.resize(block_sizes[n]);
 
-        for (size_t i = 0; i < block_sizes[n]; ++i) {
-            packets[i] = fill_one_packet(wr_sn);
-            wr_sn++;
+            core::Array<packet::PacketPtr> packets(allocator);
+            packets.resize(block_sizes[n]);
+
+            for (size_t i = 0; i < block_sizes[n]; ++i) {
+                packets[i] = fill_one_packet(wr_sn);
+                wr_sn++;
+            }
+
+            for (size_t i = 0; i < block_sizes[n]; ++i) {
+                writer.write(packets[i]);
+            }
+
+            dispatcher.release_all();
+
+            for (size_t i = 0; i < block_sizes[n]; ++i) {
+                const packet::PacketPtr p = reader.read();
+
+                CHECK(p);
+                CHECK(p->fec());
+                CHECK(p->fec()->source_block_length == block_sizes[n]);
+
+                check_audio_packet(p, rd_sn);
+                rd_sn++;
+            }
         }
 
-        for (size_t i = 0; i < block_sizes[n]; ++i) {
-            writer.write(packets[i]);
-        }
-
-        dispatcher.release_all();
-
-        for (size_t i = 0; i < block_sizes[n]; ++i) {
-            const packet::PacketPtr p = reader.read();
-
-            CHECK(p);
-            CHECK(p->fec());
-            CHECK(p->fec()->source_block_length == block_sizes[n]);
-
-            check_audio_packet(p, rd_sn);
-            rd_sn++;
-        }
+        UNSIGNED_LONGS_EQUAL(wr_sn, rd_sn);
     }
-
-    UNSIGNED_LONGS_EQUAL(wr_sn, rd_sn);
 }
 
 TEST(writer_reader, resize_block_middle) {
-    OFEncoder encoder(config, FECPayloadSize, allocator);
-    OFDecoder decoder(config, FECPayloadSize, buffer_pool, allocator);
+    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
+        config.scheme = Test_fec_schemes[n_scheme];
 
-    CHECK(decoder.valid());
-    CHECK(encoder.valid());
+        OFEncoder encoder(config, FECPayloadSize, allocator);
+        OFDecoder decoder(config, FECPayloadSize, buffer_pool, allocator);
 
-    PacketDispatcher dispatcher;
+        CHECK(decoder.valid());
+        CHECK(encoder.valid());
 
-    Writer writer(config, FECPayloadSize, encoder, dispatcher, source_composer,
-                  repair_composer, packet_pool, buffer_pool, allocator);
-    Reader reader(config, decoder, dispatcher.source_reader(), dispatcher.repair_reader(),
-                  rtp_parser, packet_pool, allocator);
+        PacketDispatcher dispatcher;
 
-    CHECK(reader.valid());
-    CHECK(writer.valid());
+        Writer writer(config, FECPayloadSize, encoder, dispatcher, source_composer,
+                      repair_composer, packet_pool, buffer_pool, allocator);
+        Reader reader(config, decoder, dispatcher.source_reader(), dispatcher.repair_reader(),
+                      rtp_parser, packet_pool, allocator);
 
-    const size_t block_sizes[] = { 15, 25, 35, 43, 33, 23, 13 };
+        CHECK(reader.valid());
+        CHECK(writer.valid());
 
-    size_t prev_sblen = NumSourcePackets;
+        const size_t block_sizes[] = { 15, 25, 35, 43, 33, 23, 13 };
 
-    packet::seqnum_t wr_sn = 0;
-    packet::seqnum_t rd_sn = 0;
+        size_t prev_sblen = NumSourcePackets;
 
-    for (size_t n = 0; n < ROC_ARRAY_SIZE(block_sizes); ++n) {
-        core::Array<packet::PacketPtr> packets(allocator);
-        packets.resize(prev_sblen);
+        packet::seqnum_t wr_sn = 0;
+        packet::seqnum_t rd_sn = 0;
 
-        for (size_t i = 0; i < prev_sblen; ++i) {
-            packets[i] = fill_one_packet(wr_sn);
-            wr_sn++;
+        for (size_t n = 0; n < ROC_ARRAY_SIZE(block_sizes); ++n) {
+            core::Array<packet::PacketPtr> packets(allocator);
+            packets.resize(prev_sblen);
+
+            for (size_t i = 0; i < prev_sblen; ++i) {
+                packets[i] = fill_one_packet(wr_sn);
+                wr_sn++;
+            }
+
+            // Write first half of the packets.
+            for (size_t i = 0; i < prev_sblen / 2; ++i) {
+                writer.write(packets[i]);
+            }
+
+            // Update source block size.
+            writer.resize(block_sizes[n]);
+
+            // Write the remaining packets.
+            for (size_t i = prev_sblen / 2; i < prev_sblen; ++i) {
+                writer.write(packets[i]);
+            }
+
+            dispatcher.release_all();
+
+            for (size_t i = 0; i < prev_sblen; ++i) {
+                const packet::PacketPtr p = reader.read();
+
+                CHECK(p);
+                CHECK(p->fec());
+                CHECK(p->fec()->source_block_length == prev_sblen);
+
+                check_audio_packet(p, rd_sn);
+                rd_sn++;
+            }
+
+            prev_sblen = block_sizes[n];
         }
 
-        // Write first half of the packets.
-        for (size_t i = 0; i < prev_sblen / 2; ++i) {
-            writer.write(packets[i]);
-        }
-
-        // Update source block size.
-        writer.resize(block_sizes[n]);
-
-        // Write the remaining packets.
-        for (size_t i = prev_sblen / 2; i < prev_sblen; ++i) {
-            writer.write(packets[i]);
-        }
-
-        dispatcher.release_all();
-
-        for (size_t i = 0; i < prev_sblen; ++i) {
-            const packet::PacketPtr p = reader.read();
-
-            CHECK(p);
-            CHECK(p->fec());
-            CHECK(p->fec()->source_block_length == prev_sblen);
-
-            check_audio_packet(p, rd_sn);
-            rd_sn++;
-        }
-
-        prev_sblen = block_sizes[n];
+        UNSIGNED_LONGS_EQUAL(wr_sn, rd_sn);
     }
-
-    UNSIGNED_LONGS_EQUAL(wr_sn, rd_sn);
 }
 
 TEST(writer_reader, resize_block_losses) {
-    OFEncoder encoder(config, FECPayloadSize, allocator);
-    OFDecoder decoder(config, FECPayloadSize, buffer_pool, allocator);
+    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
+        config.scheme = Test_fec_schemes[n_scheme];
 
-    CHECK(decoder.valid());
-    CHECK(encoder.valid());
+        OFEncoder encoder(config, FECPayloadSize, allocator);
+        OFDecoder decoder(config, FECPayloadSize, buffer_pool, allocator);
 
-    PacketDispatcher dispatcher;
+        CHECK(decoder.valid());
+        CHECK(encoder.valid());
 
-    Writer writer(config, FECPayloadSize, encoder, dispatcher, source_composer,
-                  repair_composer, packet_pool, buffer_pool, allocator);
-    Reader reader(config, decoder, dispatcher.source_reader(), dispatcher.repair_reader(),
-                  rtp_parser, packet_pool, allocator);
+        PacketDispatcher dispatcher;
 
-    CHECK(reader.valid());
-    CHECK(writer.valid());
+        Writer writer(config, FECPayloadSize, encoder, dispatcher, source_composer,
+                      repair_composer, packet_pool, buffer_pool, allocator);
+        Reader reader(config, decoder, dispatcher.source_reader(), dispatcher.repair_reader(),
+                      rtp_parser, packet_pool, allocator);
 
-    const size_t block_sizes[] = { 15, 25, 35, 43, 33, 23, 13 };
+        CHECK(reader.valid());
+        CHECK(writer.valid());
 
-    packet::seqnum_t wr_sn = 0;
-    packet::seqnum_t rd_sn = 0;
+        const size_t block_sizes[] = { 15, 25, 35, 43, 33, 23, 13 };
 
-    for (size_t n = 0; n < ROC_ARRAY_SIZE(block_sizes); ++n) {
-        writer.resize(block_sizes[n]);
+        packet::seqnum_t wr_sn = 0;
+        packet::seqnum_t rd_sn = 0;
 
-        core::Array<packet::PacketPtr> packets(allocator);
-        packets.resize(block_sizes[n]);
+        for (size_t n = 0; n < ROC_ARRAY_SIZE(block_sizes); ++n) {
+            writer.resize(block_sizes[n]);
 
-        for (size_t i = 0; i < block_sizes[n]; ++i) {
-            packets[i] = fill_one_packet(wr_sn);
-            wr_sn++;
+            core::Array<packet::PacketPtr> packets(allocator);
+            packets.resize(block_sizes[n]);
+
+            for (size_t i = 0; i < block_sizes[n]; ++i) {
+                packets[i] = fill_one_packet(wr_sn);
+                wr_sn++;
+            }
+
+            dispatcher.lose(block_sizes[n] / 2);
+
+            for (size_t i = 0; i < block_sizes[n]; ++i) {
+                writer.write(packets[i]);
+            }
+
+            dispatcher.release_all();
+            dispatcher.clear_losses();
+
+            for (size_t i = 0; i < block_sizes[n]; ++i) {
+                const packet::PacketPtr p = reader.read();
+                CHECK(p);
+                check_audio_packet(p, rd_sn);
+                rd_sn++;
+            }
         }
 
-        dispatcher.lose(block_sizes[n] / 2);
-
-        for (size_t i = 0; i < block_sizes[n]; ++i) {
-            writer.write(packets[i]);
-        }
-
-        dispatcher.release_all();
-        dispatcher.clear_losses();
-
-        for (size_t i = 0; i < block_sizes[n]; ++i) {
-            const packet::PacketPtr p = reader.read();
-            CHECK(p);
-            check_audio_packet(p, rd_sn);
-            rd_sn++;
-        }
+        UNSIGNED_LONGS_EQUAL(wr_sn, rd_sn);
     }
-
-    UNSIGNED_LONGS_EQUAL(wr_sn, rd_sn);
 }
 
 } // namespace fec
