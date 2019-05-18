@@ -687,7 +687,16 @@ if 'target_pulseaudio' in system_dependecies:
             if not libs:
                 env.Die("can't find %s" % path)
 
-        pulse_env.Append(LIBS=libs)
+            pulse_env.Append(LIBS=libs)
+
+            m = re.search('-([0-9.]+).so$', libs[0].path)
+            if m:
+                pa_ver = m.group(1)
+
+        if not pa_ver:
+            env.Die("can't determine pulseaudio version")
+
+        env['ROC_PULSE_VERSION'] = pa_ver
 
 if 'target_sox' in system_dependecies:
     conf = Configure(tool_env, custom_tests=env.CustomTests)
