@@ -85,6 +85,8 @@ struct PacketTest {
     packet::IComposer* composer;
     packet::IParser* parser;
 
+    packet::FECScheme scheme;
+
     bool is_rtp;
     bool has_nes;
 
@@ -126,7 +128,10 @@ void fill_packet(packet::Packet& packet, bool is_rtp) {
     }
 }
 
-void check_packet(packet::Packet& packet, bool is_rtp, bool has_nes) {
+void check_packet(packet::Packet& packet,
+                  packet::FECScheme scheme,
+                  bool is_rtp,
+                  bool has_nes) {
     if (is_rtp) {
         CHECK(packet.rtp());
 
@@ -138,6 +143,7 @@ void check_packet(packet::Packet& packet, bool is_rtp, bool has_nes) {
 
     CHECK(packet.fec());
 
+    UNSIGNED_LONGS_EQUAL(scheme, packet.fec()->fec_scheme);
     UNSIGNED_LONGS_EQUAL(Test_fec_esi, packet.fec()->encoding_symbol_id);
     UNSIGNED_LONGS_EQUAL(Test_fec_sbn, packet.fec()->source_block_number);
     UNSIGNED_LONGS_EQUAL(Test_fec_sbl, packet.fec()->source_block_length);
@@ -198,7 +204,7 @@ void test_parse(const PacketTest& test) {
 
     CHECK(test.parser->parse(*packet, packet->data()));
 
-    check_packet(*packet, test.is_rtp, test.has_nes);
+    check_packet(*packet, test.scheme, test.is_rtp, test.has_nes);
 }
 
 void test_compose_parse(const PacketTest& test) {
@@ -221,7 +227,7 @@ void test_compose_parse(const PacketTest& test) {
 
     CHECK(test.parser->parse(*packet2, packet1->data()));
 
-    check_packet(*packet2, test.is_rtp, test.has_nes);
+    check_packet(*packet2, test.scheme, test.is_rtp, test.has_nes);
 }
 
 void test_all(const PacketTest& test) {
@@ -245,6 +251,7 @@ TEST(composer_parser, rtp_ldpc_source) {
     PacketTest test;
     test.composer = &ldpc_composer;
     test.parser = &ldpc_parser;
+    test.scheme = packet::FEC_LDPC_Staircase;
     test.is_rtp = true;
     test.has_nes = false;
     test.reference = Ref_rtp_ldpc_source;
@@ -260,6 +267,7 @@ TEST(composer_parser, ldpc_repair) {
     PacketTest test;
     test.composer = &ldpc_composer;
     test.parser = &ldpc_parser;
+    test.scheme = packet::FEC_LDPC_Staircase;
     test.is_rtp = false;
     test.has_nes = true;
     test.reference = Ref_ldpc_repair;
@@ -279,6 +287,7 @@ TEST(composer_parser, rtp_rsm8_source) {
     PacketTest test;
     test.composer = &rsm8_composer;
     test.parser = &rsm8_parser;
+    test.scheme = packet::FEC_ReedSolomon_M8;
     test.is_rtp = true;
     test.has_nes = false;
     test.reference = Ref_rtp_rsm8_source;
@@ -294,6 +303,7 @@ TEST(composer_parser, rsm8_repair) {
     PacketTest test;
     test.composer = &rsm8_composer;
     test.parser = &rsm8_parser;
+    test.scheme = packet::FEC_ReedSolomon_M8;
     test.is_rtp = false;
     test.has_nes = false;
     test.reference = Ref_rsm8_repair;

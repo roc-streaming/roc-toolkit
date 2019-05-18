@@ -56,6 +56,7 @@ public:
 
         packet::FEC& fec = *packet.fec();
 
+        fec.fec_scheme = PayloadID::fec_scheme();
         fec.encoding_symbol_id = payload_id->esi();
         fec.source_block_number = (packet::blknum_t)payload_id->sbn();
         fec.source_block_length = payload_id->k();

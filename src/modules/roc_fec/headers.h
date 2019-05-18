@@ -16,6 +16,7 @@
 #include "roc_core/endian.h"
 #include "roc_core/panic.h"
 #include "roc_core/stddefs.h"
+#include "roc_packet/fec.h"
 
 namespace roc {
 namespace fec {
@@ -55,6 +56,11 @@ private:
     uint16_t k_;
 
 public:
+    //! Get FEC scheme to which these packets belong to.
+    static packet::FECScheme fec_scheme() {
+        return packet::FEC_LDPC_Staircase;
+    }
+
     //! Clear header.
     void clear() {
         memset(this, 0, sizeof(*this));
@@ -126,6 +132,11 @@ private:
     uint16_t n_;
 
 public:
+    //! Get FEC scheme to which these packets belong to.
+    static packet::FECScheme fec_scheme() {
+        return packet::FEC_LDPC_Staircase;
+    }
+
     //! Clear header.
     void clear() {
         memset(this, 0, sizeof(*this));
@@ -195,6 +206,11 @@ private:
     uint16_t k_;
 
 public:
+    //! Get FEC scheme to which these packets belong to.
+    static packet::FECScheme fec_scheme() {
+        return packet::FEC_ReedSolomon_M8;
+    }
+
     //! Clear header.
     void clear() {
         memset(this, 0, sizeof(*this));
