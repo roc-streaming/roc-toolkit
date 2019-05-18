@@ -250,7 +250,7 @@ int pa__init(pa_module* m) {
     /* create and initialize sink input */
     pa_sink_input_new_data data;
     pa_sink_input_new_data_init(&data);
-#if PA_CHECK_VERSION(11, 99, 1)
+#if PA_CHECK_VERSION(11, 99, 0)
     pa_sink_input_new_data_set_sink(&data, sink, false, false);
 #else
     pa_sink_input_new_data_set_sink(&data, sink, false);
