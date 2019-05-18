@@ -274,6 +274,11 @@ Receiver::make_session_config_(const packet::PacketPtr& packet) const {
         sess_config.payload_type = rtp->payload_type;
     }
 
+    packet::FEC* fec = packet->fec();
+    if (fec) {
+        sess_config.fec.scheme = fec->fec_scheme;
+    }
+
     return sess_config;
 }
 

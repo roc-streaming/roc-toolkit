@@ -24,6 +24,14 @@
 
 using namespace roc;
 
+namespace {
+
+void trx_remove_port(void* arg, const pipeline::PortConfig& port) {
+    ((netio::Transceiver*)arg)->remove_port(port.address);
+}
+
+} // namespace
+
 int main(int argc, char** argv) {
     core::CrashHandler crash_handler;
 
@@ -81,19 +89,16 @@ int main(int argc, char** argv) {
 
     switch ((unsigned)args.fec_arg) {
     case fec_arg_none:
-        config.default_session.fec.scheme = packet::FEC_None;
         source_port.protocol = pipeline::Proto_RTP;
         repair_port.protocol = pipeline::Proto_RTP;
         break;
 
     case fec_arg_rs:
-        config.default_session.fec.scheme = packet::FEC_ReedSolomon_M8;
         source_port.protocol = pipeline::Proto_RTP_RSm8_Source;
         repair_port.protocol = pipeline::Proto_RSm8_Repair;
         break;
 
     case fec_arg_ldpc:
-        config.default_session.fec.scheme = packet::FEC_LDPC_Staircase;
         source_port.protocol = pipeline::Proto_RTP_LDPC_Source;
         repair_port.protocol = pipeline::Proto_LDPC_Repair;
         break;
@@ -103,7 +108,7 @@ int main(int argc, char** argv) {
     }
 
     if (args.nbsrc_given) {
-        if (config.default_session.fec.scheme == packet::FEC_None) {
+        if (args.fec_arg == fec_arg_none) {
             roc_log(LogError, "--nbsrc can't be used when --fec=none)");
             return 1;
         }
@@ -115,7 +120,7 @@ int main(int argc, char** argv) {
     }
 
     if (args.nbrpr_given) {
-        if (config.default_session.fec.scheme == packet::FEC_None) {
+        if (args.fec_arg == fec_arg_none) {
             roc_log(LogError, "--nbrpr can't be used when --fec=none");
             return 1;
         }
@@ -309,7 +314,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    if (config.default_session.fec.scheme != packet::FEC_None) {
+    if (args.fec_arg != fec_arg_none) {
         if (!trx.add_udp_receiver(repair_port.address, receiver)) {
             roc_log(LogError, "can't register udp receiver: %s",
                     packet::address_to_str(repair_port.address).c_str());
@@ -332,11 +337,7 @@ int main(int argc, char** argv) {
     trx.stop();
     trx.join();
 
-    trx.remove_port(source_port.address);
-
-    if (config.default_session.fec.scheme != packet::FEC_None) {
-        trx.remove_port(repair_port.address);
-    }
+    receiver.iterate_ports(trx_remove_port, &trx);
 
     return ok ? 0 : 1;
 }

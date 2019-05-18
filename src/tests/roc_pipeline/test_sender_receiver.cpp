@@ -36,8 +36,8 @@ enum {
     SamplesPerPacket = 40,
     FramesPerPacket = SamplesPerPacket / SamplesPerFrame,
 
-    SourcePackets = 10,
-    RepairPackets = 5,
+    SourcePackets = 20,
+    RepairPackets = 10,
 
     Latency = SamplesPerPacket * SourcePackets,
     Timeout = Latency * 20,
@@ -49,20 +49,23 @@ enum {
     // default flags
     FlagNone = 0,
 
-    // enable FEC on sender or receiver
-    FlagFEC = (1 << 0),
+    // drop all source packets on receiver
+    FlagDropSource = (1 << 0),
 
-    // enable interleaving on sender
-    FlagInterleaving = (1 << 1),
+    // drop all repair packets on receiver
+    FlagDropRepair = (1 << 1),
 
-    // enable packet loss on sender
-    FlagLoss = (1 << 2),
+    // enable packet losses on sender
+    FlagLosses = (1 << 2),
 
-    // drop all source packets
-    FlagDropSource = (1 << 3),
+    // enable packet interleaving on sender
+    FlagInterleaving = (1 << 3),
 
-    // drop all repair packets
-    FlagDropRepair = (1 << 4)
+    // enable Reed-Solomon FEC scheme on sender
+    FlagReedSolomon = (1 << 4),
+
+    // enable LDPC-Staircase FEC scheme on sender
+    FlagLDPC = (1 << 5)
 };
 
 core::HeapAllocator allocator;
@@ -77,8 +80,8 @@ TEST_GROUP(sender_receiver) {
     void send_receive(int flags, size_t num_sessions) {
         packet::Queue queue;
 
-        PortConfig source_port = source_port_config(flags);
-        PortConfig repair_port = repair_port_config(flags);
+        PortConfig source_port = sender_source_port(flags);
+        PortConfig repair_port = sender_repair_port(flags);
 
         Sender sender(sender_config(flags),
                       source_port,
@@ -93,7 +96,7 @@ TEST_GROUP(sender_receiver) {
 
         CHECK(sender.valid());
 
-        Receiver receiver(receiver_config(flags),
+        Receiver receiver(receiver_config(),
                           format_map,
                           packet_pool,
                           byte_buffer_pool,
@@ -102,8 +105,7 @@ TEST_GROUP(sender_receiver) {
 
         CHECK(receiver.valid());
 
-        CHECK(receiver.add_port(source_port));
-        CHECK(receiver.add_port(repair_port));
+        add_receiver_ports(receiver);
 
         FrameWriter frame_writer(sender, sample_buffer_pool);
 
@@ -134,7 +136,7 @@ TEST_GROUP(sender_receiver) {
         size_t counter = 0;
 
         while (packet::PacketPtr pp = reader.read()) {
-            if ((flags & FlagLoss) && counter++ % (SourcePackets + RepairPackets) == 1) {
+            if ((flags & FlagLosses) && counter++ % (SourcePackets + RepairPackets) == 1) {
                 continue;
             }
 
@@ -152,18 +154,58 @@ TEST_GROUP(sender_receiver) {
         }
     }
 
-    PortConfig source_port_config(int flags) {
-        PortConfig port;
-        port.address = new_address(1);
-        port.protocol = (flags & FlagFEC) ? Proto_RTP_RSm8_Source : Proto_RTP;
-        return port;
+    PortConfig sender_source_port(int flags) {
+        PortConfig port_config;
+        if (flags & FlagReedSolomon) {
+            port_config.address = new_address(20);
+            port_config.protocol = Proto_RTP_RSm8_Source;
+        } else if (flags & FlagLDPC) {
+            port_config.address = new_address(30);
+            port_config.protocol = Proto_RTP_LDPC_Source;
+        } else {
+            port_config.address = new_address(10);
+            port_config.protocol = Proto_RTP;
+        }
+        return port_config;
     }
 
-    PortConfig repair_port_config(int flags) {
-        PortConfig port;
-        port.address = new_address(2);
-        port.protocol = (flags & FlagFEC) ? Proto_RSm8_Repair : Proto_RTP;
-        return port;
+    PortConfig sender_repair_port(int flags) {
+        PortConfig port_config;
+        if (flags & FlagReedSolomon) {
+            port_config.address = new_address(21);
+            port_config.protocol = Proto_RSm8_Repair;
+        } else if (flags & FlagLDPC) {
+            port_config.address = new_address(31);
+            port_config.protocol = Proto_LDPC_Repair;
+        } else {
+            port_config.address = new_address(30);
+            port_config.protocol = Proto_RTP;
+        }
+        return port_config;
+    }
+
+    void add_receiver_ports(Receiver& receiver) {
+        PortConfig port_config;
+
+        port_config.address = new_address(10);
+        port_config.protocol = Proto_RTP;
+        CHECK(receiver.add_port(port_config));
+
+        port_config.address = new_address(20);
+        port_config.protocol = Proto_RTP_RSm8_Source;
+        CHECK(receiver.add_port(port_config));
+
+        port_config.address = new_address(21);
+        port_config.protocol = Proto_RSm8_Repair;
+        CHECK(receiver.add_port(port_config));
+
+        port_config.address = new_address(30);
+        port_config.protocol = Proto_RTP_LDPC_Source;
+        CHECK(receiver.add_port(port_config));
+
+        port_config.address = new_address(31);
+        port_config.protocol = Proto_LDPC_Repair;
+        CHECK(receiver.add_port(port_config));
     }
 
     SenderConfig sender_config(int flags) {
@@ -173,7 +215,16 @@ TEST_GROUP(sender_receiver) {
         config.packet_length = SamplesPerPacket * core::Second / SampleRate;
         config.internal_frame_size = MaxBufSize;
 
-        config.fec = fec_config(flags);
+        if (flags & FlagReedSolomon) {
+            config.fec.scheme = packet::FEC_ReedSolomon_M8;
+        }
+
+        if (flags & FlagLDPC) {
+            config.fec.scheme = packet::FEC_LDPC_Staircase;
+        }
+
+        config.fec.n_source_packets = SourcePackets;
+        config.fec.n_repair_packets = RepairPackets;
 
         config.interleaving = (flags & FlagInterleaving);
         config.timing = false;
@@ -182,7 +233,7 @@ TEST_GROUP(sender_receiver) {
         return config;
     }
 
-    ReceiverConfig receiver_config(int flags) {
+    ReceiverConfig receiver_config() {
         ReceiverConfig config;
 
         config.common.output_sample_rate = SampleRate;
@@ -201,21 +252,8 @@ TEST_GROUP(sender_receiver) {
         config.default_session.watchdog.no_playback_timeout =
             Timeout * core::Second / SampleRate;
 
-        config.default_session.fec = fec_config(flags);
-
-        return config;
-    }
-
-    fec::Config fec_config(int flags) {
-        fec::Config config;
-
-        if (flags & FlagFEC) {
-            config.scheme = packet::FEC_ReedSolomon_M8;
-            config.n_source_packets = SourcePackets;
-            config.n_repair_packets = RepairPackets;
-        } else {
-            config.scheme = packet::FEC_None;
-        }
+        config.default_session.fec.n_source_packets = SourcePackets;
+        config.default_session.fec.n_repair_packets = RepairPackets;
 
         return config;
     }
@@ -230,24 +268,28 @@ TEST(sender_receiver, interleaving) {
 }
 
 #ifdef ROC_TARGET_OPENFEC
-TEST(sender_receiver, fec) {
-    send_receive(FlagFEC, 1);
+TEST(sender_receiver, fec_rs) {
+    send_receive(FlagReedSolomon, 1);
+}
+
+TEST(sender_receiver, fec_ldpc) {
+    send_receive(FlagLDPC, 1);
 }
 
 TEST(sender_receiver, fec_interleaving) {
-    send_receive(FlagFEC | FlagInterleaving, 1);
+    send_receive(FlagReedSolomon | FlagInterleaving, 1);
 }
 
 TEST(sender_receiver, fec_loss) {
-    send_receive(FlagFEC | FlagLoss, 1);
+    send_receive(FlagReedSolomon | FlagLosses, 1);
 }
 
 TEST(sender_receiver, fec_drop_source) {
-    send_receive(FlagFEC | FlagDropSource, 0);
+    send_receive(FlagReedSolomon | FlagDropSource, 0);
 }
 
 TEST(sender_receiver, fec_drop_repair) {
-    send_receive(FlagFEC | FlagDropRepair, 1);
+    send_receive(FlagReedSolomon | FlagDropRepair, 1);
 }
 #endif //! ROC_TARGET_OPENFEC
 
