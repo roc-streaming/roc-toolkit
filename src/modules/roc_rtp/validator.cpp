@@ -13,11 +13,11 @@ namespace roc {
 namespace rtp {
 
 Validator::Validator(packet::IReader& reader,
-                     const Format& format,
-                     const ValidatorConfig& config)
-    : format_(format)
-    , reader_(reader)
-    , config_(config) {
+                     const ValidatorConfig& config,
+                     size_t sample_rate)
+    : reader_(reader)
+    , config_(config)
+    , sample_rate_(sample_rate) {
 }
 
 packet::PacketPtr Validator::read() {
@@ -55,6 +55,13 @@ bool Validator::check_(const packet::RTP& prev, const packet::RTP& next) const {
         return false;
     }
 
+    if (next.payload_type != prev.payload_type) {
+        roc_log(LogDebug,
+                "rtp validator: payload type jump: prev=%u, next=%u",
+                (unsigned)prev.payload_type, (unsigned)next.payload_type);
+        return false;
+    }
+
     packet::seqnum_diff_t sn_dist = packet::seqnum_diff(next.seqnum, prev.seqnum);
     if (sn_dist < 0) {
         sn_dist = -sn_dist;
@@ -74,8 +81,7 @@ bool Validator::check_(const packet::RTP& prev, const packet::RTP& next) const {
         ts_dist = -ts_dist;
     }
 
-    const core::nanoseconds_t ts_dist_ns =
-        packet::timestamp_to_ns(ts_dist, format_.sample_rate);
+    const core::nanoseconds_t ts_dist_ns = packet::timestamp_to_ns(ts_dist, sample_rate_);
 
     if (ts_dist_ns > config_.max_ts_jump) {
         roc_log(LogDebug,
@@ -83,13 +89,6 @@ bool Validator::check_(const packet::RTP& prev, const packet::RTP& next) const {
                 " too long timestamp jump: prev=%lu next=%lu dist=%lu",
                 (unsigned long)prev.timestamp, (unsigned long)next.timestamp,
                 (unsigned long)ts_dist);
-        return false;
-    }
-
-    if (next.payload_type != (unsigned)format_.payload_type) {
-        roc_log(LogDebug,
-                "rtp validator: unexpected payload type: expected=%u, actual=%u",
-                (unsigned)format_.payload_type, (unsigned)next.payload_type);
         return false;
     }
 

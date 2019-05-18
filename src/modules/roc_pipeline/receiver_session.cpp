@@ -61,8 +61,8 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
     }
     preader = delayed_reader_.get();
 
-    validator_.reset(new (allocator_)
-                         rtp::Validator(*preader, *format, session_config.rtp_validator),
+    validator_.reset(new (allocator_) rtp::Validator(
+                         *preader, session_config.rtp_validator, format->sample_rate),
                      allocator_);
     if (!validator_) {
         return;
@@ -103,8 +103,9 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
         }
         preader = fec_reader_.get();
 
-        fec_validator_.reset(new (allocator_) rtp::Validator(
-                                 *preader, *format, session_config.rtp_validator),
+        fec_validator_.reset(new (allocator_)
+                                 rtp::Validator(*preader, session_config.rtp_validator,
+                                                format->sample_rate),
                              allocator_);
         if (!fec_validator_) {
             return;

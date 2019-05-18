@@ -15,7 +15,6 @@
 #include "roc_core/noncopyable.h"
 #include "roc_core/time.h"
 #include "roc_packet/ireader.h"
-#include "roc_rtp/format_map.h"
 
 namespace roc {
 namespace rtp {
@@ -41,11 +40,9 @@ public:
     //!
     //! @b Parameters
     //!  - @p reader is input packet reader
-    //!  - @p format defines the expected packet payload type
     //!  - @p config defines validator parameters
-    Validator(packet::IReader& reader,
-              const Format& format,
-              const ValidatorConfig& config);
+    //!  - @p sample_rate defines session sample rate
+    Validator(packet::IReader& reader, const ValidatorConfig& config, size_t sample_rate);
 
     //! Read next packet.
     //! @remarks
@@ -56,12 +53,11 @@ public:
 private:
     bool check_(const packet::RTP& prev, const packet::RTP& next) const;
 
-    const Format& format_;
-
     packet::IReader& reader_;
     packet::PacketPtr prev_packet_;
 
     const ValidatorConfig config_;
+    const size_t sample_rate_;
 };
 
 } // namespace rtp

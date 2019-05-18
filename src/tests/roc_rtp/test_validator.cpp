@@ -11,6 +11,7 @@
 #include "roc_core/heap_allocator.h"
 #include "roc_packet/packet_pool.h"
 #include "roc_packet/queue.h"
+#include "roc_rtp/headers.h"
 #include "roc_rtp/validator.h"
 
 namespace roc {
@@ -30,16 +31,11 @@ packet::PacketPool pool(allocator, true);
 
 TEST_GROUP(validator) {
     ValidatorConfig config;
-    Format format;
 
     void setup() {
         memset((void*)&config, 0, sizeof(config));
         config.max_sn_jump = MaxSnJump;
         config.max_ts_jump = MaxTsJump * core::Second / SampleRate;
-
-        memset(&format, 0, sizeof(format));
-        format.payload_type = Pt1;
-        format.sample_rate = SampleRate;
     }
 
     packet::PacketPtr new_packet(PayloadType pt, packet::source_t src,
@@ -59,14 +55,14 @@ TEST_GROUP(validator) {
 
 TEST(validator, empty) {
     packet::Queue queue;
-    Validator validator(queue, format, config);
+    Validator validator(queue, config, SampleRate);
 
     CHECK(!validator.read());
 }
 
 TEST(validator, normal) {
     packet::Queue queue;
-    Validator validator(queue, format, config);
+    Validator validator(queue, config, SampleRate);
 
     packet::PacketPtr p1 = new_packet(Pt1, Src1, 1, 1);
     queue.write(p1);
@@ -81,7 +77,7 @@ TEST(validator, normal) {
 
 TEST(validator, payload_id_jump) {
     packet::Queue queue;
-    Validator validator(queue, format, config);
+    Validator validator(queue, config, SampleRate);
 
     packet::PacketPtr p1 = new_packet(Pt1, Src1, 1, 1);
     queue.write(p1);
@@ -96,7 +92,7 @@ TEST(validator, payload_id_jump) {
 
 TEST(validator, source_id_jump) {
     packet::Queue queue;
-    Validator validator(queue, format, config);
+    Validator validator(queue, config, SampleRate);
 
     packet::PacketPtr p1 = new_packet(Pt1, Src1, 1, 1);
     queue.write(p1);
@@ -119,7 +115,7 @@ TEST(validator, seqnum_no_jump) {
         const packet::seqnum_t sn2 = packet::seqnum_t(sn1 + MaxSnJump);
 
         packet::Queue queue;
-        Validator validator(queue, format, config);
+        Validator validator(queue, config, SampleRate);
 
         packet::PacketPtr p1 = new_packet(Pt1, Src1, sn1, 1);
         queue.write(p1);
@@ -143,7 +139,7 @@ TEST(validator, seqnum_jump_up) {
         const packet::seqnum_t sn2 = packet::seqnum_t(sn1 + MaxSnJump + 1);
 
         packet::Queue queue;
-        Validator validator(queue, format, config);
+        Validator validator(queue, config, SampleRate);
 
         packet::PacketPtr p1 = new_packet(Pt1, Src1, sn1, 1);
         queue.write(p1);
@@ -167,7 +163,7 @@ TEST(validator, seqnum_jump_down) {
         const packet::seqnum_t sn2 = packet::seqnum_t(sn1 + MaxSnJump + 1);
 
         packet::Queue queue;
-        Validator validator(queue, format, config);
+        Validator validator(queue, config, SampleRate);
 
         packet::PacketPtr p1 = new_packet(Pt1, Src1, sn2, 1);
         queue.write(p1);
@@ -187,7 +183,7 @@ TEST(validator, seqnum_late) {
     const packet::seqnum_t sn3 = sn2 + MaxSnJump + 1;
 
     packet::Queue queue;
-    Validator validator(queue, format, config);
+    Validator validator(queue, config, SampleRate);
 
     packet::PacketPtr p1 = new_packet(Pt1, Src1, sn1, 1);
     queue.write(p1);
@@ -214,7 +210,7 @@ TEST(validator, timestamp_no_jump) {
         const packet::timestamp_t ts2 = ts1 + MaxTsJump;
 
         packet::Queue queue;
-        Validator validator(queue, format, config);
+        Validator validator(queue, config, SampleRate);
 
         packet::PacketPtr p1 = new_packet(Pt1, Src1, 1, ts1);
         queue.write(p1);
@@ -238,7 +234,7 @@ TEST(validator, timestamp_jump_up) {
         const packet::timestamp_t ts2 = ts1 + MaxTsJump + 10;
 
         packet::Queue queue;
-        Validator validator(queue, format, config);
+        Validator validator(queue, config, SampleRate);
 
         packet::PacketPtr p1 = new_packet(Pt1, Src1, 1, ts1);
         queue.write(p1);
@@ -262,7 +258,7 @@ TEST(validator, timestamp_jump_down) {
         const packet::timestamp_t ts2 = ts1 + MaxTsJump + 10;
 
         packet::Queue queue;
-        Validator validator(queue, format, config);
+        Validator validator(queue, config, SampleRate);
 
         packet::PacketPtr p1 = new_packet(Pt1, Src1, 1, ts2);
         queue.write(p1);
@@ -282,7 +278,7 @@ TEST(validator, timestamp_late) {
     const packet::timestamp_t ts3 = ts2 + MaxTsJump + 1;
 
     packet::Queue queue;
-    Validator validator(queue, format, config);
+    Validator validator(queue, config, SampleRate);
 
     packet::PacketPtr p1 = new_packet(Pt1, Src1, 2, ts1);
     queue.write(p1);
