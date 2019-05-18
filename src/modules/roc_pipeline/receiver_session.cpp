@@ -19,7 +19,6 @@ namespace pipeline {
 
 ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
                                  const ReceiverCommonConfig& common_config,
-                                 const unsigned int payload_type,
                                  const packet::Address& src_address,
                                  const rtp::FormatMap& format_map,
                                  packet::PacketPool& packet_pool,
@@ -29,7 +28,7 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
     : src_address_(src_address)
     , allocator_(allocator)
     , audio_reader_(NULL) {
-    const rtp::Format* format = format_map.format(payload_type);
+    const rtp::Format* format = format_map.format(session_config.payload_type);
     if (!format) {
         return;
     }

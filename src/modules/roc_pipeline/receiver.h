@@ -92,6 +92,8 @@ private:
 
     void update_sessions_();
 
+    ReceiverSessionConfig make_session_config_(const packet::PacketPtr& packet) const;
+
     const rtp::FormatMap& format_map_;
 
     packet::PacketPool& packet_pool_;

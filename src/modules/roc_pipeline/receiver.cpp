@@ -222,11 +222,13 @@ bool Receiver::create_session_(const packet::PacketPtr& packet) {
         return false;
     }
 
+    const ReceiverSessionConfig sess_config = make_session_config_(packet);
+
     const packet::Address src_address = packet->udp()->src_addr;
 
-    core::SharedPtr<ReceiverSession> sess = new (allocator_) ReceiverSession(
-        config_.default_session, config_.common, packet->rtp()->payload_type, src_address,
-        format_map_, packet_pool_, byte_buffer_pool_, sample_buffer_pool_, allocator_);
+    core::SharedPtr<ReceiverSession> sess = new (allocator_)
+        ReceiverSession(sess_config, config_.common, src_address, format_map_,
+                        packet_pool_, byte_buffer_pool_, sample_buffer_pool_, allocator_);
 
     if (!sess || !sess->valid()) {
         roc_log(LogError, "receiver: can't create session, initialization failed");
@@ -261,6 +263,18 @@ void Receiver::update_sessions_() {
             remove_session_(*curr);
         }
     }
+}
+
+ReceiverSessionConfig
+Receiver::make_session_config_(const packet::PacketPtr& packet) const {
+    ReceiverSessionConfig sess_config = config_.default_session;
+
+    packet::RTP* rtp = packet->rtp();
+    if (rtp) {
+        sess_config.payload_type = rtp->payload_type;
+    }
+
+    return sess_config;
 }
 
 } // namespace pipeline

@@ -135,14 +135,17 @@ struct SenderConfig {
 //! @remarks
 //!  Defines per-session receiver parameters.
 struct ReceiverSessionConfig {
+    //! Target latency, nanoseconds.
+    core::nanoseconds_t target_latency;
+
     //! Channel mask.
     packet::channel_mask_t channels;
 
+    //! Packet payload type.
+    unsigned int payload_type;
+
     //! Packet length, in nanoseconds.
     core::nanoseconds_t packet_length;
-
-    //! Target latency, nanoseconds.
-    core::nanoseconds_t target_latency;
 
     //! FEC scheme parameters.
     fec::Config fec;
@@ -160,9 +163,10 @@ struct ReceiverSessionConfig {
     audio::ResamplerConfig resampler;
 
     ReceiverSessionConfig()
-        : channels(DefaultChannelMask)
-        , packet_length(DefaultPacketLength)
-        , target_latency(DefaultLatency) {
+        : target_latency(DefaultLatency)
+        , channels(DefaultChannelMask)
+        , payload_type(0)
+        , packet_length(DefaultPacketLength) {
         latency_monitor.min_latency = target_latency * DefaultMinLatencyFactor;
         latency_monitor.max_latency = target_latency * DefaultMaxLatencyFactor;
     }
