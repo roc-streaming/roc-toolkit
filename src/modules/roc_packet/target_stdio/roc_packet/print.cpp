@@ -10,6 +10,7 @@
 
 #include "roc_core/print.h"
 #include "roc_packet/address_to_str.h"
+#include "roc_packet/fec_scheme_to_str.h"
 #include "roc_packet/packet.h"
 #include "roc_packet/print.h"
 
@@ -38,7 +39,8 @@ void print(const Packet& p, int flags) {
     }
 
     if (p.fec()) {
-        fprintf(stderr, " fec: esi=%lu sbn=%lu sblen=%lu blen=%lu payload_sz=%lu\n",
+        fprintf(stderr, " fec: %s esi=%lu sbn=%lu sblen=%lu blen=%lu payload_sz=%lu\n",
+                fec_scheme_to_str(p.fec()->fec_scheme),
                 (unsigned long)p.fec()->encoding_symbol_id,
                 (unsigned long)p.fec()->source_block_number,
                 (unsigned long)p.fec()->source_block_length,
