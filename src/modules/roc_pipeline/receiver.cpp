@@ -169,12 +169,10 @@ void Receiver::fetch_packets_() {
         packets_.remove(*packet);
 
         if (!parse_packet_(packet)) {
-            roc_log(LogDebug, "receiver: can't parse packet, dropping");
             continue;
         }
 
         if (!route_packet_(packet)) {
-            roc_log(LogDebug, "receiver: can't route packet, dropping");
             continue;
         }
     }
@@ -189,6 +187,8 @@ bool Receiver::parse_packet_(const packet::PacketPtr& packet) {
         }
     }
 
+    roc_log(LogDebug, "receiver: ignoring packet for unknown port");
+
     return false;
 }
 
@@ -201,7 +201,20 @@ bool Receiver::route_packet_(const packet::PacketPtr& packet) {
         }
     }
 
+    if (!can_create_session_(packet)) {
+        return false;
+    }
+
     return create_session_(packet);
+}
+
+bool Receiver::can_create_session_(const packet::PacketPtr& packet) {
+    if (packet->flags() & packet::Packet::FlagRepair) {
+        roc_log(LogDebug, "receiver: ignoring repair packet for unknown session");
+        return false;
+    }
+
+    return true;
 }
 
 bool Receiver::create_session_(const packet::PacketPtr& packet) {
@@ -214,11 +227,6 @@ bool Receiver::create_session_(const packet::PacketPtr& packet) {
 
     if (!packet->rtp()) {
         roc_log(LogError, "receiver: can't create session, unexpected non-rtp packet");
-        return false;
-    }
-
-    if (packet->flags() & packet::Packet::FlagRepair) {
-        roc_log(LogDebug, "receiver: dropping repair packet for non-existent session");
         return false;
     }
 

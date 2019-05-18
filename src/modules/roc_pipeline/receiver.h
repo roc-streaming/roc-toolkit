@@ -87,6 +87,8 @@ private:
     bool parse_packet_(const packet::PacketPtr& packet);
     bool route_packet_(const packet::PacketPtr& packet);
 
+    bool can_create_session_(const packet::PacketPtr& packet);
+
     bool create_session_(const packet::PacketPtr& packet);
     void remove_session_(ReceiverSession& sess);
 
