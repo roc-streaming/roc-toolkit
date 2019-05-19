@@ -19,9 +19,8 @@ Options
 -v, --verbose             Increase verbosity level (may be used multiple times)
 -o, --output=OUTPUT       Output file or device
 -d, --driver=DRIVER       Output driver
--s, --source=ADDRESS      Source UDP address
--r, --repair=ADDRESS      Repair UDP address
---fec=ENUM                FEC scheme  (possible values="rs", "ldpc", "none" default=`rs')
+-s, --source=PORT         Source port triplet
+-r, --repair=PORT         Repair port triplet
 --nbsrc=INT               Number of source packets in FEC block
 --nbrpr=INT               Number of repair packets in FEC block
 --sess-latency=STRING     Session target latency, TIME units
@@ -68,14 +67,31 @@ Driver
 
 If the driver is omitted, some default driver is selected. If the user did specify the output and it is a file with a known extension, the appropriate file driver is selected. Otherwise, the first device driver available on the system is selected.
 
-Address
--------
+Port
+----
 
-*ADDRESS* should be in one of the following forms:
+*PORT* should be in one of the following forms:
 
-- :PORT (e.g. ":10001")
-- IPv4:PORT (e.g. "127.0.0.1:10001")
-- [IPv6]:PORT (e.g. "[::1]:10001")
+- ``protocol::portnum`` (0.0.0.0 address)
+- ``protocol:ipv4addr:portnum``
+- ``protocol:[ipv6addr]:portnum``
+
+For example:
+
+- rtp+rs8m::10001
+- rtp+rs8m:127.0.0.1:10001
+- rtp+rs8m:[::1]:10001
+
+Supported protocols for source ports:
+
+- rtp (bare RTP, no FEC scheme)
+- rtp+rs8m (RTP + Reed-Solomon m=8 FEC scheme)
+- rtp+ldpc (RTP + LDPC-Starircase FEC scheme)
+
+Supported protocols for repair ports:
+
+- rs8m (Reed-Solomon m=8 FEC scheme)
+- ldpc (LDPC-Starircase FEC scheme)
 
 Time
 ----
@@ -90,56 +106,62 @@ Start receiver listening on all interfaces on two UDP ports:
 
 .. code::
 
-    $ roc-recv -vv -s :10001 -r :10002
+    $ roc-recv -vv -s rtp+rs8m::10001 -r rs8m::10002
 
 Start receiver listening on particular interface:
 
 .. code::
 
-    $ roc-recv -vv -s 192.168.0.3:10001 -r 192.168.0.3:10002
+    $ roc-recv -vv -s rtp+rs8m:192.168.0.3:10001 -r rs8m:192.168.0.3:10002
 
 Output to the default ALSA device:
 
 .. code::
 
-    $ roc-recv -vv -s :10001 -r :10002 -t alsa
+    $ roc-recv -vv -s rtp+rs8m::10001 -r rs8m::10002 -d alsa
 
 Output to a specific PulseAudio device:
 
 .. code::
 
-    $ roc-recv -vv -s :10001 -r :10002 -t pulseaudio -o <device>
+    $ roc-recv -vv -s rtp+rs8m::10001 -r rs8m::10002 -d pulseaudio -o <device>
 
 Output to a file in WAV format:
 
 .. code::
 
-    $ roc-recv -vv -s :10001 -r :10002 -o ./file.wav
+    $ roc-recv -vv -s rtp+rs8m::10001 -r rs8m::10002 -o ./file.wav
 
 Output to stdout in WAV format:
 
 .. code::
 
-    $ roc-recv -vv -s :10001 -r :10002 -t wav -o - > ./file.wav
+    $ roc-recv -vv -s rtp+rs8m::10001 -r rs8m::10002 -d wav -o - > ./file.wav
 
-Select higher latency and timeouts:
-
-.. code::
-
-    $ roc-recv -vv -s :10001 -r :10002 \
-      --latency=5s --min-latency=-1s --max-latency=10s --np-timeout=10s --bp-timeout=10s
-
-Force a specific output rate to be requested on the audio device:
+Force a specific rate on the output device:
 
 .. code::
 
-    $ roc-recv -vv -s :10001 -r :10002 --rate=44100
+    $ roc-recv -vv -s rtp+rs8m::10001 -r rs8m::10002 --rate=44100
+
+Select higher session latency and timeouts:
+
+.. code::
+
+    $ roc-recv -vv -s rtp+rs8m::10001 -r rs8m::10002 \
+      --sess-latency=5s --min-latency=-1s --max-latency=10s --np-timeout=10s --bp-timeout=10s
+
+Select higher I/O latency:
+
+.. code::
+
+    $ roc-recv -vv -s rtp+rs8m::10001 -r rs8m::10002 --io-latency=200ms
 
 Select resampler profile:
 
 .. code::
 
-    $ roc-recv -vv -s :10001 -r :10002 --resampler-profile=high
+    $ roc-recv -vv -s rtp+rs8m::10001 -r rs8m::10002 --resampler-profile=high
 
 SEE ALSO
 ========

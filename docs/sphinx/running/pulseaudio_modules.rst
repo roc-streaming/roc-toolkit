@@ -93,13 +93,13 @@ local_source_port     no       10001          local port for source (audio) pack
 local_repair_port     no       10002          local port for repair (FEC) packets
 ===================== ======== ============== ==========================================
 
-Here is how you can create a Roc sink from command line:
+Here is how you can create a Roc sink input from command line:
 
 .. code::
 
    $ pactl load-module module-roc-sink-input
 
-Alternatively, you can add this line to ``/etc/pulse/default.pa`` to create a Roc sink automatically at PulseAudio start:
+Alternatively, you can add this line to ``/etc/pulse/default.pa`` to create a Roc sink input automatically at PulseAudio start:
 
 .. code::
 

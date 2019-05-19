@@ -19,10 +19,9 @@ Options
 -v, --verbose             Increase verbosity level (may be used multiple times)
 -i, --input=INPUT         Input file or device
 -d, --driver=DRIVER       Input driver
--s, --source=ADDRESS      Remote source UDP address
--r, --repair=ADDRESS      Remote repair UDP address
--l, --local=ADDRESS        Local UDP address
---fec=ENUM                FEC scheme  (possible values="rs", "ldpc", "none" default=`rs')
+-s, --source=PORT         Remote source port triplet
+-r, --repair=PORT         Remote repair port triplet
+--fec=ENUM                FEC scheme  (possible values="rs8m", "ldpc", "none" default=`rs8m')
 --nbsrc=INT               Number of source packets in FEC block
 --nbrpr=INT               Number of repair packets in FEC block
 --packet-length=STRING    Outgoing packet length, TIME units
@@ -62,14 +61,29 @@ Driver
 
 If the driver is omitted, some default driver is selected. If the user did specify the input and it is a file with a known extension, the appropriate file driver is selected. Otherwise, the first device driver available on the system is selected.
 
-Address
--------
+Port
+----
 
-*ADDRESS* should be in one of the following forms:
+*PORT* should be in one of the following forms:
 
-- :PORT (e.g. ":10001")
-- IPv4:PORT (e.g. "127.0.0.1:10001")
-- [IPv6]:PORT (e.g. "[::1]:10001")
+- ``protocol:ipv4addr:portnum``
+- ``protocol:[ipv6addr]:portnum``
+
+For example:
+
+- rtp+rs8m:127.0.0.1:10001
+- rtp+rs8m:[::1]:10001
+
+Supported protocols for source ports:
+
+- rtp (bare RTP, no FEC scheme)
+- rtp+rs8m (RTP + Reed-Solomon m=8 FEC scheme)
+- rtp+ldpc (RTP + LDPC-Starircase FEC scheme)
+
+Supported protocols for repair ports:
+
+- rs8m (Reed-Solomon m=8 FEC scheme)
+- ldpc (LDPC-Starircase FEC scheme)
 
 Time
 ----
@@ -84,61 +98,56 @@ Send WAV file:
 
 .. code::
 
-    $ roc-send -vv -s 192.168.0.3:10001 -r 192.168.0.3:10002 -i ./file.wav
+    $ roc-send -vv -s rtp+rs8m:192.168.0.3:10001 -r rs8m:192.168.0.3:10002 -i ./file.wav
 
 Send WAV from stdin:
 
 .. code::
 
-    $ roc-send -vv -s 192.168.0.3:10001 -r 192.168.0.3:10002 -t wav -i - < ./file.wav
+    $ roc-send -vv -s rtp+rs8m:192.168.0.3:10001 -r rs8m:192.168.0.3:10002 -d wav -i - < ./file.wav
 
 Capture sound from the default driver and device:
 
 .. code::
 
-    $ roc-send -vv -s 192.168.0.3:10001 -r 192.168.0.3:10002
+    $ roc-send -vv -s rtp+rs8m:192.168.0.3:10001 -r rs8m:192.168.0.3:10002
 
 Capture sound from the default ALSA device:
 
 .. code::
 
-    $ roc-send -vv -s 192.168.0.3:10001 -r 192.168.0.3:10002 -t alsa
+    $ roc-send -vv -s rtp+rs8m:192.168.0.3:10001 -r rs8m:192.168.0.3:10002 -d alsa
 
 Capture sound from a specific PulseAudio device:
 
 .. code::
 
-    $ roc-send -vv -s 192.168.0.3:10001 -r 192.168.0.3:10002 -t pulseaudio -i <device>
+    $ roc-send -vv -s rtp+rs8m:192.168.0.3:10001 -r rs8m:192.168.0.3:10002 -d pulseaudio -i <device>
 
-Bind outgoing sender port to a specific inteface:
+Force a specific rate on the input device:
 
 .. code::
 
-    $ roc-send -vv -s 192.168.0.3:10001 -r 192.168.0.3:10002 -l 192.168.0.2 -i ./file.wav
+    $ roc-send -vv -s rtp+rs8m:192.168.0.3:10001 -r rs8m:192.168.0.3:10002 --rate=44100
 
 Select the LDPC-Staircase FEC scheme and a larger block size:
 
 .. code::
 
-    $ roc-send -vv -s 192.168.0.3:10001 -r 192.168.0.3:10002 -i ./file.wav --fec=ldpc --nbsrc=1000 --nbrpr=500
+    $ roc-send -vv -s rtp+ldpc:192.168.0.3:10003 -r ldpc:192.168.0.3:10004 -i ./file.wav \
+      --fec=ldpc --nbsrc=1000 --nbrpr=500
 
-Disable FEC:
-
-.. code::
-
-    $ roc-send -vv -s 192.168.0.3:10001 -i ./file.wav --fec=none
-
-Force a specific input rate to be requested from on the audio device:
+Select bare RTP without FEC:
 
 .. code::
 
-    $ roc-send -vv -s 192.168.0.3:10001 -r 192.168.0.3:10002 --rate=44100
+    $ roc-send -vv -s rtp:192.168.0.3:10005 -i ./file.wav --fec=none
 
 Select resampler profile:
 
 .. code::
 
-    $ roc-send -vv -s 192.168.0.3:10001 -r 192.168.0.3:10002 --resampler-profile=high
+    $ roc-send -vv -s rtp+rs8m:192.168.0.3:10001 -r rs8m:192.168.0.3:10002 --resampler-profile=high
 
 SEE ALSO
 ========
