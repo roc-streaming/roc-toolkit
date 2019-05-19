@@ -91,8 +91,10 @@ private:
     const char* device_;
     size_t sample_rate_;
     const size_t num_channels_;
-    core::nanoseconds_t latency_;
     const size_t frame_size_;
+
+    core::nanoseconds_t latency_;
+    core::nanoseconds_t timeout_;
 
     bool open_done_;
     bool opened_;

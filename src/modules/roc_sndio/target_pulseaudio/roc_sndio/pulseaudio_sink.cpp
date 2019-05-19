@@ -21,6 +21,11 @@ namespace {
 
 const core::nanoseconds_t ReportInterval = 10 * core::Second;
 
+const core::nanoseconds_t DefaultLatency = core::Millisecond * 40;
+
+const core::nanoseconds_t MinTimeout = core::Millisecond * 50;
+const core::nanoseconds_t MaxTimeout = core::Second * 2;
+
 } // namespace
 
 PulseaudioSink::PulseaudioSink(const Config& config)
@@ -40,7 +45,11 @@ PulseaudioSink::PulseaudioSink(const Config& config)
     if (config.latency != 0) {
         latency_ = config.latency;
     } else {
-        latency_ = 40 * core::Millisecond;
+        latency_ = DefaultLatency;
+    }
+    timeout_ = latency_ * 2;
+    if (timeout_ < MinTimeout) {
+        timeout_ = MinTimeout;
     }
 }
 
@@ -99,12 +108,12 @@ void PulseaudioSink::write(audio::Frame& frame) {
     ensure_started_();
 
     if (!write_frame_(frame)) {
-        roc_log(LogInfo, "pulseaudio sink: reconnecting to server");
+        roc_log(LogInfo, "pulseaudio sink: restarting stream");
 
         close_();
 
         if (!open_()) {
-            roc_panic("pulseaudio sink: can't reconnect to server");
+            roc_panic("pulseaudio sink: can't restart stream");
         }
     }
 }
@@ -450,12 +459,28 @@ ssize_t PulseaudioSink::wait_stream_() {
         size_t writable_size = pa_stream_writable_size(stream_);
 
         if (writable_size == (size_t)-1) {
-            roc_log(LogError, "pulseaudio sink: detected stream breakage");
+            roc_log(LogError, "pulseaudio sink: stream is broken");
             return -1;
         }
 
         if (writable_size == 0 && timer_expired) {
-            roc_log(LogError, "pulseaudio sink: detected stream hang up");
+            roc_log(LogInfo,
+                    "pulseaudio sink: stream timeout expired: latency=%ld timeout=%ld",
+                    (long)packet::timestamp_from_ns(latency_, sample_rate_),
+                    (long)packet::timestamp_from_ns(timeout_, sample_rate_));
+
+            if (timeout_ < MaxTimeout) {
+                timeout_ *= 2;
+                if (timeout_ > MaxTimeout) {
+                    timeout_ = MaxTimeout;
+                }
+                roc_log(LogDebug,
+                        "pulseaudio sink: stream timeout increased: "
+                        "latency=%ld timeout=%ld",
+                        (long)packet::timestamp_from_ns(latency_, sample_rate_),
+                        (long)packet::timestamp_from_ns(timeout_, sample_rate_));
+            }
+
             return -1;
         }
 
@@ -463,7 +488,7 @@ ssize_t PulseaudioSink::wait_stream_() {
             return (ssize_t)writable_size;
         }
 
-        start_timer_(latency_);
+        start_timer_(timeout_);
 
         pa_threaded_mainloop_wait(mainloop_);
 
@@ -567,7 +592,9 @@ bool PulseaudioSink::stop_timer_() {
 
     pa_context_rttime_restart(context_, timer_, PA_USEC_INVALID);
 
-    return core::timestamp() >= timer_deadline_;
+    const bool expired = core::timestamp() >= timer_deadline_;
+
+    return expired;
 }
 
 void PulseaudioSink::timer_cb_(pa_mainloop_api*,
