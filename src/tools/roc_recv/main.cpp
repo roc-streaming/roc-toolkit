@@ -14,7 +14,6 @@
 #include "roc_core/scoped_destructor.h"
 #include "roc_core/unique_ptr.h"
 #include "roc_netio/transceiver.h"
-#include "roc_packet/address_to_str.h"
 #include "roc_pipeline/parse_port.h"
 #include "roc_pipeline/receiver.h"
 #include "roc_sndio/backend_dispatcher.h"
@@ -39,24 +38,6 @@ int main(int argc, char** argv) {
 
     core::Logger::instance().set_level(
         LogLevel(core::DefaultLogLevel + args.verbose_given));
-
-    pipeline::PortConfig source_port;
-    if (args.source_given) {
-        if (!pipeline::parse_port(pipeline::Port_AudioSource, args.source_arg,
-                                  source_port)) {
-            roc_log(LogError, "can't parse source port: %s", args.source_arg);
-            return 1;
-        }
-    }
-
-    pipeline::PortConfig repair_port;
-    if (args.repair_given) {
-        if (!pipeline::parse_port(pipeline::Port_AudioRepair, args.repair_arg,
-                                  repair_port)) {
-            roc_log(LogError, "can't parse repair port: %s", args.repair_arg);
-            return 1;
-        }
-    }
 
     pipeline::ReceiverConfig config;
 
@@ -268,26 +249,34 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    if (!trx.add_udp_receiver(source_port.address, receiver)) {
-        roc_log(LogError, "can't register udp receiver: %s",
-                packet::address_to_str(source_port.address).c_str());
-        return 1;
-    }
-    if (!receiver.add_port(source_port)) {
-        roc_log(LogError, "can't add udp port: %s",
-                packet::address_to_str(source_port.address).c_str());
-        return 1;
-    }
-
-    if (args.repair_given) {
-        if (!trx.add_udp_receiver(repair_port.address, receiver)) {
-            roc_log(LogError, "can't register udp receiver: %s",
-                    packet::address_to_str(repair_port.address).c_str());
+    for (size_t n = 0; n < args.source_given; n++) {
+        pipeline::PortConfig port;
+        if (!pipeline::parse_port(pipeline::Port_AudioSource, args.source_arg[n], port)) {
+            roc_log(LogError, "can't parse source port: %s", args.source_arg[n]);
             return 1;
         }
-        if (!receiver.add_port(repair_port)) {
-            roc_log(LogError, "can't add udp port: %s",
-                    packet::address_to_str(repair_port.address).c_str());
+        if (!trx.add_udp_receiver(port.address, receiver)) {
+            roc_log(LogError, "can't bind source port: %s", args.source_arg[n]);
+            return 1;
+        }
+        if (!receiver.add_port(port)) {
+            roc_log(LogError, "can't initialize source port: %s", args.source_arg[n]);
+            return 1;
+        }
+    }
+
+    for (size_t n = 0; n < args.repair_given; n++) {
+        pipeline::PortConfig port;
+        if (!pipeline::parse_port(pipeline::Port_AudioRepair, args.repair_arg[n], port)) {
+            roc_log(LogError, "can't parse repair port: %s", args.repair_arg[n]);
+            return 1;
+        }
+        if (!trx.add_udp_receiver(port.address, receiver)) {
+            roc_log(LogError, "can't bind repair port: %s", args.repair_arg[n]);
+            return 1;
+        }
+        if (!receiver.add_port(port)) {
+            roc_log(LogError, "can't initialize repair port: %s", args.repair_arg[n]);
             return 1;
         }
     }

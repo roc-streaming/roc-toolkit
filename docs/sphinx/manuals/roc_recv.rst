@@ -19,8 +19,8 @@ Options
 -v, --verbose             Increase verbosity level (may be used multiple times)
 -o, --output=OUTPUT       Output file or device
 -d, --driver=DRIVER       Output driver
--s, --source=PORT         Source port triplet
--r, --repair=PORT         Repair port triplet
+-s, --source=PORT         Source port triplet (may be used multiple times)
+-r, --repair=PORT         Repair port triplet (may be used multiple times)
 --nbsrc=INT               Number of source packets in FEC block
 --nbrpr=INT               Number of repair packets in FEC block
 --sess-latency=STRING     Session target latency, TIME units
@@ -72,7 +72,7 @@ Port
 
 *PORT* should be in one of the following forms:
 
-- ``protocol::portnum`` (0.0.0.0 address)
+- ``protocol::portnum`` (0.0.0.0 IP address is used)
 - ``protocol:ipv4addr:portnum``
 - ``protocol:[ipv6addr]:portnum``
 
@@ -81,6 +81,10 @@ For example:
 - rtp+rs8m::10001
 - rtp+rs8m:127.0.0.1:10001
 - rtp+rs8m:[::1]:10001
+
+If FEC is enabled on sender, a pair of a source and repair ports should be used for communication between sender and receiver. If FEC is disabled, a single source port should be used instead.
+
+Receiver can listen on multiple source and repair ports of different protocols simultaneously. This allows multiple senders which use different protocols and FEC schemes to connect to a single receiver.
 
 Supported protocols for source ports:
 
@@ -102,17 +106,23 @@ Time
 EXAMPLES
 ========
 
-Start receiver listening on all interfaces on two UDP ports:
+Listen on two ports on all interfaces:
 
 .. code::
 
     $ roc-recv -vv -s rtp+rs8m::10001 -r rs8m::10002
 
-Start receiver listening on particular interface:
+Listen on two ports on particular interface:
 
 .. code::
 
     $ roc-recv -vv -s rtp+rs8m:192.168.0.3:10001 -r rs8m:192.168.0.3:10002
+
+Listen on multiple ports (two for Reed-Solomon, two for LDPC, one for bare RTP):
+
+.. code::
+
+    $ roc-recv -vv -s rtp+rs8m::10001 -r rs8m::10002 -s rtp+ldpc::10003 -r ldpc::10004 -s rtp::10005
 
 Output to the default ALSA device:
 

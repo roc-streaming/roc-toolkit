@@ -74,6 +74,8 @@ For example:
 - rtp+rs8m:127.0.0.1:10001
 - rtp+rs8m:[::1]:10001
 
+If FEC is enabled on sender, a pair of a source and repair ports should be used for communication between sender and receiver. If FEC is disabled, a single source port should be used instead.
+
 Supported protocols for source ports:
 
 - rtp (bare RTP, no FEC scheme)

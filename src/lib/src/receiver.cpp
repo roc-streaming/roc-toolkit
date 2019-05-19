@@ -9,7 +9,6 @@
 #include "private.h"
 
 #include "roc_core/log.h"
-#include "roc_packet/address_to_str.h"
 #include "roc_pipeline/port_to_str.h"
 
 using namespace roc;
