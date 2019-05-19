@@ -40,6 +40,12 @@ def rmpath(path):
     except:
         pass
 
+def rm_emptydir(path):
+    try:
+        os.rmdir(path)
+    except:
+        pass
+
 def download_vendordir(url, path, log, vendordir):
     distfile = os.path.join(vendordir, os.path.basename(path))
     if not os.path.exists(distfile):
@@ -67,26 +73,54 @@ def download_wget(url, path, log, vendordir):
 def download_curl(url, path, log, vendordir):
     download_tool(url, path, log, 'curl', 'curl -Ls "%s" -o "%s"' % (url, path))
 
-def download(url, path, log, vendordir):
-    print('[download] %s' % url)
-    rmpath(path)
+def download(url, name, log, vendordir):
+    path_res = 'src/' + name
+    path_tmp = 'tmp/' + name
+
+    if os.path.exists(path_res):
+        print('[found cached] %s' % name)
+        return
+
+    rmpath(path_res)
+    rmpath(path_tmp)
+    mkpath('tmp')
+
     error = None
     for fn in [download_vendordir, download_urlopen, download_curl, download_wget]:
         try:
-            fn(url, path, log, vendordir)
+            fn(url, path_tmp, log, vendordir)
+            shutil.move(path_tmp, path_res)
+            rm_emptydir('tmp')
             return
         except Exception as e:
+            if fn == download_vendordir:
+                print('[download] %s' % url)
             if fn == download_urlopen:
                 error = e
+
     print("error: can't download '%s': %s" % (url, error), file=sys.stderr)
     exit(1)
 
-def extract(path, dirname):
-    print('[extract] %s' % path)
-    rmpath(dirname)
-    tar = tarfile.open(path, 'r')
-    tar.extractall('.')
+def extract(filename, dirname):
+    dirname_res = 'src/' + dirname
+    dirname_tmp = 'tmp/' + dirname
+
+    if os.path.exists(dirname_res):
+        print('[found cached] %s' % dirname)
+        return
+
+    print('[extract] %s' % filename)
+
+    rmpath(dirname_res)
+    rmpath(dirname_tmp)
+    mkpath('tmp')
+
+    tar = tarfile.open('src/'+filename, 'r')
+    tar.extractall('tmp')
     tar.close()
+
+    shutil.move(dirname_tmp, dirname_res)
+    rm_emptydir('tmp')
 
 def execute(cmd, log):
     print('[execute] %s' % cmd)
@@ -213,7 +247,8 @@ logfile = os.path.join(builddir, 'build.log')
 
 rmpath(os.path.join(builddir, 'commit'))
 mkpath(os.path.join(builddir, 'src'))
-os.chdir(os.path.join(builddir, 'src'))
+
+os.chdir(os.path.join(builddir))
 
 if name == 'uv':
     download('http://dist.libuv.org/dist/v%s/libuv-v%s.tar.gz' % (ver, ver),
@@ -222,7 +257,7 @@ if name == 'uv':
              vendordir)
     extract('libuv-v%s.tar.gz' % ver,
             'libuv-v%s' % ver)
-    os.chdir('libuv-v%s' % ver)
+    os.chdir('src/libuv-v%s' % ver)
     freplace('include/uv.h', '__attribute__((visibility("default")))', '')
     execute('./autogen.sh', logfile)
     execute('./configure --host=%s %s %s' % (
@@ -243,8 +278,8 @@ elif name == 'openfec':
         vendordir)
     extract('openfec_v%s.tar.gz' % ver,
             'openfec-%s' % ver)
-    os.chdir('openfec-%s' % ver)
-    os.mkdir('build')
+    os.chdir('src/openfec-%s' % ver)
+    mkpath('build')
     os.chdir('build')
     args = [
         '-DCMAKE_C_COMPILER=%s' % '-'.join([s for s in [toolchain, 'gcc'] if s]),
@@ -284,7 +319,7 @@ elif name == 'alsa':
         vendordir)
     extract('alsa-lib-%s.tar.bz2' % ver,
             'alsa-lib-%s' % ver)
-    os.chdir('alsa-lib-%s' % ver)
+    os.chdir('src/alsa-lib-%s' % ver)
     execute('./configure --host=%s %s' % (
         toolchain,
         ' '.join([
@@ -306,7 +341,7 @@ elif name == 'ltdl':
         vendordir)
     extract('libtool-%s.tar.gz' % ver,
             'libtool-%s' % ver)
-    os.chdir('libtool-%s' % ver)
+    os.chdir('src/libtool-%s' % ver)
     execute('./configure --host=%s %s' % (
         toolchain,
         ' '.join([
@@ -326,7 +361,7 @@ elif name == 'json':
         vendordir)
     extract('json-%s.tar.gz' % ver,
             'json-c-json-c-%s' % ver)
-    os.chdir('json-c-json-c-%s' % ver)
+    os.chdir('src/json-c-json-c-%s' % ver)
     execute('%s --host=%s %s %s' % (
         ' '.join(filter(None, [
             # workaround for outdated config.sub
@@ -355,7 +390,7 @@ elif name == 'sndfile':
         vendordir)
     extract('libsndfile-%s.tar.gz' % ver,
             'libsndfile-%s' % ver)
-    os.chdir('libsndfile-%s' % ver)
+    os.chdir('src/libsndfile-%s' % ver)
     execute('%s --host=%s %s %s' % (
         ' '.join(filter(None, [
             # workaround for outdated config.sub
@@ -381,7 +416,7 @@ elif name == 'pulseaudio':
         vendordir)
     extract('pulseaudio-%s.tar.gz' % ver,
             'pulseaudio-%s' % ver)
-    os.chdir('pulseaudio-%s' % ver)
+    os.chdir('src/pulseaudio-%s' % ver)
     execute('./configure --host=%s %s %s %s' % (
         toolchain,
         makeflags(workdir, toolchain, deplist, cflags='-w -fomit-frame-pointer -O2'),
@@ -421,7 +456,7 @@ elif name == 'sox':
         vendordir)
     extract('sox-%s.tar.gz' % ver,
             'sox-%s' % ver)
-    os.chdir('sox-%s' % ver)
+    os.chdir('src/sox-%s' % ver)
     execute('./configure --host=%s %s %s' % (
         toolchain,
         makeflags(workdir, toolchain, deplist, cflags='-fvisibility=hidden', variant=variant),
@@ -444,7 +479,7 @@ elif name == 'gengetopt':
              vendordir)
     extract('gengetopt-%s.tar.gz' % ver,
             'gengetopt-%s' % ver)
-    os.chdir('gengetopt-%s' % ver)
+    os.chdir('src/gengetopt-%s' % ver)
     execute('./configure', logfile)
     execute('make', logfile) # -j is buggy for gengetopt
     install_files('src/gengetopt', os.path.join(builddir, 'bin'))
@@ -457,7 +492,7 @@ elif name == 'cpputest':
         vendordir)
     extract('cpputest-%s.tar.gz' % ver,
             'cpputest-%s' % ver)
-    os.chdir('cpputest-%s' % ver)
+    os.chdir('src/cpputest-%s' % ver)
     execute('./configure --host=%s %s %s' % (
             toolchain,
             # disable warnings, since CppUTest uses -Werror and may fail to
