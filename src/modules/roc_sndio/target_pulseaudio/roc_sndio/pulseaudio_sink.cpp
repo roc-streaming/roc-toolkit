@@ -21,7 +21,7 @@ namespace {
 
 const core::nanoseconds_t ReportInterval = 10 * core::Second;
 
-const core::nanoseconds_t DefaultLatency = core::Millisecond * 40;
+const core::nanoseconds_t DefaultLatency = core::Millisecond * 50;
 
 const core::nanoseconds_t MinTimeout = core::Millisecond * 50;
 const core::nanoseconds_t MaxTimeout = core::Second * 2;
