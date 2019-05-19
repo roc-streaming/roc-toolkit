@@ -288,14 +288,14 @@ int pa__init(pa_module* m) {
         goto error;
     }
 
-    if (roc_sender_connect(u->sender, ROC_PORT_AUDIO_SOURCE, ROC_PROTO_RTP_RSM8_SOURCE,
+    if (roc_sender_connect(u->sender, ROC_PORT_AUDIO_SOURCE, ROC_PROTO_RTP_RS8M_SOURCE,
                            &remote_source_addr)
         != 0) {
         pa_log("can't connect roc sender to remote address");
         goto error;
     }
 
-    if (roc_sender_connect(u->sender, ROC_PORT_AUDIO_REPAIR, ROC_PROTO_RSM8_REPAIR,
+    if (roc_sender_connect(u->sender, ROC_PORT_AUDIO_REPAIR, ROC_PROTO_RS8M_REPAIR,
                            &remote_repair_addr)
         != 0) {
         pa_log("can't connect roc sender to remote address");

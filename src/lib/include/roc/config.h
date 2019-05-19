@@ -41,10 +41,10 @@ typedef enum roc_protocol {
 
     /** RTP source packet (RFC 3550) + FECFRAME Reed-Solomon footer (RFC 6865) with m=8.
      */
-    ROC_PROTO_RTP_RSM8_SOURCE = 2,
+    ROC_PROTO_RTP_RS8M_SOURCE = 2,
 
     /** FEC repair packet + FECFRAME Reed-Solomon header (RFC 6865) with m=8. */
-    ROC_PROTO_RSM8_REPAIR = 3,
+    ROC_PROTO_RS8M_REPAIR = 3,
 
     /** RTP source packet (RFC 3550) + FECFRAME LDPC-Staircase footer (RFC 6816). */
     ROC_PROTO_RTP_LDPC_SOURCE = 4,

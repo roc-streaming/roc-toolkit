@@ -94,10 +94,10 @@ public:
         sndr_ = roc_sender_open(context.get(), &config);
         CHECK(sndr_);
         CHECK(roc_sender_bind(sndr_, &addr) == 0);
-        CHECK(roc_sender_connect(sndr_, ROC_PORT_AUDIO_SOURCE, ROC_PROTO_RTP_RSM8_SOURCE,
+        CHECK(roc_sender_connect(sndr_, ROC_PORT_AUDIO_SOURCE, ROC_PROTO_RTP_RS8M_SOURCE,
                                  dst_source_addr)
               == 0);
-        CHECK(roc_sender_connect(sndr_, ROC_PORT_AUDIO_REPAIR, ROC_PROTO_RSM8_REPAIR,
+        CHECK(roc_sender_connect(sndr_, ROC_PORT_AUDIO_REPAIR, ROC_PROTO_RS8M_REPAIR,
                                  dst_repair_addr)
               == 0);
     }
@@ -144,10 +144,10 @@ public:
         CHECK(roc_address_init(&repair_addr_, ROC_AF_AUTO, "127.0.0.1", 0) == 0);
         recv_ = roc_receiver_open(context.get(), &config);
         CHECK(recv_);
-        CHECK(roc_receiver_bind(recv_, ROC_PORT_AUDIO_SOURCE, ROC_PROTO_RTP_RSM8_SOURCE,
+        CHECK(roc_receiver_bind(recv_, ROC_PORT_AUDIO_SOURCE, ROC_PROTO_RTP_RS8M_SOURCE,
                                 &source_addr_)
               == 0);
-        CHECK(roc_receiver_bind(recv_, ROC_PORT_AUDIO_REPAIR, ROC_PROTO_RSM8_REPAIR,
+        CHECK(roc_receiver_bind(recv_, ROC_PORT_AUDIO_REPAIR, ROC_PROTO_RS8M_REPAIR,
                                 &repair_addr_)
               == 0);
     }

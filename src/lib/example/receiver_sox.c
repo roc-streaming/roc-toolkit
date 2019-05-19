@@ -94,7 +94,7 @@ int main() {
         != 0) {
         oops("roc_address_init");
     }
-    if (roc_receiver_bind(receiver, ROC_PORT_AUDIO_SOURCE, ROC_PROTO_RTP_RSM8_SOURCE,
+    if (roc_receiver_bind(receiver, ROC_PORT_AUDIO_SOURCE, ROC_PROTO_RTP_RS8M_SOURCE,
                           &recv_source_addr)
         != 0) {
         oops("roc_receiver_bind");
@@ -109,7 +109,7 @@ int main() {
         != 0) {
         oops("roc_address_init");
     }
-    if (roc_receiver_bind(receiver, ROC_PORT_AUDIO_REPAIR, ROC_PROTO_RSM8_REPAIR,
+    if (roc_receiver_bind(receiver, ROC_PORT_AUDIO_REPAIR, ROC_PROTO_RS8M_REPAIR,
                           &recv_repair_addr)
         != 0) {
         oops("roc_receiver_bind");

@@ -248,7 +248,7 @@ bool make_port_config(pipeline::PortConfig& out,
         case ROC_PROTO_RTP:
             out.protocol = pipeline::Proto_RTP;
             break;
-        case ROC_PROTO_RTP_RSM8_SOURCE:
+        case ROC_PROTO_RTP_RS8M_SOURCE:
             out.protocol = pipeline::Proto_RTP_RSm8_Source;
             break;
         case ROC_PROTO_RTP_LDPC_SOURCE:
@@ -262,7 +262,7 @@ bool make_port_config(pipeline::PortConfig& out,
 
     case ROC_PORT_AUDIO_REPAIR:
         switch ((int)proto) {
-        case ROC_PROTO_RSM8_REPAIR:
+        case ROC_PROTO_RS8M_REPAIR:
             out.protocol = pipeline::Proto_RSm8_Repair;
             break;
         case ROC_PROTO_LDPC_REPAIR:

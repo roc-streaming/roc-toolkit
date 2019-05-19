@@ -233,14 +233,14 @@ int pa__init(pa_module* m) {
         goto error;
     }
 
-    if (roc_receiver_bind(u->receiver, ROC_PORT_AUDIO_SOURCE, ROC_PROTO_RTP_RSM8_SOURCE,
+    if (roc_receiver_bind(u->receiver, ROC_PORT_AUDIO_SOURCE, ROC_PROTO_RTP_RS8M_SOURCE,
                           &local_source_addr)
         != 0) {
         pa_log("can't connect roc receiver to local address");
         goto error;
     }
 
-    if (roc_receiver_bind(u->receiver, ROC_PORT_AUDIO_REPAIR, ROC_PROTO_RSM8_REPAIR,
+    if (roc_receiver_bind(u->receiver, ROC_PORT_AUDIO_REPAIR, ROC_PROTO_RS8M_REPAIR,
                           &local_repair_addr)
         != 0) {
         pa_log("can't connect roc receiver to local address");
