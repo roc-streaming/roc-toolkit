@@ -65,23 +65,13 @@ public:
         , source_stock_(0)
         , repair_queue_(0)
         , repair_stock_(0)
-        , n_lost_(0) {
+        , n_lost_(0)
+        , n_delayed_(0){
         reset();
     }
 
     virtual void write(const packet::PacketPtr& p) {
-        if (is_lost_(packet_num_)) {
-            ++packet_num_;
-            return;
-        }
-
-        if (p->flags() & packet::Packet::FlagAudio) {
-            source_stock_.write(p);
-        } else if (p->flags() & packet::Packet::FlagRepair) {
-            repair_stock_.write(p);
-        } else {
-            FAIL("unexpected packet type");
-        }
+        write_(p);
 
         if (++packet_num_ >= NumSourcePackets + NumRepairPackets) {
             packet_num_ = 0;
@@ -121,7 +111,9 @@ public:
         }
 
         packet_num_ = 0;
-        n_lost_ = 0;
+
+        clear_losses();
+        clear_delays();
     }
 
     void lose(const size_t n) {
@@ -133,7 +125,19 @@ public:
         n_lost_ = 0;
     }
 
-    void push_all() {
+    void delay(const size_t n) {
+        CHECK(n_delayed_ != MaxDelayed);
+        delayed_packet_nums_[n_delayed_++] = n;
+    }
+
+    void clear_delays() {
+        for (size_t i = 0; i < MaxDelayed; i++) {
+            delayed_stock_[i] = NULL;
+        }
+        n_delayed_ = 0;
+    }
+
+    void push_written() {
         while (source_stock_.head()) {
             source_queue_.write(source_stock_.read());
         }
@@ -142,7 +146,7 @@ public:
         }
     }
 
-    bool pop_source() {
+    bool push_one_source() {
         packet::PacketPtr p;
         if (!(p = source_stock_.read())) {
             return false;
@@ -151,10 +155,56 @@ public:
         return true;
     }
 
+    void push_delayed(const size_t n) {
+        for (size_t i = 0; i < n_delayed_; i++) {
+            if (delayed_packet_nums_[i] == n) {
+                if (delayed_stock_[i]) {
+                    route_(source_queue_, repair_queue_, delayed_stock_[i]);
+                    delayed_stock_[i] = NULL;
+                } else {
+                    FAIL("no delayed packet");
+                }
+            }
+        }
+    }
+
 private:
+    void write_(const packet::PacketPtr& p) {
+        if (is_lost_(packet_num_)) {
+            return;
+        }
+
+        if (delay_(packet_num_, p)) {
+            return;
+        }
+
+        route_(source_stock_, repair_stock_, p);
+    }
+
+    void
+    route_(packet::SortedQueue& sq, packet::SortedQueue& rq, const packet::PacketPtr& p) {
+        if (p->flags() & packet::Packet::FlagAudio) {
+            sq.write(p);
+        } else if (p->flags() & packet::Packet::FlagRepair) {
+            rq.write(p);
+        } else {
+            FAIL("unexpected packet type");
+        }
+    }
+
     bool is_lost_(size_t n) const {
         for (size_t i = 0; i < n_lost_; i++) {
             if (lost_packet_nums_[i] == n) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool delay_(size_t n, packet::PacketPtr pp) {
+        for (size_t i = 0; i < n_delayed_; i++) {
+            if (delayed_packet_nums_[i] == n) {
+                delayed_stock_[i] = pp;
                 return true;
             }
         }
@@ -173,6 +223,13 @@ private:
 
     size_t lost_packet_nums_[MaxLost];
     size_t n_lost_;
+
+    enum { MaxDelayed = 100 };
+
+    size_t delayed_packet_nums_[MaxDelayed];
+    size_t n_delayed_;
+
+    packet::PacketPtr delayed_stock_[MaxDelayed];
 };
 
 } // namespace
@@ -271,7 +328,7 @@ TEST(writer_reader, no_losses) {
         for (size_t i = 0; i < NumSourcePackets; ++i) {
             writer.write(source_packets[i]);
         }
-        dispatcher.push_all();
+        dispatcher.push_written();
 
         CHECK(dispatcher.source_size() == NumSourcePackets);
         CHECK(dispatcher.repair_size() == NumRepairPackets);
@@ -312,7 +369,7 @@ TEST(writer_reader, 1_loss) {
         for (size_t i = 0; i < NumSourcePackets; ++i) {
             writer.write(source_packets[i]);
         }
-        dispatcher.push_all();
+        dispatcher.push_written();
 
         LONGS_EQUAL(NumSourcePackets - 1, dispatcher.source_size());
         LONGS_EQUAL(NumRepairPackets, dispatcher.repair_size());
@@ -359,7 +416,7 @@ TEST(writer_reader, lost_first_packet_in_first_block) {
         for (size_t i = 0; i < NumSourcePackets; ++i) {
             writer.write(source_packets[i]);
         }
-        dispatcher.push_all();
+        dispatcher.push_written();
 
         // Receive every sent packet and the repaired one.
         for (size_t i = 1; i < NumSourcePackets * 2; ++i) {
@@ -410,7 +467,7 @@ TEST(writer_reader, multiple_blocks_1_loss) {
             for (size_t i = 0; i < NumSourcePackets; ++i) {
                 writer.write(source_packets[i]);
             }
-            dispatcher.push_all();
+            dispatcher.push_written();
 
             if (lost_sq == size_t(-1)) {
                 CHECK(dispatcher.source_size() == NumSourcePackets);
@@ -467,7 +524,7 @@ TEST(writer_reader, interleaver) {
             many_packets[i] = fill_one_packet(i);
             writer.write(many_packets[i]);
         }
-        dispatcher.push_all();
+        dispatcher.push_written();
 
         intrlvr.flush();
 
@@ -509,7 +566,7 @@ TEST(writer_reader, decoding_when_multiple_blocks_in_queue) {
                 writer.write(source_packets[i]);
             }
         }
-        dispatcher.push_all();
+        dispatcher.push_written();
 
         CHECK(dispatcher.source_size() == NumSourcePackets * NumBlocks);
         CHECK(dispatcher.repair_size() == NumRepairPackets * NumBlocks);
@@ -526,11 +583,12 @@ TEST(writer_reader, decoding_when_multiple_blocks_in_queue) {
     }
 }
 
-IGNORE_TEST(writer_reader, decoding_late_packet) {
-    // 1. Fill all packets in block except one lost packet.
-    // 2. Read first part of block till lost packet.
-    // 3. Receive one missing packet.
-    // 4. Read and check latter block part.
+TEST(writer_reader, decoding_late_packets) {
+    // 1. Send a block, but delay some packets in the middle of the block.
+    // 2. Read first part of the block before delayed packets.
+    // 3. Deliver all delayed packets except one.
+    // 4. Read second part of the block.
+    // 5. Deliver the last delayed packet.
     for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
         config.scheme = Test_fec_schemes[n_scheme];
 
@@ -552,38 +610,42 @@ IGNORE_TEST(writer_reader, decoding_late_packet) {
         CHECK(reader.valid());
 
         fill_all_packets(0);
+
+        // Mark packets 7-10 as delayed
+        dispatcher.clear_delays();
+        for (size_t i = 7; i <= 10; ++i) {
+            dispatcher.delay(i);
+        }
+
         for (size_t i = 0; i < NumSourcePackets; ++i) {
-            // Hold from #7 to #10
-            if (i >= 7 && i <= 10) {
-                continue;
-            }
             writer.write(source_packets[i]);
         }
-        dispatcher.push_all();
+
+        // Deliver packets 0-6 and 11-20
+        dispatcher.push_written();
         CHECK(dispatcher.source_size() == NumSourcePackets - (10 - 7 + 1));
 
-        // Check 0-7 packets.
+        // Read packets 0-6
         for (size_t i = 0; i < 7; ++i) {
             packet::PacketPtr p = reader.read();
         }
-        // Receive packet #9 and #10
-        writer.write(source_packets[9]);
-        writer.write(source_packets[10]);
-        dispatcher.pop_source();
-        dispatcher.pop_source();
 
-        for (size_t i = 9; i < NumSourcePackets; ++i) {
+        // Deliver packets 7-9
+        dispatcher.push_delayed(7);
+        dispatcher.push_delayed(8);
+        dispatcher.push_delayed(9);
+
+        for (size_t i = 7; i < NumSourcePackets; ++i) {
             packet::PacketPtr p = reader.read();
             CHECK(p);
             check_audio_packet(p, i);
-            // Receive late packet that Reader have to throw away.
+
+            // Deliver packet 10 (reader should throw it away)
             if (i == 10) {
-                writer.write(source_packets[7]);
-                writer.write(source_packets[8]);
-                dispatcher.pop_source();
-                dispatcher.pop_source();
+                dispatcher.push_delayed(10);
             }
         }
+
         LONGS_EQUAL(0, dispatcher.source_size());
     }
 }
@@ -622,7 +684,7 @@ TEST(writer_reader, encode_packet_fields) {
                 for (size_t i = 0; i < NumSourcePackets; ++i) {
                     writer.write(source_packets[i]);
                 }
-                dispatcher.push_all();
+                dispatcher.push_written();
 
                 if (block_num == 0) {
                     const packet::FEC* fec = dispatcher.repair_head()->fec();
@@ -707,7 +769,7 @@ TEST(writer_reader, decode_bad_source_id) {
         for (size_t i = 0; i < NumSourcePackets; ++i) {
             writer.write(source_packets[i]);
         }
-        dispatcher.push_all();
+        dispatcher.push_written();
 
         for (size_t i = 0; i < 5; ++i) {
             check_audio_packet(reader.read(), i);
@@ -756,13 +818,13 @@ TEST(writer_reader, multitime_decode) {
 
         for (size_t i = 0; i < NumSourcePackets; ++i) {
             writer.write(source_packets[i]);
-            dispatcher.pop_source();
+            dispatcher.push_one_source();
         }
 
         fill_all_packets(NumSourcePackets);
         for (size_t i = 0; i < NumSourcePackets; ++i) {
             writer.write(source_packets[i]);
-            dispatcher.pop_source();
+            dispatcher.push_one_source();
         }
 
         for (size_t i = 0; i < NumSourcePackets; ++i) {
@@ -771,7 +833,7 @@ TEST(writer_reader, multitime_decode) {
                 // The moment of truth.
             } else if (i == 15) {
                 // Get FEC packets. Reader must try to decode once more.
-                dispatcher.push_all();
+                dispatcher.push_written();
                 check_audio_packet(reader.read(), i);
             }
         }
@@ -814,14 +876,14 @@ TEST(writer_reader, delayed_packets) {
             writer.write(source_packets[i]);
         }
         for (size_t i = 0; i < 10; ++i) {
-            dispatcher.pop_source();
+            dispatcher.push_one_source();
         }
 
         for (size_t i = 0; i < 10; ++i) {
             check_audio_packet(reader.read(), i);
         }
         CHECK(!reader.read());
-        dispatcher.push_all();
+        dispatcher.push_written();
         for (size_t i = 10; i < NumSourcePackets; ++i) {
             check_audio_packet(reader.read(), i);
         }
@@ -867,7 +929,7 @@ TEST(writer_reader, drop_outdated_block) {
             writer.write(source_packets[n]);
         }
 
-        dispatcher.push_all();
+        dispatcher.push_written();
 
         // Read first block.
         const packet::PacketPtr first_packet = reader.read();
@@ -932,7 +994,7 @@ TEST(writer_reader, repaired_block_numbering) {
             writer.write(source_packets[n]);
         }
 
-        dispatcher.push_all();
+        dispatcher.push_written();
 
         // Read first block.
         const packet::PacketPtr first_packet = reader.read();
@@ -996,7 +1058,7 @@ TEST(writer_reader, writer_block_sizes) {
             CHECK(dispatcher.source_size() == block_sizes[n]);
             CHECK(dispatcher.repair_size() == NumRepairPackets);
 
-            dispatcher.push_all();
+            dispatcher.push_written();
             dispatcher.reset();
         }
     }
@@ -1042,7 +1104,7 @@ TEST(writer_reader, resize_block_begin) {
                 writer.write(packets[i]);
             }
 
-            dispatcher.push_all();
+            dispatcher.push_written();
 
             for (size_t i = 0; i < block_sizes[n]; ++i) {
                 const packet::PacketPtr p = reader.read();
@@ -1109,7 +1171,7 @@ TEST(writer_reader, resize_block_middle) {
                 writer.write(packets[i]);
             }
 
-            dispatcher.push_all();
+            dispatcher.push_written();
 
             for (size_t i = 0; i < prev_sblen; ++i) {
                 const packet::PacketPtr p = reader.read();
@@ -1171,7 +1233,7 @@ TEST(writer_reader, resize_block_losses) {
                 writer.write(packets[i]);
             }
 
-            dispatcher.push_all();
+            dispatcher.push_written();
             dispatcher.clear_losses();
 
             for (size_t i = 0; i < block_sizes[n]; ++i) {
