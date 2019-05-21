@@ -54,6 +54,9 @@ public:
     //! Check if object is successfully constructed.
     bool valid() const;
 
+    //! Check if writer is still working.
+    bool alive() const;
+
     //! Set number of source packets per block.
     void resize(size_t sblen);
 
@@ -100,6 +103,7 @@ private:
     size_t cur_packet_;
 
     bool valid_;
+    bool alive_;
 };
 
 } // namespace fec

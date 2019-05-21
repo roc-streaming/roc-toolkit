@@ -39,7 +39,8 @@ Writer::Writer(const Config& config,
     , cur_sbn_((packet::blknum_t)core::random(packet::blknum_t(-1)))
     , cur_block_repair_sn_((packet::seqnum_t)core::random(packet::seqnum_t(-1)))
     , cur_packet_(0)
-    , valid_(false) {
+    , valid_(false)
+    , alive_(true) {
     if (!repair_packets_.resize(config.n_repair_packets)) {
         return;
     }
@@ -50,9 +51,17 @@ bool Writer::valid() const {
     return valid_;
 }
 
+bool Writer::alive() const {
+    return alive_;
+}
+
 void Writer::write(const packet::PacketPtr& pp) {
     roc_panic_if_not(valid());
     roc_panic_if_not(pp);
+
+    if (!alive_) {
+        return;
+    }
 
     if (!pp->rtp()) {
         roc_panic("fec writer: unexpected non-rtp packet");
@@ -71,8 +80,7 @@ void Writer::write(const packet::PacketPtr& pp) {
 
     if (cur_packet_ == 0) {
         if (!begin_block_()) {
-            // FIXME: shutdown instead of panic
-            roc_panic("fec writer: can't start block");
+            return;
         }
     }
 
@@ -87,7 +95,7 @@ void Writer::write(const packet::PacketPtr& pp) {
 }
 
 void Writer::resize(size_t sblen) {
-    roc_log(LogDebug, "fec writer: update sblen, cur=%lu next=%lu",
+    roc_log(LogDebug, "fec writer: update sblen: cur=%lu next=%lu",
             (unsigned long)cur_sblen_, (unsigned long)sblen);
 
     next_sblen_ = sblen;
@@ -115,8 +123,12 @@ bool Writer::begin_block_() {
         return true;
     }
 
-    roc_log(LogError, "fec writer: can't begin encoding");
-    return false;
+    roc_log(LogError,
+            "fec writer: can't begin encoder block, shutting down:"
+            " sblen=%lu rblen=%lu",
+            (unsigned long)cur_sblen_, (unsigned long)cur_rblen_);
+
+    return (alive_ = false);
 }
 
 void Writer::end_block_() {

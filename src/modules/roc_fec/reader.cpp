@@ -177,10 +177,10 @@ bool Reader::update_block_size_(size_t new_sblen) {
 
     if (!source_block_.resize(new_sblen)) {
         roc_log(LogDebug,
-                "fec reader: can't update source block size:"
+                "fec reader: can't allocate source block table, shutting down:"
                 " cur_sbl=%lu new_sbl=%lu",
                 (unsigned long)cur_sblen, (unsigned long)new_sblen);
-        return false;
+        return (alive_ = false);
     }
 
     roc_log(LogDebug, "fec reader: update sblen: cur_sbl=%lu new_sbl=%lu",
