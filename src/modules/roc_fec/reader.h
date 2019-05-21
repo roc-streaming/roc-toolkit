@@ -63,19 +63,19 @@ public:
 
 private:
     packet::PacketPtr read_();
-    packet::PacketPtr read_first_packet_();
+
+    packet::PacketPtr get_first_packet_();
     packet::PacketPtr get_next_packet_();
 
-    bool update_size_(size_t);
-
+    bool update_block_size_(size_t);
     void next_block_();
+
     void try_repair_();
 
     void fetch_packets_();
-    void update_packets_();
-
-    void update_source_packets_();
-    void update_repair_packets_();
+    void update_block_();
+    void update_source_block_();
+    void update_repair_block_();
 
     bool validate_incoming_source_packet_(const packet::PacketPtr&);
     bool validate_incoming_repair_packet_(const packet::PacketPtr&);
