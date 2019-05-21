@@ -249,6 +249,8 @@ void Reader::try_repair_() {
             continue;
         }
 
+        pp->add_flags(packet::Packet::FlagRestored);
+
         source_block_[n] = pp;
     }
 
