@@ -91,30 +91,30 @@ packet::PacketPtr Reader::read_() {
 
 packet::PacketPtr Reader::read_first_packet_() {
     packet::PacketPtr pp = source_queue_.head();
-    if (pp) {
-        packet::FEC* fec = pp->fec();
-        if (!fec) {
-            roc_panic("fec reader: unexpected non-fec source packet");
-        }
-
-        cur_sbn_ = fec->source_block_number;
-        if (!update_size_(fec->source_block_length)) {
-            roc_log(LogTrace,
-                    "fec reader: dropping first source packet: can't update block size: "
-                    "esi=%lu sblen=%lu blen=%lu",
-                    (unsigned long)fec->encoding_symbol_id,
-                    (unsigned long)fec->source_block_length,
-                    (unsigned long)fec->block_length);
-            return NULL;
-        }
-
-        if (!has_source_) {
-            source_ = pp->rtp()->source;
-            has_source_ = true;
-        }
-
-        drop_repair_packets_from_prev_blocks_();
+    if (!pp) {
+        return NULL;
     }
+
+    packet::FEC& fec = *pp->fec();
+    packet::RTP& rtp = *pp->rtp();
+
+    cur_sbn_ = fec.source_block_number;
+    if (!update_size_(fec.source_block_length)) {
+        roc_log(LogTrace,
+                "fec reader: dropping first source packet: can't update block size: "
+                "esi=%lu sblen=%lu blen=%lu",
+                (unsigned long)fec.encoding_symbol_id,
+                (unsigned long)fec.source_block_length,
+                (unsigned long)fec.block_length);
+        return NULL;
+    }
+
+    if (!has_source_) {
+        source_ = rtp.source;
+        has_source_ = true;
+    }
+
+    drop_repair_packets_from_prev_blocks_();
 
     return pp;
 }
@@ -309,62 +309,56 @@ void Reader::update_source_packets_() {
             break;
         }
 
-        const packet::RTP* rtp = pp->rtp();
-        const packet::FEC* fec = pp->fec();
-        if (!rtp) {
-            roc_panic("fec reader: unexpected non-rtp source packet");
-        }
-        if (!fec) {
-            roc_panic("fec reader: unexpected non-fec source packet");
-        }
+        const packet::RTP& rtp = *pp->rtp();
+        const packet::FEC& fec = *pp->fec();
 
-        if (!packet::blknum_le(fec->source_block_number, cur_sbn_)) {
+        if (!packet::blknum_le(fec.source_block_number, cur_sbn_)) {
             break;
         }
 
-        source_queue_.read();
+        (void)source_queue_.read();
         n_fetched++;
 
-        if (packet::blknum_lt(fec->source_block_number, cur_sbn_)) {
+        if (packet::blknum_lt(fec.source_block_number, cur_sbn_)) {
             roc_log(LogTrace,
                     "fec reader: dropping source packet: belongs to previous block:"
                     " cur_sbn=%lu pkt_sbn=%lu pkt_sn=%lu",
-                    (unsigned long)cur_sbn_, (unsigned long)fec->source_block_number,
-                    (unsigned long)rtp->seqnum);
+                    (unsigned long)cur_sbn_, (unsigned long)fec.source_block_number,
+                    (unsigned long)rtp.seqnum);
             n_dropped++;
             continue;
         }
 
         // should not happen: we have handled preceding and following blocks above
-        roc_panic_if_not(fec->source_block_number == cur_sbn_);
+        roc_panic_if_not(fec.source_block_number == cur_sbn_);
 
         if (!validate_incoming_source_packet_(pp)) {
             roc_log(LogTrace,
                     "fec reader: dropping source packet: invalid fields: "
                     "esi=%lu sblen=%lu blen=%lu",
-                    (unsigned long)fec->encoding_symbol_id,
-                    (unsigned long)fec->source_block_length,
-                    (unsigned long)fec->block_length);
+                    (unsigned long)fec.encoding_symbol_id,
+                    (unsigned long)fec.source_block_length,
+                    (unsigned long)fec.block_length);
             n_dropped++;
             continue;
         }
 
-        if (!update_size_(fec->source_block_length)) {
+        if (!update_size_(fec.source_block_length)) {
             roc_log(LogTrace,
                     "fec reader: dropping source packet: can't update block size: "
                     "esi=%lu sblen=%lu blen=%lu",
-                    (unsigned long)fec->encoding_symbol_id,
-                    (unsigned long)fec->source_block_length,
-                    (unsigned long)fec->block_length);
+                    (unsigned long)fec.encoding_symbol_id,
+                    (unsigned long)fec.source_block_length,
+                    (unsigned long)fec.block_length);
             n_dropped++;
             continue;
         }
 
         // should not happen: we have handled validation and block size above
-        roc_panic_if_not(fec->source_block_length == source_block_.size());
-        roc_panic_if_not(fec->encoding_symbol_id < source_block_.size());
+        roc_panic_if_not(fec.source_block_length == source_block_.size());
+        roc_panic_if_not(fec.encoding_symbol_id < source_block_.size());
 
-        const size_t p_num = fec->encoding_symbol_id;
+        const size_t p_num = fec.encoding_symbol_id;
 
         if (!source_block_[p_num]) {
             can_repair_ = true;
@@ -388,87 +382,84 @@ void Reader::update_repair_packets_() {
             break;
         }
 
-        const packet::FEC* fec = pp->fec();
-        if (!fec) {
-            roc_panic("fec reader: unexpected non-fec repair packet");
-        }
+        const packet::FEC& fec = *pp->fec();
 
-        if (!packet::blknum_le(fec->source_block_number, cur_sbn_)) {
+        if (!packet::blknum_le(fec.source_block_number, cur_sbn_)) {
             break;
         }
 
-        repair_queue_.read();
+        (void)repair_queue_.read();
         n_fetched++;
 
-        if (packet::blknum_lt(fec->source_block_number, cur_sbn_)) {
+        if (packet::blknum_lt(fec.source_block_number, cur_sbn_)) {
             roc_log(LogTrace,
                     "fec reader: dropping repair packet: belongs to previous block:"
                     " cur_sbn=%lu pkt_sbn=%lu",
-                    (unsigned long)cur_sbn_, (unsigned long)fec->source_block_number);
+                    (unsigned long)cur_sbn_, (unsigned long)fec.source_block_number);
             n_dropped++;
             continue;
         }
 
         // should not happen: we have handled preceding and following blocks above
-        roc_panic_if(fec->source_block_number != cur_sbn_);
+        roc_panic_if(fec.source_block_number != cur_sbn_);
 
         if (!validate_incoming_repair_packet_(pp)) {
             roc_log(LogTrace,
                     "fec reader: dropping repair packet: invalid fields: "
                     "esi=%lu sblen=%lu blen=%lu",
-                    (unsigned long)fec->encoding_symbol_id,
-                    (unsigned long)fec->source_block_length,
-                    (unsigned long)fec->block_length);
+                    (unsigned long)fec.encoding_symbol_id,
+                    (unsigned long)fec.source_block_length,
+                    (unsigned long)fec.block_length);
             n_dropped++;
             continue;
         }
 
-        if (fec->source_block_length != source_block_.size()) {
+        if (fec.source_block_length != source_block_.size()) {
             // FIXME: if this is the first packet in a block, update block size
             roc_log(
                 LogTrace,
                 "fec reader: dropping repair packet: mismatching source block length: "
                 "esi=%lu sblen=%lu blen=%lu",
-                (unsigned long)fec->encoding_symbol_id,
-                (unsigned long)fec->source_block_length,
-                (unsigned long)fec->block_length);
+                (unsigned long)fec.encoding_symbol_id,
+                (unsigned long)fec.source_block_length,
+                (unsigned long)fec.block_length);
             n_dropped++;
             continue;
         }
 
-        if (fec->block_length != 0) {
-            if (fec->block_length != source_block_.size() + repair_block_.size()) {
+        if (fec.block_length != 0) {
+            if (fec.block_length != source_block_.size() + repair_block_.size()) {
                 // FIXME: if this is the first packet in a block, update block size
                 roc_log(LogTrace,
                         "fec reader: dropping repair packet: mismatching block length: "
                         "esi=%lu sblen=%lu blen=%lu",
-                        (unsigned long)fec->encoding_symbol_id,
-                        (unsigned long)fec->source_block_length,
-                        (unsigned long)fec->block_length);
+                        (unsigned long)fec.encoding_symbol_id,
+                        (unsigned long)fec.source_block_length,
+                        (unsigned long)fec.block_length);
                 n_dropped++;
                 continue;
             }
         } else {
             // FIXME: automatically increase block size
-            if (fec->encoding_symbol_id > source_block_.size() + repair_block_.size()) {
+            if (fec.encoding_symbol_id > source_block_.size() + repair_block_.size()) {
                 roc_log(LogTrace,
                         "fec reader: dropping repair packet: out of range encoding id: "
                         "esi=%lu sblen=%lu blen=%lu",
-                        (unsigned long)fec->encoding_symbol_id,
-                        (unsigned long)fec->source_block_length,
-                        (unsigned long)fec->block_length);
+                        (unsigned long)fec.encoding_symbol_id,
+                        (unsigned long)fec.source_block_length,
+                        (unsigned long)fec.block_length);
                 n_dropped++;
                 continue;
             }
         }
 
         // should not happen: we have handled validation and block size above
-        roc_panic_if_not(fec->source_block_length == source_block_.size());
-        roc_panic_if_not(fec->encoding_symbol_id >= source_block_.size());
-        roc_panic_if_not(fec->encoding_symbol_id
+        roc_panic_if_not(fec.source_block_length == source_block_.size());
+        roc_panic_if_not(fec.encoding_symbol_id >= source_block_.size());
+        roc_panic_if_not(fec.encoding_symbol_id
                          < source_block_.size() + repair_block_.size());
 
-        const size_t p_num = fec->encoding_symbol_id - fec->source_block_length;
+        const size_t p_num = fec.encoding_symbol_id - fec.source_block_length;
 
         if (!repair_block_[p_num]) {
             can_repair_ = true;
@@ -484,14 +475,14 @@ void Reader::update_repair_packets_() {
 }
 
 bool Reader::validate_incoming_source_packet_(const packet::PacketPtr& pp) {
-    const packet::FEC* fec = pp->fec();
+    const packet::FEC& fec = *pp->fec();
 
-    if (!(fec->encoding_symbol_id < fec->source_block_length)) {
+    if (!(fec.encoding_symbol_id < fec.source_block_length)) {
         return false;
     }
 
-    if (fec->block_length != 0) {
-        if (!(fec->source_block_length <= fec->block_length)) {
+    if (fec.block_length != 0) {
+        if (!(fec.source_block_length <= fec.block_length)) {
             return false;
         }
     }
@@ -500,18 +491,18 @@ bool Reader::validate_incoming_source_packet_(const packet::PacketPtr& pp) {
 }
 
 bool Reader::validate_incoming_repair_packet_(const packet::PacketPtr& pp) {
-    const packet::FEC* fec = pp->fec();
+    const packet::FEC& fec = *pp->fec();
 
-    if (!(fec->encoding_symbol_id >= fec->source_block_length)) {
+    if (!(fec.encoding_symbol_id >= fec.source_block_length)) {
         return false;
     }
 
-    if (fec->block_length != 0) {
-        if (!(fec->encoding_symbol_id < fec->block_length)) {
+    if (fec.block_length != 0) {
+        if (!(fec.encoding_symbol_id < fec.block_length)) {
             return false;
         }
 
-        if (!(fec->source_block_length <= fec->block_length)) {
+        if (!(fec.source_block_length <= fec.block_length)) {
             return false;
         }
     }
@@ -520,18 +511,15 @@ bool Reader::validate_incoming_repair_packet_(const packet::PacketPtr& pp) {
 }
 
 bool Reader::validate_repaired_source_packet_(const packet::PacketPtr& pp) {
+    const packet::RTP& rtp = *pp->rtp();
+
     roc_panic_if_not(has_source_);
 
-    if (!pp->rtp()) {
-        roc_log(LogDebug, "fec reader: repaired unexpected non-rtp packet");
-        return false;
-    }
-
-    if (pp->rtp()->source != source_) {
+    if (rtp.source != source_) {
         roc_log(LogDebug,
                 "fec reader: repaired packet has bad source id, shutting down:"
                 " got=%lu expected=%lu",
-                (unsigned long)pp->rtp()->source, (unsigned long)source_);
+                (unsigned long)rtp.source, (unsigned long)source_);
         return (alive_ = false);
     }
 
@@ -547,21 +535,18 @@ void Reader::drop_repair_packets_from_prev_blocks_() {
             break;
         }
 
-        const packet::FEC* fec = pp->fec();
-        if (!fec) {
-            roc_panic("fec reader: unexpected non-fec repair packet");
-        }
+        const packet::FEC& fec = *pp->fec();
 
-        if (!packet::blknum_lt(fec->source_block_number, cur_sbn_)) {
+        if (!packet::blknum_lt(fec.source_block_number, cur_sbn_)) {
             break;
         }
 
         roc_log(LogTrace,
                 "fec reader: dropping repair packet from previous blocks,"
                 " decoding not started: cur_sbn=%lu pkt_sbn=%lu",
-                (unsigned long)cur_sbn_, (unsigned long)fec->source_block_number);
+                (unsigned long)cur_sbn_, (unsigned long)fec.source_block_number);
 
-        repair_queue_.read();
+        (void)repair_queue_.read();
         n_dropped++;
     }
 
