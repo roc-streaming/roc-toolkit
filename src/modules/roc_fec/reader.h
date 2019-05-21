@@ -70,13 +70,16 @@ private:
 
     void next_block_();
     void try_repair_();
-    bool check_packet_(const packet::PacketPtr&);
 
     void fetch_packets_();
     void update_packets_();
 
     void update_source_packets_();
     void update_repair_packets_();
+
+    bool validate_incoming_source_packet_(const packet::PacketPtr&);
+    bool validate_incoming_repair_packet_(const packet::PacketPtr&);
+    bool validate_repaired_source_packet_(const packet::PacketPtr&);
 
     void drop_repair_packets_from_prev_blocks_();
 

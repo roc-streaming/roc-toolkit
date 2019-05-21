@@ -1041,6 +1041,195 @@ TEST(writer_reader, repaired_block_numbering) {
     }
 }
 
+TEST(writer_reader, invalid_esi) {
+    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
+        config.scheme = Test_fec_schemes[n_scheme];
+
+        OFEncoder encoder(config, FECPayloadSize, allocator);
+        OFDecoder decoder(config, FECPayloadSize, buffer_pool, allocator);
+
+        CHECK(encoder.valid());
+        CHECK(decoder.valid());
+
+        packet::Queue queue;
+        PacketDispatcher dispatcher;
+
+        Writer writer(config, FECPayloadSize, encoder, queue, source_composer(),
+                      repair_composer(), packet_pool, buffer_pool, allocator);
+
+        Reader reader(config, decoder, dispatcher.source_reader(),
+                      dispatcher.repair_reader(), rtp_parser, packet_pool, allocator);
+
+        CHECK(writer.valid());
+        CHECK(reader.valid());
+
+        fill_all_packets(0);
+
+        // encode packets and write to queue
+        for (size_t i = 0; i < NumSourcePackets; ++i) {
+            writer.write(source_packets[i]);
+        }
+
+        // write packets from queue to dispatcher
+        for (size_t i = 0; i < NumSourcePackets + NumRepairPackets; ++i) {
+            packet::PacketPtr p = queue.read();
+            CHECK(p);
+            if (i == 5) {
+                // violates: ESI < SBL (for source packets)
+                p->fec()->encoding_symbol_id = NumSourcePackets;
+            }
+            if (i == NumSourcePackets + 3) {
+                // violates: ESI >= SBL (for repair packets)
+                p->fec()->encoding_symbol_id = NumSourcePackets - 1;
+            }
+            if (i == NumSourcePackets + 5) {
+                // violates: ESI < NES (for repair packets)
+                p->fec()->encoding_symbol_id = NumSourcePackets + NumRepairPackets;
+            }
+            dispatcher.write(p);
+        }
+
+        // deliver packets from dispatcher to reader
+        dispatcher.push_written();
+
+        // read packets
+        for (size_t i = 0; i < NumSourcePackets; ++i) {
+            packet::PacketPtr p = reader.read();
+            CHECK(p);
+            check_audio_packet(p, i);
+            // packet #5 should be dropped and repaired
+            check_restored(p, i == 5);
+        }
+
+        CHECK(reader.alive());
+        CHECK(dispatcher.source_size() == 0);
+        CHECK(dispatcher.repair_size() == 0);
+    }
+}
+
+TEST(writer_reader, invalid_sbl) {
+    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
+        config.scheme = Test_fec_schemes[n_scheme];
+
+        OFEncoder encoder(config, FECPayloadSize, allocator);
+        OFDecoder decoder(config, FECPayloadSize, buffer_pool, allocator);
+
+        CHECK(encoder.valid());
+        CHECK(decoder.valid());
+
+        packet::Queue queue;
+        PacketDispatcher dispatcher;
+
+        Writer writer(config, FECPayloadSize, encoder, queue, source_composer(),
+                      repair_composer(), packet_pool, buffer_pool, allocator);
+
+        Reader reader(config, decoder, dispatcher.source_reader(),
+                      dispatcher.repair_reader(), rtp_parser, packet_pool, allocator);
+
+        CHECK(writer.valid());
+        CHECK(reader.valid());
+
+        fill_all_packets(0);
+
+        // encode packets and write to queue
+        for (size_t i = 0; i < NumSourcePackets; ++i) {
+            writer.write(source_packets[i]);
+        }
+
+        // write packets from queue to dispatcher
+        for (size_t i = 0; i < NumSourcePackets + NumRepairPackets; ++i) {
+            packet::PacketPtr p = queue.read();
+            CHECK(p);
+            if (i == 5) {
+                // violates: SBL can't change in the middle of a block (source packet)
+                p->fec()->source_block_length = NumSourcePackets + 1;
+            }
+            if (i == NumSourcePackets + 3) {
+                // violates: SBL can't change in the middle of a block (repair packet)
+                p->fec()->source_block_length = NumSourcePackets + 1;
+            }
+            dispatcher.write(p);
+        }
+
+        // deliver packets from dispatcher to reader
+        dispatcher.push_written();
+
+        // read packets
+        for (size_t i = 0; i < NumSourcePackets; ++i) {
+            packet::PacketPtr p = reader.read();
+            CHECK(p);
+            check_audio_packet(p, i);
+            // packet #5 should be dropped and repaired
+            check_restored(p, i == 5);
+        }
+
+        CHECK(reader.alive());
+        CHECK(dispatcher.source_size() == 0);
+        CHECK(dispatcher.repair_size() == 0);
+    }
+}
+
+TEST(writer_reader, invalid_nes) {
+    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
+        config.scheme = Test_fec_schemes[n_scheme];
+
+        OFEncoder encoder(config, FECPayloadSize, allocator);
+        OFDecoder decoder(config, FECPayloadSize, buffer_pool, allocator);
+
+        CHECK(encoder.valid());
+        CHECK(decoder.valid());
+
+        packet::Queue queue;
+        PacketDispatcher dispatcher;
+
+        Writer writer(config, FECPayloadSize, encoder, queue, source_composer(),
+                      repair_composer(), packet_pool, buffer_pool, allocator);
+
+        Reader reader(config, decoder, dispatcher.source_reader(),
+                      dispatcher.repair_reader(), rtp_parser, packet_pool, allocator);
+
+        CHECK(writer.valid());
+        CHECK(reader.valid());
+
+        fill_all_packets(0);
+
+        // encode packets and write to queue
+        for (size_t i = 0; i < NumSourcePackets; ++i) {
+            writer.write(source_packets[i]);
+        }
+
+        // write packets from queue to dispatcher
+        for (size_t i = 0; i < NumSourcePackets + NumRepairPackets; ++i) {
+            packet::PacketPtr p = queue.read();
+            CHECK(p);
+            if (i == NumSourcePackets) {
+                // violates: SBL <= NES
+                p->fec()->block_length = NumSourcePackets - 1;
+            }
+            if (i == NumSourcePackets + 3) {
+                // violates: NES can't change in the middle of a block
+                p->fec()->block_length = NumSourcePackets + NumRepairPackets + 1;
+            }
+            dispatcher.write(p);
+        }
+
+        // deliver packets from dispatcher to reader
+        dispatcher.push_written();
+
+        // read packets
+        for (size_t i = 0; i < NumSourcePackets; ++i) {
+            packet::PacketPtr p = reader.read();
+            CHECK(p);
+            check_audio_packet(p, i);
+            check_restored(p, false);
+        }
+
+        CHECK(reader.alive());
+        CHECK(dispatcher.source_size() == 0);
+        CHECK(dispatcher.repair_size() == 0);
+    }
+}
+
 TEST(writer_reader, writer_encode_blocks) {
     enum { NumBlocks = 3 };
 

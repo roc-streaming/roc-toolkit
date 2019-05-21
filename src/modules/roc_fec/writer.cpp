@@ -70,7 +70,10 @@ void Writer::write(const packet::PacketPtr& pp) {
     }
 
     if (cur_packet_ == 0) {
-        roc_panic_if_not(begin_block_());
+        if (!begin_block_()) {
+            // FIXME: shutdown instead of panic
+            roc_panic("fec writer: can't start block");
+        }
     }
 
     write_source_packet_(pp);
