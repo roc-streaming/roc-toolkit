@@ -9,6 +9,7 @@
 #include <CppUTest/TestHarness.h>
 
 #include "test_fec_schemes.h"
+#include "test_mock_allocator.h"
 #include "test_packet_dispatcher.h"
 
 #include "roc_core/buffer_pool.h"
@@ -1466,6 +1467,189 @@ TEST(writer_reader, resize_block_losses) {
         }
 
         UNSIGNED_LONGS_EQUAL(wr_sn, rd_sn);
+    }
+}
+
+TEST(writer_reader, error_writer_encode_packet) {
+    enum { BlockSize1 = 50, BlockSize2 = 60 };
+
+    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
+        config.scheme = Test_fec_schemes[n_scheme];
+
+        MockAllocator mock_allocator;
+
+        OFEncoder encoder(config, FECPayloadSize, mock_allocator);
+        CHECK(encoder.valid());
+
+        PacketDispatcher dispatcher(NumSourcePackets, NumRepairPackets);
+
+        Writer writer(config, FECPayloadSize, encoder, dispatcher, source_composer(),
+                      repair_composer(), packet_pool, buffer_pool, allocator);
+
+        CHECK(writer.valid());
+
+        size_t sn = 0;
+
+        writer.resize(BlockSize1);
+
+        for (size_t i = 0; i < BlockSize1; ++i) {
+            writer.write(fill_one_packet(sn++));
+        }
+
+        CHECK(writer.alive());
+        CHECK(dispatcher.source_size() == BlockSize1);
+        CHECK(dispatcher.repair_size() == NumRepairPackets);
+
+        mock_allocator.set_fail(true);
+        writer.resize(BlockSize2);
+
+        for (size_t i = 0; i < BlockSize2; ++i) {
+            writer.write(fill_one_packet(sn++));
+        }
+
+        CHECK(!writer.alive());
+        CHECK(dispatcher.source_size() == BlockSize1);
+        CHECK(dispatcher.repair_size() == NumRepairPackets);
+    }
+}
+
+TEST(writer_reader, error_reader_resize_block) {
+    enum { BlockSize1 = 50, BlockSize2 = 60 };
+
+    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
+        config.scheme = Test_fec_schemes[n_scheme];
+
+        OFEncoder encoder(config, FECPayloadSize, allocator);
+        OFDecoder decoder(config, FECPayloadSize, buffer_pool, allocator);
+
+        CHECK(encoder.valid());
+        CHECK(decoder.valid());
+
+        PacketDispatcher dispatcher(NumSourcePackets, NumRepairPackets);
+
+        MockAllocator mock_allocator;
+
+        Writer writer(config, FECPayloadSize, encoder, dispatcher, source_composer(),
+                      repair_composer(), packet_pool, buffer_pool, allocator);
+
+        Reader reader(config, decoder, dispatcher.source_reader(),
+                      dispatcher.repair_reader(), rtp_parser, packet_pool,
+                      mock_allocator);
+
+        CHECK(writer.valid());
+        CHECK(reader.valid());
+
+        size_t sn = 0;
+
+        // write first block
+        writer.resize(BlockSize1);
+        for (size_t i = 0; i < BlockSize1; ++i) {
+            writer.write(fill_one_packet(sn++));
+        }
+
+        // deliver first block
+        dispatcher.push_written();
+
+        // read first block
+        for (size_t i = 0; i < BlockSize1; ++i) {
+            packet::PacketPtr p = reader.read();
+            CHECK(p);
+            check_audio_packet(p, i);
+            check_restored(p, false);
+        }
+
+        // write second block
+        writer.resize(BlockSize2);
+        for (size_t i = 0; i < BlockSize2; ++i) {
+            writer.write(fill_one_packet(sn++));
+        }
+
+        // deliver second block
+        dispatcher.push_written();
+
+        // configure allocator to return errors
+        mock_allocator.set_fail(true);
+
+        // reader should get an error from allocator when trying
+        // to resize the block and shut down
+        CHECK(!reader.read());
+        CHECK(!reader.alive());
+    }
+}
+
+TEST(writer_reader, error_reader_decode_packet) {
+    enum { BlockSize1 = 50, BlockSize2 = 60 };
+
+    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
+        config.scheme = Test_fec_schemes[n_scheme];
+
+        MockAllocator mock_allocator;
+
+        OFEncoder encoder(config, FECPayloadSize, allocator);
+        OFDecoder decoder(config, FECPayloadSize, buffer_pool, mock_allocator);
+
+        CHECK(encoder.valid());
+        CHECK(decoder.valid());
+
+        PacketDispatcher dispatcher(NumSourcePackets, NumRepairPackets);
+
+        Writer writer(config, FECPayloadSize, encoder, dispatcher, source_composer(),
+                      repair_composer(), packet_pool, buffer_pool, allocator);
+
+        Reader reader(config, decoder, dispatcher.source_reader(),
+                      dispatcher.repair_reader(), rtp_parser, packet_pool,
+                      allocator);
+
+        CHECK(writer.valid());
+        CHECK(reader.valid());
+
+        size_t sn = 0;
+
+        // write first block
+        writer.resize(BlockSize1);
+        for (size_t i = 0; i < BlockSize1; ++i) {
+            writer.write(fill_one_packet(sn++));
+        }
+
+        // deliver first block
+        dispatcher.push_written();
+
+        // read first block
+        for (size_t i = 0; i < BlockSize1; ++i) {
+            packet::PacketPtr p = reader.read();
+            CHECK(p);
+            check_audio_packet(p, i);
+            check_restored(p, false);
+        }
+
+        // lose one packet in second block
+        dispatcher.reset();
+        dispatcher.lose(10);
+
+        // write second block
+        writer.resize(BlockSize2);
+        for (size_t i = 0; i < BlockSize2; ++i) {
+            writer.write(fill_one_packet(sn++));
+        }
+
+        // deliver second block
+        dispatcher.push_written();
+
+        // read second block packets before loss
+        for (size_t i = 0; i < 10; ++i) {
+            packet::PacketPtr p = reader.read();
+            CHECK(p);
+            check_audio_packet(p, BlockSize1 + i);
+            check_restored(p, false);
+        }
+
+        // configure allocator to return errors
+        mock_allocator.set_fail(true);
+
+        // reader should get an error from allocator when trying
+        // to repair lost packet and shut down
+        CHECK(!reader.read());
+        CHECK(!reader.alive());
     }
 }
 
