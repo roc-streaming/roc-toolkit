@@ -39,12 +39,13 @@ public:
 
     //! Packet flags.
     enum {
-        FlagUDP = (1 << 0),     //!< Packet contains UDP header.
-        FlagRTP = (1 << 1),     //!< Packet contains RTP header.
-        FlagFEC = (1 << 2),     //!< Packet contains FEC header.
-        FlagAudio = (1 << 3),   //!< Packet contains audio samples.
-        FlagRepair = (1 << 4),  //!< Packet contains repair FEC symbols.
-        FlagComposed = (1 << 5) //!< Packet is already composed.
+        FlagUDP = (1 << 0),      //!< Packet contains UDP header.
+        FlagRTP = (1 << 1),      //!< Packet contains RTP header.
+        FlagFEC = (1 << 2),      //!< Packet contains FEC header.
+        FlagAudio = (1 << 3),    //!< Packet contains audio samples.
+        FlagRepair = (1 << 4),   //!< Packet contains repair FEC symbols.
+        FlagComposed = (1 << 5), //!< Packet is already composed.
+        FlagRestored = (1 << 6)  //!< Packet was restored using FEC decoder.
     };
 
     //! Add flags.
