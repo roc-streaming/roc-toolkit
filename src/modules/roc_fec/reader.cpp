@@ -37,7 +37,8 @@ Reader::Reader(const Config& config,
     , cur_sbn_(0)
     , has_source_(false)
     , source_(0)
-    , n_packets_(0) {
+    , n_packets_(0)
+    , max_sbn_jump_(config.max_sbn_jump) {
     if (!repair_block_.resize(config.n_repair_packets)) {
         return;
     }
@@ -65,7 +66,7 @@ packet::PacketPtr Reader::read() {
     if (pp) {
         n_packets_++;
     }
-    // Check if alive_ have changed.
+    // check if alive_ has changed
     return (alive_ ? pp : NULL);
 }
 
@@ -124,6 +125,10 @@ packet::PacketPtr Reader::get_next_packet_() {
     packet::PacketPtr pp = source_block_[next_packet_];
 
     do {
+        if (!alive_) {
+            break;
+        }
+
         if (!pp) {
             try_repair_();
 
@@ -178,7 +183,7 @@ bool Reader::update_block_size_(size_t new_sblen) {
         return false;
     }
 
-    roc_log(LogDebug, "fec reader: update sblen, cur_sbl=%lu new_sbl=%lu",
+    roc_log(LogDebug, "fec reader: update sblen: cur_sbl=%lu new_sbl=%lu",
             (unsigned long)cur_sblen, (unsigned long)new_sblen);
 
     return true;
@@ -308,6 +313,10 @@ void Reader::update_source_block_() {
             break;
         }
 
+        if (!validate_sbn_sequence_(pp)) {
+            break;
+        }
+
         const packet::RTP& rtp = *pp->rtp();
         const packet::FEC& fec = *pp->fec();
 
@@ -378,6 +387,10 @@ void Reader::update_repair_block_() {
     for (;;) {
         packet::PacketPtr pp = repair_queue_.head();
         if (!pp) {
+            break;
+        }
+
+        if (!validate_sbn_sequence_(pp)) {
             break;
         }
 
@@ -518,6 +531,28 @@ bool Reader::validate_repaired_source_packet_(const packet::PacketPtr& pp) {
                 "fec reader: repaired packet has bad source id, shutting down:"
                 " got=%lu expected=%lu",
                 (unsigned long)rtp.source, (unsigned long)source_);
+        return (alive_ = false);
+    }
+
+    return true;
+}
+
+bool Reader::validate_sbn_sequence_(const packet::PacketPtr& pp) {
+    const packet::FEC& fec = *pp->fec();
+
+    packet::blknum_diff_t blk_dist =
+        packet::blknum_diff(fec.source_block_number, cur_sbn_);
+
+    if (blk_dist < 0) {
+        blk_dist = -blk_dist;
+    }
+
+    if ((size_t)blk_dist > max_sbn_jump_) {
+        roc_log(LogDebug,
+                "fec reader: too long source block number jump, shutting down:"
+                " cur_sbn=%lu pkt_sbn=%lu dist=%lu",
+                (unsigned long)cur_sbn_, (unsigned long)fec.source_block_number,
+                (unsigned long)blk_dist);
         return (alive_ = false);
     }
 

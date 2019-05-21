@@ -38,13 +38,17 @@ struct Config {
     //! Configuration for ReedSolomon scheme.
     uint16_t rs_m;
 
+    //! Maximum allowed source block number jump.
+    size_t max_sbn_jump;
+
     Config()
         : scheme(packet::FEC_None)
         , n_source_packets(20)
         , n_repair_packets(10)
         , ldpc_prng_seed(1297501556)
         , ldpc_N1(7)
-        , rs_m(8) {
+        , rs_m(8)
+        , max_sbn_jump(100) {
     }
 };
 

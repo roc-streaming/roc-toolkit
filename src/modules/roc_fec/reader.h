@@ -80,6 +80,7 @@ private:
     bool validate_incoming_source_packet_(const packet::PacketPtr&);
     bool validate_incoming_repair_packet_(const packet::PacketPtr&);
     bool validate_repaired_source_packet_(const packet::PacketPtr&);
+    bool validate_sbn_sequence_(const packet::PacketPtr&);
 
     void drop_repair_packets_from_prev_blocks_();
 
@@ -109,6 +110,8 @@ private:
     packet::source_t source_;
 
     unsigned n_packets_;
+
+    const size_t max_sbn_jump_;
 };
 
 } // namespace fec

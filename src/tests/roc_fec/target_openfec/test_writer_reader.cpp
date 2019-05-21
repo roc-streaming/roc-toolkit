@@ -1230,6 +1230,104 @@ TEST(writer_reader, invalid_nes) {
     }
 }
 
+TEST(writer_reader, sbn_jump) {
+    enum { MaxSbnJump = 30 };
+
+    config.max_sbn_jump = MaxSbnJump;
+
+    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
+        config.scheme = Test_fec_schemes[n_scheme];
+
+        OFEncoder encoder(config, FECPayloadSize, allocator);
+        OFDecoder decoder(config, FECPayloadSize, buffer_pool, allocator);
+
+        CHECK(encoder.valid());
+        CHECK(decoder.valid());
+
+        packet::Queue queue;
+        PacketDispatcher dispatcher;
+
+        Writer writer(config, FECPayloadSize, encoder, queue, source_composer(),
+                      repair_composer(), packet_pool, buffer_pool, allocator);
+
+        Reader reader(config, decoder, dispatcher.source_reader(),
+                      dispatcher.repair_reader(), rtp_parser, packet_pool, allocator);
+
+        CHECK(writer.valid());
+        CHECK(reader.valid());
+
+        // write three blocks to the queue
+        for (size_t n = 0; n < 3; n++) {
+            fill_all_packets(NumSourcePackets * n);
+
+            for (size_t i = 0; i < NumSourcePackets; ++i) {
+                writer.write(source_packets[i]);
+            }
+        }
+
+        // write first block to the dispatcher
+        for (size_t i = 0; i < NumSourcePackets + NumRepairPackets; ++i) {
+            packet::PacketPtr p = queue.read();
+            CHECK(p);
+            dispatcher.write(p);
+        }
+
+        // deliver packets from dispatcher to reader
+        dispatcher.push_written();
+
+        // read first block
+        for (size_t i = 0; i < NumSourcePackets; ++i) {
+            packet::PacketPtr p = reader.read();
+            CHECK(p);
+            check_audio_packet(p, i);
+            check_restored(p, false);
+        }
+
+        CHECK(reader.alive());
+
+        // write second block to the dispatcher
+        // shift it ahead but in the allowed range
+        for (size_t i = 0; i < NumSourcePackets + NumRepairPackets; ++i) {
+            packet::PacketPtr p = queue.read();
+            CHECK(p);
+            p->fec()->source_block_number += MaxSbnJump;
+            dispatcher.write(p);
+        }
+
+        // deliver packets from dispatcher to reader
+        dispatcher.push_written();
+
+        // read second block
+        for (size_t i = NumSourcePackets; i < NumSourcePackets * 2; ++i) {
+            packet::PacketPtr p = reader.read();
+            CHECK(p);
+            check_audio_packet(p, i);
+            check_restored(p, false);
+        }
+
+        CHECK(reader.alive());
+
+        // write third block to the dispatcher
+        // shift it ahead too far
+        for (size_t i = 0; i < NumSourcePackets + NumRepairPackets; ++i) {
+            packet::PacketPtr p = queue.read();
+            CHECK(p);
+            p->fec()->source_block_number += MaxSbnJump * 2 + 1;
+            dispatcher.write(p);
+        }
+
+        // deliver packets from dispatcher to reader
+        dispatcher.push_written();
+
+        // the reader should detect sbn jump and shutdown
+        CHECK(!reader.read());
+        CHECK(!reader.alive());
+
+        CHECK(dispatcher.source_size() == 0);
+        CHECK(dispatcher.repair_size() == 0);
+    }
+}
+
 TEST(writer_reader, writer_encode_blocks) {
     enum { NumBlocks = 3 };
 
