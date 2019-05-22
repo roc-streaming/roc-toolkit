@@ -245,31 +245,40 @@ void Reader::try_repair_() {
             continue;
         }
 
-        packet::PacketPtr pp = new (packet_pool_) packet::Packet(packet_pool_);
+        packet::PacketPtr pp = parse_repaired_packet_(buffer);
         if (!pp) {
-            roc_log(LogError, "fec reader: can't allocate packet");
             continue;
         }
-
-        if (!parser_.parse(*pp, buffer)) {
-            roc_log(LogDebug, "fec reader: can't parse repaired packet");
-            continue;
-        }
-
-        pp->set_data(buffer);
-
-        if (!validate_repaired_source_packet_(pp)) {
-            roc_log(LogDebug, "fec reader: dropping unexpected repaired packet");
-            continue;
-        }
-
-        pp->add_flags(packet::Packet::FlagRestored);
 
         source_block_[n] = pp;
     }
 
     decoder_.end();
     can_repair_ = false;
+}
+
+packet::PacketPtr Reader::parse_repaired_packet_(const core::Slice<uint8_t>& buffer) {
+    packet::PacketPtr pp = new (packet_pool_) packet::Packet(packet_pool_);
+    if (!pp) {
+        roc_log(LogError, "fec reader: can't allocate packet");
+        return NULL;
+    }
+
+    if (!parser_.parse(*pp, buffer)) {
+        roc_log(LogDebug, "fec reader: can't parse repaired packet");
+        return NULL;
+    }
+
+    pp->set_data(buffer);
+
+    if (!validate_repaired_source_packet_(pp)) {
+        roc_log(LogDebug, "fec reader: dropping unexpected repaired packet");
+        return NULL;
+    }
+
+    pp->add_flags(packet::Packet::FlagRestored);
+
+    return pp;
 }
 
 void Reader::fetch_packets_() {

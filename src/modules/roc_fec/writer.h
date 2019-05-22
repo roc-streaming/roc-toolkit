@@ -72,6 +72,8 @@ private:
     const size_t cur_rblen_;
     const size_t payload_size_;
 
+    void generate_source_id_(const packet::PacketPtr& pp);
+
     bool begin_block_();
     void end_block_();
     void next_block_();

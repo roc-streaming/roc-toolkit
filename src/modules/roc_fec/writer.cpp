@@ -55,6 +55,17 @@ bool Writer::alive() const {
     return alive_;
 }
 
+void Writer::resize(size_t sblen) {
+    roc_log(LogDebug, "fec writer: update sblen: cur=%lu next=%lu",
+            (unsigned long)cur_sblen_, (unsigned long)sblen);
+
+    next_sblen_ = sblen;
+
+    if (cur_packet_ == 0) {
+        cur_sblen_ = sblen;
+    }
+}
+
 void Writer::write(const packet::PacketPtr& pp) {
     roc_panic_if_not(valid());
     roc_panic_if_not(pp);
@@ -73,9 +84,7 @@ void Writer::write(const packet::PacketPtr& pp) {
 
     if (first_packet_) {
         first_packet_ = false;
-        do {
-            source_ = (packet::source_t)core::random(packet::source_t(-1));
-        } while (source_ == pp->rtp()->source);
+        generate_source_id_(pp);
     }
 
     if (cur_packet_ == 0) {
@@ -94,28 +103,10 @@ void Writer::write(const packet::PacketPtr& pp) {
     }
 }
 
-void Writer::resize(size_t sblen) {
-    roc_log(LogDebug, "fec writer: update sblen: cur=%lu next=%lu",
-            (unsigned long)cur_sblen_, (unsigned long)sblen);
-
-    next_sblen_ = sblen;
-
-    if (cur_packet_ == 0) {
-        cur_sblen_ = sblen;
-    }
-}
-
-void Writer::write_source_packet_(const packet::PacketPtr& pp) {
-    encoder_.set(cur_packet_, pp->fec()->payload);
-
-    pp->add_flags(packet::Packet::FlagComposed);
-    fill_packet_fec_fields_(pp, (packet::seqnum_t)cur_packet_);
-
-    if (!source_composer_.compose(*pp)) {
-        roc_panic("fec writer: can't compose packet");
-    }
-
-    writer_.write(pp);
+void Writer::generate_source_id_(const packet::PacketPtr& pp) {
+    do {
+        source_ = (packet::source_t)core::random(packet::source_t(-1));
+    } while (source_ == pp->rtp()->source);
 }
 
 bool Writer::begin_block_() {
@@ -149,6 +140,19 @@ void Writer::next_block_() {
     roc_log(LogTrace, "fec writer: next block: sbn=%lu sbl=%lu rbl=%lu",
             (unsigned long)cur_sbn_, (unsigned long)cur_sblen_,
             (unsigned long)cur_rblen_);
+}
+
+void Writer::write_source_packet_(const packet::PacketPtr& pp) {
+    encoder_.set(cur_packet_, pp->fec()->payload);
+
+    pp->add_flags(packet::Packet::FlagComposed);
+    fill_packet_fec_fields_(pp, (packet::seqnum_t)cur_packet_);
+
+    if (!source_composer_.compose(*pp)) {
+        roc_panic("fec writer: can't compose packet");
+    }
+
+    writer_.write(pp);
 }
 
 void Writer::make_repair_packets_() {
