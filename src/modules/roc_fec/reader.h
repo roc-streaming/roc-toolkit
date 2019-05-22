@@ -72,6 +72,8 @@ private:
 
     void try_repair_();
 
+    packet::PacketPtr parse_repaired_packet_(const core::Slice<uint8_t>& buffer);
+
     void fetch_packets_();
     void update_block_();
     void update_source_block_();
