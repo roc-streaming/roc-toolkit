@@ -385,9 +385,6 @@ TEST_GROUP(sender_receiver) {
         receiver_conf.resampler_profile = ROC_RESAMPLER_DISABLE;
         receiver_conf.target_latency = Latency * 1000000000ul / SampleRate;
         receiver_conf.no_playback_timeout = Timeout * 1000000000ul / SampleRate;
-        receiver_conf.packet_length =
-            PacketSamples * 1000000000ul / (SampleRate * NumChans);
-        receiver_conf.fec_code = ROC_FEC_RS8M;
         receiver_conf.fec_block_source_packets = SourcePackets;
         receiver_conf.fec_block_repair_packets = RepairPackets;
     }

@@ -17,7 +17,9 @@
 #include "roc_audio/watchdog.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/time.h"
-#include "roc_fec/config.h"
+#include "roc_fec/codec_config.h"
+#include "roc_fec/reader.h"
+#include "roc_fec/writer.h"
 #include "roc_packet/units.h"
 #include "roc_pipeline/port.h"
 #include "roc_rtp/headers.h"
@@ -68,8 +70,11 @@ struct SenderConfig {
     //! Resampler parameters.
     audio::ResamplerConfig resampler;
 
-    //! FEC scheme parameters.
-    fec::Config fec;
+    //! FEC writer parameters.
+    fec::WriterConfig fec_writer;
+
+    //! FEC encoder parameters.
+    fec::CodecConfig fec_encoder;
 
     //! Number of samples per second per channel.
     size_t input_sample_rate;
@@ -124,11 +129,11 @@ struct ReceiverSessionConfig {
     //! Packet payload type.
     unsigned int payload_type;
 
-    //! Packet length, in nanoseconds.
-    core::nanoseconds_t packet_length;
+    //! FEC reader parameters.
+    fec::ReaderConfig fec_reader;
 
-    //! FEC scheme parameters.
-    fec::Config fec;
+    //! FEC decoder parameters.
+    fec::CodecConfig fec_decoder;
 
     //! RTP validator parameters.
     rtp::ValidatorConfig rtp_validator;
@@ -145,8 +150,7 @@ struct ReceiverSessionConfig {
     ReceiverSessionConfig()
         : target_latency(DefaultLatency)
         , channels(DefaultChannelMask)
-        , payload_type(0)
-        , packet_length(DefaultPacketLength) {
+        , payload_type(0) {
         latency_monitor.min_latency = target_latency * DefaultMinLatencyFactor;
         latency_monitor.max_latency = target_latency * DefaultMaxLatencyFactor;
     }

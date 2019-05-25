@@ -216,15 +216,15 @@ TEST_GROUP(sender_receiver) {
         config.internal_frame_size = MaxBufSize;
 
         if (flags & FlagReedSolomon) {
-            config.fec.scheme = packet::FEC_ReedSolomon_M8;
+            config.fec_encoder.scheme = packet::FEC_ReedSolomon_M8;
         }
 
         if (flags & FlagLDPC) {
-            config.fec.scheme = packet::FEC_LDPC_Staircase;
+            config.fec_encoder.scheme = packet::FEC_LDPC_Staircase;
         }
 
-        config.fec.n_source_packets = SourcePackets;
-        config.fec.n_repair_packets = RepairPackets;
+        config.fec_writer.n_source_packets = SourcePackets;
+        config.fec_writer.n_repair_packets = RepairPackets;
 
         config.interleaving = (flags & FlagInterleaving);
         config.timing = false;
@@ -245,15 +245,12 @@ TEST_GROUP(sender_receiver) {
         config.common.poisoning = true;
 
         config.default_session.channels = ChMask;
-        config.default_session.packet_length =
-            SamplesPerPacket * core::Second / SampleRate;
 
         config.default_session.target_latency = Latency * core::Second / SampleRate;
         config.default_session.watchdog.no_playback_timeout =
             Timeout * core::Second / SampleRate;
 
-        config.default_session.fec.n_source_packets = SourcePackets;
-        config.default_session.fec.n_repair_packets = RepairPackets;
+        config.default_session.fec_reader.n_repair_packets = RepairPackets;
 
         return config;
     }

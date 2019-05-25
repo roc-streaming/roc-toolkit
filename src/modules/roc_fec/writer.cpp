@@ -14,7 +14,7 @@
 namespace roc {
 namespace fec {
 
-Writer::Writer(const Config& config,
+Writer::Writer(const WriterConfig& config,
                size_t payload_size,
                IEncoder& encoder,
                packet::IWriter& writer,
@@ -23,10 +23,12 @@ Writer::Writer(const Config& config,
                packet::PacketPool& packet_pool,
                core::BufferPool<uint8_t>& buffer_pool,
                core::IAllocator& allocator)
-    : cur_sblen_(config.n_source_packets)
-    , next_sblen_(config.n_source_packets)
-    , cur_rblen_(config.n_repair_packets)
-    , payload_size_(payload_size)
+    : cur_sblen_(0)
+    , next_sblen_(0)
+    , cur_rblen_(0)
+    , next_rblen_(0)
+    , cur_payload_size_(0)
+    , next_payload_size_(0)
     , encoder_(encoder)
     , writer_(writer)
     , source_composer_(source_composer)
@@ -41,6 +43,10 @@ Writer::Writer(const Config& config,
     , cur_packet_(0)
     , valid_(false)
     , alive_(true) {
+    if (!resize(config.n_source_packets, config.n_repair_packets, payload_size)) {
+        return;
+    }
+    // FIXME: remove this, do it inside resize() instead
     if (!repair_packets_.resize(config.n_repair_packets)) {
         return;
     }
@@ -55,12 +61,23 @@ bool Writer::alive() const {
     return alive_;
 }
 
-bool Writer::resize(size_t sblen) {
-    if (cur_sblen_ == sblen) {
+bool Writer::resize(size_t sblen, size_t rblen, size_t payload_size) {
+    if (next_sblen_ == sblen && next_rblen_ == rblen
+        && next_payload_size_ == payload_size) {
         return true;
     }
 
-    const size_t new_blen = cur_rblen_ + sblen;
+    if (payload_size == 0) {
+        roc_log(LogError, "fec writer: resize: payload size can't be zero");
+        return false;
+    }
+
+    if (sblen == 0) {
+        roc_log(LogError, "fec writer: resize: sblen can't be zero");
+        return false;
+    }
+
+    const size_t new_blen = sblen + rblen;
 
     if (new_blen > encoder_.max_block_length()) {
         roc_log(LogDebug,
@@ -71,13 +88,23 @@ bool Writer::resize(size_t sblen) {
         return false;
     }
 
-    roc_log(LogDebug, "fec writer: update block size, cur_sbl=%lu new_sbl=%lu",
-            (unsigned long)cur_sblen_, (unsigned long)sblen);
+    // FIXME: update rblen
+    if (cur_rblen_ != 0 && cur_rblen_ != rblen) {
+        roc_panic("fec writer: not implemented");
+    }
+
+    roc_log(LogDebug,
+            "fec writer: update block size, cur_sbl=%lu new_sbl=%lu payload_size=%lu",
+            (unsigned long)cur_sblen_, (unsigned long)sblen, (unsigned long)payload_size);
 
     next_sblen_ = sblen;
+    next_rblen_ = rblen;
+    next_payload_size_ = payload_size;
 
     if (cur_packet_ == 0) {
         cur_sblen_ = sblen;
+        cur_rblen_ = rblen;
+        cur_payload_size_ = payload_size;
     }
 
     return true;
@@ -127,7 +154,7 @@ void Writer::generate_source_id_(const packet::PacketPtr& pp) {
 }
 
 bool Writer::begin_block_() {
-    if (encoder_.begin(cur_sblen_, cur_rblen_)) {
+    if (encoder_.begin(cur_sblen_, cur_rblen_, cur_payload_size_)) {
         return true;
     }
 
@@ -153,10 +180,13 @@ void Writer::next_block_() {
 
     cur_packet_ = 0;
     cur_sblen_ = next_sblen_;
+    cur_rblen_ = next_rblen_;
+    cur_payload_size_ = next_payload_size_;
 
-    roc_log(LogTrace, "fec writer: next block: sbn=%lu sbl=%lu rbl=%lu",
-            (unsigned long)cur_sbn_, (unsigned long)cur_sblen_,
-            (unsigned long)cur_rblen_);
+    roc_log(LogTrace,
+            "fec writer: next block: sbn=%lu sblen=%lu rblen=%lu payload_size=%lu",
+            (unsigned long)cur_sbn_, (unsigned long)cur_sblen_, (unsigned long)cur_rblen_,
+            (unsigned long)cur_payload_size_);
 }
 
 void Writer::write_source_packet_(const packet::PacketPtr& pp) {
@@ -200,7 +230,7 @@ packet::PacketPtr Writer::make_repair_packet_(packet::seqnum_t pack_n) {
         return NULL;
     }
 
-    if (!repair_composer_.prepare(*packet, data, payload_size_)) {
+    if (!repair_composer_.prepare(*packet, data, cur_payload_size_)) {
         roc_log(LogError, "fec writer: can't prepare packet");
         return NULL;
     }

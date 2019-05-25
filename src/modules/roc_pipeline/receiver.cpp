@@ -284,7 +284,7 @@ Receiver::make_session_config_(const packet::PacketPtr& packet) const {
 
     packet::FEC* fec = packet->fec();
     if (fec) {
-        sess_config.fec.scheme = fec->fec_scheme;
+        sess_config.fec_decoder.scheme = fec->fec_scheme;
     }
 
     return sess_config;

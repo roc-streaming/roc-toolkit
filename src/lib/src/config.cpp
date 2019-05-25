@@ -94,14 +94,14 @@ bool make_sender_config(pipeline::SenderConfig& out, const roc_sender_config& in
 
     switch ((int)in.fec_code) {
     case ROC_FEC_DISABLE:
-        out.fec.scheme = packet::FEC_None;
+        out.fec_encoder.scheme = packet::FEC_None;
         break;
     case ROC_FEC_DEFAULT:
     case ROC_FEC_RS8M:
-        out.fec.scheme = packet::FEC_ReedSolomon_M8;
+        out.fec_encoder.scheme = packet::FEC_ReedSolomon_M8;
         break;
     case ROC_FEC_LDPC_STAIRCASE:
-        out.fec.scheme = packet::FEC_LDPC_Staircase;
+        out.fec_encoder.scheme = packet::FEC_LDPC_Staircase;
         break;
     default:
         roc_log(LogError, "roc_config: invalid fec_scheme");
@@ -109,8 +109,8 @@ bool make_sender_config(pipeline::SenderConfig& out, const roc_sender_config& in
     }
 
     if (in.fec_block_source_packets != 0 || in.fec_block_repair_packets != 0) {
-        out.fec.n_source_packets = in.fec_block_source_packets;
-        out.fec.n_repair_packets = in.fec_block_repair_packets;
+        out.fec_writer.n_source_packets = in.fec_block_source_packets;
+        out.fec_writer.n_repair_packets = in.fec_block_repair_packets;
     }
 
     return true;
@@ -210,29 +210,24 @@ bool make_receiver_config(pipeline::ReceiverConfig& out, const roc_receiver_conf
             (core::nanoseconds_t)in.breakage_detection_window;
     }
 
-    if (in.packet_length != 0) {
-        out.default_session.packet_length = (core::nanoseconds_t)in.packet_length;
-    }
-
     switch ((int)in.fec_code) {
     case ROC_FEC_DISABLE:
-        out.default_session.fec.scheme = packet::FEC_None;
+        out.default_session.fec_decoder.scheme = packet::FEC_None;
         break;
     case ROC_FEC_DEFAULT:
     case ROC_FEC_RS8M:
-        out.default_session.fec.scheme = packet::FEC_ReedSolomon_M8;
+        out.default_session.fec_decoder.scheme = packet::FEC_ReedSolomon_M8;
         break;
     case ROC_FEC_LDPC_STAIRCASE:
-        out.default_session.fec.scheme = packet::FEC_LDPC_Staircase;
+        out.default_session.fec_decoder.scheme = packet::FEC_LDPC_Staircase;
         break;
     default:
         roc_log(LogError, "roc_config: invalid fec_scheme");
         return false;
     }
 
-    if (in.fec_block_source_packets != 0 || in.fec_block_repair_packets != 0) {
-        out.default_session.fec.n_source_packets = in.fec_block_source_packets;
-        out.default_session.fec.n_repair_packets = in.fec_block_repair_packets;
+    if (in.fec_block_repair_packets != 0) {
+        out.default_session.fec_reader.n_repair_packets = in.fec_block_repair_packets;
     }
 
     return true;

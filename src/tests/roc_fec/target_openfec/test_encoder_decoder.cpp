@@ -34,15 +34,15 @@ core::BufferPool<uint8_t> buffer_pool(allocator, PayloadSize, true);
 
 class Codec {
 public:
-    Codec(const Config& config)
-        : encoder_(config, PayloadSize, allocator)
-        , decoder_(config, PayloadSize, buffer_pool, allocator)
+    Codec(const CodecConfig& config)
+        : encoder_(config, allocator)
+        , decoder_(config, buffer_pool, allocator)
         , buffers_(allocator) {
         CHECK(buffers_.resize(NumSourcePackets + NumRepairPackets));
     }
 
     void encode() {
-        CHECK(encoder_.begin(NumSourcePackets, NumRepairPackets));
+        CHECK(encoder_.begin(NumSourcePackets, NumRepairPackets, PayloadSize));
 
         for (size_t i = 0; i < NumSourcePackets + NumRepairPackets; ++i) {
             buffers_[i] = make_buffer_();
@@ -96,23 +96,18 @@ private:
     core::Array<core::Slice<uint8_t> > buffers_;
 };
 
-TEST_GROUP(encoder_decoder) {
-    Config config;
-    void setup() {
-        config.n_source_packets = NumSourcePackets;
-        config.n_repair_packets = NumRepairPackets;
-    }
-};
+TEST_GROUP(encoder_decoder){};
 
 TEST(encoder_decoder, without_loss) {
     for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
+        CodecConfig config;
         config.scheme = Test_fec_schemes[n_scheme];
 
         Codec code(config);
         code.encode();
 
         // Sending all packets in block without loss.
-        CHECK(code.decoder().begin(NumSourcePackets, NumRepairPackets));
+        CHECK(code.decoder().begin(NumSourcePackets, NumRepairPackets, PayloadSize));
 
         for (size_t i = 0; i < NumSourcePackets + NumRepairPackets; ++i) {
             code.decoder().set(i, code.get_buffer(i));
@@ -125,13 +120,14 @@ TEST(encoder_decoder, without_loss) {
 
 TEST(encoder_decoder, loss_1) {
     for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
+        CodecConfig config;
         config.scheme = Test_fec_schemes[n_scheme];
 
         Codec code(config);
         code.encode();
 
         // Sending all packets in block with one loss.
-        CHECK(code.decoder().begin(NumSourcePackets, NumRepairPackets));
+        CHECK(code.decoder().begin(NumSourcePackets, NumRepairPackets, PayloadSize));
 
         for (size_t i = 0; i < NumSourcePackets + NumRepairPackets; ++i) {
             if (i == 5) {
@@ -149,6 +145,7 @@ TEST(encoder_decoder, load_test) {
     enum { NumIterations = 20, LossPercent = 10, MaxLoss = 3 };
 
     for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
+        CodecConfig config;
         config.scheme = Test_fec_schemes[n_scheme];
 
         Codec code(config);
@@ -161,7 +158,7 @@ TEST(encoder_decoder, load_test) {
         for (size_t test_num = 0; test_num < NumIterations; ++test_num) {
             code.encode();
 
-            CHECK(code.decoder().begin(NumSourcePackets, NumRepairPackets));
+            CHECK(code.decoder().begin(NumSourcePackets, NumRepairPackets, PayloadSize));
 
             size_t curr_loss = 0;
             for (size_t i = 0; i < NumSourcePackets + NumRepairPackets; ++i) {
@@ -195,7 +192,9 @@ TEST(encoder_decoder, max_source_block) {
     CHECK(ROC_ARRAY_SIZE(test_cases) == Test_n_fec_schemes);
 
     for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; ++n_scheme) {
+        CodecConfig config;
         config.scheme = Test_fec_schemes[n_scheme];
+
         Codec code(config);
 
         CHECK(code.encoder().max_block_length() == test_cases[n_scheme]);

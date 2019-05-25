@@ -63,6 +63,11 @@ public:
         return repair_queue_.head();
     }
 
+    void resize(size_t num_source, size_t num_repair) {
+        num_source_ = num_source;
+        num_repair_ = num_repair;
+    }
+
     void reset() {
         const size_t n_source_packets = source_queue_.size();
         const size_t n_repair_packets = repair_queue_.size();
@@ -175,8 +180,8 @@ private:
         return false;
     }
 
-    const size_t num_source_;
-    const size_t num_repair_;
+    size_t num_source_;
+    size_t num_repair_;
 
     size_t packet_num_;
 

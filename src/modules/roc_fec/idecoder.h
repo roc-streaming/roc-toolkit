@@ -31,7 +31,7 @@ public:
     //! @remarks
     //!  Performs an initial setup for a block. Should be called before
     //!  any operations for the block.
-    virtual bool begin(size_t sblen, size_t rblen) = 0;
+    virtual bool begin(size_t sblen, size_t rblen, size_t payload_size) = 0;
 
     //! Store source or repair packet buffer for current block.
     virtual void set(size_t index, const core::Slice<uint8_t>& buffer) = 0;

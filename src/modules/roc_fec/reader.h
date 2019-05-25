@@ -16,7 +16,6 @@
 #include "roc_core/iallocator.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/slice.h"
-#include "roc_fec/config.h"
 #include "roc_fec/idecoder.h"
 #include "roc_packet/iparser.h"
 #include "roc_packet/ireader.h"
@@ -26,6 +25,20 @@
 
 namespace roc {
 namespace fec {
+
+//! FEC reader parameters.
+struct ReaderConfig {
+    //! FIXME: remove this from config.
+    size_t n_repair_packets;
+
+    //! Maximum allowed source block number jump.
+    size_t max_sbn_jump;
+
+    ReaderConfig()
+        : n_repair_packets(10)
+        , max_sbn_jump(100) {
+    }
+};
 
 //! FEC reader.
 class Reader : public packet::IReader, public core::NonCopyable<> {
@@ -39,7 +52,7 @@ public:
     //!  - @p repair_reader specifies input queue with FEC packets;
     //!  - @p parser specifies packet parser for restored packets.
     //!  - @p allocator is used to initialize a packet array
-    Reader(const Config& config,
+    Reader(const ReaderConfig& config,
            IDecoder& decoder,
            packet::IReader& source_reader,
            packet::IReader& repair_reader,
@@ -67,6 +80,7 @@ private:
     packet::PacketPtr get_first_packet_();
     packet::PacketPtr get_next_packet_();
 
+    bool update_payload_size_(size_t);
     bool update_block_size_(size_t);
     void next_block_();
 
@@ -107,6 +121,8 @@ private:
 
     size_t next_packet_;
     packet::blknum_t cur_sbn_;
+
+    size_t payload_size_;
 
     bool has_source_;
     packet::source_t source_;

@@ -87,15 +87,15 @@ int main(int argc, char** argv) {
 
     switch ((unsigned)args.fec_arg) {
     case fec_arg_none:
-        config.fec.scheme = packet::FEC_None;
+        config.fec_encoder.scheme = packet::FEC_None;
         break;
 
     case fec_arg_rs8m:
-        config.fec.scheme = packet::FEC_ReedSolomon_M8;
+        config.fec_encoder.scheme = packet::FEC_ReedSolomon_M8;
         break;
 
     case fec_arg_ldpc:
-        config.fec.scheme = packet::FEC_LDPC_Staircase;
+        config.fec_encoder.scheme = packet::FEC_LDPC_Staircase;
         break;
 
     default:
@@ -103,7 +103,7 @@ int main(int argc, char** argv) {
     }
 
     if (args.nbsrc_given) {
-        if (config.fec.scheme == packet::FEC_None) {
+        if (config.fec_encoder.scheme == packet::FEC_None) {
             roc_log(LogError, "--nbsrc can't be used when --fec=none)");
             return 1;
         }
@@ -111,11 +111,11 @@ int main(int argc, char** argv) {
             roc_log(LogError, "invalid --nbsrc: should be > 0");
             return 1;
         }
-        config.fec.n_source_packets = (size_t)args.nbsrc_arg;
+        config.fec_writer.n_source_packets = (size_t)args.nbsrc_arg;
     }
 
     if (args.nbrpr_given) {
-        if (config.fec.scheme == packet::FEC_None) {
+        if (config.fec_encoder.scheme == packet::FEC_None) {
             roc_log(LogError, "--nbrpr can't be used when --fec=none");
             return 1;
         }
@@ -123,7 +123,7 @@ int main(int argc, char** argv) {
             roc_log(LogError, "invalid --nbrpr: should be > 0");
             return 1;
         }
-        config.fec.n_repair_packets = (size_t)args.nbrpr_arg;
+        config.fec_writer.n_repair_packets = (size_t)args.nbrpr_arg;
     }
 
     config.resampling = !args.no_resampling_flag;

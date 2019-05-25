@@ -69,7 +69,7 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
     preader = validator_.get();
 
 #ifdef ROC_TARGET_OPENFEC
-    if (session_config.fec.scheme != packet::FEC_None) {
+    if (session_config.fec_decoder.scheme != packet::FEC_None) {
         repair_queue_.reset(new (allocator_) packet::SortedQueue(0), allocator_);
         if (!repair_queue_) {
             return;
@@ -79,9 +79,8 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
         }
 
         core::UniquePtr<fec::OFDecoder> fec_decoder(
-            new (allocator_) fec::OFDecoder(session_config.fec,
-                                            format->size(session_config.packet_length),
-                                            byte_buffer_pool, allocator_),
+            new (allocator_)
+                fec::OFDecoder(session_config.fec_decoder, byte_buffer_pool, allocator_),
             allocator_);
         if (!fec_decoder || !fec_decoder->valid()) {
             return;
@@ -94,8 +93,8 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
         }
 
         fec_reader_.reset(new (allocator_) fec::Reader(
-                              session_config.fec, *fec_decoder_, *preader, *repair_queue_,
-                              *fec_parser_, packet_pool, allocator_),
+                              session_config.fec_reader, *fec_decoder_, *preader,
+                              *repair_queue_, *fec_parser_, packet_pool, allocator_),
                           allocator_);
         if (!fec_reader_ || !fec_reader_->valid()) {
             return;

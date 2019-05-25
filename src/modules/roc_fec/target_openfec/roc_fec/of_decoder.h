@@ -17,7 +17,7 @@
 #include "roc_core/iallocator.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/slice.h"
-#include "roc_fec/config.h"
+#include "roc_fec/codec_config.h"
 #include "roc_fec/idecoder.h"
 #include "roc_packet/units.h"
 
@@ -40,8 +40,7 @@ namespace fec {
 class OFDecoder : public IDecoder, public core::NonCopyable<> {
 public:
     //! Initialize.
-    explicit OFDecoder(const Config& config,
-                       size_t payload_size,
+    explicit OFDecoder(const CodecConfig& config,
                        core::BufferPool<uint8_t>& buffer_pool,
                        core::IAllocator& allocator);
 
@@ -58,7 +57,7 @@ public:
     //! @remarks
     //!  Performs an initial setup for a block. Should be called before
     //!  any operations for the block.
-    virtual bool begin(size_t sblen, size_t rblen);
+    virtual bool begin(size_t sblen, size_t rblen, size_t payload_size);
 
     //! Store source or repair packet buffer for current block.
     virtual void set(size_t index, const core::Slice<uint8_t>& buffer);
@@ -74,7 +73,7 @@ public:
     virtual void end();
 
 private:
-    void update_session_params_(size_t sblen, size_t rblen);
+    void update_session_params_(size_t sblen, size_t rblen, size_t payload_size);
 
     void reset_tabs_();
     bool resize_tabs_(size_t size);
@@ -98,7 +97,7 @@ private:
 
     size_t sblen_;
     size_t rblen_;
-    const size_t payload_size_;
+    size_t payload_size_;
 
     of_codec_id_t codec_id_;
     union {

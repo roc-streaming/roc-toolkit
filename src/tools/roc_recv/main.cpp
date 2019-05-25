@@ -66,7 +66,6 @@ int main(int argc, char** argv) {
             roc_log(LogError, "invalid --nbsrc: should be > 0");
             return 1;
         }
-        config.default_session.fec.n_source_packets = (size_t)args.nbsrc_arg;
     }
 
     if (args.nbrpr_given) {
@@ -74,7 +73,7 @@ int main(int argc, char** argv) {
             roc_log(LogError, "invalid --nbrpr: should be > 0");
             return 1;
         }
-        config.default_session.fec.n_repair_packets = (size_t)args.nbrpr_arg;
+        config.default_session.fec_reader.n_repair_packets = (size_t)args.nbrpr_arg;
     }
 
     if (args.sess_latency_given) {

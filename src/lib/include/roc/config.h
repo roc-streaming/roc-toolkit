@@ -312,12 +312,6 @@ typedef struct roc_receiver_config {
      */
     unsigned long long breakage_detection_window;
 
-    /** The length of the packets received from sender, in nanoseconds.
-     * Number of nanoseconds encoded per packet. If zero, default value is used.
-     * Should be set to the same value as on the sender.
-     */
-    unsigned long long packet_length;
-
     /** FEC code to use.
      * If non-zero, the receiver employs FEC codec to restore dropped packets.
      * This requires both sender and receiver to use two separate source and

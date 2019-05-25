@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_fec/config.h
-//! @brief FEC code type options.
+//! @file roc_fec/codec_config.h
+//! @brief FEC codec parameters.
 
-#ifndef ROC_FEC_CONFIG_H_
-#define ROC_FEC_CONFIG_H_
+#ifndef ROC_FEC_CODEC_CONFIG_H_
+#define ROC_FEC_CODEC_CONFIG_H_
 
 #include "roc_core/stddefs.h"
 #include "roc_packet/fec.h"
@@ -18,16 +18,10 @@
 namespace roc {
 namespace fec {
 
-//! FEC configuration.
-struct Config {
+//! FEC codec parameters.
+struct CodecConfig {
     //! FEC scheme.
     packet::FECScheme scheme;
-
-    //! Number of data packets in block.
-    size_t n_source_packets;
-
-    //! Number of FEC packets in block.
-    size_t n_repair_packets;
 
     //! Seed for LDPC scheme.
     int32_t ldpc_prng_seed;
@@ -38,21 +32,15 @@ struct Config {
     //! Configuration for ReedSolomon scheme.
     uint16_t rs_m;
 
-    //! Maximum allowed source block number jump.
-    size_t max_sbn_jump;
-
-    Config()
+    CodecConfig()
         : scheme(packet::FEC_None)
-        , n_source_packets(20)
-        , n_repair_packets(10)
         , ldpc_prng_seed(1297501556)
         , ldpc_N1(7)
-        , rs_m(8)
-        , max_sbn_jump(100) {
+        , rs_m(8) {
     }
 };
 
 } // namespace fec
 } // namespace roc
 
-#endif // ROC_FEC_CONFIG_H_
+#endif // ROC_FEC_CODEC_CONFIG_H_
