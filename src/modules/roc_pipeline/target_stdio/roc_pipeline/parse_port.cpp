@@ -49,7 +49,6 @@ bool match_proto(PortType type, const char* str, PortProtocol& proto) {
     return false;
 }
 
-
 } // namespace
 
 bool parse_port(PortType type, const char* input, PortConfig& result) {

@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_pipeline/port_to_str.h
+//! @file roc_pipeline/target_stdio/roc_pipeline/port_to_str.h
 //! @brief Port to string.
 
 #ifndef ROC_PIPELINE_PORT_TO_STR_H_

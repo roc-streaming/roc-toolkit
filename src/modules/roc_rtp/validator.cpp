@@ -56,8 +56,7 @@ bool Validator::check_(const packet::RTP& prev, const packet::RTP& next) const {
     }
 
     if (next.payload_type != prev.payload_type) {
-        roc_log(LogDebug,
-                "rtp validator: payload type jump: prev=%u, next=%u",
+        roc_log(LogDebug, "rtp validator: payload type jump: prev=%u, next=%u",
                 (unsigned)prev.payload_type, (unsigned)next.payload_type);
         return false;
     }

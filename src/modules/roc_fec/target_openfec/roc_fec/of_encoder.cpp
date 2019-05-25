@@ -66,7 +66,7 @@ size_t OFEncoder::max_block_length() const {
 
     size_t ret = 0;
 
-    switch((int)codec_id_) {
+    switch ((int)codec_id_) {
     case OF_CODEC_REED_SOLOMON_GF_2_M_STABLE:
         ret = OF_REED_SOLOMON_MAX_NB_ENCODING_SYMBOLS_DEFAULT;
         break;

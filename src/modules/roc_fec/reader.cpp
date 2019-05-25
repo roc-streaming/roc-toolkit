@@ -187,7 +187,6 @@ bool Reader::update_block_size_(size_t new_sblen) {
         return (alive_ = false);
     }
 
-
     if (!source_block_.resize(new_sblen)) {
         roc_log(LogDebug,
                 "fec reader: can't allocate source block table, shutting down:"

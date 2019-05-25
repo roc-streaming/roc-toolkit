@@ -1299,8 +1299,7 @@ TEST(writer_reader, resize_block_begin) {
         CHECK(writer.valid());
 
         const size_t block_sizes[] = {
-            15, 25, 35, 43, 33, 23, 13,
-            encoder.max_block_length() - NumRepairPackets
+            15, 25, 35, 43, 33, 23, 13, encoder.max_block_length() - NumRepairPackets
         };
 
         packet::seqnum_t wr_sn = 0;
@@ -1362,8 +1361,7 @@ TEST(writer_reader, resize_block_middle) {
         CHECK(writer.valid());
 
         const size_t block_sizes[] = {
-            15, 25, 35, 43, 33, 23, 13,
-            encoder.max_block_length() - NumRepairPackets
+            15, 25, 35, 43, 33, 23, 13, encoder.max_block_length() - NumRepairPackets
         };
 
         size_t prev_sblen = NumSourcePackets;
@@ -1603,8 +1601,7 @@ TEST(writer_reader, error_reader_decode_packet) {
                       repair_composer(), packet_pool, buffer_pool, allocator);
 
         Reader reader(config, decoder, dispatcher.source_reader(),
-                      dispatcher.repair_reader(), rtp_parser, packet_pool,
-                      allocator);
+                      dispatcher.repair_reader(), rtp_parser, packet_pool, allocator);
 
         CHECK(writer.valid());
         CHECK(reader.valid());
