@@ -43,6 +43,8 @@ OFDecoder::OFDecoder(const Config& config,
         codec_params_.rs_params_.m = config.rs_m;
 
         of_sess_params_ = (of_parameters_t*)&codec_params_.rs_params_;
+
+        max_block_length_ = OF_REED_SOLOMON_MAX_NB_ENCODING_SYMBOLS_DEFAULT;
     } else if (config.scheme == packet::FEC_LDPC_Staircase) {
         roc_log(LogDebug, "of decoder: initializing LDPC decoder");
 
@@ -51,6 +53,8 @@ OFDecoder::OFDecoder(const Config& config,
         codec_params_.ldpc_params_.N1 = config.ldpc_N1;
 
         of_sess_params_ = (of_parameters_t*)&codec_params_.ldpc_params_;
+
+        max_block_length_ = OF_LDPC_STAIRCASE_MAX_NB_ENCODING_SYMBOLS_DEFAULT;
     } else {
         roc_panic("of decoder: unexpected fec scheme");
     }
@@ -74,20 +78,7 @@ bool OFDecoder::valid() const {
 size_t OFDecoder::max_block_length() const {
     roc_panic_if_not(valid());
 
-    size_t ret = 0;
-
-    switch ((int)codec_id_) {
-    case OF_CODEC_REED_SOLOMON_GF_2_M_STABLE:
-        ret = OF_REED_SOLOMON_MAX_NB_ENCODING_SYMBOLS_DEFAULT;
-        break;
-    case OF_CODEC_LDPC_STAIRCASE_STABLE:
-        ret = OF_LDPC_STAIRCASE_MAX_NB_ENCODING_SYMBOLS_DEFAULT;
-        break;
-    default:
-        roc_panic("unexpected fec scheme");
-    }
-
-    return ret;
+    return max_block_length_;
 }
 
 bool OFDecoder::begin(size_t sblen, size_t rblen) {

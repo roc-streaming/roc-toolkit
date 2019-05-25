@@ -128,6 +128,8 @@ private:
     bool has_new_packets_;
     bool decoding_finished_;
 
+    size_t max_block_length_;
+
     bool valid_;
 };
 

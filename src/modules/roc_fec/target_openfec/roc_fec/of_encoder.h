@@ -97,6 +97,8 @@ private:
     core::Array<core::Slice<uint8_t> > buff_tab_;
     core::Array<void*> data_tab_;
 
+    size_t max_block_length_;
+
     bool valid_;
 };
 
