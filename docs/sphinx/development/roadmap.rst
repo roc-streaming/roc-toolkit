@@ -40,21 +40,12 @@ Advanced features
 - ☐ Video support (requires some research)
 - ☐ Hardware acceleration (maybe OpenMAX)
 
-Portability
-===========
-
-- ☑ Linux, including Raspberry Pi and clones
-- ☐ Other \*nix systems
-- ☑ macOS
-- ☐ Android
-- ☐ Windows
-
 API
 ===
 
 - ☑ Transport API (network sender and receiver)
+- ☐ Control API
 - ☐ Discovery API (publisher and explorer)
-- ☐ Audio API (grabber and player)
 - ☐ Packet API (packet encoder and decoder)
 
 Tools
@@ -65,13 +56,18 @@ Tools
 - ☑ Converter
 - ☐ Relay (to improve quality of service of existing applications without modifying them)
 
-PulseAudio
-==========
+Integrations
+============
 
 - ☑ Roc-based transport for PulseAudio
 - ☐ Roc-based service discovery for PulseAudio
+- ☐ Bindings for various languages
 
-Bindings
-========
+Portability
+===========
 
-- ☐ Bindings for other languages
+- ☑ Linux, including Raspberry Pi and clones
+- ☐ Other \*nix systems
+- ☑ macOS
+- ☐ Android
+- ☐ Windows

@@ -9,6 +9,11 @@ div.related {
     color: #FFFDAB;
 }
 
+div.topic, div.seealso {
+    background-color: #fafaf5;
+    border: 1px solid #eee;
+}
+
 div.footer {
     background-color: #10212d;
 }
@@ -45,6 +50,9 @@ dl.function > dt {
     padding: 4px 4px 4px 10px;
 }
 
-.highlight {
-    font-size: 90%;
+pre {
+    font-size: 98%;
+    box-shadow: none;
+    -webkit-box-shadow: none;
+    -moz-box-shadow: none;
 }

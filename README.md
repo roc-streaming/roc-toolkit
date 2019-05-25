@@ -4,7 +4,7 @@
 
 Roc is a toolkit for real-time media streaming over the network.
 
-You can read about the project [here](https://roc-project.github.io/roc/docs/about_project.html).
+You can read about the project on the [overview](https://roc-project.github.io/roc/docs/about_project/overview.html) and [features](https://roc-project.github.io/roc/docs/about_project/features.html) pages.
 
 The toolkit consists of:
 
@@ -57,9 +57,11 @@ Documentation
 Releases
 --------
 
-No public release yet. No stable API yet.
+See [releases](https://github.com/roc-project/roc/releases) page for the list of released versions and [changelog](https://roc-project.github.io/roc/docs/development/changelog.html) page for the detailed list of changes.
 
-Coming soon.
+Versions are assigned accroding to [semantic versioning](https://semver.org/). There is no compatibility promise for the public API until 1.0.0 is released. Small breaking changes are possible.
+
+Releases are tagged from the master branch, which is maintained to be stable. Actual development happens in the develop branch which is merged into master from time to time.
 
 Plans
 -----
@@ -68,6 +70,8 @@ See the [roadmap](https://roc-project.github.io/roc/docs/development/roadmap.htm
 
 Continuous integration
 ----------------------
+
+See details [here](https://roc-project.github.io/roc/docs/development/continuous_integration.html).
 
 Branch    | Status
 --------- | ------
@@ -86,7 +90,7 @@ Contributing
 
 Contributions are always welcome!
 
-We use GitHub for issue tracking and code review. Feel free to file bug reports or feature requests, and send pull requests for review. The project internals are documented [here](https://roc-project.github.io/roc/docs/internals.html). The developer's information can be found [here](https://roc-project.github.io/roc/docs/development.html).
+We use GitHub for issue tracking and code review. Feel free to file bug reports or feature requests, and send pull requests for review. The project internals are documented [here](https://roc-project.github.io/roc/docs/internals.html) and [here](https://roc-project.github.io/roc/doxygen/). The developer's information can be found [here](https://roc-project.github.io/roc/docs/development.html).
 
 Licensing
 ---------

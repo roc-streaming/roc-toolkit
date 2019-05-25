@@ -31,6 +31,7 @@ Linux distributions:
 * Debian (stable)
 * Fedora (latest)
 * CentOS (latest)
+* Arch Linux (latest)
 
 Xcode versions:
 
