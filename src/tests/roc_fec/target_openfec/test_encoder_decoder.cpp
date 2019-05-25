@@ -192,6 +192,8 @@ TEST(encoder_decoder, max_source_block) {
     size_t test_cases[] = { OF_REED_SOLOMON_MAX_NB_ENCODING_SYMBOLS_DEFAULT,
                             OF_LDPC_STAIRCASE_MAX_NB_ENCODING_SYMBOLS_DEFAULT };
 
+    CHECK(ROC_ARRAY_SIZE(test_cases) == Test_n_fec_schemes);
+
     for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; ++n_scheme) {
         config.scheme = Test_fec_schemes[n_scheme];
         Codec code(config);

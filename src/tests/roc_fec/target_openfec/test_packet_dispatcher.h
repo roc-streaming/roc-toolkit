@@ -102,7 +102,7 @@ public:
         n_delayed_ = 0;
     }
 
-    void push_written() {
+    void push_stocks() {
         while (source_stock_.head()) {
             source_queue_.write(source_stock_.read());
         }
@@ -111,18 +111,17 @@ public:
         }
     }
 
-    bool push_one_source() {
-        packet::PacketPtr p;
-        if (!(p = source_stock_.read())) {
-            return false;
+    void push_source_stock(size_t limit) {
+        for (size_t n = 0; n < limit; n++) {
+            packet::PacketPtr p = source_stock_.read();
+            CHECK(p);
+            source_queue_.write(p);
         }
-        source_queue_.write(p);
-        return true;
     }
 
-    void push_delayed(const size_t n) {
+    void push_delayed(const size_t index) {
         for (size_t i = 0; i < n_delayed_; i++) {
-            if (delayed_packet_nums_[i] == n) {
+            if (delayed_packet_nums_[i] == index) {
                 if (delayed_stock_[i]) {
                     route_(source_queue_, repair_queue_, delayed_stock_[i]);
                     delayed_stock_[i] = NULL;
