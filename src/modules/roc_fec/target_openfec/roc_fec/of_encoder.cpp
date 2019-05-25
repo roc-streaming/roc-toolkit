@@ -13,11 +13,10 @@
 namespace roc {
 namespace fec {
 
-OFEncoder::OFEncoder(const Config& config,
-                     size_t payload_size,
-                     core::IAllocator& allocator)
+OFEncoder::OFEncoder(const CodecConfig& config, core::IAllocator& allocator)
     : sblen_(0)
     , rblen_(0)
+    , payload_size_(0)
     , of_sess_(NULL)
     , buff_tab_(allocator)
     , data_tab_(allocator)
@@ -45,7 +44,6 @@ OFEncoder::OFEncoder(const Config& config,
         roc_panic("of encoder: unexpected fec scheme");
     }
 
-    of_sess_params_->encoding_symbol_length = (uint32_t)payload_size;
     of_verbosity = 0;
 
     valid_ = true;
@@ -71,10 +69,10 @@ size_t OFEncoder::max_block_length() const {
     return max_block_length_;
 }
 
-bool OFEncoder::begin(size_t sblen, size_t rblen) {
+bool OFEncoder::begin(size_t sblen, size_t rblen, size_t payload_size) {
     roc_panic_if_not(valid());
 
-    if (sblen_ == sblen && rblen_ == rblen) {
+    if (sblen_ == sblen && rblen_ == rblen && payload_size_ == payload_size) {
         return true;
     }
 
@@ -84,8 +82,9 @@ bool OFEncoder::begin(size_t sblen, size_t rblen) {
 
     sblen_ = sblen;
     rblen_ = rblen;
+    payload_size_ = payload_size;
 
-    update_session_params_(sblen, rblen);
+    update_session_params_(sblen, rblen, payload_size);
     reset_session_();
 
     return true;
@@ -101,6 +100,11 @@ void OFEncoder::set(size_t index, const core::Slice<uint8_t>& buffer) {
 
     if (!buffer) {
         roc_panic("of encoder: null buffer");
+    }
+
+    if (buffer.size() == 0 || buffer.size() != payload_size_) {
+        roc_panic("of encoder: invalid payload size: size=%lu, expected=%lu",
+                  (unsigned long)buffer.size(), (unsigned long)payload_size_);
     }
 
     if ((uintptr_t)buffer.data() % Alignment != 0) {
@@ -144,9 +148,10 @@ bool OFEncoder::resize_tabs_(size_t size) {
     return true;
 }
 
-void OFEncoder::update_session_params_(size_t sblen, size_t rblen) {
+void OFEncoder::update_session_params_(size_t sblen, size_t rblen, size_t payload_size) {
     of_sess_params_->nb_source_symbols = (uint32_t)sblen;
     of_sess_params_->nb_repair_symbols = (uint32_t)rblen;
+    of_sess_params_->encoding_symbol_length = (uint32_t)payload_size;
 }
 
 void OFEncoder::reset_session_() {

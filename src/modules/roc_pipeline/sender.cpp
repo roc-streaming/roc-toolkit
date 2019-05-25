@@ -75,16 +75,16 @@ Sender::Sender(const SenderConfig& config,
     }
 
 #ifdef ROC_TARGET_OPENFEC
-    if (config.fec.scheme != packet::FEC_None) {
+    if (config.fec_encoder.scheme != packet::FEC_None) {
         if (!repair_port_) {
             return;
         }
 
         if (config.interleaving) {
-            interleaver_.reset(new (allocator)
-                                   packet::Interleaver(*pwriter, allocator,
-                                                       config.fec.n_source_packets
-                                                           + config.fec.n_repair_packets),
+            interleaver_.reset(new (allocator) packet::Interleaver(
+                                   *pwriter, allocator,
+                                   config.fec_writer.n_source_packets
+                                       + config.fec_writer.n_repair_packets),
                                allocator);
             if (!interleaver_ || !interleaver_->valid()) {
                 return;
@@ -95,18 +95,18 @@ Sender::Sender(const SenderConfig& config,
         const size_t source_packet_size = format->size(config.packet_length);
 
         core::UniquePtr<fec::OFEncoder> fec_encoder(
-            new (allocator) fec::OFEncoder(config.fec, source_packet_size, allocator),
-            allocator);
+            new (allocator) fec::OFEncoder(config.fec_encoder, allocator), allocator);
         if (!fec_encoder || !fec_encoder->valid()) {
             return;
         }
         fec_encoder_.reset(fec_encoder.release(), allocator);
 
-        fec_writer_.reset(new (allocator) fec::Writer(
-                              config.fec, source_packet_size, *fec_encoder_, *pwriter,
-                              source_port_->composer(), repair_port_->composer(),
-                              packet_pool, byte_buffer_pool, allocator),
-                          allocator);
+        fec_writer_.reset(
+            new (allocator)
+                fec::Writer(config.fec_writer, source_packet_size, *fec_encoder_,
+                            *pwriter, source_port_->composer(), repair_port_->composer(),
+                            packet_pool, byte_buffer_pool, allocator),
+            allocator);
         if (!fec_writer_ || !fec_writer_->valid()) {
             return;
         }

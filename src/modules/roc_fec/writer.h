@@ -17,7 +17,6 @@
 #include "roc_core/iallocator.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/slice.h"
-#include "roc_fec/config.h"
 #include "roc_fec/iencoder.h"
 #include "roc_packet/icomposer.h"
 #include "roc_packet/iwriter.h"
@@ -26,6 +25,20 @@
 
 namespace roc {
 namespace fec {
+
+//! FEC writer parameters.
+struct WriterConfig {
+    //! Number of data packets in block.
+    size_t n_source_packets;
+
+    //! Number of FEC packets in block.
+    size_t n_repair_packets;
+
+    WriterConfig()
+        : n_source_packets(20)
+        , n_repair_packets(10) {
+    }
+};
 
 //! FEC writer.
 class Writer : public packet::IWriter, public core::NonCopyable<> {
@@ -41,7 +54,7 @@ public:
     //!  - @p packet_pool is used to allocate repair packets
     //!  - @p buffer_pool is used to allocate buffers for repair packets
     //!  - @p allocator is used to initialize a packet array
-    Writer(const Config& config,
+    Writer(const WriterConfig& config,
            size_t payload_size,
            IEncoder& encoder,
            packet::IWriter& writer,
@@ -58,7 +71,7 @@ public:
     bool alive() const;
 
     //! Set number of source packets per block.
-    bool resize(size_t sblen);
+    bool resize(size_t sblen, size_t rblen, size_t payload_size);
 
     //! Write packet.
     //! @remarks
@@ -67,11 +80,6 @@ public:
     virtual void write(const packet::PacketPtr&);
 
 private:
-    size_t cur_sblen_;
-    size_t next_sblen_;
-    const size_t cur_rblen_;
-    const size_t payload_size_;
-
     void generate_source_id_(const packet::PacketPtr& pp);
 
     bool begin_block_();
@@ -84,6 +92,15 @@ private:
     void encode_repair_packets_();
     void write_repair_packets_();
     void fill_packet_fec_fields_(const packet::PacketPtr& packet, packet::seqnum_t n);
+
+    size_t cur_sblen_;
+    size_t next_sblen_;
+
+    size_t cur_rblen_;
+    size_t next_rblen_;
+
+    size_t cur_payload_size_;
+    size_t next_payload_size_;
 
     IEncoder& encoder_;
     packet::IWriter& writer_;

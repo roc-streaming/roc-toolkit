@@ -19,13 +19,12 @@ extern "C" {
 namespace roc {
 namespace fec {
 
-OFDecoder::OFDecoder(const Config& config,
-                     size_t payload_size,
+OFDecoder::OFDecoder(const CodecConfig& config,
                      core::BufferPool<uint8_t>& buffer_pool,
                      core::IAllocator& allocator)
     : sblen_(0)
     , rblen_(0)
-    , payload_size_(payload_size)
+    , payload_size_(0)
     , of_sess_(NULL)
     , of_sess_params_(NULL)
     , buffer_pool_(buffer_pool)
@@ -59,7 +58,6 @@ OFDecoder::OFDecoder(const Config& config,
         roc_panic("of decoder: unexpected fec scheme");
     }
 
-    of_sess_params_->encoding_symbol_length = (uint32_t)payload_size_;
     of_verbosity = 0;
 
     valid_ = true;
@@ -81,7 +79,7 @@ size_t OFDecoder::max_block_length() const {
     return max_block_length_;
 }
 
-bool OFDecoder::begin(size_t sblen, size_t rblen) {
+bool OFDecoder::begin(size_t sblen, size_t rblen, size_t payload_size) {
     roc_panic_if_not(valid());
 
     if (!resize_tabs_(sblen + rblen)) {
@@ -90,8 +88,9 @@ bool OFDecoder::begin(size_t sblen, size_t rblen) {
 
     sblen_ = sblen;
     rblen_ = rblen;
+    payload_size_ = payload_size;
 
-    update_session_params_(sblen, rblen);
+    update_session_params_(sblen, rblen, payload_size);
     reset_session_();
 
     return true;
@@ -109,7 +108,7 @@ void OFDecoder::set(size_t index, const core::Slice<uint8_t>& buffer) {
         roc_panic("of decoder: null buffer");
     }
 
-    if (buffer.size() != payload_size_) {
+    if (buffer.size() == 0 || buffer.size() != payload_size_) {
         roc_panic("of decoder: invalid payload size: size=%lu, expected=%lu",
                   (unsigned long)buffer.size(), (unsigned long)payload_size_);
     }
@@ -154,9 +153,10 @@ void OFDecoder::end() {
     decoding_finished_ = false;
 }
 
-void OFDecoder::update_session_params_(size_t sblen, size_t rblen) {
+void OFDecoder::update_session_params_(size_t sblen, size_t rblen, size_t payload_size) {
     of_sess_params_->nb_source_symbols = (uint32_t)sblen;
     of_sess_params_->nb_repair_symbols = (uint32_t)rblen;
+    of_sess_params_->encoding_symbol_length = (uint32_t)payload_size;
 }
 
 void OFDecoder::reset_tabs_() {
