@@ -185,7 +185,7 @@ TEST(writer_reader, no_losses) {
         for (size_t i = 0; i < NumSourcePackets; ++i) {
             writer.write(source_packets[i]);
         }
-        dispatcher.push_written();
+        dispatcher.push_stocks();
 
         CHECK(dispatcher.source_size() == NumSourcePackets);
         CHECK(dispatcher.repair_size() == NumRepairPackets);
@@ -227,7 +227,7 @@ TEST(writer_reader, 1_loss) {
         for (size_t i = 0; i < NumSourcePackets; ++i) {
             writer.write(source_packets[i]);
         }
-        dispatcher.push_written();
+        dispatcher.push_stocks();
 
         LONGS_EQUAL(NumSourcePackets - 1, dispatcher.source_size());
         LONGS_EQUAL(NumRepairPackets, dispatcher.repair_size());
@@ -275,7 +275,7 @@ TEST(writer_reader, lose_first_packet_in_first_block) {
         for (size_t i = 0; i < NumSourcePackets; ++i) {
             writer.write(source_packets[i]);
         }
-        dispatcher.push_written();
+        dispatcher.push_stocks();
 
         // Receive every sent packet except the first one.
         for (size_t i = 1; i < NumSourcePackets * 2; ++i) {
@@ -327,7 +327,7 @@ TEST(writer_reader, multiple_blocks_1_loss) {
             for (size_t i = 0; i < NumSourcePackets; ++i) {
                 writer.write(source_packets[i]);
             }
-            dispatcher.push_written();
+            dispatcher.push_stocks();
 
             if (lost_sq == size_t(-1)) {
                 CHECK(dispatcher.source_size() == NumSourcePackets);
@@ -389,7 +389,7 @@ TEST(writer_reader, multiple_blocks_in_queue) {
                 writer.write(source_packets[i]);
             }
         }
-        dispatcher.push_written();
+        dispatcher.push_stocks();
 
         CHECK(dispatcher.source_size() == NumSourcePackets * NumBlocks);
         CHECK(dispatcher.repair_size() == NumRepairPackets * NumBlocks);
@@ -440,7 +440,7 @@ TEST(writer_reader, interleaved_packets) {
             many_packets[i] = fill_one_packet(i);
             writer.write(many_packets[i]);
         }
-        dispatcher.push_written();
+        dispatcher.push_stocks();
 
         intrlvr.flush();
 
@@ -489,7 +489,7 @@ TEST(writer_reader, delayed_packets) {
 
         // deliver 10 packets to reader
         for (size_t i = 0; i < 10; ++i) {
-            dispatcher.push_one_source();
+            dispatcher.push_source_stock(1);
         }
 
         // read 10 packets
@@ -505,7 +505,7 @@ TEST(writer_reader, delayed_packets) {
         CHECK(!reader.read());
 
         // deliver "delayed" packets
-        dispatcher.push_written();
+        dispatcher.push_stocks();
 
         // successfully read packets starting from the 11th packet
         for (size_t i = 10; i < NumSourcePackets; ++i) {
@@ -556,7 +556,7 @@ TEST(writer_reader, late_out_of_order_packets) {
         }
 
         // Deliver packets 0-6 and 11-20
-        dispatcher.push_written();
+        dispatcher.push_stocks();
         CHECK(dispatcher.source_size() == NumSourcePackets - (10 - 7 + 1));
 
         // Read packets 0-6
@@ -626,7 +626,7 @@ TEST(writer_reader, repaired_bad_source_id) {
         }
 
         // deliver all packets except the packet with bad source id
-        dispatcher.push_written();
+        dispatcher.push_stocks();
 
         // read packets before the bad packet
         for (size_t i = 0; i < 5; ++i) {
@@ -680,7 +680,9 @@ TEST(writer_reader, multiple_repair_attempts) {
 
         for (size_t i = 0; i < NumSourcePackets; ++i) {
             writer.write(source_packets[i]);
-            dispatcher.push_one_source();
+            if (i != 5 && i != 15) {
+                dispatcher.push_source_stock(1);
+            }
         }
 
         dispatcher.clear_losses();
@@ -688,7 +690,7 @@ TEST(writer_reader, multiple_repair_attempts) {
         fill_all_packets(NumSourcePackets);
         for (size_t i = 0; i < NumSourcePackets; ++i) {
             writer.write(source_packets[i]);
-            dispatcher.push_one_source();
+            dispatcher.push_source_stock(1);
         }
 
         for (size_t i = 0; i < NumSourcePackets; ++i) {
@@ -700,7 +702,7 @@ TEST(writer_reader, multiple_repair_attempts) {
             } else if (i == 15) {
                 // The moment of truth. Deliver FEC packets accumulated in dispatcher.
                 // Reader must try to decode once more.
-                dispatcher.push_written();
+                dispatcher.push_stocks();
 
                 packet::PacketPtr p = reader.read();
                 CHECK(p);
@@ -761,7 +763,7 @@ TEST(writer_reader, drop_outdated_block) {
             writer.write(source_packets[n]);
         }
 
-        dispatcher.push_written();
+        dispatcher.push_stocks();
 
         // Read first block.
         const packet::PacketPtr first_packet = reader.read();
@@ -826,7 +828,7 @@ TEST(writer_reader, repaired_block_numbering) {
             writer.write(source_packets[n]);
         }
 
-        dispatcher.push_written();
+        dispatcher.push_stocks();
 
         // Read first block.
         const packet::PacketPtr first_packet = reader.read();
@@ -912,7 +914,7 @@ TEST(writer_reader, invalid_esi) {
         }
 
         // deliver packets from dispatcher to reader
-        dispatcher.push_written();
+        dispatcher.push_stocks();
 
         // read packets
         for (size_t i = 0; i < NumSourcePackets; ++i) {
@@ -974,7 +976,7 @@ TEST(writer_reader, invalid_sbl) {
         }
 
         // deliver packets from dispatcher to reader
-        dispatcher.push_written();
+        dispatcher.push_stocks();
 
         // read packets
         for (size_t i = 0; i < NumSourcePackets; ++i) {
@@ -1036,7 +1038,7 @@ TEST(writer_reader, invalid_nes) {
         }
 
         // deliver packets from dispatcher to reader
-        dispatcher.push_written();
+        dispatcher.push_stocks();
 
         // read packets
         for (size_t i = 0; i < NumSourcePackets; ++i) {
@@ -1095,7 +1097,7 @@ TEST(writer_reader, sbn_jump) {
         }
 
         // deliver packets from dispatcher to reader
-        dispatcher.push_written();
+        dispatcher.push_stocks();
 
         // read first block
         for (size_t i = 0; i < NumSourcePackets; ++i) {
@@ -1117,7 +1119,7 @@ TEST(writer_reader, sbn_jump) {
         }
 
         // deliver packets from dispatcher to reader
-        dispatcher.push_written();
+        dispatcher.push_stocks();
 
         // read second block
         for (size_t i = NumSourcePackets; i < NumSourcePackets * 2; ++i) {
@@ -1139,7 +1141,7 @@ TEST(writer_reader, sbn_jump) {
         }
 
         // deliver packets from dispatcher to reader
-        dispatcher.push_written();
+        dispatcher.push_stocks();
 
         // the reader should detect sbn jump and shutdown
         CHECK(!reader.read());
@@ -1184,7 +1186,7 @@ TEST(writer_reader, writer_encode_blocks) {
                 for (size_t i = 0; i < NumSourcePackets; ++i) {
                     writer.write(source_packets[i]);
                 }
-                dispatcher.push_written();
+                dispatcher.push_stocks();
 
                 if (block_num == 0) {
                     const packet::FEC* fec = dispatcher.repair_head()->fec();
@@ -1272,7 +1274,7 @@ TEST(writer_reader, writer_resize_blocks) {
             CHECK(dispatcher.source_size() == block_sizes[n]);
             CHECK(dispatcher.repair_size() == NumRepairPackets);
 
-            dispatcher.push_written();
+            dispatcher.push_stocks();
             dispatcher.reset();
         }
     }
@@ -1320,7 +1322,7 @@ TEST(writer_reader, resize_block_begin) {
                 writer.write(packets[i]);
             }
 
-            dispatcher.push_written();
+            dispatcher.push_stocks();
 
             for (size_t i = 0; i < block_sizes[n]; ++i) {
                 const packet::PacketPtr p = reader.read();
@@ -1391,7 +1393,7 @@ TEST(writer_reader, resize_block_middle) {
                 writer.write(packets[i]);
             }
 
-            dispatcher.push_written();
+            dispatcher.push_stocks();
 
             for (size_t i = 0; i < prev_sblen; ++i) {
                 const packet::PacketPtr p = reader.read();
@@ -1455,7 +1457,7 @@ TEST(writer_reader, resize_block_losses) {
                 writer.write(packets[i]);
             }
 
-            dispatcher.push_written();
+            dispatcher.push_stocks();
 
             for (size_t i = 0; i < block_sizes[n]; ++i) {
                 const packet::PacketPtr p = reader.read();
@@ -1552,7 +1554,7 @@ TEST(writer_reader, error_reader_resize_block) {
         }
 
         // deliver first block
-        dispatcher.push_written();
+        dispatcher.push_stocks();
 
         // read first block
         for (size_t i = 0; i < BlockSize1; ++i) {
@@ -1569,7 +1571,7 @@ TEST(writer_reader, error_reader_resize_block) {
         }
 
         // deliver second block
-        dispatcher.push_written();
+        dispatcher.push_stocks();
 
         // configure allocator to return errors
         mock_allocator.set_fail(true);
@@ -1615,7 +1617,7 @@ TEST(writer_reader, error_reader_decode_packet) {
         }
 
         // deliver first block
-        dispatcher.push_written();
+        dispatcher.push_stocks();
 
         // read first block
         for (size_t i = 0; i < BlockSize1; ++i) {
@@ -1636,7 +1638,7 @@ TEST(writer_reader, error_reader_decode_packet) {
         }
 
         // deliver second block
-        dispatcher.push_written();
+        dispatcher.push_stocks();
 
         // read second block packets before loss
         for (size_t i = 0; i < 10; ++i) {
@@ -1693,7 +1695,7 @@ TEST(writer_reader, writer_oversized_block) {
             }
 
             // deliver packets from dispatcher to reader
-            dispatcher.push_written();
+            dispatcher.push_stocks();
 
             CHECK(dispatcher.source_size() == NumSourcePackets);
             CHECK(dispatcher.repair_size() == NumRepairPackets);
@@ -1733,9 +1735,9 @@ TEST(writer_reader, reader_oversized_block) {
         packet::Queue queue;
         PacketDispatcher dispatcher(NumSourcePackets, NumRepairPackets);
 
-        // We are going to violates source_block_length field of a FEC packet,
-        // but Reed-Solomon does not allows us to set this field more than 255.
-        // As a result LDPC composer is used.
+        // we are going to spoil source_block_length field of a FEC packet,
+        // but Reed-Solomon does not allow us to set this field above 255,
+        // so LDPC composer is used for all schemes.
         Writer writer(config, FECPayloadSize, encoder, queue, ldpc_source_composer,
                       ldpc_repair_composer, packet_pool, buffer_pool, allocator);
 
@@ -1769,7 +1771,7 @@ TEST(writer_reader, reader_oversized_block) {
         }
 
         // deliver packets from dispatcher to reader
-        dispatcher.push_written();
+        dispatcher.push_stocks();
 
         CHECK(dispatcher.source_size() == NumSourcePackets);
         CHECK(dispatcher.repair_size() == NumRepairPackets);
