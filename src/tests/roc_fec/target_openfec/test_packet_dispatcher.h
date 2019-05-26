@@ -13,7 +13,9 @@
 #include "roc_packet/fec.h"
 #include "roc_packet/ireader.h"
 #include "roc_packet/iwriter.h"
+#include "roc_packet/iparser.h"
 #include "roc_packet/sorted_queue.h"
+#include "roc_packet/packet_pool.h"
 
 namespace roc {
 namespace fec {
@@ -22,8 +24,12 @@ namespace fec {
 // as needed for Decoder.
 class PacketDispatcher : public packet::IWriter {
 public:
-    PacketDispatcher(size_t num_source, size_t num_repair)
-        : num_source_(num_source)
+    PacketDispatcher(packet::IParser& source_parser, packet::IParser& repair_parser,
+                     packet::PacketPool& pool, size_t num_source, size_t num_repair)
+        : source_parser_(source_parser)
+        , repair_parser_(repair_parser)
+        , packet_pool_(pool)
+        , num_source_(num_source)
         , num_repair_(num_repair)
         , packet_num_(0)
         , source_queue_(0)
@@ -36,7 +42,7 @@ public:
     }
 
     virtual void write(const packet::PacketPtr& p) {
-        write_(p);
+        store_(p);
 
         if (++packet_num_ >= num_source_ + num_repair_) {
             packet_num_ = 0;
@@ -109,18 +115,26 @@ public:
 
     void push_stocks() {
         while (source_stock_.head()) {
-            source_queue_.write(source_stock_.read());
+            packet::PacketPtr p = source_stock_.read();
+            deliver_(p);
         }
         while (repair_stock_.head()) {
-            repair_queue_.write(repair_stock_.read());
+            packet::PacketPtr p = repair_stock_.read();
+            deliver_(p);
         }
     }
 
     void push_source_stock(size_t limit) {
         for (size_t n = 0; n < limit; n++) {
             packet::PacketPtr p = source_stock_.read();
-            CHECK(p);
-            source_queue_.write(p);
+            deliver_(p);
+        }
+    }
+
+    void push_repair_stock(size_t limit) {
+        for (size_t n = 0; n < limit; n++) {
+            packet::PacketPtr p = repair_stock_.read();
+            deliver_(p);
         }
     }
 
@@ -128,7 +142,7 @@ public:
         for (size_t i = 0; i < n_delayed_; i++) {
             if (delayed_packet_nums_[i] == index) {
                 if (delayed_stock_[i]) {
-                    route_(source_queue_, repair_queue_, delayed_stock_[i]);
+                    deliver_(delayed_stock_[i]);
                     delayed_stock_[i] = NULL;
                 } else {
                     FAIL("no delayed packet");
@@ -138,7 +152,9 @@ public:
     }
 
 private:
-    void write_(const packet::PacketPtr& p) {
+    void store_(const packet::PacketPtr& p) {
+        CHECK(p);
+
         if (is_lost_(packet_num_)) {
             return;
         }
@@ -147,18 +163,44 @@ private:
             return;
         }
 
-        route_(source_stock_, repair_stock_, p);
-    }
-
-    void
-    route_(packet::SortedQueue& sq, packet::SortedQueue& rq, const packet::PacketPtr& p) {
         if (p->flags() & packet::Packet::FlagAudio) {
-            sq.write(p);
+            source_stock_.write(p);
         } else if (p->flags() & packet::Packet::FlagRepair) {
-            rq.write(p);
+            repair_stock_.write(p);
         } else {
             FAIL("unexpected packet type");
         }
+    }
+
+    void deliver_(const packet::PacketPtr& p) {
+        CHECK(p);
+
+        if (p->flags() & packet::Packet::FlagAudio) {
+            source_queue_.write(reparse_packet_(source_parser_, p));
+        } else if (p->flags() & packet::Packet::FlagRepair) {
+            repair_queue_.write(reparse_packet_(repair_parser_, p));
+        } else {
+            FAIL("unexpected packet type");
+        }
+    }
+
+    packet::PacketPtr reparse_packet_(packet::IParser& parser,
+                                      const packet::PacketPtr& old_pp) {
+        CHECK(old_pp);
+        CHECK(old_pp->flags() & packet::Packet::FlagComposed);
+
+        packet::PacketPtr pp = new (packet_pool_) packet::Packet(packet_pool_);
+        if (!pp) {
+            FAIL("can't allocate packet");
+        }
+
+        if (!parser.parse(*pp, old_pp->data())) {
+            FAIL("can't parse packet");
+        }
+
+        pp->set_data(old_pp->data());
+
+        return pp;
     }
 
     bool is_lost_(size_t n) const {
@@ -179,6 +221,10 @@ private:
         }
         return false;
     }
+
+    packet::IParser& source_parser_;
+    packet::IParser& repair_parser_;
+    packet::PacketPool& packet_pool_;
 
     size_t num_source_;
     size_t num_repair_;

@@ -80,23 +80,32 @@ private:
     packet::PacketPtr get_first_packet_();
     packet::PacketPtr get_next_packet_();
 
-    bool update_payload_size_(size_t);
-    bool update_block_size_(size_t);
     void next_block_();
-
     void try_repair_();
 
     packet::PacketPtr parse_repaired_packet_(const core::Slice<uint8_t>& buffer);
 
     void fetch_packets_();
-    void update_block_();
-    void update_source_block_();
-    void update_repair_block_();
+
+    void fill_block_();
+    void fill_source_block_();
+    void fill_repair_block_();
+
+    bool process_source_packet_(const packet::PacketPtr&);
+    bool process_repair_packet_(const packet::PacketPtr&);
 
     bool validate_incoming_source_packet_(const packet::PacketPtr&);
     bool validate_incoming_repair_packet_(const packet::PacketPtr&);
     bool validate_repaired_source_packet_(const packet::PacketPtr&);
     bool validate_sbn_sequence_(const packet::PacketPtr&);
+
+    bool can_update_payload_size_(size_t);
+    bool can_update_source_block_size_(size_t);
+    bool can_update_repair_block_size_(size_t);
+
+    bool update_payload_size_(size_t);
+    bool update_source_block_size_(size_t);
+    bool update_repair_block_size_(size_t);
 
     void drop_repair_packets_from_prev_blocks_();
 
@@ -124,7 +133,8 @@ private:
 
     size_t payload_size_;
 
-    bool block_resized_;
+    bool source_block_resized_;
+    bool repair_block_resized_;
     bool payload_resized_;
 
     bool has_source_;

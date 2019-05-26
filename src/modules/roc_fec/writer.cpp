@@ -35,7 +35,7 @@ Writer::Writer(const WriterConfig& config,
     , repair_composer_(repair_composer)
     , packet_pool_(packet_pool)
     , buffer_pool_(buffer_pool)
-    , repair_packets_(allocator)
+    , repair_block_(allocator)
     , source_(0)
     , first_packet_(true)
     , cur_sbn_((packet::blknum_t)core::random(packet::blknum_t(-1)))
@@ -44,10 +44,6 @@ Writer::Writer(const WriterConfig& config,
     , valid_(false)
     , alive_(true) {
     if (!resize(config.n_source_packets, config.n_repair_packets, payload_size)) {
-        return;
-    }
-    // FIXME: remove this, do it inside resize() instead
-    if (!repair_packets_.resize(config.n_repair_packets)) {
         return;
     }
     valid_ = true;
@@ -82,20 +78,19 @@ bool Writer::resize(size_t sblen, size_t rblen, size_t payload_size) {
     if (new_blen > encoder_.max_block_length()) {
         roc_log(LogDebug,
                 "fec writer: can't update block length, maximum value exceeded:"
-                " cur_sbl=%lu cur_rbl=%lu new_sbl=%lu max_blen=%lu",
+                " cur_sbl=%lu cur_rbl=%lu new_sbl=%lu new_rbl=%lu max_blen=%lu",
                 (unsigned long)cur_sblen_, (unsigned long)cur_rblen_,
-                (unsigned long)sblen, (unsigned long)encoder_.max_block_length());
+                (unsigned long)sblen, (unsigned long)rblen,
+                (unsigned long)encoder_.max_block_length());
         return false;
     }
 
-    // FIXME: update rblen
-    if (cur_rblen_ != 0 && cur_rblen_ != rblen) {
-        roc_panic("fec writer: not implemented");
-    }
-
     roc_log(LogDebug,
-            "fec writer: update block size, cur_sbl=%lu new_sbl=%lu payload_size=%lu",
-            (unsigned long)cur_sblen_, (unsigned long)sblen, (unsigned long)payload_size);
+            "fec writer: update block size:"
+            " cur_sbl=%lu cur_rbl=%lu new_sbl=%lu new_rbl=%lu payload_size=%lu",
+            (unsigned long)cur_sblen_, (unsigned long)cur_rblen_,
+            (unsigned long)sblen, (unsigned long)rblen,
+            (unsigned long)payload_size);
 
     next_sblen_ = sblen;
     next_rblen_ = rblen;
@@ -154,21 +149,25 @@ void Writer::generate_source_id_(const packet::PacketPtr& pp) {
 }
 
 bool Writer::begin_block_() {
-    if (encoder_.begin(cur_sblen_, cur_rblen_, cur_payload_size_)) {
-        return true;
+    if (!resize_repair_block_(cur_rblen_)) {
+        return false;
     }
 
-    roc_log(LogError,
-            "fec writer: can't begin encoder block, shutting down:"
-            " sblen=%lu rblen=%lu",
-            (unsigned long)cur_sblen_, (unsigned long)cur_rblen_);
+    if (!encoder_.begin(cur_sblen_, cur_rblen_, cur_payload_size_)) {
+        roc_log(LogError,
+                "fec writer: can't begin encoder block, shutting down:"
+                " sblen=%lu rblen=%lu",
+                (unsigned long)cur_sblen_, (unsigned long)cur_rblen_);
+        return (alive_ = false);
+    }
 
-    return (alive_ = false);
+    return true;
 }
 
 void Writer::end_block_() {
     make_repair_packets_();
     encode_repair_packets_();
+    compose_repair_packets_();
     write_repair_packets_();
 
     encoder_.end();
@@ -189,6 +188,23 @@ void Writer::next_block_() {
             (unsigned long)cur_payload_size_);
 }
 
+bool Writer::resize_repair_block_(size_t rblen) {
+    if (repair_block_.size() == rblen) {
+        return true;
+    }
+
+    if (!repair_block_.resize(rblen)) {
+        roc_log(LogDebug,
+                "fec writer: can't allocate repair block memory, shutting down:"
+                " cur_rbl=%lu new_rbl=%lu",
+                (unsigned long)repair_block_.size(), (unsigned long)rblen);
+        return (alive_ = false);
+    }
+
+    return true;
+}
+
+
 void Writer::write_source_packet_(const packet::PacketPtr& pp) {
     encoder_.set(cur_packet_, pp->fec()->payload);
 
@@ -196,7 +212,7 @@ void Writer::write_source_packet_(const packet::PacketPtr& pp) {
     fill_packet_fec_fields_(pp, (packet::seqnum_t)cur_packet_);
 
     if (!source_composer_.compose(*pp)) {
-        roc_panic("fec writer: can't compose packet");
+        roc_panic("fec writer: can't compose source packet");
     }
 
     writer_.write(pp);
@@ -208,7 +224,7 @@ void Writer::make_repair_packets_() {
         if (!rp) {
             continue;
         }
-        repair_packets_[i] = rp;
+        repair_block_[i] = rp;
     }
 }
 
@@ -248,7 +264,7 @@ packet::PacketPtr Writer::make_repair_packet_(packet::seqnum_t pack_n) {
 
 void Writer::encode_repair_packets_() {
     for (packet::seqnum_t i = 0; i < cur_rblen_; i++) {
-        packet::PacketPtr rp = repair_packets_[i];
+        packet::PacketPtr rp = repair_block_[i];
         if (rp) {
             encoder_.set(cur_sblen_ + i, rp->fec()->payload);
         }
@@ -256,12 +272,27 @@ void Writer::encode_repair_packets_() {
     encoder_.fill();
 }
 
+void Writer::compose_repair_packets_() {
+    for (size_t i = 0; i < cur_rblen_; i++) {
+        packet::PacketPtr rp = repair_block_[i];
+        if (!rp) {
+            continue;
+        }
+
+        rp->add_flags(packet::Packet::FlagComposed);
+
+        if (!repair_composer_.compose(*rp)) {
+            roc_panic("fec writer: can't compose repair packet");
+        }
+    }
+}
+
 void Writer::write_repair_packets_() {
     for (packet::seqnum_t i = 0; i < cur_rblen_; i++) {
-        packet::PacketPtr rp = repair_packets_[i];
+        packet::PacketPtr rp = repair_block_[i];
         if (rp) {
-            writer_.write(repair_packets_[i]);
-            repair_packets_[i] = NULL;
+            writer_.write(repair_block_[i]);
+            repair_block_[i] = NULL;
         }
     }
 }
