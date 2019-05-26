@@ -252,7 +252,7 @@ TEST(writer_reader, 1_loss) {
     }
 }
 
-TEST(writer_reader, lose_first_packet_in_first_block) {
+TEST(writer_reader, lost_first_packet_in_first_block) {
     for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
@@ -300,6 +300,69 @@ TEST(writer_reader, lose_first_packet_in_first_block) {
             check_audio_packet(p, i);
             check_restored(p, false);
         }
+        CHECK(dispatcher.source_size() == 0);
+    }
+}
+
+TEST(writer_reader, lost_one_source_and_all_repair_packets) {
+    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
+        codec_config.scheme = Test_fec_schemes[n_scheme];
+
+        OFEncoder encoder(codec_config, allocator);
+        OFDecoder decoder(codec_config, buffer_pool, allocator);
+
+        CHECK(encoder.valid());
+        CHECK(decoder.valid());
+
+        PacketDispatcher dispatcher(NumSourcePackets, NumRepairPackets);
+
+        Writer writer(writer_config, FECPayloadSize, encoder, dispatcher,
+                      source_composer(), repair_composer(), packet_pool, buffer_pool,
+                      allocator);
+
+        Reader reader(reader_config, decoder, dispatcher.source_reader(),
+                      dispatcher.repair_reader(), rtp_parser, packet_pool, allocator);
+
+        CHECK(writer.valid());
+        CHECK(reader.valid());
+
+        // Send first block without one source and all repair packets.
+        dispatcher.lose(3);
+        for (size_t i = 0; i < NumRepairPackets; ++i) {
+            dispatcher.lose(NumSourcePackets + i);
+        }
+        fill_all_packets(0);
+        for (size_t i = 0; i < NumSourcePackets; ++i) {
+            writer.write(source_packets[i]);
+        }
+        dispatcher.push_stocks();
+
+        // Send second block without one source packet.
+        dispatcher.clear_losses();
+        dispatcher.lose(5);
+        fill_all_packets(NumSourcePackets);
+        for (size_t i = 0; i < NumSourcePackets; ++i) {
+            writer.write(source_packets[i]);
+        }
+        dispatcher.push_stocks();
+
+        // Receive packets.
+        for (size_t i = 0; i < NumSourcePackets * 2; ++i) {
+            if (i == 3) {
+                // nop
+            } else if (i == NumSourcePackets + 5) {
+                packet::PacketPtr p = reader.read();
+                CHECK(p);
+                check_audio_packet(p, i);
+                check_restored(p, true);
+            } else {
+                packet::PacketPtr p = reader.read();
+                CHECK(p);
+                check_audio_packet(p, i);
+                check_restored(p, false);
+            }
+        }
+
         CHECK(dispatcher.source_size() == 0);
     }
 }
