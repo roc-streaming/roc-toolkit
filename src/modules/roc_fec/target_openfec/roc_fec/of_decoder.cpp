@@ -100,7 +100,7 @@ void OFDecoder::set(size_t index, const core::Slice<uint8_t>& buffer) {
     roc_panic_if_not(valid());
 
     if (index >= sblen_ + rblen_) {
-        roc_panic("of decoder: index out of bounds: index=%lu, size=%lu",
+        roc_panic("of decoder: index out of bounds: index=%lu size=%lu",
                   (unsigned long)index, (unsigned long)(sblen_ + rblen_));
     }
 
@@ -109,8 +109,8 @@ void OFDecoder::set(size_t index, const core::Slice<uint8_t>& buffer) {
     }
 
     if (buffer.size() == 0 || buffer.size() != payload_size_) {
-        roc_panic("of decoder: invalid payload size: size=%lu, expected=%lu",
-                  (unsigned long)buffer.size(), (unsigned long)payload_size_);
+        roc_panic("of decoder: invalid payload size: cur=%lu new=%lu",
+                  (unsigned long)payload_size_, (unsigned long)buffer.size());
     }
 
     if (buff_tab_[index]) {

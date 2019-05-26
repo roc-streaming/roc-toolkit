@@ -103,8 +103,8 @@ void OFEncoder::set(size_t index, const core::Slice<uint8_t>& buffer) {
     }
 
     if (buffer.size() == 0 || buffer.size() != payload_size_) {
-        roc_panic("of encoder: invalid payload size: size=%lu, expected=%lu",
-                  (unsigned long)buffer.size(), (unsigned long)payload_size_);
+        roc_panic("of encoder: invalid payload size: cur=%lu new=%lu",
+                  (unsigned long)payload_size_, (unsigned long)buffer.size());
     }
 
     if ((uintptr_t)buffer.data() % Alignment != 0) {
