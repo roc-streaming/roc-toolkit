@@ -75,7 +75,6 @@ TEST_GROUP(writer_reader) {
     void setup() {
         writer_config.n_source_packets = NumSourcePackets;
         writer_config.n_repair_packets = NumRepairPackets;
-        reader_config.n_repair_packets = NumRepairPackets;
     }
 
     packet::IParser& source_parser() {

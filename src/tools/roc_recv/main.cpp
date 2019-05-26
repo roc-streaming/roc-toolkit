@@ -61,21 +61,6 @@ int main(int argc, char** argv) {
     sndio::BackendDispatcher::instance().set_frame_size(
         config.common.internal_frame_size);
 
-    if (args.nbsrc_given) {
-        if (args.nbsrc_arg <= 0) {
-            roc_log(LogError, "invalid --nbsrc: should be > 0");
-            return 1;
-        }
-    }
-
-    if (args.nbrpr_given) {
-        if (args.nbrpr_arg <= 0) {
-            roc_log(LogError, "invalid --nbrpr: should be > 0");
-            return 1;
-        }
-        config.default_session.fec_reader.n_repair_packets = (size_t)args.nbrpr_arg;
-    }
-
     if (args.sess_latency_given) {
         if (!core::parse_duration(args.sess_latency_arg,
                                   config.default_session.target_latency)) {

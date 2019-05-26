@@ -311,25 +311,6 @@ typedef struct roc_receiver_config {
      * @see broken_playback_timeout.
      */
     unsigned long long breakage_detection_window;
-
-    /** FEC code to use.
-     * If non-zero, the receiver employs FEC codec to restore dropped packets.
-     * This requires both sender and receiver to use two separate source and
-     * repair ports. Should be set to the same value as on the sender.
-     */
-    roc_fec_code fec_code;
-
-    /** Number of source packets per FEC block.
-     * Used if some FEC code is selected. If zero, default value is used.
-     * Should be set to the same value as on the sender.
-     */
-    unsigned int fec_block_source_packets;
-
-    /** Number of repair packets per FEC block.
-     * Used if some FEC code is selected. If zero, default value is used.
-     * Should be set to the same value as on the sender.
-     */
-    unsigned int fec_block_repair_packets;
 } roc_receiver_config;
 
 #ifdef __cplusplus

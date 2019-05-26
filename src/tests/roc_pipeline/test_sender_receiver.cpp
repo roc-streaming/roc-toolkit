@@ -250,8 +250,6 @@ TEST_GROUP(sender_receiver) {
         config.default_session.watchdog.no_playback_timeout =
             Timeout * core::Second / SampleRate;
 
-        config.default_session.fec_reader.n_repair_packets = RepairPackets;
-
         return config;
     }
 };
