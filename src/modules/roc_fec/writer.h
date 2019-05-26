@@ -86,10 +86,13 @@ private:
     void end_block_();
     void next_block_();
 
+    bool resize_repair_block_(size_t rblen);
+
     void write_source_packet_(const packet::PacketPtr&);
     void make_repair_packets_();
     packet::PacketPtr make_repair_packet_(packet::seqnum_t n);
     void encode_repair_packets_();
+    void compose_repair_packets_();
     void write_repair_packets_();
     void fill_packet_fec_fields_(const packet::PacketPtr& packet, packet::seqnum_t n);
 
@@ -111,7 +114,7 @@ private:
     packet::PacketPool& packet_pool_;
     core::BufferPool<uint8_t>& buffer_pool_;
 
-    core::Array<packet::PacketPtr> repair_packets_;
+    core::Array<packet::PacketPtr> repair_block_;
 
     packet::source_t source_;
     bool first_packet_;

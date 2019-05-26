@@ -252,7 +252,7 @@ public:
 
     //! Get number encoding symbols.
     uint16_t n() const {
-        return 0;
+        return 255;
     }
 
     //! Set number encoding symbols.

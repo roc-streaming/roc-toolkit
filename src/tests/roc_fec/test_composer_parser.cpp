@@ -86,9 +86,9 @@ struct PacketTest {
     packet::IParser* parser;
 
     packet::FECScheme scheme;
+    size_t block_length;
 
     bool is_rtp;
-    bool has_nes;
 
     const uint8_t* reference;
     size_t reference_size;
@@ -130,8 +130,8 @@ void fill_packet(packet::Packet& packet, bool is_rtp) {
 
 void check_packet(packet::Packet& packet,
                   packet::FECScheme scheme,
-                  bool is_rtp,
-                  bool has_nes) {
+                  size_t block_length,
+                  bool is_rtp) {
     if (is_rtp) {
         CHECK(packet.rtp());
 
@@ -147,12 +147,7 @@ void check_packet(packet::Packet& packet,
     UNSIGNED_LONGS_EQUAL(Test_fec_esi, packet.fec()->encoding_symbol_id);
     UNSIGNED_LONGS_EQUAL(Test_fec_sbn, packet.fec()->source_block_number);
     UNSIGNED_LONGS_EQUAL(Test_fec_sbl, packet.fec()->source_block_length);
-
-    if (has_nes) {
-        UNSIGNED_LONGS_EQUAL(Test_fec_nes, packet.fec()->block_length);
-    } else {
-        UNSIGNED_LONGS_EQUAL(0, packet.fec()->block_length);
-    }
+    UNSIGNED_LONGS_EQUAL(block_length, packet.fec()->block_length);
 
     core::Slice<uint8_t> packet_payload;
     if (is_rtp) {
@@ -204,7 +199,7 @@ void test_parse(const PacketTest& test) {
 
     CHECK(test.parser->parse(*packet, packet->data()));
 
-    check_packet(*packet, test.scheme, test.is_rtp, test.has_nes);
+    check_packet(*packet, test.scheme, test.block_length, test.is_rtp);
 }
 
 void test_compose_parse(const PacketTest& test) {
@@ -227,7 +222,7 @@ void test_compose_parse(const PacketTest& test) {
 
     CHECK(test.parser->parse(*packet2, packet1->data()));
 
-    check_packet(*packet2, test.scheme, test.is_rtp, test.has_nes);
+    check_packet(*packet2, test.scheme, test.block_length, test.is_rtp);
 }
 
 void test_all(const PacketTest& test) {
@@ -253,7 +248,7 @@ TEST(composer_parser, rtp_ldpc_source) {
     test.parser = &ldpc_parser;
     test.scheme = packet::FEC_LDPC_Staircase;
     test.is_rtp = true;
-    test.has_nes = false;
+    test.block_length = 0;
     test.reference = Ref_rtp_ldpc_source;
     test.reference_size = sizeof(Ref_rtp_ldpc_source);
 
@@ -269,7 +264,7 @@ TEST(composer_parser, ldpc_repair) {
     test.parser = &ldpc_parser;
     test.scheme = packet::FEC_LDPC_Staircase;
     test.is_rtp = false;
-    test.has_nes = true;
+    test.block_length = Test_fec_nes;
     test.reference = Ref_ldpc_repair;
     test.reference_size = sizeof(Ref_ldpc_repair);
 
@@ -289,7 +284,7 @@ TEST(composer_parser, rtp_rsm8_source) {
     test.parser = &rsm8_parser;
     test.scheme = packet::FEC_ReedSolomon_M8;
     test.is_rtp = true;
-    test.has_nes = false;
+    test.block_length = 255;
     test.reference = Ref_rtp_rsm8_source;
     test.reference_size = sizeof(Ref_rtp_rsm8_source);
 
@@ -305,7 +300,7 @@ TEST(composer_parser, rsm8_repair) {
     test.parser = &rsm8_parser;
     test.scheme = packet::FEC_ReedSolomon_M8;
     test.is_rtp = false;
-    test.has_nes = false;
+    test.block_length = 255;
     test.reference = Ref_rsm8_repair;
     test.reference_size = sizeof(Ref_rsm8_repair);
 
