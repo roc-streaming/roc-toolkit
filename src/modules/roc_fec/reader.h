@@ -28,15 +28,11 @@ namespace fec {
 
 //! FEC reader parameters.
 struct ReaderConfig {
-    //! FIXME: remove this from config.
-    size_t n_repair_packets;
-
     //! Maximum allowed source block number jump.
     size_t max_sbn_jump;
 
     ReaderConfig()
-        : n_repair_packets(10)
-        , max_sbn_jump(100) {
+        : max_sbn_jump(100) {
     }
 };
 

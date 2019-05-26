@@ -21,8 +21,6 @@ Options
 -d, --driver=DRIVER       Output driver
 -s, --source=PORT         Source port triplet (may be used multiple times)
 -r, --repair=PORT         Repair port triplet (may be used multiple times)
---nbsrc=INT               Number of source packets in FEC block
---nbrpr=INT               Number of repair packets in FEC block
 --sess-latency=STRING     Session target latency, TIME units
 --min-latency=STRING      Session minimum latency, TIME units
 --max-latency=STRING      Session maximum latency, TIME units

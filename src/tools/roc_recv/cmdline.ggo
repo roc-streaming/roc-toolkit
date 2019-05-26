@@ -15,12 +15,6 @@ section "Options"
     option "repair" r "Repair port triplet (may be used multiple times)"
         typestr="PORT" string optional multiple
 
-    option "nbsrc" - "Number of source packets in FEC block"
-        int optional
-
-    option "nbrpr" - "Number of repair packets in FEC block"
-        int optional
-
     option "sess-latency" - "Session target latency, TIME units"
         string optional
 
