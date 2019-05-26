@@ -403,10 +403,10 @@ void Reader::update_source_block_() {
         if (!validate_incoming_source_packet_(pp)) {
             roc_log(LogTrace,
                     "fec reader: dropping source packet: invalid fields: "
-                    "esi=%lu sblen=%lu blen=%lu",
+                    "esi=%lu sblen=%lu blen=%lu psize=%lu",
                     (unsigned long)fec.encoding_symbol_id,
                     (unsigned long)fec.source_block_length,
-                    (unsigned long)fec.block_length);
+                    (unsigned long)fec.block_length, (unsigned long)fec.payload.size());
             n_dropped++;
             continue;
         }
@@ -489,10 +489,10 @@ void Reader::update_repair_block_() {
         if (!validate_incoming_repair_packet_(pp)) {
             roc_log(LogTrace,
                     "fec reader: dropping repair packet: invalid fields: "
-                    "esi=%lu sblen=%lu blen=%lu",
+                    "esi=%lu sblen=%lu blen=%lu psize=%lu",
                     (unsigned long)fec.encoding_symbol_id,
                     (unsigned long)fec.source_block_length,
-                    (unsigned long)fec.block_length);
+                    (unsigned long)fec.block_length, (unsigned long)fec.payload.size());
             n_dropped++;
             continue;
         }
@@ -580,6 +580,10 @@ bool Reader::validate_incoming_source_packet_(const packet::PacketPtr& pp) {
         }
     }
 
+    if (fec.payload.size() == 0) {
+        return false;
+    }
+
     return true;
 }
 
@@ -598,6 +602,10 @@ bool Reader::validate_incoming_repair_packet_(const packet::PacketPtr& pp) {
         if (!(fec.source_block_length <= fec.block_length)) {
             return false;
         }
+    }
+
+    if (fec.payload.size() == 0) {
+        return false;
     }
 
     return true;

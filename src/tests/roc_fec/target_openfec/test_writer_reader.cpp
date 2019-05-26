@@ -1086,6 +1086,154 @@ TEST(writer_reader, invalid_nes) {
     }
 }
 
+TEST(writer_reader, invalid_payload_size) {
+    enum { NumBlocks = 5 };
+
+    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
+        codec_config.scheme = Test_fec_schemes[n_scheme];
+
+        OFEncoder encoder(codec_config, allocator);
+        OFDecoder decoder(codec_config, buffer_pool, allocator);
+
+        CHECK(encoder.valid());
+        CHECK(decoder.valid());
+
+        packet::Queue queue;
+        PacketDispatcher dispatcher(NumSourcePackets, NumRepairPackets);
+
+        Writer writer(writer_config, FECPayloadSize, encoder, queue, source_composer(),
+                      repair_composer(), packet_pool, buffer_pool, allocator);
+
+        Reader reader(reader_config, decoder, dispatcher.source_reader(),
+                      dispatcher.repair_reader(), rtp_parser, packet_pool, allocator);
+
+        CHECK(writer.valid());
+        CHECK(reader.valid());
+
+        for (size_t n_block = 0; n_block < NumBlocks; n_block++) {
+            fill_all_packets(0);
+
+            // encode packets and write to queue
+            for (size_t i = 0; i < NumSourcePackets; ++i) {
+                writer.write(source_packets[i]);
+            }
+
+            // write packets from queue to dispatcher
+            for (size_t i = 0; i < NumSourcePackets + NumRepairPackets; ++i) {
+                packet::PacketPtr p = queue.read();
+                CHECK(p);
+                if (i == 5) {
+                    // violates: psize can't change in the middle of a block (source packet)
+                    p->fec()->payload.resize(FECPayloadSize - 1);
+                }
+                if (i == NumSourcePackets + 3) {
+                    // violates: psize can't change in the middle of a block (repair packet)
+                    p->fec()->payload.resize(FECPayloadSize - 1);
+                }
+                if (n_block == 3 && i == 0) {
+                    // violates: psize can't be zero (source packet)
+                    p->fec()->payload.resize(0);
+                }
+                if (n_block == 4 && i == NumSourcePackets) {
+                    // violates: psize can't be zero (repair packet)
+                    p->fec()->payload.resize(0);
+                }
+                dispatcher.write(p);
+            }
+
+            // deliver packets from dispatcher to reader
+            dispatcher.push_stocks();
+
+            // read packets
+            for (size_t i = 0; i < NumSourcePackets; ++i) {
+                packet::PacketPtr p = reader.read();
+                CHECK(p);
+                check_audio_packet(p, i);
+                // invalid packets should be dropped and repaired
+                check_restored(p, i == 5 || (n_block == 3 && i == 0));
+            }
+
+            CHECK(reader.alive());
+            CHECK(dispatcher.source_size() == 0);
+            CHECK(dispatcher.repair_size() == 0);
+        }
+    }
+}
+
+TEST(writer_reader, zero_payload_size) {
+    enum { NumBlocks = 5 };
+
+    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
+        codec_config.scheme = Test_fec_schemes[n_scheme];
+
+        OFEncoder encoder(codec_config, allocator);
+        OFDecoder decoder(codec_config, buffer_pool, allocator);
+
+        CHECK(encoder.valid());
+        CHECK(decoder.valid());
+
+        packet::Queue queue;
+        PacketDispatcher dispatcher(NumSourcePackets, NumRepairPackets);
+
+        Writer writer(writer_config, FECPayloadSize, encoder, queue, source_composer(),
+                      repair_composer(), packet_pool, buffer_pool, allocator);
+
+        Reader reader(reader_config, decoder, dispatcher.source_reader(),
+                      dispatcher.repair_reader(), rtp_parser, packet_pool, allocator);
+
+        CHECK(writer.valid());
+        CHECK(reader.valid());
+
+        for (size_t n_block = 0; n_block < NumBlocks; n_block++) {
+            fill_all_packets(0);
+
+            // encode packets and write to queue
+            for (size_t i = 0; i < NumSourcePackets; ++i) {
+                writer.write(source_packets[i]);
+            }
+
+            // lose source packet #5
+            dispatcher.lose(5);
+
+            // write packets from queue to dispatcher
+            for (size_t i = 0; i < NumSourcePackets + NumRepairPackets; ++i) {
+                packet::PacketPtr p = queue.read();
+                CHECK(p);
+
+                // two blocks with invalid zero-payload packets
+                if (n_block == 2 || n_block == 4) {
+                    p->fec()->payload.resize(0);
+                }
+
+                dispatcher.write(p);
+            }
+
+            // check we have processed all packets
+            UNSIGNED_LONGS_EQUAL(0, queue.size());
+
+            // deliver packets from dispatcher to reader
+            dispatcher.push_stocks();
+
+            // read packets
+            for (size_t i = 0; i < NumSourcePackets; ++i) {
+                packet::PacketPtr p = reader.read();
+
+                if (n_block == 2 || n_block == 4) {
+                    CHECK(!p);
+                } else {
+                    CHECK(p);
+                    check_audio_packet(p, i);
+                    check_restored(p, i == 5);
+                }
+            }
+
+            CHECK(reader.alive());
+            CHECK(dispatcher.source_size() == 0);
+            CHECK(dispatcher.repair_size() == 0);
+        }
+    }
+}
+
 TEST(writer_reader, sbn_jump) {
     enum { MaxSbnJump = 30 };
 
