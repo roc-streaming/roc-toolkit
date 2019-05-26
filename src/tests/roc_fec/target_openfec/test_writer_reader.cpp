@@ -40,8 +40,7 @@ const size_t NumRepairPackets = 10;
 const unsigned SourceID = 555;
 const unsigned PayloadType = rtp::PayloadType_L16_Stereo;
 
-const size_t RTPPayloadSize = 177;
-const size_t FECPayloadSize = RTPPayloadSize + sizeof(rtp::Header);
+const size_t FECPayloadSize = 189;
 
 const size_t MaxBuffSize = 500;
 
@@ -100,19 +99,22 @@ TEST_GROUP(writer_reader) {
         }
     }
 
-    packet::PacketPtr fill_one_packet(size_t sn) {
+    packet::PacketPtr fill_one_packet(size_t sn, size_t fec_payload_size = FECPayloadSize) {
+        CHECK(fec_payload_size > sizeof(rtp::Header));
+        const size_t rtp_payload_size = fec_payload_size - sizeof(rtp::Header);
+
         packet::PacketPtr pp = new (packet_pool) packet::Packet(packet_pool);
         CHECK(pp);
 
         core::Slice<uint8_t> bp = new (buffer_pool) core::Buffer<uint8_t>(buffer_pool);
         CHECK(bp);
 
-        CHECK(source_composer().prepare(*pp, bp, RTPPayloadSize));
+        CHECK(source_composer().prepare(*pp, bp, rtp_payload_size));
 
         pp->set_data(bp);
 
-        UNSIGNED_LONGS_EQUAL(RTPPayloadSize, pp->rtp()->payload.size());
-        UNSIGNED_LONGS_EQUAL(FECPayloadSize, pp->fec()->payload.size());
+        UNSIGNED_LONGS_EQUAL(rtp_payload_size, pp->rtp()->payload.size());
+        UNSIGNED_LONGS_EQUAL(fec_payload_size, pp->fec()->payload.size());
 
         pp->add_flags(packet::Packet::FlagAudio);
 
@@ -121,14 +123,18 @@ TEST_GROUP(writer_reader) {
         pp->rtp()->seqnum = packet::seqnum_t(sn);
         pp->rtp()->timestamp = packet::timestamp_t(sn * 10);
 
-        for (size_t i = 0; i < RTPPayloadSize; i++) {
+        for (size_t i = 0; i < rtp_payload_size; i++) {
             pp->rtp()->payload.data()[i] = uint8_t(sn + i);
         }
 
         return pp;
     }
 
-    void check_audio_packet(packet::PacketPtr pp, size_t sn) {
+    void check_audio_packet(packet::PacketPtr pp, size_t sn,
+                            size_t fec_payload_size = FECPayloadSize) {
+        CHECK(fec_payload_size > sizeof(rtp::Header));
+        const size_t rtp_payload_size = fec_payload_size - sizeof(rtp::Header);
+
         CHECK(pp);
 
         CHECK(pp->flags() & packet::Packet::FlagRTP);
@@ -144,9 +150,9 @@ TEST_GROUP(writer_reader) {
         UNSIGNED_LONGS_EQUAL(packet::timestamp_t(sn * 10), pp->rtp()->timestamp);
 
         UNSIGNED_LONGS_EQUAL(PayloadType, pp->rtp()->payload_type);
-        UNSIGNED_LONGS_EQUAL(RTPPayloadSize, pp->rtp()->payload.size());
+        UNSIGNED_LONGS_EQUAL(rtp_payload_size, pp->rtp()->payload.size());
 
-        for (size_t i = 0; i < RTPPayloadSize; i++) {
+        for (size_t i = 0; i < rtp_payload_size; i++) {
             UNSIGNED_LONGS_EQUAL(uint8_t(sn + i), pp->rtp()->payload.data()[i]);
         }
     }
@@ -1269,32 +1275,44 @@ TEST(writer_reader, writer_resize_blocks) {
 
         CHECK(writer.valid());
 
-        const size_t block_sizes[] = {
+        const size_t source_sizes[] = {
             15, 25, 35, 43, 33, 23, 13, 255 - NumRepairPackets
         };
 
-        packet::seqnum_t pack_n = 0;
+        const size_t payload_sizes[] = {
+            100, 100, 100, 80, 150, 170, 170, 90
+        };
 
-        for (size_t n = 0; n < ROC_ARRAY_SIZE(block_sizes); ++n) {
-            CHECK(writer.resize(block_sizes[n], NumRepairPackets, FECPayloadSize));
+        UNSIGNED_LONGS_EQUAL(ROC_ARRAY_SIZE(source_sizes), ROC_ARRAY_SIZE(payload_sizes));
 
-            core::Array<packet::PacketPtr> packets(allocator);
-            packets.resize(block_sizes[n]);
+        packet::seqnum_t wr_sn = 0;
+        packet::seqnum_t rd_sn = 0;
 
-            for (size_t i = 0; i < block_sizes[n]; ++i) {
-                packets[i] = fill_one_packet(pack_n);
-                pack_n++;
+        for (size_t n = 0; n < ROC_ARRAY_SIZE(source_sizes); ++n) {
+            CHECK(writer.resize(source_sizes[n], NumRepairPackets, payload_sizes[n]));
+
+            for (size_t i = 0; i < source_sizes[n]; ++i) {
+                packet::PacketPtr p = fill_one_packet(wr_sn, payload_sizes[n]);
+                wr_sn++;
+                writer.write(p);
             }
-            for (size_t i = 0; i < block_sizes[n]; ++i) {
-                writer.write(packets[i]);
-            }
 
-            CHECK(dispatcher.source_size() == block_sizes[n]);
-            CHECK(dispatcher.repair_size() == NumRepairPackets);
+            UNSIGNED_LONGS_EQUAL(source_sizes[n], dispatcher.source_size());
+            UNSIGNED_LONGS_EQUAL(NumRepairPackets, dispatcher.repair_size());
 
             dispatcher.push_stocks();
+
+            for (size_t i = 0; i < source_sizes[n]; ++i) {
+                packet::PacketPtr p = dispatcher.source_reader().read();
+                CHECK(p);
+                check_audio_packet(p, rd_sn, payload_sizes[n]);
+                rd_sn++;
+            }
+
             dispatcher.reset();
         }
+
+        UNSIGNED_LONGS_EQUAL(wr_sn, rd_sn);
     }
 }
 
@@ -1319,38 +1337,41 @@ TEST(writer_reader, resize_block_begin) {
         CHECK(reader.valid());
         CHECK(writer.valid());
 
-        const size_t block_sizes[] = {
+        const size_t source_sizes[] = {
             15, 25, 35, 43, 33, 23, 13, 255 - NumRepairPackets
         };
+
+        const size_t payload_sizes[] = {
+            100, 100, 100, 80, 150, 170, 170, 90
+        };
+
+        UNSIGNED_LONGS_EQUAL(ROC_ARRAY_SIZE(source_sizes), ROC_ARRAY_SIZE(payload_sizes));
 
         packet::seqnum_t wr_sn = 0;
         packet::seqnum_t rd_sn = 0;
 
-        for (size_t n = 0; n < ROC_ARRAY_SIZE(block_sizes); ++n) {
-            CHECK(writer.resize(block_sizes[n], NumRepairPackets, FECPayloadSize));
+        for (size_t n = 0; n < ROC_ARRAY_SIZE(source_sizes); ++n) {
+            CHECK(writer.resize(source_sizes[n], NumRepairPackets, payload_sizes[n]));
 
-            core::Array<packet::PacketPtr> packets(allocator);
-            packets.resize(block_sizes[n]);
-
-            for (size_t i = 0; i < block_sizes[n]; ++i) {
-                packets[i] = fill_one_packet(wr_sn);
+            for (size_t i = 0; i < source_sizes[n]; ++i) {
+                packet::PacketPtr p = fill_one_packet(wr_sn, payload_sizes[n]);
                 wr_sn++;
+                writer.write(p);
             }
 
-            for (size_t i = 0; i < block_sizes[n]; ++i) {
-                writer.write(packets[i]);
-            }
+            UNSIGNED_LONGS_EQUAL(source_sizes[n], dispatcher.source_size());
+            UNSIGNED_LONGS_EQUAL(NumRepairPackets, dispatcher.repair_size());
 
             dispatcher.push_stocks();
 
-            for (size_t i = 0; i < block_sizes[n]; ++i) {
+            for (size_t i = 0; i < source_sizes[n]; ++i) {
                 const packet::PacketPtr p = reader.read();
 
                 CHECK(p);
                 CHECK(p->fec());
-                CHECK(p->fec()->source_block_length == block_sizes[n]);
+                UNSIGNED_LONGS_EQUAL(source_sizes[n], p->fec()->source_block_length);
 
-                check_audio_packet(p, rd_sn);
+                check_audio_packet(p, rd_sn, payload_sizes[n]);
                 check_restored(p, false);
 
                 rd_sn++;
@@ -1382,21 +1403,28 @@ TEST(writer_reader, resize_block_middle) {
         CHECK(reader.valid());
         CHECK(writer.valid());
 
-        const size_t block_sizes[] = {
+        const size_t source_sizes[] = {
             15, 25, 35, 43, 33, 23, 13, 255 - NumRepairPackets
         };
 
+        const size_t payload_sizes[] = {
+            100, 100, 100, 80, 150, 170, 170, 90
+        };
+
+        UNSIGNED_LONGS_EQUAL(ROC_ARRAY_SIZE(source_sizes), ROC_ARRAY_SIZE(payload_sizes));
+
         size_t prev_sblen = NumSourcePackets;
+        size_t prev_psize = FECPayloadSize;
 
         packet::seqnum_t wr_sn = 0;
         packet::seqnum_t rd_sn = 0;
 
-        for (size_t n = 0; n < ROC_ARRAY_SIZE(block_sizes); ++n) {
+        for (size_t n = 0; n < ROC_ARRAY_SIZE(source_sizes); ++n) {
             core::Array<packet::PacketPtr> packets(allocator);
             packets.resize(prev_sblen);
 
             for (size_t i = 0; i < prev_sblen; ++i) {
-                packets[i] = fill_one_packet(wr_sn);
+                packets[i] = fill_one_packet(wr_sn, prev_psize);
                 wr_sn++;
             }
 
@@ -1406,12 +1434,15 @@ TEST(writer_reader, resize_block_middle) {
             }
 
             // Update source block size.
-            CHECK(writer.resize(block_sizes[n], NumRepairPackets, FECPayloadSize));
+            CHECK(writer.resize(source_sizes[n], NumRepairPackets, payload_sizes[n]));
 
             // Write the remaining packets.
             for (size_t i = prev_sblen / 2; i < prev_sblen; ++i) {
                 writer.write(packets[i]);
             }
+
+            UNSIGNED_LONGS_EQUAL(prev_sblen, dispatcher.source_size());
+            UNSIGNED_LONGS_EQUAL(NumRepairPackets, dispatcher.repair_size());
 
             dispatcher.push_stocks();
 
@@ -1422,13 +1453,14 @@ TEST(writer_reader, resize_block_middle) {
                 CHECK(p->fec());
                 CHECK(p->fec()->source_block_length == prev_sblen);
 
-                check_audio_packet(p, rd_sn);
+                check_audio_packet(p, rd_sn, prev_psize);
                 check_restored(p, false);
 
                 rd_sn++;
             }
 
-            prev_sblen = block_sizes[n];
+            prev_sblen = source_sizes[n];
+            prev_psize = payload_sizes[n];
         }
 
         UNSIGNED_LONGS_EQUAL(wr_sn, rd_sn);
@@ -1456,41 +1488,44 @@ TEST(writer_reader, resize_block_losses) {
         CHECK(reader.valid());
         CHECK(writer.valid());
 
-        const size_t block_sizes[] = {
+        const size_t source_sizes[] = {
             15, 25, 35, 43, 33, 23, 13, 255 - NumRepairPackets
         };
+
+        const size_t payload_sizes[] = {
+            100, 100, 100, 80, 150, 170, 170, 90
+        };
+
+        UNSIGNED_LONGS_EQUAL(ROC_ARRAY_SIZE(source_sizes), ROC_ARRAY_SIZE(payload_sizes));
 
         packet::seqnum_t wr_sn = 0;
         packet::seqnum_t rd_sn = 0;
 
-        for (size_t n = 0; n < ROC_ARRAY_SIZE(block_sizes); ++n) {
-            CHECK(writer.resize(block_sizes[n], NumRepairPackets, FECPayloadSize));
+        for (size_t n = 0; n < ROC_ARRAY_SIZE(source_sizes); ++n) {
+            CHECK(writer.resize(source_sizes[n], NumRepairPackets, payload_sizes[n]));
 
-            dispatcher.resize(block_sizes[n], NumRepairPackets);
+            dispatcher.resize(source_sizes[n], NumRepairPackets);
             dispatcher.reset();
 
-            core::Array<packet::PacketPtr> packets(allocator);
-            packets.resize(block_sizes[n]);
+            dispatcher.lose(source_sizes[n] / 2);
 
-            for (size_t i = 0; i < block_sizes[n]; ++i) {
-                packets[i] = fill_one_packet(wr_sn);
+            for (size_t i = 0; i < source_sizes[n]; ++i) {
+                packet::PacketPtr p = fill_one_packet(wr_sn, payload_sizes[n]);
                 wr_sn++;
+                writer.write(p);
             }
 
-            dispatcher.lose(block_sizes[n] / 2);
-
-            for (size_t i = 0; i < block_sizes[n]; ++i) {
-                writer.write(packets[i]);
-            }
+            UNSIGNED_LONGS_EQUAL(source_sizes[n] - 1, dispatcher.source_size());
+            UNSIGNED_LONGS_EQUAL(NumRepairPackets, dispatcher.repair_size());
 
             dispatcher.push_stocks();
 
-            for (size_t i = 0; i < block_sizes[n]; ++i) {
+            for (size_t i = 0; i < source_sizes[n]; ++i) {
                 const packet::PacketPtr p = reader.read();
                 CHECK(p);
 
-                check_audio_packet(p, rd_sn);
-                check_restored(p, i == block_sizes[n] / 2);
+                check_audio_packet(p, rd_sn, payload_sizes[n]);
+                check_restored(p, i == source_sizes[n] / 2);
 
                 rd_sn++;
             }
