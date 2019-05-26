@@ -36,6 +36,8 @@ Reader::Reader(const ReaderConfig& config,
     , next_packet_(0)
     , cur_sbn_(0)
     , payload_size_(0)
+    , block_resized_(false)
+    , payload_resized_(false)
     , has_source_(false)
     , source_(0)
     , n_packets_(0)
@@ -164,35 +166,42 @@ packet::PacketPtr Reader::get_next_packet_() {
 
 bool Reader::update_payload_size_(size_t new_payload_size) {
     if (payload_size_ == new_payload_size) {
+        payload_resized_ = true;
         return true;
     }
 
-    if (next_packet_ != 0) {
+    if (payload_resized_) {
         roc_log(LogDebug,
                 "fec reader: can't change payload size in the middle of a block:"
-                " cur=%lu new=%lu",
-                (unsigned long)payload_size_, (unsigned long)new_payload_size);
+                " next_esi=%lu cur_size=%lu new_size=%lu",
+                (unsigned long)next_packet_, (unsigned long)payload_size_,
+                (unsigned long)new_payload_size);
         return false;
     }
 
-    roc_log(LogDebug, "fec reader: update payload size: cur=%lu new=%lu",
-            (unsigned long)payload_size_, (unsigned long)new_payload_size);
+    roc_log(LogDebug,
+            "fec reader: update payload size: next_esi=%lu cur_size=%lu new_size=%lu",
+            (unsigned long)next_packet_, (unsigned long)payload_size_,
+            (unsigned long)new_payload_size);
 
     payload_size_ = new_payload_size;
+    payload_resized_ = true;
 
     return true;
 }
 
 bool Reader::update_block_size_(size_t new_sblen) {
     const size_t cur_sblen = source_block_.size();
+
     if (cur_sblen == new_sblen) {
+        block_resized_ = true;
         return true;
     }
 
-    if (next_packet_ != 0) {
+    if (block_resized_) {
         roc_log(LogDebug,
                 "fec reader: can't update source block size in the middle of a block:"
-                " esi=%lu cur_sbl=%lu new_sbl=%lu",
+                " next_esi=%lu cur_sbl=%lu new_sbl=%lu",
                 (unsigned long)next_packet_, (unsigned long)cur_sblen,
                 (unsigned long)new_sblen);
         return false;
@@ -221,6 +230,8 @@ bool Reader::update_block_size_(size_t new_sblen) {
     roc_log(LogDebug, "fec reader: update sblen: cur_sbl=%lu new_sbl=%lu",
             (unsigned long)cur_sblen, (unsigned long)new_sblen);
 
+    block_resized_ = true;
+
     return true;
 }
 
@@ -238,7 +249,11 @@ void Reader::next_block_() {
     cur_sbn_++;
     next_packet_ = 0;
 
+    block_resized_ = false;
+    payload_resized_ = false;
+
     can_repair_ = false;
+
     update_block_();
 }
 

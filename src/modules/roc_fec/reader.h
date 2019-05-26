@@ -124,6 +124,9 @@ private:
 
     size_t payload_size_;
 
+    bool block_resized_;
+    bool payload_resized_;
+
     bool has_source_;
     packet::source_t source_;
 
