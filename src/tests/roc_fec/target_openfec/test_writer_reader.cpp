@@ -41,7 +41,7 @@ const size_t NumRepairPackets = 10;
 const unsigned SourceID = 555;
 const unsigned PayloadType = rtp::PayloadType_L16_Stereo;
 
-const size_t FECPayloadSize = 189;
+const size_t FECPayloadSize = 193;
 
 const size_t MaxBuffSize = 500;
 
@@ -713,6 +713,180 @@ TEST(writer_reader, late_out_of_order_packets) {
         }
 
         LONGS_EQUAL(0, dispatcher.source_size());
+    }
+}
+
+TEST(writer_reader, repair_packets_before_source_packets) {
+    writer_config.n_source_packets = 30;
+    writer_config.n_repair_packets = 40;
+
+    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
+        codec_config.scheme = Test_fec_schemes[n_scheme];
+
+        OFEncoder encoder(codec_config, allocator);
+        OFDecoder decoder(codec_config, buffer_pool, allocator);
+
+        CHECK(encoder.valid());
+        CHECK(decoder.valid());
+
+        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                    writer_config.n_source_packets,
+                                    writer_config.n_repair_packets);
+
+        Writer writer(writer_config, FECPayloadSize, encoder, dispatcher,
+                      source_composer(), repair_composer(), packet_pool, buffer_pool,
+                      allocator);
+
+        Reader reader(reader_config, decoder, dispatcher.source_reader(),
+                      dispatcher.repair_reader(), rtp_parser, packet_pool, allocator);
+
+        CHECK(writer.valid());
+        CHECK(reader.valid());
+
+        packet::seqnum_t wr_sn = 0;
+        packet::seqnum_t rd_sn = 0;
+
+        // Encode first block.
+        for (size_t i = 0; i < writer_config.n_source_packets; ++i) {
+            writer.write(fill_one_packet(wr_sn));
+            wr_sn++;
+        }
+
+        // Deliver first block.
+        dispatcher.push_stocks();
+
+        // Read first block.
+        for (size_t i = 0; i < writer_config.n_source_packets; ++i) {
+            packet::PacketPtr p = reader.read();
+            CHECK(p);
+            check_audio_packet(p, rd_sn);
+            check_restored(p, false);
+            rd_sn++;
+        }
+
+        // Encode second block.
+        for (size_t i = 0; i < writer_config.n_source_packets; ++i) {
+            writer.write(fill_one_packet(wr_sn));
+            wr_sn++;
+        }
+
+        // Deliver repair packets from second block.
+        dispatcher.push_repair_stock(writer_config.n_repair_packets);
+
+        // Read second block.
+        for (size_t i = 0; i < writer_config.n_source_packets; ++i) {
+            packet::PacketPtr p = reader.read();
+            CHECK(p);
+
+            // All packets should be restored.
+            check_audio_packet(p, rd_sn);
+            check_restored(p, true);
+
+            rd_sn++;
+
+            if (i == 0) {
+                // Deliver source packets from second block.
+                // These packets should be dropped.
+                dispatcher.push_stocks();
+            }
+        }
+
+        CHECK(dispatcher.source_size() == 0);
+        CHECK(dispatcher.repair_size() == 0);
+
+        UNSIGNED_LONGS_EQUAL(wr_sn, rd_sn);
+    }
+}
+
+TEST(writer_reader, repair_packets_mixed_with_source_packets) {
+    writer_config.n_source_packets = 30;
+    writer_config.n_repair_packets = 40;
+
+    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
+        codec_config.scheme = Test_fec_schemes[n_scheme];
+
+        OFEncoder encoder(codec_config, allocator);
+        OFDecoder decoder(codec_config, buffer_pool, allocator);
+
+        CHECK(encoder.valid());
+        CHECK(decoder.valid());
+
+        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                    writer_config.n_source_packets,
+                                    writer_config.n_repair_packets);
+
+        Writer writer(writer_config, FECPayloadSize, encoder, dispatcher,
+                      source_composer(), repair_composer(), packet_pool, buffer_pool,
+                      allocator);
+
+        Reader reader(reader_config, decoder, dispatcher.source_reader(),
+                      dispatcher.repair_reader(), rtp_parser, packet_pool, allocator);
+
+        CHECK(writer.valid());
+        CHECK(reader.valid());
+
+        packet::seqnum_t wr_sn = 0;
+        packet::seqnum_t rd_sn = 0;
+
+        // Encode first block.
+        for (size_t i = 0; i < writer_config.n_source_packets; ++i) {
+            writer.write(fill_one_packet(wr_sn));
+            wr_sn++;
+        }
+
+        // Deliver first block.
+        dispatcher.push_stocks();
+
+        // Read first block.
+        for (size_t i = 0; i < writer_config.n_source_packets; ++i) {
+            packet::PacketPtr p = reader.read();
+            CHECK(p);
+            check_audio_packet(p, rd_sn);
+            check_restored(p, false);
+            rd_sn++;
+        }
+
+        // Lose all source packets except first and last 5 packets.
+        for (size_t i = 5; i < writer_config.n_source_packets - 5; ++i) {
+            dispatcher.lose(i);
+        }
+
+        // Encode second block.
+        for (size_t i = 0; i < writer_config.n_source_packets; ++i) {
+            writer.write(fill_one_packet(wr_sn));
+            wr_sn++;
+        }
+
+        // Deliver some repair packets.
+        dispatcher.push_repair_stock(3);
+
+        // Delivered repair packets should not be enough for restore.
+        CHECK(!reader.read());
+
+        // Deliver first and last 5 source packets.
+        dispatcher.push_source_stock(10);
+
+        // Read second block.
+        for (size_t i = 0; i < writer_config.n_source_packets; ++i) {
+            packet::PacketPtr p = reader.read();
+            CHECK(p);
+
+            // All packets except first and last 5 should be restored.
+            check_audio_packet(p, rd_sn);
+            check_restored(p, i >= 5 && i < writer_config.n_source_packets - 5);
+
+            rd_sn++;
+
+            if (i == 0) {
+                // Deliver the rest repair pacekets.
+                dispatcher.push_repair_stock(writer_config.n_repair_packets - 3);
+            }
+        }
+
+        CHECK(dispatcher.source_size() == 0);
+        CHECK(dispatcher.repair_size() == 0);
+
+        UNSIGNED_LONGS_EQUAL(wr_sn, rd_sn);
     }
 }
 
