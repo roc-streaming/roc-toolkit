@@ -25,6 +25,7 @@ OFDecoder::OFDecoder(const CodecConfig& config,
     : sblen_(0)
     , rblen_(0)
     , payload_size_(0)
+    , max_index_(0)
     , of_sess_(NULL)
     , of_sess_params_(NULL)
     , buffer_pool_(buffer_pool)
@@ -89,6 +90,7 @@ bool OFDecoder::begin(size_t sblen, size_t rblen, size_t payload_size) {
     sblen_ = sblen;
     rblen_ = rblen;
     payload_size_ = payload_size;
+    max_index_ = 0;
 
     update_session_params_(sblen, rblen, payload_size);
     reset_session_();
@@ -127,6 +129,10 @@ void OFDecoder::set(size_t index, const core::Slice<uint8_t>& buffer) {
     if (of_decode_with_new_symbol(of_sess_, data_tab_[index], (unsigned int)index)
         != OF_STATUS_OK) {
         roc_panic("of decoder: can't add packet to OF session");
+    }
+
+    if (max_index_ < index) {
+        max_index_ = index;
     }
 }
 
@@ -294,9 +300,15 @@ void OFDecoder::destroy_session_() {
 void OFDecoder::report_() {
     size_t n_lost = 0, n_repaired = 0;
 
-    status_[sblen_] = ' ';
+    size_t tab_size = max_index_;
+    if (tab_size < sblen_) {
+        tab_size = sblen_;
+    }
 
-    for (size_t i = 0; i < buff_tab_.size(); ++i) {
+    status_[sblen_] = ' ';
+    status_[tab_size] = '\0';
+
+    for (size_t i = 0; i < tab_size; ++i) {
         char* status = (i < sblen_ ? &status_[i] : &status_[i + 1]);
 
         if (buff_tab_[i] || data_tab_[i]) {
