@@ -277,7 +277,7 @@ macOS 10.12 and later
     $ scons -Q --build-3rdparty=openfec,cpputest
 
     # install libraries and tools
-    $ sudo scons -Q --build-3rdparty=openfec,cpputest install
+    $ sudo scons -Q --build-3rdparty=openfec,cpputest --prefix=/usr/local install
 
 macOS 10.11 and later
 ---------------------
@@ -298,4 +298,4 @@ macOS 10.11 and later
     $ scons -Q --build-3rdparty=uv,openfec,sox,cpputest
 
     # install libraries and tools
-    $ sudo scons -Q --build-3rdparty=uv,openfec,sox,cpputest install
+    $ sudo scons -Q --build-3rdparty=uv,openfec,sox,cpputest --prefix=/usr/local install
