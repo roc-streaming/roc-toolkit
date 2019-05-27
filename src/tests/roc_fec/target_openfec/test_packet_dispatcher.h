@@ -11,11 +11,11 @@
 
 #include "roc_core/helpers.h"
 #include "roc_packet/fec.h"
+#include "roc_packet/iparser.h"
 #include "roc_packet/ireader.h"
 #include "roc_packet/iwriter.h"
-#include "roc_packet/iparser.h"
-#include "roc_packet/sorted_queue.h"
 #include "roc_packet/packet_pool.h"
+#include "roc_packet/sorted_queue.h"
 
 namespace roc {
 namespace fec {
@@ -24,8 +24,11 @@ namespace fec {
 // as needed for Decoder.
 class PacketDispatcher : public packet::IWriter {
 public:
-    PacketDispatcher(packet::IParser& source_parser, packet::IParser& repair_parser,
-                     packet::PacketPool& pool, size_t num_source, size_t num_repair)
+    PacketDispatcher(packet::IParser& source_parser,
+                     packet::IParser& repair_parser,
+                     packet::PacketPool& pool,
+                     size_t num_source,
+                     size_t num_repair)
         : source_parser_(source_parser)
         , repair_parser_(repair_parser)
         , packet_pool_(pool)

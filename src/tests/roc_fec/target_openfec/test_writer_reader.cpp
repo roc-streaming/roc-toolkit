@@ -19,9 +19,9 @@
 #include "roc_fec/headers.h"
 #include "roc_fec/of_decoder.h"
 #include "roc_fec/of_encoder.h"
+#include "roc_fec/parser.h"
 #include "roc_fec/reader.h"
 #include "roc_fec/writer.h"
-#include "roc_fec/parser.h"
 #include "roc_packet/interleaver.h"
 #include "roc_packet/packet_pool.h"
 #include "roc_packet/queue.h"
@@ -135,7 +135,8 @@ TEST_GROUP(writer_reader) {
         }
     }
 
-    packet::PacketPtr fill_one_packet(size_t sn, size_t fec_payload_size = FECPayloadSize) {
+    packet::PacketPtr fill_one_packet(size_t sn,
+                                      size_t fec_payload_size = FECPayloadSize) {
         CHECK(fec_payload_size > sizeof(rtp::Header));
         const size_t rtp_payload_size = fec_payload_size - sizeof(rtp::Header);
 
@@ -214,8 +215,8 @@ TEST(writer_reader, no_losses) {
         CHECK(encoder.valid());
         CHECK(decoder.valid());
 
-        PacketDispatcher dispatcher(source_parser(), repair_parser(),
-                                    packet_pool, NumSourcePackets, NumRepairPackets);
+        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                    NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, FECPayloadSize, encoder, dispatcher,
                       source_composer(), repair_composer(), packet_pool, buffer_pool,
@@ -256,8 +257,8 @@ TEST(writer_reader, 1_loss) {
         CHECK(encoder.valid());
         CHECK(decoder.valid());
 
-        PacketDispatcher dispatcher(source_parser(), repair_parser(),
-                                    packet_pool, NumSourcePackets, NumRepairPackets);
+        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                    NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, FECPayloadSize, encoder, dispatcher,
                       source_composer(), repair_composer(), packet_pool, buffer_pool,
@@ -300,8 +301,8 @@ TEST(writer_reader, lost_first_packet_in_first_block) {
         CHECK(encoder.valid());
         CHECK(decoder.valid());
 
-        PacketDispatcher dispatcher(source_parser(), repair_parser(),
-                                    packet_pool, NumSourcePackets, NumRepairPackets);
+        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                    NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, FECPayloadSize, encoder, dispatcher,
                       source_composer(), repair_composer(), packet_pool, buffer_pool,
@@ -419,8 +420,8 @@ TEST(writer_reader, multiple_blocks_1_loss) {
         CHECK(encoder.valid());
         CHECK(decoder.valid());
 
-        PacketDispatcher dispatcher(source_parser(), repair_parser(),
-                                    packet_pool, NumSourcePackets, NumRepairPackets);
+        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                    NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, FECPayloadSize, encoder, dispatcher,
                       source_composer(), repair_composer(), packet_pool, buffer_pool,
@@ -488,8 +489,8 @@ TEST(writer_reader, multiple_blocks_in_queue) {
         CHECK(encoder.valid());
         CHECK(decoder.valid());
 
-        PacketDispatcher dispatcher(source_parser(), repair_parser(),
-                                    packet_pool, NumSourcePackets, NumRepairPackets);
+        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                    NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, FECPayloadSize, encoder, dispatcher,
                       source_composer(), repair_composer(), packet_pool, buffer_pool,
@@ -538,8 +539,8 @@ TEST(writer_reader, interleaved_packets) {
         CHECK(encoder.valid());
         CHECK(decoder.valid());
 
-        PacketDispatcher dispatcher(source_parser(), repair_parser(),
-                                    packet_pool, NumSourcePackets, NumRepairPackets);
+        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                    NumSourcePackets, NumRepairPackets);
 
         packet::Interleaver intrlvr(dispatcher, allocator, 10);
 
@@ -588,8 +589,8 @@ TEST(writer_reader, delayed_packets) {
         CHECK(encoder.valid());
         CHECK(decoder.valid());
 
-        PacketDispatcher dispatcher(source_parser(), repair_parser(),
-                                    packet_pool, NumSourcePackets, NumRepairPackets);
+        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                    NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, FECPayloadSize, encoder, dispatcher,
                       source_composer(), repair_composer(), packet_pool, buffer_pool,
@@ -654,8 +655,8 @@ TEST(writer_reader, late_out_of_order_packets) {
         CHECK(encoder.valid());
         CHECK(decoder.valid());
 
-        PacketDispatcher dispatcher(source_parser(), repair_parser(),
-                                    packet_pool, NumSourcePackets, NumRepairPackets);
+        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                    NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, FECPayloadSize, encoder, dispatcher,
                       source_composer(), repair_composer(), packet_pool, buffer_pool,
@@ -899,8 +900,8 @@ TEST(writer_reader, repaired_bad_source_id) {
         CHECK(encoder.valid());
         CHECK(decoder.valid());
 
-        PacketDispatcher dispatcher(source_parser(), repair_parser(),
-                                    packet_pool, NumSourcePackets, NumRepairPackets);
+        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                    NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, FECPayloadSize, encoder, dispatcher,
                       source_composer(), repair_composer(), packet_pool, buffer_pool,
@@ -962,8 +963,8 @@ TEST(writer_reader, multiple_repair_attempts) {
         CHECK(encoder.valid());
         CHECK(decoder.valid());
 
-        PacketDispatcher dispatcher(source_parser(), repair_parser(),
-                                    packet_pool, NumSourcePackets, NumRepairPackets);
+        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                    NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, FECPayloadSize, encoder, dispatcher,
                       source_composer(), repair_composer(), packet_pool, buffer_pool,
@@ -1036,8 +1037,8 @@ TEST(writer_reader, drop_outdated_block) {
         CHECK(encoder.valid());
         CHECK(decoder.valid());
 
-        PacketDispatcher dispatcher(source_parser(), repair_parser(),
-                                    packet_pool, NumSourcePackets, NumRepairPackets);
+        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                    NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, FECPayloadSize, encoder, dispatcher,
                       source_composer(), repair_composer(), packet_pool, buffer_pool,
@@ -1102,8 +1103,8 @@ TEST(writer_reader, repaired_block_numbering) {
         CHECK(encoder.valid());
         CHECK(decoder.valid());
 
-        PacketDispatcher dispatcher(source_parser(), repair_parser(),
-                                    packet_pool, NumSourcePackets, NumRepairPackets);
+        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                    NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, FECPayloadSize, encoder, dispatcher,
                       source_composer(), repair_composer(), packet_pool, buffer_pool,
@@ -1426,11 +1427,13 @@ TEST(writer_reader, invalid_payload_size) {
                 CHECK(p);
 
                 if (i == 5) {
-                    // violates: psize can't change in the middle of a block (source packet)
+                    // violates: psize can't change in the middle of a block (source
+                    // packet)
                     p->fec()->payload.resize(FECPayloadSize - 1);
                 }
                 if (i == NumSourcePackets + 3) {
-                    // violates: psize can't change in the middle of a block (repair packet)
+                    // violates: psize can't change in the middle of a block (repair
+                    // packet)
                     p->fec()->payload.resize(FECPayloadSize - 1);
                 }
                 if (n_block == 3 && i == 0) {
@@ -1714,8 +1717,8 @@ TEST(writer_reader, sbn_jump) {
 
         packet::Queue queue;
 
-        PacketDispatcher dispatcher(source_parser(), repair_parser(),
-                                    packet_pool, NumSourcePackets, NumRepairPackets);
+        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                    NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, FECPayloadSize, encoder, queue, source_composer(),
                       repair_composer(), packet_pool, buffer_pool, allocator);
@@ -1817,8 +1820,8 @@ TEST(writer_reader, writer_encode_blocks) {
 
             CHECK(encoder.valid());
 
-            PacketDispatcher dispatcher(source_parser(), repair_parser(),
-                                        packet_pool, NumSourcePackets, NumRepairPackets);
+            PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                        NumSourcePackets, NumRepairPackets);
 
             Writer writer(writer_config, FECPayloadSize, encoder, dispatcher,
                           source_composer(), repair_composer(), packet_pool, buffer_pool,
@@ -1900,8 +1903,8 @@ TEST(writer_reader, writer_resize_blocks) {
         OFEncoder encoder(codec_config, allocator);
         CHECK(encoder.valid());
 
-        PacketDispatcher dispatcher(source_parser(), repair_parser(),
-                                    packet_pool, NumSourcePackets, NumRepairPackets);
+        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                    NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, FECPayloadSize, encoder, dispatcher,
                       source_composer(), repair_composer(), packet_pool, buffer_pool,
@@ -1913,13 +1916,9 @@ TEST(writer_reader, writer_resize_blocks) {
             15, 25, 35, 43, 33, 23, 13, 255 - NumRepairPackets
         };
 
-        const size_t repair_sizes[] = {
-            10, 20, 30, 40, 30, 20, 10, NumRepairPackets
-        };
+        const size_t repair_sizes[] = { 10, 20, 30, 40, 30, 20, 10, NumRepairPackets };
 
-        const size_t payload_sizes[] = {
-            100, 100, 100, 80, 150, 170, 170, 90
-        };
+        const size_t payload_sizes[] = { 100, 100, 100, 80, 150, 170, 170, 90 };
 
         UNSIGNED_LONGS_EQUAL(ROC_ARRAY_SIZE(source_sizes), ROC_ARRAY_SIZE(repair_sizes));
         UNSIGNED_LONGS_EQUAL(ROC_ARRAY_SIZE(source_sizes), ROC_ARRAY_SIZE(payload_sizes));
@@ -1965,8 +1964,8 @@ TEST(writer_reader, resize_block_begin) {
         CHECK(decoder.valid());
         CHECK(encoder.valid());
 
-        PacketDispatcher dispatcher(source_parser(), repair_parser(),
-                                    packet_pool, NumSourcePackets, NumRepairPackets);
+        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                    NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, FECPayloadSize, encoder, dispatcher,
                       source_composer(), repair_composer(), packet_pool, buffer_pool,
@@ -1981,13 +1980,9 @@ TEST(writer_reader, resize_block_begin) {
             15, 25, 35, 43, 33, 23, 13, 255 - NumRepairPackets
         };
 
-        const size_t repair_sizes[] = {
-            10, 20, 30, 40, 30, 20, 10, NumRepairPackets
-        };
+        const size_t repair_sizes[] = { 10, 20, 30, 40, 30, 20, 10, NumRepairPackets };
 
-        const size_t payload_sizes[] = {
-            100, 100, 100, 80, 150, 170, 170, 90
-        };
+        const size_t payload_sizes[] = { 100, 100, 100, 80, 150, 170, 170, 90 };
 
         UNSIGNED_LONGS_EQUAL(ROC_ARRAY_SIZE(source_sizes), ROC_ARRAY_SIZE(repair_sizes));
         UNSIGNED_LONGS_EQUAL(ROC_ARRAY_SIZE(source_sizes), ROC_ARRAY_SIZE(payload_sizes));
@@ -2037,8 +2032,8 @@ TEST(writer_reader, resize_block_middle) {
         CHECK(decoder.valid());
         CHECK(encoder.valid());
 
-        PacketDispatcher dispatcher(source_parser(), repair_parser(),
-                                    packet_pool, NumSourcePackets, NumRepairPackets);
+        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                    NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, FECPayloadSize, encoder, dispatcher,
                       source_composer(), repair_composer(), packet_pool, buffer_pool,
@@ -2053,13 +2048,9 @@ TEST(writer_reader, resize_block_middle) {
             15, 25, 35, 43, 33, 23, 13, 255 - NumRepairPackets
         };
 
-        const size_t repair_sizes[] = {
-            10, 20, 30, 40, 30, 20, 10, NumRepairPackets
-        };
+        const size_t repair_sizes[] = { 10, 20, 30, 40, 30, 20, 10, NumRepairPackets };
 
-        const size_t payload_sizes[] = {
-            100, 100, 100, 80, 150, 170, 170, 90
-        };
+        const size_t payload_sizes[] = { 100, 100, 100, 80, 150, 170, 170, 90 };
 
         UNSIGNED_LONGS_EQUAL(ROC_ARRAY_SIZE(source_sizes), ROC_ARRAY_SIZE(repair_sizes));
         UNSIGNED_LONGS_EQUAL(ROC_ARRAY_SIZE(source_sizes), ROC_ARRAY_SIZE(payload_sizes));
@@ -2130,8 +2121,8 @@ TEST(writer_reader, resize_block_losses) {
         CHECK(decoder.valid());
         CHECK(encoder.valid());
 
-        PacketDispatcher dispatcher(source_parser(), repair_parser(),
-                                    packet_pool, NumSourcePackets, NumRepairPackets);
+        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                    NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, FECPayloadSize, encoder, dispatcher,
                       source_composer(), repair_composer(), packet_pool, buffer_pool,
@@ -2146,13 +2137,9 @@ TEST(writer_reader, resize_block_losses) {
             15, 25, 35, 43, 33, 23, 13, 255 - NumRepairPackets
         };
 
-        const size_t repair_sizes[] = {
-            10, 20, 30, 40, 30, 20, 10, NumRepairPackets
-        };
+        const size_t repair_sizes[] = { 10, 20, 30, 40, 30, 20, 10, NumRepairPackets };
 
-        const size_t payload_sizes[] = {
-            100, 100, 100, 80, 150, 170, 170, 90
-        };
+        const size_t payload_sizes[] = { 100, 100, 100, 80, 150, 170, 170, 90 };
 
         UNSIGNED_LONGS_EQUAL(ROC_ARRAY_SIZE(source_sizes), ROC_ARRAY_SIZE(repair_sizes));
         UNSIGNED_LONGS_EQUAL(ROC_ARRAY_SIZE(source_sizes), ROC_ARRAY_SIZE(payload_sizes));
@@ -2288,8 +2275,8 @@ TEST(writer_reader, error_writer_resize_block) {
         OFEncoder encoder(codec_config, allocator);
         CHECK(encoder.valid());
 
-        PacketDispatcher dispatcher(source_parser(), repair_parser(),
-                                    packet_pool, NumSourcePackets, NumRepairPackets);
+        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                    NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, FECPayloadSize, encoder, dispatcher,
                       source_composer(), repair_composer(), packet_pool, buffer_pool,
@@ -2337,8 +2324,8 @@ TEST(writer_reader, error_writer_encode_packet) {
         OFEncoder encoder(codec_config, mock_allocator);
         CHECK(encoder.valid());
 
-        PacketDispatcher dispatcher(source_parser(), repair_parser(),
-                                    packet_pool, NumSourcePackets, NumRepairPackets);
+        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                    NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, FECPayloadSize, encoder, dispatcher,
                       source_composer(), repair_composer(), packet_pool, buffer_pool,
@@ -2383,8 +2370,8 @@ TEST(writer_reader, error_reader_resize_block) {
         CHECK(encoder.valid());
         CHECK(decoder.valid());
 
-        PacketDispatcher dispatcher(source_parser(), repair_parser(),
-                                    packet_pool, NumSourcePackets, NumRepairPackets);
+        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                    NumSourcePackets, NumRepairPackets);
 
         MockAllocator mock_allocator;
 
@@ -2451,8 +2438,8 @@ TEST(writer_reader, error_reader_decode_packet) {
         CHECK(encoder.valid());
         CHECK(decoder.valid());
 
-        PacketDispatcher dispatcher(source_parser(), repair_parser(),
-                                    packet_pool, NumSourcePackets, NumRepairPackets);
+        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                    NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, FECPayloadSize, encoder, dispatcher,
                       source_composer(), repair_composer(), packet_pool, buffer_pool,
@@ -2527,8 +2514,8 @@ TEST(writer_reader, writer_oversized_block) {
         CHECK(decoder.max_block_length() == encoder.max_block_length());
         CHECK(NumSourcePackets + NumRepairPackets <= encoder.max_block_length());
 
-        PacketDispatcher dispatcher(source_parser(), repair_parser(),
-                                    packet_pool, NumSourcePackets, NumRepairPackets);
+        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                    NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, FECPayloadSize, encoder, dispatcher,
                       source_composer(), repair_composer(), packet_pool, buffer_pool,
@@ -2591,8 +2578,8 @@ TEST(writer_reader, reader_oversized_source_block) {
         CHECK((NumSourcePackets + NumRepairPackets) < encoder.max_block_length());
 
         packet::Queue queue;
-        PacketDispatcher dispatcher(ldpc_source_parser, ldpc_repair_parser,
-                                    packet_pool, NumSourcePackets, NumRepairPackets);
+        PacketDispatcher dispatcher(ldpc_source_parser, ldpc_repair_parser, packet_pool,
+                                    NumSourcePackets, NumRepairPackets);
 
         // We are going to spoil source_block_length field of a FEC packet,
         // but Reed-Solomon does not allow us to set this field above 255,
@@ -2654,8 +2641,8 @@ TEST(writer_reader, reader_oversized_repair_block) {
         CHECK((NumSourcePackets + NumRepairPackets) < encoder.max_block_length());
 
         packet::Queue queue;
-        PacketDispatcher dispatcher(ldpc_source_parser, ldpc_repair_parser,
-                                    packet_pool, NumSourcePackets, NumRepairPackets);
+        PacketDispatcher dispatcher(ldpc_source_parser, ldpc_repair_parser, packet_pool,
+                                    NumSourcePackets, NumRepairPackets);
 
         // We are going to spoil source_block_length field of a FEC packet,
         // but Reed-Solomon does not allow us to set this field above 255,

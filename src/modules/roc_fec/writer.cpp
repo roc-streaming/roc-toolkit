@@ -88,9 +88,8 @@ bool Writer::resize(size_t sblen, size_t rblen, size_t payload_size) {
     roc_log(LogDebug,
             "fec writer: update block size:"
             " cur_sbl=%lu cur_rbl=%lu new_sbl=%lu new_rbl=%lu payload_size=%lu",
-            (unsigned long)cur_sblen_, (unsigned long)cur_rblen_,
-            (unsigned long)sblen, (unsigned long)rblen,
-            (unsigned long)payload_size);
+            (unsigned long)cur_sblen_, (unsigned long)cur_rblen_, (unsigned long)sblen,
+            (unsigned long)rblen, (unsigned long)payload_size);
 
     next_sblen_ = sblen;
     next_rblen_ = rblen;
@@ -203,7 +202,6 @@ bool Writer::resize_repair_block_(size_t rblen) {
 
     return true;
 }
-
 
 void Writer::write_source_packet_(const packet::PacketPtr& pp) {
     encoder_.set(cur_packet_, pp->fec()->payload);
