@@ -98,6 +98,7 @@ private:
     size_t sblen_;
     size_t rblen_;
     size_t payload_size_;
+    size_t max_index_;
 
     of_codec_id_t codec_id_;
     union {
