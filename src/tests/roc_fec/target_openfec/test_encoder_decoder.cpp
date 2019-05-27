@@ -22,13 +22,10 @@ namespace fec {
 
 namespace {
 
-const size_t NumSourcePackets = 20;
-const size_t NumRepairPackets = 10;
-
-const size_t PayloadSize = 251;
+const size_t MaxPayloadSize = 1024;
 
 core::HeapAllocator allocator;
-core::BufferPool<uint8_t> buffer_pool(allocator, PayloadSize, true);
+core::BufferPool<uint8_t> buffer_pool(allocator, MaxPayloadSize, true);
 
 } // namespace
 
@@ -38,30 +35,31 @@ public:
         : encoder_(config, allocator)
         , decoder_(config, buffer_pool, allocator)
         , buffers_(allocator) {
-        CHECK(buffers_.resize(NumSourcePackets + NumRepairPackets));
     }
 
-    void encode() {
-        CHECK(encoder_.begin(NumSourcePackets, NumRepairPackets, PayloadSize));
+    void encode(size_t n_source, size_t n_repair, size_t p_size) {
+        CHECK(buffers_.resize(n_source + n_repair));
 
-        for (size_t i = 0; i < NumSourcePackets + NumRepairPackets; ++i) {
-            buffers_[i] = make_buffer_();
+        CHECK(encoder_.begin(n_source, n_repair, p_size));
+
+        for (size_t i = 0; i < n_source + n_repair; ++i) {
+            buffers_[i] = make_buffer_(p_size);
             encoder_.set(i, buffers_[i]);
         }
         encoder_.fill();
         encoder_.end();
     }
 
-    bool decode() {
-        for (size_t i = 0; i < NumSourcePackets; ++i) {
+    bool decode(size_t n_source, size_t p_size) {
+        for (size_t i = 0; i < n_source; ++i) {
             core::Slice<uint8_t> decoded = decoder_.repair(i);
             if (!decoded) {
                 return false;
             }
 
-            LONGS_EQUAL(PayloadSize, decoded.size());
+            UNSIGNED_LONGS_EQUAL(p_size, decoded.size());
 
-            if (memcmp(buffers_[i].data(), decoded.data(), PayloadSize) != 0) {
+            if (memcmp(buffers_[i].data(), decoded.data(), p_size) != 0) {
                 return false;
             }
         }
@@ -81,9 +79,9 @@ public:
     }
 
 private:
-    core::Slice<uint8_t> make_buffer_() {
+    core::Slice<uint8_t> make_buffer_(size_t p_size) {
         core::Slice<uint8_t> buf = new (buffer_pool) core::Buffer<uint8_t>(buffer_pool);
-        buf.resize(PayloadSize);
+        buf.resize(p_size);
         for (size_t j = 0; j < buf.size(); ++j) {
             buf.data()[j] = (uint8_t)core::random(0, 0xff);
         }
@@ -99,34 +97,36 @@ private:
 TEST_GROUP(encoder_decoder){};
 
 TEST(encoder_decoder, without_loss) {
+    enum { NumSourcePackets = 20, NumRepairPackets = 10, PayloadSize = 251 };
+
     for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
         CodecConfig config;
         config.scheme = Test_fec_schemes[n_scheme];
 
         Codec code(config);
-        code.encode();
+        code.encode(NumSourcePackets, NumRepairPackets, PayloadSize);
 
-        // Sending all packets in block without loss.
         CHECK(code.decoder().begin(NumSourcePackets, NumRepairPackets, PayloadSize));
 
         for (size_t i = 0; i < NumSourcePackets + NumRepairPackets; ++i) {
             code.decoder().set(i, code.get_buffer(i));
         }
-        CHECK(code.decode());
+        CHECK(code.decode(NumSourcePackets, PayloadSize));
 
         code.decoder().end();
     }
 }
 
-TEST(encoder_decoder, loss_1) {
+TEST(encoder_decoder, lost_1) {
+    enum { NumSourcePackets = 20, NumRepairPackets = 10, PayloadSize = 251 };
+
     for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
         CodecConfig config;
         config.scheme = Test_fec_schemes[n_scheme];
 
         Codec code(config);
-        code.encode();
+        code.encode(NumSourcePackets, NumRepairPackets, PayloadSize);
 
-        // Sending all packets in block with one loss.
         CHECK(code.decoder().begin(NumSourcePackets, NumRepairPackets, PayloadSize));
 
         for (size_t i = 0; i < NumSourcePackets + NumRepairPackets; ++i) {
@@ -135,14 +135,21 @@ TEST(encoder_decoder, loss_1) {
             }
             code.decoder().set(i, code.get_buffer(i));
         }
-        CHECK(code.decode());
+        CHECK(code.decode(NumSourcePackets, PayloadSize));
 
         code.decoder().end();
     }
 }
 
-TEST(encoder_decoder, load_test) {
-    enum { NumIterations = 20, LossPercent = 10, MaxLoss = 3 };
+TEST(encoder_decoder, random_losses) {
+    enum {
+        NumSourcePackets = 20,
+        NumRepairPackets = 10,
+        PayloadSize = 251,
+        NumIterations = 20,
+        LossPercent = 10,
+        MaxLoss = 3
+    };
 
     for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
         CodecConfig config;
@@ -156,7 +163,7 @@ TEST(encoder_decoder, load_test) {
         size_t total_fails = 0;
 
         for (size_t test_num = 0; test_num < NumIterations; ++test_num) {
-            code.encode();
+            code.encode(NumSourcePackets, NumRepairPackets, PayloadSize);
 
             CHECK(code.decoder().begin(NumSourcePackets, NumRepairPackets, PayloadSize));
 
@@ -170,18 +177,45 @@ TEST(encoder_decoder, load_test) {
                 }
             }
             max_loss = std::max(max_loss, curr_loss);
-            if (!code.decode()) {
+            if (!code.decode(NumSourcePackets, PayloadSize)) {
                 total_fails++;
             }
 
             code.decoder().end();
         }
 
-        roc_log(LogInfo, "max losses in block: %u", (uint32_t)max_loss);
-        roc_log(LogInfo, "total losses: %u", (uint32_t)total_loss);
-        roc_log(LogInfo, "total fails: %u", (uint32_t)total_fails);
+        roc_log(LogInfo, "max losses in block: %u", (unsigned)max_loss);
+        roc_log(LogInfo, "total losses: %u", (unsigned)total_loss);
+        roc_log(LogInfo, "total fails: %u", (unsigned)total_fails);
 
         CHECK(total_fails < NumIterations / 2);
+    }
+}
+
+// FIXME: bugs in OpenFEC
+IGNORE_TEST(encoder_decoder, full_repair_payload_sizes) {
+    enum { NumSourcePackets = 10, NumRepairPackets = 20 };
+
+    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
+        CodecConfig config;
+        config.scheme = Test_fec_schemes[n_scheme];
+
+        for (size_t p_size = 1; p_size < 300; p_size++) {
+            roc_log(LogInfo, "payload size %u", (unsigned)p_size);
+
+            Codec code(config);
+            code.encode(NumSourcePackets, NumRepairPackets, p_size);
+
+            CHECK(code.decoder().begin(NumSourcePackets, NumRepairPackets, p_size));
+
+            for (size_t i = NumSourcePackets; i < NumSourcePackets + NumRepairPackets;
+                 ++i) {
+                code.decoder().set(i, code.get_buffer(i));
+            }
+            CHECK(code.decode(NumSourcePackets, p_size));
+
+            code.decoder().end();
+        }
     }
 }
 
