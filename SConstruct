@@ -24,7 +24,7 @@ supported_sanitizers = [
 # 3rdparty library default versions
 thirdparty_versions = {
     'uv':         '1.5.0',
-    'openfec':    '1.4.2.1',
+    'openfec':    '1.4.2.2',
     'cpputest':   '3.6',
     'sox':        '14.4.2',
     'alsa':       '1.0.29',
