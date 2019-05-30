@@ -209,26 +209,19 @@ if env.GetOption('clean'):
     env.Execute(clean)
     Return()
 
-for var in ['CC', 'CXX', 'LD', 'AR', 'RANLIB',
-            'GENGETOPT', 'DOXYGEN', 'SPHINX_BUILD', 'BREATHE_APIDOC', 'PKG_CONFIG']:
-    if env.HasArg(var):
-        env[var] = env.GetArg(var)
+for var in ['CC', 'CXX', 'LD', 'AR', 'RANLIB', 'GENGETOPT', 'PKG_CONFIG']:
+    env.OverrideFromArg(var)
 
-if not 'DOXYGEN' in env.Dictionary():
-    env['DOXYGEN'] = 'doxygen'
-
-if not 'SPHINX_BUILD' in env.Dictionary():
-    env['SPHINX_BUILD'] = 'sphinx-build'
-
-if not 'BREATHE_APIDOC' in env.Dictionary():
-    env['BREATHE_APIDOC'] = 'breathe-apidoc'
+env.OverrideFromArg('DOXYGEN', default='doxygen')
+env.OverrideFromArg('SPHINX_BUILD', default='sphinx-build')
+env.OverrideFromArg('BREATHE_APIDOC', default='breathe-apidoc')
 
 if set(COMMAND_LINE_TARGETS).intersection(['doxygen', 'docs']):
     enable_doxygen = True
 elif GetOption('disable_doc') or set(COMMAND_LINE_TARGETS).intersection(['tidy', 'fmt']):
     enable_doxygen = False
 else:
-    doxygen_version = env.CompilerVersion(env['DOXYGEN'])
+    doxygen_version = env.ParseCompilerVersion(env['DOXYGEN'])
     enable_doxygen = doxygen_version and doxygen_version[:2] >= (1, 6)
 
 if enable_doxygen:
@@ -237,13 +230,13 @@ if enable_doxygen:
             html_dir='html/doxygen',
             build_dir='build/docs/modules',
             config='src/modules/Doxyfile',
-            sources=(env.RecursiveGlob('#src/modules', ['*.h', '*.dox']) +
-                env.RecursiveGlob('#docs/images', ['*'])),
+            sources=(env.GlobRecursive('#src/modules', ['*.h', '*.dox']) +
+                env.GlobRecursive('#docs/images', ['*'])),
             werror=GetOption('enable_werror')),
         env.Doxygen(
             build_dir='build/docs/lib',
             config='src/lib/Doxyfile',
-            sources=env.RecursiveGlob('#src/lib/include', ['*.h', '*.dox']),
+            sources=env.GlobRecursive('#src/lib/include', ['*.h', '*.dox']),
             werror=GetOption('enable_werror')),
     ]
     env.AlwaysBuild(env.Alias('doxygen', doxygen_targets))
@@ -262,9 +255,9 @@ if enable_doxygen and enable_sphinx:
             output_type='html',
             output_dir='html/docs',
             source_dir='docs/sphinx',
-            sources=(env.RecursiveGlob('docs/sphinx', ['*']) +
-                env.RecursiveGlob('docs/images', ['*']) +
-                env.RecursiveGlob('#src/lib/include', ['*.h', '*.dox']) +
+            sources=(env.GlobRecursive('docs/sphinx', ['*']) +
+                env.GlobRecursive('docs/images', ['*']) +
+                env.GlobRecursive('#src/lib/include', ['*.h', '*.dox']) +
                 doxygen_targets),
             werror=GetOption('enable_werror')),
         env.Sphinx(
@@ -272,7 +265,7 @@ if enable_doxygen and enable_sphinx:
             output_type='man',
             output_dir='man',
             source_dir='docs/sphinx',
-            sources=env.RecursiveGlob('docs/sphinx', ['*']),
+            sources=env.GlobRecursive('docs/sphinx', ['*']),
             werror=GetOption('enable_werror')),
     ]
     env.AlwaysBuild(env.Alias('sphinx', sphinx_targets))
@@ -294,15 +287,15 @@ for tool in clang_format_tools:
         clang_format = tool
         break
 
-if clang_format and env.CompilerVersion(clang_format) >= (3, 6):
+if clang_format and env.ParseCompilerVersion(clang_format) >= (3, 6):
     fmt += [
         env.Action(
             '%s -i %s' % (clang_format, ' '.join(map(str,
-                env.RecursiveGlob(
+                env.GlobRecursive(
                     '#src', ['*.h', '*.cpp'],
                     exclude=open(env.File('#.fmtignore').path).read().split())
             ))),
-            env.Pretty('FMT', 'src', 'yellow')
+            env.PrettyCommand('FMT', 'src', 'yellow')
         ),
     ]
 elif 'fmt' in COMMAND_LINE_TARGETS:
@@ -310,20 +303,20 @@ elif 'fmt' in COMMAND_LINE_TARGETS:
 
 fmt += [
     env.Action(
-        '%s scripts/format.py src/modules' % env.Python(),
-        env.Pretty('FMT', 'src/modules', 'yellow')
+        '%s scripts/format.py src/modules' % env.PythonExecutable(),
+        env.PrettyCommand('FMT', 'src/modules', 'yellow')
     ),
     env.Action(
-        '%s scripts/format.py src/tests' % env.Python(),
-        env.Pretty('FMT', 'src/tests', 'yellow')
+        '%s scripts/format.py src/tests' % env.PythonExecutable(),
+        env.PrettyCommand('FMT', 'src/tests', 'yellow')
     ),
     env.Action(
-        '%s scripts/format.py src/tools' % env.Python(),
-        env.Pretty('FMT', 'src/tools', 'yellow')
+        '%s scripts/format.py src/tools' % env.PythonExecutable(),
+        env.PrettyCommand('FMT', 'src/tools', 'yellow')
     ),
     env.Action(
-        '%s scripts/format.py src/lib/src' % env.Python(),
-        env.Pretty('FMT', 'src/lib/src', 'yellow')
+        '%s scripts/format.py src/lib/src' % env.PythonExecutable(),
+        env.PrettyCommand('FMT', 'src/lib/src', 'yellow')
     ),
 ]
 
@@ -364,9 +357,9 @@ if '-' in compiler:
     compiler_ver = tuple(map(int, compiler_ver.split('.')))
 else:
     if toolchain:
-        compiler_ver = env.CompilerVersion('%s-%s' % (toolchain, compiler))
+        compiler_ver = env.ParseCompilerVersion('%s-%s' % (toolchain, compiler))
     else:
-        compiler_ver = env.CompilerVersion(compiler)
+        compiler_ver = env.ParseCompilerVersion(compiler)
 
 if not compiler in supported_compilers:
     env.Die("unknown compiler '%s', expected one of: %s",
@@ -376,11 +369,9 @@ if not compiler_ver:
     env.Die("can't detect compiler version for compiler '%s'",
             '-'.join([s for s in [toolchain, compiler] if s]))
 
-llvmdir = env.LLVMDir(compiler_ver)
-if llvmdir:
-    env['ENV']['PATH'] += ':%s/bin' % llvmdir
-
 conf = Configure(env, custom_tests=env.CustomTests)
+
+conf.FindLLVMDir(compiler_ver)
 
 if compiler == 'gcc':
     conf.FindTool('CXX', toolchain, compiler_ver, ['g++'])
@@ -388,10 +379,10 @@ elif compiler == 'clang':
     conf.FindTool('CXX', toolchain, compiler_ver, ['clang++'])
 
 # get full compiler version
-compiler_ver = env.CompilerVersion(env['CXX'])
+compiler_ver = env.ParseCompilerVersion(env['CXX'])
 
 if not build:
-    build = env.CompilerTarget(env['CXX'])
+    build = env.ParseCompilerTarget(env['CXX'])
     if not build:
         env.Die(("can't detect system type, please specify 'build={type}' manually, "+
                  "e.g. 'build=x86_64-pc-linux-gnu'"))
@@ -426,13 +417,9 @@ elif compiler == 'clang':
 env['LINK'] = env['LD']
 env['SHLINK'] = env['LD']
 
-for var in ['CFLAGS', 'CXXFLAGS', 'LDFLAGS']:
-    if env.HasArg(var):
-        if var == 'LDFLAGS':
-            tvar = 'LINKFLAGS'
-        else:
-            tvar = var
-        env.Prepend(**{tvar: env.GetArg(var)})
+env.PrependFromArg('CFLAGS')
+env.PrependFromArg('CXXFLAGS')
+env.PrependFromArg('LINKFLAGS', args=['LINKFLAGS', 'LDFLAGS'])
 
 env = conf.Finish()
 
@@ -442,10 +429,10 @@ build_dir = 'build/%s/%s' % (
 
 if compiler in ['gcc', 'clang']:
     for var in ['CC', 'CXX']:
-        env[var] = env.ClangDB(build_dir, env[var])
+        env[var] = env.ClangDBWriter(env[var], build_dir)
 
-    clangdb = env.Install('#', '%s/compile_commands.json' % build_dir)
-    env.Requires(clangdb, env.Dir('#src'))
+    env.Requires(env.Install('#', '%s/compile_commands.json' % build_dir),
+                 env.Dir('#src'))
 
 env['ROC_BINDIR'] = '#bin/%s' % host
 env['ROC_VERSION'] = open(env.File('#.version').path).read().strip()
@@ -554,7 +541,7 @@ system_dependecies = all_dependencies - download_dependencies
 if 'target_uv' in system_dependecies:
     conf = Configure(env, custom_tests=env.CustomTests)
 
-    env.TryParseConfig('--cflags --libs libuv')
+    env.ParsePkgConfig('--cflags --libs libuv')
 
     if not crosscompile:
         if not conf.CheckLibWithHeaderExpr(
@@ -569,7 +556,7 @@ if 'target_uv' in system_dependecies:
 if 'target_openfec' in system_dependecies:
     conf = Configure(env, custom_tests=env.CustomTests)
 
-    if not env.TryParseConfig('--silence-errors --cflags --libs openfec') \
+    if not env.ParsePkgConfig('--silence-errors --cflags --libs openfec') \
       and not crosscompile:
         for prefix in ['/usr/local', '/usr']:
             if os.path.exists('%s/include/openfec' % prefix):
@@ -602,7 +589,7 @@ if 'target_openfec' in system_dependecies:
 if 'target_pulseaudio' in system_dependecies:
     conf = Configure(tool_env, custom_tests=env.CustomTests)
 
-    tool_env.TryParseConfig('--cflags --libs libpulse')
+    tool_env.ParsePkgConfig('--cflags --libs libpulse')
 
     if not conf.CheckLibWithHeaderUniq('pulse', 'pulse/pulseaudio.h', 'c'):
         env.Die("libpulse not found (see 'config.log' for details)")
@@ -647,7 +634,7 @@ if 'target_pulseaudio' in system_dependecies:
 if 'target_sox' in system_dependecies:
     conf = Configure(tool_env, custom_tests=env.CustomTests)
 
-    tool_env.TryParseConfig('--cflags --libs sox')
+    tool_env.ParsePkgConfig('--cflags --libs sox')
 
     if not crosscompile:
         if not conf.CheckLibWithHeaderExpr(
@@ -676,7 +663,7 @@ if 'target_gengetopt' in system_dependecies:
 if 'target_cpputest' in system_dependecies:
     conf = Configure(test_env, custom_tests=env.CustomTests)
 
-    test_env.TryParseConfig('--cflags --libs cpputest')
+    test_env.ParsePkgConfig('--cflags --libs cpputest')
 
     if not conf.CheckLibWithHeaderUniq('CppUTest', 'CppUTest/TestHarness.h', 'cxx'):
         test_env.Die("CppUTest not found (see 'config.log' for details)")
@@ -698,7 +685,7 @@ if 'target_alsa' in download_dependencies:
 
 if 'target_pulseaudio' in download_dependencies:
     if not 'pulseaudio' in explicit_version and not crosscompile:
-        pa_ver = env.ToolVersion(['pulseaudio', '--version'])
+        pa_ver = env.ParseVersion(['pulseaudio', '--version'])
         if pa_ver:
             thirdparty_versions['pulseaudio'] = pa_ver
 
@@ -949,7 +936,7 @@ if compiler in ['gcc', 'clang']:
                       e['CPPPATH'] + ['%s/tools' % build_dir]]
                       })
 
-sanitizers = env.ParseSanitizers(GetOption('sanitizers'), supported_sanitizers)
+sanitizers = env.ParseList(GetOption('sanitizers'), supported_sanitizers)
 if sanitizers:
     if not compiler in ['gcc', 'clang']:
         env.Die("sanitizers are not supported for compiler '%s'" % compiler)
@@ -984,12 +971,12 @@ env.AlwaysBuild(
             "clang-tidy -p %s -checks='%s' -header-filter='src/.*' %s" % (
                 build_dir,
                 ','.join(open(env.File('#.clang-checks').path).read().split()),
-                ' '.join(map(str, (env.RecursiveGlob('#src/modules', '*.cpp') +
-                                   env.RecursiveGlob('#src/lib', '*.cpp') +
-                                   env.RecursiveGlob('#src/tools', '*.cpp'))
+                ' '.join(map(str, (env.GlobRecursive('#src/modules', '*.cpp') +
+                                   env.GlobRecursive('#src/lib', '*.cpp') +
+                                   env.GlobRecursive('#src/tools', '*.cpp'))
                 ))
             ),
-            env.Pretty('TIDY', 'src', 'yellow')
+            env.PrettyCommand('TIDY', 'src', 'yellow')
         )))
 
 Export('env', 'lib_env', 'gen_env', 'tool_env', 'test_env', 'pulse_env')

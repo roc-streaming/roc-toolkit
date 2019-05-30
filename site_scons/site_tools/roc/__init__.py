@@ -1,8 +1,13 @@
-import roc.pretty
-import roc.helpers
-import roc.tests
+import roc.commands
+import roc.config
 import roc.distfiles
+import roc.fs
 import roc.parallel
+import roc.parsers
+import roc.pretty
+import roc.tests
+import roc.thirdparty
+import roc.vars
 
 # workaround for python3
 import SCons.Subst
@@ -12,11 +17,20 @@ except:
     pass
 
 def generate(env):
-    pretty.Init(env)
-    helpers.Init(env)
-    tests.Init(env)
-    distfiles.Init(env)
-    parallel.Init(env)
+    modules = [
+        commands,
+        config,
+        distfiles,
+        fs,
+        parallel,
+        parsers,
+        pretty,
+        tests,
+        thirdparty,
+        vars,
+    ]
+    for m in modules:
+        m.init(env)
 
 def exists(env):
     return 1

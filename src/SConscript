@@ -4,7 +4,7 @@ Import('env', 'lib_env', 'gen_env', 'tool_env', 'test_env', 'pulse_env')
 
 env.Append(CPPPATH=['#src/modules'])
 
-for targetdir in env.RecursiveGlob('modules', 'target_*'):
+for targetdir in env.GlobRecursive('modules', 'target_*'):
     if targetdir.name in env['ROC_TARGETS']:
         env.Append(CPPPATH=['#src/%s' % targetdir])
 
@@ -16,9 +16,9 @@ for module in env['ROC_MODULES']:
     cenv.Append(CPPDEFINES=('ROC_MODULE', module))
 
     sources = env.Glob('%s/*.cpp' % moduledir)
-    for targetdir in env.RecursiveGlob(moduledir, 'target_*'):
+    for targetdir in env.GlobRecursive(moduledir, 'target_*'):
         if targetdir.name in env['ROC_TARGETS']:
-            sources += env.RecursiveGlob(targetdir, '*.cpp')
+            sources += env.GlobRecursive(targetdir, '*.cpp')
 
     if not sources:
         continue
@@ -92,10 +92,10 @@ if not GetOption('disable_tests'):
             ccenv.Prepend(LIBS=['roc'])
 
         sources = env.Glob('%s/*.cpp' % testdir)
-        for targetdir in env.RecursiveGlob(testdir, 'target_*'):
+        for targetdir in env.GlobRecursive(testdir, 'target_*'):
             if targetdir.name in env['ROC_TARGETS']:
                 ccenv.Append(CPPPATH=['#src/%s' % targetdir])
-                sources += env.RecursiveGlob(targetdir, '*.cpp')
+                sources += env.GlobRecursive(targetdir, '*.cpp')
 
         if not sources:
             continue

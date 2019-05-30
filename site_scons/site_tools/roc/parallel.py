@@ -1,9 +1,8 @@
 import SCons.Script
-
 import sys
 import re
 
-def _CpuCount():
+def _cpu_count():
     try:
         import multiprocessing
         return multiprocessing.cpu_count()
@@ -28,9 +27,8 @@ def _CpuCount():
 
     return 1
 
-def Init(env):
+def init(env):
     for arg in sys.argv:
         if re.match('^(-j|--jobs=?)\d*$', arg):
             return
-
-    SCons.Script.SetOption('num_jobs', _CpuCount())
+    SCons.Script.SetOption('num_jobs', _cpu_count())

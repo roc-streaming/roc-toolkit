@@ -31,15 +31,16 @@ def AddDistfile(env, prefix, subdir, target):
                 os.remove(dst)
 
     env.AlwaysBuild(env.Alias('install', [], [
-        env.Action(install, env.Pretty('INSTALL', dst, 'yellow', 'install(%s)' % dst))
+        env.Action(install,
+                   env.PrettyCommand('INSTALL', dst, 'yellow', 'install(%s)' % dst))
     ]))
 
     env.AlwaysBuild(env.Alias('uninstall', [], [
-        env.Action(uninstall, env.Pretty('UNINSTALL', dst, 'red', 'uninstall(%s)' % dst))
+        env.Action(uninstall,
+                   env.PrettyCommand('UNINSTALL', dst, 'red', 'uninstall(%s)' % dst))
     ]))
 
-def Init(env):
+def init(env):
     env.AlwaysBuild(env.Alias('install', [], env.Action('')))
     env.AlwaysBuild(env.Alias('uninstall', [], env.Action('')))
-
     env.AddMethod(AddDistfile, 'AddDistfile')
