@@ -18,9 +18,8 @@ def _get_non_test_targets(env):
         yield env.Dir('#')
 
 def _with_timeout(env, cmd, timeout):
-    return '%s %s/wrappers/timeout.py %s %s' % (
+    return '%s scripts/wrappers/timeout.py %s %s' % (
         env.PythonExecutable(),
-        env.Dir(os.path.dirname(__file__)).path,
         timeout,
         cmd)
 

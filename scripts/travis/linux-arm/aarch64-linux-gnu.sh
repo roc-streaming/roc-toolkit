@@ -17,6 +17,6 @@ find bin/${TOOLCHAIN} -name 'roc-test-*' \
     while read t
     do
         LD_LIBRARY_PATH="/opt/sysroot/lib:${PWD}/3rdparty/${TOOLCHAIN}/rpath" \
-            python2 site_scons/site_tools/roc/wrappers/timeout.py 300 \
+            python2 scripts/wrappers/timeout.py 300 \
             qemu-aarch64 -L "/opt/sysroot" -cpu ${CPU} $t
     done

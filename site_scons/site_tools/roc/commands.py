@@ -12,9 +12,8 @@ def PythonExecutable(env):
         return sys.executable
 
 def ClangDBWriter(env, tool, build_dir):
-    return '%s %s/wrappers/clangdb.py "%s" "%s" "%s"' % (
+    return '%s scripts/wrappers/clangdb.py "%s" "%s" "%s"' % (
         env.PythonExecutable(),
-        env.Dir(os.path.dirname(__file__)).path,
         env.Dir('#').path,
         env.Dir(build_dir).path,
         tool)
@@ -30,9 +29,8 @@ def Doxygen(env, build_dir='', html_dir=None, config='', sources=[], werror=Fals
         dirs += [env.Dir(html_dir).path]
 
     env.Command(target, sources + [config], SCons.Action.CommandAction(
-        '%s %s/wrappers/doc.py %s %s %s %s %s %s %s' % (
+        '%s scripts/wrappers/doc.py %s %s %s %s %s %s %s' % (
             env.PythonExecutable(),
-            env.Dir(os.path.dirname(__file__)).path,
             env.Dir('#').path,
             env.Dir(os.path.dirname(config)).path,
             ':'.join(dirs),
@@ -51,9 +49,8 @@ def Sphinx(env, output_type, build_dir, output_dir, source_dir, sources, werror=
         env.Die("sphinx-build not found in PATH (looked for '%s')" % env['SPHINX_BUILD'])
 
     env.Command(target, sources, SCons.Action.CommandAction(
-        '%s %s/wrappers/doc.py %s %s %s %s %s %s -q -b %s -d %s %s %s' % (
+        '%s scripts/wrappers/doc.py %s %s %s %s %s %s -q -b %s -d %s %s %s' % (
             env.PythonExecutable(),
-            env.Dir(os.path.dirname(__file__)).path,
             env.Dir('#').path,
             env.Dir('#').path,
             output_dir,
