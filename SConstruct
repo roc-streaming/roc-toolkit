@@ -382,92 +382,10 @@ if llvmdir:
 
 conf = Configure(env, custom_tests=env.CustomTests)
 
-unversioned = set(['ar', 'ranlib'])
-
-tools = dict()
-
 if compiler == 'gcc':
-    tools['CC'] = ['gcc']
-    tools['CXX'] = ['g++']
-    tools['LD'] = ['g++']
-    tools['AR'] = ['ar']
-    tools['RANLIB'] = ['ranlib']
-
-if compiler == 'clang':
-    tools['CC'] = ['clang']
-    tools['CXX'] = ['clang++']
-    tools['LD'] = ['clang++']
-    tools['AR'] = ['llvm-ar', 'ar']
-    tools['RANLIB'] = ['llvm-ranlib', 'ranlib']
-
-checked = set()
-
-for var in ['CC', 'CXX', 'LD', 'AR', 'RANLIB']:
-    if env.HasArg(var):
-        if not env[var] in checked:
-            conf.CheckProg(env[var])
-    else:
-        for tool_name in tools[var]:
-            if not toolchain:
-                tool = tool_name
-            else:
-                tool = '%s-%s' % (toolchain, tool_name)
-
-            if not tool_name in unversioned:
-                search_versions = [
-                    compiler_ver[:3],
-                    compiler_ver[:2],
-                ]
-
-                default_ver = env.CompilerVersion(tool)
-
-                if default_ver and default_ver[:len(compiler_ver)] == compiler_ver:
-                    search_versions += [default_ver]
-
-                for ver in reversed(sorted(set(search_versions))):
-                    versioned_tool = '%s-%s' % (tool, '.'.join(map(str, ver)))
-                    if env.Which(versioned_tool):
-                        tool = versioned_tool
-                        break
-
-            if env.Which(tool):
-                env[var] = tool
-                break
-        else:
-            env.Die("can't detect %s: looked for any of: %s" % (
-                var,
-                ', '.join(tools[var])))
-
-        if not env[var] in checked:
-            conf.CheckProg(env[var])
-
-            if not tool_name in unversioned:
-                actual_ver = env.CompilerVersion(env[var])
-                if actual_ver:
-                    actual_ver = actual_ver[:len(compiler_ver)]
-
-                if actual_ver != compiler_ver:
-                    env.Die(
-                        "can't detect %s: '%s' not found in PATH, '%s' version is %s" % (
-                            var,
-                            '%s-%s' % (tool, '.'.join(map(str, compiler_ver))),
-                            env[var],
-                            actual_ver))
-
-    checked.add(env[var])
-
-env['LINK'] = env['LD']
-env['SHLINK'] = env['LD']
-
-for var in ['CFLAGS', 'CXXFLAGS', 'LDFLAGS']:
-    if env.HasArg(var):
-        if var == 'LDFLAGS':
-            tvar = 'LINKFLAGS'
-        else:
-            tvar = var
-        env.Prepend(**{tvar: env.GetArg(var)})
-
-env = conf.Finish()
+    conf.FindTool('CXX', toolchain, compiler_ver, ['g++'])
+elif compiler == 'clang':
+    conf.FindTool('CXX', toolchain, compiler_ver, ['clang++'])
 
 # get full compiler version
 compiler_ver = env.CompilerVersion(env['CXX'])
@@ -481,19 +399,42 @@ if not build:
 if not host:
     host = build
 
+crosscompile = (host != build)
+
 if not platform:
     if 'linux' in host:
         platform = 'linux'
     elif 'darwin' in host:
         platform = 'darwin'
 
-if not GetOption('override_targets'):
-    if not platform:
-        env.Die(("can't detect platform for host '%s', looked for one of: %s\nyou should "+
-                 "provide either known '--platform' or '--override-targets' option"),
-                    host, ', '.join(supported_platforms))
+if compiler == 'gcc':
+    conf.FindTool('CC', toolchain, compiler_ver, ['gcc'])
+    conf.FindTool('LD', toolchain, compiler_ver, ['g++'])
+    conf.FindTool('RANLIB', toolchain, None, ['ranlib'])
+elif compiler == 'clang':
+    conf.FindTool('CC', toolchain, compiler_ver, ['clang'])
+    conf.FindTool('LD', toolchain, compiler_ver, ['clang++'])
+    conf.FindTool('RANLIB', toolchain, None, ['llvm-randlib', 'ranlib'])
 
-crosscompile = (host != build)
+if platform == 'darwin' and not crosscompile:
+    conf.FindTool('AR', None, None, [['libtool', '-static', '-o'], 'llvm-ar', 'ar'])
+elif compiler == 'gcc':
+    conf.FindTool('AR', toolchain, None, ['ar'])
+elif compiler == 'clang':
+    conf.FindTool('AR', toolchain, None, ['llvm-ar', 'ar'])
+
+env['LINK'] = env['LD']
+env['SHLINK'] = env['LD']
+
+for var in ['CFLAGS', 'CXXFLAGS', 'LDFLAGS']:
+    if env.HasArg(var):
+        if var == 'LDFLAGS':
+            tvar = 'LINKFLAGS'
+        else:
+            tvar = var
+        env.Prepend(**{tvar: env.GetArg(var)})
+
+env = conf.Finish()
 
 build_dir = 'build/%s/%s' % (
     host,
@@ -526,6 +467,11 @@ if GetOption('override_targets'):
     for t in GetOption('override_targets').split(','):
         env['ROC_TARGETS'] += ['target_%s' % t]
 else:
+    if not platform:
+        env.Die(("can't detect platform for host '%s', looked for one of: %s\nyou should "+
+                 "provide either known '--platform' or '--override-targets' option"),
+                    host, ', '.join(supported_platforms))
+
     if platform in ['linux', 'darwin']:
         env.Append(ROC_TARGETS=[
             'target_stdio',

@@ -459,8 +459,10 @@ int main() {
 def CheckLibWithHeaderUniq(context, libs, headers, language):
     return CheckLibWithHeaderExpr(context, libs, headers, language, '1')
 
-def CheckProg(context, prog):
-    context.Message("Checking for executable %s... " % prog)
+def CheckProg(context, prog, name=''):
+    if name:
+        name += ' '
+    context.Message("Checking for %sexecutable %s... " % (name, prog))
 
     if context.env.Which(prog):
         context.Result('yes')
@@ -468,6 +470,69 @@ def CheckProg(context, prog):
     else:
         context.Result('no')
         return False
+
+def FindTool(context, var, toolchain, version, commands):
+    env = context.env
+
+    if env.HasArg(var):
+        CheckProg(context, env[var], name=var)
+        return
+
+    for tool_cmd in commands:
+        if isinstance(tool_cmd, list):
+            tool_name = tool_cmd[0]
+            tool_flags = tool_cmd[1:]
+        else:
+            tool_name = tool_cmd
+            tool_flags = []
+
+        if not toolchain:
+            tool = tool_name
+        else:
+            tool = '%s-%s' % (toolchain, tool_name)
+
+        if version:
+            search_versions = [
+                version[:3],
+                version[:2],
+                version[:1],
+            ]
+
+            default_ver = env.CompilerVersion(tool)
+
+            if default_ver and default_ver[:len(version)] == version:
+                search_versions += [default_ver]
+
+            for ver in reversed(sorted(set(search_versions))):
+                versioned_tool = '%s-%s' % (tool, '.'.join(map(str, ver)))
+                if env.Which(versioned_tool):
+                    tool = versioned_tool
+                    break
+
+        if env.Which(tool):
+            env[var] = tool
+            if tool_flags:
+                env['%sFLAGS' % var] = ' '.join(tool_flags)
+            break
+    else:
+        env.Die("can't detect %s: looked for any of: %s" % (
+            var,
+            ', '.join([' '.join(c) if isinstance(c, list) else c for c in commands])))
+
+    CheckProg(context, env[var], name=var)
+
+    if version:
+        actual_ver = env.CompilerVersion(env[var])
+        if actual_ver:
+            actual_ver = actual_ver[:len(version)]
+
+        if actual_ver != version:
+            env.Die(
+                "can't detect %s: '%s' not found in PATH, '%s' version is %s" % (
+                    var,
+                    '%s-%s' % (tool, '.'.join(map(str, version))),
+                    env[var],
+                    '.'.join(map(str, actual_ver))))
 
 def Init(env):
     env.AddMethod(Die, 'Die')
@@ -498,4 +563,5 @@ def Init(env):
         'CheckLibWithHeaderExpr': CheckLibWithHeaderExpr,
         'CheckLibWithHeaderUniq': CheckLibWithHeaderUniq,
         'CheckProg': CheckProg,
+        'FindTool': FindTool,
     }
