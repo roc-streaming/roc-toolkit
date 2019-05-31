@@ -3,9 +3,27 @@ from __future__ import print_function
 import sys
 import os
 import os.path
-import json
 import fnmatch
-import fcntl # FIXME: works only on posix
+import json
+
+try:
+    import fcntl
+
+    def flock(fp):
+        fcntl.flock(fp.fileno(), fcntl.LOCK_EX)
+
+    def funlock(fp):
+        fcntl.flock(fp.fileno(), fcntl.LOCK_UN)
+except:
+    import msvcrt
+
+    def flock(fp):
+        fp.seek(0)
+        msvcrt.locking(fp.fileno(), msvcrt.LK_LOCK, 1)
+
+    def funlock(fp):
+        fp.seek(0)
+        msvcrt.locking(fp.fileno(), msvcrt.LK_UNLCK, 1)
 
 if len(sys.argv) < 5:
    print("usage: clangdb.py ROOT_DIR BUILD_DIR COMPILER COMPILER_ARGS...",
@@ -38,25 +56,28 @@ if source_file:
 
     try:
         with open(db_path, 'a+') as fp:
-            fcntl.flock(fp.fileno(), fcntl.LOCK_EX)
-
             try:
+                flock(fp)
+
+                try:
+                    fp.seek(0)
+                    db = json.loads(fp.read())
+                    db[:]
+                except:
+                    db = []
+
+                for index, item in enumerate(db):
+                    if item["file"] == source_file:
+                        db[index] = cmd
+                        break
+                else:
+                    db.append(cmd)
+
                 fp.seek(0)
-                db = json.loads(fp.read())
-                db[:]
-            except:
-                db = []
-
-            for index, item in enumerate(db):
-                if item["file"] == source_file:
-                    db[index] = cmd
-                    break
-            else:
-                db.append(cmd)
-
-            fp.seek(0)
-            fp.truncate()
-            fp.write(json.dumps(db, indent=2))
+                fp.truncate()
+                fp.write(json.dumps(db, indent=2))
+            finally:
+                funlock(fp)
     except:
         e = sys.exc_info()[1]
         print("error: unable to write clangdb to %s" % db_path, file=sys.stderr)
