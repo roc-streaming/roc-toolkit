@@ -1,5 +1,6 @@
 import os
 import os.path
+import shutil
 import fnmatch
 
 def GlobRecursive(env, dirs, patterns, exclude=[]):
@@ -42,25 +43,36 @@ def GlobDirs(env, pattern):
         if os.path.isdir(path.srcnode().abspath):
             yield path
 
-def Which(env, prog):
-    def getenv(name, default):
-        if name in env['ENV']:
-            return env['ENV'][name]
-        return os.environ.get(name, default)
+def getenv(env, name, default):
+    if name in env['ENV']:
+        return env['ENV'][name]
+    return os.environ.get(name, default)
+
+def which(env, prog, mode):
     result = []
-    exts = filter(None, getenv('PATHEXT', '').split(os.pathsep))
-    path = getenv('PATH', None)
+    exts = filter(None, getenv(env, 'PATHEXT', '').split(os.pathsep))
+    path = getenv(env, 'PATH', None)
     if path is None:
         return []
-    for p in getenv('PATH', '').split(os.pathsep):
+    for p in getenv(env, 'PATH', '').split(os.pathsep):
         p = os.path.join(p, prog)
-        if os.access(p, os.X_OK):
+        if os.access(p, mode):
             result.append(p)
         for e in exts:
             pext = p + e
-            if os.access(pext, os.X_OK):
+            if os.access(pext, mode):
                 result.append(pext)
     return result
+
+def Which(env, prog):
+    try:
+        path = shutil.which(prog, os.X_OK, getenv(env, 'PATH', os.defpath))
+        if path:
+            return [path]
+        else:
+            return []
+    except:
+        return which(env, prog, os.X_OK)
 
 def init(env):
     env.AddMethod(GlobRecursive, 'GlobRecursive')
