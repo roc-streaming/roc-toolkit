@@ -327,20 +327,23 @@ TEST(writer_reader, lost_first_packet_in_first_block) {
         for (size_t i = 0; i < NumSourcePackets; ++i) {
             writer.write(source_packets[i]);
         }
+
+        UNSIGNED_LONGS_EQUAL(NumSourcePackets * 2 - 1, dispatcher.source_size());
+        UNSIGNED_LONGS_EQUAL(NumRepairPackets * 2, dispatcher.repair_size());
+
         dispatcher.push_stocks();
 
-        // Receive every sent packet except the first one.
-        for (size_t i = 1; i < NumSourcePackets * 2; ++i) {
+        // Receive every sent packet including the first one.
+        for (size_t i = 0; i < NumSourcePackets * 2; ++i) {
             packet::PacketPtr p = reader.read();
-            if (i < NumSourcePackets) {
-                CHECK(!reader.started());
-            } else {
-                CHECK(reader.started());
-            }
+            CHECK(reader.started());
+
             check_audio_packet(p, i);
-            check_restored(p, false);
+            check_restored(p, i == 0);
         }
-        CHECK(dispatcher.source_size() == 0);
+
+        UNSIGNED_LONGS_EQUAL(0, dispatcher.source_size());
+        UNSIGNED_LONGS_EQUAL(0, dispatcher.repair_size());
     }
 }
 

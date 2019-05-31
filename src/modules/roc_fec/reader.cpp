@@ -76,8 +76,8 @@ packet::PacketPtr Reader::read_() {
 
     if (!started_) {
         packet::PacketPtr pp = get_first_packet_();
-        if (!pp || pp->fec()->encoding_symbol_id > 0) {
-            return source_queue_.read();
+        if (!pp) {
+            return NULL;
         }
 
         roc_log(LogDebug,
