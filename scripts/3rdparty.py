@@ -68,10 +68,10 @@ def download_tool(url, path, log, vendordir, tool, cmd):
         raise
 
 def download_wget(url, path, log, vendordir):
-    download_tool(url, path, log, 'wget', 'wget "%s" --quiet -O "%s"' % (url, path))
+    download_tool(url, path, log, vendordir, 'wget', 'wget "%s" --quiet -O "%s"' % (url, path))
 
 def download_curl(url, path, log, vendordir):
-    download_tool(url, path, log, 'curl', 'curl -Ls "%s" -o "%s"' % (url, path))
+    download_tool(url, path, log, vendordir, 'curl', 'curl -Ls "%s" -o "%s"' % (url, path))
 
 def download(url, name, log, vendordir):
     path_res = 'src/' + name
