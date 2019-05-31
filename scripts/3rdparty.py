@@ -226,8 +226,17 @@ def makeflags(workdir, toolchain, deplist, cflags='', ldflags='', variant=''):
         'LDFLAGS="%s"' % ' '.join(ldflags),
     ])
 
-if len(sys.argv) != 7:
-    print("error: usage: 3rdparty.py workdir vendordir toolchain variant package deplist",
+def makeenv(envlist):
+    ret = []
+    for e in envlist:
+        if ' ' in e:
+            ret.append('"%s"' % e)
+        else:
+            ret.append(e)
+    return ' '.join(ret)
+
+if len(sys.argv) < 7:
+    print("error: usage: 3rdparty.py workdir vendordir toolchain variant package deplist [env]",
           file=sys.stderr)
     exit(1)
 
@@ -237,6 +246,12 @@ toolchain = sys.argv[3]
 variant = sys.argv[4]
 fullname = sys.argv[5]
 deplist = sys.argv[6].split(':')
+envlist = sys.argv[7:]
+
+env = dict()
+for e in envlist:
+    k, v = e.split('=', 1)
+    env[k] = v
 
 name, ver = fullname.split('-', 1)
 
@@ -260,8 +275,9 @@ if name == 'uv':
     os.chdir('src/libuv-v%s' % ver)
     freplace('include/uv.h', '__attribute__((visibility("default")))', '')
     execute('./autogen.sh', logfile)
-    execute('./configure --host=%s %s %s' % (
+    execute('./configure --host=%s %s %s %s' % (
         toolchain,
+        makeenv(envlist),
         makeflags(workdir, toolchain, [], cflags='-fvisibility=hidden'),
         ' '.join([
             '--with-pic',
@@ -282,8 +298,19 @@ elif name == 'openfec':
     mkpath('build')
     os.chdir('build')
     args = [
-        '-DCMAKE_C_COMPILER=%s' % '-'.join([s for s in [toolchain, 'gcc'] if s]),
-        '-DCMAKE_FIND_ROOT_PATH=%s' % getsysroot(toolchain),
+        '-DCMAKE_C_COMPILER="%s"' % (
+            env['CC'] if 'CC' in env else '-'.join([s for s in [toolchain, 'gcc'] if s])
+        ),
+        '-DCMAKE_LINKER="%s"' % (
+            env['CCLD'] if 'CCLD' in env else '-'.join([s for s in [toolchain, 'gcc'] if s])
+        ),
+        '-DCMAKE_AR="%s"' % (
+            env['AR'] if 'AR' in env else '-'.join([s for s in [toolchain, 'ar'] if s])
+        ),
+        '-DCMAKE_RANLIB="%s"' % (
+            env['RANLIB'] if 'RANLIB' in env else '-'.join([s for s in [toolchain, 'ranlib'] if s])
+        ),
+        '-DCMAKE_FIND_ROOT_PATH="%s"' % getsysroot(toolchain),
         '-DCMAKE_POSITION_INDEPENDENT_CODE=ON',
         '-DBUILD_STATIC_LIBS=ON',
         ]
@@ -320,8 +347,9 @@ elif name == 'alsa':
     extract('alsa-lib-%s.tar.bz2' % ver,
             'alsa-lib-%s' % ver)
     os.chdir('src/alsa-lib-%s' % ver)
-    execute('./configure --host=%s %s' % (
+    execute('./configure --host=%s %s %s' % (
         toolchain,
+        makeenv(envlist),
         ' '.join([
             '--enable-shared',
             '--disable-static',
@@ -342,8 +370,9 @@ elif name == 'ltdl':
     extract('libtool-%s.tar.gz' % ver,
             'libtool-%s' % ver)
     os.chdir('src/libtool-%s' % ver)
-    execute('./configure --host=%s %s' % (
+    execute('./configure --host=%s %s %s' % (
         toolchain,
+        makeenv(envlist),
         ' '.join([
             '--enable-shared',
             '--disable-static',
@@ -362,7 +391,7 @@ elif name == 'json':
     extract('json-%s.tar.gz' % ver,
             'json-c-json-c-%s' % ver)
     os.chdir('src/json-c-json-c-%s' % ver)
-    execute('%s --host=%s %s %s' % (
+    execute('%s --host=%s %s %s %s' % (
         ' '.join(filter(None, [
             # workaround for outdated config.sub
             'ac_cv_host=%s' % toolchain if toolchain else '',
@@ -373,6 +402,7 @@ elif name == 'json':
             './configure',
         ])),
         toolchain,
+        makeenv(envlist),
         makeflags(workdir, toolchain, [], cflags='-w -fPIC -fvisibility=hidden'),
         ' '.join([
             '--enable-static',
@@ -391,7 +421,7 @@ elif name == 'sndfile':
     extract('libsndfile-%s.tar.gz' % ver,
             'libsndfile-%s' % ver)
     os.chdir('src/libsndfile-%s' % ver)
-    execute('%s --host=%s %s %s' % (
+    execute('%s --host=%s %s %s %s' % (
         ' '.join(filter(None, [
             # workaround for outdated config.sub
             'ac_cv_host=%s' % toolchain if toolchain else '',
@@ -399,6 +429,7 @@ elif name == 'sndfile':
             './configure',
         ])),
         toolchain,
+        makeenv(envlist),
         makeflags(workdir, toolchain, [], cflags='-fPIC -fvisibility=hidden'),
         ' '.join([
             '--enable-static',
@@ -417,8 +448,9 @@ elif name == 'pulseaudio':
     extract('pulseaudio-%s.tar.gz' % ver,
             'pulseaudio-%s' % ver)
     os.chdir('src/pulseaudio-%s' % ver)
-    execute('./configure --host=%s %s %s %s' % (
+    execute('./configure --host=%s %s %s %s %s' % (
         toolchain,
+        makeenv(envlist),
         makeflags(workdir, toolchain, deplist, cflags='-w -fomit-frame-pointer -O2'),
         ' '.join([
             'LIBJSON_CFLAGS=" "',
@@ -457,8 +489,9 @@ elif name == 'sox':
     extract('sox-%s.tar.gz' % ver,
             'sox-%s' % ver)
     os.chdir('src/sox-%s' % ver)
-    execute('./configure --host=%s %s %s' % (
+    execute('./configure --host=%s %s %s %s' % (
         toolchain,
+        makeenv(envlist),
         makeflags(workdir, toolchain, deplist, cflags='-fvisibility=hidden', variant=variant),
         ' '.join([
             '--enable-static',
@@ -480,7 +513,8 @@ elif name == 'gengetopt':
     extract('gengetopt-%s.tar.gz' % ver,
             'gengetopt-%s' % ver)
     os.chdir('src/gengetopt-%s' % ver)
-    execute('./configure', logfile)
+    execute('./configure %s' % (
+        makeenv(envlist)), logfile)
     execute('make', logfile) # -j is buggy for gengetopt
     install_files('src/gengetopt', os.path.join(builddir, 'bin'))
 elif name == 'cpputest':
@@ -493,8 +527,9 @@ elif name == 'cpputest':
     extract('cpputest-%s.tar.gz' % ver,
             'cpputest-%s' % ver)
     os.chdir('src/cpputest-%s' % ver)
-    execute('./configure --host=%s %s %s' % (
+    execute('./configure --host=%s %s %s %s' % (
             toolchain,
+            makeenv(envlist),
             # disable warnings, since CppUTest uses -Werror and may fail to
             # build on old GCC versions
             makeflags(workdir, toolchain, [], cflags='-w'),

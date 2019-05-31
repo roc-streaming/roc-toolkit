@@ -28,16 +28,26 @@ def ThirdParty(
     for dep in deps:
         vdeps.append(_versioned_thirdparty(env, dep, versions))
 
+    envvars = [
+        'CXX="%s"'    % env['CXX'],
+        'CXXLD="%s"'  % env['CXX'],
+        'CC="%s"'     % env['CC'],
+        'CCLD="%s"'   % env['CC'],
+        'AR="%s"'     % env['AR'],
+        'RANLIB="%s"' % env['RANLIB'],
+    ]
+
     if not os.path.exists(os.path.join('3rdparty', host, 'build', vname, 'commit')):
         if env.Execute(
             SCons.Action.CommandAction(
-                '%s scripts/3rdparty.py "3rdparty/%s" "vendor" """%s" "%s" "%s" "%s"' % (
+                '%s scripts/3rdparty.py "3rdparty/%s" "vendor" "%s" "%s" "%s" "%s" %s' % (
                     env.PythonExecutable(),
                     host,
                     toolchain,
                     variant,
                     vname,
-                    ':'.join(vdeps)),
+                    ':'.join(vdeps),
+                    ' '.join(envvars)),
                 cmdstr = env.PrettyCommand('GET', '%s/%s' % (host, vname), 'yellow'))):
             env.Die("can't make '%s', see '3rdparty/%s/build/%s/build.log' for details" % (
                 vname, host, vname))

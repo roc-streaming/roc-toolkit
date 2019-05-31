@@ -48,24 +48,25 @@ int main() {
 def CheckLibWithHeaderUniq(context, libs, headers, language):
     return CheckLibWithHeaderExpr(context, libs, headers, language, '1')
 
-def CheckProg(context, prog, name=''):
-    if name:
-        name += ' '
-    context.Message("Checking for %sexecutable %s... " % (name, prog))
+def CheckProg(context, prog):
+    context.Message("Checking for executable %s... " % prog)
 
-    if context.env.Which(prog):
-        context.Result('yes')
+    path = context.env.Which(prog)
+    if path:
+        context.Result(path[0])
         return True
     else:
-        context.Result('no')
+        context.Result('not found')
         return False
 
-def FindTool(context, var, toolchain, version, commands):
+def FindTool(context, var, toolchain, version, commands, prepend_path=[]):
     env = context.env
 
+    context.Message("Looking for %s executable... " % var)
+
     if env.HasArg(var):
-        CheckProg(context, env[var], name=var)
-        return
+        context.Result(env[var])
+        return True
 
     for tool_cmd in commands:
         if isinstance(tool_cmd, list):
@@ -94,12 +95,13 @@ def FindTool(context, var, toolchain, version, commands):
 
             for ver in reversed(sorted(set(search_versions))):
                 versioned_tool = '%s-%s' % (tool, '.'.join(map(str, ver)))
-                if env.Which(versioned_tool):
+                if env.Which(versioned_tool, prepend_path):
                     tool = versioned_tool
                     break
 
-        if env.Which(tool):
-            env[var] = tool
+        tool_path = env.Which(tool, prepend_path)
+        if tool_path:
+            env[var] = tool_path[0]
             if tool_flags:
                 env['%sFLAGS' % var] = ' '.join(tool_flags)
             break
@@ -107,8 +109,6 @@ def FindTool(context, var, toolchain, version, commands):
         env.Die("can't detect %s: looked for any of: %s" % (
             var,
             ', '.join([' '.join(c) if isinstance(c, list) else c for c in commands])))
-
-    CheckProg(context, env[var], name=var)
 
     if version:
         actual_ver = env.ParseCompilerVersion(env[var])
@@ -123,26 +123,42 @@ def FindTool(context, var, toolchain, version, commands):
                     env[var],
                     '.'.join(map(str, actual_ver))))
 
+    message = env[var]
+    realpath = os.path.realpath(env[var])
+    if realpath != env[var]:
+        message += ' (%s)' % realpath
+
+    context.Result(message)
+    return True
+
 def FindLLVMDir(context, version):
     context.Message(
         "Checking for PATH for llvm %s... " % '.'.join(map(str, version)))
 
-    suffixes = []
-    for n in [3, 2, 1]:
-        v = '.'.join(map(str, version[:n]))
-        suffixes += [
-            '-' + v,
-            '/' + v,
+    def macos_dirs():
+        return [
+        '/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin',
+        '/Library/Developer/CommandLineTools/usr/bin',
         ]
-    suffixes += ['']
 
-    for s in suffixes:
-        llvmdir = '/usr/lib/llvm' + s
+    def linux_dirs():
+        suffixes = []
+        for n in [3, 2, 1]:
+            v = '.'.join(map(str, version[:n]))
+            suffixes += [
+                '-' + v,
+                '/' + v,
+            ]
+        suffixes += ['']
+        ret = []
+        for s in suffixes:
+            ret.append('/usr/lib/llvm%s/bin' % s)
+        return ret
 
+    for llvmdir in macos_dirs() + linux_dirs():
         if os.path.isdir(llvmdir):
-            llvmpath = llvmdir + '/bin'
-            context.env['ENV']['PATH'] += ':' + llvmpath
-            context.Result(llvmpath)
+            context.env['ENV']['PATH'] += ':' + llvmdir
+            context.Result(llvmdir)
             return True
 
     context.Result('not found')

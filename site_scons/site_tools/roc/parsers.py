@@ -83,6 +83,18 @@ def ParseCompilerTarget(env, compiler):
 
     return None
 
+def ParseCompilerDirectory(env, compiler):
+    text = _command_output(env, [compiler, '--version'])
+    if not text:
+        return None
+
+    for line in text.splitlines():
+        m = re.search(r'\bInstalledDir:\s*(.*)', line)
+        if m:
+            return m.group(1)
+
+    return None
+
 def ParsePkgConfig(env, cmd):
     if 'PKG_CONFIG' in env.Dictionary():
         pkg_config = env['PKG_CONFIG']
@@ -115,5 +127,6 @@ def init(env):
     env.AddMethod(ParseVersion, 'ParseVersion')
     env.AddMethod(ParseCompilerVersion, 'ParseCompilerVersion')
     env.AddMethod(ParseCompilerTarget, 'ParseCompilerTarget')
+    env.AddMethod(ParseCompilerDirectory, 'ParseCompilerDirectory')
     env.AddMethod(ParsePkgConfig, 'ParsePkgConfig')
     env.AddMethod(ParseList, 'ParseList')

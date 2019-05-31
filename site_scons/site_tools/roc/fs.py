@@ -48,13 +48,10 @@ def getenv(env, name, default):
         return env['ENV'][name]
     return os.environ.get(name, default)
 
-def which(env, prog, mode):
+def which(env, prog, mode, searchpath):
     result = []
-    exts = filter(None, getenv(env, 'PATHEXT', '').split(os.pathsep))
-    path = getenv(env, 'PATH', None)
-    if path is None:
-        return []
-    for p in getenv(env, 'PATH', '').split(os.pathsep):
+    exts = list(filter(None, getenv(env, 'PATHEXT', '').split(os.pathsep)))
+    for p in searchpath.split(os.pathsep):
         p = os.path.join(p, prog)
         if os.access(p, mode):
             result.append(p)
@@ -64,15 +61,20 @@ def which(env, prog, mode):
                 result.append(pext)
     return result
 
-def Which(env, prog):
+def Which(env, prog, prepend_path=[]):
+    searchpath = getenv(env, 'PATH', os.defpath)
+    if prepend_path:
+        searchpath = os.pathsep.join(prepend_path) + os.pathsep + searchpath
+
+    paths = []
     try:
-        path = shutil.which(prog, os.X_OK, getenv(env, 'PATH', os.defpath))
+        path = shutil.which(prog, os.X_OK, searchpath)
         if path:
-            return [path]
-        else:
-            return []
+            paths = [path]
     except:
-        return which(env, prog, os.X_OK)
+        paths = which(env, prog, os.X_OK, searchpath)
+
+    return paths
 
 def init(env):
     env.AddMethod(GlobRecursive, 'GlobRecursive')
