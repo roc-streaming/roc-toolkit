@@ -217,7 +217,34 @@ TEST(watchdog, broken_playback_timeout_equal_frame_sizes) {
 
         check_n_reads(watchdog, true, BreakageWindow, BreakageWindowsPerTimeout - 1,
                       Frame::FlagIncomplete | Frame::FlagDrops);
+        check_read(watchdog, true, BreakageWindow, Frame::FlagIncomplete);
+
+        CHECK(watchdog.update());
+        check_read(watchdog, true, BreakageWindow, 0);
+    }
+    {
+        Watchdog watchdog(test_reader, NumCh,
+                          make_config(NoPlaybackTimeout, BrokenPlaybackTimeout),
+                          SampleRate, allocator);
+        CHECK(watchdog.valid());
+
+        check_n_reads(watchdog, true, BreakageWindow, BreakageWindowsPerTimeout - 1,
+                      Frame::FlagIncomplete | Frame::FlagDrops);
         check_read(watchdog, true, BreakageWindow, Frame::FlagDrops);
+
+        CHECK(watchdog.update());
+        check_read(watchdog, true, BreakageWindow, 0);
+    }
+    {
+        Watchdog watchdog(test_reader, NumCh,
+                          make_config(NoPlaybackTimeout, BrokenPlaybackTimeout),
+                          SampleRate, allocator);
+        CHECK(watchdog.valid());
+
+        check_n_reads(watchdog, true, BreakageWindow, BreakageWindowsPerTimeout - 1,
+                      Frame::FlagIncomplete | Frame::FlagDrops);
+        check_read(watchdog, true, BreakageWindow,
+                   Frame::FlagIncomplete | Frame::FlagDrops);
 
         CHECK(!watchdog.update());
         check_read(watchdog, false, BreakageWindow, 0);

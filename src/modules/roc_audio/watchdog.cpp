@@ -159,9 +159,12 @@ void Watchdog::update_drops_timeout_(const Frame& frame,
     const packet::timestamp_t window_end = window_start + drop_detection_window_;
 
     if (packet::timestamp_le(window_end, next_read_pos)) {
-        if ((curr_window_flags_ & (Frame::FlagIncomplete | Frame::FlagDrops)) == 0) {
+        const unsigned drop_flags = Frame::FlagIncomplete | Frame::FlagDrops;
+
+        if ((curr_window_flags_ & drop_flags) != drop_flags) {
             last_pos_before_drops_ = next_read_pos;
         }
+
         if (next_read_pos % drop_detection_window_ == 0) {
             curr_window_flags_ = 0;
         } else {
