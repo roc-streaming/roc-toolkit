@@ -37,11 +37,25 @@ core::BufferPool<sample_t> sample_buffer_pool(allocator, MaxBufSize, true);
 
 class TestFrameReader : public IReader, public core::NonCopyable<> {
 public:
+    TestFrameReader()
+        : flags_(0) {
+    }
+
+    void set_flags(unsigned flags) {
+        flags_ = flags;
+    }
+
     void read(Frame& frame) {
+        if (flags_) {
+            frame.set_flags(flags_);
+        }
         for (size_t n = 0; n < frame.size(); n++) {
             frame.data()[n] = 42;
         }
     }
+
+private:
+    unsigned flags_;
 };
 
 } // namespace
@@ -66,14 +80,13 @@ TEST_GROUP(watchdog) {
         return config;
     }
 
-    void check_read(IReader & reader, const bool is_read, const size_t fsz,
-                    const unsigned frame_flags) {
+    void check_read(IReader & reader, bool is_read, size_t fsz, unsigned frame_flags) {
         core::Slice<sample_t> buf = new_buffer(fsz);
         memset(buf.data(), 0xff, buf.size() * sizeof(sample_t));
 
-        Frame frame(buf.data(), buf.size());
-        frame.set_flags(frame_flags);
+        test_reader.set_flags(frame_flags);
 
+        Frame frame(buf.data(), buf.size());
         reader.read(frame);
 
         if (is_read) {
@@ -87,8 +100,8 @@ TEST_GROUP(watchdog) {
         }
     }
 
-    void check_n_reads(IReader & reader, const bool is_read, const size_t fsz,
-                       const size_t it_num, const unsigned frame_flags) {
+    void check_n_reads(IReader & reader, bool is_read, size_t fsz, size_t it_num,
+                       unsigned frame_flags) {
         for (size_t n = 0; n < it_num; n++) {
             check_read(reader, is_read, fsz, frame_flags);
         }
