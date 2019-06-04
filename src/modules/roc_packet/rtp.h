@@ -66,9 +66,6 @@ struct RTP {
 
     //! Determine packet order.
     int compare(const RTP&) const;
-
-    //! Determine distance between two packets.
-    timestamp_t distance(const RTP&) const;
 };
 
 } // namespace packet
