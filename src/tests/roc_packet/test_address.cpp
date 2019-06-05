@@ -75,7 +75,7 @@ TEST(address, get_ipv6) {
     STRCMP_EQUAL("2001:db8::1", buf);
 }
 
-TEST(address, eq) {
+TEST(address, eq_ipv4) {
     Address addr1;
     CHECK(addr1.set_ipv4("1.2.3.4", 123));
     CHECK(addr1.valid());
@@ -90,6 +90,32 @@ TEST(address, eq) {
 
     Address addr4;
     CHECK(addr4.set_ipv4("1.2.4.3", 123));
+    CHECK(addr4.valid());
+
+    CHECK(addr1 == addr2);
+    CHECK(!(addr1 == addr3));
+    CHECK(!(addr1 == addr4));
+
+    CHECK(!(addr1 != addr2));
+    CHECK(addr1 != addr3);
+    CHECK(addr1 != addr4);
+}
+
+TEST(address, eq_ipv6) {
+    Address addr1;
+    CHECK(addr1.set_ipv6("2001:db1::1", 123));
+    CHECK(addr1.valid());
+
+    Address addr2;
+    CHECK(addr2.set_ipv6("2001:db1::1", 123));
+    CHECK(addr2.valid());
+
+    Address addr3;
+    CHECK(addr3.set_ipv6("2001:db1::1", 456));
+    CHECK(addr3.valid());
+
+    Address addr4;
+    CHECK(addr4.set_ipv6("2001:db2::1", 123));
     CHECK(addr4.valid());
 
     CHECK(addr1 == addr2);
