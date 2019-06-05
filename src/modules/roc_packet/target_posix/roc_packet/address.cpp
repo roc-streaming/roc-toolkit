@@ -129,7 +129,8 @@ bool Address::operator==(const Address& other) const {
         break;
 
     case AF_INET6:
-        if (sa_.addr6.sin6_addr.s6_addr != other.sa_.addr6.sin6_addr.s6_addr) {
+        if (memcmp(sa_.addr6.sin6_addr.s6_addr, other.sa_.addr6.sin6_addr.s6_addr,
+                   sizeof(sa_.addr6.sin6_addr.s6_addr)) != 0) {
             return false;
         }
         if (sa_.addr6.sin6_port != other.sa_.addr6.sin6_port) {
