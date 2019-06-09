@@ -22,7 +22,8 @@ def ParseThirdParties(env, s):
     return ret.items()
 
 def ThirdParty(
-        env, host, toolchain, variant, versions, name, deps=[], includes=[], libs=['*']):
+        env, hostdir, compilerdir, toolchain, variant, versions, name,
+        deps=[], includes=[], libs=['*']):
     vname = _versioned_thirdparty(env, name, versions)
     vdeps = []
     for dep in deps:
@@ -37,25 +38,30 @@ def ThirdParty(
         'RANLIB="%s"' % env['RANLIB'],
     ]
 
-    if not os.path.exists(os.path.join('3rdparty', host, 'build', vname, 'commit')):
+    if not os.path.exists(os.path.join(
+        '3rdparty', hostdir, compilerdir, 'build', vname, 'commit')):
         if env.Execute(
             SCons.Action.CommandAction(
-                '%s scripts/3rdparty.py "3rdparty/%s" "vendor" "%s" "%s" "%s" "%s" %s' % (
+                '%s scripts/3rdparty.py "3rdparty/%s/%s" "vendor" "%s" "%s" "%s" "%s" %s' % (
                     env.PythonExecutable(),
-                    host,
+                    hostdir,
+                    compilerdir,
                     toolchain,
                     variant,
                     vname,
                     ':'.join(vdeps),
                     ' '.join(envvars)),
-                cmdstr = env.PrettyCommand('GET', '%s/%s' % (host, vname), 'yellow'))):
+                cmdstr = env.PrettyCommand(
+                    'GET', '3rdparty/%s/%s/build/%s' % (
+                        hostdir, compilerdir, vname), 'yellow'))):
             env.Die("can't make '%s', see '3rdparty/%s/build/%s/build.log' for details" % (
-                vname, host, vname))
+                vname, hostdir, vname))
 
     env.ImportThridParty(
-        host, toolchain, versions, name, includes, libs)
+        hostdir, compilerdir, toolchain, versions, name, includes, libs)
 
-def ImportThridParty(env, host, toolchain, versions, name, includes=[], libs=['*']):
+def ImportThridParty(env, hostdir, compilerdir, toolchain, versions, name,
+                     includes=[], libs=['*']):
     def needlib(lib):
         for name in libs:
             if fnmatch.fnmatch(os.path.basename(lib), 'lib%s.*' % name):
@@ -69,10 +75,10 @@ def ImportThridParty(env, host, toolchain, versions, name, includes=[], libs=['*
 
     for s in includes:
         env.Prepend(CPPPATH=[
-            '#3rdparty/%s/build/%s/include/%s' % (host, vname, s)
+            '#3rdparty/%s/%s/build/%s/include/%s' % (hostdir, compilerdir, vname, s)
         ])
 
-    libdir = '#3rdparty/%s/build/%s/lib' % (host, vname)
+    libdir = '#3rdparty/%s/%s/build/%s/lib' % (hostdir, compilerdir, vname)
 
     if os.path.isdir(env.Dir(libdir).abspath):
         env.Prepend(LIBPATH=[libdir])

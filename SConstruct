@@ -430,9 +430,15 @@ env.PrependFromArg('LINKFLAGS', args=['LINKFLAGS', 'LDFLAGS'])
 
 env = conf.Finish()
 
+compiler_spec = '-'.join(
+    [s for s in [compiler, '.'.join(map(str, compiler_ver)), variant] if s])
+
+thirdparty_compiler_spec = '-'.join(
+    [s for s in [compiler, '.'.join(map(str, compiler_ver)), thirdparty_variant] if s])
+
 build_dir = 'build/%s/%s' % (
     host,
-    '-'.join([s for s in [compiler, '.'.join(map(str, compiler_ver)), variant] if s]))
+    compiler_spec)
 
 env['ROC_BINDIR'] = '#bin/%s' % host
 env['ROC_VERSION'] = open(env.File('#.version').path).read().strip()
@@ -671,17 +677,20 @@ if 'target_cpputest' in system_dependecies:
     test_env = conf.Finish()
 
 if 'target_uv' in download_dependencies:
-    env.ThirdParty(host, toolchain, thirdparty_variant, thirdparty_versions, 'uv')
+    env.ThirdParty(host, thirdparty_compiler_spec, toolchain,
+                   thirdparty_variant, thirdparty_versions, 'uv')
 
 if 'target_openfec' in download_dependencies:
-    env.ThirdParty(host, toolchain, thirdparty_variant, thirdparty_versions, 'openfec',
-                   includes=[
-                    'lib_common',
-                    'lib_stable',
-                    ])
+    env.ThirdParty(host, thirdparty_compiler_spec, toolchain,
+                   thirdparty_variant, thirdparty_versions,
+                   'openfec', includes=[
+                        'lib_common',
+                        'lib_stable',
+                        ])
 
 if 'target_alsa' in download_dependencies:
-    tool_env.ThirdParty(host, toolchain, thirdparty_variant, thirdparty_versions, 'alsa')
+    tool_env.ThirdParty(host, thirdparty_compiler_spec, toolchain,
+                        thirdparty_variant, thirdparty_versions, 'alsa')
 
 if 'target_pulseaudio' in download_dependencies:
     if not 'pulseaudio' in explicit_version and not crosscompile:
@@ -700,14 +709,20 @@ if 'target_pulseaudio' in download_dependencies:
 
     env['ROC_PULSE_VERSION'] = thirdparty_versions['pulseaudio']
 
-    tool_env.ThirdParty(host, toolchain, thirdparty_variant, thirdparty_versions, 'ltdl')
-    tool_env.ThirdParty(host, toolchain, thirdparty_variant, thirdparty_versions, 'json')
-    tool_env.ThirdParty(host, toolchain, thirdparty_variant, thirdparty_versions, 'sndfile')
-    tool_env.ThirdParty(host, toolchain, thirdparty_variant, thirdparty_versions,
+    tool_env.ThirdParty(host, thirdparty_compiler_spec, toolchain,
+                        thirdparty_variant, thirdparty_versions, 'ltdl')
+    tool_env.ThirdParty(host, thirdparty_compiler_spec, toolchain,
+                        thirdparty_variant, thirdparty_versions, 'json')
+    tool_env.ThirdParty(host, thirdparty_compiler_spec, toolchain,
+                        thirdparty_variant, thirdparty_versions, 'sndfile')
+    tool_env.ThirdParty(host, thirdparty_compiler_spec, toolchain,
+                        thirdparty_variant, thirdparty_versions,
                         'pulseaudio', deps=pa_deps, libs=['pulse', 'pulse-simple'])
 
-    pulse_env.ImportThridParty(host, toolchain, thirdparty_versions, 'ltdl')
-    pulse_env.ImportThridParty(host, toolchain, thirdparty_versions, 'pulseaudio',
+    pulse_env.ImportThridParty(host, thirdparty_compiler_spec, toolchain,
+                               thirdparty_versions, 'ltdl')
+    pulse_env.ImportThridParty(host, thirdparty_compiler_spec, toolchain,
+                               thirdparty_versions, 'pulseaudio',
                                libs=[
                                    'pulsecore-%s' % thirdparty_versions['pulseaudio'],
                                    'pulsecommon-%s' % thirdparty_versions['pulseaudio'],
@@ -722,8 +737,8 @@ if 'target_sox' in download_dependencies:
     if 'target_pulseaudio' in download_dependencies:
         sox_deps += ['pulseaudio']
 
-    tool_env.ThirdParty(
-        host, toolchain, thirdparty_variant, thirdparty_versions, 'sox', sox_deps)
+    tool_env.ThirdParty(host, thirdparty_compiler_spec, toolchain,
+                        thirdparty_variant, thirdparty_versions, 'sox', sox_deps)
 
     conf = Configure(tool_env, custom_tests=env.CustomTests)
 
@@ -755,14 +770,16 @@ if 'target_sox' in download_dependencies:
     tool_env = conf.Finish()
 
 if 'target_gengetopt' in download_dependencies:
-    env.ThirdParty(build, "", thirdparty_variant, thirdparty_versions, 'gengetopt')
+    env.ThirdParty(build, thirdparty_compiler_spec, "",
+                   thirdparty_variant, thirdparty_versions, 'gengetopt')
 
     gen_env['GENGETOPT'] = env.File(
-        '#3rdparty/%s/build/gengetopt-2.22.6/bin/gengetopt' % build + env['PROGSUFFIX'])
+        '#3rdparty/%s/%s/build/gengetopt-2.22.6/bin/gengetopt' % (
+            build + env['PROGSUFFIX'], thirdparty_compiler_spec))
 
 if 'target_cpputest' in download_dependencies:
-    test_env.ThirdParty(
-        host, toolchain, thirdparty_variant, thirdparty_versions, 'cpputest')
+    test_env.ThirdParty(host, thirdparty_compiler_spec, toolchain,
+                        thirdparty_variant, thirdparty_versions, 'cpputest')
 
 if 'target_posix' in env['ROC_TARGETS'] and platform not in ['darwin']:
     env.Append(CPPDEFINES=[('_POSIX_C_SOURCE', '200809')])
@@ -961,7 +978,8 @@ else:
 
 if platform in ['linux']:
     tool_env.Append(LINKFLAGS=[
-        '-Wl,-rpath-link,%s' % env.Dir('#3rdparty/%s/rpath' % host).abspath,
+        '-Wl,-rpath-link,%s' % env.Dir('#3rdparty/%s/%s/rpath' % (
+            host, thirdparty_compiler_spec)).abspath,
     ])
 
 test_env.Append(CPPDEFINES=('CPPUTEST_USE_MEM_LEAK_DETECTION', '0'))
