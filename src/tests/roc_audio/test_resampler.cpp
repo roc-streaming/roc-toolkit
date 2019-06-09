@@ -15,7 +15,9 @@
 #include "roc_core/random.h"
 #include "roc_core/stddefs.h"
 
+#include "test_awgn.h"
 #include "test_fft.h"
+#include "test_median.h"
 #include "test_mock_reader.h"
 
 namespace roc {
@@ -93,30 +95,6 @@ TEST_GROUP(resampler) {
         FreqSpectrum(spectrum1, sig_len / nChannels);
         FreqSpectrum(spectrum2, sig_len / nChannels);
     }
-
-    // Generates additive white Gaussian Noise samples with zero mean and a standard
-    // deviation of 1.
-    // https://www.embeddedrelated.com/showcode/311.php
-    double AWGN_generator() {
-        const double epsilon = 1.0 / (double)RAND_MAX;
-        double temp2 = epsilon;
-
-        int p = 1;
-        while (p > 0) {
-            temp2 = (rand() / ((double)RAND_MAX));
-            if (temp2 <= epsilon) {
-                // temp2 is >= (RAND_MAX / 2)
-                p = 1;
-            } else {
-                p = -1;
-            }
-        }
-
-        double temp1 = cos((2.0 * M_PI) * rand() / ((double)RAND_MAX));
-        double result = sqrt(-2.0 * log(temp2)) * temp1;
-
-        return result; // return the generated random sample to the caller
-    }
 };
 
 TEST(resampler, invalid_scaling) {
@@ -162,39 +140,43 @@ TEST(resampler, upscaling_twice_single) {
 }
 
 // Check upsampling quality and the cut-off band with white noise.
-#ifdef ROC_TARGET_DARWIN
-IGNORE_TEST(resampler, upscaling_twice_awgn) {
-#else  // !ROC_TARGET_DARWIN
 TEST(resampler, upscaling_twice_awgn) {
-#endif // ROC_TARGET_DARWIN
-
     enum { ChMask = 0x1 };
 
     MockReader reader;
     ResamplerReader rr(reader, buffer_pool, allocator, config, ChMask, FrameSize);
 
     CHECK(rr.valid());
-
     CHECK(rr.set_scaling(0.5f));
 
-    const size_t sig_len = 2048;
-    double buff[sig_len * 2];
-    size_t i;
-
+    // Generate white noise.
     for (size_t n = 0; n < InSamples; n++) {
-        const sample_t s = (sample_t)AWGN_generator();
+        const sample_t s = (sample_t)generate_awgn();
         reader.add(1, s);
     }
 
     // Put the spectrum of the resampled signal into buff.
     // Odd elements are magnitudes in dB, even elements are phases in radians.
+    const size_t sig_len = 2048;
+    double buff[sig_len * 2];
     get_sample_spectrum1(rr, buff, sig_len);
 
-    for (i = 0; i < sig_len - 1; i += 2) {
-        if (i <= sig_len * 0.90 / 2) {
-            CHECK(buff[i] >= -60);
-        } else if (i >= sig_len * 1.00 / 2) {
-            CHECK(buff[i] <= -60);
+    // Get dB part.
+    const size_t db_len = sig_len / 2;
+    double db[db_len];
+    for (size_t i = 0; i < sig_len; i += 2) {
+        db[i / 2] = buff[i];
+    }
+
+    // Remove spikes using median filter.
+    double filtered_db[db_len];
+    median_filter(db, filtered_db, db_len);
+
+    for (size_t i = 0; i < db_len; i++) {
+        if (i <= db_len * 0.4) {
+            CHECK(filtered_db[i] >= -50);
+        } else if (i >= db_len * 0.8) {
+            CHECK(filtered_db[i] <= -50);
         }
     }
 }
@@ -206,8 +188,8 @@ TEST(resampler, downsample) {
     ResamplerReader rr(reader, buffer_pool, allocator, config, ChMask, FrameSize);
 
     CHECK(rr.valid());
-
     CHECK(rr.set_scaling(1.5f));
+
     const size_t sig_len = 2048;
     double buff[sig_len * 2];
 
@@ -236,7 +218,6 @@ TEST(resampler, two_tones_sep_channels) {
     ResamplerReader rr(reader, buffer_pool, allocator, config, ChMask, FrameSize);
 
     CHECK(rr.valid());
-
     CHECK(rr.set_scaling(0.5f));
 
     const size_t sig_len = 2048;
