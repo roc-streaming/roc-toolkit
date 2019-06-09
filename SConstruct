@@ -948,10 +948,15 @@ if compiler == 'clang':
 if compiler in ['gcc', 'clang']:
     for e in [env, lib_env, tool_env, test_env, pulse_env]:
         for var in ['CXXFLAGS', 'CFLAGS']:
-            e.Prepend(**{var:
-                [('-isystem', env.Dir(path).path) for path in \
-                      e['CPPPATH'] + ['%s/tools' % build_dir]]
-                      })
+            dirs = [('-isystem', env.Dir(path).path)
+                    for path in e['CPPPATH'] + ['%s/tools' % build_dir]]
+
+            # workaround to force our 3rdparty directories to be placed
+            # before /usr/local/include on macos
+            if compiler == 'clang' and platform == 'darwin':
+                dirs += [('-isystem', '/usr/local/include')]
+
+            e.Prepend(**{var: dirs})
 
     for var in ['CC', 'CXX']:
         env[var] = env.ClangDBWriter(env[var], build_dir)

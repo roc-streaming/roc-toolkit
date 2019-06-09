@@ -28,14 +28,17 @@ def PrependFromArg(env, var, args=[], default=None):
             env.Prepend(**{tvar: env.GetArg(var)})
             break
 
-def AppendVars(env, src_env):
+def MergeVars(env, src_env):
     for k, v in src_env.Dictionary().items():
         if not (isinstance(v, SCons.Util.CLVar) or isinstance(v, list)):
             continue
-        env.AppendUnique(**{k: v})
+        if k == 'LIBS':
+            env.AppendUnique(**{k: v})
+        else:
+            env.PrependUnique(**{k: v})
 
 def init(env):
     env.AddMethod(HasArg, 'HasArg')
     env.AddMethod(OverrideFromArg, 'OverrideFromArg')
     env.AddMethod(PrependFromArg, 'PrependFromArg')
-    env.AddMethod(AppendVars, 'AppendVars')
+    env.AddMethod(MergeVars, 'MergeVars')
