@@ -78,7 +78,7 @@ TEST_GROUP(depacketizer) {
 
     void expect_values(const sample_t* samples, size_t num_samples, sample_t value) {
         for (size_t n = 0; n < num_samples; n++) {
-            DOUBLES_EQUAL(value, samples[n], 0.0001);
+            DOUBLES_EQUAL((double)value, (double)samples[n], 0.0001);
         }
     }
 

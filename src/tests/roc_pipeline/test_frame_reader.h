@@ -38,7 +38,8 @@ public:
         source_.read(frame);
 
         for (size_t n = 0; n < num_samples; n++) {
-            DOUBLES_EQUAL(nth_sample(offset_) * num_sessions, frame.data()[n], Epsilon);
+            DOUBLES_EQUAL((double)nth_sample(offset_) * num_sessions,
+                          (double)frame.data()[n], Epsilon);
             offset_++;
         }
     }
@@ -55,7 +56,7 @@ public:
         source_.read(frame);
 
         for (size_t n = 0; n < num_samples; n++) {
-            DOUBLES_EQUAL(0.0f, frame.data()[n], Epsilon);
+            DOUBLES_EQUAL(0.0, (double)frame.data()[n], Epsilon);
         }
     }
 

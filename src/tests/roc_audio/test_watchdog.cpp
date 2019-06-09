@@ -91,11 +91,11 @@ TEST_GROUP(watchdog) {
 
         if (is_read) {
             for (size_t n = 0; n < frame.size(); n++) {
-                DOUBLES_EQUAL(42.0f, frame.data()[n], 0);
+                DOUBLES_EQUAL(42.0, (double)frame.data()[n], 0);
             }
         } else {
             for (size_t n = 0; n < frame.size(); n++) {
-                DOUBLES_EQUAL(0.0f, frame.data()[n], 0);
+                DOUBLES_EQUAL(0.0, (double)frame.data()[n], 0);
             }
         }
     }

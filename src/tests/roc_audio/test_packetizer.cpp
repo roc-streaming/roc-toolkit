@@ -24,7 +24,7 @@ namespace audio {
 
 namespace {
 
-const sample_t Epsilon = 0.00001f;
+const double Epsilon = 0.00001;
 
 enum {
     SamplesPerPacket = 200,
@@ -97,7 +97,8 @@ public:
 
         for (; n < n_samples; n++) {
             for (size_t c = 0; c < NumCh; c++) {
-                DOUBLES_EQUAL(nth_sample(value_), samples[n * NumCh + c], Epsilon);
+                DOUBLES_EQUAL((double)nth_sample(value_), (double)samples[n * NumCh + c],
+                              Epsilon);
                 value_++;
             }
         }
@@ -147,7 +148,7 @@ private:
 
 } // namespace
 
-TEST_GROUP(packetizer){};
+TEST_GROUP(packetizer) {};
 
 TEST(packetizer, one_buffer_one_packet) {
     enum { NumFrames = 10 };

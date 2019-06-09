@@ -22,7 +22,7 @@ namespace {
 
 enum { MaxBufsz = 100, MaxSamples = 100 };
 
-const float Epsilon = 0.0001f;
+const double Epsilon = 0.0001;
 
 core::HeapAllocator allocator;
 core::BufferPool<uint8_t> buffer_pool(allocator, MaxBufsz, true);
@@ -84,11 +84,11 @@ TEST_GROUP(pcm) {
         size_t n = 0;
 
         for (; n < num_samples * packet::num_channels(channels); n++) {
-            DOUBLES_EQUAL(samples[n], output[n], Epsilon);
+            DOUBLES_EQUAL((double)samples[n], (double)output[n], Epsilon);
         }
 
         for (; n < MaxSamples; n++) {
-            DOUBLES_EQUAL(0.0f, output[n], Epsilon);
+            DOUBLES_EQUAL(0.0, (double)output[n], Epsilon);
         }
     }
 };

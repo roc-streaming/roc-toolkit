@@ -17,16 +17,16 @@ namespace {
 
 enum { Target = 10000 };
 
-const float Epsilon = 0.0001f;
+const double Epsilon = 0.0001;
 
 } // namespace
 
-TEST_GROUP(freq_estimator){};
+TEST_GROUP(freq_estimator) {};
 
 TEST(freq_estimator, initial) {
     FreqEstimator fe(Target);
 
-    DOUBLES_EQUAL(1.0, fe.freq_coeff(), Epsilon);
+    DOUBLES_EQUAL(1.0, (double)fe.freq_coeff(), Epsilon);
 }
 
 TEST(freq_estimator, aim_queue_size) {
@@ -36,7 +36,7 @@ TEST(freq_estimator, aim_queue_size) {
         fe.update(Target);
     }
 
-    DOUBLES_EQUAL(1.0, fe.freq_coeff(), Epsilon);
+    DOUBLES_EQUAL(1.0, (double)fe.freq_coeff(), Epsilon);
 }
 
 TEST(freq_estimator, large_queue_size) {

@@ -22,7 +22,7 @@ namespace pipeline {
 
 namespace {
 
-const audio::sample_t Epsilon = 0.00001f;
+const double Epsilon = 0.00001;
 
 inline audio::sample_t nth_sample(uint8_t n) {
     return audio::sample_t(n) / 1024;

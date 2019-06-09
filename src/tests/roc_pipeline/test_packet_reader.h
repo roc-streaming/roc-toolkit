@@ -90,7 +90,7 @@ private:
             decoder_.read_samples(*pp, 0, samples, samples_per_packet, channels));
 
         for (size_t n = 0; n < samples_per_packet * packet::num_channels(channels); n++) {
-            DOUBLES_EQUAL(nth_sample(offset_), samples[n], Epsilon);
+            DOUBLES_EQUAL((double)nth_sample(offset_), (double)samples[n], Epsilon);
             offset_++;
         }
     }

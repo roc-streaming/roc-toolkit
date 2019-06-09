@@ -41,7 +41,7 @@ public:
         UNSIGNED_LONGS_EQUAL(pos_, size);
 
         for (size_t n = 0; n < size; n++) {
-            DOUBLES_EQUAL(samples_[n], nth_sample_(offset + n), 0.0001);
+            DOUBLES_EQUAL((double)samples_[n], (double)nth_sample_(offset + n), 0.0001);
         }
     }
 

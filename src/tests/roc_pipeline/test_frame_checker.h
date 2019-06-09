@@ -38,7 +38,7 @@ public:
 
     virtual void write(audio::Frame& frame) {
         for (size_t n = 0; n < frame.size(); n++) {
-            DOUBLES_EQUAL(frame.data()[n], nth_sample(off_), Epsilon);
+            DOUBLES_EQUAL((double)frame.data()[n], (double)nth_sample(off_), Epsilon);
             off_++;
             n_samples_++;
         }

@@ -43,7 +43,7 @@ TEST_GROUP(mixer) {
         mixer.read(frame);
 
         for (size_t n = 0; n < sz; n++) {
-            DOUBLES_EQUAL(value, frame.data()[n], 0.0001);
+            DOUBLES_EQUAL((double)value, (double)frame.data()[n], 0.0001);
         }
     }
 };
