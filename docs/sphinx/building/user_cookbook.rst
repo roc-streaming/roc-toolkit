@@ -264,7 +264,7 @@ macOS 10.12 and later
 .. code::
 
     # for Roc
-    $ brew install scons gengetopt sox libuv
+    $ brew install scons gengetopt sox libuv cpputest
 
     # for 3rd-parties
     $ brew install libtool autoconf automake make cmake
@@ -274,10 +274,10 @@ macOS 10.12 and later
     $ cd roc
 
     # build libraries and tools
-    $ scons -Q --build-3rdparty=openfec,cpputest
+    $ scons -Q --build-3rdparty=openfec
 
     # install libraries and tools
-    $ sudo scons -Q --build-3rdparty=openfec,cpputest --prefix=/usr/local install
+    $ sudo scons -Q --build-3rdparty=openfec --prefix=/usr/local install
 
 macOS 10.11 and later
 ---------------------
@@ -285,7 +285,7 @@ macOS 10.11 and later
 .. code::
 
     # for Roc
-    $ brew install scons gengetopt
+    $ brew install scons gengetopt cpputest
 
     # for 3rd-parties
     $ brew install libtool autoconf automake make cmake
@@ -295,7 +295,7 @@ macOS 10.11 and later
     $ cd roc
 
     # build libraries and tools
-    $ scons -Q --build-3rdparty=uv,openfec,sox,cpputest
+    $ scons -Q --build-3rdparty=uv,openfec,sox
 
     # install libraries and tools
-    $ sudo scons -Q --build-3rdparty=uv,openfec,sox,cpputest --prefix=/usr/local install
+    $ sudo scons -Q --build-3rdparty=uv,openfec,sox --prefix=/usr/local install
