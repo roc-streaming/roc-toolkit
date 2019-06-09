@@ -13,7 +13,7 @@
 namespace roc {
 namespace packet {
 
-TEST_GROUP(units){};
+TEST_GROUP(units) {};
 
 TEST(units, seqnum_diff) {
     const seqnum_t v = 65535;

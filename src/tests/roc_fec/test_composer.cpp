@@ -17,7 +17,7 @@
 namespace roc {
 namespace fec {
 
-TEST_GROUP(composer){};
+TEST_GROUP(composer) {};
 
 TEST(composer, align_footer) {
     enum { BufferSize = 100, Alignment = 8 };

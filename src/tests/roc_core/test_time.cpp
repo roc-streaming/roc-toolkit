@@ -13,7 +13,7 @@
 namespace roc {
 namespace core {
 
-TEST_GROUP(time){};
+TEST_GROUP(time) {};
 
 TEST(time, timestamp) {
     const nanoseconds_t ts = timestamp();

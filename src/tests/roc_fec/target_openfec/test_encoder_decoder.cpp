@@ -94,7 +94,7 @@ private:
     core::Array<core::Slice<uint8_t> > buffers_;
 };
 
-TEST_GROUP(encoder_decoder){};
+TEST_GROUP(encoder_decoder) {};
 
 TEST(encoder_decoder, without_loss) {
     enum { NumSourcePackets = 20, NumRepairPackets = 10, PayloadSize = 251 };

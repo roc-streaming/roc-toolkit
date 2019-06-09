@@ -14,7 +14,7 @@
 namespace roc {
 namespace pipeline {
 
-TEST_GROUP(port){};
+TEST_GROUP(port) {};
 
 TEST(port, all_fields) {
     PortConfig port;
