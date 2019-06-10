@@ -120,6 +120,9 @@ void OFEncoder::fill() {
     roc_panic_if_not(valid());
 
     for (size_t i = sblen_; i < sblen_ + rblen_; ++i) {
+        roc_log(LogTrace, "of encoder: of_build_repair_symbol(): index=%lu",
+                (unsigned long)i);
+
         if (OF_STATUS_OK
             != of_build_repair_symbol(of_sess_, &data_tab_[0], (uint32_t)i)) {
             roc_panic("of encoder: of_build_repair_symbol() failed");
@@ -156,15 +159,25 @@ void OFEncoder::update_session_params_(size_t sblen, size_t rblen, size_t payloa
 
 void OFEncoder::reset_session_() {
     if (of_sess_ != NULL) {
+        roc_log(LogTrace, "of encoder: of_release_codec_instance()");
+
         of_release_codec_instance(of_sess_);
         of_sess_ = NULL;
     }
+
+    roc_log(LogTrace, "of encoder: of_create_codec_instance()");
 
     if (OF_STATUS_OK != of_create_codec_instance(&of_sess_, codec_id_, OF_ENCODER, 0)) {
         roc_panic("of encoder: of_create_codec_instance() failed");
     }
 
     roc_panic_if(of_sess_ == NULL);
+
+    roc_log(LogTrace,
+            "of encoder: of_set_fec_parameters(): nb_src=%lu nb_rpr=%lu symbol_len=%lu",
+            (unsigned long)of_sess_params_->nb_source_symbols,
+            (unsigned long)of_sess_params_->nb_repair_symbols,
+            (unsigned long)of_sess_params_->encoding_symbol_length);
 
     if (OF_STATUS_OK != of_set_fec_parameters(of_sess_, of_sess_params_)) {
         roc_panic("of encoder: of_set_fec_parameters() failed");
