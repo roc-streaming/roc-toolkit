@@ -27,8 +27,8 @@ class Composer : public packet::IComposer, public core::NonCopyable<> {
 public:
     //! Initialization.
     //! @remarks
-    //!  Composes FECFRAME header or footer and passes the rest to @p inner_composer
-    //!  if it's not null.
+    //!  Composes FECFRAME header or footer and passes the rest to
+    //!  @p inner_composer if it's not null.
     Composer(packet::IComposer* inner_composer)
         : inner_composer_(inner_composer) {
     }
@@ -65,7 +65,6 @@ public:
     }
 
     //! Prepare buffer for composing a packet.
-    //!  capacity is not enough.
     virtual bool
     prepare(packet::Packet& packet, core::Slice<uint8_t>& buffer, size_t payload_size) {
         core::Slice<uint8_t> payload_id = buffer.range(0, 0);
@@ -124,7 +123,7 @@ public:
     //! Truncate packet payload.
     virtual bool truncate(packet::Packet& packet, size_t payload_size) {
         if (!packet.fec()) {
-            roc_panic("rtp composer: unexpected non-rtp packet");
+            roc_panic("fec composer: unexpected non-fec packet");
         }
 
         packet::FEC& fec = *packet.fec();
