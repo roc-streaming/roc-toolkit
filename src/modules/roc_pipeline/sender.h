@@ -21,7 +21,7 @@
 #include "roc_core/noncopyable.h"
 #include "roc_core/ticker.h"
 #include "roc_core/unique_ptr.h"
-#include "roc_fec/iencoder.h"
+#include "roc_fec/iblock_encoder.h"
 #include "roc_fec/writer.h"
 #include "roc_packet/interleaver.h"
 #include "roc_packet/packet_pool.h"
@@ -69,7 +69,7 @@ private:
 
     core::UniquePtr<packet::Interleaver> interleaver_;
 
-    core::UniquePtr<fec::IEncoder> fec_encoder_;
+    core::UniquePtr<fec::IBlockEncoder> fec_encoder_;
     core::UniquePtr<fec::Writer> fec_writer_;
 
     core::UniquePtr<audio::IEncoder> encoder_;

@@ -66,11 +66,11 @@ public:
         return true;
     }
 
-    IEncoder& encoder() {
+    IBlockEncoder& encoder() {
         return encoder_;
     }
 
-    IDecoder& decoder() {
+    IBlockDecoder& decoder() {
         return decoder_;
     }
 

@@ -16,7 +16,7 @@ namespace fec {
 
 Writer::Writer(const WriterConfig& config,
                size_t payload_size,
-               IEncoder& encoder,
+               IBlockEncoder& encoder,
                packet::IWriter& writer,
                packet::IComposer& source_composer,
                packet::IComposer& repair_composer,

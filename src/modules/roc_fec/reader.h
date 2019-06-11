@@ -16,7 +16,7 @@
 #include "roc_core/iallocator.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/slice.h"
-#include "roc_fec/idecoder.h"
+#include "roc_fec/iblock_decoder.h"
 #include "roc_packet/iparser.h"
 #include "roc_packet/ireader.h"
 #include "roc_packet/packet.h"
@@ -49,7 +49,7 @@ public:
     //!  - @p parser specifies packet parser for restored packets.
     //!  - @p allocator is used to initialize a packet array
     Reader(const ReaderConfig& config,
-           IDecoder& decoder,
+           IBlockDecoder& decoder,
            packet::IReader& source_reader,
            packet::IReader& repair_reader,
            packet::IParser& parser,
@@ -105,7 +105,7 @@ private:
 
     void drop_repair_packets_from_prev_blocks_();
 
-    IDecoder& decoder_;
+    IBlockDecoder& decoder_;
 
     packet::IReader& source_reader_;
     packet::IReader& repair_reader_;

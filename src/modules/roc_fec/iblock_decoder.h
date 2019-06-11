@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_fec/idecoder.h
+//! @file roc_fec/iblock_decoder.h
 //! @brief FEC block decoder interface.
 
-#ifndef ROC_FEC_IDECODER_H_
-#define ROC_FEC_IDECODER_H_
+#ifndef ROC_FEC_IBLOCK_DECODER_H_
+#define ROC_FEC_IBLOCK_DECODER_H_
 
 #include "roc_core/slice.h"
 #include "roc_core/stddefs.h"
@@ -19,9 +19,9 @@ namespace roc {
 namespace fec {
 
 //! FEC block decoder interface.
-class IDecoder {
+class IBlockDecoder {
 public:
-    virtual ~IDecoder();
+    virtual ~IBlockDecoder();
 
     //! Get the maximum number of encoding symbols for the scheme being used.
     virtual size_t max_block_length() const = 0;
@@ -50,4 +50,4 @@ public:
 } // namespace fec
 } // namespace roc
 
-#endif // ROC_FEC_IDECODER_H_
+#endif // ROC_FEC_IBLOCK_DECODER_H_

@@ -24,7 +24,7 @@
 #include "roc_core/list_node.h"
 #include "roc_core/refcnt.h"
 #include "roc_core/unique_ptr.h"
-#include "roc_fec/idecoder.h"
+#include "roc_fec/iblock_decoder.h"
 #include "roc_fec/reader.h"
 #include "roc_packet/address.h"
 #include "roc_packet/delayed_reader.h"
@@ -94,7 +94,7 @@ private:
     core::UniquePtr<audio::Watchdog> watchdog_;
 
     core::UniquePtr<rtp::Parser> fec_parser_;
-    core::UniquePtr<fec::IDecoder> fec_decoder_;
+    core::UniquePtr<fec::IBlockDecoder> fec_decoder_;
     core::UniquePtr<fec::Reader> fec_reader_;
     core::UniquePtr<rtp::Validator> fec_validator_;
 

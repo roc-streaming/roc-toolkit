@@ -14,7 +14,7 @@ namespace roc {
 namespace fec {
 
 Reader::Reader(const ReaderConfig& config,
-               IDecoder& decoder,
+               IBlockDecoder& decoder,
                packet::IReader& source_reader,
                packet::IReader& repair_reader,
                packet::IParser& parser,

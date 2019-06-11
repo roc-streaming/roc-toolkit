@@ -21,7 +21,7 @@ static void median_filter(const double* signal, double* result, size_t size) {
         // Fill window.
         double window[WindowSize];
         for (size_t j = 0; j < WindowSize; ++j) {
-            window[j] = signal[i - WindowSize/2 + j];
+            window[j] = signal[i - WindowSize / 2 + j];
         }
 
         // Sort the first half of the window.

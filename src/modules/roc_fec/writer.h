@@ -17,7 +17,7 @@
 #include "roc_core/iallocator.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/slice.h"
-#include "roc_fec/iencoder.h"
+#include "roc_fec/iblock_encoder.h"
 #include "roc_packet/icomposer.h"
 #include "roc_packet/iwriter.h"
 #include "roc_packet/packet.h"
@@ -56,7 +56,7 @@ public:
     //!  - @p allocator is used to initialize a packet array
     Writer(const WriterConfig& config,
            size_t payload_size,
-           IEncoder& encoder,
+           IBlockEncoder& encoder,
            packet::IWriter& writer,
            packet::IComposer& source_composer,
            packet::IComposer& repair_composer,
@@ -105,7 +105,7 @@ private:
     size_t cur_payload_size_;
     size_t next_payload_size_;
 
-    IEncoder& encoder_;
+    IBlockEncoder& encoder_;
     packet::IWriter& writer_;
 
     packet::IComposer& source_composer_;

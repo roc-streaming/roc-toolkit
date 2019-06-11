@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_fec/iencoder.h
+//! @file roc_fec/iblock_encoder.h
 //! @brief FEC block encoder interface.
 
-#ifndef ROC_FEC_IENCODER_H_
-#define ROC_FEC_IENCODER_H_
+#ifndef ROC_FEC_IBLOCK_ENCODER_H_
+#define ROC_FEC_IBLOCK_ENCODER_H_
 
 #include "roc_core/slice.h"
 #include "roc_core/stddefs.h"
@@ -19,9 +19,9 @@ namespace roc {
 namespace fec {
 
 //! FEC block encoder interface.
-class IEncoder {
+class IBlockEncoder {
 public:
-    virtual ~IEncoder();
+    virtual ~IBlockEncoder();
 
     //! Get buffer alignment requirement.
     virtual size_t alignment() const = 0;
@@ -53,4 +53,4 @@ public:
 } // namespace fec
 } // namespace roc
 
-#endif // ROC_FEC_IENCODER_H_
+#endif // ROC_FEC_IBLOCK_ENCODER_H_

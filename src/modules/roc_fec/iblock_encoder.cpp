@@ -6,12 +6,12 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_fec/iencoder.h"
+#include "roc_fec/iblock_encoder.h"
 
 namespace roc {
 namespace fec {
 
-IEncoder::~IEncoder() {
+IBlockEncoder::~IBlockEncoder() {
 }
 
 } // namespace fec

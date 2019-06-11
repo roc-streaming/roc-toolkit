@@ -18,7 +18,7 @@
 #include "roc_core/noncopyable.h"
 #include "roc_core/slice.h"
 #include "roc_fec/codec_config.h"
-#include "roc_fec/iencoder.h"
+#include "roc_fec/iblock_encoder.h"
 #include "roc_packet/units.h"
 
 extern "C" {
@@ -37,7 +37,7 @@ namespace roc {
 namespace fec {
 
 //! Encoder implementation using OpenFEC library.
-class OFEncoder : public IEncoder, public core::NonCopyable<> {
+class OFEncoder : public IBlockEncoder, public core::NonCopyable<> {
 public:
     //! Initialize.
     explicit OFEncoder(const CodecConfig& config, core::IAllocator& allocator);
