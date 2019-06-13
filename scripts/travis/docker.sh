@@ -3,7 +3,7 @@
   docker run --rm -t \
          --cap-add SYS_PTRACE \
          -u "${UID}" \
-         -v "${TRAVIS_BUILD_DIR}":/opt/roc \
+         -v "${TRAVIS_BUILD_DIR:-`pwd`}":/opt/roc \
          -w /opt/roc "$@" )
 error=$?
 if [ $error = 0 ]

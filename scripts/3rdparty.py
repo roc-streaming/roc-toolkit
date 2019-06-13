@@ -78,7 +78,7 @@ def download(url, name, log, vendordir):
     path_tmp = 'tmp/' + name
 
     if os.path.exists(path_res):
-        print('[found cached] %s' % name)
+        print('[found downloaded] %s' % name)
         return
 
     rmpath(path_res)
@@ -106,7 +106,7 @@ def extract(filename, dirname):
     dirname_tmp = 'tmp/' + dirname
 
     if os.path.exists(dirname_res):
-        print('[found cached] %s' % dirname)
+        print('[found extracted] %s' % dirname)
         return
 
     print('[extract] %s' % filename)

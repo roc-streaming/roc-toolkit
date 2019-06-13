@@ -27,7 +27,6 @@ jobs:
         - docker pull rocproject/travis-debian
         - docker pull rocproject/travis-fedora
         - docker pull rocproject/travis-centos
-        - docker pull rocproject/travis-min
       script:
         - scripts/travis/docker.sh rocproject/travis-ubuntu:18.04 scripts/travis/linux-x86_64/ubuntu-18.04.sh
         - scripts/travis/docker.sh rocproject/travis-ubuntu:16.04 scripts/travis/linux-x86_64/ubuntu-16.04.sh
@@ -36,7 +35,6 @@ jobs:
         - scripts/travis/docker.sh rocproject/travis-fedora scripts/travis/linux-x86_64/fedora.sh
         - scripts/travis/docker.sh rocproject/travis-centos scripts/travis/linux-x86_64/centos.sh
         - scripts/travis/docker.sh rocproject/travis-archlinux scripts/travis/linux-x86_64/archlinux.sh
-        - scripts/travis/docker.sh rocproject/travis-min scripts/travis/linux-x86_64/min.sh
         - cat build.status
 
     - name: "Linux ARM"
@@ -56,6 +54,35 @@ jobs:
         - scripts/travis/docker.sh rocproject/cross-aarch64-linux-gnu:gcc-7.4 scripts/travis/linux-arm/aarch64-linux-gnu.sh
         - cat build.status
 
+    - name: "Linux runtime checks"
+      stage: Build
+      os: linux
+      dist: trusty
+      sudo: required
+      services:
+        - docker
+      before_install:
+        - docker pull rocproject/travis-checks
+      script:
+        - scripts/travis/docker.sh rocproject/travis-checks scripts/travis/linux-runtime-checks/sanitizers-clang.sh
+        - scripts/travis/docker.sh rocproject/travis-checks scripts/travis/linux-runtime-checks/sanitizers-gcc.sh
+        - scripts/travis/docker.sh rocproject/travis-checks scripts/travis/linux-runtime-checks/valgrind-debug.sh
+        - scripts/travis/docker.sh rocproject/travis-checks scripts/travis/linux-runtime-checks/valgrind-release.sh
+
+    - name: "Linux build options"
+      stage: Build
+      os: linux
+      dist: trusty
+      sudo: required
+      services:
+        - docker
+      before_install:
+        - docker pull rocproject/travis-minimal
+      script:
+        - scripts/travis/docker.sh rocproject/travis-minimal scripts/travis/linux-build-options/optional-features.sh
+        - scripts/travis/docker.sh rocproject/travis-minimal scripts/travis/linux-build-options/pulseaudio-support.sh
+        - scripts/travis/docker.sh rocproject/travis-minimal scripts/travis/linux-build-options/full-debug.sh
+
     - name: "macOS Xcode 7.3"
       stage: Build
       os: osx
@@ -66,6 +93,7 @@ jobs:
         - cat config.log
 
     - name: "macOS Xcode 9.1"
+      stage: Build
       os: osx
       osx_image: xcode9.1
       script:
@@ -74,6 +102,7 @@ jobs:
         - cat config.log
 
     - name: "macOS Xcode 10.2"
+      stage: Build
       os: osx
       osx_image: xcode10.2
       script:
