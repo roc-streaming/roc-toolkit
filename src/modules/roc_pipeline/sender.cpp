@@ -74,6 +74,11 @@ Sender::Sender(const SenderConfig& config,
         }
     }
 
+    encoder_.reset(format->new_encoder(allocator, *format), allocator);
+    if (!encoder_) {
+        return;
+    }
+
 #ifdef ROC_TARGET_OPENFEC
     if (config.fec_encoder.scheme != packet::FEC_None) {
         if (!repair_port_) {
@@ -92,7 +97,7 @@ Sender::Sender(const SenderConfig& config,
             pwriter = interleaver_.get();
         }
 
-        const size_t source_packet_size = format->size(config.packet_length);
+        const size_t source_packet_size = encoder_->packet_size(config.packet_length);
 
         core::UniquePtr<fec::OFEncoder> fec_encoder(
             new (allocator) fec::OFEncoder(config.fec_encoder, allocator), allocator);
@@ -114,15 +119,10 @@ Sender::Sender(const SenderConfig& config,
     }
 #endif // ROC_TARGET_OPENFEC
 
-    encoder_.reset(format->new_encoder(allocator), allocator);
-    if (!encoder_) {
-        return;
-    }
-
     packetizer_.reset(new (allocator) audio::Packetizer(
                           *pwriter, source_port_->composer(), *encoder_, packet_pool,
                           byte_buffer_pool, config.input_channels, config.packet_length,
-                          format->sample_rate, config.payload_type),
+                          format->sample_rate),
                       allocator);
     if (!packetizer_) {
         return;

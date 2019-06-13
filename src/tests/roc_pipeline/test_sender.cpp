@@ -15,7 +15,7 @@
 #include "roc_pipeline/sender.h"
 #include "roc_rtp/format_map.h"
 #include "roc_rtp/parser.h"
-#include "roc_rtp/pcm_decoder.h"
+#include "roc_rtp/pcm_funcs.h"
 
 #include "test_frame_writer.h"
 #include "test_packet_reader.h"
@@ -48,7 +48,8 @@ packet::PacketPool packet_pool(allocator, true);
 
 rtp::FormatMap format_map;
 rtp::Parser rtp_parser(format_map, NULL);
-rtp::PCMDecoder<int16_t, NumCh> pcm_decoder;
+
+const rtp::PCMFuncs& pcm_funcs = rtp::PCM_16bit_2ch;
 
 } // namespace
 
@@ -86,7 +87,7 @@ TEST(sender, write) {
         frame_writer.write_samples(SamplesPerFrame * NumCh);
     }
 
-    PacketReader packet_reader(queue, rtp_parser, pcm_decoder, packet_pool, PayloadType,
+    PacketReader packet_reader(queue, rtp_parser, pcm_funcs, packet_pool, PayloadType,
                                source_port.address);
 
     for (size_t np = 0; np < ManyFrames / FramesPerPacket; np++) {
@@ -116,7 +117,7 @@ TEST(sender, frame_size_small) {
         frame_writer.write_samples(SamplesPerSmallFrame * NumCh);
     }
 
-    PacketReader packet_reader(queue, rtp_parser, pcm_decoder, packet_pool, PayloadType,
+    PacketReader packet_reader(queue, rtp_parser, pcm_funcs, packet_pool, PayloadType,
                                source_port.address);
 
     for (size_t np = 0; np < ManySmallFrames / SmallFramesPerPacket; np++) {
@@ -146,7 +147,7 @@ TEST(sender, frame_size_large) {
         frame_writer.write_samples(SamplesPerLargeFrame * NumCh);
     }
 
-    PacketReader packet_reader(queue, rtp_parser, pcm_decoder, packet_pool, PayloadType,
+    PacketReader packet_reader(queue, rtp_parser, pcm_funcs, packet_pool, PayloadType,
                                source_port.address);
 
     for (size_t np = 0; np < ManyLargeFrames * PacketsPerLargeFrame; np++) {

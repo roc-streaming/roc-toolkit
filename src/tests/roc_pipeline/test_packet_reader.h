@@ -27,13 +27,13 @@ class PacketReader : public core::NonCopyable<> {
 public:
     PacketReader(packet::IReader& reader,
                  packet::IParser& parser,
-                 audio::IDecoder& decoder,
+                 const rtp::PCMFuncs& pcm_funcs,
                  packet::PacketPool& packet_pool,
                  rtp::PayloadType pt,
                  const packet::Address& dst_addr)
         : reader_(reader)
         , parser_(parser)
-        , decoder_(decoder)
+        , pcm_funcs_(pcm_funcs)
         , packet_pool_(packet_pool)
         , dst_addr_(dst_addr)
         , source_(0)
@@ -85,9 +85,10 @@ private:
         timestamp_ += samples_per_packet;
 
         audio::sample_t samples[MaxSamples] = {};
-        UNSIGNED_LONGS_EQUAL(
-            samples_per_packet,
-            decoder_.read_samples(*pp, 0, samples, samples_per_packet, channels));
+        UNSIGNED_LONGS_EQUAL(samples_per_packet,
+                             pcm_funcs_.decode_samples(
+                                 pp->rtp()->payload.data(), pp->rtp()->payload.size(), 0,
+                                 samples, samples_per_packet, channels));
 
         for (size_t n = 0; n < samples_per_packet * packet::num_channels(channels); n++) {
             DOUBLES_EQUAL((double)nth_sample(offset_), (double)samples[n], Epsilon);
@@ -98,7 +99,8 @@ private:
     packet::IReader& reader_;
 
     packet::IParser& parser_;
-    audio::IDecoder& decoder_;
+
+    const rtp::PCMFuncs& pcm_funcs_;
 
     packet::PacketPool& packet_pool_;
 

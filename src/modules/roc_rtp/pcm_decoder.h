@@ -13,35 +13,28 @@
 #define ROC_RTP_PCM_DECODER_H_
 
 #include "roc_audio/idecoder.h"
-#include "roc_core/iallocator.h"
 #include "roc_core/panic.h"
-#include "roc_rtp/pcm_helpers.h"
+#include "roc_rtp/format.h"
+#include "roc_rtp/pcm_funcs.h"
 
 namespace roc {
 namespace rtp {
 
 //! PCM decoder.
-template <class Sample, size_t NumCh>
 class PCMDecoder : public audio::IDecoder, public core::NonCopyable<> {
 public:
-    //! Create decoder.
-    static audio::IDecoder* create(core::IAllocator& allocator) {
-        return new (allocator) PCMDecoder;
-    }
+    //! Initialize.
+    PCMDecoder(const PCMFuncs& funcs, const Format& format);
 
     //! Read samples from packet.
     virtual size_t read_samples(const packet::Packet& packet,
                                 size_t offset,
                                 audio::sample_t* samples,
                                 size_t n_samples,
-                                packet::channel_mask_t channels) {
-        const packet::RTP* rtp = packet.rtp();
-        if (!rtp) {
-            roc_panic("unexpected non-rtp packet");
-        }
-        return pcm_read<Sample, NumCh>(rtp->payload.data(), rtp->payload.size(), offset,
-                                       samples, n_samples, channels);
-    }
+                                packet::channel_mask_t channels);
+
+private:
+    const PCMFuncs& funcs_;
 };
 
 } // namespace rtp

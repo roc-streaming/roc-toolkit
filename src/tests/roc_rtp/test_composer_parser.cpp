@@ -16,6 +16,7 @@
 #include "roc_rtp/composer.h"
 #include "roc_rtp/format_map.h"
 #include "roc_rtp/parser.h"
+#include "roc_rtp/pcm_funcs.h"
 
 #include "test_packets/rtp_l16_1ch_10s_12ext.h"
 #include "test_packets/rtp_l16_1ch_10s_4pad_2csrc_12ext_marker.h"
@@ -56,24 +57,16 @@ TEST_GROUP(packets) {
                                  + pi.padding_size);
     }
 
-    void check_format(const Format& format,
-                      packet::Packet& packet,
-                      const PacketInfo& pi,
-                      bool check_size) {
+    void
+    check_format(const Format& format, packet::Packet& packet, const PacketInfo& pi) {
         UNSIGNED_LONGS_EQUAL(packet::Packet::FlagAudio, format.flags);
         UNSIGNED_LONGS_EQUAL(pi.pt, format.payload_type);
         UNSIGNED_LONGS_EQUAL(pi.samplerate, format.sample_rate);
         UNSIGNED_LONGS_EQUAL(pi.num_channels, packet::num_channels(format.channel_mask));
 
         CHECK(packet.rtp());
-        UNSIGNED_LONGS_EQUAL(pi.num_samples, format.duration(*packet.rtp()));
-
-        if (check_size) {
-            UNSIGNED_LONGS_EQUAL(
-                pi.packet_size,
-                format.size(core::nanoseconds_t(pi.num_samples) * core::Second
-                            / core::nanoseconds_t(format.sample_rate)));
-        }
+        UNSIGNED_LONGS_EQUAL(pi.num_samples,
+                             format.get_num_samples(packet.rtp()->payload.size()));
     }
 
     void check_headers(const packet::Packet& packet, const PacketInfo& pi) {
@@ -123,14 +116,23 @@ TEST_GROUP(packets) {
         CHECK(memcmp(packet.data().data(), pi.raw_data, pi.packet_size) == 0);
     }
 
-    void decode_samples(audio::IDecoder& decoder,
-                        const packet::Packet& packet,
-                        const PacketInfo& pi) {
+    void check_sizes(const PacketInfo& pi, const PCMFuncs& pcm_funcs) {
+        UNSIGNED_LONGS_EQUAL(pi.payload_size,
+                             pcm_funcs.payload_size_from_samples(pi.num_samples));
+
+        UNSIGNED_LONGS_EQUAL(pi.num_samples,
+                             pcm_funcs.samples_from_payload_size(pi.payload_size));
+    }
+
+    void decode_samples(const packet::Packet& packet,
+                        const PacketInfo& pi,
+                        const PCMFuncs& pcm_funcs) {
         audio::sample_t samples[PacketInfo::MaxSamples * PacketInfo::MaxCh] = {};
 
-        UNSIGNED_LONGS_EQUAL(
-            pi.num_samples,
-            decoder.read_samples(packet, 0, samples, pi.num_samples,
+        UNSIGNED_LONGS_EQUAL(pi.num_samples,
+                             pcm_funcs.decode_samples(
+                                 packet.rtp()->payload.data(),
+                                 packet.rtp()->payload.size(), 0, samples, pi.num_samples,
                                  packet::channel_mask_t(1 << pi.num_channels) - 1));
 
         size_t i = 0;
@@ -144,9 +146,9 @@ TEST_GROUP(packets) {
         }
     }
 
-    void encode_samples(audio::IEncoder& encoder,
-                        packet::Packet& packet,
-                        const PacketInfo& pi) {
+    void encode_samples(packet::Packet& packet,
+                        const PacketInfo& pi,
+                        const PCMFuncs& pcm_funcs) {
         audio::sample_t samples[PacketInfo::MaxSamples * PacketInfo::MaxCh] = {};
 
         size_t i = 0;
@@ -159,13 +161,14 @@ TEST_GROUP(packets) {
             }
         }
 
-        UNSIGNED_LONGS_EQUAL(
-            pi.num_samples,
-            encoder.write_samples(packet, 0, samples, pi.num_samples,
-                                  packet::channel_mask_t(1 << pi.num_channels) - 1));
+        UNSIGNED_LONGS_EQUAL(pi.num_samples,
+                             pcm_funcs.encode_samples(
+                                 packet.rtp()->payload.data(),
+                                 packet.rtp()->payload.size(), 0, samples, pi.num_samples,
+                                 packet::channel_mask_t(1 << pi.num_channels) - 1));
     }
 
-    void check_parse_decode(const PacketInfo& pi) {
+    void check_parse_decode(const PacketInfo& pi, const PCMFuncs& pcm_funcs) {
         FormatMap format_map;
 
         core::Slice<uint8_t> buffer = new_buffer(pi.raw_data, pi.packet_size);
@@ -182,17 +185,13 @@ TEST_GROUP(packets) {
         const Format* format = format_map.format(packet->rtp()->payload_type);
         CHECK(format);
 
-        core::UniquePtr<audio::IDecoder> decoder(format->new_decoder(allocator),
-                                                 allocator);
-        CHECK(decoder);
-
-        check_format(*format, *packet, pi, false);
+        check_format(*format, *packet, pi);
         check_headers(*packet, pi);
 
-        decode_samples(*decoder, *packet, pi);
+        decode_samples(*packet, pi, pcm_funcs);
     }
 
-    void check_compose_encode(const PacketInfo& pi) {
+    void check_compose_encode(const PacketInfo& pi, const PCMFuncs& pcm_funcs) {
         FormatMap format_map;
 
         core::Slice<uint8_t> buffer = new_buffer(NULL, 0);
@@ -204,42 +203,41 @@ TEST_GROUP(packets) {
         const Format* format = format_map.format(pi.pt);
         CHECK(format);
 
-        core::UniquePtr<audio::IEncoder> encoder(format->new_encoder(allocator),
-                                                 allocator);
-        CHECK(encoder);
-
         Composer composer(NULL);
-        CHECK(composer.prepare(*packet, buffer, encoder->payload_size(pi.num_samples)));
+        CHECK(composer.prepare(*packet, buffer,
+                               pcm_funcs.payload_size_from_samples(pi.num_samples)));
+
         packet->set_data(buffer);
 
-        encode_samples(*encoder, *packet, pi);
+        encode_samples(*packet, pi, pcm_funcs);
         set_headers(*packet, pi);
 
         CHECK(composer.compose(*packet));
 
-        check_format(*format, *packet, pi, true);
+        check_format(*format, *packet, pi);
         check_data(*packet, pi);
     }
 
-    void check(const PacketInfo& pi, bool compose) {
+    void check(const PacketInfo& pi, const PCMFuncs& pcm_funcs, bool compose) {
         check_packet_info(pi);
-        check_parse_decode(pi);
+        check_sizes(pi, pcm_funcs);
+        check_parse_decode(pi, pcm_funcs);
         if (compose) {
-            check_compose_encode(pi);
+            check_compose_encode(pi, pcm_funcs);
         }
     }
 };
 
 TEST(packets, l16_2ch_320s) {
-    check(rtp_l16_2ch_320s, true);
+    check(rtp_l16_2ch_320s, PCM_16bit_2ch, true);
 }
 
 TEST(packets, l16_1ch_10s_12ext) {
-    check(rtp_l16_1ch_10s_12ext, false);
+    check(rtp_l16_1ch_10s_12ext, PCM_16bit_1ch, false);
 }
 
 TEST(packets, l16_1ch_10s_4pad_2csrc_12ext_marker) {
-    check(rtp_l16_1ch_10s_4pad_2csrc_12ext_marker, false);
+    check(rtp_l16_1ch_10s_4pad_2csrc_12ext_marker, PCM_16bit_1ch, false);
 }
 
 } // namespace rtp

@@ -21,11 +21,21 @@ namespace rtp {
 //! RTP payload format map.
 class FormatMap : public core::NonCopyable<> {
 public:
+    FormatMap();
+
     //! Get format by payload type.
     //! @returns
     //!  pointer to the format structure or null if there is no format
     //!  registered for this payload type.
     const Format* format(unsigned int pt) const;
+
+private:
+    enum { MaxFormats = 2 };
+
+    Format formats_[MaxFormats];
+    size_t n_formats_;
+
+    void add_(const Format& fmt);
 };
 
 } // namespace rtp

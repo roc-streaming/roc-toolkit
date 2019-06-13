@@ -1,5 +1,7 @@
 src/tests/roc_audio/test_depacketizer.cpp
 src/tests/roc_audio/test_mixer.cpp
+src/tests/roc_audio/test_packetizer.cpp
+src/tests/roc_fec/test_composer_parser.cpp
 src/tests/roc_netio/test_udp.cpp
 src/tests/roc_packet/test_concurrent_queue.cpp
 src/tests/roc_packet/test_delayed_reader.cpp
@@ -8,8 +10,9 @@ src/tests/roc_packet/test_router.cpp
 src/tests/roc_packet/test_sorted_queue.cpp
 src/tests/roc_packet/test_watchdog.cpp
 src/tests/roc_pipeline/test_sender_receiver.cpp
+src/tests/roc_rtp/test_composer_parser.cpp
+src/tests/roc_rtp/test_encoder_decoder.cpp
 src/tests/roc_rtp/test_packets.cpp
 src/tests/roc_rtp/test_packets/*.h
-src/tests/roc_fec/test_composer_parser.cpp
 src/tests/roc_sndio/target_sox/test_player_recorder.cpp
 src/tests/roc_sndio/target_sox/test_writer_reader.cpp

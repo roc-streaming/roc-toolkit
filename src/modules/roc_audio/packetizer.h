@@ -33,17 +33,6 @@ namespace audio {
 class Packetizer : public IWriter, public core::NonCopyable<> {
 public:
     //! Initialization.
-    //!
-    //! @b Parameters
-    //!  - @p writer is used to write generated packets
-    //!  - @p composer is used to initialize new packets
-    //!  - @p encoder is used to write samples to packets
-    //!  - @p packet_pool is used to allocate packets
-    //!  - @p buffer_pool is used to allocate buffers for packets
-    //!  - @p channels defines a set of channels in the input frames
-    //!  - @p packet_length defines packet length in nanoseconds
-    //!  - @p sample_rate defines number of samples per channel per second
-    //!  - @p payload_type defines packet payload type
     Packetizer(packet::IWriter& writer,
                packet::IComposer& composer,
                IEncoder& encoder,
@@ -51,20 +40,21 @@ public:
                core::BufferPool<uint8_t>& buffer_pool,
                packet::channel_mask_t channels,
                core::nanoseconds_t packet_length,
-               size_t sample_rate,
-               unsigned int payload_type);
+               size_t sample_rate);
 
     //! Write audio frame.
     virtual void write(Frame& frame);
 
     //! Flush buffered packet, if any.
     //! @remarks
-    //!  Packet is padded with zero samples to match fixed size.
+    //!  Packet payload is padded if necessary to match configured payload size.
     void flush();
 
 private:
-    packet::PacketPtr start_packet_();
-    bool finish_packet_();
+    bool begin_packet_();
+    void end_packet_();
+
+    packet::PacketPtr create_packet_();
 
     packet::IWriter& writer_;
     packet::IComposer& composer_;
@@ -75,14 +65,9 @@ private:
     const packet::channel_mask_t channels_;
     const size_t num_channels_;
     const size_t samples_per_packet_;
-    const unsigned int payload_type_;
 
     packet::PacketPtr packet_;
-    size_t packet_pos_;
-
-    const packet::source_t source_;
-    packet::seqnum_t seqnum_;
-    packet::timestamp_t timestamp_;
+    size_t remaining_samples_;
 };
 
 } // namespace audio

@@ -16,8 +16,8 @@
 #include "roc_packet/packet_pool.h"
 #include "roc_packet/queue.h"
 #include "roc_rtp/composer.h"
+#include "roc_rtp/format_map.h"
 #include "roc_rtp/pcm_decoder.h"
-#include "roc_rtp/pcm_encoder.h"
 
 namespace roc {
 namespace audio {
@@ -32,13 +32,19 @@ core::BufferPool<uint8_t> byte_buffer_pool(allocator, MaxBufSize, true);
 packet::PacketPool packet_pool(allocator, true);
 
 rtp::Composer rtp_composer(NULL);
-
-rtp::PCMEncoder<int16_t, NumCh> pcm_encoder;
-rtp::PCMDecoder<int16_t, NumCh> pcm_decoder;
+rtp::FormatMap format_map;
 
 } // namespace
 
 TEST_GROUP(depacketizer) {
+    const rtp::PCMFuncs& get_funcs() {
+        return rtp::PCM_16bit_2ch;
+    }
+
+    const rtp::Format& get_format() {
+        return *format_map.format(rtp::PayloadType_L16_Stereo);
+    }
+
     packet::PacketPtr new_packet(packet::timestamp_t ts, sample_t value) {
         packet::PacketPtr pp = new(packet_pool) packet::Packet(packet_pool);
         CHECK(pp);
@@ -47,7 +53,8 @@ TEST_GROUP(depacketizer) {
             new (byte_buffer_pool) core::Buffer<uint8_t>(byte_buffer_pool);
         CHECK(bp);
 
-        CHECK(rtp_composer.prepare(*pp, bp, pcm_encoder.payload_size(SamplesPerPacket)));
+        CHECK(rtp_composer.prepare(
+            *pp, bp, get_funcs().payload_size_from_samples(SamplesPerPacket)));
 
         pp->set_data(bp);
 
@@ -59,9 +66,10 @@ TEST_GROUP(depacketizer) {
             samples[n] = value;
         }
 
-        UNSIGNED_LONGS_EQUAL(
-            SamplesPerPacket,
-            pcm_encoder.write_samples(*pp, 0, samples, SamplesPerPacket, ChMask));
+        UNSIGNED_LONGS_EQUAL(SamplesPerPacket,
+                             get_funcs().encode_samples(
+                                 pp->rtp()->payload.data(), pp->rtp()->payload.size(), 0,
+                                 samples, SamplesPerPacket, ChMask));
 
         CHECK(rtp_composer.compose(*pp));
 
@@ -103,6 +111,8 @@ TEST_GROUP(depacketizer) {
 };
 
 TEST(depacketizer, one_packet_one_read) {
+    rtp::PCMDecoder pcm_decoder(get_funcs(), get_format());
+
     packet::Queue queue;
     Depacketizer dp(queue, pcm_decoder, ChMask, false);
 
@@ -112,6 +122,8 @@ TEST(depacketizer, one_packet_one_read) {
 }
 
 TEST(depacketizer, one_packet_multiple_reads) {
+    rtp::PCMDecoder pcm_decoder(get_funcs(), get_format());
+
     packet::Queue queue;
     Depacketizer dp(queue, pcm_decoder, ChMask, false);
 
@@ -124,6 +136,8 @@ TEST(depacketizer, one_packet_multiple_reads) {
 
 TEST(depacketizer, multiple_packets_one_read) {
     enum { NumPackets = 10 };
+
+    rtp::PCMDecoder pcm_decoder(get_funcs(), get_format());
 
     packet::Queue queue;
     Depacketizer dp(queue, pcm_decoder, ChMask, false);
@@ -139,6 +153,8 @@ TEST(depacketizer, multiple_packets_multiple_reads) {
     enum { FramesPerPacket = 10 };
 
     CHECK(SamplesPerPacket % FramesPerPacket== 0);
+
+    rtp::PCMDecoder pcm_decoder(get_funcs(), get_format());
 
     packet::Queue queue;
     Depacketizer dp(queue, pcm_decoder, ChMask, false);
@@ -161,6 +177,8 @@ TEST(depacketizer, multiple_packets_multiple_reads) {
 }
 
 TEST(depacketizer, timestamp_overflow) {
+    rtp::PCMDecoder pcm_decoder(get_funcs(), get_format());
+
     packet::Queue queue;
     Depacketizer dp(queue, pcm_decoder, ChMask, false);
 
@@ -178,6 +196,8 @@ TEST(depacketizer, timestamp_overflow) {
 }
 
 TEST(depacketizer, drop_late_packets) {
+    rtp::PCMDecoder pcm_decoder(get_funcs(), get_format());
+
     packet::Queue queue;
     Depacketizer dp(queue, pcm_decoder, ChMask, false);
 
@@ -194,6 +214,8 @@ TEST(depacketizer, drop_late_packets) {
 }
 
 TEST(depacketizer, drop_late_packets_timestamp_overflow) {
+    rtp::PCMDecoder pcm_decoder(get_funcs(), get_format());
+
     packet::Queue queue;
     Depacketizer dp(queue, pcm_decoder, ChMask, false);
 
@@ -210,6 +232,8 @@ TEST(depacketizer, drop_late_packets_timestamp_overflow) {
 }
 
 TEST(depacketizer, zeros_no_packets) {
+    rtp::PCMDecoder pcm_decoder(get_funcs(), get_format());
+
     packet::Queue queue;
     Depacketizer dp(queue, pcm_decoder, ChMask, false);
 
@@ -217,6 +241,8 @@ TEST(depacketizer, zeros_no_packets) {
 }
 
 TEST(depacketizer, zeros_no_next_packet) {
+    rtp::PCMDecoder pcm_decoder(get_funcs(), get_format());
+
     packet::Queue queue;
     Depacketizer dp(queue, pcm_decoder, ChMask, false);
 
@@ -227,6 +253,8 @@ TEST(depacketizer, zeros_no_next_packet) {
 }
 
 TEST(depacketizer, zeros_between_packets) {
+    rtp::PCMDecoder pcm_decoder(get_funcs(), get_format());
+
     packet::Queue queue;
     Depacketizer dp(queue, pcm_decoder, ChMask, false);
 
@@ -239,6 +267,8 @@ TEST(depacketizer, zeros_between_packets) {
 }
 
 TEST(depacketizer, zeros_between_packets_timestamp_overflow) {
+    rtp::PCMDecoder pcm_decoder(get_funcs(), get_format());
+
     packet::Queue queue;
     Depacketizer dp(queue, pcm_decoder, ChMask, false);
 
@@ -256,6 +286,8 @@ TEST(depacketizer, zeros_between_packets_timestamp_overflow) {
 
 TEST(depacketizer, zeros_after_packet) {
     CHECK(SamplesPerPacket % 2 == 0);
+
+    rtp::PCMDecoder pcm_decoder(get_funcs(), get_format());
 
     packet::Queue queue;
     Depacketizer dp(queue, pcm_decoder, ChMask, false);
@@ -278,6 +310,8 @@ TEST(depacketizer, zeros_after_packet) {
 }
 
 TEST(depacketizer, packet_after_zeros) {
+    rtp::PCMDecoder pcm_decoder(get_funcs(), get_format());
+
     packet::Queue queue;
     Depacketizer dp(queue, pcm_decoder, ChMask, false);
 
@@ -290,6 +324,8 @@ TEST(depacketizer, packet_after_zeros) {
 
 TEST(depacketizer, overlapping_packets) {
     CHECK(SamplesPerPacket % 2 == 0);
+
+    rtp::PCMDecoder pcm_decoder(get_funcs(), get_format());
 
     packet::Queue queue;
     Depacketizer dp(queue, pcm_decoder, ChMask, false);
@@ -309,6 +345,8 @@ TEST(depacketizer, overlapping_packets) {
 
 TEST(depacketizer, frame_flags_incompltete_blank) {
     enum { PacketsPerFrame = 3 };
+
+    rtp::PCMDecoder pcm_decoder(get_funcs(), get_format());
 
     packet::Queue queue;
     Depacketizer dp(queue, pcm_decoder, ChMask, false);
@@ -377,6 +415,8 @@ TEST(depacketizer, frame_flags_incompltete_blank) {
 }
 
 TEST(depacketizer, frame_flags_drops) {
+    rtp::PCMDecoder pcm_decoder(get_funcs(), get_format());
+
     packet::Queue queue;
     Depacketizer dp(queue, pcm_decoder, ChMask, false);
 
@@ -416,6 +456,8 @@ TEST(depacketizer, timestamp) {
     };
 
     CHECK(SamplesPerPacket % FramesPerPacket== 0);
+
+    rtp::PCMDecoder pcm_decoder(get_funcs(), get_format());
 
     packet::Queue queue;
     Depacketizer dp(queue, pcm_decoder, ChMask, false);

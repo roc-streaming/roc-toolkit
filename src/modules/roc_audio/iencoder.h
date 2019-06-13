@@ -25,33 +25,45 @@ class IEncoder {
 public:
     virtual ~IEncoder();
 
-    //! Get packet payload size for given number of samples.
+    //! Calculate full packet size for given duration in nanoseconds.
+    virtual size_t packet_size(core::nanoseconds_t duration) const = 0;
+
+    //! Calculate packet payload size for given number of samples per channel.
     virtual size_t payload_size(size_t num_samples) const = 0;
 
-    //! Write samples to packet.
+    //! Start encoding a new packet.
+    //!
+    //! After this call, encoder will write samples to the given @p packet until
+    //! it is full or end() is called.
+    virtual void begin(const packet::PacketPtr& packet) = 0;
+
+    //! Encode samples.
     //!
     //! @b Parameters
-    //!  - @p packet - packet to write samples to
-    //!  - @p offset - packet write offset
-    //!  - @p samples - input buffer
-    //!  - @p n_samples - number of samples in input buffer
-    //!  - @p channels - input buffer channel mask
+    //!  - @p samples - samples to be encoded
+    //!  - @p n_samples - number of samples to be encoded per channel
+    //!  - @p channels - channel mask of the samples to be encoded
     //!
-    //! Reads @p n_samples from @p samples in the interleaved format, and writes
-    //! them to @p packet starting from the @p offset. The input buffer size
-    //! should be n_samples * n_channels.
+    //! Encodes samples and writes to the current packet.
     //!
-    //! Packet channel mask and input buffer channel mask may differ. If the input
-    //! buffer contains additional channels, they are skipped. If the input buffer
-    //! doesn't contain some required channels, the corresponding packet channels
-    //! are not modified.
+    //! Packet channel mask and input samples channel mask may differ. If the input
+    //! samples provide additional channels, they are ignored. If the input samples
+    //! don't have some channels present in packet, the corresponding channels in
+    //! packet are set to zeros.
     //!
-    //! @returns actual number of samples written for every channel.
-    virtual size_t write_samples(packet::Packet& packet,
-                                 size_t offset,
-                                 const sample_t* samples,
-                                 size_t n_samples,
-                                 packet::channel_mask_t channels) = 0;
+    //! @returns
+    //!  number of samples encoded per channel. The returned value can be fewer than
+    //!  @p n_samples if the packet is full and no more samples can be written to it.
+    virtual size_t
+    write(const sample_t* samples, size_t n_samples, packet::channel_mask_t channels) = 0;
+
+    //! Finish encoding packet.
+    //!
+    //! If the packet is not fully filled with samples, the packet is padded.
+    //!
+    //! After this call, the packet is fully encoded and no more samples will be
+    //! written to the packet. A new packet should be started by calling begin().
+    virtual void end() = 0;
 };
 
 } // namespace audio

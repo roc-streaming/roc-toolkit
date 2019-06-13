@@ -115,7 +115,7 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
     }
 #endif // ROC_TARGET_OPENFEC
 
-    decoder_.reset(format->new_decoder(allocator_), allocator_);
+    decoder_.reset(format->new_decoder(allocator_, *format), allocator_);
     if (!decoder_) {
         return;
     }

@@ -21,8 +21,7 @@ Packetizer::Packetizer(packet::IWriter& writer,
                        core::BufferPool<uint8_t>& buffer_pool,
                        packet::channel_mask_t channels,
                        core::nanoseconds_t packet_length,
-                       size_t sample_rate,
-                       unsigned int payload_type)
+                       size_t sample_rate)
     : writer_(writer)
     , composer_(composer)
     , encoder_(encoder)
@@ -32,11 +31,7 @@ Packetizer::Packetizer(packet::IWriter& writer,
     , num_channels_(packet::num_channels(channels))
     , samples_per_packet_(
           (packet::timestamp_t)packet::timestamp_from_ns(packet_length, sample_rate))
-    , payload_type_(payload_type)
-    , packet_pos_(0)
-    , source_((packet::source_t)core::random(packet::source_t(-1)))
-    , seqnum_((packet::seqnum_t)core::random(packet::seqnum_t(-1)))
-    , timestamp_((packet::timestamp_t)core::random(packet::timestamp_t(-1))) {
+    , remaining_samples_(0) {
     roc_log(LogDebug, "packetizer: initializing: n_channels=%lu samples_per_packet=%lu",
             (unsigned long)num_channels_, (unsigned long)samples_per_packet_);
 }
@@ -46,46 +41,67 @@ void Packetizer::write(Frame& frame) {
         roc_panic("packetizer: unexpected frame size");
     }
 
+    if (frame.size() == 0) {
+        return;
+    }
+
     const sample_t* buffer_ptr = frame.data();
     size_t buffer_samples = frame.size() / num_channels_;
 
     while (buffer_samples != 0) {
         if (!packet_) {
-            if (!(packet_ = start_packet_())) {
+            if (!begin_packet_()) {
                 return;
             }
         }
 
-        size_t ns = encoder_.write_samples(*packet_, packet_pos_, buffer_ptr,
-                                           buffer_samples, channels_);
+        size_t ns = buffer_samples;
+        if (ns > remaining_samples_) {
+            ns = remaining_samples_;
+        }
 
-        packet_pos_ += ns;
-        buffer_samples -= ns;
-        buffer_ptr += ns * num_channels_;
+        const size_t actual_ns = encoder_.write(buffer_ptr, ns, channels_);
+        roc_panic_if_not(actual_ns <= ns);
 
-        if (packet_pos_ == samples_per_packet_) {
-            flush();
+        buffer_ptr += actual_ns * num_channels_;
+        buffer_samples -= actual_ns;
+
+        remaining_samples_ -= actual_ns;
+
+        if (actual_ns < ns || remaining_samples_ == 0) {
+            end_packet_();
         }
     }
 }
 
 void Packetizer::flush() {
-    if (packet_pos_ == 0) {
-        return;
+    if (packet_) {
+        end_packet_();
+    }
+}
+
+bool Packetizer::begin_packet_() {
+    packet::PacketPtr pp = create_packet_();
+    if (!pp) {
+        return false;
     }
 
-    if (finish_packet_()) {
-        writer_.write(packet_);
-    }
+    encoder_.begin(pp);
 
-    seqnum_++;
-    timestamp_ += (packet::timestamp_t)packet_pos_;
+    packet_ = pp;
+    remaining_samples_ = samples_per_packet_;
 
-    packet_pos_ = 0;
+    return true;
+}
+
+void Packetizer::end_packet_() {
+    encoder_.end();
+
+    writer_.write(packet_);
     packet_ = NULL;
 }
 
-packet::PacketPtr Packetizer::start_packet_() {
+packet::PacketPtr Packetizer::create_packet_() {
     packet::PacketPtr packet = new (packet_pool_) packet::Packet(packet_pool_);
     if (!packet) {
         roc_log(LogError, "packetizer: can't allocate packet");
@@ -107,31 +123,7 @@ packet::PacketPtr Packetizer::start_packet_() {
 
     packet->set_data(data);
 
-    packet::RTP* rtp = packet->rtp();
-    if (!rtp) {
-        roc_log(LogError, "packetizer: unexpected non-rtp packet");
-        return NULL;
-    }
-
-    rtp->source = source_;
-    rtp->seqnum = seqnum_;
-    rtp->timestamp = timestamp_;
-    rtp->payload_type = payload_type_;
-
     return packet;
-}
-
-bool Packetizer::finish_packet_() {
-    if (packet_pos_ == samples_per_packet_) {
-        return true;
-    }
-
-    if (!composer_.truncate(*packet_, encoder_.payload_size(packet_pos_))) {
-        roc_log(LogError, "packetizer: can't truncate packet");
-        return false;
-    }
-
-    return true;
 }
 
 } // namespace audio

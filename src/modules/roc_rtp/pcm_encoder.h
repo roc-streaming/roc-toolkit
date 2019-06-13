@@ -13,40 +13,48 @@
 #define ROC_RTP_PCM_ENCODER_H_
 
 #include "roc_audio/iencoder.h"
-#include "roc_core/iallocator.h"
-#include "roc_core/panic.h"
-#include "roc_rtp/pcm_helpers.h"
+#include "roc_rtp/format.h"
+#include "roc_rtp/pcm_funcs.h"
 
 namespace roc {
 namespace rtp {
 
 //! PCM encoder.
-template <class Sample, size_t NumCh>
 class PCMEncoder : public audio::IEncoder, public core::NonCopyable<> {
 public:
-    //! Create encoder.
-    static audio::IEncoder* create(core::IAllocator& allocator) {
-        return new (allocator) PCMEncoder;
-    }
+    //! Initialize.
+    PCMEncoder(const PCMFuncs& funcs, const Format& format);
 
-    //! Get packet payload size.
-    virtual size_t payload_size(size_t num_samples) const {
-        return pcm_payload_size_from_samples<Sample, NumCh>(num_samples);
-    }
+    //! Calculate full packet size for given duration in nanoseconds.
+    virtual size_t packet_size(core::nanoseconds_t duration) const;
 
-    //! Write samples to packet.
-    virtual size_t write_samples(packet::Packet& packet,
-                                 size_t offset,
-                                 const audio::sample_t* samples,
-                                 size_t n_samples,
-                                 packet::channel_mask_t channels) {
-        packet::RTP* rtp = packet.rtp();
-        if (!rtp) {
-            roc_panic("unexpected non-rtp packet");
-        }
-        return pcm_write<Sample, NumCh>(rtp->payload.data(), rtp->payload.size(), offset,
-                                        samples, n_samples, channels);
-    }
+    //! Calculate packet payload size for given number of samples.
+    virtual size_t payload_size(size_t num_samples) const;
+
+    //! Start encoding a new packet.
+    virtual void begin(const packet::PacketPtr& packet);
+
+    //! Encode samples.
+    virtual size_t write(const audio::sample_t* samples,
+                         size_t n_samples,
+                         packet::channel_mask_t channels);
+
+    //! Finish encoding packet.
+    virtual void end();
+
+private:
+    const PCMFuncs& funcs_;
+
+    packet::PacketPtr packet_;
+    size_t packet_pos_;
+
+    const size_t sample_rate_;
+
+    const packet::source_t source_;
+    const unsigned int payload_type_;
+
+    packet::seqnum_t seqnum_;
+    packet::timestamp_t timestamp_;
 };
 
 } // namespace rtp
