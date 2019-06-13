@@ -28,6 +28,9 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
     : src_address_(src_address)
     , allocator_(allocator)
     , audio_reader_(NULL) {
+    (void)packet_pool;
+    (void)byte_buffer_pool;
+
     const rtp::Format* format = format_map.format(session_config.payload_type);
     if (!format) {
         return;
