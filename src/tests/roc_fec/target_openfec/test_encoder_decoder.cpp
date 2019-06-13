@@ -192,8 +192,7 @@ TEST(encoder_decoder, random_losses) {
     }
 }
 
-// FIXME: bugs in OpenFEC
-IGNORE_TEST(encoder_decoder, full_repair_payload_sizes) {
+TEST(encoder_decoder, full_repair_payload_sizes) {
     enum { NumSourcePackets = 10, NumRepairPackets = 20 };
 
     for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
