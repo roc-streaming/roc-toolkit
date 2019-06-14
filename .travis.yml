@@ -9,7 +9,7 @@ branches:
 stages:
   - name: Build
   - name: Docs
-    if: branch = master
+    if: branch = master AND type != pull_request AND NOT fork
 
 jobs:
   include:
