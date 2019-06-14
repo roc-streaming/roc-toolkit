@@ -131,6 +131,20 @@ def DeleteDir(env, path):
 
     return env.Action(rmtree, env.PrettyCommand('RM', path, 'red', 'rm(%s)' % path))
 
+def Artifact(env, dst, src):
+    def noop(target, source, env):
+        pass
+
+    target = env.File(dst)
+
+    env.Command(dst, src, env.Action(noop, env.PrettyCommand(
+            'ART', target.path, 'purple', 'art(%s)' % target.path)))
+
+    env.Precious(dst)
+    env.Requires(dst, src)
+
+    return target
+
 def init(env):
     env.AddMethod(PythonExecutable, 'PythonExecutable')
     env.AddMethod(ClangDBWriter, 'ClangDBWriter')
@@ -139,3 +153,4 @@ def init(env):
     env.AddMethod(GenGetOpt, 'GenGetOpt')
     env.AddMethod(DeleteFile, 'DeleteFile')
     env.AddMethod(DeleteDir, 'DeleteDir')
+    env.AddMethod(Artifact, 'Artifact')

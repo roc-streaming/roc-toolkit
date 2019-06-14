@@ -961,8 +961,10 @@ if compiler in ['gcc', 'clang']:
     for var in ['CC', 'CXX']:
         env[var] = env.ClangDBWriter(env[var], build_dir)
 
-    env.Requires(env.Install('#', '%s/compile_commands.json' % build_dir),
-                 env.Dir('#src'))
+    compile_commands = '%s/compile_commands.json' % build_dir
+
+    env.Artifact(compile_commands, '#src')
+    env.Install('#', compile_commands)
 
 sanitizers = env.ParseList(GetOption('sanitizers'), supported_sanitizers)
 if sanitizers:
