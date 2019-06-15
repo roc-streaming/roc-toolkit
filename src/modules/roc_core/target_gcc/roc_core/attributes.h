@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_core/target_gnu/roc_core/attributes.h
+//! @file roc_core/target_gcc/roc_core/attributes.h
 //! @brief GCC attributes.
 
 #ifndef ROC_CORE_ATTRIBUTES_H_

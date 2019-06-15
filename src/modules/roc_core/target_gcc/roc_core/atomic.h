@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_core/target_gnu/roc_core/atomic.h
+//! @file roc_core/target_gcc/roc_core/atomic.h
 //! @brief Atomic integer.
 
 #ifndef ROC_CORE_ATOMIC_H_

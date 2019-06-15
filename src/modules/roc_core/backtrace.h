@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_core/target_gnu/roc_core/backtrace.h
+//! @file roc_core/backtrace.h
 //! @brief Backtrace printing.
 
 #ifndef ROC_CORE_BACKTRACE_H_
@@ -25,12 +25,7 @@ void print_backtrace();
 //! @remarks
 //!  This function does not use signal-unsafe functions and doesn't perform
 //!  symbol demangling for this reason.
-void print_emergency_backtrace();
-
-//! Print string to stderr (emergency mode).
-//! @remarks
-//!  This function does not use signal-unsafe functions.
-void print_emergency_string(const char* str);
+void print_backtrace_emergency();
 
 } // namespace core
 } // namespace roc

@@ -79,27 +79,12 @@ void print_backtrace() {
     }
 }
 
-void print_emergency_backtrace() {
+void print_backtrace_emergency() {
     void* array[MaxDepth] = {};
     int size = backtrace(array, MaxDepth);
 
-    if (size <= 0) {
-        print_emergency_string("No backtrace available\n");
-    } else {
-        print_emergency_string("Backtrace:\n");
+    if (size > 0) {
         backtrace_symbols_fd(array, size, STDERR_FILENO);
-    }
-}
-
-void print_emergency_string(const char* str) {
-    size_t str_sz = strlen(str);
-    while (str_sz > 0) {
-        ssize_t ret = write(STDERR_FILENO, str, str_sz);
-        if (ret <= 0) {
-            return;
-        }
-        str += (size_t)ret;
-        str_sz -= (size_t)ret;
     }
 }
 
