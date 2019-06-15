@@ -177,12 +177,17 @@ AddOption('--with-openfec-includes',
           help=("path to the directory with OpenFEC headers (it should contain "+
                 "lib_common and lib_stable subdirectories)"))
 
-AddOption('--with-openfec-libs',
-          dest='with_openfec_libs',
-          action='store',
+AddOption('--with-includes',
+          dest='with_includes',
+          action='append',
           type='string',
-          help=("path to the directory with OpenFEC library (it should contain "+
-                "libopenfec.so or similar)"))
+          help=("additional include directory, may be used multiple times"))
+
+AddOption('--with-libraries',
+          dest='with_libraries',
+          action='append',
+          type='string',
+          help=("additional library directory, may be used multiple times"))
 
 AddOption('--build-3rdparty',
           dest='build_3rdparty',
@@ -547,6 +552,12 @@ env.Append(CPPPATH=[])
 env.Append(LIBPATH=[])
 env.Append(LIBS=[])
 
+if GetOption('with_includes'):
+    env.Append(CPPPATH=GetOption('with_includes'))
+
+if GetOption('with_libraries'):
+    env.Append(LIBPATH=GetOption('with_libraries'))
+
 lib_env = env.Clone()
 gen_env = env.Clone()
 tool_env = env.Clone()
@@ -562,8 +573,9 @@ if not GetOption('disable_tests'):
 if not GetOption('disable_tools'):
     all_dependencies.add('target_gengetopt')
 
-if not GetOption('disable_tools') \
-  or not GetOption('disable_examples') \
+if ((not GetOption('disable_tools') \
+        or not GetOption('disable_examples')) \
+    and not GetOption('disable_pulseaudio')) \
   or GetOption('enable_pulseaudio_modules'):
     if platform in ['linux', 'android']:
         all_dependencies.add('target_alsa')
@@ -607,18 +619,13 @@ if 'target_openfec' in system_dependecies:
 
     if env.ParsePkgConfig('--silence-errors --cflags --libs openfec'):
         pass
-    elif GetOption('with_openfec_includes') or GetOption('with_openfec_libs'):
+    elif GetOption('with_openfec_includes'):
         openfec_includes = GetOption('with_openfec_includes')
-        if openfec_includes:
-            env.Append(CPPPATH=[
-                openfec_includes,
-                '%s/lib_common' % openfec_includes,
-                '%s/lib_stable' % openfec_includes,
-            ])
-
-        openfec_libs = GetOption('with_openfec_libs')
-        if openfec_libs:
-            env.Append(LIBPATH=[openfec_libs])
+        env.Append(CPPPATH=[
+            openfec_includes,
+            '%s/lib_common' % openfec_includes,
+            '%s/lib_stable' % openfec_includes,
+        ])
     elif not crosscompile:
        for prefix in ['/usr/local', '/usr']:
            if os.path.exists('%s/include/openfec' % prefix):

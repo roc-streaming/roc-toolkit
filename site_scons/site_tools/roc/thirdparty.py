@@ -54,8 +54,8 @@ def ThirdParty(
                 cmdstr = env.PrettyCommand(
                     'GET', '3rdparty/%s/%s/build/%s' % (
                         hostdir, compilerdir, vname), 'yellow'))):
-            env.Die("can't make '%s', see '3rdparty/%s/build/%s/build.log' for details" % (
-                vname, hostdir, vname))
+            env.Die("can't make '%s', see '3rdparty/%s/%s/build/%s/build.log' for details" % (
+                vname, hostdir, compilerdir, vname))
 
     env.ImportThridParty(
         hostdir, compilerdir, toolchain, versions, name, includes, libs)

@@ -45,7 +45,7 @@ Options
                                 'arm-linux-gnueabihf', auto-detect if empty
   --platform=PLATFORM         platform name where Roc will run, supported
                                 values: empty (detect from host), 'linux',
-                                'darwin'
+                                'darwin', 'android'
   --compiler=COMPILER         compiler name and optional version, e.g.
                                 'gcc-4.9', supported names: empty (detect what
                                 available), 'gcc', 'clang'
@@ -73,9 +73,12 @@ Options
                               path to the directory with OpenFEC headers (it
                                 should contain lib_common and lib_stable
                                 subdirectories)
-  --with-openfec-libs=WITH_OPENFEC_LIBS
-                              path to the directory with OpenFEC library (it
-                                should contain libopenfec.so or similar)
+  --with-includes=WITH_INCLUDES
+                              additional include directory, may be used
+                                multiple times
+  --with-libraries=WITH_LIBRARIES
+                              additional library directory, may be used
+                                multiple times
   --build-3rdparty=BUILD_3RDPARTY
                               download and build specified 3rdparty libraries,
                                 pass a comma-separated list of library names

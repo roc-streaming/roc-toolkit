@@ -24,6 +24,7 @@ except:
     pass
 
 printdir = os.path.abspath('.')
+devnull = open(os.devnull, 'w')
 
 def mkpath(path):
     try:
@@ -179,7 +180,7 @@ def getsysroot(toolchain):
         return ""
     try:
         cmd = ['%s-gcc' % toolchain, '-print-sysroot']
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=devnull)
         return proc.stdout.read().strip()
     except:
         print("error: can't execute '%s'" % ' '.join(cmd), file=sys.stderr)
