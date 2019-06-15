@@ -1,6 +1,19 @@
 import SCons.SConf
+import os
 import os.path
 import hashlib
+
+def _run_prog(context, src, suffix):
+    # Workaround for a SCons bug.
+    # RunProg uses a global incrementing counter for temporary .c file names. The
+    # file name depends on the number of invocations of that function, but not on
+    # the file contents. When the user subsequently invokes scons with different
+    # options, the sequence of file contents passed to RunProg may vary. However,
+    # RunProg may incorrectly use cached results from a previous run saved for
+    # different file contents but the same invocation number. To prevent this, we
+    # monkey patch its global counter with a hashsum of the file contents.
+    SCons.SConf._ac_build_counter = int(hashlib.md5(src.encode()).hexdigest(), 16)
+    return context.RunProg(src, suffix)
 
 def CheckLibWithHeaderExpr(context, libs, headers, language, expr):
     if not isinstance(headers, list):
@@ -26,16 +39,7 @@ int main() {
     context.Message("Checking for %s library %s... " % (
         language.upper(), name))
 
-    # Workaround for a SCons bug.
-    # RunProg uses a global incrementing counter for temporary .c file names. The
-    # file name depends on the number of invocations of that function, but not on
-    # the file contents. When the user subsequently invokes scons with different
-    # options, the sequence of file contents passed to RunProg may vary. However,
-    # RunProg may incorrectly use cached results from a previous run saved for
-    # different file contents but the same invocation number. To prevent this, we
-    # monkey patch its global counter with a hashsum of the file contents.
-    SCons.SConf._ac_build_counter = int(hashlib.md5(src.encode()).hexdigest(), 16)
-    err, out = context.RunProg(src, suffix)
+    err, out = _run_prog(context, src, suffix)
 
     if not err and out.strip() != '0':
         context.Result('yes')
@@ -62,10 +66,28 @@ def CheckProg(context, prog):
         context.Result('not found')
         return False
 
+def CheckCanRunProgs(context):
+    context.Message("Checking whether we can run compiled executables... ")
+
+    src = """
+int main() {
+    return 0;
+}
+"""
+
+    err, out = _run_prog(context, src, '.c')
+
+    if not err:
+        context.Result('yes')
+        return True
+    else:
+        context.Result('no')
+        return False
+
 def FindTool(context, var, toolchain, version, commands, prepend_path=[]):
     env = context.env
 
-    context.Message("Looking for %s executable... " % var)
+    context.Message("Searching %s executable... " % var)
 
     if env.HasArg(var):
         context.Result(env[var])
@@ -136,7 +158,7 @@ def FindTool(context, var, toolchain, version, commands, prepend_path=[]):
 
 def FindLLVMDir(context, version):
     context.Message(
-        "Checking for PATH for llvm %s... " % '.'.join(map(str, version)))
+        "Searching PATH for llvm %s... " % '.'.join(map(str, version)))
 
     def macos_dirs():
         return [
@@ -167,11 +189,48 @@ def FindLLVMDir(context, version):
     context.Result('not found')
     return True
 
+def FindConfigGuess(context):
+    context.Message('Searching config.guess script... ')
+
+    prefixes = [
+        '/usr',
+        '/usr/local',
+        '/usr/local/Cellar',
+    ]
+
+    dirs = [
+        'share/gnuconfig',
+        'share/misc',
+        'share/automake-*',
+        'automake/*/share/automake-*',
+        'share/libtool/build-aux',
+        'libtool/*/share/libtool/build-aux',
+        'lib/php/build',
+        'lib/php/*/build',
+    ]
+
+    for p in prefixes:
+        for d in dirs:
+            for f in context.env.Glob(os.path.join(p, d, 'config.guess')):
+                path = str(f)
+                if not os.access(path, os.X_OK):
+                    continue
+
+                context.env['CONFIG_GUESS'] = path
+                context.Result(path)
+
+                return True
+
+    context.Result('not found')
+    return False
+
 def init(env):
     env.CustomTests = {
         'CheckLibWithHeaderExpr': CheckLibWithHeaderExpr,
         'CheckLibWithHeaderUniq': CheckLibWithHeaderUniq,
         'CheckProg': CheckProg,
+        'CheckCanRunProgs': CheckCanRunProgs,
         'FindTool': FindTool,
         'FindLLVMDir': FindLLVMDir,
+        'FindConfigGuess': FindConfigGuess,
     }

@@ -109,6 +109,16 @@ def ParsePkgConfig(env, cmd):
     except:
         return False
 
+def ParseConfigGuess(env, cmd):
+    text = _command_output(env, [cmd])
+    if not text:
+        return None
+
+    if not re.match(r'^\S+-\S+$', text):
+        return None
+
+    return text
+
 def ParseList(env, s, all):
     if not s:
         return []
@@ -129,4 +139,5 @@ def init(env):
     env.AddMethod(ParseCompilerTarget, 'ParseCompilerTarget')
     env.AddMethod(ParseCompilerDirectory, 'ParseCompilerDirectory')
     env.AddMethod(ParsePkgConfig, 'ParsePkgConfig')
+    env.AddMethod(ParseConfigGuess, 'ParseConfigGuess')
     env.AddMethod(ParseList, 'ParseList')

@@ -76,7 +76,7 @@ AddOption('--host',
           type='string',
           help=("system name where Roc will run, "+
                 "e.g. 'arm-linux-gnueabihf', "+
-                "equal to --build if empty"))
+                "auto-detect if empty"))
 
 AddOption('--platform',
           dest='platform',
@@ -383,10 +383,19 @@ elif compiler == 'gcc':
 compiler_ver = env.ParseCompilerVersion(conf.env['CXX'])
 
 if not build:
-    build = env.ParseCompilerTarget(conf.env['CXX'])
-    if not build:
-        env.Die(("can't detect system type, please specify 'build={type}' manually, "+
-                 "e.g. 'build=x86_64-pc-linux-gnu'"))
+    if conf.FindConfigGuess():
+        build = env.ParseConfigGuess(conf.env['CONFIG_GUESS'])
+
+if not build:
+    if conf.CheckCanRunProgs():
+        build = env.ParseCompilerTarget(conf.env['CXX'])
+
+if not build:
+    env.Die(("can't detect system type, please specify '--build={type}' manually, "+
+             "e.g. '--build=x86_64-pc-linux-gnu'"))
+
+if not host:
+    host = env.ParseCompilerTarget(conf.env['CXX'])
 
 if not host:
     host = build
