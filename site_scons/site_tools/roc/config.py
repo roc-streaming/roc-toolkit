@@ -190,7 +190,11 @@ def FindLLVMDir(context, version):
     return True
 
 def FindConfigGuess(context):
-    context.Message('Searching config.guess script... ')
+    context.Message('Searching CONFIG_GUESS script... ')
+
+    if context.env.HasArg('CONFIG_GUESS'):
+        context.Result(context.env['CONFIG_GUESS'])
+        return True
 
     prefixes = [
         '/usr',

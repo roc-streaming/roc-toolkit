@@ -209,7 +209,7 @@ if env.GetOption('clean'):
     env.Execute(clean)
     Return()
 
-for var in ['CXX', 'CC', 'AR', 'RANLIB', 'GENGETOPT', 'PKG_CONFIG']:
+for var in ['CXX', 'CC', 'AR', 'RANLIB', 'GENGETOPT', 'PKG_CONFIG', 'CONFIG_GUESS']:
     env.OverrideFromArg(var)
 
 env.OverrideFromArg('CXXLD', names=['CXXLD', 'CXX'])
