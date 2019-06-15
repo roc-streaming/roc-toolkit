@@ -99,13 +99,13 @@ AddOption('--sanitizers',
           action='store',
           type='string',
           help="list of gcc/clang sanitizers, "+
-          "supported names: '', 'all', "+
+          "supported names: empty (no sanitizers), 'all', "+
           ', '.join(["'%s'" % s for s in supported_sanitizers]))
 
 AddOption('--enable-debug',
           dest='enable_debug',
           action='store_true',
-          help='enable debug build')
+          help='enable debug build for Roc')
 
 AddOption('--enable-debug-3rdparty',
           dest='enable_debug_3rdparty',
@@ -115,7 +115,7 @@ AddOption('--enable-debug-3rdparty',
 AddOption('--enable-werror',
           dest='enable_werror',
           action='store_true',
-          help='enable -Werror compiler option')
+          help='treat warnings as errors')
 
 AddOption('--enable-pulseaudio-modules',
           dest='enable_pulseaudio_modules',
@@ -168,6 +168,20 @@ AddOption('--with-pulseaudio',
           type='string',
           help=("path to the fully built pulseaudio source directory used when "+
                 "building pulseaudio modules"))
+
+AddOption('--with-openfec-includes',
+          dest='with_openfec_includes',
+          action='store',
+          type='string',
+          help=("path to the directory with OpenFEC headers (it should contain "+
+                "lib_common and lib_stable subdirectories)"))
+
+AddOption('--with-openfec-libs',
+          dest='with_openfec_libs',
+          action='store',
+          type='string',
+          help=("path to the directory with OpenFEC library (it should contain "+
+                "libopenfec.so or similar)"))
 
 AddOption('--build-3rdparty',
           dest='build_3rdparty',
@@ -577,19 +591,32 @@ if 'target_uv' in system_dependecies:
 if 'target_openfec' in system_dependecies:
     conf = Configure(env, custom_tests=env.CustomTests)
 
-    if not env.ParsePkgConfig('--silence-errors --cflags --libs openfec') \
-      and not crosscompile:
-        for prefix in ['/usr/local', '/usr']:
-            if os.path.exists('%s/include/openfec' % prefix):
-                env.Append(CPPPATH=[
-                    '%s/include/openfec' % prefix,
-                    '%s/include/openfec/lib_common' % prefix,
-                    '%s/include/openfec/lib_stable' % prefix,
-                ])
-                env.Append(LIBPATH=[
-                    '%s/lib' % prefix,
-                ])
-                break
+    if env.ParsePkgConfig('--silence-errors --cflags --libs openfec'):
+        pass
+    elif GetOption('with_openfec_includes') or GetOption('with_openfec_libs'):
+        openfec_includes = GetOption('with_openfec_includes')
+        if openfec_includes:
+            env.Append(CPPPATH=[
+                openfec_includes,
+                '%s/lib_common' % openfec_includes,
+                '%s/lib_stable' % openfec_includes,
+            ])
+
+        openfec_libs = GetOption('with_openfec_libs')
+        if openfec_libs:
+            env.Append(LIBPATH=[openfec_libs])
+    elif not crosscompile:
+       for prefix in ['/usr/local', '/usr']:
+           if os.path.exists('%s/include/openfec' % prefix):
+               env.Append(CPPPATH=[
+                   '%s/include/openfec' % prefix,
+                   '%s/include/openfec/lib_common' % prefix,
+                   '%s/include/openfec/lib_stable' % prefix,
+               ])
+               env.Append(LIBPATH=[
+                   '%s/lib' % prefix,
+               ])
+               break
 
     if not conf.CheckLibWithHeaderUniq(
             'openfec', 'of_openfec_api.h', 'C', run=not crosscompile):
