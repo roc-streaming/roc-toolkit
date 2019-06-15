@@ -24,11 +24,11 @@ Build results are installed into the following directories:
 - ``./3rdparty/<host>/rpath``
     automatically built 3rd-party shared libraries
 
-- ``./docs/man``
-    Manual pages
+- ``./man``
+    generated manual pages
 
-- ``./docs/html``
-    HTML documentation
+- ``./html``
+    generated HTML documentation
 
 Options
 =======
@@ -42,8 +42,7 @@ Options
   --build=BUILD               system name where Roc is being compiled, e.g.
                                 'x86_64-pc-linux-gnu', auto-detect if empty
   --host=HOST                 system name where Roc will run, e.g.
-                                'arm-linux-gnueabihf', equal to --build if
-                                empty
+                                'arm-linux-gnueabihf', auto-detect if empty
   --platform=PLATFORM         platform name where Roc will run, supported
                                 values: empty (detect from host), 'linux',
                                 'darwin'
@@ -51,10 +50,11 @@ Options
                                 'gcc-4.9', supported names: empty (detect what
                                 available), 'gcc', 'clang'
   --sanitizers=SANITIZERS     list of gcc/clang sanitizers, supported names:
-                                '', 'all', 'undefined', 'address'
-  --enable-debug              enable debug build
+                                empty (no sanitizers), 'all', 'undefined',
+                                'address'
+  --enable-debug              enable debug build for Roc
   --enable-debug-3rdparty     enable debug build for 3rdparty libraries
-  --enable-werror             enable -Werror compiler option
+  --enable-werror             treat warnings as errors
   --enable-pulseaudio-modules
                               enable building of pulseaudio modules
   --disable-lib               disable libroc building
@@ -69,6 +69,13 @@ Options
                               path to the fully built pulseaudio source
                                 directory used when building pulseaudio
                                 modules
+  --with-openfec-includes=WITH_OPENFEC_INCLUDES
+                              path to the directory with OpenFEC headers (it
+                                should contain lib_common and lib_stable
+                                subdirectories)
+  --with-openfec-libs=WITH_OPENFEC_LIBS
+                              path to the directory with OpenFEC library (it
+                                should contain libopenfec.so or similar)
   --build-3rdparty=BUILD_3RDPARTY
                               download and build specified 3rdparty libraries,
                                 pass a comma-separated list of library names
@@ -81,12 +88,14 @@ Options
 Variables
 =========
 
-- CFLAGS
+- CPPFLAGS
 - CXXFLAGS
+- CFLAGS
 - LDFLAGS
-- CC
 - CXX
-- LD
+- CC
+- CXXLD
+- CCLD or LD
 - AR
 - RANLIB
 - GENGETOPT
@@ -94,6 +103,7 @@ Variables
 - SPHINX_BUILD
 - BREATHE_APIDOC
 - PKG_CONFIG
+- CONFIG_GUESS
 
 Targets
 =======

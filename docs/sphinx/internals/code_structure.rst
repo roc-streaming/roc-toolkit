@@ -86,11 +86,13 @@ target            description
 ================= =================
 target_posix      Enabled for a POSIX OS
 target_posixtime  Enabled for a POSIX OS with time extensions
-target_gnu        Enabled for a GNU-compatible system and compiler
-target_darwin     Enabled for Mac OS
+target_gcc        Enabled for a GCC-compatible compiler
+target_glibc      Enabled for the GNU standard C library
+target_bionic     Enabled for the Bionic standard C library
+target_darwin     Enabled for macOS
 target_stdio      Enabled if stdio is available in the standard library
-target_openfec    Enabled if OpenFEC is available
 target_uv         Enabled if libuv is available
+target_openfec    Enabled if OpenFEC is available
 target_sox        Enabled if SoX is available
 ================= =================
 

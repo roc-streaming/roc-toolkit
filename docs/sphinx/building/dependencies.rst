@@ -9,6 +9,7 @@ Build dependencies
 * SCons
 * gengetopt (optional, install if you want to build tools)
 * pkg-config (optional, install if you want installed dependencies to be auto-detected)
+* config.guess script (optional, used to auto-detect the system type; usually provided by autotools, automake, and libtool packages)
 * libtool, intltool, autoconf, automake, make, cmake (optional, install if you want Roc to download and build dependencies automatically)
 
 Runtime dependencies
