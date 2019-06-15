@@ -209,8 +209,11 @@ if env.GetOption('clean'):
     env.Execute(clean)
     Return()
 
-for var in ['CC', 'CXX', 'LD', 'AR', 'RANLIB', 'GENGETOPT', 'PKG_CONFIG']:
+for var in ['CXX', 'CC', 'AR', 'RANLIB', 'GENGETOPT', 'PKG_CONFIG']:
     env.OverrideFromArg(var)
+
+env.OverrideFromArg('CXXLD', names=['CXXLD', 'CXX'])
+env.OverrideFromArg('CCLD', names=['CCLD', 'LD', 'CC'])
 
 env.OverrideFromArg('DOXYGEN', default='doxygen')
 env.OverrideFromArg('SPHINX_BUILD', default='sphinx-build')
@@ -410,7 +413,8 @@ if not platform:
 
 if compiler == 'clang':
     conf.FindTool('CC', toolchain, compiler_ver, ['clang'])
-    conf.FindTool('LD', toolchain, compiler_ver, ['clang++'])
+    conf.FindTool('CXXLD', toolchain, compiler_ver, ['clang++'])
+    conf.FindTool('CCLD', toolchain, compiler_ver, ['clang'])
 
     install_dir = env.ParseCompilerDirectory(conf.env['CXX'])
     if install_dir:
@@ -418,24 +422,26 @@ if compiler == 'clang':
     else:
         prepend_path = []
 
-    conf.FindTool('RANLIB', toolchain, None, ['llvm-ranlib', 'ranlib'],
+    conf.FindTool('AR', toolchain, None, ['llvm-ar', 'ar'],
                   prepend_path=prepend_path)
 
-    conf.FindTool('AR', toolchain, None, ['llvm-ar', 'ar'],
+    conf.FindTool('RANLIB', toolchain, None, ['llvm-ranlib', 'ranlib'],
                   prepend_path=prepend_path)
 
 elif compiler == 'gcc':
     conf.FindTool('CC', toolchain, compiler_ver, ['gcc'])
-    conf.FindTool('LD', toolchain, compiler_ver, ['g++'])
-    conf.FindTool('RANLIB', toolchain, None, ['ranlib'])
+    conf.FindTool('CXXLD', toolchain, compiler_ver, ['g++'])
+    conf.FindTool('CCLD', toolchain, compiler_ver, ['gcc'])
     conf.FindTool('AR', toolchain, None, ['ar'])
+    conf.FindTool('RANLIB', toolchain, None, ['ranlib'])
 
-env['LINK'] = env['LD']
-env['SHLINK'] = env['LD']
+env['LINK'] = env['CXXLD']
+env['SHLINK'] = env['CXXLD']
 
-env.PrependFromArg('CFLAGS')
+env.PrependFromArg('CPPFLAGS')
 env.PrependFromArg('CXXFLAGS')
-env.PrependFromArg('LINKFLAGS', args=['LINKFLAGS', 'LDFLAGS'])
+env.PrependFromArg('CFLAGS')
+env.PrependFromArg('LINKFLAGS', names=['LINKFLAGS', 'LDFLAGS'])
 
 env = conf.Finish()
 

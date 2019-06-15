@@ -14,18 +14,22 @@ def _get_arg(env, var, default):
 def HasArg(env, var):
     return _get_arg(env, var, None) is not None
 
-def OverrideFromArg(env, var, default=None):
-    v = _get_arg(env, var, default)
-    if v is not None:
-        env[var] = v
-
-def PrependFromArg(env, var, args=[], default=None):
-    if not args:
-        args = [var]
-    for arg in args:
-        v = _get_arg(env, arg, default)
+def OverrideFromArg(env, var, names=[], default=None):
+    if not names:
+        names = [var]
+    for name in names:
+        v = _get_arg(env, var, default)
         if v is not None:
-            env.Prepend(**{tvar: env.GetArg(var)})
+            env[var] = v
+            break
+
+def PrependFromArg(env, var, names=[], default=None):
+    if not names:
+        names = [var]
+    for name in names:
+        v = _get_arg(env, name, default)
+        if v is not None:
+            env.Prepend(**{var: v})
             break
 
 def MergeVars(env, src_env):

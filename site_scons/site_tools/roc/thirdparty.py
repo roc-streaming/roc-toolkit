@@ -31,9 +31,9 @@ def ThirdParty(
 
     envvars = [
         'CXX="%s"'    % env['CXX'],
-        'CXXLD="%s"'  % env['CXX'],
+        'CXXLD="%s"'  % env['CXXLD'],
         'CC="%s"'     % env['CC'],
-        'CCLD="%s"'   % env['CC'],
+        'CCLD="%s"'   % env['CCLD'],
         'AR="%s"'     % env['AR'],
         'RANLIB="%s"' % env['RANLIB'],
     ]
