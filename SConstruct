@@ -7,6 +7,7 @@ import SCons.Script
 supported_platforms = [
     'linux',
     'darwin',
+    'android',
 ]
 
 # supported compiler names (without version)
@@ -420,7 +421,9 @@ if not host:
 crosscompile = (host != build)
 
 if not platform:
-    if 'linux' in host:
+    if 'android' in host:
+        platform = 'android'
+    elif 'linux' in host:
         platform = 'linux'
     elif 'darwin' in host:
         platform = 'darwin'
@@ -494,15 +497,26 @@ else:
                  "provide either known '--platform' or '--override-targets' option"),
                     host, ', '.join(supported_platforms))
 
-    if platform in ['linux', 'darwin']:
+    if platform in ['linux', 'darwin', 'android']:
         env.Append(ROC_TARGETS=[
-            'target_stdio',
-            'target_gnu',
-            'target_uv',
             'target_posix',
+            'target_stdio',
+            'target_uv',
         ])
 
-    if platform in ['linux']:
+    if platform in ['linux', 'darwin']:
+        env.Append(ROC_TARGETS=[
+            'target_gcc',
+            'target_glibc',
+        ])
+
+    if platform in ['android']:
+        env.Append(ROC_TARGETS=[
+            'target_gcc',
+            'target_bionic',
+        ])
+
+    if platform in ['linux', 'android']:
         env.Append(ROC_TARGETS=[
             'target_posixtime',
         ])
@@ -551,7 +565,7 @@ if not GetOption('disable_tools'):
 if not GetOption('disable_tools') \
   or not GetOption('disable_examples') \
   or GetOption('enable_pulseaudio_modules'):
-    if platform in ['linux']:
+    if platform in ['linux', 'android']:
         all_dependencies.add('target_alsa')
         all_dependencies.add('target_pulseaudio')
 
@@ -849,11 +863,12 @@ if compiler in ['gcc', 'clang']:
             '-fPIC',
         ]})
 
-    env.Append(LIBS=[
-        'pthread',
-    ])
+    if platform in ['linux', 'darwin']:
+        env.Append(LIBS=[
+            'pthread',
+        ])
 
-    if platform in ['linux']:
+    if platform in ['linux', 'android']:
         lib_env.Append(LINKFLAGS=[
             '-Wl,--version-script=' + env.File('#src/lib/roc.version').path
         ])
@@ -970,12 +985,14 @@ if compiler == 'clang':
                 '-Wno-unreachable-code',
             ]})
 
-    if platform == 'linux':
+    if platform in ['linux', 'android']:
         if compiler_ver[:2] >= (6, 0):
             for var in ['CXXFLAGS', 'CFLAGS']:
                 env.Append(**{var: [
                     '-Wno-redundant-parens',
                 ]})
+
+    if platform in ['linux']:
         if compiler_ver[:2] >= (8, 0):
             for var in ['CXXFLAGS', 'CFLAGS']:
                 env.Append(**{var: [
@@ -1023,7 +1040,7 @@ if sanitizers:
         env.AppendUnique(CXXFLAGS=flags)
         env.AppendUnique(LINKFLAGS=flags)
 else:
-    if platform in ['linux']:
+    if platform in ['linux', 'android']:
         env.Append(LINKFLAGS=[
             '-Wl,--no-undefined',
         ])
