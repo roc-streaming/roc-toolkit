@@ -579,11 +579,11 @@ if 'target_uv' in system_dependecies:
     env.ParsePkgConfig('--cflags --libs libuv')
 
     if not crosscompile:
-        if not conf.CheckLibWithHeaderExpr(
+        if not conf.CheckLibWithHeaderExt(
             'uv', 'uv.h', 'C', expr='UV_VERSION_MAJOR >= 1 && UV_VERSION_MINOR >= 4'):
             env.Die("libuv >= 1.4 not found (see 'config.log' for details)")
     else:
-        if not conf.CheckLibWithHeaderUniq('uv', 'uv.h', 'C', run=False):
+        if not conf.CheckLibWithHeaderExt('uv', 'uv.h', 'C', run=False):
             env.Die("libuv not found (see 'config.log' for details)")
 
     env = conf.Finish()
@@ -618,7 +618,7 @@ if 'target_openfec' in system_dependecies:
                ])
                break
 
-    if not conf.CheckLibWithHeaderUniq(
+    if not conf.CheckLibWithHeaderExt(
             'openfec', 'of_openfec_api.h', 'C', run=not crosscompile):
         env.Die("openfec not found (see 'config.log' for details)")
 
@@ -640,7 +640,7 @@ if 'target_pulseaudio' in system_dependecies:
 
     tool_env.ParsePkgConfig('--cflags --libs libpulse')
 
-    if not conf.CheckLibWithHeaderUniq(
+    if not conf.CheckLibWithHeaderExt(
             'pulse', 'pulse/pulseaudio.h', 'C', run=not crosscompile):
         env.Die("libpulse not found (see 'config.log' for details)")
 
@@ -649,7 +649,7 @@ if 'target_pulseaudio' in system_dependecies:
     if GetOption('enable_pulseaudio_modules'):
         conf = Configure(pulse_env, custom_tests=env.CustomTests)
 
-        if not conf.CheckLibWithHeaderUniq('ltdl', 'ltdl.h', 'C', run=not crosscompile):
+        if not conf.CheckLibWithHeaderExt('ltdl', 'ltdl.h', 'C', run=not crosscompile):
             env.Die("ltdl not found (see 'config.log' for details)")
 
         pulse_env = conf.Finish()
@@ -687,12 +687,12 @@ if 'target_sox' in system_dependecies:
     tool_env.ParsePkgConfig('--cflags --libs sox')
 
     if not crosscompile:
-        if not conf.CheckLibWithHeaderExpr(
+        if not conf.CheckLibWithHeaderExt(
                 'sox', 'sox.h', 'C',
                 expr='SOX_LIB_VERSION_CODE >= SOX_LIB_VERSION(14, 4, 0)'):
             env.Die("libsox >= 14.4.0 not found (see 'config.log' for details)")
     else:
-        if not conf.CheckLibWithHeaderUniq('sox', 'sox.h', 'C', run=False):
+        if not conf.CheckLibWithHeaderExt('sox', 'sox.h', 'C', run=False):
             env.Die("libsox not found (see 'config.log' for details)")
 
     tool_env = conf.Finish()
@@ -715,7 +715,7 @@ if 'target_cpputest' in system_dependecies:
 
     test_env.ParsePkgConfig('--cflags --libs cpputest')
 
-    if not conf.CheckLibWithHeaderUniq(
+    if not conf.CheckLibWithHeaderExt(
             'CppUTest', 'CppUTest/TestHarness.h', 'CXX', run=not crosscompile):
         test_env.Die("CppUTest not found (see 'config.log' for details)")
 

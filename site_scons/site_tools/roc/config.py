@@ -15,7 +15,7 @@ def _run_prog(context, src, suffix):
     SCons.SConf._ac_build_counter = int(hashlib.md5(src.encode()).hexdigest(), 16)
     return context.RunProg(src, suffix)
 
-def CheckLibWithHeaderExpr(context, libs, headers, language, expr):
+def CheckLibWithHeaderExt(context, libs, headers, language, expr='1', run=True):
     if not isinstance(headers, list):
         headers = [headers]
 
@@ -39,21 +39,20 @@ int main() {
     context.Message("Checking for %s library %s... " % (
         language.upper(), name))
 
-    err, out = _run_prog(context, src, suffix)
+    if run:
+        err, out = _run_prog(context, src, suffix)
+        if out.strip() == '0':
+            err = True
+    else:
+        err = context.CompileProg(src, suffix)
 
-    if not err and out.strip() != '0':
+    if not err:
         context.Result('yes')
         context.env.Append(LIBS=libs)
         return True
     else:
         context.Result('no')
         return False
-
-def CheckLibWithHeaderUniq(context, libs, headers, language, run):
-    if run:
-        return context.CheckLibWithHeaderExpr(libs, headers, language, '1')
-    else:
-        return context.CheckLibWithHeader(libs, headers, language)
 
 def CheckProg(context, prog):
     context.Message("Checking for executable %s... " % prog)
@@ -230,8 +229,7 @@ def FindConfigGuess(context):
 
 def init(env):
     env.CustomTests = {
-        'CheckLibWithHeaderExpr': CheckLibWithHeaderExpr,
-        'CheckLibWithHeaderUniq': CheckLibWithHeaderUniq,
+        'CheckLibWithHeaderExt': CheckLibWithHeaderExt,
         'CheckProg': CheckProg,
         'CheckCanRunProgs': CheckCanRunProgs,
         'FindTool': FindTool,
