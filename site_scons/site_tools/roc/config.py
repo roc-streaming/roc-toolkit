@@ -12,7 +12,7 @@ def CheckLibWithHeaderExpr(context, libs, headers, language, expr):
     name = libs[0]
     libs = [l for l in libs if not l in context.env['LIBS']]
 
-    suffix = '.%s' % language
+    suffix = '.%s' % language.lower()
     includes = '\n'.join(['#include <%s>' % h for h in ['stdio.h'] + headers])
     src = """
 %s
@@ -45,8 +45,11 @@ int main() {
         context.Result('no')
         return False
 
-def CheckLibWithHeaderUniq(context, libs, headers, language):
-    return CheckLibWithHeaderExpr(context, libs, headers, language, '1')
+def CheckLibWithHeaderUniq(context, libs, headers, language, run):
+    if run:
+        return context.CheckLibWithHeaderExpr(libs, headers, language, '1')
+    else:
+        return context.CheckLibWithHeader(libs, headers, language)
 
 def CheckProg(context, prog):
     context.Message("Checking for executable %s... " % prog)

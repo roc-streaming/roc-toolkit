@@ -551,10 +551,10 @@ if 'target_uv' in system_dependecies:
 
     if not crosscompile:
         if not conf.CheckLibWithHeaderExpr(
-            'uv', 'uv.h', 'c', expr='UV_VERSION_MAJOR >= 1 && UV_VERSION_MINOR >= 4'):
+            'uv', 'uv.h', 'C', expr='UV_VERSION_MAJOR >= 1 && UV_VERSION_MINOR >= 4'):
             env.Die("libuv >= 1.4 not found (see 'config.log' for details)")
     else:
-        if not conf.CheckLibWithHeaderUniq('uv', 'uv.h', 'c'):
+        if not conf.CheckLibWithHeaderUniq('uv', 'uv.h', 'C', run=False):
             env.Die("libuv not found (see 'config.log' for details)")
 
     env = conf.Finish()
@@ -576,7 +576,8 @@ if 'target_openfec' in system_dependecies:
                 ])
                 break
 
-    if not conf.CheckLibWithHeaderUniq('openfec', 'of_openfec_api.h', 'c'):
+    if not conf.CheckLibWithHeaderUniq(
+            'openfec', 'of_openfec_api.h', 'C', run=not crosscompile):
         env.Die("openfec not found (see 'config.log' for details)")
 
     if not conf.CheckDeclaration('OF_USE_ENCODER', '#include <of_openfec_api.h>', 'c'):
@@ -597,7 +598,8 @@ if 'target_pulseaudio' in system_dependecies:
 
     tool_env.ParsePkgConfig('--cflags --libs libpulse')
 
-    if not conf.CheckLibWithHeaderUniq('pulse', 'pulse/pulseaudio.h', 'c'):
+    if not conf.CheckLibWithHeaderUniq(
+            'pulse', 'pulse/pulseaudio.h', 'C', run=not crosscompile):
         env.Die("libpulse not found (see 'config.log' for details)")
 
     tool_env = conf.Finish()
@@ -605,7 +607,7 @@ if 'target_pulseaudio' in system_dependecies:
     if GetOption('enable_pulseaudio_modules'):
         conf = Configure(pulse_env, custom_tests=env.CustomTests)
 
-        if not conf.CheckLibWithHeaderUniq('ltdl', 'ltdl.h', 'c'):
+        if not conf.CheckLibWithHeaderUniq('ltdl', 'ltdl.h', 'C', run=not crosscompile):
             env.Die("ltdl not found (see 'config.log' for details)")
 
         pulse_env = conf.Finish()
@@ -613,7 +615,7 @@ if 'target_pulseaudio' in system_dependecies:
         pa_dir = GetOption('with_pulseaudio')
         if not pa_dir:
             env.Die('--enable-pulseaudio-modules requires either --with-pulseaudio'+
-                    'or --build-3rdparty=pulseaudio')
+                    ' or --build-3rdparty=pulseaudio')
 
         pulse_env.Append(CPPPATH=[
             pa_dir,
@@ -644,11 +646,11 @@ if 'target_sox' in system_dependecies:
 
     if not crosscompile:
         if not conf.CheckLibWithHeaderExpr(
-                'sox', 'sox.h', 'c',
+                'sox', 'sox.h', 'C',
                 expr='SOX_LIB_VERSION_CODE >= SOX_LIB_VERSION(14, 4, 0)'):
             env.Die("libsox >= 14.4.0 not found (see 'config.log' for details)")
     else:
-        if not conf.CheckLibWithHeaderUniq('sox', 'sox.h', 'c'):
+        if not conf.CheckLibWithHeaderUniq('sox', 'sox.h', 'C', run=False):
             env.Die("libsox not found (see 'config.log' for details)")
 
     tool_env = conf.Finish()
@@ -671,7 +673,8 @@ if 'target_cpputest' in system_dependecies:
 
     test_env.ParsePkgConfig('--cflags --libs cpputest')
 
-    if not conf.CheckLibWithHeaderUniq('CppUTest', 'CppUTest/TestHarness.h', 'cxx'):
+    if not conf.CheckLibWithHeaderUniq(
+            'CppUTest', 'CppUTest/TestHarness.h', 'CXX', run=not crosscompile):
         test_env.Die("CppUTest not found (see 'config.log' for details)")
 
     test_env = conf.Finish()
