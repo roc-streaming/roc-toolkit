@@ -409,9 +409,15 @@ if not build:
     if conf.FindConfigGuess():
         build = env.ParseConfigGuess(conf.env['CONFIG_GUESS'])
 
-if not build:
+if not build and not host:
     if conf.CheckCanRunProgs():
         build = env.ParseCompilerTarget(conf.env['CXX'])
+
+if not build:
+    for c in ['/usr/bin/gcc', '/usr/bin/clang']:
+        build = env.ParseCompilerTarget(c)
+        if build:
+            break
 
 if not build:
     env.Die(("can't detect system type, please specify '--build={type}' manually, "+
