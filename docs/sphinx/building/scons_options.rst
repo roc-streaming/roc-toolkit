@@ -66,9 +66,14 @@ Options
   --disable-sox               disable SoX support in tools
   --disable-pulseaudio        disable PulseAudio support in tools
   --with-pulseaudio=WITH_PULSEAUDIO
-                              path to the fully built pulseaudio source
-                                directory used when building pulseaudio
-                                modules
+                              path to the PulseAudio source directory used
+                                when building PulseAudio modules
+  --with-pulseaudio-build-dir=WITH_PULSEAUDIO_BUILD_DIR
+                              path to the PulseAudio build directory used when
+                                building PulseAudio modules (needed in case
+                                you build PulseAudio out of source; if empty,
+                                the build directory is assumed to be the same
+                                as the source directory)
   --with-openfec-includes=WITH_OPENFEC_INCLUDES
                               path to the directory with OpenFEC headers (it
                                 should contain lib_common and lib_stable
@@ -86,7 +91,7 @@ Options
   --override-targets=OVERRIDE_TARGETS
                               override targets to use, pass a comma-separated
                                 list of target names, e.g.
-                                'gnu,posix,uv,openfec,...'
+                                'glibc,posix,uv,openfec,...'
 
 Variables
 =========

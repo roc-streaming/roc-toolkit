@@ -167,8 +167,17 @@ AddOption('--with-pulseaudio',
           dest='with_pulseaudio',
           action='store',
           type='string',
-          help=("path to the fully built pulseaudio source directory used when "+
-                "building pulseaudio modules"))
+          help=("path to the PulseAudio source directory used when "+
+                "building PulseAudio modules"))
+
+AddOption('--with-pulseaudio-build-dir',
+          dest='with_pulseaudio_build_dir',
+          action='store',
+          type='string',
+          help=("path to the PulseAudio build directory used when "+
+                "building PulseAudio modules (needed in case you build "+
+                "PulseAudio out of source; if empty, the build directory is "+
+                "assumed to be the same as the source directory)"))
 
 AddOption('--with-openfec-includes',
           dest='with_openfec_includes',
@@ -203,7 +212,7 @@ AddOption('--override-targets',
           type='string',
           help=("override targets to use, "+
                 "pass a comma-separated list of target names, "+
-                "e.g. 'gnu,posix,uv,openfec,...'"))
+                "e.g. 'glibc,posix,uv,openfec,...'"))
 
 if GetOption('help'):
     Return()
@@ -681,18 +690,22 @@ if 'target_pulseaudio' in system_dependecies:
 
         pulse_env = conf.Finish()
 
-        pa_dir = GetOption('with_pulseaudio')
-        if not pa_dir:
+        pa_src_dir = GetOption('with_pulseaudio')
+        if not pa_src_dir:
             env.Die('--enable-pulseaudio-modules requires either --with-pulseaudio'+
                     ' or --build-3rdparty=pulseaudio')
 
+        pa_build_dir = GetOption('with_pulseaudio_build_dir')
+        if not pa_build_dir:
+            pa_build_dir = pa_src_dir
+
         pulse_env.Append(CPPPATH=[
-            pa_dir,
-            pa_dir + '/src',
+            pa_build_dir,
+            pa_src_dir + '/src',
         ])
 
         for lib in ['libpulsecore-*.so', 'libpulsecommon-*.so']:
-            path = '%s/src/.libs/%s' % (pa_dir, lib)
+            path = '%s/src/.libs/%s' % (pa_build_dir, lib)
             libs = env.Glob(path)
             if not libs:
                 env.Die("can't find %s" % path)
