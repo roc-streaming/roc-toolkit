@@ -5,6 +5,41 @@ Changelog
    :local:
    :depth: 1
 
+Version 0.1.1 (Jun 18, 2019)
+============================
+
+Bugfixes
+--------
+
+* fix memory corruption in OpenFEC / LDPC-Staircase (fix available in our fork)
+* fix false positives in stream breakage detection
+
+Portability
+-----------
+
+* start working on Android port; Roc PulseAudio modules are now available in Termux unstable repo
+* continuous integration for Android / arm64 (minimal build)
+* docker image for aarch64-linux-android toolchain
+
+Testing
+-------
+
+* fix resampler AWGN tests
+* add travis job to run tests under valgrind
+
+Building
+--------
+
+* fix multiple build issues on macOS
+* fix multiple build issues with cross-compilation and Android build
+* fix issues with building third-parties
+* fix issues with compilation db generation
+* set library soname/install_name and install proper symlinks
+* improve configuration options
+* improve system type detection and system tools search
+* improve scripts portability
+* better handling of build environment variables
+
 Version 0.1.0 (May 28, 2019)
 ============================
 
