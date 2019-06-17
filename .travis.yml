@@ -83,6 +83,19 @@ jobs:
         - scripts/travis/docker.sh rocproject/travis-minimal scripts/travis/linux-build-options/pulseaudio-support.sh
         - scripts/travis/docker.sh rocproject/travis-minimal scripts/travis/linux-build-options/full-debug.sh
 
+    - name: "Android ARM"
+      stage: Build
+      os: linux
+      dist: trusty
+      sudo: required
+      services:
+        - docker
+      before_install:
+        - docker pull rocproject/cross-aarch64-linux-android:api28
+      script:
+        - scripts/travis/docker.sh rocproject/cross-aarch64-linux-android:api28 scripts/travis/android/aarch64-linux-android.sh
+        - cat build.status
+
     - name: "macOS Xcode 7.3"
       stage: Build
       os: osx
