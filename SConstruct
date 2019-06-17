@@ -302,7 +302,7 @@ if enable_doxygen and enable_sphinx:
     ]
     env.AlwaysBuild(env.Alias('sphinx', sphinx_targets))
     for man in ['roc-send', 'roc-recv', 'roc-conv']:
-        env.AddDistfile(GetOption('prefix'), 'share/man/man1', '#man/%s.1' % man)
+        env.AddDistFile(GetOption('prefix'), 'share/man/man1', '#man/%s.1' % man)
 
 if (enable_doxygen and enable_sphinx) or 'docs' in COMMAND_LINE_TARGETS:
     env.AlwaysBuild(env.Alias('docs', ['doxygen', 'sphinx']))
@@ -494,6 +494,8 @@ build_dir = 'build/%s/%s' % (
 
 env['ROC_BINDIR'] = '#bin/%s' % host
 env['ROC_VERSION'] = open(env.File('#.version').path).read().strip()
+
+abi_version = '.'.join(env['ROC_VERSION'].split('.')[:2])
 
 env['ROC_MODULES'] = [
     'roc_core',
@@ -895,8 +897,21 @@ if compiler in ['gcc', 'clang']:
         ])
 
     if platform in ['linux', 'android']:
+        test_env['RPATH'] = test_env.Literal('\\$$ORIGIN')
+
+        lib_env['SHLIBSUFFIX'] = '%s.%s' % (lib_env['SHLIBSUFFIX'], abi_version)
         lib_env.Append(LINKFLAGS=[
-            '-Wl,--version-script=' + env.File('#src/lib/roc.version').path
+            '-Wl,--version-script=%s' % env.File('#src/lib/roc.version').path,
+            '-Wl,-soname,libroc%s' % lib_env['SHLIBSUFFIX'],
+        ])
+
+    if platform in ['darwin']:
+        lib_env['SHLIBSUFFIX'] = '.%s%s' % (abi_version, lib_env['SHLIBSUFFIX'])
+        lib_env.Append(LINKFLAGS=[
+            '-Wl,-compatibility_version,%s' % abi_version,
+            '-Wl,-current_version,%s' % env['ROC_VERSION'],
+            '-Wl,-install_name,%s/libroc%s' % (
+                env.Dir(env['ROC_BINDIR']).abspath, lib_env['SHLIBSUFFIX']),
         ])
 
     if not(compiler == 'clang' and variant == 'debug'):

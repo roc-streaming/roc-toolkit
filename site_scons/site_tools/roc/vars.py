@@ -34,12 +34,16 @@ def PrependFromArg(env, var, names=[], default=None):
 
 def MergeVars(env, src_env):
     for k, v in src_env.Dictionary().items():
-        if not (isinstance(v, SCons.Util.CLVar) or isinstance(v, list)):
+        if not k in env.Dictionary():
+            env[k] = v
             continue
-        if k == 'LIBS':
-            env.AppendUnique(**{k: v})
-        else:
-            env.PrependUnique(**{k: v})
+
+        if isinstance(v, SCons.Util.CLVar) or isinstance(v, list):
+            if k == 'LIBS':
+                env.AppendUnique(**{k: v})
+            else:
+                env.PrependUnique(**{k: v})
+            continue
 
 def init(env):
     env.AddMethod(HasArg, 'HasArg')

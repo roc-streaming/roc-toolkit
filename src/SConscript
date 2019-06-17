@@ -38,22 +38,33 @@ if not GetOption('disable_lib'):
     cenv.Append(CPPPATH=['lib/include'])
 
     sources = env.Glob('lib/src/*.cpp')
-    libroc = cenv.SharedLibrary('roc', sources)
+
+    libroc = cenv.SharedLibrary(
+        'roc', sources, SHLIBSUFFIX=lib_env['SHLIBSUFFIX'])
+
     env.Depends(libroc, '#src/lib/roc.version')
 
     target = env.Install(env['ROC_BINDIR'], libroc)
+    symlinks = env.SymlinkLibrary(target[0])
 
-    env.Alias('libroc', [target], env.Action(''))
+    env.Alias('libroc', [target] + symlinks, env.Action(''))
     env.AlwaysBuild('libroc')
 
-    env.AddDistfile(GetOption('prefix'), 'include', '#src/lib/include/roc')
-    env.AddDistfile(GetOption('prefix'), 'lib', target)
+    env.AddDistFile(GetOption('prefix'), 'include', '#src/lib/include/roc')
+    env.AddDistFile(GetOption('prefix'), 'lib', target)
+
+    env.AddDistAction(env.FixupLibrary(
+        os.path.join(GetOption('prefix'), 'lib', target[0].name)))
+
+    for s in symlinks:
+        env.AddDistFile(GetOption('prefix'), 'lib', s)
 
 if not GetOption('disable_examples'):
     cenv = env.Clone()
     cenv.MergeVars(tool_env)
+    cenv.MergeVars(test_env)
     cenv.Append(CPPPATH=['lib/include'])
-    cenv.Append(LIBS=['roc'])
+    cenv.Append(LIBS=[libroc])
 
     targets = []
 
@@ -65,7 +76,7 @@ if not GetOption('disable_examples'):
             continue
 
         exe = cenv.Program(exename, [source],
-                    RPATH=env.Literal('\\$$ORIGIN'))
+                    RPATH=(cenv['RPATH'] if 'RPATH' in cenv.Dictionary() else None))
 
         env.Depends(exe, libroc)
         targets.append(env.Install(env['ROC_BINDIR'], exe))
@@ -89,7 +100,7 @@ if not GetOption('disable_tests'):
 
         if testname == 'roc_lib':
             ccenv.Append(CPPPATH=['lib/include'])
-            ccenv.Prepend(LIBS=['roc'])
+            ccenv.Prepend(LIBS=[libroc])
 
         sources = env.Glob('%s/*.cpp' % testdir)
         for targetdir in env.GlobRecursive(testdir, 'target_*'):
@@ -103,7 +114,7 @@ if not GetOption('disable_tests'):
         exename = 'roc-test-' + testname.replace('roc_', '')
         target = env.Install(env['ROC_BINDIR'],
             ccenv.Program(exename, sources + test_main,
-                RPATH=env.Literal('\\$$ORIGIN')))
+                RPATH=(ccenv['RPATH'] if 'RPATH' in ccenv.Dictionary() else None)))
 
         env.AddTest(testname, '%s/%s' % (env['ROC_BINDIR'], exename))
 
@@ -126,13 +137,13 @@ if not GetOption('disable_tools'):
         env.Alias(exename, [target], env.Action(''))
         env.AlwaysBuild(exename)
 
-        env.AddDistfile(GetOption('prefix'), 'bin', target)
+        env.AddDistFile(GetOption('prefix'), 'bin', target)
 
 if GetOption('enable_pulseaudio_modules'):
     cenv = env.Clone()
     cenv.MergeVars(pulse_env)
     cenv.Append(CPPPATH=['lib/include'])
-    cenv.Append(LIBS=['roc'])
+    cenv.Append(LIBS=[libroc])
 
     helpers = cenv.Object('pulse/module_helpers.c')
     targets = []
@@ -146,7 +157,7 @@ if GetOption('enable_pulseaudio_modules'):
         target = env.Install(env['ROC_BINDIR'], modulelib)
         targets.append(target)
 
-        env.AddDistfile(GetOption('prefix'),
+        env.AddDistFile(GetOption('prefix'),
                         'lib/pulse-%s/modules' % env['ROC_PULSE_VERSION'],
                         target)
 

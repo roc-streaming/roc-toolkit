@@ -1,5 +1,6 @@
 import SCons.Script
 import sys
+import re
 import os.path
 import shutil
 
@@ -113,6 +114,37 @@ def GenGetOpt(env, source, ver):
 
     return ret
 
+def SymlinkLibrary(env, src):
+    def symlink(target, source, env):
+        os.symlink(os.path.relpath(source[0].path, os.path.dirname(target[0].path)),
+                   target[0].path)
+
+    path = src.abspath
+    ret = []
+
+    while True:
+        m = re.match(r'^(.+)\.[0-9]+(\.[a-z]+)?$', path)
+        if not m:
+            break
+
+        path = m.group(1) + (m.group(2) or '')
+
+        dst = env.File(path)
+        ret += [dst]
+
+        env.Command(dst, src, env.Action(
+            symlink, env.PrettyCommand('LN', dst.path, 'yellow', 'ln(%s)' % dst.path)))
+
+    return ret
+
+def FixupLibrary(env, path):
+    if not env.Which('install_name_tool'):
+        return []
+
+    return [SCons.Action.CommandAction(
+        'install_name_tool -id "%s" "%s"' % (path, path),
+        cmdstr = env.PrettyCommand('FIXUP', path, 'yellow'))]
+
 def DeleteFile(env, path):
     path = env.File(path).path
 
@@ -151,6 +183,8 @@ def init(env):
     env.AddMethod(Doxygen, 'Doxygen')
     env.AddMethod(Sphinx, 'Sphinx')
     env.AddMethod(GenGetOpt, 'GenGetOpt')
+    env.AddMethod(SymlinkLibrary, 'SymlinkLibrary')
+    env.AddMethod(FixupLibrary, 'FixupLibrary')
     env.AddMethod(DeleteFile, 'DeleteFile')
     env.AddMethod(DeleteDir, 'DeleteDir')
     env.AddMethod(Artifact, 'Artifact')
