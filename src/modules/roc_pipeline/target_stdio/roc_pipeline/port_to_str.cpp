@@ -40,7 +40,8 @@ port_to_str::port_to_str(const PortConfig& port) {
     buffer_[0] = '\0';
 
     if (snprintf(buffer_, sizeof(buffer_), "%s:%s", proto_to_str(port.protocol),
-                 packet::address_to_str(port.address).c_str())) {
+                 packet::address_to_str(port.address).c_str())
+        < 0) {
         roc_log(LogError, "port to str: can't format port");
     }
 }
