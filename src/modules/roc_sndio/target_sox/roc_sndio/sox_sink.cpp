@@ -178,7 +178,7 @@ void SoxSink::close_() {
         return;
     }
 
-    roc_log(LogDebug, "sox sink: closing output");
+    roc_log(LogInfo, "sox sink: closing output");
 
     int err = sox_close(output_);
     if (err != SOX_SUCCESS) {

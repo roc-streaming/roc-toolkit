@@ -30,16 +30,20 @@ sample_t clamp(const sample_t x) {
 
 Mixer::Mixer(core::BufferPool<sample_t>& pool, size_t frame_size)
     : valid_(false) {
+    roc_log(LogDebug, "mixer: initializing: frame_size=%lu", (unsigned long)frame_size);
+
     temp_buf_ = new (pool) core::Buffer<sample_t>(pool);
     if (!temp_buf_) {
         roc_log(LogError, "mixer: can't allocate temporary buffer");
         return;
     }
+
     if (temp_buf_.capacity() < frame_size) {
         roc_log(LogError, "mixer: allocated buffer is too small");
         return;
     }
     temp_buf_.resize(frame_size);
+
     valid_ = true;
 }
 

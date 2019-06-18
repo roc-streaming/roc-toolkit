@@ -176,7 +176,7 @@ bool SoxSource::open_(const char* driver, const char* input) {
     roc_log(LogInfo,
             "sox source:"
             " in_bits=%lu out_bits=%lu in_rate=%lu out_rate=%lu"
-            " in_ch=%lu, out_ch=%lu, is_file=%d",
+            " in_ch=%lu out_ch=%lu is_file=%d",
             (unsigned long)input_->encoding.bits_per_sample,
             (unsigned long)in_signal_.precision, (unsigned long)input_->signal.rate,
             (unsigned long)in_signal_.rate, (unsigned long)input_->signal.channels,
@@ -198,7 +198,7 @@ void SoxSource::close_() {
         return;
     }
 
-    roc_log(LogDebug, "sox source: closing input");
+    roc_log(LogInfo, "sox source: closing input");
 
     int err = sox_close(input_);
     if (err != SOX_SUCCESS) {

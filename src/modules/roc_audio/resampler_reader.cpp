@@ -58,8 +58,6 @@ void ResamplerReader::read(Frame& frame) {
 }
 
 bool ResamplerReader::init_frames_(core::BufferPool<sample_t>& buffer_pool) {
-    roc_log(LogDebug, "resampler reader: initializing window");
-
     for (size_t n = 0; n < ROC_ARRAY_SIZE(frames_); n++) {
         frames_[n] = new (buffer_pool) core::Buffer<sample_t>(buffer_pool);
 

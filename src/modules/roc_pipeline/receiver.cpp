@@ -10,6 +10,7 @@
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_core/shared_ptr.h"
+#include "roc_packet/address_to_str.h"
 
 namespace roc {
 namespace pipeline {
@@ -218,8 +219,6 @@ bool Receiver::can_create_session_(const packet::PacketPtr& packet) {
 }
 
 bool Receiver::create_session_(const packet::PacketPtr& packet) {
-    roc_log(LogInfo, "receiver: creating session");
-
     if (!packet->udp()) {
         roc_log(LogError, "receiver: can't create session, unexpected non-udp packet");
         return false;
@@ -233,6 +232,11 @@ bool Receiver::create_session_(const packet::PacketPtr& packet) {
     const ReceiverSessionConfig sess_config = make_session_config_(packet);
 
     const packet::Address src_address = packet->udp()->src_addr;
+    const packet::Address dst_address = packet->udp()->dst_addr;
+
+    roc_log(LogInfo, "receiver: creating session: src_addr=%s dst_addr=%s",
+            packet::address_to_str(src_address).c_str(),
+            packet::address_to_str(dst_address).c_str());
 
     core::SharedPtr<ReceiverSession> sess = new (allocator_)
         ReceiverSession(sess_config, config_.common, src_address, format_map_,

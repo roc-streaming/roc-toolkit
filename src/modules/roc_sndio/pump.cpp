@@ -43,7 +43,7 @@ bool Pump::valid() const {
 }
 
 bool Pump::run() {
-    roc_log(LogDebug, "pump: starting");
+    roc_log(LogDebug, "pump: starting main loop");
 
     while (!stop_) {
         if (source_.state() == ISource::Inactive) {
@@ -64,7 +64,8 @@ bool Pump::run() {
         sink_.write(frame);
     }
 
-    roc_log(LogDebug, "pump: exiting, wrote %lu buffers", (unsigned long)n_bufs_);
+    roc_log(LogDebug, "pump: exiting main loop, wrote %lu buffers",
+            (unsigned long)n_bufs_);
 
     return !stop_;
 }

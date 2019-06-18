@@ -54,7 +54,7 @@ PulseaudioSink::PulseaudioSink(const Config& config)
 }
 
 PulseaudioSink::~PulseaudioSink() {
-    roc_log(LogDebug, "pulseaudio sink: closing sink");
+    roc_log(LogInfo, "pulseaudio sink: closing sink");
 
     close_();
     stop_mainloop_();
@@ -382,7 +382,7 @@ void PulseaudioSink::init_stream_params_(const pa_sink_info& info) {
 bool PulseaudioSink::open_stream_() {
     roc_panic_if_not(context_);
 
-    roc_log(LogDebug,
+    roc_log(LogInfo,
             "pulseaudio sink: opening stream: device=%s n_channels=%lu sample_rate=%lu",
             device_, (unsigned long)num_channels_, (unsigned long)sample_rate_);
 

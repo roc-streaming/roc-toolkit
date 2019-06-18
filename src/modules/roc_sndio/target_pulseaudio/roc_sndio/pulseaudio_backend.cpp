@@ -18,7 +18,7 @@ namespace roc {
 namespace sndio {
 
 PulseaudioBackend::PulseaudioBackend() {
-    roc_log(LogInfo, "initializing pulseaudio backend");
+    roc_log(LogDebug, "initializing pulseaudio backend");
 }
 
 bool PulseaudioBackend::probe(const char* driver, const char*, int flags) {

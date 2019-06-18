@@ -22,7 +22,8 @@ OFEncoder::OFEncoder(const CodecConfig& config, core::IAllocator& allocator)
     , data_tab_(allocator)
     , valid_(false) {
     if (config.scheme == packet::FEC_ReedSolomon_M8) {
-        roc_log(LogDebug, "of encoder: initializing Reed-Solomon encoder");
+        roc_log(LogDebug, "of encoder: initializing: codec=rs m=%u",
+                (unsigned)config.rs_m);
 
         codec_id_ = OF_CODEC_REED_SOLOMON_GF_2_M_STABLE;
         codec_params_.rs_params_.m = config.rs_m;
@@ -31,7 +32,8 @@ OFEncoder::OFEncoder(const CodecConfig& config, core::IAllocator& allocator)
 
         max_block_length_ = OF_REED_SOLOMON_MAX_NB_ENCODING_SYMBOLS_DEFAULT;
     } else if (config.scheme == packet::FEC_LDPC_Staircase) {
-        roc_log(LogDebug, "of encoder: initializing LDPC encoder");
+        roc_log(LogDebug, "of encoder: initializing: codec=ldpc prng_seed=%ld n1=%d",
+                (long)config.ldpc_prng_seed, (int)config.ldpc_N1);
 
         codec_id_ = OF_CODEC_LDPC_STAIRCASE_STABLE;
         codec_params_.ldpc_params_.prng_seed = config.ldpc_prng_seed;

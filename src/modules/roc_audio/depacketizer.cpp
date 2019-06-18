@@ -47,6 +47,8 @@ Depacketizer::Depacketizer(packet::IReader& reader,
     , first_packet_(true)
     , beep_(beep)
     , dropped_packets_(0) {
+    roc_log(LogDebug, "depacketizer: initializing: n_channels=%lu",
+            (unsigned long)num_channels_);
 }
 
 bool Depacketizer::started() const {

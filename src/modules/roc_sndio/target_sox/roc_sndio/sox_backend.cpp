@@ -85,13 +85,15 @@ void log_handler(unsigned sox_level,
         break;
 
     case 2: // warn
-    case 3: // info
-    case 4: // debug
         level = LogInfo;
         break;
 
-    default: // debug_more, debug most
+    case 3: // info
         level = LogDebug;
+        break;
+
+    default: // debug, debug more, debug most
+        level = LogTrace;
         break;
     }
 
@@ -102,13 +104,13 @@ void log_handler(unsigned sox_level,
     char message[256] = {};
     vsnprintf(message, sizeof(message) - 1, format, args);
 
-    roc_log(level, "[sox] %s: %s", filename, message);
+    roc_log(level, "sox: %s: %s", filename, message);
 }
 
 } // namespace
 
 SoxBackend::SoxBackend() {
-    roc_log(LogInfo, "initializing sox backend");
+    roc_log(LogDebug, "initializing sox backend");
 
     sox_init();
 
