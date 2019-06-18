@@ -173,7 +173,7 @@ Raspberry Pi 2 and 3
 
     # install Roc binaries
     $ scp ./bin/arm-linux-gnueabihf/roc-{recv,send,conv} <address>:/usr/bin
-    $ scp ./bin/arm-linux-gnueabihf/libroc.so <address>:/usr/lib
+    $ scp ./bin/arm-linux-gnueabihf/libroc.so.*.* <address>:/usr/lib
     $ scp ./bin/arm-linux-gnueabihf/module-roc-{sink,sink-input} <address>:/usr/lib/pulse-10.0/modules
 
     # install Roc dependencies
@@ -198,7 +198,7 @@ Raspberry Pi 1 and Zero
 
     # install Roc binaries
     $ scp ./bin/arm-bcm2708hardfp-linux-gnueabi/roc-{recv,send,conv} <address>:/usr/bin
-    $ scp ./bin/arm-bcm2708hardfp-linux-gnueabi/libroc.so <address>:/usr/lib
+    $ scp ./bin/arm-bcm2708hardfp-linux-gnueabi/libroc.so.*.* <address>:/usr/lib
     $ scp ./bin/arm-bcm2708hardfp-linux-gnueabi/module-roc-{sink,sink-input} \
         <address>:/usr/lib/pulse-5.0/modules
 
@@ -224,7 +224,7 @@ Orange Pi 64-bit models
 
     # install Roc binaries
     $ scp ./bin/aarch64-linux-gnu/roc-{recv,send,conv} <address>:/usr/bin
-    $ scp ./bin/aarch64-linux-gnu/libroc.so <address>:/usr/lib
+    $ scp ./bin/aarch64-linux-gnu/libroc.so.*.* <address>:/usr/lib
     $ scp ./bin/aarch64-linux-gnu/module-roc-{sink,sink-input} <address>:/usr/lib/pulse-8.0/modules
 
     # install Roc dependencies
@@ -249,7 +249,7 @@ Orange Pi 32-bit models
 
     # install Roc binaries
     $ scp ./bin/arm-linux-gnueabihf/roc-{recv,send,conv} <address>:/usr/bin
-    $ scp ./bin/arm-linux-gnueabihf/libroc.so <address>:/usr/lib
+    $ scp ./bin/arm-linux-gnueabihf/libroc.so.*.* <address>:/usr/lib
     $ scp ./bin/arm-linux-gnueabihf/module-roc-{sink,sink-input} <address>:/usr/lib/pulse-8.0/modules
 
     # install Roc dependencies
@@ -299,3 +299,27 @@ macOS 10.11 and later
 
     # install libraries and tools
     $ sudo scons -Q --build-3rdparty=uv,openfec,sox --prefix=/usr/local install
+
+Android
+=======
+
+.. warning::
+
+   Android support is still work in progress and was not properly tested yet.
+
+.. seealso::
+
+   * :doc:`/portability/cross_compiling`
+
+Termux packages
+---------------
+
+Install `Termux <https://termux.com/>`_ on your device and enter these commands:
+
+.. code::
+
+    $ pkg install unstable-repo
+    $ pkg install roc
+    $ pkg install pulseaudio
+
+This will install binary packages for PulseAudio daemon and Roc PulseAudio modules on your device. Then you can configure PulseAudio to run Roc as described in :doc:`/running/pulseaudio_modules`.

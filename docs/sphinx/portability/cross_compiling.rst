@@ -1,4 +1,4 @@
-Cross compiling
+Cross-compiling
 ***************
 
 .. contents:: Table of contents:
@@ -51,7 +51,7 @@ Here is how you can build Roc with this toolchain using `rocproject/cross-arm-bc
             --host=arm-bcm2708hardfp-linux-gnueabi \
             --build-3rdparty=all
 
-Or you can install the toolchain manually:
+Alternatively, you can install the toolchain manually:
 
 .. code::
 
@@ -98,7 +98,7 @@ Here is how you can build Roc with this toolchain using `rocproject/cross-arm-li
             --host=arm-linux-gnueabihf \
             --build-3rdparty=all
 
-Or you can install the toolchain manually:
+Alternatively, you can install the toolchain manually:
 
 .. code::
 
@@ -141,7 +141,7 @@ Here is how you can build Roc with this toolchain using `rocproject/cross-aarch6
             --host=aarch64-linux-gnu \
             --build-3rdparty=all
 
-Or you can install the toolchain manually:
+Alternatively, you can install the toolchain manually:
 
 .. code::
 
@@ -163,6 +163,31 @@ Or you can install the toolchain manually:
     # build Roc
     $ cd "${ROC_DIR}"
     $ scons --host=aarch64-linux-gnu --build-3rdparty=all
+
+.. _aarch64-linux-android:
+
+Android NDK arm64 toolchain
+===========================
+
+`Android NDK <https://developer.android.com/ndk>`_ provides a way to build toolchains for various architectures and Android versions.
+
+The ``aarch64-linux-android`` is an arm64 Android toolchain. There are versions for different Android API levels.
+
+Here is how you can build Roc with this toolchain using `rocproject/cross-aarch64-linux-android <https://hub.docker.com/r/rocproject/cross-aarch64-linux-android/>`_ Docker image:
+
+.. code::
+
+    $ cd /path/to/roc
+    $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
+        rocproject/cross-aarch64-linux-android:api28 \
+          scons \
+            --compiler=clang \
+            --host=aarch64-linux-android \
+            --disable-tools \
+            --disable-examples \
+            --build-3rdparty=uv,openfec,cpputest
+
+Alternatively, you can download Android NDK and build the toolchain manually by following `these instructions <https://developer.android.com/ndk/guides/standalone_toolchain>`_.
 
 Debian and Ubuntu toolchains
 ============================
@@ -209,7 +234,9 @@ If you build Roc dependencies manually and install them into sysroot, you should
 
 If you let Roc to build its dependencies automatically using ``--build-3rdparty`` option, most of them are statically linked into the Roc binaries, but there are still a few dependencies that are linked dynamically and so needed to be installed on the target system.
 
-You can either copy their binaries from ``3rdparty/<toolchain>/rpath`` directory or obtain them some other way. If you have a package manager on the target system, you can just login on the system and install them. Below are examples for Rapsbian.
+You can either copy their binaries from ``3rdparty/<toolchain>/rpath`` directory or obtain them some other way. If you have a package manager on the target system, you can just login on the system and install them.
+
+Here are examples for Raspbian:
 
 If ALSA support is enabled, install libasound:
 

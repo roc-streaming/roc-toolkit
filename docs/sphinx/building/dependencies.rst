@@ -9,7 +9,7 @@ Build dependencies
 * SCons
 * gengetopt (optional, install if you want to build tools)
 * pkg-config (optional, install if you want installed dependencies to be auto-detected)
-* config.guess script (optional, used to auto-detect the system type; usually provided by autotools, automake, and libtool packages)
+* config.guess script (optional, used to auto-detect the system type; may be provided by autotools, automake, or libtool package)
 * libtool, intltool, autoconf, automake, make, cmake (optional, install if you want Roc to download and build dependencies automatically)
 
 Runtime dependencies
@@ -26,7 +26,7 @@ Runtime dependencies
 
 .. warning::
 
-   If you want to install OpenFEC, it's recommended to use `our fork <https://github.com/roc-project/openfec>`_ or manually apply patches from it. Our fork is automatically installed when using ``--build-3rdparty=openfec`` option. The fork contains several bug fixes and minor improvements that are not available in the upstream yet.
+   If you want to install OpenFEC, it's highly recommended to use `our fork <https://github.com/roc-project/openfec>`_ or manually apply patches from it. The fork is automatically used when using ``--build-3rdparty=openfec`` option. The fork contains several bug fixes and improvements that are not available in the upstream.
 
 Development dependencies
 ========================

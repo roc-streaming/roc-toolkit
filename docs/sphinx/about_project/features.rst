@@ -77,6 +77,7 @@ Portability
 
   * GNU/Linux
   * macOS
+  * Android *(work in progress)*
 
 * tested hardware architectures
 

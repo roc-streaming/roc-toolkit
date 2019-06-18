@@ -14,6 +14,7 @@ Operating systems:
 
 * GNU/Linux
 * macOS
+* Android *(work in progress)*
 
 Compilers:
 
