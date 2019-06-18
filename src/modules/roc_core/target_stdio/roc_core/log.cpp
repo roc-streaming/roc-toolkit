@@ -9,6 +9,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+#include "roc_core/format_time.h"
 #include "roc_core/log.h"
 
 namespace roc {
@@ -52,36 +53,42 @@ void Logger::print(const char* module, LogLevel level, const char* format, ...) 
         return;
     }
 
-    char message[256] = {};
+    char timestamp[64] = {};
+    if (!format_time(timestamp, sizeof(timestamp))) {
+        timestamp[0] = '\0';
+    }
 
+    char message[256] = {};
     va_list args;
     va_start(args, format);
-    vsnprintf(message, sizeof(message) - 1, format, args);
+    if (vsnprintf(message, sizeof(message) - 1, format, args) < 0) {
+        message[0] = '\0';
+    }
     va_end(args);
 
     if (handler_) {
         handler_(level, module, message);
     } else {
-        const char* prefix = "?";
+        const char* level_str = "???";
 
         switch (level) {
         case LogNone:
             break;
         case LogError:
-            prefix = "error";
+            level_str = "err";
             break;
         case LogInfo:
-            prefix = "info";
+            level_str = "inf";
             break;
         case LogDebug:
-            prefix = "debug";
+            level_str = "dbg";
             break;
         case LogTrace:
-            prefix = "trace";
+            level_str = "trc";
             break;
         }
 
-        fprintf(stderr, "[%s] %s: %s\n", prefix, module, message);
+        fprintf(stderr, "%s [%s] %s: %s\n", timestamp, level_str, module, message);
     }
 }
 
