@@ -42,7 +42,7 @@ roc_context* roc_context_open(const roc_context_config* config) {
 
     roc_log(LogInfo, "roc_context: starting context");
 
-    if (!context->trx.start()) {
+    if (!context->trx.valid()) {
         roc_log(LogError, "roc_context_start: can't start thread");
 
         delete context;
@@ -65,7 +65,6 @@ int roc_context_close(roc_context* context) {
     }
 
     context->trx.stop();
-    context->trx.join();
 
     delete context;
 

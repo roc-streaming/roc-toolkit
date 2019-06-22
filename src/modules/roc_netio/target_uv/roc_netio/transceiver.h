@@ -21,6 +21,7 @@
 #include "roc_core/list_node.h"
 #include "roc_core/mutex.h"
 #include "roc_core/thread.h"
+#include "roc_netio/handle.h"
 #include "roc_netio/udp_receiver.h"
 #include "roc_netio/udp_sender.h"
 #include "roc_packet/address.h"
@@ -34,30 +35,23 @@ namespace netio {
 class Transceiver : private core::Thread {
 public:
     //! Initialize.
+    //!
+    //! @remarks
+    //!  Start background thread.
     Transceiver(packet::PacketPool& packet_pool,
                 core::BufferPool<uint8_t>& buffer_pool,
                 core::IAllocator& allocator);
 
     virtual ~Transceiver();
 
-    //! Check if trasceiver was successfully constructed.
+    //! Check if transceiver was successfully constructed.
     bool valid() const;
 
-    //! Start background thread.
+    //! Stop all receivers and senders.
+    //!
     //! @remarks
-    //!  Should be called once.
-    bool start();
-
-    //! Asynchronous stop.
-    //! @remarks
-    //!  Asynchronously stops all receivers and senders. May be called from
-    //!  any thread. Use join() to wait until the background thread finishes.
+    //!  May be called from any thread. Wait until background thread finishes.
     void stop();
-
-    //! Wait until background thread finishes.
-    //! @remarks
-    //!  Should be called once.
-    void join();
 
     //! Get number of receiver and sender ports.
     size_t num_ports() const;
@@ -119,22 +113,29 @@ private:
 
     static void task_sem_cb_(uv_async_t* handle);
     static void stop_sem_cb_(uv_async_t* handle);
+    static void close_cb_(uv_handle_t* handle);
+    static void remove_port_cb_(void*, packet::Address&);
 
     virtual void run();
 
     void stop_();
     void close_();
-
-    void remove_all_ports_();
+    void stop_all_();
+    void wait_stopped_();
+    void wait_closed_();
 
     void process_tasks_();
     void run_task_(Task&);
 
     bool add_udp_receiver_(Task&);
     bool add_udp_sender_(Task&);
-    bool remove_port_(Task&);
 
-    bool has_port_(const packet::Address& address) const;
+    bool remove_port_(Task&);
+    void wait_port_removed_(const packet::Address&) const;
+
+    bool has_port_(const packet::Address&) const;
+    core::SharedPtr<UDPReceiver> get_receiver_(const packet::Address&) const;
+    core::SharedPtr<UDPSender> get_sender_(const packet::Address&) const;
 
     packet::PacketPool& packet_pool_;
     core::BufferPool<uint8_t>& buffer_pool_;
@@ -156,8 +157,9 @@ private:
 
     core::List<UDPReceiver> receivers_;
     core::List<UDPSender> senders_;
-
     size_t num_ports_;
+
+    Handle stop_handle_;
 
     core::Mutex mutex_;
     core::Cond cond_;

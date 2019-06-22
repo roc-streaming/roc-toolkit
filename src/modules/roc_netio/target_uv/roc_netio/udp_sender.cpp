@@ -10,20 +10,23 @@
 #include "roc_core/helpers.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
+#include "roc_netio/handle.h"
 #include "roc_packet/address_to_str.h"
 
 namespace roc {
 namespace netio {
 
-UDPSender::UDPSender(uv_loop_t& event_loop, core::IAllocator& allocator)
+UDPSender::UDPSender(uv_loop_t& event_loop,
+                     Handle& stop_handle,
+                     core::IAllocator& allocator)
     : allocator_(allocator)
     , loop_(event_loop)
     , write_sem_initialized_(false)
     , handle_initialized_(false)
     , pending_(0)
     , stopped_(true)
-    , container_(NULL)
-    , packet_counter_(0) {
+    , packet_counter_(0)
+    , stop_handle_(stop_handle) {
 }
 
 UDPSender::~UDPSender() {
@@ -37,15 +40,6 @@ void UDPSender::destroy() {
 }
 
 bool UDPSender::start(packet::Address& bind_address) {
-    if (int err = uv_async_init(&loop_, &write_sem_, write_sem_cb_)) {
-        roc_log(LogError, "udp sender: uv_async_init(): [%s] %s", uv_err_name(err),
-                uv_strerror(err));
-        return false;
-    }
-
-    write_sem_.data = this;
-    write_sem_initialized_ = true;
-
     if (int err = uv_udp_init(&loop_, &handle_)) {
         roc_log(LogError, "udp sender: uv_udp_init(): [%s] %s", uv_err_name(err),
                 uv_strerror(err));
@@ -54,6 +48,15 @@ bool UDPSender::start(packet::Address& bind_address) {
 
     handle_.data = this;
     handle_initialized_ = true;
+
+    if (int err = uv_async_init(&loop_, &write_sem_, write_sem_cb_)) {
+        roc_log(LogError, "udp sender: uv_async_init(): [%s] %s", uv_err_name(err),
+                uv_strerror(err));
+        return false;
+    }
+
+    write_sem_.data = this;
+    write_sem_initialized_ = true;
 
     unsigned flags = 0;
     if (bind_address.multicast() && bind_address.port() > 0) {
@@ -102,18 +105,6 @@ void UDPSender::stop() {
 
     if (pending_ == 0) {
         close_();
-    }
-}
-
-void UDPSender::remove(core::List<UDPSender>& container) {
-    roc_panic_if(container_);
-
-    if (handle_initialized_ || write_sem_initialized_) {
-        stop();
-        container_ = &container;
-        address_ = packet::Address();
-    } else {
-        container.remove(*this);
     }
 }
 
@@ -166,9 +157,10 @@ void UDPSender::close_cb_(uv_handle_t* handle) {
         return;
     }
 
-    if (self.container_) {
-        self.container_->remove(self);
-    }
+    roc_log(LogInfo, "udp receiver: closed port %s",
+            packet::address_to_str(self.address_).c_str());
+
+    self.stop_handle_.fn(self.stop_handle_.data, self.address_);
 }
 
 void UDPSender::write_sem_cb_(uv_async_t* handle) {

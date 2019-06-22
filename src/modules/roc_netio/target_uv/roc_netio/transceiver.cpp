@@ -10,6 +10,7 @@
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_core/shared_ptr.h"
+#include "roc_netio/handle.h"
 #include "roc_packet/address_to_str.h"
 
 namespace roc {
@@ -51,7 +52,10 @@ Transceiver::Transceiver(packet::PacketPool& packet_pool,
     task_sem_.data = this;
     task_sem_initialized_ = true;
 
-    valid_ = true;
+    stop_handle_.data = this;
+    stop_handle_.fn = remove_port_cb_;
+
+    valid_ = Thread::start();
 }
 
 Transceiver::~Transceiver() {
@@ -59,33 +63,28 @@ Transceiver::~Transceiver() {
         roc_panic("transceiver: thread is not joined before calling destructor");
     }
 
-    if (num_ports_ != 0) {
-        remove_all_ports_();
-    }
+    roc_panic_if(num_ports_);
 
-    close_();
+    roc_panic_if(receivers_.size());
+    roc_panic_if(senders_.size());
 
     if (loop_initialized_) {
-        // If the thread was never started and joined and thus stop_() was not
-        // called, we should manually call it and quickly run the loop to wait
-        // all opened handles to be closed. Otherwise, uv_loop_close() will
-        // fail with EBUSY.
+        // If the thread was never started and joined and thus stop() was not
+        // called, we should manually run the loop to wait all opened handles
+        // to be closed. Otherwise, uv_loop_close() will fail with EBUSY.
         if (uv_loop_alive(&loop_)) {
-            stop_();
+            close_();
+
             Transceiver::run(); // non-virtual call from dtor
         }
+
+        roc_panic_if(task_sem_initialized_);
+        roc_panic_if(stop_sem_initialized_);
+
         if (int err = uv_loop_close(&loop_)) {
             roc_panic("transceiver: uv_loop_close(): [%s] %s", uv_err_name(err),
                       uv_strerror(err));
         }
-    }
-
-    const size_t num_dead_ports = receivers_.size() + senders_.size();
-
-    if (num_dead_ports != 0) {
-        roc_panic(
-            "transceiver: %lu dead port(s) were not cleaned up before calling destructor",
-            (unsigned long)num_dead_ports);
     }
 }
 
@@ -93,43 +92,12 @@ bool Transceiver::valid() const {
     return valid_;
 }
 
-bool Transceiver::start() {
-    if (!valid()) {
-        roc_panic("transceiver: can't use invalid transceiver");
-    }
-
-    core::Mutex::Lock lock(mutex_);
-
-    if (stopped_) {
-        roc_log(LogError, "tranceiver: can't start stopped transceiver");
-        return false;
-    }
-
-    return Thread::start();
-}
-
 void Transceiver::stop() {
     if (!valid()) {
         roc_panic("transceiver: can't use invalid transceiver");
     }
 
-    core::Mutex::Lock lock(mutex_);
-
-    // Ignore subsequent calls, since stop_sem_ may be already closed
-    // from event loop thread.
-    if (stopped_) {
-        return;
-    }
-
-    stopped_ = true;
-
-    if (int err = uv_async_send(&stop_sem_)) {
-        roc_panic("transceiver: uv_async_send(): [%s] %s", uv_err_name(err),
-                  uv_strerror(err));
-    }
-}
-
-void Transceiver::join() {
+    stop_();
     Thread::join();
 }
 
@@ -186,13 +154,11 @@ void Transceiver::remove_port(packet::Address bind_address) {
         roc_panic("transceiver: can't remove port %s: unknown port",
                   packet::address_to_str(bind_address).c_str());
     }
+
+    wait_port_removed_(bind_address);
 }
 
 void Transceiver::run() {
-    if (!valid()) {
-        roc_panic("transceiver: can't use invalid transceiver");
-    }
-
     roc_log(LogDebug, "transceiver: starting event loop");
 
     int err = uv_run(&loop_, UV_RUN_DEFAULT);
@@ -214,12 +180,88 @@ void Transceiver::stop_sem_cb_(uv_async_t* handle) {
     roc_panic_if_not(handle);
 
     Transceiver& self = *(Transceiver*)handle->data;
-    self.stop_();
+    self.stop_all_();
     self.close_();
     self.process_tasks_();
 }
 
+void Transceiver::close_cb_(uv_handle_t* handle) {
+    roc_panic_if_not(handle);
+
+    Transceiver& self = *(Transceiver*)handle->data;
+
+    core::Mutex::Lock lock(self.mutex_);
+
+    if (handle == (uv_handle_t*)&self.stop_sem_) {
+        self.stop_sem_initialized_ = false;
+    } else {
+        self.task_sem_initialized_ = false;
+    }
+
+    if (self.stop_sem_initialized_ || self.task_sem_initialized_) {
+        return;
+    }
+
+    self.cond_.broadcast();
+}
+
+void Transceiver::remove_port_cb_(void* data, packet::Address& address) {
+    roc_log(LogDebug, "transceiver: removed port %s",
+            packet::address_to_str(address).c_str());
+
+    Transceiver& self = *(Transceiver*)data;
+
+    core::Mutex::Lock lock(self.mutex_);
+
+    core::SharedPtr<UDPReceiver> rp = self.get_receiver_(address);
+    if (!rp) {
+        core::SharedPtr<UDPSender> sp = self.get_sender_(address);
+        if (!sp) {
+            roc_panic("transceiver: can't remove unknown port %s",
+                      packet::address_to_str(address).c_str());
+        } else {
+            self.senders_.remove(*sp);
+        }
+    } else {
+        self.receivers_.remove(*rp);
+    }
+
+    self.num_ports_--;
+
+    self.cond_.broadcast();
+}
+
 void Transceiver::stop_() {
+    core::Mutex::Lock lock(mutex_);
+
+    if (stopped_) {
+        return;
+    }
+
+    if (int err = uv_async_send(&stop_sem_)) {
+        roc_panic("transceiver: uv_async_send(): [%s] %s", uv_err_name(err),
+                  uv_strerror(err));
+    }
+
+    wait_stopped_();
+    wait_closed_();
+
+    stopped_ = true;
+}
+
+void Transceiver::wait_stopped_() {
+    while (receivers_.size() || senders_.size()) {
+        cond_.wait();
+    }
+}
+
+void Transceiver::wait_closed_() {
+    while (task_sem_initialized_ || stop_sem_initialized_) {
+        cond_.wait();
+    }
+}
+
+void Transceiver::stop_all_() {
     for (core::SharedPtr<UDPReceiver> rp = receivers_.front(); rp;
          rp = receivers_.nextof(*rp)) {
         rp->stop();
@@ -233,57 +275,24 @@ void Transceiver::stop_() {
 
 void Transceiver::close_() {
     if (task_sem_initialized_) {
-        uv_close((uv_handle_t*)&task_sem_, NULL);
-        task_sem_initialized_ = false;
+        uv_close((uv_handle_t*)&task_sem_, close_cb_);
     }
 
     if (stop_sem_initialized_) {
-        uv_close((uv_handle_t*)&stop_sem_, NULL);
-        stop_sem_initialized_ = false;
-    }
-}
-
-void Transceiver::remove_all_ports_() {
-    core::SharedPtr<UDPReceiver> rp = receivers_.front();
-    while (rp) {
-        core::SharedPtr<UDPReceiver> rp_next = receivers_.nextof(*rp);
-        rp->remove(receivers_);
-        rp = rp_next;
-        num_ports_--;
-    }
-
-    core::SharedPtr<UDPSender> sp = senders_.front();
-    while (sp) {
-        core::SharedPtr<UDPSender> sp_next = senders_.nextof(*sp);
-        sp->remove(senders_);
-        sp = sp_next;
-        num_ports_--;
+        uv_close((uv_handle_t*)&stop_sem_, close_cb_);
     }
 }
 
 void Transceiver::run_task_(Task& task) {
     core::Mutex::Lock lock(mutex_);
 
-    const bool running = joinable();
+    roc_panic_if(stopped_);
 
-    if (!running || stopped_) {
-        // If a stop was scheduled, ensure event loop thread have finished.
-        if (running) {
-            mutex_.unlock();
-            join();
-            mutex_.lock();
-        }
+    tasks_.push_back(task);
 
-        // There is no event loop thread, execute task in-place.
-        task.execute(*this);
-    } else {
-        // Schedule task on event loop thread.
-        tasks_.push_back(task);
-
-        if (int err = uv_async_send(&task_sem_)) {
-            roc_panic("transceiver: uv_async_send(): [%s] %s", uv_err_name(err),
-                      uv_strerror(err));
-        }
+    if (int err = uv_async_send(&task_sem_)) {
+        roc_panic("transceiver: uv_async_send(): [%s] %s", uv_err_name(err),
+                  uv_strerror(err));
     }
 
     while (!task.done) {
@@ -315,8 +324,8 @@ bool Transceiver::add_udp_receiver_(Task& task) {
         return false;
     }
 
-    core::SharedPtr<UDPReceiver> rp = new (allocator_)
-        UDPReceiver(loop_, *task.writer, packet_pool_, buffer_pool_, allocator_);
+    core::SharedPtr<UDPReceiver> rp = new (allocator_) UDPReceiver(
+        loop_, stop_handle_, *task.writer, packet_pool_, buffer_pool_, allocator_);
 
     if (!rp) {
         roc_log(LogError, "transceiver: can't add port %s: can't allocate receiver",
@@ -349,7 +358,8 @@ bool Transceiver::add_udp_sender_(Task& task) {
         return false;
     }
 
-    core::SharedPtr<UDPSender> sp = new (allocator_) UDPSender(loop_, allocator_);
+    core::SharedPtr<UDPSender> sp =
+        new (allocator_) UDPSender(loop_, stop_handle_, allocator_);
 
     if (!sp) {
         roc_log(LogError, "transceiver: can't add port %s: can't allocate sender",
@@ -370,44 +380,69 @@ bool Transceiver::add_udp_sender_(Task& task) {
     return true;
 }
 
-bool Transceiver::remove_port_(Task& task) {
-    for (core::SharedPtr<UDPReceiver> rp = receivers_.front(); rp;
-         rp = receivers_.nextof(*rp)) {
-        if (rp->address() == *task.address) {
-            rp->remove(receivers_);
-            num_ports_--;
-            return true;
-        }
+bool Transceiver::has_port_(const packet::Address& address) const {
+    core::SharedPtr<UDPReceiver> rp = get_receiver_(address);
+    if (rp) {
+        return true;
     }
 
-    for (core::SharedPtr<UDPSender> sp = senders_.front(); sp;
-         sp = senders_.nextof(*sp)) {
-        if (sp->address() == *task.address) {
-            sp->remove(senders_);
-            num_ports_--;
-            return true;
-        }
+    core::SharedPtr<UDPSender> sp = get_sender_(address);
+    if (sp) {
+        return true;
     }
 
     return false;
 }
 
-bool Transceiver::has_port_(const packet::Address& address) const {
-    for (core::SharedPtr<UDPReceiver> rp = receivers_.front(); rp;
-         rp = receivers_.nextof(*rp)) {
-        if (rp->address() == address) {
-            return true;
-        }
+bool Transceiver::remove_port_(Task& task) {
+    roc_log(LogDebug, "transceiver: removing port %s",
+            packet::address_to_str(*task.address).c_str());
+
+    core::SharedPtr<UDPReceiver> rp = get_receiver_(*task.address);
+    if (rp) {
+        rp->stop();
+        return true;
     }
 
-    for (core::SharedPtr<UDPSender> sp = senders_.front(); sp;
-         sp = senders_.nextof(*sp)) {
-        if (sp->address() == address) {
-            return true;
-        }
+    core::SharedPtr<UDPSender> sp = get_sender_(*task.address);
+    if (sp) {
+        sp->stop();
+        return true;
     }
 
     return false;
+}
+
+void Transceiver::wait_port_removed_(const packet::Address& address) const {
+    core::Mutex::Lock lock(mutex_);
+
+    while (has_port_(address)) {
+        cond_.wait();
+    }
+}
+
+core::SharedPtr<UDPReceiver>
+Transceiver::get_receiver_(const packet::Address& address) const {
+    for (core::SharedPtr<UDPReceiver> pp = receivers_.front(); pp;
+         pp = receivers_.nextof(*pp)) {
+        if (pp->address() == address) {
+            return pp;
+        }
+    }
+
+    return NULL;
+}
+
+core::SharedPtr<UDPSender>
+Transceiver::get_sender_(const packet::Address& address) const {
+    for (core::SharedPtr<UDPSender> pp = senders_.front(); pp;
+         pp = senders_.nextof(*pp)) {
+        if (pp->address() == address) {
+            return pp;
+        }
+    }
+
+    return NULL;
 }
 
 } // namespace netio

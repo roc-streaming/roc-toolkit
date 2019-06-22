@@ -19,6 +19,7 @@
 #include "roc_core/list.h"
 #include "roc_core/list_node.h"
 #include "roc_core/refcnt.h"
+#include "roc_netio/handle.h"
 #include "roc_packet/address.h"
 #include "roc_packet/iwriter.h"
 #include "roc_packet/packet_pool.h"
@@ -31,6 +32,7 @@ class UDPReceiver : public core::RefCnt<UDPReceiver>, public core::ListNode {
 public:
     //! Initialize.
     UDPReceiver(uv_loop_t& event_loop,
+                Handle& stop_handle,
                 packet::IWriter& writer,
                 packet::PacketPool& packet_pool,
                 core::BufferPool<uint8_t>& buffer_pool,
@@ -48,11 +50,6 @@ public:
     //! @remarks
     //!  Should be called from the event loop thread.
     void stop();
-
-    //! Asynchronous remove.
-    //! @remarks
-    //!  Should be called from the event loop thread.
-    void remove(core::List<UDPReceiver>& container);
 
     //! Get bind address.
     const packet::Address& address() const;
@@ -83,9 +80,9 @@ private:
     packet::PacketPool& packet_pool_;
     core::BufferPool<uint8_t>& buffer_pool_;
 
-    core::List<UDPReceiver>* container_;
-
     unsigned packet_counter_;
+
+    Handle& stop_handle_;
 };
 
 } // namespace netio
