@@ -262,15 +262,21 @@ public:
         , n_source_packets_(n_source_packets)
         , n_repair_packets_(n_repair_packets)
         , pos_(0) {
+        CHECK(trx_.valid());
+
         dst_source_addr_.set_ipv4("127.0.0.1", roc_address_port(dst_source_addr));
         dst_repair_addr_.set_ipv4("127.0.0.1", roc_address_port(dst_repair_addr));
+
         send_addr_.set_ipv4("127.0.0.1", 0);
         recv_source_addr_.set_ipv4("127.0.0.1", 0);
         recv_repair_addr_.set_ipv4("127.0.0.1", 0);
+
         writer_ = trx_.add_udp_sender(send_addr_);
         CHECK(writer_);
+
         CHECK(trx_.add_udp_receiver(recv_source_addr_, *this));
         CHECK(trx_.add_udp_receiver(recv_repair_addr_, *this));
+
         CHECK(roc_address_init(&roc_source_addr_, ROC_AF_AUTO, "127.0.0.1",
                                recv_source_addr_.port())
               == 0);
@@ -280,9 +286,7 @@ public:
     }
 
     ~Proxy() {
-        trx_.remove_port(send_addr_);
-        trx_.remove_port(recv_source_addr_);
-        trx_.remove_port(recv_repair_addr_);
+        trx_.stop();
     }
 
     const roc_address* source_addr() const {
@@ -291,15 +295,6 @@ public:
 
     const roc_address* repair_addr() const {
         return &roc_repair_addr_;
-    }
-
-    void start() {
-        trx_.start();
-    }
-
-    void stop() {
-        trx_.stop();
-        trx_.join();
     }
 
 private:
@@ -465,13 +460,9 @@ TEST(sender_receiver, fec_with_losses) {
     Sender sender(context, sender_conf, proxy.source_addr(), proxy.repair_addr(), samples,
                   TotalSamples, FrameSamples, Flags);
 
-    proxy.start();
-
     sender.start();
     receiver.run();
     sender.join();
-
-    proxy.stop();
 }
 #endif // ROC_TARGET_OPENFEC
 

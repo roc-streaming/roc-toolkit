@@ -19,6 +19,7 @@
 #include "roc_core/list_node.h"
 #include "roc_core/mutex.h"
 #include "roc_core/refcnt.h"
+#include "roc_netio/handle.h"
 #include "roc_packet/address.h"
 #include "roc_packet/iwriter.h"
 
@@ -31,7 +32,7 @@ class UDPSender : public core::RefCnt<UDPSender>,
                   public packet::IWriter {
 public:
     //! Initialize.
-    UDPSender(uv_loop_t& event_loop, core::IAllocator& allocator);
+    UDPSender(uv_loop_t& event_loop, Handle& stop_handle_, core::IAllocator& allocator);
 
     //! Destroy.
     ~UDPSender();
@@ -45,11 +46,6 @@ public:
     //! @remarks
     //!  Should be called from the event loop thread.
     void stop();
-
-    //! Asynchronous remove.
-    //! @remarks
-    //!  Should be called from the event loop thread.
-    void remove(core::List<UDPSender>& container);
 
     //! Get bind address.
     const packet::Address& address() const;
@@ -89,9 +85,9 @@ private:
     size_t pending_;
     bool stopped_;
 
-    core::List<UDPSender>* container_;
-
     unsigned packet_counter_;
+
+    Handle& stop_handle_;
 };
 
 } // namespace netio

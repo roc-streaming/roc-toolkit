@@ -226,15 +226,9 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    if (!trx.start()) {
-        roc_log(LogError, "can't start transceiver");
-        return 1;
-    }
-
     const bool ok = pump.run();
 
     trx.stop();
-    trx.join();
 
     return ok ? 0 : 1;
 }

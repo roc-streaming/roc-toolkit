@@ -93,8 +93,6 @@ TEST(udp, one_sender_one_receiver_single_thread) {
 
     CHECK(trx.add_udp_receiver(rx_addr, rx_queue));
 
-    CHECK(trx.start());
-
     for (int i = 0; i < NumIterations; i++) {
         for (int p = 0; p < NumPackets; p++) {
             tx_sender->write(new_packet(tx_addr, rx_addr, p));
@@ -105,10 +103,6 @@ TEST(udp, one_sender_one_receiver_single_thread) {
     }
 
     trx.stop();
-    trx.join();
-
-    trx.remove_port(tx_addr);
-    trx.remove_port(rx_addr);
 }
 
 TEST(udp, one_sender_one_receiver_separate_threads) {
@@ -128,9 +122,6 @@ TEST(udp, one_sender_one_receiver_separate_threads) {
 
     CHECK(rx.add_udp_receiver(rx_addr, rx_queue));
 
-    CHECK(tx.start());
-    CHECK(rx.start());
-
     for (int i = 0; i < NumIterations; i++) {
         for (int p = 0; p < NumPackets; p++) {
             tx_sender->write(new_packet(tx_addr, rx_addr, p));
@@ -141,13 +132,7 @@ TEST(udp, one_sender_one_receiver_separate_threads) {
     }
 
     tx.stop();
-    tx.join();
-
     rx.stop();
-    rx.join();
-
-    tx.remove_port(tx_addr);
-    rx.remove_port(rx_addr);
 }
 
 TEST(udp, one_sender_multiple_receivers) {
@@ -176,11 +161,6 @@ TEST(udp, one_sender_multiple_receivers) {
     CHECK(rx23.add_udp_receiver(rx_addr2, rx_queue2));
     CHECK(rx23.add_udp_receiver(rx_addr3, rx_queue3));
 
-    CHECK(tx.start());
-
-    CHECK(rx1.start());
-    CHECK(rx23.start());
-
     for (int i = 0; i < NumIterations; i++) {
         for (int p = 0; p < NumPackets; p++) {
             tx_sender->write(new_packet(tx_addr, rx_addr1, p * 10));
@@ -195,18 +175,8 @@ TEST(udp, one_sender_multiple_receivers) {
     }
 
     tx.stop();
-    tx.join();
-
     rx1.stop();
-    rx1.join();
-
     rx23.stop();
-    rx23.join();
-
-    tx.remove_port(tx_addr);
-    rx1.remove_port(rx_addr1);
-    rx23.remove_port(rx_addr2);
-    rx23.remove_port(rx_addr3);
 }
 
 TEST(udp, multiple_senders_one_receiver) {
@@ -225,7 +195,7 @@ TEST(udp, multiple_senders_one_receiver) {
     CHECK(tx_sender1);
 
     Transceiver tx23(packet_pool, buffer_pool, allocator);
-    CHECK(tx1.valid());
+    CHECK(tx23.valid());
 
     packet::IWriter* tx_sender2 = tx23.add_udp_sender(tx_addr2);
     CHECK(tx_sender2);
@@ -236,11 +206,6 @@ TEST(udp, multiple_senders_one_receiver) {
     Transceiver rx(packet_pool, buffer_pool, allocator);
     CHECK(rx.valid());
     CHECK(rx.add_udp_receiver(rx_addr, rx_queue));
-
-    CHECK(tx1.start());
-    CHECK(tx23.start());
-
-    CHECK(rx.start());
 
     for (int i = 0; i < NumIterations; i++) {
         for (int p = 0; p < NumPackets; p++) {
@@ -264,18 +229,8 @@ TEST(udp, multiple_senders_one_receiver) {
     }
 
     tx1.stop();
-    tx1.join();
-
     tx23.stop();
-    tx23.join();
-
     rx.stop();
-    rx.join();
-
-    tx1.remove_port(tx_addr1);
-    tx23.remove_port(tx_addr2);
-    tx23.remove_port(tx_addr3);
-    rx.remove_port(rx_addr);
 }
 
 } // namespace netio
