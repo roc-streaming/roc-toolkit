@@ -38,13 +38,13 @@ Depacketizer::Depacketizer(packet::IReader& reader,
     , decoder_(decoder)
     , channels_(channels)
     , num_channels_(packet::num_channels(channels))
-    , packet_pos_(0)
     , timestamp_(0)
     , zero_samples_(0)
     , missing_samples_(0)
     , packet_samples_(0)
     , rate_limiter_(LogInterval)
     , first_packet_(true)
+    , has_packet_(false)
     , beep_(beep)
     , dropped_packets_(0) {
     roc_log(LogDebug, "depacketizer: initializing: n_channels=%lu",
@@ -98,8 +98,8 @@ void Depacketizer::read_frame_(Frame& frame) {
 sample_t* Depacketizer::read_samples_(sample_t* buff_ptr, sample_t* buff_end) {
     update_packet_();
 
-    if (packet_) {
-        packet::timestamp_t next_timestamp = (packet_->rtp()->timestamp + packet_pos_);
+    if (has_packet_) {
+        packet::timestamp_t next_timestamp = decoder_.timestamp();
 
         if (timestamp_ != next_timestamp) {
             roc_panic_if_not(packet::timestamp_lt(timestamp_, next_timestamp));
@@ -126,15 +126,13 @@ sample_t* Depacketizer::read_samples_(sample_t* buff_ptr, sample_t* buff_end) {
 sample_t* Depacketizer::read_packet_samples_(sample_t* buff_ptr, sample_t* buff_end) {
     const size_t max_samples = (size_t)(buff_end - buff_ptr) / num_channels_;
 
-    const size_t num_samples =
-        decoder_.read_samples(*packet_, packet_pos_, buff_ptr, max_samples, channels_);
+    const size_t num_samples = decoder_.read(buff_ptr, max_samples, channels_);
 
     timestamp_ += packet::timestamp_t(num_samples);
-    packet_pos_ += packet::timestamp_t(num_samples);
     packet_samples_ += num_samples;
 
-    if (num_samples == 0) {
-        packet_.reset();
+    if (num_samples < max_samples) {
+        has_packet_ = false;
     }
 
     return (buff_ptr + num_samples * num_channels_);
@@ -161,21 +159,24 @@ sample_t* Depacketizer::read_missing_samples_(sample_t* buff_ptr, sample_t* buff
 }
 
 void Depacketizer::update_packet_() {
-    if (packet_) {
+    if (has_packet_) {
         return;
     }
 
     packet::timestamp_t pkt_timestamp = 0;
     unsigned n_dropped = 0;
 
-    while ((packet_ = read_packet_())) {
-        pkt_timestamp = packet_->rtp()->timestamp;
+    while (packet::PacketPtr packet = reader_.read()) {
+        decoder_.set(packet);
+        has_packet_ = true;
+
+        pkt_timestamp = decoder_.timestamp();
 
         if (first_packet_) {
             break;
         }
 
-        const packet::timestamp_t pkt_end = pkt_timestamp + packet_->rtp()->duration;
+        const packet::timestamp_t pkt_end = pkt_timestamp + decoder_.remaining();
 
         if (packet::timestamp_lt(timestamp_, pkt_end)) {
             break;
@@ -188,13 +189,13 @@ void Depacketizer::update_packet_() {
     }
 
     if (n_dropped != 0) {
-        roc_log(LogDebug, "depacketizer: fetched=%d dropped=%u", (int)!!packet_,
+        roc_log(LogDebug, "depacketizer: fetched=%d dropped=%u", (int)has_packet_,
                 n_dropped);
 
         dropped_packets_ += n_dropped;
     }
 
-    if (!packet_) {
+    if (!has_packet_) {
         return;
     }
 
@@ -207,24 +208,8 @@ void Depacketizer::update_packet_() {
     }
 
     if (packet::timestamp_lt(pkt_timestamp, timestamp_)) {
-        packet_pos_ =
-            (packet::timestamp_t)packet::timestamp_diff(timestamp_, pkt_timestamp);
-    } else {
-        packet_pos_ = 0;
+        decoder_.advance((size_t)packet::timestamp_diff(timestamp_, pkt_timestamp));
     }
-}
-
-packet::PacketPtr Depacketizer::read_packet_() {
-    packet::PacketPtr pp = reader_.read();
-    if (!pp) {
-        return NULL;
-    }
-
-    if (!pp->rtp()) {
-        roc_panic("depacketizer: unexpected non-rtp packet");
-    }
-
-    return pp;
 }
 
 void Depacketizer::set_frame_flags_(Frame& frame,

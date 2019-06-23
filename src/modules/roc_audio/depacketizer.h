@@ -64,16 +64,12 @@ private:
                           packet::timestamp_t prev_packet_samples);
 
     void update_packet_();
-    packet::PacketPtr read_packet_();
 
     packet::IReader& reader_;
     IDecoder& decoder_;
 
     const packet::channel_mask_t channels_;
     const size_t num_channels_;
-
-    packet::PacketPtr packet_;
-    packet::timestamp_t packet_pos_;
 
     packet::timestamp_t timestamp_;
 
@@ -84,6 +80,8 @@ private:
     core::RateLimiter rate_limiter_;
 
     bool first_packet_;
+    bool has_packet_;
+
     bool beep_;
 
     size_t dropped_packets_;

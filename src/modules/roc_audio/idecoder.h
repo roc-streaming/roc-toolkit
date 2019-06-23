@@ -25,29 +25,64 @@ class IDecoder {
 public:
     virtual ~IDecoder();
 
-    //! Read samples from packet.
+    //! Start decoding a new packet.
+    //!
+    //! After this call, decoder will report position and sequentially read samples
+    //! from the given @p packet.
+    virtual void set(const packet::PacketPtr& packet) = 0;
+
+    //! Get current stream position.
+    //!
+    //! Returns the position of the next sample to be retrieved by read(). Samples
+    //! numbering depends on the specific protocol.
+    //!
+    //! A successfull read() increases the timestamp by the number of samples
+    //! returned per channel. A set() call resets the timestamp according to the
+    //! provided packet.
+    virtual packet::timestamp_t timestamp() const = 0;
+
+    //! Get number of samples remaining in the current packet.
+    //!
+    //! Returns zero if there are no more samples in the current packet of if there
+    //! is no current packet set.
+    //!
+    //! A successfull read() decreases the number of remaining samples by the number
+    //! of samples returned per channel. A set() call resets it according to the
+    //! provided packet.
+    virtual packet::timestamp_t remaining() const = 0;
+
+    //! Decode samples.
     //!
     //! @b Parameters
-    //!  - @p packet - packet to read samples from
-    //!  - @p offset - packet read offset
-    //!  - @p samples - output buffer
-    //!  - @p n_samples - number of samples in output buffer
-    //!  - @p channels - output buffer channel mask
+    //!  - @p samples - buffer to write decoded samples to
+    //!  - @p n_samples - number of samples to be decoded per channel
+    //!  - @p channels - channel mask of the samples to be decoded
     //!
-    //! Reads samples from @p packet starting from the @p offset and writes them to
-    //! @p samples in the interleaved format, but no more than @p n_samples samples.
-    //! The output buffer size should be at least n_samples * n_channels.
+    //! Decodes samples from the current packet and writes them to the provided buffer.
     //!
-    //! Packet channel mask and output buffer channel mask may differ. If the packet
-    //! contains additional channels, they are skipped. If the packet doesn't contain
-    //! some requested channels, zero samples are inserted.
+    //! Packet channel mask and output samples channel mask may differ. If the packet
+    //! provides additional channels, they are ignored. If the output samples mask
+    //! don't have some channels present in packet, the corresponding channels in
+    //! output buffer are set to zeros.
     //!
-    //! @returns actual number of samples read for every channel.
-    virtual size_t read_samples(const packet::Packet& packet,
-                                size_t offset,
-                                sample_t* samples,
-                                size_t n_samples,
-                                packet::channel_mask_t channels) = 0;
+    //! @returns
+    //!  number of samples decoded per channel. The returned value can be fewer than
+    //!  @p n_samples if there are no more samples in the current packet.
+    virtual size_t
+    read(sample_t* samples, size_t n_samples, packet::channel_mask_t channels) = 0;
+
+    //! Advance the stream position.
+    //!
+    //! @b Parameters
+    //!  - @p m_samples - number of samples to add to the stream position
+    //!
+    //! Advances the stream position and drops the given number of leading samples
+    //! (per channel), as if they were read and the result was droppped.
+    //!
+    //! The new position as allowed to go beyond the packet boundary. In this case,
+    //! remaining() will report zero and read() will not read any samples, until
+    //! set() is called.
+    virtual void advance(size_t n_samples) = 0;
 };
 
 } // namespace audio

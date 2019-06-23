@@ -26,15 +26,31 @@ public:
     //! Initialize.
     PCMDecoder(const PCMFuncs& funcs, const Format& format);
 
-    //! Read samples from packet.
-    virtual size_t read_samples(const packet::Packet& packet,
-                                size_t offset,
-                                audio::sample_t* samples,
-                                size_t n_samples,
-                                packet::channel_mask_t channels);
+    //! Start decoding a new packet.
+    virtual void set(const packet::PacketPtr& packet);
+
+    //! Get current stream position.
+    virtual packet::timestamp_t timestamp() const;
+
+    //! Get number of samples remaining in the current packet.
+    virtual packet::timestamp_t remaining() const;
+
+    //! Decode samples.
+    virtual size_t
+    read(audio::sample_t* samples, size_t n_samples, packet::channel_mask_t channels);
+
+    //! Advance the stream position.
+    virtual void advance(size_t n_samples);
 
 private:
     const PCMFuncs& funcs_;
+
+    packet::timestamp_t stream_pos_;
+
+    packet::timestamp_t packet_pos_;
+    packet::timestamp_t packet_rem_;
+
+    packet::PacketPtr packet_;
 };
 
 } // namespace rtp
