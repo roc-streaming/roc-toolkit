@@ -35,7 +35,7 @@ packet::PacketPool packet_pool(allocator, true);
 
 } // namespace
 
-TEST_GROUP(packets) {
+TEST_GROUP(composer_parser) {
     core::Slice<uint8_t> new_buffer(const uint8_t* data, size_t datasz) {
         core::Slice<uint8_t> buf = new (buffer_pool) core::Buffer<uint8_t>(buffer_pool);
         if (data) {
@@ -228,15 +228,15 @@ TEST_GROUP(packets) {
     }
 };
 
-TEST(packets, l16_2ch_320s) {
+TEST(composer_parser, l16_2ch_320s) {
     check(rtp_l16_2ch_320s, PCM_16bit_2ch, true);
 }
 
-TEST(packets, l16_1ch_10s_12ext) {
+TEST(composer_parser, l16_1ch_10s_12ext) {
     check(rtp_l16_1ch_10s_12ext, PCM_16bit_1ch, false);
 }
 
-TEST(packets, l16_1ch_10s_4pad_2csrc_12ext_marker) {
+TEST(composer_parser, l16_1ch_10s_4pad_2csrc_12ext_marker) {
     check(rtp_l16_1ch_10s_4pad_2csrc_12ext_marker, PCM_16bit_1ch, false);
 }
 

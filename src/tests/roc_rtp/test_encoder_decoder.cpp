@@ -14,6 +14,7 @@
 #include "roc_packet/packet_pool.h"
 #include "roc_rtp/composer.h"
 #include "roc_rtp/format_map.h"
+#include "roc_rtp/parser.h"
 #include "roc_rtp/pcm_decoder.h"
 #include "roc_rtp/pcm_encoder.h"
 #include "roc_rtp/pcm_funcs.h"
@@ -48,8 +49,9 @@ core::HeapAllocator allocator;
 core::BufferPool<uint8_t> byte_buffer_pool(allocator, MaxBufSize, true);
 packet::PacketPool packet_pool(allocator, true);
 
-Composer rtp_composer(NULL);
 FormatMap format_map;
+Composer rtp_composer(NULL);
+Parser rtp_parser(format_map, NULL);
 
 audio::sample_t nth_sample(uint8_t n) {
     return audio::sample_t(n) / audio::sample_t(1 << 8);
@@ -57,7 +59,7 @@ audio::sample_t nth_sample(uint8_t n) {
 
 } // namespace
 
-TEST_GROUP(encoder) {
+TEST_GROUP(encoder_decoder) {
     const Format& get_format(unsigned int pt) {
         const Format* fmt = format_map.format(pt);
         CHECK(fmt);
@@ -113,6 +115,18 @@ TEST_GROUP(encoder) {
         return pp;
     }
 
+    packet::PacketPtr reparse_packet(const packet::PacketPtr& old_p) {
+        CHECK(rtp_composer.compose(*old_p));
+
+        packet::PacketPtr new_p = new (packet_pool) packet::Packet(packet_pool);
+        CHECK(new_p);
+
+        CHECK(rtp_parser.parse(*new_p, old_p->data()));
+        new_p->set_data(old_p->data());
+
+        return new_p;
+    }
+
     size_t fill_samples(audio::sample_t* samples,
                         size_t pos,
                         size_t n_samples,
@@ -157,7 +171,7 @@ TEST_GROUP(encoder) {
     }
 };
 
-TEST(encoder, one_packet) {
+TEST(encoder_decoder, one_packet) {
     enum { SamplesPerPacket = 177 };
 
     for (size_t n_codec = 0; n_codec < Test_NumCodecs; n_codec++) {
@@ -182,12 +196,12 @@ TEST(encoder, one_packet) {
 
         UNSIGNED_LONGS_EQUAL(Test_codec_pts[n_codec], pp->rtp()->payload_type);
 
-        audio::sample_t decoder_samples[SamplesPerPacket * MaxChans];
-
-        decoder->set(pp);
+        decoder->set(reparse_packet(pp));
 
         UNSIGNED_LONGS_EQUAL(pp->rtp()->timestamp, decoder->timestamp());
         UNSIGNED_LONGS_EQUAL(pp->rtp()->duration, decoder->remaining());
+
+        audio::sample_t decoder_samples[SamplesPerPacket * MaxChans];
 
         UNSIGNED_LONGS_EQUAL(SamplesPerPacket,
                              decoder->read(decoder_samples, SamplesPerPacket,
@@ -201,7 +215,7 @@ TEST(encoder, one_packet) {
     }
 }
 
-TEST(encoder, multiple_packets) {
+TEST(encoder_decoder, multiple_packets) {
     enum { NumPackets = 10, SamplesPerPacket = 177 };
 
     for (size_t n_codec = 0; n_codec < Test_NumCodecs; n_codec++) {
@@ -222,7 +236,6 @@ TEST(encoder, multiple_packets) {
             packet::PacketPtr pp = new_packet(encoder->payload_size(SamplesPerPacket));
 
             encoder->begin(pp);
-
 
             audio::sample_t encoder_samples[SamplesPerPacket * MaxChans] = {};
             encoder_pos = fill_samples(encoder_samples, encoder_pos, SamplesPerPacket,
@@ -245,12 +258,12 @@ TEST(encoder, multiple_packets) {
             UNSIGNED_LONGS_EQUAL(sn, pp->rtp()->seqnum);
             UNSIGNED_LONGS_EQUAL(ts, pp->rtp()->timestamp);
 
-            audio::sample_t decoder_samples[SamplesPerPacket * MaxChans];
-
-            decoder->set(pp);
+            decoder->set(reparse_packet(pp));
 
             UNSIGNED_LONGS_EQUAL(ts, decoder->timestamp());
             UNSIGNED_LONGS_EQUAL(SamplesPerPacket, decoder->remaining());
+
+            audio::sample_t decoder_samples[SamplesPerPacket * MaxChans];
 
             UNSIGNED_LONGS_EQUAL(SamplesPerPacket,
                                  decoder->read(decoder_samples, SamplesPerPacket,
@@ -270,7 +283,7 @@ TEST(encoder, multiple_packets) {
     }
 }
 
-TEST(encoder, multiple_packets_with_losses) {
+TEST(encoder_decoder, multiple_packets_with_losses) {
     enum { NumPackets = 30, SamplesPerPacket = 177 };
 
     for (size_t n_codec = 0; n_codec < Test_NumCodecs; n_codec++) {
@@ -315,16 +328,17 @@ TEST(encoder, multiple_packets_with_losses) {
             UNSIGNED_LONGS_EQUAL(ts, pp->rtp()->timestamp);
 
             if (n % 3 == 1) {
+                // "a loss"
                 decoder->advance(SamplesPerPacket);
                 decoder_pos +=
                     SamplesPerPacket * packet::num_channels(Test_codec_channels[n_codec]);
             } else {
-                audio::sample_t decoder_samples[SamplesPerPacket * MaxChans];
-
-                decoder->set(pp);
+                decoder->set(reparse_packet(pp));
 
                 UNSIGNED_LONGS_EQUAL(ts, decoder->timestamp());
                 UNSIGNED_LONGS_EQUAL(SamplesPerPacket, decoder->remaining());
+
+                audio::sample_t decoder_samples[SamplesPerPacket * MaxChans];
 
                 UNSIGNED_LONGS_EQUAL(SamplesPerPacket,
                                      decoder->read(decoder_samples, SamplesPerPacket,
@@ -345,7 +359,7 @@ TEST(encoder, multiple_packets_with_losses) {
     }
 }
 
-TEST(encoder, write_incrementally) {
+TEST(encoder_decoder, write_incrementally) {
     enum { FirstPart = 33, SecondPart = 44, SamplesPerPacket = FirstPart + SecondPart };
 
     for (size_t n_codec = 0; n_codec < Test_NumCodecs; n_codec++) {
@@ -375,12 +389,12 @@ TEST(encoder, write_incrementally) {
 
         encoder->end();
 
-        audio::sample_t decoder_samples[SamplesPerPacket * MaxChans];
-
-        decoder->set(pp);
+        decoder->set(reparse_packet(pp));
 
         UNSIGNED_LONGS_EQUAL(pp->rtp()->timestamp, decoder->timestamp());
         UNSIGNED_LONGS_EQUAL(pp->rtp()->duration, decoder->remaining());
+
+        audio::sample_t decoder_samples[SamplesPerPacket * MaxChans];
 
         UNSIGNED_LONGS_EQUAL(SamplesPerPacket,
                              decoder->read(decoder_samples, SamplesPerPacket,
@@ -390,7 +404,7 @@ TEST(encoder, write_incrementally) {
     }
 }
 
-TEST(encoder, write_too_much) {
+TEST(encoder_decoder, write_too_much) {
     enum { SamplesPerPacket = 177 };
 
     for (size_t n_codec = 0; n_codec < Test_NumCodecs; n_codec++) {
@@ -414,12 +428,12 @@ TEST(encoder, write_too_much) {
 
         encoder->end();
 
-        audio::sample_t decoder_samples[SamplesPerPacket * MaxChans];
-
-        decoder->set(pp);
+        decoder->set(reparse_packet(pp));
 
         UNSIGNED_LONGS_EQUAL(pp->rtp()->timestamp, decoder->timestamp());
         UNSIGNED_LONGS_EQUAL(pp->rtp()->duration, decoder->remaining());
+
+        audio::sample_t decoder_samples[SamplesPerPacket * MaxChans];
 
         UNSIGNED_LONGS_EQUAL(SamplesPerPacket,
                              decoder->read(decoder_samples, SamplesPerPacket,
@@ -429,7 +443,7 @@ TEST(encoder, write_too_much) {
     }
 }
 
-TEST(encoder, write_channel_mask) {
+TEST(encoder_decoder, write_channel_mask) {
     enum {
         FirstPart = 33,
         SecondPart = 44,
@@ -471,12 +485,12 @@ TEST(encoder, write_channel_mask) {
 
         encoder->end();
 
-        audio::sample_t decoder_samples[SamplesPerPacket * MaxChans];
-
-        decoder->set(pp);
+        decoder->set(reparse_packet(pp));
 
         UNSIGNED_LONGS_EQUAL(pp->rtp()->timestamp, decoder->timestamp());
         UNSIGNED_LONGS_EQUAL(pp->rtp()->duration, decoder->remaining());
+
+        audio::sample_t decoder_samples[SamplesPerPacket * MaxChans];
 
         UNSIGNED_LONGS_EQUAL(SamplesPerPacket,
                              decoder->read(decoder_samples, SamplesPerPacket,
@@ -514,7 +528,7 @@ TEST(encoder, write_channel_mask) {
     }
 }
 
-TEST(encoder, read_incrementally) {
+TEST(encoder_decoder, read_incrementally) {
     enum { FirstPart = 33, SecondPart = 44, SamplesPerPacket = FirstPart + SecondPart };
 
     for (size_t n_codec = 0; n_codec < Test_NumCodecs; n_codec++) {
@@ -538,7 +552,7 @@ TEST(encoder, read_incrementally) {
 
         encoder->end();
 
-        decoder->set(pp);
+        decoder->set(reparse_packet(pp));
 
         UNSIGNED_LONGS_EQUAL(pp->rtp()->timestamp, decoder->timestamp());
         UNSIGNED_LONGS_EQUAL(pp->rtp()->duration, decoder->remaining());
@@ -578,7 +592,7 @@ TEST(encoder, read_incrementally) {
     }
 }
 
-TEST(encoder, read_too_much) {
+TEST(encoder_decoder, read_too_much) {
     enum { SamplesPerPacket = 177 };
 
     for (size_t n_codec = 0; n_codec < Test_NumCodecs; n_codec++) {
@@ -603,12 +617,12 @@ TEST(encoder, read_too_much) {
 
         UNSIGNED_LONGS_EQUAL(Test_codec_pts[n_codec], pp->rtp()->payload_type);
 
-        audio::sample_t decoder_samples[(SamplesPerPacket + 20) * MaxChans];
-
-        decoder->set(pp);
+        decoder->set(reparse_packet(pp));
 
         UNSIGNED_LONGS_EQUAL(pp->rtp()->timestamp, decoder->timestamp());
         UNSIGNED_LONGS_EQUAL(pp->rtp()->duration, decoder->remaining());
+
+        audio::sample_t decoder_samples[(SamplesPerPacket + 20) * MaxChans];
 
         UNSIGNED_LONGS_EQUAL(SamplesPerPacket,
                              decoder->read(decoder_samples, SamplesPerPacket + 20,
@@ -622,7 +636,7 @@ TEST(encoder, read_too_much) {
     }
 }
 
-TEST(encoder, read_channel_mask) {
+TEST(encoder_decoder, read_channel_mask) {
     enum {
         FirstPart = 33,
         SecondPart = 44,
@@ -652,7 +666,7 @@ TEST(encoder, read_channel_mask) {
 
         encoder->end();
 
-        decoder->set(pp);
+        decoder->set(reparse_packet(pp));
 
         UNSIGNED_LONGS_EQUAL(pp->rtp()->timestamp, decoder->timestamp());
         UNSIGNED_LONGS_EQUAL(pp->rtp()->duration, decoder->remaining());
@@ -715,7 +729,7 @@ TEST(encoder, read_channel_mask) {
     }
 }
 
-TEST(encoder, advance_incrementally) {
+TEST(encoder_decoder, advance_incrementally) {
     enum {
         FirstPart = 33,
         SecondPart = 44,
@@ -743,7 +757,7 @@ TEST(encoder, advance_incrementally) {
 
         encoder->end();
 
-        decoder->set(pp);
+        decoder->set(reparse_packet(pp));
 
         UNSIGNED_LONGS_EQUAL(pp->rtp()->timestamp, decoder->timestamp());
         UNSIGNED_LONGS_EQUAL(SamplesPerPacket, decoder->remaining());
