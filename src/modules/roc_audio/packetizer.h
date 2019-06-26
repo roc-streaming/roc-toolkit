@@ -63,7 +63,10 @@ public:
     void flush();
 
 private:
-    packet::PacketPtr start_packet_();
+    bool begin_packet_();
+    void end_packet_();
+
+    packet::PacketPtr create_packet_();
 
     packet::IWriter& writer_;
     packet::IComposer& composer_;

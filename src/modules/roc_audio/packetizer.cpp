@@ -51,7 +51,7 @@ void Packetizer::write(Frame& frame) {
 
     while (buffer_samples != 0) {
         if (!packet_) {
-            if (!(packet_ = start_packet_())) {
+            if (!begin_packet_()) {
                 return;
             }
         }
@@ -64,26 +64,49 @@ void Packetizer::write(Frame& frame) {
         buffer_ptr += ns * num_channels_;
 
         if (packet_pos_ == samples_per_packet_) {
-            flush();
+            end_packet_();
         }
     }
 }
 
 void Packetizer::flush() {
-    if (packet_pos_ == 0) {
-        return;
+    if (packet_) {
+        end_packet_();
+    }
+}
+
+bool Packetizer::begin_packet_() {
+    packet::PacketPtr pp = create_packet_();
+    if (!pp) {
+        return false;
     }
 
+    packet::RTP* rtp = pp->rtp();
+    if (!rtp) {
+        roc_panic("packetizer: unexpected non-rtp packet");
+    }
+
+    rtp->source = source_;
+    rtp->seqnum = seqnum_;
+    rtp->timestamp = timestamp_;
+    rtp->payload_type = payload_type_;
+
+    packet_ = pp;
+
+    return true;
+}
+
+void Packetizer::end_packet_() {
     writer_.write(packet_);
 
     seqnum_++;
     timestamp_ += (packet::timestamp_t)packet_pos_;
 
-    packet_pos_ = 0;
     packet_ = NULL;
+    packet_pos_ = 0;
 }
 
-packet::PacketPtr Packetizer::start_packet_() {
+packet::PacketPtr Packetizer::create_packet_() {
     packet::PacketPtr packet = new (packet_pool_) packet::Packet(packet_pool_);
     if (!packet) {
         roc_log(LogError, "packetizer: can't allocate packet");
@@ -104,17 +127,6 @@ packet::PacketPtr Packetizer::start_packet_() {
     }
 
     packet->set_data(data);
-
-    packet::RTP* rtp = packet->rtp();
-    if (!rtp) {
-        roc_log(LogError, "packetizer: unexpected non-rtp packet");
-        return NULL;
-    }
-
-    rtp->source = source_;
-    rtp->seqnum = seqnum_;
-    rtp->timestamp = timestamp_;
-    rtp->payload_type = payload_type_;
 
     return packet;
 }
