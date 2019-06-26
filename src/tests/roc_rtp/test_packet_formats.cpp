@@ -28,13 +28,15 @@ namespace {
 
 enum { MaxBufSize = PacketInfo::MaxData };
 
+enum { CanParse = (1 << 0), CanCompose = (1 << 1) };
+
 core::HeapAllocator allocator;
 core::BufferPool<uint8_t> buffer_pool(allocator, MaxBufSize, true);
 packet::PacketPool packet_pool(allocator, true);
 
 } // namespace
 
-TEST_GROUP(packets) {
+TEST_GROUP(packet_formats) {
     core::Slice<uint8_t> new_buffer(const uint8_t* data, size_t datasz) {
         core::Slice<uint8_t> buf = new (buffer_pool) core::Buffer<uint8_t>(buffer_pool);
         if (data) {
@@ -56,19 +58,15 @@ TEST_GROUP(packets) {
                                  + pi.padding_size);
     }
 
-    void
-    check_format(const Format& format, packet::Packet& packet, const PacketInfo& pi) {
+    void check_format_info(const Format& format, const PacketInfo& pi) {
         UNSIGNED_LONGS_EQUAL(packet::Packet::FlagAudio, format.flags);
         UNSIGNED_LONGS_EQUAL(pi.pt, format.payload_type);
         UNSIGNED_LONGS_EQUAL(pi.samplerate, format.sample_rate);
         UNSIGNED_LONGS_EQUAL(pi.num_channels, packet::num_channels(format.channel_mask));
-
-        CHECK(packet.rtp());
-        UNSIGNED_LONGS_EQUAL(pi.num_samples,
-                             format.get_num_samples(packet.rtp()->payload.size()));
+        UNSIGNED_LONGS_EQUAL(pi.num_samples, format.get_num_samples(pi.payload_size));
     }
 
-    void check_headers(const packet::Packet& packet, const PacketInfo& pi) {
+    void check_packet_fields(const packet::Packet& packet, const PacketInfo& pi) {
         UNSIGNED_LONGS_EQUAL(packet::Packet::FlagRTP | packet::Packet::FlagAudio,
                              packet.flags());
 
@@ -90,7 +88,7 @@ TEST_GROUP(packets) {
         UNSIGNED_LONGS_EQUAL(pi.num_samples, packet.rtp()->duration);
     }
 
-    void set_headers(packet::Packet& packet, const PacketInfo& pi) {
+    void set_packet_fields(packet::Packet& packet, const PacketInfo& pi) {
         CHECK(packet.rtp());
 
         packet.rtp()->source = pi.ssrc;
@@ -98,9 +96,10 @@ TEST_GROUP(packets) {
         packet.rtp()->timestamp = pi.ts;
         packet.rtp()->marker = pi.marker;
         packet.rtp()->payload_type = pi.pt;
+        packet.rtp()->duration = (packet::timestamp_t)pi.num_samples;
     }
 
-    void check_data(packet::Packet& packet, const PacketInfo& pi) {
+    void check_packet_data(packet::Packet& packet, const PacketInfo& pi) {
         CHECK(packet.data());
 
         CHECK(packet.rtp());
@@ -178,8 +177,9 @@ TEST_GROUP(packets) {
                                                  allocator);
         CHECK(decoder);
 
-        check_format(*format, *packet, pi);
-        check_headers(*packet, pi);
+        check_format_info(*format, pi);
+        check_packet_fields(*packet, pi);
+        check_packet_data(*packet, pi);
 
         decode_samples(*decoder, *packet, pi);
     }
@@ -193,6 +193,8 @@ TEST_GROUP(packets) {
         packet::PacketPtr packet = new_packet();
         CHECK(packet);
 
+        packet->add_flags(packet::Packet::FlagAudio);
+
         const Format* format = format_map.format(pi.pt);
         CHECK(format);
 
@@ -205,33 +207,38 @@ TEST_GROUP(packets) {
         packet->set_data(buffer);
 
         encode_samples(*encoder, *packet, pi);
-        set_headers(*packet, pi);
+        set_packet_fields(*packet, pi);
 
         CHECK(composer.compose(*packet));
 
-        check_format(*format, *packet, pi);
-        check_data(*packet, pi);
+        check_format_info(*format, pi);
+        check_packet_fields(*packet, pi);
+        check_packet_data(*packet, pi);
     }
 
-    void check(const PacketInfo& pi, bool compose) {
+    void check(const PacketInfo& pi, unsigned flags) {
         check_packet_info(pi);
-        check_parse_decode(pi);
-        if (compose) {
+
+        if (flags & CanParse) {
+            check_parse_decode(pi);
+        }
+
+        if (flags & CanCompose) {
             check_compose_encode(pi);
         }
     }
 };
 
-TEST(packets, l16_2ch_320s) {
-    check(rtp_l16_2ch_320s, true);
+TEST(packet_formats, l16_2ch_320s) {
+    check(rtp_l16_2ch_320s, CanParse | CanCompose);
 }
 
-TEST(packets, l16_1ch_10s_12ext) {
-    check(rtp_l16_1ch_10s_12ext, false);
+TEST(packet_formats, l16_1ch_10s_12ext) {
+    check(rtp_l16_1ch_10s_12ext, CanParse);
 }
 
-TEST(packets, l16_1ch_10s_4pad_2csrc_12ext_marker) {
-    check(rtp_l16_1ch_10s_4pad_2csrc_12ext_marker, false);
+TEST(packet_formats, l16_1ch_10s_4pad_2csrc_12ext_marker) {
+    check(rtp_l16_1ch_10s_4pad_2csrc_12ext_marker, CanParse);
 }
 
 } // namespace rtp
