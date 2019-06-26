@@ -33,6 +33,7 @@ Packetizer::Packetizer(packet::IWriter& writer,
     , samples_per_packet_(
           (packet::timestamp_t)packet::timestamp_from_ns(packet_length, sample_rate))
     , payload_type_(payload_type)
+    , payload_size_(encoder_.payload_size(samples_per_packet_))
     , packet_pos_(0)
     , source_((packet::source_t)core::random(packet::source_t(-1)))
     , seqnum_((packet::seqnum_t)core::random(packet::seqnum_t(-1)))
@@ -97,6 +98,10 @@ bool Packetizer::begin_packet_() {
 }
 
 void Packetizer::end_packet_() {
+    if (packet_pos_ < samples_per_packet_) {
+        pad_packet_();
+    }
+
     writer_.write(packet_);
 
     seqnum_++;
@@ -104,6 +109,20 @@ void Packetizer::end_packet_() {
 
     packet_ = NULL;
     packet_pos_ = 0;
+}
+
+void Packetizer::pad_packet_() {
+    const size_t actual_payload_size = encoder_.payload_size(packet_pos_);
+    roc_panic_if_not(actual_payload_size <= payload_size_);
+
+    if (actual_payload_size == payload_size_) {
+        return;
+    }
+
+    if (!composer_.pad(*packet_, payload_size_ - actual_payload_size)) {
+        roc_panic("packetizer: can't pad packet: orig_size=%lu actual_size=%lu",
+                  (unsigned long)payload_size_, (unsigned long)actual_payload_size);
+    }
 }
 
 packet::PacketPtr Packetizer::create_packet_() {
@@ -121,7 +140,7 @@ packet::PacketPtr Packetizer::create_packet_() {
         return NULL;
     }
 
-    if (!composer_.prepare(*packet, data, encoder_.payload_size(samples_per_packet_))) {
+    if (!composer_.prepare(*packet, data, payload_size_)) {
         roc_log(LogError, "packetizer: can't prepare packet");
         return NULL;
     }

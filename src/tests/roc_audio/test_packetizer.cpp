@@ -249,8 +249,8 @@ TEST(packetizer, multiple_buffers_multiple_packets) {
     UNSIGNED_LONGS_EQUAL(0, packet_queue.size());
 }
 
-IGNORE_TEST(packetizer, flush) {
-    enum { Missing = 10 };
+TEST(packetizer, flush) {
+    enum { NumIterations = 5, Missing = 10 };
 
     packet::Queue packet_queue;
 
@@ -261,20 +261,22 @@ IGNORE_TEST(packetizer, flush) {
     FrameMaker frame_maker;
     PacketChecker packet_checker;
 
-    frame_maker.write(packetizer, SamplesPerPacket);
-    frame_maker.write(packetizer, SamplesPerPacket);
-    frame_maker.write(packetizer, SamplesPerPacket - Missing);
+    for (size_t n = 0; n < NumIterations; n++) {
+        frame_maker.write(packetizer, SamplesPerPacket);
+        frame_maker.write(packetizer, SamplesPerPacket);
+        frame_maker.write(packetizer, SamplesPerPacket - Missing);
 
-    UNSIGNED_LONGS_EQUAL(2, packet_queue.size());
+        UNSIGNED_LONGS_EQUAL(2, packet_queue.size());
 
-    packet_checker.read(packet_queue, SamplesPerPacket);
-    packet_checker.read(packet_queue, SamplesPerPacket);
+        packet_checker.read(packet_queue, SamplesPerPacket);
+        packet_checker.read(packet_queue, SamplesPerPacket);
 
-    packetizer.flush();
+        packetizer.flush();
 
-    packet_checker.read(packet_queue, SamplesPerPacket - Missing);
+        packet_checker.read(packet_queue, SamplesPerPacket - Missing);
 
-    UNSIGNED_LONGS_EQUAL(0, packet_queue.size());
+        UNSIGNED_LONGS_EQUAL(0, packet_queue.size());
+    }
 }
 
 } // namespace audio

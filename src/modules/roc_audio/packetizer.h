@@ -59,12 +59,14 @@ public:
 
     //! Flush buffered packet, if any.
     //! @remarks
-    //!  Packet is padded with zero samples to match fixed size.
+    //!  Packet is padded to match fixed size.
     void flush();
 
 private:
     bool begin_packet_();
     void end_packet_();
+
+    void pad_packet_();
 
     packet::PacketPtr create_packet_();
 
@@ -78,6 +80,7 @@ private:
     const size_t num_channels_;
     const size_t samples_per_packet_;
     const unsigned int payload_type_;
+    const size_t payload_size_;
 
     packet::PacketPtr packet_;
     size_t packet_pos_;
