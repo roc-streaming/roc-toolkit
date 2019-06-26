@@ -19,6 +19,7 @@
 
 #include "test_packets/rtp_l16_1ch_10s_12ext.h"
 #include "test_packets/rtp_l16_1ch_10s_4pad_2csrc_12ext_marker.h"
+#include "test_packets/rtp_l16_2ch_300s_80pad.h"
 #include "test_packets/rtp_l16_2ch_320s.h"
 
 namespace roc {
@@ -74,11 +75,15 @@ TEST_GROUP(packet_formats) {
         CHECK(packet.rtp());
         CHECK(packet.rtp()->header);
         CHECK(packet.rtp()->payload);
+        if (pi.padding) {
+            CHECK(packet.rtp()->padding);
+        }
 
         UNSIGNED_LONGS_EQUAL(pi.packet_size, packet.data().size());
         UNSIGNED_LONGS_EQUAL(pi.header_size + pi.extension_size,
                              packet.rtp()->header.size());
         UNSIGNED_LONGS_EQUAL(pi.payload_size, packet.rtp()->payload.size());
+        UNSIGNED_LONGS_EQUAL(pi.padding_size, packet.rtp()->padding.size());
 
         UNSIGNED_LONGS_EQUAL(pi.ssrc, packet.rtp()->source);
         UNSIGNED_LONGS_EQUAL(pi.seqnum, packet.rtp()->seqnum);
@@ -86,6 +91,7 @@ TEST_GROUP(packet_formats) {
         UNSIGNED_LONGS_EQUAL(pi.marker, packet.rtp()->marker);
         UNSIGNED_LONGS_EQUAL(pi.pt, packet.rtp()->payload_type);
         UNSIGNED_LONGS_EQUAL(pi.num_samples, packet.rtp()->duration);
+        UNSIGNED_LONGS_EQUAL(pi.padding, (packet.rtp()->padding.size() != 0));
     }
 
     void set_packet_fields(packet::Packet& packet, const PacketInfo& pi) {
@@ -109,7 +115,8 @@ TEST_GROUP(packet_formats) {
         UNSIGNED_LONGS_EQUAL(pi.packet_size, packet.data().size());
 
         UNSIGNED_LONGS_EQUAL(packet.data().size(),
-                             packet.rtp()->header.size() + packet.rtp()->payload.size());
+                             packet.rtp()->header.size() + packet.rtp()->payload.size()
+                                 + packet.rtp()->padding.size());
 
         CHECK(memcmp(packet.data().data(), pi.raw_data, pi.packet_size) == 0);
     }
@@ -149,6 +156,8 @@ TEST_GROUP(packet_formats) {
                 i++;
             }
         }
+
+        UNSIGNED_LONGS_EQUAL(pi.payload_size, encoder.payload_size(pi.num_samples));
 
         UNSIGNED_LONGS_EQUAL(
             pi.num_samples,
@@ -203,11 +212,16 @@ TEST_GROUP(packet_formats) {
         CHECK(encoder);
 
         Composer composer(NULL);
-        CHECK(composer.prepare(*packet, buffer, encoder->payload_size(pi.num_samples)));
+
+        CHECK(composer.prepare(*packet, buffer, pi.payload_size + pi.padding_size));
         packet->set_data(buffer);
 
         encode_samples(*encoder, *packet, pi);
         set_packet_fields(*packet, pi);
+
+        if (pi.padding_size != 0) {
+            composer.pad(*packet, pi.padding_size);
+        }
 
         CHECK(composer.compose(*packet));
 
@@ -231,6 +245,10 @@ TEST_GROUP(packet_formats) {
 
 TEST(packet_formats, l16_2ch_320s) {
     check(rtp_l16_2ch_320s, CanParse | CanCompose);
+}
+
+TEST(packet_formats, l16_2ch_300s_80pad) {
+    check(rtp_l16_2ch_300s_80pad, CanParse | CanCompose);
 }
 
 TEST(packet_formats, l16_1ch_10s_12ext) {

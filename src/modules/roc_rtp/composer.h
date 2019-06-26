@@ -34,6 +34,9 @@ public:
     virtual bool
     prepare(packet::Packet& packet, core::Slice<uint8_t>& buffer, size_t payload_size);
 
+    //! Pad packet.
+    virtual bool pad(packet::Packet& packet, size_t padding_size);
+
     //! Compose packet to buffer.
     virtual bool compose(packet::Packet& packet);
 

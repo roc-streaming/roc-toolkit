@@ -141,6 +141,12 @@ public:
         return (flags_ & (Flag_PaddingMask << Flag_PaddingShift));
     }
 
+    //! Set padding flag.
+    void set_padding(bool v) {
+        flags_ &= ~(Flag_PaddingMask << Flag_PaddingShift);
+        flags_ |= ((v ? 1 : 0) << Flag_PaddingShift);
+    }
+
     //! Get extension flag.
     bool has_extension() const {
         return (flags_ & (Flag_ExtensionMask << Flag_ExtensionShift));

@@ -62,6 +62,8 @@ bool Parser::parse(packet::Packet& packet, const core::Slice<uint8_t>& buffer) {
     size_t payload_begin = header_size;
     size_t payload_end = buffer.size();
 
+    uint8_t pad_size = 0;
+
     if (header.has_padding()) {
         if (payload_begin == payload_end) {
             roc_log(LogDebug,
@@ -69,7 +71,7 @@ bool Parser::parse(packet::Packet& packet, const core::Slice<uint8_t>& buffer) {
             return false;
         }
 
-        const uint8_t pad_size = buffer.data()[payload_end - 1];
+        pad_size = buffer.data()[payload_end - 1];
 
         if (pad_size == 0) {
             roc_log(LogDebug, "rtp parser: bad packet, padding size octet is zero");
@@ -97,6 +99,10 @@ bool Parser::parse(packet::Packet& packet, const core::Slice<uint8_t>& buffer) {
     rtp.payload_type = header.payload_type();
     rtp.header = buffer.range(0, header_size);
     rtp.payload = buffer.range(payload_begin, payload_end);
+
+    if (pad_size) {
+        rtp.padding = buffer.range(payload_end, payload_end + pad_size);
+    }
 
     if (const Format* format = format_map_.format(header.payload_type())) {
         packet.add_flags(format->flags);

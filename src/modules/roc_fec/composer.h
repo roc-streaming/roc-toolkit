@@ -120,6 +120,16 @@ public:
         return true;
     }
 
+    //! Pad packet.
+    virtual bool pad(packet::Packet& packet, size_t padding_size) {
+        if (inner_composer_) {
+            return inner_composer_->pad(packet, padding_size);
+        }
+
+        // padding not supported
+        return false;
+    }
+
     //! Compose packet to buffer.
     virtual bool compose(packet::Packet& packet) {
         if (!packet.fec()) {

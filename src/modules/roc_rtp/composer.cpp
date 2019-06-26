@@ -87,26 +87,75 @@ bool Composer::prepare(packet::Packet& packet,
     return true;
 }
 
-bool Composer::compose(packet::Packet& packet) {
-    if (!packet.rtp()) {
+bool Composer::pad(packet::Packet& packet, size_t padding_size) {
+    if (inner_composer_) {
+        return inner_composer_->pad(packet, padding_size);
+    }
+
+    packet::RTP* rtp = packet.rtp();
+    if (!rtp) {
         roc_panic("rtp composer: unexpected non-rtp packet");
     }
 
-    if (packet.rtp()->header.size() != sizeof(Header)) {
+    if (rtp->padding) {
+        roc_panic("rtp composer: can't pad packet twice");
+    }
+
+    const size_t payload_size = rtp->payload.size();
+
+    if (payload_size < padding_size) {
+        roc_log(LogDebug,
+                "rtp composer: padding is larger than payload size:"
+                " payload_size=%lu padding_size=%lu",
+                (unsigned long)rtp->payload.size(), (unsigned long)padding_size);
+        return false;
+    }
+
+    rtp->padding = rtp->payload.range(payload_size - padding_size, payload_size);
+    rtp->payload = rtp->payload.range(0, payload_size - padding_size);
+
+    return true;
+}
+
+bool Composer::compose(packet::Packet& packet) {
+    packet::RTP* rtp = packet.rtp();
+    if (!rtp) {
+        roc_panic("rtp composer: unexpected non-rtp packet");
+    }
+
+    if (rtp->header.size() != sizeof(Header)) {
         roc_panic("rtp composer: unexpected rtp header size");
     }
 
-    packet::RTP& rtp = *packet.rtp();
-
-    Header& header = *(Header*)rtp.header.data();
+    Header& header = *(Header*)rtp->header.data();
 
     header.clear();
     header.set_version(V2);
-    header.set_ssrc(rtp.source);
-    header.set_seqnum(rtp.seqnum);
-    header.set_timestamp(rtp.timestamp);
-    header.set_marker(rtp.marker);
-    header.set_payload_type(PayloadType(rtp.payload_type));
+    header.set_ssrc(rtp->source);
+    header.set_seqnum(rtp->seqnum);
+    header.set_timestamp(rtp->timestamp);
+    header.set_marker(rtp->marker);
+    header.set_payload_type(PayloadType(rtp->payload_type));
+
+    if (rtp->padding.size() > 0) {
+        header.set_padding(true);
+
+        uint8_t* padding_data = rtp->padding.data();
+        size_t padding_size = rtp->padding.size();
+
+        if (padding_size > (uint8_t)-1) {
+            roc_log(LogDebug,
+                    "rtp composer: padding is larger than supported by rtp:"
+                    " pad_size=%lu max_size=%lu",
+                    (unsigned long)padding_size, (unsigned long)(uint8_t)-1);
+            return false;
+        }
+
+        if (padding_size > 1) {
+            memset(padding_data, 0, padding_size - 1);
+        }
+        padding_data[padding_size - 1] = (uint8_t)padding_size;
+    }
 
     if (inner_composer_) {
         return inner_composer_->compose(packet);

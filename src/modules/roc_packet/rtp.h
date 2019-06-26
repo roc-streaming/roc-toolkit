@@ -61,6 +61,11 @@ struct RTP {
     //!  Doesn't include RTP headers and padding.
     core::Slice<uint8_t> payload;
 
+    //! Packet padding.
+    //! @remarks
+    //!  Not included in header and payload, but affects overall packet size.
+    core::Slice<uint8_t> padding;
+
     //! Construct zero RTP packet.
     RTP();
 

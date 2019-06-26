@@ -47,6 +47,16 @@ public:
     virtual bool
     prepare(Packet& packet, core::Slice<uint8_t>& buffer, size_t payload_size) = 0;
 
+    //! Pad packet.
+    //! @remarks
+    //!  Cuts from the right the given number of bytes from the packet payload of
+    //!  the most inner composer and marks them as padding. The @p padding_size
+    //!  parameter should be less than or equal to the packet payload size.
+    //! @returns
+    //!  true if the packet was successfully padded or false if parameters
+    //!  are invalid or padding is not supported.
+    virtual bool pad(Packet& packet, size_t padding_size) = 0;
+
     //! Compose packet to buffer.
     //! @remarks
     //!  Formats @p packet headers and payloads to the buffer attached to it during
