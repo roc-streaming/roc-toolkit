@@ -18,6 +18,7 @@
 #include "roc_rtp/composer.h"
 #include "roc_rtp/pcm_decoder.h"
 #include "roc_rtp/pcm_encoder.h"
+#include "roc_rtp/pcm_funcs.h"
 
 namespace roc {
 namespace audio {
@@ -33,8 +34,8 @@ packet::PacketPool packet_pool(allocator, true);
 
 rtp::Composer rtp_composer(NULL);
 
-rtp::PCMEncoder<int16_t, NumCh> pcm_encoder;
-rtp::PCMDecoder<int16_t, NumCh> pcm_decoder;
+rtp::PCMEncoder pcm_encoder(rtp::PCM_int16_2ch);
+rtp::PCMDecoder pcm_decoder(rtp::PCM_int16_2ch);
 
 } // namespace
 

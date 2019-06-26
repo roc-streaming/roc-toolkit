@@ -13,40 +13,29 @@
 #define ROC_RTP_PCM_ENCODER_H_
 
 #include "roc_audio/iencoder.h"
-#include "roc_core/iallocator.h"
-#include "roc_core/panic.h"
-#include "roc_rtp/pcm_helpers.h"
+#include "roc_rtp/pcm_funcs.h"
 
 namespace roc {
 namespace rtp {
 
 //! PCM encoder.
-template <class Sample, size_t NumCh>
 class PCMEncoder : public audio::IEncoder, public core::NonCopyable<> {
 public:
-    //! Create encoder.
-    static audio::IEncoder* create(core::IAllocator& allocator) {
-        return new (allocator) PCMEncoder;
-    }
+    //! Initialize.
+    PCMEncoder(const PCMFuncs& funcs);
 
     //! Get packet payload size.
-    virtual size_t payload_size(size_t num_samples) const {
-        return pcm_payload_size_from_samples<Sample, NumCh>(num_samples);
-    }
+    virtual size_t payload_size(size_t num_samples) const;
 
     //! Write samples to packet.
     virtual size_t write_samples(packet::Packet& packet,
                                  size_t offset,
                                  const audio::sample_t* samples,
                                  size_t n_samples,
-                                 packet::channel_mask_t channels) {
-        packet::RTP* rtp = packet.rtp();
-        if (!rtp) {
-            roc_panic("unexpected non-rtp packet");
-        }
-        return pcm_write<Sample, NumCh>(rtp->payload.data(), rtp->payload.size(), offset,
-                                        samples, n_samples, channels);
-    }
+                                 packet::channel_mask_t channels);
+
+private:
+    const PCMFuncs& funcs_;
 };
 
 } // namespace rtp

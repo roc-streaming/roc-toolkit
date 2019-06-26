@@ -56,24 +56,16 @@ TEST_GROUP(packets) {
                                  + pi.padding_size);
     }
 
-    void check_format(const Format& format,
-                      packet::Packet& packet,
-                      const PacketInfo& pi,
-                      bool check_size) {
+    void
+    check_format(const Format& format, packet::Packet& packet, const PacketInfo& pi) {
         UNSIGNED_LONGS_EQUAL(packet::Packet::FlagAudio, format.flags);
         UNSIGNED_LONGS_EQUAL(pi.pt, format.payload_type);
         UNSIGNED_LONGS_EQUAL(pi.samplerate, format.sample_rate);
         UNSIGNED_LONGS_EQUAL(pi.num_channels, packet::num_channels(format.channel_mask));
 
         CHECK(packet.rtp());
-        UNSIGNED_LONGS_EQUAL(pi.num_samples, format.duration(*packet.rtp()));
-
-        if (check_size) {
-            UNSIGNED_LONGS_EQUAL(
-                pi.packet_size,
-                format.size(core::nanoseconds_t(pi.num_samples) * core::Second
-                            / core::nanoseconds_t(format.sample_rate)));
-        }
+        UNSIGNED_LONGS_EQUAL(pi.num_samples,
+                             format.get_num_samples(packet.rtp()->payload.size()));
     }
 
     void check_headers(const packet::Packet& packet, const PacketInfo& pi) {
@@ -186,7 +178,7 @@ TEST_GROUP(packets) {
                                                  allocator);
         CHECK(decoder);
 
-        check_format(*format, *packet, pi, false);
+        check_format(*format, *packet, pi);
         check_headers(*packet, pi);
 
         decode_samples(*decoder, *packet, pi);
@@ -217,7 +209,7 @@ TEST_GROUP(packets) {
 
         CHECK(composer.compose(*packet));
 
-        check_format(*format, *packet, pi, true);
+        check_format(*format, *packet, pi);
         check_data(*packet, pi);
     }
 

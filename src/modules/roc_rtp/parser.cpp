@@ -100,7 +100,7 @@ bool Parser::parse(packet::Packet& packet, const core::Slice<uint8_t>& buffer) {
 
     if (const Format* format = format_map_.format(header.payload_type())) {
         packet.add_flags(format->flags);
-        rtp.duration = format->duration(rtp);
+        rtp.duration = (packet::timestamp_t)format->get_num_samples(rtp.payload.size());
     }
 
     if (inner_parser_) {

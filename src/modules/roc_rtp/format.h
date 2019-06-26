@@ -37,11 +37,8 @@ struct Format {
     //! Channel mask.
     packet::channel_mask_t channel_mask;
 
-    //! Get packet duration in samples.
-    packet::timestamp_t (*duration)(const packet::RTP&);
-
-    //! Get packet size in bytes for given duration in nanoseconds.
-    size_t (*size)(core::nanoseconds_t duration);
+    //! Get number of samples for given payload size.
+    size_t (*get_num_samples)(size_t payload_size);
 
     //! Create encoder.
     audio::IEncoder* (*new_encoder)(core::IAllocator& allocator);

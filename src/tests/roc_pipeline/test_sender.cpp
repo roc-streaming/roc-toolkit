@@ -16,6 +16,7 @@
 #include "roc_rtp/format_map.h"
 #include "roc_rtp/parser.h"
 #include "roc_rtp/pcm_decoder.h"
+#include "roc_rtp/pcm_funcs.h"
 
 #include "test_frame_writer.h"
 #include "test_packet_reader.h"
@@ -48,7 +49,7 @@ packet::PacketPool packet_pool(allocator, true);
 
 rtp::FormatMap format_map;
 rtp::Parser rtp_parser(format_map, NULL);
-rtp::PCMDecoder<int16_t, NumCh> pcm_decoder;
+rtp::PCMDecoder pcm_decoder(rtp::PCM_int16_2ch);
 
 } // namespace
 

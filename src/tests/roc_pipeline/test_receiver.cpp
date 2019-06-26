@@ -15,6 +15,7 @@
 #include "roc_rtp/composer.h"
 #include "roc_rtp/format_map.h"
 #include "roc_rtp/pcm_encoder.h"
+#include "roc_rtp/pcm_funcs.h"
 
 #include "test_frame_reader.h"
 #include "test_packet_writer.h"
@@ -53,7 +54,7 @@ packet::PacketPool packet_pool(allocator, true);
 
 rtp::FormatMap format_map;
 rtp::Composer rtp_composer(NULL);
-rtp::PCMEncoder<int16_t, NumCh> pcm_encoder;
+rtp::PCMEncoder pcm_encoder(rtp::PCM_int16_2ch);
 
 } // namespace
 
