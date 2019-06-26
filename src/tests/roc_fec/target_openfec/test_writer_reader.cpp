@@ -218,9 +218,8 @@ TEST(writer_reader, no_losses) {
         PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
                                     NumSourcePackets, NumRepairPackets);
 
-        Writer writer(writer_config, FECPayloadSize, encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
-                      allocator);
+        Writer writer(writer_config, encoder, dispatcher, source_composer(),
+                      repair_composer(), packet_pool, buffer_pool, allocator);
 
         Reader reader(reader_config, decoder, dispatcher.source_reader(),
                       dispatcher.repair_reader(), rtp_parser, packet_pool, allocator);
@@ -260,9 +259,8 @@ TEST(writer_reader, 1_loss) {
         PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
                                     NumSourcePackets, NumRepairPackets);
 
-        Writer writer(writer_config, FECPayloadSize, encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
-                      allocator);
+        Writer writer(writer_config, encoder, dispatcher, source_composer(),
+                      repair_composer(), packet_pool, buffer_pool, allocator);
 
         Reader reader(reader_config, decoder, dispatcher.source_reader(),
                       dispatcher.repair_reader(), rtp_parser, packet_pool, allocator);
@@ -304,9 +302,8 @@ TEST(writer_reader, lost_first_packet_in_first_block) {
         PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
                                     NumSourcePackets, NumRepairPackets);
 
-        Writer writer(writer_config, FECPayloadSize, encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
-                      allocator);
+        Writer writer(writer_config, encoder, dispatcher, source_composer(),
+                      repair_composer(), packet_pool, buffer_pool, allocator);
 
         Reader reader(reader_config, decoder, dispatcher.source_reader(),
                       dispatcher.repair_reader(), rtp_parser, packet_pool, allocator);
@@ -357,9 +354,8 @@ TEST(writer_reader, lost_one_source_and_all_repair_packets) {
         PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
                                     NumSourcePackets, NumRepairPackets);
 
-        Writer writer(writer_config, FECPayloadSize, encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
-                      allocator);
+        Writer writer(writer_config, encoder, dispatcher, source_composer(),
+                      repair_composer(), packet_pool, buffer_pool, allocator);
 
         Reader reader(reader_config, decoder, dispatcher.source_reader(),
                       dispatcher.repair_reader(), rtp_parser, packet_pool, allocator);
@@ -423,9 +419,8 @@ TEST(writer_reader, multiple_blocks_1_loss) {
         PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
                                     NumSourcePackets, NumRepairPackets);
 
-        Writer writer(writer_config, FECPayloadSize, encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
-                      allocator);
+        Writer writer(writer_config, encoder, dispatcher, source_composer(),
+                      repair_composer(), packet_pool, buffer_pool, allocator);
 
         Reader reader(reader_config, decoder, dispatcher.source_reader(),
                       dispatcher.repair_reader(), rtp_parser, packet_pool, allocator);
@@ -492,9 +487,8 @@ TEST(writer_reader, multiple_blocks_in_queue) {
         PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
                                     NumSourcePackets, NumRepairPackets);
 
-        Writer writer(writer_config, FECPayloadSize, encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
-                      allocator);
+        Writer writer(writer_config, encoder, dispatcher, source_composer(),
+                      repair_composer(), packet_pool, buffer_pool, allocator);
 
         Reader reader(reader_config, decoder, dispatcher.source_reader(),
                       dispatcher.repair_reader(), rtp_parser, packet_pool, allocator);
@@ -546,7 +540,7 @@ TEST(writer_reader, interleaved_packets) {
 
         CHECK(intrlvr.valid());
 
-        Writer writer(writer_config, FECPayloadSize, encoder, intrlvr, source_composer(),
+        Writer writer(writer_config, encoder, intrlvr, source_composer(),
                       repair_composer(), packet_pool, buffer_pool, allocator);
 
         Reader reader(reader_config, decoder, dispatcher.source_reader(),
@@ -592,9 +586,8 @@ TEST(writer_reader, delayed_packets) {
         PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
                                     NumSourcePackets, NumRepairPackets);
 
-        Writer writer(writer_config, FECPayloadSize, encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
-                      allocator);
+        Writer writer(writer_config, encoder, dispatcher, source_composer(),
+                      repair_composer(), packet_pool, buffer_pool, allocator);
 
         Reader reader(reader_config, decoder, dispatcher.source_reader(),
                       dispatcher.repair_reader(), rtp_parser, packet_pool, allocator);
@@ -658,9 +651,8 @@ TEST(writer_reader, late_out_of_order_packets) {
         PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
                                     NumSourcePackets, NumRepairPackets);
 
-        Writer writer(writer_config, FECPayloadSize, encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
-                      allocator);
+        Writer writer(writer_config, encoder, dispatcher, source_composer(),
+                      repair_composer(), packet_pool, buffer_pool, allocator);
 
         Reader reader(reader_config, decoder, dispatcher.source_reader(),
                       dispatcher.repair_reader(), rtp_parser, packet_pool, allocator);
@@ -733,9 +725,8 @@ TEST(writer_reader, repair_packets_before_source_packets) {
                                     writer_config.n_source_packets,
                                     writer_config.n_repair_packets);
 
-        Writer writer(writer_config, FECPayloadSize, encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
-                      allocator);
+        Writer writer(writer_config, encoder, dispatcher, source_composer(),
+                      repair_composer(), packet_pool, buffer_pool, allocator);
 
         Reader reader(reader_config, decoder, dispatcher.source_reader(),
                       dispatcher.repair_reader(), rtp_parser, packet_pool, allocator);
@@ -815,9 +806,8 @@ TEST(writer_reader, repair_packets_mixed_with_source_packets) {
                                     writer_config.n_source_packets,
                                     writer_config.n_repair_packets);
 
-        Writer writer(writer_config, FECPayloadSize, encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
-                      allocator);
+        Writer writer(writer_config, encoder, dispatcher, source_composer(),
+                      repair_composer(), packet_pool, buffer_pool, allocator);
 
         Reader reader(reader_config, decoder, dispatcher.source_reader(),
                       dispatcher.repair_reader(), rtp_parser, packet_pool, allocator);
@@ -903,9 +893,8 @@ TEST(writer_reader, repaired_bad_source_id) {
         PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
                                     NumSourcePackets, NumRepairPackets);
 
-        Writer writer(writer_config, FECPayloadSize, encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
-                      allocator);
+        Writer writer(writer_config, encoder, dispatcher, source_composer(),
+                      repair_composer(), packet_pool, buffer_pool, allocator);
 
         Reader reader(reader_config, decoder, dispatcher.source_reader(),
                       dispatcher.repair_reader(), rtp_parser, packet_pool, allocator);
@@ -966,9 +955,8 @@ TEST(writer_reader, multiple_repair_attempts) {
         PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
                                     NumSourcePackets, NumRepairPackets);
 
-        Writer writer(writer_config, FECPayloadSize, encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
-                      allocator);
+        Writer writer(writer_config, encoder, dispatcher, source_composer(),
+                      repair_composer(), packet_pool, buffer_pool, allocator);
 
         Reader reader(reader_config, decoder, dispatcher.source_reader(),
                       dispatcher.repair_reader(), rtp_parser, packet_pool, allocator);
@@ -1040,9 +1028,8 @@ TEST(writer_reader, drop_outdated_block) {
         PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
                                     NumSourcePackets, NumRepairPackets);
 
-        Writer writer(writer_config, FECPayloadSize, encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
-                      allocator);
+        Writer writer(writer_config, encoder, dispatcher, source_composer(),
+                      repair_composer(), packet_pool, buffer_pool, allocator);
 
         Reader reader(reader_config, decoder, dispatcher.source_reader(),
                       dispatcher.repair_reader(), rtp_parser, packet_pool, allocator);
@@ -1106,9 +1093,8 @@ TEST(writer_reader, repaired_block_numbering) {
         PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
                                     NumSourcePackets, NumRepairPackets);
 
-        Writer writer(writer_config, FECPayloadSize, encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
-                      allocator);
+        Writer writer(writer_config, encoder, dispatcher, source_composer(),
+                      repair_composer(), packet_pool, buffer_pool, allocator);
 
         Reader reader(reader_config, decoder, dispatcher.source_reader(),
                       dispatcher.repair_reader(), rtp_parser, packet_pool, allocator);
@@ -1189,8 +1175,8 @@ TEST(writer_reader, invalid_esi) {
         PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
                                     NumSourcePackets, NumRepairPackets);
 
-        Writer writer(writer_config, FECPayloadSize, encoder, queue, source_composer(),
-                      repair_composer(), packet_pool, buffer_pool, allocator);
+        Writer writer(writer_config, encoder, queue, source_composer(), repair_composer(),
+                      packet_pool, buffer_pool, allocator);
 
         Reader reader(reader_config, decoder, dispatcher.source_reader(),
                       dispatcher.repair_reader(), rtp_parser, packet_pool, allocator);
@@ -1264,8 +1250,8 @@ TEST(writer_reader, invalid_sbl) {
         PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
                                     NumSourcePackets, NumRepairPackets);
 
-        Writer writer(writer_config, FECPayloadSize, encoder, queue, source_composer(),
-                      repair_composer(), packet_pool, buffer_pool, allocator);
+        Writer writer(writer_config, encoder, queue, source_composer(), repair_composer(),
+                      packet_pool, buffer_pool, allocator);
 
         Reader reader(reader_config, decoder, dispatcher.source_reader(),
                       dispatcher.repair_reader(), rtp_parser, packet_pool, allocator);
@@ -1334,8 +1320,8 @@ TEST(writer_reader, invalid_nes) {
         PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
                                     NumSourcePackets, NumRepairPackets);
 
-        Writer writer(writer_config, FECPayloadSize, encoder, queue, source_composer(),
-                      repair_composer(), packet_pool, buffer_pool, allocator);
+        Writer writer(writer_config, encoder, queue, source_composer(), repair_composer(),
+                      packet_pool, buffer_pool, allocator);
 
         Reader reader(reader_config, decoder, dispatcher.source_reader(),
                       dispatcher.repair_reader(), rtp_parser, packet_pool, allocator);
@@ -1402,9 +1388,8 @@ TEST(writer_reader, invalid_payload_size) {
         packet::Queue source_queue;
         packet::Queue repair_queue;
 
-        Writer writer(writer_config, FECPayloadSize, encoder, writer_queue,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
-                      allocator);
+        Writer writer(writer_config, encoder, writer_queue, source_composer(),
+                      repair_composer(), packet_pool, buffer_pool, allocator);
 
         Reader reader(reader_config, decoder, source_queue, repair_queue, rtp_parser,
                       packet_pool, allocator);
@@ -1485,8 +1470,8 @@ TEST(writer_reader, zero_source_packets) {
         PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
                                     NumSourcePackets, NumRepairPackets);
 
-        Writer writer(writer_config, FECPayloadSize, encoder, queue, source_composer(),
-                      repair_composer(), packet_pool, buffer_pool, allocator);
+        Writer writer(writer_config, encoder, queue, source_composer(), repair_composer(),
+                      packet_pool, buffer_pool, allocator);
 
         Reader reader(reader_config, decoder, dispatcher.source_reader(),
                       dispatcher.repair_reader(), rtp_parser, packet_pool, allocator);
@@ -1562,7 +1547,7 @@ TEST(writer_reader, zero_repair_packets) {
         PacketDispatcher dispatcher(ldpc_source_parser, ldpc_repair_parser, packet_pool,
                                     NumSourcePackets, NumRepairPackets);
 
-        Writer writer(writer_config, FECPayloadSize, encoder, queue, ldpc_source_composer,
+        Writer writer(writer_config, encoder, queue, ldpc_source_composer,
                       ldpc_repair_composer, packet_pool, buffer_pool, allocator);
 
         Reader reader(reader_config, decoder, dispatcher.source_reader(),
@@ -1637,9 +1622,8 @@ TEST(writer_reader, zero_payload_size) {
         packet::Queue source_queue;
         packet::Queue repair_queue;
 
-        Writer writer(writer_config, FECPayloadSize, encoder, writer_queue,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
-                      allocator);
+        Writer writer(writer_config, encoder, writer_queue, source_composer(),
+                      repair_composer(), packet_pool, buffer_pool, allocator);
 
         Reader reader(reader_config, decoder, source_queue, repair_queue, rtp_parser,
                       packet_pool, allocator);
@@ -1720,8 +1704,8 @@ TEST(writer_reader, sbn_jump) {
         PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
                                     NumSourcePackets, NumRepairPackets);
 
-        Writer writer(writer_config, FECPayloadSize, encoder, queue, source_composer(),
-                      repair_composer(), packet_pool, buffer_pool, allocator);
+        Writer writer(writer_config, encoder, queue, source_composer(), repair_composer(),
+                      packet_pool, buffer_pool, allocator);
 
         Reader reader(reader_config, decoder, dispatcher.source_reader(),
                       dispatcher.repair_reader(), rtp_parser, packet_pool, allocator);
@@ -1823,9 +1807,8 @@ TEST(writer_reader, writer_encode_blocks) {
             PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
                                         NumSourcePackets, NumRepairPackets);
 
-            Writer writer(writer_config, FECPayloadSize, encoder, dispatcher,
-                          source_composer(), repair_composer(), packet_pool, buffer_pool,
-                          allocator);
+            Writer writer(writer_config, encoder, dispatcher, source_composer(),
+                          repair_composer(), packet_pool, buffer_pool, allocator);
 
             CHECK(writer.valid());
 
@@ -1906,9 +1889,8 @@ TEST(writer_reader, writer_resize_blocks) {
         PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
                                     NumSourcePackets, NumRepairPackets);
 
-        Writer writer(writer_config, FECPayloadSize, encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
-                      allocator);
+        Writer writer(writer_config, encoder, dispatcher, source_composer(),
+                      repair_composer(), packet_pool, buffer_pool, allocator);
 
         CHECK(writer.valid());
 
@@ -1927,7 +1909,7 @@ TEST(writer_reader, writer_resize_blocks) {
         packet::seqnum_t rd_sn = 0;
 
         for (size_t n = 0; n < ROC_ARRAY_SIZE(source_sizes); ++n) {
-            CHECK(writer.resize(source_sizes[n], repair_sizes[n], payload_sizes[n]));
+            CHECK(writer.resize(source_sizes[n], repair_sizes[n]));
 
             for (size_t i = 0; i < source_sizes[n]; ++i) {
                 packet::PacketPtr p = fill_one_packet(wr_sn, payload_sizes[n]);
@@ -1967,9 +1949,8 @@ TEST(writer_reader, resize_block_begin) {
         PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
                                     NumSourcePackets, NumRepairPackets);
 
-        Writer writer(writer_config, FECPayloadSize, encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
-                      allocator);
+        Writer writer(writer_config, encoder, dispatcher, source_composer(),
+                      repair_composer(), packet_pool, buffer_pool, allocator);
         Reader reader(reader_config, decoder, dispatcher.source_reader(),
                       dispatcher.repair_reader(), rtp_parser, packet_pool, allocator);
 
@@ -1991,7 +1972,7 @@ TEST(writer_reader, resize_block_begin) {
         packet::seqnum_t rd_sn = 0;
 
         for (size_t n = 0; n < ROC_ARRAY_SIZE(source_sizes); ++n) {
-            CHECK(writer.resize(source_sizes[n], repair_sizes[n], payload_sizes[n]));
+            CHECK(writer.resize(source_sizes[n], repair_sizes[n]));
 
             for (size_t i = 0; i < source_sizes[n]; ++i) {
                 packet::PacketPtr p = fill_one_packet(wr_sn, payload_sizes[n]);
@@ -2035,9 +2016,8 @@ TEST(writer_reader, resize_block_middle) {
         PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
                                     NumSourcePackets, NumRepairPackets);
 
-        Writer writer(writer_config, FECPayloadSize, encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
-                      allocator);
+        Writer writer(writer_config, encoder, dispatcher, source_composer(),
+                      repair_composer(), packet_pool, buffer_pool, allocator);
         Reader reader(reader_config, decoder, dispatcher.source_reader(),
                       dispatcher.repair_reader(), rtp_parser, packet_pool, allocator);
 
@@ -2077,7 +2057,7 @@ TEST(writer_reader, resize_block_middle) {
             }
 
             // Update source block size.
-            CHECK(writer.resize(source_sizes[n], repair_sizes[n], payload_sizes[n]));
+            CHECK(writer.resize(source_sizes[n], repair_sizes[n]));
 
             // Write the remaining packets.
             for (size_t i = prev_sblen / 2; i < prev_sblen; ++i) {
@@ -2124,9 +2104,8 @@ TEST(writer_reader, resize_block_losses) {
         PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
                                     NumSourcePackets, NumRepairPackets);
 
-        Writer writer(writer_config, FECPayloadSize, encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
-                      allocator);
+        Writer writer(writer_config, encoder, dispatcher, source_composer(),
+                      repair_composer(), packet_pool, buffer_pool, allocator);
         Reader reader(reader_config, decoder, dispatcher.source_reader(),
                       dispatcher.repair_reader(), rtp_parser, packet_pool, allocator);
 
@@ -2148,7 +2127,7 @@ TEST(writer_reader, resize_block_losses) {
         packet::seqnum_t rd_sn = 0;
 
         for (size_t n = 0; n < ROC_ARRAY_SIZE(source_sizes); ++n) {
-            CHECK(writer.resize(source_sizes[n], repair_sizes[n], payload_sizes[n]));
+            CHECK(writer.resize(source_sizes[n], repair_sizes[n]));
 
             dispatcher.resize(source_sizes[n], repair_sizes[n]);
             dispatcher.reset();
@@ -2194,9 +2173,8 @@ TEST(writer_reader, resize_block_repair_first) {
         PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
                                     NumSourcePackets, NumRepairPackets);
 
-        Writer writer(writer_config, FECPayloadSize, encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
-                      allocator);
+        Writer writer(writer_config, encoder, dispatcher, source_composer(),
+                      repair_composer(), packet_pool, buffer_pool, allocator);
 
         Reader reader(reader_config, decoder, dispatcher.source_reader(),
                       dispatcher.repair_reader(), rtp_parser, packet_pool, allocator);
@@ -2226,8 +2204,7 @@ TEST(writer_reader, resize_block_repair_first) {
         }
 
         // Resize.
-        CHECK(writer.resize(NumSourcePackets * 2, NumRepairPackets * 2,
-                            FECPayloadSize * 2));
+        CHECK(writer.resize(NumSourcePackets * 2, NumRepairPackets * 2));
 
         // Lose one packet.
         dispatcher.resize(NumSourcePackets * 2, NumRepairPackets * 2);
@@ -2278,15 +2255,14 @@ TEST(writer_reader, error_writer_resize_block) {
         PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
                                     NumSourcePackets, NumRepairPackets);
 
-        Writer writer(writer_config, FECPayloadSize, encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
-                      mock_allocator);
+        Writer writer(writer_config, encoder, dispatcher, source_composer(),
+                      repair_composer(), packet_pool, buffer_pool, mock_allocator);
 
         CHECK(writer.valid());
 
         size_t sn = 0;
 
-        CHECK(writer.resize(NumSourcePackets, BlockSize1, FECPayloadSize));
+        CHECK(writer.resize(NumSourcePackets, BlockSize1));
 
         for (size_t i = 0; i < NumSourcePackets; ++i) {
             writer.write(fill_one_packet(sn++));
@@ -2301,7 +2277,7 @@ TEST(writer_reader, error_writer_resize_block) {
 
         mock_allocator.set_fail(true);
 
-        CHECK(writer.resize(NumSourcePackets, BlockSize2, FECPayloadSize));
+        CHECK(writer.resize(NumSourcePackets, BlockSize2));
 
         for (size_t i = 0; i < NumSourcePackets; ++i) {
             writer.write(fill_one_packet(sn++));
@@ -2327,15 +2303,14 @@ TEST(writer_reader, error_writer_encode_packet) {
         PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
                                     NumSourcePackets, NumRepairPackets);
 
-        Writer writer(writer_config, FECPayloadSize, encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
-                      allocator);
+        Writer writer(writer_config, encoder, dispatcher, source_composer(),
+                      repair_composer(), packet_pool, buffer_pool, allocator);
 
         CHECK(writer.valid());
 
         size_t sn = 0;
 
-        CHECK(writer.resize(BlockSize1, NumRepairPackets, FECPayloadSize));
+        CHECK(writer.resize(BlockSize1, NumRepairPackets));
 
         for (size_t i = 0; i < BlockSize1; ++i) {
             writer.write(fill_one_packet(sn++));
@@ -2346,7 +2321,7 @@ TEST(writer_reader, error_writer_encode_packet) {
         CHECK(dispatcher.repair_size() == NumRepairPackets);
 
         mock_allocator.set_fail(true);
-        CHECK(writer.resize(BlockSize2, NumRepairPackets, FECPayloadSize));
+        CHECK(writer.resize(BlockSize2, NumRepairPackets));
 
         for (size_t i = 0; i < BlockSize2; ++i) {
             writer.write(fill_one_packet(sn++));
@@ -2375,9 +2350,8 @@ TEST(writer_reader, error_reader_resize_block) {
 
         MockAllocator mock_allocator;
 
-        Writer writer(writer_config, FECPayloadSize, encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
-                      allocator);
+        Writer writer(writer_config, encoder, dispatcher, source_composer(),
+                      repair_composer(), packet_pool, buffer_pool, allocator);
 
         Reader reader(reader_config, decoder, dispatcher.source_reader(),
                       dispatcher.repair_reader(), rtp_parser, packet_pool,
@@ -2389,7 +2363,7 @@ TEST(writer_reader, error_reader_resize_block) {
         size_t sn = 0;
 
         // write first block
-        CHECK(writer.resize(BlockSize1, NumRepairPackets, FECPayloadSize));
+        CHECK(writer.resize(BlockSize1, NumRepairPackets));
         for (size_t i = 0; i < BlockSize1; ++i) {
             writer.write(fill_one_packet(sn++));
         }
@@ -2406,7 +2380,7 @@ TEST(writer_reader, error_reader_resize_block) {
         }
 
         // write second block
-        CHECK(writer.resize(BlockSize2, NumRepairPackets, FECPayloadSize));
+        CHECK(writer.resize(BlockSize2, NumRepairPackets));
         for (size_t i = 0; i < BlockSize2; ++i) {
             writer.write(fill_one_packet(sn++));
         }
@@ -2441,9 +2415,8 @@ TEST(writer_reader, error_reader_decode_packet) {
         PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
                                     NumSourcePackets, NumRepairPackets);
 
-        Writer writer(writer_config, FECPayloadSize, encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
-                      allocator);
+        Writer writer(writer_config, encoder, dispatcher, source_composer(),
+                      repair_composer(), packet_pool, buffer_pool, allocator);
 
         Reader reader(reader_config, decoder, dispatcher.source_reader(),
                       dispatcher.repair_reader(), rtp_parser, packet_pool, allocator);
@@ -2454,7 +2427,7 @@ TEST(writer_reader, error_reader_decode_packet) {
         size_t sn = 0;
 
         // write first block
-        CHECK(writer.resize(BlockSize1, NumRepairPackets, FECPayloadSize));
+        CHECK(writer.resize(BlockSize1, NumRepairPackets));
         for (size_t i = 0; i < BlockSize1; ++i) {
             writer.write(fill_one_packet(sn++));
         }
@@ -2475,7 +2448,7 @@ TEST(writer_reader, error_reader_decode_packet) {
         dispatcher.lose(10);
 
         // write second block
-        CHECK(writer.resize(BlockSize2, NumRepairPackets, FECPayloadSize));
+        CHECK(writer.resize(BlockSize2, NumRepairPackets));
         for (size_t i = 0; i < BlockSize2; ++i) {
             writer.write(fill_one_packet(sn++));
         }
@@ -2517,9 +2490,8 @@ TEST(writer_reader, writer_oversized_block) {
         PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
                                     NumSourcePackets, NumRepairPackets);
 
-        Writer writer(writer_config, FECPayloadSize, encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
-                      allocator);
+        Writer writer(writer_config, encoder, dispatcher, source_composer(),
+                      repair_composer(), packet_pool, buffer_pool, allocator);
 
         Reader reader(reader_config, decoder, dispatcher.source_reader(),
                       dispatcher.repair_reader(), rtp_parser, packet_pool, allocator);
@@ -2528,8 +2500,7 @@ TEST(writer_reader, writer_oversized_block) {
         CHECK(reader.valid());
 
         // try to resize writer with an invalid value
-        CHECK(!writer.resize(encoder.max_block_length() + 1, NumRepairPackets,
-                             FECPayloadSize));
+        CHECK(!writer.resize(encoder.max_block_length() + 1, NumRepairPackets));
 
         // ensure that the block size was not updated
         for (size_t n = 0; n < 10; ++n) {
@@ -2584,7 +2555,7 @@ TEST(writer_reader, reader_oversized_source_block) {
         // We are going to spoil source_block_length field of a FEC packet,
         // but Reed-Solomon does not allow us to set this field above 255,
         // so LDPC composer is used for all schemes.
-        Writer writer(writer_config, FECPayloadSize, encoder, queue, ldpc_source_composer,
+        Writer writer(writer_config, encoder, queue, ldpc_source_composer,
                       ldpc_repair_composer, packet_pool, buffer_pool, allocator);
 
         Reader reader(reader_config, decoder, dispatcher.source_reader(),
@@ -2647,7 +2618,7 @@ TEST(writer_reader, reader_oversized_repair_block) {
         // We are going to spoil source_block_length field of a FEC packet,
         // but Reed-Solomon does not allow us to set this field above 255,
         // so LDPC composer is used for all schemes.
-        Writer writer(writer_config, FECPayloadSize, encoder, queue, ldpc_source_composer,
+        Writer writer(writer_config, encoder, queue, ldpc_source_composer,
                       ldpc_repair_composer, packet_pool, buffer_pool, allocator);
 
         Reader reader(reader_config, decoder, dispatcher.source_reader(),

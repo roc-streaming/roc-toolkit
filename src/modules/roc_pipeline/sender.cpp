@@ -92,8 +92,6 @@ Sender::Sender(const SenderConfig& config,
             pwriter = interleaver_.get();
         }
 
-        const size_t source_packet_size = format->size(config.packet_length);
-
         core::UniquePtr<fec::OFEncoder> fec_encoder(
             new (allocator) fec::OFEncoder(config.fec_encoder, allocator), allocator);
         if (!fec_encoder || !fec_encoder->valid()) {
@@ -101,12 +99,11 @@ Sender::Sender(const SenderConfig& config,
         }
         fec_encoder_.reset(fec_encoder.release(), allocator);
 
-        fec_writer_.reset(
-            new (allocator)
-                fec::Writer(config.fec_writer, source_packet_size, *fec_encoder_,
-                            *pwriter, source_port_->composer(), repair_port_->composer(),
-                            packet_pool, byte_buffer_pool, allocator),
-            allocator);
+        fec_writer_.reset(new (allocator) fec::Writer(
+                              config.fec_writer, *fec_encoder_, *pwriter,
+                              source_port_->composer(), repair_port_->composer(),
+                              packet_pool, byte_buffer_pool, allocator),
+                          allocator);
         if (!fec_writer_ || !fec_writer_->valid()) {
             return;
         }

@@ -15,7 +15,6 @@ namespace roc {
 namespace fec {
 
 Writer::Writer(const WriterConfig& config,
-               size_t payload_size,
                IBlockEncoder& encoder,
                packet::IWriter& writer,
                packet::IComposer& source_composer,
@@ -28,7 +27,6 @@ Writer::Writer(const WriterConfig& config,
     , cur_rblen_(0)
     , next_rblen_(0)
     , cur_payload_size_(0)
-    , next_payload_size_(0)
     , encoder_(encoder)
     , writer_(writer)
     , source_composer_(source_composer)
@@ -43,7 +41,7 @@ Writer::Writer(const WriterConfig& config,
     , cur_packet_(0)
     , valid_(false)
     , alive_(true) {
-    if (!resize(config.n_source_packets, config.n_repair_packets, payload_size)) {
+    if (!resize(config.n_source_packets, config.n_repair_packets)) {
         return;
     }
     valid_ = true;
@@ -57,15 +55,9 @@ bool Writer::alive() const {
     return alive_;
 }
 
-bool Writer::resize(size_t sblen, size_t rblen, size_t payload_size) {
-    if (next_sblen_ == sblen && next_rblen_ == rblen
-        && next_payload_size_ == payload_size) {
+bool Writer::resize(size_t sblen, size_t rblen) {
+    if (next_sblen_ == sblen && next_rblen_ == rblen) {
         return true;
-    }
-
-    if (payload_size == 0) {
-        roc_log(LogError, "fec writer: resize: payload size can't be zero");
-        return false;
     }
 
     if (sblen == 0) {
@@ -87,19 +79,12 @@ bool Writer::resize(size_t sblen, size_t rblen, size_t payload_size) {
 
     roc_log(LogDebug,
             "fec writer: update block size:"
-            " cur_sbl=%lu cur_rbl=%lu new_sbl=%lu new_rbl=%lu payload_size=%lu",
+            " cur_sbl=%lu cur_rbl=%lu new_sbl=%lu new_rbl=%lu",
             (unsigned long)cur_sblen_, (unsigned long)cur_rblen_, (unsigned long)sblen,
-            (unsigned long)rblen, (unsigned long)payload_size);
+            (unsigned long)rblen);
 
     next_sblen_ = sblen;
     next_rblen_ = rblen;
-    next_payload_size_ = payload_size;
-
-    if (cur_packet_ == 0) {
-        cur_sblen_ = sblen;
-        cur_rblen_ = rblen;
-        cur_payload_size_ = payload_size;
-    }
 
     return true;
 }
@@ -126,7 +111,7 @@ void Writer::write(const packet::PacketPtr& pp) {
     }
 
     if (cur_packet_ == 0) {
-        if (!begin_block_()) {
+        if (!begin_block_(pp)) {
             return;
         }
     }
@@ -147,10 +132,15 @@ void Writer::generate_source_id_(const packet::PacketPtr& pp) {
     } while (source_ == pp->rtp()->source);
 }
 
-bool Writer::begin_block_() {
-    if (!resize_repair_block_(cur_rblen_)) {
+bool Writer::begin_block_(const packet::PacketPtr& pp) {
+    if (!apply_sizes_(next_sblen_, next_rblen_, pp->fec()->payload.size())) {
         return false;
     }
+
+    roc_log(LogTrace,
+            "fec writer: begin block: sbn=%lu sblen=%lu rblen=%lu payload_size=%lu",
+            (unsigned long)cur_sbn_, (unsigned long)cur_sblen_, (unsigned long)cur_rblen_,
+            (unsigned long)cur_payload_size_);
 
     if (!encoder_.begin(cur_sblen_, cur_rblen_, cur_payload_size_)) {
         roc_log(LogError,
@@ -175,30 +165,28 @@ void Writer::end_block_() {
 void Writer::next_block_() {
     cur_block_repair_sn_ += cur_rblen_;
     cur_sbn_++;
-
     cur_packet_ = 0;
-    cur_sblen_ = next_sblen_;
-    cur_rblen_ = next_rblen_;
-    cur_payload_size_ = next_payload_size_;
-
-    roc_log(LogTrace,
-            "fec writer: next block: sbn=%lu sblen=%lu rblen=%lu payload_size=%lu",
-            (unsigned long)cur_sbn_, (unsigned long)cur_sblen_, (unsigned long)cur_rblen_,
-            (unsigned long)cur_payload_size_);
 }
 
-bool Writer::resize_repair_block_(size_t rblen) {
-    if (repair_block_.size() == rblen) {
-        return true;
-    }
-
-    if (!repair_block_.resize(rblen)) {
-        roc_log(LogDebug,
-                "fec writer: can't allocate repair block memory, shutting down:"
-                " cur_rbl=%lu new_rbl=%lu",
-                (unsigned long)repair_block_.size(), (unsigned long)rblen);
+bool Writer::apply_sizes_(size_t sblen, size_t rblen, size_t payload_size) {
+    if (payload_size == 0) {
+        roc_log(LogError, "fec writer: payload size can't be zero");
         return (alive_ = false);
     }
+
+    if (repair_block_.size() != rblen) {
+        if (!repair_block_.resize(rblen)) {
+            roc_log(LogError,
+                    "fec writer: can't allocate repair block memory, shutting down:"
+                    " cur_rbl=%lu new_rbl=%lu",
+                    (unsigned long)repair_block_.size(), (unsigned long)rblen);
+            return (alive_ = false);
+        }
+    }
+
+    cur_sblen_ = sblen;
+    cur_rblen_ = rblen;
+    cur_payload_size_ = payload_size;
 
     return true;
 }

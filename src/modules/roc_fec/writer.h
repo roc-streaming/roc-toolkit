@@ -50,12 +50,11 @@ public:
     //!  - @p encoder is used to encode repair packets
     //!  - @p writer is used to write source and repair packets
     //!  - @p source_composer is used to format source packets
-    //!  - @p source_composer is used to format repair packets
+    //!  - @p repair_composer is used to format repair packets
     //!  - @p packet_pool is used to allocate repair packets
     //!  - @p buffer_pool is used to allocate buffers for repair packets
     //!  - @p allocator is used to initialize a packet array
     Writer(const WriterConfig& config,
-           size_t payload_size,
            IBlockEncoder& encoder,
            packet::IWriter& writer,
            packet::IComposer& source_composer,
@@ -71,7 +70,7 @@ public:
     bool alive() const;
 
     //! Set number of source packets per block.
-    bool resize(size_t sblen, size_t rblen, size_t payload_size);
+    bool resize(size_t sblen, size_t rblen);
 
     //! Write packet.
     //! @remarks
@@ -82,11 +81,11 @@ public:
 private:
     void generate_source_id_(const packet::PacketPtr& pp);
 
-    bool begin_block_();
+    bool begin_block_(const packet::PacketPtr& pp);
     void end_block_();
     void next_block_();
 
-    bool resize_repair_block_(size_t rblen);
+    bool apply_sizes_(size_t sblen, size_t rblen, size_t payload_size);
 
     void write_source_packet_(const packet::PacketPtr&);
     void make_repair_packets_();
@@ -103,7 +102,6 @@ private:
     size_t next_rblen_;
 
     size_t cur_payload_size_;
-    size_t next_payload_size_;
 
     IBlockEncoder& encoder_;
     packet::IWriter& writer_;
