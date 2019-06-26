@@ -34,9 +34,6 @@ public:
     virtual bool
     prepare(packet::Packet& packet, core::Slice<uint8_t>& buffer, size_t payload_size);
 
-    //! Truncate packet payload.
-    virtual bool truncate(packet::Packet& packet, size_t payload_size);
-
     //! Compose packet to buffer.
     virtual bool compose(packet::Packet& packet);
 

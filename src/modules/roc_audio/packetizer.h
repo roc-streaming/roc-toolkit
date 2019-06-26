@@ -64,7 +64,6 @@ public:
 
 private:
     packet::PacketPtr start_packet_();
-    bool finish_packet_();
 
     packet::IWriter& writer_;
     packet::IComposer& composer_;

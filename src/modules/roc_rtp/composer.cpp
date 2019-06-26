@@ -87,32 +87,6 @@ bool Composer::prepare(packet::Packet& packet,
     return true;
 }
 
-bool Composer::truncate(packet::Packet& packet, size_t payload_size) {
-    if (!packet.rtp()) {
-        roc_panic("rtp composer: unexpected non-rtp packet");
-    }
-
-    packet::RTP& rtp = *packet.rtp();
-
-    if (rtp.payload.size() < payload_size) {
-        roc_log(LogDebug,
-                "rtp composer: can't truncate packet to a larger size:"
-                " old_size=%lu new_size=%lu",
-                (unsigned long)rtp.payload.size(), (unsigned long)payload_size);
-        return false;
-    }
-
-    if (inner_composer_) {
-        if (!inner_composer_->truncate(packet, payload_size)) {
-            return false;
-        }
-    }
-
-    rtp.payload = rtp.payload.range(0, payload_size);
-
-    return true;
-}
-
 bool Composer::compose(packet::Packet& packet) {
     if (!packet.rtp()) {
         roc_panic("rtp composer: unexpected non-rtp packet");

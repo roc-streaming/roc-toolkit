@@ -120,33 +120,6 @@ public:
         return true;
     }
 
-    //! Truncate packet payload.
-    virtual bool truncate(packet::Packet& packet, size_t payload_size) {
-        if (!packet.fec()) {
-            roc_panic("fec composer: unexpected non-fec packet");
-        }
-
-        packet::FEC& fec = *packet.fec();
-
-        if (fec.payload.size() < payload_size) {
-            roc_log(LogDebug,
-                    "fec composer: can't truncate packet to a larger size:"
-                    " old_size=%lu new_size=%lu",
-                    (unsigned long)fec.payload.size(), (unsigned long)payload_size);
-            return false;
-        }
-
-        if (inner_composer_) {
-            if (!inner_composer_->truncate(packet, payload_size)) {
-                return false;
-            }
-        }
-
-        fec.payload = fec.payload.range(0, payload_size);
-
-        return true;
-    }
-
     //! Compose packet to buffer.
     virtual bool compose(packet::Packet& packet) {
         if (!packet.fec()) {

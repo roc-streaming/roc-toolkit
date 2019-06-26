@@ -74,9 +74,7 @@ void Packetizer::flush() {
         return;
     }
 
-    if (finish_packet_()) {
-        writer_.write(packet_);
-    }
+    writer_.write(packet_);
 
     seqnum_++;
     timestamp_ += (packet::timestamp_t)packet_pos_;
@@ -119,19 +117,6 @@ packet::PacketPtr Packetizer::start_packet_() {
     rtp->payload_type = payload_type_;
 
     return packet;
-}
-
-bool Packetizer::finish_packet_() {
-    if (packet_pos_ == samples_per_packet_) {
-        return true;
-    }
-
-    if (!composer_.truncate(*packet_, encoder_.payload_size(packet_pos_))) {
-        roc_log(LogError, "packetizer: can't truncate packet");
-        return false;
-    }
-
-    return true;
 }
 
 } // namespace audio

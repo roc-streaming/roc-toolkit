@@ -249,7 +249,7 @@ TEST(packetizer, multiple_buffers_multiple_packets) {
     UNSIGNED_LONGS_EQUAL(0, packet_queue.size());
 }
 
-TEST(packetizer, flush) {
+IGNORE_TEST(packetizer, flush) {
     enum { Missing = 10 };
 
     packet::Queue packet_queue;

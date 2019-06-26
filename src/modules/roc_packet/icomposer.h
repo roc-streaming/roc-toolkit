@@ -47,16 +47,6 @@ public:
     virtual bool
     prepare(Packet& packet, core::Slice<uint8_t>& buffer, size_t payload_size) = 0;
 
-    //! Truncate packet payload.
-    //! @remarks
-    //!  Truncates the @p packet payload to given @p payload_size. The new size
-    //!  should be less than or equal to the previois size set by prepare() or
-    //   truncate().
-    //! @returns
-    //!  true if the packet was successfully truncated or false if the packet
-    //!  payload was not truncated.
-    virtual bool truncate(Packet& packet, size_t payload_size) = 0;
-
     //! Compose packet to buffer.
     //! @remarks
     //!  Formats @p packet headers and payloads to the buffer attached to it during
