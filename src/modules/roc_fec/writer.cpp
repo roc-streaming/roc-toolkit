@@ -116,6 +116,10 @@ void Writer::write(const packet::PacketPtr& pp) {
         }
     }
 
+    if (!validate_source_packet_(pp)) {
+        return;
+    }
+
     write_source_packet_(pp);
 
     cur_packet_++;
@@ -187,6 +191,21 @@ bool Writer::apply_sizes_(size_t sblen, size_t rblen, size_t payload_size) {
     cur_sblen_ = sblen;
     cur_rblen_ = rblen;
     cur_payload_size_ = payload_size;
+
+    return true;
+}
+
+bool Writer::validate_source_packet_(const packet::PacketPtr& pp) {
+    const size_t payload_size = pp->fec()->payload.size();
+
+    if (payload_size != cur_payload_size_) {
+        roc_log(LogError,
+                "fec writer: can't change payload size in the middle of a block:"
+                " sbn=%lu esi=%lu old_size=%lu new_size=%lu",
+                (unsigned long)cur_sbn_, (unsigned long)cur_packet_,
+                (unsigned long)cur_payload_size_, (unsigned long)payload_size);
+        return (alive_ = false);
+    }
 
     return true;
 }

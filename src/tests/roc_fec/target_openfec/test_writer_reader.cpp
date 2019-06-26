@@ -2661,5 +2661,51 @@ TEST(writer_reader, reader_oversized_repair_block) {
     }
 }
 
+TEST(writer_reader, writer_invalid_payload_size_change) {
+    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; ++n_scheme) {
+        codec_config.scheme = Test_fec_schemes[n_scheme];
+
+        OFEncoder encoder(codec_config, allocator);
+        CHECK(encoder.valid());
+
+        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                    NumSourcePackets, NumRepairPackets);
+
+        Writer writer(writer_config, encoder, dispatcher, source_composer(),
+                      repair_composer(), packet_pool, buffer_pool, allocator);
+        CHECK(writer.valid());
+
+        size_t sn = 0;
+
+        // write the first block with the same payload size
+        for (size_t i = 0; i < NumSourcePackets; ++i) {
+            writer.write(fill_one_packet(sn++, FECPayloadSize));
+        }
+
+        CHECK(writer.alive());
+        UNSIGNED_LONGS_EQUAL(NumSourcePackets, dispatcher.source_size());
+        UNSIGNED_LONGS_EQUAL(NumRepairPackets, dispatcher.repair_size());
+
+        // write a half of the second block with another payload size
+        for (size_t i = 0; i < NumSourcePackets / 2; ++i) {
+            writer.write(fill_one_packet(sn++, FECPayloadSize - 1));
+        }
+
+        CHECK(writer.alive());
+        UNSIGNED_LONGS_EQUAL(NumSourcePackets + NumSourcePackets / 2,
+                             dispatcher.source_size());
+        UNSIGNED_LONGS_EQUAL(NumRepairPackets, dispatcher.repair_size());
+
+        // write a packet with different payload size
+        writer.write(fill_one_packet(sn, FECPayloadSize));
+
+        // writer should be terminated
+        CHECK(!writer.alive());
+        UNSIGNED_LONGS_EQUAL(NumSourcePackets + NumSourcePackets / 2,
+                             dispatcher.source_size());
+        UNSIGNED_LONGS_EQUAL(NumRepairPackets, dispatcher.repair_size());
+    }
+}
+
 } // namespace fec
 } // namespace roc

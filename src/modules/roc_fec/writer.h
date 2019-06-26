@@ -87,6 +87,7 @@ private:
 
     bool apply_sizes_(size_t sblen, size_t rblen, size_t payload_size);
 
+    bool validate_source_packet_(const packet::PacketPtr&);
     void write_source_packet_(const packet::PacketPtr&);
     void make_repair_packets_();
     packet::PacketPtr make_repair_packet_(packet::seqnum_t n);
