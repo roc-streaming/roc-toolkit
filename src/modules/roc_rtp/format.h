@@ -12,8 +12,8 @@
 #ifndef ROC_RTP_FORMAT_H_
 #define ROC_RTP_FORMAT_H_
 
-#include "roc_audio/idecoder.h"
-#include "roc_audio/iencoder.h"
+#include "roc_audio/iframe_decoder.h"
+#include "roc_audio/iframe_encoder.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/time.h"
 #include "roc_packet/rtp.h"
@@ -41,10 +41,10 @@ struct Format {
     size_t (*get_num_samples)(size_t payload_size);
 
     //! Create encoder.
-    audio::IEncoder* (*new_encoder)(core::IAllocator& allocator);
+    audio::IFrameEncoder* (*new_encoder)(core::IAllocator& allocator);
 
     //! Create decoder.
-    audio::IDecoder* (*new_decoder)(core::IAllocator& allocator);
+    audio::IFrameDecoder* (*new_decoder)(core::IAllocator& allocator);
 };
 
 } // namespace rtp

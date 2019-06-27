@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_audio/idecoder.h
-//! @brief Audio decoder interface.
+//! @file roc_audio/iframe_decoder.h
+//! @brief Audio frame decoder interface.
 
-#ifndef ROC_AUDIO_IDECODER_H_
-#define ROC_AUDIO_IDECODER_H_
+#ifndef ROC_AUDIO_IFRAME_DECODER_H_
+#define ROC_AUDIO_IFRAME_DECODER_H_
 
 #include "roc_audio/units.h"
 #include "roc_core/stddefs.h"
@@ -20,10 +20,10 @@
 namespace roc {
 namespace audio {
 
-//! Audio decoder interface.
-class IDecoder {
+//! Audio frame decoder interface.
+class IFrameDecoder {
 public:
-    virtual ~IDecoder();
+    virtual ~IFrameDecoder();
 
     //! Read samples from packet.
     //!
@@ -53,4 +53,4 @@ public:
 } // namespace audio
 } // namespace roc
 
-#endif // ROC_AUDIO_IDECODER_H_
+#endif // ROC_AUDIO_IFRAME_DECODER_H_

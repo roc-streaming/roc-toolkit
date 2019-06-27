@@ -11,7 +11,7 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "roc_audio/idecoder.h"
+#include "roc_audio/iframe_decoder.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/noncopyable.h"
 #include "roc_packet/iparser.h"
@@ -27,13 +27,13 @@ class PacketReader : public core::NonCopyable<> {
 public:
     PacketReader(packet::IReader& reader,
                  packet::IParser& parser,
-                 audio::IDecoder& decoder,
+                 audio::IFrameDecoder& payload_decoder,
                  packet::PacketPool& packet_pool,
                  rtp::PayloadType pt,
                  const packet::Address& dst_addr)
         : reader_(reader)
         , parser_(parser)
-        , decoder_(decoder)
+        , payload_decoder_(payload_decoder)
         , packet_pool_(packet_pool)
         , dst_addr_(dst_addr)
         , source_(0)
@@ -87,7 +87,7 @@ private:
         audio::sample_t samples[MaxSamples] = {};
         UNSIGNED_LONGS_EQUAL(
             samples_per_packet,
-            decoder_.read_samples(*pp, 0, samples, samples_per_packet, channels));
+            payload_decoder_.read_samples(*pp, 0, samples, samples_per_packet, channels));
 
         for (size_t n = 0; n < samples_per_packet * packet::num_channels(channels); n++) {
             DOUBLES_EQUAL((double)nth_sample(offset_), (double)samples[n], Epsilon);
@@ -98,7 +98,7 @@ private:
     packet::IReader& reader_;
 
     packet::IParser& parser_;
-    audio::IDecoder& decoder_;
+    audio::IFrameDecoder& payload_decoder_;
 
     packet::PacketPool& packet_pool_;
 

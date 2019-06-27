@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_audio/iencoder.h
-//! @brief Audio encoder interface.
+//! @file roc_audio/iframe_encoder.h
+//! @brief Audio frame encoder interface.
 
-#ifndef ROC_AUDIO_IENCODER_H_
-#define ROC_AUDIO_IENCODER_H_
+#ifndef ROC_AUDIO_IFRAME_ENCODER_H_
+#define ROC_AUDIO_IFRAME_ENCODER_H_
 
 #include "roc_audio/units.h"
 #include "roc_core/stddefs.h"
@@ -20,10 +20,10 @@
 namespace roc {
 namespace audio {
 
-//! Audio encoder interface.
-class IEncoder {
+//! Audio frame encoder interface.
+class IFrameEncoder {
 public:
-    virtual ~IEncoder();
+    virtual ~IFrameEncoder();
 
     //! Get packet payload size for given number of samples.
     virtual size_t payload_size(size_t num_samples) const = 0;
@@ -57,4 +57,4 @@ public:
 } // namespace audio
 } // namespace roc
 
-#endif // ROC_AUDIO_IENCODER_H_
+#endif // ROC_AUDIO_IFRAME_ENCODER_H_

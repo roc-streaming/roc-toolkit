@@ -12,7 +12,7 @@
 #ifndef ROC_RTP_PCM_DECODER_H_
 #define ROC_RTP_PCM_DECODER_H_
 
-#include "roc_audio/idecoder.h"
+#include "roc_audio/iframe_decoder.h"
 #include "roc_core/panic.h"
 #include "roc_rtp/pcm_funcs.h"
 
@@ -20,7 +20,7 @@ namespace roc {
 namespace rtp {
 
 //! PCM decoder.
-class PCMDecoder : public audio::IDecoder, public core::NonCopyable<> {
+class PCMDecoder : public audio::IFrameDecoder, public core::NonCopyable<> {
 public:
     //! Initialize.
     PCMDecoder(const PCMFuncs& funcs);

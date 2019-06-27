@@ -8,8 +8,8 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "roc_audio/idecoder.h"
-#include "roc_audio/iencoder.h"
+#include "roc_audio/iframe_decoder.h"
+#include "roc_audio/iframe_encoder.h"
 #include "roc_audio/packetizer.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/heap_allocator.h"

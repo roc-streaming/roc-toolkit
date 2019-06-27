@@ -31,11 +31,11 @@ inline void write_beep(sample_t* buf, size_t bufsz) {
 } // namespace
 
 Depacketizer::Depacketizer(packet::IReader& reader,
-                           IDecoder& decoder,
+                           IFrameDecoder& payload_decoder,
                            packet::channel_mask_t channels,
                            bool beep)
     : reader_(reader)
-    , decoder_(decoder)
+    , payload_decoder_(payload_decoder)
     , channels_(channels)
     , num_channels_(packet::num_channels(channels))
     , packet_pos_(0)
@@ -126,8 +126,8 @@ sample_t* Depacketizer::read_samples_(sample_t* buff_ptr, sample_t* buff_end) {
 sample_t* Depacketizer::read_packet_samples_(sample_t* buff_ptr, sample_t* buff_end) {
     const size_t max_samples = (size_t)(buff_end - buff_ptr) / num_channels_;
 
-    const size_t num_samples =
-        decoder_.read_samples(*packet_, packet_pos_, buff_ptr, max_samples, channels_);
+    const size_t num_samples = payload_decoder_.read_samples(
+        *packet_, packet_pos_, buff_ptr, max_samples, channels_);
 
     timestamp_ += packet::timestamp_t(num_samples);
     packet_pos_ += packet::timestamp_t(num_samples);

@@ -11,7 +11,7 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "roc_audio/iencoder.h"
+#include "roc_audio/iframe_encoder.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/noncopyable.h"
 #include "roc_packet/icomposer.h"
@@ -27,7 +27,7 @@ class PacketWriter : public core::NonCopyable<> {
 public:
     PacketWriter(packet::IWriter& writer,
                  packet::IComposer& composer,
-                 audio::IEncoder& encoder,
+                 audio::IFrameEncoder& payload_encoder,
                  packet::PacketPool& packet_pool,
                  core::BufferPool<uint8_t>& buffer_pool,
                  rtp::PayloadType pt,
@@ -35,7 +35,7 @@ public:
                  const packet::Address& dst_addr)
         : writer_(writer)
         , composer_(composer)
-        , encoder_(encoder)
+        , payload_encoder_(payload_encoder)
         , packet_pool_(packet_pool)
         , buffer_pool_(buffer_pool)
         , src_addr_(src_addr)
@@ -127,7 +127,8 @@ private:
         core::Slice<uint8_t> bp = new (buffer_pool_) core::Buffer<uint8_t>(buffer_pool_);
         CHECK(bp);
 
-        CHECK(composer_.prepare(*pp, bp, encoder_.payload_size(samples_per_packet)));
+        CHECK(composer_.prepare(*pp, bp,
+                                payload_encoder_.payload_size(samples_per_packet)));
 
         pp->set_data(bp);
 
@@ -144,9 +145,9 @@ private:
             samples[n] = nth_sample(offset_++);
         }
 
-        UNSIGNED_LONGS_EQUAL(
-            samples_per_packet,
-            encoder_.write_samples(*pp, 0, samples, samples_per_packet, channels));
+        UNSIGNED_LONGS_EQUAL(samples_per_packet,
+                             payload_encoder_.write_samples(
+                                 *pp, 0, samples, samples_per_packet, channels));
 
         CHECK(composer_.compose(*pp));
 
@@ -156,7 +157,7 @@ private:
     packet::IWriter& writer_;
 
     packet::IComposer& composer_;
-    audio::IEncoder& encoder_;
+    audio::IFrameEncoder& payload_encoder_;
 
     packet::PacketPool& packet_pool_;
     core::BufferPool<uint8_t>& buffer_pool_;
