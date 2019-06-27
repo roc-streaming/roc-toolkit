@@ -39,8 +39,6 @@ Reader::Reader(const ReaderConfig& config,
     , source_block_resized_(false)
     , repair_block_resized_(false)
     , payload_resized_(false)
-    , has_source_(false)
-    , source_(0)
     , n_packets_(0)
     , max_sbn_jump_(config.max_sbn_jump) {
     valid_ = true;
@@ -82,8 +80,8 @@ packet::PacketPtr Reader::read_() {
 
         roc_log(LogDebug,
                 "fec reader: got first packet in a block, start decoding:"
-                " n_packets_before=%u sn=%lu sbn=%lu",
-                n_packets_, (unsigned long)pp->rtp()->seqnum, (unsigned long)cur_sbn_);
+                " n_packets_before=%u sbn=%lu",
+                n_packets_, (unsigned long)cur_sbn_);
 
         started_ = true;
     }
@@ -97,7 +95,6 @@ packet::PacketPtr Reader::get_first_packet_() {
         return NULL;
     }
 
-    const packet::RTP& rtp = *pp->rtp();
     const packet::FEC& fec = *pp->fec();
 
     if (!process_source_packet_(pp)) {
@@ -111,12 +108,6 @@ packet::PacketPtr Reader::get_first_packet_() {
     }
 
     cur_sbn_ = fec.source_block_number;
-
-    if (!has_source_) {
-        source_ = rtp.source;
-        has_source_ = true;
-    }
-
     drop_repair_packets_from_prev_blocks_();
 
     return pp;
@@ -254,12 +245,6 @@ packet::PacketPtr Reader::parse_repaired_packet_(const core::Slice<uint8_t>& buf
     }
 
     pp->set_data(buffer);
-
-    if (!validate_repaired_source_packet_(pp)) {
-        roc_log(LogDebug, "fec reader: dropping unexpected repaired packet");
-        return NULL;
-    }
-
     pp->add_flags(packet::Packet::FlagRestored);
 
     return pp;
@@ -268,9 +253,6 @@ packet::PacketPtr Reader::parse_repaired_packet_(const core::Slice<uint8_t>& buf
 void Reader::fetch_packets_() {
     for (;;) {
         if (packet::PacketPtr pp = source_reader_.read()) {
-            if (!pp->rtp()) {
-                roc_panic("fec reader: unexpected non-rtp source packet");
-            }
             if (!pp->fec()) {
                 roc_panic("fec reader: unexpected non-fec source packet");
             }
@@ -310,7 +292,6 @@ void Reader::fill_source_block_() {
             break;
         }
 
-        const packet::RTP& rtp = *pp->rtp();
         const packet::FEC& fec = *pp->fec();
 
         if (!packet::blknum_le(fec.source_block_number, cur_sbn_)) {
@@ -323,9 +304,9 @@ void Reader::fill_source_block_() {
         if (packet::blknum_lt(fec.source_block_number, cur_sbn_)) {
             roc_log(LogTrace,
                     "fec reader: dropping source packet from previous block:"
-                    " cur_sbn=%lu pkt_sbn=%lu pkt_sn=%lu",
+                    " cur_sbn=%lu pkt_sbn=%lu pkt_esi=%lu",
                     (unsigned long)cur_sbn_, (unsigned long)fec.source_block_number,
-                    (unsigned long)rtp.seqnum);
+                    (unsigned long)fec.encoding_symbol_id);
             n_dropped++;
             continue;
         }
@@ -536,22 +517,6 @@ bool Reader::validate_incoming_repair_packet_(const packet::PacketPtr& pp) {
 
     if (fec.payload.size() == 0) {
         return false;
-    }
-
-    return true;
-}
-
-bool Reader::validate_repaired_source_packet_(const packet::PacketPtr& pp) {
-    const packet::RTP& rtp = *pp->rtp();
-
-    roc_panic_if_not(has_source_);
-
-    if (rtp.source != source_) {
-        roc_log(LogDebug,
-                "fec reader: repaired packet has bad source id, shutting down:"
-                " got=%lu expected=%lu",
-                (unsigned long)rtp.source, (unsigned long)source_);
-        return (alive_ = false);
     }
 
     return true;

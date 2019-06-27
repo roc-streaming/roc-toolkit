@@ -79,8 +79,6 @@ public:
     virtual void write(const packet::PacketPtr&);
 
 private:
-    void generate_source_id_(const packet::PacketPtr& pp);
-
     bool begin_block_(const packet::PacketPtr& pp);
     void end_block_();
     void next_block_();
@@ -115,7 +113,6 @@ private:
 
     core::Array<packet::PacketPtr> repair_block_;
 
-    packet::source_t source_;
     bool first_packet_;
 
     packet::blknum_t cur_sbn_;

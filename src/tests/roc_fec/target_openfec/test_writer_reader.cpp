@@ -880,63 +880,6 @@ TEST(writer_reader, repair_packets_mixed_with_source_packets) {
     }
 }
 
-TEST(writer_reader, repaired_bad_source_id) {
-    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
-        codec_config.scheme = Test_fec_schemes[n_scheme];
-
-        OFEncoder encoder(codec_config, allocator);
-        OFDecoder decoder(codec_config, buffer_pool, allocator);
-
-        CHECK(encoder.valid());
-        CHECK(decoder.valid());
-
-        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
-                                    NumSourcePackets, NumRepairPackets);
-
-        Writer writer(writer_config, encoder, dispatcher, source_composer(),
-                      repair_composer(), packet_pool, buffer_pool, allocator);
-
-        Reader reader(reader_config, decoder, dispatcher.source_reader(),
-                      dispatcher.repair_reader(), rtp_parser, packet_pool, allocator);
-
-        CHECK(writer.valid());
-        CHECK(reader.valid());
-
-        fill_all_packets(0);
-
-        // change packet source id before passing it to writer
-        source_packets[5]->rtp()->source += 1;
-
-        // lose packet with bad source id
-        dispatcher.lose(5);
-
-        // encode packets
-        for (size_t i = 0; i < NumSourcePackets; ++i) {
-            writer.write(source_packets[i]);
-        }
-
-        // deliver all packets except the packet with bad source id
-        dispatcher.push_stocks();
-
-        // read packets before the bad packet
-        for (size_t i = 0; i < 5; ++i) {
-            packet::PacketPtr p = reader.read();
-            CHECK(p);
-            check_audio_packet(p, i);
-            check_restored(p, false);
-        }
-
-        // try to read more packets
-        // the reader should repair the lost packet, see bad source id, and shutdown
-        for (size_t i = 5; i < NumSourcePackets; ++i) {
-            CHECK(!reader.read());
-            CHECK(!reader.alive());
-        }
-
-        CHECK(dispatcher.source_size() == 0);
-    }
-}
-
 TEST(writer_reader, multiple_repair_attempts) {
     // 1. Lose two distant packets and hold every fec packets in first block,
     //    receive second full block.

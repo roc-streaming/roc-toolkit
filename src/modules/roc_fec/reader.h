@@ -92,7 +92,6 @@ private:
 
     bool validate_incoming_source_packet_(const packet::PacketPtr&);
     bool validate_incoming_repair_packet_(const packet::PacketPtr&);
-    bool validate_repaired_source_packet_(const packet::PacketPtr&);
     bool validate_sbn_sequence_(const packet::PacketPtr&);
 
     bool can_update_payload_size_(size_t);
@@ -132,9 +131,6 @@ private:
     bool source_block_resized_;
     bool repair_block_resized_;
     bool payload_resized_;
-
-    bool has_source_;
-    packet::source_t source_;
 
     unsigned n_packets_;
 

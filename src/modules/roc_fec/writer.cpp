@@ -34,7 +34,6 @@ Writer::Writer(const WriterConfig& config,
     , packet_pool_(packet_pool)
     , buffer_pool_(buffer_pool)
     , repair_block_(allocator)
-    , source_(0)
     , first_packet_(true)
     , cur_sbn_((packet::blknum_t)core::random(packet::blknum_t(-1)))
     , cur_block_repair_sn_((packet::seqnum_t)core::random(packet::seqnum_t(-1)))
@@ -97,17 +96,12 @@ void Writer::write(const packet::PacketPtr& pp) {
         return;
     }
 
-    if (!pp->rtp()) {
-        roc_panic("fec writer: unexpected non-rtp packet");
-    }
-
     if (!pp->fec()) {
         roc_panic("fec writer: unexpected non-fec packet");
     }
 
     if (first_packet_) {
         first_packet_ = false;
-        generate_source_id_(pp);
     }
 
     if (cur_packet_ == 0) {
@@ -128,12 +122,6 @@ void Writer::write(const packet::PacketPtr& pp) {
         end_block_();
         next_block_();
     }
-}
-
-void Writer::generate_source_id_(const packet::PacketPtr& pp) {
-    do {
-        source_ = (packet::source_t)core::random(packet::source_t(-1));
-    } while (source_ == pp->rtp()->source);
 }
 
 bool Writer::begin_block_(const packet::PacketPtr& pp) {
