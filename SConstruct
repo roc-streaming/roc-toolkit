@@ -1097,6 +1097,7 @@ test_env.Append(CPPDEFINES=('CPPUTEST_USE_MEM_LEAK_DETECTION', '0'))
 if compiler == 'clang':
     test_env.AppendUnique(CXXFLAGS=[
         '-Wno-weak-vtables',
+        '-Wno-unused-member-function',
     ])
 
 env.AlwaysBuild(
