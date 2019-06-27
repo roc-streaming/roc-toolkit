@@ -14,9 +14,11 @@
 #include "roc_audio/iframe_decoder.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/noncopyable.h"
+#include "roc_core/unique_ptr.h"
 #include "roc_packet/iparser.h"
 #include "roc_packet/ireader.h"
 #include "roc_packet/packet_pool.h"
+#include "roc_rtp/format_map.h"
 
 #include "test_helpers.h"
 
@@ -25,15 +27,16 @@ namespace pipeline {
 
 class PacketReader : public core::NonCopyable<> {
 public:
-    PacketReader(packet::IReader& reader,
+    PacketReader(core::IAllocator& allocator,
+                 packet::IReader& reader,
                  packet::IParser& parser,
-                 audio::IFrameDecoder& payload_decoder,
+                 rtp::FormatMap& format_map,
                  packet::PacketPool& packet_pool,
                  rtp::PayloadType pt,
                  const packet::Address& dst_addr)
         : reader_(reader)
         , parser_(parser)
-        , payload_decoder_(payload_decoder)
+        , payload_decoder_(format_map.format(pt)->new_decoder(allocator), allocator)
         , packet_pool_(packet_pool)
         , dst_addr_(dst_addr)
         , source_(0)
@@ -84,15 +87,15 @@ private:
         seqnum_++;
         timestamp_ += samples_per_packet;
 
-        payload_decoder_.begin(pp->rtp()->timestamp, pp->rtp()->payload.data(),
-                               pp->rtp()->payload.size());
+        payload_decoder_->begin(pp->rtp()->timestamp, pp->rtp()->payload.data(),
+                                pp->rtp()->payload.size());
 
         audio::sample_t samples[MaxSamples] = {};
         UNSIGNED_LONGS_EQUAL(
             samples_per_packet,
-            payload_decoder_.read(samples, samples_per_packet, channels));
+            payload_decoder_->read(samples, samples_per_packet, channels));
 
-        payload_decoder_.end();
+        payload_decoder_->end();
 
         for (size_t n = 0; n < samples_per_packet * packet::num_channels(channels); n++) {
             DOUBLES_EQUAL((double)nth_sample(offset_), (double)samples[n], Epsilon);
@@ -103,7 +106,7 @@ private:
     packet::IReader& reader_;
 
     packet::IParser& parser_;
-    audio::IFrameDecoder& payload_decoder_;
+    core::UniquePtr<audio::IFrameDecoder> payload_decoder_;
 
     packet::PacketPool& packet_pool_;
 

@@ -50,7 +50,6 @@ packet::PacketPool packet_pool(allocator, true);
 fec::CodecMap codec_map;
 rtp::FormatMap format_map;
 rtp::Parser rtp_parser(format_map, NULL);
-audio::PCMDecoder pcm_decoder(audio::PCM_int16_2ch);
 
 } // namespace
 
@@ -88,8 +87,8 @@ TEST(sender, write) {
         frame_writer.write_samples(SamplesPerFrame * NumCh);
     }
 
-    PacketReader packet_reader(queue, rtp_parser, pcm_decoder, packet_pool, PayloadType,
-                               source_port.address);
+    PacketReader packet_reader(allocator, queue, rtp_parser, format_map, packet_pool,
+                               PayloadType, source_port.address);
 
     for (size_t np = 0; np < ManyFrames / FramesPerPacket; np++) {
         packet_reader.read_packet(SamplesPerPacket, ChMask);
@@ -118,8 +117,8 @@ TEST(sender, frame_size_small) {
         frame_writer.write_samples(SamplesPerSmallFrame * NumCh);
     }
 
-    PacketReader packet_reader(queue, rtp_parser, pcm_decoder, packet_pool, PayloadType,
-                               source_port.address);
+    PacketReader packet_reader(allocator, queue, rtp_parser, format_map, packet_pool,
+                               PayloadType, source_port.address);
 
     for (size_t np = 0; np < ManySmallFrames / SmallFramesPerPacket; np++) {
         packet_reader.read_packet(SamplesPerPacket, ChMask);
@@ -148,8 +147,8 @@ TEST(sender, frame_size_large) {
         frame_writer.write_samples(SamplesPerLargeFrame * NumCh);
     }
 
-    PacketReader packet_reader(queue, rtp_parser, pcm_decoder, packet_pool, PayloadType,
-                               source_port.address);
+    PacketReader packet_reader(allocator, queue, rtp_parser, format_map, packet_pool,
+                               PayloadType, source_port.address);
 
     for (size_t np = 0; np < ManyLargeFrames * PacketsPerLargeFrame; np++) {
         packet_reader.read_packet(SamplesPerPacket, ChMask);
