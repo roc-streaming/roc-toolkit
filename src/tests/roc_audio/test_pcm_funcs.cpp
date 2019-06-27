@@ -12,8 +12,6 @@
 #include "roc_audio/pcm_encoder.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/heap_allocator.h"
-#include "roc_packet/packet_pool.h"
-#include "roc_rtp/composer.h"
 
 namespace roc {
 namespace audio {
@@ -26,7 +24,6 @@ const double Epsilon = 0.0001;
 
 core::HeapAllocator allocator;
 core::BufferPool<uint8_t> buffer_pool(allocator, MaxBufsz, true);
-packet::PacketPool packet_pool(allocator, true);
 
 } // namespace
 
@@ -38,39 +35,31 @@ TEST_GROUP(pcm_funcs) {
         funcs = &f;
     }
 
-    packet::PacketPtr new_packet(size_t num_samples) {
+    core::Slice<uint8_t> new_buffer(size_t num_samples) {
         CHECK(funcs);
-
-        packet::PacketPtr pp = new (packet_pool) packet::Packet(packet_pool);
-        CHECK(pp);
 
         core::Slice<uint8_t> bp = new (buffer_pool) core::Buffer<uint8_t>(buffer_pool);
         CHECK(bp);
+
+        bp.resize(funcs->payload_size_from_samples(num_samples));
 
         for (size_t n = 0; n < bp.size(); n++) {
             bp.data()[n] = 0;
         }
 
-        const size_t payload_size = funcs->payload_size_from_samples(num_samples);
-
-        rtp::Composer composer(NULL);
-        CHECK(composer.prepare(*pp, bp, payload_size));
-
-        pp->set_data(bp);
-        return pp;
+        return bp;
     }
 
-    void encode(const packet::PacketPtr& pp, const audio::sample_t* samples,
+    void encode(const core::Slice<uint8_t>& bp, const audio::sample_t* samples,
                 size_t offset, size_t num_samples, packet::channel_mask_t channels) {
         CHECK(funcs);
 
         UNSIGNED_LONGS_EQUAL(num_samples,
-                             funcs->encode_samples(pp->rtp()->payload.data(),
-                                                   pp->rtp()->payload.size(), offset,
-                                                   samples, num_samples, channels));
+                             funcs->encode_samples(bp.data(), bp.size(), offset, samples,
+                                                   num_samples, channels));
     }
 
-    void decode(const packet::PacketPtr& pp, size_t offset, size_t num_samples,
+    void decode(const core::Slice<uint8_t>& bp, size_t offset, size_t num_samples,
                 packet::channel_mask_t channels) {
         CHECK(funcs);
 
@@ -79,9 +68,8 @@ TEST_GROUP(pcm_funcs) {
         }
 
         UNSIGNED_LONGS_EQUAL(num_samples,
-                             funcs->decode_samples(pp->rtp()->payload.data(),
-                                                   pp->rtp()->payload.size(), offset,
-                                                   output, num_samples, channels));
+                             funcs->decode_samples(bp.data(), bp.size(), offset, output,
+                                                   num_samples, channels));
     }
 
     void check(const audio::sample_t* samples, size_t num_samples,
@@ -121,7 +109,7 @@ TEST(pcm_funcs, encode_decode_1ch) {
 
     use(PCM_int16_1ch);
 
-    packet::PacketPtr pp = new_packet(NumSamples);
+    core::Slice<uint8_t> bp = new_buffer(NumSamples);
 
     const audio::sample_t samples[NumSamples] = {
         0.1f, //
@@ -131,8 +119,8 @@ TEST(pcm_funcs, encode_decode_1ch) {
         0.5f, //
     };
 
-    encode(pp, samples, 0, NumSamples, 0x1);
-    decode(pp, 0, NumSamples, 0x1);
+    encode(bp, samples, 0, NumSamples, 0x1);
+    decode(bp, 0, NumSamples, 0x1);
 
     check(samples, NumSamples, 0x1);
 }
@@ -142,7 +130,7 @@ TEST(pcm_funcs, encode_decode_2ch) {
 
     use(PCM_int16_2ch);
 
-    packet::PacketPtr pp = new_packet(NumSamples);
+    core::Slice<uint8_t> bp = new_buffer(NumSamples);
 
     const audio::sample_t samples[NumSamples * 2] = {
         -0.1f, 0.1f, //
@@ -152,8 +140,8 @@ TEST(pcm_funcs, encode_decode_2ch) {
         -0.5f, 0.5f, //
     };
 
-    encode(pp, samples, 0, NumSamples, 0x3);
-    decode(pp, 0, NumSamples, 0x3);
+    encode(bp, samples, 0, NumSamples, 0x3);
+    decode(bp, 0, NumSamples, 0x3);
 
     check(samples, NumSamples, 0x3);
 }
@@ -163,7 +151,7 @@ TEST(pcm_funcs, encode_mask_subset) {
 
     use(PCM_int16_2ch);
 
-    packet::PacketPtr pp = new_packet(NumSamples);
+    core::Slice<uint8_t> bp = new_buffer(NumSamples);
 
     const audio::sample_t input[NumSamples] = {
         0.1f, //
@@ -173,8 +161,8 @@ TEST(pcm_funcs, encode_mask_subset) {
         0.5f, //
     };
 
-    encode(pp, input, 0, NumSamples, 0x2);
-    decode(pp, 0, NumSamples, 0x3);
+    encode(bp, input, 0, NumSamples, 0x2);
+    decode(bp, 0, NumSamples, 0x3);
 
     const audio::sample_t output[NumSamples * 2] = {
         0.0f, 0.1f, //
@@ -192,7 +180,7 @@ TEST(pcm_funcs, encode_mask_superset) {
 
     use(PCM_int16_2ch);
 
-    packet::PacketPtr pp = new_packet(NumSamples);
+    core::Slice<uint8_t> bp = new_buffer(NumSamples);
 
     const audio::sample_t input[NumSamples * 3] = {
         -0.1f, 0.1f, 0.8f, //
@@ -202,8 +190,8 @@ TEST(pcm_funcs, encode_mask_superset) {
         -0.5f, 0.5f, 0.8f, //
     };
 
-    encode(pp, input, 0, NumSamples, 0x7);
-    decode(pp, 0, NumSamples, 0x3);
+    encode(bp, input, 0, NumSamples, 0x7);
+    decode(bp, 0, NumSamples, 0x3);
 
     const audio::sample_t output[NumSamples * 2] = {
         -0.1f, 0.1f, //
@@ -221,7 +209,7 @@ TEST(pcm_funcs, encode_mask_overlap) {
 
     use(PCM_int16_2ch);
 
-    packet::PacketPtr pp = new_packet(NumSamples);
+    core::Slice<uint8_t> bp = new_buffer(NumSamples);
 
     const audio::sample_t input[NumSamples * 3] = {
         -0.1f, 0.8f, //
@@ -231,8 +219,8 @@ TEST(pcm_funcs, encode_mask_overlap) {
         -0.5f, 0.8f, //
     };
 
-    encode(pp, input, 0, NumSamples, 0x5);
-    decode(pp, 0, NumSamples, 0x3);
+    encode(bp, input, 0, NumSamples, 0x5);
+    decode(bp, 0, NumSamples, 0x3);
 
     const audio::sample_t output[NumSamples * 2] = {
         -0.1f, 0.0f, //
@@ -250,7 +238,7 @@ TEST(pcm_funcs, decode_mask_subset) {
 
     use(PCM_int16_2ch);
 
-    packet::PacketPtr pp = new_packet(NumSamples);
+    core::Slice<uint8_t> bp = new_buffer(NumSamples);
 
     const audio::sample_t input[NumSamples * 2] = {
         -0.1f, 0.1f, //
@@ -260,8 +248,8 @@ TEST(pcm_funcs, decode_mask_subset) {
         -0.5f, 0.5f, //
     };
 
-    encode(pp, input, 0, NumSamples, 0x3);
-    decode(pp, 0, NumSamples, 0x2);
+    encode(bp, input, 0, NumSamples, 0x3);
+    decode(bp, 0, NumSamples, 0x2);
 
     const audio::sample_t output[NumSamples] = {
         0.1f, //
@@ -279,7 +267,7 @@ TEST(pcm_funcs, decode_mask_superset) {
 
     use(PCM_int16_2ch);
 
-    packet::PacketPtr pp = new_packet(NumSamples);
+    core::Slice<uint8_t> bp = new_buffer(NumSamples);
 
     const audio::sample_t input[NumSamples * 2] = {
         -0.1f, 0.1f, //
@@ -289,8 +277,8 @@ TEST(pcm_funcs, decode_mask_superset) {
         -0.5f, 0.5f, //
     };
 
-    encode(pp, input, 0, NumSamples, 0x3);
-    decode(pp, 0, NumSamples, 0x7);
+    encode(bp, input, 0, NumSamples, 0x3);
+    decode(bp, 0, NumSamples, 0x7);
 
     const audio::sample_t output[NumSamples * 3] = {
         -0.1f, 0.1f, 0.0f, //
@@ -308,7 +296,7 @@ TEST(pcm_funcs, decode_mask_overlap) {
 
     use(PCM_int16_2ch);
 
-    packet::PacketPtr pp = new_packet(NumSamples);
+    core::Slice<uint8_t> bp = new_buffer(NumSamples);
 
     const audio::sample_t input[NumSamples * 2] = {
         -0.1f, 0.1f, //
@@ -318,8 +306,8 @@ TEST(pcm_funcs, decode_mask_overlap) {
         -0.5f, 0.5f, //
     };
 
-    encode(pp, input, 0, NumSamples, 0x3);
-    decode(pp, 0, NumSamples, 0x6);
+    encode(bp, input, 0, NumSamples, 0x3);
+    decode(bp, 0, NumSamples, 0x6);
 
     const audio::sample_t output[NumSamples * 2] = {
         0.1f, 0.0f, //
@@ -337,7 +325,7 @@ TEST(pcm_funcs, encode_incremental) {
 
     use(PCM_int16_2ch);
 
-    packet::PacketPtr pp = new_packet(NumSamples);
+    core::Slice<uint8_t> bp = new_buffer(NumSamples);
 
     const audio::sample_t input1[(NumSamples - Off) * 2] = {
         -0.3f, 0.3f, //
@@ -345,14 +333,14 @@ TEST(pcm_funcs, encode_incremental) {
         -0.5f, 0.5f, //
     };
 
-    encode(pp, input1, Off, NumSamples - Off, 0x3);
+    encode(bp, input1, Off, NumSamples - Off, 0x3);
 
     const audio::sample_t input2[Off] = {
         -0.1f, //
         -0.2f, //
     };
 
-    encode(pp, input2, 0, Off, 0x1);
+    encode(bp, input2, 0, Off, 0x1);
 
     const audio::sample_t output[NumSamples * 2] = {
         -0.1f, 0.0f, //
@@ -362,7 +350,7 @@ TEST(pcm_funcs, encode_incremental) {
         -0.5f, 0.5f, //
     };
 
-    decode(pp, 0, NumSamples, 0x3);
+    decode(bp, 0, NumSamples, 0x3);
 
     check(output, NumSamples, 0x3);
 }
@@ -372,7 +360,7 @@ TEST(pcm_funcs, decode_incremenal) {
 
     use(PCM_int16_2ch);
 
-    packet::PacketPtr pp = new_packet(NumSamples);
+    core::Slice<uint8_t> bp = new_buffer(NumSamples);
 
     const audio::sample_t input[NumSamples * 2] = {
         -0.1f, 0.1f, //
@@ -382,9 +370,9 @@ TEST(pcm_funcs, decode_incremenal) {
         -0.5f, 0.5f, //
     };
 
-    encode(pp, input, 0, NumSamples, 0x3);
+    encode(bp, input, 0, NumSamples, 0x3);
 
-    decode(pp, 0, Off, 0x3);
+    decode(bp, 0, Off, 0x3);
 
     const audio::sample_t output1[NumSamples * 2] = {
         -0.1f, 0.1f, //
@@ -393,7 +381,7 @@ TEST(pcm_funcs, decode_incremenal) {
 
     check(output1, Off, 0x3);
 
-    decode(pp, Off, NumSamples - Off, 0x1);
+    decode(bp, Off, NumSamples - Off, 0x1);
 
     const audio::sample_t output2[NumSamples] = {
         -0.3f, //
@@ -403,7 +391,7 @@ TEST(pcm_funcs, decode_incremenal) {
 
     check(output2, NumSamples - Off, 0x1);
 
-    decode(pp, Off, NumSamples - Off, 0x2);
+    decode(bp, Off, NumSamples - Off, 0x2);
 
     const audio::sample_t output3[NumSamples] = {
         0.3f, //
@@ -419,7 +407,7 @@ TEST(pcm_funcs, encode_truncate) {
 
     use(PCM_int16_2ch);
 
-    packet::PacketPtr pp = new_packet(NumSamples);
+    core::Slice<uint8_t> bp = new_buffer(NumSamples);
 
     const audio::sample_t input[NumSamples * 2] = {
         -0.1f, 0.1f, //
@@ -429,15 +417,12 @@ TEST(pcm_funcs, encode_truncate) {
         -0.5f, 0.5f, //
     };
 
-    UNSIGNED_LONGS_EQUAL(NumSamples - Off,
-                         funcs->encode_samples(pp->rtp()->payload.data(),
-                                               pp->rtp()->payload.size(), Off, input,
-                                               NumSamples, 0x3));
+    UNSIGNED_LONGS_EQUAL(
+        NumSamples - Off,
+        funcs->encode_samples(bp.data(), bp.size(), Off, input, NumSamples, 0x3));
 
-    UNSIGNED_LONGS_EQUAL(0,
-                         funcs->encode_samples(pp->rtp()->payload.data(),
-                                               pp->rtp()->payload.size(), 123, input,
-                                               NumSamples, 0x3));
+    UNSIGNED_LONGS_EQUAL(
+        0, funcs->encode_samples(bp.data(), bp.size(), 123, input, NumSamples, 0x3));
 
     const audio::sample_t output[NumSamples * 2] = {
         0.0f,  0.0f, //
@@ -447,7 +432,7 @@ TEST(pcm_funcs, encode_truncate) {
         -0.3f, 0.3f, //
     };
 
-    decode(pp, 0, NumSamples, 0x3);
+    decode(bp, 0, NumSamples, 0x3);
 
     check(output, NumSamples, 0x3);
 }
@@ -457,7 +442,7 @@ TEST(pcm_funcs, decode_truncate) {
 
     use(PCM_int16_2ch);
 
-    packet::PacketPtr pp = new_packet(NumSamples);
+    core::Slice<uint8_t> bp = new_buffer(NumSamples);
 
     const audio::sample_t input[NumSamples * 2] = {
         -0.1f, 0.1f, //
@@ -467,17 +452,14 @@ TEST(pcm_funcs, decode_truncate) {
         -0.5f, 0.5f, //
     };
 
-    encode(pp, input, 0, NumSamples, 0x3);
+    encode(bp, input, 0, NumSamples, 0x3);
 
-    UNSIGNED_LONGS_EQUAL(NumSamples - Off,
-                         funcs->decode_samples(pp->rtp()->payload.data(),
-                                               pp->rtp()->payload.size(), Off, output,
-                                               NumSamples, 0x3));
+    UNSIGNED_LONGS_EQUAL(
+        NumSamples - Off,
+        funcs->decode_samples(bp.data(), bp.size(), Off, output, NumSamples, 0x3));
 
-    UNSIGNED_LONGS_EQUAL(0,
-                         funcs->decode_samples(pp->rtp()->payload.data(),
-                                               pp->rtp()->payload.size(), 123, output,
-                                               NumSamples, 0x3));
+    UNSIGNED_LONGS_EQUAL(
+        0, funcs->decode_samples(bp.data(), bp.size(), 123, output, NumSamples, 0x3));
 
     const audio::sample_t output[NumSamples * 2] = {
         -0.3f, 0.3f, //
