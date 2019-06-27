@@ -13,24 +13,49 @@ namespace roc {
 namespace audio {
 
 PCMEncoder::PCMEncoder(const PCMFuncs& funcs)
-    : funcs_(funcs) {
+    : funcs_(funcs)
+    , frame_data_(NULL)
+    , frame_size_(0)
+    , frame_pos_(0) {
 }
 
-size_t PCMEncoder::payload_size(size_t num_samples) const {
+size_t PCMEncoder::encoded_size(size_t num_samples) const {
     return funcs_.payload_size_from_samples(num_samples);
 }
 
-size_t PCMEncoder::write_samples(packet::Packet& packet,
-                                 size_t offset,
-                                 const sample_t* samples,
-                                 size_t n_samples,
-                                 packet::channel_mask_t channels) {
-    packet::RTP* rtp = packet.rtp();
-    if (!rtp) {
-        roc_panic("unexpected non-rtp packet");
+void PCMEncoder::begin(void* frame_data, size_t frame_size) {
+    roc_panic_if_not(frame_data);
+
+    if (frame_data_) {
+        roc_panic("pcm encoder: unpaired begin/end");
     }
-    return funcs_.encode_samples(rtp->payload.data(), rtp->payload.size(), offset,
-                                 samples, n_samples, channels);
+
+    frame_data_ = frame_data;
+    frame_size_ = frame_size;
+}
+
+size_t PCMEncoder::write(const audio::sample_t* samples,
+                         size_t n_samples,
+                         packet::channel_mask_t channels) {
+    if (!frame_data_) {
+        roc_panic("pcm encoder: write should be called only between begin/end");
+    }
+
+    const size_t wr_samples = funcs_.encode_samples(frame_data_, frame_size_, frame_pos_,
+                                                    samples, n_samples, channels);
+
+    frame_pos_ += wr_samples;
+    return wr_samples;
+}
+
+void PCMEncoder::end() {
+    if (!frame_data_) {
+        roc_panic("pcm encoder: unpaired begin/end");
+    }
+
+    frame_data_ = NULL;
+    frame_size_ = 0;
+    frame_pos_ = 0;
 }
 
 } // namespace audio

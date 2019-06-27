@@ -23,20 +23,27 @@ namespace audio {
 class PCMEncoder : public IFrameEncoder, public core::NonCopyable<> {
 public:
     //! Initialize.
-    PCMEncoder(const PCMFuncs& funcs);
+    explicit PCMEncoder(const PCMFuncs& funcs);
 
-    //! Get packet payload size.
-    virtual size_t payload_size(size_t num_samples) const;
+    //! Calculate encoded frame size for given number of samples per channel.
+    virtual size_t encoded_size(size_t num_samples) const;
 
-    //! Write samples to packet.
-    virtual size_t write_samples(packet::Packet& packet,
-                                 size_t offset,
-                                 const sample_t* samples,
-                                 size_t n_samples,
-                                 packet::channel_mask_t channels);
+    //! Start encoding a new frame.
+    virtual void begin(void* frame, size_t frame_size);
+
+    //! Encode samples.
+    virtual size_t
+    write(const sample_t* samples, size_t n_samples, packet::channel_mask_t channels);
+
+    //! Finish encoding frame.
+    virtual void end();
 
 private:
     const PCMFuncs& funcs_;
+
+    void* frame_data_;
+    size_t frame_size_;
+    size_t frame_pos_;
 };
 
 } // namespace audio

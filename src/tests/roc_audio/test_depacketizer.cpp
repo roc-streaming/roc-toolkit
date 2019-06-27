@@ -48,7 +48,7 @@ TEST_GROUP(depacketizer) {
             new (byte_buffer_pool) core::Buffer<uint8_t>(byte_buffer_pool);
         CHECK(bp);
 
-        CHECK(rtp_composer.prepare(*pp, bp, pcm_encoder.payload_size(SamplesPerPacket)));
+        CHECK(rtp_composer.prepare(*pp, bp, pcm_encoder.encoded_size(SamplesPerPacket)));
 
         pp->set_data(bp);
 
@@ -60,9 +60,12 @@ TEST_GROUP(depacketizer) {
             samples[n] = value;
         }
 
-        UNSIGNED_LONGS_EQUAL(
-            SamplesPerPacket,
-            pcm_encoder.write_samples(*pp, 0, samples, SamplesPerPacket, ChMask));
+        pcm_encoder.begin(pp->rtp()->payload.data(), pp->rtp()->payload.size());
+
+        UNSIGNED_LONGS_EQUAL(SamplesPerPacket,
+                             pcm_encoder.write(samples, SamplesPerPacket, ChMask));
+
+        pcm_encoder.end();
 
         CHECK(rtp_composer.compose(*pp));
 
