@@ -7,10 +7,10 @@
  */
 
 #include "roc_rtp/format_map.h"
+#include "roc_audio/pcm_decoder.h"
+#include "roc_audio/pcm_encoder.h"
+#include "roc_audio/pcm_funcs.h"
 #include "roc_core/panic.h"
-#include "roc_rtp/pcm_decoder.h"
-#include "roc_rtp/pcm_encoder.h"
-#include "roc_rtp/pcm_funcs.h"
 
 namespace roc {
 namespace rtp {
@@ -18,11 +18,11 @@ namespace rtp {
 namespace {
 
 template <class I, class T> I* new_codec_pcm_int16_1ch(core::IAllocator& allocator) {
-    return new (allocator) T(PCM_int16_1ch);
+    return new (allocator) T(audio::PCM_int16_1ch);
 }
 
 template <class I, class T> I* new_codec_pcm_int16_2ch(core::IAllocator& allocator) {
-    return new (allocator) T(PCM_int16_2ch);
+    return new (allocator) T(audio::PCM_int16_2ch);
 }
 
 } // namespace
@@ -35,9 +35,11 @@ FormatMap::FormatMap()
         fmt.flags = packet::Packet::FlagAudio;
         fmt.sample_rate = 44100;
         fmt.channel_mask = 0x1;
-        fmt.get_num_samples = PCM_int16_1ch.samples_from_payload_size;
-        fmt.new_encoder = new_codec_pcm_int16_1ch<audio::IFrameEncoder, PCMEncoder>;
-        fmt.new_decoder = new_codec_pcm_int16_1ch<audio::IFrameDecoder, PCMDecoder>;
+        fmt.get_num_samples = audio::PCM_int16_1ch.samples_from_payload_size;
+        fmt.new_encoder =
+            new_codec_pcm_int16_1ch<audio::IFrameEncoder, audio::PCMEncoder>;
+        fmt.new_decoder =
+            new_codec_pcm_int16_1ch<audio::IFrameDecoder, audio::PCMDecoder>;
         add_(fmt);
     }
     {
@@ -46,9 +48,11 @@ FormatMap::FormatMap()
         fmt.flags = packet::Packet::FlagAudio;
         fmt.sample_rate = 44100;
         fmt.channel_mask = 0x3;
-        fmt.get_num_samples = PCM_int16_2ch.samples_from_payload_size;
-        fmt.new_encoder = new_codec_pcm_int16_2ch<audio::IFrameEncoder, PCMEncoder>;
-        fmt.new_decoder = new_codec_pcm_int16_2ch<audio::IFrameDecoder, PCMDecoder>;
+        fmt.get_num_samples = audio::PCM_int16_2ch.samples_from_payload_size;
+        fmt.new_encoder =
+            new_codec_pcm_int16_2ch<audio::IFrameEncoder, audio::PCMEncoder>;
+        fmt.new_decoder =
+            new_codec_pcm_int16_2ch<audio::IFrameDecoder, audio::PCMDecoder>;
         add_(fmt);
     }
 }

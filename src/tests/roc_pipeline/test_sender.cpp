@@ -8,6 +8,8 @@
 
 #include <CppUTest/TestHarness.h>
 
+#include "roc_audio/pcm_decoder.h"
+#include "roc_audio/pcm_funcs.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_packet/packet_pool.h"
@@ -15,8 +17,6 @@
 #include "roc_pipeline/sender.h"
 #include "roc_rtp/format_map.h"
 #include "roc_rtp/parser.h"
-#include "roc_rtp/pcm_decoder.h"
-#include "roc_rtp/pcm_funcs.h"
 
 #include "test_frame_writer.h"
 #include "test_packet_reader.h"
@@ -50,7 +50,7 @@ packet::PacketPool packet_pool(allocator, true);
 fec::CodecMap codec_map;
 rtp::FormatMap format_map;
 rtp::Parser rtp_parser(format_map, NULL);
-rtp::PCMDecoder pcm_decoder(rtp::PCM_int16_2ch);
+audio::PCMDecoder pcm_decoder(audio::PCM_int16_2ch);
 
 } // namespace
 

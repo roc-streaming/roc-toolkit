@@ -6,19 +6,18 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_rtp/pcm_funcs.h
+//! @file roc_audio/pcm_funcs.h
 //! @brief RTP PCM functions.
 
-#ifndef ROC_RTP_PCM_FUNCS_H_
-#define ROC_RTP_PCM_FUNCS_H_
+#ifndef ROC_AUDIO_PCM_FUNCS_H_
+#define ROC_AUDIO_PCM_FUNCS_H_
 
 #include "roc_audio/units.h"
 #include "roc_core/stddefs.h"
-#include "roc_packet/rtp.h"
 #include "roc_packet/units.h"
 
 namespace roc {
-namespace rtp {
+namespace audio {
 
 //! PCM function table.
 struct PCMFuncs {
@@ -32,7 +31,7 @@ struct PCMFuncs {
     size_t (*encode_samples)(void* out_data,
                              size_t out_size,
                              size_t out_offset,
-                             const audio::sample_t* in_samples,
+                             const sample_t* in_samples,
                              size_t in_n_samples,
                              packet::channel_mask_t in_chan_mask);
 
@@ -40,7 +39,7 @@ struct PCMFuncs {
     size_t (*decode_samples)(const void* in_data,
                              size_t in_size,
                              size_t in_offset,
-                             audio::sample_t* out_samples,
+                             sample_t* out_samples,
                              size_t out_n_samples,
                              packet::channel_mask_t out_chan_mask);
 };
@@ -51,7 +50,7 @@ extern const PCMFuncs PCM_int16_1ch;
 //! PCM functions for 16-bit 2-channel audio.
 extern const PCMFuncs PCM_int16_2ch;
 
-} // namespace rtp
+} // namespace audio
 } // namespace roc
 
-#endif // ROC_RTP_PCM_FUNCS_H_
+#endif // ROC_AUDIO_PCM_FUNCS_H_
