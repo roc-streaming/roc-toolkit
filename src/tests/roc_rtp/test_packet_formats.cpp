@@ -126,10 +126,15 @@ TEST_GROUP(packet_formats) {
                         const PacketInfo& pi) {
         audio::sample_t samples[PacketInfo::MaxSamples * PacketInfo::MaxCh] = {};
 
+        decoder.begin(packet.rtp()->timestamp, packet.rtp()->payload.data(),
+                      packet.rtp()->payload.size());
+
         UNSIGNED_LONGS_EQUAL(
             pi.num_samples,
-            decoder.read_samples(packet, 0, samples, pi.num_samples,
-                                 packet::channel_mask_t(1 << pi.num_channels) - 1));
+            decoder.read(samples, pi.num_samples,
+                         packet::channel_mask_t(1 << pi.num_channels) - 1));
+
+        decoder.end();
 
         size_t i = 0;
 

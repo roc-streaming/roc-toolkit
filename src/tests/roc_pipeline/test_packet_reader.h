@@ -84,10 +84,15 @@ private:
         seqnum_++;
         timestamp_ += samples_per_packet;
 
+        payload_decoder_.begin(pp->rtp()->timestamp, pp->rtp()->payload.data(),
+                               pp->rtp()->payload.size());
+
         audio::sample_t samples[MaxSamples] = {};
         UNSIGNED_LONGS_EQUAL(
             samples_per_packet,
-            payload_decoder_.read_samples(*pp, 0, samples, samples_per_packet, channels));
+            payload_decoder_.read(samples, samples_per_packet, channels));
+
+        payload_decoder_.end();
 
         for (size_t n = 0; n < samples_per_packet * packet::num_channels(channels); n++) {
             DOUBLES_EQUAL((double)nth_sample(offset_), (double)samples[n], Epsilon);

@@ -73,7 +73,6 @@ private:
     const size_t num_channels_;
 
     packet::PacketPtr packet_;
-    packet::timestamp_t packet_pos_;
 
     packet::timestamp_t timestamp_;
 

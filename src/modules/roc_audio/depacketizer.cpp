@@ -38,7 +38,6 @@ Depacketizer::Depacketizer(packet::IReader& reader,
     , payload_decoder_(payload_decoder)
     , channels_(channels)
     , num_channels_(packet::num_channels(channels))
-    , packet_pos_(0)
     , timestamp_(0)
     , zero_samples_(0)
     , missing_samples_(0)
@@ -99,7 +98,7 @@ sample_t* Depacketizer::read_samples_(sample_t* buff_ptr, sample_t* buff_end) {
     update_packet_();
 
     if (packet_) {
-        packet::timestamp_t next_timestamp = (packet_->rtp()->timestamp + packet_pos_);
+        packet::timestamp_t next_timestamp = payload_decoder_.position();
 
         if (timestamp_ != next_timestamp) {
             roc_panic_if_not(packet::timestamp_lt(timestamp_, next_timestamp));
@@ -126,15 +125,14 @@ sample_t* Depacketizer::read_samples_(sample_t* buff_ptr, sample_t* buff_end) {
 sample_t* Depacketizer::read_packet_samples_(sample_t* buff_ptr, sample_t* buff_end) {
     const size_t max_samples = (size_t)(buff_end - buff_ptr) / num_channels_;
 
-    const size_t num_samples = payload_decoder_.read_samples(
-        *packet_, packet_pos_, buff_ptr, max_samples, channels_);
+    const size_t num_samples = payload_decoder_.read(buff_ptr, max_samples, channels_);
 
     timestamp_ += packet::timestamp_t(num_samples);
-    packet_pos_ += packet::timestamp_t(num_samples);
     packet_samples_ += num_samples;
 
-    if (num_samples == 0) {
-        packet_.reset();
+    if (num_samples < max_samples) {
+        payload_decoder_.end();
+        packet_ = NULL;
     }
 
     return (buff_ptr + num_samples * num_channels_);
@@ -169,13 +167,16 @@ void Depacketizer::update_packet_() {
     unsigned n_dropped = 0;
 
     while ((packet_ = read_packet_())) {
-        pkt_timestamp = packet_->rtp()->timestamp;
+        payload_decoder_.begin(packet_->rtp()->timestamp, packet_->rtp()->payload.data(),
+                               packet_->rtp()->payload.size());
+
+        pkt_timestamp = payload_decoder_.position();
 
         if (first_packet_) {
             break;
         }
 
-        const packet::timestamp_t pkt_end = pkt_timestamp + packet_->rtp()->duration;
+        const packet::timestamp_t pkt_end = pkt_timestamp + payload_decoder_.available();
 
         if (packet::timestamp_lt(timestamp_, pkt_end)) {
             break;
@@ -185,6 +186,8 @@ void Depacketizer::update_packet_() {
                 (unsigned long)timestamp_, (unsigned long)pkt_timestamp);
 
         n_dropped++;
+
+        payload_decoder_.end();
     }
 
     if (n_dropped != 0) {
@@ -207,10 +210,11 @@ void Depacketizer::update_packet_() {
     }
 
     if (packet::timestamp_lt(pkt_timestamp, timestamp_)) {
-        packet_pos_ =
-            (packet::timestamp_t)packet::timestamp_diff(timestamp_, pkt_timestamp);
-    } else {
-        packet_pos_ = 0;
+        const size_t diff = (size_t)packet::timestamp_diff(timestamp_, pkt_timestamp);
+
+        if (payload_decoder_.shift(diff) != diff) {
+            roc_panic("depacketizer: can't shift packet");
+        }
     }
 }
 
