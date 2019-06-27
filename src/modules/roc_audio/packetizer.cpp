@@ -108,6 +108,8 @@ bool Packetizer::begin_packet_() {
 void Packetizer::end_packet_() {
     payload_encoder_.end();
 
+    packet_->rtp()->duration = (packet::timestamp_t)packet_pos_;
+
     if (packet_pos_ < samples_per_packet_) {
         pad_packet_();
     }
