@@ -31,6 +31,9 @@ Sender::Sender(const SenderConfig& config,
     , config_(config)
     , timestamp_(0)
     , num_channels_(packet::num_channels(config.input_channels)) {
+    (void)repair_port_config;
+    (void)repair_writer;
+
     const rtp::Format* format = format_map.format(config.payload_type);
     if (!format) {
         return;
@@ -50,15 +53,6 @@ Sender::Sender(const SenderConfig& config,
         return;
     }
 
-    if (repair_port_config.protocol != Proto_None) {
-        repair_port_.reset(new (allocator)
-                               SenderPort(repair_port_config, repair_writer, allocator),
-                           allocator);
-        if (!repair_port_ || !repair_port_->valid()) {
-            return;
-        }
-    }
-
     router_.reset(new (allocator) packet::Router(allocator, 2), allocator);
     if (!router_ || !router_->valid()) {
         return;
@@ -68,15 +62,17 @@ Sender::Sender(const SenderConfig& config,
     if (!router_->add_route(*source_port_, packet::Packet::FlagAudio)) {
         return;
     }
-    if (repair_port_) {
-        if (!router_->add_route(*repair_port_, packet::Packet::FlagRepair)) {
-            return;
-        }
-    }
 
 #ifdef ROC_TARGET_OPENFEC
     if (config.fec_encoder.scheme != packet::FEC_None) {
-        if (!repair_port_) {
+        repair_port_.reset(new (allocator)
+                               SenderPort(repair_port_config, repair_writer, allocator),
+                           allocator);
+        if (!repair_port_ || !repair_port_->valid()) {
+            return;
+        }
+
+        if (!router_->add_route(*repair_port_, packet::Packet::FlagRepair)) {
             return;
         }
 
