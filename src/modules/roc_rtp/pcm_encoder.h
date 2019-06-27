@@ -12,14 +12,14 @@
 #ifndef ROC_RTP_PCM_ENCODER_H_
 #define ROC_RTP_PCM_ENCODER_H_
 
-#include "roc_audio/iencoder.h"
+#include "roc_audio/iframe_encoder.h"
 #include "roc_rtp/pcm_funcs.h"
 
 namespace roc {
 namespace rtp {
 
 //! PCM encoder.
-class PCMEncoder : public audio::IEncoder, public core::NonCopyable<> {
+class PCMEncoder : public audio::IFrameEncoder, public core::NonCopyable<> {
 public:
     //! Initialize.
     PCMEncoder(const PCMFuncs& funcs);

@@ -121,7 +121,7 @@ TEST_GROUP(packet_formats) {
         CHECK(memcmp(packet.data().data(), pi.raw_data, pi.packet_size) == 0);
     }
 
-    void decode_samples(audio::IDecoder& decoder,
+    void decode_samples(audio::IFrameDecoder& decoder,
                         const packet::Packet& packet,
                         const PacketInfo& pi) {
         audio::sample_t samples[PacketInfo::MaxSamples * PacketInfo::MaxCh] = {};
@@ -142,7 +142,7 @@ TEST_GROUP(packet_formats) {
         }
     }
 
-    void encode_samples(audio::IEncoder& encoder,
+    void encode_samples(audio::IFrameEncoder& encoder,
                         packet::Packet& packet,
                         const PacketInfo& pi) {
         audio::sample_t samples[PacketInfo::MaxSamples * PacketInfo::MaxCh] = {};
@@ -182,8 +182,8 @@ TEST_GROUP(packet_formats) {
         const Format* format = format_map.format(packet->rtp()->payload_type);
         CHECK(format);
 
-        core::UniquePtr<audio::IDecoder> decoder(format->new_decoder(allocator),
-                                                 allocator);
+        core::UniquePtr<audio::IFrameDecoder> decoder(format->new_decoder(allocator),
+                                                      allocator);
         CHECK(decoder);
 
         check_format_info(*format, pi);
@@ -207,8 +207,8 @@ TEST_GROUP(packet_formats) {
         const Format* format = format_map.format(pi.pt);
         CHECK(format);
 
-        core::UniquePtr<audio::IEncoder> encoder(format->new_encoder(allocator),
-                                                 allocator);
+        core::UniquePtr<audio::IFrameEncoder> encoder(format->new_encoder(allocator),
+                                                      allocator);
         CHECK(encoder);
 
         Composer composer(NULL);

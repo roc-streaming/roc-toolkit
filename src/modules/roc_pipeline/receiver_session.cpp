@@ -106,12 +106,12 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
         preader = fec_validator_.get();
     }
 
-    decoder_.reset(format->new_decoder(allocator_), allocator_);
-    if (!decoder_) {
+    payload_decoder_.reset(format->new_decoder(allocator_), allocator_);
+    if (!payload_decoder_) {
         return;
     }
 
-    depacketizer_.reset(new (allocator_) audio::Depacketizer(*preader, *decoder_,
+    depacketizer_.reset(new (allocator_) audio::Depacketizer(*preader, *payload_decoder_,
                                                              session_config.channels,
                                                              common_config.beeping),
                         allocator_);

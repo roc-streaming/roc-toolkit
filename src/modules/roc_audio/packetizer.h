@@ -12,7 +12,7 @@
 #ifndef ROC_AUDIO_PACKETIZER_H_
 #define ROC_AUDIO_PACKETIZER_H_
 
-#include "roc_audio/iencoder.h"
+#include "roc_audio/iframe_encoder.h"
 #include "roc_audio/iwriter.h"
 #include "roc_audio/units.h"
 #include "roc_core/buffer_pool.h"
@@ -37,7 +37,7 @@ public:
     //! @b Parameters
     //!  - @p writer is used to write generated packets
     //!  - @p composer is used to initialize new packets
-    //!  - @p encoder is used to write samples to packets
+    //!  - @p payload_encoder is used to write samples to packets
     //!  - @p packet_pool is used to allocate packets
     //!  - @p buffer_pool is used to allocate buffers for packets
     //!  - @p channels defines a set of channels in the input frames
@@ -46,7 +46,7 @@ public:
     //!  - @p payload_type defines packet payload type
     Packetizer(packet::IWriter& writer,
                packet::IComposer& composer,
-               IEncoder& encoder,
+               IFrameEncoder& payload_encoder,
                packet::PacketPool& packet_pool,
                core::BufferPool<uint8_t>& buffer_pool,
                packet::channel_mask_t channels,
@@ -72,7 +72,8 @@ private:
 
     packet::IWriter& writer_;
     packet::IComposer& composer_;
-    IEncoder& encoder_;
+    IFrameEncoder& payload_encoder_;
+
     packet::PacketPool& packet_pool_;
     core::BufferPool<uint8_t>& buffer_pool_;
 

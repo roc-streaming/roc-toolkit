@@ -16,7 +16,7 @@ namespace audio {
 
 Packetizer::Packetizer(packet::IWriter& writer,
                        packet::IComposer& composer,
-                       IEncoder& encoder,
+                       IFrameEncoder& payload_encoder,
                        packet::PacketPool& packet_pool,
                        core::BufferPool<uint8_t>& buffer_pool,
                        packet::channel_mask_t channels,
@@ -25,7 +25,7 @@ Packetizer::Packetizer(packet::IWriter& writer,
                        unsigned int payload_type)
     : writer_(writer)
     , composer_(composer)
-    , encoder_(encoder)
+    , payload_encoder_(payload_encoder)
     , packet_pool_(packet_pool)
     , buffer_pool_(buffer_pool)
     , channels_(channels)
@@ -33,7 +33,7 @@ Packetizer::Packetizer(packet::IWriter& writer,
     , samples_per_packet_(
           (packet::timestamp_t)packet::timestamp_from_ns(packet_length, sample_rate))
     , payload_type_(payload_type)
-    , payload_size_(encoder_.payload_size(samples_per_packet_))
+    , payload_size_(payload_encoder.payload_size(samples_per_packet_))
     , packet_pos_(0)
     , source_((packet::source_t)core::random(packet::source_t(-1)))
     , seqnum_((packet::seqnum_t)core::random(packet::seqnum_t(-1)))
@@ -57,8 +57,8 @@ void Packetizer::write(Frame& frame) {
             }
         }
 
-        size_t ns = encoder_.write_samples(*packet_, packet_pos_, buffer_ptr,
-                                           buffer_samples, channels_);
+        size_t ns = payload_encoder_.write_samples(*packet_, packet_pos_, buffer_ptr,
+                                                   buffer_samples, channels_);
 
         packet_pos_ += ns;
         buffer_samples -= ns;
@@ -112,7 +112,7 @@ void Packetizer::end_packet_() {
 }
 
 void Packetizer::pad_packet_() {
-    const size_t actual_payload_size = encoder_.payload_size(packet_pos_);
+    const size_t actual_payload_size = payload_encoder_.payload_size(packet_pos_);
     roc_panic_if_not(actual_payload_size <= payload_size_);
 
     if (actual_payload_size == payload_size_) {

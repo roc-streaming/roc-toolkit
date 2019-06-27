@@ -13,7 +13,7 @@
 #define ROC_PIPELINE_RECEIVER_SESSION_H_
 
 #include "roc_audio/depacketizer.h"
-#include "roc_audio/idecoder.h"
+#include "roc_audio/iframe_decoder.h"
 #include "roc_audio/ireader.h"
 #include "roc_audio/latency_monitor.h"
 #include "roc_audio/poison_reader.h"
@@ -100,7 +100,7 @@ private:
     core::UniquePtr<fec::Reader> fec_reader_;
     core::UniquePtr<rtp::Validator> fec_validator_;
 
-    core::UniquePtr<audio::IDecoder> decoder_;
+    core::UniquePtr<audio::IFrameDecoder> payload_decoder_;
     core::UniquePtr<audio::Depacketizer> depacketizer_;
 
     core::UniquePtr<audio::PoisonReader> resampler_poisoner_;

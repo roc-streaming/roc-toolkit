@@ -112,15 +112,15 @@ Sender::Sender(const SenderConfig& config,
         pwriter = fec_writer_.get();
     }
 
-    encoder_.reset(format->new_encoder(allocator), allocator);
-    if (!encoder_) {
+    payload_encoder_.reset(format->new_encoder(allocator), allocator);
+    if (!payload_encoder_) {
         return;
     }
 
     packetizer_.reset(new (allocator) audio::Packetizer(
-                          *pwriter, source_port_->composer(), *encoder_, packet_pool,
-                          byte_buffer_pool, config.input_channels, config.packet_length,
-                          format->sample_rate, config.payload_type),
+                          *pwriter, source_port_->composer(), *payload_encoder_,
+                          packet_pool, byte_buffer_pool, config.input_channels,
+                          config.packet_length, format->sample_rate, config.payload_type),
                       allocator);
     if (!packetizer_) {
         return;

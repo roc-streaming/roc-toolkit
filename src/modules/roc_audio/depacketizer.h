@@ -12,7 +12,7 @@
 #ifndef ROC_AUDIO_DEPACKETIZER_H_
 #define ROC_AUDIO_DEPACKETIZER_H_
 
-#include "roc_audio/idecoder.h"
+#include "roc_audio/iframe_decoder.h"
 #include "roc_audio/ireader.h"
 #include "roc_audio/units.h"
 #include "roc_core/noncopyable.h"
@@ -32,11 +32,11 @@ public:
     //!
     //! @b Parameters
     //!  - @p reader is used to read packets
-    //!  - @p decoder is used to extract samples from packets
+    //!  - @p payload_decoder is used to extract samples from packets
     //!  - @p channels defines a set of channels in the output frames
     //!  - @p beep enables weird beeps instead of silence on packet loss
     Depacketizer(packet::IReader& reader,
-                 IDecoder& decoder,
+                 IFrameDecoder& payload_decoder,
                  packet::channel_mask_t channels,
                  bool beep);
 
@@ -67,7 +67,7 @@ private:
     packet::PacketPtr read_packet_();
 
     packet::IReader& reader_;
-    IDecoder& decoder_;
+    IFrameDecoder& payload_decoder_;
 
     const packet::channel_mask_t channels_;
     const size_t num_channels_;

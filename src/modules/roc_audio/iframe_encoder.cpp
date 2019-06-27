@@ -6,12 +6,12 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_audio/iencoder.h"
+#include "roc_audio/iframe_encoder.h"
 
 namespace roc {
 namespace audio {
 
-IEncoder::~IEncoder() {
+IFrameEncoder::~IFrameEncoder() {
 }
 
 } // namespace audio

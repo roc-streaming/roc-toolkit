@@ -12,7 +12,7 @@
 #ifndef ROC_PIPELINE_SENDER_H_
 #define ROC_PIPELINE_SENDER_H_
 
-#include "roc_audio/iencoder.h"
+#include "roc_audio/iframe_encoder.h"
 #include "roc_audio/packetizer.h"
 #include "roc_audio/poison_writer.h"
 #include "roc_audio/resampler_writer.h"
@@ -74,7 +74,7 @@ private:
     core::UniquePtr<fec::IBlockEncoder> fec_encoder_;
     core::UniquePtr<fec::Writer> fec_writer_;
 
-    core::UniquePtr<audio::IEncoder> encoder_;
+    core::UniquePtr<audio::IFrameEncoder> payload_encoder_;
     core::UniquePtr<audio::Packetizer> packetizer_;
 
     core::UniquePtr<audio::PoisonWriter> resampler_poisoner_;

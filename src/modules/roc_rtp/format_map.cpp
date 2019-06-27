@@ -36,8 +36,8 @@ FormatMap::FormatMap()
         fmt.sample_rate = 44100;
         fmt.channel_mask = 0x1;
         fmt.get_num_samples = PCM_int16_1ch.samples_from_payload_size;
-        fmt.new_encoder = new_codec_pcm_int16_1ch<audio::IEncoder, PCMEncoder>;
-        fmt.new_decoder = new_codec_pcm_int16_1ch<audio::IDecoder, PCMDecoder>;
+        fmt.new_encoder = new_codec_pcm_int16_1ch<audio::IFrameEncoder, PCMEncoder>;
+        fmt.new_decoder = new_codec_pcm_int16_1ch<audio::IFrameDecoder, PCMDecoder>;
         add_(fmt);
     }
     {
@@ -47,8 +47,8 @@ FormatMap::FormatMap()
         fmt.sample_rate = 44100;
         fmt.channel_mask = 0x3;
         fmt.get_num_samples = PCM_int16_2ch.samples_from_payload_size;
-        fmt.new_encoder = new_codec_pcm_int16_2ch<audio::IEncoder, PCMEncoder>;
-        fmt.new_decoder = new_codec_pcm_int16_2ch<audio::IDecoder, PCMDecoder>;
+        fmt.new_encoder = new_codec_pcm_int16_2ch<audio::IFrameEncoder, PCMEncoder>;
+        fmt.new_decoder = new_codec_pcm_int16_2ch<audio::IFrameDecoder, PCMDecoder>;
         add_(fmt);
     }
 }
