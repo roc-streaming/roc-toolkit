@@ -25,33 +25,46 @@ class IFrameEncoder {
 public:
     virtual ~IFrameEncoder();
 
-    //! Get packet payload size for given number of samples.
-    virtual size_t payload_size(size_t num_samples) const = 0;
+    //! Get encoded frame size for given number of samples per channel.
+    virtual size_t encoded_size(size_t num_samples) const = 0;
 
-    //! Write samples to packet.
+    //! Start encoding a new frame.
+    //!
+    //! @remarks
+    //!  After this call, write() will store samples to the given @p frame_data
+    //!  until @p frame_size bytes are written or end() is called.
+    virtual void begin(void* frame_data, size_t frame_size) = 0;
+
+    //! Write samples into current frame.
     //!
     //! @b Parameters
-    //!  - @p packet - packet to write samples to
-    //!  - @p offset - packet write offset
-    //!  - @p samples - input buffer
-    //!  - @p n_samples - number of samples in input buffer
-    //!  - @p channels - input buffer channel mask
+    //!  - @p samples - samples to be encoded
+    //!  - @p n_samples - number of samples to be encoded per channel
+    //!  - @p channels - channel mask of the samples to be encoded
     //!
-    //! Reads @p n_samples from @p samples in the interleaved format, and writes
-    //! them to @p packet starting from the @p offset. The input buffer size
-    //! should be n_samples * n_channels.
+    //! @remarks
+    //!  Encodes samples and writes to the current frame.
     //!
-    //! Packet channel mask and input buffer channel mask may differ. If the input
-    //! buffer contains additional channels, they are skipped. If the input buffer
-    //! doesn't contain some required channels, the corresponding packet channels
-    //! are not modified.
+    //! @returns
+    //!  number of samples encoded per channel. The returned value can be fewer than
+    //!  @p n_samples if the frame is full and no more samples can be written to it.
     //!
-    //! @returns actual number of samples written for every channel.
-    virtual size_t write_samples(packet::Packet& packet,
-                                 size_t offset,
-                                 const sample_t* samples,
-                                 size_t n_samples,
-                                 packet::channel_mask_t channels) = 0;
+    //! @pre
+    //!  This method may be called only between begin() and end() calls.
+    //!
+    //! @note
+    //!  Encoded and decoded channel masks may differ. If the provided samples have
+    //!  extra channels, they are ignored. If they don't have some channels, these
+    //!  channels are filled with zeros.
+    virtual size_t
+    write(const sample_t* samples, size_t n_samples, packet::channel_mask_t channels) = 0;
+
+    //! Finish encoding current frame.
+    //!
+    //! @remarks
+    //!  After this call, the frame is fully encoded and no more samples will be
+    //!  written to the frame. A new frame should be started by calling begin().
+    virtual void end() = 0;
 };
 
 } // namespace audio

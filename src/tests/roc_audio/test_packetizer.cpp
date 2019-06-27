@@ -49,8 +49,7 @@ packet::PacketPool packet_pool(allocator, true);
 
 rtp::Composer rtp_composer(NULL);
 
-audio::PCMEncoder pcm_encoder(audio::PCM_int16_2ch);
-audio::PCMDecoder pcm_decoder(audio::PCM_int16_2ch);
+const audio::PCMFuncs& pcm_funcs = audio::PCM_int16_2ch;
 
 sample_t nth_sample(uint8_t n) {
     return sample_t(n) / sample_t(1 << 8);
@@ -58,8 +57,9 @@ sample_t nth_sample(uint8_t n) {
 
 class PacketChecker {
 public:
-    PacketChecker()
-        : pos_(0)
+    PacketChecker(IFrameDecoder& payload_decoder)
+        : payload_decoder_(payload_decoder)
+        , pos_(0)
         , src_(0)
         , sn_(0)
         , ts_(0)
@@ -92,7 +92,7 @@ public:
 
         UNSIGNED_LONGS_EQUAL(
             n_samples,
-            pcm_decoder.read_samples(*pp, 0, samples, SamplesPerPacket, ChMask));
+            payload_decoder_.read_samples(*pp, 0, samples, SamplesPerPacket, ChMask));
 
         size_t n = 0;
 
@@ -110,6 +110,8 @@ public:
     }
 
 private:
+    IFrameDecoder& payload_decoder_;
+
     size_t pos_;
 
     packet::source_t src_;
@@ -154,14 +156,17 @@ TEST_GROUP(packetizer) {};
 TEST(packetizer, one_buffer_one_packet) {
     enum { NumFrames = 10 };
 
+    audio::PCMEncoder encoder(pcm_funcs);
+    audio::PCMDecoder decoder(pcm_funcs);
+
     packet::Queue packet_queue;
 
-    Packetizer packetizer(packet_queue, rtp_composer, pcm_encoder, packet_pool,
+    Packetizer packetizer(packet_queue, rtp_composer, encoder, packet_pool,
                           byte_buffer_pool, ChMask, PacketDuration, SampleRate,
                           PayloadType);
 
     FrameMaker frame_maker;
-    PacketChecker packet_checker;
+    PacketChecker packet_checker(decoder);
 
     for (size_t fn = 0; fn < NumFrames; fn++) {
         UNSIGNED_LONGS_EQUAL(0, packet_queue.size());
@@ -177,14 +182,17 @@ TEST(packetizer, one_buffer_one_packet) {
 TEST(packetizer, one_buffer_multiple_packets) {
     enum { NumPackets = 10 };
 
+    audio::PCMEncoder encoder(pcm_funcs);
+    audio::PCMDecoder decoder(pcm_funcs);
+
     packet::Queue packet_queue;
 
-    Packetizer packetizer(packet_queue, rtp_composer, pcm_encoder, packet_pool,
+    Packetizer packetizer(packet_queue, rtp_composer, encoder, packet_pool,
                           byte_buffer_pool, ChMask, PacketDuration, SampleRate,
                           PayloadType);
 
     FrameMaker frame_maker;
-    PacketChecker packet_checker;
+    PacketChecker packet_checker(decoder);
 
     frame_maker.write(packetizer, SamplesPerPacket * NumPackets);
 
@@ -200,14 +208,17 @@ TEST(packetizer, multiple_buffers_one_packet) {
 
     CHECK(SamplesPerPacket % FramesPerPacket == 0);
 
+    audio::PCMEncoder encoder(pcm_funcs);
+    audio::PCMDecoder decoder(pcm_funcs);
+
     packet::Queue packet_queue;
 
-    Packetizer packetizer(packet_queue, rtp_composer, pcm_encoder, packet_pool,
+    Packetizer packetizer(packet_queue, rtp_composer, encoder, packet_pool,
                           byte_buffer_pool, ChMask, PacketDuration, SampleRate,
                           PayloadType);
 
     FrameMaker frame_maker;
-    PacketChecker packet_checker;
+    PacketChecker packet_checker(decoder);
 
     for (size_t pn = 0; pn < NumPackets; pn++) {
         for (size_t fn = 0; fn < FramesPerPacket; fn++) {
@@ -229,14 +240,17 @@ TEST(packetizer, multiple_buffers_multiple_packets) {
         NumPackets = (NumSamples * NumFrames / SamplesPerPacket)
     };
 
+    audio::PCMEncoder encoder(pcm_funcs);
+    audio::PCMDecoder decoder(pcm_funcs);
+
     packet::Queue packet_queue;
 
-    Packetizer packetizer(packet_queue, rtp_composer, pcm_encoder, packet_pool,
+    Packetizer packetizer(packet_queue, rtp_composer, encoder, packet_pool,
                           byte_buffer_pool, ChMask, PacketDuration, SampleRate,
                           PayloadType);
 
     FrameMaker frame_maker;
-    PacketChecker packet_checker;
+    PacketChecker packet_checker(decoder);
 
     for (size_t fn = 0; fn < NumFrames; fn++) {
         frame_maker.write(packetizer, NumSamples);
@@ -252,14 +266,17 @@ TEST(packetizer, multiple_buffers_multiple_packets) {
 TEST(packetizer, flush) {
     enum { NumIterations = 5, Missing = 10 };
 
+    audio::PCMEncoder encoder(pcm_funcs);
+    audio::PCMDecoder decoder(pcm_funcs);
+
     packet::Queue packet_queue;
 
-    Packetizer packetizer(packet_queue, rtp_composer, pcm_encoder, packet_pool,
+    Packetizer packetizer(packet_queue, rtp_composer, encoder, packet_pool,
                           byte_buffer_pool, ChMask, PacketDuration, SampleRate,
                           PayloadType);
 
     FrameMaker frame_maker;
-    PacketChecker packet_checker;
+    PacketChecker packet_checker(decoder);
 
     for (size_t n = 0; n < NumIterations; n++) {
         frame_maker.write(packetizer, SamplesPerPacket);

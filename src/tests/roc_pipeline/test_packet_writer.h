@@ -128,7 +128,7 @@ private:
         CHECK(bp);
 
         CHECK(composer_.prepare(*pp, bp,
-                                payload_encoder_.payload_size(samples_per_packet)));
+                                payload_encoder_.encoded_size(samples_per_packet)));
 
         pp->set_data(bp);
 
@@ -145,9 +145,13 @@ private:
             samples[n] = nth_sample(offset_++);
         }
 
-        UNSIGNED_LONGS_EQUAL(samples_per_packet,
-                             payload_encoder_.write_samples(
-                                 *pp, 0, samples, samples_per_packet, channels));
+        payload_encoder_.begin(pp->rtp()->payload.data(), pp->rtp()->payload.size());
+
+        UNSIGNED_LONGS_EQUAL(
+            samples_per_packet,
+            payload_encoder_.write(samples, samples_per_packet, channels));
+
+        payload_encoder_.end();
 
         CHECK(composer_.compose(*pp));
 

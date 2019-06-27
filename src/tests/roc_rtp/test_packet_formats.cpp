@@ -157,12 +157,16 @@ TEST_GROUP(packet_formats) {
             }
         }
 
-        UNSIGNED_LONGS_EQUAL(pi.payload_size, encoder.payload_size(pi.num_samples));
+        UNSIGNED_LONGS_EQUAL(pi.payload_size, encoder.encoded_size(pi.num_samples));
+
+        encoder.begin(packet.rtp()->payload.data(), packet.rtp()->payload.size());
 
         UNSIGNED_LONGS_EQUAL(
             pi.num_samples,
-            encoder.write_samples(packet, 0, samples, pi.num_samples,
-                                  packet::channel_mask_t(1 << pi.num_channels) - 1));
+            encoder.write(samples, pi.num_samples,
+                          packet::channel_mask_t(1 << pi.num_channels) - 1));
+
+        encoder.end();
     }
 
     void check_parse_decode(const PacketInfo& pi) {
