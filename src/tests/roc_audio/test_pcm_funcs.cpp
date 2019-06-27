@@ -8,15 +8,15 @@
 
 #include <CppUTest/TestHarness.h>
 
+#include "roc_audio/pcm_decoder.h"
+#include "roc_audio/pcm_encoder.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_packet/packet_pool.h"
 #include "roc_rtp/composer.h"
-#include "roc_rtp/pcm_decoder.h"
-#include "roc_rtp/pcm_encoder.h"
 
 namespace roc {
-namespace rtp {
+namespace audio {
 
 namespace {
 
@@ -53,7 +53,7 @@ TEST_GROUP(pcm_funcs) {
 
         const size_t payload_size = funcs->payload_size_from_samples(num_samples);
 
-        Composer composer(NULL);
+        rtp::Composer composer(NULL);
         CHECK(composer.prepare(*pp, bp, payload_size));
 
         pp->set_data(bp);
@@ -490,5 +490,5 @@ TEST(pcm_funcs, decode_truncate) {
     check(output, NumSamples, 0x3);
 }
 
-} // namespace rtp
+} // namespace audio
 } // namespace roc

@@ -11,14 +11,14 @@
 #include "roc_audio/depacketizer.h"
 #include "roc_audio/iframe_decoder.h"
 #include "roc_audio/iframe_encoder.h"
+#include "roc_audio/pcm_decoder.h"
+#include "roc_audio/pcm_encoder.h"
+#include "roc_audio/pcm_funcs.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_packet/packet_pool.h"
 #include "roc_packet/queue.h"
 #include "roc_rtp/composer.h"
-#include "roc_rtp/pcm_decoder.h"
-#include "roc_rtp/pcm_encoder.h"
-#include "roc_rtp/pcm_funcs.h"
 
 namespace roc {
 namespace audio {
@@ -34,8 +34,8 @@ packet::PacketPool packet_pool(allocator, true);
 
 rtp::Composer rtp_composer(NULL);
 
-rtp::PCMEncoder pcm_encoder(rtp::PCM_int16_2ch);
-rtp::PCMDecoder pcm_decoder(rtp::PCM_int16_2ch);
+audio::PCMEncoder pcm_encoder(audio::PCM_int16_2ch);
+audio::PCMDecoder pcm_decoder(audio::PCM_int16_2ch);
 
 } // namespace
 

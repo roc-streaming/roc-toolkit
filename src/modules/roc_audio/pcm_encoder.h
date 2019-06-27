@@ -6,20 +6,21 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_rtp/pcm_encoder.h
+//! @file roc_audio/pcm_encoder.h
 //! @brief PCM encoder.
 
-#ifndef ROC_RTP_PCM_ENCODER_H_
-#define ROC_RTP_PCM_ENCODER_H_
+#ifndef ROC_AUDIO_PCM_ENCODER_H_
+#define ROC_AUDIO_PCM_ENCODER_H_
 
 #include "roc_audio/iframe_encoder.h"
-#include "roc_rtp/pcm_funcs.h"
+#include "roc_audio/pcm_funcs.h"
+#include "roc_core/noncopyable.h"
 
 namespace roc {
-namespace rtp {
+namespace audio {
 
 //! PCM encoder.
-class PCMEncoder : public audio::IFrameEncoder, public core::NonCopyable<> {
+class PCMEncoder : public IFrameEncoder, public core::NonCopyable<> {
 public:
     //! Initialize.
     PCMEncoder(const PCMFuncs& funcs);
@@ -30,7 +31,7 @@ public:
     //! Write samples to packet.
     virtual size_t write_samples(packet::Packet& packet,
                                  size_t offset,
-                                 const audio::sample_t* samples,
+                                 const sample_t* samples,
                                  size_t n_samples,
                                  packet::channel_mask_t channels);
 
@@ -38,7 +39,7 @@ private:
     const PCMFuncs& funcs_;
 };
 
-} // namespace rtp
+} // namespace audio
 } // namespace roc
 
-#endif // ROC_RTP_PCM_ENCODER_H_
+#endif // ROC_AUDIO_PCM_ENCODER_H_

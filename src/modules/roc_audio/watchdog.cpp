@@ -120,7 +120,7 @@ void Watchdog::update_blank_timeout_(const Frame& frame,
         return;
     }
 
-    if (frame.flags() & audio::Frame::FlagBlank) {
+    if (frame.flags() & Frame::FlagBlank) {
         return;
     }
 

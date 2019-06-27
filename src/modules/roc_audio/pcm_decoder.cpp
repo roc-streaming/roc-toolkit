@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_rtp/pcm_decoder.h"
+#include "roc_audio/pcm_decoder.h"
 #include "roc_core/panic.h"
 
 namespace roc {
-namespace rtp {
+namespace audio {
 
 PCMDecoder::PCMDecoder(const PCMFuncs& funcs)
     : funcs_(funcs) {
@@ -18,7 +18,7 @@ PCMDecoder::PCMDecoder(const PCMFuncs& funcs)
 
 size_t PCMDecoder::read_samples(const packet::Packet& packet,
                                 size_t offset,
-                                audio::sample_t* samples,
+                                sample_t* samples,
                                 size_t n_samples,
                                 packet::channel_mask_t channels) {
     const packet::RTP* rtp = packet.rtp();
@@ -29,5 +29,5 @@ size_t PCMDecoder::read_samples(const packet::Packet& packet,
                                  samples, n_samples, channels);
 }
 
-} // namespace rtp
+} // namespace audio
 } // namespace roc

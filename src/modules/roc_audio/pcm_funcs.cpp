@@ -6,12 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_rtp/pcm_funcs.h"
+#include "roc_audio/pcm_funcs.h"
 #include "roc_core/endian.h"
-#include "roc_core/stddefs.h"
 
 namespace roc {
-namespace rtp {
+namespace audio {
 
 namespace {
 
@@ -25,7 +24,7 @@ size_t pcm_payload_size_from_samples(size_t num_samples) {
     return num_samples * NumCh * sizeof(Sample);
 }
 
-template <class T> T pcm_encode_one_sample(audio::sample_t);
+template <class T> T pcm_encode_one_sample(sample_t);
 
 template <> int16_t inline pcm_encode_one_sample(float s) {
     s *= 32768.0f;
@@ -42,7 +41,7 @@ template <class Sample, size_t NumCh>
 size_t pcm_encode_samples(void* out_data,
                           size_t out_size,
                           size_t out_offset,
-                          const audio::sample_t* in_samples,
+                          const sample_t* in_samples,
                           size_t in_n_samples,
                           packet::channel_mask_t in_chan_mask) {
     const packet::channel_mask_t out_chan_mask = packet::channel_mask_t(1 << NumCh) - 1;
@@ -82,7 +81,7 @@ template <class Sample, size_t NumCh>
 size_t pcm_decode_samples(const void* in_data,
                           size_t in_size,
                           size_t in_offset,
-                          audio::sample_t* out_samples,
+                          sample_t* out_samples,
                           size_t out_n_samples,
                           packet::channel_mask_t out_chan_mask) {
     const packet::channel_mask_t in_chan_mask = packet::channel_mask_t(1 << NumCh) - 1;
@@ -102,7 +101,7 @@ size_t pcm_decode_samples(const void* in_data,
 
     for (size_t ns = 0; ns < out_n_samples; ns++) {
         for (packet::channel_mask_t ch = 1; ch <= inout_chan_mask && ch != 0; ch <<= 1) {
-            audio::sample_t s = 0;
+            sample_t s = 0;
             if (in_chan_mask & ch) {
                 s = pcm_decode_one_sample(*in_samples++);
             }
@@ -131,5 +130,5 @@ const PCMFuncs PCM_int16_2ch = {
     pcm_decode_samples<int16_t, 2>,
 };
 
-} // namespace rtp
+} // namespace audio
 } // namespace roc
