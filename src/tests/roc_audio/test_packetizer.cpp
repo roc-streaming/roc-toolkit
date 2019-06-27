@@ -88,11 +88,15 @@ public:
         CHECK(pp->rtp()->header);
         CHECK(pp->rtp()->payload);
 
+        payload_decoder_.begin(pp->rtp()->timestamp, pp->rtp()->payload.data(),
+                               pp->rtp()->payload.size());
+
         sample_t samples[SamplesPerPacket * NumCh] = {};
 
-        UNSIGNED_LONGS_EQUAL(
-            n_samples,
-            payload_decoder_.read_samples(*pp, 0, samples, SamplesPerPacket, ChMask));
+        UNSIGNED_LONGS_EQUAL(n_samples,
+                             payload_decoder_.read(samples, SamplesPerPacket, ChMask));
+
+        payload_decoder_.end();
 
         size_t n = 0;
 

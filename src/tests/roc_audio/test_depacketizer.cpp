@@ -34,13 +34,13 @@ packet::PacketPool packet_pool(allocator, true);
 
 rtp::Composer rtp_composer(NULL);
 
-audio::PCMEncoder pcm_encoder(audio::PCM_int16_2ch);
-audio::PCMDecoder pcm_decoder(audio::PCM_int16_2ch);
+const audio::PCMFuncs& pcm_funcs = audio::PCM_int16_2ch;
 
 } // namespace
 
 TEST_GROUP(depacketizer) {
-    packet::PacketPtr new_packet(packet::timestamp_t ts, sample_t value) {
+    packet::PacketPtr new_packet(
+        IFrameEncoder& encoder, packet::timestamp_t ts, sample_t value) {
         packet::PacketPtr pp = new(packet_pool) packet::Packet(packet_pool);
         CHECK(pp);
 
@@ -48,7 +48,7 @@ TEST_GROUP(depacketizer) {
             new (byte_buffer_pool) core::Buffer<uint8_t>(byte_buffer_pool);
         CHECK(bp);
 
-        CHECK(rtp_composer.prepare(*pp, bp, pcm_encoder.encoded_size(SamplesPerPacket)));
+        CHECK(rtp_composer.prepare(*pp, bp, encoder.encoded_size(SamplesPerPacket)));
 
         pp->set_data(bp);
 
@@ -60,12 +60,12 @@ TEST_GROUP(depacketizer) {
             samples[n] = value;
         }
 
-        pcm_encoder.begin(pp->rtp()->payload.data(), pp->rtp()->payload.size());
+        encoder.begin(pp->rtp()->payload.data(), pp->rtp()->payload.size());
 
         UNSIGNED_LONGS_EQUAL(SamplesPerPacket,
-                             pcm_encoder.write(samples, SamplesPerPacket, ChMask));
+                             encoder.write(samples, SamplesPerPacket, ChMask));
 
-        pcm_encoder.end();
+        encoder.end();
 
         CHECK(rtp_composer.compose(*pp));
 
@@ -107,19 +107,25 @@ TEST_GROUP(depacketizer) {
 };
 
 TEST(depacketizer, one_packet_one_read) {
-    packet::Queue queue;
-    Depacketizer dp(queue, pcm_decoder, ChMask, false);
+    audio::PCMEncoder encoder(pcm_funcs);
+    audio::PCMDecoder decoder(pcm_funcs);
 
-    queue.write(new_packet(0, 0.11f));
+    packet::Queue queue;
+    Depacketizer dp(queue, decoder, ChMask, false);
+
+    queue.write(new_packet(encoder, 0, 0.11f));
 
     expect_output(dp, SamplesPerPacket, 0.11f);
 }
 
 TEST(depacketizer, one_packet_multiple_reads) {
-    packet::Queue queue;
-    Depacketizer dp(queue, pcm_decoder, ChMask, false);
+    audio::PCMEncoder encoder(pcm_funcs);
+    audio::PCMDecoder decoder(pcm_funcs);
 
-    queue.write(new_packet(0, 0.11f));
+    packet::Queue queue;
+    Depacketizer dp(queue, decoder, ChMask, false);
+
+    queue.write(new_packet(encoder, 0, 0.11f));
 
     for (size_t n = 0; n < SamplesPerPacket; n++) {
         expect_output(dp, 1, 0.11f);
@@ -129,11 +135,14 @@ TEST(depacketizer, one_packet_multiple_reads) {
 TEST(depacketizer, multiple_packets_one_read) {
     enum { NumPackets = 10 };
 
+    audio::PCMEncoder encoder(pcm_funcs);
+    audio::PCMDecoder decoder(pcm_funcs);
+
     packet::Queue queue;
-    Depacketizer dp(queue, pcm_decoder, ChMask, false);
+    Depacketizer dp(queue, decoder, ChMask, false);
 
     for (packet::timestamp_t n = 0; n < NumPackets; n++) {
-        queue.write(new_packet(n * SamplesPerPacket, 0.11f));
+        queue.write(new_packet(encoder, n * SamplesPerPacket, 0.11f));
     }
 
     expect_output(dp, NumPackets * SamplesPerPacket, 0.11f);
@@ -144,12 +153,15 @@ TEST(depacketizer, multiple_packets_multiple_reads) {
 
     CHECK(SamplesPerPacket % FramesPerPacket== 0);
 
-    packet::Queue queue;
-    Depacketizer dp(queue, pcm_decoder, ChMask, false);
+    audio::PCMEncoder encoder(pcm_funcs);
+    audio::PCMDecoder decoder(pcm_funcs);
 
-    queue.write(new_packet(1 * SamplesPerPacket, 0.11f));
-    queue.write(new_packet(2 * SamplesPerPacket, 0.22f));
-    queue.write(new_packet(3 * SamplesPerPacket, 0.33f));
+    packet::Queue queue;
+    Depacketizer dp(queue, decoder, ChMask, false);
+
+    queue.write(new_packet(encoder, 1 * SamplesPerPacket, 0.11f));
+    queue.write(new_packet(encoder, 2 * SamplesPerPacket, 0.22f));
+    queue.write(new_packet(encoder, 3 * SamplesPerPacket, 0.33f));
 
     for (size_t n = 0; n < FramesPerPacket; n++) {
         expect_output(dp, SamplesPerPacket / FramesPerPacket, 0.11f);
@@ -165,16 +177,19 @@ TEST(depacketizer, multiple_packets_multiple_reads) {
 }
 
 TEST(depacketizer, timestamp_overflow) {
+    audio::PCMEncoder encoder(pcm_funcs);
+    audio::PCMDecoder decoder(pcm_funcs);
+
     packet::Queue queue;
-    Depacketizer dp(queue, pcm_decoder, ChMask, false);
+    Depacketizer dp(queue, decoder, ChMask, false);
 
     const packet::timestamp_t ts2 = 0;
     const packet::timestamp_t ts1 = ts2 - SamplesPerPacket;
     const packet::timestamp_t ts3 = ts2 + SamplesPerPacket;
 
-    queue.write(new_packet(ts1, 0.11f));
-    queue.write(new_packet(ts2, 0.22f));
-    queue.write(new_packet(ts3, 0.33f));
+    queue.write(new_packet(encoder, ts1, 0.11f));
+    queue.write(new_packet(encoder, ts2, 0.22f));
+    queue.write(new_packet(encoder, ts3, 0.33f));
 
     expect_output(dp, SamplesPerPacket, 0.11f);
     expect_output(dp, SamplesPerPacket, 0.22f);
@@ -182,60 +197,75 @@ TEST(depacketizer, timestamp_overflow) {
 }
 
 TEST(depacketizer, drop_late_packets) {
+    audio::PCMEncoder encoder(pcm_funcs);
+    audio::PCMDecoder decoder(pcm_funcs);
+
     packet::Queue queue;
-    Depacketizer dp(queue, pcm_decoder, ChMask, false);
+    Depacketizer dp(queue, decoder, ChMask, false);
 
     const packet::timestamp_t ts1 = SamplesPerPacket * 2;
     const packet::timestamp_t ts2 = SamplesPerPacket * 1;
     const packet::timestamp_t ts3 = SamplesPerPacket * 3;
 
-    queue.write(new_packet(ts1, 0.11f));
-    queue.write(new_packet(ts2, 0.22f));
-    queue.write(new_packet(ts3, 0.33f));
+    queue.write(new_packet(encoder, ts1, 0.11f));
+    queue.write(new_packet(encoder, ts2, 0.22f));
+    queue.write(new_packet(encoder, ts3, 0.33f));
 
     expect_output(dp, SamplesPerPacket, 0.11f);
     expect_output(dp, SamplesPerPacket, 0.33f);
 }
 
 TEST(depacketizer, drop_late_packets_timestamp_overflow) {
+    audio::PCMEncoder encoder(pcm_funcs);
+    audio::PCMDecoder decoder(pcm_funcs);
+
     packet::Queue queue;
-    Depacketizer dp(queue, pcm_decoder, ChMask, false);
+    Depacketizer dp(queue, decoder, ChMask, false);
 
     const packet::timestamp_t ts1 = 0;
     const packet::timestamp_t ts2 = ts1 - SamplesPerPacket;
     const packet::timestamp_t ts3 = ts1 + SamplesPerPacket;
 
-    queue.write(new_packet(ts1, 0.11f));
-    queue.write(new_packet(ts2, 0.22f));
-    queue.write(new_packet(ts3, 0.33f));
+    queue.write(new_packet(encoder, ts1, 0.11f));
+    queue.write(new_packet(encoder, ts2, 0.22f));
+    queue.write(new_packet(encoder, ts3, 0.33f));
 
     expect_output(dp, SamplesPerPacket, 0.11f);
     expect_output(dp, SamplesPerPacket, 0.33f);
 }
 
 TEST(depacketizer, zeros_no_packets) {
+    audio::PCMEncoder encoder(pcm_funcs);
+    audio::PCMDecoder decoder(pcm_funcs);
+
     packet::Queue queue;
-    Depacketizer dp(queue, pcm_decoder, ChMask, false);
+    Depacketizer dp(queue, decoder, ChMask, false);
 
     expect_output(dp, SamplesPerPacket, 0.00f);
 }
 
 TEST(depacketizer, zeros_no_next_packet) {
-    packet::Queue queue;
-    Depacketizer dp(queue, pcm_decoder, ChMask, false);
+    audio::PCMEncoder encoder(pcm_funcs);
+    audio::PCMDecoder decoder(pcm_funcs);
 
-    queue.write(new_packet(0, 0.11f));
+    packet::Queue queue;
+    Depacketizer dp(queue, decoder, ChMask, false);
+
+    queue.write(new_packet(encoder, 0, 0.11f));
 
     expect_output(dp, SamplesPerPacket, 0.11f);
     expect_output(dp, SamplesPerPacket, 0.00f);
 }
 
 TEST(depacketizer, zeros_between_packets) {
-    packet::Queue queue;
-    Depacketizer dp(queue, pcm_decoder, ChMask, false);
+    audio::PCMEncoder encoder(pcm_funcs);
+    audio::PCMDecoder decoder(pcm_funcs);
 
-    queue.write(new_packet(1 * SamplesPerPacket, 0.11f));
-    queue.write(new_packet(3 * SamplesPerPacket, 0.33f));
+    packet::Queue queue;
+    Depacketizer dp(queue, decoder, ChMask, false);
+
+    queue.write(new_packet(encoder, 1 * SamplesPerPacket, 0.11f));
+    queue.write(new_packet(encoder, 3 * SamplesPerPacket, 0.33f));
 
     expect_output(dp, SamplesPerPacket, 0.11f);
     expect_output(dp, SamplesPerPacket, 0.00f);
@@ -243,15 +273,18 @@ TEST(depacketizer, zeros_between_packets) {
 }
 
 TEST(depacketizer, zeros_between_packets_timestamp_overflow) {
+    audio::PCMEncoder encoder(pcm_funcs);
+    audio::PCMDecoder decoder(pcm_funcs);
+
     packet::Queue queue;
-    Depacketizer dp(queue, pcm_decoder, ChMask, false);
+    Depacketizer dp(queue, decoder, ChMask, false);
 
     const packet::timestamp_t ts2 = 0;
     const packet::timestamp_t ts1 = ts2 - SamplesPerPacket;
     const packet::timestamp_t ts3 = ts2 + SamplesPerPacket;
 
-    queue.write(new_packet(ts1, 0.11f));
-    queue.write(new_packet(ts3, 0.33f));
+    queue.write(new_packet(encoder, ts1, 0.11f));
+    queue.write(new_packet(encoder, ts3, 0.33f));
 
     expect_output(dp, SamplesPerPacket, 0.11f);
     expect_output(dp, SamplesPerPacket, 0.000f);
@@ -259,12 +292,15 @@ TEST(depacketizer, zeros_between_packets_timestamp_overflow) {
 }
 
 TEST(depacketizer, zeros_after_packet) {
+    audio::PCMEncoder encoder(pcm_funcs);
+    audio::PCMDecoder decoder(pcm_funcs);
+
     CHECK(SamplesPerPacket % 2 == 0);
 
     packet::Queue queue;
-    Depacketizer dp(queue, pcm_decoder, ChMask, false);
+    Depacketizer dp(queue, decoder, ChMask, false);
 
-    queue.write(new_packet(0, 0.11f));
+    queue.write(new_packet(encoder, 0, 0.11f));
 
     core::Slice<sample_t> b1 = new_buffer(SamplesPerPacket / 2);
     core::Slice<sample_t> b2 = new_buffer(SamplesPerPacket);
@@ -282,12 +318,15 @@ TEST(depacketizer, zeros_after_packet) {
 }
 
 TEST(depacketizer, packet_after_zeros) {
+    audio::PCMEncoder encoder(pcm_funcs);
+    audio::PCMDecoder decoder(pcm_funcs);
+
     packet::Queue queue;
-    Depacketizer dp(queue, pcm_decoder, ChMask, false);
+    Depacketizer dp(queue, decoder, ChMask, false);
 
     expect_output(dp, SamplesPerPacket, 0.00f);
 
-    queue.write(new_packet(0, 0.11f));
+    queue.write(new_packet(encoder, 0, 0.11f));
 
     expect_output(dp, SamplesPerPacket, 0.11f);
 }
@@ -295,16 +334,19 @@ TEST(depacketizer, packet_after_zeros) {
 TEST(depacketizer, overlapping_packets) {
     CHECK(SamplesPerPacket % 2 == 0);
 
+    audio::PCMEncoder encoder(pcm_funcs);
+    audio::PCMDecoder decoder(pcm_funcs);
+
     packet::Queue queue;
-    Depacketizer dp(queue, pcm_decoder, ChMask, false);
+    Depacketizer dp(queue, decoder, ChMask, false);
 
     packet::timestamp_t ts1 = 0;
     packet::timestamp_t ts2 = SamplesPerPacket / 2;
     packet::timestamp_t ts3 = SamplesPerPacket;
 
-    queue.write(new_packet(ts1, 0.11f));
-    queue.write(new_packet(ts2, 0.22f));
-    queue.write(new_packet(ts3, 0.33f));
+    queue.write(new_packet(encoder, ts1, 0.11f));
+    queue.write(new_packet(encoder, ts2, 0.22f));
+    queue.write(new_packet(encoder, ts3, 0.33f));
 
     expect_output(dp, SamplesPerPacket, 0.11f);
     expect_output(dp, SamplesPerPacket / 2, 0.22f);
@@ -314,42 +356,45 @@ TEST(depacketizer, overlapping_packets) {
 TEST(depacketizer, frame_flags_incompltete_blank) {
     enum { PacketsPerFrame = 3 };
 
+    audio::PCMEncoder encoder(pcm_funcs);
+    audio::PCMDecoder decoder(pcm_funcs);
+
     packet::Queue queue;
-    Depacketizer dp(queue, pcm_decoder, ChMask, false);
+    Depacketizer dp(queue, decoder, ChMask, false);
 
     packet::PacketPtr packets[][PacketsPerFrame] = {
         {
-            new_packet(SamplesPerPacket * 1, 0.11f),
-            new_packet(SamplesPerPacket * 2, 0.11f),
-            new_packet(SamplesPerPacket * 3, 0.11f),
+            new_packet(encoder, SamplesPerPacket * 1, 0.11f),
+            new_packet(encoder, SamplesPerPacket * 2, 0.11f),
+            new_packet(encoder, SamplesPerPacket * 3, 0.11f),
         },
         {
             NULL,
-            new_packet(SamplesPerPacket * 5, 0.11f),
-            new_packet(SamplesPerPacket * 6, 0.11f),
+            new_packet(encoder, SamplesPerPacket * 5, 0.11f),
+            new_packet(encoder, SamplesPerPacket * 6, 0.11f),
         },
         {
-            new_packet(SamplesPerPacket * 7, 0.11f),
+            new_packet(encoder, SamplesPerPacket * 7, 0.11f),
             NULL,
-            new_packet(SamplesPerPacket * 9, 0.11f),
+            new_packet(encoder, SamplesPerPacket * 9, 0.11f),
         },
         {
-            new_packet(SamplesPerPacket * 10, 0.11f),
-            new_packet(SamplesPerPacket * 11, 0.11f),
+            new_packet(encoder, SamplesPerPacket * 10, 0.11f),
+            new_packet(encoder, SamplesPerPacket * 11, 0.11f),
             NULL,
         },
         {
             NULL,
-            new_packet(SamplesPerPacket * 14, 0.11f),
+            new_packet(encoder, SamplesPerPacket * 14, 0.11f),
             NULL,
         },
         {
             NULL, NULL, NULL,
         },
         {
-            new_packet(SamplesPerPacket * 22, 0.11f),
-            new_packet(SamplesPerPacket * 23, 0.11f),
-            new_packet(SamplesPerPacket * 24, 0.11f),
+            new_packet(encoder, SamplesPerPacket * 22, 0.11f),
+            new_packet(encoder, SamplesPerPacket * 23, 0.11f),
+            new_packet(encoder, SamplesPerPacket * 24, 0.11f),
         },
         {
             NULL, NULL, NULL,
@@ -381,17 +426,20 @@ TEST(depacketizer, frame_flags_incompltete_blank) {
 }
 
 TEST(depacketizer, frame_flags_drops) {
+    audio::PCMEncoder encoder(pcm_funcs);
+    audio::PCMDecoder decoder(pcm_funcs);
+
     packet::Queue queue;
-    Depacketizer dp(queue, pcm_decoder, ChMask, false);
+    Depacketizer dp(queue, decoder, ChMask, false);
 
     packet::PacketPtr packets[] = {
-        new_packet(SamplesPerPacket * 4, 0.11f),
-        new_packet(SamplesPerPacket * 1, 0.11f),
-        new_packet(SamplesPerPacket * 2, 0.11f),
-        new_packet(SamplesPerPacket * 5, 0.11f),
-        new_packet(SamplesPerPacket * 6, 0.11f),
-        new_packet(SamplesPerPacket * 3, 0.11f),
-        new_packet(SamplesPerPacket * 8, 0.11f),
+        new_packet(encoder, SamplesPerPacket * 4, 0.11f),
+        new_packet(encoder, SamplesPerPacket * 1, 0.11f),
+        new_packet(encoder, SamplesPerPacket * 2, 0.11f),
+        new_packet(encoder, SamplesPerPacket * 5, 0.11f),
+        new_packet(encoder, SamplesPerPacket * 6, 0.11f),
+        new_packet(encoder, SamplesPerPacket * 3, 0.11f),
+        new_packet(encoder, SamplesPerPacket * 8, 0.11f),
     };
 
     unsigned frame_flags[] = {
@@ -421,8 +469,11 @@ TEST(depacketizer, timestamp) {
 
     CHECK(SamplesPerPacket % FramesPerPacket== 0);
 
+    audio::PCMEncoder encoder(pcm_funcs);
+    audio::PCMDecoder decoder(pcm_funcs);
+
     packet::Queue queue;
-    Depacketizer dp(queue, pcm_decoder, ChMask, false);
+    Depacketizer dp(queue, decoder, ChMask, false);
 
     for (size_t n = 0; n < NumPackets * FramesPerPacket; n++) {
         expect_output(dp, SamplesPerFrame, 0.0f);
@@ -432,8 +483,9 @@ TEST(depacketizer, timestamp) {
     }
 
     for (size_t n = 0; n < NumPackets; n++) {
-        queue.write(
-            new_packet(StartTimestamp + packet::timestamp_t(n * SamplesPerPacket), 0.1f));
+        queue.write(new_packet(encoder,
+                               StartTimestamp + packet::timestamp_t(n * SamplesPerPacket),
+                               0.1f));
     }
 
     packet::timestamp_t ts = StartTimestamp;
