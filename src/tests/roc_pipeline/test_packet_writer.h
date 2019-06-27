@@ -14,9 +14,11 @@
 #include "roc_audio/iframe_encoder.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/noncopyable.h"
+#include "roc_core/unique_ptr.h"
 #include "roc_packet/icomposer.h"
 #include "roc_packet/iwriter.h"
 #include "roc_packet/packet_pool.h"
+#include "roc_rtp/format_map.h"
 
 #include "test_helpers.h"
 
@@ -25,9 +27,10 @@ namespace pipeline {
 
 class PacketWriter : public core::NonCopyable<> {
 public:
-    PacketWriter(packet::IWriter& writer,
+    PacketWriter(core::IAllocator& allocator,
+                 packet::IWriter& writer,
                  packet::IComposer& composer,
-                 audio::IFrameEncoder& payload_encoder,
+                 rtp::FormatMap& format_map,
                  packet::PacketPool& packet_pool,
                  core::BufferPool<uint8_t>& buffer_pool,
                  rtp::PayloadType pt,
@@ -35,7 +38,7 @@ public:
                  const packet::Address& dst_addr)
         : writer_(writer)
         , composer_(composer)
-        , payload_encoder_(payload_encoder)
+        , payload_encoder_(format_map.format(pt)->new_encoder(allocator), allocator)
         , packet_pool_(packet_pool)
         , buffer_pool_(buffer_pool)
         , src_addr_(src_addr)
@@ -128,7 +131,7 @@ private:
         CHECK(bp);
 
         CHECK(composer_.prepare(*pp, bp,
-                                payload_encoder_.encoded_size(samples_per_packet)));
+                                payload_encoder_->encoded_size(samples_per_packet)));
 
         pp->set_data(bp);
 
@@ -145,13 +148,13 @@ private:
             samples[n] = nth_sample(offset_++);
         }
 
-        payload_encoder_.begin(pp->rtp()->payload.data(), pp->rtp()->payload.size());
+        payload_encoder_->begin(pp->rtp()->payload.data(), pp->rtp()->payload.size());
 
         UNSIGNED_LONGS_EQUAL(
             samples_per_packet,
-            payload_encoder_.write(samples, samples_per_packet, channels));
+            payload_encoder_->write(samples, samples_per_packet, channels));
 
-        payload_encoder_.end();
+        payload_encoder_->end();
 
         CHECK(composer_.compose(*pp));
 
@@ -161,7 +164,7 @@ private:
     packet::IWriter& writer_;
 
     packet::IComposer& composer_;
-    audio::IFrameEncoder& payload_encoder_;
+    core::UniquePtr<audio::IFrameEncoder> payload_encoder_;
 
     packet::PacketPool& packet_pool_;
     core::BufferPool<uint8_t>& buffer_pool_;
