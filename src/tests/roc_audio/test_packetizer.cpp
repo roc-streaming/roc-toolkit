@@ -83,6 +83,7 @@ public:
             UNSIGNED_LONGS_EQUAL(ts_, pp->rtp()->timestamp);
         }
 
+        UNSIGNED_LONGS_EQUAL(n_samples, pp->rtp()->duration);
         UNSIGNED_LONGS_EQUAL(PayloadType, pp->rtp()->payload_type);
 
         CHECK(pp->rtp()->header);
