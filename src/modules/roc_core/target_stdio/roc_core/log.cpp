@@ -53,11 +53,6 @@ void Logger::print(const char* module, LogLevel level, const char* format, ...) 
         return;
     }
 
-    char timestamp[64] = {};
-    if (!format_time(timestamp, sizeof(timestamp))) {
-        timestamp[0] = '\0';
-    }
-
     char message[256] = {};
     va_list args;
     va_start(args, format);
@@ -69,8 +64,12 @@ void Logger::print(const char* module, LogLevel level, const char* format, ...) 
     if (handler_) {
         handler_(level, module, message);
     } else {
-        const char* level_str = "???";
+        char timestamp[64] = {};
+        if (!format_time(timestamp, sizeof(timestamp))) {
+            timestamp[0] = '\0';
+        }
 
+        const char* level_str = "???";
         switch (level) {
         case LogNone:
             break;
