@@ -87,7 +87,8 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
         }
 
         fec_reader_.reset(new (allocator_) fec::Reader(
-                              session_config.fec_reader, *fec_decoder_, *preader,
+                              session_config.fec_reader,
+                              session_config.fec_decoder.scheme, *fec_decoder_, *preader,
                               *repair_queue_, *fec_parser_, packet_pool, allocator_),
                           allocator_);
         if (!fec_reader_ || !fec_reader_->valid()) {

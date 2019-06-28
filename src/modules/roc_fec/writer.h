@@ -55,6 +55,7 @@ public:
     //!  - @p buffer_pool is used to allocate buffers for repair packets
     //!  - @p allocator is used to initialize a packet array
     Writer(const WriterConfig& config,
+           packet::FECScheme fec_scheme,
            IBlockEncoder& encoder,
            packet::IWriter& writer,
            packet::IComposer& source_composer,
@@ -85,7 +86,6 @@ private:
 
     bool apply_sizes_(size_t sblen, size_t rblen, size_t payload_size);
 
-    bool validate_source_packet_(const packet::PacketPtr&);
     void write_source_packet_(const packet::PacketPtr&);
     void make_repair_packets_();
     packet::PacketPtr make_repair_packet_(packet::seqnum_t n);
@@ -93,6 +93,9 @@ private:
     void compose_repair_packets_();
     void write_repair_packets_();
     void fill_packet_fec_fields_(const packet::PacketPtr& packet, packet::seqnum_t n);
+
+    void validate_fec_packet_(const packet::PacketPtr&);
+    bool validate_source_packet_(const packet::PacketPtr&);
 
     size_t cur_sblen_;
     size_t next_sblen_;
@@ -119,6 +122,8 @@ private:
     packet::seqnum_t cur_block_repair_sn_;
 
     size_t cur_packet_;
+
+    const packet::FECScheme fec_scheme_;
 
     bool valid_;
     bool alive_;

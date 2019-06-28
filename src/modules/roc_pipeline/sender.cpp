@@ -88,11 +88,12 @@ Sender::Sender(const SenderConfig& config,
             return;
         }
 
-        fec_writer_.reset(new (allocator) fec::Writer(
-                              config.fec_writer, *fec_encoder_, *pwriter,
-                              source_port_->composer(), repair_port_->composer(),
-                              packet_pool, byte_buffer_pool, allocator),
-                          allocator);
+        fec_writer_.reset(
+            new (allocator)
+                fec::Writer(config.fec_writer, config.fec_encoder.scheme, *fec_encoder_,
+                            *pwriter, source_port_->composer(), repair_port_->composer(),
+                            packet_pool, byte_buffer_pool, allocator),
+            allocator);
         if (!fec_writer_ || !fec_writer_->valid()) {
             return;
         }

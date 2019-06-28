@@ -112,6 +112,7 @@ public:
 
         packet::FEC& fec = *packet.fec();
 
+        fec.fec_scheme = PayloadID::fec_scheme();
         fec.payload_id = payload_id;
         fec.payload = payload;
 

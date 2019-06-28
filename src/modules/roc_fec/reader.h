@@ -49,6 +49,7 @@ public:
     //!  - @p parser specifies packet parser for restored packets.
     //!  - @p allocator is used to initialize a packet array
     Reader(const ReaderConfig& config,
+           packet::FECScheme fec_scheme,
            IBlockDecoder& decoder,
            packet::IReader& source_reader,
            packet::IReader& repair_reader,
@@ -90,9 +91,11 @@ private:
     bool process_source_packet_(const packet::PacketPtr&);
     bool process_repair_packet_(const packet::PacketPtr&);
 
+    bool validate_fec_packet_(const packet::PacketPtr&);
+    bool validate_sbn_sequence_(const packet::PacketPtr&);
+
     bool validate_incoming_source_packet_(const packet::PacketPtr&);
     bool validate_incoming_repair_packet_(const packet::PacketPtr&);
-    bool validate_sbn_sequence_(const packet::PacketPtr&);
 
     bool can_update_payload_size_(size_t);
     bool can_update_source_block_size_(size_t);
@@ -135,6 +138,7 @@ private:
     unsigned n_packets_;
 
     const size_t max_sbn_jump_;
+    const packet::FECScheme fec_scheme_;
 };
 
 } // namespace fec

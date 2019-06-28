@@ -9,11 +9,13 @@
 #include "roc_fec/reader.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
+#include "roc_packet/fec_scheme_to_str.h"
 
 namespace roc {
 namespace fec {
 
 Reader::Reader(const ReaderConfig& config,
+               packet::FECScheme fec_scheme,
                IBlockDecoder& decoder,
                packet::IReader& source_reader,
                packet::IReader& repair_reader,
@@ -40,7 +42,8 @@ Reader::Reader(const ReaderConfig& config,
     , repair_block_resized_(false)
     , payload_resized_(false)
     , n_packets_(0)
-    , max_sbn_jump_(config.max_sbn_jump) {
+    , max_sbn_jump_(config.max_sbn_jump)
+    , fec_scheme_(fec_scheme) {
     valid_ = true;
 }
 
@@ -253,8 +256,8 @@ packet::PacketPtr Reader::parse_repaired_packet_(const core::Slice<uint8_t>& buf
 void Reader::fetch_packets_() {
     for (;;) {
         if (packet::PacketPtr pp = source_reader_.read()) {
-            if (!pp->fec()) {
-                roc_panic("fec reader: unexpected non-fec source packet");
+            if (!validate_fec_packet_(pp)) {
+                return;
             }
             source_queue_.write(pp);
         } else {
@@ -264,8 +267,8 @@ void Reader::fetch_packets_() {
 
     for (;;) {
         if (packet::PacketPtr pp = repair_reader_.read()) {
-            if (!pp->fec()) {
-                roc_panic("fec reader: unexpected non-fec repair packet");
+            if (!validate_fec_packet_(pp)) {
+                return;
             }
             repair_queue_.write(pp);
         } else {
@@ -470,6 +473,47 @@ bool Reader::process_repair_packet_(const packet::PacketPtr& pp) {
     return true;
 }
 
+bool Reader::validate_fec_packet_(const packet::PacketPtr& pp) {
+    const packet::FEC* fec = pp->fec();
+
+    if (!fec) {
+        roc_panic("fec reader: unexpected non-fec source packet");
+    }
+
+    if (fec->fec_scheme != fec_scheme_) {
+        roc_log(LogDebug,
+                "fec reader: unexpected packet fec scheme, shutting down:"
+                " packet_scheme=%s session_scheme=%s",
+                packet::fec_scheme_to_str(fec->fec_scheme),
+                packet::fec_scheme_to_str(fec_scheme_));
+        return (alive_ = false);
+    }
+
+    return true;
+}
+
+bool Reader::validate_sbn_sequence_(const packet::PacketPtr& pp) {
+    const packet::FEC& fec = *pp->fec();
+
+    packet::blknum_diff_t blk_dist =
+        packet::blknum_diff(fec.source_block_number, cur_sbn_);
+
+    if (blk_dist < 0) {
+        blk_dist = -blk_dist;
+    }
+
+    if ((size_t)blk_dist > max_sbn_jump_) {
+        roc_log(LogDebug,
+                "fec reader: too long source block number jump, shutting down:"
+                " cur_sbn=%lu pkt_sbn=%lu dist=%lu max=%lu",
+                (unsigned long)cur_sbn_, (unsigned long)fec.source_block_number,
+                (unsigned long)blk_dist, (unsigned long)max_sbn_jump_);
+        return (alive_ = false);
+    }
+
+    return true;
+}
+
 bool Reader::validate_incoming_source_packet_(const packet::PacketPtr& pp) {
     const packet::FEC& fec = *pp->fec();
 
@@ -517,28 +561,6 @@ bool Reader::validate_incoming_repair_packet_(const packet::PacketPtr& pp) {
 
     if (fec.payload.size() == 0) {
         return false;
-    }
-
-    return true;
-}
-
-bool Reader::validate_sbn_sequence_(const packet::PacketPtr& pp) {
-    const packet::FEC& fec = *pp->fec();
-
-    packet::blknum_diff_t blk_dist =
-        packet::blknum_diff(fec.source_block_number, cur_sbn_);
-
-    if (blk_dist < 0) {
-        blk_dist = -blk_dist;
-    }
-
-    if ((size_t)blk_dist > max_sbn_jump_) {
-        roc_log(LogDebug,
-                "fec reader: too long source block number jump, shutting down:"
-                " cur_sbn=%lu pkt_sbn=%lu dist=%lu",
-                (unsigned long)cur_sbn_, (unsigned long)fec.source_block_number,
-                (unsigned long)blk_dist);
-        return (alive_ = false);
     }
 
     return true;

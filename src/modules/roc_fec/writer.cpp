@@ -10,11 +10,13 @@
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_core/random.h"
+#include "roc_packet/fec_scheme_to_str.h"
 
 namespace roc {
 namespace fec {
 
 Writer::Writer(const WriterConfig& config,
+               packet::FECScheme fec_scheme,
                IBlockEncoder& encoder,
                packet::IWriter& writer,
                packet::IComposer& source_composer,
@@ -38,6 +40,7 @@ Writer::Writer(const WriterConfig& config,
     , cur_sbn_((packet::blknum_t)core::random(packet::blknum_t(-1)))
     , cur_block_repair_sn_((packet::seqnum_t)core::random(packet::seqnum_t(-1)))
     , cur_packet_(0)
+    , fec_scheme_(fec_scheme)
     , valid_(false)
     , alive_(true) {
     if (!resize(config.n_source_packets, config.n_repair_packets)) {
@@ -96,9 +99,7 @@ void Writer::write(const packet::PacketPtr& pp) {
         return;
     }
 
-    if (!pp->fec()) {
-        roc_panic("fec writer: unexpected non-fec packet");
-    }
+    validate_fec_packet_(pp);
 
     if (first_packet_) {
         first_packet_ = false;
@@ -183,21 +184,6 @@ bool Writer::apply_sizes_(size_t sblen, size_t rblen, size_t payload_size) {
     return true;
 }
 
-bool Writer::validate_source_packet_(const packet::PacketPtr& pp) {
-    const size_t payload_size = pp->fec()->payload.size();
-
-    if (payload_size != cur_payload_size_) {
-        roc_log(LogError,
-                "fec writer: can't change payload size in the middle of a block:"
-                " sbn=%lu esi=%lu old_size=%lu new_size=%lu",
-                (unsigned long)cur_sbn_, (unsigned long)cur_packet_,
-                (unsigned long)cur_payload_size_, (unsigned long)payload_size);
-        return (alive_ = false);
-    }
-
-    return true;
-}
-
 void Writer::write_source_packet_(const packet::PacketPtr& pp) {
     encoder_.set(cur_packet_, pp->fec()->payload);
 
@@ -251,7 +237,9 @@ packet::PacketPtr Writer::make_repair_packet_(packet::seqnum_t pack_n) {
 
     packet->set_data(data);
 
+    validate_fec_packet_(packet);
     fill_packet_fec_fields_(packet, (packet::seqnum_t)cur_sblen_ + pack_n);
+
     return packet;
 }
 
@@ -298,6 +286,36 @@ void Writer::fill_packet_fec_fields_(const packet::PacketPtr& packet,
     fec.source_block_number = cur_sbn_;
     fec.source_block_length = cur_sblen_;
     fec.block_length = cur_sblen_ + cur_rblen_;
+}
+
+void Writer::validate_fec_packet_(const packet::PacketPtr& pp) {
+    const packet::FEC* fec = pp->fec();
+
+    if (!fec) {
+        roc_panic("fec writer: unexpected non-fec packet");
+    }
+
+    if (fec->fec_scheme != fec_scheme_) {
+        roc_panic("fec writer: unexpected packet fec scheme:"
+                  " packet_scheme=%s session_scheme=%s",
+                  packet::fec_scheme_to_str(fec->fec_scheme),
+                  packet::fec_scheme_to_str(fec_scheme_));
+    }
+}
+
+bool Writer::validate_source_packet_(const packet::PacketPtr& pp) {
+    const size_t payload_size = pp->fec()->payload.size();
+
+    if (payload_size != cur_payload_size_) {
+        roc_log(LogError,
+                "fec writer: can't change payload size in the middle of a block:"
+                " sbn=%lu esi=%lu old_size=%lu new_size=%lu",
+                (unsigned long)cur_sbn_, (unsigned long)cur_packet_,
+                (unsigned long)cur_payload_size_, (unsigned long)payload_size);
+        return (alive_ = false);
+    }
+
+    return true;
 }
 
 } // namespace fec
