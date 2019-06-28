@@ -32,7 +32,7 @@ core::BufferPool<uint8_t> buffer_pool(allocator, MaxPayloadSize, true);
 class Codec {
 public:
     Codec(const CodecConfig& config)
-        : encoder_(config, allocator)
+        : encoder_(config, buffer_pool, allocator)
         , decoder_(config, buffer_pool, allocator)
         , buffers_(allocator) {
     }

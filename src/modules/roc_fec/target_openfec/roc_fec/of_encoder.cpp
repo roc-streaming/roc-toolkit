@@ -13,7 +13,9 @@
 namespace roc {
 namespace fec {
 
-OFEncoder::OFEncoder(const CodecConfig& config, core::IAllocator& allocator)
+OFEncoder::OFEncoder(const CodecConfig& config,
+                     core::BufferPool<uint8_t>&,
+                     core::IAllocator& allocator)
     : sblen_(0)
     , rblen_(0)
     , payload_size_(0)

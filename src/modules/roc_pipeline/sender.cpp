@@ -89,7 +89,9 @@ Sender::Sender(const SenderConfig& config,
         }
 
         core::UniquePtr<fec::OFEncoder> fec_encoder(
-            new (allocator) fec::OFEncoder(config.fec_encoder, allocator), allocator);
+            new (allocator)
+                fec::OFEncoder(config.fec_encoder, byte_buffer_pool, allocator),
+            allocator);
         if (!fec_encoder || !fec_encoder->valid()) {
             return;
         }

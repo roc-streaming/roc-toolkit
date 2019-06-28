@@ -40,7 +40,9 @@ namespace fec {
 class OFEncoder : public IBlockEncoder, public core::NonCopyable<> {
 public:
     //! Initialize.
-    explicit OFEncoder(const CodecConfig& config, core::IAllocator& allocator);
+    explicit OFEncoder(const CodecConfig& config,
+                       core::BufferPool<uint8_t>& buffer_pool,
+                       core::IAllocator& allocator);
 
     virtual ~OFEncoder();
 
