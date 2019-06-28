@@ -18,6 +18,9 @@
 //! Function never returns.
 #define ROC_ATTR_NORETURN __attribute__((noreturn))
 
+//! Function or variable is never used but no warning should be generated.
+#define ROC_ATTR_UNUSED __attribute__((unused))
+
 //! Structure's fields are packed.
 #define ROC_ATTR_PACKED __attribute__((packed))
 
