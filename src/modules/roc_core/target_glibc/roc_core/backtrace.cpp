@@ -20,7 +20,7 @@ namespace core {
 
 namespace {
 
-enum { MaxDepth = 128 };
+enum { MaxDepth = 128, MaxLen = 128 };
 
 } // namespace
 
@@ -38,34 +38,39 @@ void print_backtrace() {
         char** strings = backtrace_symbols(array, size);
 
         for (int i = 0; i < size; i++) {
-            char* begin = NULL;
-            char* end = NULL;
-            char* mangled = NULL;
+            char* left_paren = NULL;
+            char* right_paren = NULL;
+            char* plus = NULL;
 
             for (char* p = strings[i]; *p; ++p) {
                 if (*p == '(') {
-                    mangled = p;
+                    left_paren = p;
                 } else if (*p == '+') {
-                    begin = p;
+                    plus = p;
                 } else if (*p == ')') {
-                    end = p;
+                    right_paren = p;
                     break;
                 }
             }
 
-            if (mangled && begin && end && mangled < begin) {
-                *mangled++ = '\0';
-                *begin++ = '\0';
-                *end++ = '\0';
+            if (left_paren && right_paren && plus && left_paren + 1 < plus) {
+                size_t mangled_size = size_t(plus - left_paren - 1);
+
+                if (mangled_size < MaxLen - 1) {
+                    char mangled[MaxLen];
+                    memcpy(mangled, left_paren + 1, mangled_size);
+                    mangled[mangled_size] = '\0';
+
+                    int status = -1;
+                    char* demangled = abi::__cxa_demangle(mangled, 0, 0, &status);
+
+                    if (status == 0) {
+                        names[i] = demangled;
+                    }
+                }
             }
 
-            int status = -1;
-
-            if (mangled) {
-                names[i] = abi::__cxa_demangle(mangled, 0, 0, &status);
-            }
-
-            fprintf(stderr, "# %s\n", status == 0 ? names[i] : strings[i]);
+            fprintf(stderr, "# %s\n", names[i] ? names[i] : strings[i]);
         }
 
         /* Call free() only after we've printed backtrace, since free() may
