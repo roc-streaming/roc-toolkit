@@ -47,6 +47,7 @@ core::BufferPool<audio::sample_t> sample_buffer_pool(allocator, MaxBufSize, true
 core::BufferPool<uint8_t> byte_buffer_pool(allocator, MaxBufSize, true);
 packet::PacketPool packet_pool(allocator, true);
 
+fec::CodecMap codec_map;
 rtp::FormatMap format_map;
 rtp::Parser rtp_parser(format_map, NULL);
 rtp::PCMDecoder pcm_decoder(rtp::PCM_int16_2ch);
@@ -76,8 +77,8 @@ TEST_GROUP(sender) {
 TEST(sender, write) {
     packet::Queue queue;
 
-    Sender sender(config, source_port, queue, repair_port, queue, format_map, packet_pool,
-                  byte_buffer_pool, sample_buffer_pool, allocator);
+    Sender sender(config, source_port, queue, repair_port, queue, codec_map, format_map,
+                  packet_pool, byte_buffer_pool, sample_buffer_pool, allocator);
 
     CHECK(sender.valid());
 
@@ -106,8 +107,8 @@ TEST(sender, frame_size_small) {
 
     packet::Queue queue;
 
-    Sender sender(config, source_port, queue, repair_port, queue, format_map, packet_pool,
-                  byte_buffer_pool, sample_buffer_pool, allocator);
+    Sender sender(config, source_port, queue, repair_port, queue, codec_map, format_map,
+                  packet_pool, byte_buffer_pool, sample_buffer_pool, allocator);
 
     CHECK(sender.valid());
 
@@ -136,8 +137,8 @@ TEST(sender, frame_size_large) {
 
     packet::Queue queue;
 
-    Sender sender(config, source_port, queue, repair_port, queue, format_map, packet_pool,
-                  byte_buffer_pool, sample_buffer_pool, allocator);
+    Sender sender(config, source_port, queue, repair_port, queue, codec_map, format_map,
+                  packet_pool, byte_buffer_pool, sample_buffer_pool, allocator);
 
     CHECK(sender.valid());
 

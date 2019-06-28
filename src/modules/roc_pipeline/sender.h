@@ -21,6 +21,7 @@
 #include "roc_core/noncopyable.h"
 #include "roc_core/ticker.h"
 #include "roc_core/unique_ptr.h"
+#include "roc_fec/codec_map.h"
 #include "roc_fec/iblock_encoder.h"
 #include "roc_fec/writer.h"
 #include "roc_packet/interleaver.h"
@@ -43,6 +44,7 @@ public:
            packet::IWriter& source_writer,
            const PortConfig& repair_port,
            packet::IWriter& repair_writer,
+           const fec::CodecMap& codec_map,
            const rtp::FormatMap& format_map,
            packet::PacketPool& packet_pool,
            core::BufferPool<uint8_t>& byte_buffer_pool,

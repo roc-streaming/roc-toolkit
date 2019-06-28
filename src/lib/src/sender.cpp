@@ -20,9 +20,9 @@ bool sender_init_pipeline(roc_sender* sender) {
     sender->sender.reset(
         new (sender->context.allocator) pipeline::Sender(
             sender->config, sender->source_port, *sender->writer, sender->repair_port,
-            *sender->writer, sender->format_map, sender->context.packet_pool,
-            sender->context.byte_buffer_pool, sender->context.sample_buffer_pool,
-            sender->context.allocator),
+            *sender->writer, sender->codec_map, sender->format_map,
+            sender->context.packet_pool, sender->context.byte_buffer_pool,
+            sender->context.sample_buffer_pool, sender->context.allocator),
         sender->context.allocator);
 
     if (!sender->sender) {

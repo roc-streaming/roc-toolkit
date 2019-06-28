@@ -200,6 +200,7 @@ int main(int argc, char** argv) {
     config.timing = !source->has_clock();
     config.input_sample_rate = source->sample_rate();
 
+    fec::CodecMap codec_map;
     rtp::FormatMap format_map;
 
     netio::Transceiver trx(packet_pool, byte_buffer_pool, allocator);
@@ -220,8 +221,8 @@ int main(int argc, char** argv) {
     }
 
     pipeline::Sender sender(config, source_port, *udp_sender, repair_port, *udp_sender,
-                            format_map, packet_pool, byte_buffer_pool, sample_buffer_pool,
-                            allocator);
+                            codec_map, format_map, packet_pool, byte_buffer_pool,
+                            sample_buffer_pool, allocator);
     if (!sender.valid()) {
         roc_log(LogError, "can't create sender pipeline");
         return 1;

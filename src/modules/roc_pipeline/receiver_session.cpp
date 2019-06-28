@@ -10,16 +10,13 @@
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 
-#ifdef ROC_TARGET_OPENFEC
-#include "roc_fec/of_decoder.h"
-#endif
-
 namespace roc {
 namespace pipeline {
 
 ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
                                  const ReceiverCommonConfig& common_config,
                                  const packet::Address& src_address,
+                                 const fec::CodecMap& codec_map,
                                  const rtp::FormatMap& format_map,
                                  packet::PacketPool& packet_pool,
                                  core::BufferPool<uint8_t>& byte_buffer_pool,
@@ -28,9 +25,6 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
     : src_address_(src_address)
     , allocator_(allocator)
     , audio_reader_(NULL) {
-    (void)packet_pool;
-    (void)byte_buffer_pool;
-
     const rtp::Format* format = format_map.format(session_config.payload_type);
     if (!format) {
         return;
@@ -71,7 +65,6 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
     }
     preader = validator_.get();
 
-#ifdef ROC_TARGET_OPENFEC
     if (session_config.fec_decoder.scheme != packet::FEC_None) {
         repair_queue_.reset(new (allocator_) packet::SortedQueue(0), allocator_);
         if (!repair_queue_) {
@@ -81,14 +74,12 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
             return;
         }
 
-        core::UniquePtr<fec::OFDecoder> fec_decoder(
-            new (allocator_)
-                fec::OFDecoder(session_config.fec_decoder, byte_buffer_pool, allocator_),
-            allocator_);
-        if (!fec_decoder || !fec_decoder->valid()) {
+        fec_decoder_.reset(codec_map.new_decoder(session_config.fec_decoder,
+                                                 byte_buffer_pool, allocator_),
+                           allocator_);
+        if (!fec_decoder_) {
             return;
         }
-        fec_decoder_.reset(fec_decoder.release(), allocator_);
 
         fec_parser_.reset(new (allocator_) rtp::Parser(format_map, NULL), allocator_);
         if (!fec_parser_) {
@@ -113,7 +104,6 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
         }
         preader = fec_validator_.get();
     }
-#endif // ROC_TARGET_OPENFEC
 
     decoder_.reset(format->new_decoder(allocator_), allocator_);
     if (!decoder_) {

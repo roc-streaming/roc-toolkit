@@ -210,10 +210,11 @@ int main(int argc, char** argv) {
         return 1;
     }
 
+    fec::CodecMap codec_map;
     rtp::FormatMap format_map;
 
-    pipeline::Receiver receiver(config, format_map, packet_pool, byte_buffer_pool,
-                                sample_buffer_pool, allocator);
+    pipeline::Receiver receiver(config, codec_map, format_map, packet_pool,
+                                byte_buffer_pool, sample_buffer_pool, allocator);
     if (!receiver.valid()) {
         roc_log(LogError, "can't create receiver pipeline");
         return 1;

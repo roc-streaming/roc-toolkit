@@ -61,6 +61,7 @@ struct roc_sender {
 
     roc_context& context;
 
+    roc::fec::CodecMap codec_map;
     roc::rtp::FormatMap format_map;
 
     roc::pipeline::SenderConfig config;
@@ -83,7 +84,9 @@ struct roc_receiver {
 
     roc_context& context;
 
+    roc::fec::CodecMap codec_map;
     roc::rtp::FormatMap format_map;
+
     roc::pipeline::Receiver receiver;
 
     size_t num_channels;

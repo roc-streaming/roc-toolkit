@@ -72,6 +72,7 @@ core::HeapAllocator allocator;
 core::BufferPool<audio::sample_t> sample_buffer_pool(allocator, MaxBufSize, true);
 core::BufferPool<uint8_t> byte_buffer_pool(allocator, MaxBufSize, true);
 packet::PacketPool packet_pool(allocator, true);
+fec::CodecMap codec_map;
 rtp::FormatMap format_map;
 
 } // namespace
@@ -88,6 +89,7 @@ TEST_GROUP(sender_receiver) {
                       queue,
                       repair_port,
                       queue,
+                      codec_map,
                       format_map,
                       packet_pool,
                       byte_buffer_pool,
@@ -97,6 +99,7 @@ TEST_GROUP(sender_receiver) {
         CHECK(sender.valid());
 
         Receiver receiver(receiver_config(),
+                          codec_map,
                           format_map,
                           packet_pool,
                           byte_buffer_pool,

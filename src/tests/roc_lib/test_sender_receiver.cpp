@@ -51,6 +51,10 @@ enum {
     Timeout = TotalSamples * 10
 };
 
+enum {
+    FlagFEC = (1 << 0)
+};
+
 core::HeapAllocator allocator;
 packet::PacketPool packet_pool(allocator, true);
 core::BufferPool<uint8_t> byte_buffer_pool(allocator, MaxBufSize, true);
@@ -85,7 +89,8 @@ public:
            const roc_address* dst_repair_addr,
            float* samples,
            size_t total_samples,
-           size_t frame_size)
+           size_t frame_size,
+           unsigned flags)
         : samples_(samples)
         , total_samples_(total_samples)
         , frame_size_(frame_size) {
@@ -94,12 +99,18 @@ public:
         sndr_ = roc_sender_open(context.get(), &config);
         CHECK(sndr_);
         CHECK(roc_sender_bind(sndr_, &addr) == 0);
-        CHECK(roc_sender_connect(sndr_, ROC_PORT_AUDIO_SOURCE, ROC_PROTO_RTP_RS8M_SOURCE,
-                                 dst_source_addr)
-              == 0);
-        CHECK(roc_sender_connect(sndr_, ROC_PORT_AUDIO_REPAIR, ROC_PROTO_RS8M_REPAIR,
-                                 dst_repair_addr)
-              == 0);
+        if (flags & FlagFEC) {
+            CHECK(roc_sender_connect(sndr_, ROC_PORT_AUDIO_SOURCE,
+                                     ROC_PROTO_RTP_RS8M_SOURCE, dst_source_addr)
+                  == 0);
+            CHECK(roc_sender_connect(sndr_, ROC_PORT_AUDIO_REPAIR, ROC_PROTO_RS8M_REPAIR,
+                                     dst_repair_addr)
+                  == 0);
+        } else {
+            CHECK(roc_sender_connect(sndr_, ROC_PORT_AUDIO_SOURCE, ROC_PROTO_RTP,
+                                     dst_source_addr)
+                  == 0);
+        }
     }
 
     ~Sender() {
@@ -136,7 +147,8 @@ public:
              roc_receiver_config& config,
              const float* samples,
              size_t total_samples,
-             size_t frame_size)
+             size_t frame_size,
+             unsigned flags)
         : samples_(samples)
         , total_samples_(total_samples)
         , frame_size_(frame_size) {
@@ -144,12 +156,18 @@ public:
         CHECK(roc_address_init(&repair_addr_, ROC_AF_AUTO, "127.0.0.1", 0) == 0);
         recv_ = roc_receiver_open(context.get(), &config);
         CHECK(recv_);
-        CHECK(roc_receiver_bind(recv_, ROC_PORT_AUDIO_SOURCE, ROC_PROTO_RTP_RS8M_SOURCE,
-                                &source_addr_)
-              == 0);
-        CHECK(roc_receiver_bind(recv_, ROC_PORT_AUDIO_REPAIR, ROC_PROTO_RS8M_REPAIR,
-                                &repair_addr_)
-              == 0);
+        if (flags & FlagFEC) {
+            CHECK(roc_receiver_bind(recv_, ROC_PORT_AUDIO_SOURCE, ROC_PROTO_RTP_RS8M_SOURCE,
+                                    &source_addr_)
+                  == 0);
+            CHECK(roc_receiver_bind(recv_, ROC_PORT_AUDIO_REPAIR, ROC_PROTO_RS8M_REPAIR,
+                                    &repair_addr_)
+                  == 0);
+        } else {
+            CHECK(roc_receiver_bind(recv_, ROC_PORT_AUDIO_SOURCE, ROC_PROTO_RTP,
+                                    &source_addr_)
+                  == 0);
+        }
     }
 
     ~Receiver() {
@@ -360,34 +378,6 @@ TEST_GROUP(sender_receiver) {
     void setup() {
         roc_log_set_level((roc_log_level)core::Logger::instance().level());
 
-        init_config();
-        init_samples();
-    }
-
-    void init_config() {
-        memset(&sender_conf, 0, sizeof(sender_conf));
-        sender_conf.frame_sample_rate = SampleRate;
-        sender_conf.frame_channels = ROC_CHANNEL_SET_STEREO;
-        sender_conf.frame_encoding = ROC_FRAME_ENCODING_PCM_FLOAT;
-        sender_conf.automatic_timing = 1;
-        sender_conf.resampler_profile = ROC_RESAMPLER_DISABLE;
-        sender_conf.packet_length =
-            PacketSamples * 1000000000ul / (SampleRate * NumChans);
-        sender_conf.fec_code = ROC_FEC_RS8M;
-        sender_conf.fec_block_source_packets = SourcePackets;
-        sender_conf.fec_block_repair_packets = RepairPackets;
-
-        memset(&receiver_conf, 0, sizeof(receiver_conf));
-        receiver_conf.frame_sample_rate = SampleRate;
-        receiver_conf.frame_channels = ROC_CHANNEL_SET_STEREO;
-        receiver_conf.frame_encoding = ROC_FRAME_ENCODING_PCM_FLOAT;
-        receiver_conf.automatic_timing = 1;
-        receiver_conf.resampler_profile = ROC_RESAMPLER_DISABLE;
-        receiver_conf.target_latency = Latency * 1000000000ul / SampleRate;
-        receiver_conf.no_playback_timeout = Timeout * 1000000000ul / SampleRate;
-    }
-
-    void init_samples() {
         const float sstep = 1. / 32768.;
         float sval = -1 + sstep;
         for (size_t i = 0; i < TotalSamples; ++i) {
@@ -398,15 +388,46 @@ TEST_GROUP(sender_receiver) {
             }
         }
     }
+
+    void init_config(unsigned flags) {
+        memset(&sender_conf, 0, sizeof(sender_conf));
+        sender_conf.frame_sample_rate = SampleRate;
+        sender_conf.frame_channels = ROC_CHANNEL_SET_STEREO;
+        sender_conf.frame_encoding = ROC_FRAME_ENCODING_PCM_FLOAT;
+        sender_conf.automatic_timing = 1;
+        sender_conf.resampler_profile = ROC_RESAMPLER_DISABLE;
+        sender_conf.packet_length =
+            PacketSamples * 1000000000ul / (SampleRate * NumChans);
+        if (flags & FlagFEC) {
+            sender_conf.fec_code = ROC_FEC_RS8M;
+            sender_conf.fec_block_source_packets = SourcePackets;
+            sender_conf.fec_block_repair_packets = RepairPackets;
+        } else {
+            sender_conf.fec_code = ROC_FEC_DISABLE;
+        }
+
+        memset(&receiver_conf, 0, sizeof(receiver_conf));
+        receiver_conf.frame_sample_rate = SampleRate;
+        receiver_conf.frame_channels = ROC_CHANNEL_SET_STEREO;
+        receiver_conf.frame_encoding = ROC_FRAME_ENCODING_PCM_FLOAT;
+        receiver_conf.automatic_timing = 1;
+        receiver_conf.resampler_profile = ROC_RESAMPLER_DISABLE;
+        receiver_conf.target_latency = Latency * 1000000000ul / SampleRate;
+        receiver_conf.no_playback_timeout = Timeout * 1000000000ul / SampleRate;
+    }
 };
 
-TEST(sender_receiver, simple) {
+TEST(sender_receiver, bare_rtp) {
+    enum { Flags = 0 };
+
+    init_config(Flags);
+
     Context context;
 
-    Receiver receiver(context, receiver_conf, samples, TotalSamples, FrameSamples);
+    Receiver receiver(context, receiver_conf, samples, TotalSamples, FrameSamples, Flags);
 
     Sender sender(context, sender_conf, receiver.source_addr(), receiver.repair_addr(),
-                  samples, TotalSamples, FrameSamples);
+                  samples, TotalSamples, FrameSamples, Flags);
 
     sender.start();
     receiver.run();
@@ -414,16 +435,37 @@ TEST(sender_receiver, simple) {
 }
 
 #ifdef ROC_TARGET_OPENFEC
-TEST(sender_receiver, losses) {
+TEST(sender_receiver, fec_without_losses) {
+    enum { Flags = FlagFEC };
+
+    init_config(Flags);
+
     Context context;
 
-    Receiver receiver(context, receiver_conf, samples, TotalSamples, FrameSamples);
+    Receiver receiver(context, receiver_conf, samples, TotalSamples, FrameSamples, Flags);
+
+    Sender sender(context, sender_conf, receiver.source_addr(), receiver.repair_addr(),
+                  samples, TotalSamples, FrameSamples, Flags);
+
+    sender.start();
+    receiver.run();
+    sender.join();
+}
+
+TEST(sender_receiver, fec_with_losses) {
+    enum { Flags = FlagFEC };
+
+    init_config(Flags);
+
+    Context context;
+
+    Receiver receiver(context, receiver_conf, samples, TotalSamples, FrameSamples, Flags);
 
     Proxy proxy(receiver.source_addr(), receiver.repair_addr(), SourcePackets,
                 RepairPackets);
 
     Sender sender(context, sender_conf, proxy.source_addr(), proxy.repair_addr(), samples,
-                  TotalSamples, FrameSamples);
+                  TotalSamples, FrameSamples, Flags);
 
     proxy.start();
 

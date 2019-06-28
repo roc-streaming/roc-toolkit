@@ -16,12 +16,14 @@ namespace roc {
 namespace pipeline {
 
 Receiver::Receiver(const ReceiverConfig& config,
+                   const fec::CodecMap& codec_map,
                    const rtp::FormatMap& format_map,
                    packet::PacketPool& packet_pool,
                    core::BufferPool<uint8_t>& byte_buffer_pool,
                    core::BufferPool<audio::sample_t>& sample_buffer_pool,
                    core::IAllocator& allocator)
-    : format_map_(format_map)
+    : codec_map_(codec_map)
+    , format_map_(format_map)
     , packet_pool_(packet_pool)
     , byte_buffer_pool_(byte_buffer_pool)
     , sample_buffer_pool_(sample_buffer_pool)
@@ -239,7 +241,7 @@ bool Receiver::create_session_(const packet::PacketPtr& packet) {
             packet::address_to_str(dst_address).c_str());
 
     core::SharedPtr<ReceiverSession> sess = new (allocator_)
-        ReceiverSession(sess_config, config_.common, src_address, format_map_,
+        ReceiverSession(sess_config, config_.common, src_address, codec_map_, format_map_,
                         packet_pool_, byte_buffer_pool_, sample_buffer_pool_, allocator_);
 
     if (!sess || !sess->valid()) {

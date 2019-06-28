@@ -10,10 +10,6 @@
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 
-#ifdef ROC_TARGET_OPENFEC
-#include "roc_fec/of_encoder.h"
-#endif
-
 namespace roc {
 namespace pipeline {
 
@@ -22,6 +18,7 @@ Sender::Sender(const SenderConfig& config,
                packet::IWriter& source_writer,
                const PortConfig& repair_port_config,
                packet::IWriter& repair_writer,
+               const fec::CodecMap& codec_map,
                const rtp::FormatMap& format_map,
                packet::PacketPool& packet_pool,
                core::BufferPool<uint8_t>& byte_buffer_pool,
@@ -31,9 +28,6 @@ Sender::Sender(const SenderConfig& config,
     , config_(config)
     , timestamp_(0)
     , num_channels_(packet::num_channels(config.input_channels)) {
-    (void)repair_port_config;
-    (void)repair_writer;
-
     const rtp::Format* format = format_map.format(config.payload_type);
     if (!format) {
         return;
@@ -63,7 +57,6 @@ Sender::Sender(const SenderConfig& config,
         return;
     }
 
-#ifdef ROC_TARGET_OPENFEC
     if (config.fec_encoder.scheme != packet::FEC_None) {
         repair_port_.reset(new (allocator)
                                SenderPort(repair_port_config, repair_writer, allocator),
@@ -88,14 +81,12 @@ Sender::Sender(const SenderConfig& config,
             pwriter = interleaver_.get();
         }
 
-        core::UniquePtr<fec::OFEncoder> fec_encoder(
-            new (allocator)
-                fec::OFEncoder(config.fec_encoder, byte_buffer_pool, allocator),
+        fec_encoder_.reset(
+            codec_map.new_encoder(config.fec_encoder, byte_buffer_pool, allocator),
             allocator);
-        if (!fec_encoder || !fec_encoder->valid()) {
+        if (!fec_encoder_) {
             return;
         }
-        fec_encoder_.reset(fec_encoder.release(), allocator);
 
         fec_writer_.reset(new (allocator) fec::Writer(
                               config.fec_writer, *fec_encoder_, *pwriter,
@@ -107,7 +98,6 @@ Sender::Sender(const SenderConfig& config,
         }
         pwriter = fec_writer_.get();
     }
-#endif // ROC_TARGET_OPENFEC
 
     encoder_.reset(format->new_encoder(allocator), allocator);
     if (!encoder_) {

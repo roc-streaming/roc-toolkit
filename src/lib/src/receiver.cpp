@@ -27,6 +27,7 @@ void receiver_close_port(void* arg, const pipeline::PortConfig& port) {
 roc_receiver::roc_receiver(roc_context& ctx, pipeline::ReceiverConfig& cfg)
     : context(ctx)
     , receiver(cfg,
+               codec_map,
                format_map,
                context.packet_pool,
                context.byte_buffer_pool,

@@ -22,6 +22,7 @@
 #include "roc_core/mutex.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/unique_ptr.h"
+#include "roc_fec/codec_map.h"
 #include "roc_packet/ireader.h"
 #include "roc_packet/iwriter.h"
 #include "roc_packet/packet_pool.h"
@@ -41,6 +42,7 @@ class Receiver : public sndio::ISource,
 public:
     //! Initialize.
     Receiver(const ReceiverConfig& config,
+             const fec::CodecMap& codec_map,
              const rtp::FormatMap& format_map,
              packet::PacketPool& packet_pool,
              core::BufferPool<uint8_t>& byte_buffer_pool,
@@ -96,6 +98,7 @@ private:
 
     ReceiverSessionConfig make_session_config_(const packet::PacketPtr& packet) const;
 
+    const fec::CodecMap& codec_map_;
     const rtp::FormatMap& format_map_;
 
     packet::PacketPool& packet_pool_;
