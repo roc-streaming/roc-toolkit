@@ -10,12 +10,13 @@
 
 #include "test_fec_schemes.h"
 
+#include "roc_core/array.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_core/log.h"
 #include "roc_core/random.h"
-#include "roc_fec/of_decoder.h"
-#include "roc_fec/of_encoder.h"
+#include "roc_core/unique_ptr.h"
+#include "roc_fec/codec_map.h"
 
 namespace roc {
 namespace fec {
@@ -27,32 +28,36 @@ const size_t MaxPayloadSize = 1024;
 core::HeapAllocator allocator;
 core::BufferPool<uint8_t> buffer_pool(allocator, MaxPayloadSize, true);
 
+CodecMap codec_map;
+
 } // namespace
 
 class Codec {
 public:
     Codec(const CodecConfig& config)
-        : encoder_(config, buffer_pool, allocator)
-        , decoder_(config, buffer_pool, allocator)
+        : encoder_(codec_map.new_encoder(config, buffer_pool, allocator), allocator)
+        , decoder_(codec_map.new_decoder(config, buffer_pool, allocator), allocator)
         , buffers_(allocator) {
+        CHECK(encoder_);
+        CHECK(decoder_);
     }
 
     void encode(size_t n_source, size_t n_repair, size_t p_size) {
         CHECK(buffers_.resize(n_source + n_repair));
 
-        CHECK(encoder_.begin(n_source, n_repair, p_size));
+        CHECK(encoder_->begin(n_source, n_repair, p_size));
 
         for (size_t i = 0; i < n_source + n_repair; ++i) {
             buffers_[i] = make_buffer_(p_size);
-            encoder_.set(i, buffers_[i]);
+            encoder_->set(i, buffers_[i]);
         }
-        encoder_.fill();
-        encoder_.end();
+        encoder_->fill();
+        encoder_->end();
     }
 
     bool decode(size_t n_source, size_t p_size) {
         for (size_t i = 0; i < n_source; ++i) {
-            core::Slice<uint8_t> decoded = decoder_.repair(i);
+            core::Slice<uint8_t> decoded = decoder_->repair(i);
             if (!decoded) {
                 return false;
             }
@@ -67,11 +72,11 @@ public:
     }
 
     IBlockEncoder& encoder() {
-        return encoder_;
+        return *encoder_;
     }
 
     IBlockDecoder& decoder() {
-        return decoder_;
+        return *decoder_;
     }
 
     const core::Slice<uint8_t>& get_buffer(const size_t i) {
@@ -88,8 +93,8 @@ private:
         return buf;
     }
 
-    OFEncoder encoder_;
-    OFDecoder decoder_;
+    core::UniquePtr<IBlockEncoder> encoder_;
+    core::UniquePtr<IBlockDecoder> decoder_;
 
     core::Array<core::Slice<uint8_t> > buffers_;
 };
@@ -219,19 +224,14 @@ TEST(encoder_decoder, full_repair_payload_sizes) {
 }
 
 TEST(encoder_decoder, max_source_block) {
-    size_t test_cases[] = { OF_REED_SOLOMON_MAX_NB_ENCODING_SYMBOLS_DEFAULT,
-                            OF_LDPC_STAIRCASE_MAX_NB_ENCODING_SYMBOLS_DEFAULT };
-
-    CHECK(ROC_ARRAY_SIZE(test_cases) == Test_n_fec_schemes);
-
     for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; ++n_scheme) {
         CodecConfig config;
         config.scheme = Test_fec_schemes[n_scheme];
 
         Codec code(config);
 
-        CHECK(code.encoder().max_block_length() == test_cases[n_scheme]);
-        CHECK(code.decoder().max_block_length() == test_cases[n_scheme]);
+        CHECK(code.encoder().max_block_length() > 0);
+        CHECK(code.decoder().max_block_length() > 0);
     }
 }
 
