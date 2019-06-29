@@ -11,6 +11,7 @@
 #include "roc_core/log.h"
 #include "roc_packet/address_to_str.h"
 #include "roc_pipeline/port_to_str.h"
+#include "roc_pipeline/port_utils.h"
 
 using namespace roc;
 
@@ -48,6 +49,19 @@ bool sender_set_port(roc_sender* sender,
             return false;
         }
 
+        if (!pipeline::validate_port(sender->config.fec_encoder.scheme,
+                                     port_config.protocol, pipeline::Port_AudioSource)) {
+            return false;
+        }
+
+        if (sender->repair_port.protocol != pipeline::Proto_None) {
+            if (!pipeline::validate_ports(sender->config.fec_encoder.scheme,
+                                          port_config.protocol,
+                                          sender->repair_port.protocol)) {
+                return false;
+            }
+        }
+
         sender->source_port = port_config;
 
         roc_log(LogInfo, "roc_sender: set audio source port to %s",
@@ -61,10 +75,17 @@ bool sender_set_port(roc_sender* sender,
             return false;
         }
 
-        if (sender->config.fec_encoder.scheme == packet::FEC_None) {
-            roc_log(LogError,
-                    "roc_sender: can't set audio repair port when fec is disabled");
+        if (!pipeline::validate_port(sender->config.fec_encoder.scheme,
+                                     port_config.protocol, pipeline::Port_AudioRepair)) {
             return false;
+        }
+
+        if (sender->source_port.protocol != pipeline::Proto_None) {
+            if (!pipeline::validate_ports(sender->config.fec_encoder.scheme,
+                                          sender->source_port.protocol,
+                                          port_config.protocol)) {
+                return false;
+            }
         }
 
         sender->repair_port = port_config;

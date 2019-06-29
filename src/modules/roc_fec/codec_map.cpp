@@ -85,8 +85,8 @@ const CodecMap::Codec* CodecMap::find_codec_(packet::FECScheme scheme) const {
         }
     }
 
-    roc_log(LogError, "codec map: no supported codec found: scheme=%s n_codecs=%lu",
-            packet::fec_scheme_to_str(scheme), (unsigned long)n_codecs_);
+    roc_log(LogError, "codec map: no codec available for fec scheme '%s'",
+            packet::fec_scheme_to_str(scheme));
 
     return NULL;
 }

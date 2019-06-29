@@ -24,8 +24,7 @@ bool match_proto(PortType type, const char* str, PortProtocol& proto) {
         } else if (strcmp(str, "rtp+ldpc") == 0) {
             proto = Proto_RTP_LDPC_Source;
         } else {
-            roc_log(LogError,
-                    "parse port: bad protocol: unsupported source port protocol '%s'",
+            roc_log(LogError, "parse port: '%s' is not a valid source port protocol",
                     str);
             return false;
         }
@@ -37,8 +36,7 @@ bool match_proto(PortType type, const char* str, PortProtocol& proto) {
         } else if (strcmp(str, "ldpc") == 0) {
             proto = Proto_LDPC_Repair;
         } else {
-            roc_log(LogError,
-                    "parse port: bad protocol: unsupported repair port protocol '%s'",
+            roc_log(LogError, "parse port: '%s' is not a valid repair port protocol",
                     str);
             return false;
         }

@@ -45,6 +45,7 @@ address_to_str::address_to_str(const Address& addr) {
         break;
     }
     default:
+        strcpy(buffer_, "none");
         break;
     }
 }

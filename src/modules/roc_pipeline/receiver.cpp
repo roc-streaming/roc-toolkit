@@ -11,6 +11,7 @@
 #include "roc_core/panic.h"
 #include "roc_core/shared_ptr.h"
 #include "roc_packet/address_to_str.h"
+#include "roc_pipeline/port_to_str.h"
 
 namespace roc {
 namespace pipeline {
@@ -58,6 +59,8 @@ bool Receiver::valid() {
 }
 
 bool Receiver::add_port(const PortConfig& config) {
+    roc_log(LogInfo, "receiver: adding port %s", port_to_str(config).c_str());
+
     core::Mutex::Lock lock(control_mutex_);
 
     core::SharedPtr<ReceiverPort> port =

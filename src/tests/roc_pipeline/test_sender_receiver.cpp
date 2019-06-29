@@ -181,8 +181,7 @@ TEST_GROUP(sender_receiver) {
             port_config.address = new_address(31);
             port_config.protocol = Proto_LDPC_Repair;
         } else {
-            port_config.address = new_address(30);
-            port_config.protocol = Proto_RTP;
+            port_config.protocol = Proto_None;
         }
         return port_config;
     }

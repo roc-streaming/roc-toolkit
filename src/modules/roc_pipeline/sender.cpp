@@ -9,6 +9,8 @@
 #include "roc_pipeline/sender.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
+#include "roc_pipeline/port_to_str.h"
+#include "roc_pipeline/port_utils.h"
 
 namespace roc {
 namespace pipeline {
@@ -28,6 +30,16 @@ Sender::Sender(const SenderConfig& config,
     , config_(config)
     , timestamp_(0)
     , num_channels_(packet::num_channels(config.input_channels)) {
+    roc_log(LogInfo, "sender: using remote source port %s",
+            port_to_str(source_port_config).c_str());
+    roc_log(LogInfo, "sender: using remote repair port %s",
+            port_to_str(repair_port_config).c_str());
+
+    if (!validate_ports(config.fec_encoder.scheme, source_port_config.protocol,
+                        repair_port_config.protocol)) {
+        return;
+    }
+
     const rtp::Format* format = format_map.format(config.payload_type);
     if (!format) {
         return;

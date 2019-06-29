@@ -12,9 +12,6 @@ section "Options"
     option "source" s "Remote source port triplet" typestr="PORT" string required
     option "repair" r "Remote repair port triplet" typestr="PORT" string optional
 
-    option "fec" - "FEC scheme"
-        values="rs8m","ldpc","none" default="rs8m" enum optional
-
     option "nbsrc" - "Number of source packets in FEC block"
         int optional
 

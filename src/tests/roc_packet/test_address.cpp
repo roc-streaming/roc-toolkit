@@ -24,7 +24,7 @@ TEST(address, invalid) {
     UNSIGNED_LONGS_EQUAL(-1, addr.version());
     LONGS_EQUAL(-1, addr.port());
 
-    STRCMP_EQUAL("", address_to_str(addr).c_str());
+    STRCMP_EQUAL("none", address_to_str(addr).c_str());
 }
 
 TEST(address, set_ipv4) {

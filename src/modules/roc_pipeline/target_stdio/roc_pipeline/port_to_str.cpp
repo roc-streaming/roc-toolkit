@@ -14,9 +14,17 @@
 namespace roc {
 namespace pipeline {
 
-namespace {
+const char* port_type_to_str(PortType type) {
+    switch (type) {
+    case Port_AudioSource:
+        return "source";
+    case Port_AudioRepair:
+        return "repair";
+    }
+    return "?";
+}
 
-const char* proto_to_str(PortProtocol proto) {
+const char* port_proto_to_str(PortProtocol proto) {
     switch (proto) {
     case Proto_None:
         return "none";
@@ -34,12 +42,10 @@ const char* proto_to_str(PortProtocol proto) {
     return "?";
 }
 
-} // namespace
-
 port_to_str::port_to_str(const PortConfig& port) {
     buffer_[0] = '\0';
 
-    if (snprintf(buffer_, sizeof(buffer_), "%s:%s", proto_to_str(port.protocol),
+    if (snprintf(buffer_, sizeof(buffer_), "%s:%s", port_proto_to_str(port.protocol),
                  packet::address_to_str(port.address).c_str())
         < 0) {
         roc_log(LogError, "port to str: can't format port");

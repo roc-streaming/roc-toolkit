@@ -15,6 +15,7 @@
 #include "roc_core/unique_ptr.h"
 #include "roc_netio/transceiver.h"
 #include "roc_pipeline/parse_port.h"
+#include "roc_pipeline/port_utils.h"
 #include "roc_pipeline/sender.h"
 #include "roc_sndio/backend_dispatcher.h"
 #include "roc_sndio/pump.h"
@@ -85,26 +86,11 @@ int main(int argc, char** argv) {
         }
     }
 
-    switch ((unsigned)args.fec_arg) {
-    case fec_arg_none:
-        config.fec_encoder.scheme = packet::FEC_None;
-        break;
-
-    case fec_arg_rs8m:
-        config.fec_encoder.scheme = packet::FEC_ReedSolomon_M8;
-        break;
-
-    case fec_arg_ldpc:
-        config.fec_encoder.scheme = packet::FEC_LDPC_Staircase;
-        break;
-
-    default:
-        roc_panic("unexpected fec scheme");
-    }
+    config.fec_encoder.scheme = pipeline::port_fec_scheme(source_port.protocol);
 
     if (args.nbsrc_given) {
         if (config.fec_encoder.scheme == packet::FEC_None) {
-            roc_log(LogError, "--nbsrc can't be used when --fec=none)");
+            roc_log(LogError, "--nbsrc can't be used when fec is disabled)");
             return 1;
         }
         if (args.nbsrc_arg <= 0) {
@@ -116,7 +102,7 @@ int main(int argc, char** argv) {
 
     if (args.nbrpr_given) {
         if (config.fec_encoder.scheme == packet::FEC_None) {
-            roc_log(LogError, "--nbrpr can't be used when --fec=none");
+            roc_log(LogError, "--nbrpr can't be used when fec is disabled");
             return 1;
         }
         if (args.nbrpr_arg <= 0) {

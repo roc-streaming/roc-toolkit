@@ -21,7 +21,6 @@ Options
 -d, --driver=DRIVER       Input driver
 -s, --source=PORT         Remote source port triplet
 -r, --repair=PORT         Remote repair port triplet
---fec=ENUM                FEC scheme  (possible values="rs8m", "ldpc", "none" default=`rs8m')
 --nbsrc=INT               Number of source packets in FEC block
 --nbrpr=INT               Number of repair packets in FEC block
 --packet-length=STRING    Outgoing packet length, TIME units
@@ -137,13 +136,13 @@ Select the LDPC-Staircase FEC scheme and a larger block size:
 .. code::
 
     $ roc-send -vv -s rtp+ldpc:192.168.0.3:10003 -r ldpc:192.168.0.3:10004 -i ./file.wav \
-      --fec=ldpc --nbsrc=1000 --nbrpr=500
+      --nbsrc=1000 --nbrpr=500
 
 Select bare RTP without FEC:
 
 .. code::
 
-    $ roc-send -vv -s rtp:192.168.0.3:10005 -i ./file.wav --fec=none
+    $ roc-send -vv -s rtp:192.168.0.3:10005 -i ./file.wav
 
 Select resampler profile:
 

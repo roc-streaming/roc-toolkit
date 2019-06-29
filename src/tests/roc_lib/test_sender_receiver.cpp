@@ -51,9 +51,7 @@ enum {
     Timeout = TotalSamples * 10
 };
 
-enum {
-    FlagFEC = (1 << 0)
-};
+enum { FlagFEC = (1 << 0) };
 
 core::HeapAllocator allocator;
 packet::PacketPool packet_pool(allocator, true);
@@ -157,8 +155,8 @@ public:
         recv_ = roc_receiver_open(context.get(), &config);
         CHECK(recv_);
         if (flags & FlagFEC) {
-            CHECK(roc_receiver_bind(recv_, ROC_PORT_AUDIO_SOURCE, ROC_PROTO_RTP_RS8M_SOURCE,
-                                    &source_addr_)
+            CHECK(roc_receiver_bind(recv_, ROC_PORT_AUDIO_SOURCE,
+                                    ROC_PROTO_RTP_RS8M_SOURCE, &source_addr_)
                   == 0);
             CHECK(roc_receiver_bind(recv_, ROC_PORT_AUDIO_REPAIR, ROC_PROTO_RS8M_REPAIR,
                                     &repair_addr_)
