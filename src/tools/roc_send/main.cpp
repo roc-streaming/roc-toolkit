@@ -196,7 +196,12 @@ int main(int argc, char** argv) {
     }
 
     packet::Address local_addr;
-    if (!local_addr.set_ipv4("0.0.0.0", 0)) {
+    if (source_port.address.version() == 6) {
+        local_addr.set_ipv6("::", 0);
+    } else {
+        local_addr.set_ipv4("0.0.0.0", 0);
+    }
+    if (!local_addr.valid()) {
         roc_panic("can't initialize local address");
     }
 

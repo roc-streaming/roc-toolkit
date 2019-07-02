@@ -127,5 +127,72 @@ TEST(address, eq_ipv6) {
     CHECK(addr1 != addr4);
 }
 
+TEST(address, multicast_ipv4) {
+    {
+        Address addr;
+        CHECK(addr.set_ipv4("223.255.255.255", 123));
+        CHECK(addr.valid());
+        CHECK(!addr.multicast());
+    }
+
+    {
+        Address addr;
+        CHECK(addr.set_ipv4("224.0.0.0", 123));
+        CHECK(addr.valid());
+        CHECK(addr.multicast());
+    }
+
+    {
+        Address addr;
+        CHECK(addr.set_ipv4("227.128.128.128", 123));
+        CHECK(addr.valid());
+        CHECK(addr.multicast());
+    }
+
+    {
+        Address addr;
+        CHECK(addr.set_ipv4("239.255.255.255", 123));
+        CHECK(addr.valid());
+        CHECK(addr.multicast());
+    }
+
+    {
+        Address addr;
+        CHECK(addr.set_ipv4("240.0.0.0", 123));
+        CHECK(addr.valid());
+        CHECK(!addr.multicast());
+    }
+}
+
+TEST(address, multicast_ipv6) {
+    {
+        Address addr;
+        CHECK(addr.set_ipv6("fe00::", 123));
+        CHECK(addr.valid());
+        CHECK(!addr.multicast());
+    }
+
+    {
+        Address addr;
+        CHECK(addr.set_ipv6("ff00::", 123));
+        CHECK(addr.valid());
+        CHECK(addr.multicast());
+    }
+
+    {
+        Address addr;
+        CHECK(addr.set_ipv6("ff11:1:1:1:1:1:1:1", 123));
+        CHECK(addr.valid());
+        CHECK(addr.multicast());
+    }
+
+    {
+        Address addr;
+        CHECK(addr.set_ipv6("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff", 123));
+        CHECK(addr.valid());
+        CHECK(addr.multicast());
+    }
+}
+
 } // namespace packet
 } // namespace roc

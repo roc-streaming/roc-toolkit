@@ -104,23 +104,35 @@ Time
 EXAMPLES
 ========
 
-Listen on two ports on all interfaces:
+Listen on two ports on all IPv4 interfaces (but not IPv6):
 
 .. code::
 
     $ roc-recv -vv -s rtp+rs8m::10001 -r rs8m::10002
 
-Listen on two ports on particular interface:
+Listen on two ports on all IPv6 interfaces (but not IPv4):
+
+.. code::
+
+    $ roc-recv -vv -s rtp+rs8m:[::]:10001 -r rs8m:[::]:10002
+
+Listen on two ports on a particular interface:
 
 .. code::
 
     $ roc-recv -vv -s rtp+rs8m:192.168.0.3:10001 -r rs8m:192.168.0.3:10002
 
-Listen on multiple ports (two for Reed-Solomon, two for LDPC, one for bare RTP):
+Listen on two Reed-Solomon ports, two LDPC ports, and one bare RTP port:
 
 .. code::
 
     $ roc-recv -vv -s rtp+rs8m::10001 -r rs8m::10002 -s rtp+ldpc::10003 -r ldpc::10004 -s rtp::10005
+
+Listen on two ports on all IPv4 interfaces and on two ports on all IPv6 interfaces:
+
+.. code::
+
+    $ roc-recv -vv -s rtp+rs8m::10001 -r rs8m::10002 -s rtp+rs8m:[::]:10001 -r rs8m:[::]:10002
 
 Output to the default ALSA device:
 

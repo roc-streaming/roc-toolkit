@@ -52,13 +52,20 @@ bool UDPReceiver::start(packet::Address& bind_address) {
     handle_initialized_ = true;
 
     unsigned flags = 0;
-    if (bind_address.port() > 0) {
+    if (bind_address.multicast() && bind_address.port() > 0) {
         flags |= UV_UDP_REUSEADDR;
     }
 
-    if (int err = uv_udp_bind(&handle_, bind_address.saddr(), flags)) {
-        roc_log(LogError, "udp receiver: uv_udp_bind(): [%s] %s", uv_err_name(err),
-                uv_strerror(err));
+    int bind_err = UV_EINVAL;
+    if (bind_address.version() == 6) {
+        bind_err = uv_udp_bind(&handle_, bind_address.saddr(), flags | UV_UDP_IPV6ONLY);
+    }
+    if (bind_err == UV_EINVAL || bind_err == UV_ENOTSUP) {
+        bind_err = uv_udp_bind(&handle_, bind_address.saddr(), flags);
+    }
+    if (bind_err != 0) {
+        roc_log(LogError, "udp receiver: uv_udp_bind(): [%s] %s", uv_err_name(bind_err),
+                uv_strerror(bind_err));
         return false;
     }
 
