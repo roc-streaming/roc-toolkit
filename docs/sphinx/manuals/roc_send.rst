@@ -101,6 +101,12 @@ Send WAV file:
 
     $ roc-send -vv -s rtp+rs8m:192.168.0.3:10001 -r rs8m:192.168.0.3:10002 -i ./file.wav
 
+Send WAV file to an IPv6 receiver:
+
+.. code::
+
+    $ roc-send -vv -s rtp+rs8m:[2001:db8::]:10001 -r rs8m:[2001:db8::]:10002 -i ./file.wav
+
 Send WAV from stdin:
 
 .. code::

@@ -92,6 +92,17 @@ int Address::port() const {
     }
 }
 
+bool Address::multicast() const {
+    switch (family_()) {
+    case AF_INET:
+        return IN_MULTICAST(ntohl(sa_.addr4.sin_addr.s_addr));
+    case AF_INET6:
+        return IN6_IS_ADDR_MULTICAST(&sa_.addr6.sin6_addr);
+    default:
+        return false;
+    }
+}
+
 bool Address::get_ip(char* buf, size_t bufsz) const {
     switch (family_()) {
     case AF_INET:

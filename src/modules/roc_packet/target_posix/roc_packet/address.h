@@ -53,6 +53,9 @@ public:
     //! Get address port.
     int port() const;
 
+    //! Check whether this is multicast address.
+    bool multicast() const;
+
     //! Get IP address.
     bool get_ip(char* buf, size_t bufsz) const;
 
