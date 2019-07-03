@@ -44,6 +44,7 @@ API
 ===
 
 - ☑ Transport API (network sender and receiver)
+- ☐ Audio API (recorder and player)
 - ☐ Control API
 - ☐ Discovery API (publisher and explorer)
 - ☐ Packet API (packet encoder and decoder)
@@ -54,7 +55,7 @@ Tools
 - ☑ Sender
 - ☑ Receiver
 - ☑ Converter
-- ☐ Relay (to improve quality of service of existing applications without modifying them)
+- ☐ Relay
 
 Integrations
 ============

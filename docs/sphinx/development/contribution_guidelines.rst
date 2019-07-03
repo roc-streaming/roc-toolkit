@@ -1,0 +1,79 @@
+Contribution guidelines
+***********************
+
+.. contents:: Table of contents:
+   :local:
+   :depth: 1
+
+How you can help
+================
+
+If you would like to help the project, you can:
+
+* **help with testing**
+
+  Try to use Roc command-line tools or PulseAudio modules and report bugs or suggest improvements.
+
+* **help with research**
+
+  Discover how does Roc perform on different conditions and configurations and share the results. What latency and service quality does it provide in different cases, what parameter combinations are optimal, and so on.
+
+* **help with porting**
+
+  We'd be happy to meet developers who can help with maintaining ports for non-Linux \*nix systems, macOS, Android, Windows, and other platforms.
+
+* **contribute code**
+
+  Roc has quite a long and pretty interesting roadmap and a backlog with issues of varying difficulty. Read the documentation, choose a task, and submit pull requests!
+
+How to choose a task
+====================
+
+Want to contribute code? Great! Here is how you can choose a task.
+
+.. note::
+
+   It is highly recommended to leave a comment on GitHub or throw a mail to the mailing list before starting working on an issue to ensure that nobody is already working on it.
+
+* **"help wanted" tag**
+
+  Look for issues marked with the `"help wanted" <https://github.com/roc-project/roc/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22>`_ tag. This tag means that this is an important and awaited issue but we have no human resources for it yet, and it is still in the backlog.
+
+* **"easy hacks" tag**
+
+  Look for issues that are additionally marked with the `"easy hacks" <https://github.com/roc-project/roc/issues?q=is%3Aissue+is%3Aopen+label%3A%22easy+hacks%22>`_ tag. This tag means that the solution is expected to be straightforward even if you are new to the project.
+
+* **backlog column**
+
+  Look for issues in the "Backlog" column in the `project board <https://github.com/roc-project/roc/projects/2>`_. Issues that are *not* marked as "help wanted" are probably not very good for you if you're new to the project, but you can take your chances if you would like to.
+
+* **project roadmap**
+
+  Look for unimplemented features in the long-term :doc:`project roadmap </development/roadmap>`. If there is no issue for a feature yet, it means that nobody had thought through it yet and strictly speaking it is unknown how much work does it require.
+
+* **suggest your own**
+
+  Of course, you're also welcome to open an issue and suggest a feature that is not in our backlog and roadmap yet.
+
+How to contribute code
+======================
+
+When you have chosen a task and are ready to work on it, the following documentation will be your friend:
+
+* **project internals**
+
+  See :doc:`/internals` section for a high-level overview.
+
+  See also more low-level `Doxygen-generated documentation <https://roc-project.github.io/roc/doxygen/>`_.
+
+* **coding guidelines**
+
+  Please take a look at the :doc:`/development/coding_guidelines` page. The guidelines are not hard to follow but some of them a specific.
+
+* **version control**
+
+  Please also take a look at the :doc:`/development/version_control` page for details on commits, branches, and pull requests.
+
+* **authorship**
+
+  Feel free to add yourself to the :doc:`/about_project/authors` page when submitting a pull request.

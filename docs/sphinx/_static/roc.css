@@ -9,7 +9,7 @@ div.related {
     color: #FFFDAB;
 }
 
-div.topic, div.seealso {
+div.topic, div.note, div.seealso {
     background-color: #fafaf5;
     border: 1px solid #eee;
 }

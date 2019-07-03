@@ -191,9 +191,9 @@ SEE ALSO
 BUGS
 ====
 
-Please report any bugs found via GitHub issues (https://github.com/roc-project/roc/).
+Please report any bugs found via GitHub (https://github.com/roc-project/roc/).
 
 AUTHORS
 =======
 
-See the AUTHORS file for a list of maintainers and contributors.
+See `authors <https://roc-project.github.io/roc/docs/about_project/authors.html>`_ page on the website for a list of maintainers and contributors.

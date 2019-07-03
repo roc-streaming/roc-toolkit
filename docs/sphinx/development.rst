@@ -6,5 +6,7 @@ Development
 
    development/changelog
    development/roadmap
-   development/guidelines
+   development/contribution_guidelines
+   development/coding_guidelines
+   development/version_control
    development/continuous_integration
