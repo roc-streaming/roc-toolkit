@@ -21,9 +21,10 @@
 #include "roc_core/list_node.h"
 #include "roc_core/mutex.h"
 #include "roc_core/thread.h"
-#include "roc_netio/handle.h"
-#include "roc_netio/udp_receiver.h"
-#include "roc_netio/udp_sender.h"
+#include "roc_netio/basic_port.h"
+#include "roc_netio/iclose_handler.h"
+#include "roc_netio/udp_receiver_port.h"
+#include "roc_netio/udp_sender_port.h"
 #include "roc_packet/address.h"
 #include "roc_packet/iwriter.h"
 #include "roc_packet/packet_pool.h"
@@ -32,26 +33,24 @@ namespace roc {
 namespace netio {
 
 //! Network sender/receiver.
-class Transceiver : private core::Thread {
+class Transceiver : private ICloseHandler, private core::Thread {
 public:
     //! Initialize.
     //!
     //! @remarks
-    //!  Start background thread.
+    //!  Start background thread if the object was successfully constructed.
     Transceiver(packet::PacketPool& packet_pool,
                 core::BufferPool<uint8_t>& buffer_pool,
                 core::IAllocator& allocator);
 
+    //! Destroy. Stop all receivers and senders.
+    //!
+    //! @remarks
+    //!  Wait until background thread finishes.
     virtual ~Transceiver();
 
     //! Check if transceiver was successfully constructed.
     bool valid() const;
-
-    //! Stop all receivers and senders.
-    //!
-    //! @remarks
-    //!  May be called from any thread. Wait until background thread finishes.
-    void stop();
 
     //! Get number of receiver and sender ports.
     size_t num_ports() const;
@@ -67,7 +66,7 @@ public:
     //! back to @p bind_address.
     //!
     //! @returns
-    //!  true on success or false if error occured
+    //!  true on success or false if error occurred
     bool add_udp_receiver(packet::Address& bind_address, packet::IWriter& writer);
 
     //! Add UDP datagram sender port.
@@ -81,10 +80,10 @@ public:
     //! back to @p bind_address.
     //!
     //! @returns
-    //!  a new packet writer on success or null if error occured
+    //!  a new packet writer on success or null if error occurred
     packet::IWriter* add_udp_sender(packet::Address& bind_address);
 
-    //! Remove sender or receiver port.
+    //! Remove sender or receiver port. Wait until port will be removed.
     void remove_port(packet::Address bind_address);
 
 private:
@@ -93,19 +92,16 @@ private:
 
         packet::Address* address;
         packet::IWriter* writer;
+        BasicPort* port;
 
         bool result;
         bool done;
-
-        void execute(Transceiver& trx) {
-            result = (trx.*fn)(*this);
-            done = true;
-        }
 
         Task()
             : fn(NULL)
             , address(NULL)
             , writer(NULL)
+            , port(NULL)
             , result(false)
             , done(false) {
         }
@@ -113,16 +109,12 @@ private:
 
     static void task_sem_cb_(uv_async_t* handle);
     static void stop_sem_cb_(uv_async_t* handle);
-    static void close_cb_(uv_handle_t* handle);
-    static void remove_port_cb_(void*, packet::Address&);
 
+    virtual void handle_closed(BasicPort&);
     virtual void run();
 
-    void stop_();
-    void close_();
-    void stop_all_();
-    void wait_stopped_();
-    void wait_closed_();
+    void close_sems_();
+    void async_close_ports_();
 
     void process_tasks_();
     void run_task_(Task&);
@@ -131,18 +123,14 @@ private:
     bool add_udp_sender_(Task&);
 
     bool remove_port_(Task&);
-    void wait_port_removed_(const packet::Address&) const;
-
-    bool has_port_(const packet::Address&) const;
-    core::SharedPtr<UDPReceiver> get_receiver_(const packet::Address&) const;
-    core::SharedPtr<UDPSender> get_sender_(const packet::Address&) const;
+    void wait_port_closed_(const BasicPort& port);
+    bool port_is_closing_(const BasicPort& port);
 
     packet::PacketPool& packet_pool_;
     core::BufferPool<uint8_t>& buffer_pool_;
     core::IAllocator& allocator_;
 
-    bool valid_;
-    bool stopped_;
+    bool started_;
 
     uv_loop_t loop_;
     bool loop_initialized_;
@@ -155,11 +143,8 @@ private:
 
     core::List<Task, core::NoOwnership> tasks_;
 
-    core::List<UDPReceiver> receivers_;
-    core::List<UDPSender> senders_;
-    size_t num_ports_;
-
-    Handle stop_handle_;
+    core::List<BasicPort> open_ports_;
+    core::List<BasicPort> closing_ports_;
 
     core::Mutex mutex_;
     core::Cond cond_;

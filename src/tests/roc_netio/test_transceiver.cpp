@@ -36,12 +36,10 @@ packet::Address make_address(const char* ip, int port) {
 
 TEST_GROUP(transceiver) {};
 
-TEST(transceiver, start_stop) {
+TEST(transceiver, init) {
     Transceiver trx(packet_pool, buffer_pool, allocator);
 
     CHECK(trx.valid());
-
-    trx.stop();
 }
 
 TEST(transceiver, bind_any) {
@@ -59,8 +57,6 @@ TEST(transceiver, bind_any) {
 
     trx.remove_port(tx_addr);
     trx.remove_port(rx_addr);
-
-    trx.stop();
 }
 
 TEST(transceiver, bind_lo) {
@@ -78,11 +74,28 @@ TEST(transceiver, bind_lo) {
 
     trx.remove_port(tx_addr);
     trx.remove_port(rx_addr);
-
-    trx.stop();
 }
 
-TEST(transceiver, start_add_stop) {
+TEST(transceiver, bind_addrinuse) {
+    packet::ConcurrentQueue queue;
+
+    Transceiver trx1(packet_pool, buffer_pool, allocator);
+    CHECK(trx1.valid());
+
+    packet::Address tx_addr = make_address("127.0.0.1", 0);
+    packet::Address rx_addr = make_address("127.0.0.1", 0);
+
+    CHECK(trx1.add_udp_sender(tx_addr));
+    CHECK(trx1.add_udp_receiver(rx_addr, queue));
+
+    Transceiver trx2(packet_pool, buffer_pool, allocator);
+    CHECK(trx2.valid());
+
+    CHECK(!trx2.add_udp_sender(tx_addr));
+    CHECK(!trx2.add_udp_receiver(rx_addr, queue));
+}
+
+TEST(transceiver, add) {
     packet::ConcurrentQueue queue;
 
     Transceiver trx(packet_pool, buffer_pool, allocator);
@@ -94,11 +107,9 @@ TEST(transceiver, start_add_stop) {
 
     CHECK(trx.add_udp_sender(tx_addr));
     CHECK(trx.add_udp_receiver(rx_addr, queue));
-
-    trx.stop();
 }
 
-TEST(transceiver, start_add_remove_stop) {
+TEST(transceiver, add_remove) {
     packet::ConcurrentQueue queue;
 
     Transceiver trx(packet_pool, buffer_pool, allocator);
@@ -121,8 +132,18 @@ TEST(transceiver, start_add_remove_stop) {
 
     trx.remove_port(rx_addr);
     UNSIGNED_LONGS_EQUAL(0, trx.num_ports());
+}
 
-    trx.stop();
+TEST(transceiver, add_remove_add) {
+    Transceiver trx(packet_pool, buffer_pool, allocator);
+
+    CHECK(trx.valid());
+
+    packet::Address tx_addr = make_address("0.0.0.0", 0);
+
+    CHECK(trx.add_udp_sender(tx_addr));
+    trx.remove_port(tx_addr);
+    CHECK(trx.add_udp_sender(tx_addr));
 }
 
 TEST(transceiver, add_duplicate) {
@@ -158,8 +179,6 @@ TEST(transceiver, add_duplicate) {
 
     trx.remove_port(rx_addr);
     UNSIGNED_LONGS_EQUAL(0, trx.num_ports());
-
-    trx.stop();
 }
 
 } // namespace netio
