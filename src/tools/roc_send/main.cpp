@@ -228,7 +228,5 @@ int main(int argc, char** argv) {
 
     const bool ok = pump.run();
 
-    trx.stop();
-
     return ok ? 0 : 1;
 }

@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_netio/target_uv/roc_netio/udp_receiver.h
+//! @file roc_netio/target_uv/roc_netio/udp_receiver_port.h
 //! @brief UDP receiver.
 
-#ifndef ROC_NETIO_UDP_RECEIVER_H_
-#define ROC_NETIO_UDP_RECEIVER_H_
+#ifndef ROC_NETIO_UDP_RECEIVER_PORT_H_
+#define ROC_NETIO_UDP_RECEIVER_PORT_H_
 
 #include <uv.h>
 
@@ -19,7 +19,8 @@
 #include "roc_core/list.h"
 #include "roc_core/list_node.h"
 #include "roc_core/refcnt.h"
-#include "roc_netio/handle.h"
+#include "roc_netio/basic_port.h"
+#include "roc_netio/iclose_handler.h"
 #include "roc_packet/address.h"
 #include "roc_packet/iwriter.h"
 #include "roc_packet/packet_pool.h"
@@ -28,31 +29,28 @@ namespace roc {
 namespace netio {
 
 //! UDP receiver.
-class UDPReceiver : public core::RefCnt<UDPReceiver>, public core::ListNode {
+class UDPReceiverPort : public BasicPort {
 public:
     //! Initialize.
-    UDPReceiver(uv_loop_t& event_loop,
-                Handle& stop_handle,
-                packet::IWriter& writer,
-                packet::PacketPool& packet_pool,
-                core::BufferPool<uint8_t>& buffer_pool,
-                core::IAllocator& allocator);
+    UDPReceiverPort(ICloseHandler& close_handler,
+                    const packet::Address&,
+                    uv_loop_t& event_loop,
+                    packet::IWriter& writer,
+                    packet::PacketPool& packet_pool,
+                    core::BufferPool<uint8_t>& buffer_pool,
+                    core::IAllocator& allocator);
 
     //! Destroy.
-    ~UDPReceiver();
-
-    //! Start receiver.
-    //! @remarks
-    //!  Should be called from the event loop thread.
-    bool start(packet::Address& bind_address);
-
-    //! Asynchronous stop.
-    //! @remarks
-    //!  Should be called from the event loop thread.
-    void stop();
+    ~UDPReceiverPort();
 
     //! Get bind address.
-    const packet::Address& address() const;
+    virtual const packet::Address& address() const;
+
+    //! Open receiver.
+    virtual bool open();
+
+    //! Asynchronously close receiver.
+    virtual void async_close();
 
 private:
     static void close_cb_(uv_handle_t* handle);
@@ -63,16 +61,15 @@ private:
                          const sockaddr* addr,
                          unsigned flags);
 
-    friend class core::RefCnt<UDPReceiver>;
-
-    void destroy();
-
-    core::IAllocator& allocator_;
+    ICloseHandler& close_handler_;
 
     uv_loop_t& loop_;
 
     uv_udp_t handle_;
     bool handle_initialized_;
+
+    bool recv_started_;
+    bool closed_;
 
     packet::Address address_;
     packet::IWriter& writer_;
@@ -81,11 +78,9 @@ private:
     core::BufferPool<uint8_t>& buffer_pool_;
 
     unsigned packet_counter_;
-
-    Handle& stop_handle_;
 };
 
 } // namespace netio
 } // namespace roc
 
-#endif // ROC_NETIO_UDP_RECEIVER_H_
+#endif // ROC_NETIO_UDP_RECEIVER_PORT_H_

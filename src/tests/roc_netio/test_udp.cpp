@@ -101,8 +101,6 @@ TEST(udp, one_sender_one_receiver_single_thread) {
             check_packet(rx_queue.read(), tx_addr, rx_addr, p);
         }
     }
-
-    trx.stop();
 }
 
 TEST(udp, one_sender_one_receiver_separate_threads) {
@@ -130,9 +128,6 @@ TEST(udp, one_sender_one_receiver_separate_threads) {
             check_packet(rx_queue.read(), tx_addr, rx_addr, p);
         }
     }
-
-    tx.stop();
-    rx.stop();
 }
 
 TEST(udp, one_sender_multiple_receivers) {
@@ -173,10 +168,6 @@ TEST(udp, one_sender_multiple_receivers) {
             check_packet(rx_queue3.read(), tx_addr, rx_addr3, p * 30);
         }
     }
-
-    tx.stop();
-    rx1.stop();
-    rx23.stop();
 }
 
 TEST(udp, multiple_senders_one_receiver) {
@@ -227,10 +218,6 @@ TEST(udp, multiple_senders_one_receiver) {
             check_packet(rx_queue.read(), tx_addr3, rx_addr, p * 30);
         }
     }
-
-    tx1.stop();
-    tx23.stop();
-    rx.stop();
 }
 
 } // namespace netio

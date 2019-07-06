@@ -285,10 +285,6 @@ public:
               == 0);
     }
 
-    ~Proxy() {
-        trx_.stop();
-    }
-
     const roc_address* source_addr() const {
         return &roc_source_addr_;
     }

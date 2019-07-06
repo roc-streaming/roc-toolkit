@@ -40,10 +40,8 @@ roc_context* roc_context_open(const roc_context_config* config) {
         return NULL;
     }
 
-    roc_log(LogInfo, "roc_context: starting context");
-
     if (!context->trx.valid()) {
-        roc_log(LogError, "roc_context_start: can't start thread");
+        roc_log(LogError, "roc_context_open: can't initialize transceiver");
 
         delete context;
         return NULL;
@@ -63,8 +61,6 @@ int roc_context_close(roc_context* context) {
                 (unsigned long)context->counter);
         return -1;
     }
-
-    context->trx.stop();
 
     delete context;
 

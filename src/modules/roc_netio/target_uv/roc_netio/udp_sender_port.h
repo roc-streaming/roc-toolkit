@@ -6,20 +6,19 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_netio/target_uv/roc_netio/udp_sender.h
+//! @file roc_netio/target_uv/roc_netio/udp_sender_port.h
 //! @brief UDP sender.
 
-#ifndef ROC_NETIO_UDP_SENDER_H_
-#define ROC_NETIO_UDP_SENDER_H_
+#ifndef ROC_NETIO_UDP_SENDER_PORT_H_
+#define ROC_NETIO_UDP_SENDER_PORT_H_
 
 #include <uv.h>
 
 #include "roc_core/iallocator.h"
-#include "roc_core/list.h"
-#include "roc_core/list_node.h"
 #include "roc_core/mutex.h"
 #include "roc_core/refcnt.h"
-#include "roc_netio/handle.h"
+#include "roc_netio/basic_port.h"
+#include "roc_netio/iclose_handler.h"
 #include "roc_packet/address.h"
 #include "roc_packet/iwriter.h"
 
@@ -27,28 +26,25 @@ namespace roc {
 namespace netio {
 
 //! UDP sender.
-class UDPSender : public core::RefCnt<UDPSender>,
-                  public core::ListNode,
-                  public packet::IWriter {
+class UDPSenderPort : public BasicPort, public packet::IWriter {
 public:
     //! Initialize.
-    UDPSender(uv_loop_t& event_loop, Handle& stop_handle_, core::IAllocator& allocator);
+    UDPSenderPort(ICloseHandler& close_handler,
+                  const packet::Address&,
+                  uv_loop_t& event_loop,
+                  core::IAllocator& allocator);
 
     //! Destroy.
-    ~UDPSender();
-
-    //! Start sender.
-    //! @remarks
-    //!  Should be called from the event loop thread.
-    bool start(packet::Address& bind_address);
-
-    //! Asynchronous stop.
-    //! @remarks
-    //!  Should be called from the event loop thread.
-    void stop();
+    ~UDPSenderPort();
 
     //! Get bind address.
-    const packet::Address& address() const;
+    virtual const packet::Address& address() const;
+
+    //! Open sender.
+    virtual bool open();
+
+    //! Asynchronously close sender.
+    virtual void async_close();
 
     //! Write packet.
     //! @remarks
@@ -60,14 +56,10 @@ private:
     static void write_sem_cb_(uv_async_t* handle);
     static void send_cb_(uv_udp_send_t* req, int status);
 
-    friend class core::RefCnt<UDPSender>;
-
-    void destroy();
-
     packet::PacketPtr read_();
     void close_();
 
-    core::IAllocator& allocator_;
+    ICloseHandler& close_handler_;
 
     uv_loop_t& loop_;
 
@@ -84,13 +76,12 @@ private:
 
     size_t pending_;
     bool stopped_;
+    bool closed_;
 
     unsigned packet_counter_;
-
-    Handle& stop_handle_;
 };
 
 } // namespace netio
 } // namespace roc
 
-#endif // ROC_NETIO_UDP_SENDER_H_
+#endif // ROC_NETIO_UDP_SENDER_PORT_H_

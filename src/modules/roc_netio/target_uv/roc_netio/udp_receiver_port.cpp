@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_netio/udp_receiver.h"
+#include "roc_netio/udp_receiver_port.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_core/shared_ptr.h"
@@ -15,34 +15,38 @@
 namespace roc {
 namespace netio {
 
-UDPReceiver::UDPReceiver(uv_loop_t& event_loop,
-                         Handle& stop_handle,
-                         packet::IWriter& writer,
-                         packet::PacketPool& packet_pool,
-                         core::BufferPool<uint8_t>& buffer_pool,
-                         core::IAllocator& allocator)
-    : allocator_(allocator)
+UDPReceiverPort::UDPReceiverPort(ICloseHandler& close_handler,
+                                 const packet::Address& address,
+                                 uv_loop_t& event_loop,
+                                 packet::IWriter& writer,
+                                 packet::PacketPool& packet_pool,
+                                 core::BufferPool<uint8_t>& buffer_pool,
+                                 core::IAllocator& allocator)
+    : BasicPort(allocator)
+    , close_handler_(close_handler)
     , loop_(event_loop)
     , handle_initialized_(false)
+    , recv_started_(false)
+    , closed_(false)
+    , address_(address)
     , writer_(writer)
     , packet_pool_(packet_pool)
     , buffer_pool_(buffer_pool)
-    , packet_counter_(0)
-    , stop_handle_(stop_handle) {
+    , packet_counter_(0) {
 }
 
-UDPReceiver::~UDPReceiver() {
+UDPReceiverPort::~UDPReceiverPort() {
     if (handle_initialized_) {
         roc_panic(
             "udp receiver: receiver was not fully closed before calling destructor");
     }
 }
 
-void UDPReceiver::destroy() {
-    allocator_.destroy(*this);
+const packet::Address& UDPReceiverPort::address() const {
+    return address_;
 }
 
-bool UDPReceiver::start(packet::Address& bind_address) {
+bool UDPReceiverPort::open() {
     if (int err = uv_udp_init(&loop_, &handle_)) {
         roc_log(LogError, "udp receiver: uv_udp_init(): [%s] %s", uv_err_name(err),
                 uv_strerror(err));
@@ -53,16 +57,16 @@ bool UDPReceiver::start(packet::Address& bind_address) {
     handle_initialized_ = true;
 
     unsigned flags = 0;
-    if (bind_address.multicast() && bind_address.port() > 0) {
+    if (address_.multicast() && address_.port() > 0) {
         flags |= UV_UDP_REUSEADDR;
     }
 
     int bind_err = UV_EINVAL;
-    if (bind_address.version() == 6) {
-        bind_err = uv_udp_bind(&handle_, bind_address.saddr(), flags | UV_UDP_IPV6ONLY);
+    if (address_.version() == 6) {
+        bind_err = uv_udp_bind(&handle_, address_.saddr(), flags | UV_UDP_IPV6ONLY);
     }
     if (bind_err == UV_EINVAL || bind_err == UV_ENOTSUP) {
-        bind_err = uv_udp_bind(&handle_, bind_address.saddr(), flags);
+        bind_err = uv_udp_bind(&handle_, address_.saddr(), flags);
     }
     if (bind_err != 0) {
         roc_log(LogError, "udp receiver: uv_udp_bind(): [%s] %s", uv_err_name(bind_err),
@@ -70,18 +74,18 @@ bool UDPReceiver::start(packet::Address& bind_address) {
         return false;
     }
 
-    int addrlen = (int)bind_address.slen();
-    if (int err = uv_udp_getsockname(&handle_, bind_address.saddr(), &addrlen)) {
+    int addrlen = (int)address_.slen();
+    if (int err = uv_udp_getsockname(&handle_, address_.saddr(), &addrlen)) {
         roc_log(LogError, "udp receiver: uv_udp_getsockname(): [%s] %s", uv_err_name(err),
                 uv_strerror(err));
         return false;
     }
 
-    if (addrlen != (int)bind_address.slen()) {
+    if (addrlen != (int)address_.slen()) {
         roc_log(
             LogError,
             "udp receiver: uv_udp_getsockname(): unexpected len: got=%lu expected=%lu",
-            (unsigned long)addrlen, (unsigned long)bind_address.slen());
+            (unsigned long)addrlen, (unsigned long)address_.slen());
         return false;
     }
 
@@ -92,54 +96,61 @@ bool UDPReceiver::start(packet::Address& bind_address) {
     }
 
     roc_log(LogInfo, "udp receiver: opened port %s",
-            packet::address_to_str(bind_address).c_str());
+            packet::address_to_str(address_).c_str());
 
-    address_ = bind_address;
+    recv_started_ = true;
+
     return true;
 }
 
-void UDPReceiver::stop() {
-    if (!handle_initialized_) {
-        return;
+void UDPReceiverPort::async_close() {
+    if (closed_) {
+        return; // handle_closed() was already called
     }
 
-    if (uv_is_closing((uv_handle_t*)&handle_)) {
+    if (!handle_initialized_) {
+        closed_ = true;
+        close_handler_.handle_closed(*this);
+
         return;
     }
 
     roc_log(LogInfo, "udp receiver: closing port %s",
             packet::address_to_str(address_).c_str());
 
-    if (int err = uv_udp_recv_stop(&handle_)) {
-        roc_log(LogError, "udp receiver: uv_udp_recv_stop(): [%s] %s", uv_err_name(err),
-                uv_strerror(err));
+    if (recv_started_) {
+        if (int err = uv_udp_recv_stop(&handle_)) {
+            roc_log(LogError, "udp receiver: uv_udp_recv_stop(): [%s] %s",
+                    uv_err_name(err), uv_strerror(err));
+        }
+
+        recv_started_ = false;
     }
 
-    uv_close((uv_handle_t*)&handle_, close_cb_);
+    if (!uv_is_closing((uv_handle_t*)&handle_)) {
+        uv_close((uv_handle_t*)&handle_, close_cb_);
+    }
 }
 
-const packet::Address& UDPReceiver::address() const {
-    return address_;
-}
-
-void UDPReceiver::close_cb_(uv_handle_t* handle) {
+void UDPReceiverPort::close_cb_(uv_handle_t* handle) {
     roc_panic_if_not(handle);
 
-    UDPReceiver& self = *(UDPReceiver*)handle->data;
+    UDPReceiverPort& self = *(UDPReceiverPort*)handle->data;
 
     self.handle_initialized_ = false;
 
     roc_log(LogInfo, "udp receiver: closed port %s",
             packet::address_to_str(self.address_).c_str());
 
-    self.stop_handle_.fn(self.stop_handle_.data, self.address_);
+    self.closed_ = true;
+    self.close_handler_.handle_closed(self);
 }
 
-void UDPReceiver::alloc_cb_(uv_handle_t* handle, size_t size, uv_buf_t* buf) {
+void UDPReceiverPort::alloc_cb_(uv_handle_t* handle, size_t size, uv_buf_t* buf) {
     roc_panic_if_not(handle);
     roc_panic_if_not(buf);
 
-    UDPReceiver& self = *(UDPReceiver*)handle->data;
+    UDPReceiverPort& self = *(UDPReceiverPort*)handle->data;
 
     core::SharedPtr<core::Buffer<uint8_t> > bp =
         new (self.buffer_pool_) core::Buffer<uint8_t>(self.buffer_pool_);
@@ -163,15 +174,15 @@ void UDPReceiver::alloc_cb_(uv_handle_t* handle, size_t size, uv_buf_t* buf) {
     buf->len = size;
 }
 
-void UDPReceiver::recv_cb_(uv_udp_t* handle,
-                           ssize_t nread,
-                           const uv_buf_t* buf,
-                           const sockaddr* sockaddr,
-                           unsigned flags) {
+void UDPReceiverPort::recv_cb_(uv_udp_t* handle,
+                               ssize_t nread,
+                               const uv_buf_t* buf,
+                               const sockaddr* sockaddr,
+                               unsigned flags) {
     roc_panic_if_not(handle);
     roc_panic_if_not(buf);
 
-    UDPReceiver& self = *(UDPReceiver*)handle->data;
+    UDPReceiverPort& self = *(UDPReceiverPort*)handle->data;
 
     packet::Address src_addr;
     if (sockaddr) {
