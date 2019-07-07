@@ -21,7 +21,7 @@ namespace core {
 template <class T, void (*Func)(T)> class ScopedDestructor : public NonCopyable<> {
 public:
     //! Initialize.
-    ScopedDestructor(T obj)
+    explicit ScopedDestructor(T obj)
         : obj_(obj) {
     }
 
