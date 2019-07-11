@@ -37,9 +37,15 @@ public:
     virtual bool begin(size_t sblen, size_t rblen, size_t payload_size) = 0;
 
     //! Store source or repair packet buffer for current block.
+    //!
+    //! @pre
+    //!  This method may be called only between begin() and end() calls.
     virtual void set(size_t index, const core::Slice<uint8_t>& buffer) = 0;
 
     //! Fill all repair packets in current block.
+    //!
+    //! @pre
+    //!  This method may be called only between begin() and end() calls.
     virtual void fill() = 0;
 
     //! Finish block.
