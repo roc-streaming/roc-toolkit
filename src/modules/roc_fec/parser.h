@@ -28,7 +28,7 @@ public:
     //! @remarks
     //!  Parses FECFRAME header or footer and passes the rest to @p inner_parser
     //!  if it's not null.
-    Parser(packet::IParser* inner_parser)
+    explicit Parser(packet::IParser* inner_parser)
         : inner_parser_(inner_parser) {
     }
 
