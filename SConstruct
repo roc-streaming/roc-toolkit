@@ -529,8 +529,16 @@ else:
     if platform in ['linux', 'darwin']:
         env.Append(ROC_TARGETS=[
             'target_gcc',
-            'target_glibc',
         ])
+
+        if 'musl' in host:
+            env.Append(ROC_TARGETS=[
+                'target_musl',
+            ])
+        else:
+            env.Append(ROC_TARGETS=[
+                'target_glibc',
+            ])
 
     if platform in ['android']:
         env.Append(ROC_TARGETS=[
