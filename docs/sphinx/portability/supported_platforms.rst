@@ -33,6 +33,7 @@ Linux distributions:
 * Fedora (latest)
 * CentOS (latest)
 * Arch Linux (latest)
+* Alpine Linux (latest)
 
 Xcode versions:
 

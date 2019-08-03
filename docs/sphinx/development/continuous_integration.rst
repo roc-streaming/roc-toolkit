@@ -38,6 +38,7 @@ rocproject/travis-debian            debian:stable         x86_64        distro d
 rocproject/travis-fedora            fedora:latest         x86_64        distro default
 rocproject/travis-centos            centos:latest         x86_64        distro default
 rocproject/travis-archlinux         archlinux/base:latest x86_64        distro default
+rocproject/travis-alpine            alpine:latest         x86_64        distro default
 =================================== ===================== ============= ===========================
 
 Linux misc.

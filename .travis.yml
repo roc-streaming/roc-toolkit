@@ -27,6 +27,8 @@ jobs:
         - docker pull rocproject/travis-debian
         - docker pull rocproject/travis-fedora
         - docker pull rocproject/travis-centos
+        - docker pull rocproject/travis-archlinux
+        - docker pull rocproject/travis-alpine
       script:
         - scripts/travis/docker.sh rocproject/travis-ubuntu:18.04 scripts/travis/linux-x86_64/ubuntu-18.04.sh
         - scripts/travis/docker.sh rocproject/travis-ubuntu:16.04 scripts/travis/linux-x86_64/ubuntu-16.04.sh
@@ -35,6 +37,7 @@ jobs:
         - scripts/travis/docker.sh rocproject/travis-fedora scripts/travis/linux-x86_64/fedora.sh
         - scripts/travis/docker.sh rocproject/travis-centos scripts/travis/linux-x86_64/centos.sh
         - scripts/travis/docker.sh rocproject/travis-archlinux scripts/travis/linux-x86_64/archlinux.sh
+        - scripts/travis/docker.sh rocproject/travis-alpine scripts/travis/linux-x86_64/alpine.sh
         - cat build.status
 
     - name: "Linux ARM"
