@@ -1,8 +1,8 @@
 ![](docs/images/logo.png)
 
-# Roc: real-time streaming over the network
+# Roc: real-time audio streaming over the network
 
-Roc is a toolkit for real-time media streaming over the network.
+Roc is a toolkit for real-time audio streaming over the network.
 
 You can read about the project on the [overview](https://roc-project.github.io/roc/docs/about_project/overview.html) and [features](https://roc-project.github.io/roc/docs/about_project/features.html) pages.
 

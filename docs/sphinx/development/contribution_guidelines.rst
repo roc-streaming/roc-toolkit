@@ -26,8 +26,8 @@ If you would like to help the project, you can:
 
   Roc has quite a long and pretty interesting roadmap and a backlog with issues of varying difficulty. Read the documentation, choose a task, and submit pull requests!
 
-How to choose a task
-====================
+Choosing a task
+===============
 
 Want to contribute code? Great! Here is how you can choose a task.
 
@@ -55,10 +55,10 @@ Want to contribute code? Great! Here is how you can choose a task.
 
   Of course, you're also welcome to open an issue and suggest a feature that is not in our backlog and roadmap yet.
 
-How to contribute code
-======================
+Working on a patch
+==================
 
-When you have chosen a task and are ready to work on it, the following documentation will be your friend:
+If you have chosen a task and are ready to work on it, the following documentation is your friend:
 
 * **project internals**
 
@@ -74,6 +74,10 @@ When you have chosen a task and are ready to work on it, the following documenta
 
   Please also take a look at the :doc:`/development/version_control` page for details on commits, branches, and pull requests.
 
-* **authorship**
+* **asking questions**
+
+  Feel free to ask questions on our mailing list or IRC channel. See :doc:`/about_project/contacts` page for details.
+
+* **authors file**
 
   Feel free to add yourself to the :doc:`/about_project/authors` page when submitting a pull request.

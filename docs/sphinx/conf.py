@@ -184,6 +184,6 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
     (master_doc, 'roc', u'Roc documentation',
-     author, 'roc', 'Real-time streaming over the network.',
+     author, 'roc', 'Real-time audio streaming over the network.',
      'Miscellaneous'),
 ]

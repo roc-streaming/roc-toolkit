@@ -8,7 +8,7 @@ Overview
 Synopsis
 --------
 
-Roc is a toolkit for real-time media streaming over the network.
+Roc is a toolkit for real-time audio streaming over the network.
 
 Basically, Roc is a network transport, highly specialized for the real-time streaming use case. The user writes the stream to the one end and reads it from another end, and Roc deals with all the complexity of the task of delivering data in time and with no loss. Encoding, decoding, adjusting rates, restoring losses -- all these are performed transparently under the hood.
 
