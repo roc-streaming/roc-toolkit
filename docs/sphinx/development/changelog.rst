@@ -5,6 +5,40 @@ Changelog
    :local:
    :depth: 1
 
+Version 0.1.2 (in progress)
+===========================
+
+Bugfixes
+--------
+
+* fix handling of inconsistent port protocols / FEC schemes
+* fix IPv6 support
+* fix incorrect usage of SO_REUSEADDR
+* fix panic on bind error
+* fix race in port removing code
+* fix packet flushing mechanism
+* fix backtrace printing on release builds
+
+Internals
+---------
+
+* rework audio codecs interfaces (preparations for Opus and read-aheads support)
+* minor refactoring in FEC support
+* improve logging
+
+Portability
+-----------
+
+* fix building on musl libc
+* continuous integration for Alpine Linux
+
+Documentation
+-------------
+
+* extend "Forward Erasure Correction codes" page
+* add new pages: "Licensing", "Contacts", "Authors"
+* replace "Guidelines" page with "Contribution Guidelines", "Coding guidelines", and "Version control"
+
 Version 0.1.1 (Jun 18, 2019)
 ============================
 
