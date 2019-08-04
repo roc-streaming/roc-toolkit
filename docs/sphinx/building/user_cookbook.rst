@@ -146,6 +146,33 @@ Arch Linux
     # install libraries, tools, and PulseAudio modules
     $ sudo scons -Q --enable-pulseaudio-modules --build-3rdparty=openfec,pulseaudio,cpputest install
 
+Alpine Linux
+------------
+
+.. code::
+
+    # for Roc
+    $ sudo apk add g++ pkgconf scons gengetopt libuv-dev pulseaudio-dev sox-dev cpputest
+
+    # for 3rd-parties
+    $ sudo apk add libtool autoconf automake make cmake
+
+    # clone repo
+    $ git clone https://github.com/roc-project/roc.git
+    $ cd roc
+
+    # build libraries and tools
+    $ scons -Q --build-3rdparty=openfec
+
+    # install libraries and tools
+    $ sudo scons -Q --build-3rdparty=openfec install
+
+    # build libraries, tools, and PulseAudio modules
+    $ scons -Q --enable-pulseaudio-modules --build-3rdparty=openfec,pulseaudio
+
+    # install libraries, tools, and PulseAudio modules
+    $ sudo scons -Q --enable-pulseaudio-modules --build-3rdparty=openfec,pulseaudio install
+
 Linux (cross-compile)
 =====================
 
