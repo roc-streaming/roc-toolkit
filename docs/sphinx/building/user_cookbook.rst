@@ -304,7 +304,7 @@ macOS 10.12 and later
     $ scons -Q --build-3rdparty=openfec
 
     # install libraries and tools
-    $ sudo scons -Q --build-3rdparty=openfec --prefix=/usr/local install
+    $ sudo scons -Q --build-3rdparty=openfec install
 
 macOS 10.11 and later
 ---------------------
@@ -325,7 +325,7 @@ macOS 10.11 and later
     $ scons -Q --build-3rdparty=uv,openfec,sox
 
     # install libraries and tools
-    $ sudo scons -Q --build-3rdparty=uv,openfec,sox --prefix=/usr/local install
+    $ sudo scons -Q --build-3rdparty=uv,openfec,sox install
 
 Android
 =======

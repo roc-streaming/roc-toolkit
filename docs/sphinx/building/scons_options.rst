@@ -33,65 +33,41 @@ Build results are installed into the following directories:
 Options
 =======
 
-  -Q                          compact colored output
-  -c                          remove build results
-  -n                          dry run
-  -j N, --jobs=N              allow N parallel jobs at once
+-Q                                                     compact colored output
+-c                                                     remove build results
+-n                                                     dry run
+-j N, --jobs=N                                         allow N parallel jobs at once
 
-  --prefix=PREFIX             installation prefix, /usr by default
-  --build=BUILD               system name where Roc is being compiled, e.g.
-                                'x86_64-pc-linux-gnu', auto-detect if empty
-  --host=HOST                 system name where Roc will run, e.g.
-                                'arm-linux-gnueabihf', auto-detect if empty
-  --platform=PLATFORM         platform name where Roc will run, supported
-                                values: empty (detect from host), 'linux',
-                                'darwin', 'android'
-  --compiler=COMPILER         compiler name and optional version, e.g.
-                                'gcc-4.9', supported names: empty (detect what
-                                available), 'gcc', 'clang'
-  --sanitizers=SANITIZERS     list of gcc/clang sanitizers, supported names:
-                                empty (no sanitizers), 'all', 'undefined',
-                                'address'
-  --enable-debug              enable debug build for Roc
-  --enable-debug-3rdparty     enable debug build for 3rdparty libraries
-  --enable-werror             treat warnings as errors
-  --enable-pulseaudio-modules
-                              enable building of pulseaudio modules
-  --disable-lib               disable libroc building
-  --disable-tools             disable tools building
-  --disable-tests             disable tests building
-  --disable-examples          disable examples building
-  --disable-doc               disable Doxygen documentation generation
-  --disable-openfec           disable OpenFEC support required for FEC codes
-  --disable-sox               disable SoX support in tools
-  --disable-pulseaudio        disable PulseAudio support in tools
-  --with-pulseaudio=WITH_PULSEAUDIO
-                              path to the PulseAudio source directory used
-                                when building PulseAudio modules
-  --with-pulseaudio-build-dir=WITH_PULSEAUDIO_BUILD_DIR
-                              path to the PulseAudio build directory used when
-                                building PulseAudio modules (needed in case
-                                you build PulseAudio out of source; if empty,
-                                the build directory is assumed to be the same
-                                as the source directory)
-  --with-openfec-includes=WITH_OPENFEC_INCLUDES
-                              path to the directory with OpenFEC headers (it
-                                should contain lib_common and lib_stable
-                                subdirectories)
-  --with-includes=WITH_INCLUDES
-                              additional include directory, may be used
-                                multiple times
-  --with-libraries=WITH_LIBRARIES
-                              additional library directory, may be used
-                                multiple times
-  --build-3rdparty=BUILD_3RDPARTY
-                              download and build specified 3rdparty libraries,
-                                pass a comma-separated list of library names
-                                and optional versions, e.g. 'uv:1.4.2,openfec'
-  --override-targets=OVERRIDE_TARGETS
-                              override targets to use, pass a comma-separated
-                                list of target names, e.g.
-                                'glibc,posix,uv,openfec,...'
+--prefix=PREFIX                                        installation prefix, '/usr' by default
+--bindir=BINDIR                                        path to the binary installation directory (where to install Roc command-line tools), '<prefix>/bin' by default
+--libdir=LIBDIR                                        path to the library installation directory (where to install Roc library), auto-detect if empty
+--incdir=INCDIR                                        path to the headers installation directory (where to install Roc headers), '<prefix>/include' by default
+--mandir=MANDIR                                        path to the manuals installation directory (where to install Roc manual pages), '<prefix>/share/man/man1' by default
+--pulseaudio-module-dir=PULSEAUDIO_MODULE_DIR          path to the PulseAudio modules installation directory (where to install Roc PulseAudio modules), auto-detect if empty
+--build=BUILD                                          system name where Roc is being compiled, e.g. 'x86_64-pc-linux-gnu', auto-detect if empty
+--host=HOST                                            system name where Roc will run, e.g. 'arm-linux-gnueabihf', auto-detect if empty
+--platform=PLATFORM                                    platform name where Roc will run, supported values: empty (detect from host), 'linux', 'darwin', 'android'
+--compiler=COMPILER                                    compiler name and optional version, e.g. 'gcc-4.9', supported names: empty (detect what available), 'gcc', 'clang'
+--sanitizers=SANITIZERS                                list of gcc/clang sanitizers, supported names: empty (no sanitizers), 'all', 'undefined', 'address'
+--enable-debug                                         enable debug build for Roc
+--enable-debug-3rdparty                                enable debug build for 3rdparty libraries
+--enable-werror                                        treat warnings as errors
+--enable-pulseaudio-modules                            enable building of pulseaudio modules
+--disable-lib                                          disable libroc building
+--disable-tools                                        disable tools building
+--disable-tests                                        disable tests building
+--disable-examples                                     disable examples building
+--disable-doc                                          disable Doxygen and Sphinx documentation generation
+--disable-openfec                                      disable OpenFEC support required for FEC codes
+--disable-sox                                          disable SoX support in tools
+--disable-pulseaudio                                   disable PulseAudio support in tools
+--with-pulseaudio=WITH_PULSEAUDIO                      path to the PulseAudio source directory used when building PulseAudio modules
+--with-pulseaudio-build-dir=WITH_PULSEAUDIO_BUILD_DIR  path to the PulseAudio build directory used when building PulseAudio modules (needed in case you build PulseAudio out of source; if empty, the build directory is assumed to be the same as the source directory)
+--with-openfec-includes=WITH_OPENFEC_INCLUDES          path to the directory with OpenFEC headers (it should contain lib_common and lib_stable subdirectories)
+--with-includes=WITH_INCLUDES                          additional include directory, may be used multiple times
+--with-libraries=WITH_LIBRARIES                        additional library directory, may be used multiple times
+--build-3rdparty=BUILD_3RDPARTY                        download and build specified 3rdparty libraries, pass a comma-separated list of library names and optional versions, e.g. 'uv:1.4.2,openfec'
+--override-targets=OVERRIDE_TARGETS                    override targets to use, pass a comma-separated list of target names, e.g. 'glibc,posix,uv,openfec,...'
 
 Variables
 =========
@@ -124,6 +100,9 @@ Targets
 
 ``clean``
     remove build results
+
+``cleandocs``
+    remove only documentation build results
 
 ``install``
     install build results into the system

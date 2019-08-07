@@ -126,6 +126,12 @@ Build specific parts of documentation:
    $ scons -Q doxygen
    $ scons -Q sphinx
 
+Remove generated documentation:
+
+.. code::
+
+   $ scons -Q cleandocs
+
 Run doxygen manually:
 
 .. code::

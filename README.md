@@ -4,7 +4,14 @@
 
 Roc is a toolkit for real-time audio streaming over the network.
 
-You can read about the project on the [overview](https://roc-project.github.io/roc/docs/about_project/overview.html) and [features](https://roc-project.github.io/roc/docs/about_project/features.html) pages.
+You can read about the project here:
+
+* [Overview](https://roc-project.github.io/roc/docs/about_project/overview.html)
+* [Features](https://roc-project.github.io/roc/docs/about_project/features.html)
+* [Usage](https://roc-project.github.io/roc/docs/about_project/usage.html)
+
+Summary
+-------
 
 The toolkit consists of:
 
@@ -15,8 +22,8 @@ The toolkit consists of:
 Key features:
 
 * real-time streaming with guaranteed latency;
-* converting between the sender and receiver clock domains;
 * restoring lost packets using Forward Erasure Correction codes;
+* converting between the sender and receiver clock domains;
 * CD-quality audio;
 * multiple profiles for different CPU and latency requirements;
 * portability;

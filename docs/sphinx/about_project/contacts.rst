@@ -1,6 +1,11 @@
 Contacts
 ********
 
+GitHub
+======
+
+We use `GitHub <https://github.com/roc-project/roc>`_ for bug tracking and code review. Feel free to file an issue to report a bug, suggest a feature, or discuss an idea. Pull requests are welcome as well; see :doc:`/development/contribution_guidelines`.
+
 Mailing list
 ============
 

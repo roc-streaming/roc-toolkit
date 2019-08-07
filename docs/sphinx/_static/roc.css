@@ -30,6 +30,10 @@ div.body h3 {
     background-color: #DEEAF3;
 }
 
+span.option {
+    white-space: nowrap;
+}
+
 dl.typedef > dt {
     background-color: #EDF0F2;
     padding: 4px 4px 4px 10px;

@@ -1,6 +1,8 @@
 Overview
 ********
 
+.. seealso:: :doc:`/about_project/features`, :doc:`/about_project/usage`, :doc:`/about_project/publications`
+
 .. contents:: Table of contents:
    :local:
    :depth: 1
@@ -91,8 +93,8 @@ Sound processing features:
 * sound I/O --- not yet (except command-line tools); use other libraries
 * DSP --- limited; Roc is not a general-purpose DSP library
 
-Usage scenarios
----------------
+Application fields
+------------------
 
 Below is the list of example applications where Roc could be useful.
 

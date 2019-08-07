@@ -32,11 +32,17 @@ Portability
 * fix building on musl libc
 * continuous integration for Alpine Linux
 
+Building
+--------
+
+* allow to configure installation directories
+* auto-detect system library directory and PulseAudio module directory
+
 Documentation
 -------------
 
 * extend "Forward Erasure Correction codes" page
-* add new pages: "Licensing", "Contacts", "Authors"
+* add new pages: "Usage", "Publications", "Licensing", "Contacts", "Authors"
 * replace "Guidelines" page with "Contribution Guidelines", "Coding guidelines", and "Version control"
 
 Version 0.1.1 (Jun 18, 2019)
