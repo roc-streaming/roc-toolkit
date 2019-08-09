@@ -2,7 +2,7 @@ import SCons.Script
 import os
 import shutil
 
-def AddDistFile(env, prefix, subdir, target, hooks=[]):
+def AddDistFile(env, subdir, target, hooks=[]):
     if isinstance(target, list):
         target = target[0]
 
@@ -13,7 +13,7 @@ def AddDistFile(env, prefix, subdir, target, hooks=[]):
             target = env.File(target)
 
     src = target.path
-    dst = os.path.join(prefix, subdir, target.name)
+    dst = os.path.join(subdir, target.name)
 
     def install(target, source, env):
         if os.path.isdir(src):
@@ -25,6 +25,9 @@ def AddDistFile(env, prefix, subdir, target, hooks=[]):
                 os.remove(dst)
             os.symlink(os.readlink(src), dst)
         else:
+            par = os.path.dirname(dst)
+            if not os.path.exists(par):
+                os.makedirs(par)
             shutil.copy(src, dst)
 
     def uninstall(target, source, env):

@@ -1,24 +1,7 @@
 import re
-import os
-import subprocess
-
-def _command_output(env, command):
-    try:
-        with open(os.devnull, 'w') as null:
-            proc = subprocess.Popen(command,
-                                    stdin=null,
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.STDOUT,
-                                    env=env['ENV'])
-            lines = [s.decode() for s in proc.stdout.readlines()]
-            output = str(' '.join(lines).strip())
-            proc.terminate()
-            return output
-    except:
-        return None
 
 def ParseVersion(env, command):
-    text = _command_output(env, command)
+    text = env.CommandOutput(command)
     if not text:
         return None
 
@@ -36,7 +19,7 @@ def ParseCompilerVersion(env, compiler):
                 r'(\b[0-9]+\.[0-9]+\b)',
             ]
 
-            full_text = _command_output(env, [compiler, '--version'])
+            full_text = env.CommandOutput([compiler, '--version'])
 
             for regex in version_formats:
                 m = re.search(r'(?:LLVM|clang)\s+version\s+'+regex, full_text)
@@ -45,7 +28,7 @@ def ParseCompilerVersion(env, compiler):
 
             trunc_text = re.sub(r'\([^)]+\)', '', full_text)
 
-            dump_text = _command_output(env, [compiler, '-dumpversion'])
+            dump_text = env.CommandOutput([compiler, '-dumpversion'])
 
             for text in [dump_text, trunc_text, full_text]:
                 for regex in version_formats:
@@ -64,7 +47,7 @@ def ParseCompilerVersion(env, compiler):
         return None
 
 def ParseCompilerTarget(env, compiler):
-    text = _command_output(env, [compiler, '-v', '-E', '-'])
+    text = env.CommandOutput([compiler, '-v', '-E', '-'])
     if not text:
         return None
 
@@ -84,7 +67,7 @@ def ParseCompilerTarget(env, compiler):
     return None
 
 def ParseCompilerDirectory(env, compiler):
-    text = _command_output(env, [compiler, '--version'])
+    text = env.CommandOutput([compiler, '--version'])
     if not text:
         return None
 
@@ -110,7 +93,7 @@ def ParsePkgConfig(env, cmd):
         return False
 
 def ParseConfigGuess(env, cmd):
-    text = _command_output(env, [cmd])
+    text = env.CommandOutput([cmd])
     if not text:
         return None
 

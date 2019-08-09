@@ -1,6 +1,7 @@
 import re
 import os
 import os.path
+import platform
 import SCons.Script
 
 # supported platform names
@@ -56,12 +57,58 @@ env.SConsignFile(os.path.join(env.Dir('#').abspath, '.sconsign.dblite'))
 # libraries are no different
 env['STATIC_AND_SHARED_OBJECTS_ARE_THE_SAME'] = 1
 
+if platform.system() == 'Darwin':
+    default_prefix = '/usr/local'
+else:
+    # it would be better to use /usr/local on Linux too, but PulseAudio
+    # is usually installed in /usr and does no search /usr/local for
+    # dynamic libraries; so by default we also use /usr for consistency
+    default_prefix = '/usr'
+
 AddOption('--prefix',
           dest='prefix',
           action='store',
           type='string',
-          default='/usr',
-          help="installation prefix, /usr by default")
+          default=default_prefix,
+          help="installation prefix, '%s' by default" % default_prefix)
+
+AddOption('--bindir',
+          dest='bindir',
+          action='store',
+          type='string',
+          default=os.path.join(GetOption('prefix'), 'bin'),
+          help=("path to the binary installation directory (where to "+
+                "install Roc command-line tools), '<prefix>/bin' by default"))
+
+AddOption('--libdir',
+          dest='libdir',
+          action='store',
+          type='string',
+          help=("path to the library installation directory (where to "+
+                "install Roc library), auto-detect if empty"))
+
+AddOption('--incdir',
+          dest='incdir',
+          action='store',
+          type='string',
+          default=os.path.join(GetOption('prefix'), 'include'),
+          help=("path to the headers installation directory (where to "+
+                "install Roc headers), '<prefix>/include' by default"))
+
+AddOption('--mandir',
+          dest='mandir',
+          action='store',
+          type='string',
+          default=os.path.join(GetOption('prefix'), 'share/man/man1'),
+          help=("path to the manuals installation directory (where to "+
+                "install Roc manual pages), '<prefix>/share/man/man1' by default"))
+
+AddOption('--pulseaudio-module-dir',
+          dest='pulseaudio_module_dir',
+          action='store',
+          type='string',
+          help=("path to the PulseAudio modules installation directory (where "+
+                "to install Roc PulseAudio modules), auto-detect if empty"))
 
 AddOption('--build',
           dest='build',
@@ -146,7 +193,7 @@ AddOption('--disable-examples',
 AddOption('--disable-doc',
           dest='disable_doc',
           action='store_true',
-          help='disable Doxygen documentation generation')
+          help='disable Doxygen and Sphinx documentation generation')
 
 AddOption('--disable-openfec',
           dest='disable_openfec',
@@ -234,9 +281,16 @@ clean = [
 
 env.AlwaysBuild(env.Alias('clean', [], clean))
 
+# handle "scons -c"
 if env.GetOption('clean'):
     env.Execute(clean)
     Return()
+
+env.AlwaysBuild(env.Alias('cleandocs', [], [
+    env.DeleteDir('#html'),
+    env.DeleteDir('#man'),
+    env.DeleteDir('#build/docs'),
+]))
 
 for var in ['CXX', 'CC', 'AR', 'RANLIB', 'GENGETOPT', 'PKG_CONFIG', 'CONFIG_GUESS']:
     env.OverrideFromArg(var)
@@ -302,7 +356,7 @@ if enable_doxygen and enable_sphinx:
     ]
     env.AlwaysBuild(env.Alias('sphinx', sphinx_targets))
     for man in ['roc-send', 'roc-recv', 'roc-conv']:
-        env.AddDistFile(GetOption('prefix'), 'share/man/man1', '#man/%s.1' % man)
+        env.AddDistFile(GetOption('mandir'), '#man/%s.1' % man)
 
 if (enable_doxygen and enable_sphinx) or 'docs' in COMMAND_LINE_TARGETS:
     env.AlwaysBuild(env.Alias('docs', ['doxygen', 'sphinx']))
@@ -355,7 +409,7 @@ fmt += [
 env.AlwaysBuild(
     env.Alias('fmt', [], fmt))
 
-non_build_targets = ['clean', 'fmt', 'docs', 'shpinx', 'doxygen']
+non_build_targets = ['clean', 'cleandocs', 'fmt', 'docs', 'shpinx', 'doxygen']
 if set(COMMAND_LINE_TARGETS) \
   and set(COMMAND_LINE_TARGETS).intersection(non_build_targets) == set(COMMAND_LINE_TARGETS):
     Return()
@@ -878,6 +932,24 @@ if 'target_cpputest' in download_dependencies:
 
 if 'target_posix' in env['ROC_TARGETS'] and platform not in ['darwin']:
     env.Append(CPPDEFINES=[('_POSIX_C_SOURCE', '200809')])
+
+conf = Configure(env, custom_tests=env.CustomTests)
+
+conf.env['ROC_SYSTEM_BINDIR'] = GetOption('bindir')
+conf.env['ROC_SYSTEM_INCDIR'] = GetOption('incdir')
+
+if GetOption('libdir'):
+    conf.env['ROC_SYSTEM_LIBDIR'] = GetOption('libdir')
+else:
+    conf.FindLibDir(GetOption('prefix'), host)
+
+if GetOption('enable_pulseaudio_modules'):
+    if GetOption('pulseaudio_module_dir'):
+        conf.env['ROC_PULSE_MODULEDIR'] = GetOption('pulseaudio_module_dir')
+    else:
+        conf.FindPulseDir(GetOption('prefix'), build, host, env['ROC_PULSE_VERSION'])
+
+env = conf.Finish()
 
 for t in env['ROC_TARGETS']:
     env.Append(CPPDEFINES=['ROC_' + t.upper()])

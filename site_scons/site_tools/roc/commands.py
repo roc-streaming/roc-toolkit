@@ -1,8 +1,25 @@
 import SCons.Script
 import sys
 import re
+import os
 import os.path
 import shutil
+import subprocess
+
+def CommandOutput(env, command):
+    try:
+        with open(os.devnull, 'w') as null:
+            proc = subprocess.Popen(command,
+                                    stdin=null,
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.STDOUT,
+                                    env=env['ENV'])
+            lines = [s.decode() for s in proc.stdout.readlines()]
+            output = str(' '.join(lines).strip())
+            proc.terminate()
+            return output
+    except:
+        return None
 
 def PythonExecutable(env):
     base = os.path.basename(sys.executable)
@@ -178,6 +195,7 @@ def Artifact(env, dst, src):
     return target
 
 def init(env):
+    env.AddMethod(CommandOutput, 'CommandOutput')
     env.AddMethod(PythonExecutable, 'PythonExecutable')
     env.AddMethod(ClangDBWriter, 'ClangDBWriter')
     env.AddMethod(Doxygen, 'Doxygen')

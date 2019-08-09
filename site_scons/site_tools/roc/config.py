@@ -1,4 +1,5 @@
 import SCons.SConf
+import re
 import os
 import os.path
 import hashlib
@@ -188,6 +189,67 @@ def FindLLVMDir(context, version):
     context.Result('not found')
     return True
 
+def _libdirs(host):
+    dirs = ['lib/' + host]
+    if 'x86_64-pc-linux-gnu' == host:
+        dirs += ['lib/x86_64-linux-gnu']
+    if 'x86_64' in host:
+        dirs += ['lib64']
+    dirs += ['lib']
+    return dirs
+
+def _isprefix(prefix, subdir):
+    prefix = os.path.abspath(prefix)
+    subdir = os.path.abspath(subdir)
+    return subdir.startswith(prefix + os.sep)
+
+def FindLibDir(context, prefix, host):
+    context.Message("Searching for system library directory... ")
+
+    for d in _libdirs(host):
+        libdir = os.path.join(prefix, d)
+        if os.path.isdir(libdir):
+            break
+
+    context.env['ROC_SYSTEM_LIBDIR'] = libdir
+    context.Result(libdir)
+    return True
+
+def FindPulseDir(context, prefix, build, host, version):
+    context.Message("Searching for PulseAudio modules directory... ")
+
+    if build == host:
+        pa_ver = context.env.CommandOutput(['pulseaudio', '--version'])
+        if pa_ver and version in pa_ver.split():
+            pa_conf = context.env.CommandOutput(['pulseaudio', '--dump-conf'])
+            if pa_conf:
+                for line in pa_conf.splitlines():
+                    m = re.match(r'^\s*dl-search-path\s*=\s*(.*)$', line)
+                    if m:
+                        pa_dir = m.group(1)
+                        if _isprefix(prefix, pa_dir):
+                            context.env['ROC_PULSE_MODULEDIR'] = pa_dir
+                            context.Result(pa_dir)
+                            return True
+
+    for d in _libdirs(host):
+        pa_dir = os.path.join(prefix, d, 'pulse-'+version, 'modules')
+        if os.path.isdir(pa_dir):
+            context.env['ROC_PULSE_MODULEDIR'] = pa_dir
+            context.Result(pa_dir)
+            return True
+
+    for d in _libdirs(host):
+        libdir = os.path.join(prefix, d)
+        if os.path.isdir(libdir):
+            break
+
+    pa_dir = os.path.join(libdir, 'pulse-'+version, 'modules')
+
+    context.env['ROC_PULSE_MODULEDIR'] = pa_dir
+    context.Result(pa_dir)
+    return True
+
 def FindConfigGuess(context):
     context.Message('Searching CONFIG_GUESS script... ')
 
@@ -234,5 +296,7 @@ def init(env):
         'CheckCanRunProgs': CheckCanRunProgs,
         'FindTool': FindTool,
         'FindLLVMDir': FindLLVMDir,
+        'FindLibDir': FindLibDir,
+        'FindPulseDir': FindPulseDir,
         'FindConfigGuess': FindConfigGuess,
     }

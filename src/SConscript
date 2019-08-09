@@ -50,14 +50,14 @@ if not GetOption('disable_lib'):
     env.Alias('libroc', [target] + symlinks, env.Action(''))
     env.AlwaysBuild('libroc')
 
-    env.AddDistFile(GetOption('prefix'), 'include', '#src/lib/include/roc')
-    env.AddDistFile(GetOption('prefix'), 'lib', target)
+    env.AddDistFile(env['ROC_SYSTEM_INCDIR'], '#src/lib/include/roc')
+    env.AddDistFile(env['ROC_SYSTEM_LIBDIR'], target)
 
     env.AddDistAction(env.FixupLibrary(
-        os.path.join(GetOption('prefix'), 'lib', target[0].name)))
+        os.path.join(env['ROC_SYSTEM_LIBDIR'], target[0].name)))
 
     for s in symlinks:
-        env.AddDistFile(GetOption('prefix'), 'lib', s)
+        env.AddDistFile(env['ROC_SYSTEM_LIBDIR'], s)
 
 if not GetOption('disable_examples'):
     cenv = env.Clone()
@@ -137,7 +137,7 @@ if not GetOption('disable_tools'):
         env.Alias(exename, [target], env.Action(''))
         env.AlwaysBuild(exename)
 
-        env.AddDistFile(GetOption('prefix'), 'bin', target)
+        env.AddDistFile(env['ROC_SYSTEM_BINDIR'], target)
 
 if GetOption('enable_pulseaudio_modules'):
     cenv = env.Clone()
@@ -157,9 +157,7 @@ if GetOption('enable_pulseaudio_modules'):
         target = env.Install(env['ROC_BINDIR'], modulelib)
         targets.append(target)
 
-        env.AddDistFile(GetOption('prefix'),
-                        'lib/pulse-%s/modules' % env['ROC_PULSE_VERSION'],
-                        target)
+        env.AddDistFile(env['ROC_PULSE_MODULEDIR'], target)
 
     env.Alias('pulse', targets, env.Action(''))
     env.AlwaysBuild('pulse')
