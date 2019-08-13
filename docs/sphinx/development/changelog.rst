@@ -5,8 +5,8 @@ Changelog
    :local:
    :depth: 1
 
-Version 0.1.2 (in progress)
-===========================
+Version 0.1.2 (Aug 14, 2019)
+============================
 
 Bugfixes
 --------
