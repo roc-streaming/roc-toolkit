@@ -123,12 +123,23 @@ def extract(filename, dirname):
     shutil.move(dirname_tmp, dirname_res)
     rm_emptydir('tmp')
 
-def execute(cmd, log):
+def try_execute(cmd):
+    return subprocess.call(
+        cmd, stdout=devnull, stderr=subprocess.STDOUT, shell=True) == 0
+
+def execute(cmd, log, ignore_error=False):
     print('[execute] %s' % cmd)
+
     with open(log, 'a+') as fp:
         print('>>> %s' % cmd, file=fp)
-    if os.system('%s >>%s 2>&1' % (cmd, log)) != 0:
-        exit(1)
+
+    code = os.system('%s >>%s 2>&1' % (cmd, log))
+    if code != 0:
+        if ignore_error:
+            with open(log, 'a+') as fp:
+                print('command exited with status %s' % code, file=fp)
+        else:
+            exit(1)
 
 def install_tree(src, dst, match=None, ignore=None):
     print('[install] %s' % os.path.relpath(dst, printdir))
@@ -171,6 +182,14 @@ def freplace(path, pat, to):
     print('[patch] %s' % path)
     for line in fileinput.input(path, inplace=True):
         print(line.replace(pat, to), end='')
+
+def try_patch(dirname, patchurl, patchname, logfile, vendordir):
+    if not try_execute('patch --version'):
+        return
+    download(patchurl, patchname, logfile, vendordir)
+    execute('patch -p1 -N -d %s -i %s' % (
+        'src/' + dirname,
+        '../' + patchname), logfile, ignore_error=True)
 
 def touch(path):
     open(path, 'w').close()
@@ -448,6 +467,13 @@ elif name == 'pulseaudio':
         vendordir)
     extract('pulseaudio-%s.tar.gz' % ver,
             'pulseaudio-%s' % ver)
+    if (8, 99, 1) <= tuple(map(int, ver.split('.'))) < (11, 99, 1):
+        try_patch(
+            'pulseaudio-%s' % ver,
+            'https://bugs.freedesktop.org/attachment.cgi?id=136927',
+            '0001-memfd-wrappers-only-define-memfd_create-if-not-alrea.patch',
+            logfile,
+            vendordir)
     os.chdir('src/pulseaudio-%s' % ver)
     execute('./configure --host=%s %s %s %s %s' % (
         toolchain,
