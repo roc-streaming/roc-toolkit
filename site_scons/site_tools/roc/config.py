@@ -220,7 +220,8 @@ def FindPulseDir(context, prefix, build, host, version):
 
     if build == host:
         pa_ver = context.env.CommandOutput(['pulseaudio', '--version'])
-        if pa_ver and version in pa_ver.split():
+        m = re.search(r'([0-9.]+)', pa_ver or '')
+        if m and m.group(1) == version:
             pa_conf = context.env.CommandOutput(['pulseaudio', '--dump-conf'])
             if pa_conf:
                 for line in pa_conf.splitlines():
