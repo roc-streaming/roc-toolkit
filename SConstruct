@@ -548,6 +548,8 @@ build_dir = 'build/%s/%s' % (
 
 env['ROC_BINDIR'] = '#bin/%s' % host
 env['ROC_VERSION'] = open(env.File('#.version').path).read().strip()
+env['ROC_SHA'] = os.popen("cat .git/$(cat .git/HEAD | awk '{print $2}') | cut -b1-10").read().strip()
+env['ROC_VERSION_STR'] = env['ROC_VERSION'] + "-" + env['ROC_SHA']
 
 abi_version = '.'.join(env['ROC_VERSION'].split('.')[:2])
 
