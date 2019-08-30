@@ -128,7 +128,7 @@ if not GetOption('disable_tools'):
         sources = env.Glob('%s/*.cpp' % tooldir)
         objects = []
         for ggo in env.Glob('%s/*.ggo' % tooldir):
-            objects += gen_env.GenGetOpt(ggo, env['ROC_VERSION'])
+            objects += gen_env.GenGetOpt(ggo, env['ROC_VERSION_STR'])
 
         exename = tooldir.name.replace('roc_', 'roc-')
         target = env.Install(env['ROC_BINDIR'],
