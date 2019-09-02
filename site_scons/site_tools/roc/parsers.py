@@ -11,6 +11,14 @@ def ParseVersion(env, command):
 
     return m.group(1)
 
+def ParseGitHead(env):
+    with open('.git/HEAD') as hf:
+        head_ref = hf.read().strip().split()[-1]
+        with open('.git/%s' % (head_ref)) as hrf:
+            sha = hrf.read().strip()[:10]
+
+    return sha
+
 def ParseCompilerVersion(env, compiler):
     def getverstr():
         try:
@@ -118,6 +126,7 @@ def ParseList(env, s, all):
 
 def init(env):
     env.AddMethod(ParseVersion, 'ParseVersion')
+    env.AddMethod(ParseGitHead, 'ParseGitHead')
     env.AddMethod(ParseCompilerVersion, 'ParseCompilerVersion')
     env.AddMethod(ParseCompilerTarget, 'ParseCompilerTarget')
     env.AddMethod(ParseCompilerDirectory, 'ParseCompilerDirectory')
