@@ -14,9 +14,13 @@ def ParseVersion(env, command):
 def ParseGitHead(env):
     with open('.git/HEAD') as hf:
         head_ref = hf.read().strip().split()[-1]
-        with open('.git/%s' % (head_ref)) as hrf:
-            sha = hrf.read().strip()[:10]
-
+        pattern = re.compile(r'\b[0-9a-f]{40}\b')
+        is_sha = re.match(pattern, head_ref)
+        if is_sha:
+            sha = head_ref[:10]
+        else:
+            with open('.git/%s' % (head_ref)) as hrf:
+                sha = hrf.read().strip()[:10]
     return sha
 
 def ParseCompilerVersion(env, compiler):
