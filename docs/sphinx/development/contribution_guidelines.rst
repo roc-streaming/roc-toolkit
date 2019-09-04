@@ -37,11 +37,11 @@ Want to contribute code? Great! Here is how you can choose a task.
 
 * **"help wanted" tag**
 
-  Look for issues marked with the `"help wanted" <https://github.com/roc-project/roc/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22>`_ tag. This tag means that this is an important and awaited issue but we have no human resources for it yet, and it is still in the backlog.
+  Look for issues marked with the `"help wanted" <https://github.com/roc-project/roc/labels/help%20wanted>`_ tag. This tag means that this is an important and awaited task but we have no human resources for it yet, and it is still in the backlog.
 
 * **"easy hacks" tag**
 
-  Look for issues that are additionally marked with the `"easy hacks" <https://github.com/roc-project/roc/issues?q=is%3Aissue+is%3Aopen+label%3A%22easy+hacks%22>`_ tag. This tag means that the solution is expected to be straightforward even if you are new to the project.
+  Look for issues that are additionally marked with the `"easy hacks" <https://github.com/roc-project/roc/labels/easy%20hacks>`_ tag. This tag means that the solution is expected to be straightforward even if you are new to the project.
 
 * **backlog column**
 
@@ -49,11 +49,11 @@ Want to contribute code? Great! Here is how you can choose a task.
 
 * **project roadmap**
 
-  Look for unimplemented features in the long-term :doc:`project roadmap </development/roadmap>`. If there is no issue for a feature yet, it means that nobody had thought through it yet and strictly speaking it is unknown how much work does it require.
+  Look for unimplemented features in the long-term :doc:`project roadmap </development/roadmap>`. If there is no issue for a feature yet, it means that nobody had thought through it yet. You are suggested to open an issue for discussion in this case.
 
 * **suggest your own**
 
-  Of course, you're also welcome to open an issue and suggest a feature that is not in our backlog and roadmap yet.
+  Of course, you're also welcome to open an issue and suggest a feature that is not in our backlog and roadmap.
 
 Working on a patch
 ==================
