@@ -29,6 +29,7 @@ thirdparty_versions = {
     'openfec':    '1.4.2.4',
     'cpputest':   '3.6',
     'sox':        '14.4.2',
+    'libunwind':  '1.2.1',
     'alsa':       '1.0.29',
     'pulseaudio': '5.0',
     'json':       '0.11-20130402',
@@ -204,6 +205,11 @@ AddOption('--disable-sox',
           dest='disable_sox',
           action='store_true',
           help='disable SoX support in tools')
+
+AddOption('--disable-libunwind',
+          dest='disable_libunwind',
+          action='store_true',
+          help='disable libunwind support as header file')
 
 AddOption('--disable-pulseaudio',
           dest='disable_pulseaudio',
@@ -603,9 +609,14 @@ else:
         ])
 
         if 'musl' in host:
-            env.Append(ROC_TARGETS=[
-                'target_musl',
-            ])
+            if GetOption('disable_libunwind'):
+                env.Append(ROC_TARGETS=[
+                    'target_nobacktrace',
+                ])
+            else:
+                env.Append(ROC_TARGETS=[
+                    'target_libunwind',
+                ])
         else:
             env.Append(ROC_TARGETS=[
                 'target_glibc',
@@ -819,6 +830,13 @@ if 'target_sox' in system_dependecies:
 
     tool_env = conf.Finish()
 
+if 'target_libunwind' in system_dependecies:
+    conf = Configure(env, custom_tests=env.CustomTests)
+    env.ParsePkgConfig('--cflags --libs libunwind')
+    if not conf.CheckLibWithHeaderExt('unwind', 'libunwind.h', 'C', run=not crosscompile):
+        env.Die("libunwind not found (see 'config.log' for details)")
+    env = conf.Finish()
+
 if 'target_gengetopt' in system_dependecies:
     conf = Configure(env, custom_tests=env.CustomTests)
 
@@ -935,6 +953,11 @@ if 'target_sox' in download_dependencies:
         ])
 
     tool_env = conf.Finish()
+
+if 'target_libunwind' in download_dependencies:
+    env.ThirdParty(host, thirdparty_compiler_spec, 
+                   toolchain, thirdparty_variant,
+                   thirdparty_versions, 'libunwind')
 
 if 'target_gengetopt' in download_dependencies:
     env.ThirdParty(build, thirdparty_compiler_spec, "",
