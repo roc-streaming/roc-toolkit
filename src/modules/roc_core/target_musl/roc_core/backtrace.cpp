@@ -15,115 +15,179 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 #include "roc_core/backtrace.h"
 
-int backtrace()
+/* Function to convert unsigned int to decimal/hex string.
+ * This function is signal safe.
+ * Parameters : 
+ * number = the number to be converted.
+ * base = 10 for decimal to char* and 16 for hex to char* conversion.
+ * output_string = the decimal/hex string
+ */
+void uint_to_string(unsigned int number, int base, char *output_string)
 {
-	/* to point to the current frame in the call stack
+	int i = 12;
+	int j = 0;
+	do {
+		output_string[i] = "0123456789abcdef"[number % base];
+		i--;
+		number = number/base;
+	} while(number > 0);
+
+	while(++i < 13)
+		output_string[j++] = output_string[i];
+	output_string[j] = 0;
+}
+
+/* Return size of backtrace stack by unwinding it.
+ * This must be signal safe.
+ */
+ssize_t backtrace()
+{
+	/* To point to the current frame in the call stack.
 	 */
 	unw_cursor_t cursor;
-	/* to store the snapshot of the CPU registers
+
+	/* To store the snapshot of the CPU registers.
 	 */
 	unw_context_t context;
 
-	/* to point to instruction pointer & stack pointer
-	 * respectively
+	/* To point to instruction pointer & stack pointer respectively.
 	 */
 	unw_word_t ip, sp;
 
-	/* to get snapshot of the CPU register
+	/* To get snapshot of the CPU register.
+	 * unw_getcontext() is signal safe.
 	 */
-	unw_getcontext(&context);
+	if(unw_getcontext(&context) < 0)
+		return -1;
 
-	/* to point to current frame 
+	/* To point to current frame.
+	 * unw_init_local() is signal safe.
 	 */
-	unw_init_local(&cursor, &context);
-	/* moving to previously called frames & going
-	 * through each of them
+	if(unw_init_local(&cursor, &context) < 0)
+		return -1;
+
+	/* Moving to previously called frames & going through each of them.
+	 * unw_step() is signal safe.
 	 */
-	int size = 0;
-	while (unw_step(&cursor) > 0) {
-		unw_get_reg(&cursor, UNW_REG_IP, &ip);
-		unw_get_reg(&cursor, UNW_REG_IP, &sp);
+	ssize_t size = 0;
+	while (unw_step(&cursor) > 0)
 		size++;
-		// fprintf(stderr, "ip = %x\n", (u_int)ip);
-	}
 	return size;
 }
 
-/* print function name, stack frame address and offset
+/* Print function name, stack frame address and offset.
+ * Not signal safe as we are using fprintf() here.
  */
 void backtrace_symbols()
 {
-	/* to point to the current frame in the call stack
+	/* To point to the current frame in the call stack.
 	 */
 	unw_cursor_t cursor;
-	/* to store the snapshot of the CPU registers
+
+	/* To store the snapshot of the CPU registers.
 	 */
 	unw_context_t context;
 
-	/* to get snapshot of the CPU register
+	/* To get snapshot of the CPU register.
+	 * unw_getcontext() is signal safe.
 	 */
 	unw_getcontext(&context);
 
-	/* to point to current frame 
+	/* To point to current frame. 
 	 */
 	unw_init_local(&cursor, &context);
-	/* moving to previously called frames & going
-	 * through each of them
-	 */
 
+	/* Moving to previously called frames & going through each of them.
+	 */
 	int i = 0;
 	while (unw_step(&cursor) > 0) {
 		char b[64];
 		unw_word_t offset, ip;
 		b[0] = '\0';
-		/* get value stored in instruction register
+		/* Get value stored in instruction register.
+		 * unw_get_reg() is signal safe.
 		 */
 		unw_get_reg(&cursor, UNW_REG_IP, &ip);
-		/* get function name, offset
+
+		/* Get function name, offset.
+		 * unw_get_proc_name() is signal safe.
 		 */
 		(void) unw_get_proc_name(&cursor, b, sizeof(b), &offset);
-		// printing index, function name, cursor, offset, ip
-		fprintf(stderr, " #%d : %s %p 0x%x 0x%x\n", ++i, b, cursor, (u_int)offset, (u_int)ip);
+
+		/* printing index, function name, cursor, offset, ip
+		 */
+		fprintf(stderr, "#%d : (%s+0x%x) [0x%x]\n", ++i, b, (u_int)offset, (u_int)ip);
 	}
 }
 
-void backtrace_symbols_fd(int f){
-	FILE *fd = fdopen(f, "r+");
-	/* to point to the current frame in the call stack
+/* This must be signal safe.
+ */
+void backtrace_symbols_fd(int fd){
+	/* To point to the current frame in the call stack.
 	 */
 	unw_cursor_t cursor;
-	/* to store the snapshot of the CPU registers
+
+	/* To store the snapshot of the CPU registers.
 	 */
 	unw_context_t context;
 
-	/* to get snapshot of the CPU register
+	/* To get snapshot of the CPU register.
+	 * unw_getcontext() is signal safe.
 	 */
 	unw_getcontext(&context);
 
-	/* to point to current frame 
+	/* To point to current frame.
+	 * unw_init_local() is signal safe. 
 	 */
 	unw_init_local(&cursor, &context);
-	/* moving to previously called frames & going
-	 * through each of them
-	 */
 
-	int i = 0;
+	/* Moving to previously called frames & going through each of them.
+	 * unw_step() is signal safe.
+	 * buffer = final output that will be written to stderr. 
+	 */
+	u_int index = 0;
 	while (unw_step(&cursor) > 0) {
-		char b[64];
+		char buffer[100] = "#";
+		index++;
+		char function_name[40];
 		unw_word_t offset, ip;
-		b[0] = '\0';
-		/* get value stored in instruction register
+		function_name[0] = '\0';
+		/* Get value stored in instruction register
+		 * unw_get_reg() is signal safe.
 		 */
 		unw_get_reg(&cursor, UNW_REG_IP, &ip);
-		/* get function name, offset
+		/* Get function name & offset
+		 * unw_get_proc_name() is signal safe.
 		 */
-		(void) unw_get_proc_name(&cursor, b, sizeof(b), &offset);
-		// printing index, function name, cursor, offset, ip
-		fprintf(fd, " #%d : %s %p 0x%x 0x%x\n", ++i,  b, cursor, (u_int)offset, (u_int)ip);
+		(void) unw_get_proc_name(&cursor, function_name, 40, &offset);
+		/* Printing index, function name, cursor, offset, ip
+		 * using write(). 
+		 * write() & strcat() are signal safe.
+		 */
+		char index_buffer[10];
+		uint_to_string(index, 10, index_buffer);
+		strcat(buffer, index_buffer);
+		strcat(buffer, ": (");
+		strcat(buffer, function_name);
+		strcat(buffer, "+0x");
+		
+		char offset_buffer[10];
+		uint_to_string((u_int)offset, 16, offset_buffer);
+		strcat(buffer, offset_buffer);
+		strcat(buffer, ") [");
+
+		char address_buffer[16];
+		uint_to_string((u_int)ip, 16, address_buffer);
+		strcat(buffer, address_buffer);
+		strcat(buffer, "]\n");
+
+		write(fd, buffer, 100);
+		// fprintf(fd, " #%d : %s %p 0x%x 0x%x\n", ++i,  b, cursor, (u_int)offset, (u_int)ip);
 	}
 }
 
@@ -131,8 +195,8 @@ namespace roc {
 namespace core {
 
 void print_backtrace() {
-	int size = backtrace();
-	if(size<=0) {
+	ssize_t size = backtrace();
+	if(size <= 0) {
 		fprintf(stderr, "No backtrace available\n");
 	} else {
 		fprintf(stderr, "Backtrace:\n");
@@ -141,7 +205,7 @@ void print_backtrace() {
 }
 
 void print_backtrace_emergency() {
-	int size = backtrace();
+	ssize_t size = backtrace();
 	if(size > 0) {
 		backtrace_symbols_fd(STDERR_FILENO);
 	}
