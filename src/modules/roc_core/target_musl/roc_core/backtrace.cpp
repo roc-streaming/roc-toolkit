@@ -106,7 +106,7 @@ void backtrace_symbols()
 	 */
 	int i = 0;
 	while (unw_step(&cursor) > 0) {
-		char b[64];
+		char b[128];
 		unw_word_t offset, ip;
 		b[0] = '\0';
 		/* Get value stored in instruction register.
@@ -118,10 +118,19 @@ void backtrace_symbols()
 		 * unw_get_proc_name() is signal safe.
 		 */
 		(void) unw_get_proc_name(&cursor, b, sizeof(b), &offset);
-
+		
+		/* Perform demangling
+		 */
+		char *demangled;
+		int status = -1;
+		if(offset > 0) {
+			char mangled[128];
+			memcpy(mangled, b, 128);
+			demangled = abi::__cxa_demangle(mangled, 0, 0, &status);
+		}
 		/* printing index, function name, cursor, offset, ip
 		 */
-		fprintf(stderr, "#%d : (%s+0x%x) [0x%x]\n", ++i, b, (u_int)offset, (u_int)ip);
+		fprintf(stderr, "#%d : (%s+0x%x) [0x%x]\n", ++i, (status == 0)? demangled : b, (u_int)offset, (u_int)ip);
 	}
 }
 
@@ -152,9 +161,9 @@ void backtrace_symbols_fd(int fd){
 	 */
 	u_int index = 0;
 	while (unw_step(&cursor) > 0) {
-		char buffer[100] = "#";
+		char buffer[200] = "#";
 		index++;
-		char function_name[40];
+		char function_name[128];
 		unw_word_t offset, ip;
 		function_name[0] = '\0';
 		/* Get value stored in instruction register
@@ -186,7 +195,7 @@ void backtrace_symbols_fd(int fd){
 		strcat(buffer, address_buffer);
 		strcat(buffer, "]\n");
 
-		write(fd, buffer, 100);
+		write(fd, buffer, 200);
 		// fprintf(fd, " #%d : %s %p 0x%x 0x%x\n", ++i,  b, cursor, (u_int)offset, (u_int)ip);
 	}
 }
