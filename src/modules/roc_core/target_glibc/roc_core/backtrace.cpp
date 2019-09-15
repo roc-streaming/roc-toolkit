@@ -24,6 +24,8 @@ enum { MaxDepth = 128, MaxLen = 128 };
 
 } // namespace
 
+// This function tries to performs symbol demangling, which uses signal-unsafe
+// functions and works only with -rdynamic option (enabled in debug builds).
 void print_backtrace() {
     char* names[MaxDepth] = {};
     void* array[MaxDepth] = {};
@@ -73,9 +75,8 @@ void print_backtrace() {
             fprintf(stderr, "# %s\n", names[i] ? names[i] : strings[i]);
         }
 
-        /* Call free() only after we've printed backtrace, since free() may
-         * abort() if heap is corrupted.
-         */
+        // Call free() only after we've printed backtrace, since free() may
+        // abort() if heap is corrupted.
         for (int i = 0; i < size; i++) {
             free(names[i]);
         }
@@ -88,7 +89,10 @@ void print_backtrace_emergency() {
     void* array[MaxDepth] = {};
     int size = backtrace(array, MaxDepth);
 
-    if (size > 0) {
+    if (size <= 0) {
+        print_emergency_message("No backtrace available\n");
+    } else {
+        print_emergency_message("Backtrace:\n");
         backtrace_symbols_fd(array, size, STDERR_FILENO);
     }
 }

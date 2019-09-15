@@ -17,15 +17,21 @@ namespace core {
 
 //! Print backtrace to stderr.
 //! @remarks
-//!  This function tries to performs symbol demangling, which uses signal-unsafe
-//!  functions and works only with -rdynamic option (enabled in debug builds).
+//!  This function is not signal-safe.
+//!  It can use heap and stdio.
 void print_backtrace();
 
 //! Print backtrace to stderr (emergency mode).
 //! @remarks
-//!  This function does not use signal-unsafe functions and doesn't perform
-//!  symbol demangling for this reason.
+//!  This function is signal-safe.
+//!  It can't use heap and stdio.
 void print_backtrace_emergency();
+
+//! Print message to stderr (emergency mode).
+//! @remarks
+//!  This function is signal-safe.
+//!  It can't use heap and stdio.
+void print_emergency_message(const char* str);
 
 } // namespace core
 } // namespace roc
