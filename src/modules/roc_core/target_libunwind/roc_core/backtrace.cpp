@@ -15,7 +15,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "../../../roc_core/backtrace.h"
+#include "roc_core/backtrace.h"
 
 /* Function to convert unsigned int to decimal/hex string.
  * This function is signal safe.
