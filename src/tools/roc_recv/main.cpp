@@ -16,6 +16,8 @@
 #include "roc_core/scoped_destructor.h"
 #include "roc_core/unique_ptr.h"
 #include "roc_netio/transceiver.h"
+#include "roc_packet/address_to_str.h"
+#include "roc_packet/parse_address.h"
 #include "roc_pipeline/parse_port.h"
 #include "roc_pipeline/receiver.h"
 #include "roc_sndio/backend_dispatcher.h"
@@ -271,12 +273,16 @@ int main(int argc, char** argv) {
     if (args.source_given) {
         pipeline::PortConfig port;
 
-        if (!pipeline::parse_port(pipeline::Port_AudioSource, args.source_arg,
-                                  port)) {
+        if (!pipeline::parse_port(pipeline::Port_AudioSource, args.source_arg, port)) {
             roc_log(LogError, "can't parse source port: %s", args.source_arg);
             return 1;
         }
-
+        if (args.miface_given) {
+            if (!packet::set_miface_from_string(args.miface_arg, port.address)) {
+                roc_log(LogError, "can't parse miface: %s", args.miface_arg);
+                return 1;
+            }
+        }
         if (!trx.add_udp_receiver(port.address, receiver)) {
             roc_log(LogError, "can't bind source port: %s", args.source_arg);
             return 1;
@@ -290,10 +296,16 @@ int main(int argc, char** argv) {
     if (args.repair_given) {
         pipeline::PortConfig port;
 
-        if (!pipeline::parse_port(pipeline::Port_AudioRepair, args.repair_arg,
-                                  port)) {
+        if (!pipeline::parse_port(pipeline::Port_AudioRepair, args.repair_arg, port)) {
             roc_log(LogError, "can't parse repair port: %s", args.repair_arg);
             return 1;
+        }
+
+        if (args.miface_given) {
+            if (!packet::set_miface_from_string(args.miface_arg, port.address)) {
+                roc_log(LogError, "can't parse miface: %s", args.miface_arg);
+                return 1;
+            }
         }
         if (!trx.add_udp_receiver(port.address, receiver)) {
             roc_log(LogError, "can't bind repair port: %s", args.repair_arg);
