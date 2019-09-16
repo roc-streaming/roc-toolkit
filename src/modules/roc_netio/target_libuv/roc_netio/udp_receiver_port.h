@@ -61,6 +61,9 @@ private:
                          const sockaddr* addr,
                          unsigned flags);
 
+    bool join_multicast_group_();
+    void leave_multicast_group_();
+
     ICloseHandler& close_handler_;
 
     uv_loop_t& loop_;
@@ -68,6 +71,7 @@ private:
     uv_udp_t handle_;
     bool handle_initialized_;
 
+    bool multicast_group_joined_;
     bool recv_started_;
     bool closed_;
 
