@@ -37,7 +37,7 @@ typedef enum roc_family {
 
 enum {
     /** Address struct size. */
-    ROC_ADDRESS_SIZE = 64
+    ROC_ADDRESS_SIZE = 256
 };
 
 /** Network address.
