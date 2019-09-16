@@ -30,7 +30,7 @@ inline audio::sample_t nth_sample(uint8_t n) {
 
 inline packet::Address new_address(int port) {
     packet::Address addr;
-    CHECK(addr.set_ipv4("127.0.0.1", port));
+    CHECK(addr.set_host_ipv4("127.0.0.1", port));
     return addr;
 }
 
