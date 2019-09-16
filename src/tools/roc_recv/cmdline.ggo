@@ -16,6 +16,9 @@ section "Options"
 
     option "repair" r "Repair port triplet" typestr="PORT" string optional
 
+    option "miface" - "IP address of the network interface on which to join the multicast group"
+        typestr="IFACE_IP" string optional
+
     option "sess-latency" - "Session target latency, TIME units"
         string optional
 
@@ -77,6 +80,9 @@ DRIVER is the type of the output file or device, e.g.:
 
 PORT is a triplet PROTOCOL:IPADDR:PORTNUM, e.g.:
   rtp+rs8m::10001; rtp+rs8m:127.0.0.1:10001; rtp+rs8m:[::1]:10001;
+
+IFACE_IP is an IPv4 or IPv6 address, e.g.:
+  0.0.0.0; 192.168.0.3; [::], [2001:db8::1];
 
 TIME is an integer number with a suffix, e.g.:
   123ns; 123us; 123ms; 123s; 123m; 123h;
