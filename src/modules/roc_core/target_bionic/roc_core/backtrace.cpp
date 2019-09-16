@@ -21,8 +21,6 @@
 /* Implementation of backtrace in bionic/android is similar
  * to the implementation of backtrace in glibc.
  */
-
-
 struct BacktraceState
 {
     void** current;
@@ -77,33 +75,6 @@ void dumpBacktrace(void** buffer, size_t count)
 	}
 }
 
-void dumpBacktrace_fd(void** buffer, size_t count, int f)
-{
-	FILE *fd = fdopen(f, "r+");
-	if(count <= 0) {
-		fprintf(fd, "No backtrace available\n");
-	} else {
-		fprintf(fd, "Backtrace:\n");
-		for (size_t idx = 0; idx < count; ++idx) {
-			const void* addr = buffer[idx];
-			const char* symbol = "";
-			int status = -1;
-
-			Dl_info info;
-			if (dladdr(addr, &info) && info.dli_sname) {
-				symbol = info.dli_sname;
-			}
-			fprintf(fd, "#%zd: 0x%x %s", idx, addr, symbol);
-			/* perform demangling
-			 */
-			symbol = abi::__cxa_demangle(symbol, 0, 0, &status);
-			if(status == 0)
-				fprintf(fd, " %s", symbol);
-			fprintf(fd, "\n");
-		}
-	}
-}
-
 namespace roc {
 namespace core {
 
@@ -121,8 +92,6 @@ void print_backtrace()
 
 void print_backtrace_emergency() 
 {
-	void* buffer[MaxLen];
-	dumpBacktrace_fd(buffer, captureBacktrace(buffer, MaxLen), STDERR_FILENO);
 }
 
 } // namespace core
