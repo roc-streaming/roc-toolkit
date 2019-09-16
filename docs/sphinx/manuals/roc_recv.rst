@@ -21,6 +21,7 @@ Options
 -d, --driver=DRIVER       Output driver
 -s, --source=PORT         Source port triplet
 -r, --repair=PORT         Repair port triplet
+--miface=IFACE_IP         IP address of the network interface on which to join the multicast group
 --sess-latency=STRING     Session target latency, TIME units
 --min-latency=STRING      Session minimum latency, TIME units
 --max-latency=STRING      Session maximum latency, TIME units
@@ -132,6 +133,24 @@ Listen on two ports on a particular interface:
 
     $ roc-recv -vv -s rtp+rs8m:192.168.0.3:10001 -r rs8m:192.168.0.3:10002
 
+Listen on two ports on a particular multicast address (but not join to a multicast group):
+
+.. code::
+
+    $ roc-recv -vv -s rtp+rs8m:225.1.2.3:10001 -r rs8m:225.1.2.3:10002
+
+Listen on two ports on a particular multicast address and join to a multicast group on all interfaces:
+
+.. code::
+
+    $ roc-recv -vv -s rtp+rs8m:225.1.2.3:10001 -r rs8m:225.1.2.3:10002 --miface 0.0.0.0
+
+Listen on two ports on a particular multicast address and join to a multicast group on a particular interface:
+
+.. code::
+
+    $ roc-recv -vv -s rtp+rs8m:225.1.2.3:10001 -r rs8m:225.1.2.3:10002 --miface 192.168.0.3
+
 Output to the default ALSA device:
 
 .. code::
@@ -180,6 +199,13 @@ Select resampler profile:
 .. code::
 
     $ roc-recv -vv -s rtp+rs8m::10001 -r rs8m::10002 --resampler-profile=high
+
+Multicast
+---------
+
+*IFACE_IP* should be an IP address of the network interface on which to join to the multicast group. It may be "0.0.0.0" (for IPv4) or "[::]" (for IPv6) to join the multicast group on all available interfaces.
+
+If *IFACE_IP* is not specified and multicast address is used, the user is responsible for joining the multicast group manually.
 
 SEE ALSO
 ========

@@ -31,7 +31,7 @@ packet::PacketPool packet_pool(allocator, true);
 TEST_GROUP(udp) {
     packet::Address new_address() {
         packet::Address addr;
-        CHECK(addr.set_ipv4("127.0.0.1", 0));
+        CHECK(addr.set_host_ipv4("127.0.0.1", 0));
         return addr;
     }
 
