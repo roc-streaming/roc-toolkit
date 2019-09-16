@@ -13,7 +13,7 @@
 namespace roc {
 namespace core {
 
-TEST_GROUP(atomic) {};
+TEST_GROUP(atomic){};
 
 TEST(atomic, init_load) {
     Atomic a1;

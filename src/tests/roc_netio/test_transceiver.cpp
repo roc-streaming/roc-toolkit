@@ -34,7 +34,7 @@ packet::Address make_address(const char* ip, int port) {
 
 } // namespace
 
-TEST_GROUP(transceiver) {};
+TEST_GROUP(transceiver){};
 
 TEST(transceiver, init) {
     Transceiver trx(packet_pool, buffer_pool, allocator);

@@ -26,7 +26,7 @@ typedef List<Object, RefCntOwnership> TestList;
 
 } // namespace
 
-TEST_GROUP(list_ownership) {};
+TEST_GROUP(list_ownership){};
 
 TEST(list_ownership, push_back) {
     Object obj;

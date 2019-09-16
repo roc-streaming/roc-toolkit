@@ -90,5 +90,11 @@ void BackendDispatcher::add_backend_(IBackend& backend) {
     backends_[n_backends_++] = &backend;
 }
 
+void BackendDispatcher::get_drivers(core::Array<DriverInfo>& arr) {
+    for (size_t n = 0; n < n_backends_; n++) {
+        backends_[n]->get_drivers(arr);
+    }
+}
+
 } // namespace sndio
 } // namespace roc

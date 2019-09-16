@@ -50,6 +50,9 @@ public:
                                  const char* input,
                                  const Config& config);
 
+    //! Append supported dirvers to Array
+    virtual void get_drivers(core::Array<DriverInfo>& arr);
+
 private:
     friend class core::Singleton<SoxBackend>;
 

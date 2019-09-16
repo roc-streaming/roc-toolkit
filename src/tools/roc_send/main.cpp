@@ -7,6 +7,7 @@
  */
 
 #include "roc_audio/resampler_profile.h"
+#include "roc_core/array.h"
 #include "roc_core/crash.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_core/log.h"
@@ -17,6 +18,7 @@
 #include "roc_pipeline/parse_port.h"
 #include "roc_pipeline/port_utils.h"
 #include "roc_pipeline/sender.h"
+#include "roc_sndio/DriverInfo.h"
 #include "roc_sndio/backend_dispatcher.h"
 #include "roc_sndio/pump.h"
 
@@ -41,6 +43,15 @@ int main(int argc, char** argv) {
         LogLevel(core::DefaultLogLevel + args.verbose_given));
 
     pipeline::SenderConfig config;
+
+    if (args.list_drivers_given) {
+        core::HeapAllocator allocator;
+        core::Array<sndio::DriverInfo> DriverList(allocator);
+        sndio::BackendDispatcher::instance().get_drivers(DriverList);
+        for (size_t n = 0; n < DriverList.size(); n++) {
+            printf("%s \n", DriverList[n].name);
+        }
+    }
 
     if (args.packet_length_given) {
         if (!core::parse_duration(args.packet_length_arg, config.packet_length)) {

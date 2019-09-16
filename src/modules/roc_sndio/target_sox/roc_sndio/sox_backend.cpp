@@ -196,5 +196,36 @@ ISource* SoxBackend::open_source(core::IAllocator& allocator,
     return source.release();
 }
 
+void SoxBackend::get_drivers(core::Array<DriverInfo>& arr) {
+    const sox_format_tab_t* formats = sox_get_format_fns();
+    char const* const* format_names;
+    size_t n;
+    for (n = 0; formats[n].fn; n++) {
+        sox_format_handler_t const* handler = formats[n].fn();
+        if (!(handler->flags & SOX_FILE_DEVICE)
+            || ((handler->flags & SOX_FILE_DEVICE)
+                && !(handler->flags & SOX_FILE_PHONY))) {
+            for (format_names = handler->names; *format_names; ++format_names) {
+                if (!strchr(*format_names, '/')) {
+                    size_t x;
+                    for (x = 0; x < arr.size(); x++) {
+                        if (strcmp(*format_names, arr[x].name) == 0) {
+                            break;
+                        }
+                    }
+                    if (x == arr.size()) {
+                        DriverInfo newDriver(*format_names);
+                        if (arr.grow(arr.size() + 1)) {
+                            arr.push_back(newDriver);
+                        }
+                    } else {
+                        continue;
+                    }
+                }
+            }
+        }
+    }
+}
+
 } // namespace sndio
 } // namespace roc

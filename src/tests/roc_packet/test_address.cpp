@@ -14,7 +14,7 @@
 namespace roc {
 namespace packet {
 
-TEST_GROUP(address) {};
+TEST_GROUP(address){};
 
 TEST(address, invalid) {
     Address addr;
