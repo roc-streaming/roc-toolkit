@@ -26,6 +26,7 @@ UDPReceiverPort::UDPReceiverPort(ICloseHandler& close_handler,
     , close_handler_(close_handler)
     , loop_(event_loop)
     , handle_initialized_(false)
+    , multicast_group_joined_(false)
     , recv_started_(false)
     , closed_(false)
     , address_(address)
@@ -89,6 +90,12 @@ bool UDPReceiverPort::open() {
         return false;
     }
 
+    if (address_.multicast() && address_.has_miface()) {
+        if (!join_multicast_group_()) {
+            return false;
+        }
+    }
+
     if (int err = uv_udp_recv_start(&handle_, alloc_cb_, recv_cb_)) {
         roc_log(LogError, "udp receiver: uv_udp_recv_start(): [%s] %s", uv_err_name(err),
                 uv_strerror(err));
@@ -125,6 +132,10 @@ void UDPReceiverPort::async_close() {
         }
 
         recv_started_ = false;
+    }
+
+    if (multicast_group_joined_) {
+        leave_multicast_group_();
     }
 
     if (!uv_is_closing((uv_handle_t*)&handle_)) {
@@ -261,6 +272,43 @@ void UDPReceiverPort::recv_cb_(uv_udp_t* handle,
     pp->set_data(core::Slice<uint8_t>(*bp, 0, (size_t)nread));
 
     self.writer_.write(pp);
+}
+
+bool UDPReceiverPort::join_multicast_group_() {
+    char host[packet::Address::MaxStrLen];
+    address_.get_host(host, sizeof(host));
+
+    char miface[packet::Address::MaxStrLen];
+    address_.get_miface(miface, sizeof(miface));
+
+    if (int err = uv_udp_set_membership(&handle_, host, miface, UV_JOIN_GROUP)) {
+        roc_log(LogError, "udp receiver: uv_udp_set_membership(): [%s] %s",
+                uv_err_name(err), uv_strerror(err));
+        return false;
+    }
+
+    roc_log(LogDebug, "udp receiver: joined multicast group for port %s",
+            packet::address_to_str(address_).c_str());
+
+    return (multicast_group_joined_ = true);
+}
+
+void UDPReceiverPort::leave_multicast_group_() {
+    multicast_group_joined_ = false;
+
+    char host[packet::Address::MaxStrLen];
+    address_.get_host(host, sizeof(host));
+
+    char miface[packet::Address::MaxStrLen];
+    address_.get_miface(miface, sizeof(miface));
+
+    if (int err = uv_udp_set_membership(&handle_, host, miface, UV_LEAVE_GROUP)) {
+        roc_log(LogError, "udp receiver: uv_udp_set_membership(): [%s] %s",
+                uv_err_name(err), uv_strerror(err));
+    }
+
+    roc_log(LogDebug, "udp receiver: left multicast group for port %s",
+            packet::address_to_str(address_).c_str());
 }
 
 } // namespace netio
