@@ -53,13 +53,13 @@ int roc_address_init(roc_address* address, roc_family family, const char* ip, in
     packet::Address& pa = *new (address_payload(address)) packet::Address;
 
     if (family == ROC_AF_AUTO || family == ROC_AF_IPv4) {
-        if (pa.set_ipv4(ip, port)) {
+        if (pa.set_host_ipv4(ip, port)) {
             return 0;
         }
     }
 
     if (family == ROC_AF_AUTO || family == ROC_AF_IPv6) {
-        if (pa.set_ipv6(ip, port)) {
+        if (pa.set_host_ipv6(ip, port)) {
             return 0;
         }
     }
@@ -97,7 +97,7 @@ const char* roc_address_ip(const roc_address* address, char* buf, size_t bufsz) 
 
     const packet::Address& pa = get_address(address);
 
-    if (!pa.get_ip(buf, bufsz)) {
+    if (!pa.get_host(buf, bufsz)) {
         return NULL;
     }
 

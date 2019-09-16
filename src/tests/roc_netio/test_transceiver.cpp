@@ -28,7 +28,7 @@ packet::PacketPool packet_pool(allocator, true);
 
 packet::Address make_address(const char* ip, int port) {
     packet::Address addr;
-    CHECK(addr.set_ipv4(ip, port));
+    CHECK(addr.set_host_ipv4(ip, port));
     return addr;
 }
 
