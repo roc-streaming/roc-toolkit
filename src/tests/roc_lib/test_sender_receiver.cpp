@@ -264,12 +264,12 @@ public:
         , pos_(0) {
         CHECK(trx_.valid());
 
-        dst_source_addr_.set_ipv4("127.0.0.1", roc_address_port(dst_source_addr));
-        dst_repair_addr_.set_ipv4("127.0.0.1", roc_address_port(dst_repair_addr));
+        dst_source_addr_.set_host_ipv4("127.0.0.1", roc_address_port(dst_source_addr));
+        dst_repair_addr_.set_host_ipv4("127.0.0.1", roc_address_port(dst_repair_addr));
 
-        send_addr_.set_ipv4("127.0.0.1", 0);
-        recv_source_addr_.set_ipv4("127.0.0.1", 0);
-        recv_repair_addr_.set_ipv4("127.0.0.1", 0);
+        send_addr_.set_host_ipv4("127.0.0.1", 0);
+        recv_source_addr_.set_host_ipv4("127.0.0.1", 0);
+        recv_repair_addr_.set_host_ipv4("127.0.0.1", 0);
 
         writer_ = trx_.add_udp_sender(send_addr_);
         CHECK(writer_);
