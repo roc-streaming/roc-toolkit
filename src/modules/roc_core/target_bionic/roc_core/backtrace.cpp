@@ -7,72 +7,79 @@
  */
 
 #include <cxxabi.h>
-#include <iomanip>
+#include <dlfcn.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <dlfcn.h>
 #include <unwind.h>
-
 
 #include "roc_core/backtrace.h"
 
 /* Implementation of backtrace in bionic/android is similar
  * to the implementation of backtrace in glibc.
  */
-struct BacktraceState
-{
+namespace {
+
+enum { MaxLen = 128 };
+
+struct BacktraceState {
     void** current;
     void** end;
 };
 
-static _Unwind_Reason_Code unwindCallback(struct _Unwind_Context* context, void* arg)
-{
+static _Unwind_Reason_Code unwind_callback(struct _Unwind_Context* context, void* arg) {
     BacktraceState* state = static_cast<BacktraceState*>(arg);
     _Unwind_Ptr pc = _Unwind_GetIP(context);
     if (pc) {
-	   if (state->current == state->end) {
+        if (state->current == state->end) {
             return _URC_END_OF_STACK;
-       } else {
+        } else {
             *state->current++ = reinterpret_cast<void*>(pc);
-       }
+        }
     }
     return _URC_NO_REASON;
 }
 
-size_t captureBacktrace(void** buffer, size_t max)
-{
-    BacktraceState state = {buffer, buffer + max};
-    _Unwind_Backtrace(unwindCallback, &state);
-
-    return state.current - buffer;
+size_t capture_backtrace(void** buffer, size_t max) {
+    BacktraceState state = { buffer, buffer + max };
+    _Unwind_Backtrace(unwind_callback, &state);
+    if (state.current != NULL)
+        return state.current - buffer;
+    else
+        return 0;
 }
 
-void dumpBacktrace(void** buffer, size_t count)
-{
-	if(count <= 0) {
-		fprintf(stderr, "No backtrace available\n");
-	} else {
-		fprintf(stderr, "Backtrace:\n");
-		for (size_t idx = 0; idx < count; ++idx) {
-			const void* addr = buffer[idx];
-			const char* symbol = "";
-			int status = -1;
+void dump_backtrace(void** buffer, size_t count) {
+    if (count <= 0) {
+        fprintf(stderr, "No backtrace available\n");
+    } else {
+        fprintf(stderr, "Backtrace:\n");
+        for (size_t idx = 0; idx < count; ++idx) {
+            const void* addr = buffer[idx];
+            const char* symbol = "";
+            int status = -1;
 
-			Dl_info info;
-			if (dladdr(addr, &info) && info.dli_sname) {
-				symbol = info.dli_sname;
-			}
-			fprintf(stderr, "#%zd: 0x%x %s", idx, addr, symbol);
-			/* perform demangling
-			 */
-			symbol = abi::__cxa_demangle(symbol, 0, 0, &status);
-			if(status == 0)
-				fprintf(stderr, " %s", symbol);
-			fprintf(stderr, "\n");
-		}
-	}
+            Dl_info info;
+            if (dladdr(addr, &info) && info.dli_sname) {
+                symbol = info.dli_sname;
+            }
+            fprintf(stderr, "#%zd: 0x%x", idx, addr);
+
+            char mangled_name[MaxLen];
+            memcpy(mangled_name, symbol, strlen(symbol));
+            /* perform demangling
+             */
+            char* demangled_name = (char*)malloc(MaxLen * sizeof(char));
+            demangled_name = abi::__cxa_demangle(mangled_name, 0, 0, &status);
+            if (status == 0)
+                fprintf(stderr, " %s\n", demangled_name);
+            else
+                fprintf(stderr, " %s\n", symbol);
+            free(demangled_name);
+        }
+    }
+}
 }
 
 namespace roc {
@@ -80,18 +87,15 @@ namespace core {
 
 namespace {
 
-enum { MaxDepth = 128, MaxLen = 128 };
-
+enum { MaxDepth = 128 };
 }
 
-void print_backtrace() 
-{
-	void* buffer[MaxLen];
-	dumpBacktrace(buffer, captureBacktrace(buffer, MaxLen));
+void print_backtrace() {
+    void* buffer[MaxDepth];
+    dump_backtrace(buffer, capture_backtrace(buffer, MaxDepth));
 }
 
-void print_backtrace_emergency() 
-{
+void print_backtrace_emergency() {
 }
 
 } // namespace core

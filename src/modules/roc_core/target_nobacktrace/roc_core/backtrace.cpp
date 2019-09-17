@@ -6,26 +6,15 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include <stdio.h>
-
-
 #include "roc_core/backtrace.h"
 
 namespace roc {
 namespace core {
 
-namespace {
-
-enum { MaxDepth = 128, MaxLen = 128 };
-
+void print_backtrace() {
 }
 
-void print_backtrace() 
-{
-}
-
-void print_backtrace_emergency() 
-{
+void print_backtrace_emergency() {
 }
 
 } // namespace core
