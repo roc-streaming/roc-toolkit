@@ -41,7 +41,7 @@ static _Unwind_Reason_Code unwind_callback(struct _Unwind_Context* context, void
     return _URC_NO_REASON;
 }
 
-size_t capture_backtrace(void** buffer, size_t max) {
+ssize_t capture_backtrace(void** buffer, size_t max) {
     BacktraceState state = { buffer, buffer + max };
     _Unwind_Backtrace(unwind_callback, &state);
     if (state.current != NULL)
@@ -50,12 +50,12 @@ size_t capture_backtrace(void** buffer, size_t max) {
         return 0;
 }
 
-void dump_backtrace(void** buffer, size_t count) {
+void dump_backtrace(void** buffer, ssize_t count) {
     if (count <= 0) {
         fprintf(stderr, "No backtrace available\n");
     } else {
         fprintf(stderr, "Backtrace:\n");
-        for (size_t idx = 0; idx < count; ++idx) {
+        for (ssize_t idx = 0; idx < count; ++idx) {
             const void* addr = buffer[idx];
             const char* symbol = "";
             int status = -1;
@@ -64,7 +64,7 @@ void dump_backtrace(void** buffer, size_t count) {
             if (dladdr(addr, &info) && info.dli_sname) {
                 symbol = info.dli_sname;
             }
-            fprintf(stderr, "#%zd: 0x%x", idx, addr);
+            fprintf(stderr, "#%zd: 0x%p", idx, addr);
 
             char mangled_name[MaxLen];
             memcpy(mangled_name, symbol, strlen(symbol));
