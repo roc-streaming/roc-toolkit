@@ -3,14 +3,17 @@ usage "roc-recv OPTIONS"
 
 section "Options"
 
+    option "list-drivers" L "list all supported audio drivers" optional
+
     option "verbose" v "Increase verbosity level (may be used multiple times)"
         multiple optional
 
     option "output" o "Output file or device" typestr="OUTPUT" string optional
+
     option "driver" d "Output driver" typestr="DRIVER" string optional
 
     option "source" s "Source port triplet (may be used multiple times)"
-        typestr="PORT" string required multiple
+        typestr="PORT" string optional multiple
 
     option "repair" r "Repair port triplet (may be used multiple times)"
         typestr="PORT" string optional multiple

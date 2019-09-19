@@ -135,11 +135,11 @@ bool SoxBackend::probe(const char* driver, const char* inout, int flags) {
     }
 
     if (handler->flags & SOX_FILE_DEVICE) {
-        if ((flags & ProbeDevice) == 0) {
+        if ((flags & FilterDevice) == 0) {
             return false;
         }
     } else {
-        if ((flags & ProbeFile) == 0) {
+        if ((flags & FilterFile) == 0) {
             return false;
         }
     }
@@ -194,6 +194,28 @@ ISource* SoxBackend::open_source(core::IAllocator& allocator,
     }
 
     return source.release();
+}
+
+void SoxBackend::get_drivers(core::Array<DriverInfo>& arr, FilterFlags driver_type) {
+    const sox_format_tab_t* formats = sox_get_format_fns();
+    char const* const* format_names;
+    for (size_t n = 0; formats[n].fn; n++) {
+        sox_format_handler_t const* handler = formats[n].fn();
+        bool match = false;
+        if (driver_type & FilterFile) {
+            match = !(handler->flags & SOX_FILE_DEVICE);
+        } else if (driver_type & FilterDevice) {
+            match = ((handler->flags & SOX_FILE_DEVICE)
+                     && !(handler->flags & SOX_FILE_PHONY));
+        }
+        if (match) {
+            for (format_names = handler->names; *format_names; ++format_names) {
+                if (!strchr(*format_names, '/')) {
+                    add_driver_uniq(arr, *format_names);
+                }
+            }
+        }
+    }
 }
 
 } // namespace sndio
