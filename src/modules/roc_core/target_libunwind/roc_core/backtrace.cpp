@@ -16,6 +16,31 @@
 
 #include "roc_core/backtrace.h"
 
+namespace roc {
+namespace core {
+
+namespace {
+
+enum { MaxDigits = 10, MaxLen = 200, MaxLenFunctionName = 128 };
+/* safe concatenation of strings
+ */
+void safe_strcat(char* buffer, size_t& buffer_size, const char* str) {
+    size_t len = strlen(str);
+	/* Checking if there is enough space in the buffer
+	 */
+    if (buffer_size + len < MaxLen) {
+        strcat(buffer, str);
+        buffer_size += len;
+    } else {
+        size_t length_to_be_truncated = buffer_size + len - MaxLen;
+        for (size_t i = 0; i < len - length_to_be_truncated; i++) {
+            buffer[buffer_size] = str[i];
+            buffer_size++;
+        }
+        buffer[MaxLen - 1] = '\n';
+    }
+}
+
 /* Function to convert unsigned int to decimal/hex string.
  * This function is signal safe.
  * Parameters :
@@ -23,11 +48,6 @@
  * base = 10 for decimal to char* and 16 for hex to char* conversion.
  * output_string = the decimal/hex string
  */
-
-namespace {
-
-enum { MaxDigits = 10, MaxLen = 200 };
-
 void uint32_to_string(uint32_t number, uint32_t base, char* output_string) {
     int i = MaxDigits;
     int j = 0;
@@ -37,8 +57,9 @@ void uint32_to_string(uint32_t number, uint32_t base, char* output_string) {
         number = number / base;
     } while (number > 0);
 
-    while (++i < MaxDigits + 1)
+    while (++i < MaxDigits + 1) {
         output_string[j++] = output_string[i];
+    }
     output_string[j] = 0;
 }
 
@@ -53,25 +74,28 @@ bool is_backtrace_available() {
     /* To get snapshot of the CPU register.
      * unw_getcontext() is signal safe.
      */
-    if (unw_getcontext(&context) < 0)
+    if (unw_getcontext(&context) < 0) {
         return false;
+    }
 
     /* To point to the current frame in the call stack.
- */
+     */
     unw_cursor_t cursor;
 
     /* To point to current frame.
- * unw_init_local() is signal safe.
- */
-    if (unw_init_local(&cursor, &context) < 0)
+     * unw_init_local() is signal safe.
+     */
+    if (unw_init_local(&cursor, &context) < 0) {
         return false;
+    }
 
     /* Moving to previously called frames & going through each of them.
      * unw_step() is signal safe.
      * If there is atleast one entry in backtrace
      */
-    if (unw_step(&cursor) > 0)
+    if (unw_step(&cursor) > 0) {
         return true;
+    }
     return false;
 }
 
@@ -88,13 +112,13 @@ void backtrace_symbols_fd(int fd) {
      */
     unw_getcontext(&context);
 
-    /* To point to the current frame in the call stack.
- */
+    /* To point to the current frame in the call stack
+     */
     unw_cursor_t cursor;
 
     /* To point to current frame.
- * unw_init_local() is signal safe.
- */
+     * unw_init_local() is signal safe.
+     */
     unw_init_local(&cursor, &context);
 
     /* Moving to previously called frames & going through each of them.
@@ -114,7 +138,7 @@ void backtrace_symbols_fd(int fd) {
          * 'status' checks if unw_get_proc_name() is successful or not.
          * 'status = 0', successfully executed the function.
          */
-        char function_name[128];
+        char function_name[MaxLenFunctionName];
         function_name[0] = '\0';
         unw_word_t offset;
         int32_t status =
@@ -130,26 +154,24 @@ void backtrace_symbols_fd(int fd) {
         uint32_to_string(index, 10, number);
 
         char buffer[MaxLen] = "#";
-        strcat(buffer, number);
-        strcat(buffer, ": (");
-        strcat(buffer, function_name);
-        strcat(buffer, "+0x");
+        size_t current_buffer_size = 1;
+        safe_strcat(buffer, current_buffer_size, number);
+        safe_strcat(buffer, current_buffer_size, ": (");
+        safe_strcat(buffer, current_buffer_size, function_name);
+        safe_strcat(buffer, current_buffer_size, "+0x");
 
         uint32_to_string((uint32_t)offset, 16, number);
-        strcat(buffer, number);
-        strcat(buffer, ") [");
+        safe_strcat(buffer, current_buffer_size, number);
+        safe_strcat(buffer, current_buffer_size, ") [");
 
         uint32_to_string((uint32_t)ip, 16, number);
-        strcat(buffer, number);
-        strcat(buffer, "]\n");
+        safe_strcat(buffer, current_buffer_size, number);
+        safe_strcat(buffer, current_buffer_size, "]\n");
 
-        write(fd, buffer, 200);
+        write(fd, buffer, MaxLen);
     }
 }
-}
-
-namespace roc {
-namespace core {
+} // namespace
 
 void print_backtrace() {
     if (!is_backtrace_available()) {

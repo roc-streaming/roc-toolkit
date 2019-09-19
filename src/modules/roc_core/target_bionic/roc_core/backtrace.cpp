@@ -19,9 +19,13 @@
 /* Implementation of backtrace in bionic/android is similar
  * to the implementation of backtrace in glibc.
  */
+
+namespace roc {
+namespace core {
+
 namespace {
 
-enum { MaxLen = 128 };
+enum { MaxLen = 128, MaxDepth = 128 };
 
 struct BacktraceState {
     void** current;
@@ -44,10 +48,10 @@ static _Unwind_Reason_Code unwind_callback(struct _Unwind_Context* context, void
 ssize_t capture_backtrace(void** buffer, size_t max) {
     BacktraceState state = { buffer, buffer + max };
     _Unwind_Backtrace(unwind_callback, &state);
-    if (state.current != NULL)
+    if (state.current != NULL) {
         return state.current - buffer;
-    else
-        return 0;
+    }
+    return 0;
 }
 
 void dump_backtrace(void** buffer, ssize_t count) {
@@ -55,6 +59,8 @@ void dump_backtrace(void** buffer, ssize_t count) {
         fprintf(stderr, "No backtrace available\n");
     } else {
         fprintf(stderr, "Backtrace:\n");
+        size_t demangled_size = MaxLen;
+        char* demangled_name = (char*)malloc(demangled_size);
         for (ssize_t idx = 0; idx < count; ++idx) {
             const void* addr = buffer[idx];
             const char* symbol = "";
@@ -66,29 +72,20 @@ void dump_backtrace(void** buffer, ssize_t count) {
             }
             fprintf(stderr, "#%zd: 0x%p", idx, addr);
 
-            char mangled_name[MaxLen];
-            memcpy(mangled_name, symbol, strlen(symbol));
             /* perform demangling
              */
-            char* demangled_name = (char*)malloc(MaxLen * sizeof(char));
-            demangled_name = abi::__cxa_demangle(mangled_name, 0, 0, &status);
-            if (status == 0)
+            demangled_name =
+                abi::__cxa_demangle(symbol, demangled_name, &demangled_size, &status);
+            if (status == 0) {
                 fprintf(stderr, " %s\n", demangled_name);
-            else
+            } else {
                 fprintf(stderr, " %s\n", symbol);
-            free(demangled_name);
+            }
         }
+        free(demangled_name);
     }
 }
-}
-
-namespace roc {
-namespace core {
-
-namespace {
-
-enum { MaxDepth = 128 };
-}
+} // namespace
 
 void print_backtrace() {
     void* buffer[MaxDepth];
