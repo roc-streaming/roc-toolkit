@@ -12,6 +12,7 @@
 #ifndef ROC_SNDIO_BACKEND_DISPATCHER_H_
 #define ROC_SNDIO_BACKEND_DISPATCHER_H_
 
+#include "roc_core/array.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/shared_ptr.h"
@@ -45,6 +46,9 @@ public:
                          const char* driver,
                          const char* input,
                          const Config& config);
+
+    //! Append supported drivers from all registered backends to Array
+    void get_drivers(core::Array<DriverInfo>& arr, IBackend::FilterFlags driver_type);
 
 private:
     friend class core::Singleton<BackendDispatcher>;

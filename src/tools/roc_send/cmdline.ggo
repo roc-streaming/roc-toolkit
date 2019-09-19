@@ -3,13 +3,17 @@ usage "roc-send OPTIONS"
 
 section "Options"
 
+    option "list-drivers" L "List all supported audio drivers" optional
+    
     option "verbose" v "Increase verbosity level (may be used multiple times)"
         multiple optional
 
     option "input" i "Input file or device" typestr="INPUT" string optional
+
     option "driver" d "Input driver" typestr="DRIVER" string optional
 
-    option "source" s "Remote source port triplet" typestr="PORT" string required
+    option "source" s "Remote source port triplet" typestr="PORT" string optional
+    
     option "repair" r "Remote repair port triplet" typestr="PORT" string optional
 
     option "nbsrc" - "Number of source packets in FEC block"

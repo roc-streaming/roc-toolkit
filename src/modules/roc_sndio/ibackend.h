@@ -12,9 +12,11 @@
 #ifndef ROC_SNDIO_IBACKEND_H_
 #define ROC_SNDIO_IBACKEND_H_
 
+#include "roc_core/array.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/shared_ptr.h"
 #include "roc_sndio/config.h"
+#include "roc_sndio/driver_info.h"
 #include "roc_sndio/isink.h"
 #include "roc_sndio/isource.h"
 
@@ -27,18 +29,18 @@ public:
     virtual ~IBackend();
 
     //! Probing flags.
-    enum ProbeFlags {
+    enum FilterFlags {
         //! Input or output may be a sink.
-        ProbeSink = (1 << 0),
+        FilterSink = (1 << 0),
 
         //! Input or output may be a source.
-        ProbeSource = (1 << 1),
+        FilterSource = (1 << 1),
 
         //! Input or output may be a file.
-        ProbeFile = (1 << 2),
+        FilterFile = (1 << 2),
 
         //! Input or output may be a device.
-        ProbeDevice = (1 << 3)
+        FilterDevice = (1 << 3)
     };
 
     //! Check whether the backend can handle given input or output.
@@ -55,6 +57,9 @@ public:
                                  const char* driver,
                                  const char* input,
                                  const Config& config) = 0;
+
+    //! Append supported dirvers to Array
+    virtual void get_drivers(core::Array<DriverInfo>& arr, FilterFlags driver_type) = 0;
 };
 
 } // namespace sndio

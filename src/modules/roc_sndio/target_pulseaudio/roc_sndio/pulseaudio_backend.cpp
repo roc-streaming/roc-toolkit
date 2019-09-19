@@ -11,6 +11,7 @@
 #include "roc_core/log.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/unique_ptr.h"
+#include "roc_sndio/driver_info.h"
 #include "roc_sndio/pulseaudio_backend.h"
 #include "roc_sndio/pulseaudio_sink.h"
 
@@ -22,11 +23,11 @@ PulseaudioBackend::PulseaudioBackend() {
 }
 
 bool PulseaudioBackend::probe(const char* driver, const char*, int flags) {
-    if ((flags & ProbeDevice) == 0) {
+    if ((flags & FilterDevice) == 0) {
         return false;
     }
 
-    if ((flags & ProbeSink) == 0) {
+    if ((flags & FilterSink) == 0) {
         return false;
     }
 
@@ -55,6 +56,14 @@ ISource* PulseaudioBackend::open_source(core::IAllocator&,
                                         const char*,
                                         const Config&) {
     return NULL;
+}
+
+void PulseaudioBackend::get_drivers(core::Array<DriverInfo>& arr,
+                                    FilterFlags driver_type) {
+    const char* format_name = "pulseaudio";
+    if (driver_type & FilterDevice) {
+        add_driver_uniq(arr, format_name);
+    }
 }
 
 } // namespace sndio

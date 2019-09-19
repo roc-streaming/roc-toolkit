@@ -42,7 +42,7 @@ ISink* BackendDispatcher::open_sink(core::IAllocator& allocator,
                                     const char* driver,
                                     const char* output,
                                     const Config& config) {
-    IBackend* backend = select_backend_(driver, output, IBackend::ProbeSink);
+    IBackend* backend = select_backend_(driver, output, IBackend::FilterSink);
     if (!backend) {
         return NULL;
     }
@@ -53,7 +53,7 @@ ISource* BackendDispatcher::open_source(core::IAllocator& allocator,
                                         const char* driver,
                                         const char* input,
                                         const Config& config) {
-    IBackend* backend = select_backend_(driver, input, IBackend::ProbeSource);
+    IBackend* backend = select_backend_(driver, input, IBackend::FilterSource);
     if (!backend) {
         return NULL;
     }
@@ -62,12 +62,13 @@ ISource* BackendDispatcher::open_source(core::IAllocator& allocator,
 
 IBackend*
 BackendDispatcher::select_backend_(const char* driver, const char* inout, int flags) {
-    if (IBackend* backend = probe_backends_(driver, inout, flags | IBackend::ProbeFile)) {
+    if (IBackend* backend =
+            probe_backends_(driver, inout, flags | IBackend::FilterFile)) {
         return backend;
     }
 
     if (IBackend* backend = probe_backends_(
-            driver, inout, flags | IBackend::ProbeFile | IBackend::ProbeDevice)) {
+            driver, inout, flags | IBackend::FilterFile | IBackend::FilterDevice)) {
         return backend;
     }
 
@@ -88,6 +89,13 @@ BackendDispatcher::probe_backends_(const char* driver, const char* inout, int fl
 void BackendDispatcher::add_backend_(IBackend& backend) {
     roc_panic_if(n_backends_ == MaxBackends);
     backends_[n_backends_++] = &backend;
+}
+
+void BackendDispatcher::get_drivers(core::Array<DriverInfo>& arr,
+                                    IBackend::FilterFlags driver_type) {
+    for (size_t n = 0; n < n_backends_; n++) {
+        backends_[n]->get_drivers(arr, driver_type);
+    }
 }
 
 } // namespace sndio
