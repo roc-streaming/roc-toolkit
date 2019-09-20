@@ -33,7 +33,7 @@ void safe_strcat(char* buffer, size_t& buffer_size, const char* str) {
         buffer_size += len;
     } else {
         size_t length_to_be_truncated = buffer_size + len - MaxLen;
-        for (size_t i = 0; i < len - length_to_be_truncated; i++) {
+        for (size_t i = 0; i < len - length_to_be_truncated && buffer_size < MaxLen-1; i++) {
             buffer[buffer_size] = str[i];
             buffer_size++;
         }
