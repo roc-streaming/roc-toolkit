@@ -32,8 +32,11 @@ def PrependFromArg(env, var, names=[], default=None):
             env.Prepend(**{var: v})
             break
 
-def MergeVars(env, src_env):
+def MergeVars(env, src_env, exclude=[]):
     for k, v in src_env.Dictionary().items():
+        if k in exclude:
+            continue
+
         if not k in env.Dictionary():
             env[k] = v
             continue

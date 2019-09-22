@@ -7,6 +7,7 @@ Build dependencies
 * GCC >= 4.1 or Clang >= 3.4
 * Python >= 2.6 or 3.x
 * SCons
+* Ragel
 * gengetopt (optional, install if you want to build tools)
 * pkg-config (optional, install if you want installed dependencies to be auto-detected)
 * config.guess script (optional, used to auto-detect the system type; may be provided by autotools, automake, or libtool package)

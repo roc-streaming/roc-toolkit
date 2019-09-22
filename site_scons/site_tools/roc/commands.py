@@ -83,6 +83,33 @@ def Sphinx(env, output_type, build_dir, output_dir, source_dir, sources, werror=
 
     return env.File(target)
 
+def Ragel(env, source):
+    if 'RAGEL' in env.Dictionary():
+        ragel = env['RAGEL']
+
+    else:
+        ragel = 'ragel'
+
+    if isinstance(ragel, str):
+        if not env.Which(ragel):
+            env.Die("ragel not found in PATH (looked for '%s')" % ragel)
+    else:
+        ragel = env.File(ragel).path
+
+    source = env.File(source)
+
+    target_name = os.path.splitext(os.path.basename(source.path))[0] + '.cpp'
+    target = os.path.join(str(source.dir), target_name)
+
+    env.Command(target, source, SCons.Action.CommandAction(
+        '%s -o "%s" "%s"' % (
+            ragel,
+            os.path.join(os.path.dirname(source.path), target_name),
+            source.srcnode().path),
+        cmdstr = env.PrettyCommand('RAGEL', '$SOURCE', 'purple')))
+
+    return [env.Object(target)]
+
 def GenGetOpt(env, source, ver):
     if 'GENGETOPT' in env.Dictionary():
         gengetopt = env['GENGETOPT']
@@ -215,6 +242,7 @@ def init(env):
     env.AddMethod(ClangDBWriter, 'ClangDBWriter')
     env.AddMethod(Doxygen, 'Doxygen')
     env.AddMethod(Sphinx, 'Sphinx')
+    env.AddMethod(Ragel, 'Ragel')
     env.AddMethod(GenGetOpt, 'GenGetOpt')
     env.AddMethod(MaybeStripLibrary, 'MaybeStripLibrary')
     env.AddMethod(SymlinkLibrary, 'SymlinkLibrary')

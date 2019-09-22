@@ -15,15 +15,26 @@ for module in env['ROC_MODULES']:
     cenv.MergeVars(tool_env)
     cenv.Append(CPPDEFINES=('ROC_MODULE', module))
 
-    sources = env.Glob('%s/*.cpp' % moduledir)
+    genv = gen_env.Clone()
+    genv.MergeVars(cenv, exclude=['CXXFLAGS'])
+
+    sources = []
+    objects = []
+
+    sources += env.Glob('%s/*.cpp' % moduledir)
+    for rs in env.Glob('%s/*.rl' % moduledir):
+        objects += genv.Ragel(rs)
+
     for targetdir in env.GlobRecursive(moduledir, 'target_*'):
         if targetdir.name in env['ROC_TARGETS']:
             sources += env.GlobRecursive(targetdir, '*.cpp')
+            for rs in env.GlobRecursive(targetdir, '*.rl'):
+                objects += genv.Ragel(rs)
 
-    if not sources:
+    if not sources and not objects:
         continue
 
-    lib = cenv.StaticLibrary(module, sources)
+    lib = cenv.StaticLibrary(module, sources+objects)
     env.Alias(module, [lib], env.Action(''))
     env.AlwaysBuild(module)
 

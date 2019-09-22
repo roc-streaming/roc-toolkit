@@ -60,7 +60,7 @@ Alternatively, you can install the toolchain manually:
     $ ROC_DIR=/path/to/roc
 
     # for Roc
-    $ apt-get install g++ scons gengetopt
+    $ apt-get install g++ scons ragel gengetopt
 
     # for 3rd-parties
     $ apt-get install libtool intltool autoconf automake make cmake
@@ -107,7 +107,7 @@ Alternatively, you can install the toolchain manually:
     $ ROC_DIR=/path/to/roc
 
     # for Roc
-    $ apt-get install g++ scons gengetopt
+    $ apt-get install g++ scons ragel gengetopt
 
     # for 3rd-parties
     $ apt-get install libtool autoconf automake make cmake
@@ -150,7 +150,7 @@ Alternatively, you can install the toolchain manually:
     $ ROC_DIR=/path/to/roc
 
     # for Roc
-    $ apt-get install g++ scons gengetopt
+    $ apt-get install g++ scons ragel gengetopt
 
     # for 3rd-parties
     $ apt-get install libtool autoconf automake make cmake
@@ -213,7 +213,7 @@ Here is how you can build Roc with this toolchain on Ubuntu:
     $ apt-get update
 
     # for Roc
-    $ apt-get install g++ scons gengetopt
+    $ apt-get install g++ scons ragel gengetopt
 
     # for 3rd-parties
     $ apt-get install libtool autoconf automake make cmake

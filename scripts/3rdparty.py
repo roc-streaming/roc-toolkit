@@ -590,6 +590,18 @@ elif name == 'gengetopt':
         makeenv(envlist)), logfile)
     execute('make', logfile) # -j is buggy for gengetopt
     install_files('src/gengetopt', os.path.join(builddir, 'bin'))
+elif name == 'ragel':
+    download('https://www.colm.net/files/ragel/ragel-%s.tar.gz' % ver,
+             'ragel-%s.tar.gz' % ver,
+             logfile,
+             vendordir)
+    extract('ragel-%s.tar.gz' % ver,
+            'ragel-%s' % ver)
+    os.chdir('src/ragel-%s' % ver)
+    execute('./configure %s' % (
+        makeenv(envlist)), logfile)
+    execute('make -j', logfile)
+    install_files('ragel/ragel', os.path.join(builddir, 'bin'))
 elif name == 'cpputest':
     download(
         'https://raw.githubusercontent.com/cpputest/cpputest.github.io/' \
