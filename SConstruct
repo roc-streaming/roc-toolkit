@@ -35,6 +35,7 @@ thirdparty_versions = {
     'json':       '0.11-20130402',
     'ltdl':       '2.4.6',
     'sndfile':    '1.0.20',
+    'ragel':      '6.10',
     'gengetopt':  '2.22.6',
 }
 
@@ -301,7 +302,7 @@ if env.GetOption('clean'):
     env.Execute(clean)
     Return()
 
-for var in ['CXX', 'CC', 'AR', 'RANLIB', 'GENGETOPT', 'PKG_CONFIG', 'CONFIG_GUESS']:
+for var in ['CXX', 'CC', 'AR', 'RANLIB', 'RAGEL', 'GENGETOPT', 'PKG_CONFIG', 'CONFIG_GUESS']:
     env.OverrideFromArg(var)
 
 env.OverrideFromArg('CXXLD', names=['CXXLD', 'CXX'])
@@ -675,6 +676,8 @@ pulse_env = env.Clone()
 # all possible dependencies on this platform
 all_dependencies = set(env['ROC_TARGETS'])
 
+all_dependencies.add('target_ragel')
+
 if not GetOption('disable_tests'):
     all_dependencies.add('target_cpputest')
 
@@ -837,6 +840,19 @@ if 'target_libunwind' in system_dependecies:
         env.Die("libunwind not found (see 'config.log' for details)")
     env = conf.Finish()
 
+if 'target_ragel' in system_dependecies:
+    conf = Configure(env, custom_tests=env.CustomTests)
+
+    if 'RAGEL' in env.Dictionary():
+        ragel = env['RAGEL']
+    else:
+        ragel = 'ragel'
+
+    if not conf.CheckProg(ragel):
+        env.Die("ragel not found in PATH (looked for '%s')" % ragel)
+
+    env = conf.Finish()
+
 if 'target_gengetopt' in system_dependecies:
     conf = Configure(env, custom_tests=env.CustomTests)
 
@@ -955,17 +971,27 @@ if 'target_sox' in download_dependencies:
     tool_env = conf.Finish()
 
 if 'target_libunwind' in download_dependencies:
-    env.ThirdParty(host, thirdparty_compiler_spec, 
+    env.ThirdParty(host, thirdparty_compiler_spec,
                    toolchain, thirdparty_variant,
                    thirdparty_versions, 'libunwind')
+
+if 'target_ragel' in download_dependencies:
+    env.ThirdParty(build, thirdparty_compiler_spec, "",
+                   thirdparty_variant, thirdparty_versions, 'ragel')
+
+    gen_env['RAGEL'] = env.File(
+        '#3rdparty/%s/%s/build/ragel-%s/bin/ragel' % (
+            build + env['PROGSUFFIX'], thirdparty_compiler_spec,
+            thirdparty_versions['ragel']))
 
 if 'target_gengetopt' in download_dependencies:
     env.ThirdParty(build, thirdparty_compiler_spec, "",
                    thirdparty_variant, thirdparty_versions, 'gengetopt')
 
     gen_env['GENGETOPT'] = env.File(
-        '#3rdparty/%s/%s/build/gengetopt-2.22.6/bin/gengetopt' % (
-            build + env['PROGSUFFIX'], thirdparty_compiler_spec))
+        '#3rdparty/%s/%s/build/gengetopt-%s/bin/gengetopt' % (
+            build + env['PROGSUFFIX'], thirdparty_compiler_spec,
+            thirdparty_versions['gengetopt']))
 
 if 'target_cpputest' in download_dependencies:
     test_env.ThirdParty(host, thirdparty_compiler_spec, toolchain,
