@@ -38,10 +38,19 @@ def GlobRecursive(env, dirs, patterns, exclude=[]):
 
     return matches
 
+def GlobFiles(env, pattern):
+    ret = []
+    for path in env.Glob(pattern):
+        if os.path.isfile(path.srcnode().abspath):
+            ret.append(path)
+    return ret
+
 def GlobDirs(env, pattern):
+    ret = []
     for path in env.Glob(pattern):
         if os.path.isdir(path.srcnode().abspath):
-            yield path
+            ret.append(path)
+    return ret
 
 def getenv(env, name, default):
     if name in env['ENV']:
@@ -78,5 +87,6 @@ def Which(env, prog, prepend_path=[]):
 
 def init(env):
     env.AddMethod(GlobRecursive, 'GlobRecursive')
+    env.AddMethod(GlobFiles, 'GlobFiles')
     env.AddMethod(GlobDirs, 'GlobDirs')
     env.AddMethod(Which, 'Which')

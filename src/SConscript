@@ -21,8 +21,8 @@ for module in env['ROC_MODULES']:
     sources = []
     objects = []
 
-    sources += env.Glob('%s/*.cpp' % moduledir)
-    for rs in env.Glob('%s/*.rl' % moduledir):
+    sources += env.GlobFiles('%s/*.cpp' % moduledir)
+    for rs in env.GlobFiles('%s/*.rl' % moduledir):
         objects += genv.Ragel(rs)
 
     for targetdir in env.GlobRecursive(moduledir, 'target_*'):
@@ -48,7 +48,7 @@ if not GetOption('disable_lib'):
     cenv.Append(CPPDEFINES=('ROC_MODULE', 'roc_lib'))
     cenv.Append(CPPPATH=['lib/include'])
 
-    sources = env.Glob('lib/src/*.cpp')
+    sources = env.GlobFiles('lib/src/*.cpp')
 
     libroc = cenv.SharedLibrary(
         'roc_unstripped', sources, SHLIBSUFFIX=lib_env['SHLIBSUFFIX'])
@@ -82,7 +82,7 @@ if not GetOption('disable_examples'):
 
     targets = []
 
-    for source in env.Glob('lib/example/*.c'):
+    for source in env.GlobFiles('lib/example/*.c'):
         example = os.path.splitext(source.name)[0]
         exename = 'roc-example-' + example.replace('_', '-')
 
@@ -116,7 +116,7 @@ if not GetOption('disable_tests'):
             ccenv.Append(CPPPATH=['lib/include'])
             ccenv.Prepend(LIBS=[libroc])
 
-        sources = env.Glob('%s/*.cpp' % testdir)
+        sources = env.GlobFiles('%s/*.cpp' % testdir)
         for targetdir in env.GlobRecursive(testdir, 'target_*'):
             if targetdir.name in env['ROC_TARGETS']:
                 ccenv.Append(CPPPATH=['#src/%s' % targetdir])
@@ -139,9 +139,9 @@ if not GetOption('disable_tools'):
         cenv.Append(CPPDEFINES=('ROC_MODULE', tooldir.name))
         cenv.Append(CPPPATH=['tools', '#src/tools/%s' % tooldir.name])
 
-        sources = env.Glob('%s/*.cpp' % tooldir)
+        sources = env.GlobFiles('%s/*.cpp' % tooldir)
         objects = []
-        for ggo in env.Glob('%s/*.ggo' % tooldir):
+        for ggo in env.GlobFiles('%s/*.ggo' % tooldir):
             objects += gen_env.GenGetOpt(ggo, env['ROC_VERSION_STR'])
 
         exename = tooldir.name.replace('roc_', 'roc-')
@@ -162,7 +162,7 @@ if GetOption('enable_pulseaudio_modules'):
     helpers = cenv.Object('pulse/module_helpers.c')
     targets = []
 
-    for source in env.Glob('pulse/module-*.c'):
+    for source in env.GlobFiles('pulse/module-*.c'):
         module = os.path.splitext(source.name)[0]
 
         modulelib = cenv.SharedLibrary(module, [source, helpers], LIBPREFIX='')
