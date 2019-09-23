@@ -178,10 +178,27 @@ def install_files(src, dst):
         mkpath(dst)
         shutil.copy(f, dst)
 
-def freplace(path, pat, to):
+def freplace(path, from_, to):
     print('[patch] %s' % path)
     for line in fileinput.input(path, inplace=True):
-        print(line.replace(pat, to), end='')
+        print(line.replace(from_, to), end='')
+
+def freplace_tree(dirpath, filepats, from_, to):
+    def match(path):
+        try:
+            with open(path) as fp:
+                for line in fp:
+                    if from_ in line:
+                        return True
+        except:
+            pass
+
+    for filepat in filepats:
+        for root, dirnames, filenames in os.walk(dirpath):
+            for filename in fnmatch.filter(filenames, filepat):
+                filepath = os.path.join(root, filename)
+                if match(filepath):
+                    freplace(filepath, from_, to)
 
 def try_patch(dirname, patchurl, patchname, logfile, vendordir):
     if not try_execute('patch --version'):
@@ -467,13 +484,18 @@ elif name == 'pulseaudio':
         vendordir)
     extract('pulseaudio-%s.tar.gz' % ver,
             'pulseaudio-%s' % ver)
-    if (8, 99, 1) <= tuple(map(int, ver.split('.'))) < (11, 99, 1):
+    pa_ver = tuple(map(int, ver.split('.')))
+    if (8, 99, 1) <= pa_ver < (11, 99, 1):
         try_patch(
             'pulseaudio-%s' % ver,
             'https://bugs.freedesktop.org/attachment.cgi?id=136927',
             '0001-memfd-wrappers-only-define-memfd_create-if-not-alrea.patch',
             logfile,
             vendordir)
+    if pa_ver < (12, 99, 1):
+        freplace_tree('src/pulseaudio-%s' % ver, ['*.h', '*.c'],
+                      '#include <asoundlib.h>',
+                      '#include <alsa/asoundlib.h>')
     os.chdir('src/pulseaudio-%s' % ver)
     execute('./configure --host=%s %s %s %s %s' % (
         toolchain,
@@ -509,7 +531,7 @@ elif name == 'pulseaudio':
     install_files('src/.libs/libpulsecommon-*.so', rpathdir)
 elif name == 'sox':
     download(
-      'http://vorboss.dl.sourceforge.net/project/sox/sox/%s/sox-%s.tar.gz' % (ver, ver),
+      'https://datapacket.dl.sourceforge.net/project/sox/sox/%s/sox-%s.tar.gz' % (ver, ver),
       'sox-%s.tar.gz' % ver,
         logfile,
         vendordir)

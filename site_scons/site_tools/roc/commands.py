@@ -104,7 +104,7 @@ def GenGetOpt(env, source, ver):
     ]
 
     env.Command(target, source, SCons.Action.CommandAction(
-        '%s -i %s -F %s --output-dir=%s --set-version=%s' % (
+        '%s -i "%s" -F "%s" --output-dir "%s" --set-version "%s"' % (
             gengetopt,
             source.srcnode().path,
             source_name,

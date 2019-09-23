@@ -24,18 +24,6 @@ namespace {
 
 volatile sig_atomic_t crash_in_progress = 0;
 
-void signal_print(const char* str) {
-    size_t str_sz = strlen(str);
-    while (str_sz > 0) {
-        ssize_t ret = write(STDERR_FILENO, str, str_sz);
-        if (ret <= 0) {
-            return;
-        }
-        str += (size_t)ret;
-        str_sz -= (size_t)ret;
-    }
-}
-
 const char* signal_string(int sig, siginfo_t* si) {
     switch (sig) {
     case SIGABRT:
@@ -82,9 +70,9 @@ const char* signal_string(int sig, siginfo_t* si) {
 
 void signal_handler(int sig, siginfo_t* si, void*) {
     if (!crash_in_progress) {
-        signal_print("\nERROR: ");
-        signal_print(signal_string(sig, si));
-        signal_print("\n\nBacktrace:\n");
+        print_emergency_message("\nERROR: ");
+        print_emergency_message(signal_string(sig, si));
+        print_emergency_message("\n\n");
         print_backtrace_emergency();
     }
     // this will finally kill us since we use SA_RESETHAND

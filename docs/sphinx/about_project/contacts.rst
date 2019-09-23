@@ -17,3 +17,5 @@ IRC
 ===
 
 We also have an IRC channel for more interactive discussion. Point your client to ``chat.freenode.net`` and then join the ``#rocproject`` channel. Alternately, you can connect using `a web client <https://webchat.freenode.net/?channels=rocproject>`_.
+
+If you want to be able to see messages sent to the channel when you were offline, you can use Matrix.org IRC bridge. You can `connect to the channel <https://riot.im/app/#/room/#freenode_#rocproject:matrix.org>`_ using Riot web client or other clients. You'll need to setup a Matrix account and enter the room.
