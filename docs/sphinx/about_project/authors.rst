@@ -18,3 +18,4 @@ Contributors
 * Andrew Petelin <adrianopol@gmail.com>
 * zenuo <zenuo@protonmail.com>
 * Paul Malcolm <paul.malcolm@l3t.com>
+* Thomas Dwyer <tdwyer1990@gmail.com>
