@@ -8,7 +8,7 @@
 
 #include <stdio.h>
 
-#include "roc_core/print.h"
+#include "roc_core/print_buffer.h"
 #include "roc_packet/address_to_str.h"
 #include "roc_packet/fec_scheme_to_str.h"
 #include "roc_packet/packet.h"
@@ -34,7 +34,7 @@ void print(const Packet& p, int flags) {
                 (unsigned long)p.rtp()->payload.size());
 
         if ((flags & PrintPayload) && p.rtp()->payload) {
-            core::print_memory(p.rtp()->payload.data(), p.rtp()->payload.size());
+            core::print_buffer(p.rtp()->payload.data(), p.rtp()->payload.size());
         }
     }
 
@@ -48,7 +48,7 @@ void print(const Packet& p, int flags) {
                 (unsigned long)p.fec()->payload.size());
 
         if ((flags & PrintPayload) && p.fec()->payload) {
-            core::print_memory(p.fec()->payload.data(), p.fec()->payload.size());
+            core::print_buffer(p.fec()->payload.data(), p.fec()->payload.size());
         }
     }
 }

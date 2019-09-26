@@ -8,23 +8,23 @@
 
 #include <stdio.h>
 
-#include "roc_core/print.h"
+#include "roc_core/print_buffer.h"
 
 namespace roc {
 namespace core {
 
 namespace {
 
-void print_value_t(uint8_t v) {
+void print_number_t(uint8_t v) {
     fprintf(stderr, "%02x", (unsigned)v);
 }
 
-void print_value_t(float v) {
+void print_number_t(float v) {
     fprintf(stderr, "%.4f", (double)v);
 }
 
 template <class T>
-void print_memory_t(const T* data, size_t size, size_t from, size_t to) {
+void print_buffer_t(const T* data, size_t size, size_t from, size_t to) {
     enum { MaxPerLine = 16 };
 
     if (size == 0) {
@@ -62,44 +62,47 @@ void print_memory_t(const T* data, size_t size, size_t from, size_t to) {
             break;
         }
 
-        print_value_t(data[n]);
+        print_number_t(data[n]);
     }
 }
 
 template <class T>
-void print_slice_t(const T* inner, size_t inner_size, const T* outer, size_t outer_size) {
+void print_buffer_slice_t(const T* inner,
+                          size_t inner_size,
+                          const T* outer,
+                          size_t outer_size) {
     const size_t off = size_t(inner - outer);
 
     fprintf(stderr, "slice: off=%lu size=%lu cap=%lu\n", (unsigned long)off,
             (unsigned long)inner_size, (unsigned long)outer_size - off);
 
     if (outer) {
-        print_memory_t(outer, outer_size, off, off + inner_size);
+        print_buffer_t(outer, outer_size, off, off + inner_size);
     }
 }
 
 } // namespace
 
-void print_memory(const uint8_t* data, size_t size) {
-    print_memory_t(data, size, (size_t)-1, (size_t)-1);
+void print_buffer(const uint8_t* data, size_t size) {
+    print_buffer_t(data, size, (size_t)-1, (size_t)-1);
 }
 
-void print_memory(const float* data, size_t size) {
-    print_memory_t(data, size, (size_t)-1, (size_t)-1);
+void print_buffer(const float* data, size_t size) {
+    print_buffer_t(data, size, (size_t)-1, (size_t)-1);
 }
 
-void print_slice(const uint8_t* inner,
-                 size_t inner_size,
-                 const uint8_t* outer,
-                 size_t outer_size) {
-    print_slice_t(inner, inner_size, outer, outer_size);
+void print_buffer_slice(const uint8_t* inner,
+                        size_t inner_size,
+                        const uint8_t* outer,
+                        size_t outer_size) {
+    print_buffer_slice_t(inner, inner_size, outer, outer_size);
 }
 
-void print_slice(const float* inner,
-                 size_t inner_size,
-                 const float* outer,
-                 size_t outer_size) {
-    print_slice_t(inner, inner_size, outer, outer_size);
+void print_buffer_slice(const float* inner,
+                        size_t inner_size,
+                        const float* outer,
+                        size_t outer_size) {
+    print_buffer_slice_t(inner, inner_size, outer, outer_size);
 }
 
 } // namespace core
