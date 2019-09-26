@@ -29,7 +29,7 @@ public:
     }
 
     //! Check whether the backend can handle given input or output.
-    virtual bool probe(const char* driver, const char* inout, int flags);
+    virtual bool probe(const char* driver, const char* inout, int filter_flags);
 
     //! Create and open a sink.
     virtual ISink* open_sink(core::IAllocator& allocator,
@@ -43,8 +43,8 @@ public:
                                  const char* input,
                                  const Config& config);
 
-    //! Append supported drivers to Array
-    virtual void get_drivers(core::Array<DriverInfo>& arr, FilterFlags driver_type);
+    //! Append supported dirvers to the list.
+    virtual bool get_drivers(core::Array<DriverInfo>& arr, int filter_flags);
 
 private:
     friend class core::Singleton<PulseaudioBackend>;

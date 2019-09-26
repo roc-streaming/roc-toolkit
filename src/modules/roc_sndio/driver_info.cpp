@@ -32,7 +32,7 @@ bool add_driver_uniq(core::Array<DriverInfo>& arr, const char* driver_name) {
     roc_panic_if(driver_name == NULL);
     for (size_t n = 0; n < arr.size(); n++) {
         if (strcmp(driver_name, arr[n].name) == 0) {
-            return false;
+            return true;
         }
     }
     if (arr.grow(arr.size() + 1)) {

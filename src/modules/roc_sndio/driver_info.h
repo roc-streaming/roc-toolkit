@@ -32,8 +32,8 @@ struct DriverInfo {
     char name[MaxSize];
 };
 
-//! Append driver to array and ensure uniqueness, returns false if unable to add item,
-//! or if unable to allocate space for item
+//! Append driver to array and ensure uniqueness, returns false if unable to allocate
+//! space for item.
 bool add_driver_uniq(core::Array<DriverInfo>& arr, const char* driver_name);
 
 } // namespace sndio

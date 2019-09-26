@@ -3,10 +3,10 @@ usage "roc-recv OPTIONS"
 
 section "Options"
 
-    option "list-drivers" L "list all supported audio drivers" optional
-
     option "verbose" v "Increase verbosity level (may be used multiple times)"
         multiple optional
+
+    option "list-drivers" L "list all supported audio drivers" optional
 
     option "output" o "Output file or device" typestr="OUTPUT" string optional
 

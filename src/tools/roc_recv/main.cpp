@@ -18,7 +18,7 @@
 #include "roc_pipeline/parse_port.h"
 #include "roc_pipeline/receiver.h"
 #include "roc_sndio/backend_dispatcher.h"
-#include "roc_sndio/driver_info.h"
+#include "roc_sndio/print_drivers.h"
 #include "roc_sndio/pump.h"
 
 #include "roc_recv/cmdline.h"
@@ -44,26 +44,10 @@ int main(int argc, char** argv) {
     core::HeapAllocator allocator;
 
     if (args.list_drivers_given) {
-        core::Array<sndio::DriverInfo> device_driver_list(allocator);
-        core::Array<sndio::DriverInfo> file_driver_list(allocator);
-        sndio::BackendDispatcher::instance().get_drivers(device_driver_list,
-                                                         sndio::IBackend::FilterDevice);
-        sndio::BackendDispatcher::instance().get_drivers(file_driver_list,
-                                                         sndio::IBackend::FilterFile);
-        printf("%s\n", "device drivers:");
-        for (size_t n = 0; n < device_driver_list.size(); n++) {
-            printf("  %s\n", device_driver_list[n].name);
-        }
-        printf("\n%s\n", "file drivers:");
-        for (size_t m = 0; m < file_driver_list.size(); m++) {
-            printf("  %s\n", file_driver_list[m].name);
+        if (!sndio::print_drivers(allocator)) {
+            return 1;
         }
         return 0;
-    }
-
-    if (args.source_given == 0 && args.repair_given == 0) {
-        roc_log(LogError, "at least one --source or --repair port should be specified");
-        return 1;
     }
 
     pipeline::ReceiverConfig config;
@@ -257,6 +241,11 @@ int main(int argc, char** argv) {
     netio::Transceiver trx(packet_pool, byte_buffer_pool, allocator);
     if (!trx.valid()) {
         roc_log(LogError, "can't create network transceiver");
+        return 1;
+    }
+
+    if (args.source_given == 0 && args.repair_given == 0) {
+        roc_log(LogError, "at least one --source or --repair port should be specified");
         return 1;
     }
 

@@ -47,8 +47,11 @@ public:
                          const char* input,
                          const Config& config);
 
-    //! Append supported drivers from all registered backends to Array
-    void get_drivers(core::Array<DriverInfo>& arr, IBackend::FilterFlags driver_type);
+    //! Append supported drivers from all registered backends to array.
+    bool get_device_drivers(core::Array<DriverInfo>& arr);
+
+    //! Append supported file formats from all registered backends to array.
+    bool get_file_drivers(core::Array<DriverInfo>& arr);
 
 private:
     friend class core::Singleton<BackendDispatcher>;

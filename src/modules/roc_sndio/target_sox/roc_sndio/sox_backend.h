@@ -50,9 +50,8 @@ public:
                                  const char* input,
                                  const Config& config);
 
-    //! Append supported dirvers to Array, replicates the behavior of
-    //! display_supported_formats() from sox.c
-    virtual void get_drivers(core::Array<DriverInfo>& arr, FilterFlags driver_type);
+    //! Append supported dirvers to the list.
+    virtual bool get_drivers(core::Array<DriverInfo>& arr, int filter_flags);
 
 private:
     friend class core::Singleton<SoxBackend>;

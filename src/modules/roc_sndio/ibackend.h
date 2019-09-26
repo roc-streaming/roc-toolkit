@@ -44,7 +44,7 @@ public:
     };
 
     //! Check whether the backend can handle given input or output.
-    virtual bool probe(const char* driver, const char* inout, int flags) = 0;
+    virtual bool probe(const char* driver, const char* inout, int filter_flags) = 0;
 
     //! Create and open a sink.
     virtual ISink* open_sink(core::IAllocator& allocator,
@@ -58,8 +58,8 @@ public:
                                  const char* input,
                                  const Config& config) = 0;
 
-    //! Append supported dirvers to Array
-    virtual void get_drivers(core::Array<DriverInfo>& arr, FilterFlags driver_type) = 0;
+    //! Append supported dirvers to the list.
+    virtual bool get_drivers(core::Array<DriverInfo>& arr, int filter_flags) = 0;
 };
 
 } // namespace sndio

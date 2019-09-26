@@ -6,6 +6,8 @@ section "Options"
     option "verbose" v "Increase verbosity level (may be used multiple times)"
         multiple optional
 
+    option "list-drivers" L "list all supported audio drivers" optional
+
     option "input" i "Input file" typestr="PATH" string required
     option "output" o "Output file" typestr="PATH" string optional
 

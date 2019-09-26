@@ -22,16 +22,16 @@ PulseaudioBackend::PulseaudioBackend() {
     roc_log(LogDebug, "initializing pulseaudio backend");
 }
 
-bool PulseaudioBackend::probe(const char* driver, const char*, int flags) {
-    if ((flags & FilterDevice) == 0) {
+bool PulseaudioBackend::probe(const char* driver, const char*, int filter_flags) {
+    if ((filter_flags & FilterDevice) == 0) {
         return false;
     }
 
-    if ((flags & FilterSink) == 0) {
+    if ((filter_flags & FilterSink) == 0) {
         return false;
     }
 
-    return !driver || strcmp(driver, "pulseaudio") == 0;
+    return !driver || strcmp(driver, "pulse") == 0;
 }
 
 ISink* PulseaudioBackend::open_sink(core::IAllocator& allocator,
@@ -58,12 +58,11 @@ ISource* PulseaudioBackend::open_source(core::IAllocator&,
     return NULL;
 }
 
-void PulseaudioBackend::get_drivers(core::Array<DriverInfo>& arr,
-                                    FilterFlags driver_type) {
-    const char* format_name = "pulseaudio";
-    if (driver_type & FilterDevice) {
-        add_driver_uniq(arr, format_name);
+bool PulseaudioBackend::get_drivers(core::Array<DriverInfo>& arr, int filter_flags) {
+    if (filter_flags & FilterDevice) {
+        return add_driver_uniq(arr, "pulse");
     }
+    return true;
 }
 
 } // namespace sndio

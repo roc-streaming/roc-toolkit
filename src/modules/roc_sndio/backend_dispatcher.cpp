@@ -60,6 +60,26 @@ ISource* BackendDispatcher::open_source(core::IAllocator& allocator,
     return backend->open_source(allocator, driver, input, config);
 }
 
+bool BackendDispatcher::get_device_drivers(core::Array<DriverInfo>& arr) {
+    arr.resize(0);
+    for (size_t n = 0; n < n_backends_; n++) {
+        if (!backends_[n]->get_drivers(arr, IBackend::FilterDevice)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool BackendDispatcher::get_file_drivers(core::Array<DriverInfo>& arr) {
+    arr.resize(0);
+    for (size_t n = 0; n < n_backends_; n++) {
+        if (!backends_[n]->get_drivers(arr, IBackend::FilterFile)) {
+            return false;
+        }
+    }
+    return true;
+}
+
 IBackend*
 BackendDispatcher::select_backend_(const char* driver, const char* inout, int flags) {
     if (IBackend* backend =
@@ -89,13 +109,6 @@ BackendDispatcher::probe_backends_(const char* driver, const char* inout, int fl
 void BackendDispatcher::add_backend_(IBackend& backend) {
     roc_panic_if(n_backends_ == MaxBackends);
     backends_[n_backends_++] = &backend;
-}
-
-void BackendDispatcher::get_drivers(core::Array<DriverInfo>& arr,
-                                    IBackend::FilterFlags driver_type) {
-    for (size_t n = 0; n < n_backends_; n++) {
-        backends_[n]->get_drivers(arr, driver_type);
-    }
 }
 
 } // namespace sndio

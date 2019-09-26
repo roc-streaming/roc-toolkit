@@ -14,6 +14,7 @@
 #include "roc_core/unique_ptr.h"
 #include "roc_pipeline/converter.h"
 #include "roc_sndio/backend_dispatcher.h"
+#include "roc_sndio/print_drivers.h"
 #include "roc_sndio/pump.h"
 
 #include "roc_conv/cmdline.h"
@@ -36,6 +37,15 @@ int main(int argc, char** argv) {
     core::Logger::instance().set_level(
         LogLevel(core::DefaultLogLevel + args.verbose_given));
 
+    core::HeapAllocator allocator;
+
+    if (args.list_drivers_given) {
+        if (!sndio::print_drivers(allocator)) {
+            return 1;
+        }
+        return 0;
+    }
+
     pipeline::ConverterConfig config;
 
     if (args.frame_size_given) {
@@ -48,7 +58,6 @@ int main(int argc, char** argv) {
 
     sndio::BackendDispatcher::instance().set_frame_size(config.internal_frame_size);
 
-    core::HeapAllocator allocator;
     core::BufferPool<audio::sample_t> pool(allocator, config.internal_frame_size,
                                            args.poisoning_flag);
 
