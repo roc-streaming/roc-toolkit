@@ -72,23 +72,33 @@ ISource* BackendDispatcher::open_source(core::IAllocator& allocator,
     return backend->open_source(allocator, driver, input, config);
 }
 
-bool BackendDispatcher::get_device_drivers(core::Array<DriverInfo>& arr) {
-    arr.resize(0);
+bool BackendDispatcher::get_supported_schemes(core::StringList& list) {
+    list.clear();
+
     for (size_t n = 0; n < n_backends_; n++) {
-        if (!backends_[n]->get_drivers(arr, IBackend::FilterDevice)) {
+        // every device driver has its own scheme
+        if (!backends_[n]->get_drivers(list, IBackend::FilterDevice)) {
             return false;
         }
     }
+
+    // all file drivers has a single "file" scheme
+    if (!list.push_back("file")) {
+        return false;
+    }
+
     return true;
 }
 
-bool BackendDispatcher::get_file_drivers(core::Array<DriverInfo>& arr) {
-    arr.resize(0);
+bool BackendDispatcher::get_supported_formats(core::StringList& list) {
+    list.clear();
+
     for (size_t n = 0; n < n_backends_; n++) {
-        if (!backends_[n]->get_drivers(arr, IBackend::FilterFile)) {
+        if (!backends_[n]->get_drivers(list, IBackend::FilterFile)) {
             return false;
         }
     }
+
     return true;
 }
 

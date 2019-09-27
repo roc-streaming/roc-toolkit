@@ -6,7 +6,7 @@ section "Options"
     option "verbose" v "Increase verbosity level (may be used multiple times)"
         multiple optional
 
-    option "list-drivers" L "list all supported audio drivers" optional
+    option "list-supported" L "list supported schemes and formats" optional
 
     option "output" o "Output file or device URI" typestr="URI" string optional
     option "format" f "Force output file format" typestr="FORMAT" string optional
