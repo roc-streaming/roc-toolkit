@@ -69,13 +69,12 @@ void dump_backtrace(void** buffer, ssize_t count) {
             Dl_info info;
             if (dladdr(addr, &info) && info.dli_sname) {
                 symbol = info.dli_sname;
+                /* perform demangling
+                 */
+                demangled_name =
+                    abi::__cxa_demangle(symbol, demangled_name, &demangled_size, &status);
             }
             fprintf(stderr, "#%zd: 0x%p", idx, addr);
-
-            /* perform demangling
-             */
-            demangled_name =
-                abi::__cxa_demangle(symbol, demangled_name, &demangled_size, &status);
             if (status == 0) {
                 fprintf(stderr, " %s\n", demangled_name);
             } else {

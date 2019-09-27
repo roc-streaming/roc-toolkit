@@ -12,7 +12,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 
 #include "roc_core/backtrace.h"
 
@@ -26,18 +25,15 @@ enum { MaxDigits = 10, MaxLen = 200, MaxLenFunctionName = 128 };
  */
 void safe_strcat(char* buffer, size_t& buffer_size, const char* str) {
     size_t len = strlen(str);
-	/* Checking if there is enough space in the buffer
-	 */
-    if (buffer_size + len < MaxLen) {
-        strcat(buffer, str);
+    /* Checking if there is enough space in the buffer
+     */
+    if (len < MaxLen - buffer_size - 1) {
+        len = MaxLen - buffer_size - 1;
+    }
+    if (len > 0) {
+        strncat(buffer, str, len);
         buffer_size += len;
-    } else {
-        size_t length_to_be_truncated = buffer_size + len - MaxLen;
-        for (size_t i = 0; i < len - length_to_be_truncated && buffer_size < MaxLen-1; i++) {
-            buffer[buffer_size] = str[i];
-            buffer_size++;
-        }
-        buffer[MaxLen - 1] = '\n';
+        buffer[MaxLen - 1] = '\0';
     }
 }
 
@@ -102,7 +98,7 @@ bool is_backtrace_available() {
 /* Print function name, offset, instruction pointer address
  * This must be signal safe.
  */
-void backtrace_symbols_fd(int fd) {
+void backtrace_symbols() {
     /* To store the snapshot of the CPU registers.
      */
     unw_context_t context;
@@ -168,7 +164,7 @@ void backtrace_symbols_fd(int fd) {
         safe_strcat(buffer, current_buffer_size, number);
         safe_strcat(buffer, current_buffer_size, "]\n");
 
-        write(fd, buffer, MaxLen);
+        print_emergency_message(buffer);
     }
 }
 } // namespace
@@ -178,13 +174,13 @@ void print_backtrace() {
         fprintf(stderr, "No backtrace available\n");
     } else {
         fprintf(stderr, "Backtrace:\n");
-        backtrace_symbols_fd(STDERR_FILENO);
+        backtrace_symbols();
     }
 }
 
 void print_backtrace_emergency() {
     if (is_backtrace_available()) {
-        backtrace_symbols_fd(STDERR_FILENO);
+        backtrace_symbols();
     }
 }
 
