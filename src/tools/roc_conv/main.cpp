@@ -6,6 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+#include "roc_address/io_uri.h"
 #include "roc_audio/resampler_profile.h"
 #include "roc_core/colors.h"
 #include "roc_core/crash.h"
@@ -85,9 +86,22 @@ int main(int argc, char** argv) {
     source_config.sample_rate = 0;
     source_config.frame_size = config.internal_frame_size;
 
+    address::IoURI input;
+    if (args.input_given) {
+        if (!address::parse_io_uri(args.input_arg, input) || !input.is_file()) {
+            roc_log(LogError, "invalid --input file URI");
+            return 1;
+        }
+    }
+
+    if (!args.input_format_given && input.is_special_file()) {
+        roc_log(LogError, "--input-format should be specified if --input is \"-\"");
+        return 1;
+    }
+
     core::UniquePtr<sndio::ISource> source(
-        sndio::BackendDispatcher::instance().open_source(allocator, NULL, args.input_arg,
-                                                         source_config),
+        sndio::BackendDispatcher::instance().open_source(
+            allocator, input, args.input_format_arg, source_config),
         allocator);
     if (!source) {
         roc_log(LogError, "can't open input: %s", args.input_arg);
@@ -140,10 +154,23 @@ int main(int argc, char** argv) {
     sink_config.sample_rate = config.output_sample_rate;
     sink_config.frame_size = config.internal_frame_size;
 
+    address::IoURI output;
+    if (args.output_given) {
+        if (!address::parse_io_uri(args.output_arg, output) || !output.is_file()) {
+            roc_log(LogError, "invalid --output file URI");
+            return 1;
+        }
+    }
+
+    if (!args.output_format_given && output.is_special_file()) {
+        roc_log(LogError, "--output-format should be specified if --output is \"-\"");
+        return 1;
+    }
+
     core::UniquePtr<sndio::ISink> sink;
     if (args.output_given) {
         sink.reset(sndio::BackendDispatcher::instance().open_sink(
-                       allocator, NULL, args.output_arg, sink_config),
+                       allocator, output, args.output_format_arg, sink_config),
                    allocator);
         if (!sink) {
             roc_log(LogError, "can't open output: %s", args.output_arg);
