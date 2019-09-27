@@ -6,21 +6,21 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_sndio/target_stdio/roc_sndio/print_drivers.h
-//! @brief Print drivers.
+//! @file roc_sndio/target_stdio/roc_sndio/print_supported.h
+//! @brief Print supported schemes and formats.
 
-#ifndef ROC_SNDIO_PRINT_DRIVERS_H_
-#define ROC_SNDIO_PRINT_DRIVERS_H_
+#ifndef ROC_SNDIO_PRINT_SUPPORTED_H_
+#define ROC_SNDIO_PRINT_SUPPORTED_H_
 
 #include "roc_core/iallocator.h"
 
 namespace roc {
 namespace sndio {
 
-//! Print list of supported drivers.
-bool print_drivers(core::IAllocator& allocator);
+//! Print supported schemes and formats.
+bool print_supported(core::IAllocator& allocator);
 
 } // namespace sndio
 } // namespace roc
 
-#endif // ROC_SNDIO_PRINT_DRIVERS_H_
+#endif // ROC_SNDIO_PRINT_SUPPORTED_H_
