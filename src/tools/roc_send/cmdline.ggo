@@ -8,9 +8,8 @@ section "Options"
 
     option "list-drivers" L "List all supported audio drivers" optional
 
-    option "input" i "Input file or device" typestr="INPUT" string optional
-
-    option "driver" d "Input driver" typestr="DRIVER" string optional
+    option "input" i "Input file or device URI" typestr="URI" string optional
+    option "format" f "Force input file format" typestr="FORMAT" string optional
 
     option "source" s "Remote source port triplet" typestr="PORT" string optional
 
