@@ -59,6 +59,8 @@ private:
     SoxBackend();
 
     core::Mutex mutex_;
+
+    bool first_created_;
 };
 
 } // namespace sndio

@@ -177,7 +177,8 @@ void log_handler(unsigned sox_level,
 
 } // namespace
 
-SoxBackend::SoxBackend() {
+SoxBackend::SoxBackend()
+    : first_created_(false) {
     roc_log(LogDebug, "initializing sox backend");
 
     sox_init();
@@ -189,10 +190,17 @@ SoxBackend::SoxBackend() {
 void SoxBackend::set_frame_size(size_t size) {
     core::Mutex::Lock lock(mutex_);
 
+    if (first_created_) {
+        roc_panic("sox backend: set_frame_size() can be called only before creating "
+                  "first source or sink");
+    }
+
     sox_get_globals()->bufsiz = size * sizeof(sox_sample_t);
 }
 
 bool SoxBackend::probe(const char* driver, const char* inout, int filter_flags) {
+    core::Mutex::Lock lock(mutex_);
+
     driver = map_to_sox_driver(driver);
 
     if (!select_defaults(driver, inout)) {
@@ -221,6 +229,10 @@ ISink* SoxBackend::open_sink(core::IAllocator& allocator,
                              const char* driver,
                              const char* output,
                              const Config& config) {
+    core::Mutex::Lock lock(mutex_);
+
+    first_created_ = true;
+
     driver = map_to_sox_driver(driver);
 
     if (!select_defaults(driver, output)) {
@@ -247,6 +259,10 @@ ISource* SoxBackend::open_source(core::IAllocator& allocator,
                                  const char* driver,
                                  const char* input,
                                  const Config& config) {
+    core::Mutex::Lock lock(mutex_);
+
+    first_created_ = true;
+
     driver = map_to_sox_driver(driver);
 
     if (!select_defaults(driver, input)) {
@@ -271,6 +287,8 @@ ISource* SoxBackend::open_source(core::IAllocator& allocator,
 }
 
 bool SoxBackend::get_drivers(core::Array<DriverInfo>& arr, int filter_flags) {
+    core::Mutex::Lock lock(mutex_);
+
     const sox_format_tab_t* formats = sox_get_format_fns();
 
     for (size_t n = 0; formats[n].fn; n++) {
