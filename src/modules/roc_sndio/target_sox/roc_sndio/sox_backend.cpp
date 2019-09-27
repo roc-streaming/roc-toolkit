@@ -286,7 +286,7 @@ ISource* SoxBackend::open_source(core::IAllocator& allocator,
     return source.release();
 }
 
-bool SoxBackend::get_drivers(core::Array<DriverInfo>& arr, int filter_flags) {
+bool SoxBackend::get_drivers(core::StringList& list, int filter_flags) {
     core::Mutex::Lock lock(mutex_);
 
     const sox_format_tab_t* formats = sox_get_format_fns();
@@ -315,7 +315,7 @@ bool SoxBackend::get_drivers(core::Array<DriverInfo>& arr, int filter_flags) {
                     continue;
                 }
 
-                if (!add_driver_uniq(arr, driver)) {
+                if (!list.push_back_uniq(driver)) {
                     return false;
                 }
             }

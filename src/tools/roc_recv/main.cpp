@@ -22,7 +22,7 @@
 #include "roc_pipeline/parse_port.h"
 #include "roc_pipeline/receiver.h"
 #include "roc_sndio/backend_dispatcher.h"
-#include "roc_sndio/print_drivers.h"
+#include "roc_sndio/print_supported.h"
 #include "roc_sndio/pump.h"
 
 #include "roc_recv/cmdline.h"
@@ -65,8 +65,8 @@ int main(int argc, char** argv) {
 
     core::HeapAllocator allocator;
 
-    if (args.list_drivers_given) {
-        if (!sndio::print_drivers(allocator)) {
+    if (args.list_supported_given) {
+        if (!sndio::print_supported(allocator)) {
             return 1;
         }
         return 0;
