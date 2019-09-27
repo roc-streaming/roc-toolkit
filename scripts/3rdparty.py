@@ -554,6 +554,28 @@ elif name == 'sox':
     execute('make -j', logfile)
     install_files('src/sox.h', os.path.join(builddir, 'include'))
     install_files('src/.libs/libsox.a', os.path.join(builddir, 'lib'))
+
+elif name == 'libunwind':
+	download(
+		'http://download.savannah.nongnu.org/releases/libunwind/libunwind-%s.%s.%s.tar.gz' %(ver, ver, ver),
+		'libunwind-%s.%s.%s.tar.gz' % (ver, ver, ver),
+		logfile,
+		vendordir)
+	extract('libunwind-%s.%s.%s.tar.gz' % (ver, ver, ver),
+			'src/libunwind-%s.%s.%s' % (ver, ver, ver))
+	os.chdir('src/libunwind-%s.%s.%s' % (ver, ver, ver))
+	execute('./configure --host=%s %s %s %s' % (
+        toolchain,
+        makeenv(envlist),
+        makeflags(workdir, toolchain, deplist, cflags='-fvisibility=hidden', variant=variant),
+        ' '.join([
+            '--enable-static', 
+           ])), logfile)
+	execute('make', logfile)
+	execute('make install prefix=src', logfile)
+	install_files('src/include/libunwind.h', os.path.join(builddir, 'include'))
+	install_files('src/lib/libunwind.a', os.path.join(builddir, 'lib'))
+
 elif name == 'gengetopt':
     download('ftp://ftp.gnu.org/gnu/gengetopt/gengetopt-%s.tar.gz' % ver,
              'gengetopt-%s.tar.gz' % ver,

@@ -29,6 +29,7 @@ thirdparty_versions = {
     'openfec':    '1.4.2.4',
     'cpputest':   '3.6',
     'sox':        '14.4.2',
+	'libunwind':  '1.2.1',
     'alsa':       '1.0.29',
     'pulseaudio': '5.0',
     'json':       '0.11-20130402',
@@ -204,6 +205,11 @@ AddOption('--disable-sox',
           dest='disable_sox',
           action='store_true',
           help='disable SoX support in tools')
+
+AddOption('--disable-libunwind',
+		  dest='disable_libunwind',
+          action='store_true',
+          help='disable libunwind support in tools')
 
 AddOption('--disable-pulseaudio',
           dest='disable_pulseaudio',
@@ -589,7 +595,7 @@ else:
 
         if 'musl' in host:
             env.Append(ROC_TARGETS=[
-                'target_musl',
+                'target_libunwind',
             ])
         else:
             env.Append(ROC_TARGETS=[
@@ -620,6 +626,12 @@ else:
       and not GetOption('disable_sox'):
         env.Append(ROC_TARGETS=[
             'target_sox',
+        ])
+
+    if (not GetOption('disable_tools') or not GetOption('disable_examples')) \
+      and not GetOption('disable_libunwind'):
+        env.Append(ROC_TARGETS=[
+            'target_libunwind',
         ])
 
     if not GetOption('disable_openfec'):
@@ -803,6 +815,18 @@ if 'target_sox' in system_dependecies:
 
     tool_env = conf.Finish()
 
+if 'target_libunwind' in system_dependecies:
+    conf = Configure(tool_env, custom_tests=env.CustomTests)
+
+    if not crosscompile:
+        if not conf.CheckLibWithHeaderExt('libunwind', 'libunwind.h', 'C'):
+            env.Die("libunwind >= 1.2.1 not found (see 'config.log' for details)")
+    else:
+        if not conf.CheckLibWithHeaderExit('libunwind', 'libunwind.h', 'C', run=False):
+            env.Die("libunwind not found (see 'config.log' for details)")
+
+    tool_env = conf.Finish()
+
 if 'target_gengetopt' in system_dependecies:
     conf = Configure(env, custom_tests=env.CustomTests)
 
@@ -917,6 +941,12 @@ if 'target_sox' in download_dependencies:
         tool_env.Append(LINKFLAGS=[
             '-Wl,-framework,CoreAudio'
         ])
+
+    tool_env = conf.Finish()
+
+if 'target_sox' in download_dependencies:
+    env.ThirdParty(build, thirdparty_compiler_spec, "", thirdparty_variant, thirdparty_versions, 'libunwind')
+    conf = Configure(tool_env, custom_tests=env.CustomTests)
 
     tool_env = conf.Finish()
 
