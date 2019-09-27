@@ -13,11 +13,11 @@
 #define ROC_SNDIO_BACKEND_DISPATCHER_H_
 
 #include "roc_address/io_uri.h"
-#include "roc_core/array.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/shared_ptr.h"
 #include "roc_core/singleton.h"
+#include "roc_core/string_list.h"
 #include "roc_sndio/ibackend.h"
 #include "roc_sndio/isink.h"
 #include "roc_sndio/isource.h"
@@ -48,11 +48,11 @@ public:
                          const char* force_format,
                          const Config& config);
 
-    //! Append supported drivers from all registered backends to array.
-    bool get_device_drivers(core::Array<DriverInfo>& arr);
+    //! Get all supported URI schemes.
+    bool get_supported_schemes(core::StringList&);
 
-    //! Append supported file formats from all registered backends to array.
-    bool get_file_drivers(core::Array<DriverInfo>& arr);
+    //! Get all supported file formats.
+    bool get_supported_formats(core::StringList&);
 
 private:
     friend class core::Singleton<BackendDispatcher>;
