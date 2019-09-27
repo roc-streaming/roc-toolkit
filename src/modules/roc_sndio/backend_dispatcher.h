@@ -12,6 +12,7 @@
 #ifndef ROC_SNDIO_BACKEND_DISPATCHER_H_
 #define ROC_SNDIO_BACKEND_DISPATCHER_H_
 
+#include "roc_address/io_uri.h"
 #include "roc_core/array.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/noncopyable.h"
@@ -37,14 +38,14 @@ public:
 
     //! Create and open a sink.
     ISink* open_sink(core::IAllocator& allocator,
-                     const char* driver,
-                     const char* output,
+                     const address::IoURI& uri,
+                     const char* force_format,
                      const Config& config);
 
     //! Create and open a source.
     ISource* open_source(core::IAllocator& allocator,
-                         const char* driver,
-                         const char* input,
+                         const address::IoURI& uri,
+                         const char* force_format,
                          const Config& config);
 
     //! Append supported drivers from all registered backends to array.
@@ -58,10 +59,14 @@ private:
 
     BackendDispatcher();
 
-    IBackend* select_backend_(const char* driver, const char* inout, int flags);
-    IBackend* probe_backends_(const char* driver, const char* inout, int flags);
+    int select_driver_type_(const address::IoURI& uri) const;
+    const char* select_driver_name_(const address::IoURI& uri,
+                                    const char* force_format) const;
+    const char* select_inout_(const address::IoURI& uri) const;
 
-    void add_backend_(IBackend& backend);
+    IBackend* select_backend_(const char* driver, const char* inout, int flags);
+
+    void register_backend_(IBackend& backend);
 
     enum { MaxBackends = 8 };
 
