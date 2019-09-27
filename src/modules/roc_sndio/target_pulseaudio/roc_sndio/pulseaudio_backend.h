@@ -43,8 +43,8 @@ public:
                                  const char* input,
                                  const Config& config);
 
-    //! Append supported dirvers to the list.
-    virtual bool get_drivers(core::Array<DriverInfo>& arr, int filter_flags);
+    //! Append supported drivers to the list.
+    virtual bool get_drivers(core::StringList&, int filter_flags);
 
 private:
     friend class core::Singleton<PulseaudioBackend>;
