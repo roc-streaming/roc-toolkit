@@ -944,7 +944,7 @@ if 'target_sox' in download_dependencies:
 
     tool_env = conf.Finish()
 
-if 'target_sox' in download_dependencies:
+if 'target_libunwind' in download_dependencies:
     env.ThirdParty(build, thirdparty_compiler_spec, "", thirdparty_variant, thirdparty_versions, 'libunwind')
     conf = Configure(tool_env, custom_tests=env.CustomTests)
 
