@@ -11,7 +11,6 @@
 #include "roc_core/log.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/unique_ptr.h"
-#include "roc_sndio/driver_info.h"
 #include "roc_sndio/pulseaudio_backend.h"
 #include "roc_sndio/pulseaudio_sink.h"
 
@@ -58,9 +57,9 @@ ISource* PulseaudioBackend::open_source(core::IAllocator&,
     return NULL;
 }
 
-bool PulseaudioBackend::get_drivers(core::Array<DriverInfo>& arr, int filter_flags) {
+bool PulseaudioBackend::get_drivers(core::StringList& list, int filter_flags) {
     if (filter_flags & FilterDevice) {
-        return add_driver_uniq(arr, "pulse");
+        return list.push_back_uniq("pulse");
     }
     return true;
 }
