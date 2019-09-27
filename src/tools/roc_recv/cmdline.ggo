@@ -8,9 +8,8 @@ section "Options"
 
     option "list-drivers" L "list all supported audio drivers" optional
 
-    option "output" o "Output file or device" typestr="OUTPUT" string optional
-
-    option "driver" d "Output driver" typestr="DRIVER" string optional
+    option "output" o "Output file or device URI" typestr="URI" string optional
+    option "format" f "Force output file format" typestr="FORMAT" string optional
 
     option "source" s "Source port triplet" typestr="PORT" string optional
 
