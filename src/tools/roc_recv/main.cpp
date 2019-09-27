@@ -6,6 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+#include "roc_address/io_uri.h"
 #include "roc_audio/resampler_profile.h"
 #include "roc_core/array.h"
 #include "roc_core/colors.h"
@@ -221,13 +222,33 @@ int main(int argc, char** argv) {
         allocator, config.common.internal_frame_size, args.poisoning_flag);
     packet::PacketPool packet_pool(allocator, args.poisoning_flag);
 
+    address::IoURI output;
+    if (args.output_given) {
+        if (!address::parse_io_uri(args.output_arg, output)) {
+            roc_log(LogError, "invalid --output file or device URI");
+            return 1;
+        }
+    }
+
+    if (args.format_given) {
+        if (!output.is_empty() && !output.is_file()) {
+            roc_log(LogError, "--format can't be used if --output is not a file URI");
+            return 1;
+        }
+    } else {
+        if (output.is_special_file()) {
+            roc_log(LogError, "--format should be specified if --output is \"-\"");
+            return 1;
+        }
+    }
+
     core::UniquePtr<sndio::ISink> sink(
-        sndio::BackendDispatcher::instance().open_sink(allocator, args.driver_arg,
-                                                       args.output_arg, sink_config),
+        sndio::BackendDispatcher::instance().open_sink(allocator, output, args.format_arg,
+                                                       sink_config),
         allocator);
     if (!sink) {
-        roc_log(LogError, "can't open output file or device: driver=%s output=%s",
-                args.driver_arg, args.output_arg);
+        roc_log(LogError, "can't open output file or device: output=%s format=%s",
+                args.output_arg, args.format_arg);
         return 1;
     }
 
