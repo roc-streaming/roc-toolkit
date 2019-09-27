@@ -8,8 +8,11 @@ section "Options"
 
     option "list-drivers" L "list all supported audio drivers" optional
 
-    option "input" i "Input file" typestr="PATH" string required
-    option "output" o "Output file" typestr="PATH" string optional
+    option "input" i "Input file URI" typestr="URI" string optional
+    option "output" o "Input file URI" typestr="URI" string optional
+
+    option "input-format" - "Force input file format" typestr="FORMAT" string optional
+    option "output-format" - "Force output file format" typestr="FORMAT" string optional
 
     option "frame-size" - "Internal frame size, number of samples"
         int optional
