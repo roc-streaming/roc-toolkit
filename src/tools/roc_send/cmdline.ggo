@@ -8,7 +8,7 @@ section "Options"
 
     option "list-supported" L "list supported schemes and formats" optional
 
-    option "input" i "Input file or device URI" typestr="URI" string optional
+    option "input" i "Input file or device URI" typestr="INPUT_URI" string optional
     option "format" f "Force input file format" typestr="FORMAT" string optional
 
     option "source" s "Remote source port triplet" typestr="PORT" string optional
@@ -53,17 +53,21 @@ section "Options"
         values="auto","always","never" default="auto" enum optional
 
 text "
-INPUT is the file name or device name, depending on the selected DRIVER, e.g.:
-  file.wav; front:CARD=PCH,DEV=0; alsa_input.pci-0000_00_1f.3.analog-stereo;
+INPUT_URI is a device or file URI, e.g.:
+  pulse://default; pulse://alsa_input.pci-0000_00_1f.3.analog-stereo
+  file:///home/user/test.wav; file:./test.wav; file:-
 
-DRIVER is the type of the input file or device, e.g.:
-  wav; alsa; pulseaudio;
+FORMAT is the output file format name, e.g.:
+  wav; ogg; mp3
 
 PORT is a triplet PROTOCOL:IPADDR:PORTNUM, e.g.:
   rtp+rs8m:127.0.0.1:10001; rtp+rs8m:[::1]:10001;
 
 TIME is an integer number with a suffix, e.g.:
   123ns; 123us; 123ms; 123s; 123m; 123h;
+
+Use --list-supported option to print the list of the supported
+URI schemes and file formats.
 
 See further details in roc-send(1) manual page locally or online:
 https://roc-project.github.io/roc/docs/manuals/roc_send.html"
