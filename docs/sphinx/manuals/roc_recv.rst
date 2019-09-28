@@ -17,10 +17,11 @@ Options
 -h, --help                Print help and exit
 -V, --version             Print version and exit
 -v, --verbose             Increase verbosity level (may be used multiple times)
--o, --output=OUTPUT       Output file or device
--d, --driver=DRIVER       Output driver
--s, --source=PORT         Source port triplet
--r, --repair=PORT         Repair port triplet
+-L, --list-supported      list supported schemes and formats
+-o, --output=OUTPUT_URI   Output file or device URI
+-f, --format=FORMAT       Force output file format
+-s, --source=PORT         Source port triplet (may be used multiple times)
+-r, --repair=PORT         Repair port triplet (may be used multiple times)
 --miface=IFACE_IP         IP address of the network interface on which to join the multicast group
 --sess-latency=STRING     Session target latency, TIME units
 --min-latency=STRING      Session minimum latency, TIME units
@@ -40,31 +41,40 @@ Options
 --poisoning               Enable uninitialized memory poisoning (default=off)
 --beeping                 Enable beeping on packet loss  (default=off)
 
-Output
-------
+Output URI
+----------
 
-*OUTPUT* should be file name or device name, for example:
+``--output`` option requires a device or file URI in one of the following forms:
 
-- \- (stdout)
-- file.wav (WAV file)
-- default (default output device)
-- front:CARD=PCH,DEV=0 (ALSA device)
-- alsa_output.pci-0000_00_1f.3.analog-stereo (PulseAudio sink)
+- ``DEVICE_TYPE://DEVICE_NAME`` -- audio device
+- ``DEVICE_TYPE://default`` -- default audio device for given device type
+- ``file:///ABS/PATH`` -- absolute file path
+- ``file://localhost/ABS/PATH`` -- absolute file path (alternative form; only "localhost" host is supported)
+- ``file:/ABS/PATH`` -- absolute file path (alternative form)
+- ``file:REL/PATH`` -- relative file path
+- ``file://-`` -- stdout
+- ``file:-`` -- stdout (alternative form)
 
-Interpretation of the device name depends on the selected driver.
+Examples:
 
-If the output is omitted, some default output is selected. If the driver is omitted or it is a device driver, the default output device is seelcted. If the driver is a file driver, the stdout is selected.
+- ``pulse://default``
+- ``pulse://alsa_output.pci-0000_00_1f.3.analog-stereo``
+- ``alsa://front:CARD=PCH,DEV=0``
+- ``file:///home/user/test.wav``
+- ``file://localhost/home/user/test.wav``
+- ``file:/home/user/test.wav``
+- ``file:./test.wav``
+- ``file:-``
 
-Driver
-------
+The list of supported schemes and file formats can be retrieved using ``--list-supported`` option.
 
-*DRIVER* defines the type of the output file or device, for example:
+If the ``--output`` is omitted, the default driver and device are selected.
 
-- wav
-- alsa
-- pulseaudio
+The ``--format`` option can be used to force the output file format. If it is omitted, the file format is auto-detected. This option is always required when the output is stdout.
 
-If the driver is omitted, some default driver is selected. If the user did specify the output and it is a file with a known extension, the appropriate file driver is selected. Otherwise, the first device driver available on the system is selected.
+The path component of the provided URI is `percent-decoded <https://en.wikipedia.org/wiki/Percent-encoding>`_. For convenience, unencoded characters are allowed as well, except that ``%`` should be always encoded as ``%25``.
+
+For example, the file named ``/foo/bar%/[baz]`` may be specified using either of the following URIs: ``file:///foo%2Fbar%25%2F%5Bbaz%5D`` and ``file:///foo/bar%25/[baz]``.
 
 Port
 ----
@@ -94,15 +104,15 @@ Supported protocols for repair ports:
 - rs8m (Reed-Solomon m=8 FEC scheme)
 - ldpc (LDPC-Starircase FEC scheme)
 
-Multicast
----------
+Multicast interface
+-------------------
 
 *IFACE_IP* should be an IP address of the network interface on which to join the multicast group. It may be "0.0.0.0" (for IPv4) or "[::]" (for IPv6) to join the multicast group on all available interfaces.
 
 If *IFACE_IP* is not specified and multicast address is used, the user is responsible for joining the multicast group manually.
 
-Time
-----
+Time units
+----------
 
 *TIME* should have one of the following forms:
   123ns, 123us, 123ms, 123s, 123m, 123h
@@ -162,31 +172,43 @@ Output to the default ALSA device:
 
 .. code::
 
-    $ roc-recv -vv -s rtp+rs8m::10001 -r rs8m::10002 -d alsa
+    $ roc-recv -vv -o alsa://default -s rtp+rs8m::10001 -r rs8m::10002
 
 Output to a specific PulseAudio device:
 
 .. code::
 
-    $ roc-recv -vv -s rtp+rs8m::10001 -r rs8m::10002 -d pulseaudio -o <device>
+    $ roc-recv -vv -o pulse://alsa_input.pci-0000_00_1f.3.analog-stereo -s rtp+rs8m::10001 -r rs8m::10002
 
-Output to a file in WAV format:
+Output to a file in WAV format (guess format by extension):
 
 .. code::
 
-    $ roc-recv -vv -s rtp+rs8m::10001 -r rs8m::10002 -o ./file.wav
+    $ roc-recv -vv -o file:./output.wav -s rtp+rs8m::10001 -r rs8m::10002
+
+Output to a file in WAV format (specify format manually):
+
+.. code::
+
+    $ roc-recv -vv -o file:./output -f wav -s rtp+rs8m::10001 -r rs8m::10002
 
 Output to stdout in WAV format:
 
 .. code::
 
-    $ roc-recv -vv -s rtp+rs8m::10001 -r rs8m::10002 -d wav -o - > ./file.wav
+    $ roc-recv -vv -o file:- -f wav -s rtp+rs8m::10001 -r rs8m::10002 > ./output.wav
+
+Output to a file in WAV format, specify full URI:
+
+.. code::
+
+    $ roc-recv -vv -o file:///home/user/output.wav -s rtp+rs8m::10001 -r rs8m::10002
 
 Force a specific rate on the output device:
 
 .. code::
 
-    $ roc-recv -vv -s rtp+rs8m::10001 -r rs8m::10002 --rate=44100
+    $ roc-recv -vv --rate=44100 -s rtp+rs8m::10001 -r rs8m::10002
 
 Select higher session latency and timeouts:
 
@@ -199,13 +221,13 @@ Select higher I/O latency:
 
 .. code::
 
-    $ roc-recv -vv -s rtp+rs8m::10001 -r rs8m::10002 --io-latency=200ms
+    $ roc-recv -vv --io-latency=200ms -s rtp+rs8m::10001 -r rs8m::10002
 
 Select resampler profile:
 
 .. code::
 
-    $ roc-recv -vv -s rtp+rs8m::10001 -r rs8m::10002 --resampler-profile=high
+    $ roc-recv -vv --resampler-profile=high -s rtp+rs8m::10001 -r rs8m::10002
 
 SEE ALSO
 ========
