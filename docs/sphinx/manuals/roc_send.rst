@@ -17,8 +17,9 @@ Options
 -h, --help                Print help and exit
 -V, --version             Print version and exit
 -v, --verbose             Increase verbosity level (may be used multiple times)
--i, --input=INPUT         Input file or device
--d, --driver=DRIVER       Input driver
+-L, --list-supported      list supported schemes and formats
+-i, --input=INPUT_URI     Input file or device URI
+-f, --format=FORMAT       Force input file format
 -s, --source=PORT         Remote source port triplet
 -r, --repair=PORT         Remote repair port triplet
 --nbsrc=INT               Number of source packets in FEC block
@@ -34,31 +35,40 @@ Options
 --interleaving            Enable packet interleaving  (default=off)
 --poisoning               Enable uninitialized memory poisoning (default=off)
 
-Input
------
+Input URI
+---------
 
-*INPUT* should be file name or device name, for example:
+``--input`` option requires a device or file URI in one of the following forms:
 
-- \- (stdin)
-- file.wav (WAV file)
-- default (default input device)
-- front:CARD=PCH,DEV=0 (ALSA device)
-- alsa_input.pci-0000_00_1f.3.analog-stereo (PulseAudio source)
+- ``DEVICE_TYPE://DEVICE_NAME`` -- audio device
+- ``DEVICE_TYPE://default`` -- default audio device for given device type
+- ``file:///ABS/PATH`` -- absolute file path
+- ``file://localhost/ABS/PATH`` -- absolute file path (alternative form; only "localhost" host is supported)
+- ``file:/ABS/PATH`` -- absolute file path (alternative form)
+- ``file:REL/PATH`` -- relative file path
+- ``file://-`` -- stdin
+- ``file:-`` -- stdin (alternative form)
 
-Interpretation of the device name depends on the selected driver.
+Examples:
 
-If the input is omitted, some default input is selected. If the driver is omitted or it is a device driver, the default input device is seelcted. If the driver is a file driver, the stdin is selected.
+- ``pulse://default``
+- ``pulse://alsa_input.pci-0000_00_1f.3.analog-stereo``
+- ``alsa://front:CARD=PCH,DEV=0``
+- ``file:///home/user/test.wav``
+- ``file://localhost/home/user/test.wav``
+- ``file:/home/user/test.wav``
+- ``file:./test.wav``
+- ``file:-``
 
-Driver
-------
+The list of supported schemes and file formats can be retrieved using ``--list-supported`` option.
 
-*DRIVER* defines the type of the input file or device, for example:
+If the ``--input`` is omitted, the default driver and device are selected.
 
-- wav
-- alsa
-- pulseaudio
+The ``--format`` option can be used to force the input file format. If it is omitted, the file format is auto-detected. This option is always required when the input is stdin.
 
-If the driver is omitted, some default driver is selected. If the user did specify the input and it is a file with a known extension, the appropriate file driver is selected. Otherwise, the first device driver available on the system is selected.
+The path component of the provided URI is `percent-decoded <https://en.wikipedia.org/wiki/Percent-encoding>`_. For convenience, unencoded characters are allowed as well, except that ``%`` should be always encoded as ``%25``.
+
+For example, the file named ``/foo/bar%/[baz]`` may be specified using either of the following URIs: ``file:///foo%2Fbar%25%2F%5Bbaz%5D`` and ``file:///foo/bar%25/[baz]``.
 
 Port
 ----
@@ -86,8 +96,8 @@ Supported protocols for repair ports:
 - rs8m (Reed-Solomon m=8 FEC scheme)
 - ldpc (LDPC-Starircase FEC scheme)
 
-Time
-----
+Time units
+----------
 
 *TIME* should have one of the following forms:
   123ns, 123us, 123ms, 123s, 123m, 123h
@@ -99,21 +109,27 @@ Send WAV file:
 
 .. code::
 
-    $ roc-send -vv -s rtp+rs8m:192.168.0.3:10001 -r rs8m:192.168.0.3:10002 -i ./file.wav
+    $ roc-send -vv -i file:./input.wav -s rtp+rs8m:192.168.0.3:10001 -r rs8m:192.168.0.3:10002
 
 Send WAV file to an IPv6 receiver:
 
 .. code::
 
-    $ roc-send -vv -s rtp+rs8m:[2001:db8::]:10001 -r rs8m:[2001:db8::]:10002 -i ./file.wav
+    $ roc-send -vv -i file:./input.wav -s rtp+rs8m:[2001:db8::]:10001 -r rs8m:[2001:db8::]:10002
 
 Send WAV from stdin:
 
 .. code::
 
-    $ roc-send -vv -s rtp+rs8m:192.168.0.3:10001 -r rs8m:192.168.0.3:10002 -d wav -i - < ./file.wav
+    $ roc-send -vv -i file:- -f wav -s rtp+rs8m:192.168.0.3:10001 -r rs8m:192.168.0.3:10002 < ./input.wav
 
-Capture sound from the default driver and device:
+Send WAV file, specify full URI:
+
+.. code::
+
+    $ roc-send -vv -i file:///home/user/input.wav -s rtp+rs8m:192.168.0.3:10001 -r rs8m:192.168.0.3:10002
+
+Capture sound from the default audio device:
 
 .. code::
 
@@ -123,38 +139,39 @@ Capture sound from the default ALSA device:
 
 .. code::
 
-    $ roc-send -vv -s rtp+rs8m:192.168.0.3:10001 -r rs8m:192.168.0.3:10002 -d alsa
+    $ roc-send -vv -i alsa://default -s rtp+rs8m:192.168.0.3:10001 -r rs8m:192.168.0.3:10002
 
 Capture sound from a specific PulseAudio device:
 
 .. code::
 
-    $ roc-send -vv -s rtp+rs8m:192.168.0.3:10001 -r rs8m:192.168.0.3:10002 -d pulseaudio -i <device>
+    $ roc-send -vv -i pulse://alsa_input.pci-0000_00_1f.3.analog-stereo \
+      -s rtp+rs8m:192.168.0.3:10001 -r rs8m:192.168.0.3:10002
 
 Force a specific rate on the input device:
 
 .. code::
 
-    $ roc-send -vv -s rtp+rs8m:192.168.0.3:10001 -r rs8m:192.168.0.3:10002 --rate=44100
+    $ roc-send -vv --rate=44100 -s rtp+rs8m:192.168.0.3:10001 -r rs8m:192.168.0.3:10002
 
 Select the LDPC-Staircase FEC scheme and a larger block size:
 
 .. code::
 
-    $ roc-send -vv -s rtp+ldpc:192.168.0.3:10003 -r ldpc:192.168.0.3:10004 -i ./file.wav \
-      --nbsrc=1000 --nbrpr=500
+    $ roc-send -vv -i file:./input.wav -s rtp+ldpc:192.168.0.3:10003 -r ldpc:192.168.0.3:10004 \
+        --nbsrc=1000 --nbrpr=500
 
 Select bare RTP without FEC:
 
 .. code::
 
-    $ roc-send -vv -s rtp:192.168.0.3:10005 -i ./file.wav
+    $ roc-send -vv -i file:./input.wav -s rtp:192.168.0.3:10005
 
 Select resampler profile:
 
 .. code::
 
-    $ roc-send -vv -s rtp+rs8m:192.168.0.3:10001 -r rs8m:192.168.0.3:10002 --resampler-profile=high
+    $ roc-send -vv --resampler-profile=high -s rtp+rs8m:192.168.0.3:10001 -r rs8m:192.168.0.3:10002
 
 SEE ALSO
 ========
