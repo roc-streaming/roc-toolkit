@@ -8,8 +8,8 @@ section "Options"
 
     option "list-supported" L "list supported schemes and formats" optional
 
-    option "input" i "Input file URI" typestr="URI" string optional
-    option "output" o "Input file URI" typestr="URI" string optional
+    option "input" i "Input file URI" typestr="FILE_URI" string required
+    option "output" o "Output file URI" typestr="FILE_URI" string optional
 
     option "input-format" - "Force input file format" typestr="FORMAT" string optional
     option "output-format" - "Force output file format" typestr="FORMAT" string optional
@@ -36,3 +36,16 @@ section "Options"
 
     option "color" - "Set colored logging mode for stderr output"
         values="auto","always","never" default="auto" enum optional
+
+text "
+FILE_URI defines an absolute or relative file path, e.g.:
+  file:///home/user/test.wav; file:./test.wav; file:-
+
+FORMAT is the output file format name, e.g.:
+  wav; ogg; mp3
+
+Use --list-supported option to print the list of the supported
+URI schemes and file formats.
+
+See further details in roc-recv(1) manual page locally or online:
+https://roc-project.github.io/roc/docs/manuals/roc_recv.html"
