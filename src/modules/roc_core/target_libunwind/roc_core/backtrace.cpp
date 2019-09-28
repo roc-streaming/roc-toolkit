@@ -27,11 +27,11 @@ void safe_strcat(char* buffer, size_t& buffer_size, const char* str) {
     size_t len = strlen(str);
     /* Checking if there is enough space in the buffer
      */
-    if (len < MaxLen - buffer_size - 1) {
+    if (len > MaxLen - buffer_size - 1) {
         len = MaxLen - buffer_size - 1;
     }
     if (len > 0) {
-        strncat(buffer, str, len);
+        memcpy(buffer + buffer_size, str, len);
         buffer_size += len;
         buffer[MaxLen - 1] = '\0';
     }
@@ -152,17 +152,16 @@ void backtrace_symbols() {
         char buffer[MaxLen] = "#";
         size_t current_buffer_size = 1;
         safe_strcat(buffer, current_buffer_size, number);
-        safe_strcat(buffer, current_buffer_size, ": (");
+        safe_strcat(buffer, current_buffer_size, ": 0x");
+
+        uint32_to_string((uint32_t)ip, 16, number);
+        safe_strcat(buffer, current_buffer_size, number);
+        safe_strcat(buffer, current_buffer_size, " ");
         safe_strcat(buffer, current_buffer_size, function_name);
         safe_strcat(buffer, current_buffer_size, "+0x");
 
         uint32_to_string((uint32_t)offset, 16, number);
         safe_strcat(buffer, current_buffer_size, number);
-        safe_strcat(buffer, current_buffer_size, ") [");
-
-        uint32_to_string((uint32_t)ip, 16, number);
-        safe_strcat(buffer, current_buffer_size, number);
-        safe_strcat(buffer, current_buffer_size, "]\n");
 
         print_emergency_message(buffer);
     }
