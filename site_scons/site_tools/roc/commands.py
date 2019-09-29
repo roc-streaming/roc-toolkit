@@ -131,6 +131,21 @@ def GenGetOpt(env, source, ver):
 
     return ret
 
+def MaybeStripLibrary(env, dst, src, is_debug):
+    def copy(target, source, env):
+        shutil.copy(source[0].path, target[0].path)
+
+    actions =  [
+        env.Action(copy, env.PrettyCommand('CP', src[0].path, 'yellow'))
+    ]
+    if 'STRIP' in env.Dictionary() and not is_debug:
+        actions += [
+            SCons.Action.CommandAction('$STRIP $STRIPFLAGS $TARGET',
+                cmdstr=env.PrettyCommand('STRIP', '$TARGET', 'red')),
+        ]
+
+    return env.Command(dst, src, actions)
+
 def SymlinkLibrary(env, src):
     def symlink(target, source, env):
         os.symlink(os.path.relpath(source[0].path, os.path.dirname(target[0].path)),
@@ -201,6 +216,7 @@ def init(env):
     env.AddMethod(Doxygen, 'Doxygen')
     env.AddMethod(Sphinx, 'Sphinx')
     env.AddMethod(GenGetOpt, 'GenGetOpt')
+    env.AddMethod(MaybeStripLibrary, 'MaybeStripLibrary')
     env.AddMethod(SymlinkLibrary, 'SymlinkLibrary')
     env.AddMethod(FixupLibrary, 'FixupLibrary')
     env.AddMethod(DeleteFile, 'DeleteFile')

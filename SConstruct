@@ -298,6 +298,8 @@ for var in ['CXX', 'CC', 'AR', 'RANLIB', 'GENGETOPT', 'PKG_CONFIG', 'CONFIG_GUES
 env.OverrideFromArg('CXXLD', names=['CXXLD', 'CXX'])
 env.OverrideFromArg('CCLD', names=['CCLD', 'LD', 'CC'])
 
+env.OverrideFromArg('STRIP', default='strip')
+
 env.OverrideFromArg('DOXYGEN', default='doxygen')
 env.OverrideFromArg('SPHINX_BUILD', default='sphinx-build')
 env.OverrideFromArg('BREATHE_APIDOC', default='breathe-apidoc')
@@ -519,12 +521,16 @@ if compiler == 'clang':
     conf.FindTool('RANLIB', toolchain, None, ['llvm-ranlib', 'ranlib'],
                   prepend_path=prepend_path)
 
+    conf.FindTool('STRIP', toolchain, None, ['llvm-strip', 'strip'],
+                  prepend_path=prepend_path)
+
 elif compiler == 'gcc':
     conf.FindTool('CC', toolchain, compiler_ver, ['gcc'])
     conf.FindTool('CXXLD', toolchain, compiler_ver, ['g++'])
     conf.FindTool('CCLD', toolchain, compiler_ver, ['gcc'])
     conf.FindTool('AR', toolchain, None, ['ar'])
     conf.FindTool('RANLIB', toolchain, None, ['ranlib'])
+    conf.FindTool('STRIP', toolchain, None, ['strip'])
 
 env['LINK'] = env['CXXLD']
 env['SHLINK'] = env['CXXLD']
@@ -533,6 +539,7 @@ env.PrependFromArg('CPPFLAGS')
 env.PrependFromArg('CXXFLAGS')
 env.PrependFromArg('CFLAGS')
 env.PrependFromArg('LINKFLAGS', names=['LINKFLAGS', 'LDFLAGS'])
+env.PrependFromArg('STRIPFLAGS')
 
 env = conf.Finish()
 
@@ -632,6 +639,7 @@ env.Append(CPPDEFINES=[])
 env.Append(CPPPATH=[])
 env.Append(LIBPATH=[])
 env.Append(LIBS=[])
+env.Append(STRIPFLAGS=[])
 
 if GetOption('with_includes'):
     env.Append(CPPPATH=GetOption('with_includes'))
@@ -1186,6 +1194,10 @@ if compiler == 'clang':
         '-Wno-weak-vtables',
         '-Wno-unused-member-function',
     ])
+
+if not env['STRIPFLAGS']:
+    if platform in ['darwin']:
+        env.Append(STRIPFLAGS=['-x'])
 
 env.AlwaysBuild(
     env.Alias('tidy', [env.Dir('#')],

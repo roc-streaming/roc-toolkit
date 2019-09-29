@@ -40,9 +40,12 @@ if not GetOption('disable_lib'):
     sources = env.Glob('lib/src/*.cpp')
 
     libroc = cenv.SharedLibrary(
-        'roc', sources, SHLIBSUFFIX=lib_env['SHLIBSUFFIX'])
+        'roc_unstripped', sources, SHLIBSUFFIX=lib_env['SHLIBSUFFIX'])
 
     env.Depends(libroc, '#src/lib/roc.version')
+
+    libroc = cenv.MaybeStripLibrary(libroc[0].name.replace('_unstripped', ''),
+        libroc, is_debug=GetOption('enable_debug'))
 
     target = env.Install(env['ROC_BINDIR'], libroc)
     symlinks = env.SymlinkLibrary(target[0])
