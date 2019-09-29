@@ -983,9 +983,13 @@ if compiler in ['gcc', 'clang']:
 
         lib_env['SHLIBSUFFIX'] = '%s.%s' % (lib_env['SHLIBSUFFIX'], abi_version)
         lib_env.Append(LINKFLAGS=[
-            '-Wl,--version-script=%s' % env.File('#src/lib/roc.version').path,
             '-Wl,-soname,libroc%s' % lib_env['SHLIBSUFFIX'],
         ])
+
+        if variant == 'release':
+            lib_env.Append(LINKFLAGS=[
+                '-Wl,--version-script=%s' % env.File('#src/lib/roc.version').path
+            ])
 
     if platform in ['darwin']:
         lib_env['SHLIBSUFFIX'] = '.%s%s' % (abi_version, lib_env['SHLIBSUFFIX'])
@@ -1011,6 +1015,7 @@ if compiler in ['gcc', 'clang']:
         for var in ['CXXFLAGS', 'CFLAGS']:
             env.Append(**{var: [
                 '-ggdb',
+                '-funwind-tables',
                 '-fno-omit-frame-pointer',
             ]})
         env.Append(LINKFLAGS=[
