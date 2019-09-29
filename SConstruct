@@ -557,9 +557,14 @@ build_dir = 'build/%s/%s' % (
     compiler_spec)
 
 env['ROC_BINDIR'] = '#bin/%s' % host
-env['ROC_VERSION'] = open(env.File('#.version').path).read().strip()
+
+env['ROC_VERSION'] = env.ParseProjectVersion()
 env['ROC_SHA'] = env.ParseGitHead()
-env['ROC_VERSION_STR'] = '%s (%s)' % (env['ROC_VERSION'], env['ROC_SHA'])
+
+if env['ROC_SHA']:
+    env['ROC_VERSION_STR'] = '%s (%s)' % (env['ROC_VERSION'], env['ROC_SHA'])
+else:
+    env['ROC_VERSION_STR'] = env['ROC_VERSION']
 
 abi_version = '.'.join(env['ROC_VERSION'].split('.')[:2])
 
