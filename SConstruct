@@ -267,30 +267,33 @@ if GetOption('help'):
 if 'clean' in COMMAND_LINE_TARGETS and COMMAND_LINE_TARGETS != ['clean']:
     env.Die("combining 'clean' with other targets is not allowed")
 
-clean = [
+cleanbuild = [
     env.DeleteDir('#bin'),
     env.DeleteDir('#build'),
-    env.DeleteDir('#3rdparty'),
-    env.DeleteDir('#html'),
-    env.DeleteDir('#man'),
-    env.DeleteDir('#.sconf_temp'),
-    env.DeleteFile('#.sconsign.dblite'),
-    env.DeleteFile('#config.log'),
     env.DeleteFile('#compile_commands.json'),
 ]
 
+cleandocs = [
+    env.DeleteDir('#html'),
+    env.DeleteDir('#man'),
+    env.DeleteDir('#build/docs'),
+]
+
+clean = cleanbuild + cleandocs + [
+    env.DeleteDir('#3rdparty'),
+    env.DeleteFile('#config.log'),
+    env.DeleteDir('#.sconf_temp'),
+    env.DeleteFile('#.sconsign.dblite'),
+]
+
 env.AlwaysBuild(env.Alias('clean', [], clean))
+env.AlwaysBuild(env.Alias('cleanbuild', [], cleanbuild))
+env.AlwaysBuild(env.Alias('cleandocs', [], cleandocs))
 
 # handle "scons -c"
 if env.GetOption('clean'):
     env.Execute(clean)
     Return()
-
-env.AlwaysBuild(env.Alias('cleandocs', [], [
-    env.DeleteDir('#html'),
-    env.DeleteDir('#man'),
-    env.DeleteDir('#build/docs'),
-]))
 
 for var in ['CXX', 'CC', 'AR', 'RANLIB', 'GENGETOPT', 'PKG_CONFIG', 'CONFIG_GUESS']:
     env.OverrideFromArg(var)

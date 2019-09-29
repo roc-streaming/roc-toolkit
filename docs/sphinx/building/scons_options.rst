@@ -101,10 +101,13 @@ Targets
     build everything and run tests
 
 ``clean``
-    remove build results
+    full clean, including build results, downloaded third-parties, generated documentation, and scons database
+
+``cleanbuild``
+    remove only build results
 
 ``cleandocs``
-    remove only documentation build results
+    remove only generated documentation
 
 ``install``
     install build results into the system
