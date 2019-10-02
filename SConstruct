@@ -679,23 +679,23 @@ test_env = env.Clone()
 pulse_env = env.Clone()
 
 # all possible dependencies on this platform
-all_dependencies = set(env['ROC_TARGETS'])
+all_dependencies = set([t.replace('target_', '') for t in env['ROC_TARGETS']])
 
-all_dependencies.add('target_ragel')
-
-if not GetOption('disable_tests'):
-    all_dependencies.add('target_cpputest')
+all_dependencies.add('ragel')
 
 if not GetOption('disable_tools'):
-    all_dependencies.add('target_gengetopt')
+    all_dependencies.add('gengetopt')
+
+if not GetOption('disable_tests'):
+    all_dependencies.add('cpputest')
 
 if ((not GetOption('disable_tools') \
         or not GetOption('disable_examples')) \
     and not GetOption('disable_pulseaudio')) \
   or GetOption('enable_pulseaudio_modules'):
     if platform in ['linux', 'android']:
-        all_dependencies.add('target_alsa')
-        all_dependencies.add('target_pulseaudio')
+        all_dependencies.add('alsa')
+        all_dependencies.add('pulseaudio')
 
 # dependencies that we should download and build manually
 download_dependencies = set()
@@ -704,18 +704,18 @@ download_dependencies = set()
 explicit_version = set()
 
 for name, version in env.ParseThirdParties(GetOption('build_3rdparty')):
-    download_dependencies.add('target_%s' % name)
+    download_dependencies.add(name)
     if version:
         thirdparty_versions[name] = version
         explicit_version.add(name)
 
-if 'target_all' in download_dependencies:
+if 'all' in download_dependencies:
     download_dependencies = all_dependencies
 
 # dependencies that should be pre-installed on system
 system_dependecies = all_dependencies - download_dependencies
 
-if 'target_libuv' in system_dependecies:
+if 'libuv' in system_dependecies:
     conf = Configure(env, custom_tests=env.CustomTests)
 
     env.ParsePkgConfig('--cflags --libs libuv')
@@ -730,7 +730,7 @@ if 'target_libuv' in system_dependecies:
 
     env = conf.Finish()
 
-if 'target_libunwind' in system_dependecies:
+if 'libunwind' in system_dependecies:
     conf = Configure(env, custom_tests=env.CustomTests)
 
     env.ParsePkgConfig('--cflags --libs libunwind')
@@ -740,7 +740,7 @@ if 'target_libunwind' in system_dependecies:
 
     env = conf.Finish()
 
-if 'target_openfec' in system_dependecies:
+if 'openfec' in system_dependecies:
     conf = Configure(env, custom_tests=env.CustomTests)
 
     if env.ParsePkgConfig('--silence-errors --cflags --libs openfec'):
@@ -782,7 +782,7 @@ if 'target_openfec' in system_dependecies:
 
     env = conf.Finish()
 
-if 'target_pulseaudio' in system_dependecies:
+if 'pulseaudio' in system_dependecies:
     conf = Configure(tool_env, custom_tests=env.CustomTests)
 
     tool_env.ParsePkgConfig('--cflags --libs libpulse')
@@ -832,7 +832,7 @@ if 'target_pulseaudio' in system_dependecies:
 
         env['ROC_PULSE_VERSION'] = pa_ver
 
-if 'target_sox' in system_dependecies:
+if 'sox' in system_dependecies:
     conf = Configure(tool_env, custom_tests=env.CustomTests)
 
     tool_env.ParsePkgConfig('--cflags --libs sox')
@@ -848,7 +848,7 @@ if 'target_sox' in system_dependecies:
 
     tool_env = conf.Finish()
 
-if 'target_ragel' in system_dependecies:
+if 'ragel' in system_dependecies:
     conf = Configure(env, custom_tests=env.CustomTests)
 
     if 'RAGEL' in env.Dictionary():
@@ -861,7 +861,7 @@ if 'target_ragel' in system_dependecies:
 
     env = conf.Finish()
 
-if 'target_gengetopt' in system_dependecies:
+if 'gengetopt' in system_dependecies:
     conf = Configure(env, custom_tests=env.CustomTests)
 
     if 'GENGETOPT' in env.Dictionary():
@@ -874,7 +874,7 @@ if 'target_gengetopt' in system_dependecies:
 
     env = conf.Finish()
 
-if 'target_cpputest' in system_dependecies:
+if 'cpputest' in system_dependecies:
     conf = Configure(test_env, custom_tests=env.CustomTests)
 
     test_env.ParsePkgConfig('--cflags --libs cpputest')
@@ -885,16 +885,16 @@ if 'target_cpputest' in system_dependecies:
 
     test_env = conf.Finish()
 
-if 'target_libuv' in download_dependencies:
+if 'libuv' in download_dependencies:
     env.ThirdParty(host, thirdparty_compiler_spec, toolchain,
                    thirdparty_variant, thirdparty_versions, 'libuv')
 
-if 'target_libunwind' in download_dependencies:
+if 'libunwind' in download_dependencies:
     env.ThirdParty(host, thirdparty_compiler_spec,
                    toolchain, thirdparty_variant,
                    thirdparty_versions, 'libunwind')
 
-if 'target_openfec' in download_dependencies:
+if 'openfec' in download_dependencies:
     env.ThirdParty(host, thirdparty_compiler_spec, toolchain,
                    thirdparty_variant, thirdparty_versions,
                    'openfec', includes=[
@@ -902,11 +902,11 @@ if 'target_openfec' in download_dependencies:
                         'lib_stable',
                         ])
 
-if 'target_alsa' in download_dependencies:
+if 'alsa' in download_dependencies:
     tool_env.ThirdParty(host, thirdparty_compiler_spec, toolchain,
                         thirdparty_variant, thirdparty_versions, 'alsa')
 
-if 'target_pulseaudio' in download_dependencies:
+if 'pulseaudio' in download_dependencies:
     if not 'pulseaudio' in explicit_version and not crosscompile:
         pa_ver = env.ParseVersion(['pulseaudio', '--version'])
         if pa_ver:
@@ -918,7 +918,7 @@ if 'target_pulseaudio' in download_dependencies:
         'sndfile',
         ]
 
-    if 'target_alsa' in download_dependencies:
+    if 'alsa' in download_dependencies:
         pa_deps += ['alsa']
 
     env['ROC_PULSE_VERSION'] = thirdparty_versions['pulseaudio']
@@ -942,13 +942,13 @@ if 'target_pulseaudio' in download_dependencies:
                                    'pulsecommon-%s' % thirdparty_versions['pulseaudio'],
                                    ])
 
-if 'target_sox' in download_dependencies:
+if 'sox' in download_dependencies:
     sox_deps = []
 
-    if 'target_alsa' in download_dependencies:
+    if 'alsa' in download_dependencies:
         sox_deps += ['alsa']
 
-    if 'target_pulseaudio' in download_dependencies:
+    if 'pulseaudio' in download_dependencies:
         sox_deps += ['pulseaudio']
 
     tool_env.ThirdParty(host, thirdparty_compiler_spec, toolchain,
@@ -963,13 +963,13 @@ if 'target_sox' in download_dependencies:
             'mad', 'mp3lame']:
         conf.CheckLib(lib)
 
-    if not 'target_alsa' in download_dependencies:
+    if not 'alsa' in download_dependencies:
         for lib in [
                 'asound',
                 ]:
             conf.CheckLib(lib)
 
-    if not 'target_pulseaudio' in download_dependencies:
+    if not 'pulseaudio' in download_dependencies:
         for lib in [
                 'sndfile',
                 'pulse', 'pulse-simple',
@@ -983,7 +983,7 @@ if 'target_sox' in download_dependencies:
 
     tool_env = conf.Finish()
 
-if 'target_ragel' in download_dependencies:
+if 'ragel' in download_dependencies:
     env.ThirdParty(build, thirdparty_compiler_spec, "",
                    thirdparty_variant, thirdparty_versions, 'ragel')
 
@@ -992,7 +992,7 @@ if 'target_ragel' in download_dependencies:
             build + env['PROGSUFFIX'], thirdparty_compiler_spec,
             thirdparty_versions['ragel']))
 
-if 'target_gengetopt' in download_dependencies:
+if 'gengetopt' in download_dependencies:
     env.ThirdParty(build, thirdparty_compiler_spec, "",
                    thirdparty_variant, thirdparty_versions, 'gengetopt')
 
@@ -1001,12 +1001,9 @@ if 'target_gengetopt' in download_dependencies:
             build + env['PROGSUFFIX'], thirdparty_compiler_spec,
             thirdparty_versions['gengetopt']))
 
-if 'target_cpputest' in download_dependencies:
+if 'cpputest' in download_dependencies:
     test_env.ThirdParty(host, thirdparty_compiler_spec, toolchain,
                         thirdparty_variant, thirdparty_versions, 'cpputest')
-
-if 'target_posix' in env['ROC_TARGETS'] and platform not in ['darwin']:
-    env.Append(CPPDEFINES=[('_POSIX_C_SOURCE', '200809')])
 
 conf = Configure(env, custom_tests=env.CustomTests)
 
@@ -1025,6 +1022,9 @@ if GetOption('enable_pulseaudio_modules'):
         conf.FindPulseDir(GetOption('prefix'), build, host, env['ROC_PULSE_VERSION'])
 
 env = conf.Finish()
+
+if 'target_posix' in env['ROC_TARGETS'] and platform not in ['darwin']:
+    env.Append(CPPDEFINES=[('_POSIX_C_SOURCE', '200809')])
 
 for t in env['ROC_TARGETS']:
     env.Append(CPPDEFINES=['ROC_' + t.upper()])
