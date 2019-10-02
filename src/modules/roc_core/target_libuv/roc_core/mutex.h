@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_core/target_uv/roc_core/mutex.h
+//! @file roc_core/target_libuv/roc_core/mutex.h
 //! @brief Mutex.
 
 #ifndef ROC_CORE_MUTEX_H_

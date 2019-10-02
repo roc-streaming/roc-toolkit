@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_core/target_uv/roc_core/thread.h
+//! @file roc_core/target_libuv/roc_core/thread.h
 //! @brief Thread.
 
 #ifndef ROC_CORE_THREAD_H_

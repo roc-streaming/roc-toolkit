@@ -302,7 +302,7 @@ mkpath(os.path.join(builddir, 'src'))
 
 os.chdir(os.path.join(builddir))
 
-if name == 'uv':
+if name == 'libuv':
     download('http://dist.libuv.org/dist/v%s/libuv-v%s.tar.gz' % (ver, ver),
              'libuv-v%s.tar.gz' % ver,
              logfile,

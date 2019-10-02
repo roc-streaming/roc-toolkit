@@ -14,12 +14,12 @@ scons -Q \
       --enable-werror \
       --enable-debug \
       --sanitizers=address \
-      --build-3rdparty=uv,openfec,sox \
+      --build-3rdparty=libuv,openfec,sox \
       test
 
 scons -Q \
       --enable-werror \
-      --build-3rdparty=uv,openfec,sox \
+      --build-3rdparty=libuv,openfec,sox \
       test
 
 scons -Q \

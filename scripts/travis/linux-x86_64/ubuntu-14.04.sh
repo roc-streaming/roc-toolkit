@@ -8,7 +8,7 @@ do
     scons -Q \
           --enable-werror \
           --enable-pulseaudio-modules \
-          --build-3rdparty=uv,openfec,pulseaudio,cpputest \
+          --build-3rdparty=libuv,openfec,pulseaudio,cpputest \
           --compiler=$c \
           test
 done

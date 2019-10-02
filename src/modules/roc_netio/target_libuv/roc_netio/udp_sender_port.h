@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_netio/target_uv/roc_netio/udp_sender_port.h
+//! @file roc_netio/target_libuv/roc_netio/udp_sender_port.h
 //! @brief UDP sender.
 
 #ifndef ROC_NETIO_UDP_SENDER_PORT_H_

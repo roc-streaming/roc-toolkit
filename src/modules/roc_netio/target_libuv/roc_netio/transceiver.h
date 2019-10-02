@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_netio/target_uv/roc_netio/transceiver.h
+//! @file roc_netio/target_libuv/roc_netio/transceiver.h
 //! @brief Network sender/receiver.
 
 #ifndef ROC_NETIO_TRANSCEIVER_H_

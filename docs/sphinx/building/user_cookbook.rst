@@ -51,16 +51,16 @@ Ubuntu 14.04 and later, Debian Jessie and later
     $ cd roc
 
     # build libraries and tools
-    $ scons -Q --build-3rdparty=uv,openfec,cpputest
+    $ scons -Q --build-3rdparty=libuv,openfec,cpputest
 
     # install libraries and tools
-    $ sudo scons -Q --build-3rdparty=uv,openfec,cpputest install
+    $ sudo scons -Q --build-3rdparty=libuv,openfec,cpputest install
 
     # build libraries, tools, and PulseAudio modules
-    $ scons -Q --enable-pulseaudio-modules --build-3rdparty=uv,openfec,pulseaudio,cpputest
+    $ scons -Q --enable-pulseaudio-modules --build-3rdparty=libuv,openfec,pulseaudio,cpputest
 
     # install libraries, tools, and PulseAudio modules
-    $ sudo scons -Q --enable-pulseaudio-modules --build-3rdparty=uv,openfec,pulseaudio,cpputest install
+    $ sudo scons -Q --enable-pulseaudio-modules --build-3rdparty=libuv,openfec,pulseaudio,cpputest install
 
 Fedora 22 and later
 -------------------
@@ -108,16 +108,16 @@ Centos 7 and later
     $ cd roc
 
     # build libraries and tools
-    $ scons -Q --build-3rdparty=uv,openfec,cpputest
+    $ scons -Q --build-3rdparty=libuv,openfec,cpputest
 
     # install libraries and tools
-    $ sudo scons -Q --build-3rdparty=uv,openfec,cpputest install
+    $ sudo scons -Q --build-3rdparty=libuv,openfec,cpputest install
 
     # build libraries, tools, and PulseAudio modules
-    $ scons -Q --enable-pulseaudio-modules --build-3rdparty=uv,openfec,pulseaudio,cpputest
+    $ scons -Q --enable-pulseaudio-modules --build-3rdparty=libuv,openfec,pulseaudio,cpputest
 
     # install libraries, tools, and PulseAudio modules
-    $ sudo scons -Q --enable-pulseaudio-modules --build-3rdparty=uv,openfec,pulseaudio,cpputest install
+    $ sudo scons -Q --enable-pulseaudio-modules --build-3rdparty=libuv,openfec,pulseaudio,cpputest install
 
 Arch Linux
 ----------
@@ -196,7 +196,7 @@ Raspberry Pi 2 and 3
           scons -Q \
             --enable-pulseaudio-modules \
             --host=arm-linux-gnueabihf \
-            --build-3rdparty=uv,libunwind,openfec,alsa,pulseaudio:10.0,sox,cpputest
+            --build-3rdparty=libuv,libunwind,openfec,alsa,pulseaudio:10.0,sox,cpputest
 
     # install Roc binaries
     $ scp ./bin/arm-linux-gnueabihf/roc-{recv,send,conv} <address>:/usr/bin
@@ -221,7 +221,7 @@ Raspberry Pi 1 and Zero
           scons -Q \
             --enable-pulseaudio-modules \
             --host=arm-bcm2708hardfp-linux-gnueabi \
-            --build-3rdparty=uv,libunwind,openfec,alsa,pulseaudio:5.0,sox,cpputest
+            --build-3rdparty=libuv,libunwind,openfec,alsa,pulseaudio:5.0,sox,cpputest
 
     # install Roc binaries
     $ scp ./bin/arm-bcm2708hardfp-linux-gnueabi/roc-{recv,send,conv} <address>:/usr/bin
@@ -247,7 +247,7 @@ Orange Pi 64-bit models
           scons -Q \
             --enable-pulseaudio-modules \
             --host=aarch64-linux-gnu \
-            --build-3rdparty=uv,libunwind,openfec,alsa,pulseaudio:8.0,sox,cpputest
+            --build-3rdparty=libuv,libunwind,openfec,alsa,pulseaudio:8.0,sox,cpputest
 
     # install Roc binaries
     $ scp ./bin/aarch64-linux-gnu/roc-{recv,send,conv} <address>:/usr/bin
@@ -272,7 +272,7 @@ Orange Pi 32-bit models
           scons -Q \
             --enable-pulseaudio-modules \
             --host=arm-linux-gnueabihf \
-            --build-3rdparty=uv,libunwind,openfec,alsa,pulseaudio:8.0,sox,cpputest
+            --build-3rdparty=libuv,libunwind,openfec,alsa,pulseaudio:8.0,sox,cpputest
 
     # install Roc binaries
     $ scp ./bin/arm-linux-gnueabihf/roc-{recv,send,conv} <address>:/usr/bin
@@ -322,10 +322,10 @@ macOS 10.11 and later
     $ cd roc
 
     # build libraries and tools
-    $ scons -Q --build-3rdparty=uv,openfec,sox
+    $ scons -Q --build-3rdparty=libuv,openfec,sox
 
     # install libraries and tools
-    $ sudo scons -Q --build-3rdparty=uv,openfec,sox install
+    $ sudo scons -Q --build-3rdparty=libuv,openfec,sox install
 
 Android
 =======

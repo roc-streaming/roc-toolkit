@@ -25,11 +25,10 @@ supported_sanitizers = [
 
 # 3rdparty library default versions
 thirdparty_versions = {
-    'uv':         '1.5.0',
-    'openfec':    '1.4.2.4',
-    'cpputest':   '3.6',
-    'sox':        '14.4.2',
+    'libuv':      '1.5.0',
     'libunwind':  '1.2.1',
+    'openfec':    '1.4.2.4',
+    'sox':        '14.4.2',
     'alsa':       '1.0.29',
     'pulseaudio': '5.0',
     'json':       '0.11-20130402',
@@ -37,6 +36,7 @@ thirdparty_versions = {
     'sndfile':    '1.0.20',
     'ragel':      '6.10',
     'gengetopt':  '2.22.6',
+    'cpputest':   '3.6',
 }
 
 SCons.SConf.dryrun = 0 # configure even in dry run mode
@@ -266,7 +266,7 @@ AddOption('--override-targets',
           type='string',
           help=("override targets to use, "+
                 "pass a comma-separated list of target names, "+
-                "e.g. 'glibc,posix,uv,openfec,...'"))
+                "e.g. 'glibc,stdio,posix,libuv,openfec,...'"))
 
 if GetOption('help'):
     Return()
@@ -715,7 +715,7 @@ if 'target_all' in download_dependencies:
 # dependencies that should be pre-installed on system
 system_dependecies = all_dependencies - download_dependencies
 
-if 'target_uv' in system_dependecies:
+if 'target_libuv' in system_dependecies:
     conf = Configure(env, custom_tests=env.CustomTests)
 
     env.ParsePkgConfig('--cflags --libs libuv')
@@ -885,9 +885,9 @@ if 'target_cpputest' in system_dependecies:
 
     test_env = conf.Finish()
 
-if 'target_uv' in download_dependencies:
+if 'target_libuv' in download_dependencies:
     env.ThirdParty(host, thirdparty_compiler_spec, toolchain,
-                   thirdparty_variant, thirdparty_versions, 'uv')
+                   thirdparty_variant, thirdparty_versions, 'libuv')
 
 if 'target_libunwind' in download_dependencies:
     env.ThirdParty(host, thirdparty_compiler_spec,

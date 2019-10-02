@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_netio/target_uv/roc_netio/basic_port.h
+//! @file roc_netio/target_libuv/roc_netio/basic_port.h
 //! @brief Basic network port.
 
 #ifndef ROC_NETIO_BASIC_PORT_H_

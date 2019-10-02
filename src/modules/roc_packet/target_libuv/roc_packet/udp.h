@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_packet/target_uv/roc_packet/udp.h
+//! @file roc_packet/target_libuv/roc_packet/udp.h
 //! @brief UDP packet.
 
 #ifndef ROC_PACKET_UDP_H_

@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_core/target_uv/roc_core/cond.h
+//! @file roc_core/target_libuv/roc_core/cond.h
 //! @brief Condition variable.
 
 #ifndef ROC_CORE_COND_H_

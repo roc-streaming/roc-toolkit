@@ -68,7 +68,7 @@ Options
 --with-includes=WITH_INCLUDES                          additional include directory, may be used multiple times
 --with-libraries=WITH_LIBRARIES                        additional library directory, may be used multiple times
 --build-3rdparty=BUILD_3RDPARTY                        download and build specified 3rdparty libraries, pass a comma-separated list of library names and optional versions, e.g. 'uv:1.4.2,openfec'
---override-targets=OVERRIDE_TARGETS                    override targets to use, pass a comma-separated list of target names, e.g. 'glibc,posix,uv,openfec,...'
+--override-targets=OVERRIDE_TARGETS                    override targets to use, pass a comma-separated list of target names, e.g. 'glibc,stdio,posix,libuv,openfec,...'
 
 Variables
 =========

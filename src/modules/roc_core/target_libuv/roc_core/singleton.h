@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_core/target_uv/roc_core/singleton.h
+//! @file roc_core/target_libuv/roc_core/singleton.h
 //! @brief Singleton.
 
 #ifndef ROC_CORE_SINGLETON_H_
