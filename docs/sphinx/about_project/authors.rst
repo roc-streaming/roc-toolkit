@@ -19,3 +19,4 @@ Contributors
 * zenuo <zenuo@protonmail.com>
 * Paul Malcolm <paul.malcolm@l3t.com>
 * Thomas Dwyer <tdwyer1990@gmail.com>
+* Hrishikesh Suresh <hrishikesh123s@gmail.com>
