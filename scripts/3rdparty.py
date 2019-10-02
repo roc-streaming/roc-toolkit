@@ -573,7 +573,7 @@ elif name == 'libunwind':
             '--disable-coredump',
             '--disable-ptrace',
             '--disable-setjmp',
-            '--disable-minidebuginfo', 
+            '--disable-minidebuginfo',
            ])), logfile)
     execute('make -j', logfile)
     install_files('include/*.h', os.path.join(builddir, 'include'))

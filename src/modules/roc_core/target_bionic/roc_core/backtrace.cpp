@@ -10,8 +10,6 @@
 #include <dlfcn.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
 #include <unwind.h>
 
 #include "roc_core/backtrace.h"
@@ -84,6 +82,7 @@ void dump_backtrace(void** buffer, ssize_t count) {
         free(demangled_name);
     }
 }
+
 } // namespace
 
 void print_backtrace() {

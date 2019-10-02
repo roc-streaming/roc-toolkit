@@ -21,6 +21,7 @@ namespace core {
 namespace {
 
 enum { MaxDigits = 10, MaxLen = 200, MaxLenFunctionName = 128 };
+
 /* safe concatenation of strings
  */
 void safe_strcat(char* buffer, size_t& buffer_size, const char* str) {
@@ -162,11 +163,12 @@ void backtrace_symbols() {
 
         uint32_to_string((uint32_t)offset, 16, number);
         safe_strcat(buffer, current_buffer_size, number);
-		safe_strcat(buffer, current_buffer_size, "\n");
+        safe_strcat(buffer, current_buffer_size, "\n");
 
         print_emergency_message(buffer);
     }
 }
+
 } // namespace
 
 void print_backtrace() {
