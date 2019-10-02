@@ -83,8 +83,8 @@ jobs:
         - docker pull rocproject/travis-minimal
       script:
         - scripts/travis/docker.sh rocproject/travis-minimal scripts/travis/linux-build-options/optional-features.sh
+        - scripts/travis/docker.sh rocproject/travis-minimal scripts/travis/linux-build-options/debug-features.sh
         - scripts/travis/docker.sh rocproject/travis-minimal scripts/travis/linux-build-options/pulseaudio-support.sh
-        - scripts/travis/docker.sh rocproject/travis-minimal scripts/travis/linux-build-options/full-debug.sh
 
     - name: "Android ARM"
       stage: Build

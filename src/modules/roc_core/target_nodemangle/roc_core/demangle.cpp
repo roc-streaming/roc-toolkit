@@ -6,15 +6,13 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_core/backtrace.h"
+#include "roc_core/demangle.h"
 
 namespace roc {
 namespace core {
 
-void print_backtrace() {
-}
-
-void print_emergency_backtrace() {
+const char* demangle(const char*, char*&, size_t&) {
+    return NULL;
 }
 
 } // namespace core

@@ -73,7 +73,7 @@ void signal_handler(int sig, siginfo_t* si, void*) {
         print_emergency_message("\nERROR: ");
         print_emergency_message(signal_string(sig, si));
         print_emergency_message("\n\n");
-        print_backtrace_emergency();
+        print_emergency_backtrace();
     }
     // this will finally kill us since we use SA_RESETHAND
     raise(sig);

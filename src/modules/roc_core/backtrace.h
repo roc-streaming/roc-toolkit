@@ -25,7 +25,7 @@ void print_backtrace();
 //! @remarks
 //!  This function is signal-safe.
 //!  It can't use heap and stdio.
-void print_backtrace_emergency();
+void print_emergency_backtrace();
 
 //! Print message to stderr (emergency mode).
 //! @remarks

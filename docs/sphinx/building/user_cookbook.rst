@@ -14,7 +14,7 @@ Ubuntu 16.04 and later
 .. code::
 
     # for Roc
-    $ sudo apt-get install g++ pkg-config scons ragel gengetopt libuv1-dev libpulse-dev libsox-dev libcpputest-dev
+    $ sudo apt-get install g++ pkg-config scons ragel gengetopt libuv1-dev libunwind-dev libpulse-dev libsox-dev libcpputest-dev
 
     # for 3rd-parties
     $ sudo apt-get install libtool intltool autoconf automake make cmake
@@ -41,7 +41,7 @@ Ubuntu 14.04 and later, Debian Jessie and later
 .. code::
 
     # for Roc
-    $ sudo apt-get install g++ pkg-config scons ragel gengetopt libpulse-dev libsox-dev
+    $ sudo apt-get install g++ pkg-config scons ragel gengetopt libunwind8-dev libpulse-dev libsox-dev
 
     # for 3rd-parties
     $ sudo apt-get install libtool intltool autoconf automake make cmake
@@ -68,7 +68,7 @@ Fedora 22 and later
 .. code::
 
     # for Roc
-    $ sudo dnf install gcc-c++ pkgconfig scons ragel gengetopt libuv-devel pulseaudio-libs-devel sox-devel
+    $ sudo dnf install gcc-c++ pkgconfig scons ragel gengetopt libuv-devel libunwind-devel pulseaudio-libs-devel sox-devel
 
     # for 3rd-parties
     $ sudo dnf install libtool intltool autoconf automake make cmake
@@ -98,7 +98,7 @@ Centos 7 and later
     $ sudo yum install epel-release
 
     # for Roc
-    $ sudo yum install gcc-c++ pkgconfig scons ragel gengetopt pulseaudio-libs-devel sox-devel
+    $ sudo yum install gcc-c++ pkgconfig scons ragel gengetopt libunwind-devel pulseaudio-libs-devel sox-devel
 
     # for 3rd-parties
     $ sudo yum install libtool intltool autoconf automake make cmake
@@ -125,7 +125,7 @@ Arch Linux
 .. code::
 
     # for Roc
-    $ sudo pacman -S gcc pkgconf scons ragel gengetopt libuv libpulse sox
+    $ sudo pacman -S gcc pkgconf scons ragel gengetopt libuv libunwind libpulse sox
 
     # for 3rd-parties
     $ sudo pacman -S grep gawk libtool intltool autoconf automake make cmake
@@ -152,7 +152,7 @@ Alpine Linux
 .. code::
 
     # for Roc
-    $ sudo apk add g++ pkgconf scons ragel gengetopt libuv-dev pulseaudio-dev sox-dev cpputest
+    $ sudo apk add g++ pkgconf scons ragel gengetopt libuv-dev libunwind-dev pulseaudio-dev sox-dev cpputest
 
     # for 3rd-parties
     $ sudo apk add libtool autoconf automake make cmake
@@ -196,7 +196,7 @@ Raspberry Pi 2 and 3
           scons -Q \
             --enable-pulseaudio-modules \
             --host=arm-linux-gnueabihf \
-            --build-3rdparty=uv,openfec,alsa,pulseaudio:10.0,sox,cpputest
+            --build-3rdparty=uv,libunwind,openfec,alsa,pulseaudio:10.0,sox,cpputest
 
     # install Roc binaries
     $ scp ./bin/arm-linux-gnueabihf/roc-{recv,send,conv} <address>:/usr/bin
@@ -221,7 +221,7 @@ Raspberry Pi 1 and Zero
           scons -Q \
             --enable-pulseaudio-modules \
             --host=arm-bcm2708hardfp-linux-gnueabi \
-            --build-3rdparty=uv,openfec,alsa,pulseaudio:5.0,sox,cpputest
+            --build-3rdparty=uv,libunwind,openfec,alsa,pulseaudio:5.0,sox,cpputest
 
     # install Roc binaries
     $ scp ./bin/arm-bcm2708hardfp-linux-gnueabi/roc-{recv,send,conv} <address>:/usr/bin
@@ -247,7 +247,7 @@ Orange Pi 64-bit models
           scons -Q \
             --enable-pulseaudio-modules \
             --host=aarch64-linux-gnu \
-            --build-3rdparty=uv,openfec,alsa,pulseaudio:8.0,sox,cpputest
+            --build-3rdparty=uv,libunwind,openfec,alsa,pulseaudio:8.0,sox,cpputest
 
     # install Roc binaries
     $ scp ./bin/aarch64-linux-gnu/roc-{recv,send,conv} <address>:/usr/bin
@@ -272,7 +272,7 @@ Orange Pi 32-bit models
           scons -Q \
             --enable-pulseaudio-modules \
             --host=arm-linux-gnueabihf \
-            --build-3rdparty=uv,openfec,alsa,pulseaudio:8.0,sox,cpputest
+            --build-3rdparty=uv,libunwind,openfec,alsa,pulseaudio:8.0,sox,cpputest
 
     # install Roc binaries
     $ scp ./bin/arm-linux-gnueabihf/roc-{recv,send,conv} <address>:/usr/bin
@@ -291,7 +291,7 @@ macOS 10.12 and later
 .. code::
 
     # for Roc
-    $ brew install scons ragel gengetopt sox libuv cpputest
+    $ brew install scons ragel gengetopt sox libuv libunwind cpputest
 
     # for 3rd-parties
     $ brew install libtool autoconf automake make cmake
@@ -312,7 +312,7 @@ macOS 10.11 and later
 .. code::
 
     # for Roc
-    $ brew install scons ragel gengetopt cpputest
+    $ brew install scons ragel gengetopt libunwind cpputest
 
     # for 3rd-parties
     $ brew install libtool autoconf automake make cmake

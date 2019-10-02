@@ -14,13 +14,14 @@
 #include <string.h>
 
 #include "roc_core/backtrace.h"
+#include "roc_core/demangle.h"
 
 namespace roc {
 namespace core {
 
 namespace {
 
-enum { MaxDigits = 10, MaxLen = 200, MaxLenFunctionName = 128 };
+enum { MaxDigits = 10, MaxLenBuffer = 200, MaxLenFunctionName = 128 };
 
 /* safe concatenation of strings
  */
@@ -28,8 +29,8 @@ void safe_strcat(char* buffer, size_t& buffer_size, const char* str) {
     size_t len = strlen(str);
     /* Checking if there is enough space in the buffer
      */
-    if (len > MaxLen - buffer_size - 1) {
-        len = MaxLen - buffer_size - 1;
+    if (len > MaxLenBuffer - buffer_size - 1) {
+        len = MaxLenBuffer - buffer_size - 1;
     }
     if (len > 0) {
         memcpy(buffer + buffer_size, str, len);
@@ -97,9 +98,9 @@ bool is_backtrace_available() {
 }
 
 /* Print function name, offset, instruction pointer address
- * This must be signal safe.
+ * This must be signal safe if enable_demangling is false.
  */
-void backtrace_symbols() {
+void backtrace_symbols(bool enable_demangling) {
     /* To store the snapshot of the CPU registers.
      */
     unw_context_t context;
@@ -117,6 +118,11 @@ void backtrace_symbols() {
      * unw_init_local() is signal safe.
      */
     unw_init_local(&cursor, &context);
+
+    /* Buffer for demangling.
+     */
+    char* demangled_buf = NULL;
+    size_t demangled_size = 0;
 
     /* Moving to previously called frames & going through each of them.
      * unw_step() is signal safe.
@@ -140,9 +146,19 @@ void backtrace_symbols() {
         unw_word_t offset;
         int32_t status =
             unw_get_proc_name(&cursor, function_name, sizeof(function_name), &offset);
-        /* Printing => index, function name, offset, ip
-         * using write().
-         * write() & strcat() are signal safe.
+
+        /* Demangling is not signal-safe.
+         */
+        const char* symbol = NULL;
+        if (enable_demangling) {
+            symbol = demangle(function_name, demangled_buf, demangled_size);
+        }
+        if (!symbol) {
+            symbol = function_name;
+        }
+
+        /* Printing => index, function name, offset, ip.
+         * uint32_to_string() & safe_strcat() & print_emergency_message() are signal safe.
          */
         if (status < 0) {
             offset = 0;
@@ -150,7 +166,7 @@ void backtrace_symbols() {
         char number[MaxDigits + 1];
         uint32_to_string(index, 10, number);
 
-        char buffer[MaxLen] = "#";
+        char buffer[MaxLenBuffer] = "#";
         size_t current_buffer_size = 1;
         safe_strcat(buffer, current_buffer_size, number);
         safe_strcat(buffer, current_buffer_size, ": 0x");
@@ -158,7 +174,7 @@ void backtrace_symbols() {
         uint32_to_string((uint32_t)ip, 16, number);
         safe_strcat(buffer, current_buffer_size, number);
         safe_strcat(buffer, current_buffer_size, " ");
-        safe_strcat(buffer, current_buffer_size, function_name);
+        safe_strcat(buffer, current_buffer_size, symbol);
         safe_strcat(buffer, current_buffer_size, "+0x");
 
         uint32_to_string((uint32_t)offset, 16, number);
@@ -166,6 +182,10 @@ void backtrace_symbols() {
         safe_strcat(buffer, current_buffer_size, "\n");
 
         print_emergency_message(buffer);
+    }
+
+    if (enable_demangling) {
+        free(demangled_buf);
     }
 }
 
@@ -176,13 +196,13 @@ void print_backtrace() {
         fprintf(stderr, "No backtrace available\n");
     } else {
         fprintf(stderr, "Backtrace:\n");
-        backtrace_symbols();
+        backtrace_symbols(true);
     }
 }
 
-void print_backtrace_emergency() {
+void print_emergency_backtrace() {
     if (is_backtrace_available()) {
-        backtrace_symbols();
+        backtrace_symbols(false);
     }
 }
 

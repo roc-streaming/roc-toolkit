@@ -81,20 +81,23 @@ Every module can have its own target directories. Headers from enabled target di
 
 Currently supported targets are:
 
-================= =================
-target            description
-================= =================
-target_posix      Enabled for a POSIX OS
-target_posixtime  Enabled for a POSIX OS with time extensions
-target_gcc        Enabled for a GCC-compatible compiler
-target_glibc      Enabled for the GNU standard C library
-target_bionic     Enabled for the Bionic standard C library
-target_darwin     Enabled for macOS
-target_stdio      Enabled if stdio is available in the standard library
-target_uv         Enabled if libuv is available
-target_openfec    Enabled if OpenFEC is available
-target_sox        Enabled if SoX is available
-================= =================
+=================== =================
+target              description
+=================== =================
+target_posix        Enabled for a POSIX OS
+target_posixtime    Enabled for a POSIX OS with time extensions
+target_gcc          Enabled for a GCC-compatible compiler
+target_glibc        Enabled for the GNU standard C library
+target_bionic       Enabled for the Bionic standard C library
+target_darwin       Enabled for macOS
+target_stdio        Enabled if stdio is available in the standard library
+target_uv           Enabled if libuv is available
+target_libunwind    Enabled if libunwind is available
+target_openfec      Enabled if OpenFEC is available
+target_sox          Enabled if SoX is available
+target_nobacktrace  Enabled if no backtrace API is available
+target_nodemangle   Enabled if no demangling API is available
+=================== =================
 
 Example directory structure employing targets:
 

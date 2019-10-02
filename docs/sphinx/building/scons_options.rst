@@ -59,6 +59,7 @@ Options
 --disable-examples                                     disable examples building
 --disable-doc                                          disable Doxygen and Sphinx documentation generation
 --disable-openfec                                      disable OpenFEC support required for FEC codes
+--disable-libunwind                                    disable libunwind support required for printing backtrace
 --disable-sox                                          disable SoX support in tools
 --disable-pulseaudio                                   disable PulseAudio support in tools
 --with-pulseaudio=WITH_PULSEAUDIO                      path to the PulseAudio source directory used when building PulseAudio modules

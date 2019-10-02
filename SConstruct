@@ -210,7 +210,7 @@ AddOption('--disable-sox',
 AddOption('--disable-libunwind',
           dest='disable_libunwind',
           action='store_true',
-          help='disable libunwind support as header file')
+          help='disable libunwind support required for printing backtrace')
 
 AddOption('--disable-pulseaudio',
           dest='disable_pulseaudio',
@@ -598,62 +598,66 @@ else:
                  "provide either known '--platform' or '--override-targets' option"),
                     host, ', '.join(supported_platforms))
 
-    if platform in ['linux', 'darwin', 'android']:
+    if platform in ['linux', 'android', 'darwin']:
         env.Append(ROC_TARGETS=[
             'target_posix',
             'target_stdio',
-            'target_uv',
-        ])
-
-    if platform in ['linux', 'darwin']:
-        env.Append(ROC_TARGETS=[
             'target_gcc',
-        ])
-
-        if 'musl' in host:
-            if GetOption('disable_libunwind'):
-                env.Append(ROC_TARGETS=[
-                    'target_nobacktrace',
-                ])
-            else:
-                env.Append(ROC_TARGETS=[
-                    'target_libunwind',
-                ])
-        else:
-            env.Append(ROC_TARGETS=[
-                'target_glibc',
-            ])
-
-    if platform in ['android']:
-        env.Append(ROC_TARGETS=[
-            'target_gcc',
-            'target_bionic',
+            'target_libuv',
         ])
 
     if platform in ['linux', 'android']:
         env.Append(ROC_TARGETS=[
             'target_posixtime',
         ])
-        if not GetOption('disable_tools') and not GetOption('disable_pulseaudio'):
+
+    if platform in ['linux']:
+        if not GetOption('disable_libunwind'):
             env.Append(ROC_TARGETS=[
-                'target_pulseaudio',
+                'target_libunwind',
             ])
+        else:
+            env.Append(ROC_TARGETS=[
+                'target_nobacktrace',
+            ])
+
+    if platform in ['android']:
+        env.Append(ROC_TARGETS=[
+            'target_bionic',
+        ])
 
     if platform in ['darwin']:
         env.Append(ROC_TARGETS=[
             'target_darwin',
+            'target_libunwind',
         ])
 
-    if (not GetOption('disable_tools') or not GetOption('disable_examples')) \
-      and not GetOption('disable_sox'):
+    is_glibc = not 'musl' in host
+
+    if is_glibc:
         env.Append(ROC_TARGETS=[
-            'target_sox',
+            'target_glibc',
+        ])
+    else:
+        env.Append(ROC_TARGETS=[
+            'target_nodemangle',
         ])
 
     if not GetOption('disable_openfec'):
         env.Append(ROC_TARGETS=[
             'target_openfec',
         ])
+
+    if not GetOption('disable_tools') or not GetOption('disable_examples'):
+        if not GetOption('disable_sox'):
+            env.Append(ROC_TARGETS=[
+                'target_sox',
+            ])
+
+        if platform in ['linux'] and not GetOption('disable_pulseaudio'):
+            env.Append(ROC_TARGETS=[
+                'target_pulseaudio',
+            ])
 
 env.Append(CXXFLAGS=[])
 env.Append(CPPDEFINES=[])
@@ -723,6 +727,16 @@ if 'target_uv' in system_dependecies:
     else:
         if not conf.CheckLibWithHeaderExt('uv', 'uv.h', 'C', run=False):
             env.Die("libuv not found (see 'config.log' for details)")
+
+    env = conf.Finish()
+
+if 'target_libunwind' in system_dependecies:
+    conf = Configure(env, custom_tests=env.CustomTests)
+
+    env.ParsePkgConfig('--cflags --libs libunwind')
+
+    if not conf.CheckLibWithHeaderExt('unwind', 'libunwind.h', 'C', run=not crosscompile):
+        env.Die("libunwind not found (see 'config.log' for details)")
 
     env = conf.Finish()
 
@@ -834,13 +848,6 @@ if 'target_sox' in system_dependecies:
 
     tool_env = conf.Finish()
 
-if 'target_libunwind' in system_dependecies:
-    conf = Configure(env, custom_tests=env.CustomTests)
-    env.ParsePkgConfig('--cflags --libs libunwind')
-    if not conf.CheckLibWithHeaderExt('unwind', 'libunwind.h', 'C', run=not crosscompile):
-        env.Die("libunwind not found (see 'config.log' for details)")
-    env = conf.Finish()
-
 if 'target_ragel' in system_dependecies:
     conf = Configure(env, custom_tests=env.CustomTests)
 
@@ -881,6 +888,11 @@ if 'target_cpputest' in system_dependecies:
 if 'target_uv' in download_dependencies:
     env.ThirdParty(host, thirdparty_compiler_spec, toolchain,
                    thirdparty_variant, thirdparty_versions, 'uv')
+
+if 'target_libunwind' in download_dependencies:
+    env.ThirdParty(host, thirdparty_compiler_spec,
+                   toolchain, thirdparty_variant,
+                   thirdparty_versions, 'libunwind')
 
 if 'target_openfec' in download_dependencies:
     env.ThirdParty(host, thirdparty_compiler_spec, toolchain,
@@ -970,11 +982,6 @@ if 'target_sox' in download_dependencies:
         ])
 
     tool_env = conf.Finish()
-
-if 'target_libunwind' in download_dependencies:
-    env.ThirdParty(host, thirdparty_compiler_spec,
-                   toolchain, thirdparty_variant,
-                   thirdparty_versions, 'libunwind')
 
 if 'target_ragel' in download_dependencies:
     env.ThirdParty(build, thirdparty_compiler_spec, "",

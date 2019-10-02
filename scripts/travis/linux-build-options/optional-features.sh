@@ -9,6 +9,7 @@ scons -Q --enable-werror --build-3rdparty=all \
       --disable-tests \
       --disable-examples \
       --disable-doc \
+      --disable-libunwind \
       --disable-openfec \
       --disable-sox \
       --disable-pulseaudio

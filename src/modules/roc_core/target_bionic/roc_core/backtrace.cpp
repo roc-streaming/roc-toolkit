@@ -13,10 +13,7 @@
 #include <unwind.h>
 
 #include "roc_core/backtrace.h"
-
-/* Implementation of backtrace in bionic/android is similar
- * to the implementation of backtrace in glibc.
- */
+#include "roc_core/demangle.h"
 
 namespace roc {
 namespace core {
@@ -57,29 +54,31 @@ void dump_backtrace(void** buffer, ssize_t count) {
         fprintf(stderr, "No backtrace available\n");
     } else {
         fprintf(stderr, "Backtrace:\n");
-        size_t demangled_size = MaxLen;
-        char* demangled_name = (char*)malloc(demangled_size);
+
+        char* demangled_buf = NULL;
+        size_t demangled_size = 0;
+
         for (ssize_t idx = 0; idx < count; ++idx) {
             const void* addr = buffer[idx];
+
             const char* symbol = "";
-            int status = -1;
+            const char* demangled_symbol = NULL;
 
             Dl_info info;
             if (dladdr(addr, &info) && info.dli_sname) {
                 symbol = info.dli_sname;
-                /* perform demangling
-                 */
-                demangled_name =
-                    abi::__cxa_demangle(symbol, demangled_name, &demangled_size, &status);
+                demangled_symbol = demangle(symbol, demangled_buf, demangled_size);
             }
-            fprintf(stderr, "#%zd: %p", idx, addr);
-            if (status == 0) {
-                fprintf(stderr, " %s\n", demangled_name);
+
+            fprintf(stderr, "#%d: %p", (int)idx, addr);
+            if (demangled_symbol) {
+                fprintf(stderr, " %s\n", demangled_symbol);
             } else {
                 fprintf(stderr, " %s\n", symbol);
             }
         }
-        free(demangled_name);
+
+        free(demangled_buf);
     }
 }
 
@@ -90,7 +89,7 @@ void print_backtrace() {
     dump_backtrace(buffer, capture_backtrace(buffer, MaxDepth));
 }
 
-void print_backtrace_emergency() {
+void print_emergency_backtrace() {
 }
 
 } // namespace core
