@@ -681,6 +681,10 @@ pulse_env = env.Clone()
 # all possible dependencies on this platform
 all_dependencies = set([t.replace('target_', '') for t in env['ROC_TARGETS']])
 
+# on macos libunwind is provided by the OS
+if platform in ['darwin']:
+    all_dependencies.discard('libunwind')
+
 all_dependencies.add('ragel')
 
 if not GetOption('disable_tools'):
@@ -1165,6 +1169,7 @@ if compiler == 'clang':
             '-Wno-invalid-offsetof',
             '-Wno-shift-sign-overflow',
             '-Wno-used-but-marked-unused',
+            '-Wno-unused-macros',
             '-Wno-format-nonliteral',
             '-Wno-variadic-macros',
             '-Wno-disabled-macro-expansion',
