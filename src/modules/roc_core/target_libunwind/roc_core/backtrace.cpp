@@ -88,7 +88,7 @@ bool is_backtrace_available() {
 
     /* Moving to previously called frames & going through each of them.
      * unw_step() is signal safe.
-     * If there is atleast one entry in backtrace
+     * If there is at least one entry in backtrace
      */
     if (unw_step(&cursor) > 0) {
         return true;
