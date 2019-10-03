@@ -52,7 +52,7 @@ private:
     core::IAllocator& allocator_;
 };
 
-} // netio namespace
-} // roc namespace
+} // namespace netio
+} // namespace roc
 
 #endif // ROC_NETIO_BASIC_PORT_H_

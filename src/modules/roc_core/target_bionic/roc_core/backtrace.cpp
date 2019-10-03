@@ -27,7 +27,7 @@ struct BacktraceState {
     void** end;
 };
 
-static _Unwind_Reason_Code unwind_callback(struct _Unwind_Context* context, void* arg) {
+_Unwind_Reason_Code unwind_callback(struct _Unwind_Context* context, void* arg) {
     BacktraceState* state = static_cast<BacktraceState*>(arg);
     _Unwind_Ptr pc = _Unwind_GetIP(context);
     if (pc) {

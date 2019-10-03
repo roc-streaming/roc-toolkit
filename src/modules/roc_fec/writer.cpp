@@ -198,8 +198,8 @@ void Writer::write_source_packet_(const packet::PacketPtr& pp) {
 }
 
 void Writer::make_repair_packets_() {
-    for (packet::seqnum_t i = 0; i < cur_rblen_; i++) {
-        packet::PacketPtr rp = make_repair_packet_(i);
+    for (size_t i = 0; i < cur_rblen_; i++) {
+        packet::PacketPtr rp = make_repair_packet_((packet::seqnum_t)i);
         if (!rp) {
             continue;
         }
@@ -244,7 +244,7 @@ packet::PacketPtr Writer::make_repair_packet_(packet::seqnum_t pack_n) {
 }
 
 void Writer::encode_repair_packets_() {
-    for (packet::seqnum_t i = 0; i < cur_rblen_; i++) {
+    for (size_t i = 0; i < cur_rblen_; i++) {
         packet::PacketPtr rp = repair_block_[i];
         if (rp) {
             encoder_.set(cur_sblen_ + i, rp->fec()->payload);
@@ -269,7 +269,7 @@ void Writer::compose_repair_packets_() {
 }
 
 void Writer::write_repair_packets_() {
-    for (packet::seqnum_t i = 0; i < cur_rblen_; i++) {
+    for (size_t i = 0; i < cur_rblen_; i++) {
         packet::PacketPtr rp = repair_block_[i];
         if (rp) {
             writer_.write(repair_block_[i]);

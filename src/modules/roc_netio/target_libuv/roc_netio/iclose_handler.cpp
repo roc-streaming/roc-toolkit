@@ -14,5 +14,5 @@ namespace netio {
 ICloseHandler::~ICloseHandler() {
 }
 
-} // netio namespace
-} // roc namespace
+} // namespace netio
+} // namespace roc

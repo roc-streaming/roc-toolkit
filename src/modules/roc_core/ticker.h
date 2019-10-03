@@ -50,7 +50,7 @@ public:
             start();
             return 0;
         } else {
-            return Ticks((timestamp() - start_) * ratio_);
+            return Ticks(double(timestamp() - start_) * ratio_);
         }
     }
 
