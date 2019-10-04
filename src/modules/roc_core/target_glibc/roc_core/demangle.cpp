@@ -26,7 +26,7 @@ const char* demangle(const char* mangled, char*& demangled_buf, size_t& demangle
             new_size = 128;
         }
 
-        char* new_buf = (char*)malloc(demangled_size);
+        char* new_buf = (char*)malloc(new_size);
         if (!new_buf) {
             return NULL;
         }
