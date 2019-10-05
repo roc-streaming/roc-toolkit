@@ -263,39 +263,44 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    if (args.source_given == 0 && args.repair_given == 0) {
-        roc_log(LogError, "at least one --source or --repair port should be specified");
+    if (!args.source_given) {
+        roc_log(LogError, "source port must be specified");
         return 1;
     }
 
-    for (size_t n = 0; n < args.source_given; n++) {
+    if (args.source_given) {
         pipeline::PortConfig port;
-        if (!pipeline::parse_port(pipeline::Port_AudioSource, args.source_arg[n], port)) {
-            roc_log(LogError, "can't parse source port: %s", args.source_arg[n]);
+
+        if (!pipeline::parse_port(pipeline::Port_AudioSource, args.source_arg,
+                                  port)) {
+            roc_log(LogError, "can't parse source port: %s", args.source_arg);
             return 1;
         }
+
         if (!trx.add_udp_receiver(port.address, receiver)) {
-            roc_log(LogError, "can't bind source port: %s", args.source_arg[n]);
+            roc_log(LogError, "can't bind source port: %s", args.source_arg);
             return 1;
         }
         if (!receiver.add_port(port)) {
-            roc_log(LogError, "can't initialize source port: %s", args.source_arg[n]);
+            roc_log(LogError, "can't initialize source port: %s", args.source_arg);
             return 1;
         }
     }
 
-    for (size_t n = 0; n < args.repair_given; n++) {
+    if (args.repair_given) {
         pipeline::PortConfig port;
-        if (!pipeline::parse_port(pipeline::Port_AudioRepair, args.repair_arg[n], port)) {
-            roc_log(LogError, "can't parse repair port: %s", args.repair_arg[n]);
+
+        if (!pipeline::parse_port(pipeline::Port_AudioRepair, args.repair_arg,
+                                  port)) {
+            roc_log(LogError, "can't parse repair port: %s", args.repair_arg);
             return 1;
         }
         if (!trx.add_udp_receiver(port.address, receiver)) {
-            roc_log(LogError, "can't bind repair port: %s", args.repair_arg[n]);
+            roc_log(LogError, "can't bind repair port: %s", args.repair_arg);
             return 1;
         }
         if (!receiver.add_port(port)) {
-            roc_log(LogError, "can't initialize repair port: %s", args.repair_arg[n]);
+            roc_log(LogError, "can't initialize repair port: %s", args.repair_arg);
             return 1;
         }
     }
