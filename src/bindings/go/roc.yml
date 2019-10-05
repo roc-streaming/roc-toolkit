@@ -1,0 +1,53 @@
+--- 
+GENERATOR: 
+  PackageName: roc 
+  PackageDescription: "Package roc provides Go bindings for libroc"
+  PackageLicense: ""
+  Includes:
+    - ../../../lib/include/roc/address.h
+    - ../../../lib/include/roc/config.h
+    - ../../../lib/include/roc/context.h
+    - ../../../lib/include/roc/frame.h
+    - ../../../lib/include/roc/log.h
+    - ../../../lib/include/roc/platform.h
+    - ../../../lib/include/roc/receiver.h
+    - ../../../lib/include/roc/sender.h
+  FlagGroups:
+    - {name: "CFLAGS", traits: ["linux"], flags: [
+        "-I\"../../../lib/include\"",
+    ]}
+    - {name: "LDFLAGS", traits: ["linux"], flags: [
+      "-L\"../../../build/x86_64-pc-redhat-linux/gcc-9.1.1-release\" -lroc",
+    ]} 
+    
+PARSER:
+  IncludePaths: ["../../lib/include", "/usr/lib/gcc/x86_64-redhat-linux/9/include"]
+  SourcesPaths:
+    - ../../lib/include/roc/address.h
+    - ../../lib/include/roc/config.h
+    - ../../lib/include/roc/context.h
+    - ../../lib/include/roc/frame.h
+    - ../../lib/include/roc/log.h
+    - ../../lib/include/roc/platform.h
+    - ../../lib/include/roc/receiver.h
+    - ../../lib/include/roc/sender.h
+
+TRANSLATOR: 
+  ConstRules: 
+    defines: expand
+  Rules: 
+    global: 
+      - {transform: lower}
+      - {action: accept, from: "^roc_"}
+      - {action: replace, from: "^roc_", to: _}
+      - {transform: export}
+    const:
+      - {action: accept, from: "^ROC_"}
+      - {action: replace, from: "^ROC_", to: _}
+    type: 
+      - {action: replace, from: "_t$"}
+    private:
+      - {transform: unexport}
+    post-global: 
+      - {action: replace, from: _$}
+      - {load: snakecase}
