@@ -12,11 +12,9 @@ section "Options"
 
     option "driver" d "Output driver" typestr="DRIVER" string optional
 
-    option "source" s "Source port triplet (may be used multiple times)"
-        typestr="PORT" string optional multiple
+    option "source" s "Source port triplet" typestr="PORT" string optional
 
-    option "repair" r "Repair port triplet (may be used multiple times)"
-        typestr="PORT" string optional multiple
+    option "repair" r "Repair port triplet" typestr="PORT" string optional
 
     option "sess-latency" - "Session target latency, TIME units"
         string optional
