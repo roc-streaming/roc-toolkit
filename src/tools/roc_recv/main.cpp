@@ -8,6 +8,7 @@
 
 #include "roc_audio/resampler_profile.h"
 #include "roc_core/array.h"
+#include "roc_core/colors.h"
 #include "roc_core/crash.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_core/log.h"
@@ -40,6 +41,24 @@ int main(int argc, char** argv) {
 
     core::Logger::instance().set_level(
         LogLevel(core::DefaultLogLevel + args.verbose_given));
+
+    switch ((unsigned)args.color_arg) {
+    case color_arg_auto:
+        core::Logger::instance().set_colors(
+            core::colors_available() ? core::ColorsEnabled : core::ColorsDisabled);
+        break;
+
+    case color_arg_always:
+        core::Logger::instance().set_colors(core::ColorsMode(core::ColorsEnabled));
+        break;
+
+    case color_arg_never:
+        core::Logger::instance().set_colors(core::ColorsMode(core::ColorsDisabled));
+        break;
+
+    default:
+        break;
+    }
 
     core::HeapAllocator allocator;
 
