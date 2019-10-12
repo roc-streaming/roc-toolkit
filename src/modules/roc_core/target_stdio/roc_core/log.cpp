@@ -9,6 +9,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+#include "roc_core/colors.h"
 #include "roc_core/format_time.h"
 #include "roc_core/log.h"
 
@@ -17,7 +18,8 @@ namespace core {
 
 Logger::Logger()
     : level_(DefaultLogLevel)
-    , handler_(NULL) {
+    , handler_(NULL)
+    , colors_(DefaultColorsMode) {
 }
 
 LogLevel Logger::level() {
@@ -44,6 +46,12 @@ void Logger::set_handler(LogHandler handler) {
     Mutex::Lock lock(mutex_);
 
     handler_ = handler;
+}
+
+void Logger::set_colors(ColorsMode colors) {
+    Mutex::Lock lock(mutex_);
+
+    colors_ = colors;
 }
 
 void Logger::print(const char* module, LogLevel level, const char* format, ...) {
@@ -85,6 +93,20 @@ void Logger::print(const char* module, LogLevel level, const char* format, ...) 
         case LogTrace:
             level_str = "trc";
             break;
+        }
+
+        if (colors_ == ColorsEnabled) {
+            char colored_level_str[16] = {};
+            char colored_message[256] = {};
+
+            if (format_colored(level, level_str, colored_level_str,
+                               sizeof(colored_level_str))
+                && format_colored(level, message, colored_message,
+                                  sizeof(colored_message))) {
+                fprintf(stderr, "%s [%s] %s: %s\n", timestamp, colored_level_str, module,
+                        colored_message);
+                return;
+            }
         }
 
         fprintf(stderr, "%s [%s] %s: %s\n", timestamp, level_str, module, message);

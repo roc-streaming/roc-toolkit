@@ -50,6 +50,9 @@ section "Options"
     option "poisoning" - "Enable uninitialized memory poisoning"
         flag off
 
+    option "color" - "Set colored logging mode for stderr output"
+        values="auto","always","never" default="auto" enum optional
+
 text "
 INPUT is the file name or device name, depending on the selected DRIVER, e.g.:
   file.wav; front:CARD=PCH,DEV=0; alsa_input.pci-0000_00_1f.3.analog-stereo;

@@ -41,6 +41,15 @@ namespace core {
 //! Default log level.
 const LogLevel DefaultLogLevel = LogError;
 
+//! Colors mode.
+enum ColorsMode {
+    ColorsDisabled, //!< Do not use colored logs.
+    ColorsEnabled   //!< Use colored logs.
+};
+
+//! Default colors mode.
+const ColorsMode DefaultColorsMode = ColorsDisabled;
+
 //! Log handler.
 typedef void (*LogHandler)(LogLevel level, const char* module, const char* message);
 
@@ -75,6 +84,12 @@ public:
     //!  Otherwise, they're printed to stderr.Default log handler is NULL.
     void set_handler(LogHandler handler);
 
+    //! Set colors mode.
+    //!
+    //! @note
+    //!  Default colors mode is ColorsAuto.
+    void set_colors(ColorsMode mode);
+
 private:
     friend class Singleton<Logger>;
 
@@ -84,6 +99,7 @@ private:
 
     LogLevel level_;
     LogHandler handler_;
+    ColorsMode colors_;
 };
 
 } // namespace core
