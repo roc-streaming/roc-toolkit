@@ -16,7 +16,9 @@ Pump::Pump(core::BufferPool<audio::sample_t>& buffer_pool,
            ISource& source,
            ISource* backup_source,
            ISink& sink,
-           size_t frame_size,
+           core::nanoseconds_t frame_length,
+           size_t sample_rate,
+           packet::channel_mask_t ch_mask,
            Mode mode)
     : main_source_(source)
     , backup_source_(backup_source)
@@ -24,6 +26,12 @@ Pump::Pump(core::BufferPool<audio::sample_t>& buffer_pool,
     , n_bufs_(0)
     , oneshot_(mode == ModeOneshot)
     , stop_(0) {
+    size_t frame_size = packet::ns_to_size(frame_length, sample_rate, ch_mask);
+    if (frame_size == 0) {
+        roc_log(LogError, "pump: frame size cannot be 0");
+        return;
+    }
+
     if (buffer_pool.buffer_size() < frame_size) {
         roc_log(LogError, "pump: buffer size is too small: required=%lu actual=%lu",
                 (unsigned long)frame_size, (unsigned long)buffer_pool.buffer_size());
