@@ -14,8 +14,8 @@ section "Options"
     option "input-format" - "Force input file format" typestr="FILE_FORMAT" string optional
     option "output-format" - "Force output file format" typestr="FILE_FORMAT" string optional
 
-    option "frame-size" - "Internal frame size, number of samples"
-        int optional
+    option "frame-length" - "Duration of the internal frames, in nanoseconds"
+        typestr="TIME" string optional
 
     option "rate" r "Output sample rate, Hz"
         int optional
@@ -46,6 +46,9 @@ FILE_URI defines an absolute or relative file path, e.g.:
 
 FILE_FORMAT is the output file format name, e.g.:
   wav; ogg; mp3
+
+TIME is an integer number with a suffix, e.g.:
+  123ns; 123us; 123ms; 123s; 123m; 123h;
 
 Use --list-supported option to print the list of the supported
 URI schemes and file formats.

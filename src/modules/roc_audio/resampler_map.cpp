@@ -19,8 +19,9 @@ ResamplerMap::ResamplerMap() {
 IResampler* ResamplerMap::new_resampler(ResamplerBackend resampler_backend,
                                         core::IAllocator& allocator,
                                         const ResamplerConfig& config,
-                                        packet::channel_mask_t channels,
-                                        size_t frame_size) {
+                                        core::nanoseconds_t frame_length,
+                                        size_t sample_rate,
+                                        packet::channel_mask_t channels) {
     if (resampler_backend != ResamplerBackend_Builtin) {
         roc_panic(
             "No valid resampler backend selected.. selected resampler backend is : %d",
@@ -30,8 +31,8 @@ IResampler* ResamplerMap::new_resampler(ResamplerBackend resampler_backend,
     core::ScopedPtr<IResampler> resampler;
     switch (resampler_backend) {
     case ResamplerBackend_Builtin:
-        resampler.reset(new (allocator)
-                            BuiltinResampler(allocator, config, channels, frame_size),
+        resampler.reset(new (allocator) BuiltinResampler(allocator, config, frame_length,
+                                                         sample_rate, channels),
                         allocator);
         break;
     }

@@ -39,8 +39,9 @@ public:
     ResamplerReader(IReader& reader,
                     IResampler& resampler,
                     core::BufferPool<sample_t>& buffer_pool,
-                    size_t frame_size);
-
+                    core::nanoseconds_t frame_length,
+                    size_t sample_rate,
+                    roc::packet::channel_mask_t ch_mask);
     //! Check if object is successfully constructed.
     bool valid() const;
 

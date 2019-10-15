@@ -17,7 +17,8 @@ namespace sndio {
 SoxSink::SoxSink(core::IAllocator& allocator, const Config& config)
     : output_(NULL)
     , buffer_(allocator)
-    , buffer_size_(config.frame_size)
+    , buffer_size_(
+          packet::ns_to_size(config.frame_length, config.sample_rate, config.channels))
     , is_file_(false)
     , valid_(false) {
     SoxBackend::instance();
@@ -28,13 +29,17 @@ SoxSink::SoxSink(core::IAllocator& allocator, const Config& config)
         return;
     }
 
-    if (config.frame_size == 0) {
-        roc_log(LogError, "sox sink: frame size is zero");
+    if (config.latency != 0) {
+        roc_log(LogError, "sox sink: setting io latency not supported by sox backend");
         return;
     }
 
-    if (config.latency != 0) {
-        roc_log(LogError, "sox sink: setting io latency not supported by sox backend");
+    channels_ = config.channels;
+    frame_length_ = config.frame_length;
+
+    if (frame_length_ == 0) {
+        roc_log(LogError, "sox sink: frame length is zero");
+        out_signal_.rate = sample_rate();
         return;
     }
 
@@ -63,11 +68,11 @@ bool SoxSink::open(const char* driver, const char* output) {
         roc_panic("sox sink: can't call open() more than once");
     }
 
-    if (!prepare_()) {
+    if (!open_(driver, output)) {
         return false;
     }
 
-    if (!open_(driver, output)) {
+    if (!prepare_()) {
         return false;
     }
 
@@ -134,6 +139,11 @@ void SoxSink::write(audio::Frame& frame) {
 }
 
 bool SoxSink::prepare_() {
+    if (buffer_size_ == 0) {
+        out_signal_.rate = sample_rate();
+        buffer_size_ = packet::ns_to_size(frame_length_, sample_rate(), channels_);
+    }
+
     if (!buffer_.resize(buffer_size_)) {
         roc_log(LogError, "sox sink: can't allocate sample buffer");
         return false;

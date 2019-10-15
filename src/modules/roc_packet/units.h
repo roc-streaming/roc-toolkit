@@ -87,6 +87,13 @@ static inline size_t num_channels(channel_mask_t ch_mask) {
     return n_ch;
 }
 
+//! Convert frame length to frame size.
+inline size_t ns_to_size(roc::core::nanoseconds_t frame_length,
+                         size_t sample_rate,
+                         roc::packet::channel_mask_t ch_mask) {
+    return (size_t)timestamp_from_ns(frame_length, sample_rate) * num_channels(ch_mask);
+}
+
 //! FEC block number in a packet stream.
 typedef uint16_t blknum_t;
 

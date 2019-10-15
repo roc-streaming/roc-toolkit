@@ -24,7 +24,10 @@ namespace sndio {
 
 namespace {
 
-enum { MaxBufSize = 8192, FrameSize = 512, SampleRate = 44100, ChMask = 0x3 };
+enum { MaxBufSize = 8192, SampleRate = 44100, ChMask = 0x3 };
+
+const core::nanoseconds_t MaxBufDuration =
+    MaxBufSize * core::Second / (SampleRate * packet::num_channels(ChMask));
 
 core::HeapAllocator allocator;
 core::BufferPool<audio::sample_t> buffer_pool(allocator, MaxBufSize, true);
@@ -37,7 +40,7 @@ TEST_GROUP(pump) {
     void setup() {
         config.channels = ChMask;
         config.sample_rate = SampleRate;
-        config.frame_size = FrameSize;
+        config.frame_length = MaxBufDuration;
     }
 };
 
@@ -53,7 +56,8 @@ TEST(pump, write_read) {
         SoxSink sox_sink(allocator, config);
         CHECK(sox_sink.open(NULL, file.path()));
 
-        Pump pump(buffer_pool, mock_source, NULL, sox_sink, FrameSize, Pump::ModeOneshot);
+        Pump pump(buffer_pool, mock_source, NULL, sox_sink, MaxBufDuration, SampleRate,
+                  ChMask, Pump::ModeOneshot);
         CHECK(pump.valid());
         CHECK(pump.run());
 
@@ -65,7 +69,8 @@ TEST(pump, write_read) {
 
     MockSink mock_writer;
 
-    Pump pump(buffer_pool, sox_source, NULL, mock_writer, FrameSize, Pump::ModePermanent);
+    Pump pump(buffer_pool, sox_source, NULL, mock_writer, MaxBufDuration, SampleRate,
+              ChMask, Pump::ModePermanent);
     CHECK(pump.valid());
     CHECK(pump.run());
 
@@ -84,7 +89,8 @@ TEST(pump, write_overwrite_read) {
         SoxSink sox_sink(allocator, config);
         CHECK(sox_sink.open(NULL, file.path()));
 
-        Pump pump(buffer_pool, mock_source, NULL, sox_sink, FrameSize, Pump::ModeOneshot);
+        Pump pump(buffer_pool, mock_source, NULL, sox_sink, MaxBufDuration, SampleRate,
+                  ChMask, Pump::ModeOneshot);
         CHECK(pump.valid());
         CHECK(pump.run());
     }
@@ -98,7 +104,8 @@ TEST(pump, write_overwrite_read) {
         SoxSink sox_sink(allocator, config);
         CHECK(sox_sink.open(NULL, file.path()));
 
-        Pump pump(buffer_pool, mock_source, NULL, sox_sink, FrameSize, Pump::ModeOneshot);
+        Pump pump(buffer_pool, mock_source, NULL, sox_sink, MaxBufDuration, SampleRate,
+                  ChMask, Pump::ModeOneshot);
         CHECK(pump.valid());
         CHECK(pump.run());
     }
@@ -111,7 +118,8 @@ TEST(pump, write_overwrite_read) {
 
     MockSink mock_writer;
 
-    Pump pump(buffer_pool, sox_source, NULL, mock_writer, FrameSize, Pump::ModePermanent);
+    Pump pump(buffer_pool, sox_source, NULL, mock_writer, MaxBufDuration, SampleRate,
+              ChMask, Pump::ModePermanent);
     CHECK(pump.valid());
     CHECK(pump.run());
 
