@@ -95,16 +95,25 @@ int main(int argc, char** argv) {
 
     pipeline::ReceiverConfig receiver_config;
 
-    if (args.frame_size_given) {
-        if (args.frame_size_arg <= 0) {
-            roc_log(LogError, "invalid --frame-size: should be > 0");
+    if (args.frame_length_given) {
+        if (!core::parse_duration(args.frame_length_arg,
+                                  receiver_config.common.internal_frame_length)) {
+            roc_log(LogError, "invalid --frame-length: bad format");
             return 1;
         }
-        receiver_config.common.internal_frame_size = (size_t)args.frame_size_arg;
+        if (packet::ns_to_size(receiver_config.common.internal_frame_length,
+                               receiver_config.common.output_sample_rate,
+                               receiver_config.common.output_channels)
+            <= 0) {
+            roc_log(LogError, "invalid --frame-length: should be > 0");
+            return 1;
+        }
     }
 
     sndio::BackendDispatcher::instance().set_frame_size(
-        receiver_config.common.internal_frame_size);
+        receiver_config.common.internal_frame_length,
+        receiver_config.common.output_sample_rate,
+        receiver_config.common.output_channels);
 
     if (args.sess_latency_given) {
         if (!core::parse_duration(args.sess_latency_arg,
@@ -221,8 +230,9 @@ int main(int argc, char** argv) {
     receiver_config.common.beeping = args.beeping_flag;
 
     sndio::Config io_config;
+    io_config.frame_length = receiver_config.common.internal_frame_length;
+    io_config.sample_rate = receiver_config.common.output_sample_rate;
     io_config.channels = receiver_config.common.output_channels;
-    io_config.frame_size = receiver_config.common.internal_frame_size;
 
     if (args.io_latency_given) {
         if (!core::parse_duration(args.io_latency_arg, io_config.latency)) {
@@ -332,7 +342,8 @@ int main(int argc, char** argv) {
         converter_config.input_channels = receiver_config.common.output_channels;
         converter_config.output_channels = receiver_config.common.output_channels;
 
-        converter_config.internal_frame_size = receiver_config.common.internal_frame_size;
+        converter_config.internal_frame_length =
+            receiver_config.common.internal_frame_length;
 
         converter_config.resampling = receiver_config.common.resampling;
         converter_config.poisoning = receiver_config.common.poisoning;
@@ -404,7 +415,8 @@ int main(int argc, char** argv) {
 
     sndio::Pump pump(
         context.sample_buffer_pool(), receiver.source(), backup_pipeline.get(),
-        *output_sink, receiver_config.common.internal_frame_size,
+        *output_sink, receiver_config.common.internal_frame_length,
+        receiver_config.common.output_sample_rate, receiver_config.common.output_channels,
         args.oneshot_flag ? sndio::Pump::ModeOneshot : sndio::Pump::ModePermanent);
     if (!pump.valid()) {
         roc_log(LogError, "can't create pump");

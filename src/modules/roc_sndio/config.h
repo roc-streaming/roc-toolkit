@@ -26,8 +26,8 @@ struct Config {
     //! Number of samples per channel per seconds.
     size_t sample_rate;
 
-    //! Number of samples per frame, for all channels.
-    size_t frame_size;
+    //! Duration of the internal frames, in nanoseconds.
+    core::nanoseconds_t frame_length;
 
     //! Requested input or output latency.
     core::nanoseconds_t latency;
@@ -36,7 +36,7 @@ struct Config {
     Config()
         : channels(0)
         , sample_rate(0)
-        , frame_size(0)
+        , frame_length(0)
         , latency(0) {
     }
 };

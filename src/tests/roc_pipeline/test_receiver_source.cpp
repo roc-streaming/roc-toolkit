@@ -47,6 +47,9 @@ enum {
     MaxTsJump = ManyPackets * 7 * SamplesPerPacket
 };
 
+const core::nanoseconds_t MaxBufDuration =
+    MaxBufSize * core::Second / (SampleRate * packet::num_channels(ChMask));
+
 core::HeapAllocator allocator;
 core::BufferPool<audio::sample_t> sample_buffer_pool(allocator, MaxBufSize, true);
 core::BufferPool<uint8_t> byte_buffer_pool(allocator, MaxBufSize, true);
@@ -72,7 +75,7 @@ TEST_GROUP(receiver_source) {
     void setup() {
         config.common.output_sample_rate = SampleRate;
         config.common.output_channels = ChMask;
-        config.common.internal_frame_size = MaxBufSize;
+        config.common.internal_frame_length = MaxBufDuration;
 
         config.common.resampling = false;
         config.common.timing = false;

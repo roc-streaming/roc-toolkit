@@ -32,8 +32,9 @@ public:
     //! Initialize.
     BuiltinResampler(core::IAllocator& allocator,
                      const ResamplerConfig& config,
-                     packet::channel_mask_t channels,
-                     size_t frame_size);
+                     core::nanoseconds_t frame_length,
+                     size_t sample_rate,
+                     packet::channel_mask_t channels);
 
     //! Check if object is successfully constructed.
     bool valid() const;
