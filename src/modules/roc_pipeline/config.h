@@ -40,8 +40,8 @@ const core::nanoseconds_t DefaultPacketLength = 7 * core::Millisecond;
 //! Default latency.
 const core::nanoseconds_t DefaultLatency = 200 * core::Millisecond;
 
-//! Default internal frame size.
-const size_t DefaultInternalFrameSize = 640;
+//! Default internal frame length.
+const core::nanoseconds_t DefaultInternalFrameLength = 7 * core::Millisecond;
 
 //! Default minum latency relative to target latency.
 const int DefaultMinLatencyFactor = -1;
@@ -69,8 +69,8 @@ struct SenderConfig {
     //! Channel mask.
     packet::channel_mask_t input_channels;
 
-    //! Number of samples for internal frames.
-    size_t internal_frame_size;
+    //! Duration of the internal frames, in nanoseconds.
+    core::nanoseconds_t internal_frame_length;
 
     //! Packet length, in nanoseconds.
     core::nanoseconds_t packet_length;
@@ -94,7 +94,7 @@ struct SenderConfig {
         : resampler_backend(audio::ResamplerBackend_Builtin)
         , input_sample_rate(DefaultSampleRate)
         , input_channels(DefaultChannelMask)
-        , internal_frame_size(DefaultInternalFrameSize)
+        , internal_frame_length(DefaultInternalFrameLength)
         , packet_length(DefaultPacketLength)
         , payload_type(rtp::PayloadType_L16_Stereo)
         , resampling(false)
@@ -158,8 +158,8 @@ struct ReceiverCommonConfig {
     //! Channel mask.
     packet::channel_mask_t output_channels;
 
-    //! Number of samples for internal frames.
-    size_t internal_frame_size;
+    //! Duration of the internal frames, in nanoseconds.
+    core::nanoseconds_t internal_frame_length;
 
     //! Perform resampling to compensate sender and receiver frequency difference.
     bool resampling;
@@ -176,7 +176,7 @@ struct ReceiverCommonConfig {
     ReceiverCommonConfig()
         : output_sample_rate(DefaultSampleRate)
         , output_channels(DefaultChannelMask)
-        , internal_frame_size(DefaultInternalFrameSize)
+        , internal_frame_length(DefaultInternalFrameLength)
         , resampling(false)
         , timing(false)
         , poisoning(false)
@@ -213,8 +213,8 @@ struct ConverterConfig {
     //! Output channel mask.
     packet::channel_mask_t output_channels;
 
-    //! Number of samples for internal frames.
-    size_t internal_frame_size;
+    //! Duration of the internal frames, in nanoseconds.
+    core::nanoseconds_t internal_frame_length;
 
     //! Resample frames with a constant ratio.
     bool resampling;
@@ -228,7 +228,7 @@ struct ConverterConfig {
         , output_sample_rate(DefaultSampleRate)
         , input_channels(DefaultChannelMask)
         , output_channels(DefaultChannelMask)
-        , internal_frame_size(DefaultInternalFrameSize)
+        , internal_frame_length(DefaultInternalFrameLength)
         , resampling(false)
         , poisoning(false) {
     }

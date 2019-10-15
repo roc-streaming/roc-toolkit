@@ -71,7 +71,9 @@ private:
     sox_signalinfo_t out_signal_;
 
     core::Array<sox_sample_t> buffer_;
-    const size_t buffer_size_;
+    size_t buffer_size_;
+    core::nanoseconds_t frame_length_;
+    packet::channel_mask_t channels_;
 
     bool is_file_;
     bool valid_;

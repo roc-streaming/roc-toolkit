@@ -187,8 +187,12 @@ SoxBackend::SoxBackend()
     sox_get_globals()->output_message_handler = log_handler;
 }
 
-void SoxBackend::set_frame_size(size_t size) {
+void SoxBackend::set_frame_size(core::nanoseconds_t frame_length,
+                                size_t sample_rate,
+                                packet::channel_mask_t channels) {
     core::Mutex::Lock lock(mutex_);
+
+    size_t size = packet::ns_to_size(frame_length, sample_rate, channels);
 
     if (first_created_) {
         roc_panic("sox backend: set_frame_size() can be called only before creating "

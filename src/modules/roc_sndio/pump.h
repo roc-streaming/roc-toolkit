@@ -12,11 +12,13 @@
 #ifndef ROC_SNDIO_PUMP_H_
 #define ROC_SNDIO_PUMP_H_
 
+#include "roc_audio/units.h"
 #include "roc_core/atomic.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/slice.h"
 #include "roc_core/stddefs.h"
+#include "roc_packet/units.h"
 #include "roc_sndio/isink.h"
 #include "roc_sndio/isource.h"
 
@@ -42,7 +44,9 @@ public:
          ISource& source,
          ISource* backup_source,
          ISink& sink,
-         size_t frame_size,
+         core::nanoseconds_t frame_length,
+         size_t sample_rate,
+         packet::channel_mask_t ch_mask,
          Mode mode);
 
     //! Check if the object was successfulyl constructed.

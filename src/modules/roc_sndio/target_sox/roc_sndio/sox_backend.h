@@ -33,7 +33,9 @@ public:
     //! Set internal SoX frame size.
     //! @remarks
     //!  Number of samples for all channels.
-    void set_frame_size(size_t size);
+    void set_frame_size(core::nanoseconds_t frame_length,
+                        size_t sample_rate,
+                        packet::channel_mask_t channels);
 
     //! Check whether the backend can handle given input or output.
     virtual bool probe(const char* driver, const char* inout, int flags);

@@ -20,11 +20,13 @@ namespace audio {
 
 namespace {
 
-enum { BufSz = 100, MaxSz = 500 };
+enum { BufSz = 100, SampleRate = 44100,
+       ChannelMask = 0x1, MaxBufSz = 500 };
 
+const core::nanoseconds_t MaxBufDuration = MaxBufSz * core::Second / (SampleRate * packet::num_channels(ChannelMask)); 
 core::HeapAllocator allocator;
-core::BufferPool<sample_t> buffer_pool(allocator, MaxSz, true);
-core::BufferPool<sample_t> large_buffer_pool(allocator, MaxSz * 10, true);
+core::BufferPool<sample_t> buffer_pool(allocator, MaxBufSz, true);
+core::BufferPool<sample_t> large_buffer_pool(allocator, MaxBufSz * 10, true);
 
 } // namespace
 
@@ -49,7 +51,7 @@ TEST_GROUP(mixer) {
 };
 
 TEST(mixer, no_readers) {
-    Mixer mixer(buffer_pool, MaxSz);
+    Mixer mixer(buffer_pool, MaxBufDuration, SampleRate, ChannelMask);
     CHECK(mixer.valid());
 
     expect_output(mixer, BufSz, 0);
@@ -58,7 +60,7 @@ TEST(mixer, no_readers) {
 TEST(mixer, one_reader) {
     MockReader reader;
 
-    Mixer mixer(buffer_pool, MaxSz);
+    Mixer mixer(buffer_pool, MaxBufDuration, SampleRate, ChannelMask);
     CHECK(mixer.valid());
 
     mixer.add_input(reader);
@@ -72,13 +74,13 @@ TEST(mixer, one_reader) {
 TEST(mixer, one_reader_large) {
     MockReader reader;
 
-    Mixer mixer(buffer_pool, MaxSz);
+    Mixer mixer(buffer_pool, MaxBufDuration, SampleRate, ChannelMask);
     CHECK(mixer.valid());
 
     mixer.add_input(reader);
 
-    reader.add(MaxSz * 2, 0.11f);
-    expect_output(mixer, MaxSz * 2, 0.11f);
+    reader.add(MaxBufSz * 2, 0.11f);
+    expect_output(mixer, MaxBufSz * 2, 0.11f);
 
     CHECK(reader.num_unread() == 0);
 }
@@ -87,7 +89,7 @@ TEST(mixer, two_readers) {
     MockReader reader1;
     MockReader reader2;
 
-    Mixer mixer(buffer_pool, MaxSz);
+    Mixer mixer(buffer_pool, MaxBufDuration, SampleRate, ChannelMask);
     CHECK(mixer.valid());
 
     mixer.add_input(reader1);
@@ -106,7 +108,7 @@ TEST(mixer, remove_reader) {
     MockReader reader1;
     MockReader reader2;
 
-    Mixer mixer(buffer_pool, MaxSz);
+    Mixer mixer(buffer_pool, MaxBufDuration, SampleRate, ChannelMask);
     CHECK(mixer.valid());
 
     mixer.add_input(reader1);
@@ -136,7 +138,7 @@ TEST(mixer, clamp) {
     MockReader reader1;
     MockReader reader2;
 
-    Mixer mixer(buffer_pool, MaxSz);
+    Mixer mixer(buffer_pool, MaxBufDuration, SampleRate, ChannelMask);
     CHECK(mixer.valid());
 
     mixer.add_input(reader1);
