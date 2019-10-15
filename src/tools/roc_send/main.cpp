@@ -102,16 +102,24 @@ int main(int argc, char** argv) {
         }
     }
 
-    if (args.frame_size_given) {
-        if (args.frame_size_arg <= 0) {
-            roc_log(LogError, "invalid --frame-size: should be > 0");
+    if (args.frame_length_given) {
+        if (!core::parse_duration(args.frame_length_arg,
+                                  sender_config.internal_frame_length)) {
+            roc_log(LogError, "invalid --frame-length: bad format");
             return 1;
         }
-        sender_config.internal_frame_size = (size_t)args.frame_size_arg;
+        if (packet::ns_to_size(sender_config.internal_frame_length,
+                               sender_config.input_sample_rate,
+                               sender_config.input_channels)
+            <= 0) {
+            roc_log(LogError, "invalid --frame-length: should be > 0");
+            return 1;
+        }
     }
 
     sndio::BackendDispatcher::instance().set_frame_size(
-        sender_config.internal_frame_size);
+        sender_config.internal_frame_length, sender_config.input_sample_rate,
+        sender_config.input_channels);
 
     address::EndpointURI source_endpoint(context.allocator());
     if (args.source_given) {
@@ -211,7 +219,8 @@ int main(int argc, char** argv) {
 
     sndio::Config io_config;
     io_config.channels = sender_config.input_channels;
-    io_config.frame_size = sender_config.internal_frame_size;
+    io_config.sample_rate = sender_config.input_sample_rate;
+    io_config.frame_length = sender_config.internal_frame_length;
 
     if (args.rate_given) {
         if (args.rate_arg <= 0) {
@@ -292,7 +301,8 @@ int main(int argc, char** argv) {
     }
 
     sndio::Pump pump(context.sample_buffer_pool(), *input_source, NULL, sender.sink(),
-                     sender_config.internal_frame_size, sndio::Pump::ModePermanent);
+                     sender_config.internal_frame_length, sender_config.input_sample_rate,
+                     sender_config.input_channels, sndio::Pump::ModePermanent);
     if (!pump.valid()) {
         roc_log(LogError, "can't create audio pump");
         return 1;

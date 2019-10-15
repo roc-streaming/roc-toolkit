@@ -18,16 +18,21 @@ namespace audio {
 ResamplerReader::ResamplerReader(IReader& reader,
                                  IResampler& resampler,
                                  core::BufferPool<sample_t>& buffer_pool,
-                                 size_t frame_size)
+                                 core::nanoseconds_t frame_length,
+                                 size_t sample_rate,
+                                 roc::packet::channel_mask_t ch_mask)
     : resampler_(resampler)
     , reader_(reader)
-    , frame_size_(frame_size)
+    , frame_size_(packet::ns_to_size(frame_length, sample_rate, ch_mask))
     , frames_empty_(true)
     , valid_(false) {
     if (!resampler_.valid()) {
         return;
     }
 
+    if (frame_size_ == 0) {
+        return;
+    }
     if (!init_frames_(buffer_pool)) {
         return;
     }

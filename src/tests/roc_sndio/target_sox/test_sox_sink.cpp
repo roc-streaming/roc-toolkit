@@ -17,7 +17,10 @@ namespace sndio {
 
 namespace {
 
-enum { FrameSize = 512, SampleRate = 44100, ChMask = 0x3 };
+enum { FrameSize = 500, SampleRate = 44100, ChMask = 0x3 };
+
+const core::nanoseconds_t FrameDuration =
+    FrameSize * core::Second / (SampleRate * packet::num_channels(ChMask));
 
 core::HeapAllocator allocator;
 
@@ -29,7 +32,7 @@ TEST_GROUP(sox_sink) {
     void setup() {
         sink_config.channels = ChMask;
         sink_config.sample_rate = SampleRate;
-        sink_config.frame_size = FrameSize;
+        sink_config.frame_length = FrameDuration;
     }
 };
 
@@ -53,6 +56,7 @@ TEST(sox_sink, has_clock) {
 
 TEST(sox_sink, sample_rate_auto) {
     sink_config.sample_rate = 0;
+    sink_config.frame_length = FrameDuration;
     SoxSink sox_sink(allocator, sink_config);
 
     core::TempFile file("test.wav");
