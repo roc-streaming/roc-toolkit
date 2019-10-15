@@ -18,13 +18,18 @@ namespace audio {
 ResamplerWriter::ResamplerWriter(IWriter& writer,
                                  IResampler& resampler,
                                  core::BufferPool<sample_t>& buffer_pool,
-                                 size_t frame_size)
+                                 core::nanoseconds_t frame_length,
+                                 size_t sample_rate,
+                                 roc::packet::channel_mask_t ch_mask)
     : resampler_(resampler)
     , writer_(writer)
+    , frame_size_(packet::ns_to_size(frame_length, sample_rate, ch_mask))
     , frame_pos_(0)
-    , frame_size_(frame_size)
     , valid_(false) {
     if (!resampler_.valid()) {
+        return;
+    }
+    if (frame_size_ == 0) {
         return;
     }
     if (!init_(buffer_pool)) {

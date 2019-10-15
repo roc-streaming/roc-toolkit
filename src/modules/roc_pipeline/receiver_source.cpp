@@ -30,8 +30,9 @@ ReceiverSource::ReceiverSource(const ReceiverConfig& config,
     , config_(config)
     , timestamp_(0)
     , num_channels_(packet::num_channels(config.common.output_channels)) {
-    mixer_.reset(new (allocator_)
-                     audio::Mixer(sample_buffer_pool, config.common.internal_frame_size),
+    mixer_.reset(new (allocator_) audio::Mixer(
+                     sample_buffer_pool, config.common.internal_frame_length,
+                     config.common.output_sample_rate, config.common.output_channels),
                  allocator_);
     if (!mixer_ || !mixer_->valid()) {
         return;
