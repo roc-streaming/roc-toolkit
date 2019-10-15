@@ -28,9 +28,18 @@ sample_t clamp(const sample_t x) {
 
 } // namespace
 
-Mixer::Mixer(core::BufferPool<sample_t>& pool, size_t frame_size)
+Mixer::Mixer(core::BufferPool<sample_t>& pool,
+             core::nanoseconds_t frame_length,
+             size_t sample_rate,
+             packet::channel_mask_t channel_mask)
     : valid_(false) {
+    size_t frame_size = packet::ns_to_size(frame_length, sample_rate, channel_mask);
     roc_log(LogDebug, "mixer: initializing: frame_size=%lu", (unsigned long)frame_size);
+
+    if (frame_size == 0) {
+        roc_log(LogError, "mixer: frame size cannot be 0");
+        return;
+    }
 
     temp_buf_ = new (pool) core::Buffer<sample_t>(pool);
     if (!temp_buf_) {
