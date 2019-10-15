@@ -18,7 +18,8 @@ SoxSource::SoxSource(core::IAllocator& allocator, const Config& config)
     : driver_name_(allocator)
     , input_name_(allocator)
     , buffer_(allocator)
-    , buffer_size_(config.frame_size)
+    , buffer_size_(
+          packet::ns_to_size(config.frame_length, config.sample_rate, config.channels))
     , input_(NULL)
     , is_file_(false)
     , eof_(false)
@@ -32,13 +33,16 @@ SoxSource::SoxSource(core::IAllocator& allocator, const Config& config)
         return;
     }
 
-    if (config.frame_size == 0) {
-        roc_log(LogError, "sox source: frame size is zero");
+    if (config.latency != 0) {
+        roc_log(LogError, "sox source: setting io latency not supported by sox backend");
         return;
     }
 
-    if (config.latency != 0) {
-        roc_log(LogError, "sox source: setting io latency not supported by sox backend");
+    frame_length_ = config.frame_length;
+    channels_ = config.channels;
+
+    if (frame_length_ == 0) {
+        roc_log(LogError, "sox source: frame length is zero");
         return;
     }
 
@@ -321,6 +325,11 @@ bool SoxSource::open_() {
                 "expected=%lu actual=%lu",
                 (unsigned long)n_channels_, (unsigned long)input_->signal.channels);
         return false;
+    }
+
+    if (buffer_size_ == 0) {
+        in_signal_.rate = sample_rate();
+        buffer_size_ = packet::ns_to_size(frame_length_, sample_rate(), channels_);
     }
 
     return true;

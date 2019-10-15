@@ -31,6 +31,8 @@ enum {
     ManyFrames = 30
 };
 
+const core::nanoseconds_t MaxBufDuration =
+    MaxBufSize * core::Second / (SampleRate * packet::num_channels(ChMask));
 core::HeapAllocator allocator;
 core::BufferPool<audio::sample_t> sample_buffer_pool(allocator, MaxBufSize, true);
 
@@ -45,8 +47,7 @@ TEST_GROUP(converter_sink) {
 
         config.input_sample_rate = SampleRate;
         config.output_sample_rate = SampleRate;
-
-        config.internal_frame_size = MaxBufSize;
+        config.internal_frame_length = MaxBufDuration;
 
         config.resampling = false;
         config.poisoning = true;

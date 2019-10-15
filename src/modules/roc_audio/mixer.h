@@ -18,6 +18,8 @@
 #include "roc_core/noncopyable.h"
 #include "roc_core/pool.h"
 #include "roc_core/slice.h"
+#include "roc_core/time.h"
+#include "roc_packet/units.h"
 
 namespace roc {
 namespace audio {
@@ -41,9 +43,15 @@ public:
     //!
     //! @b Parameters
     //!  - @p pool is used to allocate a temporary buffer of samples
-    //!  - @p frame_size defines the temporary buffer size used to read from
+    //!  - @p frame_length defines the temporary buffer length used to
+    //!    read from, in nanoseconds
+    //!  - @p sample_rate defines the number of samples taken from the audio signal
+    //!  - @p ch_mask defines the bitmask of audio channels
     //!    attached readers
-    explicit Mixer(core::BufferPool<sample_t>& pool, size_t frame_size);
+    explicit Mixer(core::BufferPool<sample_t>& pool,
+                   core::nanoseconds_t frame_length,
+                   size_t sample_rate,
+                   packet::channel_mask_t ch_mask);
 
     //! Check if the mixer was succefully constructed.
     bool valid() const;

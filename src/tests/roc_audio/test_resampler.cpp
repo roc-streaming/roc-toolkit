@@ -103,16 +103,20 @@ TEST_GROUP(resampler) {
 TEST(resampler, invalid_scaling) {
     enum { ChMask = 0x1, InvalidScaling = FrameSize };
 
+    const core::nanoseconds_t FrameDuration =
+        FrameSize * core::Second / (InSamples * packet::num_channels(ChMask));
+
     for (size_t n_backend = 0; n_backend < Test_n_resampler_backends; n_backend++) {
         ResamplerBackend backend = Test_resampler_backends[n_backend];
 
         MockReader reader;
         core::ScopedPtr<IResampler> resampler(
-            ResamplerMap::instance().new_resampler(backend, allocator, config, ChMask,
-                                                   FrameSize),
+            ResamplerMap::instance().new_resampler(backend, allocator, config,
+                                                   FrameDuration, InSamples, ChMask),
             allocator);
         CHECK(resampler);
-        ResamplerReader rr(reader, *resampler, buffer_pool, FrameSize);
+        ResamplerReader rr(reader, *resampler, buffer_pool, FrameDuration, InSamples,
+                           ChMask);
         CHECK(rr.valid());
 
         CHECK(!rr.set_scaling(InvalidScaling));
@@ -125,13 +129,17 @@ TEST(resampler, upscaling_twice_single) {
     for (size_t n_backend = 0; n_backend < Test_n_resampler_backends; n_backend++) {
         ResamplerBackend backend = Test_resampler_backends[n_backend];
 
+        const core::nanoseconds_t FrameDuration =
+            FrameSize * core::Second / (InSamples * packet::num_channels(ChMask));
+
         MockReader reader;
         core::ScopedPtr<IResampler> resampler(
-            ResamplerMap::instance().new_resampler(backend, allocator, config, ChMask,
-                                                   FrameSize),
+            ResamplerMap::instance().new_resampler(backend, allocator, config,
+                                                   FrameDuration, InSamples, ChMask),
             allocator);
         CHECK(resampler);
-        ResamplerReader rr(reader, *resampler, buffer_pool, FrameSize);
+        ResamplerReader rr(reader, *resampler, buffer_pool, FrameDuration, InSamples,
+                           ChMask);
 
         CHECK(rr.valid());
 
@@ -161,16 +169,21 @@ TEST(resampler, upscaling_twice_single) {
 // Check upsampling quality and the cut-off band with white noise.
 TEST(resampler, upscaling_twice_awgn) {
     enum { ChMask = 0x1 };
+
+    const core::nanoseconds_t FrameDuration =
+        FrameSize * core::Second / (InSamples * packet::num_channels(ChMask));
+
     for (size_t n_backend = 0; n_backend < Test_n_resampler_backends; n_backend++) {
         ResamplerBackend backend = Test_resampler_backends[n_backend];
 
         MockReader reader;
         core::ScopedPtr<IResampler> resampler(
-            ResamplerMap::instance().new_resampler(backend, allocator, config, ChMask,
-                                                   FrameSize),
+            ResamplerMap::instance().new_resampler(backend, allocator, config,
+                                                   FrameDuration, InSamples, ChMask),
             allocator);
         CHECK(resampler);
-        ResamplerReader rr(reader, *resampler, buffer_pool, FrameSize);
+        ResamplerReader rr(reader, *resampler, buffer_pool, FrameDuration, InSamples,
+                           ChMask);
 
         CHECK(rr.valid());
         CHECK(rr.set_scaling(0.5f));
@@ -210,16 +223,21 @@ TEST(resampler, upscaling_twice_awgn) {
 
 TEST(resampler, downsample) {
     enum { ChMask = 0x1 };
+
+    const core::nanoseconds_t FrameDuration =
+        FrameSize * core::Second / (InSamples * packet::num_channels(ChMask));
+
     for (size_t n_backend = 0; n_backend < Test_n_resampler_backends; n_backend++) {
         ResamplerBackend backend = Test_resampler_backends[n_backend];
 
         MockReader reader;
         core::ScopedPtr<IResampler> resampler(
-            ResamplerMap::instance().new_resampler(backend, allocator, config, ChMask,
-                                                   FrameSize),
+            ResamplerMap::instance().new_resampler(backend, allocator, config,
+                                                   FrameDuration, InSamples, ChMask),
             allocator);
         CHECK(resampler);
-        ResamplerReader rr(reader, *resampler, buffer_pool, FrameSize);
+        ResamplerReader rr(reader, *resampler, buffer_pool, FrameDuration, InSamples,
+                           ChMask);
 
         CHECK(rr.valid());
         CHECK(rr.set_scaling(1.5f));
@@ -248,16 +266,21 @@ TEST(resampler, downsample) {
 
 TEST(resampler, two_tones_sep_channels) {
     enum { ChMask = 0x3, nChannels = 2 };
+
+    const core::nanoseconds_t FrameDuration =
+        FrameSize * core::Second / (InSamples * packet::num_channels(ChMask));
+
     for (size_t n_backend = 0; n_backend < Test_n_resampler_backends; n_backend++) {
         ResamplerBackend backend = Test_resampler_backends[n_backend];
 
         MockReader reader;
         core::ScopedPtr<IResampler> resampler(
-            ResamplerMap::instance().new_resampler(backend, allocator, config, ChMask,
-                                                   FrameSize),
+            ResamplerMap::instance().new_resampler(backend, allocator, config,
+                                                   FrameDuration, InSamples, ChMask),
             allocator);
         CHECK(resampler);
-        ResamplerReader rr(reader, *resampler, buffer_pool, FrameSize);
+        ResamplerReader rr(reader, *resampler, buffer_pool, FrameDuration, InSamples,
+                           ChMask);
         CHECK(rr.valid());
         CHECK(rr.set_scaling(0.5f));
 

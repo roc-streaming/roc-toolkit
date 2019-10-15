@@ -28,8 +28,8 @@ section "Options"
     option "packet-limit" - "Maximum packet size, in bytes"
         int optional
 
-    option "frame-size" - "Internal frame size, number of samples"
-        int optional
+    option "frame-length" - "Duration of the internal frames, in nanoseconds"
+        typestr="TIME" string optional
 
     option "rate" - "Override input sample rate, Hz"
         int optional

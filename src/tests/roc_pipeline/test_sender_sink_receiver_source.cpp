@@ -46,6 +46,8 @@ enum {
     ManyFrames = Latency / SamplesPerFrame * 10
 };
 
+const core::nanoseconds_t MaxBufDuration = MaxBufSize * core::Second / (SampleRate * packet::num_channels(ChMask));
+
 enum {
     // default flags
     FlagNone = 0,
@@ -217,7 +219,7 @@ TEST_GROUP(sender_sink_receiver_source) {
 
         config.input_channels = ChMask;
         config.packet_length = SamplesPerPacket * core::Second / SampleRate;
-        config.internal_frame_size = MaxBufSize;
+        config.internal_frame_length = MaxBufDuration;
 
         if (flags & FlagReedSolomon) {
             config.fec_encoder.scheme = packet::FEC_ReedSolomon_M8;
@@ -242,7 +244,7 @@ TEST_GROUP(sender_sink_receiver_source) {
 
         config.common.output_sample_rate = SampleRate;
         config.common.output_channels = ChMask;
-        config.common.internal_frame_size = MaxBufSize;
+        config.common.internal_frame_length = MaxBufDuration;
 
         config.common.resampling = false;
         config.common.timing = false;

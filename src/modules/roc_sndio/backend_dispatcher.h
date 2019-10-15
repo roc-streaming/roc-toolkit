@@ -34,7 +34,9 @@ public:
     }
 
     //! Set internal buffer size for all backends that need it.
-    void set_frame_size(size_t size);
+    void set_frame_size(core::nanoseconds_t frame_length,
+                        size_t sample_rate,
+                        packet::channel_mask_t channels);
 
     //! Create and open a sink.
     ISink* open_sink(core::IAllocator& allocator,
