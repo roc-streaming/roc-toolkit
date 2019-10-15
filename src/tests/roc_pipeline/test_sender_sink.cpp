@@ -42,6 +42,9 @@ enum {
     ManyFrames = FramesPerPacket * 20
 };
 
+const core::nanoseconds_t MaxBufDuration =
+    MaxBufSize * core::Second / (SampleRate * packet::num_channels(ChMask));
+
 core::HeapAllocator allocator;
 core::BufferPool<audio::sample_t> sample_buffer_pool(allocator, MaxBufSize, true);
 core::BufferPool<uint8_t> byte_buffer_pool(allocator, MaxBufSize, true);
@@ -61,7 +64,7 @@ TEST_GROUP(sender_sink) {
     void setup() {
         config.input_channels = ChMask;
         config.packet_length = SamplesPerPacket * core::Second / SampleRate;
-        config.internal_frame_size = MaxBufSize;
+        config.internal_frame_length = MaxBufDuration;
 
         config.interleaving = false;
         config.timing = false;

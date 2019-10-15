@@ -86,7 +86,9 @@ private:
     core::StringBuffer<> input_name_;
 
     core::Array<sox_sample_t> buffer_;
-    const size_t buffer_size_;
+    size_t buffer_size_;
+    core::nanoseconds_t frame_length_;
+    packet::channel_mask_t channels_;
 
     sox_format_t* input_;
     sox_signalinfo_t in_signal_;
