@@ -70,11 +70,15 @@ BackendDispatcher::BackendDispatcher()
 #endif // ROC_TARGET_SOX
 }
 
-void BackendDispatcher::set_frame_size(size_t frame_size) {
-    (void)frame_size;
+void BackendDispatcher::set_frame_size(core::nanoseconds_t frame_length,
+                                       size_t sample_rate,
+                                       packet::channel_mask_t channels) {
 #ifdef ROC_TARGET_SOX
-    SoxBackend::instance().set_frame_size(frame_size);
+    SoxBackend::instance().set_frame_size(frame_length, sample_rate, channels);
 #endif // ROC_TARGET_SOX
+    (void)frame_length;
+    (void)sample_rate;
+    (void)channels;
 }
 
 ISink* BackendDispatcher::open_sink(core::IAllocator& allocator,

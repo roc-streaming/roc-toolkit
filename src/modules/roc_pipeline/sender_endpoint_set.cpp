@@ -227,17 +227,19 @@ bool SenderEndpointSet::create_pipeline_() {
 
         resampler_.reset(audio::ResamplerMap::instance().new_resampler(
                              config_.resampler_backend, allocator_, config_.resampler,
-                             config_.input_channels, config_.internal_frame_size),
+                             config_.internal_frame_length, config_.input_sample_rate,
+                             config_.input_channels),
                          allocator_);
 
         if (!resampler_) {
             return false;
         }
 
-        resampler_writer_.reset(
-            new (allocator_) audio::ResamplerWriter(
-                *awriter, *resampler_, sample_buffer_pool_, config_.internal_frame_size),
-            allocator_);
+        resampler_writer_.reset(new (allocator_) audio::ResamplerWriter(
+                                    *awriter, *resampler_, sample_buffer_pool_,
+                                    config_.internal_frame_length,
+                                    config_.input_sample_rate, config_.input_channels),
+                                allocator_);
 
         if (!resampler_writer_ || !resampler_writer_->valid()) {
             return false;
