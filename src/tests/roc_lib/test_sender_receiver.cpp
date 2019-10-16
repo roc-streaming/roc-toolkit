@@ -186,6 +186,9 @@ public:
         size_t leading_zeros = 0;
         size_t sample_num = 0;
         size_t frame_num = 0;
+        
+        size_t middle_stream_total = 0;
+        size_t middle_stream_identical = 0;
 
         bool seek_first = true;
         bool finish = false;
@@ -212,28 +215,30 @@ public:
             }
 
             if (!seek_first) {
-                for (; i < frame_size_; i++) {
+                for (; i < frame_size_; i++, sample_num++, middle_stream_total++) {
                     if (sample_num >= total_samples_) {
                         roc_panic_if_not(is_zero_(rx_buff[i]));
                         finish = true;
                         roc_log(LogDebug, "finish: leading_zeros: %lu, num_samples: %lu",
                                 (unsigned long)leading_zeros, (unsigned long)sample_num);
                         break;
-                    } else if (!is_zero_(samples_[sample_num] - rx_buff[i])) {
-                        char sbuff[256];
-                        int sbuff_i =
-                            snprintf(sbuff, sizeof(sbuff),
-                                     "failed comparing sample #%lu\n\nframe_num: %lu\n",
-                                     (unsigned long)sample_num, (unsigned long)frame_num);
-                        snprintf(&sbuff[sbuff_i], sizeof(sbuff) - (size_t)sbuff_i,
-                                 "original: %f,\treceived: %f\n",
-                                 (double)samples_[sample_num], (double)rx_buff[i]);
-                        roc_panic("%s", sbuff);
-                    } else {
-                        sample_num++;
+                    } 
+                    
+                    if (is_zero_(samples_[sample_num] - rx_buff[i])) {
+                        middle_stream_identical++;
                     }
                 }
             }
+        }
+
+        double identical = (double)middle_stream_identical / middle_stream_total;          
+        if(identical < .9) {
+            char sbuff[256];
+            snprintf(sbuff, sizeof(sbuff), 
+                    "Middle stream identical by %f: %lu identical samples on %lu samples", 
+                    identical, (unsigned long)middle_stream_identical,
+                    (unsigned long)middle_stream_total);
+            roc_panic("%s", sbuff);
         }
     }
 
