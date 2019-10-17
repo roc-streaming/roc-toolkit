@@ -94,6 +94,13 @@ Supported protocols for repair ports:
 - rs8m (Reed-Solomon m=8 FEC scheme)
 - ldpc (LDPC-Starircase FEC scheme)
 
+Multicast
+---------
+
+*IFACE_IP* should be an IP address of the network interface on which to join the multicast group. It may be "0.0.0.0" (for IPv4) or "[::]" (for IPv6) to join the multicast group on all available interfaces.
+
+If *IFACE_IP* is not specified and multicast address is used, the user is responsible for joining the multicast group manually.
+
 Time
 ----
 
@@ -199,13 +206,6 @@ Select resampler profile:
 .. code::
 
     $ roc-recv -vv -s rtp+rs8m::10001 -r rs8m::10002 --resampler-profile=high
-
-Multicast
----------
-
-*IFACE_IP* should be an IP address of the network interface on which to join to the multicast group. It may be "0.0.0.0" (for IPv4) or "[::]" (for IPv6) to join the multicast group on all available interfaces.
-
-If *IFACE_IP* is not specified and multicast address is used, the user is responsible for joining the multicast group manually.
 
 SEE ALSO
 ========
