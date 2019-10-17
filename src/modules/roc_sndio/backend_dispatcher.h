@@ -59,13 +59,7 @@ private:
 
     BackendDispatcher();
 
-    int select_driver_type_(const address::IoURI& uri) const;
-    const char* select_driver_name_(const address::IoURI& uri,
-                                    const char* force_format) const;
-    const char* select_inout_(const address::IoURI& uri) const;
-
-    IBackend* select_backend_(const char* driver, const char* inout, int flags);
-
+    IBackend* find_backend_(const char* driver, const char* inout, int flags);
     void register_backend_(IBackend& backend);
 
     enum { MaxBackends = 8 };
