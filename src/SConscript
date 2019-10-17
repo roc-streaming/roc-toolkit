@@ -16,7 +16,7 @@ for module in env['ROC_MODULES']:
     cenv.Append(CPPDEFINES=('ROC_MODULE', module))
 
     genv = gen_env.Clone()
-    genv.MergeVars(cenv, exclude=['CXXFLAGS'])
+    genv.MergeVars(cenv)
 
     sources = []
     objects = []
@@ -139,10 +139,13 @@ if not GetOption('disable_tools'):
         cenv.Append(CPPDEFINES=('ROC_MODULE', tooldir.name))
         cenv.Append(CPPPATH=['tools', '#src/tools/%s' % tooldir.name])
 
+        genv = gen_env.Clone()
+        genv.MergeVars(cenv)
+
         sources = env.GlobFiles('%s/*.cpp' % tooldir)
         objects = []
         for ggo in env.GlobFiles('%s/*.ggo' % tooldir):
-            objects += gen_env.GenGetOpt(ggo, env['ROC_VERSION_STR'])
+            objects += genv.GenGetOpt(ggo, env['ROC_VERSION_STR'])
 
         exename = tooldir.name.replace('roc_', 'roc-')
         target = env.Install(env['ROC_BINDIR'],
