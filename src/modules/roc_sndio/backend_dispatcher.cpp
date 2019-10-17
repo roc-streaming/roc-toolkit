@@ -21,6 +21,45 @@
 namespace roc {
 namespace sndio {
 
+namespace {
+
+int select_driver_type(const address::IoURI& uri) {
+    if (uri.is_file()) {
+        return IBackend::FilterFile;
+    } else {
+        return IBackend::FilterDevice;
+    }
+}
+
+const char* select_driver_name(const address::IoURI& uri, const char* force_format) {
+    if (uri.is_file()) {
+        if (force_format && *force_format) {
+            // use specific file driver
+            return force_format;
+        }
+        // auto-detect file driver
+        return NULL;
+    }
+
+    if (!uri.is_empty()) {
+        // use spcific device driver
+        return uri.scheme;
+    }
+
+    // use default device driver
+    return NULL;
+}
+
+const char* select_input_output(const address::IoURI& uri) {
+    if (uri.is_empty()) {
+        return NULL;
+    } else {
+        return uri.path;
+    }
+}
+
+} // namespace
+
 BackendDispatcher::BackendDispatcher()
     : n_backends_(0) {
 #ifdef ROC_TARGET_PULSEAUDIO
@@ -42,12 +81,12 @@ ISink* BackendDispatcher::open_sink(core::IAllocator& allocator,
                                     const address::IoURI& uri,
                                     const char* force_format,
                                     const Config& config) {
-    const int flags = select_driver_type_(uri) | IBackend::FilterSink;
+    const int flags = select_driver_type(uri) | IBackend::FilterSink;
 
-    const char* driver = select_driver_name_(uri, force_format);
-    const char* output = select_inout_(uri);
+    const char* driver = select_driver_name(uri, force_format);
+    const char* output = select_input_output(uri);
 
-    IBackend* backend = select_backend_(driver, output, flags);
+    IBackend* backend = find_backend_(driver, output, flags);
     if (!backend) {
         return NULL;
     }
@@ -59,12 +98,12 @@ ISource* BackendDispatcher::open_source(core::IAllocator& allocator,
                                         const address::IoURI& uri,
                                         const char* force_format,
                                         const Config& config) {
-    const int flags = select_driver_type_(uri) | IBackend::FilterSource;
+    const int flags = select_driver_type(uri) | IBackend::FilterSource;
 
-    const char* driver = select_driver_name_(uri, force_format);
-    const char* input = select_inout_(uri);
+    const char* driver = select_driver_name(uri, force_format);
+    const char* input = select_input_output(uri);
 
-    IBackend* backend = select_backend_(driver, input, flags);
+    IBackend* backend = find_backend_(driver, input, flags);
     if (!backend) {
         return NULL;
     }
@@ -102,44 +141,8 @@ bool BackendDispatcher::get_supported_formats(core::StringList& list) {
     return true;
 }
 
-int BackendDispatcher::select_driver_type_(const address::IoURI& uri) const {
-    if (uri.is_file()) {
-        return IBackend::FilterFile;
-    } else {
-        return IBackend::FilterDevice;
-    }
-}
-
-const char* BackendDispatcher::select_driver_name_(const address::IoURI& uri,
-                                                   const char* force_format) const {
-    if (uri.is_file()) {
-        if (force_format && *force_format) {
-            // use specific file driver
-            return force_format;
-        }
-        // auto-detect file driver
-        return NULL;
-    }
-
-    if (!uri.is_empty()) {
-        // use spcific device driver
-        return uri.scheme;
-    }
-
-    // use default device driver
-    return NULL;
-}
-
-const char* BackendDispatcher::select_inout_(const address::IoURI& uri) const {
-    if (uri.is_empty()) {
-        return NULL;
-    } else {
-        return uri.path;
-    }
-}
-
 IBackend*
-BackendDispatcher::select_backend_(const char* driver, const char* inout, int flags) {
+BackendDispatcher::find_backend_(const char* driver, const char* inout, int flags) {
     for (size_t n = 0; n < n_backends_; n++) {
         if (backends_[n]->probe(driver, inout, flags)) {
             return backends_[n];
