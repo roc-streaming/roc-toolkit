@@ -38,6 +38,8 @@ proc = subprocess.Popen(command, cwd=working_dir, stderr=subprocess.PIPE)
 err = False
 
 for line in proc.stderr:
+    line = line.decode('utf-8')
+
     line = re.sub('WARNING:', 'warning:', line, flags=re.I)
     line = re.sub('ERROR:', 'error:', line, flags=re.I)
 
