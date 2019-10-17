@@ -1082,12 +1082,6 @@ if compiler in ['gcc', 'clang']:
             '-fno-rtti',
         ])
 
-    if GetOption('enable_werror'):
-        for var in ['CXXFLAGS', 'CFLAGS']:
-            env.Append(**{var: [
-                '-Werror',
-            ]})
-
     if variant == 'debug':
         for var in ['CXXFLAGS', 'CFLAGS']:
             env.Append(**{var: [
@@ -1103,8 +1097,22 @@ if compiler in ['gcc', 'clang']:
             '-fvisibility=hidden',
             '-O3',
         ])
+
+    if compiler == 'gcc' and compiler_ver[:2] < (4, 6):
+        for var in ['CXXFLAGS', 'CFLAGS']:
+            env.Append(**{var: [
+                '-fno-strict-aliasing',
+            ]})
+
 else:
     env.Die("CXXFLAGS setup not implemented for compiler '%s'", compiler)
+
+if compiler in ['gcc', 'clang']:
+    if GetOption('enable_werror'):
+        for var in ['CXXFLAGS', 'CFLAGS']:
+            env.Append(**{var: [
+                '-Werror',
+            ]})
 
 if compiler == 'gcc':
     for var in ['CXXFLAGS', 'CFLAGS']:
@@ -1147,12 +1155,6 @@ if compiler == 'gcc':
         for var in ['CXXFLAGS', 'CFLAGS']:
             env.Append(**{var: [
                 '-Wno-parentheses',
-            ]})
-
-    if compiler_ver[:2] < (4, 6):
-        for var in ['CXXFLAGS', 'CFLAGS']:
-            env.Append(**{var: [
-                '-fno-strict-aliasing',
             ]})
 
 if compiler == 'clang':
@@ -1260,10 +1262,25 @@ if platform in ['linux']:
 test_env.Append(CPPDEFINES=('CPPUTEST_USE_MEM_LEAK_DETECTION', '0'))
 
 if compiler == 'clang':
+    for var in ['CXXFLAGS', 'CFLAGS']:
+        gen_env.AppendUnique(**{var: [
+            '-Wno-sign-conversion',
+            '-Wno-missing-variable-declarations',
+            '-Wno-switch-enum',
+            '-Wno-shorten-64-to-32',
+            '-Wno-unused-const-variable',
+            '-Wno-documentation',
+        ]})
     test_env.AppendUnique(CXXFLAGS=[
         '-Wno-weak-vtables',
         '-Wno-unused-member-function',
     ])
+
+if compiler == 'gcc':
+    for var in ['CXXFLAGS', 'CFLAGS']:
+        gen_env.AppendUnique(**{var: [
+            '-Wno-overlength-strings',
+        ]})
 
 if not env['STRIPFLAGS']:
     if platform in ['darwin']:
