@@ -78,6 +78,6 @@ If you have chosen a task and are ready to work on it, the following documentati
 
   Feel free to ask questions on our mailing list or IRC channel. See :doc:`/about_project/contacts` page for details.
 
-* **authors file**
+* **getting credits**
 
-  Feel free to add yourself to the :doc:`/about_project/authors` page when submitting a pull request.
+  Feel free to add yourself to the :doc:`/about_project/authors` page when submitting a patch. It is updated from git log from time to time.
