@@ -5,6 +5,36 @@ Changelog
    :local:
    :depth: 1
 
+Version 0.1.3 (Oct 21, 2019)
+============================
+
+Tools
+-----
+
+* add ``--list-drivers`` option
+* add git commit hash to version info
+
+Internals
+---------
+
+* print backtrace on Linux and macOS using libunwind instead of glibc backtrace module
+* print backtrace on Android using bionic backtrace module
+* colored logging
+
+Building
+--------
+
+* add libunwind optional dependency (enabled by default)
+* add ragel required dependency
+* rename "uv" to "libuv" in ``--build-3rdparty``
+* don't hide symbols in debug builds
+* strip symbols in release builds
+* fix building on recent Python versions
+* fix SoX download URL
+* fix PulseAudio version parsing
+* automatically apply memfd patch when building PulseAudio
+* automatically fix libasound includes when building PulseAudio
+
 Version 0.1.2 (Aug 14, 2019)
 ============================
 
