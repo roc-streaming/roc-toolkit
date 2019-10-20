@@ -291,7 +291,7 @@ macOS 10.12 and later
 .. code::
 
     # for Roc
-    $ brew install scons ragel gengetopt sox libuv libunwind cpputest
+    $ brew install scons ragel gengetopt sox libuv cpputest
 
     # for 3rd-parties
     $ brew install libtool autoconf automake make cmake
@@ -312,7 +312,7 @@ macOS 10.11 and later
 .. code::
 
     # for Roc
-    $ brew install scons ragel gengetopt libunwind cpputest
+    $ brew install scons ragel gengetopt cpputest
 
     # for 3rd-parties
     $ brew install libtool autoconf automake make cmake
