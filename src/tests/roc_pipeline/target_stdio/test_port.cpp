@@ -21,7 +21,7 @@ TEST(port, all_fields) {
     CHECK(parse_port(Port_AudioSource, "rtp:1.2.3.4:123", port));
 
     UNSIGNED_LONGS_EQUAL(Proto_RTP, port.protocol);
-    CHECK(port.address.valid());
+    CHECK(port.address.has_host_port());
     UNSIGNED_LONGS_EQUAL(4, port.address.version());
     LONGS_EQUAL(123, port.address.port());
 
@@ -91,7 +91,7 @@ TEST(port, addr_ipv4) {
     PortConfig port;
     CHECK(parse_port(Port_AudioSource, "rtp:1.2.0.255:123", port));
 
-    CHECK(port.address.valid());
+    CHECK(port.address.has_host_port());
     UNSIGNED_LONGS_EQUAL(4, port.address.version());
 
     STRCMP_EQUAL("rtp:1.2.0.255:123", port_to_str(port).c_str());
@@ -101,7 +101,7 @@ TEST(port, addr_ipv6) {
     PortConfig port;
     CHECK(parse_port(Port_AudioSource, "rtp:[2001:db8::1]:123", port));
 
-    CHECK(port.address.valid());
+    CHECK(port.address.has_host_port());
     UNSIGNED_LONGS_EQUAL(6, port.address.version());
 
     STRCMP_EQUAL("rtp:[2001:db8::1]:123", port_to_str(port).c_str());
