@@ -26,23 +26,41 @@ public:
     //! Construct invalid address.
     Address();
 
-    //! Check if the address was properly initialized.
-    bool valid() const;
+    //! Check whether host and port are set.
+    bool has_host_port() const;
 
     //! Set address from sockaddr struct.
-    bool set_saddr(const sockaddr* sa);
+    bool set_host_port_saddr(const sockaddr* sa);
 
     //! Set IPv4 host address.
-    bool set_host_ipv4(const char* ip, int port);
+    bool set_host_port_ipv4(const char* ip, int port);
 
     //! Set IPv6 host address.
-    bool set_host_ipv6(const char* ip, int port);
+    bool set_host_port_ipv6(const char* ip, int port);
+
+    //! Check whether multicast interface address is set.
+    bool has_miface() const;
 
     //! Set IPv4 address of the interface on which to join to the multicast group.
-    bool set_miface_ipv4(const char* iface);
+    bool set_miface_ipv4(const char* ip);
 
     //! Set IPv6 address of the interface on which to join to the multicast group.
-    bool set_miface_ipv6(const char* iface);
+    bool set_miface_ipv6(const char* ip);
+
+    //! Get IP version (4 or 6).
+    int version() const;
+
+    //! Check whether this is multicast address.
+    bool multicast() const;
+
+    //! Get host IP address.
+    bool get_host(char* buf, size_t bufsz) const;
+
+    //! Get IP address of the interface on which to join to the multicast group.
+    bool get_miface(char* buf, size_t bufsz) const;
+
+    //! Get address port.
+    int port() const;
 
     //! Get sockaddr struct.
     sockaddr* saddr();
@@ -52,25 +70,6 @@ public:
 
     //! Get sockaddr struct length.
     socklen_t slen() const;
-
-    //! Get IP version (4 or 6).
-    int version() const;
-
-    //! Get address port.
-    int port() const;
-
-    //! Check whether this is multicast address.
-    bool multicast() const;
-
-    //! Check whether IP address of the interface on which to join to the
-    //! multicast group is initialized.
-    bool has_miface() const;
-
-    //! Get host IP address.
-    bool get_host(char* buf, size_t bufsz) const;
-
-    //! Get IP address of the interface on which to join to the multicast group.
-    bool get_miface(char* buf, size_t bufsz) const;
 
     //! Compare addresses.
     bool operator==(const Address& other) const;
@@ -84,21 +83,21 @@ public:
     };
 
 private:
-    static socklen_t sizeof_(sa_family_t family);
+    static socklen_t saddr_size_(sa_family_t family);
 
-    sa_family_t family_() const;
+    sa_family_t saddr_family_() const;
 
     union {
         sockaddr_in addr4;
         sockaddr_in6 addr6;
-    } sa_;
+    } saddr_;
+
+    sa_family_t miface_family_;
 
     union {
         in_addr addr4;
         in6_addr addr6;
     } miface_;
-
-    sa_family_t miface_family_;
 };
 
 } // namespace packet
