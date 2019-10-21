@@ -18,8 +18,8 @@ TEST_GROUP(parse_address) {};
 TEST(parse_address, miface_ipv4) {
     Address addr;
 
-    CHECK(addr.set_host_ipv4("225.1.2.3", 123));
-    CHECK(addr.valid());
+    CHECK(addr.set_host_port_ipv4("225.1.2.3", 123));
+    CHECK(addr.has_host_port());
     CHECK(addr.multicast());
 
     CHECK(set_miface_from_string("0.0.0.0", addr));
@@ -33,8 +33,8 @@ TEST(parse_address, miface_ipv4) {
 TEST(parse_address, miface_ipv6) {
     Address addr;
 
-    CHECK(addr.set_host_ipv6("ffaa::", 123));
-    CHECK(addr.valid());
+    CHECK(addr.set_host_port_ipv6("ffaa::", 123));
+    CHECK(addr.has_host_port());
     CHECK(addr.multicast());
 
     CHECK(set_miface_from_string("[2001:db8::1]", addr));
@@ -53,8 +53,8 @@ TEST(parse_address, bad_miface) {
     { // non-multicast address
         Address addr;
 
-        CHECK(addr.set_host_ipv6("2001:db8::1", 123));
-        CHECK(addr.valid());
+        CHECK(addr.set_host_port_ipv6("2001:db8::1", 123));
+        CHECK(addr.has_host_port());
         CHECK(!addr.multicast());
 
         CHECK(!set_miface_from_string("[::]", addr));
@@ -62,8 +62,8 @@ TEST(parse_address, bad_miface) {
     { // empty miface
         Address addr;
 
-        CHECK(addr.set_host_ipv4("225.1.2.3", 123));
-        CHECK(addr.valid());
+        CHECK(addr.set_host_port_ipv4("225.1.2.3", 123));
+        CHECK(addr.has_host_port());
 
         CHECK(!set_miface_from_string("", addr));
         CHECK(!set_miface_from_string(NULL, addr));
@@ -71,8 +71,8 @@ TEST(parse_address, bad_miface) {
     { // ipv6 miface for ipv4 addr
         Address addr;
 
-        CHECK(addr.set_host_ipv4("225.1.2.3", 123));
-        CHECK(addr.valid());
+        CHECK(addr.set_host_port_ipv4("225.1.2.3", 123));
+        CHECK(addr.has_host_port());
         CHECK(addr.multicast());
 
         CHECK(!set_miface_from_string("[::]", addr));
@@ -80,8 +80,8 @@ TEST(parse_address, bad_miface) {
     { // ipv4 miface for ipv6 addr
         Address addr;
 
-        CHECK(addr.set_host_ipv6("ffaa::", 123));
-        CHECK(addr.valid());
+        CHECK(addr.set_host_port_ipv6("ffaa::", 123));
+        CHECK(addr.has_host_port());
         CHECK(addr.multicast());
 
         CHECK(!set_miface_from_string("0.0.0.0", addr));
