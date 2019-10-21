@@ -166,7 +166,7 @@ int roc_sender_bind(roc_sender* sender, roc_address* address) {
     }
 
     packet::Address& addr = get_address(address);
-    if (!addr.valid()) {
+    if (!addr.has_host_port()) {
         roc_log(LogError, "roc_sender_bind: invalid arguments: invalid address");
         return -1;
     }
@@ -211,7 +211,7 @@ int roc_sender_connect(roc_sender* sender,
     }
 
     const packet::Address& addr = get_address(address);
-    if (!addr.valid()) {
+    if (!addr.has_host_port()) {
         roc_log(LogError, "roc_sender_connect: invalid arguments: invalid address");
         return -1;
     }
