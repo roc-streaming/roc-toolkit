@@ -88,7 +88,7 @@ int roc_receiver_bind(roc_receiver* receiver,
         return -1;
     }
 
-    packet::Address& addr = get_address(address);
+    address::SocketAddr& addr = get_address(address);
     if (!addr.has_host_port()) {
         roc_log(LogError, "roc_sender_connect: invalid arguments: bad address");
         return -1;

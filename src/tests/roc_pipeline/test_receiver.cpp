@@ -61,8 +61,8 @@ rtp::Composer rtp_composer(NULL);
 TEST_GROUP(receiver) {
     ReceiverConfig config;
 
-    packet::Address src1;
-    packet::Address src2;
+    address::SocketAddr src1;
+    address::SocketAddr src2;
 
     PortConfig port1;
     PortConfig port2;

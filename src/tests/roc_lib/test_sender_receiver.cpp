@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <unistd.h>
 
+#include "roc_address/socket_addr.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_core/log.h"
@@ -19,8 +20,6 @@
 #include "roc_core/stddefs.h"
 #include "roc_core/thread.h"
 #include "roc_netio/transceiver.h"
-#include "roc_packet/address.h"
-#include "roc_packet/address_to_str.h"
 #include "roc_packet/packet_pool.h"
 #include "roc_packet/queue.h"
 
@@ -352,16 +351,16 @@ private:
 
     netio::Transceiver trx_;
 
-    packet::Address send_addr_;
+    address::SocketAddr send_addr_;
 
     roc_address roc_source_addr_;
     roc_address roc_repair_addr_;
 
-    packet::Address recv_source_addr_;
-    packet::Address recv_repair_addr_;
+    address::SocketAddr recv_source_addr_;
+    address::SocketAddr recv_repair_addr_;
 
-    packet::Address dst_source_addr_;
-    packet::Address dst_repair_addr_;
+    address::SocketAddr dst_source_addr_;
+    address::SocketAddr dst_repair_addr_;
 
     packet::Queue source_queue_;
     packet::Queue repair_queue_;

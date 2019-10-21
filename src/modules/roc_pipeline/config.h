@@ -55,7 +55,7 @@ const int DefaultMaxLatencyFactor = 2;
 //!  defines a destination port parameters.
 struct PortConfig {
     //! Port address.
-    packet::Address address;
+    address::SocketAddr address;
 
     //! Port protocol.
     PortProtocol protocol;
