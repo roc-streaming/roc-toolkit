@@ -8,15 +8,15 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "roc_packet/parse_address.h"
+#include "roc_address/parse_socket_addr.h"
 
 namespace roc {
-namespace packet {
+namespace address {
 
-TEST_GROUP(parse_address) {};
+TEST_GROUP(socket_addr_parse) {};
 
-TEST(parse_address, miface_ipv4) {
-    Address addr;
+TEST(socket_addr_parse, miface_ipv4) {
+    SocketAddr addr;
 
     CHECK(addr.set_host_port_ipv4("225.1.2.3", 123));
     CHECK(addr.has_host_port());
@@ -30,8 +30,8 @@ TEST(parse_address, miface_ipv4) {
     STRCMP_EQUAL("0.0.0.0", miface);
 }
 
-TEST(parse_address, miface_ipv6) {
-    Address addr;
+TEST(socket_addr_parse, miface_ipv6) {
+    SocketAddr addr;
 
     CHECK(addr.set_host_port_ipv6("ffaa::", 123));
     CHECK(addr.has_host_port());
@@ -45,13 +45,13 @@ TEST(parse_address, miface_ipv6) {
     STRCMP_EQUAL("2001:db8::1", miface);
 }
 
-TEST(parse_address, bad_miface) {
+TEST(socket_addr_parse, bad_miface) {
     { // invalid address
-        Address addr;
+        SocketAddr addr;
         CHECK(!set_miface_from_string("0.0.0.0", addr));
     }
     { // non-multicast address
-        Address addr;
+        SocketAddr addr;
 
         CHECK(addr.set_host_port_ipv6("2001:db8::1", 123));
         CHECK(addr.has_host_port());
@@ -60,7 +60,7 @@ TEST(parse_address, bad_miface) {
         CHECK(!set_miface_from_string("[::]", addr));
     }
     { // empty miface
-        Address addr;
+        SocketAddr addr;
 
         CHECK(addr.set_host_port_ipv4("225.1.2.3", 123));
         CHECK(addr.has_host_port());
@@ -69,7 +69,7 @@ TEST(parse_address, bad_miface) {
         CHECK(!set_miface_from_string(NULL, addr));
     }
     { // ipv6 miface for ipv4 addr
-        Address addr;
+        SocketAddr addr;
 
         CHECK(addr.set_host_port_ipv4("225.1.2.3", 123));
         CHECK(addr.has_host_port());
@@ -78,7 +78,7 @@ TEST(parse_address, bad_miface) {
         CHECK(!set_miface_from_string("[::]", addr));
     }
     { // ipv4 miface for ipv6 addr
-        Address addr;
+        SocketAddr addr;
 
         CHECK(addr.set_host_port_ipv6("ffaa::", 123));
         CHECK(addr.has_host_port());
@@ -88,5 +88,5 @@ TEST(parse_address, bad_miface) {
     }
 }
 
-} // namespace packet
+} // namespace address
 } // namespace roc

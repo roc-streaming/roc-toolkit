@@ -294,11 +294,11 @@ void OFDecoder::reset_session_() {
 
     if (OF_STATUS_OK
         != of_set_callback_functions(
-               of_sess_, source_cb_,
-               // OpenFEC doesn't repair fec-packets in case of Reed-Solomon FEC
-               // and prints curses to the console if we give it the callback for that
-               codec_id_ == OF_CODEC_REED_SOLOMON_GF_2_M_STABLE ? NULL : repair_cb_,
-               (void*)this)) {
+            of_sess_, source_cb_,
+            // OpenFEC doesn't repair fec-packets in case of Reed-Solomon FEC
+            // and prints curses to the console if we give it the callback for that
+            codec_id_ == OF_CODEC_REED_SOLOMON_GF_2_M_STABLE ? NULL : repair_cb_,
+            (void*)this)) {
         roc_panic("of decoder: of_set_callback_functions() failed");
     }
 }
