@@ -14,12 +14,12 @@
 
 #include <uv.h>
 
+#include "roc_address/socket_addr.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/mutex.h"
 #include "roc_core/refcnt.h"
 #include "roc_netio/basic_port.h"
 #include "roc_netio/iclose_handler.h"
-#include "roc_packet/address.h"
 #include "roc_packet/iwriter.h"
 
 namespace roc {
@@ -30,7 +30,7 @@ class UDPSenderPort : public BasicPort, public packet::IWriter {
 public:
     //! Initialize.
     UDPSenderPort(ICloseHandler& close_handler,
-                  const packet::Address&,
+                  const address::SocketAddr&,
                   uv_loop_t& event_loop,
                   core::IAllocator& allocator);
 
@@ -38,7 +38,7 @@ public:
     ~UDPSenderPort();
 
     //! Get bind address.
-    virtual const packet::Address& address() const;
+    virtual const address::SocketAddr& address() const;
 
     //! Open sender.
     virtual bool open();
@@ -69,7 +69,7 @@ private:
     uv_udp_t handle_;
     bool handle_initialized_;
 
-    packet::Address address_;
+    address::SocketAddr address_;
 
     core::List<packet::Packet> list_;
     core::Mutex mutex_;
