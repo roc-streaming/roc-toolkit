@@ -245,7 +245,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    packet::Address local_addr;
+    address::SocketAddr local_addr;
     if (source_port.address.version() == 6) {
         local_addr.set_host_port_ipv6("::", 0);
     } else {
