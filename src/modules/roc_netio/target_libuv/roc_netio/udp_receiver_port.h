@@ -14,6 +14,7 @@
 
 #include <uv.h>
 
+#include "roc_address/socket_addr.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/list.h"
@@ -21,7 +22,6 @@
 #include "roc_core/refcnt.h"
 #include "roc_netio/basic_port.h"
 #include "roc_netio/iclose_handler.h"
-#include "roc_packet/address.h"
 #include "roc_packet/iwriter.h"
 #include "roc_packet/packet_pool.h"
 
@@ -33,7 +33,7 @@ class UDPReceiverPort : public BasicPort {
 public:
     //! Initialize.
     UDPReceiverPort(ICloseHandler& close_handler,
-                    const packet::Address&,
+                    const address::SocketAddr&,
                     uv_loop_t& event_loop,
                     packet::IWriter& writer,
                     packet::PacketPool& packet_pool,
@@ -44,7 +44,7 @@ public:
     ~UDPReceiverPort();
 
     //! Get bind address.
-    virtual const packet::Address& address() const;
+    virtual const address::SocketAddr& address() const;
 
     //! Open receiver.
     virtual bool open();
@@ -75,7 +75,7 @@ private:
     bool recv_started_;
     bool closed_;
 
-    packet::Address address_;
+    address::SocketAddr address_;
     packet::IWriter& writer_;
 
     packet::PacketPool& packet_pool_;
