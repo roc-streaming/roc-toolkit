@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_packet/target_posix/roc_packet/address.h
-//! @brief Network address.
+//! @file roc_address/target_posix/roc_address/socket_addr.h
+//! @brief Socket address.
 
-#ifndef ROC_PACKET_ADDRESS_H_
-#define ROC_PACKET_ADDRESS_H_
+#ifndef ROC_ADDRESS_SOCKET_ADDR_H_
+#define ROC_ADDRESS_SOCKET_ADDR_H_
 
 #include <netinet/in.h>
 #include <sys/socket.h>
@@ -18,13 +18,13 @@
 #include "roc_core/stddefs.h"
 
 namespace roc {
-namespace packet {
+namespace address {
 
-//! Network address.
-class Address {
+//! Socket address.
+class SocketAddr {
 public:
-    //! Construct invalid address.
-    Address();
+    //! Construct empty address.
+    SocketAddr();
 
     //! Check whether host and port are set.
     bool has_host_port() const;
@@ -72,10 +72,10 @@ public:
     socklen_t slen() const;
 
     //! Compare addresses.
-    bool operator==(const Address& other) const;
+    bool operator==(const SocketAddr& other) const;
 
     //! Compare addresses.
-    bool operator!=(const Address& other) const;
+    bool operator!=(const SocketAddr& other) const;
 
     enum {
         // An estimate maximum length of a string representation of an address.
@@ -100,7 +100,7 @@ private:
     } miface_;
 };
 
-} // namespace packet
+} // namespace address
 } // namespace roc
 
-#endif // ROC_PACKET_ADDRESS_H_
+#endif // ROC_ADDRESS_SOCKET_ADDR_H_

@@ -34,8 +34,8 @@ public:
                  packet::PacketPool& packet_pool,
                  core::BufferPool<uint8_t>& buffer_pool,
                  rtp::PayloadType pt,
-                 const packet::Address& src_addr,
-                 const packet::Address& dst_addr)
+                 const address::SocketAddr& src_addr,
+                 const address::SocketAddr& dst_addr)
         : writer_(writer)
         , composer_(composer)
         , payload_encoder_(format_map.format(pt)->new_encoder(allocator), allocator)
@@ -169,8 +169,8 @@ private:
     packet::PacketPool& packet_pool_;
     core::BufferPool<uint8_t>& buffer_pool_;
 
-    packet::Address src_addr_;
-    packet::Address dst_addr_;
+    address::SocketAddr src_addr_;
+    address::SocketAddr dst_addr_;
 
     packet::source_t source_;
     packet::seqnum_t seqnum_;

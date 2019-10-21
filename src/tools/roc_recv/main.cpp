@@ -7,6 +7,7 @@
  */
 
 #include "roc_address/io_uri.h"
+#include "roc_address/parse_socket_addr.h"
 #include "roc_audio/resampler_profile.h"
 #include "roc_core/array.h"
 #include "roc_core/colors.h"
@@ -17,8 +18,6 @@
 #include "roc_core/scoped_destructor.h"
 #include "roc_core/unique_ptr.h"
 #include "roc_netio/transceiver.h"
-#include "roc_packet/address_to_str.h"
-#include "roc_packet/parse_address.h"
 #include "roc_pipeline/parse_port.h"
 #include "roc_pipeline/receiver.h"
 #include "roc_sndio/backend_dispatcher.h"
@@ -299,7 +298,7 @@ int main(int argc, char** argv) {
             return 1;
         }
         if (args.miface_given) {
-            if (!packet::set_miface_from_string(args.miface_arg, port.address)) {
+            if (!address::set_miface_from_string(args.miface_arg, port.address)) {
                 roc_log(LogError, "can't parse miface: %s", args.miface_arg);
                 return 1;
             }
@@ -323,7 +322,7 @@ int main(int argc, char** argv) {
         }
 
         if (args.miface_given) {
-            if (!packet::set_miface_from_string(args.miface_arg, port.address)) {
+            if (!address::set_miface_from_string(args.miface_arg, port.address)) {
                 roc_log(LogError, "can't parse miface: %s", args.miface_arg);
                 return 1;
             }

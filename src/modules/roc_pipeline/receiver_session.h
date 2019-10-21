@@ -12,6 +12,7 @@
 #ifndef ROC_PIPELINE_RECEIVER_SESSION_H_
 #define ROC_PIPELINE_RECEIVER_SESSION_H_
 
+#include "roc_address/socket_addr.h"
 #include "roc_audio/depacketizer.h"
 #include "roc_audio/iframe_decoder.h"
 #include "roc_audio/ireader.h"
@@ -27,7 +28,6 @@
 #include "roc_fec/codec_map.h"
 #include "roc_fec/iblock_decoder.h"
 #include "roc_fec/reader.h"
-#include "roc_packet/address.h"
 #include "roc_packet/delayed_reader.h"
 #include "roc_packet/iparser.h"
 #include "roc_packet/ireader.h"
@@ -51,7 +51,7 @@ public:
     //! Initialize.
     ReceiverSession(const ReceiverSessionConfig& session_config,
                     const ReceiverCommonConfig& common_config,
-                    const packet::Address& src_address,
+                    const address::SocketAddr& src_address,
                     const fec::CodecMap& codec_map,
                     const rtp::FormatMap& format_map,
                     packet::PacketPool& packet_pool,
@@ -80,7 +80,7 @@ private:
 
     void destroy();
 
-    const packet::Address src_address_;
+    const address::SocketAddr src_address_;
 
     core::IAllocator& allocator_;
 

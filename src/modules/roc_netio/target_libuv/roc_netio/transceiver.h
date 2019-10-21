@@ -14,6 +14,7 @@
 
 #include <uv.h>
 
+#include "roc_address/socket_addr.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/cond.h"
 #include "roc_core/iallocator.h"
@@ -25,7 +26,6 @@
 #include "roc_netio/iclose_handler.h"
 #include "roc_netio/udp_receiver_port.h"
 #include "roc_netio/udp_sender_port.h"
-#include "roc_packet/address.h"
 #include "roc_packet/iwriter.h"
 #include "roc_packet/packet_pool.h"
 
@@ -67,7 +67,7 @@ public:
     //!
     //! @returns
     //!  true on success or false if error occurred
-    bool add_udp_receiver(packet::Address& bind_address, packet::IWriter& writer);
+    bool add_udp_receiver(address::SocketAddr& bind_address, packet::IWriter& writer);
 
     //! Add UDP datagram sender port.
     //!
@@ -81,16 +81,16 @@ public:
     //!
     //! @returns
     //!  a new packet writer on success or null if error occurred
-    packet::IWriter* add_udp_sender(packet::Address& bind_address);
+    packet::IWriter* add_udp_sender(address::SocketAddr& bind_address);
 
     //! Remove sender or receiver port. Wait until port will be removed.
-    void remove_port(packet::Address bind_address);
+    void remove_port(address::SocketAddr bind_address);
 
 private:
     struct Task : core::ListNode {
         bool (Transceiver::*fn)(Task&);
 
-        packet::Address* address;
+        address::SocketAddr* address;
         packet::IWriter* writer;
         BasicPort* port;
 
