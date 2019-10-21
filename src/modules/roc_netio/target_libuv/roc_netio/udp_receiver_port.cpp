@@ -197,7 +197,7 @@ void UDPReceiverPort::recv_cb_(uv_udp_t* handle,
 
     packet::Address src_addr;
     if (sockaddr) {
-        if (!src_addr.set_saddr(sockaddr)) {
+        if (!src_addr.set_host_port_saddr(sockaddr)) {
             roc_log(
                 LogError,
                 "udp receiver: can't determine source address: num=%u dst=%s nread=%ld",
