@@ -47,7 +47,7 @@ bool set_miface_from_string(const char* input, Address& addr) {
         return false;
     }
 
-    if (!addr.valid()) {
+    if (!addr.has_host_port()) {
         return false;
     }
 
