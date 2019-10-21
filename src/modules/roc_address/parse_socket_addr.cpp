@@ -6,10 +6,10 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_packet/parse_address.h"
+#include "roc_address/parse_socket_addr.h"
 
 namespace roc {
-namespace packet {
+namespace address {
 
 namespace {
 
@@ -42,7 +42,7 @@ bool parse_ipv6_addr(const char* begin, const char* end, char* buf, size_t bufsz
 
 } // namespace
 
-bool set_miface_from_string(const char* input, Address& addr) {
+bool set_miface_from_string(const char* input, SocketAddr& addr) {
     if (!input) {
         return false;
     }
@@ -67,7 +67,7 @@ bool set_miface_from_string(const char* input, Address& addr) {
         return false;
     }
 
-    char addr6[Address::MaxStrLen] = {};
+    char addr6[SocketAddr::MaxStrLen] = {};
 
     if (!parse_ipv6_addr(input, input + strlen(input), addr6, sizeof(addr6))) {
         return false;
@@ -76,5 +76,5 @@ bool set_miface_from_string(const char* input, Address& addr) {
     return addr.set_miface_ipv6(addr6);
 }
 
-} // namespace packet
+} // namespace address
 } // namespace roc

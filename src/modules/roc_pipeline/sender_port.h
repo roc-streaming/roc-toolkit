@@ -43,7 +43,7 @@ public:
     void write(const packet::PacketPtr& packet);
 
 private:
-    const packet::Address dst_address_;
+    const address::SocketAddr dst_address_;
 
     packet::IWriter& writer_;
     packet::IComposer* composer_;

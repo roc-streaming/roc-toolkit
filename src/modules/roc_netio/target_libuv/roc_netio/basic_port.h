@@ -12,10 +12,10 @@
 #ifndef ROC_NETIO_BASIC_PORT_H_
 #define ROC_NETIO_BASIC_PORT_H_
 
+#include "roc_address/socket_addr.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/list_node.h"
 #include "roc_core/refcnt.h"
-#include "roc_packet/address.h"
 
 namespace roc {
 namespace netio {
@@ -30,7 +30,7 @@ public:
     virtual ~BasicPort();
 
     //! Get bind address.
-    virtual const packet::Address& address() const = 0;
+    virtual const address::SocketAddr& address() const = 0;
 
     //! Open port.
     //!
