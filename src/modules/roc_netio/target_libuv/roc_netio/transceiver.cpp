@@ -7,10 +7,10 @@
  */
 
 #include "roc_netio/transceiver.h"
+#include "roc_address/socket_addr_to_str.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_core/shared_ptr.h"
-#include "roc_packet/address_to_str.h"
 
 namespace roc {
 namespace netio {
@@ -95,7 +95,7 @@ size_t Transceiver::num_ports() const {
     return open_ports_.size();
 }
 
-bool Transceiver::add_udp_receiver(packet::Address& bind_address,
+bool Transceiver::add_udp_receiver(address::SocketAddr& bind_address,
                                    packet::IWriter& writer) {
     if (!valid()) {
         roc_panic("transceiver: can't use invalid transceiver");
@@ -117,7 +117,7 @@ bool Transceiver::add_udp_receiver(packet::Address& bind_address,
     return task.result;
 }
 
-packet::IWriter* Transceiver::add_udp_sender(packet::Address& bind_address) {
+packet::IWriter* Transceiver::add_udp_sender(address::SocketAddr& bind_address) {
     if (!valid()) {
         roc_panic("transceiver: can't use invalid transceiver");
     }
@@ -138,7 +138,7 @@ packet::IWriter* Transceiver::add_udp_sender(packet::Address& bind_address) {
     return task.writer;
 }
 
-void Transceiver::remove_port(packet::Address bind_address) {
+void Transceiver::remove_port(address::SocketAddr bind_address) {
     if (!valid()) {
         roc_panic("transceiver: can't use invalid transceiver");
     }
@@ -152,7 +152,7 @@ void Transceiver::remove_port(packet::Address bind_address) {
 
     if (!task.result) {
         roc_panic("transceiver: can't remove port %s: unknown port",
-                  packet::address_to_str(bind_address).c_str());
+                  address::socket_addr_to_str(bind_address).c_str());
     } else {
         roc_panic_if_not(task.port);
         wait_port_closed_(*task.port);
@@ -169,7 +169,7 @@ void Transceiver::handle_closed(BasicPort& port) {
         }
 
         roc_log(LogDebug, "transceiver: asynchronous close finished: port %s",
-                packet::address_to_str(port.address()).c_str());
+                address::socket_addr_to_str(port.address()).c_str());
 
         closing_ports_.remove(*pp);
         cond_.broadcast();
@@ -263,7 +263,7 @@ bool Transceiver::add_udp_receiver_(Task& task) {
 
     if (!rp) {
         roc_log(LogError, "transceiver: can't add port %s: can't allocate receiver",
-                packet::address_to_str(*task.address).c_str());
+                address::socket_addr_to_str(*task.address).c_str());
 
         return false;
     }
@@ -272,7 +272,7 @@ bool Transceiver::add_udp_receiver_(Task& task) {
 
     if (!rp->open()) {
         roc_log(LogError, "transceiver: can't add port %s: can't start receiver",
-                packet::address_to_str(*task.address).c_str());
+                address::socket_addr_to_str(*task.address).c_str());
 
         closing_ports_.push_back(*rp);
         rp->async_close();
@@ -291,7 +291,7 @@ bool Transceiver::add_udp_sender_(Task& task) {
         new (allocator_) UDPSenderPort(*this, *task.address, loop_, allocator_);
     if (!sp) {
         roc_log(LogError, "transceiver: can't add port %s: can't allocate sender",
-                packet::address_to_str(*task.address).c_str());
+                address::socket_addr_to_str(*task.address).c_str());
 
         return false;
     }
@@ -300,7 +300,7 @@ bool Transceiver::add_udp_sender_(Task& task) {
 
     if (!sp->open()) {
         roc_log(LogError, "transceiver: can't add port %s: can't start sender",
-                packet::address_to_str(*task.address).c_str());
+                address::socket_addr_to_str(*task.address).c_str());
 
         closing_ports_.push_back(*sp);
         sp->async_close();
@@ -318,7 +318,7 @@ bool Transceiver::add_udp_sender_(Task& task) {
 
 bool Transceiver::remove_port_(Task& task) {
     roc_log(LogDebug, "transceiver: removing port %s",
-            packet::address_to_str(*task.address).c_str());
+            address::socket_addr_to_str(*task.address).c_str());
 
     core::SharedPtr<BasicPort> curr = open_ports_.front();
     while (curr) {

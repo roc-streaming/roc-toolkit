@@ -216,7 +216,7 @@ bool make_receiver_config(pipeline::ReceiverConfig& out, const roc_receiver_conf
 bool make_port_config(pipeline::PortConfig& out,
                       roc_port_type type,
                       roc_protocol proto,
-                      const packet::Address& addr) {
+                      const address::SocketAddr& addr) {
     switch ((int)type) {
     case ROC_PORT_AUDIO_SOURCE:
         switch ((int)proto) {

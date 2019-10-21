@@ -15,7 +15,7 @@ namespace pipeline {
 
 ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
                                  const ReceiverCommonConfig& common_config,
-                                 const packet::Address& src_address,
+                                 const address::SocketAddr& src_address,
                                  const fec::CodecMap& codec_map,
                                  const rtp::FormatMap& format_map,
                                  packet::PacketPool& packet_pool,
