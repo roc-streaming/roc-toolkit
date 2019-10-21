@@ -14,9 +14,9 @@
 
 #include <uv.h>
 
+#include "roc_address/socket_addr.h"
 #include "roc_core/slice.h"
 #include "roc_core/stddefs.h"
-#include "roc_packet/address.h"
 
 namespace roc {
 namespace packet {
@@ -24,10 +24,10 @@ namespace packet {
 //! UDP packet.
 struct UDP {
     //! Source address.
-    Address src_addr;
+    address::SocketAddr src_addr;
 
     //! Destination address.
-    Address dst_addr;
+    address::SocketAddr dst_addr;
 
     //! Sender request state.
     uv_udp_send_t request;
