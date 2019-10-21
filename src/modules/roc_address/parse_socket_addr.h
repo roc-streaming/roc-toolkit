@@ -6,16 +6,16 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_packet/parse_address.h
+//! @file roc_address/parse_socket_addr.h
 //! @brief Parse port from string.
 
-#ifndef ROC_PACKET_PARSE_ADDRESS_H_
-#define ROC_PACKET_PARSE_ADDRESS_H_
+#ifndef ROC_ADDRESS_PARSE_SOCKET_ADDR_H_
+#define ROC_ADDRESS_PARSE_SOCKET_ADDR_H_
 
-#include "roc_packet/address.h"
+#include "roc_address/socket_addr.h"
 
 namespace roc {
-namespace packet {
+namespace address {
 
 //! Set multicast interface address on which to join to the multicast group.
 //!
@@ -29,9 +29,9 @@ namespace packet {
 //!  false if @p addr is not multicast;
 //!  false if @p miface represents IP address with a version other than
 //!  IP version of @p addr.
-bool set_miface_from_string(const char* input, Address& addr);
+bool set_miface_from_string(const char* input, SocketAddr& addr);
 
-} // namespace packet
+} // namespace address
 } // namespace roc
 
-#endif // ROC_PACKET_PARSE_ADDRESS_H_
+#endif // ROC_ADDRESS_PARSE_SOCKET_ADDR_H_

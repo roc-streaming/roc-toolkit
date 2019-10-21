@@ -121,7 +121,7 @@ bool parse_port(PortType type, const char* input, PortConfig& result) {
             return false;
         }
 
-        char addr6[packet::Address::MaxStrLen] = {};
+        char addr6[address::SocketAddr::MaxStrLen] = {};
         if (addrlen - 2 > sizeof(addr6) - 1) {
             roc_log(LogError, "parse port: bad IPv6 address: address too long");
             return false;

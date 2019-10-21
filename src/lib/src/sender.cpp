@@ -8,8 +8,8 @@
 
 #include "private.h"
 
+#include "roc_address/socket_addr_to_str.h"
 #include "roc_core/log.h"
-#include "roc_packet/address_to_str.h"
 #include "roc_pipeline/port_to_str.h"
 #include "roc_pipeline/port_utils.h"
 
@@ -165,7 +165,7 @@ int roc_sender_bind(roc_sender* sender, roc_address* address) {
         return -1;
     }
 
-    packet::Address& addr = get_address(address);
+    address::SocketAddr& addr = get_address(address);
     if (!addr.has_host_port()) {
         roc_log(LogError, "roc_sender_bind: invalid arguments: invalid address");
         return -1;
@@ -191,7 +191,7 @@ int roc_sender_bind(roc_sender* sender, roc_address* address) {
 
     sender->address = addr;
     roc_log(LogInfo, "roc_sender: bound to %s",
-            packet::address_to_str(sender->address).c_str());
+            address::socket_addr_to_str(sender->address).c_str());
 
     return 0;
 }
@@ -210,7 +210,7 @@ int roc_sender_connect(roc_sender* sender,
         return -1;
     }
 
-    const packet::Address& addr = get_address(address);
+    const address::SocketAddr& addr = get_address(address);
     if (!addr.has_host_port()) {
         roc_log(LogError, "roc_sender_connect: invalid arguments: invalid address");
         return -1;

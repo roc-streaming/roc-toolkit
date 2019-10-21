@@ -7,16 +7,16 @@
  */
 
 #include "roc_netio/udp_receiver_port.h"
+#include "roc_address/socket_addr_to_str.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_core/shared_ptr.h"
-#include "roc_packet/address_to_str.h"
 
 namespace roc {
 namespace netio {
 
 UDPReceiverPort::UDPReceiverPort(ICloseHandler& close_handler,
-                                 const packet::Address& address,
+                                 const address::SocketAddr& address,
                                  uv_loop_t& event_loop,
                                  packet::IWriter& writer,
                                  packet::PacketPool& packet_pool,
@@ -43,7 +43,7 @@ UDPReceiverPort::~UDPReceiverPort() {
     }
 }
 
-const packet::Address& UDPReceiverPort::address() const {
+const address::SocketAddr& UDPReceiverPort::address() const {
     return address_;
 }
 
@@ -103,7 +103,7 @@ bool UDPReceiverPort::open() {
     }
 
     roc_log(LogInfo, "udp receiver: opened port %s",
-            packet::address_to_str(address_).c_str());
+            address::socket_addr_to_str(address_).c_str());
 
     recv_started_ = true;
 
@@ -123,7 +123,7 @@ void UDPReceiverPort::async_close() {
     }
 
     roc_log(LogInfo, "udp receiver: closing port %s",
-            packet::address_to_str(address_).c_str());
+            address::socket_addr_to_str(address_).c_str());
 
     if (recv_started_) {
         if (int err = uv_udp_recv_stop(&handle_)) {
@@ -151,7 +151,7 @@ void UDPReceiverPort::close_cb_(uv_handle_t* handle) {
     self.handle_initialized_ = false;
 
     roc_log(LogInfo, "udp receiver: closed port %s",
-            packet::address_to_str(self.address_).c_str());
+            address::socket_addr_to_str(self.address_).c_str());
 
     self.closed_ = true;
     self.close_handler_.handle_closed(self);
@@ -195,13 +195,13 @@ void UDPReceiverPort::recv_cb_(uv_udp_t* handle,
 
     UDPReceiverPort& self = *(UDPReceiverPort*)handle->data;
 
-    packet::Address src_addr;
+    address::SocketAddr src_addr;
     if (sockaddr) {
         if (!src_addr.set_host_port_saddr(sockaddr)) {
             roc_log(
                 LogError,
                 "udp receiver: can't determine source address: num=%u dst=%s nread=%ld",
-                self.packet_counter_, packet::address_to_str(self.address_).c_str(),
+                self.packet_counter_, address::socket_addr_to_str(self.address_).c_str(),
                 (long)nread);
         }
     }
@@ -218,8 +218,8 @@ void UDPReceiverPort::recv_cb_(uv_udp_t* handle,
 
     if (nread < 0) {
         roc_log(LogError, "udp receiver: network error: num=%u src=%s dst=%s nread=%ld",
-                self.packet_counter_, packet::address_to_str(src_addr).c_str(),
-                packet::address_to_str(self.address_).c_str(), (long)nread);
+                self.packet_counter_, address::socket_addr_to_str(src_addr).c_str(),
+                address::socket_addr_to_str(self.address_).c_str(), (long)nread);
         return;
     }
 
@@ -228,8 +228,8 @@ void UDPReceiverPort::recv_cb_(uv_udp_t* handle,
             // no more data for now
         } else {
             roc_log(LogTrace, "udp receiver: empty packet: num=%u src=%s dst=%s",
-                    self.packet_counter_, packet::address_to_str(src_addr).c_str(),
-                    packet::address_to_str(self.address_).c_str());
+                    self.packet_counter_, address::socket_addr_to_str(src_addr).c_str(),
+                    address::socket_addr_to_str(self.address_).c_str());
         }
         return;
     }
@@ -242,16 +242,16 @@ void UDPReceiverPort::recv_cb_(uv_udp_t* handle,
         roc_log(LogDebug,
                 "udp receiver:"
                 " ignoring partial read: num=%u src=%s dst=%s nread=%ld",
-                self.packet_counter_, packet::address_to_str(src_addr).c_str(),
-                packet::address_to_str(self.address_).c_str(), (long)nread);
+                self.packet_counter_, address::socket_addr_to_str(src_addr).c_str(),
+                address::socket_addr_to_str(self.address_).c_str(), (long)nread);
         return;
     }
 
     self.packet_counter_++;
 
     roc_log(LogTrace, "udp receiver: received packet: num=%u src=%s dst=%s nread=%ld",
-            self.packet_counter_, packet::address_to_str(src_addr).c_str(),
-            packet::address_to_str(self.address_).c_str(), (long)nread);
+            self.packet_counter_, address::socket_addr_to_str(src_addr).c_str(),
+            address::socket_addr_to_str(self.address_).c_str(), (long)nread);
 
     if ((size_t)nread > bp->size()) {
         roc_panic("udp receiver: unexpected buffer size: got %ld, max %ld", (long)nread,
@@ -275,10 +275,10 @@ void UDPReceiverPort::recv_cb_(uv_udp_t* handle,
 }
 
 bool UDPReceiverPort::join_multicast_group_() {
-    char host[packet::Address::MaxStrLen];
+    char host[address::SocketAddr::MaxStrLen];
     address_.get_host(host, sizeof(host));
 
-    char miface[packet::Address::MaxStrLen];
+    char miface[address::SocketAddr::MaxStrLen];
     address_.get_miface(miface, sizeof(miface));
 
     if (int err = uv_udp_set_membership(&handle_, host, miface, UV_JOIN_GROUP)) {
@@ -288,7 +288,7 @@ bool UDPReceiverPort::join_multicast_group_() {
     }
 
     roc_log(LogDebug, "udp receiver: joined multicast group for port %s",
-            packet::address_to_str(address_).c_str());
+            address::socket_addr_to_str(address_).c_str());
 
     return (multicast_group_joined_ = true);
 }
@@ -296,10 +296,10 @@ bool UDPReceiverPort::join_multicast_group_() {
 void UDPReceiverPort::leave_multicast_group_() {
     multicast_group_joined_ = false;
 
-    char host[packet::Address::MaxStrLen];
+    char host[address::SocketAddr::MaxStrLen];
     address_.get_host(host, sizeof(host));
 
-    char miface[packet::Address::MaxStrLen];
+    char miface[address::SocketAddr::MaxStrLen];
     address_.get_miface(miface, sizeof(miface));
 
     if (int err = uv_udp_set_membership(&handle_, host, miface, UV_LEAVE_GROUP)) {
@@ -308,7 +308,7 @@ void UDPReceiverPort::leave_multicast_group_() {
     }
 
     roc_log(LogDebug, "udp receiver: left multicast group for port %s",
-            packet::address_to_str(address_).c_str());
+            address::socket_addr_to_str(address_).c_str());
 }
 
 } // namespace netio

@@ -8,8 +8,8 @@
 
 #include <stdio.h>
 
+#include "roc_address/socket_addr_to_str.h"
 #include "roc_core/print_buffer.h"
-#include "roc_packet/address_to_str.h"
 #include "roc_packet/fec_scheme_to_str.h"
 #include "roc_packet/packet.h"
 #include "roc_packet/print.h"
@@ -22,8 +22,8 @@ void print(const Packet& p, int flags) {
 
     if (p.udp()) {
         fprintf(stderr, " udp: src=%s dst=%s\n",
-                address_to_str(p.udp()->src_addr).c_str(),
-                address_to_str(p.udp()->dst_addr).c_str());
+                address::socket_addr_to_str(p.udp()->src_addr).c_str(),
+                address::socket_addr_to_str(p.udp()->dst_addr).c_str());
     }
 
     if (p.rtp()) {
