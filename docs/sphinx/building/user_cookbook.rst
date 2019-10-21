@@ -14,7 +14,8 @@ Ubuntu 16.04 and later
 .. code::
 
     # for Roc
-    $ sudo apt-get install g++ pkg-config scons ragel gengetopt libuv1-dev libunwind-dev libpulse-dev libsox-dev libcpputest-dev
+    $ sudo apt-get install g++ pkg-config scons ragel gengetopt \
+        libuv1-dev libunwind-dev libpulse-dev libsox-dev libcpputest-dev
 
     # for 3rd-parties
     $ sudo apt-get install libtool intltool autoconf automake make cmake
@@ -68,7 +69,8 @@ Fedora 22 and later
 .. code::
 
     # for Roc
-    $ sudo dnf install gcc-c++ pkgconfig scons ragel gengetopt libuv-devel libunwind-devel pulseaudio-libs-devel sox-devel
+    $ sudo dnf install gcc-c++ pkgconfig scons ragel gengetopt \
+        libuv-devel libunwind-devel pulseaudio-libs-devel sox-devel
 
     # for 3rd-parties
     $ sudo dnf install libtool intltool autoconf automake make cmake
@@ -340,6 +342,10 @@ Android
 
 Termux packages
 ---------------
+
+.. warning::
+
+   Termux package for Roc may be outdated.
 
 Install `Termux <https://termux.com/>`_ on your device and enter these commands:
 
