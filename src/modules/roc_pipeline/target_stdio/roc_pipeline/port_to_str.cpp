@@ -8,7 +8,7 @@
 
 #include <stdio.h>
 
-#include "roc_packet/address_to_str.h"
+#include "roc_address/socket_addr_to_str.h"
 #include "roc_pipeline/port_to_str.h"
 
 namespace roc {
@@ -46,7 +46,7 @@ port_to_str::port_to_str(const PortConfig& port) {
     buffer_[0] = '\0';
 
     if (snprintf(buffer_, sizeof(buffer_), "%s:%s", port_proto_to_str(port.protocol),
-                 packet::address_to_str(port.address).c_str())
+                 address::socket_addr_to_str(port.address).c_str())
         < 0) {
         roc_log(LogError, "port to str: can't format port");
     }
