@@ -8,10 +8,10 @@
 
 #include <CppUTest/TestHarness.h>
 
+#include "roc_address/socket_addr.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_netio/transceiver.h"
-#include "roc_packet/address.h"
 #include "roc_packet/concurrent_queue.h"
 #include "roc_packet/packet_pool.h"
 
@@ -29,8 +29,8 @@ packet::PacketPool packet_pool(allocator, true);
 } // namespace
 
 TEST_GROUP(udp) {
-    packet::Address new_address() {
-        packet::Address addr;
+    address::SocketAddr new_address() {
+        address::SocketAddr addr;
         CHECK(addr.set_host_port_ipv4("127.0.0.1", 0));
         return addr;
     }
@@ -46,7 +46,7 @@ TEST_GROUP(udp) {
     }
 
     packet::PacketPtr
-    new_packet(packet::Address tx_addr, packet::Address rx_addr, int value) {
+    new_packet(address::SocketAddr tx_addr, address::SocketAddr rx_addr, int value) {
         packet::PacketPtr pp = new (packet_pool) packet::Packet(packet_pool);
         CHECK(pp);
 
@@ -61,8 +61,8 @@ TEST_GROUP(udp) {
     }
 
     void check_packet(const packet::PacketPtr& pp,
-                      packet::Address tx_addr,
-                      packet::Address rx_addr,
+                      address::SocketAddr tx_addr,
+                      address::SocketAddr rx_addr,
                       int value) {
         CHECK(pp);
 
@@ -82,8 +82,8 @@ TEST_GROUP(udp) {
 TEST(udp, one_sender_one_receiver_single_thread) {
     packet::ConcurrentQueue rx_queue;
 
-    packet::Address tx_addr = new_address();
-    packet::Address rx_addr = new_address();
+    address::SocketAddr tx_addr = new_address();
+    address::SocketAddr rx_addr = new_address();
 
     Transceiver trx(packet_pool, buffer_pool, allocator);
     CHECK(trx.valid());
@@ -106,8 +106,8 @@ TEST(udp, one_sender_one_receiver_single_thread) {
 TEST(udp, one_sender_one_receiver_separate_threads) {
     packet::ConcurrentQueue rx_queue;
 
-    packet::Address tx_addr = new_address();
-    packet::Address rx_addr = new_address();
+    address::SocketAddr tx_addr = new_address();
+    address::SocketAddr rx_addr = new_address();
 
     Transceiver tx(packet_pool, buffer_pool, allocator);
     CHECK(tx.valid());
@@ -135,11 +135,11 @@ TEST(udp, one_sender_multiple_receivers) {
     packet::ConcurrentQueue rx_queue2;
     packet::ConcurrentQueue rx_queue3;
 
-    packet::Address tx_addr = new_address();
+    address::SocketAddr tx_addr = new_address();
 
-    packet::Address rx_addr1 = new_address();
-    packet::Address rx_addr2 = new_address();
-    packet::Address rx_addr3 = new_address();
+    address::SocketAddr rx_addr1 = new_address();
+    address::SocketAddr rx_addr2 = new_address();
+    address::SocketAddr rx_addr3 = new_address();
 
     Transceiver tx(packet_pool, buffer_pool, allocator);
     CHECK(tx.valid());
@@ -173,11 +173,11 @@ TEST(udp, one_sender_multiple_receivers) {
 TEST(udp, multiple_senders_one_receiver) {
     packet::ConcurrentQueue rx_queue;
 
-    packet::Address tx_addr1 = new_address();
-    packet::Address tx_addr2 = new_address();
-    packet::Address tx_addr3 = new_address();
+    address::SocketAddr tx_addr1 = new_address();
+    address::SocketAddr tx_addr2 = new_address();
+    address::SocketAddr tx_addr3 = new_address();
 
-    packet::Address rx_addr = new_address();
+    address::SocketAddr rx_addr = new_address();
 
     Transceiver tx1(packet_pool, buffer_pool, allocator);
     CHECK(tx1.valid());

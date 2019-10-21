@@ -6,23 +6,23 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_packet/target_stdio/roc_packet/address_to_str.h
+//! @file roc_address/target_stdio/roc_address/socket_addr_to_str.h
 //! @brief Convert network address to string.
 
-#ifndef ROC_PACKET_ADDRESS_TO_STR_H_
-#define ROC_PACKET_ADDRESS_TO_STR_H_
+#ifndef ROC_ADDRESS_SOCKET_ADDR_TO_STR_H_
+#define ROC_ADDRESS_SOCKET_ADDR_TO_STR_H_
 
+#include "roc_address/socket_addr.h"
 #include "roc_core/noncopyable.h"
-#include "roc_packet/address.h"
 
 namespace roc {
-namespace packet {
+namespace address {
 
 //! Convert network address to string.
-class address_to_str : public core::NonCopyable<> {
+class socket_addr_to_str : public core::NonCopyable<> {
 public:
     //! Construct.
-    explicit address_to_str(const Address&);
+    explicit socket_addr_to_str(const SocketAddr&);
 
     //! Get formatted address.
     const char* c_str() const {
@@ -30,10 +30,10 @@ public:
     }
 
 private:
-    char buffer_[256];
+    char buffer_[SocketAddr::MaxStrLen];
 };
 
-} // namespace packet
+} // namespace address
 } // namespace roc
 
-#endif // ROC_PACKET_ADDRESS_TO_STR_H_
+#endif // ROC_ADDRESS_SOCKET_ADDR_TO_STR_H_
