@@ -129,12 +129,12 @@ bool parse_port(PortType type, const char* input, PortConfig& result) {
 
         memcpy(addr6, addr + 1, addrlen - 2);
 
-        if (!result.address.set_host_ipv6(addr6, (int)port_num)) {
+        if (!result.address.set_host_port_ipv6(addr6, (int)port_num)) {
             roc_log(LogError, "parse port: bad IPv6 address: %s", addr6);
             return false;
         }
     } else {
-        if (!result.address.set_host_ipv4(addr, (int)port_num)) {
+        if (!result.address.set_host_port_ipv4(addr, (int)port_num)) {
             roc_log(LogError, "parse port: bad IPv4 address: %s", addr);
             return false;
         }
