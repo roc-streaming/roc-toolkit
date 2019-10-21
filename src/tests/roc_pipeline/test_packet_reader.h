@@ -33,7 +33,7 @@ public:
                  rtp::FormatMap& format_map,
                  packet::PacketPool& packet_pool,
                  rtp::PayloadType pt,
-                 const packet::Address& dst_addr)
+                 const address::SocketAddr& dst_addr)
         : reader_(reader)
         , parser_(parser)
         , payload_decoder_(format_map.format(pt)->new_decoder(allocator), allocator)
@@ -110,7 +110,7 @@ private:
 
     packet::PacketPool& packet_pool_;
 
-    packet::Address dst_addr_;
+    address::SocketAddr dst_addr_;
 
     packet::source_t source_;
     packet::seqnum_t seqnum_;

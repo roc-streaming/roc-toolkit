@@ -8,22 +8,22 @@
 
 #include <arpa/inet.h>
 
-#include "roc_packet/address.h"
+#include "roc_address/socket_addr.h"
 
 namespace roc {
-namespace packet {
+namespace address {
 
-Address::Address()
+SocketAddr::SocketAddr()
     : miface_family_(AF_UNSPEC) {
     memset(&saddr_, 0, sizeof(saddr_));
     memset(&miface_, 0, sizeof(miface_));
 }
 
-bool Address::has_host_port() const {
+bool SocketAddr::has_host_port() const {
     return saddr_family_() == AF_INET || saddr_family_() == AF_INET6;
 }
 
-bool Address::set_host_port_saddr(const sockaddr* sa) {
+bool SocketAddr::set_host_port_saddr(const sockaddr* sa) {
     const socklen_t sa_size = saddr_size_(sa->sa_family);
     if (sa_size == 0) {
         return false;
@@ -34,7 +34,7 @@ bool Address::set_host_port_saddr(const sockaddr* sa) {
     return true;
 }
 
-bool Address::set_host_port_ipv4(const char* ip_str, int port) {
+bool SocketAddr::set_host_port_ipv4(const char* ip_str, int port) {
     in_addr addr;
     if (inet_pton(AF_INET, ip_str, &addr) != 1) {
         return false;
@@ -47,7 +47,7 @@ bool Address::set_host_port_ipv4(const char* ip_str, int port) {
     return true;
 }
 
-bool Address::set_host_port_ipv6(const char* ip_str, int port) {
+bool SocketAddr::set_host_port_ipv6(const char* ip_str, int port) {
     in6_addr addr;
     if (inet_pton(AF_INET6, ip_str, &addr) != 1) {
         return false;
@@ -60,7 +60,7 @@ bool Address::set_host_port_ipv6(const char* ip_str, int port) {
     return true;
 }
 
-bool Address::set_miface_ipv4(const char* iface) {
+bool SocketAddr::set_miface_ipv4(const char* iface) {
     in_addr addr;
 
     if (inet_pton(AF_INET, iface, &addr) != 1) {
@@ -72,7 +72,7 @@ bool Address::set_miface_ipv4(const char* iface) {
     return true;
 }
 
-bool Address::set_miface_ipv6(const char* iface) {
+bool SocketAddr::set_miface_ipv6(const char* iface) {
     in6_addr addr;
 
     if (inet_pton(AF_INET6, iface, &addr) != 1) {
@@ -84,19 +84,19 @@ bool Address::set_miface_ipv6(const char* iface) {
     return true;
 }
 
-sockaddr* Address::saddr() {
+sockaddr* SocketAddr::saddr() {
     return (sockaddr*)&saddr_;
 }
 
-const sockaddr* Address::saddr() const {
+const sockaddr* SocketAddr::saddr() const {
     return (const sockaddr*)&saddr_;
 }
 
-socklen_t Address::slen() const {
+socklen_t SocketAddr::slen() const {
     return saddr_size_(saddr_family_());
 }
 
-int Address::version() const {
+int SocketAddr::version() const {
     switch (saddr_family_()) {
     case AF_INET:
         return 4;
@@ -107,7 +107,7 @@ int Address::version() const {
     }
 }
 
-int Address::port() const {
+int SocketAddr::port() const {
     switch (saddr_family_()) {
     case AF_INET:
         return ntohs(saddr_.addr4.sin_port);
@@ -118,7 +118,7 @@ int Address::port() const {
     }
 }
 
-bool Address::multicast() const {
+bool SocketAddr::multicast() const {
     switch (saddr_family_()) {
     case AF_INET:
         return IN_MULTICAST(ntohl(saddr_.addr4.sin_addr.s_addr));
@@ -129,11 +129,11 @@ bool Address::multicast() const {
     }
 }
 
-bool Address::has_miface() const {
+bool SocketAddr::has_miface() const {
     return miface_family_ == AF_INET || miface_family_ == AF_INET6;
 }
 
-bool Address::get_host(char* buf, size_t bufsz) const {
+bool SocketAddr::get_host(char* buf, size_t bufsz) const {
     switch (saddr_family_()) {
     case AF_INET:
         if (!inet_ntop(AF_INET, &saddr_.addr4.sin_addr, buf, (socklen_t)bufsz)) {
@@ -154,7 +154,7 @@ bool Address::get_host(char* buf, size_t bufsz) const {
     return true;
 }
 
-bool Address::get_miface(char* buf, size_t bufsz) const {
+bool SocketAddr::get_miface(char* buf, size_t bufsz) const {
     switch (miface_family_) {
     case AF_INET:
         if (!inet_ntop(AF_INET, &miface_.addr4, buf, (socklen_t)bufsz)) {
@@ -177,7 +177,7 @@ bool Address::get_miface(char* buf, size_t bufsz) const {
     return true;
 }
 
-bool Address::operator==(const Address& other) const {
+bool SocketAddr::operator==(const SocketAddr& other) const {
     if (saddr_family_() != other.saddr_family_()) {
         return false;
     }
@@ -234,11 +234,11 @@ bool Address::operator==(const Address& other) const {
     return true;
 }
 
-bool Address::operator!=(const Address& other) const {
+bool SocketAddr::operator!=(const SocketAddr& other) const {
     return !(*this == other);
 }
 
-socklen_t Address::saddr_size_(sa_family_t family) {
+socklen_t SocketAddr::saddr_size_(sa_family_t family) {
     switch (family) {
     case AF_INET:
         return sizeof(sockaddr_in);
@@ -249,9 +249,9 @@ socklen_t Address::saddr_size_(sa_family_t family) {
     }
 }
 
-sa_family_t Address::saddr_family_() const {
+sa_family_t SocketAddr::saddr_family_() const {
     return saddr_.addr4.sin_family;
 }
 
-} // namespace packet
+} // namespace address
 } // namespace roc

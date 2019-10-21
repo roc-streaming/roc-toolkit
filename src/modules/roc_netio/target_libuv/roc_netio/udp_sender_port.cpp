@@ -7,16 +7,16 @@
  */
 
 #include "roc_netio/udp_sender_port.h"
+#include "roc_address/socket_addr_to_str.h"
 #include "roc_core/helpers.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
-#include "roc_packet/address_to_str.h"
 
 namespace roc {
 namespace netio {
 
 UDPSenderPort::UDPSenderPort(ICloseHandler& close_handler,
-                             const packet::Address& address,
+                             const address::SocketAddr& address,
                              uv_loop_t& event_loop,
                              core::IAllocator& allocator)
     : BasicPort(allocator)
@@ -37,7 +37,7 @@ UDPSenderPort::~UDPSenderPort() {
     }
 }
 
-const packet::Address& UDPSenderPort::address() const {
+const address::SocketAddr& UDPSenderPort::address() const {
     return address_;
 }
 
@@ -93,7 +93,7 @@ bool UDPSenderPort::open() {
     }
 
     roc_log(LogInfo, "udp sender: opened port %s",
-            packet::address_to_str(address_).c_str());
+            address::socket_addr_to_str(address_).c_str());
 
     stopped_ = false;
 
@@ -156,7 +156,7 @@ void UDPSenderPort::close_cb_(uv_handle_t* handle) {
     }
 
     roc_log(LogInfo, "udp receiver: closed port %s",
-            packet::address_to_str(self.address_).c_str());
+            address::socket_addr_to_str(self.address_).c_str());
 
     self.closed_ = true;
     self.close_handler_.handle_closed(self);
@@ -173,8 +173,9 @@ void UDPSenderPort::write_sem_cb_(uv_async_t* handle) {
         self.packet_counter_++;
 
         roc_log(LogTrace, "udp sender: sending packet: num=%u src=%s dst=%s sz=%ld",
-                self.packet_counter_, packet::address_to_str(self.address_).c_str(),
-                packet::address_to_str(udp.dst_addr).c_str(), (long)pp->data().size());
+                self.packet_counter_, address::socket_addr_to_str(self.address_).c_str(),
+                address::socket_addr_to_str(udp.dst_addr).c_str(),
+                (long)pp->data().size());
 
         uv_buf_t buf;
         buf.base = (char*)pp->data().data();
@@ -213,8 +214,8 @@ void UDPSenderPort::send_cb_(uv_udp_send_t* req, int status) {
         roc_log(LogError,
                 "udp sender:"
                 " can't send packet: src=%s dst=%s sz=%ld: [%s] %s",
-                packet::address_to_str(self.address_).c_str(),
-                packet::address_to_str(pp->udp()->dst_addr).c_str(),
+                address::socket_addr_to_str(self.address_).c_str(),
+                address::socket_addr_to_str(pp->udp()->dst_addr).c_str(),
                 (long)pp->data().size(), uv_err_name(status), uv_strerror(status));
     }
 
@@ -252,7 +253,7 @@ void UDPSenderPort::close_() {
 
     if (handle_initialized_ && !uv_is_closing((uv_handle_t*)&handle_)) {
         roc_log(LogInfo, "udp sender: closing port %s",
-                packet::address_to_str(address_).c_str());
+                address::socket_addr_to_str(address_).c_str());
 
         uv_close((uv_handle_t*)&handle_, close_cb_);
     }

@@ -14,6 +14,7 @@
 #include "roc/receiver.h"
 #include "roc/sender.h"
 
+#include "roc_address/socket_addr.h"
 #include "roc_audio/units.h"
 #include "roc_core/atomic.h"
 #include "roc_core/buffer_pool.h"
@@ -21,15 +22,14 @@
 #include "roc_core/mutex.h"
 #include "roc_core/unique_ptr.h"
 #include "roc_netio/transceiver.h"
-#include "roc_packet/address.h"
 #include "roc_packet/iwriter.h"
 #include "roc_packet/packet_pool.h"
 #include "roc_pipeline/receiver.h"
 #include "roc_pipeline/sender.h"
 #include "roc_rtp/format_map.h"
 
-const roc::packet::Address& get_address(const roc_address* address);
-roc::packet::Address& get_address(roc_address* address);
+const roc::address::SocketAddr& get_address(const roc_address* address);
+roc::address::SocketAddr& get_address(roc_address* address);
 
 bool make_context_config(roc_context_config& out, const roc_context_config& in);
 
@@ -40,7 +40,7 @@ bool make_receiver_config(roc::pipeline::ReceiverConfig& out,
 bool make_port_config(roc::pipeline::PortConfig& out,
                       roc_port_type type,
                       roc_protocol proto,
-                      const roc::packet::Address& addr);
+                      const roc::address::SocketAddr& addr);
 
 struct roc_context {
     roc_context(const roc_context_config& cfg);
@@ -72,7 +72,7 @@ struct roc_sender {
     roc::core::UniquePtr<roc::pipeline::Sender> sender;
     roc::packet::IWriter* writer;
 
-    roc::packet::Address address;
+    roc::address::SocketAddr address;
 
     roc::core::Mutex mutex;
 
