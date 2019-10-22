@@ -155,7 +155,7 @@ void UDPSenderPort::close_cb_(uv_handle_t* handle) {
         return;
     }
 
-    roc_log(LogInfo, "udp receiver: closed port %s",
+    roc_log(LogInfo, "udp sender: closed port %s",
             address::socket_addr_to_str(self.address_).c_str());
 
     self.closed_ = true;
