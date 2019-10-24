@@ -61,10 +61,12 @@ bool parse_io_uri(const char* str, IoURI& result) {
             }
         }
 
+        pchar = [^?#];
+
         file_scheme = 'file' %set_file_scheme;
 
-        abs_path = ('/' [^/] any*) >start_token %set_path;
-        rel_path = ([^/] any*) >start_token %set_path;
+        abs_path = ('/' (pchar - '/') pchar*) >start_token %set_path;
+        rel_path = ([^/] pchar*) >start_token %set_path;
         special_path = '-' >start_token %set_path;
 
         file_hier_part = ('//' 'localhost'?)? abs_path
@@ -74,7 +76,7 @@ bool parse_io_uri(const char* str, IoURI& result) {
         file_uri = file_scheme ':' file_hier_part;
 
         device_scheme = (alnum+ - file_scheme) >start_token %set_scheme;
-        device_hier_part = any+ >start_token %set_path;
+        device_hier_part = pchar+ >start_token %set_path;
 
         device_uri = device_scheme '://' device_hier_part;
 
