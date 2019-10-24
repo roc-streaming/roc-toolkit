@@ -22,6 +22,9 @@ enum PctMode {
     //! Percent-encode all symbols that are not unreserved.
     PctNonUnreserved,
 
+    //! Percent-encode all symbols that are not allowed in host.
+    PctNonHost,
+
     //! Percent-encode all symbols that are not allowed in path.
     PctNonPath
 };
