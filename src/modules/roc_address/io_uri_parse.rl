@@ -7,10 +7,8 @@
  */
 
 #include "roc_address/io_uri.h"
-#include "roc_address/pct.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
-#include "roc_core/string_utils.h"
 
 namespace roc {
 namespace address {
@@ -42,21 +40,19 @@ bool parse_io_uri(const char* str, IoURI& result) {
         }
 
         action set_scheme {
-            if (!core::copy_str(result.scheme, sizeof(result.scheme), start_p, p)) {
-                roc_log(LogError, "parse io uri: too long scheme");
+            if (!result.set_scheme(start_p, p - start_p)) {
+                roc_log(LogError, "parse io uri: invalid scheme");
                 return false;
             }
         }
 
         action set_file_scheme {
-            strcpy(result.scheme, "file");
+            result.set_scheme("file", 4);
         }
 
         action set_path {
-            if (pct_decode(result.path, sizeof(result.path), start_p, p - start_p)
-                == -1) {
-                roc_log(LogError,
-                        "parse io uri: invalid percent-encoded or too long path");
+            if (!result.set_encoded_path(start_p, p - start_p)) {
+                roc_log(LogError, "parse io uri: invalid path");
                 return false;
             }
         }
