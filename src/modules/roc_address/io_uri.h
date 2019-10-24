@@ -12,6 +12,7 @@
 #ifndef ROC_ADDRESS_IO_URI_H_
 #define ROC_ADDRESS_IO_URI_H_
 
+#include "roc_core/array.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/stddefs.h"
 
@@ -22,9 +23,9 @@ namespace address {
 class IoURI : public core::NonCopyable<> {
 public:
     //! Initialize empty URI.
-    IoURI();
+    explicit IoURI(core::IAllocator&);
 
-    //! Returns true if the URI has all required components.
+    //! Returns true if the URI has all required fields (scheme and path).
     bool is_valid() const;
 
     //! Returns true if the scheme is "file".
@@ -33,17 +34,20 @@ public:
     //! Returns true if the scheme is "file" and the path is "-".
     bool is_special_file() const;
 
+    //! Clear all fields.
+    void clear();
+
     //! URI scheme.
     //! May be "file" or device type, e.g. "alsa".
     const char* scheme() const;
 
-    //! URI path.
-    //! May be device name or file path depending on scheme.
-    const char* path() const;
-
     //! Set URI scheme.
     //! String should not be zero-terminated.
     bool set_scheme(const char* str, size_t str_len);
+
+    //! URI path.
+    //! May be device name or file path depending on scheme.
+    const char* path() const;
 
     //! Set URI path.
     //! String should be percent-encoded.
@@ -57,7 +61,7 @@ public:
 
 private:
     char scheme_[16];
-    char path_[1024];
+    core::Array<char> path_;
 };
 
 //! Parse IoURI from string.
