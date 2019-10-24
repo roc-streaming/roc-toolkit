@@ -18,14 +18,15 @@ TEST_GROUP(pct) {};
 
 TEST(pct, unreserved_symbols) {
     const char* decoded =
-        // unescaped
+        // allowed (unreserved)
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_.~"
-        // escaped standard
+        // disallowed
         "!#$%&'()*+,:;=/?@[]"
-        // escaped non-standard
+        // disallowed
         "`^{}<>|\\\" ";
 
     const char* encoded =
+        // allowed (unreserved)
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_.~"
         // !  #  $  %  &  '  (  )  *  +  ,  :  ;  =  /  ?  @  [  ]
         "%21%23%24%25%26%27%28%29%2A%2B%2C%3A%3B%3D%2F%3F%40%5B%5D"
@@ -50,18 +51,72 @@ TEST(pct, unreserved_symbols) {
     }
 }
 
-TEST(pct, path_symbols) {
+TEST(pct, host_symbols) {
     const char* decoded =
-        // delims
-        ":@!$&'()*+,;=/"
-        // non-delims
-        "#?[]";
+        // allowed (unreserved)
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_.~"
+        // allowed (subdelims)
+        "!$&'()*+,;="
+        // allowed (ipv6)
+        ":[]"
+        // disallowed
+        "#?/@"
+        // disallowed
+        "`^{}<>|\\\" ";
 
     const char* encoded =
-        // delims
-        ":@!$&'()*+,;=/"
+        // allowed (unreserved)
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_.~"
+        // allowed (subdelims)
+        "!$&'()*+,;="
+        // allowed (ipv6)
+        ":[]"
+        // #  ?  /  @
+        "%23%3F%2F%40"
+        // `  ^  {  }  <  >  |  \  " spc
+        "%60%5E%7B%7D%3C%3E%7C%5C%22%20";
+
+    {
+        char buf[512];
+        ssize_t ret = pct_encode(buf, sizeof(buf), decoded, strlen(decoded), PctNonHost);
+        CHECK(ret > 0);
+        STRCMP_EQUAL(encoded, buf);
+        LONGS_EQUAL(strlen(encoded), ret);
+    }
+
+    {
+        char buf[512];
+        ssize_t ret = pct_decode(buf, sizeof(buf), encoded, strlen(encoded));
+        CHECK(ret > 0);
+        STRCMP_EQUAL(decoded, buf);
+        LONGS_EQUAL(strlen(decoded), ret);
+    }
+}
+
+TEST(pct, path_symbols) {
+    const char* decoded =
+        // allowed (unreserved)
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_.~"
+        // allowed (subdelims)
+        "!$&'()*+,;="
+        // allowed (pchar, path)
+        ":@/"
+        // disallowed
+        "#?[]"
+        // disallowed
+        "`^{}<>|\\\" ";
+
+    const char* encoded =
+        // allowed (unreserved)
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_.~"
+        // allowed (subdelims)
+        "!$&'()*+,;="
+        // allowed (pchar, path)
+        ":@/"
         // #  ?  [  ]
-        "%23%3F%5B%5D";
+        "%23%3F%5B%5D"
+        // `  ^  {  }  <  >  |  \  " spc
+        "%60%5E%7B%7D%3C%3E%7C%5C%22%20";
 
     {
         char buf[512];
