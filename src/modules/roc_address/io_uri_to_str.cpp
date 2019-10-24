@@ -13,7 +13,7 @@ namespace address {
 
 io_uri_to_str::io_uri_to_str(const IoURI& u) {
     if (!format_io_uri(u, buf_, sizeof(buf_))) {
-        strcpy(buf_, "<too long>");
+        strcpy(buf_, "<bad>");
     }
 }
 

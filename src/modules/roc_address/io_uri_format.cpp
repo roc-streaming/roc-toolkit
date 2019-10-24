@@ -23,29 +23,33 @@ bool format_io_uri(const IoURI& u, char* buf, size_t buf_size) {
 
     buf[0] = '\0';
 
-    if (*u.scheme) {
-        if (!core::append_str(buf, buf_size, u.scheme)) {
+    if (!*u.scheme) {
+        return false;
+    }
+
+    if (!core::append_str(buf, buf_size, u.scheme)) {
+        return false;
+    }
+
+    if (u.is_file()) {
+        if (!core::append_str(buf, buf_size, ":")) {
             return false;
         }
-
-        if (u.is_file()) {
-            if (!core::append_str(buf, buf_size, ":")) {
-                return false;
-            }
-        } else {
-            if (!core::append_str(buf, buf_size, "://")) {
-                return false;
-            }
+    } else {
+        if (!core::append_str(buf, buf_size, "://")) {
+            return false;
         }
     }
 
-    if (*u.path) {
-        const size_t pos = strlen(buf);
+    if (!*u.path) {
+        return false;
+    }
 
-        if (pct_encode(buf + pos, buf_size - pos, u.path, strlen(u.path), PctNonPath)
-            == -1) {
-            return false;
-        }
+    const size_t pos = strlen(buf);
+
+    if (pct_encode(buf + pos, buf_size - pos, u.path, strlen(u.path), PctNonPath)
+        == -1) {
+        return false;
     }
 
     return true;
