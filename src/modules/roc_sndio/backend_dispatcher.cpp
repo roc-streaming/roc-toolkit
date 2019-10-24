@@ -41,9 +41,9 @@ const char* select_driver_name(const address::IoURI& uri, const char* force_form
         return NULL;
     }
 
-    if (!uri.is_empty()) {
-        // use spcific device driver
-        return uri.scheme;
+    if (uri.is_valid()) {
+        // use specific device driver
+        return uri.scheme();
     }
 
     // use default device driver
@@ -51,10 +51,10 @@ const char* select_driver_name(const address::IoURI& uri, const char* force_form
 }
 
 const char* select_input_output(const address::IoURI& uri) {
-    if (uri.is_empty()) {
-        return NULL;
+    if (uri.is_valid()) {
+        return uri.path();
     } else {
-        return uri.path;
+        return NULL;
     }
 }
 
