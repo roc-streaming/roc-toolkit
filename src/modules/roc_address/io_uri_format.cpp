@@ -7,7 +7,6 @@
  */
 
 #include "roc_address/io_uri.h"
-#include "roc_address/pct.h"
 #include "roc_core/panic.h"
 #include "roc_core/string_utils.h"
 
@@ -21,13 +20,13 @@ bool format_io_uri(const IoURI& u, char* buf, size_t buf_size) {
         return false;
     }
 
-    buf[0] = '\0';
-
-    if (!*u.scheme) {
+    if (!u.is_valid()) {
         return false;
     }
 
-    if (!core::append_str(buf, buf_size, u.scheme)) {
+    buf[0] = '\0';
+
+    if (!core::append_str(buf, buf_size, u.scheme())) {
         return false;
     }
 
@@ -41,14 +40,9 @@ bool format_io_uri(const IoURI& u, char* buf, size_t buf_size) {
         }
     }
 
-    if (!*u.path) {
-        return false;
-    }
-
     const size_t pos = strlen(buf);
 
-    if (pct_encode(buf + pos, buf_size - pos, u.path, strlen(u.path), PctNonPath)
-        == -1) {
+    if (!u.get_encoded_path(buf + pos, buf_size - pos)) {
         return false;
     }
 
