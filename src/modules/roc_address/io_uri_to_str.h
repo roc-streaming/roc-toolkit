@@ -30,7 +30,7 @@ public:
     }
 
 private:
-    char buf_[512];
+    char buf_[1024];
 };
 
 } // namespace address
