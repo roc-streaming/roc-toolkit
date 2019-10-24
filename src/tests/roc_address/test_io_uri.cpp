@@ -144,32 +144,32 @@ TEST(io_uri, file_compact_specialpath) {
 TEST(io_uri, percent_encoding) {
     {
         IoURI u;
-        CHECK(parse_io_uri("alsa://foo%21/bar!%2Fbaz#/qux%23", u));
+        CHECK(parse_io_uri("alsa://foo%21/bar!%2Fbaz%23", u));
 
         STRCMP_EQUAL("alsa", u.scheme);
-        STRCMP_EQUAL("foo!/bar!/baz#/qux#", u.path);
+        STRCMP_EQUAL("foo!/bar!/baz#", u.path);
 
-        STRCMP_EQUAL("alsa://foo!/bar!/baz%23/qux%23", io_uri_to_str(u).c_str());
+        STRCMP_EQUAL("alsa://foo!/bar!/baz%23", io_uri_to_str(u).c_str());
     }
 
     {
         IoURI u;
-        CHECK(parse_io_uri("file:///foo%21/bar!%2Fbaz#/qux%23", u));
+        CHECK(parse_io_uri("file:///foo%21/bar!%2Fbaz%23", u));
 
         STRCMP_EQUAL("file", u.scheme);
-        STRCMP_EQUAL("/foo!/bar!/baz#/qux#", u.path);
+        STRCMP_EQUAL("/foo!/bar!/baz#", u.path);
 
-        STRCMP_EQUAL("file:/foo!/bar!/baz%23/qux%23", io_uri_to_str(u).c_str());
+        STRCMP_EQUAL("file:/foo!/bar!/baz%23", io_uri_to_str(u).c_str());
     }
 
     {
         IoURI u;
-        CHECK(parse_io_uri("file:foo%21/bar!%2Fbaz#/qux%23", u));
+        CHECK(parse_io_uri("file:foo%21/bar!%2Fbaz%23", u));
 
         STRCMP_EQUAL("file", u.scheme);
-        STRCMP_EQUAL("foo!/bar!/baz#/qux#", u.path);
+        STRCMP_EQUAL("foo!/bar!/baz#", u.path);
 
-        STRCMP_EQUAL("file:foo!/bar!/baz%23/qux%23", io_uri_to_str(u).c_str());
+        STRCMP_EQUAL("file:foo!/bar!/baz%23", io_uri_to_str(u).c_str());
     }
 }
 
@@ -232,6 +232,12 @@ TEST(io_uri, bad_syntax) {
 
     CHECK(!parse_io_uri("file://test%", u));
     CHECK(!parse_io_uri("file://test%--test", u));
+
+    CHECK(!parse_io_uri("file://test?test", u));
+    CHECK(!parse_io_uri("file://test?test#test", u));
+    CHECK(!parse_io_uri("file://test#test", u));
+    CHECK(!parse_io_uri("file://?", u));
+    CHECK(!parse_io_uri("file://#", u));
 
     CHECK(!parse_io_uri("test", u));
     CHECK(!parse_io_uri("/test", u));
