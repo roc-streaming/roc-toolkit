@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_address/target_stdio/roc_address/socket_addr_to_str.h
+//! @file roc_address/socket_addr_to_str.h
 //! @brief Convert network address to string.
 
 #ifndef ROC_ADDRESS_SOCKET_ADDR_TO_STR_H_
@@ -30,6 +30,9 @@ public:
     }
 
 private:
+    bool format_ipv4_(const SocketAddr&);
+    bool format_ipv6_(const SocketAddr&);
+
     char buffer_[SocketAddr::MaxStrLen];
 };
 
