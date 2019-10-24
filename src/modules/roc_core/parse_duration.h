@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_core/target_stdio/roc_core/parse_duration.h
+//! @file roc_core/parse_duration.h
 //! @brief Parse duration.
 
 #ifndef ROC_CORE_PARSE_DURATION_H_
