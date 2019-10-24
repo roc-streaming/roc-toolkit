@@ -21,6 +21,8 @@ namespace address {
 bool parse_io_uri(const char* str, IoURI& result) {
     roc_panic_if(str == NULL);
 
+    result.clear();
+
     // for ragel
     const char* p = str;
     const char *pe = str + strlen(str);
@@ -47,7 +49,12 @@ bool parse_io_uri(const char* str, IoURI& result) {
         }
 
         action set_file_scheme {
-            result.set_scheme("file", 4);
+            const char* scheme = "file";
+
+            if (!result.set_scheme(scheme, strlen(scheme))) {
+                roc_log(LogError, "parse io uri: invalid scheme");
+                return false;
+            }
         }
 
         action set_path {
