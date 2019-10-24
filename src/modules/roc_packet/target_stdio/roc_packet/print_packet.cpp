@@ -12,12 +12,12 @@
 #include "roc_core/print_buffer.h"
 #include "roc_packet/fec_scheme_to_str.h"
 #include "roc_packet/packet.h"
-#include "roc_packet/print.h"
+#include "roc_packet/print_packet.h"
 
 namespace roc {
 namespace packet {
 
-void print(const Packet& p, int flags) {
+void print_packet(const Packet& p, int flags) {
     fprintf(stderr, "packet [%p]\n", (const void*)&p);
 
     if (p.udp()) {
