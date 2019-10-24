@@ -86,7 +86,7 @@ int main(int argc, char** argv) {
     source_config.sample_rate = 0;
     source_config.frame_size = config.internal_frame_size;
 
-    address::IoURI input;
+    address::IoURI input(allocator);
     if (args.input_given) {
         if (!address::parse_io_uri(args.input_arg, input) || !input.is_file()) {
             roc_log(LogError, "invalid --input file URI");
@@ -154,7 +154,7 @@ int main(int argc, char** argv) {
     sink_config.sample_rate = config.output_sample_rate;
     sink_config.frame_size = config.internal_frame_size;
 
-    address::IoURI output;
+    address::IoURI output(allocator);
     if (args.output_given) {
         if (!address::parse_io_uri(args.output_arg, output) || !output.is_file()) {
             roc_log(LogError, "invalid --output file URI");
