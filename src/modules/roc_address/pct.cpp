@@ -32,13 +32,8 @@ bool is_unreserved(char c) {
     return false;
 }
 
-bool is_pchar_or_slash(char c) {
-    // allowed in pchar
-    if (is_unreserved(c)) {
-        return true;
-    }
+bool is_subdelim(char c) {
     switch (c) {
-    // allowed in pchar (via sub-delims)
     case '!':
     case '$':
     case '&':
@@ -50,16 +45,62 @@ bool is_pchar_or_slash(char c) {
     case ',':
     case ';':
     case '=':
-    // allowed in pchar (directly)
-    case ':':
-    case '@':
-    // delimiter between segments
-    case '/':
         return true;
     default:
         break;
     }
     return false;
+}
+
+bool is_pchar(char c) {
+    if (is_unreserved(c)) {
+        return true;
+    }
+    if (is_subdelim(c)) {
+        return true;
+    }
+    switch (c) {
+    case ':':
+    case '@':
+        return true;
+    default:
+        break;
+    }
+    return false;
+}
+
+bool is_segment_char(char c) {
+    return is_pchar(c) || c == '/';
+}
+
+bool is_ip_literal_char(char c) {
+    if (isxdigit(c)) {
+        return true;
+    }
+    switch (c) {
+    case '.':
+    case ':':
+    case '[':
+    case ']':
+        return true;
+    default:
+        break;
+    }
+    return false;
+}
+
+bool is_regname_char(char c) {
+    if (is_unreserved(c)) {
+        return true;
+    }
+    if (is_subdelim(c)) {
+        return true;
+    }
+    return false;
+}
+
+bool is_host_char(char c) {
+    return is_ip_literal_char(c) || is_regname_char(c);
 }
 
 char to_hex(unsigned char c) {
@@ -89,8 +130,11 @@ pct_encode(char* dst, size_t dst_sz, const char* src, size_t src_sz, PctMode mod
     case PctNonUnreserved:
         skip_encoding = is_unreserved;
         break;
+    case PctNonHost:
+        skip_encoding = is_host_char;
+        break;
     case PctNonPath:
-        skip_encoding = is_pchar_or_slash;
+        skip_encoding = is_segment_char;
         break;
     }
 
