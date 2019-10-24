@@ -230,7 +230,7 @@ int main(int argc, char** argv) {
     }
 
     if (args.format_given) {
-        if (!output.is_empty() && !output.is_file()) {
+        if (output.is_valid() && !output.is_file()) {
             roc_log(LogError, "--format can't be used if --output is not a file URI");
             return 1;
         }

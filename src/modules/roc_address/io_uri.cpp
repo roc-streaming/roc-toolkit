@@ -7,25 +7,56 @@
  */
 
 #include "roc_address/io_uri.h"
+#include "roc_address/pct.h"
+#include "roc_core/string_utils.h"
 
 namespace roc {
 namespace address {
 
 IoURI::IoURI() {
-    scheme[0] = '\0';
-    path[0] = '\0';
+    scheme_[0] = '\0';
+    path_[0] = '\0';
 }
 
-bool IoURI::is_empty() const {
-    return !*scheme && !*path;
+bool IoURI::is_valid() const {
+    return *scheme_ && *path_;
 }
 
 bool IoURI::is_file() const {
-    return strcmp(scheme, "file") == 0;
+    return strcmp(scheme_, "file") == 0;
 }
 
 bool IoURI::is_special_file() const {
-    return strcmp(scheme, "file") == 0 && strcmp(path, "-") == 0;
+    return strcmp(scheme_, "file") == 0 && strcmp(path_, "-") == 0;
+}
+
+const char* IoURI::scheme() const {
+    if (!is_valid()) {
+        return "";
+    }
+    return scheme_;
+}
+
+const char* IoURI::path() const {
+    if (!is_valid()) {
+        return "";
+    }
+    return path_;
+}
+
+bool IoURI::set_scheme(const char* str, size_t str_len) {
+    return core::copy_str(scheme_, sizeof(scheme_), str, str + str_len);
+}
+
+bool IoURI::set_encoded_path(const char* str, size_t str_len) {
+    return pct_decode(path_, sizeof(path_), str, str_len) != -1;
+}
+
+bool IoURI::get_encoded_path(char* str, size_t str_len) const {
+    if (!is_valid()) {
+        return false;
+    }
+    return pct_encode(str, str_len, path_, strlen(path_), PctNonPath) != -1;
 }
 
 } // namespace address
