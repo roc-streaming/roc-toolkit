@@ -30,7 +30,7 @@ public:
     }
 
 private:
-    char buf_[IoURI::MaxLength];
+    char buf_[512];
 };
 
 } // namespace address
