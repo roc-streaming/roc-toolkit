@@ -9,33 +9,10 @@
 #include "roc_address/io_uri.h"
 #include "roc_address/pct.h"
 #include "roc_core/panic.h"
+#include "roc_core/string_utils.h"
 
 namespace roc {
 namespace address {
-
-namespace {
-
-bool str_append(char* buf, size_t bufsz, size_t& pos, const char* str) {
-    roc_panic_if(buf == NULL);
-    roc_panic_if(str == NULL);
-
-    const size_t orig_len = strlen(str);
-
-    size_t len = orig_len;
-    if (len > bufsz - pos - 1) {
-        len = bufsz - pos - 1;
-    }
-
-    if (len > 0) {
-        memcpy(buf + pos, str, len);
-        pos += len;
-        buf[pos] = '\0';
-    }
-
-    return (len == orig_len);
-}
-
-} // namespace
 
 bool format_io_uri(const IoURI& u, char* buf, size_t buf_size) {
     roc_panic_if(buf == NULL);
@@ -44,36 +21,33 @@ bool format_io_uri(const IoURI& u, char* buf, size_t buf_size) {
         return false;
     }
 
-    size_t pos = 0;
-
     buf[0] = '\0';
 
     if (*u.scheme) {
-        if (!str_append(buf, buf_size, pos, u.scheme)) {
+        if (!core::append_str(buf, buf_size, u.scheme)) {
             return false;
         }
 
         if (u.is_file()) {
-            if (!str_append(buf, buf_size, pos, ":")) {
+            if (!core::append_str(buf, buf_size, ":")) {
                 return false;
             }
         } else {
-            if (!str_append(buf, buf_size, pos, "://")) {
+            if (!core::append_str(buf, buf_size, "://")) {
                 return false;
             }
         }
     }
 
     if (*u.path) {
-        const ssize_t ret =
-            pct_encode(buf + pos, buf_size - pos, u.path, strlen(u.path), PctNonPath);
-        if (ret == -1) {
+        const size_t pos = strlen(buf);
+
+        if (pct_encode(buf + pos, buf_size - pos, u.path, strlen(u.path), PctNonPath)
+            == -1) {
             return false;
         }
-        pos += (size_t)ret;
     }
 
-    roc_panic_if_not(pos <= buf_size);
     return true;
 }
 

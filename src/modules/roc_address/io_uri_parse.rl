@@ -10,25 +10,10 @@
 #include "roc_address/pct.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
+#include "roc_core/string_utils.h"
 
 namespace roc {
 namespace address {
-
-namespace {
-
-bool str_copy(char* buf, size_t bufsz, const char* begin, const char* end) {
-    const size_t size = size_t(end - begin);
-    if (size > bufsz - 1) {
-        return false;
-    }
-
-    memcpy(buf, begin, size);
-    buf[size] = '\0';
-
-    return true;
-}
-
-} // namespace
 
 %%{
     machine parse_io_uri;
@@ -57,7 +42,7 @@ bool parse_io_uri(const char* str, IoURI& result) {
         }
 
         action set_scheme {
-            if (!str_copy(result.scheme, sizeof(result.scheme), start_p, p)) {
+            if (!core::copy_str(result.scheme, sizeof(result.scheme), start_p, p)) {
                 roc_log(LogError, "parse io uri: too long scheme");
                 return false;
             }
