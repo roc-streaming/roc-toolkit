@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_packet/target_stdio/roc_packet/fec_scheme_to_str.h
+//! @file roc_packet/fec_scheme_to_str.h
 //! @brief FEC scheme to string.
 
 #ifndef ROC_PACKET_FEC_SCHEME_TO_STR_H_

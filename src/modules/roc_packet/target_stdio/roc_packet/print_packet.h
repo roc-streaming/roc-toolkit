@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_packet/target_stdio/roc_packet/print.h
+//! @file roc_packet/target_stdio/roc_packet/print_packet.h
 //! @brief Print packet to stdout.
 
-#ifndef ROC_PACKET_PRINT_H_
-#define ROC_PACKET_PRINT_H_
+#ifndef ROC_PACKET_PRINT_PACKET_H_
+#define ROC_PACKET_PRINT_PACKET_H_
 
 namespace roc {
 namespace packet {
@@ -23,9 +23,9 @@ enum {
 };
 
 //! Print packet to stderr.
-void print(const Packet& packet, int flags);
+void print_packet(const Packet& packet, int flags);
 
 } // namespace packet
 } // namespace roc
 
-#endif // ROC_PACKET_PRINT_H_
+#endif // ROC_PACKET_PRINT_PACKET_H_
