@@ -212,7 +212,7 @@ int main(int argc, char** argv) {
     }
 
     if (args.format_given) {
-        if (!input.is_empty() && !input.is_file()) {
+        if (input.is_valid() && !input.is_file()) {
             roc_log(LogError, "--format can't be used if --input is not a file URI");
             return 1;
         }
