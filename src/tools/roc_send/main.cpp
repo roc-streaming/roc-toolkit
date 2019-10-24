@@ -203,7 +203,7 @@ int main(int argc, char** argv) {
         allocator, config.internal_frame_size, args.poisoning_flag);
     packet::PacketPool packet_pool(allocator, args.poisoning_flag);
 
-    address::IoURI input;
+    address::IoURI input(allocator);
     if (args.input_given) {
         if (!address::parse_io_uri(args.input_arg, input)) {
             roc_log(LogError, "invalid --input file or device URI");
