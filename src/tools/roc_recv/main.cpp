@@ -221,7 +221,7 @@ int main(int argc, char** argv) {
         allocator, config.common.internal_frame_size, args.poisoning_flag);
     packet::PacketPool packet_pool(allocator, args.poisoning_flag);
 
-    address::IoURI output;
+    address::IoURI output(allocator);
     if (args.output_given) {
         if (!address::parse_io_uri(args.output_arg, output)) {
             roc_log(LogError, "invalid --output file or device URI");
