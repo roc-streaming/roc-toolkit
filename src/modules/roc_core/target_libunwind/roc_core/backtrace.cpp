@@ -15,51 +15,14 @@
 
 #include "roc_core/backtrace.h"
 #include "roc_core/demangle.h"
+#include "roc_core/string_utils.h"
 
 namespace roc {
 namespace core {
 
 namespace {
 
-enum { MaxDigits = 10, MaxLenBuffer = 200, MaxLenFunctionName = 128 };
-
-/* safe concatenation of strings
- */
-void safe_strcat(char* buffer, size_t& buffer_size, const char* str) {
-    size_t len = strlen(str);
-    /* Checking if there is enough space in the buffer
-     */
-    if (len > MaxLenBuffer - buffer_size - 1) {
-        len = MaxLenBuffer - buffer_size - 1;
-    }
-    if (len > 0) {
-        memcpy(buffer + buffer_size, str, len);
-        buffer_size += len;
-        buffer[buffer_size] = '\0';
-    }
-}
-
-/* Function to convert unsigned int to decimal/hex string.
- * This function is signal safe.
- * Parameters :
- * number = the number to be converted.
- * base = 10 for decimal to char* and 16 for hex to char* conversion.
- * output_string = the decimal/hex string
- */
-void uint32_to_string(uint32_t number, uint32_t base, char* output_string) {
-    int i = MaxDigits;
-    int j = 0;
-    do {
-        output_string[i] = "0123456789abcdef"[number % base];
-        i--;
-        number = number / base;
-    } while (number > 0);
-
-    while (++i < MaxDigits + 1) {
-        output_string[j++] = output_string[i];
-    }
-    output_string[j] = 0;
-}
+enum { MaxFunctionNameLen = 100, MaxLineLen = 200 };
 
 /* Checking if backtrace is empty or not.
  * This must be signal safe.
@@ -141,11 +104,14 @@ void backtrace_symbols(bool enable_demangling) {
          * 'status' checks if unw_get_proc_name() is successful or not.
          * 'status = 0', successfully executed the function.
          */
-        char function_name[MaxLenFunctionName];
+        char function_name[MaxFunctionNameLen];
         function_name[0] = '\0';
         unw_word_t offset;
         int32_t status =
             unw_get_proc_name(&cursor, function_name, sizeof(function_name), &offset);
+        if (status < 0) {
+            offset = 0;
+        }
 
         /* Demangling is not signal-safe.
          */
@@ -158,28 +124,21 @@ void backtrace_symbols(bool enable_demangling) {
         }
 
         /* Printing => index, function name, offset, ip.
-         * uint32_to_string() & safe_strcat() & print_emergency_message() are signal safe.
+         * The functions below are signal-safe.
          */
-        if (status < 0) {
-            offset = 0;
-        }
-        char number[MaxDigits + 1];
-        uint32_to_string(index, 10, number);
+        char buffer[MaxLineLen] = "#";
+        append_uint(buffer, sizeof(buffer) - 1, index, 10);
 
-        char buffer[MaxLenBuffer] = "#";
-        size_t current_buffer_size = 1;
-        safe_strcat(buffer, current_buffer_size, number);
-        safe_strcat(buffer, current_buffer_size, ": 0x");
+        append_str(buffer, sizeof(buffer) - 1, ": 0x");
+        append_uint(buffer, sizeof(buffer) - 1, ip, 16);
 
-        uint32_to_string((uint32_t)ip, 16, number);
-        safe_strcat(buffer, current_buffer_size, number);
-        safe_strcat(buffer, current_buffer_size, " ");
-        safe_strcat(buffer, current_buffer_size, symbol);
-        safe_strcat(buffer, current_buffer_size, "+0x");
+        append_str(buffer, sizeof(buffer) - 1, " ");
+        append_str(buffer, sizeof(buffer) - 1, symbol);
 
-        uint32_to_string((uint32_t)offset, 16, number);
-        safe_strcat(buffer, current_buffer_size, number);
-        safe_strcat(buffer, current_buffer_size, "\n");
+        append_str(buffer, sizeof(buffer) - 1, "+0x");
+        append_uint(buffer, sizeof(buffer) - 1, offset, 16);
+
+        append_str(buffer, sizeof(buffer), "\n");
 
         print_emergency_message(buffer);
     }
