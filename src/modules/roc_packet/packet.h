@@ -18,7 +18,7 @@
 #include "roc_core/refcnt.h"
 #include "roc_core/shared_ptr.h"
 #include "roc_packet/fec.h"
-#include "roc_packet/print.h"
+#include "roc_packet/print_packet.h"
 #include "roc_packet/rtp.h"
 #include "roc_packet/udp.h"
 
@@ -105,7 +105,7 @@ public:
 
     //! Print packet to stderr.
     void print(int flags) const {
-        packet::print(*this, flags);
+        packet::print_packet(*this, flags);
     }
 
     //! Get pointer to packet from a pointer to its UDP part.
