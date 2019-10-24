@@ -26,7 +26,7 @@ TEST(io_uri, empty) {
     STRCMP_EQUAL("", u.scheme);
     STRCMP_EQUAL("", u.path);
 
-    STRCMP_EQUAL("", io_uri_to_str(u).c_str());
+    STRCMP_EQUAL("<bad>", io_uri_to_str(u).c_str());
 }
 
 TEST(io_uri, device) {
@@ -173,42 +173,23 @@ TEST(io_uri, percent_encoding) {
     }
 }
 
-TEST(io_uri, input_too_long) {
-    IoURI u;
-
-    CHECK(parse_io_uri("abcdefg://test", u));
-    CHECK(!parse_io_uri("abcdefghijklmnop://test", u));
-
-    char buf[IoURI::MaxLength * 2] = "file:///";
-
-    for (int i = 0; i < IoURI::MaxLength / 2; i++) {
-        strcat(buf, "x");
-    }
-    CHECK(parse_io_uri(buf, u));
-
-    for (int i = 0; i < IoURI::MaxLength; i++) {
-        strcat(buf, "y");
-    }
-    CHECK(!parse_io_uri(buf, u));
-}
-
-TEST(io_uri, output_too_small) {
+TEST(io_uri, small_buffer) {
     IoURI u;
     CHECK(parse_io_uri("abcdef://abcdef", u));
 
-    char buf1[16];
-    CHECK(format_io_uri(u, buf1, sizeof(buf1)));
-    STRCMP_EQUAL("abcdef://abcdef", buf1);
+    char buf[16];
+    CHECK(format_io_uri(u, buf, sizeof(buf)));
 
-    char buf2[15];
-    CHECK(!format_io_uri(u, buf2, sizeof(buf2)));
-
-    char buf3[3];
-    CHECK(!format_io_uri(u, buf3, sizeof(buf3)));
+    for (size_t i = 0; i < sizeof(buf); i++) {
+        CHECK(!format_io_uri(u, buf, i));
+    }
 }
 
 TEST(io_uri, bad_syntax) {
     IoURI u;
+
+    CHECK(parse_io_uri("abcdefg://test", u));
+    CHECK(!parse_io_uri("abcdefghijklmnop://test", u));
 
     CHECK(!parse_io_uri("alsa://", u));
     CHECK(!parse_io_uri("file://", u));
