@@ -12,18 +12,20 @@
 #ifndef ROC_ADDRESS_IO_URI_H_
 #define ROC_ADDRESS_IO_URI_H_
 
+#include "roc_core/noncopyable.h"
 #include "roc_core/stddefs.h"
 
 namespace roc {
 namespace address {
 
 //! Audio file or device URI.
-struct IoURI {
+class IoURI : public core::NonCopyable<> {
+public:
     //! Initialize empty URI.
     IoURI();
 
-    //! Returns true if the URI is empty.
-    bool is_empty() const;
+    //! Returns true if the URI has all required components.
+    bool is_valid() const;
 
     //! Returns true if the scheme is "file".
     bool is_file() const;
@@ -31,18 +33,31 @@ struct IoURI {
     //! Returns true if the scheme is "file" and the path is "-".
     bool is_special_file() const;
 
-    enum {
-        // An estimate maximum length of encoded URI.
-        MaxLength = 1280
-    };
-
     //! URI scheme.
     //! May be "file" or device type, e.g. "alsa".
-    char scheme[16];
+    const char* scheme() const;
 
     //! URI path.
     //! May be device name or file path depending on scheme.
-    char path[1024];
+    const char* path() const;
+
+    //! Set URI scheme.
+    //! String should not be zero-terminated.
+    bool set_scheme(const char* str, size_t str_len);
+
+    //! Set URI path.
+    //! String should be percent-encoded.
+    //! String should not be zero-terminated.
+    bool set_encoded_path(const char* str, size_t str_len);
+
+    //! Get URI path.
+    //! String will be percent-encoded.
+    //! String will be zero-terminated.
+    bool get_encoded_path(char* str, size_t str_len) const;
+
+private:
+    char scheme_[16];
+    char path_[1024];
 };
 
 //! Parse IoURI from string.
