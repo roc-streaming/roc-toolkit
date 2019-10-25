@@ -57,12 +57,10 @@ const char* IoURI::path() const {
 
 bool IoURI::set_scheme(const char* str, size_t str_len) {
     if (str_len < 1) {
-        clear();
         return false;
     }
 
     if (!core::copy_str(scheme_, sizeof(scheme_), str, str + str_len)) {
-        clear();
         return false;
     }
 
@@ -71,19 +69,16 @@ bool IoURI::set_scheme(const char* str, size_t str_len) {
 
 bool IoURI::set_encoded_path(const char* str, size_t str_len) {
     if (str_len < 1) {
-        clear();
         return false;
     }
 
     const size_t buf_size = str_len + 1;
 
     if (!path_.resize(buf_size)) {
-        clear();
         return false;
     }
 
     if (pct_decode(&path_[0], buf_size, str, str_len) == -1) {
-        clear();
         return false;
     }
 
