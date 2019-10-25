@@ -103,6 +103,7 @@ bool parse_io_uri(const char* str, IoURI& result) {
                 " 'file:-',\n"
                 " got '%s'",
                 str);
+        result.clear();
         return false;
     }
 
