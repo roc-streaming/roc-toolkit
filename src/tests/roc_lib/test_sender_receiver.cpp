@@ -19,6 +19,7 @@
 #include "roc_core/random.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/thread.h"
+#include "roc_core/time.h"
 #include "roc_netio/transceiver.h"
 #include "roc_packet/packet_pool.h"
 #include "roc_packet/queue.h"
@@ -52,6 +53,14 @@ enum {
 
 enum { FlagFEC = (1 << 0) };
 
+float increment_sample_value(float sample_value, float sample_step) {
+    sample_value += sample_step;
+    if (sample_value + sample_step > 1.0f) {
+        sample_value = sample_step;
+    }
+    return sample_value;
+}
+
 core::HeapAllocator allocator;
 packet::PacketPool packet_pool(allocator, true);
 core::BufferPool<uint8_t> byte_buffer_pool(allocator, MaxBufSize, true);
@@ -84,12 +93,10 @@ public:
            roc_sender_config& config,
            const roc_address* dst_source_addr,
            const roc_address* dst_repair_addr,
-           float* samples,
-           size_t total_samples,
+           float sample_step,
            size_t frame_size,
            unsigned flags)
-        : samples_(samples)
-        , total_samples_(total_samples)
+        : sample_step_(sample_step)
         , frame_size_(frame_size) {
         roc_address addr;
         CHECK(roc_address_init(&addr, ROC_AF_AUTO, "127.0.0.1", 0) == 0);
@@ -114,40 +121,52 @@ public:
         roc_sender_close(sndr_);
     }
 
+    void stop() {
+        stopped_ = 1;
+    }
+
 private:
     virtual void run() {
-        for (size_t off = 0; off < total_samples_; off += frame_size_) {
-            if (off + frame_size_ > total_samples_) {
-                off = total_samples_ - frame_size_;
+        float sample_value = sample_step_;
+        float samples[TotalSamples];
+
+        while (!stopped_) {
+            for (size_t i = 0; i < TotalSamples; ++i) {
+                samples[i] = sample_value;
+                sample_value = increment_sample_value(sample_value, sample_step_);
             }
 
-            roc_frame frame;
-            memset(&frame, 0, sizeof(frame));
+            for (size_t off = 0; off < TotalSamples; off += frame_size_) {
+                if (off + frame_size_ > TotalSamples) {
+                    off = TotalSamples - frame_size_;
+                }
 
-            frame.samples = samples_ + off;
-            frame.samples_size = frame_size_ * sizeof(float);
+                roc_frame frame;
+                memset(&frame, 0, sizeof(frame));
 
-            const int ret = roc_sender_write(sndr_, &frame);
-            roc_panic_if_not(ret == 0);
+                frame.samples = samples + off;
+                frame.samples_size = frame_size_ * sizeof(float);
+
+                const int ret = roc_sender_write(sndr_, &frame);
+                roc_panic_if_not(ret == 0);
+            }
         }
     }
 
     roc_sender* sndr_;
-    float* samples_;
-    const size_t total_samples_;
+    const float sample_step_;
     const size_t frame_size_;
+    core::Atomic stopped_;
 };
 
 class Receiver {
 public:
     Receiver(Context& context,
              roc_receiver_config& config,
-             const float* samples,
-             size_t total_samples,
+             float sample_step,
              size_t frame_size,
              unsigned flags)
-        : samples_(samples)
-        , total_samples_(total_samples)
+        : sample_step_(sample_step)
         , frame_size_(frame_size) {
         CHECK(roc_address_init(&source_addr_, ROC_AF_AUTO, "127.0.0.1", 0) == 0);
         CHECK(roc_address_init(&repair_addr_, ROC_AF_AUTO, "127.0.0.1", 0) == 0);
@@ -182,17 +201,17 @@ public:
     void run() {
         float rx_buff[MaxBufSize];
 
-        size_t leading_zeros = 0;
         size_t sample_num = 0;
         size_t frame_num = 0;
 
-        size_t middle_stream_total = 0;
-        size_t middle_stream_identical = 0;
+        bool wait_for_signal = true;
+        size_t identical_sample_num = 0;
 
-        bool seek_first = true;
-        bool finish = false;
+        size_t nb_success = PacketSamples * SourcePackets * 4;
 
-        while (!finish) {
+        float prev_sample = sample_step_;
+
+        while (identical_sample_num < nb_success) {
             size_t i = 0;
             frame_num++;
 
@@ -204,51 +223,45 @@ public:
 
             roc_panic_if_not(roc_receiver_read(recv_, &frame) == 0);
 
-            if (seek_first) {
-                for (; i < frame_size_ && is_zero_(rx_buff[i]); i++, leading_zeros++) {
+            if (wait_for_signal) {
+                for (; i < frame_size_ && is_zero_(rx_buff[i]); i++) {
                 }
-                roc_panic_if_not(leading_zeros < Timeout);
+
                 if (i < frame_size_) {
-                    seek_first = false;
+                    wait_for_signal = false;
+
+                    prev_sample = rx_buff[i];
+                    i++;
                 }
             }
 
-            if (!seek_first) {
-                for (; i < frame_size_; i++, sample_num++, middle_stream_total++) {
-                    if (sample_num >= total_samples_) {
-                        roc_panic_if_not(is_zero_(rx_buff[i]));
-                        finish = true;
-                        roc_log(LogDebug, "finish: leading_zeros: %lu, num_samples: %lu",
-                                (unsigned long)leading_zeros, (unsigned long)sample_num);
-                        break;
-                    }
+            if (!wait_for_signal) {
+                float cur_rx_buff;
+                for (; i < frame_size_; i++, sample_num++) {
+                    cur_rx_buff = rx_buff[i];
 
-                    if (is_zero_(samples_[sample_num] - rx_buff[i])) {
-                        middle_stream_identical++;
-                    } else if (!is_zero_(rx_buff[i])) {
+                    if (is_zero_(increment_sample_value(prev_sample, sample_step_)
+                                 - cur_rx_buff)) {
+                        identical_sample_num++;
+                    } else if (!is_zero_(prev_sample)
+                               && !is_zero_(cur_rx_buff)) { // Allows stream shifts
                         char sbuff[256];
                         int sbuff_i =
                             snprintf(sbuff, sizeof(sbuff),
                                      "failed comparing sample #%lu\n\nframe_num: %lu\n",
-                                     (unsigned long)sample_num, (unsigned long)frame_num);
-                        snprintf(&sbuff[sbuff_i], sizeof(sbuff) - (size_t)sbuff_i,
-                                 "original: %f,\treceived: %f\n",
-                                 (double)samples_[sample_num], (double)rx_buff[i]);
+                                     (unsigned long)identical_sample_num,
+                                     (unsigned long)frame_num);
+                        snprintf(
+                            &sbuff[sbuff_i], sizeof(sbuff) - (size_t)sbuff_i,
+                            "original: %f,\treceived: %f\n",
+                            (double)increment_sample_value(prev_sample, sample_step_),
+                            (double)cur_rx_buff);
                         roc_panic("%s", sbuff);
                     }
+
+                    prev_sample = cur_rx_buff;
                 }
             }
-        }
-
-        double identical = (double)middle_stream_identical / middle_stream_total;
-        if (identical < .9) {
-            char sbuff[256];
-            snprintf(
-                sbuff, sizeof(sbuff),
-                "middle stream identical by %f: %lu identical samples on %lu samples",
-                identical, (unsigned long)middle_stream_identical,
-                (unsigned long)middle_stream_total);
-            roc_panic("%s", sbuff);
         }
     }
 
@@ -262,8 +275,7 @@ private:
     roc_address source_addr_;
     roc_address repair_addr_;
 
-    const float* samples_;
-    const size_t total_samples_;
+    const float sample_step_;
     const size_t frame_size_;
 };
 
@@ -349,8 +361,6 @@ private:
         return true;
     }
 
-    netio::Transceiver trx_;
-
     address::SocketAddr send_addr_;
 
     roc_address roc_source_addr_;
@@ -367,6 +377,8 @@ private:
 
     packet::IWriter* writer_;
 
+    netio::Transceiver trx_;
+
     const size_t n_source_packets_;
     const size_t n_repair_packets_;
 
@@ -379,20 +391,11 @@ TEST_GROUP(sender_receiver) {
     roc_sender_config sender_conf;
     roc_receiver_config receiver_conf;
 
-    float samples[TotalSamples];
+    float sample_step;
 
     void setup() {
         roc_log_set_level((roc_log_level)core::Logger::instance().level());
-
-        const float sstep = 1. / 32768.;
-        float sval = -1 + sstep;
-        for (size_t i = 0; i < TotalSamples; ++i) {
-            samples[i] = sval;
-            sval += sstep;
-            if (sval >= 1) {
-                sval = -1 + sstep;
-            }
-        }
+        sample_step = 1. / 32768.;
     }
 
     void init_config(unsigned flags) {
@@ -430,13 +433,15 @@ TEST(sender_receiver, bare_rtp) {
 
     Context context;
 
-    Receiver receiver(context, receiver_conf, samples, TotalSamples, FrameSamples, Flags);
+    Receiver receiver(context, receiver_conf, sample_step, FrameSamples,
+                      Flags);
 
     Sender sender(context, sender_conf, receiver.source_addr(), receiver.repair_addr(),
-                  samples, TotalSamples, FrameSamples, Flags);
+                  sample_step, FrameSamples, Flags);
 
     sender.start();
     receiver.run();
+    sender.stop();
     sender.join();
 }
 
@@ -448,13 +453,15 @@ TEST(sender_receiver, fec_without_losses) {
 
     Context context;
 
-    Receiver receiver(context, receiver_conf, samples, TotalSamples, FrameSamples, Flags);
+    Receiver receiver(context, receiver_conf, sample_step, FrameSamples,
+                      Flags);
 
     Sender sender(context, sender_conf, receiver.source_addr(), receiver.repair_addr(),
-                  samples, TotalSamples, FrameSamples, Flags);
+                  sample_step, FrameSamples, Flags);
 
     sender.start();
     receiver.run();
+    sender.stop();
     sender.join();
 }
 
@@ -465,16 +472,18 @@ TEST(sender_receiver, fec_with_losses) {
 
     Context context;
 
-    Receiver receiver(context, receiver_conf, samples, TotalSamples, FrameSamples, Flags);
+    Receiver receiver(context, receiver_conf, sample_step, FrameSamples,
+                      Flags);
 
     Proxy proxy(receiver.source_addr(), receiver.repair_addr(), SourcePackets,
                 RepairPackets);
 
-    Sender sender(context, sender_conf, proxy.source_addr(), proxy.repair_addr(), samples,
-                  TotalSamples, FrameSamples, Flags);
+    Sender sender(context, sender_conf, proxy.source_addr(), proxy.repair_addr(),
+                  sample_step, FrameSamples, Flags);
 
     sender.start();
     receiver.run();
+    sender.stop();
     sender.join();
 }
 #endif // ROC_TARGET_OPENFEC
