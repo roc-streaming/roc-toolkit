@@ -4,8 +4,7 @@ set -euxo pipefail
 scons -Q clean
 scons -Q --enable-werror --build-3rdparty=all
 
-find bin/x86_64-pc-linux-gnu -name 'roc-test-*' \
-     -not -name 'roc-test-lib' |\
+find bin/x86_64-pc-linux-gnu -name 'roc-test-*' |\
     while read t
     do
         python2 scripts/wrappers/timeout.py 300 \
