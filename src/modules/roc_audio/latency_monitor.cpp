@@ -103,7 +103,7 @@ bool LatencyMonitor::update(packet::timestamp_t pos) {
             return false;
         }
     } else {
-        report_latency_((packet::timestamp_t)latency);
+        report_latency_(latency);
     }
 
     return true;
@@ -211,10 +211,10 @@ bool LatencyMonitor::update_resampler_(packet::timestamp_t pos,
     return true;
 }
 
-void LatencyMonitor::report_latency_(packet::timestamp_t latency) {
+void LatencyMonitor::report_latency_(packet::timestamp_diff_t latency) {
     if (rate_limiter_.allow()) {
-        roc_log(LogDebug, "latency monitor: latency=%lu target=%lu",
-                (unsigned long)latency, (unsigned long)target_latency_);
+        roc_log(LogDebug, "latency monitor: latency=%ld target=%lu",
+                (long)latency, (unsigned long)target_latency_);;
     }
 }
 
