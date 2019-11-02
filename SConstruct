@@ -7,6 +7,7 @@ import SCons.Script
 # supported platform names
 supported_platforms = [
     'linux',
+    'freebsd',
     'darwin',
     'android',
 ]
@@ -511,6 +512,8 @@ if not platform:
         platform = 'android'
     elif 'linux' in host:
         platform = 'linux'
+    elif 'freebsd' in host:
+        platform = 'freebsd'
     elif 'darwin' in host:
         platform = 'darwin'
 
@@ -598,7 +601,7 @@ else:
                  "provide either known '--platform' or '--override-targets' option"),
                     host, ', '.join(supported_platforms))
 
-    if platform in ['linux', 'android', 'darwin']:
+    if platform in ['linux', 'android', 'darwin', 'freebsd']:
         env.Append(ROC_TARGETS=[
             'target_posix',
             'target_stdio',
@@ -606,12 +609,12 @@ else:
             'target_libuv',
         ])
 
-    if platform in ['linux', 'android']:
+    if platform in ['linux', 'android', 'freebsd']:
         env.Append(ROC_TARGETS=[
             'target_posixtime',
         ])
 
-    if platform in ['linux']:
+    if platform in ['linux', 'freebsd']:
         if not GetOption('disable_libunwind'):
             env.Append(ROC_TARGETS=[
                 'target_libunwind',
@@ -1027,7 +1030,7 @@ if GetOption('enable_pulseaudio_modules'):
 
 env = conf.Finish()
 
-if 'target_posix' in env['ROC_TARGETS'] and platform not in ['darwin']:
+if 'target_posix' in env['ROC_TARGETS'] and platform not in ['darwin', 'freebsd']:
     env.Append(CPPDEFINES=[('_POSIX_C_SOURCE', '200809')])
 
 for t in env['ROC_TARGETS']:
