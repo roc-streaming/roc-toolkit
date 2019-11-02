@@ -320,7 +320,7 @@ if name == 'libuv':
             '--with-pic',
             '--enable-static',
         ])), logfile)
-    execute('make -j', logfile)
+    execute('make', logfile)
     install_tree('include', os.path.join(builddir, 'include'))
     install_files('.libs/libuv.a', os.path.join(builddir, 'lib'))
 elif name == 'openfec':
@@ -371,7 +371,7 @@ elif name == 'openfec':
             '-DCMAKE_C_FLAGS_RELEASE:STRING="-fPIC -fvisibility=hidden"',
         ]
     execute('cmake .. ' + ' '.join(args), logfile)
-    execute('make -j', logfile)
+    execute('make ', logfile)
     os.chdir('..')
     install_tree('src', os.path.join(builddir, 'include'), match=['*.h'])
     install_files('%s/libopenfec.a' % dist, os.path.join(builddir, 'lib'))
@@ -392,7 +392,7 @@ elif name == 'alsa':
             '--disable-static',
             '--disable-python',
         ])), logfile)
-    execute('make -j', logfile)
+    execute('make', logfile)
     install_tree('include/alsa',
             os.path.join(builddir, 'include', 'alsa'),
             ignore=['alsa'])
@@ -414,7 +414,7 @@ elif name == 'ltdl':
             '--enable-shared',
             '--disable-static',
         ])), logfile)
-    execute('make -j', logfile)
+    execute('make', logfile)
     install_files('libltdl/ltdl.h', os.path.join(builddir, 'include'))
     install_tree('libltdl/libltdl', os.path.join(builddir, 'include', 'libltdl'))
     install_files('libltdl/.libs/libltdl.so', os.path.join(builddir, 'lib'))
@@ -473,7 +473,7 @@ elif name == 'sndfile':
             '--disable-shared',
             '--disable-external-libs',
         ])), logfile)
-    execute('make -j', logfile)
+    execute('make', logfile)
     install_files('src/sndfile.h', os.path.join(builddir, 'include'))
     install_files('src/.libs/libsndfile.a', os.path.join(builddir, 'lib'))
 elif name == 'pulseaudio':
@@ -515,7 +515,7 @@ elif name == 'pulseaudio':
             '--disable-webrtc-aec',
             '--without-caps',
         ])), logfile)
-    execute('make -j', logfile)
+    execute('make', logfile)
     install_files('config.h', os.path.join(builddir, 'include'))
     install_tree('src/pulse', os.path.join(builddir, 'include', 'pulse'),
                  match=['*.h'])
@@ -551,7 +551,7 @@ elif name == 'sox':
             '--without-ao',
             '--without-opus',
         ])), logfile)
-    execute('make -j', logfile)
+    execute('make', logfile)
     install_files('src/sox.h', os.path.join(builddir, 'include'))
     install_files('src/.libs/libsox.a', os.path.join(builddir, 'lib'))
 elif name == 'libunwind':
@@ -623,7 +623,7 @@ elif name == 'cpputest':
                 # disable memory leak detection which is too hard to use properly
                 '--disable-memory-leak-detection',
             ])), logfile)
-    execute('make -j', logfile)
+    execute('make', logfile)
     install_tree('include', os.path.join(builddir, 'include'))
     install_files('lib/libCppUTest.a', os.path.join(builddir, 'lib'))
 else:
