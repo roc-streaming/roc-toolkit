@@ -59,13 +59,13 @@ env.SConsignFile(os.path.join(env.Dir('#').abspath, '.sconsign.dblite'))
 # libraries are no different
 env['STATIC_AND_SHARED_OBJECTS_ARE_THE_SAME'] = 1
 
-if platform.system() == 'Darwin':
-    default_prefix = '/usr/local'
-else:
+if platform.system() == 'Linux':
     # it would be better to use /usr/local on Linux too, but PulseAudio
     # is usually installed in /usr and does no search /usr/local for
     # dynamic libraries; so by default we also use /usr for consistency
     default_prefix = '/usr'
+else:
+    default_prefix = '/usr/local'
 
 AddOption('--prefix',
           dest='prefix',
