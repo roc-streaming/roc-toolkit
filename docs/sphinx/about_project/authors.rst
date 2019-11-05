@@ -21,3 +21,4 @@ Contributors
 * Thomas Dwyer <tdwyer1990@gmail.com>
 * Hrishikesh Suresh <hrishikesh123s@gmail.com>
 * kcy1019 <gkcy1019@gmail.com>
+* alexandremgo <alexandre.magaud@gmail.com>
