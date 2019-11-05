@@ -21,3 +21,8 @@ Contributors
 * Thomas Dwyer <tdwyer1990@gmail.com>
 * Hrishikesh Suresh <hrishikesh123s@gmail.com>
 * kcy1019 <gkcy1019@gmail.com>
+* alexandremgo <alexandre.magaud@gmail.com>
+* Cristobal Miranda <cristobal.miranda.tt@gmail.com>
+* Rohan Kumar <rohank.ce@gmail.com>
+* JonathanS <mail@strfry.org>
+* Gareth Marlow <gareth@eqsystems.io>
