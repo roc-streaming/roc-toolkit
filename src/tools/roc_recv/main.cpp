@@ -191,7 +191,9 @@ int main(int argc, char** argv) {
         receiver_config.default_session.resampler_backend =
             audio::ResamplerBackend_Builtin;
         break;
-
+    case resampler_backend_arg_speex:
+        receiver_config.default_session.resampler_backend = audio::ResamplerBackend_Speex;
+        break;
     default:
         break;
     }
