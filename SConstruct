@@ -29,6 +29,7 @@ thirdparty_versions = {
     'libatomic_ops':    '7.6.10',
     'libunwind':        '1.2.1',
     'openfec':          '1.4.2.4',
+    'speex':            '1.2beta3',
     'sox':              '14.4.2',
     'alsa':             '1.0.29',
     'pulseaudio':       '5.0',
@@ -994,6 +995,10 @@ if 'openfec' in download_dependencies:
                         'lib_common',
                         'lib_stable',
                         ])
+
+if 'speex' in download_dependencies:
+    env.ThirdParty(build, thirdparty_compiler_spec, toolchain,
+                thirdparty_variant, thirdparty_versions, 'speex')
 
 if 'alsa' in download_dependencies:
     tool_env.ThirdParty(host, thirdparty_compiler_spec, toolchain,

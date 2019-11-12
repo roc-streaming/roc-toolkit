@@ -628,6 +628,17 @@ elif name == 'openfec':
     os.chdir('..')
     install_tree('src', os.path.join(builddir, 'include'), match=['*.h'])
     install_files('%s/libopenfec.a' % dist, os.path.join(builddir, 'lib'))
+elif name == 'speex':
+    download('http://downloads.xiph.org/releases/speex/speex-%s.tar.gz' % ver,
+            'speex-%s.tar.gz' % ver,
+            logfile,
+            vendordir)
+    extract('speex-%s.tar.gz' % ver,
+            'speex-%s' % ver)
+    os.chdir('src/speex-%s' % ver)
+    execute('./configure', logfile)
+    execute_make(logfile)
+    install_tree('include', os.path.join(builddir, 'include'))
 elif name == 'alsa':
     download(
       'ftp://ftp.alsa-project.org/pub/lib/alsa-lib-%s.tar.bz2' % ver,
