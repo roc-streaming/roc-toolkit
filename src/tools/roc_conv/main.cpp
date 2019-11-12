@@ -140,7 +140,9 @@ int main(int argc, char** argv) {
     case resampler_backend_arg_builtin:
         converter_config.resampler_backend = audio::ResamplerBackend_Builtin;
         break;
-
+    case resampler_backend_arg_speex:
+        converter_config.resampler_backend = audio::ResamplerBackend_Speex;
+        break;
     default:
         break;
     }
