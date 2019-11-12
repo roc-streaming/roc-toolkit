@@ -29,6 +29,7 @@ thirdparty_versions = {
     'libatomic_ops':    '7.6.10',
     'libunwind':        '1.2.1',
     'openfec':          '1.4.2.4',
+    'speexdsp':         '1.2.0',
     'sox':              '14.4.2',
     'alsa':             '1.0.29',
     'pulseaudio':       '5.0',
@@ -219,6 +220,11 @@ AddOption('--disable-openfec',
           dest='disable_openfec',
           action='store_true',
           help='disable OpenFEC support required for FEC codes')
+
+AddOption('--disable-speexdsp',
+          dest='disable_speexdsp',
+          action='store_true',
+          help='disable SpeexDSP support for resampling')
 
 AddOption('--disable-sox',
           dest='disable_sox',
@@ -701,6 +707,11 @@ else:
             'target_openfec',
         ])
 
+    if not GetOption('disable_speexdsp'):
+        env.Append(ROC_TARGETS=[
+            'target_speexdsp',
+        ])
+
     if not GetOption('disable_tools'):
         if not GetOption('disable_sox'):
             env.Append(ROC_TARGETS=[
@@ -853,6 +864,17 @@ if 'openfec' in system_dependencies:
 
     env = conf.Finish()
 
+if 'speexdsp' in system_dependencies:
+    conf = Configure(env, custom_tests=env.CustomTests)
+
+    conf.AddPkgConfigDependency('speexdsp', '--cflags --libs')
+
+    if not conf.CheckLibWithHeaderExt('speexdsp', 'speex/speex_resampler.h', 'C',
+                                          run=not crosscompile):
+        env.Die("speexdsp not found (see 'config.log' for details)")
+
+    env = conf.Finish()
+
 if 'pulseaudio' in system_dependencies:
     conf = Configure(tool_env, custom_tests=env.CustomTests)
 
@@ -1000,6 +1022,10 @@ if 'openfec' in download_dependencies:
                         'lib_common',
                         'lib_stable',
                         ])
+
+if 'speexdsp' in download_dependencies:
+    env.ThirdParty(build, thirdparty_compiler_spec, toolchain,
+                thirdparty_variant, thirdparty_versions, 'speexdsp')
 
 if 'alsa' in download_dependencies:
     tool_env.ThirdParty(host, thirdparty_compiler_spec, toolchain,
