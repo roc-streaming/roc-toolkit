@@ -8,6 +8,7 @@
 
 #include "roc_audio/resampler_map.h"
 #include "roc_audio/resampler_builtin.h"
+#include "roc_audio/resampler_speex.h"
 
 namespace roc {
 namespace audio {
@@ -37,6 +38,12 @@ IResampler* ResamplerMap::new_resampler(ResamplerBackend resampler_backend,
     case ResamplerBackend_Builtin:
         resampler.reset(new (allocator) BuiltinResampler(allocator, profile, frame_length,
                                                          sample_rate, channels),
+                        allocator);
+        break;
+
+    case ResamplerBackend_Speex:
+        resampler.reset(new (allocator) SpeexResampler(allocator, profile, frame_length,
+                                                       sample_rate, channels),
                         allocator);
         break;
 
