@@ -20,6 +20,9 @@ enum ResamplerBackend {
     //! Roc built-in resampler.
     ResamplerBackend_Builtin = 0,
 
+    //! SpeexDSP resampler.
+    ResamplerBackend_Speex = 1,
+
     //! Number of backends.
     NumResamplerBackends
 };
