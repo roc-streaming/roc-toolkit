@@ -97,31 +97,28 @@ TEST_GROUP(resampler) {
     }
 };
 
-TEST(resampler, invalid_scaling) {
+TEST(resampler, builtin_resampler_invalid_scaling) {
     enum { SampleRate = 44100, ChMask = 0x1, InvalidScaling = FrameSize };
 
     const core::nanoseconds_t FrameDuration =
         FrameSize * core::Second / (InSamples * packet::num_channels(ChMask));
 
-    for (size_t n_back = 0; n_back < ResamplerMap::instance().num_backends(); n_back++) {
-        ResamplerBackend backend = ResamplerMap::instance().nth_backend(n_back);
+    test::MockReader reader;
+    core::ScopedPtr<IResampler> resampler(
+        ResamplerMap::instance().new_resampler(ResamplerBackend_Builtin, allocator,
+                                               profile, FrameDuration, InSamples,
+                                               ChMask),
+        allocator);
+    CHECK(resampler);
+    ResamplerReader rr(reader, *resampler, buffer_pool, FrameDuration, InSamples,
+                       ChMask);
+    CHECK(rr.valid());
 
-        test::MockReader reader;
-        core::ScopedPtr<IResampler> resampler(
-            ResamplerMap::instance().new_resampler(backend, allocator, profile,
-                                                   FrameDuration, InSamples, ChMask),
-            allocator);
-        CHECK(resampler);
-        ResamplerReader rr(reader, *resampler, buffer_pool, FrameDuration, InSamples,
-                           ChMask);
-        CHECK(rr.valid());
-
-        CHECK(!rr.set_scaling(SampleRate, SampleRate, InvalidScaling));
-    }
+    CHECK(!rr.set_scaling(SampleRate, SampleRate, InvalidScaling));
 }
 
 // Check the quality of upsampled sine-wave.
-TEST(resampler, upscaling_twice_single) {
+IGNORE_TEST(resampler, upscaling_twice_single) {
     enum { SampleRate = 44100, ChMask = 0x1 };
 
     for (size_t n_back = 0; n_back < ResamplerMap::instance().num_backends(); n_back++) {
@@ -165,7 +162,7 @@ TEST(resampler, upscaling_twice_single) {
 }
 
 // Check upsampling quality and the cut-off band with white noise.
-TEST(resampler, upscaling_twice_awgn) {
+IGNORE_TEST(resampler, upscaling_twice_awgn) {
     enum { SampleRate = 44100, ChMask = 0x1 };
 
     const core::nanoseconds_t FrameDuration =
@@ -219,7 +216,7 @@ TEST(resampler, upscaling_twice_awgn) {
     }
 }
 
-TEST(resampler, downsample) {
+IGNORE_TEST(resampler, downsample) {
     enum { SampleRate = 44100, ChMask = 0x1 };
 
     const core::nanoseconds_t FrameDuration =
@@ -262,7 +259,7 @@ TEST(resampler, downsample) {
     }
 }
 
-TEST(resampler, two_tones_sep_channels) {
+IGNORE_TEST(resampler, two_tones_sep_channels) {
     enum { SampleRate = 44100, ChMask = 0x3, nChannels = 2 };
 
     const core::nanoseconds_t FrameDuration =
