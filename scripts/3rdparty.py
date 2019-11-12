@@ -510,7 +510,7 @@ for e in envlist:
     k, v = e.split('=', 1)
     env[k] = v
 
-m = re.match('^(.*?)-([0-9][0-9.-]+)$', fullname)
+m = re.match('^(.*?)-([0-9][a-z0-9.-]+)$', fullname)
 if not m:
     print("error: can't determine version of '%s'" % fullname, file=sys.stderr)
     exit(1)
@@ -628,6 +628,31 @@ elif name == 'openfec':
     os.chdir('..')
     install_tree('src', os.path.join(builddir, 'include'), match=['*.h'])
     install_files('%s/libopenfec.a' % dist, os.path.join(builddir, 'lib'))
+elif name == 'speexdsp':
+    if ver.split('.', 1) > ['1', '2'] and (
+            not re.match('^1.2[a-z]', ver) or ver == '1.2rc3'):
+        speex = 'speexdsp'
+    else:
+        speex = 'speex'
+    download('http://downloads.xiph.org/releases/speex/%s-%s.tar.gz' % (speex, ver),
+            '%s-%s.tar.gz' % (speex, ver),
+            logfile,
+            vendordir)
+    extract('%s-%s.tar.gz' % (speex, ver),
+            '%s-%s' % (speex, ver))
+    os.chdir('src/%s-%s' % (speex, ver))
+    execute('./configure --host=%s %s %s %s' % (
+        toolchain,
+        makeenv(envlist),
+        makeflags(workdir, toolchain, env, deplist, cflags='-fPIC', variant=variant),
+        ' '.join([
+            '--enable-static',
+            '--disable-shared',
+            '--disable-examples',
+           ])), logfile)
+    execute_make(logfile)
+    install_tree('include', os.path.join(builddir, 'include'))
+    install_files('lib%s/.libs/libspeexdsp.a' % speex, os.path.join(builddir, 'lib'))
 elif name == 'alsa':
     download(
       'ftp://ftp.alsa-project.org/pub/lib/alsa-lib-%s.tar.bz2' % ver,
