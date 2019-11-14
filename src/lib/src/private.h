@@ -16,6 +16,7 @@
 
 #include "roc_address/socket_addr.h"
 #include "roc_audio/units.h"
+#include "roc_core/array.h"
 #include "roc_core/atomic.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/heap_allocator.h"
@@ -90,6 +91,8 @@ struct roc_receiver {
     roc::pipeline::Receiver receiver;
 
     size_t num_channels;
+
+    roc::core::Array<roc::address::SocketAddr> addresses;
 };
 
 #endif // ROC_PRIVATE_H_
