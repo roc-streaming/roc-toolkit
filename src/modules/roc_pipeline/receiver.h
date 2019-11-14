@@ -55,9 +55,6 @@ public:
     //! Add receiving port.
     bool add_port(const PortConfig& config);
 
-    //! Iterate added ports.
-    void iterate_ports(void (*fn)(void*, const PortConfig&), void* arg) const;
-
     //! Get number of alive sessions.
     size_t num_sessions() const;
 
