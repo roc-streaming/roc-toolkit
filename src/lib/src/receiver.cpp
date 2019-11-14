@@ -13,17 +13,6 @@
 
 using namespace roc;
 
-namespace {
-
-void receiver_close_port(void* arg, const pipeline::PortConfig& port) {
-    roc_panic_if_not(arg);
-    roc_receiver* receiver = (roc_receiver*)arg;
-
-    receiver->context.trx.remove_port(port.address);
-}
-
-} // namespace
-
 roc_receiver::roc_receiver(roc_context& ctx, pipeline::ReceiverConfig& cfg)
     : context(ctx)
     , receiver(cfg,
@@ -33,7 +22,8 @@ roc_receiver::roc_receiver(roc_context& ctx, pipeline::ReceiverConfig& cfg)
                context.byte_buffer_pool,
                context.sample_buffer_pool,
                context.allocator)
-    , num_channels(packet::num_channels(cfg.common.output_channels)) {
+    , num_channels(packet::num_channels(cfg.common.output_channels))
+    , addresses(context.allocator) {
 }
 
 roc_receiver* roc_receiver_open(roc_context* context, const roc_receiver_config* config) {
@@ -110,6 +100,8 @@ int roc_receiver_bind(roc_receiver* receiver,
         return -1;
     }
 
+    receiver->addresses.grow(receiver->addresses.size() + 1);
+    receiver->addresses.push_back(addr);
     roc_log(LogInfo, "roc_receiver: bound to %s",
             pipeline::port_to_str(port_config).c_str());
 
@@ -160,8 +152,10 @@ int roc_receiver_close(roc_receiver* receiver) {
 
     roc_context& context = receiver->context;
 
-    receiver->receiver.iterate_ports(receiver_close_port, receiver);
-    receiver->context.allocator.destroy(*receiver);
+    for (size_t i = 0; i < receiver->addresses.size(); i++) {
+        context.trx.remove_port(receiver->addresses[i]);
+    }
+    context.allocator.destroy(*receiver);
     --context.counter;
 
     roc_log(LogInfo, "roc_receiver: closed receiver");
