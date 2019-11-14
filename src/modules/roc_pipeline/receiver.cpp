@@ -75,16 +75,6 @@ bool Receiver::add_port(const PortConfig& config) {
     return true;
 }
 
-void Receiver::iterate_ports(void (*fn)(void*, const PortConfig&), void* arg) const {
-    core::Mutex::Lock lock(control_mutex_);
-
-    core::SharedPtr<ReceiverPort> port;
-
-    for (port = ports_.front(); port; port = ports_.nextof(*port)) {
-        fn(arg, port->config());
-    }
-}
-
 size_t Receiver::num_sessions() const {
     core::Mutex::Lock lock(control_mutex_);
 
