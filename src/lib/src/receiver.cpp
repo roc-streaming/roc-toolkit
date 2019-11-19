@@ -100,12 +100,11 @@ int roc_receiver_bind(roc_receiver* receiver,
         return -1;
     }
 
-    if (receiver->addresses.size() == receiver->addresses.max_size()) {
-        if (!receiver->addresses.grow((receiver->addresses.size() + 1) * 2)) {
-            roc_log(LogError, "roc_receiver_bind: can't grow the addresses array");
-            return -1;
-        }
+    if (!receiver->addresses.grow_exp((receiver->addresses.size() + 1))) {
+        roc_log(LogError, "roc_receiver_bind: can't grow the addresses array");
+        return -1;
     }
+
     receiver->addresses.push_back(addr);
     roc_log(LogInfo, "roc_receiver: bound to %s",
             pipeline::port_to_str(port_config).c_str());
