@@ -184,6 +184,26 @@ public:
         return true;
     }
 
+    //! Increase exponentially array maximum size.
+    //! @remarks
+    //!  If @p min_size is greater than the current maximum size, a larger memory
+    //!  region is allocated and the array elements are copied there.
+    //!  The size growth will follow the sequence: 0, 2, 4, 8, 16, ...
+    //! @returns
+    //!  false if the allocation failed
+    bool grow_exp(size_t min_size) {
+        if (min_size <= max_size_) {
+            return true;
+        }
+
+        size_t new_size = size_;
+        while (min_size > new_size) {
+            new_size = (new_size == 0) ? 2 : new_size * 2;
+        }
+
+        return grow(new_size);
+    }
+
 private:
     T* data_;
     size_t size_;
