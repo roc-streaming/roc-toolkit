@@ -70,6 +70,22 @@ TEST(array, grow) {
     LONGS_EQUAL(0, Object::n_objects);
 }
 
+TEST(array, grow_exp) {
+    Array<Object> array(allocator);
+
+    CHECK(array.grow_exp(3));
+
+    LONGS_EQUAL(4, array.max_size());
+    LONGS_EQUAL(0, array.size());
+    LONGS_EQUAL(0, Object::n_objects);
+
+    CHECK(array.grow_exp(1));
+
+    LONGS_EQUAL(4, array.max_size());
+    LONGS_EQUAL(0, array.size());
+    LONGS_EQUAL(0, Object::n_objects);
+}
+
 TEST(array, resize) {
     Array<Object> array(allocator);
 
