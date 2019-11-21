@@ -92,21 +92,11 @@ void StringList::clear() {
 }
 
 bool StringList::grow_(size_t new_size) {
-    if (new_size <= data_.max_size()) {
-        return true;
+    if (new_size < MinCapacity) {
+        new_size = MinCapacity;
     }
 
-    size_t new_capacity = data_.size();
-
-    if (new_capacity < MinCapacity) {
-        new_capacity = MinCapacity;
-    }
-
-    while (new_capacity < new_size) {
-        new_capacity *= 2;
-    }
-
-    return data_.grow(new_capacity);
+    return data_.grow_exp(new_size);
 }
 
 } // namespace core
