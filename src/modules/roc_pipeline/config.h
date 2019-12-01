@@ -28,6 +28,9 @@
 namespace roc {
 namespace pipeline {
 
+//! Default interval for profiling and logging
+const core::nanoseconds_t LogInterval = core::Second;
+
 //! Default sample rate, number of samples per second.
 const size_t DefaultSampleRate = 44100;
 
@@ -90,6 +93,9 @@ struct SenderConfig {
     //! Fill unitialized data with large values to make them more noticable.
     bool poisoning;
 
+    //! Profile moving average of frames being written
+    bool profiling;
+
     SenderConfig()
         : resampler_backend(audio::ResamplerBackend_Builtin)
         , input_sample_rate(DefaultSampleRate)
@@ -100,7 +106,8 @@ struct SenderConfig {
         , resampling(false)
         , interleaving(false)
         , timing(false)
-        , poisoning(false) {
+        , poisoning(false)
+        , profiling(false) {
     }
 };
 
@@ -170,6 +177,9 @@ struct ReceiverCommonConfig {
     //! Fill uninitialized data with large values to make them more noticeable.
     bool poisoning;
 
+    //! Profile moving average of frames being written
+    bool profiling;
+
     //! Insert weird beeps instead of silence on packet loss.
     bool beeping;
 
@@ -180,6 +190,7 @@ struct ReceiverCommonConfig {
         , resampling(false)
         , timing(false)
         , poisoning(false)
+        , profiling(false)
         , beeping(false) {
     }
 };
@@ -222,6 +233,9 @@ struct ConverterConfig {
     //! Fill unitialized data with large values to make them more noticable.
     bool poisoning;
 
+    //! Profile moving average of frames being written
+    bool profiling;
+
     ConverterConfig()
         : resampler_backend(audio::ResamplerBackend_Builtin)
         , input_sample_rate(DefaultSampleRate)
@@ -230,7 +244,8 @@ struct ConverterConfig {
         , output_channels(DefaultChannelMask)
         , internal_frame_length(DefaultInternalFrameLength)
         , resampling(false)
-        , poisoning(false) {
+        , poisoning(false)
+        , profiling(false) {
     }
 };
 

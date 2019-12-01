@@ -47,6 +47,17 @@ ReceiverSource::ReceiverSource(const ReceiverConfig& config,
         areader = poisoner_.get();
     }
 
+    if (config.common.profiling) {
+        profiler_.reset(new (allocator) audio::ProfilingReader(
+                            *areader, allocator, config.common.output_channels,
+                            config.common.output_sample_rate, LogInterval),
+                        allocator);
+        if (!profiler_) {
+            return;
+        }
+        areader = profiler_.get();
+    }
+
     audio_reader_ = areader;
 }
 

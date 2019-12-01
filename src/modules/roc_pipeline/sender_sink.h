@@ -113,6 +113,8 @@ private:
 
     core::ScopedPtr<audio::PoisonWriter> pipeline_poisoner_;
 
+    core::ScopedPtr<audio::ProfilingWriter> profiler_;
+
     core::ScopedPtr<core::Ticker> ticker_;
 
     audio::IWriter* audio_writer_;

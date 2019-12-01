@@ -235,6 +235,7 @@ int main(int argc, char** argv) {
     }
 
     receiver_config.common.poisoning = args.poisoning_flag;
+    receiver_config.common.profiling = args.profiling_flag;
     receiver_config.common.beeping = args.beeping_flag;
 
     sndio::Config io_config;

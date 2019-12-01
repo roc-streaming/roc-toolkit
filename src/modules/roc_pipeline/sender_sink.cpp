@@ -47,6 +47,17 @@ SenderSink::SenderSink(const SenderConfig& config,
         }
         awriter = pipeline_poisoner_.get();
     }
+    
+    if (config.profiling) {
+        profiler_.reset(new (allocator) audio::ProfilingWriter(
+                            *awriter, allocator, config.input_channels,
+                            config.input_sample_rate, LogInterval),
+                        allocator);
+        if (!profiler_) {
+            return;
+        }
+        awriter = profiler_.get();
+    }
 
     audio_writer_ = awriter;
 }
