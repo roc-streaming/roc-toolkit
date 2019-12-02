@@ -18,12 +18,8 @@ namespace roc {
 namespace core {
 
 //! Get random integer.
-//! @returns random value in range [0; upper).
-unsigned random(unsigned upper);
-
-//! Get random integer.
 //! @returns random value in range [from; to].
-unsigned random(unsigned from, unsigned to);
+uint32_t random(uint32_t from, uint32_t to);
 
 } // namespace core
 } // namespace roc
