@@ -35,9 +35,9 @@ Packetizer::Packetizer(packet::IWriter& writer,
     , payload_type_(payload_type)
     , payload_size_(payload_encoder.encoded_size(samples_per_packet_))
     , packet_pos_(0)
-    , source_((packet::source_t)core::random(packet::source_t(-1)))
-    , seqnum_((packet::seqnum_t)core::random(packet::seqnum_t(-1)))
-    , timestamp_((packet::timestamp_t)core::random(packet::timestamp_t(-1))) {
+    , source_((packet::source_t)core::random(0, packet::source_t(-1)))
+    , seqnum_((packet::seqnum_t)core::random(0, packet::seqnum_t(-1)))
+    , timestamp_((packet::timestamp_t)core::random(0, packet::timestamp_t(-1))) {
     roc_log(LogDebug, "packetizer: initializing: n_channels=%lu samples_per_packet=%lu",
             (unsigned long)num_channels_, (unsigned long)samples_per_packet_);
 }
