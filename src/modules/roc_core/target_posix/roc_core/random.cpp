@@ -33,31 +33,25 @@ void random_init() {
 
 } // namespace
 
-unsigned random(unsigned upper) {
-    roc_panic_if_not(upper > 0);
-
-    return random(0, upper - 1);
-}
-
 // Based on arc4random_uniform() from OpenBSD.
-unsigned random(unsigned from, unsigned to) {
+uint32_t random(uint32_t from, uint32_t to) {
     if (int err = pthread_once(&rand_once, random_init)) {
         roc_panic("pthread_once: %s", errno_to_str(err).c_str());
     }
 
     roc_panic_if_not(from <= to);
 
-    uint32_t upper = uint32_t(to - from + 1);
-    uint32_t min = -upper % upper;
-    uint32_t val = 0;
+    uint64_t upper = uint64_t(to) - from + 1;
+    uint64_t min = -upper % upper;
+    uint64_t val = 0;
 
     for (;;) {
-        if ((val = (uint32_t)nrand48(rand_seed)) >= min) {
+        if ((val = (uint64_t)nrand48(rand_seed)) >= min) {
             break;
         }
     }
 
-    unsigned ret = from + (unsigned)(val % upper);
+    uint32_t ret = from + uint32_t(val % upper);
 
     roc_panic_if_not(ret >= from);
     roc_panic_if_not(ret <= to);
