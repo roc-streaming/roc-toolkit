@@ -16,12 +16,10 @@ namespace roc {
 namespace audio {
 
 ResamplerWriter::ResamplerWriter(IWriter& writer,
+                                 IResampler& resampler,
                                  core::BufferPool<sample_t>& buffer_pool,
-                                 core::IAllocator& allocator,
-                                 const ResamplerConfig& config,
-                                 packet::channel_mask_t channels,
                                  size_t frame_size)
-    : resampler_(allocator, config, channels, frame_size)
+    : resampler_(resampler)
     , writer_(writer)
     , frame_pos_(0)
     , frame_size_(frame_size)

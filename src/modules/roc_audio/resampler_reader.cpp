@@ -16,12 +16,10 @@ namespace roc {
 namespace audio {
 
 ResamplerReader::ResamplerReader(IReader& reader,
+                                 IResampler& resampler,
                                  core::BufferPool<sample_t>& buffer_pool,
-                                 core::IAllocator& allocator,
-                                 const ResamplerConfig& config,
-                                 packet::channel_mask_t channels,
                                  size_t frame_size)
-    : resampler_(allocator, config, channels, frame_size)
+    : resampler_(resampler)
     , reader_(reader)
     , frame_size_(frame_size)
     , frames_empty_(true)
@@ -29,9 +27,11 @@ ResamplerReader::ResamplerReader(IReader& reader,
     if (!resampler_.valid()) {
         return;
     }
+
     if (!init_frames_(buffer_pool)) {
         return;
     }
+
     valid_ = true;
 }
 
