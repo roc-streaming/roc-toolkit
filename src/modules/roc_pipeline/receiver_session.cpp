@@ -7,6 +7,7 @@
  */
 
 #include "roc_pipeline/receiver_session.h"
+#include "roc_audio/resampler_map.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 
@@ -144,15 +145,27 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
             }
             areader = resampler_poisoner_.get();
         }
-        resampler_.reset(new (allocator_) audio::ResamplerReader(
-                             *areader, sample_buffer_pool, allocator,
-                             session_config.resampler, session_config.channels,
-                             common_config.internal_frame_size),
-                         allocator_);
-        if (!resampler_ || !resampler_->valid()) {
+        audio::ResamplerMap resampler_map;
+
+        resampler_.reset(resampler_map.new_resampler(session_config.resampler_backend,
+                                                     allocator, session_config.resampler,
+                                                     session_config.channels,
+                                                     common_config.internal_frame_size),
+                         allocator);
+
+        if (!resampler_) {
             return;
         }
-        areader = resampler_.get();
+
+        resampler_reader.reset(new (allocator) audio::ResamplerReader(
+                                   *areader, *resampler_, sample_buffer_pool,
+                                   common_config.internal_frame_size),
+                               allocator);
+
+        if (!resampler_reader || !resampler_reader->valid()) {
+            return;
+        }
+        areader = resampler_reader.get();
     }
 
     if (common_config.poisoning) {
@@ -165,7 +178,7 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
     }
 
     latency_monitor_.reset(new (allocator_) audio::LatencyMonitor(
-                               *source_queue_, *depacketizer_, resampler_.get(),
+                               *source_queue_, *depacketizer_, resampler_reader.get(),
                                session_config.latency_monitor,
                                session_config.target_latency, format->sample_rate,
                                common_config.output_sample_rate),

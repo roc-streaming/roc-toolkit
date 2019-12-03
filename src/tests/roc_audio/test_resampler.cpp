@@ -8,17 +8,20 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "roc_audio/resampler.h"
+#include "roc_audio/iresampler.h"
+#include "roc_audio/resampler_map.h"
 #include "roc_audio/resampler_reader.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_core/random.h"
 #include "roc_core/stddefs.h"
+#include "roc_core/unique_ptr.h"
 
 #include "test_awgn.h"
 #include "test_fft.h"
 #include "test_median.h"
 #include "test_mock_reader.h"
+#include "test_resampler_backends.h"
 
 namespace roc {
 namespace audio {
@@ -37,6 +40,7 @@ enum {
 
 core::HeapAllocator allocator;
 core::BufferPool<sample_t> buffer_pool(allocator, MaxSize, true);
+ResamplerMap resampler_map;
 
 } // namespace
 
@@ -100,147 +104,181 @@ TEST_GROUP(resampler) {
 TEST(resampler, invalid_scaling) {
     enum { ChMask = 0x1, InvalidScaling = FrameSize };
 
-    MockReader reader;
-    ResamplerReader rr(reader, buffer_pool, allocator, config, ChMask, FrameSize);
+    for (size_t n_backend = 0; n_backend < Test_n_resampler_backends; n_backend++) {
+        ResamplerBackend backend = Test_resampler_backends[n_backend];
 
-    CHECK(rr.valid());
+        MockReader reader;
+        core::UniquePtr<IResampler> resampler(
+            resampler_map.new_resampler(backend, allocator, config, ChMask, FrameSize),
+            allocator);
+        CHECK(resampler);
+        ResamplerReader rr(reader, *resampler, buffer_pool, FrameSize);
+        CHECK(rr.valid());
 
-    CHECK(!rr.set_scaling(InvalidScaling));
+        CHECK(!rr.set_scaling(InvalidScaling));
+    }
 }
 
 // Check the quality of upsampled sine-wave.
 TEST(resampler, upscaling_twice_single) {
     enum { ChMask = 0x1 };
+    for (size_t n_backend = 0; n_backend < Test_n_resampler_backends; n_backend++) {
+        ResamplerBackend backend = Test_resampler_backends[n_backend];
 
-    MockReader reader;
-    ResamplerReader rr(reader, buffer_pool, allocator, config, ChMask, FrameSize);
+        MockReader reader;
+        core::UniquePtr<IResampler> resampler(
+            resampler_map.new_resampler(backend, allocator, config, ChMask, FrameSize),
+            allocator);
+        CHECK(resampler);
+        ResamplerReader rr(reader, *resampler, buffer_pool, FrameSize);
 
-    CHECK(rr.valid());
+        CHECK(rr.valid());
 
-    CHECK(rr.set_scaling(0.5f));
+        CHECK(rr.set_scaling(0.5f));
 
-    const size_t sig_len = 2048;
-    double buff[sig_len * 2];
+        const size_t sig_len = 2048;
+        double buff[sig_len * 2];
 
-    for (size_t n = 0; n < InSamples; n++) {
-        const sample_t s = (sample_t)std::sin(M_PI / 4 * double(n));
-        reader.add(1, s);
-    }
+        for (size_t n = 0; n < InSamples; n++) {
+            const sample_t s = (sample_t)std::sin(M_PI / 4 * double(n));
+            reader.add(1, s);
+        }
 
-    // Put the spectrum of the resampled signal into buff.
-    // Odd elements are magnitudes in dB, even elements are phases in radians.
-    get_sample_spectrum1(rr, buff, sig_len);
+        // Put the spectrum of the resampled signal into buff.
+        // Odd elements are magnitudes in dB, even elements are phases in radians.
+        get_sample_spectrum1(rr, buff, sig_len);
 
-    const size_t main_freq_index = sig_len / 8;
-    for (size_t n = 0; n < sig_len / 2; n += 2) {
-        // The main sinewave frequency decreased twice as we've upsampled.
-        // So here SNR is checked.
-        CHECK((buff[n] - buff[main_freq_index]) <= -110 || n == main_freq_index);
+        const size_t main_freq_index = sig_len / 8;
+        for (size_t n = 0; n < sig_len / 2; n += 2) {
+            // The main sinewave frequency decreased twice as we've upsampled.
+            // So here SNR is checked.
+            CHECK((buff[n] - buff[main_freq_index]) <= -110 || n == main_freq_index);
+        }
     }
 }
 
 // Check upsampling quality and the cut-off band with white noise.
 TEST(resampler, upscaling_twice_awgn) {
     enum { ChMask = 0x1 };
+    for (size_t n_backend = 0; n_backend < Test_n_resampler_backends; n_backend++) {
+        ResamplerBackend backend = Test_resampler_backends[n_backend];
 
-    MockReader reader;
-    ResamplerReader rr(reader, buffer_pool, allocator, config, ChMask, FrameSize);
+        MockReader reader;
+        core::UniquePtr<IResampler> resampler(
+            resampler_map.new_resampler(backend, allocator, config, ChMask, FrameSize),
+            allocator);
+        CHECK(resampler);
+        ResamplerReader rr(reader, *resampler, buffer_pool, FrameSize);
 
-    CHECK(rr.valid());
-    CHECK(rr.set_scaling(0.5f));
+        CHECK(rr.valid());
+        CHECK(rr.set_scaling(0.5f));
 
-    // Generate white noise.
-    for (size_t n = 0; n < InSamples; n++) {
-        const sample_t s = (sample_t)generate_awgn();
-        reader.add(1, s);
-    }
+        // Generate white noise.
+        for (size_t n = 0; n < InSamples; n++) {
+            const sample_t s = (sample_t)generate_awgn();
+            reader.add(1, s);
+        }
 
-    // Put the spectrum of the resampled signal into buff.
-    // Odd elements are magnitudes in dB, even elements are phases in radians.
-    const size_t sig_len = 2048;
-    double buff[sig_len * 2];
-    get_sample_spectrum1(rr, buff, sig_len);
+        // Put the spectrum of the resampled signal into buff.
+        // Odd elements are magnitudes in dB, even elements are phases in radians.
+        const size_t sig_len = 2048;
+        double buff[sig_len * 2];
+        get_sample_spectrum1(rr, buff, sig_len);
 
-    // Get dB part.
-    const size_t db_len = sig_len / 2;
-    double db[db_len];
-    for (size_t i = 0; i < sig_len; i += 2) {
-        db[i / 2] = buff[i];
-    }
+        // Get dB part.
+        const size_t db_len = sig_len / 2;
+        double db[db_len];
+        for (size_t i = 0; i < sig_len; i += 2) {
+            db[i / 2] = buff[i];
+        }
 
-    // Remove spikes using median filter.
-    double filtered_db[db_len];
-    median_filter(db, filtered_db, db_len);
+        // Remove spikes using median filter.
+        double filtered_db[db_len];
+        median_filter(db, filtered_db, db_len);
 
-    for (size_t i = 0; i < db_len; i++) {
-        if (i <= db_len * 0.4) {
-            CHECK(filtered_db[i] >= -50);
-        } else if (i >= db_len * 0.8) {
-            CHECK(filtered_db[i] <= -50);
+        for (size_t i = 0; i < db_len; i++) {
+            if (i <= db_len * 0.4) {
+                CHECK(filtered_db[i] >= -50);
+            } else if (i >= db_len * 0.8) {
+                CHECK(filtered_db[i] <= -50);
+            }
         }
     }
 }
 
 TEST(resampler, downsample) {
     enum { ChMask = 0x1 };
+    for (size_t n_backend = 0; n_backend < Test_n_resampler_backends; n_backend++) {
+        ResamplerBackend backend = Test_resampler_backends[n_backend];
 
-    MockReader reader;
-    ResamplerReader rr(reader, buffer_pool, allocator, config, ChMask, FrameSize);
+        MockReader reader;
+        core::UniquePtr<IResampler> resampler(
+            resampler_map.new_resampler(backend, allocator, config, ChMask, FrameSize),
+            allocator);
+        CHECK(resampler);
+        ResamplerReader rr(reader, *resampler, buffer_pool, FrameSize);
 
-    CHECK(rr.valid());
-    CHECK(rr.set_scaling(1.5f));
+        CHECK(rr.valid());
+        CHECK(rr.set_scaling(1.5f));
 
-    const size_t sig_len = 2048;
-    double buff[sig_len * 2];
+        const size_t sig_len = 2048;
+        double buff[sig_len * 2];
 
-    for (size_t n = 0; n < InSamples; n++) {
-        const sample_t s = (sample_t)std::sin(M_PI / 4 * double(n));
-        reader.add(1, s);
-    }
+        for (size_t n = 0; n < InSamples; n++) {
+            const sample_t s = (sample_t)std::sin(M_PI / 4 * double(n));
+            reader.add(1, s);
+        }
 
-    // Put the spectrum of the resampled signal into buff.
-    // Odd elements are magnitudes in dB, even elements are phases in radians.
-    get_sample_spectrum1(rr, buff, sig_len);
+        // Put the spectrum of the resampled signal into buff.
+        // Odd elements are magnitudes in dB, even elements are phases in radians.
+        get_sample_spectrum1(rr, buff, sig_len);
 
-    const size_t main_freq_index = (size_t)round(sig_len / 4 * 1.5);
-    for (size_t n = 0; n < sig_len / 2; n += 2) {
-        // The main sinewave frequency increased by 1.5 as we've downsampled.
-        // So here SNR is checked.
-        CHECK((buff[n] - buff[main_freq_index]) <= -110 || buff[n] < -200
-              || n == main_freq_index);
+        const size_t main_freq_index = (size_t)round(sig_len / 4 * 1.5);
+        for (size_t n = 0; n < sig_len / 2; n += 2) {
+            // The main sinewave frequency increased by 1.5 as we've downsampled.
+            // So here SNR is checked.
+            CHECK((buff[n] - buff[main_freq_index]) <= -110 || buff[n] < -200
+                  || n == main_freq_index);
+        }
     }
 }
 
 TEST(resampler, two_tones_sep_channels) {
     enum { ChMask = 0x3, nChannels = 2 };
+    for (size_t n_backend = 0; n_backend < Test_n_resampler_backends; n_backend++) {
+        ResamplerBackend backend = Test_resampler_backends[n_backend];
 
-    MockReader reader;
-    ResamplerReader rr(reader, buffer_pool, allocator, config, ChMask, FrameSize);
+        MockReader reader;
+        core::UniquePtr<IResampler> resampler(
+            resampler_map.new_resampler(backend, allocator, config, ChMask, FrameSize),
+            allocator);
+        CHECK(resampler);
+        ResamplerReader rr(reader, *resampler, buffer_pool, FrameSize);
+        CHECK(rr.valid());
+        CHECK(rr.set_scaling(0.5f));
 
-    CHECK(rr.valid());
-    CHECK(rr.set_scaling(0.5f));
+        const size_t sig_len = 2048;
+        double buff1[sig_len * 2];
+        double buff2[sig_len * 2];
+        size_t i;
 
-    const size_t sig_len = 2048;
-    double buff1[sig_len * 2];
-    double buff2[sig_len * 2];
-    size_t i;
+        for (size_t n = 0; n < InSamples / nChannels; n++) {
+            const sample_t s1 = (sample_t)std::sin(M_PI / 4 * double(n));
+            const sample_t s2 = (sample_t)std::sin(M_PI / 8 * double(n));
+            reader.add(1, s1);
+            reader.add(1, s2);
+        }
 
-    for (size_t n = 0; n < InSamples / nChannels; n++) {
-        const sample_t s1 = (sample_t)std::sin(M_PI / 4 * double(n));
-        const sample_t s2 = (sample_t)std::sin(M_PI / 8 * double(n));
-        reader.add(1, s1);
-        reader.add(1, s2);
-    }
+        // Put the spectrum of the resampled signal into buff.
+        // Odd elements are magnitudes in dB, even elements are phases in radians.
+        get_sample_spectrum2(rr, buff1, buff2, sig_len);
 
-    // Put the spectrum of the resampled signal into buff.
-    // Odd elements are magnitudes in dB, even elements are phases in radians.
-    get_sample_spectrum2(rr, buff1, buff2, sig_len);
-
-    const size_t main_freq_index1 = sig_len / 8 / nChannels;
-    const size_t main_freq_index2 = sig_len / 16 / nChannels;
-    for (i = 0; i < sig_len / 2; i += 2) {
-        CHECK((buff1[i] - buff1[main_freq_index1]) <= -75 || i == main_freq_index1);
-        CHECK((buff2[i] - buff2[main_freq_index2]) <= -75 || i == main_freq_index2);
+        const size_t main_freq_index1 = sig_len / 8 / nChannels;
+        const size_t main_freq_index2 = sig_len / 16 / nChannels;
+        for (i = 0; i < sig_len / 2; i += 2) {
+            CHECK((buff1[i] - buff1[main_freq_index1]) <= -75 || i == main_freq_index1);
+            CHECK((buff2[i] - buff2[main_freq_index2]) <= -75 || i == main_freq_index2);
+        }
     }
 }
 
