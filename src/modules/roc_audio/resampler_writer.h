@@ -13,8 +13,9 @@
 #define ROC_AUDIO_RESAMPLER_WRITER_H_
 
 #include "roc_audio/frame.h"
+#include "roc_audio/iresampler.h"
 #include "roc_audio/iwriter.h"
-#include "roc_audio/resampler.h"
+#include "roc_audio/resampler_config.h"
 #include "roc_audio/units.h"
 #include "roc_core/array.h"
 #include "roc_core/noncopyable.h"
@@ -34,14 +35,11 @@ public:
     //!
     //! @b Parameters
     //!  - @p writer specifies output audio stream used in write()
-    //!  - @p buffer_pool is used to allocate temporary buffers
+    //!  - @p resampler interface that hides which resampler algorithm will be used
     //!  - @p frame_size is number of samples per resampler frame per audio channel
-    //!  - @p channels is the bitmask of audio channels
     ResamplerWriter(IWriter& writer,
+                    IResampler& resampler,
                     core::BufferPool<sample_t>& buffer_pool,
-                    core::IAllocator& allocator,
-                    const ResamplerConfig& config,
-                    packet::channel_mask_t channels,
                     size_t frame_size);
 
     //! Check if object is successfully constructed.
@@ -64,7 +62,7 @@ public:
 private:
     bool init_(core::BufferPool<sample_t>&);
 
-    Resampler resampler_;
+    IResampler& resampler_;
     IWriter& writer_;
 
     core::Slice<sample_t> output_;

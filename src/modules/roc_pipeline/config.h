@@ -13,7 +13,7 @@
 #define ROC_PIPELINE_CONFIG_H_
 
 #include "roc_audio/latency_monitor.h"
-#include "roc_audio/resampler.h"
+#include "roc_audio/resampler_config.h"
 #include "roc_audio/watchdog.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/time.h"
@@ -70,6 +70,9 @@ struct SenderConfig {
     //! Resampler parameters.
     audio::ResamplerConfig resampler;
 
+    //! To specify which resampling backend will be used.
+    audio::ResamplerBackend resampler_backend;
+
     //! FEC writer parameters.
     fec::WriterConfig fec_writer;
 
@@ -104,7 +107,8 @@ struct SenderConfig {
     bool poisoning;
 
     SenderConfig()
-        : input_sample_rate(DefaultSampleRate)
+        : resampler_backend(audio::ResamplerBackend_Builtin)
+        , input_sample_rate(DefaultSampleRate)
         , input_channels(DefaultChannelMask)
         , internal_frame_size(DefaultInternalFrameSize)
         , packet_length(DefaultPacketLength)
@@ -147,10 +151,14 @@ struct ReceiverSessionConfig {
     //! Resampler parameters.
     audio::ResamplerConfig resampler;
 
+    //! To specify which resampling backend will be used.
+    audio::ResamplerBackend resampler_backend;
+
     ReceiverSessionConfig()
         : target_latency(DefaultLatency)
         , channels(DefaultChannelMask)
-        , payload_type(0) {
+        , payload_type(0)
+        , resampler_backend(audio::ResamplerBackend_Builtin) {
         latency_monitor.min_latency = target_latency * DefaultMinLatencyFactor;
         latency_monitor.max_latency = target_latency * DefaultMaxLatencyFactor;
     }
@@ -206,6 +214,9 @@ struct ConverterConfig {
     //! Resampler parameters.
     audio::ResamplerConfig resampler;
 
+    //! To specify which resampling backend will be used.
+    audio::ResamplerBackend resampler_backend;
+
     //! Number of samples per second per channel.
     size_t input_sample_rate;
 
@@ -228,7 +239,8 @@ struct ConverterConfig {
     bool poisoning;
 
     ConverterConfig()
-        : input_sample_rate(DefaultSampleRate)
+        : resampler_backend(audio::ResamplerBackend_Builtin)
+        , input_sample_rate(DefaultSampleRate)
         , output_sample_rate(DefaultSampleRate)
         , input_channels(DefaultChannelMask)
         , output_channels(DefaultChannelMask)

@@ -12,9 +12,11 @@
 #ifndef ROC_PIPELINE_CONVERTER_H_
 #define ROC_PIPELINE_CONVERTER_H_
 
+#include "roc_audio/iresampler.h"
 #include "roc_audio/null_writer.h"
 #include "roc_audio/poison_writer.h"
 #include "roc_audio/profiling_writer.h"
+#include "roc_audio/resampler_map.h"
 #include "roc_audio/resampler_profile.h"
 #include "roc_audio/resampler_writer.h"
 #include "roc_core/buffer_pool.h"
@@ -50,7 +52,8 @@ private:
     audio::NullWriter null_writer_;
 
     core::UniquePtr<audio::PoisonWriter> resampler_poisoner_;
-    core::UniquePtr<audio::ResamplerWriter> resampler_;
+    core::UniquePtr<audio::ResamplerWriter> resampler_writer_;
+    core::UniquePtr<audio::IResampler> resampler_;
 
     core::UniquePtr<audio::ProfilingWriter> profiler_;
 
