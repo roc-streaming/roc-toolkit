@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_audio/resampler.h"
+#include "roc_audio/resampler_builtin.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_core/stddefs.h"
@@ -72,10 +72,10 @@ inline size_t calc_bits(size_t n) {
 
 } // namespace
 
-Resampler::Resampler(core::IAllocator& allocator,
-                     const ResamplerConfig& config,
-                     packet::channel_mask_t channels,
-                     size_t frame_size)
+BuiltinResampler::BuiltinResampler(core::IAllocator& allocator,
+                                   const ResamplerConfig& config,
+                                   packet::channel_mask_t channels,
+                                   size_t frame_size)
     : channel_mask_(channels)
     , channels_num_(packet::num_channels(channel_mask_))
     , prev_frame_(NULL)
@@ -114,11 +114,14 @@ Resampler::Resampler(core::IAllocator& allocator,
     valid_ = true;
 }
 
-bool Resampler::valid() const {
+BuiltinResampler::~BuiltinResampler() {
+}
+
+bool BuiltinResampler::valid() const {
     return valid_;
 }
 
-bool Resampler::set_scaling(float new_scaling) {
+bool BuiltinResampler::set_scaling(float new_scaling) {
     // Window's size changes according to scaling. If new window size
     // doesn't fit to the frames size -- deny changes.
     if (window_size_ * new_scaling >= frame_size_ch_) {
@@ -165,7 +168,7 @@ bool Resampler::set_scaling(float new_scaling) {
     return true;
 }
 
-bool Resampler::resample_buff(Frame& out) {
+bool BuiltinResampler::resample_buff(Frame& out) {
     roc_panic_if(!prev_frame_);
     roc_panic_if(!curr_frame_);
     roc_panic_if(!next_frame_);
@@ -192,7 +195,7 @@ bool Resampler::resample_buff(Frame& out) {
     return true;
 }
 
-bool Resampler::check_config_() const {
+bool BuiltinResampler::check_config_() const {
     if (channels_num_ < 1) {
         roc_log(LogError, "resampler: invalid num_channels: num_channels=%lu",
                 (unsigned long)channels_num_);
@@ -228,9 +231,9 @@ bool Resampler::check_config_() const {
     return true;
 }
 
-void Resampler::renew_buffers(core::Slice<sample_t>& prev,
-                              core::Slice<sample_t>& cur,
-                              core::Slice<sample_t>& next) {
+void BuiltinResampler::renew_buffers(core::Slice<sample_t>& prev,
+                                     core::Slice<sample_t>& cur,
+                                     core::Slice<sample_t>& next) {
     roc_panic_if(window_size_ * scaling_ >= frame_size_ch_);
 
     roc_panic_if(prev.size() != frame_size_);
@@ -249,7 +252,7 @@ void Resampler::renew_buffers(core::Slice<sample_t>& prev,
     next_frame_ = next.data();
 }
 
-bool Resampler::fill_sinc_() {
+bool BuiltinResampler::fill_sinc_() {
     if (!sinc_table_.resize(window_size_ * window_interp_ + 2)) {
         roc_log(LogError, "resampler: can't allocate sinc table");
         return false;
@@ -281,7 +284,7 @@ bool Resampler::fill_sinc_() {
 // During going through input signal window only integer part of argument changes,
 // that's why there are two arguments in this function: integer part and fractional
 // part of time coordinate.
-sample_t Resampler::sinc_(const fixedpoint_t x, const float fract_x) {
+sample_t BuiltinResampler::sinc_(const fixedpoint_t x, const float fract_x) {
     const size_t index = (x >> (FRACT_BIT_COUNT - window_interp_bits_));
 
     const sample_t hl = sinc_table_ptr_[index];     // table index smaller than x
@@ -292,7 +295,7 @@ sample_t Resampler::sinc_(const fixedpoint_t x, const float fract_x) {
     return scaling_ > 1.0f ? result / scaling_ : result;
 }
 
-sample_t Resampler::resample_(const size_t channel_offset) {
+sample_t BuiltinResampler::resample_(const size_t channel_offset) {
     // Index of first input sample in window.
     size_t ind_begin_prev;
 
