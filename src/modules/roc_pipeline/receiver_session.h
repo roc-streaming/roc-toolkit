@@ -16,6 +16,7 @@
 #include "roc_audio/depacketizer.h"
 #include "roc_audio/iframe_decoder.h"
 #include "roc_audio/ireader.h"
+#include "roc_audio/iresampler.h"
 #include "roc_audio/latency_monitor.h"
 #include "roc_audio/poison_reader.h"
 #include "roc_audio/resampler_reader.h"
@@ -104,7 +105,8 @@ private:
     core::UniquePtr<audio::Depacketizer> depacketizer_;
 
     core::UniquePtr<audio::PoisonReader> resampler_poisoner_;
-    core::UniquePtr<audio::ResamplerReader> resampler_;
+    core::UniquePtr<audio::ResamplerReader> resampler_reader;
+    core::UniquePtr<audio::IResampler> resampler_;
 
     core::UniquePtr<audio::PoisonReader> session_poisoner_;
 
