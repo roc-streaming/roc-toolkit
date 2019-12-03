@@ -120,6 +120,15 @@ int main(int argc, char** argv) {
         config.output_sample_rate = config.input_sample_rate;
     }
 
+    switch ((unsigned)args.resampler_backend_arg) {
+    case resampler_backend_arg_builtin:
+        config.resampler_backend = audio::ResamplerBackend_Builtin;
+        break;
+
+    default:
+        break;
+    }
+
     switch ((unsigned)args.resampler_profile_arg) {
     case resampler_profile_arg_low:
         config.resampler = audio::resampler_profile(audio::ResamplerProfile_Low);
