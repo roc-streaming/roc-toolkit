@@ -7,6 +7,7 @@
  */
 
 #include "roc_pipeline/converter.h"
+#include "roc_audio/resampler_map.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 
@@ -33,18 +34,31 @@ Converter::Converter(const ConverterConfig& config,
             }
             awriter = resampler_poisoner_.get();
         }
-        resampler_.reset(new (allocator) audio::ResamplerWriter(
-                             *awriter, pool, allocator, config.resampler,
-                             config.output_channels, config.internal_frame_size),
+
+        audio::ResamplerMap resampler_map;
+
+        resampler_.reset(resampler_map.new_resampler(
+                             config.resampler_backend, allocator, config.resampler,
+                             config.input_channels, config.internal_frame_size),
                          allocator);
-        if (!resampler_ || !resampler_->valid()) {
+
+        if (!resampler_) {
             return;
         }
-        if (!resampler_->set_scaling(float(config.input_sample_rate)
-                                     / config.output_sample_rate)) {
+
+        resampler_writer_.reset(new (allocator)
+                                    audio::ResamplerWriter(*awriter, *resampler_, pool,
+                                                           config.internal_frame_size),
+                                allocator);
+
+        if (!resampler_writer_ || !resampler_writer_->valid()) {
             return;
         }
-        awriter = resampler_.get();
+        if (!resampler_writer_->set_scaling(float(config.input_sample_rate)
+                                            / config.output_sample_rate)) {
+            return;
+        }
+        awriter = resampler_writer_.get();
     }
 
     profiler_.reset(new (allocator) audio::ProfilingWriter(
