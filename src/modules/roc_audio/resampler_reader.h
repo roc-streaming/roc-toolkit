@@ -14,7 +14,7 @@
 
 #include "roc_audio/frame.h"
 #include "roc_audio/ireader.h"
-#include "roc_audio/resampler.h"
+#include "roc_audio/iresampler.h"
 #include "roc_audio/units.h"
 #include "roc_core/array.h"
 #include "roc_core/noncopyable.h"
@@ -34,14 +34,11 @@ public:
     //!
     //! @b Parameters
     //!  - @p reader specifies input audio stream used in read()
-    //!  - @p buffer_pool is used to allocate temporary buffers
+    //!  - @p resampler interface that hides which resampler algorithm will be used
     //!  - @p frame_size is number of samples per resampler frame per audio channel
-    //!  - @p channels is the bitmask of audio channels
     ResamplerReader(IReader& reader,
+                    IResampler& resampler,
                     core::BufferPool<sample_t>& buffer_pool,
-                    core::IAllocator& allocator,
-                    const ResamplerConfig& config,
-                    packet::channel_mask_t channels,
                     size_t frame_size);
 
     //! Check if object is successfully constructed.
@@ -65,7 +62,7 @@ private:
     bool init_frames_(core::BufferPool<sample_t>&);
     void renew_frames_();
 
-    Resampler resampler_;
+    IResampler& resampler_;
     IReader& reader_;
 
     core::Slice<sample_t> frames_[3];

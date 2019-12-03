@@ -145,6 +145,15 @@ int main(int argc, char** argv) {
 
     config.resampling = !args.no_resampling_flag;
 
+    switch ((unsigned)args.resampler_backend_arg) {
+    case resampler_backend_arg_builtin:
+        config.resampler_backend = audio::ResamplerBackend_Builtin;
+        break;
+
+    default:
+        break;
+    }
+
     switch ((unsigned)args.resampler_profile_arg) {
     case resampler_profile_arg_low:
         config.resampler = audio::resampler_profile(audio::ResamplerProfile_Low);

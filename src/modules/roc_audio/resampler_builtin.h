@@ -6,14 +6,16 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_audio/resampler.h
+//! @file roc_audio/resampler_builtin.h
 //! @brief Resampler.
 
-#ifndef ROC_AUDIO_RESAMPLER_H_
-#define ROC_AUDIO_RESAMPLER_H_
+#ifndef ROC_AUDIO_RESAMPLER_BUILTIN_H_
+#define ROC_AUDIO_RESAMPLER_BUILTIN_H_
 
 #include "roc_audio/frame.h"
 #include "roc_audio/ireader.h"
+#include "roc_audio/iresampler.h"
+#include "roc_audio/resampler_config.h"
 #include "roc_audio/units.h"
 #include "roc_core/array.h"
 #include "roc_core/noncopyable.h"
@@ -24,34 +26,14 @@
 namespace roc {
 namespace audio {
 
-//! Resampler parameters.
-struct ResamplerConfig {
-    //! Sinc table precision.
-    //! @remarks
-    //!  Affects sync table size.
-    //!  Lower values give lower quality but rarer cache misses.
-    size_t window_interp;
-
-    //! Resampler internal window length.
-    //! @remarks
-    //!  Affects sync table size and number of CPU cycles.
-    //!  Lower values give lower quality but higher speed and also rarer cache misses.
-    size_t window_size;
-
-    ResamplerConfig()
-        : window_interp(128)
-        , window_size(32) {
-    }
-};
-
 //! Resamples audio stream with non-integer dynamically changing factor.
-class Resampler : public core::NonCopyable<> {
+class BuiltinResampler : public IResampler, public core::NonCopyable<> {
 public:
     //! Initialize.
-    Resampler(core::IAllocator& allocator,
-              const ResamplerConfig& config,
-              packet::channel_mask_t channels,
-              size_t frame_size);
+    BuiltinResampler(core::IAllocator& allocator,
+                     const ResamplerConfig& config,
+                     packet::channel_mask_t channels,
+                     size_t frame_size);
 
     //! Check if object is successfully constructed.
     bool valid() const;
@@ -72,6 +54,8 @@ public:
     void renew_buffers(core::Slice<sample_t>& prev,
                        core::Slice<sample_t>& cur,
                        core::Slice<sample_t>& next);
+
+    ~BuiltinResampler();
 
 private:
     typedef uint32_t fixedpoint_t;
@@ -141,4 +125,4 @@ private:
 } // namespace audio
 } // namespace roc
 
-#endif // ROC_AUDIO_RESAMPLER_H_
+#endif // ROC_AUDIO_RESAMPLER_BUILTIN_H_

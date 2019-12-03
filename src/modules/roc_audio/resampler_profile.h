@@ -12,7 +12,7 @@
 #ifndef ROC_AUDIO_RESAMPLER_PROFILE_H_
 #define ROC_AUDIO_RESAMPLER_PROFILE_H_
 
-#include "roc_audio/resampler.h"
+#include "roc_audio/resampler_config.h"
 
 namespace roc {
 namespace audio {

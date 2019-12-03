@@ -13,8 +13,10 @@
 #define ROC_PIPELINE_SENDER_H_
 
 #include "roc_audio/iframe_encoder.h"
+#include "roc_audio/iresampler.h"
 #include "roc_audio/packetizer.h"
 #include "roc_audio/poison_writer.h"
+#include "roc_audio/resampler_map.h"
 #include "roc_audio/resampler_writer.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/iallocator.h"
@@ -78,7 +80,8 @@ private:
     core::UniquePtr<audio::Packetizer> packetizer_;
 
     core::UniquePtr<audio::PoisonWriter> resampler_poisoner_;
-    core::UniquePtr<audio::ResamplerWriter> resampler_;
+    core::UniquePtr<audio::ResamplerWriter> resampler_writer_;
+    core::UniquePtr<audio::IResampler> resampler_;
 
     core::UniquePtr<audio::PoisonWriter> pipeline_poisoner_;
 
