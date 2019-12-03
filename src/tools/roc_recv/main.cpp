@@ -151,6 +151,15 @@ int main(int argc, char** argv) {
 
     config.common.resampling = !args.no_resampling_flag;
 
+    switch ((unsigned)args.resampler_backend_arg) {
+    case resampler_backend_arg_builtin:
+        config.default_session.resampler_backend = audio::ResamplerBackend_Builtin;
+        break;
+
+    default:
+        break;
+    }
+
     switch ((unsigned)args.resampler_profile_arg) {
     case resampler_profile_arg_low:
         config.default_session.resampler =
