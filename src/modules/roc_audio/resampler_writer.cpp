@@ -42,10 +42,12 @@ bool ResamplerWriter::valid() const {
     return valid_;
 }
 
-bool ResamplerWriter::set_scaling(float scaling) {
+bool ResamplerWriter::set_scaling(size_t input_sample_rate,
+                                  size_t output_sample_rate,
+                                  float multiplier) {
     roc_panic_if_not(valid());
 
-    return resampler_.set_scaling(scaling);
+    return resampler_.set_scaling(input_sample_rate, output_sample_rate, multiplier);
 }
 
 void ResamplerWriter::write(Frame& input) {

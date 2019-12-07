@@ -55,8 +55,8 @@ ConverterSink::ConverterSink(const ConverterConfig& config,
         if (!resampler_writer_ || !resampler_writer_->valid()) {
             return;
         }
-        if (!resampler_writer_->set_scaling(float(config.input_sample_rate)
-                                            / config.output_sample_rate)) {
+        if (!resampler_writer_->set_scaling(config.input_sample_rate,
+                                            config.output_sample_rate, 1.0f)) {
             return;
         }
         awriter = resampler_writer_.get();
