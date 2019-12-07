@@ -244,8 +244,8 @@ bool SenderEndpointSet::create_pipeline_() {
         if (!resampler_writer_ || !resampler_writer_->valid()) {
             return false;
         }
-        if (!resampler_writer_->set_scaling(float(config_.input_sample_rate)
-                                            / format->sample_rate)) {
+        if (!resampler_writer_->set_scaling(config_.input_sample_rate,
+                                            format->sample_rate, 1.0f)) {
             return false;
         }
         awriter = resampler_writer_.get();

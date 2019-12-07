@@ -28,13 +28,7 @@ public:
     virtual bool valid() const = 0;
 
     //! Set new resample factor.
-    //! @remarks
-    //!  Resampling algorithm needs some window of input samples. The length of the window
-    //!  (length of sinc impulse response) is a compromise between SNR and speed. It
-    //!  depends on current resampling factor. So we choose length of input buffers to let
-    //!  it handle maximum length of input. If new scaling factor breaks equation this
-    //!  function returns false.
-    virtual bool set_scaling(float) = 0;
+    virtual bool set_scaling(size_t input_rate, size_t output_rate, float multiplier) = 0;
 
     //! Resamples the whole output frame.
     virtual bool resample_buff(Frame& out) = 0;
