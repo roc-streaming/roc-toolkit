@@ -111,7 +111,9 @@ private:
     const packet::timestamp_diff_t max_latency_;
 
     const float max_scaling_delta_;
-    float sample_rate_coeff_;
+
+    size_t input_sample_rate_;
+    size_t output_sample_rate_;
 
     bool valid_;
 };
