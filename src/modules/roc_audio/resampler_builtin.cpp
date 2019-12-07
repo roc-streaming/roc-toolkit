@@ -122,7 +122,11 @@ bool BuiltinResampler::valid() const {
     return valid_;
 }
 
-bool BuiltinResampler::set_scaling(float new_scaling) {
+bool BuiltinResampler::set_scaling(size_t input_sample_rate,
+                                   size_t output_sample_rate,
+                                   float multiplier) {
+    const float new_scaling = float(input_sample_rate) / output_sample_rate * multiplier;
+
     // Window's size changes according to scaling. If new window size
     // doesn't fit to the frames size -- deny changes.
     if (window_size_ * new_scaling >= frame_size_ch_) {

@@ -46,15 +46,16 @@ public:
     //!  depends on current resampling factor. So we choose length of input buffers to let
     //!  it handle maximum length of input. If new scaling factor breaks equation this
     //!  function returns false.
-    bool set_scaling(float);
+    virtual bool
+    set_scaling(size_t input_sample_rate, size_t output_sample_rate, float multiplier);
 
     //! Resamples the whole output frame.
-    bool resample_buff(Frame& out);
+    virtual bool resample_buff(Frame& out);
 
     //! Push new buffer on the front of the internal FIFO, which comprisesthree window_.
-    void renew_buffers(core::Slice<sample_t>& prev,
-                       core::Slice<sample_t>& cur,
-                       core::Slice<sample_t>& next);
+    virtual void renew_buffers(core::Slice<sample_t>& prev,
+                               core::Slice<sample_t>& cur,
+                               core::Slice<sample_t>& next);
 
     ~BuiltinResampler();
 
