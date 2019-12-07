@@ -37,7 +37,7 @@ struct ResamplerConfig {
 };
 
 //! Indexes the backend used for the resampling.
-enum ResamplerBackend { ResamplerBackend_Builtin = 0 };
+enum ResamplerBackend { ResamplerBackend_Builtin = 0, ResamplerBackend_Speex = 1 };
 
 } // namespace audio
 } // namespace roc

@@ -639,6 +639,7 @@ elif name == 'speex':
     execute('./configure', logfile)
     execute_make(logfile)
     install_tree('include', os.path.join(builddir, 'include'))
+    install_files('libspeex/.libs/libspeexdsp.a', os.path.join(builddir, 'lib'))
 elif name == 'alsa':
     download(
       'ftp://ftp.alsa-project.org/pub/lib/alsa-lib-%s.tar.bz2' % ver,

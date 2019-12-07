@@ -117,7 +117,7 @@ TEST(resampler, invalid_scaling) {
                            ChMask);
         CHECK(rr.valid());
 
-        CHECK(!rr.set_scaling(InvalidScaling));
+        CHECK(!rr.set_scaling(InvalidScaling, InvalidScaling, InvalidScaling));
     }
 }
 
@@ -141,7 +141,7 @@ TEST(resampler, upscaling_twice_single) {
 
         CHECK(rr.valid());
 
-        CHECK(rr.set_scaling(0.5f));
+        CHECK(rr.set_scaling(1.0, 1.0, 0.5f));
 
         const size_t sig_len = 2048;
         double buff[sig_len * 2];
@@ -184,7 +184,7 @@ TEST(resampler, upscaling_twice_awgn) {
                            ChMask);
 
         CHECK(rr.valid());
-        CHECK(rr.set_scaling(0.5f));
+        CHECK(rr.set_scaling(1.0, 1.0, 0.5f));
 
         // Generate white noise.
         for (size_t n = 0; n < InSamples; n++) {
@@ -238,7 +238,7 @@ TEST(resampler, downsample) {
                            ChMask);
 
         CHECK(rr.valid());
-        CHECK(rr.set_scaling(1.5f));
+        CHECK(rr.set_scaling(1.0, 1.0, 1.5f));
 
         const size_t sig_len = 2048;
         double buff[sig_len * 2];
@@ -280,7 +280,7 @@ TEST(resampler, two_tones_sep_channels) {
         ResamplerReader rr(reader, *resampler, buffer_pool, FrameDuration, InSamples,
                            ChMask);
         CHECK(rr.valid());
-        CHECK(rr.set_scaling(0.5f));
+        CHECK(rr.set_scaling(1.0, 1.0, 0.5f));
 
         const size_t sig_len = 2048;
         double buff1[sig_len * 2];

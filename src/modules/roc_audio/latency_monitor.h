@@ -113,6 +113,9 @@ private:
     const float max_scaling_delta_;
     float sample_rate_coeff_;
 
+    float input_sample_rate_;
+    float output_sample_rate_;
+
     bool valid_;
 };
 

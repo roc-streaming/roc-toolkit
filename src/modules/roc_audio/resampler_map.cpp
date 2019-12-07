@@ -8,6 +8,7 @@
 
 #include "roc_audio/resampler_map.h"
 #include "roc_audio/resampler_builtin.h"
+#include "roc_audio/resampler_speex.h"
 #include "roc_audio/resampler_config.h"
 
 namespace roc {
@@ -31,18 +32,23 @@ IResampler* ResamplerMap::new_resampler(ResamplerBackend resampler_backend,
                                         core::nanoseconds_t frame_length,
                                         size_t sample_rate,
                                         packet::channel_mask_t channels) {
-    if (resampler_backend != ResamplerBackend_Builtin) {
-        roc_panic("resampler map: no valid resampler backend selected: backend=%d",
-                  resampler_backend);
-    }
-
     core::ScopedPtr<IResampler> resampler;
+
     switch (resampler_backend) {
     case ResamplerBackend_Builtin:
         resampler.reset(new (allocator) BuiltinResampler(allocator, config, frame_length,
                                                          sample_rate, channels),
                         allocator);
         break;
+
+    case ResamplerBackend_Speex:
+        resampler.reset(new (allocator)
+                            SpeexResampler(allocator, config, channels, frame_size),
+                        allocator);
+        break;
+
+    default:
+        roc_panic("resampler map: invalid resampler backend %d", resampler_backend);
     }
 
     if (!resampler || !resampler->valid()) {

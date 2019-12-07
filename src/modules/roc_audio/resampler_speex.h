@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Roc authors
+ * Copyright (c) 2019 Roc authors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -35,7 +35,7 @@ public:
 
     bool valid() const;
 
-    bool set_scaling(float);
+    bool set_scaling(float input_sample_rate, float output_sample_rate, float multiplier);
 
     bool resample_buff(Frame& out);
 
@@ -46,7 +46,24 @@ public:
     ~SpeexResampler();
 
 private:
-   
+    core::IAllocator& allocator;
+    const packet::channel_mask_t channel_mask_;
+    const size_t channels_num_;
+
+    sample_t* prev_frame_;
+    sample_t* curr_frame_;
+    sample_t* next_frame_;
+
+    size_t out_frame_pos_;
+
+    float scaling_;
+
+    const size_t frame_size_;
+    const size_t frame_size_ch_;
+
+    float input_sample_rate_;
+    float output_sample_rate_;
+    float sample_rate_multiplier_;
 };
 
 } // namespace audio
