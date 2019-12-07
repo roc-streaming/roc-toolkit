@@ -51,13 +51,8 @@ public:
     virtual bool read(Frame&);
 
     //! Set new resample factor.
-    //! @remarks
-    //!  Resampling algorithm needs some window of input samples. The length of the window
-    //!  (length of sinc impulse response) is a compromise between SNR and speed. It
-    //!  depends on current resampling factor. So we choose length of input buffers to let
-    //!  it handle maximum length of input. If new scaling factor breaks equation this
-    //!  function returns false.
-    bool set_scaling(float);
+    bool
+    set_scaling(size_t input_sample_rate, size_t output_sample_rate, float multiplier);
 
 private:
     bool init_frames_(core::BufferPool<sample_t>&);
