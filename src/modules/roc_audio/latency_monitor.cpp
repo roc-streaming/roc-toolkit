@@ -41,7 +41,8 @@ LatencyMonitor::LatencyMonitor(const packet::SortedQueue& queue,
     , min_latency_(packet::timestamp_from_ns(config.min_latency, input_sample_rate))
     , max_latency_(packet::timestamp_from_ns(config.max_latency, input_sample_rate))
     , max_scaling_delta_(config.max_scaling_delta)
-    , sample_rate_coeff_(0.f)
+    , input_sample_rate_(input_sample_rate)
+    , output_sample_rate_(output_sample_rate)
     , valid_(false) {
     roc_log(LogDebug,
             "latency monitor: initializing: target_latency=%lu in_rate=%lu out_rate=%lu",
@@ -166,11 +167,10 @@ bool LatencyMonitor::init_resampler_(size_t input_sample_rate,
         return false;
     }
 
-    sample_rate_coeff_ = (float)input_sample_rate / output_sample_rate;
-
-    if (!resampler_->set_scaling(sample_rate_coeff_)) {
-        roc_log(LogError, "latency monitor: scaling factor out of bounds: scaling=%.5f",
-                (double)sample_rate_coeff_);
+    if (!resampler_->set_scaling(input_sample_rate, output_sample_rate, 1.0f)) {
+        roc_log(LogError,
+                "latency monitor: scaling factor out of bounds: input=%lu output=%lu",
+                (unsigned long)input_sample_rate, (unsigned long)output_sample_rate);
         return false;
     }
 
@@ -191,20 +191,18 @@ bool LatencyMonitor::update_resampler_(packet::timestamp_t pos,
 
     const float freq_coeff = fe_.freq_coeff();
     const float trimmed_coeff = trim_scaling_(freq_coeff);
-    const float adjusted_coeff = sample_rate_coeff_ * trimmed_coeff;
 
     if (rate_limiter_.allow()) {
-        roc_log(
-            LogDebug,
-            "latency monitor: latency=%lu target=%lu fe=%.5f trim_fe=%.5f adj_fe=%.5f",
-            (unsigned long)latency, (unsigned long)target_latency_, (double)freq_coeff,
-            (double)trimmed_coeff, (double)adjusted_coeff);
+        roc_log(LogDebug, "latency monitor: latency=%lu target=%lu fe=%.5f trim_fe=%.5f",
+                (unsigned long)latency, (unsigned long)target_latency_,
+                (double)freq_coeff, (double)trimmed_coeff);
     }
 
-    if (!resampler_->set_scaling(adjusted_coeff)) {
+    if (!resampler_->set_scaling(input_sample_rate_, output_sample_rate_,
+                                 trimmed_coeff)) {
         roc_log(LogDebug,
-                "latency monitor: scaling factor out of bounds: fe=%.5f adj_fe=%.5f",
-                (double)freq_coeff, (double)adjusted_coeff);
+                "latency monitor: scaling factor out of bounds: fe=%.5f trim_fe=%.5f",
+                (double)freq_coeff, (double)trimmed_coeff);
         return false;
     }
 
