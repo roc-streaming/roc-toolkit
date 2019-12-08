@@ -10,6 +10,7 @@
 #include <stdio.h>
 
 #include "roc_core/colors.h"
+#include "roc_core/format_tid.h"
 #include "roc_core/format_time.h"
 #include "roc_core/log.h"
 
@@ -77,6 +78,11 @@ void Logger::print(const char* module, LogLevel level, const char* format, ...) 
             timestamp[0] = '\0';
         }
 
+        char tid[20] = {};
+        if (!format_tid(tid, sizeof(tid))) {
+            tid[0] = '\0';
+        }
+
         const char* level_str = "???";
         switch (level) {
         case LogNone:
@@ -103,13 +109,14 @@ void Logger::print(const char* module, LogLevel level, const char* format, ...) 
                                sizeof(colored_level_str))
                 && format_colored(level, message, colored_message,
                                   sizeof(colored_message))) {
-                fprintf(stderr, "%s [%s] %s: %s\n", timestamp, colored_level_str, module,
-                        colored_message);
+                fprintf(stderr, "%s [%s] [%s] %s: %s\n", timestamp, tid,
+                        colored_level_str, module, colored_message);
                 return;
             }
         }
 
-        fprintf(stderr, "%s [%s] %s: %s\n", timestamp, level_str, module, message);
+        fprintf(stderr, "%s [%s] [%s] %s: %s\n", timestamp, tid, level_str, module,
+                message);
     }
 }
 
