@@ -27,6 +27,13 @@
 
 namespace roc {
 namespace audio {
+    namespace {
+        const uint32_t FRACT_BIT_COUNT = 20;
+        typedef int32_t signed_fixedpoint_t;
+        typedef uint32_t fixedpoint_t;
+    };
+    
+
 
 class SpeexResampler : public IResampler {
 public:
@@ -73,6 +80,9 @@ private:
 
     int counter;
     bool valid_;
+
+
+    bool check_config_() const;
 };
 
 } // namespace audio

@@ -10,7 +10,6 @@
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_core/stddefs.h"
-#include "roc_core/unique_ptr.h"
 
 namespace roc {
 namespace audio {
@@ -32,7 +31,11 @@ SpeexResampler::SpeexResampler(core::IAllocator& allocator,
     , frame_size_ch_(channels_num_ ? frame_size / channels_num_ : 0)
     , counter(0) // delete me
     , valid_(false) {
-    valid_ = true;
+        if(!check_config_()){
+            return;
+        }
+        
+        valid_ = true;
 }
 
 SpeexResampler::~SpeexResampler() {
@@ -94,6 +97,36 @@ void SpeexResampler::renew_buffers(core::Slice<sample_t>& prev,
     curr_frame_ = cur.data();
     next_frame_ = next.data();
 }
+
+bool SpeexResampler::check_config_() const {
+    if (channels_num_ < 1) {
+        roc_log(LogError, "resampler: invalid num_channels: num_channels=%lu",
+                (unsigned long)channels_num_);
+        return false;
+    }
+
+    if (frame_size_ != frame_size_ch_ * channels_num_) {
+        roc_log(LogError,
+                "resampler: frame_size is not multiple of num_channels:"
+                " frame_size=%lu num_channels=%lu",
+                (unsigned long)frame_size_, (unsigned long)channels_num_);
+        return false;
+    }
+
+    const size_t max_frame_size =
+        (((fixedpoint_t)(signed_fixedpoint_t)-1 >> FRACT_BIT_COUNT) + 1) * channels_num_;
+    if (frame_size_ > max_frame_size) {
+        roc_log(LogError,
+                "resampler: frame_size is too much: "
+                "max_frame_size=%lu frame_size=%lu num_channels=%lu",
+                (unsigned long)max_frame_size, (unsigned long)frame_size_,
+                (unsigned long)channels_num_);
+        return false;
+    }
+
+    return true;
+}
+
 
 } // namespace audio
 } // namespace roc
