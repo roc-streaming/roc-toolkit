@@ -37,7 +37,7 @@ SpeexResampler::SpeexResampler(core::IAllocator& allocator,
 
 SpeexResampler::~SpeexResampler() {
     if (speex_state) {
-        delete speex_state;
+        free(speex_state);
     }
 }
 
@@ -48,12 +48,12 @@ bool SpeexResampler::valid() const {
 bool SpeexResampler::refresh_state() {
     int err_init;
     if (speex_state) {
-        delete speex_state;
+        free(speex_state);
     }
     // speex_resampler_init does a C calloc(), SpeexResampler does not have a destructor,
     // then it can't be managed by a UniquePtr (it calls the destructor of the managed
     // object) maybe a solution would be creating a C++ wrapper for these calls and
-    // SpeexResampler (having a destructor with 'delete speex_state') ?
+    // SpeexResampler (having a destructor with 'free(speex_state)') ?
     speex_state =
         speex_resampler_init(channels_num_, input_sample_rate_ * sample_rate_multiplier_,
                              output_sample_rate_, 5, &err_init);
