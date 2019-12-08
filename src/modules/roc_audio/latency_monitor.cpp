@@ -203,7 +203,8 @@ bool LatencyMonitor::update_resampler_(packet::timestamp_t pos,
             (double)trimmed_coeff, (double)adjusted_coeff);
     }
 
-    if (!resampler_->set_scaling(input_sample_rate_, output_sample_rate_, trimmed_coeff)) {
+    if (!resampler_->set_scaling(input_sample_rate_, output_sample_rate_,
+                                 trimmed_coeff)) {
         roc_log(LogDebug,
                 "latency monitor: scaling factor out of bounds: fe=%.5f adj_fe=%.5f",
                 (double)freq_coeff, (double)adjusted_coeff);

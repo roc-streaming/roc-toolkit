@@ -8,8 +8,8 @@
 
 #include "roc_audio/resampler_map.h"
 #include "roc_audio/resampler_builtin.h"
-#include "roc_audio/resampler_speex.h"
 #include "roc_audio/resampler_config.h"
+#include "roc_audio/resampler_speex.h"
 
 namespace roc {
 namespace audio {

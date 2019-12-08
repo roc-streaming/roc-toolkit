@@ -34,7 +34,9 @@ public:
     //!  depends on current resampling factor. So we choose length of input buffers to let
     //!  it handle maximum length of input. If new scaling factor breaks equation this
     //!  function returns false.
-    virtual bool set_scaling(float input_sample_rate, float output_sample_rate, float multiplier = 1.0) = 0;
+    virtual bool set_scaling(float input_sample_rate,
+                             float output_sample_rate,
+                             float multiplier = 1.0) = 0;
 
     //! Resamples the whole output frame.
     virtual bool resample_buff(Frame& out) = 0;

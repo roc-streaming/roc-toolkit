@@ -44,7 +44,9 @@ bool ResamplerReader::valid() const {
     return valid_;
 }
 
-bool ResamplerReader::set_scaling(float input_sample_rate, float output_sample_rate, float multiplier) {
+bool ResamplerReader::set_scaling(float input_sample_rate,
+                                  float output_sample_rate,
+                                  float multiplier) {
     roc_panic_if_not(valid());
 
     return resampler_.set_scaling(input_sample_rate, output_sample_rate, multiplier);

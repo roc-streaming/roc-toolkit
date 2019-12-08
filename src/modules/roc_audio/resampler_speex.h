@@ -12,26 +12,28 @@
 #ifndef ROC_AUDIO_RESAMPLER_SPEEX_H_
 #define ROC_AUDIO_RESAMPLER_SPEEX_H_
 
-#include "roc_audio/iresampler.h"
 #include "roc_audio/frame.h"
 #include "roc_audio/ireader.h"
-#include "roc_audio/units.h"
+#include "roc_audio/iresampler.h"
 #include "roc_audio/resampler_config.h"
+#include "roc_audio/units.h"
 #include "roc_core/array.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/slice.h"
 #include "roc_core/stddefs.h"
 #include "roc_packet/units.h"
 
+#include <speex/speex_resampler.h>
+
 namespace roc {
 namespace audio {
 
-class SpeexResampler : public IResampler{
+class SpeexResampler : public IResampler {
 public:
     SpeexResampler(core::IAllocator& allocator,
-              const ResamplerConfig& config,
-              packet::channel_mask_t channels,
-              size_t frame_size);
+                   const ResamplerConfig& config,
+                   packet::channel_mask_t channels,
+                   size_t frame_size);
 
     bool valid() const;
 
@@ -50,6 +52,10 @@ private:
     const packet::channel_mask_t channel_mask_;
     const size_t channels_num_;
 
+    SpeexResamplerState* speex_state;
+
+    bool refresh_state();
+
     sample_t* prev_frame_;
     sample_t* curr_frame_;
     sample_t* next_frame_;
@@ -64,6 +70,9 @@ private:
     float input_sample_rate_;
     float output_sample_rate_;
     float sample_rate_multiplier_;
+
+    int counter;
+    bool valid_;
 };
 
 } // namespace audio

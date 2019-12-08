@@ -57,7 +57,9 @@ public:
     //!  depends on current resampling factor. So we choose length of input buffers to let
     //!  it handle maximum length of input. If new scaling factor breaks equation this
     //!  function returns false.
-    bool set_scaling(float input_sample_rate, float output_sample_rate, float multiplier = 1.0);
+    bool set_scaling(float input_sample_rate,
+                     float output_sample_rate,
+                     float multiplier = 1.0);
 
 private:
     bool init_frames_(core::BufferPool<sample_t>&);
