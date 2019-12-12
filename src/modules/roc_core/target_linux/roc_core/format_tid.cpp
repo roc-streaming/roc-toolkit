@@ -17,9 +17,8 @@ namespace core {
 
 bool format_tid(char* buf, size_t bufsz) {
     pid_t tid = (pid_t)syscall(SYS_gettid);
-    if (snprintf(buf, bufsz, "%d", tid) < 0)
-        return false;
-    return true;
+    int ret = snprintf(buf, bufsz, "%llu", (unsigned long long)tid);
+    return ret > 0 && (size_t)ret < bufsz;
 }
 
 } // namespace core
