@@ -78,7 +78,7 @@ void Logger::print(const char* module, LogLevel level, const char* format, ...) 
             timestamp[0] = '\0';
         }
 
-        char tid[20] = {};
+        char tid[21] = {};
         if (!format_tid(tid, sizeof(tid))) {
             tid[0] = '\0';
         }
