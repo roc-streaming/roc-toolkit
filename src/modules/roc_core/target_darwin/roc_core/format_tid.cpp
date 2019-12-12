@@ -17,10 +17,9 @@ namespace core {
 
 bool format_tid(char* buf, size_t bufsz) {
     uint64_t tid = 0;
-    pthread_threadid_np(NULL, &tid);
-    if (snprintf(buf, bufsz, "%llu", tid) < 0)
-        return false;
-    return true;
+    int ret_tid = pthread_threadid_np(NULL, &tid);
+    int ret_buff = snprintf(buf, bufsz, "%llu", (unsigned long long)tid);
+    return ret_tid == 0 && ret_buff > 0 && (size_t)ret_buff < bufsz;
 }
 
 } // namespace core
