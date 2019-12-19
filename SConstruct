@@ -586,6 +586,7 @@ abi_version = '.'.join(env['ROC_VERSION'].split('.')[:2])
 
 env['ROC_MODULES'] = [
     'roc_core',
+    'roc_error',
     'roc_address',
     'roc_packet',
     'roc_audio',
