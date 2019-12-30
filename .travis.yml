@@ -57,6 +57,20 @@ jobs:
         - scripts/travis/docker.sh rocproject/cross-aarch64-linux-gnu:gcc-7.4 scripts/travis/linux-arm/aarch64-linux-gnu.sh
         - cat build.status
 
+    - name: "Linux build checks"
+      stage: Build
+      os: linux
+      dist: trusty
+      sudo: required
+      services:
+        - docker
+      before_install:
+        - docker pull rocproject/travis-minimal
+      script:
+        - scripts/travis/docker.sh rocproject/travis-minimal scripts/travis/linux-build-checks/optional-features.sh
+        - scripts/travis/docker.sh rocproject/travis-minimal scripts/travis/linux-build-checks/debug-features.sh
+        - scripts/travis/docker.sh rocproject/travis-minimal scripts/travis/linux-build-checks/pulseaudio-support.sh
+
     - name: "Linux runtime checks"
       stage: Build
       os: linux
@@ -71,20 +85,6 @@ jobs:
         - scripts/travis/docker.sh rocproject/travis-checks scripts/travis/linux-runtime-checks/sanitizers-gcc.sh
         - scripts/travis/docker.sh rocproject/travis-checks scripts/travis/linux-runtime-checks/valgrind-debug.sh
         - scripts/travis/docker.sh rocproject/travis-checks scripts/travis/linux-runtime-checks/valgrind-release.sh
-
-    - name: "Linux build options"
-      stage: Build
-      os: linux
-      dist: trusty
-      sudo: required
-      services:
-        - docker
-      before_install:
-        - docker pull rocproject/travis-minimal
-      script:
-        - scripts/travis/docker.sh rocproject/travis-minimal scripts/travis/linux-build-options/optional-features.sh
-        - scripts/travis/docker.sh rocproject/travis-minimal scripts/travis/linux-build-options/debug-features.sh
-        - scripts/travis/docker.sh rocproject/travis-minimal scripts/travis/linux-build-options/pulseaudio-support.sh
 
     - name: "Android ARM"
       stage: Build
