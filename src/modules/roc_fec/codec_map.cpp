@@ -14,8 +14,8 @@
 #include "roc_packet/fec_scheme_to_str.h"
 
 #ifdef ROC_TARGET_OPENFEC
-#include "roc_fec/of_decoder.h"
-#include "roc_fec/of_encoder.h"
+#include "roc_fec/openfec_decoder.h"
+#include "roc_fec/openfec_encoder.h"
 #endif // ROC_TARGET_OPENFEC
 
 namespace roc {
@@ -41,8 +41,8 @@ CodecMap::CodecMap()
 #ifdef ROC_TARGET_OPENFEC
     {
         Codec codec;
-        codec.encoder_ctor = ctor_func<IBlockEncoder, OFEncoder>;
-        codec.decoder_ctor = ctor_func<IBlockDecoder, OFDecoder>;
+        codec.encoder_ctor = ctor_func<IBlockEncoder, OpenfecEncoder>;
+        codec.decoder_ctor = ctor_func<IBlockDecoder, OpenfecDecoder>;
 
         codec.scheme = packet::FEC_ReedSolomon_M8;
         add_codec_(codec);

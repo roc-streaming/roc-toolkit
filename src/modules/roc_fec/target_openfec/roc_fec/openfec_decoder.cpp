@@ -14,14 +14,14 @@ extern "C" {
 
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
-#include "roc_fec/of_decoder.h"
+#include "roc_fec/openfec_decoder.h"
 
 namespace roc {
 namespace fec {
 
-OFDecoder::OFDecoder(const CodecConfig& config,
-                     core::BufferPool<uint8_t>& buffer_pool,
-                     core::IAllocator& allocator)
+OpenfecDecoder::OpenfecDecoder(const CodecConfig& config,
+                               core::BufferPool<uint8_t>& buffer_pool,
+                               core::IAllocator& allocator)
     : sblen_(0)
     , rblen_(0)
     , payload_size_(0)
@@ -37,7 +37,7 @@ OFDecoder::OFDecoder(const CodecConfig& config,
     , decoding_finished_(false)
     , valid_(false) {
     if (config.scheme == packet::FEC_ReedSolomon_M8) {
-        roc_log(LogDebug, "of decoder: initializing: codec=rs m=%u",
+        roc_log(LogDebug, "openfec decoder: initializing: codec=rs m=%u",
                 (unsigned)config.rs_m);
 
         codec_id_ = OF_CODEC_REED_SOLOMON_GF_2_M_STABLE;
@@ -47,7 +47,7 @@ OFDecoder::OFDecoder(const CodecConfig& config,
 
         max_block_length_ = OF_REED_SOLOMON_MAX_NB_ENCODING_SYMBOLS_DEFAULT;
     } else if (config.scheme == packet::FEC_LDPC_Staircase) {
-        roc_log(LogDebug, "of decoder: initializing: codec=ldpc prng_seed=%ld n1=%d",
+        roc_log(LogDebug, "openfec decoder: initializing: codec=ldpc prng_seed=%ld n1=%d",
                 (long)config.ldpc_prng_seed, (int)config.ldpc_N1);
 
         codec_id_ = OF_CODEC_LDPC_STAIRCASE_STABLE;
@@ -58,7 +58,7 @@ OFDecoder::OFDecoder(const CodecConfig& config,
 
         max_block_length_ = OF_LDPC_STAIRCASE_MAX_NB_ENCODING_SYMBOLS_DEFAULT;
     } else {
-        roc_panic("of decoder: unexpected fec scheme");
+        roc_panic("openfec decoder: unexpected fec scheme");
     }
 
     of_verbosity = 0;
@@ -66,23 +66,23 @@ OFDecoder::OFDecoder(const CodecConfig& config,
     valid_ = true;
 }
 
-OFDecoder::~OFDecoder() {
+OpenfecDecoder::~OpenfecDecoder() {
     if (of_sess_) {
         destroy_session_();
     }
 }
 
-bool OFDecoder::valid() const {
+bool OpenfecDecoder::valid() const {
     return valid_;
 }
 
-size_t OFDecoder::max_block_length() const {
+size_t OpenfecDecoder::max_block_length() const {
     roc_panic_if_not(valid());
 
     return max_block_length_;
 }
 
-bool OFDecoder::begin(size_t sblen, size_t rblen, size_t payload_size) {
+bool OpenfecDecoder::begin(size_t sblen, size_t rblen, size_t payload_size) {
     roc_panic_if_not(valid());
 
     if (!resize_tabs_(sblen + rblen)) {
@@ -100,25 +100,26 @@ bool OFDecoder::begin(size_t sblen, size_t rblen, size_t payload_size) {
     return true;
 }
 
-void OFDecoder::set(size_t index, const core::Slice<uint8_t>& buffer) {
+void OpenfecDecoder::set(size_t index, const core::Slice<uint8_t>& buffer) {
     roc_panic_if_not(valid());
 
     if (index >= sblen_ + rblen_) {
-        roc_panic("of decoder: index out of bounds: index=%lu size=%lu",
+        roc_panic("openfec decoder: index out of bounds: index=%lu size=%lu",
                   (unsigned long)index, (unsigned long)(sblen_ + rblen_));
     }
 
     if (!buffer) {
-        roc_panic("of decoder: null buffer");
+        roc_panic("openfec decoder: null buffer");
     }
 
     if (buffer.size() == 0 || buffer.size() != payload_size_) {
-        roc_panic("of decoder: invalid payload size: cur=%lu new=%lu",
+        roc_panic("openfec decoder: invalid payload size: cur=%lu new=%lu",
                   (unsigned long)payload_size_, (unsigned long)buffer.size());
     }
 
     if (buff_tab_[index]) {
-        roc_panic("of decoder: can't overwrite buffer: index=%lu", (unsigned long)index);
+        roc_panic("openfec decoder: can't overwrite buffer: index=%lu",
+                  (unsigned long)index);
     }
 
     has_new_packets_ = true;
@@ -128,12 +129,12 @@ void OFDecoder::set(size_t index, const core::Slice<uint8_t>& buffer) {
     recv_tab_[index] = true;
 
     // register new packet and try to repair more packets
-    roc_log(LogTrace, "of decoder: of_decode_with_new_symbol(): index=%lu",
+    roc_log(LogTrace, "openfec decoder: of_decode_with_new_symbol(): index=%lu",
             (unsigned long)index);
 
     if (of_decode_with_new_symbol(of_sess_, data_tab_[index], (unsigned int)index)
         != OF_STATUS_OK) {
-        roc_panic("of decoder: can't add packet to OF session");
+        roc_panic("openfec decoder: can't add packet to OF session");
     }
 
     if (max_index_ < index) {
@@ -141,7 +142,7 @@ void OFDecoder::set(size_t index, const core::Slice<uint8_t>& buffer) {
     }
 }
 
-core::Slice<uint8_t> OFDecoder::repair(size_t index) {
+core::Slice<uint8_t> OpenfecDecoder::repair(size_t index) {
     roc_panic_if_not(valid());
 
     if (!buff_tab_[index]) {
@@ -152,7 +153,7 @@ core::Slice<uint8_t> OFDecoder::repair(size_t index) {
     return buff_tab_[index];
 }
 
-void OFDecoder::end() {
+void OpenfecDecoder::end() {
     if (of_sess_ != NULL) {
         report_();
         destroy_session_();
@@ -164,13 +165,15 @@ void OFDecoder::end() {
     decoding_finished_ = false;
 }
 
-void OFDecoder::update_session_params_(size_t sblen, size_t rblen, size_t payload_size) {
+void OpenfecDecoder::update_session_params_(size_t sblen,
+                                            size_t rblen,
+                                            size_t payload_size) {
     of_sess_params_->nb_source_symbols = (uint32_t)sblen;
     of_sess_params_->nb_repair_symbols = (uint32_t)rblen;
     of_sess_params_->encoding_symbol_length = (uint32_t)payload_size;
 }
 
-void OFDecoder::reset_tabs_() {
+void OpenfecDecoder::reset_tabs_() {
     for (size_t i = 0; i < buff_tab_.size(); ++i) {
         buff_tab_[i] = core::Slice<uint8_t>();
         data_tab_[i] = NULL;
@@ -178,7 +181,7 @@ void OFDecoder::reset_tabs_() {
     }
 }
 
-bool OFDecoder::resize_tabs_(size_t size) {
+bool OpenfecDecoder::resize_tabs_(size_t size) {
     if (!buff_tab_.resize(size)) {
         return false;
     }
@@ -195,7 +198,7 @@ bool OFDecoder::resize_tabs_(size_t size) {
     return true;
 }
 
-void OFDecoder::update_() {
+void OpenfecDecoder::update_() {
     roc_panic_if(of_sess_ == NULL);
 
     if (!has_new_packets_) {
@@ -204,14 +207,14 @@ void OFDecoder::update_() {
 
     decode_();
 
-    roc_log(LogTrace, "of decoder: of_get_source_symbols_tab()");
+    roc_log(LogTrace, "openfec decoder: of_get_source_symbols_tab()");
 
     of_get_source_symbols_tab(of_sess_, &data_tab_[0]);
 
     has_new_packets_ = false;
 }
 
-void OFDecoder::decode_() {
+void OpenfecDecoder::decode_() {
     if (decoding_finished_ && is_optimal_()) {
         return;
     }
@@ -224,18 +227,18 @@ void OFDecoder::decode_() {
         // it's not allowed to decode twice, so we recreate the session
         reset_session_();
 
-        roc_log(LogTrace, "of decoder: of_set_available_symbols()");
+        roc_log(LogTrace, "openfec decoder: of_set_available_symbols()");
 
         if (of_set_available_symbols(of_sess_, &data_tab_[0]) != OF_STATUS_OK) {
-            roc_panic("of decoder: can't add packets to OF session");
+            roc_panic("openfec decoder: can't add packets to OF session");
         }
     }
 
     // try to repair more packets
-    roc_log(LogTrace, "of decoder: of_finish_decoding()");
+    roc_log(LogTrace, "openfec decoder: of_finish_decoding()");
 
     if (of_finish_decoding(of_sess_) != OF_STATUS_OK) {
-        roc_log(LogTrace, "of decoder: of_finish_decoding() returned error");
+        roc_log(LogTrace, "openfec decoder: of_finish_decoding() returned error");
         return;
     }
 
@@ -244,7 +247,7 @@ void OFDecoder::decode_() {
 
 // note: we have to calculate this every time because OpenFEC
 // doesn't always report to us when it repairs a packet
-bool OFDecoder::has_n_packets_(size_t n_packets) const {
+bool OpenfecDecoder::has_n_packets_(size_t n_packets) const {
     size_t n = 0;
     for (size_t i = 0; i < data_tab_.size(); i++) {
         if (data_tab_[i]) {
@@ -262,35 +265,36 @@ bool OFDecoder::has_n_packets_(size_t n_packets) const {
 //
 // non-optimal codecs may require more packets, and the
 // exact amount may be different every block
-bool OFDecoder::is_optimal_() const {
+bool OpenfecDecoder::is_optimal_() const {
     return codec_id_ == OF_CODEC_REED_SOLOMON_GF_2_M_STABLE;
 }
 
-void OFDecoder::reset_session_() {
+void OpenfecDecoder::reset_session_() {
     if (of_sess_ != NULL) {
         of_release_codec_instance(of_sess_);
         of_sess_ = NULL;
     }
 
-    roc_log(LogTrace, "of decoder: of_create_codec_instance()");
+    roc_log(LogTrace, "openfec decoder: of_create_codec_instance()");
 
     if (OF_STATUS_OK != of_create_codec_instance(&of_sess_, codec_id_, OF_DECODER, 0)) {
-        roc_panic("of decoder: of_create_codec_instance() failed");
+        roc_panic("openfec decoder: of_create_codec_instance() failed");
     }
 
     roc_panic_if(of_sess_ == NULL);
 
-    roc_log(LogTrace,
-            "of decoder: of_set_fec_parameters(): nb_src=%lu nb_rpr=%lu symbol_len=%lu",
-            (unsigned long)of_sess_params_->nb_source_symbols,
-            (unsigned long)of_sess_params_->nb_repair_symbols,
-            (unsigned long)of_sess_params_->encoding_symbol_length);
+    roc_log(
+        LogTrace,
+        "openfec decoder: of_set_fec_parameters(): nb_src=%lu nb_rpr=%lu symbol_len=%lu",
+        (unsigned long)of_sess_params_->nb_source_symbols,
+        (unsigned long)of_sess_params_->nb_repair_symbols,
+        (unsigned long)of_sess_params_->encoding_symbol_length);
 
     if (OF_STATUS_OK != of_set_fec_parameters(of_sess_, of_sess_params_)) {
-        roc_panic("of decoder: of_set_fec_parameters() failed");
+        roc_panic("openfec decoder: of_set_fec_parameters() failed");
     }
 
-    roc_log(LogTrace, "of decoder: of_set_callback_functions()");
+    roc_log(LogTrace, "openfec decoder: of_set_callback_functions()");
 
     if (OF_STATUS_OK
         != of_set_callback_functions(
@@ -299,12 +303,12 @@ void OFDecoder::reset_session_() {
             // and prints curses to the console if we give it the callback for that
             codec_id_ == OF_CODEC_REED_SOLOMON_GF_2_M_STABLE ? NULL : repair_cb_,
             (void*)this)) {
-        roc_panic("of decoder: of_set_callback_functions() failed");
+        roc_panic("openfec decoder: of_set_callback_functions() failed");
     }
 }
 
-void OFDecoder::destroy_session_() {
-    roc_log(LogTrace, "of decoder: of_release_codec_instance()");
+void OpenfecDecoder::destroy_session_() {
+    roc_log(LogTrace, "openfec decoder: of_release_codec_instance()");
 
     of_release_codec_instance(of_sess_);
     of_sess_ = NULL;
@@ -319,14 +323,14 @@ void OFDecoder::destroy_session_() {
             continue;
         }
 
-        roc_log(LogTrace, "of decoder: of_free(): index=%lu", (unsigned long)i);
+        roc_log(LogTrace, "openfec decoder: of_free(): index=%lu", (unsigned long)i);
         of_free(data_tab_[i]);
 
         data_tab_[i] = NULL;
     }
 }
 
-void OFDecoder::report_() {
+void OpenfecDecoder::report_() {
     size_t n_lost = 0, n_repaired = 0;
 
     size_t tab_size = max_index_;
@@ -362,15 +366,16 @@ void OFDecoder::report_() {
         return;
     }
 
-    roc_log(LogDebug, "of decoder: repaired %u/%u/%u %s", (unsigned)n_repaired,
+    roc_log(LogDebug, "openfec decoder: repaired %u/%u/%u %s", (unsigned)n_repaired,
             (unsigned)n_lost, (unsigned)buff_tab_.size(), &status_[0]);
 }
 
 // OpenFEC may allocate memory without calling source_cb_()
 // we need our own buffers, so we handle this case here
-void OFDecoder::fix_buffer_(size_t index) {
+void OpenfecDecoder::fix_buffer_(size_t index) {
     if (!buff_tab_[index] && data_tab_[index]) {
-        roc_log(LogTrace, "of decoder: copy buffer: index=%lu", (unsigned long)index);
+        roc_log(LogTrace, "openfec decoder: copy buffer: index=%lu",
+                (unsigned long)index);
 
         if (void* buff = make_buffer_(index)) {
             memcpy(buff, data_tab_[index], payload_size_);
@@ -378,16 +383,16 @@ void OFDecoder::fix_buffer_(size_t index) {
     }
 }
 
-void* OFDecoder::make_buffer_(size_t index) {
+void* OpenfecDecoder::make_buffer_(size_t index) {
     core::Slice<uint8_t> buffer = new (buffer_pool_) core::Buffer<uint8_t>(buffer_pool_);
 
     if (!buffer) {
-        roc_log(LogError, "of decoder: can't allocate buffer");
+        roc_log(LogError, "openfec decoder: can't allocate buffer");
         return NULL;
     }
 
     if (buffer.capacity() < payload_size_) {
-        roc_log(LogError, "of decoder: packet size too large: size=%lu max=%lu",
+        roc_log(LogError, "openfec decoder: packet size too large: size=%lu max=%lu",
                 (unsigned long)payload_size_, (unsigned long)buffer.capacity());
         return NULL;
     }
@@ -399,20 +404,22 @@ void* OFDecoder::make_buffer_(size_t index) {
 }
 
 // called when OpenFEC allocates a source packet
-void* OFDecoder::source_cb_(void* context, uint32_t size, uint32_t index) {
-    roc_log(LogTrace, "of decoder: source callback: index=%lu", (unsigned long)index);
+void* OpenfecDecoder::source_cb_(void* context, uint32_t size, uint32_t index) {
+    roc_log(LogTrace, "openfec decoder: source callback: index=%lu",
+            (unsigned long)index);
 
     roc_panic_if(context == NULL);
     (void)size;
 
-    OFDecoder& self = *(OFDecoder*)context;
+    OpenfecDecoder& self = *(OpenfecDecoder*)context;
     return self.make_buffer_(index);
 }
 
 // called when OpenFEC created a repair packet
 // the return value is ignored in OpenFEC
-void* OFDecoder::repair_cb_(void* context, uint32_t size, uint32_t index) {
-    roc_log(LogTrace, "of decoder: repair callback: index=%lu", (unsigned long)index);
+void* OpenfecDecoder::repair_cb_(void* context, uint32_t size, uint32_t index) {
+    roc_log(LogTrace, "openfec decoder: repair callback: index=%lu",
+            (unsigned long)index);
 
     roc_panic_if(context == NULL);
     (void)size;
