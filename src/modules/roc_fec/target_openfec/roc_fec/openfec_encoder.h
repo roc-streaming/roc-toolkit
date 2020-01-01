@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_fec/target_openfec/roc_fec/of_encoder.h
+//! @file roc_fec/target_openfec/roc_fec/openfec_encoder.h
 //! @brief Encoder implementation using OpenFEC library.
 
-#ifndef ROC_FEC_OF_ENCODER_H_
-#define ROC_FEC_OF_ENCODER_H_
+#ifndef ROC_FEC_OPENFEC_ENCODER_H_
+#define ROC_FEC_OPENFEC_ENCODER_H_
 
 #include "roc_core/array.h"
 #include "roc_core/buffer_pool.h"
@@ -37,14 +37,14 @@ namespace roc {
 namespace fec {
 
 //! Encoder implementation using OpenFEC library.
-class OFEncoder : public IBlockEncoder, public core::NonCopyable<> {
+class OpenfecEncoder : public IBlockEncoder, public core::NonCopyable<> {
 public:
     //! Initialize.
-    explicit OFEncoder(const CodecConfig& config,
-                       core::BufferPool<uint8_t>& buffer_pool,
-                       core::IAllocator& allocator);
+    explicit OpenfecEncoder(const CodecConfig& config,
+                            core::BufferPool<uint8_t>& buffer_pool,
+                            core::IAllocator& allocator);
 
-    virtual ~OFEncoder();
+    virtual ~OpenfecEncoder();
 
     //! Check if object is successfully constructed.
     bool valid() const;
@@ -107,4 +107,4 @@ private:
 } // namespace fec
 } // namespace roc
 
-#endif // ROC_FEC_OF_ENCODER_H_
+#endif // ROC_FEC_OPENFEC_ENCODER_H_
