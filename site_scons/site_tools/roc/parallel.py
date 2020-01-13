@@ -4,6 +4,12 @@ import re
 
 def _cpu_count():
     try:
+        import os
+        return len(os.sched_getaffinity(0))
+    except:
+        pass
+
+    try:
         import multiprocessing
         return multiprocessing.cpu_count()
     except:

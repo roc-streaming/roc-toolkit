@@ -11,6 +11,7 @@ import ssl
 import tarfile
 import fileinput
 import subprocess
+import multiprocessing
 
 try:
     from urllib.request import urlopen
@@ -140,6 +141,25 @@ def execute(cmd, log, ignore_error=False):
                 print('command exited with status %s' % code, file=fp)
         else:
             exit(1)
+
+def execute_make(log, cpu_count=None):
+    if cpu_count is None:
+        try:
+            cpu_count = len(os.sched_getaffinity(0))
+        except:
+            pass
+
+    if cpu_count is None:
+        try:
+            cpu_count = multiprocessing.cpu_count()
+        except:
+            pass
+
+    cmd = ['make']
+    if cpu_count:
+        cmd += ['-j' + str(cpu_count)]
+
+    execute(' '.join(cmd), log)
 
 def install_tree(src, dst, match=None, ignore=None):
     print('[install] %s' % os.path.relpath(dst, printdir))
@@ -320,7 +340,7 @@ if name == 'libuv':
             '--with-pic',
             '--enable-static',
         ])), logfile)
-    execute('make -j', logfile)
+    execute_make(logfile)
     install_tree('include', os.path.join(builddir, 'include'))
     install_files('.libs/libuv.a', os.path.join(builddir, 'lib'))
 elif name == 'openfec':
@@ -371,7 +391,7 @@ elif name == 'openfec':
             '-DCMAKE_C_FLAGS_RELEASE:STRING="-fPIC -fvisibility=hidden"',
         ]
     execute('cmake .. ' + ' '.join(args), logfile)
-    execute('make -j', logfile)
+    execute_make(logfile)
     os.chdir('..')
     install_tree('src', os.path.join(builddir, 'include'), match=['*.h'])
     install_files('%s/libopenfec.a' % dist, os.path.join(builddir, 'lib'))
@@ -392,7 +412,7 @@ elif name == 'alsa':
             '--disable-static',
             '--disable-python',
         ])), logfile)
-    execute('make -j', logfile)
+    execute_make(logfile)
     install_tree('include/alsa',
             os.path.join(builddir, 'include', 'alsa'),
             ignore=['alsa'])
@@ -414,7 +434,7 @@ elif name == 'ltdl':
             '--enable-shared',
             '--disable-static',
         ])), logfile)
-    execute('make -j', logfile)
+    execute_make(logfile)
     install_files('libltdl/ltdl.h', os.path.join(builddir, 'include'))
     install_tree('libltdl/libltdl', os.path.join(builddir, 'include', 'libltdl'))
     install_files('libltdl/.libs/libltdl.so', os.path.join(builddir, 'lib'))
@@ -445,7 +465,7 @@ elif name == 'json':
             '--enable-static',
             '--disable-shared',
         ])), logfile)
-    execute('make', logfile) # -j is buggy for json-c
+    execute_make(logfile, cpu_count=0) # -j is buggy for json-c
     install_tree('.', os.path.join(builddir, 'include'), match=['*.h'])
     install_files('.libs/libjson.a', os.path.join(builddir, 'lib'))
     install_files('.libs/libjson-c.a', os.path.join(builddir, 'lib'))
@@ -473,7 +493,7 @@ elif name == 'sndfile':
             '--disable-shared',
             '--disable-external-libs',
         ])), logfile)
-    execute('make -j', logfile)
+    execute_make(logfile)
     install_files('src/sndfile.h', os.path.join(builddir, 'include'))
     install_files('src/.libs/libsndfile.a', os.path.join(builddir, 'lib'))
 elif name == 'pulseaudio':
@@ -515,7 +535,7 @@ elif name == 'pulseaudio':
             '--disable-webrtc-aec',
             '--without-caps',
         ])), logfile)
-    execute('make -j', logfile)
+    execute_make(logfile)
     install_files('config.h', os.path.join(builddir, 'include'))
     install_tree('src/pulse', os.path.join(builddir, 'include', 'pulse'),
                  match=['*.h'])
@@ -551,7 +571,7 @@ elif name == 'sox':
             '--without-ao',
             '--without-opus',
         ])), logfile)
-    execute('make -j', logfile)
+    execute_make(logfile)
     install_files('src/sox.h', os.path.join(builddir, 'include'))
     install_files('src/.libs/libsox.a', os.path.join(builddir, 'lib'))
 elif name == 'libunwind':
@@ -575,7 +595,7 @@ elif name == 'libunwind':
             '--disable-setjmp',
             '--disable-minidebuginfo',
            ])), logfile)
-    execute('make -j', logfile)
+    execute_make(logfile)
     install_files('include/*.h', os.path.join(builddir, 'include'))
     install_files('src/.libs/libunwind.a', os.path.join(builddir, 'lib'))
 elif name == 'gengetopt':
@@ -588,7 +608,7 @@ elif name == 'gengetopt':
     os.chdir('src/gengetopt-%s' % ver)
     execute('./configure %s' % (
         makeenv(envlist)), logfile)
-    execute('make', logfile) # -j is buggy for gengetopt
+    execute_make(logfile, cpu_count=0) # -j is buggy for gengetopt
     install_files('src/gengetopt', os.path.join(builddir, 'bin'))
 elif name == 'ragel':
     download('https://www.colm.net/files/ragel/ragel-%s.tar.gz' % ver,
@@ -600,7 +620,7 @@ elif name == 'ragel':
     os.chdir('src/ragel-%s' % ver)
     execute('./configure %s' % (
         makeenv(envlist)), logfile)
-    execute('make -j', logfile)
+    execute_make(logfile)
     install_files('ragel/ragel', os.path.join(builddir, 'bin'))
 elif name == 'cpputest':
     download(
@@ -623,7 +643,7 @@ elif name == 'cpputest':
                 # disable memory leak detection which is too hard to use properly
                 '--disable-memory-leak-detection',
             ])), logfile)
-    execute('make -j', logfile)
+    execute_make(logfile)
     install_tree('include', os.path.join(builddir, 'include'))
     install_files('lib/libCppUTest.a', os.path.join(builddir, 'lib'))
 else:
