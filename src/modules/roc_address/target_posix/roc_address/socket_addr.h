@@ -47,11 +47,17 @@ public:
     //! Set IPv6 address of the interface on which to join to the multicast group.
     bool set_miface_ipv6(const char* ip);
 
+    //! Set broadcast flag.
+    bool set_broadcast();
+
     //! Get IP version (4 or 6).
     int version() const;
 
     //! Check whether this is multicast address.
     bool multicast() const;
+
+    //! Check whether this is broadcast address.
+    bool broadcast() const;
 
     //! Get host IP address.
     bool get_host(char* buf, size_t bufsz) const;
@@ -98,6 +104,8 @@ private:
         in_addr addr4;
         in6_addr addr6;
     } miface_;
+
+    bool broadcast_;
 };
 
 } // namespace address
