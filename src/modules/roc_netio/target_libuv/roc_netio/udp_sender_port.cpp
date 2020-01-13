@@ -78,6 +78,17 @@ bool UDPSenderPort::open() {
         return false;
     }
 
+    if (address_.broadcast()) {
+        roc_log(LogDebug, "udp sender: setting broadcast flag for port %s",
+                address::socket_addr_to_str(address_).c_str());
+
+        if (int err = uv_udp_set_broadcast(&handle_, 1)) {
+            roc_log(LogError, "udp sender: uv_udp_set_broadcast(): [%s] %s",
+                    uv_err_name(err), uv_strerror(err));
+            return false;
+        }
+    }
+
     int addrlen = (int)address_.slen();
     if (int err = uv_udp_getsockname(&handle_, address_.saddr(), &addrlen)) {
         roc_log(LogError, "udp sender: uv_udp_getsockname(): [%s] %s", uv_err_name(err),
