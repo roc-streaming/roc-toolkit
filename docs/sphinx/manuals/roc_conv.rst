@@ -25,6 +25,7 @@ Options
 --frame-size=INT          Internal frame size, number of samples
 -r, --rate=INT            Output sample rate, Hz
 --no-resampling           Disable resampling  (default=off)
+--resampler-backend=ENUM  Resampler backend  (possible values="builtin" default=`builtin')
 --resampler-profile=ENUM  Resampler profile  (possible values="low", "medium", "high" default=`medium')
 --resampler-interp=INT    Resampler sinc table precision
 --resampler-window=INT    Number of samples per resampler window
