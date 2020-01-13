@@ -22,6 +22,7 @@ Options
 -f, --format=FORMAT       Force input file format
 -s, --source=PORT         Remote source port triplet
 -r, --repair=PORT         Remote repair port triplet
+--broadcast               Allow broadcast destination port addresses (default=off)
 --nbsrc=INT               Number of source packets in FEC block
 --nbrpr=INT               Number of repair packets in FEC block
 --packet-length=STRING    Outgoing packet length, TIME units
@@ -29,11 +30,13 @@ Options
 --frame-size=INT          Internal frame size, number of samples
 --rate=INT                Override input sample rate, Hz
 --no-resampling           Disable resampling  (default=off)
+--resampler-backend=ENUM  Resampler backend  (possible values="builtin" default=`builtin')
 --resampler-profile=ENUM  Resampler profile  (possible values="low", "medium", "high" default=`medium')
 --resampler-interp=INT    Resampler sinc table precision
 --resampler-window=INT    Number of samples per resampler window
 --interleaving            Enable packet interleaving  (default=off)
 --poisoning               Enable uninitialized memory poisoning (default=off)
+--color=ENUM              Set colored logging mode for stderr output (possible values="auto", "always", "never" default=`auto')
 
 Input URI
 ---------
@@ -53,7 +56,7 @@ Examples:
 
 - ``pulse://default``
 - ``pulse://alsa_input.pci-0000_00_1f.3.analog-stereo``
-- ``alsa://front:CARD=PCH,DEV=0``
+- ``alsa://hw:1,0``
 - ``file:///home/user/test.wav``
 - ``file://localhost/home/user/test.wav``
 - ``file:/home/user/test.wav``
@@ -116,6 +119,12 @@ Send WAV file to an IPv6 receiver:
 .. code::
 
     $ roc-send -vv -i file:./input.wav -s rtp+rs8m:[2001:db8::]:10001 -r rs8m:[2001:db8::]:10002
+
+Send WAV file to a broadcast address:
+
+.. code::
+
+    $ roc-send -vv -i file:./input.wav -s rtp+rs8m:192.168.0.255:10001 -r rs8m:192.168.0.255:10002 --broadcast
 
 Send WAV from stdin:
 
