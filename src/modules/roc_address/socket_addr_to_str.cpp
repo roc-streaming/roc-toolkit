@@ -18,18 +18,27 @@ socket_addr_to_str::socket_addr_to_str(const SocketAddr& addr) {
     case 4:
         if (!format_ipv4_(addr)) {
             strcpy(buffer_, "<error>");
+            return;
         }
         break;
 
     case 6:
         if (!format_ipv6_(addr)) {
             strcpy(buffer_, "<error>");
+            return;
         }
         break;
 
     default:
         strcpy(buffer_, "<none>");
-        break;
+        return;
+    }
+
+    if (addr.broadcast()) {
+        if (!core::append_str(buffer_, sizeof(buffer_), " broadcast")) {
+            strcpy(buffer_, "<error>");
+            return;
+        }
     }
 }
 
