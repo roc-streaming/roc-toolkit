@@ -229,7 +229,7 @@ def Artifact(env, dst, src):
     target = env.File(dst)
 
     env.Command(dst, src, env.Action(noop, env.PrettyCommand(
-            'ART', target.path, 'purple', 'art(%s)' % target.path)))
+            'CHECK', target.path, 'purple', 'art(%s)' % target.path)))
 
     env.Precious(dst)
     env.Requires(dst, src)
