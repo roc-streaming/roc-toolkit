@@ -14,7 +14,8 @@ namespace roc {
 namespace address {
 
 SocketAddr::SocketAddr()
-    : miface_family_(AF_UNSPEC) {
+    : miface_family_(AF_UNSPEC)
+    , broadcast_(false) {
     memset(&saddr_, 0, sizeof(saddr_));
     memset(&miface_, 0, sizeof(miface_));
 }
@@ -40,6 +41,10 @@ bool SocketAddr::set_host_port_ipv4(const char* ip_str, int port) {
         return false;
     }
 
+    if (broadcast_ && IN_MULTICAST(ntohl(addr.s_addr))) {
+        return false;
+    }
+
     saddr_.addr4.sin_family = AF_INET;
     saddr_.addr4.sin_addr = addr;
     saddr_.addr4.sin_port = htons(uint16_t(port));
@@ -50,6 +55,10 @@ bool SocketAddr::set_host_port_ipv4(const char* ip_str, int port) {
 bool SocketAddr::set_host_port_ipv6(const char* ip_str, int port) {
     in6_addr addr;
     if (inet_pton(AF_INET6, ip_str, &addr) != 1) {
+        return false;
+    }
+
+    if (broadcast_ && IN6_IS_ADDR_MULTICAST(&addr)) {
         return false;
     }
 
@@ -81,6 +90,14 @@ bool SocketAddr::set_miface_ipv6(const char* iface) {
     miface_.addr6 = addr;
     miface_family_ = AF_INET6;
 
+    return true;
+}
+
+bool SocketAddr::set_broadcast() {
+    if (multicast()) {
+        return false;
+    }
+    broadcast_ = true;
     return true;
 }
 
@@ -127,6 +144,10 @@ bool SocketAddr::multicast() const {
     default:
         return false;
     }
+}
+
+bool SocketAddr::broadcast() const {
+    return broadcast_;
 }
 
 bool SocketAddr::has_miface() const {
@@ -229,6 +250,10 @@ bool SocketAddr::operator==(const SocketAddr& other) const {
 
     default:
         break;
+    }
+
+    if (broadcast_ != other.broadcast_) {
+        return false;
     }
 
     return true;
