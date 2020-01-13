@@ -263,6 +263,12 @@ int main(int argc, char** argv) {
     if (!local_addr.has_host_port()) {
         roc_panic("can't initialize local address");
     }
+    if (args.broadcast_given) {
+        if (!local_addr.set_broadcast()) {
+            roc_log(LogError, "can't enable broadcast for local address");
+            return 1;
+        }
+    }
 
     packet::IWriter* udp_sender = trx.add_udp_sender(local_addr);
     if (!udp_sender) {
