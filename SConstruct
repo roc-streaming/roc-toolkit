@@ -343,6 +343,8 @@ if set(COMMAND_LINE_TARGETS).intersection(['sphinx', 'docs']):
     enable_sphinx = True
 elif GetOption('disable_doc') or set(COMMAND_LINE_TARGETS).intersection(['tidy', 'fmt']):
     enable_sphinx = False
+elif env.HasArg('SPHINX_BUILD') and env.HasArg('BREATHE_APIDOC'):
+    enable_sphinx = True
 else:
     enable_sphinx = env.Which(env['SPHINX_BUILD']) and env.Which(env['BREATHE_APIDOC'])
 

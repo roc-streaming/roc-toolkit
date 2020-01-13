@@ -39,9 +39,6 @@ def ClangDBWriter(env, tool, build_dir):
 def Doxygen(env, build_dir='', html_dir=None, config='', sources=[], werror=False):
     target = os.path.join(env.Dir(build_dir).path, '.done')
 
-    if not env.Which(env['DOXYGEN']):
-        env.Die("doxygen not found in PATH (looked for '%s')" % env['DOXYGEN'])
-
     dirs = [env.Dir(build_dir).path]
     if html_dir:
         dirs += [env.Dir(html_dir).path]
@@ -62,9 +59,6 @@ def Doxygen(env, build_dir='', html_dir=None, config='', sources=[], werror=Fals
 
 def Sphinx(env, output_type, build_dir, output_dir, source_dir, sources, werror=False):
     target = os.path.join(env.Dir(build_dir).path, source_dir, '.done.'+output_type)
-
-    if not env.Which(env['SPHINX_BUILD']):
-        env.Die("sphinx-build not found in PATH (looked for '%s')" % env['SPHINX_BUILD'])
 
     env.Command(target, sources, SCons.Action.CommandAction(
         '%s scripts/wrappers/doc.py %s %s %s %s %s %s -q -b %s -d %s %s %s' % (
@@ -90,10 +84,7 @@ def Ragel(env, source):
     else:
         ragel = 'ragel'
 
-    if isinstance(ragel, str):
-        if not env.Which(ragel):
-            env.Die("ragel not found in PATH (looked for '%s')" % ragel)
-    else:
+    if not isinstance(ragel, str):
         ragel = env.File(ragel).path
 
     source = env.File(source)
@@ -117,10 +108,7 @@ def GenGetOpt(env, source, ver):
     else:
         gengetopt = 'gengetopt'
 
-    if isinstance(gengetopt, str):
-        if not env.Which(gengetopt):
-            env.Die("gengetopt not found in PATH (looked for '%s')" % gengetopt)
-    else:
+    if not isinstance(gengetopt, str):
         gengetopt = env.File(gengetopt).path
 
     source = env.File(source)
