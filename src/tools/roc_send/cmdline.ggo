@@ -12,8 +12,9 @@ section "Options"
     option "format" f "Force input file format" typestr="FORMAT" string optional
 
     option "source" s "Remote source port triplet" typestr="PORT" string optional
-
     option "repair" r "Remote repair port triplet" typestr="PORT" string optional
+
+    option "broadcast" - "Allow broadcast destination port addresses" flag off
 
     option "nbsrc" - "Number of source packets in FEC block"
         int optional
