@@ -445,10 +445,16 @@ else:
 toolchain = host
 
 if not compiler:
-    if not toolchain and env.Which('clang'):
-        compiler = 'clang'
+    if env.HasArg('CXX'):
+        if 'gcc' in env['CXX'] or 'g++' in env['CXX']:
+            compiler = 'gcc'
+        elif 'clang' in env['CXX']:
+            compiler = 'clang'
     else:
-        compiler = 'gcc'
+        if not toolchain and env.Which('clang'):
+            compiler = 'clang'
+        else:
+            compiler = 'gcc'
 
 if '-' in compiler:
     compiler, compiler_ver = compiler.split('-')
