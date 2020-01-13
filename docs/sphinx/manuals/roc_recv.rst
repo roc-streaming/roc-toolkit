@@ -20,8 +20,8 @@ Options
 -L, --list-supported      list supported schemes and formats
 -o, --output=OUTPUT_URI   Output file or device URI
 -f, --format=FORMAT       Force output file format
--s, --source=PORT         Source port triplet (may be used multiple times)
--r, --repair=PORT         Repair port triplet (may be used multiple times)
+-s, --source=PORT         Source port triplet
+-r, --repair=PORT         Repair port triplet
 --miface=IFACE_IP         IP address of the network interface on which to join the multicast group
 --sess-latency=STRING     Session target latency, TIME units
 --min-latency=STRING      Session minimum latency, TIME units
@@ -34,12 +34,14 @@ Options
 --frame-size=INT          Internal frame size, number of samples
 --rate=INT                Override output sample rate, Hz
 --no-resampling           Disable resampling  (default=off)
+--resampler-backend=ENUM  Resampler backend  (possible values="builtin" default=`builtin')
 --resampler-profile=ENUM  Resampler profile  (possible values="low", "medium", "high" default=`medium')
 --resampler-interp=INT    Resampler sinc table precision
 --resampler-window=INT    Number of samples per resampler window
 -1, --oneshot             Exit when last connected client disconnects (default=off)
 --poisoning               Enable uninitialized memory poisoning (default=off)
 --beeping                 Enable beeping on packet loss  (default=off)
+--color=ENUM              Set colored logging mode for stderr output (possible values="auto", "always", "never" default=`auto')
 
 Output URI
 ----------
@@ -59,7 +61,7 @@ Examples:
 
 - ``pulse://default``
 - ``pulse://alsa_output.pci-0000_00_1f.3.analog-stereo``
-- ``alsa://front:CARD=PCH,DEV=0``
+- ``alsa://hw:1,0``
 - ``file:///home/user/test.wav``
 - ``file://localhost/home/user/test.wav``
 - ``file:/home/user/test.wav``
