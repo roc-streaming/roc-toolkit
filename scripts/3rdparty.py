@@ -551,7 +551,7 @@ elif name == 'pulseaudio':
     install_files('src/.libs/libpulsecommon-*.so', rpathdir)
 elif name == 'sox':
     download(
-      'https://datapacket.dl.sourceforge.net/project/sox/sox/%s/sox-%s.tar.gz' % (ver, ver),
+      'https://downloads.sourceforge.net/project/sox/sox/%s/sox-%s.tar.gz' % (ver, ver),
       'sox-%s.tar.gz' % ver,
         logfile,
         vendordir)
