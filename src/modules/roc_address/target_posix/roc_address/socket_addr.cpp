@@ -35,6 +35,17 @@ bool SocketAddr::set_host_port_saddr(const sockaddr* sa) {
     return true;
 }
 
+bool SocketAddr::set_host_port(AddrType type, const char* ip_str, int port) {
+    switch (type) {
+    case IP4:
+        return set_host_port_ipv4(ip_str, port);
+    case IP6:
+        return set_host_port_ipv6(ip_str, port);
+    }
+
+    return false;
+}
+
 bool SocketAddr::set_host_port_ipv4(const char* ip_str, int port) {
     in_addr addr;
     if (inet_pton(AF_INET, ip_str, &addr) != 1) {
@@ -67,6 +78,17 @@ bool SocketAddr::set_host_port_ipv6(const char* ip_str, int port) {
     saddr_.addr6.sin6_port = htons(uint16_t(port));
 
     return true;
+}
+
+bool SocketAddr::set_miface(AddrType type, const char* iface) {
+    switch (type) {
+    case IP4:
+        return set_miface_ipv4(iface);
+    case IP6:
+        return set_miface_ipv6(iface);
+    }
+
+    return false;
 }
 
 bool SocketAddr::set_miface_ipv4(const char* iface) {
