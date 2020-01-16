@@ -198,12 +198,12 @@ Raspberry Pi 2 and 3
           scons -Q \
             --enable-pulseaudio-modules \
             --host=arm-linux-gnueabihf \
-            --build-3rdparty=libuv,libunwind,openfec,alsa,pulseaudio:10.0,sox,cpputest
+            --build-3rdparty=libuv,libunwind,openfec,alsa,pulseaudio:12.2,sox,cpputest
 
     # install Roc binaries
     $ scp ./bin/arm-linux-gnueabihf/roc-{recv,send,conv} <address>:/usr/bin
     $ scp ./bin/arm-linux-gnueabihf/libroc.so.*.* <address>:/usr/lib
-    $ scp ./bin/arm-linux-gnueabihf/module-roc-{sink,sink-input} <address>:/usr/lib/pulse-10.0/modules
+    $ scp ./bin/arm-linux-gnueabihf/module-roc-{sink,sink-input} <address>:/usr/lib/pulse-12.2/modules
 
     # install Roc dependencies
     $ ssh <address> apt-get install libasound2 libpulse0 libltdl7
