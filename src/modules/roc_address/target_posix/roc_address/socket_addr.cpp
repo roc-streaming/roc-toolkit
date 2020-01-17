@@ -36,17 +36,17 @@ bool SocketAddr::set_host_port_saddr(const sockaddr* sa) {
 }
 
 bool SocketAddr::set_host_port(AddrFamily type, const char* ip_str, int port) {
-    switch (type) {
-    case IPv4:
-        return set_host_port_ipv4(ip_str, port);
-    case IPv6:
-        return set_host_port_ipv6(ip_str, port);
+    switch ((unsigned)type) {
+    case Family_IPv4:
+        return set_host_port_ipv4_(ip_str, port);
+    case Family_IPv6:
+        return set_host_port_ipv6_(ip_str, port);
+    default:
+        return false;
     }
-
-    return false;
 }
 
-bool SocketAddr::set_host_port_ipv4(const char* ip_str, int port) {
+bool SocketAddr::set_host_port_ipv4_(const char* ip_str, int port) {
     in_addr addr;
     if (inet_pton(AF_INET, ip_str, &addr) != 1) {
         return false;
@@ -63,7 +63,7 @@ bool SocketAddr::set_host_port_ipv4(const char* ip_str, int port) {
     return true;
 }
 
-bool SocketAddr::set_host_port_ipv6(const char* ip_str, int port) {
+bool SocketAddr::set_host_port_ipv6_(const char* ip_str, int port) {
     in6_addr addr;
     if (inet_pton(AF_INET6, ip_str, &addr) != 1) {
         return false;
@@ -81,17 +81,17 @@ bool SocketAddr::set_host_port_ipv6(const char* ip_str, int port) {
 }
 
 bool SocketAddr::set_miface(AddrFamily type, const char* iface) {
-    switch (type) {
-    case IPv4:
-        return set_miface_ipv4(iface);
-    case IPv6:
-        return set_miface_ipv6(iface);
+    switch ((unsigned)type) {
+    case Family_IPv4:
+        return set_miface_ipv4_(iface);
+    case Family_IPv6:
+        return set_miface_ipv6_(iface);
+    default:
+        return false;
     }
-
-    return false;
 }
 
-bool SocketAddr::set_miface_ipv4(const char* iface) {
+bool SocketAddr::set_miface_ipv4_(const char* iface) {
     in_addr addr;
 
     if (inet_pton(AF_INET, iface, &addr) != 1) {
@@ -103,7 +103,7 @@ bool SocketAddr::set_miface_ipv4(const char* iface) {
     return true;
 }
 
-bool SocketAddr::set_miface_ipv6(const char* iface) {
+bool SocketAddr::set_miface_ipv6_(const char* iface) {
     in6_addr addr;
 
     if (inet_pton(AF_INET6, iface, &addr) != 1) {
@@ -135,14 +135,14 @@ socklen_t SocketAddr::slen() const {
     return saddr_size_(saddr_family_());
 }
 
-int SocketAddr::version() const {
+AddrFamily SocketAddr::version() const {
     switch (saddr_family_()) {
     case AF_INET:
-        return 4;
+        return Family_IPv4;
     case AF_INET6:
-        return 6;
+        return Family_IPv6;
     default:
-        return -1;
+        return Family_Unknown;
     }
 }
 
