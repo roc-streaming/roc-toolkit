@@ -50,6 +50,28 @@ public:
         return size_;
     }
 
+    //! Get pointer to first element.
+    //! @remarks
+    //!  Returns null if the array is empty.
+    T* data() {
+        if (size_) {
+            return data_;
+        } else {
+            return NULL;
+        }
+    }
+
+    //! Get pointer to first element.
+    //! @remarks
+    //!  Returns null if the array is empty.
+    const T* data() const {
+        if (size_) {
+            return data_;
+        } else {
+            return NULL;
+        }
+    }
+
     //! Get element at given position.
     T& operator[](size_t index) {
         if (index >= size_) {
