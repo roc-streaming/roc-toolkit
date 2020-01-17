@@ -103,6 +103,18 @@ void Receiver::wait_active() const {
     }
 }
 
+void Receiver::pause() {
+    // no-op
+}
+
+bool Receiver::resume() {
+    return true;
+}
+
+bool Receiver::restart() {
+    return true;
+}
+
 void Receiver::write(const packet::PacketPtr& packet) {
     core::Mutex::Lock lock(control_mutex_);
 

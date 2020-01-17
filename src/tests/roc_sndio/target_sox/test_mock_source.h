@@ -43,6 +43,20 @@ public:
         FAIL("not implemented");
     }
 
+    virtual void pause() {
+        FAIL("not implemented");
+    }
+
+    virtual bool resume() {
+        FAIL("not implemented");
+        return false;
+    }
+
+    virtual bool restart() {
+        FAIL("not implemented");
+        return false;
+    }
+
     virtual bool read(audio::Frame& frame) {
         size_t ns = frame.size();
         if (ns > size_ - pos_) {
