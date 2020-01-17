@@ -33,8 +33,7 @@ Receiver::Receiver(const ReceiverConfig& config,
     , audio_reader_(NULL)
     , config_(config)
     , timestamp_(0)
-    , num_channels_(packet::num_channels(config.common.output_channels))
-    , active_cond_(control_mutex_) {
+    , num_channels_(packet::num_channels(config.common.output_channels)) {
     mixer_.reset(new (allocator_)
                      audio::Mixer(sample_buffer_pool, config.common.internal_frame_size),
                  allocator_);
@@ -92,15 +91,15 @@ bool Receiver::has_clock() const {
 sndio::ISource::State Receiver::state() const {
     core::Mutex::Lock lock(control_mutex_);
 
-    return state_();
-}
-
-void Receiver::wait_active() const {
-    core::Mutex::Lock lock(control_mutex_);
-
-    while (state_() != Active) {
-        active_cond_.wait();
+    if (sessions_.size() != 0) {
+        return Active;
     }
+
+    if (packets_.size() != 0) {
+        return Active;
+    }
+
+    return Inactive;
 }
 
 void Receiver::pause() {
@@ -118,13 +117,7 @@ bool Receiver::restart() {
 void Receiver::write(const packet::PacketPtr& packet) {
     core::Mutex::Lock lock(control_mutex_);
 
-    const State old_state = state_();
-
     packets_.push_back(*packet);
-
-    if (old_state != Active) {
-        active_cond_.broadcast();
-    }
 }
 
 bool Receiver::read(audio::Frame& frame) {
@@ -145,26 +138,8 @@ bool Receiver::read(audio::Frame& frame) {
 void Receiver::prepare_() {
     core::Mutex::Lock lock(control_mutex_);
 
-    const State old_state = state_();
-
     fetch_packets_();
     update_sessions_();
-
-    if (old_state != Active && state_() == Active) {
-        active_cond_.broadcast();
-    }
-}
-
-sndio::ISource::State Receiver::state_() const {
-    if (sessions_.size() != 0) {
-        return Active;
-    }
-
-    if (packets_.size() != 0) {
-        return Active;
-    }
-
-    return Inactive;
 }
 
 void Receiver::fetch_packets_() {

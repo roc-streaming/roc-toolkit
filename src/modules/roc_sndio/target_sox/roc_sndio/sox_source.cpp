@@ -108,12 +108,6 @@ ISource::State SoxSource::state() const {
     }
 }
 
-void SoxSource::wait_active() const {
-    roc_panic_if(!valid_);
-
-    // always active
-}
-
 void SoxSource::pause() {
     roc_panic_if(!valid_);
 
