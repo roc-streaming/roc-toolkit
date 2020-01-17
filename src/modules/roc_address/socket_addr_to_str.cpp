@@ -14,21 +14,20 @@ namespace roc {
 namespace address {
 
 socket_addr_to_str::socket_addr_to_str(const SocketAddr& addr) {
-    switch (addr.version()) {
-    case 4:
+    switch ((unsigned)addr.version()) {
+    case Family_IPv4:
         if (!format_ipv4_(addr)) {
             strcpy(buffer_, "<error>");
             return;
         }
         break;
 
-    case 6:
+    case Family_IPv6:
         if (!format_ipv6_(addr)) {
             strcpy(buffer_, "<error>");
             return;
         }
         break;
-
     default:
         strcpy(buffer_, "<none>");
         return;
