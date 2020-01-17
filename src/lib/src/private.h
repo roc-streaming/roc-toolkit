@@ -92,7 +92,7 @@ struct roc_receiver {
 
     size_t num_channels;
 
-    roc::core::Array<roc::address::SocketAddr> addresses;
+    roc::core::Array<roc::address::SocketAddr, 2> addresses;
 };
 
 #endif // ROC_PRIVATE_H_
