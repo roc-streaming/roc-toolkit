@@ -727,9 +727,9 @@ if 'all' in download_dependencies:
     download_dependencies = all_dependencies
 
 # dependencies that should be pre-installed on system
-system_dependecies = all_dependencies - download_dependencies
+system_dependencies = all_dependencies - download_dependencies
 
-if 'libuv' in system_dependecies:
+if 'libuv' in system_dependencies:
     conf = Configure(env, custom_tests=env.CustomTests)
 
     env.ParsePkgConfig('--cflags --libs libuv')
@@ -744,7 +744,7 @@ if 'libuv' in system_dependecies:
 
     env = conf.Finish()
 
-if 'libunwind' in system_dependecies:
+if 'libunwind' in system_dependencies:
     conf = Configure(env, custom_tests=env.CustomTests)
 
     env.ParsePkgConfig('--cflags --libs libunwind')
@@ -754,7 +754,7 @@ if 'libunwind' in system_dependecies:
 
     env = conf.Finish()
 
-if 'openfec' in system_dependecies:
+if 'openfec' in system_dependencies:
     conf = Configure(env, custom_tests=env.CustomTests)
 
     if env.ParsePkgConfig('--silence-errors --cflags --libs openfec'):
@@ -796,7 +796,7 @@ if 'openfec' in system_dependecies:
 
     env = conf.Finish()
 
-if 'pulseaudio' in system_dependecies:
+if 'pulseaudio' in system_dependencies:
     conf = Configure(tool_env, custom_tests=env.CustomTests)
 
     tool_env.ParsePkgConfig('--cflags --libs libpulse')
@@ -846,7 +846,7 @@ if 'pulseaudio' in system_dependecies:
 
         env['ROC_PULSE_VERSION'] = pa_ver
 
-if 'sox' in system_dependecies:
+if 'sox' in system_dependencies:
     conf = Configure(tool_env, custom_tests=env.CustomTests)
 
     tool_env.ParsePkgConfig('--cflags --libs sox')
@@ -862,7 +862,7 @@ if 'sox' in system_dependecies:
 
     tool_env = conf.Finish()
 
-if 'ragel' in system_dependecies:
+if 'ragel' in system_dependencies:
     conf = Configure(env, custom_tests=env.CustomTests)
 
     if 'RAGEL' in env.Dictionary():
@@ -875,7 +875,7 @@ if 'ragel' in system_dependecies:
 
     env = conf.Finish()
 
-if 'gengetopt' in system_dependecies:
+if 'gengetopt' in system_dependencies:
     conf = Configure(env, custom_tests=env.CustomTests)
 
     if 'GENGETOPT' in env.Dictionary():
@@ -888,7 +888,7 @@ if 'gengetopt' in system_dependecies:
 
     env = conf.Finish()
 
-if 'cpputest' in system_dependecies:
+if 'cpputest' in system_dependencies:
     conf = Configure(test_env, custom_tests=env.CustomTests)
 
     test_env.ParsePkgConfig('--cflags --libs cpputest')
