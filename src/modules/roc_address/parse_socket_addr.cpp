@@ -60,7 +60,7 @@ bool parse_socket_addr_miface(const char* input, SocketAddr& addr) {
             return false;
         }
 
-        return addr.set_miface_ipv4(input);
+        return addr.set_miface(IPv4, input);
     }
 
     if (addr.version() == 4) {
@@ -73,7 +73,7 @@ bool parse_socket_addr_miface(const char* input, SocketAddr& addr) {
         return false;
     }
 
-    return addr.set_miface_ipv6(addr6);
+    return addr.set_miface(IPv6, addr6);
 }
 
 } // namespace address
