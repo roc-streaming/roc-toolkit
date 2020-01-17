@@ -292,14 +292,14 @@ public:
         , pos_(0) {
         CHECK(event_loop_.valid());
 
-        dst_source_addr_.set_host_port(address::IPv4, "127.0.0.1",
+        dst_source_addr_.set_host_port(address::Family_IPv4, "127.0.0.1",
                                             roc_address_port(dst_source_addr));
-        dst_repair_addr_.set_host_port(address::IPv4, "127.0.0.1",
+        dst_repair_addr_.set_host_port(address::Family_IPv4, "127.0.0.1",
                                             roc_address_port(dst_repair_addr));
 
-        send_addr_.set_host_port(address::IPv4, "127.0.0.1", 0);
-        recv_source_addr_.set_host_port(address::IPv4, "127.0.0.1", 0);
-        recv_repair_addr_.set_host_port(address::IPv4, "127.0.0.1", 0);
+        send_addr_.set_host_port(address::Family_IPv4, "127.0.0.1", 0);
+        recv_source_addr_.set_host_port(address::Family_IPv4, "127.0.0.1", 0);
+        recv_repair_addr_.set_host_port(address::Family_IPv4, "127.0.0.1", 0);
 
         writer_ = event_loop_.add_udp_sender(send_addr_);
         CHECK(writer_);
