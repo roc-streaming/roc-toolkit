@@ -42,7 +42,7 @@ TEST(receiver, bind) {
 
         pipeline::PortConfig port_config;
         port_config.protocol = address::EndProto_RTP;
-        CHECK(port_config.address.set_host_port_ipv4("127.0.0.1", 0));
+        CHECK(port_config.address.set_host_port(address::Family_IPv4, "127.0.0.1", 0));
         CHECK(port_config.address.port() == 0);
 
         CHECK(receiver.bind(address::EndType_AudioSource, port_config));
