@@ -58,17 +58,26 @@ public:
     //! Get number of alive sessions.
     size_t num_sessions() const;
 
+    //! Get source sample rate.
+    virtual size_t sample_rate() const;
+
+    //! Check if the source has own clock.
+    virtual bool has_clock() const;
+
     //! Get current receiver state.
     virtual State state() const;
 
     //! Wait until the receiver status becomes active.
     virtual void wait_active() const;
 
-    //! Get source sample rate.
-    virtual size_t sample_rate() const;
+    //! Pause reading.
+    virtual void pause();
 
-    //! Check if the source has own clock.
-    virtual bool has_clock() const;
+    //! Resume paused reading.
+    virtual bool resume();
+
+    //! Restart reading from the beginning.
+    virtual bool restart();
 
     //! Write packet.
     virtual void write(const packet::PacketPtr&);
