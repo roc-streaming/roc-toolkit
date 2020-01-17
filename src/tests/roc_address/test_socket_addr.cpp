@@ -104,17 +104,17 @@ TEST(socket_addr, eq_ipv4) {
 TEST(socket_addr, eq_ipv4_multicast) {
     SocketAddr addr1;
     CHECK(addr1.set_host_port(IPv4, "1.2.3.4", 123));
-    CHECK(addr1.set_miface_ipv4("0.0.0.0"));
+    CHECK(addr1.set_miface(IPv4, "0.0.0.0"));
     CHECK(addr1.has_host_port());
 
     SocketAddr addr2;
     CHECK(addr2.set_host_port(IPv4, "1.2.3.4", 123));
-    CHECK(addr2.set_miface_ipv4("0.0.0.0"));
+    CHECK(addr2.set_miface(IPv4, "0.0.0.0"));
     CHECK(addr2.has_host_port());
 
     SocketAddr addr3;
     CHECK(addr3.set_host_port(IPv4, "1.2.3.4", 123));
-    CHECK(addr3.set_miface_ipv4("0.0.0.1"));
+    CHECK(addr3.set_miface(IPv4, "0.0.0.1"));
     CHECK(addr3.has_host_port());
 
     CHECK(addr1 == addr1);
@@ -157,19 +157,19 @@ TEST(socket_addr, eq_ipv6) {
 TEST(socket_addr, eq_ipv6_multicast) {
     SocketAddr addr1;
     CHECK(addr1.set_host_port(IPv6, "ffee::", 123));
-    CHECK(addr1.set_miface_ipv6("::"));
+    CHECK(addr1.set_miface(IPv6, "::"));
     CHECK(addr1.has_host_port());
     CHECK(addr1.multicast());
 
     SocketAddr addr2;
     CHECK(addr2.set_host_port(IPv6, "ffee::", 123));
-    CHECK(addr2.set_miface_ipv6("::"));
+    CHECK(addr2.set_miface(IPv6, "::"));
     CHECK(addr2.has_host_port());
     CHECK(addr1.multicast());
 
     SocketAddr addr3;
     CHECK(addr3.set_host_port(IPv6, "ffee::", 123));
-    CHECK(addr3.set_miface_ipv6("2001:db8::1"));
+    CHECK(addr3.set_miface(IPv6, "2001:db8::1"));
     CHECK(addr3.has_host_port());
     CHECK(addr1.multicast());
 
@@ -291,7 +291,7 @@ TEST(socket_addr, multicast_ipv4_to_str) {
         CHECK(addr.has_host_port());
         CHECK(addr.multicast());
 
-        CHECK(addr.set_miface_ipv4("0.0.0.0"));
+        CHECK(addr.set_miface(IPv4, "0.0.0.0"));
 
         STRCMP_EQUAL("239.255.255.255:123 miface 0.0.0.0",
                      socket_addr_to_str(addr).c_str());
@@ -315,7 +315,7 @@ TEST(socket_addr, multicast_ipv6_to_str) {
         CHECK(addr.has_host_port());
         CHECK(addr.multicast());
 
-        CHECK(addr.set_miface_ipv6("::"));
+        CHECK(addr.set_miface(IPv6, "::"));
 
         STRCMP_EQUAL("[ff00::]:123 miface [::]", socket_addr_to_str(addr).c_str());
     }
