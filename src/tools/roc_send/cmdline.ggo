@@ -8,8 +8,8 @@ section "Options"
 
     option "list-supported" L "list supported schemes and formats" optional
 
-    option "input" i "Input file or device URI" typestr="INPUT_URI" string optional
-    option "format" f "Force input file format" typestr="FORMAT" string optional
+    option "input" i "Input file or device URI" typestr="IO_URI" string optional
+    option "input-format" - "Force input file format" typestr="FORMAT" string optional
 
     option "source" s "Remote source port triplet" typestr="PORT" string optional
     option "repair" r "Remote repair port triplet" typestr="PORT" string optional
@@ -57,7 +57,7 @@ section "Options"
         values="auto","always","never" default="auto" enum optional
 
 text "
-INPUT_URI is a device or file URI, e.g.:
+IO_URI is a device or file URI, e.g.:
   pulse://default; pulse://alsa_input.pci-0000_00_1f.3.analog-stereo
   file:///home/user/test.wav; file:./test.wav; file:-
 
