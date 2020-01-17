@@ -53,7 +53,7 @@ TEST(pump, write_read) {
         SoxSink sox_sink(allocator, config);
         CHECK(sox_sink.open(NULL, file.path()));
 
-        Pump pump(buffer_pool, mock_source, sox_sink, FrameSize, Pump::ModeOneshot);
+        Pump pump(buffer_pool, mock_source, NULL, sox_sink, FrameSize, Pump::ModeOneshot);
         CHECK(pump.valid());
         CHECK(pump.run());
 
@@ -65,7 +65,7 @@ TEST(pump, write_read) {
 
     MockSink mock_writer;
 
-    Pump pump(buffer_pool, sox_source, mock_writer, FrameSize, Pump::ModePermanent);
+    Pump pump(buffer_pool, sox_source, NULL, mock_writer, FrameSize, Pump::ModePermanent);
     CHECK(pump.valid());
     CHECK(pump.run());
 
@@ -84,7 +84,7 @@ TEST(pump, write_overwrite_read) {
         SoxSink sox_sink(allocator, config);
         CHECK(sox_sink.open(NULL, file.path()));
 
-        Pump pump(buffer_pool, mock_source, sox_sink, FrameSize, Pump::ModeOneshot);
+        Pump pump(buffer_pool, mock_source, NULL, sox_sink, FrameSize, Pump::ModeOneshot);
         CHECK(pump.valid());
         CHECK(pump.run());
     }
@@ -98,7 +98,7 @@ TEST(pump, write_overwrite_read) {
         SoxSink sox_sink(allocator, config);
         CHECK(sox_sink.open(NULL, file.path()));
 
-        Pump pump(buffer_pool, mock_source, sox_sink, FrameSize, Pump::ModeOneshot);
+        Pump pump(buffer_pool, mock_source, NULL, sox_sink, FrameSize, Pump::ModeOneshot);
         CHECK(pump.valid());
         CHECK(pump.run());
     }
@@ -111,7 +111,7 @@ TEST(pump, write_overwrite_read) {
 
     MockSink mock_writer;
 
-    Pump pump(buffer_pool, sox_source, mock_writer, FrameSize, Pump::ModePermanent);
+    Pump pump(buffer_pool, sox_source, NULL, mock_writer, FrameSize, Pump::ModePermanent);
     CHECK(pump.valid());
     CHECK(pump.run());
 
