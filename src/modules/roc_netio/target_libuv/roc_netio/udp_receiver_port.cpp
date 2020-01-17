@@ -63,7 +63,7 @@ bool UdpReceiverPort::open() {
     }
 
     int bind_err = UV_EINVAL;
-    if (address_.version() == 6) {
+    if (address_.version() == address::Family_IPv6) {
         bind_err = uv_udp_bind(&handle_, address_.saddr(), flags | UV_UDP_IPV6ONLY);
     }
     if (bind_err == UV_EINVAL || bind_err == UV_ENOTSUP) {
