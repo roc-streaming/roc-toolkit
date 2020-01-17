@@ -35,11 +35,11 @@ bool SocketAddr::set_host_port_saddr(const sockaddr* sa) {
     return true;
 }
 
-bool SocketAddr::set_host_port(AddrType type, const char* ip_str, int port) {
+bool SocketAddr::set_host_port(AddrFamily type, const char* ip_str, int port) {
     switch (type) {
-    case IP4:
+    case IPv4:
         return set_host_port_ipv4(ip_str, port);
-    case IP6:
+    case IPv6:
         return set_host_port_ipv6(ip_str, port);
     }
 
@@ -80,11 +80,11 @@ bool SocketAddr::set_host_port_ipv6(const char* ip_str, int port) {
     return true;
 }
 
-bool SocketAddr::set_miface(AddrType type, const char* iface) {
+bool SocketAddr::set_miface(AddrFamily type, const char* iface) {
     switch (type) {
-    case IP4:
+    case IPv4:
         return set_miface_ipv4(iface);
-    case IP6:
+    case IPv6:
         return set_miface_ipv6(iface);
     }
 
