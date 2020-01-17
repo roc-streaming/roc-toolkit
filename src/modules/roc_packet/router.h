@@ -49,7 +49,7 @@ private:
         bool has_source;
     };
 
-    core::Array<Route> routes_;
+    core::Array<Route, 2> routes_;
 
     bool valid_;
 };
