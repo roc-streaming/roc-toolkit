@@ -71,7 +71,7 @@ TEST(sox_source, has_clock) {
         SoxSink sox_sink(allocator, sink_config);
         CHECK(sox_sink.open(NULL, file.path()));
 
-        Pump pump(buffer_pool, mock_source, sox_sink, FrameSize, Pump::ModeOneshot);
+        Pump pump(buffer_pool, mock_source, NULL, sox_sink, FrameSize, Pump::ModeOneshot);
         CHECK(pump.valid());
         CHECK(pump.run());
     }
@@ -92,7 +92,7 @@ TEST(sox_source, sample_rate_auto) {
         SoxSink sox_sink(allocator, sink_config);
         CHECK(sox_sink.open(NULL, file.path()));
 
-        Pump pump(buffer_pool, mock_source, sox_sink, FrameSize, Pump::ModeOneshot);
+        Pump pump(buffer_pool, mock_source, NULL, sox_sink, FrameSize, Pump::ModeOneshot);
         CHECK(pump.valid());
         CHECK(pump.run());
     }
@@ -114,7 +114,7 @@ TEST(sox_source, sample_rate_mismatch) {
         SoxSink sox_sink(allocator, sink_config);
         CHECK(sox_sink.open(NULL, file.path()));
 
-        Pump pump(buffer_pool, mock_source, sox_sink, FrameSize, Pump::ModeOneshot);
+        Pump pump(buffer_pool, mock_source, NULL, sox_sink, FrameSize, Pump::ModeOneshot);
         CHECK(pump.valid());
         CHECK(pump.run());
     }
