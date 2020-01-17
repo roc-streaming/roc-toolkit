@@ -33,13 +33,13 @@ int roc_address_init(roc_address* address, roc_family family, const char* ip, in
         *new (api::get_address_payload(address)) address::SocketAddr;
 
     if (family == ROC_AF_AUTO || family == ROC_AF_IPv4) {
-        if (sa.set_host_port_ipv4(ip, port)) {
+        if (sa.set_host_port(address::IPv4, ip, port)) {
             return 0;
         }
     }
 
     if (family == ROC_AF_AUTO || family == ROC_AF_IPv6) {
-        if (sa.set_host_port_ipv6(ip, port)) {
+        if (sa.set_host_port(address::IPv6, ip, port)) {
             return 0;
         }
     }
