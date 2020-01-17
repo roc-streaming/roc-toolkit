@@ -58,9 +58,6 @@ public:
     //! Get current source state.
     virtual State state() const;
 
-    //! Wait until the source state becomes active.
-    virtual void wait_active() const;
-
     //! Pause reading.
     virtual void pause();
 
