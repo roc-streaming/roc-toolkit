@@ -34,7 +34,10 @@ public:
         Active,
 
         //! Source is inactive and is producing silence.
-        Inactive
+        Inactive,
+
+        //! Source is explicitly paused.
+        Paused
     };
 
     //! Get current source state.
@@ -44,6 +47,21 @@ public:
     //! @remarks
     //!  Spurious wakeups are allowed.
     virtual void wait_active() const = 0;
+
+    //! Pause reading.
+    virtual void pause() = 0;
+
+    //! Resume paused reading.
+    //! @returns
+    //!  false if an error occured.
+    virtual bool resume() = 0;
+
+    //! Restart reading from the beginning.
+    //! @remarks
+    //!  If the reading is paused, it's automatically resumed.
+    //! @returns
+    //!  false if an error occured.
+    virtual bool restart() = 0;
 
     //! Read frame.
     //! @returns
