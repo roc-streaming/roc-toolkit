@@ -198,7 +198,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    sndio::Pump pump(pool, *source, converter, config.internal_frame_size,
+    sndio::Pump pump(pool, *source, NULL, converter, config.internal_frame_size,
                      sndio::Pump::ModePermanent);
     if (!pump.valid()) {
         roc_log(LogError, "can't create audio pump");
