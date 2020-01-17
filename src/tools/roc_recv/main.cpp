@@ -281,7 +281,7 @@ int main(int argc, char** argv) {
     }
 
     sndio::Pump pump(
-        sample_buffer_pool, receiver, *sink, config.common.internal_frame_size,
+        sample_buffer_pool, receiver, NULL, *sink, config.common.internal_frame_size,
         args.oneshot_flag ? sndio::Pump::ModeOneshot : sndio::Pump::ModePermanent);
     if (!pump.valid()) {
         roc_log(LogError, "can't create pump");
