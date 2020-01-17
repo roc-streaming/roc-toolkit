@@ -30,7 +30,7 @@ inline audio::sample_t nth_sample(uint8_t n) {
 
 inline address::SocketAddr new_address(int port) {
     address::SocketAddr addr;
-    CHECK(addr.set_host_port_ipv4("127.0.0.1", port));
+    CHECK(addr.set_host_port(address::IPv4, "127.0.0.1", port));
     return addr;
 }
 
