@@ -18,6 +18,7 @@
 #include "roc_core/scoped_destructor.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_netio/transceiver.h"
+#include "roc_pipeline/converter_source.h"
 #include "roc_pipeline/parse_port.h"
 #include "roc_pipeline/receiver_source.h"
 #include "roc_sndio/backend_dispatcher.h"
@@ -197,13 +198,13 @@ int main(int argc, char** argv) {
         config.default_session.resampler.window_size = (size_t)args.resampler_window_arg;
     }
 
-    sndio::Config sink_config;
+    sndio::Config io_config;
 
-    sink_config.channels = config.common.output_channels;
-    sink_config.frame_size = config.common.internal_frame_size;
+    io_config.channels = config.common.output_channels;
+    io_config.frame_size = config.common.internal_frame_size;
 
     if (args.io_latency_given) {
-        if (!core::parse_duration(args.io_latency_arg, sink_config.latency)) {
+        if (!core::parse_duration(args.io_latency_arg, io_config.latency)) {
             roc_log(LogError, "invalid --io-latency");
             return 1;
         }
@@ -214,10 +215,10 @@ int main(int argc, char** argv) {
             roc_log(LogError, "invalid --rate: should be > 0");
             return 1;
         }
-        sink_config.sample_rate = (size_t)args.rate_arg;
+        io_config.sample_rate = (size_t)args.rate_arg;
     } else {
         if (!config.common.resampling) {
-            sink_config.sample_rate = pipeline::DefaultSampleRate;
+            io_config.sample_rate = pipeline::DefaultSampleRate;
         }
     }
 
@@ -238,25 +239,26 @@ int main(int argc, char** argv) {
         }
     }
 
-    if (args.format_given) {
+    if (args.output_format_given) {
         if (output.is_valid() && !output.is_file()) {
-            roc_log(LogError, "--format can't be used if --output is not a file URI");
+            roc_log(LogError,
+                    "--output-format can't be used if --output is not a file URI");
             return 1;
         }
     } else {
         if (output.is_special_file()) {
-            roc_log(LogError, "--format should be specified if --output is \"-\"");
+            roc_log(LogError, "--output-format should be specified if --output is \"-\"");
             return 1;
         }
     }
 
     core::ScopedPtr<sndio::ISink> sink(
-        sndio::BackendDispatcher::instance().open_sink(allocator, output, args.format_arg,
-                                                       sink_config),
+        sndio::BackendDispatcher::instance().open_sink(allocator, output,
+                                                       args.output_format_arg, io_config),
         allocator);
     if (!sink) {
-        roc_log(LogError, "can't open output file or device: output=%s format=%s",
-                args.output_arg, args.format_arg);
+        roc_log(LogError, "can't open output file or device: uri=%s format=%s",
+                args.output_arg, args.output_format_arg);
         return 1;
     }
 
@@ -270,6 +272,66 @@ int main(int argc, char** argv) {
         return 1;
     }
 
+    core::ScopedPtr<sndio::ISource> backup_source;
+    core::ScopedPtr<pipeline::ConverterSource> backup_pipeline;
+
+    if (args.backup_given) {
+        address::IoURI backup(allocator);
+
+        if (!address::parse_io_uri(args.backup_arg, backup)) {
+            roc_log(LogError, "invalid --backup file or device URI");
+            return 1;
+        }
+
+        if (args.backup_format_given) {
+            if (backup.is_valid() && !backup.is_file()) {
+                roc_log(LogError,
+                        "--backup-format can't be used if --backup is not a file URI");
+                return 1;
+            }
+        } else {
+            if (backup.is_special_file()) {
+                roc_log(LogError,
+                        "--backup-format should be specified if --backup is \"-\"");
+                return 1;
+            }
+        }
+
+        backup_source.reset(sndio::BackendDispatcher::instance().open_source(
+                                allocator, backup, args.backup_format_arg, io_config),
+                            allocator);
+        if (!backup_source) {
+            roc_log(LogError, "can't open backup file or device: uri=%s format=%s",
+                    args.backup_arg, args.backup_format_arg);
+            return 1;
+        }
+
+        pipeline::ConverterConfig converter_config;
+
+        converter_config.resampler = config.default_session.resampler;
+        converter_config.resampler_backend = config.default_session.resampler_backend;
+
+        converter_config.input_sample_rate = backup_source->sample_rate();
+        converter_config.output_sample_rate = config.common.output_sample_rate;
+
+        converter_config.input_channels = config.common.output_channels;
+        converter_config.output_channels = config.common.output_channels;
+
+        converter_config.internal_frame_size = config.common.internal_frame_size;
+
+        converter_config.resampling = config.common.resampling;
+        converter_config.poisoning = config.common.poisoning;
+
+        backup_pipeline.reset(
+            new (allocator) pipeline::ConverterSource(converter_config, *backup_source,
+                                                      sample_buffer_pool, allocator),
+            allocator);
+        if (!backup_pipeline) {
+            roc_log(LogError, "can't create backup pipeline");
+            return 1;
+        }
+    }
+
     fec::CodecMap codec_map;
     rtp::FormatMap format_map;
 
@@ -280,9 +342,10 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    sndio::Pump pump(
-        sample_buffer_pool, receiver, NULL, *sink, config.common.internal_frame_size,
-        args.oneshot_flag ? sndio::Pump::ModeOneshot : sndio::Pump::ModePermanent);
+    sndio::Pump pump(sample_buffer_pool, receiver, backup_pipeline.get(), *sink,
+                     config.common.internal_frame_size,
+                     args.oneshot_flag ? sndio::Pump::ModeOneshot
+                                       : sndio::Pump::ModePermanent);
     if (!pump.valid()) {
         roc_log(LogError, "can't create pump");
         return 1;
