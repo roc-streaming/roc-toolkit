@@ -14,10 +14,12 @@ namespace sndio {
 
 Pump::Pump(core::BufferPool<audio::sample_t>& buffer_pool,
            ISource& source,
+           ISource* backup_source,
            ISink& sink,
            size_t frame_size,
            Mode mode)
-    : source_(source)
+    : main_source_(source)
+    , backup_source_(backup_source)
     , sink_(sink)
     , n_bufs_(0)
     , oneshot_(mode == ModeOneshot)
@@ -45,26 +47,59 @@ bool Pump::valid() const {
 bool Pump::run() {
     roc_log(LogDebug, "pump: starting main loop");
 
+    ISource* current_source = &main_source_;
+
     while (!stop_) {
-        if (source_.state() == ISource::Inactive) {
-            if (oneshot_ && n_bufs_ != 0) {
-                roc_log(LogInfo, "pump: got inactive status in oneshot mode");
-                break;
+        if (main_source_.state() == ISource::Active) {
+            if (current_source == backup_source_) {
+                roc_log(LogInfo, "pump: switching to main source");
+
+                if (main_source_.resume()) {
+                    current_source = &main_source_;
+                    backup_source_->pause();
+                } else {
+                    roc_log(LogError, "pump: can't resume main source");
+                }
             }
         } else {
-            n_bufs_++;
+            if (oneshot_ && n_bufs_ != 0) {
+                roc_log(LogInfo, "pump: main source become inactive in oneshot mode");
+                break;
+            }
+
+            if (backup_source_ && current_source != backup_source_) {
+                roc_log(LogInfo, "pump: switching to backup source");
+
+                if (backup_source_->restart()) {
+                    current_source = backup_source_;
+                    main_source_.pause();
+                } else {
+                    roc_log(LogError, "pump: can't restart backup source");
+                }
+            }
         }
 
         audio::Frame frame(frame_buffer_.data(), frame_buffer_.size());
-        if (!source_.read(frame)) {
+
+        if (!current_source->read(frame)) {
             roc_log(LogDebug, "pump: got eof from source");
-            break;
+
+            if (current_source == backup_source_) {
+                current_source = &main_source_;
+                continue;
+            } else {
+                break;
+            }
         }
 
         sink_.write(frame);
+
+        if (current_source == &main_source_) {
+            n_bufs_++;
+        }
     }
 
-    roc_log(LogDebug, "pump: exiting main loop, wrote %lu buffers",
+    roc_log(LogDebug, "pump: exiting main loop, wrote %lu buffers from main source",
             (unsigned long)n_bufs_);
 
     return !stop_;
