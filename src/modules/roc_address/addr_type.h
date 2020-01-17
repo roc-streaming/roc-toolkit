@@ -16,7 +16,11 @@ namespace roc {
 namespace address {
 
 //! Address family.
-enum AddrFamily { IPv4, IPv6 };
+enum AddrFamily {
+    Family_Unknown = 0,
+    Family_IPv4, 
+    Family_IPv6 
+};
 
 } // namespace address
 } // namespace roc
