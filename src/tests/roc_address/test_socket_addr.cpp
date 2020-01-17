@@ -30,7 +30,7 @@ TEST(socket_addr, empty) {
 TEST(socket_addr, set_ipv4) {
     SocketAddr addr;
 
-    CHECK(addr.set_host_port_ipv4("1.2.0.255", 123));
+    CHECK(addr.set_host_port(IPv4, "1.2.0.255", 123));
     CHECK(addr.has_host_port());
 
     UNSIGNED_LONGS_EQUAL(4, addr.version());
@@ -42,7 +42,7 @@ TEST(socket_addr, set_ipv4) {
 TEST(socket_addr, set_ipv6) {
     SocketAddr addr;
 
-    CHECK(addr.set_host_port_ipv6("2001:db8::1", 123));
+    CHECK(addr.set_host_port(IPv6, "2001:db8::1", 123));
     CHECK(addr.has_host_port());
 
     UNSIGNED_LONGS_EQUAL(6, addr.version());
@@ -54,7 +54,7 @@ TEST(socket_addr, set_ipv6) {
 TEST(socket_addr, get_ipv4) {
     SocketAddr addr;
 
-    CHECK(addr.set_host_port_ipv4("1.2.0.255", 123));
+    CHECK(addr.set_host_port(IPv4, "1.2.0.255", 123));
     CHECK(addr.has_host_port());
 
     char buf[SocketAddr::MaxStrLen];
@@ -66,7 +66,7 @@ TEST(socket_addr, get_ipv4) {
 TEST(socket_addr, get_ipv6) {
     SocketAddr addr;
 
-    CHECK(addr.set_host_port_ipv6("2001:db8::1", 123));
+    CHECK(addr.set_host_port(IPv6, "2001:db8::1", 123));
     CHECK(addr.has_host_port());
 
     char buf[SocketAddr::MaxStrLen];
@@ -77,19 +77,19 @@ TEST(socket_addr, get_ipv6) {
 
 TEST(socket_addr, eq_ipv4) {
     SocketAddr addr1;
-    CHECK(addr1.set_host_port_ipv4("1.2.3.4", 123));
+    CHECK(addr1.set_host_port(IPv4, "1.2.3.4", 123));
     CHECK(addr1.has_host_port());
 
     SocketAddr addr2;
-    CHECK(addr2.set_host_port_ipv4("1.2.3.4", 123));
+    CHECK(addr2.set_host_port(IPv4, "1.2.3.4", 123));
     CHECK(addr2.has_host_port());
 
     SocketAddr addr3;
-    CHECK(addr3.set_host_port_ipv4("1.2.3.4", 456));
+    CHECK(addr3.set_host_port(IPv4, "1.2.3.4", 456));
     CHECK(addr3.has_host_port());
 
     SocketAddr addr4;
-    CHECK(addr4.set_host_port_ipv4("1.2.4.3", 123));
+    CHECK(addr4.set_host_port(IPv4, "1.2.4.3", 123));
     CHECK(addr4.has_host_port());
 
     CHECK(addr1 == addr2);
@@ -103,17 +103,17 @@ TEST(socket_addr, eq_ipv4) {
 
 TEST(socket_addr, eq_ipv4_multicast) {
     SocketAddr addr1;
-    CHECK(addr1.set_host_port_ipv4("1.2.3.4", 123));
+    CHECK(addr1.set_host_port(IPv4, "1.2.3.4", 123));
     CHECK(addr1.set_miface_ipv4("0.0.0.0"));
     CHECK(addr1.has_host_port());
 
     SocketAddr addr2;
-    CHECK(addr2.set_host_port_ipv4("1.2.3.4", 123));
+    CHECK(addr2.set_host_port(IPv4, "1.2.3.4", 123));
     CHECK(addr2.set_miface_ipv4("0.0.0.0"));
     CHECK(addr2.has_host_port());
 
     SocketAddr addr3;
-    CHECK(addr3.set_host_port_ipv4("1.2.3.4", 123));
+    CHECK(addr3.set_host_port(IPv4, "1.2.3.4", 123));
     CHECK(addr3.set_miface_ipv4("0.0.0.1"));
     CHECK(addr3.has_host_port());
 
@@ -130,19 +130,19 @@ TEST(socket_addr, eq_ipv4_multicast) {
 
 TEST(socket_addr, eq_ipv6) {
     SocketAddr addr1;
-    CHECK(addr1.set_host_port_ipv6("2001:db1::1", 123));
+    CHECK(addr1.set_host_port(IPv6, "2001:db1::1", 123));
     CHECK(addr1.has_host_port());
 
     SocketAddr addr2;
-    CHECK(addr2.set_host_port_ipv6("2001:db1::1", 123));
+    CHECK(addr2.set_host_port(IPv6, "2001:db1::1", 123));
     CHECK(addr2.has_host_port());
 
     SocketAddr addr3;
-    CHECK(addr3.set_host_port_ipv6("2001:db1::1", 456));
+    CHECK(addr3.set_host_port(IPv6, "2001:db1::1", 456));
     CHECK(addr3.has_host_port());
 
     SocketAddr addr4;
-    CHECK(addr4.set_host_port_ipv6("2001:db2::1", 123));
+    CHECK(addr4.set_host_port(IPv6, "2001:db2::1", 123));
     CHECK(addr4.has_host_port());
 
     CHECK(addr1 == addr2);
@@ -156,19 +156,19 @@ TEST(socket_addr, eq_ipv6) {
 
 TEST(socket_addr, eq_ipv6_multicast) {
     SocketAddr addr1;
-    CHECK(addr1.set_host_port_ipv6("ffee::", 123));
+    CHECK(addr1.set_host_port(IPv6, "ffee::", 123));
     CHECK(addr1.set_miface_ipv6("::"));
     CHECK(addr1.has_host_port());
     CHECK(addr1.multicast());
 
     SocketAddr addr2;
-    CHECK(addr2.set_host_port_ipv6("ffee::", 123));
+    CHECK(addr2.set_host_port(IPv6, "ffee::", 123));
     CHECK(addr2.set_miface_ipv6("::"));
     CHECK(addr2.has_host_port());
     CHECK(addr1.multicast());
 
     SocketAddr addr3;
-    CHECK(addr3.set_host_port_ipv6("ffee::", 123));
+    CHECK(addr3.set_host_port(IPv6, "ffee::", 123));
     CHECK(addr3.set_miface_ipv6("2001:db8::1"));
     CHECK(addr3.has_host_port());
     CHECK(addr1.multicast());
@@ -186,15 +186,15 @@ TEST(socket_addr, eq_ipv6_multicast) {
 
 TEST(socket_addr, eq_broadcast) {
     SocketAddr addr1;
-    CHECK(addr1.set_host_port_ipv4("1.2.3.4", 123));
+    CHECK(addr1.set_host_port(IPv4, "1.2.3.4", 123));
     CHECK(addr1.set_broadcast());
 
     SocketAddr addr2;
-    CHECK(addr2.set_host_port_ipv4("1.2.3.4", 123));
+    CHECK(addr2.set_host_port(IPv4, "1.2.3.4", 123));
     CHECK(addr2.set_broadcast());
 
     SocketAddr addr3;
-    CHECK(addr3.set_host_port_ipv4("1.2.3.4", 123));
+    CHECK(addr3.set_host_port(IPv4, "1.2.3.4", 123));
 
     CHECK(addr1 == addr1);
 
@@ -210,35 +210,35 @@ TEST(socket_addr, eq_broadcast) {
 TEST(socket_addr, multicast_ipv4) {
     {
         SocketAddr addr;
-        CHECK(addr.set_host_port_ipv4("223.255.255.255", 123));
+        CHECK(addr.set_host_port(IPv4, "223.255.255.255", 123));
         CHECK(addr.has_host_port());
         CHECK(!addr.multicast());
     }
 
     {
         SocketAddr addr;
-        CHECK(addr.set_host_port_ipv4("224.0.0.0", 123));
+        CHECK(addr.set_host_port(IPv4, "224.0.0.0", 123));
         CHECK(addr.has_host_port());
         CHECK(addr.multicast());
     }
 
     {
         SocketAddr addr;
-        CHECK(addr.set_host_port_ipv4("227.128.128.128", 123));
+        CHECK(addr.set_host_port(IPv4, "227.128.128.128", 123));
         CHECK(addr.has_host_port());
         CHECK(addr.multicast());
     }
 
     {
         SocketAddr addr;
-        CHECK(addr.set_host_port_ipv4("239.255.255.255", 123));
+        CHECK(addr.set_host_port(IPv4, "239.255.255.255", 123));
         CHECK(addr.has_host_port());
         CHECK(addr.multicast());
     }
 
     {
         SocketAddr addr;
-        CHECK(addr.set_host_port_ipv4("240.0.0.0", 123));
+        CHECK(addr.set_host_port(IPv4, "240.0.0.0", 123));
         CHECK(addr.has_host_port());
         CHECK(!addr.multicast());
     }
@@ -247,28 +247,28 @@ TEST(socket_addr, multicast_ipv4) {
 TEST(socket_addr, multicast_ipv6) {
     {
         SocketAddr addr;
-        CHECK(addr.set_host_port_ipv6("fe00::", 123));
+        CHECK(addr.set_host_port(IPv6, "fe00::", 123));
         CHECK(addr.has_host_port());
         CHECK(!addr.multicast());
     }
 
     {
         SocketAddr addr;
-        CHECK(addr.set_host_port_ipv6("ff00::", 123));
+        CHECK(addr.set_host_port(IPv6, "ff00::", 123));
         CHECK(addr.has_host_port());
         CHECK(addr.multicast());
     }
 
     {
         SocketAddr addr;
-        CHECK(addr.set_host_port_ipv6("ff11:1:1:1:1:1:1:1", 123));
+        CHECK(addr.set_host_port(IPv6, "ff11:1:1:1:1:1:1:1", 123));
         CHECK(addr.has_host_port());
         CHECK(addr.multicast());
     }
 
     {
         SocketAddr addr;
-        CHECK(addr.set_host_port_ipv6("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff", 123));
+        CHECK(addr.set_host_port(IPv6, "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff", 123));
         CHECK(addr.has_host_port());
         CHECK(addr.multicast());
     }
@@ -278,7 +278,7 @@ TEST(socket_addr, multicast_ipv4_to_str) {
     {
         SocketAddr addr;
 
-        CHECK(addr.set_host_port_ipv4("239.255.255.255", 123));
+        CHECK(addr.set_host_port(IPv4, "239.255.255.255", 123));
         CHECK(addr.has_host_port());
         CHECK(addr.multicast());
 
@@ -287,7 +287,7 @@ TEST(socket_addr, multicast_ipv4_to_str) {
     {
         SocketAddr addr;
 
-        CHECK(addr.set_host_port_ipv4("239.255.255.255", 123));
+        CHECK(addr.set_host_port(IPv4, "239.255.255.255", 123));
         CHECK(addr.has_host_port());
         CHECK(addr.multicast());
 
@@ -302,7 +302,7 @@ TEST(socket_addr, multicast_ipv6_to_str) {
     {
         SocketAddr addr;
 
-        CHECK(addr.set_host_port_ipv6("ff00::", 123));
+        CHECK(addr.set_host_port(IPv6, "ff00::", 123));
         CHECK(addr.has_host_port());
         CHECK(addr.multicast());
 
@@ -311,7 +311,7 @@ TEST(socket_addr, multicast_ipv6_to_str) {
     {
         SocketAddr addr;
 
-        CHECK(addr.set_host_port_ipv6("ff00::", 123));
+        CHECK(addr.set_host_port(IPv6, "ff00::", 123));
         CHECK(addr.has_host_port());
         CHECK(addr.multicast());
 
@@ -336,7 +336,7 @@ TEST(socket_addr, broadcast) {
 TEST(socket_addr, broadcast_to_str) {
     SocketAddr addr;
 
-    CHECK(addr.set_host_port_ipv4("223.255.255.255", 123));
+    CHECK(addr.set_host_port(IPv4, "223.255.255.255", 123));
     CHECK(addr.set_broadcast());
 
     STRCMP_EQUAL("223.255.255.255:123 broadcast", socket_addr_to_str(addr).c_str());
@@ -346,7 +346,7 @@ TEST(socket_addr, multicast_and_broadcast) {
     {
         SocketAddr addr;
 
-        CHECK(addr.set_host_port_ipv4("224.0.0.0", 123));
+        CHECK(addr.set_host_port(IPv4, "224.0.0.0", 123));
         CHECK(addr.multicast());
 
         CHECK(!addr.set_broadcast());
@@ -355,7 +355,7 @@ TEST(socket_addr, multicast_and_broadcast) {
     {
         SocketAddr addr;
 
-        CHECK(addr.set_host_port_ipv4("223.255.255.255", 123));
+        CHECK(addr.set_host_port(IPv4, "223.255.255.255", 123));
         CHECK(!addr.multicast());
 
         CHECK(addr.set_broadcast());
