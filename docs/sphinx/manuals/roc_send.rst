@@ -18,8 +18,8 @@ Options
 -V, --version             Print version and exit
 -v, --verbose             Increase verbosity level (may be used multiple times)
 -L, --list-supported      list supported schemes and formats
--i, --input=INPUT_URI     Input file or device URI
--f, --format=FORMAT       Force input file format
+-i, --input=IO_URI        Input file or device URI
+--input-format=FORMAT     Force input file format
 -s, --source=PORT         Remote source port triplet
 -r, --repair=PORT         Remote repair port triplet
 --broadcast               Allow broadcast destination port addresses (default=off)
@@ -38,8 +38,8 @@ Options
 --poisoning               Enable uninitialized memory poisoning (default=off)
 --color=ENUM              Set colored logging mode for stderr output (possible values="auto", "always", "never" default=`auto')
 
-Input URI
----------
+IO URI
+------
 
 ``--input`` option requires a device or file URI in one of the following forms:
 
@@ -67,7 +67,7 @@ The list of supported schemes and file formats can be retrieved using ``--list-s
 
 If the ``--input`` is omitted, the default driver and device are selected.
 
-The ``--format`` option can be used to force the input file format. If it is omitted, the file format is auto-detected. This option is always required when the input is stdin.
+The ``--input-format`` option can be used to force the input file format. If it is omitted, the file format is auto-detected. This option is always required when the input is stdin.
 
 The path component of the provided URI is `percent-decoded <https://en.wikipedia.org/wiki/Percent-encoding>`_. For convenience, unencoded characters are allowed as well, except that ``%`` should be always encoded as ``%25``.
 
@@ -130,7 +130,8 @@ Send WAV from stdin:
 
 .. code::
 
-    $ roc-send -vv -i file:- -f wav -s rtp+rs8m:192.168.0.3:10001 -r rs8m:192.168.0.3:10002 < ./input.wav
+    $ roc-send -vv -i file:- --input-format wav \
+      -s rtp+rs8m:192.168.0.3:10001 -r rs8m:192.168.0.3:10002 < ./input.wav
 
 Send WAV file, specify full URI:
 
