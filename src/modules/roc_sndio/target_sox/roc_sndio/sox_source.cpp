@@ -9,17 +9,21 @@
 #include "roc_sndio/sox_source.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
+#include "roc_core/string_utils.h"
 #include "roc_sndio/sox_backend.h"
 
 namespace roc {
 namespace sndio {
 
 SoxSource::SoxSource(core::IAllocator& allocator, const Config& config)
-    : input_(NULL)
-    , allocator_(allocator)
+    : driver_name_(allocator)
+    , input_name_(allocator)
+    , buffer_(allocator)
     , buffer_size_(config.frame_size)
+    , input_(NULL)
     , is_file_(false)
     , eof_(false)
+    , paused_(false)
     , valid_(false) {
     SoxBackend::instance();
 
@@ -59,15 +63,15 @@ bool SoxSource::open(const char* driver, const char* input) {
 
     roc_log(LogInfo, "sox source: opening: driver=%s input=%s", driver, input);
 
-    if (buffer_ || input_) {
+    if (buffer_.size() != 0 || input_) {
         roc_panic("sox source: can't call open() more than once");
     }
 
-    if (!prepare_()) {
+    if (!prepare_(driver, input)) {
         return false;
     }
 
-    if (!open_(driver, input)) {
+    if (!open_()) {
         return false;
     }
 
@@ -97,7 +101,11 @@ bool SoxSource::has_clock() const {
 ISource::State SoxSource::state() const {
     roc_panic_if(!valid_);
 
-    return Active;
+    if (paused_) {
+        return Paused;
+    } else {
+        return Active;
+    }
 }
 
 void SoxSource::wait_active() const {
@@ -106,17 +114,96 @@ void SoxSource::wait_active() const {
     // always active
 }
 
+void SoxSource::pause() {
+    roc_panic_if(!valid_);
+
+    if (paused_) {
+        return;
+    }
+
+    if (!input_) {
+        roc_panic("sox source: pause: non-open input file or device");
+    }
+
+    roc_log(LogDebug, "sox source: pausing: driver=%s input=%s", driver_name_.data(),
+            input_name_.data());
+
+    if (!is_file_) {
+        close_();
+    }
+
+    paused_ = true;
+}
+
+bool SoxSource::resume() {
+    roc_panic_if(!valid_);
+
+    if (!paused_) {
+        return true;
+    }
+
+    roc_log(LogDebug, "sox source: resuming: driver=%s input=%s", driver_name_.data(),
+            input_name_.data());
+
+    if (!input_) {
+        if (!open_()) {
+            roc_log(LogError, "sox source: open failed when resuming: driver=%s input=%s",
+                    driver_name_.data(), input_name_.data());
+            return false;
+        }
+    }
+
+    paused_ = false;
+    return true;
+}
+
+bool SoxSource::restart() {
+    roc_panic_if(!valid_);
+
+    roc_log(LogDebug, "sox source: restarting: driver=%s input=%s", driver_name_.data(),
+            input_name_.data());
+
+    if (is_file_ && !eof_) {
+        if (!seek_(0)) {
+            roc_log(LogError,
+                    "sox source: seek failed when restarting: driver=%s input=%s",
+                    driver_name_.data(), input_name_.data());
+            return false;
+        }
+    } else {
+        if (input_) {
+            close_();
+        }
+
+        if (!open_()) {
+            roc_log(LogError,
+                    "sox source: open failed when restarting: driver=%s input=%s",
+                    driver_name_.data(), input_name_.data());
+            return false;
+        }
+    }
+
+    paused_ = false;
+    eof_ = false;
+
+    return true;
+}
+
 bool SoxSource::read(audio::Frame& frame) {
     roc_panic_if(!valid_);
 
-    if (eof_) {
+    if (paused_ || eof_) {
         return false;
+    }
+
+    if (!input_) {
+        roc_panic("sox source: read: non-open input file or device");
     }
 
     audio::sample_t* frame_data = frame.data();
     size_t frame_left = frame.size();
 
-    sox_sample_t* buffer_data = buffer_.get();
+    sox_sample_t* buffer_data = buffer_.data();
 
     SOX_SAMPLE_LOCALS;
 
@@ -154,20 +241,63 @@ bool SoxSource::read(audio::Frame& frame) {
     return true;
 }
 
-bool SoxSource::prepare_() {
-    buffer_.reset(new (allocator_) sox_sample_t[buffer_size_], allocator_);
+bool SoxSource::seek_(uint64_t offset) {
+    roc_panic_if(!valid_);
 
-    if (!buffer_) {
-        roc_log(LogError, "sox source: can't allocate sox buffer");
+    if (!input_) {
+        roc_panic("sox source: seek: non-open input file or device");
+    }
+
+    if (!is_file_) {
+        roc_panic("sox source: seek: not a file");
+    }
+
+    roc_log(LogDebug, "sox source: resetting position to %lu", (unsigned long)offset);
+
+    int err = sox_seek(input_, offset, SOX_SEEK_SET);
+    if (err != SOX_SUCCESS) {
+        roc_log(LogError, "sox source: can't reset position to %lu: %s",
+                (unsigned long)offset, sox_strerror(err));
         return false;
     }
 
     return true;
 }
 
-bool SoxSource::open_(const char* driver, const char* input) {
-    if (!(input_ = sox_open_read(input, &in_signal_, NULL, driver))) {
-        roc_log(LogError, "sox source: can't open: driver=%s input=%s", driver, input);
+bool SoxSource::prepare_(const char* driver, const char* input) {
+    if (driver) {
+        if (!driver_name_.resize(strlen(driver) + 1)
+            || !core::copy_str(driver_name_.data(), driver_name_.size(), driver)) {
+            roc_log(LogError, "sox source: can't allocate string");
+            return false;
+        }
+    }
+
+    if (input) {
+        if (!input_name_.resize(strlen(input) + 1)
+            || !core::copy_str(input_name_.data(), input_name_.size(), input)) {
+            roc_log(LogError, "sox source: can't allocate string");
+            return false;
+        }
+    }
+
+    if (!buffer_.resize(buffer_size_)) {
+        roc_log(LogError, "sox source: can't allocate sample buffer");
+        return false;
+    }
+
+    return true;
+}
+
+bool SoxSource::open_() {
+    if (input_) {
+        roc_panic("sox source: already opened");
+    }
+
+    if (!(input_ = sox_open_read(input_name_.data(), &in_signal_, NULL,
+                                 driver_name_.data()))) {
+        roc_log(LogError, "sox source: can't open: driver=%s input=%s",
+                driver_name_.data(), input_name_.data());
         return false;
     }
 
