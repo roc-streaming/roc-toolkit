@@ -42,12 +42,6 @@ public:
     //! Set address of the interface on which to join to the multicast group.
     bool set_miface(AddrFamily type, const char* ip);
 
-    //! Set IPv4 address of the interface on which to join to the multicast group.
-    bool set_miface_ipv4(const char* ip);
-
-    //! Set IPv6 address of the interface on which to join to the multicast group.
-    bool set_miface_ipv6(const char* ip);
-
     //! Set broadcast flag.
     bool set_broadcast();
 
@@ -113,6 +107,12 @@ private:
 
     //! Set IPv6 host address.
     bool set_host_port_ipv6(const char* ip, int port);
+
+    //! Set IPv4 address of the interface on which to join to the multicast group.
+    bool set_miface_ipv4(const char* ip);
+
+    //! Set IPv6 address of the interface on which to join to the multicast group.
+    bool set_miface_ipv6(const char* ip);
 };
 
 } // namespace address
