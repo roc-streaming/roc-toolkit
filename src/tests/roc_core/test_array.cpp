@@ -16,7 +16,7 @@ namespace core {
 
 namespace {
 
-enum { NumObjects = 5 };
+enum { NumObjects = 10, NumEmbed = 5 };
 
 struct Object {
     static long n_objects;
@@ -47,7 +47,7 @@ TEST_GROUP(array) {
 };
 
 TEST(array, empty) {
-    Array<Object> array(allocator);
+    Array<Object, NumEmbed> array(allocator);
 
     LONGS_EQUAL(0, array.max_size());
     LONGS_EQUAL(0, array.size());
@@ -55,7 +55,7 @@ TEST(array, empty) {
 }
 
 TEST(array, grow) {
-    Array<Object> array(allocator);
+    Array<Object, NumEmbed> array(allocator);
 
     CHECK(array.grow(3));
 
@@ -71,7 +71,7 @@ TEST(array, grow) {
 }
 
 TEST(array, grow_exp) {
-    Array<Object> array(allocator);
+    Array<Object, NumEmbed> array(allocator);
 
     CHECK(array.grow_exp(3));
 
@@ -99,7 +99,7 @@ TEST(array, grow_exp) {
 }
 
 TEST(array, resize) {
-    Array<Object> array(allocator);
+    Array<Object, NumEmbed> array(allocator);
 
     CHECK(array.resize(3));
 
@@ -115,7 +115,7 @@ TEST(array, resize) {
 }
 
 TEST(array, push_back) {
-    Array<Object> array(allocator);
+    Array<Object, NumEmbed> array(allocator);
 
     CHECK(array.grow(NumObjects));
 
@@ -133,7 +133,7 @@ TEST(array, push_back) {
 }
 
 TEST(array, front_back) {
-    Array<Object> array(allocator);
+    Array<Object, NumEmbed> array(allocator);
 
     CHECK(array.grow(NumObjects));
 
@@ -149,7 +149,7 @@ TEST(array, front_back) {
 }
 
 TEST(array, data) {
-    Array<Object> array(allocator);
+    Array<Object, NumEmbed> array(allocator);
 
     CHECK(array.data() == NULL);
 
@@ -162,11 +162,31 @@ TEST(array, data) {
     }
 }
 
+TEST(array, embedding) {
+    Array<Object, NumEmbed> array(allocator);
+
+    CHECK(array.resize(NumEmbed));
+
+    LONGS_EQUAL(0, allocator.num_allocations());
+
+    // data is inside of the array
+    CHECK((char*)array.data() >= (char*)&array
+          && (char*)(array.data() + NumEmbed) <= (char*)&array + sizeof(array));
+
+    CHECK(array.resize(NumObjects));
+
+    LONGS_EQUAL(1, allocator.num_allocations());
+
+    // data is outside of the array
+    CHECK((char*)(array.data() + NumEmbed) < (char*)&array
+          || (char*)array.data() > (char*)&array + sizeof(array));
+}
+
 TEST(array, constructor_destructor) {
     LONGS_EQUAL(0, allocator.num_allocations());
 
     {
-        Array<Object> array(allocator);
+        Array<Object, NumEmbed> array(allocator);
 
         CHECK(array.grow(3));
 
@@ -174,10 +194,13 @@ TEST(array, constructor_destructor) {
         array.push_back(Object(2));
         array.push_back(Object(3));
 
-        LONGS_EQUAL(1, allocator.num_allocations());
+        LONGS_EQUAL(0, allocator.num_allocations());
         LONGS_EQUAL(3, Object::n_objects);
 
-        CHECK(array.grow(5));
+        CHECK(array.grow(7));
+
+        LONGS_EQUAL(1, allocator.num_allocations());
+        LONGS_EQUAL(3, Object::n_objects);
 
         array.push_back(Object(4));
         array.push_back(Object(5));
