@@ -15,7 +15,7 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 
-#include "roc_address/socket_addr_enums.h"
+#include "roc_address/addr_type.h"
 #include "roc_core/stddefs.h"
 
 namespace roc {
@@ -34,19 +34,13 @@ public:
     bool set_host_port_saddr(const sockaddr* sa);
 
     //! Set host address.
-    bool set_host_port(AddrType type, const char*, int port);
-
-    //! Set IPv4 host address.
-    bool set_host_port_ipv4(const char* ip, int port);
-
-    //! Set IPv6 host address.
-    bool set_host_port_ipv6(const char* ip, int port);
+    bool set_host_port(AddrFamily type, const char*, int port);
 
     //! Check whether multicast interface address is set.
     bool has_miface() const;
 
     //! Set address of the interface on which to join to the multicast group.
-    bool set_miface(AddrType type, const char* ip);
+    bool set_miface(AddrFamily type, const char* ip);
 
     //! Set IPv4 address of the interface on which to join to the multicast group.
     bool set_miface_ipv4(const char* ip);
@@ -113,6 +107,12 @@ private:
     } miface_;
 
     bool broadcast_;
+
+    //! Set IPv4 host address.
+    bool set_host_port_ipv4(const char* ip, int port);
+
+    //! Set IPv6 host address.
+    bool set_host_port_ipv6(const char* ip, int port);
 };
 
 } // namespace address
