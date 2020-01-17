@@ -88,7 +88,7 @@ public:
 
 private:
     EndpointProtocol proto_;
-    core::Array<char> host_;
+    core::Array<char, 32> host_;
     int port_;
     core::Array<char> path_;
     core::Array<char> query_;
