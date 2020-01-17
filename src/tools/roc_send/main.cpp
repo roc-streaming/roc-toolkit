@@ -187,19 +187,19 @@ int main(int argc, char** argv) {
         config.resampler.window_size = (size_t)args.resampler_window_arg;
     }
 
-    sndio::Config source_config;
-    source_config.channels = config.input_channels;
-    source_config.frame_size = config.internal_frame_size;
+    sndio::Config io_config;
+    io_config.channels = config.input_channels;
+    io_config.frame_size = config.internal_frame_size;
 
     if (args.rate_given) {
         if (args.rate_arg <= 0) {
             roc_log(LogError, "invalid --rate: should be > 0");
             return 1;
         }
-        source_config.sample_rate = (size_t)args.rate_arg;
+        io_config.sample_rate = (size_t)args.rate_arg;
     } else {
         if (!config.resampling) {
-            source_config.sample_rate = pipeline::DefaultSampleRate;
+            io_config.sample_rate = pipeline::DefaultSampleRate;
         }
     }
 
@@ -220,25 +220,26 @@ int main(int argc, char** argv) {
         }
     }
 
-    if (args.format_given) {
+    if (args.input_format_given) {
         if (input.is_valid() && !input.is_file()) {
-            roc_log(LogError, "--format can't be used if --input is not a file URI");
+            roc_log(LogError,
+                    "--input-format can't be used if --input is not a file URI");
             return 1;
         }
     } else {
         if (input.is_special_file()) {
-            roc_log(LogError, "--format should be specified if --input is \"-\"");
+            roc_log(LogError, "--input-format should be specified if --input is \"-\"");
             return 1;
         }
     }
 
     core::ScopedPtr<sndio::ISource> source(
-        sndio::BackendDispatcher::instance().open_source(allocator, input,
-                                                         args.format_arg, source_config),
+        sndio::BackendDispatcher::instance().open_source(
+            allocator, input, args.input_format_arg, io_config),
         allocator);
     if (!source) {
-        roc_log(LogError, "can't open input file or device: input=%s format=%s",
-                args.input_arg, args.format_arg);
+        roc_log(LogError, "can't open input file or device: uri=%s format=%s",
+                args.input_arg, args.input_format_arg);
         return 1;
     }
 
