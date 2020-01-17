@@ -22,7 +22,15 @@ namespace roc {
 namespace core {
 
 //! Dynamic array.
-template <class T> class Array : public NonCopyable<> {
+//!
+//! @b Parameters
+//!
+//!  - @tparam T defines array element type.
+//!
+//!  - @tparam EmbedSize defines the size of the fixed-size array embedded
+//!    directly into Array object; it is used instead of dynamic memory if
+//!    the array size is small enough.
+template <class T, size_t EmbedSize = 0> class Array : public NonCopyable<> {
 public:
     //! Initialize empty array.
     explicit Array(IAllocator& allocator)
@@ -36,7 +44,7 @@ public:
         resize(0);
 
         if (data_) {
-            allocator_.deallocate(data_);
+            deallocate_(data_);
         }
     }
 
@@ -153,12 +161,12 @@ public:
             return false;
         }
 
-        // Construct objects if size increased.
+        // Construct new objects if size increased.
         for (size_t n = size_; n < sz; n++) {
             new (data_ + n) T();
         }
 
-        // Destruct objects (in reverse order) if size decreased.
+        // Destruct old objects (in reverse order) if size decreased.
         for (size_t n = size_; n > sz; n--) {
             data_[n - 1].~T();
         }
@@ -179,30 +187,33 @@ public:
             return true;
         }
 
-        T* new_data = (T*)allocator_.allocate(max_sz * sizeof(T));
+        T* new_data = reallocate_(max_sz);
         if (!new_data) {
             roc_log(LogError, "array: can't allocate memory: old_size=%lu new_size=%lu",
                     (unsigned long)max_size_, (unsigned long)max_sz);
             return false;
         }
 
-        // Copy objects.
-        for (size_t n = 0; n < size_; n++) {
-            new (new_data + n) T(data_[n]);
+        if (new_data != data_) {
+            // Copy old objects to new memory.
+            for (size_t n = 0; n < size_; n++) {
+                new (new_data + n) T(data_[n]);
+            }
+
+            // Destruct objects in old memory (in reverse order).
+            for (size_t n = size_; n > 0; n--) {
+                data_[n - 1].~T();
+            }
+
+            // Free old memory.
+            if (data_) {
+                deallocate_(data_);
+            }
+
+            data_ = new_data;
         }
 
-        // Destruct objects (in reverse order).
-        for (size_t n = size_; n > 0; n--) {
-            data_[n - 1].~T();
-        }
-
-        if (data_) {
-            allocator_.deallocate(data_);
-        }
-
-        data_ = new_data;
         max_size_ = max_sz;
-
         return true;
     }
 
@@ -227,10 +238,32 @@ public:
     }
 
 private:
+    union Storage {
+        MaxAlign align;
+        char mem[EmbedSize ? EmbedSize * sizeof(T) : 1];
+    };
+
+    T* reallocate_(size_t n_elems) {
+        if (n_elems <= EmbedSize) {
+            return (T*)&emb_data_;
+        } else {
+            return (T*)allocator_.allocate(n_elems * sizeof(T));
+        }
+    }
+
+    void deallocate_(T* data) {
+        if ((void*)data != (void*)&emb_data_) {
+            allocator_.deallocate(data);
+        }
+    }
+
     T* data_;
     size_t size_;
     size_t max_size_;
+
     IAllocator& allocator_;
+
+    Storage emb_data_;
 };
 
 } // namespace core
