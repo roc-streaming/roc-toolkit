@@ -14,10 +14,10 @@
 
 #include <sox.h>
 
+#include "roc_core/array.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/stddefs.h"
-#include "roc_core/unique_ptr.h"
 #include "roc_packet/units.h"
 #include "roc_sndio/config.h"
 #include "roc_sndio/isource.h"
@@ -61,25 +61,39 @@ public:
     //! Wait until the source state becomes active.
     virtual void wait_active() const;
 
+    //! Pause reading.
+    virtual void pause();
+
+    //! Resume paused reading.
+    virtual bool resume();
+
+    //! Restart reading from the beginning.
+    virtual bool restart();
+
     //! Read frame.
     virtual bool read(audio::Frame&);
 
 private:
-    bool prepare_();
-    bool open_(const char* driver, const char* input);
+    bool prepare_(const char* driver, const char* input);
+
+    bool open_();
     void close_();
+
+    bool seek_(uint64_t offset);
+
+    core::Array<char, 16> driver_name_;
+    core::Array<char> input_name_;
+
+    core::Array<sox_sample_t> buffer_;
+    const size_t buffer_size_;
 
     sox_format_t* input_;
     sox_signalinfo_t in_signal_;
     size_t n_channels_;
 
-    core::IAllocator& allocator_;
-
-    core::UniquePtr<sox_sample_t> buffer_;
-    const size_t buffer_size_;
-
     bool is_file_;
     bool eof_;
+    bool paused_;
     bool valid_;
 };
 
