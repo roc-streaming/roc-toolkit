@@ -8,6 +8,7 @@
 
 #include "roc_audio/frame.h"
 #include "roc_core/panic.h"
+#include "roc_core/print_buffer.h"
 
 namespace roc {
 namespace audio {
@@ -38,6 +39,10 @@ sample_t* Frame::data() const {
 
 size_t Frame::size() const {
     return size_;
+}
+
+void Frame::print() const {
+    core::print_buffer(data_, size_);
 }
 
 } // namespace audio
