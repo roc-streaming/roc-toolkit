@@ -16,7 +16,6 @@
 #include "roc_audio/mixer.h"
 #include "roc_audio/poison_reader.h"
 #include "roc_core/buffer_pool.h"
-#include "roc_core/cond.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/list.h"
 #include "roc_core/mutex.h"
@@ -66,9 +65,6 @@ public:
 
     //! Get current receiver state.
     virtual State state() const;
-
-    //! Wait until the receiver status becomes active.
-    virtual void wait_active() const;
 
     //! Pause reading.
     virtual void pause();
@@ -131,7 +127,6 @@ private:
 
     core::Mutex control_mutex_;
     core::Mutex pipeline_mutex_;
-    core::Cond active_cond_;
 };
 
 } // namespace pipeline
