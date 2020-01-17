@@ -18,8 +18,10 @@ Options
 -V, --version             Print version and exit
 -v, --verbose             Increase verbosity level (may be used multiple times)
 -L, --list-supported      list supported schemes and formats
--o, --output=OUTPUT_URI   Output file or device URI
--f, --format=FORMAT       Force output file format
+-o, --output=IO_URI       Output file or device URI
+--output-format=FORMAT    Force output file format
+--backup=IO_URI           Backup file or device URI (if set, used when there are no sessions)
+--backup-format=FORMAT    Force backup file format
 -s, --source=PORT         Source port triplet
 -r, --repair=PORT         Repair port triplet
 --miface=IFACE_IP         IP address of the network interface on which to join the multicast group
@@ -43,10 +45,10 @@ Options
 --beeping                 Enable beeping on packet loss  (default=off)
 --color=ENUM              Set colored logging mode for stderr output (possible values="auto", "always", "never" default=`auto')
 
-Output URI
-----------
+IO URI
+------
 
-``--output`` option requires a device or file URI in one of the following forms:
+``--output`` and ``--backup`` options require a device or file URI in one of the following forms:
 
 - ``DEVICE_TYPE://DEVICE_NAME`` -- audio device
 - ``DEVICE_TYPE://default`` -- default audio device for given device type
@@ -71,8 +73,9 @@ Examples:
 The list of supported schemes and file formats can be retrieved using ``--list-supported`` option.
 
 If the ``--output`` is omitted, the default driver and device are selected.
+If the ``--backup`` is omitted, no backup source is used.
 
-The ``--format`` option can be used to force the output file format. If it is omitted, the file format is auto-detected. This option is always required when the output is stdout.
+The ``--output-format`` and ``--backup-format`` options can be used to force the output or backup file format. If the option is omitted, the file format is auto-detected. The option is always required when the output or backup is stdout or stdin.
 
 The path component of the provided URI is `percent-decoded <https://en.wikipedia.org/wiki/Percent-encoding>`_. For convenience, unencoded characters are allowed as well, except that ``%`` should be always encoded as ``%25``.
 
@@ -105,6 +108,13 @@ Supported protocols for repair ports:
 
 - rs8m (Reed-Solomon m=8 FEC scheme)
 - ldpc (LDPC-Starircase FEC scheme)
+
+Backup audio
+------------
+
+If ``--backup`` option is given, it defines input audio device or file which will be played when there are no connected sessions. If it's not given, silence is played instead.
+
+Backup file is restarted from the beginning each time when the last session disconnect. The playback of of the backup file is automatically looped.
 
 Multicast interface
 -------------------
@@ -192,19 +202,25 @@ Output to a file in WAV format (specify format manually):
 
 .. code::
 
-    $ roc-recv -vv -o file:./output -f wav -s rtp+rs8m::10001 -r rs8m::10002
+    $ roc-recv -vv -o file:./output --output-format wav -s rtp+rs8m::10001 -r rs8m::10002
 
 Output to stdout in WAV format:
 
 .. code::
 
-    $ roc-recv -vv -o file:- -f wav -s rtp+rs8m::10001 -r rs8m::10002 > ./output.wav
+    $ roc-recv -vv -o file:- --output-format wav -s rtp+rs8m::10001 -r rs8m::10002 > ./output.wav
 
 Output to a file in WAV format, specify full URI:
 
 .. code::
 
     $ roc-recv -vv -o file:///home/user/output.wav -s rtp+rs8m::10001 -r rs8m::10002
+
+Specify backup file:
+
+.. code::
+
+    $ roc-recv -vv --backup file:./backup.wav -s rtp+rs8m::10001 -r rs8m::10002
 
 Force a specific rate on the output device:
 
