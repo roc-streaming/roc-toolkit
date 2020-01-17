@@ -45,8 +45,8 @@ public:
     //! Set broadcast flag.
     bool set_broadcast();
 
-    //! Get IP version (4 or 6).
-    int version() const;
+    //! Get IP version (IPv4 or IPv6).
+    AddrFamily version() const;
 
     //! Check whether this is multicast address.
     bool multicast() const;
@@ -103,16 +103,16 @@ private:
     bool broadcast_;
 
     //! Set IPv4 host address.
-    bool set_host_port_ipv4(const char* ip, int port);
+    bool set_host_port_ipv4_(const char* ip, int port);
 
     //! Set IPv6 host address.
-    bool set_host_port_ipv6(const char* ip, int port);
+    bool set_host_port_ipv6_(const char* ip, int port);
 
     //! Set IPv4 address of the interface on which to join to the multicast group.
-    bool set_miface_ipv4(const char* ip);
+    bool set_miface_ipv4_(const char* ip);
 
     //! Set IPv6 address of the interface on which to join to the multicast group.
-    bool set_miface_ipv6(const char* ip);
+    bool set_miface_ipv6_(const char* ip);
 };
 
 } // namespace address

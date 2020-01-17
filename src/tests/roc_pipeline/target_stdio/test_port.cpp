@@ -22,7 +22,7 @@ TEST(port, all_fields) {
 
     UNSIGNED_LONGS_EQUAL(address::EndProto_RTP, port.protocol);
     CHECK(port.address.has_host_port());
-    UNSIGNED_LONGS_EQUAL(4, port.address.version());
+    UNSIGNED_LONGS_EQUAL(address::Family_IPv4, port.address.version());
     LONGS_EQUAL(123, port.address.port());
 
     STRCMP_EQUAL("rtp:1.2.3.4:123", port_to_str(port).c_str());
@@ -92,8 +92,7 @@ TEST(port, addr_ipv4) {
     CHECK(parse_port(address::EndType_AudioSource, "rtp:1.2.0.255:123", port));
 
     CHECK(port.address.has_host_port());
-    UNSIGNED_LONGS_EQUAL(4, port.address.version());
-
+    UNSIGNED_LONGS_EQUAL(address::Family_IPv4, port.address.version());
     STRCMP_EQUAL("rtp:1.2.0.255:123", port_to_str(port).c_str());
 }
 
@@ -102,7 +101,7 @@ TEST(port, addr_ipv6) {
     CHECK(parse_port(address::EndType_AudioSource, "rtp:[2001:db8::1]:123", port));
 
     CHECK(port.address.has_host_port());
-    UNSIGNED_LONGS_EQUAL(6, port.address.version());
+    UNSIGNED_LONGS_EQUAL(address::Family_IPv6, port.address.version());
 
     STRCMP_EQUAL("rtp:[2001:db8::1]:123", port_to_str(port).c_str());
 }

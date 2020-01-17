@@ -18,7 +18,7 @@ TEST_GROUP(socket_addr_parse) {};
 TEST(socket_addr_parse, miface_ipv4) {
     SocketAddr addr;
 
-    CHECK(addr.set_host_port(IPv4, "225.1.2.3", 123));
+    CHECK(addr.set_host_port(Family_IPv4, "225.1.2.3", 123));
     CHECK(addr.has_host_port());
     CHECK(addr.multicast());
 
@@ -33,7 +33,7 @@ TEST(socket_addr_parse, miface_ipv4) {
 TEST(socket_addr_parse, miface_ipv6) {
     SocketAddr addr;
 
-    CHECK(addr.set_host_port(IPv6, "ffaa::", 123));
+    CHECK(addr.set_host_port(Family_IPv6, "ffaa::", 123));
     CHECK(addr.has_host_port());
     CHECK(addr.multicast());
 
@@ -53,7 +53,7 @@ TEST(socket_addr_parse, bad_miface) {
     { // non-multicast address
         SocketAddr addr;
 
-        CHECK(addr.set_host_port(IPv6, "2001:db8::1", 123));
+        CHECK(addr.set_host_port(Family_IPv6, "2001:db8::1", 123));
         CHECK(addr.has_host_port());
         CHECK(!addr.multicast());
 
@@ -62,7 +62,7 @@ TEST(socket_addr_parse, bad_miface) {
     { // empty miface
         SocketAddr addr;
 
-        CHECK(addr.set_host_port(IPv4, "225.1.2.3", 123));
+        CHECK(addr.set_host_port(Family_IPv4, "225.1.2.3", 123));
         CHECK(addr.has_host_port());
 
         CHECK(!parse_socket_addr_miface("", addr));
@@ -71,7 +71,7 @@ TEST(socket_addr_parse, bad_miface) {
     { // ipv6 miface for ipv4 addr
         SocketAddr addr;
 
-        CHECK(addr.set_host_port(IPv4, "225.1.2.3", 123));
+        CHECK(addr.set_host_port(Family_IPv4, "225.1.2.3", 123));
         CHECK(addr.has_host_port());
         CHECK(addr.multicast());
 
@@ -80,7 +80,7 @@ TEST(socket_addr_parse, bad_miface) {
     { // ipv4 miface for ipv6 addr
         SocketAddr addr;
 
-        CHECK(addr.set_host_port(IPv6, "ffaa::", 123));
+        CHECK(addr.set_host_port(Family_IPv6, "ffaa::", 123));
         CHECK(addr.has_host_port());
         CHECK(addr.multicast());
 
