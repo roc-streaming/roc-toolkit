@@ -23,7 +23,13 @@ namespace sndio {
 
 namespace {
 
-enum { MaxBufSize = 8192, FrameSize = 512, SampleRate = 44100, ChMask = 0x3 };
+enum {
+    MaxBufSize = 8192,
+    FrameSize = 500,
+    SampleRate = 44100,
+    ChMask = 0x3,
+    NumChans = 2
+};
 
 core::HeapAllocator allocator;
 core::BufferPool<audio::sample_t> buffer_pool(allocator, MaxBufSize, true);
@@ -118,6 +124,123 @@ TEST(sox_source, sample_rate_mismatch) {
 
     CHECK(sox_source.open(NULL, file.path()));
     CHECK(sox_source.sample_rate() == SampleRate * 2);
+}
+
+TEST(sox_source, pause_resume) {
+    core::TempFile file("test.wav");
+
+    {
+        MockSource mock_source;
+        mock_source.add(FrameSize * NumChans * 2);
+
+        SoxSink sox_sink(allocator, sink_config);
+        CHECK(sox_sink.open(NULL, file.path()));
+
+        Pump pump(buffer_pool, mock_source, NULL, sox_sink, FrameSize, Pump::ModeOneshot);
+        CHECK(pump.valid());
+        CHECK(pump.run());
+    }
+
+    SoxSource sox_source(allocator, source_config);
+
+    CHECK(sox_source.open(NULL, file.path()));
+
+    audio::sample_t frame_data1[FrameSize * NumChans] = {};
+    audio::Frame frame1(frame_data1, FrameSize * NumChans);
+
+    CHECK(sox_source.state() == ISource::Active);
+    CHECK(sox_source.read(frame1));
+
+    sox_source.pause();
+    CHECK(sox_source.state() == ISource::Paused);
+
+    audio::sample_t frame_data2[FrameSize * NumChans] = {};
+    audio::Frame frame2(frame_data2, FrameSize * NumChans);
+
+    CHECK(!sox_source.read(frame2));
+
+    CHECK(sox_source.resume());
+    CHECK(sox_source.state() == ISource::Active);
+
+    CHECK(sox_source.read(frame2));
+
+    if (memcmp(frame_data1, frame_data2, sizeof(frame_data1)) == 0) {
+        FAIL("frames should not be equal");
+    }
+}
+
+TEST(sox_source, pause_restart) {
+    core::TempFile file("test.wav");
+
+    {
+        MockSource mock_source;
+        mock_source.add(FrameSize * NumChans * 2);
+
+        SoxSink sox_sink(allocator, sink_config);
+        CHECK(sox_sink.open(NULL, file.path()));
+
+        Pump pump(buffer_pool, mock_source, NULL, sox_sink, FrameSize, Pump::ModeOneshot);
+        CHECK(pump.valid());
+        CHECK(pump.run());
+    }
+
+    SoxSource sox_source(allocator, source_config);
+
+    CHECK(sox_source.open(NULL, file.path()));
+
+    audio::sample_t frame_data1[FrameSize * NumChans] = {};
+    audio::Frame frame1(frame_data1, FrameSize * NumChans);
+
+    CHECK(sox_source.state() == ISource::Active);
+    CHECK(sox_source.read(frame1));
+
+    sox_source.pause();
+    CHECK(sox_source.state() == ISource::Paused);
+
+    audio::sample_t frame_data2[FrameSize * NumChans] = {};
+    audio::Frame frame2(frame_data2, FrameSize * NumChans);
+
+    CHECK(!sox_source.read(frame2));
+
+    CHECK(sox_source.restart());
+    CHECK(sox_source.state() == ISource::Active);
+
+    CHECK(sox_source.read(frame2));
+
+    if (memcmp(frame_data1, frame_data2, sizeof(frame_data1)) != 0) {
+        FAIL("frames should be equal");
+    }
+}
+
+TEST(sox_source, eof_restart) {
+    core::TempFile file("test.wav");
+
+    {
+        MockSource mock_source;
+        mock_source.add(FrameSize * NumChans * 2);
+
+        SoxSink sox_sink(allocator, sink_config);
+        CHECK(sox_sink.open(NULL, file.path()));
+
+        Pump pump(buffer_pool, mock_source, NULL, sox_sink, FrameSize, Pump::ModeOneshot);
+        CHECK(pump.valid());
+        CHECK(pump.run());
+    }
+
+    SoxSource sox_source(allocator, source_config);
+
+    CHECK(sox_source.open(NULL, file.path()));
+
+    audio::sample_t frame_data[FrameSize * NumChans] = {};
+    audio::Frame frame(frame_data, FrameSize * NumChans);
+
+    for (int i = 0; i < 3; i++) {
+        CHECK(sox_source.read(frame));
+        CHECK(sox_source.read(frame));
+        CHECK(!sox_source.read(frame));
+
+        CHECK(sox_source.restart());
+    }
 }
 
 } // namespace sndio
