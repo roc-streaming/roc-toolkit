@@ -433,8 +433,7 @@ TEST(sender_receiver, bare_rtp) {
 
     Context context;
 
-    Receiver receiver(context, receiver_conf, sample_step, FrameSamples,
-                      Flags);
+    Receiver receiver(context, receiver_conf, sample_step, FrameSamples, Flags);
 
     Sender sender(context, sender_conf, receiver.source_addr(), receiver.repair_addr(),
                   sample_step, FrameSamples, Flags);
@@ -453,8 +452,7 @@ TEST(sender_receiver, fec_without_losses) {
 
     Context context;
 
-    Receiver receiver(context, receiver_conf, sample_step, FrameSamples,
-                      Flags);
+    Receiver receiver(context, receiver_conf, sample_step, FrameSamples, Flags);
 
     Sender sender(context, sender_conf, receiver.source_addr(), receiver.repair_addr(),
                   sample_step, FrameSamples, Flags);
@@ -472,8 +470,7 @@ TEST(sender_receiver, fec_with_losses) {
 
     Context context;
 
-    Receiver receiver(context, receiver_conf, sample_step, FrameSamples,
-                      Flags);
+    Receiver receiver(context, receiver_conf, sample_step, FrameSamples, Flags);
 
     Proxy proxy(receiver.source_addr(), receiver.repair_addr(), SourcePackets,
                 RepairPackets);
