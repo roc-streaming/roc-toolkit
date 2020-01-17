@@ -40,6 +40,7 @@ public:
     //! Initialize.
     Pump(core::BufferPool<audio::sample_t>& buffer_pool,
          ISource& source,
+         ISource* backup_source,
          ISink& sink,
          size_t frame_size,
          Mode mode);
@@ -59,7 +60,8 @@ public:
     void stop();
 
 private:
-    ISource& source_;
+    ISource& main_source_;
+    ISource* backup_source_;
     ISink& sink_;
 
     core::Slice<audio::sample_t> frame_buffer_;
