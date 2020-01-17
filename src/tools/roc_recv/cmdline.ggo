@@ -8,11 +8,16 @@ section "Options"
 
     option "list-supported" L "list supported schemes and formats" optional
 
-    option "output" o "Output file or device URI" typestr="OUTPUT_URI" string optional
-    option "format" f "Force output file format" typestr="FORMAT" string optional
+    option "output" o "Output file or device URI" typestr="IO_URI" string optional
+    option "output-format" - "Force output file format" typestr="FORMAT" string optional
+
+    option "backup" - "Backup file or device URI (if set, used when there are no sessions)"
+        typestr="IO_URI" string optional
+
+    option "backup-format" - "Force backup file format"
+        typestr="FORMAT" string optional
 
     option "source" s "Source port triplet" typestr="PORT" string optional
-
     option "repair" r "Repair port triplet" typestr="PORT" string optional
 
     option "miface" - "IP address of the network interface on which to join the multicast group"
@@ -74,7 +79,7 @@ section "Options"
         values="auto","always","never" default="auto" enum optional
 
 text "
-OUTPUT_URI is a device or file URI, e.g.:
+IO_URI is a device or file URI, e.g.:
   pulse://default; pulse://alsa_input.pci-0000_00_1f.3.analog-stereo
   file:///home/user/test.wav; file:./test.wav; file:-
 
