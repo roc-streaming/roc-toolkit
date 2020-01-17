@@ -43,11 +43,6 @@ public:
     //! Get current source state.
     virtual State state() const = 0;
 
-    //! Wait until the source state becomes active.
-    //! @remarks
-    //!  Spurious wakeups are allowed.
-    virtual void wait_active() const = 0;
-
     //! Pause reading.
     virtual void pause() = 0;
 
