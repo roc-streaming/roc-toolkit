@@ -50,6 +50,9 @@ public:
     //! Get frame data size.
     size_t size() const;
 
+    //! Print frame to stderr.
+    void print() const;
+
 private:
     sample_t* data_;
     size_t size_;
