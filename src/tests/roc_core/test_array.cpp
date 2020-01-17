@@ -84,6 +84,18 @@ TEST(array, grow_exp) {
     LONGS_EQUAL(4, array.max_size());
     LONGS_EQUAL(0, array.size());
     LONGS_EQUAL(0, Object::n_objects);
+
+    CHECK(array.grow_exp(4));
+
+    LONGS_EQUAL(4, array.max_size());
+    LONGS_EQUAL(0, array.size());
+    LONGS_EQUAL(0, Object::n_objects);
+
+    CHECK(array.grow_exp(5));
+
+    LONGS_EQUAL(8, array.max_size());
+    LONGS_EQUAL(0, array.size());
+    LONGS_EQUAL(0, Object::n_objects);
 }
 
 TEST(array, resize) {
@@ -133,6 +145,20 @@ TEST(array, front_back) {
 
         POINTERS_EQUAL(&array[0], &array.front());
         POINTERS_EQUAL(&array[n], &array.back());
+    }
+}
+
+TEST(array, data) {
+    Array<Object> array(allocator);
+
+    CHECK(array.data() == NULL);
+
+    CHECK(array.resize(NumObjects));
+
+    CHECK(array.data() != NULL);
+
+    for (size_t n = 0; n < NumObjects; n++) {
+        POINTERS_EQUAL(&array[n], array.data() + n);
     }
 }
 
