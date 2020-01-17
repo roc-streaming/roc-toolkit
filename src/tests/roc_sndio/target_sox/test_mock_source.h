@@ -39,10 +39,6 @@ public:
         }
     }
 
-    virtual void wait_active() const {
-        FAIL("not implemented");
-    }
-
     virtual void pause() {
         FAIL("not implemented");
     }
