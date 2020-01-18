@@ -14,7 +14,7 @@
 #include "roc_core/heap_allocator.h"
 #include "roc_packet/packet_pool.h"
 #include "roc_packet/queue.h"
-#include "roc_pipeline/sender.h"
+#include "roc_pipeline/sender_sink.h"
 #include "roc_rtp/format_map.h"
 #include "roc_rtp/parser.h"
 
@@ -53,7 +53,7 @@ rtp::Parser rtp_parser(format_map, NULL);
 
 } // namespace
 
-TEST_GROUP(sender) {
+TEST_GROUP(sender_sink) {
     SenderConfig config;
 
     PortConfig source_port;
@@ -73,11 +73,12 @@ TEST_GROUP(sender) {
     }
 };
 
-TEST(sender, write) {
+TEST(sender_sink, write) {
     packet::Queue queue;
 
-    Sender sender(config, source_port, queue, repair_port, queue, codec_map, format_map,
-                  packet_pool, byte_buffer_pool, sample_buffer_pool, allocator);
+    SenderSink sender(config, source_port, queue, repair_port, queue, codec_map,
+                      format_map, packet_pool, byte_buffer_pool, sample_buffer_pool,
+                      allocator);
 
     CHECK(sender.valid());
 
@@ -97,7 +98,7 @@ TEST(sender, write) {
     CHECK(!queue.read());
 }
 
-TEST(sender, frame_size_small) {
+TEST(sender_sink, frame_size_small) {
     enum {
         SamplesPerSmallFrame = SamplesPerFrame / 2,
         SmallFramesPerPacket = SamplesPerPacket / SamplesPerSmallFrame,
@@ -106,8 +107,9 @@ TEST(sender, frame_size_small) {
 
     packet::Queue queue;
 
-    Sender sender(config, source_port, queue, repair_port, queue, codec_map, format_map,
-                  packet_pool, byte_buffer_pool, sample_buffer_pool, allocator);
+    SenderSink sender(config, source_port, queue, repair_port, queue, codec_map,
+                      format_map, packet_pool, byte_buffer_pool, sample_buffer_pool,
+                      allocator);
 
     CHECK(sender.valid());
 
@@ -127,7 +129,7 @@ TEST(sender, frame_size_small) {
     CHECK(!queue.read());
 }
 
-TEST(sender, frame_size_large) {
+TEST(sender_sink, frame_size_large) {
     enum {
         SamplesPerLargeFrame = SamplesPerPacket * 4,
         PacketsPerLargeFrame = SamplesPerLargeFrame / SamplesPerPacket,
@@ -136,8 +138,9 @@ TEST(sender, frame_size_large) {
 
     packet::Queue queue;
 
-    Sender sender(config, source_port, queue, repair_port, queue, codec_map, format_map,
-                  packet_pool, byte_buffer_pool, sample_buffer_pool, allocator);
+    SenderSink sender(config, source_port, queue, repair_port, queue, codec_map,
+                      format_map, packet_pool, byte_buffer_pool, sample_buffer_pool,
+                      allocator);
 
     CHECK(sender.valid());
 
