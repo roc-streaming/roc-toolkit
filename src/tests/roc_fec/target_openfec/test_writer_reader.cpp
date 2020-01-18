@@ -14,7 +14,7 @@
 
 #include "roc_core/buffer_pool.h"
 #include "roc_core/heap_allocator.h"
-#include "roc_core/unique_ptr.h"
+#include "roc_core/scoped_ptr.h"
 #include "roc_fec/codec_map.h"
 #include "roc_fec/composer.h"
 #include "roc_fec/headers.h"
@@ -213,9 +213,9 @@ TEST(writer_reader, no_losses) {
     for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
-        core::UniquePtr<IBlockEncoder> encoder(
+        core::ScopedPtr<IBlockEncoder> encoder(
             codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
-        core::UniquePtr<IBlockDecoder> decoder(
+        core::ScopedPtr<IBlockDecoder> decoder(
             codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
 
         CHECK(encoder);
@@ -258,9 +258,9 @@ TEST(writer_reader, 1_loss) {
     for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
-        core::UniquePtr<IBlockEncoder> encoder(
+        core::ScopedPtr<IBlockEncoder> encoder(
             codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
-        core::UniquePtr<IBlockDecoder> decoder(
+        core::ScopedPtr<IBlockDecoder> decoder(
             codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
 
         CHECK(encoder);
@@ -305,9 +305,9 @@ TEST(writer_reader, lost_first_packet_in_first_block) {
     for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
-        core::UniquePtr<IBlockEncoder> encoder(
+        core::ScopedPtr<IBlockEncoder> encoder(
             codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
-        core::UniquePtr<IBlockDecoder> decoder(
+        core::ScopedPtr<IBlockDecoder> decoder(
             codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
 
         CHECK(encoder);
@@ -361,9 +361,9 @@ TEST(writer_reader, lost_one_source_and_all_repair_packets) {
     for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
-        core::UniquePtr<IBlockEncoder> encoder(
+        core::ScopedPtr<IBlockEncoder> encoder(
             codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
-        core::UniquePtr<IBlockDecoder> decoder(
+        core::ScopedPtr<IBlockDecoder> decoder(
             codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
 
         CHECK(encoder);
@@ -430,9 +430,9 @@ TEST(writer_reader, multiple_blocks_1_loss) {
     for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
-        core::UniquePtr<IBlockEncoder> encoder(
+        core::ScopedPtr<IBlockEncoder> encoder(
             codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
-        core::UniquePtr<IBlockDecoder> decoder(
+        core::ScopedPtr<IBlockDecoder> decoder(
             codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
 
         CHECK(encoder);
@@ -502,9 +502,9 @@ TEST(writer_reader, multiple_blocks_in_queue) {
     for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
-        core::UniquePtr<IBlockEncoder> encoder(
+        core::ScopedPtr<IBlockEncoder> encoder(
             codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
-        core::UniquePtr<IBlockDecoder> decoder(
+        core::ScopedPtr<IBlockDecoder> decoder(
             codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
 
         CHECK(encoder);
@@ -555,9 +555,9 @@ TEST(writer_reader, interleaved_packets) {
     for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
-        core::UniquePtr<IBlockEncoder> encoder(
+        core::ScopedPtr<IBlockEncoder> encoder(
             codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
-        core::UniquePtr<IBlockDecoder> decoder(
+        core::ScopedPtr<IBlockDecoder> decoder(
             codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
 
         CHECK(encoder);
@@ -609,9 +609,9 @@ TEST(writer_reader, delayed_packets) {
     for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
-        core::UniquePtr<IBlockEncoder> encoder(
+        core::ScopedPtr<IBlockEncoder> encoder(
             codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
-        core::UniquePtr<IBlockDecoder> decoder(
+        core::ScopedPtr<IBlockDecoder> decoder(
             codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
 
         CHECK(encoder);
@@ -678,9 +678,9 @@ TEST(writer_reader, late_out_of_order_packets) {
     for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
-        core::UniquePtr<IBlockEncoder> encoder(
+        core::ScopedPtr<IBlockEncoder> encoder(
             codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
-        core::UniquePtr<IBlockDecoder> decoder(
+        core::ScopedPtr<IBlockDecoder> decoder(
             codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
 
         CHECK(encoder);
@@ -755,9 +755,9 @@ TEST(writer_reader, repair_packets_before_source_packets) {
     for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
-        core::UniquePtr<IBlockEncoder> encoder(
+        core::ScopedPtr<IBlockEncoder> encoder(
             codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
-        core::UniquePtr<IBlockDecoder> decoder(
+        core::ScopedPtr<IBlockDecoder> decoder(
             codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
 
         CHECK(encoder);
@@ -840,9 +840,9 @@ TEST(writer_reader, repair_packets_mixed_with_source_packets) {
     for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
-        core::UniquePtr<IBlockEncoder> encoder(
+        core::ScopedPtr<IBlockEncoder> encoder(
             codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
-        core::UniquePtr<IBlockDecoder> decoder(
+        core::ScopedPtr<IBlockDecoder> decoder(
             codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
 
         CHECK(encoder);
@@ -937,9 +937,9 @@ TEST(writer_reader, multiple_repair_attempts) {
     for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
-        core::UniquePtr<IBlockEncoder> encoder(
+        core::ScopedPtr<IBlockEncoder> encoder(
             codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
-        core::UniquePtr<IBlockDecoder> decoder(
+        core::ScopedPtr<IBlockDecoder> decoder(
             codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
 
         CHECK(encoder);
@@ -1014,9 +1014,9 @@ TEST(writer_reader, drop_outdated_block) {
     for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
-        core::UniquePtr<IBlockEncoder> encoder(
+        core::ScopedPtr<IBlockEncoder> encoder(
             codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
-        core::UniquePtr<IBlockDecoder> decoder(
+        core::ScopedPtr<IBlockDecoder> decoder(
             codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
 
         CHECK(encoder);
@@ -1083,9 +1083,9 @@ TEST(writer_reader, repaired_block_numbering) {
     for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
-        core::UniquePtr<IBlockEncoder> encoder(
+        core::ScopedPtr<IBlockEncoder> encoder(
             codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
-        core::UniquePtr<IBlockDecoder> decoder(
+        core::ScopedPtr<IBlockDecoder> decoder(
             codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
 
         CHECK(encoder);
@@ -1167,9 +1167,9 @@ TEST(writer_reader, invalid_esi) {
     for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
-        core::UniquePtr<IBlockEncoder> encoder(
+        core::ScopedPtr<IBlockEncoder> encoder(
             codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
-        core::UniquePtr<IBlockDecoder> decoder(
+        core::ScopedPtr<IBlockDecoder> decoder(
             codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
 
         CHECK(encoder);
@@ -1246,9 +1246,9 @@ TEST(writer_reader, invalid_sbl) {
     for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
-        core::UniquePtr<IBlockEncoder> encoder(
+        core::ScopedPtr<IBlockEncoder> encoder(
             codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
-        core::UniquePtr<IBlockDecoder> decoder(
+        core::ScopedPtr<IBlockDecoder> decoder(
             codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
 
         CHECK(encoder);
@@ -1320,9 +1320,9 @@ TEST(writer_reader, invalid_nes) {
     for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
-        core::UniquePtr<IBlockEncoder> encoder(
+        core::ScopedPtr<IBlockEncoder> encoder(
             codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
-        core::UniquePtr<IBlockDecoder> decoder(
+        core::ScopedPtr<IBlockDecoder> decoder(
             codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
 
         CHECK(encoder);
@@ -1393,9 +1393,9 @@ TEST(writer_reader, invalid_payload_size) {
     for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
-        core::UniquePtr<IBlockEncoder> encoder(
+        core::ScopedPtr<IBlockEncoder> encoder(
             codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
-        core::UniquePtr<IBlockDecoder> decoder(
+        core::ScopedPtr<IBlockDecoder> decoder(
             codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
 
         CHECK(encoder);
@@ -1477,9 +1477,9 @@ TEST(writer_reader, zero_source_packets) {
     for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
-        core::UniquePtr<IBlockEncoder> encoder(
+        core::ScopedPtr<IBlockEncoder> encoder(
             codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
-        core::UniquePtr<IBlockDecoder> decoder(
+        core::ScopedPtr<IBlockDecoder> decoder(
             codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
 
         CHECK(encoder);
@@ -1558,9 +1558,9 @@ TEST(writer_reader, zero_repair_packets) {
     for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
-        core::UniquePtr<IBlockEncoder> encoder(
+        core::ScopedPtr<IBlockEncoder> encoder(
             codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
-        core::UniquePtr<IBlockDecoder> decoder(
+        core::ScopedPtr<IBlockDecoder> decoder(
             codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
 
         CHECK(encoder);
@@ -1636,9 +1636,9 @@ TEST(writer_reader, zero_payload_size) {
     for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
-        core::UniquePtr<IBlockEncoder> encoder(
+        core::ScopedPtr<IBlockEncoder> encoder(
             codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
-        core::UniquePtr<IBlockDecoder> decoder(
+        core::ScopedPtr<IBlockDecoder> decoder(
             codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
 
         CHECK(encoder);
@@ -1720,9 +1720,9 @@ TEST(writer_reader, sbn_jump) {
     for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
-        core::UniquePtr<IBlockEncoder> encoder(
+        core::ScopedPtr<IBlockEncoder> encoder(
             codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
-        core::UniquePtr<IBlockDecoder> decoder(
+        core::ScopedPtr<IBlockDecoder> decoder(
             codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
 
         CHECK(encoder);
@@ -1831,7 +1831,7 @@ TEST(writer_reader, writer_encode_blocks) {
         packet::source_t data_source = 555;
 
         for (size_t n = 0; n < 5; n++) {
-            core::UniquePtr<IBlockEncoder> encoder(
+            core::ScopedPtr<IBlockEncoder> encoder(
                 codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
 
             CHECK(encoder);
@@ -1916,7 +1916,7 @@ TEST(writer_reader, writer_resize_blocks) {
     for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
-        core::UniquePtr<IBlockEncoder> encoder(
+        core::ScopedPtr<IBlockEncoder> encoder(
             codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
         CHECK(encoder);
 
@@ -1975,9 +1975,9 @@ TEST(writer_reader, resize_block_begin) {
     for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
-        core::UniquePtr<IBlockEncoder> encoder(
+        core::ScopedPtr<IBlockEncoder> encoder(
             codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
-        core::UniquePtr<IBlockDecoder> decoder(
+        core::ScopedPtr<IBlockDecoder> decoder(
             codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
 
         CHECK(decoder);
@@ -2046,9 +2046,9 @@ TEST(writer_reader, resize_block_middle) {
     for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
-        core::UniquePtr<IBlockEncoder> encoder(
+        core::ScopedPtr<IBlockEncoder> encoder(
             codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
-        core::UniquePtr<IBlockDecoder> decoder(
+        core::ScopedPtr<IBlockDecoder> decoder(
             codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
 
         CHECK(decoder);
@@ -2138,9 +2138,9 @@ TEST(writer_reader, resize_block_losses) {
     for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
-        core::UniquePtr<IBlockEncoder> encoder(
+        core::ScopedPtr<IBlockEncoder> encoder(
             codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
-        core::UniquePtr<IBlockDecoder> decoder(
+        core::ScopedPtr<IBlockDecoder> decoder(
             codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
 
         CHECK(decoder);
@@ -2211,9 +2211,9 @@ TEST(writer_reader, resize_block_repair_first) {
     for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
-        core::UniquePtr<IBlockEncoder> encoder(
+        core::ScopedPtr<IBlockEncoder> encoder(
             codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
-        core::UniquePtr<IBlockDecoder> decoder(
+        core::ScopedPtr<IBlockDecoder> decoder(
             codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
 
         CHECK(encoder);
@@ -2298,7 +2298,7 @@ TEST(writer_reader, error_writer_resize_block) {
     for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
-        core::UniquePtr<IBlockEncoder> encoder(
+        core::ScopedPtr<IBlockEncoder> encoder(
             codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
         CHECK(encoder);
 
@@ -2350,7 +2350,7 @@ TEST(writer_reader, error_writer_encode_packet) {
 
         MockAllocator mock_allocator;
 
-        core::UniquePtr<IBlockEncoder> encoder(
+        core::ScopedPtr<IBlockEncoder> encoder(
             codec_map.new_encoder(codec_config, buffer_pool, mock_allocator),
             mock_allocator);
         CHECK(encoder);
@@ -2395,9 +2395,9 @@ TEST(writer_reader, error_reader_resize_block) {
     for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
-        core::UniquePtr<IBlockEncoder> encoder(
+        core::ScopedPtr<IBlockEncoder> encoder(
             codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
-        core::UniquePtr<IBlockDecoder> decoder(
+        core::ScopedPtr<IBlockDecoder> decoder(
             codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
 
         CHECK(encoder);
@@ -2463,13 +2463,13 @@ TEST(writer_reader, error_reader_decode_packet) {
     for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
-        core::UniquePtr<IBlockEncoder> encoder(
+        core::ScopedPtr<IBlockEncoder> encoder(
             codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
         CHECK(encoder);
 
         MockAllocator mock_allocator;
 
-        core::UniquePtr<IBlockDecoder> decoder(
+        core::ScopedPtr<IBlockDecoder> decoder(
             codec_map.new_decoder(codec_config, buffer_pool, mock_allocator),
             mock_allocator);
         CHECK(decoder);
@@ -2542,9 +2542,9 @@ TEST(writer_reader, writer_oversized_block) {
     for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; ++n_scheme) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
-        core::UniquePtr<IBlockEncoder> encoder(
+        core::ScopedPtr<IBlockEncoder> encoder(
             codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
-        core::UniquePtr<IBlockDecoder> decoder(
+        core::ScopedPtr<IBlockDecoder> decoder(
             codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
 
         CHECK(encoder);
@@ -2607,9 +2607,9 @@ TEST(writer_reader, reader_oversized_source_block) {
     for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; ++n_scheme) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
-        core::UniquePtr<IBlockEncoder> encoder(
+        core::ScopedPtr<IBlockEncoder> encoder(
             codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
-        core::UniquePtr<IBlockDecoder> decoder(
+        core::ScopedPtr<IBlockDecoder> decoder(
             codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
 
         CHECK(encoder);
@@ -2672,9 +2672,9 @@ TEST(writer_reader, reader_oversized_repair_block) {
     for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; ++n_scheme) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
-        core::UniquePtr<IBlockEncoder> encoder(
+        core::ScopedPtr<IBlockEncoder> encoder(
             codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
-        core::UniquePtr<IBlockDecoder> decoder(
+        core::ScopedPtr<IBlockDecoder> decoder(
             codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
 
         CHECK(encoder);
@@ -2737,7 +2737,7 @@ TEST(writer_reader, writer_invalid_payload_size_change) {
     for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; ++n_scheme) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
-        core::UniquePtr<IBlockEncoder> encoder(
+        core::ScopedPtr<IBlockEncoder> encoder(
             codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
         CHECK(encoder);
 
@@ -2785,9 +2785,9 @@ TEST(writer_reader, reader_invalid_fec_scheme_source_packet) {
     for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; ++n_scheme) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
-        core::UniquePtr<IBlockEncoder> encoder(
+        core::ScopedPtr<IBlockEncoder> encoder(
             codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
-        core::UniquePtr<IBlockDecoder> decoder(
+        core::ScopedPtr<IBlockDecoder> decoder(
             codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
 
         CHECK(encoder);
@@ -2850,9 +2850,9 @@ TEST(writer_reader, reader_invalid_fec_scheme_repair_packet) {
     for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; ++n_scheme) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
-        core::UniquePtr<IBlockEncoder> encoder(
+        core::ScopedPtr<IBlockEncoder> encoder(
             codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
-        core::UniquePtr<IBlockDecoder> decoder(
+        core::ScopedPtr<IBlockDecoder> decoder(
             codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
 
         CHECK(encoder);

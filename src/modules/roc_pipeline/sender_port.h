@@ -14,7 +14,7 @@
 
 #include "roc_core/iallocator.h"
 #include "roc_core/noncopyable.h"
-#include "roc_core/unique_ptr.h"
+#include "roc_core/scoped_ptr.h"
 #include "roc_packet/icomposer.h"
 #include "roc_packet/iwriter.h"
 #include "roc_pipeline/config.h"
@@ -48,8 +48,8 @@ private:
     packet::IWriter& writer_;
     packet::IComposer* composer_;
 
-    core::UniquePtr<rtp::Composer> rtp_composer_;
-    core::UniquePtr<packet::IComposer> fec_composer_;
+    core::ScopedPtr<rtp::Composer> rtp_composer_;
+    core::ScopedPtr<packet::IComposer> fec_composer_;
 };
 
 } // namespace pipeline
