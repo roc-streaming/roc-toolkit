@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_pipeline/sender.h
+//! @file roc_pipeline/sender_sink.h
 //! @brief Sender pipeline.
 
-#ifndef ROC_PIPELINE_SENDER_H_
-#define ROC_PIPELINE_SENDER_H_
+#ifndef ROC_PIPELINE_SENDER_SINK_H_
+#define ROC_PIPELINE_SENDER_SINK_H_
 
 #include "roc_audio/iframe_encoder.h"
 #include "roc_audio/iresampler.h"
@@ -37,21 +37,24 @@
 namespace roc {
 namespace pipeline {
 
-//! Sender pipeline.
-class Sender : public sndio::ISink, public core::NonCopyable<> {
+//! Sender sink pipeline.
+//! @remarks
+//   - input: frames
+//!  - output: packets
+class SenderSink : public sndio::ISink, public core::NonCopyable<> {
 public:
     //! Initialize.
-    Sender(const SenderConfig& config,
-           const PortConfig& source_port,
-           packet::IWriter& source_writer,
-           const PortConfig& repair_port,
-           packet::IWriter& repair_writer,
-           const fec::CodecMap& codec_map,
-           const rtp::FormatMap& format_map,
-           packet::PacketPool& packet_pool,
-           core::BufferPool<uint8_t>& byte_buffer_pool,
-           core::BufferPool<audio::sample_t>& sample_buffer_pool,
-           core::IAllocator& allocator);
+    SenderSink(const SenderConfig& config,
+               const PortConfig& source_port,
+               packet::IWriter& source_writer,
+               const PortConfig& repair_port,
+               packet::IWriter& repair_writer,
+               const fec::CodecMap& codec_map,
+               const rtp::FormatMap& format_map,
+               packet::PacketPool& packet_pool,
+               core::BufferPool<uint8_t>& byte_buffer_pool,
+               core::BufferPool<audio::sample_t>& sample_buffer_pool,
+               core::IAllocator& allocator);
 
     //! Check if the pipeline was successfully constructed.
     bool valid();
@@ -98,4 +101,4 @@ private:
 } // namespace pipeline
 } // namespace roc
 
-#endif // ROC_PIPELINE_SENDER_H_
+#endif // ROC_PIPELINE_SENDER_SINK_H_

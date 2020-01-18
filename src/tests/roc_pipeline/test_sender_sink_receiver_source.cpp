@@ -12,8 +12,8 @@
 #include "roc_core/heap_allocator.h"
 #include "roc_packet/packet_pool.h"
 #include "roc_packet/queue.h"
-#include "roc_pipeline/receiver.h"
-#include "roc_pipeline/sender.h"
+#include "roc_pipeline/receiver_source.h"
+#include "roc_pipeline/sender_sink.h"
 #include "roc_rtp/format_map.h"
 
 #include "test_frame_reader.h"
@@ -77,34 +77,34 @@ rtp::FormatMap format_map;
 
 } // namespace
 
-TEST_GROUP(sender_receiver) {
+TEST_GROUP(sender_sink_receiver_source) {
     void send_receive(int flags, size_t num_sessions) {
         packet::Queue queue;
 
         PortConfig source_port = sender_source_port(flags);
         PortConfig repair_port = sender_repair_port(flags);
 
-        Sender sender(sender_config(flags),
-                      source_port,
-                      queue,
-                      repair_port,
-                      queue,
-                      codec_map,
-                      format_map,
-                      packet_pool,
-                      byte_buffer_pool,
-                      sample_buffer_pool,
-                      allocator);
-
-        CHECK(sender.valid());
-
-        Receiver receiver(receiver_config(),
+        SenderSink sender(sender_config(flags),
+                          source_port,
+                          queue,
+                          repair_port,
+                          queue,
                           codec_map,
                           format_map,
                           packet_pool,
                           byte_buffer_pool,
                           sample_buffer_pool,
                           allocator);
+
+        CHECK(sender.valid());
+
+        ReceiverSource receiver(receiver_config(),
+                                codec_map,
+                                format_map,
+                                packet_pool,
+                                byte_buffer_pool,
+                                sample_buffer_pool,
+                                allocator);
 
         CHECK(receiver.valid());
 
@@ -186,7 +186,7 @@ TEST_GROUP(sender_receiver) {
         return port_config;
     }
 
-    void add_receiver_ports(Receiver& receiver) {
+    void add_receiver_ports(ReceiverSource& receiver) {
         PortConfig port_config;
 
         port_config.address = new_address(10);
@@ -256,36 +256,36 @@ TEST_GROUP(sender_receiver) {
     }
 };
 
-TEST(sender_receiver, bare) {
+TEST(sender_sink_receiver_source, bare) {
     send_receive(FlagNone, 1);
 }
 
-TEST(sender_receiver, interleaving) {
+TEST(sender_sink_receiver_source, interleaving) {
     send_receive(FlagInterleaving, 1);
 }
 
 #ifdef ROC_TARGET_OPENFEC
-TEST(sender_receiver, fec_rs) {
+TEST(sender_sink_receiver_source, fec_rs) {
     send_receive(FlagReedSolomon, 1);
 }
 
-TEST(sender_receiver, fec_ldpc) {
+TEST(sender_sink_receiver_source, fec_ldpc) {
     send_receive(FlagLDPC, 1);
 }
 
-TEST(sender_receiver, fec_interleaving) {
+TEST(sender_sink_receiver_source, fec_interleaving) {
     send_receive(FlagReedSolomon | FlagInterleaving, 1);
 }
 
-TEST(sender_receiver, fec_loss) {
+TEST(sender_sink_receiver_source, fec_loss) {
     send_receive(FlagReedSolomon | FlagLosses, 1);
 }
 
-TEST(sender_receiver, fec_drop_source) {
+TEST(sender_sink_receiver_source, fec_drop_source) {
     send_receive(FlagReedSolomon | FlagDropSource, 0);
 }
 
-TEST(sender_receiver, fec_drop_repair) {
+TEST(sender_sink_receiver_source, fec_drop_repair) {
     send_receive(FlagReedSolomon | FlagDropRepair, 1);
 }
 #endif //! ROC_TARGET_OPENFEC
