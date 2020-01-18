@@ -17,7 +17,7 @@
 #include "roc_audio/iresampler.h"
 #include "roc_audio/resampler_config.h"
 #include "roc_core/iallocator.h"
-#include "roc_core/unique_ptr.h"
+#include "roc_core/scoped_ptr.h"
 #include "roc_packet/units.h"
 
 namespace roc {

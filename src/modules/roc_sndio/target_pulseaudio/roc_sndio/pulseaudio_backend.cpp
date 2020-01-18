@@ -9,8 +9,8 @@
 #include <stdio.h>
 
 #include "roc_core/log.h"
+#include "roc_core/scoped_ptr.h"
 #include "roc_core/stddefs.h"
-#include "roc_core/unique_ptr.h"
 #include "roc_sndio/pulseaudio_backend.h"
 #include "roc_sndio/pulseaudio_sink.h"
 
@@ -37,7 +37,7 @@ ISink* PulseaudioBackend::open_sink(core::IAllocator& allocator,
                                     const char*,
                                     const char* output,
                                     const Config& config) {
-    core::UniquePtr<PulseaudioSink> sink(new (allocator) PulseaudioSink(config),
+    core::ScopedPtr<PulseaudioSink> sink(new (allocator) PulseaudioSink(config),
                                          allocator);
     if (!sink) {
         return NULL;
