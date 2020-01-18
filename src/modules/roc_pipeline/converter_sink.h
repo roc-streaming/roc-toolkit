@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_pipeline/converter.h
+//! @file roc_pipeline/converter_sink.h
 //! @brief Converter pipeline.
 
-#ifndef ROC_PIPELINE_CONVERTER_H_
-#define ROC_PIPELINE_CONVERTER_H_
+#ifndef ROC_PIPELINE_CONVERTER_SINK_H_
+#define ROC_PIPELINE_CONVERTER_SINK_H_
 
 #include "roc_audio/iresampler.h"
 #include "roc_audio/null_writer.h"
@@ -27,14 +27,17 @@
 namespace roc {
 namespace pipeline {
 
-//! Converter pipeline.
-class Converter : public sndio::ISink, public core::NonCopyable<> {
+//! Converter sink pipeline.
+//! @remarks
+//   - input: frames
+//!  - output: frames
+class ConverterSink : public sndio::ISink, public core::NonCopyable<> {
 public:
     //! Initialize.
-    Converter(const ConverterConfig& config,
-              audio::IWriter* output_writer,
-              core::BufferPool<audio::sample_t>& pool,
-              core::IAllocator& allocator);
+    ConverterSink(const ConverterConfig& config,
+                  audio::IWriter* output_writer,
+                  core::BufferPool<audio::sample_t>& pool,
+                  core::IAllocator& allocator);
 
     //! Check if the pipeline was successfully constructed.
     bool valid();
@@ -67,4 +70,4 @@ private:
 } // namespace pipeline
 } // namespace roc
 
-#endif // ROC_PIPELINE_CONVERTER_H_
+#endif // ROC_PIPELINE_CONVERTER_SINK_H_
