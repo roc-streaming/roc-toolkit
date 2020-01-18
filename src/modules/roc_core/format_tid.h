@@ -16,7 +16,6 @@ namespace roc {
 namespace core {
 
 //! Retrieve and format current time.
-//
 //!
 //! @returns
 //!  if obtaining thread id was successful
