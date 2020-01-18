@@ -45,7 +45,7 @@ roc_receiver* roc_receiver_open(roc_context* context, const roc_receiver_config*
         return NULL;
     }
 
-    core::UniquePtr<roc_receiver> receiver(new (context->allocator)
+    core::ScopedPtr<roc_receiver> receiver(new (context->allocator)
                                                roc_receiver(*context, private_config),
                                            context->allocator);
 
