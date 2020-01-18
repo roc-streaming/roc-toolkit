@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_pipeline/receiver.h
+//! @file roc_pipeline/receiver_source.h
 //! @brief Receiver pipeline.
 
-#ifndef ROC_PIPELINE_RECEIVER_H_
-#define ROC_PIPELINE_RECEIVER_H_
+#ifndef ROC_PIPELINE_RECEIVER_SOURCE_H_
+#define ROC_PIPELINE_RECEIVER_SOURCE_H_
 
 #include "roc_audio/ireader.h"
 #include "roc_audio/mixer.h"
@@ -34,19 +34,22 @@
 namespace roc {
 namespace pipeline {
 
-//! Receiver pipeline.
-class Receiver : public sndio::ISource,
-                 public packet::IWriter,
-                 public core::NonCopyable<> {
+//! Receiver source pipeline.
+//! @remarks
+//   - input: packets
+//!  - output: frames
+class ReceiverSource : public sndio::ISource,
+                       public packet::IWriter,
+                       public core::NonCopyable<> {
 public:
     //! Initialize.
-    Receiver(const ReceiverConfig& config,
-             const fec::CodecMap& codec_map,
-             const rtp::FormatMap& format_map,
-             packet::PacketPool& packet_pool,
-             core::BufferPool<uint8_t>& byte_buffer_pool,
-             core::BufferPool<audio::sample_t>& sample_buffer_pool,
-             core::IAllocator& allocator);
+    ReceiverSource(const ReceiverConfig& config,
+                   const fec::CodecMap& codec_map,
+                   const rtp::FormatMap& format_map,
+                   packet::PacketPool& packet_pool,
+                   core::BufferPool<uint8_t>& byte_buffer_pool,
+                   core::BufferPool<audio::sample_t>& sample_buffer_pool,
+                   core::IAllocator& allocator);
 
     //! Check if the pipeline was successfully constructed.
     bool valid();
@@ -132,4 +135,4 @@ private:
 } // namespace pipeline
 } // namespace roc
 
-#endif // ROC_PIPELINE_RECEIVER_H_
+#endif // ROC_PIPELINE_RECEIVER_SOURCE_H_

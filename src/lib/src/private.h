@@ -25,8 +25,8 @@
 #include "roc_netio/transceiver.h"
 #include "roc_packet/iwriter.h"
 #include "roc_packet/packet_pool.h"
-#include "roc_pipeline/receiver.h"
-#include "roc_pipeline/sender.h"
+#include "roc_pipeline/receiver_source.h"
+#include "roc_pipeline/sender_sink.h"
 #include "roc_rtp/format_map.h"
 
 const roc::address::SocketAddr& get_address(const roc_address* address);
@@ -70,7 +70,7 @@ struct roc_sender {
     roc::pipeline::PortConfig source_port;
     roc::pipeline::PortConfig repair_port;
 
-    roc::core::ScopedPtr<roc::pipeline::Sender> sender;
+    roc::core::ScopedPtr<roc::pipeline::SenderSink> sender;
     roc::packet::IWriter* writer;
 
     roc::address::SocketAddr address;
@@ -88,7 +88,7 @@ struct roc_receiver {
     roc::fec::CodecMap codec_map;
     roc::rtp::FormatMap format_map;
 
-    roc::pipeline::Receiver receiver;
+    roc::pipeline::ReceiverSource receiver;
 
     size_t num_channels;
 
