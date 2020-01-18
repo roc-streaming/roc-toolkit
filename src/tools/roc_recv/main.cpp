@@ -16,7 +16,7 @@
 #include "roc_core/log.h"
 #include "roc_core/parse_duration.h"
 #include "roc_core/scoped_destructor.h"
-#include "roc_core/unique_ptr.h"
+#include "roc_core/scoped_ptr.h"
 #include "roc_netio/transceiver.h"
 #include "roc_pipeline/parse_port.h"
 #include "roc_pipeline/receiver.h"
@@ -250,7 +250,7 @@ int main(int argc, char** argv) {
         }
     }
 
-    core::UniquePtr<sndio::ISink> sink(
+    core::ScopedPtr<sndio::ISink> sink(
         sndio::BackendDispatcher::instance().open_sink(allocator, output, args.format_arg,
                                                        sink_config),
         allocator);

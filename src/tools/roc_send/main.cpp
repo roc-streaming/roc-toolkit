@@ -15,7 +15,7 @@
 #include "roc_core/log.h"
 #include "roc_core/parse_duration.h"
 #include "roc_core/scoped_destructor.h"
-#include "roc_core/unique_ptr.h"
+#include "roc_core/scoped_ptr.h"
 #include "roc_netio/transceiver.h"
 #include "roc_pipeline/parse_port.h"
 #include "roc_pipeline/port_utils.h"
@@ -232,7 +232,7 @@ int main(int argc, char** argv) {
         }
     }
 
-    core::UniquePtr<sndio::ISource> source(
+    core::ScopedPtr<sndio::ISource> source(
         sndio::BackendDispatcher::instance().open_source(allocator, input,
                                                          args.format_arg, source_config),
         allocator);

@@ -21,8 +21,8 @@
 #include "roc_core/buffer_pool.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/noncopyable.h"
+#include "roc_core/scoped_ptr.h"
 #include "roc_core/ticker.h"
-#include "roc_core/unique_ptr.h"
 #include "roc_fec/codec_map.h"
 #include "roc_fec/iblock_encoder.h"
 #include "roc_fec/writer.h"
@@ -66,26 +66,26 @@ public:
     virtual void write(audio::Frame& frame);
 
 private:
-    core::UniquePtr<SenderPort> source_port_;
-    core::UniquePtr<SenderPort> repair_port_;
+    core::ScopedPtr<SenderPort> source_port_;
+    core::ScopedPtr<SenderPort> repair_port_;
 
-    core::UniquePtr<packet::Router> router_;
+    core::ScopedPtr<packet::Router> router_;
 
-    core::UniquePtr<packet::Interleaver> interleaver_;
+    core::ScopedPtr<packet::Interleaver> interleaver_;
 
-    core::UniquePtr<fec::IBlockEncoder> fec_encoder_;
-    core::UniquePtr<fec::Writer> fec_writer_;
+    core::ScopedPtr<fec::IBlockEncoder> fec_encoder_;
+    core::ScopedPtr<fec::Writer> fec_writer_;
 
-    core::UniquePtr<audio::IFrameEncoder> payload_encoder_;
-    core::UniquePtr<audio::Packetizer> packetizer_;
+    core::ScopedPtr<audio::IFrameEncoder> payload_encoder_;
+    core::ScopedPtr<audio::Packetizer> packetizer_;
 
-    core::UniquePtr<audio::PoisonWriter> resampler_poisoner_;
-    core::UniquePtr<audio::ResamplerWriter> resampler_writer_;
-    core::UniquePtr<audio::IResampler> resampler_;
+    core::ScopedPtr<audio::PoisonWriter> resampler_poisoner_;
+    core::ScopedPtr<audio::ResamplerWriter> resampler_writer_;
+    core::ScopedPtr<audio::IResampler> resampler_;
 
-    core::UniquePtr<audio::PoisonWriter> pipeline_poisoner_;
+    core::ScopedPtr<audio::PoisonWriter> pipeline_poisoner_;
 
-    core::UniquePtr<core::Ticker> ticker_;
+    core::ScopedPtr<core::Ticker> ticker_;
 
     audio::IWriter* audio_writer_;
 
