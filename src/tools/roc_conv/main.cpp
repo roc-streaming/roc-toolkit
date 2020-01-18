@@ -14,7 +14,7 @@
 #include "roc_core/log.h"
 #include "roc_core/scoped_destructor.h"
 #include "roc_core/scoped_ptr.h"
-#include "roc_pipeline/converter.h"
+#include "roc_pipeline/converter_sink.h"
 #include "roc_sndio/backend_dispatcher.h"
 #include "roc_sndio/print_supported.h"
 #include "roc_sndio/pump.h"
@@ -192,7 +192,7 @@ int main(int argc, char** argv) {
         output_writer = sink.get();
     }
 
-    pipeline::Converter converter(config, output_writer, pool, allocator);
+    pipeline::ConverterSink converter(config, output_writer, pool, allocator);
     if (!converter.valid()) {
         roc_log(LogError, "can't create converter pipeline");
         return 1;
