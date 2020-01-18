@@ -10,7 +10,7 @@
 #include "roc_core/attributes.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
-#include "roc_core/unique_ptr.h"
+#include "roc_core/scoped_ptr.h"
 #include "roc_packet/fec_scheme_to_str.h"
 
 #ifdef ROC_TARGET_OPENFEC
@@ -27,7 +27,7 @@ template <class I, class T>
 ROC_ATTR_UNUSED I* ctor_func(const CodecConfig& config,
                              core::BufferPool<uint8_t>& pool,
                              core::IAllocator& allocator) {
-    core::UniquePtr<T> codec(new (allocator) T(config, pool, allocator), allocator);
+    core::ScopedPtr<T> codec(new (allocator) T(config, pool, allocator), allocator);
     if (!codec || !codec->valid()) {
         return NULL;
     }

@@ -11,7 +11,7 @@
 #include "roc_core/helpers.h"
 #include "roc_core/log.h"
 #include "roc_core/scoped_lock.h"
-#include "roc_core/unique_ptr.h"
+#include "roc_core/scoped_ptr.h"
 #include "roc_sndio/sox_backend.h"
 #include "roc_sndio/sox_sink.h"
 #include "roc_sndio/sox_source.h"
@@ -239,7 +239,7 @@ ISink* SoxBackend::open_sink(core::IAllocator& allocator,
         return NULL;
     }
 
-    core::UniquePtr<SoxSink> sink(new (allocator) SoxSink(allocator, config), allocator);
+    core::ScopedPtr<SoxSink> sink(new (allocator) SoxSink(allocator, config), allocator);
     if (!sink) {
         return NULL;
     }
@@ -269,7 +269,7 @@ ISource* SoxBackend::open_source(core::IAllocator& allocator,
         return NULL;
     }
 
-    core::UniquePtr<SoxSource> source(new (allocator) SoxSource(allocator, config),
+    core::ScopedPtr<SoxSource> source(new (allocator) SoxSource(allocator, config),
                                       allocator);
     if (!source) {
         return NULL;

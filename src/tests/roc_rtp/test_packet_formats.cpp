@@ -11,7 +11,7 @@
 #include "roc_core/buffer_pool.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_core/stddefs.h"
-#include "roc_core/unique_ptr.h"
+#include "roc_core/scoped_ptr.h"
 #include "roc_packet/packet_pool.h"
 #include "roc_rtp/composer.h"
 #include "roc_rtp/format_map.h"
@@ -191,7 +191,7 @@ TEST_GROUP(packet_formats) {
         const Format* format = format_map.format(packet->rtp()->payload_type);
         CHECK(format);
 
-        core::UniquePtr<audio::IFrameDecoder> decoder(format->new_decoder(allocator),
+        core::ScopedPtr<audio::IFrameDecoder> decoder(format->new_decoder(allocator),
                                                       allocator);
         CHECK(decoder);
 
@@ -216,7 +216,7 @@ TEST_GROUP(packet_formats) {
         const Format* format = format_map.format(pi.pt);
         CHECK(format);
 
-        core::UniquePtr<audio::IFrameEncoder> encoder(format->new_encoder(allocator),
+        core::ScopedPtr<audio::IFrameEncoder> encoder(format->new_encoder(allocator),
                                                       allocator);
         CHECK(encoder);
 

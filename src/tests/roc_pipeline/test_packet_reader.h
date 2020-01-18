@@ -14,7 +14,7 @@
 #include "roc_audio/iframe_decoder.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/noncopyable.h"
-#include "roc_core/unique_ptr.h"
+#include "roc_core/scoped_ptr.h"
 #include "roc_packet/iparser.h"
 #include "roc_packet/ireader.h"
 #include "roc_packet/packet_pool.h"
@@ -106,7 +106,7 @@ private:
     packet::IReader& reader_;
 
     packet::IParser& parser_;
-    core::UniquePtr<audio::IFrameDecoder> payload_decoder_;
+    core::ScopedPtr<audio::IFrameDecoder> payload_decoder_;
 
     packet::PacketPool& packet_pool_;
 
