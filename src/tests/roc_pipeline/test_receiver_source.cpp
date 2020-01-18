@@ -13,7 +13,7 @@
 #include "roc_core/heap_allocator.h"
 #include "roc_fec/codec_map.h"
 #include "roc_packet/packet_pool.h"
-#include "roc_pipeline/receiver.h"
+#include "roc_pipeline/receiver_source.h"
 #include "roc_rtp/composer.h"
 #include "roc_rtp/format_map.h"
 
@@ -58,7 +58,7 @@ rtp::Composer rtp_composer(NULL);
 
 } // namespace
 
-TEST_GROUP(receiver) {
+TEST_GROUP(receiver_source) {
     ReceiverConfig config;
 
     address::SocketAddr src1;
@@ -103,9 +103,9 @@ TEST_GROUP(receiver) {
     }
 };
 
-TEST(receiver, no_sessions) {
-    Receiver receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
-                      sample_buffer_pool, allocator);
+TEST(receiver_source, no_sessions) {
+    ReceiverSource receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
+                            sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
 
@@ -118,9 +118,9 @@ TEST(receiver, no_sessions) {
     }
 }
 
-TEST(receiver, no_ports) {
-    Receiver receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
-                      sample_buffer_pool, allocator);
+TEST(receiver_source, no_ports) {
+    ReceiverSource receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
+                            sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
 
@@ -142,9 +142,9 @@ TEST(receiver, no_ports) {
     }
 }
 
-TEST(receiver, one_session) {
-    Receiver receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
-                      sample_buffer_pool, allocator);
+TEST(receiver_source, one_session) {
+    ReceiverSource receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
+                            sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
     CHECK(receiver.add_port(port1));
@@ -167,11 +167,11 @@ TEST(receiver, one_session) {
     }
 }
 
-TEST(receiver, one_session_long_run) {
+TEST(receiver_source, one_session_long_run) {
     enum { NumIterations = 10 };
 
-    Receiver receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
-                      sample_buffer_pool, allocator);
+    ReceiverSource receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
+                            sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
     CHECK(receiver.add_port(port1));
@@ -196,9 +196,9 @@ TEST(receiver, one_session_long_run) {
     }
 }
 
-TEST(receiver, initial_latency) {
-    Receiver receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
-                      sample_buffer_pool, allocator);
+TEST(receiver_source, initial_latency) {
+    ReceiverSource receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
+                            sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
     CHECK(receiver.add_port(port1));
@@ -229,9 +229,9 @@ TEST(receiver, initial_latency) {
     }
 }
 
-TEST(receiver, initial_latency_timeout) {
-    Receiver receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
-                      sample_buffer_pool, allocator);
+TEST(receiver_source, initial_latency_timeout) {
+    ReceiverSource receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
+                            sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
     CHECK(receiver.add_port(port1));
@@ -256,9 +256,9 @@ TEST(receiver, initial_latency_timeout) {
     UNSIGNED_LONGS_EQUAL(0, receiver.num_sessions());
 }
 
-TEST(receiver, timeout) {
-    Receiver receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
-                      sample_buffer_pool, allocator);
+TEST(receiver_source, timeout) {
+    ReceiverSource receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
+                            sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
     CHECK(receiver.add_port(port1));
@@ -283,9 +283,9 @@ TEST(receiver, timeout) {
     }
 }
 
-TEST(receiver, initial_trim) {
-    Receiver receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
-                      sample_buffer_pool, allocator);
+TEST(receiver_source, initial_trim) {
+    ReceiverSource receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
+                            sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
     CHECK(receiver.add_port(port1));
@@ -310,9 +310,9 @@ TEST(receiver, initial_trim) {
     }
 }
 
-TEST(receiver, two_sessions_synchronous) {
-    Receiver receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
-                      sample_buffer_pool, allocator);
+TEST(receiver_source, two_sessions_synchronous) {
+    ReceiverSource receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
+                            sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
     CHECK(receiver.add_port(port1));
@@ -344,9 +344,9 @@ TEST(receiver, two_sessions_synchronous) {
     }
 }
 
-TEST(receiver, two_sessions_overlapping) {
-    Receiver receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
-                      sample_buffer_pool, allocator);
+TEST(receiver_source, two_sessions_overlapping) {
+    ReceiverSource receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
+                            sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
     CHECK(receiver.add_port(port1));
@@ -388,9 +388,9 @@ TEST(receiver, two_sessions_overlapping) {
     }
 }
 
-TEST(receiver, two_sessions_two_ports) {
-    Receiver receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
-                      sample_buffer_pool, allocator);
+TEST(receiver_source, two_sessions_two_ports) {
+    ReceiverSource receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
+                            sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
 
@@ -424,9 +424,9 @@ TEST(receiver, two_sessions_two_ports) {
     }
 }
 
-TEST(receiver, two_sessions_same_address_same_stream) {
-    Receiver receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
-                      sample_buffer_pool, allocator);
+TEST(receiver_source, two_sessions_same_address_same_stream) {
+    ReceiverSource receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
+                            sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
 
@@ -465,9 +465,9 @@ TEST(receiver, two_sessions_same_address_same_stream) {
     }
 }
 
-TEST(receiver, two_sessions_same_address_different_streams) {
-    Receiver receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
-                      sample_buffer_pool, allocator);
+TEST(receiver_source, two_sessions_same_address_different_streams) {
+    ReceiverSource receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
+                            sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
 
@@ -508,9 +508,9 @@ TEST(receiver, two_sessions_same_address_different_streams) {
     }
 }
 
-TEST(receiver, seqnum_overflow) {
-    Receiver receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
-                      sample_buffer_pool, allocator);
+TEST(receiver_source, seqnum_overflow) {
+    ReceiverSource receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
+                            sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
     CHECK(receiver.add_port(port1));
@@ -531,11 +531,11 @@ TEST(receiver, seqnum_overflow) {
     }
 }
 
-TEST(receiver, seqnum_small_jump) {
+TEST(receiver_source, seqnum_small_jump) {
     enum { SmallJump = 5 };
 
-    Receiver receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
-                      sample_buffer_pool, allocator);
+    ReceiverSource receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
+                            sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
     CHECK(receiver.add_port(port1));
@@ -564,9 +564,9 @@ TEST(receiver, seqnum_small_jump) {
     }
 }
 
-TEST(receiver, seqnum_large_jump) {
-    Receiver receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
-                      sample_buffer_pool, allocator);
+TEST(receiver_source, seqnum_large_jump) {
+    ReceiverSource receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
+                            sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
     CHECK(receiver.add_port(port1));
@@ -599,11 +599,11 @@ TEST(receiver, seqnum_large_jump) {
     }
 }
 
-TEST(receiver, seqnum_reorder) {
+TEST(receiver_source, seqnum_reorder) {
     enum { ReorderWindow = Latency / SamplesPerPacket };
 
-    Receiver receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
-                      sample_buffer_pool, allocator);
+    ReceiverSource receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
+                            sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
     CHECK(receiver.add_port(port1));
@@ -631,11 +631,11 @@ TEST(receiver, seqnum_reorder) {
     }
 }
 
-TEST(receiver, seqnum_late) {
+TEST(receiver_source, seqnum_late) {
     enum { DelayedPackets = 5 };
 
-    Receiver receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
-                      sample_buffer_pool, allocator);
+    ReceiverSource receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
+                            sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
     CHECK(receiver.add_port(port1));
@@ -681,9 +681,9 @@ TEST(receiver, seqnum_late) {
     frame_reader.read_samples(SamplesPerFrame * NumCh, 0);
 }
 
-TEST(receiver, timestamp_overflow) {
-    Receiver receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
-                      sample_buffer_pool, allocator);
+TEST(receiver_source, timestamp_overflow) {
+    ReceiverSource receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
+                            sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
     CHECK(receiver.add_port(port1));
@@ -706,11 +706,11 @@ TEST(receiver, timestamp_overflow) {
     }
 }
 
-TEST(receiver, timestamp_small_jump) {
+TEST(receiver_source, timestamp_small_jump) {
     enum { ShiftedPackets = 5 };
 
-    Receiver receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
-                      sample_buffer_pool, allocator);
+    ReceiverSource receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
+                            sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
     CHECK(receiver.add_port(port1));
@@ -747,9 +747,9 @@ TEST(receiver, timestamp_small_jump) {
     }
 }
 
-TEST(receiver, timestamp_large_jump) {
-    Receiver receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
-                      sample_buffer_pool, allocator);
+TEST(receiver_source, timestamp_large_jump) {
+    ReceiverSource receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
+                            sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
     CHECK(receiver.add_port(port1));
@@ -776,11 +776,11 @@ TEST(receiver, timestamp_large_jump) {
     }
 }
 
-TEST(receiver, timestamp_overlap) {
+TEST(receiver_source, timestamp_overlap) {
     enum { OverlappedSamples = SamplesPerPacket / 2 };
 
-    Receiver receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
-                      sample_buffer_pool, allocator);
+    ReceiverSource receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
+                            sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
     CHECK(receiver.add_port(port1));
@@ -803,9 +803,9 @@ TEST(receiver, timestamp_overlap) {
     }
 }
 
-TEST(receiver, timestamp_reorder) {
-    Receiver receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
-                      sample_buffer_pool, allocator);
+TEST(receiver_source, timestamp_reorder) {
+    ReceiverSource receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
+                            sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
     CHECK(receiver.add_port(port1));
@@ -848,11 +848,11 @@ TEST(receiver, timestamp_reorder) {
     }
 }
 
-TEST(receiver, timestamp_late) {
+TEST(receiver_source, timestamp_late) {
     enum { DelayedPackets = 5 };
 
-    Receiver receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
-                      sample_buffer_pool, allocator);
+    ReceiverSource receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
+                            sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
     CHECK(receiver.add_port(port1));
@@ -901,15 +901,15 @@ TEST(receiver, timestamp_late) {
     frame_reader.read_samples(SamplesPerFrame * NumCh, 0);
 }
 
-TEST(receiver, packet_size_small) {
+TEST(receiver_source, packet_size_small) {
     enum {
         SmallPacketsPerFrame = 2,
         SamplesPerSmallPacket = SamplesPerFrame / SmallPacketsPerFrame,
         ManySmallPackets = Latency / SamplesPerSmallPacket * 10
     };
 
-    Receiver receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
-                      sample_buffer_pool, allocator);
+    ReceiverSource receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
+                            sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
     CHECK(receiver.add_port(port1));
@@ -930,15 +930,15 @@ TEST(receiver, packet_size_small) {
     }
 }
 
-TEST(receiver, packet_size_large) {
+TEST(receiver_source, packet_size_large) {
     enum {
         FramesPerLargePacket = 2,
         SamplesPerLargePacket = SamplesPerFrame * FramesPerLargePacket,
         ManyLargePackets = Latency / SamplesPerLargePacket * 10
     };
 
-    Receiver receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
-                      sample_buffer_pool, allocator);
+    ReceiverSource receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
+                            sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
     CHECK(receiver.add_port(port1));
@@ -959,7 +959,7 @@ TEST(receiver, packet_size_large) {
     }
 }
 
-TEST(receiver, packet_size_variable) {
+TEST(receiver_source, packet_size_variable) {
     enum {
         SmallPacketsPerFrame = 2,
         SamplesPerSmallPacket = SamplesPerFrame / SmallPacketsPerFrame,
@@ -972,8 +972,8 @@ TEST(receiver, packet_size_variable) {
         NumIterations = Latency / SamplesPerTwoPackets * 10
     };
 
-    Receiver receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
-                      sample_buffer_pool, allocator);
+    ReceiverSource receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
+                            sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
     CHECK(receiver.add_port(port1));
@@ -997,9 +997,9 @@ TEST(receiver, packet_size_variable) {
     }
 }
 
-TEST(receiver, corrupted_packets_new_session) {
-    Receiver receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
-                      sample_buffer_pool, allocator);
+TEST(receiver_source, corrupted_packets_new_session) {
+    ReceiverSource receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
+                            sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
     CHECK(receiver.add_port(port1));
@@ -1024,9 +1024,9 @@ TEST(receiver, corrupted_packets_new_session) {
     }
 }
 
-TEST(receiver, corrupted_packets_existing_session) {
-    Receiver receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
-                      sample_buffer_pool, allocator);
+TEST(receiver_source, corrupted_packets_existing_session) {
+    ReceiverSource receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
+                            sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
     CHECK(receiver.add_port(port1));
@@ -1072,9 +1072,9 @@ TEST(receiver, corrupted_packets_existing_session) {
     }
 }
 
-TEST(receiver, status) {
-    Receiver receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
-                      sample_buffer_pool, allocator);
+TEST(receiver_source, status) {
+    ReceiverSource receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
+                            sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
     CHECK(receiver.add_port(port1));

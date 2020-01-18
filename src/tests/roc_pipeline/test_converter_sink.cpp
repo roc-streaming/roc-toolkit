@@ -10,7 +10,7 @@
 
 #include "roc_core/buffer_pool.h"
 #include "roc_core/heap_allocator.h"
-#include "roc_pipeline/converter.h"
+#include "roc_pipeline/converter_sink.h"
 
 #include "test_frame_checker.h"
 #include "test_frame_writer.h"
@@ -36,7 +36,7 @@ core::BufferPool<audio::sample_t> sample_buffer_pool(allocator, MaxBufSize, true
 
 } // namespace
 
-TEST_GROUP(converter) {
+TEST_GROUP(converter_sink) {
     ConverterConfig config;
 
     void setup() {
@@ -53,8 +53,8 @@ TEST_GROUP(converter) {
     }
 };
 
-TEST(converter, null) {
-    Converter converter(config, NULL, sample_buffer_pool, allocator);
+TEST(converter_sink, null) {
+    ConverterSink converter(config, NULL, sample_buffer_pool, allocator);
     CHECK(converter.valid());
 
     FrameWriter frame_writer(converter, sample_buffer_pool);
@@ -64,10 +64,10 @@ TEST(converter, null) {
     }
 }
 
-TEST(converter, write) {
+TEST(converter_sink, write) {
     FrameChecker frame_checker;
 
-    Converter converter(config, &frame_checker, sample_buffer_pool, allocator);
+    ConverterSink converter(config, &frame_checker, sample_buffer_pool, allocator);
     CHECK(converter.valid());
 
     FrameWriter frame_writer(converter, sample_buffer_pool);
@@ -80,12 +80,12 @@ TEST(converter, write) {
     frame_checker.expect_samples(ManyFrames * SamplesPerFrame * NumCh);
 }
 
-TEST(converter, frame_size_small) {
+TEST(converter_sink, frame_size_small) {
     enum { SamplesPerSmallFrame = SamplesPerFrame / 2 - 3 };
 
     FrameChecker frame_checker;
 
-    Converter converter(config, &frame_checker, sample_buffer_pool, allocator);
+    ConverterSink converter(config, &frame_checker, sample_buffer_pool, allocator);
     CHECK(converter.valid());
 
     FrameWriter frame_writer(converter, sample_buffer_pool);
@@ -98,12 +98,12 @@ TEST(converter, frame_size_small) {
     frame_checker.expect_samples(ManyFrames * SamplesPerSmallFrame * NumCh);
 }
 
-TEST(converter, frame_size_large) {
+TEST(converter_sink, frame_size_large) {
     enum { SamplesPerLargeFrame = SamplesPerFrame * 2 + 3 };
 
     FrameChecker frame_checker;
 
-    Converter converter(config, &frame_checker, sample_buffer_pool, allocator);
+    ConverterSink converter(config, &frame_checker, sample_buffer_pool, allocator);
     CHECK(converter.valid());
 
     FrameWriter frame_writer(converter, sample_buffer_pool);

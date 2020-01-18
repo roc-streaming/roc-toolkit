@@ -19,7 +19,7 @@ namespace {
 
 bool sender_init_pipeline(roc_sender* sender) {
     sender->sender.reset(
-        new (sender->context.allocator) pipeline::Sender(
+        new (sender->context.allocator) pipeline::SenderSink(
             sender->config, sender->source_port, *sender->writer, sender->repair_port,
             *sender->writer, sender->codec_map, sender->format_map,
             sender->context.packet_pool, sender->context.byte_buffer_pool,

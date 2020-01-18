@@ -19,7 +19,7 @@
 #include "roc_core/scoped_ptr.h"
 #include "roc_netio/transceiver.h"
 #include "roc_pipeline/parse_port.h"
-#include "roc_pipeline/receiver.h"
+#include "roc_pipeline/receiver_source.h"
 #include "roc_sndio/backend_dispatcher.h"
 #include "roc_sndio/print_supported.h"
 #include "roc_sndio/pump.h"
@@ -273,8 +273,8 @@ int main(int argc, char** argv) {
     fec::CodecMap codec_map;
     rtp::FormatMap format_map;
 
-    pipeline::Receiver receiver(config, codec_map, format_map, packet_pool,
-                                byte_buffer_pool, sample_buffer_pool, allocator);
+    pipeline::ReceiverSource receiver(config, codec_map, format_map, packet_pool,
+                                      byte_buffer_pool, sample_buffer_pool, allocator);
     if (!receiver.valid()) {
         roc_log(LogError, "can't create receiver pipeline");
         return 1;
