@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_pipeline/receiver.h"
+#include "roc_pipeline/receiver_source.h"
 #include "roc_address/socket_addr_to_str.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
@@ -16,13 +16,13 @@
 namespace roc {
 namespace pipeline {
 
-Receiver::Receiver(const ReceiverConfig& config,
-                   const fec::CodecMap& codec_map,
-                   const rtp::FormatMap& format_map,
-                   packet::PacketPool& packet_pool,
-                   core::BufferPool<uint8_t>& byte_buffer_pool,
-                   core::BufferPool<audio::sample_t>& sample_buffer_pool,
-                   core::IAllocator& allocator)
+ReceiverSource::ReceiverSource(const ReceiverConfig& config,
+                               const fec::CodecMap& codec_map,
+                               const rtp::FormatMap& format_map,
+                               packet::PacketPool& packet_pool,
+                               core::BufferPool<uint8_t>& byte_buffer_pool,
+                               core::BufferPool<audio::sample_t>& sample_buffer_pool,
+                               core::IAllocator& allocator)
     : codec_map_(codec_map)
     , format_map_(format_map)
     , packet_pool_(packet_pool)
@@ -53,11 +53,11 @@ Receiver::Receiver(const ReceiverConfig& config,
     audio_reader_ = areader;
 }
 
-bool Receiver::valid() {
+bool ReceiverSource::valid() {
     return audio_reader_;
 }
 
-bool Receiver::add_port(const PortConfig& config) {
+bool ReceiverSource::add_port(const PortConfig& config) {
     roc_log(LogInfo, "receiver: adding port %s", port_to_str(config).c_str());
 
     core::Mutex::Lock lock(control_mutex_);
@@ -74,21 +74,21 @@ bool Receiver::add_port(const PortConfig& config) {
     return true;
 }
 
-size_t Receiver::num_sessions() const {
+size_t ReceiverSource::num_sessions() const {
     core::Mutex::Lock lock(control_mutex_);
 
     return sessions_.size();
 }
 
-size_t Receiver::sample_rate() const {
+size_t ReceiverSource::sample_rate() const {
     return config_.common.output_sample_rate;
 }
 
-bool Receiver::has_clock() const {
+bool ReceiverSource::has_clock() const {
     return config_.common.timing;
 }
 
-sndio::ISource::State Receiver::state() const {
+sndio::ISource::State ReceiverSource::state() const {
     core::Mutex::Lock lock(control_mutex_);
 
     if (sessions_.size() != 0) {
@@ -102,25 +102,25 @@ sndio::ISource::State Receiver::state() const {
     return Inactive;
 }
 
-void Receiver::pause() {
+void ReceiverSource::pause() {
     // no-op
 }
 
-bool Receiver::resume() {
+bool ReceiverSource::resume() {
     return true;
 }
 
-bool Receiver::restart() {
+bool ReceiverSource::restart() {
     return true;
 }
 
-void Receiver::write(const packet::PacketPtr& packet) {
+void ReceiverSource::write(const packet::PacketPtr& packet) {
     core::Mutex::Lock lock(control_mutex_);
 
     packets_.push_back(*packet);
 }
 
-bool Receiver::read(audio::Frame& frame) {
+bool ReceiverSource::read(audio::Frame& frame) {
     core::Mutex::Lock lock(pipeline_mutex_);
 
     if (config_.common.timing) {
@@ -135,14 +135,14 @@ bool Receiver::read(audio::Frame& frame) {
     return true;
 }
 
-void Receiver::prepare_() {
+void ReceiverSource::prepare_() {
     core::Mutex::Lock lock(control_mutex_);
 
     fetch_packets_();
     update_sessions_();
 }
 
-void Receiver::fetch_packets_() {
+void ReceiverSource::fetch_packets_() {
     for (;;) {
         packet::PacketPtr packet = packets_.front();
         if (!packet) {
@@ -161,7 +161,7 @@ void Receiver::fetch_packets_() {
     }
 }
 
-bool Receiver::parse_packet_(const packet::PacketPtr& packet) {
+bool ReceiverSource::parse_packet_(const packet::PacketPtr& packet) {
     core::SharedPtr<ReceiverPort> port;
 
     for (port = ports_.front(); port; port = ports_.nextof(*port)) {
@@ -175,7 +175,7 @@ bool Receiver::parse_packet_(const packet::PacketPtr& packet) {
     return false;
 }
 
-bool Receiver::route_packet_(const packet::PacketPtr& packet) {
+bool ReceiverSource::route_packet_(const packet::PacketPtr& packet) {
     core::SharedPtr<ReceiverSession> sess;
 
     for (sess = sessions_.front(); sess; sess = sessions_.nextof(*sess)) {
@@ -191,7 +191,7 @@ bool Receiver::route_packet_(const packet::PacketPtr& packet) {
     return create_session_(packet);
 }
 
-bool Receiver::can_create_session_(const packet::PacketPtr& packet) {
+bool ReceiverSource::can_create_session_(const packet::PacketPtr& packet) {
     if (packet->flags() & packet::Packet::FlagRepair) {
         roc_log(LogDebug, "receiver: ignoring repair packet for unknown session");
         return false;
@@ -200,7 +200,7 @@ bool Receiver::can_create_session_(const packet::PacketPtr& packet) {
     return true;
 }
 
-bool Receiver::create_session_(const packet::PacketPtr& packet) {
+bool ReceiverSource::create_session_(const packet::PacketPtr& packet) {
     if (!packet->udp()) {
         roc_log(LogError, "receiver: can't create session, unexpected non-udp packet");
         return false;
@@ -240,14 +240,14 @@ bool Receiver::create_session_(const packet::PacketPtr& packet) {
     return true;
 }
 
-void Receiver::remove_session_(ReceiverSession& sess) {
+void ReceiverSource::remove_session_(ReceiverSession& sess) {
     roc_log(LogInfo, "receiver: removing session");
 
     mixer_->remove(sess.reader());
     sessions_.remove(sess);
 }
 
-void Receiver::update_sessions_() {
+void ReceiverSource::update_sessions_() {
     core::SharedPtr<ReceiverSession> curr, next;
 
     for (curr = sessions_.front(); curr; curr = next) {
@@ -260,7 +260,7 @@ void Receiver::update_sessions_() {
 }
 
 ReceiverSessionConfig
-Receiver::make_session_config_(const packet::PacketPtr& packet) const {
+ReceiverSource::make_session_config_(const packet::PacketPtr& packet) const {
     ReceiverSessionConfig sess_config = config_.default_session;
 
     packet::RTP* rtp = packet->rtp();
