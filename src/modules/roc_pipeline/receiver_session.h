@@ -25,7 +25,7 @@
 #include "roc_core/iallocator.h"
 #include "roc_core/list_node.h"
 #include "roc_core/refcnt.h"
-#include "roc_core/unique_ptr.h"
+#include "roc_core/scoped_ptr.h"
 #include "roc_fec/codec_map.h"
 #include "roc_fec/iblock_decoder.h"
 #include "roc_fec/reader.h"
@@ -87,30 +87,30 @@ private:
 
     audio::IReader* audio_reader_;
 
-    core::UniquePtr<packet::Router> queue_router_;
+    core::ScopedPtr<packet::Router> queue_router_;
 
-    core::UniquePtr<packet::SortedQueue> source_queue_;
-    core::UniquePtr<packet::SortedQueue> repair_queue_;
+    core::ScopedPtr<packet::SortedQueue> source_queue_;
+    core::ScopedPtr<packet::SortedQueue> repair_queue_;
 
-    core::UniquePtr<packet::DelayedReader> delayed_reader_;
-    core::UniquePtr<rtp::Validator> validator_;
-    core::UniquePtr<audio::Watchdog> watchdog_;
+    core::ScopedPtr<packet::DelayedReader> delayed_reader_;
+    core::ScopedPtr<rtp::Validator> validator_;
+    core::ScopedPtr<audio::Watchdog> watchdog_;
 
-    core::UniquePtr<rtp::Parser> fec_parser_;
-    core::UniquePtr<fec::IBlockDecoder> fec_decoder_;
-    core::UniquePtr<fec::Reader> fec_reader_;
-    core::UniquePtr<rtp::Validator> fec_validator_;
+    core::ScopedPtr<rtp::Parser> fec_parser_;
+    core::ScopedPtr<fec::IBlockDecoder> fec_decoder_;
+    core::ScopedPtr<fec::Reader> fec_reader_;
+    core::ScopedPtr<rtp::Validator> fec_validator_;
 
-    core::UniquePtr<audio::IFrameDecoder> payload_decoder_;
-    core::UniquePtr<audio::Depacketizer> depacketizer_;
+    core::ScopedPtr<audio::IFrameDecoder> payload_decoder_;
+    core::ScopedPtr<audio::Depacketizer> depacketizer_;
 
-    core::UniquePtr<audio::PoisonReader> resampler_poisoner_;
-    core::UniquePtr<audio::ResamplerReader> resampler_reader;
-    core::UniquePtr<audio::IResampler> resampler_;
+    core::ScopedPtr<audio::PoisonReader> resampler_poisoner_;
+    core::ScopedPtr<audio::ResamplerReader> resampler_reader;
+    core::ScopedPtr<audio::IResampler> resampler_;
 
-    core::UniquePtr<audio::PoisonReader> session_poisoner_;
+    core::ScopedPtr<audio::PoisonReader> session_poisoner_;
 
-    core::UniquePtr<audio::LatencyMonitor> latency_monitor_;
+    core::ScopedPtr<audio::LatencyMonitor> latency_monitor_;
 };
 
 } // namespace pipeline

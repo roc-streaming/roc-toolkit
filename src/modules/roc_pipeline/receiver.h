@@ -20,7 +20,7 @@
 #include "roc_core/list.h"
 #include "roc_core/mutex.h"
 #include "roc_core/noncopyable.h"
-#include "roc_core/unique_ptr.h"
+#include "roc_core/scoped_ptr.h"
 #include "roc_fec/codec_map.h"
 #include "roc_packet/ireader.h"
 #include "roc_packet/iwriter.h"
@@ -115,8 +115,8 @@ private:
 
     core::Ticker ticker_;
 
-    core::UniquePtr<audio::Mixer> mixer_;
-    core::UniquePtr<audio::PoisonReader> poisoner_;
+    core::ScopedPtr<audio::Mixer> mixer_;
+    core::ScopedPtr<audio::PoisonReader> poisoner_;
 
     audio::IReader* audio_reader_;
 
