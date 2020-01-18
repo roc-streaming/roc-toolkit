@@ -26,6 +26,7 @@ namespace roc {
 namespace core {
 
 namespace {
+
 char const* colors_to_levels(LogLevel level) {
     char const* color = COLOR_NONE;
     switch (level) {
@@ -44,6 +45,7 @@ char const* colors_to_levels(LogLevel level) {
     }
     return color;
 }
+
 } // namespace
 
 bool colors_available() {
