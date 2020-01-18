@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_pipeline/sender.h"
+#include "roc_pipeline/sender_sink.h"
 #include "roc_audio/resampler_map.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
@@ -16,17 +16,17 @@
 namespace roc {
 namespace pipeline {
 
-Sender::Sender(const SenderConfig& config,
-               const PortConfig& source_port_config,
-               packet::IWriter& source_writer,
-               const PortConfig& repair_port_config,
-               packet::IWriter& repair_writer,
-               const fec::CodecMap& codec_map,
-               const rtp::FormatMap& format_map,
-               packet::PacketPool& packet_pool,
-               core::BufferPool<uint8_t>& byte_buffer_pool,
-               core::BufferPool<audio::sample_t>& sample_buffer_pool,
-               core::IAllocator& allocator)
+SenderSink::SenderSink(const SenderConfig& config,
+                       const PortConfig& source_port_config,
+                       packet::IWriter& source_writer,
+                       const PortConfig& repair_port_config,
+                       packet::IWriter& repair_writer,
+                       const fec::CodecMap& codec_map,
+                       const rtp::FormatMap& format_map,
+                       packet::PacketPool& packet_pool,
+                       core::BufferPool<uint8_t>& byte_buffer_pool,
+                       core::BufferPool<audio::sample_t>& sample_buffer_pool,
+                       core::IAllocator& allocator)
     : audio_writer_(NULL)
     , config_(config)
     , timestamp_(0)
@@ -177,19 +177,19 @@ Sender::Sender(const SenderConfig& config,
     audio_writer_ = awriter;
 }
 
-bool Sender::valid() {
+bool SenderSink::valid() {
     return audio_writer_;
 }
 
-size_t Sender::sample_rate() const {
+size_t SenderSink::sample_rate() const {
     return config_.input_sample_rate;
 }
 
-bool Sender::has_clock() const {
+bool SenderSink::has_clock() const {
     return config_.timing;
 }
 
-void Sender::write(audio::Frame& frame) {
+void SenderSink::write(audio::Frame& frame) {
     roc_panic_if(!valid());
 
     if (ticker_) {
