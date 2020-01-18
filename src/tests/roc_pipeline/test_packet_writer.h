@@ -14,7 +14,7 @@
 #include "roc_audio/iframe_encoder.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/noncopyable.h"
-#include "roc_core/unique_ptr.h"
+#include "roc_core/scoped_ptr.h"
 #include "roc_packet/icomposer.h"
 #include "roc_packet/iwriter.h"
 #include "roc_packet/packet_pool.h"
@@ -164,7 +164,7 @@ private:
     packet::IWriter& writer_;
 
     packet::IComposer& composer_;
-    core::UniquePtr<audio::IFrameEncoder> payload_encoder_;
+    core::ScopedPtr<audio::IFrameEncoder> payload_encoder_;
 
     packet::PacketPool& packet_pool_;
     core::BufferPool<uint8_t>& buffer_pool_;

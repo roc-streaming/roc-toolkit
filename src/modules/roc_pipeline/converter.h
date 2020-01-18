@@ -20,7 +20,7 @@
 #include "roc_audio/resampler_profile.h"
 #include "roc_audio/resampler_writer.h"
 #include "roc_core/buffer_pool.h"
-#include "roc_core/unique_ptr.h"
+#include "roc_core/scoped_ptr.h"
 #include "roc_pipeline/config.h"
 #include "roc_sndio/isink.h"
 
@@ -51,13 +51,13 @@ public:
 private:
     audio::NullWriter null_writer_;
 
-    core::UniquePtr<audio::PoisonWriter> resampler_poisoner_;
-    core::UniquePtr<audio::ResamplerWriter> resampler_writer_;
-    core::UniquePtr<audio::IResampler> resampler_;
+    core::ScopedPtr<audio::PoisonWriter> resampler_poisoner_;
+    core::ScopedPtr<audio::ResamplerWriter> resampler_writer_;
+    core::ScopedPtr<audio::IResampler> resampler_;
 
-    core::UniquePtr<audio::ProfilingWriter> profiler_;
+    core::ScopedPtr<audio::ProfilingWriter> profiler_;
 
-    core::UniquePtr<audio::PoisonWriter> pipeline_poisoner_;
+    core::ScopedPtr<audio::PoisonWriter> pipeline_poisoner_;
 
     audio::IWriter* audio_writer_;
 
