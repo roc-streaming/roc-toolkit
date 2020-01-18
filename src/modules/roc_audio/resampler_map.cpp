@@ -24,7 +24,7 @@ IResampler* ResamplerMap::new_resampler(ResamplerBackend resampler_backend,
             resampler_backend);
     }
 
-    core::UniquePtr<IResampler> resampler;
+    core::ScopedPtr<IResampler> resampler;
     switch (resampler_backend) {
     case ResamplerBackend_Builtin:
         resampler.reset(new (allocator)

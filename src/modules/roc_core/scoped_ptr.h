@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_core/unique_ptr.h
+//! @file roc_core/scoped_ptr.h
 //! @brief Unique ownrship pointer.
 
-#ifndef ROC_CORE_UNIQUE_PTR_H_
-#define ROC_CORE_UNIQUE_PTR_H_
+#ifndef ROC_CORE_SCOPED_PTR_H_
+#define ROC_CORE_SCOPED_PTR_H_
 
 #include "roc_core/iallocator.h"
 #include "roc_core/noncopyable.h"
@@ -24,22 +24,22 @@ namespace core {
 //!
 //! @tparam T defines pointee type. It may be const.
 //! @tparam Destroyer is used to destroy the object.
-template <class T, class Destroyer = IAllocator> class UniquePtr : public NonCopyable<> {
+template <class T, class Destroyer = IAllocator> class ScopedPtr : public NonCopyable<> {
 public:
     //! Initialize null pointer.
-    UniquePtr()
+    ScopedPtr()
         : ptr_(NULL)
         , destroyer_() {
     }
 
     //! Initialize from a raw pointer.
-    UniquePtr(T* ptr, Destroyer& destroyer)
+    ScopedPtr(T* ptr, Destroyer& destroyer)
         : ptr_(ptr)
         , destroyer_(&destroyer) {
     }
 
     //! Destroy object.
-    ~UniquePtr() {
+    ~ScopedPtr() {
         destroy_();
     }
 
@@ -108,4 +108,4 @@ private:
 } // namespace core
 } // namespace roc
 
-#endif // ROC_CORE_UNIQUE_PTR_H_
+#endif // ROC_CORE_SCOPED_PTR_H_
