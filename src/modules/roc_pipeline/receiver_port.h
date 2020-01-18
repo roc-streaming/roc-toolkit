@@ -15,7 +15,7 @@
 #include "roc_core/iallocator.h"
 #include "roc_core/list_node.h"
 #include "roc_core/refcnt.h"
-#include "roc_core/unique_ptr.h"
+#include "roc_core/scoped_ptr.h"
 #include "roc_packet/iparser.h"
 #include "roc_pipeline/config.h"
 #include "roc_rtp/format_map.h"
@@ -56,8 +56,8 @@ private:
 
     packet::IParser* parser_;
 
-    core::UniquePtr<rtp::Parser> rtp_parser_;
-    core::UniquePtr<packet::IParser> fec_parser_;
+    core::ScopedPtr<rtp::Parser> rtp_parser_;
+    core::ScopedPtr<packet::IParser> fec_parser_;
 };
 
 } // namespace pipeline

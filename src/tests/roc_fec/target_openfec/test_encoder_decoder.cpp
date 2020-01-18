@@ -15,7 +15,7 @@
 #include "roc_core/heap_allocator.h"
 #include "roc_core/log.h"
 #include "roc_core/random.h"
-#include "roc_core/unique_ptr.h"
+#include "roc_core/scoped_ptr.h"
 #include "roc_fec/codec_map.h"
 
 namespace roc {
@@ -93,8 +93,8 @@ private:
         return buf;
     }
 
-    core::UniquePtr<IBlockEncoder> encoder_;
-    core::UniquePtr<IBlockDecoder> decoder_;
+    core::ScopedPtr<IBlockEncoder> encoder_;
+    core::ScopedPtr<IBlockDecoder> decoder_;
 
     core::Array<core::Slice<uint8_t> > buffers_;
 };
