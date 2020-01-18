@@ -13,7 +13,7 @@
 #include "roc_core/heap_allocator.h"
 #include "roc_core/log.h"
 #include "roc_core/scoped_destructor.h"
-#include "roc_core/unique_ptr.h"
+#include "roc_core/scoped_ptr.h"
 #include "roc_pipeline/converter.h"
 #include "roc_sndio/backend_dispatcher.h"
 #include "roc_sndio/print_supported.h"
@@ -99,7 +99,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    core::UniquePtr<sndio::ISource> source(
+    core::ScopedPtr<sndio::ISource> source(
         sndio::BackendDispatcher::instance().open_source(
             allocator, input, args.input_format_arg, source_config),
         allocator);
@@ -176,7 +176,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    core::UniquePtr<sndio::ISink> sink;
+    core::ScopedPtr<sndio::ISink> sink;
     if (args.output_given) {
         sink.reset(sndio::BackendDispatcher::instance().open_sink(
                        allocator, output, args.output_format_arg, sink_config),

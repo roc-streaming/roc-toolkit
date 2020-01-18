@@ -16,8 +16,8 @@
 
 #include "roc_core/iallocator.h"
 #include "roc_core/noncopyable.h"
+#include "roc_core/scoped_ptr.h"
 #include "roc_core/stddefs.h"
-#include "roc_core/unique_ptr.h"
 #include "roc_packet/units.h"
 #include "roc_sndio/config.h"
 #include "roc_sndio/isink.h"
@@ -69,7 +69,7 @@ private:
 
     core::IAllocator& allocator_;
 
-    core::UniquePtr<sox_sample_t> buffer_;
+    core::ScopedPtr<sox_sample_t> buffer_;
     const size_t buffer_size_;
 
     bool is_file_;
