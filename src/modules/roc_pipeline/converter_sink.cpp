@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_pipeline/converter.h"
+#include "roc_pipeline/converter_sink.h"
 #include "roc_audio/resampler_map.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
@@ -14,10 +14,10 @@
 namespace roc {
 namespace pipeline {
 
-Converter::Converter(const ConverterConfig& config,
-                     audio::IWriter* output_writer,
-                     core::BufferPool<audio::sample_t>& pool,
-                     core::IAllocator& allocator)
+ConverterSink::ConverterSink(const ConverterConfig& config,
+                             audio::IWriter* output_writer,
+                             core::BufferPool<audio::sample_t>& pool,
+                             core::IAllocator& allocator)
     : audio_writer_(NULL)
     , config_(config) {
     audio::IWriter* awriter = output_writer;
@@ -81,19 +81,19 @@ Converter::Converter(const ConverterConfig& config,
     audio_writer_ = awriter;
 }
 
-bool Converter::valid() {
+bool ConverterSink::valid() {
     return audio_writer_;
 }
 
-size_t Converter::sample_rate() const {
+size_t ConverterSink::sample_rate() const {
     return config_.output_sample_rate;
 }
 
-bool Converter::has_clock() const {
+bool ConverterSink::has_clock() const {
     return false;
 }
 
-void Converter::write(audio::Frame& frame) {
+void ConverterSink::write(audio::Frame& frame) {
     roc_panic_if(!valid());
 
     audio_writer_->write(frame);
