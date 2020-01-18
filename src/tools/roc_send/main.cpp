@@ -19,7 +19,7 @@
 #include "roc_netio/transceiver.h"
 #include "roc_pipeline/parse_port.h"
 #include "roc_pipeline/port_utils.h"
-#include "roc_pipeline/sender.h"
+#include "roc_pipeline/sender_sink.h"
 #include "roc_sndio/backend_dispatcher.h"
 #include "roc_sndio/print_supported.h"
 #include "roc_sndio/pump.h"
@@ -276,9 +276,9 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    pipeline::Sender sender(config, source_port, *udp_sender, repair_port, *udp_sender,
-                            codec_map, format_map, packet_pool, byte_buffer_pool,
-                            sample_buffer_pool, allocator);
+    pipeline::SenderSink sender(config, source_port, *udp_sender, repair_port,
+                                *udp_sender, codec_map, format_map, packet_pool,
+                                byte_buffer_pool, sample_buffer_pool, allocator);
     if (!sender.valid()) {
         roc_log(LogError, "can't create sender pipeline");
         return 1;
