@@ -13,7 +13,7 @@
 #include "roc_audio/pcm_funcs.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/heap_allocator.h"
-#include "roc_core/unique_ptr.h"
+#include "roc_core/scoped_ptr.h"
 
 namespace roc {
 namespace audio {
@@ -134,10 +134,10 @@ TEST(encoder_decoder, one_frame) {
     enum { Timestamp = 100500, SamplesPerFrame = 177 };
 
     for (size_t n_codec = 0; n_codec < NumCodecs; n_codec++) {
-        core::UniquePtr<IFrameEncoder> encoder(new_encoder(n_codec), allocator);
+        core::ScopedPtr<IFrameEncoder> encoder(new_encoder(n_codec), allocator);
         CHECK(encoder);
 
-        core::UniquePtr<IFrameDecoder> decoder(new_decoder(n_codec), allocator);
+        core::ScopedPtr<IFrameDecoder> decoder(new_decoder(n_codec), allocator);
         CHECK(decoder);
 
         core::Slice<uint8_t> bp = new_buffer(encoder->encoded_size(SamplesPerFrame));
@@ -180,10 +180,10 @@ TEST(encoder_decoder, multiple_frames) {
     enum { NumFrames = 20, SamplesPerFrame = 177 };
 
     for (size_t n_codec = 0; n_codec < NumCodecs; n_codec++) {
-        core::UniquePtr<IFrameEncoder> encoder(new_encoder(n_codec), allocator);
+        core::ScopedPtr<IFrameEncoder> encoder(new_encoder(n_codec), allocator);
         CHECK(encoder);
 
-        core::UniquePtr<IFrameDecoder> decoder(new_decoder(n_codec), allocator);
+        core::ScopedPtr<IFrameDecoder> decoder(new_decoder(n_codec), allocator);
         CHECK(decoder);
 
         packet::timestamp_t ts = 100500;
@@ -240,10 +240,10 @@ TEST(encoder_decoder, incomplete_frames) {
     };
 
     for (size_t n_codec = 0; n_codec < NumCodecs; n_codec++) {
-        core::UniquePtr<IFrameEncoder> encoder(new_encoder(n_codec), allocator);
+        core::ScopedPtr<IFrameEncoder> encoder(new_encoder(n_codec), allocator);
         CHECK(encoder);
 
-        core::UniquePtr<IFrameDecoder> decoder(new_decoder(n_codec), allocator);
+        core::ScopedPtr<IFrameDecoder> decoder(new_decoder(n_codec), allocator);
         CHECK(decoder);
 
         packet::timestamp_t ts = 100500;
@@ -299,10 +299,10 @@ TEST(encoder_decoder, shifted_frames) {
     enum { NumFrames = 20, SamplesPerFrame = 177, Shift = 55 };
 
     for (size_t n_codec = 0; n_codec < NumCodecs; n_codec++) {
-        core::UniquePtr<IFrameEncoder> encoder(new_encoder(n_codec), allocator);
+        core::ScopedPtr<IFrameEncoder> encoder(new_encoder(n_codec), allocator);
         CHECK(encoder);
 
-        core::UniquePtr<IFrameDecoder> decoder(new_decoder(n_codec), allocator);
+        core::ScopedPtr<IFrameDecoder> decoder(new_decoder(n_codec), allocator);
         CHECK(decoder);
 
         packet::timestamp_t ts = 100500;
@@ -362,10 +362,10 @@ TEST(encoder_decoder, skipped_frames) {
     enum { NumFrames = 20, SkipEvery = 3, SamplesPerFrame = 177 };
 
     for (size_t n_codec = 0; n_codec < NumCodecs; n_codec++) {
-        core::UniquePtr<IFrameEncoder> encoder(new_encoder(n_codec), allocator);
+        core::ScopedPtr<IFrameEncoder> encoder(new_encoder(n_codec), allocator);
         CHECK(encoder);
 
-        core::UniquePtr<IFrameDecoder> decoder(new_decoder(n_codec), allocator);
+        core::ScopedPtr<IFrameDecoder> decoder(new_decoder(n_codec), allocator);
         CHECK(decoder);
 
         packet::timestamp_t ts = 100500;
@@ -430,10 +430,10 @@ TEST(encoder_decoder, write_incrementally) {
     };
 
     for (size_t n_codec = 0; n_codec < NumCodecs; n_codec++) {
-        core::UniquePtr<IFrameEncoder> encoder(new_encoder(n_codec), allocator);
+        core::ScopedPtr<IFrameEncoder> encoder(new_encoder(n_codec), allocator);
         CHECK(encoder);
 
-        core::UniquePtr<IFrameDecoder> decoder(new_decoder(n_codec), allocator);
+        core::ScopedPtr<IFrameDecoder> decoder(new_decoder(n_codec), allocator);
         CHECK(decoder);
 
         core::Slice<uint8_t> bp = new_buffer(encoder->encoded_size(SamplesPerFrame));
@@ -477,10 +477,10 @@ TEST(encoder_decoder, write_too_much) {
     enum { Timestamp = 100500, SamplesPerFrame = 177 };
 
     for (size_t n_codec = 0; n_codec < NumCodecs; n_codec++) {
-        core::UniquePtr<IFrameEncoder> encoder(new_encoder(n_codec), allocator);
+        core::ScopedPtr<IFrameEncoder> encoder(new_encoder(n_codec), allocator);
         CHECK(encoder);
 
-        core::UniquePtr<IFrameDecoder> decoder(new_decoder(n_codec), allocator);
+        core::ScopedPtr<IFrameDecoder> decoder(new_decoder(n_codec), allocator);
         CHECK(decoder);
 
         core::Slice<uint8_t> bp = new_buffer(encoder->encoded_size(SamplesPerFrame));
@@ -525,10 +525,10 @@ TEST(encoder_decoder, write_channel_mask) {
     };
 
     for (size_t n_codec = 0; n_codec < NumCodecs; n_codec++) {
-        core::UniquePtr<IFrameEncoder> encoder(new_encoder(n_codec), allocator);
+        core::ScopedPtr<IFrameEncoder> encoder(new_encoder(n_codec), allocator);
         CHECK(encoder);
 
-        core::UniquePtr<IFrameDecoder> decoder(new_decoder(n_codec), allocator);
+        core::ScopedPtr<IFrameDecoder> decoder(new_decoder(n_codec), allocator);
         CHECK(decoder);
 
         core::Slice<uint8_t> bp = new_buffer(encoder->encoded_size(SamplesPerFrame));
@@ -611,10 +611,10 @@ TEST(encoder_decoder, read_incrementally) {
     };
 
     for (size_t n_codec = 0; n_codec < NumCodecs; n_codec++) {
-        core::UniquePtr<IFrameEncoder> encoder(new_encoder(n_codec), allocator);
+        core::ScopedPtr<IFrameEncoder> encoder(new_encoder(n_codec), allocator);
         CHECK(encoder);
 
-        core::UniquePtr<IFrameDecoder> decoder(new_decoder(n_codec), allocator);
+        core::ScopedPtr<IFrameDecoder> decoder(new_decoder(n_codec), allocator);
         CHECK(decoder);
 
         core::Slice<uint8_t> bp = new_buffer(encoder->encoded_size(SamplesPerFrame));
@@ -676,10 +676,10 @@ TEST(encoder_decoder, read_too_much) {
     enum { Timestamp = 100500, SamplesPerFrame = 177 };
 
     for (size_t n_codec = 0; n_codec < NumCodecs; n_codec++) {
-        core::UniquePtr<IFrameEncoder> encoder(new_encoder(n_codec), allocator);
+        core::ScopedPtr<IFrameEncoder> encoder(new_encoder(n_codec), allocator);
         CHECK(encoder);
 
-        core::UniquePtr<IFrameDecoder> decoder(new_decoder(n_codec), allocator);
+        core::ScopedPtr<IFrameDecoder> decoder(new_decoder(n_codec), allocator);
         CHECK(decoder);
 
         core::Slice<uint8_t> bp = new_buffer(encoder->encoded_size(SamplesPerFrame));
@@ -726,10 +726,10 @@ TEST(encoder_decoder, read_channel_mask) {
     };
 
     for (size_t n_codec = 0; n_codec < NumCodecs; n_codec++) {
-        core::UniquePtr<IFrameEncoder> encoder(new_encoder(n_codec), allocator);
+        core::ScopedPtr<IFrameEncoder> encoder(new_encoder(n_codec), allocator);
         CHECK(encoder);
 
-        core::UniquePtr<IFrameDecoder> decoder(new_decoder(n_codec), allocator);
+        core::ScopedPtr<IFrameDecoder> decoder(new_decoder(n_codec), allocator);
         CHECK(decoder);
 
         core::Slice<uint8_t> bp = new_buffer(encoder->encoded_size(SamplesPerFrame));
@@ -820,10 +820,10 @@ TEST(encoder_decoder, shift_incrementally) {
     };
 
     for (size_t n_codec = 0; n_codec < NumCodecs; n_codec++) {
-        core::UniquePtr<IFrameEncoder> encoder(new_encoder(n_codec), allocator);
+        core::ScopedPtr<IFrameEncoder> encoder(new_encoder(n_codec), allocator);
         CHECK(encoder);
 
-        core::UniquePtr<IFrameDecoder> decoder(new_decoder(n_codec), allocator);
+        core::ScopedPtr<IFrameDecoder> decoder(new_decoder(n_codec), allocator);
         CHECK(decoder);
 
         core::Slice<uint8_t> bp = new_buffer(encoder->encoded_size(SamplesPerFrame));

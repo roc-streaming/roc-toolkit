@@ -14,8 +14,8 @@
 #include "roc_core/buffer_pool.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_core/random.h"
+#include "roc_core/scoped_ptr.h"
 #include "roc_core/stddefs.h"
-#include "roc_core/unique_ptr.h"
 
 #include "test_awgn.h"
 #include "test_fft.h"
@@ -108,7 +108,7 @@ TEST(resampler, invalid_scaling) {
         ResamplerBackend backend = Test_resampler_backends[n_backend];
 
         MockReader reader;
-        core::UniquePtr<IResampler> resampler(
+        core::ScopedPtr<IResampler> resampler(
             resampler_map.new_resampler(backend, allocator, config, ChMask, FrameSize),
             allocator);
         CHECK(resampler);
@@ -126,7 +126,7 @@ TEST(resampler, upscaling_twice_single) {
         ResamplerBackend backend = Test_resampler_backends[n_backend];
 
         MockReader reader;
-        core::UniquePtr<IResampler> resampler(
+        core::ScopedPtr<IResampler> resampler(
             resampler_map.new_resampler(backend, allocator, config, ChMask, FrameSize),
             allocator);
         CHECK(resampler);
@@ -164,7 +164,7 @@ TEST(resampler, upscaling_twice_awgn) {
         ResamplerBackend backend = Test_resampler_backends[n_backend];
 
         MockReader reader;
-        core::UniquePtr<IResampler> resampler(
+        core::ScopedPtr<IResampler> resampler(
             resampler_map.new_resampler(backend, allocator, config, ChMask, FrameSize),
             allocator);
         CHECK(resampler);
@@ -212,7 +212,7 @@ TEST(resampler, downsample) {
         ResamplerBackend backend = Test_resampler_backends[n_backend];
 
         MockReader reader;
-        core::UniquePtr<IResampler> resampler(
+        core::ScopedPtr<IResampler> resampler(
             resampler_map.new_resampler(backend, allocator, config, ChMask, FrameSize),
             allocator);
         CHECK(resampler);
@@ -249,7 +249,7 @@ TEST(resampler, two_tones_sep_channels) {
         ResamplerBackend backend = Test_resampler_backends[n_backend];
 
         MockReader reader;
-        core::UniquePtr<IResampler> resampler(
+        core::ScopedPtr<IResampler> resampler(
             resampler_map.new_resampler(backend, allocator, config, ChMask, FrameSize),
             allocator);
         CHECK(resampler);
