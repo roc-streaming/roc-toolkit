@@ -35,7 +35,7 @@ namespace audio {
     
 
 
-class SpeexResampler : public IResampler {
+class SpeexResampler : public IResampler, public core::NonCopyable<>  {
 public:
     SpeexResampler(core::IAllocator& allocator,
                    const ResamplerConfig& config,
@@ -55,7 +55,6 @@ public:
     ~SpeexResampler();
 
 private:
-    core::IAllocator& allocator;
     const packet::channel_mask_t channel_mask_;
     const size_t channels_num_;
 
@@ -68,6 +67,7 @@ private:
     sample_t* next_frame_;
 
     size_t out_frame_pos_;
+    size_t in_offset;
 
     float scaling_;
 
@@ -78,7 +78,6 @@ private:
     float output_sample_rate_;
     float sample_rate_multiplier_;
 
-    int counter;
     bool valid_;
 
 

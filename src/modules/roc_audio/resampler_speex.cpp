@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Roc authors
+ * Copyright (c) 2019 Roc authors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -11,6 +11,8 @@
 #include "roc_core/panic.h"
 #include "roc_core/stddefs.h"
 
+#include <iostream>
+
 namespace roc {
 namespace audio {
 
@@ -18,18 +20,17 @@ SpeexResampler::SpeexResampler(core::IAllocator& allocator,
                                const ResamplerConfig& config,
                                packet::channel_mask_t channels,
                                size_t frame_size)
-    : allocator(allocator)
-    , channel_mask_(channels)
+    : channel_mask_(channels)
     , channels_num_(packet::num_channels(channel_mask_))
     , speex_state(NULL)
     , prev_frame_(NULL)
     , curr_frame_(NULL)
     , next_frame_(NULL)
     , out_frame_pos_(0)
+    , in_offset(0)
     , scaling_(1.0)
     , frame_size_(frame_size)
     , frame_size_ch_(channels_num_ ? frame_size / channels_num_ : 0)
-    , counter(0) // delete me
     , valid_(false) {
         if(!check_config_()){
             return;
@@ -40,7 +41,7 @@ SpeexResampler::SpeexResampler(core::IAllocator& allocator,
 
 SpeexResampler::~SpeexResampler() {
     if (speex_state) {
-        free(speex_state);
+        speex_resampler_destroy(speex_state);
     }
 }
 
@@ -51,14 +52,11 @@ bool SpeexResampler::valid() const {
 bool SpeexResampler::refresh_state() {
     int err_init;
     if (speex_state) {
-        free(speex_state);
+        speex_resampler_destroy(speex_state);
     }
-    // speex_resampler_init does a C calloc(), SpeexResampler does not have a destructor,
-    // then it can't be managed by a UniquePtr (it calls the destructor of the managed
-    // object) maybe a solution would be creating a C++ wrapper for these calls and
-    // SpeexResampler (having a destructor with 'free(speex_state)') ?
+
     speex_state =
-        speex_resampler_init(channels_num_, input_sample_rate_ * sample_rate_multiplier_,
+        speex_resampler_init(1, input_sample_rate_ * sample_rate_multiplier_,
                              output_sample_rate_, 5, &err_init);
     return err_init == 0;
 };
@@ -69,21 +67,55 @@ bool SpeexResampler::set_scaling(float input_sample_rate,
     input_sample_rate_ = input_sample_rate;
     output_sample_rate_ = output_sample_rate;
     sample_rate_multiplier_ = multiplier;
-    refresh_state();
-    return true;
+    
+    return refresh_state();
 }
 
 bool SpeexResampler::resample_buff(Frame& out) {
+    roc_panic_if(!prev_frame_);
+    roc_panic_if(!curr_frame_);
+    roc_panic_if(!next_frame_);
+
     sample_t* out_data = out.data();
     sample_t* in_data = curr_frame_;
 
     spx_uint32_t in_len_val = frame_size_;
-    spx_uint32_t out_len_val = out.size();
+    spx_uint32_t out_len_val = out.size() - out_frame_pos_;
 
-    int err = speex_resampler_process_interleaved_float(speex_state, in_data, &in_len_val,
-                                                        out_data, &out_len_val);
+    spx_uint32_t remaining_in = in_len_val;
+    spx_uint32_t remaining_out = out_len_val;
 
-    return err == 0;
+    while(out_frame_pos_ < out_len_val && remaining_out > 0){
+        // remaining_in after this call is the number of input processed samples, the same happens to remaining_out
+        int err = speex_resampler_process_interleaved_float(speex_state, in_data + in_offset,  &remaining_in, out_data + out_frame_pos_, &remaining_out);
+        roc_panic_if(err);
+
+        in_offset += remaining_in;
+        out_frame_pos_ += remaining_out;
+        //std::cout << "rem in " << remaining_in << std::endl;
+
+        remaining_in = in_len_val > in_offset ? in_len_val - in_offset : 0;
+        remaining_out = out_len_val > out_frame_pos_ ? out_len_val - out_frame_pos_ : 0;
+        /*
+        std::cout << "remaining_in = " << remaining_in << ", remaining_out = " << remaining_out 
+        << ", out_frame_pos_ = " << out_frame_pos_ << ", in_offset = " << in_offset << ", out_len_val = " << out_len_val
+        << ", in_len_val = " << in_len_val  << std::endl;
+        */
+        /*
+        if(in_offset > in_len_val || out_frame_pos_ > out_len_val){
+            roc_panic("speex wrote out of bounds mem!!");
+        }*/
+
+        if(remaining_in == 0){
+            //std::cout << "FALSE" << std::endl;
+            in_offset = 0;
+            return false;
+        }
+    }
+    out_frame_pos_ = 0;
+    //std::cout << "TRUE" << std::endl;
+    return true;
+    
 }
 
 void SpeexResampler::renew_buffers(core::Slice<sample_t>& prev,
