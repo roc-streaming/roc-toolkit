@@ -198,6 +198,9 @@ int main(int argc, char** argv) {
         break;
     }
 
+    config.default_session.resampler_quality =
+        args.resampler_quality_given ? args.resampler_quality_arg : 0;
+
     switch ((unsigned)args.resampler_profile_arg) {
     case resampler_profile_arg_low:
         receiver_config.default_session.resampler =

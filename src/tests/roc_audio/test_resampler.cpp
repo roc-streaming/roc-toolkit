@@ -33,7 +33,9 @@ enum {
     FrameSize = 512,
 
     OutSamples = FrameSize * 100 + 1,
-    InSamples = OutSamples + (FrameSize * 3)
+    InSamples = OutSamples + (FrameSize * 3),
+
+    ResamplerQuality = 0
 };
 
 core::HeapAllocator allocator;
@@ -110,7 +112,8 @@ TEST(resampler, invalid_scaling) {
         test::MockReader reader;
         core::ScopedPtr<IResampler> resampler(
             ResamplerMap::instance().new_resampler(backend, allocator, config,
-                                                   FrameDuration, InSamples, ChMask),
+                                                   FrameDuration, InSamples, ChMask,
+                                                   ResamplerQuality),
             allocator);
         CHECK(resampler);
         ResamplerReader rr(reader, *resampler, buffer_pool, FrameDuration, InSamples,
@@ -130,10 +133,12 @@ TEST(resampler, upscaling_twice_single) {
         const core::nanoseconds_t FrameDuration =
             FrameSize * core::Second / (InSamples * packet::num_channels(ChMask));
 
+
         test::MockReader reader;
         core::ScopedPtr<IResampler> resampler(
             ResamplerMap::instance().new_resampler(backend, allocator, config,
-                                                   FrameDuration, InSamples, ChMask),
+                                                   FrameDuration, InSamples, ChMask,
+                                                   ResamplerQuality),
             allocator);
         CHECK(resampler);
         ResamplerReader rr(reader, *resampler, buffer_pool, FrameDuration, InSamples,
@@ -177,7 +182,8 @@ TEST(resampler, upscaling_twice_awgn) {
         test::MockReader reader;
         core::ScopedPtr<IResampler> resampler(
             ResamplerMap::instance().new_resampler(backend, allocator, config,
-                                                   FrameDuration, InSamples, ChMask),
+                                                   FrameDuration, InSamples, ChMask,
+                                                   ResamplerQuality),
             allocator);
         CHECK(resampler);
         ResamplerReader rr(reader, *resampler, buffer_pool, FrameDuration, InSamples,
@@ -231,7 +237,8 @@ TEST(resampler, downsample) {
         test::MockReader reader;
         core::ScopedPtr<IResampler> resampler(
             ResamplerMap::instance().new_resampler(backend, allocator, config,
-                                                   FrameDuration, InSamples, ChMask),
+                                                   FrameDuration, InSamples, ChMask,
+                                                   ResamplerQuality),
             allocator);
         CHECK(resampler);
         ResamplerReader rr(reader, *resampler, buffer_pool, FrameDuration, InSamples,
@@ -272,10 +279,10 @@ TEST(resampler, two_tones_sep_channels) {
         ResamplerBackend backend = ResamplerMap::instance().nth_backend(n_back);
 
         test::MockReader reader;
-        core::ScopedPtr<IResampler> resampler(
-            ResamplerMap::instance().new_resampler(backend, allocator, config,
-                                                   FrameDuration, InSamples, ChMask),
-            allocator);
+        core::ScopedPtr<IResampler> resampler(ResamplerMap::instance().new_resampler(
+            backend, allocator, config, FrameDuration, InSamples, ChMask,
+            ResamplerQuality);
+                                              allocator);
         CHECK(resampler);
         ResamplerReader rr(reader, *resampler, buffer_pool, FrameDuration, InSamples,
                            ChMask);

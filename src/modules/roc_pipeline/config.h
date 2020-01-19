@@ -104,6 +104,10 @@ struct SenderConfig {
     //! To specify which resampling backend will be used.
     audio::ResamplerBackend resampler_backend;
 
+    //! Specifies quality setting for the resampling backend, varies among the differents
+    //! backends
+    int resampler_quality;
+
     //! FEC writer parameters.
     fec::WriterConfig fec_writer;
 
@@ -139,6 +143,7 @@ struct SenderConfig {
 
     SenderConfig()
         : resampler_backend(audio::ResamplerBackend_Builtin)
+        , resampler_quality(0)
         , input_sample_rate(DefaultSampleRate)
         , input_channels(DefaultChannelMask)
         , internal_frame_length(DefaultInternalFrameLength)
@@ -185,11 +190,16 @@ struct ReceiverSessionConfig {
     //! To specify which resampling backend will be used.
     audio::ResamplerBackend resampler_backend;
 
+    //! Specifies quality setting for the resampling backend, varies among the differents
+    //! backends
+    int resampler_quality;
+
     ReceiverSessionConfig()
         : target_latency(DefaultLatency)
         , channels(DefaultChannelMask)
         , payload_type(0)
-        , resampler_backend(audio::ResamplerBackend_Builtin) {
+        , resampler_backend(audio::ResamplerBackend_Builtin)
+        , resampler_quality(0) {
         latency_monitor.min_latency = target_latency * DefaultMinLatencyFactor;
         latency_monitor.max_latency = target_latency * DefaultMaxLatencyFactor;
     }
@@ -251,6 +261,10 @@ struct ConverterConfig {
     //! To specify which resampling backend will be used.
     audio::ResamplerBackend resampler_backend;
 
+    //! Specifies quality setting for the resampling backend, varies among the differents
+    //! backends
+    int resampler_quality;
+
     //! Number of samples per second per channel.
     size_t input_sample_rate;
 
@@ -274,6 +288,7 @@ struct ConverterConfig {
 
     ConverterConfig()
         : resampler_backend(audio::ResamplerBackend_Builtin)
+        , resampler_quality(0)
         , input_sample_rate(DefaultSampleRate)
         , output_sample_rate(DefaultSampleRate)
         , input_channels(DefaultChannelMask)

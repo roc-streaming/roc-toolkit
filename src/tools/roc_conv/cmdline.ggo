@@ -25,6 +25,9 @@ section "Options"
     option "resampler-backend" - "Resampler backend"
         values="builtin","speex" default="builtin" enum optional
 
+    option "resampler-quality" q  "Resampler quality"
+        int optional
+
     option "resampler-profile" - "Resampler profile"
         values="low","medium","high" default="medium" enum optional
 

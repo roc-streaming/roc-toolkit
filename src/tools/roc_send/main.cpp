@@ -190,6 +190,9 @@ int main(int argc, char** argv) {
         break;
     }
 
+    config.resampler_quality =
+        args.resampler_quality_given ? args.resampler_quality_arg : 0;
+
     switch ((unsigned)args.resampler_profile_arg) {
     case resampler_profile_arg_low:
         sender_config.resampler = audio::resampler_profile(audio::ResamplerProfile_Low);

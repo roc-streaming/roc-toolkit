@@ -43,7 +43,8 @@ public:
                               const ResamplerConfig& config,
                               core::nanoseconds_t frame_length,
                               size_t sample_rate,
-                              packet::channel_mask_t channels);
+                              packet::channel_mask_t channels,
+                              int quality);
 
 private:
     friend class core::Singleton<ResamplerMap>;

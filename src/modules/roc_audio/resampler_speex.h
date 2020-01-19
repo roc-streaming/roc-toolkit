@@ -27,20 +27,23 @@
 
 namespace roc {
 namespace audio {
-    namespace {
-        const uint32_t FRACT_BIT_COUNT = 20;
-        typedef int32_t signed_fixedpoint_t;
-        typedef uint32_t fixedpoint_t;
-    };
-    
+namespace {
+const uint32_t FRACT_BIT_COUNT = 20;
+typedef int32_t signed_fixedpoint_t;
+typedef uint32_t fixedpoint_t;
+};
 
-
-class SpeexResampler : public IResampler, public core::NonCopyable<>  {
+//! Resamples audio stream using speex resampler.
+class SpeexResampler : public IResampler, public core::NonCopyable<> {
 public:
+    //! Initialize.
+    //! @remarks
+    //! quality is an integer in the range 0-10 inclusive,
+    //! where 10 is the best quality and 0 is the worst quality
     SpeexResampler(core::IAllocator& allocator,
-                   const ResamplerConfig& config,
                    packet::channel_mask_t channels,
-                   size_t frame_size);
+                   size_t frame_size,
+                   int quality);
 
     bool valid() const;
 
@@ -55,6 +58,8 @@ public:
     ~SpeexResampler();
 
 private:
+    core::BufferPool<sample_t> sr_buffer_pool;
+    const core::IAllocator& allocator;
     const packet::channel_mask_t channel_mask_;
     const size_t channels_num_;
 
@@ -65,6 +70,8 @@ private:
     sample_t* prev_frame_;
     sample_t* curr_frame_;
     sample_t* next_frame_;
+
+    core::Slice<sample_t> mix_frame;
 
     size_t out_frame_pos_;
     size_t in_offset;
@@ -78,8 +85,9 @@ private:
     float output_sample_rate_;
     float sample_rate_multiplier_;
 
-    bool valid_;
+    int quality;
 
+    bool valid_;
 
     bool check_config_() const;
 };

@@ -150,7 +150,7 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
                              session_config.resampler_backend, allocator,
                              session_config.resampler,
                              common_config.internal_frame_length, format->sample_rate,
-                             session_config.channels),
+                             session_config.channels, session_config.resampler_quality),
                          allocator);
 
         if (!resampler_) {
