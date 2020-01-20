@@ -55,7 +55,7 @@ public:
     //!  - @p buffer_pool is used to allocate buffers for repair packets
     //!  - @p allocator is used to initialize a packet array
     Writer(const WriterConfig& config,
-           packet::FECScheme fec_scheme,
+           packet::FecScheme fec_scheme,
            IBlockEncoder& encoder,
            packet::IWriter& writer,
            packet::IComposer& source_composer,
@@ -123,7 +123,7 @@ private:
 
     size_t cur_packet_;
 
-    const packet::FECScheme fec_scheme_;
+    const packet::FecScheme fec_scheme_;
 
     bool valid_;
     bool alive_;

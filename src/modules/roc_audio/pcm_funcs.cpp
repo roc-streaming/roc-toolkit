@@ -116,14 +116,14 @@ size_t pcm_decode_samples(const void* in_data,
 
 } // namespace
 
-const PCMFuncs PCM_int16_1ch = {
+const PcmFuncs PCM_int16_1ch = {
     pcm_samples_from_payload_size<int16_t, 1>,
     pcm_payload_size_from_samples<int16_t, 1>,
     pcm_encode_samples<int16_t, 1>,
     pcm_decode_samples<int16_t, 1>,
 };
 
-const PCMFuncs PCM_int16_2ch = {
+const PcmFuncs PCM_int16_2ch = {
     pcm_samples_from_payload_size<int16_t, 2>,
     pcm_payload_size_from_samples<int16_t, 2>,
     pcm_encode_samples<int16_t, 2>,
