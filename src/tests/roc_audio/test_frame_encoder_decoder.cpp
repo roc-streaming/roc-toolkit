@@ -49,10 +49,10 @@ TEST_GROUP(encoder_decoder) {
     IFrameEncoder* new_encoder(size_t id) {
         switch (id) {
         case Codec_PCM_int16_1ch:
-            return new (allocator) PCMEncoder(PCM_int16_1ch);
+            return new (allocator) PcmEncoder(PCM_int16_1ch);
 
         case Codec_PCM_int16_2ch:
-            return new (allocator) PCMEncoder(PCM_int16_2ch);
+            return new (allocator) PcmEncoder(PCM_int16_2ch);
 
         default:
             FAIL("bad codec id");
@@ -64,10 +64,10 @@ TEST_GROUP(encoder_decoder) {
     IFrameDecoder* new_decoder(size_t id) {
         switch (id) {
         case Codec_PCM_int16_1ch:
-            return new (allocator) PCMDecoder(PCM_int16_1ch);
+            return new (allocator) PcmDecoder(PCM_int16_1ch);
 
         case Codec_PCM_int16_2ch:
-            return new (allocator) PCMDecoder(PCM_int16_2ch);
+            return new (allocator) PcmDecoder(PCM_int16_2ch);
 
         default:
             FAIL("bad codec id");

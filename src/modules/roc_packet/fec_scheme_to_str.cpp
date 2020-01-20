@@ -11,7 +11,7 @@
 namespace roc {
 namespace packet {
 
-const char* fec_scheme_to_str(FECScheme scheme) {
+const char* fec_scheme_to_str(FecScheme scheme) {
     switch (scheme) {
     case FEC_None:
         return "none";

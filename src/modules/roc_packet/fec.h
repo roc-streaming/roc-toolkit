@@ -20,7 +20,7 @@ namespace roc {
 namespace packet {
 
 //! FECFRAME scheme.
-enum FECScheme {
+enum FecScheme {
     //! No FEC.
     FEC_None,
 
@@ -37,7 +37,7 @@ struct FEC {
     //!
     //! @remarks
     //!  Defines both FEC header or footer format and FEC payalod format.
-    FECScheme fec_scheme;
+    FecScheme fec_scheme;
 
     //! The index number of packet in a block.
     //!

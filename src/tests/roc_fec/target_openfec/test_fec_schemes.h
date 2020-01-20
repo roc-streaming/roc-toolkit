@@ -17,7 +17,7 @@ namespace fec {
 
 namespace {
 
-packet::FECScheme Test_fec_schemes[] = { packet::FEC_ReedSolomon_M8,
+packet::FecScheme Test_fec_schemes[] = { packet::FEC_ReedSolomon_M8,
                                          packet::FEC_LDPC_Staircase };
 
 const size_t Test_n_fec_schemes = ROC_ARRAY_SIZE(Test_fec_schemes);
