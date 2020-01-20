@@ -12,13 +12,13 @@
 #ifndef ROC_SNDIO_ISOURCE_H_
 #define ROC_SNDIO_ISOURCE_H_
 
-#include "roc_audio/frame.h"
+#include "roc_audio/ireader.h"
 
 namespace roc {
 namespace sndio {
 
 //! Source interface.
-class ISource {
+class ISource : public audio::IReader {
 public:
     virtual ~ISource();
 
@@ -57,11 +57,6 @@ public:
     //! @returns
     //!  false if an error occured.
     virtual bool restart() = 0;
-
-    //! Read frame.
-    //! @returns
-    //!  false if there is nothing to read anymore.
-    virtual bool read(audio::Frame&) = 0;
 };
 
 } // namespace sndio

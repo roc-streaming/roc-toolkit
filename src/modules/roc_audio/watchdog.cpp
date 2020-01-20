@@ -75,15 +75,17 @@ bool Watchdog::valid() const {
     return valid_;
 }
 
-void Watchdog::read(Frame& frame) {
+bool Watchdog::read(Frame& frame) {
     if (!alive_) {
         if (frame.size() != 0) {
             memset(frame.data(), 0, frame.size() * sizeof(sample_t));
         }
-        return;
+        return true;
     }
 
-    reader_.read(frame);
+    if (!reader_.read(frame)) {
+        return false;
+    }
 
     const packet::timestamp_t next_read_pos =
         packet::timestamp_t(curr_read_pos_ + frame.size() / num_channels_);
@@ -98,6 +100,8 @@ void Watchdog::read(Frame& frame) {
         flush_status_();
         alive_ = false;
     }
+
+    return true;
 }
 
 bool Watchdog::update() {
