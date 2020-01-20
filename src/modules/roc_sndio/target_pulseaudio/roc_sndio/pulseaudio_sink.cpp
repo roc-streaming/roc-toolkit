@@ -100,6 +100,10 @@ size_t PulseaudioSink::sample_rate() const {
     return ret;
 }
 
+size_t PulseaudioSink::num_channels() const {
+    return num_channels_;
+}
+
 bool PulseaudioSink::has_clock() const {
     return true;
 }
