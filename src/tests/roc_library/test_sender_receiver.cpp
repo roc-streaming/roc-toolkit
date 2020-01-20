@@ -403,7 +403,7 @@ TEST_GROUP(sender_receiver) {
         sender_conf.frame_sample_rate = SampleRate;
         sender_conf.frame_channels = ROC_CHANNEL_SET_STEREO;
         sender_conf.frame_encoding = ROC_FRAME_ENCODING_PCM_FLOAT;
-        sender_conf.automatic_timing = 1;
+        sender_conf.clock_source = ROC_CLOCK_INTERNAL;
         sender_conf.resampler_profile = ROC_RESAMPLER_DISABLE;
         sender_conf.packet_length =
             PacketSamples * 1000000000ul / (SampleRate * NumChans);
@@ -419,7 +419,7 @@ TEST_GROUP(sender_receiver) {
         receiver_conf.frame_sample_rate = SampleRate;
         receiver_conf.frame_channels = ROC_CHANNEL_SET_STEREO;
         receiver_conf.frame_encoding = ROC_FRAME_ENCODING_PCM_FLOAT;
-        receiver_conf.automatic_timing = 1;
+        receiver_conf.clock_source = ROC_CLOCK_INTERNAL;
         receiver_conf.resampler_profile = ROC_RESAMPLER_DISABLE;
         receiver_conf.target_latency = Latency * 1000000000ul / SampleRate;
         receiver_conf.no_playback_timeout = Timeout * 1000000000ul / SampleRate;

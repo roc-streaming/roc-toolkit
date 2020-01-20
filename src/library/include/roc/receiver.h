@@ -99,17 +99,17 @@ extern "C" {
  * Receiver should decode samples at a constant rate that is configured when the receiver
  * is created. There are two ways to accomplish this:
  *
- *  - If the user enabled the automatic timing feature, the receiver employs a CPU timer
- *    to block reads until it's time to decode the next bunch of samples according to the
- *    configured sample rate. This mode is useful when the user passes samples to a
- *    non-realtime destination, e.g. to an audio file.
+ *  - If the user enabled internal clock (@c ROC_CLOCK_INTERNAL), the receiver employs a
+ *    CPU timer to block reads until it's time to decode the next bunch of samples
+ *    according to the configured sample rate. This mode is useful when the user passes
+ *    samples to a non-realtime destination, e.g. to an audio file.
  *
- *  - Otherwise, the samples read from the receiver are decoded immediately and the user
- *    is responsible to read samples in time. This mode is useful when the user passes
- *    samples to a realtime destination with its own clock, e.g. to an audio device.
- *    Automatic clocking should not be used in this case because the audio device and the
- *    CPU might have slightly different clocks, and the difference will eventually lead
- *    to an underrun or an overrun.
+ *  - Otherwise (@c ROC_CLOCK_EXTERNAL), the samples read from the receiver are decoded
+ *    immediately and the user is responsible to read samples in time. This mode is
+ *    useful when the user passes samples to a realtime destination with its own clock,
+ *    e.g. to an audio device. Internal clock should not be used in this case because the
+ *    audio device and the CPU might have slightly different clocks, and the difference
+ *    will eventually lead to an underrun or an overrun.
  *
  * @b Thread-safety
  *  - can be used concurrently
