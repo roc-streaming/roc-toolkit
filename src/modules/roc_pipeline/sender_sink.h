@@ -7,7 +7,7 @@
  */
 
 //! @file roc_pipeline/sender_sink.h
-//! @brief Sender pipeline.
+//! @brief Sender sink pipeline.
 
 #ifndef ROC_PIPELINE_SENDER_SINK_H_
 #define ROC_PIPELINE_SENDER_SINK_H_
