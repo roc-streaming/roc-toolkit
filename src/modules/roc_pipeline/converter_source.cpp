@@ -79,6 +79,10 @@ size_t ConverterSource::sample_rate() const {
     return config_.output_sample_rate;
 }
 
+size_t ConverterSource::num_channels() const {
+    return input_source_.num_channels();
+}
+
 bool ConverterSource::has_clock() const {
     return input_source_.has_clock();
 }
