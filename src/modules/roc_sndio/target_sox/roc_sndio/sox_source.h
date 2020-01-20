@@ -52,6 +52,9 @@ public:
     //! Get sample rate of an input file or a device.
     virtual size_t sample_rate() const;
 
+    //! Get number of channels for the source.
+    virtual size_t num_channels() const;
+
     //! Check if the source has own clock.
     virtual bool has_clock() const;
 

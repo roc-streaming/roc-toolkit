@@ -19,7 +19,8 @@ ConverterSink::ConverterSink(const ConverterConfig& config,
                              core::BufferPool<audio::sample_t>& pool,
                              core::IAllocator& allocator)
     : audio_writer_(NULL)
-    , config_(config) {
+    , config_(config)
+    , num_channels_(packet::num_channels(config.output_channels)) {
     audio::IWriter* awriter = output_writer;
     if (!awriter) {
         awriter = &null_writer_;
@@ -87,6 +88,10 @@ bool ConverterSink::valid() {
 
 size_t ConverterSink::sample_rate() const {
     return config_.output_sample_rate;
+}
+
+size_t ConverterSink::num_channels() const {
+    return num_channels_;
 }
 
 bool ConverterSink::has_clock() const {

@@ -84,6 +84,10 @@ size_t ReceiverSource::sample_rate() const {
     return config_.common.output_sample_rate;
 }
 
+size_t ReceiverSource::num_channels() const {
+    return num_channels_;
+}
+
 bool ReceiverSource::has_clock() const {
     return config_.common.timing;
 }
