@@ -70,7 +70,7 @@ bool make_sender_config(pipeline::SenderConfig& out, const roc_sender_config& in
     }
 
     out.interleaving = in.packet_interleaving;
-    out.timing = in.automatic_timing;
+    out.timing = (in.clock_source == ROC_CLOCK_INTERNAL);
 
     out.resampling = (in.resampler_profile != ROC_RESAMPLER_DISABLE);
 
@@ -134,8 +134,7 @@ bool make_receiver_config(pipeline::ReceiverConfig& out, const roc_receiver_conf
         return false;
     }
 
-    out.common.timing = in.automatic_timing;
-
+    out.common.timing = (in.clock_source == ROC_CLOCK_INTERNAL);
     out.common.resampling = (in.resampler_profile != ROC_RESAMPLER_DISABLE);
 
     switch ((int)in.resampler_profile) {
