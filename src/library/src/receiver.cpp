@@ -6,62 +6,53 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "private.h"
+#include "roc/receiver.h"
+
+#include "address_helpers.h"
+#include "config_helpers.h"
 
 #include "roc_core/log.h"
-#include "roc_pipeline/port_to_str.h"
+#include "roc_peer/receiver.h"
 
 using namespace roc;
 
-roc_receiver::roc_receiver(roc_context& ctx, pipeline::ReceiverConfig& cfg)
-    : context(ctx)
-    , receiver(cfg,
-               codec_map,
-               format_map,
-               context.packet_pool,
-               context.byte_buffer_pool,
-               context.sample_buffer_pool,
-               context.allocator)
-    , num_channels(packet::num_channels(cfg.common.output_channels))
-    , addresses(context.allocator) {
-}
-
 roc_receiver* roc_receiver_open(roc_context* context, const roc_receiver_config* config) {
-    roc_log(LogInfo, "roc_receiver: opening receiver");
+    roc_log(LogInfo, "roc_receiver_open: opening receiver");
 
     if (!context) {
         roc_log(LogError, "roc_receiver_open: invalid arguments: context is null");
         return NULL;
     }
 
+    peer::Context* imp_context = (peer::Context*)context;
+
     if (!config) {
         roc_log(LogError, "roc_receiver_open: invalid arguments: config is null");
         return NULL;
     }
 
-    pipeline::ReceiverConfig private_config;
-    if (!make_receiver_config(private_config, *config)) {
+    pipeline::ReceiverConfig imp_config;
+    if (!api::make_receiver_config(imp_config, *config)) {
         roc_log(LogError, "roc_receiver_open: invalid arguments: bad config");
         return NULL;
     }
 
-    core::ScopedPtr<roc_receiver> receiver(new (context->allocator)
-                                               roc_receiver(*context, private_config),
-                                           context->allocator);
+    peer::Receiver* imp_receiver =
+        new (imp_context->allocator()) peer::Receiver(*imp_context, imp_config);
 
-    if (!receiver) {
-        roc_log(LogError, "roc_receiver_open: can't allocate receiver pipeline");
+    if (!imp_receiver) {
+        roc_log(LogError, "roc_receiver_open: can't allocate receiver");
         return NULL;
     }
 
-    if (!receiver->receiver.valid()) {
-        roc_log(LogError, "roc_receiver_open: can't initialize receiver pipeline");
+    if (!imp_receiver->valid()) {
+        roc_log(LogError, "roc_receiver_open: can't initialize receiver");
+
+        delete imp_receiver;
         return NULL;
     }
 
-    ++context->counter;
-
-    return receiver.release();
+    return (roc_receiver*)imp_receiver;
 }
 
 int roc_receiver_bind(roc_receiver* receiver,
@@ -73,41 +64,37 @@ int roc_receiver_bind(roc_receiver* receiver,
         return -1;
     }
 
+    peer::Receiver* imp_receiver = (peer::Receiver*)receiver;
+
     if (!address) {
         roc_log(LogError, "roc_receiver_bind: invalid arguments: address is null");
         return -1;
     }
 
-    address::SocketAddr& addr = get_address(address);
+    address::SocketAddr& addr = api::get_socket_addr(address);
     if (!addr.has_host_port()) {
         roc_log(LogError, "roc_sender_connect: invalid arguments: bad address");
         return -1;
     }
 
-    if (!receiver->context.event_loop.add_udp_receiver(addr, receiver->receiver)) {
+    pipeline::PortType imp_port_type;
+    if (!api::make_port_type(imp_port_type, type)) {
+        roc_log(LogError, "roc_receiver_bind: invalid arguments: bad port type");
+        return -1;
+    }
+
+    pipeline::PortConfig imp_port_config;
+    if (!api::make_port_config(imp_port_config, type, proto, addr)) {
+        roc_log(LogError, "roc_receiver_bind: invalid arguments: bad protocol");
+        return -1;
+    }
+
+    if (!imp_receiver->bind(imp_port_type, imp_port_config)) {
         roc_log(LogError, "roc_receiver_bind: bind failed");
         return -1;
     }
 
-    pipeline::PortConfig port_config;
-    if (!make_port_config(port_config, type, proto, addr)) {
-        roc_log(LogError, "roc_receiver_bind: invalid arguments: bad config");
-        return -1;
-    }
-
-    if (!receiver->receiver.add_port(port_config)) {
-        roc_log(LogError, "roc_receiver_bind: can't add pipeline port");
-        return -1;
-    }
-
-    if (!receiver->addresses.grow_exp((receiver->addresses.size() + 1))) {
-        roc_log(LogError, "roc_receiver_bind: can't grow the addresses array");
-        return -1;
-    }
-
-    receiver->addresses.push_back(addr);
-    roc_log(LogInfo, "roc_receiver: bound to %s",
-            pipeline::port_to_str(port_config).c_str());
+    addr = imp_port_config.address;
 
     return 0;
 }
@@ -118,6 +105,10 @@ int roc_receiver_read(roc_receiver* receiver, roc_frame* frame) {
         return -1;
     }
 
+    peer::Receiver* imp_receiver = (peer::Receiver*)receiver;
+
+    sndio::ISource& imp_source = imp_receiver->source();
+
     if (!frame) {
         roc_log(LogError, "roc_receiver_read: invalid arguments: frame is null");
         return -1;
@@ -127,13 +118,13 @@ int roc_receiver_read(roc_receiver* receiver, roc_frame* frame) {
         return 0;
     }
 
-    const size_t step = receiver->num_channels * sizeof(float);
+    const size_t factor = imp_source.num_channels() * sizeof(float);
 
-    if (frame->samples_size % step != 0) {
+    if (frame->samples_size % factor != 0) {
         roc_log(LogError,
                 "roc_receiver_read: invalid arguments: # of samples should be "
                 "multiple of # of %u",
-                (unsigned)step);
+                (unsigned)factor);
         return -1;
     }
 
@@ -142,8 +133,12 @@ int roc_receiver_read(roc_receiver* receiver, roc_frame* frame) {
         return -1;
     }
 
-    audio::Frame audio_frame((float*)frame->samples, frame->samples_size / sizeof(float));
-    receiver->receiver.read(audio_frame);
+    audio::Frame imp_frame((float*)frame->samples, frame->samples_size / sizeof(float));
+
+    if (!imp_source.read(imp_frame)) {
+        roc_log(LogError, "roc_receiver_read: got unexpected eof from source");
+        return -1;
+    }
 
     return 0;
 }
@@ -154,15 +149,11 @@ int roc_receiver_close(roc_receiver* receiver) {
         return -1;
     }
 
-    roc_context& context = receiver->context;
+    peer::Receiver* imp_receiver = (peer::Receiver*)receiver;
 
-    for (size_t i = 0; i < receiver->addresses.size(); i++) {
-        context.event_loop.remove_port(receiver->addresses[i]);
-    }
-    context.allocator.destroy(*receiver);
-    --context.counter;
+    imp_receiver->destroy();
 
-    roc_log(LogInfo, "roc_receiver: closed receiver");
+    roc_log(LogInfo, "roc_receiver_close: closed receiver");
 
     return 0;
 }

@@ -6,25 +6,21 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "private.h"
+#include "config_helpers.h"
 
 #include "roc_audio/resampler_profile.h"
 #include "roc_core/log.h"
-#include "roc_core/stddefs.h"
 
-using namespace roc;
+namespace roc {
+namespace api {
 
-bool make_context_config(roc_context_config& out, const roc_context_config& in) {
+bool make_context_config(peer::ContextConfig& out, const roc_context_config& in) {
     if (in.max_packet_size != 0) {
         out.max_packet_size = in.max_packet_size;
-    } else {
-        out.max_packet_size = 2048;
     }
 
     if (in.max_frame_size / sizeof(audio::sample_t) != 0) {
         out.max_frame_size = in.max_frame_size;
-    } else {
-        out.max_frame_size = 4096;
     }
 
     return true;
@@ -34,34 +30,34 @@ bool make_sender_config(pipeline::SenderConfig& out, const roc_sender_config& in
     if (in.frame_sample_rate != 0) {
         out.input_sample_rate = in.frame_sample_rate;
     } else {
-        roc_log(LogError, "roc_config: invalid frame_sample_rate");
+        roc_log(LogError, "bad configuration: invalid frame_sample_rate");
         return false;
     }
 
     if (in.frame_channels != ROC_CHANNEL_SET_STEREO) {
-        roc_log(LogError, "roc_config: invalid frame_channels");
+        roc_log(LogError, "bad configuration: invalid frame_channels");
         return false;
     }
 
     if (in.frame_encoding != ROC_FRAME_ENCODING_PCM_FLOAT) {
-        roc_log(LogError, "roc_config: invalid frame_encoding");
+        roc_log(LogError, "bad configuration: invalid frame_encoding");
         return false;
     }
 
     if (in.packet_sample_rate != 0 && in.packet_sample_rate != 44100) {
-        roc_log(
-            LogError,
-            "roc_config: invalid packet_sample_rate, only 44100 is currently supported");
+        roc_log(LogError,
+                "bad configuration:"
+                " invalid packet_sample_rate, only 44100 is currently supported");
         return false;
     }
 
     if (in.packet_channels != 0 && in.packet_channels != ROC_CHANNEL_SET_STEREO) {
-        roc_log(LogError, "roc_config: invalid packet_channels");
+        roc_log(LogError, "bad configuration: invalid packet_channels");
         return false;
     }
 
     if (in.packet_encoding != 0 && in.packet_encoding != ROC_PACKET_ENCODING_AVP_L16) {
-        roc_log(LogError, "roc_config: invalid packet_encoding");
+        roc_log(LogError, "bad configuration: invalid packet_encoding");
         return false;
     }
 
@@ -88,7 +84,7 @@ bool make_sender_config(pipeline::SenderConfig& out, const roc_sender_config& in
         out.resampler = audio::resampler_profile(audio::ResamplerProfile_High);
         break;
     default:
-        roc_log(LogError, "roc_config: invalid resampler_profile");
+        roc_log(LogError, "bad configuration: invalid resampler_profile");
         return false;
     }
 
@@ -104,7 +100,7 @@ bool make_sender_config(pipeline::SenderConfig& out, const roc_sender_config& in
         out.fec_encoder.scheme = packet::FEC_LDPC_Staircase;
         break;
     default:
-        roc_log(LogError, "roc_config: invalid fec_scheme");
+        roc_log(LogError, "bad configuration: invalid fec_scheme");
         return false;
     }
 
@@ -120,17 +116,17 @@ bool make_receiver_config(pipeline::ReceiverConfig& out, const roc_receiver_conf
     if (in.frame_sample_rate != 0) {
         out.common.output_sample_rate = in.frame_sample_rate;
     } else {
-        roc_log(LogError, "roc_config: invalid frame_sample_rate");
+        roc_log(LogError, "bad configuration: invalid frame_sample_rate");
         return false;
     }
 
     if (in.frame_channels != ROC_CHANNEL_SET_STEREO) {
-        roc_log(LogError, "roc_config: invalid frame_channels");
+        roc_log(LogError, "bad configuration: invalid frame_channels");
         return false;
     }
 
     if (in.frame_encoding != ROC_FRAME_ENCODING_PCM_FLOAT) {
-        roc_log(LogError, "roc_config: invalid frame_encoding");
+        roc_log(LogError, "bad configuration: invalid frame_encoding");
         return false;
     }
 
@@ -154,7 +150,7 @@ bool make_receiver_config(pipeline::ReceiverConfig& out, const roc_receiver_conf
             audio::resampler_profile(audio::ResamplerProfile_High);
         break;
     default:
-        roc_log(LogError, "roc_config: invalid resampler_profile");
+        roc_log(LogError, "bad configuration: invalid resampler_profile");
         return false;
     }
 
@@ -212,6 +208,24 @@ bool make_receiver_config(pipeline::ReceiverConfig& out, const roc_receiver_conf
     return true;
 }
 
+bool make_port_type(pipeline::PortType& out, roc_port_type in) {
+    switch ((int)in) {
+    case ROC_PORT_AUDIO_SOURCE:
+        out = pipeline::Port_AudioSource;
+        return true;
+
+    case ROC_PORT_AUDIO_REPAIR:
+        out = pipeline::Port_AudioRepair;
+        return true;
+
+    default:
+        break;
+    }
+
+    roc_log(LogError, "bad configuration: invalid port type");
+    return false;
+}
+
 bool make_port_config(pipeline::PortConfig& out,
                       roc_port_type type,
                       roc_protocol proto,
@@ -229,7 +243,8 @@ bool make_port_config(pipeline::PortConfig& out,
             out.protocol = pipeline::Proto_RTP_LDPC_Source;
             break;
         default:
-            roc_log(LogError, "roc_config: invalid protocol for audio source port");
+            roc_log(LogError,
+                    "bad configuration: invalid protocol for audio source port");
             return false;
         }
         break;
@@ -243,16 +258,20 @@ bool make_port_config(pipeline::PortConfig& out,
             out.protocol = pipeline::Proto_LDPC_Repair;
             break;
         default:
-            roc_log(LogError, "roc_config: invalid protocol for audio repair port");
+            roc_log(LogError,
+                    "bad configuration: invalid protocol for audio repair port");
             return false;
         }
         break;
 
     default:
-        roc_log(LogError, "roc_config: invalid port type");
+        roc_log(LogError, "bad configuration: invalid port type");
         return false;
     }
 
     out.address = addr;
     return true;
 }
+
+} // namespace api
+} // namespace roc
