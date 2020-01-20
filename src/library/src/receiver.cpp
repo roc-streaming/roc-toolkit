@@ -84,7 +84,7 @@ int roc_receiver_bind(roc_receiver* receiver,
         return -1;
     }
 
-    if (!receiver->context.trx.add_udp_receiver(addr, receiver->receiver)) {
+    if (!receiver->context.event_loop.add_udp_receiver(addr, receiver->receiver)) {
         roc_log(LogError, "roc_receiver_bind: bind failed");
         return -1;
     }
@@ -157,7 +157,7 @@ int roc_receiver_close(roc_receiver* receiver) {
     roc_context& context = receiver->context;
 
     for (size_t i = 0; i < receiver->addresses.size(); i++) {
-        context.trx.remove_port(receiver->addresses[i]);
+        context.event_loop.remove_port(receiver->addresses[i]);
     }
     context.allocator.destroy(*receiver);
     --context.counter;

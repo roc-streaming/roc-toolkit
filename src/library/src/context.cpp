@@ -16,7 +16,7 @@ roc_context::roc_context(const roc_context_config& cfg)
     : packet_pool(allocator, false)
     , byte_buffer_pool(allocator, cfg.max_packet_size, false)
     , sample_buffer_pool(allocator, cfg.max_frame_size / sizeof(audio::sample_t), false)
-    , trx(packet_pool, byte_buffer_pool, allocator)
+    , event_loop(packet_pool, byte_buffer_pool, allocator)
     , counter(0) {
 }
 
@@ -40,7 +40,7 @@ roc_context* roc_context_open(const roc_context_config* config) {
         return NULL;
     }
 
-    if (!context->trx.valid()) {
+    if (!context->event_loop.valid()) {
         roc_log(LogError, "roc_context_open: can't initialize transceiver");
 
         delete context;
