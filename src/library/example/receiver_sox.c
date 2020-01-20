@@ -79,6 +79,11 @@ int main() {
     receiver_config.frame_channels = ROC_CHANNEL_SET_STEREO;
     receiver_config.frame_encoding = ROC_FRAME_ENCODING_PCM_FLOAT;
 
+    /* Use user-provided clock.
+     * Receiver will be clocked by SoX reader. Read operation will be non-blocking.
+     */
+    receiver_config.clock_source = ROC_CLOCK_EXTERNAL;
+
     /* Create receiver. */
     roc_receiver* receiver = roc_receiver_open(context, &receiver_config);
     if (!receiver) {
