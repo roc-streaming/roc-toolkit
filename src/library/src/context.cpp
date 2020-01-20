@@ -6,48 +6,43 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "private.h"
+#include "roc/context.h"
+
+#include "config_helpers.h"
 
 #include "roc_core/log.h"
+#include "roc_peer/context.h"
 
 using namespace roc;
 
-roc_context::roc_context(const roc_context_config& cfg)
-    : packet_pool(allocator, false)
-    , byte_buffer_pool(allocator, cfg.max_packet_size, false)
-    , sample_buffer_pool(allocator, cfg.max_frame_size / sizeof(audio::sample_t), false)
-    , event_loop(packet_pool, byte_buffer_pool, allocator)
-    , counter(0) {
-}
-
 roc_context* roc_context_open(const roc_context_config* config) {
-    roc_log(LogInfo, "roc_context: opening context");
+    roc_log(LogInfo, "roc_context_open: opening context");
 
     if (!config) {
         roc_log(LogError, "roc_context_open: invalid arguments: config is null");
         return NULL;
     }
 
-    roc_context_config private_config;
-    if (!make_context_config(private_config, *config)) {
+    peer::ContextConfig imp_config;
+    if (!api::make_context_config(imp_config, *config)) {
         roc_log(LogError, "roc_context_open: invalid arguments: bad config");
         return NULL;
     }
 
-    roc_context* context = new (std::nothrow) roc_context(private_config);
-    if (!context) {
-        roc_log(LogError, "roc_context_open: can't allocate roc_context");
+    peer::Context* imp_context = new (std::nothrow) peer::Context(imp_config);
+    if (!imp_context) {
+        roc_log(LogError, "roc_context_open: can't allocate context");
         return NULL;
     }
 
-    if (!context->event_loop.valid()) {
-        roc_log(LogError, "roc_context_open: can't initialize transceiver");
+    if (!imp_context->valid()) {
+        roc_log(LogError, "roc_context_open: can't initialize context");
 
-        delete context;
+        delete imp_context;
         return NULL;
     }
 
-    return context;
+    return (roc_context*)imp_context;
 }
 
 int roc_context_close(roc_context* context) {
@@ -56,15 +51,16 @@ int roc_context_close(roc_context* context) {
         return -1;
     }
 
-    if (context->counter != 0) {
-        roc_log(LogError, "roc_context_close: context is still in use: counter=%lu",
-                (unsigned long)context->counter);
+    peer::Context* imp_context = (peer::Context*)context;
+
+    if (imp_context->is_used()) {
+        roc_log(LogError, "roc_context_close: context is still in use");
         return -1;
     }
 
-    delete context;
+    delete imp_context;
 
-    roc_log(LogInfo, "roc_context: closed context");
+    roc_log(LogInfo, "roc_context_close: closed context");
 
     return 0;
 }
