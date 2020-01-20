@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_netio/target_libuv/roc_netio/transceiver.h
-//! @brief Network sender/receiver.
+//! @file roc_netio/target_libuv/roc_netio/event_loop.h
+//! @brief Network event loop.
 
-#ifndef ROC_NETIO_TRANSCEIVER_H_
-#define ROC_NETIO_TRANSCEIVER_H_
+#ifndef ROC_NETIO_EVENT_LOOP_H_
+#define ROC_NETIO_EVENT_LOOP_H_
 
 #include <uv.h>
 
@@ -32,22 +32,22 @@
 namespace roc {
 namespace netio {
 
-//! Network sender/receiver.
-class Transceiver : private ICloseHandler, private core::Thread {
+//! Network event loop serving multiple ports.
+class EventLoop : private ICloseHandler, private core::Thread {
 public:
     //! Initialize.
     //!
     //! @remarks
     //!  Start background thread if the object was successfully constructed.
-    Transceiver(packet::PacketPool& packet_pool,
-                core::BufferPool<uint8_t>& buffer_pool,
-                core::IAllocator& allocator);
+    EventLoop(packet::PacketPool& packet_pool,
+              core::BufferPool<uint8_t>& buffer_pool,
+              core::IAllocator& allocator);
 
     //! Destroy. Stop all receivers and senders.
     //!
     //! @remarks
     //!  Wait until background thread finishes.
-    virtual ~Transceiver();
+    virtual ~EventLoop();
 
     //! Check if transceiver was successfully constructed.
     bool valid() const;
@@ -88,7 +88,7 @@ public:
 
 private:
     struct Task : core::ListNode {
-        bool (Transceiver::*fn)(Task&);
+        bool (EventLoop::*func)(Task&);
 
         address::SocketAddr* address;
         packet::IWriter* writer;
@@ -98,7 +98,7 @@ private:
         bool done;
 
         Task()
-            : fn(NULL)
+            : func(NULL)
             , address(NULL)
             , writer(NULL)
             , port(NULL)
@@ -153,4 +153,4 @@ private:
 } // namespace netio
 } // namespace roc
 
-#endif // ROC_NETIO_TRANSCEIVER_H_
+#endif // ROC_NETIO_EVENT_LOOP_H_
