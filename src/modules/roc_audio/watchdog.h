@@ -77,7 +77,7 @@ public:
     //! Read audio frame.
     //! @remarks
     //!  Updates stream state and reads frame from the input reader.
-    virtual void read(Frame& frame);
+    virtual bool read(Frame& frame);
 
     //! Update stream.
     //! @returns

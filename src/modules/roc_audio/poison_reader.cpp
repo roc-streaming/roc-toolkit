@@ -16,7 +16,7 @@ PoisonReader::PoisonReader(IReader& reader)
     : reader_(reader) {
 }
 
-void PoisonReader::read(Frame& frame) {
+bool PoisonReader::read(Frame& frame) {
     const size_t frame_size = frame.size();
     sample_t* frame_data = frame.data();
 
@@ -24,7 +24,7 @@ void PoisonReader::read(Frame& frame) {
         frame_data[n] = SampleMax;
     }
 
-    reader_.read(frame);
+    return reader_.read(frame);
 }
 
 } // namespace audio

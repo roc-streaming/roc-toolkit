@@ -90,7 +90,7 @@ TEST_GROUP(depacketizer) {
         core::Slice<sample_t> buf = new_buffer(sz);
 
         Frame frame(buf.data(), buf.size());
-        depacketizer.read(frame);
+        CHECK(depacketizer.read(frame));
 
         UNSIGNED_LONGS_EQUAL(sz * NumCh, frame.size());
         expect_values(frame.data(), sz * NumCh, value);
@@ -100,7 +100,7 @@ TEST_GROUP(depacketizer) {
         core::Slice<sample_t> buf = new_buffer(sz);
 
         Frame frame(buf.data(), buf.size());
-        depacketizer.read(frame);
+        CHECK(depacketizer.read(frame));
 
         UNSIGNED_LONGS_EQUAL(flags, frame.flags());
     }

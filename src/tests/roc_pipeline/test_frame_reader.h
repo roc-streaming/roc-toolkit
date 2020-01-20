@@ -35,7 +35,7 @@ public:
         samples.resize(num_samples);
 
         audio::Frame frame(samples.data(), samples.size());
-        source_.read(frame);
+        CHECK(source_.read(frame));
 
         for (size_t n = 0; n < num_samples; n++) {
             DOUBLES_EQUAL((double)nth_sample(offset_) * num_sessions,
@@ -53,7 +53,7 @@ public:
         memset(samples.data(), 0, samples.size() * sizeof(audio::sample_t));
 
         audio::Frame frame(samples.data(), samples.size());
-        source_.read(frame);
+        CHECK(source_.read(frame));
 
         for (size_t n = 0; n < num_samples; n++) {
             DOUBLES_EQUAL(0.0, (double)frame.data()[n], Epsilon);
