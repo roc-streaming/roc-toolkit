@@ -185,6 +185,10 @@ size_t SenderSink::sample_rate() const {
     return config_.input_sample_rate;
 }
 
+size_t SenderSink::num_channels() const {
+    return num_channels_;
+}
+
 bool SenderSink::has_clock() const {
     return config_.timing;
 }

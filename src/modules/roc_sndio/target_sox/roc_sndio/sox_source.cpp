@@ -88,6 +88,16 @@ size_t SoxSource::sample_rate() const {
     return size_t(input_->signal.rate);
 }
 
+size_t SoxSource::num_channels() const {
+    roc_panic_if(!valid_);
+
+    if (!input_) {
+        roc_panic("sox source: sample_rate: non-open input file or device");
+    }
+
+    return n_channels_;
+}
+
 bool SoxSource::has_clock() const {
     roc_panic_if(!valid_);
 
