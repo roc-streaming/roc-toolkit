@@ -231,29 +231,29 @@ int main(int argc, char** argv) {
         allocator, config.common.internal_frame_size, args.poisoning_flag);
     packet::PacketPool packet_pool(allocator, args.poisoning_flag);
 
-    address::IoURI output(allocator);
+    address::IoURI output_uri(allocator);
     if (args.output_given) {
-        if (!address::parse_io_uri(args.output_arg, output)) {
+        if (!address::parse_io_uri(args.output_arg, output_uri)) {
             roc_log(LogError, "invalid --output file or device URI");
             return 1;
         }
     }
 
     if (args.output_format_given) {
-        if (output.is_valid() && !output.is_file()) {
+        if (output_uri.is_valid() && !output_uri.is_file()) {
             roc_log(LogError,
                     "--output-format can't be used if --output is not a file URI");
             return 1;
         }
     } else {
-        if (output.is_special_file()) {
+        if (output_uri.is_special_file()) {
             roc_log(LogError, "--output-format should be specified if --output is \"-\"");
             return 1;
         }
     }
 
     core::ScopedPtr<sndio::ISink> sink(
-        sndio::BackendDispatcher::instance().open_sink(allocator, output,
+        sndio::BackendDispatcher::instance().open_sink(allocator, output_uri,
                                                        args.output_format_arg, io_config),
         allocator);
     if (!sink) {
@@ -276,21 +276,21 @@ int main(int argc, char** argv) {
     core::ScopedPtr<pipeline::ConverterSource> backup_pipeline;
 
     if (args.backup_given) {
-        address::IoURI backup(allocator);
+        address::IoURI backup_uri(allocator);
 
-        if (!address::parse_io_uri(args.backup_arg, backup)) {
+        if (!address::parse_io_uri(args.backup_arg, backup_uri)) {
             roc_log(LogError, "invalid --backup file or device URI");
             return 1;
         }
 
         if (args.backup_format_given) {
-            if (backup.is_valid() && !backup.is_file()) {
+            if (backup_uri.is_valid() && !backup_uri.is_file()) {
                 roc_log(LogError,
                         "--backup-format can't be used if --backup is not a file URI");
                 return 1;
             }
         } else {
-            if (backup.is_special_file()) {
+            if (backup_uri.is_special_file()) {
                 roc_log(LogError,
                         "--backup-format should be specified if --backup is \"-\"");
                 return 1;
@@ -298,7 +298,7 @@ int main(int argc, char** argv) {
         }
 
         backup_source.reset(sndio::BackendDispatcher::instance().open_source(
-                                allocator, backup, args.backup_format_arg, io_config),
+                                allocator, backup_uri, args.backup_format_arg, io_config),
                             allocator);
         if (!backup_source) {
             roc_log(LogError, "can't open backup file or device: uri=%s format=%s",

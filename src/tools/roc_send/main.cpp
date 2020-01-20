@@ -212,22 +212,22 @@ int main(int argc, char** argv) {
         allocator, config.internal_frame_size, args.poisoning_flag);
     packet::PacketPool packet_pool(allocator, args.poisoning_flag);
 
-    address::IoURI input(allocator);
+    address::IoURI input_uri(allocator);
     if (args.input_given) {
-        if (!address::parse_io_uri(args.input_arg, input)) {
+        if (!address::parse_io_uri(args.input_arg, input_uri)) {
             roc_log(LogError, "invalid --input file or device URI");
             return 1;
         }
     }
 
     if (args.input_format_given) {
-        if (input.is_valid() && !input.is_file()) {
+        if (input_uri.is_valid() && !input_uri.is_file()) {
             roc_log(LogError,
                     "--input-format can't be used if --input is not a file URI");
             return 1;
         }
     } else {
-        if (input.is_special_file()) {
+        if (input_uri.is_special_file()) {
             roc_log(LogError, "--input-format should be specified if --input is \"-\"");
             return 1;
         }
@@ -235,7 +235,7 @@ int main(int argc, char** argv) {
 
     core::ScopedPtr<sndio::ISource> source(
         sndio::BackendDispatcher::instance().open_source(
-            allocator, input, args.input_format_arg, io_config),
+            allocator, input_uri, args.input_format_arg, io_config),
         allocator);
     if (!source) {
         roc_log(LogError, "can't open input file or device: uri=%s format=%s",
