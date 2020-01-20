@@ -21,7 +21,7 @@ namespace fec {
 //! FEC codec parameters.
 struct CodecConfig {
     //! FEC scheme.
-    packet::FECScheme scheme;
+    packet::FecScheme scheme;
 
     //! Seed for LDPC scheme.
     int32_t ldpc_prng_seed;
