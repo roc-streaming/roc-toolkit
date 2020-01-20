@@ -127,6 +127,21 @@ typedef enum roc_resampler_profile {
     ROC_RESAMPLER_LOW = 3
 } roc_resampler_profile;
 
+/** Clock source for sender or receiver. */
+typedef enum roc_clock_source {
+    /** Sender or receiver is clocked by external user-defined clock.
+     * Write and read operations are non-blocking. The user is responsible
+     * to call them in time, according to the external clock.
+     */
+    ROC_CLOCK_EXTERNAL = 0,
+
+    /** Sender or receiver is clocked by an internal clock.
+     * Write and read operations are blocking. They automatically wait until it's time
+     * to process the next bunch of samples according to the configured sample rate.
+     */
+    ROC_CLOCK_INTERNAL = 1
+} roc_clock_source;
+
 /** Context configuration.
  * @see roc_context
  */
@@ -199,11 +214,11 @@ typedef struct roc_sender_config {
      */
     unsigned int packet_interleaving;
 
-    /** Enable automatic timing.
-     * If non-zero, the sender write operation restricts the write rate according
-     * to the frame_sample_rate parameter. If zero, no restrictions are applied.
+    /** Clock source to use.
+     * Defines whether write operation will be blocking or non-blocking.
+     * If zero, default value is used.
      */
-    unsigned int automatic_timing;
+    roc_clock_source clock_source;
 
     /** Resampler profile to use.
      * If non-zero, the sender employs resampler if the frame sample rate differs
@@ -253,11 +268,11 @@ typedef struct roc_receiver_config {
      */
     roc_frame_encoding frame_encoding;
 
-    /** Enable automatic timing.
-     * If non-zero, the receiver read operation restricts the read rate according
-     * to the @c frame_sample_rate parameter. If zero, no restrictions are applied.
+    /** Clock source to use.
+     * Defines whether read operation will be blocking or non-blocking.
+     * If zero, default value is used.
      */
-    unsigned int automatic_timing;
+    roc_clock_source clock_source;
 
     /** Resampler profile to use.
      * If non-zero, the receiver employs resampler for two purposes:
