@@ -20,7 +20,7 @@
 #include "roc_core/stddefs.h"
 #include "roc_core/thread.h"
 #include "roc_core/time.h"
-#include "roc_netio/transceiver.h"
+#include "roc_netio/event_loop.h"
 #include "roc_packet/packet_pool.h"
 #include "roc_packet/queue.h"
 
@@ -285,11 +285,11 @@ public:
           const roc_address* dst_repair_addr,
           size_t n_source_packets,
           size_t n_repair_packets)
-        : trx_(packet_pool, byte_buffer_pool, allocator)
+        : event_loop_(packet_pool, byte_buffer_pool, allocator)
         , n_source_packets_(n_source_packets)
         , n_repair_packets_(n_repair_packets)
         , pos_(0) {
-        CHECK(trx_.valid());
+        CHECK(event_loop_.valid());
 
         dst_source_addr_.set_host_port_ipv4("127.0.0.1",
                                             roc_address_port(dst_source_addr));
@@ -300,11 +300,11 @@ public:
         recv_source_addr_.set_host_port_ipv4("127.0.0.1", 0);
         recv_repair_addr_.set_host_port_ipv4("127.0.0.1", 0);
 
-        writer_ = trx_.add_udp_sender(send_addr_);
+        writer_ = event_loop_.add_udp_sender(send_addr_);
         CHECK(writer_);
 
-        CHECK(trx_.add_udp_receiver(recv_source_addr_, *this));
-        CHECK(trx_.add_udp_receiver(recv_repair_addr_, *this));
+        CHECK(event_loop_.add_udp_receiver(recv_source_addr_, *this));
+        CHECK(event_loop_.add_udp_receiver(recv_repair_addr_, *this));
 
         CHECK(roc_address_init(&roc_source_addr_, ROC_AF_AUTO, "127.0.0.1",
                                recv_source_addr_.port())
@@ -377,7 +377,7 @@ private:
 
     packet::IWriter* writer_;
 
-    netio::Transceiver trx_;
+    netio::EventLoop event_loop_;
 
     const size_t n_source_packets_;
     const size_t n_repair_packets_;

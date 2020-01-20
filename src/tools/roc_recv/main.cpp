@@ -17,7 +17,7 @@
 #include "roc_core/parse_duration.h"
 #include "roc_core/scoped_destructor.h"
 #include "roc_core/scoped_ptr.h"
-#include "roc_netio/transceiver.h"
+#include "roc_netio/event_loop.h"
 #include "roc_pipeline/converter_source.h"
 #include "roc_pipeline/parse_port.h"
 #include "roc_pipeline/receiver_source.h"
@@ -351,8 +351,8 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    netio::Transceiver trx(packet_pool, byte_buffer_pool, allocator);
-    if (!trx.valid()) {
+    netio::EventLoop event_loop(packet_pool, byte_buffer_pool, allocator);
+    if (!event_loop.valid()) {
         roc_log(LogError, "can't create network transceiver");
         return 1;
     }
@@ -375,7 +375,7 @@ int main(int argc, char** argv) {
                 return 1;
             }
         }
-        if (!trx.add_udp_receiver(port.address, receiver)) {
+        if (!event_loop.add_udp_receiver(port.address, receiver)) {
             roc_log(LogError, "can't bind source port: %s", args.source_arg);
             return 1;
         }
@@ -399,7 +399,7 @@ int main(int argc, char** argv) {
                 return 1;
             }
         }
-        if (!trx.add_udp_receiver(port.address, receiver)) {
+        if (!event_loop.add_udp_receiver(port.address, receiver)) {
             roc_log(LogError, "can't bind repair port: %s", args.repair_arg);
             return 1;
         }
