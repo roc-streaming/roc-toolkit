@@ -14,7 +14,7 @@ scons -Q \
     --host=${TOOLCHAIN}
 
 find bin/${TOOLCHAIN} -name 'roc-test-*' \
-     -not -name 'roc-test-lib' |\
+     -not -name 'roc-test-library' |\
     while read t
     do
         LD_LIBRARY_PATH="/opt/sysroot/lib:${PWD}/3rdparty/${TOOLCHAIN}/${COMPILER}/rpath" \

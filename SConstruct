@@ -333,8 +333,8 @@ if enable_doxygen:
             werror=GetOption('enable_werror')),
         env.Doxygen(
             build_dir='build/docs/lib',
-            config='src/lib/Doxyfile',
-            sources=env.GlobRecursive('#src/lib/include', ['*.h', '*.dox']),
+            config='src/library/Doxyfile',
+            sources=env.GlobRecursive('#src/library/include', ['*.h', '*.dox']),
             werror=GetOption('enable_werror')),
     ]
     env.AlwaysBuild(env.Alias('doxygen', doxygen_targets))
@@ -357,7 +357,7 @@ if enable_doxygen and enable_sphinx:
             source_dir='docs/sphinx',
             sources=(env.GlobRecursive('docs/sphinx', ['*']) +
                 env.GlobRecursive('docs/images', ['*']) +
-                env.GlobRecursive('#src/lib/include', ['*.h', '*.dox']) +
+                env.GlobRecursive('#src/library/include', ['*.h', '*.dox']) +
                 doxygen_targets),
             werror=GetOption('enable_werror')),
         env.Sphinx(
@@ -415,8 +415,8 @@ fmt += [
         env.PrettyCommand('FMT', 'src/tools', 'yellow')
     ),
     env.Action(
-        '%s scripts/format.py src/lib/src' % env.PythonExecutable(),
-        env.PrettyCommand('FMT', 'src/lib/src', 'yellow')
+        '%s scripts/format.py src/library/src' % env.PythonExecutable(),
+        env.PrettyCommand('FMT', 'src/library/src', 'yellow')
     ),
 ]
 
@@ -1079,7 +1079,7 @@ if compiler in ['gcc', 'clang']:
 
         if variant == 'release':
             lib_env.Append(LINKFLAGS=[
-                '-Wl,--version-script=%s' % env.File('#src/lib/roc.version').path
+                '-Wl,--version-script=%s' % env.File('#src/library/roc.version').path
             ])
 
     if platform in ['darwin']:
