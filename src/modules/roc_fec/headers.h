@@ -57,7 +57,7 @@ private:
 
 public:
     //! Get FEC scheme to which these packets belong to.
-    static packet::FECScheme fec_scheme() {
+    static packet::FecScheme fec_scheme() {
         return packet::FEC_LDPC_Staircase;
     }
 
@@ -133,7 +133,7 @@ private:
 
 public:
     //! Get FEC scheme to which these packets belong to.
-    static packet::FECScheme fec_scheme() {
+    static packet::FecScheme fec_scheme() {
         return packet::FEC_LDPC_Staircase;
     }
 
@@ -207,7 +207,7 @@ private:
 
 public:
     //! Get FEC scheme to which these packets belong to.
-    static packet::FECScheme fec_scheme() {
+    static packet::FecScheme fec_scheme() {
         return packet::FEC_ReedSolomon_M8;
     }
 

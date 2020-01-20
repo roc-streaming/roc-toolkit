@@ -19,15 +19,15 @@ namespace roc {
 namespace pipeline {
 
 //! Get FEC scheme for given protocol.
-packet::FECScheme port_fec_scheme(PortProtocol proto);
+packet::FecScheme port_fec_scheme(PortProtocol proto);
 
 //! Validate consistency of a single port and FEC scheme.
-bool validate_port(packet::FECScheme fec_scheme,
+bool validate_port(packet::FecScheme fec_scheme,
                    PortProtocol port_protocol,
                    PortType port_type);
 
 //! Validate consistency of two ports and FEC scheme.
-bool validate_ports(packet::FECScheme fec_scheme,
+bool validate_ports(packet::FecScheme fec_scheme,
                     PortProtocol source_port,
                     PortProtocol repair_port);
 

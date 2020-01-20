@@ -20,7 +20,7 @@ namespace roc {
 namespace audio {
 
 //! PCM function table.
-struct PCMFuncs {
+struct PcmFuncs {
     //! Get number of samples per channel from payload size in bytes.
     size_t (*samples_from_payload_size)(size_t payload_size);
 
@@ -45,10 +45,10 @@ struct PCMFuncs {
 };
 
 //! PCM functions for 16-bit 1-channel audio.
-extern const PCMFuncs PCM_int16_1ch;
+extern const PcmFuncs PCM_int16_1ch;
 
 //! PCM functions for 16-bit 2-channel audio.
-extern const PCMFuncs PCM_int16_2ch;
+extern const PcmFuncs PCM_int16_2ch;
 
 } // namespace audio
 } // namespace roc
