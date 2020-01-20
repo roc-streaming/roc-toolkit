@@ -63,12 +63,12 @@ void Mixer::remove(IReader& reader) {
     readers_.remove(reader);
 }
 
-void Mixer::read(Frame& frame) {
+bool Mixer::read(Frame& frame) {
     roc_panic_if(!valid_);
 
     if (readers_.size() == 1) {
         readers_.front()->read(frame);
-        return;
+        return true;
     }
 
     const size_t max_read = temp_buf_.size();
@@ -87,6 +87,8 @@ void Mixer::read(Frame& frame) {
         samples += n_read;
         n_samples -= n_read;
     }
+
+    return true;
 }
 
 void Mixer::read_(sample_t* data, size_t size) {
@@ -99,7 +101,9 @@ void Mixer::read_(sample_t* data, size_t size) {
         sample_t* temp_data = temp_buf_.data();
 
         Frame temp_frame(temp_data, size);
-        rp->read(temp_frame);
+        if (!rp->read(temp_frame)) {
+            continue;
+        }
 
         for (size_t n = 0; n < size; n++) {
             data[n] = clamp(data[n] + temp_data[n]);

@@ -45,7 +45,7 @@ bool ResamplerReader::set_scaling(float scaling) {
     return resampler_.set_scaling(scaling);
 }
 
-void ResamplerReader::read(Frame& frame) {
+bool ResamplerReader::read(Frame& frame) {
     roc_panic_if_not(valid());
 
     if (frames_empty_) {
@@ -53,8 +53,12 @@ void ResamplerReader::read(Frame& frame) {
     }
 
     while (!resampler_.resample_buff(frame)) {
-        renew_frames_();
+        if (!renew_frames_()) {
+            return false;
+        }
     }
+
+    return true;
 }
 
 bool ResamplerReader::init_frames_(core::BufferPool<sample_t>& buffer_pool) {
@@ -72,11 +76,13 @@ bool ResamplerReader::init_frames_(core::BufferPool<sample_t>& buffer_pool) {
     return true;
 }
 
-void ResamplerReader::renew_frames_() {
+bool ResamplerReader::renew_frames_() {
     if (frames_empty_) {
         for (size_t n = 0; n < ROC_ARRAY_SIZE(frames_); ++n) {
             Frame frame(frames_[n].data(), frames_[n].size());
-            reader_.read(frame);
+            if (!reader_.read(frame)) {
+                return false;
+            }
         }
         frames_empty_ = false;
     } else {
@@ -86,10 +92,13 @@ void ResamplerReader::renew_frames_() {
         frames_[2] = temp;
 
         Frame frame(frames_[2].data(), frames_[2].size());
-        reader_.read(frame);
+        if (!reader_.read(frame)) {
+            return false;
+        }
     }
 
     resampler_.renew_buffers(frames_[0], frames_[1], frames_[2]);
+    return true;
 }
 
 } // namespace audio
