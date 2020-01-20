@@ -183,7 +183,7 @@ int roc_sender_bind(roc_sender* sender, roc_address* address) {
         return -1;
     }
 
-    sender->writer = sender->context.trx.add_udp_sender(addr);
+    sender->writer = sender->context.event_loop.add_udp_sender(addr);
     if (!sender->writer) {
         roc_log(LogError, "roc_sender_bind: bind failed");
         return -1;
@@ -304,7 +304,7 @@ int roc_sender_close(roc_sender* sender) {
     }
 
     if (sender->writer) {
-        sender->context.trx.remove_port(sender->address);
+        sender->context.event_loop.remove_port(sender->address);
     }
 
     roc_context& context = sender->context;

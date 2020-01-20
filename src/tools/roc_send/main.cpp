@@ -16,7 +16,7 @@
 #include "roc_core/parse_duration.h"
 #include "roc_core/scoped_destructor.h"
 #include "roc_core/scoped_ptr.h"
-#include "roc_netio/transceiver.h"
+#include "roc_netio/event_loop.h"
 #include "roc_pipeline/parse_port.h"
 #include "roc_pipeline/port_utils.h"
 #include "roc_pipeline/sender_sink.h"
@@ -249,8 +249,8 @@ int main(int argc, char** argv) {
     fec::CodecMap codec_map;
     rtp::FormatMap format_map;
 
-    netio::Transceiver trx(packet_pool, byte_buffer_pool, allocator);
-    if (!trx.valid()) {
+    netio::EventLoop event_loop(packet_pool, byte_buffer_pool, allocator);
+    if (!event_loop.valid()) {
         roc_log(LogError, "can't create network transceiver");
         return 1;
     }
@@ -271,7 +271,7 @@ int main(int argc, char** argv) {
         }
     }
 
-    packet::IWriter* udp_sender = trx.add_udp_sender(local_addr);
+    packet::IWriter* udp_sender = event_loop.add_udp_sender(local_addr);
     if (!udp_sender) {
         roc_log(LogError, "can't create udp sender");
         return 1;

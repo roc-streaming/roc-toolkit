@@ -15,7 +15,7 @@
 namespace roc {
 namespace netio {
 
-UDPReceiverPort::UDPReceiverPort(ICloseHandler& close_handler,
+UdpReceiverPort::UdpReceiverPort(ICloseHandler& close_handler,
                                  const address::SocketAddr& address,
                                  uv_loop_t& event_loop,
                                  packet::IWriter& writer,
@@ -36,18 +36,18 @@ UDPReceiverPort::UDPReceiverPort(ICloseHandler& close_handler,
     , packet_counter_(0) {
 }
 
-UDPReceiverPort::~UDPReceiverPort() {
+UdpReceiverPort::~UdpReceiverPort() {
     if (handle_initialized_) {
         roc_panic(
             "udp receiver: receiver was not fully closed before calling destructor");
     }
 }
 
-const address::SocketAddr& UDPReceiverPort::address() const {
+const address::SocketAddr& UdpReceiverPort::address() const {
     return address_;
 }
 
-bool UDPReceiverPort::open() {
+bool UdpReceiverPort::open() {
     if (int err = uv_udp_init(&loop_, &handle_)) {
         roc_log(LogError, "udp receiver: uv_udp_init(): [%s] %s", uv_err_name(err),
                 uv_strerror(err));
@@ -110,7 +110,7 @@ bool UDPReceiverPort::open() {
     return true;
 }
 
-void UDPReceiverPort::async_close() {
+void UdpReceiverPort::async_close() {
     if (closed_) {
         return; // handle_closed() was already called
     }
@@ -143,10 +143,10 @@ void UDPReceiverPort::async_close() {
     }
 }
 
-void UDPReceiverPort::close_cb_(uv_handle_t* handle) {
+void UdpReceiverPort::close_cb_(uv_handle_t* handle) {
     roc_panic_if_not(handle);
 
-    UDPReceiverPort& self = *(UDPReceiverPort*)handle->data;
+    UdpReceiverPort& self = *(UdpReceiverPort*)handle->data;
 
     self.handle_initialized_ = false;
 
@@ -157,11 +157,11 @@ void UDPReceiverPort::close_cb_(uv_handle_t* handle) {
     self.close_handler_.handle_closed(self);
 }
 
-void UDPReceiverPort::alloc_cb_(uv_handle_t* handle, size_t size, uv_buf_t* buf) {
+void UdpReceiverPort::alloc_cb_(uv_handle_t* handle, size_t size, uv_buf_t* buf) {
     roc_panic_if_not(handle);
     roc_panic_if_not(buf);
 
-    UDPReceiverPort& self = *(UDPReceiverPort*)handle->data;
+    UdpReceiverPort& self = *(UdpReceiverPort*)handle->data;
 
     core::SharedPtr<core::Buffer<uint8_t> > bp =
         new (self.buffer_pool_) core::Buffer<uint8_t>(self.buffer_pool_);
@@ -185,7 +185,7 @@ void UDPReceiverPort::alloc_cb_(uv_handle_t* handle, size_t size, uv_buf_t* buf)
     buf->len = size;
 }
 
-void UDPReceiverPort::recv_cb_(uv_udp_t* handle,
+void UdpReceiverPort::recv_cb_(uv_udp_t* handle,
                                ssize_t nread,
                                const uv_buf_t* buf,
                                const sockaddr* sockaddr,
@@ -193,7 +193,7 @@ void UDPReceiverPort::recv_cb_(uv_udp_t* handle,
     roc_panic_if_not(handle);
     roc_panic_if_not(buf);
 
-    UDPReceiverPort& self = *(UDPReceiverPort*)handle->data;
+    UdpReceiverPort& self = *(UdpReceiverPort*)handle->data;
 
     address::SocketAddr src_addr;
     if (sockaddr) {
@@ -274,7 +274,7 @@ void UDPReceiverPort::recv_cb_(uv_udp_t* handle,
     self.writer_.write(pp);
 }
 
-bool UDPReceiverPort::join_multicast_group_() {
+bool UdpReceiverPort::join_multicast_group_() {
     char host[address::SocketAddr::MaxStrLen];
     address_.get_host(host, sizeof(host));
 
@@ -293,7 +293,7 @@ bool UDPReceiverPort::join_multicast_group_() {
     return (multicast_group_joined_ = true);
 }
 
-void UDPReceiverPort::leave_multicast_group_() {
+void UdpReceiverPort::leave_multicast_group_() {
     multicast_group_joined_ = false;
 
     char host[address::SocketAddr::MaxStrLen];

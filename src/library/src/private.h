@@ -22,7 +22,7 @@
 #include "roc_core/heap_allocator.h"
 #include "roc_core/mutex.h"
 #include "roc_core/scoped_ptr.h"
-#include "roc_netio/transceiver.h"
+#include "roc_netio/event_loop.h"
 #include "roc_packet/iwriter.h"
 #include "roc_packet/packet_pool.h"
 #include "roc_pipeline/receiver_source.h"
@@ -52,7 +52,7 @@ struct roc_context {
     roc::core::BufferPool<uint8_t> byte_buffer_pool;
     roc::core::BufferPool<roc::audio::sample_t> sample_buffer_pool;
 
-    roc::netio::Transceiver trx;
+    roc::netio::EventLoop event_loop;
 
     roc::core::Atomic counter;
 };

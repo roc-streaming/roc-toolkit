@@ -15,7 +15,7 @@
 namespace roc {
 namespace netio {
 
-UDPSenderPort::UDPSenderPort(ICloseHandler& close_handler,
+UdpSenderPort::UdpSenderPort(ICloseHandler& close_handler,
                              const address::SocketAddr& address,
                              uv_loop_t& event_loop,
                              core::IAllocator& allocator)
@@ -31,17 +31,17 @@ UDPSenderPort::UDPSenderPort(ICloseHandler& close_handler,
     , packet_counter_(0) {
 }
 
-UDPSenderPort::~UDPSenderPort() {
+UdpSenderPort::~UdpSenderPort() {
     if (handle_initialized_ || write_sem_initialized_) {
         roc_panic("udp sender: sender was not fully closed before calling destructor");
     }
 }
 
-const address::SocketAddr& UDPSenderPort::address() const {
+const address::SocketAddr& UdpSenderPort::address() const {
     return address_;
 }
 
-bool UDPSenderPort::open() {
+bool UdpSenderPort::open() {
     if (int err = uv_async_init(&loop_, &write_sem_, write_sem_cb_)) {
         roc_log(LogError, "udp sender: uv_async_init(): [%s] %s", uv_err_name(err),
                 uv_strerror(err));
@@ -111,7 +111,7 @@ bool UDPSenderPort::open() {
     return true;
 }
 
-void UDPSenderPort::async_close() {
+void UdpSenderPort::async_close() {
     core::Mutex::Lock lock(mutex_);
 
     stopped_ = true;
@@ -121,7 +121,7 @@ void UDPSenderPort::async_close() {
     }
 }
 
-void UDPSenderPort::write(const packet::PacketPtr& pp) {
+void UdpSenderPort::write(const packet::PacketPtr& pp) {
     if (!pp) {
         roc_panic("udp sender: unexpected null packet");
     }
@@ -151,10 +151,10 @@ void UDPSenderPort::write(const packet::PacketPtr& pp) {
     }
 }
 
-void UDPSenderPort::close_cb_(uv_handle_t* handle) {
+void UdpSenderPort::close_cb_(uv_handle_t* handle) {
     roc_panic_if_not(handle);
 
-    UDPSenderPort& self = *(UDPSenderPort*)handle->data;
+    UdpSenderPort& self = *(UdpSenderPort*)handle->data;
 
     if (handle == (uv_handle_t*)&self.handle_) {
         self.handle_initialized_ = false;
@@ -173,10 +173,10 @@ void UDPSenderPort::close_cb_(uv_handle_t* handle) {
     self.close_handler_.handle_closed(self);
 }
 
-void UDPSenderPort::write_sem_cb_(uv_async_t* handle) {
+void UdpSenderPort::write_sem_cb_(uv_async_t* handle) {
     roc_panic_if_not(handle);
 
-    UDPSenderPort& self = *(UDPSenderPort*)handle->data;
+    UdpSenderPort& self = *(UdpSenderPort*)handle->data;
 
     while (packet::PacketPtr pp = self.read_()) {
         packet::UDP& udp = *pp->udp();
@@ -206,10 +206,10 @@ void UDPSenderPort::write_sem_cb_(uv_async_t* handle) {
     }
 }
 
-void UDPSenderPort::send_cb_(uv_udp_send_t* req, int status) {
+void UdpSenderPort::send_cb_(uv_udp_send_t* req, int status) {
     roc_panic_if_not(req);
 
-    UDPSenderPort& self = *(UDPSenderPort*)req->data;
+    UdpSenderPort& self = *(UdpSenderPort*)req->data;
 
     packet::PacketPtr pp =
         packet::Packet::container_of(ROC_CONTAINER_OF(req, packet::UDP, request));
@@ -239,7 +239,7 @@ void UDPSenderPort::send_cb_(uv_udp_send_t* req, int status) {
     }
 }
 
-packet::PacketPtr UDPSenderPort::read_() {
+packet::PacketPtr UdpSenderPort::read_() {
     core::Mutex::Lock lock(mutex_);
 
     packet::PacketPtr pp = list_.front();
@@ -250,7 +250,7 @@ packet::PacketPtr UDPSenderPort::read_() {
     return pp;
 }
 
-void UDPSenderPort::close_() {
+void UdpSenderPort::close_() {
     if (closed_) {
         return; // handle_closed() was already called
     }
