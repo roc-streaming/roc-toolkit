@@ -8,40 +8,14 @@
 
 #include "roc/log.h"
 
+#include "log_helpers.h"
+
 #include "roc_core/log.h"
 
 using namespace roc;
 
-namespace {
-
-roc::LogLevel convert_level(roc_log_level level) {
-    switch ((unsigned)level) {
-    case ROC_LOG_NONE:
-        return roc::LogNone;
-
-    case ROC_LOG_ERROR:
-        return roc::LogError;
-
-    case ROC_LOG_INFO:
-        return roc::LogInfo;
-
-    case ROC_LOG_DEBUG:
-        return roc::LogDebug;
-
-    case ROC_LOG_TRACE:
-        return roc::LogTrace;
-
-    default:
-        break;
-    }
-
-    return core::DefaultLogLevel;
-}
-
-} // namespace
-
 void roc_log_set_level(roc_log_level level) {
-    core::Logger::instance().set_level(convert_level(level));
+    core::Logger::instance().set_level(api::convert_log_level(level));
 }
 
 void roc_log_set_handler(roc_log_handler handler) {
