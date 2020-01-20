@@ -26,16 +26,16 @@ namespace roc {
 namespace netio {
 
 //! UDP sender.
-class UDPSenderPort : public BasicPort, public packet::IWriter {
+class UdpSenderPort : public BasicPort, public packet::IWriter {
 public:
     //! Initialize.
-    UDPSenderPort(ICloseHandler& close_handler,
+    UdpSenderPort(ICloseHandler& close_handler,
                   const address::SocketAddr&,
                   uv_loop_t& event_loop,
                   core::IAllocator& allocator);
 
     //! Destroy.
-    ~UDPSenderPort();
+    ~UdpSenderPort();
 
     //! Get bind address.
     virtual const address::SocketAddr& address() const;
