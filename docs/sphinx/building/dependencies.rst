@@ -24,7 +24,7 @@ Runtime dependencies
 
 .. warning::
 
-   libuv versions before 1.5.0 may have problems on 64-but ARMs.
+   libuv versions before 1.5.0 may have problems on 64-bit ARMs.
 
 .. warning::
 
