@@ -11,6 +11,7 @@ src/tests/roc_packet/test_router.cpp
 src/tests/roc_packet/test_sorted_queue.cpp
 src/tests/roc_packet/test_watchdog.cpp
 src/tests/roc_pipeline/test_sender_receiver.cpp
+src/tests/roc_pipeline/test_sender_sink_receiver_source.cpp
 src/tests/roc_rtp/test_packet_formats.cpp
 src/tests/roc_rtp/test_packets/*.h
 src/tests/roc_sndio/target_sox/test_player_recorder.cpp

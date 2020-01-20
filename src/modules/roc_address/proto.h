@@ -19,7 +19,7 @@ namespace roc {
 namespace address {
 
 //! Get FEC scheme for given protocol.
-packet::FECScheme proto_fec_scheme(EndpointProtocol proto);
+packet::FecScheme proto_fec_scheme(EndpointProtocol proto);
 
 //! Get default port number for given protocol.
 int proto_default_port(EndpointProtocol proto);

@@ -18,7 +18,7 @@ namespace roc {
 namespace packet {
 
 //! FEC scheme to string.
-const char* fec_scheme_to_str(FECScheme);
+const char* fec_scheme_to_str(FecScheme);
 
 } // namespace packet
 } // namespace roc
