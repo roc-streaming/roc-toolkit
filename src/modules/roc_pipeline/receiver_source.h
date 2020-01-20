@@ -7,7 +7,7 @@
  */
 
 //! @file roc_pipeline/receiver_source.h
-//! @brief Receiver pipeline.
+//! @brief Receiver source pipeline.
 
 #ifndef ROC_PIPELINE_RECEIVER_SOURCE_H_
 #define ROC_PIPELINE_RECEIVER_SOURCE_H_
