@@ -46,14 +46,14 @@ if not GetOption('disable_lib'):
     cenv = env.Clone()
     cenv.MergeVars(lib_env)
     cenv.Append(CPPDEFINES=('ROC_MODULE', 'roc_lib'))
-    cenv.Append(CPPPATH=['lib/include'])
+    cenv.Append(CPPPATH=['library/include'])
 
-    sources = env.GlobFiles('lib/src/*.cpp')
+    sources = env.GlobFiles('library/src/*.cpp')
 
     libroc = cenv.SharedLibrary(
         'roc_unstripped', sources, SHLIBSUFFIX=lib_env['SHLIBSUFFIX'])
 
-    env.Depends(libroc, '#src/lib/roc.version')
+    env.Depends(libroc, '#src/library/roc.version')
 
     libroc = cenv.MaybeStripLibrary(libroc[0].name.replace('_unstripped', ''),
         libroc, is_debug=GetOption('enable_debug'))
@@ -64,7 +64,7 @@ if not GetOption('disable_lib'):
     env.Alias('libroc', [target] + symlinks, env.Action(''))
     env.AlwaysBuild('libroc')
 
-    env.AddDistFile(env['ROC_SYSTEM_INCDIR'], '#src/lib/include/roc')
+    env.AddDistFile(env['ROC_SYSTEM_INCDIR'], '#src/library/include/roc')
     env.AddDistFile(env['ROC_SYSTEM_LIBDIR'], target)
 
     env.AddDistAction(env.FixupLibrary(
@@ -77,12 +77,12 @@ if not GetOption('disable_examples'):
     cenv = env.Clone()
     cenv.MergeVars(tool_env)
     cenv.MergeVars(test_env)
-    cenv.Append(CPPPATH=['lib/include'])
+    cenv.Append(CPPPATH=['library/include'])
     cenv.Append(LIBS=[libroc])
 
     targets = []
 
-    for source in env.GlobFiles('lib/example/*.c'):
+    for source in env.GlobFiles('library/example/*.c'):
         example = os.path.splitext(source.name)[0]
         exename = 'roc-example-' + example.replace('_', '-')
 
@@ -106,14 +106,14 @@ if not GetOption('disable_tests'):
 
     test_main = cenv.Object('tests/test_main.cpp')
 
-    for testname in env['ROC_MODULES'] + ['roc_lib']:
+    for testname in env['ROC_MODULES'] + ['roc_library']:
         testdir = 'tests/' + testname
 
         ccenv = cenv.Clone()
         ccenv.Append(CPPPATH=['#src/%s' % testdir])
 
-        if testname == 'roc_lib':
-            ccenv.Append(CPPPATH=['lib/include'])
+        if testname == 'roc_library':
+            ccenv.Append(CPPPATH=['library/include'])
             ccenv.Prepend(LIBS=[libroc])
 
         sources = env.GlobFiles('%s/*.cpp' % testdir)
@@ -159,7 +159,7 @@ if not GetOption('disable_tools'):
 if GetOption('enable_pulseaudio_modules'):
     cenv = env.Clone()
     cenv.MergeVars(pulse_env)
-    cenv.Append(CPPPATH=['lib/include'])
+    cenv.Append(CPPPATH=['library/include'])
     cenv.Append(LIBS=[libroc])
 
     helpers = cenv.Object('pulse/module_helpers.c')
