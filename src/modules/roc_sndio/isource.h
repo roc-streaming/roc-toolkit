@@ -25,6 +25,9 @@ public:
     //! Get source sample rate.
     virtual size_t sample_rate() const = 0;
 
+    //! Get number of channels for the source.
+    virtual size_t num_channels() const = 0;
+
     //! Check if the source has own clock.
     virtual bool has_clock() const = 0;
 

@@ -25,6 +25,9 @@ public:
     //! Get sample rate of the sink.
     virtual size_t sample_rate() const = 0;
 
+    //! Get number of channels for the sink.
+    virtual size_t num_channels() const = 0;
+
     //! Check if the sink has own clock.
     virtual bool has_clock() const = 0;
 };

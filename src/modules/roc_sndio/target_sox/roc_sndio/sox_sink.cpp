@@ -84,6 +84,16 @@ size_t SoxSink::sample_rate() const {
     return size_t(output_->signal.rate);
 }
 
+size_t SoxSink::num_channels() const {
+    roc_panic_if(!valid_);
+
+    if (!output_) {
+        roc_panic("sox sink: num_channels: non-open output file or device");
+    }
+
+    return size_t(output_->signal.channels);
+}
+
 bool SoxSink::has_clock() const {
     roc_panic_if(!valid_);
 
