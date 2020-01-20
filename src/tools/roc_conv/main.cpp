@@ -86,22 +86,22 @@ int main(int argc, char** argv) {
     source_config.sample_rate = 0;
     source_config.frame_size = config.internal_frame_size;
 
-    address::IoURI input(allocator);
+    address::IoURI input_uri(allocator);
     if (args.input_given) {
-        if (!address::parse_io_uri(args.input_arg, input) || !input.is_file()) {
+        if (!address::parse_io_uri(args.input_arg, input_uri) || !input_uri.is_file()) {
             roc_log(LogError, "invalid --input file URI");
             return 1;
         }
     }
 
-    if (!args.input_format_given && input.is_special_file()) {
+    if (!args.input_format_given && input_uri.is_special_file()) {
         roc_log(LogError, "--input-format should be specified if --input is \"-\"");
         return 1;
     }
 
     core::ScopedPtr<sndio::ISource> source(
         sndio::BackendDispatcher::instance().open_source(
-            allocator, input, args.input_format_arg, source_config),
+            allocator, input_uri, args.input_format_arg, source_config),
         allocator);
     if (!source) {
         roc_log(LogError, "can't open input: %s", args.input_arg);
@@ -163,15 +163,16 @@ int main(int argc, char** argv) {
     sink_config.sample_rate = config.output_sample_rate;
     sink_config.frame_size = config.internal_frame_size;
 
-    address::IoURI output(allocator);
+    address::IoURI output_uri(allocator);
     if (args.output_given) {
-        if (!address::parse_io_uri(args.output_arg, output) || !output.is_file()) {
+        if (!address::parse_io_uri(args.output_arg, output_uri)
+            || !output_uri.is_file()) {
             roc_log(LogError, "invalid --output file URI");
             return 1;
         }
     }
 
-    if (!args.output_format_given && output.is_special_file()) {
+    if (!args.output_format_given && output_uri.is_special_file()) {
         roc_log(LogError, "--output-format should be specified if --output is \"-\"");
         return 1;
     }
@@ -179,7 +180,7 @@ int main(int argc, char** argv) {
     core::ScopedPtr<sndio::ISink> sink;
     if (args.output_given) {
         sink.reset(sndio::BackendDispatcher::instance().open_sink(
-                       allocator, output, args.output_format_arg, sink_config),
+                       allocator, output_uri, args.output_format_arg, sink_config),
                    allocator);
         if (!sink) {
             roc_log(LogError, "can't open output: %s", args.output_arg);
