@@ -20,10 +20,10 @@ namespace roc {
 namespace audio {
 
 //! PCM decoder.
-class PCMDecoder : public IFrameDecoder, public core::NonCopyable<> {
+class PcmDecoder : public IFrameDecoder, public core::NonCopyable<> {
 public:
     //! Initialize.
-    explicit PCMDecoder(const PCMFuncs& funcs);
+    explicit PcmDecoder(const PcmFuncs& funcs);
 
     //! Get current stream position.
     virtual packet::timestamp_t position() const;
@@ -46,7 +46,7 @@ public:
     virtual void end();
 
 private:
-    const PCMFuncs& funcs_;
+    const PcmFuncs& funcs_;
 
     packet::timestamp_t stream_pos_;
     packet::timestamp_t stream_avail_;

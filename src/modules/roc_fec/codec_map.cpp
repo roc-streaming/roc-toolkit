@@ -78,7 +78,7 @@ void CodecMap::add_codec_(const Codec& codec) {
     codecs_[n_codecs_++] = codec;
 }
 
-const CodecMap::Codec* CodecMap::find_codec_(packet::FECScheme scheme) const {
+const CodecMap::Codec* CodecMap::find_codec_(packet::FecScheme scheme) const {
     for (size_t n = 0; n < n_codecs_; n++) {
         if (codecs_[n].scheme == scheme) {
             return &codecs_[n];

@@ -14,7 +14,7 @@
 namespace roc {
 namespace pipeline {
 
-packet::FECScheme port_fec_scheme(PortProtocol proto) {
+packet::FecScheme port_fec_scheme(PortProtocol proto) {
     switch (proto) {
     case Proto_None:
         return packet::FEC_None;
@@ -38,10 +38,10 @@ packet::FECScheme port_fec_scheme(PortProtocol proto) {
     return packet::FEC_None;
 }
 
-bool validate_port(packet::FECScheme fec_scheme,
+bool validate_port(packet::FecScheme fec_scheme,
                    PortProtocol port_protocol,
                    PortType port_type) {
-    const packet::FECScheme port_scheme = port_fec_scheme(port_protocol);
+    const packet::FecScheme port_scheme = port_fec_scheme(port_protocol);
 
     if (port_scheme != fec_scheme) {
         roc_log(LogError,
@@ -57,11 +57,11 @@ bool validate_port(packet::FECScheme fec_scheme,
     return true;
 }
 
-bool validate_ports(packet::FECScheme fec_scheme,
+bool validate_ports(packet::FecScheme fec_scheme,
                     PortProtocol source_port,
                     PortProtocol repair_port) {
-    const packet::FECScheme source_port_scheme = port_fec_scheme(source_port);
-    const packet::FECScheme repair_port_scheme = port_fec_scheme(repair_port);
+    const packet::FecScheme source_port_scheme = port_fec_scheme(source_port);
+    const packet::FecScheme repair_port_scheme = port_fec_scheme(repair_port);
 
     // source port is missing
     if (source_port == Proto_None) {

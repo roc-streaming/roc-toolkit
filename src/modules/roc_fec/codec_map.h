@@ -54,7 +54,7 @@ private:
     enum { MaxCodecs = 2 };
 
     struct Codec {
-        packet::FECScheme scheme;
+        packet::FecScheme scheme;
 
         IBlockEncoder* (*encoder_ctor)(const CodecConfig& config,
                                        core::BufferPool<uint8_t>& pool,
@@ -66,7 +66,7 @@ private:
     };
 
     void add_codec_(const Codec& codec);
-    const Codec* find_codec_(packet::FECScheme scheme) const;
+    const Codec* find_codec_(packet::FecScheme scheme) const;
 
     size_t n_codecs_;
     Codec codecs_[MaxCodecs];

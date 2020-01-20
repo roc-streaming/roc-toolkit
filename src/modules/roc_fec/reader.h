@@ -49,7 +49,7 @@ public:
     //!  - @p parser specifies packet parser for restored packets.
     //!  - @p allocator is used to initialize a packet array
     Reader(const ReaderConfig& config,
-           packet::FECScheme fec_scheme,
+           packet::FecScheme fec_scheme,
            IBlockDecoder& decoder,
            packet::IReader& source_reader,
            packet::IReader& repair_reader,
@@ -138,7 +138,7 @@ private:
     unsigned n_packets_;
 
     const size_t max_sbn_jump_;
-    const packet::FECScheme fec_scheme_;
+    const packet::FecScheme fec_scheme_;
 };
 
 } // namespace fec
