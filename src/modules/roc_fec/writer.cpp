@@ -16,7 +16,7 @@ namespace roc {
 namespace fec {
 
 Writer::Writer(const WriterConfig& config,
-               packet::FECScheme fec_scheme,
+               packet::FecScheme fec_scheme,
                IBlockEncoder& encoder,
                packet::IWriter& writer,
                packet::IComposer& source_composer,
