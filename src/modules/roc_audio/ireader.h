@@ -27,7 +27,9 @@ public:
     //! @remarks
     //!  Frame buffer and its size should be set by caller. The reader
     //!  should fill the entire buffer and should not resize it.
-    virtual void read(Frame& frame) = 0;
+    //! @returns
+    //!  false if there is nothing to read anymore.
+    virtual bool read(Frame& frame) = 0;
 };
 
 } // namespace audio

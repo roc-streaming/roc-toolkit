@@ -129,7 +129,9 @@ bool ReceiverSource::read(audio::Frame& frame) {
 
     prepare_();
 
-    audio_reader_->read(frame);
+    if (!audio_reader_->read(frame)) {
+        return false;
+    }
     timestamp_ += frame.size() / num_channels_;
 
     return true;

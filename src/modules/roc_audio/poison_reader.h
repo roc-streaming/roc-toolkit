@@ -26,7 +26,7 @@ public:
     PoisonReader(IReader& reader);
 
     //! Read audio frame.
-    virtual void read(Frame&);
+    virtual bool read(Frame&);
 
 private:
     IReader& reader_;

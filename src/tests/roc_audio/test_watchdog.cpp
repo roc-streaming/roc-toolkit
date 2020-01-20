@@ -45,13 +45,14 @@ public:
         flags_ = flags;
     }
 
-    void read(Frame& frame) {
+    bool read(Frame& frame) {
         if (flags_) {
             frame.set_flags(flags_);
         }
         for (size_t n = 0; n < frame.size(); n++) {
             frame.data()[n] = 42;
         }
+        return true;
     }
 
 private:
@@ -87,7 +88,7 @@ TEST_GROUP(watchdog) {
         test_reader.set_flags(frame_flags);
 
         Frame frame(buf.data(), buf.size());
-        reader.read(frame);
+        CHECK(reader.read(frame));
 
         if (is_read) {
             for (size_t n = 0; n < frame.size(); n++) {
