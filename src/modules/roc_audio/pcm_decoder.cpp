@@ -12,7 +12,7 @@
 namespace roc {
 namespace audio {
 
-PCMDecoder::PCMDecoder(const PCMFuncs& funcs)
+PcmDecoder::PcmDecoder(const PcmFuncs& funcs)
     : funcs_(funcs)
     , stream_pos_(0)
     , stream_avail_(0)
@@ -21,15 +21,15 @@ PCMDecoder::PCMDecoder(const PCMFuncs& funcs)
     , frame_pos_(0) {
 }
 
-packet::timestamp_t PCMDecoder::position() const {
+packet::timestamp_t PcmDecoder::position() const {
     return stream_pos_;
 }
 
-packet::timestamp_t PCMDecoder::available() const {
+packet::timestamp_t PcmDecoder::available() const {
     return stream_avail_;
 }
 
-void PCMDecoder::begin(packet::timestamp_t frame_position,
+void PcmDecoder::begin(packet::timestamp_t frame_position,
                        const void* frame_data,
                        size_t frame_size) {
     roc_panic_if_not(frame_data);
@@ -45,7 +45,7 @@ void PCMDecoder::begin(packet::timestamp_t frame_position,
     frame_size_ = frame_size;
 }
 
-size_t PCMDecoder::read(audio::sample_t* samples,
+size_t PcmDecoder::read(audio::sample_t* samples,
                         size_t n_samples,
                         packet::channel_mask_t channels) {
     if (!frame_data_) {
@@ -64,7 +64,7 @@ size_t PCMDecoder::read(audio::sample_t* samples,
     return rd_samples;
 }
 
-size_t PCMDecoder::shift(size_t n_samples) {
+size_t PcmDecoder::shift(size_t n_samples) {
     if (!frame_data_) {
         roc_panic("pcm decoder: shift should be called only between begin/end");
     }
@@ -81,7 +81,7 @@ size_t PCMDecoder::shift(size_t n_samples) {
     return n_samples;
 }
 
-void PCMDecoder::end() {
+void PcmDecoder::end() {
     if (!frame_data_) {
         roc_panic("pcm decoder: unpaired begin/end");
     }

@@ -20,10 +20,10 @@ namespace roc {
 namespace audio {
 
 //! PCM encoder.
-class PCMEncoder : public IFrameEncoder, public core::NonCopyable<> {
+class PcmEncoder : public IFrameEncoder, public core::NonCopyable<> {
 public:
     //! Initialize.
-    explicit PCMEncoder(const PCMFuncs& funcs);
+    explicit PcmEncoder(const PcmFuncs& funcs);
 
     //! Calculate encoded frame size for given number of samples per channel.
     virtual size_t encoded_size(size_t num_samples) const;
@@ -39,7 +39,7 @@ public:
     virtual void end();
 
 private:
-    const PCMFuncs& funcs_;
+    const PcmFuncs& funcs_;
 
     void* frame_data_;
     size_t frame_size_;
