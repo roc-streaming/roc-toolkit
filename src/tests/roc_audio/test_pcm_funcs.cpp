@@ -28,10 +28,10 @@ core::BufferPool<uint8_t> buffer_pool(allocator, MaxBufsz, true);
 } // namespace
 
 TEST_GROUP(pcm_funcs) {
-    const PCMFuncs* funcs;
+    const PcmFuncs* funcs;
     audio::sample_t output[MaxSamples];
 
-    void use(const PCMFuncs& f) {
+    void use(const PcmFuncs& f) {
         funcs = &f;
     }
 

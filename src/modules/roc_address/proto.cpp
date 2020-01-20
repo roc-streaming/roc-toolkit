@@ -12,7 +12,7 @@
 namespace roc {
 namespace address {
 
-packet::FECScheme proto_fec_scheme(EndpointProtocol proto) {
+packet::FecScheme proto_fec_scheme(EndpointProtocol proto) {
     switch ((int)proto) {
     case EndProto_RTP:
         return packet::FEC_None;
