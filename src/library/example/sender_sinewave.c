@@ -91,10 +91,10 @@ int main() {
     sender_config.frame_channels = ROC_CHANNEL_SET_STEREO;
     sender_config.frame_encoding = ROC_FRAME_ENCODING_PCM_FLOAT;
 
-    /* Turn on sender timing.
+    /* Turn on internal CPU timer.
      * Sender must send packets with steady rate, so we should either implement
      * clocking or ask the library to do so. We choose the second here. */
-    sender_config.automatic_timing = 1;
+    sender_config.clock_source = ROC_CLOCK_INTERNAL;
 
     /* Create sender. */
     roc_sender* sender = roc_sender_open(context, &sender_config);
