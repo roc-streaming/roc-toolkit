@@ -7,7 +7,7 @@
  */
 
 //! @file roc_pipeline/converter_sink.h
-//! @brief Converter pipeline.
+//! @brief Converter sink pipeline.
 
 #ifndef ROC_PIPELINE_CONVERTER_SINK_H_
 #define ROC_PIPELINE_CONVERTER_SINK_H_
