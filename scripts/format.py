@@ -26,7 +26,7 @@ def is_test(path):
 
 def is_lib(path):
     rootname = os.path.basename(os.path.dirname(os.path.dirname(os.path.abspath(path))))
-    return rootname == 'lib'
+    return rootname == 'library'
 
 def make_guard(path):
     dirpath, basename = os.path.split(path)
