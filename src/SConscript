@@ -45,7 +45,7 @@ libroc = None
 if not GetOption('disable_lib'):
     cenv = env.Clone()
     cenv.MergeVars(lib_env)
-    cenv.Append(CPPDEFINES=('ROC_MODULE', 'roc_lib'))
+    cenv.Append(CPPDEFINES=('ROC_MODULE', 'roc_api'))
     cenv.Append(CPPPATH=['library/include'])
 
     sources = env.GlobFiles('library/src/*.cpp')

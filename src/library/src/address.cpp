@@ -6,32 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "private.h"
+#include "roc/address.h"
 
-#include "roc_address/socket_addr.h"
-#include "roc_core/stddefs.h"
+#include "address_helpers.h"
 
 using namespace roc;
-
-namespace {
-
-const char* address_payload(const roc_address* address) {
-    return address->private_data.payload;
-}
-
-char* address_payload(roc_address* address) {
-    return address->private_data.payload;
-}
-
-} // namespace
-
-const address::SocketAddr& get_address(const roc_address* address) {
-    return *(const address::SocketAddr*)address_payload(address);
-}
-
-address::SocketAddr& get_address(roc_address* address) {
-    return *(address::SocketAddr*)address_payload(address);
-}
 
 int roc_address_init(roc_address* address, roc_family family, const char* ip, int port) {
     if (sizeof(roc_address) < sizeof(address::SocketAddr)) {
@@ -50,7 +29,8 @@ int roc_address_init(roc_address* address, roc_family family, const char* ip, in
         return -1;
     }
 
-    address::SocketAddr& sa = *new (address_payload(address)) address::SocketAddr;
+    address::SocketAddr& sa =
+        *new (api::get_address_payload(address)) address::SocketAddr;
 
     if (family == ROC_AF_AUTO || family == ROC_AF_IPv4) {
         if (sa.set_host_port_ipv4(ip, port)) {
@@ -72,7 +52,7 @@ roc_family roc_address_family(const roc_address* address) {
         return ROC_AF_INVALID;
     }
 
-    const address::SocketAddr& sa = get_address(address);
+    const address::SocketAddr& sa = api::get_socket_addr(address);
 
     switch (sa.version()) {
     case 4:
@@ -95,7 +75,7 @@ const char* roc_address_ip(const roc_address* address, char* buf, size_t bufsz) 
         return NULL;
     }
 
-    const address::SocketAddr& sa = get_address(address);
+    const address::SocketAddr& sa = api::get_socket_addr(address);
 
     if (!sa.get_host(buf, bufsz)) {
         return NULL;
@@ -109,7 +89,7 @@ int roc_address_port(const roc_address* address) {
         return -1;
     }
 
-    const address::SocketAddr& sa = get_address(address);
+    const address::SocketAddr& sa = api::get_socket_addr(address);
 
     int port = sa.port();
     if (port < 0) {
