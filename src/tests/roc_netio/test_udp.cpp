@@ -11,7 +11,7 @@
 #include "roc_address/socket_addr.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/heap_allocator.h"
-#include "roc_netio/transceiver.h"
+#include "roc_netio/event_loop.h"
 #include "roc_packet/concurrent_queue.h"
 #include "roc_packet/packet_pool.h"
 
@@ -85,13 +85,13 @@ TEST(udp, one_sender_one_receiver_single_thread) {
     address::SocketAddr tx_addr = new_address();
     address::SocketAddr rx_addr = new_address();
 
-    Transceiver trx(packet_pool, buffer_pool, allocator);
-    CHECK(trx.valid());
+    EventLoop event_loop(packet_pool, buffer_pool, allocator);
+    CHECK(event_loop.valid());
 
-    packet::IWriter* tx_sender = trx.add_udp_sender(tx_addr);
+    packet::IWriter* tx_sender = event_loop.add_udp_sender(tx_addr);
     CHECK(tx_sender);
 
-    CHECK(trx.add_udp_receiver(rx_addr, rx_queue));
+    CHECK(event_loop.add_udp_receiver(rx_addr, rx_queue));
 
     for (int i = 0; i < NumIterations; i++) {
         for (int p = 0; p < NumPackets; p++) {
@@ -109,16 +109,16 @@ TEST(udp, one_sender_one_receiver_separate_threads) {
     address::SocketAddr tx_addr = new_address();
     address::SocketAddr rx_addr = new_address();
 
-    Transceiver tx(packet_pool, buffer_pool, allocator);
-    CHECK(tx.valid());
+    EventLoop tx_loop(packet_pool, buffer_pool, allocator);
+    CHECK(tx_loop.valid());
 
-    packet::IWriter* tx_sender = tx.add_udp_sender(tx_addr);
+    packet::IWriter* tx_sender = tx_loop.add_udp_sender(tx_addr);
     CHECK(tx_sender);
 
-    Transceiver rx(packet_pool, buffer_pool, allocator);
-    CHECK(rx.valid());
+    EventLoop rx_loop(packet_pool, buffer_pool, allocator);
+    CHECK(rx_loop.valid());
 
-    CHECK(rx.add_udp_receiver(rx_addr, rx_queue));
+    CHECK(rx_loop.add_udp_receiver(rx_addr, rx_queue));
 
     for (int i = 0; i < NumIterations; i++) {
         for (int p = 0; p < NumPackets; p++) {
@@ -141,20 +141,20 @@ TEST(udp, one_sender_multiple_receivers) {
     address::SocketAddr rx_addr2 = new_address();
     address::SocketAddr rx_addr3 = new_address();
 
-    Transceiver tx(packet_pool, buffer_pool, allocator);
-    CHECK(tx.valid());
+    EventLoop tx_loop(packet_pool, buffer_pool, allocator);
+    CHECK(tx_loop.valid());
 
-    packet::IWriter* tx_sender = tx.add_udp_sender(tx_addr);
+    packet::IWriter* tx_sender = tx_loop.add_udp_sender(tx_addr);
     CHECK(tx_sender);
 
-    Transceiver rx1(packet_pool, buffer_pool, allocator);
-    CHECK(rx1.valid());
-    CHECK(rx1.add_udp_receiver(rx_addr1, rx_queue1));
+    EventLoop rx1_loop(packet_pool, buffer_pool, allocator);
+    CHECK(rx1_loop.valid());
+    CHECK(rx1_loop.add_udp_receiver(rx_addr1, rx_queue1));
 
-    Transceiver rx23(packet_pool, buffer_pool, allocator);
-    CHECK(rx23.valid());
-    CHECK(rx23.add_udp_receiver(rx_addr2, rx_queue2));
-    CHECK(rx23.add_udp_receiver(rx_addr3, rx_queue3));
+    EventLoop rx23_loop(packet_pool, buffer_pool, allocator);
+    CHECK(rx23_loop.valid());
+    CHECK(rx23_loop.add_udp_receiver(rx_addr2, rx_queue2));
+    CHECK(rx23_loop.add_udp_receiver(rx_addr3, rx_queue3));
 
     for (int i = 0; i < NumIterations; i++) {
         for (int p = 0; p < NumPackets; p++) {
@@ -179,24 +179,24 @@ TEST(udp, multiple_senders_one_receiver) {
 
     address::SocketAddr rx_addr = new_address();
 
-    Transceiver tx1(packet_pool, buffer_pool, allocator);
-    CHECK(tx1.valid());
+    EventLoop tx1_loop(packet_pool, buffer_pool, allocator);
+    CHECK(tx1_loop.valid());
 
-    packet::IWriter* tx_sender1 = tx1.add_udp_sender(tx_addr1);
+    packet::IWriter* tx_sender1 = tx1_loop.add_udp_sender(tx_addr1);
     CHECK(tx_sender1);
 
-    Transceiver tx23(packet_pool, buffer_pool, allocator);
-    CHECK(tx23.valid());
+    EventLoop tx23_loop(packet_pool, buffer_pool, allocator);
+    CHECK(tx23_loop.valid());
 
-    packet::IWriter* tx_sender2 = tx23.add_udp_sender(tx_addr2);
+    packet::IWriter* tx_sender2 = tx23_loop.add_udp_sender(tx_addr2);
     CHECK(tx_sender2);
 
-    packet::IWriter* tx_sender3 = tx23.add_udp_sender(tx_addr3);
+    packet::IWriter* tx_sender3 = tx23_loop.add_udp_sender(tx_addr3);
     CHECK(tx_sender3);
 
-    Transceiver rx(packet_pool, buffer_pool, allocator);
-    CHECK(rx.valid());
-    CHECK(rx.add_udp_receiver(rx_addr, rx_queue));
+    EventLoop rx_loop(packet_pool, buffer_pool, allocator);
+    CHECK(rx_loop.valid());
+    CHECK(rx_loop.add_udp_receiver(rx_addr, rx_queue));
 
     for (int i = 0; i < NumIterations; i++) {
         for (int p = 0; p < NumPackets; p++) {

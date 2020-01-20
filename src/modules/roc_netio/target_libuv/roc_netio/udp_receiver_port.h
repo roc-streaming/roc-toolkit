@@ -29,10 +29,10 @@ namespace roc {
 namespace netio {
 
 //! UDP receiver.
-class UDPReceiverPort : public BasicPort {
+class UdpReceiverPort : public BasicPort {
 public:
     //! Initialize.
-    UDPReceiverPort(ICloseHandler& close_handler,
+    UdpReceiverPort(ICloseHandler& close_handler,
                     const address::SocketAddr&,
                     uv_loop_t& event_loop,
                     packet::IWriter& writer,
@@ -41,7 +41,7 @@ public:
                     core::IAllocator& allocator);
 
     //! Destroy.
-    ~UDPReceiverPort();
+    ~UdpReceiverPort();
 
     //! Get bind address.
     virtual const address::SocketAddr& address() const;
