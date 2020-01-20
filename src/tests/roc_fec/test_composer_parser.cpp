@@ -85,7 +85,7 @@ struct PacketTest {
     packet::IComposer* composer;
     packet::IParser* parser;
 
-    packet::FECScheme scheme;
+    packet::FecScheme scheme;
     size_t block_length;
 
     bool is_rtp;
@@ -129,7 +129,7 @@ void fill_packet(packet::Packet& packet, bool is_rtp) {
 }
 
 void check_packet(packet::Packet& packet,
-                  packet::FECScheme scheme,
+                  packet::FecScheme scheme,
                   size_t block_length,
                   bool is_rtp) {
     if (is_rtp) {
