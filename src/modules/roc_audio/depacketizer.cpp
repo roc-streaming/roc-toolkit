@@ -61,7 +61,7 @@ packet::timestamp_t Depacketizer::timestamp() const {
     return timestamp_;
 }
 
-void Depacketizer::read(Frame& frame) {
+bool Depacketizer::read(Frame& frame) {
     const size_t prev_dropped_packets = dropped_packets_;
     const packet::timestamp_t prev_packet_samples = packet_samples_;
 
@@ -77,6 +77,8 @@ void Depacketizer::read(Frame& frame) {
         roc_log(LogDebug, "depacketizer: ts=%lu loss_ratio=%.5lf",
                 (unsigned long)timestamp_, loss_ratio);
     }
+
+    return true;
 }
 
 void Depacketizer::read_frame_(Frame& frame) {
