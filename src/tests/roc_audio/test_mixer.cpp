@@ -40,7 +40,7 @@ TEST_GROUP(mixer) {
         core::Slice<sample_t> buf = new_buffer(sz);
 
         Frame frame(buf.data(), buf.size());
-        mixer.read(frame);
+        CHECK(mixer.read(frame));
 
         for (size_t n = 0; n < sz; n++) {
             DOUBLES_EQUAL((double)value, (double)frame.data()[n], 0.0001);

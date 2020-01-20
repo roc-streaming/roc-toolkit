@@ -64,7 +64,7 @@ TEST_GROUP(resampler) {
         core::Slice<sample_t> buf = new_buffer(sig_len);
 
         Frame frame(buf.data(), buf.size());
-        reader.read(frame);
+        CHECK(reader.read(frame));
 
         for (size_t i = 0; i < sig_len; ++i) {
             spectrum[i * 2] = (double)frame.data()[i];
@@ -83,7 +83,7 @@ TEST_GROUP(resampler) {
         core::Slice<sample_t> buf = new_buffer(sig_len);
 
         Frame frame(buf.data(), buf.size());
-        reader.read(frame);
+        CHECK(reader.read(frame));
 
         size_t i = 0;
         for (; i < sig_len / nChannels; ++i) {
