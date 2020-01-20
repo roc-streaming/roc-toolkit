@@ -41,7 +41,7 @@ public:
                  bool beep);
 
     //! Read audio frame.
-    virtual void read(Frame& frame);
+    virtual bool read(Frame& frame);
 
     //! Did depacketizer catch first packet?
     bool started() const;

@@ -47,7 +47,7 @@ public:
     //! Read audio frame.
     //! @remarks
     //!  Calculates everything during this call so it may take time.
-    virtual void read(Frame&);
+    virtual bool read(Frame&);
 
     //! Set new resample factor.
     //! @remarks
@@ -60,7 +60,7 @@ public:
 
 private:
     bool init_frames_(core::BufferPool<sample_t>&);
-    void renew_frames_();
+    bool renew_frames_();
 
     IResampler& resampler_;
     IReader& reader_;
