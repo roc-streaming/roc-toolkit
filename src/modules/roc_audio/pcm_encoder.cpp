@@ -12,18 +12,18 @@
 namespace roc {
 namespace audio {
 
-PCMEncoder::PCMEncoder(const PCMFuncs& funcs)
+PcmEncoder::PcmEncoder(const PcmFuncs& funcs)
     : funcs_(funcs)
     , frame_data_(NULL)
     , frame_size_(0)
     , frame_pos_(0) {
 }
 
-size_t PCMEncoder::encoded_size(size_t num_samples) const {
+size_t PcmEncoder::encoded_size(size_t num_samples) const {
     return funcs_.payload_size_from_samples(num_samples);
 }
 
-void PCMEncoder::begin(void* frame_data, size_t frame_size) {
+void PcmEncoder::begin(void* frame_data, size_t frame_size) {
     roc_panic_if_not(frame_data);
 
     if (frame_data_) {
@@ -34,7 +34,7 @@ void PCMEncoder::begin(void* frame_data, size_t frame_size) {
     frame_size_ = frame_size;
 }
 
-size_t PCMEncoder::write(const audio::sample_t* samples,
+size_t PcmEncoder::write(const audio::sample_t* samples,
                          size_t n_samples,
                          packet::channel_mask_t channels) {
     if (!frame_data_) {
@@ -48,7 +48,7 @@ size_t PCMEncoder::write(const audio::sample_t* samples,
     return wr_samples;
 }
 
-void PCMEncoder::end() {
+void PcmEncoder::end() {
     if (!frame_data_) {
         roc_panic("pcm encoder: unpaired begin/end");
     }
