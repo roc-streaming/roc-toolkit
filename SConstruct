@@ -595,6 +595,7 @@ env['ROC_MODULES'] = [
     'roc_netio',
     'roc_sndio',
     'roc_pipeline',
+    'roc_peer',
 ]
 
 env['ROC_TARGETS'] = []
