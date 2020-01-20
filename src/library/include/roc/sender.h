@@ -78,17 +78,17 @@ extern "C" {
  * Sender should encode samples at a constant rate that is configured when the sender
  * is created. There are two ways to accomplish this:
  *
- *  - If the user enabled the automatic timing feature, the sender employs a CPU timer
- *    to block writes until it's time to encode the next bunch of samples according to the
- *    configured sample rate. This mode is useful when the user gets samples from a
+ *  - If the user enabled internal clock (@c ROC_CLOCK_INTERNAL), the sender employs a CPU
+ *    timer to block writes until it's time to encode the next bunch of samples according
+ *    to the configured sample rate. This mode is useful when the user gets samples from a
  *    non-realtime source, e.g. from an audio file.
  *
- *  - Otherwise, the samples written to the sender are encoded immediately and the user
- *    is responsible to write samples in time. This mode is useful when the user gets
- *    samples from a realtime source with its own clock, e.g. from an audio device.
- *    Automatic clocking should not be used in this case because the audio device and the
- *    CPU might have slightly different clocks, and the difference will eventually lead
- *    to an underrun or an overrun.
+ *  - Otherwise (@c ROC_CLOCK_EXTERNAL), the samples written to the sender are encoded
+ *    immediately and the user is responsible to write samples in time. This mode is
+ *    useful when the user gets samples from a realtime source with its own clock, e.g.
+ *    from an audio device. Internal clock should not be used in this case because the
+ *    audio device and the CPU might have slightly different clocks, and the difference
+ *    will eventually lead to an underrun or an overrun.
  *
  * @b Thread-safety
  *  - can be used concurrently
