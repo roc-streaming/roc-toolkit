@@ -9,7 +9,7 @@ We use `GitHub <https://github.com/roc-project/roc>`_ for bug tracking and code 
 Mailing list
 ============
 
-We have an announcement and discussion mailing list for users and developers: roc@freelists.org.
+We have an announcement and discussion mailing list for users and developers: roc@freelists.org. We recommend to use it for discussions and troubleshooting. Please use `bottom-posting <http://www.idallen.com/topposting.html>`_.
 
 You can browse the list archive and join the list by visiting `this page <https://www.freelists.org/list/roc>`_. You can also join the list by sending an email to roc-request@freelists.org with "subscribe" in the "Subject" field. You need to join to be able to post.
 
