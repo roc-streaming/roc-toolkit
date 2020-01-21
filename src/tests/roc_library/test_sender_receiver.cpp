@@ -20,6 +20,7 @@
 #include "roc_core/stddefs.h"
 #include "roc_core/thread.h"
 #include "roc_core/time.h"
+#include "roc_fec/codec_map.h"
 #include "roc_netio/event_loop.h"
 #include "roc_packet/packet_pool.h"
 #include "roc_packet/queue.h"
@@ -424,6 +425,11 @@ TEST_GROUP(sender_receiver) {
         receiver_conf.target_latency = Latency * 1000000000ul / SampleRate;
         receiver_conf.no_playback_timeout = Timeout * 1000000000ul / SampleRate;
     }
+
+    bool is_fec_supported() {
+        fec::CodecMap codec_map;
+        return codec_map.is_supported(packet::FEC_ReedSolomon_M8);
+    }
 };
 
 TEST(sender_receiver, bare_rtp) {
@@ -444,8 +450,11 @@ TEST(sender_receiver, bare_rtp) {
     sender.join();
 }
 
-#ifdef ROC_TARGET_OPENFEC
 TEST(sender_receiver, fec_without_losses) {
+    if (!is_fec_supported()) {
+        return;
+    }
+
     enum { Flags = FlagFEC };
 
     init_config(Flags);
@@ -464,6 +473,10 @@ TEST(sender_receiver, fec_without_losses) {
 }
 
 TEST(sender_receiver, fec_with_losses) {
+    if (!is_fec_supported()) {
+        return;
+    }
+
     enum { Flags = FlagFEC };
 
     init_config(Flags);
@@ -483,6 +496,5 @@ TEST(sender_receiver, fec_with_losses) {
     sender.stop();
     sender.join();
 }
-#endif // ROC_TARGET_OPENFEC
 
 } // namespace roc
