@@ -17,6 +17,8 @@
 #include "roc_core/scoped_destructor.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_netio/event_loop.h"
+#include "roc_peer/context.h"
+#include "roc_peer/sender.h"
 #include "roc_pipeline/parse_port.h"
 #include "roc_pipeline/port_utils.h"
 #include "roc_pipeline/sender_sink.h"
@@ -62,10 +64,26 @@ int main(int argc, char** argv) {
         break;
     }
 
-    core::HeapAllocator allocator;
+    peer::ContextConfig context_config;
+
+    context_config.poisoning = args.poisoning_flag;
+
+    if (args.packet_limit_given) {
+        if (args.packet_limit_arg <= 0) {
+            roc_log(LogError, "invalid --packet-limit: should be > 0");
+            return 1;
+        }
+        context_config.max_packet_size = (size_t)args.packet_limit_arg;
+    }
+
+    peer::Context context(context_config);
+    if (!context.valid()) {
+        roc_log(LogError, "can't initialize peer context");
+        return 1;
+    }
 
     if (args.list_supported_given) {
-        if (!sndio::print_supported(allocator)) {
+        if (!sndio::print_supported(context.allocator())) {
             return 1;
         }
         return 0;
@@ -78,15 +96,6 @@ int main(int argc, char** argv) {
             roc_log(LogError, "invalid --packet-length");
             return 1;
         }
-    }
-
-    size_t max_packet_size = 2048;
-    if (args.packet_limit_given) {
-        if (args.packet_limit_arg <= 0) {
-            roc_log(LogError, "invalid --packet-limit: should be > 0");
-            return 1;
-        }
-        max_packet_size = (size_t)args.packet_limit_arg;
     }
 
     if (args.frame_size_given) {
@@ -113,6 +122,22 @@ int main(int argc, char** argv) {
         if (!pipeline::parse_port(pipeline::Port_AudioRepair, args.repair_arg,
                                   repair_port)) {
             roc_log(LogError, "can't parse remote repair port: %s", args.repair_arg);
+            return 1;
+        }
+    }
+
+    address::SocketAddr local_addr;
+    if (source_port.address.version() == 6) {
+        local_addr.set_host_port_ipv6("::", 0);
+    } else {
+        local_addr.set_host_port_ipv4("0.0.0.0", 0);
+    }
+    if (!local_addr.has_host_port()) {
+        roc_panic("can't initialize local address");
+    }
+    if (args.broadcast_given) {
+        if (!local_addr.set_broadcast()) {
+            roc_log(LogError, "can't enable broadcast for local address");
             return 1;
         }
     }
@@ -187,6 +212,9 @@ int main(int argc, char** argv) {
         config.resampler.window_size = (size_t)args.resampler_window_arg;
     }
 
+    config.interleaving = args.interleaving_flag;
+    config.poisoning = args.poisoning_flag;
+
     sndio::Config io_config;
     io_config.channels = config.input_channels;
     io_config.frame_size = config.internal_frame_size;
@@ -203,16 +231,7 @@ int main(int argc, char** argv) {
         }
     }
 
-    config.interleaving = args.interleaving_flag;
-    config.poisoning = args.poisoning_flag;
-
-    core::BufferPool<uint8_t> byte_buffer_pool(allocator, max_packet_size,
-                                               args.poisoning_flag);
-    core::BufferPool<audio::sample_t> sample_buffer_pool(
-        allocator, config.internal_frame_size, args.poisoning_flag);
-    packet::PacketPool packet_pool(allocator, args.poisoning_flag);
-
-    address::IoURI input_uri(allocator);
+    address::IoURI input_uri(context.allocator());
     if (args.input_given) {
         if (!address::parse_io_uri(args.input_arg, input_uri)) {
             roc_log(LogError, "invalid --input file or device URI");
@@ -235,8 +254,8 @@ int main(int argc, char** argv) {
 
     core::ScopedPtr<sndio::ISource> source(
         sndio::BackendDispatcher::instance().open_source(
-            allocator, input_uri, args.input_format_arg, io_config),
-        allocator);
+            context.allocator(), input_uri, args.input_format_arg, io_config),
+        context.allocator());
     if (!source) {
         roc_log(LogError, "can't open input file or device: uri=%s format=%s",
                 args.input_arg, args.input_format_arg);
@@ -246,46 +265,38 @@ int main(int argc, char** argv) {
     config.timing = !source->has_clock();
     config.input_sample_rate = source->sample_rate();
 
-    fec::CodecMap codec_map;
-    rtp::FormatMap format_map;
-
-    netio::EventLoop event_loop(packet_pool, byte_buffer_pool, allocator);
-    if (!event_loop.valid()) {
-        roc_log(LogError, "can't create network transceiver");
+    peer::Sender sender(context, config);
+    if (!sender.valid()) {
+        roc_log(LogError, "can't create sender peer");
         return 1;
     }
 
-    address::SocketAddr local_addr;
-    if (source_port.address.version() == 6) {
-        local_addr.set_host_port_ipv6("::", 0);
-    } else {
-        local_addr.set_host_port_ipv4("0.0.0.0", 0);
+    if (!sender.bind(local_addr)) {
+        roc_log(LogError, "can't bind sender to local address");
+        return 1;
     }
-    if (!local_addr.has_host_port()) {
-        roc_panic("can't initialize local address");
-    }
-    if (args.broadcast_given) {
-        if (!local_addr.set_broadcast()) {
-            roc_log(LogError, "can't enable broadcast for local address");
+
+    if (args.source_given) {
+        if (!sender.connect(pipeline::Port_AudioSource, source_port)) {
+            roc_log(LogError, "can't connect sender to remote source port");
             return 1;
         }
     }
 
-    packet::IWriter* udp_sender = event_loop.add_udp_sender(local_addr);
-    if (!udp_sender) {
-        roc_log(LogError, "can't create udp sender");
+    if (args.repair_given) {
+        if (!sender.connect(pipeline::Port_AudioRepair, repair_port)) {
+            roc_log(LogError, "can't connect sender to remote repair port");
+            return 1;
+        }
+    }
+
+    sndio::ISink* sender_sink = sender.sink();
+    if (!sender_sink) {
+        roc_log(LogError, "can't create sender sink");
         return 1;
     }
 
-    pipeline::SenderSink sender(config, source_port, *udp_sender, repair_port,
-                                *udp_sender, codec_map, format_map, packet_pool,
-                                byte_buffer_pool, sample_buffer_pool, allocator);
-    if (!sender.valid()) {
-        roc_log(LogError, "can't create sender pipeline");
-        return 1;
-    }
-
-    sndio::Pump pump(sample_buffer_pool, *source, NULL, sender,
+    sndio::Pump pump(context.sample_buffer_pool(), *source, NULL, *sender_sink,
                      config.internal_frame_size, sndio::Pump::ModePermanent);
     if (!pump.valid()) {
         roc_log(LogError, "can't create audio pump");
