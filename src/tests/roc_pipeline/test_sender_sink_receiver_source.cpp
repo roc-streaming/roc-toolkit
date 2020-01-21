@@ -78,6 +78,16 @@ rtp::FormatMap format_map;
 } // namespace
 
 TEST_GROUP(sender_sink_receiver_source) {
+    bool is_fec_supported(int flags) {
+        if (flags & FlagReedSolomon) {
+            return codec_map.is_supported(packet::FEC_ReedSolomon_M8);
+        }
+        if (flags & FlagLDPC) {
+            return codec_map.is_supported(packet::FEC_LDPC_Staircase);
+        }
+        return true;
+    }
+
     void send_receive(int flags, size_t num_sessions) {
         packet::Queue queue;
 
@@ -264,31 +274,41 @@ TEST(sender_sink_receiver_source, interleaving) {
     send_receive(FlagInterleaving, 1);
 }
 
-#ifdef ROC_TARGET_OPENFEC
 TEST(sender_sink_receiver_source, fec_rs) {
-    send_receive(FlagReedSolomon, 1);
+    if (is_fec_supported(FlagReedSolomon)) {
+        send_receive(FlagReedSolomon, 1);
+    }
 }
 
 TEST(sender_sink_receiver_source, fec_ldpc) {
-    send_receive(FlagLDPC, 1);
+    if (is_fec_supported(FlagLDPC)) {
+        send_receive(FlagLDPC, 1);
+    }
 }
 
 TEST(sender_sink_receiver_source, fec_interleaving) {
-    send_receive(FlagReedSolomon | FlagInterleaving, 1);
+    if (is_fec_supported(FlagReedSolomon)) {
+        send_receive(FlagReedSolomon | FlagInterleaving, 1);
+    }
 }
 
 TEST(sender_sink_receiver_source, fec_loss) {
-    send_receive(FlagReedSolomon | FlagLosses, 1);
+    if (is_fec_supported(FlagReedSolomon)) {
+        send_receive(FlagReedSolomon | FlagLosses, 1);
+    }
 }
 
 TEST(sender_sink_receiver_source, fec_drop_source) {
-    send_receive(FlagReedSolomon | FlagDropSource, 0);
+    if (is_fec_supported(FlagReedSolomon)) {
+        send_receive(FlagReedSolomon | FlagDropSource, 0);
+    }
 }
 
 TEST(sender_sink_receiver_source, fec_drop_repair) {
-    send_receive(FlagReedSolomon | FlagDropRepair, 1);
+    if (is_fec_supported(FlagReedSolomon)) {
+        send_receive(FlagReedSolomon | FlagDropRepair, 1);
+    }
 }
-#endif //! ROC_TARGET_OPENFEC
 
 } // namespace pipeline
 } // namespace roc
