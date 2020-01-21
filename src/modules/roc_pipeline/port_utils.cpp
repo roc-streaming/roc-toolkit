@@ -43,6 +43,15 @@ bool validate_port(packet::FecScheme fec_scheme,
                    PortType port_type) {
     const packet::FecScheme port_scheme = port_fec_scheme(port_protocol);
 
+    if (port_type == Port_AudioRepair && port_protocol != Proto_None
+        && fec_scheme == packet::FEC_None) {
+        roc_log(
+            LogError,
+            "bad ports configuration:"
+            " repair port is provided, but pipeline is configured to use no fec scheme");
+        return false;
+    }
+
     if (port_scheme != fec_scheme) {
         roc_log(LogError,
                 "bad ports configuration:"
