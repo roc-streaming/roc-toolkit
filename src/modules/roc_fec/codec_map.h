@@ -28,6 +28,9 @@ public:
     //! Initialize.
     CodecMap();
 
+    //! Check whether given FEC scheme is supported.
+    bool is_supported(packet::FecScheme scheme);
+
     //! Create a new block encoder.
     //!
     //! @remarks
