@@ -18,6 +18,8 @@
 #include "roc_core/scoped_destructor.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_netio/event_loop.h"
+#include "roc_peer/context.h"
+#include "roc_peer/receiver.h"
 #include "roc_pipeline/converter_source.h"
 #include "roc_pipeline/parse_port.h"
 #include "roc_pipeline/receiver_source.h"
@@ -63,25 +65,32 @@ int main(int argc, char** argv) {
         break;
     }
 
-    core::HeapAllocator allocator;
+    peer::ContextConfig context_config;
+
+    context_config.poisoning = args.poisoning_flag;
+
+    if (args.packet_limit_given) {
+        if (args.packet_limit_arg <= 0) {
+            roc_log(LogError, "invalid --packet-limit: should be > 0");
+            return 1;
+        }
+        context_config.max_packet_size = (size_t)args.packet_limit_arg;
+    }
+
+    peer::Context context(context_config);
+    if (!context.valid()) {
+        roc_log(LogError, "can't initialize peer context");
+        return 1;
+    }
 
     if (args.list_supported_given) {
-        if (!sndio::print_supported(allocator)) {
+        if (!sndio::print_supported(context.allocator())) {
             return 1;
         }
         return 0;
     }
 
     pipeline::ReceiverConfig config;
-
-    size_t max_packet_size = 2048;
-    if (args.packet_limit_given) {
-        if (args.packet_limit_arg <= 0) {
-            roc_log(LogError, "invalid --packet-limit: should be > 0");
-            return 1;
-        }
-        max_packet_size = (size_t)args.packet_limit_arg;
-    }
 
     if (args.frame_size_given) {
         if (args.frame_size_arg <= 0) {
@@ -198,8 +207,10 @@ int main(int argc, char** argv) {
         config.default_session.resampler.window_size = (size_t)args.resampler_window_arg;
     }
 
-    sndio::Config io_config;
+    config.common.poisoning = args.poisoning_flag;
+    config.common.beeping = args.beeping_flag;
 
+    sndio::Config io_config;
     io_config.channels = config.common.output_channels;
     io_config.frame_size = config.common.internal_frame_size;
 
@@ -222,16 +233,7 @@ int main(int argc, char** argv) {
         }
     }
 
-    config.common.poisoning = args.poisoning_flag;
-    config.common.beeping = args.beeping_flag;
-
-    core::BufferPool<uint8_t> byte_buffer_pool(allocator, max_packet_size,
-                                               args.poisoning_flag);
-    core::BufferPool<audio::sample_t> sample_buffer_pool(
-        allocator, config.common.internal_frame_size, args.poisoning_flag);
-    packet::PacketPool packet_pool(allocator, args.poisoning_flag);
-
-    address::IoURI output_uri(allocator);
+    address::IoURI output_uri(context.allocator());
     if (args.output_given) {
         if (!address::parse_io_uri(args.output_arg, output_uri)) {
             roc_log(LogError, "invalid --output file or device URI");
@@ -253,9 +255,9 @@ int main(int argc, char** argv) {
     }
 
     core::ScopedPtr<sndio::ISink> sink(
-        sndio::BackendDispatcher::instance().open_sink(allocator, output_uri,
+        sndio::BackendDispatcher::instance().open_sink(context.allocator(), output_uri,
                                                        args.output_format_arg, io_config),
-        allocator);
+        context.allocator());
     if (!sink) {
         roc_log(LogError, "can't open output file or device: uri=%s format=%s",
                 args.output_arg, args.output_format_arg);
@@ -276,7 +278,7 @@ int main(int argc, char** argv) {
     core::ScopedPtr<pipeline::ConverterSource> backup_pipeline;
 
     if (args.backup_given) {
-        address::IoURI backup_uri(allocator);
+        address::IoURI backup_uri(context.allocator());
 
         if (!address::parse_io_uri(args.backup_arg, backup_uri)) {
             roc_log(LogError, "invalid --backup file or device URI");
@@ -297,9 +299,11 @@ int main(int argc, char** argv) {
             }
         }
 
-        backup_source.reset(sndio::BackendDispatcher::instance().open_source(
-                                allocator, backup_uri, args.backup_format_arg, io_config),
-                            allocator);
+        backup_source.reset(
+            sndio::BackendDispatcher::instance().open_source(
+                context.allocator(), backup_uri, args.backup_format_arg, io_config),
+            context.allocator());
+
         if (!backup_source) {
             roc_log(LogError, "can't open backup file or device: uri=%s format=%s",
                     args.backup_arg, args.backup_format_arg);
@@ -322,38 +326,19 @@ int main(int argc, char** argv) {
         converter_config.resampling = config.common.resampling;
         converter_config.poisoning = config.common.poisoning;
 
-        backup_pipeline.reset(
-            new (allocator) pipeline::ConverterSource(converter_config, *backup_source,
-                                                      sample_buffer_pool, allocator),
-            allocator);
+        backup_pipeline.reset(new (context.allocator()) pipeline::ConverterSource(
+                                  converter_config, *backup_source,
+                                  context.sample_buffer_pool(), context.allocator()),
+                              context.allocator());
         if (!backup_pipeline) {
             roc_log(LogError, "can't create backup pipeline");
             return 1;
         }
     }
 
-    fec::CodecMap codec_map;
-    rtp::FormatMap format_map;
-
-    pipeline::ReceiverSource receiver(config, codec_map, format_map, packet_pool,
-                                      byte_buffer_pool, sample_buffer_pool, allocator);
+    peer::Receiver receiver(context, config);
     if (!receiver.valid()) {
-        roc_log(LogError, "can't create receiver pipeline");
-        return 1;
-    }
-
-    sndio::Pump pump(sample_buffer_pool, receiver, backup_pipeline.get(), *sink,
-                     config.common.internal_frame_size,
-                     args.oneshot_flag ? sndio::Pump::ModeOneshot
-                                       : sndio::Pump::ModePermanent);
-    if (!pump.valid()) {
-        roc_log(LogError, "can't create pump");
-        return 1;
-    }
-
-    netio::EventLoop event_loop(packet_pool, byte_buffer_pool, allocator);
-    if (!event_loop.valid()) {
-        roc_log(LogError, "can't create network transceiver");
+        roc_log(LogError, "can't create receiver peer");
         return 1;
     }
 
@@ -375,12 +360,8 @@ int main(int argc, char** argv) {
                 return 1;
             }
         }
-        if (!event_loop.add_udp_receiver(port.address, receiver)) {
+        if (!receiver.bind(pipeline::Port_AudioSource, port)) {
             roc_log(LogError, "can't bind source port: %s", args.source_arg);
-            return 1;
-        }
-        if (!receiver.add_port(port)) {
-            roc_log(LogError, "can't initialize source port: %s", args.source_arg);
             return 1;
         }
     }
@@ -399,14 +380,19 @@ int main(int argc, char** argv) {
                 return 1;
             }
         }
-        if (!event_loop.add_udp_receiver(port.address, receiver)) {
+        if (!receiver.bind(pipeline::Port_AudioRepair, port)) {
             roc_log(LogError, "can't bind repair port: %s", args.repair_arg);
             return 1;
         }
-        if (!receiver.add_port(port)) {
-            roc_log(LogError, "can't initialize repair port: %s", args.repair_arg);
-            return 1;
-        }
+    }
+
+    sndio::Pump pump(context.sample_buffer_pool(), receiver.source(),
+                     backup_pipeline.get(), *sink, config.common.internal_frame_size,
+                     args.oneshot_flag ? sndio::Pump::ModeOneshot
+                                       : sndio::Pump::ModePermanent);
+    if (!pump.valid()) {
+        roc_log(LogError, "can't create pump");
+        return 1;
     }
 
     const bool ok = pump.run();
