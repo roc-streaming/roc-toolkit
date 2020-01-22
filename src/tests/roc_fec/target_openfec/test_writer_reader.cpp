@@ -53,14 +53,14 @@ fec::CodecMap codec_map;
 rtp::FormatMap format_map;
 rtp::Parser rtp_parser(format_map, NULL);
 
-fec::Parser<RSm8_PayloadID, Source, Footer> rs8m_source_parser(&rtp_parser);
-fec::Parser<RSm8_PayloadID, Repair, Header> rs8m_repair_parser(NULL);
+fec::Parser<RS8M_PayloadID, Source, Footer> rs8m_source_parser(&rtp_parser);
+fec::Parser<RS8M_PayloadID, Repair, Header> rs8m_repair_parser(NULL);
 fec::Parser<LDPC_Source_PayloadID, Source, Footer> ldpc_source_parser(&rtp_parser);
 fec::Parser<LDPC_Repair_PayloadID, Repair, Header> ldpc_repair_parser(NULL);
 
 rtp::Composer rtp_composer(NULL);
-fec::Composer<RSm8_PayloadID, Source, Footer> rs8m_source_composer(&rtp_composer);
-fec::Composer<RSm8_PayloadID, Repair, Header> rs8m_repair_composer(NULL);
+fec::Composer<RS8M_PayloadID, Source, Footer> rs8m_source_composer(&rtp_composer);
+fec::Composer<RS8M_PayloadID, Repair, Header> rs8m_repair_composer(NULL);
 fec::Composer<LDPC_Source_PayloadID, Source, Footer> ldpc_source_composer(&rtp_composer);
 fec::Composer<LDPC_Repair_PayloadID, Repair, Header> ldpc_repair_composer(NULL);
 

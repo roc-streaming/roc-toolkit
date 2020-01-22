@@ -104,8 +104,8 @@ int roc_sender_connect(roc_sender* sender,
         return -1;
     }
 
-    pipeline::PortType imp_port_type;
-    if (!api::make_port_type(imp_port_type, type)) {
+    address::EndpointType imp_endpoint_type;
+    if (!api::make_endpoint_type(imp_endpoint_type, type)) {
         roc_log(LogError, "roc_sender_connect: invalid arguments: bad port type");
         return -1;
     }
@@ -116,7 +116,7 @@ int roc_sender_connect(roc_sender* sender,
         return -1;
     }
 
-    if (!imp_sender->connect(imp_port_type, imp_port_config)) {
+    if (!imp_sender->connect(imp_endpoint_type, imp_port_config)) {
         roc_log(LogError, "roc_sender_bind: connect failed");
         return -1;
     }
