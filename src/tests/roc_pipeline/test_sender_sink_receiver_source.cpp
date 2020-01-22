@@ -171,13 +171,13 @@ TEST_GROUP(sender_sink_receiver_source) {
         PortConfig port_config;
         if (flags & FlagReedSolomon) {
             port_config.address = new_address(20);
-            port_config.protocol = Proto_RTP_RSm8_Source;
+            port_config.protocol = address::EndProto_RTP_RS8M_Source;
         } else if (flags & FlagLDPC) {
             port_config.address = new_address(30);
-            port_config.protocol = Proto_RTP_LDPC_Source;
+            port_config.protocol = address::EndProto_RTP_LDPC_Source;
         } else {
             port_config.address = new_address(10);
-            port_config.protocol = Proto_RTP;
+            port_config.protocol = address::EndProto_RTP;
         }
         return port_config;
     }
@@ -186,12 +186,12 @@ TEST_GROUP(sender_sink_receiver_source) {
         PortConfig port_config;
         if (flags & FlagReedSolomon) {
             port_config.address = new_address(21);
-            port_config.protocol = Proto_RSm8_Repair;
+            port_config.protocol = address::EndProto_RS8M_Repair;
         } else if (flags & FlagLDPC) {
             port_config.address = new_address(31);
-            port_config.protocol = Proto_LDPC_Repair;
+            port_config.protocol = address::EndProto_LDPC_Repair;
         } else {
-            port_config.protocol = Proto_None;
+            port_config.protocol = address::EndProto_None;
         }
         return port_config;
     }
@@ -200,23 +200,23 @@ TEST_GROUP(sender_sink_receiver_source) {
         PortConfig port_config;
 
         port_config.address = new_address(10);
-        port_config.protocol = Proto_RTP;
+        port_config.protocol = address::EndProto_RTP;
         CHECK(receiver.add_port(port_config));
 
         port_config.address = new_address(20);
-        port_config.protocol = Proto_RTP_RSm8_Source;
+        port_config.protocol = address::EndProto_RTP_RS8M_Source;
         CHECK(receiver.add_port(port_config));
 
         port_config.address = new_address(21);
-        port_config.protocol = Proto_RSm8_Repair;
+        port_config.protocol = address::EndProto_RS8M_Repair;
         CHECK(receiver.add_port(port_config));
 
         port_config.address = new_address(30);
-        port_config.protocol = Proto_RTP_LDPC_Source;
+        port_config.protocol = address::EndProto_RTP_LDPC_Source;
         CHECK(receiver.add_port(port_config));
 
         port_config.address = new_address(31);
-        port_config.protocol = Proto_LDPC_Repair;
+        port_config.protocol = address::EndProto_LDPC_Repair;
         CHECK(receiver.add_port(port_config));
     }
 

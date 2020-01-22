@@ -194,7 +194,7 @@ public:
 //!   |    Source Block Length (k)    |
 //!   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //! @endcode
-class ROC_ATTR_PACKED RSm8_PayloadID {
+class ROC_ATTR_PACKED RS8M_PayloadID {
 private:
     //! Source block number.
     uint8_t sbn_[3];
