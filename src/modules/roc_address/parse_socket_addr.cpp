@@ -42,7 +42,7 @@ bool parse_ipv6_addr(const char* begin, const char* end, char* buf, size_t bufsz
 
 } // namespace
 
-bool set_miface_from_string(const char* input, SocketAddr& addr) {
+bool parse_socket_addr_miface(const char* input, SocketAddr& addr) {
     if (!input) {
         return false;
     }

@@ -6,26 +6,16 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_address/endpoint_enums.h
-//! @brief Network endpoint enums.
+//! @file roc_address/endpoint_protocol.h
+//! @brief Network endpoint protocol.
 
-#ifndef ROC_ADDRESS_ENDPOINT_ENUMS_H_
-#define ROC_ADDRESS_ENDPOINT_ENUMS_H_
+#ifndef ROC_ADDRESS_ENDPOINT_PROTOCOL_H_
+#define ROC_ADDRESS_ENDPOINT_PROTOCOL_H_
+
+#include "roc_packet/fec.h"
 
 namespace roc {
 namespace address {
-
-//! Network endpoint type.
-enum EndpointType {
-    //! Session initiation and control.
-    EndType_Session,
-
-    //! Audio source packets.
-    EndType_AudioSource,
-
-    //! Audio repair packets.
-    EndType_AudioRepair
-};
 
 //! Network endpoint protocol.
 enum EndpointProtocol {
@@ -51,7 +41,10 @@ enum EndpointProtocol {
     EndProto_LDPC_Repair
 };
 
+//! Get string name of the protocol.
+const char* endpoint_proto_to_str(EndpointProtocol proto);
+
 } // namespace address
 } // namespace roc
 
-#endif // ROC_ADDRESS_ENDPOINT_ENUMS_H_
+#endif // ROC_ADDRESS_ENDPOINT_PROTOCOL_H_

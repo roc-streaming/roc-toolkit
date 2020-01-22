@@ -29,7 +29,7 @@ namespace address {
 //!  false if @p addr is not multicast;
 //!  false if @p miface represents IP address with a version other than
 //!  IP version of @p addr.
-bool set_miface_from_string(const char* input, SocketAddr& addr);
+bool parse_socket_addr_miface(const char* input, SocketAddr& addr);
 
 } // namespace address
 } // namespace roc
