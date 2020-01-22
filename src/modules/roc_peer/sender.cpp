@@ -10,7 +10,7 @@
 #include "roc_address/socket_addr_to_str.h"
 #include "roc_core/log.h"
 #include "roc_pipeline/port_to_str.h"
-#include "roc_pipeline/port_utils.h"
+#include "roc_pipeline/validate_endpoints.h"
 
 namespace roc {
 namespace peer {
@@ -60,7 +60,7 @@ bool Sender::bind(address::SocketAddr& addr) {
     return true;
 }
 
-bool Sender::connect(pipeline::PortType port_type,
+bool Sender::connect(address::EndpointType port_type,
                      const pipeline::PortConfig& port_config) {
     core::Mutex::Lock lock(mutex_);
 
@@ -70,10 +70,10 @@ bool Sender::connect(pipeline::PortType port_type,
     }
 
     switch ((int)port_type) {
-    case pipeline::Port_AudioSource:
+    case address::EndType_AudioSource:
         return set_source_port_(port_config);
 
-    case pipeline::Port_AudioRepair:
+    case address::EndType_AudioRepair:
         return set_repair_port_(port_config);
 
     default:
@@ -95,52 +95,56 @@ sndio::ISink* Sender::sink() {
 }
 
 bool Sender::set_source_port_(const pipeline::PortConfig& port_config) {
-    if (source_port_.protocol != pipeline::Proto_None) {
-        roc_log(LogError, "sender peer: audio source port is already set");
+    if (source_port_.protocol != address::EndProto_None) {
+        roc_log(LogError, "sender peer: audio source endpoint is already set");
         return false;
     }
 
-    if (!pipeline::validate_port(pipeline_config_.fec_encoder.scheme,
-                                 port_config.protocol, pipeline::Port_AudioSource)) {
+    if (!pipeline::validate_transport_endpoint(pipeline_config_.fec_encoder.scheme,
+                                               address::EndType_AudioSource,
+                                               port_config.protocol)) {
         return false;
     }
 
-    if (repair_port_.protocol != pipeline::Proto_None) {
-        if (!pipeline::validate_ports(pipeline_config_.fec_encoder.scheme,
-                                      port_config.protocol, repair_port_.protocol)) {
+    if (repair_port_.protocol != address::EndProto_None) {
+        if (!pipeline::validate_transport_endpoint_pair(
+                pipeline_config_.fec_encoder.scheme, port_config.protocol,
+                repair_port_.protocol)) {
             return false;
         }
     }
 
     source_port_ = port_config;
 
-    roc_log(LogInfo, "sender peer: set audio source port to %s",
+    roc_log(LogInfo, "sender peer: set audio source endpoint to %s",
             pipeline::port_to_str(port_config).c_str());
 
     return true;
 }
 
 bool Sender::set_repair_port_(const pipeline::PortConfig& port_config) {
-    if (repair_port_.protocol != pipeline::Proto_None) {
-        roc_log(LogError, "sender peer: audio repair port is already set");
+    if (repair_port_.protocol != address::EndProto_None) {
+        roc_log(LogError, "sender peer: audio repair endpoint is already set");
         return false;
     }
 
-    if (!pipeline::validate_port(pipeline_config_.fec_encoder.scheme,
-                                 port_config.protocol, pipeline::Port_AudioRepair)) {
+    if (!pipeline::validate_transport_endpoint(pipeline_config_.fec_encoder.scheme,
+                                               address::EndType_AudioRepair,
+                                               port_config.protocol)) {
         return false;
     }
 
-    if (source_port_.protocol != pipeline::Proto_None) {
-        if (!pipeline::validate_ports(pipeline_config_.fec_encoder.scheme,
-                                      source_port_.protocol, port_config.protocol)) {
+    if (source_port_.protocol != address::EndProto_None) {
+        if (!pipeline::validate_transport_endpoint_pair(
+                pipeline_config_.fec_encoder.scheme, source_port_.protocol,
+                port_config.protocol)) {
             return false;
         }
     }
 
     repair_port_ = port_config;
 
-    roc_log(LogInfo, "sender peer: set audio repair port to %s",
+    roc_log(LogInfo, "sender peer: set audio repair endpoint to %s",
             pipeline::port_to_str(port_config).c_str());
 
     return true;
@@ -156,14 +160,14 @@ bool Sender::ensure_pipeline_() {
         return false;
     }
 
-    if (source_port_.protocol == pipeline::Proto_None) {
-        roc_log(LogError, "sender peer: source port is not connected");
+    if (source_port_.protocol == address::EndProto_None) {
+        roc_log(LogError, "sender peer: source endpoint is not connected");
         return false;
     }
 
-    if (repair_port_.protocol == pipeline::Proto_None
+    if (repair_port_.protocol == address::EndProto_None
         && pipeline_config_.fec_encoder.scheme != packet::FEC_None) {
-        roc_log(LogError, "sender peer: repair port is not connected");
+        roc_log(LogError, "sender peer: repair endpoint is not connected");
         return false;
     }
 

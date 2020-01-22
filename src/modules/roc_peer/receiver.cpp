@@ -10,7 +10,7 @@
 #include "roc_address/socket_addr_to_str.h"
 #include "roc_core/log.h"
 #include "roc_pipeline/port_to_str.h"
-#include "roc_pipeline/port_utils.h"
+#include "roc_pipeline/validate_endpoints.h"
 
 namespace roc {
 namespace peer {
@@ -40,7 +40,7 @@ bool Receiver::valid() {
     return pipeline_.valid();
 }
 
-bool Receiver::bind(pipeline::PortType, pipeline::PortConfig& port_config) {
+bool Receiver::bind(address::EndpointType, pipeline::PortConfig& port_config) {
     if (!context_.event_loop().add_udp_receiver(port_config.address, pipeline_)) {
         roc_log(LogError, "receiver peer: bind failed");
         return false;

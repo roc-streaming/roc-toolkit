@@ -7,6 +7,7 @@
  */
 
 #include "roc_address/io_uri.h"
+#include "roc_address/protocol_map.h"
 #include "roc_audio/resampler_profile.h"
 #include "roc_core/array.h"
 #include "roc_core/colors.h"
@@ -20,7 +21,6 @@
 #include "roc_peer/context.h"
 #include "roc_peer/sender.h"
 #include "roc_pipeline/parse_port.h"
-#include "roc_pipeline/port_utils.h"
 #include "roc_pipeline/sender_sink.h"
 #include "roc_sndio/backend_dispatcher.h"
 #include "roc_sndio/print_supported.h"
@@ -110,7 +110,7 @@ int main(int argc, char** argv) {
 
     pipeline::PortConfig source_port;
     if (args.source_given) {
-        if (!pipeline::parse_port(pipeline::Port_AudioSource, args.source_arg,
+        if (!pipeline::parse_port(address::EndType_AudioSource, args.source_arg,
                                   source_port)) {
             roc_log(LogError, "can't parse remote source port: %s", args.source_arg);
             return 1;
@@ -119,7 +119,7 @@ int main(int argc, char** argv) {
 
     pipeline::PortConfig repair_port;
     if (args.repair_given) {
-        if (!pipeline::parse_port(pipeline::Port_AudioRepair, args.repair_arg,
+        if (!pipeline::parse_port(address::EndType_AudioRepair, args.repair_arg,
                                   repair_port)) {
             roc_log(LogError, "can't parse remote repair port: %s", args.repair_arg);
             return 1;
@@ -142,7 +142,11 @@ int main(int argc, char** argv) {
         }
     }
 
-    config.fec_encoder.scheme = pipeline::port_fec_scheme(source_port.protocol);
+    const address::ProtocolAttrs* source_attrs =
+        address::ProtocolMap::instance().find_proto(source_port.protocol);
+    if (source_attrs) {
+        config.fec_encoder.scheme = source_attrs->fec_scheme;
+    }
 
     if (args.nbsrc_given) {
         if (config.fec_encoder.scheme == packet::FEC_None) {
@@ -277,14 +281,14 @@ int main(int argc, char** argv) {
     }
 
     if (args.source_given) {
-        if (!sender.connect(pipeline::Port_AudioSource, source_port)) {
+        if (!sender.connect(address::EndType_AudioSource, source_port)) {
             roc_log(LogError, "can't connect sender to remote source port");
             return 1;
         }
     }
 
     if (args.repair_given) {
-        if (!sender.connect(pipeline::Port_AudioRepair, repair_port)) {
+        if (!sender.connect(address::EndType_AudioRepair, repair_port)) {
             roc_log(LogError, "can't connect sender to remote repair port");
             return 1;
         }

@@ -12,6 +12,7 @@
 #ifndef ROC_PIPELINE_CONFIG_H_
 #define ROC_PIPELINE_CONFIG_H_
 
+#include "roc_address/endpoint_protocol.h"
 #include "roc_audio/latency_monitor.h"
 #include "roc_audio/resampler_config.h"
 #include "roc_audio/watchdog.h"
@@ -21,7 +22,6 @@
 #include "roc_fec/reader.h"
 #include "roc_fec/writer.h"
 #include "roc_packet/units.h"
-#include "roc_pipeline/port.h"
 #include "roc_rtp/headers.h"
 #include "roc_rtp/validator.h"
 
@@ -58,10 +58,10 @@ struct PortConfig {
     address::SocketAddr address;
 
     //! Port protocol.
-    PortProtocol protocol;
+    address::EndpointProtocol protocol;
 
     PortConfig()
-        : protocol(Proto_None) {
+        : protocol(address::EndProto_None) {
     }
 };
 
