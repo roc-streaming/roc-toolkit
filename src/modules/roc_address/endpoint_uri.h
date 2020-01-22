@@ -12,7 +12,8 @@
 #ifndef ROC_ADDRESS_ENDPOINT_URI_H_
 #define ROC_ADDRESS_ENDPOINT_URI_H_
 
-#include "roc_address/endpoint_enums.h"
+#include "roc_address/endpoint_protocol.h"
+#include "roc_address/endpoint_type.h"
 #include "roc_core/array.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/stddefs.h"
