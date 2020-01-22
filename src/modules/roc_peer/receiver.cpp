@@ -23,8 +23,15 @@ Receiver::Receiver(Context& context, const pipeline::ReceiverConfig& pipeline_co
                 context_.byte_buffer_pool(),
                 context_.sample_buffer_pool(),
                 context_.allocator())
+    , default_port_group_(0)
     , addresses_(context_.allocator()) {
     roc_log(LogDebug, "receiver peer: initializing");
+
+    if (!pipeline_.valid()) {
+        return;
+    }
+
+    default_port_group_ = pipeline_.add_port_group();
 }
 
 Receiver::~Receiver() {
@@ -36,22 +43,27 @@ Receiver::~Receiver() {
 }
 
 bool Receiver::valid() {
-    return pipeline_.valid();
+    return default_port_group_;
 }
 
 bool Receiver::bind(address::EndpointType, pipeline::PortConfig& port_config) {
-    if (!context_.event_loop().add_udp_receiver(port_config.address, pipeline_)) {
-        roc_log(LogError, "receiver peer: bind failed");
+    core::Mutex::Lock lock(mutex_);
+
+    if (!addresses_.grow_exp((addresses_.size() + 1))) {
+        roc_log(LogError, "receiver peer: can't grow the addresses array");
         return false;
     }
 
-    if (!pipeline_.add_port(port_config)) {
+    packet::IWriter* port_writer =
+        pipeline_.add_port(default_port_group_, port_config.protocol);
+
+    if (!port_writer) {
         roc_log(LogError, "receiver peer: can't add port to pipeline");
         return false;
     }
 
-    if (!addresses_.grow_exp((addresses_.size() + 1))) {
-        roc_log(LogError, "receiver peer: can't grow the addresses array");
+    if (!context_.event_loop().add_udp_receiver(port_config.address, *port_writer)) {
+        roc_log(LogError, "receiver peer: bind failed");
         return false;
     }
 
