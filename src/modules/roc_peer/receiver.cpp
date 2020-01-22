@@ -10,7 +10,6 @@
 #include "roc_address/socket_addr_to_str.h"
 #include "roc_core/log.h"
 #include "roc_pipeline/port_to_str.h"
-#include "roc_pipeline/validate_endpoints.h"
 
 namespace roc {
 namespace peer {
