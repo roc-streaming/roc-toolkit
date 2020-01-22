@@ -14,15 +14,17 @@ namespace pipeline {
 
 namespace {
 
-bool match_proto(PortType type, const char* str, PortProtocol& proto) {
-    switch (type) {
-    case Port_AudioSource:
+bool match_proto(address::EndpointType type,
+                 const char* str,
+                 address::EndpointProtocol& proto) {
+    switch ((int)type) {
+    case address::EndType_AudioSource:
         if (strcmp(str, "rtp") == 0) {
-            proto = Proto_RTP;
+            proto = address::EndProto_RTP;
         } else if (strcmp(str, "rtp+rs8m") == 0) {
-            proto = Proto_RTP_RSm8_Source;
+            proto = address::EndProto_RTP_RS8M_Source;
         } else if (strcmp(str, "rtp+ldpc") == 0) {
-            proto = Proto_RTP_LDPC_Source;
+            proto = address::EndProto_RTP_LDPC_Source;
         } else {
             roc_log(LogError, "parse port: '%s' is not a valid source port protocol",
                     str);
@@ -30,17 +32,20 @@ bool match_proto(PortType type, const char* str, PortProtocol& proto) {
         }
         return true;
 
-    case Port_AudioRepair:
+    case address::EndType_AudioRepair:
         if (strcmp(str, "rs8m") == 0) {
-            proto = Proto_RSm8_Repair;
+            proto = address::EndProto_RS8M_Repair;
         } else if (strcmp(str, "ldpc") == 0) {
-            proto = Proto_LDPC_Repair;
+            proto = address::EndProto_LDPC_Repair;
         } else {
             roc_log(LogError, "parse port: '%s' is not a valid repair port protocol",
                     str);
             return false;
         }
         return true;
+
+    default:
+        break;
     }
 
     roc_log(LogError, "parse port: unsupported port type");
@@ -49,7 +54,7 @@ bool match_proto(PortType type, const char* str, PortProtocol& proto) {
 
 } // namespace
 
-bool parse_port(PortType type, const char* input, PortConfig& result) {
+bool parse_port(address::EndpointType type, const char* input, PortConfig& result) {
     if (input == NULL) {
         roc_log(LogError, "parse port: string is null");
         return false;
@@ -64,7 +69,7 @@ bool parse_port(PortType type, const char* input, PortConfig& result) {
         return false;
     }
 
-    PortProtocol protocol = Proto_None;
+    address::EndpointProtocol protocol = address::EndProto_None;
 
     char proto_buf[16] = {};
     if (size_t(lcolon - input) > sizeof(proto_buf) - 1) {

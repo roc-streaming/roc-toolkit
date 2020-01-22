@@ -57,7 +57,7 @@ const uint8_t Ref_ldpc_repair[] = {
     0x09, 0x0a
 };
 
-const uint8_t Ref_rtp_rsm8_source[] = {
+const uint8_t Ref_rtp_rs8m_source[] = {
     /* RTP header */
     0x80, 0x0B, 0x55, 0x66,
     0x77, 0x88, 0x99, 0xaa,
@@ -66,13 +66,13 @@ const uint8_t Ref_rtp_rsm8_source[] = {
     0x01, 0x02, 0x03, 0x04,
     0x05, 0x06, 0x07, 0x08,
     0x09, 0x0a,
-    /* RSm8 footer */
+    /* RS8M footer */
     0x00, 0x22, 0x33, 0x11,
     0x44, 0x55
 };
 
-const uint8_t Ref_rsm8_repair[] = {
-    /* RSm8 header */
+const uint8_t Ref_rs8m_repair[] = {
+    /* RS8M header */
     0x00, 0x22, 0x33, 0x11,
     0x44, 0x55,
     /* Payload */
@@ -271,38 +271,38 @@ TEST(composer_parser, ldpc_repair) {
     test_all(test);
 }
 
-TEST(composer_parser, rtp_rsm8_source) {
+TEST(composer_parser, rtp_rs8m_source) {
     rtp::Composer rtp_composer(NULL);
-    Composer<RSm8_PayloadID, Source, Footer> rsm8_composer(&rtp_composer);
+    Composer<RS8M_PayloadID, Source, Footer> rs8m_composer(&rtp_composer);
 
     rtp::FormatMap rtp_format_map;
     rtp::Parser rtp_parser(rtp_format_map, NULL);
-    Parser<RSm8_PayloadID, Source, Footer> rsm8_parser(&rtp_parser);
+    Parser<RS8M_PayloadID, Source, Footer> rs8m_parser(&rtp_parser);
 
     PacketTest test;
-    test.composer = &rsm8_composer;
-    test.parser = &rsm8_parser;
+    test.composer = &rs8m_composer;
+    test.parser = &rs8m_parser;
     test.scheme = packet::FEC_ReedSolomon_M8;
     test.is_rtp = true;
     test.block_length = 255;
-    test.reference = Ref_rtp_rsm8_source;
-    test.reference_size = sizeof(Ref_rtp_rsm8_source);
+    test.reference = Ref_rtp_rs8m_source;
+    test.reference_size = sizeof(Ref_rtp_rs8m_source);
 
     test_all(test);
 }
 
-TEST(composer_parser, rsm8_repair) {
-    Composer<RSm8_PayloadID, Repair, Header> rsm8_composer(NULL);
-    Parser<RSm8_PayloadID, Repair, Header> rsm8_parser(NULL);
+TEST(composer_parser, rs8m_repair) {
+    Composer<RS8M_PayloadID, Repair, Header> rs8m_composer(NULL);
+    Parser<RS8M_PayloadID, Repair, Header> rs8m_parser(NULL);
 
     PacketTest test;
-    test.composer = &rsm8_composer;
-    test.parser = &rsm8_parser;
+    test.composer = &rs8m_composer;
+    test.parser = &rs8m_parser;
     test.scheme = packet::FEC_ReedSolomon_M8;
     test.is_rtp = false;
     test.block_length = 255;
-    test.reference = Ref_rsm8_repair;
-    test.reference_size = sizeof(Ref_rsm8_repair);
+    test.reference = Ref_rs8m_repair;
+    test.reference_size = sizeof(Ref_rs8m_repair);
 
     test_all(test);
 }

@@ -36,7 +36,7 @@ TEST(composer, align_footer) {
     UNSIGNED_LONGS_EQUAL(BufferSize, slice.capacity());
     UNSIGNED_LONGS_EQUAL((unsigned long)buffer->data(), slice.data());
 
-    Composer<RSm8_PayloadID, Source, Footer> composer(NULL);
+    Composer<RS8M_PayloadID, Source, Footer> composer(NULL);
     CHECK(composer.align(slice, 0, Alignment));
 
     UNSIGNED_LONGS_EQUAL(0, slice.size());
@@ -60,18 +60,18 @@ TEST(composer, align_header) {
     UNSIGNED_LONGS_EQUAL(0, slice.size());
     UNSIGNED_LONGS_EQUAL(BufferSize, slice.capacity());
     UNSIGNED_LONGS_EQUAL((unsigned long)buffer->data(), slice.data());
-    CHECK(((unsigned long)slice.data() + sizeof(RSm8_PayloadID)) % Alignment != 0);
+    CHECK(((unsigned long)slice.data() + sizeof(RS8M_PayloadID)) % Alignment != 0);
 
-    Composer<RSm8_PayloadID, Source, Header> composer(NULL);
+    Composer<RS8M_PayloadID, Source, Header> composer(NULL);
     CHECK(composer.align(slice, 0, Alignment));
 
     UNSIGNED_LONGS_EQUAL(0, slice.size());
-    UNSIGNED_LONGS_EQUAL(BufferSize - (Alignment - sizeof(RSm8_PayloadID)),
+    UNSIGNED_LONGS_EQUAL(BufferSize - (Alignment - sizeof(RS8M_PayloadID)),
                          slice.capacity());
     UNSIGNED_LONGS_EQUAL((unsigned long)buffer->data()
-                             + (Alignment - sizeof(RSm8_PayloadID)),
+                             + (Alignment - sizeof(RS8M_PayloadID)),
                          slice.data());
-    CHECK(((unsigned long)slice.data() + sizeof(RSm8_PayloadID)) % Alignment == 0);
+    CHECK(((unsigned long)slice.data() + sizeof(RS8M_PayloadID)) % Alignment == 0);
 }
 
 TEST(composer, align_outer_header) {
@@ -90,20 +90,20 @@ TEST(composer, align_outer_header) {
     UNSIGNED_LONGS_EQUAL(0, slice.size());
     UNSIGNED_LONGS_EQUAL(BufferSize, slice.capacity());
     UNSIGNED_LONGS_EQUAL((unsigned long)buffer->data(), slice.data());
-    CHECK(((unsigned long)slice.data() + sizeof(RSm8_PayloadID) + OuterHeader) % Alignment
+    CHECK(((unsigned long)slice.data() + sizeof(RS8M_PayloadID) + OuterHeader) % Alignment
           != 0);
 
-    Composer<RSm8_PayloadID, Source, Header> composer(NULL);
+    Composer<RS8M_PayloadID, Source, Header> composer(NULL);
     CHECK(composer.align(slice, OuterHeader, Alignment));
 
     UNSIGNED_LONGS_EQUAL(0, slice.size());
     UNSIGNED_LONGS_EQUAL(BufferSize
-                             - (Alignment * 2 - (sizeof(RSm8_PayloadID) + OuterHeader)),
+                             - (Alignment * 2 - (sizeof(RS8M_PayloadID) + OuterHeader)),
                          slice.capacity());
     UNSIGNED_LONGS_EQUAL((unsigned long)buffer->data()
-                             + (Alignment * 2 - (sizeof(RSm8_PayloadID) + OuterHeader)),
+                             + (Alignment * 2 - (sizeof(RS8M_PayloadID) + OuterHeader)),
                          slice.data());
-    CHECK(((unsigned long)slice.data() + sizeof(RSm8_PayloadID) + OuterHeader) % Alignment
+    CHECK(((unsigned long)slice.data() + sizeof(RS8M_PayloadID) + OuterHeader) % Alignment
           == 0);
 }
 
@@ -120,7 +120,7 @@ TEST(composer, packet_size) {
     packet::PacketPtr packet = new (packet_pool) packet::Packet(packet_pool);
     CHECK(packet);
 
-    Composer<RSm8_PayloadID, Source, Header> composer(NULL);
+    Composer<RS8M_PayloadID, Source, Header> composer(NULL);
 
     CHECK(composer.align(buffer, 0, Alignment));
     CHECK(composer.prepare(*packet, buffer, PayloadSize));
@@ -129,7 +129,7 @@ TEST(composer, packet_size) {
 
     CHECK(composer.compose(*packet));
 
-    UNSIGNED_LONGS_EQUAL(sizeof(RSm8_PayloadID) + PayloadSize, packet->data().size());
+    UNSIGNED_LONGS_EQUAL(sizeof(RS8M_PayloadID) + PayloadSize, packet->data().size());
 }
 
 } // namespace fec

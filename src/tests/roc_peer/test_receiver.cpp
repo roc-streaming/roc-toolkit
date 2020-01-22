@@ -41,11 +41,11 @@ TEST(receiver, bind) {
         CHECK(receiver.valid());
 
         pipeline::PortConfig port_config;
-        port_config.protocol = pipeline::Proto_RTP;
+        port_config.protocol = address::EndProto_RTP;
         CHECK(port_config.address.set_host_port_ipv4("127.0.0.1", 0));
         CHECK(port_config.address.port() == 0);
 
-        CHECK(receiver.bind(pipeline::Port_AudioSource, port_config));
+        CHECK(receiver.bind(address::EndType_AudioSource, port_config));
         CHECK(port_config.address.port() != 0);
 
         UNSIGNED_LONGS_EQUAL(context.event_loop().num_ports(), 1);
