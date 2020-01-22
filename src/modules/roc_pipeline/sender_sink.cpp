@@ -11,7 +11,7 @@
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_pipeline/port_to_str.h"
-#include "roc_pipeline/port_utils.h"
+#include "roc_pipeline/validate_endpoints.h"
 
 namespace roc {
 namespace pipeline {
@@ -36,8 +36,9 @@ SenderSink::SenderSink(const SenderConfig& config,
     roc_log(LogInfo, "sender: using remote repair port %s",
             port_to_str(repair_port_config).c_str());
 
-    if (!validate_ports(config.fec_encoder.scheme, source_port_config.protocol,
-                        repair_port_config.protocol)) {
+    if (!validate_transport_endpoint_pair(config.fec_encoder.scheme,
+                                          source_port_config.protocol,
+                                          repair_port_config.protocol)) {
         return;
     }
 
