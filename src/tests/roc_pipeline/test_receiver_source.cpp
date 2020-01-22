@@ -64,8 +64,11 @@ TEST_GROUP(receiver_source) {
     address::SocketAddr src1;
     address::SocketAddr src2;
 
-    PortConfig port1;
-    PortConfig port2;
+    address::SocketAddr dst1;
+    address::SocketAddr dst2;
+
+    address::EndpointProtocol port1;
+    address::EndpointProtocol port2;
 
     void setup() {
         config.common.output_sample_rate = SampleRate;
@@ -95,11 +98,11 @@ TEST_GROUP(receiver_source) {
         src1 = new_address(1);
         src2 = new_address(2);
 
-        port1.address = new_address(3);
-        port1.protocol = address::EndProto_RTP;
+        dst1 = new_address(3);
+        dst2 = new_address(4);
 
-        port2.address = new_address(4);
-        port2.protocol = address::EndProto_RTP;
+        port1 = address::EndProto_RTP;
+        port2 = address::EndProto_RTP;
     }
 };
 
@@ -118,41 +121,22 @@ TEST(receiver_source, no_sessions) {
     }
 }
 
-TEST(receiver_source, no_ports) {
-    ReceiverSource receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
-                            sample_buffer_pool, allocator);
-
-    CHECK(receiver.valid());
-
-    FrameReader frame_reader(receiver, sample_buffer_pool);
-
-    PacketWriter packet_writer(allocator, receiver, rtp_composer, format_map, packet_pool,
-                               byte_buffer_pool, PayloadType, src1, port1.address);
-
-    packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket, ChMask);
-
-    for (size_t np = 0; np < ManyPackets; np++) {
-        for (size_t nf = 0; nf < FramesPerPacket; nf++) {
-            frame_reader.skip_zeros(SamplesPerFrame * NumCh);
-
-            UNSIGNED_LONGS_EQUAL(0, receiver.num_sessions());
-        }
-
-        packet_writer.write_packets(1, SamplesPerPacket, ChMask);
-    }
-}
-
 TEST(receiver_source, one_session) {
     ReceiverSource receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
                             sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
-    CHECK(receiver.add_port(port1));
+
+    ReceiverSource::PortGroupID port_group = receiver.add_port_group();
+    CHECK(port_group != 0);
+
+    packet::IWriter* port1_writer = receiver.add_port(port_group, port1);
+    CHECK(port1_writer);
 
     FrameReader frame_reader(receiver, sample_buffer_pool);
 
-    PacketWriter packet_writer(allocator, receiver, rtp_composer, format_map, packet_pool,
-                               byte_buffer_pool, PayloadType, src1, port1.address);
+    PacketWriter packet_writer(allocator, *port1_writer, rtp_composer, format_map,
+                               packet_pool, byte_buffer_pool, PayloadType, src1, dst1);
 
     packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket, ChMask);
 
@@ -174,12 +158,17 @@ TEST(receiver_source, one_session_long_run) {
                             sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
-    CHECK(receiver.add_port(port1));
+
+    ReceiverSource::PortGroupID port_group = receiver.add_port_group();
+    CHECK(port_group != 0);
+
+    packet::IWriter* port1_writer = receiver.add_port(port_group, port1);
+    CHECK(port1_writer);
 
     FrameReader frame_reader(receiver, sample_buffer_pool);
 
-    PacketWriter packet_writer(allocator, receiver, rtp_composer, format_map, packet_pool,
-                               byte_buffer_pool, PayloadType, src1, port1.address);
+    PacketWriter packet_writer(allocator, *port1_writer, rtp_composer, format_map,
+                               packet_pool, byte_buffer_pool, PayloadType, src1, dst1);
 
     packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket, ChMask);
 
@@ -201,12 +190,17 @@ TEST(receiver_source, initial_latency) {
                             sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
-    CHECK(receiver.add_port(port1));
+
+    ReceiverSource::PortGroupID port_group = receiver.add_port_group();
+    CHECK(port_group != 0);
+
+    packet::IWriter* port1_writer = receiver.add_port(port_group, port1);
+    CHECK(port1_writer);
 
     FrameReader frame_reader(receiver, sample_buffer_pool);
 
-    PacketWriter packet_writer(allocator, receiver, rtp_composer, format_map, packet_pool,
-                               byte_buffer_pool, PayloadType, src1, port1.address);
+    PacketWriter packet_writer(allocator, *port1_writer, rtp_composer, format_map,
+                               packet_pool, byte_buffer_pool, PayloadType, src1, dst1);
 
     for (size_t np = 0; np < Latency / SamplesPerPacket - 1; np++) {
         packet_writer.write_packets(1, SamplesPerPacket, ChMask);
@@ -234,12 +228,17 @@ TEST(receiver_source, initial_latency_timeout) {
                             sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
-    CHECK(receiver.add_port(port1));
+
+    ReceiverSource::PortGroupID port_group = receiver.add_port_group();
+    CHECK(port_group != 0);
+
+    packet::IWriter* port1_writer = receiver.add_port(port_group, port1);
+    CHECK(port1_writer);
 
     FrameReader frame_reader(receiver, sample_buffer_pool);
 
-    PacketWriter packet_writer(allocator, receiver, rtp_composer, format_map, packet_pool,
-                               byte_buffer_pool, PayloadType, src1, port1.address);
+    PacketWriter packet_writer(allocator, *port1_writer, rtp_composer, format_map,
+                               packet_pool, byte_buffer_pool, PayloadType, src1, dst1);
 
     packet_writer.write_packets(1, SamplesPerPacket, ChMask);
 
@@ -261,12 +260,17 @@ TEST(receiver_source, timeout) {
                             sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
-    CHECK(receiver.add_port(port1));
+
+    ReceiverSource::PortGroupID port_group = receiver.add_port_group();
+    CHECK(port_group != 0);
+
+    packet::IWriter* port1_writer = receiver.add_port(port_group, port1);
+    CHECK(port1_writer);
 
     FrameReader frame_reader(receiver, sample_buffer_pool);
 
-    PacketWriter packet_writer(allocator, receiver, rtp_composer, format_map, packet_pool,
-                               byte_buffer_pool, PayloadType, src1, port1.address);
+    PacketWriter packet_writer(allocator, *port1_writer, rtp_composer, format_map,
+                               packet_pool, byte_buffer_pool, PayloadType, src1, dst1);
 
     packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket, ChMask);
 
@@ -288,12 +292,17 @@ TEST(receiver_source, initial_trim) {
                             sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
-    CHECK(receiver.add_port(port1));
+
+    ReceiverSource::PortGroupID port_group = receiver.add_port_group();
+    CHECK(port_group != 0);
+
+    packet::IWriter* port1_writer = receiver.add_port(port_group, port1);
+    CHECK(port1_writer);
 
     FrameReader frame_reader(receiver, sample_buffer_pool);
 
-    PacketWriter packet_writer(allocator, receiver, rtp_composer, format_map, packet_pool,
-                               byte_buffer_pool, PayloadType, src1, port1.address);
+    PacketWriter packet_writer(allocator, *port1_writer, rtp_composer, format_map,
+                               packet_pool, byte_buffer_pool, PayloadType, src1, dst1);
 
     packet_writer.write_packets(Latency * 3 / SamplesPerPacket, SamplesPerPacket, ChMask);
 
@@ -315,17 +324,20 @@ TEST(receiver_source, two_sessions_synchronous) {
                             sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
-    CHECK(receiver.add_port(port1));
+
+    ReceiverSource::PortGroupID port_group = receiver.add_port_group();
+    CHECK(port_group != 0);
+
+    packet::IWriter* port1_writer = receiver.add_port(port_group, port1);
+    CHECK(port1_writer);
 
     FrameReader frame_reader(receiver, sample_buffer_pool);
 
-    PacketWriter packet_writer1(allocator, receiver, rtp_composer, format_map,
-                                packet_pool, byte_buffer_pool, PayloadType, src1,
-                                port1.address);
+    PacketWriter packet_writer1(allocator, *port1_writer, rtp_composer, format_map,
+                                packet_pool, byte_buffer_pool, PayloadType, src1, dst1);
 
-    PacketWriter packet_writer2(allocator, receiver, rtp_composer, format_map,
-                                packet_pool, byte_buffer_pool, PayloadType, src2,
-                                port1.address);
+    PacketWriter packet_writer2(allocator, *port1_writer, rtp_composer, format_map,
+                                packet_pool, byte_buffer_pool, PayloadType, src2, dst1);
 
     for (size_t np = 0; np < Latency / SamplesPerPacket; np++) {
         packet_writer1.write_packets(1, SamplesPerPacket, ChMask);
@@ -349,13 +361,17 @@ TEST(receiver_source, two_sessions_overlapping) {
                             sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
-    CHECK(receiver.add_port(port1));
+
+    ReceiverSource::PortGroupID port_group = receiver.add_port_group();
+    CHECK(port_group != 0);
+
+    packet::IWriter* port1_writer = receiver.add_port(port_group, port1);
+    CHECK(port1_writer);
 
     FrameReader frame_reader(receiver, sample_buffer_pool);
 
-    PacketWriter packet_writer1(allocator, receiver, rtp_composer, format_map,
-                                packet_pool, byte_buffer_pool, PayloadType, src1,
-                                port1.address);
+    PacketWriter packet_writer1(allocator, *port1_writer, rtp_composer, format_map,
+                                packet_pool, byte_buffer_pool, PayloadType, src1, dst1);
 
     packet_writer1.write_packets(Latency / SamplesPerPacket, SamplesPerPacket, ChMask);
 
@@ -369,9 +385,8 @@ TEST(receiver_source, two_sessions_overlapping) {
         packet_writer1.write_packets(1, SamplesPerPacket, ChMask);
     }
 
-    PacketWriter packet_writer2(allocator, receiver, rtp_composer, format_map,
-                                packet_pool, byte_buffer_pool, PayloadType, src2,
-                                port1.address);
+    PacketWriter packet_writer2(allocator, *port1_writer, rtp_composer, format_map,
+                                packet_pool, byte_buffer_pool, PayloadType, src2, dst1);
 
     packet_writer2.set_offset(packet_writer1.offset() - Latency * NumCh);
     packet_writer2.write_packets(Latency / SamplesPerPacket, SamplesPerPacket, ChMask);
@@ -388,24 +403,71 @@ TEST(receiver_source, two_sessions_overlapping) {
     }
 }
 
-TEST(receiver_source, two_sessions_two_ports) {
+TEST(receiver_source, two_sessions_two_ports_one_group) {
     ReceiverSource receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
                             sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
 
-    CHECK(receiver.add_port(port1));
-    CHECK(receiver.add_port(port2));
+    ReceiverSource::PortGroupID port_group = receiver.add_port_group();
+    CHECK(port_group != 0);
+
+    packet::IWriter* port1_writer = receiver.add_port(port_group, port1);
+    CHECK(port1_writer);
+
+    packet::IWriter* port2_writer = receiver.add_port(port_group, port2);
+    CHECK(port2_writer);
 
     FrameReader frame_reader(receiver, sample_buffer_pool);
 
-    PacketWriter packet_writer1(allocator, receiver, rtp_composer, format_map,
-                                packet_pool, byte_buffer_pool, PayloadType, src1,
-                                port1.address);
+    PacketWriter packet_writer1(allocator, *port1_writer, rtp_composer, format_map,
+                                packet_pool, byte_buffer_pool, PayloadType, src1, dst1);
 
-    PacketWriter packet_writer2(allocator, receiver, rtp_composer, format_map,
-                                packet_pool, byte_buffer_pool, PayloadType, src2,
-                                port2.address);
+    PacketWriter packet_writer2(allocator, *port2_writer, rtp_composer, format_map,
+                                packet_pool, byte_buffer_pool, PayloadType, src2, dst2);
+
+    for (size_t np = 0; np < Latency / SamplesPerPacket; np++) {
+        packet_writer1.write_packets(1, SamplesPerPacket, ChMask);
+        packet_writer2.write_packets(1, SamplesPerPacket, ChMask);
+    }
+
+    for (size_t np = 0; np < ManyPackets; np++) {
+        for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            frame_reader.read_samples(SamplesPerFrame * NumCh, 2);
+
+            UNSIGNED_LONGS_EQUAL(2, receiver.num_sessions());
+        }
+
+        packet_writer1.write_packets(1, SamplesPerPacket, ChMask);
+        packet_writer2.write_packets(1, SamplesPerPacket, ChMask);
+    }
+}
+
+TEST(receiver_source, two_sessions_two_ports_two_groups) {
+    ReceiverSource receiver(config, codec_map, format_map, packet_pool, byte_buffer_pool,
+                            sample_buffer_pool, allocator);
+
+    CHECK(receiver.valid());
+
+    ReceiverSource::PortGroupID port1_group = receiver.add_port_group();
+    CHECK(port1_group != 0);
+
+    packet::IWriter* port1_writer = receiver.add_port(port1_group, port1);
+    CHECK(port1_writer);
+
+    ReceiverSource::PortGroupID port2_group = receiver.add_port_group();
+    CHECK(port2_group != 0);
+
+    packet::IWriter* port2_writer = receiver.add_port(port2_group, port2);
+    CHECK(port2_writer);
+
+    FrameReader frame_reader(receiver, sample_buffer_pool);
+
+    PacketWriter packet_writer1(allocator, *port1_writer, rtp_composer, format_map,
+                                packet_pool, byte_buffer_pool, PayloadType, src1, dst1);
+
+    PacketWriter packet_writer2(allocator, *port2_writer, rtp_composer, format_map,
+                                packet_pool, byte_buffer_pool, PayloadType, src2, dst2);
 
     for (size_t np = 0; np < Latency / SamplesPerPacket; np++) {
         packet_writer1.write_packets(1, SamplesPerPacket, ChMask);
@@ -430,18 +492,22 @@ TEST(receiver_source, two_sessions_same_address_same_stream) {
 
     CHECK(receiver.valid());
 
-    CHECK(receiver.add_port(port1));
-    CHECK(receiver.add_port(port2));
+    ReceiverSource::PortGroupID port_group = receiver.add_port_group();
+    CHECK(port_group != 0);
+
+    packet::IWriter* port1_writer = receiver.add_port(port_group, port1);
+    CHECK(port1_writer);
+
+    packet::IWriter* port2_writer = receiver.add_port(port_group, port2);
+    CHECK(port2_writer);
 
     FrameReader frame_reader(receiver, sample_buffer_pool);
 
-    PacketWriter packet_writer1(allocator, receiver, rtp_composer, format_map,
-                                packet_pool, byte_buffer_pool, PayloadType, src1,
-                                port1.address);
+    PacketWriter packet_writer1(allocator, *port1_writer, rtp_composer, format_map,
+                                packet_pool, byte_buffer_pool, PayloadType, src1, dst1);
 
-    PacketWriter packet_writer2(allocator, receiver, rtp_composer, format_map,
-                                packet_pool, byte_buffer_pool, PayloadType, src1,
-                                port2.address);
+    PacketWriter packet_writer2(allocator, *port2_writer, rtp_composer, format_map,
+                                packet_pool, byte_buffer_pool, PayloadType, src1, dst2);
 
     packet_writer1.set_source(11);
     packet_writer2.set_source(11);
@@ -471,18 +537,22 @@ TEST(receiver_source, two_sessions_same_address_different_streams) {
 
     CHECK(receiver.valid());
 
-    CHECK(receiver.add_port(port1));
-    CHECK(receiver.add_port(port2));
+    ReceiverSource::PortGroupID port_group = receiver.add_port_group();
+    CHECK(port_group != 0);
+
+    packet::IWriter* port1_writer = receiver.add_port(port_group, port1);
+    CHECK(port1_writer);
+
+    packet::IWriter* port2_writer = receiver.add_port(port_group, port2);
+    CHECK(port2_writer);
 
     FrameReader frame_reader(receiver, sample_buffer_pool);
 
-    PacketWriter packet_writer1(allocator, receiver, rtp_composer, format_map,
-                                packet_pool, byte_buffer_pool, PayloadType, src1,
-                                port1.address);
+    PacketWriter packet_writer1(allocator, *port1_writer, rtp_composer, format_map,
+                                packet_pool, byte_buffer_pool, PayloadType, src1, dst1);
 
-    PacketWriter packet_writer2(allocator, receiver, rtp_composer, format_map,
-                                packet_pool, byte_buffer_pool, PayloadType, src1,
-                                port2.address);
+    PacketWriter packet_writer2(allocator, *port2_writer, rtp_composer, format_map,
+                                packet_pool, byte_buffer_pool, PayloadType, src1, dst2);
 
     packet_writer1.set_source(11);
     packet_writer2.set_source(22);
@@ -513,12 +583,17 @@ TEST(receiver_source, seqnum_overflow) {
                             sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
-    CHECK(receiver.add_port(port1));
+
+    ReceiverSource::PortGroupID port_group = receiver.add_port_group();
+    CHECK(port_group != 0);
+
+    packet::IWriter* port1_writer = receiver.add_port(port_group, port1);
+    CHECK(port1_writer);
 
     FrameReader frame_reader(receiver, sample_buffer_pool);
 
-    PacketWriter packet_writer(allocator, receiver, rtp_composer, format_map, packet_pool,
-                               byte_buffer_pool, PayloadType, src1, port1.address);
+    PacketWriter packet_writer(allocator, *port1_writer, rtp_composer, format_map,
+                               packet_pool, byte_buffer_pool, PayloadType, src1, dst1);
 
     packet_writer.set_seqnum(packet::seqnum_t(-1) - ManyPackets / 2);
     packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket, ChMask);
@@ -538,12 +613,17 @@ TEST(receiver_source, seqnum_small_jump) {
                             sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
-    CHECK(receiver.add_port(port1));
+
+    ReceiverSource::PortGroupID port_group = receiver.add_port_group();
+    CHECK(port_group != 0);
+
+    packet::IWriter* port1_writer = receiver.add_port(port_group, port1);
+    CHECK(port1_writer);
 
     FrameReader frame_reader(receiver, sample_buffer_pool);
 
-    PacketWriter packet_writer(allocator, receiver, rtp_composer, format_map, packet_pool,
-                               byte_buffer_pool, PayloadType, src1, port1.address);
+    PacketWriter packet_writer(allocator, *port1_writer, rtp_composer, format_map,
+                               packet_pool, byte_buffer_pool, PayloadType, src1, dst1);
 
     packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket, ChMask);
 
@@ -569,12 +649,17 @@ TEST(receiver_source, seqnum_large_jump) {
                             sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
-    CHECK(receiver.add_port(port1));
+
+    ReceiverSource::PortGroupID port_group = receiver.add_port_group();
+    CHECK(port_group != 0);
+
+    packet::IWriter* port1_writer = receiver.add_port(port_group, port1);
+    CHECK(port1_writer);
 
     FrameReader frame_reader(receiver, sample_buffer_pool);
 
-    PacketWriter packet_writer(allocator, receiver, rtp_composer, format_map, packet_pool,
-                               byte_buffer_pool, PayloadType, src1, port1.address);
+    PacketWriter packet_writer(allocator, *port1_writer, rtp_composer, format_map,
+                               packet_pool, byte_buffer_pool, PayloadType, src1, dst1);
 
     packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket, ChMask);
 
@@ -606,12 +691,17 @@ TEST(receiver_source, seqnum_reorder) {
                             sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
-    CHECK(receiver.add_port(port1));
+
+    ReceiverSource::PortGroupID port_group = receiver.add_port_group();
+    CHECK(port_group != 0);
+
+    packet::IWriter* port1_writer = receiver.add_port(port_group, port1);
+    CHECK(port1_writer);
 
     FrameReader frame_reader(receiver, sample_buffer_pool);
 
-    PacketWriter packet_writer(allocator, receiver, rtp_composer, format_map, packet_pool,
-                               byte_buffer_pool, PayloadType, src1, port1.address);
+    PacketWriter packet_writer(allocator, *port1_writer, rtp_composer, format_map,
+                               packet_pool, byte_buffer_pool, PayloadType, src1, dst1);
 
     size_t pos = 0;
 
@@ -638,12 +728,17 @@ TEST(receiver_source, seqnum_late) {
                             sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
-    CHECK(receiver.add_port(port1));
+
+    ReceiverSource::PortGroupID port_group = receiver.add_port_group();
+    CHECK(port_group != 0);
+
+    packet::IWriter* port1_writer = receiver.add_port(port_group, port1);
+    CHECK(port1_writer);
 
     FrameReader frame_reader(receiver, sample_buffer_pool);
 
-    PacketWriter packet_writer(allocator, receiver, rtp_composer, format_map, packet_pool,
-                               byte_buffer_pool, PayloadType, src1, port1.address);
+    PacketWriter packet_writer(allocator, *port1_writer, rtp_composer, format_map,
+                               packet_pool, byte_buffer_pool, PayloadType, src1, dst1);
 
     packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket, ChMask);
     packet_writer.shift_to(Latency / SamplesPerPacket + DelayedPackets, SamplesPerPacket,
@@ -686,12 +781,17 @@ TEST(receiver_source, timestamp_overflow) {
                             sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
-    CHECK(receiver.add_port(port1));
+
+    ReceiverSource::PortGroupID port_group = receiver.add_port_group();
+    CHECK(port_group != 0);
+
+    packet::IWriter* port1_writer = receiver.add_port(port_group, port1);
+    CHECK(port1_writer);
 
     FrameReader frame_reader(receiver, sample_buffer_pool);
 
-    PacketWriter packet_writer(allocator, receiver, rtp_composer, format_map, packet_pool,
-                               byte_buffer_pool, PayloadType, src1, port1.address);
+    PacketWriter packet_writer(allocator, *port1_writer, rtp_composer, format_map,
+                               packet_pool, byte_buffer_pool, PayloadType, src1, dst1);
 
     packet_writer.set_timestamp(packet::timestamp_t(-1)
                                 - ManyPackets * SamplesPerPacket / 2);
@@ -713,12 +813,17 @@ TEST(receiver_source, timestamp_small_jump) {
                             sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
-    CHECK(receiver.add_port(port1));
+
+    ReceiverSource::PortGroupID port_group = receiver.add_port_group();
+    CHECK(port_group != 0);
+
+    packet::IWriter* port1_writer = receiver.add_port(port_group, port1);
+    CHECK(port1_writer);
 
     FrameReader frame_reader(receiver, sample_buffer_pool);
 
-    PacketWriter packet_writer(allocator, receiver, rtp_composer, format_map, packet_pool,
-                               byte_buffer_pool, PayloadType, src1, port1.address);
+    PacketWriter packet_writer(allocator, *port1_writer, rtp_composer, format_map,
+                               packet_pool, byte_buffer_pool, PayloadType, src1, dst1);
 
     packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket, ChMask);
 
@@ -752,12 +857,17 @@ TEST(receiver_source, timestamp_large_jump) {
                             sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
-    CHECK(receiver.add_port(port1));
+
+    ReceiverSource::PortGroupID port_group = receiver.add_port_group();
+    CHECK(port_group != 0);
+
+    packet::IWriter* port1_writer = receiver.add_port(port_group, port1);
+    CHECK(port1_writer);
 
     FrameReader frame_reader(receiver, sample_buffer_pool);
 
-    PacketWriter packet_writer(allocator, receiver, rtp_composer, format_map, packet_pool,
-                               byte_buffer_pool, PayloadType, src1, port1.address);
+    PacketWriter packet_writer(allocator, *port1_writer, rtp_composer, format_map,
+                               packet_pool, byte_buffer_pool, PayloadType, src1, dst1);
 
     packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket, ChMask);
 
@@ -783,12 +893,17 @@ TEST(receiver_source, timestamp_overlap) {
                             sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
-    CHECK(receiver.add_port(port1));
+
+    ReceiverSource::PortGroupID port_group = receiver.add_port_group();
+    CHECK(port_group != 0);
+
+    packet::IWriter* port1_writer = receiver.add_port(port_group, port1);
+    CHECK(port1_writer);
 
     FrameReader frame_reader(receiver, sample_buffer_pool);
 
-    PacketWriter packet_writer(allocator, receiver, rtp_composer, format_map, packet_pool,
-                               byte_buffer_pool, PayloadType, src1, port1.address);
+    PacketWriter packet_writer(allocator, *port1_writer, rtp_composer, format_map,
+                               packet_pool, byte_buffer_pool, PayloadType, src1, dst1);
 
     packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket, ChMask);
 
@@ -808,12 +923,17 @@ TEST(receiver_source, timestamp_reorder) {
                             sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
-    CHECK(receiver.add_port(port1));
+
+    ReceiverSource::PortGroupID port_group = receiver.add_port_group();
+    CHECK(port_group != 0);
+
+    packet::IWriter* port1_writer = receiver.add_port(port_group, port1);
+    CHECK(port1_writer);
 
     FrameReader frame_reader(receiver, sample_buffer_pool);
 
-    PacketWriter packet_writer(allocator, receiver, rtp_composer, format_map, packet_pool,
-                               byte_buffer_pool, PayloadType, src1, port1.address);
+    PacketWriter packet_writer(allocator, *port1_writer, rtp_composer, format_map,
+                               packet_pool, byte_buffer_pool, PayloadType, src1, dst1);
 
     packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket, ChMask);
 
@@ -855,12 +975,17 @@ TEST(receiver_source, timestamp_late) {
                             sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
-    CHECK(receiver.add_port(port1));
+
+    ReceiverSource::PortGroupID port_group = receiver.add_port_group();
+    CHECK(port_group != 0);
+
+    packet::IWriter* port1_writer = receiver.add_port(port_group, port1);
+    CHECK(port1_writer);
 
     FrameReader frame_reader(receiver, sample_buffer_pool);
 
-    PacketWriter packet_writer(allocator, receiver, rtp_composer, format_map, packet_pool,
-                               byte_buffer_pool, PayloadType, src1, port1.address);
+    PacketWriter packet_writer(allocator, *port1_writer, rtp_composer, format_map,
+                               packet_pool, byte_buffer_pool, PayloadType, src1, dst1);
 
     packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket, ChMask);
 
@@ -912,12 +1037,17 @@ TEST(receiver_source, packet_size_small) {
                             sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
-    CHECK(receiver.add_port(port1));
+
+    ReceiverSource::PortGroupID port_group = receiver.add_port_group();
+    CHECK(port_group != 0);
+
+    packet::IWriter* port1_writer = receiver.add_port(port_group, port1);
+    CHECK(port1_writer);
 
     FrameReader frame_reader(receiver, sample_buffer_pool);
 
-    PacketWriter packet_writer(allocator, receiver, rtp_composer, format_map, packet_pool,
-                               byte_buffer_pool, PayloadType, src1, port1.address);
+    PacketWriter packet_writer(allocator, *port1_writer, rtp_composer, format_map,
+                               packet_pool, byte_buffer_pool, PayloadType, src1, dst1);
 
     packet_writer.write_packets(Latency / SamplesPerSmallPacket, SamplesPerSmallPacket,
                                 ChMask);
@@ -941,12 +1071,17 @@ TEST(receiver_source, packet_size_large) {
                             sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
-    CHECK(receiver.add_port(port1));
+
+    ReceiverSource::PortGroupID port_group = receiver.add_port_group();
+    CHECK(port_group != 0);
+
+    packet::IWriter* port1_writer = receiver.add_port(port_group, port1);
+    CHECK(port1_writer);
 
     FrameReader frame_reader(receiver, sample_buffer_pool);
 
-    PacketWriter packet_writer(allocator, receiver, rtp_composer, format_map, packet_pool,
-                               byte_buffer_pool, PayloadType, src1, port1.address);
+    PacketWriter packet_writer(allocator, *port1_writer, rtp_composer, format_map,
+                               packet_pool, byte_buffer_pool, PayloadType, src1, dst1);
 
     packet_writer.write_packets(Latency / SamplesPerLargePacket, SamplesPerLargePacket,
                                 ChMask);
@@ -976,12 +1111,17 @@ TEST(receiver_source, packet_size_variable) {
                             sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
-    CHECK(receiver.add_port(port1));
+
+    ReceiverSource::PortGroupID port_group = receiver.add_port_group();
+    CHECK(port_group != 0);
+
+    packet::IWriter* port1_writer = receiver.add_port(port_group, port1);
+    CHECK(port1_writer);
 
     FrameReader frame_reader(receiver, sample_buffer_pool);
 
-    PacketWriter packet_writer(allocator, receiver, rtp_composer, format_map, packet_pool,
-                               byte_buffer_pool, PayloadType, src1, port1.address);
+    PacketWriter packet_writer(allocator, *port1_writer, rtp_composer, format_map,
+                               packet_pool, byte_buffer_pool, PayloadType, src1, dst1);
 
     size_t available = 0;
 
@@ -1002,12 +1142,17 @@ TEST(receiver_source, corrupted_packets_new_session) {
                             sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
-    CHECK(receiver.add_port(port1));
+
+    ReceiverSource::PortGroupID port_group = receiver.add_port_group();
+    CHECK(port_group != 0);
+
+    packet::IWriter* port1_writer = receiver.add_port(port_group, port1);
+    CHECK(port1_writer);
 
     FrameReader frame_reader(receiver, sample_buffer_pool);
 
-    PacketWriter packet_writer(allocator, receiver, rtp_composer, format_map, packet_pool,
-                               byte_buffer_pool, PayloadType, src1, port1.address);
+    PacketWriter packet_writer(allocator, *port1_writer, rtp_composer, format_map,
+                               packet_pool, byte_buffer_pool, PayloadType, src1, dst1);
 
     packet_writer.set_corrupt(true);
 
@@ -1029,12 +1174,17 @@ TEST(receiver_source, corrupted_packets_existing_session) {
                             sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
-    CHECK(receiver.add_port(port1));
+
+    ReceiverSource::PortGroupID port_group = receiver.add_port_group();
+    CHECK(port_group != 0);
+
+    packet::IWriter* port1_writer = receiver.add_port(port_group, port1);
+    CHECK(port1_writer);
 
     FrameReader frame_reader(receiver, sample_buffer_pool);
 
-    PacketWriter packet_writer(allocator, receiver, rtp_composer, format_map, packet_pool,
-                               byte_buffer_pool, PayloadType, src1, port1.address);
+    PacketWriter packet_writer(allocator, *port1_writer, rtp_composer, format_map,
+                               packet_pool, byte_buffer_pool, PayloadType, src1, dst1);
 
     packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket, ChMask);
     packet_writer.set_corrupt(true);
@@ -1077,10 +1227,15 @@ TEST(receiver_source, status) {
                             sample_buffer_pool, allocator);
 
     CHECK(receiver.valid());
-    CHECK(receiver.add_port(port1));
 
-    PacketWriter packet_writer(allocator, receiver, rtp_composer, format_map, packet_pool,
-                               byte_buffer_pool, PayloadType, src1, port1.address);
+    ReceiverSource::PortGroupID port_group = receiver.add_port_group();
+    CHECK(port_group != 0);
+
+    packet::IWriter* port1_writer = receiver.add_port(port_group, port1);
+    CHECK(port1_writer);
+
+    PacketWriter packet_writer(allocator, *port1_writer, rtp_composer, format_map,
+                               packet_pool, byte_buffer_pool, PayloadType, src1, dst1);
 
     core::Slice<audio::sample_t> samples(
         new (sample_buffer_pool) core::Buffer<audio::sample_t>(sample_buffer_pool));
