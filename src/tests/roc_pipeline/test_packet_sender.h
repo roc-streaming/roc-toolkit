@@ -20,9 +20,12 @@ namespace pipeline {
 
 class PacketSender : public packet::IWriter, core::NonCopyable<> {
 public:
-    PacketSender(packet::PacketPool& pool, packet::IWriter& writer)
+    PacketSender(packet::PacketPool& pool,
+                 packet::IWriter* source_writer,
+                 packet::IWriter* repair_writer)
         : pool_(pool)
-        , writer_(writer) {
+        , source_writer_(source_writer)
+        , repair_writer_(repair_writer) {
     }
 
     virtual void write(const packet::PacketPtr& pp) {
@@ -36,11 +39,14 @@ public:
                 break;
             }
 
-            if (!(pp->flags() & packet::Packet::FlagRepair)) {
+            if (pp->flags() & packet::Packet::FlagRepair) {
+                CHECK(repair_writer_);
+                repair_writer_->write(copy_packet_(pp));
+            } else {
+                CHECK(source_writer_);
                 np++;
+                source_writer_->write(copy_packet_(pp));
             }
-
-            writer_.write(copy_packet_(pp));
         }
     }
 
@@ -59,7 +65,8 @@ private:
     }
 
     packet::PacketPool& pool_;
-    packet::IWriter& writer_;
+    packet::IWriter* source_writer_;
+    packet::IWriter* repair_writer_;
     packet::Queue queue_;
 };
 
