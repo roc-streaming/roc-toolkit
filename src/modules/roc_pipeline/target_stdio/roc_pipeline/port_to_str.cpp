@@ -14,38 +14,11 @@
 namespace roc {
 namespace pipeline {
 
-const char* port_type_to_str(PortType type) {
-    switch (type) {
-    case Port_AudioSource:
-        return "source";
-    case Port_AudioRepair:
-        return "repair";
-    }
-    return "?";
-}
-
-const char* port_proto_to_str(PortProtocol proto) {
-    switch (proto) {
-    case Proto_None:
-        return "none";
-    case Proto_RTP:
-        return "rtp";
-    case Proto_RTP_RSm8_Source:
-        return "rtp+rs8m";
-    case Proto_RSm8_Repair:
-        return "rs8m";
-    case Proto_RTP_LDPC_Source:
-        return "rtp+ldpc";
-    case Proto_LDPC_Repair:
-        return "ldpc";
-    }
-    return "?";
-}
-
 port_to_str::port_to_str(const PortConfig& port) {
     buffer_[0] = '\0';
 
-    if (snprintf(buffer_, sizeof(buffer_), "%s:%s", port_proto_to_str(port.protocol),
+    if (snprintf(buffer_, sizeof(buffer_), "%s:%s",
+                 address::endpoint_proto_to_str(port.protocol),
                  address::socket_addr_to_str(port.address).c_str())
         < 0) {
         roc_log(LogError, "port to str: can't format port");

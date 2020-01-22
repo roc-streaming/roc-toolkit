@@ -61,7 +61,7 @@ TEST_GROUP(sender_sink) {
 
     void setup() {
         source_port.address = new_address(1);
-        source_port.protocol = Proto_RTP;
+        source_port.protocol = address::EndProto_RTP;
 
         config.input_channels = ChMask;
         config.packet_length = SamplesPerPacket * core::Second / SampleRate;
