@@ -96,10 +96,10 @@ TEST_GROUP(receiver_source) {
         src2 = new_address(2);
 
         port1.address = new_address(3);
-        port1.protocol = Proto_RTP;
+        port1.protocol = address::EndProto_RTP;
 
         port2.address = new_address(4);
-        port2.protocol = Proto_RTP;
+        port2.protocol = address::EndProto_RTP;
     }
 };
 

@@ -208,14 +208,14 @@ bool make_receiver_config(pipeline::ReceiverConfig& out, const roc_receiver_conf
     return true;
 }
 
-bool make_port_type(pipeline::PortType& out, roc_port_type in) {
+bool make_endpoint_type(address::EndpointType& out, roc_port_type in) {
     switch ((int)in) {
     case ROC_PORT_AUDIO_SOURCE:
-        out = pipeline::Port_AudioSource;
+        out = address::EndType_AudioSource;
         return true;
 
     case ROC_PORT_AUDIO_REPAIR:
-        out = pipeline::Port_AudioRepair;
+        out = address::EndType_AudioRepair;
         return true;
 
     default:
@@ -234,13 +234,13 @@ bool make_port_config(pipeline::PortConfig& out,
     case ROC_PORT_AUDIO_SOURCE:
         switch ((int)proto) {
         case ROC_PROTO_RTP:
-            out.protocol = pipeline::Proto_RTP;
+            out.protocol = address::EndProto_RTP;
             break;
         case ROC_PROTO_RTP_RS8M_SOURCE:
-            out.protocol = pipeline::Proto_RTP_RSm8_Source;
+            out.protocol = address::EndProto_RTP_RS8M_Source;
             break;
         case ROC_PROTO_RTP_LDPC_SOURCE:
-            out.protocol = pipeline::Proto_RTP_LDPC_Source;
+            out.protocol = address::EndProto_RTP_LDPC_Source;
             break;
         default:
             roc_log(LogError,
@@ -252,10 +252,10 @@ bool make_port_config(pipeline::PortConfig& out,
     case ROC_PORT_AUDIO_REPAIR:
         switch ((int)proto) {
         case ROC_PROTO_RS8M_REPAIR:
-            out.protocol = pipeline::Proto_RSm8_Repair;
+            out.protocol = address::EndProto_RS8M_Repair;
             break;
         case ROC_PROTO_LDPC_REPAIR:
-            out.protocol = pipeline::Proto_LDPC_Repair;
+            out.protocol = address::EndProto_LDPC_Repair;
             break;
         default:
             roc_log(LogError,
