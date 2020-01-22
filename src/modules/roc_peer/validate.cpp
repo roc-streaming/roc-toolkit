@@ -6,13 +6,13 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_pipeline/validate_endpoints.h"
+#include "roc_peer/validate.h"
 #include "roc_address/protocol_map.h"
 #include "roc_core/log.h"
 #include "roc_packet/fec_scheme_to_str.h"
 
 namespace roc {
-namespace pipeline {
+namespace peer {
 
 bool validate_transport_endpoint(packet::FecScheme fec_scheme,
                                  address::EndpointType type,
@@ -128,5 +128,5 @@ bool validate_transport_endpoint_pair(packet::FecScheme fec_scheme,
     return true;
 }
 
-} // namespace pipeline
+} // namespace peer
 } // namespace roc
