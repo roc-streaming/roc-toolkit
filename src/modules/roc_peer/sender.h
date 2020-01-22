@@ -12,6 +12,7 @@
 #ifndef ROC_PEER_SENDER_H_
 #define ROC_PEER_SENDER_H_
 
+#include "roc_address/endpoint_type.h"
 #include "roc_address/socket_addr.h"
 #include "roc_core/mutex.h"
 #include "roc_core/scoped_ptr.h"
@@ -41,7 +42,8 @@ public:
     bool bind(address::SocketAddr& addr);
 
     //! Connect peer to remote port.
-    bool connect(pipeline::PortType port_type, const pipeline::PortConfig& port_config);
+    bool connect(address::EndpointType port_type,
+                 const pipeline::PortConfig& port_config);
 
     //! Get sender sink.
     sndio::ISink* sink();
