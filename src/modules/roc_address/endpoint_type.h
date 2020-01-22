@@ -6,16 +6,26 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_address/endpoint_type_to_str.h
-//! @brief Convert endpoint type to string.
+//! @file roc_address/endpoint_type.h
+//! @brief Network endpoint type.
 
-#ifndef ROC_ADDRESS_ENDPOINT_TYPE_TO_STR_H_
-#define ROC_ADDRESS_ENDPOINT_TYPE_TO_STR_H_
-
-#include "roc_address/endpoint_enums.h"
+#ifndef ROC_ADDRESS_ENDPOINT_TYPE_H_
+#define ROC_ADDRESS_ENDPOINT_TYPE_H_
 
 namespace roc {
 namespace address {
+
+//! Network endpoint type.
+enum EndpointType {
+    //! Session initiation and control.
+    EndType_Session,
+
+    //! Audio source packets.
+    EndType_AudioSource,
+
+    //! Audio repair packets.
+    EndType_AudioRepair
+};
 
 //! Convert endpoint type to string.
 const char* endpoint_type_to_str(EndpointType);
@@ -23,4 +33,4 @@ const char* endpoint_type_to_str(EndpointType);
 } // namespace address
 } // namespace roc
 
-#endif // ROC_ADDRESS_ENDPOINT_TYPE_TO_STR_H_
+#endif // ROC_ADDRESS_ENDPOINT_TYPE_H_
