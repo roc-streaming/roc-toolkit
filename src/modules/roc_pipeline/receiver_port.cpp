@@ -25,9 +25,9 @@ ReceiverPort::ReceiverPort(const PortConfig& config,
     packet::IParser* parser = NULL;
 
     switch ((unsigned)config.protocol) {
-    case Proto_RTP:
-    case Proto_RTP_LDPC_Source:
-    case Proto_RTP_RSm8_Source:
+    case address::EndProto_RTP:
+    case address::EndProto_RTP_LDPC_Source:
+    case address::EndProto_RTP_RS8M_Source:
         rtp_parser_.reset(new (allocator) rtp::Parser(format_map, NULL), allocator);
         if (!rtp_parser_) {
             return;
@@ -37,7 +37,7 @@ ReceiverPort::ReceiverPort(const PortConfig& config,
     }
 
     switch ((unsigned)config.protocol) {
-    case Proto_RTP_LDPC_Source:
+    case address::EndProto_RTP_LDPC_Source:
         fec_parser_.reset(
             new (allocator)
                 fec::Parser<fec::LDPC_Source_PayloadID, fec::Source, fec::Footer>(parser),
@@ -47,7 +47,7 @@ ReceiverPort::ReceiverPort(const PortConfig& config,
         }
         parser = fec_parser_.get();
         break;
-    case Proto_LDPC_Repair:
+    case address::EndProto_LDPC_Repair:
         fec_parser_.reset(
             new (allocator)
                 fec::Parser<fec::LDPC_Repair_PayloadID, fec::Repair, fec::Header>(parser),
@@ -57,20 +57,20 @@ ReceiverPort::ReceiverPort(const PortConfig& config,
         }
         parser = fec_parser_.get();
         break;
-    case Proto_RTP_RSm8_Source:
+    case address::EndProto_RTP_RS8M_Source:
         fec_parser_.reset(
             new (allocator)
-                fec::Parser<fec::RSm8_PayloadID, fec::Source, fec::Footer>(parser),
+                fec::Parser<fec::RS8M_PayloadID, fec::Source, fec::Footer>(parser),
             allocator);
         if (!fec_parser_) {
             return;
         }
         parser = fec_parser_.get();
         break;
-    case Proto_RSm8_Repair:
+    case address::EndProto_RS8M_Repair:
         fec_parser_.reset(
             new (allocator)
-                fec::Parser<fec::RSm8_PayloadID, fec::Repair, fec::Header>(parser),
+                fec::Parser<fec::RS8M_PayloadID, fec::Repair, fec::Header>(parser),
             allocator);
         if (!fec_parser_) {
             return;
