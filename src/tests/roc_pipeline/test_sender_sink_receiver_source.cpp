@@ -118,15 +118,26 @@ TEST_GROUP(sender_sink_receiver_source) {
 
         CHECK(receiver.valid());
 
-        add_receiver_ports(receiver);
-
         FrameWriter frame_writer(sender, sample_buffer_pool);
 
         for (size_t nf = 0; nf < ManyFrames; nf++) {
             frame_writer.write_samples(SamplesPerFrame * NumCh);
         }
 
-        PacketSender packet_sender(packet_pool, receiver);
+        ReceiverSource::PortGroupID port_group = receiver.add_port_group();
+        CHECK(port_group != 0);
+
+        packet::IWriter* source_port_writer =
+            receiver.add_port(port_group, source_port.protocol);
+        CHECK(source_port_writer);
+
+        packet::IWriter* repair_port_writer = NULL;
+        if (repair_port.protocol != address::EndProto_None) {
+            repair_port_writer = receiver.add_port(port_group, repair_port.protocol);
+            CHECK(repair_port_writer);
+        }
+
+        PacketSender packet_sender(packet_pool, source_port_writer, repair_port_writer);
 
         filter_packets(flags, queue, packet_sender);
 
@@ -194,30 +205,6 @@ TEST_GROUP(sender_sink_receiver_source) {
             port_config.protocol = address::EndProto_None;
         }
         return port_config;
-    }
-
-    void add_receiver_ports(ReceiverSource& receiver) {
-        PortConfig port_config;
-
-        port_config.address = new_address(10);
-        port_config.protocol = address::EndProto_RTP;
-        CHECK(receiver.add_port(port_config));
-
-        port_config.address = new_address(20);
-        port_config.protocol = address::EndProto_RTP_RS8M_Source;
-        CHECK(receiver.add_port(port_config));
-
-        port_config.address = new_address(21);
-        port_config.protocol = address::EndProto_RS8M_Repair;
-        CHECK(receiver.add_port(port_config));
-
-        port_config.address = new_address(30);
-        port_config.protocol = address::EndProto_RTP_LDPC_Source;
-        CHECK(receiver.add_port(port_config));
-
-        port_config.address = new_address(31);
-        port_config.protocol = address::EndProto_LDPC_Repair;
-        CHECK(receiver.add_port(port_config));
     }
 
     SenderConfig sender_config(int flags) {
