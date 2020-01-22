@@ -355,7 +355,7 @@ int main(int argc, char** argv) {
             return 1;
         }
         if (args.miface_given) {
-            if (!address::set_miface_from_string(args.miface_arg, port.address)) {
+            if (!address::parse_socket_addr_miface(args.miface_arg, port.address)) {
                 roc_log(LogError, "can't parse miface: %s", args.miface_arg);
                 return 1;
             }
@@ -375,7 +375,7 @@ int main(int argc, char** argv) {
         }
 
         if (args.miface_given) {
-            if (!address::set_miface_from_string(args.miface_arg, port.address)) {
+            if (!address::parse_socket_addr_miface(args.miface_arg, port.address)) {
                 roc_log(LogError, "can't parse miface: %s", args.miface_arg);
                 return 1;
             }
