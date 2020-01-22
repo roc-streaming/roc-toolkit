@@ -51,10 +51,10 @@ TEST(sender, bind_connect_sink) {
         UNSIGNED_LONGS_EQUAL(context.event_loop().num_ports(), 1);
 
         pipeline::PortConfig remote_port;
-        remote_port.protocol = pipeline::Proto_RTP;
+        remote_port.protocol = address::EndProto_RTP;
         CHECK(remote_port.address.set_host_port_ipv4("127.0.0.1", 123));
 
-        CHECK(sender.connect(pipeline::Port_AudioSource, remote_port));
+        CHECK(sender.connect(address::EndType_AudioSource, remote_port));
 
         UNSIGNED_LONGS_EQUAL(context.event_loop().num_ports(), 1);
 
@@ -82,11 +82,11 @@ TEST(sender, port_validation) {
         CHECK(sender.bind(local_addr));
 
         pipeline::PortConfig source_port;
-        source_port.protocol = pipeline::Proto_RTP_LDPC_Source;
+        source_port.protocol = address::EndProto_RTP_LDPC_Source;
         CHECK(source_port.address.set_host_port_ipv4("127.0.0.1", 123));
 
         // source port fec scheme mismatch
-        CHECK(!sender.connect(pipeline::Port_AudioSource, source_port));
+        CHECK(!sender.connect(address::EndType_AudioSource, source_port));
     }
 
     {
@@ -100,11 +100,11 @@ TEST(sender, port_validation) {
         CHECK(sender.bind(local_addr));
 
         pipeline::PortConfig repair_port;
-        repair_port.protocol = pipeline::Proto_LDPC_Repair;
+        repair_port.protocol = address::EndProto_LDPC_Repair;
         CHECK(repair_port.address.set_host_port_ipv4("127.0.0.1", 123));
 
         // repair port fec scheme mismatch
-        CHECK(!sender.connect(pipeline::Port_AudioRepair, repair_port));
+        CHECK(!sender.connect(address::EndType_AudioRepair, repair_port));
     }
 
     {
@@ -118,11 +118,11 @@ TEST(sender, port_validation) {
         CHECK(sender.bind(local_addr));
 
         pipeline::PortConfig repair_port;
-        repair_port.protocol = pipeline::Proto_RTP;
+        repair_port.protocol = address::EndProto_RTP;
         CHECK(repair_port.address.set_host_port_ipv4("127.0.0.1", 123));
 
         // repair port provided when fec is disabled
-        CHECK(!sender.connect(pipeline::Port_AudioRepair, repair_port));
+        CHECK(!sender.connect(address::EndType_AudioRepair, repair_port));
     }
 
     {
@@ -136,9 +136,9 @@ TEST(sender, port_validation) {
         CHECK(sender.bind(local_addr));
 
         pipeline::PortConfig source_port;
-        source_port.protocol = pipeline::Proto_RTP_RSm8_Source;
+        source_port.protocol = address::EndProto_RTP_RS8M_Source;
         CHECK(source_port.address.set_host_port_ipv4("127.0.0.1", 123));
-        CHECK(sender.connect(pipeline::Port_AudioSource, source_port));
+        CHECK(sender.connect(address::EndType_AudioSource, source_port));
 
         // repair port not provided when fec is enabled
         CHECK(!sender.sink());
@@ -155,9 +155,9 @@ TEST(sender, port_validation) {
         CHECK(sender.bind(local_addr));
 
         pipeline::PortConfig repair_port;
-        repair_port.protocol = pipeline::Proto_RSm8_Repair;
+        repair_port.protocol = address::EndProto_RS8M_Repair;
         CHECK(repair_port.address.set_host_port_ipv4("127.0.0.1", 123));
-        CHECK(sender.connect(pipeline::Port_AudioRepair, repair_port));
+        CHECK(sender.connect(address::EndType_AudioRepair, repair_port));
 
         // source port not provided when fec is enabled
         CHECK(!sender.sink());
@@ -184,14 +184,14 @@ TEST(sender, port_validation) {
         CHECK(sender.valid());
 
         pipeline::PortConfig source_port;
-        source_port.protocol = pipeline::Proto_RTP_RSm8_Source;
+        source_port.protocol = address::EndProto_RTP_RS8M_Source;
         CHECK(source_port.address.set_host_port_ipv4("127.0.0.1", 123));
-        CHECK(sender.connect(pipeline::Port_AudioSource, source_port));
+        CHECK(sender.connect(address::EndType_AudioSource, source_port));
 
         pipeline::PortConfig repair_port;
-        repair_port.protocol = pipeline::Proto_RSm8_Repair;
+        repair_port.protocol = address::EndProto_RS8M_Repair;
         CHECK(repair_port.address.set_host_port_ipv4("127.0.0.1", 123));
-        CHECK(sender.connect(pipeline::Port_AudioRepair, repair_port));
+        CHECK(sender.connect(address::EndType_AudioRepair, repair_port));
 
         // bind was not called
         CHECK(!sender.sink());
@@ -208,9 +208,9 @@ TEST(sender, port_validation) {
         CHECK(sender.bind(local_addr));
 
         pipeline::PortConfig source_port;
-        source_port.protocol = pipeline::Proto_RTP;
+        source_port.protocol = address::EndProto_RTP;
         CHECK(source_port.address.set_host_port_ipv4("127.0.0.1", 123));
-        CHECK(sender.connect(pipeline::Port_AudioSource, source_port));
+        CHECK(sender.connect(address::EndType_AudioSource, source_port));
 
         // fec is disabled; everything is ok
         CHECK(sender.sink());
@@ -227,14 +227,14 @@ TEST(sender, port_validation) {
         CHECK(sender.bind(local_addr));
 
         pipeline::PortConfig source_port;
-        source_port.protocol = pipeline::Proto_RTP_RSm8_Source;
+        source_port.protocol = address::EndProto_RTP_RS8M_Source;
         CHECK(source_port.address.set_host_port_ipv4("127.0.0.1", 123));
-        CHECK(sender.connect(pipeline::Port_AudioSource, source_port));
+        CHECK(sender.connect(address::EndType_AudioSource, source_port));
 
         pipeline::PortConfig repair_port;
-        repair_port.protocol = pipeline::Proto_RSm8_Repair;
+        repair_port.protocol = address::EndProto_RS8M_Repair;
         CHECK(repair_port.address.set_host_port_ipv4("127.0.0.1", 123));
-        CHECK(sender.connect(pipeline::Port_AudioRepair, repair_port));
+        CHECK(sender.connect(address::EndType_AudioRepair, repair_port));
 
         if (codec_map.is_supported(packet::FEC_ReedSolomon_M8)) {
             // fec is enabled and supported; everything is ok

@@ -24,9 +24,9 @@ SenderPort::SenderPort(const PortConfig& config,
     packet::IComposer* composer = NULL;
 
     switch ((unsigned)config.protocol) {
-    case Proto_RTP:
-    case Proto_RTP_LDPC_Source:
-    case Proto_RTP_RSm8_Source:
+    case address::EndProto_RTP:
+    case address::EndProto_RTP_LDPC_Source:
+    case address::EndProto_RTP_RS8M_Source:
         rtp_composer_.reset(new (allocator) rtp::Composer(NULL), allocator);
         if (!rtp_composer_) {
             return;
@@ -36,7 +36,7 @@ SenderPort::SenderPort(const PortConfig& config,
     }
 
     switch ((unsigned)config.protocol) {
-    case Proto_RTP_LDPC_Source:
+    case address::EndProto_RTP_LDPC_Source:
         fec_composer_.reset(
             new (allocator)
                 fec::Composer<fec::LDPC_Source_PayloadID, fec::Source, fec::Footer>(
@@ -47,7 +47,7 @@ SenderPort::SenderPort(const PortConfig& config,
         }
         composer = fec_composer_.get();
         break;
-    case Proto_LDPC_Repair:
+    case address::EndProto_LDPC_Repair:
         fec_composer_.reset(
             new (allocator)
                 fec::Composer<fec::LDPC_Repair_PayloadID, fec::Repair, fec::Header>(
@@ -58,20 +58,20 @@ SenderPort::SenderPort(const PortConfig& config,
         }
         composer = fec_composer_.get();
         break;
-    case Proto_RTP_RSm8_Source:
+    case address::EndProto_RTP_RS8M_Source:
         fec_composer_.reset(
             new (allocator)
-                fec::Composer<fec::RSm8_PayloadID, fec::Source, fec::Footer>(composer),
+                fec::Composer<fec::RS8M_PayloadID, fec::Source, fec::Footer>(composer),
             allocator);
         if (!fec_composer_) {
             return;
         }
         composer = fec_composer_.get();
         break;
-    case Proto_RSm8_Repair:
+    case address::EndProto_RS8M_Repair:
         fec_composer_.reset(
             new (allocator)
-                fec::Composer<fec::RSm8_PayloadID, fec::Repair, fec::Header>(composer),
+                fec::Composer<fec::RS8M_PayloadID, fec::Repair, fec::Header>(composer),
             allocator);
         if (!fec_composer_) {
             return;
