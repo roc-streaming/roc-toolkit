@@ -17,12 +17,6 @@
 namespace roc {
 namespace pipeline {
 
-//! Convert port type to string.
-const char* port_type_to_str(PortType type);
-
-//! Convert port protocol to string.
-const char* port_proto_to_str(PortProtocol proto);
-
 //! Convert pipeline port to string.
 class port_to_str : public core::NonCopyable<> {
 public:
