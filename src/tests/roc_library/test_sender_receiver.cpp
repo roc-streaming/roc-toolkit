@@ -293,9 +293,9 @@ public:
         CHECK(event_loop_.valid());
 
         dst_source_addr_.set_host_port(address::Family_IPv4, "127.0.0.1",
-                                            roc_address_port(dst_source_addr));
+                                       roc_address_port(dst_source_addr));
         dst_repair_addr_.set_host_port(address::Family_IPv4, "127.0.0.1",
-                                            roc_address_port(dst_repair_addr));
+                                       roc_address_port(dst_repair_addr));
 
         send_addr_.set_host_port(address::Family_IPv4, "127.0.0.1", 0);
         recv_source_addr_.set_host_port(address::Family_IPv4, "127.0.0.1", 0);
