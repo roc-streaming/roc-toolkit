@@ -22,7 +22,7 @@ TEST(socket_addr_parse, miface_ipv4) {
     CHECK(addr.has_host_port());
     CHECK(addr.multicast());
 
-    CHECK(set_miface_from_string("0.0.0.0", addr));
+    CHECK(parse_socket_addr_miface("0.0.0.0", addr));
     CHECK(addr.has_miface());
 
     char miface[64];
@@ -37,7 +37,7 @@ TEST(socket_addr_parse, miface_ipv6) {
     CHECK(addr.has_host_port());
     CHECK(addr.multicast());
 
-    CHECK(set_miface_from_string("[2001:db8::1]", addr));
+    CHECK(parse_socket_addr_miface("[2001:db8::1]", addr));
     CHECK(addr.has_miface());
 
     char miface[64];
@@ -48,7 +48,7 @@ TEST(socket_addr_parse, miface_ipv6) {
 TEST(socket_addr_parse, bad_miface) {
     { // invalid address
         SocketAddr addr;
-        CHECK(!set_miface_from_string("0.0.0.0", addr));
+        CHECK(!parse_socket_addr_miface("0.0.0.0", addr));
     }
     { // non-multicast address
         SocketAddr addr;
@@ -57,7 +57,7 @@ TEST(socket_addr_parse, bad_miface) {
         CHECK(addr.has_host_port());
         CHECK(!addr.multicast());
 
-        CHECK(!set_miface_from_string("[::]", addr));
+        CHECK(!parse_socket_addr_miface("[::]", addr));
     }
     { // empty miface
         SocketAddr addr;
@@ -65,8 +65,8 @@ TEST(socket_addr_parse, bad_miface) {
         CHECK(addr.set_host_port_ipv4("225.1.2.3", 123));
         CHECK(addr.has_host_port());
 
-        CHECK(!set_miface_from_string("", addr));
-        CHECK(!set_miface_from_string(NULL, addr));
+        CHECK(!parse_socket_addr_miface("", addr));
+        CHECK(!parse_socket_addr_miface(NULL, addr));
     }
     { // ipv6 miface for ipv4 addr
         SocketAddr addr;
@@ -75,7 +75,7 @@ TEST(socket_addr_parse, bad_miface) {
         CHECK(addr.has_host_port());
         CHECK(addr.multicast());
 
-        CHECK(!set_miface_from_string("[::]", addr));
+        CHECK(!parse_socket_addr_miface("[::]", addr));
     }
     { // ipv4 miface for ipv6 addr
         SocketAddr addr;
@@ -84,7 +84,7 @@ TEST(socket_addr_parse, bad_miface) {
         CHECK(addr.has_host_port());
         CHECK(addr.multicast());
 
-        CHECK(!set_miface_from_string("0.0.0.0", addr));
+        CHECK(!parse_socket_addr_miface("0.0.0.0", addr));
     }
 }
 
