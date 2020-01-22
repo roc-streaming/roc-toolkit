@@ -12,6 +12,7 @@
 #ifndef ROC_PEER_RECEIVER_H_
 #define ROC_PEER_RECEIVER_H_
 
+#include "roc_address/endpoint_type.h"
 #include "roc_address/socket_addr.h"
 #include "roc_core/array.h"
 #include "roc_fec/codec_map.h"
@@ -36,7 +37,7 @@ public:
     bool valid();
 
     //! Bind peer to local port.
-    bool bind(pipeline::PortType port_type, pipeline::PortConfig& port_config);
+    bool bind(address::EndpointType port_type, pipeline::PortConfig& port_config);
 
     //! Get receiver source.
     sndio::ISource& source();

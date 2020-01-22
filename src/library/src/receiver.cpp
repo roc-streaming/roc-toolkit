@@ -77,8 +77,8 @@ int roc_receiver_bind(roc_receiver* receiver,
         return -1;
     }
 
-    pipeline::PortType imp_port_type;
-    if (!api::make_port_type(imp_port_type, type)) {
+    address::EndpointType imp_endpoint_type;
+    if (!api::make_endpoint_type(imp_endpoint_type, type)) {
         roc_log(LogError, "roc_receiver_bind: invalid arguments: bad port type");
         return -1;
     }
@@ -89,7 +89,7 @@ int roc_receiver_bind(roc_receiver* receiver,
         return -1;
     }
 
-    if (!imp_receiver->bind(imp_port_type, imp_port_config)) {
+    if (!imp_receiver->bind(imp_endpoint_type, imp_port_config)) {
         roc_log(LogError, "roc_receiver_bind: bind failed");
         return -1;
     }
