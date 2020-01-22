@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_address/endpoint_type_to_str.h"
+#include "roc_address/endpoint_type.h"
 #include "roc_core/stddefs.h"
 
 namespace roc {

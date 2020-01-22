@@ -6,8 +6,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+#include "roc_address/endpoint_protocol.h"
 #include "roc_address/endpoint_uri.h"
-#include "roc_address/proto.h"
 #include "roc_core/panic.h"
 #include "roc_core/string_utils.h"
 
@@ -27,7 +27,7 @@ bool format_endpoint_uri(const EndpointURI& u, char* buf, size_t buf_size) {
 
     buf[0] = '\0';
 
-    const char* proto = proto_to_str(u.proto());
+    const char* proto = endpoint_proto_to_str(u.proto());
     if (!proto) {
         return false;
     }
