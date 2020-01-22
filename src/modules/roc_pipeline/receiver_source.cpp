@@ -7,11 +7,9 @@
  */
 
 #include "roc_pipeline/receiver_source.h"
-#include "roc_address/socket_addr_to_str.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_core/shared_ptr.h"
-#include "roc_pipeline/port_to_str.h"
 
 namespace roc {
 namespace pipeline {
@@ -57,27 +55,39 @@ bool ReceiverSource::valid() {
     return audio_reader_;
 }
 
-bool ReceiverSource::add_port(const PortConfig& config) {
-    roc_log(LogInfo, "receiver: adding port %s", port_to_str(config).c_str());
+ReceiverSource::PortGroupID ReceiverSource::add_port_group() {
+    core::Mutex::Lock lock(mutex_);
 
-    core::Mutex::Lock lock(control_mutex_);
+    roc_log(LogInfo, "receiver source: adding port group");
 
-    core::SharedPtr<ReceiverPort> port =
-        new (allocator_) ReceiverPort(config, format_map_, allocator_);
+    core::SharedPtr<ReceiverPortGroup> port_group = new (allocator_) ReceiverPortGroup(
+        config_, receiver_state_, *mixer_, codec_map_, format_map_, packet_pool_,
+        byte_buffer_pool_, sample_buffer_pool_, allocator_);
 
-    if (!port || !port->valid()) {
-        roc_log(LogError, "receiver: can't create port, initialization failed");
-        return false;
+    if (!port_group) {
+        roc_log(LogError, "receiver source: can't allocate port group");
+        return 0;
     }
 
-    ports_.push_back(*port);
-    return true;
+    port_groups_.push_back(*port_group);
+
+    return (PortGroupID)port_group.get();
+}
+
+packet::IWriter* ReceiverSource::add_port(PortGroupID port_group,
+                                          address::EndpointProtocol port_proto) {
+    core::Mutex::Lock lock(mutex_);
+
+    roc_log(LogInfo, "receiver source: adding port");
+
+    ReceiverPortGroup* port_group_ptr = (ReceiverPortGroup*)port_group;
+    roc_panic_if_not(port_group_ptr);
+
+    return port_group_ptr->add_port(port_proto);
 }
 
 size_t ReceiverSource::num_sessions() const {
-    core::Mutex::Lock lock(control_mutex_);
-
-    return sessions_.size();
+    return receiver_state_.num_sessions();
 }
 
 size_t ReceiverSource::sample_rate() const {
@@ -93,16 +103,17 @@ bool ReceiverSource::has_clock() const {
 }
 
 sndio::ISource::State ReceiverSource::state() const {
-    core::Mutex::Lock lock(control_mutex_);
-
-    if (sessions_.size() != 0) {
+    if (receiver_state_.num_sessions() != 0) {
+        // we have sessions and they're producing some sound
         return Active;
     }
 
-    if (packets_.size() != 0) {
+    if (receiver_state_.has_pending_packets()) {
+        // we don't have sessions, but we have packets that may create sessions
         return Active;
     }
 
+    // no sessions and packets; we can sleep
     return Inactive;
 }
 
@@ -118,168 +129,25 @@ bool ReceiverSource::restart() {
     return true;
 }
 
-void ReceiverSource::write(const packet::PacketPtr& packet) {
-    core::Mutex::Lock lock(control_mutex_);
-
-    packets_.push_back(*packet);
-}
-
 bool ReceiverSource::read(audio::Frame& frame) {
-    core::Mutex::Lock lock(pipeline_mutex_);
+    core::Mutex::Lock lock(mutex_);
 
     if (config_.common.timing) {
         ticker_.wait(timestamp_);
     }
 
-    prepare_();
+    for (core::SharedPtr<ReceiverPortGroup> port_group = port_groups_.front(); port_group;
+         port_group = port_groups_.nextof(*port_group)) {
+        port_group->update(timestamp_);
+    }
 
     if (!audio_reader_->read(frame)) {
         return false;
     }
+
     timestamp_ += frame.size() / num_channels_;
 
     return true;
-}
-
-void ReceiverSource::prepare_() {
-    core::Mutex::Lock lock(control_mutex_);
-
-    fetch_packets_();
-    update_sessions_();
-}
-
-void ReceiverSource::fetch_packets_() {
-    for (;;) {
-        packet::PacketPtr packet = packets_.front();
-        if (!packet) {
-            break;
-        }
-
-        packets_.remove(*packet);
-
-        if (!parse_packet_(packet)) {
-            continue;
-        }
-
-        if (!route_packet_(packet)) {
-            continue;
-        }
-    }
-}
-
-bool ReceiverSource::parse_packet_(const packet::PacketPtr& packet) {
-    core::SharedPtr<ReceiverPort> port;
-
-    for (port = ports_.front(); port; port = ports_.nextof(*port)) {
-        if (port->handle(*packet)) {
-            return true;
-        }
-    }
-
-    roc_log(LogDebug, "receiver: ignoring packet for unknown port");
-
-    return false;
-}
-
-bool ReceiverSource::route_packet_(const packet::PacketPtr& packet) {
-    core::SharedPtr<ReceiverSession> sess;
-
-    for (sess = sessions_.front(); sess; sess = sessions_.nextof(*sess)) {
-        if (sess->handle(packet)) {
-            return true;
-        }
-    }
-
-    if (!can_create_session_(packet)) {
-        return false;
-    }
-
-    return create_session_(packet);
-}
-
-bool ReceiverSource::can_create_session_(const packet::PacketPtr& packet) {
-    if (packet->flags() & packet::Packet::FlagRepair) {
-        roc_log(LogDebug, "receiver: ignoring repair packet for unknown session");
-        return false;
-    }
-
-    return true;
-}
-
-bool ReceiverSource::create_session_(const packet::PacketPtr& packet) {
-    if (!packet->udp()) {
-        roc_log(LogError, "receiver: can't create session, unexpected non-udp packet");
-        return false;
-    }
-
-    if (!packet->rtp()) {
-        roc_log(LogError, "receiver: can't create session, unexpected non-rtp packet");
-        return false;
-    }
-
-    const ReceiverSessionConfig sess_config = make_session_config_(packet);
-
-    const address::SocketAddr src_address = packet->udp()->src_addr;
-    const address::SocketAddr dst_address = packet->udp()->dst_addr;
-
-    roc_log(LogInfo, "receiver: creating session: src_addr=%s dst_addr=%s",
-            address::socket_addr_to_str(src_address).c_str(),
-            address::socket_addr_to_str(dst_address).c_str());
-
-    core::SharedPtr<ReceiverSession> sess = new (allocator_)
-        ReceiverSession(sess_config, config_.common, src_address, codec_map_, format_map_,
-                        packet_pool_, byte_buffer_pool_, sample_buffer_pool_, allocator_);
-
-    if (!sess || !sess->valid()) {
-        roc_log(LogError, "receiver: can't create session, initialization failed");
-        return false;
-    }
-
-    if (!sess->handle(packet)) {
-        roc_log(LogError, "receiver: can't create session, can't handle first packet");
-        return false;
-    }
-
-    mixer_->add(sess->reader());
-    sessions_.push_back(*sess);
-
-    return true;
-}
-
-void ReceiverSource::remove_session_(ReceiverSession& sess) {
-    roc_log(LogInfo, "receiver: removing session");
-
-    mixer_->remove(sess.reader());
-    sessions_.remove(sess);
-}
-
-void ReceiverSource::update_sessions_() {
-    core::SharedPtr<ReceiverSession> curr, next;
-
-    for (curr = sessions_.front(); curr; curr = next) {
-        next = sessions_.nextof(*curr);
-
-        if (!curr->update(timestamp_)) {
-            remove_session_(*curr);
-        }
-    }
-}
-
-ReceiverSessionConfig
-ReceiverSource::make_session_config_(const packet::PacketPtr& packet) const {
-    ReceiverSessionConfig sess_config = config_.default_session;
-
-    packet::RTP* rtp = packet->rtp();
-    if (rtp) {
-        sess_config.payload_type = rtp->payload_type;
-    }
-
-    packet::FEC* fec = packet->fec();
-    if (fec) {
-        sess_config.fec_decoder.scheme = fec->fec_scheme;
-    }
-
-    return sess_config;
 }
 
 } // namespace pipeline
