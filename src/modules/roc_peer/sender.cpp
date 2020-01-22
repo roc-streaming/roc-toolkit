@@ -9,8 +9,8 @@
 #include "roc_peer/sender.h"
 #include "roc_address/socket_addr_to_str.h"
 #include "roc_core/log.h"
+#include "roc_peer/validate.h"
 #include "roc_pipeline/port_to_str.h"
-#include "roc_pipeline/validate_endpoints.h"
 
 namespace roc {
 namespace peer {
@@ -100,16 +100,16 @@ bool Sender::set_source_port_(const pipeline::PortConfig& port_config) {
         return false;
     }
 
-    if (!pipeline::validate_transport_endpoint(pipeline_config_.fec_encoder.scheme,
-                                               address::EndType_AudioSource,
-                                               port_config.protocol)) {
+    if (!validate_transport_endpoint(pipeline_config_.fec_encoder.scheme,
+                                     address::EndType_AudioSource,
+                                     port_config.protocol)) {
         return false;
     }
 
     if (repair_port_.protocol != address::EndProto_None) {
-        if (!pipeline::validate_transport_endpoint_pair(
-                pipeline_config_.fec_encoder.scheme, port_config.protocol,
-                repair_port_.protocol)) {
+        if (!validate_transport_endpoint_pair(pipeline_config_.fec_encoder.scheme,
+                                              port_config.protocol,
+                                              repair_port_.protocol)) {
             return false;
         }
     }
@@ -128,16 +128,16 @@ bool Sender::set_repair_port_(const pipeline::PortConfig& port_config) {
         return false;
     }
 
-    if (!pipeline::validate_transport_endpoint(pipeline_config_.fec_encoder.scheme,
-                                               address::EndType_AudioRepair,
-                                               port_config.protocol)) {
+    if (!validate_transport_endpoint(pipeline_config_.fec_encoder.scheme,
+                                     address::EndType_AudioRepair,
+                                     port_config.protocol)) {
         return false;
     }
 
     if (source_port_.protocol != address::EndProto_None) {
-        if (!pipeline::validate_transport_endpoint_pair(
-                pipeline_config_.fec_encoder.scheme, source_port_.protocol,
-                port_config.protocol)) {
+        if (!validate_transport_endpoint_pair(pipeline_config_.fec_encoder.scheme,
+                                              source_port_.protocol,
+                                              port_config.protocol)) {
             return false;
         }
     }
@@ -168,6 +168,12 @@ bool Sender::ensure_pipeline_() {
     if (repair_port_.protocol == address::EndProto_None
         && pipeline_config_.fec_encoder.scheme != packet::FEC_None) {
         roc_log(LogError, "sender peer: repair endpoint is not connected");
+        return false;
+    }
+
+    if (!validate_transport_endpoint_pair(pipeline_config_.fec_encoder.scheme,
+                                          source_port_.protocol, repair_port_.protocol)) {
+        roc_log(LogError, "sender peer: inconsistent source and repair endpoints");
         return false;
     }
 
