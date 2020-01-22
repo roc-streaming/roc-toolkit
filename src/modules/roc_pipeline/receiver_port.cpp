@@ -16,15 +16,19 @@
 namespace roc {
 namespace pipeline {
 
-ReceiverPort::ReceiverPort(const PortConfig& config,
+ReceiverPort::ReceiverPort(address::EndpointProtocol proto,
+                           ReceiverState& receiver_state,
+                           ReceiverSessionGroup& session_group,
                            const rtp::FormatMap& format_map,
                            core::IAllocator& allocator)
     : allocator_(allocator)
-    , config_(config)
-    , parser_(NULL) {
+    , receiver_state_(receiver_state)
+    , session_group_(session_group)
+    , parser_(NULL)
+    , cur_queue_(0) {
     packet::IParser* parser = NULL;
 
-    switch ((unsigned)config.protocol) {
+    switch ((int)proto) {
     case address::EndProto_RTP:
     case address::EndProto_RTP_LDPC_Source:
     case address::EndProto_RTP_RS8M_Source:
@@ -36,7 +40,7 @@ ReceiverPort::ReceiverPort(const PortConfig& config,
         break;
     }
 
-    switch ((unsigned)config.protocol) {
+    switch ((int)proto) {
     case address::EndProto_RTP_LDPC_Source:
         fec_parser_.reset(
             new (allocator)
@@ -90,28 +94,48 @@ bool ReceiverPort::valid() const {
     return parser_;
 }
 
-const PortConfig& ReceiverPort::config() const {
-    return config_;
-}
+void ReceiverPort::write(const packet::PacketPtr& packet) {
+    core::Mutex::Lock lock(queue_mutex_);
 
-bool ReceiverPort::handle(packet::Packet& packet) {
     roc_panic_if(!valid());
 
-    packet::UDP* udp = packet.udp();
-    if (!udp) {
-        return false;
+    queues_[cur_queue_].write(packet);
+
+    receiver_state_.add_pending_packets(+1);
+}
+
+void ReceiverPort::flush_packets() {
+    roc_panic_if(!valid());
+
+    packet::Queue* queue = get_read_queue_();
+    if (!queue) {
+        return;
     }
 
-    if (udp->dst_addr != config_.address) {
-        return false;
+    while (packet::PacketPtr packet = queue->read()) {
+        if (!parser_->parse(*packet, packet->data())) {
+            roc_log(LogDebug, "receiver port: failed to parse packet");
+            continue;
+        }
+
+        session_group_.route_packet(packet);
+
+        receiver_state_.add_pending_packets(-1);
+    }
+}
+
+packet::Queue* ReceiverPort::get_read_queue_() {
+    core::Mutex::Lock lock(queue_mutex_);
+
+    if (queues_[cur_queue_].size() == 0) {
+        return NULL;
     }
 
-    if (!parser_->parse(packet, packet.data())) {
-        roc_log(LogDebug, "receiver port: failed to parse packet");
-        return false;
-    }
+    packet::Queue* queue = &queues_[cur_queue_];
+    cur_queue_ = (cur_queue_ + 1) % 2;
+    roc_panic_if_not(queues_[cur_queue_].size() == 0);
 
-    return true;
+    return queue;
 }
 
 } // namespace pipeline
