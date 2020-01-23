@@ -16,150 +16,33 @@ namespace roc {
 namespace pipeline {
 
 SenderSink::SenderSink(const SenderConfig& config,
-                       const PortConfig& source_port_config,
-                       packet::IWriter& source_writer,
-                       const PortConfig& repair_port_config,
-                       packet::IWriter& repair_writer,
                        const fec::CodecMap& codec_map,
                        const rtp::FormatMap& format_map,
                        packet::PacketPool& packet_pool,
                        core::BufferPool<uint8_t>& byte_buffer_pool,
                        core::BufferPool<audio::sample_t>& sample_buffer_pool,
                        core::IAllocator& allocator)
-    : audio_writer_(NULL)
-    , config_(config)
+    : config_(config)
+    , codec_map_(codec_map)
+    , format_map_(format_map)
+    , packet_pool_(packet_pool)
+    , byte_buffer_pool_(byte_buffer_pool)
+    , sample_buffer_pool_(sample_buffer_pool)
+    , allocator_(allocator)
+    , audio_writer_(NULL)
     , timestamp_(0)
-    , num_channels_(packet::num_channels(config.input_channels)) {
-    roc_log(LogInfo, "sender: using remote source port %s",
-            port_to_str(source_port_config).c_str());
-    roc_log(LogInfo, "sender: using remote repair port %s",
-            port_to_str(repair_port_config).c_str());
-
-    const rtp::Format* format = format_map.format(config.payload_type);
-    if (!format) {
-        return;
-    }
-
-    if (config.timing) {
-        ticker_.reset(new (allocator) core::Ticker(config.input_sample_rate), allocator);
+    , num_channels_(packet::num_channels(config_.input_channels)) {
+    if (config_.timing) {
+        ticker_.reset(new (allocator_) core::Ticker(config_.input_sample_rate),
+                      allocator_);
         if (!ticker_) {
             return;
         }
     }
 
-    source_port_.reset(new (allocator)
-                           SenderPort(source_port_config, source_writer, allocator),
-                       allocator);
-    if (!source_port_ || !source_port_->valid()) {
-        return;
-    }
+    audio::IWriter* awriter = &fanout_;
 
-    router_.reset(new (allocator) packet::Router(allocator), allocator);
-    if (!router_) {
-        return;
-    }
-    packet::IWriter* pwriter = router_.get();
-
-    if (!router_->add_route(*source_port_, packet::Packet::FlagAudio)) {
-        return;
-    }
-
-    if (config.fec_encoder.scheme != packet::FEC_None) {
-        repair_port_.reset(new (allocator)
-                               SenderPort(repair_port_config, repair_writer, allocator),
-                           allocator);
-        if (!repair_port_ || !repair_port_->valid()) {
-            return;
-        }
-
-        if (!router_->add_route(*repair_port_, packet::Packet::FlagRepair)) {
-            return;
-        }
-
-        if (config.interleaving) {
-            interleaver_.reset(new (allocator) packet::Interleaver(
-                                   *pwriter, allocator,
-                                   config.fec_writer.n_source_packets
-                                       + config.fec_writer.n_repair_packets),
-                               allocator);
-            if (!interleaver_ || !interleaver_->valid()) {
-                return;
-            }
-            pwriter = interleaver_.get();
-        }
-
-        fec_encoder_.reset(
-            codec_map.new_encoder(config.fec_encoder, byte_buffer_pool, allocator),
-            allocator);
-        if (!fec_encoder_) {
-            return;
-        }
-
-        fec_writer_.reset(
-            new (allocator)
-                fec::Writer(config.fec_writer, config.fec_encoder.scheme, *fec_encoder_,
-                            *pwriter, source_port_->composer(), repair_port_->composer(),
-                            packet_pool, byte_buffer_pool, allocator),
-            allocator);
-        if (!fec_writer_ || !fec_writer_->valid()) {
-            return;
-        }
-        pwriter = fec_writer_.get();
-    }
-
-    payload_encoder_.reset(format->new_encoder(allocator), allocator);
-    if (!payload_encoder_) {
-        return;
-    }
-
-    packetizer_.reset(new (allocator) audio::Packetizer(
-                          *pwriter, source_port_->composer(), *payload_encoder_,
-                          packet_pool, byte_buffer_pool, config.input_channels,
-                          config.packet_length, format->sample_rate, config.payload_type),
-                      allocator);
-    if (!packetizer_) {
-        return;
-    }
-
-    audio::IWriter* awriter = packetizer_.get();
-
-    if (config.resampling && config.input_sample_rate != format->sample_rate) {
-        if (config.poisoning) {
-            resampler_poisoner_.reset(new (allocator) audio::PoisonWriter(*awriter),
-                                      allocator);
-            if (!resampler_poisoner_) {
-                return;
-            }
-            awriter = resampler_poisoner_.get();
-        }
-
-        audio::ResamplerMap resampler_map;
-
-        resampler_.reset(resampler_map.new_resampler(
-                             config.resampler_backend, allocator, config.resampler,
-                             config.input_channels, config.internal_frame_size),
-                         allocator);
-
-        if (!resampler_) {
-            return;
-        }
-
-        resampler_writer_.reset(
-            new (allocator) audio::ResamplerWriter(
-                *awriter, *resampler_, sample_buffer_pool, config.internal_frame_size),
-            allocator);
-
-        if (!resampler_writer_ || !resampler_writer_->valid()) {
-            return;
-        }
-        if (!resampler_writer_->set_scaling(float(config.input_sample_rate)
-                                            / format->sample_rate)) {
-            return;
-        }
-        awriter = resampler_writer_.get();
-    }
-
-    if (config.poisoning) {
+    if (config_.poisoning) {
         pipeline_poisoner_.reset(new (allocator) audio::PoisonWriter(*awriter),
                                  allocator);
         if (!pipeline_poisoner_) {
@@ -171,8 +54,79 @@ SenderSink::SenderSink(const SenderConfig& config,
     audio_writer_ = awriter;
 }
 
-bool SenderSink::valid() {
+bool SenderSink::valid() const {
     return audio_writer_;
+}
+
+SenderSink::PortGroupID SenderSink::add_port_group() {
+    core::Mutex::Lock lock(mutex_);
+
+    roc_panic_if(!valid());
+
+    roc_log(LogInfo, "sender sink: adding port group");
+
+    core::SharedPtr<SenderPortGroup> port_group = new (allocator_)
+        SenderPortGroup(config_, codec_map_, format_map_, packet_pool_, byte_buffer_pool_,
+                        sample_buffer_pool_, allocator_);
+
+    if (!port_group) {
+        roc_log(LogError, "sender sink: can't allocate port group");
+        return 0;
+    }
+
+    port_groups_.push_back(*port_group);
+
+    return (PortGroupID)port_group.get();
+}
+
+SenderSink::PortID SenderSink::add_port(PortGroupID port_group_id,
+                                        address::EndpointType port_type,
+                                        const pipeline::PortConfig& port_config) {
+    core::Mutex::Lock lock(mutex_);
+
+    roc_panic_if(!valid());
+
+    roc_log(LogInfo, "sender sink: adding port");
+
+    SenderPortGroup* port_group = (SenderPortGroup*)port_group_id;
+    roc_panic_if_not(port_group);
+
+    SenderPort* port = port_group->add_port(port_type, port_config);
+    if (!port) {
+        return 0;
+    }
+
+    if (audio::IWriter* port_group_writer = port_group->writer()) {
+        if (!fanout_.has_output(*port_group_writer)) {
+            fanout_.add_output(*port_group_writer);
+        }
+    }
+
+    return (PortID)port;
+}
+
+void SenderSink::set_port_writer(PortID port_id, packet::IWriter& port_writer) {
+    core::Mutex::Lock lock(mutex_);
+
+    roc_panic_if(!valid());
+
+    roc_log(LogDebug, "sender sink: attaching writer to port");
+
+    SenderPort* port = (SenderPort*)port_id;
+    roc_panic_if_not(port);
+
+    port->set_writer(port_writer);
+}
+
+bool SenderSink::port_group_configured(PortGroupID port_group_id) const {
+    core::Mutex::Lock lock(mutex_);
+
+    roc_panic_if(!valid());
+
+    SenderPortGroup* port_group = (SenderPortGroup*)port_group_id;
+    roc_panic_if_not(port_group);
+
+    return port_group->is_configured();
 }
 
 size_t SenderSink::sample_rate() const {
@@ -188,6 +142,8 @@ bool SenderSink::has_clock() const {
 }
 
 void SenderSink::write(audio::Frame& frame) {
+    core::Mutex::Lock lock(mutex_);
+
     roc_panic_if(!valid());
 
     if (ticker_) {
@@ -195,6 +151,7 @@ void SenderSink::write(audio::Frame& frame) {
     }
 
     audio_writer_->write(frame);
+
     timestamp_ += frame.size() / num_channels_;
 }
 

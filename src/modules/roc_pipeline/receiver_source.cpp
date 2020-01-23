@@ -51,12 +51,14 @@ ReceiverSource::ReceiverSource(const ReceiverConfig& config,
     audio_reader_ = areader;
 }
 
-bool ReceiverSource::valid() {
+bool ReceiverSource::valid() const {
     return audio_reader_;
 }
 
 ReceiverSource::PortGroupID ReceiverSource::add_port_group() {
     core::Mutex::Lock lock(mutex_);
+
+    roc_panic_if(!valid());
 
     roc_log(LogInfo, "receiver source: adding port group");
 
@@ -74,16 +76,18 @@ ReceiverSource::PortGroupID ReceiverSource::add_port_group() {
     return (PortGroupID)port_group.get();
 }
 
-packet::IWriter* ReceiverSource::add_port(PortGroupID port_group,
+packet::IWriter* ReceiverSource::add_port(PortGroupID port_group_id,
                                           address::EndpointProtocol port_proto) {
     core::Mutex::Lock lock(mutex_);
 
+    roc_panic_if(!valid());
+
     roc_log(LogInfo, "receiver source: adding port");
 
-    ReceiverPortGroup* port_group_ptr = (ReceiverPortGroup*)port_group;
-    roc_panic_if_not(port_group_ptr);
+    ReceiverPortGroup* port_group = (ReceiverPortGroup*)port_group_id;
+    roc_panic_if_not(port_group);
 
-    return port_group_ptr->add_port(port_proto);
+    return port_group->add_port(port_proto);
 }
 
 size_t ReceiverSource::num_sessions() const {
@@ -103,6 +107,8 @@ bool ReceiverSource::has_clock() const {
 }
 
 sndio::ISource::State ReceiverSource::state() const {
+    roc_panic_if(!valid());
+
     if (receiver_state_.num_sessions() != 0) {
         // we have sessions and they're producing some sound
         return Active;
@@ -131,6 +137,8 @@ bool ReceiverSource::restart() {
 
 bool ReceiverSource::read(audio::Frame& frame) {
     core::Mutex::Lock lock(mutex_);
+
+    roc_panic_if(!valid());
 
     if (config_.common.timing) {
         ticker_.wait(timestamp_);
