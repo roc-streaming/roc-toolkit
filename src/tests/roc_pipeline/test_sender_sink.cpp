@@ -76,11 +76,17 @@ TEST_GROUP(sender_sink) {
 TEST(sender_sink, write) {
     packet::Queue queue;
 
-    SenderSink sender(config, source_port, queue, repair_port, queue, codec_map,
-                      format_map, packet_pool, byte_buffer_pool, sample_buffer_pool,
-                      allocator);
-
+    SenderSink sender(config, codec_map, format_map, packet_pool, byte_buffer_pool,
+                      sample_buffer_pool, allocator);
     CHECK(sender.valid());
+
+    SenderSink::PortGroupID port_group = sender.add_port_group();
+    CHECK(port_group != 0);
+
+    SenderSink::PortID source_port_id =
+        sender.add_port(port_group, address::EndType_AudioSource, source_port);
+    CHECK(source_port_id != 0);
+    sender.set_port_writer(source_port_id, queue);
 
     FrameWriter frame_writer(sender, sample_buffer_pool);
 
@@ -107,11 +113,17 @@ TEST(sender_sink, frame_size_small) {
 
     packet::Queue queue;
 
-    SenderSink sender(config, source_port, queue, repair_port, queue, codec_map,
-                      format_map, packet_pool, byte_buffer_pool, sample_buffer_pool,
-                      allocator);
-
+    SenderSink sender(config, codec_map, format_map, packet_pool, byte_buffer_pool,
+                      sample_buffer_pool, allocator);
     CHECK(sender.valid());
+
+    SenderSink::PortGroupID port_group = sender.add_port_group();
+    CHECK(port_group != 0);
+
+    SenderSink::PortID source_port_id =
+        sender.add_port(port_group, address::EndType_AudioSource, source_port);
+    CHECK(source_port_id != 0);
+    sender.set_port_writer(source_port_id, queue);
 
     FrameWriter frame_writer(sender, sample_buffer_pool);
 
@@ -138,11 +150,17 @@ TEST(sender_sink, frame_size_large) {
 
     packet::Queue queue;
 
-    SenderSink sender(config, source_port, queue, repair_port, queue, codec_map,
-                      format_map, packet_pool, byte_buffer_pool, sample_buffer_pool,
-                      allocator);
-
+    SenderSink sender(config, codec_map, format_map, packet_pool, byte_buffer_pool,
+                      sample_buffer_pool, allocator);
     CHECK(sender.valid());
+
+    SenderSink::PortGroupID port_group = sender.add_port_group();
+    CHECK(port_group != 0);
+
+    SenderSink::PortID source_port_id =
+        sender.add_port(port_group, address::EndType_AudioSource, source_port);
+    CHECK(source_port_id != 0);
+    sender.set_port_writer(source_port_id, queue);
 
     FrameWriter frame_writer(sender, sample_buffer_pool);
 

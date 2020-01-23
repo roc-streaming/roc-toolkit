@@ -52,7 +52,7 @@ public:
                    core::IAllocator& allocator);
 
     //! Check if the pipeline was successfully constructed.
-    bool valid();
+    bool valid() const;
 
     //! Port group identifier.
     typedef uintptr_t PortGroupID;
