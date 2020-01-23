@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_pipeline/receiver_port.h
-//! @brief Receiver port pipeline.
+//! @file roc_pipeline/receiver_endpoint.h
+//! @brief Receiver endpoint pipeline.
 
-#ifndef ROC_PIPELINE_RECEIVER_PORT_H_
-#define ROC_PIPELINE_RECEIVER_PORT_H_
+#ifndef ROC_PIPELINE_RECEIVER_ENDPOINT_H_
+#define ROC_PIPELINE_RECEIVER_ENDPOINT_H_
 
 #include "roc_address/endpoint_protocol.h"
 #include "roc_core/iallocator.h"
@@ -30,22 +30,26 @@
 namespace roc {
 namespace pipeline {
 
-//! Receiver port pipeline.
+//! Receiver endpoint pipeline.
 //! @remarks
-//!  Created at the receiver side for every listened port.
-class ReceiverPort : public packet::IWriter,
-                     public core::RefCnt<ReceiverPort>,
-                     public core::ListNode {
+//!  Created for every transport endpoint. Belongs to endpoint set.
+//!  Passes packets to the session group of the endpoint set.
+class ReceiverEndpoint : public packet::IWriter,
+                         public core::RefCnt<ReceiverEndpoint>,
+                         public core::ListNode {
 public:
     //! Initialize.
-    ReceiverPort(address::EndpointProtocol proto,
-                 ReceiverState& receiver_state,
-                 ReceiverSessionGroup& session_group,
-                 const rtp::FormatMap& format_map,
-                 core::IAllocator& allocator);
+    ReceiverEndpoint(address::EndpointProtocol proto,
+                     ReceiverState& receiver_state,
+                     ReceiverSessionGroup& session_group,
+                     const rtp::FormatMap& format_map,
+                     core::IAllocator& allocator);
 
     //! Check if the port pipeline was succefully constructed.
     bool valid() const;
+
+    //! Get protocol.
+    address::EndpointProtocol proto() const;
 
     //! Handle packet.
     //! Called outside of pipeline from any thread, typically from netio thread.
@@ -56,11 +60,13 @@ public:
     void flush_packets();
 
 private:
-    friend class core::RefCnt<ReceiverPort>;
+    friend class core::RefCnt<ReceiverEndpoint>;
 
     void destroy();
 
     packet::Queue* get_read_queue_();
+
+    const address::EndpointProtocol proto_;
 
     core::IAllocator& allocator_;
 
@@ -80,4 +86,4 @@ private:
 } // namespace pipeline
 } // namespace roc
 
-#endif // ROC_PIPELINE_RECEIVER_PORT_H_
+#endif // ROC_PIPELINE_RECEIVER_ENDPOINT_H_

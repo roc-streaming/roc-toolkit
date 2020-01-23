@@ -10,7 +10,6 @@
 #include "roc_audio/resampler_map.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
-#include "roc_pipeline/port_to_str.h"
 
 namespace roc {
 namespace pipeline {
@@ -56,75 +55,84 @@ bool SenderSink::valid() const {
     return audio_writer_;
 }
 
-SenderSink::PortGroupID SenderSink::add_port_group() {
+SenderSink::EndpointSetHandle SenderSink::add_endpoint_set() {
     core::Mutex::Lock lock(mutex_);
 
     roc_panic_if(!valid());
 
-    roc_log(LogInfo, "sender sink: adding port group");
+    roc_log(LogInfo, "sender sink: adding endpoint set");
 
-    core::SharedPtr<SenderPortGroup> port_group = new (allocator_)
-        SenderPortGroup(config_, format_map_, packet_pool_, byte_buffer_pool_,
-                        sample_buffer_pool_, allocator_);
+    core::SharedPtr<SenderEndpointSet> endpoint_set = new (allocator_)
+        SenderEndpointSet(config_, format_map_, packet_pool_, byte_buffer_pool_,
+                          sample_buffer_pool_, allocator_);
 
-    if (!port_group) {
-        roc_log(LogError, "sender sink: can't allocate port group");
+    if (!endpoint_set) {
+        roc_log(LogError, "sender sink: can't allocate endpoint set");
         return 0;
     }
 
-    port_groups_.push_back(*port_group);
+    endpoint_sets_.push_back(*endpoint_set);
 
-    return (PortGroupID)port_group.get();
+    return (EndpointSetHandle)endpoint_set.get();
 }
 
-SenderSink::PortID SenderSink::add_port(PortGroupID port_group_id,
-                                        address::EndpointType port_type,
-                                        const pipeline::PortConfig& port_config) {
+SenderSink::EndpointHandle SenderSink::add_endpoint(EndpointSetHandle endpoint_set_handle,
+                                                    address::EndpointType type,
+                                                    address::EndpointProtocol proto) {
     core::Mutex::Lock lock(mutex_);
 
     roc_panic_if(!valid());
 
-    roc_log(LogInfo, "sender sink: adding port");
+    SenderEndpointSet* endpoint_set = (SenderEndpointSet*)endpoint_set_handle;
+    roc_panic_if_not(endpoint_set);
 
-    SenderPortGroup* port_group = (SenderPortGroup*)port_group_id;
-    roc_panic_if_not(port_group);
-
-    SenderPort* port = port_group->add_port(port_type, port_config);
-    if (!port) {
+    SenderEndpoint* endpoint = endpoint_set->add_endpoint(type, proto);
+    if (!endpoint) {
         return 0;
     }
 
-    if (audio::IWriter* port_group_writer = port_group->writer()) {
-        if (!fanout_.has_output(*port_group_writer)) {
-            fanout_.add_output(*port_group_writer);
+    if (audio::IWriter* endpoint_set_writer = endpoint_set->writer()) {
+        if (!fanout_.has_output(*endpoint_set_writer)) {
+            fanout_.add_output(*endpoint_set_writer);
         }
     }
 
-    return (PortID)port;
+    return (EndpointHandle)endpoint;
 }
 
-void SenderSink::set_port_writer(PortID port_id, packet::IWriter& port_writer) {
+void SenderSink::set_endpoint_output_writer(EndpointHandle endpoint_handle,
+                                            packet::IWriter& writer) {
     core::Mutex::Lock lock(mutex_);
 
     roc_panic_if(!valid());
 
-    roc_log(LogDebug, "sender sink: attaching writer to port");
+    SenderEndpoint* endpoint = (SenderEndpoint*)endpoint_handle;
+    roc_panic_if_not(endpoint);
 
-    SenderPort* port = (SenderPort*)port_id;
-    roc_panic_if_not(port);
-
-    port->set_writer(port_writer);
+    endpoint->set_output_writer(writer);
 }
 
-bool SenderSink::port_group_configured(PortGroupID port_group_id) const {
+void SenderSink::set_endpoint_destination_udp_address(EndpointHandle endpoint_handle,
+                                                      const address::SocketAddr& addr) {
     core::Mutex::Lock lock(mutex_);
 
     roc_panic_if(!valid());
 
-    SenderPortGroup* port_group = (SenderPortGroup*)port_group_id;
-    roc_panic_if_not(port_group);
+    SenderEndpoint* endpoint = (SenderEndpoint*)endpoint_handle;
+    roc_panic_if_not(endpoint);
 
-    return port_group->is_configured();
+    endpoint->set_destination_udp_address(addr);
+}
+
+bool SenderSink::endpoint_set_ready(EndpointSetHandle endpoint_set_handle) const {
+    core::Mutex::Lock lock(mutex_);
+
+    roc_panic_if(!valid());
+
+    SenderEndpointSet* endpoint_set = (SenderEndpointSet*)endpoint_set_handle;
+    roc_panic_if_not(endpoint_set);
+
+    return endpoint_set->is_ready();
 }
 
 size_t SenderSink::sample_rate() const {
