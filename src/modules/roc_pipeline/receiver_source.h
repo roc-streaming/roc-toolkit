@@ -26,7 +26,7 @@
 #include "roc_packet/iwriter.h"
 #include "roc_packet/packet_pool.h"
 #include "roc_pipeline/config.h"
-#include "roc_pipeline/receiver_port_group.h"
+#include "roc_pipeline/receiver_endpoint_set.h"
 #include "roc_pipeline/receiver_state.h"
 #include "roc_rtp/format_map.h"
 #include "roc_sndio/isource.h"
@@ -52,19 +52,22 @@ public:
     //! Check if the pipeline was successfully constructed.
     bool valid() const;
 
-    //! Port group identifier.
-    typedef uintptr_t PortGroupID;
+    //! Opaque endpoint set handle.
+    typedef struct EndpointSetHandle* EndpointSetHandle;
 
-    //! Add new port group.
+    //! Add new endpoint set.
     //! @returns
-    //!  non-zero identifier on success or zero on error.
-    PortGroupID add_port_group();
+    //!  NULL on on error or non-NULL opaque handle on success.
+    EndpointSetHandle add_endpoint_set();
 
-    //! Add port to group.
+    //! Add endpoint to endpoint set.
+    //! Each endpoint set can have one source and zero or one repair endpoint.
+    //! The protocols of endpoints in one set should be compatible.
     //! @returns
-    //!  thread-safe packet writer for the newly created port.
-    packet::IWriter* add_port(PortGroupID port_group,
-                              address::EndpointProtocol port_proto);
+    //!  thread-safe packet writer for the newly created endpoint or NULL on error.
+    packet::IWriter* add_endpoint(EndpointSetHandle endpoint_set,
+                                  address::EndpointType type,
+                                  address::EndpointProtocol proto);
 
     //! Get number of connected sessions.
     size_t num_sessions() const;
@@ -104,7 +107,7 @@ private:
     core::IAllocator& allocator_;
 
     ReceiverState receiver_state_;
-    core::List<ReceiverPortGroup> port_groups_;
+    core::List<ReceiverEndpointSet> endpoint_sets_;
 
     core::Ticker ticker_;
 

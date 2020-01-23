@@ -281,14 +281,16 @@ int main(int argc, char** argv) {
     }
 
     if (args.source_given) {
-        if (!sender.connect(address::EndType_AudioSource, source_port)) {
+        if (!sender.connect(address::EndType_AudioSource, source_port.protocol,
+                            source_port.address)) {
             roc_log(LogError, "can't connect sender to remote source port");
             return 1;
         }
     }
 
     if (args.repair_given) {
-        if (!sender.connect(address::EndType_AudioRepair, repair_port)) {
+        if (!sender.connect(address::EndType_AudioRepair, repair_port.protocol,
+                            repair_port.address)) {
             roc_log(LogError, "can't connect sender to remote repair port");
             return 1;
         }
