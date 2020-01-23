@@ -68,13 +68,13 @@ int roc_sender_bind(roc_sender* sender, roc_address* address) {
         return -1;
     }
 
-    address::SocketAddr& addr = api::get_socket_addr(address);
-    if (!addr.has_host_port()) {
+    address::SocketAddr& imp_address = api::get_socket_addr(address);
+    if (!imp_address.has_host_port()) {
         roc_log(LogError, "roc_sender_bind: invalid arguments: invalid address");
         return -1;
     }
 
-    if (!imp_sender->bind(addr)) {
+    if (!imp_sender->bind(imp_address)) {
         roc_log(LogError, "roc_sender_bind: bind failed");
         return -1;
     }
@@ -98,25 +98,25 @@ int roc_sender_connect(roc_sender* sender,
         return -1;
     }
 
-    const address::SocketAddr& addr = api::get_socket_addr(address);
-    if (!addr.has_host_port()) {
+    const address::SocketAddr& imp_address = api::get_socket_addr(address);
+    if (!imp_address.has_host_port()) {
         roc_log(LogError, "roc_sender_connect: invalid arguments: invalid address");
         return -1;
     }
 
     address::EndpointType imp_endpoint_type;
     if (!api::make_endpoint_type(imp_endpoint_type, type)) {
-        roc_log(LogError, "roc_sender_connect: invalid arguments: bad port type");
+        roc_log(LogError, "roc_sender_connect: invalid arguments: bad type");
         return -1;
     }
 
-    pipeline::PortConfig imp_port_config;
-    if (!api::make_port_config(imp_port_config, type, proto, addr)) {
+    address::EndpointProtocol imp_endpoint_proto;
+    if (!api::make_endpoint_proto(imp_endpoint_proto, proto)) {
         roc_log(LogError, "roc_sender_connect: invalid arguments: bad protocol");
         return -1;
     }
 
-    if (!imp_sender->connect(imp_endpoint_type, imp_port_config)) {
+    if (!imp_sender->connect(imp_endpoint_type, imp_endpoint_proto, imp_address)) {
         roc_log(LogError, "roc_sender_bind: connect failed");
         return -1;
     }
