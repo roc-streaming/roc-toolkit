@@ -28,7 +28,7 @@
 #include "roc_packet/packet_pool.h"
 #include "roc_packet/router.h"
 #include "roc_pipeline/config.h"
-#include "roc_pipeline/sender_port_group.h"
+#include "roc_pipeline/sender_endpoint_set.h"
 #include "roc_rtp/format_map.h"
 #include "roc_sndio/isink.h"
 
@@ -53,28 +53,36 @@ public:
     //! Check if the pipeline was successfully constructed.
     bool valid() const;
 
-    //! Port group identifier.
-    typedef uintptr_t PortGroupID;
+    //! Opaque endpoint set handle.
+    typedef struct EndpointSetHandle* EndpointSetHandle;
 
-    //! Port identifier.
-    typedef uintptr_t PortID;
+    //! Opaque endpoint handle.
+    typedef struct EndpointHandle* EndpointHandle;
 
-    //! Add new port group.
+    //! Add new endpoint set.
     //! @returns
-    //!  non-zero identifier on success or zero on error.
-    PortGroupID add_port_group();
+    //!  NULL on on error or non-NULL opaque handle on success.
+    EndpointSetHandle add_endpoint_set();
 
-    //! Add port to group.
-    PortID add_port(PortGroupID port_group,
-                    address::EndpointType port_type,
-                    const pipeline::PortConfig& port_config);
+    //! Add endpoint to endpoint set.
+    //! Each endpoint set can have one source and zero or one repair endpoint.
+    //! The protocols of endpoints in one set should be compatible.
+    //! @returns
+    //!  NULL on on error or non-NULL opaque handle on success.
+    EndpointHandle add_endpoint(EndpointSetHandle endpoint_set,
+                                address::EndpointType type,
+                                address::EndpointProtocol proto);
 
-    //! Attach port to packet writer.
-    void set_port_writer(PortID port_id, packet::IWriter& port_writer);
+    //! Set writer to which endpoint will write packets.
+    void set_endpoint_output_writer(EndpointHandle endpoint, packet::IWriter& writer);
 
-    //! Check if port group is fully configured.
-    //! This is true when all necessary ports are added and attached to writers.
-    bool port_group_configured(PortGroupID port_group) const;
+    //! Set UDP address for output packets.
+    void set_endpoint_destination_udp_address(EndpointHandle endpoint,
+                                              const address::SocketAddr& addr);
+
+    //! Check if endpoint set configuration is done.
+    //! This is true when all necessary endpoints are added and configured.
+    bool endpoint_set_ready(EndpointSetHandle endpoint_set) const;
 
     //! Get sink sample rate.
     virtual size_t sample_rate() const;
@@ -99,7 +107,7 @@ private:
 
     core::IAllocator& allocator_;
 
-    core::List<SenderPortGroup> port_groups_;
+    core::List<SenderEndpointSet> endpoint_sets_;
 
     audio::Fanout fanout_;
 

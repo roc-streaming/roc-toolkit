@@ -53,39 +53,38 @@ bool ReceiverSource::valid() const {
     return audio_reader_;
 }
 
-ReceiverSource::PortGroupID ReceiverSource::add_port_group() {
+ReceiverSource::EndpointSetHandle ReceiverSource::add_endpoint_set() {
     core::Mutex::Lock lock(mutex_);
 
     roc_panic_if(!valid());
 
-    roc_log(LogInfo, "receiver source: adding port group");
+    roc_log(LogDebug, "receiver source: adding endpoint set");
 
-    core::SharedPtr<ReceiverPortGroup> port_group = new (allocator_)
-        ReceiverPortGroup(config_, receiver_state_, *mixer_, format_map_, packet_pool_,
-                          byte_buffer_pool_, sample_buffer_pool_, allocator_);
+    core::SharedPtr<ReceiverEndpointSet> endpoint_set = new (allocator_)
+        ReceiverEndpointSet(config_, receiver_state_, *mixer_, format_map_, packet_pool_,
+                            byte_buffer_pool_, sample_buffer_pool_, allocator_);
 
-    if (!port_group) {
-        roc_log(LogError, "receiver source: can't allocate port group");
+    if (!endpoint_set) {
+        roc_log(LogError, "receiver source: can't allocate endpoint set");
         return 0;
     }
 
-    port_groups_.push_back(*port_group);
+    endpoint_sets_.push_back(*endpoint_set);
 
-    return (PortGroupID)port_group.get();
+    return (EndpointSetHandle)endpoint_set.get();
 }
 
-packet::IWriter* ReceiverSource::add_port(PortGroupID port_group_id,
-                                          address::EndpointProtocol port_proto) {
+packet::IWriter* ReceiverSource::add_endpoint(EndpointSetHandle endpoint_set_handle,
+                                              address::EndpointType type,
+                                              address::EndpointProtocol proto) {
     core::Mutex::Lock lock(mutex_);
 
     roc_panic_if(!valid());
 
-    roc_log(LogInfo, "receiver source: adding port");
+    ReceiverEndpointSet* endpoint_set = (ReceiverEndpointSet*)endpoint_set_handle;
+    roc_panic_if_not(endpoint_set);
 
-    ReceiverPortGroup* port_group = (ReceiverPortGroup*)port_group_id;
-    roc_panic_if_not(port_group);
-
-    return port_group->add_port(port_proto);
+    return endpoint_set->add_endpoint(type, proto);
 }
 
 size_t ReceiverSource::num_sessions() const {
@@ -142,9 +141,9 @@ bool ReceiverSource::read(audio::Frame& frame) {
         ticker_.wait(timestamp_);
     }
 
-    for (core::SharedPtr<ReceiverPortGroup> port_group = port_groups_.front(); port_group;
-         port_group = port_groups_.nextof(*port_group)) {
-        port_group->update(timestamp_);
+    for (core::SharedPtr<ReceiverEndpointSet> endpoint_set = endpoint_sets_.front();
+         endpoint_set; endpoint_set = endpoint_sets_.nextof(*endpoint_set)) {
+        endpoint_set->update(timestamp_);
     }
 
     if (!audio_reader_->read(frame)) {
