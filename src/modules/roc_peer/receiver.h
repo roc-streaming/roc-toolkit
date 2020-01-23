@@ -12,6 +12,7 @@
 #ifndef ROC_PEER_RECEIVER_H_
 #define ROC_PEER_RECEIVER_H_
 
+#include "roc_address/endpoint_protocol.h"
 #include "roc_address/endpoint_type.h"
 #include "roc_address/socket_addr.h"
 #include "roc_core/array.h"
@@ -36,8 +37,10 @@ public:
     //! Check if successfully constructed.
     bool valid();
 
-    //! Bind peer to local port.
-    bool bind(address::EndpointType port_type, pipeline::PortConfig& port_config);
+    //! Bind peer to local endpoint.
+    bool bind(address::EndpointType type,
+              address::EndpointProtocol proto,
+              address::SocketAddr& address);
 
     //! Get receiver source.
     sndio::ISource& source();
@@ -48,7 +51,7 @@ private:
     rtp::FormatMap format_map_;
 
     pipeline::ReceiverSource pipeline_;
-    pipeline::ReceiverSource::PortGroupID default_port_group_;
+    pipeline::ReceiverSource::EndpointSetHandle endpoint_set_;
 
     core::Array<address::SocketAddr, 2> addresses_;
 };

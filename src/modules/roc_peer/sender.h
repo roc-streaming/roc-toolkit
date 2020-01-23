@@ -12,6 +12,7 @@
 #ifndef ROC_PEER_SENDER_H_
 #define ROC_PEER_SENDER_H_
 
+#include "roc_address/endpoint_protocol.h"
 #include "roc_address/endpoint_type.h"
 #include "roc_address/socket_addr.h"
 #include "roc_core/mutex.h"
@@ -37,18 +38,19 @@ public:
     //! Check if successfully constructed.
     bool valid() const;
 
-    //! Bind peer to local port.
+    //! Bind peer to local endpoint.
     bool bind(address::SocketAddr& addr);
 
-    //! Connect peer to remote port.
-    bool connect(address::EndpointType port_type,
-                 const pipeline::PortConfig& port_config);
+    //! Connect peer to remote endpoint.
+    bool connect(address::EndpointType type,
+                 address::EndpointProtocol proto,
+                 const address::SocketAddr& address);
 
     //! Get sender sink.
     sndio::ISink& sink();
 
     //! Check if all necessary bind and connect calls were made.
-    bool is_configured() const;
+    bool is_ready() const;
 
 private:
     core::Mutex mutex_;
@@ -56,10 +58,10 @@ private:
     rtp::FormatMap format_map_;
 
     pipeline::SenderSink pipeline_;
-    pipeline::SenderSink::PortGroupID default_port_group_;
+    pipeline::SenderSink::EndpointSetHandle endpoint_set_;
 
-    pipeline::SenderSink::PortID source_id_;
-    pipeline::SenderSink::PortID repair_id_;
+    pipeline::SenderSink::EndpointHandle source_endpoint_;
+    pipeline::SenderSink::EndpointHandle repair_endpoint_;
 
     packet::IWriter* udp_writer_;
     address::SocketAddr bind_address_;

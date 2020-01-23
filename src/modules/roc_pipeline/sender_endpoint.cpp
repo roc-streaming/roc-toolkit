@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_pipeline/sender_port.h"
+#include "roc_pipeline/sender_endpoint.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_fec/composer.h"
@@ -15,14 +15,14 @@
 namespace roc {
 namespace pipeline {
 
-SenderPort::SenderPort(const PortConfig& config, core::IAllocator& allocator)
-    : proto_(config.protocol)
-    , dst_address_(config.address)
+SenderEndpoint::SenderEndpoint(address::EndpointProtocol proto,
+                               core::IAllocator& allocator)
+    : proto_(proto)
     , writer_(NULL)
     , composer_(NULL) {
     packet::IComposer* composer = NULL;
 
-    switch ((int)config.protocol) {
+    switch ((int)proto) {
     case address::EndProto_RTP:
     case address::EndProto_RTP_LDPC_Source:
     case address::EndProto_RTP_RS8M_Source:
@@ -34,7 +34,7 @@ SenderPort::SenderPort(const PortConfig& config, core::IAllocator& allocator)
         break;
     }
 
-    switch ((int)config.protocol) {
+    switch ((int)proto) {
     case address::EndProto_RTP_LDPC_Source:
         fec_composer_.reset(
             new (allocator)
@@ -82,23 +82,29 @@ SenderPort::SenderPort(const PortConfig& config, core::IAllocator& allocator)
     composer_ = composer;
 }
 
-bool SenderPort::valid() const {
+bool SenderEndpoint::valid() const {
     return composer_;
 }
 
-address::EndpointProtocol SenderPort::proto() const {
+address::EndpointProtocol SenderEndpoint::proto() const {
     roc_panic_if(!valid());
 
     return proto_;
 }
 
-packet::IComposer& SenderPort::composer() {
+packet::IComposer& SenderEndpoint::composer() {
     roc_panic_if(!valid());
 
     return *composer_;
 }
 
-void SenderPort::set_writer(packet::IWriter& writer) {
+bool SenderEndpoint::has_writer() const {
+    core::Mutex::Lock lock(mutex_);
+
+    return writer_;
+}
+
+void SenderEndpoint::set_output_writer(packet::IWriter& writer) {
     core::Mutex::Lock lock(mutex_);
 
     roc_panic_if(!valid());
@@ -107,13 +113,16 @@ void SenderPort::set_writer(packet::IWriter& writer) {
     writer_ = &writer;
 }
 
-bool SenderPort::has_writer() const {
+void SenderEndpoint::set_destination_udp_address(const address::SocketAddr& addr) {
     core::Mutex::Lock lock(mutex_);
 
-    return writer_;
+    roc_panic_if(!valid());
+    roc_panic_if(udp_address_.has_host_port());
+
+    udp_address_ = addr;
 }
 
-void SenderPort::write(const packet::PacketPtr& packet) {
+void SenderEndpoint::write(const packet::PacketPtr& packet) {
     core::Mutex::Lock lock(mutex_);
 
     roc_panic_if(!valid());
@@ -122,12 +131,14 @@ void SenderPort::write(const packet::PacketPtr& packet) {
         return;
     }
 
-    packet->add_flags(packet::Packet::FlagUDP);
-    packet->udp()->dst_addr = dst_address_;
+    if (udp_address_.has_host_port()) {
+        packet->add_flags(packet::Packet::FlagUDP);
+        packet->udp()->dst_addr = udp_address_;
+    }
 
     if ((packet->flags() & packet::Packet::FlagComposed) == 0) {
         if (!composer_->compose(*packet)) {
-            roc_panic("sender port: can't compose packet");
+            roc_panic("sender endpoint: can't compose packet");
         }
         packet->add_flags(packet::Packet::FlagComposed);
     }
