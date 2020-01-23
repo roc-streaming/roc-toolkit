@@ -6,23 +6,23 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_address/addr_type.h
-//! @brief Address enums.
+//! @file roc_address/addr_family.h
+//! @brief Address family.
 
-#ifndef ROC_ADDRESS_ADDR_TYPE_H_
-#define ROC_ADDRESS_ADDR_TYPE_H_
+#ifndef ROC_ADDRESS_ADDR_FAMILY_H_
+#define ROC_ADDRESS_ADDR_FAMILY_H_
 
 namespace roc {
 namespace address {
 
 //! Address family.
 enum AddrFamily {
-    Family_Unknown = 0,
-    Family_IPv4, 
-    Family_IPv6 
+    Family_Unknown = 0, //!< Invalid.
+    Family_IPv4,        //!< IPv4.
+    Family_IPv6         //!< IPv6.
 };
 
 } // namespace address
 } // namespace roc
 
-#endif // ROC_ADDRESS_ADDR_TYPE_H_
+#endif // ROC_ADDRESS_ADDR_FAMILY_H_
