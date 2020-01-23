@@ -99,19 +99,25 @@ TEST_GROUP(sender_sink_receiver_source) {
 
         CHECK(sender.valid());
 
-        SenderSink::PortGroupID sender_port_group = sender.add_port_group();
-        CHECK(sender_port_group != 0);
+        SenderSink::EndpointSetHandle sender_endpoint_set = sender.add_endpoint_set();
+        CHECK(sender_endpoint_set);
 
-        SenderSink::PortID source_port_id =
-            sender.add_port(sender_port_group, address::EndType_AudioSource, source_port);
-        CHECK(source_port_id != 0);
-        sender.set_port_writer(source_port_id, queue);
+        SenderSink::EndpointHandle sender_source_endpoint = sender.add_endpoint(
+            sender_endpoint_set, address::EndType_AudioSource, source_port.protocol);
+        CHECK(sender_source_endpoint);
+
+        sender.set_endpoint_output_writer(sender_source_endpoint, queue);
+        sender.set_endpoint_destination_udp_address(sender_source_endpoint,
+                                                    source_port.address);
 
         if (repair_port.protocol != address::EndProto_None) {
-            SenderSink::PortID repair_port_id = sender.add_port(
-                sender_port_group, address::EndType_AudioRepair, repair_port);
-            CHECK(repair_port_id != 0);
-            sender.set_port_writer(repair_port_id, queue);
+            SenderSink::EndpointHandle sender_repair_endpoint = sender.add_endpoint(
+                sender_endpoint_set, address::EndType_AudioRepair, repair_port.protocol);
+            CHECK(sender_repair_endpoint);
+
+            sender.set_endpoint_output_writer(sender_repair_endpoint, queue);
+            sender.set_endpoint_destination_udp_address(sender_repair_endpoint,
+                                                        repair_port.address);
         }
 
         ReceiverSource receiver(receiver_config(), format_map, packet_pool,
@@ -119,18 +125,20 @@ TEST_GROUP(sender_sink_receiver_source) {
 
         CHECK(receiver.valid());
 
-        ReceiverSource::PortGroupID receiver_port_group = receiver.add_port_group();
-        CHECK(receiver_port_group != 0);
+        ReceiverSource::EndpointSetHandle receiver_endpoint_set =
+            receiver.add_endpoint_set();
+        CHECK(receiver_endpoint_set);
 
-        packet::IWriter* source_port_writer =
-            receiver.add_port(receiver_port_group, source_port.protocol);
-        CHECK(source_port_writer);
+        packet::IWriter* receiver_source_endpoint_writer = receiver.add_endpoint(
+            receiver_endpoint_set, address::EndType_AudioSource, source_port.protocol);
+        CHECK(receiver_source_endpoint_writer);
 
-        packet::IWriter* repair_port_writer = NULL;
+        packet::IWriter* receiver_repair_endpoint_writer = NULL;
         if (repair_port.protocol != address::EndProto_None) {
-            repair_port_writer =
-                receiver.add_port(receiver_port_group, repair_port.protocol);
-            CHECK(repair_port_writer);
+            receiver_repair_endpoint_writer =
+                receiver.add_endpoint(receiver_endpoint_set, address::EndType_AudioRepair,
+                                      repair_port.protocol);
+            CHECK(receiver_repair_endpoint_writer);
         }
 
         FrameWriter frame_writer(sender, sample_buffer_pool);
@@ -139,7 +147,8 @@ TEST_GROUP(sender_sink_receiver_source) {
             frame_writer.write_samples(SamplesPerFrame * NumCh);
         }
 
-        PacketSender packet_sender(packet_pool, source_port_writer, repair_port_writer);
+        PacketSender packet_sender(packet_pool, receiver_source_endpoint_writer,
+                                   receiver_repair_endpoint_writer);
 
         filter_packets(flags, queue, packet_sender);
 

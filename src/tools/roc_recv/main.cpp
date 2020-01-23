@@ -360,7 +360,7 @@ int main(int argc, char** argv) {
                 return 1;
             }
         }
-        if (!receiver.bind(address::EndType_AudioSource, port)) {
+        if (!receiver.bind(address::EndType_AudioSource, port.protocol, port.address)) {
             roc_log(LogError, "can't bind source port: %s", args.source_arg);
             return 1;
         }
@@ -380,7 +380,7 @@ int main(int argc, char** argv) {
                 return 1;
             }
         }
-        if (!receiver.bind(address::EndType_AudioRepair, port)) {
+        if (!receiver.bind(address::EndType_AudioRepair, port.protocol, port.address)) {
             roc_log(LogError, "can't bind repair port: %s", args.repair_arg);
             return 1;
         }
