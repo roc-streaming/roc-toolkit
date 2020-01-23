@@ -31,8 +31,8 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
         return;
     }
 
-    queue_router_.reset(new (allocator_) packet::Router(allocator_, 2), allocator_);
-    if (!queue_router_ || !queue_router_->valid()) {
+    queue_router_.reset(new (allocator_) packet::Router(allocator_), allocator_);
+    if (!queue_router_) {
         return;
     }
 
