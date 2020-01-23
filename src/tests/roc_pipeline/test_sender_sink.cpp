@@ -47,7 +47,6 @@ core::BufferPool<audio::sample_t> sample_buffer_pool(allocator, MaxBufSize, true
 core::BufferPool<uint8_t> byte_buffer_pool(allocator, MaxBufSize, true);
 packet::PacketPool packet_pool(allocator, true);
 
-fec::CodecMap codec_map;
 rtp::FormatMap format_map;
 rtp::Parser rtp_parser(format_map, NULL);
 
@@ -76,7 +75,7 @@ TEST_GROUP(sender_sink) {
 TEST(sender_sink, write) {
     packet::Queue queue;
 
-    SenderSink sender(config, codec_map, format_map, packet_pool, byte_buffer_pool,
+    SenderSink sender(config, format_map, packet_pool, byte_buffer_pool,
                       sample_buffer_pool, allocator);
     CHECK(sender.valid());
 
@@ -113,7 +112,7 @@ TEST(sender_sink, frame_size_small) {
 
     packet::Queue queue;
 
-    SenderSink sender(config, codec_map, format_map, packet_pool, byte_buffer_pool,
+    SenderSink sender(config, format_map, packet_pool, byte_buffer_pool,
                       sample_buffer_pool, allocator);
     CHECK(sender.valid());
 
@@ -150,7 +149,7 @@ TEST(sender_sink, frame_size_large) {
 
     packet::Queue queue;
 
-    SenderSink sender(config, codec_map, format_map, packet_pool, byte_buffer_pool,
+    SenderSink sender(config, format_map, packet_pool, byte_buffer_pool,
                       sample_buffer_pool, allocator);
     CHECK(sender.valid());
 

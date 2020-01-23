@@ -9,6 +9,7 @@
 #include "roc_pipeline/sender_port_group.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
+#include "roc_fec/codec_map.h"
 #include "roc_pipeline/port_to_str.h"
 #include "roc_pipeline/validate_endpoints.h"
 
@@ -16,14 +17,12 @@ namespace roc {
 namespace pipeline {
 
 SenderPortGroup::SenderPortGroup(const SenderConfig& config,
-                                 const fec::CodecMap& codec_map,
                                  const rtp::FormatMap& format_map,
                                  packet::PacketPool& packet_pool,
                                  core::BufferPool<uint8_t>& byte_buffer_pool,
                                  core::BufferPool<audio::sample_t>& sample_buffer_pool,
                                  core::IAllocator& allocator)
     : config_(config)
-    , codec_map_(codec_map)
     , format_map_(format_map)
     , packet_pool_(packet_pool)
     , byte_buffer_pool_(byte_buffer_pool)
@@ -176,9 +175,9 @@ bool SenderPortGroup::create_pipeline_() {
             pwriter = interleaver_.get();
         }
 
-        fec_encoder_.reset(
-            codec_map_.new_encoder(config_.fec_encoder, byte_buffer_pool_, allocator_),
-            allocator_);
+        fec_encoder_.reset(fec::CodecMap::instance().new_encoder(
+                               config_.fec_encoder, byte_buffer_pool_, allocator_),
+                           allocator_);
         if (!fec_encoder_) {
             return false;
         }

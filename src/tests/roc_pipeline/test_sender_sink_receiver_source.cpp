@@ -10,6 +10,7 @@
 
 #include "roc_core/buffer_pool.h"
 #include "roc_core/heap_allocator.h"
+#include "roc_fec/codec_map.h"
 #include "roc_packet/packet_pool.h"
 #include "roc_packet/queue.h"
 #include "roc_pipeline/receiver_source.h"
@@ -72,7 +73,6 @@ core::HeapAllocator allocator;
 core::BufferPool<audio::sample_t> sample_buffer_pool(allocator, MaxBufSize, true);
 core::BufferPool<uint8_t> byte_buffer_pool(allocator, MaxBufSize, true);
 packet::PacketPool packet_pool(allocator, true);
-fec::CodecMap codec_map;
 rtp::FormatMap format_map;
 
 } // namespace
@@ -80,10 +80,10 @@ rtp::FormatMap format_map;
 TEST_GROUP(sender_sink_receiver_source) {
     bool is_fec_supported(int flags) {
         if (flags & FlagReedSolomon) {
-            return codec_map.is_supported(packet::FEC_ReedSolomon_M8);
+            return fec::CodecMap::instance().is_supported(packet::FEC_ReedSolomon_M8);
         }
         if (flags & FlagLDPC) {
-            return codec_map.is_supported(packet::FEC_LDPC_Staircase);
+            return fec::CodecMap::instance().is_supported(packet::FEC_LDPC_Staircase);
         }
         return true;
     }
@@ -94,8 +94,8 @@ TEST_GROUP(sender_sink_receiver_source) {
         PortConfig source_port = sender_source_port(flags);
         PortConfig repair_port = sender_repair_port(flags);
 
-        SenderSink sender(sender_config(flags), codec_map, format_map, packet_pool,
-                          byte_buffer_pool, sample_buffer_pool, allocator);
+        SenderSink sender(sender_config(flags), format_map, packet_pool, byte_buffer_pool,
+                          sample_buffer_pool, allocator);
 
         CHECK(sender.valid());
 
@@ -114,7 +114,7 @@ TEST_GROUP(sender_sink_receiver_source) {
             sender.set_port_writer(repair_port_id, queue);
         }
 
-        ReceiverSource receiver(receiver_config(), codec_map, format_map, packet_pool,
+        ReceiverSource receiver(receiver_config(), format_map, packet_pool,
                                 byte_buffer_pool, sample_buffer_pool, allocator);
 
         CHECK(receiver.valid());
