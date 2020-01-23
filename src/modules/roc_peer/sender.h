@@ -36,7 +36,7 @@ public:
     ~Sender();
 
     //! Check if successfully constructed.
-    bool valid();
+    bool valid() const;
 
     //! Bind peer to local port.
     bool bind(address::SocketAddr& addr);
@@ -46,27 +46,24 @@ public:
                  const pipeline::PortConfig& port_config);
 
     //! Get sender sink.
-    sndio::ISink* sink();
+    sndio::ISink& sink();
+
+    //! Check if all necessary bind and connect calls were made.
+    bool is_configured() const;
 
 private:
-    bool set_source_port_(const pipeline::PortConfig& port_config);
-    bool set_repair_port_(const pipeline::PortConfig& port_config);
-
-    bool ensure_pipeline_();
-
     core::Mutex mutex_;
-
-    const pipeline::SenderConfig pipeline_config_;
 
     fec::CodecMap codec_map_;
     rtp::FormatMap format_map_;
 
-    pipeline::PortConfig source_port_;
-    pipeline::PortConfig repair_port_;
+    pipeline::SenderSink pipeline_;
+    pipeline::SenderSink::PortGroupID default_port_group_;
 
-    core::ScopedPtr<pipeline::SenderSink> pipeline_;
+    pipeline::SenderSink::PortID source_id_;
+    pipeline::SenderSink::PortID repair_id_;
+
     packet::IWriter* udp_writer_;
-
     address::SocketAddr bind_address_;
 };
 

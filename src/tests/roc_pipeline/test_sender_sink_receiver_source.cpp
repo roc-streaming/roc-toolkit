@@ -94,47 +94,49 @@ TEST_GROUP(sender_sink_receiver_source) {
         PortConfig source_port = sender_source_port(flags);
         PortConfig repair_port = sender_repair_port(flags);
 
-        SenderSink sender(sender_config(flags),
-                          source_port,
-                          queue,
-                          repair_port,
-                          queue,
-                          codec_map,
-                          format_map,
-                          packet_pool,
-                          byte_buffer_pool,
-                          sample_buffer_pool,
-                          allocator);
+        SenderSink sender(sender_config(flags), codec_map, format_map, packet_pool,
+                          byte_buffer_pool, sample_buffer_pool, allocator);
 
         CHECK(sender.valid());
 
-        ReceiverSource receiver(receiver_config(),
-                                codec_map,
-                                format_map,
-                                packet_pool,
-                                byte_buffer_pool,
-                                sample_buffer_pool,
-                                allocator);
+        SenderSink::PortGroupID sender_port_group = sender.add_port_group();
+        CHECK(sender_port_group != 0);
+
+        SenderSink::PortID source_port_id =
+            sender.add_port(sender_port_group, address::EndType_AudioSource, source_port);
+        CHECK(source_port_id != 0);
+        sender.set_port_writer(source_port_id, queue);
+
+        if (repair_port.protocol != address::EndProto_None) {
+            SenderSink::PortID repair_port_id = sender.add_port(
+                sender_port_group, address::EndType_AudioRepair, repair_port);
+            CHECK(repair_port_id != 0);
+            sender.set_port_writer(repair_port_id, queue);
+        }
+
+        ReceiverSource receiver(receiver_config(), codec_map, format_map, packet_pool,
+                                byte_buffer_pool, sample_buffer_pool, allocator);
 
         CHECK(receiver.valid());
+
+        ReceiverSource::PortGroupID receiver_port_group = receiver.add_port_group();
+        CHECK(receiver_port_group != 0);
+
+        packet::IWriter* source_port_writer =
+            receiver.add_port(receiver_port_group, source_port.protocol);
+        CHECK(source_port_writer);
+
+        packet::IWriter* repair_port_writer = NULL;
+        if (repair_port.protocol != address::EndProto_None) {
+            repair_port_writer =
+                receiver.add_port(receiver_port_group, repair_port.protocol);
+            CHECK(repair_port_writer);
+        }
 
         FrameWriter frame_writer(sender, sample_buffer_pool);
 
         for (size_t nf = 0; nf < ManyFrames; nf++) {
             frame_writer.write_samples(SamplesPerFrame * NumCh);
-        }
-
-        ReceiverSource::PortGroupID port_group = receiver.add_port_group();
-        CHECK(port_group != 0);
-
-        packet::IWriter* source_port_writer =
-            receiver.add_port(port_group, source_port.protocol);
-        CHECK(source_port_writer);
-
-        packet::IWriter* repair_port_writer = NULL;
-        if (repair_port.protocol != address::EndProto_None) {
-            repair_port_writer = receiver.add_port(port_group, repair_port.protocol);
-            CHECK(repair_port_writer);
         }
 
         PacketSender packet_sender(packet_pool, source_port_writer, repair_port_writer);

@@ -294,13 +294,7 @@ int main(int argc, char** argv) {
         }
     }
 
-    sndio::ISink* sender_sink = sender.sink();
-    if (!sender_sink) {
-        roc_log(LogError, "can't create sender sink");
-        return 1;
-    }
-
-    sndio::Pump pump(context.sample_buffer_pool(), *source, NULL, *sender_sink,
+    sndio::Pump pump(context.sample_buffer_pool(), *source, NULL, sender.sink(),
                      config.internal_frame_size, sndio::Pump::ModePermanent);
     if (!pump.valid()) {
         roc_log(LogError, "can't create audio pump");
