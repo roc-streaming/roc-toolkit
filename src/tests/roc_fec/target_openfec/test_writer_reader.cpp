@@ -48,21 +48,19 @@ core::HeapAllocator allocator;
 core::BufferPool<uint8_t> buffer_pool(allocator, MaxBuffSize, true);
 packet::PacketPool packet_pool(allocator, true);
 
-fec::CodecMap codec_map;
-
 rtp::FormatMap format_map;
 rtp::Parser rtp_parser(format_map, NULL);
 
-fec::Parser<RS8M_PayloadID, Source, Footer> rs8m_source_parser(&rtp_parser);
-fec::Parser<RS8M_PayloadID, Repair, Header> rs8m_repair_parser(NULL);
-fec::Parser<LDPC_Source_PayloadID, Source, Footer> ldpc_source_parser(&rtp_parser);
-fec::Parser<LDPC_Repair_PayloadID, Repair, Header> ldpc_repair_parser(NULL);
+Parser<RS8M_PayloadID, Source, Footer> rs8m_source_parser(&rtp_parser);
+Parser<RS8M_PayloadID, Repair, Header> rs8m_repair_parser(NULL);
+Parser<LDPC_Source_PayloadID, Source, Footer> ldpc_source_parser(&rtp_parser);
+Parser<LDPC_Repair_PayloadID, Repair, Header> ldpc_repair_parser(NULL);
 
 rtp::Composer rtp_composer(NULL);
-fec::Composer<RS8M_PayloadID, Source, Footer> rs8m_source_composer(&rtp_composer);
-fec::Composer<RS8M_PayloadID, Repair, Header> rs8m_repair_composer(NULL);
-fec::Composer<LDPC_Source_PayloadID, Source, Footer> ldpc_source_composer(&rtp_composer);
-fec::Composer<LDPC_Repair_PayloadID, Repair, Header> ldpc_repair_composer(NULL);
+Composer<RS8M_PayloadID, Source, Footer> rs8m_source_composer(&rtp_composer);
+Composer<RS8M_PayloadID, Repair, Header> rs8m_repair_composer(NULL);
+Composer<LDPC_Source_PayloadID, Source, Footer> ldpc_source_composer(&rtp_composer);
+Composer<LDPC_Repair_PayloadID, Repair, Header> ldpc_repair_composer(NULL);
 
 } // namespace
 
@@ -214,9 +212,12 @@ TEST(writer_reader, no_losses) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            allocator);
+
         core::ScopedPtr<IBlockDecoder> decoder(
-            codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            allocator);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -259,9 +260,12 @@ TEST(writer_reader, 1_loss) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            allocator);
+
         core::ScopedPtr<IBlockDecoder> decoder(
-            codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            allocator);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -306,9 +310,12 @@ TEST(writer_reader, lost_first_packet_in_first_block) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            allocator);
+
         core::ScopedPtr<IBlockDecoder> decoder(
-            codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            allocator);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -362,9 +369,12 @@ TEST(writer_reader, lost_one_source_and_all_repair_packets) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            allocator);
+
         core::ScopedPtr<IBlockDecoder> decoder(
-            codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            allocator);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -431,9 +441,12 @@ TEST(writer_reader, multiple_blocks_1_loss) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            allocator);
+
         core::ScopedPtr<IBlockDecoder> decoder(
-            codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            allocator);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -503,9 +516,12 @@ TEST(writer_reader, multiple_blocks_in_queue) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            allocator);
+
         core::ScopedPtr<IBlockDecoder> decoder(
-            codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            allocator);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -556,9 +572,12 @@ TEST(writer_reader, interleaved_packets) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            allocator);
+
         core::ScopedPtr<IBlockDecoder> decoder(
-            codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            allocator);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -610,9 +629,12 @@ TEST(writer_reader, delayed_packets) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            allocator);
+
         core::ScopedPtr<IBlockDecoder> decoder(
-            codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            allocator);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -679,9 +701,12 @@ TEST(writer_reader, late_out_of_order_packets) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            allocator);
+
         core::ScopedPtr<IBlockDecoder> decoder(
-            codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            allocator);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -756,9 +781,12 @@ TEST(writer_reader, repair_packets_before_source_packets) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            allocator);
+
         core::ScopedPtr<IBlockDecoder> decoder(
-            codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            allocator);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -841,9 +869,12 @@ TEST(writer_reader, repair_packets_mixed_with_source_packets) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            allocator);
+
         core::ScopedPtr<IBlockDecoder> decoder(
-            codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            allocator);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -938,9 +969,12 @@ TEST(writer_reader, multiple_repair_attempts) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            allocator);
+
         core::ScopedPtr<IBlockDecoder> decoder(
-            codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            allocator);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -1015,9 +1049,12 @@ TEST(writer_reader, drop_outdated_block) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            allocator);
+
         core::ScopedPtr<IBlockDecoder> decoder(
-            codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            allocator);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -1084,9 +1121,12 @@ TEST(writer_reader, repaired_block_numbering) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            allocator);
+
         core::ScopedPtr<IBlockDecoder> decoder(
-            codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            allocator);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -1168,9 +1208,12 @@ TEST(writer_reader, invalid_esi) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            allocator);
+
         core::ScopedPtr<IBlockDecoder> decoder(
-            codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            allocator);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -1247,9 +1290,12 @@ TEST(writer_reader, invalid_sbl) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            allocator);
+
         core::ScopedPtr<IBlockDecoder> decoder(
-            codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            allocator);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -1321,9 +1367,12 @@ TEST(writer_reader, invalid_nes) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            allocator);
+
         core::ScopedPtr<IBlockDecoder> decoder(
-            codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            allocator);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -1394,9 +1443,12 @@ TEST(writer_reader, invalid_payload_size) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            allocator);
+
         core::ScopedPtr<IBlockDecoder> decoder(
-            codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            allocator);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -1478,9 +1530,12 @@ TEST(writer_reader, zero_source_packets) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            allocator);
+
         core::ScopedPtr<IBlockDecoder> decoder(
-            codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            allocator);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -1559,9 +1614,12 @@ TEST(writer_reader, zero_repair_packets) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            allocator);
+
         core::ScopedPtr<IBlockDecoder> decoder(
-            codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            allocator);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -1637,9 +1695,12 @@ TEST(writer_reader, zero_payload_size) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            allocator);
+
         core::ScopedPtr<IBlockDecoder> decoder(
-            codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            allocator);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -1721,9 +1782,12 @@ TEST(writer_reader, sbn_jump) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            allocator);
+
         core::ScopedPtr<IBlockDecoder> decoder(
-            codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            allocator);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -1832,7 +1896,8 @@ TEST(writer_reader, writer_encode_blocks) {
 
         for (size_t n = 0; n < 5; n++) {
             core::ScopedPtr<IBlockEncoder> encoder(
-                codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
+                CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+                allocator);
 
             CHECK(encoder);
 
@@ -1917,7 +1982,8 @@ TEST(writer_reader, writer_resize_blocks) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            allocator);
         CHECK(encoder);
 
         PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
@@ -1976,9 +2042,12 @@ TEST(writer_reader, resize_block_begin) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            allocator);
+
         core::ScopedPtr<IBlockDecoder> decoder(
-            codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            allocator);
 
         CHECK(decoder);
         CHECK(encoder);
@@ -2047,9 +2116,12 @@ TEST(writer_reader, resize_block_middle) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            allocator);
+
         core::ScopedPtr<IBlockDecoder> decoder(
-            codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            allocator);
 
         CHECK(decoder);
         CHECK(encoder);
@@ -2139,9 +2211,12 @@ TEST(writer_reader, resize_block_losses) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            allocator);
+
         core::ScopedPtr<IBlockDecoder> decoder(
-            codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            allocator);
 
         CHECK(decoder);
         CHECK(encoder);
@@ -2212,9 +2287,12 @@ TEST(writer_reader, resize_block_repair_first) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            allocator);
+
         core::ScopedPtr<IBlockDecoder> decoder(
-            codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            allocator);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -2299,7 +2377,8 @@ TEST(writer_reader, error_writer_resize_block) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            allocator);
         CHECK(encoder);
 
         PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
@@ -2351,7 +2430,7 @@ TEST(writer_reader, error_writer_encode_packet) {
         MockAllocator mock_allocator;
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            codec_map.new_encoder(codec_config, buffer_pool, mock_allocator),
+            CodecMap::instance().new_encoder(codec_config, buffer_pool, mock_allocator),
             mock_allocator);
         CHECK(encoder);
 
@@ -2396,9 +2475,12 @@ TEST(writer_reader, error_reader_resize_block) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            allocator);
+
         core::ScopedPtr<IBlockDecoder> decoder(
-            codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            allocator);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -2464,13 +2546,14 @@ TEST(writer_reader, error_reader_decode_packet) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            allocator);
         CHECK(encoder);
 
         MockAllocator mock_allocator;
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            codec_map.new_decoder(codec_config, buffer_pool, mock_allocator),
+            CodecMap::instance().new_decoder(codec_config, buffer_pool, mock_allocator),
             mock_allocator);
         CHECK(decoder);
 
@@ -2543,9 +2626,12 @@ TEST(writer_reader, writer_oversized_block) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            allocator);
+
         core::ScopedPtr<IBlockDecoder> decoder(
-            codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            allocator);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -2608,9 +2694,12 @@ TEST(writer_reader, reader_oversized_source_block) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            allocator);
+
         core::ScopedPtr<IBlockDecoder> decoder(
-            codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            allocator);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -2673,9 +2762,12 @@ TEST(writer_reader, reader_oversized_repair_block) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            allocator);
+
         core::ScopedPtr<IBlockDecoder> decoder(
-            codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            allocator);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -2738,7 +2830,8 @@ TEST(writer_reader, writer_invalid_payload_size_change) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            allocator);
         CHECK(encoder);
 
         PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
@@ -2786,9 +2879,12 @@ TEST(writer_reader, reader_invalid_fec_scheme_source_packet) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            allocator);
+
         core::ScopedPtr<IBlockDecoder> decoder(
-            codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            allocator);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -2851,9 +2947,12 @@ TEST(writer_reader, reader_invalid_fec_scheme_repair_packet) {
         codec_config.scheme = Test_fec_schemes[n_scheme];
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            codec_map.new_encoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            allocator);
+
         core::ScopedPtr<IBlockDecoder> decoder(
-            codec_map.new_decoder(codec_config, buffer_pool, allocator), allocator);
+            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            allocator);
 
         CHECK(encoder);
         CHECK(decoder);

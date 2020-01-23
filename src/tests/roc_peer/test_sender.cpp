@@ -16,7 +16,6 @@ namespace roc {
 namespace peer {
 
 TEST_GROUP(sender) {
-    fec::CodecMap codec_map;
     ContextConfig context_config;
     pipeline::SenderConfig sender_config;
 };
@@ -112,7 +111,7 @@ TEST(sender, ports_fec) {
     Context context(context_config);
     CHECK(context.valid());
 
-    if (!codec_map.is_supported(packet::FEC_ReedSolomon_M8)) {
+    if (!fec::CodecMap::instance().is_supported(packet::FEC_ReedSolomon_M8)) {
         sender_config.fec_encoder.scheme = packet::FEC_ReedSolomon_M8;
 
         Sender sender(context, sender_config);
