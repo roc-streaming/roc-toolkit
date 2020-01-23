@@ -9,7 +9,6 @@
 #include "roc_peer/receiver.h"
 #include "roc_address/socket_addr_to_str.h"
 #include "roc_core/log.h"
-#include "roc_pipeline/port_to_str.h"
 
 namespace roc {
 namespace peer {
@@ -22,7 +21,7 @@ Receiver::Receiver(Context& context, const pipeline::ReceiverConfig& pipeline_co
                 context_.byte_buffer_pool(),
                 context_.sample_buffer_pool(),
                 context_.allocator())
-    , default_port_group_(0)
+    , endpoint_set_(0)
     , addresses_(context_.allocator()) {
     roc_log(LogDebug, "receiver peer: initializing");
 
@@ -30,7 +29,7 @@ Receiver::Receiver(Context& context, const pipeline::ReceiverConfig& pipeline_co
         return;
     }
 
-    default_port_group_ = pipeline_.add_port_group();
+    endpoint_set_ = pipeline_.add_endpoint_set();
 }
 
 Receiver::~Receiver() {
@@ -42,10 +41,12 @@ Receiver::~Receiver() {
 }
 
 bool Receiver::valid() {
-    return default_port_group_;
+    return endpoint_set_;
 }
 
-bool Receiver::bind(address::EndpointType, pipeline::PortConfig& port_config) {
+bool Receiver::bind(address::EndpointType type,
+                    address::EndpointProtocol proto,
+                    address::SocketAddr& address) {
     core::Mutex::Lock lock(mutex_);
 
     if (!addresses_.grow_exp((addresses_.size() + 1))) {
@@ -53,23 +54,22 @@ bool Receiver::bind(address::EndpointType, pipeline::PortConfig& port_config) {
         return false;
     }
 
-    packet::IWriter* port_writer =
-        pipeline_.add_port(default_port_group_, port_config.protocol);
-
-    if (!port_writer) {
-        roc_log(LogError, "receiver peer: can't add port to pipeline");
+    packet::IWriter* endpoint_writer = pipeline_.add_endpoint(endpoint_set_, type, proto);
+    if (!endpoint_writer) {
+        roc_log(LogError, "receiver peer: can't add endpoint to pipeline");
         return false;
     }
 
-    if (!context_.event_loop().add_udp_receiver(port_config.address, *port_writer)) {
+    if (!context_.event_loop().add_udp_receiver(address, *endpoint_writer)) {
         roc_log(LogError, "receiver peer: bind failed");
         return false;
     }
 
-    addresses_.push_back(port_config.address);
+    addresses_.push_back(address);
 
-    roc_log(LogInfo, "receiver peer: bound to %s",
-            pipeline::port_to_str(port_config).c_str());
+    roc_log(LogInfo, "receiver peer: bound to %s endpoint %s at %s",
+            address::endpoint_type_to_str(type), address::endpoint_proto_to_str(proto),
+            address::socket_addr_to_str(address).c_str());
 
     return true;
 }

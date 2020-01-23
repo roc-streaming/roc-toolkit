@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_pipeline/sender_port.h
-//! @brief Sender port pipeline.
+//! @file roc_pipeline/sender_endpoint.h
+//! @brief Sender endpoint pipeline.
 
-#ifndef ROC_PIPELINE_SENDER_PORT_H_
-#define ROC_PIPELINE_SENDER_PORT_H_
+#ifndef ROC_PIPELINE_SENDER_ENDPOINT_H_
+#define ROC_PIPELINE_SENDER_ENDPOINT_H_
 
 #include "roc_core/iallocator.h"
 #include "roc_core/mutex.h"
@@ -24,15 +24,16 @@
 namespace roc {
 namespace pipeline {
 
-//! Sender port pipeline.
+//! Sender endpoint pipeline.
 //! @remarks
-//!  Created at the sender side for every sending port.
-class SenderPort : public packet::IWriter, public core::NonCopyable<> {
+//!  Created for every transport endpoint. Belongs to endpoint set.
+//!  Passes packets to outside writer (e.g. netio).
+class SenderEndpoint : public packet::IWriter, public core::NonCopyable<> {
 public:
     //! Initialize.
-    SenderPort(const PortConfig& config, core::IAllocator& allocator);
+    SenderEndpoint(address::EndpointProtocol proto, core::IAllocator& allocator);
 
-    //! Check if the port pipeline was succefully constructed.
+    //! Check if pipeline was succefully constructed.
     bool valid() const;
 
     //! Get protocol.
@@ -41,22 +42,29 @@ public:
     //! Get packet composer.
     packet::IComposer& composer();
 
-    //! Set output writer.
-    //! Called outside of roc_pipeline from any thread.
-    void set_writer(packet::IWriter& writer);
-
     //! Check if writer is set.
     bool has_writer() const;
 
+    //! Set output writer.
+    //! @remarks
+    //!  Called outside of roc_pipeline from any thread.
+    void set_output_writer(packet::IWriter& writer);
+
+    //! Set destination UDP address.
+    //! @remarks
+    //!  Called outside of roc_pipeline from any thread.
+    void set_destination_udp_address(const address::SocketAddr&);
+
     //! Write packet.
-    //! Called from pipeline thread.
+    //! @remarks
+    //!  Called from pipeline thread.
     virtual void write(const packet::PacketPtr& packet);
 
 private:
     core::Mutex mutex_;
 
-    address::EndpointProtocol proto_;
-    const address::SocketAddr dst_address_;
+    const address::EndpointProtocol proto_;
+    address::SocketAddr udp_address_;
 
     packet::IWriter* writer_;
     packet::IComposer* composer_;
@@ -68,4 +76,4 @@ private:
 } // namespace pipeline
 } // namespace roc
 
-#endif // ROC_PIPELINE_SENDER_PORT_H_
+#endif // ROC_PIPELINE_SENDER_ENDPOINT_H_
