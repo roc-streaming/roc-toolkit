@@ -16,7 +16,6 @@
 #include "roc_address/socket_addr.h"
 #include "roc_core/mutex.h"
 #include "roc_core/scoped_ptr.h"
-#include "roc_fec/codec_map.h"
 #include "roc_packet/iwriter.h"
 #include "roc_peer/basic_peer.h"
 #include "roc_peer/context.h"
@@ -54,7 +53,6 @@ public:
 private:
     core::Mutex mutex_;
 
-    fec::CodecMap codec_map_;
     rtp::FormatMap format_map_;
 
     pipeline::SenderSink pipeline_;
