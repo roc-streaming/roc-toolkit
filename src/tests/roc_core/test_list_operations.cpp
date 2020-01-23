@@ -162,5 +162,15 @@ TEST(list_operations, remove_middle) {
     LONGS_EQUAL(2, list.size());
 }
 
+TEST(list_operations, contains) {
+    CHECK(!list.contains(objects[0]));
+
+    list.push_back(objects[0]);
+    CHECK(list.contains(objects[0]));
+
+    list.remove(objects[0]);
+    CHECK(!list.contains(objects[0]));
+}
+
 } // namespace core
 } // namespace roc
