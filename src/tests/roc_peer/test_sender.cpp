@@ -21,16 +21,6 @@ TEST_GROUP(sender) {
     pipeline::SenderConfig sender_config;
 };
 
-TEST(sender, no_sink) {
-    Context context(context_config);
-    CHECK(context.valid());
-
-    Sender sender(context, sender_config);
-    CHECK(sender.valid());
-
-    CHECK(!sender.sink());
-}
-
 TEST(sender, bind_connect_sink) {
     Context context(context_config);
     CHECK(context.valid());
@@ -58,18 +48,118 @@ TEST(sender, bind_connect_sink) {
 
         UNSIGNED_LONGS_EQUAL(context.event_loop().num_ports(), 1);
 
-        CHECK(sender.sink());
-
-        UNSIGNED_LONGS_EQUAL(sender.sink()->sample_rate(),
+        UNSIGNED_LONGS_EQUAL(sender.sink().sample_rate(),
                              sender_config.input_sample_rate);
     }
 
     UNSIGNED_LONGS_EQUAL(context.event_loop().num_ports(), 0);
 }
 
-TEST(sender, port_validation) {
+TEST(sender, ports_no_fec) {
     Context context(context_config);
     CHECK(context.valid());
+
+    {
+        sender_config.fec_encoder.scheme = packet::FEC_None;
+
+        Sender sender(context, sender_config);
+        CHECK(sender.valid());
+
+        address::SocketAddr local_addr;
+        CHECK(local_addr.set_host_port(address::Family_IPv4, "127.0.0.1", 0));
+        CHECK(sender.bind(local_addr));
+
+        pipeline::PortConfig source_port;
+        source_port.protocol = address::EndProto_RTP;
+        CHECK(source_port.address.set_host_port(address::Family_IPv4, "127.0.0.1", 123));
+        CHECK(sender.connect(address::EndType_AudioSource, source_port));
+
+        // everything is ok
+        CHECK(sender.is_configured());
+    }
+
+    {
+        sender_config.fec_encoder.scheme = packet::FEC_None;
+
+        Sender sender(context, sender_config);
+        CHECK(sender.valid());
+
+        pipeline::PortConfig source_port;
+        source_port.protocol = address::EndProto_RTP;
+        CHECK(source_port.address.set_host_port(address::Family_IPv4, "127.0.0.1", 123));
+        CHECK(sender.connect(address::EndType_AudioSource, source_port));
+
+        // bind was not called
+        CHECK(!sender.is_configured());
+    }
+
+    {
+        sender_config.fec_encoder.scheme = packet::FEC_None;
+
+        Sender sender(context, sender_config);
+        CHECK(sender.valid());
+
+        address::SocketAddr local_addr;
+        CHECK(local_addr.set_host_port(address::Family_IPv4, "127.0.0.1", 0));
+        CHECK(sender.bind(local_addr));
+
+        // source port not provides
+        CHECK(!sender.is_configured());
+    }
+}
+
+TEST(sender, ports_fec) {
+    Context context(context_config);
+    CHECK(context.valid());
+
+    if (!codec_map.is_supported(packet::FEC_ReedSolomon_M8)) {
+        sender_config.fec_encoder.scheme = packet::FEC_ReedSolomon_M8;
+
+        Sender sender(context, sender_config);
+        CHECK(sender.valid());
+
+        pipeline::PortConfig source_port;
+        source_port.protocol = address::EndProto_RTP_RS8M_Source;
+        CHECK(source_port.address.set_host_port(address::Family_IPv4, "127.0.0.1", 123));
+
+        // fec is not supported
+        CHECK(!sender.connect(address::EndType_AudioSource, source_port));
+        CHECK(!sender.is_configured());
+
+        pipeline::PortConfig repair_port;
+        repair_port.protocol = address::EndProto_RS8M_Repair;
+        CHECK(repair_port.address.set_host_port(address::Family_IPv4, "127.0.0.1", 123));
+
+        // fec is not supported
+        CHECK(!sender.connect(address::EndType_AudioRepair, repair_port));
+        CHECK(!sender.is_configured());
+
+        return;
+    }
+
+    {
+        sender_config.fec_encoder.scheme = packet::FEC_ReedSolomon_M8;
+
+        Sender sender(context, sender_config);
+        CHECK(sender.valid());
+
+        address::SocketAddr local_addr;
+        CHECK(local_addr.set_host_port(address::Family_IPv4, "127.0.0.1", 0));
+        CHECK(sender.bind(local_addr));
+
+        pipeline::PortConfig source_port;
+        source_port.protocol = address::EndProto_RTP_RS8M_Source;
+        CHECK(source_port.address.set_host_port(address::Family_IPv4, "127.0.0.1", 123));
+        CHECK(sender.connect(address::EndType_AudioSource, source_port));
+
+        pipeline::PortConfig repair_port;
+        repair_port.protocol = address::EndProto_RS8M_Repair;
+        CHECK(repair_port.address.set_host_port(address::Family_IPv4, "127.0.0.1", 123));
+        CHECK(sender.connect(address::EndType_AudioRepair, repair_port));
+
+        // everything is ok
+        CHECK(sender.is_configured());
+    }
 
     {
         sender_config.fec_encoder.scheme = packet::FEC_ReedSolomon_M8;
@@ -87,6 +177,7 @@ TEST(sender, port_validation) {
 
         // source port fec scheme mismatch
         CHECK(!sender.connect(address::EndType_AudioSource, source_port));
+        CHECK(!sender.is_configured());
     }
 
     {
@@ -105,6 +196,7 @@ TEST(sender, port_validation) {
 
         // repair port fec scheme mismatch
         CHECK(!sender.connect(address::EndType_AudioRepair, repair_port));
+        CHECK(!sender.is_configured());
     }
 
     {
@@ -123,6 +215,7 @@ TEST(sender, port_validation) {
 
         // repair port provided when fec is disabled
         CHECK(!sender.connect(address::EndType_AudioRepair, repair_port));
+        CHECK(!sender.is_configured());
     }
 
     {
@@ -141,7 +234,7 @@ TEST(sender, port_validation) {
         CHECK(sender.connect(address::EndType_AudioSource, source_port));
 
         // repair port not provided when fec is enabled
-        CHECK(!sender.sink());
+        CHECK(!sender.is_configured());
     }
 
     {
@@ -160,21 +253,7 @@ TEST(sender, port_validation) {
         CHECK(sender.connect(address::EndType_AudioRepair, repair_port));
 
         // source port not provided when fec is enabled
-        CHECK(!sender.sink());
-    }
-
-    {
-        sender_config.fec_encoder.scheme = packet::FEC_None;
-
-        Sender sender(context, sender_config);
-        CHECK(sender.valid());
-
-        address::SocketAddr local_addr;
-        CHECK(local_addr.set_host_port(address::Family_IPv4, "127.0.0.1", 0));
-        CHECK(sender.bind(local_addr));
-
-        // source port not provided when fec is disabled
-        CHECK(!sender.sink());
+        CHECK(!sender.is_configured());
     }
 
     {
@@ -194,55 +273,7 @@ TEST(sender, port_validation) {
         CHECK(sender.connect(address::EndType_AudioRepair, repair_port));
 
         // bind was not called
-        CHECK(!sender.sink());
-    }
-
-    {
-        sender_config.fec_encoder.scheme = packet::FEC_None;
-
-        Sender sender(context, sender_config);
-        CHECK(sender.valid());
-
-        address::SocketAddr local_addr;
-        CHECK(local_addr.set_host_port(address::Family_IPv4, "127.0.0.1", 0));
-        CHECK(sender.bind(local_addr));
-
-        pipeline::PortConfig source_port;
-        source_port.protocol = address::EndProto_RTP;
-        CHECK(source_port.address.set_host_port(address::Family_IPv4, "127.0.0.1", 123));
-        CHECK(sender.connect(address::EndType_AudioSource, source_port));
-
-        // fec is disabled; everything is ok
-        CHECK(sender.sink());
-    }
-
-    {
-        sender_config.fec_encoder.scheme = packet::FEC_ReedSolomon_M8;
-
-        Sender sender(context, sender_config);
-        CHECK(sender.valid());
-
-        address::SocketAddr local_addr;
-        CHECK(local_addr.set_host_port(address::Family_IPv4, "127.0.0.1", 0));
-        CHECK(sender.bind(local_addr));
-
-        pipeline::PortConfig source_port;
-        source_port.protocol = address::EndProto_RTP_RS8M_Source;
-        CHECK(source_port.address.set_host_port(address::Family_IPv4, "127.0.0.1", 123));
-        CHECK(sender.connect(address::EndType_AudioSource, source_port));
-
-        pipeline::PortConfig repair_port;
-        repair_port.protocol = address::EndProto_RS8M_Repair;
-        CHECK(repair_port.address.set_host_port(address::Family_IPv4, "127.0.0.1", 123));
-        CHECK(sender.connect(address::EndType_AudioRepair, repair_port));
-
-        if (codec_map.is_supported(packet::FEC_ReedSolomon_M8)) {
-            // fec is enabled and supported; everything is ok
-            CHECK(sender.sink());
-        } else {
-            // fec is enabled but not supported
-            CHECK(!sender.sink());
-        }
+        CHECK(!sender.is_configured());
     }
 }
 

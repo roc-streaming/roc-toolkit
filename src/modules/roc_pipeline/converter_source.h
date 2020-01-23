@@ -27,7 +27,7 @@ namespace pipeline {
 
 //! Converter source pipeline.
 //! @remarks
-//   - input: frames
+//!  - input: frames
 //!  - output: frames
 class ConverterSource : public sndio::ISource, public core::NonCopyable<> {
 public:
