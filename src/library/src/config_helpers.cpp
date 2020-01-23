@@ -222,55 +222,38 @@ bool make_endpoint_type(address::EndpointType& out, roc_port_type in) {
         break;
     }
 
-    roc_log(LogError, "bad configuration: invalid port type");
+    roc_log(LogError, "bad configuration: invalid endpoint type");
     return false;
 }
 
-bool make_port_config(pipeline::PortConfig& out,
-                      roc_port_type type,
-                      roc_protocol proto,
-                      const address::SocketAddr& addr) {
-    switch ((int)type) {
-    case ROC_PORT_AUDIO_SOURCE:
-        switch ((int)proto) {
-        case ROC_PROTO_RTP:
-            out.protocol = address::EndProto_RTP;
-            break;
-        case ROC_PROTO_RTP_RS8M_SOURCE:
-            out.protocol = address::EndProto_RTP_RS8M_Source;
-            break;
-        case ROC_PROTO_RTP_LDPC_SOURCE:
-            out.protocol = address::EndProto_RTP_LDPC_Source;
-            break;
-        default:
-            roc_log(LogError,
-                    "bad configuration: invalid protocol for audio source port");
-            return false;
-        }
-        break;
+bool make_endpoint_proto(address::EndpointProtocol& out, roc_protocol in) {
+    switch ((int)in) {
+    case ROC_PROTO_RTP:
+        out = address::EndProto_RTP;
+        return true;
 
-    case ROC_PORT_AUDIO_REPAIR:
-        switch ((int)proto) {
-        case ROC_PROTO_RS8M_REPAIR:
-            out.protocol = address::EndProto_RS8M_Repair;
-            break;
-        case ROC_PROTO_LDPC_REPAIR:
-            out.protocol = address::EndProto_LDPC_Repair;
-            break;
-        default:
-            roc_log(LogError,
-                    "bad configuration: invalid protocol for audio repair port");
-            return false;
-        }
-        break;
+    case ROC_PROTO_RTP_RS8M_SOURCE:
+        out = address::EndProto_RTP_RS8M_Source;
+        return true;
+
+    case ROC_PROTO_RS8M_REPAIR:
+        out = address::EndProto_RS8M_Repair;
+        return true;
+
+    case ROC_PROTO_RTP_LDPC_SOURCE:
+        out = address::EndProto_RTP_LDPC_Source;
+        return true;
+
+    case ROC_PROTO_LDPC_REPAIR:
+        out = address::EndProto_LDPC_Repair;
+        return true;
 
     default:
-        roc_log(LogError, "bad configuration: invalid port type");
-        return false;
+        break;
     }
 
-    out.address = addr;
-    return true;
+    roc_log(LogError, "bad configuration: invalid endpoint protocol");
+    return false;
 }
 
 } // namespace api

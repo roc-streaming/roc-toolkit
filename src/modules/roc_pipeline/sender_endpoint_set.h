@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_pipeline/sender_port_group.h
-//! @brief Sender port group.
+//! @file roc_pipeline/sender_endpoint_set.h
+//! @brief Sender endpoint set.
 
-#ifndef ROC_PIPELINE_SENDER_PORT_GROUP_H_
-#define ROC_PIPELINE_SENDER_PORT_GROUP_H_
+#ifndef ROC_PIPELINE_SENDER_ENDPOINT_SET_H_
+#define ROC_PIPELINE_SENDER_ENDPOINT_SET_H_
 
 #include "roc_address/endpoint_type.h"
 #include "roc_audio/iframe_encoder.h"
@@ -30,42 +30,44 @@
 #include "roc_packet/packet_pool.h"
 #include "roc_packet/router.h"
 #include "roc_pipeline/config.h"
-#include "roc_pipeline/sender_port.h"
+#include "roc_pipeline/sender_endpoint.h"
 #include "roc_rtp/format_map.h"
 
 namespace roc {
 namespace pipeline {
 
-//! Sender port group.
-class SenderPortGroup : public core::RefCnt<SenderPortGroup>, public core::ListNode {
+//! Sender endpoint set.
+//! @remarks
+//!  Contains one or seevral related endpoint pipelines and
+//!  the part of the sender pipeline shared by them.
+class SenderEndpointSet : public core::RefCnt<SenderEndpointSet>, public core::ListNode {
 public:
     //! Initialize.
-    SenderPortGroup(const SenderConfig& config,
-                    const rtp::FormatMap& format_map,
-                    packet::PacketPool& packet_pool,
-                    core::BufferPool<uint8_t>& byte_buffer_pool,
-                    core::BufferPool<audio::sample_t>& sample_buffer_pool,
-                    core::IAllocator& allocator);
+    SenderEndpointSet(const SenderConfig& config,
+                      const rtp::FormatMap& format_map,
+                      packet::PacketPool& packet_pool,
+                      core::BufferPool<uint8_t>& byte_buffer_pool,
+                      core::BufferPool<audio::sample_t>& sample_buffer_pool,
+                      core::IAllocator& allocator);
 
-    //! Add port.
-    //! @returns false on error.
-    SenderPort* add_port(address::EndpointType type,
-                         const pipeline::PortConfig& port_config);
+    //! Add endpoint.
+    SenderEndpoint* add_endpoint(address::EndpointType type,
+                                 address::EndpointProtocol proto);
 
     //! Get audio writer.
-    //! @returns null if it's pipeline is not fully configured yet.
+    //! @returns NULL if endpoint set is not ready.
     audio::IWriter* writer();
 
-    //! Check if port group is fully configured.
-    bool is_configured() const;
+    //! Check if endpoint set configuration is done.
+    bool is_ready() const;
 
 private:
-    friend class core::RefCnt<SenderPortGroup>;
+    friend class core::RefCnt<SenderEndpointSet>;
 
     void destroy();
 
-    SenderPort* create_source_port_(const PortConfig& port_config);
-    SenderPort* create_repair_port_(const PortConfig& port_config);
+    SenderEndpoint* create_source_endpoint_(address::EndpointProtocol proto);
+    SenderEndpoint* create_repair_endpoint_(address::EndpointProtocol proto);
 
     bool create_pipeline_();
 
@@ -79,8 +81,8 @@ private:
 
     core::IAllocator& allocator_;
 
-    core::ScopedPtr<SenderPort> source_port_;
-    core::ScopedPtr<SenderPort> repair_port_;
+    core::ScopedPtr<SenderEndpoint> source_endpoint_;
+    core::ScopedPtr<SenderEndpoint> repair_endpoint_;
 
     core::ScopedPtr<packet::Router> router_;
 
@@ -102,4 +104,4 @@ private:
 } // namespace pipeline
 } // namespace roc
 
-#endif // ROC_PIPELINE_SENDER_PORT_GROUP_H_
+#endif // ROC_PIPELINE_SENDER_ENDPOINT_SET_H_

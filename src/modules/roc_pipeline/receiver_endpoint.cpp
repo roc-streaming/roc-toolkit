@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_pipeline/receiver_port.h"
+#include "roc_pipeline/receiver_endpoint.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_fec/composer.h"
@@ -16,12 +16,13 @@
 namespace roc {
 namespace pipeline {
 
-ReceiverPort::ReceiverPort(address::EndpointProtocol proto,
-                           ReceiverState& receiver_state,
-                           ReceiverSessionGroup& session_group,
-                           const rtp::FormatMap& format_map,
-                           core::IAllocator& allocator)
-    : allocator_(allocator)
+ReceiverEndpoint::ReceiverEndpoint(address::EndpointProtocol proto,
+                                   ReceiverState& receiver_state,
+                                   ReceiverSessionGroup& session_group,
+                                   const rtp::FormatMap& format_map,
+                                   core::IAllocator& allocator)
+    : proto_(proto)
+    , allocator_(allocator)
     , receiver_state_(receiver_state)
     , session_group_(session_group)
     , parser_(NULL)
@@ -86,15 +87,19 @@ ReceiverPort::ReceiverPort(address::EndpointProtocol proto,
     parser_ = parser;
 }
 
-void ReceiverPort::destroy() {
+void ReceiverEndpoint::destroy() {
     allocator_.destroy(*this);
 }
 
-bool ReceiverPort::valid() const {
+bool ReceiverEndpoint::valid() const {
     return parser_;
 }
 
-void ReceiverPort::write(const packet::PacketPtr& packet) {
+address::EndpointProtocol ReceiverEndpoint::proto() const {
+    return proto_;
+}
+
+void ReceiverEndpoint::write(const packet::PacketPtr& packet) {
     core::Mutex::Lock lock(queue_mutex_);
 
     roc_panic_if(!valid());
@@ -104,7 +109,7 @@ void ReceiverPort::write(const packet::PacketPtr& packet) {
     receiver_state_.add_pending_packets(+1);
 }
 
-void ReceiverPort::flush_packets() {
+void ReceiverEndpoint::flush_packets() {
     roc_panic_if(!valid());
 
     packet::Queue* queue = get_read_queue_();
@@ -114,7 +119,7 @@ void ReceiverPort::flush_packets() {
 
     while (packet::PacketPtr packet = queue->read()) {
         if (!parser_->parse(*packet, packet->data())) {
-            roc_log(LogDebug, "receiver port: failed to parse packet");
+            roc_log(LogDebug, "receiver endpoint: can't parse packet");
             continue;
         }
 
@@ -124,7 +129,7 @@ void ReceiverPort::flush_packets() {
     }
 }
 
-packet::Queue* ReceiverPort::get_read_queue_() {
+packet::Queue* ReceiverEndpoint::get_read_queue_() {
     core::Mutex::Lock lock(queue_mutex_);
 
     if (queues_[cur_queue_].size() == 0) {
