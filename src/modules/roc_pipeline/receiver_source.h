@@ -22,7 +22,6 @@
 #include "roc_core/noncopyable.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_core/stddefs.h"
-#include "roc_fec/codec_map.h"
 #include "roc_packet/ireader.h"
 #include "roc_packet/iwriter.h"
 #include "roc_packet/packet_pool.h"
@@ -44,7 +43,6 @@ class ReceiverSource : public sndio::ISource, public core::NonCopyable<> {
 public:
     //! Initialize.
     ReceiverSource(const ReceiverConfig& config,
-                   const fec::CodecMap& codec_map,
                    const rtp::FormatMap& format_map,
                    packet::PacketPool& packet_pool,
                    core::BufferPool<uint8_t>& byte_buffer_pool,
@@ -98,7 +96,6 @@ public:
 private:
     void update_(packet::timestamp_t timestamp);
 
-    const fec::CodecMap& codec_map_;
     const rtp::FormatMap& format_map_;
 
     packet::PacketPool& packet_pool_;

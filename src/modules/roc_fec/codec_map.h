@@ -15,6 +15,7 @@
 #include "roc_core/buffer_pool.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/noncopyable.h"
+#include "roc_core/singleton.h"
 #include "roc_fec/codec_config.h"
 #include "roc_fec/iblock_decoder.h"
 #include "roc_fec/iblock_encoder.h"
@@ -25,8 +26,10 @@ namespace fec {
 //! FEC codec map.
 class CodecMap : public core::NonCopyable<> {
 public:
-    //! Initialize.
-    CodecMap();
+    //! Get instance.
+    static CodecMap& instance() {
+        return core::Singleton<CodecMap>::instance();
+    }
 
     //! Check whether given FEC scheme is supported.
     bool is_supported(packet::FecScheme scheme);
@@ -54,6 +57,8 @@ public:
                                core::IAllocator& allocator) const;
 
 private:
+    friend class core::Singleton<CodecMap>;
+
     enum { MaxCodecs = 2 };
 
     struct Codec {
@@ -67,6 +72,8 @@ private:
                                        core::BufferPool<uint8_t>& pool,
                                        core::IAllocator& allocator);
     };
+
+    CodecMap();
 
     void add_codec_(const Codec& codec);
     const Codec* find_codec_(packet::FecScheme scheme) const;

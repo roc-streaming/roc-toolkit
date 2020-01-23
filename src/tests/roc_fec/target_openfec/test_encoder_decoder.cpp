@@ -28,15 +28,15 @@ const size_t MaxPayloadSize = 1024;
 core::HeapAllocator allocator;
 core::BufferPool<uint8_t> buffer_pool(allocator, MaxPayloadSize, true);
 
-CodecMap codec_map;
-
 } // namespace
 
 class Codec {
 public:
     Codec(const CodecConfig& config)
-        : encoder_(codec_map.new_encoder(config, buffer_pool, allocator), allocator)
-        , decoder_(codec_map.new_decoder(config, buffer_pool, allocator), allocator)
+        : encoder_(CodecMap::instance().new_encoder(config, buffer_pool, allocator),
+                   allocator)
+        , decoder_(CodecMap::instance().new_decoder(config, buffer_pool, allocator),
+                   allocator)
         , buffers_(allocator) {
         CHECK(encoder_);
         CHECK(decoder_);

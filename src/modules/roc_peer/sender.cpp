@@ -17,7 +17,6 @@ namespace peer {
 Sender::Sender(Context& context, const pipeline::SenderConfig& pipeline_config)
     : BasicPeer(context)
     , pipeline_(pipeline_config,
-                codec_map_,
                 format_map_,
                 context_.packet_pool(),
                 context_.byte_buffer_pool(),
