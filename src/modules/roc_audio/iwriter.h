@@ -13,12 +13,13 @@
 #define ROC_AUDIO_IWRITER_H_
 
 #include "roc_audio/frame.h"
+#include "roc_core/list_node.h"
 
 namespace roc {
 namespace audio {
 
 //! Audio writer interface.
-class IWriter {
+class IWriter : public core::ListNode {
 public:
     virtual ~IWriter();
 
