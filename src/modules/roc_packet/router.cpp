@@ -13,25 +13,13 @@
 namespace roc {
 namespace packet {
 
-Router::Router(core::IAllocator& allocator, size_t max_routes)
-    : routes_(allocator)
-    , valid_(false) {
-    if (!routes_.grow(max_routes)) {
-        return;
-    }
-    valid_ = true;
-}
-
-bool Router::valid() const {
-    return valid_;
+Router::Router(core::IAllocator& allocator)
+    : routes_(allocator) {
 }
 
 bool Router::add_route(IWriter& writer, unsigned flags) {
-    roc_panic_if_not(valid());
-
-    if (routes_.size() == routes_.max_size()) {
-        roc_log(LogError, "router: can't add more than %lu routes",
-                (unsigned long)routes_.max_size());
+    if (!routes_.grow_exp(routes_.size() + 1)) {
+        roc_log(LogError, "router: can't allocate route");
         return false;
     }
 
@@ -46,8 +34,6 @@ bool Router::add_route(IWriter& writer, unsigned flags) {
 }
 
 void Router::write(const PacketPtr& packet) {
-    roc_panic_if_not(valid());
-
     if (!packet) {
         roc_panic("router: unexpected null packet");
     }

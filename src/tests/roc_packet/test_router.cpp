@@ -18,8 +18,6 @@ namespace packet {
 
 namespace {
 
-enum { MaxRoutes = 5 };
-
 core::HeapAllocator allocator;
 PacketPool pool(allocator, true);
 
@@ -36,9 +34,7 @@ TEST_GROUP(router) {
 };
 
 TEST(router, no_routes) {
-    Router router(allocator, MaxRoutes);
-
-    CHECK(router.valid());
+    Router router(allocator);
 
     PacketPtr p = new_packet(0, Packet::FlagAudio);
 
@@ -48,9 +44,7 @@ TEST(router, no_routes) {
 }
 
 TEST(router, one_route) {
-    Router router(allocator, MaxRoutes);
-
-    CHECK(router.valid());
+    Router router(allocator);
 
     Queue queue;
     CHECK(router.add_route(queue, Packet::FlagAudio));
@@ -79,9 +73,7 @@ TEST(router, one_route) {
 }
 
 TEST(router, two_routes) {
-    Router router(allocator, MaxRoutes);
-
-    CHECK(router.valid());
+    Router router(allocator);
 
     Queue queue_a;
     CHECK(router.add_route(queue_a, Packet::FlagAudio));
@@ -116,24 +108,8 @@ TEST(router, two_routes) {
     CHECK(!queue_f.read());
 }
 
-TEST(router, max_routes) {
-    Router router(allocator, MaxRoutes);
-
-    CHECK(router.valid());
-
-    Queue queue;
-
-    for (size_t n = 0; n < MaxRoutes; n++) {
-        CHECK(router.add_route(queue, Packet::FlagAudio));
-    }
-
-    CHECK(!router.add_route(queue, Packet::FlagAudio));
-}
-
 TEST(router, same_route_different_sources) {
-    Router router(allocator, MaxRoutes);
-
-    CHECK(router.valid());
+    Router router(allocator);
 
     Queue queue;
     CHECK(router.add_route(queue, Packet::FlagAudio));
@@ -149,9 +125,7 @@ TEST(router, same_route_different_sources) {
 }
 
 TEST(router, different_routes_same_source) {
-    Router router(allocator, MaxRoutes);
-
-    CHECK(router.valid());
+    Router router(allocator);
 
     Queue queue_a;
     CHECK(router.add_route(queue_a, Packet::FlagAudio));
@@ -167,9 +141,7 @@ TEST(router, different_routes_same_source) {
 }
 
 TEST(router, different_routes_different_sources) {
-    Router router(allocator, MaxRoutes);
-
-    CHECK(router.valid());
+    Router router(allocator);
 
     Queue queue_a;
     CHECK(router.add_route(queue_a, Packet::FlagAudio));
