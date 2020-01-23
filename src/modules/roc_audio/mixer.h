@@ -49,10 +49,10 @@ public:
     bool valid() const;
 
     //! Add input reader.
-    void add(IReader&);
+    void add_input(IReader&);
 
     //! Remove input reader.
-    void remove(IReader&);
+    void remove_input(IReader&);
 
     //! Read audio frame.
     //! @remarks
