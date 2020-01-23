@@ -26,7 +26,6 @@
 #include "roc_core/list_node.h"
 #include "roc_core/refcnt.h"
 #include "roc_core/scoped_ptr.h"
-#include "roc_fec/codec_map.h"
 #include "roc_fec/iblock_decoder.h"
 #include "roc_fec/reader.h"
 #include "roc_packet/delayed_reader.h"
@@ -53,7 +52,6 @@ public:
     ReceiverSession(const ReceiverSessionConfig& session_config,
                     const ReceiverCommonConfig& common_config,
                     const address::SocketAddr& src_address,
-                    const fec::CodecMap& codec_map,
                     const rtp::FormatMap& format_map,
                     packet::PacketPool& packet_pool,
                     core::BufferPool<uint8_t>& byte_buffer_pool,
