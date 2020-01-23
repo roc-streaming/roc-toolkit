@@ -51,13 +51,13 @@ bool Mixer::valid() const {
     return valid_;
 }
 
-void Mixer::add(IReader& reader) {
+void Mixer::add_input(IReader& reader) {
     roc_panic_if(!valid_);
 
     readers_.push_back(reader);
 }
 
-void Mixer::remove(IReader& reader) {
+void Mixer::remove_input(IReader& reader) {
     roc_panic_if(!valid_);
 
     readers_.remove(reader);
