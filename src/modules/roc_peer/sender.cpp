@@ -9,7 +9,6 @@
 #include "roc_peer/sender.h"
 #include "roc_address/socket_addr_to_str.h"
 #include "roc_core/log.h"
-#include "roc_peer/validate.h"
 #include "roc_pipeline/port_to_str.h"
 
 namespace roc {
@@ -17,9 +16,24 @@ namespace peer {
 
 Sender::Sender(Context& context, const pipeline::SenderConfig& pipeline_config)
     : BasicPeer(context)
-    , pipeline_config_(pipeline_config)
+    , pipeline_(pipeline_config,
+                codec_map_,
+                format_map_,
+                context_.packet_pool(),
+                context_.byte_buffer_pool(),
+                context_.sample_buffer_pool(),
+                context_.allocator())
+    , default_port_group_(0)
+    , source_id_(0)
+    , repair_id_(0)
     , udp_writer_(NULL) {
     roc_log(LogDebug, "sender peer: initializing");
+
+    if (!pipeline_.valid()) {
+        return;
+    }
+
+    default_port_group_ = pipeline_.add_port_group();
 }
 
 Sender::~Sender() {
@@ -30,17 +44,14 @@ Sender::~Sender() {
     }
 }
 
-bool Sender::valid() {
-    return true;
+bool Sender::valid() const {
+    return default_port_group_;
 }
 
 bool Sender::bind(address::SocketAddr& addr) {
     core::Mutex::Lock lock(mutex_);
 
-    if (pipeline_) {
-        roc_log(LogError, "sender peer: can't bind after first use");
-        return false;
-    }
+    roc_panic_if_not(valid());
 
     if (udp_writer_) {
         roc_log(LogError, "sender peer: already bound");
@@ -54,6 +65,15 @@ bool Sender::bind(address::SocketAddr& addr) {
     }
 
     bind_address_ = addr;
+
+    if (source_id_) {
+        pipeline_.set_port_writer(source_id_, *udp_writer_);
+    }
+
+    if (repair_id_) {
+        pipeline_.set_port_writer(repair_id_, *udp_writer_);
+    }
+
     roc_log(LogInfo, "sender peer: bound to %s",
             address::socket_addr_to_str(bind_address_).c_str());
 
@@ -64,138 +84,44 @@ bool Sender::connect(address::EndpointType port_type,
                      const pipeline::PortConfig& port_config) {
     core::Mutex::Lock lock(mutex_);
 
-    if (pipeline_) {
-        roc_log(LogError, "sender peer: can't connect after first use");
+    roc_panic_if_not(valid());
+
+    pipeline::SenderSink::PortID port_id =
+        pipeline_.add_port(default_port_group_, port_type, port_config);
+
+    if (!port_id) {
+        roc_log(LogError, "sender peer: connect failed");
         return false;
     }
 
-    switch ((int)port_type) {
-    case address::EndType_AudioSource:
-        return set_source_port_(port_config);
-
-    case address::EndType_AudioRepair:
-        return set_repair_port_(port_config);
-
-    default:
-        break;
+    if (udp_writer_) {
+        pipeline_.set_port_writer(port_id, *udp_writer_);
     }
 
-    roc_log(LogError, "sender peer: invalid protocol");
-    return false;
+    if (port_type == address::EndType_AudioSource) {
+        source_id_ = port_id;
+    } else {
+        repair_id_ = port_id;
+    }
+
+    roc_log(LogInfo, "sender peer: connected to %s",
+            pipeline::port_to_str(port_config).c_str());
+
+    return true;
 }
 
-sndio::ISink* Sender::sink() {
+sndio::ISink& Sender::sink() {
+    roc_panic_if_not(valid());
+
+    return pipeline_;
+}
+
+bool Sender::is_configured() const {
     core::Mutex::Lock lock(mutex_);
 
-    if (!ensure_pipeline_()) {
-        return NULL;
-    }
+    roc_panic_if_not(valid());
 
-    return pipeline_.get();
-}
-
-bool Sender::set_source_port_(const pipeline::PortConfig& port_config) {
-    if (source_port_.protocol != address::EndProto_None) {
-        roc_log(LogError, "sender peer: audio source endpoint is already set");
-        return false;
-    }
-
-    if (!validate_transport_endpoint(pipeline_config_.fec_encoder.scheme,
-                                     address::EndType_AudioSource,
-                                     port_config.protocol)) {
-        return false;
-    }
-
-    if (repair_port_.protocol != address::EndProto_None) {
-        if (!validate_transport_endpoint_pair(pipeline_config_.fec_encoder.scheme,
-                                              port_config.protocol,
-                                              repair_port_.protocol)) {
-            return false;
-        }
-    }
-
-    source_port_ = port_config;
-
-    roc_log(LogInfo, "sender peer: set audio source endpoint to %s",
-            pipeline::port_to_str(port_config).c_str());
-
-    return true;
-}
-
-bool Sender::set_repair_port_(const pipeline::PortConfig& port_config) {
-    if (repair_port_.protocol != address::EndProto_None) {
-        roc_log(LogError, "sender peer: audio repair endpoint is already set");
-        return false;
-    }
-
-    if (!validate_transport_endpoint(pipeline_config_.fec_encoder.scheme,
-                                     address::EndType_AudioRepair,
-                                     port_config.protocol)) {
-        return false;
-    }
-
-    if (source_port_.protocol != address::EndProto_None) {
-        if (!validate_transport_endpoint_pair(pipeline_config_.fec_encoder.scheme,
-                                              source_port_.protocol,
-                                              port_config.protocol)) {
-            return false;
-        }
-    }
-
-    repair_port_ = port_config;
-
-    roc_log(LogInfo, "sender peer: set audio repair endpoint to %s",
-            pipeline::port_to_str(port_config).c_str());
-
-    return true;
-}
-
-bool Sender::ensure_pipeline_() {
-    if (pipeline_) {
-        return true;
-    }
-
-    if (!udp_writer_) {
-        roc_log(LogError, "sender peer: bind was not called");
-        return false;
-    }
-
-    if (source_port_.protocol == address::EndProto_None) {
-        roc_log(LogError, "sender peer: source endpoint is not connected");
-        return false;
-    }
-
-    if (repair_port_.protocol == address::EndProto_None
-        && pipeline_config_.fec_encoder.scheme != packet::FEC_None) {
-        roc_log(LogError, "sender peer: repair endpoint is not connected");
-        return false;
-    }
-
-    if (!validate_transport_endpoint_pair(pipeline_config_.fec_encoder.scheme,
-                                          source_port_.protocol, repair_port_.protocol)) {
-        roc_log(LogError, "sender peer: inconsistent source and repair endpoints");
-        return false;
-    }
-
-    pipeline_.reset(new (context_.allocator()) pipeline::SenderSink(
-                        pipeline_config_, source_port_, *udp_writer_, repair_port_,
-                        *udp_writer_, codec_map_, format_map_, context_.packet_pool(),
-                        context_.byte_buffer_pool(), context_.sample_buffer_pool(),
-                        context_.allocator()),
-                    context_.allocator());
-
-    if (!pipeline_) {
-        roc_log(LogError, "sender peer: can't allocate pipeline");
-        return false;
-    }
-
-    if (!pipeline_->valid()) {
-        roc_log(LogError, "sender peer: can't initialize pipeline");
-        pipeline_.reset();
-        return false;
-    }
-
-    return true;
+    return pipeline_.port_group_configured(default_port_group_);
 }
 
 } // namespace peer

@@ -132,12 +132,7 @@ int roc_sender_write(roc_sender* sender, const roc_frame* frame) {
 
     peer::Sender* imp_sender = (peer::Sender*)sender;
 
-    sndio::ISink* imp_sink = imp_sender->sink();
-
-    if (!imp_sink) {
-        roc_log(LogError, "roc_sender_write: sender is not properly initialized");
-        return -1;
-    }
+    sndio::ISink& imp_sink = imp_sender->sink();
 
     if (!frame) {
         roc_log(LogError, "roc_sender_write: invalid arguments: frame is null");
@@ -148,7 +143,7 @@ int roc_sender_write(roc_sender* sender, const roc_frame* frame) {
         return 0;
     }
 
-    const size_t factor = imp_sink->num_channels() * sizeof(float);
+    const size_t factor = imp_sink.num_channels() * sizeof(float);
 
     if (frame->samples_size % factor != 0) {
         roc_log(LogError,
@@ -165,7 +160,7 @@ int roc_sender_write(roc_sender* sender, const roc_frame* frame) {
 
     audio::Frame imp_frame((float*)frame->samples, frame->samples_size / sizeof(float));
 
-    imp_sink->write(imp_frame);
+    imp_sink.write(imp_frame);
 
     return 0;
 }
