@@ -16,14 +16,12 @@ namespace roc {
 namespace pipeline {
 
 SenderSink::SenderSink(const SenderConfig& config,
-                       const fec::CodecMap& codec_map,
                        const rtp::FormatMap& format_map,
                        packet::PacketPool& packet_pool,
                        core::BufferPool<uint8_t>& byte_buffer_pool,
                        core::BufferPool<audio::sample_t>& sample_buffer_pool,
                        core::IAllocator& allocator)
     : config_(config)
-    , codec_map_(codec_map)
     , format_map_(format_map)
     , packet_pool_(packet_pool)
     , byte_buffer_pool_(byte_buffer_pool)
@@ -66,7 +64,7 @@ SenderSink::PortGroupID SenderSink::add_port_group() {
     roc_log(LogInfo, "sender sink: adding port group");
 
     core::SharedPtr<SenderPortGroup> port_group = new (allocator_)
-        SenderPortGroup(config_, codec_map_, format_map_, packet_pool_, byte_buffer_pool_,
+        SenderPortGroup(config_, format_map_, packet_pool_, byte_buffer_pool_,
                         sample_buffer_pool_, allocator_);
 
     if (!port_group) {

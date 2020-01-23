@@ -29,7 +29,6 @@ public:
     ReceiverSessionGroup(const ReceiverConfig& receiver_config,
                          ReceiverState& receiver_state,
                          audio::Mixer& mixer,
-                         const fec::CodecMap& codec_map,
                          const rtp::FormatMap& format_map,
                          packet::PacketPool& packet_pool,
                          core::BufferPool<uint8_t>& byte_buffer_pool,
@@ -59,7 +58,6 @@ private:
     core::BufferPool<uint8_t>& byte_buffer_pool_;
     core::BufferPool<audio::sample_t>& sample_buffer_pool_;
 
-    const fec::CodecMap& codec_map_;
     const rtp::FormatMap& format_map_;
 
     audio::Mixer& mixer_;
