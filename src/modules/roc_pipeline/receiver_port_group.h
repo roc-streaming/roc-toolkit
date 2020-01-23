@@ -33,7 +33,6 @@ public:
     ReceiverPortGroup(const ReceiverConfig& receiver_config,
                       ReceiverState& receiver_state,
                       audio::Mixer& mixer,
-                      const fec::CodecMap& codec_map,
                       const rtp::FormatMap& format_map,
                       packet::PacketPool& packet_pool,
                       core::BufferPool<uint8_t>& byte_buffer_pool,
