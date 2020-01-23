@@ -10,6 +10,7 @@
 #include "roc_audio/resampler_map.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
+#include "roc_fec/codec_map.h"
 
 namespace roc {
 namespace pipeline {
@@ -17,7 +18,6 @@ namespace pipeline {
 ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
                                  const ReceiverCommonConfig& common_config,
                                  const address::SocketAddr& src_address,
-                                 const fec::CodecMap& codec_map,
                                  const rtp::FormatMap& format_map,
                                  packet::PacketPool& packet_pool,
                                  core::BufferPool<uint8_t>& byte_buffer_pool,
@@ -75,8 +75,8 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
             return;
         }
 
-        fec_decoder_.reset(codec_map.new_decoder(session_config.fec_decoder,
-                                                 byte_buffer_pool, allocator_),
+        fec_decoder_.reset(fec::CodecMap::instance().new_decoder(
+                               session_config.fec_decoder, byte_buffer_pool, allocator_),
                            allocator_);
         if (!fec_decoder_) {
             return;

@@ -24,7 +24,6 @@
 #include "roc_core/noncopyable.h"
 #include "roc_core/refcnt.h"
 #include "roc_core/scoped_ptr.h"
-#include "roc_fec/codec_map.h"
 #include "roc_fec/iblock_encoder.h"
 #include "roc_fec/writer.h"
 #include "roc_packet/interleaver.h"
@@ -42,7 +41,6 @@ class SenderPortGroup : public core::RefCnt<SenderPortGroup>, public core::ListN
 public:
     //! Initialize.
     SenderPortGroup(const SenderConfig& config,
-                    const fec::CodecMap& codec_map,
                     const rtp::FormatMap& format_map,
                     packet::PacketPool& packet_pool,
                     core::BufferPool<uint8_t>& byte_buffer_pool,
@@ -73,7 +71,6 @@ private:
 
     const SenderConfig& config_;
 
-    const fec::CodecMap& codec_map_;
     const rtp::FormatMap& format_map_;
 
     packet::PacketPool& packet_pool_;
