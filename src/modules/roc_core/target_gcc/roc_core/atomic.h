@@ -53,6 +53,16 @@ public:
         return __sync_sub_and_fetch(&value_, 1);
     }
 
+    //! Atomic add.
+    long operator+=(long increment) {
+        return __sync_add_and_fetch(&value_, increment);
+    }
+
+    //! Atomic sub.
+    long operator-=(long decrement) {
+        return __sync_sub_and_fetch(&value_, decrement);
+    }
+
 private:
     mutable long value_;
 };
