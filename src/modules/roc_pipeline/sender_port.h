@@ -13,6 +13,7 @@
 #define ROC_PIPELINE_SENDER_PORT_H_
 
 #include "roc_core/iallocator.h"
+#include "roc_core/mutex.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_packet/icomposer.h"
@@ -29,23 +30,35 @@ namespace pipeline {
 class SenderPort : public packet::IWriter, public core::NonCopyable<> {
 public:
     //! Initialize.
-    SenderPort(const PortConfig& config,
-               packet::IWriter& writer,
-               core::IAllocator& allocator);
+    SenderPort(const PortConfig& config, core::IAllocator& allocator);
 
     //! Check if the port pipeline was succefully constructed.
     bool valid() const;
 
+    //! Get protocol.
+    address::EndpointProtocol proto() const;
+
     //! Get packet composer.
     packet::IComposer& composer();
 
+    //! Set output writer.
+    //! Called outside of roc_pipeline from any thread.
+    void set_writer(packet::IWriter& writer);
+
+    //! Check if writer is set.
+    bool has_writer() const;
+
     //! Write packet.
-    void write(const packet::PacketPtr& packet);
+    //! Called from pipeline thread.
+    virtual void write(const packet::PacketPtr& packet);
 
 private:
+    core::Mutex mutex_;
+
+    address::EndpointProtocol proto_;
     const address::SocketAddr dst_address_;
 
-    packet::IWriter& writer_;
+    packet::IWriter* writer_;
     packet::IComposer* composer_;
 
     core::ScopedPtr<rtp::Composer> rtp_composer_;
