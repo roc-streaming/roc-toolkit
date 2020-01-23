@@ -55,13 +55,10 @@ rtp::Parser rtp_parser(format_map, NULL);
 TEST_GROUP(sender_sink) {
     SenderConfig config;
 
-    PortConfig source_port;
-    PortConfig repair_port;
+    address::EndpointProtocol source_proto;
+    address::SocketAddr dst_addr;
 
     void setup() {
-        source_port.address = new_address(1);
-        source_port.protocol = address::EndProto_RTP;
-
         config.input_channels = ChMask;
         config.packet_length = SamplesPerPacket * core::Second / SampleRate;
         config.internal_frame_size = MaxBufSize;
@@ -69,6 +66,9 @@ TEST_GROUP(sender_sink) {
         config.interleaving = false;
         config.timing = false;
         config.poisoning = true;
+
+        source_proto = address::EndProto_RTP;
+        dst_addr = new_address(123);
     }
 };
 
@@ -79,13 +79,15 @@ TEST(sender_sink, write) {
                       sample_buffer_pool, allocator);
     CHECK(sender.valid());
 
-    SenderSink::PortGroupID port_group = sender.add_port_group();
-    CHECK(port_group != 0);
+    SenderSink::EndpointSetHandle endpoint_set = sender.add_endpoint_set();
+    CHECK(endpoint_set);
 
-    SenderSink::PortID source_port_id =
-        sender.add_port(port_group, address::EndType_AudioSource, source_port);
-    CHECK(source_port_id != 0);
-    sender.set_port_writer(source_port_id, queue);
+    SenderSink::EndpointHandle source_endpoint =
+        sender.add_endpoint(endpoint_set, address::EndType_AudioSource, source_proto);
+    CHECK(source_endpoint);
+
+    sender.set_endpoint_output_writer(source_endpoint, queue);
+    sender.set_endpoint_destination_udp_address(source_endpoint, dst_addr);
 
     FrameWriter frame_writer(sender, sample_buffer_pool);
 
@@ -94,7 +96,7 @@ TEST(sender_sink, write) {
     }
 
     PacketReader packet_reader(allocator, queue, rtp_parser, format_map, packet_pool,
-                               PayloadType, source_port.address);
+                               PayloadType, dst_addr);
 
     for (size_t np = 0; np < ManyFrames / FramesPerPacket; np++) {
         packet_reader.read_packet(SamplesPerPacket, ChMask);
@@ -116,13 +118,15 @@ TEST(sender_sink, frame_size_small) {
                       sample_buffer_pool, allocator);
     CHECK(sender.valid());
 
-    SenderSink::PortGroupID port_group = sender.add_port_group();
-    CHECK(port_group != 0);
+    SenderSink::EndpointSetHandle endpoint_set = sender.add_endpoint_set();
+    CHECK(endpoint_set);
 
-    SenderSink::PortID source_port_id =
-        sender.add_port(port_group, address::EndType_AudioSource, source_port);
-    CHECK(source_port_id != 0);
-    sender.set_port_writer(source_port_id, queue);
+    SenderSink::EndpointHandle source_endpoint =
+        sender.add_endpoint(endpoint_set, address::EndType_AudioSource, source_proto);
+    CHECK(source_endpoint);
+
+    sender.set_endpoint_output_writer(source_endpoint, queue);
+    sender.set_endpoint_destination_udp_address(source_endpoint, dst_addr);
 
     FrameWriter frame_writer(sender, sample_buffer_pool);
 
@@ -131,7 +135,7 @@ TEST(sender_sink, frame_size_small) {
     }
 
     PacketReader packet_reader(allocator, queue, rtp_parser, format_map, packet_pool,
-                               PayloadType, source_port.address);
+                               PayloadType, dst_addr);
 
     for (size_t np = 0; np < ManySmallFrames / SmallFramesPerPacket; np++) {
         packet_reader.read_packet(SamplesPerPacket, ChMask);
@@ -153,13 +157,15 @@ TEST(sender_sink, frame_size_large) {
                       sample_buffer_pool, allocator);
     CHECK(sender.valid());
 
-    SenderSink::PortGroupID port_group = sender.add_port_group();
-    CHECK(port_group != 0);
+    SenderSink::EndpointSetHandle endpoint_set = sender.add_endpoint_set();
+    CHECK(endpoint_set);
 
-    SenderSink::PortID source_port_id =
-        sender.add_port(port_group, address::EndType_AudioSource, source_port);
-    CHECK(source_port_id != 0);
-    sender.set_port_writer(source_port_id, queue);
+    SenderSink::EndpointHandle source_endpoint =
+        sender.add_endpoint(endpoint_set, address::EndType_AudioSource, source_proto);
+    CHECK(source_endpoint);
+
+    sender.set_endpoint_output_writer(source_endpoint, queue);
+    sender.set_endpoint_destination_udp_address(source_endpoint, dst_addr);
 
     FrameWriter frame_writer(sender, sample_buffer_pool);
 
@@ -168,7 +174,7 @@ TEST(sender_sink, frame_size_large) {
     }
 
     PacketReader packet_reader(allocator, queue, rtp_parser, format_map, packet_pool,
-                               PayloadType, source_port.address);
+                               PayloadType, dst_addr);
 
     for (size_t np = 0; np < ManyLargeFrames * PacketsPerLargeFrame; np++) {
         packet_reader.read_packet(SamplesPerPacket, ChMask);

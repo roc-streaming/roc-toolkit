@@ -6,22 +6,22 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_pipeline/sender_port_group.h"
+#include "roc_pipeline/sender_endpoint_set.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_fec/codec_map.h"
-#include "roc_pipeline/port_to_str.h"
-#include "roc_pipeline/validate_endpoints.h"
+#include "roc_pipeline/endpoint_helpers.h"
 
 namespace roc {
 namespace pipeline {
 
-SenderPortGroup::SenderPortGroup(const SenderConfig& config,
-                                 const rtp::FormatMap& format_map,
-                                 packet::PacketPool& packet_pool,
-                                 core::BufferPool<uint8_t>& byte_buffer_pool,
-                                 core::BufferPool<audio::sample_t>& sample_buffer_pool,
-                                 core::IAllocator& allocator)
+SenderEndpointSet::SenderEndpointSet(
+    const SenderConfig& config,
+    const rtp::FormatMap& format_map,
+    packet::PacketPool& packet_pool,
+    core::BufferPool<uint8_t>& byte_buffer_pool,
+    core::BufferPool<audio::sample_t>& sample_buffer_pool,
+    core::IAllocator& allocator)
     : config_(config)
     , format_map_(format_map)
     , packet_pool_(packet_pool)
@@ -31,117 +31,123 @@ SenderPortGroup::SenderPortGroup(const SenderConfig& config,
     , audio_writer_(NULL) {
 }
 
-void SenderPortGroup::destroy() {
+void SenderEndpointSet::destroy() {
     allocator_.destroy(*this);
 }
 
-SenderPort* SenderPortGroup::add_port(address::EndpointType type,
-                                      const PortConfig& port_config) {
-    SenderPort* created_port = NULL;
+SenderEndpoint* SenderEndpointSet::add_endpoint(address::EndpointType type,
+                                                address::EndpointProtocol proto) {
+    roc_log(LogDebug, "sender endpoint set: adding %s endpoint %s",
+            address::endpoint_type_to_str(type), address::endpoint_proto_to_str(proto));
+
+    SenderEndpoint* endpoint = NULL;
 
     switch ((int)type) {
     case address::EndType_AudioSource:
-        if (!(created_port = create_source_port_(port_config))) {
+        if (!(endpoint = create_source_endpoint_(proto))) {
             return NULL;
         }
         break;
 
     case address::EndType_AudioRepair:
-        if (!(created_port = create_repair_port_(port_config))) {
+        if (!(endpoint = create_repair_endpoint_(proto))) {
             return NULL;
         }
         break;
 
     default:
-        roc_log(LogError, "sender port group: invalid endpoint protocol");
+        roc_log(LogError, "sender endpoint set: invalid endpoint type");
         return NULL;
     }
 
-    roc_log(LogInfo, "sender port group: created %s endpoint %s",
-            address::endpoint_type_to_str(type), port_to_str(port_config).c_str());
-
-    if (source_port_
-        && (repair_port_ || config_.fec_encoder.scheme == packet::FEC_None)) {
+    if (source_endpoint_
+        && (repair_endpoint_ || config_.fec_encoder.scheme == packet::FEC_None)) {
         if (!create_pipeline_()) {
             return NULL;
         }
     }
 
-    return created_port;
+    return endpoint;
 }
 
-audio::IWriter* SenderPortGroup::writer() {
+audio::IWriter* SenderEndpointSet::writer() {
     return audio_writer_;
 }
 
-bool SenderPortGroup::is_configured() const {
-    return audio_writer_ && source_port_->has_writer()
-        && (!repair_port_ || repair_port_->has_writer());
+bool SenderEndpointSet::is_ready() const {
+    return audio_writer_ && source_endpoint_->has_writer()
+        && (!repair_endpoint_ || repair_endpoint_->has_writer());
 }
 
-SenderPort* SenderPortGroup::create_source_port_(const PortConfig& port_config) {
-    if (source_port_) {
-        roc_log(LogError, "sender port group: audio source endpoint is already set");
+SenderEndpoint*
+SenderEndpointSet::create_source_endpoint_(address::EndpointProtocol proto) {
+    if (source_endpoint_) {
+        roc_log(LogError, "sender endpoint set: audio source endpoint is already set");
         return NULL;
     }
 
-    if (!validate_transport_endpoint(config_.fec_encoder.scheme,
-                                     address::EndType_AudioSource,
-                                     port_config.protocol)) {
+    if (!validate_endpoint(address::EndType_AudioSource, proto)) {
         return NULL;
     }
 
-    if (repair_port_) {
-        if (!validate_transport_endpoint_pair(config_.fec_encoder.scheme,
-                                              port_config.protocol,
-                                              repair_port_->proto())) {
+    if (repair_endpoint_) {
+        if (!validate_endpoint_pair_consistency(proto, repair_endpoint_->proto())) {
             return NULL;
         }
     }
 
-    source_port_.reset(new (allocator_) SenderPort(port_config, allocator_), allocator_);
-    if (!source_port_ || !source_port_->valid()) {
-        roc_log(LogError, "sender port group: can't create source port");
-        source_port_.reset();
+    if (!validate_endpoint_and_pipeline_consistency(
+            config_.fec_encoder.scheme, address::EndType_AudioSource, proto)) {
         return NULL;
     }
 
-    return source_port_.get();
+    source_endpoint_.reset(new (allocator_) SenderEndpoint(proto, allocator_),
+                           allocator_);
+    if (!source_endpoint_ || !source_endpoint_->valid()) {
+        roc_log(LogError, "sender endpoint set: can't create source endpoint");
+        source_endpoint_.reset();
+        return NULL;
+    }
+
+    return source_endpoint_.get();
 }
 
-SenderPort* SenderPortGroup::create_repair_port_(const PortConfig& port_config) {
-    if (repair_port_) {
-        roc_log(LogError, "sender port group: audio repair endpoint is already set");
+SenderEndpoint*
+SenderEndpointSet::create_repair_endpoint_(address::EndpointProtocol proto) {
+    if (repair_endpoint_) {
+        roc_log(LogError, "sender endpoint set: audio repair endpoint is already set");
         return NULL;
     }
 
-    if (!validate_transport_endpoint(config_.fec_encoder.scheme,
-                                     address::EndType_AudioRepair,
-                                     port_config.protocol)) {
+    if (!validate_endpoint(address::EndType_AudioRepair, proto)) {
         return NULL;
     }
 
-    if (source_port_) {
-        if (!validate_transport_endpoint_pair(config_.fec_encoder.scheme,
-                                              source_port_->proto(),
-                                              port_config.protocol)) {
+    if (source_endpoint_) {
+        if (!validate_endpoint_pair_consistency(source_endpoint_->proto(), proto)) {
             return NULL;
         }
     }
 
-    repair_port_.reset(new (allocator_) SenderPort(port_config, allocator_), allocator_);
-    if (!repair_port_ || !repair_port_->valid()) {
-        roc_log(LogError, "sender port group: can't create repair port");
-        repair_port_.reset();
+    if (!validate_endpoint_and_pipeline_consistency(
+            config_.fec_encoder.scheme, address::EndType_AudioRepair, proto)) {
         return NULL;
     }
 
-    return repair_port_.get();
+    repair_endpoint_.reset(new (allocator_) SenderEndpoint(proto, allocator_),
+                           allocator_);
+    if (!repair_endpoint_ || !repair_endpoint_->valid()) {
+        roc_log(LogError, "sender endpoint set: can't create repair endpoint");
+        repair_endpoint_.reset();
+        return NULL;
+    }
+
+    return repair_endpoint_.get();
 }
 
-bool SenderPortGroup::create_pipeline_() {
+bool SenderEndpointSet::create_pipeline_() {
     roc_panic_if(audio_writer_);
-    roc_panic_if(!source_port_);
+    roc_panic_if(!source_endpoint_);
 
     const rtp::Format* format = format_map_.format(config_.payload_type);
     if (!format) {
@@ -154,12 +160,12 @@ bool SenderPortGroup::create_pipeline_() {
     }
     packet::IWriter* pwriter = router_.get();
 
-    if (!router_->add_route(*source_port_, packet::Packet::FlagAudio)) {
+    if (!router_->add_route(*source_endpoint_, packet::Packet::FlagAudio)) {
         return false;
     }
 
-    if (repair_port_) {
-        if (!router_->add_route(*repair_port_, packet::Packet::FlagRepair)) {
+    if (repair_endpoint_) {
+        if (!router_->add_route(*repair_endpoint_, packet::Packet::FlagRepair)) {
             return false;
         }
 
@@ -182,12 +188,12 @@ bool SenderPortGroup::create_pipeline_() {
             return false;
         }
 
-        fec_writer_.reset(
-            new (allocator_)
-                fec::Writer(config_.fec_writer, config_.fec_encoder.scheme, *fec_encoder_,
-                            *pwriter, source_port_->composer(), repair_port_->composer(),
-                            packet_pool_, byte_buffer_pool_, allocator_),
-            allocator_);
+        fec_writer_.reset(new (allocator_) fec::Writer(
+                              config_.fec_writer, config_.fec_encoder.scheme,
+                              *fec_encoder_, *pwriter, source_endpoint_->composer(),
+                              repair_endpoint_->composer(), packet_pool_,
+                              byte_buffer_pool_, allocator_),
+                          allocator_);
         if (!fec_writer_ || !fec_writer_->valid()) {
             return false;
         }
@@ -200,7 +206,7 @@ bool SenderPortGroup::create_pipeline_() {
     }
 
     packetizer_.reset(new (allocator_) audio::Packetizer(
-                          *pwriter, source_port_->composer(), *payload_encoder_,
+                          *pwriter, source_endpoint_->composer(), *payload_encoder_,
                           packet_pool_, byte_buffer_pool_, config_.input_channels,
                           config_.packet_length, format->sample_rate,
                           config_.payload_type),

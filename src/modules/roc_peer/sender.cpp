@@ -9,7 +9,6 @@
 #include "roc_peer/sender.h"
 #include "roc_address/socket_addr_to_str.h"
 #include "roc_core/log.h"
-#include "roc_pipeline/port_to_str.h"
 
 namespace roc {
 namespace peer {
@@ -22,9 +21,9 @@ Sender::Sender(Context& context, const pipeline::SenderConfig& pipeline_config)
                 context_.byte_buffer_pool(),
                 context_.sample_buffer_pool(),
                 context_.allocator())
-    , default_port_group_(0)
-    , source_id_(0)
-    , repair_id_(0)
+    , endpoint_set_(0)
+    , source_endpoint_(0)
+    , repair_endpoint_(0)
     , udp_writer_(NULL) {
     roc_log(LogDebug, "sender peer: initializing");
 
@@ -32,7 +31,7 @@ Sender::Sender(Context& context, const pipeline::SenderConfig& pipeline_config)
         return;
     }
 
-    default_port_group_ = pipeline_.add_port_group();
+    endpoint_set_ = pipeline_.add_endpoint_set();
 }
 
 Sender::~Sender() {
@@ -44,7 +43,7 @@ Sender::~Sender() {
 }
 
 bool Sender::valid() const {
-    return default_port_group_;
+    return endpoint_set_;
 }
 
 bool Sender::bind(address::SocketAddr& addr) {
@@ -65,12 +64,12 @@ bool Sender::bind(address::SocketAddr& addr) {
 
     bind_address_ = addr;
 
-    if (source_id_) {
-        pipeline_.set_port_writer(source_id_, *udp_writer_);
+    if (source_endpoint_) {
+        pipeline_.set_endpoint_output_writer(source_endpoint_, *udp_writer_);
     }
 
-    if (repair_id_) {
-        pipeline_.set_port_writer(repair_id_, *udp_writer_);
+    if (repair_endpoint_) {
+        pipeline_.set_endpoint_output_writer(repair_endpoint_, *udp_writer_);
     }
 
     roc_log(LogInfo, "sender peer: bound to %s",
@@ -79,32 +78,36 @@ bool Sender::bind(address::SocketAddr& addr) {
     return true;
 }
 
-bool Sender::connect(address::EndpointType port_type,
-                     const pipeline::PortConfig& port_config) {
+bool Sender::connect(address::EndpointType type,
+                     address::EndpointProtocol proto,
+                     const address::SocketAddr& address) {
     core::Mutex::Lock lock(mutex_);
 
     roc_panic_if_not(valid());
 
-    pipeline::SenderSink::PortID port_id =
-        pipeline_.add_port(default_port_group_, port_type, port_config);
+    pipeline::SenderSink::EndpointHandle endpoint =
+        pipeline_.add_endpoint(endpoint_set_, type, proto);
 
-    if (!port_id) {
-        roc_log(LogError, "sender peer: connect failed");
+    if (!endpoint) {
+        roc_log(LogError, "sender peer: can't add endpoint to pipeline");
         return false;
     }
 
+    pipeline_.set_endpoint_destination_udp_address(endpoint, address);
+
     if (udp_writer_) {
-        pipeline_.set_port_writer(port_id, *udp_writer_);
+        pipeline_.set_endpoint_output_writer(endpoint, *udp_writer_);
     }
 
-    if (port_type == address::EndType_AudioSource) {
-        source_id_ = port_id;
+    if (type == address::EndType_AudioSource) {
+        source_endpoint_ = endpoint;
     } else {
-        repair_id_ = port_id;
+        repair_endpoint_ = endpoint;
     }
 
-    roc_log(LogInfo, "sender peer: connected to %s",
-            pipeline::port_to_str(port_config).c_str());
+    roc_log(LogInfo, "sender peer: connected to %s endpoint %s at %s",
+            address::endpoint_type_to_str(type), address::endpoint_proto_to_str(proto),
+            address::socket_addr_to_str(address).c_str());
 
     return true;
 }
@@ -115,12 +118,12 @@ sndio::ISink& Sender::sink() {
     return pipeline_;
 }
 
-bool Sender::is_configured() const {
+bool Sender::is_ready() const {
     core::Mutex::Lock lock(mutex_);
 
     roc_panic_if_not(valid());
 
-    return pipeline_.port_group_configured(default_port_group_);
+    return pipeline_.endpoint_set_ready(endpoint_set_);
 }
 
 } // namespace peer
