@@ -110,7 +110,7 @@ void ReceiverSessionGroup::create_session_(const packet::PacketPtr& packet) {
         return;
     }
 
-    mixer_.add(sess->reader());
+    mixer_.add_input(sess->reader());
     sessions_.push_back(*sess);
 
     receiver_state_.add_sessions(+1);
@@ -119,7 +119,7 @@ void ReceiverSessionGroup::create_session_(const packet::PacketPtr& packet) {
 void ReceiverSessionGroup::remove_session_(ReceiverSession& sess) {
     roc_log(LogInfo, "session group: removing session");
 
-    mixer_.remove(sess.reader());
+    mixer_.remove_input(sess.reader());
     sessions_.remove(sess);
 
     receiver_state_.add_sessions(-1);
