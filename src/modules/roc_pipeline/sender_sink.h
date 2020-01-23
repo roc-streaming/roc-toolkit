@@ -22,7 +22,6 @@
 #include "roc_core/noncopyable.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_core/ticker.h"
-#include "roc_fec/codec_map.h"
 #include "roc_fec/iblock_encoder.h"
 #include "roc_fec/writer.h"
 #include "roc_packet/interleaver.h"
@@ -45,7 +44,6 @@ class SenderSink : public sndio::ISink, public core::NonCopyable<> {
 public:
     //! Initialize.
     SenderSink(const SenderConfig& config,
-               const fec::CodecMap& codec_map,
                const rtp::FormatMap& format_map,
                packet::PacketPool& packet_pool,
                core::BufferPool<uint8_t>& byte_buffer_pool,
@@ -93,7 +91,6 @@ public:
 private:
     const SenderConfig config_;
 
-    const fec::CodecMap& codec_map_;
     const rtp::FormatMap& format_map_;
 
     packet::PacketPool& packet_pool_;
