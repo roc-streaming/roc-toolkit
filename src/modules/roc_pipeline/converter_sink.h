@@ -29,7 +29,7 @@ namespace pipeline {
 
 //! Converter sink pipeline.
 //! @remarks
-//   - input: frames
+//!  - input: frames
 //!  - output: frames
 class ConverterSink : public sndio::ISink, public core::NonCopyable<> {
 public:

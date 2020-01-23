@@ -15,15 +15,14 @@
 namespace roc {
 namespace pipeline {
 
-SenderPort::SenderPort(const PortConfig& config,
-                       packet::IWriter& writer,
-                       core::IAllocator& allocator)
-    : dst_address_(config.address)
-    , writer_(writer)
+SenderPort::SenderPort(const PortConfig& config, core::IAllocator& allocator)
+    : proto_(config.protocol)
+    , dst_address_(config.address)
+    , writer_(NULL)
     , composer_(NULL) {
     packet::IComposer* composer = NULL;
 
-    switch ((unsigned)config.protocol) {
+    switch ((int)config.protocol) {
     case address::EndProto_RTP:
     case address::EndProto_RTP_LDPC_Source:
     case address::EndProto_RTP_RS8M_Source:
@@ -35,7 +34,7 @@ SenderPort::SenderPort(const PortConfig& config,
         break;
     }
 
-    switch ((unsigned)config.protocol) {
+    switch ((int)config.protocol) {
     case address::EndProto_RTP_LDPC_Source:
         fec_composer_.reset(
             new (allocator)
@@ -87,20 +86,44 @@ bool SenderPort::valid() const {
     return composer_;
 }
 
+address::EndpointProtocol SenderPort::proto() const {
+    roc_panic_if(!valid());
+
+    return proto_;
+}
+
 packet::IComposer& SenderPort::composer() {
     roc_panic_if(!valid());
 
     return *composer_;
 }
 
+void SenderPort::set_writer(packet::IWriter& writer) {
+    core::Mutex::Lock lock(mutex_);
+
+    roc_panic_if(!valid());
+    roc_panic_if(writer_);
+
+    writer_ = &writer;
+}
+
+bool SenderPort::has_writer() const {
+    core::Mutex::Lock lock(mutex_);
+
+    return writer_;
+}
+
 void SenderPort::write(const packet::PacketPtr& packet) {
+    core::Mutex::Lock lock(mutex_);
+
     roc_panic_if(!valid());
 
+    if (!writer_) {
+        return;
+    }
+
     packet->add_flags(packet::Packet::FlagUDP);
-
-    packet::UDP& udp = *packet->udp();
-
-    udp.dst_addr = dst_address_;
+    packet->udp()->dst_addr = dst_address_;
 
     if ((packet->flags() & packet::Packet::FlagComposed) == 0) {
         if (!composer_->compose(*packet)) {
@@ -109,7 +132,7 @@ void SenderPort::write(const packet::PacketPtr& packet) {
         packet->add_flags(packet::Packet::FlagComposed);
     }
 
-    writer_.write(packet);
+    writer_->write(packet);
 }
 
 } // namespace pipeline
