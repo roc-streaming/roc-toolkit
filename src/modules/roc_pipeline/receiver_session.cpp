@@ -145,12 +145,11 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
             }
             areader = resampler_poisoner_.get();
         }
-        audio::ResamplerMap resampler_map;
 
-        resampler_.reset(resampler_map.new_resampler(session_config.resampler_backend,
-                                                     allocator, session_config.resampler,
-                                                     session_config.channels,
-                                                     common_config.internal_frame_size),
+        resampler_.reset(audio::ResamplerMap::instance().new_resampler(
+                             session_config.resampler_backend, allocator,
+                             session_config.resampler, session_config.channels,
+                             common_config.internal_frame_size),
                          allocator);
 
         if (!resampler_) {
