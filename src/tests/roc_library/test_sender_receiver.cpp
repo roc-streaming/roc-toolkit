@@ -427,8 +427,7 @@ TEST_GROUP(sender_receiver) {
     }
 
     bool is_fec_supported() {
-        fec::CodecMap codec_map;
-        return codec_map.is_supported(packet::FEC_ReedSolomon_M8);
+        return fec::CodecMap::instance().is_supported(packet::FEC_ReedSolomon_M8);
     }
 };
 
