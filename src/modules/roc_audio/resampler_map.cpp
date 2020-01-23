@@ -13,6 +13,9 @@
 namespace roc {
 namespace audio {
 
+ResamplerMap::ResamplerMap() {
+}
+
 IResampler* ResamplerMap::new_resampler(ResamplerBackend resampler_backend,
                                         core::IAllocator& allocator,
                                         const ResamplerConfig& config,
