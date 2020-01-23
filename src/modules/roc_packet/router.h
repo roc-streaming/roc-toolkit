@@ -26,10 +26,7 @@ namespace packet {
 class Router : public IWriter, public core::NonCopyable<> {
 public:
     //! Initialize.
-    Router(core::IAllocator& allocator, size_t max_routes);
-
-    //! Check if object is successfully constructed.
-    bool valid() const;
+    Router(core::IAllocator& allocator);
 
     //! Add route.
     //! @remarks
@@ -50,8 +47,6 @@ private:
     };
 
     core::Array<Route, 2> routes_;
-
-    bool valid_;
 };
 
 } // namespace packet

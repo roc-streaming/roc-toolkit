@@ -54,8 +54,8 @@ SenderSink::SenderSink(const SenderConfig& config,
         return;
     }
 
-    router_.reset(new (allocator) packet::Router(allocator, 2), allocator);
-    if (!router_ || !router_->valid()) {
+    router_.reset(new (allocator) packet::Router(allocator), allocator);
+    if (!router_) {
         return;
     }
     packet::IWriter* pwriter = router_.get();
