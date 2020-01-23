@@ -222,9 +222,7 @@ bool SenderPortGroup::create_pipeline_() {
             awriter = resampler_poisoner_.get();
         }
 
-        audio::ResamplerMap resampler_map;
-
-        resampler_.reset(resampler_map.new_resampler(
+        resampler_.reset(audio::ResamplerMap::instance().new_resampler(
                              config_.resampler_backend, allocator_, config_.resampler,
                              config_.input_channels, config_.internal_frame_size),
                          allocator_);
