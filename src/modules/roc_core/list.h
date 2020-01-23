@@ -24,9 +24,10 @@ namespace core {
 //! Intrusive doubly-linked list.
 //!
 //! @tparam T defines object type, it should inherit ListNode.
+//!
 //! @tparam Ownership defines ownership policy which is used to acquire an element
-//! ownership
-//! when it's added to the list and release ownership when it's removed from the list
+//! ownership when it's added to the list and release ownership when it's removed
+//! from the list.
 template <class T, template <class TT> class Ownership = RefCntOwnership>
 class List : public NonCopyable<> {
 public:
@@ -84,6 +85,12 @@ public:
             return NULL;
         }
         return container_of_(head_.prev);
+    }
+
+    //! Check if element belongs to list.
+    bool contains(const T& element) {
+        const ListNode::ListNodeData* data = element.list_node_data();
+        return (data->list == this);
     }
 
     //! Get list element next to given one.
