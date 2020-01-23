@@ -268,7 +268,8 @@ TEST(socket_addr, multicast_ipv6) {
 
     {
         SocketAddr addr;
-        CHECK(addr.set_host_port(Family_IPv6, "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff", 123));
+        CHECK(addr.set_host_port(Family_IPv6, "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff",
+                                 123));
         CHECK(addr.has_host_port());
         CHECK(addr.multicast());
     }
