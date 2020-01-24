@@ -21,7 +21,7 @@ TEST(socket_addr, empty) {
 
     CHECK(!addr.has_host_port());
 
-    UNSIGNED_LONGS_EQUAL(Family_Unknown, addr.version());
+    UNSIGNED_LONGS_EQUAL(Family_Unknown, addr.family());
     LONGS_EQUAL(-1, addr.port());
 
     STRCMP_EQUAL("<none>", socket_addr_to_str(addr).c_str());
@@ -33,7 +33,7 @@ TEST(socket_addr, set_ipv4) {
     CHECK(addr.set_host_port(Family_IPv4, "1.2.0.255", 123));
     CHECK(addr.has_host_port());
 
-    UNSIGNED_LONGS_EQUAL(Family_IPv4, addr.version());
+    UNSIGNED_LONGS_EQUAL(Family_IPv4, addr.family());
     LONGS_EQUAL(123, addr.port());
 
     STRCMP_EQUAL("1.2.0.255:123", socket_addr_to_str(addr).c_str());
@@ -45,7 +45,7 @@ TEST(socket_addr, set_ipv6) {
     CHECK(addr.set_host_port(Family_IPv6, "2001:db8::1", 123));
     CHECK(addr.has_host_port());
 
-    UNSIGNED_LONGS_EQUAL(Family_IPv6, addr.version());
+    UNSIGNED_LONGS_EQUAL(Family_IPv6, addr.family());
     LONGS_EQUAL(123, addr.port());
 
     STRCMP_EQUAL("[2001:db8::1]:123", socket_addr_to_str(addr).c_str());

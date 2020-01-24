@@ -14,7 +14,7 @@ namespace roc {
 namespace address {
 
 socket_addr_to_str::socket_addr_to_str(const SocketAddr& addr) {
-    switch ((unsigned)addr.version()) {
+    switch ((unsigned)addr.family()) {
     case Family_IPv4:
         if (!format_ipv4_(addr)) {
             strcpy(buffer_, "<error>");
@@ -28,6 +28,7 @@ socket_addr_to_str::socket_addr_to_str(const SocketAddr& addr) {
             return;
         }
         break;
+
     default:
         strcpy(buffer_, "<none>");
         return;
