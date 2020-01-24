@@ -21,7 +21,7 @@ namespace pipeline {
 class MockSource : public sndio::ISource {
 public:
     MockSource()
-        : state_(Active)
+        : state_(Playing)
         , pos_(0)
         , size_(0) {
     }
@@ -51,12 +51,12 @@ public:
     }
 
     virtual bool resume() {
-        state_ = Active;
+        state_ = Playing;
         return true;
     }
 
     virtual bool restart() {
-        state_ = Active;
+        state_ = Playing;
         return true;
     }
 
