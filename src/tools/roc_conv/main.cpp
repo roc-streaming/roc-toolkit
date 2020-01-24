@@ -66,25 +66,26 @@ int main(int argc, char** argv) {
         return 0;
     }
 
-    pipeline::ConverterConfig config;
+    pipeline::ConverterConfig converter_config;
 
     if (args.frame_size_given) {
         if (args.frame_size_arg <= 0) {
             roc_log(LogError, "invalid --frame-size: should be > 0");
             return 1;
         }
-        config.internal_frame_size = (size_t)args.frame_size_arg;
+        converter_config.internal_frame_size = (size_t)args.frame_size_arg;
     }
 
-    sndio::BackendDispatcher::instance().set_frame_size(config.internal_frame_size);
+    sndio::BackendDispatcher::instance().set_frame_size(
+        converter_config.internal_frame_size);
 
-    core::BufferPool<audio::sample_t> pool(allocator, config.internal_frame_size,
-                                           args.poisoning_flag);
+    core::BufferPool<audio::sample_t> pool(
+        allocator, converter_config.internal_frame_size, args.poisoning_flag);
 
     sndio::Config source_config;
-    source_config.channels = config.input_channels;
+    source_config.channels = converter_config.input_channels;
     source_config.sample_rate = 0;
-    source_config.frame_size = config.internal_frame_size;
+    source_config.frame_size = converter_config.internal_frame_size;
 
     address::IoURI input_uri(allocator);
     if (args.input_given) {
@@ -99,30 +100,30 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    core::ScopedPtr<sndio::ISource> source(
+    core::ScopedPtr<sndio::ISource> input_source(
         sndio::BackendDispatcher::instance().open_source(
             allocator, input_uri, args.input_format_arg, source_config),
         allocator);
-    if (!source) {
+    if (!input_source) {
         roc_log(LogError, "can't open input: %s", args.input_arg);
         return 1;
     }
-    if (source->has_clock()) {
+    if (input_source->has_clock()) {
         roc_log(LogError, "unsupported input: %s", args.input_arg);
         return 1;
     }
 
-    config.input_sample_rate = source->sample_rate();
+    converter_config.input_sample_rate = input_source->sample_rate();
 
     if (args.rate_given) {
-        config.output_sample_rate = (size_t)args.rate_arg;
+        converter_config.output_sample_rate = (size_t)args.rate_arg;
     } else {
-        config.output_sample_rate = config.input_sample_rate;
+        converter_config.output_sample_rate = converter_config.input_sample_rate;
     }
 
     switch ((unsigned)args.resampler_backend_arg) {
     case resampler_backend_arg_builtin:
-        config.resampler_backend = audio::ResamplerBackend_Builtin;
+        converter_config.resampler_backend = audio::ResamplerBackend_Builtin;
         break;
 
     default:
@@ -131,15 +132,18 @@ int main(int argc, char** argv) {
 
     switch ((unsigned)args.resampler_profile_arg) {
     case resampler_profile_arg_low:
-        config.resampler = audio::resampler_profile(audio::ResamplerProfile_Low);
+        converter_config.resampler =
+            audio::resampler_profile(audio::ResamplerProfile_Low);
         break;
 
     case resampler_profile_arg_medium:
-        config.resampler = audio::resampler_profile(audio::ResamplerProfile_Medium);
+        converter_config.resampler =
+            audio::resampler_profile(audio::ResamplerProfile_Medium);
         break;
 
     case resampler_profile_arg_high:
-        config.resampler = audio::resampler_profile(audio::ResamplerProfile_High);
+        converter_config.resampler =
+            audio::resampler_profile(audio::ResamplerProfile_High);
         break;
 
     default:
@@ -147,21 +151,21 @@ int main(int argc, char** argv) {
     }
 
     if (args.resampler_interp_given) {
-        config.resampler.window_interp = (size_t)args.resampler_interp_arg;
+        converter_config.resampler.window_interp = (size_t)args.resampler_interp_arg;
     }
     if (args.resampler_window_given) {
-        config.resampler.window_size = (size_t)args.resampler_window_arg;
+        converter_config.resampler.window_size = (size_t)args.resampler_window_arg;
     }
 
-    config.resampling = !args.no_resampling_flag;
-    config.poisoning = args.poisoning_flag;
+    converter_config.resampling = !args.no_resampling_flag;
+    converter_config.poisoning = args.poisoning_flag;
 
     audio::IWriter* output_writer = NULL;
 
     sndio::Config sink_config;
-    sink_config.channels = config.output_channels;
-    sink_config.sample_rate = config.output_sample_rate;
-    sink_config.frame_size = config.internal_frame_size;
+    sink_config.channels = converter_config.output_channels;
+    sink_config.sample_rate = converter_config.output_sample_rate;
+    sink_config.frame_size = converter_config.internal_frame_size;
 
     address::IoURI output_uri(allocator);
     if (args.output_given) {
@@ -177,30 +181,30 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    core::ScopedPtr<sndio::ISink> sink;
+    core::ScopedPtr<sndio::ISink> output_sink;
     if (args.output_given) {
-        sink.reset(sndio::BackendDispatcher::instance().open_sink(
-                       allocator, output_uri, args.output_format_arg, sink_config),
-                   allocator);
-        if (!sink) {
+        output_sink.reset(sndio::BackendDispatcher::instance().open_sink(
+                              allocator, output_uri, args.output_format_arg, sink_config),
+                          allocator);
+        if (!output_sink) {
             roc_log(LogError, "can't open output: %s", args.output_arg);
             return 1;
         }
-        if (sink->has_clock()) {
+        if (output_sink->has_clock()) {
             roc_log(LogError, "unsupported output: %s", args.output_arg);
             return 1;
         }
-        output_writer = sink.get();
+        output_writer = output_sink.get();
     }
 
-    pipeline::ConverterSink converter(config, output_writer, pool, allocator);
+    pipeline::ConverterSink converter(converter_config, output_writer, pool, allocator);
     if (!converter.valid()) {
         roc_log(LogError, "can't create converter pipeline");
         return 1;
     }
 
-    sndio::Pump pump(pool, *source, NULL, converter, config.internal_frame_size,
-                     sndio::Pump::ModePermanent);
+    sndio::Pump pump(pool, *input_source, NULL, converter,
+                     converter_config.internal_frame_size, sndio::Pump::ModePermanent);
     if (!pump.valid()) {
         roc_log(LogError, "can't create audio pump");
         return 1;
