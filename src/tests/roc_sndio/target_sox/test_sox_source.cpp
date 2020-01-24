@@ -148,7 +148,7 @@ TEST(sox_source, pause_resume) {
     audio::sample_t frame_data1[FrameSize * NumChans] = {};
     audio::Frame frame1(frame_data1, FrameSize * NumChans);
 
-    CHECK(sox_source.state() == ISource::Active);
+    CHECK(sox_source.state() == ISource::Playing);
     CHECK(sox_source.read(frame1));
 
     sox_source.pause();
@@ -160,7 +160,7 @@ TEST(sox_source, pause_resume) {
     CHECK(!sox_source.read(frame2));
 
     CHECK(sox_source.resume());
-    CHECK(sox_source.state() == ISource::Active);
+    CHECK(sox_source.state() == ISource::Playing);
 
     CHECK(sox_source.read(frame2));
 
@@ -191,7 +191,7 @@ TEST(sox_source, pause_restart) {
     audio::sample_t frame_data1[FrameSize * NumChans] = {};
     audio::Frame frame1(frame_data1, FrameSize * NumChans);
 
-    CHECK(sox_source.state() == ISource::Active);
+    CHECK(sox_source.state() == ISource::Playing);
     CHECK(sox_source.read(frame1));
 
     sox_source.pause();
@@ -203,7 +203,7 @@ TEST(sox_source, pause_restart) {
     CHECK(!sox_source.read(frame2));
 
     CHECK(sox_source.restart());
-    CHECK(sox_source.state() == ISource::Active);
+    CHECK(sox_source.state() == ISource::Playing);
 
     CHECK(sox_source.read(frame2));
 
