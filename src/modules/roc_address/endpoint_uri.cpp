@@ -52,6 +52,25 @@ const char* EndpointURI::host() const {
     return &host_[0];
 }
 
+bool EndpointURI::set_host(const char* str) {
+    const size_t str_len = strlen(str);
+
+    if (str_len < 1) {
+        host_.resize(0);
+        return true;
+    }
+
+    if (!host_.resize(str_len + 1)) {
+        return false;
+    }
+
+    if (!core::copy_str(&host_[0], host_.size(), str, str + str_len)) {
+        return false;
+    }
+
+    return true;
+}
+
 bool EndpointURI::set_encoded_host(const char* str, size_t str_len) {
     if (str_len < 1) {
         return false;
