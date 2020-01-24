@@ -90,52 +90,57 @@ int main(int argc, char** argv) {
         return 0;
     }
 
-    pipeline::ReceiverConfig config;
+    pipeline::ReceiverConfig receiver_config;
 
     if (args.frame_size_given) {
         if (args.frame_size_arg <= 0) {
             roc_log(LogError, "invalid --frame-size: should be > 0");
             return 1;
         }
-        config.common.internal_frame_size = (size_t)args.frame_size_arg;
+        receiver_config.common.internal_frame_size = (size_t)args.frame_size_arg;
     }
 
     sndio::BackendDispatcher::instance().set_frame_size(
-        config.common.internal_frame_size);
+        receiver_config.common.internal_frame_size);
 
     if (args.sess_latency_given) {
         if (!core::parse_duration(args.sess_latency_arg,
-                                  config.default_session.target_latency)) {
+                                  receiver_config.default_session.target_latency)) {
             roc_log(LogError, "invalid --sess-latency");
             return 1;
         }
     }
 
     if (args.min_latency_given) {
-        if (!core::parse_duration(args.min_latency_arg,
-                                  config.default_session.latency_monitor.min_latency)) {
+        if (!core::parse_duration(
+                args.min_latency_arg,
+                receiver_config.default_session.latency_monitor.min_latency)) {
             roc_log(LogError, "invalid --min-latency");
             return 1;
         }
     } else {
-        config.default_session.latency_monitor.min_latency =
-            config.default_session.target_latency * pipeline::DefaultMinLatencyFactor;
+        receiver_config.default_session.latency_monitor.min_latency =
+            receiver_config.default_session.target_latency
+            * pipeline::DefaultMinLatencyFactor;
     }
 
     if (args.max_latency_given) {
-        if (!core::parse_duration(args.max_latency_arg,
-                                  config.default_session.latency_monitor.max_latency)) {
+        if (!core::parse_duration(
+                args.max_latency_arg,
+                receiver_config.default_session.latency_monitor.max_latency)) {
             roc_log(LogError, "invalid --max-latency");
             return 1;
         }
     } else {
-        config.default_session.latency_monitor.max_latency =
-            config.default_session.target_latency * pipeline::DefaultMaxLatencyFactor;
+        receiver_config.default_session.latency_monitor.max_latency =
+            receiver_config.default_session.target_latency
+            * pipeline::DefaultMaxLatencyFactor;
     }
 
     if (args.np_timeout_given) {
-        if (!core::parse_duration(args.np_timeout_arg,
-                                  config.default_session.watchdog.no_playback_timeout)) {
+        if (!core::parse_duration(
+                args.np_timeout_arg,
+                receiver_config.default_session.watchdog.no_playback_timeout)) {
             roc_log(LogError, "invalid --np-timeout");
             return 1;
         }
@@ -144,7 +149,7 @@ int main(int argc, char** argv) {
     if (args.bp_timeout_given) {
         if (!core::parse_duration(
                 args.bp_timeout_arg,
-                config.default_session.watchdog.broken_playback_timeout)) {
+                receiver_config.default_session.watchdog.broken_playback_timeout)) {
             roc_log(LogError, "invalid --bp-timeout");
             return 1;
         }
@@ -153,17 +158,18 @@ int main(int argc, char** argv) {
     if (args.bp_window_given) {
         if (!core::parse_duration(
                 args.bp_window_arg,
-                config.default_session.watchdog.breakage_detection_window)) {
+                receiver_config.default_session.watchdog.breakage_detection_window)) {
             roc_log(LogError, "invalid --bp-window");
             return 1;
         }
     }
 
-    config.common.resampling = !args.no_resampling_flag;
+    receiver_config.common.resampling = !args.no_resampling_flag;
 
     switch ((unsigned)args.resampler_backend_arg) {
     case resampler_backend_arg_builtin:
-        config.default_session.resampler_backend = audio::ResamplerBackend_Builtin;
+        receiver_config.default_session.resampler_backend =
+            audio::ResamplerBackend_Builtin;
         break;
 
     default:
@@ -172,17 +178,17 @@ int main(int argc, char** argv) {
 
     switch ((unsigned)args.resampler_profile_arg) {
     case resampler_profile_arg_low:
-        config.default_session.resampler =
+        receiver_config.default_session.resampler =
             audio::resampler_profile(audio::ResamplerProfile_Low);
         break;
 
     case resampler_profile_arg_medium:
-        config.default_session.resampler =
+        receiver_config.default_session.resampler =
             audio::resampler_profile(audio::ResamplerProfile_Medium);
         break;
 
     case resampler_profile_arg_high:
-        config.default_session.resampler =
+        receiver_config.default_session.resampler =
             audio::resampler_profile(audio::ResamplerProfile_High);
         break;
 
@@ -195,7 +201,7 @@ int main(int argc, char** argv) {
             roc_log(LogError, "invalid --resampler-interp: should be > 0");
             return 1;
         }
-        config.default_session.resampler.window_interp =
+        receiver_config.default_session.resampler.window_interp =
             (size_t)args.resampler_interp_arg;
     }
 
@@ -204,15 +210,16 @@ int main(int argc, char** argv) {
             roc_log(LogError, "invalid --resampler-window: should be > 0");
             return 1;
         }
-        config.default_session.resampler.window_size = (size_t)args.resampler_window_arg;
+        receiver_config.default_session.resampler.window_size =
+            (size_t)args.resampler_window_arg;
     }
 
-    config.common.poisoning = args.poisoning_flag;
-    config.common.beeping = args.beeping_flag;
+    receiver_config.common.poisoning = args.poisoning_flag;
+    receiver_config.common.beeping = args.beeping_flag;
 
     sndio::Config io_config;
-    io_config.channels = config.common.output_channels;
-    io_config.frame_size = config.common.internal_frame_size;
+    io_config.channels = receiver_config.common.output_channels;
+    io_config.frame_size = receiver_config.common.internal_frame_size;
 
     if (args.io_latency_given) {
         if (!core::parse_duration(args.io_latency_arg, io_config.latency)) {
@@ -228,7 +235,7 @@ int main(int argc, char** argv) {
         }
         io_config.sample_rate = (size_t)args.rate_arg;
     } else {
-        if (!config.common.resampling) {
+        if (!receiver_config.common.resampling) {
             io_config.sample_rate = pipeline::DefaultSampleRate;
         }
     }
@@ -254,20 +261,20 @@ int main(int argc, char** argv) {
         }
     }
 
-    core::ScopedPtr<sndio::ISink> sink(
+    core::ScopedPtr<sndio::ISink> output_sink(
         sndio::BackendDispatcher::instance().open_sink(context.allocator(), output_uri,
                                                        args.output_format_arg, io_config),
         context.allocator());
-    if (!sink) {
+    if (!output_sink) {
         roc_log(LogError, "can't open output file or device: uri=%s format=%s",
                 args.output_arg, args.output_format_arg);
         return 1;
     }
 
-    config.common.timing = !sink->has_clock();
-    config.common.output_sample_rate = sink->sample_rate();
+    receiver_config.common.timing = !output_sink->has_clock();
+    receiver_config.common.output_sample_rate = output_sink->sample_rate();
 
-    if (config.common.output_sample_rate == 0) {
+    if (receiver_config.common.output_sample_rate == 0) {
         roc_log(LogError,
                 "can't detect output sample rate, try to set it "
                 "explicitly with --rate option");
@@ -312,19 +319,20 @@ int main(int argc, char** argv) {
 
         pipeline::ConverterConfig converter_config;
 
-        converter_config.resampler = config.default_session.resampler;
-        converter_config.resampler_backend = config.default_session.resampler_backend;
+        converter_config.resampler = receiver_config.default_session.resampler;
+        converter_config.resampler_backend =
+            receiver_config.default_session.resampler_backend;
 
         converter_config.input_sample_rate = backup_source->sample_rate();
-        converter_config.output_sample_rate = config.common.output_sample_rate;
+        converter_config.output_sample_rate = receiver_config.common.output_sample_rate;
 
-        converter_config.input_channels = config.common.output_channels;
-        converter_config.output_channels = config.common.output_channels;
+        converter_config.input_channels = receiver_config.common.output_channels;
+        converter_config.output_channels = receiver_config.common.output_channels;
 
-        converter_config.internal_frame_size = config.common.internal_frame_size;
+        converter_config.internal_frame_size = receiver_config.common.internal_frame_size;
 
-        converter_config.resampling = config.common.resampling;
-        converter_config.poisoning = config.common.poisoning;
+        converter_config.resampling = receiver_config.common.resampling;
+        converter_config.poisoning = receiver_config.common.poisoning;
 
         backup_pipeline.reset(new (context.allocator()) pipeline::ConverterSource(
                                   converter_config, *backup_source,
@@ -336,7 +344,7 @@ int main(int argc, char** argv) {
         }
     }
 
-    peer::Receiver receiver(context, config);
+    peer::Receiver receiver(context, receiver_config);
     if (!receiver.valid()) {
         roc_log(LogError, "can't create receiver peer");
         return 1;
@@ -386,10 +394,10 @@ int main(int argc, char** argv) {
         }
     }
 
-    sndio::Pump pump(context.sample_buffer_pool(), receiver.source(),
-                     backup_pipeline.get(), *sink, config.common.internal_frame_size,
-                     args.oneshot_flag ? sndio::Pump::ModeOneshot
-                                       : sndio::Pump::ModePermanent);
+    sndio::Pump pump(
+        context.sample_buffer_pool(), receiver.source(), backup_pipeline.get(),
+        *output_sink, receiver_config.common.internal_frame_size,
+        args.oneshot_flag ? sndio::Pump::ModeOneshot : sndio::Pump::ModePermanent);
     if (!pump.valid()) {
         roc_log(LogError, "can't create pump");
         return 1;
