@@ -15,6 +15,46 @@ namespace address {
 
 TEST_GROUP(socket_addr_parse) {};
 
+TEST(socket_addr_parse, host_port_ipv4) {
+    SocketAddr addr;
+
+    CHECK(parse_socket_addr_host_port("0.0.0.0", 123, addr));
+    CHECK(addr.has_host_port());
+
+    char host[64];
+    CHECK(addr.get_host(host, sizeof(host)));
+    STRCMP_EQUAL("0.0.0.0", host);
+    LONGS_EQUAL(Family_IPv4, addr.version());
+    LONGS_EQUAL(123, addr.port());
+}
+
+TEST(socket_addr_parse, host_port_ipv6) {
+    SocketAddr addr;
+
+    CHECK(parse_socket_addr_host_port("[11::]", 123, addr));
+    CHECK(addr.has_host_port());
+
+    char host[64];
+    CHECK(addr.get_host(host, sizeof(host)));
+    STRCMP_EQUAL("11::", host);
+    LONGS_EQUAL(Family_IPv6, addr.version());
+    LONGS_EQUAL(123, addr.port());
+}
+
+TEST(socket_addr_parse, bad_host_port) {
+    { // invalid port
+        SocketAddr addr;
+        CHECK(!parse_socket_addr_host_port("1.1.1.1", -3, addr));
+    }
+    { // invalid host
+        SocketAddr addr;
+        CHECK(!parse_socket_addr_host_port("", 123, addr));
+        CHECK(!parse_socket_addr_host_port("abc.com", 123, addr));
+        CHECK(!parse_socket_addr_host_port("1.2", 123, addr));
+        CHECK(!parse_socket_addr_host_port("[11::", 123, addr));
+    }
+}
+
 TEST(socket_addr_parse, miface_ipv4) {
     SocketAddr addr;
 
@@ -66,7 +106,6 @@ TEST(socket_addr_parse, bad_miface) {
         CHECK(addr.has_host_port());
 
         CHECK(!parse_socket_addr_miface("", addr));
-        CHECK(!parse_socket_addr_miface(NULL, addr));
     }
     { // ipv6 miface for ipv4 addr
         SocketAddr addr;

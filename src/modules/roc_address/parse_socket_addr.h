@@ -7,7 +7,7 @@
  */
 
 //! @file roc_address/parse_socket_addr.h
-//! @brief Parse port from string.
+//! @brief Parse address from string.
 
 #ifndef ROC_ADDRESS_PARSE_SOCKET_ADDR_H_
 #define ROC_ADDRESS_PARSE_SOCKET_ADDR_H_
@@ -17,10 +17,21 @@
 namespace roc {
 namespace address {
 
-//! Set multicast interface address on which to join to the multicast group.
+//! Parse host and port.
 //!
 //! @remarks
-//!  The input string should be in one of the following forms:
+//!  The @p host string should be in one of the following forms:
+//!   - "IPv4"    e.g. "1.2.3.4"
+//!   - "[IPv6]"  e.g. "[::1]"
+//!
+//! @returns
+//!  false if @p host can't be parsed.
+bool parse_socket_addr_host_port(const char* host, int port, SocketAddr& addr);
+
+//! Parse multicast interface address on which to join to the multicast group.
+//!
+//! @remarks
+//!  The @p input string should be in one of the following forms:
 //!   - "IPv4"    e.g. "1.2.3.4"
 //!   - "[IPv6]"  e.g. "[::1]"
 //!
@@ -29,7 +40,7 @@ namespace address {
 //!  false if @p addr is not multicast;
 //!  false if @p miface represents IP address with a version other than
 //!  IP version of @p addr.
-bool parse_socket_addr_miface(const char* input, SocketAddr& addr);
+bool parse_socket_addr_miface(const char* miface, SocketAddr& addr);
 
 } // namespace address
 } // namespace roc
