@@ -114,7 +114,7 @@ ISource::State SoxSource::state() const {
     if (paused_) {
         return Paused;
     } else {
-        return Active;
+        return Playing;
     }
 }
 

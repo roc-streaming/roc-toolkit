@@ -37,9 +37,9 @@ public:
 
     virtual State state() const {
         if (pos_ >= size_) {
-            return Inactive;
+            return Idle;
         } else {
-            return Active;
+            return Playing;
         }
     }
 
