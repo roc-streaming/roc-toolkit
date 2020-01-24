@@ -62,7 +62,7 @@ ProtocolMap::ProtocolMap() {
     {
         ProtocolAttrs attrs;
         attrs.protocol = EndProto_RTSP;
-        attrs.type = EndType_Session;
+        attrs.type = EndType_Control;
         attrs.fec_scheme = packet::FEC_None;
         attrs.default_port = 554;
         attrs.path_supported = true;
