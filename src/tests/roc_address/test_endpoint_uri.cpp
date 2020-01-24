@@ -37,7 +37,7 @@ TEST(endpoint_uri, empty) {
 TEST(endpoint_uri, fields) {
     {
         EndpointURI u(allocator);
-        CHECK(parse_endpoint_uri("rtsp://host", EndType_Session, u));
+        CHECK(parse_endpoint_uri("rtsp://host", EndType_Control, u));
         CHECK(u.is_valid());
 
         LONGS_EQUAL(EndProto_RTSP, u.proto());
@@ -51,7 +51,7 @@ TEST(endpoint_uri, fields) {
     }
     {
         EndpointURI u(allocator);
-        CHECK(parse_endpoint_uri("rtsp://host:123", EndType_Session, u));
+        CHECK(parse_endpoint_uri("rtsp://host:123", EndType_Control, u));
         CHECK(u.is_valid());
 
         LONGS_EQUAL(EndProto_RTSP, u.proto());
@@ -65,7 +65,7 @@ TEST(endpoint_uri, fields) {
     }
     {
         EndpointURI u(allocator);
-        CHECK(parse_endpoint_uri("rtsp://host:123/path", EndType_Session, u));
+        CHECK(parse_endpoint_uri("rtsp://host:123/path", EndType_Control, u));
         CHECK(u.is_valid());
 
         LONGS_EQUAL(EndProto_RTSP, u.proto());
@@ -79,7 +79,7 @@ TEST(endpoint_uri, fields) {
     }
     {
         EndpointURI u(allocator);
-        CHECK(parse_endpoint_uri("rtsp://host:123/", EndType_Session, u));
+        CHECK(parse_endpoint_uri("rtsp://host:123/", EndType_Control, u));
         CHECK(u.is_valid());
 
         LONGS_EQUAL(EndProto_RTSP, u.proto());
@@ -93,7 +93,7 @@ TEST(endpoint_uri, fields) {
     }
     {
         EndpointURI u(allocator);
-        CHECK(parse_endpoint_uri("rtsp://host:123/path?query", EndType_Session, u));
+        CHECK(parse_endpoint_uri("rtsp://host:123/path?query", EndType_Control, u));
         CHECK(u.is_valid());
 
         LONGS_EQUAL(EndProto_RTSP, u.proto());
@@ -107,7 +107,7 @@ TEST(endpoint_uri, fields) {
     }
     {
         EndpointURI u(allocator);
-        CHECK(parse_endpoint_uri("rtsp://host:123/path#frag", EndType_Session, u));
+        CHECK(parse_endpoint_uri("rtsp://host:123/path#frag", EndType_Control, u));
         CHECK(u.is_valid());
 
         LONGS_EQUAL(EndProto_RTSP, u.proto());
@@ -121,7 +121,7 @@ TEST(endpoint_uri, fields) {
     }
     {
         EndpointURI u(allocator);
-        CHECK(parse_endpoint_uri("rtsp://host:123/path?query#frag", EndType_Session, u));
+        CHECK(parse_endpoint_uri("rtsp://host:123/path?query#frag", EndType_Control, u));
         CHECK(u.is_valid());
 
         LONGS_EQUAL(EndProto_RTSP, u.proto());
@@ -135,7 +135,7 @@ TEST(endpoint_uri, fields) {
     }
     {
         EndpointURI u(allocator);
-        CHECK(parse_endpoint_uri("rtsp://host:123/?#", EndType_Session, u));
+        CHECK(parse_endpoint_uri("rtsp://host:123/?#", EndType_Control, u));
         CHECK(u.is_valid());
 
         LONGS_EQUAL(EndProto_RTSP, u.proto());
@@ -149,7 +149,7 @@ TEST(endpoint_uri, fields) {
     }
     {
         EndpointURI u(allocator);
-        CHECK(parse_endpoint_uri("rtsp://host:123?query", EndType_Session, u));
+        CHECK(parse_endpoint_uri("rtsp://host:123?query", EndType_Control, u));
         CHECK(u.is_valid());
 
         LONGS_EQUAL(EndProto_RTSP, u.proto());
@@ -163,7 +163,7 @@ TEST(endpoint_uri, fields) {
     }
     {
         EndpointURI u(allocator);
-        CHECK(parse_endpoint_uri("rtsp://host:123#frag", EndType_Session, u));
+        CHECK(parse_endpoint_uri("rtsp://host:123#frag", EndType_Control, u));
         CHECK(u.is_valid());
 
         LONGS_EQUAL(EndProto_RTSP, u.proto());
@@ -177,7 +177,7 @@ TEST(endpoint_uri, fields) {
     }
     {
         EndpointURI u(allocator);
-        CHECK(parse_endpoint_uri("rtsp://host:123?query#frag", EndType_Session, u));
+        CHECK(parse_endpoint_uri("rtsp://host:123?query#frag", EndType_Control, u));
         CHECK(u.is_valid());
 
         LONGS_EQUAL(EndProto_RTSP, u.proto());
@@ -191,7 +191,7 @@ TEST(endpoint_uri, fields) {
     }
     {
         EndpointURI u(allocator);
-        CHECK(parse_endpoint_uri("rtsp://host:123?#", EndType_Session, u));
+        CHECK(parse_endpoint_uri("rtsp://host:123?#", EndType_Control, u));
         CHECK(u.is_valid());
 
         LONGS_EQUAL(EndProto_RTSP, u.proto());
@@ -208,7 +208,7 @@ TEST(endpoint_uri, fields) {
 TEST(endpoint_uri, protocols) {
     {
         EndpointURI u(allocator);
-        CHECK(parse_endpoint_uri("rtsp://host:123", EndType_Session, u));
+        CHECK(parse_endpoint_uri("rtsp://host:123", EndType_Control, u));
         CHECK(u.is_valid());
 
         LONGS_EQUAL(EndProto_RTSP, u.proto());
@@ -300,7 +300,7 @@ TEST(endpoint_uri, percent_encoding) {
                              "/foo%21bar%40baz%2Fqux%3Fwee"
                              "?foo%21bar"
                              "#foo%21bar",
-                             EndType_Session, u));
+                             EndType_Control, u));
     CHECK(u.is_valid());
 
     LONGS_EQUAL(EndProto_RTSP, u.proto());
@@ -322,15 +322,15 @@ TEST(endpoint_uri, percent_encoding) {
 TEST(endpoint_uri, endpoint_types) {
     EndpointURI u(allocator);
 
-    CHECK(parse_endpoint_uri("rtsp://host:123", EndType_Session, u));
+    CHECK(parse_endpoint_uri("rtsp://host:123", EndType_Control, u));
     CHECK(!parse_endpoint_uri("rtsp://host:123", EndType_AudioSource, u));
     CHECK(!parse_endpoint_uri("rtsp://host:123", EndType_AudioRepair, u));
 
-    CHECK(!parse_endpoint_uri("rtp+rs8m://host:123", EndType_Session, u));
+    CHECK(!parse_endpoint_uri("rtp+rs8m://host:123", EndType_Control, u));
     CHECK(parse_endpoint_uri("rtp+rs8m://host:123", EndType_AudioSource, u));
     CHECK(!parse_endpoint_uri("rtp+rs8m://host:123", EndType_AudioRepair, u));
 
-    CHECK(!parse_endpoint_uri("rs8m://host:123", EndType_Session, u));
+    CHECK(!parse_endpoint_uri("rs8m://host:123", EndType_Control, u));
     CHECK(!parse_endpoint_uri("rs8m://host:123", EndType_AudioSource, u));
     CHECK(parse_endpoint_uri("rs8m://host:123", EndType_AudioRepair, u));
 }
@@ -338,8 +338,8 @@ TEST(endpoint_uri, endpoint_types) {
 TEST(endpoint_uri, omit_port) {
     EndpointURI u(allocator);
 
-    CHECK(parse_endpoint_uri("rtsp://host:123", EndType_Session, u));
-    CHECK(parse_endpoint_uri("rtsp://host", EndType_Session, u));
+    CHECK(parse_endpoint_uri("rtsp://host:123", EndType_Control, u));
+    CHECK(parse_endpoint_uri("rtsp://host", EndType_Control, u));
 
     CHECK(parse_endpoint_uri("rtp://host:123", EndType_AudioSource, u));
     CHECK(!parse_endpoint_uri("rtp://host", EndType_AudioSource, u));
@@ -360,10 +360,10 @@ TEST(endpoint_uri, omit_port) {
 TEST(endpoint_uri, non_empty_path) {
     EndpointURI u(allocator);
 
-    CHECK(parse_endpoint_uri("rtsp://host:123", EndType_Session, u));
-    CHECK(parse_endpoint_uri("rtsp://host:123/path", EndType_Session, u));
-    CHECK(parse_endpoint_uri("rtsp://host:123?query", EndType_Session, u));
-    CHECK(parse_endpoint_uri("rtsp://host:123#frag", EndType_Session, u));
+    CHECK(parse_endpoint_uri("rtsp://host:123", EndType_Control, u));
+    CHECK(parse_endpoint_uri("rtsp://host:123/path", EndType_Control, u));
+    CHECK(parse_endpoint_uri("rtsp://host:123?query", EndType_Control, u));
+    CHECK(parse_endpoint_uri("rtsp://host:123#frag", EndType_Control, u));
 
     CHECK(parse_endpoint_uri("rtp://host:123", EndType_AudioSource, u));
     CHECK(!parse_endpoint_uri("rtp://host:123/path", EndType_AudioSource, u));
@@ -393,7 +393,7 @@ TEST(endpoint_uri, non_empty_path) {
 
 TEST(endpoint_uri, small_buffer) {
     EndpointURI u(allocator);
-    CHECK(parse_endpoint_uri("rtsp://host:123/path?query#frag", EndType_Session, u));
+    CHECK(parse_endpoint_uri("rtsp://host:123/path?query#frag", EndType_Control, u));
 
     char buf[32];
     CHECK(format_endpoint_uri(u, buf, sizeof(buf)));
@@ -406,31 +406,31 @@ TEST(endpoint_uri, small_buffer) {
 TEST(endpoint_uri, bad_syntax) {
     EndpointURI u(allocator);
 
-    CHECK(parse_endpoint_uri("rtsp://host:123", EndType_Session, u));
-    CHECK(!parse_endpoint_uri("bad://host:123", EndType_Session, u));
+    CHECK(parse_endpoint_uri("rtsp://host:123", EndType_Control, u));
+    CHECK(!parse_endpoint_uri("bad://host:123", EndType_Control, u));
 
-    CHECK(!parse_endpoint_uri("host:123", EndType_Session, u));
-    CHECK(!parse_endpoint_uri("://host:123", EndType_Session, u));
-    CHECK(!parse_endpoint_uri("rtsp://", EndType_Session, u));
-    CHECK(!parse_endpoint_uri("rtsp://:123", EndType_Session, u));
-    CHECK(!parse_endpoint_uri(" rtsp://host:123", EndType_Session, u));
-    CHECK(!parse_endpoint_uri("rtp ://host:123", EndType_Session, u));
-    CHECK(!parse_endpoint_uri("rtsp://host: 123", EndType_Session, u));
-    CHECK(!parse_endpoint_uri("rtsp://host:123 ", EndType_Session, u));
+    CHECK(!parse_endpoint_uri("host:123", EndType_Control, u));
+    CHECK(!parse_endpoint_uri("://host:123", EndType_Control, u));
+    CHECK(!parse_endpoint_uri("rtsp://", EndType_Control, u));
+    CHECK(!parse_endpoint_uri("rtsp://:123", EndType_Control, u));
+    CHECK(!parse_endpoint_uri(" rtsp://host:123", EndType_Control, u));
+    CHECK(!parse_endpoint_uri("rtp ://host:123", EndType_Control, u));
+    CHECK(!parse_endpoint_uri("rtsp://host: 123", EndType_Control, u));
+    CHECK(!parse_endpoint_uri("rtsp://host:123 ", EndType_Control, u));
 
-    CHECK(!parse_endpoint_uri("rtsp://host:port", EndType_Session, u));
-    CHECK(!parse_endpoint_uri("rtsp://host:-1", EndType_Session, u));
-    CHECK(!parse_endpoint_uri("rtsp://host:65536", EndType_Session, u));
+    CHECK(!parse_endpoint_uri("rtsp://host:port", EndType_Control, u));
+    CHECK(!parse_endpoint_uri("rtsp://host:-1", EndType_Control, u));
+    CHECK(!parse_endpoint_uri("rtsp://host:65536", EndType_Control, u));
 
-    CHECK(!parse_endpoint_uri("rtsp://host:123path", EndType_Session, u));
-    CHECK(!parse_endpoint_uri("rtsp://host:123./path", EndType_Session, u));
+    CHECK(!parse_endpoint_uri("rtsp://host:123path", EndType_Control, u));
+    CHECK(!parse_endpoint_uri("rtsp://host:123./path", EndType_Control, u));
 
-    CHECK(!parse_endpoint_uri("rtsp://host%:123/path", EndType_Session, u));
-    CHECK(!parse_endpoint_uri("rtsp://host%--host:123/path", EndType_Session, u));
-    CHECK(!parse_endpoint_uri("rtsp://host:123/path%", EndType_Session, u));
-    CHECK(!parse_endpoint_uri("rtsp://host:123/path%--path", EndType_Session, u));
+    CHECK(!parse_endpoint_uri("rtsp://host%:123/path", EndType_Control, u));
+    CHECK(!parse_endpoint_uri("rtsp://host%--host:123/path", EndType_Control, u));
+    CHECK(!parse_endpoint_uri("rtsp://host:123/path%", EndType_Control, u));
+    CHECK(!parse_endpoint_uri("rtsp://host:123/path%--path", EndType_Control, u));
 
-    CHECK(!parse_endpoint_uri("", EndType_Session, u));
+    CHECK(!parse_endpoint_uri("", EndType_Control, u));
 }
 
 } // namespace address
