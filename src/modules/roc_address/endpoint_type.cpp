@@ -14,8 +14,8 @@ namespace address {
 
 const char* endpoint_type_to_str(EndpointType type) {
     switch (type) {
-    case EndType_Session:
-        return "session";
+    case EndType_Control:
+        return "control";
 
     case EndType_AudioSource:
         return "source";
