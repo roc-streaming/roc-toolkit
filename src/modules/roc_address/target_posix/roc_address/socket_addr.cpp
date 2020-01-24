@@ -135,7 +135,7 @@ socklen_t SocketAddr::slen() const {
     return saddr_size_(saddr_family_());
 }
 
-AddrFamily SocketAddr::version() const {
+AddrFamily SocketAddr::family() const {
     switch (saddr_family_()) {
     case AF_INET:
         return Family_IPv4;
