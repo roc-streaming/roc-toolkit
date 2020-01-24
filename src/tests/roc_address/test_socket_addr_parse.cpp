@@ -24,7 +24,7 @@ TEST(socket_addr_parse, host_port_ipv4) {
     char host[64];
     CHECK(addr.get_host(host, sizeof(host)));
     STRCMP_EQUAL("0.0.0.0", host);
-    LONGS_EQUAL(Family_IPv4, addr.version());
+    LONGS_EQUAL(Family_IPv4, addr.family());
     LONGS_EQUAL(123, addr.port());
 }
 
@@ -37,7 +37,7 @@ TEST(socket_addr_parse, host_port_ipv6) {
     char host[64];
     CHECK(addr.get_host(host, sizeof(host)));
     STRCMP_EQUAL("11::", host);
-    LONGS_EQUAL(Family_IPv6, addr.version());
+    LONGS_EQUAL(Family_IPv6, addr.family());
     LONGS_EQUAL(123, addr.port());
 }
 
