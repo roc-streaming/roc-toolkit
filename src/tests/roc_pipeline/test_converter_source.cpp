@@ -59,11 +59,11 @@ TEST(converter_source, state) {
     ConverterSource converter(config, mock_source, sample_buffer_pool, allocator);
     CHECK(converter.valid());
 
-    mock_source.set_state(sndio::ISource::Active);
-    CHECK(converter.state() == sndio::ISource::Active);
+    mock_source.set_state(sndio::ISource::Playing);
+    CHECK(converter.state() == sndio::ISource::Playing);
 
-    mock_source.set_state(sndio::ISource::Inactive);
-    CHECK(converter.state() == sndio::ISource::Inactive);
+    mock_source.set_state(sndio::ISource::Idle);
+    CHECK(converter.state() == sndio::ISource::Idle);
 }
 
 TEST(converter_source, pause_resume) {
@@ -77,8 +77,8 @@ TEST(converter_source, pause_resume) {
     CHECK(mock_source.state() == sndio::ISource::Paused);
 
     CHECK(converter.resume());
-    CHECK(converter.state() == sndio::ISource::Active);
-    CHECK(mock_source.state() == sndio::ISource::Active);
+    CHECK(converter.state() == sndio::ISource::Playing);
+    CHECK(mock_source.state() == sndio::ISource::Playing);
 }
 
 TEST(converter_source, pause_restart) {
@@ -92,8 +92,8 @@ TEST(converter_source, pause_restart) {
     CHECK(mock_source.state() == sndio::ISource::Paused);
 
     CHECK(converter.restart());
-    CHECK(converter.state() == sndio::ISource::Active);
-    CHECK(mock_source.state() == sndio::ISource::Active);
+    CHECK(converter.state() == sndio::ISource::Playing);
+    CHECK(mock_source.state() == sndio::ISource::Playing);
 }
 
 TEST(converter_source, read) {
