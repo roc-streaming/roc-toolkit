@@ -41,7 +41,7 @@ struct ProtocolAttrs {
 
     ProtocolAttrs()
         : protocol(EndProto_None)
-        , type(EndType_Session)
+        , type(EndType_Control)
         , fec_scheme(packet::FEC_None)
         , default_port(-1)
         , path_supported(false) {
