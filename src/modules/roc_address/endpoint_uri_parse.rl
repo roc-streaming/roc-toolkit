@@ -18,9 +18,7 @@ namespace address {
     write data;
 }%%
 
-bool parse_endpoint_uri(const char* str,
-                        EndpointType endpoint_type,
-                        EndpointURI& result) {
+bool parse_endpoint_uri(const char* str, EndpointURI& result) {
     roc_panic_if(str == NULL);
 
     result.clear();
@@ -123,7 +121,7 @@ bool parse_endpoint_uri(const char* str,
         return false;
     }
 
-    if (!validate_endpoint_uri(endpoint_type, result)) {
+    if (!validate_endpoint_uri(result)) {
         result.clear();
         return false;
     }
