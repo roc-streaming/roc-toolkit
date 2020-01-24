@@ -16,7 +16,7 @@ namespace sndio {
 
 SoxSink::SoxSink(core::IAllocator& allocator, const Config& config)
     : output_(NULL)
-    , allocator_(allocator)
+    , buffer_(allocator)
     , buffer_size_(config.frame_size)
     , is_file_(false)
     , valid_(false) {
@@ -59,7 +59,7 @@ bool SoxSink::open(const char* driver, const char* output) {
 
     roc_log(LogInfo, "sox sink: opening: driver=%s output=%s", driver, output);
 
-    if (buffer_ || output_) {
+    if (buffer_.size() != 0 || output_) {
         roc_panic("sox sink: can't call open() more than once");
     }
 
@@ -110,7 +110,7 @@ void SoxSink::write(audio::Frame& frame) {
     const audio::sample_t* frame_data = frame.data();
     size_t frame_size = frame.size();
 
-    sox_sample_t* buffer_data = buffer_.get();
+    sox_sample_t* buffer_data = buffer_.data();
     size_t buffer_pos = 0;
 
     SOX_SAMPLE_LOCALS;
@@ -134,10 +134,8 @@ void SoxSink::write(audio::Frame& frame) {
 }
 
 bool SoxSink::prepare_() {
-    buffer_.reset(new (allocator_) sox_sample_t[buffer_size_], allocator_);
-
-    if (!buffer_) {
-        roc_log(LogError, "sox sink: can't allocate sox buffer");
+    if (!buffer_.resize(buffer_size_)) {
+        roc_log(LogError, "sox sink: can't allocate sample buffer");
         return false;
     }
 
