@@ -33,13 +33,16 @@ public:
 
     //! Source state.
     enum State {
-        //! Source is active and is producing some sound.
-        Active,
+        //! Source is running and active.
+        //! It is producing some sound.
+        Playing,
 
-        //! Source is inactive and is producing silence.
-        Inactive,
+        //! Source is running but is inactive.
+        //! It is producing silence. It may be safely paused.
+        Idle,
 
-        //! Source is explicitly paused.
+        //! Source is paused.
+        //! It's not producing anything.
         Paused
     };
 
