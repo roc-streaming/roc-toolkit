@@ -128,7 +128,7 @@ int main(int argc, char** argv) {
     }
 
     address::SocketAddr local_addr;
-    if (source_port.address.version() == address::Family_IPv6) {
+    if (source_port.address.family() == address::Family_IPv6) {
         local_addr.set_host_port(address::Family_IPv6, "::", 0);
     } else {
         local_addr.set_host_port(address::Family_IPv4, "0.0.0.0", 0);
