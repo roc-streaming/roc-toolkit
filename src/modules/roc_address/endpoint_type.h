@@ -18,7 +18,7 @@ namespace address {
 //! Network endpoint type.
 enum EndpointType {
     //! Session initiation and control.
-    EndType_Session,
+    EndType_Control,
 
     //! Audio source packets.
     EndType_AudioSource,
