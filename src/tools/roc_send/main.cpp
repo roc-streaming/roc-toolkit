@@ -89,10 +89,10 @@ int main(int argc, char** argv) {
         return 0;
     }
 
-    pipeline::SenderConfig config;
+    pipeline::SenderConfig sender_config;
 
     if (args.packet_length_given) {
-        if (!core::parse_duration(args.packet_length_arg, config.packet_length)) {
+        if (!core::parse_duration(args.packet_length_arg, sender_config.packet_length)) {
             roc_log(LogError, "invalid --packet-length");
             return 1;
         }
@@ -103,10 +103,11 @@ int main(int argc, char** argv) {
             roc_log(LogError, "invalid --frame-size: should be > 0");
             return 1;
         }
-        config.internal_frame_size = (size_t)args.frame_size_arg;
+        sender_config.internal_frame_size = (size_t)args.frame_size_arg;
     }
 
-    sndio::BackendDispatcher::instance().set_frame_size(config.internal_frame_size);
+    sndio::BackendDispatcher::instance().set_frame_size(
+        sender_config.internal_frame_size);
 
     pipeline::PortConfig source_port;
     if (args.source_given) {
@@ -145,11 +146,11 @@ int main(int argc, char** argv) {
     const address::ProtocolAttrs* source_attrs =
         address::ProtocolMap::instance().find_proto(source_port.protocol);
     if (source_attrs) {
-        config.fec_encoder.scheme = source_attrs->fec_scheme;
+        sender_config.fec_encoder.scheme = source_attrs->fec_scheme;
     }
 
     if (args.nbsrc_given) {
-        if (config.fec_encoder.scheme == packet::FEC_None) {
+        if (sender_config.fec_encoder.scheme == packet::FEC_None) {
             roc_log(LogError, "--nbsrc can't be used when fec is disabled)");
             return 1;
         }
@@ -157,11 +158,11 @@ int main(int argc, char** argv) {
             roc_log(LogError, "invalid --nbsrc: should be > 0");
             return 1;
         }
-        config.fec_writer.n_source_packets = (size_t)args.nbsrc_arg;
+        sender_config.fec_writer.n_source_packets = (size_t)args.nbsrc_arg;
     }
 
     if (args.nbrpr_given) {
-        if (config.fec_encoder.scheme == packet::FEC_None) {
+        if (sender_config.fec_encoder.scheme == packet::FEC_None) {
             roc_log(LogError, "--nbrpr can't be used when fec is disabled");
             return 1;
         }
@@ -169,14 +170,14 @@ int main(int argc, char** argv) {
             roc_log(LogError, "invalid --nbrpr: should be > 0");
             return 1;
         }
-        config.fec_writer.n_repair_packets = (size_t)args.nbrpr_arg;
+        sender_config.fec_writer.n_repair_packets = (size_t)args.nbrpr_arg;
     }
 
-    config.resampling = !args.no_resampling_flag;
+    sender_config.resampling = !args.no_resampling_flag;
 
     switch ((unsigned)args.resampler_backend_arg) {
     case resampler_backend_arg_builtin:
-        config.resampler_backend = audio::ResamplerBackend_Builtin;
+        sender_config.resampler_backend = audio::ResamplerBackend_Builtin;
         break;
 
     default:
@@ -185,15 +186,16 @@ int main(int argc, char** argv) {
 
     switch ((unsigned)args.resampler_profile_arg) {
     case resampler_profile_arg_low:
-        config.resampler = audio::resampler_profile(audio::ResamplerProfile_Low);
+        sender_config.resampler = audio::resampler_profile(audio::ResamplerProfile_Low);
         break;
 
     case resampler_profile_arg_medium:
-        config.resampler = audio::resampler_profile(audio::ResamplerProfile_Medium);
+        sender_config.resampler =
+            audio::resampler_profile(audio::ResamplerProfile_Medium);
         break;
 
     case resampler_profile_arg_high:
-        config.resampler = audio::resampler_profile(audio::ResamplerProfile_High);
+        sender_config.resampler = audio::resampler_profile(audio::ResamplerProfile_High);
         break;
 
     default:
@@ -205,7 +207,7 @@ int main(int argc, char** argv) {
             roc_log(LogError, "invalid --resampler-interp: should be > 0");
             return 1;
         }
-        config.resampler.window_interp = (size_t)args.resampler_interp_arg;
+        sender_config.resampler.window_interp = (size_t)args.resampler_interp_arg;
     }
 
     if (args.resampler_window_given) {
@@ -213,15 +215,15 @@ int main(int argc, char** argv) {
             roc_log(LogError, "invalid --resampler-window: should be > 0");
             return 1;
         }
-        config.resampler.window_size = (size_t)args.resampler_window_arg;
+        sender_config.resampler.window_size = (size_t)args.resampler_window_arg;
     }
 
-    config.interleaving = args.interleaving_flag;
-    config.poisoning = args.poisoning_flag;
+    sender_config.interleaving = args.interleaving_flag;
+    sender_config.poisoning = args.poisoning_flag;
 
     sndio::Config io_config;
-    io_config.channels = config.input_channels;
-    io_config.frame_size = config.internal_frame_size;
+    io_config.channels = sender_config.input_channels;
+    io_config.frame_size = sender_config.internal_frame_size;
 
     if (args.rate_given) {
         if (args.rate_arg <= 0) {
@@ -230,7 +232,7 @@ int main(int argc, char** argv) {
         }
         io_config.sample_rate = (size_t)args.rate_arg;
     } else {
-        if (!config.resampling) {
+        if (!sender_config.resampling) {
             io_config.sample_rate = pipeline::DefaultSampleRate;
         }
     }
@@ -256,20 +258,20 @@ int main(int argc, char** argv) {
         }
     }
 
-    core::ScopedPtr<sndio::ISource> source(
+    core::ScopedPtr<sndio::ISource> input_source(
         sndio::BackendDispatcher::instance().open_source(
             context.allocator(), input_uri, args.input_format_arg, io_config),
         context.allocator());
-    if (!source) {
+    if (!input_source) {
         roc_log(LogError, "can't open input file or device: uri=%s format=%s",
                 args.input_arg, args.input_format_arg);
         return 1;
     }
 
-    config.timing = !source->has_clock();
-    config.input_sample_rate = source->sample_rate();
+    sender_config.timing = !input_source->has_clock();
+    sender_config.input_sample_rate = input_source->sample_rate();
 
-    peer::Sender sender(context, config);
+    peer::Sender sender(context, sender_config);
     if (!sender.valid()) {
         roc_log(LogError, "can't create sender peer");
         return 1;
@@ -296,8 +298,8 @@ int main(int argc, char** argv) {
         }
     }
 
-    sndio::Pump pump(context.sample_buffer_pool(), *source, NULL, sender.sink(),
-                     config.internal_frame_size, sndio::Pump::ModePermanent);
+    sndio::Pump pump(context.sample_buffer_pool(), *input_source, NULL, sender.sink(),
+                     sender_config.internal_frame_size, sndio::Pump::ModePermanent);
     if (!pump.valid()) {
         roc_log(LogError, "can't create audio pump");
         return 1;
