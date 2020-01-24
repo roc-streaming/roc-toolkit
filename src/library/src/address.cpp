@@ -54,7 +54,7 @@ roc_family roc_address_family(const roc_address* address) {
 
     const address::SocketAddr& sa = api::get_socket_addr(address);
 
-    switch ((unsigned)sa.version()) {
+    switch ((unsigned)sa.family()) {
     case address::Family_IPv4:
         return ROC_AF_IPv4;
     case address::Family_IPv6:
