@@ -43,6 +43,10 @@ public:
     const char* host() const;
 
     //! Set URI host.
+    //! String should be zero-terminated.
+    bool set_host(const char* str);
+
+    //! Set URI host.
     //! String should be percent-encoded.
     //! String should not be zero-terminated.
     bool set_encoded_host(const char* str, size_t str_len);
@@ -122,7 +126,7 @@ private:
 //!
 //! This parser does not try to perform full URI validation. For example, it does not
 //! check that path contains only allowed symbols. If it can be parsed, it will be.
-bool parse_endpoint_uri(const char* str, EndpointType type, EndpointURI& result);
+bool parse_endpoint_uri(const char* str, EndpointURI& result);
 
 //! Format EndpointURI to string.
 //!
@@ -138,7 +142,7 @@ bool parse_endpoint_uri(const char* str, EndpointType type, EndpointURI& result)
 bool format_endpoint_uri(const EndpointURI& uri, char* buf, size_t buf_size);
 
 //! Check if the endpoint URI is correct.
-bool validate_endpoint_uri(EndpointType type, const EndpointURI& uri);
+bool validate_endpoint_uri(const EndpointURI& uri);
 
 } // namespace address
 } // namespace roc
