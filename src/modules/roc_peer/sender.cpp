@@ -123,7 +123,7 @@ bool Sender::is_ready() const {
 
     roc_panic_if_not(valid());
 
-    return pipeline_.endpoint_set_ready(endpoint_set_);
+    return pipeline_.is_endpoint_set_ready(endpoint_set_);
 }
 
 } // namespace peer

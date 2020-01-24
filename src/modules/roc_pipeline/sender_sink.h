@@ -82,7 +82,7 @@ public:
 
     //! Check if endpoint set configuration is done.
     //! This is true when all necessary endpoints are added and configured.
-    bool endpoint_set_ready(EndpointSetHandle endpoint_set) const;
+    bool is_endpoint_set_ready(EndpointSetHandle endpoint_set) const;
 
     //! Get sink sample rate.
     virtual size_t sample_rate() const;
