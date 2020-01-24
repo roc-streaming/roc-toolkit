@@ -83,7 +83,7 @@ bool parse_socket_addr_miface(const char* miface, SocketAddr& addr) {
     }
 
     if (miface[0] == '[') {
-        if (addr.version() != Family_IPv6) {
+        if (addr.family() != Family_IPv6) {
             return false;
         }
 
@@ -99,7 +99,7 @@ bool parse_socket_addr_miface(const char* miface, SocketAddr& addr) {
 
         return true;
     } else {
-        if (addr.version() != Family_IPv4) {
+        if (addr.family() != Family_IPv4) {
             return false;
         }
 

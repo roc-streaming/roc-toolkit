@@ -34,7 +34,7 @@ public:
     bool set_host_port_saddr(const sockaddr* sa);
 
     //! Set host address.
-    bool set_host_port(AddrFamily type, const char*, int port);
+    bool set_host_port(AddrFamily type, const char* host, int port);
 
     //! Check whether multicast interface address is set.
     bool has_miface() const;
@@ -46,7 +46,7 @@ public:
     bool set_broadcast();
 
     //! Get IP version (IPv4 or IPv6).
-    AddrFamily version() const;
+    AddrFamily family() const;
 
     //! Check whether this is multicast address.
     bool multicast() const;
