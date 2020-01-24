@@ -50,7 +50,7 @@ bool Pump::run() {
     ISource* current_source = &main_source_;
 
     while (!stop_) {
-        if (main_source_.state() == ISource::Active) {
+        if (main_source_.state() == ISource::Playing) {
             if (current_source == backup_source_) {
                 roc_log(LogInfo, "pump: switching to main source");
 
