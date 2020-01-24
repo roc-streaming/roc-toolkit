@@ -124,7 +124,7 @@ void SenderSink::set_endpoint_destination_udp_address(EndpointHandle endpoint_ha
     endpoint->set_destination_udp_address(addr);
 }
 
-bool SenderSink::endpoint_set_ready(EndpointSetHandle endpoint_set_handle) const {
+bool SenderSink::is_endpoint_set_ready(EndpointSetHandle endpoint_set_handle) const {
     core::Mutex::Lock lock(mutex_);
 
     roc_panic_if(!valid());
