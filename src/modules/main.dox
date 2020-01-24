@@ -9,13 +9,25 @@ namespace roc {}
 
 namespace roc {
   //! @namespace roc::core
-  //! Basic building blocks.
+  //! General-purpose building blocks and platform abstraction layer.
   namepsace core {}
 }
 
 namespace roc {
+  //! @namespace roc::error
+  //! Error codes.
+  namepsace error {}
+}
+
+namespace roc {
+  //! @namespace roc::address
+  //! URIs and addresses.
+  namepsace address {}
+}
+
+namespace roc {
   //! @namespace roc::packet
-  //! Packets and packet processing.
+  //! Network packets and packet processing.
   namepsace packet {}
 }
 
@@ -27,7 +39,7 @@ namespace roc {
 
 namespace roc {
   //! @namespace roc::rtp
-  //! RTP support.
+  //! RTP and RTCP support.
   namepsace rtp {}
 }
 
@@ -39,8 +51,14 @@ namespace roc {
 
 namespace roc {
   //! @namespace roc::pipeline
-  //! High-level sending/receiving pipelines.
+  //! Sender and receiver processing pipelines.
   namepsace pipeline {}
+}
+
+namespace roc {
+  //! @namespace roc::peer
+  //! High-level sender and receiver peers.
+  namepsace peer {}
 }
 
 namespace roc {
