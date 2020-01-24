@@ -14,7 +14,7 @@
 namespace roc {
 namespace address {
 
-bool validate_endpoint_uri(EndpointType type, const EndpointURI& uri) {
+bool validate_endpoint_uri(const EndpointURI& uri) {
     if (!uri.is_valid()) {
         roc_log(LogError, "invalid endpoint uri: missing scheme or host");
         return false;
@@ -23,14 +23,6 @@ bool validate_endpoint_uri(EndpointType type, const EndpointURI& uri) {
     const ProtocolAttrs* proto_attrs = ProtocolMap::instance().find_proto(uri.proto());
     if (!proto_attrs) {
         roc_log(LogError, "invalid endpoint uri: unknown protocol");
-        return false;
-    }
-
-    if (proto_attrs->type != type) {
-        roc_log(LogError,
-                "invalid endpoint uri:"
-                " endpoint protocol '%s' can't be used for %s endpoints",
-                endpoint_proto_to_str(uri.proto()), endpoint_type_to_str(type));
         return false;
     }
 
