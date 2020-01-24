@@ -108,16 +108,16 @@ sndio::ISource::State ReceiverSource::state() const {
 
     if (receiver_state_.num_sessions() != 0) {
         // we have sessions and they're producing some sound
-        return Active;
+        return Playing;
     }
 
     if (receiver_state_.has_pending_packets()) {
         // we don't have sessions, but we have packets that may create sessions
-        return Active;
+        return Playing;
     }
 
     // no sessions and packets; we can sleep
-    return Inactive;
+    return Idle;
 }
 
 void ReceiverSource::pause() {
