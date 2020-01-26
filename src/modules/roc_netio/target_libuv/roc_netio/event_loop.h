@@ -151,6 +151,7 @@ private:
     TaskState remove_port_(Task&);
     TaskState resolve_endpoint_address_(Task&);
 
+    void async_close_port_(BasicPort& port);
     void wait_port_closed_(const BasicPort& port);
 
     packet::PacketPool& packet_pool_;
