@@ -202,8 +202,7 @@ int pa__init(pa_module* m) {
     roc_context_config context_config;
     memset(&context_config, 0, sizeof(context_config));
 
-    u->context = roc_context_open(&context_config);
-    if (!u->context) {
+    if (roc_context_open(&context_config, &u->context) < 0) {
         pa_log("can't create roc context");
         goto error;
     }
@@ -227,8 +226,7 @@ int pa__init(pa_module* m) {
         goto error;
     }
 
-    u->receiver = roc_receiver_open(u->context, &receiver_config);
-    if (!u->receiver) {
+    if (roc_receiver_open(u->context, &receiver_config, &u->receiver) < 0) {
         pa_log("can't create roc receiver");
         goto error;
     }
