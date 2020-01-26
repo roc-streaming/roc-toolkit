@@ -13,11 +13,15 @@
 namespace roc {
 namespace address {
 
-SocketAddr::SocketAddr()
-    : miface_family_(AF_UNSPEC)
-    , broadcast_(false) {
+SocketAddr::SocketAddr() {
+    clear();
+}
+
+void SocketAddr::clear() {
     memset(&saddr_, 0, sizeof(saddr_));
     memset(&miface_, 0, sizeof(miface_));
+    miface_family_ = AF_UNSPEC;
+    broadcast_ = false;
 }
 
 bool SocketAddr::has_host_port() const {
