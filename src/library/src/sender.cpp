@@ -12,6 +12,7 @@
 #include "config_helpers.h"
 
 #include "roc_core/log.h"
+#include "roc_core/scoped_ptr.h"
 #include "roc_peer/sender.h"
 
 using namespace roc;
@@ -44,8 +45,9 @@ int roc_sender_open(roc_context* context,
         return -1;
     }
 
-    peer::Sender* imp_sender =
-        new (imp_context->allocator()) peer::Sender(*imp_context, imp_config);
+    core::ScopedPtr<peer::Sender> imp_sender(new (imp_context->allocator())
+                                                 peer::Sender(*imp_context, imp_config),
+                                             imp_context->allocator());
 
     if (!imp_sender) {
         roc_log(LogError, "roc_sender_open: can't allocate sender");
@@ -54,12 +56,10 @@ int roc_sender_open(roc_context* context,
 
     if (!imp_sender->valid()) {
         roc_log(LogError, "roc_sender_open: can't initialize sender");
-
-        delete imp_sender;
         return -1;
     }
 
-    *result = (roc_sender*)imp_sender;
+    *result = (roc_sender*)imp_sender.release();
     return 0;
 }
 

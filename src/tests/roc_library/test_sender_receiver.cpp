@@ -121,7 +121,7 @@ public:
     }
 
     ~Sender() {
-        roc_sender_close(sndr_);
+        CHECK(roc_sender_close(sndr_) == 0);
     }
 
     void stop() {
@@ -191,7 +191,7 @@ public:
     }
 
     ~Receiver() {
-        roc_receiver_close(recv_);
+        CHECK(roc_receiver_close(recv_) == 0);
     }
 
     const roc_address* source_addr() const {
