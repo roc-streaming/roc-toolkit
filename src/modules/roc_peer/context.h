@@ -15,7 +15,7 @@
 #include "roc_audio/units.h"
 #include "roc_core/atomic.h"
 #include "roc_core/buffer_pool.h"
-#include "roc_core/heap_allocator.h"
+#include "roc_core/iallocator.h"
 #include "roc_netio/event_loop.h"
 #include "roc_packet/packet_pool.h"
 
@@ -44,7 +44,7 @@ struct ContextConfig {
 class Context : public core::NonCopyable<> {
 public:
     //! Initialize.
-    explicit Context(const ContextConfig& config);
+    explicit Context(const ContextConfig& config, core::IAllocator& allocator);
 
     //! Deinitialize.
     ~Context();
@@ -60,6 +60,9 @@ public:
 
     //! Check if context is still in use.
     bool is_used();
+
+    //! Deinitialize and deallocate.
+    void destroy();
 
     //! Get allocator.
     core::IAllocator& allocator();
@@ -77,7 +80,7 @@ public:
     netio::EventLoop& event_loop();
 
 private:
-    core::HeapAllocator allocator_;
+    core::IAllocator& allocator_;
 
     packet::PacketPool packet_pool_;
     core::BufferPool<uint8_t> byte_buffer_pool_;
