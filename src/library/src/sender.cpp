@@ -16,25 +16,32 @@
 
 using namespace roc;
 
-roc_sender* roc_sender_open(roc_context* context, const roc_sender_config* config) {
+int roc_sender_open(roc_context* context,
+                    const roc_sender_config* config,
+                    roc_sender** result) {
     roc_log(LogInfo, "roc_sender_open: opening sender");
+
+    if (!result) {
+        roc_log(LogError, "roc_sender_open: invalid arguments: result is null");
+        return -1;
+    }
 
     if (!context) {
         roc_log(LogError, "roc_sender_open: invalid arguments: context is null");
-        return NULL;
+        return -1;
     }
 
     peer::Context* imp_context = (peer::Context*)context;
 
     if (!config) {
         roc_log(LogError, "roc_sender_open: invalid arguments: config is null");
-        return NULL;
+        return -1;
     }
 
     pipeline::SenderConfig imp_config;
     if (!api::make_sender_config(imp_config, *config)) {
         roc_log(LogError, "roc_sender_open: invalid arguments: bad config");
-        return NULL;
+        return -1;
     }
 
     peer::Sender* imp_sender =
@@ -42,17 +49,18 @@ roc_sender* roc_sender_open(roc_context* context, const roc_sender_config* confi
 
     if (!imp_sender) {
         roc_log(LogError, "roc_sender_open: can't allocate sender");
-        return NULL;
+        return -1;
     }
 
     if (!imp_sender->valid()) {
         roc_log(LogError, "roc_sender_open: can't initialize sender");
 
         delete imp_sender;
-        return NULL;
+        return -1;
     }
 
-    return (roc_sender*)imp_sender;
+    *result = (roc_sender*)imp_sender;
+    return 0;
 }
 
 int roc_sender_bind(roc_sender* sender, roc_address* address) {
