@@ -20,10 +20,21 @@ TEST(context, open_close) {
     roc_context_config config;
     memset(&config, 0, sizeof(config));
 
-    roc_context* context = roc_context_open(&config);
+    roc_context* context = NULL;
+    CHECK(roc_context_open(&config, &context) == 0);
     CHECK(context);
 
     LONGS_EQUAL(0, roc_context_close(context));
+}
+
+TEST(context, open_null) {
+    roc_context* context = NULL;
+    LONGS_EQUAL(-1, roc_context_open(NULL, &context));
+    CHECK(!context);
+
+    roc_context_config config;
+    memset(&config, 0, sizeof(config));
+    LONGS_EQUAL(-1, roc_context_open(&config, NULL));
 }
 
 TEST(context, close_null) {
