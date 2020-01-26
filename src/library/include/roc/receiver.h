@@ -123,14 +123,16 @@ typedef struct roc_receiver roc_receiver;
  * @b Parameters
  *  - @p context should point to an opened context
  *  - @p config should point to an initialized config
+ *  - @p result should point to an unitialized roc_receiver pointer
  *
  * @b Returns
- *  - returns a new receiver if it was successfully created
- *  - returns NULL if the arguments are invalid
- *  - returns NULL if there are not enough resources
+ *  - returns zero if the receiver was successfully created
+ *  - returns a negative value if the arguments are invalid
+ *  - returns a negative value if there are not enough resources
  */
-ROC_API roc_receiver* roc_receiver_open(roc_context* context,
-                                        const roc_receiver_config* config);
+ROC_API int roc_receiver_open(roc_context* context,
+                              const roc_receiver_config* config,
+                              roc_receiver** result);
 
 /** Bind the receiver to a local port.
  *
