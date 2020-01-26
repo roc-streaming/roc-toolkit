@@ -110,16 +110,13 @@ bool UdpReceiverPort::open() {
     return true;
 }
 
-void UdpReceiverPort::async_close() {
-    if (closed_) {
-        return; // handle_closed() was already called
+bool UdpReceiverPort::async_close() {
+    if (!handle_initialized_) {
+        return false;
     }
 
-    if (!handle_initialized_) {
-        closed_ = true;
-        close_handler_.handle_closed(*this);
-
-        return;
+    if (closed_) {
+        return false;
     }
 
     roc_log(LogInfo, "udp receiver: closing port %s",
@@ -130,7 +127,6 @@ void UdpReceiverPort::async_close() {
             roc_log(LogError, "udp receiver: uv_udp_recv_stop(): [%s] %s",
                     uv_err_name(err), uv_strerror(err));
         }
-
         recv_started_ = false;
     }
 
@@ -141,6 +137,8 @@ void UdpReceiverPort::async_close() {
     if (!uv_is_closing((uv_handle_t*)&handle_)) {
         uv_close((uv_handle_t*)&handle_, close_cb_);
     }
+
+    return true;
 }
 
 void UdpReceiverPort::close_cb_(uv_handle_t* handle) {

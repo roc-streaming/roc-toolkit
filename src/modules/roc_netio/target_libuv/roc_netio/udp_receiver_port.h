@@ -50,7 +50,7 @@ public:
     virtual bool open();
 
     //! Asynchronously close receiver.
-    virtual void async_close();
+    virtual bool async_close();
 
 private:
     static void close_cb_(uv_handle_t* handle);
