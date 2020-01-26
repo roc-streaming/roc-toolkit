@@ -8,12 +8,19 @@
 
 #include <CppUTest/TestHarness.h>
 
+#include "roc_core/heap_allocator.h"
 #include "roc_fec/codec_map.h"
 #include "roc_peer/context.h"
 #include "roc_peer/receiver.h"
 
 namespace roc {
 namespace peer {
+
+namespace {
+
+core::HeapAllocator allocator;
+
+} // namespace
 
 TEST_GROUP(receiver) {
     ContextConfig context_config;
@@ -23,7 +30,7 @@ TEST_GROUP(receiver) {
 TEST(receiver, bad_config) {
     context_config.max_frame_size = 1;
 
-    Context context(context_config);
+    Context context(context_config, allocator);
     CHECK(context.valid());
 
     Receiver receiver(context, receiver_config);
@@ -31,7 +38,7 @@ TEST(receiver, bad_config) {
 }
 
 TEST(receiver, source) {
-    Context context(context_config);
+    Context context(context_config, allocator);
     CHECK(context.valid());
 
     Receiver receiver(context, receiver_config);
@@ -42,7 +49,7 @@ TEST(receiver, source) {
 }
 
 TEST(receiver, bind) {
-    Context context(context_config);
+    Context context(context_config, allocator);
     CHECK(context.valid());
 
     UNSIGNED_LONGS_EQUAL(context.event_loop().num_ports(), 0);
@@ -67,7 +74,7 @@ TEST(receiver, bind) {
 }
 
 TEST(receiver, endpoints_no_fec) {
-    Context context(context_config);
+    Context context(context_config, allocator);
     CHECK(context.valid());
 
     {
@@ -83,7 +90,7 @@ TEST(receiver, endpoints_no_fec) {
 }
 
 TEST(receiver, endpoints_fec) {
-    Context context(context_config);
+    Context context(context_config, allocator);
     CHECK(context.valid());
 
     if (!fec::CodecMap::instance().is_supported(packet::FEC_ReedSolomon_M8)) {

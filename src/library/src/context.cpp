@@ -9,8 +9,10 @@
 #include "roc/context.h"
 
 #include "config_helpers.h"
+#include "root_allocator.h"
 
 #include "roc_core/log.h"
+#include "roc_core/scoped_ptr.h"
 #include "roc_peer/context.h"
 
 using namespace roc;
@@ -34,7 +36,10 @@ int roc_context_open(const roc_context_config* config, roc_context** result) {
         return -1;
     }
 
-    peer::Context* imp_context = new (std::nothrow) peer::Context(imp_config);
+    core::ScopedPtr<peer::Context> imp_context(
+        new (api::root_allocator) peer::Context(imp_config, api::root_allocator),
+        api::root_allocator);
+
     if (!imp_context) {
         roc_log(LogError, "roc_context_open: can't allocate context");
         return -1;
@@ -42,12 +47,10 @@ int roc_context_open(const roc_context_config* config, roc_context** result) {
 
     if (!imp_context->valid()) {
         roc_log(LogError, "roc_context_open: can't initialize context");
-
-        delete imp_context;
         return -1;
     }
 
-    *result = (roc_context*)imp_context;
+    *result = (roc_context*)imp_context.release();
     return 0;
 }
 
@@ -64,7 +67,7 @@ int roc_context_close(roc_context* context) {
         return -1;
     }
 
-    delete imp_context;
+    imp_context->destroy();
 
     roc_log(LogInfo, "roc_context_close: closed context");
 
