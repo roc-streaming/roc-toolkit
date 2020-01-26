@@ -76,7 +76,9 @@ int main(int argc, char** argv) {
         context_config.max_packet_size = (size_t)args.packet_limit_arg;
     }
 
-    peer::Context context(context_config);
+    core::HeapAllocator heap_allocator;
+
+    peer::Context context(context_config, heap_allocator);
     if (!context.valid()) {
         roc_log(LogError, "can't initialize peer context");
         return 1;

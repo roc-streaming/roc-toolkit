@@ -13,8 +13,9 @@
 namespace roc {
 namespace peer {
 
-Context::Context(const ContextConfig& config)
-    : packet_pool_(allocator_, false)
+Context::Context(const ContextConfig& config, core::IAllocator& allocator)
+    : allocator_(allocator)
+    , packet_pool_(allocator_, false)
     , byte_buffer_pool_(allocator_, config.max_packet_size, config.poisoning)
     , sample_buffer_pool_(
           allocator_, config.max_frame_size / sizeof(audio::sample_t), config.poisoning)
@@ -52,6 +53,10 @@ void Context::decref() {
 
 bool Context::is_used() {
     return ref_counter_ != 0;
+}
+
+void Context::destroy() {
+    allocator_.destroy(*this);
 }
 
 core::IAllocator& Context::allocator() {

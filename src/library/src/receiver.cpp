@@ -12,6 +12,7 @@
 #include "config_helpers.h"
 
 #include "roc_core/log.h"
+#include "roc_core/scoped_ptr.h"
 #include "roc_peer/receiver.h"
 
 using namespace roc;
@@ -44,8 +45,9 @@ int roc_receiver_open(roc_context* context,
         return -1;
     }
 
-    peer::Receiver* imp_receiver =
-        new (imp_context->allocator()) peer::Receiver(*imp_context, imp_config);
+    core::ScopedPtr<peer::Receiver> imp_receiver(
+        new (imp_context->allocator()) peer::Receiver(*imp_context, imp_config),
+        imp_context->allocator());
 
     if (!imp_receiver) {
         roc_log(LogError, "roc_receiver_open: can't allocate receiver");
@@ -54,12 +56,10 @@ int roc_receiver_open(roc_context* context,
 
     if (!imp_receiver->valid()) {
         roc_log(LogError, "roc_receiver_open: can't initialize receiver");
-
-        delete imp_receiver;
         return -1;
     }
 
-    *result = (roc_receiver*)imp_receiver;
+    *result = (roc_receiver*)imp_receiver.release();
     return 0;
 }
 
