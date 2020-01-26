@@ -76,8 +76,8 @@ int main() {
     /* Create context.
      * Context contains memory pools and the network worker thread(s).
      * We need a context to create a sender. */
-    roc_context* context = roc_context_open(&context_config);
-    if (!context) {
+    roc_context* context;
+    if (roc_context_open(&context_config, &context) != 0) {
         oops("roc_context_open");
     }
 
@@ -97,8 +97,8 @@ int main() {
     sender_config.clock_source = ROC_CLOCK_INTERNAL;
 
     /* Create sender. */
-    roc_sender* sender = roc_sender_open(context, &sender_config);
-    if (!sender) {
+    roc_sender* sender;
+    if (roc_sender_open(context, &sender_config, &sender) != 0) {
         oops("roc_sender_open");
     }
 

@@ -102,14 +102,16 @@ typedef struct roc_sender roc_sender;
  * @b Parameters
  *  - @p context should point to an opened context
  *  - @p config should point to an initialized config
+ *  - @p result should point to an unitialized roc_sender pointer
  *
  * @b Returns
- *  - returns a new sender if it was successfully created
- *  - returns NULL if the arguments are invalid
- *  - returns NULL if there are not enough resources
+ *  - returns zero if the sender was successfully created
+ *  - returns a negative value if the arguments are invalid
+ *  - returns a negative value if there are not enough resources
  */
-ROC_API roc_sender* roc_sender_open(roc_context* context,
-                                    const roc_sender_config* config);
+ROC_API int roc_sender_open(roc_context* context,
+                            const roc_sender_config* config,
+                            roc_sender** result);
 
 /** Bind the sender to a local port.
  *
