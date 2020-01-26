@@ -292,31 +292,35 @@ TEST(endpoint_uri, protocols) {
     }
 }
 
-TEST(endpoint_uri, percent_encoding) {
-    EndpointURI u(allocator);
-    CHECK(parse_endpoint_uri("rtsp://"
-                             "foo%21bar%40baz%2Fqux%3Fwee"
-                             ":123"
-                             "/foo%21bar%40baz%2Fqux%3Fwee"
-                             "?foo%21bar"
-                             "#foo%21bar",
-                             u));
-    CHECK(u.is_valid());
+TEST(endpoint_uri, addresses) {
+    {
+        EndpointURI u(allocator);
+        CHECK(parse_endpoint_uri("rtsp://127.0.0.1:123", u));
+        CHECK(u.is_valid());
 
-    LONGS_EQUAL(EndProto_RTSP, u.proto());
-    STRCMP_EQUAL("foo!bar@baz/qux?wee", u.host());
-    LONGS_EQUAL(123, u.port());
-    STRCMP_EQUAL("/foo!bar@baz/qux?wee", u.path());
-    STRCMP_EQUAL("foo%21bar", u.encoded_query());
-    STRCMP_EQUAL("foo%21bar", u.encoded_fragment());
+        LONGS_EQUAL(EndProto_RTSP, u.proto());
+        STRCMP_EQUAL("127.0.0.1", u.host());
+        LONGS_EQUAL(123, u.port());
+        CHECK(!u.path());
+        CHECK(!u.encoded_query());
+        CHECK(!u.encoded_fragment());
 
-    STRCMP_EQUAL("rtsp://"
-                 "foo!bar%40baz%2Fqux%3Fwee"
-                 ":123"
-                 "/foo!bar@baz/qux%3Fwee"
-                 "?foo%21bar"
-                 "#foo%21bar",
-                 endpoint_uri_to_str(u).c_str());
+        STRCMP_EQUAL("rtsp://127.0.0.1:123", endpoint_uri_to_str(u).c_str());
+    }
+    {
+        EndpointURI u(allocator);
+        CHECK(parse_endpoint_uri("rtsp://[::1]:123", u));
+        CHECK(u.is_valid());
+
+        LONGS_EQUAL(EndProto_RTSP, u.proto());
+        STRCMP_EQUAL("[::1]", u.host());
+        LONGS_EQUAL(123, u.port());
+        CHECK(!u.path());
+        CHECK(!u.encoded_query());
+        CHECK(!u.encoded_fragment());
+
+        STRCMP_EQUAL("rtsp://[::1]:123", endpoint_uri_to_str(u).c_str());
+    }
 }
 
 TEST(endpoint_uri, omit_port) {
@@ -339,6 +343,33 @@ TEST(endpoint_uri, omit_port) {
 
     CHECK(parse_endpoint_uri("ldpc://host:123", u));
     CHECK(!parse_endpoint_uri("ldpc://host", u));
+}
+
+TEST(endpoint_uri, service) {
+    {
+        EndpointURI u(allocator);
+        CHECK(parse_endpoint_uri("rtsp://127.0.0.1:123", u));
+        CHECK(u.is_valid());
+
+        LONGS_EQUAL(EndProto_RTSP, u.proto());
+        STRCMP_EQUAL("127.0.0.1", u.host());
+        LONGS_EQUAL(123, u.port());
+        STRCMP_EQUAL("123", u.service());
+
+        STRCMP_EQUAL("rtsp://127.0.0.1:123", endpoint_uri_to_str(u).c_str());
+    }
+    {
+        EndpointURI u(allocator);
+        CHECK(parse_endpoint_uri("rtsp://127.0.0.1", u));
+        CHECK(u.is_valid());
+
+        LONGS_EQUAL(EndProto_RTSP, u.proto());
+        STRCMP_EQUAL("127.0.0.1", u.host());
+        LONGS_EQUAL(-1, u.port());
+        STRCMP_EQUAL("554", u.service());
+
+        STRCMP_EQUAL("rtsp://127.0.0.1", endpoint_uri_to_str(u).c_str());
+    }
 }
 
 TEST(endpoint_uri, non_empty_path) {
@@ -373,6 +404,33 @@ TEST(endpoint_uri, non_empty_path) {
     CHECK(!parse_endpoint_uri("ldpc://host:123/path", u));
     CHECK(!parse_endpoint_uri("ldpc://host:123?query", u));
     CHECK(!parse_endpoint_uri("ldpc://host:123#frag", u));
+}
+
+TEST(endpoint_uri, percent_encoding) {
+    EndpointURI u(allocator);
+    CHECK(parse_endpoint_uri("rtsp://"
+                             "foo%21bar%40baz%2Fqux%3Fwee"
+                             ":123"
+                             "/foo%21bar%40baz%2Fqux%3Fwee"
+                             "?foo%21bar"
+                             "#foo%21bar",
+                             u));
+    CHECK(u.is_valid());
+
+    LONGS_EQUAL(EndProto_RTSP, u.proto());
+    STRCMP_EQUAL("foo!bar@baz/qux?wee", u.host());
+    LONGS_EQUAL(123, u.port());
+    STRCMP_EQUAL("/foo!bar@baz/qux?wee", u.path());
+    STRCMP_EQUAL("foo%21bar", u.encoded_query());
+    STRCMP_EQUAL("foo%21bar", u.encoded_fragment());
+
+    STRCMP_EQUAL("rtsp://"
+                 "foo!bar%40baz%2Fqux%3Fwee"
+                 ":123"
+                 "/foo!bar@baz/qux%3Fwee"
+                 "?foo%21bar"
+                 "#foo%21bar",
+                 endpoint_uri_to_str(u).c_str());
 }
 
 TEST(endpoint_uri, small_buffer) {
