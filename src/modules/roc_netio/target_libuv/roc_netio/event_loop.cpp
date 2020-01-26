@@ -181,20 +181,15 @@ bool EventLoop::resolve_endpoint_address(const address::Endpoint& endpoint,
 void EventLoop::handle_closed(BasicPort& port) {
     core::Mutex::Lock lock(mutex_);
 
-    for (core::SharedPtr<BasicPort> pp = closing_ports_.front(); pp;
-         pp = closing_ports_.nextof(*pp)) {
-        if (pp.get() != &port) {
-            continue;
-        }
-
-        roc_log(LogDebug, "transceiver: asynchronous close finished: port %s",
-                address::socket_addr_to_str(port.address()).c_str());
-
-        closing_ports_.remove(*pp);
-        close_cond_.broadcast();
-
-        break;
+    if (!closing_ports_.contains(port)) {
+        return;
     }
+
+    roc_log(LogDebug, "transceiver: asynchronous close finished: port %s",
+            address::socket_addr_to_str(port.address()).c_str());
+
+    closing_ports_.remove(port);
+    close_cond_.broadcast();
 }
 
 void EventLoop::handle_resolved(ResolverRequest& req) {
@@ -238,9 +233,7 @@ void EventLoop::async_close_ports_() {
 
     while (core::SharedPtr<BasicPort> port = open_ports_.front()) {
         open_ports_.remove(*port);
-        closing_ports_.push_back(*port);
-
-        port->async_close();
+        async_close_port_(*port);
     }
 }
 
@@ -306,10 +299,7 @@ EventLoop::TaskState EventLoop::add_udp_receiver_(Task& task) {
     if (!rp->open()) {
         roc_log(LogError, "transceiver: can't add port %s: can't start receiver",
                 address::socket_addr_to_str(*task.port_address).c_str());
-
-        closing_ports_.push_back(*rp);
-        rp->async_close();
-
+        async_close_port_(*rp);
         return TaskFailed;
     }
 
@@ -333,10 +323,7 @@ EventLoop::TaskState EventLoop::add_udp_sender_(Task& task) {
     if (!sp->open()) {
         roc_log(LogError, "transceiver: can't add port %s: can't start sender",
                 address::socket_addr_to_str(*task.port_address).c_str());
-
-        closing_ports_.push_back(*sp);
-        sp->async_close();
-
+        async_close_port_(*sp);
         return TaskFailed;
     }
 
@@ -358,11 +345,9 @@ EventLoop::TaskState EventLoop::remove_port_(Task& task) {
 
         if (curr->address() == *task.port_address) {
             open_ports_.remove(*curr);
-            closing_ports_.push_back(*curr);
+            async_close_port_(*curr);
 
             task.port = curr.get();
-            curr->async_close();
-
             return TaskSucceeded;
         }
 
@@ -378,6 +363,14 @@ EventLoop::TaskState EventLoop::resolve_endpoint_address_(Task& task) {
     }
 
     return TaskPending;
+}
+
+void EventLoop::async_close_port_(BasicPort& port) {
+    if (!port.async_close()) {
+        return;
+    }
+
+    closing_ports_.push_back(port);
 }
 
 void EventLoop::wait_port_closed_(const BasicPort& port) {

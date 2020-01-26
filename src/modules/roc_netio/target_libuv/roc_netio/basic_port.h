@@ -42,7 +42,11 @@ public:
     //!
     //! @remarks
     //!  Should be called from the event loop thread.
-    virtual void async_close() = 0;
+    //!
+    //! @returns
+    //!  true if asynchronous close was initiated or false if
+    //!  the port is already closed.
+    virtual bool async_close() = 0;
 
 private:
     friend class core::RefCnt<BasicPort>;

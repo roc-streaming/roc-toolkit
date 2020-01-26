@@ -44,7 +44,7 @@ public:
     virtual bool open();
 
     //! Asynchronously close sender.
-    virtual void async_close();
+    virtual bool async_close();
 
     //! Write packet.
     //! @remarks
@@ -57,7 +57,9 @@ private:
     static void send_cb_(uv_udp_send_t* req, int status);
 
     packet::PacketPtr read_();
-    void close_();
+
+    bool fully_closed_() const;
+    void start_closing_();
 
     ICloseHandler& close_handler_;
 
