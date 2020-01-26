@@ -364,5 +364,26 @@ TEST(socket_addr, multicast_and_broadcast) {
     }
 }
 
+TEST(socket_addr, clear) {
+    {
+        SocketAddr addr;
+        CHECK(addr.set_host_port(Family_IPv4, "239.255.255.255", 123));
+        CHECK(addr.set_miface(Family_IPv4, "1.2.3.4"));
+
+        CHECK(addr != SocketAddr());
+        addr.clear();
+        CHECK(addr == SocketAddr());
+    }
+    {
+        SocketAddr addr;
+        CHECK(addr.set_host_port(Family_IPv4, "192.168.0.1", 123));
+        CHECK(addr.set_broadcast());
+
+        CHECK(addr != SocketAddr());
+        addr.clear();
+        CHECK(addr == SocketAddr());
+    }
+}
+
 } // namespace address
 } // namespace roc
