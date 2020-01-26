@@ -62,6 +62,12 @@ public:
     //! Set port.
     bool set_port(int);
 
+    //! Get string representation of port.
+    //! If port is not set, default port for the protocol is used.
+    //! This string is suitable for passing to getaddrinfo().
+    //! @returns NULL if both port and default port are not set.
+    const char* service() const;
+
     //! Decoded path.
     const char* path() const;
 
@@ -92,9 +98,15 @@ public:
     bool set_encoded_fragment(const char* str, size_t str_len);
 
 private:
+    void set_service_from_port_(int port);
+    void set_service_from_proto_(EndpointProtocol proto);
+
     EndpointProtocol proto_;
+
     core::Array<char, 32> host_;
     int port_;
+    char service_[6];
+
     core::Array<char> path_;
     core::Array<char> query_;
     core::Array<char> frag_;
