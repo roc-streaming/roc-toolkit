@@ -27,6 +27,9 @@ public:
     //! Construct empty address.
     SocketAddr();
 
+    //! Clear address.
+    void clear();
+
     //! Check whether host and port are set.
     bool has_host_port() const;
 
