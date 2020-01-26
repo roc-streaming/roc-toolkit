@@ -8,6 +8,7 @@
 
 #include "roc_address/endpoint_uri.h"
 #include "roc_address/pct.h"
+#include "roc_address/protocol_map.h"
 #include "roc_core/string_utils.h"
 
 namespace roc {
@@ -29,6 +30,7 @@ void EndpointURI::clear() {
     proto_ = EndProto_None;
     host_.resize(0);
     port_ = -1;
+    service_[0] = '\0';
     path_.resize(0);
     query_.resize(0);
     frag_.resize(0);
@@ -43,6 +45,10 @@ EndpointProtocol EndpointURI::proto() const {
 
 void EndpointURI::set_proto(EndpointProtocol proto) {
     proto_ = proto;
+
+    if (port_ == -1) {
+        set_service_from_proto_(proto);
+    }
 }
 
 const char* EndpointURI::host() const {
@@ -107,7 +113,36 @@ bool EndpointURI::set_port(int port) {
 
     port_ = port;
 
+    set_service_from_port_(port);
+
     return true;
+}
+
+const char* EndpointURI::service() const {
+    if (service_[0]) {
+        return service_;
+    }
+    return NULL;
+}
+
+void EndpointURI::set_service_from_port_(int port) {
+    service_[0] = '\0';
+    if (!core::append_uint(service_, sizeof(service_), (uint64_t)port, 10)) {
+        roc_panic("endpoint uri: can't format port to string");
+    }
+}
+
+void EndpointURI::set_service_from_proto_(EndpointProtocol proto) {
+    const ProtocolAttrs* attrs = ProtocolMap::instance().find_proto(proto);
+    if (!attrs) {
+        return;
+    }
+
+    if (attrs->default_port <= 0) {
+        return;
+    }
+
+    set_service_from_port_(attrs->default_port);
 }
 
 const char* EndpointURI::path() const {

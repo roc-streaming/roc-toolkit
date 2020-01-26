@@ -92,7 +92,7 @@ bool parse_endpoint_uri(const char* str, EndpointURI& result) {
                | 'ldpc'      %{ result.set_proto(EndProto_LDPC_Repair); }
                ;
 
-        host = ([^/:@]+) >start_token %set_host;
+        host = ('[' [^/@\[\]]+ ']' | [^/:@\[\]]+) >start_token %set_host;
         port = (digit+) >start_token %set_port;
 
         pchar = [^?#];
