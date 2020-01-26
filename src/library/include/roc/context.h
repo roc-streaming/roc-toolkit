@@ -43,16 +43,18 @@ typedef struct roc_context roc_context;
 /** Open a new context.
  *
  * Allocates and initializes a new context. May start some background threads.
+ * Overrides the provided @p result pointer with the newly created context.
  *
  * @b Parameters
  *  - @p config should point to an initialized config
+ *  - @p result should point to an unitialized roc_context pointer
  *
  * @b Returns
- *  - returns a new context if it was successfully created
- *  - returns NULL if the arguments are invalid
- *  - returns NULL if there are not enough resources
+ *  - returns zero if the context was successfully created
+ *  - returns a negative value if the arguments are invalid
+ *  - returns a negative value if there are not enough resources
  */
-ROC_API roc_context* roc_context_open(const roc_context_config* config);
+ROC_API int roc_context_open(const roc_context_config* config, roc_context** result);
 
 /** Close the context.
  *

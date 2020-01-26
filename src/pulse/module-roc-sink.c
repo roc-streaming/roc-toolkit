@@ -264,8 +264,7 @@ int pa__init(pa_module* m) {
     roc_context_config context_config;
     memset(&context_config, 0, sizeof(context_config));
 
-    u->context = roc_context_open(&context_config);
-    if (!u->context) {
+    if (roc_context_open(&context_config, &u->context) < 0) {
         pa_log("can't create roc context");
         goto error;
     }
@@ -277,8 +276,7 @@ int pa__init(pa_module* m) {
     sender_config.frame_channels = ROC_CHANNEL_SET_STEREO;
     sender_config.frame_encoding = ROC_FRAME_ENCODING_PCM_FLOAT;
 
-    u->sender = roc_sender_open(u->context, &sender_config);
-    if (!u->sender) {
+    if (roc_sender_open(u->context, &sender_config, &u->sender) < 0) {
         pa_log("can't create roc sender");
         goto error;
     }
