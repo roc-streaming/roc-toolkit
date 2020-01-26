@@ -8,6 +8,7 @@
 
 #include "roc_netio/event_loop.h"
 #include "roc_address/socket_addr_to_str.h"
+#include "roc_core/helpers.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_core/shared_ptr.h"
@@ -25,7 +26,9 @@ EventLoop::EventLoop(packet::PacketPool& packet_pool,
     , loop_initialized_(false)
     , stop_sem_initialized_(false)
     , task_sem_initialized_(false)
-    , cond_(mutex_) {
+    , task_cond_(mutex_)
+    , close_cond_(mutex_)
+    , resolver_(*this, loop_) {
     if (int err = uv_loop_init(&loop_)) {
         roc_log(LogError, "transceiver: uv_loop_init(): [%s] %s", uv_err_name(err),
                 uv_strerror(err));
@@ -103,18 +106,18 @@ bool EventLoop::add_udp_receiver(address::SocketAddr& bind_address,
 
     Task task;
     task.func = &EventLoop::add_udp_receiver_;
-    task.address = &bind_address;
-    task.writer = &writer;
+    task.port_address = &bind_address;
+    task.port_writer = &writer;
 
     run_task_(task);
 
-    if (!task.result) {
+    if (task.state == TaskFailed) {
         if (task.port) {
             wait_port_closed_(*task.port);
         }
     }
 
-    return task.result;
+    return (task.state == TaskSucceeded);
 }
 
 packet::IWriter* EventLoop::add_udp_sender(address::SocketAddr& bind_address) {
@@ -124,18 +127,18 @@ packet::IWriter* EventLoop::add_udp_sender(address::SocketAddr& bind_address) {
 
     Task task;
     task.func = &EventLoop::add_udp_sender_;
-    task.address = &bind_address;
-    task.writer = NULL;
+    task.port_address = &bind_address;
+    task.port_writer = NULL;
 
     run_task_(task);
 
-    if (!task.result) {
+    if (task.state == TaskFailed) {
         if (task.port) {
             wait_port_closed_(*task.port);
         }
     }
 
-    return task.writer;
+    return task.port_writer;
 }
 
 void EventLoop::remove_port(address::SocketAddr bind_address) {
@@ -145,18 +148,34 @@ void EventLoop::remove_port(address::SocketAddr bind_address) {
 
     Task task;
     task.func = &EventLoop::remove_port_;
-    task.address = &bind_address;
-    task.writer = NULL;
+    task.port_address = &bind_address;
+    task.port_writer = NULL;
 
     run_task_(task);
 
-    if (!task.result) {
+    if (task.state == TaskFailed) {
         roc_panic("transceiver: can't remove port %s: unknown port",
                   address::socket_addr_to_str(bind_address).c_str());
     } else {
         roc_panic_if_not(task.port);
         wait_port_closed_(*task.port);
     }
+}
+
+bool EventLoop::resolve_endpoint_address(const address::Endpoint& endpoint,
+                                         address::SocketAddr& resolved_address) {
+    if (!valid()) {
+        roc_panic("transceiver: can't use invalid transceiver");
+    }
+
+    Task task;
+    task.func = &EventLoop::resolve_endpoint_address_;
+    task.resolve_req.endpoint = &endpoint;
+    task.resolve_req.resolved_address = &resolved_address;
+
+    run_task_(task);
+
+    return (task.state == TaskSucceeded);
 }
 
 void EventLoop::handle_closed(BasicPort& port) {
@@ -172,10 +191,19 @@ void EventLoop::handle_closed(BasicPort& port) {
                 address::socket_addr_to_str(port.address()).c_str());
 
         closing_ports_.remove(*pp);
-        cond_.broadcast();
+        close_cond_.broadcast();
 
         break;
     }
+}
+
+void EventLoop::handle_resolved(ResolverRequest& req) {
+    core::Mutex::Lock lock(mutex_);
+
+    Task& task = *ROC_CONTAINER_OF(&req, Task, resolve_req);
+
+    task.state = (req.success ? TaskSucceeded : TaskFailed);
+    task_cond_.broadcast();
 }
 
 void EventLoop::run() {
@@ -238,125 +266,126 @@ void EventLoop::run_task_(Task& task) {
                   uv_strerror(err));
     }
 
-    while (!task.done) {
-        cond_.wait();
+    while (task.state == TaskPending) {
+        task_cond_.wait();
     }
 }
 
 void EventLoop::process_tasks_() {
     core::Mutex::Lock lock(mutex_);
 
+    bool notify = false;
+
     while (Task* task = tasks_.front()) {
         tasks_.remove(*task);
 
-        task->result = (this->*(task->func))(*task);
-        task->done = true;
+        task->state = (this->*(task->func))(*task);
+
+        if (task->state != TaskPending) {
+            notify = true;
+        }
     }
 
-    cond_.broadcast();
+    if (notify) {
+        task_cond_.broadcast();
+    }
 }
 
-bool EventLoop::add_udp_receiver_(Task& task) {
-    core::SharedPtr<BasicPort> rp =
-        new (allocator_) UdpReceiverPort(*this, *task.address, loop_, *task.writer,
-                                         packet_pool_, buffer_pool_, allocator_);
-
+EventLoop::TaskState EventLoop::add_udp_receiver_(Task& task) {
+    core::SharedPtr<BasicPort> rp = new (allocator_)
+        UdpReceiverPort(*this, *task.port_address, loop_, *task.port_writer, packet_pool_,
+                        buffer_pool_, allocator_);
     if (!rp) {
         roc_log(LogError, "transceiver: can't add port %s: can't allocate receiver",
-                address::socket_addr_to_str(*task.address).c_str());
-
-        return false;
+                address::socket_addr_to_str(*task.port_address).c_str());
+        return TaskFailed;
     }
 
     task.port = rp.get();
 
     if (!rp->open()) {
         roc_log(LogError, "transceiver: can't add port %s: can't start receiver",
-                address::socket_addr_to_str(*task.address).c_str());
+                address::socket_addr_to_str(*task.port_address).c_str());
 
         closing_ports_.push_back(*rp);
         rp->async_close();
 
-        return false;
+        return TaskFailed;
     }
 
-    *task.address = rp->address();
+    *task.port_address = rp->address();
     open_ports_.push_back(*rp);
 
-    return true;
+    return TaskSucceeded;
 }
 
-bool EventLoop::add_udp_sender_(Task& task) {
+EventLoop::TaskState EventLoop::add_udp_sender_(Task& task) {
     core::SharedPtr<UdpSenderPort> sp =
-        new (allocator_) UdpSenderPort(*this, *task.address, loop_, allocator_);
+        new (allocator_) UdpSenderPort(*this, *task.port_address, loop_, allocator_);
     if (!sp) {
         roc_log(LogError, "transceiver: can't add port %s: can't allocate sender",
-                address::socket_addr_to_str(*task.address).c_str());
-
-        return false;
+                address::socket_addr_to_str(*task.port_address).c_str());
+        return TaskFailed;
     }
 
     task.port = sp.get();
 
     if (!sp->open()) {
         roc_log(LogError, "transceiver: can't add port %s: can't start sender",
-                address::socket_addr_to_str(*task.address).c_str());
+                address::socket_addr_to_str(*task.port_address).c_str());
 
         closing_ports_.push_back(*sp);
         sp->async_close();
 
-        return false;
+        return TaskFailed;
     }
 
-    task.writer = sp.get();
-    *task.address = sp->address();
+    task.port_writer = sp.get();
+    *task.port_address = sp->address();
 
     open_ports_.push_back(*sp);
 
-    return true;
+    return TaskSucceeded;
 }
 
-bool EventLoop::remove_port_(Task& task) {
+EventLoop::TaskState EventLoop::remove_port_(Task& task) {
     roc_log(LogDebug, "transceiver: removing port %s",
-            address::socket_addr_to_str(*task.address).c_str());
+            address::socket_addr_to_str(*task.port_address).c_str());
 
     core::SharedPtr<BasicPort> curr = open_ports_.front();
     while (curr) {
         core::SharedPtr<BasicPort> next = open_ports_.nextof(*curr);
 
-        if (curr->address() == *task.address) {
+        if (curr->address() == *task.port_address) {
             open_ports_.remove(*curr);
             closing_ports_.push_back(*curr);
 
             task.port = curr.get();
             curr->async_close();
 
-            return true;
+            return TaskSucceeded;
         }
 
         curr = next;
     }
 
-    return false;
+    return TaskFailed;
+}
+
+EventLoop::TaskState EventLoop::resolve_endpoint_address_(Task& task) {
+    if (!resolver_.async_resolve(task.resolve_req)) {
+        return (task.resolve_req.success ? TaskSucceeded : TaskFailed);
+    }
+
+    return TaskPending;
 }
 
 void EventLoop::wait_port_closed_(const BasicPort& port) {
     core::Mutex::Lock lock(mutex_);
 
-    while (port_is_closing_(port)) {
-        cond_.wait();
+    while (closing_ports_.contains(port)) {
+        close_cond_.wait();
     }
-}
-
-bool EventLoop::port_is_closing_(const BasicPort& port) {
-    for (core::SharedPtr<BasicPort> pp = closing_ports_.front(); pp;
-         pp = closing_ports_.nextof(*pp)) {
-        if (pp.get() == &port) {
-            return true;
-        }
-    }
-
-    return false;
 }
 
 } // namespace netio

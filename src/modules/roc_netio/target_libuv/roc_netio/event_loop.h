@@ -24,6 +24,7 @@
 #include "roc_core/thread.h"
 #include "roc_netio/basic_port.h"
 #include "roc_netio/iclose_handler.h"
+#include "roc_netio/resolver.h"
 #include "roc_netio/udp_receiver_port.h"
 #include "roc_netio/udp_sender_port.h"
 #include "roc_packet/iwriter.h"
@@ -33,7 +34,9 @@ namespace roc {
 namespace netio {
 
 //! Network event loop serving multiple ports.
-class EventLoop : private ICloseHandler, private core::Thread {
+class EventLoop : private ICloseHandler,
+                  private IResolverRequestHandler,
+                  private core::Thread {
 public:
     //! Initialize.
     //!
@@ -86,24 +89,45 @@ public:
     //! Remove sender or receiver port. Wait until port will be removed.
     void remove_port(address::SocketAddr bind_address);
 
+    //! Resolve endpoint hostname and fill provided address.
+    //! @remarks
+    //!  Resolved address inherits IP and port from endpoint URI and other attributes
+    //!  like multicast and broadcast settings from endpoint object.
+    //! @returns
+    //!  false if hostname can't be resolved or resolved address is incompatible
+    //!  with other endpoint settings (e.g. address is not allowed to be multicast and
+    //!  broadcast at the same time).
+    bool resolve_endpoint_address(const address::Endpoint& endpoint,
+                                  address::SocketAddr& resolved_address);
+
 private:
+    enum TaskState { TaskPending, TaskSucceeded, TaskFailed };
+
+    // task lifetime is limited to the public method call like add_udp_receiver()
+    // task object is allocated on stack is exists until the task is finished
+    // the method which allocated the task blocks until the task is finished
+    // and then destroys the task object
     struct Task : core::ListNode {
-        bool (EventLoop::*func)(Task&);
+        // method to be executed on event loop thread
+        TaskState (EventLoop::*func)(Task&);
 
-        address::SocketAddr* address;
-        packet::IWriter* writer;
-        BasicPort* port;
+        // task state
+        TaskState state;
 
-        bool result;
-        bool done;
+        // input and output for port-related tasks
+        address::SocketAddr* port_address;
+        packet::IWriter* port_writer;
+        core::SharedPtr<BasicPort> port;
+
+        // input and output for resolver tasks
+        ResolverRequest resolve_req;
 
         Task()
             : func(NULL)
-            , address(NULL)
-            , writer(NULL)
-            , port(NULL)
-            , result(false)
-            , done(false) {
+            , state(TaskPending)
+            , port_address(NULL)
+            , port_writer(NULL)
+            , port(NULL) {
         }
     };
 
@@ -111,6 +135,8 @@ private:
     static void stop_sem_cb_(uv_async_t* handle);
 
     virtual void handle_closed(BasicPort&);
+    virtual void handle_resolved(ResolverRequest& req);
+
     virtual void run();
 
     void close_sems_();
@@ -119,12 +145,13 @@ private:
     void process_tasks_();
     void run_task_(Task&);
 
-    bool add_udp_receiver_(Task&);
-    bool add_udp_sender_(Task&);
+    // task methods
+    TaskState add_udp_receiver_(Task&);
+    TaskState add_udp_sender_(Task&);
+    TaskState remove_port_(Task&);
+    TaskState resolve_endpoint_address_(Task&);
 
-    bool remove_port_(Task&);
     void wait_port_closed_(const BasicPort& port);
-    bool port_is_closing_(const BasicPort& port);
 
     packet::PacketPool& packet_pool_;
     core::BufferPool<uint8_t>& buffer_pool_;
@@ -141,13 +168,19 @@ private:
     uv_async_t task_sem_;
     bool task_sem_initialized_;
 
+    // list of tasks to be processed
     core::List<Task, core::NoOwnership> tasks_;
+
+    core::Cond task_cond_;  // signaled when a task is succeeded or failed
+    core::Cond close_cond_; // signaled when a port is closed
+
+    Resolver resolver_;
 
     core::List<BasicPort> open_ports_;
     core::List<BasicPort> closing_ports_;
 
+    // protects all fields
     core::Mutex mutex_;
-    core::Cond cond_;
 };
 
 } // namespace netio
