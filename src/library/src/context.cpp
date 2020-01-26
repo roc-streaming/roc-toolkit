@@ -15,34 +15,40 @@
 
 using namespace roc;
 
-roc_context* roc_context_open(const roc_context_config* config) {
+int roc_context_open(const roc_context_config* config, roc_context** result) {
     roc_log(LogInfo, "roc_context_open: opening context");
+
+    if (!result) {
+        roc_log(LogError, "roc_context_open: invalid arguments: result is null");
+        return -1;
+    }
 
     if (!config) {
         roc_log(LogError, "roc_context_open: invalid arguments: config is null");
-        return NULL;
+        return -1;
     }
 
     peer::ContextConfig imp_config;
     if (!api::make_context_config(imp_config, *config)) {
         roc_log(LogError, "roc_context_open: invalid arguments: bad config");
-        return NULL;
+        return -1;
     }
 
     peer::Context* imp_context = new (std::nothrow) peer::Context(imp_config);
     if (!imp_context) {
         roc_log(LogError, "roc_context_open: can't allocate context");
-        return NULL;
+        return -1;
     }
 
     if (!imp_context->valid()) {
         roc_log(LogError, "roc_context_open: can't initialize context");
 
         delete imp_context;
-        return NULL;
+        return -1;
     }
 
-    return (roc_context*)imp_context;
+    *result = (roc_context*)imp_context;
+    return 0;
 }
 
 int roc_context_close(roc_context* context) {

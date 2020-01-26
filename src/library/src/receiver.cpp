@@ -16,25 +16,32 @@
 
 using namespace roc;
 
-roc_receiver* roc_receiver_open(roc_context* context, const roc_receiver_config* config) {
+int roc_receiver_open(roc_context* context,
+                      const roc_receiver_config* config,
+                      roc_receiver** result) {
     roc_log(LogInfo, "roc_receiver_open: opening receiver");
+
+    if (!result) {
+        roc_log(LogError, "roc_receiver_open: invalid arguments: result is null");
+        return -1;
+    }
 
     if (!context) {
         roc_log(LogError, "roc_receiver_open: invalid arguments: context is null");
-        return NULL;
+        return -1;
     }
 
     peer::Context* imp_context = (peer::Context*)context;
 
     if (!config) {
         roc_log(LogError, "roc_receiver_open: invalid arguments: config is null");
-        return NULL;
+        return -1;
     }
 
     pipeline::ReceiverConfig imp_config;
     if (!api::make_receiver_config(imp_config, *config)) {
         roc_log(LogError, "roc_receiver_open: invalid arguments: bad config");
-        return NULL;
+        return -1;
     }
 
     peer::Receiver* imp_receiver =
@@ -42,17 +49,18 @@ roc_receiver* roc_receiver_open(roc_context* context, const roc_receiver_config*
 
     if (!imp_receiver) {
         roc_log(LogError, "roc_receiver_open: can't allocate receiver");
-        return NULL;
+        return -1;
     }
 
     if (!imp_receiver->valid()) {
         roc_log(LogError, "roc_receiver_open: can't initialize receiver");
 
         delete imp_receiver;
-        return NULL;
+        return -1;
     }
 
-    return (roc_receiver*)imp_receiver;
+    *result = (roc_receiver*)imp_receiver;
+    return 0;
 }
 
 int roc_receiver_bind(roc_receiver* receiver,

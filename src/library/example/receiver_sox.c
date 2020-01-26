@@ -64,8 +64,8 @@ int main() {
     /* Create context.
      * Context contains memory pools and the network worker thread(s).
      * We need a context to create a receiver. */
-    roc_context* context = roc_context_open(&context_config);
-    if (!context) {
+    roc_context* context;
+    if (roc_context_open(&context_config, &context) != 0) {
         oops("roc_context_open");
     }
 
@@ -85,8 +85,8 @@ int main() {
     receiver_config.clock_source = ROC_CLOCK_EXTERNAL;
 
     /* Create receiver. */
-    roc_receiver* receiver = roc_receiver_open(context, &receiver_config);
-    if (!receiver) {
+    roc_receiver* receiver;
+    if (roc_receiver_open(context, &receiver_config, &receiver) != 0) {
         oops("roc_receiver_open");
     }
 

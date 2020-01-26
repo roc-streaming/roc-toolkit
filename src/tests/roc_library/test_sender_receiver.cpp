@@ -68,11 +68,12 @@ core::BufferPool<uint8_t> byte_buffer_pool(allocator, MaxBufSize, true);
 
 class Context : public core::NonCopyable<> {
 public:
-    Context() {
+    Context()
+        : ctx_(NULL) {
         roc_context_config config;
         memset(&config, 0, sizeof(config));
 
-        ctx_ = roc_context_open(&config);
+        CHECK(roc_context_open(&config, &ctx_) == 0);
         CHECK(ctx_);
     }
 
@@ -97,11 +98,12 @@ public:
            float sample_step,
            size_t frame_size,
            unsigned flags)
-        : sample_step_(sample_step)
+        : sndr_(NULL)
+        , sample_step_(sample_step)
         , frame_size_(frame_size) {
         roc_address addr;
         CHECK(roc_address_init(&addr, ROC_AF_AUTO, "127.0.0.1", 0) == 0);
-        sndr_ = roc_sender_open(context.get(), &config);
+        CHECK(roc_sender_open(context.get(), &config, &sndr_) == 0);
         CHECK(sndr_);
         CHECK(roc_sender_bind(sndr_, &addr) == 0);
         if (flags & FlagFEC) {
@@ -167,11 +169,12 @@ public:
              float sample_step,
              size_t frame_size,
              unsigned flags)
-        : sample_step_(sample_step)
+        : recv_(NULL)
+        , sample_step_(sample_step)
         , frame_size_(frame_size) {
         CHECK(roc_address_init(&source_addr_, ROC_AF_AUTO, "127.0.0.1", 0) == 0);
         CHECK(roc_address_init(&repair_addr_, ROC_AF_AUTO, "127.0.0.1", 0) == 0);
-        recv_ = roc_receiver_open(context.get(), &config);
+        CHECK(roc_receiver_open(context.get(), &config, &recv_) == 0);
         CHECK(recv_);
         if (flags & FlagFEC) {
             CHECK(roc_receiver_bind(recv_, ROC_PORT_AUDIO_SOURCE,
