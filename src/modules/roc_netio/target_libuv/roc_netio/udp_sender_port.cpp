@@ -111,14 +111,20 @@ bool UdpSenderPort::open() {
     return true;
 }
 
-void UdpSenderPort::async_close() {
+bool UdpSenderPort::async_close() {
     core::Mutex::Lock lock(mutex_);
 
     stopped_ = true;
 
-    if (pending_ == 0) {
-        close_();
+    if (fully_closed_()) {
+        return false;
     }
+
+    if (pending_ == 0) {
+        start_closing_();
+    }
+
+    return true;
 }
 
 void UdpSenderPort::write(const packet::PacketPtr& pp) {
@@ -235,7 +241,7 @@ void UdpSenderPort::send_cb_(uv_udp_send_t* req, int status) {
     --self.pending_;
 
     if (self.stopped_ && self.pending_ == 0) {
-        self.close_();
+        self.start_closing_();
     }
 }
 
@@ -250,15 +256,20 @@ packet::PacketPtr UdpSenderPort::read_() {
     return pp;
 }
 
-void UdpSenderPort::close_() {
-    if (closed_) {
-        return; // handle_closed() was already called
+bool UdpSenderPort::fully_closed_() const {
+    if (!handle_initialized_ && !write_sem_initialized_) {
+        return true;
     }
 
-    if (!handle_initialized_ && !write_sem_initialized_) {
-        closed_ = true;
-        close_handler_.handle_closed(*this);
+    if (closed_) {
+        return true;
+    }
 
+    return false;
+}
+
+void UdpSenderPort::start_closing_() {
+    if (fully_closed_()) {
         return;
     }
 
