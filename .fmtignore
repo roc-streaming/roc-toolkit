@@ -1,4 +1,5 @@
 src/modules/roc_fec/codec_map.cpp
+src/tests/roc_address/test_pct.cpp
 src/tests/roc_audio/test_depacketizer.cpp
 src/tests/roc_audio/test_fanout.cpp
 src/tests/roc_audio/test_frame_encoder_decoder.cpp

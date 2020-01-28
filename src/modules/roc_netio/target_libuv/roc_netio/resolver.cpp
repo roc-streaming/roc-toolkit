@@ -26,10 +26,16 @@ bool Resolver::async_resolve(ResolverRequest& req) {
     roc_panic_if(!req.endpoint);
     roc_panic_if(!req.resolved_address);
 
+    req.resolved_address->clear();
+
+    if (!req.endpoint->check()) {
+        roc_log(LogError, "resolver: invalid endpoint");
+        req.success = false;
+        return false;
+    }
+
     roc_log(LogTrace, "resolver: starting resolving: endpoint=%s",
             address::endpoint_uri_to_str(req.endpoint->uri()).c_str());
-
-    req.resolved_address->clear();
 
     if (address::parse_socket_addr_host_port(req.endpoint->uri().host(),
                                              req.endpoint->uri().port(),

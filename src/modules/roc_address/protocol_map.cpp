@@ -75,6 +75,10 @@ const ProtocolAttrs* ProtocolMap::find_proto(EndpointProtocol proto) const {
         return NULL;
     }
 
+    if (protos_[proto].protocol == EndProto_None) {
+        return NULL;
+    }
+
     if (protos_[proto].protocol != proto) {
         return NULL;
     }
