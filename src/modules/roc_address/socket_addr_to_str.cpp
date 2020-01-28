@@ -8,100 +8,73 @@
 
 #include "roc_address/socket_addr_to_str.h"
 #include "roc_core/log.h"
-#include "roc_core/string_utils.h"
+#include "roc_core/string_builder.h"
 
 namespace roc {
 namespace address {
 
 socket_addr_to_str::socket_addr_to_str(const SocketAddr& addr) {
-    switch ((unsigned)addr.family()) {
-    case Family_IPv4:
-        if (!format_ipv4_(addr)) {
-            strcpy(buffer_, "<error>");
-            return;
-        }
-        break;
-
-    case Family_IPv6:
-        if (!format_ipv6_(addr)) {
-            strcpy(buffer_, "<error>");
-            return;
-        }
-        break;
-
-    default:
+    if (!format_(addr)) {
         strcpy(buffer_, "<none>");
-        return;
-    }
-
-    if (addr.broadcast()) {
-        if (!core::append_str(buffer_, sizeof(buffer_), " broadcast")) {
-            strcpy(buffer_, "<error>");
-            return;
-        }
     }
 }
 
-bool socket_addr_to_str::format_ipv4_(const SocketAddr& addr) {
-    if (!addr.get_host(buffer_, sizeof(buffer_))) {
-        return false;
-    }
+bool socket_addr_to_str::format_(const SocketAddr& addr) {
+    core::StringBuilder b(buffer_, sizeof(buffer_));
 
-    if (!core::append_str(buffer_, sizeof(buffer_), ":")) {
-        return false;
-    }
+    char ip[64];
 
-    if (!core::append_uint(buffer_, sizeof(buffer_), (uint64_t)addr.port(), 10)) {
-        return false;
-    }
-
-    if (addr.has_miface()) {
-        if (!core::append_str(buffer_, sizeof(buffer_), " miface ")) {
+    if (addr.family() == Family_IPv4) {
+        if (!addr.get_host(ip, sizeof(ip))) {
             return false;
         }
 
-        const size_t blen = strlen(buffer_);
+        b.append_str(ip);
+        b.append_str(":");
+        b.append_uint((uint64_t)addr.port(), 10);
 
-        if (!addr.get_miface(buffer_ + blen, sizeof(buffer_) - blen)) {
-            return false;
+        if (addr.has_miface()) {
+            if (!addr.get_miface(ip, sizeof(ip))) {
+                return false;
+            }
+            b.append_str(" miface ");
+            b.append_str(ip);
         }
+
+        if (addr.broadcast()) {
+            b.append_str(" broadcast");
+        }
+
+        return true;
     }
 
-    return true;
-}
-
-bool socket_addr_to_str::format_ipv6_(const SocketAddr& addr) {
-    buffer_[0] = '[';
-
-    if (!addr.get_host(buffer_ + 1, sizeof(buffer_) - 1)) {
-        return false;
-    }
-
-    if (!core::append_str(buffer_, sizeof(buffer_), "]:")) {
-        return false;
-    }
-
-    if (!core::append_uint(buffer_, sizeof(buffer_), (uint64_t)addr.port(), 10)) {
-        return false;
-    }
-
-    if (addr.has_miface()) {
-        if (!core::append_str(buffer_, sizeof(buffer_), " miface [")) {
+    if (addr.family() == Family_IPv6) {
+        if (!addr.get_host(ip, sizeof(ip))) {
             return false;
         }
 
-        const size_t blen = strlen(buffer_);
+        b.append_str("[");
+        b.append_str(ip);
+        b.append_str("]:");
+        b.append_uint((uint64_t)addr.port(), 10);
 
-        if (!addr.get_miface(buffer_ + blen, sizeof(buffer_) - blen)) {
-            return false;
+        if (addr.has_miface()) {
+            if (!addr.get_miface(ip, sizeof(ip))) {
+                return false;
+            }
+            b.append_str(" miface [");
+            b.append_str(ip);
+            b.append_str("]");
         }
 
-        if (!core::append_str(buffer_, sizeof(buffer_), "]")) {
-            return false;
+        if (addr.broadcast()) {
+            b.append_str(" broadcast");
         }
+
+        return true;
     }
 
-    return true;
+    return false;
 }
 
 } // namespace address

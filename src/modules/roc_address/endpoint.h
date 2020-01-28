@@ -16,7 +16,8 @@
 #include "roc_address/endpoint_uri.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/noncopyable.h"
-#include "roc_core/array.h"
+#include "roc_core/string_buffer.h"
+#include "roc_core/string_builder.h"
 
 namespace roc {
 namespace address {
@@ -26,6 +27,12 @@ class Endpoint : public core::NonCopyable<> {
 public:
     //! Initialize.
     Endpoint(core::IAllocator& allocator);
+
+    //! Destroy endpoint.
+    void destroy();
+
+    //! Check if endpoint is valid.
+    bool check() const;
 
     //! Get endpoint URI.
     const EndpointURI& uri() const;
@@ -41,15 +48,34 @@ public:
     //! @returns false on allocation error.
     bool set_miface(const char* miface);
 
+    //! Get multicast interface.
+    bool format_miface(core::StringBuilder& dst) const;
+
     //! Get broadcast flag.
     bool broadcast() const;
 
     //! Set broadcast flag.
-    void set_broadcast(bool);
+    bool set_broadcast(int flag);
+
+    //! Get broadcast flag.
+    bool get_broadcast(int& flag) const;
 
 private:
+    enum Part {
+        PartMiface = (1 << 0), //
+        PartBroadcast = (1 << 1)
+    };
+
+    bool part_is_valid_(Part part) const;
+    void set_valid_(Part part);
+    void set_invalid_(Part part);
+
+    core::IAllocator& allocator_;
+
+    int invalid_parts_;
+
     EndpointURI uri_;
-    core::Array<char> miface_;
+    core::StringBuffer<> miface_;
     bool broadcast_;
 };
 

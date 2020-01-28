@@ -12,9 +12,10 @@
 #ifndef ROC_ADDRESS_IO_URI_H_
 #define ROC_ADDRESS_IO_URI_H_
 
-#include "roc_core/array.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/stddefs.h"
+#include "roc_core/string_buffer.h"
+#include "roc_core/string_builder.h"
 
 namespace roc {
 namespace address {
@@ -56,12 +57,11 @@ public:
 
     //! Get URI path.
     //! String will be percent-encoded.
-    //! String will be zero-terminated.
-    bool get_encoded_path(char* str, size_t str_len) const;
+    bool format_encoded_path(core::StringBuilder& dst) const;
 
 private:
-    char scheme_[16];
-    core::Array<char> path_;
+    core::StringBuffer<16> scheme_;
+    core::StringBuffer<> path_;
 };
 
 //! Parse IoURI from string.
@@ -124,7 +124,7 @@ bool parse_io_uri(const char* str, IoURI& result);
 //!
 //! @returns
 //!  true on success or false if the buffer is too small.
-bool format_io_uri(const IoURI& uri, char* buf, size_t buf_size);
+bool format_io_uri(const IoURI& uri, core::StringBuilder& dst);
 
 } // namespace address
 } // namespace roc
