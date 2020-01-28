@@ -30,8 +30,7 @@ public:
     }
 
 private:
-    bool format_ipv4_(const SocketAddr&);
-    bool format_ipv6_(const SocketAddr&);
+    bool format_(const SocketAddr&);
 
     char buffer_[SocketAddr::MaxStrLen];
 };
