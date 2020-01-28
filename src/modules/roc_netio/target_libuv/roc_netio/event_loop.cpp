@@ -30,14 +30,14 @@ EventLoop::EventLoop(packet::PacketPool& packet_pool,
     , close_cond_(mutex_)
     , resolver_(*this, loop_) {
     if (int err = uv_loop_init(&loop_)) {
-        roc_log(LogError, "transceiver: uv_loop_init(): [%s] %s", uv_err_name(err),
+        roc_log(LogError, "event loop: uv_loop_init(): [%s] %s", uv_err_name(err),
                 uv_strerror(err));
         return;
     }
     loop_initialized_ = true;
 
     if (int err = uv_async_init(&loop_, &stop_sem_, stop_sem_cb_)) {
-        roc_log(LogError, "transceiver: uv_async_init(): [%s] %s", uv_err_name(err),
+        roc_log(LogError, "event loop: uv_async_init(): [%s] %s", uv_err_name(err),
                 uv_strerror(err));
         return;
     }
@@ -45,7 +45,7 @@ EventLoop::EventLoop(packet::PacketPool& packet_pool,
     stop_sem_initialized_ = true;
 
     if (int err = uv_async_init(&loop_, &task_sem_, task_sem_cb_)) {
-        roc_log(LogError, "transceiver: uv_async_init(): [%s] %s", uv_err_name(err),
+        roc_log(LogError, "event loop: uv_async_init(): [%s] %s", uv_err_name(err),
                 uv_strerror(err));
         return;
     }
@@ -58,7 +58,7 @@ EventLoop::EventLoop(packet::PacketPool& packet_pool,
 EventLoop::~EventLoop() {
     if (started_) {
         if (int err = uv_async_send(&stop_sem_)) {
-            roc_panic("transceiver: uv_async_send(): [%s] %s", uv_err_name(err),
+            roc_panic("event loop: uv_async_send(): [%s] %s", uv_err_name(err),
                       uv_strerror(err));
         }
     } else {
@@ -76,7 +76,7 @@ EventLoop::~EventLoop() {
         }
 
         if (int err = uv_loop_close(&loop_)) {
-            roc_panic("transceiver: uv_loop_close(): [%s] %s", uv_err_name(err),
+            roc_panic("event loop: uv_loop_close(): [%s] %s", uv_err_name(err),
                       uv_strerror(err));
         }
     }
@@ -101,7 +101,7 @@ size_t EventLoop::num_ports() const {
 bool EventLoop::add_udp_receiver(address::SocketAddr& bind_address,
                                  packet::IWriter& writer) {
     if (!valid()) {
-        roc_panic("transceiver: can't use invalid transceiver");
+        roc_panic("event loop: can't use invalid loop");
     }
 
     Task task;
@@ -122,7 +122,7 @@ bool EventLoop::add_udp_receiver(address::SocketAddr& bind_address,
 
 packet::IWriter* EventLoop::add_udp_sender(address::SocketAddr& bind_address) {
     if (!valid()) {
-        roc_panic("transceiver: can't use invalid transceiver");
+        roc_panic("event loop: can't use invalid loop");
     }
 
     Task task;
@@ -143,7 +143,7 @@ packet::IWriter* EventLoop::add_udp_sender(address::SocketAddr& bind_address) {
 
 void EventLoop::remove_port(address::SocketAddr bind_address) {
     if (!valid()) {
-        roc_panic("transceiver: can't use invalid transceiver");
+        roc_panic("event loop: can't use invalid loop");
     }
 
     Task task;
@@ -154,7 +154,7 @@ void EventLoop::remove_port(address::SocketAddr bind_address) {
     run_task_(task);
 
     if (task.state == TaskFailed) {
-        roc_panic("transceiver: can't remove port %s: unknown port",
+        roc_panic("event loop: can't remove port %s: unknown port",
                   address::socket_addr_to_str(bind_address).c_str());
     } else {
         roc_panic_if_not(task.port);
@@ -165,7 +165,7 @@ void EventLoop::remove_port(address::SocketAddr bind_address) {
 bool EventLoop::resolve_endpoint_address(const address::Endpoint& endpoint,
                                          address::SocketAddr& resolved_address) {
     if (!valid()) {
-        roc_panic("transceiver: can't use invalid transceiver");
+        roc_panic("event loop: can't use invalid loop");
     }
 
     Task task;
@@ -185,7 +185,7 @@ void EventLoop::handle_closed(BasicPort& port) {
         return;
     }
 
-    roc_log(LogDebug, "transceiver: asynchronous close finished: port %s",
+    roc_log(LogDebug, "event loop: asynchronous close finished: port %s",
             address::socket_addr_to_str(port.address()).c_str());
 
     closing_ports_.remove(port);
@@ -202,14 +202,14 @@ void EventLoop::handle_resolved(ResolverRequest& req) {
 }
 
 void EventLoop::run() {
-    roc_log(LogDebug, "transceiver: starting event loop");
+    roc_log(LogDebug, "event loop: starting event loop");
 
     int err = uv_run(&loop_, UV_RUN_DEFAULT);
     if (err != 0) {
-        roc_log(LogInfo, "transceiver: uv_run() returned non-zero");
+        roc_log(LogInfo, "event loop: uv_run() returned non-zero");
     }
 
-    roc_log(LogDebug, "transceiver: finishing event loop");
+    roc_log(LogDebug, "event loop: finishing event loop");
 }
 
 void EventLoop::task_sem_cb_(uv_async_t* handle) {
@@ -255,7 +255,7 @@ void EventLoop::run_task_(Task& task) {
     tasks_.push_back(task);
 
     if (int err = uv_async_send(&task_sem_)) {
-        roc_panic("transceiver: uv_async_send(): [%s] %s", uv_err_name(err),
+        roc_panic("event loop: uv_async_send(): [%s] %s", uv_err_name(err),
                   uv_strerror(err));
     }
 
@@ -289,7 +289,7 @@ EventLoop::TaskState EventLoop::add_udp_receiver_(Task& task) {
         UdpReceiverPort(*this, *task.port_address, loop_, *task.port_writer, packet_pool_,
                         buffer_pool_, allocator_);
     if (!rp) {
-        roc_log(LogError, "transceiver: can't add port %s: can't allocate receiver",
+        roc_log(LogError, "event loop: can't add port %s: can't allocate receiver",
                 address::socket_addr_to_str(*task.port_address).c_str());
         return TaskFailed;
     }
@@ -297,7 +297,7 @@ EventLoop::TaskState EventLoop::add_udp_receiver_(Task& task) {
     task.port = rp.get();
 
     if (!rp->open()) {
-        roc_log(LogError, "transceiver: can't add port %s: can't start receiver",
+        roc_log(LogError, "event loop: can't add port %s: can't start receiver",
                 address::socket_addr_to_str(*task.port_address).c_str());
         async_close_port_(*rp);
         return TaskFailed;
@@ -313,7 +313,7 @@ EventLoop::TaskState EventLoop::add_udp_sender_(Task& task) {
     core::SharedPtr<UdpSenderPort> sp =
         new (allocator_) UdpSenderPort(*this, *task.port_address, loop_, allocator_);
     if (!sp) {
-        roc_log(LogError, "transceiver: can't add port %s: can't allocate sender",
+        roc_log(LogError, "event loop: can't add port %s: can't allocate sender",
                 address::socket_addr_to_str(*task.port_address).c_str());
         return TaskFailed;
     }
@@ -321,7 +321,7 @@ EventLoop::TaskState EventLoop::add_udp_sender_(Task& task) {
     task.port = sp.get();
 
     if (!sp->open()) {
-        roc_log(LogError, "transceiver: can't add port %s: can't start sender",
+        roc_log(LogError, "event loop: can't add port %s: can't start sender",
                 address::socket_addr_to_str(*task.port_address).c_str());
         async_close_port_(*sp);
         return TaskFailed;
@@ -336,7 +336,7 @@ EventLoop::TaskState EventLoop::add_udp_sender_(Task& task) {
 }
 
 EventLoop::TaskState EventLoop::remove_port_(Task& task) {
-    roc_log(LogDebug, "transceiver: removing port %s",
+    roc_log(LogDebug, "event loop: removing port %s",
             address::socket_addr_to_str(*task.port_address).c_str());
 
     core::SharedPtr<BasicPort> curr = open_ports_.front();
