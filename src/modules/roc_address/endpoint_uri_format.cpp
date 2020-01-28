@@ -9,74 +9,54 @@
 #include "roc_address/endpoint_protocol.h"
 #include "roc_address/endpoint_uri.h"
 #include "roc_core/panic.h"
-#include "roc_core/string_utils.h"
+#include "roc_core/string_builder.h"
 
 namespace roc {
 namespace address {
 
-bool format_endpoint_uri(const EndpointURI& u, char* buf, size_t buf_size) {
-    roc_panic_if(buf == NULL);
-
-    if (buf_size == 0) {
+bool format_endpoint_uri(const EndpointURI& u,
+                         EndpointURI::Subset subset,
+                         core::StringBuilder& dst) {
+    if (!u.check(subset)) {
         return false;
     }
 
-    if (!u.is_valid()) {
-        return false;
-    }
+    if (subset == EndpointURI::Subset_Full) {
+        dst.append_str(endpoint_proto_to_str(u.proto()));
+        dst.append_str("://");
 
-    buf[0] = '\0';
-
-    const char* proto = endpoint_proto_to_str(u.proto());
-    if (!proto) {
-        return false;
-    }
-
-    if (!core::append_str(buf, buf_size, proto)) {
-        return false;
-    }
-
-    if (!core::append_str(buf, buf_size, "://")) {
-        return false;
-    }
-
-    size_t pos = strlen(buf);
-
-    if (!u.get_encoded_host(buf + pos, buf_size - pos)) {
-        return false;
-    }
-
-    if (u.port() > 0) {
-        if (!core::append_str(buf, buf_size, ":")) {
+        if (!u.format_host(dst)) {
             return false;
         }
-        if (!core::append_uint(buf, buf_size, (uint64_t)u.port(), 10)) {
+
+        if (u.port() > 0) {
+            dst.append_str(":");
+            dst.append_uint((uint64_t)u.port(), 10);
+        }
+    }
+
+    if (subset == EndpointURI::Subset_Resource) {
+        if (!u.path() && !u.encoded_query() && !u.encoded_fragment()) {
             return false;
         }
     }
 
     if (u.path()) {
-        pos = strlen(buf);
-
-        if (!u.get_encoded_path(buf + pos, buf_size - pos)) {
+        if (!u.format_encoded_path(dst)) {
             return false;
         }
     }
 
     if (u.encoded_query()) {
-        if (!core::append_str(buf, buf_size, "?")) {
-            return false;
-        }
-        if (!core::append_str(buf, buf_size, u.encoded_query())) {
+        dst.append_str("?");
+        if (!u.format_encoded_query(dst)) {
             return false;
         }
     }
 
     if (u.encoded_fragment()) {
-        if (!core::append_str(buf, buf_size, "#")) {
-            return false;
-        }
-        if (!core::append_str(buf, buf_size, u.encoded_fragment())) {
+        dst.append_str("#");
+        if (!u.format_encoded_fragment(dst)) {
             return false;
         }
     }

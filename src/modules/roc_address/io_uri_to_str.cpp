@@ -12,9 +12,14 @@ namespace roc {
 namespace address {
 
 io_uri_to_str::io_uri_to_str(const IoURI& u) {
-    if (!format_io_uri(u, buf_, sizeof(buf_))) {
-        strcpy(buf_, "<bad>");
+    core::StringBuilder b(buf_, sizeof(buf_));
+
+    if (!u.is_valid()) {
+        b.set_str("<bad>");
+        return;
     }
+
+    format_io_uri(u, b);
 }
 
 } // namespace address
