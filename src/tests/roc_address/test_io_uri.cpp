@@ -181,18 +181,24 @@ TEST(io_uri, small_buffer) {
     CHECK(parse_io_uri("abcdef://abcdef", u));
 
     char buf[16];
-    CHECK(format_io_uri(u, buf, sizeof(buf)));
+
+    {
+        core::StringBuilder b(buf, sizeof(buf));
+
+        CHECK(format_io_uri(u, b));
+        CHECK(b.ok());
+    }
 
     for (size_t i = 0; i < sizeof(buf); i++) {
-        CHECK(!format_io_uri(u, buf, i));
+        core::StringBuilder b(buf, i);
+
+        CHECK(format_io_uri(u, b));
+        CHECK(!b.ok());
     }
 }
 
 TEST(io_uri, bad_syntax) {
     IoURI u(allocator);
-
-    CHECK(parse_io_uri("abcdefg://test", u));
-    CHECK(!parse_io_uri("abcdefghijklmnop://test", u));
 
     CHECK(!parse_io_uri("alsa://", u));
     CHECK(!parse_io_uri("file://", u));

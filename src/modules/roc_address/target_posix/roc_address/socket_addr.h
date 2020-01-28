@@ -83,7 +83,7 @@ public:
 
     enum {
         // An estimate maximum length of a string representation of an address.
-        MaxStrLen = 128
+        MaxStrLen = 196
     };
 
 private:
