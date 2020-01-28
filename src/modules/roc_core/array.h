@@ -187,7 +187,7 @@ public:
             return true;
         }
 
-        T* new_data = reallocate_(max_sz);
+        T* new_data = allocate_(max_sz);
         if (!new_data) {
             roc_log(LogError, "array: can't allocate memory: old_size=%lu new_size=%lu",
                     (unsigned long)max_size_, (unsigned long)max_sz);
@@ -243,7 +243,7 @@ private:
         char mem[EmbedSize ? EmbedSize * sizeof(T) : 1];
     };
 
-    T* reallocate_(size_t n_elems) {
+    T* allocate_(size_t n_elems) {
         if (n_elems <= EmbedSize) {
             return (T*)&emb_data_;
         } else {
