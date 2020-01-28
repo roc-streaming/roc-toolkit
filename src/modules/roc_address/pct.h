@@ -13,6 +13,7 @@
 #define ROC_ADDRESS_PCT_H_
 
 #include "roc_core/stddefs.h"
+#include "roc_core/string_builder.h"
 
 namespace roc {
 namespace address {
@@ -33,43 +34,26 @@ enum PctMode {
 //
 //! @b Parameters
 //!  - @p dst - destination buffer
-//!  - @p dst_sz - destination buffer size
 //!  - @p src - source string in UTF-8
 //!  - @p src_sz - source string size
 //!  - @p mode - encoding mode
 //!
-//! @returns
-//!  number of characters written to destination buffer, excluding the terminating
-//!  zero byte, or -1 if the buffer is too small or the source string is invalid.
-//!
 //! @remarks
 //!  The source string should NOT be null-terminated.
 //!  The source string size should NOT include the terminating zero byte.
-//!  The destination buffer size SHOULD include the terminating zero byte.
-//!  If the function succeeded, the resulting string is ALWAYS null-terminated,
-//!  but the returned size EXCLUDES the terminating zero byte.
-ssize_t
-pct_encode(char* dst, size_t dst_sz, const char* src, size_t src_sz, PctMode mode);
+bool pct_encode(core::StringBuilder& dst, const char* src, size_t src_sz, PctMode mode);
 
 //! Percent-decode an UTF-8 string.
 //
 //! @b Parameters
 //!  - @p dst - destination buffer
-//!  - @p dst_sz - destination buffer size
 //!  - @p src - source string in UTF-8
 //!  - @p src_sz - source string size
-//!
-//! @returns
-//!  number of characters written to destination buffer, excluding the terminating
-//!  zero byte, or -1 if the buffer is too small or the source string is invalid.
 //!
 //! @remarks
 //!  The source string should NOT be null-terminated.
 //!  The source string size should NOT include the terminating zero byte.
-//!  The destination buffer size SHOULD include the terminating zero byte.
-//!  If the function succeeded, the resulting string is ALWAYS null-terminated,
-//!  but the returned size EXCLUDES the terminating zero byte.
-ssize_t pct_decode(char* dst, size_t dst_sz, const char* src, size_t src_sz);
+bool pct_decode(core::StringBuilder& dst, const char* src, size_t src_sz);
 
 } // namespace address
 } // namespace roc

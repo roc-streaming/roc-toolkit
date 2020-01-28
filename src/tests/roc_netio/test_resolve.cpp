@@ -34,7 +34,8 @@ TEST(resolve, ipv4) {
     CHECK(event_loop.valid());
 
     address::Endpoint endpoint(allocator);
-    CHECK(address::parse_endpoint_uri("rtp://127.0.0.1:123", endpoint.uri()));
+    CHECK(address::parse_endpoint_uri("rtp://127.0.0.1:123",
+                                      address::EndpointURI::Subset_Full, endpoint.uri()));
 
     address::SocketAddr address;
     CHECK(event_loop.resolve_endpoint_address(endpoint, address));
@@ -48,7 +49,8 @@ TEST(resolve, ipv6) {
     CHECK(event_loop.valid());
 
     address::Endpoint endpoint(allocator);
-    CHECK(address::parse_endpoint_uri("rtp://[::1]:123", endpoint.uri()));
+    CHECK(address::parse_endpoint_uri("rtp://[::1]:123",
+                                      address::EndpointURI::Subset_Full, endpoint.uri()));
 
     address::SocketAddr address;
     CHECK(event_loop.resolve_endpoint_address(endpoint, address));
@@ -62,7 +64,8 @@ TEST(resolve, hostname) {
     CHECK(event_loop.valid());
 
     address::Endpoint endpoint(allocator);
-    CHECK(address::parse_endpoint_uri("rtp://localhost:123", endpoint.uri()));
+    CHECK(address::parse_endpoint_uri("rtp://localhost:123",
+                                      address::EndpointURI::Subset_Full, endpoint.uri()));
 
     address::SocketAddr address;
     CHECK(event_loop.resolve_endpoint_address(endpoint, address));
@@ -82,7 +85,8 @@ TEST(resolve, default_port) {
     CHECK(event_loop.valid());
 
     address::Endpoint endpoint(allocator);
-    CHECK(address::parse_endpoint_uri("rtsp://127.0.0.1", endpoint.uri()));
+    CHECK(address::parse_endpoint_uri("rtsp://127.0.0.1",
+                                      address::EndpointURI::Subset_Full, endpoint.uri()));
 
     address::SocketAddr address;
     CHECK(event_loop.resolve_endpoint_address(endpoint, address));
@@ -96,7 +100,8 @@ TEST(resolve, multicast) {
 
     { // multicast interface not present
         address::Endpoint endpoint(allocator);
-        CHECK(address::parse_endpoint_uri("rtp://224.0.0.0:123", endpoint.uri()));
+        CHECK(address::parse_endpoint_uri(
+            "rtp://224.0.0.0:123", address::EndpointURI::Subset_Full, endpoint.uri()));
 
         address::SocketAddr address;
         CHECK(event_loop.resolve_endpoint_address(endpoint, address));
@@ -106,7 +111,8 @@ TEST(resolve, multicast) {
     }
     { // multicast interface present
         address::Endpoint endpoint(allocator);
-        CHECK(address::parse_endpoint_uri("rtp://224.0.0.0:123", endpoint.uri()));
+        CHECK(address::parse_endpoint_uri(
+            "rtp://224.0.0.0:123", address::EndpointURI::Subset_Full, endpoint.uri()));
         CHECK(endpoint.set_miface("192.168.0.1"));
 
         address::SocketAddr address;
@@ -121,7 +127,8 @@ TEST(resolve, multicast) {
     }
     { // multicast interface present but address is not multicast
         address::Endpoint endpoint(allocator);
-        CHECK(address::parse_endpoint_uri("rtp://192.168.0.1:123", endpoint.uri()));
+        CHECK(address::parse_endpoint_uri(
+            "rtp://192.168.0.1:123", address::EndpointURI::Subset_Full, endpoint.uri()));
         CHECK(endpoint.set_miface("192.168.0.1"));
 
         address::SocketAddr address;
@@ -135,7 +142,9 @@ TEST(resolve, broadcast) {
 
     { // broadcast not set
         address::Endpoint endpoint(allocator);
-        CHECK(address::parse_endpoint_uri("rtp://223.255.255.255:123", endpoint.uri()));
+        CHECK(address::parse_endpoint_uri("rtp://223.255.255.255:123",
+                                          address::EndpointURI::Subset_Full,
+                                          endpoint.uri()));
 
         address::SocketAddr address;
         CHECK(event_loop.resolve_endpoint_address(endpoint, address));
@@ -144,7 +153,9 @@ TEST(resolve, broadcast) {
     }
     { // broadcast set
         address::Endpoint endpoint(allocator);
-        CHECK(address::parse_endpoint_uri("rtp://223.255.255.255:123", endpoint.uri()));
+        CHECK(address::parse_endpoint_uri("rtp://223.255.255.255:123",
+                                          address::EndpointURI::Subset_Full,
+                                          endpoint.uri()));
         endpoint.set_broadcast(true);
 
         address::SocketAddr address;
@@ -154,7 +165,8 @@ TEST(resolve, broadcast) {
     }
     { // broadcast set but address is multicast
         address::Endpoint endpoint(allocator);
-        CHECK(address::parse_endpoint_uri("rtp://224.0.0.0:123", endpoint.uri()));
+        CHECK(address::parse_endpoint_uri(
+            "rtp://224.0.0.0:123", address::EndpointURI::Subset_Full, endpoint.uri()));
         endpoint.set_broadcast(true);
 
         address::SocketAddr address;
@@ -168,21 +180,24 @@ TEST(resolve, bad_host) {
 
     { // bad ipv4
         address::Endpoint endpoint(allocator);
-        CHECK(address::parse_endpoint_uri("rtp://300.0.0.1:123", endpoint.uri()));
+        CHECK(address::parse_endpoint_uri(
+            "rtp://300.0.0.1:123", address::EndpointURI::Subset_Full, endpoint.uri()));
 
         address::SocketAddr address;
         CHECK(!event_loop.resolve_endpoint_address(endpoint, address));
     }
     { // bad ipv6
         address::Endpoint endpoint(allocator);
-        CHECK(address::parse_endpoint_uri("rtp://[11::22::]:123", endpoint.uri()));
+        CHECK(address::parse_endpoint_uri(
+            "rtp://[11::22::]:123", address::EndpointURI::Subset_Full, endpoint.uri()));
 
         address::SocketAddr address;
         CHECK(!event_loop.resolve_endpoint_address(endpoint, address));
     }
     { // bad hostname
         address::Endpoint endpoint(allocator);
-        CHECK(address::parse_endpoint_uri("rtp://_:123", endpoint.uri()));
+        CHECK(address::parse_endpoint_uri(
+            "rtp://_:123", address::EndpointURI::Subset_Full, endpoint.uri()));
 
         address::SocketAddr address;
         CHECK(!event_loop.resolve_endpoint_address(endpoint, address));
