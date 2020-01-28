@@ -8,59 +8,54 @@
 
 #include "roc_address/io_uri.h"
 #include "roc_address/pct.h"
-#include "roc_core/string_utils.h"
 
 namespace roc {
 namespace address {
 
 IoURI::IoURI(core::IAllocator& allocator)
-    : path_(allocator) {
-    clear();
+    : scheme_(allocator)
+    , path_(allocator) {
 }
 
 bool IoURI::is_valid() const {
-    return *scheme_ && path_.size() != 0;
+    return !scheme_.is_empty() && !path_.is_empty();
 }
 
 bool IoURI::is_file() const {
     if (!is_valid()) {
         return false;
     }
-    return strcmp(scheme_, "file") == 0;
+    return strcmp(scheme_.c_str(), "file") == 0;
 }
 
 bool IoURI::is_special_file() const {
     if (!is_valid()) {
         return false;
     }
-    return strcmp(scheme_, "file") == 0 && strcmp(&path_[0], "-") == 0;
+    return strcmp(scheme_.c_str(), "file") == 0 && strcmp(path_.c_str(), "-") == 0;
 }
 
 void IoURI::clear() {
-    scheme_[0] = '\0';
-    path_.resize(0);
+    scheme_.clear();
+    path_.clear();
 }
 
 const char* IoURI::scheme() const {
-    if (!is_valid()) {
-        return "";
-    }
-    return scheme_;
+    return scheme_.c_str();
 }
 
 const char* IoURI::path() const {
-    if (!is_valid()) {
-        return "";
-    }
-    return &path_[0];
+    return path_.c_str();
 }
 
 bool IoURI::set_scheme(const char* str, size_t str_len) {
     if (str_len < 1) {
+        scheme_.clear();
         return false;
     }
 
-    if (!core::copy_str(scheme_, sizeof(scheme_), str, str + str_len)) {
+    if (!scheme_.set_buf(str, str_len)) {
+        scheme_.clear();
         return false;
     }
 
@@ -69,27 +64,35 @@ bool IoURI::set_scheme(const char* str, size_t str_len) {
 
 bool IoURI::set_encoded_path(const char* str, size_t str_len) {
     if (str_len < 1) {
+        path_.clear();
         return false;
     }
 
-    const size_t buf_size = str_len + 1;
-
-    if (!path_.resize(buf_size)) {
+    if (!path_.grow(str_len + 1)) {
+        path_.clear();
         return false;
     }
 
-    if (pct_decode(&path_[0], buf_size, str, str_len) == -1) {
+    core::StringBuilder b(path_.raw_buf());
+
+    if (!pct_decode(b, str, str_len)) {
+        path_.clear();
+        return false;
+    }
+
+    if (!b.ok()) {
+        path_.clear();
         return false;
     }
 
     return true;
 }
 
-bool IoURI::get_encoded_path(char* str, size_t str_len) const {
-    if (!is_valid()) {
+bool IoURI::format_encoded_path(core::StringBuilder& dst) const {
+    if (path_.is_empty()) {
         return false;
     }
-    return pct_encode(str, str_len, &path_[0], strlen(&path_[0]), PctNonPath) != -1;
+    return pct_encode(dst, path_.c_str(), path_.len(), PctNonPath);
 }
 
 } // namespace address
