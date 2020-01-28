@@ -115,16 +115,7 @@ char from_hex(char hi, char lo) {
 
 } // namespace
 
-ssize_t
-pct_encode(char* dst, size_t dst_sz, const char* src, size_t src_sz, PctMode mode) {
-    roc_panic_if(dst == NULL);
-    roc_panic_if(src == NULL);
-
-    const char* dst_start = dst;
-    const char* dst_end = dst + dst_sz;
-
-    const char* src_end = src + src_sz;
-
+bool pct_encode(core::StringBuilder& dst, const char* src, size_t src_sz, PctMode mode) {
     bool (*skip_encoding)(char) = NULL;
     switch (mode) {
     case PctNonUnreserved:
@@ -138,81 +129,62 @@ pct_encode(char* dst, size_t dst_sz, const char* src, size_t src_sz, PctMode mod
         break;
     }
 
-    while (src < src_end) {
-        if (*src == '\0') {
-            return -1;
-        }
-
-        if (skip_encoding(*src)) {
-            if (dst_end - dst < 1) {
-                return -1;
-            }
-            *dst++ = *src++;
-            continue;
-        }
-
-        if (dst_end - dst < 3) {
-            return -1;
-        }
-        *dst++ = '%';
-        *dst++ = to_hex((unsigned char)*src >> 4);
-        *dst++ = to_hex((unsigned char)*src & 0xf);
-        src++;
-    }
-
-    if (dst_end - dst < 1) {
-        return -1;
-    }
-    *dst = '\0';
-
-    return ssize_t(dst - dst_start);
-}
-
-ssize_t pct_decode(char* dst, size_t dst_sz, const char* src, size_t src_sz) {
-    roc_panic_if(dst == NULL);
     roc_panic_if(src == NULL);
-
-    const char* dst_start = dst;
-    const char* dst_end = dst + dst_sz;
-
     const char* src_end = src + src_sz;
 
     while (src < src_end) {
         if (*src == '\0') {
-            return -1;
+            return false;
         }
 
-        if (*src == '%') {
-            if (dst_end - dst < 1) {
-                return -1;
-            }
-            if (src_end - src < 3) {
-                return -1;
-            }
-            if (!isxdigit(src[1]) || !isxdigit(src[2])) {
-                return -1;
-            }
-            const char c = from_hex(src[1], src[2]);
-            if (c == '\0') {
-                return -1;
-            }
-            *dst++ = c;
-            src += 3;
+        if (skip_encoding(*src)) {
+            dst.append_char(*src++);
             continue;
         }
 
-        if (dst_end - dst < 1) {
-            return -1;
+        dst.append_char('%');
+        dst.append_char(to_hex((unsigned char)*src >> 4));
+        dst.append_char(to_hex((unsigned char)*src & 0xf));
+
+        src++;
+    }
+
+    return true;
+}
+
+bool pct_decode(core::StringBuilder& dst, const char* src, size_t src_sz) {
+    roc_panic_if(src == NULL);
+    const char* src_end = src + src_sz;
+
+    while (src < src_end) {
+        if (*src == '\0') {
+            return false;
         }
-        *dst++ = *src++;
+
+        if (*src == '%') {
+            if (src_end - src < 3) {
+                return false;
+            }
+
+            if (!isxdigit(src[1]) || !isxdigit(src[2])) {
+                return false;
+            }
+
+            const char c = from_hex(src[1], src[2]);
+            if (c == '\0') {
+                return false;
+            }
+
+            dst.append_char(c);
+            src += 3;
+
+            continue;
+        }
+
+        dst.append_char(*src++);
     }
 
-    if (dst_end - dst < 1) {
-        return -1;
-    }
-    *dst = '\0';
-
-    return ssize_t(dst - dst_start);
+    return true;
 }
 
 } // namespace address

@@ -8,41 +8,25 @@
 
 #include "roc_address/io_uri.h"
 #include "roc_core/panic.h"
-#include "roc_core/string_utils.h"
+#include "roc_core/string_builder.h"
 
 namespace roc {
 namespace address {
 
-bool format_io_uri(const IoURI& u, char* buf, size_t buf_size) {
-    roc_panic_if(buf == NULL);
-
-    if (buf_size == 0) {
-        return false;
-    }
-
+bool format_io_uri(const IoURI& u, core::StringBuilder& dst) {
     if (!u.is_valid()) {
         return false;
     }
 
-    buf[0] = '\0';
-
-    if (!core::append_str(buf, buf_size, u.scheme())) {
-        return false;
-    }
+    dst.append_str(u.scheme());
 
     if (u.is_file()) {
-        if (!core::append_str(buf, buf_size, ":")) {
-            return false;
-        }
+        dst.append_str(":");
     } else {
-        if (!core::append_str(buf, buf_size, "://")) {
-            return false;
-        }
+        dst.append_str("://");
     }
 
-    const size_t pos = strlen(buf);
-
-    if (!u.get_encoded_path(buf + pos, buf_size - pos)) {
+    if (!u.format_encoded_path(dst)) {
         return false;
     }
 
