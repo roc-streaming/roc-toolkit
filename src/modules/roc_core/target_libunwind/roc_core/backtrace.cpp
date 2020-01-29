@@ -15,7 +15,7 @@
 
 #include "roc_core/backtrace.h"
 #include "roc_core/demangle.h"
-#include "roc_core/string_utils.h"
+#include "roc_core/string_builder.h"
 
 namespace roc {
 namespace core {
@@ -126,19 +126,23 @@ void backtrace_symbols(bool enable_demangling) {
         /* Printing => index, function name, offset, ip.
          * The functions below are signal-safe.
          */
-        char buffer[MaxLineLen] = "#";
-        append_uint(buffer, sizeof(buffer) - 1, index, 10);
+        char buffer[MaxLineLen];
 
-        append_str(buffer, sizeof(buffer) - 1, ": 0x");
-        append_uint(buffer, sizeof(buffer) - 1, ip, 16);
+        StringBuilder b(buffer, sizeof(buffer) - 1);
 
-        append_str(buffer, sizeof(buffer) - 1, " ");
-        append_str(buffer, sizeof(buffer) - 1, symbol);
+        b.append_str("#");
+        b.append_uint(index, 10);
 
-        append_str(buffer, sizeof(buffer) - 1, "+0x");
-        append_uint(buffer, sizeof(buffer) - 1, offset, 16);
+        b.append_str(": 0x");
+        b.append_uint(ip, 16);
 
-        append_str(buffer, sizeof(buffer), "\n");
+        b.append_str(" ");
+        b.append_str(symbol);
+
+        b.append_str("+0x");
+        b.append_uint(offset, 16);
+
+        strcat(buffer, "\n");
 
         print_emergency_message(buffer);
     }
