@@ -14,7 +14,7 @@
 namespace roc {
 namespace api {
 
-bool make_context_config(peer::ContextConfig& out, const roc_context_config& in) {
+bool context_config_from_user(peer::ContextConfig& out, const roc_context_config& in) {
     if (in.max_packet_size != 0) {
         out.max_packet_size = in.max_packet_size;
     }
@@ -26,7 +26,7 @@ bool make_context_config(peer::ContextConfig& out, const roc_context_config& in)
     return true;
 }
 
-bool make_sender_config(pipeline::SenderConfig& out, const roc_sender_config& in) {
+bool sender_config_from_user(pipeline::SenderConfig& out, const roc_sender_config& in) {
     if (in.frame_sample_rate != 0) {
         out.input_sample_rate = in.frame_sample_rate;
     } else {
@@ -112,7 +112,8 @@ bool make_sender_config(pipeline::SenderConfig& out, const roc_sender_config& in
     return true;
 }
 
-bool make_receiver_config(pipeline::ReceiverConfig& out, const roc_receiver_config& in) {
+bool receiver_config_from_user(pipeline::ReceiverConfig& out,
+                               const roc_receiver_config& in) {
     if (in.frame_sample_rate != 0) {
         out.common.output_sample_rate = in.frame_sample_rate;
     } else {
@@ -208,7 +209,7 @@ bool make_receiver_config(pipeline::ReceiverConfig& out, const roc_receiver_conf
     return true;
 }
 
-bool make_endpoint_type(address::EndpointType& out, roc_port_type in) {
+bool endpoint_type_from_user(address::EndpointType& out, roc_port_type in) {
     switch ((int)in) {
     case ROC_PORT_AUDIO_SOURCE:
         out = address::EndType_AudioSource;
@@ -226,7 +227,7 @@ bool make_endpoint_type(address::EndpointType& out, roc_port_type in) {
     return false;
 }
 
-bool make_endpoint_proto(address::EndpointProtocol& out, roc_protocol in) {
+bool endpoint_proto_from_user(address::EndpointProtocol& out, roc_protocol in) {
     switch ((int)in) {
     case ROC_PROTO_RTP:
         out = address::EndProto_RTP;
@@ -246,6 +247,36 @@ bool make_endpoint_proto(address::EndpointProtocol& out, roc_protocol in) {
 
     case ROC_PROTO_LDPC_REPAIR:
         out = address::EndProto_LDPC_Repair;
+        return true;
+
+    default:
+        break;
+    }
+
+    roc_log(LogError, "bad configuration: invalid endpoint protocol");
+    return false;
+}
+
+bool endpoint_proto_to_user(roc_protocol& out, address::EndpointProtocol in) {
+    switch ((int)in) {
+    case address::EndProto_RTP:
+        out = ROC_PROTO_RTP;
+        return true;
+
+    case address::EndProto_RTP_RS8M_Source:
+        out = ROC_PROTO_RTP_RS8M_SOURCE;
+        return true;
+
+    case address::EndProto_RS8M_Repair:
+        out = ROC_PROTO_RS8M_REPAIR;
+        return true;
+
+    case address::EndProto_RTP_LDPC_Source:
+        out = ROC_PROTO_RTP_LDPC_SOURCE;
+        return true;
+
+    case address::EndProto_LDPC_Repair:
+        out = ROC_PROTO_LDPC_REPAIR;
         return true;
 
     default:
