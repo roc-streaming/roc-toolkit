@@ -9,7 +9,6 @@
 #include "roc_sndio/sox_source.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
-#include "roc_core/string_utils.h"
 #include "roc_sndio/sox_backend.h"
 
 namespace roc {
@@ -129,8 +128,8 @@ void SoxSource::pause() {
         roc_panic("sox source: pause: non-open input file or device");
     }
 
-    roc_log(LogDebug, "sox source: pausing: driver=%s input=%s", driver_name_.data(),
-            input_name_.data());
+    roc_log(LogDebug, "sox source: pausing: driver=%s input=%s", driver_name_.c_str(),
+            input_name_.c_str());
 
     if (!is_file_) {
         close_();
@@ -146,13 +145,13 @@ bool SoxSource::resume() {
         return true;
     }
 
-    roc_log(LogDebug, "sox source: resuming: driver=%s input=%s", driver_name_.data(),
-            input_name_.data());
+    roc_log(LogDebug, "sox source: resuming: driver=%s input=%s", driver_name_.c_str(),
+            input_name_.c_str());
 
     if (!input_) {
         if (!open_()) {
             roc_log(LogError, "sox source: open failed when resuming: driver=%s input=%s",
-                    driver_name_.data(), input_name_.data());
+                    driver_name_.c_str(), input_name_.c_str());
             return false;
         }
     }
@@ -164,14 +163,14 @@ bool SoxSource::resume() {
 bool SoxSource::restart() {
     roc_panic_if(!valid_);
 
-    roc_log(LogDebug, "sox source: restarting: driver=%s input=%s", driver_name_.data(),
-            input_name_.data());
+    roc_log(LogDebug, "sox source: restarting: driver=%s input=%s", driver_name_.c_str(),
+            input_name_.c_str());
 
     if (is_file_ && !eof_) {
         if (!seek_(0)) {
             roc_log(LogError,
                     "sox source: seek failed when restarting: driver=%s input=%s",
-                    driver_name_.data(), input_name_.data());
+                    driver_name_.c_str(), input_name_.c_str());
             return false;
         }
     } else {
@@ -182,7 +181,7 @@ bool SoxSource::restart() {
         if (!open_()) {
             roc_log(LogError,
                     "sox source: open failed when restarting: driver=%s input=%s",
-                    driver_name_.data(), input_name_.data());
+                    driver_name_.c_str(), input_name_.c_str());
             return false;
         }
     }
@@ -270,16 +269,14 @@ bool SoxSource::seek_(uint64_t offset) {
 
 bool SoxSource::prepare_(const char* driver, const char* input) {
     if (driver) {
-        if (!driver_name_.resize(strlen(driver) + 1)
-            || !core::copy_str(driver_name_.data(), driver_name_.size(), driver)) {
+        if (!driver_name_.set_str(driver)) {
             roc_log(LogError, "sox source: can't allocate string");
             return false;
         }
     }
 
     if (input) {
-        if (!input_name_.resize(strlen(input) + 1)
-            || !core::copy_str(input_name_.data(), input_name_.size(), input)) {
+        if (!input_name_.set_str(input)) {
             roc_log(LogError, "sox source: can't allocate string");
             return false;
         }
@@ -298,10 +295,12 @@ bool SoxSource::open_() {
         roc_panic("sox source: already opened");
     }
 
-    if (!(input_ = sox_open_read(input_name_.data(), &in_signal_, NULL,
-                                 driver_name_.data()))) {
+    input_ =
+        sox_open_read(input_name_.is_empty() ? NULL : input_name_.c_str(), &in_signal_,
+                      NULL, driver_name_.is_empty() ? NULL : driver_name_.c_str());
+    if (!input_) {
         roc_log(LogError, "sox source: can't open: driver=%s input=%s",
-                driver_name_.data(), input_name_.data());
+                driver_name_.c_str(), input_name_.c_str());
         return false;
     }
 
