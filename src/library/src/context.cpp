@@ -31,7 +31,7 @@ int roc_context_open(const roc_context_config* config, roc_context** result) {
     }
 
     peer::ContextConfig imp_config;
-    if (!api::make_context_config(imp_config, *config)) {
+    if (!api::context_config_from_user(imp_config, *config)) {
         roc_log(LogError, "roc_context_open: invalid arguments: bad config");
         return -1;
     }
