@@ -18,6 +18,7 @@
 #include "roc_core/iallocator.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/stddefs.h"
+#include "roc_core/string_buffer.h"
 #include "roc_packet/units.h"
 #include "roc_sndio/config.h"
 #include "roc_sndio/isource.h"
@@ -81,8 +82,8 @@ private:
 
     bool seek_(uint64_t offset);
 
-    core::Array<char, 16> driver_name_;
-    core::Array<char> input_name_;
+    core::StringBuffer<16> driver_name_;
+    core::StringBuffer<> input_name_;
 
     core::Array<sox_sample_t> buffer_;
     const size_t buffer_size_;
