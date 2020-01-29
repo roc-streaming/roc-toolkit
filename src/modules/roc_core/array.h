@@ -221,7 +221,8 @@ public:
     //! @remarks
     //!  If @p min_size is greater than the current maximum size, a larger memory
     //!  region is allocated and the array elements are copied there.
-    //!  The size growth will follow the sequence: 0, 2, 4, 8, 16, ...
+    //!  The size growth will follow the sequence: 0, 2, 4, 8, 16, ... until
+    //!  it reaches some threshold, and then starts growing linearly.
     //! @returns
     //!  false if the allocation failed
     bool grow_exp(size_t min_size) {
@@ -229,12 +230,19 @@ public:
             return true;
         }
 
-        size_t new_size = size_;
-        while (min_size > new_size) {
-            new_size = (new_size == 0) ? 2 : new_size * 2;
+        size_t new_max_size_ = max_size_;
+
+        if (max_size_ < 1024) {
+            while (min_size > new_max_size_) {
+                new_max_size_ = (new_max_size_ == 0) ? 2 : new_max_size_ * 2;
+            }
+        } else {
+            while (min_size > new_max_size_) {
+                new_max_size_ += new_max_size_ / 4;
+            }
         }
 
-        return grow(new_size);
+        return grow(new_max_size_);
     }
 
 private:
