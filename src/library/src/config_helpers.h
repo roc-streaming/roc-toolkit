@@ -18,13 +18,16 @@
 namespace roc {
 namespace api {
 
-bool make_context_config(peer::ContextConfig& out, const roc_context_config& in);
+bool context_config_from_user(peer::ContextConfig& out, const roc_context_config& in);
 
-bool make_sender_config(pipeline::SenderConfig& out, const roc_sender_config& in);
-bool make_receiver_config(pipeline::ReceiverConfig& out, const roc_receiver_config& in);
+bool sender_config_from_user(pipeline::SenderConfig& out, const roc_sender_config& in);
+bool receiver_config_from_user(pipeline::ReceiverConfig& out,
+                               const roc_receiver_config& in);
 
-bool make_endpoint_type(address::EndpointType& out, roc_port_type in);
-bool make_endpoint_proto(address::EndpointProtocol& out, roc_protocol proto);
+bool endpoint_type_from_user(address::EndpointType& out, roc_port_type in);
+
+bool endpoint_proto_from_user(address::EndpointProtocol& out, roc_protocol in);
+bool endpoint_proto_to_user(roc_protocol& out, address::EndpointProtocol in);
 
 } // namespace api
 } // namespace roc
