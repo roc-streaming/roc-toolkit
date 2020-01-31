@@ -162,7 +162,7 @@ void EventLoop::remove_port(address::SocketAddr bind_address) {
     }
 }
 
-bool EventLoop::resolve_endpoint_address(const address::Endpoint& endpoint,
+bool EventLoop::resolve_endpoint_address(const address::EndpointURI& endpoint_uri,
                                          address::SocketAddr& resolved_address) {
     if (!valid()) {
         roc_panic("event loop: can't use invalid loop");
@@ -170,7 +170,7 @@ bool EventLoop::resolve_endpoint_address(const address::Endpoint& endpoint,
 
     Task task;
     task.func = &EventLoop::resolve_endpoint_address_;
-    task.resolve_req.endpoint = &endpoint;
+    task.resolve_req.endpoint_uri = &endpoint_uri;
     task.resolve_req.resolved_address = &resolved_address;
 
     run_task_(task);

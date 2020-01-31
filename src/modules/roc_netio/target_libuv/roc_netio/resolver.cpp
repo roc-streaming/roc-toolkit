@@ -23,32 +23,31 @@ Resolver::Resolver(IResolverRequestHandler& req_handler, uv_loop_t& event_loop)
 }
 
 bool Resolver::async_resolve(ResolverRequest& req) {
-    roc_panic_if(!req.endpoint);
+    roc_panic_if(!req.endpoint_uri);
     roc_panic_if(!req.resolved_address);
 
     req.resolved_address->clear();
 
-    if (!req.endpoint->check()) {
+    if (!req.endpoint_uri->check(address::EndpointURI::Subset_Full)) {
         roc_log(LogError, "resolver: invalid endpoint");
         req.success = false;
         return false;
     }
 
     roc_log(LogTrace, "resolver: starting resolving: endpoint=%s",
-            address::endpoint_uri_to_str(req.endpoint->uri()).c_str());
+            address::endpoint_uri_to_str(*req.endpoint_uri).c_str());
 
-    if (address::parse_socket_addr_host_port(req.endpoint->uri().host(),
-                                             req.endpoint->uri().port(),
-                                             *req.resolved_address)) {
+    if (address::parse_socket_addr_host_port(
+            req.endpoint_uri->host(), req.endpoint_uri->port(), *req.resolved_address)) {
         finish_resolving_(req, 0);
         return false;
     }
 
     req.handle.data = this;
 
-    if (int err = uv_getaddrinfo(&loop_, &req.handle, &Resolver::getaddrinfo_cb_,
-                                 req.endpoint->uri().host(),
-                                 req.endpoint->uri().service(), NULL)) {
+    if (int err =
+            uv_getaddrinfo(&loop_, &req.handle, &Resolver::getaddrinfo_cb_,
+                           req.endpoint_uri->host(), req.endpoint_uri->service(), NULL)) {
         finish_resolving_(req, err);
         return false;
     }
@@ -82,49 +81,17 @@ void Resolver::getaddrinfo_cb_(uv_getaddrinfo_t* req_handle,
 void Resolver::finish_resolving_(ResolverRequest& req, int status) {
     if (status != 0) {
         roc_log(LogError, "resolver: can't resolve hostname '%s': [%s] %s",
-                req.endpoint->uri().host(), uv_err_name(status), uv_strerror(status));
+                req.endpoint_uri->host(), uv_err_name(status), uv_strerror(status));
         req.success = false;
         return;
     }
 
     if (!req.resolved_address->has_host_port()) {
         roc_log(LogError, "resolver: no address associated with hostname: hostname=%s",
-                req.endpoint->uri().host());
+                req.endpoint_uri->host());
         req.success = false;
         return;
     }
-
-    if (req.endpoint->miface()) {
-        if (!address::parse_socket_addr_miface(req.endpoint->miface(),
-                                               *req.resolved_address)) {
-            roc_log(LogError,
-                    "resolver: can't add multicast interface to the resolved address:"
-                    " hostname=%s resolved_address=%s miface=%s",
-                    req.endpoint->uri().host(),
-                    address::socket_addr_to_str(*req.resolved_address).c_str(),
-                    req.endpoint->miface());
-            req.success = false;
-            return;
-        }
-    }
-
-    if (req.endpoint->broadcast()) {
-        if (!req.resolved_address->set_broadcast()) {
-            roc_log(LogError,
-                    "resolver: can't add broadcast flag to the resolved address:"
-                    " hostname=%s resolved_address=%s",
-                    req.endpoint->uri().host(),
-                    address::socket_addr_to_str(*req.resolved_address).c_str());
-            req.success = false;
-            return;
-        }
-    }
-
-    roc_log(LogDebug,
-            "resolver: endpoint resolving finished:"
-            " endpoint=%s resolved_address=%s",
-            address::endpoint_uri_to_str(req.endpoint->uri()).c_str(),
-            address::socket_addr_to_str(*req.resolved_address).c_str());
 
     req.success = true;
 }
