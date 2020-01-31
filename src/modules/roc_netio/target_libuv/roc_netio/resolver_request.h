@@ -14,7 +14,7 @@
 
 #include <uv.h>
 
-#include "roc_address/endpoint.h"
+#include "roc_address/endpoint_uri.h"
 #include "roc_address/socket_addr.h"
 
 namespace roc {
@@ -23,7 +23,7 @@ namespace netio {
 //! Resolver request.
 struct ResolverRequest {
     //! Endpoint with hostname to resolve for async_resolve().
-    const address::Endpoint* endpoint;
+    const address::EndpointURI* endpoint_uri;
 
     //! Resolved address to be filled by async_resolve().
     address::SocketAddr* resolved_address;
@@ -35,7 +35,7 @@ struct ResolverRequest {
     uv_getaddrinfo_t handle;
 
     ResolverRequest()
-        : endpoint(NULL)
+        : endpoint_uri(NULL)
         , resolved_address(NULL)
         , success(false) {
         memset(&handle, 0, sizeof(handle));
