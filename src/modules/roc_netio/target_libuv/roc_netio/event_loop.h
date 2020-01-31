@@ -97,7 +97,7 @@ public:
     //!  false if hostname can't be resolved or resolved address is incompatible
     //!  with other endpoint settings (e.g. address is not allowed to be multicast and
     //!  broadcast at the same time).
-    bool resolve_endpoint_address(const address::Endpoint& endpoint,
+    bool resolve_endpoint_address(const address::EndpointURI& endpoint_uri,
                                   address::SocketAddr& resolved_address);
 
 private:
