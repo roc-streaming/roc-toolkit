@@ -39,7 +39,6 @@ SoxSink::SoxSink(core::IAllocator& allocator, const Config& config)
 
     if (frame_length_ == 0) {
         roc_log(LogError, "sox sink: frame length is zero");
-        out_signal_.rate = sample_rate();
         return;
     }
 
@@ -72,7 +71,7 @@ bool SoxSink::open(const char* driver, const char* output) {
         return false;
     }
 
-    if (!prepare_()) {
+    if (!setup_buffer_()) {
         return false;
     }
 
@@ -138,11 +137,9 @@ void SoxSink::write(audio::Frame& frame) {
     write_(buffer_data, buffer_pos);
 }
 
-bool SoxSink::prepare_() {
-    if (buffer_size_ == 0) {
-        out_signal_.rate = sample_rate();
-        buffer_size_ = packet::ns_to_size(frame_length_, sample_rate(), channels_);
-    }
+bool SoxSink::setup_buffer_() {
+    size_t requested_device_rate = sample_rate();
+    buffer_size_ = packet::ns_to_size(frame_length_, requested_device_rate, channels_);
 
     if (!buffer_.resize(buffer_size_)) {
         roc_log(LogError, "sox sink: can't allocate sample buffer");

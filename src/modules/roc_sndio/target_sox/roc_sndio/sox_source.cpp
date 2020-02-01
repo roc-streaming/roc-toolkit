@@ -70,11 +70,15 @@ bool SoxSource::open(const char* driver, const char* input) {
         roc_panic("sox source: can't call open() more than once");
     }
 
-    if (!prepare_(driver, input)) {
+    if (!setup_names_(driver, input)) {
         return false;
     }
 
     if (!open_()) {
+        return false;
+    }
+
+    if (!setup_buffer_()) {
         return false;
     }
 
@@ -271,7 +275,7 @@ bool SoxSource::seek_(uint64_t offset) {
     return true;
 }
 
-bool SoxSource::prepare_(const char* driver, const char* input) {
+bool SoxSource::setup_names_(const char* driver, const char* input) {
     if (driver) {
         if (!driver_name_.set_str(driver)) {
             roc_log(LogError, "sox source: can't allocate string");
@@ -286,6 +290,12 @@ bool SoxSource::prepare_(const char* driver, const char* input) {
         }
     }
 
+    return true;
+}
+
+bool SoxSource::setup_buffer_() {
+    size_t requested_device_rate = sample_rate();
+    buffer_size_ = packet::ns_to_size(frame_length_, requested_device_rate, channels_);
     if (!buffer_.resize(buffer_size_)) {
         roc_log(LogError, "sox source: can't allocate sample buffer");
         return false;
@@ -327,10 +337,8 @@ bool SoxSource::open_() {
         return false;
     }
 
-    if (buffer_size_ == 0) {
-        in_signal_.rate = sample_rate();
-        buffer_size_ = packet::ns_to_size(frame_length_, sample_rate(), channels_);
-    }
+    size_t requested_device_rate = sample_rate();
+    buffer_size_ = packet::ns_to_size(frame_length_, requested_device_rate, channels_);
 
     return true;
 }
