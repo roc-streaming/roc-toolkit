@@ -24,13 +24,13 @@ namespace sndio {
 
 namespace {
 
-enum { MaxBufSize = 8192, SampleRate = 44100, ChMask = 0x3 };
+enum { BufSize = 512, SampleRate = 44100, ChMask = 0x3 };
 
-const core::nanoseconds_t MaxBufDuration =
-    MaxBufSize * core::Second / (SampleRate * packet::num_channels(ChMask));
+const core::nanoseconds_t BufDuration =
+    BufSize * core::Second / (SampleRate * packet::num_channels(ChMask));
 
 core::HeapAllocator allocator;
-core::BufferPool<audio::sample_t> buffer_pool(allocator, MaxBufSize, true);
+core::BufferPool<audio::sample_t> buffer_pool(allocator, BufSize, true);
 
 } // namespace
 
@@ -40,12 +40,12 @@ TEST_GROUP(pump) {
     void setup() {
         config.channels = ChMask;
         config.sample_rate = SampleRate;
-        config.frame_length = MaxBufDuration;
+        config.frame_length = BufDuration;
     }
 };
 
 TEST(pump, write_read) {
-    enum { NumSamples = MaxBufSize * 10 };
+    enum { NumSamples = BufSize * 10 };
 
     MockSource mock_source;
     mock_source.add(NumSamples);
@@ -56,12 +56,12 @@ TEST(pump, write_read) {
         SoxSink sox_sink(allocator, config);
         CHECK(sox_sink.open(NULL, file.path()));
 
-        Pump pump(buffer_pool, mock_source, NULL, sox_sink, MaxBufDuration, SampleRate,
+        Pump pump(buffer_pool, mock_source, NULL, sox_sink, BufDuration, SampleRate,
                   ChMask, Pump::ModeOneshot);
         CHECK(pump.valid());
         CHECK(pump.run());
 
-        CHECK(mock_source.num_returned() >= NumSamples - MaxBufSize);
+        CHECK(mock_source.num_returned() >= NumSamples - BufSize);
     }
 
     SoxSource sox_source(allocator, config);
@@ -69,8 +69,8 @@ TEST(pump, write_read) {
 
     MockSink mock_writer;
 
-    Pump pump(buffer_pool, sox_source, NULL, mock_writer, MaxBufDuration, SampleRate,
-              ChMask, Pump::ModePermanent);
+    Pump pump(buffer_pool, sox_source, NULL, mock_writer, BufDuration, SampleRate, ChMask,
+              Pump::ModePermanent);
     CHECK(pump.valid());
     CHECK(pump.run());
 
@@ -78,7 +78,7 @@ TEST(pump, write_read) {
 }
 
 TEST(pump, write_overwrite_read) {
-    enum { NumSamples = MaxBufSize * 10 };
+    enum { NumSamples = BufSize * 10 };
 
     MockSource mock_source;
     mock_source.add(NumSamples);
@@ -89,7 +89,7 @@ TEST(pump, write_overwrite_read) {
         SoxSink sox_sink(allocator, config);
         CHECK(sox_sink.open(NULL, file.path()));
 
-        Pump pump(buffer_pool, mock_source, NULL, sox_sink, MaxBufDuration, SampleRate,
+        Pump pump(buffer_pool, mock_source, NULL, sox_sink, BufDuration, SampleRate,
                   ChMask, Pump::ModeOneshot);
         CHECK(pump.valid());
         CHECK(pump.run());
@@ -98,28 +98,28 @@ TEST(pump, write_overwrite_read) {
     mock_source.add(NumSamples);
 
     size_t num_returned1 = mock_source.num_returned();
-    CHECK(num_returned1 >= NumSamples - MaxBufSize);
+    CHECK(num_returned1 >= NumSamples - BufSize);
 
     {
         SoxSink sox_sink(allocator, config);
         CHECK(sox_sink.open(NULL, file.path()));
 
-        Pump pump(buffer_pool, mock_source, NULL, sox_sink, MaxBufDuration, SampleRate,
+        Pump pump(buffer_pool, mock_source, NULL, sox_sink, BufDuration, SampleRate,
                   ChMask, Pump::ModeOneshot);
         CHECK(pump.valid());
         CHECK(pump.run());
     }
 
     size_t num_returned2 = mock_source.num_returned() - num_returned1;
-    CHECK(num_returned1 >= NumSamples - MaxBufSize);
+    CHECK(num_returned1 >= NumSamples - BufSize);
 
     SoxSource sox_source(allocator, config);
     CHECK(sox_source.open(NULL, file.path()));
 
     MockSink mock_writer;
 
-    Pump pump(buffer_pool, sox_source, NULL, mock_writer, MaxBufDuration, SampleRate,
-              ChMask, Pump::ModePermanent);
+    Pump pump(buffer_pool, sox_source, NULL, mock_writer, BufDuration, SampleRate, ChMask,
+              Pump::ModePermanent);
     CHECK(pump.valid());
     CHECK(pump.run());
 
