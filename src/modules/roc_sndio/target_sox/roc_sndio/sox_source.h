@@ -75,7 +75,8 @@ public:
     virtual bool read(audio::Frame&);
 
 private:
-    bool prepare_(const char* driver, const char* input);
+    bool setup_names_(const char* driver, const char* input);
+    bool setup_buffer_();
 
     bool open_();
     void close_();

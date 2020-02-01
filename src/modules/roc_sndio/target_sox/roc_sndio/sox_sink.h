@@ -62,7 +62,7 @@ public:
     virtual void write(audio::Frame& frame);
 
 private:
-    bool prepare_();
+    bool setup_buffer_();
     bool open_(const char* driver, const char* output);
     void write_(const sox_sample_t* samples, size_t n_samples);
     void close_();
