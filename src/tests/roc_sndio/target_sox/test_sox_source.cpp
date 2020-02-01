@@ -31,8 +31,8 @@ enum {
     NumChans = 2
 };
 
-const core::nanoseconds_t MaxBufDuration =
-    MaxBufSize * core::Second / (SampleRate * packet::num_channels(ChMask));
+const core::nanoseconds_t FrameDuration =
+    FrameSize * core::Second / (SampleRate * packet::num_channels(ChMask));
 
 core::HeapAllocator allocator;
 core::BufferPool<audio::sample_t> buffer_pool(allocator, MaxBufSize, true);
@@ -46,11 +46,11 @@ TEST_GROUP(sox_source) {
     void setup() {
         sink_config.channels = ChMask;
         sink_config.sample_rate = SampleRate;
-        sink_config.frame_length = MaxBufDuration;
+        sink_config.frame_length = FrameDuration;
 
         source_config.channels = ChMask;
         source_config.sample_rate = SampleRate;
-        source_config.frame_length = MaxBufDuration;
+        source_config.frame_length = FrameDuration;
     }
 };
 
@@ -74,7 +74,7 @@ TEST(sox_source, has_clock) {
         SoxSink sox_sink(allocator, sink_config);
         CHECK(sox_sink.open(NULL, file.path()));
 
-        Pump pump(buffer_pool, mock_source, NULL, sox_sink, MaxBufDuration, SampleRate,
+        Pump pump(buffer_pool, mock_source, NULL, sox_sink, FrameDuration, SampleRate,
                   ChMask, Pump::ModeOneshot);
         CHECK(pump.valid());
         CHECK(pump.run());
@@ -96,14 +96,14 @@ TEST(sox_source, sample_rate_auto) {
         SoxSink sox_sink(allocator, sink_config);
         CHECK(sox_sink.open(NULL, file.path()));
 
-        Pump pump(buffer_pool, mock_source, NULL, sox_sink, MaxBufDuration, SampleRate,
+        Pump pump(buffer_pool, mock_source, NULL, sox_sink, FrameDuration, SampleRate,
                   ChMask, Pump::ModeOneshot);
         CHECK(pump.valid());
         CHECK(pump.run());
     }
 
     source_config.sample_rate = 0;
-    source_config.frame_length = MaxBufDuration;
+    source_config.frame_length = FrameDuration;
     SoxSource sox_source(allocator, source_config);
 
     CHECK(sox_source.open(NULL, file.path()));
@@ -120,7 +120,7 @@ TEST(sox_source, sample_rate_mismatch) {
         SoxSink sox_sink(allocator, sink_config);
         CHECK(sox_sink.open(NULL, file.path()));
 
-        Pump pump(buffer_pool, mock_source, NULL, sox_sink, MaxBufDuration, SampleRate,
+        Pump pump(buffer_pool, mock_source, NULL, sox_sink, FrameDuration, SampleRate,
                   ChMask, Pump::ModeOneshot);
         CHECK(pump.valid());
         CHECK(pump.run());
@@ -143,7 +143,7 @@ TEST(sox_source, pause_resume) {
         SoxSink sox_sink(allocator, sink_config);
         CHECK(sox_sink.open(NULL, file.path()));
 
-        Pump pump(buffer_pool, mock_source, NULL, sox_sink, MaxBufDuration, SampleRate,
+        Pump pump(buffer_pool, mock_source, NULL, sox_sink, FrameDuration, SampleRate,
                   ChMask, Pump::ModeOneshot);
         CHECK(pump.valid());
         CHECK(pump.run());
@@ -187,7 +187,7 @@ TEST(sox_source, pause_restart) {
         SoxSink sox_sink(allocator, sink_config);
         CHECK(sox_sink.open(NULL, file.path()));
 
-        Pump pump(buffer_pool, mock_source, NULL, sox_sink, MaxBufDuration, SampleRate,
+        Pump pump(buffer_pool, mock_source, NULL, sox_sink, FrameDuration, SampleRate,
                   ChMask, Pump::ModeOneshot);
         CHECK(pump.valid());
         CHECK(pump.run());
