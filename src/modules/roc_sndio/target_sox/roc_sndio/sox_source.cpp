@@ -294,8 +294,7 @@ bool SoxSource::setup_names_(const char* driver, const char* input) {
 }
 
 bool SoxSource::setup_buffer_() {
-    size_t requested_device_rate = sample_rate();
-    buffer_size_ = packet::ns_to_size(frame_length_, requested_device_rate, channels_);
+    buffer_size_ = packet::ns_to_size(frame_length_, sample_rate(), channels_);
     if (!buffer_.resize(buffer_size_)) {
         roc_log(LogError, "sox source: can't allocate sample buffer");
         return false;
@@ -336,9 +335,6 @@ bool SoxSource::open_() {
                 (unsigned long)n_channels_, (unsigned long)input_->signal.channels);
         return false;
     }
-
-    size_t requested_device_rate = sample_rate();
-    buffer_size_ = packet::ns_to_size(frame_length_, requested_device_rate, channels_);
 
     return true;
 }
