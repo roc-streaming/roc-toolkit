@@ -39,7 +39,7 @@ ConverterSink::ConverterSink(const ConverterConfig& config,
         resampler_.reset(audio::ResamplerMap::instance().new_resampler(
                              config.resampler_backend, allocator, config.resampler,
                              config.internal_frame_length, config.input_sample_rate,
-                             config.output_channels),
+                             config.input_channels),
                          allocator);
 
         if (!resampler_) {
@@ -49,7 +49,7 @@ ConverterSink::ConverterSink(const ConverterConfig& config,
         resampler_writer_.reset(new (allocator) audio::ResamplerWriter(
                                     *awriter, *resampler_, pool,
                                     config.internal_frame_length,
-                                    config.input_sample_rate, config.output_channels),
+                                    config.input_sample_rate, config.input_channels),
                                 allocator);
 
         if (!resampler_writer_ || !resampler_writer_->valid()) {
