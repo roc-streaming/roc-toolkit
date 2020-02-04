@@ -22,7 +22,7 @@ Receiver::Receiver(Context& context, const pipeline::ReceiverConfig& pipeline_co
                 context_.sample_buffer_pool(),
                 context_.allocator())
     , endpoint_set_(0)
-    , addresses_(context_.allocator()) {
+    , ports_(context_.allocator()) {
     roc_log(LogDebug, "receiver peer: initializing");
 
     if (!pipeline_.valid()) {
@@ -35,8 +35,8 @@ Receiver::Receiver(Context& context, const pipeline::ReceiverConfig& pipeline_co
 Receiver::~Receiver() {
     roc_log(LogDebug, "receiver peer: deinitializing");
 
-    for (size_t i = 0; i < addresses_.size(); i++) {
-        context_.event_loop().remove_port(addresses_[i]);
+    for (size_t i = 0; i < ports_.size(); i++) {
+        context_.event_loop().remove_port(ports_[i]);
     }
 }
 
@@ -49,8 +49,8 @@ bool Receiver::bind(address::EndpointType type,
                     address::SocketAddr& address) {
     core::Mutex::Lock lock(mutex_);
 
-    if (!addresses_.grow_exp((addresses_.size() + 1))) {
-        roc_log(LogError, "receiver peer: can't grow the addresses array");
+    if (!ports_.grow_exp((ports_.size() + 1))) {
+        roc_log(LogError, "receiver peer: can't grow the ports array");
         return false;
     }
 
@@ -60,12 +60,15 @@ bool Receiver::bind(address::EndpointType type,
         return false;
     }
 
-    if (!context_.event_loop().add_udp_receiver(address, *endpoint_writer)) {
+    netio::EventLoop::PortHandle port =
+        context_.event_loop().add_udp_receiver(address, *endpoint_writer);
+
+    if (!port) {
         roc_log(LogError, "receiver peer: bind failed");
         return false;
     }
 
-    addresses_.push_back(address);
+    ports_.push_back(port);
 
     roc_log(LogInfo, "receiver peer: bound to %s endpoint %s at %s",
             address::endpoint_type_to_str(type), address::endpoint_proto_to_str(proto),

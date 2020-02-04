@@ -49,8 +49,8 @@ TEST(resolve, ipv6) {
     CHECK(event_loop.valid());
 
     address::EndpointURI endpoint_uri(allocator);
-    CHECK(address::parse_endpoint_uri(
-        "rtp://[::1]:123", address::EndpointURI::Subset_Full, endpoint_uri));
+    CHECK(address::parse_endpoint_uri("rtp://[::1]:123",
+                                      address::EndpointURI::Subset_Full, endpoint_uri));
 
     address::SocketAddr address;
     CHECK(event_loop.resolve_endpoint_address(endpoint_uri, address));
@@ -64,8 +64,8 @@ TEST(resolve, hostname) {
     CHECK(event_loop.valid());
 
     address::EndpointURI endpoint_uri(allocator);
-    CHECK(address::parse_endpoint_uri(
-        "rtp://localhost:123", address::EndpointURI::Subset_Full, endpoint_uri));
+    CHECK(address::parse_endpoint_uri("rtp://localhost:123",
+                                      address::EndpointURI::Subset_Full, endpoint_uri));
 
     address::SocketAddr address;
     CHECK(event_loop.resolve_endpoint_address(endpoint_uri, address));
@@ -85,8 +85,8 @@ TEST(resolve, standard_port) {
     CHECK(event_loop.valid());
 
     address::EndpointURI endpoint_uri(allocator);
-    CHECK(address::parse_endpoint_uri(
-        "rtsp://127.0.0.1", address::EndpointURI::Subset_Full, endpoint_uri));
+    CHECK(address::parse_endpoint_uri("rtsp://127.0.0.1",
+                                      address::EndpointURI::Subset_Full, endpoint_uri));
 
     address::SocketAddr address;
     CHECK(event_loop.resolve_endpoint_address(endpoint_uri, address));
