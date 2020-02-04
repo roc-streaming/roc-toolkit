@@ -88,14 +88,15 @@ TEST(udp, one_sender_one_receiver_single_thread) {
     EventLoop event_loop(packet_pool, buffer_pool, allocator);
     CHECK(event_loop.valid());
 
-    packet::IWriter* tx_sender = event_loop.add_udp_sender(tx_addr);
-    CHECK(tx_sender);
+    packet::IWriter* tx_writer = NULL;
+    CHECK(event_loop.add_udp_sender(tx_addr, &tx_writer));
+    CHECK(tx_writer);
 
     CHECK(event_loop.add_udp_receiver(rx_addr, rx_queue));
 
     for (int i = 0; i < NumIterations; i++) {
         for (int p = 0; p < NumPackets; p++) {
-            tx_sender->write(new_packet(tx_addr, rx_addr, p));
+            tx_writer->write(new_packet(tx_addr, rx_addr, p));
         }
         for (int p = 0; p < NumPackets; p++) {
             check_packet(rx_queue.read(), tx_addr, rx_addr, p);
@@ -112,17 +113,17 @@ TEST(udp, one_sender_one_receiver_separate_threads) {
     EventLoop tx_loop(packet_pool, buffer_pool, allocator);
     CHECK(tx_loop.valid());
 
-    packet::IWriter* tx_sender = tx_loop.add_udp_sender(tx_addr);
-    CHECK(tx_sender);
+    packet::IWriter* tx_writer = NULL;
+    CHECK(tx_loop.add_udp_sender(tx_addr, &tx_writer));
+    CHECK(tx_writer);
 
     EventLoop rx_loop(packet_pool, buffer_pool, allocator);
     CHECK(rx_loop.valid());
-
     CHECK(rx_loop.add_udp_receiver(rx_addr, rx_queue));
 
     for (int i = 0; i < NumIterations; i++) {
         for (int p = 0; p < NumPackets; p++) {
-            tx_sender->write(new_packet(tx_addr, rx_addr, p));
+            tx_writer->write(new_packet(tx_addr, rx_addr, p));
         }
         for (int p = 0; p < NumPackets; p++) {
             check_packet(rx_queue.read(), tx_addr, rx_addr, p);
@@ -144,8 +145,9 @@ TEST(udp, one_sender_multiple_receivers) {
     EventLoop tx_loop(packet_pool, buffer_pool, allocator);
     CHECK(tx_loop.valid());
 
-    packet::IWriter* tx_sender = tx_loop.add_udp_sender(tx_addr);
-    CHECK(tx_sender);
+    packet::IWriter* tx_writer = NULL;
+    CHECK(tx_loop.add_udp_sender(tx_addr, &tx_writer));
+    CHECK(tx_writer);
 
     EventLoop rx1_loop(packet_pool, buffer_pool, allocator);
     CHECK(rx1_loop.valid());
@@ -158,9 +160,9 @@ TEST(udp, one_sender_multiple_receivers) {
 
     for (int i = 0; i < NumIterations; i++) {
         for (int p = 0; p < NumPackets; p++) {
-            tx_sender->write(new_packet(tx_addr, rx_addr1, p * 10));
-            tx_sender->write(new_packet(tx_addr, rx_addr2, p * 20));
-            tx_sender->write(new_packet(tx_addr, rx_addr3, p * 30));
+            tx_writer->write(new_packet(tx_addr, rx_addr1, p * 10));
+            tx_writer->write(new_packet(tx_addr, rx_addr2, p * 20));
+            tx_writer->write(new_packet(tx_addr, rx_addr3, p * 30));
         }
         for (int p = 0; p < NumPackets; p++) {
             check_packet(rx_queue1.read(), tx_addr, rx_addr1, p * 10);
@@ -182,17 +184,20 @@ TEST(udp, multiple_senders_one_receiver) {
     EventLoop tx1_loop(packet_pool, buffer_pool, allocator);
     CHECK(tx1_loop.valid());
 
-    packet::IWriter* tx_sender1 = tx1_loop.add_udp_sender(tx_addr1);
-    CHECK(tx_sender1);
+    packet::IWriter* tx_writer1 = NULL;
+    CHECK(tx1_loop.add_udp_sender(tx_addr1, &tx_writer1));
+    CHECK(tx_writer1);
 
     EventLoop tx23_loop(packet_pool, buffer_pool, allocator);
     CHECK(tx23_loop.valid());
 
-    packet::IWriter* tx_sender2 = tx23_loop.add_udp_sender(tx_addr2);
-    CHECK(tx_sender2);
+    packet::IWriter* tx_writer2 = NULL;
+    CHECK(tx23_loop.add_udp_sender(tx_addr2, &tx_writer2));
+    CHECK(tx_writer2);
 
-    packet::IWriter* tx_sender3 = tx23_loop.add_udp_sender(tx_addr3);
-    CHECK(tx_sender3);
+    packet::IWriter* tx_writer3 = NULL;
+    CHECK(tx23_loop.add_udp_sender(tx_addr3, &tx_writer3));
+    CHECK(tx_writer3);
 
     EventLoop rx_loop(packet_pool, buffer_pool, allocator);
     CHECK(rx_loop.valid());
@@ -200,19 +205,19 @@ TEST(udp, multiple_senders_one_receiver) {
 
     for (int i = 0; i < NumIterations; i++) {
         for (int p = 0; p < NumPackets; p++) {
-            tx_sender1->write(new_packet(tx_addr1, rx_addr, p * 10));
+            tx_writer1->write(new_packet(tx_addr1, rx_addr, p * 10));
         }
         for (int p = 0; p < NumPackets; p++) {
             check_packet(rx_queue.read(), tx_addr1, rx_addr, p * 10);
         }
         for (int p = 0; p < NumPackets; p++) {
-            tx_sender2->write(new_packet(tx_addr2, rx_addr, p * 20));
+            tx_writer2->write(new_packet(tx_addr2, rx_addr, p * 20));
         }
         for (int p = 0; p < NumPackets; p++) {
             check_packet(rx_queue.read(), tx_addr2, rx_addr, p * 20);
         }
         for (int p = 0; p < NumPackets; p++) {
-            tx_sender3->write(new_packet(tx_addr3, rx_addr, p * 30));
+            tx_writer3->write(new_packet(tx_addr3, rx_addr, p * 30));
         }
         for (int p = 0; p < NumPackets; p++) {
             check_packet(rx_queue.read(), tx_addr3, rx_addr, p * 30);
