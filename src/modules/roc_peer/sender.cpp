@@ -24,6 +24,7 @@ Sender::Sender(Context& context, const pipeline::SenderConfig& pipeline_config)
     , endpoint_set_(0)
     , source_endpoint_(0)
     , repair_endpoint_(0)
+    , udp_port_(NULL)
     , udp_writer_(NULL) {
     roc_log(LogDebug, "sender peer: initializing");
 
@@ -37,8 +38,8 @@ Sender::Sender(Context& context, const pipeline::SenderConfig& pipeline_config)
 Sender::~Sender() {
     roc_log(LogDebug, "sender peer: deinitializing");
 
-    if (udp_writer_) {
-        context_.event_loop().remove_port(bind_address_);
+    if (udp_port_) {
+        context_.event_loop().remove_port(udp_port_);
     }
 }
 
@@ -51,18 +52,17 @@ bool Sender::bind(address::SocketAddr& addr) {
 
     roc_panic_if_not(valid());
 
-    if (udp_writer_) {
+    if (udp_port_) {
         roc_log(LogError, "sender peer: already bound");
         return false;
     }
 
-    udp_writer_ = context_.event_loop().add_udp_sender(addr);
-    if (!udp_writer_) {
+    if (!(udp_port_ = context_.event_loop().add_udp_sender(addr, &udp_writer_))) {
         roc_log(LogError, "sender peer: bind failed");
         return false;
     }
 
-    bind_address_ = addr;
+    udp_bind_address_ = addr;
 
     if (source_endpoint_) {
         pipeline_.set_endpoint_output_writer(source_endpoint_, *udp_writer_);
@@ -73,7 +73,7 @@ bool Sender::bind(address::SocketAddr& addr) {
     }
 
     roc_log(LogInfo, "sender peer: bound to %s",
-            address::socket_addr_to_str(bind_address_).c_str());
+            address::socket_addr_to_str(udp_bind_address_).c_str());
 
     return true;
 }
@@ -112,18 +112,18 @@ bool Sender::connect(address::EndpointType type,
     return true;
 }
 
-sndio::ISink& Sender::sink() {
-    roc_panic_if_not(valid());
-
-    return pipeline_;
-}
-
 bool Sender::is_ready() const {
     core::Mutex::Lock lock(mutex_);
 
     roc_panic_if_not(valid());
 
     return pipeline_.is_endpoint_set_ready(endpoint_set_);
+}
+
+sndio::ISink& Sender::sink() {
+    roc_panic_if_not(valid());
+
+    return pipeline_;
 }
 
 } // namespace peer
