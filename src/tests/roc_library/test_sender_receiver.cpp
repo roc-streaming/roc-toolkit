@@ -304,7 +304,9 @@ public:
         recv_source_addr_.set_host_port(address::Family_IPv4, "127.0.0.1", 0);
         recv_repair_addr_.set_host_port(address::Family_IPv4, "127.0.0.1", 0);
 
-        writer_ = event_loop_.add_udp_sender(send_addr_);
+        netio::EventLoop::PortHandle send_port =
+            event_loop_.add_udp_sender(send_addr_, &writer_);
+        CHECK(send_port);
         CHECK(writer_);
 
         CHECK(event_loop_.add_udp_receiver(recv_source_addr_, *this));
