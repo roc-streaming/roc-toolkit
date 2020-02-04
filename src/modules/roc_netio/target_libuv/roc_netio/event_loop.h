@@ -58,9 +58,12 @@ public:
     //! Get number of receiver and sender ports.
     size_t num_ports() const;
 
+    //! Opaque receiver port handle.
+    typedef struct PortHandle* PortHandle;
+
     //! Add UDP datagram receiver port.
     //!
-    //! Creates a new UDP receiver and bind it to @p bind_address. The receiver
+    //! Creates a new UDP receiver and binds it to @p bind_address. The receiver
     //! will pass packets to @p writer. Writer will be called from the network
     //! thread. It should not block.
     //!
@@ -69,25 +72,29 @@ public:
     //! back to @p bind_address.
     //!
     //! @returns
-    //!  true on success or false if error occurred
-    bool add_udp_receiver(address::SocketAddr& bind_address, packet::IWriter& writer);
+    //!  created port handle or NULL on error.
+    PortHandle add_udp_receiver(address::SocketAddr& bind_address,
+                                packet::IWriter& writer);
 
     //! Add UDP datagram sender port.
     //!
-    //! Creates a new UDP sender, bind to @p bind_address, and returns a writer
-    //! that may be used to send packets from this address. Writer may be called
-    //! from any thread. It will not block the caller.
+    //! Creates a new UDP sender and binds it to @p bind_address.
     //!
     //! If IP is zero, INADDR_ANY is used, i.e. the socket is bound to all network
     //! interfaces. If port is zero, a random free port is selected and written
     //! back to @p bind_address.
     //!
+    //! @p writer can be used to send packets from this port. Writer may be called
+    //! from any thread. It will not block the caller.
+    //!
     //! @returns
-    //!  a new packet writer on success or null if error occurred
-    packet::IWriter* add_udp_sender(address::SocketAddr& bind_address);
+    //!  created port handle or NULL on error.
+    PortHandle add_udp_sender(address::SocketAddr& bind_address,
+                              packet::IWriter** writer);
 
-    //! Remove sender or receiver port. Wait until port will be removed.
-    void remove_port(address::SocketAddr bind_address);
+    //! Remove port.
+    //! Waits until the port is removed.
+    void remove_port(PortHandle handle);
 
     //! Resolve endpoint hostname and fill provided address.
     //! @remarks

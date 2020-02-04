@@ -46,11 +46,11 @@ public:
                  address::EndpointProtocol proto,
                  const address::SocketAddr& address);
 
-    //! Get sender sink.
-    sndio::ISink& sink();
-
     //! Check if all necessary bind and connect calls were made.
     bool is_ready() const;
+
+    //! Get sender sink.y
+    sndio::ISink& sink();
 
 private:
     core::Mutex mutex_;
@@ -63,8 +63,9 @@ private:
     pipeline::SenderSink::EndpointHandle source_endpoint_;
     pipeline::SenderSink::EndpointHandle repair_endpoint_;
 
+    netio::EventLoop::PortHandle udp_port_;
     packet::IWriter* udp_writer_;
-    address::SocketAddr bind_address_;
+    address::SocketAddr udp_bind_address_;
 };
 
 } // namespace peer
