@@ -53,7 +53,7 @@ private:
     pipeline::ReceiverSource pipeline_;
     pipeline::ReceiverSource::EndpointSetHandle endpoint_set_;
 
-    core::Array<address::SocketAddr, 2> addresses_;
+    core::Array<netio::EventLoop::PortHandle, 2> ports_;
 };
 
 } // namespace peer
