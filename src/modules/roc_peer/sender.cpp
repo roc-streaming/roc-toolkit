@@ -47,7 +47,7 @@ bool Sender::valid() const {
     return endpoint_set_;
 }
 
-bool Sender::bind(address::SocketAddr& addr) {
+bool Sender::set_broadcast_enabled(bool enabled) {
     core::Mutex::Lock lock(mutex_);
 
     roc_panic_if_not(valid());
@@ -57,12 +57,28 @@ bool Sender::bind(address::SocketAddr& addr) {
         return false;
     }
 
-    if (!(udp_port_ = context_.event_loop().add_udp_sender(addr, &udp_writer_))) {
+    udp_config_.broadcast_enabled = enabled;
+    return true;
+}
+
+bool Sender::bind(address::SocketAddr& address) {
+    core::Mutex::Lock lock(mutex_);
+
+    roc_panic_if_not(valid());
+
+    if (udp_port_) {
+        roc_log(LogError, "sender peer: already bound");
+        return false;
+    }
+
+    udp_config_.bind_address = address;
+
+    if (!(udp_port_ = context_.event_loop().add_udp_sender(udp_config_, &udp_writer_))) {
         roc_log(LogError, "sender peer: bind failed");
         return false;
     }
 
-    udp_bind_address_ = addr;
+    address = udp_config_.bind_address;
 
     if (source_endpoint_) {
         pipeline_.set_endpoint_output_writer(source_endpoint_, *udp_writer_);
@@ -73,7 +89,7 @@ bool Sender::bind(address::SocketAddr& addr) {
     }
 
     roc_log(LogInfo, "sender peer: bound to %s",
-            address::socket_addr_to_str(udp_bind_address_).c_str());
+            address::socket_addr_to_str(udp_config_.bind_address).c_str());
 
     return true;
 }

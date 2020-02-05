@@ -28,14 +28,30 @@
 namespace roc {
 namespace netio {
 
+//! UDP receiver parameters.
+struct UdpReceiverConfig {
+    //! Receiver will bind to this address.
+    //! If IP is zero, INADDR_ANY is used, i.e. the socket is bound to all network
+    //! interfaces. If port is zero, a random free port is selected.
+    address::SocketAddr bind_address;
+
+    //! If not empty, receiver will join multicast group on the interface
+    //! with given address. May be "0.0.0.0" or "[::]" to join on all interfaces.
+    char multicast_interface[64];
+
+    UdpReceiverConfig() {
+        multicast_interface[0] = '\0';
+    }
+};
+
 //! UDP receiver.
 class UdpReceiverPort : public BasicPort {
 public:
     //! Initialize.
-    UdpReceiverPort(ICloseHandler& close_handler,
-                    const address::SocketAddr&,
-                    uv_loop_t& event_loop,
+    UdpReceiverPort(const UdpReceiverConfig& config,
                     packet::IWriter& writer,
+                    ICloseHandler& close_handler,
+                    uv_loop_t& event_loop,
                     packet::PacketPool& packet_pool,
                     core::BufferPool<uint8_t>& buffer_pool,
                     core::IAllocator& allocator);
@@ -64,6 +80,9 @@ private:
     bool join_multicast_group_();
     void leave_multicast_group_();
 
+    UdpReceiverConfig config_;
+    packet::IWriter& writer_;
+
     ICloseHandler& close_handler_;
 
     uv_loop_t& loop_;
@@ -74,9 +93,6 @@ private:
     bool multicast_group_joined_;
     bool recv_started_;
     bool closed_;
-
-    address::SocketAddr address_;
-    packet::IWriter& writer_;
 
     packet::PacketPool& packet_pool_;
     core::BufferPool<uint8_t>& buffer_pool_;
