@@ -12,7 +12,8 @@
 #ifndef ROC_PIPELINE_SENDER_ENDPOINT_SET_H_
 #define ROC_PIPELINE_SENDER_ENDPOINT_SET_H_
 
-#include "roc_address/endpoint_type.h"
+#include "roc_address/interface.h"
+#include "roc_address/protocol.h"
 #include "roc_audio/iframe_encoder.h"
 #include "roc_audio/iresampler.h"
 #include "roc_audio/packetizer.h"
@@ -51,8 +52,7 @@ public:
                       core::IAllocator& allocator);
 
     //! Add endpoint.
-    SenderEndpoint* add_endpoint(address::EndpointType type,
-                                 address::EndpointProtocol proto);
+    SenderEndpoint* add_endpoint(address::Interface iface, address::Protocol proto);
 
     //! Get audio writer.
     //! @returns NULL if endpoint set is not ready.
@@ -66,8 +66,8 @@ private:
 
     void destroy();
 
-    SenderEndpoint* create_source_endpoint_(address::EndpointProtocol proto);
-    SenderEndpoint* create_repair_endpoint_(address::EndpointProtocol proto);
+    SenderEndpoint* create_source_endpoint_(address::Protocol proto);
+    SenderEndpoint* create_repair_endpoint_(address::Protocol proto);
 
     bool create_pipeline_();
 

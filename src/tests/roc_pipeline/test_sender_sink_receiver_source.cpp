@@ -103,16 +103,16 @@ TEST_GROUP(sender_sink_receiver_source) {
         CHECK(sender_endpoint_set);
 
         SenderSink::EndpointHandle sender_source_endpoint = sender.add_endpoint(
-            sender_endpoint_set, address::EndType_AudioSource, source_port.protocol);
+            sender_endpoint_set, address::Iface_AudioSource, source_port.protocol);
         CHECK(sender_source_endpoint);
 
         sender.set_endpoint_output_writer(sender_source_endpoint, queue);
         sender.set_endpoint_destination_udp_address(sender_source_endpoint,
                                                     source_port.address);
 
-        if (repair_port.protocol != address::EndProto_None) {
+        if (repair_port.protocol != address::Proto_None) {
             SenderSink::EndpointHandle sender_repair_endpoint = sender.add_endpoint(
-                sender_endpoint_set, address::EndType_AudioRepair, repair_port.protocol);
+                sender_endpoint_set, address::Iface_AudioRepair, repair_port.protocol);
             CHECK(sender_repair_endpoint);
 
             sender.set_endpoint_output_writer(sender_repair_endpoint, queue);
@@ -130,13 +130,13 @@ TEST_GROUP(sender_sink_receiver_source) {
         CHECK(receiver_endpoint_set);
 
         packet::IWriter* receiver_source_endpoint_writer = receiver.add_endpoint(
-            receiver_endpoint_set, address::EndType_AudioSource, source_port.protocol);
+            receiver_endpoint_set, address::Iface_AudioSource, source_port.protocol);
         CHECK(receiver_source_endpoint_writer);
 
         packet::IWriter* receiver_repair_endpoint_writer = NULL;
-        if (repair_port.protocol != address::EndProto_None) {
+        if (repair_port.protocol != address::Proto_None) {
             receiver_repair_endpoint_writer =
-                receiver.add_endpoint(receiver_endpoint_set, address::EndType_AudioRepair,
+                receiver.add_endpoint(receiver_endpoint_set, address::Iface_AudioRepair,
                                       repair_port.protocol);
             CHECK(receiver_repair_endpoint_writer);
         }
@@ -193,13 +193,13 @@ TEST_GROUP(sender_sink_receiver_source) {
         PortConfig port_config;
         if (flags & FlagReedSolomon) {
             port_config.address = new_address(20);
-            port_config.protocol = address::EndProto_RTP_RS8M_Source;
+            port_config.protocol = address::Proto_RTP_RS8M_Source;
         } else if (flags & FlagLDPC) {
             port_config.address = new_address(30);
-            port_config.protocol = address::EndProto_RTP_LDPC_Source;
+            port_config.protocol = address::Proto_RTP_LDPC_Source;
         } else {
             port_config.address = new_address(10);
-            port_config.protocol = address::EndProto_RTP;
+            port_config.protocol = address::Proto_RTP;
         }
         return port_config;
     }
@@ -208,12 +208,12 @@ TEST_GROUP(sender_sink_receiver_source) {
         PortConfig port_config;
         if (flags & FlagReedSolomon) {
             port_config.address = new_address(21);
-            port_config.protocol = address::EndProto_RS8M_Repair;
+            port_config.protocol = address::Proto_RS8M_Repair;
         } else if (flags & FlagLDPC) {
             port_config.address = new_address(31);
-            port_config.protocol = address::EndProto_LDPC_Repair;
+            port_config.protocol = address::Proto_LDPC_Repair;
         } else {
-            port_config.protocol = address::EndProto_None;
+            port_config.protocol = address::Proto_None;
         }
         return port_config;
     }
