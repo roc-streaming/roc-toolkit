@@ -7,8 +7,8 @@
  */
 
 /**
- * @file roc/context.h
- * @brief Roc context.
+ * \file roc/context.h
+ * \brief Shared context.
  */
 
 #ifndef ROC_CONTEXT_H_
@@ -21,35 +21,37 @@
 extern "C" {
 #endif
 
-/** Roc context.
+/** Shared context.
  *
- * Context contains memory pools and network worker thread(s). Other objects that work
- * with memory and network should be attached to a context. It is allowed both to create
- * a separate context for every object, or to create a single context shared between
- * multiple objects.
+ * Context contains memory pools and network worker threads, shared among objects attached
+ * to the context. It is allowed both to create a separate context for every object, or
+ * to create a single context shared between multiple objects.
+ *
+ * **Life cycle**
  *
  * A context is created using roc_context_open() and destroyed using roc_context_close().
  * Objects can be attached and detached to an opened context at any moment from any
  * thread. However, the user should ensure that the context is not closed until there
  * are no objects attached to the context.
  *
- * @b Thread-safety
- *  - can be used concurrently
+ * **Thread safety**
  *
- * @see roc_sender, roc_receiver
+ * Can be used concurrently
+ *
+ * \see roc_sender, roc_receiver
  */
 typedef struct roc_context roc_context;
 
 /** Open a new context.
  *
  * Allocates and initializes a new context. May start some background threads.
- * Overrides the provided @p result pointer with the newly created context.
+ * Overrides the provided \p result pointer with the newly created context.
  *
- * @b Parameters
- *  - @p config should point to an initialized config
- *  - @p result should point to an unitialized roc_context pointer
+ * **Parameters**
+ *  - \p config should point to an initialized config
+ *  - \p result should point to an unitialized roc_context pointer
  *
- * @b Returns
+ * **Returns**
  *  - returns zero if the context was successfully created
  *  - returns a negative value if the arguments are invalid
  *  - returns a negative value if there are not enough resources
@@ -63,10 +65,10 @@ ROC_API int roc_context_open(const roc_context_config* config, roc_context** res
  *
  * If this function fails, the context is kept opened.
  *
- * @b Parameters
- *  - @p context should point to an opened context
+ * **Parameters**
+ *  - \p context should point to an opened context
  *
- * @b Returns
+ * **Returns**
  *  - returns zero if the context was successfully closed
  *  - returns a negative value if the arguments are invalid
  *  - returns a negative value if there are objects attached to the context

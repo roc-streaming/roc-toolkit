@@ -24,7 +24,7 @@ bool sender_config_from_user(pipeline::SenderConfig& out, const roc_sender_confi
 bool receiver_config_from_user(pipeline::ReceiverConfig& out,
                                const roc_receiver_config& in);
 
-bool interface_from_user(address::Interface& out, roc_port_type in);
+bool interface_from_user(address::Interface& out, roc_interface in);
 
 bool proto_from_user(address::Protocol& out, roc_protocol in);
 bool proto_to_user(roc_protocol& out, address::Protocol in);

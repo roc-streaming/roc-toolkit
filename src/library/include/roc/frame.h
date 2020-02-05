@@ -7,8 +7,8 @@
  */
 
 /**
- * @file roc/frame.h
- * @brief Audio frame.
+ * \file roc/frame.h
+ * \brief Audio frame.
  */
 
 #ifndef ROC_FRAME_H_
@@ -25,8 +25,9 @@ extern "C" {
  * Represents a multichannel sequence of audio samples. The user is responsible for
  * allocating and deallocating the frame and the data it is pointing to.
  *
- * @b Thread-safety
- *  - should not be used concurrently
+ * **Thread safety**
+ *
+ * Should not be used concurrently.
  */
 typedef struct roc_frame {
     /** Audio samples.
