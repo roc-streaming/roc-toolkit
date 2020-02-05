@@ -22,6 +22,9 @@ enum AddrFamily {
     Family_IPv6         //!< IPv6.
 };
 
+//! Convert address family to string.
+const char* addr_family_to_str(AddrFamily family);
+
 } // namespace address
 } // namespace roc
 
