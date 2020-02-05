@@ -36,12 +36,23 @@ void rocpa_log_handler(roc_log_level level, const char* module, const char* mess
     }
 }
 
-int rocpa_parse_address(roc_address* addr,
-                        pa_modargs* args,
-                        const char* ip_arg,
-                        const char* default_ip_arg,
-                        const char* port_arg,
-                        const char* default_port_arg) {
+int rocpa_parse_endpoint(roc_endpoint** endp,
+                         roc_protocol proto,
+                         pa_modargs* args,
+                         const char* ip_arg,
+                         const char* default_ip_arg,
+                         const char* port_arg,
+                         const char* default_port_arg) {
+    if (roc_endpoint_allocate(endp) != 0) {
+        pa_log("can't allocate endpoint");
+        return -1;
+    }
+
+    if (roc_endpoint_set_protocol(*endp, proto) != 0) {
+        pa_log("can't set endpoint protocol");
+        return -1;
+    }
+
     const char* ip_str;
     if (ip_arg) {
         ip_str = pa_modargs_get_value(args, ip_arg, default_ip_arg);
@@ -51,6 +62,11 @@ int rocpa_parse_address(roc_address* addr,
 
     if (!*ip_str) {
         ip_str = "0.0.0.0";
+    }
+
+    if (roc_endpoint_set_host(*endp, ip_str) != 0) {
+        pa_log("can't set endpoint host");
+        return -1;
     }
 
     const char* port_str;
@@ -67,8 +83,8 @@ int rocpa_parse_address(roc_address* addr,
         return -1;
     }
 
-    if (roc_address_init(addr, ROC_AF_AUTO, ip_str, (int)port_num) != 0) {
-        pa_log("invalid address: %s:%s", ip_str, port_str);
+    if (roc_endpoint_set_port(*endp, (int)port_num) != 0) {
+        pa_log("can't set endpoint port");
         return -1;
     }
 
