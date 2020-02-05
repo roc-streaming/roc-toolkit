@@ -300,23 +300,26 @@ public:
         dst_repair_addr_.set_host_port(address::Family_IPv4, "127.0.0.1",
                                        roc_address_port(dst_repair_addr));
 
-        send_addr_.set_host_port(address::Family_IPv4, "127.0.0.1", 0);
-        recv_source_addr_.set_host_port(address::Family_IPv4, "127.0.0.1", 0);
-        recv_repair_addr_.set_host_port(address::Family_IPv4, "127.0.0.1", 0);
+        send_config_.bind_address.set_host_port(address::Family_IPv4, "127.0.0.1", 0);
+
+        recv_source_config_.bind_address.set_host_port(address::Family_IPv4, "127.0.0.1",
+                                                       0);
+        recv_repair_config_.bind_address.set_host_port(address::Family_IPv4, "127.0.0.1",
+                                                       0);
 
         netio::EventLoop::PortHandle send_port =
-            event_loop_.add_udp_sender(send_addr_, &writer_);
+            event_loop_.add_udp_sender(send_config_, &writer_);
         CHECK(send_port);
         CHECK(writer_);
 
-        CHECK(event_loop_.add_udp_receiver(recv_source_addr_, *this));
-        CHECK(event_loop_.add_udp_receiver(recv_repair_addr_, *this));
+        CHECK(event_loop_.add_udp_receiver(recv_source_config_, *this));
+        CHECK(event_loop_.add_udp_receiver(recv_repair_config_, *this));
 
         CHECK(roc_address_init(&roc_source_addr_, ROC_AF_AUTO, "127.0.0.1",
-                               recv_source_addr_.port())
+                               recv_source_config_.bind_address.port())
               == 0);
         CHECK(roc_address_init(&roc_repair_addr_, ROC_AF_AUTO, "127.0.0.1",
-                               recv_repair_addr_.port())
+                               recv_repair_config_.bind_address.port())
               == 0);
     }
 
@@ -330,9 +333,9 @@ public:
 
 private:
     virtual void write(const packet::PacketPtr& pp) {
-        pp->udp()->src_addr = send_addr_;
+        pp->udp()->src_addr = send_config_.bind_address;
 
-        if (pp->udp()->dst_addr == recv_source_addr_) {
+        if (pp->udp()->dst_addr == recv_source_config_.bind_address) {
             pp->udp()->dst_addr = dst_source_addr_;
             source_queue_.write(pp);
         } else {
@@ -367,13 +370,13 @@ private:
         return true;
     }
 
-    address::SocketAddr send_addr_;
+    netio::UdpSenderConfig send_config_;
 
     roc_address roc_source_addr_;
     roc_address roc_repair_addr_;
 
-    address::SocketAddr recv_source_addr_;
-    address::SocketAddr recv_repair_addr_;
+    netio::UdpReceiverConfig recv_source_config_;
+    netio::UdpReceiverConfig recv_repair_config_;
 
     address::SocketAddr dst_source_addr_;
     address::SocketAddr dst_repair_addr_;

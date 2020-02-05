@@ -33,18 +33,6 @@ bool socket_addr_to_str::format_(const SocketAddr& addr) {
         b.append_str(":");
         b.append_uint((uint64_t)addr.port(), 10);
 
-        if (addr.has_miface()) {
-            if (!addr.get_miface(ip, sizeof(ip))) {
-                return false;
-            }
-            b.append_str(" miface ");
-            b.append_str(ip);
-        }
-
-        if (addr.broadcast()) {
-            b.append_str(" broadcast");
-        }
-
         return true;
     }
 
@@ -57,19 +45,6 @@ bool socket_addr_to_str::format_(const SocketAddr& addr) {
         b.append_str(ip);
         b.append_str("]:");
         b.append_uint((uint64_t)addr.port(), 10);
-
-        if (addr.has_miface()) {
-            if (!addr.get_miface(ip, sizeof(ip))) {
-                return false;
-            }
-            b.append_str(" miface [");
-            b.append_str(ip);
-            b.append_str("]");
-        }
-
-        if (addr.broadcast()) {
-            b.append_str(" broadcast");
-        }
 
         return true;
     }
