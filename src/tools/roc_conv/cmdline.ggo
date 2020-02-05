@@ -11,8 +11,8 @@ section "Options"
     option "input" i "Input file URI" typestr="FILE_URI" string required
     option "output" o "Output file URI" typestr="FILE_URI" string optional
 
-    option "input-format" - "Force input file format" typestr="FORMAT" string optional
-    option "output-format" - "Force output file format" typestr="FORMAT" string optional
+    option "input-format" - "Force input file format" typestr="FILE_FORMAT" string optional
+    option "output-format" - "Force output file format" typestr="FILE_FORMAT" string optional
 
     option "frame-size" - "Internal frame size, number of samples"
         int optional
@@ -44,7 +44,7 @@ text "
 FILE_URI defines an absolute or relative file path, e.g.:
   file:///home/user/test.wav; file:./test.wav; file:-
 
-FORMAT is the output file format name, e.g.:
+FILE_FORMAT is the output file format name, e.g.:
   wav; ogg; mp3
 
 Use --list-supported option to print the list of the supported
