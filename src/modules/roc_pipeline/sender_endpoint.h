@@ -31,13 +31,13 @@ namespace pipeline {
 class SenderEndpoint : public packet::IWriter, public core::NonCopyable<> {
 public:
     //! Initialize.
-    SenderEndpoint(address::EndpointProtocol proto, core::IAllocator& allocator);
+    SenderEndpoint(address::Protocol proto, core::IAllocator& allocator);
 
     //! Check if pipeline was succefully constructed.
     bool valid() const;
 
     //! Get protocol.
-    address::EndpointProtocol proto() const;
+    address::Protocol proto() const;
 
     //! Get packet composer.
     packet::IComposer& composer();
@@ -63,7 +63,7 @@ public:
 private:
     core::Mutex mutex_;
 
-    const address::EndpointProtocol proto_;
+    const address::Protocol proto_;
     address::SocketAddr udp_address_;
 
     packet::IWriter* writer_;

@@ -12,8 +12,8 @@
 #ifndef ROC_PIPELINE_RECEIVER_ENDPOINT_SET_H_
 #define ROC_PIPELINE_RECEIVER_ENDPOINT_SET_H_
 
-#include "roc_address/endpoint_protocol.h"
-#include "roc_address/endpoint_type.h"
+#include "roc_address/interface.h"
+#include "roc_address/protocol.h"
 #include "roc_audio/mixer.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/list.h"
@@ -45,8 +45,7 @@ public:
                         core::IAllocator& allocator);
 
     //! Add endpoint.
-    packet::IWriter* add_endpoint(address::EndpointType type,
-                                  address::EndpointProtocol proto);
+    packet::IWriter* add_endpoint(address::Interface iface, address::Protocol proto);
 
     //! Update packet queues and sessions.
     void update(packet::timestamp_t timestamp);
@@ -59,8 +58,8 @@ private:
 
     void destroy();
 
-    ReceiverEndpoint* create_source_endpoint_(address::EndpointProtocol proto);
-    ReceiverEndpoint* create_repair_endpoint_(address::EndpointProtocol proto);
+    ReceiverEndpoint* create_source_endpoint_(address::Protocol proto);
+    ReceiverEndpoint* create_repair_endpoint_(address::Protocol proto);
 
     core::IAllocator& allocator_;
 

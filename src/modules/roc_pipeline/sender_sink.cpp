@@ -77,8 +77,8 @@ SenderSink::EndpointSetHandle SenderSink::add_endpoint_set() {
 }
 
 SenderSink::EndpointHandle SenderSink::add_endpoint(EndpointSetHandle endpoint_set_handle,
-                                                    address::EndpointType type,
-                                                    address::EndpointProtocol proto) {
+                                                    address::Interface iface,
+                                                    address::Protocol proto) {
     core::Mutex::Lock lock(mutex_);
 
     roc_panic_if(!valid());
@@ -86,7 +86,7 @@ SenderSink::EndpointHandle SenderSink::add_endpoint(EndpointSetHandle endpoint_s
     SenderEndpointSet* endpoint_set = (SenderEndpointSet*)endpoint_set_handle;
     roc_panic_if_not(endpoint_set);
 
-    SenderEndpoint* endpoint = endpoint_set->add_endpoint(type, proto);
+    SenderEndpoint* endpoint = endpoint_set->add_endpoint(iface, proto);
     if (!endpoint) {
         return 0;
     }

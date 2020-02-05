@@ -360,19 +360,19 @@ int main(int argc, char** argv) {
     if (args.source_given) {
         pipeline::PortConfig port;
 
-        if (!pipeline::parse_port(address::EndType_AudioSource, args.source_arg, port)) {
+        if (!pipeline::parse_port(address::Iface_AudioSource, args.source_arg, port)) {
             roc_log(LogError, "can't parse source port: %s", args.source_arg);
             return 1;
         }
 
         if (args.miface_given) {
-            if (!receiver.set_multicast_group(address::EndType_AudioSource,
+            if (!receiver.set_multicast_group(address::Iface_AudioSource,
                                               args.miface_arg)) {
                 roc_log(LogError, "can't set miface: %s", args.miface_arg);
                 return 1;
             }
         }
-        if (!receiver.bind(address::EndType_AudioSource, port.protocol, port.address)) {
+        if (!receiver.bind(address::Iface_AudioSource, port.protocol, port.address)) {
             roc_log(LogError, "can't bind source port: %s", args.source_arg);
             return 1;
         }
@@ -381,19 +381,19 @@ int main(int argc, char** argv) {
     if (args.repair_given) {
         pipeline::PortConfig port;
 
-        if (!pipeline::parse_port(address::EndType_AudioRepair, args.repair_arg, port)) {
+        if (!pipeline::parse_port(address::Iface_AudioRepair, args.repair_arg, port)) {
             roc_log(LogError, "can't parse repair port: %s", args.repair_arg);
             return 1;
         }
 
         if (args.miface_given) {
-            if (!receiver.set_multicast_group(address::EndType_AudioRepair,
+            if (!receiver.set_multicast_group(address::Iface_AudioRepair,
                                               args.miface_arg)) {
                 roc_log(LogError, "can't set miface: %s", args.miface_arg);
                 return 1;
             }
         }
-        if (!receiver.bind(address::EndType_AudioRepair, port.protocol, port.address)) {
+        if (!receiver.bind(address::Iface_AudioRepair, port.protocol, port.address)) {
             roc_log(LogError, "can't bind repair port: %s", args.repair_arg);
             return 1;
         }

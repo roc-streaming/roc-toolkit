@@ -12,8 +12,8 @@
 #ifndef ROC_PEER_RECEIVER_H_
 #define ROC_PEER_RECEIVER_H_
 
-#include "roc_address/endpoint_protocol.h"
-#include "roc_address/endpoint_type.h"
+#include "roc_address/interface.h"
+#include "roc_address/protocol.h"
 #include "roc_address/socket_addr.h"
 #include "roc_core/mutex.h"
 #include "roc_peer/basic_peer.h"
@@ -37,22 +37,21 @@ public:
     bool valid();
 
     //! Set multicast interface address for given endpoint type.
-    bool set_multicast_group(address::EndpointType type, const char* ip);
+    bool set_multicast_group(address::Interface iface, const char* ip);
 
     //! Bind peer to local endpoint.
-    bool bind(address::EndpointType type,
-              address::EndpointProtocol proto,
-              address::SocketAddr& address);
+    bool
+    bind(address::Interface iface, address::Protocol proto, address::SocketAddr& address);
 
     //! Get receiver source.
     sndio::ISource& source();
 
 private:
-    struct UdpPort {
+    struct InterfacePort {
         netio::UdpReceiverConfig config;
         netio::EventLoop::PortHandle handle;
 
-        UdpPort()
+        InterfacePort()
             : handle(NULL) {
         }
     };
@@ -64,7 +63,7 @@ private:
     pipeline::ReceiverSource pipeline_;
     pipeline::ReceiverSource::EndpointSetHandle endpoint_set_;
 
-    UdpPort ports_[address::EndType_Max];
+    InterfacePort ports_[address::Iface_Max];
 };
 
 } // namespace peer
