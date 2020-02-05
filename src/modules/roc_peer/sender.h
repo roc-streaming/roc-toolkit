@@ -39,10 +39,10 @@ public:
     bool valid() const;
 
     //! Enable or disable traffic to broadcast addresses.
-    bool set_broadcast_enabled(bool);
+    bool set_broadcast_enabled(address::EndpointType type, bool enabled);
 
-    //! Bind peer to local endpoint.
-    bool bind(address::SocketAddr& addr);
+    //! Set outgoing interface address.
+    bool set_outgoing_address(address::EndpointType type, const char* ip);
 
     //! Connect peer to remote endpoint.
     bool connect(address::EndpointType type,
@@ -56,6 +56,22 @@ public:
     sndio::ISink& sink();
 
 private:
+    struct UdpPort {
+        netio::UdpSenderConfig config;
+        netio::EventLoop::PortHandle handle;
+        packet::IWriter* writer;
+        bool is_set;
+
+        UdpPort()
+            : handle(NULL)
+            , writer(NULL)
+            , is_set(false) {
+        }
+    };
+
+    address::EndpointType select_outgoing_port_(address::EndpointType type);
+    UdpPort* setup_outgoing_port_(address::EndpointType type, address::AddrFamily family);
+
     core::Mutex mutex_;
 
     rtp::FormatMap format_map_;
@@ -66,9 +82,7 @@ private:
     pipeline::SenderSink::EndpointHandle source_endpoint_;
     pipeline::SenderSink::EndpointHandle repair_endpoint_;
 
-    netio::UdpSenderConfig udp_config_;
-    netio::EventLoop::PortHandle udp_port_;
-    packet::IWriter* udp_writer_;
+    UdpPort ports_[address::EndType_Max];
 };
 
 } // namespace peer

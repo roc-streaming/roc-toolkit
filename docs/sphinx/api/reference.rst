@@ -33,8 +33,6 @@ roc_sender
 
 .. doxygenfunction:: roc_sender_open
 
-.. doxygenfunction:: roc_sender_bind
-
 .. doxygenfunction:: roc_sender_connect
 
 .. doxygenfunction:: roc_sender_write
