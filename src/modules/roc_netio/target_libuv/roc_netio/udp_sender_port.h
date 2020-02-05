@@ -25,12 +25,33 @@
 namespace roc {
 namespace netio {
 
+//! UDP sender parameters.
+struct UdpSenderConfig {
+    //! Sender will bind to this address.
+    //! If IP is zero, INADDR_ANY is used, i.e. the socket is bound to all network
+    //! interfaces. If port is zero, a random free port is selected.
+    address::SocketAddr bind_address;
+
+    //! If true, sender is allowed to send packets to broadcast addresses.
+    bool broadcast_enabled;
+
+    UdpSenderConfig()
+        : broadcast_enabled(false) {
+    }
+
+    //! Check two configs for equality.
+    bool operator==(const UdpSenderConfig& other) const {
+        return bind_address == other.bind_address
+            && broadcast_enabled == other.broadcast_enabled;
+    }
+};
+
 //! UDP sender.
 class UdpSenderPort : public BasicPort, public packet::IWriter {
 public:
     //! Initialize.
-    UdpSenderPort(ICloseHandler& close_handler,
-                  const address::SocketAddr&,
+    UdpSenderPort(const UdpSenderConfig& config,
+                  ICloseHandler& close_handler,
                   uv_loop_t& event_loop,
                   core::IAllocator& allocator);
 
@@ -60,6 +81,8 @@ private:
 
     bool fully_closed_() const;
     void start_closing_();
+
+    UdpSenderConfig config_;
 
     ICloseHandler& close_handler_;
 
