@@ -129,16 +129,6 @@ int main(int argc, char** argv) {
         }
     }
 
-    address::SocketAddr local_addr;
-    if (source_port.address.family() == address::Family_IPv6) {
-        local_addr.set_host_port(address::Family_IPv6, "::", 0);
-    } else {
-        local_addr.set_host_port(address::Family_IPv4, "0.0.0.0", 0);
-    }
-    if (!local_addr.has_host_port()) {
-        roc_panic("can't initialize local address");
-    }
-
     const address::ProtocolAttrs* source_attrs =
         address::ProtocolMap::instance().find_proto(source_port.protocol);
     if (source_attrs) {
@@ -273,19 +263,13 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    if (args.broadcast_given) {
-        if (!sender.set_broadcast_enabled(true)) {
-            roc_log(LogError, "can't enable broadcast");
-            return 1;
-        }
-    }
-
-    if (!sender.bind(local_addr)) {
-        roc_log(LogError, "can't bind sender to local address");
-        return 1;
-    }
-
     if (args.source_given) {
+        if (args.broadcast_given) {
+            if (!sender.set_broadcast_enabled(address::EndType_AudioSource, true)) {
+                roc_log(LogError, "can't enable broadcast");
+                return 1;
+            }
+        }
         if (!sender.connect(address::EndType_AudioSource, source_port.protocol,
                             source_port.address)) {
             roc_log(LogError, "can't connect sender to remote source port");
@@ -294,6 +278,12 @@ int main(int argc, char** argv) {
     }
 
     if (args.repair_given) {
+        if (args.broadcast_given) {
+            if (!sender.set_broadcast_enabled(address::EndType_AudioRepair, true)) {
+                roc_log(LogError, "can't enable broadcast");
+                return 1;
+            }
+        }
         if (!sender.connect(address::EndType_AudioRepair, repair_port.protocol,
                             repair_port.address)) {
             roc_log(LogError, "can't connect sender to remote repair port");
