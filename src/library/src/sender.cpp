@@ -63,33 +63,6 @@ int roc_sender_open(roc_context* context,
     return 0;
 }
 
-int roc_sender_bind(roc_sender* sender, roc_address* address) {
-    if (!sender) {
-        roc_log(LogError, "roc_sender_bind: invalid arguments: sender is null");
-        return -1;
-    }
-
-    peer::Sender* imp_sender = (peer::Sender*)sender;
-
-    if (!address) {
-        roc_log(LogError, "roc_sender_bind: invalid arguments: address is null");
-        return -1;
-    }
-
-    address::SocketAddr& imp_address = api::get_socket_addr(address);
-    if (!imp_address.has_host_port()) {
-        roc_log(LogError, "roc_sender_bind: invalid arguments: invalid address");
-        return -1;
-    }
-
-    if (!imp_sender->bind(imp_address)) {
-        roc_log(LogError, "roc_sender_bind: bind failed");
-        return -1;
-    }
-
-    return 0;
-}
-
 int roc_sender_connect(roc_sender* sender,
                        roc_port_type type,
                        roc_protocol proto,
