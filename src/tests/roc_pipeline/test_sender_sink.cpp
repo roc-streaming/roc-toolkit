@@ -55,7 +55,7 @@ rtp::Parser rtp_parser(format_map, NULL);
 TEST_GROUP(sender_sink) {
     SenderConfig config;
 
-    address::EndpointProtocol source_proto;
+    address::Protocol source_proto;
     address::SocketAddr dst_addr;
 
     void setup() {
@@ -67,7 +67,7 @@ TEST_GROUP(sender_sink) {
         config.timing = false;
         config.poisoning = true;
 
-        source_proto = address::EndProto_RTP;
+        source_proto = address::Proto_RTP;
         dst_addr = new_address(123);
     }
 };
@@ -83,7 +83,7 @@ TEST(sender_sink, write) {
     CHECK(endpoint_set);
 
     SenderSink::EndpointHandle source_endpoint =
-        sender.add_endpoint(endpoint_set, address::EndType_AudioSource, source_proto);
+        sender.add_endpoint(endpoint_set, address::Iface_AudioSource, source_proto);
     CHECK(source_endpoint);
 
     sender.set_endpoint_output_writer(source_endpoint, queue);
@@ -122,7 +122,7 @@ TEST(sender_sink, frame_size_small) {
     CHECK(endpoint_set);
 
     SenderSink::EndpointHandle source_endpoint =
-        sender.add_endpoint(endpoint_set, address::EndType_AudioSource, source_proto);
+        sender.add_endpoint(endpoint_set, address::Iface_AudioSource, source_proto);
     CHECK(source_endpoint);
 
     sender.set_endpoint_output_writer(source_endpoint, queue);
@@ -161,7 +161,7 @@ TEST(sender_sink, frame_size_large) {
     CHECK(endpoint_set);
 
     SenderSink::EndpointHandle source_endpoint =
-        sender.add_endpoint(endpoint_set, address::EndType_AudioSource, source_proto);
+        sender.add_endpoint(endpoint_set, address::Iface_AudioSource, source_proto);
     CHECK(source_endpoint);
 
     sender.set_endpoint_output_writer(source_endpoint, queue);

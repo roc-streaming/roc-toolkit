@@ -12,8 +12,8 @@
 #ifndef ROC_ADDRESS_PROTOCOL_MAP_H_
 #define ROC_ADDRESS_PROTOCOL_MAP_H_
 
-#include "roc_address/endpoint_protocol.h"
-#include "roc_address/endpoint_type.h"
+#include "roc_address/interface.h"
+#include "roc_address/protocol.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/singleton.h"
 #include "roc_core/stddefs.h"
@@ -25,10 +25,10 @@ namespace address {
 //! Protocol attributes.
 struct ProtocolAttrs {
     //! Protocol ID.
-    EndpointProtocol protocol;
+    Protocol protocol;
 
     //! Endpoint type.
-    EndpointType type;
+    Interface iface;
 
     //! FEC scheme associated wit hthe protocol, if any.
     packet::FecScheme fec_scheme;
@@ -40,8 +40,8 @@ struct ProtocolAttrs {
     bool path_supported;
 
     ProtocolAttrs()
-        : protocol(EndProto_None)
-        , type(EndType_Control)
+        : protocol(Proto_None)
+        , iface(Iface_Invalid)
         , fec_scheme(packet::FEC_None)
         , default_port(-1)
         , path_supported(false) {
@@ -57,7 +57,7 @@ public:
     }
 
     //! Get protocol attributes by ID.
-    const ProtocolAttrs* find_proto(EndpointProtocol proto) const;
+    const ProtocolAttrs* find_proto(Protocol proto) const;
 
 private:
     friend class core::Singleton<ProtocolMap>;
