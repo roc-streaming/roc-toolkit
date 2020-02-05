@@ -209,13 +209,13 @@ bool receiver_config_from_user(pipeline::ReceiverConfig& out,
     return true;
 }
 
-bool interface_from_user(address::Interface& out, roc_port_type in) {
+bool interface_from_user(address::Interface& out, roc_interface in) {
     switch ((int)in) {
-    case ROC_PORT_AUDIO_SOURCE:
+    case ROC_INTERFACE_AUDIO_SOURCE:
         out = address::Iface_AudioSource;
         return true;
 
-    case ROC_PORT_AUDIO_REPAIR:
+    case ROC_INTERFACE_AUDIO_REPAIR:
         out = address::Iface_AudioRepair;
         return true;
 
@@ -229,6 +229,10 @@ bool interface_from_user(address::Interface& out, roc_port_type in) {
 
 bool proto_from_user(address::Protocol& out, roc_protocol in) {
     switch ((int)in) {
+    case ROC_PROTO_RTSP:
+        out = address::Proto_RTSP;
+        return true;
+
     case ROC_PROTO_RTP:
         out = address::Proto_RTP;
         return true;
@@ -259,6 +263,10 @@ bool proto_from_user(address::Protocol& out, roc_protocol in) {
 
 bool proto_to_user(roc_protocol& out, address::Protocol in) {
     switch ((int)in) {
+    case address::Proto_RTSP:
+        out = ROC_PROTO_RTSP;
+        return true;
+
     case address::Proto_RTP:
         out = ROC_PROTO_RTP;
         return true;

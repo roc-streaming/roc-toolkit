@@ -51,6 +51,9 @@ struct roc_sink_userdata {
 
     uint64_t rendered_bytes;
 
+    roc_endpoint* remote_source_endp;
+    roc_endpoint* remote_repair_endp;
+
     roc_context* context;
     roc_sender* sender;
 };
@@ -239,16 +242,16 @@ int pa__init(pa_module* m) {
     u->rtpoll = pa_rtpoll_new();
     pa_thread_mq_init(&u->thread_mq, m->core->mainloop, u->rtpoll);
 
-    roc_address remote_source_addr;
-    if (rocpa_parse_address(&remote_source_addr, args, "remote_ip", "",
-                            "remote_source_port", ROCPA_DEFAULT_SOURCE_PORT)
+    if (rocpa_parse_endpoint(&u->remote_source_endp, ROCPA_DEFAULT_SOURCE_PROTO, args,
+                             "remote_ip", "", "remote_source_port",
+                             ROCPA_DEFAULT_SOURCE_PORT)
         < 0) {
         goto error;
     }
 
-    roc_address remote_repair_addr;
-    if (rocpa_parse_address(&remote_repair_addr, args, "remote_ip", "",
-                            "remote_repair_port", ROCPA_DEFAULT_REPAIR_PORT)
+    if (rocpa_parse_endpoint(&u->remote_repair_endp, ROCPA_DEFAULT_REPAIR_PROTO, args,
+                             "remote_ip", "", "remote_repair_port",
+                             ROCPA_DEFAULT_REPAIR_PORT)
         < 0) {
         goto error;
     }
@@ -273,15 +276,13 @@ int pa__init(pa_module* m) {
         goto error;
     }
 
-    if (roc_sender_connect(u->sender, ROC_PORT_AUDIO_SOURCE, ROC_PROTO_RTP_RS8M_SOURCE,
-                           &remote_source_addr)
+    if (roc_sender_connect(u->sender, ROC_INTERFACE_AUDIO_SOURCE, u->remote_source_endp)
         != 0) {
         pa_log("can't connect roc sender to remote address");
         goto error;
     }
 
-    if (roc_sender_connect(u->sender, ROC_PORT_AUDIO_REPAIR, ROC_PROTO_RS8M_REPAIR,
-                           &remote_repair_addr)
+    if (roc_sender_connect(u->sender, ROC_INTERFACE_AUDIO_REPAIR, u->remote_repair_endp)
         != 0) {
         pa_log("can't connect roc sender to remote address");
         goto error;
@@ -382,6 +383,18 @@ void pa__done(pa_module* m) {
     if (u->context) {
         if (roc_context_close(u->context) != 0) {
             pa_log("failed to close roc context");
+        }
+    }
+
+    if (u->remote_source_endp) {
+        if (roc_endpoint_deallocate(u->remote_source_endp) != 0) {
+            pa_log("failed to deallocate roc endpoint");
+        }
+    }
+
+    if (u->remote_repair_endp) {
+        if (roc_endpoint_deallocate(u->remote_repair_endp) != 0) {
+            pa_log("failed to deallocate roc endpoint");
         }
     }
 
