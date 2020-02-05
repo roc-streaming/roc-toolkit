@@ -37,7 +37,6 @@ PA_MODULE_LOAD_ONCE(false);
 PA_MODULE_USAGE(
         "sink_name=<name for the sink> "
         "sink_properties=<properties for the sink> "
-        "local_ip=<local sender ip> "
         "remote_ip=<remote receiver ip> "
         "remote_source_port=<remote receiver port for source packets> "
         "remote_repair_port=<remote receiver port for repair packets>");
@@ -59,7 +58,6 @@ struct roc_sink_userdata {
 static const char* const roc_sink_modargs[] = {
     "sink_name",
     "sink_properties",
-    "local_ip",
     "remote_ip",
     "remote_source_port",
     "remote_repair_port",
@@ -241,12 +239,6 @@ int pa__init(pa_module* m) {
     u->rtpoll = pa_rtpoll_new();
     pa_thread_mq_init(&u->thread_mq, m->core->mainloop, u->rtpoll);
 
-    roc_address local_addr;
-    if (rocpa_parse_address(&local_addr, args, "local_ip", ROCPA_DEFAULT_IP, NULL, "0")
-        < 0) {
-        goto error;
-    }
-
     roc_address remote_source_addr;
     if (rocpa_parse_address(&remote_source_addr, args, "remote_ip", "",
                             "remote_source_port", ROCPA_DEFAULT_SOURCE_PORT)
@@ -278,11 +270,6 @@ int pa__init(pa_module* m) {
 
     if (roc_sender_open(u->context, &sender_config, &u->sender) < 0) {
         pa_log("can't create roc sender");
-        goto error;
-    }
-
-    if (roc_sender_bind(u->sender, &local_addr) != 0) {
-        pa_log("can't bind roc sender to local address");
         goto error;
     }
 
