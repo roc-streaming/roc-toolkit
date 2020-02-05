@@ -37,8 +37,8 @@ bool Resolver::async_resolve(ResolverRequest& req) {
     roc_log(LogTrace, "resolver: starting resolving: endpoint=%s",
             address::endpoint_uri_to_str(*req.endpoint_uri).c_str());
 
-    if (address::parse_socket_addr_host_port(
-            req.endpoint_uri->host(), req.endpoint_uri->port(), *req.resolved_address)) {
+    if (address::parse_socket_addr(req.endpoint_uri->host(), req.endpoint_uri->port(),
+                                   *req.resolved_address)) {
         finish_resolving_(req, 0);
         return false;
     }

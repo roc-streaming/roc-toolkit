@@ -62,35 +62,22 @@ public:
     typedef struct PortHandle* PortHandle;
 
     //! Add UDP datagram receiver port.
-    //!
-    //! Creates a new UDP receiver and binds it to @p bind_address. The receiver
-    //! will pass packets to @p writer. Writer will be called from the network
-    //! thread. It should not block.
-    //!
-    //! If IP is zero, INADDR_ANY is used, i.e. the socket is bound to all network
-    //! interfaces. If port is zero, a random free port is selected and written
-    //! back to @p bind_address.
-    //!
+    //! @remarks
+    //!  - Updates @p config with the actual bind address.
+    //!  - Passes received packets to @p writer. It is called from network thread.
+    //!    It should not block the caller.
     //! @returns
     //!  created port handle or NULL on error.
-    PortHandle add_udp_receiver(address::SocketAddr& bind_address,
-                                packet::IWriter& writer);
+    PortHandle add_udp_receiver(UdpReceiverConfig& config, packet::IWriter& writer);
 
     //! Add UDP datagram sender port.
-    //!
-    //! Creates a new UDP sender and binds it to @p bind_address.
-    //!
-    //! If IP is zero, INADDR_ANY is used, i.e. the socket is bound to all network
-    //! interfaces. If port is zero, a random free port is selected and written
-    //! back to @p bind_address.
-    //!
-    //! @p writer can be used to send packets from this port. Writer may be called
-    //! from any thread. It will not block the caller.
-    //!
+    //! @remarks
+    //!  - Updates @p config with the actual bind address.
+    //!  - Sets @p writer to a writer that can be used to send packets from this port.
+    //!    It may be calledfrom any thread. It will not block the caller.
     //! @returns
     //!  created port handle or NULL on error.
-    PortHandle add_udp_sender(address::SocketAddr& bind_address,
-                              packet::IWriter** writer);
+    PortHandle add_udp_sender(UdpSenderConfig& config, packet::IWriter** writer);
 
     //! Remove port.
     //! Waits until the port is removed.
@@ -121,20 +108,23 @@ private:
         // task state
         TaskState state;
 
-        // input and output for port-related tasks
-        address::SocketAddr* port_address;
-        packet::IWriter* port_writer;
+        // for port-related tasks
         core::SharedPtr<BasicPort> port;
+        packet::IWriter* port_writer;
 
-        // input and output for resolver tasks
+        // for port creation
+        UdpSenderConfig* sender_config;
+        UdpReceiverConfig* receiver_config;
+
+        // for resolver tasks
         ResolverRequest resolve_req;
 
         Task()
             : func(NULL)
             , state(TaskPending)
-            , port_address(NULL)
             , port_writer(NULL)
-            , port(NULL) {
+            , sender_config(NULL)
+            , receiver_config(NULL) {
         }
     };
 
@@ -158,6 +148,7 @@ private:
     TaskState remove_port_(Task&);
     TaskState resolve_endpoint_address_(Task&);
 
+    void remove_port_(BasicPort& port);
     void async_close_port_(BasicPort& port);
     void wait_port_closed_(const BasicPort& port);
 

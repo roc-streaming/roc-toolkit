@@ -15,16 +15,16 @@
 namespace roc {
 namespace netio {
 
-UdpSenderPort::UdpSenderPort(ICloseHandler& close_handler,
-                             const address::SocketAddr& address,
+UdpSenderPort::UdpSenderPort(const UdpSenderConfig& config,
+                             ICloseHandler& close_handler,
                              uv_loop_t& event_loop,
                              core::IAllocator& allocator)
     : BasicPort(allocator)
+    , config_(config)
     , close_handler_(close_handler)
     , loop_(event_loop)
     , write_sem_initialized_(false)
     , handle_initialized_(false)
-    , address_(address)
     , pending_(0)
     , stopped_(true)
     , closed_(false)
@@ -38,7 +38,7 @@ UdpSenderPort::~UdpSenderPort() {
 }
 
 const address::SocketAddr& UdpSenderPort::address() const {
-    return address_;
+    return config_.bind_address;
 }
 
 bool UdpSenderPort::open() {
@@ -60,17 +60,12 @@ bool UdpSenderPort::open() {
     handle_.data = this;
     handle_initialized_ = true;
 
-    unsigned flags = 0;
-    if (address_.multicast() && address_.port() > 0) {
-        flags |= UV_UDP_REUSEADDR;
-    }
-
     int bind_err = UV_EINVAL;
     if (address_.family() == address::Family_IPv6) {
-        bind_err = uv_udp_bind(&handle_, address_.saddr(), flags | UV_UDP_IPV6ONLY);
+        bind_err = uv_udp_bind(&handle_, config_.bind_address.saddr(), UV_UDP_IPV6ONLY);
     }
     if (bind_err == UV_EINVAL || bind_err == UV_ENOTSUP) {
-        bind_err = uv_udp_bind(&handle_, address_.saddr(), flags);
+        bind_err = uv_udp_bind(&handle_, config_.bind_address.saddr(), 0);
     }
     if (bind_err != 0) {
         roc_log(LogError, "udp sender: uv_udp_bind(): [%s] %s", uv_err_name(bind_err),
@@ -78,9 +73,9 @@ bool UdpSenderPort::open() {
         return false;
     }
 
-    if (address_.broadcast()) {
+    if (config_.broadcast_enabled) {
         roc_log(LogDebug, "udp sender: setting broadcast flag for port %s",
-                address::socket_addr_to_str(address_).c_str());
+                address::socket_addr_to_str(config_.bind_address).c_str());
 
         if (int err = uv_udp_set_broadcast(&handle_, 1)) {
             roc_log(LogError, "udp sender: uv_udp_set_broadcast(): [%s] %s",
@@ -89,22 +84,22 @@ bool UdpSenderPort::open() {
         }
     }
 
-    int addrlen = (int)address_.slen();
-    if (int err = uv_udp_getsockname(&handle_, address_.saddr(), &addrlen)) {
+    int addrlen = (int)config_.bind_address.slen();
+    if (int err = uv_udp_getsockname(&handle_, config_.bind_address.saddr(), &addrlen)) {
         roc_log(LogError, "udp sender: uv_udp_getsockname(): [%s] %s", uv_err_name(err),
                 uv_strerror(err));
         return false;
     }
 
-    if (addrlen != (int)address_.slen()) {
+    if (addrlen != (int)config_.bind_address.slen()) {
         roc_log(LogError,
                 "udp sender: uv_udp_getsockname(): unexpected len: got=%lu expected=%lu",
-                (unsigned long)addrlen, (unsigned long)address_.slen());
+                (unsigned long)addrlen, (unsigned long)config_.bind_address.slen());
         return false;
     }
 
     roc_log(LogInfo, "udp sender: opened port %s",
-            address::socket_addr_to_str(address_).c_str());
+            address::socket_addr_to_str(config_.bind_address).c_str());
 
     stopped_ = false;
 
@@ -173,7 +168,7 @@ void UdpSenderPort::close_cb_(uv_handle_t* handle) {
     }
 
     roc_log(LogInfo, "udp sender: closed port %s",
-            address::socket_addr_to_str(self.address_).c_str());
+            address::socket_addr_to_str(self.config_.bind_address).c_str());
 
     self.closed_ = true;
     self.close_handler_.handle_closed(self);
@@ -190,7 +185,8 @@ void UdpSenderPort::write_sem_cb_(uv_async_t* handle) {
         self.packet_counter_++;
 
         roc_log(LogTrace, "udp sender: sending packet: num=%u src=%s dst=%s sz=%ld",
-                self.packet_counter_, address::socket_addr_to_str(self.address_).c_str(),
+                self.packet_counter_,
+                address::socket_addr_to_str(self.config_.bind_address).c_str(),
                 address::socket_addr_to_str(udp.dst_addr).c_str(),
                 (long)pp->data().size());
 
@@ -231,7 +227,7 @@ void UdpSenderPort::send_cb_(uv_udp_send_t* req, int status) {
         roc_log(LogError,
                 "udp sender:"
                 " can't send packet: src=%s dst=%s sz=%ld: [%s] %s",
-                address::socket_addr_to_str(self.address_).c_str(),
+                address::socket_addr_to_str(self.config_.bind_address).c_str(),
                 address::socket_addr_to_str(pp->udp()->dst_addr).c_str(),
                 (long)pp->data().size(), uv_err_name(status), uv_strerror(status));
     }
@@ -275,7 +271,7 @@ void UdpSenderPort::start_closing_() {
 
     if (handle_initialized_ && !uv_is_closing((uv_handle_t*)&handle_)) {
         roc_log(LogInfo, "udp sender: closing port %s",
-                address::socket_addr_to_str(address_).c_str());
+                address::socket_addr_to_str(config_.bind_address).c_str());
 
         uv_close((uv_handle_t*)&handle_, close_cb_);
     }
