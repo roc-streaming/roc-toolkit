@@ -12,7 +12,7 @@
 #ifndef ROC_PIPELINE_PARSE_PORT_H_
 #define ROC_PIPELINE_PARSE_PORT_H_
 
-#include "roc_address/endpoint_type.h"
+#include "roc_address/interface.h"
 #include "roc_pipeline/config.h"
 
 namespace roc {
@@ -28,7 +28,7 @@ namespace pipeline {
 //!
 //! @returns
 //!  false if string can't be parsed.
-bool parse_port(address::EndpointType type, const char* string, PortConfig& result);
+bool parse_port(address::Interface iface, const char* string, PortConfig& result);
 
 } // namespace pipeline
 } // namespace roc

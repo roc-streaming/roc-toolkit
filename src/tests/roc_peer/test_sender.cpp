@@ -48,10 +48,10 @@ TEST(sender, bind_connect) {
         CHECK(sender.valid());
 
         pipeline::PortConfig remote_port;
-        remote_port.protocol = address::EndProto_RTP;
+        remote_port.protocol = address::Proto_RTP;
         CHECK(remote_port.address.set_host_port(address::Family_IPv4, "127.0.0.1", 123));
 
-        CHECK(sender.connect(address::EndType_AudioSource, remote_port.protocol,
+        CHECK(sender.connect(address::Iface_AudioSource, remote_port.protocol,
                              remote_port.address));
 
         UNSIGNED_LONGS_EQUAL(context.event_loop().num_ports(), 1);
@@ -71,9 +71,9 @@ TEST(sender, endpoints_no_fec) {
         CHECK(sender.valid());
 
         pipeline::PortConfig source_port;
-        source_port.protocol = address::EndProto_RTP;
+        source_port.protocol = address::Proto_RTP;
         CHECK(source_port.address.set_host_port(address::Family_IPv4, "127.0.0.1", 123));
-        CHECK(sender.connect(address::EndType_AudioSource, source_port.protocol,
+        CHECK(sender.connect(address::Iface_AudioSource, source_port.protocol,
                              source_port.address));
 
         // everything is ok
@@ -102,20 +102,20 @@ TEST(sender, endpoints_fec) {
         CHECK(sender.valid());
 
         pipeline::PortConfig source_port;
-        source_port.protocol = address::EndProto_RTP_RS8M_Source;
+        source_port.protocol = address::Proto_RTP_RS8M_Source;
         CHECK(source_port.address.set_host_port(address::Family_IPv4, "127.0.0.1", 123));
 
         // fec is not supported
-        CHECK(!sender.connect(address::EndType_AudioSource, source_port.protocol,
+        CHECK(!sender.connect(address::Iface_AudioSource, source_port.protocol,
                               source_port.address));
         CHECK(!sender.is_ready());
 
         pipeline::PortConfig repair_port;
-        repair_port.protocol = address::EndProto_RS8M_Repair;
+        repair_port.protocol = address::Proto_RS8M_Repair;
         CHECK(repair_port.address.set_host_port(address::Family_IPv4, "127.0.0.1", 123));
 
         // fec is not supported
-        CHECK(!sender.connect(address::EndType_AudioRepair, repair_port.protocol,
+        CHECK(!sender.connect(address::Iface_AudioRepair, repair_port.protocol,
                               repair_port.address));
         CHECK(!sender.is_ready());
 
@@ -129,15 +129,15 @@ TEST(sender, endpoints_fec) {
         CHECK(sender.valid());
 
         pipeline::PortConfig source_port;
-        source_port.protocol = address::EndProto_RTP_RS8M_Source;
+        source_port.protocol = address::Proto_RTP_RS8M_Source;
         CHECK(source_port.address.set_host_port(address::Family_IPv4, "127.0.0.1", 123));
-        CHECK(sender.connect(address::EndType_AudioSource, source_port.protocol,
+        CHECK(sender.connect(address::Iface_AudioSource, source_port.protocol,
                              source_port.address));
 
         pipeline::PortConfig repair_port;
-        repair_port.protocol = address::EndProto_RS8M_Repair;
+        repair_port.protocol = address::Proto_RS8M_Repair;
         CHECK(repair_port.address.set_host_port(address::Family_IPv4, "127.0.0.1", 123));
-        CHECK(sender.connect(address::EndType_AudioRepair, repair_port.protocol,
+        CHECK(sender.connect(address::Iface_AudioRepair, repair_port.protocol,
                              repair_port.address));
 
         // everything is ok
@@ -151,11 +151,11 @@ TEST(sender, endpoints_fec) {
         CHECK(sender.valid());
 
         pipeline::PortConfig source_port;
-        source_port.protocol = address::EndProto_RTP_LDPC_Source;
+        source_port.protocol = address::Proto_RTP_LDPC_Source;
         CHECK(source_port.address.set_host_port(address::Family_IPv4, "127.0.0.1", 123));
 
         // source port fec scheme mismatch
-        CHECK(!sender.connect(address::EndType_AudioSource, source_port.protocol,
+        CHECK(!sender.connect(address::Iface_AudioSource, source_port.protocol,
                               source_port.address));
         CHECK(!sender.is_ready());
     }
@@ -167,11 +167,11 @@ TEST(sender, endpoints_fec) {
         CHECK(sender.valid());
 
         pipeline::PortConfig repair_port;
-        repair_port.protocol = address::EndProto_LDPC_Repair;
+        repair_port.protocol = address::Proto_LDPC_Repair;
         CHECK(repair_port.address.set_host_port(address::Family_IPv4, "127.0.0.1", 123));
 
         // repair port fec scheme mismatch
-        CHECK(!sender.connect(address::EndType_AudioRepair, repair_port.protocol,
+        CHECK(!sender.connect(address::Iface_AudioRepair, repair_port.protocol,
                               repair_port.address));
         CHECK(!sender.is_ready());
     }
@@ -183,11 +183,11 @@ TEST(sender, endpoints_fec) {
         CHECK(sender.valid());
 
         pipeline::PortConfig repair_port;
-        repair_port.protocol = address::EndProto_RTP;
+        repair_port.protocol = address::Proto_RTP;
         CHECK(repair_port.address.set_host_port(address::Family_IPv4, "127.0.0.1", 123));
 
         // repair port provided when fec is disabled
-        CHECK(!sender.connect(address::EndType_AudioRepair, repair_port.protocol,
+        CHECK(!sender.connect(address::Iface_AudioRepair, repair_port.protocol,
                               repair_port.address));
         CHECK(!sender.is_ready());
     }
@@ -199,9 +199,9 @@ TEST(sender, endpoints_fec) {
         CHECK(sender.valid());
 
         pipeline::PortConfig source_port;
-        source_port.protocol = address::EndProto_RTP_RS8M_Source;
+        source_port.protocol = address::Proto_RTP_RS8M_Source;
         CHECK(source_port.address.set_host_port(address::Family_IPv4, "127.0.0.1", 123));
-        CHECK(sender.connect(address::EndType_AudioSource, source_port.protocol,
+        CHECK(sender.connect(address::Iface_AudioSource, source_port.protocol,
                              source_port.address));
 
         // repair port not provided when fec is enabled
@@ -215,9 +215,9 @@ TEST(sender, endpoints_fec) {
         CHECK(sender.valid());
 
         pipeline::PortConfig repair_port;
-        repair_port.protocol = address::EndProto_RS8M_Repair;
+        repair_port.protocol = address::Proto_RS8M_Repair;
         CHECK(repair_port.address.set_host_port(address::Family_IPv4, "127.0.0.1", 123));
-        CHECK(sender.connect(address::EndType_AudioRepair, repair_port.protocol,
+        CHECK(sender.connect(address::Iface_AudioRepair, repair_port.protocol,
                              repair_port.address));
 
         // source port not provided when fec is enabled
