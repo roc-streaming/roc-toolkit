@@ -7,16 +7,16 @@
  */
 
 /**
- * @file roc/receiver.h
- * @brief Roc receiver.
+ * \file roc/receiver.h
+ * \brief Roc receiver.
  */
 
 #ifndef ROC_RECEIVER_H_
 #define ROC_RECEIVER_H_
 
-#include "roc/address.h"
 #include "roc/config.h"
 #include "roc/context.h"
+#include "roc/endpoint.h"
 #include "roc/frame.h"
 #include "roc/platform.h"
 
@@ -24,40 +24,77 @@
 extern "C" {
 #endif
 
-/** Roc receiver.
+/** Receiver peer.
  *
- * Receiver receives the network packets from multiple senders, decodes audio streams
+ * Receiver gets the network packets from multiple senders, decodes audio streams
  * from them, mixes multiple streams into a single stream, and returns it to the user.
  *
- * @b Context
+ * **Context**
  *
  * Receiver is automatically attached to a context when opened and detached from it when
- * closed. The user should not close the context until the receiver is not closed.
+ * closed. The user should not close the context until the receiver is closed.
  *
  * Receiver work consists of two parts: packet reception and stream decoding. The
  * decoding part is performed in the receiver itself, and the reception part is
- * performed in the context network worker thread(s).
+ * performed in the context network worker threads.
  *
- * @b Lifecycle
+ * **Life cycle**
  *
- * A receiver is created using roc_receiver_open(). Then it should be bound to a single
- * or multiple local ports using roc_receiver_bind(). After that, the audio stream is
- * iteratively read from the receiver using roc_receiver_read(). When the receiver is not
- * needed anymore, it is destroyed using roc_receiver_close().
+ * - A receiver is created using roc_receiver_open().
  *
- * @b Ports
+ * - The receiver either binds local endpoints using roc_receiver_bind(), allowing senders
+ *   connecting to them, or itself connects to remote sender endpoints using
+ *   roc_receiver_connect(). What option to use is up to the user.
  *
- * Receiver can be bound to multiple network ports of several types. Every port handles
- * packets of the specific protocol selected when the port is bound. It is allowed to
- * bind multiple ports of the same type, typically handling different protocols.
+ * - The audio stream is iteratively read from the receiver using roc_receiver_read().
+ *   Receiver returns the mixed stream from all connected senders.
  *
- * Senders can then be connected to some or all receiver ports to transmit one or several
- * packet streams. If a sender employs FEC, it needs to be connected to a pair of
- * @c ROC_PORT_AUDIO_SOURCE and @c ROC_PORT_AUDIO_REPAIR ports which protocols correspond
- * to the employed FEC code. Otherwise, the sender needs to be connected to a single
- * @c ROC_PORT_AUDIO_SOURCE port.
+ * - The receiver is destroyed using roc_receiver_close().
  *
- * @b Sessions
+ * **Interfaces and endpoints**
+ *
+ * Receiver has several *interfaces*, one per each type defined in \ref roc_interface. The
+ * interface defines the type of the comminication with the remote peer and the set of
+ * the protocols supported by it.
+ *
+ * Supported actions with the interface:
+ *
+ *  - Call roc_receiver_bind() to bind the interface to a local \ref roc_endpoint. In this
+ *    case the receiver accepts connections from senders mixes their streams into the
+ *    single output stream.
+ *
+ *  - Call roc_receiver_connect() to connect the interface to a remote \ref roc_endpoint.
+ *    In this case the receiver initiates connection to the sender and requests it
+ *    to start sending media stream to the receiver.
+ *
+ * Supported interface configurations:
+ *
+ *   - Bind \c ROC_INTERFACE_AGGREGATE to a local endpoint (e.g. be an RTSP server).
+ *   - Connect \c ROC_INTERFACE_AGGREGATE to a remote endpoint (e.g. be an RTSP client).
+ *   - Bind \c ROC_INTERFACE_AUDIO_SOURCE to a local endpoint (e.g. be an RTP receiver).
+ *   - Bind \c ROC_INTERFACE_AUDIO_SOURCE and \c ROC_INTERFACE_AUDIO_REPAIR to a pair
+ *     of local endpoints (e.g. be an RTP + FECFRAME receiver).
+ *
+ * **FEC scheme**
+ *
+ * If \c ROC_INTERFACE_AGGREGATE is used, it automatically creates all necessary transport
+ * interfaces and the user should not bother about them.
+ *
+ * Otherwise, the user should manually configure \c ROC_INTERFACE_AUDIO_SOURCE and
+ * \c ROC_INTERFACE_AUDIO_REPAIR interfaces:
+ *
+ *  - If FEC is disabled (\ref ROC_FEC_DISABLE), only \c ROC_INTERFACE_AUDIO_SOURCE should
+ *    be configured. It will be used to transmit audio packets.
+ *
+ *  - If FEC is enabled, both \c ROC_INTERFACE_AUDIO_SOURCE and
+ *    \c ROC_INTERFACE_AUDIO_REPAIR interfaces should be configured. The second interface
+ *    will be used to transmit redundant repair data.
+ *
+ * The protocols for the two interfaces should correspond to each other and to the FEC
+ * scheme. For example, if \c ROC_FEC_RS8M is used, the protocols should be
+ * \c ROC_PROTO_RTP_RS8M_SOURCE and \c ROC_PROTO_RS8M_REPAIR.
+ *
+ * **Sessions**
  *
  * Receiver creates a session object for every sender connected to it. Sessions can appear
  * and disappear at any time. Multiple sessions can be active at the same time.
@@ -72,15 +109,18 @@ extern "C" {
  * destroyed on other events like a large latency underrun or overrun or broken playback,
  * but if the sender continues to send packets, it will be created again shortly.
  *
- * @b Mixing
+ * **Mixing**
  *
  * Receiver mixes audio streams from all currently active sessions into a single output
- * stream. The output stream continues no matter how much active sessions there are at
- * the moment. In particular, if there are no sessions, the receiver produces a stream
- * with all zeros. Sessions can be added and removed from the output stream at any time,
- * probably in the middle of a frame.
+ * stream.
  *
- * @b Resampling
+ * The output stream continues no matter how much active sessions there are at the moment.
+ * In particular, if there are no sessions, the receiver produces a stream with all zeros.
+ *
+ * Sessions can be added and removed from the output stream at any time, probably in the
+ * middle of a frame.
+ *
+ * **Sample rate**
  *
  * Every session may have a different sample rate. And even if nominally all of them are
  * of the same rate, device frequencies usually differ by a few tens of Hertz.
@@ -94,25 +134,30 @@ extern "C" {
  * disabling resampling (at the cost of occasional underruns or overruns) or several
  * resampler profiles providing different compromises between CPU consumption and quality.
  *
- * @b Timing
+ * **Clock source**
  *
  * Receiver should decode samples at a constant rate that is configured when the receiver
  * is created. There are two ways to accomplish this:
  *
- *  - If the user enabled internal clock (@c ROC_CLOCK_INTERNAL), the receiver employs a
+ *  - If the user enabled internal clock (\c ROC_CLOCK_INTERNAL), the receiver employs a
  *    CPU timer to block reads until it's time to decode the next bunch of samples
- *    according to the configured sample rate. This mode is useful when the user passes
- *    samples to a non-realtime destination, e.g. to an audio file.
+ *    according to the configured sample rate.
  *
- *  - Otherwise (@c ROC_CLOCK_EXTERNAL), the samples read from the receiver are decoded
- *    immediately and the user is responsible to read samples in time. This mode is
- *    useful when the user passes samples to a realtime destination with its own clock,
- *    e.g. to an audio device. Internal clock should not be used in this case because the
- *    audio device and the CPU might have slightly different clocks, and the difference
- *    will eventually lead to an underrun or an overrun.
+ *    This mode is useful when the user passes samples to a non-realtime destination,
+ *    e.g. to an audio file.
  *
- * @b Thread-safety
- *  - can be used concurrently
+ *  - If the user enabled external clock (\c ROC_CLOCK_EXTERNAL), the samples read from
+ *    the receiver are decoded immediately and hence the user is responsible to call
+ *    read operation according to the sample rate.
+ *
+ *    This mode is useful when the user passes samples to a realtime destination with its
+ *    own clock, e.g. to an audio device. Internal clock should not be used in this case
+ *    because the audio device and the CPU might have slightly different clocks, and the
+ *    difference will eventually lead to an underrun or an overrun.
+ *
+ * **Thread safety**
+ *
+ * Can be used concurrently.
  */
 typedef struct roc_receiver roc_receiver;
 
@@ -120,45 +165,45 @@ typedef struct roc_receiver roc_receiver;
  *
  * Allocates and initializes a new receiver, and attaches it to the context.
  *
- * @b Parameters
- *  - @p context should point to an opened context
- *  - @p config should point to an initialized config
- *  - @p result should point to an unitialized roc_receiver pointer
+ * **Parameters**
+ *  - \p context should point to an opened context
+ *  - \p config should point to an initialized config
+ *  - \p result should point to an unitialized roc_receiver pointer
  *
- * @b Returns
+ * **Returns**
  *  - returns zero if the receiver was successfully created
  *  - returns a negative value if the arguments are invalid
- *  - returns a negative value if there are not enough resources
+ *  - returns a negative value on resource allocation failure
  */
 ROC_API int roc_receiver_open(roc_context* context,
                               const roc_receiver_config* config,
                               roc_receiver** result);
 
-/** Bind the receiver to a local port.
+/** Bind the receiver interface to a local endpoint.
  *
- * Binds the receiver to a local port. May be called multiple times to bind multiple
- * port. May be called at any time.
+ * Checks that the endpoint is valid and supported by the interface, allocates
+ * a new ingoing port, and binds it to the local endpoint.
  *
- * If @p address has zero port, the receiver is bound to a randomly chosen ephemeral
- * port. If the function succeeds, the actual port to which the receiver was bound
- * is written back to @p address.
+ * Each interface can be bound or connected only once.
+ * May be called multiple times for different interfaces.
  *
- * @b Parameters
- *  - @p receiver should point to an opened receiver
- *  - @p type specifies the port type
- *  - @p proto specifies the port protocol
- *  - @p address should point to a properly initialized address
+ * If \p endpoint has explicitly set zero port, the receiver is bound to a randomly
+ * chosen ephemeral port. If the function succeeds, the actual port to which the
+ * receiver was bound is written back to \p endpoint.
  *
- * @b Returns
+ * **Parameters**
+ *  - \p receiver should point to an opened receiver
+ *  - \p iface specifies the receiver interface
+ *  - \p endpoint specifies the receiver endpoint
+ *
+ * **Returns**
  *  - returns zero if the receiver was successfully bound to a port
  *  - returns a negative value if the arguments are invalid
  *  - returns a negative value if the address can't be bound
- *  - returns a negative value if there are not enough resources
+ *  - returns a negative value on resource allocation failure
  */
-ROC_API int roc_receiver_bind(roc_receiver* receiver,
-                              roc_port_type type,
-                              roc_protocol proto,
-                              roc_address* address);
+ROC_API int
+roc_receiver_bind(roc_receiver* receiver, roc_interface iface, roc_endpoint* endpoint);
 
 /** Read samples from the receiver.
  *
@@ -166,18 +211,21 @@ ROC_API int roc_receiver_bind(roc_receiver* receiver,
  * packets, decodes samples, resamples and mixes them, and finally stores samples into the
  * provided frame.
  *
- * If the automatic timing is enabled, the function blocks until it's time to decode the
+ * If \c ROC_CLOCK_INTERNAL is used, the function blocks until it's time to decode the
  * samples according to the configured sample rate.
  *
- * @b Parameters
- *  - @p receiver should point to an opened receiver
- *  - @p frame should point to an initialized frame which will be filled with samples;
+ * Until the receiver is connected to at least one sender, it produces silence.
+ * If the receiver is connected to multiple senders, it mixes their streams into one.
+ *
+ * **Parameters**
+ *  - \p receiver should point to an opened receiver
+ *  - \p frame should point to an initialized frame which will be filled with samples;
  *    the number of samples is defined by the frame size
  *
- * @b Returns
+ * **Returns**
  *  - returns zero if all samples were successfully decoded
  *  - returns a negative value if the arguments are invalid
- *  - returns a negative value if there are not enough resources
+ *  - returns a negative value on resource allocation failure
  */
 ROC_API int roc_receiver_read(roc_receiver* receiver, roc_frame* frame);
 
@@ -187,10 +235,10 @@ ROC_API int roc_receiver_read(roc_receiver* receiver, roc_frame* frame);
  * should ensure that nobody uses the receiver during and after this call. If this
  * function fails, the receiver is kept opened and attached to the context.
  *
- * @b Parameters
- *  - @p receiver should point to an opened receiver
+ * **Parameters**
+ *  - \p receiver should point to an opened receiver
  *
- * @b Returns
+ * **Returns**
  *  - returns zero if the receiver was successfully closed
  *  - returns a negative value if the arguments are invalid
  */

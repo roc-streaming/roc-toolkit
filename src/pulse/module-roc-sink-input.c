@@ -45,6 +45,9 @@ struct roc_sink_input_userdata {
     pa_module* module;
     pa_sink_input* sink_input;
 
+    roc_endpoint* local_source_endp;
+    roc_endpoint* local_repair_endp;
+
     roc_context* context;
     roc_receiver* receiver;
 };
@@ -185,16 +188,16 @@ int pa__init(pa_module* m) {
 
     u->module = m;
 
-    roc_address local_source_addr;
-    if (rocpa_parse_address(&local_source_addr, args, "local_ip", ROCPA_DEFAULT_IP,
-                            "local_source_port", ROCPA_DEFAULT_SOURCE_PORT)
+    if (rocpa_parse_endpoint(&u->local_source_endp, ROCPA_DEFAULT_SOURCE_PROTO, args,
+                             "local_ip", ROCPA_DEFAULT_IP, "local_source_port",
+                             ROCPA_DEFAULT_SOURCE_PORT)
         < 0) {
         goto error;
     }
 
-    roc_address local_repair_addr;
-    if (rocpa_parse_address(&local_repair_addr, args, "local_ip", ROCPA_DEFAULT_IP,
-                            "local_repair_port", ROCPA_DEFAULT_REPAIR_PORT)
+    if (rocpa_parse_endpoint(&u->local_repair_endp, ROCPA_DEFAULT_REPAIR_PROTO, args,
+                             "local_ip", ROCPA_DEFAULT_IP, "local_repair_port",
+                             ROCPA_DEFAULT_REPAIR_PORT)
         < 0) {
         goto error;
     }
@@ -231,15 +234,13 @@ int pa__init(pa_module* m) {
         goto error;
     }
 
-    if (roc_receiver_bind(u->receiver, ROC_PORT_AUDIO_SOURCE, ROC_PROTO_RTP_RS8M_SOURCE,
-                          &local_source_addr)
+    if (roc_receiver_bind(u->receiver, ROC_INTERFACE_AUDIO_SOURCE, u->local_source_endp)
         != 0) {
         pa_log("can't connect roc receiver to local address");
         goto error;
     }
 
-    if (roc_receiver_bind(u->receiver, ROC_PORT_AUDIO_REPAIR, ROC_PROTO_RS8M_REPAIR,
-                          &local_repair_addr)
+    if (roc_receiver_bind(u->receiver, ROC_INTERFACE_AUDIO_REPAIR, u->local_repair_endp)
         != 0) {
         pa_log("can't connect roc receiver to local address");
         goto error;
@@ -328,6 +329,18 @@ void pa__done(pa_module* m) {
     if (u->context) {
         if (roc_context_close(u->context) != 0) {
             pa_log("failed to close roc context");
+        }
+    }
+
+    if (u->local_source_endp) {
+        if (roc_endpoint_deallocate(u->local_source_endp) != 0) {
+            pa_log("failed to deallocate roc endpoint");
+        }
+    }
+
+    if (u->local_repair_endp) {
+        if (roc_endpoint_deallocate(u->local_repair_endp) != 0) {
+            pa_log("failed to deallocate roc endpoint");
         }
     }
 
