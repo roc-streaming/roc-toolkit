@@ -33,20 +33,11 @@ public:
     //! Check whether host and port are set.
     bool has_host_port() const;
 
-    //! Set address from sockaddr struct.
-    bool set_host_port_saddr(const sockaddr* sa);
-
     //! Set host address.
     bool set_host_port(AddrFamily type, const char* host, int port);
 
-    //! Check whether multicast interface address is set.
-    bool has_miface() const;
-
-    //! Set address of the interface on which to join to the multicast group.
-    bool set_miface(AddrFamily type, const char* ip);
-
-    //! Set broadcast flag.
-    bool set_broadcast();
+    //! Set address from sockaddr struct.
+    bool set_host_port_saddr(const sockaddr* sa);
 
     //! Get IP version (IPv4 or IPv6).
     AddrFamily family() const;
@@ -54,14 +45,8 @@ public:
     //! Check whether this is multicast address.
     bool multicast() const;
 
-    //! Check whether this is broadcast address.
-    bool broadcast() const;
-
     //! Get host IP address.
     bool get_host(char* buf, size_t bufsz) const;
-
-    //! Get IP address of the interface on which to join to the multicast group.
-    bool get_miface(char* buf, size_t bufsz) const;
 
     //! Get address port.
     int port() const;
@@ -94,22 +79,10 @@ private:
     bool set_host_port_ipv4_(const char* ip, int port);
     bool set_host_port_ipv6_(const char* ip, int port);
 
-    bool set_miface_ipv4_(const char* ip);
-    bool set_miface_ipv6_(const char* ip);
-
     union {
         sockaddr_in addr4;
         sockaddr_in6 addr6;
     } saddr_;
-
-    sa_family_t miface_family_;
-
-    union {
-        in_addr addr4;
-        in6_addr addr6;
-    } miface_;
-
-    bool broadcast_;
 };
 
 } // namespace address

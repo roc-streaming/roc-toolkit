@@ -38,6 +38,9 @@ public:
     //! Check if successfully constructed.
     bool valid() const;
 
+    //! Enable or disable traffic to broadcast addresses.
+    bool set_broadcast_enabled(bool);
+
     //! Bind peer to local endpoint.
     bool bind(address::SocketAddr& addr);
 
@@ -63,9 +66,9 @@ private:
     pipeline::SenderSink::EndpointHandle source_endpoint_;
     pipeline::SenderSink::EndpointHandle repair_endpoint_;
 
+    netio::UdpSenderConfig udp_config_;
     netio::EventLoop::PortHandle udp_port_;
     packet::IWriter* udp_writer_;
-    address::SocketAddr udp_bind_address_;
 };
 
 } // namespace peer
