@@ -15,7 +15,7 @@
 namespace roc {
 namespace pipeline {
 
-bool validate_endpoint(address::EndpointType type, address::EndpointProtocol proto) {
+bool validate_endpoint(address::Interface iface, address::Protocol proto) {
     const address::ProtocolAttrs* proto_attrs =
         address::ProtocolMap::instance().find_proto(proto);
 
@@ -24,11 +24,11 @@ bool validate_endpoint(address::EndpointType type, address::EndpointProtocol pro
         return false;
     }
 
-    if (proto_attrs->type != type) {
+    if (proto_attrs->iface != iface) {
         roc_log(
             LogError,
             "bad endpoints configuration: %s protocol is not suitable for %s endpoint",
-            address::endpoint_proto_to_str(proto), address::endpoint_type_to_str(type));
+            address::proto_to_str(proto), address::interface_to_str(iface));
         return false;
     }
 
@@ -38,8 +38,7 @@ bool validate_endpoint(address::EndpointType type, address::EndpointProtocol pro
                 "bad endpoints configuration:"
                 " %s endpoint protocol '%s' implies fec scheme '%s',"
                 " but it is disabled at compile time",
-                address::endpoint_type_to_str(type),
-                address::endpoint_proto_to_str(proto),
+                address::interface_to_str(iface), address::proto_to_str(proto),
                 packet::fec_scheme_to_str(proto_attrs->fec_scheme));
         return false;
     }
@@ -48,8 +47,8 @@ bool validate_endpoint(address::EndpointType type, address::EndpointProtocol pro
 }
 
 bool validate_endpoint_and_pipeline_consistency(packet::FecScheme pipeline_fec_scheme,
-                                                address::EndpointType type,
-                                                address::EndpointProtocol proto) {
+                                                address::Interface iface,
+                                                address::Protocol proto) {
     const address::ProtocolAttrs* proto_attrs =
         address::ProtocolMap::instance().find_proto(proto);
 
@@ -58,7 +57,7 @@ bool validate_endpoint_and_pipeline_consistency(packet::FecScheme pipeline_fec_s
         return false;
     }
 
-    if (type == address::EndType_AudioRepair && proto != address::EndProto_None
+    if (iface == address::Iface_AudioRepair && proto != address::Proto_None
         && pipeline_fec_scheme == packet::FEC_None) {
         roc_log(LogError,
                 "bad endpoints configuration:"
@@ -72,8 +71,7 @@ bool validate_endpoint_and_pipeline_consistency(packet::FecScheme pipeline_fec_s
                 "bad endpoints configuration:"
                 " %s endpoint protocol '%s' implies fec scheme '%s',"
                 " but pipeline is configured to use fec scheme '%s'",
-                address::endpoint_type_to_str(type),
-                address::endpoint_proto_to_str(proto),
+                address::interface_to_str(iface), address::proto_to_str(proto),
                 packet::fec_scheme_to_str(proto_attrs->fec_scheme),
                 packet::fec_scheme_to_str(pipeline_fec_scheme));
         return false;
@@ -84,10 +82,10 @@ bool validate_endpoint_and_pipeline_consistency(packet::FecScheme pipeline_fec_s
 
 // note: many of the checks below are redundant, but they help
 // to provide meaninful error messages
-bool validate_endpoint_pair_consistency(address::EndpointProtocol source_proto,
-                                        address::EndpointProtocol repair_proto) {
+bool validate_endpoint_pair_consistency(address::Protocol source_proto,
+                                        address::Protocol repair_proto) {
     // source endpoint is missing
-    if (source_proto == address::EndProto_None) {
+    if (source_proto == address::Proto_None) {
         roc_log(LogError, "bad endpoints configuration: no source endpoint provided");
         return false;
     }
@@ -102,29 +100,29 @@ bool validate_endpoint_pair_consistency(address::EndpointProtocol source_proto,
 
     // repair endpoint is needed but missing
     if (source_attrs->fec_scheme != packet::FEC_None
-        && repair_proto == address::EndProto_None) {
+        && repair_proto == address::Proto_None) {
         roc_log(
             LogError,
             "bad endpoints configuration:"
             " source endpoint protocol '%s' implies fec scheme '%s' and two endpoints,"
             " but repair endpoint is not provided",
-            address::endpoint_proto_to_str(source_proto),
+            address::proto_to_str(source_proto),
             packet::fec_scheme_to_str(source_attrs->fec_scheme));
         return false;
     }
 
     // repair endpoint is not needed but present
     if (source_attrs->fec_scheme == packet::FEC_None
-        && repair_proto != address::EndProto_None) {
+        && repair_proto != address::Proto_None) {
         roc_log(LogError,
                 "bad endpoints configuration:"
                 " source endpoint protocol '%s' implies no fec scheme and one endpoint,"
                 " but repair endpoint is provided",
-                address::endpoint_proto_to_str(source_proto));
+                address::proto_to_str(source_proto));
         return false;
     }
 
-    if (repair_proto != address::EndProto_None) {
+    if (repair_proto != address::Proto_None) {
         const address::ProtocolAttrs* repair_attrs =
             address::ProtocolMap::instance().find_proto(repair_proto);
 
@@ -138,10 +136,10 @@ bool validate_endpoint_pair_consistency(address::EndpointProtocol source_proto,
             roc_log(LogError,
                     "bad endpoints configuration:"
                     " source endpoint protocol '%s' implies fec scheme '%s',"
-                    " but repair endpoint protocolo '%s' implies fec scheme '%s'",
-                    address::endpoint_proto_to_str(source_proto),
+                    " but repair endpoint protocol '%s' implies fec scheme '%s'",
+                    address::proto_to_str(source_proto),
                     packet::fec_scheme_to_str(source_attrs->fec_scheme),
-                    address::endpoint_proto_to_str(repair_proto),
+                    address::proto_to_str(repair_proto),
                     packet::fec_scheme_to_str(repair_attrs->fec_scheme));
             return false;
         }

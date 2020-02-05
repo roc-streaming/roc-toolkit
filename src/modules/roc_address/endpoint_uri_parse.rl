@@ -36,7 +36,7 @@ bool parse_endpoint_uri(const char* str, EndpointURI::Subset subset, EndpointURI
     int cs = 0;
 
     // for actions
-    EndpointProtocol proto = EndProto_None;
+    Protocol proto = Proto_None;
     const char* start_p = NULL;
 
     // parse result
@@ -113,12 +113,12 @@ bool parse_endpoint_uri(const char* str, EndpointURI::Subset subset, EndpointURI
             }
         }
 
-        scheme = 'rtsp'      %{ proto = EndProto_RTSP; }
-               | 'rtp'       %{ proto = EndProto_RTP; }
-               | 'rtp+rs8m'  %{ proto = EndProto_RTP_RS8M_Source; }
-               | 'rs8m'      %{ proto = EndProto_RS8M_Repair; }
-               | 'rtp+ldpc'  %{ proto = EndProto_RTP_LDPC_Source; }
-               | 'ldpc'      %{ proto = EndProto_LDPC_Repair; }
+        scheme = 'rtsp'      %{ proto = Proto_RTSP; }
+               | 'rtp'       %{ proto = Proto_RTP; }
+               | 'rtp+rs8m'  %{ proto = Proto_RTP_RS8M_Source; }
+               | 'rs8m'      %{ proto = Proto_RS8M_Repair; }
+               | 'rtp+ldpc'  %{ proto = Proto_RTP_LDPC_Source; }
+               | 'ldpc'      %{ proto = Proto_LDPC_Repair; }
                ;
 
         proto = scheme %set_proto;
