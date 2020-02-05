@@ -6,8 +6,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+#include "roc_address/endpoint_uri.h"
 #include "roc_address/io_uri.h"
-#include "roc_address/parse_socket_addr.h"
 #include "roc_audio/resampler_profile.h"
 #include "roc_core/array.h"
 #include "roc_core/colors.h"
@@ -21,7 +21,6 @@
 #include "roc_peer/context.h"
 #include "roc_peer/receiver.h"
 #include "roc_pipeline/converter_source.h"
-#include "roc_pipeline/parse_port.h"
 #include "roc_pipeline/receiver_source.h"
 #include "roc_sndio/backend_dispatcher.h"
 #include "roc_sndio/print_supported.h"
@@ -358,10 +357,11 @@ int main(int argc, char** argv) {
     }
 
     if (args.source_given) {
-        pipeline::PortConfig port;
+        address::EndpointURI endpoint(context.allocator());
 
-        if (!pipeline::parse_port(address::Iface_AudioSource, args.source_arg, port)) {
-            roc_log(LogError, "can't parse source port: %s", args.source_arg);
+        if (!address::parse_endpoint_uri(args.source_arg,
+                                         address::EndpointURI::Subset_Full, endpoint)) {
+            roc_log(LogError, "can't parse source endpoint: %s", args.source_arg);
             return 1;
         }
 
@@ -372,17 +372,18 @@ int main(int argc, char** argv) {
                 return 1;
             }
         }
-        if (!receiver.bind(address::Iface_AudioSource, port.protocol, port.address)) {
-            roc_log(LogError, "can't bind source port: %s", args.source_arg);
+        if (!receiver.bind(address::Iface_AudioSource, endpoint)) {
+            roc_log(LogError, "can't bind source endpoint: %s", args.source_arg);
             return 1;
         }
     }
 
     if (args.repair_given) {
-        pipeline::PortConfig port;
+        address::EndpointURI endpoint(context.allocator());
 
-        if (!pipeline::parse_port(address::Iface_AudioRepair, args.repair_arg, port)) {
-            roc_log(LogError, "can't parse repair port: %s", args.repair_arg);
+        if (!address::parse_endpoint_uri(args.repair_arg,
+                                         address::EndpointURI::Subset_Full, endpoint)) {
+            roc_log(LogError, "can't parse repair endpoint: %s", args.source_arg);
             return 1;
         }
 
@@ -393,7 +394,7 @@ int main(int argc, char** argv) {
                 return 1;
             }
         }
-        if (!receiver.bind(address::Iface_AudioRepair, port.protocol, port.address)) {
+        if (!receiver.bind(address::Iface_AudioRepair, endpoint)) {
             roc_log(LogError, "can't bind repair port: %s", args.repair_arg);
             return 1;
         }
