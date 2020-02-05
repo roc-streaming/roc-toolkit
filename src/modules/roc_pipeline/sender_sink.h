@@ -70,8 +70,8 @@ public:
     //! @returns
     //!  NULL on on error or non-NULL opaque handle on success.
     EndpointHandle add_endpoint(EndpointSetHandle endpoint_set,
-                                address::EndpointType type,
-                                address::EndpointProtocol proto);
+                                address::Interface iface,
+                                address::Protocol proto);
 
     //! Set writer to which endpoint will write packets.
     void set_endpoint_output_writer(EndpointHandle endpoint, packet::IWriter& writer);

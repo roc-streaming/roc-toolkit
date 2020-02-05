@@ -6,45 +6,45 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_address/endpoint_protocol.h
-//! @brief Network endpoint protocol.
+//! @file roc_address/protocol.h
+//! @brief Protocol ID.
 
-#ifndef ROC_ADDRESS_ENDPOINT_PROTOCOL_H_
-#define ROC_ADDRESS_ENDPOINT_PROTOCOL_H_
+#ifndef ROC_ADDRESS_PROTOCOL_H_
+#define ROC_ADDRESS_PROTOCOL_H_
 
 #include "roc_packet/fec.h"
 
 namespace roc {
 namespace address {
 
-//! Network endpoint protocol.
-enum EndpointProtocol {
+//! Protocol ID.
+enum Protocol {
     //! Protocol is not set.
-    EndProto_None,
+    Proto_None,
 
     //! RTSP.
-    EndProto_RTSP,
+    Proto_RTSP,
 
     //! Bare RTP.
-    EndProto_RTP,
+    Proto_RTP,
 
     //! RTP source packet + FECFRAME Reed-Solomon footer (m=8).
-    EndProto_RTP_RS8M_Source,
+    Proto_RTP_RS8M_Source,
 
     //! FEC repair packet + FECFRAME Reed-Solomon header (m=8).
-    EndProto_RS8M_Repair,
+    Proto_RS8M_Repair,
 
     //! RTP source packet + FECFRAME LDPC footer.
-    EndProto_RTP_LDPC_Source,
+    Proto_RTP_LDPC_Source,
 
     //! FEC repair packet + FECFRAME LDPC header.
-    EndProto_LDPC_Repair
+    Proto_LDPC_Repair
 };
 
 //! Get string name of the protocol.
-const char* endpoint_proto_to_str(EndpointProtocol proto);
+const char* proto_to_str(Protocol proto);
 
 } // namespace address
 } // namespace roc
 
-#endif // ROC_ADDRESS_ENDPOINT_PROTOCOL_H_
+#endif // ROC_ADDRESS_PROTOCOL_H_

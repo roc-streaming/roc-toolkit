@@ -39,23 +39,23 @@ void ReceiverEndpointSet::destroy() {
     allocator_.destroy(*this);
 }
 
-packet::IWriter* ReceiverEndpointSet::add_endpoint(address::EndpointType type,
-                                                   address::EndpointProtocol proto) {
+packet::IWriter* ReceiverEndpointSet::add_endpoint(address::Interface iface,
+                                                   address::Protocol proto) {
     roc_log(LogDebug, "receiver endpoint set: adding %s endpoint %s",
-            address::endpoint_type_to_str(type), address::endpoint_proto_to_str(proto));
+            address::interface_to_str(iface), address::proto_to_str(proto));
 
-    switch ((int)type) {
-    case address::EndType_AudioSource:
+    switch ((int)iface) {
+    case address::Iface_AudioSource:
         return create_source_endpoint_(proto);
 
-    case address::EndType_AudioRepair:
+    case address::Iface_AudioRepair:
         return create_repair_endpoint_(proto);
 
     default:
         break;
     }
 
-    roc_log(LogError, "receiver endpoint set: invalid endpoint type");
+    roc_log(LogError, "receiver endpoint set: unsupported interface");
     return NULL;
 }
 
@@ -75,14 +75,13 @@ size_t ReceiverEndpointSet::num_sessions() const {
     return session_group_.num_sessions();
 }
 
-ReceiverEndpoint*
-ReceiverEndpointSet::create_source_endpoint_(address::EndpointProtocol proto) {
+ReceiverEndpoint* ReceiverEndpointSet::create_source_endpoint_(address::Protocol proto) {
     if (source_endpoint_) {
         roc_log(LogError, "receiver endpoint set: audio source endpoint is already set");
         return NULL;
     }
 
-    if (!validate_endpoint(address::EndType_AudioSource, proto)) {
+    if (!validate_endpoint(address::Iface_AudioSource, proto)) {
         return NULL;
     }
 
@@ -106,14 +105,13 @@ ReceiverEndpointSet::create_source_endpoint_(address::EndpointProtocol proto) {
     return source_endpoint_.get();
 }
 
-ReceiverEndpoint*
-ReceiverEndpointSet::create_repair_endpoint_(address::EndpointProtocol proto) {
+ReceiverEndpoint* ReceiverEndpointSet::create_repair_endpoint_(address::Protocol proto) {
     if (repair_endpoint_) {
         roc_log(LogError, "receiver endpoint set: audio repair endpoint is already set");
         return NULL;
     }
 
-    if (!validate_endpoint(address::EndType_AudioRepair, proto)) {
+    if (!validate_endpoint(address::Iface_AudioRepair, proto)) {
         return NULL;
     }
 

@@ -47,57 +47,57 @@ bool Sender::valid() const {
     return endpoint_set_;
 }
 
-bool Sender::set_broadcast_enabled(address::EndpointType type, bool enabled) {
+bool Sender::set_broadcast_enabled(address::Interface iface, bool enabled) {
     core::Mutex::Lock lock(mutex_);
 
     roc_panic_if_not(valid());
 
-    roc_panic_if(type < 0);
-    roc_panic_if(type >= (int)ROC_ARRAY_SIZE(ports_));
+    roc_panic_if(iface < 0);
+    roc_panic_if(iface >= (int)ROC_ARRAY_SIZE(ports_));
 
-    if (ports_[type].handle) {
+    if (ports_[iface].handle) {
         roc_log(LogError,
                 "sender peer:"
                 " can't set broadcast flag for %s interface:"
                 " interface is already bound",
-                address::endpoint_type_to_str(type));
+                address::interface_to_str(iface));
         return false;
     }
 
-    ports_[type].config.broadcast_enabled = enabled;
-    ports_[type].is_set = true;
+    ports_[iface].config.broadcast_enabled = enabled;
+    ports_[iface].is_set = true;
 
     roc_log(LogDebug, "sender peer: setting %s interface broadcast flag to %d",
-            address::endpoint_type_to_str(type), (int)enabled);
+            address::interface_to_str(iface), (int)enabled);
 
     return true;
 }
 
-bool Sender::set_outgoing_address(address::EndpointType type, const char* ip) {
+bool Sender::set_outgoing_address(address::Interface iface, const char* ip) {
     core::Mutex::Lock lock(mutex_);
 
     roc_panic_if_not(valid());
 
-    roc_panic_if(type < 0);
-    roc_panic_if(type >= (int)ROC_ARRAY_SIZE(ports_));
+    roc_panic_if(iface < 0);
+    roc_panic_if(iface >= (int)ROC_ARRAY_SIZE(ports_));
 
     roc_panic_if(!ip);
 
-    if (ports_[type].handle) {
+    if (ports_[iface].handle) {
         roc_log(LogError,
                 "sender peer:"
                 " can't set outgoing address for %s interface:"
                 " interface is already bound",
-                address::endpoint_type_to_str(type));
+                address::interface_to_str(iface));
         return false;
     }
 
-    bool ok = ports_[type].config.bind_address.set_host_port(
-        address::Family_IPv4, ip, ports_[type].config.bind_address.port());
+    bool ok = ports_[iface].config.bind_address.set_host_port(
+        address::Family_IPv4, ip, ports_[iface].config.bind_address.port());
 
     if (!ok) {
-        ok = ports_[type].config.bind_address.set_host_port(
-            address::Family_IPv6, ip, ports_[type].config.bind_address.port());
+        ok = ports_[iface].config.bind_address.set_host_port(
+            address::Family_IPv6, ip, ports_[iface].config.bind_address.port());
     }
 
     if (!ok) {
@@ -105,54 +105,54 @@ bool Sender::set_outgoing_address(address::EndpointType type, const char* ip) {
                 "sender peer:"
                 " can't set outgoing address for %s interface to '%s':"
                 " invalid IPv4 or IPv6 address",
-                address::endpoint_type_to_str(type), ip);
+                address::interface_to_str(iface), ip);
         return false;
     }
 
-    ports_[type].is_set = true;
+    ports_[iface].is_set = true;
 
     roc_log(LogDebug, "sender peer: setting %s interface outgoing address to %s",
-            address::endpoint_type_to_str(type), ip);
+            address::interface_to_str(iface), ip);
 
     return true;
 }
 
-bool Sender::connect(address::EndpointType type,
-                     address::EndpointProtocol proto,
+bool Sender::connect(address::Interface iface,
+                     address::Protocol proto,
                      const address::SocketAddr& address) {
     core::Mutex::Lock lock(mutex_);
 
     roc_panic_if_not(valid());
 
-    address::EndpointType outgoing_type = select_outgoing_port_(type);
+    address::Interface outgoing_iface = select_outgoing_iface_(iface);
 
-    UdpPort* port = setup_outgoing_port_(outgoing_type, address.family());
+    InterfacePort* port = setup_outgoing_iface_(outgoing_iface, address.family());
     if (!port) {
         roc_log(LogError, "sender peer: can't bind %s interface to local port",
-                address::endpoint_type_to_str(type));
+                address::interface_to_str(iface));
         return false;
     }
 
     pipeline::SenderSink::EndpointHandle endpoint =
-        pipeline_.add_endpoint(endpoint_set_, type, proto);
+        pipeline_.add_endpoint(endpoint_set_, iface, proto);
 
     if (!endpoint) {
         roc_log(LogError, "sender peer: can't add %s endpoint to pipeline",
-                address::endpoint_type_to_str(type));
+                address::interface_to_str(iface));
         return false;
     }
 
     pipeline_.set_endpoint_destination_udp_address(endpoint, address);
     pipeline_.set_endpoint_output_writer(endpoint, *port->writer);
 
-    if (type == address::EndType_AudioSource) {
+    if (iface == address::Iface_AudioSource) {
         source_endpoint_ = endpoint;
     } else {
         repair_endpoint_ = endpoint;
     }
 
     roc_log(LogInfo, "sender peer: connected %s interface to %s:%s",
-            address::endpoint_type_to_str(type), address::endpoint_proto_to_str(proto),
+            address::interface_to_str(iface), address::proto_to_str(proto),
             address::socket_addr_to_str(address).c_str());
 
     return true;
@@ -172,17 +172,17 @@ sndio::ISink& Sender::sink() {
     return pipeline_;
 }
 
-address::EndpointType Sender::select_outgoing_port_(address::EndpointType type) {
-    if (ports_[type].is_set) {
-        return type;
+address::Interface Sender::select_outgoing_iface_(address::Interface iface) {
+    if (ports_[iface].is_set) {
+        return iface;
     }
 
-    return address::EndType_AudioCombined;
+    return address::Iface_AudioCombined;
 }
 
-Sender::UdpPort* Sender::setup_outgoing_port_(address::EndpointType type,
-                                              address::AddrFamily family) {
-    Sender::UdpPort& port = ports_[type];
+Sender::InterfacePort* Sender::setup_outgoing_iface_(address::Interface iface,
+                                                     address::AddrFamily family) {
+    InterfacePort& port = ports_[iface];
 
     if (port.config.bind_address.has_host_port()) {
         if (port.config.bind_address.family() != family) {
@@ -190,7 +190,7 @@ Sender::UdpPort* Sender::setup_outgoing_port_(address::EndpointType type,
                     "sender peer:"
                     " %s interface is configured to use %s,"
                     " but tried to be connected to %s address",
-                    address::endpoint_type_to_str(type),
+                    address::interface_to_str(iface),
                     address::addr_family_to_str(port.config.bind_address.family()),
                     address::addr_family_to_str(family));
             return NULL;
@@ -215,7 +215,7 @@ Sender::UdpPort* Sender::setup_outgoing_port_(address::EndpointType type,
     }
 
     roc_log(LogInfo, "sender peer: bound %s interface to %s",
-            address::endpoint_type_to_str(type),
+            address::interface_to_str(iface),
             address::socket_addr_to_str(port.config.bind_address).c_str());
 
     return &port;
