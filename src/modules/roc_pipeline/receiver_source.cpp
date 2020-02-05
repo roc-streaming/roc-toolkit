@@ -75,8 +75,8 @@ ReceiverSource::EndpointSetHandle ReceiverSource::add_endpoint_set() {
 }
 
 packet::IWriter* ReceiverSource::add_endpoint(EndpointSetHandle endpoint_set_handle,
-                                              address::EndpointType type,
-                                              address::EndpointProtocol proto) {
+                                              address::Interface iface,
+                                              address::Protocol proto) {
     core::Mutex::Lock lock(mutex_);
 
     roc_panic_if(!valid());
@@ -84,7 +84,7 @@ packet::IWriter* ReceiverSource::add_endpoint(EndpointSetHandle endpoint_set_han
     ReceiverEndpointSet* endpoint_set = (ReceiverEndpointSet*)endpoint_set_handle;
     roc_panic_if_not(endpoint_set);
 
-    return endpoint_set->add_endpoint(type, proto);
+    return endpoint_set->add_endpoint(iface, proto);
 }
 
 size_t ReceiverSource::num_sessions() const {

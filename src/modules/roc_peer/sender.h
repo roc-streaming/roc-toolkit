@@ -12,8 +12,8 @@
 #ifndef ROC_PEER_SENDER_H_
 #define ROC_PEER_SENDER_H_
 
-#include "roc_address/endpoint_protocol.h"
-#include "roc_address/endpoint_type.h"
+#include "roc_address/interface.h"
+#include "roc_address/protocol.h"
 #include "roc_address/socket_addr.h"
 #include "roc_core/mutex.h"
 #include "roc_core/scoped_ptr.h"
@@ -39,14 +39,14 @@ public:
     bool valid() const;
 
     //! Enable or disable traffic to broadcast addresses.
-    bool set_broadcast_enabled(address::EndpointType type, bool enabled);
+    bool set_broadcast_enabled(address::Interface iface, bool enabled);
 
     //! Set outgoing interface address.
-    bool set_outgoing_address(address::EndpointType type, const char* ip);
+    bool set_outgoing_address(address::Interface iface, const char* ip);
 
     //! Connect peer to remote endpoint.
-    bool connect(address::EndpointType type,
-                 address::EndpointProtocol proto,
+    bool connect(address::Interface iface,
+                 address::Protocol proto,
                  const address::SocketAddr& address);
 
     //! Check if all necessary bind and connect calls were made.
@@ -56,21 +56,22 @@ public:
     sndio::ISink& sink();
 
 private:
-    struct UdpPort {
+    struct InterfacePort {
         netio::UdpSenderConfig config;
         netio::EventLoop::PortHandle handle;
         packet::IWriter* writer;
         bool is_set;
 
-        UdpPort()
+        InterfacePort()
             : handle(NULL)
             , writer(NULL)
             , is_set(false) {
         }
     };
 
-    address::EndpointType select_outgoing_port_(address::EndpointType type);
-    UdpPort* setup_outgoing_port_(address::EndpointType type, address::AddrFamily family);
+    address::Interface select_outgoing_iface_(address::Interface);
+    InterfacePort* setup_outgoing_iface_(address::Interface iface,
+                                         address::AddrFamily family);
 
     core::Mutex mutex_;
 
@@ -82,7 +83,7 @@ private:
     pipeline::SenderSink::EndpointHandle source_endpoint_;
     pipeline::SenderSink::EndpointHandle repair_endpoint_;
 
-    UdpPort ports_[address::EndType_Max];
+    InterfacePort ports_[address::Iface_Max];
 };
 
 } // namespace peer

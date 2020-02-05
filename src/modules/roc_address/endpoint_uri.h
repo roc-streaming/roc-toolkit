@@ -12,8 +12,8 @@
 #ifndef ROC_ADDRESS_ENDPOINT_URI_H_
 #define ROC_ADDRESS_ENDPOINT_URI_H_
 
-#include "roc_address/endpoint_protocol.h"
-#include "roc_address/endpoint_type.h"
+#include "roc_address/interface.h"
+#include "roc_address/protocol.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/string_buffer.h"
@@ -44,13 +44,13 @@ public:
     void invalidate(Subset subset);
 
     //! Protocol ID (URI scheme).
-    EndpointProtocol proto() const;
+    Protocol proto() const;
 
     //! Set protocol ID (URI scheme).
-    bool set_proto(EndpointProtocol);
+    bool set_proto(Protocol);
 
     //! Get protocol ID (URI scheme).
-    bool get_proto(EndpointProtocol& proto) const;
+    bool get_proto(Protocol& proto) const;
 
     //! Hostname or IP address.
     const char* host() const;
@@ -119,7 +119,7 @@ public:
 
 private:
     void set_service_from_port_(int port);
-    bool set_service_from_proto_(EndpointProtocol proto);
+    bool set_service_from_proto_(Protocol proto);
 
     enum Part {
         PartProto = (1 << 0),
@@ -136,7 +136,7 @@ private:
 
     int invalid_parts_;
 
-    EndpointProtocol proto_;
+    Protocol proto_;
 
     core::StringBuffer<56> host_;
     int port_;
