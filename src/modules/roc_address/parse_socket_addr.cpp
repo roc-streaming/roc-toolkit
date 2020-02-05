@@ -43,7 +43,7 @@ bool parse_ipv6_addr(const char* begin, const char* end, char* buf, size_t bufsz
 
 } // namespace
 
-bool parse_socket_addr_host_port(const char* host, int port, SocketAddr& addr) {
+bool parse_socket_addr(const char* host, int port, SocketAddr& addr) {
     roc_panic_if(!host);
 
     if (port < 0) {
@@ -64,46 +64,6 @@ bool parse_socket_addr_host_port(const char* host, int port, SocketAddr& addr) {
         return true;
     } else {
         if (!addr.set_host_port(Family_IPv4, host, port)) {
-            return false;
-        }
-
-        return true;
-    }
-}
-
-bool parse_socket_addr_miface(const char* miface, SocketAddr& addr) {
-    roc_panic_if(!miface);
-
-    if (!addr.has_host_port()) {
-        return false;
-    }
-
-    if (!addr.multicast()) {
-        return false;
-    }
-
-    if (miface[0] == '[') {
-        if (addr.family() != Family_IPv6) {
-            return false;
-        }
-
-        char addr6[SocketAddr::MaxStrLen] = {};
-
-        if (!parse_ipv6_addr(miface, miface + strlen(miface), addr6, sizeof(addr6))) {
-            return false;
-        }
-
-        if (!addr.set_miface(Family_IPv6, addr6)) {
-            return false;
-        }
-
-        return true;
-    } else {
-        if (addr.family() != Family_IPv4) {
-            return false;
-        }
-
-        if (!addr.set_miface(Family_IPv4, miface)) {
             return false;
         }
 
