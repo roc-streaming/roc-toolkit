@@ -6,7 +6,6 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_address/endpoint_protocol.h"
 #include "roc_address/endpoint_uri.h"
 #include "roc_core/panic.h"
 #include "roc_core/string_builder.h"
@@ -22,7 +21,7 @@ bool format_endpoint_uri(const EndpointURI& u,
     }
 
     if (subset == EndpointURI::Subset_Full) {
-        dst.append_str(endpoint_proto_to_str(u.proto()));
+        dst.append_str(proto_to_str(u.proto()));
         dst.append_str("://");
 
         if (!u.format_host(dst)) {

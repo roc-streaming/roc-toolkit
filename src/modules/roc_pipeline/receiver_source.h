@@ -66,8 +66,8 @@ public:
     //! @returns
     //!  thread-safe packet writer for the newly created endpoint or NULL on error.
     packet::IWriter* add_endpoint(EndpointSetHandle endpoint_set,
-                                  address::EndpointType type,
-                                  address::EndpointProtocol proto);
+                                  address::Interface iface,
+                                  address::Protocol proto);
 
     //! Get number of connected sessions.
     size_t num_sessions() const;
