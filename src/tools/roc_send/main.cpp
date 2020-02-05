@@ -6,6 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+#include "roc_address/endpoint_uri.h"
 #include "roc_address/io_uri.h"
 #include "roc_address/protocol_map.h"
 #include "roc_audio/resampler_profile.h"
@@ -20,7 +21,6 @@
 #include "roc_netio/event_loop.h"
 #include "roc_peer/context.h"
 #include "roc_peer/sender.h"
-#include "roc_pipeline/parse_port.h"
 #include "roc_pipeline/sender_sink.h"
 #include "roc_sndio/backend_dispatcher.h"
 #include "roc_sndio/print_supported.h"
@@ -111,26 +111,26 @@ int main(int argc, char** argv) {
     sndio::BackendDispatcher::instance().set_frame_size(
         sender_config.internal_frame_size);
 
-    pipeline::PortConfig source_port;
+    address::EndpointURI source_endpoint(context.allocator());
     if (args.source_given) {
-        if (!pipeline::parse_port(address::Iface_AudioSource, args.source_arg,
-                                  source_port)) {
-            roc_log(LogError, "can't parse remote source port: %s", args.source_arg);
+        if (!address::parse_endpoint_uri(
+                args.source_arg, address::EndpointURI::Subset_Full, source_endpoint)) {
+            roc_log(LogError, "can't parse remote source endpoint: %s", args.source_arg);
             return 1;
         }
     }
 
-    pipeline::PortConfig repair_port;
+    address::EndpointURI repair_endpoint(context.allocator());
     if (args.repair_given) {
-        if (!pipeline::parse_port(address::Iface_AudioRepair, args.repair_arg,
-                                  repair_port)) {
-            roc_log(LogError, "can't parse remote repair port: %s", args.repair_arg);
+        if (!address::parse_endpoint_uri(
+                args.repair_arg, address::EndpointURI::Subset_Full, repair_endpoint)) {
+            roc_log(LogError, "can't parse remote repair endpoint: %s", args.repair_arg);
             return 1;
         }
     }
 
     const address::ProtocolAttrs* source_attrs =
-        address::ProtocolMap::instance().find_proto(source_port.protocol);
+        address::ProtocolMap::instance().find_proto(source_endpoint.proto());
     if (source_attrs) {
         sender_config.fec_encoder.scheme = source_attrs->fec_scheme;
     }
@@ -263,29 +263,22 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    if (args.source_given) {
-        if (args.broadcast_given) {
-            if (!sender.set_broadcast_enabled(address::Iface_AudioSource, true)) {
-                roc_log(LogError, "can't enable broadcast");
-                return 1;
-            }
+    if (args.broadcast_given) {
+        if (!sender.set_broadcast_enabled(address::Iface_AudioCombined, true)) {
+            roc_log(LogError, "can't enable broadcast");
+            return 1;
         }
-        if (!sender.connect(address::Iface_AudioSource, source_port.protocol,
-                            source_port.address)) {
+    }
+
+    if (args.source_given) {
+        if (!sender.connect(address::Iface_AudioSource, source_endpoint)) {
             roc_log(LogError, "can't connect sender to remote source port");
             return 1;
         }
     }
 
     if (args.repair_given) {
-        if (args.broadcast_given) {
-            if (!sender.set_broadcast_enabled(address::Iface_AudioRepair, true)) {
-                roc_log(LogError, "can't enable broadcast");
-                return 1;
-            }
-        }
-        if (!sender.connect(address::Iface_AudioRepair, repair_port.protocol,
-                            repair_port.address)) {
+        if (!sender.connect(address::Iface_AudioRepair, repair_endpoint)) {
             roc_log(LogError, "can't connect sender to remote repair port");
             return 1;
         }
