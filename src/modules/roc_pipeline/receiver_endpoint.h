@@ -12,7 +12,8 @@
 #ifndef ROC_PIPELINE_RECEIVER_ENDPOINT_H_
 #define ROC_PIPELINE_RECEIVER_ENDPOINT_H_
 
-#include "roc_address/endpoint_protocol.h"
+#include "roc_address/interface.h"
+#include "roc_address/protocol.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/list_node.h"
 #include "roc_core/mutex.h"
@@ -39,7 +40,7 @@ class ReceiverEndpoint : public packet::IWriter,
                          public core::ListNode {
 public:
     //! Initialize.
-    ReceiverEndpoint(address::EndpointProtocol proto,
+    ReceiverEndpoint(address::Protocol proto,
                      ReceiverState& receiver_state,
                      ReceiverSessionGroup& session_group,
                      const rtp::FormatMap& format_map,
@@ -49,7 +50,7 @@ public:
     bool valid() const;
 
     //! Get protocol.
-    address::EndpointProtocol proto() const;
+    address::Protocol proto() const;
 
     //! Handle packet.
     //! Called outside of pipeline from any thread, typically from netio thread.
@@ -66,7 +67,7 @@ private:
 
     packet::Queue* get_read_queue_();
 
-    const address::EndpointProtocol proto_;
+    const address::Protocol proto_;
 
     core::IAllocator& allocator_;
 

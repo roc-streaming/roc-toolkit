@@ -16,7 +16,7 @@
 namespace roc {
 namespace pipeline {
 
-ReceiverEndpoint::ReceiverEndpoint(address::EndpointProtocol proto,
+ReceiverEndpoint::ReceiverEndpoint(address::Protocol proto,
                                    ReceiverState& receiver_state,
                                    ReceiverSessionGroup& session_group,
                                    const rtp::FormatMap& format_map,
@@ -30,9 +30,9 @@ ReceiverEndpoint::ReceiverEndpoint(address::EndpointProtocol proto,
     packet::IParser* parser = NULL;
 
     switch ((int)proto) {
-    case address::EndProto_RTP:
-    case address::EndProto_RTP_LDPC_Source:
-    case address::EndProto_RTP_RS8M_Source:
+    case address::Proto_RTP:
+    case address::Proto_RTP_LDPC_Source:
+    case address::Proto_RTP_RS8M_Source:
         rtp_parser_.reset(new (allocator) rtp::Parser(format_map, NULL), allocator);
         if (!rtp_parser_) {
             return;
@@ -42,7 +42,7 @@ ReceiverEndpoint::ReceiverEndpoint(address::EndpointProtocol proto,
     }
 
     switch ((int)proto) {
-    case address::EndProto_RTP_LDPC_Source:
+    case address::Proto_RTP_LDPC_Source:
         fec_parser_.reset(
             new (allocator)
                 fec::Parser<fec::LDPC_Source_PayloadID, fec::Source, fec::Footer>(parser),
@@ -52,7 +52,7 @@ ReceiverEndpoint::ReceiverEndpoint(address::EndpointProtocol proto,
         }
         parser = fec_parser_.get();
         break;
-    case address::EndProto_LDPC_Repair:
+    case address::Proto_LDPC_Repair:
         fec_parser_.reset(
             new (allocator)
                 fec::Parser<fec::LDPC_Repair_PayloadID, fec::Repair, fec::Header>(parser),
@@ -62,7 +62,7 @@ ReceiverEndpoint::ReceiverEndpoint(address::EndpointProtocol proto,
         }
         parser = fec_parser_.get();
         break;
-    case address::EndProto_RTP_RS8M_Source:
+    case address::Proto_RTP_RS8M_Source:
         fec_parser_.reset(
             new (allocator)
                 fec::Parser<fec::RS8M_PayloadID, fec::Source, fec::Footer>(parser),
@@ -72,7 +72,7 @@ ReceiverEndpoint::ReceiverEndpoint(address::EndpointProtocol proto,
         }
         parser = fec_parser_.get();
         break;
-    case address::EndProto_RS8M_Repair:
+    case address::Proto_RS8M_Repair:
         fec_parser_.reset(
             new (allocator)
                 fec::Parser<fec::RS8M_PayloadID, fec::Repair, fec::Header>(parser),
@@ -95,7 +95,7 @@ bool ReceiverEndpoint::valid() const {
     return parser_;
 }
 
-address::EndpointProtocol ReceiverEndpoint::proto() const {
+address::Protocol ReceiverEndpoint::proto() const {
     return proto_;
 }
 

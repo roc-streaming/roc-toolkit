@@ -35,28 +35,28 @@ void SenderEndpointSet::destroy() {
     allocator_.destroy(*this);
 }
 
-SenderEndpoint* SenderEndpointSet::add_endpoint(address::EndpointType type,
-                                                address::EndpointProtocol proto) {
+SenderEndpoint* SenderEndpointSet::add_endpoint(address::Interface iface,
+                                                address::Protocol proto) {
     roc_log(LogDebug, "sender endpoint set: adding %s endpoint %s",
-            address::endpoint_type_to_str(type), address::endpoint_proto_to_str(proto));
+            address::interface_to_str(iface), address::proto_to_str(proto));
 
     SenderEndpoint* endpoint = NULL;
 
-    switch ((int)type) {
-    case address::EndType_AudioSource:
+    switch ((int)iface) {
+    case address::Iface_AudioSource:
         if (!(endpoint = create_source_endpoint_(proto))) {
             return NULL;
         }
         break;
 
-    case address::EndType_AudioRepair:
+    case address::Iface_AudioRepair:
         if (!(endpoint = create_repair_endpoint_(proto))) {
             return NULL;
         }
         break;
 
     default:
-        roc_log(LogError, "sender endpoint set: invalid endpoint type");
+        roc_log(LogError, "sender endpoint set: unsupported interface");
         return NULL;
     }
 
@@ -79,14 +79,13 @@ bool SenderEndpointSet::is_ready() const {
         && (!repair_endpoint_ || repair_endpoint_->has_writer());
 }
 
-SenderEndpoint*
-SenderEndpointSet::create_source_endpoint_(address::EndpointProtocol proto) {
+SenderEndpoint* SenderEndpointSet::create_source_endpoint_(address::Protocol proto) {
     if (source_endpoint_) {
         roc_log(LogError, "sender endpoint set: audio source endpoint is already set");
         return NULL;
     }
 
-    if (!validate_endpoint(address::EndType_AudioSource, proto)) {
+    if (!validate_endpoint(address::Iface_AudioSource, proto)) {
         return NULL;
     }
 
@@ -96,8 +95,8 @@ SenderEndpointSet::create_source_endpoint_(address::EndpointProtocol proto) {
         }
     }
 
-    if (!validate_endpoint_and_pipeline_consistency(
-            config_.fec_encoder.scheme, address::EndType_AudioSource, proto)) {
+    if (!validate_endpoint_and_pipeline_consistency(config_.fec_encoder.scheme,
+                                                    address::Iface_AudioSource, proto)) {
         return NULL;
     }
 
@@ -112,14 +111,13 @@ SenderEndpointSet::create_source_endpoint_(address::EndpointProtocol proto) {
     return source_endpoint_.get();
 }
 
-SenderEndpoint*
-SenderEndpointSet::create_repair_endpoint_(address::EndpointProtocol proto) {
+SenderEndpoint* SenderEndpointSet::create_repair_endpoint_(address::Protocol proto) {
     if (repair_endpoint_) {
         roc_log(LogError, "sender endpoint set: audio repair endpoint is already set");
         return NULL;
     }
 
-    if (!validate_endpoint(address::EndType_AudioRepair, proto)) {
+    if (!validate_endpoint(address::Iface_AudioRepair, proto)) {
         return NULL;
     }
 
@@ -129,8 +127,8 @@ SenderEndpointSet::create_repair_endpoint_(address::EndpointProtocol proto) {
         }
     }
 
-    if (!validate_endpoint_and_pipeline_consistency(
-            config_.fec_encoder.scheme, address::EndType_AudioRepair, proto)) {
+    if (!validate_endpoint_and_pipeline_consistency(config_.fec_encoder.scheme,
+                                                    address::Iface_AudioRepair, proto)) {
         return NULL;
     }
 

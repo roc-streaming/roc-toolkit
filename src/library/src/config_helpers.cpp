@@ -209,73 +209,73 @@ bool receiver_config_from_user(pipeline::ReceiverConfig& out,
     return true;
 }
 
-bool endpoint_type_from_user(address::EndpointType& out, roc_port_type in) {
+bool interface_from_user(address::Interface& out, roc_port_type in) {
     switch ((int)in) {
     case ROC_PORT_AUDIO_SOURCE:
-        out = address::EndType_AudioSource;
+        out = address::Iface_AudioSource;
         return true;
 
     case ROC_PORT_AUDIO_REPAIR:
-        out = address::EndType_AudioRepair;
+        out = address::Iface_AudioRepair;
         return true;
 
     default:
         break;
     }
 
-    roc_log(LogError, "bad configuration: invalid endpoint type");
+    roc_log(LogError, "bad configuration: invalid interface");
     return false;
 }
 
-bool endpoint_proto_from_user(address::EndpointProtocol& out, roc_protocol in) {
+bool proto_from_user(address::Protocol& out, roc_protocol in) {
     switch ((int)in) {
     case ROC_PROTO_RTP:
-        out = address::EndProto_RTP;
+        out = address::Proto_RTP;
         return true;
 
     case ROC_PROTO_RTP_RS8M_SOURCE:
-        out = address::EndProto_RTP_RS8M_Source;
+        out = address::Proto_RTP_RS8M_Source;
         return true;
 
     case ROC_PROTO_RS8M_REPAIR:
-        out = address::EndProto_RS8M_Repair;
+        out = address::Proto_RS8M_Repair;
         return true;
 
     case ROC_PROTO_RTP_LDPC_SOURCE:
-        out = address::EndProto_RTP_LDPC_Source;
+        out = address::Proto_RTP_LDPC_Source;
         return true;
 
     case ROC_PROTO_LDPC_REPAIR:
-        out = address::EndProto_LDPC_Repair;
+        out = address::Proto_LDPC_Repair;
         return true;
 
     default:
         break;
     }
 
-    roc_log(LogError, "bad configuration: invalid endpoint protocol");
+    roc_log(LogError, "bad configuration: invalid protocol");
     return false;
 }
 
-bool endpoint_proto_to_user(roc_protocol& out, address::EndpointProtocol in) {
+bool proto_to_user(roc_protocol& out, address::Protocol in) {
     switch ((int)in) {
-    case address::EndProto_RTP:
+    case address::Proto_RTP:
         out = ROC_PROTO_RTP;
         return true;
 
-    case address::EndProto_RTP_RS8M_Source:
+    case address::Proto_RTP_RS8M_Source:
         out = ROC_PROTO_RTP_RS8M_SOURCE;
         return true;
 
-    case address::EndProto_RS8M_Repair:
+    case address::Proto_RS8M_Repair:
         out = ROC_PROTO_RS8M_REPAIR;
         return true;
 
-    case address::EndProto_RTP_LDPC_Source:
+    case address::Proto_RTP_LDPC_Source:
         out = ROC_PROTO_RTP_LDPC_SOURCE;
         return true;
 
-    case address::EndProto_LDPC_Repair:
+    case address::Proto_LDPC_Repair:
         out = ROC_PROTO_LDPC_REPAIR;
         return true;
 
@@ -283,7 +283,7 @@ bool endpoint_proto_to_user(roc_protocol& out, address::EndpointProtocol in) {
         break;
     }
 
-    roc_log(LogError, "bad configuration: invalid endpoint protocol");
+    roc_log(LogError, "bad configuration: invalid protocol");
     return false;
 }
 

@@ -66,8 +66,8 @@ TEST_GROUP(receiver_source) {
     address::SocketAddr dst1;
     address::SocketAddr dst2;
 
-    address::EndpointProtocol proto1;
-    address::EndpointProtocol proto2;
+    address::Protocol proto1;
+    address::Protocol proto2;
 
     void setup() {
         config.common.output_sample_rate = SampleRate;
@@ -100,8 +100,8 @@ TEST_GROUP(receiver_source) {
         dst1 = new_address(3);
         dst2 = new_address(4);
 
-        proto1 = address::EndProto_RTP;
-        proto2 = address::EndProto_RTP;
+        proto1 = address::Proto_RTP;
+        proto2 = address::Proto_RTP;
     }
 };
 
@@ -130,7 +130,7 @@ TEST(receiver_source, one_session) {
     CHECK(endpoint_set);
 
     packet::IWriter* endpoint1_writer =
-        receiver.add_endpoint(endpoint_set, address::EndType_AudioSource, proto1);
+        receiver.add_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     FrameReader frame_reader(receiver, sample_buffer_pool);
@@ -163,7 +163,7 @@ TEST(receiver_source, one_session_long_run) {
     CHECK(endpoint_set);
 
     packet::IWriter* endpoint1_writer =
-        receiver.add_endpoint(endpoint_set, address::EndType_AudioSource, proto1);
+        receiver.add_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     FrameReader frame_reader(receiver, sample_buffer_pool);
@@ -196,7 +196,7 @@ TEST(receiver_source, initial_latency) {
     CHECK(endpoint_set);
 
     packet::IWriter* endpoint1_writer =
-        receiver.add_endpoint(endpoint_set, address::EndType_AudioSource, proto1);
+        receiver.add_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     FrameReader frame_reader(receiver, sample_buffer_pool);
@@ -235,7 +235,7 @@ TEST(receiver_source, initial_latency_timeout) {
     CHECK(endpoint_set);
 
     packet::IWriter* endpoint1_writer =
-        receiver.add_endpoint(endpoint_set, address::EndType_AudioSource, proto1);
+        receiver.add_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     FrameReader frame_reader(receiver, sample_buffer_pool);
@@ -268,7 +268,7 @@ TEST(receiver_source, timeout) {
     CHECK(endpoint_set);
 
     packet::IWriter* endpoint1_writer =
-        receiver.add_endpoint(endpoint_set, address::EndType_AudioSource, proto1);
+        receiver.add_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     FrameReader frame_reader(receiver, sample_buffer_pool);
@@ -301,7 +301,7 @@ TEST(receiver_source, initial_trim) {
     CHECK(endpoint_set);
 
     packet::IWriter* endpoint1_writer =
-        receiver.add_endpoint(endpoint_set, address::EndType_AudioSource, proto1);
+        receiver.add_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     FrameReader frame_reader(receiver, sample_buffer_pool);
@@ -334,7 +334,7 @@ TEST(receiver_source, two_sessions_synchronous) {
     CHECK(endpoint_set);
 
     packet::IWriter* endpoint1_writer =
-        receiver.add_endpoint(endpoint_set, address::EndType_AudioSource, proto1);
+        receiver.add_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     FrameReader frame_reader(receiver, sample_buffer_pool);
@@ -372,7 +372,7 @@ TEST(receiver_source, two_sessions_overlapping) {
     CHECK(endpoint_set);
 
     packet::IWriter* endpoint1_writer =
-        receiver.add_endpoint(endpoint_set, address::EndType_AudioSource, proto1);
+        receiver.add_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     FrameReader frame_reader(receiver, sample_buffer_pool);
@@ -420,14 +420,14 @@ TEST(receiver_source, two_sessions_two_endpoints) {
     CHECK(endpoint_set1);
 
     packet::IWriter* endpoint1_writer =
-        receiver.add_endpoint(endpoint_set1, address::EndType_AudioSource, proto1);
+        receiver.add_endpoint(endpoint_set1, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     ReceiverSource::EndpointSetHandle endpoint_set2 = receiver.add_endpoint_set();
     CHECK(endpoint_set2);
 
     packet::IWriter* endpoint2_writer =
-        receiver.add_endpoint(endpoint_set2, address::EndType_AudioSource, proto2);
+        receiver.add_endpoint(endpoint_set2, address::Iface_AudioSource, proto2);
     CHECK(endpoint2_writer);
 
     FrameReader frame_reader(receiver, sample_buffer_pool);
@@ -465,7 +465,7 @@ TEST(receiver_source, two_sessions_same_address_same_stream) {
     CHECK(endpoint_set);
 
     packet::IWriter* endpoint_writer =
-        receiver.add_endpoint(endpoint_set, address::EndType_AudioSource, proto1);
+        receiver.add_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint_writer);
 
     FrameReader frame_reader(receiver, sample_buffer_pool);
@@ -508,7 +508,7 @@ TEST(receiver_source, two_sessions_same_address_different_streams) {
     CHECK(endpoint_set);
 
     packet::IWriter* endpoint_writer =
-        receiver.add_endpoint(endpoint_set, address::EndType_AudioSource, proto1);
+        receiver.add_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint_writer);
 
     FrameReader frame_reader(receiver, sample_buffer_pool);
@@ -553,7 +553,7 @@ TEST(receiver_source, seqnum_overflow) {
     CHECK(endpoint_set);
 
     packet::IWriter* endpoint1_writer =
-        receiver.add_endpoint(endpoint_set, address::EndType_AudioSource, proto1);
+        receiver.add_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     FrameReader frame_reader(receiver, sample_buffer_pool);
@@ -584,7 +584,7 @@ TEST(receiver_source, seqnum_small_jump) {
     CHECK(endpoint_set);
 
     packet::IWriter* endpoint1_writer =
-        receiver.add_endpoint(endpoint_set, address::EndType_AudioSource, proto1);
+        receiver.add_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     FrameReader frame_reader(receiver, sample_buffer_pool);
@@ -621,7 +621,7 @@ TEST(receiver_source, seqnum_large_jump) {
     CHECK(endpoint_set);
 
     packet::IWriter* endpoint1_writer =
-        receiver.add_endpoint(endpoint_set, address::EndType_AudioSource, proto1);
+        receiver.add_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     FrameReader frame_reader(receiver, sample_buffer_pool);
@@ -664,7 +664,7 @@ TEST(receiver_source, seqnum_reorder) {
     CHECK(endpoint_set);
 
     packet::IWriter* endpoint1_writer =
-        receiver.add_endpoint(endpoint_set, address::EndType_AudioSource, proto1);
+        receiver.add_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     FrameReader frame_reader(receiver, sample_buffer_pool);
@@ -702,7 +702,7 @@ TEST(receiver_source, seqnum_late) {
     CHECK(endpoint_set);
 
     packet::IWriter* endpoint1_writer =
-        receiver.add_endpoint(endpoint_set, address::EndType_AudioSource, proto1);
+        receiver.add_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     FrameReader frame_reader(receiver, sample_buffer_pool);
@@ -756,7 +756,7 @@ TEST(receiver_source, timestamp_overflow) {
     CHECK(endpoint_set);
 
     packet::IWriter* endpoint1_writer =
-        receiver.add_endpoint(endpoint_set, address::EndType_AudioSource, proto1);
+        receiver.add_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     FrameReader frame_reader(receiver, sample_buffer_pool);
@@ -789,7 +789,7 @@ TEST(receiver_source, timestamp_small_jump) {
     CHECK(endpoint_set);
 
     packet::IWriter* endpoint1_writer =
-        receiver.add_endpoint(endpoint_set, address::EndType_AudioSource, proto1);
+        receiver.add_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     FrameReader frame_reader(receiver, sample_buffer_pool);
@@ -834,7 +834,7 @@ TEST(receiver_source, timestamp_large_jump) {
     CHECK(endpoint_set);
 
     packet::IWriter* endpoint1_writer =
-        receiver.add_endpoint(endpoint_set, address::EndType_AudioSource, proto1);
+        receiver.add_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     FrameReader frame_reader(receiver, sample_buffer_pool);
@@ -871,7 +871,7 @@ TEST(receiver_source, timestamp_overlap) {
     CHECK(endpoint_set);
 
     packet::IWriter* endpoint1_writer =
-        receiver.add_endpoint(endpoint_set, address::EndType_AudioSource, proto1);
+        receiver.add_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     FrameReader frame_reader(receiver, sample_buffer_pool);
@@ -902,7 +902,7 @@ TEST(receiver_source, timestamp_reorder) {
     CHECK(endpoint_set);
 
     packet::IWriter* endpoint1_writer =
-        receiver.add_endpoint(endpoint_set, address::EndType_AudioSource, proto1);
+        receiver.add_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     FrameReader frame_reader(receiver, sample_buffer_pool);
@@ -955,7 +955,7 @@ TEST(receiver_source, timestamp_late) {
     CHECK(endpoint_set);
 
     packet::IWriter* endpoint1_writer =
-        receiver.add_endpoint(endpoint_set, address::EndType_AudioSource, proto1);
+        receiver.add_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     FrameReader frame_reader(receiver, sample_buffer_pool);
@@ -1018,7 +1018,7 @@ TEST(receiver_source, packet_size_small) {
     CHECK(endpoint_set);
 
     packet::IWriter* endpoint1_writer =
-        receiver.add_endpoint(endpoint_set, address::EndType_AudioSource, proto1);
+        receiver.add_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     FrameReader frame_reader(receiver, sample_buffer_pool);
@@ -1053,7 +1053,7 @@ TEST(receiver_source, packet_size_large) {
     CHECK(endpoint_set);
 
     packet::IWriter* endpoint1_writer =
-        receiver.add_endpoint(endpoint_set, address::EndType_AudioSource, proto1);
+        receiver.add_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     FrameReader frame_reader(receiver, sample_buffer_pool);
@@ -1094,7 +1094,7 @@ TEST(receiver_source, packet_size_variable) {
     CHECK(endpoint_set);
 
     packet::IWriter* endpoint1_writer =
-        receiver.add_endpoint(endpoint_set, address::EndType_AudioSource, proto1);
+        receiver.add_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     FrameReader frame_reader(receiver, sample_buffer_pool);
@@ -1126,7 +1126,7 @@ TEST(receiver_source, corrupted_packets_new_session) {
     CHECK(endpoint_set);
 
     packet::IWriter* endpoint1_writer =
-        receiver.add_endpoint(endpoint_set, address::EndType_AudioSource, proto1);
+        receiver.add_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     FrameReader frame_reader(receiver, sample_buffer_pool);
@@ -1159,7 +1159,7 @@ TEST(receiver_source, corrupted_packets_existing_session) {
     CHECK(endpoint_set);
 
     packet::IWriter* endpoint1_writer =
-        receiver.add_endpoint(endpoint_set, address::EndType_AudioSource, proto1);
+        receiver.add_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     FrameReader frame_reader(receiver, sample_buffer_pool);
@@ -1213,7 +1213,7 @@ TEST(receiver_source, status) {
     CHECK(endpoint_set);
 
     packet::IWriter* endpoint1_writer =
-        receiver.add_endpoint(endpoint_set, address::EndType_AudioSource, proto1);
+        receiver.add_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     PacketWriter packet_writer(allocator, *endpoint1_writer, rtp_composer, format_map,

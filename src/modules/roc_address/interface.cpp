@@ -6,27 +6,33 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_address/endpoint_type.h"
+#include "roc_address/interface.h"
 #include "roc_core/stddefs.h"
 
 namespace roc {
 namespace address {
 
-const char* endpoint_type_to_str(EndpointType type) {
-    switch (type) {
-    case EndType_Control:
-        return "control";
+const char* interface_to_str(Interface iface) {
+    switch (iface) {
+    case Iface_Invalid:
+        break;
 
-    case EndType_AudioSource:
+    case Iface_Aggregate:
+        return "aggregate";
+
+    case Iface_AudioSource:
         return "source";
 
-    case EndType_AudioRepair:
+    case Iface_AudioRepair:
         return "repair";
 
-    case EndType_AudioCombined:
+    case Iface_AudioControl:
+        return "control";
+
+    case Iface_AudioCombined:
         return "combined";
 
-    case EndType_Max:
+    case Iface_Max:
         break;
     }
 

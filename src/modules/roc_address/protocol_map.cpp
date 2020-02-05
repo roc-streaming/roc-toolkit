@@ -16,8 +16,8 @@ ProtocolMap::ProtocolMap() {
     memset(protos_, 0, sizeof(protos_));
     {
         ProtocolAttrs attrs;
-        attrs.protocol = EndProto_RTP;
-        attrs.type = EndType_AudioSource;
+        attrs.protocol = Proto_RTP;
+        attrs.iface = Iface_AudioSource;
         attrs.fec_scheme = packet::FEC_None;
         attrs.default_port = -1;
         attrs.path_supported = false;
@@ -25,8 +25,8 @@ ProtocolMap::ProtocolMap() {
     }
     {
         ProtocolAttrs attrs;
-        attrs.protocol = EndProto_RTP_RS8M_Source;
-        attrs.type = EndType_AudioSource;
+        attrs.protocol = Proto_RTP_RS8M_Source;
+        attrs.iface = Iface_AudioSource;
         attrs.fec_scheme = packet::FEC_ReedSolomon_M8;
         attrs.default_port = -1;
         attrs.path_supported = false;
@@ -34,8 +34,8 @@ ProtocolMap::ProtocolMap() {
     }
     {
         ProtocolAttrs attrs;
-        attrs.protocol = EndProto_RS8M_Repair;
-        attrs.type = EndType_AudioRepair;
+        attrs.protocol = Proto_RS8M_Repair;
+        attrs.iface = Iface_AudioRepair;
         attrs.fec_scheme = packet::FEC_ReedSolomon_M8;
         attrs.default_port = -1;
         attrs.path_supported = false;
@@ -43,8 +43,8 @@ ProtocolMap::ProtocolMap() {
     }
     {
         ProtocolAttrs attrs;
-        attrs.protocol = EndProto_RTP_LDPC_Source;
-        attrs.type = EndType_AudioSource;
+        attrs.protocol = Proto_RTP_LDPC_Source;
+        attrs.iface = Iface_AudioSource;
         attrs.fec_scheme = packet::FEC_LDPC_Staircase;
         attrs.default_port = -1;
         attrs.path_supported = false;
@@ -52,8 +52,8 @@ ProtocolMap::ProtocolMap() {
     }
     {
         ProtocolAttrs attrs;
-        attrs.protocol = EndProto_LDPC_Repair;
-        attrs.type = EndType_AudioRepair;
+        attrs.protocol = Proto_LDPC_Repair;
+        attrs.iface = Iface_AudioRepair;
         attrs.fec_scheme = packet::FEC_LDPC_Staircase;
         attrs.default_port = -1;
         attrs.path_supported = false;
@@ -61,8 +61,8 @@ ProtocolMap::ProtocolMap() {
     }
     {
         ProtocolAttrs attrs;
-        attrs.protocol = EndProto_RTSP;
-        attrs.type = EndType_Control;
+        attrs.protocol = Proto_RTSP;
+        attrs.iface = Iface_Aggregate;
         attrs.fec_scheme = packet::FEC_None;
         attrs.default_port = 554;
         attrs.path_supported = true;
@@ -70,12 +70,12 @@ ProtocolMap::ProtocolMap() {
     }
 }
 
-const ProtocolAttrs* ProtocolMap::find_proto(EndpointProtocol proto) const {
+const ProtocolAttrs* ProtocolMap::find_proto(Protocol proto) const {
     if ((int)proto < 0 || (int)proto >= MaxProtos) {
         return NULL;
     }
 
-    if (protos_[proto].protocol == EndProto_None) {
+    if (protos_[proto].protocol == Proto_None) {
         return NULL;
     }
 
