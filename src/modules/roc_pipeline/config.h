@@ -49,22 +49,6 @@ const int DefaultMinLatencyFactor = -1;
 //! Default maximum latency relative to target latency.
 const int DefaultMaxLatencyFactor = 2;
 
-//! Port parameters.
-//! @remarks
-//!  On receiver, defines a listened port parameters. On sender,
-//!  defines a destination port parameters.
-struct PortConfig {
-    //! Port address.
-    address::SocketAddr address;
-
-    //! Port protocol.
-    address::Protocol protocol;
-
-    PortConfig()
-        : protocol(address::Proto_None) {
-    }
-};
-
 //! Sender parameters.
 struct SenderConfig {
     //! Resampler parameters.
