@@ -69,31 +69,38 @@ roc_frame
 .. doxygenstruct:: roc_frame
    :members:
 
-roc_address
-===========
+roc_endpoint
+============
 
 .. code-block:: c
 
-   #include <roc/address.h>
+   #include <roc/endpoint.h>
 
-.. doxygentypedef:: roc_family
-   :outline:
+.. doxygentypedef:: roc_endpoint
 
-.. doxygenenum:: roc_family
+.. doxygenfunction:: roc_endpoint_allocate
 
-.. doxygentypedef:: roc_address
-   :outline:
+.. doxygenfunction:: roc_endpoint_set_uri
 
-.. doxygenstruct:: roc_address
-   :members:
+.. doxygenfunction:: roc_endpoint_set_protocol
 
-.. doxygenfunction:: roc_address_init
+.. doxygenfunction:: roc_endpoint_set_host
 
-.. doxygenfunction:: roc_address_family
+.. doxygenfunction:: roc_endpoint_set_port
 
-.. doxygenfunction:: roc_address_ip
+.. doxygenfunction:: roc_endpoint_set_resource
 
-.. doxygenfunction:: roc_address_port
+.. doxygenfunction:: roc_endpoint_get_uri
+
+.. doxygenfunction:: roc_endpoint_get_protocol
+
+.. doxygenfunction:: roc_endpoint_get_host
+
+.. doxygenfunction:: roc_endpoint_get_port
+
+.. doxygenfunction:: roc_endpoint_get_resource
+
+.. doxygenfunction:: roc_endpoint_deallocate
 
 roc_config
 ==========
@@ -102,10 +109,10 @@ roc_config
 
    #include <roc/config.h>
 
-.. doxygentypedef:: roc_port_type
+.. doxygentypedef:: roc_interface
    :outline:
 
-.. doxygenenum:: roc_port_type
+.. doxygenenum:: roc_interface
 
 .. doxygentypedef:: roc_protocol
    :outline:

@@ -23,8 +23,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <roc/address.h>
 #include <roc/context.h>
+#include <roc/endpoint.h>
 #include <roc/log.h>
 #include <roc/sender.h>
 
@@ -45,12 +45,13 @@
         exit(1);                                                                         \
     } while (0)
 
-static void gensine(float* samples, size_t num_samples) {
-    double t = 0;
+static void gensine(float* samples, size_t batch_num, size_t num_samples) {
+    double t = batch_num * num_samples / 2;
     size_t i;
     for (i = 0; i < num_samples / 2; i++) {
         const float s =
-            (float)sin(2 * 3.14159265359 * EXAMPLE_SINE_RATE / EXAMPLE_SAMPLE_RATE * t);
+            (float)sin(2 * 3.14159265359 * EXAMPLE_SINE_RATE / EXAMPLE_SAMPLE_RATE * t)
+            * 0.1f;
 
         /* Fill samples for left and right channels. */
         samples[i * 2] = s;
@@ -98,34 +99,44 @@ int main() {
         oops("roc_sender_open");
     }
 
-    /* Connect sender to the receiver source (audio) packets port.
+    /* Connect sender to the receiver source (audio) packets endpoint.
      * The receiver should expect packets with RTP header and Reed-Solomon (m=8) FECFRAME
      * Source Payload ID on that port. */
-    roc_address recv_source_addr;
-    if (roc_address_init(&recv_source_addr, ROC_AF_AUTO, EXAMPLE_RECEIVER_IP,
-                         EXAMPLE_RECEIVER_SOURCE_PORT)
-        != 0) {
-        oops("roc_address_init");
+    roc_endpoint* recv_source_endp = NULL;
+    if (roc_endpoint_allocate(&recv_source_endp) != 0) {
+        oops("roc_endpoint_allocate");
     }
-    if (roc_sender_connect(sender, ROC_PORT_AUDIO_SOURCE, ROC_PROTO_RTP_RS8M_SOURCE,
-                           &recv_source_addr)
-        != 0) {
+
+    roc_endpoint_set_protocol(recv_source_endp, ROC_PROTO_RTP_RS8M_SOURCE);
+    roc_endpoint_set_host(recv_source_endp, EXAMPLE_RECEIVER_IP);
+    roc_endpoint_set_port(recv_source_endp, EXAMPLE_RECEIVER_SOURCE_PORT);
+
+    if (roc_sender_connect(sender, ROC_INTERFACE_AUDIO_SOURCE, recv_source_endp) != 0) {
         oops("roc_sender_connect");
     }
 
-    /* Connect sender to the receiver repair (FEC) packets port.
+    if (roc_endpoint_deallocate(recv_source_endp) != 0) {
+        oops("roc_endpoint_deallocate");
+    }
+
+    /* Connect sender to the receiver repair (FEC) packets endpoint.
      * The receiver should expect packets with Reed-Solomon (m=8) FECFRAME
      * Repair Payload ID on that port. */
-    roc_address recv_repair_addr;
-    if (roc_address_init(&recv_repair_addr, ROC_AF_AUTO, EXAMPLE_RECEIVER_IP,
-                         EXAMPLE_RECEIVER_REPAIR_PORT)
-        != 0) {
-        oops("roc_address_init");
+    roc_endpoint* recv_repair_endp = NULL;
+    if (roc_endpoint_allocate(&recv_repair_endp) != 0) {
+        oops("roc_endpoint_allocate");
     }
-    if (roc_sender_connect(sender, ROC_PORT_AUDIO_REPAIR, ROC_PROTO_RS8M_REPAIR,
-                           &recv_repair_addr)
-        != 0) {
+
+    roc_endpoint_set_protocol(recv_repair_endp, ROC_PROTO_RS8M_REPAIR);
+    roc_endpoint_set_host(recv_repair_endp, EXAMPLE_RECEIVER_IP);
+    roc_endpoint_set_port(recv_repair_endp, EXAMPLE_RECEIVER_REPAIR_PORT);
+
+    if (roc_sender_connect(sender, ROC_INTERFACE_AUDIO_REPAIR, recv_repair_endp) != 0) {
         oops("roc_sender_connect");
+    }
+
+    if (roc_endpoint_deallocate(recv_repair_endp) != 0) {
+        oops("roc_endpoint_deallocate");
     }
 
     /* Generate sine wave and write it to the sender. */
@@ -133,7 +144,7 @@ int main() {
     for (i = 0; i < EXAMPLE_SINE_SAMPLES / EXAMPLE_BUFFER_SIZE; i++) {
         /* Generate sine wave. */
         float samples[EXAMPLE_BUFFER_SIZE];
-        gensine(samples, EXAMPLE_BUFFER_SIZE);
+        gensine(samples, i, EXAMPLE_BUFFER_SIZE);
 
         /* Write samples to the sender. */
         roc_frame frame;

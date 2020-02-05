@@ -7,16 +7,16 @@
  */
 
 /**
- * @file roc/sender.h
- * @brief Roc sender.
+ * \file roc/sender.h
+ * \brief Roc sender.
  */
 
 #ifndef ROC_SENDER_H_
 #define ROC_SENDER_H_
 
-#include "roc/address.h"
 #include "roc/config.h"
 #include "roc/context.h"
+#include "roc/endpoint.h"
 #include "roc/frame.h"
 #include "roc/platform.h"
 
@@ -24,47 +24,77 @@
 extern "C" {
 #endif
 
-/** Roc sender.
+/** Sender peer.
  *
  * Sender gets an audio stream from the user, encodes it into network packets, and
  * transmits them to a remote receiver.
  *
- * @b Context
+ * **Context**
  *
  * Sender is automatically attached to a context when opened and detached from it when
- * closed. The user should not close the context until the sender is not closed.
+ * closed. The user should not close the context until the sender is closed.
  *
  * Sender work consists of two parts: stream encoding and packet transmission. The
  * encoding part is performed in the sender itself, and the transmission part is
- * performed in the context network worker thread(s).
+ * performed in the context network worker threads.
  *
- * @b Lifecycle
+ * **Life cycle**
  *
- * A sender is created using roc_sender_open(). Then it should be bound to a local port
- * using roc_sender_bind() and connected to a single or multiple remote receiver ports
- * using roc_sender_connect(). After that, the audio stream is iteratively written to the
- * sender using roc_sender_write(). When the sender is not needed anymore, it is
- * destroyed using roc_sender_close().
+ * - A sender is created using roc_sender_open().
  *
- * @b Ports
+ * - The sender either binds local endpoints using roc_sender_bind(), allowing receivers
+ *   connecting to them, or itself connects to remote receiver endpoints using
+ *   roc_sender_connect(). What option to use is up to the user.
  *
- * The user is responsible for connecting the sender to all necessary receiver ports
- * and selecting the same port types and protocols as at the receiver side.
+ * - The audio stream is iteratively written to the sender using roc_sender_write(). The
+ *   sender encodes the stream into packets and send to connected receiver(s).
  *
- * Currently, two configurations are possible:
+ * - The sender is destroyed using roc_sender_close().
  *
- *  - If FEC is disabled, a single port of type @c ROC_PORT_AUDIO_SOURCE should be
- *    connected. The only supported protocol in this case is @c ROC_PROTO_RTP. This port
- *    will be used to send audio packets.
+ * **Interfaces and endpoints**
  *
- *  - If FEC is enabled, two ports of types @c ROC_PORT_AUDIO_SOURCE and
- *    @c ROC_PORT_AUDIO_REPAIR should be connected. These ports will be used to send
- *    audio packets and redundant data for audio packets, respectively. The supported
- *    protocols in this case depend on the selected FEC code. For example, if
- *    @c ROC_FEC_RS8M is used, the corresponding protocols would be
- *    @c ROC_PROTO_RTP_RSM8_SOURCE and @c ROC_PROTO_RSM8_REPAIR.
+ * Sender has several *interfaces*, one per each type defined in \ref roc_interface. The
+ * interface defines the type of the comminication with the remote peer and the set of
+ * the protocols supported by it.
  *
- * @b Resampling
+ * Supported actions with the interface:
+ *
+ *  - Call roc_sender_bind() to bind the interface to a local \ref roc_endpoint. In this
+ *    case the sender accepts connections from receivers and sends media stream to all
+ *    connected receivers.
+ *
+ *  - Call roc_sender_connect() to connect the interface to a remote \ref roc_endpoint.
+ *    In this case the sender initiates connection to the receiver and starts sending
+ *    media stream to it.
+ *
+ * Supported interface configurations:
+ *
+ *   - Connect \c ROC_INTERFACE_AGGREGATE to a remote endpoint (e.g. be an RTSP client).
+ *   - Bind \c ROC_INTERFACE_AGGREGATE to a local endpoint (e.g. be an RTSP server).
+ *   - Connect \c ROC_INTERFACE_AUDIO_SOURCE to a remote endpoint (e.g. be an RTP sender).
+ *   - Connect \c ROC_INTERFACE_AUDIO_SOURCE and \c ROC_INTERFACE_AUDIO_REPAIR to a pair
+ *     of remote endpoints (e.g. be an RTP + FECFRAME sender).
+ *
+ * **FEC scheme**
+ *
+ * If \c ROC_INTERFACE_AGGREGATE is used, it automatically creates all necessary transport
+ * interfaces and the user should not bother about them.
+ *
+ * Otherwise, the user should manually configure \c ROC_INTERFACE_AUDIO_SOURCE and
+ * \c ROC_INTERFACE_AUDIO_REPAIR interfaces:
+ *
+ *  - If FEC is disabled (\ref ROC_FEC_DISABLE), only \c ROC_INTERFACE_AUDIO_SOURCE should
+ *    be configured. It will be used to transmit audio packets.
+ *
+ *  - If FEC is enabled, both \c ROC_INTERFACE_AUDIO_SOURCE and
+ *    \c ROC_INTERFACE_AUDIO_REPAIR interfaces should be configured. The second interface
+ *    will be used to transmit redundant repair data.
+ *
+ * The protocols for the two interfaces should correspond to each other and to the FEC
+ * scheme. For example, if \c ROC_FEC_RS8M is used, the protocols should be
+ * \c ROC_PROTO_RTP_RS8M_SOURCE and \c ROC_PROTO_RS8M_REPAIR.
+ *
+ * **Sample rate**
  *
  * If the sample rate of the user frames and the sample rate of the network packets are
  * different, the sender employs resampler to convert one rate to another.
@@ -73,25 +103,30 @@ extern "C" {
  * disabling resampling (and so use the same rate for frames and packets) or several
  * resampler profiles providing different compromises between CPU consumption and quality.
  *
- * @b Timing
+ * **Clock source**
  *
  * Sender should encode samples at a constant rate that is configured when the sender
  * is created. There are two ways to accomplish this:
  *
- *  - If the user enabled internal clock (@c ROC_CLOCK_INTERNAL), the sender employs a CPU
- *    timer to block writes until it's time to encode the next bunch of samples according
- *    to the configured sample rate. This mode is useful when the user gets samples from a
- *    non-realtime source, e.g. from an audio file.
+ *  - If the user enabled internal clock (\c ROC_CLOCK_INTERNAL), the sender employs a
+ *    CPU timer to block writes until it's time to encode the next bunch of samples
+ *    according to the configured sample rate.
+
+ *    This mode is useful when the user gets samples from a non-realtime source, e.g.
+ *    from an audio file.
  *
- *  - Otherwise (@c ROC_CLOCK_EXTERNAL), the samples written to the sender are encoded
- *    immediately and the user is responsible to write samples in time. This mode is
- *    useful when the user gets samples from a realtime source with its own clock, e.g.
- *    from an audio device. Internal clock should not be used in this case because the
- *    audio device and the CPU might have slightly different clocks, and the difference
- *    will eventually lead to an underrun or an overrun.
+ *  - If the user enabled external clock (\c ROC_CLOCK_EXTERNAL), the samples written to
+ *    the sender are encoded and sent immediately, and hence the user is responsible to
+ *    call write operation according to the sample rate.
  *
- * @b Thread-safety
- *  - can be used concurrently
+ *    This mode is useful when the user gets samples from a realtime source with its own
+ *    clock, e.g. from an audio device. Internal clock should not be used in this case
+ *    because the audio device and the CPU might have slightly different clocks, and the
+ *    difference will eventually lead to an underrun or an overrun.
+ *
+ * **Thread safety**
+ *
+ * Can be used concurrently.
  */
 typedef struct roc_sender roc_sender;
 
@@ -99,60 +134,62 @@ typedef struct roc_sender roc_sender;
  *
  * Allocates and initializes a new sender, and attaches it to the context.
  *
- * @b Parameters
- *  - @p context should point to an opened context
- *  - @p config should point to an initialized config
- *  - @p result should point to an unitialized roc_sender pointer
+ * **Parameters**
+ *  - \p context should point to an opened context
+ *  - \p config should point to an initialized config
+ *  - \p result should point to an unitialized roc_sender pointer
  *
- * @b Returns
+ * **Returns**
  *  - returns zero if the sender was successfully created
  *  - returns a negative value if the arguments are invalid
- *  - returns a negative value if there are not enough resources
+ *  - returns a negative value on resource allocation failure
  */
 ROC_API int roc_sender_open(roc_context* context,
                             const roc_sender_config* config,
                             roc_sender** result);
 
-/** Connect the sender to a remote receiver port.
+/** Connect the sender interface to a remote receiver endpoint.
  *
- * Connects the sender to a receiver port. Should be called one or multiple times
- * before calling roc_sender_write() first time. The @p type and @p proto should be
- * the same as they are set at the receiver for this port.
+ * Checks that the endpoint is valid and supported by the interface, allocates
+ * a new outgoing port, and connects it to the remote endpoint.
  *
- * @b Parameters
- *  - @p sender should point to an opened sender
- *  - @p type specifies the receiver port type
- *  - @p proto specifies the receiver port protocol
- *  - @p address should point to a properly initialized address
+ * Each interface can be bound or connected only once.
+ * May be called multiple times for different interfaces.
  *
- * @b Returns
- *  - returns zero if the sender was successfully connected to a port
+ * **Parameters**
+ *  - \p sender should point to an opened sender
+ *  - \p iface specifies the sender interface
+ *  - \p endpoint specifies the receiver endpoint
+ *
+ * **Returns**
+ *  - returns zero if the sender was successfully connected
  *  - returns a negative value if the arguments are invalid
- *  - returns a negative value if roc_sender_write() was already called
+ *  - returns a negative value on resource allocation failure
  */
-ROC_API int roc_sender_connect(roc_sender* sender,
-                               roc_port_type type,
-                               roc_protocol proto,
-                               const roc_address* address);
+ROC_API int
+roc_sender_connect(roc_sender* sender, roc_interface iface, const roc_endpoint* endpoint);
 
 /** Encode samples to packets and transmit them to the receiver.
  *
- * Encodes samples to packets and enqueues them for transmission by the context network
- * worker thread. Should be called after roc_sender_bind() and roc_sender_connect().
+ * Encodes samples to packets and enqueues them for transmission by the network worker
+ * thread of the context.
  *
- * If the automatic timing is enabled, the function blocks until it's time to encode the
+ * If \c ROC_CLOCK_INTERNAL is used, the function blocks until it's time to transmit the
  * samples according to the configured sample rate. The function returns after encoding
  * and enqueuing the packets, without waiting when the packets are actually transmitted.
  *
- * @b Parameters
- *  - @p sender should point to an opened, bound, and connected sender
- *  - @p frame should point to a valid frame with an array of samples to send
+ * Until the sender is connected to at least one receiver, the stream is just dropped.
+ * If the sender is connected to multiple receivers, the stream is duplicated to
+ * each of them.
  *
- * @b Returns
+ * **Parameters**
+ *  - \p sender should point to an opened, bound, and connected sender
+ *  - \p frame should point to a valid frame with an array of samples to send
+ *
+ * **Returns**
  *  - returns zero if all samples were successfully encoded and enqueued
  *  - returns a negative value if the arguments are invalid
- *  - returns a negative value if the sender is not bound or connected
- *  - returns a negative value if there are not enough resources
+ *  - returns a negative value on resource allocation failure
  */
 ROC_API int roc_sender_write(roc_sender* sender, const roc_frame* frame);
 
@@ -162,10 +199,10 @@ ROC_API int roc_sender_write(roc_sender* sender, const roc_frame* frame);
  * should ensure that nobody uses the sender during and after this call. If this
  * function fails, the sender is kept opened and attached to the context.
  *
- * @b Parameters
- *  - @p sender should point to an opened sender
+ * **Parameters**
+ *  - \p sender should point to an opened sender
  *
- * @b Returns
+ * **Returns**
  *  - returns zero if the sender was successfully closed
  *  - returns a negative value if the arguments are invalid
  */
