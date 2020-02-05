@@ -12,9 +12,9 @@
 #ifndef ROC_PEER_RECEIVER_H_
 #define ROC_PEER_RECEIVER_H_
 
+#include "roc_address/endpoint_uri.h"
 #include "roc_address/interface.h"
 #include "roc_address/protocol.h"
-#include "roc_address/socket_addr.h"
 #include "roc_core/mutex.h"
 #include "roc_peer/basic_peer.h"
 #include "roc_peer/context.h"
@@ -40,8 +40,7 @@ public:
     bool set_multicast_group(address::Interface iface, const char* ip);
 
     //! Bind peer to local endpoint.
-    bool
-    bind(address::Interface iface, address::Protocol proto, address::SocketAddr& address);
+    bool bind(address::Interface iface, address::EndpointURI& uri);
 
     //! Get receiver source.
     sndio::ISource& source();
