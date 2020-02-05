@@ -7,8 +7,8 @@
  */
 
 /**
- * @file roc/platform.h
- * @brief Platform-specific definitions.
+ * \file roc/platform.h
+ * \brief Platform-specific definitions.
  */
 
 #ifndef ROC_PLATFORM_H_
