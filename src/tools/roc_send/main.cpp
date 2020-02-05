@@ -113,7 +113,7 @@ int main(int argc, char** argv) {
 
     pipeline::PortConfig source_port;
     if (args.source_given) {
-        if (!pipeline::parse_port(address::EndType_AudioSource, args.source_arg,
+        if (!pipeline::parse_port(address::Iface_AudioSource, args.source_arg,
                                   source_port)) {
             roc_log(LogError, "can't parse remote source port: %s", args.source_arg);
             return 1;
@@ -122,7 +122,7 @@ int main(int argc, char** argv) {
 
     pipeline::PortConfig repair_port;
     if (args.repair_given) {
-        if (!pipeline::parse_port(address::EndType_AudioRepair, args.repair_arg,
+        if (!pipeline::parse_port(address::Iface_AudioRepair, args.repair_arg,
                                   repair_port)) {
             roc_log(LogError, "can't parse remote repair port: %s", args.repair_arg);
             return 1;
@@ -265,12 +265,12 @@ int main(int argc, char** argv) {
 
     if (args.source_given) {
         if (args.broadcast_given) {
-            if (!sender.set_broadcast_enabled(address::EndType_AudioSource, true)) {
+            if (!sender.set_broadcast_enabled(address::Iface_AudioSource, true)) {
                 roc_log(LogError, "can't enable broadcast");
                 return 1;
             }
         }
-        if (!sender.connect(address::EndType_AudioSource, source_port.protocol,
+        if (!sender.connect(address::Iface_AudioSource, source_port.protocol,
                             source_port.address)) {
             roc_log(LogError, "can't connect sender to remote source port");
             return 1;
@@ -279,12 +279,12 @@ int main(int argc, char** argv) {
 
     if (args.repair_given) {
         if (args.broadcast_given) {
-            if (!sender.set_broadcast_enabled(address::EndType_AudioRepair, true)) {
+            if (!sender.set_broadcast_enabled(address::Iface_AudioRepair, true)) {
                 roc_log(LogError, "can't enable broadcast");
                 return 1;
             }
         }
-        if (!sender.connect(address::EndType_AudioRepair, repair_port.protocol,
+        if (!sender.connect(address::Iface_AudioRepair, repair_port.protocol,
                             repair_port.address)) {
             roc_log(LogError, "can't connect sender to remote repair port");
             return 1;

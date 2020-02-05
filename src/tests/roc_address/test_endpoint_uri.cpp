@@ -24,7 +24,7 @@ TEST(endpoint_uri, empty) {
 
     CHECK(!u.check(EndpointURI::Subset_Full));
 
-    LONGS_EQUAL(EndProto_None, u.proto());
+    LONGS_EQUAL(Proto_None, u.proto());
     STRCMP_EQUAL("", u.host());
     LONGS_EQUAL(-1, u.port());
     CHECK(!u.path());
@@ -40,7 +40,7 @@ TEST(endpoint_uri, fields) {
         CHECK(parse_endpoint_uri("rtsp://host", EndpointURI::Subset_Full, u));
         CHECK(u.check(EndpointURI::Subset_Full));
 
-        LONGS_EQUAL(EndProto_RTSP, u.proto());
+        LONGS_EQUAL(Proto_RTSP, u.proto());
         STRCMP_EQUAL("host", u.host());
         LONGS_EQUAL(-1, u.port());
         CHECK(!u.path());
@@ -54,7 +54,7 @@ TEST(endpoint_uri, fields) {
         CHECK(parse_endpoint_uri("rtsp://host:123", EndpointURI::Subset_Full, u));
         CHECK(u.check(EndpointURI::Subset_Full));
 
-        LONGS_EQUAL(EndProto_RTSP, u.proto());
+        LONGS_EQUAL(Proto_RTSP, u.proto());
         STRCMP_EQUAL("host", u.host());
         LONGS_EQUAL(123, u.port());
         CHECK(!u.path());
@@ -68,7 +68,7 @@ TEST(endpoint_uri, fields) {
         CHECK(parse_endpoint_uri("rtsp://host:123/path", EndpointURI::Subset_Full, u));
         CHECK(u.check(EndpointURI::Subset_Full));
 
-        LONGS_EQUAL(EndProto_RTSP, u.proto());
+        LONGS_EQUAL(Proto_RTSP, u.proto());
         STRCMP_EQUAL("host", u.host());
         LONGS_EQUAL(123, u.port());
         STRCMP_EQUAL("/path", u.path());
@@ -82,7 +82,7 @@ TEST(endpoint_uri, fields) {
         CHECK(parse_endpoint_uri("rtsp://host:123/", EndpointURI::Subset_Full, u));
         CHECK(u.check(EndpointURI::Subset_Full));
 
-        LONGS_EQUAL(EndProto_RTSP, u.proto());
+        LONGS_EQUAL(Proto_RTSP, u.proto());
         STRCMP_EQUAL("host", u.host());
         LONGS_EQUAL(123, u.port());
         STRCMP_EQUAL("/", u.path());
@@ -97,7 +97,7 @@ TEST(endpoint_uri, fields) {
                                  u));
         CHECK(u.check(EndpointURI::Subset_Full));
 
-        LONGS_EQUAL(EndProto_RTSP, u.proto());
+        LONGS_EQUAL(Proto_RTSP, u.proto());
         STRCMP_EQUAL("host", u.host());
         LONGS_EQUAL(123, u.port());
         STRCMP_EQUAL("/path", u.path());
@@ -112,7 +112,7 @@ TEST(endpoint_uri, fields) {
             parse_endpoint_uri("rtsp://host:123/path#frag", EndpointURI::Subset_Full, u));
         CHECK(u.check(EndpointURI::Subset_Full));
 
-        LONGS_EQUAL(EndProto_RTSP, u.proto());
+        LONGS_EQUAL(Proto_RTSP, u.proto());
         STRCMP_EQUAL("host", u.host());
         LONGS_EQUAL(123, u.port());
         STRCMP_EQUAL("/path", u.path());
@@ -127,7 +127,7 @@ TEST(endpoint_uri, fields) {
                                  EndpointURI::Subset_Full, u));
         CHECK(u.check(EndpointURI::Subset_Full));
 
-        LONGS_EQUAL(EndProto_RTSP, u.proto());
+        LONGS_EQUAL(Proto_RTSP, u.proto());
         STRCMP_EQUAL("host", u.host());
         LONGS_EQUAL(123, u.port());
         STRCMP_EQUAL("/path", u.path());
@@ -141,7 +141,7 @@ TEST(endpoint_uri, fields) {
         CHECK(parse_endpoint_uri("rtsp://host:123/?#", EndpointURI::Subset_Full, u));
         CHECK(u.check(EndpointURI::Subset_Full));
 
-        LONGS_EQUAL(EndProto_RTSP, u.proto());
+        LONGS_EQUAL(Proto_RTSP, u.proto());
         STRCMP_EQUAL("host", u.host());
         LONGS_EQUAL(123, u.port());
         STRCMP_EQUAL("/", u.path());
@@ -155,7 +155,7 @@ TEST(endpoint_uri, fields) {
         CHECK(parse_endpoint_uri("rtsp://host:123?query", EndpointURI::Subset_Full, u));
         CHECK(u.check(EndpointURI::Subset_Full));
 
-        LONGS_EQUAL(EndProto_RTSP, u.proto());
+        LONGS_EQUAL(Proto_RTSP, u.proto());
         STRCMP_EQUAL("host", u.host());
         LONGS_EQUAL(123, u.port());
         CHECK(!u.path());
@@ -169,7 +169,7 @@ TEST(endpoint_uri, fields) {
         CHECK(parse_endpoint_uri("rtsp://host:123#frag", EndpointURI::Subset_Full, u));
         CHECK(u.check(EndpointURI::Subset_Full));
 
-        LONGS_EQUAL(EndProto_RTSP, u.proto());
+        LONGS_EQUAL(Proto_RTSP, u.proto());
         STRCMP_EQUAL("host", u.host());
         LONGS_EQUAL(123, u.port());
         CHECK(!u.path());
@@ -184,7 +184,7 @@ TEST(endpoint_uri, fields) {
                                  u));
         CHECK(u.check(EndpointURI::Subset_Full));
 
-        LONGS_EQUAL(EndProto_RTSP, u.proto());
+        LONGS_EQUAL(Proto_RTSP, u.proto());
         STRCMP_EQUAL("host", u.host());
         LONGS_EQUAL(123, u.port());
         CHECK(!u.path());
@@ -198,7 +198,7 @@ TEST(endpoint_uri, fields) {
         CHECK(parse_endpoint_uri("rtsp://host:123?#", EndpointURI::Subset_Full, u));
         CHECK(u.check(EndpointURI::Subset_Full));
 
-        LONGS_EQUAL(EndProto_RTSP, u.proto());
+        LONGS_EQUAL(Proto_RTSP, u.proto());
         STRCMP_EQUAL("host", u.host());
         LONGS_EQUAL(123, u.port());
         CHECK(!u.path());
@@ -215,7 +215,7 @@ TEST(endpoint_uri, protocols) {
         CHECK(parse_endpoint_uri("rtsp://host:123", EndpointURI::Subset_Full, u));
         CHECK(u.check(EndpointURI::Subset_Full));
 
-        LONGS_EQUAL(EndProto_RTSP, u.proto());
+        LONGS_EQUAL(Proto_RTSP, u.proto());
         STRCMP_EQUAL("host", u.host());
         LONGS_EQUAL(123, u.port());
         CHECK(!u.path());
@@ -229,7 +229,7 @@ TEST(endpoint_uri, protocols) {
         CHECK(parse_endpoint_uri("rtp://host:123", EndpointURI::Subset_Full, u));
         CHECK(u.check(EndpointURI::Subset_Full));
 
-        LONGS_EQUAL(EndProto_RTP, u.proto());
+        LONGS_EQUAL(Proto_RTP, u.proto());
         STRCMP_EQUAL("host", u.host());
         LONGS_EQUAL(123, u.port());
         CHECK(!u.path());
@@ -243,7 +243,7 @@ TEST(endpoint_uri, protocols) {
         CHECK(parse_endpoint_uri("rtp+rs8m://host:123", EndpointURI::Subset_Full, u));
         CHECK(u.check(EndpointURI::Subset_Full));
 
-        LONGS_EQUAL(EndProto_RTP_RS8M_Source, u.proto());
+        LONGS_EQUAL(Proto_RTP_RS8M_Source, u.proto());
         STRCMP_EQUAL("host", u.host());
         LONGS_EQUAL(123, u.port());
         CHECK(!u.path());
@@ -257,7 +257,7 @@ TEST(endpoint_uri, protocols) {
         CHECK(parse_endpoint_uri("rs8m://host:123", EndpointURI::Subset_Full, u));
         CHECK(u.check(EndpointURI::Subset_Full));
 
-        LONGS_EQUAL(EndProto_RS8M_Repair, u.proto());
+        LONGS_EQUAL(Proto_RS8M_Repair, u.proto());
         STRCMP_EQUAL("host", u.host());
         LONGS_EQUAL(123, u.port());
         CHECK(!u.path());
@@ -271,7 +271,7 @@ TEST(endpoint_uri, protocols) {
         CHECK(parse_endpoint_uri("rtp+ldpc://host:123", EndpointURI::Subset_Full, u));
         CHECK(u.check(EndpointURI::Subset_Full));
 
-        LONGS_EQUAL(EndProto_RTP_LDPC_Source, u.proto());
+        LONGS_EQUAL(Proto_RTP_LDPC_Source, u.proto());
         STRCMP_EQUAL("host", u.host());
         LONGS_EQUAL(123, u.port());
         CHECK(!u.path());
@@ -285,7 +285,7 @@ TEST(endpoint_uri, protocols) {
         CHECK(parse_endpoint_uri("ldpc://host:123", EndpointURI::Subset_Full, u));
         CHECK(u.check(EndpointURI::Subset_Full));
 
-        LONGS_EQUAL(EndProto_LDPC_Repair, u.proto());
+        LONGS_EQUAL(Proto_LDPC_Repair, u.proto());
         STRCMP_EQUAL("host", u.host());
         LONGS_EQUAL(123, u.port());
         CHECK(!u.path());
@@ -302,7 +302,7 @@ TEST(endpoint_uri, addresses) {
         CHECK(parse_endpoint_uri("rtsp://127.0.0.1:123", EndpointURI::Subset_Full, u));
         CHECK(u.check(EndpointURI::Subset_Full));
 
-        LONGS_EQUAL(EndProto_RTSP, u.proto());
+        LONGS_EQUAL(Proto_RTSP, u.proto());
         STRCMP_EQUAL("127.0.0.1", u.host());
         LONGS_EQUAL(123, u.port());
         CHECK(!u.path());
@@ -316,7 +316,7 @@ TEST(endpoint_uri, addresses) {
         CHECK(parse_endpoint_uri("rtsp://[::1]:123", EndpointURI::Subset_Full, u));
         CHECK(u.check(EndpointURI::Subset_Full));
 
-        LONGS_EQUAL(EndProto_RTSP, u.proto());
+        LONGS_EQUAL(Proto_RTSP, u.proto());
         STRCMP_EQUAL("[::1]", u.host());
         LONGS_EQUAL(123, u.port());
         CHECK(!u.path());
@@ -355,7 +355,7 @@ TEST(endpoint_uri, service) {
         CHECK(parse_endpoint_uri("rtsp://127.0.0.1:123", EndpointURI::Subset_Full, u));
         CHECK(u.check(EndpointURI::Subset_Full));
 
-        LONGS_EQUAL(EndProto_RTSP, u.proto());
+        LONGS_EQUAL(Proto_RTSP, u.proto());
         STRCMP_EQUAL("127.0.0.1", u.host());
         LONGS_EQUAL(123, u.port());
         STRCMP_EQUAL("123", u.service());
@@ -367,7 +367,7 @@ TEST(endpoint_uri, service) {
         CHECK(parse_endpoint_uri("rtsp://127.0.0.1", EndpointURI::Subset_Full, u));
         CHECK(u.check(EndpointURI::Subset_Full));
 
-        LONGS_EQUAL(EndProto_RTSP, u.proto());
+        LONGS_EQUAL(Proto_RTSP, u.proto());
         STRCMP_EQUAL("127.0.0.1", u.host());
         LONGS_EQUAL(-1, u.port());
         STRCMP_EQUAL("554", u.service());
@@ -421,7 +421,7 @@ TEST(endpoint_uri, percent_encoding) {
                              EndpointURI::Subset_Full, u));
     CHECK(u.check(EndpointURI::Subset_Full));
 
-    LONGS_EQUAL(EndProto_RTSP, u.proto());
+    LONGS_EQUAL(Proto_RTSP, u.proto());
     STRCMP_EQUAL("foo-bar", u.host());
     LONGS_EQUAL(123, u.port());
     STRCMP_EQUAL("/foo!bar@baz/qux?wee", u.path());
