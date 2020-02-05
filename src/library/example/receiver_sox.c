@@ -24,8 +24,8 @@
 
 #include <sox.h>
 
-#include <roc/address.h>
 #include <roc/context.h>
+#include <roc/endpoint.h>
 #include <roc/log.h>
 #include <roc/receiver.h>
 
@@ -36,7 +36,7 @@
 
 /* Player parameters. */
 #define EXAMPLE_OUTPUT_DEVICE "default"
-#define EXAMPLE_OUTPUT_TYPE "alsa"
+#define EXAMPLE_OUTPUT_TYPE "pulseaudio"
 #define EXAMPLE_SAMPLE_RATE 44100
 #define EXAMPLE_NUM_CHANNELS 2
 #define EXAMPLE_BUFFER_SIZE 1000
@@ -90,34 +90,44 @@ int main() {
         oops("roc_receiver_open");
     }
 
-    /* Bind receiver to the source (audio) packets port.
+    /* Bind receiver to the source (audio) packets endpoint.
      * The receiver will expect packets with RTP header and Reed-Solomon (m=8) FECFRAME
      * Source Payload ID on this port. */
-    roc_address recv_source_addr;
-    if (roc_address_init(&recv_source_addr, ROC_AF_AUTO, EXAMPLE_RECEIVER_IP,
-                         EXAMPLE_RECEIVER_SOURCE_PORT)
-        != 0) {
-        oops("roc_address_init");
+    roc_endpoint* recv_source_endp = NULL;
+    if (roc_endpoint_allocate(&recv_source_endp) != 0) {
+        oops("roc_endpoint_allocate");
     }
-    if (roc_receiver_bind(receiver, ROC_PORT_AUDIO_SOURCE, ROC_PROTO_RTP_RS8M_SOURCE,
-                          &recv_source_addr)
-        != 0) {
+
+    roc_endpoint_set_protocol(recv_source_endp, ROC_PROTO_RTP_RS8M_SOURCE);
+    roc_endpoint_set_host(recv_source_endp, EXAMPLE_RECEIVER_IP);
+    roc_endpoint_set_port(recv_source_endp, EXAMPLE_RECEIVER_SOURCE_PORT);
+
+    if (roc_receiver_bind(receiver, ROC_INTERFACE_AUDIO_SOURCE, recv_source_endp) != 0) {
         oops("roc_receiver_bind");
     }
 
-    /* Bind receiver to the repair (FEC) packets port.
+    if (roc_endpoint_deallocate(recv_source_endp) != 0) {
+        oops("roc_endpoint_deallocate");
+    }
+
+    /* Bind receiver to the repair (FEC) packets endpoint.
      * The receiver will expect packets with Reed-Solomon (m=8) FECFRAME
      * Repair Payload ID on this port. */
-    roc_address recv_repair_addr;
-    if (roc_address_init(&recv_repair_addr, ROC_AF_AUTO, EXAMPLE_RECEIVER_IP,
-                         EXAMPLE_RECEIVER_REPAIR_PORT)
-        != 0) {
-        oops("roc_address_init");
+    roc_endpoint* recv_repair_endp = NULL;
+    if (roc_endpoint_allocate(&recv_repair_endp) != 0) {
+        oops("roc_endpoint_allocate");
     }
-    if (roc_receiver_bind(receiver, ROC_PORT_AUDIO_REPAIR, ROC_PROTO_RS8M_REPAIR,
-                          &recv_repair_addr)
-        != 0) {
+
+    roc_endpoint_set_protocol(recv_repair_endp, ROC_PROTO_RS8M_REPAIR);
+    roc_endpoint_set_host(recv_repair_endp, EXAMPLE_RECEIVER_IP);
+    roc_endpoint_set_port(recv_repair_endp, EXAMPLE_RECEIVER_REPAIR_PORT);
+
+    if (roc_receiver_bind(receiver, ROC_INTERFACE_AUDIO_REPAIR, recv_repair_endp) != 0) {
         oops("roc_receiver_bind");
+    }
+
+    if (roc_endpoint_deallocate(recv_repair_endp) != 0) {
+        oops("roc_endpoint_deallocate");
     }
 
     /* Initialize SoX parameters. */
