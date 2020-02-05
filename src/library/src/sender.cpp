@@ -8,7 +8,6 @@
 
 #include "roc/sender.h"
 
-#include "address_helpers.h"
 #include "config_helpers.h"
 
 #include "roc_core/log.h"
@@ -64,9 +63,8 @@ int roc_sender_open(roc_context* context,
 }
 
 int roc_sender_connect(roc_sender* sender,
-                       roc_port_type type,
-                       roc_protocol proto,
-                       const roc_address* address) {
+                       roc_interface iface,
+                       const roc_endpoint* endpoint) {
     if (!sender) {
         roc_log(LogError, "roc_sender_connect: invalid arguments: sender is null");
         return -1;
@@ -74,31 +72,21 @@ int roc_sender_connect(roc_sender* sender,
 
     peer::Sender* imp_sender = (peer::Sender*)sender;
 
-    if (!address) {
-        roc_log(LogError, "roc_sender_connect: invalid arguments: address is null");
+    if (!endpoint) {
+        roc_log(LogError, "roc_sender_connect: invalid arguments: endpoint is null");
         return -1;
     }
 
-    const address::SocketAddr& imp_address = api::get_socket_addr(address);
-    if (!imp_address.has_host_port()) {
-        roc_log(LogError, "roc_sender_connect: invalid arguments: invalid address");
-        return -1;
-    }
+    const address::EndpointURI& imp_endpoint = *(const address::EndpointURI*)endpoint;
 
     address::Interface imp_iface;
-    if (!api::interface_from_user(imp_iface, type)) {
-        roc_log(LogError, "roc_sender_connect: invalid arguments: bad type");
+    if (!api::interface_from_user(imp_iface, iface)) {
+        roc_log(LogError, "roc_sender_connect: invalid arguments: bad interface");
         return -1;
     }
 
-    address::Protocol imp_proto;
-    if (!api::proto_from_user(imp_proto, proto)) {
-        roc_log(LogError, "roc_sender_connect: invalid arguments: bad protocol");
-        return -1;
-    }
-
-    if (!imp_sender->connect(imp_iface, imp_proto, imp_address)) {
-        roc_log(LogError, "roc_sender_bind: connect failed");
+    if (!imp_sender->connect(imp_iface, imp_endpoint)) {
+        roc_log(LogError, "roc_sender_connect: operation failed");
         return -1;
     }
 
