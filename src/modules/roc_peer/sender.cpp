@@ -7,8 +7,11 @@
  */
 
 #include "roc_peer/sender.h"
+#include "roc_address/endpoint_uri_to_str.h"
+#include "roc_address/socket_addr.h"
 #include "roc_address/socket_addr_to_str.h"
 #include "roc_core/log.h"
+#include "roc_core/panic.h"
 
 namespace roc {
 namespace peer {
@@ -117,12 +120,22 @@ bool Sender::set_outgoing_address(address::Interface iface, const char* ip) {
     return true;
 }
 
-bool Sender::connect(address::Interface iface,
-                     address::Protocol proto,
-                     const address::SocketAddr& address) {
+bool Sender::connect(address::Interface iface, const address::EndpointURI& uri) {
     core::Mutex::Lock lock(mutex_);
 
     roc_panic_if_not(valid());
+
+    if (!uri.check(address::EndpointURI::Subset_Full)) {
+        roc_log(LogError, "sender peer: invalid uri");
+        return false;
+    }
+
+    address::SocketAddr address;
+    if (!context_.event_loop().resolve_endpoint_address(uri, address)) {
+        roc_log(LogError, "sender peer: can't resolve %s interface address",
+                address::interface_to_str(iface));
+        return false;
+    }
 
     address::Interface outgoing_iface = select_outgoing_iface_(iface);
 
@@ -134,7 +147,7 @@ bool Sender::connect(address::Interface iface,
     }
 
     pipeline::SenderSink::EndpointHandle endpoint =
-        pipeline_.add_endpoint(endpoint_set_, iface, proto);
+        pipeline_.add_endpoint(endpoint_set_, iface, uri.proto());
 
     if (!endpoint) {
         roc_log(LogError, "sender peer: can't add %s endpoint to pipeline",
@@ -151,9 +164,8 @@ bool Sender::connect(address::Interface iface,
         repair_endpoint_ = endpoint;
     }
 
-    roc_log(LogInfo, "sender peer: connected %s interface to %s:%s",
-            address::interface_to_str(iface), address::proto_to_str(proto),
-            address::socket_addr_to_str(address).c_str());
+    roc_log(LogInfo, "sender peer: connected %s interface to %s",
+            address::interface_to_str(iface), address::endpoint_uri_to_str(uri).c_str());
 
     return true;
 }
