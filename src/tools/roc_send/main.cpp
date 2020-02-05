@@ -138,12 +138,6 @@ int main(int argc, char** argv) {
     if (!local_addr.has_host_port()) {
         roc_panic("can't initialize local address");
     }
-    if (args.broadcast_given) {
-        if (!local_addr.set_broadcast()) {
-            roc_log(LogError, "can't enable broadcast for local address");
-            return 1;
-        }
-    }
 
     const address::ProtocolAttrs* source_attrs =
         address::ProtocolMap::instance().find_proto(source_port.protocol);
@@ -277,6 +271,13 @@ int main(int argc, char** argv) {
     if (!sender.valid()) {
         roc_log(LogError, "can't create sender peer");
         return 1;
+    }
+
+    if (args.broadcast_given) {
+        if (!sender.set_broadcast_enabled(true)) {
+            roc_log(LogError, "can't enable broadcast");
+            return 1;
+        }
     }
 
     if (!sender.bind(local_addr)) {

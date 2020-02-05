@@ -364,9 +364,11 @@ int main(int argc, char** argv) {
             roc_log(LogError, "can't parse source port: %s", args.source_arg);
             return 1;
         }
+
         if (args.miface_given) {
-            if (!address::parse_socket_addr_miface(args.miface_arg, port.address)) {
-                roc_log(LogError, "can't parse miface: %s", args.miface_arg);
+            if (!receiver.set_multicast_group(address::EndType_AudioSource,
+                                              args.miface_arg)) {
+                roc_log(LogError, "can't set miface: %s", args.miface_arg);
                 return 1;
             }
         }
@@ -385,8 +387,9 @@ int main(int argc, char** argv) {
         }
 
         if (args.miface_given) {
-            if (!address::parse_socket_addr_miface(args.miface_arg, port.address)) {
-                roc_log(LogError, "can't parse miface: %s", args.miface_arg);
+            if (!receiver.set_multicast_group(address::EndType_AudioRepair,
+                                              args.miface_arg)) {
+                roc_log(LogError, "can't set miface: %s", args.miface_arg);
                 return 1;
             }
         }
