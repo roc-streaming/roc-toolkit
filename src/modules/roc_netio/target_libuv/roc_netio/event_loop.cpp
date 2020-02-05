@@ -98,7 +98,7 @@ size_t EventLoop::num_ports() const {
     return open_ports_.size();
 }
 
-EventLoop::PortHandle EventLoop::add_udp_receiver(address::SocketAddr& bind_address,
+EventLoop::PortHandle EventLoop::add_udp_receiver(UdpReceiverConfig& config,
                                                   packet::IWriter& writer) {
     if (!valid()) {
         roc_panic("event loop: can't use invalid loop");
@@ -106,8 +106,8 @@ EventLoop::PortHandle EventLoop::add_udp_receiver(address::SocketAddr& bind_addr
 
     Task task;
     task.func = &EventLoop::add_udp_receiver_;
-    task.port_address = &bind_address;
     task.port_writer = &writer;
+    task.receiver_config = &config;
 
     run_task_(task);
 
@@ -122,7 +122,7 @@ EventLoop::PortHandle EventLoop::add_udp_receiver(address::SocketAddr& bind_addr
     return (PortHandle)task.port.get();
 }
 
-EventLoop::PortHandle EventLoop::add_udp_sender(address::SocketAddr& bind_address,
+EventLoop::PortHandle EventLoop::add_udp_sender(UdpSenderConfig& config,
                                                 packet::IWriter** writer) {
     if (!valid()) {
         roc_panic("event loop: can't use invalid loop");
@@ -130,8 +130,7 @@ EventLoop::PortHandle EventLoop::add_udp_sender(address::SocketAddr& bind_addres
 
     Task task;
     task.func = &EventLoop::add_udp_sender_;
-    task.port_address = &bind_address;
-    task.port_writer = NULL;
+    task.sender_config = &config;
 
     run_task_(task);
 
@@ -143,7 +142,7 @@ EventLoop::PortHandle EventLoop::add_udp_sender(address::SocketAddr& bind_addres
     }
 
     if (writer) {
-        *writer = (UdpSenderPort*)task.port.get();
+        *writer = task.port_writer;
     }
 
     roc_panic_if(!task.port);
@@ -296,51 +295,52 @@ void EventLoop::process_tasks_() {
 }
 
 EventLoop::TaskState EventLoop::add_udp_receiver_(Task& task) {
-    core::SharedPtr<BasicPort> rp = new (allocator_)
-        UdpReceiverPort(*this, *task.port_address, loop_, *task.port_writer, packet_pool_,
-                        buffer_pool_, allocator_);
+    core::SharedPtr<BasicPort> rp =
+        new (allocator_) UdpReceiverPort(*task.receiver_config, *task.port_writer, *this,
+                                         loop_, packet_pool_, buffer_pool_, allocator_);
     if (!rp) {
         roc_log(LogError, "event loop: can't add port %s: can't allocate receiver",
-                address::socket_addr_to_str(*task.port_address).c_str());
+                address::socket_addr_to_str(task.receiver_config->bind_address).c_str());
         return TaskFailed;
     }
 
-    task.port = rp.get();
+    task.port = rp;
 
     if (!rp->open()) {
         roc_log(LogError, "event loop: can't add port %s: can't start receiver",
-                address::socket_addr_to_str(*task.port_address).c_str());
+                address::socket_addr_to_str(task.receiver_config->bind_address).c_str());
         async_close_port_(*rp);
         return TaskFailed;
     }
 
-    *task.port_address = rp->address();
-    open_ports_.push_back(*rp);
+    task.receiver_config->bind_address = rp->address();
 
+    open_ports_.push_back(*rp);
     return TaskSucceeded;
 }
 
 EventLoop::TaskState EventLoop::add_udp_sender_(Task& task) {
     core::SharedPtr<UdpSenderPort> sp =
-        new (allocator_) UdpSenderPort(*this, *task.port_address, loop_, allocator_);
+        new (allocator_) UdpSenderPort(*task.sender_config, *this, loop_, allocator_);
     if (!sp) {
         roc_log(LogError, "event loop: can't add port %s: can't allocate sender",
-                address::socket_addr_to_str(*task.port_address).c_str());
+                address::socket_addr_to_str(task.sender_config->bind_address).c_str());
         return TaskFailed;
     }
 
-    task.port = sp.get();
+    task.port = sp;
 
     if (!sp->open()) {
         roc_log(LogError, "event loop: can't add port %s: can't start sender",
-                address::socket_addr_to_str(*task.port_address).c_str());
+                address::socket_addr_to_str(task.sender_config->bind_address).c_str());
         async_close_port_(*sp);
         return TaskFailed;
     }
 
-    *task.port_address = sp->address();
-    open_ports_.push_back(*sp);
+    task.port_writer = sp.get();
+    task.sender_config->bind_address = sp->address();
 
+    open_ports_.push_back(*sp);
     return TaskSucceeded;
 }
 

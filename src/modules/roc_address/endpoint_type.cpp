@@ -22,6 +22,9 @@ const char* endpoint_type_to_str(EndpointType type) {
 
     case EndType_AudioRepair:
         return "repair";
+
+    case EndType_Max:
+        break;
     }
 
     return NULL;
