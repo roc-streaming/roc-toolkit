@@ -25,8 +25,8 @@
 #include "roc_packet/packet_pool.h"
 #include "roc_packet/queue.h"
 
-#include "roc/address.h"
 #include "roc/context.h"
+#include "roc/endpoint.h"
 #include "roc/log.h"
 #include "roc/receiver.h"
 #include "roc/sender.h"
@@ -93,8 +93,8 @@ class Sender : public core::Thread {
 public:
     Sender(Context& context,
            roc_sender_config& config,
-           const roc_address* dst_source_addr,
-           const roc_address* dst_repair_addr,
+           const roc_endpoint* receiver_source_endp,
+           const roc_endpoint* receiver_repair_endp,
            float sample_step,
            size_t frame_size,
            unsigned flags)
@@ -105,15 +105,15 @@ public:
         CHECK(sndr_);
 
         if (flags & FlagFEC) {
-            CHECK(roc_sender_connect(sndr_, ROC_PORT_AUDIO_SOURCE,
-                                     ROC_PROTO_RTP_RS8M_SOURCE, dst_source_addr)
+            CHECK(roc_sender_connect(sndr_, ROC_INTERFACE_AUDIO_SOURCE,
+                                     receiver_source_endp)
                   == 0);
-            CHECK(roc_sender_connect(sndr_, ROC_PORT_AUDIO_REPAIR, ROC_PROTO_RS8M_REPAIR,
-                                     dst_repair_addr)
+            CHECK(roc_sender_connect(sndr_, ROC_INTERFACE_AUDIO_REPAIR,
+                                     receiver_repair_endp)
                   == 0);
         } else {
-            CHECK(roc_sender_connect(sndr_, ROC_PORT_AUDIO_SOURCE, ROC_PROTO_RTP,
-                                     dst_source_addr)
+            CHECK(roc_sender_connect(sndr_, ROC_INTERFACE_AUDIO_SOURCE,
+                                     receiver_source_endp)
                   == 0);
         }
     }
@@ -168,36 +168,51 @@ public:
              size_t frame_size,
              unsigned flags)
         : recv_(NULL)
+        , source_endp_(NULL)
+        , repair_endp_(NULL)
         , sample_step_(sample_step)
         , frame_size_(frame_size) {
-        CHECK(roc_address_init(&source_addr_, ROC_AF_AUTO, "127.0.0.1", 0) == 0);
-        CHECK(roc_address_init(&repair_addr_, ROC_AF_AUTO, "127.0.0.1", 0) == 0);
         CHECK(roc_receiver_open(context.get(), &config, &recv_) == 0);
         CHECK(recv_);
+
         if (flags & FlagFEC) {
-            CHECK(roc_receiver_bind(recv_, ROC_PORT_AUDIO_SOURCE,
-                                    ROC_PROTO_RTP_RS8M_SOURCE, &source_addr_)
+            CHECK(roc_endpoint_allocate(&source_endp_) == 0);
+            CHECK(roc_endpoint_set_uri(source_endp_, "rtp+rs8m://127.0.0.1:0") == 0);
+
+            CHECK(roc_endpoint_allocate(&repair_endp_) == 0);
+            CHECK(roc_endpoint_set_uri(repair_endp_, "rs8m://127.0.0.1:0") == 0);
+
+            CHECK(roc_receiver_bind(recv_, ROC_INTERFACE_AUDIO_SOURCE, source_endp_)
                   == 0);
-            CHECK(roc_receiver_bind(recv_, ROC_PORT_AUDIO_REPAIR, ROC_PROTO_RS8M_REPAIR,
-                                    &repair_addr_)
+            CHECK(roc_receiver_bind(recv_, ROC_INTERFACE_AUDIO_REPAIR, repair_endp_)
                   == 0);
         } else {
-            CHECK(roc_receiver_bind(recv_, ROC_PORT_AUDIO_SOURCE, ROC_PROTO_RTP,
-                                    &source_addr_)
+            CHECK(roc_endpoint_allocate(&source_endp_) == 0);
+            CHECK(roc_endpoint_set_uri(source_endp_, "rtp://127.0.0.1:0") == 0);
+
+            CHECK(roc_receiver_bind(recv_, ROC_INTERFACE_AUDIO_SOURCE, source_endp_)
                   == 0);
         }
     }
 
     ~Receiver() {
+        if (source_endp_) {
+            CHECK(roc_endpoint_deallocate(source_endp_) == 0);
+        }
+
+        if (repair_endp_) {
+            CHECK(roc_endpoint_deallocate(repair_endp_) == 0);
+        }
+
         CHECK(roc_receiver_close(recv_) == 0);
     }
 
-    const roc_address* source_addr() const {
-        return &source_addr_;
+    const roc_endpoint* source_endpoint() const {
+        return source_endp_;
     }
 
-    const roc_address* repair_addr() const {
-        return &repair_addr_;
+    const roc_endpoint* repair_endpoint() const {
+        return repair_endp_;
     }
 
     void run() {
@@ -274,8 +289,8 @@ private:
 
     roc_receiver* recv_;
 
-    roc_address source_addr_;
-    roc_address repair_addr_;
+    roc_endpoint* source_endp_;
+    roc_endpoint* repair_endp_;
 
     const float sample_step_;
     const size_t frame_size_;
@@ -283,8 +298,8 @@ private:
 
 class Proxy : private packet::IWriter {
 public:
-    Proxy(const roc_address* dst_source_addr,
-          const roc_address* dst_repair_addr,
+    Proxy(const roc_endpoint* receiver_source_endp,
+          const roc_endpoint* receiver_repair_endp,
           size_t n_source_packets,
           size_t n_repair_packets)
         : event_loop_(packet_pool, byte_buffer_pool, allocator)
@@ -293,10 +308,22 @@ public:
         , pos_(0) {
         CHECK(event_loop_.valid());
 
-        dst_source_addr_.set_host_port(address::Family_IPv4, "127.0.0.1",
-                                       roc_address_port(dst_source_addr));
-        dst_repair_addr_.set_host_port(address::Family_IPv4, "127.0.0.1",
-                                       roc_address_port(dst_repair_addr));
+        roc_protocol source_proto;
+        CHECK(roc_endpoint_get_protocol(receiver_source_endp, &source_proto) == 0);
+
+        roc_protocol repair_proto;
+        CHECK(roc_endpoint_get_protocol(receiver_repair_endp, &repair_proto) == 0);
+
+        int source_port = 0;
+        CHECK(roc_endpoint_get_port(receiver_source_endp, &source_port) == 0);
+
+        int repair_port = 0;
+        CHECK(roc_endpoint_get_port(receiver_repair_endp, &repair_port) == 0);
+
+        receiver_source_endp_.set_host_port(address::Family_IPv4, "127.0.0.1",
+                                            source_port);
+        receiver_repair_endp_.set_host_port(address::Family_IPv4, "127.0.0.1",
+                                            repair_port);
 
         send_config_.bind_address.set_host_port(address::Family_IPv4, "127.0.0.1", 0);
 
@@ -313,20 +340,32 @@ public:
         CHECK(event_loop_.add_udp_receiver(recv_source_config_, *this));
         CHECK(event_loop_.add_udp_receiver(recv_repair_config_, *this));
 
-        CHECK(roc_address_init(&roc_source_addr_, ROC_AF_AUTO, "127.0.0.1",
-                               recv_source_config_.bind_address.port())
+        CHECK(roc_endpoint_allocate(&input_source_endp_) == 0);
+        CHECK(roc_endpoint_set_protocol(input_source_endp_, source_proto) == 0);
+        CHECK(roc_endpoint_set_host(input_source_endp_, "127.0.0.1") == 0);
+        CHECK(roc_endpoint_set_port(input_source_endp_,
+                                    recv_source_config_.bind_address.port())
               == 0);
-        CHECK(roc_address_init(&roc_repair_addr_, ROC_AF_AUTO, "127.0.0.1",
-                               recv_repair_config_.bind_address.port())
+
+        CHECK(roc_endpoint_allocate(&input_repair_endp_) == 0);
+        CHECK(roc_endpoint_set_protocol(input_repair_endp_, repair_proto) == 0);
+        CHECK(roc_endpoint_set_host(input_repair_endp_, "127.0.0.1") == 0);
+        CHECK(roc_endpoint_set_port(input_repair_endp_,
+                                    recv_repair_config_.bind_address.port())
               == 0);
     }
 
-    const roc_address* source_addr() const {
-        return &roc_source_addr_;
+    ~Proxy() {
+        CHECK(roc_endpoint_deallocate(input_source_endp_) == 0);
+        CHECK(roc_endpoint_deallocate(input_repair_endp_) == 0);
     }
 
-    const roc_address* repair_addr() const {
-        return &roc_repair_addr_;
+    const roc_endpoint* source_endpoint() const {
+        return input_source_endp_;
+    }
+
+    const roc_endpoint* repair_endpoint() const {
+        return input_repair_endp_;
     }
 
 private:
@@ -334,10 +373,10 @@ private:
         pp->udp()->src_addr = send_config_.bind_address;
 
         if (pp->udp()->dst_addr == recv_source_config_.bind_address) {
-            pp->udp()->dst_addr = dst_source_addr_;
+            pp->udp()->dst_addr = receiver_source_endp_;
             source_queue_.write(pp);
         } else {
-            pp->udp()->dst_addr = dst_repair_addr_;
+            pp->udp()->dst_addr = receiver_repair_endp_;
             repair_queue_.write(pp);
         }
 
@@ -370,14 +409,14 @@ private:
 
     netio::UdpSenderConfig send_config_;
 
-    roc_address roc_source_addr_;
-    roc_address roc_repair_addr_;
+    roc_endpoint* input_source_endp_;
+    roc_endpoint* input_repair_endp_;
 
     netio::UdpReceiverConfig recv_source_config_;
     netio::UdpReceiverConfig recv_repair_config_;
 
-    address::SocketAddr dst_source_addr_;
-    address::SocketAddr dst_repair_addr_;
+    address::SocketAddr receiver_source_endp_;
+    address::SocketAddr receiver_repair_endp_;
 
     packet::Queue source_queue_;
     packet::Queue repair_queue_;
@@ -446,8 +485,8 @@ TEST(sender_receiver, bare_rtp) {
 
     Receiver receiver(context, receiver_conf, sample_step, FrameSamples, Flags);
 
-    Sender sender(context, sender_conf, receiver.source_addr(), receiver.repair_addr(),
-                  sample_step, FrameSamples, Flags);
+    Sender sender(context, sender_conf, receiver.source_endpoint(),
+                  receiver.repair_endpoint(), sample_step, FrameSamples, Flags);
 
     sender.start();
     receiver.run();
@@ -468,8 +507,8 @@ TEST(sender_receiver, fec_without_losses) {
 
     Receiver receiver(context, receiver_conf, sample_step, FrameSamples, Flags);
 
-    Sender sender(context, sender_conf, receiver.source_addr(), receiver.repair_addr(),
-                  sample_step, FrameSamples, Flags);
+    Sender sender(context, sender_conf, receiver.source_endpoint(),
+                  receiver.repair_endpoint(), sample_step, FrameSamples, Flags);
 
     sender.start();
     receiver.run();
@@ -490,10 +529,10 @@ TEST(sender_receiver, fec_with_losses) {
 
     Receiver receiver(context, receiver_conf, sample_step, FrameSamples, Flags);
 
-    Proxy proxy(receiver.source_addr(), receiver.repair_addr(), SourcePackets,
+    Proxy proxy(receiver.source_endpoint(), receiver.repair_endpoint(), SourcePackets,
                 RepairPackets);
 
-    Sender sender(context, sender_conf, proxy.source_addr(), proxy.repair_addr(),
+    Sender sender(context, sender_conf, proxy.source_endpoint(), proxy.repair_endpoint(),
                   sample_step, FrameSamples, Flags);
 
     sender.start();

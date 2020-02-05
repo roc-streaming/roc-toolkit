@@ -7,8 +7,8 @@
  */
 
 /**
- * @file roc/log.h
- * @brief Logger configuration.
+ * \file roc/log.h
+ * \brief Logging.
  */
 
 #ifndef ROC_LOG_H_
@@ -21,7 +21,7 @@ extern "C" {
 #endif
 
 /** Log level.
- * @see roc_log_set_level
+ * \see roc_log_set_level
  */
 typedef enum roc_log_level {
     /** No messages.
@@ -54,12 +54,12 @@ typedef enum roc_log_level {
 
 /** Log handler.
  *
- * @b Parameters
- *  - @p level defines the message level
- *  - @p component defines the component that produces the message
- *  - @p message defines the message text
+ * **Parameters**
+ *  - \p level defines the message level
+ *  - \p component defines the component that produces the message
+ *  - \p message defines the message text
  *
- * @see roc_log_set_handler
+ * \see roc_log_set_handler
  */
 typedef void (*roc_log_handler)(roc_log_level level,
                                 const char* component,
@@ -67,25 +67,27 @@ typedef void (*roc_log_handler)(roc_log_level level,
 
 /** Set maximum log level.
  *
- * Messages with log levels higher than @p level will be dropped.
- * By default the log level is set to @c ROC_LOG_ERROR.
+ * Messages with log levels higher than \p level will be dropped.
+ * By default the log level is set to \ref ROC_LOG_ERROR.
  *
- * @b Thread-safety
- *  - can be used concurrently
+ * **Thread safety**
+ *
+ * Can be used concurrently.
  */
 ROC_API void roc_log_set_level(roc_log_level level);
 
 /** Set log handler.
  *
- * If @p handler is not NULL, messages are passed to the handler. Otherwise, messages are
+ * If \p handler is not NULL, messages are passed to the handler. Otherwise, messages are
  * printed to stderr. By default the log handler is set to NULL.
  *
  * It's guaranteed that the previously set handler, if any, will not be used after this
  * function returns.
  *
- * @b Thread-safety
- *  - can be used concurrently
- *  - handler calls are serialized, so the handler itself doesn't need to be thread-safe
+ * **Thread safety**
+ *
+ * Can be used concurrently. Handler calls are serialized, so the handler itself doesn't
+ * need to be thread-safe.
  */
 ROC_API void roc_log_set_handler(roc_log_handler handler);
 
