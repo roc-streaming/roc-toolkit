@@ -12,9 +12,9 @@
 #ifndef ROC_PEER_SENDER_H_
 #define ROC_PEER_SENDER_H_
 
+#include "roc_address/endpoint_uri.h"
 #include "roc_address/interface.h"
 #include "roc_address/protocol.h"
-#include "roc_address/socket_addr.h"
 #include "roc_core/mutex.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_packet/iwriter.h"
@@ -45,9 +45,7 @@ public:
     bool set_outgoing_address(address::Interface iface, const char* ip);
 
     //! Connect peer to remote endpoint.
-    bool connect(address::Interface iface,
-                 address::Protocol proto,
-                 const address::SocketAddr& address);
+    bool connect(address::Interface iface, const address::EndpointURI& uri);
 
     //! Check if all necessary bind and connect calls were made.
     bool is_ready() const;
