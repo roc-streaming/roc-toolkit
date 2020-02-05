@@ -23,9 +23,7 @@ Sender::Sender(Context& context, const pipeline::SenderConfig& pipeline_config)
                 context_.allocator())
     , endpoint_set_(0)
     , source_endpoint_(0)
-    , repair_endpoint_(0)
-    , udp_port_(NULL)
-    , udp_writer_(NULL) {
+    , repair_endpoint_(0) {
     roc_log(LogDebug, "sender peer: initializing");
 
     if (!pipeline_.valid()) {
@@ -38,8 +36,10 @@ Sender::Sender(Context& context, const pipeline::SenderConfig& pipeline_config)
 Sender::~Sender() {
     roc_log(LogDebug, "sender peer: deinitializing");
 
-    if (udp_port_) {
-        context_.event_loop().remove_port(udp_port_);
+    for (size_t i = 0; i < ROC_ARRAY_SIZE(ports_); i++) {
+        if (ports_[i].handle) {
+            context_.event_loop().remove_port(ports_[i].handle);
+        }
     }
 }
 
@@ -47,49 +47,72 @@ bool Sender::valid() const {
     return endpoint_set_;
 }
 
-bool Sender::set_broadcast_enabled(bool enabled) {
+bool Sender::set_broadcast_enabled(address::EndpointType type, bool enabled) {
     core::Mutex::Lock lock(mutex_);
 
     roc_panic_if_not(valid());
 
-    if (udp_port_) {
-        roc_log(LogError, "sender peer: already bound");
+    roc_panic_if(type < 0);
+    roc_panic_if(type >= (int)ROC_ARRAY_SIZE(ports_));
+
+    if (ports_[type].handle) {
+        roc_log(LogError,
+                "sender peer:"
+                " can't set broadcast flag for %s interface:"
+                " interface is already bound",
+                address::endpoint_type_to_str(type));
         return false;
     }
 
-    udp_config_.broadcast_enabled = enabled;
+    ports_[type].config.broadcast_enabled = enabled;
+    ports_[type].is_set = true;
+
+    roc_log(LogDebug, "sender peer: setting %s interface broadcast flag to %d",
+            address::endpoint_type_to_str(type), (int)enabled);
+
     return true;
 }
 
-bool Sender::bind(address::SocketAddr& address) {
+bool Sender::set_outgoing_address(address::EndpointType type, const char* ip) {
     core::Mutex::Lock lock(mutex_);
 
     roc_panic_if_not(valid());
 
-    if (udp_port_) {
-        roc_log(LogError, "sender peer: already bound");
+    roc_panic_if(type < 0);
+    roc_panic_if(type >= (int)ROC_ARRAY_SIZE(ports_));
+
+    roc_panic_if(!ip);
+
+    if (ports_[type].handle) {
+        roc_log(LogError,
+                "sender peer:"
+                " can't set outgoing address for %s interface:"
+                " interface is already bound",
+                address::endpoint_type_to_str(type));
         return false;
     }
 
-    udp_config_.bind_address = address;
+    bool ok = ports_[type].config.bind_address.set_host_port(
+        address::Family_IPv4, ip, ports_[type].config.bind_address.port());
 
-    if (!(udp_port_ = context_.event_loop().add_udp_sender(udp_config_, &udp_writer_))) {
-        roc_log(LogError, "sender peer: bind failed");
+    if (!ok) {
+        ok = ports_[type].config.bind_address.set_host_port(
+            address::Family_IPv6, ip, ports_[type].config.bind_address.port());
+    }
+
+    if (!ok) {
+        roc_log(LogError,
+                "sender peer:"
+                " can't set outgoing address for %s interface to '%s':"
+                " invalid IPv4 or IPv6 address",
+                address::endpoint_type_to_str(type), ip);
         return false;
     }
 
-    address = udp_config_.bind_address;
+    ports_[type].is_set = true;
 
-    if (source_endpoint_) {
-        pipeline_.set_endpoint_output_writer(source_endpoint_, *udp_writer_);
-    }
-
-    if (repair_endpoint_) {
-        pipeline_.set_endpoint_output_writer(repair_endpoint_, *udp_writer_);
-    }
-
-    roc_log(LogInfo, "sender peer: bound to %s",
-            address::socket_addr_to_str(udp_config_.bind_address).c_str());
+    roc_log(LogDebug, "sender peer: setting %s interface outgoing address to %s",
+            address::endpoint_type_to_str(type), ip);
 
     return true;
 }
@@ -101,19 +124,26 @@ bool Sender::connect(address::EndpointType type,
 
     roc_panic_if_not(valid());
 
+    address::EndpointType outgoing_type = select_outgoing_port_(type);
+
+    UdpPort* port = setup_outgoing_port_(outgoing_type, address.family());
+    if (!port) {
+        roc_log(LogError, "sender peer: can't bind %s interface to local port",
+                address::endpoint_type_to_str(type));
+        return false;
+    }
+
     pipeline::SenderSink::EndpointHandle endpoint =
         pipeline_.add_endpoint(endpoint_set_, type, proto);
 
     if (!endpoint) {
-        roc_log(LogError, "sender peer: can't add endpoint to pipeline");
+        roc_log(LogError, "sender peer: can't add %s endpoint to pipeline",
+                address::endpoint_type_to_str(type));
         return false;
     }
 
     pipeline_.set_endpoint_destination_udp_address(endpoint, address);
-
-    if (udp_writer_) {
-        pipeline_.set_endpoint_output_writer(endpoint, *udp_writer_);
-    }
+    pipeline_.set_endpoint_output_writer(endpoint, *port->writer);
 
     if (type == address::EndType_AudioSource) {
         source_endpoint_ = endpoint;
@@ -121,7 +151,7 @@ bool Sender::connect(address::EndpointType type,
         repair_endpoint_ = endpoint;
     }
 
-    roc_log(LogInfo, "sender peer: connected to %s endpoint %s at %s",
+    roc_log(LogInfo, "sender peer: connected %s interface to %s:%s",
             address::endpoint_type_to_str(type), address::endpoint_proto_to_str(proto),
             address::socket_addr_to_str(address).c_str());
 
@@ -140,6 +170,55 @@ sndio::ISink& Sender::sink() {
     roc_panic_if_not(valid());
 
     return pipeline_;
+}
+
+address::EndpointType Sender::select_outgoing_port_(address::EndpointType type) {
+    if (ports_[type].is_set) {
+        return type;
+    }
+
+    return address::EndType_AudioCombined;
+}
+
+Sender::UdpPort* Sender::setup_outgoing_port_(address::EndpointType type,
+                                              address::AddrFamily family) {
+    Sender::UdpPort& port = ports_[type];
+
+    if (port.config.bind_address.has_host_port()) {
+        if (port.config.bind_address.family() != family) {
+            roc_log(LogError,
+                    "sender peer:"
+                    " %s interface is configured to use %s,"
+                    " but tried to be connected to %s address",
+                    address::endpoint_type_to_str(type),
+                    address::addr_family_to_str(port.config.bind_address.family()),
+                    address::addr_family_to_str(family));
+            return NULL;
+        }
+    }
+
+    if (port.handle) {
+        return &port;
+    }
+
+    if (!port.config.bind_address.has_host_port()) {
+        if (family == address::Family_IPv4) {
+            port.config.bind_address.set_host_port(address::Family_IPv4, "0.0.0.0", 0);
+        } else {
+            port.config.bind_address.set_host_port(address::Family_IPv6, "::", 0);
+        }
+    }
+
+    port.handle = context_.event_loop().add_udp_sender(port.config, &port.writer);
+    if (!port.handle) {
+        return NULL;
+    }
+
+    roc_log(LogInfo, "sender peer: bound %s interface to %s",
+            address::endpoint_type_to_str(type),
+            address::socket_addr_to_str(port.config.bind_address).c_str());
+
+    return &port;
 }
 
 } // namespace peer

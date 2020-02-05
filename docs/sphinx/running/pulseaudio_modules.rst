@@ -132,7 +132,6 @@ option                required default        description
 ===================== ======== ============== ==========================================
 sink_name             no       roc_sender     the name of the new sink
 sink_properties       no       empty          additional sink properties
-local_ip              no       0.0.0.0        local sender address to bind to
 remote_ip             yes      no             remote receiver address
 remote_source_port    no       10001          remote receiver port for source (audio) packets
 remote_repair_port    no       10002          remote receiver port for repair (FEC) packets

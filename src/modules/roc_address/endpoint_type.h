@@ -26,6 +26,9 @@ enum EndpointType {
     //! Audio repair packets.
     EndType_AudioRepair,
 
+    //! Combined port for audio source, repair, and control.
+    EndType_AudioCombined,
+
     //! Number of endpoint types.
     EndType_Max
 };

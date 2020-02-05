@@ -47,15 +47,6 @@ TEST(sender, bind_connect) {
         Sender sender(context, sender_config);
         CHECK(sender.valid());
 
-        address::SocketAddr local_addr;
-        CHECK(local_addr.set_host_port(address::Family_IPv4, "127.0.0.1", 0));
-        CHECK(local_addr.port() == 0);
-
-        CHECK(sender.bind(local_addr));
-        CHECK(local_addr.port() != 0);
-
-        UNSIGNED_LONGS_EQUAL(context.event_loop().num_ports(), 1);
-
         pipeline::PortConfig remote_port;
         remote_port.protocol = address::EndProto_RTP;
         CHECK(remote_port.address.set_host_port(address::Family_IPv4, "127.0.0.1", 123));
@@ -79,10 +70,6 @@ TEST(sender, endpoints_no_fec) {
         Sender sender(context, sender_config);
         CHECK(sender.valid());
 
-        address::SocketAddr local_addr;
-        CHECK(local_addr.set_host_port(address::Family_IPv4, "127.0.0.1", 0));
-        CHECK(sender.bind(local_addr));
-
         pipeline::PortConfig source_port;
         source_port.protocol = address::EndProto_RTP;
         CHECK(source_port.address.set_host_port(address::Family_IPv4, "127.0.0.1", 123));
@@ -98,26 +85,6 @@ TEST(sender, endpoints_no_fec) {
 
         Sender sender(context, sender_config);
         CHECK(sender.valid());
-
-        pipeline::PortConfig source_port;
-        source_port.protocol = address::EndProto_RTP;
-        CHECK(source_port.address.set_host_port(address::Family_IPv4, "127.0.0.1", 123));
-        CHECK(sender.connect(address::EndType_AudioSource, source_port.protocol,
-                             source_port.address));
-
-        // bind was not called
-        CHECK(!sender.is_ready());
-    }
-
-    {
-        sender_config.fec_encoder.scheme = packet::FEC_None;
-
-        Sender sender(context, sender_config);
-        CHECK(sender.valid());
-
-        address::SocketAddr local_addr;
-        CHECK(local_addr.set_host_port(address::Family_IPv4, "127.0.0.1", 0));
-        CHECK(sender.bind(local_addr));
 
         // source port not provided
         CHECK(!sender.is_ready());
@@ -161,10 +128,6 @@ TEST(sender, endpoints_fec) {
         Sender sender(context, sender_config);
         CHECK(sender.valid());
 
-        address::SocketAddr local_addr;
-        CHECK(local_addr.set_host_port(address::Family_IPv4, "127.0.0.1", 0));
-        CHECK(sender.bind(local_addr));
-
         pipeline::PortConfig source_port;
         source_port.protocol = address::EndProto_RTP_RS8M_Source;
         CHECK(source_port.address.set_host_port(address::Family_IPv4, "127.0.0.1", 123));
@@ -187,10 +150,6 @@ TEST(sender, endpoints_fec) {
         Sender sender(context, sender_config);
         CHECK(sender.valid());
 
-        address::SocketAddr local_addr;
-        CHECK(local_addr.set_host_port(address::Family_IPv4, "127.0.0.1", 0));
-        CHECK(sender.bind(local_addr));
-
         pipeline::PortConfig source_port;
         source_port.protocol = address::EndProto_RTP_LDPC_Source;
         CHECK(source_port.address.set_host_port(address::Family_IPv4, "127.0.0.1", 123));
@@ -206,10 +165,6 @@ TEST(sender, endpoints_fec) {
 
         Sender sender(context, sender_config);
         CHECK(sender.valid());
-
-        address::SocketAddr local_addr;
-        CHECK(local_addr.set_host_port(address::Family_IPv4, "127.0.0.1", 0));
-        CHECK(sender.bind(local_addr));
 
         pipeline::PortConfig repair_port;
         repair_port.protocol = address::EndProto_LDPC_Repair;
@@ -227,10 +182,6 @@ TEST(sender, endpoints_fec) {
         Sender sender(context, sender_config);
         CHECK(sender.valid());
 
-        address::SocketAddr local_addr;
-        CHECK(local_addr.set_host_port(address::Family_IPv4, "127.0.0.1", 0));
-        CHECK(sender.bind(local_addr));
-
         pipeline::PortConfig repair_port;
         repair_port.protocol = address::EndProto_RTP;
         CHECK(repair_port.address.set_host_port(address::Family_IPv4, "127.0.0.1", 123));
@@ -246,10 +197,6 @@ TEST(sender, endpoints_fec) {
 
         Sender sender(context, sender_config);
         CHECK(sender.valid());
-
-        address::SocketAddr local_addr;
-        CHECK(local_addr.set_host_port(address::Family_IPv4, "127.0.0.1", 0));
-        CHECK(sender.bind(local_addr));
 
         pipeline::PortConfig source_port;
         source_port.protocol = address::EndProto_RTP_RS8M_Source;
@@ -267,10 +214,6 @@ TEST(sender, endpoints_fec) {
         Sender sender(context, sender_config);
         CHECK(sender.valid());
 
-        address::SocketAddr local_addr;
-        CHECK(local_addr.set_host_port(address::Family_IPv4, "127.0.0.1", 0));
-        CHECK(sender.bind(local_addr));
-
         pipeline::PortConfig repair_port;
         repair_port.protocol = address::EndProto_RS8M_Repair;
         CHECK(repair_port.address.set_host_port(address::Family_IPv4, "127.0.0.1", 123));
@@ -278,28 +221,6 @@ TEST(sender, endpoints_fec) {
                              repair_port.address));
 
         // source port not provided when fec is enabled
-        CHECK(!sender.is_ready());
-    }
-
-    {
-        sender_config.fec_encoder.scheme = packet::FEC_ReedSolomon_M8;
-
-        Sender sender(context, sender_config);
-        CHECK(sender.valid());
-
-        pipeline::PortConfig source_port;
-        source_port.protocol = address::EndProto_RTP_RS8M_Source;
-        CHECK(source_port.address.set_host_port(address::Family_IPv4, "127.0.0.1", 123));
-        CHECK(sender.connect(address::EndType_AudioSource, source_port.protocol,
-                             source_port.address));
-
-        pipeline::PortConfig repair_port;
-        repair_port.protocol = address::EndProto_RS8M_Repair;
-        CHECK(repair_port.address.set_host_port(address::Family_IPv4, "127.0.0.1", 123));
-        CHECK(sender.connect(address::EndType_AudioRepair, repair_port.protocol,
-                             repair_port.address));
-
-        // bind was not called
         CHECK(!sender.is_ready());
     }
 }
