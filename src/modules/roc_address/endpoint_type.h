@@ -24,7 +24,10 @@ enum EndpointType {
     EndType_AudioSource,
 
     //! Audio repair packets.
-    EndType_AudioRepair
+    EndType_AudioRepair,
+
+    //! Number of endpoint types.
+    EndType_Max
 };
 
 //! Convert endpoint type to string.
