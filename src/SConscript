@@ -113,6 +113,9 @@ if not GetOption('disable_tests'):
         ccenv.Append(CPPPATH=['#src/%s' % testdir])
 
         if testname == 'roc_library':
+            if GetOption('disable_lib'):
+                continue
+
             ccenv.Append(CPPPATH=['library/include'])
             ccenv.Prepend(LIBS=[libroc])
 
