@@ -28,10 +28,6 @@
 #include <roc/log.h>
 #include <roc/sender.h>
 
-/* Sender parameters. */
-#define EXAMPLE_SENDER_IP "0.0.0.0"
-#define EXAMPLE_SENDER_PORT 0
-
 /* Receiver parameters. */
 #define EXAMPLE_RECEIVER_IP "127.0.0.1"
 #define EXAMPLE_RECEIVER_SOURCE_PORT 10001
@@ -100,17 +96,6 @@ int main() {
     roc_sender* sender;
     if (roc_sender_open(context, &sender_config, &sender) != 0) {
         oops("roc_sender_open");
-    }
-
-    /* Bind sender to a random port. */
-    roc_address sender_addr;
-    if (roc_address_init(&sender_addr, ROC_AF_AUTO, EXAMPLE_SENDER_IP,
-                         EXAMPLE_SENDER_PORT)
-        != 0) {
-        oops("roc_address_init");
-    }
-    if (roc_sender_bind(sender, &sender_addr) != 0) {
-        oops("roc_sender_bind");
     }
 
     /* Connect sender to the receiver source (audio) packets port.
