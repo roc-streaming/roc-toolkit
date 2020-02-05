@@ -101,11 +101,9 @@ public:
         : sndr_(NULL)
         , sample_step_(sample_step)
         , frame_size_(frame_size) {
-        roc_address addr;
-        CHECK(roc_address_init(&addr, ROC_AF_AUTO, "127.0.0.1", 0) == 0);
         CHECK(roc_sender_open(context.get(), &config, &sndr_) == 0);
         CHECK(sndr_);
-        CHECK(roc_sender_bind(sndr_, &addr) == 0);
+
         if (flags & FlagFEC) {
             CHECK(roc_sender_connect(sndr_, ROC_PORT_AUDIO_SOURCE,
                                      ROC_PROTO_RTP_RS8M_SOURCE, dst_source_addr)

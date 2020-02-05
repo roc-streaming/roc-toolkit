@@ -113,28 +113,6 @@ ROC_API int roc_sender_open(roc_context* context,
                             const roc_sender_config* config,
                             roc_sender** result);
 
-/** Bind the sender to a local port.
- *
- * Binds the sender to a local port. Should be called exactly once before calling
- * roc_sender_write() first time.
- *
- * If @p address has zero port, the sender is bound to a randomly chosen ephemeral
- * port. If the function succeeds, the actual port to which the sender was bound
- * is written back to @p address.
- *
- * @b Parameters
- *  - @p sender should point to an opened sender
- *  - @p address should point to a properly initialized address
- *
- * @b Returns
- *  - returns zero if the sender was successfully bound to a port
- *  - returns a negative value if the arguments are invalid
- *  - returns a negative value if the sender is already bound
- *  - returns a negative value if the address can't be bound
- *  - returns a negative value if there are not enough resources
- */
-ROC_API int roc_sender_bind(roc_sender* sender, roc_address* address);
-
 /** Connect the sender to a remote receiver port.
  *
  * Connects the sender to a receiver port. Should be called one or multiple times
