@@ -15,7 +15,6 @@
 #include "roc_address/endpoint_protocol.h"
 #include "roc_address/endpoint_type.h"
 #include "roc_address/socket_addr.h"
-#include "roc_core/array.h"
 #include "roc_core/mutex.h"
 #include "roc_peer/basic_peer.h"
 #include "roc_peer/context.h"
@@ -37,6 +36,9 @@ public:
     //! Check if successfully constructed.
     bool valid();
 
+    //! Set multicast interface address for given endpoint type.
+    bool set_multicast_group(address::EndpointType type, const char* ip);
+
     //! Bind peer to local endpoint.
     bool bind(address::EndpointType type,
               address::EndpointProtocol proto,
@@ -46,6 +48,15 @@ public:
     sndio::ISource& source();
 
 private:
+    struct UdpPort {
+        netio::UdpReceiverConfig config;
+        netio::EventLoop::PortHandle handle;
+
+        UdpPort()
+            : handle(NULL) {
+        }
+    };
+
     core::Mutex mutex_;
 
     rtp::FormatMap format_map_;
@@ -53,7 +64,7 @@ private:
     pipeline::ReceiverSource pipeline_;
     pipeline::ReceiverSource::EndpointSetHandle endpoint_set_;
 
-    core::Array<netio::EventLoop::PortHandle, 2> ports_;
+    UdpPort ports_[address::EndType_Max];
 };
 
 } // namespace peer
