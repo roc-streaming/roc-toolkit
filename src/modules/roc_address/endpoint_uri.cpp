@@ -51,9 +51,9 @@ bool EndpointURI::check(Subset subset) const {
     if (port_ < 0 && proto_attrs->default_port < 0) {
         roc_log(LogError,
                 "invalid endpoint uri:"
-                " endpoint protocol '%s' requires a port to be specified explicitly,"
+                " protocol '%s' requires a port to be specified explicitly,"
                 " but it is omitted in the uri",
-                endpoint_proto_to_str(proto_));
+                proto_to_str(proto_));
         return false;
     }
 
@@ -61,9 +61,9 @@ bool EndpointURI::check(Subset subset) const {
         if (!path_.is_empty() || !query_.is_empty() || !frag_.is_empty()) {
             roc_log(LogError,
                     "invalid endpoint uri:"
-                    " endpoint protocol '%s' forbids using a path, query, and fragment,"
+                    " protocol '%s' forbids using a path, query, and fragment,"
                     " but they are present in the uri",
-                    endpoint_proto_to_str(proto_));
+                    proto_to_str(proto_));
             return false;
         }
     }
@@ -74,7 +74,7 @@ bool EndpointURI::check(Subset subset) const {
 void EndpointURI::clear(Subset subset) {
     if (subset == Subset_Full) {
         invalid_parts_ |= PartProto;
-        proto_ = EndProto_None;
+        proto_ = Proto_None;
 
         invalid_parts_ |= PartHost;
         host_.clear();
@@ -113,14 +113,14 @@ void EndpointURI::set_invalid_(Part part) {
     invalid_parts_ |= part;
 }
 
-EndpointProtocol EndpointURI::proto() const {
+Protocol EndpointURI::proto() const {
     if (!part_is_valid_(PartProto)) {
-        return EndProto_None;
+        return Proto_None;
     }
     return proto_;
 }
 
-bool EndpointURI::set_proto(EndpointProtocol proto) {
+bool EndpointURI::set_proto(Protocol proto) {
     if (ProtocolMap::instance().find_proto(proto) == NULL) {
         set_invalid_(PartProto);
         return false;
@@ -140,7 +140,7 @@ bool EndpointURI::set_proto(EndpointProtocol proto) {
     return true;
 }
 
-bool EndpointURI::get_proto(EndpointProtocol& proto) const {
+bool EndpointURI::get_proto(Protocol& proto) const {
     if (!part_is_valid_(PartProto)) {
         return false;
     }
@@ -255,7 +255,7 @@ void EndpointURI::set_service_from_port_(int port) {
     }
 }
 
-bool EndpointURI::set_service_from_proto_(EndpointProtocol proto) {
+bool EndpointURI::set_service_from_proto_(Protocol proto) {
     const ProtocolAttrs* attrs = ProtocolMap::instance().find_proto(proto);
     if (!attrs) {
         return false;

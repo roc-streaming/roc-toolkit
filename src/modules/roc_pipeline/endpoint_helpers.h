@@ -12,24 +12,24 @@
 #ifndef ROC_PIPELINE_ENDPOINT_HELPERS_H_
 #define ROC_PIPELINE_ENDPOINT_HELPERS_H_
 
-#include "roc_address/endpoint_protocol.h"
-#include "roc_address/endpoint_type.h"
+#include "roc_address/interface.h"
+#include "roc_address/protocol.h"
 #include "roc_packet/fec.h"
 
 namespace roc {
 namespace pipeline {
 
 //! Validate endpoint type and protocol.
-bool validate_endpoint(address::EndpointType type, address::EndpointProtocol proto);
+bool validate_endpoint(address::Interface iface, address::Protocol proto);
 
 //! Validate consistency of the endpoint and the pipeline FEC scheme.
 bool validate_endpoint_and_pipeline_consistency(packet::FecScheme pipeline_fec_scheme,
-                                                address::EndpointType type,
-                                                address::EndpointProtocol proto);
+                                                address::Interface iface,
+                                                address::Protocol proto);
 
 //! Validate consistency of the two endpoints.
-bool validate_endpoint_pair_consistency(address::EndpointProtocol source_proto,
-                                        address::EndpointProtocol repair_proto);
+bool validate_endpoint_pair_consistency(address::Protocol source_proto,
+                                        address::Protocol repair_proto);
 
 } // namespace pipeline
 } // namespace roc

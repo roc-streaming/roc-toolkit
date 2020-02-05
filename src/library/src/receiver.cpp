@@ -85,19 +85,19 @@ int roc_receiver_bind(roc_receiver* receiver,
         return -1;
     }
 
-    address::EndpointType imp_endpoint_type;
-    if (!api::endpoint_type_from_user(imp_endpoint_type, type)) {
+    address::Interface imp_iface;
+    if (!api::interface_from_user(imp_iface, type)) {
         roc_log(LogError, "roc_receiver_bind: invalid arguments: bad type");
         return -1;
     }
 
-    address::EndpointProtocol imp_endpoint_proto;
-    if (!api::endpoint_proto_from_user(imp_endpoint_proto, proto)) {
+    address::Protocol imp_proto;
+    if (!api::proto_from_user(imp_proto, proto)) {
         roc_log(LogError, "roc_receiver_bind: invalid arguments: bad protocol");
         return -1;
     }
 
-    if (!imp_receiver->bind(imp_endpoint_type, imp_endpoint_proto, imp_address)) {
+    if (!imp_receiver->bind(imp_iface, imp_proto, imp_address)) {
         roc_log(LogError, "roc_receiver_bind: bind failed");
         return -1;
     }
