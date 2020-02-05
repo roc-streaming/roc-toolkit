@@ -8,7 +8,6 @@
 
 #include "roc/receiver.h"
 
-#include "address_helpers.h"
 #include "config_helpers.h"
 
 #include "roc_core/log.h"
@@ -64,9 +63,8 @@ int roc_receiver_open(roc_context* context,
 }
 
 int roc_receiver_bind(roc_receiver* receiver,
-                      roc_port_type type,
-                      roc_protocol proto,
-                      roc_address* address) {
+                      roc_interface iface,
+                      roc_endpoint* endpoint) {
     if (!receiver) {
         roc_log(LogError, "roc_receiver_bind: invalid arguments: receiver is null");
         return -1;
@@ -74,31 +72,21 @@ int roc_receiver_bind(roc_receiver* receiver,
 
     peer::Receiver* imp_receiver = (peer::Receiver*)receiver;
 
-    if (!address) {
-        roc_log(LogError, "roc_receiver_bind: invalid arguments: address is null");
+    if (!endpoint) {
+        roc_log(LogError, "roc_receiver_bind: invalid arguments: endpoint is null");
         return -1;
     }
 
-    address::SocketAddr& imp_address = api::get_socket_addr(address);
-    if (!imp_address.has_host_port()) {
-        roc_log(LogError, "roc_sender_connect: invalid arguments: bad address");
-        return -1;
-    }
+    address::EndpointURI& imp_endpoint = *(address::EndpointURI*)endpoint;
 
     address::Interface imp_iface;
-    if (!api::interface_from_user(imp_iface, type)) {
-        roc_log(LogError, "roc_receiver_bind: invalid arguments: bad type");
+    if (!api::interface_from_user(imp_iface, iface)) {
+        roc_log(LogError, "roc_receiver_bind: invalid arguments: bad interface");
         return -1;
     }
 
-    address::Protocol imp_proto;
-    if (!api::proto_from_user(imp_proto, proto)) {
-        roc_log(LogError, "roc_receiver_bind: invalid arguments: bad protocol");
-        return -1;
-    }
-
-    if (!imp_receiver->bind(imp_iface, imp_proto, imp_address)) {
-        roc_log(LogError, "roc_receiver_bind: bind failed");
+    if (!imp_receiver->bind(imp_iface, imp_endpoint)) {
+        roc_log(LogError, "roc_receiver_bind: operation failed");
         return -1;
     }
 

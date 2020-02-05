@@ -7,8 +7,8 @@
  */
 
 /**
- * @file roc/config.h
- * @brief Configuration options.
+ * \file roc/config.h
+ * \brief Constants and configs.
  */
 
 #ifndef ROC_CONFIG_H_
@@ -18,63 +18,183 @@
 extern "C" {
 #endif
 
-/** Network port type. */
-typedef enum roc_port_type {
-    /** Network port for audio source packets.
-     * If FEC is not used, this type of port is used to send or receive audio packets.
-     * If FEC is used, this type of port is used to send or receive FEC source packets
-     * containing audio data plus some FEC headers.
+/** Network interface.
+ *
+ * Interface is a way to access the peer via network.
+ *
+ * A peer has multiple interfaces, one of each type. The user interconnects peers by
+ * binding one of the first peer's interfaces to an URI and then connecting the
+ * corresponding second peer's interface to that URI.
+ *
+ * A URI is represented by \ref roc_endpoint object.
+ *
+ * The interface defines the type of the communication with the remote peer and the
+ * set of protocols (URI schemes) that can be used with this particular interface.
+ *
+ * \c ROC_INTERFACE_AGGREGATE is a high-level interface, aggregating several lower-level
+ * interfaces. When an aggragate connection is established, peers negotiate connection
+ * parameters and automatically setup lower-level \c ROC_INTERFACE_AUDIO_SOURCE and
+ * \c ROC_INTERFACE_AUDIO_REPAIR interfaces.
+ *
+ * \c ROC_INTERFACE_AUDIO_SOURCE and \c ROC_INTERFACE_AUDIO_REPAIR are lower-level
+ * unidirectional transport-only interfaces. The first is used to transmit audio stream,
+ * and the second is used to transmit redundant repair stream, if FEC is enabled.
+ *
+ * In most cases, the user needs only \c ROC_INTERFACE_AGGREGATE. The lower-level
+ * intarfaces may be useful if an external signaling mechanism is used or for
+ * compatibility with third-party software.
+ */
+typedef enum roc_interface {
+    /** Interface aggregating source, repair, and control data of an audio stream.
+     *
+     * Allowed operations:
+     *  - bind    (sender, receiver)
+     *  - connect (sender, receiver)
+     *
+     * Allowed protocols:
+     *  - \ref ROC_PROTO_RTSP
      */
-    ROC_PORT_AUDIO_SOURCE = 1,
+    ROC_INTERFACE_AGGREGATE = 1,
 
-    /** Network port for audio repair packets.
-     * If FEC is used, this type of port is used to send or receive FEC repair packets
-     * containing redundant data for audio plus some FEC headers.
+    /** Interface for audio stream source data.
+     *
+     * Allowed operations:
+     *  - bind    (receiver)
+     *  - connect (sender)
+     *
+     * Allowed protocols:
+     *  - \ref ROC_PROTO_RTP
+     *  - \ref ROC_PROTO_RTP_RS8M_SOURCE
+     *  - \ref ROC_PROTO_RTP_LDPC_SOURCE
      */
-    ROC_PORT_AUDIO_REPAIR = 2
-} roc_port_type;
+    ROC_INTERFACE_AUDIO_SOURCE = 11,
 
-/** Network protocol. */
+    /** Interface for audio stream repair data.
+     *
+     * Allowed operations:
+     *  - bind    (receiver)
+     *  - connect (sender)
+     *
+     * Allowed protocols:
+     *  - \ref ROC_PROTO_RS8M_REPAIR
+     *  - \ref ROC_PROTO_LDPC_REPAIR
+     */
+    ROC_INTERFACE_AUDIO_REPAIR = 12
+} roc_interface;
+
+/** Network protocol.
+ *
+ * Defines URI scheme of \ref roc_endpoint.
+ */
 typedef enum roc_protocol {
-    /** Bare RTP (RFC 3550). */
-    ROC_PROTO_RTP = 1,
+    /** RTSP 1.0 (RFC 2326) or RTSP 2.0 (RFC 7826).
+     *
+     * Interfaces:
+     *  - \ref ROC_INTERFACE_AGGREGATE
+     *
+     * Transports:
+     *   - for signaling: TCP
+     *   - for media: RTP and RTCP over UDP or TCP
+     */
+    ROC_PROTO_RTSP = 10,
+
+    /** RTP over UDP (RFC 3550).
+     *
+     * Interfaces:
+     *  - \ref ROC_INTERFACE_AUDIO_SOURCE
+     *
+     * Transports:
+     *  - UDP
+     *
+     * Audio encodings:
+     *   - \ref ROC_PACKET_ENCODING_AVP_L16
+     *
+     * FEC codes:
+     *   - none
+     */
+    ROC_PROTO_RTP = 30,
 
     /** RTP source packet (RFC 3550) + FECFRAME Reed-Solomon footer (RFC 6865) with m=8.
+     *
+     * Interfaces:
+     *  - \ref ROC_INTERFACE_AUDIO_SOURCE
+     *
+     * Transports:
+     *  - UDP
+     *
+     * Audio encodings:
+     *  - similar to \ref ROC_PROTO_RTP
+     *
+     * FEC codes:
+     *  - \ref ROC_FEC_RS8M
      */
-    ROC_PROTO_RTP_RS8M_SOURCE = 2,
+    ROC_PROTO_RTP_RS8M_SOURCE = 81,
 
-    /** FEC repair packet + FECFRAME Reed-Solomon header (RFC 6865) with m=8. */
-    ROC_PROTO_RS8M_REPAIR = 3,
+    /** FEC repair packet + FECFRAME Reed-Solomon header (RFC 6865) with m=8.
+     *
+     * Interfaces:
+     *  - \ref ROC_INTERFACE_AUDIO_REPAIR
+     *
+     * Transports:
+     *  - UDP
+     *
+     * FEC codes:
+     *  - \ref ROC_FEC_RS8M
+     */
+    ROC_PROTO_RS8M_REPAIR = 82,
 
-    /** RTP source packet (RFC 3550) + FECFRAME LDPC-Staircase footer (RFC 6816). */
-    ROC_PROTO_RTP_LDPC_SOURCE = 4,
+    /** RTP source packet (RFC 3550) + FECFRAME LDPC-Staircase footer (RFC 6816).
+     *
+     * Interfaces:
+     *  - \ref ROC_INTERFACE_AUDIO_SOURCE
+     *
+     * Transports:
+     *  - UDP
+     *
+     * Audio encodings:
+     *  - similar to \ref ROC_PROTO_RTP
+     *
+     * FEC codes:
+     *  - \ref ROC_FEC_LDPC_STAIRCASE
+     */
+    ROC_PROTO_RTP_LDPC_SOURCE = 83,
 
-    /** FEC repair packet + FECFRAME LDPC-Staircase header (RFC 6816). */
-    ROC_PROTO_LDPC_REPAIR = 5
+    /** FEC repair packet + FECFRAME LDPC-Staircase header (RFC 6816).
+     *
+     * Interfaces:
+     *  - \ref ROC_INTERFACE_AUDIO_REPAIR
+     *
+     * Transports:
+     *  - UDP
+     *
+     * FEC codes:
+     *  - \ref ROC_FEC_LDPC_STAIRCASE
+     */
+    ROC_PROTO_LDPC_REPAIR = 84
 } roc_protocol;
 
 /** Forward Error Correction code. */
 typedef enum roc_fec_code {
     /** No FEC code.
-     * Compatible with @c ROC_PROTO_RTP protocol.
+     * Compatible with \ref ROC_PROTO_RTP protocol.
      */
     ROC_FEC_DISABLE = -1,
 
     /** Default FEC code.
-     * Current default is @c ROC_FEC_RS8M.
+     * Current default is \ref ROC_FEC_RS8M.
      */
     ROC_FEC_DEFAULT = 0,
 
     /** Reed-Solomon FEC code (RFC 6865) with m=8.
      * Good for small block sizes (below 256 packets).
-     * Compatible with @c ROC_PROTO_RTP_RS8M_SOURCE and @c ROC_PROTO_RS8M_REPAIR
+     * Compatible with \ref ROC_PROTO_RTP_RS8M_SOURCE and \ref ROC_PROTO_RS8M_REPAIR
      * protocols for source and repair ports.
      */
     ROC_FEC_RS8M = 1,
 
     /** LDPC-Staircase FEC code (RFC 6816).
      * Good for large block sizes (above 1024 packets).
-     * Compatible with @c ROC_PROTO_RTP_LDPC_SOURCE and @c ROC_PROTO_LDPC_REPAIR
+     * Compatible with \ref ROC_PROTO_RTP_LDPC_SOURCE and \ref ROC_PROTO_LDPC_REPAIR
      * protocols for source and repair ports.
      */
     ROC_FEC_LDPC_STAIRCASE = 2
@@ -113,7 +233,7 @@ typedef enum roc_resampler_profile {
     ROC_RESAMPLER_DISABLE = -1,
 
     /** Default profile.
-     * Current default is @c ROC_RESAMPLER_MEDIUM.
+     * Current default is \c ROC_RESAMPLER_MEDIUM.
      */
     ROC_RESAMPLER_DEFAULT = 0,
 
@@ -143,7 +263,11 @@ typedef enum roc_clock_source {
 } roc_clock_source;
 
 /** Context configuration.
- * @see roc_context
+ *
+ * It is safe to memset() this struct with zeros to get a default config. It is also
+ * safe to memcpy() this struct to get a copy of config.
+ *
+ * \see roc_context
  */
 typedef struct roc_context_config {
     /** Maximum size in bytes of a network packet.
@@ -162,12 +286,16 @@ typedef struct roc_context_config {
 } roc_context_config;
 
 /** Sender configuration.
- * @see roc_sender
+ *
+ * It is safe to memset() this struct with zeros to get a default config. It is also
+ * safe to memcpy() this struct to get a copy of config.
+ *
+ * \see roc_sender
  */
 typedef struct roc_sender_config {
     /** The rate of the samples in the frames passed to sender.
      * Number of samples per channel per second.
-     * If @c frame_sample_rate and @c packet_sample_rate are different,
+     * If \c frame_sample_rate and \c packet_sample_rate are different,
      * resampler should be enabled.
      * Should be set.
      */
@@ -249,7 +377,11 @@ typedef struct roc_sender_config {
 } roc_sender_config;
 
 /** Receiver configuration.
- * @see roc_receiver
+ *
+ * It is safe to memset() this struct with zeros to get a default config. It is also
+ * safe to memcpy() this struct to get a copy of config.
+ *
+ * \see roc_receiver
  */
 typedef struct roc_receiver_config {
     /** The rate of the samples in the frames returned to the user.
@@ -316,7 +448,7 @@ typedef struct roc_receiver_config {
     /** Timeout for broken playback, in nanoseconds.
      * If there the playback is considered broken during this period, the session
      * is terminated. The playback is broken if there is a breakage detected at every
-     * @c breakage_detection_window during @c broken_playback_timeout.
+     * \c breakage_detection_window during \c broken_playback_timeout.
      * This mechanism allows to detect vicious circles like when all client packets
      * are a bit late and receiver constantly drops them producing unpleasant noise.
      * If zero, default value is used. If negative, the timeout is disabled.
@@ -325,7 +457,7 @@ typedef struct roc_receiver_config {
 
     /** Breakage detection window, in nanoseconds.
      * If zero, default value is used.
-     * @see broken_playback_timeout.
+     * \see broken_playback_timeout.
      */
     unsigned long long breakage_detection_window;
 } roc_receiver_config;
