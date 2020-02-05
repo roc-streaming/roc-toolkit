@@ -7,6 +7,8 @@
  */
 
 #include "roc_peer/receiver.h"
+#include "roc_address/endpoint_uri_to_str.h"
+#include "roc_address/socket_addr.h"
 #include "roc_address/socket_addr_to_str.h"
 #include "roc_core/helpers.h"
 #include "roc_core/log.h"
@@ -82,15 +84,25 @@ bool Receiver::set_multicast_group(address::Interface iface, const char* ip) {
     return true;
 }
 
-bool Receiver::bind(address::Interface iface,
-                    address::Protocol proto,
-                    address::SocketAddr& address) {
+bool Receiver::bind(address::Interface iface, address::EndpointURI& uri) {
     core::Mutex::Lock lock(mutex_);
 
     roc_panic_if_not(valid());
 
+    if (!uri.check(address::EndpointURI::Subset_Full)) {
+        roc_log(LogError, "receiver peer: invalid uri");
+        return false;
+    }
+
+    address::SocketAddr address;
+    if (!context_.event_loop().resolve_endpoint_address(uri, address)) {
+        roc_log(LogError, "receiver peer: can't resolve %s interface address",
+                address::interface_to_str(iface));
+        return false;
+    }
+
     packet::IWriter* endpoint_writer =
-        pipeline_.add_endpoint(endpoint_set_, iface, proto);
+        pipeline_.add_endpoint(endpoint_set_, iface, uri.proto());
     if (!endpoint_writer) {
         roc_log(LogError, "receiver peer: can't add %s endpoint to pipeline",
                 address::interface_to_str(iface));
@@ -108,11 +120,12 @@ bool Receiver::bind(address::Interface iface,
         return false;
     }
 
-    address = ports_[iface].config.bind_address;
+    if (uri.port() == 0) {
+        uri.set_port(ports_[iface].config.bind_address.port());
+    }
 
-    roc_log(LogInfo, "receiver peer: bound %s interface to %s:%s",
-            address::interface_to_str(iface), address::proto_to_str(proto),
-            address::socket_addr_to_str(address).c_str());
+    roc_log(LogInfo, "receiver peer: bound %s interface to %s",
+            address::interface_to_str(iface), address::endpoint_uri_to_str(uri).c_str());
 
     return true;
 }
