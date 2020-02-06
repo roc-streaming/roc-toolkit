@@ -29,9 +29,6 @@ const char* interface_to_str(Interface iface) {
     case Iface_AudioControl:
         return "control";
 
-    case Iface_AudioCombined:
-        return "combined";
-
     case Iface_Max:
         break;
     }
