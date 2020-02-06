@@ -263,23 +263,28 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    if (args.broadcast_given) {
-        if (!sender.set_broadcast_enabled(address::Iface_AudioCombined, true)) {
-            roc_log(LogError, "can't enable broadcast");
-            return 1;
-        }
-    }
-
     if (args.source_given) {
+        if (args.broadcast_given) {
+            if (!sender.set_broadcast_enabled(address::Iface_AudioSource, true)) {
+                roc_log(LogError, "can't enable broadcast");
+                return 1;
+            }
+        }
         if (!sender.connect(address::Iface_AudioSource, source_endpoint)) {
-            roc_log(LogError, "can't connect sender to remote source port");
+            roc_log(LogError, "can't connect sender to source endpoint");
             return 1;
         }
     }
 
     if (args.repair_given) {
+        if (args.broadcast_given) {
+            if (!sender.set_broadcast_enabled(address::Iface_AudioRepair, true)) {
+                roc_log(LogError, "can't enable broadcast");
+                return 1;
+            }
+        }
         if (!sender.connect(address::Iface_AudioRepair, repair_endpoint)) {
-            roc_log(LogError, "can't connect sender to remote repair port");
+            roc_log(LogError, "can't connect sender to repair endpoint");
             return 1;
         }
     }
