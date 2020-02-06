@@ -14,23 +14,23 @@ Read audio stream from a file, transform it, and and write it to a another file.
 Options
 -------
 
--h, --help                Print help and exit
--V, --version             Print version and exit
--v, --verbose             Increase verbosity level (may be used multiple times)
--L, --list-supported      list supported schemes and formats
--i, --input=FILE_URI      Input file URI
--o, --output=FILE_URI     Output file URI
---input-format=FORMAT     Force input file format
---output-format=FORMAT    Force output file format
---frame-size=INT          Internal frame size, number of samples
--r, --rate=INT            Output sample rate, Hz
---no-resampling           Disable resampling  (default=off)
---resampler-backend=ENUM  Resampler backend  (possible values="builtin" default=`builtin')
---resampler-profile=ENUM  Resampler profile  (possible values="low", "medium", "high" default=`medium')
---resampler-interp=INT    Resampler sinc table precision
---resampler-window=INT    Number of samples per resampler window
---poisoning               Enable uninitialized memory poisoning (default=off)
---color=ENUM              Set colored logging mode for stderr output (possible values="auto", "always", "never" default=`auto')
+-h, --help                   Print help and exit
+-V, --version                Print version and exit
+-v, --verbose                Increase verbosity level (may be used multiple times)
+-L, --list-supported         list supported schemes and formats
+-i, --input=FILE_URI         Input file URI
+-o, --output=FILE_URI        Output file URI
+--input-format=FILE_FORMAT   Force input file format
+--output-format=FILE_FORMAT  Force output file format
+--frame-size=INT             Internal frame size, number of samples
+-r, --rate=INT               Output sample rate, Hz
+--no-resampling              Disable resampling  (default=off)
+--resampler-backend=ENUM     Resampler backend  (possible values="builtin" default=`builtin')
+--resampler-profile=ENUM     Resampler profile  (possible values="low", "medium", "high" default=`medium')
+--resampler-interp=INT       Resampler sinc table precision
+--resampler-window=INT       Number of samples per resampler window
+--poisoning                  Enable uninitialized memory poisoning (default=off)
+--color=ENUM                 Set colored logging mode for stderr output (possible values="auto", "always", "never" default=`auto')
 
 File URI
 --------
