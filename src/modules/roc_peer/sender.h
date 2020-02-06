@@ -38,6 +38,9 @@ public:
     //! Check if successfully constructed.
     bool valid() const;
 
+    //! Enable or disable port squashing.
+    bool set_squashing_enabled(bool);
+
     //! Enable or disable traffic to broadcast addresses.
     bool set_broadcast_enabled(address::Interface iface, bool enabled);
 
@@ -56,20 +59,20 @@ public:
 private:
     struct InterfacePort {
         netio::UdpSenderConfig config;
+        netio::UdpSenderConfig orig_config;
         netio::EventLoop::PortHandle handle;
         packet::IWriter* writer;
-        bool is_set;
 
         InterfacePort()
             : handle(NULL)
-            , writer(NULL)
-            , is_set(false) {
+            , writer(NULL) {
         }
     };
 
-    address::Interface select_outgoing_iface_(address::Interface);
-    InterfacePort* setup_outgoing_iface_(address::Interface iface,
-                                         address::AddrFamily family);
+    InterfacePort& select_outgoing_port_(address::Interface, address::AddrFamily family);
+    bool setup_outgoing_port_(InterfacePort& port,
+                              address::Interface iface,
+                              address::AddrFamily family);
 
     core::Mutex mutex_;
 
@@ -82,6 +85,8 @@ private:
     pipeline::SenderSink::EndpointHandle repair_endpoint_;
 
     InterfacePort ports_[address::Iface_Max];
+
+    bool squashing_enabled_;
 };
 
 } // namespace peer
