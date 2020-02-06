@@ -5,6 +5,30 @@ Changelog
    :local:
    :depth: 1
 
+Version 0.1.4 (Feb 6, 2020)
+===========================
+
+Internals
+---------
+
+* fix logging
+
+Building
+--------
+
+* make ``/usr/local`` prefix default everywhere except Linux
+* make default compiler consistent with CXX var
+* fix handling of RAGEL, GENGETOPT, DOXYGEN, SPHINX_BUILD, and BREATHE_APIDOC vars
+* fix SoX download URL (again)
+* fix CPU count calculation
+
+Documentation
+-------------
+
+* update PulseAudio version numbers in "User cookbook"
+* update CONTRIBUTING and "Coding guidelines"
+* update maintainers and contributors list
+
 Version 0.1.3 (Oct 21, 2019)
 ============================
 
