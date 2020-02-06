@@ -24,9 +24,10 @@ Sender::Sender(Context& context, const pipeline::SenderConfig& pipeline_config)
                 context_.byte_buffer_pool(),
                 context_.sample_buffer_pool(),
                 context_.allocator())
-    , endpoint_set_(0)
-    , source_endpoint_(0)
-    , repair_endpoint_(0) {
+    , endpoint_set_(NULL)
+    , source_endpoint_(NULL)
+    , repair_endpoint_(NULL)
+    , squashing_enabled_(true) {
     roc_log(LogDebug, "sender peer: initializing");
 
     if (!pipeline_.valid()) {
@@ -50,6 +51,18 @@ bool Sender::valid() const {
     return endpoint_set_;
 }
 
+bool Sender::set_squashing_enabled(bool enabled) {
+    core::Mutex::Lock lock(mutex_);
+
+    roc_panic_if_not(valid());
+
+    squashing_enabled_ = enabled;
+
+    roc_log(LogDebug, "sender peer: setting squashing to %d", (int)enabled);
+
+    return true;
+}
+
 bool Sender::set_broadcast_enabled(address::Interface iface, bool enabled) {
     core::Mutex::Lock lock(mutex_);
 
@@ -68,7 +81,6 @@ bool Sender::set_broadcast_enabled(address::Interface iface, bool enabled) {
     }
 
     ports_[iface].config.broadcast_enabled = enabled;
-    ports_[iface].is_set = true;
 
     roc_log(LogDebug, "sender peer: setting %s interface broadcast flag to %d",
             address::interface_to_str(iface), (int)enabled);
@@ -112,8 +124,6 @@ bool Sender::set_outgoing_address(address::Interface iface, const char* ip) {
         return false;
     }
 
-    ports_[iface].is_set = true;
-
     roc_log(LogDebug, "sender peer: setting %s interface outgoing address to %s",
             address::interface_to_str(iface), ip);
 
@@ -137,10 +147,9 @@ bool Sender::connect(address::Interface iface, const address::EndpointURI& uri) 
         return false;
     }
 
-    address::Interface outgoing_iface = select_outgoing_iface_(iface);
+    InterfacePort& port = select_outgoing_port_(iface, address.family());
 
-    InterfacePort* port = setup_outgoing_iface_(outgoing_iface, address.family());
-    if (!port) {
+    if (!setup_outgoing_port_(port, iface, address.family())) {
         roc_log(LogError, "sender peer: can't bind %s interface to local port",
                 address::interface_to_str(iface));
         return false;
@@ -156,7 +165,7 @@ bool Sender::connect(address::Interface iface, const address::EndpointURI& uri) 
     }
 
     pipeline_.set_endpoint_destination_udp_address(endpoint, address);
-    pipeline_.set_endpoint_output_writer(endpoint, *port->writer);
+    pipeline_.set_endpoint_output_writer(endpoint, *port.writer);
 
     if (iface == address::Iface_AudioSource) {
         source_endpoint_ = endpoint;
@@ -184,18 +193,37 @@ sndio::ISink& Sender::sink() {
     return pipeline_;
 }
 
-address::Interface Sender::select_outgoing_iface_(address::Interface iface) {
-    if (ports_[iface].is_set) {
-        return iface;
+Sender::InterfacePort& Sender::select_outgoing_port_(address::Interface iface,
+                                                     address::AddrFamily family) {
+    if (!ports_[iface].handle && squashing_enabled_) {
+        for (size_t i = 0; i < ROC_ARRAY_SIZE(ports_); i++) {
+            if ((int)i == iface) {
+                continue;
+            }
+            if (!ports_[i].handle) {
+                continue;
+            }
+            if (!(ports_[i].orig_config == ports_[iface].config)) {
+                continue;
+            }
+            if (!(ports_[i].config.bind_address.family() == family)) {
+                continue;
+            }
+
+            roc_log(LogInfo, "sender peer: reusing %s interface port for %s interface",
+                    address::interface_to_str(address::Interface(i)),
+                    address::interface_to_str(iface));
+
+            return ports_[i];
+        }
     }
 
-    return address::Iface_AudioCombined;
+    return ports_[iface];
 }
 
-Sender::InterfacePort* Sender::setup_outgoing_iface_(address::Interface iface,
-                                                     address::AddrFamily family) {
-    InterfacePort& port = ports_[iface];
-
+bool Sender::setup_outgoing_port_(InterfacePort& port,
+                                  address::Interface iface,
+                                  address::AddrFamily family) {
     if (port.config.bind_address.has_host_port()) {
         if (port.config.bind_address.family() != family) {
             roc_log(LogError,
@@ -205,32 +233,33 @@ Sender::InterfacePort* Sender::setup_outgoing_iface_(address::Interface iface,
                     address::interface_to_str(iface),
                     address::addr_family_to_str(port.config.bind_address.family()),
                     address::addr_family_to_str(family));
-            return NULL;
+            return false;
         }
     }
 
-    if (port.handle) {
-        return &port;
-    }
-
-    if (!port.config.bind_address.has_host_port()) {
-        if (family == address::Family_IPv4) {
-            port.config.bind_address.set_host_port(address::Family_IPv4, "0.0.0.0", 0);
-        } else {
-            port.config.bind_address.set_host_port(address::Family_IPv6, "::", 0);
-        }
-    }
-
-    port.handle = context_.event_loop().add_udp_sender(port.config, &port.writer);
     if (!port.handle) {
-        return NULL;
+        port.orig_config = port.config;
+
+        if (!port.config.bind_address.has_host_port()) {
+            if (family == address::Family_IPv4) {
+                port.config.bind_address.set_host_port(address::Family_IPv4, "0.0.0.0",
+                                                       0);
+            } else {
+                port.config.bind_address.set_host_port(address::Family_IPv6, "::", 0);
+            }
+        }
+
+        port.handle = context_.event_loop().add_udp_sender(port.config, &port.writer);
+        if (!port.handle) {
+            return false;
+        }
+
+        roc_log(LogInfo, "sender peer: bound %s interface to %s",
+                address::interface_to_str(iface),
+                address::socket_addr_to_str(port.config.bind_address).c_str());
     }
 
-    roc_log(LogInfo, "sender peer: bound %s interface to %s",
-            address::interface_to_str(iface),
-            address::socket_addr_to_str(port.config.bind_address).c_str());
-
-    return &port;
+    return true;
 }
 
 } // namespace peer
