@@ -9,34 +9,66 @@ SYNOPSIS
 DESCRIPTION
 ===========
 
-Send real-time audio stream from a file or an audio device to a remote receiver.
+Read audio stream from an audio device or file and send it to remote receiver.
 
 Options
 -------
 
--h, --help                Print help and exit
--V, --version             Print version and exit
--v, --verbose             Increase verbosity level (may be used multiple times)
--L, --list-supported      list supported schemes and formats
--i, --input=IO_URI        Input file or device URI
---input-format=FORMAT     Force input file format
--s, --source=PORT         Remote source port triplet
--r, --repair=PORT         Remote repair port triplet
---broadcast               Allow broadcast destination port addresses (default=off)
---nbsrc=INT               Number of source packets in FEC block
---nbrpr=INT               Number of repair packets in FEC block
---packet-length=STRING    Outgoing packet length, TIME units
---packet-limit=INT        Maximum packet size, in bytes
---frame-size=INT          Internal frame size, number of samples
---rate=INT                Override input sample rate, Hz
---no-resampling           Disable resampling  (default=off)
---resampler-backend=ENUM  Resampler backend  (possible values="builtin" default=`builtin')
---resampler-profile=ENUM  Resampler profile  (possible values="low", "medium", "high" default=`medium')
---resampler-interp=INT    Resampler sinc table precision
---resampler-window=INT    Number of samples per resampler window
---interleaving            Enable packet interleaving  (default=off)
---poisoning               Enable uninitialized memory poisoning (default=off)
---color=ENUM              Set colored logging mode for stderr output (possible values="auto", "always", "never" default=`auto')
+-h, --help                  Print help and exit
+-V, --version               Print version and exit
+-v, --verbose               Increase verbosity level (may be used multiple times)
+-L, --list-supported        list supported schemes and formats
+-i, --input=IO_URI          Input file or device URI
+--input-format=FILE_FORMAT  Force input file format
+-s, --source=ENDPOINT_URI   Remote source endpoint
+-r, --repair=ENDPOINT_URI   Remote repair endpoint
+--broadcast                 Allow broadcast destination port addresses (default=off)
+--nbsrc=INT                 Number of source packets in FEC block
+--nbrpr=INT                 Number of repair packets in FEC block
+--packet-length=STRING      Outgoing packet length, TIME units
+--packet-limit=INT          Maximum packet size, in bytes
+--frame-size=INT            Internal frame size, number of samples
+--rate=INT                  Override input sample rate, Hz
+--no-resampling             Disable resampling  (default=off)
+--resampler-backend=ENUM    Resampler backend  (possible values="builtin" default=`builtin')
+--resampler-profile=ENUM    Resampler profile  (possible values="low", "medium", "high" default=`medium')
+--resampler-interp=INT      Resampler sinc table precision
+--resampler-window=INT      Number of samples per resampler window
+--interleaving              Enable packet interleaving  (default=off)
+--poisoning                 Enable uninitialized memory poisoning (default=off)
+--color=ENUM                Set colored logging mode for stderr output (possible values="auto", "always", "never" default=`auto')
+
+Endpoint URI
+------------
+
+``--source`` and ``--repair`` options define network endpoints to which to send the traffic.
+
+*ENDPOINT_URI* should have the following form:
+
+``protocol://host[:port][/path][?query][#fragment]``
+
+Examples:
+
+- ``rtsp://localhost:123/path?query#frag``
+- ``rtp+rs8m://localhost:123``
+- ``rtp://127.0.0.1:123``
+- ``rtp://[::1]:123``
+
+The list of supported protocols can be retrieved using ``--list-supported`` option.
+
+The host field should be either FQDN (domain name), or IPv4 address, or IPv6 address in square brackets.
+
+The port field can be omitted if the protocol defines standard port. Otherwise, it is mandatory.
+
+The path, query, and fragment fields are allowed only for protocols that support them, e.g. for RTSP.
+
+If FEC is enabled, a pair of a source and repair endpoints should be provided. The two endpoints should use compatible protocols, e.g. ``rtp+rs8m://`` for source endpoint, and ``rs8m://`` for repair endpoint. If FEC is disabled, a single source endpoint should be provided.
+
+Supported configurations:
+
+- source ``rtp://``, repair none (bare RTP without FEC)
+- source ``rtp+rs8m://``, repair ``rs8m://`` (RTP with Reed-Solomon FEC)
+- source ``rtp+ldpc://``, repair ``ldpc://`` (RTP with LDPC-Staircase FEC)
 
 IO URI
 ------
@@ -73,31 +105,10 @@ The path component of the provided URI is `percent-decoded <https://en.wikipedia
 
 For example, the file named ``/foo/bar%/[baz]`` may be specified using either of the following URIs: ``file:///foo%2Fbar%25%2F%5Bbaz%5D`` and ``file:///foo/bar%25/[baz]``.
 
-Port
-----
+Broadcast address
+-----------------
 
-*PORT* should be in one of the following forms:
-
-- ``protocol:ipv4addr:portnum``
-- ``protocol:[ipv6addr]:portnum``
-
-For example:
-
-- rtp+rs8m:127.0.0.1:10001
-- rtp+rs8m:[::1]:10001
-
-If FEC is enabled on sender, a pair of a source and repair ports should be used for communication between sender and receiver. If FEC is disabled, a single source port should be used instead.
-
-Supported protocols for source ports:
-
-- rtp (bare RTP, no FEC scheme)
-- rtp+rs8m (RTP + Reed-Solomon m=8 FEC scheme)
-- rtp+ldpc (RTP + LDPC-Starircase FEC scheme)
-
-Supported protocols for repair ports:
-
-- rs8m (Reed-Solomon m=8 FEC scheme)
-- ldpc (LDPC-Starircase FEC scheme)
+This tool follows the common convention is to forbid traffic to broadcast addresses unless allowed excplicitly, to prevent accidental flood. To allow sending packets to broadcast source or repair endpoints, use ``--broadcast`` option.
 
 Time units
 ----------
@@ -108,85 +119,99 @@ Time units
 EXAMPLES
 ========
 
-Send WAV file:
+Endpoint examples
+-----------------
+
+Send file to one bare RTP endpoint:
 
 .. code::
 
-    $ roc-send -vv -i file:./input.wav -s rtp+rs8m:192.168.0.3:10001 -r rs8m:192.168.0.3:10002
+    $ roc-send -vv -i file:./input.wav -s rtp://192.168.0.3:10001
 
-Send WAV file to an IPv6 receiver:
-
-.. code::
-
-    $ roc-send -vv -i file:./input.wav -s rtp+rs8m:[2001:db8::]:10001 -r rs8m:[2001:db8::]:10002
-
-Send WAV file to a broadcast address:
+Send file to two IPv4 source and repair endpoints:
 
 .. code::
 
-    $ roc-send -vv -i file:./input.wav -s rtp+rs8m:192.168.0.255:10001 -r rs8m:192.168.0.255:10002 --broadcast
+    $ roc-send -vv -i file:./input.wav -s rtp+rs8m://192.168.0.3:10001 -r rs8m://192.168.0.3:10002
 
-Send WAV from stdin:
-
-.. code::
-
-    $ roc-send -vv -i file:- --input-format wav \
-      -s rtp+rs8m:192.168.0.3:10001 -r rs8m:192.168.0.3:10002 < ./input.wav
-
-Send WAV file, specify full URI:
+Send file to two IPv6 source and repair endpoints:
 
 .. code::
 
-    $ roc-send -vv -i file:///home/user/input.wav -s rtp+rs8m:192.168.0.3:10001 -r rs8m:192.168.0.3:10002
+    $ roc-send -vv -i file:./input.wav -s rtp+rs8m://[2001:db8::]:10001 -r rs8m://[2001:db8::]:10002
 
-Capture sound from the default audio device:
+Send file to two broadcast endpoints:
 
 .. code::
 
-    $ roc-send -vv -s rtp+rs8m:192.168.0.3:10001 -r rs8m:192.168.0.3:10002
+    $ roc-send -vv -i file:./input.wav -s rtp+rs8m://192.168.0.3:10001 -r rs8m://192.168.0.3:10002 --broadcast
+
+I/O examples
+------------
+
+Capture sound from the default device (omit ``-i``):
+
+.. code::
+
+    $ roc-send -vv -s rtp://192.168.0.3:10001
 
 Capture sound from the default ALSA device:
 
 .. code::
 
-    $ roc-send -vv -i alsa://default -s rtp+rs8m:192.168.0.3:10001 -r rs8m:192.168.0.3:10002
+    $ roc-send -vv -s rtp://192.168.0.3:10001 -i alsa://default
 
 Capture sound from a specific PulseAudio device:
 
 .. code::
 
-    $ roc-send -vv -i pulse://alsa_input.pci-0000_00_1f.3.analog-stereo \
-      -s rtp+rs8m:192.168.0.3:10001 -r rs8m:192.168.0.3:10002
+    $ roc-send -vv -s rtp://192.168.0.3:10001 -i pulse://alsa_input.pci-0000_00_1f.3.analog-stereo
+
+Send WAV file, specify format manually:
+
+.. code::
+
+    $ roc-send -vv -s rtp://192.168.0.3:10001 -i file:./input --input-format wav
+
+Send WAV from stdin:
+
+.. code::
+
+    $ roc-send -vv -s rtp://192.168.0.3:10001 -i file:- --input-format wav <./input.wav
+
+Send WAV file, specify full URI:
+
+.. code::
+
+    $ roc-send -vv -s rtp://192.168.0.3:10001 -i file:///home/user/input.wav
+
+Tuning examples
+---------------
 
 Force a specific rate on the input device:
 
 .. code::
 
-    $ roc-send -vv --rate=44100 -s rtp+rs8m:192.168.0.3:10001 -r rs8m:192.168.0.3:10002
+    $ roc-send -vv -s rtp://192.168.0.3:10001 --rate=44100
 
 Select the LDPC-Staircase FEC scheme and a larger block size:
 
 .. code::
 
-    $ roc-send -vv -i file:./input.wav -s rtp+ldpc:192.168.0.3:10003 -r ldpc:192.168.0.3:10004 \
+    $ roc-send -vv -i file:./input.wav \
+        -s rtp+ldpc://192.168.0.3:10001 -r ldpc://192.168.0.3:10002 \
         --nbsrc=1000 --nbrpr=500
-
-Select bare RTP without FEC:
-
-.. code::
-
-    $ roc-send -vv -i file:./input.wav -s rtp:192.168.0.3:10005
 
 Select resampler profile:
 
 .. code::
 
-    $ roc-send -vv --resampler-profile=high -s rtp+rs8m:192.168.0.3:10001 -r rs8m:192.168.0.3:10002
+    $ roc-send -vv -s rtp://192.168.0.3:10001 --resampler-profile=high
 
 SEE ALSO
 ========
 
-:manpage:`roc-recv(1)`, :manpage:`roc-conv(1)`, :manpage:`sox(1)`, the Roc web site at https://roc-project.github.io/
+:manpage:`roc-recv(1)`, and the Roc web site at https://roc-project.github.io/
 
 BUGS
 ====
