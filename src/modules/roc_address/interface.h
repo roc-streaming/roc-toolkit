@@ -32,10 +32,6 @@ enum Interface {
     //! Control packets of audio stream.
     Iface_AudioControl,
 
-    //! Outgoing interface to send source, repair, and control
-    //! packets of audio stream.
-    Iface_AudioCombined,
-
     //! Number of interfaces.
     Iface_Max
 };
