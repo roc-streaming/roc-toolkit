@@ -9,41 +9,73 @@ SYNOPSIS
 DESCRIPTION
 ===========
 
-Receive real-time audio streams from remote senders and write them to a file or an audio device.
+Receive audio streams from remote senders and write them to an audio device or file.
 
 Options
 -------
 
--h, --help                Print help and exit
--V, --version             Print version and exit
--v, --verbose             Increase verbosity level (may be used multiple times)
--L, --list-supported      list supported schemes and formats
--o, --output=IO_URI       Output file or device URI
---output-format=FORMAT    Force output file format
---backup=IO_URI           Backup file or device URI (if set, used when there are no sessions)
---backup-format=FORMAT    Force backup file format
--s, --source=PORT         Source port triplet
--r, --repair=PORT         Repair port triplet
---miface=IFACE_IP         IP address of the network interface on which to join the multicast group
---sess-latency=STRING     Session target latency, TIME units
---min-latency=STRING      Session minimum latency, TIME units
---max-latency=STRING      Session maximum latency, TIME units
---io-latency=STRING       Playback target latency, TIME units
---np-timeout=STRING       Session no playback timeout, TIME units
---bp-timeout=STRING       Session broken playback timeout, TIME units
---bp-window=STRING        Session breakage detection window, TIME units
---packet-limit=INT        Maximum packet size, in bytes
---frame-size=INT          Internal frame size, number of samples
---rate=INT                Override output sample rate, Hz
---no-resampling           Disable resampling  (default=off)
---resampler-backend=ENUM  Resampler backend  (possible values="builtin" default=`builtin')
---resampler-profile=ENUM  Resampler profile  (possible values="low", "medium", "high" default=`medium')
---resampler-interp=INT    Resampler sinc table precision
---resampler-window=INT    Number of samples per resampler window
--1, --oneshot             Exit when last connected client disconnects (default=off)
---poisoning               Enable uninitialized memory poisoning (default=off)
---beeping                 Enable beeping on packet loss  (default=off)
---color=ENUM              Set colored logging mode for stderr output (possible values="auto", "always", "never" default=`auto')
+-h, --help                   Print help and exit
+-V, --version                Print version and exit
+-v, --verbose                Increase verbosity level (may be used multiple times)
+-L, --list-supported         list supported schemes and formats
+-o, --output=IO_URI          Output file or device URI
+--output-format=FILE_FORMAT  Force output file format
+--backup=IO_URI              Backup file or device URI (if set, used when there are no sessions)
+--backup-format=FILE_FORMAT  Force backup file format
+-s, --source=ENDPOINT_URI    Local source endpoint
+-r, --repair=ENDPOINT_URI    Local repair endpoint
+--miface=MIFACE              IPv4 or IPv6 address of the network interface on which to join the multicast group
+--sess-latency=STRING        Session target latency, TIME units
+--min-latency=STRING         Session minimum latency, TIME units
+--max-latency=STRING         Session maximum latency, TIME units
+--io-latency=STRING          Playback target latency, TIME units
+--np-timeout=STRING          Session no playback timeout, TIME units
+--bp-timeout=STRING          Session broken playback timeout, TIME units
+--bp-window=STRING           Session breakage detection window, TIME units
+--packet-limit=INT           Maximum packet size, in bytes
+--frame-size=INT             Internal frame size, number of samples
+--rate=INT                   Override output sample rate, Hz
+--no-resampling              Disable resampling  (default=off)
+--resampler-backend=ENUM     Resampler backend  (possible values="builtin" default=`builtin')
+--resampler-profile=ENUM     Resampler profile  (possible values="low", "medium", "high" default=`medium')
+--resampler-interp=INT       Resampler sinc table precision
+--resampler-window=INT       Number of samples per resampler window
+-1, --oneshot                Exit when last connected client disconnects (default=off)
+--poisoning                  Enable uninitialized memory poisoning (default=off)
+--beeping                    Enable beeping on packet loss  (default=off)
+--color=ENUM                 Set colored logging mode for stderr output (possible values="auto", "always", "never" default=`auto')
+
+Endpoint URI
+------------
+
+``--source`` and ``--repair`` options define network endpoints on which to receive the traffic.
+
+*ENDPOINT_URI* should have the following form:
+
+``protocol://host[:port][/path][?query][#fragment]``
+
+Examples:
+
+- ``rtsp://localhost:123/path?query#frag``
+- ``rtp+rs8m://localhost:123``
+- ``rtp://0.0.0.0:123``
+- ``rtp://[::1]:123``
+
+The list of supported protocols can be retrieved using ``--list-supported`` option.
+
+The host field should be either FQDN (domain name), or IPv4 address, or IPv6 address in square brackets. It may be ``0.0.0.0`` (for IPv4) or ``[::]`` (for IPv6) to bind endpoint to all network interfaces.
+
+The port field can be omitted if the protocol defines standard port. Otherwise, it is mandatory. It may be set to zero to bind endpoint to a radomly chosen ephemeral port.
+
+The path, query, and fragment fields are allowed only for protocols that support them, e.g. for RTSP.
+
+If FEC is enabled on sender, a pair of a source and repair endpoints should be provided. The two endpoints should use compatible protocols, e.g. ``rtp+rs8m://`` for source endpoint, and ``rs8m://`` for repair endpoint. If FEC is disabled, a single source endpoint should be provided.
+
+Supported configurations:
+
+- source ``rtp://``, repair none (bare RTP without FEC)
+- source ``rtp+rs8m://``, repair ``rs8m://`` (RTP with Reed-Solomon FEC)
+- source ``rtp+ldpc://``, repair ``ldpc://`` (RTP with LDPC-Staircase FEC)
 
 IO URI
 ------
@@ -81,34 +113,6 @@ The path component of the provided URI is `percent-decoded <https://en.wikipedia
 
 For example, the file named ``/foo/bar%/[baz]`` may be specified using either of the following URIs: ``file:///foo%2Fbar%25%2F%5Bbaz%5D`` and ``file:///foo/bar%25/[baz]``.
 
-Port
-----
-
-*PORT* should be in one of the following forms:
-
-- ``protocol::portnum`` (0.0.0.0 IP address is used)
-- ``protocol:ipv4addr:portnum``
-- ``protocol:[ipv6addr]:portnum``
-
-For example:
-
-- rtp+rs8m::10001
-- rtp+rs8m:127.0.0.1:10001
-- rtp+rs8m:[::1]:10001
-
-If FEC is enabled on sender, a pair of a source and repair ports should be used for communication between sender and receiver. If FEC is disabled, a single source port should be used instead.
-
-Supported protocols for source ports:
-
-- rtp (bare RTP, no FEC scheme)
-- rtp+rs8m (RTP + Reed-Solomon m=8 FEC scheme)
-- rtp+ldpc (RTP + LDPC-Starircase FEC scheme)
-
-Supported protocols for repair ports:
-
-- rs8m (Reed-Solomon m=8 FEC scheme)
-- ldpc (LDPC-Starircase FEC scheme)
-
 Backup audio
 ------------
 
@@ -119,9 +123,11 @@ Backup file is restarted from the beginning each time when the last session disc
 Multicast interface
 -------------------
 
-*IFACE_IP* should be an IP address of the network interface on which to join the multicast group. It may be "0.0.0.0" (for IPv4) or "[::]" (for IPv6) to join the multicast group on all available interfaces.
+If ``--miface`` option is present, it defines an IP address of the network interface on which to join the multicast group. If not present, no multicast group should be joined.
 
-If *IFACE_IP* is not specified and multicast address is used, the user is responsible for joining the multicast group manually.
+It's not possible to receive multicast traffic without joining a multicast group. The user should either provide multicast interface, or join the group manually using foreign tools.
+
+*MIFACE* should be an IP address of the network interface on which to join the multicast group. It may be ``0.0.0.0`` (for IPv4) or ``::`` (for IPv6) to join the multicast group on all available interfaces.
 
 Time units
 ----------
@@ -132,125 +138,124 @@ Time units
 EXAMPLES
 ========
 
-Listen on one bare RTP port on all IPv4 interfaces:
+Endpoint examples
+-----------------
+
+Bind one bare RTP endpoint on all IPv4 interfaces:
 
 .. code::
 
-    $ roc-recv -vv -s rtp::10001
+    $ roc-recv -vv -s rtp://0.0.0.0:10001
 
-Listen on two ports on all IPv4 interfaces (but not IPv6):
-
-.. code::
-
-    $ roc-recv -vv -s rtp+rs8m::10001 -r rs8m::10002
-
-Listen on two ports on all IPv6 interfaces (but not IPv4):
+Bind two endpoints to all IPv4 interfaces (but not IPv6):
 
 .. code::
 
-    $ roc-recv -vv -s rtp+rs8m:[::]:10001 -r rs8m:[::]:10002
+    $ roc-recv -vv -s rtp+rs8m://0.0.0.0:10001 -r rs8m://0.0.0.0:10002
 
-Listen on two ports on all IPv4 interfaces (using LDPC scheme)
-
-.. code::
-
-    $ roc-recv -vv -s rtp+ldpc::10001 -r ldpc::10002
-
-Listen on two ports on a particular interface:
+Bind two endpoints to all IPv6 interfaces (but not IPv4):
 
 .. code::
 
-    $ roc-recv -vv -s rtp+rs8m:192.168.0.3:10001 -r rs8m:192.168.0.3:10002
+    $ roc-recv -vv -s rtp+rs8m://[::]:10001 -r rs8m://[::]:10002
 
-Listen on two ports on a particular multicast address (but not join to a multicast group):
-
-.. code::
-
-    $ roc-recv -vv -s rtp+rs8m:225.1.2.3:10001 -r rs8m:225.1.2.3:10002
-
-Listen on two ports on a particular multicast address and join to a multicast group on all interfaces:
+Bind two endpoints to a particular network interface:
 
 .. code::
 
-    $ roc-recv -vv -s rtp+rs8m:225.1.2.3:10001 -r rs8m:225.1.2.3:10002 --miface 0.0.0.0
+    $ roc-recv -vv -s rtp+rs8m://192.168.0.3:10001 -r rs8m://192.168.0.3:10002
 
-Listen on two ports on a particular multicast address and join to a multicast group on a particular interface:
+Bind two endpoints to a particular multicast address and join to a multicast group on a particular network interface:
 
 .. code::
 
-    $ roc-recv -vv -s rtp+rs8m:225.1.2.3:10001 -r rs8m:225.1.2.3:10002 --miface 192.168.0.3
+    $ roc-recv -vv -s rtp+rs8m://225.1.2.3:10001 -r rs8m://225.1.2.3:10002 --miface 192.168.0.3
+
+I/O examples
+------------
 
 Output to the default ALSA device:
 
 .. code::
 
-    $ roc-recv -vv -o alsa://default -s rtp+rs8m::10001 -r rs8m::10002
+    $ roc-recv -vv -s rtp://0.0.0.0:10001 -o alsa://default
 
 Output to a specific PulseAudio device:
 
 .. code::
 
-    $ roc-recv -vv -o pulse://alsa_input.pci-0000_00_1f.3.analog-stereo -s rtp+rs8m::10001 -r rs8m::10002
+    $ roc-recv -vv -s rtp://0.0.0.0:10001 -o pulse://alsa_input.pci-0000_00_1f.3.analog-stereo
 
 Output to a file in WAV format (guess format by extension):
 
 .. code::
 
-    $ roc-recv -vv -o file:./output.wav -s rtp+rs8m::10001 -r rs8m::10002
+    $ roc-recv -vv -s rtp://0.0.0.0:10001 -o file:./output.wav
 
 Output to a file in WAV format (specify format manually):
 
 .. code::
 
-    $ roc-recv -vv -o file:./output --output-format wav -s rtp+rs8m::10001 -r rs8m::10002
+    $ roc-recv -vv -s rtp://0.0.0.0:10001 -o file:./output --output-format wav
 
 Output to stdout in WAV format:
 
 .. code::
 
-    $ roc-recv -vv -o file:- --output-format wav -s rtp+rs8m::10001 -r rs8m::10002 > ./output.wav
+    $ roc-recv -vv -s rtp://0.0.0.0:10001 -o file:- --output-format wav >./output.wav
 
-Output to a file in WAV format, specify full URI:
+Output to a file in WAV format (absolute path):
 
 .. code::
 
-    $ roc-recv -vv -o file:///home/user/output.wav -s rtp+rs8m::10001 -r rs8m::10002
+    $ roc-recv -vv -s rtp://0.0.0.0:10001 -o file:///home/user/output.wav
 
 Specify backup file:
 
 .. code::
 
-    $ roc-recv -vv --backup file:./backup.wav -s rtp+rs8m::10001 -r rs8m::10002
+    $ roc-recv -vv -s rtp://0.0.0.0:10001 --backup file:./backup.wav
+
+Tuning examples
+---------------
 
 Force a specific rate on the output device:
 
 .. code::
 
-    $ roc-recv -vv --rate=44100 -s rtp+rs8m::10001 -r rs8m::10002
+    $ roc-recv -vv -s rtp://0.0.0.0:10001 --rate=44100
+
+Select the LDPC-Staircase FEC scheme:
+
+.. code::
+
+    $ roc-recv -vv -s rtp+ldpc://0.0.0.0:10001 -r ldpc://0.0.0.0:10002
 
 Select higher session latency and timeouts:
 
 .. code::
 
-    $ roc-recv -vv -s rtp+rs8m::10001 -r rs8m::10002 \
-      --sess-latency=5s --min-latency=-1s --max-latency=10s --np-timeout=10s --bp-timeout=10s
+    $ roc-recv -vv -s rtp://0.0.0.0:10001 \
+        --sess-latency=5s --min-latency=-1s --max-latency=10s --np-timeout=10s --bp-timeout=10s
 
 Select higher I/O latency:
 
 .. code::
 
-    $ roc-recv -vv --io-latency=200ms -s rtp+rs8m::10001 -r rs8m::10002
+    $ roc-recv -vv -s rtp://0.0.0.0:10001 \
+        --io-latency=200ms
 
 Select resampler profile:
 
 .. code::
 
-    $ roc-recv -vv --resampler-profile=high -s rtp+rs8m::10001 -r rs8m::10002
+    $ roc-recv -vv -s rtp://0.0.0.0:10001 \
+        --resampler-profile=high
 
 SEE ALSO
 ========
 
-:manpage:`roc-send(1)`, :manpage:`roc-conv(1)`, :manpage:`sox(1)`, the Roc web site at https://roc-project.github.io/
+:manpage:`roc-send(1)`, and the Roc web site at https://roc-project.github.io/
 
 BUGS
 ====
