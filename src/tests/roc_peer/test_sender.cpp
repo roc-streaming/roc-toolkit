@@ -255,7 +255,7 @@ TEST(sender, squashing) {
 
         UNSIGNED_LONGS_EQUAL(context.event_loop().num_ports(), 1);
     }
-    { // source and repair not squashed: squashing disabled
+    { // source and repair not squashed: squashing disabled for source interface
         Sender sender(context, sender_config);
         CHECK(sender.valid());
 
@@ -265,7 +265,24 @@ TEST(sender, squashing) {
         address::EndpointURI repair_endp(allocator);
         parse_uri(repair_endp, "rs8m://127.0.0.1:123");
 
-        CHECK(sender.set_squashing_enabled(false));
+        CHECK(sender.set_squashing_enabled(address::Iface_AudioSource, false));
+
+        CHECK(sender.connect(address::Iface_AudioSource, source_endp));
+        CHECK(sender.connect(address::Iface_AudioRepair, repair_endp));
+
+        UNSIGNED_LONGS_EQUAL(context.event_loop().num_ports(), 2);
+    }
+    { // source and repair not squashed: squashing disabled for repair interface
+        Sender sender(context, sender_config);
+        CHECK(sender.valid());
+
+        address::EndpointURI source_endp(allocator);
+        parse_uri(source_endp, "rtp+rs8m://127.0.0.1:123");
+
+        address::EndpointURI repair_endp(allocator);
+        parse_uri(repair_endp, "rs8m://127.0.0.1:123");
+
+        CHECK(sender.set_squashing_enabled(address::Iface_AudioRepair, false));
 
         CHECK(sender.connect(address::Iface_AudioSource, source_endp));
         CHECK(sender.connect(address::Iface_AudioRepair, repair_endp));
