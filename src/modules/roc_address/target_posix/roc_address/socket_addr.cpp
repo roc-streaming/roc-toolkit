@@ -36,6 +36,11 @@ bool SocketAddr::set_host_port_saddr(const sockaddr* sa) {
     return true;
 }
 
+bool SocketAddr::set_host_port_auto(const char* host, int port) {
+    return set_host_port(Family_IPv4, host, port)
+        || set_host_port(Family_IPv6, host, port);
+}
+
 bool SocketAddr::set_host_port(AddrFamily type, const char* ip_str, int port) {
     switch ((unsigned)type) {
     case Family_IPv4:

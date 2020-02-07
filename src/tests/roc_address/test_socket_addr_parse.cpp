@@ -52,6 +52,7 @@ TEST(socket_addr_parse, bad_host_port) {
         CHECK(!parse_socket_addr("abc.com", 123, addr));
         CHECK(!parse_socket_addr("1.2", 123, addr));
         CHECK(!parse_socket_addr("[11::", 123, addr));
+        CHECK(!parse_socket_addr("11::]", 123, addr));
     }
 }
 
