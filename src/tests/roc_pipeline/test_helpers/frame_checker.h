@@ -6,19 +6,20 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#ifndef ROC_PIPELINE_TEST_FRAME_CHECKER_H_
-#define ROC_PIPELINE_TEST_FRAME_CHECKER_H_
+#ifndef ROC_PIPELINE_TEST_HELPERS_FRAME_CHECKER_H_
+#define ROC_PIPELINE_TEST_HELPERS_FRAME_CHECKER_H_
 
 #include <CppUTest/TestHarness.h>
+
+#include "test_helpers/utils.h"
 
 #include "roc_core/buffer_pool.h"
 #include "roc_core/noncopyable.h"
 #include "roc_sndio/isink.h"
 
-#include "test_helpers.h"
-
 namespace roc {
 namespace pipeline {
+namespace test {
 
 class FrameChecker : public sndio::ISink, public core::NonCopyable<> {
 public:
@@ -64,7 +65,8 @@ private:
     size_t n_samples_;
 };
 
+} // namespace test
 } // namespace pipeline
 } // namespace roc
 
-#endif // ROC_PIPELINE_TEST_FRAME_CHECKER_H_
+#endif // ROC_PIPELINE_TEST_HELPERS_FRAME_CHECKER_H_

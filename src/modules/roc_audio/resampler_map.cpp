@@ -16,6 +16,15 @@ namespace audio {
 ResamplerMap::ResamplerMap() {
 }
 
+size_t ResamplerMap::num_backends() const {
+    return 1;
+}
+
+ResamplerBackend ResamplerMap::nth_backend(size_t n) const {
+    roc_panic_if_not(n == 0);
+    return ResamplerBackend_Builtin;
+}
+
 IResampler* ResamplerMap::new_resampler(ResamplerBackend resampler_backend,
                                         core::IAllocator& allocator,
                                         const ResamplerConfig& config,
@@ -23,9 +32,8 @@ IResampler* ResamplerMap::new_resampler(ResamplerBackend resampler_backend,
                                         size_t sample_rate,
                                         packet::channel_mask_t channels) {
     if (resampler_backend != ResamplerBackend_Builtin) {
-        roc_panic(
-            "No valid resampler backend selected.. selected resampler backend is : %d",
-            resampler_backend);
+        roc_panic("resampler map: no valid resampler backend selected: backend=%d",
+                  resampler_backend);
     }
 
     core::ScopedPtr<IResampler> resampler;

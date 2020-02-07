@@ -31,6 +31,12 @@ public:
         return core::Singleton<ResamplerMap>::instance();
     }
 
+    //! Get number of backends.
+    size_t num_backends() const;
+
+    //! Get backend ID by number.
+    ResamplerBackend nth_backend(size_t n) const;
+
     //! Method to instantiate and return a pointer to a IResampler object
     IResampler* new_resampler(ResamplerBackend resampler_backend,
                               core::IAllocator& allocator,
