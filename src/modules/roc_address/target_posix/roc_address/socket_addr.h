@@ -36,6 +36,9 @@ public:
     //! Set host address.
     bool set_host_port(AddrFamily type, const char* host, int port);
 
+    //! Set host address, auto-detect family.
+    bool set_host_port_auto(const char* host, int port);
+
     //! Set address from sockaddr struct.
     bool set_host_port_saddr(const sockaddr* sa);
 
