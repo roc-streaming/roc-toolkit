@@ -22,7 +22,7 @@ Options
 -o, --output=FILE_URI        Output file URI
 --input-format=FILE_FORMAT   Force input file format
 --output-format=FILE_FORMAT  Force output file format
---frame-size=INT             Internal frame size, number of samples
+--frame-length=TIME          Duration of the internal frames, TIME units
 -r, --rate=INT               Output sample rate, Hz
 --no-resampling              Disable resampling  (default=off)
 --resampler-backend=ENUM     Resampler backend  (possible values="builtin" default=`builtin')
