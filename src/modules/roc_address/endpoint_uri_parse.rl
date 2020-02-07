@@ -106,13 +106,6 @@ bool parse_endpoint_uri(const char* str, EndpointURI::Subset subset, EndpointURI
             }
         }
 
-        action set_fragment {
-            if (!result.set_encoded_fragment(start_p, p - start_p)) {
-                roc_log(LogError, "parse endpoint uri: invalid fragment");
-                return false;
-            }
-        }
-
         scheme = 'rtsp'      %{ proto = Proto_RTSP; }
                | 'rtp'       %{ proto = Proto_RTP; }
                | 'rtp+rs8m'  %{ proto = Proto_RTP_RS8M_Source; }
@@ -130,9 +123,8 @@ bool parse_endpoint_uri(const char* str, EndpointURI::Subset subset, EndpointURI
 
         path = ('/' pchar*) >start_token %set_path;
         query = (pchar*) >start_token %set_query;
-        fragment = (pchar*) >start_token %set_fragment;
 
-        uri = ( proto '://' host (':' port)? )? path? ('?' query)? ('#' fragment)?;
+        uri = ( proto '://' host (':' port)? )? path? ('?' query)?;
 
         main := uri
                 %{ success = true; }
@@ -146,13 +138,13 @@ bool parse_endpoint_uri(const char* str, EndpointURI::Subset subset, EndpointURI
         if (subset == EndpointURI::Subset_Full) {
             roc_log(LogError,
                     "parse endpoint uri: expected"
-                    " 'PROTO://HOST[:PORT][/PATH][?QUERY][#FRAGMENT]',\n"
+                    " 'PROTO://HOST[:PORT][/PATH][?QUERY]',\n"
                     " got '%s'",
                     str);
         } else {
             roc_log(LogError,
                     "parse endpoint uri: expected"
-                    " '[/PATH][?QUERY][#FRAGMENT]',\n"
+                    " '[/PATH][?QUERY]',\n"
                     " got '%s'",
                     str);
         }
