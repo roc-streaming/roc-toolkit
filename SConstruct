@@ -685,6 +685,7 @@ if GetOption('with_libraries'):
     env.Append(LIBPATH=GetOption('with_libraries'))
 
 lib_env = env.Clone()
+example_env = env.Clone()
 gen_env = env.Clone()
 tool_env = env.Clone()
 test_env = env.Clone()
@@ -811,6 +812,17 @@ if 'pulseaudio' in system_dependencies:
         env.Die("libpulse not found (see 'config.log' for details)")
 
     tool_env = conf.Finish()
+
+    if not GetOption('disable_examples'):
+        conf = Configure(example_env, custom_tests=env.CustomTests)
+
+        example_env.ParsePkgConfig('--cflags --libs libpulse-simple')
+
+        if not conf.CheckLibWithHeaderExt(
+                'pulse-simple', 'pulse/simple.h', 'C', run=not crosscompile):
+            env.Die("libpulse-simple not found (see 'config.log' for details)")
+
+        example_env = conf.Finish()
 
     if GetOption('enable_pulseaudio_modules'):
         conf = Configure(pulse_env, custom_tests=env.CustomTests)
@@ -951,6 +963,12 @@ if 'pulseaudio' in download_dependencies:
     tool_env.ThirdParty(host, thirdparty_compiler_spec, toolchain,
                         thirdparty_variant, thirdparty_versions,
                         'pulseaudio', deps=pa_deps, libs=['pulse', 'pulse-simple'])
+
+    example_env.ImportThridParty(host, thirdparty_compiler_spec, toolchain,
+                                 thirdparty_versions, 'ltdl')
+    example_env.ImportThridParty(host, thirdparty_compiler_spec, toolchain,
+                                 thirdparty_versions, 'pulseaudio',
+                                 libs=['pulse', 'pulse-simple'])
 
     pulse_env.ImportThridParty(host, thirdparty_compiler_spec, toolchain,
                                thirdparty_versions, 'ltdl')
@@ -1320,7 +1338,7 @@ env.AlwaysBuild(
             env.PrettyCommand('TIDY', 'src', 'yellow')
         )))
 
-Export('env', 'lib_env', 'gen_env', 'tool_env', 'test_env', 'pulse_env')
+Export('env', 'lib_env', 'example_env', 'gen_env', 'tool_env', 'test_env', 'pulse_env')
 
 env.SConscript('src/SConscript',
             variant_dir=build_dir, duplicate=0)
