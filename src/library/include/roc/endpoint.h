@@ -28,6 +28,8 @@ extern "C" {
  * resource identifier. All these parts together are unambiguously represented
  * by a URI. The user may set or get the entire URI or its individual parts.
  *
+ * **Endpoint URI**
+ *
  * Endpoint URI syntax is a subset of the syntax defined in RFC 3986:
  *
  *     protocol://host[:port][/path][?query][#fragment]
@@ -55,6 +57,16 @@ extern "C" {
  * The path, query, and fragment fields are allowed only for protocols that
  * support them. For example, they're supported by RTSP, but not by RTP.
  *
+ * **Field invalidation**
+ *
+ * If some field is attempted to be set to an invalid value (for example, an invalid
+ * port number), this specific field is marked as invalid until it is successully set
+ * to some valid value.
+ *
+ * Sender and receiver refuse to bind or connect an endpoint which has invalid fields
+ * or doesn't have some mandatory fields. Hence, it is safe to ignore errors returned by
+ * endpoint setters and check only for errors returned by bind and connect operations.
+ *
  * **Thread safety**
  *
  * Should not be used concurrently.
@@ -72,6 +84,10 @@ typedef struct roc_endpoint roc_endpoint;
  *  - returns zero if endpoint was successfully allocated and initialized
  *  - returns a negative value on invalid arguments
  *  - returns a negative value on allocation failure
+ *
+ * **Ownership**
+ *  - passes the owneship of \p result to the user; the user is responsible to call
+ *    roc_endpoint_deallocate() to free it
  */
 ROC_API int roc_endpoint_allocate(roc_endpoint** result);
 
@@ -90,6 +106,10 @@ ROC_API int roc_endpoint_allocate(roc_endpoint** result);
  *  - returns zero if URI was successfully parsed and set
  *  - returns a negative value on invalid arguments
  *  - returns a negative value on allocation failure
+ *
+ * **Ownership**
+ *  - doesn't take or share the ownerhip of \p uri; it may be safely deallocated
+ *    after the function returns
  */
 ROC_API int roc_endpoint_set_uri(roc_endpoint* endpoint, const char* uri);
 
@@ -122,6 +142,10 @@ ROC_API int roc_endpoint_set_protocol(roc_endpoint* endpoint, roc_protocol proto
  *  - returns zero if host was successfully set
  *  - returns a negative value on invalid arguments
  *  - returns a negative value on allocation failure
+ *
+ * **Ownership**
+ *  - doesn't take or share the ownerhip of \p host; it may be safely deallocated
+ *    after the function returns
  */
 ROC_API int roc_endpoint_set_host(roc_endpoint* endpoint, const char* host);
 
@@ -170,6 +194,10 @@ ROC_API int roc_endpoint_set_port(roc_endpoint* endpoint, int port);
  *  - returns zero if resource was successfully set
  *  - returns a negative value on invalid arguments
  *  - returns a negative value on allocation failure
+ *
+ * **Ownership**
+ *  - doesn't take or share the ownerhip of \p encoded_resource; it may be safely
+ *    deallocated after the function returns
  */
 ROC_API int roc_endpoint_set_resource(roc_endpoint* endpoint,
                                       const char* encoded_resource);
@@ -273,14 +301,16 @@ roc_endpoint_get_resource(const roc_endpoint* endpoint, char* buf, size_t* bufsz
 
 /** Deinitialize and deallocate endpoint.
  *
- * After this call, endpoint pointer can't be used anymore.
- *
  * **Parameters**
  *  - \p endpoint should point to initialized endpoint
  *
  * **Returns**
  *  - returns zero if endpoint was successfully deallocated
  *  - returns a negative value on invalid arguments
+ *
+ * **Ownership**
+ *  - ends the user ownership of \p endpoint; it can't be used anymore after the
+ *    function returns
  */
 ROC_API int roc_endpoint_deallocate(roc_endpoint* endpoint);
 

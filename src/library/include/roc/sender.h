@@ -42,9 +42,12 @@ extern "C" {
  *
  * - A sender is created using roc_sender_open().
  *
+ * - Optionally, the sender parameters may be fine-tuned using `roc_sender_set_*()`
+ *   functions.
+ *
  * - The sender either binds local endpoints using roc_sender_bind(), allowing receivers
  *   connecting to them, or itself connects to remote receiver endpoints using
- *   roc_sender_connect(). What option to use is up to the user.
+ *   roc_sender_connect(). What approach to use is up to the user.
  *
  * - The audio stream is iteratively written to the sender using roc_sender_write(). The
  *   sender encodes the stream into packets and send to connected receiver(s).
@@ -143,10 +146,105 @@ typedef struct roc_sender roc_sender;
  *  - returns zero if the sender was successfully created
  *  - returns a negative value if the arguments are invalid
  *  - returns a negative value on resource allocation failure
+ *
+ * **Ownership**
+ *  - doesn't take or share the ownerhip of \p config; it may be safely deallocated
+ *    after the function returns
+ *  - passes the owneship of \p result to the user; the user is responsible to call
+ *    roc_sender_close() to free it
  */
 ROC_API int roc_sender_open(roc_context* context,
                             const roc_sender_config* config,
                             roc_sender** result);
+
+/** Set sender interface outgoing address.
+ *
+ * Optional. Should be used only when connecting an interface to a remote endpoint.
+ *
+ * If set, explicitly defines the IP address of the OS network interface from which to
+ * send the outgoing packets. If not set, the outgoing interface is selected automatically
+ * by the OS, depending on the remote endpoint address.
+ *
+ * It is allowed to set outgoing address to `0.0.0.0` (for IPv4) or to `::` (for IPv6),
+ * to achieve the same behavior as if it wasn't set, i.e. to let the OS to select the
+ * outgoing interface automatically.
+ *
+ * By default, the outgoing address is not set.
+ *
+ * Each interface can have only one outgoing address. The function should be called before
+ * calling roc_sender_connect() for the interface. It should not be called when calling
+ * roc_sender_bind() for the interface.
+ *
+ * **Parameters**
+ *  - \p sender should point to an opened sender
+ *  - \p ip should be IPv4 or IPv6 address
+ *
+ * **Returns**
+ *  - returns zero if the outgoing interface was successfully set
+ *  - returns a negative value if the arguments are invalid
+ *  - returns a negative value if an error occurred
+ *
+ * **Ownership**
+ *  - doesn't take or share the ownerhip of \p ip; it may be safely deallocated
+ *    after the function returns
+ */
+ROC_API int
+roc_sender_set_outgoing_address(roc_sender* sender, roc_interface iface, const char* ip);
+
+/** Set sender interface broadcast flag.
+ *
+ * Optional. Should be used only when connecting an interface to a remote endpoint.
+ *
+ * If set to true, the sender interface is allowed to send traffic to broadcast addresses.
+ * Otherwise, only unicast and multicast traffic is allowed.
+ *
+ * By default, the broadcast flag is set to false, to prevent accidental flood.
+ *
+ * The function should be called before calling roc_sender_connect() for the interface.
+ * It should not be called when calling roc_sender_bind() for the interface.
+ *
+ * **Parameters**
+ *  - \p sender should point to an opened sender
+ *  - \p enabled should be 0 (for false) or 1 (for true)
+ *
+ * **Returns**
+ *  - returns zero if the broadcast flag was successfully set
+ *  - returns a negative value if the arguments are invalid
+ *  - returns a negative value if an error occurred
+ */
+ROC_API int
+roc_sender_set_broadcast_enabled(roc_sender* sender, roc_interface iface, int enabled);
+
+/** Set sender interface squashing flag.
+ *
+ * Optional. Should be used only when connecting an interface to a remote endpoint.
+ *
+ * If set to true, the sender interface will share the same outgoing port with other
+ * interfaces that have identical settings (e.g. outgoing address and broadcast flag)
+ * and have also enabled the squashing flag. If set to false, the interface will have
+ * its own outgoing port.
+ *
+ * This feature is useful when sending source and repair streams, but *not* using
+ * control and signaling protocols, like RTCP and RTSP. In this case, reusing the
+ * same port for source and repair streams is needed to help the receiver to associate
+ * these streams with one session.
+ *
+ * By default, the squashing flag is set to true.
+ *
+ * The function should be called before calling roc_sender_connect() for the interface.
+ * It should not be called when calling roc_sender_bind() for the interface.
+ *
+ * **Parameters**
+ *  - \p sender should point to an opened sender
+ *  - \p enabled should be 0 (for false) or 1 (for true)
+ *
+ * **Returns**
+ *  - returns zero if the squashing flag was successfully set
+ *  - returns a negative value if the arguments are invalid
+ *  - returns a negative value if an error occurred
+ */
+ROC_API int
+roc_sender_set_squashing_enabled(roc_sender* sender, roc_interface iface, int enabled);
 
 /** Connect the sender interface to a remote receiver endpoint.
  *
@@ -165,6 +263,10 @@ ROC_API int roc_sender_open(roc_context* context,
  *  - returns zero if the sender was successfully connected
  *  - returns a negative value if the arguments are invalid
  *  - returns a negative value on resource allocation failure
+ *
+ * **Ownership**
+ *  - doesn't take or share the ownerhip of \p endpoint; it may be safely deallocated
+ *    after the function returns
  */
 ROC_API int
 roc_sender_connect(roc_sender* sender, roc_interface iface, const roc_endpoint* endpoint);
@@ -190,6 +292,10 @@ roc_sender_connect(roc_sender* sender, roc_interface iface, const roc_endpoint* 
  *  - returns zero if all samples were successfully encoded and enqueued
  *  - returns a negative value if the arguments are invalid
  *  - returns a negative value on resource allocation failure
+ *
+ * **Ownership**
+ *  - doesn't take or share the ownerhip of \p frame; it may be safely deallocated
+ *    after the function returns
  */
 ROC_API int roc_sender_write(roc_sender* sender, const roc_frame* frame);
 
@@ -205,6 +311,10 @@ ROC_API int roc_sender_write(roc_sender* sender, const roc_frame* frame);
  * **Returns**
  *  - returns zero if the sender was successfully closed
  *  - returns a negative value if the arguments are invalid
+ *
+ * **Ownership**
+ *  - ends the user ownership of \p sender; it can't be used anymore after the
+ *    function returns
  */
 ROC_API int roc_sender_close(roc_sender* sender);
 
