@@ -69,6 +69,9 @@ public:
                                   address::Interface iface,
                                   address::Protocol proto);
 
+    //! Remove endpoint to endpoint set, if it's present.
+    void remove_endpoint(EndpointSetHandle endpoint_set, address::Interface iface);
+
     //! Get number of connected sessions.
     size_t num_sessions() const;
 
