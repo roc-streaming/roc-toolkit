@@ -6,17 +6,19 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#ifndef ROC_PIPELINE_TEST_PACKET_SENDER_H_
-#define ROC_PIPELINE_TEST_PACKET_SENDER_H_
+#ifndef ROC_PIPELINE_TEST_HELPERS_PACKET_SENDER_H_
+#define ROC_PIPELINE_TEST_HELPERS_PACKET_SENDER_H_
 
 #include <CppUTest/TestHarness.h>
 
 #include "roc_core/noncopyable.h"
 #include "roc_packet/iwriter.h"
+#include "roc_packet/packet_pool.h"
 #include "roc_packet/queue.h"
 
 namespace roc {
 namespace pipeline {
+namespace test {
 
 class PacketSender : public packet::IWriter, core::NonCopyable<> {
 public:
@@ -70,7 +72,8 @@ private:
     packet::Queue queue_;
 };
 
+} // namespace test
 } // namespace pipeline
 } // namespace roc
 
-#endif // ROC_PIPELINE_TEST_PACKET_SENDER_H_
+#endif // ROC_PIPELINE_TEST_HELPERS_PACKET_SENDER_H_

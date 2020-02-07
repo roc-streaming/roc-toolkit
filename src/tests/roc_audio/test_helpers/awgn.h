@@ -6,11 +6,14 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#ifndef ROC_AUDIO_TEST_AWGN_H_
-#define ROC_AUDIO_TEST_AWGN_H_
+#ifndef ROC_AUDIO_TEST_HELPERS_AWGN_H_
+#define ROC_AUDIO_TEST_HELPERS_AWGN_H_
+
+#include "roc_core/random.h"
 
 namespace roc {
 namespace audio {
+namespace test {
 
 // Generates additive white Gaussian Noise samples with zero mean
 // and a standard deviation of 1.
@@ -24,7 +27,8 @@ inline double generate_awgn() {
     return sqrt(-2.0 * log(r2)) * cos(2.0 * M_PI * r1);
 }
 
+} // namespace test
 } // namespace audio
 } // namespace roc
 
-#endif // ROC_AUDIO_TEST_AWGN_H_
+#endif // ROC_AUDIO_TEST_HELPERS_AWGN_H_

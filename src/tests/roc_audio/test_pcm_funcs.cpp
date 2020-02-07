@@ -29,7 +29,7 @@ core::BufferPool<uint8_t> buffer_pool(allocator, MaxBufsz, true);
 
 TEST_GROUP(pcm_funcs) {
     const PcmFuncs* funcs;
-    audio::sample_t output[MaxSamples];
+    sample_t output[MaxSamples];
 
     void use(const PcmFuncs& f) {
         funcs = &f;
@@ -50,8 +50,8 @@ TEST_GROUP(pcm_funcs) {
         return bp;
     }
 
-    void encode(const core::Slice<uint8_t>& bp, const audio::sample_t* samples,
-                size_t offset, size_t num_samples, packet::channel_mask_t channels) {
+    void encode(const core::Slice<uint8_t>& bp, const sample_t* samples, size_t offset,
+                size_t num_samples, packet::channel_mask_t channels) {
         CHECK(funcs);
 
         UNSIGNED_LONGS_EQUAL(num_samples,
@@ -72,7 +72,7 @@ TEST_GROUP(pcm_funcs) {
                                                    num_samples, channels));
     }
 
-    void check(const audio::sample_t* samples, size_t num_samples,
+    void check(const sample_t* samples, size_t num_samples,
                packet::channel_mask_t channels) {
         size_t n = 0;
 
@@ -111,7 +111,7 @@ TEST(pcm_funcs, encode_decode_1ch) {
 
     core::Slice<uint8_t> bp = new_buffer(NumSamples);
 
-    const audio::sample_t samples[NumSamples] = {
+    const sample_t samples[NumSamples] = {
         0.1f, //
         0.2f, //
         0.3f, //
@@ -132,7 +132,7 @@ TEST(pcm_funcs, encode_decode_2ch) {
 
     core::Slice<uint8_t> bp = new_buffer(NumSamples);
 
-    const audio::sample_t samples[NumSamples * 2] = {
+    const sample_t samples[NumSamples * 2] = {
         -0.1f, 0.1f, //
         -0.2f, 0.2f, //
         -0.3f, 0.3f, //
@@ -153,7 +153,7 @@ TEST(pcm_funcs, encode_mask_subset) {
 
     core::Slice<uint8_t> bp = new_buffer(NumSamples);
 
-    const audio::sample_t input[NumSamples] = {
+    const sample_t input[NumSamples] = {
         0.1f, //
         0.2f, //
         0.3f, //
@@ -164,7 +164,7 @@ TEST(pcm_funcs, encode_mask_subset) {
     encode(bp, input, 0, NumSamples, 0x2);
     decode(bp, 0, NumSamples, 0x3);
 
-    const audio::sample_t output[NumSamples * 2] = {
+    const sample_t output[NumSamples * 2] = {
         0.0f, 0.1f, //
         0.0f, 0.2f, //
         0.0f, 0.3f, //
@@ -182,7 +182,7 @@ TEST(pcm_funcs, encode_mask_superset) {
 
     core::Slice<uint8_t> bp = new_buffer(NumSamples);
 
-    const audio::sample_t input[NumSamples * 3] = {
+    const sample_t input[NumSamples * 3] = {
         -0.1f, 0.1f, 0.8f, //
         -0.2f, 0.2f, 0.8f, //
         -0.3f, 0.3f, 0.8f, //
@@ -193,7 +193,7 @@ TEST(pcm_funcs, encode_mask_superset) {
     encode(bp, input, 0, NumSamples, 0x7);
     decode(bp, 0, NumSamples, 0x3);
 
-    const audio::sample_t output[NumSamples * 2] = {
+    const sample_t output[NumSamples * 2] = {
         -0.1f, 0.1f, //
         -0.2f, 0.2f, //
         -0.3f, 0.3f, //
@@ -211,7 +211,7 @@ TEST(pcm_funcs, encode_mask_overlap) {
 
     core::Slice<uint8_t> bp = new_buffer(NumSamples);
 
-    const audio::sample_t input[NumSamples * 3] = {
+    const sample_t input[NumSamples * 3] = {
         -0.1f, 0.8f, //
         -0.2f, 0.8f, //
         -0.3f, 0.8f, //
@@ -222,7 +222,7 @@ TEST(pcm_funcs, encode_mask_overlap) {
     encode(bp, input, 0, NumSamples, 0x5);
     decode(bp, 0, NumSamples, 0x3);
 
-    const audio::sample_t output[NumSamples * 2] = {
+    const sample_t output[NumSamples * 2] = {
         -0.1f, 0.0f, //
         -0.2f, 0.0f, //
         -0.3f, 0.0f, //
@@ -240,7 +240,7 @@ TEST(pcm_funcs, decode_mask_subset) {
 
     core::Slice<uint8_t> bp = new_buffer(NumSamples);
 
-    const audio::sample_t input[NumSamples * 2] = {
+    const sample_t input[NumSamples * 2] = {
         -0.1f, 0.1f, //
         -0.2f, 0.2f, //
         -0.3f, 0.3f, //
@@ -251,7 +251,7 @@ TEST(pcm_funcs, decode_mask_subset) {
     encode(bp, input, 0, NumSamples, 0x3);
     decode(bp, 0, NumSamples, 0x2);
 
-    const audio::sample_t output[NumSamples] = {
+    const sample_t output[NumSamples] = {
         0.1f, //
         0.2f, //
         0.3f, //
@@ -269,7 +269,7 @@ TEST(pcm_funcs, decode_mask_superset) {
 
     core::Slice<uint8_t> bp = new_buffer(NumSamples);
 
-    const audio::sample_t input[NumSamples * 2] = {
+    const sample_t input[NumSamples * 2] = {
         -0.1f, 0.1f, //
         -0.2f, 0.2f, //
         -0.3f, 0.3f, //
@@ -280,7 +280,7 @@ TEST(pcm_funcs, decode_mask_superset) {
     encode(bp, input, 0, NumSamples, 0x3);
     decode(bp, 0, NumSamples, 0x7);
 
-    const audio::sample_t output[NumSamples * 3] = {
+    const sample_t output[NumSamples * 3] = {
         -0.1f, 0.1f, 0.0f, //
         -0.2f, 0.2f, 0.0f, //
         -0.3f, 0.3f, 0.0f, //
@@ -298,7 +298,7 @@ TEST(pcm_funcs, decode_mask_overlap) {
 
     core::Slice<uint8_t> bp = new_buffer(NumSamples);
 
-    const audio::sample_t input[NumSamples * 2] = {
+    const sample_t input[NumSamples * 2] = {
         -0.1f, 0.1f, //
         -0.2f, 0.2f, //
         -0.3f, 0.3f, //
@@ -309,7 +309,7 @@ TEST(pcm_funcs, decode_mask_overlap) {
     encode(bp, input, 0, NumSamples, 0x3);
     decode(bp, 0, NumSamples, 0x6);
 
-    const audio::sample_t output[NumSamples * 2] = {
+    const sample_t output[NumSamples * 2] = {
         0.1f, 0.0f, //
         0.2f, 0.0f, //
         0.3f, 0.0f, //
@@ -327,7 +327,7 @@ TEST(pcm_funcs, encode_incremental) {
 
     core::Slice<uint8_t> bp = new_buffer(NumSamples);
 
-    const audio::sample_t input1[(NumSamples - Off) * 2] = {
+    const sample_t input1[(NumSamples - Off) * 2] = {
         -0.3f, 0.3f, //
         -0.4f, 0.4f, //
         -0.5f, 0.5f, //
@@ -335,14 +335,14 @@ TEST(pcm_funcs, encode_incremental) {
 
     encode(bp, input1, Off, NumSamples - Off, 0x3);
 
-    const audio::sample_t input2[Off] = {
+    const sample_t input2[Off] = {
         -0.1f, //
         -0.2f, //
     };
 
     encode(bp, input2, 0, Off, 0x1);
 
-    const audio::sample_t output[NumSamples * 2] = {
+    const sample_t output[NumSamples * 2] = {
         -0.1f, 0.0f, //
         -0.2f, 0.0f, //
         -0.3f, 0.3f, //
@@ -362,7 +362,7 @@ TEST(pcm_funcs, decode_incremenal) {
 
     core::Slice<uint8_t> bp = new_buffer(NumSamples);
 
-    const audio::sample_t input[NumSamples * 2] = {
+    const sample_t input[NumSamples * 2] = {
         -0.1f, 0.1f, //
         -0.2f, 0.2f, //
         -0.3f, 0.3f, //
@@ -374,7 +374,7 @@ TEST(pcm_funcs, decode_incremenal) {
 
     decode(bp, 0, Off, 0x3);
 
-    const audio::sample_t output1[NumSamples * 2] = {
+    const sample_t output1[NumSamples * 2] = {
         -0.1f, 0.1f, //
         -0.2f, 0.2f, //
     };
@@ -383,7 +383,7 @@ TEST(pcm_funcs, decode_incremenal) {
 
     decode(bp, Off, NumSamples - Off, 0x1);
 
-    const audio::sample_t output2[NumSamples] = {
+    const sample_t output2[NumSamples] = {
         -0.3f, //
         -0.4f, //
         -0.5f, //
@@ -393,7 +393,7 @@ TEST(pcm_funcs, decode_incremenal) {
 
     decode(bp, Off, NumSamples - Off, 0x2);
 
-    const audio::sample_t output3[NumSamples] = {
+    const sample_t output3[NumSamples] = {
         0.3f, //
         0.4f, //
         0.5f, //
@@ -409,7 +409,7 @@ TEST(pcm_funcs, encode_truncate) {
 
     core::Slice<uint8_t> bp = new_buffer(NumSamples);
 
-    const audio::sample_t input[NumSamples * 2] = {
+    const sample_t input[NumSamples * 2] = {
         -0.1f, 0.1f, //
         -0.2f, 0.2f, //
         -0.3f, 0.3f, //
@@ -424,7 +424,7 @@ TEST(pcm_funcs, encode_truncate) {
     UNSIGNED_LONGS_EQUAL(
         0, funcs->encode_samples(bp.data(), bp.size(), 123, input, NumSamples, 0x3));
 
-    const audio::sample_t output[NumSamples * 2] = {
+    const sample_t output[NumSamples * 2] = {
         0.0f,  0.0f, //
         0.0f,  0.0f, //
         -0.1f, 0.1f, //
@@ -444,7 +444,7 @@ TEST(pcm_funcs, decode_truncate) {
 
     core::Slice<uint8_t> bp = new_buffer(NumSamples);
 
-    const audio::sample_t input[NumSamples * 2] = {
+    const sample_t input[NumSamples * 2] = {
         -0.1f, 0.1f, //
         -0.2f, 0.2f, //
         -0.3f, 0.3f, //
@@ -461,7 +461,7 @@ TEST(pcm_funcs, decode_truncate) {
     UNSIGNED_LONGS_EQUAL(
         0, funcs->decode_samples(bp.data(), bp.size(), 123, output, NumSamples, 0x3));
 
-    const audio::sample_t output[NumSamples * 2] = {
+    const sample_t output[NumSamples * 2] = {
         -0.3f, 0.3f, //
         -0.4f, 0.4f, //
         -0.5f, 0.5f, //
