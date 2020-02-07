@@ -59,6 +59,24 @@ packet::IWriter* ReceiverEndpointSet::add_endpoint(address::Interface iface,
     return NULL;
 }
 
+void ReceiverEndpointSet::remove_endpoint(address::Interface iface) {
+    roc_log(LogDebug, "receiver endpoint set: removing %s endpoint",
+            address::interface_to_str(iface));
+
+    switch ((int)iface) {
+    case address::Iface_AudioSource:
+        source_endpoint_.reset();
+        return;
+
+    case address::Iface_AudioRepair:
+        repair_endpoint_.reset();
+        return;
+
+    default:
+        return;
+    }
+}
+
 void ReceiverEndpointSet::update(packet::timestamp_t timestamp) {
     if (source_endpoint_) {
         source_endpoint_->flush_packets();
