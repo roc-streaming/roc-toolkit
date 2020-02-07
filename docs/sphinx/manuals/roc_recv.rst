@@ -33,7 +33,8 @@ Options
 --bp-timeout=STRING          Session broken playback timeout, TIME units
 --bp-window=STRING           Session breakage detection window, TIME units
 --packet-limit=INT           Maximum packet size, in bytes
---frame-size=INT             Internal frame size, number of samples
+--frame-limit=INT            Maximum internal frame size, in bytes
+--frame-length=TIME          Duration of the internal frames, TIME units
 --rate=INT                   Override output sample rate, Hz
 --no-resampling              Disable resampling  (default=off)
 --resampler-backend=ENUM     Resampler backend  (possible values="builtin" default=`builtin')
