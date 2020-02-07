@@ -18,8 +18,7 @@ SoxSource::SoxSource(core::IAllocator& allocator, const Config& config)
     : driver_name_(allocator)
     , input_name_(allocator)
     , buffer_(allocator)
-    , buffer_size_(
-          packet::ns_to_size(config.frame_length, config.sample_rate, config.channels))
+    , buffer_size_(0)
     , input_(NULL)
     , is_file_(false)
     , eof_(false)
@@ -295,6 +294,10 @@ bool SoxSource::setup_names_(const char* driver, const char* input) {
 
 bool SoxSource::setup_buffer_() {
     buffer_size_ = packet::ns_to_size(frame_length_, sample_rate(), channels_);
+    if (buffer_size_ == 0) {
+        roc_log(LogError, "sox source: buffer size is zero");
+        return false;
+    }
     if (!buffer_.resize(buffer_size_)) {
         roc_log(LogError, "sox source: can't allocate sample buffer");
         return false;
