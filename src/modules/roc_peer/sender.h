@@ -38,14 +38,14 @@ public:
     //! Check if successfully constructed.
     bool valid() const;
 
-    //! Enable or disable port squashing.
-    bool set_squashing_enabled(address::Interface iface, bool enabled);
+    //! Set outgoing interface address.
+    bool set_outgoing_address(address::Interface iface, const char* ip);
 
     //! Enable or disable traffic to broadcast addresses.
     bool set_broadcast_enabled(address::Interface iface, bool enabled);
 
-    //! Set outgoing interface address.
-    bool set_outgoing_address(address::Interface iface, const char* ip);
+    //! Enable or disable port squashing.
+    bool set_squashing_enabled(address::Interface iface, bool enabled);
 
     //! Connect peer to remote endpoint.
     bool connect(address::Interface iface, const address::EndpointURI& uri);
