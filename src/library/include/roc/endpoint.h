@@ -25,17 +25,17 @@ extern "C" {
  *
  * Endpoint is a network entry point of a peer. The definition includes the
  * protocol being used, network host and port, and, for some protocols, a
- * resource identifier. All these parts together are unambiguously represented
+ * resource. All these parts together are unambiguously represented
  * by a URI. The user may set or get the entire URI or its individual parts.
  *
  * **Endpoint URI**
  *
  * Endpoint URI syntax is a subset of the syntax defined in RFC 3986:
  *
- *     protocol://host[:port][/path][?query][#fragment]
+ *     protocol://host[:port][/path][?query]
  *
  * Examples:
- *  - `rtsp://localhost:123/path?query#frag`
+ *  - `rtsp://localhost:123/path?query`
  *  - `rtp+rs8m://localhost:123`
  *  - `rtp://127.0.0.1:123`
  *  - `rtp://[::1]:123`
@@ -54,8 +54,8 @@ extern "C" {
  * the port can not be omitted. For example, RTSP defines standard port,
  * but RTP doesn't.
  *
- * The path, query, and fragment fields are allowed only for protocols that
- * support them. For example, they're supported by RTSP, but not by RTP.
+ * The path and query fields are allowed only for protocols that support them.
+ * For example, they're supported by RTSP, but not by RTP.
  *
  * **Field invalidation**
  *
@@ -173,9 +173,9 @@ ROC_API int roc_endpoint_set_host(roc_endpoint* endpoint, const char* host);
  */
 ROC_API int roc_endpoint_set_port(roc_endpoint* endpoint, int port);
 
-/** Set endpoint resource identifier (path, query, fragment).
+/** Set endpoint resource (path and query).
  *
- * Path, query, and fragment are all optional. Any of them may be omitted. If path
+ * Path and query are both optional. Any of them may be omitted. If path
  * is present, it should be absolute.
  *
  * The given resource should be percent-encoded by user if it contains special
@@ -188,7 +188,7 @@ ROC_API int roc_endpoint_set_port(roc_endpoint* endpoint, int port);
  *
  * **Parameters**
  *  - \p endpoint should point to initialized endpoint
- *  - \p encoded_resource specifies perecent-encoded path, query, and fragment
+ *  - \p encoded_resource specifies perecent-encoded path and query
  *
  * **Returns**
  *  - returns zero if resource was successfully set
@@ -274,7 +274,7 @@ ROC_API int roc_endpoint_get_host(const roc_endpoint* endpoint, char* buf, size_
  */
 ROC_API int roc_endpoint_get_port(const roc_endpoint* endpoint, int* port);
 
-/** Get endpoint resource identifier (path, query, fragment).
+/** Get endpoint resource (path and query).
  *
  * Formats endpoint URI resource to user-provided buffer. The written
  * resource is perecent-encoded.
@@ -292,7 +292,7 @@ ROC_API int roc_endpoint_get_port(const roc_endpoint* endpoint, int* port);
  *
  * **Returns**
  *  - returns zero if resource was successfully formatted
- *  - returns a negative value if neither of endpoint path, query, and fragment is set
+ *  - returns a negative value if neither of endpoint path and query is set
  *  - returns a negative value on invalid arguments
  *  - returns a negative value if buffer is too small
  */
