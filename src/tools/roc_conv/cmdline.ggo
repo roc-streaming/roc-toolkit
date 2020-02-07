@@ -14,7 +14,7 @@ section "Options"
     option "input-format" - "Force input file format" typestr="FILE_FORMAT" string optional
     option "output-format" - "Force output file format" typestr="FILE_FORMAT" string optional
 
-    option "frame-length" - "Duration of the internal frames, in nanoseconds"
+    option "frame-length" - "Duration of the internal frames, TIME units"
         typestr="TIME" string optional
 
     option "rate" r "Output sample rate, Hz"
