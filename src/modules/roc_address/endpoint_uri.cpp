@@ -17,14 +17,13 @@ EndpointURI::EndpointURI(core::IAllocator& allocator)
     : invalid_parts_(0)
     , host_(allocator)
     , path_(allocator)
-    , query_(allocator)
-    , frag_(allocator) {
+    , query_(allocator) {
     clear(Subset_Full);
 }
 
 bool EndpointURI::check(Subset subset) const {
     if (subset == Subset_Resource) {
-        if ((invalid_parts_ & (PartPath | PartQuery | PartFrag)) != 0) {
+        if ((invalid_parts_ & (PartPath | PartQuery)) != 0) {
             roc_log(LogError, "invalid endpoint uri: contains invalid parts");
             return false;
         }
@@ -58,10 +57,10 @@ bool EndpointURI::check(Subset subset) const {
     }
 
     if (!proto_attrs->path_supported) {
-        if (!path_.is_empty() || !query_.is_empty() || !frag_.is_empty()) {
+        if (!path_.is_empty() || !query_.is_empty()) {
             roc_log(LogError,
                     "invalid endpoint uri:"
-                    " protocol '%s' forbids using a path, query, and fragment,"
+                    " protocol '%s' forbids using a path and query,"
                     " but they are present in the uri",
                     proto_to_str(proto_));
             return false;
@@ -89,16 +88,13 @@ void EndpointURI::clear(Subset subset) {
 
     invalid_parts_ &= ~PartQuery;
     query_.clear();
-
-    invalid_parts_ &= ~PartFrag;
-    frag_.clear();
 }
 
 void EndpointURI::invalidate(Subset subset) {
     if (subset == Subset_Full) {
         invalid_parts_ |= (PartProto | PartHost | PartPort);
     }
-    invalid_parts_ |= (PartPath | PartQuery | PartFrag);
+    invalid_parts_ |= (PartPath | PartQuery);
 }
 
 bool EndpointURI::part_is_valid_(Part part) const {
@@ -339,37 +335,6 @@ bool EndpointURI::format_encoded_query(core::StringBuilder& dst) const {
         return false;
     }
     dst.append_str(query_.c_str());
-    return true;
-}
-
-const char* EndpointURI::encoded_fragment() const {
-    if (!part_is_valid_(PartFrag) || frag_.is_empty()) {
-        return NULL;
-    }
-    return frag_.c_str();
-}
-
-bool EndpointURI::set_encoded_fragment(const char* str, size_t str_len) {
-    if (!str || str_len < 1) {
-        frag_.clear();
-        set_valid_(PartFrag);
-        return true;
-    }
-
-    if (!frag_.set_buf(str, str_len)) {
-        set_invalid_(PartFrag);
-        return false;
-    }
-
-    set_valid_(PartFrag);
-    return true;
-}
-
-bool EndpointURI::format_encoded_fragment(core::StringBuilder& dst) const {
-    if (!part_is_valid_(PartFrag) || frag_.is_empty()) {
-        return false;
-    }
-    dst.append_str(frag_.c_str());
     return true;
 }
 

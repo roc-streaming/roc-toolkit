@@ -45,11 +45,11 @@ Endpoint URI
 
 *ENDPOINT_URI* should have the following form:
 
-``protocol://host[:port][/path][?query][#fragment]``
+``protocol://host[:port][/path][?query]``
 
 Examples:
 
-- ``rtsp://localhost:123/path?query#frag``
+- ``rtsp://localhost:123/path?query``
 - ``rtp+rs8m://localhost:123``
 - ``rtp://127.0.0.1:123``
 - ``rtp://[::1]:123``
@@ -60,7 +60,7 @@ The host field should be either FQDN (domain name), or IPv4 address, or IPv6 add
 
 The port field can be omitted if the protocol defines standard port. Otherwise, it is mandatory.
 
-The path, query, and fragment fields are allowed only for protocols that support them, e.g. for RTSP.
+The path and query fields are allowed only for protocols that support them, e.g. for RTSP.
 
 If FEC is enabled, a pair of a source and repair endpoints should be provided. The two endpoints should use compatible protocols, e.g. ``rtp+rs8m://`` for source endpoint, and ``rs8m://`` for repair endpoint. If FEC is disabled, a single source endpoint should be provided.
 
