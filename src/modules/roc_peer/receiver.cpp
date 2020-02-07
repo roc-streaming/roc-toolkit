@@ -117,6 +117,7 @@ bool Receiver::bind(address::Interface iface, address::EndpointURI& uri) {
     if (!ports_[iface].handle) {
         roc_log(LogError, "receiver peer: can't bind %s interface to local port",
                 address::interface_to_str(iface));
+        pipeline_.remove_endpoint(endpoint_set_, iface);
         return false;
     }
 
