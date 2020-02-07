@@ -6,10 +6,12 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#ifndef ROC_PIPELINE_TEST_PACKET_WRITER_H_
-#define ROC_PIPELINE_TEST_PACKET_WRITER_H_
+#ifndef ROC_PIPELINE_TEST_HELPERS_PACKET_WRITER_H_
+#define ROC_PIPELINE_TEST_HELPERS_PACKET_WRITER_H_
 
 #include <CppUTest/TestHarness.h>
+
+#include "test_helpers/utils.h"
 
 #include "roc_audio/iframe_encoder.h"
 #include "roc_core/buffer_pool.h"
@@ -20,10 +22,9 @@
 #include "roc_packet/packet_pool.h"
 #include "roc_rtp/format_map.h"
 
-#include "test_helpers.h"
-
 namespace roc {
 namespace pipeline {
+namespace test {
 
 class PacketWriter : public core::NonCopyable<> {
 public:
@@ -183,7 +184,8 @@ private:
     bool corrupt_;
 };
 
+} // namespace test
 } // namespace pipeline
 } // namespace roc
 
-#endif // ROC_PIPELINE_TEST_PACKET_WRITER_H_
+#endif // ROC_PIPELINE_TEST_HELPERS_PACKET_WRITER_H_

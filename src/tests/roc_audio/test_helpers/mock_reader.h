@@ -6,8 +6,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#ifndef ROC_AUDIO_TEST_MOCK_READER_H_
-#define ROC_AUDIO_TEST_MOCK_READER_H_
+#ifndef ROC_AUDIO_TEST_HELPERS_MOCK_READER_H_
+#define ROC_AUDIO_TEST_HELPERS_MOCK_READER_H_
 
 #include <CppUTest/TestHarness.h>
 
@@ -16,6 +16,7 @@
 
 namespace roc {
 namespace audio {
+namespace test {
 
 class MockReader : public IReader {
 public:
@@ -53,7 +54,8 @@ private:
     size_t size_;
 };
 
+} // namespace test
 } // namespace audio
 } // namespace roc
 
-#endif // ROC_AUDIO_TEST_MOCK_READER_H_
+#endif // ROC_AUDIO_TEST_HELPERS_MOCK_READER_H_

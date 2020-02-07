@@ -6,13 +6,14 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#ifndef ROC_RTP_TEST_PACKET_INFO_H_
-#define ROC_RTP_TEST_PACKET_INFO_H_
+#ifndef ROC_RTP_TEST_PACKETS_PACKET_INFO_H_
+#define ROC_RTP_TEST_PACKETS_PACKET_INFO_H_
 
 #include "roc_core/stddefs.h"
 
 namespace roc {
 namespace rtp {
+namespace test {
 
 struct PacketInfo {
     enum { MaxData = 2000, MaxExt = 32, MaxSrc = 16, MaxCh = 16, MaxSamples = 500 };
@@ -48,7 +49,8 @@ struct PacketInfo {
     long samples[MaxCh][MaxSamples];
 };
 
+} // namespace test
 } // namespace rtp
 } // namespace roc
 
-#endif // ROC_RTP_TEST_PACKET_INFO_H_
+#endif // ROC_RTP_TEST_PACKETS_PACKET_INFO_H_

@@ -8,12 +8,12 @@
 
 #include <CppUTest/TestHarness.h>
 
+#include "test_helpers/frame_reader.h"
+#include "test_helpers/mock_source.h"
+
 #include "roc_core/buffer_pool.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_pipeline/converter_source.h"
-
-#include "test_frame_reader.h"
-#include "test_mock_source.h"
 
 namespace roc {
 namespace pipeline {
@@ -57,7 +57,7 @@ TEST_GROUP(converter_source) {
 };
 
 TEST(converter_source, state) {
-    MockSource mock_source;
+    test::MockSource mock_source;
 
     ConverterSource converter(config, mock_source, sample_buffer_pool, allocator);
     CHECK(converter.valid());
@@ -70,7 +70,7 @@ TEST(converter_source, state) {
 }
 
 TEST(converter_source, pause_resume) {
-    MockSource mock_source;
+    test::MockSource mock_source;
 
     ConverterSource converter(config, mock_source, sample_buffer_pool, allocator);
     CHECK(converter.valid());
@@ -85,7 +85,7 @@ TEST(converter_source, pause_resume) {
 }
 
 TEST(converter_source, pause_restart) {
-    MockSource mock_source;
+    test::MockSource mock_source;
 
     ConverterSource converter(config, mock_source, sample_buffer_pool, allocator);
     CHECK(converter.valid());
@@ -100,13 +100,13 @@ TEST(converter_source, pause_restart) {
 }
 
 TEST(converter_source, read) {
-    MockSource mock_source;
+    test::MockSource mock_source;
     mock_source.add(ManyFrames * SamplesPerFrame * NumCh);
 
     ConverterSource converter(config, mock_source, sample_buffer_pool, allocator);
     CHECK(converter.valid());
 
-    FrameReader frame_reader(converter, sample_buffer_pool);
+    test::FrameReader frame_reader(converter, sample_buffer_pool);
 
     for (size_t nf = 0; nf < ManyFrames; nf++) {
         frame_reader.read_samples(SamplesPerFrame * NumCh, 1);
@@ -116,7 +116,7 @@ TEST(converter_source, read) {
 }
 
 TEST(converter_source, eof) {
-    MockSource mock_source;
+    test::MockSource mock_source;
 
     ConverterSource converter(config, mock_source, sample_buffer_pool, allocator);
     CHECK(converter.valid());
@@ -135,13 +135,13 @@ TEST(converter_source, eof) {
 TEST(converter_source, frame_size_small) {
     enum { SamplesPerSmallFrame = SamplesPerFrame / 2 - 3 };
 
-    MockSource mock_source;
+    test::MockSource mock_source;
     mock_source.add(ManyFrames * SamplesPerSmallFrame * NumCh);
 
     ConverterSource converter(config, mock_source, sample_buffer_pool, allocator);
     CHECK(converter.valid());
 
-    FrameReader frame_reader(converter, sample_buffer_pool);
+    test::FrameReader frame_reader(converter, sample_buffer_pool);
 
     for (size_t nf = 0; nf < ManyFrames; nf++) {
         frame_reader.read_samples(SamplesPerSmallFrame * NumCh, 1);
@@ -153,13 +153,13 @@ TEST(converter_source, frame_size_small) {
 TEST(converter_source, frame_size_large) {
     enum { SamplesPerLargeFrame = SamplesPerFrame * 2 + 3 };
 
-    MockSource mock_source;
+    test::MockSource mock_source;
     mock_source.add(ManyFrames * SamplesPerLargeFrame * NumCh);
 
     ConverterSource converter(config, mock_source, sample_buffer_pool, allocator);
     CHECK(converter.valid());
 
-    FrameReader frame_reader(converter, sample_buffer_pool);
+    test::FrameReader frame_reader(converter, sample_buffer_pool);
 
     for (size_t nf = 0; nf < ManyFrames; nf++) {
         frame_reader.read_samples(SamplesPerLargeFrame * NumCh, 1);
