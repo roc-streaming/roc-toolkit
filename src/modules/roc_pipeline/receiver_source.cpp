@@ -87,6 +87,18 @@ packet::IWriter* ReceiverSource::add_endpoint(EndpointSetHandle endpoint_set_han
     return endpoint_set->add_endpoint(iface, proto);
 }
 
+void ReceiverSource::remove_endpoint(EndpointSetHandle endpoint_set_handle,
+                                     address::Interface iface) {
+    core::Mutex::Lock lock(mutex_);
+
+    roc_panic_if(!valid());
+
+    ReceiverEndpointSet* endpoint_set = (ReceiverEndpointSet*)endpoint_set_handle;
+    roc_panic_if_not(endpoint_set);
+
+    endpoint_set->remove_endpoint(iface);
+}
+
 size_t ReceiverSource::num_sessions() const {
     return receiver_state_.num_sessions();
 }
