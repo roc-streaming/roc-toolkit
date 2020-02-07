@@ -239,7 +239,7 @@ int roc_endpoint_get_port(const roc_endpoint* endpoint, int* port) {
     }
 
     if (!imp_endpoint.get_port(*port)) {
-        roc_log(LogError, "roc_endpoint_get_port: endpoint port is not set");
+        roc_log(LogDebug, "roc_endpoint_get_port: endpoint port is not set");
         return -1;
     }
 
@@ -264,7 +264,7 @@ int roc_endpoint_get_resource(const roc_endpoint* endpoint, char* buf, size_t* b
 
     if (!address::format_endpoint_uri(imp_endpoint, address::EndpointURI::Subset_Resource,
                                       b)) {
-        roc_log(LogError, "roc_endpoint_get_resource: endpoint resource is not set");
+        roc_log(LogDebug, "roc_endpoint_get_resource: endpoint resource is not set");
         return -1;
     }
 
