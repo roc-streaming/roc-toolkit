@@ -48,7 +48,10 @@ section "Options"
     option "packet-limit" - "Maximum packet size, in bytes"
         int optional
 
-    option "frame-length" - "Duration of the internal frames, in nanoseconds"
+    option "frame-limit" - "Maximum internal frame size, in bytes"
+        int optional
+
+    option "frame-length" - "Duration of the internal frames, TIME units"
         typestr="TIME" string optional
 
     option "rate" - "Override output sample rate, Hz"

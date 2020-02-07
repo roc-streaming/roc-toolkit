@@ -27,7 +27,8 @@ Options
 --nbrpr=INT                 Number of repair packets in FEC block
 --packet-length=STRING      Outgoing packet length, TIME units
 --packet-limit=INT          Maximum packet size, in bytes
---frame-size=INT            Internal frame size, number of samples
+--frame-limit=INT           Maximum internal frame size, in bytes
+--frame-length=TIME         Duration of the internal frames, TIME units
 --rate=INT                  Override input sample rate, Hz
 --no-resampling             Disable resampling  (default=off)
 --resampler-backend=ENUM    Resampler backend  (possible values="builtin" default=`builtin')
