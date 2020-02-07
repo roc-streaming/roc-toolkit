@@ -47,6 +47,9 @@ public:
     //! Add endpoint.
     packet::IWriter* add_endpoint(address::Interface iface, address::Protocol proto);
 
+    //! Remove endpoint.
+    void remove_endpoint(address::Interface iface);
+
     //! Update packet queues and sessions.
     void update(packet::timestamp_t timestamp);
 
