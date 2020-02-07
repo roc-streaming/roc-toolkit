@@ -39,7 +39,7 @@ public:
     bool valid() const;
 
     //! Enable or disable port squashing.
-    bool set_squashing_enabled(bool);
+    bool set_squashing_enabled(address::Interface iface, bool enabled);
 
     //! Enable or disable traffic to broadcast addresses.
     bool set_broadcast_enabled(address::Interface iface, bool enabled);
@@ -62,10 +62,12 @@ private:
         netio::UdpSenderConfig orig_config;
         netio::EventLoop::PortHandle handle;
         packet::IWriter* writer;
+        bool squashing_enabled;
 
         InterfacePort()
             : handle(NULL)
-            , writer(NULL) {
+            , writer(NULL)
+            , squashing_enabled(true) {
         }
     };
 
@@ -85,8 +87,6 @@ private:
     pipeline::SenderSink::EndpointHandle repair_endpoint_;
 
     InterfacePort ports_[address::Iface_Max];
-
-    bool squashing_enabled_;
 };
 
 } // namespace peer
