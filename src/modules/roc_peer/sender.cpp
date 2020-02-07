@@ -50,27 +50,38 @@ bool Sender::valid() const {
     return endpoint_set_;
 }
 
-bool Sender::set_squashing_enabled(address::Interface iface, bool enabled) {
+bool Sender::set_outgoing_address(address::Interface iface, const char* ip) {
     core::Mutex::Lock lock(mutex_);
 
     roc_panic_if_not(valid());
 
+    roc_panic_if(!ip);
     roc_panic_if(iface < 0);
     roc_panic_if(iface >= (int)ROC_ARRAY_SIZE(ports_));
+
+    roc_panic_if(!ip);
 
     if (ports_[iface].handle) {
         roc_log(LogError,
                 "sender peer:"
-                " can't set squashing flag for %s interface:"
+                " can't set outgoing address for %s interface:"
                 " interface is already bound",
                 address::interface_to_str(iface));
         return false;
     }
 
-    ports_[iface].squashing_enabled = enabled;
+    if (!ports_[iface].config.bind_address.set_host_port_auto(
+            ip, ports_[iface].config.bind_address.port())) {
+        roc_log(LogError,
+                "sender peer:"
+                " can't set outgoing address for %s interface to '%s':"
+                " invalid IPv4 or IPv6 address",
+                address::interface_to_str(iface), ip);
+        return false;
+    }
 
-    roc_log(LogDebug, "sender peer: setting %s interface squashing flag to %d",
-            address::interface_to_str(iface), (int)enabled);
+    roc_log(LogDebug, "sender peer: setting %s interface outgoing address to %s",
+            address::interface_to_str(iface), ip);
 
     return true;
 }
@@ -100,7 +111,7 @@ bool Sender::set_broadcast_enabled(address::Interface iface, bool enabled) {
     return true;
 }
 
-bool Sender::set_outgoing_address(address::Interface iface, const char* ip) {
+bool Sender::set_squashing_enabled(address::Interface iface, bool enabled) {
     core::Mutex::Lock lock(mutex_);
 
     roc_panic_if_not(valid());
@@ -108,36 +119,19 @@ bool Sender::set_outgoing_address(address::Interface iface, const char* ip) {
     roc_panic_if(iface < 0);
     roc_panic_if(iface >= (int)ROC_ARRAY_SIZE(ports_));
 
-    roc_panic_if(!ip);
-
     if (ports_[iface].handle) {
         roc_log(LogError,
                 "sender peer:"
-                " can't set outgoing address for %s interface:"
+                " can't set squashing flag for %s interface:"
                 " interface is already bound",
                 address::interface_to_str(iface));
         return false;
     }
 
-    bool ok = ports_[iface].config.bind_address.set_host_port(
-        address::Family_IPv4, ip, ports_[iface].config.bind_address.port());
+    ports_[iface].squashing_enabled = enabled;
 
-    if (!ok) {
-        ok = ports_[iface].config.bind_address.set_host_port(
-            address::Family_IPv6, ip, ports_[iface].config.bind_address.port());
-    }
-
-    if (!ok) {
-        roc_log(LogError,
-                "sender peer:"
-                " can't set outgoing address for %s interface to '%s':"
-                " invalid IPv4 or IPv6 address",
-                address::interface_to_str(iface), ip);
-        return false;
-    }
-
-    roc_log(LogDebug, "sender peer: setting %s interface outgoing address to %s",
-            address::interface_to_str(iface), ip);
+    roc_log(LogDebug, "sender peer: setting %s interface squashing flag to %d",
+            address::interface_to_str(iface), (int)enabled);
 
     return true;
 }
