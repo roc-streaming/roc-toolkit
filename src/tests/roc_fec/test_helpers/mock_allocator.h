@@ -6,8 +6,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#ifndef ROC_FEC_TARGET_OPENFEC_TEST_MOCK_ALLOCATOR_H_
-#define ROC_FEC_TARGET_OPENFEC_TEST_MOCK_ALLOCATOR_H_
+#ifndef ROC_FEC_TEST_HELPERS_MOCK_ALLOCATOR_H_
+#define ROC_FEC_TEST_HELPERS_MOCK_ALLOCATOR_H_
 
 #include "roc_core/heap_allocator.h"
 #include "roc_core/iallocator.h"
@@ -15,6 +15,7 @@
 
 namespace roc {
 namespace fec {
+namespace test {
 
 class MockAllocator : public core::IAllocator, public core::NonCopyable<> {
 public:
@@ -42,7 +43,8 @@ private:
     bool fail_;
 };
 
+} // namespace test
 } // namespace fec
 } // namespace roc
 
-#endif // ROC_FEC_TARGET_OPENFEC_TEST_MOCK_ALLOCATOR_H_
+#endif // ROC_FEC_TEST_HELPERS_MOCK_ALLOCATOR_H_

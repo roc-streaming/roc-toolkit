@@ -32,7 +32,13 @@ public:
     }
 
     //! Check whether given FEC scheme is supported.
-    bool is_supported(packet::FecScheme scheme);
+    bool is_supported(packet::FecScheme scheme) const;
+
+    //! Get number of supported FEC schemes.
+    size_t num_schemes() const;
+
+    //! Get FEC scheme ID by index.
+    packet::FecScheme nth_scheme(size_t n) const;
 
     //! Create a new block encoder.
     //!
