@@ -17,8 +17,7 @@ namespace sndio {
 SoxSink::SoxSink(core::IAllocator& allocator, const Config& config)
     : output_(NULL)
     , buffer_(allocator)
-    , buffer_size_(
-          packet::ns_to_size(config.frame_length, config.sample_rate, config.channels))
+    , buffer_size_(0)
     , is_file_(false)
     , valid_(false) {
     SoxBackend::instance();
@@ -139,6 +138,10 @@ void SoxSink::write(audio::Frame& frame) {
 
 bool SoxSink::setup_buffer_() {
     buffer_size_ = packet::ns_to_size(frame_length_, sample_rate(), channels_);
+    if (buffer_size_ == 0) {
+        roc_log(LogError, "sox sink: buffer size is zero");
+        return false;
+    }
     if (!buffer_.resize(buffer_size_)) {
         roc_log(LogError, "sox sink: can't allocate sample buffer");
         return false;
