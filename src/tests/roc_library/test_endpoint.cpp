@@ -29,14 +29,14 @@ TEST(endpoint, uri_string) {
     roc_endpoint* endp = NULL;
     CHECK(roc_endpoint_allocate(&endp) == 0);
 
-    CHECK(roc_endpoint_set_uri(endp, "rtsp://host:123/path?query#frag") == 0);
+    CHECK(roc_endpoint_set_uri(endp, "rtsp://host:123/path?query") == 0);
 
     {
         char buf[128];
         size_t bufsz = sizeof(buf);
         CHECK(roc_endpoint_get_uri(endp, buf, &bufsz) == 0);
 
-        STRCMP_EQUAL("rtsp://host:123/path?query#frag", buf);
+        STRCMP_EQUAL("rtsp://host:123/path?query", buf);
         UNSIGNED_LONGS_EQUAL(strlen(buf) + 1, bufsz);
     }
 
@@ -68,7 +68,7 @@ TEST(endpoint, uri_string) {
         size_t bufsz = sizeof(buf);
         CHECK(roc_endpoint_get_resource(endp, buf, &bufsz) == 0);
 
-        STRCMP_EQUAL("/path?query#frag", buf);
+        STRCMP_EQUAL("/path?query", buf);
         UNSIGNED_LONGS_EQUAL(strlen(buf) + 1, bufsz);
     }
 
@@ -82,14 +82,14 @@ TEST(endpoint, uri_parts) {
     CHECK(roc_endpoint_set_protocol(endp, ROC_PROTO_RTSP) == 0);
     CHECK(roc_endpoint_set_host(endp, "host") == 0);
     CHECK(roc_endpoint_set_port(endp, 123) == 0);
-    CHECK(roc_endpoint_set_resource(endp, "/path?query#frag") == 0);
+    CHECK(roc_endpoint_set_resource(endp, "/path?query") == 0);
 
     {
         char buf[128];
         size_t bufsz = sizeof(buf);
         CHECK(roc_endpoint_get_uri(endp, buf, &bufsz) == 0);
 
-        STRCMP_EQUAL("rtsp://host:123/path?query#frag", buf);
+        STRCMP_EQUAL("rtsp://host:123/path?query", buf);
         UNSIGNED_LONGS_EQUAL(strlen(buf) + 1, bufsz);
     }
 
@@ -121,7 +121,7 @@ TEST(endpoint, uri_parts) {
         size_t bufsz = sizeof(buf);
         CHECK(roc_endpoint_get_resource(endp, buf, &bufsz) == 0);
 
-        STRCMP_EQUAL("/path?query#frag", buf);
+        STRCMP_EQUAL("/path?query", buf);
         UNSIGNED_LONGS_EQUAL(strlen(buf) + 1, bufsz);
     }
 
@@ -132,7 +132,7 @@ TEST(endpoint, override_uri_parts) {
     roc_endpoint* endp = NULL;
     CHECK(roc_endpoint_allocate(&endp) == 0);
 
-    CHECK(roc_endpoint_set_uri(endp, "rtsp://host:123/path?query#frag") == 0);
+    CHECK(roc_endpoint_set_uri(endp, "rtsp://host:123/path?query") == 0);
 
     CHECK(roc_endpoint_set_protocol(endp, ROC_PROTO_RTP) == 0);
     CHECK(roc_endpoint_set_host(endp, "1.2.3.4") == 0);
@@ -626,7 +626,7 @@ TEST(endpoint, invalidate_parts) {
         CHECK(roc_endpoint_allocate(&endp) == 0);
 
         // set uri
-        CHECK(roc_endpoint_set_uri(endp, "rtsp://1.2.3.4:567/path?query#frag") == 0);
+        CHECK(roc_endpoint_set_uri(endp, "rtsp://1.2.3.4:567/path?query") == 0);
 
         // resource: yes
         bufsz = sizeof(buf);
@@ -963,8 +963,7 @@ TEST(endpoint, percent_encoding) {
                                    "foo-bar"
                                    ":123"
                                    "/foo%21bar%40baz%2Fqux%3Fwee"
-                                   "?foo%21bar"
-                                   "#foo%21bar")
+                                   "?foo%21bar")
               == 0);
 
         // get uri
@@ -974,16 +973,14 @@ TEST(endpoint, percent_encoding) {
                      "foo-bar"
                      ":123"
                      "/foo!bar@baz/qux%3Fwee"
-                     "?foo%21bar"
-                     "#foo%21bar",
+                     "?foo%21bar",
                      buf);
 
         // get resource
         bufsz = sizeof(buf);
         CHECK(roc_endpoint_get_resource(endp, buf, &bufsz) == 0);
         STRCMP_EQUAL("/foo!bar@baz/qux%3Fwee"
-                     "?foo%21bar"
-                     "#foo%21bar",
+                     "?foo%21bar",
                      buf);
 
         // get host
@@ -1000,16 +997,14 @@ TEST(endpoint, percent_encoding) {
         // set resource
         CHECK(roc_endpoint_set_resource(endp,
                                         "/foo%21bar%40baz%2Fqux%3Fwee"
-                                        "?foo%21bar"
-                                        "#foo%21bar")
+                                        "?foo%21bar")
               == 0);
 
         // get resource
         bufsz = sizeof(buf);
         CHECK(roc_endpoint_get_resource(endp, buf, &bufsz) == 0);
         STRCMP_EQUAL("/foo!bar@baz/qux%3Fwee"
-                     "?foo%21bar"
-                     "#foo%21bar",
+                     "?foo%21bar",
                      buf);
 
         CHECK(roc_endpoint_deallocate(endp) == 0);
@@ -1019,19 +1014,19 @@ TEST(endpoint, percent_encoding) {
 TEST(endpoint, null_buffer) {
     roc_endpoint* endp = NULL;
     CHECK(roc_endpoint_allocate(&endp) == 0);
-    CHECK(roc_endpoint_set_uri(endp, "rtsp://host:123/path?query#frag") == 0);
+    CHECK(roc_endpoint_set_uri(endp, "rtsp://host:123/path?query") == 0);
 
     size_t bufsz;
 
     // uri
     bufsz = 0;
     CHECK(roc_endpoint_get_uri(endp, NULL, &bufsz) == 0);
-    UNSIGNED_LONGS_EQUAL(strlen("rtsp://host:123/path?query#frag") + 1, bufsz);
+    UNSIGNED_LONGS_EQUAL(strlen("rtsp://host:123/path?query") + 1, bufsz);
 
     // resource
     bufsz = 0;
     CHECK(roc_endpoint_get_resource(endp, NULL, &bufsz) == 0);
-    UNSIGNED_LONGS_EQUAL(strlen("/path?query#frag") + 1, bufsz);
+    UNSIGNED_LONGS_EQUAL(strlen("/path?query") + 1, bufsz);
 
     // host
     bufsz = 0;
