@@ -51,6 +51,31 @@ TEST(socket_addr, set_ipv6) {
     STRCMP_EQUAL("[2001:db8::1]:123", socket_addr_to_str(addr).c_str());
 }
 
+TEST(socket_addr, set_auto) {
+    {
+        SocketAddr addr;
+
+        CHECK(addr.set_host_port_auto("1.2.0.255", 123));
+        CHECK(addr.has_host_port());
+
+        UNSIGNED_LONGS_EQUAL(Family_IPv4, addr.family());
+        LONGS_EQUAL(123, addr.port());
+
+        STRCMP_EQUAL("1.2.0.255:123", socket_addr_to_str(addr).c_str());
+    }
+    {
+        SocketAddr addr;
+
+        CHECK(addr.set_host_port_auto("2001:db8::1", 123));
+        CHECK(addr.has_host_port());
+
+        UNSIGNED_LONGS_EQUAL(Family_IPv6, addr.family());
+        LONGS_EQUAL(123, addr.port());
+
+        STRCMP_EQUAL("[2001:db8::1]:123", socket_addr_to_str(addr).c_str());
+    }
+}
+
 TEST(socket_addr, get_ipv4) {
     SocketAddr addr;
 
