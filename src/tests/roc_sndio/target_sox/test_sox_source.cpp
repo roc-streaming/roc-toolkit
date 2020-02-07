@@ -223,8 +223,6 @@ TEST(sox_source, pause_restart) {
 
 TEST(sox_source, eof_restart) {
     core::TempFile file("test.wav");
-    const core::nanoseconds_t BufDuration =
-        FrameSize * core::Second / (SampleRate * packet::num_channels(ChMask));
     {
         MockSource mock_source;
         mock_source.add(FrameSize * NumChans * 2);
@@ -232,7 +230,7 @@ TEST(sox_source, eof_restart) {
         SoxSink sox_sink(allocator, sink_config);
         CHECK(sox_sink.open(NULL, file.path()));
 
-        Pump pump(buffer_pool, mock_source, NULL, sox_sink, BufDuration, SampleRate,
+        Pump pump(buffer_pool, mock_source, NULL, sox_sink, FrameDuration, SampleRate,
                   ChMask, Pump::ModeOneshot);
         CHECK(pump.valid());
         CHECK(pump.run());
