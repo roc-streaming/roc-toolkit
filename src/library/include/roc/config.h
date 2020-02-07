@@ -188,14 +188,14 @@ typedef enum roc_fec_code {
     /** Reed-Solomon FEC code (RFC 6865) with m=8.
      * Good for small block sizes (below 256 packets).
      * Compatible with \ref ROC_PROTO_RTP_RS8M_SOURCE and \ref ROC_PROTO_RS8M_REPAIR
-     * protocols for source and repair ports.
+     * protocols for source and repair endpoints.
      */
     ROC_FEC_RS8M = 1,
 
     /** LDPC-Staircase FEC code (RFC 6816).
      * Good for large block sizes (above 1024 packets).
      * Compatible with \ref ROC_PROTO_RTP_LDPC_SOURCE and \ref ROC_PROTO_LDPC_REPAIR
-     * protocols for source and repair ports.
+     * protocols for source and repair endpoints.
      */
     ROC_FEC_LDPC_STAIRCASE = 2
 } roc_fec_code;
@@ -357,7 +357,7 @@ typedef struct roc_sender_config {
     /** FEC code to use.
      * If non-zero, the sender employs a FEC codec to generate redundant packets
      * which may be used on receiver to restore lost packets. This requires both
-     * sender and receiver to use two separate source and repair ports.
+     * sender and receiver to use two separate source and repair endpoints.
      */
     roc_fec_code fec_code;
 
