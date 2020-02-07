@@ -8,8 +8,8 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "test_mock_sink.h"
-#include "test_mock_source.h"
+#include "test_helpers/mock_sink.h"
+#include "test_helpers/mock_source.h"
 
 #include "roc_core/buffer_pool.h"
 #include "roc_core/heap_allocator.h"
@@ -47,7 +47,7 @@ TEST_GROUP(pump) {
 TEST(pump, write_read) {
     enum { NumSamples = BufSize * 10 };
 
-    MockSource mock_source;
+    test::MockSource mock_source;
     mock_source.add(NumSamples);
 
     core::TempFile file("test.wav");
@@ -67,7 +67,7 @@ TEST(pump, write_read) {
     SoxSource sox_source(allocator, config);
     CHECK(sox_source.open(NULL, file.path()));
 
-    MockSink mock_writer;
+    test::MockSink mock_writer;
 
     Pump pump(buffer_pool, sox_source, NULL, mock_writer, BufDuration, SampleRate, ChMask,
               Pump::ModePermanent);
@@ -80,7 +80,7 @@ TEST(pump, write_read) {
 TEST(pump, write_overwrite_read) {
     enum { NumSamples = BufSize * 10 };
 
-    MockSource mock_source;
+    test::MockSource mock_source;
     mock_source.add(NumSamples);
 
     core::TempFile file("test.wav");
@@ -116,7 +116,7 @@ TEST(pump, write_overwrite_read) {
     SoxSource sox_source(allocator, config);
     CHECK(sox_source.open(NULL, file.path()));
 
-    MockSink mock_writer;
+    test::MockSink mock_writer;
 
     Pump pump(buffer_pool, sox_source, NULL, mock_writer, BufDuration, SampleRate, ChMask,
               Pump::ModePermanent);
