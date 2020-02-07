@@ -55,6 +55,10 @@ typedef struct roc_context roc_context;
  *  - returns zero if the context was successfully created
  *  - returns a negative value if the arguments are invalid
  *  - returns a negative value if there are not enough resources
+ *
+ * **Ownership**
+ *  - passes the owneship of \p result to the user; the user is responsible to call
+ *    roc_context_close() to free it
  */
 ROC_API int roc_context_open(const roc_context_config* config, roc_context** result);
 
@@ -72,6 +76,10 @@ ROC_API int roc_context_open(const roc_context_config* config, roc_context** res
  *  - returns zero if the context was successfully closed
  *  - returns a negative value if the arguments are invalid
  *  - returns a negative value if there are objects attached to the context
+ *
+ * **Ownership**
+ *  - ends the user ownership of \p context; it can't be used anymore after the
+ *    function returns
  */
 ROC_API int roc_context_close(roc_context* context);
 
