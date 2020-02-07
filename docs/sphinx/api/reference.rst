@@ -33,6 +33,12 @@ roc_sender
 
 .. doxygenfunction:: roc_sender_open
 
+.. doxygenfunction:: roc_sender_set_outgoing_address
+
+.. doxygenfunction:: roc_sender_set_broadcast_enabled
+
+.. doxygenfunction:: roc_sender_set_squashing_enabled
+
 .. doxygenfunction:: roc_sender_connect
 
 .. doxygenfunction:: roc_sender_write
@@ -49,6 +55,8 @@ roc_receiver
 .. doxygentypedef:: roc_receiver
 
 .. doxygenfunction:: roc_receiver_open
+
+.. doxygenfunction:: roc_receiver_set_multicast_group
 
 .. doxygenfunction:: roc_receiver_bind
 
