@@ -8,6 +8,11 @@
 
 #include <CppUTest/TestHarness.h>
 
+#include "test_helpers/awgn.h"
+#include "test_helpers/fft.h"
+#include "test_helpers/median.h"
+#include "test_helpers/mock_reader.h"
+
 #include "roc_audio/iresampler.h"
 #include "roc_audio/resampler_map.h"
 #include "roc_audio/resampler_reader.h"
@@ -16,12 +21,6 @@
 #include "roc_core/random.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_core/stddefs.h"
-
-#include "test_awgn.h"
-#include "test_fft.h"
-#include "test_median.h"
-#include "test_mock_reader.h"
-#include "test_resampler_backends.h"
 
 namespace roc {
 namespace audio {
@@ -70,7 +69,7 @@ TEST_GROUP(resampler) {
             spectrum[i * 2 + 1] = 0; // imaginary part
         }
 
-        FreqSpectrum(spectrum, sig_len);
+        test::freq_spectrum(spectrum, sig_len);
     }
 
     // Reads signal from the resampler and puts its spectrum into @p spectrum.
@@ -95,8 +94,8 @@ TEST_GROUP(resampler) {
         memset(&spectrum1[i * 2], 0, (sig_len * 2 - i * 2) * sizeof(double));
         memset(&spectrum2[i * 2], 0, (sig_len * 2 - i * 2) * sizeof(double));
 
-        FreqSpectrum(spectrum1, sig_len / nChannels);
-        FreqSpectrum(spectrum2, sig_len / nChannels);
+        test::freq_spectrum(spectrum1, sig_len / nChannels);
+        test::freq_spectrum(spectrum2, sig_len / nChannels);
     }
 };
 
@@ -106,10 +105,10 @@ TEST(resampler, invalid_scaling) {
     const core::nanoseconds_t FrameDuration =
         FrameSize * core::Second / (InSamples * packet::num_channels(ChMask));
 
-    for (size_t n_backend = 0; n_backend < Test_n_resampler_backends; n_backend++) {
-        ResamplerBackend backend = Test_resampler_backends[n_backend];
+    for (size_t n_back = 0; n_back < ResamplerMap::instance().num_backends(); n_back++) {
+        ResamplerBackend backend = ResamplerMap::instance().nth_backend(n_back);
 
-        MockReader reader;
+        test::MockReader reader;
         core::ScopedPtr<IResampler> resampler(
             ResamplerMap::instance().new_resampler(backend, allocator, config,
                                                    FrameDuration, InSamples, ChMask),
@@ -126,13 +125,13 @@ TEST(resampler, invalid_scaling) {
 // Check the quality of upsampled sine-wave.
 TEST(resampler, upscaling_twice_single) {
     enum { ChMask = 0x1 };
-    for (size_t n_backend = 0; n_backend < Test_n_resampler_backends; n_backend++) {
-        ResamplerBackend backend = Test_resampler_backends[n_backend];
+    for (size_t n_back = 0; n_back < ResamplerMap::instance().num_backends(); n_back++) {
+        ResamplerBackend backend = ResamplerMap::instance().nth_backend(n_back);
 
         const core::nanoseconds_t FrameDuration =
             FrameSize * core::Second / (InSamples * packet::num_channels(ChMask));
 
-        MockReader reader;
+        test::MockReader reader;
         core::ScopedPtr<IResampler> resampler(
             ResamplerMap::instance().new_resampler(backend, allocator, config,
                                                    FrameDuration, InSamples, ChMask),
@@ -173,10 +172,10 @@ TEST(resampler, upscaling_twice_awgn) {
     const core::nanoseconds_t FrameDuration =
         FrameSize * core::Second / (InSamples * packet::num_channels(ChMask));
 
-    for (size_t n_backend = 0; n_backend < Test_n_resampler_backends; n_backend++) {
-        ResamplerBackend backend = Test_resampler_backends[n_backend];
+    for (size_t n_back = 0; n_back < ResamplerMap::instance().num_backends(); n_back++) {
+        ResamplerBackend backend = ResamplerMap::instance().nth_backend(n_back);
 
-        MockReader reader;
+        test::MockReader reader;
         core::ScopedPtr<IResampler> resampler(
             ResamplerMap::instance().new_resampler(backend, allocator, config,
                                                    FrameDuration, InSamples, ChMask),
@@ -190,7 +189,7 @@ TEST(resampler, upscaling_twice_awgn) {
 
         // Generate white noise.
         for (size_t n = 0; n < InSamples; n++) {
-            const sample_t s = (sample_t)generate_awgn();
+            const sample_t s = (sample_t)test::generate_awgn();
             reader.add(1, s);
         }
 
@@ -209,7 +208,7 @@ TEST(resampler, upscaling_twice_awgn) {
 
         // Remove spikes using median filter.
         double filtered_db[db_len];
-        median_filter(db, filtered_db, db_len);
+        test::median_filter(db, filtered_db, db_len);
 
         for (size_t i = 0; i < db_len; i++) {
             if (i <= db_len * 0.4) {
@@ -227,10 +226,10 @@ TEST(resampler, downsample) {
     const core::nanoseconds_t FrameDuration =
         FrameSize * core::Second / (InSamples * packet::num_channels(ChMask));
 
-    for (size_t n_backend = 0; n_backend < Test_n_resampler_backends; n_backend++) {
-        ResamplerBackend backend = Test_resampler_backends[n_backend];
+    for (size_t n_back = 0; n_back < ResamplerMap::instance().num_backends(); n_back++) {
+        ResamplerBackend backend = ResamplerMap::instance().nth_backend(n_back);
 
-        MockReader reader;
+        test::MockReader reader;
         core::ScopedPtr<IResampler> resampler(
             ResamplerMap::instance().new_resampler(backend, allocator, config,
                                                    FrameDuration, InSamples, ChMask),
@@ -270,10 +269,10 @@ TEST(resampler, two_tones_sep_channels) {
     const core::nanoseconds_t FrameDuration =
         FrameSize * core::Second / (InSamples * packet::num_channels(ChMask));
 
-    for (size_t n_backend = 0; n_backend < Test_n_resampler_backends; n_backend++) {
-        ResamplerBackend backend = Test_resampler_backends[n_backend];
+    for (size_t n_back = 0; n_back < ResamplerMap::instance().num_backends(); n_back++) {
+        ResamplerBackend backend = ResamplerMap::instance().nth_backend(n_back);
 
-        MockReader reader;
+        test::MockReader reader;
         core::ScopedPtr<IResampler> resampler(
             ResamplerMap::instance().new_resampler(backend, allocator, config,
                                                    FrameDuration, InSamples, ChMask),
