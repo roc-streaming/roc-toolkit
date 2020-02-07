@@ -8,9 +8,8 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "test_fec_schemes.h"
-#include "test_mock_allocator.h"
-#include "test_packet_dispatcher.h"
+#include "test_helpers/mock_allocator.h"
+#include "test_helpers/packet_dispatcher.h"
 
 #include "roc_core/buffer_pool.h"
 #include "roc_core/heap_allocator.h"
@@ -208,8 +207,8 @@ TEST_GROUP(writer_reader) {
 };
 
 TEST(writer_reader, no_losses) {
-    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
-        codec_config.scheme = Test_fec_schemes[n_scheme];
+    for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
+        codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
             CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
@@ -222,8 +221,8 @@ TEST(writer_reader, no_losses) {
         CHECK(encoder);
         CHECK(decoder);
 
-        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
-                                    NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                          NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
                       source_composer(), repair_composer(), packet_pool, buffer_pool,
@@ -256,8 +255,8 @@ TEST(writer_reader, no_losses) {
 }
 
 TEST(writer_reader, 1_loss) {
-    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
-        codec_config.scheme = Test_fec_schemes[n_scheme];
+    for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
+        codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
             CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
@@ -270,8 +269,8 @@ TEST(writer_reader, 1_loss) {
         CHECK(encoder);
         CHECK(decoder);
 
-        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
-                                    NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                          NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
                       source_composer(), repair_composer(), packet_pool, buffer_pool,
@@ -306,8 +305,8 @@ TEST(writer_reader, 1_loss) {
 }
 
 TEST(writer_reader, lost_first_packet_in_first_block) {
-    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
-        codec_config.scheme = Test_fec_schemes[n_scheme];
+    for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
+        codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
             CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
@@ -320,8 +319,8 @@ TEST(writer_reader, lost_first_packet_in_first_block) {
         CHECK(encoder);
         CHECK(decoder);
 
-        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
-                                    NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                          NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
                       source_composer(), repair_composer(), packet_pool, buffer_pool,
@@ -365,8 +364,8 @@ TEST(writer_reader, lost_first_packet_in_first_block) {
 }
 
 TEST(writer_reader, lost_one_source_and_all_repair_packets) {
-    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
-        codec_config.scheme = Test_fec_schemes[n_scheme];
+    for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
+        codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
             CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
@@ -379,8 +378,8 @@ TEST(writer_reader, lost_one_source_and_all_repair_packets) {
         CHECK(encoder);
         CHECK(decoder);
 
-        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
-                                    NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                          NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
                       source_composer(), repair_composer(), packet_pool, buffer_pool,
@@ -437,8 +436,8 @@ TEST(writer_reader, lost_one_source_and_all_repair_packets) {
 TEST(writer_reader, multiple_blocks_1_loss) {
     enum { NumBlocks = 40 };
 
-    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
-        codec_config.scheme = Test_fec_schemes[n_scheme];
+    for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
+        codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
             CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
@@ -451,8 +450,8 @@ TEST(writer_reader, multiple_blocks_1_loss) {
         CHECK(encoder);
         CHECK(decoder);
 
-        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
-                                    NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                          NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
                       source_composer(), repair_composer(), packet_pool, buffer_pool,
@@ -512,8 +511,8 @@ TEST(writer_reader, multiple_blocks_1_loss) {
 TEST(writer_reader, multiple_blocks_in_queue) {
     enum { NumBlocks = 3 };
 
-    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
-        codec_config.scheme = Test_fec_schemes[n_scheme];
+    for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
+        codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
             CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
@@ -526,8 +525,8 @@ TEST(writer_reader, multiple_blocks_in_queue) {
         CHECK(encoder);
         CHECK(decoder);
 
-        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
-                                    NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                          NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
                       source_composer(), repair_composer(), packet_pool, buffer_pool,
@@ -568,8 +567,8 @@ TEST(writer_reader, multiple_blocks_in_queue) {
 TEST(writer_reader, interleaved_packets) {
     enum { NumPackets = NumSourcePackets * 30 };
 
-    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
-        codec_config.scheme = Test_fec_schemes[n_scheme];
+    for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
+        codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
             CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
@@ -582,8 +581,8 @@ TEST(writer_reader, interleaved_packets) {
         CHECK(encoder);
         CHECK(decoder);
 
-        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
-                                    NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                          NumSourcePackets, NumRepairPackets);
 
         packet::Interleaver intrlvr(dispatcher, allocator, 10);
 
@@ -625,8 +624,8 @@ TEST(writer_reader, delayed_packets) {
     // 3. Try to read more and get NULL.
     // 4. Deliver second half of block.
     // 5. Read second half of block.
-    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
-        codec_config.scheme = Test_fec_schemes[n_scheme];
+    for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
+        codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
             CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
@@ -639,8 +638,8 @@ TEST(writer_reader, delayed_packets) {
         CHECK(encoder);
         CHECK(decoder);
 
-        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
-                                    NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                          NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
                       source_composer(), repair_composer(), packet_pool, buffer_pool,
@@ -697,8 +696,8 @@ TEST(writer_reader, late_out_of_order_packets) {
     // 3. Deliver all delayed packets except one.
     // 4. Read second part of the block.
     // 5. Deliver the last delayed packet.
-    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
-        codec_config.scheme = Test_fec_schemes[n_scheme];
+    for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
+        codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
             CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
@@ -711,8 +710,8 @@ TEST(writer_reader, late_out_of_order_packets) {
         CHECK(encoder);
         CHECK(decoder);
 
-        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
-                                    NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                          NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
                       source_composer(), repair_composer(), packet_pool, buffer_pool,
@@ -777,8 +776,8 @@ TEST(writer_reader, repair_packets_before_source_packets) {
     writer_config.n_source_packets = 30;
     writer_config.n_repair_packets = 40;
 
-    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
-        codec_config.scheme = Test_fec_schemes[n_scheme];
+    for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
+        codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
             CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
@@ -791,9 +790,9 @@ TEST(writer_reader, repair_packets_before_source_packets) {
         CHECK(encoder);
         CHECK(decoder);
 
-        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
-                                    writer_config.n_source_packets,
-                                    writer_config.n_repair_packets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                          writer_config.n_source_packets,
+                                          writer_config.n_repair_packets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
                       source_composer(), repair_composer(), packet_pool, buffer_pool,
@@ -865,8 +864,8 @@ TEST(writer_reader, repair_packets_mixed_with_source_packets) {
     writer_config.n_source_packets = 30;
     writer_config.n_repair_packets = 40;
 
-    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
-        codec_config.scheme = Test_fec_schemes[n_scheme];
+    for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
+        codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
             CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
@@ -879,9 +878,9 @@ TEST(writer_reader, repair_packets_mixed_with_source_packets) {
         CHECK(encoder);
         CHECK(decoder);
 
-        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
-                                    writer_config.n_source_packets,
-                                    writer_config.n_repair_packets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                          writer_config.n_source_packets,
+                                          writer_config.n_repair_packets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
                       source_composer(), repair_composer(), packet_pool, buffer_pool,
@@ -965,8 +964,8 @@ TEST(writer_reader, multiple_repair_attempts) {
     // 2. Detect first loss.
     // 3. Transmit fec packets.
     // 4. Check remaining data packets including lost one.
-    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
-        codec_config.scheme = Test_fec_schemes[n_scheme];
+    for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
+        codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
             CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
@@ -979,8 +978,8 @@ TEST(writer_reader, multiple_repair_attempts) {
         CHECK(encoder);
         CHECK(decoder);
 
-        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
-                                    NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                          NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
                       source_composer(), repair_composer(), packet_pool, buffer_pool,
@@ -1045,8 +1044,8 @@ TEST(writer_reader, multiple_repair_attempts) {
 }
 
 TEST(writer_reader, drop_outdated_block) {
-    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
-        codec_config.scheme = Test_fec_schemes[n_scheme];
+    for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
+        codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
             CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
@@ -1059,8 +1058,8 @@ TEST(writer_reader, drop_outdated_block) {
         CHECK(encoder);
         CHECK(decoder);
 
-        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
-                                    NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                          NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
                       source_composer(), repair_composer(), packet_pool, buffer_pool,
@@ -1117,8 +1116,8 @@ TEST(writer_reader, drop_outdated_block) {
 }
 
 TEST(writer_reader, repaired_block_numbering) {
-    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
-        codec_config.scheme = Test_fec_schemes[n_scheme];
+    for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
+        codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
             CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
@@ -1131,8 +1130,8 @@ TEST(writer_reader, repaired_block_numbering) {
         CHECK(encoder);
         CHECK(decoder);
 
-        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
-                                    NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                          NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
                       source_composer(), repair_composer(), packet_pool, buffer_pool,
@@ -1204,8 +1203,8 @@ TEST(writer_reader, repaired_block_numbering) {
 TEST(writer_reader, invalid_esi) {
     enum { NumBlocks = 5 };
 
-    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
-        codec_config.scheme = Test_fec_schemes[n_scheme];
+    for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
+        codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
             CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
@@ -1220,8 +1219,8 @@ TEST(writer_reader, invalid_esi) {
 
         packet::Queue queue;
 
-        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
-                                    NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                          NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, queue,
                       source_composer(), repair_composer(), packet_pool, buffer_pool,
@@ -1286,8 +1285,8 @@ TEST(writer_reader, invalid_esi) {
 TEST(writer_reader, invalid_sbl) {
     enum { NumBlocks = 5 };
 
-    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
-        codec_config.scheme = Test_fec_schemes[n_scheme];
+    for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
+        codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
             CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
@@ -1302,8 +1301,8 @@ TEST(writer_reader, invalid_sbl) {
 
         packet::Queue queue;
 
-        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
-                                    NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                          NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, queue,
                       source_composer(), repair_composer(), packet_pool, buffer_pool,
@@ -1363,8 +1362,8 @@ TEST(writer_reader, invalid_sbl) {
 TEST(writer_reader, invalid_nes) {
     enum { NumBlocks = 5 };
 
-    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
-        codec_config.scheme = Test_fec_schemes[n_scheme];
+    for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
+        codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
             CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
@@ -1379,8 +1378,8 @@ TEST(writer_reader, invalid_nes) {
 
         packet::Queue queue;
 
-        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
-                                    NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                          NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, queue,
                       source_composer(), repair_composer(), packet_pool, buffer_pool,
@@ -1439,8 +1438,8 @@ TEST(writer_reader, invalid_nes) {
 TEST(writer_reader, invalid_payload_size) {
     enum { NumBlocks = 5 };
 
-    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
-        codec_config.scheme = Test_fec_schemes[n_scheme];
+    for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
+        codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
             CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
@@ -1526,8 +1525,8 @@ TEST(writer_reader, invalid_payload_size) {
 TEST(writer_reader, zero_source_packets) {
     enum { NumBlocks = 5 };
 
-    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
-        codec_config.scheme = Test_fec_schemes[n_scheme];
+    for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
+        codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
             CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
@@ -1542,8 +1541,8 @@ TEST(writer_reader, zero_source_packets) {
 
         packet::Queue queue;
 
-        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
-                                    NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                          NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, queue,
                       source_composer(), repair_composer(), packet_pool, buffer_pool,
@@ -1610,8 +1609,8 @@ TEST(writer_reader, zero_source_packets) {
 TEST(writer_reader, zero_repair_packets) {
     enum { NumBlocks = 5 };
 
-    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
-        codec_config.scheme = Test_fec_schemes[n_scheme];
+    for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
+        codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
             CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
@@ -1626,8 +1625,9 @@ TEST(writer_reader, zero_repair_packets) {
 
         packet::Queue queue;
 
-        PacketDispatcher dispatcher(ldpc_source_parser, ldpc_repair_parser, packet_pool,
-                                    NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(ldpc_source_parser, ldpc_repair_parser,
+                                          packet_pool, NumSourcePackets,
+                                          NumRepairPackets);
 
         Writer writer(writer_config, packet::FEC_LDPC_Staircase, *encoder, queue,
                       ldpc_source_composer, ldpc_repair_composer, packet_pool,
@@ -1691,8 +1691,8 @@ TEST(writer_reader, zero_repair_packets) {
 TEST(writer_reader, zero_payload_size) {
     enum { NumBlocks = 5 };
 
-    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
-        codec_config.scheme = Test_fec_schemes[n_scheme];
+    for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
+        codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
             CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
@@ -1778,8 +1778,8 @@ TEST(writer_reader, sbn_jump) {
 
     reader_config.max_sbn_jump = MaxSbnJump;
 
-    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
-        codec_config.scheme = Test_fec_schemes[n_scheme];
+    for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
+        codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
             CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
@@ -1794,8 +1794,8 @@ TEST(writer_reader, sbn_jump) {
 
         packet::Queue queue;
 
-        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
-                                    NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                          NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, queue,
                       source_composer(), repair_composer(), packet_pool, buffer_pool,
@@ -1889,8 +1889,8 @@ TEST(writer_reader, sbn_jump) {
 TEST(writer_reader, writer_encode_blocks) {
     enum { NumBlocks = 3 };
 
-    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
-        codec_config.scheme = Test_fec_schemes[n_scheme];
+    for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
+        codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         packet::source_t data_source = 555;
 
@@ -1901,8 +1901,9 @@ TEST(writer_reader, writer_encode_blocks) {
 
             CHECK(encoder);
 
-            PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
-                                        NumSourcePackets, NumRepairPackets);
+            test::PacketDispatcher dispatcher(source_parser(), repair_parser(),
+                                              packet_pool, NumSourcePackets,
+                                              NumRepairPackets);
 
             Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
                           source_composer(), repair_composer(), packet_pool, buffer_pool,
@@ -1978,16 +1979,16 @@ TEST(writer_reader, writer_encode_blocks) {
 }
 
 TEST(writer_reader, writer_resize_blocks) {
-    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
-        codec_config.scheme = Test_fec_schemes[n_scheme];
+    for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
+        codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
             CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
             allocator);
         CHECK(encoder);
 
-        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
-                                    NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                          NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
                       source_composer(), repair_composer(), packet_pool, buffer_pool,
@@ -2038,8 +2039,8 @@ TEST(writer_reader, writer_resize_blocks) {
 }
 
 TEST(writer_reader, resize_block_begin) {
-    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
-        codec_config.scheme = Test_fec_schemes[n_scheme];
+    for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
+        codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
             CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
@@ -2052,8 +2053,8 @@ TEST(writer_reader, resize_block_begin) {
         CHECK(decoder);
         CHECK(encoder);
 
-        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
-                                    NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                          NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
                       source_composer(), repair_composer(), packet_pool, buffer_pool,
@@ -2112,8 +2113,8 @@ TEST(writer_reader, resize_block_begin) {
 }
 
 TEST(writer_reader, resize_block_middle) {
-    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
-        codec_config.scheme = Test_fec_schemes[n_scheme];
+    for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
+        codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
             CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
@@ -2126,8 +2127,8 @@ TEST(writer_reader, resize_block_middle) {
         CHECK(decoder);
         CHECK(encoder);
 
-        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
-                                    NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                          NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
                       source_composer(), repair_composer(), packet_pool, buffer_pool,
@@ -2207,8 +2208,8 @@ TEST(writer_reader, resize_block_middle) {
 }
 
 TEST(writer_reader, resize_block_losses) {
-    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
-        codec_config.scheme = Test_fec_schemes[n_scheme];
+    for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
+        codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
             CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
@@ -2221,8 +2222,8 @@ TEST(writer_reader, resize_block_losses) {
         CHECK(decoder);
         CHECK(encoder);
 
-        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
-                                    NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                          NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
                       source_composer(), repair_composer(), packet_pool, buffer_pool,
@@ -2283,8 +2284,8 @@ TEST(writer_reader, resize_block_losses) {
 }
 
 TEST(writer_reader, resize_block_repair_first) {
-    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
-        codec_config.scheme = Test_fec_schemes[n_scheme];
+    for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
+        codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
             CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
@@ -2297,8 +2298,8 @@ TEST(writer_reader, resize_block_repair_first) {
         CHECK(encoder);
         CHECK(decoder);
 
-        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
-                                    NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                          NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
                       source_composer(), repair_composer(), packet_pool, buffer_pool,
@@ -2373,18 +2374,18 @@ TEST(writer_reader, resize_block_repair_first) {
 TEST(writer_reader, error_writer_resize_block) {
     enum { BlockSize1 = 50, BlockSize2 = 60 };
 
-    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
-        codec_config.scheme = Test_fec_schemes[n_scheme];
+    for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
+        codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
             CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
             allocator);
         CHECK(encoder);
 
-        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
-                                    NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                          NumSourcePackets, NumRepairPackets);
 
-        MockAllocator mock_allocator;
+        test::MockAllocator mock_allocator;
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
                       source_composer(), repair_composer(), packet_pool, buffer_pool,
@@ -2424,18 +2425,18 @@ TEST(writer_reader, error_writer_resize_block) {
 TEST(writer_reader, error_writer_encode_packet) {
     enum { BlockSize1 = 50, BlockSize2 = 60 };
 
-    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
-        codec_config.scheme = Test_fec_schemes[n_scheme];
+    for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
+        codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
-        MockAllocator mock_allocator;
+        test::MockAllocator mock_allocator;
 
         core::ScopedPtr<IBlockEncoder> encoder(
             CodecMap::instance().new_encoder(codec_config, buffer_pool, mock_allocator),
             mock_allocator);
         CHECK(encoder);
 
-        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
-                                    NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                          NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
                       source_composer(), repair_composer(), packet_pool, buffer_pool,
@@ -2471,8 +2472,8 @@ TEST(writer_reader, error_writer_encode_packet) {
 TEST(writer_reader, error_reader_resize_block) {
     enum { BlockSize1 = 50, BlockSize2 = 60 };
 
-    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
-        codec_config.scheme = Test_fec_schemes[n_scheme];
+    for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
+        codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
             CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
@@ -2485,14 +2486,14 @@ TEST(writer_reader, error_reader_resize_block) {
         CHECK(encoder);
         CHECK(decoder);
 
-        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
-                                    NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                          NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
                       source_composer(), repair_composer(), packet_pool, buffer_pool,
                       allocator);
 
-        MockAllocator mock_allocator;
+        test::MockAllocator mock_allocator;
 
         Reader reader(reader_config, codec_config.scheme, *decoder,
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
@@ -2542,23 +2543,23 @@ TEST(writer_reader, error_reader_resize_block) {
 TEST(writer_reader, error_reader_decode_packet) {
     enum { BlockSize1 = 50, BlockSize2 = 60 };
 
-    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
-        codec_config.scheme = Test_fec_schemes[n_scheme];
+    for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
+        codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
             CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
             allocator);
         CHECK(encoder);
 
-        MockAllocator mock_allocator;
+        test::MockAllocator mock_allocator;
 
         core::ScopedPtr<IBlockDecoder> decoder(
             CodecMap::instance().new_decoder(codec_config, buffer_pool, mock_allocator),
             mock_allocator);
         CHECK(decoder);
 
-        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
-                                    NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                          NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
                       source_composer(), repair_composer(), packet_pool, buffer_pool,
@@ -2622,8 +2623,8 @@ TEST(writer_reader, error_reader_decode_packet) {
 }
 
 TEST(writer_reader, writer_oversized_block) {
-    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; ++n_scheme) {
-        codec_config.scheme = Test_fec_schemes[n_scheme];
+    for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); ++n_scheme) {
+        codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
             CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
@@ -2639,8 +2640,8 @@ TEST(writer_reader, writer_oversized_block) {
         CHECK(decoder->max_block_length() == encoder->max_block_length());
         CHECK(NumSourcePackets + NumRepairPackets <= encoder->max_block_length());
 
-        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
-                                    NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                          NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
                       source_composer(), repair_composer(), packet_pool, buffer_pool,
@@ -2690,8 +2691,8 @@ TEST(writer_reader, writer_oversized_block) {
 }
 
 TEST(writer_reader, reader_oversized_source_block) {
-    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; ++n_scheme) {
-        codec_config.scheme = Test_fec_schemes[n_scheme];
+    for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); ++n_scheme) {
+        codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
             CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
@@ -2708,8 +2709,9 @@ TEST(writer_reader, reader_oversized_source_block) {
         CHECK((NumSourcePackets + NumRepairPackets) < encoder->max_block_length());
 
         packet::Queue queue;
-        PacketDispatcher dispatcher(ldpc_source_parser, ldpc_repair_parser, packet_pool,
-                                    NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(ldpc_source_parser, ldpc_repair_parser,
+                                          packet_pool, NumSourcePackets,
+                                          NumRepairPackets);
 
         // We are going to spoil source_block_length field of a FEC packet,
         // but Reed-Solomon does not allow us to set this field above 255,
@@ -2758,8 +2760,8 @@ TEST(writer_reader, reader_oversized_source_block) {
 }
 
 TEST(writer_reader, reader_oversized_repair_block) {
-    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; ++n_scheme) {
-        codec_config.scheme = Test_fec_schemes[n_scheme];
+    for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); ++n_scheme) {
+        codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
             CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
@@ -2776,8 +2778,9 @@ TEST(writer_reader, reader_oversized_repair_block) {
         CHECK((NumSourcePackets + NumRepairPackets) < encoder->max_block_length());
 
         packet::Queue queue;
-        PacketDispatcher dispatcher(ldpc_source_parser, ldpc_repair_parser, packet_pool,
-                                    NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(ldpc_source_parser, ldpc_repair_parser,
+                                          packet_pool, NumSourcePackets,
+                                          NumRepairPackets);
 
         // We are going to spoil source_block_length field of a FEC packet,
         // but Reed-Solomon does not allow us to set this field above 255,
@@ -2826,16 +2829,16 @@ TEST(writer_reader, reader_oversized_repair_block) {
 }
 
 TEST(writer_reader, writer_invalid_payload_size_change) {
-    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; ++n_scheme) {
-        codec_config.scheme = Test_fec_schemes[n_scheme];
+    for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); ++n_scheme) {
+        codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
             CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
             allocator);
         CHECK(encoder);
 
-        PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
-                                    NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+                                          NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
                       source_composer(), repair_composer(), packet_pool, buffer_pool,
@@ -2875,8 +2878,8 @@ TEST(writer_reader, writer_invalid_payload_size_change) {
 }
 
 TEST(writer_reader, reader_invalid_fec_scheme_source_packet) {
-    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; ++n_scheme) {
-        codec_config.scheme = Test_fec_schemes[n_scheme];
+    for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); ++n_scheme) {
+        codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
             CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
@@ -2930,7 +2933,8 @@ TEST(writer_reader, reader_invalid_fec_scheme_source_packet) {
             packet::PacketPtr p = writer_queue.read();
             CHECK(p);
             CHECK((p->flags() & packet::Packet::FlagRepair) == 0);
-            p->fec()->fec_scheme = Test_fec_schemes[(n_scheme + 1) % Test_n_fec_schemes];
+            p->fec()->fec_scheme = CodecMap::instance().nth_scheme(
+                (n_scheme + 1) % CodecMap::instance().num_schemes());
             source_queue.write(p);
             UNSIGNED_LONGS_EQUAL(1, source_queue.size());
         }
@@ -2943,8 +2947,8 @@ TEST(writer_reader, reader_invalid_fec_scheme_source_packet) {
 }
 
 TEST(writer_reader, reader_invalid_fec_scheme_repair_packet) {
-    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; ++n_scheme) {
-        codec_config.scheme = Test_fec_schemes[n_scheme];
+    for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); ++n_scheme) {
+        codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
             CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
@@ -3009,7 +3013,8 @@ TEST(writer_reader, reader_invalid_fec_scheme_repair_packet) {
             packet::PacketPtr p = writer_queue.read();
             CHECK(p);
             CHECK((p->flags() & packet::Packet::FlagRepair) != 0);
-            p->fec()->fec_scheme = Test_fec_schemes[(n_scheme + 1) % Test_n_fec_schemes];
+            p->fec()->fec_scheme = CodecMap::instance().nth_scheme(
+                (n_scheme + 1) % CodecMap::instance().num_schemes());
             repair_queue.write(p);
             UNSIGNED_LONGS_EQUAL(1, repair_queue.size());
         }

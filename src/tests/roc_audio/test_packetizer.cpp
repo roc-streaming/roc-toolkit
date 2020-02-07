@@ -49,7 +49,7 @@ packet::PacketPool packet_pool(allocator, true);
 
 rtp::Composer rtp_composer(NULL);
 
-const audio::PcmFuncs& pcm_funcs = audio::PCM_int16_2ch;
+const PcmFuncs& pcm_funcs = PCM_int16_2ch;
 
 sample_t nth_sample(uint8_t n) {
     return sample_t(n) / sample_t(1 << 8);
@@ -161,8 +161,8 @@ TEST_GROUP(packetizer) {};
 TEST(packetizer, one_buffer_one_packet) {
     enum { NumFrames = 10 };
 
-    audio::PcmEncoder encoder(pcm_funcs);
-    audio::PcmDecoder decoder(pcm_funcs);
+    PcmEncoder encoder(pcm_funcs);
+    PcmDecoder decoder(pcm_funcs);
 
     packet::Queue packet_queue;
 
@@ -187,8 +187,8 @@ TEST(packetizer, one_buffer_one_packet) {
 TEST(packetizer, one_buffer_multiple_packets) {
     enum { NumPackets = 10 };
 
-    audio::PcmEncoder encoder(pcm_funcs);
-    audio::PcmDecoder decoder(pcm_funcs);
+    PcmEncoder encoder(pcm_funcs);
+    PcmDecoder decoder(pcm_funcs);
 
     packet::Queue packet_queue;
 
@@ -213,8 +213,8 @@ TEST(packetizer, multiple_buffers_one_packet) {
 
     CHECK(SamplesPerPacket % FramesPerPacket == 0);
 
-    audio::PcmEncoder encoder(pcm_funcs);
-    audio::PcmDecoder decoder(pcm_funcs);
+    PcmEncoder encoder(pcm_funcs);
+    PcmDecoder decoder(pcm_funcs);
 
     packet::Queue packet_queue;
 
@@ -245,8 +245,8 @@ TEST(packetizer, multiple_buffers_multiple_packets) {
         NumPackets = (NumSamples * NumFrames / SamplesPerPacket)
     };
 
-    audio::PcmEncoder encoder(pcm_funcs);
-    audio::PcmDecoder decoder(pcm_funcs);
+    PcmEncoder encoder(pcm_funcs);
+    PcmDecoder decoder(pcm_funcs);
 
     packet::Queue packet_queue;
 
@@ -271,8 +271,8 @@ TEST(packetizer, multiple_buffers_multiple_packets) {
 TEST(packetizer, flush) {
     enum { NumIterations = 5, Missing = 10 };
 
-    audio::PcmEncoder encoder(pcm_funcs);
-    audio::PcmDecoder decoder(pcm_funcs);
+    PcmEncoder encoder(pcm_funcs);
+    PcmDecoder decoder(pcm_funcs);
 
     packet::Queue packet_queue;
 
