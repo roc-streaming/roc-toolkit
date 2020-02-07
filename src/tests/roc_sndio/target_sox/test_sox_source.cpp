@@ -8,7 +8,7 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "test_mock_source.h"
+#include "test_helpers/mock_source.h"
 
 #include "roc_core/buffer_pool.h"
 #include "roc_core/heap_allocator.h"
@@ -68,7 +68,7 @@ TEST(sox_source, has_clock) {
     core::TempFile file("test.wav");
 
     {
-        MockSource mock_source;
+        test::MockSource mock_source;
         mock_source.add(MaxBufSize * 10);
 
         SoxSink sox_sink(allocator, sink_config);
@@ -90,7 +90,7 @@ TEST(sox_source, sample_rate_auto) {
     core::TempFile file("test.wav");
 
     {
-        MockSource mock_source;
+        test::MockSource mock_source;
         mock_source.add(MaxBufSize * 10);
 
         SoxSink sox_sink(allocator, sink_config);
@@ -114,7 +114,7 @@ TEST(sox_source, sample_rate_mismatch) {
     core::TempFile file("test.wav");
 
     {
-        MockSource mock_source;
+        test::MockSource mock_source;
         mock_source.add(MaxBufSize * 10);
 
         SoxSink sox_sink(allocator, sink_config);
@@ -137,7 +137,7 @@ TEST(sox_source, pause_resume) {
     core::TempFile file("test.wav");
 
     {
-        MockSource mock_source;
+        test::MockSource mock_source;
         mock_source.add(FrameSize * NumChans * 2);
 
         SoxSink sox_sink(allocator, sink_config);
@@ -181,7 +181,7 @@ TEST(sox_source, pause_restart) {
     core::TempFile file("test.wav");
 
     {
-        MockSource mock_source;
+        test::MockSource mock_source;
         mock_source.add(FrameSize * NumChans * 2);
 
         SoxSink sox_sink(allocator, sink_config);
@@ -223,8 +223,9 @@ TEST(sox_source, pause_restart) {
 
 TEST(sox_source, eof_restart) {
     core::TempFile file("test.wav");
+
     {
-        MockSource mock_source;
+        test::MockSource mock_source;
         mock_source.add(FrameSize * NumChans * 2);
 
         SoxSink sox_sink(allocator, sink_config);

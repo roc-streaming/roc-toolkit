@@ -8,8 +8,6 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "test_fec_schemes.h"
-
 #include "roc_core/array.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/heap_allocator.h"
@@ -104,9 +102,9 @@ TEST_GROUP(encoder_decoder) {};
 TEST(encoder_decoder, without_loss) {
     enum { NumSourcePackets = 20, NumRepairPackets = 10, PayloadSize = 251 };
 
-    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
+    for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
         CodecConfig config;
-        config.scheme = Test_fec_schemes[n_scheme];
+        config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         Codec code(config);
         code.encode(NumSourcePackets, NumRepairPackets, PayloadSize);
@@ -125,9 +123,9 @@ TEST(encoder_decoder, without_loss) {
 TEST(encoder_decoder, lost_1) {
     enum { NumSourcePackets = 20, NumRepairPackets = 10, PayloadSize = 251 };
 
-    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
+    for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
         CodecConfig config;
-        config.scheme = Test_fec_schemes[n_scheme];
+        config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         Codec code(config);
         code.encode(NumSourcePackets, NumRepairPackets, PayloadSize);
@@ -156,9 +154,9 @@ TEST(encoder_decoder, random_losses) {
         MaxLoss = 3
     };
 
-    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
+    for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
         CodecConfig config;
-        config.scheme = Test_fec_schemes[n_scheme];
+        config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         Codec code(config);
 
@@ -200,9 +198,9 @@ TEST(encoder_decoder, random_losses) {
 TEST(encoder_decoder, full_repair_payload_sizes) {
     enum { NumSourcePackets = 10, NumRepairPackets = 20 };
 
-    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; n_scheme++) {
+    for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
         CodecConfig config;
-        config.scheme = Test_fec_schemes[n_scheme];
+        config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         for (size_t p_size = 1; p_size < 300; p_size++) {
             roc_log(LogInfo, "payload size %u", (unsigned)p_size);
@@ -224,9 +222,9 @@ TEST(encoder_decoder, full_repair_payload_sizes) {
 }
 
 TEST(encoder_decoder, max_source_block) {
-    for (size_t n_scheme = 0; n_scheme < Test_n_fec_schemes; ++n_scheme) {
+    for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); ++n_scheme) {
         CodecConfig config;
-        config.scheme = Test_fec_schemes[n_scheme];
+        config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         Codec code(config);
 

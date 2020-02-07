@@ -8,6 +8,10 @@
 
 #include <CppUTest/TestHarness.h>
 
+#include "test_helpers/frame_reader.h"
+#include "test_helpers/frame_writer.h"
+#include "test_helpers/packet_sender.h"
+
 #include "roc_core/buffer_pool.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_fec/codec_map.h"
@@ -16,10 +20,6 @@
 #include "roc_pipeline/receiver_source.h"
 #include "roc_pipeline/sender_sink.h"
 #include "roc_rtp/format_map.h"
-
-#include "test_frame_reader.h"
-#include "test_frame_writer.h"
-#include "test_packet_sender.h"
 
 namespace roc {
 namespace pipeline {
@@ -46,7 +46,8 @@ enum {
     ManyFrames = Latency / SamplesPerFrame * 10
 };
 
-const core::nanoseconds_t MaxBufDuration = MaxBufSize * core::Second / (SampleRate * packet::num_channels(ChMask));
+const core::nanoseconds_t MaxBufDuration =
+    MaxBufSize * core::Second / (SampleRate * packet::num_channels(ChMask));
 
 enum {
     // default flags
@@ -96,8 +97,8 @@ TEST_GROUP(sender_sink_receiver_source) {
         address::Protocol source_proto = select_source_proto(flags);
         address::Protocol repair_proto = select_repair_proto(flags);
 
-        address::SocketAddr receiver_source_addr = new_address(11);
-        address::SocketAddr receiver_repair_addr = new_address(22);
+        address::SocketAddr receiver_source_addr = test::new_address(11);
+        address::SocketAddr receiver_repair_addr = test::new_address(22);
 
         SenderSink sender(sender_config(flags), format_map, packet_pool, byte_buffer_pool,
                           sample_buffer_pool, allocator);
@@ -146,18 +147,18 @@ TEST_GROUP(sender_sink_receiver_source) {
             CHECK(receiver_repair_endpoint_writer);
         }
 
-        FrameWriter frame_writer(sender, sample_buffer_pool);
+        test::FrameWriter frame_writer(sender, sample_buffer_pool);
 
         for (size_t nf = 0; nf < ManyFrames; nf++) {
             frame_writer.write_samples(SamplesPerFrame * NumCh);
         }
 
-        PacketSender packet_sender(packet_pool, receiver_source_endpoint_writer,
+        test::PacketSender packet_sender(packet_pool, receiver_source_endpoint_writer,
                                    receiver_repair_endpoint_writer);
 
         filter_packets(flags, queue, packet_sender);
 
-        FrameReader frame_reader(receiver, sample_buffer_pool);
+        test::FrameReader frame_reader(receiver, sample_buffer_pool);
 
         packet_sender.deliver(Latency / SamplesPerPacket);
 
