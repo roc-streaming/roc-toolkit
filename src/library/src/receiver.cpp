@@ -62,6 +62,38 @@ int roc_receiver_open(roc_context* context,
     return 0;
 }
 
+int roc_receiver_set_multicast_group(roc_receiver* receiver,
+                                     roc_interface iface,
+                                     const char* ip) {
+    if (!receiver) {
+        roc_log(LogError,
+                "roc_receiver_set_multicast_group: invalid arguments: receiver is null");
+        return -1;
+    }
+
+    peer::Receiver* imp_receiver = (peer::Receiver*)receiver;
+
+    address::Interface imp_iface;
+    if (!api::interface_from_user(imp_iface, iface)) {
+        roc_log(LogError,
+                "roc_receiver_set_multicast_group: invalid arguments: bad interface");
+        return -1;
+    }
+
+    if (!ip) {
+        roc_log(LogError,
+                "roc_receiver_set_multicast_group: invalid arguments: ip is null");
+        return -1;
+    }
+
+    if (!imp_receiver->set_multicast_group(imp_iface, ip)) {
+        roc_log(LogError, "roc_receiver_set_multicast_group: operation failed");
+        return -1;
+    }
+
+    return 0;
+}
+
 int roc_receiver_bind(roc_receiver* receiver,
                       roc_interface iface,
                       roc_endpoint* endpoint) {
