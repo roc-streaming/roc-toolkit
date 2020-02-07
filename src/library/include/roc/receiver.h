@@ -42,9 +42,12 @@ extern "C" {
  *
  * - A receiver is created using roc_receiver_open().
  *
+ * - Optionally, the receiver parameters may be fine-tuned using `roc_receiver_set_*()`
+ *   functions.
+ *
  * - The receiver either binds local endpoints using roc_receiver_bind(), allowing senders
  *   connecting to them, or itself connects to remote sender endpoints using
- *   roc_receiver_connect(). What option to use is up to the user.
+ *   roc_receiver_connect(). What approach to use is up to the user.
  *
  * - The audio stream is iteratively read from the receiver using roc_receiver_read().
  *   Receiver returns the mixed stream from all connected senders.
@@ -174,10 +177,53 @@ typedef struct roc_receiver roc_receiver;
  *  - returns zero if the receiver was successfully created
  *  - returns a negative value if the arguments are invalid
  *  - returns a negative value on resource allocation failure
+ *
+ * **Ownership**
+ *  - doesn't take or share the ownerhip of \p config; it may be safely deallocated
+ *    after the function returns
+ *  - passes the owneship of \p result to the user; the user is responsible to call
+ *    roc_receiver_close() to free it
  */
 ROC_API int roc_receiver_open(roc_context* context,
                               const roc_receiver_config* config,
                               roc_receiver** result);
+
+/** Set receiver interface multicast group.
+ *
+ * Optional.
+ *
+ * Multicast group should be set only when binding receiver interface to an endpoint with
+ * multicast IP address. If present, it defines an IP address of the OS network interface
+ * on which to join the multicast group. If not present, no multicast group is joined.
+ *
+ * It's possible to receive multicast traffic from only those OS network interfaces, on
+ * which the process has joined the multicast group. When using multicast, the user should
+ * either call this function, or join multicast group manually using OS-specific API.
+ *
+ * It is allowed to set multicast group to `0.0.0.0` (for IPv4) or to `::` (for IPv6),
+ * to be able to receive multicast traffic from all available interfaces. However, this
+ * may not be desirable for security reasons.
+ *
+ * Each interface can have only one multicast group. The function should be called before
+ * calling roc_receiver_bind() for the interface. It should not be called when calling
+ * roc_receiver_connect() for the interface.
+ *
+ * **Parameters**
+ *  - \p receiver should point to an opened receiver
+ *  - \p ip should be IPv4 or IPv6 address
+ *
+ * **Returns**
+ *  - returns zero if the broadcast flag was successfully set
+ *  - returns a negative value if the arguments are invalid
+ *  - returns a negative value if an error occurred
+ *
+ * **Ownership**
+ *  - doesn't take or share the ownerhip of \p ip; it may be safely deallocated
+ *    after the function returns
+ */
+ROC_API int roc_receiver_set_multicast_group(roc_receiver* receiver,
+                                             roc_interface iface,
+                                             const char* ip);
 
 /** Bind the receiver interface to a local endpoint.
  *
@@ -201,6 +247,10 @@ ROC_API int roc_receiver_open(roc_context* context,
  *  - returns a negative value if the arguments are invalid
  *  - returns a negative value if the address can't be bound
  *  - returns a negative value on resource allocation failure
+ *
+ * **Ownership**
+ *  - doesn't take or share the ownerhip of \p endpoint; it may be safely deallocated
+ *    after the function returns
  */
 ROC_API int
 roc_receiver_bind(roc_receiver* receiver, roc_interface iface, roc_endpoint* endpoint);
@@ -226,6 +276,10 @@ roc_receiver_bind(roc_receiver* receiver, roc_interface iface, roc_endpoint* end
  *  - returns zero if all samples were successfully decoded
  *  - returns a negative value if the arguments are invalid
  *  - returns a negative value on resource allocation failure
+ *
+ * **Ownership**
+ *  - doesn't take or share the ownerhip of \p frame; it may be safely deallocated
+ *    after the function returns
  */
 ROC_API int roc_receiver_read(roc_receiver* receiver, roc_frame* frame);
 
@@ -241,6 +295,10 @@ ROC_API int roc_receiver_read(roc_receiver* receiver, roc_frame* frame);
  * **Returns**
  *  - returns zero if the receiver was successfully closed
  *  - returns a negative value if the arguments are invalid
+ *
+ * **Ownership**
+ *  - ends the user ownership of \p receiver; it can't be used anymore after the
+ *    function returns
  */
 ROC_API int roc_receiver_close(roc_receiver* receiver);
 
