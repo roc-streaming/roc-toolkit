@@ -120,7 +120,9 @@ if not GetOption('disable_tests'):
             ccenv.Append(CPPPATH=['library/include'])
             ccenv.Prepend(LIBS=[libroc])
 
-        sources = env.GlobFiles('%s/*.cpp' % testdir)
+        sources = (env.GlobFiles('%s/*.cpp' % testdir) +
+            env.GlobFiles('%s/test_helpers/*.cpp' % testdir))
+
         for targetdir in env.GlobRecursive(testdir, 'target_*'):
             if targetdir.name in env['ROC_TARGETS']:
                 ccenv.Append(CPPPATH=['#src/%s' % targetdir])

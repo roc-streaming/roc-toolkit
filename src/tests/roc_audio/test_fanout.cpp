@@ -8,12 +8,12 @@
 
 #include <CppUTest/TestHarness.h>
 
+#include "test_helpers/mock_writer.h"
+
 #include "roc_audio/fanout.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_core/stddefs.h"
-
-#include "test_mock_writer.h"
 
 namespace roc {
 namespace audio {
@@ -46,7 +46,7 @@ TEST_GROUP(fanout) {
         fanout.write(frame);
     }
 
-    void expect_written(MockWriter& mock_writer, size_t sz, sample_t value) {
+    void expect_written(test::MockWriter& mock_writer, size_t sz, sample_t value) {
         for (size_t n = 0; n < sz; n++) {
             DOUBLES_EQUAL((double)value, (double)mock_writer.get(), 0.0001);
         }
@@ -60,7 +60,7 @@ TEST(fanout, no_writers) {
 }
 
 TEST(fanout, one_output) {
-    MockWriter writer;
+    test::MockWriter writer;
 
     Fanout fanout;
     fanout.add_output(writer);
@@ -74,8 +74,8 @@ TEST(fanout, one_output) {
 }
 
 TEST(fanout, two_outputs) {
-    MockWriter writer1;
-    MockWriter writer2;
+    test::MockWriter writer1;
+    test::MockWriter writer2;
 
     Fanout fanout;
     fanout.add_output(writer1);
@@ -94,9 +94,9 @@ TEST(fanout, two_outputs) {
 }
 
 TEST(fanout, remove_output) {
-    MockWriter writer1;
-    MockWriter writer2;
-    MockWriter writer3;
+    test::MockWriter writer1;
+    test::MockWriter writer2;
+    test::MockWriter writer3;
 
     Fanout fanout;
     fanout.add_output(writer1);
@@ -119,7 +119,7 @@ TEST(fanout, remove_output) {
 }
 
 TEST(fanout, has_output) {
-    MockWriter writer;
+    test::MockWriter writer;
     Fanout fanout;
 
     CHECK(!fanout.has_output(writer));
