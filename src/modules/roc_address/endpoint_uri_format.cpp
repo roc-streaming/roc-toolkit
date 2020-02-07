@@ -35,7 +35,7 @@ bool format_endpoint_uri(const EndpointURI& u,
     }
 
     if (subset == EndpointURI::Subset_Resource) {
-        if (!u.path() && !u.encoded_query() && !u.encoded_fragment()) {
+        if (!u.path() && !u.encoded_query()) {
             return false;
         }
     }
@@ -49,13 +49,6 @@ bool format_endpoint_uri(const EndpointURI& u,
     if (u.encoded_query()) {
         dst.append_str("?");
         if (!u.format_encoded_query(dst)) {
-            return false;
-        }
-    }
-
-    if (u.encoded_fragment()) {
-        dst.append_str("#");
-        if (!u.format_encoded_fragment(dst)) {
             return false;
         }
     }

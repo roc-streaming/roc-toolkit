@@ -28,7 +28,7 @@ public:
     //! URI subset.
     enum Subset {
         Subset_Full,    //!< Entire URI.
-        Subset_Resource //!< Absolute path + query + fragment.
+        Subset_Resource //!< Absolute path and query.
     };
 
     //! Initialize empty URI.
@@ -105,18 +105,6 @@ public:
     //! String will be percent-encoded.
     bool format_encoded_query(core::StringBuilder& dst) const;
 
-    //! Raw fragment.
-    const char* encoded_fragment() const;
-
-    //! Set fragment.
-    //! String should be percent-encoded.
-    //! String should not be zero-terminated.
-    bool set_encoded_fragment(const char* str, size_t str_len);
-
-    //! Get URI fragment.
-    //! String will be percent-encoded.
-    bool format_encoded_fragment(core::StringBuilder& dst) const;
-
 private:
     void set_service_from_port_(int port);
     bool set_service_from_proto_(Protocol proto);
@@ -126,8 +114,7 @@ private:
         PartHost = (1 << 1),
         PartPort = (1 << 2),
         PartPath = (1 << 3),
-        PartQuery = (1 << 4),
-        PartFrag = (1 << 5)
+        PartQuery = (1 << 4)
     };
 
     bool part_is_valid_(Part part) const;
@@ -144,23 +131,22 @@ private:
 
     core::StringBuffer<> path_;
     core::StringBuffer<> query_;
-    core::StringBuffer<> frag_;
 };
 
 //! Parse EndpointURI from string.
 //!
 //! The URI should be in the following form:
-//!  - PROTOCOL://HOST[:PORT][/PATH][?QUERY][\#FRAGMENT]
+//!  - PROTOCOL://HOST[:PORT][/PATH][?QUERY]
 //!
 //! Examples:
 //!  - rtp+rs8m://localhost
-//!  - rtsp://localhost:123/path?query#frag
+//!  - rtsp://localhost:123/path?query
 //!  - rtp://127.0.0.1:123
 //!  - rtp://[::1]:123
 //!
 //! The URI syntax is defined by RFC 3986.
 //!
-//! The path, query, and fragment fields are allowed only for some protocols.
+//! The path and query fields are allowed only for some protocols.
 //!
 //! The port field can be omitted if the protocol have standard port. Otherwise,
 //! the port can not be omitted.
@@ -168,8 +154,8 @@ private:
 //! The path and host fields of the URI are percent-decoded. (But the set of allowed
 //! unencoded characters is different for path and host).
 //!
-//! The query and fragment fields of the URI are kept as is. The user is responsible
-//! to percent-decode them when necessary.
+//! The query fields of the URI is kept as is. The user is responsible
+//! to percent-decode it when necessary.
 //!
 //! This parser does not try to perform full URI validation. For example, it does not
 //! check that path contains only allowed symbols. If it can be parsed, it will be.
@@ -180,9 +166,7 @@ bool parse_endpoint_uri(const char* str, EndpointURI::Subset subset, EndpointURI
 //! Formats a normalized form of the URI.
 //!
 //! The path and host parts of the URI are percent-encoded if necessary.
-//!
-//! The query and fragment parts are stored in the encoded form, so they
-//! ar just copied as is.
+//! The query field is stored in the encoded form, so it is just copied as is.
 //!
 //! @returns
 //!  true on success or false if the buffer is too small.
