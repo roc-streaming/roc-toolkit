@@ -26,8 +26,7 @@ Sender::Sender(Context& context, const pipeline::SenderConfig& pipeline_config)
                 context_.allocator())
     , endpoint_set_(NULL)
     , source_endpoint_(NULL)
-    , repair_endpoint_(NULL)
-    , squashing_enabled_(true) {
+    , repair_endpoint_(NULL) {
     roc_log(LogDebug, "sender peer: initializing");
 
     if (!pipeline_.valid()) {
@@ -51,14 +50,27 @@ bool Sender::valid() const {
     return endpoint_set_;
 }
 
-bool Sender::set_squashing_enabled(bool enabled) {
+bool Sender::set_squashing_enabled(address::Interface iface, bool enabled) {
     core::Mutex::Lock lock(mutex_);
 
     roc_panic_if_not(valid());
 
-    squashing_enabled_ = enabled;
+    roc_panic_if(iface < 0);
+    roc_panic_if(iface >= (int)ROC_ARRAY_SIZE(ports_));
 
-    roc_log(LogDebug, "sender peer: setting squashing to %d", (int)enabled);
+    if (ports_[iface].handle) {
+        roc_log(LogError,
+                "sender peer:"
+                " can't set squashing flag for %s interface:"
+                " interface is already bound",
+                address::interface_to_str(iface));
+        return false;
+    }
+
+    ports_[iface].squashing_enabled = enabled;
+
+    roc_log(LogDebug, "sender peer: setting %s interface squashing flag to %d",
+            address::interface_to_str(iface), (int)enabled);
 
     return true;
 }
@@ -195,12 +207,15 @@ sndio::ISink& Sender::sink() {
 
 Sender::InterfacePort& Sender::select_outgoing_port_(address::Interface iface,
                                                      address::AddrFamily family) {
-    if (!ports_[iface].handle && squashing_enabled_) {
+    if (!ports_[iface].handle && ports_[iface].squashing_enabled) {
         for (size_t i = 0; i < ROC_ARRAY_SIZE(ports_); i++) {
             if ((int)i == iface) {
                 continue;
             }
             if (!ports_[i].handle) {
+                continue;
+            }
+            if (!ports_[i].squashing_enabled) {
                 continue;
             }
             if (!(ports_[i].orig_config == ports_[iface].config)) {
