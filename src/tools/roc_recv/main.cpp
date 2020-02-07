@@ -78,6 +78,14 @@ int main(int argc, char** argv) {
         context_config.max_packet_size = (size_t)args.packet_limit_arg;
     }
 
+    if (args.frame_limit_given) {
+        if (args.frame_limit_arg <= 0) {
+            roc_log(LogError, "invalid --frame-limit: should be > 0");
+            return 1;
+        }
+        context_config.max_frame_size = (size_t)args.frame_limit_arg;
+    }
+
     core::HeapAllocator heap_allocator;
 
     peer::Context context(context_config, heap_allocator);
