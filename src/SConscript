@@ -1,6 +1,6 @@
 import os.path
 
-Import('env', 'lib_env', 'gen_env', 'tool_env', 'test_env', 'pulse_env')
+Import('env', 'lib_env', 'example_env', 'gen_env', 'tool_env', 'test_env', 'pulse_env')
 
 env.Append(CPPPATH=['#src/modules'])
 
@@ -75,6 +75,7 @@ if not GetOption('disable_lib'):
 
 if not GetOption('disable_examples'):
     cenv = env.Clone()
+    cenv.MergeVars(example_env)
     cenv.MergeVars(tool_env)
     cenv.MergeVars(test_env)
     cenv.Append(CPPPATH=['library/include'])
@@ -86,7 +87,7 @@ if not GetOption('disable_examples'):
         example = os.path.splitext(source.name)[0]
         exename = 'roc-example-' + example.replace('_', '-')
 
-        if example.endswith('_sox') and GetOption('disable_sox'):
+        if 'pulseaudio' in example and not 'pulseaudio' in env['ROC_TARGETS']:
             continue
 
         exe = cenv.Program(exename, [source],
