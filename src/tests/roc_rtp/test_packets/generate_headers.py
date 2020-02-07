@@ -76,10 +76,11 @@ for in_json in glob.glob("*.json"):
 #ifndef %s
 #define %s
 
-#include "test_packet_info.h"
+#include "test_packets/packet_info.h"
 
 namespace roc {
 namespace rtp {
+namespace test {
 
 static PacketInfo %s = {
         """ % (
@@ -135,6 +136,7 @@ static PacketInfo %s = {
         print(("""
 };
 
+} // namespace test
 } // namespace rtp
 } // namespace roc
 

@@ -401,8 +401,7 @@ TEST(endpoint_uri, bad_syntax) {
 
     CHECK(!parse_endpoint_uri("rtsp://host:123/path?query#frag", EndpointURI::Subset_Full,
                               u));
-    CHECK(!parse_endpoint_uri("rtsp://host:123/path?#frag", EndpointURI::Subset_Full,
-                              u));
+    CHECK(!parse_endpoint_uri("rtsp://host:123/path?#frag", EndpointURI::Subset_Full, u));
     CHECK(!parse_endpoint_uri("rtsp://host:123/path#frag", EndpointURI::Subset_Full, u));
     CHECK(!parse_endpoint_uri("rtsp://host:123/#frag", EndpointURI::Subset_Full, u));
     CHECK(!parse_endpoint_uri("rtsp://host:123#frag", EndpointURI::Subset_Full, u));

@@ -6,17 +6,18 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#ifndef ROC_PIPELINE_TEST_MOCK_SOURCE_H_
-#define ROC_PIPELINE_TEST_MOCK_SOURCE_H_
+#ifndef ROC_PIPELINE_TEST_HELPERS_MOCK_SOURCE_H_
+#define ROC_PIPELINE_TEST_HELPERS_MOCK_SOURCE_H_
 
 #include <CppUTest/TestHarness.h>
 
-#include "test_helpers.h"
+#include "test_helpers/utils.h"
 
 #include "roc_sndio/isource.h"
 
 namespace roc {
 namespace pipeline {
+namespace test {
 
 class MockSource : public sndio::ISource {
 public:
@@ -106,7 +107,8 @@ private:
     size_t size_;
 };
 
+} // namespace test
 } // namespace pipeline
 } // namespace roc
 
-#endif // ROC_PIPELINE_TEST_MOCK_SOURCE_H_
+#endif // ROC_PIPELINE_TEST_HELPERS_MOCK_SOURCE_H_

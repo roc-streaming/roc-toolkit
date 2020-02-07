@@ -6,14 +6,13 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_core/stddefs.h"
-
-#include "test_fft.h"
+#include "test_helpers/fft.h"
 
 namespace roc {
 namespace audio {
+namespace test {
 
-void FFT(double* data, unsigned long nn) {
+void fft(double* data, unsigned long nn) {
     unsigned long n, mmax, m, j, istep, i;
     double wtemp, wr, wpr, wpi, wi, theta;
     double tempr, tempi;
@@ -63,8 +62,8 @@ void FFT(double* data, unsigned long nn) {
     }
 }
 
-void FreqSpectrum(double* data, const size_t n) {
-    FFT(data, n);
+void freq_spectrum(double* data, const size_t n) {
+    fft(data, n);
     const double N = (double)n * (double)n;
     for (size_t i = 0; i < n; ++i) {
         const double real = data[i * 2];
@@ -74,5 +73,6 @@ void FreqSpectrum(double* data, const size_t n) {
     }
 }
 
+} // namespace test
 } // namespace audio
 } // namespace roc

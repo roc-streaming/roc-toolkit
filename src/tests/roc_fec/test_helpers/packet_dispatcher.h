@@ -6,8 +6,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#ifndef ROC_FEC_TARGET_OPENFEC_TEST_PACKET_DISPATCHER_H_
-#define ROC_FEC_TARGET_OPENFEC_TEST_PACKET_DISPATCHER_H_
+#ifndef ROC_FEC_TEST_HELPERS_PACKET_DISPATCHER_H_
+#define ROC_FEC_TEST_HELPERS_PACKET_DISPATCHER_H_
 
 #include "roc_core/helpers.h"
 #include "roc_packet/fec.h"
@@ -19,6 +19,7 @@
 
 namespace roc {
 namespace fec {
+namespace test {
 
 // Divides packets from Encoder into two queues: source and repair packets,
 // as needed for Decoder.
@@ -253,7 +254,8 @@ private:
     packet::PacketPtr delayed_stock_[MaxDelayed];
 };
 
+} // namespace test
 } // namespace fec
 } // namespace roc
 
-#endif // ROC_FEC_TARGET_OPENFEC_TEST_PACKET_DISPATCHER_H_
+#endif // ROC_FEC_TEST_HELPERS_PACKET_DISPATCHER_H_
