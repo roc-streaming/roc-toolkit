@@ -8,6 +8,11 @@
 
 #include <CppUTest/TestHarness.h>
 
+#include "test_packets/rtp_l16_1ch_10s_12ext.h"
+#include "test_packets/rtp_l16_1ch_10s_4pad_2csrc_12ext_marker.h"
+#include "test_packets/rtp_l16_2ch_300s_80pad.h"
+#include "test_packets/rtp_l16_2ch_320s.h"
+
 #include "roc_core/buffer_pool.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_core/stddefs.h"
@@ -17,17 +22,12 @@
 #include "roc_rtp/format_map.h"
 #include "roc_rtp/parser.h"
 
-#include "test_packets/rtp_l16_1ch_10s_12ext.h"
-#include "test_packets/rtp_l16_1ch_10s_4pad_2csrc_12ext_marker.h"
-#include "test_packets/rtp_l16_2ch_300s_80pad.h"
-#include "test_packets/rtp_l16_2ch_320s.h"
-
 namespace roc {
 namespace rtp {
 
 namespace {
 
-enum { MaxBufSize = PacketInfo::MaxData };
+enum { MaxBufSize = test::PacketInfo::MaxData };
 
 enum { CanParse = (1 << 0), CanCompose = (1 << 1) };
 
@@ -51,7 +51,7 @@ TEST_GROUP(packet_formats) {
         return new(packet_pool) packet::Packet(packet_pool);
     }
 
-    void check_packet_info(const PacketInfo& pi) {
+    void check_packet_info(const test::PacketInfo& pi) {
         UNSIGNED_LONGS_EQUAL(V2, pi.version);
 
         UNSIGNED_LONGS_EQUAL(pi.packet_size,
@@ -59,7 +59,7 @@ TEST_GROUP(packet_formats) {
                                  + pi.padding_size);
     }
 
-    void check_format_info(const Format& format, const PacketInfo& pi) {
+    void check_format_info(const Format& format, const test::PacketInfo& pi) {
         UNSIGNED_LONGS_EQUAL(packet::Packet::FlagAudio, format.flags);
         UNSIGNED_LONGS_EQUAL(pi.pt, format.payload_type);
         UNSIGNED_LONGS_EQUAL(pi.samplerate, format.sample_rate);
@@ -67,7 +67,7 @@ TEST_GROUP(packet_formats) {
         UNSIGNED_LONGS_EQUAL(pi.num_samples, format.get_num_samples(pi.payload_size));
     }
 
-    void check_packet_fields(const packet::Packet& packet, const PacketInfo& pi) {
+    void check_packet_fields(const packet::Packet& packet, const test::PacketInfo& pi) {
         UNSIGNED_LONGS_EQUAL(packet::Packet::FlagRTP | packet::Packet::FlagAudio,
                              packet.flags());
 
@@ -94,7 +94,7 @@ TEST_GROUP(packet_formats) {
         UNSIGNED_LONGS_EQUAL(pi.padding, (packet.rtp()->padding.size() != 0));
     }
 
-    void set_packet_fields(packet::Packet& packet, const PacketInfo& pi) {
+    void set_packet_fields(packet::Packet& packet, const test::PacketInfo& pi) {
         CHECK(packet.rtp());
 
         packet.rtp()->source = pi.ssrc;
@@ -105,7 +105,7 @@ TEST_GROUP(packet_formats) {
         packet.rtp()->duration = (packet::timestamp_t)pi.num_samples;
     }
 
-    void check_packet_data(packet::Packet& packet, const PacketInfo& pi) {
+    void check_packet_data(packet::Packet& packet, const test::PacketInfo& pi) {
         CHECK(packet.data());
 
         CHECK(packet.rtp());
@@ -123,8 +123,8 @@ TEST_GROUP(packet_formats) {
 
     void decode_samples(audio::IFrameDecoder& decoder,
                         const packet::Packet& packet,
-                        const PacketInfo& pi) {
-        audio::sample_t samples[PacketInfo::MaxSamples * PacketInfo::MaxCh] = {};
+                        const test::PacketInfo& pi) {
+        audio::sample_t samples[test::PacketInfo::MaxSamples * test::PacketInfo::MaxCh] = {};
 
         decoder.begin(packet.rtp()->timestamp, packet.rtp()->payload.data(),
                       packet.rtp()->payload.size());
@@ -149,8 +149,8 @@ TEST_GROUP(packet_formats) {
 
     void encode_samples(audio::IFrameEncoder& encoder,
                         packet::Packet& packet,
-                        const PacketInfo& pi) {
-        audio::sample_t samples[PacketInfo::MaxSamples * PacketInfo::MaxCh] = {};
+                        const test::PacketInfo& pi) {
+        audio::sample_t samples[test::PacketInfo::MaxSamples * test::PacketInfo::MaxCh] = {};
 
         size_t i = 0;
 
@@ -174,7 +174,7 @@ TEST_GROUP(packet_formats) {
         encoder.end();
     }
 
-    void check_parse_decode(const PacketInfo& pi) {
+    void check_parse_decode(const test::PacketInfo& pi) {
         FormatMap format_map;
 
         core::Slice<uint8_t> buffer = new_buffer(pi.raw_data, pi.packet_size);
@@ -202,7 +202,7 @@ TEST_GROUP(packet_formats) {
         decode_samples(*decoder, *packet, pi);
     }
 
-    void check_compose_encode(const PacketInfo& pi) {
+    void check_compose_encode(const test::PacketInfo& pi) {
         FormatMap format_map;
 
         core::Slice<uint8_t> buffer = new_buffer(NULL, 0);
@@ -239,7 +239,7 @@ TEST_GROUP(packet_formats) {
         check_packet_data(*packet, pi);
     }
 
-    void check(const PacketInfo& pi, unsigned flags) {
+    void check(const test::PacketInfo& pi, unsigned flags) {
         check_packet_info(pi);
 
         if (flags & CanParse) {
@@ -253,19 +253,19 @@ TEST_GROUP(packet_formats) {
 };
 
 TEST(packet_formats, l16_2ch_320s) {
-    check(rtp_l16_2ch_320s, CanParse | CanCompose);
+    check(test::rtp_l16_2ch_320s, CanParse | CanCompose);
 }
 
 TEST(packet_formats, l16_2ch_300s_80pad) {
-    check(rtp_l16_2ch_300s_80pad, CanParse | CanCompose);
+    check(test::rtp_l16_2ch_300s_80pad, CanParse | CanCompose);
 }
 
 TEST(packet_formats, l16_1ch_10s_12ext) {
-    check(rtp_l16_1ch_10s_12ext, CanParse);
+    check(test::rtp_l16_1ch_10s_12ext, CanParse);
 }
 
 TEST(packet_formats, l16_1ch_10s_4pad_2csrc_12ext_marker) {
-    check(rtp_l16_1ch_10s_4pad_2csrc_12ext_marker, CanParse);
+    check(test::rtp_l16_1ch_10s_4pad_2csrc_12ext_marker, CanParse);
 }
 
 } // namespace rtp

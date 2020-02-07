@@ -6,19 +6,21 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#ifndef ROC_PIPELINE_TEST_FRAME_READER_H_
-#define ROC_PIPELINE_TEST_FRAME_READER_H_
+#ifndef ROC_PIPELINE_TEST_HELPERS_FRAME_READER_H_
+#define ROC_PIPELINE_TEST_HELPERS_FRAME_READER_H_
 
 #include <CppUTest/TestHarness.h>
 
+#include "test_helpers/utils.h"
+
 #include "roc_core/buffer_pool.h"
 #include "roc_core/noncopyable.h"
+#include "roc_core/slice.h"
 #include "roc_sndio/isource.h"
-
-#include "test_helpers.h"
 
 namespace roc {
 namespace pipeline {
+namespace test {
 
 class FrameReader : public core::NonCopyable<> {
 public:
@@ -71,7 +73,8 @@ private:
     uint8_t offset_;
 };
 
+} // namespace test
 } // namespace pipeline
 } // namespace roc
 
-#endif // ROC_PIPELINE_TEST_FRAME_READER_H_
+#endif // ROC_PIPELINE_TEST_HELPERS_FRAME_READER_H_

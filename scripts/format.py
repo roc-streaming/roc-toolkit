@@ -22,7 +22,10 @@ def is_header(path):
 
 def is_test(path):
     _, basename = os.path.split(path)
-    return basename.startswith('test_')
+    for s in [basename, os.path.basename(os.path.dirname(path))]:
+        if s.startswith('test_'):
+            return True
+    return False
 
 def is_lib(path):
     rootname = os.path.basename(os.path.dirname(os.path.dirname(os.path.abspath(path))))
@@ -33,10 +36,11 @@ def make_guard(path):
     dirname = os.path.basename(dirpath)
     if is_lib(path):
         arr = ['roc', basename]
-    elif not dirname.startswith('roc_') and dirname != 'roc':
-        arr = [os.path.basename(os.path.dirname(dirpath)), dirname, basename]
     else:
         arr = [dirname, basename]
+    while not arr[0].startswith('roc_') and arr[0] != 'roc':
+        dirpath = os.path.dirname(dirpath)
+        arr = [os.path.basename(dirpath)] + arr
     return '_'.join(arr).replace('.', '_').upper() + '_'
 
 def make_doxygen_path(path):

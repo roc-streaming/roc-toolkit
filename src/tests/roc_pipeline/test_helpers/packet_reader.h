@@ -6,10 +6,12 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#ifndef ROC_PIPELINE_TEST_PACKET_READER_H_
-#define ROC_PIPELINE_TEST_PACKET_READER_H_
+#ifndef ROC_PIPELINE_TEST_HELPERS_PACKET_READER_H_
+#define ROC_PIPELINE_TEST_HELPERS_PACKET_READER_H_
 
 #include <CppUTest/TestHarness.h>
+
+#include "test_helpers/utils.h"
 
 #include "roc_audio/iframe_decoder.h"
 #include "roc_core/buffer_pool.h"
@@ -20,10 +22,9 @@
 #include "roc_packet/packet_pool.h"
 #include "roc_rtp/format_map.h"
 
-#include "test_helpers.h"
-
 namespace roc {
 namespace pipeline {
+namespace test {
 
 class PacketReader : public core::NonCopyable<> {
 public:
@@ -122,7 +123,8 @@ private:
     bool first_;
 };
 
+} // namespace test
 } // namespace pipeline
 } // namespace roc
 
-#endif // ROC_PIPELINE_TEST_PACKET_READER_H_
+#endif // ROC_PIPELINE_TEST_HELPERS_PACKET_READER_H_

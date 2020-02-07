@@ -53,8 +53,17 @@ CodecMap::CodecMap()
 #endif // ROC_TARGET_OPENFEC
 }
 
-bool CodecMap::is_supported(packet::FecScheme scheme) {
+bool CodecMap::is_supported(packet::FecScheme scheme) const {
     return find_codec_(scheme);
+}
+
+size_t CodecMap::num_schemes() const {
+    return n_codecs_;
+}
+
+packet::FecScheme CodecMap::nth_scheme(size_t n) const {
+    roc_panic_if(n >= n_codecs_);
+    return codecs_[n].scheme;
 }
 
 IBlockEncoder* CodecMap::new_encoder(const CodecConfig& config,

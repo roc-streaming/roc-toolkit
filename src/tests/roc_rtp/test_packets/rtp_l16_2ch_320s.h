@@ -9,10 +9,11 @@
 #ifndef ROC_RTP_TEST_PACKETS_RTP_L16_2CH_320S_H_
 #define ROC_RTP_TEST_PACKETS_RTP_L16_2CH_320S_H_
 
-#include "test_packet_info.h"
+#include "test_packets/packet_info.h"
 
 namespace roc {
 namespace rtp {
+namespace test {
 
 static PacketInfo rtp_l16_2ch_320s = {
   /* raw_data         */ {
@@ -215,6 +216,7 @@ static PacketInfo rtp_l16_2ch_320s = {
   },
 };
 
+} // namespace test
 } // namespace rtp
 } // namespace roc
 
