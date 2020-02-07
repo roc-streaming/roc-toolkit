@@ -12,28 +12,32 @@
 #include "roc_core/colors.h"
 #include "roc_core/crash.h"
 #include "roc_core/exit.h"
+#include "roc_core/heap_allocator.h"
 #include "roc_core/log.h"
 
+using namespace roc;
+
 int main(int argc, const char** argv) {
-    roc::core::CrashHandler crash_handler;
+    core::HeapAllocator::enable_panic_on_leak();
+
+    core::CrashHandler crash_handler;
 
     CommandLineArguments args(argc, argv);
 
     if (args.parse(NULL) && args.isVerbose()) {
-        roc::core::Logger::instance().set_level(roc::LogDebug);
+        core::Logger::instance().set_level(LogDebug);
     } else {
-        roc::core::Logger::instance().set_level(roc::LogNone);
+        core::Logger::instance().set_level(LogNone);
     }
 
-    roc::core::Logger::instance().set_colors(roc::core::colors_available()
-                                                 ? roc::core::ColorsEnabled
-                                                 : roc::core::ColorsDisabled);
+    core::Logger::instance().set_colors(core::colors_available() ? core::ColorsEnabled
+                                                                 : core::ColorsDisabled);
 
     MemoryLeakWarningPlugin::turnOffNewDeleteOverloads();
 
     const int code = CommandLineTestRunner::RunAllTests(argc, argv);
     if (code != 0) {
-        roc::core::fast_exit(code);
+        core::fast_exit(code);
     }
 
     return 0;
