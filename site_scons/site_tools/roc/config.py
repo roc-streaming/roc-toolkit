@@ -219,10 +219,10 @@ def FindPulseDir(context, prefix, build, host, version):
     context.Message("Searching for PulseAudio modules directory... ")
 
     if build == host:
-        pa_ver = context.env.CommandOutput(['pulseaudio', '--version'])
+        pa_ver = context.env.CommandOutput('pulseaudio --version')
         m = re.search(r'([0-9.]+)', pa_ver or '')
         if m and m.group(1) == version:
-            pa_conf = context.env.CommandOutput(['pulseaudio', '--dump-conf'])
+            pa_conf = context.env.CommandOutput('pulseaudio --dump-conf')
             if pa_conf:
                 for line in pa_conf.splitlines():
                     m = re.match(r'^\s*dl-search-path\s*=\s*(.*)$', line)

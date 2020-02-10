@@ -485,8 +485,9 @@ if compiler == 'clang':
 elif compiler == 'gcc':
     conf.FindTool('CXX', toolchain, compiler_ver, ['g++'])
 
-# get full compiler version
-compiler_ver = env.ParseCompilerVersion(conf.env['CXX'])
+full_compiler_ver = env.ParseCompilerVersion(conf.env['CXX'])
+if full_compiler_ver:
+    compiler_ver = full_compiler_ver
 
 if not build:
     if conf.FindConfigGuess():
@@ -920,7 +921,7 @@ if 'alsa' in download_dependencies:
 
 if 'pulseaudio' in download_dependencies:
     if not 'pulseaudio' in explicit_version and not crosscompile:
-        pa_ver = env.ParseVersion(['pulseaudio', '--version'])
+        pa_ver = env.ParseToolVersion('pulseaudio --version')
         if pa_ver:
             thirdparty_versions['pulseaudio'] = pa_ver
 

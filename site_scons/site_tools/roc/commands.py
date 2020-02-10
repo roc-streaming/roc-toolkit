@@ -10,6 +10,7 @@ def CommandOutput(env, command):
     try:
         with open(os.devnull, 'w') as null:
             proc = subprocess.Popen(command,
+                                    shell=True,
                                     stdin=null,
                                     stdout=subprocess.PIPE,
                                     stderr=subprocess.STDOUT,
