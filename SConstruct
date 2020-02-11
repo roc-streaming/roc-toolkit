@@ -1223,6 +1223,11 @@ if compiler == 'clang':
                 env.Append(**{var: [
                     '-Wno-redundant-parens',
                 ]})
+        if compiler_ver[:2] >= (11, 0):
+            for var in ['CXXFLAGS', 'CFLAGS']:
+                env.Append(**{var: [
+                    '-Wno-atomic-implicit-seq-cst',
+                ]})
 
 if compiler in ['gcc', 'clang']:
     for e in [env, lib_env, tool_env, test_env, pulse_env]:
