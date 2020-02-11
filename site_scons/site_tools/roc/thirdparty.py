@@ -2,6 +2,11 @@ import SCons.Script
 import os.path
 import fnmatch
 
+try:
+    from shlex import quote
+except:
+    from pipes import quote
+
 def _versioned_thirdparty(env, name, versions):
     if not name in versions:
         env.Die("unknown 3rdparty '%s'" % name)
@@ -30,26 +35,25 @@ def ThirdParty(
         vdeps.append(_versioned_thirdparty(env, dep, versions))
 
     envvars = [
-        'CXX="%s"'    % env['CXX'],
-        'CXXLD="%s"'  % env['CXXLD'],
-        'CC="%s"'     % env['CC'],
-        'CCLD="%s"'   % env['CCLD'],
-        'AR="%s"'     % env['AR'],
-        'RANLIB="%s"' % env['RANLIB'],
+        'CXX=%s'    % quote(env['CXX']),
+        'CXXLD=%s'  % quote(env['CXXLD']),
+        'CC=%s'     % quote(env['CC']),
+        'CCLD=%s'   % quote(env['CCLD']),
+        'AR=%s'     % quote(env['AR']),
+        'RANLIB=%s' % quote(env['RANLIB']),
     ]
 
     if not os.path.exists(os.path.join(
         '3rdparty', hostdir, compilerdir, 'build', vname, 'commit')):
         if env.Execute(
             SCons.Action.CommandAction(
-                '%s scripts/3rdparty.py "3rdparty/%s/%s" "vendor" "%s" "%s" "%s" "%s" %s' % (
-                    env.PythonExecutable(),
-                    hostdir,
-                    compilerdir,
-                    toolchain,
-                    variant,
-                    vname,
-                    ':'.join(vdeps),
+                '%s scripts/3rdparty.py %s vendor %s %s %s %s %s' % (
+                    quote(env.PythonExecutable()),
+                    quote(os.path.join("3rdparty", hostdir, compilerdir)),
+                    quote(toolchain),
+                    quote(variant),
+                    quote(vname),
+                    quote(':'.join(vdeps)),
                     ' '.join(envvars)),
                 cmdstr = env.PrettyCommand(
                     'GET', '3rdparty/%s/%s/build/%s' % (
