@@ -5,6 +5,7 @@ import os
 import os.path
 import fnmatch
 import json
+import shlex
 
 try:
     import fcntl
@@ -83,4 +84,5 @@ if source_file:
         print("error: unable to write clangdb to %s" % db_path, file=sys.stderr)
         print(str(e), file=sys.stderr)
 
-os.execvp(compiler, [compiler] + compiler_args)
+cmd = shlex.split(compiler) + compiler_args
+os.execvp(cmd[0], cmd)
