@@ -45,9 +45,17 @@ bool SessionDescription::set_guid(const char* start_p_origin_username,
     return true;
 }
 
+address::AddrFamily SessionDescription::origin_addrtype() const {
+    return origin_addrtype_;
+}
+
 bool SessionDescription::set_origin_addrtype(address::AddrFamily addrtype) {
     origin_addrtype_ = addrtype;
     return true;
+}
+
+const address::SocketAddr SessionDescription::origin_unicast_address() const {
+    return origin_unicast_address_;
 }
 
 bool SessionDescription::set_origin_unicast_address(const char* str, size_t str_len) {
@@ -60,6 +68,23 @@ bool SessionDescription::set_origin_unicast_address(const char* str, size_t str_
     if (!origin_unicast_address_.set_host_port(origin_addrtype_, addr, 0)) return false;
 
     return true;
+}
+
+bool SessionDescription::set_session_connection_address(
+    address::AddrFamily addrtype, 
+    const char* str, 
+    size_t str_len) {
+
+        char addr[address::SocketAddr::MaxStrLen];
+        core::StringBuilder b(addr, sizeof(addr));
+
+        if (!b.append_str_range(str, str + str_len)) return false;
+
+        roc_log(LogInfo, "Connection address: %s", &addr[0]);
+
+        if (!session_connection_address_.set_host_port(addrtype, addr, 0)) return false;
+
+        return true;
 }
 
 } // namespace roc
