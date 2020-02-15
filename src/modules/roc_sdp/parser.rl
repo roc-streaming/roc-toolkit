@@ -43,6 +43,8 @@ bool parse_sdp(const char* str, SessionDescription& result) {
     const char* start_p_origin_nettype = NULL;
     const char* end_p_origin_addr = NULL;
 
+    address::AddrFamily session_connection_addrtype = address::Family_Unknown;
+
     %%{
 
         action start_token {
@@ -63,6 +65,18 @@ bool parse_sdp(const char* str, SessionDescription& result) {
                                 start_p_origin_nettype,
                                 end_p_origin_addr)) {
                 roc_log(LogError, "parse origin guid: invalid origin field");
+                result.clear();
+                return false;
+            }
+        }
+
+        action set_session_connection_address {
+            if(!result.set_session_connection_address(
+                    session_connection_addrtype,
+                    start_p, 
+                    p - start_p)) {
+                        
+                roc_log(LogError, "parse session connection address: invalid address");
                 result.clear();
                 return false;
             }
@@ -110,25 +124,36 @@ bool parse_sdp(const char* str, SessionDescription& result) {
             origin_nettype ' ' origin_addrtype ' ' origin_unicast_address %set_guid;
 
         
-        # c=<nettype> <addrtype> <connection-address> - NOT YET STORED
-        connection_nettype = "IN";
-        connection_addrtype = "IP4" | "IP6";
-        connection_address = non_ws_string;
-        connection_data = connection_nettype ' ' connection_addrtype ' ' connection_address;
+        # In session-level: c=<nettype> <addrtype> <connection-address>
+        session_connection_nettype = "IN";
+        session_connection_addrtype =  
+            ( "IP4" %{ session_connection_addrtype = address::Family_IPv4; } 
+            | "IP6" %{ session_connection_addrtype = address::Family_IPv6; } );
+
+        session_connection_address = non_ws_string >start_token 
+            %{  end_p_origin_addr = p; } 
+            %set_session_connection_address;
+
+        session_connection_data = session_connection_nettype ' ' 
+            session_connection_addrtype ' ' session_connection_address;
     
-        # m=<media> <port> <proto> <fmt> - NOT YET STORED
+        # m=<type> <port> <proto> <fmt> - NOT YET STORED
         # typically "audio", "video", "text", or "application"
-        media_media = "audio" | "video" | "text" | "application";
+        media_type = "audio"  
+            | "video" 
+            | "text" 
+            | "application";
+            
         # typically an RTP payload type for audio and video media
         media_fmt = token;
         # typically "RTP/AVP" or "udp"
         media_proto = token ("/" token)*;
         media_port = digit+;
-        media_description = media_media ' ' media_port ' ' media_proto ' ' media_fmt;
+        media_description = media_type ' ' media_port ' ' media_proto ' ' media_fmt;
 
         sdp_description = 'v='i version '\n'
         'o='i origin '\n'
-        'c='i connection_data '\n'
+        'c='i session_connection_data '\n'
         'm='i media_description;
 
         main := sdp_description
