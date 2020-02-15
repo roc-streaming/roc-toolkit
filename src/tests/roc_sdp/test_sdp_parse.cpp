@@ -22,7 +22,7 @@ TEST(sdp_parser, str) {
     SessionDescription session_description(allocator);
     CHECK(parse_sdp("v=0\n"
                     "o=test_origin 16914 1 IN IP4 192.168.58.15\n"
-                    "c=IN IP4 239.255.12.42/255\n"
+                    "c=IN IP4 239.255.12.42\n"
                     "m=audio 12345 RTP/AVP 10",
                     session_description));
 }
