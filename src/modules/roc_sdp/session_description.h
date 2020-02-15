@@ -30,7 +30,8 @@ public:
     //! Initialize empty session description
     SessionDescription(core::IAllocator& allocator);
 
-    //! Globally Unique Identifier
+    //! Globally Unique Identifier for the session.
+    //! Built from a tuple of username, sess-id, nettype, addrtype, and unicast-address.
     const char* guid() const;
 
     //! Set GUID
@@ -40,23 +41,33 @@ public:
                   const char* start_p_origin_nettype,
                   const char* end_p_origin_addr);
 
+
+    //! Origin address type.
+    address::AddrFamily origin_addrtype() const;
+
     //! Set origin address type
     bool set_origin_addrtype(address::AddrFamily addrtype);
+
+    //! Origin unicast address.
+    const address::SocketAddr origin_unicast_address() const;
 
     //! Check and set origin unicast address from a string.
     //! origin_addrtype should be defined (default: IP4)
     bool set_origin_unicast_address(const char* str, size_t str_len);
 
+    //! Check and set session connection address from a string.
+    bool set_session_connection_address(address::AddrFamily addrtype, const char* str, size_t str_len);
+
 private:
-    //! Tuple of username, sess-id, nettype, addrtype, and unicast-address forms a
-    //! globally unique identifier for the session.
+
     core::StringBuffer<> guid_;
 
-    //! Origin address type.
     address::AddrFamily origin_addrtype_;
-
-    //! Origin unicast address.
     address::SocketAddr origin_unicast_address_;
+
+    address::SocketAddr session_connection_address_;
+
+    
 };
 
 //! Parse SDP session description from string.
