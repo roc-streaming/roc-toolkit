@@ -82,6 +82,14 @@ bool parse_sdp(const char* str, SessionDescription& result) {
             }
         }
 
+        action add_media {
+            if(!result.add_media_description(start_p, p - start_p)) {
+                roc_log(LogError, "parse media field: invalid media description");
+                result.clear();
+                return false;
+            }
+        }
+
         ##### USEFUL GRAMMAR #####
         # ABNF: 1*(VCHAR/%x80-FF) -> string of visible characters
         non_ws_string = [!-~]+;      
@@ -126,17 +134,24 @@ bool parse_sdp(const char* str, SessionDescription& result) {
         
         # In session-level: c=<nettype> <addrtype> <connection-address>
         session_connection_nettype = "IN";
-        session_connection_addrtype =  
-            ( "IP4" %{ session_connection_addrtype = address::Family_IPv4; } 
-            | "IP6" %{ session_connection_addrtype = address::Family_IPv6; } );
-
+        
+        # Either IPv6 or IPv4/TTL
         session_connection_address = non_ws_string >start_token 
             %{  end_p_origin_addr = p; } 
             %set_session_connection_address;
 
+        session_connection_with_addrtype =  
+            ( "IP4" %{ session_connection_addrtype = address::Family_IPv4; } 
+                ' ' session_connection_address '/' digit+
+            | "IP6" %{ session_connection_addrtype = address::Family_IPv6; } 
+                ' ' session_connection_address
+            );
+
         session_connection_data = session_connection_nettype ' ' 
-            session_connection_addrtype ' ' session_connection_address;
+            session_connection_with_addrtype;
     
+        # Each media description starts with an "m=" field and is terminated by
+        # either the next "m=" field or by the end of the session description
         # m=<type> <port> <proto> <fmt> - NOT YET STORED
         # typically "audio", "video", "text", or "application"
         media_type = "audio"  
@@ -149,12 +164,16 @@ bool parse_sdp(const char* str, SessionDescription& result) {
         # typically "RTP/AVP" or "udp"
         media_proto = token ("/" token)*;
         media_port = digit+;
-        media_description = media_type ' ' media_port ' ' media_proto ' ' media_fmt;
+        media_description = media_type ' ' media_port ' ' media_proto ' ' media_fmt
+            >start_token %add_media;
+        
+        media_field = 'm='i media_description;
+        media_fields = media_field+;
 
         sdp_description = 'v='i version '\n'
         'o='i origin '\n'
         'c='i session_connection_data '\n'
-        'm='i media_description;
+        media_fields;
 
         main := sdp_description
                 %{ success = true; }
@@ -165,6 +184,8 @@ bool parse_sdp(const char* str, SessionDescription& result) {
     }%%
 
     if (!success) {
+        roc_log(LogError, "UNSUCCESS");
+        result.clear();
         return false;
     }
 
