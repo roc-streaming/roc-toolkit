@@ -14,9 +14,13 @@
 
 #include "roc_address/socket_addr.h"
 #include "roc_core/array.h"
+#include "roc_core/iallocator.h"
 #include "roc_core/log.h"
 #include "roc_core/string_buffer.h"
 #include "roc_core/string_builder.h"
+#include "roc_sdp/media_description.h"
+#include "roc_core/shared_ptr.h"
+#include "roc_core/list.h"
 
 namespace roc {
 namespace sdp {
@@ -29,6 +33,18 @@ public:
 
     //! Initialize empty session description
     SessionDescription(core::IAllocator& allocator);
+
+    // ~SessionDescription() {
+    //     while (Task* task = tasks_.front()) {
+    //         tasks_.remove(*task);
+
+    //         task->state = (this->*(task->func))(*task);
+
+    //         if (task->state != TaskPending) {
+    //             notify = true;
+    //         }
+    //     }
+    // }
 
     //! Globally Unique Identifier for the session.
     //! Built from a tuple of username, sess-id, nettype, addrtype, and unicast-address.
@@ -58,16 +74,27 @@ public:
     //! Check and set session connection address from a string.
     bool set_session_connection_address(address::AddrFamily addrtype, const char* str, size_t str_len);
 
+    //! Add a media description from a string.
+    bool add_media_description(const char* str, size_t str_len);
+
+    //! Check and add a connection address to the last added media from a string.
+    //bool add_connection_to_last_media(address::AddrFamily addrtype, const char* str, size_t str_len);
+
+
+
 private:
 
     core::StringBuffer<> guid_;
 
-    address::AddrFamily origin_addrtype_;
+    address::AddrFamily origin_addrtype_;     // TO REMOVE
     address::SocketAddr origin_unicast_address_;
 
     address::SocketAddr session_connection_address_;
 
-    
+    // core::List<MediaDescription, core::NoOwnership> media_descriptions_;
+    core::List<MediaDescription> media_descriptions_;
+
+    core::IAllocator& allocator_;
 };
 
 //! Parse SDP session description from string.
