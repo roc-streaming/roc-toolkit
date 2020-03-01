@@ -12,16 +12,17 @@ namespace roc {
 namespace sdp {
 
 SessionDescription::SessionDescription(core::IAllocator& allocator)
-    : guid_(allocator) {
+    : guid_(allocator), media_descriptions_(), allocator_(allocator) {
     clear();
 }
 
 void SessionDescription::clear() {
     guid_.clear();
+    origin_unicast_address_.clear();
+    session_connection_address_.clear();
 }
 
 const char* SessionDescription::guid() const {
-    // part_is_valid(GuidPart) ?
     if (guid_.is_empty()) {
         return NULL;
     }
@@ -86,6 +87,22 @@ bool SessionDescription::set_session_connection_address(
 
         return true;
 }
+
+bool SessionDescription::add_media_description(const char* str, size_t str_len) {
+    core::SharedPtr<MediaDescription> media = new (allocator_) MediaDescription(allocator_);
+
+    if(!media->set_media(str, str_len)) {
+        return false;
+    }
+
+    media_descriptions_.push_back(*media);
+    return true;
+}
+
+// bool SessionDescription::add_connection_to_last_media(address::AddrFamily addrtype, const char* str, size_t str_len) {
+
+//     return true;
+// }
 
 } // namespace roc
 } // namespace sdp
