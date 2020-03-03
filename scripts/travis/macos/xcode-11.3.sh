@@ -6,6 +6,8 @@ brew update
 brew install "scons"
 brew install "ragel"
 brew install "gengetopt"
+brew install "libuv"
+brew install "sox"
 brew install "cpputest"
 
 scons -Q clean
@@ -13,13 +15,13 @@ scons -Q clean
 scons -Q \
       --enable-werror \
       --enable-debug \
-      --sanitizers=address \
-      --build-3rdparty=libuv,openfec,sox \
+      --sanitizers=all \
+      --build-3rdparty=openfec \
       test
 
 scons -Q \
       --enable-werror \
-      --build-3rdparty=libuv,openfec,sox \
+      --build-3rdparty=openfec \
       test
 
 scons -Q \

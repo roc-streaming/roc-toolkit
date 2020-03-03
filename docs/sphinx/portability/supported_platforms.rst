@@ -37,9 +37,9 @@ Linux distributions:
 
 Xcode versions:
 
-* Xcode 7.3 (macOS 10.11+)
 * Xcode 9.1 (macOS 10.12+)
 * Xcode 10.2 (macOS 10.14+)
+* Xcode 11.3 (macOS 10.15+)
 
 Hardware architectures:
 
