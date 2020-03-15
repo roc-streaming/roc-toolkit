@@ -34,18 +34,6 @@ public:
     //! Initialize empty session description
     SessionDescription(core::IAllocator& allocator);
 
-    // ~SessionDescription() {
-    //     while (Task* task = tasks_.front()) {
-    //         tasks_.remove(*task);
-
-    //         task->state = (this->*(task->func))(*task);
-
-    //         if (task->state != TaskPending) {
-    //             notify = true;
-    //         }
-    //     }
-    // }
-
     //! Globally Unique Identifier for the session.
     //! Built from a tuple of username, sess-id, nettype, addrtype, and unicast-address.
     const char* guid() const;
@@ -77,21 +65,22 @@ public:
     //! Add a media description from a string.
     bool add_media_description(const char* str, size_t str_len);
 
-    //! Check and add a connection address to the last added media from a string.
-    //bool add_connection_to_last_media(address::AddrFamily addrtype, const char* str, size_t str_len);
+    //! Get a shared pointer to the last added media description.
+    const core::SharedPtr<MediaDescription> last_media_description() const;
 
+    //! Check and add a connection address to the last added media from a string.
+    bool add_connection_to_last_media(address::AddrFamily addrtype, const char* str, size_t str_len);
 
 
 private:
 
     core::StringBuffer<> guid_;
 
-    address::AddrFamily origin_addrtype_;     // TO REMOVE
+    address::AddrFamily origin_addrtype_;     // TO REMOVE ?
     address::SocketAddr origin_unicast_address_;
 
     address::SocketAddr session_connection_address_;
 
-    // core::List<MediaDescription, core::NoOwnership> media_descriptions_;
     core::List<MediaDescription> media_descriptions_;
 
     core::IAllocator& allocator_;

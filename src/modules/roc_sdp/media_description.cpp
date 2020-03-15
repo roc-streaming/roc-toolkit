@@ -18,7 +18,10 @@ MediaDescription::MediaDescription(core::IAllocator& allocator)
 
 void MediaDescription::clear() {
     media_field_.clear();
-    connection_address_.clear();
+    while(connection_fields_.size() > 0) {
+        core::SharedPtr<ConnectionField> c = connection_fields_.back();
+        connection_fields_.remove(*c);
+    }
 }
 
 const char* MediaDescription::media() const {
@@ -33,6 +36,17 @@ bool MediaDescription::set_media(const char* str, size_t str_len) {
         return false;
     }
 
+    return true;
+}
+
+bool MediaDescription::add_connection_field(address::AddrFamily addrtype, const char* str, size_t str_len) {
+    core::SharedPtr<ConnectionField> c = new (allocator_) ConnectionField(allocator_);
+
+    if (!c->set_connection_address(addrtype, str, str_len)) {
+        return false;
+    }
+
+    connection_fields_.push_back(*c);
     return true;
 }
 
