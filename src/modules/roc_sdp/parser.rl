@@ -15,6 +15,8 @@
 #include "roc_core/array.h"
 #include "roc_core/heap_allocator.h"
 
+#include "roc_core/shared_ptr.h"
+
 namespace roc {
 namespace sdp {
 
@@ -43,7 +45,7 @@ bool parse_sdp(const char* str, SessionDescription& result) {
     const char* start_p_origin_nettype = NULL;
     const char* end_p_origin_addr = NULL;
 
-    address::AddrFamily session_connection_addrtype = address::Family_Unknown;
+    address::AddrFamily connection_addrtype = address::Family_Unknown;
 
     %%{
 
@@ -72,7 +74,7 @@ bool parse_sdp(const char* str, SessionDescription& result) {
 
         action set_session_connection_address {
             if(!result.set_session_connection_address(
-                    session_connection_addrtype,
+                    connection_addrtype,
                     start_p, 
                     p - start_p)) {
                         
@@ -85,6 +87,20 @@ bool parse_sdp(const char* str, SessionDescription& result) {
         action add_media {
             if(!result.add_media_description(start_p, p - start_p)) {
                 roc_log(LogError, "parse media field: invalid media description");
+                result.clear();
+                return false;
+            }
+
+            core::SharedPtr<MediaDescription> md = result.last_media_description();
+            roc_log(LogInfo, "OK media description: %s", md->media());
+        }
+
+        action add_media_connection_address {
+            if(!result.add_connection_to_last_media(connection_addrtype,
+                    start_p, 
+                    p - start_p)) {
+
+                roc_log(LogError, "parse media connection address: invalid address");
                 result.clear();
                 return false;
             }
@@ -141,9 +157,9 @@ bool parse_sdp(const char* str, SessionDescription& result) {
             %set_session_connection_address;
 
         session_connection_with_addrtype =  
-            ( "IP4" %{ session_connection_addrtype = address::Family_IPv4; } 
+            ( "IP4" %{ connection_addrtype = address::Family_IPv4; } 
                 ' ' session_connection_address '/' digit+
-            | "IP6" %{ session_connection_addrtype = address::Family_IPv6; } 
+            | "IP6" %{ connection_addrtype = address::Family_IPv6; } 
                 ' ' session_connection_address
             );
 
@@ -164,15 +180,36 @@ bool parse_sdp(const char* str, SessionDescription& result) {
         # typically "RTP/AVP" or "udp"
         media_proto = token ("/" token)*;
         media_port = digit+;
-        media_description = media_type ' ' media_port ' ' media_proto ' ' media_fmt
+        media_description = (media_type ' ' media_port ' ' media_proto ' ' media_fmt)
             >start_token %add_media;
         
         media_field = 'm='i media_description;
-        media_fields = media_field+;
 
-        sdp_description = 'v='i version '\n'
-        'o='i origin '\n'
-        'c='i session_connection_data '\n'
+        # In media-level: c=<nettype> <addrtype> <connection-address>
+        media_connection_nettype = "IN";
+        
+        # Either IPv6 or IPv4/TTL
+        media_connection_address = non_ws_string >start_token 
+            %{  end_p_origin_addr = p; } 
+            %add_media_connection_address;
+
+        media_connection_with_addrtype =  
+            ( "IP4" %{ connection_addrtype = address::Family_IPv4; } 
+                ' ' media_connection_address '/' digit+
+            | "IP6" %{ connection_addrtype = address::Family_IPv6; } 
+                ' ' media_connection_address
+            );
+
+        media_connection_data = media_connection_nettype ' ' 
+            media_connection_with_addrtype;
+
+        media_connection_field = 'c='i media_connection_data;
+
+        media_fields = ('\n' media_field ('\n' media_connection_field)*)+;
+
+        sdp_description = 'v='i version
+        '\n' 'o='i origin
+        '\n' 'c='i session_connection_data
         media_fields;
 
         main := sdp_description

@@ -18,6 +18,9 @@
 #include "roc_core/string_builder.h"
 #include "roc_core/list_node.h"
 #include "roc_core/refcnt.h"
+#include "roc_core/list.h"
+#include "roc_sdp/connection_field.h"
+#include "roc_core/shared_ptr.h"
 
 namespace roc {
 namespace sdp {
@@ -40,13 +43,17 @@ public:
     //! String should not be zero-terminated.
     bool set_media(const char* str, size_t str_len);
 
+     //! Add a connection field from a string.
+    bool add_connection_field(address::AddrFamily addrtype, const char* str, size_t str_len);
+
 private:
     friend class core::RefCnt<MediaDescription>;
 
     void destroy();
 
     core::StringBuffer<> media_field_;
-    address::SocketAddr connection_address_;
+    
+    core::List<ConnectionField> connection_fields_;
     
     core::IAllocator& allocator_;
 };

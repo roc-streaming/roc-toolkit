@@ -14,16 +14,21 @@
 namespace roc {
 namespace sdp {
 
-TEST_GROUP(sdp_parser) {
+namespace {
     core::HeapAllocator allocator;
-};
+}
+
+TEST_GROUP(sdp_parser) {};
 
 TEST(sdp_parser, str) {
     SessionDescription session_description(allocator);
     CHECK(parse_sdp("v=0\n"
                     "o=test_origin 16914 1 IN IP4 192.168.58.15\n"
-                    "c=IN IP4 239.255.12.42/250\n"
-                    "m=audio 12345 RTP/AVP 10",
+                    "c=IN IP4 230.255.12.42/250\n"
+                    "m=audio 12345 RTP/AVP 10\n"
+                    "m=audio 6789 RTP/AVP 10\n"
+                    "c=IN IP4 231.255.12.42/250\n"
+                    "c=IN IP4 232.255.12.42/250",
                     session_description));
 }
 
