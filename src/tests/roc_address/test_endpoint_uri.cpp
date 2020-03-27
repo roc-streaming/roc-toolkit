@@ -15,9 +15,13 @@
 namespace roc {
 namespace address {
 
-TEST_GROUP(endpoint_uri) {
-    core::HeapAllocator allocator;
-};
+namespace {
+
+core::HeapAllocator allocator;
+
+} // namespace
+
+TEST_GROUP(endpoint_uri) {};
 
 TEST(endpoint_uri, empty) {
     EndpointURI u(allocator);
