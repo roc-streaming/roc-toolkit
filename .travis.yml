@@ -27,6 +27,7 @@ jobs:
         - docker pull rocproject/travis-debian
         - docker pull rocproject/travis-fedora
         - docker pull rocproject/travis-centos
+        - docker pull rocproject/travis-opensuse
         - docker pull rocproject/travis-archlinux
         - docker pull rocproject/travis-alpine
       script:
@@ -36,6 +37,7 @@ jobs:
         - scripts/travis/docker.sh rocproject/travis-debian scripts/travis/linux-x86_64/debian.sh
         - scripts/travis/docker.sh rocproject/travis-fedora scripts/travis/linux-x86_64/fedora.sh
         - scripts/travis/docker.sh rocproject/travis-centos scripts/travis/linux-x86_64/centos.sh
+        - scripts/travis/docker.sh rocproject/travis-opensuse scripts/travis/linux-x86_64/opensuse.sh
         - scripts/travis/docker.sh rocproject/travis-archlinux scripts/travis/linux-x86_64/archlinux.sh
         - scripts/travis/docker.sh rocproject/travis-alpine scripts/travis/linux-x86_64/alpine.sh
         - cat build.status

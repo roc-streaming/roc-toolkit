@@ -121,6 +121,34 @@ Centos 7 and later
     # install libraries, tools, and PulseAudio modules
     $ sudo scons -Q --enable-pulseaudio-modules --build-3rdparty=libuv,openfec,pulseaudio,cpputest install
 
+openSUSE Leap and later
+-----------------------
+
+.. code::
+
+    # for Roc
+    $ sudo zypper install gcc-c++ scons ragel gengetopt doxygen graphviz \
+         libuv-devel libunwind-devel libpulse-devel libunwind-devel sox-devel
+
+    # for 3rd-parties
+    $ sudo zypper install pkg-config intltool libtool autoconf automake make cmake
+
+    # clone repo
+    $ git clone https://github.com/roc-project/roc.git
+    $ cd roc
+
+    # build libraries and tools
+    $ scons -Q --build-3rdparty=openfec,cpputest
+
+    # install libraries and tools
+    $ sudo scons -Q --build-3rdparty=openfec,cpputest install
+
+    # build libraries, tools, and PulseAudio modules
+    $ scons -Q --enable-pulseaudio-modules --build-3rdparty=openfec,pulseaudio,cpputest
+
+    # install libraries, tools, and PulseAudio modules
+    $ sudo scons -Q --enable-pulseaudio-modules --build-3rdparty=openfec,pulseaudio,cpputest install
+
 Arch Linux
 ----------
 

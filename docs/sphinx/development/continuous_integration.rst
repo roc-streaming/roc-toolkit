@@ -37,6 +37,7 @@ rocproject/travis-ubuntu:14.04      ubuntu:14.04          x86_64        gcc-4.4,
 rocproject/travis-debian            debian:stable         x86_64        distro default
 rocproject/travis-fedora            fedora:latest         x86_64        distro default
 rocproject/travis-centos            centos:latest         x86_64        distro default
+rocproject/travis-opensuse          opensuse/leap:latest  x86_64        distro default
 rocproject/travis-archlinux         archlinux/base:latest x86_64        distro default
 rocproject/travis-alpine            alpine:latest         x86_64        distro default
 =================================== ===================== ============= ===========================
