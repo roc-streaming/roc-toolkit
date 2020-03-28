@@ -32,6 +32,7 @@ Linux distributions:
 * Debian (stable)
 * Fedora (latest)
 * CentOS (latest)
+* openSUSE (Leap)
 * Arch Linux (latest)
 * Alpine Linux (latest)
 
