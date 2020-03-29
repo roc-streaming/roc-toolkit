@@ -18,6 +18,7 @@ namespace roc {
 namespace core {
 
 //! Get random integer.
+//! Thread-safe.
 //! @returns random value in range [from; to].
 uint32_t random(uint32_t from, uint32_t to);
 
