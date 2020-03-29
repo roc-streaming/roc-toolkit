@@ -721,6 +721,9 @@ download_dependencies = set()
 explicit_version = set()
 
 for name, version in env.ParseThirdParties(GetOption('build_3rdparty')):
+    if name != 'all' and not name in thirdparty_versions:
+        env.Die("unknown thirdparty name '%s' in '--build-3rdparty', expected any of: %s",
+                    name, ', '.join(['all'] + list(sorted(thirdparty_versions.keys()))))
     download_dependencies.add(name)
     if version:
         thirdparty_versions[name] = version
