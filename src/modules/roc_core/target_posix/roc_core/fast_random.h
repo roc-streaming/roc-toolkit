@@ -6,23 +6,23 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_core/target_posix/roc_core/random.h
+//! @file roc_core/target_posix/roc_core/fast_random.h
 //! @brief Helpers to work with random numbers.
 
-#ifndef ROC_CORE_RANDOM_H_
-#define ROC_CORE_RANDOM_H_
+#ifndef ROC_CORE_FAST_RANDOM_H_
+#define ROC_CORE_FAST_RANDOM_H_
 
 #include "roc_core/stddefs.h"
 
 namespace roc {
 namespace core {
 
-//! Get random integer.
+//! Get a random integer from a non cryptographically secure, but fast PRNG.
 //! Thread-safe.
 //! @returns random value in range [from; to].
-uint32_t random(uint32_t from, uint32_t to);
+uint32_t fast_random(uint32_t from, uint32_t to);
 
 } // namespace core
 } // namespace roc
 
-#endif // ROC_CORE_RANDOM_H_
+#endif // ROC_CORE_FAST_RANDOM_H_
