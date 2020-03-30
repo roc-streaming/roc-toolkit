@@ -1,0 +1,144 @@
+language: generic
+
+branches:
+  only:
+    - master
+    - develop
+    - /^feature\/.*/
+
+stages:
+  - name: Build
+  - name: Docs
+    if: branch = master AND type != pull_request AND NOT fork
+
+jobs:
+  include:
+    - name: "Linux x84_64"
+      stage: Build
+      os: linux
+      dist: trusty
+      sudo: required
+      services:
+        - docker
+      before_install:
+        - docker pull rocproject/travis-ubuntu:18.04
+        - docker pull rocproject/travis-ubuntu:16.04
+        - docker pull rocproject/travis-ubuntu:14.04
+        - docker pull rocproject/travis-debian
+        - docker pull rocproject/travis-fedora
+        - docker pull rocproject/travis-centos
+        - docker pull rocproject/travis-opensuse
+        - docker pull rocproject/travis-archlinux
+        - docker pull rocproject/travis-alpine
+      script:
+        - scripts/travis/docker.sh rocproject/travis-ubuntu:18.04 scripts/travis/linux-x86_64/ubuntu-18.04.sh
+        - scripts/travis/docker.sh rocproject/travis-ubuntu:16.04 scripts/travis/linux-x86_64/ubuntu-16.04.sh
+        - scripts/travis/docker.sh rocproject/travis-ubuntu:14.04 scripts/travis/linux-x86_64/ubuntu-14.04.sh
+        - scripts/travis/docker.sh rocproject/travis-debian scripts/travis/linux-x86_64/debian.sh
+        - scripts/travis/docker.sh rocproject/travis-fedora scripts/travis/linux-x86_64/fedora.sh
+        - scripts/travis/docker.sh rocproject/travis-centos scripts/travis/linux-x86_64/centos.sh
+        - scripts/travis/docker.sh rocproject/travis-opensuse scripts/travis/linux-x86_64/opensuse.sh
+        - scripts/travis/docker.sh rocproject/travis-archlinux scripts/travis/linux-x86_64/archlinux.sh
+        - scripts/travis/docker.sh rocproject/travis-alpine scripts/travis/linux-x86_64/alpine.sh
+        - cat build.status
+
+    - name: "Linux ARM"
+      stage: Build
+      os: linux
+      dist: trusty
+      sudo: required
+      services:
+        - docker
+      before_install:
+        - docker pull rocproject/cross-arm-bcm2708hardfp-linux-gnueabi:gcc-4.7
+        - docker pull rocproject/cross-arm-linux-gnueabihf:gcc-4.9
+        - docker pull rocproject/cross-aarch64-linux-gnu:gcc-7.4
+      script:
+        - scripts/travis/docker.sh rocproject/cross-arm-bcm2708hardfp-linux-gnueabi:gcc-4.7 scripts/travis/linux-arm/arm-bcm2708hardfp-linux-gnueabi.sh
+        - scripts/travis/docker.sh rocproject/cross-arm-linux-gnueabihf:gcc-4.9 scripts/travis/linux-arm/arm-linux-gnueabihf.sh
+        - scripts/travis/docker.sh rocproject/cross-aarch64-linux-gnu:gcc-7.4 scripts/travis/linux-arm/aarch64-linux-gnu.sh
+        - cat build.status
+
+    - name: "Linux build checks"
+      stage: Build
+      os: linux
+      dist: trusty
+      sudo: required
+      services:
+        - docker
+      before_install:
+        - docker pull rocproject/travis-minimal
+        - docker pull rocproject/travis-checks
+      script:
+        - scripts/travis/docker.sh rocproject/travis-minimal scripts/travis/linux-build-checks/optional-features.sh
+        - scripts/travis/docker.sh rocproject/travis-minimal scripts/travis/linux-build-checks/debug-features.sh
+        - scripts/travis/docker.sh rocproject/travis-minimal scripts/travis/linux-build-checks/pulseaudio-support.sh
+        - scripts/travis/docker.sh rocproject/travis-checks scripts/travis/linux-build-checks/check-fmt.sh
+
+    - name: "Linux runtime checks"
+      stage: Build
+      os: linux
+      dist: trusty
+      sudo: required
+      services:
+        - docker
+      before_install:
+        - docker pull rocproject/travis-checks
+      script:
+        - scripts/travis/docker.sh rocproject/travis-checks scripts/travis/linux-runtime-checks/sanitizers-clang.sh
+        - scripts/travis/docker.sh rocproject/travis-checks scripts/travis/linux-runtime-checks/sanitizers-gcc.sh
+        - scripts/travis/docker.sh rocproject/travis-checks scripts/travis/linux-runtime-checks/valgrind-debug.sh
+        - scripts/travis/docker.sh rocproject/travis-checks scripts/travis/linux-runtime-checks/valgrind-release.sh
+
+    - name: "Android ARM"
+      stage: Build
+      os: linux
+      dist: trusty
+      sudo: required
+      services:
+        - docker
+      before_install:
+        - docker pull rocproject/cross-aarch64-linux-android:api28
+      script:
+        - scripts/travis/docker.sh rocproject/cross-aarch64-linux-android:api28 scripts/travis/android/aarch64-linux-android.sh
+        - cat build.status
+
+    - name: "macOS Xcode 9.4"
+      stage: Build
+      os: osx
+      osx_image: xcode9.4
+      script:
+        - scripts/travis/macos/xcode-9.4.sh
+      after_failure:
+        - cat config.log
+
+    - name: "macOS Xcode 10.2"
+      stage: Build
+      os: osx
+      osx_image: xcode10.2
+      script:
+        - scripts/travis/macos/xcode-10.2.sh
+      after_failure:
+        - cat config.log
+
+    - name: "macOS Xcode 11.6"
+      stage: Build
+      os: osx
+      osx_image: xcode11.6
+      script:
+        - scripts/travis/macos/xcode-11.6.sh
+      after_failure:
+        - cat config.log
+
+    - name: "roc-streaming.github.io"
+      stage: Docs
+      script:
+        - scripts/travis/trigger.sh roc-streaming%2Froc-streaming.github.io travis
+
+notifications:
+  webhooks:
+    urls:
+      - "https://scalar.vector.im/api/neb/services/hooks/dHJhdmlzLWNpLyU0MGdhdnYlM0FtYXRyaXgub3JnLyUyMWN3WHpNdm9kbVRWWklGVnNwWCUzQW1hdHJpeC5vcmc"
+    on_start: never
+    on_success: always
+    on_failure: always
