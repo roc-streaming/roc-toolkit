@@ -7,8 +7,8 @@
  */
 
 #include "roc_packet/interleaver.h"
+#include "roc_core/fast_random.h"
 #include "roc_core/log.h"
-#include "roc_core/random.h"
 
 namespace roc {
 namespace packet {
@@ -81,7 +81,7 @@ void Interleaver::reinit_seq_() {
         send_seq_[i] = i;
     }
     for (size_t i = block_size_; i > 0; --i) {
-        const size_t j = core::random(0, (unsigned int)i - 1);
+        const size_t j = core::fast_random(0, (unsigned int)i - 1);
         const size_t buff = send_seq_[i - 1];
         send_seq_[i - 1] = send_seq_[j];
         send_seq_[j] = buff;
