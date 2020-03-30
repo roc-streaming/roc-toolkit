@@ -9,7 +9,7 @@
 #ifndef ROC_AUDIO_TEST_HELPERS_AWGN_H_
 #define ROC_AUDIO_TEST_HELPERS_AWGN_H_
 
-#include "roc_core/random.h"
+#include "roc_core/fast_random.h"
 
 namespace roc {
 namespace audio {
@@ -21,8 +21,8 @@ namespace test {
 inline double generate_awgn() {
     enum { RandMax = 2000000000 };
 
-    const double r1 = core::random(0, RandMax) / (double)RandMax;
-    const double r2 = core::random(10, RandMax) / (double)RandMax;
+    const double r1 = core::fast_random(0, RandMax) / (double)RandMax;
+    const double r2 = core::fast_random(10, RandMax) / (double)RandMax;
 
     return sqrt(-2.0 * log(r2)) * cos(2.0 * M_PI * r1);
 }
