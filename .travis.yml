@@ -70,6 +70,8 @@ jobs:
         - scripts/travis/docker.sh rocproject/travis-minimal scripts/travis/linux-build-checks/optional-features.sh
         - scripts/travis/docker.sh rocproject/travis-minimal scripts/travis/linux-build-checks/debug-features.sh
         - scripts/travis/docker.sh rocproject/travis-minimal scripts/travis/linux-build-checks/pulseaudio-support.sh
+        - scons -Q fmt
+        - git diff-index --quiet HEAD
 
     - name: "Linux runtime checks"
       stage: Build
