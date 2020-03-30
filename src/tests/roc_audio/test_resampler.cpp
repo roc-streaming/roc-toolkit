@@ -18,7 +18,6 @@
 #include "roc_audio/resampler_reader.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/heap_allocator.h"
-#include "roc_core/random.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_core/stddefs.h"
 

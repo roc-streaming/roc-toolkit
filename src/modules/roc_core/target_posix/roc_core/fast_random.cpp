@@ -10,8 +10,8 @@
 #include <stdlib.h>
 
 #include "roc_core/errno_to_str.h"
+#include "roc_core/fast_random.h"
 #include "roc_core/panic.h"
-#include "roc_core/random.h"
 #include "roc_core/time.h"
 
 namespace roc {
@@ -35,7 +35,7 @@ unsigned short rand_seed[3] = {};
 // race is harmless. See https://www.evanjones.ca/random-thread-safe.html.
 //
 // This implementation is not a cryptographically strong PRNG.
-uint32_t random(uint32_t from, uint32_t to) {
+uint32_t fast_random(uint32_t from, uint32_t to) {
     roc_panic_if_not(from <= to);
 
     const uint64_t upper = uint64_t(to) - from + 1;
