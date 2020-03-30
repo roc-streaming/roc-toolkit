@@ -68,10 +68,12 @@ jobs:
         - docker
       before_install:
         - docker pull rocproject/travis-minimal
+        - docker pull rocproject/travis-checks
       script:
         - scripts/travis/docker.sh rocproject/travis-minimal scripts/travis/linux-build-checks/optional-features.sh
         - scripts/travis/docker.sh rocproject/travis-minimal scripts/travis/linux-build-checks/debug-features.sh
         - scripts/travis/docker.sh rocproject/travis-minimal scripts/travis/linux-build-checks/pulseaudio-support.sh
+        - scripts/travis/docker.sh rocproject/travis-checks scripts/travis/linux-build-checks/check-fmt.sh
 
     - name: "Linux runtime checks"
       stage: Build
