@@ -62,6 +62,9 @@ public:
     //!  Packet is padded to match fixed size.
     void flush();
 
+    //! Check if object is successfully constructed.
+    bool valid() const;
+
 private:
     bool begin_packet_();
     void end_packet_();
@@ -86,9 +89,11 @@ private:
     packet::PacketPtr packet_;
     size_t packet_pos_;
 
-    const packet::source_t source_;
+    packet::source_t source_;
     packet::seqnum_t seqnum_;
     packet::timestamp_t timestamp_;
+
+    bool valid_;
 };
 
 } // namespace audio
