@@ -10,9 +10,9 @@
 
 #include "roc_core/array.h"
 #include "roc_core/buffer_pool.h"
+#include "roc_core/fast_random.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_core/log.h"
-#include "roc_core/random.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_fec/codec_map.h"
 
@@ -86,7 +86,7 @@ private:
         core::Slice<uint8_t> buf = new (buffer_pool) core::Buffer<uint8_t>(buffer_pool);
         buf.resize(p_size);
         for (size_t j = 0; j < buf.size(); ++j) {
-            buf.data()[j] = (uint8_t)core::random(0, 0xff);
+            buf.data()[j] = (uint8_t)core::fast_random(0, 0xff);
         }
         return buf;
     }
@@ -172,7 +172,7 @@ TEST(encoder_decoder, random_losses) {
 
             size_t curr_loss = 0;
             for (size_t i = 0; i < NumSourcePackets + NumRepairPackets; ++i) {
-                if (core::random(0, 100) < LossPercent && curr_loss <= MaxLoss) {
+                if (core::fast_random(0, 100) < LossPercent && curr_loss <= MaxLoss) {
                     total_loss++;
                     curr_loss++;
                 } else {
