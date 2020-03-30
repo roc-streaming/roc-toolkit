@@ -209,7 +209,7 @@ bool SenderEndpointSet::create_pipeline_() {
                           config_.packet_length, format->sample_rate,
                           config_.payload_type),
                       allocator_);
-    if (!packetizer_) {
+    if (!packetizer_ || !packetizer_->valid()) {
         return false;
     }
 

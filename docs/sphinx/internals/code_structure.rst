@@ -107,8 +107,8 @@ Example directory structure employing targets:
     ├── target_posix
     │   └── roc_core
     │       ├── ...
-    │       ├── random.cpp
-    │       └── random.h
+    │       ├── fast_random.cpp
+    │       └── fast_random.h
     ├── target_posixtime
     │   └── roc_core
     │       ├── ...
