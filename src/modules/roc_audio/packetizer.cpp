@@ -9,7 +9,7 @@
 #include "roc_audio/packetizer.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
-#include "roc_core/random.h"
+#include "roc_core/secure_random.h"
 
 namespace roc {
 namespace audio {
@@ -35,11 +35,24 @@ Packetizer::Packetizer(packet::IWriter& writer,
     , payload_type_(payload_type)
     , payload_size_(payload_encoder.encoded_size(samples_per_packet_))
     , packet_pos_(0)
-    , source_((packet::source_t)core::random(0, packet::source_t(-1)))
-    , seqnum_((packet::seqnum_t)core::random(0, packet::seqnum_t(-1)))
-    , timestamp_((packet::timestamp_t)core::random(0, packet::timestamp_t(-1))) {
+    , valid_(false) {
+    uint32_t rand_source = 0, rand_seqnum = 0, rand_timestamp = 0;
+    if (!core::secure_random(0, packet::source_t(-1), rand_source)
+        || !core::secure_random(0, packet::seqnum_t(-1), rand_seqnum)
+        || !core::secure_random(0, packet::timestamp_t(-1), rand_timestamp)) {
+        roc_log(LogError, "packetizer: initializing fails");
+        return;
+    }
+    source_ = (packet::source_t)rand_source;
+    seqnum_ = (packet::seqnum_t)rand_seqnum;
+    timestamp_ = (packet::timestamp_t)rand_timestamp;
+    valid_ = true;
     roc_log(LogDebug, "packetizer: initializing: n_channels=%lu samples_per_packet=%lu",
             (unsigned long)num_channels_, (unsigned long)samples_per_packet_);
+}
+
+bool Packetizer::valid() const {
+    return valid_;
 }
 
 void Packetizer::write(Frame& frame) {
