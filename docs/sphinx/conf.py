@@ -40,6 +40,8 @@ extensions = [
     'breathe',
 ]
 
+html4_writer = True
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = []
 
