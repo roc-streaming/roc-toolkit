@@ -73,7 +73,7 @@ Here is an example of starting the receiver that listens on all interfaces on tw
     15:23:14.234 [6447] [dbg] roc_fec: fec reader: got first packet in a block, start decoding: n_packets_before=18 sbn=47461
     15:23:14.234 [6447] [dbg] roc_fec: fec reader: update repair block size: cur_sblen=20 cur_rblen=0 new_rblen=235
     15:23:19.128 [6447] [dbg] roc_audio: latency monitor: latency=8776 target=8820 fe=0.99999 trim_fe=0.99999 adj_fe=0.91874
-  15:23:19.207 [6449] [dbg] roc_sndio: pulseaudio sink: stream_latency=26761
+    15:23:19.207 [6449] [dbg] roc_sndio: pulseaudio sink: stream_latency=26761
     ...
 
 Running sender
