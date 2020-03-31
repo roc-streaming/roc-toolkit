@@ -62,7 +62,7 @@ def Sphinx(env, output_type, build_dir, output_dir, source_dir, sources, werror=
     target = os.path.join(env.Dir(build_dir).path, source_dir, '.done.'+output_type)
 
     env.Command(target, sources, SCons.Action.CommandAction(
-        '%s scripts/wrappers/doc.py %s %s %s %s %s %s -q -b %s -d %s %s %s' % (
+        '%s scripts/wrappers/doc.py %s %s %s %s %s %s -j %d -q -b %s -d %s %s %s' % (
             env.PythonExecutable(),
             env.Dir('#').path,
             env.Dir('#').path,
@@ -70,6 +70,7 @@ def Sphinx(env, output_type, build_dir, output_dir, source_dir, sources, werror=
             target,
             int(werror or 0),
             env['SPHINX_BUILD'],
+            SCons.Script.GetOption('num_jobs'),
             output_type,
             env.Dir(os.path.join(build_dir, source_dir)).path,
             env.Dir(source_dir).path,
