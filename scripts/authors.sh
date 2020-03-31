@@ -43,7 +43,8 @@ function add_if_new() {
 }
 
 function add_contributors() {
-    repo_dir="../$1"
+    out_file="$1"
+    repo_dir="../$2"
 
     if [ ! -d "${repo_dir}" ]
     then
@@ -55,7 +56,7 @@ function add_contributors() {
         | cut -d' ' -f2- \
         | while read line
         do
-            add_if_new "${line}" "${file}"
+            add_if_new "${line}" "${out_file}" >> "${out_file}"
         done
 }
 
@@ -66,13 +67,13 @@ temp="$(mktemp)"
 
 cat "$file" > "$temp"
 
-add_contributors "roc"         "$file" >> "$temp"
-add_contributors "roc-tests"   "$file" >> "$temp"
-add_contributors "roc-go"      "$file" >> "$temp"
-add_contributors "roc-java"    "$file" >> "$temp"
-add_contributors "roc/vendor"  "$file" >> "$temp"
-add_contributors "openfec"     "$file" >> "$temp"
-add_contributors "dockerfiles" "$file" >> "$temp"
+add_contributors "${temp}" "roc"
+add_contributors "${temp}" "roc-tests"
+add_contributors "${temp}" "roc-go"
+add_contributors "${temp}" "roc-java"
+add_contributors "${temp}" "roc/vendor"
+add_contributors "${temp}" "openfec"
+add_contributors "${temp}" "dockerfiles"
 
 cat "$temp" > "$file"
 rm "$temp"

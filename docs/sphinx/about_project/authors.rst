@@ -35,3 +35,6 @@ Contributors
 * Rohan Kumar <rohank.ce@gmail.com>
 * Jonathan Sieber <mail@strfry.org>
 * Gareth Marlow <gareth@eqsystems.io>
+* Ivan <miklecivan3@gmail.com>
+* Suiyi Fu <fusuiyi123@gmail.com>
+* Vladimir Panov <quest201114@yandex.ru>
