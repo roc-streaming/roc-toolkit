@@ -54,9 +54,21 @@ dl.function > dt {
     padding: 4px 4px 4px 10px;
 }
 
+li > p:first-child {
+    margin-bottom: 0px;
+}
+
+li > p:last-child {
+    margin-bottom: 1.5em;
+}
+
 pre {
     font-size: 98%;
     box-shadow: none;
     -webkit-box-shadow: none;
     -moz-box-shadow: none;
+}
+
+table.align-center {
+    margin-left: 0;
 }
