@@ -40,6 +40,9 @@ err = False
 for line in proc.stderr:
     line = line.decode('utf-8')
 
+    if 'RemovedInSphinx30Warning' in line:
+        continue
+
     line = re.sub('WARNING:', 'warning:', line, flags=re.I)
     line = re.sub('ERROR:', 'error:', line, flags=re.I)
 
