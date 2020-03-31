@@ -59,6 +59,8 @@ html_context = {
 
 html_static_path = ['_static']
 
+html4_writer = True
+
 # -- Options for manual page output ---------------------------------------
 
 man_pages = [
