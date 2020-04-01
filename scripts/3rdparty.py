@@ -175,11 +175,15 @@ def execute_cmake(srcdir, variant, toolchain, env, log):
         '-DCMAKE_FIND_ROOT_PATH=%s' % quote(getsysroot(toolchain)),
         '-DCMAKE_POSITION_INDEPENDENT_CODE=ON',
         '-DBUILD_STATIC_LIBS=ON',
-        '-DCMAKE_C_COMPILER=%s' % quote(getvar(env, 'CC', toolchain, 'gcc')),
-        '-DCMAKE_LINKER=%s'     % quote(getvar(env, 'CCLD', toolchain, 'gcc')),
-        '-DCMAKE_AR=%s'         % quote(getvar(env, 'AR', toolchain, 'ar')),
-        '-DCMAKE_RANLIB=%s'     % quote(getvar(env, 'RANLIB', toolchain, 'ranlib')),
     ]
+
+    if not 'OE_CMAKE_TOOLCHAIN_FILE' in os.environ:
+        args += [
+            '-DCMAKE_C_COMPILER=%s' % quote(getvar(env, 'CC', toolchain, 'gcc')),
+            '-DCMAKE_LINKER=%s'     % quote(getvar(env, 'CCLD', toolchain, 'gcc')),
+            '-DCMAKE_AR=%s'         % quote(getvar(env, 'AR', toolchain, 'ar')),
+            '-DCMAKE_RANLIB=%s'     % quote(getvar(env, 'RANLIB', toolchain, 'ranlib')),
+        ]
 
     cc_flags = [
         '-fPIC', # -fPIC should be set explicitly in older cmake versions
