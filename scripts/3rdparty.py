@@ -128,13 +128,17 @@ def try_execute(cmd):
     return subprocess.call(
         cmd, stdout=devnull, stderr=subprocess.STDOUT, shell=True) == 0
 
-def execute(cmd, log, ignore_error=False):
+def execute(cmd, log, ignore_error=False, clear_env=False):
     print('[execute] %s' % cmd)
 
     with open(log, 'a+') as fp:
         print('>>> %s' % cmd, file=fp)
 
-    code = os.system('%s >>%s 2>&1' % (cmd, log))
+    env = None
+    if clear_env:
+        env = {'HOME': os.environ['HOME'], 'PATH': os.environ['PATH']}
+
+    code = subprocess.call('%s >>%s 2>&1' % (cmd, log), shell=True, env=env)
     if code != 0:
         if ignore_error:
             with open(log, 'a+') as fp:
@@ -606,8 +610,7 @@ elif name == 'gengetopt':
     extract('gengetopt-%s.tar.gz' % ver,
             'gengetopt-%s' % ver)
     os.chdir('src/gengetopt-%s' % ver)
-    execute('./configure %s' % (
-        makeenv(envlist)), logfile)
+    execute('./configure', logfile, clear_env=True)
     execute_make(logfile, cpu_count=0) # -j is buggy for gengetopt
     install_files('src/gengetopt', os.path.join(builddir, 'bin'))
 elif name == 'ragel':
@@ -618,8 +621,7 @@ elif name == 'ragel':
     extract('ragel-%s.tar.gz' % ver,
             'ragel-%s' % ver)
     os.chdir('src/ragel-%s' % ver)
-    execute('./configure %s' % (
-        makeenv(envlist)), logfile)
+    execute('./configure', logfile, clear_env=True)
     execute_make(logfile)
     install_files('ragel/ragel', os.path.join(builddir, 'bin'))
 elif name == 'cpputest':
