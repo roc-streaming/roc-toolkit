@@ -294,18 +294,56 @@ def getsysroot(toolchain):
         print("error: can't execute '%s'" % ' '.join(cmd), file=sys.stderr)
         exit(1)
 
-def isgnu(toolchain):
-    if toolchain:
-        cmd = ['%s-ld' % toolchain, '-v']
-    else:
-        cmd = ['ld', '-v']
-    try:
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        return 'GNU' in proc.stdout.read().strip()
-    except:
+def checkfamily(env, toolchain, family):
+    if family == 'gcc':
+        keys = ['GNU', 'gnu', 'gcc', 'g++']
+    elif family == 'clang':
+        keys = ['clang']
+
+    def _checktool(toolchain, tool):
+        if toolchain:
+            tool = '%s-%s' % (toolchain, tool)
+        try:
+            proc = subprocess.Popen([tool, '-v'],
+                                        stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            out = str(proc.stdout.read().strip())
+            for k in keys:
+                if k in out:
+                    return True
+        except:
+            pass
         return False
 
-def makeflags(workdir, toolchain, deplist, cflags='', ldflags='', variant=''):
+    for var in ['CC', 'CCLD', 'CXX', 'CXXLD']:
+        if var in env:
+            if not _checktool('', env[var]):
+                return False
+
+    if not 'gnu' in toolchain:
+        if 'CC' not in env:
+            for tool in ['cc', 'gcc', 'clang']:
+                if _checktool(toolchain, tool):
+                    break
+            else:
+                return False
+
+        if 'CCLD' not in env:
+            for tool in ['ld', 'gcc', 'clang']:
+                if _checktool(toolchain, tool):
+                    break
+            else:
+                return False
+
+        if 'CXX' not in env or 'CXXLD' not in env:
+            for tool in ['g++', 'clang++']:
+                if _checktool(toolchain, tool):
+                    break
+            else:
+                return False
+
+    return True
+
+def makeflags(workdir, toolchain, env, deplist, cflags='', ldflags='', variant='', pthread=False):
     incdirs=[]
     libdirs=[]
 
@@ -316,17 +354,27 @@ def makeflags(workdir, toolchain, deplist, cflags='', ldflags='', variant=''):
     cflags = ([cflags] if cflags else []) + ['-I%s' % path for path in incdirs]
     ldflags = ['-L%s' % path for path in libdirs] + ([ldflags] if ldflags else [])
 
-    gnu = isgnu(toolchain)
+    is_android = 'android' in toolchain
+    is_gnu = checkfamily(env, toolchain, 'gcc')
+    is_clang = checkfamily(env, toolchain, 'clang')
 
     if variant == 'debug':
-        if gnu:
+        if is_gnu or is_clang:
             cflags += ['-ggdb']
         else:
             cflags += ['-g']
     elif variant == 'release':
         cflags += ['-O2']
 
-    if gnu:
+    if pthread and not is_android:
+        if is_gnu or is_clang:
+            cflags += ['-pthread']
+        if is_gnu:
+            ldflags += ['-pthread']
+        else:
+            ldflags += ['-lpthread']
+
+    if is_gnu:
         ldflags += ['-Wl,-rpath-link=%s' % path for path in libdirs]
 
     return ' '.join([
@@ -384,7 +432,7 @@ if name == 'libuv':
     execute('./configure --host=%s %s %s %s' % (
         toolchain,
         makeenv(envlist),
-        makeflags(workdir, toolchain, [], cflags='-fvisibility=hidden'),
+        makeflags(workdir, toolchain, env, [], cflags='-fvisibility=hidden'),
         ' '.join([
             '--with-pic',
             '--enable-static',
@@ -477,7 +525,7 @@ elif name == 'json':
         ])),
         toolchain,
         makeenv(envlist),
-        makeflags(workdir, toolchain, [], cflags='-w -fPIC -fvisibility=hidden'),
+        makeflags(workdir, toolchain, env, [], cflags='-w -fPIC -fvisibility=hidden'),
         ' '.join([
             '--enable-static',
             '--disable-shared',
@@ -504,7 +552,8 @@ elif name == 'sndfile':
         ])),
         toolchain,
         makeenv(envlist),
-        makeflags(workdir, toolchain, [], cflags='-fPIC -fvisibility=hidden'),
+        # explicitly enable -pthread because libtool doesn't add it on some platforms
+        makeflags(workdir, toolchain, env, [], cflags='-fPIC -fvisibility=hidden', pthread=True),
         ' '.join([
             '--enable-static',
             '--disable-shared',
@@ -537,7 +586,7 @@ elif name == 'pulseaudio':
     execute('./configure --host=%s %s %s %s %s' % (
         toolchain,
         makeenv(envlist),
-        makeflags(workdir, toolchain, deplist, cflags='-w -fomit-frame-pointer -O2'),
+        makeflags(workdir, toolchain, env, deplist, cflags='-w -fomit-frame-pointer -O2'),
         ' '.join([
             'LIBJSON_CFLAGS=" "',
             'LIBJSON_LIBS="-ljson-c -ljson"',
@@ -579,7 +628,7 @@ elif name == 'sox':
     execute('./configure --host=%s %s %s %s' % (
         toolchain,
         makeenv(envlist),
-        makeflags(workdir, toolchain, deplist, cflags='-fvisibility=hidden', variant=variant),
+        makeflags(workdir, toolchain, env, deplist, cflags='-fvisibility=hidden', variant=variant),
         ' '.join([
             '--enable-static',
             '--disable-shared',
@@ -604,7 +653,7 @@ elif name == 'libunwind':
     execute('./configure --host=%s %s %s %s' % (
         toolchain,
         makeenv(envlist),
-        makeflags(workdir, toolchain, deplist, cflags='-fPIC', variant=variant),
+        makeflags(workdir, toolchain, env, deplist, cflags='-fPIC', variant=variant),
         ' '.join([
             '--enable-static',
             '--disable-shared',
@@ -653,7 +702,7 @@ elif name == 'cpputest':
             makeenv(envlist),
             # disable warnings, since CppUTest uses -Werror and may fail to
             # build on old GCC versions
-            makeflags(workdir, toolchain, [], cflags='-w'),
+            makeflags(workdir, toolchain, env, [], cflags='-w'),
             ' '.join([
                 '--enable-static',
                 # disable memory leak detection which is too hard to use properly
