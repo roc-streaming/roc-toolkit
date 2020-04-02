@@ -549,6 +549,7 @@ elif name == 'pulseaudio':
             '--disable-static',
             '--disable-tests',
             '--disable-manpages',
+            '--disable-orc',
             '--disable-webrtc-aec',
             '--without-caps',
         ])), logfile)
