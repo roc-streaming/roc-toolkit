@@ -4,6 +4,7 @@ from __future__ import print_function
 import sys
 import os
 import os.path
+import re
 import shutil
 import glob
 import fnmatch
@@ -30,7 +31,7 @@ except:
     pass
 
 printdir = os.path.abspath('.')
-devnull = open(os.devnull, 'w')
+devnull = open(os.devnull, 'w+')
 
 def mkpath(path):
     try:
@@ -170,24 +171,39 @@ def execute_make(log, cpu_count=None):
 
     execute(' '.join(cmd), log)
 
-def execute_cmake(srcdir, variant, toolchain, env, log):
-    args = [
-        '-DCMAKE_FIND_ROOT_PATH=%s' % quote(getsysroot(toolchain)),
+def execute_cmake(srcdir, variant, toolchain, env, log, args=[]):
+    compiler = getvar(env, 'CC', toolchain, 'gcc')
+    sysroot = getsysroot(toolchain, compiler)
+
+    args += [
+        '-DCMAKE_FIND_ROOT_PATH=%s' % quote(sysroot),
+        '-DCMAKE_SYSROOT=%s'        % quote(sysroot),
         '-DCMAKE_POSITION_INDEPENDENT_CODE=ON',
-        '-DBUILD_STATIC_LIBS=ON',
     ]
 
-    if not 'OE_CMAKE_TOOLCHAIN_FILE' in os.environ:
+    if 'android' in toolchain:
+        args += ['-DCMAKE_SYSTEM_NAME=Android']
+        api = getandroidapi(compiler)
+        if api:
+            args += ['-DCMAKE_SYSTEM_VERSION=%s' % api]
+        abi = getandroidabi(toolchain)
+        if abi:
+            args += ['-DCMAKE_ANDROID_ARCH_ABI=%s' % abi]
+
+    if not 'OE_CMAKE_TOOLCHAIN_FILE' in os.environ: # workaround for yocto linux
+        if not 'android' in toolchain: # workaround for android
+            args += [
+                '-DCMAKE_C_COMPILER=%s' % quote(compiler),
+            ]
         args += [
-            '-DCMAKE_C_COMPILER=%s' % quote(getvar(env, 'CC', toolchain, 'gcc')),
-            '-DCMAKE_LINKER=%s'     % quote(getvar(env, 'CCLD', toolchain, 'gcc')),
-            '-DCMAKE_AR=%s'         % quote(getvar(env, 'AR', toolchain, 'ar')),
-            '-DCMAKE_RANLIB=%s'     % quote(getvar(env, 'RANLIB', toolchain, 'ranlib')),
+            '-DCMAKE_LINKER=%s' % quote(getvar(env, 'CCLD', toolchain, 'gcc')),
+            '-DCMAKE_AR=%s'     % quote(getvar(env, 'AR', toolchain, 'ar')),
+            '-DCMAKE_RANLIB=%s' % quote(getvar(env, 'RANLIB', toolchain, 'ranlib')),
         ]
 
     cc_flags = [
         '-fPIC', # -fPIC should be set explicitly in older cmake versions
-        '-fvisibility=hidden',
+        '-fvisibility=hidden', # hide private symbols
     ]
 
     if variant == 'debug':
@@ -196,13 +212,11 @@ def execute_cmake(srcdir, variant, toolchain, env, log):
         ]
         args += [
             '-DCMAKE_BUILD_TYPE=Debug',
-            '-DDEBUG:STRING=ON',
             '-DCMAKE_C_FLAGS_DEBUG:STRING=%s' % quote(' '.join(cc_flags)),
         ]
     else:
         args += [
             '-DCMAKE_BUILD_TYPE=Release',
-            '-DDEBUG:STRING=OFF',
             '-DCMAKE_C_FLAGS_RELEASE:STRING=%s' % quote(' '.join(cc_flags)),
         ]
 
@@ -283,16 +297,65 @@ def getvar(env, var, toolchain, default):
         return env[var]
     return '-'.join([s for s in [toolchain, default] if s])
 
-def getsysroot(toolchain):
+def getsysroot(toolchain, compiler):
     if not toolchain:
         return ""
+
+    if not compiler:
+        compiler = '%s-gcc' % toolchain
+
     try:
-        cmd = ['%s-gcc' % toolchain, '-print-sysroot']
+        cmd = [compiler, '-print-sysroot']
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=devnull)
-        return proc.stdout.read().strip()
+        sysroot = proc.stdout.read().strip()
+        if os.path.isdir(sysroot):
+            return sysroot
     except:
-        print("error: can't execute '%s'" % ' '.join(cmd), file=sys.stderr)
-        exit(1)
+        pass
+
+    if 'android' in toolchain:
+        try:
+            from distutils.spawn import find_executable
+            path = find_executable(compiler)
+            while True:
+                parent = os.path.dirname(path)
+                if parent == path:
+                    break
+                path = parent
+                sysroot = os.path.join(path, 'sysroot')
+                if os.path.isdir(sysroot):
+                    return sysroot
+        except:
+            pass
+
+    print("error: can't determine sysroot for '%s' toolchain" % toolchain, file=sys.stderr)
+    exit(1)
+
+def getandroidabi(toolchain):
+    try:
+        ta = toolchain.split('-')[0]
+    except:
+        return
+    if ta == 'arm':
+        return 'armeabi-v7a'
+    if ta == 'aarch64':
+        return 'arm64-v8a'
+    if ta == 'i686':
+        return 'x86'
+    if ta == 'x86_64':
+        return 'x86_64'
+    return ta
+
+def getandroidapi(compiler):
+    try:
+        cmd = [compiler, '-dM', '-E', '-']
+        proc = subprocess.Popen(cmd, stdin=devnull, stdout=subprocess.PIPE, stderr=devnull)
+        for line in proc.stdout.read().splitlines():
+            m = re.search(r'__ANDROID_API__\s+(\d+)', line)
+            if m:
+                return m.group(1)
+    except:
+        pass
 
 def checkfamily(env, toolchain, family):
     if family == 'gcc':
@@ -428,18 +491,29 @@ if name == 'libuv':
             'libuv-v%s' % ver)
     os.chdir('src/libuv-v%s' % ver)
     freplace('include/uv.h', '__attribute__((visibility("default")))', '')
-    execute('./autogen.sh', logfile)
-    execute('./configure --host=%s %s %s %s' % (
-        toolchain,
-        makeenv(envlist),
-        makeflags(workdir, toolchain, env, [], cflags='-fvisibility=hidden'),
-        ' '.join([
-            '--with-pic',
-            '--enable-static',
-        ])), logfile)
-    execute_make(logfile)
+    if 'android' in toolchain:
+        mkpath('build')
+        os.chdir('build')
+        execute_cmake('..', variant, toolchain, env, logfile, args=[
+            '-DLIBUV_BUILD_TESTS=OFF',
+            ])
+        execute_make(logfile)
+        shutil.copy('libuv_a.a', 'libuv.a')
+        os.chdir('..')
+        install_files('build/libuv.a', os.path.join(builddir, 'lib'))
+    else:
+        execute('./autogen.sh', logfile)
+        execute('./configure --host=%s %s %s %s' % (
+            toolchain,
+            makeenv(envlist),
+            makeflags(workdir, toolchain, env, [], cflags='-fvisibility=hidden'),
+            ' '.join([
+                '--with-pic',
+                '--enable-static',
+            ])), logfile)
+        execute_make(logfile)
+        install_files('.libs/libuv.a', os.path.join(builddir, 'lib'))
     install_tree('include', os.path.join(builddir, 'include'))
-    install_files('.libs/libuv.a', os.path.join(builddir, 'lib'))
 elif name == 'openfec':
     if variant == 'debug':
         dist = 'bin/Debug'
@@ -455,7 +529,10 @@ elif name == 'openfec':
     os.chdir('src/openfec-%s' % ver)
     mkpath('build')
     os.chdir('build')
-    execute_cmake('..', variant, toolchain, env, logfile)
+    execute_cmake('..', variant, toolchain, env, logfile, args=[
+        '-DBUILD_STATIC_LIBS=ON',
+        '-DDEBUG:STRING=%s' % ('ON' if variant == 'debug' else 'OFF'),
+        ])
     execute_make(logfile)
     os.chdir('..')
     install_tree('src', os.path.join(builddir, 'include'), match=['*.h'])
