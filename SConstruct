@@ -25,7 +25,7 @@ supported_sanitizers = [
 
 # 3rdparty library default versions
 thirdparty_versions = {
-    'libuv':      '1.5.0',
+    'libuv':      '1.35.0',
     'libunwind':  '1.2.1',
     'openfec':    '1.4.2.4',
     'sox':        '14.4.2',
