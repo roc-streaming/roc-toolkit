@@ -102,7 +102,7 @@ Download and build selected dependencies, then build everything:
 
 .. code::
 
-    $ scons -Q --build-3rdparty=uv:1.4.2,openfec,cpputest
+    $ scons -Q --build-3rdparty=libuv:1.4.2,libunwind,openfec,cpputest
 
 Download and build all dependencies, then build everything:
 
