@@ -5,6 +5,32 @@ Changelog
    :local:
    :depth: 1
 
+Version 0.1.5 (Apr 5, 2020)
+===========================
+
+Building
+--------
+
+* correctly handle arguments in environment variables like CXX/CC/LD/etc (for Yocto Linux)
+* correctly handle spaces in environment variables (for Yocto Linux)
+* fix environment overrides checks
+* fix building of the host tools when cross-compiling
+* fix warnings on Clang 11
+* fix sphinx invocation
+* explicitly disable Orc when building PulseAudio using --build-3rdparty
+* explicitly enable -pthread or -lpthread for libsndfile (for Manjaro Linux)
+* user CMake instead of autotools when building libuv for Android using ``--build-3rdparty``
+* switch to libuv 1.35.0 by default in ``--build-3rdparty``
+* check for unknown names in ``--build-3rdparty``
+
+Portability
+-----------
+
+* fix building on Manjaro Linux
+* fix building on Yocto Linux
+* add openSUSE to continuous integration and user cookbook
+* drop Xcode 7.3 from continuous integration, add Xcode 11.3
+
 Version 0.1.4 (Feb 6, 2020)
 ===========================
 
