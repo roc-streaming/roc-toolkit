@@ -12,41 +12,92 @@ namespace roc {
 namespace sdp {
 
 MediaDescription::MediaDescription(core::IAllocator& allocator)
-    : media_field_(allocator), allocator_(allocator) {
+    : media_(allocator)
+    , fmts_(allocator)
+    , connection_data_(allocator)
+    , allocator_(allocator) {
     clear();
 }
 
 void MediaDescription::clear() {
-    media_field_.clear();
-    while(connection_fields_.size() > 0) {
-        core::SharedPtr<ConnectionField> c = connection_fields_.back();
-        connection_fields_.remove(*c);
-    }
+    media_.clear();
+    fmts_.clear();
+    connection_data_.resize(0);
 }
 
-const char* MediaDescription::media() const {
-    if (media_field_.is_empty()) {
+MediaType MediaDescription::type() const {
+    return type_;
+}
+
+int MediaDescription::port() const {
+    return port_;
+}
+
+int MediaDescription::nb_ports() const {
+    return nb_ports_;
+}
+
+MediaProto MediaDescription::proto() const {
+    return proto_;
+}
+
+const char* MediaDescription::default_fmt() const {
+    if (fmts_.size() == 0) {
         return NULL;
     }
-    return media_field_.c_str();
+
+    return fmts_.front();
 }
 
-bool MediaDescription::set_media(const char* str, size_t str_len) {
-    if (!media_field_.set_buf(str, str_len) || media_field_.is_empty()) {
+bool MediaDescription::set_type(MediaType type) {
+    type_ = type;
+    return true;
+}
+
+bool MediaDescription::set_proto(MediaProto proto) {
+    proto_ = proto;
+    return true;
+}
+
+bool MediaDescription::set_port(int port) {
+    port_ = port;
+    return true;
+}
+
+bool MediaDescription::set_nb_ports(int nb_ports) {
+    nb_ports_ = nb_ports;
+    return true;
+}
+
+bool MediaDescription::add_fmt(const char* str, size_t str_len) {
+    core::StringBuffer<> fmt(allocator_);
+    if (!fmt.set_buf(str, str_len) || fmt.is_empty()) {
+        return false;
+    }
+
+    if (!fmts_.push_back(fmt.c_str())) {
         return false;
     }
 
     return true;
 }
 
-bool MediaDescription::add_connection_field(address::AddrFamily addrtype, const char* str, size_t str_len) {
-    core::SharedPtr<ConnectionField> c = new (allocator_) ConnectionField(allocator_);
+bool MediaDescription::add_connection_data(address::AddrFamily addrtype,
+                                           const char* str,
+                                           size_t str_len) {
+    ConnectionData c;
 
-    if (!c->set_connection_address(addrtype, str, str_len)) {
+    if (!c.set_connection_address(addrtype, str, str_len)) {
         return false;
     }
 
-    connection_fields_.push_back(*c);
+    if (connection_data_.size() >= connection_data_.max_size()) {
+        if (!connection_data_.grow(connection_data_.size() + 1)) {
+            return false;
+        }
+    }
+    connection_data_.push_back(c);
+
     return true;
 }
 
