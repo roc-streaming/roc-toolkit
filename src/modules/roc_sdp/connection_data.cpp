@@ -6,21 +6,21 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_sdp/connection_field.h"
+#include "roc_sdp/connection_data.h"
 
 namespace roc {
 namespace sdp {
 
-ConnectionField::ConnectionField(core::IAllocator& allocator)
-    : allocator_(allocator) {
-    clear();
+ConnectionData::ConnectionData() {
 }
 
-void ConnectionField::clear() {
+void ConnectionData::clear() {
     connection_address_.clear();
 }
 
-bool ConnectionField::set_connection_address(address::AddrFamily addrtype, const char* str, size_t str_len) {
+bool ConnectionData::set_connection_address(address::AddrFamily addrtype,
+                                            const char* str,
+                                            size_t str_len) {
     char addr[address::SocketAddr::MaxStrLen];
     core::StringBuilder b(addr, sizeof(addr));
 
@@ -33,10 +33,6 @@ bool ConnectionField::set_connection_address(address::AddrFamily addrtype, const
         return false;
 
     return true;
-}
-
-void ConnectionField::destroy() {
-    allocator_.destroy(*this);
 }
 
 } // namespace roc

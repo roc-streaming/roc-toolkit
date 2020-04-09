@@ -9,13 +9,15 @@
 #include <iostream>
 #include <string.h>
 
-#include "roc_sdp/session_description.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_core/array.h"
 #include "roc_core/heap_allocator.h"
-
 #include "roc_core/shared_ptr.h"
+
+#include "roc_sdp/session_description.h"
+#include "roc_sdp/media_type.h"
+#include "roc_sdp/media_proto.h"
 
 namespace roc {
 namespace sdp {
@@ -45,7 +47,8 @@ bool parse_sdp(const char* str, SessionDescription& result) {
     const char* start_p_origin_nettype = NULL;
     const char* end_p_origin_addr = NULL;
 
-    address::AddrFamily connection_addrtype = address::Family_Unknown;
+    // Address type of the current address being parsed.
+    address::AddrFamily cur_addrtype = address::Family_Unknown;
 
     %%{
 
@@ -54,8 +57,8 @@ bool parse_sdp(const char* str, SessionDescription& result) {
         }
 
         action set_origin_unicast_address {
-            if(!result.set_origin_unicast_address(start_p, p - start_p)) {
-                roc_log(LogError, "parse origin unicast address: invalid address");
+            if(!result.set_origin_unicast_address(cur_addrtype, start_p, p - start_p)) {
+                roc_log(LogError, "parse origin: invalid unicast address");
                 result.clear();
                 return false;
             }
@@ -72,35 +75,72 @@ bool parse_sdp(const char* str, SessionDescription& result) {
             }
         }
 
-        action set_session_connection_address {
-            if(!result.set_session_connection_address(
-                    connection_addrtype,
+        action set_session_connection_data {
+            if(!result.set_session_connection_data(
+                    cur_addrtype,
                     start_p, 
                     p - start_p)) {
                         
-                roc_log(LogError, "parse session connection address: invalid address");
+                roc_log(LogError, "parse session connection data: invalid connection address");
                 result.clear();
                 return false;
             }
         }
 
-        action add_media {
-            if(!result.add_media_description(start_p, p - start_p)) {
-                roc_log(LogError, "parse media field: invalid media description");
+        action create_media {
+            if(!result.create_media_description()) {
+                roc_log(LogError, "parse media: impossible to add a new media description");
                 result.clear();
                 return false;
             }
-
-            core::SharedPtr<MediaDescription> md = result.last_media_description();
-            roc_log(LogInfo, "OK media description: %s", md->media());
         }
 
-        action add_media_connection_address {
-            if(!result.add_connection_to_last_media(connection_addrtype,
+        action set_media_port {
+
+            char* end_p = NULL;
+            long port = strtol(start_p, &end_p, 10);
+
+            if (port == LONG_MAX || port == LONG_MIN || end_p != p) {
+                roc_log(LogError, "parse media: invalid port");
+                return false;
+            }
+
+            if (!result.last_media_description()->set_port((int)port)) {
+                roc_log(LogError, "parse media: invalid port");
+                return false;
+            }
+        }
+
+        action set_media_nb_ports {
+
+            char* end_p = NULL;
+            long nb_ports = strtol(start_p, &end_p, 10);
+
+            if (nb_ports == LONG_MAX || nb_ports == LONG_MIN || end_p != p) {
+                roc_log(LogError, "parse media: invalid number of ports");
+                return false;
+            }
+
+            if (!result.last_media_description()->set_nb_ports((int)nb_ports)) {
+                roc_log(LogError, "parse media: invalid number of ports");
+                return false;
+            }
+        }
+
+        action add_media_fmt {
+            if(!result.last_media_description()->add_fmt(start_p, p - start_p)) {
+                roc_log(LogError, "parse media: invalid media format");
+                result.clear();
+                return false;
+            }
+        }
+
+        action add_media_connection_data {
+            if(!result.last_media_description()->add_connection_data(cur_addrtype,
                     start_p, 
                     p - start_p)) {
 
-                roc_log(LogError, "parse media connection address: invalid address");
+                roc_log(LogError, "parse media connection: invalid connection address");
                 result.clear();
                 return false;
             }
@@ -136,30 +176,33 @@ bool parse_sdp(const char* str, SessionDescription& result) {
         origin_username = non_ws_string >start_token %{ start_p_origin_username = start_p; };
         origin_sess_id = digit+ >start_token %{ end_p_origin_sess_id = p; };
         origin_nettype = "IN" >start_token %{ start_p_origin_nettype = start_p; };
-        origin_addrtype = ("IP4" %{ result.set_origin_addrtype(address::Family_IPv4); } 
-                            | "IP6" %{ result.set_origin_addrtype(address::Family_IPv6); }
-                        );
-        origin_unicast_address = non_ws_string >start_token 
+
+        # Either IPv6 or IPv4
+         origin_unicast_address = non_ws_string >start_token
             %{  end_p_origin_addr = p; } 
             %set_origin_unicast_address;
 
+         origin_unicast_address_with_addrtype =  
+            ( "IP4" %{ cur_addrtype = address::Family_IPv4; } 
+            | "IP6" %{ cur_addrtype = address::Family_IPv6; } 
+            ) ' '  origin_unicast_address;
+
         # action todo: sess-id should be unique for this username/host
         origin = origin_username ' ' origin_sess_id ' '  digit+ ' ' 
-            origin_nettype ' ' origin_addrtype ' ' origin_unicast_address %set_guid;
+            origin_nettype ' ' origin_unicast_address_with_addrtype %set_guid;
 
         
         # In session-level: c=<nettype> <addrtype> <connection-address>
         session_connection_nettype = "IN";
         
         # Either IPv6 or IPv4/TTL
-        session_connection_address = non_ws_string >start_token 
-            %{  end_p_origin_addr = p; } 
-            %set_session_connection_address;
+        session_connection_address = non_ws_string >start_token
+            %set_session_connection_data;
 
         session_connection_with_addrtype =  
-            ( "IP4" %{ connection_addrtype = address::Family_IPv4; } 
+            ( "IP4" %{ cur_addrtype = address::Family_IPv4; } 
                 ' ' session_connection_address '/' digit+
-            | "IP6" %{ connection_addrtype = address::Family_IPv6; } 
+            | "IP6" %{ cur_addrtype = address::Family_IPv6; } 
                 ' ' session_connection_address
             );
 
@@ -169,19 +212,27 @@ bool parse_sdp(const char* str, SessionDescription& result) {
         # Each media description starts with an "m=" field and is terminated by
         # either the next "m=" field or by the end of the session description
         # m=<type> <port> <proto> <fmt> - NOT YET STORED
-        # typically "audio", "video", "text", or "application"
-        media_type = "audio"  
-            | "video" 
-            | "text" 
-            | "application";
+
+        # Typically "audio", "video", "text", or "application"
+        media_type = ("audio"  %{ result.last_media_description()->set_type(sdp::MediaType_Audio); } 
+            | "video" %{ result.last_media_description()->set_type(sdp::MediaType_Video); }
+            | "text" %{ result.last_media_description()->set_type(sdp::MediaType_Text); }
+            | "application" %{ result.last_media_description()->set_type(sdp::MediaType_Application); }
+        );
             
+        
+        # Typically "RTP/AVP".
+        media_proto = "RTP/AVP"  %{ result.last_media_description()->set_proto(sdp::MediaProto_RTP_AVP); };
+
+        media_port = digit+ >start_token %set_media_port;
+        
+        media_nb_ports = digit+ >start_token %set_media_port;
+
         # typically an RTP payload type for audio and video media
-        media_fmt = token;
-        # typically "RTP/AVP" or "udp"
-        media_proto = token ("/" token)*;
-        media_port = digit+;
-        media_description = (media_type ' ' media_port ' ' media_proto ' ' media_fmt)
-            >start_token %add_media;
+        media_fmt = token >start_token %add_media_fmt;
+
+        media_description = (media_type ' ' media_port ('/' media_nb_ports)? ' ' media_proto (' ' media_fmt)+)
+            >create_media;
         
         media_field = 'm='i media_description;
 
@@ -190,13 +241,12 @@ bool parse_sdp(const char* str, SessionDescription& result) {
         
         # Either IPv6 or IPv4/TTL
         media_connection_address = non_ws_string >start_token 
-            %{  end_p_origin_addr = p; } 
-            %add_media_connection_address;
+            %add_media_connection_data;
 
         media_connection_with_addrtype =  
-            ( "IP4" %{ connection_addrtype = address::Family_IPv4; } 
+            ( "IP4" %{ cur_addrtype = address::Family_IPv4; } 
                 ' ' media_connection_address '/' digit+
-            | "IP6" %{ connection_addrtype = address::Family_IPv6; } 
+            | "IP6" %{ cur_addrtype = address::Family_IPv6; } 
                 ' ' media_connection_address
             );
 

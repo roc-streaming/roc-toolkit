@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_sdp/sdp_media_type.h
+//! @file roc_sdp/media_type.h
 //! @brief SDP media description type.
 
 #ifndef ROC_SDP_MEDIA_TYPE_H_
@@ -22,12 +22,12 @@ enum MediaType {
 
     //! audio.
     MediaType_Audio,
-    
+
     //! video.
     MediaType_Video,
 
     //! text.
-    MediaType_text,
+    MediaType_Text,
 
     //! application.
     MediaType_Application
