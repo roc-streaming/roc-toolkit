@@ -128,7 +128,7 @@ bool parse_sdp(const char* str, SessionDescription& result) {
         }
 
         action add_media_fmt {
-            if(!result.last_media_description()->add_fmt(start_p, p - start_p)) {
+            if(!result.last_media_description()->add_fmt(start_p, p)) {
                 roc_log(LogError, "sdp: parse media: invalid media format");
                 result.clear();
                 return false;
