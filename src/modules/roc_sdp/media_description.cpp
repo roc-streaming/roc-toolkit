@@ -69,17 +69,8 @@ bool MediaDescription::set_nb_ports(int nb_ports) {
     return true;
 }
 
-bool MediaDescription::add_fmt(const char* str, size_t str_len) {
-    core::StringBuffer<> fmt(allocator_);
-    if (!fmt.set_buf(str, str_len) || fmt.is_empty()) {
-        return false;
-    }
-
-    if (!fmts_.push_back(fmt.c_str())) {
-        return false;
-    }
-
-    return true;
+bool MediaDescription::add_fmt(const char* begin, const char* end) {
+    return fmts_.push_back_range(begin, end);
 }
 
 bool MediaDescription::add_connection_data(address::AddrFamily addrtype,
