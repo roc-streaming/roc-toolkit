@@ -58,7 +58,7 @@ bool parse_sdp(const char* str, SessionDescription& result) {
 
         action set_origin_unicast_address {
             if(!result.set_origin_unicast_address(cur_addrtype, start_p, p - start_p)) {
-                roc_log(LogError, "parse origin: invalid unicast address");
+                roc_log(LogError, "sdp: parse origin: invalid unicast address");
                 result.clear();
                 return false;
             }
@@ -69,7 +69,7 @@ bool parse_sdp(const char* str, SessionDescription& result) {
                                 end_p_origin_sess_id,
                                 start_p_origin_nettype,
                                 end_p_origin_addr)) {
-                roc_log(LogError, "parse origin guid: invalid origin field");
+                roc_log(LogError, "sdp: parse guid: invalid origin field");
                 result.clear();
                 return false;
             }
@@ -81,7 +81,7 @@ bool parse_sdp(const char* str, SessionDescription& result) {
                     start_p, 
                     p - start_p)) {
                         
-                roc_log(LogError, "parse session connection data: invalid connection address");
+                roc_log(LogError, "sdp: parse session connection data: invalid connection address");
                 result.clear();
                 return false;
             }
@@ -89,7 +89,7 @@ bool parse_sdp(const char* str, SessionDescription& result) {
 
         action create_media {
             if(!result.create_media_description()) {
-                roc_log(LogError, "parse media: impossible to add a new media description");
+                roc_log(LogError, "sdp: parse media: impossible to add a new media description");
                 result.clear();
                 return false;
             }
@@ -101,12 +101,12 @@ bool parse_sdp(const char* str, SessionDescription& result) {
             long port = strtol(start_p, &end_p, 10);
 
             if (port == LONG_MAX || port == LONG_MIN || end_p != p) {
-                roc_log(LogError, "parse media: invalid port");
+                roc_log(LogError, "sdp: parse media: invalid port");
                 return false;
             }
 
             if (!result.last_media_description()->set_port((int)port)) {
-                roc_log(LogError, "parse media: invalid port");
+                roc_log(LogError, "sdp: parse media: invalid port");
                 return false;
             }
         }
@@ -117,19 +117,19 @@ bool parse_sdp(const char* str, SessionDescription& result) {
             long nb_ports = strtol(start_p, &end_p, 10);
 
             if (nb_ports == LONG_MAX || nb_ports == LONG_MIN || end_p != p) {
-                roc_log(LogError, "parse media: invalid number of ports");
+                roc_log(LogError, "sdp: parse media: invalid number of ports");
                 return false;
             }
 
             if (!result.last_media_description()->set_nb_ports((int)nb_ports)) {
-                roc_log(LogError, "parse media: invalid number of ports");
+                roc_log(LogError, "sdp: parse media: invalid number of ports");
                 return false;
             }
         }
 
         action add_media_fmt {
             if(!result.last_media_description()->add_fmt(start_p, p - start_p)) {
-                roc_log(LogError, "parse media: invalid media format");
+                roc_log(LogError, "sdp: parse media: invalid media format");
                 result.clear();
                 return false;
             }
@@ -140,7 +140,7 @@ bool parse_sdp(const char* str, SessionDescription& result) {
                     start_p, 
                     p - start_p)) {
 
-                roc_log(LogError, "parse media connection: invalid connection address");
+                roc_log(LogError, "sdp: parse media connection: invalid connection address");
                 result.clear();
                 return false;
             }
@@ -211,7 +211,7 @@ bool parse_sdp(const char* str, SessionDescription& result) {
     
         # Each media description starts with an "m=" field and is terminated by
         # either the next "m=" field or by the end of the session description
-        # m=<type> <port> <proto> <fmt> - NOT YET STORED
+        # m=<type> <port> <proto> <fmt>
 
         # Typically "audio", "video", "text", or "application"
         media_type = ("audio"  %{ result.last_media_description()->set_type(sdp::MediaType_Audio); } 
