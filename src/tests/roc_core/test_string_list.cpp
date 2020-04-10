@@ -144,6 +144,27 @@ TEST(string_list, uniq) {
     CHECK(str == NULL);
 }
 
+TEST(string_list, push_back_range) {
+    StringList sl(allocator);
+
+    LONGS_EQUAL(0, sl.size());
+    CHECK(sl.front() == NULL);
+
+    const char* str = "foobar";
+    const char* end_1 = str + 3;
+    const char* end_2 = str + 6;
+
+    CHECK(sl.push_back_range(str, end_1));
+
+    LONGS_EQUAL(1, sl.size());
+    STRCMP_EQUAL("foo", sl.front());
+
+    CHECK(sl.push_back_range(end_1, end_2));
+
+    LONGS_EQUAL(2, sl.size());
+    STRCMP_EQUAL("bar", sl.nextof(sl.front()));
+}
+
 TEST(string_list, clear) {
     StringList sl(allocator);
 
