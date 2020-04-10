@@ -56,6 +56,13 @@ public:
     //!  false if allocation failed.
     bool push_back_unique(const char* str);
 
+    //! Append string from a range to the list.
+    //! @remarks
+    //!  Reallocates memory if necessary.
+    //! @returns
+    //!  false if allocation failed.
+    bool push_back_range(const char* begin, const char* end);
+
     //! Clear the list.
     void clear();
 
