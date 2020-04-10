@@ -86,6 +86,28 @@ bool StringList::push_back_unique(const char* str) {
     return push_back(str);
 }
 
+bool StringList::push_back_range(const char* begin, const char* end) {
+    if (begin == NULL || end == NULL) {
+        roc_panic("stringlist: string is null");
+    }
+
+    const size_t cur_sz = data_.size();
+    const size_t add_sz = (size_t)(end - begin) + 1;
+
+    if (!grow_(cur_sz + add_sz)) {
+        return false;
+    }
+
+    if (!data_.resize(cur_sz + add_sz)) {
+        return false;
+    }
+
+    memcpy(&data_[cur_sz], begin, add_sz - 1);
+    size_++;
+
+    return true;
+}
+
 void StringList::clear() {
     data_.resize(0);
     size_ = 0;
