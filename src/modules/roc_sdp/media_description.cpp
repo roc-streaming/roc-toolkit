@@ -91,11 +91,10 @@ bool MediaDescription::add_connection_data(address::AddrFamily addrtype,
         return false;
     }
 
-    if (connection_data_.size() >= connection_data_.max_size()) {
-        if (!connection_data_.grow(connection_data_.size() + 1)) {
-            return false;
-        }
+    if (!connection_data_.grow_exp(connection_data_.size() + 1)) {
+        return false;
     }
+
     connection_data_.push_back(c);
 
     return true;
