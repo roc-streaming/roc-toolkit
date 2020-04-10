@@ -67,7 +67,7 @@ public:
 
     //! Add a media format.
     //! String should not be zero-terminated.
-    bool add_fmt(const char* str, size_t str_len);
+    bool add_fmt(const char* begin, const char* end);
 
     //! Add a connection field from a string.
     bool
