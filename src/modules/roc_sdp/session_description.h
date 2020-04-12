@@ -41,12 +41,16 @@ public:
 
     //! Set GUID
     bool set_guid(const char* start_p_origin_username,
+                  const char* end_p_origin_username,
+                  const char* start_p_origin_sess_id,
                   const char* end_p_origin_sess_id,
                   const char* start_p_origin_nettype,
+                  const char* end_p_origin_nettype,
+                  const char* start_p_origin_addr,
                   const char* end_p_origin_addr);
 
     //! Origin unicast address.
-    const address::SocketAddr origin_unicast_address() const;
+    const address::SocketAddr& origin_unicast_address() const;
 
     //! Check and set origin unicast address from a string.
     bool set_origin_unicast_address(address::AddrFamily addrtype,
@@ -59,7 +63,7 @@ public:
                                      size_t str_len);
 
     //! Create and add a new empty media description.
-    bool create_media_description();
+    bool add_media_description();
 
     //! Get a shared pointer to the last added media description.
     const core::SharedPtr<MediaDescription> last_media_description() const;

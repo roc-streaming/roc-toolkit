@@ -7,7 +7,7 @@
  */
 
 //! @file roc_sdp/media_description.h
-//! @brief Media Description Protocol.
+//! @brief SDP Media Description.
 
 #ifndef ROC_SDP_MEDIA_DESCRIPTION_H_
 #define ROC_SDP_MEDIA_DESCRIPTION_H_
@@ -22,7 +22,7 @@
 #include "roc_core/string_builder.h"
 #include "roc_core/string_list.h"
 #include "roc_sdp/connection_data.h"
-#include "roc_sdp/media_proto.h"
+#include "roc_sdp/media_transport.h"
 #include "roc_sdp/media_type.h"
 
 namespace roc {
@@ -48,26 +48,25 @@ public:
     int nb_ports() const;
 
     //! Transport protocol.
-    MediaProto proto() const;
+    MediaTransport proto() const;
 
-    //! Default media format for the session.
-    const char* default_fmt() const;
+    //! Default media payload id for the session.
+    unsigned default_payload_id() const;
 
     //! Set media type.
     bool set_type(MediaType type);
 
     //! Set proto.
-    bool set_proto(MediaProto proto);
+    bool set_proto(MediaTransport proto);
 
     //! Set transport port.
-    bool set_port(int port);
+    bool set_port(long port);
 
     //! Set number of transport port(s).
-    bool set_nb_ports(int nb_ports);
+    bool set_nb_ports(long nb_ports);
 
-    //! Add a media format.
-    //! String should not be zero-terminated.
-    bool add_fmt(const char* begin, const char* end);
+    //! Add a media payload id.
+    bool add_payload_id(unsigned payload_id);
 
     //! Add a connection field from a string.
     bool
@@ -79,11 +78,10 @@ private:
     void destroy();
 
     MediaType type_;
-    core::StringBuffer<> media_;
     int port_;
     int nb_ports_;
-    MediaProto proto_;
-    core::StringList fmts_;
+    MediaTransport proto_;
+    core::Array<unsigned, 2> payload_ids_;
 
     core::Array<ConnectionData, 1> connection_data_;
 

@@ -15,7 +15,7 @@
 namespace roc {
 namespace sdp {
 
-//! Address family.
+//! Media type.
 enum MediaType {
     //! Media type is not set.
     MediaType_None,
