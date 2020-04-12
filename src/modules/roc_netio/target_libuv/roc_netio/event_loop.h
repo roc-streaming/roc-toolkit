@@ -15,6 +15,7 @@
 #include <uv.h>
 
 #include "roc_address/socket_addr.h"
+#include "roc_core/atomic.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/cond.h"
 #include "roc_core/iallocator.h"
@@ -45,6 +46,8 @@ public:
     //! The user is responsible for allocating and deallocating the task.
     class Task : public core::ListNode {
     public:
+        ~Task();
+
         //! Check that the task finished and succeeded.
         bool success() const;
 
@@ -54,12 +57,18 @@ public:
         Task();
 
         //! Task state.
-        enum State { Pending, Closing, Finished };
+        enum State { Initialized, Pending, ClosingPort, Finishing, Finished };
 
         void (EventLoop::*func_)(Task&); //!< Task implementation method.
 
-        State state_;  //!< State.
-        bool success_; //!< Completion status.
+        //! Task state, defines whether task is finished already.
+        //! The task becomes immutable after setting state to Finished.
+        core::Atomic state_;
+
+        //! Task result, defines wether finished task succeeded or failed.
+        //! Makes sense only after setting state_ to Finished.
+        //! This atomic should be assigned before setting state_ to Finished.
+        core::Atomic success_;
 
         core::SharedPtr<BasicPort> port_; //!< On which port the task operates.
 
@@ -70,6 +79,9 @@ public:
         UdpReceiverConfig* receiver_config_; //!< Receiver port config.
 
         ResolverRequest resolve_req_; //!< For resolve tasks.
+
+        void (*callback_)(void*, Task&); //!< Completion callback.
+        void* callback_arg_;             //!< Completion callback argument.
     };
 
     //! Subclasses for specific tasks.
@@ -156,7 +168,16 @@ public:
     //! Get number of receiver and sender ports.
     size_t num_ports() const;
 
+    //! Enqueue a task for execution and return.
+    //! The task should not be destroyed until the callback is called.
+    //! The @p callback will be invoked on event loop thread after the
+    //! task completes. The given @p cb_arg is passed to the callback.
+    //! The callback should not block the caller.
+    void enqueue(Task& task, void (*callback)(void* cb_arg, Task&), void* cb_arg);
+
     //! Enqueue a task for execution and wait for completion.
+    //! The task should not be destroyed until the method returns.
+    //! Should not be called from enqueue() callback.
     //! @returns
     //!  true if the task succeeded or false if it failed.
     bool enqueue_and_wait(Task& task);
@@ -174,6 +195,7 @@ private:
     void close_all_ports_();
 
     void process_pending_tasks_();
+    Task* process_next_pending_task_();
 
     void task_add_udp_receiver_(Task&);
     void task_add_udp_sender_(Task&);
@@ -182,6 +204,9 @@ private:
 
     bool async_close_port_(BasicPort& port);
     void finish_closing_tasks_(const BasicPort& port);
+    void finish_task_(Task&);
+
+    void update_num_ports_();
 
     packet::PacketPool& packet_pool_;
     core::BufferPool<uint8_t>& buffer_pool_;
@@ -201,6 +226,7 @@ private:
     core::List<Task, core::NoOwnership> pending_tasks_;
     core::List<Task, core::NoOwnership> closing_tasks_;
 
+    core::Mutex task_mutex_;
     core::Cond task_cond_;
 
     Resolver resolver_;
@@ -208,7 +234,7 @@ private:
     core::List<BasicPort> open_ports_;
     core::List<BasicPort> closing_ports_;
 
-    core::Mutex mutex_;
+    core::Atomic num_open_ports_;
 };
 
 } // namespace netio
