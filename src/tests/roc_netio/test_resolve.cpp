@@ -25,6 +25,20 @@ core::HeapAllocator allocator;
 core::BufferPool<uint8_t> buffer_pool(allocator, MaxBufSize, true);
 packet::PacketPool packet_pool(allocator, true);
 
+bool resolve_endpoint_address(EventLoop& event_loop,
+                              const address::EndpointURI& endpoint_uri,
+                              address::SocketAddr& result_address) {
+    EventLoop::Tasks::ResolveEndpointAddress task(endpoint_uri);
+    CHECK(!task.success());
+    if (!event_loop.enqueue_and_wait(task)) {
+        CHECK(!task.success());
+        return false;
+    }
+    CHECK(task.success());
+    result_address = task.get_address();
+    return true;
+}
+
 } // namespace
 
 TEST_GROUP(resolve) {};
@@ -38,7 +52,7 @@ TEST(resolve, ipv4) {
                                       address::EndpointURI::Subset_Full, endpoint_uri));
 
     address::SocketAddr address;
-    CHECK(event_loop.resolve_endpoint_address(endpoint_uri, address));
+    CHECK(resolve_endpoint_address(event_loop, endpoint_uri, address));
 
     LONGS_EQUAL(address::Family_IPv4, address.family());
     STRCMP_EQUAL("127.0.0.1:123", address::socket_addr_to_str(address).c_str());
@@ -53,7 +67,7 @@ TEST(resolve, ipv6) {
                                       address::EndpointURI::Subset_Full, endpoint_uri));
 
     address::SocketAddr address;
-    CHECK(event_loop.resolve_endpoint_address(endpoint_uri, address));
+    CHECK(resolve_endpoint_address(event_loop, endpoint_uri, address));
 
     LONGS_EQUAL(address::Family_IPv6, address.family());
     STRCMP_EQUAL("[::1]:123", address::socket_addr_to_str(address).c_str());
@@ -68,7 +82,7 @@ TEST(resolve, hostname) {
                                       address::EndpointURI::Subset_Full, endpoint_uri));
 
     address::SocketAddr address;
-    CHECK(event_loop.resolve_endpoint_address(endpoint_uri, address));
+    CHECK(resolve_endpoint_address(event_loop, endpoint_uri, address));
 
     CHECK(address.family() == address::Family_IPv4
           || address.family() == address::Family_IPv6);
@@ -89,7 +103,7 @@ TEST(resolve, standard_port) {
                                       address::EndpointURI::Subset_Full, endpoint_uri));
 
     address::SocketAddr address;
-    CHECK(event_loop.resolve_endpoint_address(endpoint_uri, address));
+    CHECK(resolve_endpoint_address(event_loop, endpoint_uri, address));
 
     STRCMP_EQUAL("127.0.0.1:554", address::socket_addr_to_str(address).c_str());
 }
@@ -104,7 +118,7 @@ TEST(resolve, bad_host) {
             "rtp://300.0.0.1:123", address::EndpointURI::Subset_Full, endpoint_uri));
 
         address::SocketAddr address;
-        CHECK(!event_loop.resolve_endpoint_address(endpoint_uri, address));
+        CHECK(!resolve_endpoint_address(event_loop, endpoint_uri, address));
     }
     { // bad ipv6
         address::EndpointURI endpoint_uri(allocator);
@@ -112,7 +126,7 @@ TEST(resolve, bad_host) {
             "rtp://[11::22::]:123", address::EndpointURI::Subset_Full, endpoint_uri));
 
         address::SocketAddr address;
-        CHECK(!event_loop.resolve_endpoint_address(endpoint_uri, address));
+        CHECK(!resolve_endpoint_address(event_loop, endpoint_uri, address));
     }
     { // bad hostname
         address::EndpointURI endpoint_uri(allocator);
@@ -120,7 +134,7 @@ TEST(resolve, bad_host) {
             "rtp://_:123", address::EndpointURI::Subset_Full, endpoint_uri));
 
         address::SocketAddr address;
-        CHECK(!event_loop.resolve_endpoint_address(endpoint_uri, address));
+        CHECK(!resolve_endpoint_address(event_loop, endpoint_uri, address));
     }
 }
 

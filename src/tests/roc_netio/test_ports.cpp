@@ -38,6 +38,37 @@ UdpReceiverConfig make_receiver_config(const char* ip, int port) {
     return config;
 }
 
+EventLoop::PortHandle add_udp_receiver(EventLoop& event_loop,
+                                       UdpReceiverConfig& config,
+                                       packet::IWriter& writer) {
+    EventLoop::Tasks::AddUdpReceiverPort task(config, writer);
+    CHECK(!task.success());
+    if (!event_loop.enqueue_and_wait(task)) {
+        CHECK(!task.success());
+        return NULL;
+    }
+    CHECK(task.success());
+    return task.get_handle();
+}
+
+EventLoop::PortHandle add_udp_sender(EventLoop& event_loop, UdpSenderConfig& config) {
+    EventLoop::Tasks::AddUdpSenderPort task(config);
+    CHECK(!task.success());
+    if (!event_loop.enqueue_and_wait(task)) {
+        CHECK(!task.success());
+        return NULL;
+    }
+    CHECK(task.success());
+    return task.get_handle();
+}
+
+void remove_port(EventLoop& event_loop, EventLoop::PortHandle handle) {
+    EventLoop::Tasks::RemovePort task(handle);
+    CHECK(!task.success());
+    CHECK(event_loop.enqueue_and_wait(task));
+    CHECK(task.success());
+}
+
 } // namespace
 
 TEST_GROUP(ports) {};
@@ -60,11 +91,11 @@ TEST(ports, add) {
 
     UNSIGNED_LONGS_EQUAL(0, event_loop.num_ports());
 
-    EventLoop::PortHandle tx_handle = event_loop.add_udp_sender(tx_config, NULL);
+    EventLoop::PortHandle tx_handle = add_udp_sender(event_loop, tx_config);
     CHECK(tx_handle);
     UNSIGNED_LONGS_EQUAL(1, event_loop.num_ports());
 
-    EventLoop::PortHandle rx_handle = event_loop.add_udp_receiver(rx_config, queue);
+    EventLoop::PortHandle rx_handle = add_udp_receiver(event_loop, rx_config, queue);
     CHECK(rx_handle);
     UNSIGNED_LONGS_EQUAL(2, event_loop.num_ports());
 }
@@ -80,18 +111,18 @@ TEST(ports, add_remove) {
 
     UNSIGNED_LONGS_EQUAL(0, event_loop.num_ports());
 
-    EventLoop::PortHandle tx_handle = event_loop.add_udp_sender(tx_config, NULL);
+    EventLoop::PortHandle tx_handle = add_udp_sender(event_loop, tx_config);
     CHECK(tx_handle);
     UNSIGNED_LONGS_EQUAL(1, event_loop.num_ports());
 
-    EventLoop::PortHandle rx_handle = event_loop.add_udp_receiver(rx_config, queue);
+    EventLoop::PortHandle rx_handle = add_udp_receiver(event_loop, rx_config, queue);
     CHECK(rx_handle);
     UNSIGNED_LONGS_EQUAL(2, event_loop.num_ports());
 
-    event_loop.remove_port(tx_handle);
+    remove_port(event_loop, tx_handle);
     UNSIGNED_LONGS_EQUAL(1, event_loop.num_ports());
 
-    event_loop.remove_port(rx_handle);
+    remove_port(event_loop, rx_handle);
     UNSIGNED_LONGS_EQUAL(0, event_loop.num_ports());
 }
 
@@ -101,14 +132,14 @@ TEST(ports, add_remove_add) {
 
     UdpSenderConfig tx_config = make_sender_config("0.0.0.0", 0);
 
-    EventLoop::PortHandle tx_handle = event_loop.add_udp_sender(tx_config, NULL);
+    EventLoop::PortHandle tx_handle = add_udp_sender(event_loop, tx_config);
     CHECK(tx_handle);
     UNSIGNED_LONGS_EQUAL(1, event_loop.num_ports());
 
-    event_loop.remove_port(tx_handle);
+    remove_port(event_loop, tx_handle);
     UNSIGNED_LONGS_EQUAL(0, event_loop.num_ports());
 
-    tx_handle = event_loop.add_udp_sender(tx_config, NULL);
+    tx_handle = add_udp_sender(event_loop, tx_config);
     CHECK(tx_handle);
     UNSIGNED_LONGS_EQUAL(1, event_loop.num_ports());
 }
@@ -121,38 +152,38 @@ TEST(ports, add_duplicate) {
 
     UdpSenderConfig port1_tx = make_sender_config("0.0.0.0", 0);
 
-    EventLoop::PortHandle tx_handle = event_loop.add_udp_sender(port1_tx, NULL);
+    EventLoop::PortHandle tx_handle = add_udp_sender(event_loop, port1_tx);
     CHECK(tx_handle);
     UNSIGNED_LONGS_EQUAL(1, event_loop.num_ports());
 
     UdpReceiverConfig port1_rx =
         make_receiver_config("0.0.0.0", port1_tx.bind_address.port());
 
-    CHECK(!event_loop.add_udp_sender(port1_tx, NULL));
+    CHECK(!add_udp_sender(event_loop, port1_tx));
     UNSIGNED_LONGS_EQUAL(1, event_loop.num_ports());
 
-    CHECK(!event_loop.add_udp_receiver(port1_rx, queue));
+    CHECK(!add_udp_receiver(event_loop, port1_rx, queue));
     UNSIGNED_LONGS_EQUAL(1, event_loop.num_ports());
 
     UdpReceiverConfig port2_rx = make_receiver_config("0.0.0.0", 0);
 
-    EventLoop::PortHandle rx_handle = event_loop.add_udp_receiver(port2_rx, queue);
+    EventLoop::PortHandle rx_handle = add_udp_receiver(event_loop, port2_rx, queue);
     CHECK(rx_handle);
     UNSIGNED_LONGS_EQUAL(2, event_loop.num_ports());
 
     UdpSenderConfig port2_tx =
         make_sender_config("0.0.0.0", port2_rx.bind_address.port());
 
-    CHECK(!event_loop.add_udp_sender(port2_tx, NULL));
+    CHECK(!add_udp_sender(event_loop, port2_tx));
     UNSIGNED_LONGS_EQUAL(2, event_loop.num_ports());
 
-    CHECK(!event_loop.add_udp_receiver(port2_rx, queue));
+    CHECK(!add_udp_receiver(event_loop, port2_rx, queue));
     UNSIGNED_LONGS_EQUAL(2, event_loop.num_ports());
 
-    event_loop.remove_port(tx_handle);
+    remove_port(event_loop, tx_handle);
     UNSIGNED_LONGS_EQUAL(1, event_loop.num_ports());
 
-    event_loop.remove_port(rx_handle);
+    remove_port(event_loop, rx_handle);
     UNSIGNED_LONGS_EQUAL(0, event_loop.num_ports());
 }
 
