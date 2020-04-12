@@ -514,6 +514,52 @@ if name == 'libuv':
         execute_make(logfile)
         install_files('.libs/libuv.a', os.path.join(builddir, 'lib'))
     install_tree('include', os.path.join(builddir, 'include'))
+elif name == 'libunwind':
+    download(
+        'http://download.savannah.nongnu.org/releases/libunwind/libunwind-%s.tar.gz' % ver,
+        'libunwind-%s.tar.gz' % ver,
+        logfile,
+        vendordir)
+    extract('libunwind-%s.tar.gz' % ver,
+            'libunwind-%s' % ver)
+    os.chdir('src/libunwind-%s' % ver)
+    execute('./configure --host=%s %s %s %s' % (
+        toolchain,
+        makeenv(envlist),
+        makeflags(workdir, toolchain, env, deplist, cflags='-fPIC', variant=variant),
+        ' '.join([
+            '--enable-static',
+            '--disable-shared',
+            '--disable-coredump',
+            '--disable-ptrace',
+            '--disable-setjmp',
+            '--disable-minidebuginfo',
+           ])), logfile)
+    execute_make(logfile)
+    install_files('include/*.h', os.path.join(builddir, 'include'))
+    install_files('src/.libs/libunwind.a', os.path.join(builddir, 'lib'))
+elif name == 'libatomic_ops':
+    download(
+        'https://github.com/ivmai/libatomic_ops/releases/download/v%s/libatomic_ops-%s.tar.gz' % (
+            ver, ver),
+        'libatomic_ops-%s.tar.gz' % ver,
+        logfile,
+        vendordir)
+    extract('libatomic_ops-%s.tar.gz' % ver,
+            'libatomic_ops-%s' % ver)
+    os.chdir('src/libatomic_ops-%s' % ver)
+    execute('./configure --host=%s %s %s %s' % (
+        toolchain,
+        makeenv(envlist),
+        makeflags(workdir, toolchain, env, deplist, cflags='-fPIC', variant=variant),
+        ' '.join([
+            '--enable-static',
+            '--disable-shared',
+            '--disable-docs',
+           ])), logfile)
+    execute_make(logfile)
+    install_tree('src', os.path.join(builddir, 'include'), match=['*.h'])
+    install_files('src/.libs/libatomic_ops.a', os.path.join(builddir, 'lib'))
 elif name == 'openfec':
     if variant == 'debug':
         dist = 'bin/Debug'
@@ -718,30 +764,6 @@ elif name == 'sox':
     execute_make(logfile)
     install_files('src/sox.h', os.path.join(builddir, 'include'))
     install_files('src/.libs/libsox.a', os.path.join(builddir, 'lib'))
-elif name == 'libunwind':
-    download(
-        'http://download.savannah.nongnu.org/releases/libunwind/libunwind-%s.tar.gz' % ver,
-        'libunwind-%s.tar.gz' % ver,
-        logfile,
-        vendordir)
-    extract('libunwind-%s.tar.gz' % ver,
-            'libunwind-%s' % ver)
-    os.chdir('src/libunwind-%s' % ver)
-    execute('./configure --host=%s %s %s %s' % (
-        toolchain,
-        makeenv(envlist),
-        makeflags(workdir, toolchain, env, deplist, cflags='-fPIC', variant=variant),
-        ' '.join([
-            '--enable-static',
-            '--disable-shared',
-            '--disable-coredump',
-            '--disable-ptrace',
-            '--disable-setjmp',
-            '--disable-minidebuginfo',
-           ])), logfile)
-    execute_make(logfile)
-    install_files('include/*.h', os.path.join(builddir, 'include'))
-    install_files('src/.libs/libunwind.a', os.path.join(builddir, 'lib'))
 elif name == 'gengetopt':
     download('ftp://ftp.gnu.org/gnu/gengetopt/gengetopt-%s.tar.gz' % ver,
              'gengetopt-%s.tar.gz' % ver,
