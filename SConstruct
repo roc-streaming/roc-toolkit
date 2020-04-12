@@ -315,7 +315,7 @@ if set(COMMAND_LINE_TARGETS).intersection(['clean', 'cleanbuild', 'cleandocs']) 
         env.Execute(cleanall)
     Return()
 
-for var in ['CXX', 'CC', 'AR', 'RANLIB', 'RAGEL', 'GENGETOPT', 'PKG_CONFIG', 'CONFIG_GUESS']:
+for var in ['CXX', 'CC', 'AR', 'RANLIB', 'RAGEL', 'GENGETOPT', 'PKG_CONFIG', 'PKG_CONFIG_PATH', 'CONFIG_GUESS']:
     env.OverrideFromArg(var)
 
 env.OverrideFromArg('CXXLD', names=['CXXLD', 'CXX'])
@@ -564,6 +564,8 @@ elif compiler == 'gcc':
     conf.FindTool('RANLIB', toolchain, None, ['ranlib'])
     conf.FindTool('STRIP', toolchain, None, ['strip'])
 
+conf.FindPkgConfig(toolchain)
+
 env['LINK'] = env['CXXLD']
 env['SHLINK'] = env['CXXLD']
 
@@ -752,7 +754,7 @@ system_dependencies = all_dependencies - download_dependencies
 if 'libuv' in system_dependencies:
     conf = Configure(env, custom_tests=env.CustomTests)
 
-    env.ParsePkgConfig('--cflags --libs libuv')
+    conf.AddPkgConfigDependency('libuv', '--cflags --libs')
 
     if not crosscompile:
         if not conf.CheckLibWithHeaderExt(
@@ -767,7 +769,7 @@ if 'libuv' in system_dependencies:
 if 'libunwind' in system_dependencies:
     conf = Configure(env, custom_tests=env.CustomTests)
 
-    env.ParsePkgConfig('--cflags --libs libunwind')
+    conf.AddPkgConfigDependency('libunwind', '--cflags --libs')
 
     if not conf.CheckLibWithHeaderExt('unwind', 'libunwind.h', 'C', run=not crosscompile):
         env.Die("libunwind not found (see 'config.log' for details)")
@@ -777,7 +779,7 @@ if 'libunwind' in system_dependencies:
 if 'libatomic_ops' in system_dependencies:
     conf = Configure(env, custom_tests=env.CustomTests)
 
-    env.ParsePkgConfig('--cflags --libs atomic_ops')
+    conf.AddPkgConfigDependency('atomic_ops', '--cflags --libs')
 
     if not conf.CheckLibWithHeaderExt('atomic_ops', 'atomic_ops.h', 'C', run=not crosscompile):
         env.Die("libatomic_ops not found (see 'config.log' for details)")
@@ -787,7 +789,7 @@ if 'libatomic_ops' in system_dependencies:
 if 'openfec' in system_dependencies:
     conf = Configure(env, custom_tests=env.CustomTests)
 
-    if env.ParsePkgConfig('--silence-errors --cflags --libs openfec'):
+    if conf.AddPkgConfigDependency('openfec', '--silence-errors --cflags --libs'):
         pass
     elif GetOption('with_openfec_includes'):
         openfec_includes = GetOption('with_openfec_includes')
@@ -829,7 +831,7 @@ if 'openfec' in system_dependencies:
 if 'pulseaudio' in system_dependencies:
     conf = Configure(tool_env, custom_tests=env.CustomTests)
 
-    tool_env.ParsePkgConfig('--cflags --libs libpulse')
+    conf.AddPkgConfigDependency('libpulse', '--cflags --libs')
 
     if not conf.CheckLibWithHeaderExt(
             'pulse', 'pulse/pulseaudio.h', 'C', run=not crosscompile):
@@ -840,7 +842,7 @@ if 'pulseaudio' in system_dependencies:
     if GetOption('enable_examples'):
         conf = Configure(example_env, custom_tests=env.CustomTests)
 
-        example_env.ParsePkgConfig('--cflags --libs libpulse-simple')
+        conf.AddPkgConfigDependency('libpulse-simple', '--cflags --libs')
 
         if not conf.CheckLibWithHeaderExt(
                 'pulse-simple', 'pulse/simple.h', 'C', run=not crosscompile):
@@ -876,7 +878,7 @@ if 'pulseaudio' in system_dependencies:
             if not libs:
                 env.Die("can't find %s" % path)
 
-            pulse_env.Append(LIBS=libs)
+            pulse_env.AddPkgConfigLibs(libs)
 
             m = re.search('-([0-9.]+).so$', libs[0].path)
             if m:
@@ -890,7 +892,7 @@ if 'pulseaudio' in system_dependencies:
 if 'sox' in system_dependencies:
     conf = Configure(tool_env, custom_tests=env.CustomTests)
 
-    tool_env.ParsePkgConfig('--cflags --libs sox')
+    conf.AddPkgConfigDependency('sox', '--cflags --libs')
 
     if not crosscompile:
         if not conf.CheckLibWithHeaderExt(
@@ -932,7 +934,7 @@ if 'gengetopt' in system_dependencies:
 if 'cpputest' in system_dependencies:
     conf = Configure(test_env, custom_tests=env.CustomTests)
 
-    test_env.ParsePkgConfig('--cflags --libs cpputest')
+    conf.AddPkgConfigDependency('cpputest', '--cflags --libs')
 
     if not conf.CheckLibWithHeaderExt(
             'CppUTest', 'CppUTest/TestHarness.h', 'CXX', run=not crosscompile):
@@ -943,8 +945,8 @@ if 'cpputest' in system_dependencies:
 if 'google-benchmark' in system_dependencies:
     conf = Configure(test_env, custom_tests=env.CustomTests)
 
-    if not test_env.ParsePkgConfig('--cflags --libs benchmark'):
-        test_env.AppendUnique(LIBS=['benchmark'])
+    if not conf.AddPkgConfigDependency('benchmark', '--cflags --libs'):
+        test_env.AddPkgConfigLibs(['benchmark'])
 
     if not conf.CheckLibWithHeaderExt(
             'benchmark', 'benchmark/benchmark.h', 'CXX', run=not crosscompile):
@@ -1099,6 +1101,8 @@ if GetOption('libdir'):
 else:
     conf.FindLibDir(GetOption('prefix'), host)
 
+conf.FindPkgConfigPath()
+
 if GetOption('enable_pulseaudio_modules'):
     if GetOption('pulseaudio_module_dir'):
         conf.env['ROC_PULSE_MODULEDIR'] = GetOption('pulseaudio_module_dir')
@@ -1116,7 +1120,7 @@ for t in env['ROC_TARGETS']:
 env.Append(LIBPATH=['#%s' % build_dir])
 
 if platform in ['linux']:
-    env.AppendUnique(LIBS=['rt', 'dl', 'm'])
+    env.AddPkgConfigLibs(['rt', 'dl', 'm'])
 
 if compiler in ['gcc', 'clang']:
     if not platform in ['android']:
@@ -1135,9 +1139,7 @@ if compiler in ['gcc', 'clang']:
         ]})
 
     if platform in ['linux', 'darwin']:
-        env.Append(LIBS=[
-            'pthread',
-        ])
+        env.AddPkgConfigLibs(['pthread'])
 
     if platform in ['linux', 'android']:
         test_env['RPATH'] = test_env.Literal('\\$$ORIGIN')
