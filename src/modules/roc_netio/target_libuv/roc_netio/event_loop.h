@@ -38,6 +38,104 @@ class EventLoop : private ICloseHandler,
                   private IResolverRequestHandler,
                   private core::Thread {
 public:
+    //! Opaque receiver port handle.
+    typedef struct PortHandle* PortHandle;
+
+    //! Base task class.
+    //! The user is responsible for allocating and deallocating the task.
+    class Task : public core::ListNode {
+    public:
+        //! Check that the task finished and succeeded.
+        bool success() const;
+
+    protected:
+        friend class EventLoop;
+
+        Task();
+
+        //! Task state.
+        enum State { Pending, Closing, Finished };
+
+        void (EventLoop::*func_)(Task&); //!< Task implementation method.
+
+        State state_;  //!< State.
+        bool success_; //!< Completion status.
+
+        core::SharedPtr<BasicPort> port_; //!< On which port the task operates.
+
+        PortHandle port_handle_;       //!< Port handle.
+        packet::IWriter* port_writer_; //!< Port writer.
+
+        UdpSenderConfig* sender_config_;     //!< Sender port config.
+        UdpReceiverConfig* receiver_config_; //!< Receiver port config.
+
+        ResolverRequest resolve_req_; //!< For resolve tasks.
+    };
+
+    //! Subclasses for specific tasks.
+    class Tasks {
+    public:
+        //! Add UDP datagram receiver port.
+        class AddUdpReceiverPort : public Task {
+        public:
+            //! Set task parameters.
+            //! @remarks
+            //!  - Updates @p config with the actual bind address.
+            //!  - Passes received packets to @p writer. It is called from network thread.
+            //!    It should not block the caller.
+            AddUdpReceiverPort(UdpReceiverConfig& config, packet::IWriter& writer);
+
+            //! Get created port handle.
+            //! @pre
+            //!  Should be called only if success() is true.
+            PortHandle get_handle() const;
+        };
+
+        //! Add UDP datagram sender port.
+        class AddUdpSenderPort : public Task {
+        public:
+            //! Set task parameters.
+            //! @remarks
+            //!  Updates @p config with the actual bind address.
+            AddUdpSenderPort(UdpSenderConfig& config);
+
+            //! Get created port handle.
+            //! @pre
+            //!  Should be called only if success() is true.
+            PortHandle get_handle() const;
+
+            //! Get created port writer;
+            //! @remarks
+            //!  The writer can be used to send packets from the port. It may be called
+            //!  from any thread. It will not block the caller.
+            //! @pre
+            //!  Should be called only if success() is true.
+            packet::IWriter* get_writer() const;
+        };
+
+        //! Remove port.
+        class RemovePort : public Task {
+        public:
+            //! Set task parameters.
+            RemovePort(PortHandle handle);
+        };
+
+        //! Resolve endpoint address.
+        class ResolveEndpointAddress : public Task {
+        public:
+            //! Set task parameters.
+            //! @remarks
+            //!  Gets endpoint hostname, resolves it, and writes the resolved IP address
+            //!  and the port from the endpoint to the resulting SocketAddr.
+            ResolveEndpointAddress(const address::EndpointURI& endpoint_uri);
+
+            //! Get resolved address.
+            //! @pre
+            //!  Should be called only if success() is true.
+            const address::SocketAddr& get_address() const;
+        };
+    };
+
     //! Initialize.
     //!
     //! @remarks
@@ -58,76 +156,12 @@ public:
     //! Get number of receiver and sender ports.
     size_t num_ports() const;
 
-    //! Opaque receiver port handle.
-    typedef struct PortHandle* PortHandle;
-
-    //! Add UDP datagram receiver port.
-    //! @remarks
-    //!  - Updates @p config with the actual bind address.
-    //!  - Passes received packets to @p writer. It is called from network thread.
-    //!    It should not block the caller.
+    //! Enqueue a task for execution and wait for completion.
     //! @returns
-    //!  created port handle or NULL on error.
-    PortHandle add_udp_receiver(UdpReceiverConfig& config, packet::IWriter& writer);
-
-    //! Add UDP datagram sender port.
-    //! @remarks
-    //!  - Updates @p config with the actual bind address.
-    //!  - Sets @p writer to a writer that can be used to send packets from this port.
-    //!    It may be calledfrom any thread. It will not block the caller.
-    //! @returns
-    //!  created port handle or NULL on error.
-    PortHandle add_udp_sender(UdpSenderConfig& config, packet::IWriter** writer);
-
-    //! Remove port.
-    //! Waits until the port is removed.
-    void remove_port(PortHandle handle);
-
-    //! Resolve endpoint hostname and fill provided address.
-    //! @remarks
-    //!  Resolved address inherits IP and port from endpoint URI and other attributes
-    //!  like multicast and broadcast settings from endpoint object.
-    //! @returns
-    //!  false if hostname can't be resolved or resolved address is incompatible
-    //!  with other endpoint settings (e.g. address is not allowed to be multicast and
-    //!  broadcast at the same time).
-    bool resolve_endpoint_address(const address::EndpointURI& endpoint_uri,
-                                  address::SocketAddr& resolved_address);
+    //!  true if the task succeeded or false if it failed.
+    bool enqueue_and_wait(Task& task);
 
 private:
-    enum TaskState { TaskPending, TaskSucceeded, TaskFailed };
-
-    // task lifetime is limited to the public method call like add_udp_receiver()
-    // task object is allocated on stack is exists until the task is finished
-    // the method which allocated the task blocks until the task is finished
-    // and then destroys the task object
-    struct Task : core::ListNode {
-        // method to be executed on event loop thread
-        TaskState (EventLoop::*func)(Task&);
-
-        // task state
-        TaskState state;
-
-        // for port-related tasks
-        core::SharedPtr<BasicPort> port;
-        packet::IWriter* port_writer;
-
-        // for port creation
-        UdpSenderConfig* sender_config;
-        UdpReceiverConfig* receiver_config;
-
-        // for resolver tasks
-        ResolverRequest resolve_req;
-
-        Task()
-            : func(NULL)
-            , state(TaskPending)
-            , port_writer(NULL)
-            , sender_config(NULL)
-            , receiver_config(NULL) {
-        }
-    };
-
     static void task_sem_cb_(uv_async_t* handle);
     static void stop_sem_cb_(uv_async_t* handle);
 
@@ -136,21 +170,18 @@ private:
 
     virtual void run();
 
-    void close_sems_();
-    void async_close_ports_();
+    void close_all_sems_();
+    void close_all_ports_();
 
-    void process_tasks_();
-    void run_task_(Task&);
+    void process_pending_tasks_();
 
-    // task methods
-    TaskState add_udp_receiver_(Task&);
-    TaskState add_udp_sender_(Task&);
-    TaskState remove_port_(Task&);
-    TaskState resolve_endpoint_address_(Task&);
+    void task_add_udp_receiver_(Task&);
+    void task_add_udp_sender_(Task&);
+    void task_remove_port_(Task&);
+    void task_resolve_endpoint_address_(Task&);
 
-    void remove_port_(BasicPort& port);
-    void async_close_port_(BasicPort& port);
-    void wait_port_closed_(const BasicPort& port);
+    bool async_close_port_(BasicPort& port);
+    void finish_closing_tasks_(const BasicPort& port);
 
     packet::PacketPool& packet_pool_;
     core::BufferPool<uint8_t>& buffer_pool_;
@@ -167,18 +198,16 @@ private:
     uv_async_t task_sem_;
     bool task_sem_initialized_;
 
-    // list of tasks to be processed
-    core::List<Task, core::NoOwnership> tasks_;
+    core::List<Task, core::NoOwnership> pending_tasks_;
+    core::List<Task, core::NoOwnership> closing_tasks_;
 
-    core::Cond task_cond_;  // signaled when a task is succeeded or failed
-    core::Cond close_cond_; // signaled when a port is closed
+    core::Cond task_cond_;
 
     Resolver resolver_;
 
     core::List<BasicPort> open_ports_;
     core::List<BasicPort> closing_ports_;
 
-    // protects all fields
     core::Mutex mutex_;
 };
 
