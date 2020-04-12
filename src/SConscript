@@ -73,6 +73,18 @@ if not GetOption('disable_lib'):
     for s in symlinks:
         env.AddDistFile(env['ROC_SYSTEM_LIBDIR'], s)
 
+    if 'PKG_CONFIG_PATH' in env.Dictionary():
+        pc_target = env.GeneratePkgConfig(
+            build_dir='build',
+            filename='roc.pc',
+            prefix=GetOption('prefix'),
+            libdir=env['ROC_SYSTEM_LIBDIR'],
+            name='roc',
+            desc='Real-time audio streaming over the network.',
+            url='https://roc-project.github.io',
+            version=env['ROC_VERSION'])
+        env.AddDistFile(env['PKG_CONFIG_PATH'], pc_target)
+
 if GetOption('enable_examples'):
     cenv = env.Clone()
     cenv.MergeVars(example_env)
