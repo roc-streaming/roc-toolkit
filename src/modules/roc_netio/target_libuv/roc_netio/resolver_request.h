@@ -26,7 +26,7 @@ struct ResolverRequest {
     const address::EndpointURI* endpoint_uri;
 
     //! Resolved address to be filled by async_resolve().
-    address::SocketAddr* resolved_address;
+    address::SocketAddr resolved_address;
 
     //! Successfully resolved.
     bool success;
@@ -36,7 +36,6 @@ struct ResolverRequest {
 
     ResolverRequest()
         : endpoint_uri(NULL)
-        , resolved_address(NULL)
         , success(false) {
         memset(&handle, 0, sizeof(handle));
     }
