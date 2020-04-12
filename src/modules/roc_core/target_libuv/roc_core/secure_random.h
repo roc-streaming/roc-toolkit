@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_core/target_posix/roc_core/secure_random.h
+//! @file roc_core/target_libuv/roc_core/secure_random.h
 //! @brief Helpers to work with CSPRNG.
 
 #ifndef ROC_CORE_SECURE_RANDOM_H_
