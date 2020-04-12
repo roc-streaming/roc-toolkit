@@ -12,6 +12,7 @@ brew install "scons"
 brew install "ragel"
 brew install "gengetopt"
 brew install "libuv"
+brew install "libatomic_ops"
 brew install "sox"
 brew install "cpputest"
 
