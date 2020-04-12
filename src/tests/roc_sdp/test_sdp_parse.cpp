@@ -15,21 +15,32 @@ namespace roc {
 namespace sdp {
 
 namespace {
-core::HeapAllocator allocator;
-}
 
-TEST_GROUP(sdp_parser){};
+core::HeapAllocator allocator;
+
+} // namespace
+
+TEST_GROUP(sdp_parser) {};
 
 TEST(sdp_parser, str) {
     SessionDescription session_description(allocator);
-    CHECK(parse_sdp("v=0\n"
-                    "o=test_origin 16914 1 IN IP4 192.168.58.15\n"
-                    "c=IN IP4 230.255.12.42/250\n"
-                    "m=audio 12345 RTP/AVP 10 11\n"
-                    "m=audio 6789 RTP/AVP 10\n"
-                    "c=IN IP4 231.255.12.42/250\n"
+    CHECK(parse_sdp("v=0\r\n"
+                    "o=test_origin 16914 1 IN IP4 192.168.58.15\r\n"
+                    "c=IN IP4 230.255.12.42/250\r\n"
+                    "m=audio 12345 RTP/AVP 10 11\r\n"
+                    "m=audio 6789 RTP/AVP 10\r\n"
+                    "c=IN IP4 231.255.12.42/250\r\n"
                     "c=IN IP4 232.255.12.42/250",
                     session_description));
+
+    STRCMP_EQUAL("test_origin 16914 IN 192.168.58.15", session_description.guid());
+
+    MediaDescription* last_media = session_description.last_media_description().get();
+
+    CHECK_EQUAL(6789, last_media->port());
+    CHECK_EQUAL(MediaType_Audio, last_media->type());
+    CHECK_EQUAL(MediaTransport_RTP_AVP, last_media->proto());
+    CHECK_EQUAL(10, last_media->default_payload_id());
 }
 
 } // namespace sdp

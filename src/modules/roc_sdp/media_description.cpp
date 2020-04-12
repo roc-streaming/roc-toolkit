@@ -12,17 +12,19 @@ namespace roc {
 namespace sdp {
 
 MediaDescription::MediaDescription(core::IAllocator& allocator)
-    : media_(allocator)
-    , fmts_(allocator)
+    : payload_ids_(allocator)
     , connection_data_(allocator)
     , allocator_(allocator) {
     clear();
 }
 
 void MediaDescription::clear() {
-    media_.clear();
-    fmts_.clear();
+    payload_ids_.resize(0);
     connection_data_.resize(0);
+    type_ = MediaType_None;
+    port_ = 0;
+    nb_ports_ = 0;
+    proto_ = MediaTransport_None;
 }
 
 MediaType MediaDescription::type() const {
@@ -37,16 +39,17 @@ int MediaDescription::nb_ports() const {
     return nb_ports_;
 }
 
-MediaProto MediaDescription::proto() const {
+MediaTransport MediaDescription::proto() const {
     return proto_;
 }
 
-const char* MediaDescription::default_fmt() const {
-    if (fmts_.size() == 0) {
-        return NULL;
+unsigned MediaDescription::default_payload_id() const {
+    if (payload_ids_.size() == 0) {
+        roc_panic(
+            "media description: MediaDescription should have at least one payload id.");
     }
 
-    return fmts_.front();
+    return payload_ids_.front();
 }
 
 bool MediaDescription::set_type(MediaType type) {
@@ -54,23 +57,36 @@ bool MediaDescription::set_type(MediaType type) {
     return true;
 }
 
-bool MediaDescription::set_proto(MediaProto proto) {
+bool MediaDescription::set_proto(MediaTransport proto) {
     proto_ = proto;
     return true;
 }
 
-bool MediaDescription::set_port(int port) {
-    port_ = port;
+bool MediaDescription::set_port(long port) {
+    if (port < 0 || port > 65535) {
+        return false;
+    }
+
+    port_ = (int)port;
     return true;
 }
 
-bool MediaDescription::set_nb_ports(int nb_ports) {
-    nb_ports_ = nb_ports;
+bool MediaDescription::set_nb_ports(long nb_ports) {
+    if (nb_ports < 0 || nb_ports > 65535) {
+        return false;
+    }
+
+    nb_ports_ = (int)nb_ports;
     return true;
 }
 
-bool MediaDescription::add_fmt(const char* begin, const char* end) {
-    return fmts_.push_back_range(begin, end);
+bool MediaDescription::add_payload_id(unsigned payload_id) {
+    if (!payload_ids_.grow_exp(payload_ids_.size() + 1)) {
+        return false;
+    }
+
+    payload_ids_.push_back(payload_id);
+    return true;
 }
 
 bool MediaDescription::add_connection_data(address::AddrFamily addrtype,
@@ -87,7 +103,6 @@ bool MediaDescription::add_connection_data(address::AddrFamily addrtype,
     }
 
     connection_data_.push_back(c);
-
     return true;
 }
 
