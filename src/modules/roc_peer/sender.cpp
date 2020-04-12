@@ -41,7 +41,11 @@ Sender::~Sender() {
 
     for (size_t i = 0; i < ROC_ARRAY_SIZE(ports_); i++) {
         if (ports_[i].handle) {
-            context_.event_loop().remove_port(ports_[i].handle);
+            netio::EventLoop::Tasks::RemovePort task(ports_[i].handle);
+
+            if (!context_.event_loop().enqueue_and_wait(task)) {
+                roc_panic("receiver peer: can't remove port");
+            }
         }
     }
 }
@@ -146,12 +150,15 @@ bool Sender::connect(address::Interface iface, const address::EndpointURI& uri) 
         return false;
     }
 
-    address::SocketAddr address;
-    if (!context_.event_loop().resolve_endpoint_address(uri, address)) {
+    netio::EventLoop::Tasks::ResolveEndpointAddress resolve_task(uri);
+
+    if (!context_.event_loop().enqueue_and_wait(resolve_task)) {
         roc_log(LogError, "sender peer: can't resolve %s interface address",
                 address::interface_to_str(iface));
         return false;
     }
+
+    const address::SocketAddr& address = resolve_task.get_address();
 
     InterfacePort& port = select_outgoing_port_(iface, address.family());
 
@@ -258,10 +265,16 @@ bool Sender::setup_outgoing_port_(InterfacePort& port,
             }
         }
 
-        port.handle = context_.event_loop().add_udp_sender(port.config, &port.writer);
-        if (!port.handle) {
+        netio::EventLoop::Tasks::AddUdpSenderPort port_task(port.config);
+
+        if (!context_.event_loop().enqueue_and_wait(port_task)) {
+            roc_log(LogError, "sender peer: can't bind %s interface to local port",
+                    address::interface_to_str(iface));
             return false;
         }
+
+        port.handle = port_task.get_handle();
+        port.writer = port_task.get_writer();
 
         roc_log(LogInfo, "sender peer: bound %s interface to %s",
                 address::interface_to_str(iface),
