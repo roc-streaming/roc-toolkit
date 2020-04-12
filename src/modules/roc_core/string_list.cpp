@@ -60,21 +60,7 @@ bool StringList::push_back(const char* str) {
         roc_panic("stringlist: string is null");
     }
 
-    const size_t cur_sz = data_.size();
-    const size_t add_sz = strlen(str) + 1;
-
-    if (!grow_(cur_sz + add_sz)) {
-        return false;
-    }
-
-    if (!data_.resize(cur_sz + add_sz)) {
-        return false;
-    }
-
-    memcpy(&data_[cur_sz], str, add_sz);
-    size_++;
-
-    return true;
+    return push_back_range(str, str + strlen(str));
 }
 
 bool StringList::push_back_unique(const char* str) {
@@ -87,7 +73,7 @@ bool StringList::push_back_unique(const char* str) {
 }
 
 bool StringList::push_back_range(const char* begin, const char* end) {
-    if (begin == NULL || end == NULL) {
+    if (begin == NULL || end == NULL || begin > end) {
         roc_panic("stringlist: string is null");
     }
 
@@ -103,6 +89,7 @@ bool StringList::push_back_range(const char* begin, const char* end) {
     }
 
     memcpy(&data_[cur_sz], begin, add_sz - 1);
+    data_[cur_sz + add_sz - 1] = '\0';
     size_++;
 
     return true;
