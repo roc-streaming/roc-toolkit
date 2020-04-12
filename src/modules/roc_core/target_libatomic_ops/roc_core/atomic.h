@@ -1,18 +1,21 @@
 /*
- * Copyright (c) 2015 Roc authors
+ * Copyright (c) 2020 Roc authors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_core/target_gcc/roc_core/atomic.h
+//! @file roc_core/target_libatomic_ops/roc_core/atomic.h
 //! @brief Atomic integer.
 
 #ifndef ROC_CORE_ATOMIC_H_
 #define ROC_CORE_ATOMIC_H_
 
 #include "roc_core/noncopyable.h"
+#include "roc_core/stddefs.h"
+
+#include <atomic_ops.h>
 
 namespace roc {
 namespace core {
@@ -21,50 +24,43 @@ namespace core {
 class Atomic : public NonCopyable<> {
 public:
     //! Initialize with given value.
-    explicit Atomic(long value = 0)
-        : value_(value) {
+    explicit Atomic(long v = 0) {
+        AO_store(&value_, (AO_t)v);
     }
 
     //! Atomic load.
     operator long() const {
-        return __sync_add_and_fetch(&value_, 0);
+        return (long)AO_load(&value_);
     }
 
     //! Atomic store.
-    //! @remarks
-    //!  Only boolean values may be implemented in a cross-platform way
-    //!  using GCC legacy __sync builtins.
-    long operator=(bool v) {
-        if (v) {
-            __sync_lock_test_and_set(&value_, 1);
-        } else {
-            __sync_and_and_fetch(&value_, 0);
-        }
+    long operator=(long v) {
+        AO_store(&value_, (AO_t)v);
         return v;
     }
 
     //! Atomic increment.
     long operator++() {
-        return __sync_add_and_fetch(&value_, 1);
+        return long(AO_fetch_and_add1(&value_) + 1);
     }
 
     //! Atomic decrement.
     long operator--() {
-        return __sync_sub_and_fetch(&value_, 1);
+        return long(AO_fetch_and_sub1(&value_) - 1);
     }
 
     //! Atomic add.
     long operator+=(long increment) {
-        return __sync_add_and_fetch(&value_, increment);
+        return long(AO_fetch_and_add(&value_, (AO_t)increment) + (AO_t)increment);
     }
 
     //! Atomic sub.
     long operator-=(long decrement) {
-        return __sync_sub_and_fetch(&value_, decrement);
+        return long(AO_fetch_and_add(&value_, (AO_t)-decrement) - (AO_t)decrement);
     }
 
 private:
-    mutable long value_;
+    mutable volatile AO_t value_;
 };
 
 } // namespace core
