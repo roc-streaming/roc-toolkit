@@ -4,6 +4,11 @@ import os
 import os.path
 import hashlib
 
+try:
+    from shlex import quote
+except:
+    from pipes import quote
+
 def _run_prog(context, src, suffix):
     # Workaround for a SCons bug.
     # RunProg uses a global incrementing counter for temporary .c file names. The
@@ -306,6 +311,84 @@ def FindConfigGuess(context):
     context.Result('not found')
     return False
 
+def FindPkgConfig(context, toolchain):
+    env = context.env
+
+    context.Message('Searching PKG_CONFIG... ')
+
+    if env.HasArg('PKG_CONFIG'):
+        context.Result(env['PKG_CONFIG'])
+        return True
+
+    # https://autotools.io/pkgconfig/cross-compiling.html
+    # https://stackoverflow.com/questions/9221236/pkg-config-fails-to-find-package-under-sysroot-directory
+    if toolchain:
+        if env.Which(toolchain + '-pkg-config'):
+            env['PKG_CONFIG'] = toolchain + '-pkg-config'
+            context.Result(env['PKG_CONFIG'])
+            return True
+
+        if 'PKG_CONFIG_PATH' in os.environ \
+            or 'PKG_CONFIG_LIBDIR' in os.environ \
+            or 'PKG_CONFIG_SYSROOT_DIR' in os.environ:
+            if env.Which('pkg-config'):
+                env['PKG_CONFIG'] = 'pkg-config'
+                context.Result(env['PKG_CONFIG'])
+                return True
+
+        context.Result('not found')
+        return False
+
+    if env.Which('pkg-config'):
+        env['PKG_CONFIG'] = 'pkg-config'
+        context.Result(env['PKG_CONFIG'])
+        return True
+
+    context.Result('not found')
+    return False
+
+def FindPkgConfigPath(context):
+    env = context.env
+
+    context.Message("Searching PKG_CONFIG_PATH...")
+
+    if env.HasArg('PKG_CONFIG_PATH'):
+        context.Result(env['PKG_CONFIG_PATH'])
+        return True
+
+    # https://linux.die.net/man/1/pkg-config the default is libdir/pkgconfig
+    env['PKG_CONFIG_PATH'] = os.path.join(env['ROC_SYSTEM_LIBDIR'], 'pkgconfig')
+
+    pkg_config = env.get('PKG_CONFIG', None)
+    if pkg_config:
+        pkg_config_paths = env.CommandOutput('%s --variable pc_path pkg-config' % quote(pkg_config))
+        try:
+            for path in pkg_config_paths.split(':'):
+                if os.path.isdir(path):
+                    env['PKG_CONFIG_PATH'] = path
+                    break
+        except:
+            pass
+
+    context.Result(env['PKG_CONFIG_PATH'])
+    return True
+
+def AddPkgConfigDependency(context, package, flags):
+    env = context.env
+    if 'PKG_CONFIG_DEPS' not in env.Dictionary():
+        env['PKG_CONFIG_DEPS'] = []
+
+    pkg_config = env.get('PKG_CONFIG', None)
+    if not pkg_config:
+        return False
+
+    try:
+        env.ParseConfig('%s %s %s' % (quote(pkg_config), package, flags))
+        env.AppendUnique(PKG_CONFIG_DEPS=[package])
+        return True
+    except:
+        return False
+
 def init(env):
     env.CustomTests = {
         'CheckLibWithHeaderExt': CheckLibWithHeaderExt,
@@ -316,4 +399,7 @@ def init(env):
         'FindLibDir': FindLibDir,
         'FindPulseDir': FindPulseDir,
         'FindConfigGuess': FindConfigGuess,
+        'FindPkgConfig': FindPkgConfig,
+        'FindPkgConfigPath': FindPkgConfigPath,
+        'AddPkgConfigDependency': AddPkgConfigDependency,
     }
