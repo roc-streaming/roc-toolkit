@@ -271,9 +271,6 @@ AddOption('--override-targets',
 if GetOption('help'):
     Return()
 
-if 'clean' in COMMAND_LINE_TARGETS and COMMAND_LINE_TARGETS != ['clean']:
-    env.Die("combining 'clean' with other targets is not allowed")
-
 cleanbuild = [
     env.DeleteDir('#bin'),
     env.DeleteDir('#build'),
@@ -286,20 +283,23 @@ cleandocs = [
     env.DeleteDir('#build/docs'),
 ]
 
-clean = cleanbuild + cleandocs + [
+cleanall = cleanbuild + cleandocs + [
     env.DeleteDir('#3rdparty'),
     env.DeleteFile('#config.log'),
     env.DeleteDir('#.sconf_temp'),
     env.DeleteFile('#.sconsign.dblite'),
 ]
 
-env.AlwaysBuild(env.Alias('clean', [], clean))
+env.AlwaysBuild(env.Alias('clean', [], cleanall))
 env.AlwaysBuild(env.Alias('cleanbuild', [], cleanbuild))
 env.AlwaysBuild(env.Alias('cleandocs', [], cleandocs))
 
-# handle "scons -c"
-if env.GetOption('clean'):
-    env.Execute(clean)
+if set(COMMAND_LINE_TARGETS).intersection(['clean', 'cleanbuild', 'cleandocs']) or \
+  env.GetOption('clean'):
+    if set(COMMAND_LINE_TARGETS) - set(['clean', 'cleanbuild', 'cleandocs']):
+        env.Die("combining 'clean*' targets with other targets is not allowed")
+    if env.GetOption('clean'):
+        env.Execute(cleanall)
     Return()
 
 for var in ['CXX', 'CC', 'AR', 'RANLIB', 'RAGEL', 'GENGETOPT', 'PKG_CONFIG', 'CONFIG_GUESS']:
