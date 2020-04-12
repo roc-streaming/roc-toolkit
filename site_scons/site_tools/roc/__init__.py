@@ -4,6 +4,7 @@ import roc.distfiles
 import roc.fs
 import roc.parallel
 import roc.parsers
+import roc.pkgconfig
 import roc.pretty
 import roc.tests
 import roc.thirdparty
@@ -24,6 +25,7 @@ def generate(env):
         fs,
         parallel,
         parsers,
+        pkgconfig,
         pretty,
         tests,
         thirdparty,
