@@ -185,7 +185,7 @@ Here is how you can build Roc with this toolchain using `rocproject/cross-aarch6
             --host=aarch64-linux-android \
             --disable-tools \
             --disable-examples \
-            --build-3rdparty=libuv,libunwind,openfec,cpputest
+            --build-3rdparty=libuv,libunwind,libatomic_ops,openfec,cpputest
 
 Alternatively, you can download Android NDK and build the toolchain manually by following `these instructions <https://developer.android.com/ndk/guides/standalone_toolchain>`_.
 
