@@ -64,13 +64,28 @@ public:
         recv_repair_config_.bind_address.set_host_port(address::Family_IPv4, "127.0.0.1",
                                                        0);
 
-        netio::EventLoop::PortHandle send_port =
-            event_loop_.add_udp_sender(send_config_, &writer_);
-        CHECK(send_port);
-        CHECK(writer_);
+        netio::EventLoop::PortHandle send_port = NULL;
 
-        CHECK(event_loop_.add_udp_receiver(recv_source_config_, *this));
-        CHECK(event_loop_.add_udp_receiver(recv_repair_config_, *this));
+        {
+            netio::EventLoop::Tasks::AddUdpSenderPort task(send_config_);
+            CHECK(event_loop_.enqueue_and_wait(task));
+
+            send_port = task.get_handle();
+            CHECK(send_port);
+
+            writer_ = task.get_writer();
+            CHECK(writer_);
+        }
+
+        {
+            netio::EventLoop::Tasks::AddUdpReceiverPort task(recv_source_config_, *this);
+            CHECK(event_loop_.enqueue_and_wait(task));
+        }
+
+        {
+            netio::EventLoop::Tasks::AddUdpReceiverPort task(recv_repair_config_, *this);
+            CHECK(event_loop_.enqueue_and_wait(task));
+        }
 
         CHECK(roc_endpoint_allocate(&input_source_endp_) == 0);
         CHECK(roc_endpoint_set_protocol(input_source_endp_, source_proto) == 0);

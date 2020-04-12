@@ -16,6 +16,74 @@
 namespace roc {
 namespace netio {
 
+EventLoop::Task::Task()
+    : func_(NULL)
+    , state_(Pending)
+    , success_(false)
+    , port_handle_(NULL)
+    , port_writer_(NULL)
+    , sender_config_(NULL)
+    , receiver_config_(NULL) {
+}
+
+bool EventLoop::Task::success() const {
+    return state_ == Finished && success_;
+}
+
+EventLoop::Tasks::AddUdpReceiverPort::AddUdpReceiverPort(UdpReceiverConfig& config,
+                                                         packet::IWriter& writer) {
+    func_ = &EventLoop::task_add_udp_receiver_;
+    port_writer_ = &writer;
+    receiver_config_ = &config;
+}
+
+EventLoop::PortHandle EventLoop::Tasks::AddUdpReceiverPort::get_handle() const {
+    if (!success()) {
+        return NULL;
+    }
+    roc_panic_if_not(port_handle_);
+    return port_handle_;
+}
+
+EventLoop::Tasks::AddUdpSenderPort::AddUdpSenderPort(UdpSenderConfig& config) {
+    func_ = &EventLoop::task_add_udp_sender_;
+    sender_config_ = &config;
+}
+
+EventLoop::PortHandle EventLoop::Tasks::AddUdpSenderPort::get_handle() const {
+    if (!success()) {
+        return NULL;
+    }
+    roc_panic_if_not(port_handle_);
+    return port_handle_;
+}
+
+packet::IWriter* EventLoop::Tasks::AddUdpSenderPort::get_writer() const {
+    if (!success()) {
+        return NULL;
+    }
+    roc_panic_if_not(port_writer_);
+    return port_writer_;
+}
+
+EventLoop::Tasks::RemovePort::RemovePort(PortHandle handle) {
+    func_ = &EventLoop::task_remove_port_;
+    if (!handle) {
+        roc_panic("event loop: handle is null");
+    }
+    port_ = (BasicPort*)handle;
+}
+
+EventLoop::Tasks::ResolveEndpointAddress::ResolveEndpointAddress(
+    const address::EndpointURI& endpoint_uri) {
+    func_ = &EventLoop::task_resolve_endpoint_address_;
+    resolve_req_.endpoint_uri = &endpoint_uri;
+}
+
+const address::SocketAddr& EventLoop::Tasks::ResolveEndpointAddress::get_address() const {
+    return resolve_req_.resolved_address;
+}
+
 EventLoop::EventLoop(packet::PacketPool& packet_pool,
                      core::BufferPool<uint8_t>& buffer_pool,
                      core::IAllocator& allocator)
@@ -27,7 +95,6 @@ EventLoop::EventLoop(packet::PacketPool& packet_pool,
     , stop_sem_initialized_(false)
     , task_sem_initialized_(false)
     , task_cond_(mutex_)
-    , close_cond_(mutex_)
     , resolver_(*this, loop_) {
     if (int err = uv_loop_init(&loop_)) {
         roc_log(LogError, "event loop: uv_loop_init(): [%s] %s", uv_err_name(err),
@@ -62,7 +129,7 @@ EventLoop::~EventLoop() {
                       uv_strerror(err));
         }
     } else {
-        close_sems_();
+        close_all_sems_();
     }
 
     if (loop_initialized_) {
@@ -98,94 +165,25 @@ size_t EventLoop::num_ports() const {
     return open_ports_.size();
 }
 
-EventLoop::PortHandle EventLoop::add_udp_receiver(UdpReceiverConfig& config,
-                                                  packet::IWriter& writer) {
+bool EventLoop::enqueue_and_wait(Task& task) {
+    core::Mutex::Lock lock(mutex_);
+
     if (!valid()) {
         roc_panic("event loop: can't use invalid loop");
     }
 
-    Task task;
-    task.func = &EventLoop::add_udp_receiver_;
-    task.port_writer = &writer;
-    task.receiver_config = &config;
+    pending_tasks_.push_back(task);
 
-    run_task_(task);
-
-    if (task.state == TaskFailed) {
-        if (task.port) {
-            wait_port_closed_(*task.port);
-        }
-        return NULL;
+    if (int err = uv_async_send(&task_sem_)) {
+        roc_panic("event loop: uv_async_send(): [%s] %s", uv_err_name(err),
+                  uv_strerror(err));
     }
 
-    roc_panic_if(!task.port);
-    return (PortHandle)task.port.get();
-}
-
-EventLoop::PortHandle EventLoop::add_udp_sender(UdpSenderConfig& config,
-                                                packet::IWriter** writer) {
-    if (!valid()) {
-        roc_panic("event loop: can't use invalid loop");
+    while (task.state_ != Task::Finished) {
+        task_cond_.wait();
     }
 
-    Task task;
-    task.func = &EventLoop::add_udp_sender_;
-    task.sender_config = &config;
-
-    run_task_(task);
-
-    if (task.state == TaskFailed) {
-        if (task.port) {
-            wait_port_closed_(*task.port);
-        }
-        return NULL;
-    }
-
-    if (writer) {
-        *writer = task.port_writer;
-    }
-
-    roc_panic_if(!task.port);
-    return (PortHandle)task.port.get();
-}
-
-void EventLoop::remove_port(PortHandle handle) {
-    if (!valid()) {
-        roc_panic("event loop: can't use invalid loop");
-    }
-
-    if (!handle) {
-        roc_panic("event loop: handle is null");
-    }
-
-    Task task;
-    task.func = &EventLoop::remove_port_;
-    task.port = (BasicPort*)handle;
-
-    run_task_(task);
-
-    if (task.state == TaskFailed) {
-        roc_panic("event loop: can't remove port %s: unknown port",
-                  address::socket_addr_to_str(task.port->address()).c_str());
-    }
-
-    wait_port_closed_(*task.port);
-}
-
-bool EventLoop::resolve_endpoint_address(const address::EndpointURI& endpoint_uri,
-                                         address::SocketAddr& resolved_address) {
-    if (!valid()) {
-        roc_panic("event loop: can't use invalid loop");
-    }
-
-    Task task;
-    task.func = &EventLoop::resolve_endpoint_address_;
-    task.resolve_req.endpoint_uri = &endpoint_uri;
-    task.resolve_req.resolved_address = &resolved_address;
-
-    run_task_(task);
-
-    return (task.state == TaskSucceeded);
+    return task.success_;
 }
 
 void EventLoop::handle_closed(BasicPort& port) {
@@ -198,16 +196,20 @@ void EventLoop::handle_closed(BasicPort& port) {
     roc_log(LogDebug, "event loop: asynchronous close finished: port %s",
             address::socket_addr_to_str(port.address()).c_str());
 
+    finish_closing_tasks_(port);
     closing_ports_.remove(port);
-    close_cond_.broadcast();
+
+    task_cond_.broadcast();
 }
 
 void EventLoop::handle_resolved(ResolverRequest& req) {
     core::Mutex::Lock lock(mutex_);
 
-    Task& task = *ROC_CONTAINER_OF(&req, Task, resolve_req);
+    Task& task = *ROC_CONTAINER_OF(&req, Task, resolve_req_);
 
-    task.state = (req.success ? TaskSucceeded : TaskFailed);
+    task.success_ = req.success;
+    task.state_ = Task::Finished;
+
     task_cond_.broadcast();
 }
 
@@ -226,19 +228,19 @@ void EventLoop::task_sem_cb_(uv_async_t* handle) {
     roc_panic_if_not(handle);
 
     EventLoop& self = *(EventLoop*)handle->data;
-    self.process_tasks_();
+    self.process_pending_tasks_();
 }
 
 void EventLoop::stop_sem_cb_(uv_async_t* handle) {
     roc_panic_if_not(handle);
 
     EventLoop& self = *(EventLoop*)handle->data;
-    self.async_close_ports_();
-    self.close_sems_();
-    self.process_tasks_();
+    self.close_all_ports_();
+    self.close_all_sems_();
+    self.process_pending_tasks_();
 }
 
-void EventLoop::async_close_ports_() {
+void EventLoop::close_all_ports_() {
     core::Mutex::Lock lock(mutex_);
 
     while (core::SharedPtr<BasicPort> port = open_ports_.front()) {
@@ -247,7 +249,7 @@ void EventLoop::async_close_ports_() {
     }
 }
 
-void EventLoop::close_sems_() {
+void EventLoop::close_all_sems_() {
     if (task_sem_initialized_) {
         uv_close((uv_handle_t*)&task_sem_, NULL);
         task_sem_initialized_ = false;
@@ -259,32 +261,17 @@ void EventLoop::close_sems_() {
     }
 }
 
-void EventLoop::run_task_(Task& task) {
-    core::Mutex::Lock lock(mutex_);
-
-    tasks_.push_back(task);
-
-    if (int err = uv_async_send(&task_sem_)) {
-        roc_panic("event loop: uv_async_send(): [%s] %s", uv_err_name(err),
-                  uv_strerror(err));
-    }
-
-    while (task.state == TaskPending) {
-        task_cond_.wait();
-    }
-}
-
-void EventLoop::process_tasks_() {
+void EventLoop::process_pending_tasks_() {
     core::Mutex::Lock lock(mutex_);
 
     bool notify = false;
 
-    while (Task* task = tasks_.front()) {
-        tasks_.remove(*task);
+    while (Task* task = pending_tasks_.front()) {
+        pending_tasks_.remove(*task);
 
-        task->state = (this->*(task->func))(*task);
+        (this->*(task->func_))(*task);
 
-        if (task->state != TaskPending) {
+        if (task->state_ == Task::Finished) {
             notify = true;
         }
     }
@@ -294,87 +281,124 @@ void EventLoop::process_tasks_() {
     }
 }
 
-EventLoop::TaskState EventLoop::add_udp_receiver_(Task& task) {
-    core::SharedPtr<BasicPort> rp =
-        new (allocator_) UdpReceiverPort(*task.receiver_config, *task.port_writer, *this,
-                                         loop_, packet_pool_, buffer_pool_, allocator_);
+void EventLoop::task_add_udp_receiver_(Task& task) {
+    core::SharedPtr<BasicPort> rp = new (allocator_)
+        UdpReceiverPort(*task.receiver_config_, *task.port_writer_, *this, loop_,
+                        packet_pool_, buffer_pool_, allocator_);
     if (!rp) {
         roc_log(LogError, "event loop: can't add port %s: can't allocate receiver",
-                address::socket_addr_to_str(task.receiver_config->bind_address).c_str());
-        return TaskFailed;
-    }
-
-    task.port = rp;
-
-    if (!rp->open()) {
-        roc_log(LogError, "event loop: can't add port %s: can't start receiver",
-                address::socket_addr_to_str(task.receiver_config->bind_address).c_str());
-        async_close_port_(*rp);
-        return TaskFailed;
-    }
-
-    task.receiver_config->bind_address = rp->address();
-
-    open_ports_.push_back(*rp);
-    return TaskSucceeded;
-}
-
-EventLoop::TaskState EventLoop::add_udp_sender_(Task& task) {
-    core::SharedPtr<UdpSenderPort> sp =
-        new (allocator_) UdpSenderPort(*task.sender_config, *this, loop_, allocator_);
-    if (!sp) {
-        roc_log(LogError, "event loop: can't add port %s: can't allocate sender",
-                address::socket_addr_to_str(task.sender_config->bind_address).c_str());
-        return TaskFailed;
-    }
-
-    task.port = sp;
-
-    if (!sp->open()) {
-        roc_log(LogError, "event loop: can't add port %s: can't start sender",
-                address::socket_addr_to_str(task.sender_config->bind_address).c_str());
-        async_close_port_(*sp);
-        return TaskFailed;
-    }
-
-    task.port_writer = sp.get();
-    task.sender_config->bind_address = sp->address();
-
-    open_ports_.push_back(*sp);
-    return TaskSucceeded;
-}
-
-EventLoop::TaskState EventLoop::remove_port_(Task& task) {
-    roc_log(LogDebug, "event loop: removing port %s",
-            address::socket_addr_to_str(task.port->address()).c_str());
-
-    open_ports_.remove(*task.port);
-    async_close_port_(*task.port);
-
-    return TaskSucceeded;
-}
-
-EventLoop::TaskState EventLoop::resolve_endpoint_address_(Task& task) {
-    if (!resolver_.async_resolve(task.resolve_req)) {
-        return (task.resolve_req.success ? TaskSucceeded : TaskFailed);
-    }
-
-    return TaskPending;
-}
-
-void EventLoop::async_close_port_(BasicPort& port) {
-    if (!port.async_close()) {
+                address::socket_addr_to_str(task.receiver_config_->bind_address).c_str());
+        task.success_ = false;
+        task.state_ = Task::Finished;
         return;
     }
 
-    closing_ports_.push_back(port);
+    task.port_ = rp;
+
+    if (!rp->open()) {
+        roc_log(LogError, "event loop: can't add port %s: can't start receiver",
+                address::socket_addr_to_str(task.receiver_config_->bind_address).c_str());
+        task.success_ = false;
+        if (!async_close_port_(*rp)) {
+            task.state_ = Task::Finished;
+        } else {
+            closing_tasks_.push_back(task);
+            task.state_ = Task::Closing;
+        }
+        return;
+    }
+
+    open_ports_.push_back(*rp);
+
+    task.receiver_config_->bind_address = rp->address();
+    task.port_handle_ = (PortHandle)rp.get();
+
+    task.success_ = true;
+    task.state_ = Task::Finished;
 }
 
-void EventLoop::wait_port_closed_(const BasicPort& port) {
-    core::Mutex::Lock lock(mutex_);
+void EventLoop::task_add_udp_sender_(Task& task) {
+    core::SharedPtr<UdpSenderPort> sp =
+        new (allocator_) UdpSenderPort(*task.sender_config_, *this, loop_, allocator_);
+    if (!sp) {
+        roc_log(LogError, "event loop: can't add port %s: can't allocate sender",
+                address::socket_addr_to_str(task.sender_config_->bind_address).c_str());
+        task.success_ = false;
+        task.state_ = Task::Finished;
+        return;
+    }
 
-    while (closing_ports_.contains(port)) {
-        close_cond_.wait();
+    task.port_ = sp;
+
+    if (!sp->open()) {
+        roc_log(LogError, "event loop: can't add port %s: can't start sender",
+                address::socket_addr_to_str(task.sender_config_->bind_address).c_str());
+        task.success_ = false;
+        if (!async_close_port_(*sp)) {
+            task.state_ = Task::Finished;
+        } else {
+            closing_tasks_.push_back(task);
+            task.state_ = Task::Closing;
+        }
+        return;
+    }
+
+    open_ports_.push_back(*sp);
+
+    task.sender_config_->bind_address = sp->address();
+    task.port_handle_ = (PortHandle)sp.get();
+    task.port_writer_ = sp.get();
+
+    task.success_ = true;
+    task.state_ = Task::Finished;
+}
+
+void EventLoop::task_remove_port_(Task& task) {
+    roc_log(LogDebug, "event loop: removing port %s",
+            address::socket_addr_to_str(task.port_->address()).c_str());
+
+    open_ports_.remove(*task.port_);
+
+    task.success_ = true;
+    if (!async_close_port_(*task.port_)) {
+        task.state_ = Task::Finished;
+    } else {
+        closing_tasks_.push_back(task);
+        task.state_ = Task::Closing;
+    }
+}
+
+void EventLoop::task_resolve_endpoint_address_(Task& task) {
+    if (!resolver_.async_resolve(task.resolve_req_)) {
+        task.success_ = task.resolve_req_.success;
+        task.state_ = Task::Finished;
+        return;
+    }
+
+    task.state_ = Task::Pending;
+}
+
+bool EventLoop::async_close_port_(BasicPort& port) {
+    if (!port.async_close()) {
+        return false;
+    }
+
+    closing_ports_.push_back(port);
+    return true;
+}
+
+void EventLoop::finish_closing_tasks_(const BasicPort& port) {
+    Task* task = closing_tasks_.front();
+
+    while (task) {
+        Task* next_task = closing_tasks_.nextof(*task);
+
+        if (task->port_.get() == &port) {
+            task->state_ = Task::Finished;
+            closing_tasks_.remove(*task);
+        }
+
+        task = next_task;
     }
 }
 

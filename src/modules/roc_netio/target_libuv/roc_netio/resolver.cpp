@@ -24,9 +24,8 @@ Resolver::Resolver(IResolverRequestHandler& req_handler, uv_loop_t& event_loop)
 
 bool Resolver::async_resolve(ResolverRequest& req) {
     roc_panic_if(!req.endpoint_uri);
-    roc_panic_if(!req.resolved_address);
 
-    req.resolved_address->clear();
+    req.resolved_address.clear();
 
     if (!req.endpoint_uri->check(address::EndpointURI::Subset_Full)) {
         roc_log(LogError, "resolver: invalid endpoint");
@@ -38,7 +37,7 @@ bool Resolver::async_resolve(ResolverRequest& req) {
             address::endpoint_uri_to_str(*req.endpoint_uri).c_str());
 
     if (address::parse_socket_addr(req.endpoint_uri->host(), req.endpoint_uri->port(),
-                                   *req.resolved_address)) {
+                                   req.resolved_address)) {
         finish_resolving_(req, 0);
         return false;
     }
@@ -66,7 +65,7 @@ void Resolver::getaddrinfo_cb_(uv_getaddrinfo_t* req_handle,
 
     if (status == 0) {
         for (struct addrinfo* ai = addrinfo; ai; ai = ai->ai_next) {
-            if (req.resolved_address->set_host_port_saddr(ai->ai_addr)) {
+            if (req.resolved_address.set_host_port_saddr(ai->ai_addr)) {
                 break;
             }
         }
@@ -86,7 +85,7 @@ void Resolver::finish_resolving_(ResolverRequest& req, int status) {
         return;
     }
 
-    if (!req.resolved_address->has_host_port()) {
+    if (!req.resolved_address.has_host_port()) {
         roc_log(LogError, "resolver: no address associated with hostname: hostname=%s",
                 req.endpoint_uri->host());
         req.success = false;
