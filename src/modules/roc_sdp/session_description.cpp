@@ -31,24 +31,40 @@ void SessionDescription::clear() {
 
 const char* SessionDescription::guid() const {
     if (guid_.is_empty()) {
-        return NULL;
+        roc_panic("session description: SessionDescription should have a guid.");
     }
     return guid_.c_str();
 }
 
 bool SessionDescription::set_guid(const char* start_p_origin_username,
+                                  const char* end_p_origin_username,
+                                  const char* start_p_origin_sess_id,
                                   const char* end_p_origin_sess_id,
                                   const char* start_p_origin_nettype,
+                                  const char* end_p_origin_nettype,
+                                  const char* start_p_origin_addr,
                                   const char* end_p_origin_addr) {
     core::StringBuilder b(guid_.raw_buf());
 
-    if (!b.append_str_range(start_p_origin_username, end_p_origin_sess_id)) {
+    if (!b.append_str_range(start_p_origin_username, end_p_origin_username)) {
         return false;
     }
 
     b.append_char(' ');
 
-    if (!b.append_str_range(start_p_origin_nettype, end_p_origin_addr)) {
+    if (!b.append_str_range(start_p_origin_sess_id, end_p_origin_sess_id)) {
+        return false;
+    }
+
+    b.append_char(' ');
+
+    if (!b.append_str_range(start_p_origin_nettype, end_p_origin_nettype)) {
+        return false;
+    }
+
+    b.append_char(' ');
+
+    if (!b.append_str_range(start_p_origin_addr, end_p_origin_addr)) {
         return false;
     }
 
@@ -57,7 +73,7 @@ bool SessionDescription::set_guid(const char* start_p_origin_username,
     return true;
 }
 
-const address::SocketAddr SessionDescription::origin_unicast_address() const {
+const address::SocketAddr& SessionDescription::origin_unicast_address() const {
     return origin_unicast_address_;
 }
 
@@ -86,9 +102,14 @@ bool SessionDescription::set_session_connection_data(address::AddrFamily addrtyp
     return session_connection_data_.set_connection_address(addrtype, str, str_len);
 }
 
-bool SessionDescription::create_media_description() {
+bool SessionDescription::add_media_description() {
     core::SharedPtr<MediaDescription> media =
         new (allocator_) MediaDescription(allocator_);
+
+    if (!media) {
+        roc_log(LogError, "sender description: can't allocate media description.");
+        return false;
+    }
 
     media_descriptions_.push_back(*media);
     return true;
