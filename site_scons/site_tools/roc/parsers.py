@@ -96,20 +96,6 @@ def ParseCompilerDirectory(env, compiler):
 
     return None
 
-def ParsePkgConfig(env, cmd):
-    if 'PKG_CONFIG' in env.Dictionary():
-        pkg_config = env['PKG_CONFIG']
-    elif env.Which('pkg-config'):
-        pkg_config = 'pkg-config'
-    else:
-        return False
-
-    try:
-        env.ParseConfig('%s %s' % (pkg_config, cmd))
-        return True
-    except:
-        return False
-
 def ParseConfigGuess(env, cmd):
     text = env.CommandOutput(cmd)
     if not text:
@@ -141,6 +127,5 @@ def init(env):
     env.AddMethod(ParseCompilerVersion, 'ParseCompilerVersion')
     env.AddMethod(ParseCompilerTarget, 'ParseCompilerTarget')
     env.AddMethod(ParseCompilerDirectory, 'ParseCompilerDirectory')
-    env.AddMethod(ParsePkgConfig, 'ParsePkgConfig')
     env.AddMethod(ParseConfigGuess, 'ParseConfigGuess')
     env.AddMethod(ParseList, 'ParseList')
