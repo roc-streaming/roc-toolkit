@@ -10,7 +10,7 @@ scons -Q clean
 scons -Q \
     --enable-werror \
     --enable-pulseaudio-modules \
-    --build-3rdparty=libuv,libunwind,openfec,alsa,pulseaudio:10.0,sox,cpputest \
+    --build-3rdparty=libuv,libunwind,libatomic_ops,openfec,alsa,pulseaudio:10.0,sox,cpputest \
     --host=${TOOLCHAIN}
 
 find bin/${TOOLCHAIN} -name 'roc-test-*' \
