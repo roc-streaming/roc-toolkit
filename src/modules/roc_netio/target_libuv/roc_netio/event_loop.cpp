@@ -18,12 +18,20 @@ namespace netio {
 
 EventLoop::Task::Task()
     : func_(NULL)
-    , state_(Pending)
+    , state_(Initialized)
     , success_(false)
     , port_handle_(NULL)
     , port_writer_(NULL)
     , sender_config_(NULL)
-    , receiver_config_(NULL) {
+    , receiver_config_(NULL)
+    , callback_(NULL)
+    , callback_arg_(NULL) {
+}
+
+EventLoop::Task::~Task() {
+    if (state_ != Finished) {
+        roc_panic("event loop: attemp to destroy task before it's finished");
+    }
 }
 
 bool EventLoop::Task::success() const {
@@ -94,8 +102,9 @@ EventLoop::EventLoop(packet::PacketPool& packet_pool,
     , loop_initialized_(false)
     , stop_sem_initialized_(false)
     , task_sem_initialized_(false)
-    , task_cond_(mutex_)
-    , resolver_(*this, loop_) {
+    , task_cond_(task_mutex_)
+    , resolver_(*this, loop_)
+    , num_open_ports_(0) {
     if (int err = uv_loop_init(&loop_)) {
         roc_log(LogError, "event loop: uv_loop_init(): [%s] %s", uv_err_name(err),
                 uv_strerror(err));
@@ -160,17 +169,45 @@ bool EventLoop::valid() const {
 }
 
 size_t EventLoop::num_ports() const {
-    core::Mutex::Lock lock(mutex_);
-
-    return open_ports_.size();
+    return (size_t)num_open_ports_;
 }
 
-bool EventLoop::enqueue_and_wait(Task& task) {
-    core::Mutex::Lock lock(mutex_);
+void EventLoop::enqueue(Task& task, void (*cb)(void* cb_arg, Task&), void* cb_arg) {
+    core::Mutex::Lock lock(task_mutex_);
 
     if (!valid()) {
         roc_panic("event loop: can't use invalid loop");
     }
+
+    if (task.state_ != Task::Initialized) {
+        roc_panic("event loop: can't use the same task multiple times");
+    }
+
+    task.callback_ = cb;
+    task.callback_arg_ = cb_arg;
+
+    task.state_ = Task::Pending;
+
+    pending_tasks_.push_back(task);
+
+    if (int err = uv_async_send(&task_sem_)) {
+        roc_panic("event loop: uv_async_send(): [%s] %s", uv_err_name(err),
+                  uv_strerror(err));
+    }
+}
+
+bool EventLoop::enqueue_and_wait(Task& task) {
+    core::Mutex::Lock lock(task_mutex_);
+
+    if (!valid()) {
+        roc_panic("event loop: can't use invalid loop");
+    }
+
+    if (task.state_ != Task::Initialized) {
+        roc_panic("event loop: can't use the same task multiple times");
+    }
+
+    task.state_ = Task::Pending;
 
     pending_tasks_.push_back(task);
 
@@ -187,8 +224,6 @@ bool EventLoop::enqueue_and_wait(Task& task) {
 }
 
 void EventLoop::handle_closed(BasicPort& port) {
-    core::Mutex::Lock lock(mutex_);
-
     if (!closing_ports_.contains(port)) {
         return;
     }
@@ -198,19 +233,13 @@ void EventLoop::handle_closed(BasicPort& port) {
 
     finish_closing_tasks_(port);
     closing_ports_.remove(port);
-
-    task_cond_.broadcast();
 }
 
 void EventLoop::handle_resolved(ResolverRequest& req) {
-    core::Mutex::Lock lock(mutex_);
-
     Task& task = *ROC_CONTAINER_OF(&req, Task, resolve_req_);
 
     task.success_ = req.success;
-    task.state_ = Task::Finished;
-
-    task_cond_.broadcast();
+    finish_task_(task);
 }
 
 void EventLoop::run() {
@@ -241,12 +270,11 @@ void EventLoop::stop_sem_cb_(uv_async_t* handle) {
 }
 
 void EventLoop::close_all_ports_() {
-    core::Mutex::Lock lock(mutex_);
-
     while (core::SharedPtr<BasicPort> port = open_ports_.front()) {
         open_ports_.remove(*port);
         async_close_port_(*port);
     }
+    update_num_ports_();
 }
 
 void EventLoop::close_all_sems_() {
@@ -262,23 +290,26 @@ void EventLoop::close_all_sems_() {
 }
 
 void EventLoop::process_pending_tasks_() {
-    core::Mutex::Lock lock(mutex_);
-
-    bool notify = false;
-
-    while (Task* task = pending_tasks_.front()) {
-        pending_tasks_.remove(*task);
-
-        (this->*(task->func_))(*task);
-
-        if (task->state_ == Task::Finished) {
-            notify = true;
+    while (Task* task = process_next_pending_task_()) {
+        if (task->state_ == Task::Finishing) {
+            finish_task_(*task);
         }
     }
+}
 
-    if (notify) {
-        task_cond_.broadcast();
+EventLoop::Task* EventLoop::process_next_pending_task_() {
+    core::Mutex::Lock lock(task_mutex_);
+
+    Task* task = pending_tasks_.front();
+    if (!task) {
+        return NULL;
     }
+
+    pending_tasks_.remove(*task);
+
+    (this->*(task->func_))(*task);
+
+    return task;
 }
 
 void EventLoop::task_add_udp_receiver_(Task& task) {
@@ -289,7 +320,7 @@ void EventLoop::task_add_udp_receiver_(Task& task) {
         roc_log(LogError, "event loop: can't add port %s: can't allocate receiver",
                 address::socket_addr_to_str(task.receiver_config_->bind_address).c_str());
         task.success_ = false;
-        task.state_ = Task::Finished;
+        task.state_ = Task::Finishing;
         return;
     }
 
@@ -300,21 +331,22 @@ void EventLoop::task_add_udp_receiver_(Task& task) {
                 address::socket_addr_to_str(task.receiver_config_->bind_address).c_str());
         task.success_ = false;
         if (!async_close_port_(*rp)) {
-            task.state_ = Task::Finished;
+            task.state_ = Task::Finishing;
         } else {
             closing_tasks_.push_back(task);
-            task.state_ = Task::Closing;
+            task.state_ = Task::ClosingPort;
         }
         return;
     }
 
     open_ports_.push_back(*rp);
+    update_num_ports_();
 
     task.receiver_config_->bind_address = rp->address();
     task.port_handle_ = (PortHandle)rp.get();
 
     task.success_ = true;
-    task.state_ = Task::Finished;
+    task.state_ = Task::Finishing;
 }
 
 void EventLoop::task_add_udp_sender_(Task& task) {
@@ -324,7 +356,7 @@ void EventLoop::task_add_udp_sender_(Task& task) {
         roc_log(LogError, "event loop: can't add port %s: can't allocate sender",
                 address::socket_addr_to_str(task.sender_config_->bind_address).c_str());
         task.success_ = false;
-        task.state_ = Task::Finished;
+        task.state_ = Task::Finishing;
         return;
     }
 
@@ -335,22 +367,23 @@ void EventLoop::task_add_udp_sender_(Task& task) {
                 address::socket_addr_to_str(task.sender_config_->bind_address).c_str());
         task.success_ = false;
         if (!async_close_port_(*sp)) {
-            task.state_ = Task::Finished;
+            task.state_ = Task::Finishing;
         } else {
             closing_tasks_.push_back(task);
-            task.state_ = Task::Closing;
+            task.state_ = Task::ClosingPort;
         }
         return;
     }
 
     open_ports_.push_back(*sp);
+    update_num_ports_();
 
     task.sender_config_->bind_address = sp->address();
     task.port_handle_ = (PortHandle)sp.get();
     task.port_writer_ = sp.get();
 
     task.success_ = true;
-    task.state_ = Task::Finished;
+    task.state_ = Task::Finishing;
 }
 
 void EventLoop::task_remove_port_(Task& task) {
@@ -358,20 +391,21 @@ void EventLoop::task_remove_port_(Task& task) {
             address::socket_addr_to_str(task.port_->address()).c_str());
 
     open_ports_.remove(*task.port_);
+    update_num_ports_();
 
     task.success_ = true;
     if (!async_close_port_(*task.port_)) {
-        task.state_ = Task::Finished;
+        task.state_ = Task::Finishing;
     } else {
         closing_tasks_.push_back(task);
-        task.state_ = Task::Closing;
+        task.state_ = Task::ClosingPort;
     }
 }
 
 void EventLoop::task_resolve_endpoint_address_(Task& task) {
     if (!resolver_.async_resolve(task.resolve_req_)) {
         task.success_ = task.resolve_req_.success;
-        task.state_ = Task::Finished;
+        task.state_ = Task::Finishing;
         return;
     }
 
@@ -394,12 +428,31 @@ void EventLoop::finish_closing_tasks_(const BasicPort& port) {
         Task* next_task = closing_tasks_.nextof(*task);
 
         if (task->port_.get() == &port) {
-            task->state_ = Task::Finished;
             closing_tasks_.remove(*task);
+            finish_task_(*task);
         }
 
         task = next_task;
     }
+}
+
+void EventLoop::finish_task_(Task& task) {
+    const bool is_async = task.callback_; // gather before setting state to Finished
+
+    task.state_ = Task::Finished;
+
+    if (is_async) {
+        task.callback_(task.callback_arg_, task);
+    } else {
+        task_cond_.broadcast();
+    }
+
+    // at this point the task may be already destroyed
+    // (either in callback or after enqueue_and_wait() unblocks and returns)
+}
+
+void EventLoop::update_num_ports_() {
+    num_open_ports_ = (long)open_ports_.size();
 }
 
 } // namespace netio
