@@ -40,6 +40,11 @@ public:
         uv_mutex_destroy(&mutex_);
     }
 
+    //! Try to lock the mutex.
+    bool try_lock() const {
+        return uv_mutex_trylock(&mutex_) == 0;
+    }
+
     //! Lock mutex.
     void lock() const {
         uv_mutex_lock(&mutex_);
