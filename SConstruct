@@ -1207,6 +1207,7 @@ if compiler == 'gcc':
         for var in ['CXXFLAGS', 'CFLAGS']:
             env.Append(**{var: [
                 '-Wno-parentheses',
+                '-Wno-cast-function-type',
             ]})
 
 if compiler == 'clang':
