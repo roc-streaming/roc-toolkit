@@ -19,7 +19,7 @@ Context::Context(const ContextConfig& config, core::IAllocator& allocator)
     , byte_buffer_pool_(allocator_, config.max_packet_size, config.poisoning)
     , sample_buffer_pool_(
           allocator_, config.max_frame_size / sizeof(audio::sample_t), config.poisoning)
-    , event_loop_(packet_pool_, byte_buffer_pool_, allocator_)
+    , network_loop_(packet_pool_, byte_buffer_pool_, allocator_)
     , ref_counter_(0) {
     roc_log(LogDebug, "context: initializing");
 }
@@ -34,7 +34,7 @@ Context::~Context() {
 }
 
 bool Context::valid() {
-    return event_loop_.valid();
+    return network_loop_.valid();
 }
 
 void Context::incref() {
@@ -75,8 +75,8 @@ core::BufferPool<audio::sample_t>& Context::sample_buffer_pool() {
     return sample_buffer_pool_;
 }
 
-netio::EventLoop& Context::event_loop() {
-    return event_loop_;
+netio::NetworkLoop& Context::network_loop() {
+    return network_loop_;
 }
 
 } // namespace peer

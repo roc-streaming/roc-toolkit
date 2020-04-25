@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_netio/target_libuv/roc_netio/event_loop.h
-//! @brief Network event loop.
+//! @file roc_netio/target_libuv/roc_netio/network_loop.h
+//! @brief Network event loop thread.
 
-#ifndef ROC_NETIO_EVENT_LOOP_H_
-#define ROC_NETIO_EVENT_LOOP_H_
+#ifndef ROC_NETIO_NETWORK_LOOP_H_
+#define ROC_NETIO_NETWORK_LOOP_H_
 
 #include <uv.h>
 
@@ -34,10 +34,10 @@
 namespace roc {
 namespace netio {
 
-//! Network event loop serving multiple ports.
-class EventLoop : private ICloseHandler,
-                  private IResolverRequestHandler,
-                  private core::Thread {
+//! Network event loop thread.
+class NetworkLoop : private ICloseHandler,
+                    private IResolverRequestHandler,
+                    private core::Thread {
 public:
     //! Opaque receiver port handle.
     typedef struct PortHandle* PortHandle;
@@ -52,14 +52,14 @@ public:
         bool success() const;
 
     protected:
-        friend class EventLoop;
+        friend class NetworkLoop;
 
         Task();
 
         //! Task state.
         enum State { Initialized, Pending, ClosingPort, Finishing, Finished };
 
-        void (EventLoop::*func_)(Task&); //!< Task implementation method.
+        void (NetworkLoop::*func_)(Task&); //!< Task implementation method.
 
         //! Task state, defines whether task is finished already.
         //! The task becomes immutable after setting state to Finished.
@@ -149,38 +149,36 @@ public:
     };
 
     //! Initialize.
-    //!
     //! @remarks
     //!  Start background thread if the object was successfully constructed.
-    EventLoop(packet::PacketPool& packet_pool,
-              core::BufferPool<uint8_t>& buffer_pool,
-              core::IAllocator& allocator);
+    NetworkLoop(packet::PacketPool& packet_pool,
+                core::BufferPool<uint8_t>& buffer_pool,
+                core::IAllocator& allocator);
 
     //! Destroy. Stop all receivers and senders.
-    //!
     //! @remarks
     //!  Wait until background thread finishes.
-    virtual ~EventLoop();
+    virtual ~NetworkLoop();
 
-    //! Check if transceiver was successfully constructed.
+    //! Check if the object was successfully constructed.
     bool valid() const;
 
     //! Get number of receiver and sender ports.
     size_t num_ports() const;
 
-    //! Enqueue a task for execution and return.
+    //! Enqueue a task for asynchronous execution and return.
     //! The task should not be destroyed until the callback is called.
     //! The @p callback will be invoked on event loop thread after the
     //! task completes. The given @p cb_arg is passed to the callback.
     //! The callback should not block the caller.
-    void enqueue(Task& task, void (*callback)(void* cb_arg, Task&), void* cb_arg);
+    void schedule(Task& task, void (*callback)(void* cb_arg, Task&), void* cb_arg);
 
-    //! Enqueue a task for execution and wait for completion.
-    //! The task should not be destroyed until the method returns.
-    //! Should not be called from enqueue() callback.
+    //! Enqueue a task for asynchronous execution and wait for its completion.
+    //! The task should not be destroyed until this method returns.
+    //! Should not be called from schedule() callback.
     //! @returns
     //!  true if the task succeeded or false if it failed.
-    bool enqueue_and_wait(Task& task);
+    bool schedule_and_wait(Task& task);
 
 private:
     static void task_sem_cb_(uv_async_t* handle);
@@ -240,4 +238,4 @@ private:
 } // namespace netio
 } // namespace roc
 
-#endif // ROC_NETIO_EVENT_LOOP_H_
+#endif // ROC_NETIO_NETWORK_LOOP_H_
