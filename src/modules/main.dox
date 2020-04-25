@@ -56,6 +56,12 @@ namespace roc {
 }
 
 namespace roc {
+  //! @namespace roc::ctl
+  //! Control tasks event loop.
+  namepsace ctl {}
+}
+
+namespace roc {
   //! @namespace roc::peer
   //! High-level sender and receiver peers.
   namepsace peer {}
