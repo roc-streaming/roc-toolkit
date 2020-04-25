@@ -17,7 +17,7 @@
 #include "roc_core/parse_duration.h"
 #include "roc_core/scoped_destructor.h"
 #include "roc_core/scoped_ptr.h"
-#include "roc_netio/event_loop.h"
+#include "roc_netio/network_loop.h"
 #include "roc_peer/context.h"
 #include "roc_peer/receiver.h"
 #include "roc_pipeline/converter_source.h"
