@@ -45,7 +45,7 @@ TEST(sender, connect) {
     Context context(context_config, allocator);
     CHECK(context.valid());
 
-    UNSIGNED_LONGS_EQUAL(context.event_loop().num_ports(), 0);
+    UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
 
     {
         Sender sender(context, sender_config);
@@ -56,10 +56,10 @@ TEST(sender, connect) {
 
         CHECK(sender.connect(address::Iface_AudioSource, source_endp));
 
-        UNSIGNED_LONGS_EQUAL(context.event_loop().num_ports(), 1);
+        UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 1);
     }
 
-    UNSIGNED_LONGS_EQUAL(context.event_loop().num_ports(), 0);
+    UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
 }
 
 TEST(sender, endpoints_no_fec) {
@@ -211,7 +211,7 @@ TEST(sender, squashing) {
     Context context(context_config, allocator);
     CHECK(context.valid());
 
-    UNSIGNED_LONGS_EQUAL(context.event_loop().num_ports(), 0);
+    UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
 
     if (!fec::CodecMap::instance().is_supported(packet::FEC_ReedSolomon_M8)) {
         return;
@@ -232,7 +232,7 @@ TEST(sender, squashing) {
         CHECK(sender.connect(address::Iface_AudioSource, source_endp));
         CHECK(sender.connect(address::Iface_AudioRepair, repair_endp));
 
-        UNSIGNED_LONGS_EQUAL(context.event_loop().num_ports(), 1);
+        UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 1);
     }
     { // source and repair squashed: same non-empty config
         Sender sender(context, sender_config);
@@ -253,7 +253,7 @@ TEST(sender, squashing) {
         CHECK(sender.connect(address::Iface_AudioSource, source_endp));
         CHECK(sender.connect(address::Iface_AudioRepair, repair_endp));
 
-        UNSIGNED_LONGS_EQUAL(context.event_loop().num_ports(), 1);
+        UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 1);
     }
     { // source and repair not squashed: squashing disabled for source interface
         Sender sender(context, sender_config);
@@ -270,7 +270,7 @@ TEST(sender, squashing) {
         CHECK(sender.connect(address::Iface_AudioSource, source_endp));
         CHECK(sender.connect(address::Iface_AudioRepair, repair_endp));
 
-        UNSIGNED_LONGS_EQUAL(context.event_loop().num_ports(), 2);
+        UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 2);
     }
     { // source and repair not squashed: squashing disabled for repair interface
         Sender sender(context, sender_config);
@@ -287,7 +287,7 @@ TEST(sender, squashing) {
         CHECK(sender.connect(address::Iface_AudioSource, source_endp));
         CHECK(sender.connect(address::Iface_AudioRepair, repair_endp));
 
-        UNSIGNED_LONGS_EQUAL(context.event_loop().num_ports(), 2);
+        UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 2);
     }
     { // source and repair not squashed: different families
         Sender sender(context, sender_config);
@@ -303,7 +303,7 @@ TEST(sender, squashing) {
 
         if (sender.connect(address::Iface_AudioRepair, repair_endp)) {
             // IPv6 may be unsupported
-            UNSIGNED_LONGS_EQUAL(context.event_loop().num_ports(), 2);
+            UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 2);
         }
     }
     { // source and repair not squashed: different addresses
@@ -323,7 +323,7 @@ TEST(sender, squashing) {
 
         if (sender.connect(address::Iface_AudioRepair, repair_endp)) {
             // 127.0.0.2 may be unsupported
-            UNSIGNED_LONGS_EQUAL(context.event_loop().num_ports(), 2);
+            UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 2);
         }
     }
     { // source and repair not squashed: different broadcast flags
@@ -342,10 +342,10 @@ TEST(sender, squashing) {
         CHECK(sender.connect(address::Iface_AudioSource, source_endp));
         CHECK(sender.connect(address::Iface_AudioRepair, repair_endp));
 
-        UNSIGNED_LONGS_EQUAL(context.event_loop().num_ports(), 2);
+        UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 2);
     }
 
-    UNSIGNED_LONGS_EQUAL(context.event_loop().num_ports(), 0);
+    UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
 }
 
 } // namespace peer
