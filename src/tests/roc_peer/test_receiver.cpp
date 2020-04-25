@@ -56,7 +56,7 @@ TEST(receiver, bind) {
     Context context(context_config, allocator);
     CHECK(context.valid());
 
-    UNSIGNED_LONGS_EQUAL(context.event_loop().num_ports(), 0);
+    UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
 
     {
         Receiver receiver(context, receiver_config);
@@ -69,10 +69,10 @@ TEST(receiver, bind) {
         CHECK(receiver.bind(address::Iface_AudioSource, source_endp));
         CHECK(source_endp.port() != 0);
 
-        UNSIGNED_LONGS_EQUAL(context.event_loop().num_ports(), 1);
+        UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 1);
     }
 
-    UNSIGNED_LONGS_EQUAL(context.event_loop().num_ports(), 0);
+    UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
 }
 
 TEST(receiver, endpoints_no_fec) {

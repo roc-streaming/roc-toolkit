@@ -48,7 +48,7 @@ public:
 private:
     struct InterfacePort {
         netio::UdpReceiverConfig config;
-        netio::EventLoop::PortHandle handle;
+        netio::NetworkLoop::PortHandle handle;
 
         InterfacePort()
             : handle(NULL) {

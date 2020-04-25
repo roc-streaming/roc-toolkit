@@ -16,7 +16,7 @@
 #include "roc_core/atomic.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/iallocator.h"
-#include "roc_netio/event_loop.h"
+#include "roc_netio/network_loop.h"
 #include "roc_packet/packet_pool.h"
 
 namespace roc {
@@ -77,7 +77,7 @@ public:
     core::BufferPool<audio::sample_t>& sample_buffer_pool();
 
     //! Get network event loop.
-    netio::EventLoop& event_loop();
+    netio::NetworkLoop& network_loop();
 
 private:
     core::IAllocator& allocator_;
@@ -86,7 +86,7 @@ private:
     core::BufferPool<uint8_t> byte_buffer_pool_;
     core::BufferPool<audio::sample_t> sample_buffer_pool_;
 
-    netio::EventLoop event_loop_;
+    netio::NetworkLoop network_loop_;
 
     core::Atomic ref_counter_;
 };
