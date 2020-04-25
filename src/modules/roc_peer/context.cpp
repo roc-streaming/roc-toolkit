@@ -34,7 +34,7 @@ Context::~Context() {
 }
 
 bool Context::valid() {
-    return network_loop_.valid();
+    return network_loop_.valid() && control_loop_.valid();
 }
 
 void Context::incref() {
@@ -77,6 +77,10 @@ core::BufferPool<audio::sample_t>& Context::sample_buffer_pool() {
 
 netio::NetworkLoop& Context::network_loop() {
     return network_loop_;
+}
+
+ctl::ControlLoop& Context::control_loop() {
+    return control_loop_;
 }
 
 } // namespace peer
