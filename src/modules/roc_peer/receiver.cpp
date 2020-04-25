@@ -40,9 +40,9 @@ Receiver::~Receiver() {
 
     for (size_t i = 0; i < ROC_ARRAY_SIZE(ports_); i++) {
         if (ports_[i].handle) {
-            netio::EventLoop::Tasks::RemovePort task(ports_[i].handle);
+            netio::NetworkLoop::Tasks::RemovePort task(ports_[i].handle);
 
-            if (!context_.event_loop().enqueue_and_wait(task)) {
+            if (!context_.network_loop().schedule_and_wait(task)) {
                 roc_panic("receiver peer: can't remove port");
             }
         }
@@ -114,9 +114,9 @@ bool Receiver::bind(address::Interface iface, address::EndpointURI& uri) {
 
     address::SocketAddr address;
 
-    netio::EventLoop::Tasks::ResolveEndpointAddress resolve_task(uri);
+    netio::NetworkLoop::Tasks::ResolveEndpointAddress resolve_task(uri);
 
-    if (!context_.event_loop().enqueue_and_wait(resolve_task)) {
+    if (!context_.network_loop().schedule_and_wait(resolve_task)) {
         roc_log(LogError, "receiver peer: can't resolve %s interface address",
                 address::interface_to_str(iface));
         return false;
@@ -132,10 +132,9 @@ bool Receiver::bind(address::Interface iface, address::EndpointURI& uri) {
 
     ports_[iface].config.bind_address = resolve_task.get_address();
 
-    netio::EventLoop::Tasks::AddUdpReceiverPort port_task(ports_[iface].config,
-                                                          *endpoint_writer);
-
-    if (!context_.event_loop().enqueue_and_wait(port_task)) {
+    netio::NetworkLoop::Tasks::AddUdpReceiverPort port_task(ports_[iface].config,
+                                                            *endpoint_writer);
+    if (!context_.network_loop().schedule_and_wait(port_task)) {
         roc_log(LogError, "receiver peer: can't bind %s interface to local port",
                 address::interface_to_str(iface));
         pipeline_.remove_endpoint(endpoint_set_, iface);
