@@ -15,7 +15,7 @@
 
 #include "roc_address/socket_addr.h"
 #include "roc_core/heap_allocator.h"
-#include "roc_netio/event_loop.h"
+#include "roc_netio/network_loop.h"
 #include "roc_packet/packet_pool.h"
 #include "roc_packet/queue.h"
 
@@ -34,11 +34,11 @@ public:
           core::HeapAllocator& allocator,
           packet::PacketPool& packet_pool,
           core::BufferPool<uint8_t>& byte_buffer_pool)
-        : event_loop_(packet_pool, byte_buffer_pool, allocator)
+        : net_loop_(packet_pool, byte_buffer_pool, allocator)
         , n_source_packets_(n_source_packets)
         , n_repair_packets_(n_repair_packets)
         , pos_(0) {
-        CHECK(event_loop_.valid());
+        CHECK(net_loop_.valid());
 
         roc_protocol source_proto;
         CHECK(roc_endpoint_get_protocol(receiver_source_endp, &source_proto) == 0);
@@ -64,11 +64,11 @@ public:
         recv_repair_config_.bind_address.set_host_port(address::Family_IPv4, "127.0.0.1",
                                                        0);
 
-        netio::EventLoop::PortHandle send_port = NULL;
+        netio::NetworkLoop::PortHandle send_port = NULL;
 
         {
-            netio::EventLoop::Tasks::AddUdpSenderPort task(send_config_);
-            CHECK(event_loop_.enqueue_and_wait(task));
+            netio::NetworkLoop::Tasks::AddUdpSenderPort task(send_config_);
+            CHECK(net_loop_.schedule_and_wait(task));
 
             send_port = task.get_handle();
             CHECK(send_port);
@@ -78,13 +78,15 @@ public:
         }
 
         {
-            netio::EventLoop::Tasks::AddUdpReceiverPort task(recv_source_config_, *this);
-            CHECK(event_loop_.enqueue_and_wait(task));
+            netio::NetworkLoop::Tasks::AddUdpReceiverPort task(recv_source_config_,
+                                                               *this);
+            CHECK(net_loop_.schedule_and_wait(task));
         }
 
         {
-            netio::EventLoop::Tasks::AddUdpReceiverPort task(recv_repair_config_, *this);
-            CHECK(event_loop_.enqueue_and_wait(task));
+            netio::NetworkLoop::Tasks::AddUdpReceiverPort task(recv_repair_config_,
+                                                               *this);
+            CHECK(net_loop_.schedule_and_wait(task));
         }
 
         CHECK(roc_endpoint_allocate(&input_source_endp_) == 0);
@@ -170,7 +172,7 @@ private:
 
     packet::IWriter* writer_;
 
-    netio::EventLoop event_loop_;
+    netio::NetworkLoop net_loop_;
 
     const size_t n_source_packets_;
     const size_t n_repair_packets_;

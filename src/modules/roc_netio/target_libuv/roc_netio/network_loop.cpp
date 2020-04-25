@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_netio/event_loop.h"
+#include "roc_netio/network_loop.h"
 #include "roc_address/socket_addr_to_str.h"
 #include "roc_core/helpers.h"
 #include "roc_core/log.h"
@@ -16,7 +16,7 @@
 namespace roc {
 namespace netio {
 
-EventLoop::Task::Task()
+NetworkLoop::Task::Task()
     : func_(NULL)
     , state_(Initialized)
     , success_(false)
@@ -28,24 +28,24 @@ EventLoop::Task::Task()
     , callback_arg_(NULL) {
 }
 
-EventLoop::Task::~Task() {
+NetworkLoop::Task::~Task() {
     if (state_ != Finished) {
-        roc_panic("event loop: attemp to destroy task before it's finished");
+        roc_panic("network loop: attemp to destroy task before it's finished");
     }
 }
 
-bool EventLoop::Task::success() const {
+bool NetworkLoop::Task::success() const {
     return state_ == Finished && success_;
 }
 
-EventLoop::Tasks::AddUdpReceiverPort::AddUdpReceiverPort(UdpReceiverConfig& config,
-                                                         packet::IWriter& writer) {
-    func_ = &EventLoop::task_add_udp_receiver_;
+NetworkLoop::Tasks::AddUdpReceiverPort::AddUdpReceiverPort(UdpReceiverConfig& config,
+                                                           packet::IWriter& writer) {
+    func_ = &NetworkLoop::task_add_udp_receiver_;
     port_writer_ = &writer;
     receiver_config_ = &config;
 }
 
-EventLoop::PortHandle EventLoop::Tasks::AddUdpReceiverPort::get_handle() const {
+NetworkLoop::PortHandle NetworkLoop::Tasks::AddUdpReceiverPort::get_handle() const {
     if (!success()) {
         return NULL;
     }
@@ -53,12 +53,12 @@ EventLoop::PortHandle EventLoop::Tasks::AddUdpReceiverPort::get_handle() const {
     return port_handle_;
 }
 
-EventLoop::Tasks::AddUdpSenderPort::AddUdpSenderPort(UdpSenderConfig& config) {
-    func_ = &EventLoop::task_add_udp_sender_;
+NetworkLoop::Tasks::AddUdpSenderPort::AddUdpSenderPort(UdpSenderConfig& config) {
+    func_ = &NetworkLoop::task_add_udp_sender_;
     sender_config_ = &config;
 }
 
-EventLoop::PortHandle EventLoop::Tasks::AddUdpSenderPort::get_handle() const {
+NetworkLoop::PortHandle NetworkLoop::Tasks::AddUdpSenderPort::get_handle() const {
     if (!success()) {
         return NULL;
     }
@@ -66,7 +66,7 @@ EventLoop::PortHandle EventLoop::Tasks::AddUdpSenderPort::get_handle() const {
     return port_handle_;
 }
 
-packet::IWriter* EventLoop::Tasks::AddUdpSenderPort::get_writer() const {
+packet::IWriter* NetworkLoop::Tasks::AddUdpSenderPort::get_writer() const {
     if (!success()) {
         return NULL;
     }
@@ -74,27 +74,28 @@ packet::IWriter* EventLoop::Tasks::AddUdpSenderPort::get_writer() const {
     return port_writer_;
 }
 
-EventLoop::Tasks::RemovePort::RemovePort(PortHandle handle) {
-    func_ = &EventLoop::task_remove_port_;
+NetworkLoop::Tasks::RemovePort::RemovePort(PortHandle handle) {
+    func_ = &NetworkLoop::task_remove_port_;
     if (!handle) {
-        roc_panic("event loop: handle is null");
+        roc_panic("network loop: handle is null");
     }
     port_ = (BasicPort*)handle;
 }
 
-EventLoop::Tasks::ResolveEndpointAddress::ResolveEndpointAddress(
+NetworkLoop::Tasks::ResolveEndpointAddress::ResolveEndpointAddress(
     const address::EndpointURI& endpoint_uri) {
-    func_ = &EventLoop::task_resolve_endpoint_address_;
+    func_ = &NetworkLoop::task_resolve_endpoint_address_;
     resolve_req_.endpoint_uri = &endpoint_uri;
 }
 
-const address::SocketAddr& EventLoop::Tasks::ResolveEndpointAddress::get_address() const {
+const address::SocketAddr&
+NetworkLoop::Tasks::ResolveEndpointAddress::get_address() const {
     return resolve_req_.resolved_address;
 }
 
-EventLoop::EventLoop(packet::PacketPool& packet_pool,
-                     core::BufferPool<uint8_t>& buffer_pool,
-                     core::IAllocator& allocator)
+NetworkLoop::NetworkLoop(packet::PacketPool& packet_pool,
+                         core::BufferPool<uint8_t>& buffer_pool,
+                         core::IAllocator& allocator)
     : packet_pool_(packet_pool)
     , buffer_pool_(buffer_pool)
     , allocator_(allocator)
@@ -106,14 +107,14 @@ EventLoop::EventLoop(packet::PacketPool& packet_pool,
     , resolver_(*this, loop_)
     , num_open_ports_(0) {
     if (int err = uv_loop_init(&loop_)) {
-        roc_log(LogError, "event loop: uv_loop_init(): [%s] %s", uv_err_name(err),
+        roc_log(LogError, "network loop: uv_loop_init(): [%s] %s", uv_err_name(err),
                 uv_strerror(err));
         return;
     }
     loop_initialized_ = true;
 
     if (int err = uv_async_init(&loop_, &stop_sem_, stop_sem_cb_)) {
-        roc_log(LogError, "event loop: uv_async_init(): [%s] %s", uv_err_name(err),
+        roc_log(LogError, "network loop: uv_async_init(): [%s] %s", uv_err_name(err),
                 uv_strerror(err));
         return;
     }
@@ -121,7 +122,7 @@ EventLoop::EventLoop(packet::PacketPool& packet_pool,
     stop_sem_initialized_ = true;
 
     if (int err = uv_async_init(&loop_, &task_sem_, task_sem_cb_)) {
-        roc_log(LogError, "event loop: uv_async_init(): [%s] %s", uv_err_name(err),
+        roc_log(LogError, "network loop: uv_async_init(): [%s] %s", uv_err_name(err),
                 uv_strerror(err));
         return;
     }
@@ -131,10 +132,10 @@ EventLoop::EventLoop(packet::PacketPool& packet_pool,
     started_ = Thread::start();
 }
 
-EventLoop::~EventLoop() {
+NetworkLoop::~NetworkLoop() {
     if (started_) {
         if (int err = uv_async_send(&stop_sem_)) {
-            roc_panic("event loop: uv_async_send(): [%s] %s", uv_err_name(err),
+            roc_panic("network loop: uv_async_send(): [%s] %s", uv_err_name(err),
                       uv_strerror(err));
         }
     } else {
@@ -148,11 +149,11 @@ EventLoop::~EventLoop() {
             // If the thread was never started we should manually run the loop to
             // wait all opened handles to be closed. Otherwise, uv_loop_close()
             // will fail with EBUSY.
-            EventLoop::run(); // non-virtual call from dtor
+            NetworkLoop::run(); // non-virtual call from dtor
         }
 
         if (int err = uv_loop_close(&loop_)) {
-            roc_panic("event loop: uv_loop_close(): [%s] %s", uv_err_name(err),
+            roc_panic("network loop: uv_loop_close(): [%s] %s", uv_err_name(err),
                       uv_strerror(err));
         }
     }
@@ -164,23 +165,23 @@ EventLoop::~EventLoop() {
     roc_panic_if(stop_sem_initialized_);
 }
 
-bool EventLoop::valid() const {
+bool NetworkLoop::valid() const {
     return started_;
 }
 
-size_t EventLoop::num_ports() const {
+size_t NetworkLoop::num_ports() const {
     return (size_t)num_open_ports_;
 }
 
-void EventLoop::enqueue(Task& task, void (*cb)(void* cb_arg, Task&), void* cb_arg) {
+void NetworkLoop::schedule(Task& task, void (*cb)(void* cb_arg, Task&), void* cb_arg) {
     core::Mutex::Lock lock(task_mutex_);
 
     if (!valid()) {
-        roc_panic("event loop: can't use invalid loop");
+        roc_panic("network loop: can't use invalid loop");
     }
 
     if (task.state_ != Task::Initialized) {
-        roc_panic("event loop: can't use the same task multiple times");
+        roc_panic("network loop: can't use the same task multiple times");
     }
 
     task.callback_ = cb;
@@ -191,20 +192,20 @@ void EventLoop::enqueue(Task& task, void (*cb)(void* cb_arg, Task&), void* cb_ar
     pending_tasks_.push_back(task);
 
     if (int err = uv_async_send(&task_sem_)) {
-        roc_panic("event loop: uv_async_send(): [%s] %s", uv_err_name(err),
+        roc_panic("network loop: uv_async_send(): [%s] %s", uv_err_name(err),
                   uv_strerror(err));
     }
 }
 
-bool EventLoop::enqueue_and_wait(Task& task) {
+bool NetworkLoop::schedule_and_wait(Task& task) {
     core::Mutex::Lock lock(task_mutex_);
 
     if (!valid()) {
-        roc_panic("event loop: can't use invalid loop");
+        roc_panic("network loop: can't use invalid loop");
     }
 
     if (task.state_ != Task::Initialized) {
-        roc_panic("event loop: can't use the same task multiple times");
+        roc_panic("network loop: can't use the same task multiple times");
     }
 
     task.state_ = Task::Pending;
@@ -212,7 +213,7 @@ bool EventLoop::enqueue_and_wait(Task& task) {
     pending_tasks_.push_back(task);
 
     if (int err = uv_async_send(&task_sem_)) {
-        roc_panic("event loop: uv_async_send(): [%s] %s", uv_err_name(err),
+        roc_panic("network loop: uv_async_send(): [%s] %s", uv_err_name(err),
                   uv_strerror(err));
     }
 
@@ -223,53 +224,53 @@ bool EventLoop::enqueue_and_wait(Task& task) {
     return task.success_;
 }
 
-void EventLoop::handle_closed(BasicPort& port) {
+void NetworkLoop::handle_closed(BasicPort& port) {
     if (!closing_ports_.contains(port)) {
         return;
     }
 
-    roc_log(LogDebug, "event loop: asynchronous close finished: port %s",
+    roc_log(LogDebug, "network loop: asynchronous close finished: port %s",
             address::socket_addr_to_str(port.address()).c_str());
 
     finish_closing_tasks_(port);
     closing_ports_.remove(port);
 }
 
-void EventLoop::handle_resolved(ResolverRequest& req) {
+void NetworkLoop::handle_resolved(ResolverRequest& req) {
     Task& task = *ROC_CONTAINER_OF(&req, Task, resolve_req_);
 
     task.success_ = req.success;
     finish_task_(task);
 }
 
-void EventLoop::run() {
-    roc_log(LogDebug, "event loop: starting event loop");
+void NetworkLoop::run() {
+    roc_log(LogDebug, "network loop: starting event loop");
 
     int err = uv_run(&loop_, UV_RUN_DEFAULT);
     if (err != 0) {
-        roc_log(LogInfo, "event loop: uv_run() returned non-zero");
+        roc_log(LogInfo, "network loop: uv_run() returned non-zero");
     }
 
-    roc_log(LogDebug, "event loop: finishing event loop");
+    roc_log(LogDebug, "network loop: finishing event loop");
 }
 
-void EventLoop::task_sem_cb_(uv_async_t* handle) {
+void NetworkLoop::task_sem_cb_(uv_async_t* handle) {
     roc_panic_if_not(handle);
 
-    EventLoop& self = *(EventLoop*)handle->data;
+    NetworkLoop& self = *(NetworkLoop*)handle->data;
     self.process_pending_tasks_();
 }
 
-void EventLoop::stop_sem_cb_(uv_async_t* handle) {
+void NetworkLoop::stop_sem_cb_(uv_async_t* handle) {
     roc_panic_if_not(handle);
 
-    EventLoop& self = *(EventLoop*)handle->data;
+    NetworkLoop& self = *(NetworkLoop*)handle->data;
     self.close_all_ports_();
     self.close_all_sems_();
     self.process_pending_tasks_();
 }
 
-void EventLoop::close_all_ports_() {
+void NetworkLoop::close_all_ports_() {
     while (core::SharedPtr<BasicPort> port = open_ports_.front()) {
         open_ports_.remove(*port);
         async_close_port_(*port);
@@ -277,7 +278,7 @@ void EventLoop::close_all_ports_() {
     update_num_ports_();
 }
 
-void EventLoop::close_all_sems_() {
+void NetworkLoop::close_all_sems_() {
     if (task_sem_initialized_) {
         uv_close((uv_handle_t*)&task_sem_, NULL);
         task_sem_initialized_ = false;
@@ -289,7 +290,7 @@ void EventLoop::close_all_sems_() {
     }
 }
 
-void EventLoop::process_pending_tasks_() {
+void NetworkLoop::process_pending_tasks_() {
     while (Task* task = process_next_pending_task_()) {
         if (task->state_ == Task::Finishing) {
             finish_task_(*task);
@@ -297,7 +298,7 @@ void EventLoop::process_pending_tasks_() {
     }
 }
 
-EventLoop::Task* EventLoop::process_next_pending_task_() {
+NetworkLoop::Task* NetworkLoop::process_next_pending_task_() {
     core::Mutex::Lock lock(task_mutex_);
 
     Task* task = pending_tasks_.front();
@@ -312,12 +313,12 @@ EventLoop::Task* EventLoop::process_next_pending_task_() {
     return task;
 }
 
-void EventLoop::task_add_udp_receiver_(Task& task) {
+void NetworkLoop::task_add_udp_receiver_(Task& task) {
     core::SharedPtr<BasicPort> rp = new (allocator_)
         UdpReceiverPort(*task.receiver_config_, *task.port_writer_, *this, loop_,
                         packet_pool_, buffer_pool_, allocator_);
     if (!rp) {
-        roc_log(LogError, "event loop: can't add port %s: can't allocate receiver",
+        roc_log(LogError, "network loop: can't add port %s: can't allocate receiver",
                 address::socket_addr_to_str(task.receiver_config_->bind_address).c_str());
         task.success_ = false;
         task.state_ = Task::Finishing;
@@ -327,7 +328,7 @@ void EventLoop::task_add_udp_receiver_(Task& task) {
     task.port_ = rp;
 
     if (!rp->open()) {
-        roc_log(LogError, "event loop: can't add port %s: can't start receiver",
+        roc_log(LogError, "network loop: can't add port %s: can't start receiver",
                 address::socket_addr_to_str(task.receiver_config_->bind_address).c_str());
         task.success_ = false;
         if (!async_close_port_(*rp)) {
@@ -349,11 +350,11 @@ void EventLoop::task_add_udp_receiver_(Task& task) {
     task.state_ = Task::Finishing;
 }
 
-void EventLoop::task_add_udp_sender_(Task& task) {
+void NetworkLoop::task_add_udp_sender_(Task& task) {
     core::SharedPtr<UdpSenderPort> sp =
         new (allocator_) UdpSenderPort(*task.sender_config_, *this, loop_, allocator_);
     if (!sp) {
-        roc_log(LogError, "event loop: can't add port %s: can't allocate sender",
+        roc_log(LogError, "network loop: can't add port %s: can't allocate sender",
                 address::socket_addr_to_str(task.sender_config_->bind_address).c_str());
         task.success_ = false;
         task.state_ = Task::Finishing;
@@ -363,7 +364,7 @@ void EventLoop::task_add_udp_sender_(Task& task) {
     task.port_ = sp;
 
     if (!sp->open()) {
-        roc_log(LogError, "event loop: can't add port %s: can't start sender",
+        roc_log(LogError, "network loop: can't add port %s: can't start sender",
                 address::socket_addr_to_str(task.sender_config_->bind_address).c_str());
         task.success_ = false;
         if (!async_close_port_(*sp)) {
@@ -386,8 +387,8 @@ void EventLoop::task_add_udp_sender_(Task& task) {
     task.state_ = Task::Finishing;
 }
 
-void EventLoop::task_remove_port_(Task& task) {
-    roc_log(LogDebug, "event loop: removing port %s",
+void NetworkLoop::task_remove_port_(Task& task) {
+    roc_log(LogDebug, "network loop: removing port %s",
             address::socket_addr_to_str(task.port_->address()).c_str());
 
     open_ports_.remove(*task.port_);
@@ -402,7 +403,7 @@ void EventLoop::task_remove_port_(Task& task) {
     }
 }
 
-void EventLoop::task_resolve_endpoint_address_(Task& task) {
+void NetworkLoop::task_resolve_endpoint_address_(Task& task) {
     if (!resolver_.async_resolve(task.resolve_req_)) {
         task.success_ = task.resolve_req_.success;
         task.state_ = Task::Finishing;
@@ -412,7 +413,7 @@ void EventLoop::task_resolve_endpoint_address_(Task& task) {
     task.state_ = Task::Pending;
 }
 
-bool EventLoop::async_close_port_(BasicPort& port) {
+bool NetworkLoop::async_close_port_(BasicPort& port) {
     if (!port.async_close()) {
         return false;
     }
@@ -421,7 +422,7 @@ bool EventLoop::async_close_port_(BasicPort& port) {
     return true;
 }
 
-void EventLoop::finish_closing_tasks_(const BasicPort& port) {
+void NetworkLoop::finish_closing_tasks_(const BasicPort& port) {
     Task* task = closing_tasks_.front();
 
     while (task) {
@@ -436,7 +437,7 @@ void EventLoop::finish_closing_tasks_(const BasicPort& port) {
     }
 }
 
-void EventLoop::finish_task_(Task& task) {
+void NetworkLoop::finish_task_(Task& task) {
     const bool is_async = task.callback_; // gather before setting state to Finished
 
     task.state_ = Task::Finished;
@@ -451,7 +452,7 @@ void EventLoop::finish_task_(Task& task) {
     // (either in callback or after enqueue_and_wait() unblocks and returns)
 }
 
-void EventLoop::update_num_ports_() {
+void NetworkLoop::update_num_ports_() {
     num_open_ports_ = (long)open_ports_.size();
 }
 

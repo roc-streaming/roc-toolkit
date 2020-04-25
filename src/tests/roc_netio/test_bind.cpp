@@ -11,7 +11,7 @@
 #include "roc_address/socket_addr.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/heap_allocator.h"
-#include "roc_netio/event_loop.h"
+#include "roc_netio/network_loop.h"
 #include "roc_packet/concurrent_queue.h"
 #include "roc_packet/packet_pool.h"
 
@@ -40,12 +40,12 @@ UdpReceiverConfig make_receiver_config(const char* ip, int port) {
     return config;
 }
 
-EventLoop::PortHandle add_udp_receiver(EventLoop& event_loop,
-                                       UdpReceiverConfig& config,
-                                       packet::IWriter& writer) {
-    EventLoop::Tasks::AddUdpReceiverPort task(config, writer);
+NetworkLoop::PortHandle add_udp_receiver(NetworkLoop& net_loop,
+                                         UdpReceiverConfig& config,
+                                         packet::IWriter& writer) {
+    NetworkLoop::Tasks::AddUdpReceiverPort task(config, writer);
     CHECK(!task.success());
-    if (!event_loop.enqueue_and_wait(task)) {
+    if (!net_loop.schedule_and_wait(task)) {
         CHECK(!task.success());
         return NULL;
     }
@@ -53,10 +53,10 @@ EventLoop::PortHandle add_udp_receiver(EventLoop& event_loop,
     return task.get_handle();
 }
 
-EventLoop::PortHandle add_udp_sender(EventLoop& event_loop, UdpSenderConfig& config) {
-    EventLoop::Tasks::AddUdpSenderPort task(config);
+NetworkLoop::PortHandle add_udp_sender(NetworkLoop& net_loop, UdpSenderConfig& config) {
+    NetworkLoop::Tasks::AddUdpSenderPort task(config);
     CHECK(!task.success());
-    if (!event_loop.enqueue_and_wait(task)) {
+    if (!net_loop.schedule_and_wait(task)) {
         CHECK(!task.success());
         return NULL;
     }
@@ -64,10 +64,10 @@ EventLoop::PortHandle add_udp_sender(EventLoop& event_loop, UdpSenderConfig& con
     return task.get_handle();
 }
 
-void remove_port(EventLoop& event_loop, EventLoop::PortHandle handle) {
-    EventLoop::Tasks::RemovePort task(handle);
+void remove_port(NetworkLoop& net_loop, NetworkLoop::PortHandle handle) {
+    NetworkLoop::Tasks::RemovePort task(handle);
     CHECK(!task.success());
-    CHECK(event_loop.enqueue_and_wait(task));
+    CHECK(net_loop.schedule_and_wait(task));
     CHECK(task.success());
 }
 
@@ -78,79 +78,79 @@ TEST_GROUP(bind) {};
 TEST(bind, any) {
     packet::ConcurrentQueue queue;
 
-    EventLoop event_loop(packet_pool, buffer_pool, allocator);
-    CHECK(event_loop.valid());
+    NetworkLoop net_loop(packet_pool, buffer_pool, allocator);
+    CHECK(net_loop.valid());
 
     UdpSenderConfig tx_config = make_sender_config("0.0.0.0", 0);
     UdpReceiverConfig rx_config = make_receiver_config("0.0.0.0", 0);
 
-    EventLoop::PortHandle tx_handle = add_udp_sender(event_loop, tx_config);
+    NetworkLoop::PortHandle tx_handle = add_udp_sender(net_loop, tx_config);
     CHECK(tx_handle);
     CHECK(tx_config.bind_address.port() != 0);
 
-    EventLoop::PortHandle rx_handle = add_udp_receiver(event_loop, rx_config, queue);
+    NetworkLoop::PortHandle rx_handle = add_udp_receiver(net_loop, rx_config, queue);
     CHECK(rx_handle);
     CHECK(rx_config.bind_address.port() != 0);
 
-    remove_port(event_loop, tx_handle);
-    remove_port(event_loop, rx_handle);
+    remove_port(net_loop, tx_handle);
+    remove_port(net_loop, rx_handle);
 }
 
 TEST(bind, localhost) {
     packet::ConcurrentQueue queue;
 
-    EventLoop event_loop(packet_pool, buffer_pool, allocator);
-    CHECK(event_loop.valid());
+    NetworkLoop net_loop(packet_pool, buffer_pool, allocator);
+    CHECK(net_loop.valid());
 
     UdpSenderConfig tx_config = make_sender_config("127.0.0.1", 0);
     UdpReceiverConfig rx_config = make_receiver_config("127.0.0.1", 0);
 
-    EventLoop::PortHandle tx_handle = add_udp_sender(event_loop, tx_config);
+    NetworkLoop::PortHandle tx_handle = add_udp_sender(net_loop, tx_config);
     CHECK(tx_handle);
     CHECK(tx_config.bind_address.port() != 0);
 
-    EventLoop::PortHandle rx_handle = add_udp_receiver(event_loop, rx_config, queue);
+    NetworkLoop::PortHandle rx_handle = add_udp_receiver(net_loop, rx_config, queue);
     CHECK(rx_handle);
     CHECK(rx_config.bind_address.port() != 0);
 
-    remove_port(event_loop, tx_handle);
-    remove_port(event_loop, rx_handle);
+    remove_port(net_loop, tx_handle);
+    remove_port(net_loop, rx_handle);
 }
 
 TEST(bind, addrinuse) {
     packet::ConcurrentQueue queue;
 
-    EventLoop event_loop1(packet_pool, buffer_pool, allocator);
-    CHECK(event_loop1.valid());
+    NetworkLoop net_loop1(packet_pool, buffer_pool, allocator);
+    CHECK(net_loop1.valid());
 
     UdpSenderConfig tx_config = make_sender_config("127.0.0.1", 0);
     UdpReceiverConfig rx_config = make_receiver_config("127.0.0.1", 0);
 
-    EventLoop::PortHandle tx_handle = add_udp_sender(event_loop1, tx_config);
+    NetworkLoop::PortHandle tx_handle = add_udp_sender(net_loop1, tx_config);
     CHECK(tx_handle);
     CHECK(tx_config.bind_address.port() != 0);
 
-    EventLoop::PortHandle rx_handle = add_udp_receiver(event_loop1, rx_config, queue);
+    NetworkLoop::PortHandle rx_handle = add_udp_receiver(net_loop1, rx_config, queue);
     CHECK(rx_handle);
     CHECK(rx_config.bind_address.port() != 0);
 
-    EventLoop event_loop2(packet_pool, buffer_pool, allocator);
-    CHECK(event_loop2.valid());
+    NetworkLoop net_loop2(packet_pool, buffer_pool, allocator);
+    CHECK(net_loop2.valid());
 
-    CHECK(!add_udp_sender(event_loop2, tx_config));
-    CHECK(!add_udp_receiver(event_loop2, rx_config, queue));
+    CHECK(!add_udp_sender(net_loop2, tx_config));
+    CHECK(!add_udp_receiver(net_loop2, rx_config, queue));
 }
 
 TEST(bind, broadcast) {
     packet::ConcurrentQueue queue;
 
-    EventLoop event_loop(packet_pool, buffer_pool, allocator);
-    CHECK(event_loop.valid());
+    NetworkLoop net_loop(packet_pool, buffer_pool, allocator);
+    CHECK(net_loop.valid());
 
     UdpSenderConfig tx_config = make_sender_config("127.0.0.1", 0);
     tx_config.broadcast_enabled = true;
 
-    EventLoop::PortHandle tx_handle = add_udp_sender(event_loop, tx_config);
+    NetworkLoop::PortHandle tx_handle = add_udp_sender(net_loop, tx_config);
     CHECK(tx_handle);
     CHECK(tx_config.bind_address.port() != 0);
 }
@@ -158,46 +158,46 @@ TEST(bind, broadcast) {
 TEST(bind, multicast) {
     packet::ConcurrentQueue queue;
 
-    EventLoop event_loop(packet_pool, buffer_pool, allocator);
-    CHECK(event_loop.valid());
+    NetworkLoop net_loop(packet_pool, buffer_pool, allocator);
+    CHECK(net_loop.valid());
 
     { // miface empty
         UdpReceiverConfig rx_config = make_receiver_config("224.0.0.1", 0);
         strcpy(rx_config.multicast_interface, "");
 
-        CHECK(add_udp_receiver(event_loop, rx_config, queue));
+        CHECK(add_udp_receiver(net_loop, rx_config, queue));
     }
     { // miface 0.0.0.0
         UdpReceiverConfig rx_config = make_receiver_config("224.0.0.1", 0);
         strcpy(rx_config.multicast_interface, "0.0.0.0");
 
-        CHECK(add_udp_receiver(event_loop, rx_config, queue));
+        CHECK(add_udp_receiver(net_loop, rx_config, queue));
     }
 }
 
 TEST(bind, multicast_error) {
     packet::ConcurrentQueue queue;
 
-    EventLoop event_loop(packet_pool, buffer_pool, allocator);
-    CHECK(event_loop.valid());
+    NetworkLoop net_loop(packet_pool, buffer_pool, allocator);
+    CHECK(net_loop.valid());
 
     { // non-multicast address
         UdpReceiverConfig rx_config = make_receiver_config("127.0.0.1", 0);
         strcpy(rx_config.multicast_interface, "0.0.0.0");
 
-        CHECK(!add_udp_receiver(event_loop, rx_config, queue));
+        CHECK(!add_udp_receiver(net_loop, rx_config, queue));
     }
     { // ipv6 miface for ipv4 addr
         UdpReceiverConfig rx_config = make_receiver_config("224.0.0.1", 0);
         strcpy(rx_config.multicast_interface, "::");
 
-        CHECK(!add_udp_receiver(event_loop, rx_config, queue));
+        CHECK(!add_udp_receiver(net_loop, rx_config, queue));
     }
     { // ipv4 miface for ipv6 addr
         UdpReceiverConfig rx_config = make_receiver_config("::1", 0);
         strcpy(rx_config.multicast_interface, "0.0.0.0");
 
-        CHECK(!add_udp_receiver(event_loop, rx_config, queue));
+        CHECK(!add_udp_receiver(net_loop, rx_config, queue));
     }
 }
 
