@@ -17,6 +17,7 @@
 #include "roc_core/mutex.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/panic.h"
+#include "roc_core/time.h"
 
 namespace roc {
 namespace core {
@@ -40,6 +41,22 @@ public:
     //! Wait.
     void wait() const {
         uv_cond_wait(&cond_, &mutex_);
+    }
+
+    //! Wait with timeout.
+    //! @returns false if timeout expired.
+    bool timed_wait(nanoseconds_t timeout) const {
+        const int err = uv_cond_timedwait(&cond_, &mutex_, (uint64_t)timeout);
+        if (err != 0 && err != UV_ETIMEDOUT) {
+            roc_panic("cond: uv_cond_timedwait(): [%s] %s", uv_err_name(err),
+                      uv_strerror(err));
+        }
+        return (err == 0);
+    }
+
+    //! Wake up one pending waits.
+    void signal() const {
+        uv_cond_signal(&cond_);
     }
 
     //! Wake up all pending waits.
