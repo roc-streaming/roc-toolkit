@@ -13,7 +13,7 @@
 #include "roc_core/cond.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_core/mutex.h"
-#include "roc_netio/event_loop.h"
+#include "roc_netio/network_loop.h"
 #include "roc_packet/concurrent_queue.h"
 #include "roc_packet/packet_pool.h"
 
@@ -40,13 +40,13 @@ core::Cond cb_cond(cb_mutex);
 bool cb_invoked;
 
 void* recorded_cb_arg;
-EventLoop::Task* recorded_task;
+NetworkLoop::Task* recorded_task;
 
-void recording_callback(void* cb_arg, EventLoop::Task& task) {
+void recording_callback(void* cb_arg, NetworkLoop::Task& task) {
     CHECK(cb_arg);
 
     CHECK(task.success());
-    CHECK(((EventLoop::Tasks::AddUdpReceiverPort&)task).get_handle());
+    CHECK(((NetworkLoop::Tasks::AddUdpReceiverPort&)task).get_handle());
 
     core::Mutex::Lock lock(cb_mutex);
 
@@ -57,11 +57,11 @@ void recording_callback(void* cb_arg, EventLoop::Task& task) {
     cb_cond.broadcast();
 }
 
-void removed_callback(void* cb_arg, EventLoop::Task& task) {
-    EventLoop& event_loop = *(EventLoop*)cb_arg;
-    UNSIGNED_LONGS_EQUAL(0, event_loop.num_ports());
+void removed_callback(void* cb_arg, NetworkLoop::Task& task) {
+    NetworkLoop& net_loop = *(NetworkLoop*)cb_arg;
+    UNSIGNED_LONGS_EQUAL(0, net_loop.num_ports());
 
-    EventLoop::Tasks::RemovePort* remove_task = (EventLoop::Tasks::RemovePort*)&task;
+    NetworkLoop::Tasks::RemovePort* remove_task = (NetworkLoop::Tasks::RemovePort*)&task;
 
     delete remove_task;
 
@@ -71,20 +71,20 @@ void removed_callback(void* cb_arg, EventLoop::Task& task) {
     cb_cond.broadcast();
 }
 
-void added_callback(void* cb_arg, EventLoop::Task& task) {
-    EventLoop& event_loop = *(EventLoop*)cb_arg;
-    UNSIGNED_LONGS_EQUAL(1, event_loop.num_ports());
+void added_callback(void* cb_arg, NetworkLoop::Task& task) {
+    NetworkLoop& net_loop = *(NetworkLoop*)cb_arg;
+    UNSIGNED_LONGS_EQUAL(1, net_loop.num_ports());
 
-    EventLoop::Tasks::AddUdpReceiverPort& add_task =
-        (EventLoop::Tasks::AddUdpReceiverPort&)task;
+    NetworkLoop::Tasks::AddUdpReceiverPort& add_task =
+        (NetworkLoop::Tasks::AddUdpReceiverPort&)task;
 
     CHECK(add_task.success());
     CHECK(add_task.get_handle());
 
-    EventLoop::Tasks::RemovePort* remove_task =
-        new EventLoop::Tasks::RemovePort(add_task.get_handle());
+    NetworkLoop::Tasks::RemovePort* remove_task =
+        new NetworkLoop::Tasks::RemovePort(add_task.get_handle());
 
-    event_loop.enqueue(*remove_task, removed_callback, &event_loop);
+    net_loop.schedule(*remove_task, removed_callback, &net_loop);
 }
 
 } // namespace
@@ -92,32 +92,32 @@ void added_callback(void* cb_arg, EventLoop::Task& task) {
 TEST_GROUP(tasks) {};
 
 TEST(tasks, synchronous_add) {
-    EventLoop event_loop(packet_pool, buffer_pool, allocator);
-    CHECK(event_loop.valid());
+    NetworkLoop net_loop(packet_pool, buffer_pool, allocator);
+    CHECK(net_loop.valid());
 
     UdpReceiverConfig config = make_receiver_config("127.0.0.1", 0);
     packet::ConcurrentQueue queue;
 
-    EventLoop::Tasks::AddUdpReceiverPort task(config, queue);
+    NetworkLoop::Tasks::AddUdpReceiverPort task(config, queue);
 
     CHECK(!task.success());
     CHECK(!task.get_handle());
 
-    CHECK(event_loop.enqueue_and_wait(task));
+    CHECK(net_loop.schedule_and_wait(task));
 
     CHECK(task.success());
     CHECK(task.get_handle());
 }
 
 TEST(tasks, asynchronous_add) {
-    EventLoop event_loop(packet_pool, buffer_pool, allocator);
-    CHECK(event_loop.valid());
+    NetworkLoop net_loop(packet_pool, buffer_pool, allocator);
+    CHECK(net_loop.valid());
 
     UdpReceiverConfig config = make_receiver_config("127.0.0.1", 0);
     packet::ConcurrentQueue queue;
     char cb_arg;
 
-    EventLoop::Tasks::AddUdpReceiverPort task(config, queue);
+    NetworkLoop::Tasks::AddUdpReceiverPort task(config, queue);
 
     CHECK(!task.success());
     CHECK(!task.get_handle());
@@ -130,7 +130,7 @@ TEST(tasks, asynchronous_add) {
     {
         core::Mutex::Lock lock(cb_mutex);
 
-        event_loop.enqueue(task, recording_callback, &cb_arg);
+        net_loop.schedule(task, recording_callback, &cb_arg);
 
         while (!cb_invoked) {
             cb_cond.wait();
@@ -145,29 +145,29 @@ TEST(tasks, asynchronous_add) {
 }
 
 TEST(tasks, asynchronous_add_remove) {
-    EventLoop event_loop(packet_pool, buffer_pool, allocator);
-    CHECK(event_loop.valid());
+    NetworkLoop net_loop(packet_pool, buffer_pool, allocator);
+    CHECK(net_loop.valid());
 
     UdpReceiverConfig config = make_receiver_config("127.0.0.1", 0);
     packet::ConcurrentQueue queue;
 
-    EventLoop::Tasks::AddUdpReceiverPort task(config, queue);
+    NetworkLoop::Tasks::AddUdpReceiverPort task(config, queue);
 
     cb_invoked = false;
 
-    UNSIGNED_LONGS_EQUAL(0, event_loop.num_ports());
+    UNSIGNED_LONGS_EQUAL(0, net_loop.num_ports());
 
     {
         core::Mutex::Lock lock(cb_mutex);
 
-        event_loop.enqueue(task, added_callback, &event_loop);
+        net_loop.schedule(task, added_callback, &net_loop);
 
         while (!cb_invoked) {
             cb_cond.wait();
         }
     }
 
-    UNSIGNED_LONGS_EQUAL(0, event_loop.num_ports());
+    UNSIGNED_LONGS_EQUAL(0, net_loop.num_ports());
 }
 
 } // namespace netio

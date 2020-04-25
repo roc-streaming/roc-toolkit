@@ -60,7 +60,7 @@ private:
     struct InterfacePort {
         netio::UdpSenderConfig config;
         netio::UdpSenderConfig orig_config;
-        netio::EventLoop::PortHandle handle;
+        netio::NetworkLoop::PortHandle handle;
         packet::IWriter* writer;
         bool squashing_enabled;
 

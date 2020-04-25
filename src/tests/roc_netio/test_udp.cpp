@@ -11,7 +11,7 @@
 #include "roc_address/socket_addr.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/heap_allocator.h"
-#include "roc_netio/event_loop.h"
+#include "roc_netio/network_loop.h"
 #include "roc_packet/concurrent_queue.h"
 #include "roc_packet/packet_pool.h"
 
@@ -38,21 +38,21 @@ UdpReceiverConfig make_receiver_config() {
     return config;
 }
 
-EventLoop::PortHandle add_udp_receiver(EventLoop& event_loop,
+NetworkLoop::PortHandle add_udp_receiver(NetworkLoop& net_loop,
                                        UdpReceiverConfig& config,
                                        packet::IWriter& writer) {
-    EventLoop::Tasks::AddUdpReceiverPort task(config, writer);
+    NetworkLoop::Tasks::AddUdpReceiverPort task(config, writer);
     CHECK(!task.success());
-    CHECK(event_loop.enqueue_and_wait(task));
+    CHECK(net_loop.schedule_and_wait(task));
     CHECK(task.success());
     return task.get_handle();
 }
 
-EventLoop::PortHandle
-add_udp_sender(EventLoop& event_loop, UdpSenderConfig& config, packet::IWriter** writer) {
-    EventLoop::Tasks::AddUdpSenderPort task(config);
+NetworkLoop::PortHandle
+add_udp_sender(NetworkLoop& net_loop, UdpSenderConfig& config, packet::IWriter** writer) {
+    NetworkLoop::Tasks::AddUdpSenderPort task(config);
     CHECK(!task.success());
-    CHECK(event_loop.enqueue_and_wait(task));
+    CHECK(net_loop.schedule_and_wait(task));
     CHECK(task.success());
     *writer = task.get_writer();
     return task.get_handle();
@@ -139,14 +139,14 @@ TEST(udp, one_sender_one_receiver_single_thread) {
     UdpSenderConfig tx_config = make_sender_config();
     UdpReceiverConfig rx_config = make_receiver_config();
 
-    EventLoop event_loop(packet_pool, buffer_pool, allocator);
-    CHECK(event_loop.valid());
+    NetworkLoop net_loop(packet_pool, buffer_pool, allocator);
+    CHECK(net_loop.valid());
 
     packet::IWriter* tx_writer = NULL;
-    CHECK(add_udp_sender(event_loop, tx_config, &tx_writer));
+    CHECK(add_udp_sender(net_loop, tx_config, &tx_writer));
     CHECK(tx_writer);
 
-    CHECK(add_udp_receiver(event_loop, rx_config, rx_queue));
+    CHECK(add_udp_receiver(net_loop, rx_config, rx_queue));
 
     for (int i = 0; i < NumIterations; i++) {
         for (int p = 0; p < NumPackets; p++) {
@@ -164,14 +164,14 @@ TEST(udp, one_sender_one_receiver_separate_threads) {
     UdpSenderConfig tx_config = make_sender_config();
     UdpReceiverConfig rx_config = make_receiver_config();
 
-    EventLoop tx_loop(packet_pool, buffer_pool, allocator);
+    NetworkLoop tx_loop(packet_pool, buffer_pool, allocator);
     CHECK(tx_loop.valid());
 
     packet::IWriter* tx_writer = NULL;
     CHECK(add_udp_sender(tx_loop, tx_config, &tx_writer));
     CHECK(tx_writer);
 
-    EventLoop rx_loop(packet_pool, buffer_pool, allocator);
+    NetworkLoop rx_loop(packet_pool, buffer_pool, allocator);
     CHECK(rx_loop.valid());
     CHECK(add_udp_receiver(rx_loop, rx_config, rx_queue));
 
@@ -196,18 +196,18 @@ TEST(udp, one_sender_multiple_receivers) {
     UdpReceiverConfig rx_config2 = make_receiver_config();
     UdpReceiverConfig rx_config3 = make_receiver_config();
 
-    EventLoop tx_loop(packet_pool, buffer_pool, allocator);
+    NetworkLoop tx_loop(packet_pool, buffer_pool, allocator);
     CHECK(tx_loop.valid());
 
     packet::IWriter* tx_writer = NULL;
     CHECK(add_udp_sender(tx_loop, tx_config, &tx_writer));
     CHECK(tx_writer);
 
-    EventLoop rx1_loop(packet_pool, buffer_pool, allocator);
+    NetworkLoop rx1_loop(packet_pool, buffer_pool, allocator);
     CHECK(rx1_loop.valid());
     CHECK(add_udp_receiver(rx1_loop, rx_config1, rx_queue1));
 
-    EventLoop rx23_loop(packet_pool, buffer_pool, allocator);
+    NetworkLoop rx23_loop(packet_pool, buffer_pool, allocator);
     CHECK(rx23_loop.valid());
     CHECK(add_udp_receiver(rx23_loop, rx_config2, rx_queue2));
     CHECK(add_udp_receiver(rx23_loop, rx_config3, rx_queue3));
@@ -235,14 +235,14 @@ TEST(udp, multiple_senders_one_receiver) {
 
     UdpReceiverConfig rx_config = make_receiver_config();
 
-    EventLoop tx1_loop(packet_pool, buffer_pool, allocator);
+    NetworkLoop tx1_loop(packet_pool, buffer_pool, allocator);
     CHECK(tx1_loop.valid());
 
     packet::IWriter* tx_writer1 = NULL;
     CHECK(add_udp_sender(tx1_loop, tx_config1, &tx_writer1));
     CHECK(tx_writer1);
 
-    EventLoop tx23_loop(packet_pool, buffer_pool, allocator);
+    NetworkLoop tx23_loop(packet_pool, buffer_pool, allocator);
     CHECK(tx23_loop.valid());
 
     packet::IWriter* tx_writer2 = NULL;
@@ -253,7 +253,7 @@ TEST(udp, multiple_senders_one_receiver) {
     CHECK(add_udp_sender(tx23_loop, tx_config3, &tx_writer3));
     CHECK(tx_writer3);
 
-    EventLoop rx_loop(packet_pool, buffer_pool, allocator);
+    NetworkLoop rx_loop(packet_pool, buffer_pool, allocator);
     CHECK(rx_loop.valid());
     CHECK(add_udp_receiver(rx_loop, rx_config, rx_queue));
 

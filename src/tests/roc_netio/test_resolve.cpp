@@ -11,7 +11,7 @@
 #include "roc_address/socket_addr_to_str.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/heap_allocator.h"
-#include "roc_netio/event_loop.h"
+#include "roc_netio/network_loop.h"
 #include "roc_packet/packet_pool.h"
 
 namespace roc {
@@ -25,12 +25,12 @@ core::HeapAllocator allocator;
 core::BufferPool<uint8_t> buffer_pool(allocator, MaxBufSize, true);
 packet::PacketPool packet_pool(allocator, true);
 
-bool resolve_endpoint_address(EventLoop& event_loop,
+bool resolve_endpoint_address(NetworkLoop& net_loop,
                               const address::EndpointURI& endpoint_uri,
                               address::SocketAddr& result_address) {
-    EventLoop::Tasks::ResolveEndpointAddress task(endpoint_uri);
+    NetworkLoop::Tasks::ResolveEndpointAddress task(endpoint_uri);
     CHECK(!task.success());
-    if (!event_loop.enqueue_and_wait(task)) {
+    if (!net_loop.schedule_and_wait(task)) {
         CHECK(!task.success());
         return false;
     }
@@ -44,45 +44,45 @@ bool resolve_endpoint_address(EventLoop& event_loop,
 TEST_GROUP(resolve) {};
 
 TEST(resolve, ipv4) {
-    EventLoop event_loop(packet_pool, buffer_pool, allocator);
-    CHECK(event_loop.valid());
+    NetworkLoop net_loop(packet_pool, buffer_pool, allocator);
+    CHECK(net_loop.valid());
 
     address::EndpointURI endpoint_uri(allocator);
     CHECK(address::parse_endpoint_uri("rtp://127.0.0.1:123",
                                       address::EndpointURI::Subset_Full, endpoint_uri));
 
     address::SocketAddr address;
-    CHECK(resolve_endpoint_address(event_loop, endpoint_uri, address));
+    CHECK(resolve_endpoint_address(net_loop, endpoint_uri, address));
 
     LONGS_EQUAL(address::Family_IPv4, address.family());
     STRCMP_EQUAL("127.0.0.1:123", address::socket_addr_to_str(address).c_str());
 }
 
 TEST(resolve, ipv6) {
-    EventLoop event_loop(packet_pool, buffer_pool, allocator);
-    CHECK(event_loop.valid());
+    NetworkLoop net_loop(packet_pool, buffer_pool, allocator);
+    CHECK(net_loop.valid());
 
     address::EndpointURI endpoint_uri(allocator);
     CHECK(address::parse_endpoint_uri("rtp://[::1]:123",
                                       address::EndpointURI::Subset_Full, endpoint_uri));
 
     address::SocketAddr address;
-    CHECK(resolve_endpoint_address(event_loop, endpoint_uri, address));
+    CHECK(resolve_endpoint_address(net_loop, endpoint_uri, address));
 
     LONGS_EQUAL(address::Family_IPv6, address.family());
     STRCMP_EQUAL("[::1]:123", address::socket_addr_to_str(address).c_str());
 }
 
 TEST(resolve, hostname) {
-    EventLoop event_loop(packet_pool, buffer_pool, allocator);
-    CHECK(event_loop.valid());
+    NetworkLoop net_loop(packet_pool, buffer_pool, allocator);
+    CHECK(net_loop.valid());
 
     address::EndpointURI endpoint_uri(allocator);
     CHECK(address::parse_endpoint_uri("rtp://localhost:123",
                                       address::EndpointURI::Subset_Full, endpoint_uri));
 
     address::SocketAddr address;
-    CHECK(resolve_endpoint_address(event_loop, endpoint_uri, address));
+    CHECK(resolve_endpoint_address(net_loop, endpoint_uri, address));
 
     CHECK(address.family() == address::Family_IPv4
           || address.family() == address::Family_IPv6);
@@ -95,22 +95,22 @@ TEST(resolve, hostname) {
 }
 
 TEST(resolve, standard_port) {
-    EventLoop event_loop(packet_pool, buffer_pool, allocator);
-    CHECK(event_loop.valid());
+    NetworkLoop net_loop(packet_pool, buffer_pool, allocator);
+    CHECK(net_loop.valid());
 
     address::EndpointURI endpoint_uri(allocator);
     CHECK(address::parse_endpoint_uri("rtsp://127.0.0.1",
                                       address::EndpointURI::Subset_Full, endpoint_uri));
 
     address::SocketAddr address;
-    CHECK(resolve_endpoint_address(event_loop, endpoint_uri, address));
+    CHECK(resolve_endpoint_address(net_loop, endpoint_uri, address));
 
     STRCMP_EQUAL("127.0.0.1:554", address::socket_addr_to_str(address).c_str());
 }
 
 TEST(resolve, bad_host) {
-    EventLoop event_loop(packet_pool, buffer_pool, allocator);
-    CHECK(event_loop.valid());
+    NetworkLoop net_loop(packet_pool, buffer_pool, allocator);
+    CHECK(net_loop.valid());
 
     { // bad ipv4
         address::EndpointURI endpoint_uri(allocator);
@@ -118,7 +118,7 @@ TEST(resolve, bad_host) {
             "rtp://300.0.0.1:123", address::EndpointURI::Subset_Full, endpoint_uri));
 
         address::SocketAddr address;
-        CHECK(!resolve_endpoint_address(event_loop, endpoint_uri, address));
+        CHECK(!resolve_endpoint_address(net_loop, endpoint_uri, address));
     }
     { // bad ipv6
         address::EndpointURI endpoint_uri(allocator);
@@ -126,7 +126,7 @@ TEST(resolve, bad_host) {
             "rtp://[11::22::]:123", address::EndpointURI::Subset_Full, endpoint_uri));
 
         address::SocketAddr address;
-        CHECK(!resolve_endpoint_address(event_loop, endpoint_uri, address));
+        CHECK(!resolve_endpoint_address(net_loop, endpoint_uri, address));
     }
     { // bad hostname
         address::EndpointURI endpoint_uri(allocator);
@@ -134,7 +134,7 @@ TEST(resolve, bad_host) {
             "rtp://_:123", address::EndpointURI::Subset_Full, endpoint_uri));
 
         address::SocketAddr address;
-        CHECK(!resolve_endpoint_address(event_loop, endpoint_uri, address));
+        CHECK(!resolve_endpoint_address(net_loop, endpoint_uri, address));
     }
 }
 
