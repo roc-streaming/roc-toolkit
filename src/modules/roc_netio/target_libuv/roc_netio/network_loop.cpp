@@ -24,8 +24,7 @@ NetworkLoop::Task::Task()
     , port_writer_(NULL)
     , sender_config_(NULL)
     , receiver_config_(NULL)
-    , callback_(NULL)
-    , callback_arg_(NULL) {
+    , handler_(NULL) {
 }
 
 NetworkLoop::Task::~Task() {
@@ -91,6 +90,9 @@ NetworkLoop::Tasks::ResolveEndpointAddress::ResolveEndpointAddress(
 const address::SocketAddr&
 NetworkLoop::Tasks::ResolveEndpointAddress::get_address() const {
     return resolve_req_.resolved_address;
+}
+
+NetworkLoop::ICompletionHandler::~ICompletionHandler() {
 }
 
 NetworkLoop::NetworkLoop(packet::PacketPool& packet_pool,
@@ -173,7 +175,7 @@ size_t NetworkLoop::num_ports() const {
     return (size_t)num_open_ports_;
 }
 
-void NetworkLoop::schedule(Task& task, void (*cb)(void* cb_arg, Task&), void* cb_arg) {
+void NetworkLoop::schedule(Task& task, ICompletionHandler& handler) {
     core::Mutex::Lock lock(task_mutex_);
 
     if (!valid()) {
@@ -184,9 +186,7 @@ void NetworkLoop::schedule(Task& task, void (*cb)(void* cb_arg, Task&), void* cb
         roc_panic("network loop: can't use the same task multiple times");
     }
 
-    task.callback_ = cb;
-    task.callback_arg_ = cb_arg;
-
+    task.handler_ = &handler;
     task.state_ = Task::Pending;
 
     pending_tasks_.push_back(task);
@@ -438,18 +438,18 @@ void NetworkLoop::finish_closing_tasks_(const BasicPort& port) {
 }
 
 void NetworkLoop::finish_task_(Task& task) {
-    const bool is_async = task.callback_; // gather before setting state to Finished
+    ICompletionHandler* handler = task.handler_;
 
     task.state_ = Task::Finished;
 
-    if (is_async) {
-        task.callback_(task.callback_arg_, task);
+    // if handler is NULL, task may be already destroyed
+
+    if (handler) {
+        handler->network_task_finished(task);
+        // task may be already destroyed
     } else {
         task_cond_.broadcast();
     }
-
-    // at this point the task may be already destroyed
-    // (either in callback or after enqueue_and_wait() unblocks and returns)
 }
 
 void NetworkLoop::update_num_ports_() {
