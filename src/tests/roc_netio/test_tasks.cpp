@@ -34,58 +34,98 @@ UdpReceiverConfig make_receiver_config(const char* ip, int port) {
     return config;
 }
 
-core::Mutex cb_mutex;
-core::Cond cb_cond(cb_mutex);
+class RecordingHandler : public NetworkLoop::ICompletionHandler {
+public:
+    RecordingHandler()
+        : cond_(mutex_)
+        , task_(NULL) {
+    }
 
-bool cb_invoked;
+    virtual void network_task_finished(NetworkLoop::Task& task) {
+        core::Mutex::Lock lock(mutex_);
+        task_ = &task;
+        cond_.broadcast();
+    }
 
-void* recorded_cb_arg;
-NetworkLoop::Task* recorded_task;
+    NetworkLoop::Task* wait_task() {
+        core::Mutex::Lock lock(mutex_);
+        while (!task_) {
+            cond_.wait();
+        }
+        return task_;
+    }
 
-void recording_callback(void* cb_arg, NetworkLoop::Task& task) {
-    CHECK(cb_arg);
+private:
+    core::Mutex mutex_;
+    core::Cond cond_;
+    NetworkLoop::Task* task_;
+};
 
-    CHECK(task.success());
-    CHECK(((NetworkLoop::Tasks::AddUdpReceiverPort&)task).get_handle());
+class AddRemoveHandler : public NetworkLoop::ICompletionHandler {
+public:
+    AddRemoveHandler(NetworkLoop& net_loop)
+        : net_loop_(net_loop)
+        , cond_(mutex_)
+        , add_task_(NULL)
+        , remove_task_(NULL) {
+    }
 
-    core::Mutex::Lock lock(cb_mutex);
+    ~AddRemoveHandler() {
+        delete add_task_;
+        delete remove_task_;
+    }
 
-    recorded_cb_arg = cb_arg;
-    recorded_task = &task;
+    void start(UdpReceiverConfig& config, packet::IWriter& writer) {
+        core::Mutex::Lock lock(mutex_);
 
-    cb_invoked = true;
-    cb_cond.broadcast();
-}
+        add_task_ = new NetworkLoop::Tasks::AddUdpReceiverPort(config, writer);
+        net_loop_.schedule(*add_task_, *this);
+    }
 
-void removed_callback(void* cb_arg, NetworkLoop::Task& task) {
-    NetworkLoop& net_loop = *(NetworkLoop*)cb_arg;
-    UNSIGNED_LONGS_EQUAL(0, net_loop.num_ports());
+    void wait() {
+        core::Mutex::Lock lock(mutex_);
 
-    NetworkLoop::Tasks::RemovePort* remove_task = (NetworkLoop::Tasks::RemovePort*)&task;
+        while (!remove_task_ || !remove_task_->success()) {
+            cond_.wait();
+        }
+    }
 
-    delete remove_task;
+    virtual void network_task_finished(NetworkLoop::Task& task) {
+        core::Mutex::Lock lock(mutex_);
 
-    core::Mutex::Lock lock(cb_mutex);
+        if (&task == add_task_) {
+            roc_panic_if_not(net_loop_.num_ports() == 1);
 
-    cb_invoked = true;
-    cb_cond.broadcast();
-}
+            roc_panic_if_not(add_task_->success());
+            roc_panic_if_not(add_task_->get_handle());
 
-void added_callback(void* cb_arg, NetworkLoop::Task& task) {
-    NetworkLoop& net_loop = *(NetworkLoop*)cb_arg;
-    UNSIGNED_LONGS_EQUAL(1, net_loop.num_ports());
+            remove_task_ = new NetworkLoop::Tasks::RemovePort(add_task_->get_handle());
+            net_loop_.schedule(*remove_task_, *this);
 
-    NetworkLoop::Tasks::AddUdpReceiverPort& add_task =
-        (NetworkLoop::Tasks::AddUdpReceiverPort&)task;
+            return;
+        }
 
-    CHECK(add_task.success());
-    CHECK(add_task.get_handle());
+        if (&task == remove_task_) {
+            roc_panic_if_not(net_loop_.num_ports() == 0);
 
-    NetworkLoop::Tasks::RemovePort* remove_task =
-        new NetworkLoop::Tasks::RemovePort(add_task.get_handle());
+            roc_panic_if_not(remove_task_->success());
+            cond_.signal();
 
-    net_loop.schedule(*remove_task, removed_callback, &net_loop);
-}
+            return;
+        }
+
+        roc_panic("unexpected task");
+    }
+
+private:
+    NetworkLoop& net_loop_;
+
+    core::Mutex mutex_;
+    core::Cond cond_;
+
+    NetworkLoop::Tasks::AddUdpReceiverPort* add_task_;
+    NetworkLoop::Tasks::RemovePort* remove_task_;
+};
 
 } // namespace
 
@@ -115,30 +155,17 @@ TEST(tasks, asynchronous_add) {
 
     UdpReceiverConfig config = make_receiver_config("127.0.0.1", 0);
     packet::ConcurrentQueue queue;
-    char cb_arg;
 
     NetworkLoop::Tasks::AddUdpReceiverPort task(config, queue);
 
     CHECK(!task.success());
     CHECK(!task.get_handle());
 
-    recorded_cb_arg = NULL;
-    recorded_task = NULL;
+    RecordingHandler handler;
 
-    cb_invoked = false;
+    net_loop.schedule(task, handler);
 
-    {
-        core::Mutex::Lock lock(cb_mutex);
-
-        net_loop.schedule(task, recording_callback, &cb_arg);
-
-        while (!cb_invoked) {
-            cb_cond.wait();
-        }
-    }
-
-    CHECK(recorded_cb_arg == &cb_arg);
-    CHECK(recorded_task == &task);
+    CHECK(handler.wait_task() == &task);
 
     CHECK(task.success());
     CHECK(task.get_handle());
@@ -151,21 +178,12 @@ TEST(tasks, asynchronous_add_remove) {
     UdpReceiverConfig config = make_receiver_config("127.0.0.1", 0);
     packet::ConcurrentQueue queue;
 
-    NetworkLoop::Tasks::AddUdpReceiverPort task(config, queue);
-
-    cb_invoked = false;
+    AddRemoveHandler handler(net_loop);
 
     UNSIGNED_LONGS_EQUAL(0, net_loop.num_ports());
 
-    {
-        core::Mutex::Lock lock(cb_mutex);
-
-        net_loop.schedule(task, added_callback, &net_loop);
-
-        while (!cb_invoked) {
-            cb_cond.wait();
-        }
-    }
+    handler.start(config, queue);
+    handler.wait();
 
     UNSIGNED_LONGS_EQUAL(0, net_loop.num_ports());
 }
