@@ -15,6 +15,7 @@
 #include "roc_audio/ireader.h"
 #include "roc_audio/mixer.h"
 #include "roc_audio/poison_reader.h"
+#include "roc_audio/profiling_reader.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/list.h"
