@@ -33,7 +33,7 @@ public:
                     core::nanoseconds_t interval);
 
     //! Read audio frame.
-    virtual void read(Frame& frame);
+    virtual bool read(Frame& frame);
 
 private:
     core::nanoseconds_t read_(Frame& frame);

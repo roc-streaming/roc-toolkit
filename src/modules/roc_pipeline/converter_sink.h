@@ -65,8 +65,6 @@ private:
 
     core::ScopedPtr<audio::PoisonWriter> pipeline_poisoner_;
 
-    core::UniquePtr<audio::ProfilingWriter> profiler_;
-
     audio::IWriter* audio_writer_;
 
     const ConverterConfig config_;
