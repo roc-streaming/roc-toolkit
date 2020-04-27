@@ -117,7 +117,7 @@ private:
 
     core::ScopedPtr<audio::Mixer> mixer_;
     core::ScopedPtr<audio::PoisonReader> poisoner_;
-    core::ScopedPtr<audio::ProfilerReader> profiler_;
+    core::ScopedPtr<audio::ProfilingReader> profiler_;
 
     audio::IReader* audio_reader_;
 
