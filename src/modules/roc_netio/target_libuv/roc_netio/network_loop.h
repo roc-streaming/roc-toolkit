@@ -39,7 +39,9 @@ class NetworkLoop : private ICloseHandler,
                     private IResolverRequestHandler,
                     private core::Thread {
 public:
-    //! Opaque receiver port handle.
+    class ICompletionHandler;
+
+    //! Opaque port handle.
     typedef struct PortHandle* PortHandle;
 
     //! Base task class.
@@ -80,8 +82,7 @@ public:
 
         ResolverRequest resolve_req_; //!< For resolve tasks.
 
-        void (*callback_)(void*, Task&); //!< Completion callback.
-        void* callback_arg_;             //!< Completion callback argument.
+        ICompletionHandler* handler_; //!< Completion handler.
     };
 
     //! Subclasses for specific tasks.
@@ -148,6 +149,15 @@ public:
         };
     };
 
+    //! Task completion handler.
+    class ICompletionHandler {
+    public:
+        virtual ~ICompletionHandler();
+
+        //! Called when a task is finished.
+        virtual void network_task_finished(Task&) = 0;
+    };
+
     //! Initialize.
     //! @remarks
     //!  Start background thread if the object was successfully constructed.
@@ -171,7 +181,7 @@ public:
     //! The @p callback will be invoked on event loop thread after the
     //! task completes. The given @p cb_arg is passed to the callback.
     //! The callback should not block the caller.
-    void schedule(Task& task, void (*callback)(void* cb_arg, Task&), void* cb_arg);
+    void schedule(Task& task, ICompletionHandler& handler);
 
     //! Enqueue a task for asynchronous execution and wait for its completion.
     //! The task should not be destroyed until this method returns.
