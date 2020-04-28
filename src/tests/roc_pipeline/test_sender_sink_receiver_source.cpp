@@ -11,6 +11,7 @@
 #include "test_helpers/frame_reader.h"
 #include "test_helpers/frame_writer.h"
 #include "test_helpers/packet_sender.h"
+#include "test_helpers/scheduler.h"
 
 #include "roc_core/buffer_pool.h"
 #include "roc_core/heap_allocator.h"
@@ -92,6 +93,8 @@ TEST_GROUP(sender_sink_receiver_source) {
     }
 
     void send_receive(int flags, size_t num_sessions) {
+        test::Scheduler scheduler;
+
         packet::Queue queue;
 
         address::Protocol source_proto = select_source_proto(flags);
@@ -126,24 +129,39 @@ TEST_GROUP(sender_sink_receiver_source) {
                                                         receiver_repair_addr);
         }
 
-        ReceiverSource receiver(receiver_config(), format_map, packet_pool,
+        ReceiverSource receiver(scheduler, receiver_config(), format_map, packet_pool,
                                 byte_buffer_pool, sample_buffer_pool, allocator);
 
         CHECK(receiver.valid());
 
-        ReceiverSource::EndpointSetHandle receiver_endpoint_set =
-            receiver.add_endpoint_set();
-        CHECK(receiver_endpoint_set);
+        ReceiverSource::EndpointSetHandle receiver_endpoint_set = NULL;
 
-        packet::IWriter* receiver_source_endpoint_writer = receiver.add_endpoint(
-            receiver_endpoint_set, address::Iface_AudioSource, source_proto);
-        CHECK(receiver_source_endpoint_writer);
+        {
+            pipeline::ReceiverSource::Tasks::AddEndpointSet task;
+            CHECK(receiver.schedule_and_wait(task));
+            CHECK(task.success());
+            receiver_endpoint_set = task.get_handle();
+            CHECK(receiver_endpoint_set);
+        }
 
+        packet::IWriter* receiver_source_endpoint_writer = NULL;
         packet::IWriter* receiver_repair_endpoint_writer = NULL;
+
+        {
+            pipeline::ReceiverSource::Tasks::CreateEndpoint task(
+                receiver_endpoint_set, address::Iface_AudioSource, source_proto);
+            CHECK(receiver.schedule_and_wait(task));
+            CHECK(task.success());
+            receiver_source_endpoint_writer = task.get_writer();
+            CHECK(receiver_source_endpoint_writer);
+        }
+
         if (repair_proto != address::Proto_None) {
-            receiver_repair_endpoint_writer =
-                receiver.add_endpoint(receiver_endpoint_set, address::Iface_AudioRepair,
-                                      repair_proto);
+            pipeline::ReceiverSource::Tasks::CreateEndpoint task(
+                receiver_endpoint_set, address::Iface_AudioRepair, repair_proto);
+            CHECK(receiver.schedule_and_wait(task));
+            CHECK(task.success());
+            receiver_repair_endpoint_writer = task.get_writer();
             CHECK(receiver_repair_endpoint_writer);
         }
 
