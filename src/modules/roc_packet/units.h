@@ -87,11 +87,18 @@ static inline size_t num_channels(channel_mask_t ch_mask) {
     return n_ch;
 }
 
-//! Convert frame length to frame size.
-inline size_t ns_to_size(roc::core::nanoseconds_t frame_length,
+//! Convert frame duration to frame size.
+inline size_t ns_to_size(core::nanoseconds_t frame_length,
                          size_t sample_rate,
-                         roc::packet::channel_mask_t ch_mask) {
+                         packet::channel_mask_t ch_mask) {
     return (size_t)timestamp_from_ns(frame_length, sample_rate) * num_channels(ch_mask);
+}
+
+//! Convert frame size to frame duration.
+inline core::nanoseconds_t
+size_to_ns(size_t frame_size, size_t sample_rate, packet::channel_mask_t ch_mask) {
+    return timestamp_to_ns(timestamp_diff_t(frame_size / num_channels(ch_mask)),
+                           sample_rate);
 }
 
 //! FEC block number in a packet stream.
