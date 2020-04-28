@@ -45,10 +45,10 @@ public:
                         core::IAllocator& allocator);
 
     //! Add endpoint.
-    packet::IWriter* add_endpoint(address::Interface iface, address::Protocol proto);
+    packet::IWriter* create_endpoint(address::Interface iface, address::Protocol proto);
 
     //! Remove endpoint.
-    void remove_endpoint(address::Interface iface);
+    void delete_endpoint(address::Interface iface);
 
     //! Update packet queues and sessions.
     void update(packet::timestamp_t timestamp);
