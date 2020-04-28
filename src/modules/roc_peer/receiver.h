@@ -16,8 +16,10 @@
 #include "roc_address/interface.h"
 #include "roc_address/protocol.h"
 #include "roc_core/mutex.h"
+#include "roc_ctl/control_loop.h"
 #include "roc_peer/basic_peer.h"
 #include "roc_peer/context.h"
+#include "roc_pipeline/itask_scheduler.h"
 #include "roc_pipeline/receiver_source.h"
 #include "roc_rtp/format_map.h"
 
@@ -25,7 +27,7 @@ namespace roc {
 namespace peer {
 
 //! Receiver peer.
-class Receiver : public BasicPeer {
+class Receiver : public BasicPeer, private pipeline::ITaskScheduler {
 public:
     //! Initialize.
     Receiver(Context& context, const pipeline::ReceiverConfig& pipeline_config);
@@ -55,6 +57,11 @@ private:
         }
     };
 
+    virtual void schedule_task_processing(pipeline::TaskPipeline&,
+                                          core::nanoseconds_t delay);
+
+    virtual void cancel_task_processing(pipeline::TaskPipeline&);
+
     core::Mutex mutex_;
 
     rtp::FormatMap format_map_;
@@ -63,6 +70,8 @@ private:
     pipeline::ReceiverSource::EndpointSetHandle endpoint_set_;
 
     InterfacePort ports_[address::Iface_Max];
+
+    ctl::ControlLoop::Tasks::ProcessPipelineTasks process_pipeline_tasks_;
 };
 
 } // namespace peer

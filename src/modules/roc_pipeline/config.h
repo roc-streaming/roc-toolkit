@@ -235,6 +235,9 @@ struct ReceiverConfig {
 
     //! Parameters common for all sessions.
     ReceiverCommonConfig common;
+
+    //! Task processing parameters.
+    TaskConfig tasks;
 };
 
 //! Converter parameters.
