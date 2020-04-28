@@ -33,14 +33,15 @@ ReceiverEndpointSet::ReceiverEndpointSet(
                      byte_buffer_pool,
                      sample_buffer_pool,
                      allocator) {
+    roc_log(LogDebug, "receiver endpoint set: initializing");
 }
 
 void ReceiverEndpointSet::destroy() {
     allocator_.destroy(*this);
 }
 
-packet::IWriter* ReceiverEndpointSet::add_endpoint(address::Interface iface,
-                                                   address::Protocol proto) {
+packet::IWriter* ReceiverEndpointSet::create_endpoint(address::Interface iface,
+                                                      address::Protocol proto) {
     roc_log(LogDebug, "receiver endpoint set: adding %s endpoint %s",
             address::interface_to_str(iface), address::proto_to_str(proto));
 
@@ -59,7 +60,7 @@ packet::IWriter* ReceiverEndpointSet::add_endpoint(address::Interface iface,
     return NULL;
 }
 
-void ReceiverEndpointSet::remove_endpoint(address::Interface iface) {
+void ReceiverEndpointSet::delete_endpoint(address::Interface iface) {
     roc_log(LogDebug, "receiver endpoint set: removing %s endpoint",
             address::interface_to_str(iface));
 
