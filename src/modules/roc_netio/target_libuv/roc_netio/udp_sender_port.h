@@ -76,8 +76,8 @@ private:
     static void close_cb_(uv_handle_t* handle);
     static void write_sem_cb_(uv_async_t* handle);
     static void send_cb_(uv_udp_send_t* req, int status);
-
     packet::PacketPtr read_();
+    bool try_nonblocking_send_(const packet::PacketPtr& pp);
 
     bool fully_closed_() const;
     void start_closing_();
@@ -102,6 +102,8 @@ private:
     size_t pending_;
     bool stopped_;
     bool closed_;
+
+    uv_os_fd_t fd_;
 
     unsigned packet_counter_;
 };

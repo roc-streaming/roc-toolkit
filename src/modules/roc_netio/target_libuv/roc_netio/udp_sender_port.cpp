@@ -11,6 +11,7 @@
 #include "roc_core/helpers.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
+#include "roc_netio/sendto.h"
 
 namespace roc {
 namespace netio {
@@ -28,6 +29,7 @@ UdpSenderPort::UdpSenderPort(const UdpSenderConfig& config,
     , pending_(0)
     , stopped_(true)
     , closed_(false)
+    , fd_()
     , packet_counter_(0) {
 }
 
@@ -98,6 +100,12 @@ bool UdpSenderPort::open() {
         return false;
     }
 
+    const int fd_err = uv_fileno((uv_handle_t*)&handle_, &fd_);
+    if (fd_err != 0) {
+        roc_panic("udp sender: uv_fileno(): [%s] %s", uv_err_name(fd_err),
+                  uv_strerror(fd_err));
+    }
+
     roc_log(LogInfo, "udp sender: opened port %s",
             address::socket_addr_to_str(config_.bind_address).c_str());
 
@@ -142,8 +150,16 @@ void UdpSenderPort::write(const packet::PacketPtr& pp) {
             return;
         }
 
+        if (try_nonblocking_send_(pp)) {
+            return;
+        }
+
         list_.push_back(*pp);
         ++pending_;
+
+        if (list_.size() > 1) {
+            return;
+        }
     }
 
     if (int err = uv_async_send(&write_sem_)) {
@@ -250,6 +266,25 @@ packet::PacketPtr UdpSenderPort::read_() {
     }
 
     return pp;
+}
+
+bool UdpSenderPort::try_nonblocking_send_(const packet::PacketPtr& pp) {
+    if (pending_ == 0) {
+        const packet::UDP& udp = *pp->udp();
+        const bool success =
+            sendto_nb(fd_, pp->data().data(), pp->data().size(), udp.dst_addr);
+        if (success) {
+            ++packet_counter_;
+            roc_log(LogTrace,
+                    "udp sender: sent packet non-blocking: num=%u src=%s dst=%s sz=%ld",
+                    packet_counter_,
+                    address::socket_addr_to_str(config_.bind_address).c_str(),
+                    address::socket_addr_to_str(udp.dst_addr).c_str(),
+                    (long)pp->data().size());
+            return true;
+        }
+    }
+    return false;
 }
 
 bool UdpSenderPort::fully_closed_() const {
