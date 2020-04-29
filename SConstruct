@@ -949,13 +949,15 @@ if 'pulseaudio' in download_dependencies:
                         thirdparty_variant, thirdparty_versions,
                         'pulseaudio', deps=pa_deps, libs=['pulse', 'pulse-simple'])
 
+    pa_ver_short = '.'.join(thirdparty_versions['pulseaudio'].split('.')[:2])
+
     pulse_env.ImportThridParty(host, thirdparty_compiler_spec, toolchain,
                                thirdparty_versions, 'ltdl')
     pulse_env.ImportThridParty(host, thirdparty_compiler_spec, toolchain,
                                thirdparty_versions, 'pulseaudio',
                                libs=[
-                                   'pulsecore-%s' % thirdparty_versions['pulseaudio'],
-                                   'pulsecommon-%s' % thirdparty_versions['pulseaudio'],
+                                   'pulsecore-%s' % pa_ver_short,
+                                   'pulsecommon-%s' % pa_ver_short
                                    ])
 
 if 'sox' in download_dependencies:
