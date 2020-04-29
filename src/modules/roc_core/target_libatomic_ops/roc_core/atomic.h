@@ -28,6 +28,11 @@ public:
         AO_store(&value_, (AO_t)v);
     }
 
+    //! Raw non-atomic read.
+    long raw() const {
+        return (long)value_;
+    }
+
     //! Atomic load.
     operator long() const {
         return (long)AO_load(&value_);
