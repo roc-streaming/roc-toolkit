@@ -15,6 +15,7 @@
 #include <uv.h>
 
 #include "roc_core/alignment.h"
+#include "roc_core/barrier.h"
 #include "roc_core/errno_to_str.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/panic.h"
@@ -27,7 +28,9 @@ template <class T> class Singleton : public core::NonCopyable<> {
 public:
     //! Get singleton instance.
     static T& instance() {
-        uv_once(&once_, create_);
+        if (!initialized_) { // fast non-atomic check
+            uv_once(&once_, create_);
+        }
         return *instance_;
     }
 
@@ -39,14 +42,18 @@ private:
 
     static void create_() {
         instance_ = new (storage_.mem) T();
+        roc_barrier();
+        initialized_ = true;
     }
 
     static uv_once_t once_;
+    static bool initialized_;
     static Storage storage_;
     static T* instance_;
 };
 
 template <class T> uv_once_t Singleton<T>::once_ = UV_ONCE_INIT;
+template <class T> bool Singleton<T>::initialized_ = false;
 template <class T> typename Singleton<T>::Storage Singleton<T>::storage_;
 template <class T> T* Singleton<T>::instance_;
 

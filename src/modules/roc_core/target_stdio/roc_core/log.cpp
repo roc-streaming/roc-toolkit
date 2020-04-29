@@ -24,14 +24,10 @@ Logger::Logger()
 }
 
 LogLevel Logger::level() {
-    Mutex::Lock lock(mutex_);
-
-    return level_;
+    return (LogLevel)(long)level_;
 }
 
 void Logger::set_level(LogLevel level) {
-    Mutex::Lock lock(mutex_);
-
     if ((int)level < LogNone) {
         level = LogNone;
     }
@@ -73,51 +69,52 @@ void Logger::print(const char* module, LogLevel level, const char* format, ...) 
     if (handler_) {
         handler_(level, module, message);
     } else {
-        char timestamp[64] = {};
-        if (!format_time(timestamp, sizeof(timestamp))) {
-            timestamp[0] = '\0';
-        }
-
-        char tid[21] = {};
-        if (!format_tid(tid, sizeof(tid))) {
-            tid[0] = '\0';
-        }
-
-        const char* level_str = "???";
-        switch (level) {
-        case LogNone:
-            break;
-        case LogError:
-            level_str = "err";
-            break;
-        case LogInfo:
-            level_str = "inf";
-            break;
-        case LogDebug:
-            level_str = "dbg";
-            break;
-        case LogTrace:
-            level_str = "trc";
-            break;
-        }
-
-        if (colors_ == ColorsEnabled) {
-            char colored_level_str[16] = {};
-            char colored_message[256] = {};
-
-            if (format_colored(level, level_str, colored_level_str,
-                               sizeof(colored_level_str))
-                && format_colored(level, message, colored_message,
-                                  sizeof(colored_message))) {
-                fprintf(stderr, "%s [%s] [%s] %s: %s\n", timestamp, tid,
-                        colored_level_str, module, colored_message);
-                return;
-            }
-        }
-
-        fprintf(stderr, "%s [%s] [%s] %s: %s\n", timestamp, tid, level_str, module,
-                message);
+        default_print_(level, module, message);
     }
+}
+
+void Logger::default_print_(LogLevel level, const char* module, const char* message) {
+    char timestamp[64] = {};
+    if (!format_time(timestamp, sizeof(timestamp))) {
+        timestamp[0] = '\0';
+    }
+
+    char tid[32] = {};
+    if (!format_tid(tid, sizeof(tid))) {
+        tid[0] = '\0';
+    }
+
+    const char* level_str = "???";
+    switch (level) {
+    case LogNone:
+        break;
+    case LogError:
+        level_str = "err";
+        break;
+    case LogInfo:
+        level_str = "inf";
+        break;
+    case LogDebug:
+        level_str = "dbg";
+        break;
+    case LogTrace:
+        level_str = "trc";
+        break;
+    }
+
+    if (colors_ == ColorsEnabled) {
+        char colored_level_str[16] = {};
+        char colored_message[256] = {};
+
+        if (format_colored(level, level_str, colored_level_str, sizeof(colored_level_str))
+            && format_colored(level, message, colored_message, sizeof(colored_message))) {
+            fprintf(stderr, "%s [%s] [%s] %s: %s\n", timestamp, tid, colored_level_str,
+                    module, colored_message);
+            return;
+        }
+    }
+
+    fprintf(stderr, "%s [%s] [%s] %s: %s\n", timestamp, tid, level_str, module, message);
 }
 
 } // namespace core
