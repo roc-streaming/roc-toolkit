@@ -12,6 +12,7 @@
 #ifndef ROC_CORE_LOG_H_
 #define ROC_CORE_LOG_H_
 
+#include "roc_core/atomic.h"
 #include "roc_core/attributes.h"
 #include "roc_core/mutex.h"
 #include "roc_core/noncopyable.h"
@@ -22,8 +23,16 @@
 #endif
 
 //! Print message to log.
-#define roc_log(...)                                                                     \
-    ::roc::core::Logger::instance().print(ROC_STRINGIZE(ROC_MODULE), __VA_ARGS__)
+//! @remarks
+//!  If the given log level is disabled, this call does not insert memory barriers
+//!  and does not evaluate arguments except @p level.
+#define roc_log(level, ...)                                                              \
+    do {                                                                                 \
+        ::roc::core::Logger& logger = ::roc::core::Logger::instance();                   \
+        if (logger.is_level_enabled(level)) {                                            \
+            logger.print(ROC_STRINGIZE(ROC_MODULE), (level), __VA_ARGS__);               \
+        }                                                                                \
+    } while (0)
 
 namespace roc {
 
@@ -68,26 +77,29 @@ public:
     //! Get current maximum log level.
     LogLevel level();
 
+    //! Check if given log level is enabled.
+    inline bool is_level_enabled(LogLevel level) {
+        return level <= level_.raw();
+    }
+
     //! Set maximum log level.
-    //!
     //! @remarks
     //!  Messages with higher log level will be dropped.
-    //!
     //! @note
-    //!  Default log level is LogError.
+    //!  Other threads are not guaranteed to see the change immediately.
     void set_level(LogLevel);
 
     //! Set log handler.
-    //!
     //! @remarks
     //!  If @p handler is not NULL, log messages will be passed to @p handler.
-    //!  Otherwise, they're printed to stderr.Default log handler is NULL.
+    //!  Otherwise, they're printed to stderr. Default log handler is NULL.
+    //! @note
+    //!  Other threads will see the change immediately.
     void set_handler(LogHandler handler);
 
     //! Set colors mode.
-    //!
     //! @note
-    //!  Default colors mode is ColorsAuto.
+    //!  Other threads will see the change immediately.
     void set_colors(ColorsMode mode);
 
 private:
@@ -95,9 +107,12 @@ private:
 
     Logger();
 
+    void default_print_(LogLevel level, const char* module, const char* message);
+
+    core::Atomic level_;
+
     Mutex mutex_;
 
-    LogLevel level_;
     LogHandler handler_;
     ColorsMode colors_;
 };
