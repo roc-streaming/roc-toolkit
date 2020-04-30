@@ -16,6 +16,12 @@
 namespace roc {
 namespace netio {
 
+namespace {
+
+const core::nanoseconds_t PacketLogInterval = 20 * core::Second;
+
+} // namespace
+
 UdpSenderPort::UdpSenderPort(const UdpSenderConfig& config,
                              ICloseHandler& close_handler,
                              uv_loop_t& event_loop,
@@ -30,7 +36,9 @@ UdpSenderPort::UdpSenderPort(const UdpSenderConfig& config,
     , stopped_(true)
     , closed_(false)
     , fd_()
-    , packet_counter_(0) {
+    , rate_limiter_(PacketLogInterval)
+    , packet_counter_(0)
+    , nb_packet_counter_(0) {
 }
 
 UdpSenderPort::~UdpSenderPort() {
@@ -148,6 +156,14 @@ void UdpSenderPort::write(const packet::PacketPtr& pp) {
 
         if (stopped_) {
             return;
+        }
+
+        if (rate_limiter_.allow()) {
+            const double nb_ratio = packet_counter_ != 0
+                ? (double)nb_packet_counter_ / packet_counter_
+                : 0.;
+            roc_log(LogDebug, "udp sender: total=%u nb=%u nb_ratio=%.5f",
+                    packet_counter_, nb_packet_counter_, nb_ratio);
         }
 
         if (try_nonblocking_send_(pp)) {
@@ -275,6 +291,7 @@ bool UdpSenderPort::try_nonblocking_send_(const packet::PacketPtr& pp) {
             sendto_nb(fd_, pp->data().data(), pp->data().size(), udp.dst_addr);
         if (success) {
             ++packet_counter_;
+            ++nb_packet_counter_;
             roc_log(LogTrace,
                     "udp sender: sent packet non-blocking: num=%u src=%s dst=%s sz=%ld",
                     packet_counter_,

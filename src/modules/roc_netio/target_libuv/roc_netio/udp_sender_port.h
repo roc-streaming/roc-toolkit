@@ -17,6 +17,7 @@
 #include "roc_address/socket_addr.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/mutex.h"
+#include "roc_core/rate_limiter.h"
 #include "roc_core/refcnt.h"
 #include "roc_netio/basic_port.h"
 #include "roc_netio/iclose_handler.h"
@@ -105,7 +106,9 @@ private:
 
     uv_os_fd_t fd_;
 
+    core::RateLimiter rate_limiter_;
     unsigned packet_counter_;
+    unsigned nb_packet_counter_;
 };
 
 } // namespace netio
