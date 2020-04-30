@@ -46,25 +46,7 @@ public:
     }
 
 private:
-    struct FrameNode : public core::RefCnt<FrameNode>, public core::ListNode {
-        FrameNode(size_t s, core::nanoseconds_t t, core::IAllocator& a)
-            : samples(s)
-            , time(t)
-            , allocator_(a) {
-        }
-
-        void destroy() {
-            allocator_.destroy(*this);
-        }
-
-        size_t samples;
-        core::nanoseconds_t time;
-        core::IAllocator& allocator_;
-    };
-
     core::RateLimiter rate_limiter_;
-
-    core::IAllocator& allocator_;
 
     core::nanoseconds_t interval_;
 

@@ -19,10 +19,9 @@ Profiler::Profiler(core::IAllocator& allocator,
                    size_t sample_rate,
                    core::nanoseconds_t interval)
     : rate_limiter_(interval)
-    , allocator_(allocator)
     , interval_(interval)
     , chunk_length_(sample_rate / 100)
-    , num_chunks_(interval / (core::Second / 100) + 1)
+    , num_chunks_((size_t)(interval / (core::Second / 100)) + 1)
     , chunks_(allocator)
     , moving_avg_(0)
     , sample_rate_(sample_rate)
@@ -47,7 +46,7 @@ void Profiler::end_frame(size_t frame_size, core::nanoseconds_t elapsed) {
     static size_t last_chunk_num = 0;     // index of last chunk
     static size_t last_chunk_samples = 0; // number of samples so far added to last chunk
 
-    double frame_speed = frame_size * core::Second / elapsed;
+    double frame_speed = frame_size * core::Second / (unsigned long long)elapsed;
 
     while (frame_size > 0) {
         size_t n_samples = frame_size;
