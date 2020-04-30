@@ -66,10 +66,12 @@ private:
 
     core::IAllocator& allocator_;
 
-    core::List<FrameNode> running_data_;
     core::nanoseconds_t interval_;
-    core::nanoseconds_t running_samples_time_;
-    size_t running_samples_;
+
+    const size_t chunk_length_;
+    const size_t num_chunks_;
+    core::Array<double> chunks_;
+
     double moving_avg_;
 
     const size_t sample_rate_;
