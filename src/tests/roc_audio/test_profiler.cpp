@@ -26,7 +26,7 @@ struct TestFrame {
     core::nanoseconds_t time_;
 };
 
-int millisecond = 1000000L;
+const core::nanoseconds_t millisecond = 1000000L;
 const core::nanoseconds_t interval = 50 * millisecond; // 5 chunks
 const int sample_rate = 5000;                          // 50 samples / chunk
 const int num_channels = 1;

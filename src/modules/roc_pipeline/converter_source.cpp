@@ -68,6 +68,17 @@ ConverterSource::ConverterSource(const ConverterConfig& config,
         areader = pipeline_poisoner_.get();
     }
 
+    if (config.profiling) {
+        profiler_.reset(new (allocator) audio::ProfilingReader(
+                            *areader, allocator, config.output_channels,
+                            config.output_sample_rate, LogInterval),
+                        allocator);
+        if (!profiler_) {
+            return;
+        }
+        areader = profiler_.get();
+    }
+
     audio_reader_ = areader;
 }
 
