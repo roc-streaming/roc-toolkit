@@ -25,19 +25,20 @@ supported_sanitizers = [
 
 # 3rdparty library default versions
 thirdparty_versions = {
-    'libuv':         '1.35.0',
-    'libunwind':     '1.2.1',
-    'libatomic_ops': '7.6.10',
-    'openfec':       '1.4.2.4',
-    'sox':           '14.4.2',
-    'alsa':          '1.0.29',
-    'pulseaudio':    '5.0',
-    'json':          '0.11-20130402',
-    'ltdl':          '2.4.6',
-    'sndfile':       '1.0.20',
-    'ragel':         '6.10',
-    'gengetopt':     '2.22.6',
-    'cpputest':      '3.6',
+    'libuv':            '1.35.0',
+    'libatomic_ops':    '7.6.10',
+    'libunwind':        '1.2.1',
+    'openfec':          '1.4.2.4',
+    'sox':              '14.4.2',
+    'alsa':             '1.0.29',
+    'pulseaudio':       '5.0',
+    'json':             '0.11-20130402',
+    'ltdl':             '2.4.6',
+    'sndfile':          '1.0.20',
+    'ragel':            '6.10',
+    'gengetopt':        '2.22.6',
+    'cpputest':         '3.6',
+    'google-benchmark': '1.5.0',
 }
 
 SCons.SConf.dryrun = 0 # configure even in dry run mode
@@ -183,15 +184,20 @@ AddOption('--disable-tools',
           action='store_true',
           help='disable tools building')
 
-AddOption('--disable-tests',
-          dest='disable_tests',
+AddOption('--enable-tests',
+          dest='enable_tests',
           action='store_true',
-          help='disable tests building')
+          help='enable tests building and running (requires CppUTest)')
 
-AddOption('--disable-examples',
-          dest='disable_examples',
+AddOption('--enable-benchmarks',
+          dest='enable_benchmarks',
           action='store_true',
-          help='disable examples building')
+          help='enable bechmarks building and running (requires Google Benchmark)')
+
+AddOption('--enable-examples',
+          dest='enable_examples',
+          action='store_true',
+          help='enable examples building')
 
 AddOption('--disable-doc',
           dest='disable_doc',
@@ -424,7 +430,7 @@ fmt += [
 env.AlwaysBuild(
     env.Alias('fmt', [], fmt))
 
-non_build_targets = ['clean', 'cleandocs', 'fmt', 'docs', 'shpinx', 'doxygen']
+non_build_targets = ['fmt', 'docs', 'shpinx', 'doxygen']
 if set(COMMAND_LINE_TARGETS) \
   and set(COMMAND_LINE_TARGETS).intersection(non_build_targets) == set(COMMAND_LINE_TARGETS):
     Return()
@@ -662,13 +668,12 @@ else:
             'target_openfec',
         ])
 
-    if not GetOption('disable_tools') or not GetOption('disable_examples'):
+    if not GetOption('disable_tools'):
         if not GetOption('disable_sox'):
             env.Append(ROC_TARGETS=[
                 'target_sox',
             ])
-
-        if platform in ['linux'] and not GetOption('disable_pulseaudio'):
+        if not GetOption('disable_pulseaudio') and platform in ['linux']:
             env.Append(ROC_TARGETS=[
                 'target_pulseaudio',
             ])
@@ -705,16 +710,17 @@ all_dependencies.add('ragel')
 if not GetOption('disable_tools'):
     all_dependencies.add('gengetopt')
 
-if not GetOption('disable_tests'):
+if GetOption('enable_pulseaudio_modules'):
+    all_dependencies.add('pulseaudio')
+
+if 'pulseaudio' in all_dependencies and platform in ['linux']:
+    all_dependencies.add('alsa')
+
+if GetOption('enable_tests'):
     all_dependencies.add('cpputest')
 
-if ((not GetOption('disable_tools') \
-        or not GetOption('disable_examples')) \
-    and not GetOption('disable_pulseaudio')) \
-  or GetOption('enable_pulseaudio_modules'):
-    if platform in ['linux', 'android']:
-        all_dependencies.add('alsa')
-        all_dependencies.add('pulseaudio')
+if GetOption('enable_benchmarks'):
+    all_dependencies.add('google-benchmark')
 
 # dependencies that we should download and build manually
 download_dependencies = set()
@@ -825,7 +831,7 @@ if 'pulseaudio' in system_dependencies:
 
     tool_env = conf.Finish()
 
-    if not GetOption('disable_examples'):
+    if GetOption('enable_examples'):
         conf = Configure(example_env, custom_tests=env.CustomTests)
 
         example_env.ParsePkgConfig('--cflags --libs libpulse-simple')
@@ -925,6 +931,18 @@ if 'cpputest' in system_dependencies:
     if not conf.CheckLibWithHeaderExt(
             'CppUTest', 'CppUTest/TestHarness.h', 'CXX', run=not crosscompile):
         test_env.Die("CppUTest not found (see 'config.log' for details)")
+
+    test_env = conf.Finish()
+
+if 'google-benchmark' in system_dependencies:
+    conf = Configure(test_env, custom_tests=env.CustomTests)
+
+    if not test_env.ParsePkgConfig('--cflags --libs benchmark'):
+        test_env.AppendUnique(LIBS=['benchmark'])
+
+    if not conf.CheckLibWithHeaderExt(
+            'benchmark', 'benchmark/benchmark.h', 'CXX', run=not crosscompile):
+        test_env.Die("Google Benchmark not found (see 'config.log' for details)")
 
     test_env = conf.Finish()
 
@@ -1060,6 +1078,10 @@ if 'gengetopt' in download_dependencies:
 if 'cpputest' in download_dependencies:
     test_env.ThirdParty(host, thirdparty_compiler_spec, toolchain,
                         thirdparty_variant, thirdparty_versions, 'cpputest')
+
+if 'google-benchmark' in download_dependencies:
+    test_env.ThirdParty(host, thirdparty_compiler_spec, toolchain,
+                        thirdparty_variant, thirdparty_versions, 'google-benchmark')
 
 conf = Configure(env, custom_tests=env.CustomTests)
 

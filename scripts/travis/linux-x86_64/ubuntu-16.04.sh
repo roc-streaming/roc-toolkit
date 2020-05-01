@@ -3,14 +3,23 @@ set -euxo pipefail
 
 scons -Q clean
 
-scons -Q --enable-werror --build-3rdparty=openfec test
+scons -Q \
+      --enable-werror \
+      --enable-tests \
+      --enable-benchmarks \
+      --enable-examples \
+      --build-3rdparty=openfec,google-benchmark \
+      test
 
 for c in gcc-4.8 gcc-5 clang-3.7
 do
     scons -Q \
           --enable-werror \
           --enable-pulseaudio-modules \
-          --build-3rdparty=openfec,pulseaudio \
+          --enable-tests \
+          --enable-benchmarks \
+          --enable-examples \
+          --build-3rdparty=openfec,pulseaudio,google-benchmark \
           --compiler=$c \
           test
 done
