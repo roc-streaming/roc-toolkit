@@ -52,7 +52,7 @@ public:
                       core::IAllocator& allocator);
 
     //! Add endpoint.
-    SenderEndpoint* add_endpoint(address::Interface iface, address::Protocol proto);
+    SenderEndpoint* create_endpoint(address::Interface iface, address::Protocol proto);
 
     //! Get audio writer.
     //! @returns NULL if endpoint set is not ready.

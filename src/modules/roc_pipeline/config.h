@@ -95,6 +95,9 @@ struct TaskConfig {
 
 //! Sender parameters.
 struct SenderConfig {
+    //! Task processing parameters.
+    TaskConfig tasks;
+
     //! Resampler parameters.
     audio::ResamplerConfig resampler;
 
