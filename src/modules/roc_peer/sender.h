@@ -20,6 +20,7 @@
 #include "roc_packet/iwriter.h"
 #include "roc_peer/basic_peer.h"
 #include "roc_peer/context.h"
+#include "roc_pipeline/itask_scheduler.h"
 #include "roc_pipeline/sender_sink.h"
 #include "roc_rtp/format_map.h"
 
@@ -27,7 +28,7 @@ namespace roc {
 namespace peer {
 
 //! Sender peer.
-class Sender : public BasicPeer {
+class Sender : public BasicPeer, private pipeline::ITaskScheduler {
 public:
     //! Initialize.
     Sender(Context& context, const pipeline::SenderConfig& pipeline_config);
@@ -51,7 +52,7 @@ public:
     bool connect(address::Interface iface, const address::EndpointURI& uri);
 
     //! Check if all necessary bind and connect calls were made.
-    bool is_ready() const;
+    bool is_ready();
 
     //! Get sender sink.y
     sndio::ISink& sink();
@@ -71,6 +72,11 @@ private:
         }
     };
 
+    virtual void schedule_task_processing(pipeline::TaskPipeline&,
+                                          core::nanoseconds_t delay);
+
+    virtual void cancel_task_processing(pipeline::TaskPipeline&);
+
     InterfacePort& select_outgoing_port_(address::Interface, address::AddrFamily family);
     bool setup_outgoing_port_(InterfacePort& port,
                               address::Interface iface,
@@ -87,6 +93,8 @@ private:
     pipeline::SenderSink::EndpointHandle repair_endpoint_;
 
     InterfacePort ports_[address::Iface_Max];
+
+    ctl::ControlLoop::Tasks::ProcessPipelineTasks process_pipeline_tasks_;
 };
 
 } // namespace peer
