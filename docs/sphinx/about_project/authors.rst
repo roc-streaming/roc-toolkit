@@ -20,6 +20,11 @@ Go team
 
 * Asal Mirzaieva <asalle.kim@gmail.com>
 
+Java team
+~~~~~~~~~
+
+* Arella Matteo <arella.matteo.95@gmail.com>
+
 Contributors
 ============
 
@@ -38,3 +43,4 @@ Contributors
 * Ivan <miklecivan3@gmail.com>
 * Suiyi Fu <fusuiyi123@gmail.com>
 * Vladimir Panov <quest201114@yandex.ru>
+* Andrey Bushmin <diskbu@yandex.ru>
