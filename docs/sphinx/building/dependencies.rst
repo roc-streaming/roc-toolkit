@@ -16,9 +16,9 @@ Build dependencies
 Runtime dependencies
 ====================
 
-* `libuv <http://libuv.org>`_ >= 1.5.0
-* `libunwind <https://www.nongnu.org/libunwind/>`_ >= 1.2.1 (optional, install if you want backtraces on a panic or a crash)
+* `libuv <http://libuv.org>`_ >= 1.5.0, recommended >= 1.35.0
 * `libatomic_ops <https://github.com/ivmai/libatomic_ops/>`_ >= 7.4.6
+* `libunwind <https://www.nongnu.org/libunwind/>`_ >= 1.2.1 (optional, install if you want backtraces on a panic or a crash)
 * `OpenFEC <http://openfec.org>`_ >= 1.4.2 (optional but recommended, install if you want to enable FEC support)
 * `SoX <http://sox.sourceforge.net>`_ >= 14.4.0 (optional, install if you want SoX backend in tools)
 * `PulseAudio <https://www.freedesktop.org/wiki/Software/PulseAudio/>`_ >= 5.0 (optional, install if you want PulseAudio backend in tools or PulseAudio modules)
@@ -29,12 +29,13 @@ Runtime dependencies
 
 .. warning::
 
-   If you want to install OpenFEC, it's highly recommended to use `our fork <https://github.com/roc-project/openfec>`_ or manually apply patches from it. The fork is automatically used when using ``--build-3rdparty=openfec`` option. The fork contains several bug fixes and improvements that are not available in the upstream.
+   If you want to install OpenFEC, it's highly recommended to use `our fork <https://github.com/roc-project/openfec>`_ or manually apply patches from it. The fork is automatically used when using ``--build-3rdparty=openfec`` option. It contains several bug-fixes (including leaks and segfaults) and improvements that are not available in the upstream.
 
 Development dependencies
 ========================
 
 * `CppUTest <http://cpputest.github.io>`_ >= 3.4 (optional, install if you want to build tests)
+* `Google Benchmark <https://github.com/google/benchmark>`_ (optional, install if you want to build benchmarks)
 * `clang-format <https://clang.llvm.org/docs/ClangFormat.html>`_ >= 3.8 (optional, install if you want to format code)
 * `clang-tidy <http://clang.llvm.org/extra/clang-tidy/>`_ (optional, install if you want to run linter)
 * `doxygen <http://www.stack.nl/~dimitri/doxygen/>`_ >= 1.6, `graphviz <https://graphviz.gitlab.io/>`_ (optional, install if you want to build doxygen or sphinx documentation)
