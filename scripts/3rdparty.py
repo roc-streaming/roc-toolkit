@@ -858,6 +858,24 @@ elif name == 'cpputest':
     execute_make(logfile)
     install_tree('include', os.path.join(builddir, 'include'))
     install_files('lib/libCppUTest.a', os.path.join(builddir, 'lib'))
+elif name == 'google-benchmark':
+    download(
+      'https://github.com/google/benchmark/archive/v%s.tar.gz' % ver,
+      'benchmark_v%s.tar.gz' % ver,
+        logfile,
+        vendordir)
+    extract('benchmark_v%s.tar.gz' % ver,
+            'benchmark-%s' % ver)
+    os.chdir('src/benchmark-%s' % ver)
+    mkpath('build')
+    os.chdir('build')
+    execute_cmake('..', variant, toolchain, env, logfile, args=[
+        '-DBENCHMARK_ENABLE_GTEST_TESTS=OFF',
+        ])
+    execute_make(logfile)
+    os.chdir('..')
+    install_tree('include', os.path.join(builddir, 'include'), match=['*.h'])
+    install_files('build/src/libbenchmark.a', os.path.join(builddir, 'lib'))
 else:
     print("error: unknown 3rdparty '%s'" % fullname, file=sys.stderr)
     exit(1)

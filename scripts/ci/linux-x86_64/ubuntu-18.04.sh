@@ -8,6 +8,9 @@ do
     scons -Q \
           --enable-werror \
           --enable-pulseaudio-modules \
+          --enable-tests \
+          --enable-benchmarks \
+          --enable-examples \
           --build-3rdparty=openfec,pulseaudio \
           --compiler=$c \
           test
