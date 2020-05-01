@@ -2,7 +2,14 @@
 set -euxo pipefail
 
 scons -Q clean
-scons -Q --enable-werror --build-3rdparty=all
+
+scons -Q \
+      --enable-werror \
+      --enable-tests \
+      --enable-benchmarks \
+      --enable-examples \
+      --build-3rdparty=all \
+      test
 
 find bin/x86_64-pc-linux-gnu -name 'roc-test-*' |\
     while read t

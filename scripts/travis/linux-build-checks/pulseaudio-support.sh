@@ -5,11 +5,20 @@ scons -Q clean
 
 scons -Q --enable-werror --build-3rdparty=all \
       --disable-pulseaudio \
+      --enable-tests \
+      --enable-benchmarks \
+      --enable-examples \
       test
 
 scons -Q --enable-werror --build-3rdparty=all \
+      --enable-tests \
+      --enable-benchmarks \
+      --enable-examples \
       test
 
 scons -Q --enable-werror --build-3rdparty=all \
       --enable-pulseaudio-modules \
+      --enable-tests \
+      --enable-benchmarks \
+      --enable-examples \
       test
