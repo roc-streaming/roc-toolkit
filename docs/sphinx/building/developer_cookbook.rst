@@ -5,104 +5,98 @@ Developer cookbook
    :local:
    :depth: 1
 
-Clean
-=====
-
-.. code::
-
-   $ scons -Q -c
-
-or:
-
-.. code::
-
-   $ scons -Q clean
-
-Build
-=====
-
-Build all:
-
-.. code::
-
-   $ scons -Q
-
-Build one module:
-
-.. code::
-
-    $ scons -Q roc_core
-
-Minimal build:
-
-.. code::
-
-    $ scons -Q --disable-openfec --disable-tools --disable-tests --disable-examples --disable-doc
+Build options
+=============
 
 Developer build:
 
 .. code::
 
-    $ scons -Q --enable-werror --enable-debug --sanitizers=all
+    $ scons -Q --build-3rdparty=... \
+      --enable-werror --enable-debug --enable-tests --enable-benchmarks --enable-examples test bench
 
-Tests
-=====
+For ``--build-3rdparty`` option, see :doc:`/building/user_cookbook`.
 
-Build and run all tests:
-
-.. code::
-
-   $ scons -Q test
-
-Run tests for the specified module:
+For developer build, you may also want to automatically download and build CppUTest (for unut tests) and Google Benchmark (for micro behcmarks):
 
 .. code::
 
-   $ scons -Q test/roc_core
+    $ scons -Q --build-3rdparty=...,cpputest,google-benchmark ...
 
-Run tests for the module manually:
-
-.. code::
-
-   $ ./bin/x86_64-pc-linux-gnu/roc-test-core -v
-
-Run single test:
+Enable GCC/Clang sanitizers:
 
 .. code::
 
-   $ ./bin/x86_64-pc-linux-gnu/roc-test-core -v -g array -n empty
+    $ scons -Q --sanitizers=undefined,address ...
+    $ scons -Q --sanitizers=all ...
+
+Minimal build (don't build library and tools):
+
+.. code::
+
+    $ scons -Q --build-3rdparty=... --disable-lib --disable-tools --disable-doc
+
+Disable specific libraries (and features they provide):
+
+.. code::
+
+    $ scons -Q --build-3rdparty=... --disable-libunwind --disable-openfec --disable-sox --disable-pulseaudio
 
 Compiler options
 ================
 
-Select compiler:
+Select specific compiler:
 
 .. code::
 
-    $ scons -Q --compiler=gcc
-    $ scons -Q --compiler=gcc-4.8
-    $ scons -Q --compiler=gcc-4.8.5
+    $ scons -Q --compiler=gcc ...
+    $ scons -Q --compiler=gcc-4.8 ...
+    $ scons -Q --compiler=gcc-4.8.5 ...
 
-Select toolchain:
+Select toolchain for cross-compiling:
 
 .. code::
 
-    $ scons -Q --host=arm-linux-gnueabihf
+    # arm-linux-gnueabihf-g++ should be in PATH
+    $ scons -Q --host=arm-linux-gnueabihf ...
 
-Set tools and options manually:
+Select both compiler and toolchain:
+
+.. code::
+
+    # arm-linux-gnueabihf-clang++ should be in PATH
+    $ scons -Q --compiler=clang --host=arm-linux-gnueabihf ...
+
+Specify search paths manually:
+
+.. code::
+
+    $ scons -Q --with-openfec-includes=... --with-includes=... --with-libraries=...
+
+Specify tools and flags manually:
 
 .. code::
 
     $ scons -Q CXX="..." CXXFLAGS="..." ...
 
-Dependencies
-============
+or:
+
+.. code::
+
+    $ export CXX="..."
+    $ export CXXFLAGS="..."
+    $ scons -Q ...
+
+The full list of the available options and variables is documented in :doc:`/building/scons_options`.
+
+Building dependencies
+=====================
 
 Download and build selected dependencies, then build everything:
 
 .. code::
 
-    $ scons -Q --build-3rdparty=libuv:1.4.2,libunwind,openfec,cpputest
+    $ scons -Q --build-3rdparty=libuv:1.4.2,libunwind,openfec,cpputest ...
 
 Download and build all dependencies, then build everything:
 
@@ -110,8 +104,74 @@ Download and build all dependencies, then build everything:
 
     $ scons -Q --build-3rdparty=all
 
-Documentation
-=============
+Per-module targets
+==================
+
+Build one module:
+
+.. code::
+
+    $ scons -Q ... roc_core
+
+Run tests for one module:
+
+.. code::
+
+   $ scons -Q ... test/roc_core
+
+Run benchmarks for one module:
+
+.. code::
+
+   $ scons -Q ... bench/roc_core
+
+Running tests manually
+======================
+
+Run tests for the module manually:
+
+.. code::
+
+   $ ./bin/x86_64-pc-linux-gnu/roc-test-pipeline -v
+
+Run a single test group:
+
+.. code::
+
+   $ ./bin/x86_64-pc-linux-gnu/roc-test-pipeline -v -g receiver_source
+
+Run a single test:
+
+.. code::
+
+   $ ./bin/x86_64-pc-linux-gnu/roc-test-pipeline -v -g receiver_source -n one_session_long_run
+
+Run behcnmarks for the module manually:
+
+.. code::
+
+   $ ./bin/x86_64-pc-linux-gnu/roc-bench-pipeline
+
+Formatting code
+===============
+
+Format code. Requires clang-format >= 3.6.
+
+.. code::
+
+   $ scons -Q fmt
+
+Running linter
+==============
+
+Run linter. Requires clang-tidy. This takes time and may produce some false positives.
+
+.. code::
+
+   $ scons -Q tidy
+
+Building documentation
+======================
 
 Build all documentation. Requires doxygen, sphinx, and breathe.
 
@@ -136,28 +196,32 @@ Run doxygen manually:
 
 .. code::
 
-   # internal modules
+   # internal modules (HTML)
    $ cd src/modules
    $ doxygen
 
-   # public api
+   # public api (XML for sphinx)
    $ cd src/lib
    $ doxygen
 
-Format code
-===========
+Cleaning build results
+======================
 
-Format code. Requires clang-format.
-
-.. code::
-
-   $ scons -Q fmt
-
-Linter
-======
-
-Run linter. Requires clang-tidy.
+Clean all:
 
 .. code::
 
-   $ scons -Q tidy
+   $ scons -Q -c
+
+or:
+
+.. code::
+
+   $ scons -Q clean
+
+Clean partially:
+
+.. code::
+
+   $ scons -Q cleanbuild
+   $ scons -Q cleandocs
