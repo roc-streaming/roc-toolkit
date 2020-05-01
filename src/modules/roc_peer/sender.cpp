@@ -18,7 +18,8 @@ namespace peer {
 
 Sender::Sender(Context& context, const pipeline::SenderConfig& pipeline_config)
     : BasicPeer(context)
-    , pipeline_(pipeline_config,
+    , pipeline_(*this,
+                pipeline_config,
                 format_map_,
                 context_.packet_pool(),
                 context_.byte_buffer_pool(),
@@ -26,14 +27,20 @@ Sender::Sender(Context& context, const pipeline::SenderConfig& pipeline_config)
                 context_.allocator())
     , endpoint_set_(NULL)
     , source_endpoint_(NULL)
-    , repair_endpoint_(NULL) {
+    , repair_endpoint_(NULL)
+    , process_pipeline_tasks_(pipeline_) {
     roc_log(LogDebug, "sender peer: initializing");
 
     if (!pipeline_.valid()) {
         return;
     }
 
-    endpoint_set_ = pipeline_.add_endpoint_set();
+    pipeline::SenderSink::Tasks::AddEndpointSet task;
+    if (!pipeline_.schedule_and_wait(task)) {
+        return;
+    }
+
+    endpoint_set_ = task.get_handle();
 }
 
 Sender::~Sender() {
@@ -168,22 +175,36 @@ bool Sender::connect(address::Interface iface, const address::EndpointURI& uri) 
         return false;
     }
 
-    pipeline::SenderSink::EndpointHandle endpoint =
-        pipeline_.add_endpoint(endpoint_set_, iface, uri.proto());
-
-    if (!endpoint) {
+    pipeline::SenderSink::Tasks::CreateEndpoint endpoint_task(endpoint_set_, iface,
+                                                              uri.proto());
+    if (!pipeline_.schedule_and_wait(endpoint_task)) {
         roc_log(LogError, "sender peer: can't add %s endpoint to pipeline",
                 address::interface_to_str(iface));
         return false;
     }
 
-    pipeline_.set_endpoint_destination_udp_address(endpoint, address);
-    pipeline_.set_endpoint_output_writer(endpoint, *port.writer);
+    pipeline::SenderSink::Tasks::SetEndpointDestinationUdpAddress addr_task(
+        endpoint_task.get_handle(), address);
+
+    if (!pipeline_.schedule_and_wait(addr_task)) {
+        roc_log(LogError, "sender peer: can't set %s endpoint destination address",
+                address::interface_to_str(iface));
+        return false;
+    }
+
+    pipeline::SenderSink::Tasks::SetEndpointOutputWriter writer_task(
+        endpoint_task.get_handle(), *port.writer);
+
+    if (!pipeline_.schedule_and_wait(writer_task)) {
+        roc_log(LogError, "sender peer: can't set %s endpoint output writer",
+                address::interface_to_str(iface));
+        return false;
+    }
 
     if (iface == address::Iface_AudioSource) {
-        source_endpoint_ = endpoint;
+        source_endpoint_ = endpoint_task.get_handle();
     } else {
-        repair_endpoint_ = endpoint;
+        repair_endpoint_ = endpoint_task.get_handle();
     }
 
     roc_log(LogInfo, "sender peer: connected %s interface to %s",
@@ -192,12 +213,14 @@ bool Sender::connect(address::Interface iface, const address::EndpointURI& uri) 
     return true;
 }
 
-bool Sender::is_ready() const {
+bool Sender::is_ready() {
     core::Mutex::Lock lock(mutex_);
 
     roc_panic_if_not(valid());
 
-    return pipeline_.is_endpoint_set_ready(endpoint_set_);
+    pipeline::SenderSink::Tasks::CheckEndpointSetIsReady task(endpoint_set_);
+
+    return pipeline_.schedule_and_wait(task);
 }
 
 sndio::ISink& Sender::sink() {
@@ -282,6 +305,15 @@ bool Sender::setup_outgoing_port_(InterfacePort& port,
     }
 
     return true;
+}
+
+void Sender::schedule_task_processing(pipeline::TaskPipeline&,
+                                      core::nanoseconds_t delay) {
+    context_.control_loop().reschedule_after(process_pipeline_tasks_, delay);
+}
+
+void Sender::cancel_task_processing(pipeline::TaskPipeline&) {
+    context_.control_loop().async_cancel(process_pipeline_tasks_);
 }
 
 } // namespace peer

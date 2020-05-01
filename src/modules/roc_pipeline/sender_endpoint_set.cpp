@@ -35,8 +35,8 @@ void SenderEndpointSet::destroy() {
     allocator_.destroy(*this);
 }
 
-SenderEndpoint* SenderEndpointSet::add_endpoint(address::Interface iface,
-                                                address::Protocol proto) {
+SenderEndpoint* SenderEndpointSet::create_endpoint(address::Interface iface,
+                                                   address::Protocol proto) {
     roc_log(LogDebug, "sender endpoint set: adding %s endpoint %s",
             address::interface_to_str(iface), address::proto_to_str(proto));
 
