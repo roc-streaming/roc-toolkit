@@ -73,7 +73,7 @@ if not GetOption('disable_lib'):
     for s in symlinks:
         env.AddDistFile(env['ROC_SYSTEM_LIBDIR'], s)
 
-if not GetOption('disable_examples'):
+if GetOption('enable_examples'):
     cenv = env.Clone()
     cenv.MergeVars(example_env)
     cenv.MergeVars(tool_env)
@@ -99,13 +99,17 @@ if not GetOption('disable_examples'):
     env.Alias('examples', targets, env.Action(''))
     env.AlwaysBuild('examples')
 
-if not GetOption('disable_tests'):
+if GetOption('enable_tests') or GetOption('enable_benchmarks'):
     cenv = env.Clone()
     cenv.MergeVars(tool_env)
     cenv.MergeVars(test_env)
     cenv.Append(CPPDEFINES=('ROC_MODULE', 'roc_test'))
 
-    test_main = cenv.Object('tests/test_main.cpp')
+    if GetOption('enable_tests'):
+        test_main = cenv.Object('tests/test_main.cpp')
+
+    if GetOption('enable_benchmarks'):
+        bench_main = cenv.Object('tests/bench_main.cpp')
 
     for testname in env['ROC_MODULES'] + ['roc_library']:
         testdir = 'tests/' + testname
@@ -120,23 +124,41 @@ if not GetOption('disable_tests'):
             ccenv.Append(CPPPATH=['library/include'])
             ccenv.Prepend(LIBS=[libroc])
 
-        sources = (env.GlobFiles('%s/*.cpp' % testdir) +
-            env.GlobFiles('%s/test_helpers/*.cpp' % testdir))
+        for kind in ['test', 'bench']:
+            if kind == 'test':
+                if GetOption('enable_tests'):
+                    main = test_main
+                else:
+                    continue
+            else:
+                if GetOption('enable_benchmarks'):
+                    main = bench_main
+                else:
+                    continue
 
-        for targetdir in env.GlobRecursive(testdir, 'target_*'):
-            if targetdir.name in env['ROC_TARGETS']:
-                ccenv.Append(CPPPATH=['#src/%s' % targetdir])
-                sources += env.GlobRecursive(targetdir, '*.cpp')
+            sources = env.GlobFiles('%s/%s_*.cpp' % (testdir, kind))
 
-        if not sources:
-            continue
+            for targetdir in env.GlobRecursive(testdir, 'target_*'):
+                if targetdir.name in env['ROC_TARGETS']:
+                    ccenv.Append(CPPPATH=['#src/%s' % targetdir])
+                    sources += env.GlobRecursive(targetdir, '%s_*.cpp' % kind)
 
-        exename = 'roc-test-' + testname.replace('roc_', '')
-        target = env.Install(env['ROC_BINDIR'],
-            ccenv.Program(exename, sources + test_main,
-                RPATH=(ccenv['RPATH'] if 'RPATH' in ccenv.Dictionary() else None)))
+            if not sources:
+                continue
 
-        env.AddTest(testname, '%s/%s' % (env['ROC_BINDIR'], exename))
+            sources += env.GlobFiles('%s/test_helpers/*.cpp' % testdir)
+
+            exename = 'roc-' + kind + '-' + testname.replace('roc_', '')
+            target = env.Install(env['ROC_BINDIR'],
+                ccenv.Program(exename, sources + main,
+                    RPATH=(ccenv['RPATH'] if 'RPATH' in ccenv.Dictionary() else None)))
+
+            exefile = '%s/%s' % (env['ROC_BINDIR'], exename)
+
+            if kind == 'test':
+                env.AddTest(testname, exefile)
+            else:
+                env.AddBench(testname, exefile)
 
 if not GetOption('disable_tools'):
     for tooldir in env.GlobDirs('tools/*'):
