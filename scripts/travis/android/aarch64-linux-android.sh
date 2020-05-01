@@ -8,7 +8,8 @@ scons -Q clean
 scons -Q \
     --enable-werror \
     --disable-tools \
-    --disable-examples \
-    --build-3rdparty=libuv,libatomic_ops,openfec,cpputest \
+    --enable-tests \
+    --enable-benchmarks \
+    --build-3rdparty=libuv,libatomic_ops,openfec,cpputest,google-benchmark \
     --compiler=clang \
     --host=${TOOLCHAIN}
