@@ -510,7 +510,11 @@ for e in envlist:
     k, v = e.split('=', 1)
     env[k] = v
 
-name, ver = fullname.split('-', 1)
+m = re.match('^(.*?)-([0-9][0-9.-]+)$', fullname)
+if not m:
+    print("error: can't determine version of '%s'" % fullname, file=sys.stderr)
+    exit(1)
+name, ver = m.group(1), m.group(2)
 
 builddir = os.path.join(workdir, 'build', fullname)
 rpathdir = os.path.join(workdir, 'rpath')
@@ -851,6 +855,24 @@ elif name == 'cpputest':
     execute_make(logfile)
     install_tree('include', os.path.join(builddir, 'include'))
     install_files('lib/libCppUTest.a', os.path.join(builddir, 'lib'))
+elif name == 'google-benchmark':
+    download(
+      'https://github.com/google/benchmark/archive/v%s.tar.gz' % ver,
+      'benchmark_v%s.tar.gz' % ver,
+        logfile,
+        vendordir)
+    extract('benchmark_v%s.tar.gz' % ver,
+            'benchmark-%s' % ver)
+    os.chdir('src/benchmark-%s' % ver)
+    mkpath('build')
+    os.chdir('build')
+    execute_cmake('..', variant, toolchain, env, logfile, args=[
+        '-DBENCHMARK_ENABLE_GTEST_TESTS=OFF',
+        ])
+    execute_make(logfile)
+    os.chdir('..')
+    install_tree('include', os.path.join(builddir, 'include'), match=['*.h'])
+    install_files('build/src/libbenchmark.a', os.path.join(builddir, 'lib'))
 else:
     print("error: unknown 3rdparty '%s'" % fullname, file=sys.stderr)
     exit(1)

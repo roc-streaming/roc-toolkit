@@ -10,6 +10,8 @@ scons -Q clean
 scons -Q \
     --enable-werror \
     --enable-pulseaudio-modules \
+    --enable-tests \
+    --enable-examples \
     --build-3rdparty=libuv,libunwind,libatomic_ops,openfec,alsa,pulseaudio:10.0,sox,cpputest \
     --host=${TOOLCHAIN}
 
