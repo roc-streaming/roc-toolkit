@@ -6,8 +6,6 @@ scons -Q clean
 scons -Q --enable-werror --build-3rdparty=all \
       --disable-lib \
       --disable-tools \
-      --disable-tests \
-      --disable-examples \
       --disable-doc \
       --disable-libunwind \
       --disable-openfec \
@@ -25,4 +23,7 @@ scons -Q --enable-werror --build-3rdparty=all \
       test
 
 scons -Q --enable-werror --build-3rdparty=all \
+      --enable-tests \
+      --enable-benchmarks \
+      --enable-examples \
       test
