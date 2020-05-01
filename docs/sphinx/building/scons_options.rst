@@ -55,12 +55,13 @@ Options
 --enable-pulseaudio-modules                            enable building of pulseaudio modules
 --disable-lib                                          disable libroc building
 --disable-tools                                        disable tools building
---disable-tests                                        disable tests building
---disable-examples                                     disable examples building
+--enable-tests                                         enable tests building and running (requires CppUTest)
+--enable-benchmarks                                    enable bechmarks building and running (requires Google Benchmark)
+--enable-examples                                      enable examples building
 --disable-doc                                          disable Doxygen and Sphinx documentation generation
 --disable-openfec                                      disable OpenFEC support required for FEC codes
---disable-libunwind                                    disable libunwind support required for printing backtrace
 --disable-sox                                          disable SoX support in tools
+--disable-libunwind                                    disable libunwind support required for printing backtrace
 --disable-pulseaudio                                   disable PulseAudio support in tools
 --with-pulseaudio=WITH_PULSEAUDIO                      path to the PulseAudio source directory used when building PulseAudio modules
 --with-pulseaudio-build-dir=WITH_PULSEAUDIO_BUILD_DIR  path to the PulseAudio build directory used when building PulseAudio modules (needed in case you build PulseAudio out of source; if empty, the build directory is assumed to be the same as the source directory)
@@ -102,6 +103,9 @@ Targets
 ``test``
     build everything and run tests
 
+``bench``
+    build everything and run benchmarks
+
 ``clean``
     full clean, including build results, downloaded third-parties, generated documentation, and scons database
 
@@ -133,7 +137,10 @@ Targets
     build sphinx documentation (requires doxygen, sphinx-build, and breathe)
 
 ``{module}``
-    build specific module, e.g. ``roc_core``
+    build specific module, e.g. ``roc_pipeline``
 
 ``test/{module}``
-    run tests for specific module, e.g. ``test/roc_core``
+    run tests for specific module, e.g. ``test/roc_pipeline``
+
+``bench/{module}``
+    run benchmarks for specific module, e.g. ``bench/roc_pipeline``
