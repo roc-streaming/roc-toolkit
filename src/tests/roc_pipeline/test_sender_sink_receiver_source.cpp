@@ -103,30 +103,70 @@ TEST_GROUP(sender_sink_receiver_source) {
         address::SocketAddr receiver_source_addr = test::new_address(11);
         address::SocketAddr receiver_repair_addr = test::new_address(22);
 
-        SenderSink sender(sender_config(flags), format_map, packet_pool, byte_buffer_pool,
-                          sample_buffer_pool, allocator);
+        SenderSink sender(scheduler, sender_config(flags), format_map, packet_pool,
+                          byte_buffer_pool, sample_buffer_pool, allocator);
 
         CHECK(sender.valid());
 
-        SenderSink::EndpointSetHandle sender_endpoint_set = sender.add_endpoint_set();
-        CHECK(sender_endpoint_set);
+        SenderSink::EndpointSetHandle sender_endpoint_set = NULL;
 
-        SenderSink::EndpointHandle sender_source_endpoint = sender.add_endpoint(
-            sender_endpoint_set, address::Iface_AudioSource, source_proto);
-        CHECK(sender_source_endpoint);
+        {
+            pipeline::SenderSink::Tasks::AddEndpointSet task;
+            CHECK(sender.schedule_and_wait(task));
+            CHECK(task.success());
+            sender_endpoint_set = task.get_handle();
+            CHECK(sender_endpoint_set);
+        }
 
-        sender.set_endpoint_output_writer(sender_source_endpoint, queue);
-        sender.set_endpoint_destination_udp_address(sender_source_endpoint,
-                                                    receiver_source_addr);
+        SenderSink::EndpointHandle sender_source_endpoint = NULL;
+        SenderSink::EndpointHandle sender_repair_endpoint = NULL;
+
+        {
+            pipeline::SenderSink::Tasks::CreateEndpoint task(
+                sender_endpoint_set, address::Iface_AudioSource, source_proto);
+            CHECK(sender.schedule_and_wait(task));
+            CHECK(task.success());
+            sender_source_endpoint = task.get_handle();
+            CHECK(sender_source_endpoint);
+        }
+
+        {
+            pipeline::SenderSink::Tasks::SetEndpointOutputWriter task(
+                sender_source_endpoint, queue);
+            CHECK(sender.schedule_and_wait(task));
+            CHECK(task.success());
+        }
+
+        {
+            pipeline::SenderSink::Tasks::SetEndpointDestinationUdpAddress task(
+                sender_source_endpoint, receiver_source_addr);
+            CHECK(sender.schedule_and_wait(task));
+            CHECK(task.success());
+        }
 
         if (repair_proto != address::Proto_None) {
-            SenderSink::EndpointHandle sender_repair_endpoint = sender.add_endpoint(
-                sender_endpoint_set, address::Iface_AudioRepair, repair_proto);
-            CHECK(sender_repair_endpoint);
+            {
+                pipeline::SenderSink::Tasks::CreateEndpoint task(
+                    sender_endpoint_set, address::Iface_AudioRepair, repair_proto);
+                CHECK(sender.schedule_and_wait(task));
+                CHECK(task.success());
+                sender_repair_endpoint = task.get_handle();
+                CHECK(sender_repair_endpoint);
+            }
 
-            sender.set_endpoint_output_writer(sender_repair_endpoint, queue);
-            sender.set_endpoint_destination_udp_address(sender_repair_endpoint,
-                                                        receiver_repair_addr);
+            {
+                pipeline::SenderSink::Tasks::SetEndpointOutputWriter task(
+                    sender_repair_endpoint, queue);
+                CHECK(sender.schedule_and_wait(task));
+                CHECK(task.success());
+            }
+
+            {
+                pipeline::SenderSink::Tasks::SetEndpointDestinationUdpAddress task(
+                    sender_repair_endpoint, receiver_repair_addr);
+                CHECK(sender.schedule_and_wait(task));
+                CHECK(task.success());
+            }
         }
 
         ReceiverSource receiver(scheduler, receiver_config(), format_map, packet_pool,
