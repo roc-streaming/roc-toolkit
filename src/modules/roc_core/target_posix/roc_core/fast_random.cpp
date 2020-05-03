@@ -27,22 +27,23 @@ unsigned short rand_seed[3] = {};
 
 } // namespace
 
-// The implementation is based on arc4random_uniform() from OpenBSD to provide
-// a uniform distribution inside the requested range.
+// The implementation is based on "Debiased Modulo (Once) — Java's Method" algorithm
+// from https://www.pcg-random.org/posts/bounded-rands.html
 //
 // We use nrand48(), which is thread-safe on most platforms. It is probably not fully
 // thread-safe on glibc when used concurrently with lcong48(), but most likely the
 // race is harmless. See https://www.evanjones.ca/random-thread-safe.html.
 //
-// This implementation is not a cryptographically strong PRNG.
+// This implementation is not a cryptographically secure PRNG.
 uint32_t fast_random(uint32_t from, uint32_t to) {
     roc_panic_if_not(from <= to);
 
-    const uint64_t upper = uint64_t(to) - from + 1;
-    const uint64_t min = -upper % upper;
+    const uint64_t range = uint64_t(to) - from + 1;
+
+    uint64_t x, r;
 
     if (int err = pthread_mutex_lock(&rand_mutex)) {
-        roc_panic("pthread_mutex_lock: %s", errno_to_str(err).c_str());
+        roc_panic("fast random: pthread_mutex_lock(): %s", errno_to_str(err).c_str());
     }
 
     if (!rand_init) {
@@ -53,18 +54,16 @@ uint32_t fast_random(uint32_t from, uint32_t to) {
         rand_seed[2] = ((seed_48 >> 32) & 0xffff);
     }
 
-    uint64_t val = 0;
-    for (;;) {
-        if ((val = (uint64_t)nrand48(rand_seed)) >= min) {
-            break;
-        }
-    }
+    do {
+        x = (uint64_t)nrand48(rand_seed);
+        r = x % range;
+    } while (x - r > (-range));
 
     if (int err = pthread_mutex_unlock(&rand_mutex)) {
-        roc_panic("pthread_mutex_unlock: %s", errno_to_str(err).c_str());
+        roc_panic("fast random: pthread_mutex_unlock(): %s", errno_to_str(err).c_str());
     }
 
-    const uint32_t ret = from + uint32_t(val % upper);
+    const uint32_t ret = from + (uint32_t)r;
 
     roc_panic_if_not(ret >= from);
     roc_panic_if_not(ret <= to);
