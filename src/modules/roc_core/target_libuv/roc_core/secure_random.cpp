@@ -16,32 +16,35 @@
 namespace roc {
 namespace core {
 
-// Based on uv_random from libuv and arc4random_uniform() from OpenBSD.
+// The implementation is based on "Debiased Modulo (Once) — Java's Method" algorithm
+// from https://www.pcg-random.org/posts/bounded-rands.html
+//
+// We use uv_random() without an event loop, which is thread-safe.
 #if UV_VERSION_MAJOR > 1 || (UV_VERSION_MAJOR == 1 && UV_VERSION_MINOR >= 33)
 bool secure_random(uint32_t from, uint32_t to, uint32_t& result) {
     roc_panic_if_not(from <= to);
 
-    const uint64_t upper = (uint64_t)to - from + 1;
-    const uint64_t min = -upper % upper;
-    uint64_t val;
+    const uint64_t range = uint64_t(to) - from + 1;
 
-    for (;;) {
+    uint64_t x;
+    uint64_t r;
+
+    do {
+        uint32_t val = 0;
         if (int err = uv_random(NULL, NULL, &val, sizeof(val), 0, NULL)) {
             roc_log(LogError, "secure random : uv_random(): [%s] %s", uv_err_name(err),
                     uv_strerror(err));
             return false;
         }
-        if (val >= min) {
-            break;
-        }
-    }
+        x = uint64_t(val);
+        r = x % range;
+    } while (x - r > (-range));
 
-    const uint32_t ret = from + (uint32_t)(val % upper);
+    result = from + (uint32_t)r;
 
-    roc_panic_if_not(ret >= from);
-    roc_panic_if_not(ret <= to);
+    roc_panic_if_not(result >= from);
+    roc_panic_if_not(result <= to);
 
-    result = ret;
     return true;
 }
 #else  // UV_VERSION_MAJOR < 1 || (UV_VERSION_MAJOR == 1 && UV_VERSION_MINOR < 33)

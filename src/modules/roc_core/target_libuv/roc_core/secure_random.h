@@ -18,10 +18,10 @@ namespace roc {
 namespace core {
 
 //! Get a random integer from a cryptographically secure pseudorandom number
-//! generator(CSPRNG).
+//! generator (CSPRNG).
 //! @remarks
 //!  Writes a random value in [from; to] to @p result.
-//!  May block indefinitely.
+//!  May block indefinitely when not enough entropy is available.
 //!  Falls back to a regular PRNG when using libuv version before 1.33.0.
 //! @returns true on success or false if accessing CSPRNG failed.
 bool secure_random(uint32_t from, uint32_t to, uint32_t& result);
