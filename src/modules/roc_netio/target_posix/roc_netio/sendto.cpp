@@ -30,8 +30,8 @@ bool sendto_nb(int fd,
 #endif
         ) {
             roc_log(LogError, "sendto_nb: sendto: %s", core::errno_to_str().c_str());
-            return false;
         }
+        return false;
     }
     return true;
 }
