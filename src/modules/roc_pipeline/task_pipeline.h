@@ -13,7 +13,7 @@
 #define ROC_PIPELINE_TASK_PIPELINE_H_
 
 #include "roc_audio/frame.h"
-#include "roc_core/atomic.h"
+#include "roc_core/atomic_int.h"
 #include "roc_core/cond.h"
 #include "roc_core/list.h"
 #include "roc_core/mutex.h"
@@ -180,12 +180,12 @@ public:
 
         // Task state, defines whether task is finished already.
         // The task becomes immutable after setting state_ to StateFinished;
-        core::Atomic state_;
+        core::AtomicInt state_;
 
         // Task result, defines wether finished task succeeded or failed.
         // Makes sense only after setting state_ to StateFinished.
         // This atomic should be assigned before setting state_ to StateFinished.
-        core::Atomic success_;
+        core::AtomicInt success_;
 
         // Completion handler;
         ICompletionHandler* handler_;
@@ -319,10 +319,10 @@ private:
     int pending_tasks_;
 
     // counter of pending process_frame_and_tasks() calls blocked on pipeline_mutex_
-    core::Atomic pending_frames_;
+    core::AtomicInt pending_frames_;
 
     // indicates whether asynchronous work was scheduled
-    core::Atomic processing_scheduled_;
+    core::AtomicInt processing_scheduled_;
 
     // when task processing before next sub-frame ends
     core::nanoseconds_t subframe_tasks_deadline_;

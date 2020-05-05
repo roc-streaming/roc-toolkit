@@ -73,7 +73,7 @@ private:
     size_t n_bufs_;
     const bool oneshot_;
 
-    core::Atomic stop_;
+    core::Atomic<int> stop_;
 };
 
 } // namespace sndio

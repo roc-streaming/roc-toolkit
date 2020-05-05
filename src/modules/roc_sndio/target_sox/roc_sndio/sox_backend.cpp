@@ -165,7 +165,7 @@ void log_handler(unsigned sox_level,
         break;
     }
 
-    if (level > core::Logger::instance().level()) {
+    if (level > core::Logger::instance().get_level()) {
         return;
     }
 

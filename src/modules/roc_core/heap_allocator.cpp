@@ -7,21 +7,22 @@
  */
 
 #include "roc_core/heap_allocator.h"
+#include "roc_core/atomic_ops.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 
 namespace roc {
 namespace core {
 
-Atomic HeapAllocator::panic_on_leak_(false);
+int HeapAllocator::panic_on_leak_;
 
 void HeapAllocator::enable_panic_on_leak() {
-    panic_on_leak_ = true;
+    AtomicOps::store_release(panic_on_leak_, true);
 }
 
 HeapAllocator::~HeapAllocator() {
     if (num_allocations_ != 0) {
-        if (panic_on_leak_) {
+        if (AtomicOps::load_acquire(panic_on_leak_)) {
             roc_panic("heap allocator: detected leak(s): %d objects was not freed",
                       (int)num_allocations_);
         } else {

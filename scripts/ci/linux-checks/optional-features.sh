@@ -7,6 +7,7 @@ scons -Q --enable-werror --build-3rdparty=all \
       --disable-lib \
       --disable-tools \
       --disable-doc \
+      --disable-c11 \
       --disable-libunwind \
       --disable-openfec \
       --disable-sox \

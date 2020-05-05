@@ -453,7 +453,7 @@ void NetworkLoop::finish_task_(Task& task) {
 }
 
 void NetworkLoop::update_num_ports_() {
-    num_open_ports_ = (long)open_ports_.size();
+    num_open_ports_ = (int)open_ports_.size();
 }
 
 } // namespace netio

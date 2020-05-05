@@ -152,7 +152,7 @@ private:
     SenderSink::Tasks::AddEndpointSet* task_add_endpoint_set_;
     SenderSink::Tasks::CreateEndpoint* task_create_endpoint_;
 
-    core::Atomic done_;
+    core::Atomic<int> done_;
 };
 
 } // namespace
