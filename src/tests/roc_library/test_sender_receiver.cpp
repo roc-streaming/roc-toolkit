@@ -35,7 +35,7 @@ TEST_GROUP(sender_receiver) {
     float sample_step;
 
     void setup() {
-        roc_log_set_level((roc_log_level)core::Logger::instance().level());
+        roc_log_set_level((roc_log_level)core::Logger::instance().get_level());
         sample_step = 1. / 32768.;
     }
 

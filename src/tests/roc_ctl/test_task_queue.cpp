@@ -8,7 +8,6 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "roc_core/atomic.h"
 #include "roc_core/cond.h"
 #include "roc_core/mutex.h"
 #include "roc_core/panic.h"

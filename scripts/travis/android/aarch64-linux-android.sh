@@ -10,6 +10,6 @@ scons -Q \
     --disable-tools \
     --enable-tests \
     --enable-benchmarks \
-    --build-3rdparty=libuv,libatomic_ops,openfec,cpputest,google-benchmark \
+    --build-3rdparty=libuv,openfec,cpputest,google-benchmark \
     --compiler=clang \
     --host=${TOOLCHAIN}

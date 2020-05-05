@@ -15,7 +15,7 @@ Ubuntu 16.04 and later
 
     # for Roc
     $ sudo apt-get install g++ pkg-config scons ragel gengetopt \
-        libuv1-dev libunwind-dev libatomic-ops-dev libpulse-dev libsox-dev
+        libuv1-dev libunwind-dev libpulse-dev libsox-dev
 
     # for 3rd-parties
     $ sudo apt-get install libtool intltool autoconf automake make cmake
@@ -43,7 +43,7 @@ Ubuntu 14.04 and later, Debian Jessie and later
 
     # for Roc
     $ sudo apt-get install g++ pkg-config scons ragel gengetopt \
-        libunwind8-dev libatomic-ops-dev libpulse-dev libsox-dev
+        libunwind8-dev libpulse-dev libsox-dev
 
     # for 3rd-parties
     $ sudo apt-get install libtool intltool autoconf automake make cmake
@@ -53,16 +53,16 @@ Ubuntu 14.04 and later, Debian Jessie and later
     $ cd roc
 
     # build libraries and tools
-    $ scons -Q --build-3rdparty=libuv,openfec
+    $ scons -Q --build-3rdparty=libuv,libatomic_ops,openfec
 
     # install libraries and tools
-    $ sudo scons -Q --build-3rdparty=libuv,openfec install
+    $ sudo scons -Q --build-3rdparty=libuv,libatomic_ops,openfec install
 
     # build libraries, tools, and PulseAudio modules
-    $ scons -Q --enable-pulseaudio-modules --build-3rdparty=libuv,openfec,pulseaudio
+    $ scons -Q --enable-pulseaudio-modules --build-3rdparty=libuv,libatomic_ops,openfec,pulseaudio
 
     # install libraries, tools, and PulseAudio modules
-    $ sudo scons -Q --enable-pulseaudio-modules --build-3rdparty=libuv,openfec,pulseaudio install
+    $ sudo scons -Q --enable-pulseaudio-modules --build-3rdparty=libuv,libatomic_ops,openfec,pulseaudio install
 
 Fedora 22 and later
 -------------------
@@ -71,7 +71,7 @@ Fedora 22 and later
 
     # for Roc
     $ sudo dnf install gcc-c++ pkgconfig scons ragel gengetopt \
-        libuv-devel libunwind-devel libatomic_ops-devel pulseaudio-libs-devel sox-devel
+        libuv-devel libunwind-devel pulseaudio-libs-devel sox-devel
 
     # for 3rd-parties
     $ sudo dnf install libtool intltool autoconf automake make cmake
@@ -102,7 +102,7 @@ Centos 7 and later
 
     # for Roc
     $ sudo yum install gcc-c++ pkgconfig scons ragel gengetopt \
-        libunwind-devel libatomic_ops-devel pulseaudio-libs-devel sox-devel
+        libunwind-devel pulseaudio-libs-devel sox-devel
 
     # for 3rd-parties
     $ sudo yum install libtool intltool autoconf automake make cmake
@@ -112,16 +112,16 @@ Centos 7 and later
     $ cd roc
 
     # build libraries and tools
-    $ scons -Q --build-3rdparty=libuv,openfec
+    $ scons -Q --build-3rdparty=libuv,libatomic_ops,openfec
 
     # install libraries and tools
-    $ sudo scons -Q --build-3rdparty=libuv,openfec install
+    $ sudo scons -Q --build-3rdparty=libuv,libatomic_ops,openfec install
 
     # build libraries, tools, and PulseAudio modules
-    $ scons -Q --enable-pulseaudio-modules --build-3rdparty=libuv,openfec,pulseaudio
+    $ scons -Q --enable-pulseaudio-modules --build-3rdparty=libuv,libatomic_ops,openfec,pulseaudio
 
     # install libraries, tools, and PulseAudio modules
-    $ sudo scons -Q --enable-pulseaudio-modules --build-3rdparty=libuv,openfec,pulseaudio install
+    $ sudo scons -Q --enable-pulseaudio-modules --build-3rdparty=libuv,libatomic_ops,openfec,pulseaudio install
 
 openSUSE Leap and later
 -----------------------
@@ -130,7 +130,7 @@ openSUSE Leap and later
 
     # for Roc
     $ sudo zypper install gcc-c++ scons ragel gengetopt \
-         libuv-devel libunwind-devel libatomic_ops-devel libpulse-devel sox-devel
+         libuv-devel libunwind-devel libpulse-devel sox-devel
 
     # for 3rd-parties
     $ sudo zypper install pkg-config intltool libtool autoconf automake make cmake
@@ -157,7 +157,7 @@ Arch Linux
 .. code::
 
     # for Roc
-    $ sudo pacman -S gcc pkgconf scons ragel gengetopt libuv libunwind libatomic_ops libpulse sox
+    $ sudo pacman -S gcc pkgconf scons ragel gengetopt libuv libunwind libpulse sox
 
     # for 3rd-parties
     $ sudo pacman -S grep gawk libtool intltool autoconf automake make cmake
@@ -185,7 +185,7 @@ Alpine Linux
 
     # for Roc
     $ sudo apk add g++ pkgconf scons ragel gengetopt \
-        libuv-dev libunwind-dev libatomic_ops-dev pulseaudio-dev sox-dev
+        libuv-dev libunwind-dev pulseaudio-dev sox-dev
 
     # for 3rd-parties
     $ sudo apk add libtool autoconf automake make cmake
@@ -229,7 +229,7 @@ Raspberry Pi 2 and 3
           scons -Q \
             --enable-pulseaudio-modules \
             --host=arm-linux-gnueabihf \
-            --build-3rdparty=libuv,libunwind,libatomic_ops,openfec,alsa,pulseaudio:12.2,sox
+            --build-3rdparty=libuv,libunwind,openfec,alsa,pulseaudio:12.2,sox
 
     # install Roc binaries
     $ scp ./bin/arm-linux-gnueabihf/roc-{recv,send,conv} <address>:/usr/bin
@@ -280,7 +280,7 @@ Orange Pi 64-bit models
           scons -Q \
             --enable-pulseaudio-modules \
             --host=aarch64-linux-gnu \
-            --build-3rdparty=libuv,libunwind,libatomic_ops,openfec,alsa,pulseaudio:8.0,sox
+            --build-3rdparty=libuv,libunwind,openfec,alsa,pulseaudio:8.0,sox
 
     # install Roc binaries
     $ scp ./bin/aarch64-linux-gnu/roc-{recv,send,conv} <address>:/usr/bin
@@ -305,7 +305,7 @@ Orange Pi 32-bit models
           scons -Q \
             --enable-pulseaudio-modules \
             --host=arm-linux-gnueabihf \
-            --build-3rdparty=libuv,libunwind,libatomic_ops,openfec,alsa,pulseaudio:8.0,sox
+            --build-3rdparty=libuv,libunwind,openfec,alsa,pulseaudio:8.0,sox
 
     # install Roc binaries
     $ scp ./bin/arm-linux-gnueabihf/roc-{recv,send,conv} <address>:/usr/bin
@@ -324,7 +324,7 @@ macOS 10.12 and later
 .. code::
 
     # for Roc
-    $ brew install scons ragel gengetopt sox libuv libatomic_ops
+    $ brew install scons ragel gengetopt sox libuv
 
     # for 3rd-parties
     $ brew install libtool autoconf automake make cmake
@@ -345,7 +345,7 @@ macOS 10.11 and later
 .. code::
 
     # for Roc
-    $ brew install scons ragel gengetopt libatomic_ops
+    $ brew install scons ragel gengetopt
 
     # for 3rd-parties
     $ brew install libtool autoconf automake make cmake

@@ -31,19 +31,19 @@ public:
 
     ~HeapAllocator();
 
+    //! Get number of allocated blocks.
+    size_t num_allocations() const;
+
     //! Allocate memory.
     virtual void* allocate(size_t size);
 
     //! Deallocate previously allocated memory.
     virtual void deallocate(void*);
 
-    //! Get number of allocated blocks.
-    size_t num_allocations() const;
-
 private:
-    static Atomic panic_on_leak_;
+    static int panic_on_leak_;
 
-    Atomic num_allocations_;
+    Atomic<int> num_allocations_;
 };
 
 } // namespace core

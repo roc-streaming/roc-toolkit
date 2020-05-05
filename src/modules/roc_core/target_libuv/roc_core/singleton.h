@@ -15,7 +15,7 @@
 #include <uv.h>
 
 #include "roc_core/alignment.h"
-#include "roc_core/barrier.h"
+#include "roc_core/atomic_ops.h"
 #include "roc_core/errno_to_str.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/panic.h"
@@ -42,7 +42,7 @@ private:
 
     static void create_() {
         instance_ = new (storage_.mem) T();
-        roc_barrier();
+        AtomicOps::barrier_release();
         initialized_ = true;
     }
 

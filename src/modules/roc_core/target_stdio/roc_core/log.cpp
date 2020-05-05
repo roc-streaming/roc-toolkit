@@ -23,10 +23,6 @@ Logger::Logger()
     , colors_(DefaultColorsMode) {
 }
 
-LogLevel Logger::level() {
-    return (LogLevel)(long)level_;
-}
-
 void Logger::set_level(LogLevel level) {
     if ((int)level < LogNone) {
         level = LogNone;
@@ -54,7 +50,7 @@ void Logger::set_colors(ColorsMode colors) {
 void Logger::print(const char* module, LogLevel level, const char* format, ...) {
     Mutex::Lock lock(mutex_);
 
-    if (level > level_ || level == LogNone) {
+    if (level > get_level() || level == LogNone) {
         return;
     }
 
