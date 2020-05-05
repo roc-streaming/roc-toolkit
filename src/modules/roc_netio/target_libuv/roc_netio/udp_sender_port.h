@@ -36,14 +36,19 @@ struct UdpSenderConfig {
     //! If true, sender is allowed to send packets to broadcast addresses.
     bool broadcast_enabled;
 
+    //! If true, allow non-blocking writes.
+    bool non_blocking_enabled;
+
     UdpSenderConfig()
-        : broadcast_enabled(false) {
+        : broadcast_enabled(false)
+        , non_blocking_enabled(true) {
     }
 
     //! Check two configs for equality.
     bool operator==(const UdpSenderConfig& other) const {
         return bind_address == other.bind_address
-            && broadcast_enabled == other.broadcast_enabled;
+            && broadcast_enabled == other.broadcast_enabled
+            && non_blocking_enabled == other.non_blocking_enabled;
     }
 };
 

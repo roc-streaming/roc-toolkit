@@ -158,16 +158,18 @@ void UdpSenderPort::write(const packet::PacketPtr& pp) {
             return;
         }
 
-        if (rate_limiter_.allow()) {
-            const double nb_ratio = packet_counter_ != 0
-                ? (double)nb_packet_counter_ / packet_counter_
-                : 0.;
-            roc_log(LogDebug, "udp sender: total=%u nb=%u nb_ratio=%.5f",
-                    packet_counter_, nb_packet_counter_, nb_ratio);
-        }
+        if (config_.non_blocking_enabled) {
+            if (rate_limiter_.allow()) {
+                const double nb_ratio = packet_counter_ != 0
+                    ? (double)nb_packet_counter_ / packet_counter_
+                    : 0.;
+                roc_log(LogDebug, "udp sender: total=%u nb=%u nb_ratio=%.5f",
+                        packet_counter_, nb_packet_counter_, nb_ratio);
+            }
 
-        if (try_nonblocking_send_(pp)) {
-            return;
+            if (try_nonblocking_send_(pp)) {
+                return;
+            }
         }
 
         list_.push_back(*pp);
