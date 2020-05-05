@@ -61,7 +61,7 @@ public:
     }
 
 private:
-    mutable Atomic counter_;
+    mutable Atomic<int> counter_;
 };
 
 } // namespace core

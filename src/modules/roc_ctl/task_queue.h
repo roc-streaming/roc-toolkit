@@ -57,8 +57,8 @@ public:
         core::nanoseconds_t deadline_;
 
         // result_ should be set before setting pending_ to false
-        core::Atomic result_;
-        core::Atomic pending_;
+        core::Atomic<int> result_;
+        core::Atomic<int> pending_;
 
         bool request_cancel_;
 
