@@ -19,7 +19,7 @@ do
           --enable-tests \
           --enable-benchmarks \
           --enable-examples \
-          --build-3rdparty=openfec,pulseaudio,google-benchmark \
+          --build-3rdparty=libatomic_ops,openfec,pulseaudio,google-benchmark \
           --compiler=$c \
           test
 done

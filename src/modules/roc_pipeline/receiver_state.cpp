@@ -21,7 +21,7 @@ bool ReceiverState::has_pending_packets() const {
     return pending_packets_;
 }
 
-void ReceiverState::add_pending_packets(long increment) {
+void ReceiverState::add_pending_packets(int increment) {
     const long result = pending_packets_ += increment;
     roc_panic_if(result < 0);
 }
@@ -30,7 +30,7 @@ size_t ReceiverState::num_sessions() const {
     return (size_t)sessions_;
 }
 
-void ReceiverState::add_sessions(long increment) {
+void ReceiverState::add_sessions(int increment) {
     const long result = sessions_ += increment;
     roc_panic_if(result < 0);
 }

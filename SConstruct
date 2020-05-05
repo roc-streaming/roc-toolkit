@@ -204,6 +204,11 @@ AddOption('--disable-doc',
           action='store_true',
           help='disable Doxygen and Sphinx documentation generation')
 
+AddOption('--disable-c11',
+          dest='disable_c11',
+          action='store_true',
+          help='disable C11 support')
+
 AddOption('--disable-openfec',
           dest='disable_openfec',
           action='store_true',
@@ -619,14 +624,33 @@ else:
                  "provide either known '--platform' or '--override-targets' option"),
                     host, ', '.join(supported_platforms))
 
+    has_c11 = False
+
+    if not GetOption('disable_c11'):
+        if compiler == 'gcc':
+            has_c11 = compiler_ver[:2] >= (4, 9)
+        elif compiler == 'clang':
+            if platform == 'darwin':
+                has_c11 = compiler_ver[:2] >= (7, 0)
+            else:
+                has_c11 = compiler_ver[:2] >= (3, 6)
+
+    if has_c11:
+        env.Append(ROC_TARGETS=[
+            'target_c11',
+        ])
+
     if platform in ['linux', 'android', 'darwin']:
         env.Append(ROC_TARGETS=[
             'target_posix',
             'target_stdio',
             'target_gcc',
             'target_libuv',
-            'target_libatomic_ops',
         ])
+        if not has_c11:
+            env.Append(ROC_TARGETS=[
+                'target_libatomic_ops',
+            ])
 
     if platform in ['linux', 'android']:
         env.Append(ROC_TARGETS=[

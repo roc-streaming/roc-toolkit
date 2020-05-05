@@ -93,7 +93,7 @@ private:
     roc_sender* sndr_;
     const float sample_step_;
     const size_t frame_size_;
-    core::Atomic stopped_;
+    core::Atomic<int> stopped_;
 };
 
 } // namespace test

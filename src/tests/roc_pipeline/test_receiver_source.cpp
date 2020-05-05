@@ -148,7 +148,7 @@ private:
     ReceiverSource::Tasks::CreateEndpoint* task_create_endpoint_;
     ReceiverSource::Tasks::DeleteEndpoint* task_delete_endpoint_;
 
-    core::Atomic done_;
+    core::Atomic<int> done_;
 };
 
 } // namespace
