@@ -93,7 +93,7 @@ private:
     netio::NetworkLoop network_loop_;
     ctl::ControlLoop control_loop_;
 
-    core::Atomic ref_counter_;
+    core::Atomic<int> ref_counter_;
 };
 
 } // namespace peer
