@@ -53,7 +53,7 @@ private:
     uv_thread_t thread_;
 
     int started_;
-    Atomic joinable_;
+    Atomic<int> joinable_;
 
     Mutex mutex_;
 };

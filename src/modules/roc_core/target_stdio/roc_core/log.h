@@ -29,7 +29,7 @@
 #define roc_log(level, ...)                                                              \
     do {                                                                                 \
         ::roc::core::Logger& logger = ::roc::core::Logger::instance();                   \
-        if (logger.is_level_enabled(level)) {                                            \
+        if ((level) <= logger.get_level()) {                                             \
             logger.print(ROC_STRINGIZE(ROC_MODULE), (level), __VA_ARGS__);               \
         }                                                                                \
     } while (0)
@@ -75,11 +75,8 @@ public:
         ROC_ATTR_PRINTF(4, 5);
 
     //! Get current maximum log level.
-    LogLevel level();
-
-    //! Check if given log level is enabled.
-    inline bool is_level_enabled(LogLevel level) {
-        return level <= level_.raw();
+    LogLevel get_level() {
+        return (LogLevel)level_.load_relaxed();
     }
 
     //! Set maximum log level.
@@ -109,7 +106,7 @@ private:
 
     void default_print_(LogLevel level, const char* module, const char* message);
 
-    core::Atomic level_;
+    Atomic<int> level_;
 
     Mutex mutex_;
 

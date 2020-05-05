@@ -17,7 +17,7 @@ Runtime dependencies
 ====================
 
 * `libuv <http://libuv.org>`_ >= 1.5.0, recommended >= 1.35.0
-* `libatomic_ops <https://github.com/ivmai/libatomic_ops/>`_ >= 7.4.6
+* `libatomic_ops <https://github.com/ivmai/libatomic_ops/>`_ >= 7.6.0 (required on non-C11 compilers)
 * `libunwind <https://www.nongnu.org/libunwind/>`_ >= 1.2.1 (optional, install if you want backtraces on a panic or a crash)
 * `OpenFEC <http://openfec.org>`_ >= 1.4.2 (optional but recommended, install if you want to enable FEC support)
 * `SoX <http://sox.sourceforge.net>`_ >= 14.4.0 (optional, install if you want SoX backend in tools)
