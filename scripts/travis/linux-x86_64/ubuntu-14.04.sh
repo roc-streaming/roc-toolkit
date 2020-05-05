@@ -10,7 +10,7 @@ do
           --enable-pulseaudio-modules \
           --enable-tests \
           --enable-examples \
-          --build-3rdparty=libuv,openfec,pulseaudio,cpputest \
+          --build-3rdparty=libuv,libatomic_ops,openfec,pulseaudio,cpputest \
           --compiler=$c \
           test
 done

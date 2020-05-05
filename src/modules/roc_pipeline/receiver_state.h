@@ -30,17 +30,17 @@ public:
     bool has_pending_packets() const;
 
     //! Add given number to pending packets counter.
-    void add_pending_packets(long increment);
+    void add_pending_packets(int increment);
 
     //! Get sessions counter.
     size_t num_sessions() const;
 
     //! Add given number to sessions counter.
-    void add_sessions(long increment);
+    void add_sessions(int increment);
 
 private:
-    core::Atomic pending_packets_;
-    core::Atomic sessions_;
+    core::Atomic<int> pending_packets_;
+    core::Atomic<int> sessions_;
 };
 
 } // namespace pipeline
