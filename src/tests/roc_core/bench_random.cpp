@@ -15,7 +15,7 @@ namespace roc {
 namespace core {
 namespace {
 
-void Bench_FastRandom(benchmark::State& state) {
+void BM_Random_Fast(benchmark::State& state) {
     uint32_t r = 0;
     while (state.KeepRunning()) {
         r = fast_random(r, (uint32_t)-1);
@@ -23,9 +23,9 @@ void Bench_FastRandom(benchmark::State& state) {
     }
 }
 
-BENCHMARK(Bench_FastRandom);
+BENCHMARK(BM_Random_Fast);
 
-void Bench_SecureRandom(benchmark::State& state) {
+void BM_Random_Secure(benchmark::State& state) {
     uint32_t r = 0;
     while (state.KeepRunning()) {
         secure_random(r, (uint32_t)-1, r);
@@ -33,7 +33,7 @@ void Bench_SecureRandom(benchmark::State& state) {
     }
 }
 
-BENCHMARK(Bench_SecureRandom);
+BENCHMARK(BM_Random_Secure);
 
 } // namespace
 } // namespace core
