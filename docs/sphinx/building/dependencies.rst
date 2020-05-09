@@ -35,7 +35,7 @@ Development dependencies
 ========================
 
 * `CppUTest <http://cpputest.github.io>`_ >= 3.4 (optional, install if you want to build tests)
-* `Google Benchmark <https://github.com/google/benchmark>`_ >= 1.2.0 (optional, install if you want to build benchmarks)
+* `Google Benchmark <https://github.com/google/benchmark>`_ >= 1.5.0 (optional, install if you want to build benchmarks)
 * `clang-format <https://clang.llvm.org/docs/ClangFormat.html>`_ >= 3.8 (optional, install if you want to format code)
 * `clang-tidy <http://clang.llvm.org/extra/clang-tidy/>`_ (optional, install if you want to run linter)
 * `doxygen <http://www.stack.nl/~dimitri/doxygen/>`_ >= 1.6, `graphviz <https://graphviz.gitlab.io/>`_ (optional, install if you want to build doxygen or sphinx documentation)
