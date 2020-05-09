@@ -8,7 +8,7 @@ scons -Q \
       --enable-tests \
       --enable-benchmarks \
       --enable-examples \
-      --build-3rdparty=openfec,google-benchmark:1.2.0 \
+      --build-3rdparty=openfec,google-benchmark \
       test
 
 for c in gcc-4.8 gcc-5 clang-3.7
@@ -19,7 +19,7 @@ do
           --enable-tests \
           --enable-benchmarks \
           --enable-examples \
-          --build-3rdparty=openfec,pulseaudio,google-benchmark:1.2.0 \
+          --build-3rdparty=openfec,pulseaudio,google-benchmark \
           --compiler=$c \
           test
 done
