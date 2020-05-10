@@ -16,6 +16,7 @@ namespace pipeline {
 TaskPipeline::Task::Task()
     : state_(StateNew)
     , success_(false)
+    , sem_(NULL)
     , handler_(NULL) {
 }
 
@@ -43,34 +44,27 @@ TaskPipeline::TaskPipeline(ITaskScheduler& scheduler,
           packet::ns_to_size(config.min_frame_length_between_tasks, sample_rate, ch_mask))
     , max_samples_between_tasks_(
           packet::ns_to_size(config.max_frame_length_between_tasks, sample_rate, ch_mask))
+    , no_task_proc_half_interval_(config.task_processing_prohibited_interval / 2)
     , scheduler_(scheduler)
-    , task_finished_(task_queue_mutex_)
-    , pending_tasks_(0)
+    , processing_state_(ProcNotScheduled)
+    , next_frame_deadline_(0)
     , subframe_tasks_deadline_(0)
-    , curr_frame_tasks_deadline_(0)
-    , next_frame_tasks_deadline_(0)
     , samples_processed_(0)
     , enough_samples_to_process_tasks_(false) {
 }
 
 TaskPipeline::~TaskPipeline() {
-    core::Mutex::Lock lock(task_queue_mutex_);
-
     if (pending_tasks_ != 0) {
         roc_panic(
             "task pipeline: attempt to destroy pipeline before finishing all tasks");
     }
 }
 
-TaskPipeline::Stats TaskPipeline::get_stats() const {
-    core::Mutex::Lock lock(task_queue_mutex_);
-
+const TaskPipeline::Stats& TaskPipeline::get_stats_ref() const {
     return stats_;
 }
 
 size_t TaskPipeline::num_pending_tasks() const {
-    core::Mutex::Lock lock(task_queue_mutex_);
-
     return (size_t)pending_tasks_;
 }
 
@@ -81,98 +75,124 @@ size_t TaskPipeline::num_pending_frames() const {
 void TaskPipeline::schedule(Task& task, ICompletionHandler& handler) {
     task.handler_ = &handler;
 
-    schedule_task_(task, false);
+    schedule_and_maybe_process_task_(task);
 }
 
 bool TaskPipeline::schedule_and_wait(Task& task) {
-    schedule_task_(task, true);
+    core::Semaphore completion_sem;
+
+    task.sem_ = &completion_sem;
+
+    schedule_and_maybe_process_task_(task);
+
+    if (task.state_ != Task::StateFinished) {
+        completion_sem.wait();
+    }
 
     return task.success_;
 }
 
-void TaskPipeline::schedule_task_(Task& task, bool wait_finished) {
-    task_queue_mutex_.lock();
-
+void TaskPipeline::schedule_and_maybe_process_task_(Task& task) {
     if (task.state_ != Task::StateNew) {
         roc_panic("task pipeline: attempt to schedule task more than once");
     }
-
     task.state_ = Task::StateScheduled;
-    pending_tasks_++;
 
-    if (pending_tasks_ == 1 && interframe_task_processing_allowed_()
-        && pipeline_mutex_.try_lock()) {
-        task_queue_mutex_.unlock();
-        process_task_(task);
-        task_queue_mutex_.lock();
+    if (++pending_tasks_ != 1) {
+        task_queue_.push_back(task);
+        return;
+    }
 
-        pending_tasks_--;
+    core::nanoseconds_t next_frame_deadline;
+    if (!next_frame_deadline_.try_load(next_frame_deadline)) {
+        task_queue_.push_back(task);
+        return;
+    }
 
-        stats_.task_processed_total++;
-        stats_.task_processed_in_place++;
-
-        bool pending_frame = pending_frames_;
-        if (pending_frame) {
-            stats_.preemptions++;
-        }
-
-        if (task_queue_.size() != 0 && !pending_frame) {
-            schedule_async_task_processing_();
-        }
-
-        pipeline_mutex_.unlock();
-    } else {
+    if (!interframe_task_processing_allowed_(next_frame_deadline)) {
         task_queue_.push_back(task);
 
-        if (pipeline_mutex_.try_lock()) {
+        if (pending_frames_ == 0) {
             schedule_async_task_processing_();
-            pipeline_mutex_.unlock();
         }
+
+        return;
     }
 
-    if (wait_finished) {
-        while (task.state_ != Task::StateFinished) {
-            task_finished_.wait();
-        }
+    if (!pipeline_mutex_.try_lock()) {
+        task_queue_.push_back(task);
+        return;
     }
 
-    task_queue_mutex_.unlock();
+    process_task_(task);
+    --pending_tasks_;
+
+    stats_.task_processed_total++;
+    stats_.task_processed_in_place++;
+
+    const int n_pending_frames = pending_frames_;
+    if (n_pending_frames != 0) {
+        stats_.preemptions++;
+    }
+
+    pipeline_mutex_.unlock();
+
+    if (n_pending_frames == 0 && pending_tasks_ != 0) {
+        schedule_async_task_processing_();
+    }
 }
 
 void TaskPipeline::process_tasks() {
-    task_queue_mutex_.lock();
+    const bool need_reschedule = maybe_process_tasks_();
 
-    processing_scheduled_ = false;
+    processing_state_.store_relaxed(ProcNotScheduled);
 
-    if (pipeline_mutex_.try_lock()) {
-        bool pending_frame = false;
+    if (need_reschedule) {
+        schedule_async_task_processing_();
+    }
+}
 
-        while (task_queue_.size() != 0 && interframe_task_processing_allowed_()
-               && !(pending_frame = pending_frames_)) {
-            Task* task = task_queue_.front();
-            task_queue_.remove(*task);
-
-            task_queue_mutex_.unlock();
-            process_task_(*task);
-            task_queue_mutex_.lock();
-
-            pending_tasks_--;
-
-            stats_.task_processed_total++;
-        }
-
-        if (pending_frame) {
-            stats_.preemptions++;
-        }
-
-        if (task_queue_.size() != 0 && !pending_frame) {
-            schedule_async_task_processing_();
-        }
-
-        pipeline_mutex_.unlock();
+bool TaskPipeline::maybe_process_tasks_() {
+    core::nanoseconds_t next_frame_deadline;
+    if (!next_frame_deadline_.try_load(next_frame_deadline)) {
+        return false;
     }
 
-    task_queue_mutex_.unlock();
+    if (!pipeline_mutex_.try_lock()) {
+        return false;
+    }
+
+    processing_state_.store_relaxed(ProcRunning);
+
+    int n_pending_frames = 0;
+
+    for (;;) {
+        if (!interframe_task_processing_allowed_(next_frame_deadline)) {
+            break;
+        }
+
+        if ((n_pending_frames = pending_frames_) != 0) {
+            break;
+        }
+
+        Task* task = task_queue_.try_pop_front();
+        if (!task) {
+            break;
+        }
+
+        process_task_(*task);
+        --pending_tasks_;
+
+        stats_.task_processed_total++;
+    }
+
+    if (n_pending_frames != 0) {
+        stats_.preemptions++;
+    }
+
+    pipeline_mutex_.unlock();
+
+    return (n_pending_frames == 0 && pending_tasks_ != 0);
 }
 
 bool TaskPipeline::process_frame_and_tasks(audio::Frame& frame) {
@@ -185,23 +205,17 @@ bool TaskPipeline::process_frame_and_tasks(audio::Frame& frame) {
 bool TaskPipeline::process_frame_and_tasks_simple_(audio::Frame& frame) {
     ++pending_frames_;
 
-    pipeline_mutex_.lock();
-
     cancel_async_task_processing_();
+
+    pipeline_mutex_.lock();
 
     const bool frame_res = process_frame_imp(frame);
 
-    task_queue_mutex_.lock();
-
-    if (task_queue_.size() != 0) {
-        schedule_async_task_processing_();
-    }
-
     pipeline_mutex_.unlock();
 
-    --pending_frames_;
-
-    task_queue_mutex_.unlock();
+    if (--pending_frames_ == 0 && pending_tasks_ != 0) {
+        schedule_async_task_processing_();
+    }
 
     return frame_res;
 }
@@ -211,9 +225,11 @@ bool TaskPipeline::process_frame_and_tasks_precise_(audio::Frame& frame) {
 
     const core::nanoseconds_t frame_start_time = timestamp_imp();
 
+    cancel_async_task_processing_();
+
     pipeline_mutex_.lock();
 
-    cancel_async_task_processing_();
+    core::nanoseconds_t next_frame_deadline = 0;
 
     size_t frame_pos = 0;
     bool frame_res = false;
@@ -223,27 +239,20 @@ bool TaskPipeline::process_frame_and_tasks_precise_(audio::Frame& frame) {
 
         frame_res = process_next_subframe_(frame, &frame_pos);
 
-        task_queue_mutex_.lock();
-
         if (first_iteration) {
-            update_interframe_deadlines_(frame_start_time, frame.size());
+            next_frame_deadline =
+                update_next_frame_deadline_(frame_start_time, frame.size());
         }
 
         if (start_subframe_task_processing_()) {
-            while (Task* task = task_queue_.front()) {
-                task_queue_.remove(*task);
-
-                task_queue_mutex_.unlock();
+            while (Task* task = task_queue_.try_pop_front()) {
                 process_task_(*task);
-                task_queue_mutex_.lock();
-
-                pending_tasks_--;
+                --pending_tasks_;
 
                 stats_.task_processed_total++;
                 stats_.task_processed_in_frame++;
 
-                if (!subframe_task_processing_allowed_()
-                    || !interframe_task_processing_allowed_()) {
+                if (!subframe_task_processing_allowed_(next_frame_deadline)) {
                     break;
                 }
             }
@@ -252,69 +261,83 @@ bool TaskPipeline::process_frame_and_tasks_precise_(audio::Frame& frame) {
         if (!frame_res || frame_pos == frame.size()) {
             break;
         }
-
-        task_queue_mutex_.unlock();
-    }
-
-    if (task_queue_.size() != 0) {
-        schedule_async_task_processing_();
     }
 
     pipeline_mutex_.unlock();
 
-    --pending_frames_;
-
-    task_queue_mutex_.unlock();
+    if (--pending_frames_ == 0 && pending_tasks_ != 0) {
+        schedule_async_task_processing_();
+    }
 
     return frame_res;
 }
 
 void TaskPipeline::schedule_async_task_processing_() {
-    if (processing_scheduled_) {
+    core::nanoseconds_t next_frame_deadline;
+    if (!next_frame_deadline_.try_load(next_frame_deadline)) {
         return;
     }
-    processing_scheduled_ = true;
 
-    core::nanoseconds_t delay = 0;
-
-    if (config_.enable_precise_task_scheduling) {
-        const core::nanoseconds_t now = timestamp_imp();
-
-        if (now < curr_frame_tasks_deadline_) {
-            delay = 0;
-        } else if (now < next_frame_tasks_deadline_) {
-            delay = (next_frame_tasks_deadline_ - now);
-        } else {
-            delay = 0;
-        }
+    if (!scheduler_mutex_.try_lock()) {
+        return;
     }
 
-    scheduler_.schedule_task_processing(*this, delay);
+    if (processing_state_.load_relaxed() == ProcNotScheduled) {
+        core::nanoseconds_t delay = 0;
 
-    stats_.scheduler_calls++;
+        if (config_.enable_precise_task_scheduling) {
+            const core::nanoseconds_t now = timestamp_imp();
+
+            if (now < (next_frame_deadline - no_task_proc_half_interval_)) {
+                delay = 0;
+            } else if (now < (next_frame_deadline + no_task_proc_half_interval_)) {
+                delay = (next_frame_deadline + no_task_proc_half_interval_ - now);
+            } else {
+                delay = 0;
+            }
+        }
+
+        scheduler_.schedule_task_processing(*this, delay);
+        stats_.scheduler_calls++;
+
+        processing_state_.store_relaxed(ProcScheduled);
+    }
+
+    scheduler_mutex_.unlock();
+
+    if (pending_frames_ != 0) {
+        cancel_async_task_processing_();
+    }
 }
 
 void TaskPipeline::cancel_async_task_processing_() {
-    if (!processing_scheduled_) {
+    if (!scheduler_mutex_.try_lock()) {
         return;
     }
-    processing_scheduled_ = false;
 
-    scheduler_.cancel_task_processing(*this);
+    if (processing_state_.load_relaxed() == ProcScheduled) {
+        scheduler_.cancel_task_processing(*this);
+        stats_.scheduler_cancellations++;
 
-    stats_.scheduler_cancellations++;
+        processing_state_.store_relaxed(ProcNotScheduled);
+    }
+
+    scheduler_mutex_.unlock();
 }
 
 void TaskPipeline::process_task_(Task& task) {
     ICompletionHandler* handler = task.handler_;
+    core::Semaphore* sem = task.sem_;
 
     task.success_ = process_task_imp(task);
     task.state_ = Task::StateFinished;
 
     if (handler) {
         handler->pipeline_task_finished(task);
-    } else {
-        task_finished_.broadcast();
+    }
+
+    if (sem) {
+        sem->post();
     }
 }
 
@@ -341,20 +364,8 @@ bool TaskPipeline::process_next_subframe_(audio::Frame& frame, size_t* frame_pos
     return ret;
 }
 
-void TaskPipeline::update_interframe_deadlines_(core::nanoseconds_t frame_start_time,
-                                                size_t frame_size) {
-    const core::nanoseconds_t frame_duration =
-        packet::size_to_ns(frame_size, sample_rate_, ch_mask_);
-
-    curr_frame_tasks_deadline_ = frame_start_time + frame_duration
-        - config_.task_processing_prohibited_interval / 2;
-
-    next_frame_tasks_deadline_ = frame_start_time + frame_duration
-        + config_.task_processing_prohibited_interval / 2;
-}
-
 bool TaskPipeline::start_subframe_task_processing_() {
-    if (task_queue_.size() == 0) {
+    if (pending_tasks_ == 0) {
         return false;
     }
 
@@ -368,20 +379,44 @@ bool TaskPipeline::start_subframe_task_processing_() {
     return true;
 }
 
-bool TaskPipeline::interframe_task_processing_allowed_() const {
+bool TaskPipeline::subframe_task_processing_allowed_(
+    core::nanoseconds_t next_frame_deadline) const {
+    const core::nanoseconds_t now = timestamp_imp();
+
+    if (now >= subframe_tasks_deadline_) {
+        return false;
+    }
+
+    if (now >= (next_frame_deadline - no_task_proc_half_interval_)) {
+        return false;
+    }
+
+    return true;
+}
+
+core::nanoseconds_t
+TaskPipeline::update_next_frame_deadline_(core::nanoseconds_t frame_start_time,
+                                          size_t frame_size) {
+    const core::nanoseconds_t frame_duration =
+        packet::size_to_ns(frame_size, sample_rate_, ch_mask_);
+
+    const core::nanoseconds_t next_frame_deadline = frame_start_time + frame_duration;
+
+    next_frame_deadline_.store(next_frame_deadline);
+
+    return next_frame_deadline;
+}
+
+bool TaskPipeline::interframe_task_processing_allowed_(
+    core::nanoseconds_t next_frame_deadline) const {
     if (!config_.enable_precise_task_scheduling) {
         return true;
     }
 
     const core::nanoseconds_t now = timestamp_imp();
 
-    return now < curr_frame_tasks_deadline_ || now >= next_frame_tasks_deadline_;
-}
-
-bool TaskPipeline::subframe_task_processing_allowed_() const {
-    const core::nanoseconds_t now = timestamp_imp();
-
-    return now < subframe_tasks_deadline_;
+    return now < (next_frame_deadline - no_task_proc_half_interval_)
+        || now >= (next_frame_deadline + no_task_proc_half_interval_);
 }
 
 } // namespace pipeline
