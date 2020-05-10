@@ -8,7 +8,7 @@
 
 #include <benchmark/benchmark.h>
 
-#include "roc_core/atomic_int.h"
+#include "roc_core/atomic.h"
 #include "roc_core/fast_random.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/thread.h"
@@ -281,7 +281,7 @@ public:
     }
 
     void export_counters(benchmark::State& state) {
-        TaskPipeline::Stats st = get_stats();
+        TaskPipeline::Stats st = get_stats_ref();
 
         state.counters["tp_plc"] =
             round_digits(double(st.task_processed_in_place) / st.task_processed_total, 3);
@@ -364,7 +364,7 @@ private:
     }
 
     TestPipeline& pipeline_;
-    core::AtomicInt stop_;
+    core::Atomic<int> stop_;
 };
 
 class FrameWriter {
