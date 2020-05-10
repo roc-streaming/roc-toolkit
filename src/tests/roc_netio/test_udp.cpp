@@ -232,5 +232,32 @@ TEST(udp, multiple_senders_one_receiver) {
     }
 }
 
+
+TEST(udp, one_sender_one_receiver_non_blocking_disabled) {
+    packet::ConcurrentQueue rx_queue;
+
+    UdpSenderConfig tx_config = make_sender_config();
+    tx_config.non_blocking_enabled = false;
+    UdpReceiverConfig rx_config = make_receiver_config();
+
+    EventLoop event_loop(packet_pool, buffer_pool, allocator);
+    CHECK(event_loop.valid());
+
+    packet::IWriter* tx_writer = NULL;
+    CHECK(event_loop.add_udp_sender(tx_config, &tx_writer));
+    CHECK(tx_writer);
+
+    CHECK(event_loop.add_udp_receiver(rx_config, rx_queue));
+
+    for (int i = 0; i < NumIterations; i++) {
+        for (int p = 0; p < NumPackets; p++) {
+            tx_writer->write(new_packet(tx_config, rx_config, p));
+        }
+        for (int p = 0; p < NumPackets; p++) {
+            check_packet(rx_queue.read(), tx_config, rx_config, p);
+        }
+    }
+}
+
 } // namespace netio
 } // namespace roc
