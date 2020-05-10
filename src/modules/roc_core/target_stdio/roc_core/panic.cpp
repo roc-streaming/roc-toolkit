@@ -18,7 +18,7 @@ namespace core {
 void panic(const char* module, const char* file, int line, const char* format, ...) {
     fprintf(stderr, "\n%s:%d: error: roc_panic()\n", file, line);
 
-    char message[128] = {};
+    char message[256] = {};
     size_t message_sz = sizeof(message) - 1;
 
     int off = snprintf(message, message_sz, "%s: ", module);
