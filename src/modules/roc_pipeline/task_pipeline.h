@@ -13,11 +13,12 @@
 #define ROC_PIPELINE_TASK_PIPELINE_H_
 
 #include "roc_audio/frame.h"
-#include "roc_core/atomic_int.h"
-#include "roc_core/cond.h"
-#include "roc_core/list.h"
+#include "roc_core/atomic.h"
+#include "roc_core/mpsc_queue.h"
 #include "roc_core/mutex.h"
 #include "roc_core/noncopyable.h"
+#include "roc_core/semaphore.h"
+#include "roc_core/seqlock.h"
 #include "roc_core/time.h"
 #include "roc_packet/units.h"
 #include "roc_pipeline/config.h"
@@ -133,37 +134,64 @@ namespace pipeline {
 //! Locking rules
 //! -------------
 //!
-//! pipeline_mutex_ should be acquired to process frame, to process task, and to
-//! invoke ITaskScheduler methods.
+//! pipeline_mutex_ protects the internal pipeline state. It should be acquired to
+//! process a frame or a task.
 //!
-//! task_queue_mutex_ should be acquired to access the task queue. It should NOT
-//! be acquired while processing a frame or a task, to allow enqueueing more tasks
-//! from concurrent threads or from within the task completion handler.
+//! scheduler_mutex_ protects ITaskScheduler invocations. It should be acquired to
+//! schedule or cancel asycnrhonous task processing.
 //!
-//! To prevent deadlocks, a thread should either first lock() pipeline_mutex_ and then
-//! lock() task_queue_mutex_, or first lock() task_queue_mutex_ and then try_lock()
-//! pipeline_mutex_.
+//! If pipeline_mutex_ is locked, it's guaranteed that the thread locking it will
+//! check pending tasks after unlocking the mutex and will either process them or
+//! scheduler asynchronous processing.
 //!
-//! If a method is locking pipeline_mutex_, but not locking task_queue_mutex_, it should
-//! guarantee that before unlocking pipeline_mutex_, it will lock task_queue_mutex_
-//! at least once and either process all tasks or invoke schedule_task_processing().
+//! If scheduler_mutex_ is locked, it's guaranteed that the thread locking it will
+//! either schedule or cancel asynchronous task processing, depending on whether
+//! there are pending tasks and frames.
 //!
-//! Following the last rule, another method that was able to lock task_queue_mutex_
-//! and added a task to the queue, but was not able to try_lock pipeline_mutex_, can
-//! just return and be sure that its task wont be lost.
+//! Lock-free operations
+//! --------------------
 //!
-//! Benchmark
-//! ---------
+//! schedule() and process_tasks() methods are lock-free. Also, they're either completely
+//! wait-free or "mostly" wait-free (i.e. on the fast path), depending on the hardware
+//! architecture (see comments for core::MpscQueue).
 //!
-//! See source code and comments in bench_task_pipeline.cpp.
-//! You can run it using "roc-bench-pipeline" command.
+//! In practice it means that when running concurrently with other TaskPipeline method
+//! invocations, they never block waiting for other threads, and usually even don't spin.
+//!
+//! This is archived by using a lock-free queue for tasks, atomics for 32-bit counters,
+//! seqlocks for 64-bit counters (which are reduced to atomics on 64-bit CPUs), always
+//! using try_lock() for mutexes and delaying the work if the mutex can't be acquired,
+//! and using semaphores instead of condition variables for signaling (which don't
+//! require blocking on mutex, at least on modern plarforms; e.g. on glibc they're
+//! implemented using an atomic and a futex).
+//!
+//! process_frame_and_tasks() is not lock-free because it has to acquire the pipeline
+//! mutex and can't delay its work. However, the precise task scheduling feature does it
+//! best to ensure that the pipeline mutex will be unlocked when process_frame_and_tasks()
+//! is invoked, thus in most cases it wont block or wait too.
+//!
+//! This approach helps us with our global goal of making all inter-thread interactions
+//! mostly wait-free, so that one thread is never or almost never blocked when another
+//! thead is blocked, preempted, or busy.
+//!
+//! Benchmarks
+//! ----------
+//!
+//! TaskPipeline is covered with to groups of benchmarks:
+//!  - bench_task_pipeline_delays.cpp measures frame and task processing delays with
+//!    or without task load and with or without precise task scheduling feature;
+//!  - bench_task_pipeline_contention.cpp measures scheduling times under different
+//!    contention levels.
+//!
+//! You can run them using "roc-bench-pipeline" command. For further details, see
+//! comments in the source code of the benchmarks.
 class TaskPipeline : public core::NonCopyable<> {
 public:
     class ICompletionHandler;
 
     //! Base task class.
     //! The user is responsible for allocating and deallocating the task.
-    class Task : public core::ListNode {
+    class Task : public core::MpscQueueNode {
     public:
         ~Task();
 
@@ -180,12 +208,15 @@ public:
 
         // Task state, defines whether task is finished already.
         // The task becomes immutable after setting state_ to StateFinished;
-        core::AtomicInt state_;
+        core::Atomic<int> state_;
 
         // Task result, defines wether finished task succeeded or failed.
         // Makes sense only after setting state_ to StateFinished.
         // This atomic should be assigned before setting state_ to StateFinished.
-        core::AtomicInt success_;
+        core::Atomic<int> success_;
+
+        // Completion semaphore.
+        core::Semaphore* sem_;
 
         // Completion handler;
         ICompletionHandler* handler_;
@@ -257,7 +288,8 @@ protected:
     size_t num_pending_frames() const;
 
     //! Get task processing statistics.
-    Stats get_stats() const;
+    //! Returned object can't be accessed concurrently with other methods.
+    const Stats& get_stats_ref() const;
 
     //! Process frame and some of the enqueued tasks, if any.
     bool process_frame_and_tasks(audio::Frame& frame);
@@ -272,10 +304,13 @@ protected:
     virtual bool process_task_imp(Task& task) = 0;
 
 private:
+    enum ProcState { ProcNotScheduled, ProcScheduled, ProcRunning };
+
     bool process_frame_and_tasks_simple_(audio::Frame& frame);
     bool process_frame_and_tasks_precise_(audio::Frame& frame);
 
-    void schedule_task_(Task& task, bool wait_finished);
+    void schedule_and_maybe_process_task_(Task& task);
+    bool maybe_process_tasks_();
 
     void schedule_async_task_processing_();
     void cancel_async_task_processing_();
@@ -283,56 +318,51 @@ private:
     void process_task_(Task&);
     bool process_next_subframe_(audio::Frame& frame, size_t* frame_pos);
 
-    void update_interframe_deadlines_(core::nanoseconds_t frame_start_time,
-                                      size_t frame_size);
-
     bool start_subframe_task_processing_();
+    bool subframe_task_processing_allowed_(core::nanoseconds_t next_frame_deadline) const;
 
-    bool interframe_task_processing_allowed_() const;
-    bool subframe_task_processing_allowed_() const;
+    core::nanoseconds_t update_next_frame_deadline_(core::nanoseconds_t frame_start_time,
+                                                    size_t frame_size);
+    bool
+    interframe_task_processing_allowed_(core::nanoseconds_t next_frame_deadline) const;
 
     // configuration
     const TaskConfig config_;
+
     const size_t sample_rate_;
     const packet::channel_mask_t ch_mask_;
+
     const size_t min_samples_between_tasks_;
     const size_t max_samples_between_tasks_;
+
+    const core::nanoseconds_t no_task_proc_half_interval_;
 
     // used to schedule asynchronous work
     ITaskScheduler& scheduler_;
 
-    // protects the whole pipeline
-    // should be acquired to process frame or task
+    // protects pipeline state
     core::Mutex pipeline_mutex_;
 
-    // protects task queue
-    // should be acquired to enqueue or dequeue a task or to request task processing
-    core::Mutex task_queue_mutex_;
+    // protects ITaskScheduler
+    core::Mutex scheduler_mutex_;
 
-    // signaled when a task is finished
-    core::Cond task_finished_;
-
-    // queue of pending tasks
-    core::List<Task, core::NoOwnership> task_queue_;
+    // lock-free queue of pending tasks
+    core::MpscQueue<Task, core::NoOwnership> task_queue_;
 
     // counter of pending tasks
-    int pending_tasks_;
+    core::Atomic<int> pending_tasks_;
 
     // counter of pending process_frame_and_tasks() calls blocked on pipeline_mutex_
-    core::AtomicInt pending_frames_;
+    core::Atomic<int> pending_frames_;
 
-    // indicates whether asynchronous work was scheduled
-    core::AtomicInt processing_scheduled_;
+    // asynchronous processing state
+    core::Atomic<int> processing_state_;
+
+    // when next frame is expected to be started
+    core::Seqlock<core::nanoseconds_t> next_frame_deadline_;
 
     // when task processing before next sub-frame ends
     core::nanoseconds_t subframe_tasks_deadline_;
-
-    // when task processing during current frame ends
-    core::nanoseconds_t curr_frame_tasks_deadline_;
-
-    // when task processing during next frame starts
-    // (usually by process_frame_and_tasks, but if it's not called, by process_tasks)
-    core::nanoseconds_t next_frame_tasks_deadline_;
 
     // number of samples processed since last in-frame task processing
     size_t samples_processed_;

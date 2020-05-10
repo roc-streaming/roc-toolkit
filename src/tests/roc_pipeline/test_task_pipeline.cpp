@@ -123,40 +123,42 @@ public:
 
     size_t num_processed_tasks() const {
         core::Mutex::Lock lock(mutex_);
-        UNSIGNED_LONGS_EQUAL(n_processed_tasks_, get_stats().task_processed_total);
+        UNSIGNED_LONGS_EQUAL(n_processed_tasks_, get_stats_ref().task_processed_total);
         return n_processed_tasks_;
     }
 
     size_t num_tasks_processed_in_sched() const {
         core::Mutex::Lock lock(mutex_);
-        return get_stats().task_processed_in_place;
+        return get_stats_ref().task_processed_in_place;
     }
 
     size_t num_tasks_processed_in_frame() const {
         core::Mutex::Lock lock(mutex_);
-        return get_stats().task_processed_in_frame;
+        return get_stats_ref().task_processed_in_frame;
     }
 
     size_t num_tasks_processed_in_proc() const {
         core::Mutex::Lock lock(mutex_);
-        return get_stats().task_processed_total - get_stats().task_processed_in_frame
-            - get_stats().task_processed_in_place;
+        return get_stats_ref().task_processed_total
+            - get_stats_ref().task_processed_in_frame
+            - get_stats_ref().task_processed_in_place;
     }
 
     size_t num_preemptions() const {
         core::Mutex::Lock lock(mutex_);
-        return get_stats().preemptions;
+        return get_stats_ref().preemptions;
     }
 
     size_t num_sched_calls() const {
         core::Mutex::Lock lock(mutex_);
-        UNSIGNED_LONGS_EQUAL(n_sched_calls_, get_stats().scheduler_calls);
+        UNSIGNED_LONGS_EQUAL(n_sched_calls_, get_stats_ref().scheduler_calls);
         return n_sched_calls_;
     }
 
     size_t num_sched_cancellations() const {
         core::Mutex::Lock lock(mutex_);
-        UNSIGNED_LONGS_EQUAL(n_sched_cancellations_, get_stats().scheduler_cancellations);
+        UNSIGNED_LONGS_EQUAL(n_sched_cancellations_,
+                             get_stats_ref().scheduler_cancellations);
         return n_sched_cancellations_;
     }
 
