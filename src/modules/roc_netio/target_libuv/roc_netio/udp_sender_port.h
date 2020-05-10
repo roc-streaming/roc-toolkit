@@ -17,6 +17,7 @@
 #include "roc_address/socket_addr.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/mutex.h"
+#include "roc_core/rate_limiter.h"
 #include "roc_core/refcnt.h"
 #include "roc_netio/basic_port.h"
 #include "roc_netio/iclose_handler.h"
@@ -35,14 +36,19 @@ struct UdpSenderConfig {
     //! If true, sender is allowed to send packets to broadcast addresses.
     bool broadcast_enabled;
 
+    //! If true, allow non-blocking writes.
+    bool non_blocking_enabled;
+
     UdpSenderConfig()
-        : broadcast_enabled(false) {
+        : broadcast_enabled(false)
+        , non_blocking_enabled(true) {
     }
 
     //! Check two configs for equality.
     bool operator==(const UdpSenderConfig& other) const {
         return bind_address == other.bind_address
-            && broadcast_enabled == other.broadcast_enabled;
+            && broadcast_enabled == other.broadcast_enabled
+            && non_blocking_enabled == other.non_blocking_enabled;
     }
 };
 
@@ -76,8 +82,8 @@ private:
     static void close_cb_(uv_handle_t* handle);
     static void write_sem_cb_(uv_async_t* handle);
     static void send_cb_(uv_udp_send_t* req, int status);
-
     packet::PacketPtr read_();
+    bool try_nonblocking_send_(const packet::PacketPtr& pp);
 
     bool fully_closed_() const;
     void start_closing_();
@@ -103,7 +109,11 @@ private:
     bool stopped_;
     bool closed_;
 
+    uv_os_fd_t fd_;
+
+    core::RateLimiter rate_limiter_;
     unsigned packet_counter_;
+    unsigned nb_packet_counter_;
 };
 
 } // namespace netio
