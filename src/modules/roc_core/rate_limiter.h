@@ -33,7 +33,12 @@ public:
         }
     }
 
-    //! Check whether an event is allowed to occur now.
+    //! Check whether allow() would succeed.
+    bool would_allow() {
+        return ticker_.elapsed() >= pos_;
+    }
+
+    //! Check whether an event is allowed to occur now, and if yes, mark it as occurred.
     bool allow() {
         const Ticker::Ticks elapsed = ticker_.elapsed();
         if (elapsed >= pos_) {
