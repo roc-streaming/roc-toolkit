@@ -17,6 +17,7 @@
 #include "roc_core/mpsc_queue.h"
 #include "roc_core/mutex.h"
 #include "roc_core/noncopyable.h"
+#include "roc_core/rate_limiter.h"
 #include "roc_core/semaphore.h"
 #include "roc_core/seqlock.h"
 #include "roc_core/time.h"
@@ -326,6 +327,8 @@ private:
     bool
     interframe_task_processing_allowed_(core::nanoseconds_t next_frame_deadline) const;
 
+    void report_stats_();
+
     // configuration
     const TaskConfig config_;
 
@@ -371,6 +374,7 @@ private:
     bool enough_samples_to_process_tasks_;
 
     // task processing statistics
+    core::RateLimiter rate_limiter_;
     Stats stats_;
 };
 
