@@ -13,6 +13,12 @@
 namespace roc {
 namespace pipeline {
 
+namespace {
+
+const core::nanoseconds_t StatsReportInterval = core::Minute;
+
+} // namespace
+
 TaskPipeline::Task::Task()
     : state_(StateNew)
     , success_(false)
@@ -50,7 +56,8 @@ TaskPipeline::TaskPipeline(ITaskScheduler& scheduler,
     , next_frame_deadline_(0)
     , subframe_tasks_deadline_(0)
     , samples_processed_(0)
-    , enough_samples_to_process_tasks_(false) {
+    , enough_samples_to_process_tasks_(false)
+    , rate_limiter_(StatsReportInterval) {
 }
 
 TaskPipeline::~TaskPipeline() {
@@ -263,6 +270,8 @@ bool TaskPipeline::process_frame_and_tasks_precise_(audio::Frame& frame) {
         }
     }
 
+    report_stats_();
+
     pipeline_mutex_.unlock();
 
     if (--pending_frames_ == 0 && pending_tasks_ != 0) {
@@ -417,6 +426,33 @@ bool TaskPipeline::interframe_task_processing_allowed_(
 
     return now < (next_frame_deadline - no_task_proc_half_interval_)
         || now >= (next_frame_deadline + no_task_proc_half_interval_);
+}
+
+void TaskPipeline::report_stats_() {
+    if (!rate_limiter_.would_allow()) {
+        return;
+    }
+
+    if (!scheduler_mutex_.try_lock()) {
+        return;
+    }
+
+    if (rate_limiter_.allow()) {
+        roc_log(LogDebug,
+                "task pipeline:"
+                " tasks=%lu in_place=%.2f in_frame=%.2f preempts=%lu sched=%lu/%lu",
+                (unsigned long)stats_.task_processed_total,
+                stats_.task_processed_total
+                    ? double(stats_.task_processed_in_place) / stats_.task_processed_total
+                    : 0.,
+                stats_.task_processed_total
+                    ? double(stats_.task_processed_in_frame) / stats_.task_processed_total
+                    : 0.,
+                (unsigned long)stats_.preemptions, (unsigned long)stats_.scheduler_calls,
+                (unsigned long)stats_.scheduler_cancellations);
+    }
+
+    scheduler_mutex_.unlock();
 }
 
 } // namespace pipeline
