@@ -34,6 +34,9 @@ public:
              size_t sample_rate,
              core::nanoseconds_t interval);
 
+    //! Check if the profiler was succefully constructed.
+    bool valid() const;
+
     //! Init audio frame.
     void begin_frame(size_t frame_size);
 
@@ -53,11 +56,16 @@ private:
     const size_t chunk_length_;
     const size_t num_chunks_;
     core::Array<double> chunks_;
+    size_t first_chunk_num_;
+    size_t last_chunk_num_;
+    size_t last_chunk_samples_;
 
     double moving_avg_;
 
     const size_t sample_rate_;
     const size_t num_channels_;
+
+    bool valid_;
 };
 
 } // namespace audio
