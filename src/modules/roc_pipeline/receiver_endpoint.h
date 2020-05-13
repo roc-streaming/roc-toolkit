@@ -15,13 +15,11 @@
 #include "roc_address/interface.h"
 #include "roc_address/protocol.h"
 #include "roc_core/iallocator.h"
-#include "roc_core/list_node.h"
-#include "roc_core/mutex.h"
+#include "roc_core/mpsc_queue.h"
 #include "roc_core/refcnt.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_packet/iparser.h"
 #include "roc_packet/iwriter.h"
-#include "roc_packet/queue.h"
 #include "roc_pipeline/config.h"
 #include "roc_pipeline/receiver_session_group.h"
 #include "roc_pipeline/receiver_state.h"
@@ -65,8 +63,6 @@ private:
 
     void destroy();
 
-    packet::Queue* get_read_queue_();
-
     const address::Protocol proto_;
 
     core::IAllocator& allocator_;
@@ -79,9 +75,7 @@ private:
     core::ScopedPtr<rtp::Parser> rtp_parser_;
     core::ScopedPtr<packet::IParser> fec_parser_;
 
-    core::Mutex queue_mutex_;
-    packet::Queue queues_[2];
-    size_t cur_queue_;
+    core::MpscQueue<packet::Packet> queue_;
 };
 
 } // namespace pipeline

@@ -15,8 +15,9 @@
 #include <uv.h>
 
 #include "roc_address/socket_addr.h"
+#include "roc_core/atomic.h"
 #include "roc_core/iallocator.h"
-#include "roc_core/mutex.h"
+#include "roc_core/mpsc_queue.h"
 #include "roc_core/rate_limiter.h"
 #include "roc_core/refcnt.h"
 #include "roc_netio/basic_port.h"
@@ -82,11 +83,14 @@ private:
     static void close_cb_(uv_handle_t* handle);
     static void write_sem_cb_(uv_async_t* handle);
     static void send_cb_(uv_udp_send_t* req, int status);
-    packet::PacketPtr read_();
-    bool try_nonblocking_send_(const packet::PacketPtr& pp);
+
+    void write_(const packet::PacketPtr&);
 
     bool fully_closed_() const;
     void start_closing_();
+
+    bool try_nonblocking_send_(const packet::PacketPtr& pp);
+    void report_stats_();
 
     UdpSenderConfig config_;
 
@@ -102,18 +106,18 @@ private:
 
     address::SocketAddr address_;
 
-    core::List<packet::Packet> list_;
-    core::Mutex mutex_;
+    core::MpscQueue<packet::Packet> queue_;
 
-    size_t pending_;
+    core::Atomic<int> pending_packets_;
+    core::Atomic<int> sent_packets_;
+    core::Atomic<int> sent_packets_blk_;
+
     bool stopped_;
     bool closed_;
 
     uv_os_fd_t fd_;
 
     core::RateLimiter rate_limiter_;
-    unsigned packet_counter_;
-    unsigned nb_packet_counter_;
 };
 
 } // namespace netio
