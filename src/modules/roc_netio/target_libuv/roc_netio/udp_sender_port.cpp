@@ -32,18 +32,19 @@ UdpSenderPort::UdpSenderPort(const UdpSenderConfig& config,
     , loop_(event_loop)
     , write_sem_initialized_(false)
     , handle_initialized_(false)
-    , pending_(0)
     , stopped_(true)
     , closed_(false)
     , fd_()
-    , rate_limiter_(PacketLogInterval)
-    , packet_counter_(0)
-    , nb_packet_counter_(0) {
+    , rate_limiter_(PacketLogInterval) {
 }
 
 UdpSenderPort::~UdpSenderPort() {
     if (handle_initialized_ || write_sem_initialized_) {
         roc_panic("udp sender: sender was not fully closed before calling destructor");
+    }
+
+    if (pending_packets_) {
+        roc_panic("udp sender: packets weren't fully sent before calling destructor");
     }
 }
 
@@ -123,15 +124,13 @@ bool UdpSenderPort::open() {
 }
 
 bool UdpSenderPort::async_close() {
-    core::Mutex::Lock lock(mutex_);
-
     stopped_ = true;
 
     if (fully_closed_()) {
         return false;
     }
 
-    if (pending_ == 0) {
+    if (pending_packets_ == 0) {
         start_closing_();
     }
 
@@ -151,34 +150,26 @@ void UdpSenderPort::write(const packet::PacketPtr& pp) {
         roc_panic("udp sender: unexpected packet w/o data");
     }
 
-    {
-        core::Mutex::Lock lock(mutex_);
+    if (stopped_) {
+        roc_panic("udp sender: attempt to use stopped sender");
+    }
 
-        if (stopped_) {
-            return;
-        }
+    write_(pp);
 
-        if (config_.non_blocking_enabled) {
-            if (rate_limiter_.allow()) {
-                const double nb_ratio = packet_counter_ != 0
-                    ? (double)nb_packet_counter_ / packet_counter_
-                    : 0.;
-                roc_log(LogDebug, "udp sender: total=%u nb=%u nb_ratio=%.5f",
-                        packet_counter_, nb_packet_counter_, nb_ratio);
-            }
+    report_stats_();
+}
 
-            if (try_nonblocking_send_(pp)) {
-                return;
-            }
-        }
+void UdpSenderPort::write_(const packet::PacketPtr& pp) {
+    const bool had_pending = (++pending_packets_ > 1);
 
-        list_.push_back(*pp);
-        ++pending_;
-
-        if (list_.size() > 1) {
+    if (!had_pending) {
+        if (try_nonblocking_send_(pp)) {
+            --pending_packets_;
             return;
         }
     }
+
+    queue_.push_back(*pp);
 
     if (int err = uv_async_send(&write_sem_)) {
         roc_panic("udp sender: uv_async_send(): [%s] %s", uv_err_name(err),
@@ -213,16 +204,21 @@ void UdpSenderPort::write_sem_cb_(uv_async_t* handle) {
 
     UdpSenderPort& self = *(UdpSenderPort*)handle->data;
 
-    while (packet::PacketPtr pp = self.read_()) {
+    // Using try_pop_front() makes this method lock-free and wait-free.
+    // try_pop_front() may return NULL if the queue is not empty, but push_back()
+    // is currently in progress. In this case we can exit before processing all
+    // packets, but write() always calls uv_async_send() after push_back(), so
+    // we'll wake up soon and process the rest packets.
+    while (packet::PacketPtr pp = self.queue_.try_pop_front()) {
         packet::UDP& udp = *pp->udp();
 
-        self.packet_counter_++;
+        const int packet_num = ++self.sent_packets_;
+        ++self.sent_packets_blk_;
 
-        roc_log(LogTrace, "udp sender: sending packet: num=%u src=%s dst=%s sz=%ld",
-                self.packet_counter_,
-                address::socket_addr_to_str(self.config_.bind_address).c_str(),
-                address::socket_addr_to_str(udp.dst_addr).c_str(),
-                (long)pp->data().size());
+        roc_log(
+            LogTrace, "udp sender: sending packet: num=%d src=%s dst=%s sz=%ld",
+            packet_num, address::socket_addr_to_str(self.config_.bind_address).c_str(),
+            address::socket_addr_to_str(udp.dst_addr).c_str(), (long)pp->data().size());
 
         uv_buf_t buf;
         buf.base = (char*)pp->data().data();
@@ -254,7 +250,7 @@ void UdpSenderPort::send_cb_(uv_udp_send_t* req, int status) {
     // one reference for the shared pointer above
     roc_panic_if(pp->getref() < 2);
 
-    // decrement reference counter incremented in async_cb_()
+    // decrement reference counter incremented in write_sem_cb_()
     pp->decref();
 
     if (status < 0) {
@@ -266,44 +262,11 @@ void UdpSenderPort::send_cb_(uv_udp_send_t* req, int status) {
                 (long)pp->data().size(), uv_err_name(status), uv_strerror(status));
     }
 
-    core::Mutex::Lock lock(self.mutex_);
+    const int pending_packets = --self.pending_packets_;
 
-    --self.pending_;
-
-    if (self.stopped_ && self.pending_ == 0) {
+    if (pending_packets == 0 && self.stopped_) {
         self.start_closing_();
     }
-}
-
-packet::PacketPtr UdpSenderPort::read_() {
-    core::Mutex::Lock lock(mutex_);
-
-    packet::PacketPtr pp = list_.front();
-    if (pp) {
-        list_.remove(*pp);
-    }
-
-    return pp;
-}
-
-bool UdpSenderPort::try_nonblocking_send_(const packet::PacketPtr& pp) {
-    if (pending_ == 0) {
-        const packet::UDP& udp = *pp->udp();
-        const bool success =
-            sendto_nb(fd_, pp->data().data(), pp->data().size(), udp.dst_addr);
-        if (success) {
-            ++packet_counter_;
-            ++nb_packet_counter_;
-            roc_log(LogTrace,
-                    "udp sender: sent packet non-blocking: num=%u src=%s dst=%s sz=%ld",
-                    packet_counter_,
-                    address::socket_addr_to_str(config_.bind_address).c_str(),
-                    address::socket_addr_to_str(udp.dst_addr).c_str(),
-                    (long)pp->data().size());
-            return true;
-        }
-    }
-    return false;
 }
 
 bool UdpSenderPort::fully_closed_() const {
@@ -333,6 +296,41 @@ void UdpSenderPort::start_closing_() {
     if (write_sem_initialized_ && !uv_is_closing((uv_handle_t*)&write_sem_)) {
         uv_close((uv_handle_t*)&write_sem_, close_cb_);
     }
+}
+
+bool UdpSenderPort::try_nonblocking_send_(const packet::PacketPtr& pp) {
+    if (!config_.non_blocking_enabled) {
+        return false;
+    }
+
+    const packet::UDP& udp = *pp->udp();
+    const bool success =
+        sendto_nb(fd_, pp->data().data(), pp->data().size(), udp.dst_addr);
+
+    if (success) {
+        const int packet_num = ++sent_packets_;
+        roc_log(
+            LogTrace, "udp sender: sent packet non-blocking: num=%d src=%s dst=%s sz=%ld",
+            packet_num, address::socket_addr_to_str(config_.bind_address).c_str(),
+            address::socket_addr_to_str(udp.dst_addr).c_str(), (long)pp->data().size());
+    }
+
+    return success;
+}
+
+void UdpSenderPort::report_stats_() {
+    if (!rate_limiter_.allow()) {
+        return;
+    }
+
+    const int sent_packets = sent_packets_;
+    const int sent_packets_nb = (sent_packets - sent_packets_blk_);
+
+    const double nb_ratio =
+        sent_packets_nb != 0 ? (double)sent_packets_ / sent_packets_nb : 0.;
+
+    roc_log(LogDebug, "udp sender: total=%u nb=%u nb_ratio=%.5f", sent_packets,
+            sent_packets_nb, nb_ratio);
 }
 
 } // namespace netio
