@@ -14,6 +14,7 @@
 
 #include "roc_core/helpers.h"
 #include "roc_core/list_node.h"
+#include "roc_core/mpsc_queue_node.h"
 #include "roc_core/pool.h"
 #include "roc_core/refcnt.h"
 #include "roc_core/shared_ptr.h"
@@ -32,7 +33,9 @@ class Packet;
 typedef core::SharedPtr<Packet> PacketPtr;
 
 //! Packet.
-class Packet : public core::RefCnt<Packet>, public core::ListNode {
+class Packet : public core::RefCnt<Packet>,
+               public core::ListNode,
+               public core::MpscQueueNode {
 public:
     //! Constructor.
     explicit Packet(PacketPool&);
