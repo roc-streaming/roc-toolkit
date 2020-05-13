@@ -25,8 +25,7 @@ ReceiverEndpoint::ReceiverEndpoint(address::Protocol proto,
     , allocator_(allocator)
     , receiver_state_(receiver_state)
     , session_group_(session_group)
-    , parser_(NULL)
-    , cur_queue_(0) {
+    , parser_(NULL) {
     packet::IParser* parser = NULL;
 
     switch ((int)proto) {
@@ -100,24 +99,23 @@ address::Protocol ReceiverEndpoint::proto() const {
 }
 
 void ReceiverEndpoint::write(const packet::PacketPtr& packet) {
-    core::Mutex::Lock lock(queue_mutex_);
-
     roc_panic_if(!valid());
-
-    queues_[cur_queue_].write(packet);
+    roc_panic_if(!packet);
 
     receiver_state_.add_pending_packets(+1);
+
+    queue_.push_back(*packet);
 }
 
 void ReceiverEndpoint::flush_packets() {
     roc_panic_if(!valid());
 
-    packet::Queue* queue = get_read_queue_();
-    if (!queue) {
-        return;
-    }
-
-    while (packet::PacketPtr packet = queue->read()) {
+    // Using try_pop_front() makes this method lock-free and wait-free. If there is only
+    // one producer (writer), which is true in this case, try_pop_front() may fail only
+    // if the queue is empty or we're trying to read the very last packet being added
+    // currently. It's okay to consider such a packet late, and leave it for next flush,
+    // so using try_pop_front() is okay here.
+    while (packet::PacketPtr packet = queue_.try_pop_front()) {
         if (!parser_->parse(*packet, packet->data())) {
             roc_log(LogDebug, "receiver endpoint: can't parse packet");
             continue;
@@ -127,20 +125,6 @@ void ReceiverEndpoint::flush_packets() {
 
         receiver_state_.add_pending_packets(-1);
     }
-}
-
-packet::Queue* ReceiverEndpoint::get_read_queue_() {
-    core::Mutex::Lock lock(queue_mutex_);
-
-    if (queues_[cur_queue_].size() == 0) {
-        return NULL;
-    }
-
-    packet::Queue* queue = &queues_[cur_queue_];
-    cur_queue_ = (cur_queue_ + 1) % 2;
-    roc_panic_if_not(queues_[cur_queue_].size() == 0);
-
-    return queue;
 }
 
 } // namespace pipeline
