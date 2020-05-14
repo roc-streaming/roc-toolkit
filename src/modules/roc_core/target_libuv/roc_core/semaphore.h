@@ -14,6 +14,8 @@
 
 #include <uv.h>
 
+#include "roc_core/atomic.h"
+#include "roc_core/cpu_ops.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/panic.h"
 
@@ -32,21 +34,29 @@ public:
     }
 
     ~Semaphore() {
+        while (guard_) {
+            cpu_relax();
+        }
         uv_sem_destroy(&sem_);
     }
 
-    //! Block until the counter becomes non-zero and decrement it.
+    //! Wait until the counter becomes non-zero, decrement it, and return.
     void wait() const {
         uv_sem_wait(&sem_);
     }
 
-    //! Increment counter and wake up blocked pends.
+    //! Increment counter and wake up blocked waits.
+    //! This method is lock-free at least on recent glibc and musl versions
+    //! (which implement POSIX semaphores using a futex and an atomic).
     void post() const {
+        ++guard_;
         uv_sem_post(&sem_);
+        --guard_;
     }
 
 private:
     mutable uv_sem_t sem_;
+    mutable Atomic<int> guard_;
 };
 
 } // namespace core
