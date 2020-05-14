@@ -14,6 +14,8 @@
 
 #include <uv.h>
 
+#include "roc_core/atomic.h"
+#include "roc_core/cpu_ops.h"
 #include "roc_core/mutex.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/panic.h"
@@ -35,12 +37,10 @@ public:
     }
 
     ~Cond() {
+        while (guard_) {
+            cpu_relax();
+        }
         uv_cond_destroy(&cond_);
-    }
-
-    //! Wait.
-    void wait() const {
-        uv_cond_wait(&cond_, &mutex_);
     }
 
     //! Wait with timeout.
@@ -54,18 +54,29 @@ public:
         return (err == 0);
     }
 
+    //! Wait.
+    void wait() const {
+        uv_cond_wait(&cond_, &mutex_);
+    }
+
     //! Wake up one pending waits.
     void signal() const {
+        ++guard_;
         uv_cond_signal(&cond_);
+        --guard_;
     }
 
     //! Wake up all pending waits.
     void broadcast() const {
+        ++guard_;
         uv_cond_broadcast(&cond_);
+        --guard_;
     }
 
 private:
     mutable uv_cond_t cond_;
+    mutable Atomic<int> guard_;
+
     uv_mutex_t& mutex_;
 };
 
