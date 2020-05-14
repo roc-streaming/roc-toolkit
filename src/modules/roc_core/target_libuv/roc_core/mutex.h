@@ -14,6 +14,8 @@
 
 #include <uv.h>
 
+#include "roc_core/atomic.h"
+#include "roc_core/cpu_ops.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/panic.h"
 #include "roc_core/scoped_lock.h"
@@ -37,6 +39,9 @@ public:
     }
 
     ~Mutex() {
+        while (guard_) {
+            cpu_relax();
+        }
         uv_mutex_destroy(&mutex_);
     }
 
@@ -52,13 +57,16 @@ public:
 
     //! Unlock mutex.
     void unlock() const {
+        ++guard_;
         uv_mutex_unlock(&mutex_);
+        --guard_;
     }
 
 private:
     friend class Cond;
 
     mutable uv_mutex_t mutex_;
+    mutable Atomic<int> guard_;
 };
 
 } // namespace core
