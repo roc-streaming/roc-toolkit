@@ -17,6 +17,7 @@
 #include "roc_core/mpsc_queue.h"
 #include "roc_core/mutex.h"
 #include "roc_core/noncopyable.h"
+#include "roc_core/optional.h"
 #include "roc_core/rate_limiter.h"
 #include "roc_core/semaphore.h"
 #include "roc_core/seqlock.h"
@@ -216,11 +217,11 @@ public:
         // This atomic should be assigned before setting state_ to StateFinished.
         core::Atomic<int> success_;
 
-        // Completion semaphore.
-        core::Semaphore* sem_;
-
         // Completion handler;
         ICompletionHandler* handler_;
+
+        // Completion semaphore.
+        core::Optional<core::Semaphore> sem_;
     };
 
     //! Task completion handler.
@@ -310,13 +311,13 @@ private:
     bool process_frame_and_tasks_simple_(audio::Frame& frame);
     bool process_frame_and_tasks_precise_(audio::Frame& frame);
 
-    void schedule_and_maybe_process_task_(Task& task);
+    bool schedule_and_maybe_process_task_(Task& task);
     bool maybe_process_tasks_();
 
     void schedule_async_task_processing_();
     void cancel_async_task_processing_();
 
-    void process_task_(Task&);
+    void process_task_(Task& task, bool notify);
     bool process_next_subframe_(audio::Frame& frame, size_t* frame_pos);
 
     bool start_subframe_task_processing_();
