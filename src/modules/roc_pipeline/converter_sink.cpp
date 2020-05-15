@@ -74,7 +74,7 @@ ConverterSink::ConverterSink(const ConverterConfig& config,
     if (config.profiling) {
         profiler_.reset(new (allocator) audio::ProfilingWriter(
                             *awriter, allocator, config.input_channels,
-                            config.input_sample_rate, LogInterval),
+                            config.input_sample_rate, DefaultProfilerLogInterval),
                         allocator);
         if (!profiler_) {
             return;

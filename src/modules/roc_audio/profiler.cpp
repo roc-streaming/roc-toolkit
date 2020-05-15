@@ -11,6 +11,10 @@
 #include "roc_core/panic.h"
 #include "roc_core/shared_ptr.h"
 
+namespace {
+const size_t chunk_time = 10;
+}
+
 namespace roc {
 namespace audio {
 
@@ -20,8 +24,8 @@ Profiler::Profiler(core::IAllocator& allocator,
                    core::nanoseconds_t interval)
     : rate_limiter_(interval)
     , interval_(interval)
-    , chunk_length_(sample_rate / 100)
-    , num_chunks_((size_t)(interval / (core::Second / 100)) + 1)
+    , chunk_length_(chunk_time * sample_rate * (core::Second / core::Millisecond))
+    , num_chunks_((size_t)(interval / (chunk_time * core::Millisecond)) + 1)
     , chunks_(allocator)
     , first_chunk_num_(0)
     , last_chunk_num_(0)
@@ -40,7 +44,7 @@ Profiler::Profiler(core::IAllocator& allocator,
         roc_log(LogError, "profiler: can't allocate chunks");
         return;
     }
-    
+
     valid_ = true;
 }
 
@@ -59,16 +63,19 @@ void Profiler::begin_frame(size_t frame_size) {
 void Profiler::end_frame(size_t frame_size, core::nanoseconds_t elapsed) {
     roc_panic_if(!valid_);
 
-    const double frame_speed = double(frame_size * core::Second) / elapsed / num_channels_;
+    const double frame_speed =
+        double(frame_size * core::Second) / elapsed / num_channels_;
 
     while (frame_size > 0) {
-        size_t n_samples = frame_size;
-        if (n_samples > (chunk_length_ - last_chunk_samples_)) {
-            n_samples = (chunk_length_ - last_chunk_samples_);
-        }
+        size_t n_samples = std::min(frame_size, (chunk_length_ - last_chunk_samples_));
 
         double& last_chunk_speed = chunks_[last_chunk_num_];
         last_chunk_samples_ += n_samples;
+
+        // Weighted mean equation
+        // reference: https://fanf2.user.srcf.net/hermes/doc/antiforgery/stats.pdf
+        // last_chunk_speed is µ, last_chunk_samples is W
+        // frame_speed is x, n_samples is w
         last_chunk_speed +=
             (frame_speed - last_chunk_speed) / last_chunk_samples_ * n_samples;
 
@@ -78,10 +85,12 @@ void Profiler::end_frame(size_t frame_size, core::nanoseconds_t elapsed) {
 
             // ring buffer is full
             if (last_chunk_num_ == first_chunk_num_) {
+                // Simple Moving Average: https://en.wikipedia.org/wiki/Moving_average
                 moving_avg_ +=
                     (last_chunk_speed - chunks_[first_chunk_num_]) / (num_chunks_ - 1);
                 first_chunk_num_ = (first_chunk_num_ + 1) % num_chunks_;
             } else {
+                // Cumulative Moving Average: https://en.wikipedia.org/wiki/Moving_average
                 moving_avg_ = ((moving_avg_ * (last_chunk_num_ - 1) + last_chunk_speed)
                                / last_chunk_num_);
             }
@@ -95,9 +104,9 @@ void Profiler::end_frame(size_t frame_size, core::nanoseconds_t elapsed) {
 
     if (rate_limiter_.allow()) {
         roc_log(LogDebug,
-                "profiler avg for last %llu sec : %lu sample/sec (%.2f sec/sec)",
-                (unsigned long long)(interval_ / core::Second),
-                (unsigned long)moving_avg_, moving_avg_ / sample_rate_);
+                "profiler: avg for last %.1f sec: %lu sample/sec (%.2f sec/sec)",
+                (double)(interval_ / core::Second), (unsigned long)moving_avg_,
+                moving_avg_ / sample_rate_);
     }
 }
 

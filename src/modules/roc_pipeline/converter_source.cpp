@@ -71,7 +71,7 @@ ConverterSource::ConverterSource(const ConverterConfig& config,
     if (config.profiling) {
         profiler_.reset(new (allocator) audio::ProfilingReader(
                             *areader, allocator, config.output_channels,
-                            config.output_sample_rate, LogInterval),
+                            config.output_sample_rate, DefaultProfilerLogInterval),
                         allocator);
         if (!profiler_) {
             return;

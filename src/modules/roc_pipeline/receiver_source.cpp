@@ -50,7 +50,7 @@ ReceiverSource::ReceiverSource(const ReceiverConfig& config,
     if (config.common.profiling) {
         profiler_.reset(new (allocator) audio::ProfilingReader(
                             *areader, allocator, config.common.output_channels,
-                            config.common.output_sample_rate, LogInterval),
+                            config.common.output_sample_rate, DefaultProfilerLogInterval),
                         allocator);
         if (!profiler_) {
             return;

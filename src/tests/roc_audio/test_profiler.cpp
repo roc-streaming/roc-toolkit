@@ -18,17 +18,16 @@ namespace {
 
 struct TestFrame {
     TestFrame(size_t size, core::nanoseconds_t time)
-        : size_(size)
-        , time_(time) {
+        : size(size)
+        , time(time) {
     }
 
-    size_t size_;
-    core::nanoseconds_t time_;
+    size_t size;
+    core::nanoseconds_t time;
 };
 
-const core::nanoseconds_t millisecond = 1000000L;
-const core::nanoseconds_t interval = 50 * millisecond; // 5 chunks
-const int sample_rate = 5000;                          // 50 samples / chunk
+const core::nanoseconds_t interval = 50 * core::Millisecond; // 5 chunks
+const int sample_rate = 5000;                                // 50 samples / chunk
 const int num_channels = 1;
 core::HeapAllocator allocator;
 
@@ -52,7 +51,7 @@ TEST(profiler, test_moving_average) {
                                           1.167, 1.580, 1.580, 2.280 };
 
     for (int i = 0; i < 9; ++i) {
-        profiler.end_frame(frames[i].size_, frames[i].time_);
+        profiler.end_frame(frames[i].size, frames[i].time);
         LONGS_EQUAL(expected_moving_average[i], profiler.get_moving_avg());
     }
 }

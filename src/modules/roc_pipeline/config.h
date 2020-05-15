@@ -29,7 +29,7 @@ namespace roc {
 namespace pipeline {
 
 //! Default interval for profiling and logging
-const core::nanoseconds_t LogInterval = core::Second;
+const core::nanoseconds_t DefaultProfilerLogInterval = core::Second;
 
 //! Default sample rate, number of samples per second.
 const size_t DefaultSampleRate = 44100;

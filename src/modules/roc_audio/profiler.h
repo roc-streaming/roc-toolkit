@@ -26,6 +26,20 @@ namespace roc {
 namespace audio {
 
 //! Profiler
+//! The role of the profiler is to report the average processing speed (# of samples
+//! processed per time unit) during the last N seconds. We want to calculate the average
+//! processing speed efficiently (with O(1) complexity, without allocations, and as
+//! lightweight as possible). The problems with this are that the we have variable-sized
+//! frames and SMA requires fixed size chunks. To efficiently perform this calculation a
+//! ring buffer is employed. The idea behind the ring buffer is that each chunk of the
+//! buffer is the average speed of 10ms worth of samples. The ring buffer is initialized
+//! with fixed size (N * 1000)ms / (10ms) chunks. Within each chunk a weighted mean is
+//! used to calculate the average speed during those 10ms. Each frame will contribute a
+//! different number of samples to each chunk, the chunk speed is then weighted based on
+//! how many samples are contributed at what frame speed. As the chunks get populated the
+//! moving average is calculated. When the buffer is not entirely full the cumulative
+//! moving average algorithm is used and once the buffer is full the simple moving average
+//! algorithm is used.
 class Profiler : public core::NonCopyable<> {
 public:
     //! Initialization.
