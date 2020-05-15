@@ -23,11 +23,9 @@ ProfilingWriter::ProfilingWriter(IWriter& writer,
 }
 
 void ProfilingWriter::write(Frame& frame) {
-    profiler_.begin_frame(frame.size());
-
     const core::nanoseconds_t elapsed = write_(frame);
 
-    profiler_.end_frame(frame.size(), elapsed);
+    profiler_.add_frame(frame.size(), elapsed);
 }
 
 core::nanoseconds_t ProfilingWriter::write_(Frame& frame) {

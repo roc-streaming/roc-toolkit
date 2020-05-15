@@ -54,16 +54,12 @@ bool Profiler::valid() const {
     return valid_;
 }
 
-void Profiler::begin_frame(size_t frame_size) {
+void Profiler::add_frame(size_t frame_size, core::nanoseconds_t elapsed) {
     roc_panic_if(!valid_);
 
     if (frame_size % num_channels_ != 0) {
         roc_panic("profiler: unexpected frame size");
     }
-}
-
-void Profiler::end_frame(size_t frame_size, core::nanoseconds_t elapsed) {
-    roc_panic_if(!valid_);
 
     const double frame_speed =
         double(frame_size * core::Second) / elapsed / num_channels_;

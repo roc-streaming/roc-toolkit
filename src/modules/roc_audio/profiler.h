@@ -51,11 +51,8 @@ public:
     //! Check if the profiler was succefully constructed.
     bool valid() const;
 
-    //! Init audio frame.
-    void begin_frame(size_t frame_size);
-
     //! Profile frame speed
-    void end_frame(size_t frame_size, core::nanoseconds_t elapsed);
+    void add_frame(size_t frame_size, core::nanoseconds_t elapsed);
 
     //! For Testing Only
     double get_moving_avg() {

@@ -23,11 +23,9 @@ ProfilingReader::ProfilingReader(IReader& reader,
 }
 
 bool ProfilingReader::read(Frame& frame) {
-    profiler_.begin_frame(frame.size());
-
     const core::nanoseconds_t elapsed = read_(frame);
 
-    profiler_.end_frame(frame.size(), elapsed);
+    profiler_.add_frame(frame.size(), elapsed);
     return true;
 }
 

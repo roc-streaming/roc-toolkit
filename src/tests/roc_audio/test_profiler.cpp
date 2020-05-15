@@ -15,11 +15,10 @@ namespace roc {
 namespace audio {
 
 namespace {
-
 struct TestFrame {
-    TestFrame(size_t size, core::nanoseconds_t time)
-        : size(size)
-        , time(time) {
+    TestFrame(size_t sz, core::nanoseconds_t tm)
+        : size(sz)
+        , time(tm) {
     }
 
     size_t size;
@@ -38,7 +37,7 @@ TEST_GROUP(profiler) {};
 TEST(profiler, test_moving_average) {
     Profiler profiler(allocator, num_channels, sample_rate, interval);
 
-    TestFrame frames[9] = {
+    TestFrame frames[] = {
         TestFrame(50, 50 * core::Second),      TestFrame(25, 25 * core::Second),
         TestFrame(25, 25 * core::Second),      TestFrame(25, 25 * core::Second),
         TestFrame(25, 25 * core::Second / 2),  TestFrame(40, 40 * core::Second),
@@ -46,14 +45,14 @@ TEST(profiler, test_moving_average) {
         TestFrame(125, 125 * core::Second / 3)
     };
 
-    double frame_speeds[9];
+    double frame_speeds[ROC_ARRAY_SIZE(frames)];
     // populate frame speeds
-    for (int i = 0; i < 9; ++i) {
+    for (int i = 0; i < ROC_ARRAY_SIZE(frames); ++i) {
         frame_speeds[i] =
             double(frames[i].size * core::Second) / frames[i].time / num_channels;
     }
 
-    double expected_average[9];
+    double expected_average[ROC_ARRAY_SIZE(frames)];
     expected_average[0] = (frame_speeds[0]) / 1;
 
     // 2nd chunk not full
@@ -98,7 +97,7 @@ TEST(profiler, test_moving_average) {
                            + frame_speeds[6] + frame_speeds[7] + frame_speeds[8] * 2)
         / 5;
 
-    for (int i = 0; i < 9; ++i) {
+    for (int i = 0; i < ROC_ARRAY_SIZE(frames); ++i) {
         profiler.end_frame(frames[i].size, frames[i].time);
         LONGS_EQUAL(expected_average[i], profiler.get_moving_avg());
     }
