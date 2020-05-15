@@ -12,10 +12,10 @@
 #ifndef ROC_CORE_TIMER_H_
 #define ROC_CORE_TIMER_H_
 
-#include "roc_core/cond.h"
-#include "roc_core/mutex.h"
+#include "roc_core/atomic.h"
 #include "roc_core/noncopyable.h"
-#include "roc_core/panic.h"
+#include "roc_core/semaphore.h"
+#include "roc_core/seqlock.h"
 #include "roc_core/time.h"
 
 namespace roc {
@@ -27,21 +27,25 @@ public:
     Timer();
 
     //! Set timer deadline.
-    //! All blocking wait_deadline() calls will unblock when deadline expires.
+    //! Can be called concurrently, but only one concurrent call will succeed.
+    //! Returns false if the call failed because of another concurrent call.
+    //! Is lock-free if Semaphore::post() is so (which is true of modern plarforms).
+    //! Current or future wait_deadline() call will unblock when deadline expires.
     //! Zero deadline means wake up immediately.
     //! Nagative deadline means never wake up, until deadline is changed again.
-    void set_deadline(nanoseconds_t deadline);
+    bool try_set_deadline(nanoseconds_t deadline);
 
     //! Wait until deadline expires.
+    //! Should be called from a single thread.
+    //! Assumes that wait_deadline() calls are serialized.
     //! Deadline may be changed concurrently from other threads.
     void wait_deadline();
 
 private:
-    Mutex mutex_;
-    Cond cond_;
-
-    nanoseconds_t deadline_;
-    nanoseconds_t next_wakeup_;
+    Semaphore sem_;
+    Atomic<int> sem_post_flag_;
+    Seqlock<nanoseconds_t> deadline_;
+    Seqlock<nanoseconds_t> next_wakeup_;
 };
 
 } // namespace core

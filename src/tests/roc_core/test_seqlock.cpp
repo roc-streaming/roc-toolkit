@@ -17,26 +17,40 @@ TEST_GROUP(seqlock) {};
 
 TEST(seqlock, int32) {
     Seqlock<int32_t> sl(345);
-    LONGS_EQUAL(345, sl.load());
+    LONGS_EQUAL(345, sl.wait_load());
 
-    sl.store(123);
-    LONGS_EQUAL(123, sl.load());
+    sl.exclusive_store(123);
+    LONGS_EQUAL(123, sl.wait_load());
 
-    int32_t v = 0;
-    CHECK(sl.try_load(v));
-    LONGS_EQUAL(123, v);
+    int32_t v1 = 0;
+    CHECK(sl.try_load(v1));
+    LONGS_EQUAL(123, v1);
+
+    CHECK(sl.try_store(456));
+    LONGS_EQUAL(456, sl.wait_load());
+
+    int32_t v2 = 0;
+    CHECK(sl.try_load(v2));
+    LONGS_EQUAL(456, v2);
 }
 
 TEST(seqlock, int64) {
     Seqlock<int64_t> sl(345);
-    LONGS_EQUAL(345, sl.load());
+    LONGS_EQUAL(345, sl.wait_load());
 
-    sl.store(123);
-    LONGS_EQUAL(123, sl.load());
+    sl.exclusive_store(123);
+    LONGS_EQUAL(123, sl.wait_load());
 
-    int64_t v = 0;
-    CHECK(sl.try_load(v));
-    LONGS_EQUAL(123, v);
+    int64_t v1 = 0;
+    CHECK(sl.try_load(v1));
+    LONGS_EQUAL(123, v1);
+
+    CHECK(sl.try_store(456));
+    LONGS_EQUAL(456, sl.wait_load());
+
+    int64_t v2 = 0;
+    CHECK(sl.try_load(v2));
+    LONGS_EQUAL(456, v2);
 }
 
 TEST(seqlock, 64bit_atomics) {
