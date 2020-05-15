@@ -42,6 +42,11 @@ public:
         AtomicOps::store_release(var_, val);
     }
 
+    //! Atomic exchange (no barrier).
+    inline T exchange_relaxed(T val) {
+        return AtomicOps::exchange_relaxed(var_, val);
+    }
+
     //! Atomic exchange (acquire barrier).
     inline T exchange_acquire(T val) {
         return AtomicOps::exchange_acquire(var_, val);
@@ -55,6 +60,11 @@ public:
     //! Atomic exchange (acquire-release barrier).
     inline T exchange_acq_rel(T val) {
         return AtomicOps::exchange_acq_rel(var_, val);
+    }
+
+    //! Atomic exchange (no barrier).
+    inline bool compare_exchange_relaxed(T exp, T des) {
+        return AtomicOps::compare_exchange_relaxed(var_, exp, des);
     }
 
     //! Atomic exchange (acquire barrier).

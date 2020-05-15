@@ -38,10 +38,32 @@ public:
     }
 
     //! Store value.
-    //! Should NOT be called concurrently.
+    //! Can be called concurrently, but only one concurrent call will succeed.
     //! Is both lock-free and wait-free, i.e. it never waits for sleeping threads
     //! and never spins.
-    void store(const T& value) {
+    bool try_store(const T& value) {
+        const int seq0 = seq_.load_relaxed();
+        if (seq0 & 1) {
+            return false;
+        }
+
+        if (!seq_.compare_exchange_relaxed(seq0, seq0 + 1)) {
+            return false;
+        }
+        AtomicOps::barrier_release();
+
+        val_ = value;
+        AtomicOps::barrier_release();
+
+        seq_.store_relaxed(seq0 + 2);
+        return true;
+    }
+
+    //! Store value.
+    //! Can NOT be called concurrently, assumes that writes are srialized.
+    //! Is both lock-free and wait-free, i.e. it never waits for sleeping threads
+    //! and never spins.
+    void exclusive_store(const T& value) {
         const int seq0 = seq_.load_relaxed();
         seq_.store_relaxed(seq0 + 1);
         AtomicOps::barrier_release();
@@ -77,7 +99,7 @@ public:
     //! Load value.
     //! May spin until concurrent store() call completes.
     //! Is NOT lock-free (or wait-free).
-    T load() const {
+    T wait_load() const {
         T ret;
         while (!try_load_(ret)) {
             cpu_relax();
@@ -124,7 +146,13 @@ public:
     }
 
     //! Store value.
-    void store(const T& value) {
+    bool try_store(const T& value) {
+        AtomicOps::store_release(val_, value);
+        return true;
+    }
+
+    //! Store value.
+    void exclusive_store(const T& value) {
         AtomicOps::store_release(val_, value);
     }
 
@@ -135,7 +163,7 @@ public:
     }
 
     //! Load value.
-    T load() const {
+    T wait_load() const {
         return AtomicOps::load_acquire(val_);
     }
 
