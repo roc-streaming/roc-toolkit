@@ -46,7 +46,9 @@ private:
 };
 
 inline void set_deadline(Timer& t, nanoseconds_t delay) {
-    t.set_deadline(delay > 0 ? timestamp() + delay : delay);
+    if (!t.try_set_deadline(delay > 0 ? timestamp() + delay : delay)) {
+        FAIL("try_set_deadline");
+    }
 }
 
 } // namespace
