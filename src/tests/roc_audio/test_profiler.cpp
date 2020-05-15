@@ -46,13 +46,61 @@ TEST(profiler, test_moving_average) {
         TestFrame(125, 125 * core::Second / 3)
     };
 
-    // hand calculated values
-    double expected_moving_average[9] = { 1.000, 1.000, 1.000, 1.000, 1.167,
-                                          1.167, 1.580, 1.580, 2.280 };
+    double frame_speeds[9];
+    // populate frame speeds
+    for (int i = 0; i < 9; ++i) {
+        frame_speeds[i] =
+            double(frames[i].size * core::Second) / frames[i].time / num_channels;
+    }
+
+    double expected_average[9];
+    expected_average[0] = (frame_speeds[0]) / 1;
+
+    // 2nd chunk not full
+    expected_average[1] = (frame_speeds[0]) / 1;
+
+    // second chunk populated
+    expected_average[2] =
+        (frame_speeds[0] + (0.5 * frame_speeds[1] + 0.5 * frame_speeds[2])) / 2;
+
+    // 3rd chunk not populated
+    expected_average[3] =
+        (frame_speeds[0] + (0.5 * frame_speeds[1] + 0.5 * frame_speeds[2])) / 2;
+
+    // 3rd chunk full
+    expected_average[4] =
+        (frame_speeds[0] + (0.5 * frame_speeds[1] + 0.5 * frame_speeds[2])
+         + (0.5 * frame_speeds[3] + 0.5 * frame_speeds[4]))
+        / 3;
+
+    // 4th chunk not fully populated
+    expected_average[5] =
+        (frame_speeds[0] + (0.5 * frame_speeds[1] + 0.5 * frame_speeds[2])
+         + (0.5 * frame_speeds[3] + 0.5 * frame_speeds[4]))
+        / 3;
+
+    // 4th and 5th chunk filled
+    expected_average[6] =
+        (frame_speeds[0] + (0.5 * frame_speeds[1] + 0.5 * frame_speeds[2])
+         + (0.5 * frame_speeds[3] + 0.5 * frame_speeds[4])
+         + (0.8 * frame_speeds[5] + 0.2 * frame_speeds[6]) + frame_speeds[6])
+        / 5;
+
+    // 1st chunk overwritten
+    expected_average[7] = ((0.5 * frame_speeds[1] + 0.5 * frame_speeds[2])
+                           + (0.5 * frame_speeds[3] + 0.5 * frame_speeds[4])
+                           + (0.8 * frame_speeds[5] + 0.2 * frame_speeds[6])
+                           + frame_speeds[6] + frame_speeds[7])
+        / 5;
+
+    // 2nd and 3rd chunk overwritten 4th partially filled
+    expected_average[8] = ((0.8 * frame_speeds[5] + 0.2 * frame_speeds[6])
+                           + frame_speeds[6] + frame_speeds[7] + frame_speeds[8] * 2)
+        / 5;
 
     for (int i = 0; i < 9; ++i) {
         profiler.end_frame(frames[i].size, frames[i].time);
-        LONGS_EQUAL(expected_moving_average[i], profiler.get_moving_avg());
+        LONGS_EQUAL(expected_average[i], profiler.get_moving_avg());
     }
 }
 

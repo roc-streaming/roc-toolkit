@@ -25,7 +25,9 @@ Profiler::Profiler(core::IAllocator& allocator,
     : rate_limiter_(interval)
     , interval_(interval)
     , chunk_length_(chunk_time * sample_rate / (core::Second / core::Millisecond))
-    , num_chunks_((size_t)(interval / (chunk_time * (unsigned long)core::Millisecond)) + 1)
+    , num_chunks_((size_t)((unsigned long)interval
+                           / (unsigned long)(chunk_time * core::Millisecond))
+                  + 1)
     , chunks_(allocator)
     , first_chunk_num_(0)
     , last_chunk_num_(0)
