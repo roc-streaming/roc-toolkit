@@ -47,7 +47,7 @@ TEST(profiler, test_moving_average) {
 
     double frame_speeds[ROC_ARRAY_SIZE(frames)];
     // populate frame speeds
-    for (int i = 0; i < ROC_ARRAY_SIZE(frames); ++i) {
+    for (size_t i = 0; i < ROC_ARRAY_SIZE(frames); ++i) {
         frame_speeds[i] =
             double(frames[i].size * core::Second) / frames[i].time / num_channels;
     }
@@ -97,8 +97,8 @@ TEST(profiler, test_moving_average) {
                            + frame_speeds[6] + frame_speeds[7] + frame_speeds[8] * 2)
         / 5;
 
-    for (int i = 0; i < ROC_ARRAY_SIZE(frames); ++i) {
-        profiler.end_frame(frames[i].size, frames[i].time);
+    for (size_t i = 0; i < ROC_ARRAY_SIZE(frames); ++i) {
+        profiler.add_frame(frames[i].size, frames[i].time);
         LONGS_EQUAL(expected_average[i], profiler.get_moving_avg());
     }
 }
