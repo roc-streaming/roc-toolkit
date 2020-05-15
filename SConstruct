@@ -660,7 +660,7 @@ else:
 
     if platform in ['linux', 'android']:
         env.Append(ROC_TARGETS=[
-            'target_posixtime',
+            'target_posix2001',
             'target_linux',
         ])
 
