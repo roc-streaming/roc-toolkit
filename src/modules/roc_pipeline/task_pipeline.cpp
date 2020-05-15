@@ -22,7 +22,6 @@ const core::nanoseconds_t StatsReportInterval = core::Minute;
 TaskPipeline::Task::Task()
     : state_(StateNew)
     , success_(false)
-    , sem_(NULL)
     , handler_(NULL) {
 }
 
@@ -80,40 +79,47 @@ size_t TaskPipeline::num_pending_frames() const {
 }
 
 void TaskPipeline::schedule(Task& task, ICompletionHandler& handler) {
+    if (task.state_ != Task::StateNew) {
+        roc_panic("task pipeline: attempt to schedule task more than once");
+    }
+
     task.handler_ = &handler;
 
     schedule_and_maybe_process_task_(task);
 }
 
 bool TaskPipeline::schedule_and_wait(Task& task) {
-    core::Semaphore completion_sem;
+    if (task.state_ != Task::StateNew) {
+        roc_panic("task pipeline: attempt to schedule task more than once");
+    }
 
-    task.sem_ = &completion_sem;
+    task.handler_ = NULL;
 
-    schedule_and_maybe_process_task_(task);
+    if (!task.sem_) {
+        task.sem_.reset(new (task.sem_) core::Semaphore);
+    }
 
-    if (task.state_ != Task::StateFinished) {
-        completion_sem.wait();
+    const bool processed = schedule_and_maybe_process_task_(task);
+
+    if (!processed) {
+        task.sem_->wait();
     }
 
     return task.success_;
 }
 
-void TaskPipeline::schedule_and_maybe_process_task_(Task& task) {
-    if (task.state_ != Task::StateNew) {
-        roc_panic("task pipeline: attempt to schedule task more than once");
-    }
+bool TaskPipeline::schedule_and_maybe_process_task_(Task& task) {
     task.state_ = Task::StateScheduled;
 
     if (++pending_tasks_ != 1) {
         task_queue_.push_back(task);
-        return;
+        return false;
     }
 
     core::nanoseconds_t next_frame_deadline;
     if (!next_frame_deadline_.try_load(next_frame_deadline)) {
         task_queue_.push_back(task);
-        return;
+        return false;
     }
 
     if (!interframe_task_processing_allowed_(next_frame_deadline)) {
@@ -123,15 +129,15 @@ void TaskPipeline::schedule_and_maybe_process_task_(Task& task) {
             schedule_async_task_processing_();
         }
 
-        return;
+        return false;
     }
 
     if (!pipeline_mutex_.try_lock()) {
         task_queue_.push_back(task);
-        return;
+        return false;
     }
 
-    process_task_(task);
+    process_task_(task, false);
     --pending_tasks_;
 
     stats_.task_processed_total++;
@@ -147,6 +153,8 @@ void TaskPipeline::schedule_and_maybe_process_task_(Task& task) {
     if (n_pending_frames == 0 && pending_tasks_ != 0) {
         schedule_async_task_processing_();
     }
+
+    return true;
 }
 
 void TaskPipeline::process_tasks() {
@@ -187,7 +195,7 @@ bool TaskPipeline::maybe_process_tasks_() {
             break;
         }
 
-        process_task_(*task);
+        process_task_(*task, true);
         --pending_tasks_;
 
         stats_.task_processed_total++;
@@ -253,7 +261,7 @@ bool TaskPipeline::process_frame_and_tasks_precise_(audio::Frame& frame) {
 
         if (start_subframe_task_processing_()) {
             while (Task* task = task_queue_.try_pop_front()) {
-                process_task_(*task);
+                process_task_(*task, true);
                 --pending_tasks_;
 
                 stats_.task_processed_total++;
@@ -334,19 +342,16 @@ void TaskPipeline::cancel_async_task_processing_() {
     scheduler_mutex_.unlock();
 }
 
-void TaskPipeline::process_task_(Task& task) {
+void TaskPipeline::process_task_(Task& task, bool notify) {
     ICompletionHandler* handler = task.handler_;
-    core::Semaphore* sem = task.sem_;
 
     task.success_ = process_task_imp(task);
     task.state_ = Task::StateFinished;
 
     if (handler) {
         handler->pipeline_task_finished(task);
-    }
-
-    if (sem) {
-        sem->post();
+    } else if (notify) {
+        task.sem_->post();
     }
 }
 
