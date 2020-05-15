@@ -17,6 +17,7 @@
 #include <mach/mach.h>
 #include <mach/mach_time.h>
 
+#include "roc_core/atomic_ops.h"
 #include "roc_core/errno_to_str.h"
 #include "roc_core/panic.h"
 #include "roc_core/time.h"
@@ -27,6 +28,8 @@ namespace core {
 namespace {
 
 pthread_once_t steady_factor_once = PTHREAD_ONCE_INIT;
+
+int steady_factor_init_done = 0;
 
 double steady_factor = 0;
 
@@ -44,6 +47,10 @@ void steady_factor_init() {
     }
 
     steady_factor = (double)info.numer / info.denom;
+
+    AtomicOps::barrier_release();
+
+    steady_factor_init_done = 1;
 }
 
 } // namespace
@@ -60,8 +67,10 @@ void steady_factor_init() {
 //
 // See "Mach Overview" at developer.apple.com (http://tiny.cc/0vlj3y)
 nanoseconds_t timestamp() {
-    if (int err = pthread_once(&steady_factor_once, steady_factor_init)) {
-        roc_panic("time: pthread_once(): %s", errno_to_str(err).c_str());
+    if (!steady_factor_init_done) {
+        if (int err = pthread_once(&steady_factor_once, steady_factor_init)) {
+            roc_panic("time: pthread_once(): %s", errno_to_str(err).c_str());
+        }
     }
     return nanoseconds_t(mach_absolute_time() * steady_factor);
 }
