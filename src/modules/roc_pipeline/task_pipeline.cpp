@@ -416,7 +416,7 @@ TaskPipeline::update_next_frame_deadline_(core::nanoseconds_t frame_start_time,
 
     const core::nanoseconds_t next_frame_deadline = frame_start_time + frame_duration;
 
-    next_frame_deadline_.store(next_frame_deadline);
+    next_frame_deadline_.exclusive_store(next_frame_deadline);
 
     return next_frame_deadline;
 }
