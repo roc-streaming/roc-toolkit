@@ -87,6 +87,9 @@ public:
 
     //! Get underlying pointer.
     T* operator->() const {
+        if (ptr_ == NULL) {
+            roc_panic("shared ptr: attempting to dereference null shared pointer");
+        }
         return ptr_;
     }
 
