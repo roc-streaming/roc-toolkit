@@ -7,54 +7,59 @@
  */
 
 #include "roc_core/timer.h"
+#include "roc_core/panic.h"
 
 namespace roc {
 namespace core {
 
 Timer::Timer()
-    : cond_(mutex_)
+    : sem_(0)
+    , sem_post_flag_(false)
     , deadline_(0)
     , next_wakeup_(0) {
 }
 
-void Timer::set_deadline(nanoseconds_t deadline) {
-    {
-        Mutex::Lock lock(mutex_);
+bool Timer::try_set_deadline(nanoseconds_t new_deadline) {
+    if (!deadline_.try_store(new_deadline)) {
+        return false;
+    }
 
-        if (deadline_ == deadline) {
-            return;
-        }
+    nanoseconds_t next_wakeup;
 
-        deadline_ = deadline;
+    if (!next_wakeup_.try_load(next_wakeup)) {
+        next_wakeup = -1;
+    }
 
-        if (next_wakeup_ == deadline || (next_wakeup_ >= 0 && next_wakeup_ <= deadline)) {
-            return;
+    if (next_wakeup < 0 || (new_deadline >= 0 && new_deadline < next_wakeup)) {
+        if (sem_post_flag_.compare_exchange_acq_rel(false, true)) {
+            sem_.post();
         }
     }
 
-    cond_.broadcast();
+    return true;
 }
 
 void Timer::wait_deadline() {
-    Mutex::Lock lock(mutex_);
-
     for (;;) {
-        const nanoseconds_t now = timestamp();
+        next_wakeup_.exclusive_store(-1);
 
-        next_wakeup_ = deadline_;
+        const nanoseconds_t deadline = deadline_.wait_load();
 
-        if (deadline_ < 0) {
-            cond_.wait();
-            continue;
+        if (deadline >= 0 && deadline <= timestamp()) {
+            break;
         }
 
-        if (deadline_ > now) {
-            cond_.timed_wait(deadline_ - now);
-            continue;
+        if (deadline > 0) {
+            next_wakeup_.exclusive_store(deadline);
+            sem_.timed_wait(deadline);
+        } else {
+            sem_.wait();
         }
 
-        return;
+        sem_post_flag_ = false;
     }
+
+    next_wakeup_.exclusive_store(0);
 }
 
 } // namespace core
