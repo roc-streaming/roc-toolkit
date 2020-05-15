@@ -45,8 +45,8 @@ TEST(profiler, test_moving_average) {
         TestFrame(125, 125 * core::Second / 3)
     };
 
-    double frame_speeds[ROC_ARRAY_SIZE(frames)];
     // populate frame speeds
+    double frame_speeds[ROC_ARRAY_SIZE(frames)];
     for (size_t i = 0; i < ROC_ARRAY_SIZE(frames); ++i) {
         frame_speeds[i] =
             double(frames[i].size * core::Second) / frames[i].time / num_channels;
