@@ -224,16 +224,15 @@ bool NetworkLoop::schedule_and_wait(Task& task) {
     return task.success_;
 }
 
-void NetworkLoop::handle_closed(BasicPort& port) {
-    if (!closing_ports_.contains(port)) {
-        return;
-    }
-
+void NetworkLoop::handle_closed(BasicPort& port, void* arg) {
     roc_log(LogDebug, "network loop: asynchronous close finished: port %s",
             address::socket_addr_to_str(port.address()).c_str());
 
-    finish_closing_tasks_(port);
     closing_ports_.remove(port);
+
+    if (Task* task = (Task*)arg) {
+        finish_task_(*task);
+    }
 }
 
 void NetworkLoop::handle_resolved(ResolverRequest& req) {
@@ -273,7 +272,7 @@ void NetworkLoop::stop_sem_cb_(uv_async_t* handle) {
 void NetworkLoop::close_all_ports_() {
     while (core::SharedPtr<BasicPort> port = open_ports_.front()) {
         open_ports_.remove(*port);
-        async_close_port_(*port);
+        async_close_port_(*port, NULL);
     }
     update_num_ports_();
 }
@@ -314,9 +313,9 @@ NetworkLoop::Task* NetworkLoop::process_next_pending_task_() {
 }
 
 void NetworkLoop::task_add_udp_receiver_(Task& task) {
-    core::SharedPtr<BasicPort> rp = new (allocator_)
-        UdpReceiverPort(*task.receiver_config_, *task.port_writer_, *this, loop_,
-                        packet_pool_, buffer_pool_, allocator_);
+    core::SharedPtr<BasicPort> rp =
+        new (allocator_) UdpReceiverPort(*task.receiver_config_, *task.port_writer_,
+                                         loop_, packet_pool_, buffer_pool_, allocator_);
     if (!rp) {
         roc_log(LogError, "network loop: can't add port %s: can't allocate receiver",
                 address::socket_addr_to_str(task.receiver_config_->bind_address).c_str());
@@ -331,10 +330,9 @@ void NetworkLoop::task_add_udp_receiver_(Task& task) {
         roc_log(LogError, "network loop: can't add port %s: can't start receiver",
                 address::socket_addr_to_str(task.receiver_config_->bind_address).c_str());
         task.success_ = false;
-        if (!async_close_port_(*rp)) {
+        if (!async_close_port_(*rp, &task)) {
             task.state_ = Task::Finishing;
         } else {
-            closing_tasks_.push_back(task);
             task.state_ = Task::ClosingPort;
         }
         return;
@@ -352,7 +350,7 @@ void NetworkLoop::task_add_udp_receiver_(Task& task) {
 
 void NetworkLoop::task_add_udp_sender_(Task& task) {
     core::SharedPtr<UdpSenderPort> sp =
-        new (allocator_) UdpSenderPort(*task.sender_config_, *this, loop_, allocator_);
+        new (allocator_) UdpSenderPort(*task.sender_config_, loop_, allocator_);
     if (!sp) {
         roc_log(LogError, "network loop: can't add port %s: can't allocate sender",
                 address::socket_addr_to_str(task.sender_config_->bind_address).c_str());
@@ -367,10 +365,9 @@ void NetworkLoop::task_add_udp_sender_(Task& task) {
         roc_log(LogError, "network loop: can't add port %s: can't start sender",
                 address::socket_addr_to_str(task.sender_config_->bind_address).c_str());
         task.success_ = false;
-        if (!async_close_port_(*sp)) {
+        if (!async_close_port_(*sp, &task)) {
             task.state_ = Task::Finishing;
         } else {
-            closing_tasks_.push_back(task);
             task.state_ = Task::ClosingPort;
         }
         return;
@@ -395,10 +392,9 @@ void NetworkLoop::task_remove_port_(Task& task) {
     update_num_ports_();
 
     task.success_ = true;
-    if (!async_close_port_(*task.port_)) {
+    if (!async_close_port_(*task.port_, &task)) {
         task.state_ = Task::Finishing;
     } else {
-        closing_tasks_.push_back(task);
         task.state_ = Task::ClosingPort;
     }
 }
@@ -411,30 +407,6 @@ void NetworkLoop::task_resolve_endpoint_address_(Task& task) {
     }
 
     task.state_ = Task::Pending;
-}
-
-bool NetworkLoop::async_close_port_(BasicPort& port) {
-    if (!port.async_close()) {
-        return false;
-    }
-
-    closing_ports_.push_back(port);
-    return true;
-}
-
-void NetworkLoop::finish_closing_tasks_(const BasicPort& port) {
-    Task* task = closing_tasks_.front();
-
-    while (task) {
-        Task* next_task = closing_tasks_.nextof(*task);
-
-        if (task->port_.get() == &port) {
-            closing_tasks_.remove(*task);
-            finish_task_(*task);
-        }
-
-        task = next_task;
-    }
 }
 
 void NetworkLoop::finish_task_(Task& task) {
@@ -450,6 +422,17 @@ void NetworkLoop::finish_task_(Task& task) {
     } else {
         task_cond_.broadcast();
     }
+}
+
+bool NetworkLoop::async_close_port_(BasicPort& port, Task* task) {
+    // this implements ICloseHandler::handle_closed()
+    // task will be passed to handle_closed() as 'arg'
+    if (!port.async_close(*this, task)) {
+        return false;
+    }
+
+    closing_ports_.push_back(port);
+    return true;
 }
 
 void NetworkLoop::update_num_ports_() {
