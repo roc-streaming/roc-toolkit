@@ -16,6 +16,7 @@
 #include "roc_core/iallocator.h"
 #include "roc_core/list_node.h"
 #include "roc_core/refcnt.h"
+#include "roc_netio/iclose_handler.h"
 
 namespace roc {
 namespace netio {
@@ -46,7 +47,7 @@ public:
     //! @returns
     //!  true if asynchronous close was initiated or false if
     //!  the port is already closed.
-    virtual bool async_close() = 0;
+    virtual bool async_close(ICloseHandler& handler, void* handler_arg) = 0;
 
 private:
     friend class core::RefCnt<BasicPort>;
