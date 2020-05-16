@@ -17,7 +17,6 @@ namespace netio {
 
 UdpReceiverPort::UdpReceiverPort(const UdpReceiverConfig& config,
                                  packet::IWriter& writer,
-                                 ICloseHandler& close_handler,
                                  uv_loop_t& event_loop,
                                  packet::PacketPool& packet_pool,
                                  core::BufferPool<uint8_t>& buffer_pool,
@@ -25,7 +24,8 @@ UdpReceiverPort::UdpReceiverPort(const UdpReceiverConfig& config,
     : BasicPort(allocator)
     , config_(config)
     , writer_(writer)
-    , close_handler_(close_handler)
+    , close_handler_(NULL)
+    , close_handler_arg_(NULL)
     , loop_(event_loop)
     , handle_initialized_(false)
     , multicast_group_joined_(false)
@@ -112,7 +112,14 @@ bool UdpReceiverPort::open() {
     return true;
 }
 
-bool UdpReceiverPort::async_close() {
+bool UdpReceiverPort::async_close(ICloseHandler& handler, void* handler_arg) {
+    if (close_handler_) {
+        roc_panic("udp receiver: can't call async_close() twice");
+    }
+
+    close_handler_ = &handler;
+    close_handler_arg_ = handler_arg;
+
     if (!handle_initialized_) {
         return false;
     }
@@ -153,8 +160,10 @@ void UdpReceiverPort::close_cb_(uv_handle_t* handle) {
     roc_log(LogInfo, "udp receiver: closed port %s",
             address::socket_addr_to_str(self.config_.bind_address).c_str());
 
+    roc_panic_if_not(self.close_handler_);
+
     self.closed_ = true;
-    self.close_handler_.handle_closed(self);
+    self.close_handler_->handle_closed(self, self.close_handler_arg_);
 }
 
 void UdpReceiverPort::alloc_cb_(uv_handle_t* handle, size_t size, uv_buf_t* buf) {
