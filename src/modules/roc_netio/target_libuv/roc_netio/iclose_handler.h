@@ -12,10 +12,10 @@
 #ifndef ROC_NETIO_ICLOSE_HANDLER_H_
 #define ROC_NETIO_ICLOSE_HANDLER_H_
 
-#include "roc_netio/basic_port.h"
-
 namespace roc {
 namespace netio {
+
+class BasicPort;
 
 //! Close handler interface.
 class ICloseHandler {
@@ -27,7 +27,7 @@ public:
     //! @remarks
     //!  - After this call closed port should not be used.
     //!  - Should be called from the event loop thread.
-    virtual void handle_closed(BasicPort&) = 0;
+    virtual void handle_closed(BasicPort& port, void* arg) = 0;
 };
 
 } // namespace netio

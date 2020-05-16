@@ -194,7 +194,7 @@ private:
     static void task_sem_cb_(uv_async_t* handle);
     static void stop_sem_cb_(uv_async_t* handle);
 
-    virtual void handle_closed(BasicPort&);
+    virtual void handle_closed(BasicPort&, void*);
     virtual void handle_resolved(ResolverRequest& req);
 
     virtual void run();
@@ -210,10 +210,9 @@ private:
     void task_remove_port_(Task&);
     void task_resolve_endpoint_address_(Task&);
 
-    bool async_close_port_(BasicPort& port);
-    void finish_closing_tasks_(const BasicPort& port);
     void finish_task_(Task&);
 
+    bool async_close_port_(BasicPort&, Task*);
     void update_num_ports_();
 
     packet::PacketPool& packet_pool_;
@@ -232,7 +231,6 @@ private:
     bool task_sem_initialized_;
 
     core::List<Task, core::NoOwnership> pending_tasks_;
-    core::List<Task, core::NoOwnership> closing_tasks_;
 
     core::Mutex task_mutex_;
     core::Cond task_cond_;
