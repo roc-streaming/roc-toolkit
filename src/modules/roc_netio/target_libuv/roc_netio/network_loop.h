@@ -17,11 +17,12 @@
 #include "roc_address/socket_addr.h"
 #include "roc_core/atomic.h"
 #include "roc_core/buffer_pool.h"
-#include "roc_core/cond.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/list.h"
-#include "roc_core/list_node.h"
-#include "roc_core/mutex.h"
+#include "roc_core/mpsc_queue.h"
+#include "roc_core/mpsc_queue_node.h"
+#include "roc_core/optional.h"
+#include "roc_core/semaphore.h"
 #include "roc_core/thread.h"
 #include "roc_netio/basic_port.h"
 #include "roc_netio/iclose_handler.h"
@@ -46,7 +47,7 @@ public:
 
     //! Base task class.
     //! The user is responsible for allocating and deallocating the task.
-    class Task : public core::ListNode {
+    class Task : public core::MpscQueueNode {
     public:
         ~Task();
 
@@ -83,6 +84,8 @@ public:
         ResolverRequest resolve_req_; //!< For resolve tasks.
 
         ICompletionHandler* handler_; //!< Completion handler.
+
+        core::Optional<core::Semaphore> sem_; //!< Completion semaphore.
     };
 
     //! Subclasses for specific tasks.
@@ -199,21 +202,19 @@ private:
 
     virtual void run();
 
+    void process_pending_tasks_();
+    void finish_task_(Task&);
+
+    bool async_close_port_(BasicPort&, Task*);
+    void update_num_ports_();
+
     void close_all_sems_();
     void close_all_ports_();
-
-    void process_pending_tasks_();
-    Task* process_next_pending_task_();
 
     void task_add_udp_receiver_(Task&);
     void task_add_udp_sender_(Task&);
     void task_remove_port_(Task&);
     void task_resolve_endpoint_address_(Task&);
-
-    void finish_task_(Task&);
-
-    bool async_close_port_(BasicPort&, Task*);
-    void update_num_ports_();
 
     packet::PacketPool& packet_pool_;
     core::BufferPool<uint8_t>& buffer_pool_;
@@ -230,10 +231,7 @@ private:
     uv_async_t task_sem_;
     bool task_sem_initialized_;
 
-    core::List<Task, core::NoOwnership> pending_tasks_;
-
-    core::Mutex task_mutex_;
-    core::Cond task_cond_;
+    core::MpscQueue<Task, core::NoOwnership> pending_tasks_;
 
     Resolver resolver_;
 

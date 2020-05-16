@@ -105,7 +105,6 @@ NetworkLoop::NetworkLoop(packet::PacketPool& packet_pool,
     , loop_initialized_(false)
     , stop_sem_initialized_(false)
     , task_sem_initialized_(false)
-    , task_cond_(task_mutex_)
     , resolver_(*this, loop_)
     , num_open_ports_(0) {
     if (int err = uv_loop_init(&loop_)) {
@@ -176,8 +175,6 @@ size_t NetworkLoop::num_ports() const {
 }
 
 void NetworkLoop::schedule(Task& task, ICompletionHandler& handler) {
-    core::Mutex::Lock lock(task_mutex_);
-
     if (!valid()) {
         roc_panic("network loop: can't use invalid loop");
     }
@@ -198,8 +195,6 @@ void NetworkLoop::schedule(Task& task, ICompletionHandler& handler) {
 }
 
 bool NetworkLoop::schedule_and_wait(Task& task) {
-    core::Mutex::Lock lock(task_mutex_);
-
     if (!valid()) {
         roc_panic("network loop: can't use invalid loop");
     }
@@ -208,6 +203,11 @@ bool NetworkLoop::schedule_and_wait(Task& task) {
         roc_panic("network loop: can't use the same task multiple times");
     }
 
+    if (!task.sem_) {
+        task.sem_.reset(new (task.sem_) core::Semaphore);
+    }
+
+    task.handler_ = NULL;
     task.state_ = Task::Pending;
 
     pending_tasks_.push_back(task);
@@ -217,9 +217,7 @@ bool NetworkLoop::schedule_and_wait(Task& task) {
                   uv_strerror(err));
     }
 
-    while (task.state_ != Task::Finished) {
-        task_cond_.wait();
-    }
+    task.sem_->wait();
 
     return task.success_;
 }
@@ -269,6 +267,48 @@ void NetworkLoop::stop_sem_cb_(uv_async_t* handle) {
     self.process_pending_tasks_();
 }
 
+void NetworkLoop::process_pending_tasks_() {
+    // Using try_pop_front() makes this method lock-free and wait-free.
+    // try_pop_front() may return NULL if the queue is not empty, but push_back()
+    // is currently in progress. In this case we can exit before processing all
+    // tasks, but schedule() always calls uv_async_send() after push_back(), so
+    // we'll wake up soon and process the rest tasks.
+    while (Task* task = pending_tasks_.try_pop_front()) {
+        (this->*(task->func_))(*task);
+
+        if (task->state_ == Task::Finishing) {
+            finish_task_(*task);
+        }
+    }
+}
+
+void NetworkLoop::finish_task_(Task& task) {
+    ICompletionHandler* handler = task.handler_;
+
+    task.state_ = Task::Finished;
+
+    if (handler) {
+        handler->network_task_finished(task);
+    } else {
+        task.sem_->post();
+    }
+}
+
+bool NetworkLoop::async_close_port_(BasicPort& port, Task* task) {
+    // this implements ICloseHandler::handle_closed()
+    // task will be passed to handle_closed() as 'arg'
+    if (!port.async_close(*this, task)) {
+        return false;
+    }
+
+    closing_ports_.push_back(port);
+    return true;
+}
+
+void NetworkLoop::update_num_ports_() {
+    num_open_ports_ = (int)open_ports_.size();
+}
+
 void NetworkLoop::close_all_ports_() {
     while (core::SharedPtr<BasicPort> port = open_ports_.front()) {
         open_ports_.remove(*port);
@@ -287,29 +327,6 @@ void NetworkLoop::close_all_sems_() {
         uv_close((uv_handle_t*)&stop_sem_, NULL);
         stop_sem_initialized_ = false;
     }
-}
-
-void NetworkLoop::process_pending_tasks_() {
-    while (Task* task = process_next_pending_task_()) {
-        if (task->state_ == Task::Finishing) {
-            finish_task_(*task);
-        }
-    }
-}
-
-NetworkLoop::Task* NetworkLoop::process_next_pending_task_() {
-    core::Mutex::Lock lock(task_mutex_);
-
-    Task* task = pending_tasks_.front();
-    if (!task) {
-        return NULL;
-    }
-
-    pending_tasks_.remove(*task);
-
-    (this->*(task->func_))(*task);
-
-    return task;
 }
 
 void NetworkLoop::task_add_udp_receiver_(Task& task) {
@@ -407,36 +424,6 @@ void NetworkLoop::task_resolve_endpoint_address_(Task& task) {
     }
 
     task.state_ = Task::Pending;
-}
-
-void NetworkLoop::finish_task_(Task& task) {
-    ICompletionHandler* handler = task.handler_;
-
-    task.state_ = Task::Finished;
-
-    // if handler is NULL, task may be already destroyed
-
-    if (handler) {
-        handler->network_task_finished(task);
-        // task may be already destroyed
-    } else {
-        task_cond_.broadcast();
-    }
-}
-
-bool NetworkLoop::async_close_port_(BasicPort& port, Task* task) {
-    // this implements ICloseHandler::handle_closed()
-    // task will be passed to handle_closed() as 'arg'
-    if (!port.async_close(*this, task)) {
-        return false;
-    }
-
-    closing_ports_.push_back(port);
-    return true;
-}
-
-void NetworkLoop::update_num_ports_() {
-    num_open_ports_ = (int)open_ports_.size();
 }
 
 } // namespace netio
