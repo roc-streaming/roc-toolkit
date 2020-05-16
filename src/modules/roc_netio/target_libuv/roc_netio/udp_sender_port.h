@@ -37,7 +37,9 @@ struct UdpSenderConfig {
     //! If true, sender is allowed to send packets to broadcast addresses.
     bool broadcast_enabled;
 
-    //! If true, allow non-blocking writes.
+    //! If true, allow non-blocking writes directly in write() method.
+    //! If non-blocking write can;t be performed, sender falls back to
+    //! regular asynchronous write.
     bool non_blocking_enabled;
 
     UdpSenderConfig()
@@ -58,7 +60,6 @@ class UdpSenderPort : public BasicPort, public packet::IWriter {
 public:
     //! Initialize.
     UdpSenderPort(const UdpSenderConfig& config,
-                  ICloseHandler& close_handler,
                   uv_loop_t& event_loop,
                   core::IAllocator& allocator);
 
@@ -72,7 +73,7 @@ public:
     virtual bool open();
 
     //! Asynchronously close sender.
-    virtual bool async_close();
+    virtual bool async_close(ICloseHandler& handler, void* handler_arg);
 
     //! Write packet.
     //! @remarks
@@ -94,7 +95,8 @@ private:
 
     UdpSenderConfig config_;
 
-    ICloseHandler& close_handler_;
+    ICloseHandler* close_handler_;
+    void* close_handler_arg_;
 
     uv_loop_t& loop_;
 

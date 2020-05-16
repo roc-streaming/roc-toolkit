@@ -23,12 +23,12 @@ const core::nanoseconds_t PacketLogInterval = 20 * core::Second;
 } // namespace
 
 UdpSenderPort::UdpSenderPort(const UdpSenderConfig& config,
-                             ICloseHandler& close_handler,
                              uv_loop_t& event_loop,
                              core::IAllocator& allocator)
     : BasicPort(allocator)
     , config_(config)
-    , close_handler_(close_handler)
+    , close_handler_(NULL)
+    , close_handler_arg_(NULL)
     , loop_(event_loop)
     , write_sem_initialized_(false)
     , handle_initialized_(false)
@@ -123,7 +123,14 @@ bool UdpSenderPort::open() {
     return true;
 }
 
-bool UdpSenderPort::async_close() {
+bool UdpSenderPort::async_close(ICloseHandler& handler, void* handler_arg) {
+    if (close_handler_) {
+        roc_panic("udp sender: can't call async_close() twice");
+    }
+
+    close_handler_ = &handler;
+    close_handler_arg_ = handler_arg;
+
     stopped_ = true;
 
     if (fully_closed_()) {
@@ -195,8 +202,10 @@ void UdpSenderPort::close_cb_(uv_handle_t* handle) {
     roc_log(LogInfo, "udp sender: closed port %s",
             address::socket_addr_to_str(self.config_.bind_address).c_str());
 
+    roc_panic_if_not(self.close_handler_);
+
     self.closed_ = true;
-    self.close_handler_.handle_closed(self);
+    self.close_handler_->handle_closed(self, self.close_handler_arg_);
 }
 
 void UdpSenderPort::write_sem_cb_(uv_async_t* handle) {
