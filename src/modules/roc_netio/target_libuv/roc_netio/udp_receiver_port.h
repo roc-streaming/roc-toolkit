@@ -50,7 +50,6 @@ public:
     //! Initialize.
     UdpReceiverPort(const UdpReceiverConfig& config,
                     packet::IWriter& writer,
-                    ICloseHandler& close_handler,
                     uv_loop_t& event_loop,
                     packet::PacketPool& packet_pool,
                     core::BufferPool<uint8_t>& buffer_pool,
@@ -66,7 +65,7 @@ public:
     virtual bool open();
 
     //! Asynchronously close receiver.
-    virtual bool async_close();
+    virtual bool async_close(ICloseHandler& handler, void* handler_arg);
 
 private:
     static void close_cb_(uv_handle_t* handle);
@@ -83,7 +82,8 @@ private:
     UdpReceiverConfig config_;
     packet::IWriter& writer_;
 
-    ICloseHandler& close_handler_;
+    ICloseHandler* close_handler_;
+    void* close_handler_arg_;
 
     uv_loop_t& loop_;
 
