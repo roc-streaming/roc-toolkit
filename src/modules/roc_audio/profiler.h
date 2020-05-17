@@ -28,17 +28,22 @@ namespace audio {
 //! Profiler Configuration Parameters.
 //! Controls profiling interval and duration of each circular buffer chunk.
 struct ProfilerConfig {
+    //! Default Initialization.
     ProfilerConfig()
         : profilingInterval(core::Second)
         , chunkDuration(10 * core::Millisecond) {
     }
 
+    //! Override Initialization.
     ProfilerConfig(core::nanoseconds_t interval, core::nanoseconds_t chunk_duration)
         : profilingInterval(interval)
         , chunkDuration(chunk_duration) {
     }
 
+    //! Rolling window duration and reporting interval.
     core::nanoseconds_t profilingInterval;
+    
+    //! Duration of samples each chunk can hold in the circular buffer.
     core::nanoseconds_t chunkDuration;
 };
 
