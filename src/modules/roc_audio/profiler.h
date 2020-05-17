@@ -42,7 +42,7 @@ struct ProfilerConfig {
 
     //! Rolling window duration and reporting interval.
     core::nanoseconds_t profilingInterval;
-    
+
     //! Duration of samples each chunk can hold in the circular buffer.
     core::nanoseconds_t chunkDuration;
 };
