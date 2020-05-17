@@ -11,10 +11,6 @@
 #include "roc_core/panic.h"
 #include "roc_core/shared_ptr.h"
 
-namespace {
-const size_t chunk_time = 10;
-}
-
 namespace roc {
 namespace audio {
 
