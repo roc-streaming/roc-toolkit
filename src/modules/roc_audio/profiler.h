@@ -35,16 +35,16 @@ struct ProfilerConfig {
     }
 
     //! Override Initialization.
-    ProfilerConfig(core::nanoseconds_t interval, core::nanoseconds_t chunk_duration)
-        : profilingInterval(interval)
-        , chunkDuration(chunk_duration) {
+    ProfilerConfig(core::nanoseconds_t interval, core::nanoseconds_t duration)
+        : profiling_interval(interval)
+        , chunk_duration(duration) {
     }
 
     //! Rolling window duration and reporting interval.
-    core::nanoseconds_t profilingInterval;
+    core::nanoseconds_t profiling_interval;
 
     //! Duration of samples each chunk can hold in the circular buffer.
-    core::nanoseconds_t chunkDuration;
+    core::nanoseconds_t chunk_duration;
 };
 
 //! Profiler
