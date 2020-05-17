@@ -51,9 +51,9 @@ SenderSink::SenderSink(const SenderConfig& config,
     if (config.profiling) {
         profiler_.reset(new (allocator) audio::ProfilingWriter(
                             *awriter, allocator, config.input_channels,
-                            config.input_sample_rate, DefaultProfilerLogInterval),
+                            config.input_sample_rate, config.profiler_config),
                         allocator);
-        if (!profiler_) {
+        if (!profiler_ || !profiler_->valid()) {
             return;
         }
         awriter = profiler_.get();

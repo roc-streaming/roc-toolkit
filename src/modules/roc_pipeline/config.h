@@ -14,6 +14,7 @@
 
 #include "roc_address/protocol.h"
 #include "roc_audio/latency_monitor.h"
+#include "roc_audio/profiler.h"
 #include "roc_audio/resampler_config.h"
 #include "roc_audio/watchdog.h"
 #include "roc_core/stddefs.h"
@@ -27,9 +28,6 @@
 
 namespace roc {
 namespace pipeline {
-
-//! Default interval for profiling and logging
-const core::nanoseconds_t DefaultProfilerLogInterval = core::Second;
 
 //! Default sample rate, number of samples per second.
 const size_t DefaultSampleRate = 44100;
@@ -93,8 +91,11 @@ struct SenderConfig {
     //! Fill unitialized data with large values to make them more noticable.
     bool poisoning;
 
-    //! Profile moving average of frames being written
+    //! Profile moving average of frames being written.
     bool profiling;
+
+    //! Profiler configuration.
+    struct audio::ProfilerConfig profiler_config;
 
     SenderConfig()
         : resampler_backend(audio::ResamplerBackend_Builtin)
@@ -107,7 +108,8 @@ struct SenderConfig {
         , interleaving(false)
         , timing(false)
         , poisoning(false)
-        , profiling(false) {
+        , profiling(false)
+        , profiler_config() {
     }
 };
 
@@ -177,8 +179,11 @@ struct ReceiverCommonConfig {
     //! Fill uninitialized data with large values to make them more noticeable.
     bool poisoning;
 
-    //! Profile moving average of frames being written
+    //! Profile moving average of frames being written.
     bool profiling;
+
+    //! Profiler configuration.
+    struct audio::ProfilerConfig profiler_config;
 
     //! Insert weird beeps instead of silence on packet loss.
     bool beeping;
@@ -191,6 +196,7 @@ struct ReceiverCommonConfig {
         , timing(false)
         , poisoning(false)
         , profiling(false)
+        , profiler_config()
         , beeping(false) {
     }
 };
@@ -233,8 +239,11 @@ struct ConverterConfig {
     //! Fill unitialized data with large values to make them more noticable.
     bool poisoning;
 
-    //! Profile moving average of frames being written
+    //! Profile moving average of frames being written.
     bool profiling;
+
+    //! Profiler configuration.
+    struct audio::ProfilerConfig profiler_config;
 
     ConverterConfig()
         : resampler_backend(audio::ResamplerBackend_Builtin)
@@ -245,7 +254,8 @@ struct ConverterConfig {
         , internal_frame_length(DefaultInternalFrameLength)
         , resampling(false)
         , poisoning(false)
-        , profiling(false) {
+        , profiling(false)
+        , profiler_config() {
     }
 };
 

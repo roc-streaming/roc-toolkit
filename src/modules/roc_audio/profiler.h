@@ -25,6 +25,23 @@
 namespace roc {
 namespace audio {
 
+//! Profiler Configuration Parameters.
+//! Controls profiling interval and duration of each circular buffer chunk.
+struct ProfilerConfig {
+    ProfilerConfig()
+        : profilingInterval(core::Second)
+        , chunkDuration(10 * core::Millisecond) {
+    }
+
+    ProfilerConfig(core::nanoseconds_t interval, core::nanoseconds_t chunk_duration)
+        : profilingInterval(interval)
+        , chunkDuration(chunk_duration) {
+    }
+
+    core::nanoseconds_t profilingInterval;
+    core::nanoseconds_t chunkDuration;
+};
+
 //! Profiler
 //! The role of the profiler is to report the average processing speed (# of samples
 //! processed per time unit) during the last N seconds. We want to calculate the average
@@ -46,7 +63,7 @@ public:
     Profiler(core::IAllocator& allocator,
              packet::channel_mask_t channels,
              size_t sample_rate,
-             core::nanoseconds_t interval);
+             struct ProfilerConfig profiler_config);
 
     //! Check if the profiler was succefully constructed.
     bool valid() const;
@@ -55,23 +72,25 @@ public:
     void add_frame(size_t frame_size, core::nanoseconds_t elapsed);
 
     //! For Testing Only
-    double get_moving_avg() {
+    float get_moving_avg() {
         return moving_avg_;
     }
 
 private:
+    void update_moving_avg_(size_t frame_size, core::nanoseconds_t elapsed);
+
     core::RateLimiter rate_limiter_;
 
     core::nanoseconds_t interval_;
 
     const size_t chunk_length_;
     const size_t num_chunks_;
-    core::Array<double> chunks_;
+    core::Array<float> chunks_;
     size_t first_chunk_num_;
     size_t last_chunk_num_;
     size_t last_chunk_samples_;
 
-    double moving_avg_;
+    float moving_avg_;
 
     const size_t sample_rate_;
     const size_t num_channels_;

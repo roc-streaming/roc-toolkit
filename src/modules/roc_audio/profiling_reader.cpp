@@ -17,16 +17,19 @@ ProfilingReader::ProfilingReader(IReader& reader,
                                  core::IAllocator& allocator,
                                  packet::channel_mask_t channels,
                                  size_t sample_rate,
-                                 core::nanoseconds_t interval)
-    : profiler_(allocator, channels, sample_rate, interval)
+                                 struct ProfilerConfig profiler_config)
+    : profiler_(allocator, channels, sample_rate, profiler_config)
     , reader_(reader) {
 }
 
 bool ProfilingReader::read(Frame& frame) {
     const core::nanoseconds_t elapsed = read_(frame);
 
-    profiler_.add_frame(frame.size(), elapsed);
-    return true;
+    bool ret = reader_.read(frame);
+    if (!ret) {
+        profiler_.add_frame(frame.size(), elapsed);
+    }
+    return ret;
 }
 
 core::nanoseconds_t ProfilingReader::read_(Frame& frame) {
@@ -35,6 +38,10 @@ core::nanoseconds_t ProfilingReader::read_(Frame& frame) {
     reader_.read(frame);
 
     return core::timestamp() - start;
+}
+
+bool ProfilingReader::valid() const {
+    return profiler_.valid();
 }
 
 } // namespace audio

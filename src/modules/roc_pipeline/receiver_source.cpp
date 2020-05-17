@@ -50,9 +50,10 @@ ReceiverSource::ReceiverSource(const ReceiverConfig& config,
     if (config.common.profiling) {
         profiler_.reset(new (allocator) audio::ProfilingReader(
                             *areader, allocator, config.common.output_channels,
-                            config.common.output_sample_rate, DefaultProfilerLogInterval),
+                            config.common.output_sample_rate,
+                            config.common.profiler_config),
                         allocator);
-        if (!profiler_) {
+        if (!profiler_ || !profiler_->valid()) {
             return;
         }
         areader = profiler_.get();

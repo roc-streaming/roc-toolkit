@@ -30,10 +30,13 @@ public:
                     core::IAllocator& allocator,
                     packet::channel_mask_t channels,
                     size_t sample_rate,
-                    core::nanoseconds_t interval);
+                    struct ProfilerConfig profiler_config);
 
     //! Read audio frame.
     virtual bool read(Frame& frame);
+
+    //! Check if the profiler was succefully constructed.
+    virtual bool valid() const;
 
 private:
     core::nanoseconds_t read_(Frame& frame);
