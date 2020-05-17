@@ -30,8 +30,8 @@ namespace audio {
 struct ProfilerConfig {
     //! Default Initialization.
     ProfilerConfig()
-        : profilingInterval(core::Second)
-        , chunkDuration(10 * core::Millisecond) {
+        : profiling_interval(core::Second)
+        , chunk_duration(10 * core::Millisecond) {
     }
 
     //! Override Initialization.
