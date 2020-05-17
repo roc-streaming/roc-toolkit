@@ -18,12 +18,12 @@ Profiler::Profiler(core::IAllocator& allocator,
                    packet::channel_mask_t channels,
                    size_t sample_rate,
                    struct ProfilerConfig profiler_config)
-    : rate_limiter_(profiler_config.profilingInterval)
-    , interval_(profiler_config.profilingInterval)
+    : rate_limiter_(profiler_config.profiling_interval)
+    , interval_(profiler_config.profiling_interval)
     , chunk_length_((size_t)(
-          sample_rate * ((float)profiler_config.chunkDuration / (float)core::Second)))
-    , num_chunks_((size_t)((unsigned long)profiler_config.profilingInterval
-                           / (unsigned long)(profiler_config.chunkDuration))
+          sample_rate * ((float)profiler_config.chunk_duration / (float)core::Second)))
+    , num_chunks_((size_t)((unsigned long)profiler_config.profiling_interval
+                           / (unsigned long)(profiler_config.chunk_duration))
                   + 1)
     , chunks_(allocator)
     , first_chunk_num_(0)
