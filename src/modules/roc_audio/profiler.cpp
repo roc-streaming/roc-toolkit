@@ -104,8 +104,8 @@ void Profiler::add_frame(size_t frame_size, core::nanoseconds_t elapsed) {
     if (rate_limiter_.allow()) {
         roc_log(LogDebug,
                 "profiler: avg for last %.1f sec: %lu sample/sec (%.2f sec/sec)",
-                (double)interval_ / core::Second, (unsigned long)moving_avg_,
-                (double)moving_avg_ / sample_rate_);
+                (double)interval_ / core::Second, (unsigned long)get_moving_avg(),
+                (double)get_moving_avg() / sample_rate_);
     }
 }
 
