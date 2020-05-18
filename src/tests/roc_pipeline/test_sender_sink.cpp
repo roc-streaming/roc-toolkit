@@ -214,7 +214,7 @@ TEST(sender_sink, endpoints_async) {
     ti.start();
     ti.wait_done();
 
-    scheduler.stop_and_wait();
+    scheduler.wait_done();
 }
 
 TEST(sender_sink, write) {
