@@ -1213,6 +1213,11 @@ if compiler == 'clang':
                 env.Append(**{var: [
                     '-Wno-redundant-parens',
                 ]})
+        if compiler_ver[:2] >= (9, 0):
+            for var in ['CXXFLAGS', 'CFLAGS']:
+                env.Append(**{var: [
+                    '-Wno-atomic-implicit-seq-cst',
+                ]})
 
     if platform in ['linux']:
         if compiler_ver[:2] >= (8, 0):
@@ -1290,10 +1295,18 @@ if compiler == 'clang':
             '-Wno-unused-const-variable',
             '-Wno-documentation',
         ]})
+
     test_env.AppendUnique(CXXFLAGS=[
         '-Wno-weak-vtables',
         '-Wno-unused-member-function',
     ])
+
+    if platform in ['linux', 'android']:
+        if compiler_ver[:2] >= (9, 0):
+            for var in ['CXXFLAGS', 'CFLAGS']:
+                test_env.Append(**{var: [
+                    '-Wno-extra-semi-stmt',
+                ]})
 
 if compiler == 'gcc':
     for var in ['CXXFLAGS', 'CFLAGS']:
