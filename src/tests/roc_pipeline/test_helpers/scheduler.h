@@ -32,7 +32,7 @@ public:
         }
     }
 
-    void stop_and_wait() {
+    void wait_done() {
         ctl::ControlLoop::Tasks::ProcessPipelineTasks* task = NULL;
 
         {
@@ -41,7 +41,7 @@ public:
         }
 
         if (task) {
-            loop_.cancel_and_wait(*task);
+            loop_.wait(*task);
 
             core::Mutex::Lock lock(mutex_);
 
