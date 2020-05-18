@@ -16,8 +16,8 @@ namespace ctl {
 namespace {
 
 enum {
-    NumScheduleIterations = 100000,
-    NumScheduleAfterIterations = 10000,
+    NumScheduleIterations = 2000000,
+    NumScheduleAfterIterations = 20000,
     NumThreads = 8,
     BatchSize = 1000
 };
@@ -66,7 +66,7 @@ BENCHMARK_DEFINE_F(BM_QueueContention, Schedule)(benchmark::State& state) {
     }
 
     for (int n = 0; n < NumScheduleIterations; n++) {
-        queue.cancel_and_wait(tasks[n]);
+        queue.wait(tasks[n]);
     }
 
     delete[] tasks;
@@ -94,7 +94,7 @@ BENCHMARK_DEFINE_F(BM_QueueContention, ScheduleAfter)(benchmark::State& state) {
     }
 
     for (int n = 0; n < NumScheduleAfterIterations; n++) {
-        queue.cancel_and_wait(tasks[n]);
+        queue.wait(tasks[n]);
     }
 
     delete[] tasks;
