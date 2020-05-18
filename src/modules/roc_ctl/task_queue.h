@@ -7,16 +7,20 @@
  */
 
 //! @file roc_ctl/task_queue.h
-//! @brief Task queue thread.
+//! @brief Asynchronous task queue.
 
 #ifndef ROC_CTL_TASK_QUEUE_H_
 #define ROC_CTL_TASK_QUEUE_H_
 
 #include "roc_core/atomic.h"
-#include "roc_core/cond.h"
 #include "roc_core/list.h"
 #include "roc_core/list_node.h"
+#include "roc_core/mpsc_queue.h"
+#include "roc_core/mpsc_queue_node.h"
 #include "roc_core/mutex.h"
+#include "roc_core/optional.h"
+#include "roc_core/semaphore.h"
+#include "roc_core/seqlock.h"
 #include "roc_core/thread.h"
 #include "roc_core/time.h"
 #include "roc_core/timer.h"
@@ -24,21 +28,69 @@
 namespace roc {
 namespace ctl {
 
-//! Task queue thread.
+//! Asynchronous task queue.
+//!
+//! This class implements a thread-safe task queue, allowing lock-free scheduling
+//! of tasks for immediate or delayed execution on the background thread, as well
+//! as lock-free task cancellation and re-scheduling (changing deadline).
+//!
+//! Note that those operations are lock-free only if core::Timer::set_deadline()
+//! is so, which however is true on modern platforms.
+//!
+//! In the current implementation, priority is given to fast scheduling and cancellation
+//! over the strict observance of the scheduling deadlines. In other words, during
+//! contention or peak load, scheduling and cancellation will be always fast, but task
+//! execution may be delayed.
+//!
+//! This design was considered acceptable because the actual task queue users are more
+//! sensitive to delays than the tasks they schedule. The task queue is used by network
+//! and pipeline threads, which should never block and use the task queue to schedule
+//! low-priority delayed work.
+//!
+//! The implementation uses two queues internally:
+//!
+//!  - ready_queue_ - a lock-free queue of tasks of three kinds:
+//!    - tasks to be executed as soon as possible (i.e. with zero deadline)
+//!    - tasks to be re-scheduled with another deadline (renewed_deadline_ > 0)
+//!    - tasks to be cancelled                          (renewed_deadline_ < 0)
+//!
+//!  - sleeping_queue_ - a sorted queue of tasks with non-zero deadline, scheduled for
+//!    execution in future; the task at the head has the smallest (nearest) deadline;
+//!
+//! task_mutex_ should be acquired to process tasks and/or to access sleeping_queue_.
+//!
+//! wakeup_timer_ (core::Timer) is used to set or wait for the next wakeup time of the
+//! background thread. This time is set to zero when ready_queue_ is non-empty, otherwise
+//! it is set to the deadline of the first task in sleeping_queue_ if it's non-empty, and
+//! otherwise is set to infinity (-1). The timer allows to update the deadline
+//! concurrently from any thread.
+//!
+//! When the task is scheduled, re-scheduled, or cancelled, there are two ways to
+//! complete the operation:
+//!
+//!  - If the event loop thread is sleeping and the task_mutex_ is free, we can acquire
+//!    the mutex and complete the operation in-place by manipulating sleeping_queue_
+//!    under the mutex.
+//!
+//!  - Otherwise, we push the task to ready_queue_ (which has lock-free push), set
+//!    the timer wakeup time to zero (to ensure that the background thread wont go to
+//!    sleep), and return, leaving the completion of the operarion to the background
+//!    thread. The background will fetch the task from ready_queue_ soon and complete
+//!    the operation by manipulating the sleeping_queue_.
 class TaskQueue : private core::Thread {
 public:
     class ICompletionHandler;
 
     //! Base task class.
     //! The user is responsible for allocating and deallocating the task.
-    class Task : public core::ListNode {
+    class Task : public core::MpscQueueNode, public core::ListNode {
     public:
         ~Task();
 
-        //! Check if the task was cancelled and was not executed.
+        //! Latest cancellation status.
         bool cancelled() const;
 
-        //! Check if the task was executed and succeeded.
+        //! Latest execution result.
         bool success() const;
 
     protected:
@@ -47,22 +99,19 @@ public:
     private:
         friend class TaskQueue;
 
-        void set_scheduling_params_(core::nanoseconds_t delay,
-                                    ICompletionHandler* handler);
-
-        void set_deadline_(core::nanoseconds_t delay);
-
-        void reset_state_(bool pending);
+        core::Atomic<int> state_;
+        core::Atomic<int> result_;
 
         core::nanoseconds_t deadline_;
+        core::Seqlock<core::nanoseconds_t> renewed_deadline_;
 
-        // result_ should be set before setting pending_ to false
-        core::Atomic<int> result_;
-        core::Atomic<int> pending_;
-
-        bool request_cancel_;
+        core::Atomic<int> in_ready_queue_;
+        core::Atomic<int> wait_in_progress_;
 
         ICompletionHandler* handler_;
+
+        core::Optional<core::Semaphore> sem_obj_;
+        core::Atomic<core::Semaphore*> sem_;
     };
 
     //! Task completion handler.
@@ -87,49 +136,50 @@ public:
     //! Check if the object was successfully constructed.
     bool valid() const;
 
-    //! Enqueue a task for asynchronous execution and return.
-    //! The task should not be destroyed until it's finishes and the handler is called.
-    //! The @p handler is invoked on event loop thread after the task completes.
-    //! It should not block the caller.
+    //! Enqueue a task for asynchronous execution in the nearest future.
+    //! Can be called only after the task is finished.
+    //! The task should not be destroyed until the handler is called, if it's set.
+    //! The @p handler is invoked on event loop thread after the task finishes.
+    //! The handler should not block the caller.
     void schedule(Task& task, ICompletionHandler* handler);
 
-    //! Enqueue a task for asynchronous execution after given delay, and return.
+    //! Enqueue a task for asynchronous execution after given delay.
+    //! Can be called only after the task is finished.
     //! The task will be executed asynchronously after the @p delay expires.
-    //! The task should not be destroyed until it's finishes and the handler is called.
-    //! The @p handler is invoked on event loop thread after the task completes.
-    //! It should not block the caller.
+    //! The task should not be destroyed until the handler is called, if it's set.
+    //! The @p handler is invoked on event loop thread after the task finishes.
+    //! The handler should not block the caller.
     void
     schedule_after(Task& task, core::nanoseconds_t delay, ICompletionHandler* handler);
 
-    //! Cancel task if it's already scheduled and re-schedule it with a new deadline.
-    //! Works like a combination of cancel_and_wait() and schedule_after(), but
-    //! asynchronously without blocking the caller.
-    //! The previois invocation of the completion handler may be cancelled, but
-    //! it's not guaranteed.
-    //! If this method is called, the task should not be destroyed until it's
-    //! completion handler is invoked for the new schedule.
+    //! Re-schedule a task with another delay.
+    //! If the task is finished, it becomes pending again.
+    //! If the task is already pending, its scheduling time is changed.
+    //! If the task is executing currently, it will be re-scheduled after it finishes.
+    //! After this call, the task should not be destroyed until the task finishes.
+    //! If the task has completion handler, it will be invoked again.
+    //! It's guaranteed that the task will be executed at least once after this call
+    //! (one possible execution for the previous schedule if the deadline was just
+    //! expired, and one guaranteed execution for the new schedule).
     void reschedule_after(Task& task, core::nanoseconds_t delay);
 
-    //! Enqueue a task for asynchronous execution and wait for its completion.
-    //! The task should not be destroyed until the method returns.
-    //! Should not be called from ICompletionHandler.
-    //! @returns
-    //!  true if the task succeeded or false if it failed.
-    bool schedule_and_wait(Task& task);
-
-    //! Asynchronously cancel scheduled task, if it was not executed yet.
-    //! If the task was not executed yet, it will be either cancelled or executed,
-    //! depending on whether its deadline is already expired.
-    //! If ICompletionHandler is present and was not called yet, it will be called
-    //! soon, no matter whether the task was cancelled or executed.
+    //! Cancel scheduled task execution.
+    //! If the task is executing currently or is already finished, do nothing.
+    //! If the task is pending, cancel scheduled execution.
+    //! If the task has completion handler, and it was not called yet, and the
+    //! task was cancelled, the handler will be invoked. In other words, no
+    //! matter whether the task was executed or cancelled, the handler is guaranteed
+    //! to be invoked once.
     void async_cancel(Task& task);
 
-    //! Asynchronously cancel scheduled task and wait until it cancelled or finished.
-    //! If the task was not executed yet, it will be either cancelled or executed,
-    //! depending on whether its deadline is already expired.
-    //! If ICompletionHandler is present and was not called yet, it will be called
-    //! soon, no matter whether the task was cancelled or executed.
-    void cancel_and_wait(Task& task);
+    //! Wait until the task is finished.
+    //! Blocks until the task is executed or cancelled.
+    //! Can not be called concurrently for the same task.
+    //! Can not be called from the task completion handler.
+    //! Does NOT wait until the task completion handler is called.
+    //! If this method is called, the task should not be destroyed until this method
+    //! returns (as well as until the completion handler is called, if set).
+    void wait(Task& task);
 
 protected:
     //! Task execution result.
@@ -144,32 +194,52 @@ protected:
     void stop_and_wait();
 
 private:
+    // Task states.
+    enum TaskState {
+        StateInitializing,
+        StateRenewing,
+        StatePending,
+        StateCancelling,
+        StateProcessing,
+        StateFinishing,
+        StateFinished
+    };
+
     virtual void run();
 
-    Task* begin_task_processing_();
-    void process_task_(Task&);
-    void end_task_processing_();
+    bool process_tasks_();
 
-    void schedule_task_(Task&);
-    void reschedule_task_(Task&, core::nanoseconds_t delay);
-    void cancel_task_(Task&);
+    void initialize_task_(Task& task, ICompletionHandler* handler);
+    void renew_task_(Task& task, core::nanoseconds_t delay);
 
-    void add_to_pending_(Task&);
-    void remove_from_pending_(Task&);
+    bool try_renew_deadline_inplace_(Task& task, core::nanoseconds_t deadline);
+    void renew_deadline_(Task& task, core::nanoseconds_t deadline);
 
-    void update_next_deadline_();
+    void reschedule_task_(Task& task, core::nanoseconds_t deadline);
+    void cancel_task_(Task& task);
+
+    void process_task_(Task& task);
+    void finish_task_(Task& task, TaskState from_state);
+    void wait_task_(Task& task);
+
+    Task* fetch_ready_task_();
+    Task* fetch_ready_or_renewed_task_(core::nanoseconds_t& renewed_deadline);
+    Task* fetch_sleeping_task_();
+
+    void insert_sleeping_task_(Task& task);
+    void remove_sleeping_task_(Task& task);
+
+    core::nanoseconds_t update_wakeup_timer_();
 
     bool started_;
-    bool stop_;
-    bool request_reschedule_;
+    core::Atomic<int> stop_;
 
-    core::List<Task, core::NoOwnership> pending_tasks_;
-    Task* first_task_with_deadline_;
-    Task* currently_processing_task_;
+    core::Atomic<int> ready_queue_size_;
+    core::MpscQueue<Task, core::NoOwnership> ready_queue_;
+    core::List<Task, core::NoOwnership> sleeping_queue_;
 
-    core::Mutex mutex_;
     core::Timer wakeup_timer_;
-    core::Cond finished_cond_;
+    core::Mutex task_mutex_;
 };
 
 } // namespace ctl
