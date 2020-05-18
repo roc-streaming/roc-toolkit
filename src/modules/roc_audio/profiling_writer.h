@@ -30,7 +30,7 @@ public:
                     core::IAllocator& allocator,
                     packet::channel_mask_t channels,
                     size_t sample_rate,
-                    struct ProfilerConfig profiler_config);
+                    ProfilerConfig profiler_config);
 
     //! Write audio frame.
     virtual void write(Frame& frame);

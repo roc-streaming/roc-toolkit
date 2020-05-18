@@ -17,7 +17,7 @@ ProfilingWriter::ProfilingWriter(IWriter& writer,
                                  core::IAllocator& allocator,
                                  packet::channel_mask_t channels,
                                  size_t sample_rate,
-                                 struct ProfilerConfig profiler_config)
+                                 ProfilerConfig profiler_config)
     : profiler_(allocator, channels, sample_rate, profiler_config)
     , writer_(writer) {
 }

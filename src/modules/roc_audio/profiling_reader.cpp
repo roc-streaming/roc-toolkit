@@ -17,25 +17,25 @@ ProfilingReader::ProfilingReader(IReader& reader,
                                  core::IAllocator& allocator,
                                  packet::channel_mask_t channels,
                                  size_t sample_rate,
-                                 struct ProfilerConfig profiler_config)
+                                 ProfilerConfig profiler_config)
     : profiler_(allocator, channels, sample_rate, profiler_config)
     , reader_(reader) {
 }
 
 bool ProfilingReader::read(Frame& frame) {
-    const core::nanoseconds_t elapsed = read_(frame);
+    bool ret;
+    const core::nanoseconds_t elapsed = read_(frame, ret);
 
-    bool ret = reader_.read(frame);
     if (!ret) {
         profiler_.add_frame(frame.size(), elapsed);
     }
     return ret;
 }
 
-core::nanoseconds_t ProfilingReader::read_(Frame& frame) {
+core::nanoseconds_t ProfilingReader::read_(Frame& frame, bool& ret) {
     const core::nanoseconds_t start = core::timestamp();
 
-    reader_.read(frame);
+    ret = reader_.read(frame);
 
     return core::timestamp() - start;
 }

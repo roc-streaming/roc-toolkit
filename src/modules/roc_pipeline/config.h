@@ -95,7 +95,7 @@ struct SenderConfig {
     bool profiling;
 
     //! Profiler configuration.
-    struct audio::ProfilerConfig profiler_config;
+    audio::ProfilerConfig profiler_config;
 
     SenderConfig()
         : resampler_backend(audio::ResamplerBackend_Builtin)
@@ -108,8 +108,7 @@ struct SenderConfig {
         , interleaving(false)
         , timing(false)
         , poisoning(false)
-        , profiling(false)
-        , profiler_config() {
+        , profiling(false) {
     }
 };
 
@@ -183,7 +182,7 @@ struct ReceiverCommonConfig {
     bool profiling;
 
     //! Profiler configuration.
-    struct audio::ProfilerConfig profiler_config;
+    audio::ProfilerConfig profiler_config;
 
     //! Insert weird beeps instead of silence on packet loss.
     bool beeping;
@@ -196,7 +195,6 @@ struct ReceiverCommonConfig {
         , timing(false)
         , poisoning(false)
         , profiling(false)
-        , profiler_config()
         , beeping(false) {
     }
 };
@@ -243,7 +241,7 @@ struct ConverterConfig {
     bool profiling;
 
     //! Profiler configuration.
-    struct audio::ProfilerConfig profiler_config;
+    audio::ProfilerConfig profiler_config;
 
     ConverterConfig()
         : resampler_backend(audio::ResamplerBackend_Builtin)
@@ -254,8 +252,7 @@ struct ConverterConfig {
         , internal_frame_length(DefaultInternalFrameLength)
         , resampling(false)
         , poisoning(false)
-        , profiling(false)
-        , profiler_config() {
+        , profiling(false) {
     }
 };
 

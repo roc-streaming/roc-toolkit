@@ -17,7 +17,7 @@ namespace audio {
 Profiler::Profiler(core::IAllocator& allocator,
                    packet::channel_mask_t channels,
                    size_t sample_rate,
-                   struct ProfilerConfig profiler_config)
+                   ProfilerConfig profiler_config)
     : rate_limiter_(profiler_config.profiling_interval)
     , interval_(profiler_config.profiling_interval)
     , chunk_length_((size_t)(

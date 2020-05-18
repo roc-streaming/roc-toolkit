@@ -25,17 +25,17 @@ struct TestFrame {
     core::nanoseconds_t time;
 };
 
-const int sampleRate = 5000; // 50 samples / chunk
-const int numChannels = 1;
+const int SampleRate = 5000; // 50 samples / chunk
+const int NumChannels = 1;
 core::HeapAllocator allocator;
-struct ProfilerConfig profiler_config(50 * core::Millisecond, 10 * core::Millisecond);
+ProfilerConfig profiler_config(50 * core::Millisecond, 10 * core::Millisecond);
 
 } // namespace
 
 TEST_GROUP(profiler) {};
 
 TEST(profiler, test_moving_average) {
-    Profiler profiler(allocator, numChannels, sampleRate, profiler_config);
+    Profiler profiler(allocator, NumChannels, SampleRate, profiler_config);
 
     TestFrame frames[] = {
         TestFrame(50, 50 * core::Second),      TestFrame(25, 25 * core::Second),
@@ -49,7 +49,7 @@ TEST(profiler, test_moving_average) {
     double frame_speeds[ROC_ARRAY_SIZE(frames)];
     for (size_t i = 0; i < ROC_ARRAY_SIZE(frames); ++i) {
         frame_speeds[i] =
-            double(frames[i].size * core::Second) / frames[i].time / numChannels;
+            double(frames[i].size * core::Second) / frames[i].time / NumChannels;
     }
 
     double expected_average[ROC_ARRAY_SIZE(frames)];
