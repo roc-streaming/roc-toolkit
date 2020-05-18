@@ -175,20 +175,37 @@ def execute_cmake(srcdir, variant, toolchain, env, log, args=[]):
     compiler = getvar(env, 'CC', toolchain, 'gcc')
     sysroot = getsysroot(toolchain, compiler)
 
-    args += [
-        '-DCMAKE_FIND_ROOT_PATH=%s' % quote(sysroot),
-        '-DCMAKE_SYSROOT=%s'        % quote(sysroot),
-        '-DCMAKE_POSITION_INDEPENDENT_CODE=ON',
-    ]
-
     if 'android' in toolchain:
         args += ['-DCMAKE_SYSTEM_NAME=Android']
-        api = getandroidapi(compiler)
-        if api:
-            args += ['-DCMAKE_SYSTEM_VERSION=%s' % api]
-        abi = getandroidabi(toolchain)
-        if abi:
-            args += ['-DCMAKE_ANDROID_ARCH_ABI=%s' % abi]
+
+        api = detect_android_api(compiler)
+        abi = detect_android_abi(toolchain)
+
+        toolchain_file = find_android_toolchain_file(compiler)
+
+        if toolchain_file:
+            sysroot = None
+            args += [quote('-DCMAKE_TOOLCHAIN_FILE=%s' % toolchain_file)]
+            if api:
+                args += ['-DANDROID_NATIVE_API_LEVEL=%s' % api]
+            if abi:
+                args += ['-DANDROID_ABI=%s' % abi]
+        else:
+            sysroot = find_android_sysroot(compiler)
+            if api:
+                args += ['-DCMAKE_SYSTEM_VERSION=%s' % api]
+            if abi:
+                args += ['-DCMAKE_ANDROID_ARCH_ABI=%s' % abi]
+
+    if sysroot:
+        args += [
+            '-DCMAKE_FIND_ROOT_PATH=%s' % quote(sysroot),
+            '-DCMAKE_SYSROOT=%s'        % quote(sysroot),
+        ]
+
+    args += [
+        '-DCMAKE_POSITION_INDEPENDENT_CODE=ON',
+    ]
 
     if not 'OE_CMAKE_TOOLCHAIN_FILE' in os.environ: # workaround for yocto linux
         if not 'android' in toolchain: # workaround for android
@@ -292,6 +309,16 @@ def try_patch(dirname, patchurl, patchname, logfile, vendordir):
 def touch(path):
     open(path, 'w').close()
 
+def traverse_parents(path, search_file):
+    while True:
+        parent = os.path.dirname(path)
+        if parent == path:
+            break # root
+        path = parent
+        child_path = os.path.join(path, search_file)
+        if os.path.exists(child_path):
+            return child_path
+
 def getvar(env, var, toolchain, default):
     if var in env:
         return env[var]
@@ -313,25 +340,24 @@ def getsysroot(toolchain, compiler):
     except:
         pass
 
-    if 'android' in toolchain:
-        try:
-            from distutils.spawn import find_executable
-            path = find_executable(compiler)
-            while True:
-                parent = os.path.dirname(path)
-                if parent == path:
-                    break
-                path = parent
-                sysroot = os.path.join(path, 'sysroot')
-                if os.path.isdir(sysroot):
-                    return sysroot
-        except:
-            pass
+    return None
 
-    print("error: can't determine sysroot for '%s' toolchain" % toolchain, file=sys.stderr)
-    exit(1)
+def find_android_toolchain_file(compiler):
+    try:
+        from distutils.spawn import find_executable
+        return traverse_parents(
+            find_executable(compiler), 'build/cmake/android.toolchain.cmake')
+    except:
+        return None
 
-def getandroidabi(toolchain):
+def find_android_sysroot(compiler):
+    try:
+        from distutils.spawn import find_executable
+        return traverse_parents(find_executable(compiler), 'sysroot')
+    except:
+        return None
+
+def detect_android_abi(toolchain):
     try:
         ta = toolchain.split('-')[0]
     except:
@@ -346,7 +372,7 @@ def getandroidabi(toolchain):
         return 'x86_64'
     return ta
 
-def getandroidapi(compiler):
+def detect_android_api(compiler):
     try:
         cmd = [compiler, '-dM', '-E', '-']
         proc = subprocess.Popen(cmd, stdin=devnull, stdout=subprocess.PIPE, stderr=devnull)
