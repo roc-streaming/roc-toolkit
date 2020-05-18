@@ -45,7 +45,7 @@ Receiver::Receiver(Context& context, const pipeline::ReceiverConfig& pipeline_co
 Receiver::~Receiver() {
     roc_log(LogDebug, "receiver peer: deinitializing");
 
-    context_.control_loop().cancel_and_wait(process_pipeline_tasks_);
+    context_.control_loop().wait(process_pipeline_tasks_);
 
     for (size_t i = 0; i < ROC_ARRAY_SIZE(ports_); i++) {
         if (ports_[i].handle) {

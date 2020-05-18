@@ -247,7 +247,7 @@ TEST(receiver_source, endpoints_async) {
     ti.start();
     ti.wait_done();
 
-    scheduler.stop_and_wait();
+    scheduler.wait_done();
 }
 
 TEST(receiver_source, no_sessions) {
