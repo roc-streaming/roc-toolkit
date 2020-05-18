@@ -273,7 +273,8 @@ public:
     }
 
     void stop_and_wait() {
-        loop_.cancel_and_wait(process_tasks_);
+        loop_.async_cancel(process_tasks_);
+        loop_.wait(process_tasks_);
 
         while (num_pending_tasks() != 0) {
             process_tasks();
