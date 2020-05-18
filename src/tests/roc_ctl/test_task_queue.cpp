@@ -336,7 +336,8 @@ TEST(task_queue, schedule_and_wait_one) {
 
         TestTaskQueue::Task task;
         tq.set_nth_result(0, true);
-        tq.schedule_and_wait(task);
+        tq.schedule(task, NULL);
+        tq.wait(task);
 
         UNSIGNED_LONGS_EQUAL(1, tq.num_tasks());
         CHECK(tq.nth_task(0) == &task);
@@ -352,7 +353,8 @@ TEST(task_queue, schedule_and_wait_one) {
 
         TestTaskQueue::Task task;
         tq.set_nth_result(0, false);
-        tq.schedule_and_wait(task);
+        tq.schedule(task, NULL);
+        tq.wait(task);
 
         UNSIGNED_LONGS_EQUAL(1, tq.num_tasks());
         CHECK(tq.nth_task(0) == &task);
@@ -375,7 +377,8 @@ TEST(task_queue, schedule_and_wait_many) {
 
         TestTaskQueue::Task task;
         tq.set_nth_result(n, success);
-        tq.schedule_and_wait(task);
+        tq.schedule(task, NULL);
+        tq.wait(task);
 
         UNSIGNED_LONGS_EQUAL(n + 1, tq.num_tasks());
         CHECK(tq.nth_task(n) == &task);
@@ -847,7 +850,8 @@ TEST(task_queue, cancel_and_wait) {
     tq.set_nth_result(0, true);
 
     tq.schedule_after(task, core::Second * 999, &handler);
-    tq.cancel_and_wait(task);
+    tq.async_cancel(task);
+    tq.wait(task);
 
     CHECK(!task.success());
     CHECK(task.cancelled());
@@ -1000,6 +1004,8 @@ TEST(task_queue, reschedule_pending) {
     tq.schedule(task1, &handler);
     tq.schedule(task2, &handler);
     tq.schedule(task3, &handler);
+
+    tq.wait_blocked();
 
     tq.reschedule_after(task2, core::Millisecond);
 
@@ -1164,7 +1170,8 @@ TEST(task_queue, reschedule_cancelled) {
     tq.set_nth_result(0, true);
     tq.schedule_after(task, core::Second * 999, &handler);
 
-    tq.cancel_and_wait(task);
+    tq.async_cancel(task);
+    tq.wait(task);
 
     CHECK(handler.wait_task() == &task);
 
