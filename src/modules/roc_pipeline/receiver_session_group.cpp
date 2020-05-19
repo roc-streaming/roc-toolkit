@@ -64,6 +64,7 @@ size_t ReceiverSessionGroup::num_sessions() const {
 
 bool ReceiverSessionGroup::can_create_session_(const packet::PacketPtr& packet) {
     if (packet->flags() & packet::Packet::FlagRepair) {
+        save_dropped_packets_(packet);
         roc_log(LogDebug, "session group: ignoring repair packet for unknown session");
         return false;
     }
@@ -108,6 +109,8 @@ void ReceiverSessionGroup::create_session_(const packet::PacketPtr& packet) {
         return;
     }
 
+    fetch_dropped_packets_(sess);
+
     mixer_.add_input(sess->reader());
     sessions_.push_back(*sess);
 
@@ -121,6 +124,22 @@ void ReceiverSessionGroup::remove_session_(ReceiverSession& sess) {
     sessions_.remove(sess);
 
     receiver_state_.add_sessions(-1);
+}
+
+void ReceiverSessionGroup::save_dropped_packets_(const packet::PacketPtr& packet) {
+    // TODO: remove old packets.
+    dropped_packets_.push_back(*packet);
+}
+
+void ReceiverSessionGroup::fetch_dropped_packets_(const core::SharedPtr<ReceiverSession> &sess) {
+    packet::PacketPtr saved_packet, saved_packet_next;
+    for (saved_packet = dropped_packets_.front(); saved_packet;
+         saved_packet = saved_packet_next) {
+        saved_packet_next = dropped_packets_.nextof(*saved_packet);
+        if (sess->handle(saved_packet)) {
+            dropped_packets_.remove(*saved_packet);
+        }
+    }
 }
 
 ReceiverSessionConfig

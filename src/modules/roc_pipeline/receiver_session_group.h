@@ -50,6 +50,10 @@ private:
     void create_session_(const packet::PacketPtr& packet);
     void remove_session_(ReceiverSession& sess);
 
+    void save_dropped_packets_(const packet::PacketPtr& packet);
+
+    void fetch_dropped_packets_(const core::SharedPtr<ReceiverSession> &sess);
+
     ReceiverSessionConfig make_session_config_(const packet::PacketPtr& packet) const;
 
     core::IAllocator& allocator_;
@@ -66,6 +70,9 @@ private:
     const ReceiverConfig& receiver_config_;
 
     core::List<ReceiverSession> sessions_;
+
+    core::List<packet::Packet> dropped_packets_;
+
 };
 
 } // namespace pipeline
