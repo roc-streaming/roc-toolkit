@@ -93,44 +93,60 @@ def FindTool(context, var, toolchain, version, commands, prepend_path=[]):
         context.Result(env[var])
         return True
 
-    for tool_cmd in commands:
-        if isinstance(tool_cmd, list):
-            tool_name = tool_cmd[0]
-            tool_flags = tool_cmd[1:]
-        else:
-            tool_name = tool_cmd
-            tool_flags = []
+    toolchain_list = [toolchain]
 
-        if not toolchain:
-            tool = tool_name
-        else:
-            tool = '%s-%s' % (toolchain, tool_name)
+    if 'android' in toolchain:
+        m = re.search('((android(eabi)?)\d+)$', toolchain)
+        if m:
+            toolchain_list += [toolchain.replace(m.group(1), m.group(2))]
+        toolchain_list += [toolchain_list[-1].replace('armv7a', 'arm')]
 
-        if version:
-            search_versions = [
-                version[:3],
-                version[:2],
-                version[:1],
-            ]
+    found = False
 
-            default_ver = env.ParseCompilerVersion(tool)
+    for tool_prefix in toolchain_list:
+        for tool_cmd in commands:
+            if isinstance(tool_cmd, list):
+                tool_name = tool_cmd[0]
+                tool_flags = tool_cmd[1:]
+            else:
+                tool_name = tool_cmd
+                tool_flags = []
 
-            if default_ver and default_ver[:len(version)] == version:
-                search_versions += [default_ver]
+            if not tool_prefix:
+                tool = tool_name
+            else:
+                tool = '%s-%s' % (tool_prefix, tool_name)
 
-            for ver in reversed(sorted(set(search_versions))):
-                versioned_tool = '%s-%s' % (tool, '.'.join(map(str, ver)))
-                if env.Which(versioned_tool, prepend_path):
-                    tool = versioned_tool
-                    break
+            if version:
+                search_versions = [
+                    version[:3],
+                    version[:2],
+                    version[:1],
+                ]
 
-        tool_path = env.Which(tool, prepend_path)
-        if tool_path:
-            env[var] = tool_path[0]
-            if tool_flags:
-                env['%sFLAGS' % var] = ' '.join(tool_flags)
+                default_ver = env.ParseCompilerVersion(tool)
+
+                if default_ver and default_ver[:len(version)] == version:
+                    search_versions += [default_ver]
+
+                for ver in reversed(sorted(set(search_versions))):
+                    versioned_tool = '%s-%s' % (tool, '.'.join(map(str, ver)))
+                    if env.Which(versioned_tool, prepend_path):
+                        tool = versioned_tool
+                        break
+
+            tool_path = env.Which(tool, prepend_path)
+            if tool_path:
+                env[var] = tool_path[0]
+                if tool_flags:
+                    env['%sFLAGS' % var] = ' '.join(tool_flags)
+                found = True
+                break
+
+        if found:
             break
-    else:
+
+    if not found:
         env.Die("can't detect %s: looked for any of: %s" % (
             var,
             ', '.join([' '.join(c) if isinstance(c, list) else c for c in commands])))

@@ -27,7 +27,7 @@ bool Address::set_saddr(const sockaddr* sa) {
         return false;
     }
 
-    memcpy(&sa_, sa, sa_size);
+    memcpy(&sa_, sa, (size_t)sa_size);
 
     return true;
 }

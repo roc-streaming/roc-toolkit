@@ -171,10 +171,21 @@ def execute_make(log, cpu_count=None):
 
     execute(' '.join(cmd), log)
 
-def execute_cmake(srcdir, variant, toolchain, env, log, args=[]):
+def execute_cmake(srcdir, variant, toolchain, env, log, args=None):
+    if not args:
+        args = []
+
     compiler = getvar(env, 'CC', toolchain, 'gcc')
     sysroot = getsysroot(toolchain, compiler)
 
+    need_sysroot = bool(sysroot)
+    need_tools = True
+
+    # cross-compiling for yocto linux
+    if 'OE_CMAKE_TOOLCHAIN_FILE' in os.environ:
+        need_tools = False
+
+    # cross-compiling for android
     if 'android' in toolchain:
         args += ['-DCMAKE_SYSTEM_NAME=Android']
 
@@ -184,7 +195,8 @@ def execute_cmake(srcdir, variant, toolchain, env, log, args=[]):
         toolchain_file = find_android_toolchain_file(compiler)
 
         if toolchain_file:
-            sysroot = None
+            need_sysroot = False
+            need_tools = False
             args += [quote('-DCMAKE_TOOLCHAIN_FILE=%s' % toolchain_file)]
             if api:
                 args += ['-DANDROID_NATIVE_API_LEVEL=%s' % api]
@@ -192,23 +204,21 @@ def execute_cmake(srcdir, variant, toolchain, env, log, args=[]):
                 args += ['-DANDROID_ABI=%s' % abi]
         else:
             sysroot = find_android_sysroot(compiler)
+            need_sysroot = bool(sysroot)
+            need_tools = True
             if api:
                 args += ['-DCMAKE_SYSTEM_VERSION=%s' % api]
             if abi:
                 args += ['-DCMAKE_ANDROID_ARCH_ABI=%s' % abi]
 
-    if sysroot:
+    if need_sysroot:
         args += [
             '-DCMAKE_FIND_ROOT_PATH=%s' % quote(sysroot),
             '-DCMAKE_SYSROOT=%s'        % quote(sysroot),
         ]
 
-    args += [
-        '-DCMAKE_POSITION_INDEPENDENT_CODE=ON',
-    ]
-
-    if not 'OE_CMAKE_TOOLCHAIN_FILE' in os.environ: # workaround for yocto linux
-        if not 'android' in toolchain: # workaround for android
+    if need_tools:
+        if not 'android' in toolchain:
             args += [
                 '-DCMAKE_C_COMPILER=%s' % quote(compiler),
             ]
@@ -236,6 +246,10 @@ def execute_cmake(srcdir, variant, toolchain, env, log, args=[]):
             '-DCMAKE_BUILD_TYPE=Release',
             '-DCMAKE_C_FLAGS_RELEASE:STRING=%s' % quote(' '.join(cc_flags)),
         ]
+
+    args += [
+        '-DCMAKE_POSITION_INDEPENDENT_CODE=ON',
+    ]
 
     execute('cmake ' + srcdir + ' ' + ' '.join(args), log)
 
@@ -362,7 +376,7 @@ def detect_android_abi(toolchain):
         ta = toolchain.split('-')[0]
     except:
         return
-    if ta == 'arm':
+    if ta == 'arm' or ta == 'armv7a':
         return 'armeabi-v7a'
     if ta == 'aarch64':
         return 'arm64-v8a'
@@ -522,6 +536,7 @@ if name == 'libuv':
         os.chdir('build')
         execute_cmake('..', variant, toolchain, env, logfile, args=[
             '-DLIBUV_BUILD_TESTS=OFF',
+            '-DANDROID_PLATFORM=android-21',
             ])
         execute_make(logfile)
         shutil.copy('libuv_a.a', 'libuv.a')

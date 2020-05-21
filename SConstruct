@@ -1053,8 +1053,12 @@ if platform in ['linux']:
     env.AppendUnique(LIBS=['rt', 'dl', 'm'])
 
 if compiler in ['gcc', 'clang']:
+    if not platform in ['android']:
+        env.Append(CXXFLAGS=[
+            '-std=c++98',
+        ])
+
     env.Append(CXXFLAGS=[
-        '-std=c++98',
         '-fno-exceptions',
     ])
 
@@ -1169,6 +1173,7 @@ if compiler == 'gcc':
         for var in ['CXXFLAGS', 'CFLAGS']:
             env.Append(**{var: [
                 '-Wno-parentheses',
+                '-Wno-cast-function-type',
             ]})
 
 if compiler == 'clang':
@@ -1196,35 +1201,28 @@ if compiler == 'clang':
         '-Wno-missing-prototypes',
     ])
 
-    if compiler_ver[:2] >= (3, 6):
-        for var in ['CXXFLAGS', 'CFLAGS']:
-            env.Append(**{var: [
-                '-Wno-reserved-id-macro',
-            ]})
-    else:
-        for var in ['CXXFLAGS', 'CFLAGS']:
-            env.Append(**{var: [
-                '-Wno-unreachable-code',
-            ]})
-
     if platform in ['linux', 'android']:
+        if compiler_ver[:2] >= (3, 4) and compiler_ver[:2] < (3, 6):
+            for var in ['CXXFLAGS', 'CFLAGS']:
+                env.Append(**{var: [
+                    '-Wno-unreachable-code',
+                ]})
+        if compiler_ver[:2] >= (3, 6):
+            for var in ['CXXFLAGS', 'CFLAGS']:
+                env.Append(**{var: [
+                    '-Wno-reserved-id-macro',
+                ]})
         if compiler_ver[:2] >= (6, 0):
             for var in ['CXXFLAGS', 'CFLAGS']:
                 env.Append(**{var: [
                     '-Wno-redundant-parens',
+                    '-Wno-zero-as-null-pointer-constant',
                 ]})
-        if compiler_ver[:2] >= (9, 0):
-            for var in ['CXXFLAGS', 'CFLAGS']:
-                env.Append(**{var: [
-                    '-Wno-atomic-implicit-seq-cst',
-                ]})
-
-    if platform in ['linux']:
         if compiler_ver[:2] >= (8, 0):
             for var in ['CXXFLAGS', 'CFLAGS']:
                 env.Append(**{var: [
-                    '-Wno-extra-semi-stmt',
                     '-Wno-atomic-implicit-seq-cst',
+                    '-Wno-extra-semi-stmt',
                 ]})
 
     if platform == 'darwin':
@@ -1238,6 +1236,12 @@ if compiler == 'clang':
                 env.Append(**{var: [
                     '-Wno-atomic-implicit-seq-cst',
                 ]})
+
+    if platform == 'android':
+        env.Append(CXXFLAGS=[
+            '-Wno-c++98-compat-pedantic',
+            '-Wno-deprecated-dynamic-exception-spec',
+        ])
 
 if compiler in ['gcc', 'clang']:
     for e in [env, lib_env, tool_env, test_env, pulse_env]:
@@ -1300,13 +1304,6 @@ if compiler == 'clang':
         '-Wno-weak-vtables',
         '-Wno-unused-member-function',
     ])
-
-    if platform in ['linux', 'android']:
-        if compiler_ver[:2] >= (9, 0):
-            for var in ['CXXFLAGS', 'CFLAGS']:
-                test_env.Append(**{var: [
-                    '-Wno-extra-semi-stmt',
-                ]})
 
 if compiler == 'gcc':
     for var in ['CXXFLAGS', 'CFLAGS']:

@@ -39,8 +39,8 @@ nanoseconds_t timestamp() {
 #if defined(CLOCK_MONOTONIC)
 void sleep_for(nanoseconds_t ns) {
     timespec ts;
-    ts.tv_sec = ns / 1000000000;
-    ts.tv_nsec = ns % 1000000000;
+    ts.tv_sec = time_t(ns / 1000000000);
+    ts.tv_nsec = long(ns % 1000000000);
     int err;
     while ((err = clock_nanosleep(CLOCK_MONOTONIC, 0, &ts, &ts))) {
         if (err != EINTR) {
@@ -52,8 +52,8 @@ void sleep_for(nanoseconds_t ns) {
 #else  // !defined(CLOCK_MONOTONIC)
 void sleep_for(nanoseconds_t ns) {
     timespec ts;
-    ts.tv_sec = ns / 1000000000;
-    ts.tv_nsec = ns % 1000000000;
+    ts.tv_sec = time_t(ns / 1000000000);
+    ts.tv_nsec = long(ns % 1000000000);
     while (nanosleep(&ts, &ts) == -1) {
         if (errno != EINTR) {
             roc_panic("time: nanosleep(): %s", errno_to_str().c_str());
@@ -65,8 +65,8 @@ void sleep_for(nanoseconds_t ns) {
 #if defined(CLOCK_MONOTONIC) && defined(TIMER_ABSTIME)
 void sleep_until(nanoseconds_t ns) {
     timespec ts;
-    ts.tv_sec = ns / 1000000000;
-    ts.tv_nsec = ns % 1000000000;
+    ts.tv_sec = time_t(ns / 1000000000);
+    ts.tv_nsec = long(ns % 1000000000);
     int err;
     while ((err = clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &ts, NULL))) {
         if (err != EINTR) {
