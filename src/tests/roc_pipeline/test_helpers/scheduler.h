@@ -51,12 +51,12 @@ public:
     }
 
     virtual void schedule_task_processing(pipeline::TaskPipeline& pipeline,
-                                          core::nanoseconds_t delay) {
+                                          core::nanoseconds_t deadline) {
         core::Mutex::Lock lock(mutex_);
         if (!task_) {
             task_ = new ctl::ControlLoop::Tasks::ProcessPipelineTasks(pipeline);
         }
-        loop_.reschedule_after(*task_, delay);
+        loop_.reschedule_at(*task_, deadline);
     }
 
     virtual void cancel_task_processing(pipeline::TaskPipeline&) {

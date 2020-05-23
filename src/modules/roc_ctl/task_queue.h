@@ -143,25 +143,29 @@ public:
     //! The handler should not block the caller.
     void schedule(Task& task, ICompletionHandler* handler);
 
-    //! Enqueue a task for asynchronous execution after given delay.
+    //! Enqueue a task for asynchronous execution at given point of time.
     //! Can be called only after the task is finished.
-    //! The task will be executed asynchronously after the @p delay expires.
+    //! The task will be executed asynchronously after deadline expires.
+    //! @p deadline should be in the same domain as core::timestamp().
+    //! It can't be negative. Zero deadline means "execute as soon as possible".
     //! The task should not be destroyed until the handler is called, if it's set.
     //! The @p handler is invoked on event loop thread after the task finishes.
     //! The handler should not block the caller.
     void
-    schedule_after(Task& task, core::nanoseconds_t delay, ICompletionHandler* handler);
+    schedule_at(Task& task, core::nanoseconds_t deadline, ICompletionHandler* handler);
 
-    //! Re-schedule a task with another delay.
+    //! Re-schedule a task with another deadline.
     //! If the task is finished, it becomes pending again.
     //! If the task is already pending, its scheduling time is changed.
     //! If the task is executing currently, it will be re-scheduled after it finishes.
+    //! @p deadline should be in the same domain as core::timestamp().
+    //! It can't be negative. Zero deadline means "execute as soon as possible".
     //! After this call, the task should not be destroyed until the task finishes.
     //! If the task has completion handler, it will be invoked again.
     //! It's guaranteed that the task will be executed at least once after this call
     //! (one possible execution for the previous schedule if the deadline was just
     //! expired, and one guaranteed execution for the new schedule).
-    void reschedule_after(Task& task, core::nanoseconds_t delay);
+    void reschedule_at(Task& task, core::nanoseconds_t deadline);
 
     //! Cancel scheduled task execution.
     //! If the task is executing currently or is already finished, do nothing.
@@ -210,7 +214,7 @@ private:
     bool process_tasks_();
 
     void initialize_task_(Task& task, ICompletionHandler* handler);
-    void renew_task_(Task& task, core::nanoseconds_t delay);
+    void renew_task_(Task& task, core::nanoseconds_t deadline);
 
     bool try_renew_deadline_inplace_(Task& task, core::nanoseconds_t deadline);
     void renew_deadline_(Task& task, core::nanoseconds_t deadline);

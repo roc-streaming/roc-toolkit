@@ -318,8 +318,8 @@ private:
         return true;
     }
 
-    virtual void schedule_task_processing(TaskPipeline&, core::nanoseconds_t delay) {
-        loop_.reschedule_after(process_tasks_, delay);
+    virtual void schedule_task_processing(TaskPipeline&, core::nanoseconds_t deadline) {
+        loop_.reschedule_at(process_tasks_, deadline);
     }
 
     virtual void cancel_task_processing(TaskPipeline&) {
