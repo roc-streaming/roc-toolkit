@@ -308,8 +308,8 @@ bool Sender::setup_outgoing_port_(InterfacePort& port,
 }
 
 void Sender::schedule_task_processing(pipeline::TaskPipeline&,
-                                      core::nanoseconds_t delay) {
-    context_.control_loop().reschedule_after(process_pipeline_tasks_, delay);
+                                      core::nanoseconds_t deadline) {
+    context_.control_loop().reschedule_at(process_pipeline_tasks_, deadline);
 }
 
 void Sender::cancel_task_processing(pipeline::TaskPipeline&) {

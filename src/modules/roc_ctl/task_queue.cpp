@@ -73,23 +73,27 @@ void TaskQueue::schedule(Task& task, ICompletionHandler* handler) {
     renew_task_(task, 0);
 }
 
-void TaskQueue::schedule_after(Task& task,
-                               core::nanoseconds_t delay,
-                               ICompletionHandler* handler) {
+void TaskQueue::schedule_at(Task& task,
+                            core::nanoseconds_t deadline,
+                            ICompletionHandler* handler) {
     if (!valid()) {
         roc_panic("task queue: attempt to use invalid queue");
     }
 
     if (stop_) {
         roc_panic("task queue: attempt to use queue after stop_and_wait()");
+    }
+
+    if (deadline < 0) {
+        roc_panic("task queue: deadline can't be negative");
     }
 
     initialize_task_(task, handler);
 
-    renew_task_(task, delay);
+    renew_task_(task, deadline);
 }
 
-void TaskQueue::reschedule_after(Task& task, core::nanoseconds_t delay) {
+void TaskQueue::reschedule_at(Task& task, core::nanoseconds_t deadline) {
     if (!valid()) {
         roc_panic("task queue: attempt to use invalid queue");
     }
@@ -98,7 +102,11 @@ void TaskQueue::reschedule_after(Task& task, core::nanoseconds_t delay) {
         roc_panic("task queue: attempt to use queue after stop_and_wait()");
     }
 
-    renew_task_(task, delay);
+    if (deadline < 0) {
+        roc_panic("task queue: deadline can't be negative");
+    }
+
+    renew_task_(task, deadline);
 }
 
 void TaskQueue::async_cancel(Task& task) {
@@ -171,20 +179,7 @@ void TaskQueue::initialize_task_(Task& task, ICompletionHandler* handler) {
     task.handler_ = handler;
 }
 
-void TaskQueue::renew_task_(Task& task, core::nanoseconds_t delay) {
-    // Allowed deadline values are:
-    //  positive - schedule task at the given point of time
-    //  "0" - process task as soon as possible
-    //  "-1" - cancel the task
-    core::nanoseconds_t deadline;
-    if (delay > 0) {
-        deadline = core::timestamp() + delay;
-    } else if (delay == 0) {
-        deadline = 0;
-    } else {
-        deadline = -1;
-    }
-
+void TaskQueue::renew_task_(Task& task, core::nanoseconds_t deadline) {
     // Handle concurrent task updates.
     // If there are concurrent reschedule_after() and/or async_cancel() calls, only one
     // of them wins, and other give up and do nothing. This is okay, since if they were
@@ -202,6 +197,10 @@ void TaskQueue::renew_task_(Task& task, core::nanoseconds_t delay) {
     }
 
     // Set the new desired deadline.
+    // Allowed deadline values are:
+    //  positive - schedule task at the given point of time
+    //  "0" - process task as soon as possible
+    //  "-1" - cancel the task
     // The new deadline will be applied either by try_renew_deadline_inplace_()
     // in this thread, or by fetch_ready_task_() later in event loop thread.
     task.renewed_deadline_.exclusive_store(deadline);
