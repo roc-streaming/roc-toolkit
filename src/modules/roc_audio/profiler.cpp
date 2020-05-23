@@ -32,7 +32,8 @@ Profiler::Profiler(core::IAllocator& allocator,
     , moving_avg_(0)
     , sample_rate_(sample_rate)
     , num_channels_(packet::num_channels(channels))
-    , valid_(false) {
+    , valid_(false)
+    , buffer_full_(false) {
     if (num_channels_ == 0) {
         roc_panic("profiler: n_channels is zero");
     }
@@ -74,6 +75,7 @@ void Profiler::update_moving_avg_(size_t frame_size, core::nanoseconds_t elapsed
 
             // ring buffer is full
             if (last_chunk_num_ == first_chunk_num_) {
+                buffer_full_ = true;
                 // Simple Moving Average: https://en.wikipedia.org/wiki/Moving_average
                 moving_avg_ +=
                     (last_chunk_speed - chunks_[first_chunk_num_]) / (num_chunks_ - 1);
@@ -107,6 +109,19 @@ void Profiler::add_frame(size_t frame_size, core::nanoseconds_t elapsed) {
                 (double)interval_ / core::Second, (unsigned long)get_moving_avg(),
                 (double)get_moving_avg() / sample_rate_);
     }
+}
+
+float Profiler::get_moving_avg() {
+    size_t num_samples_in_moving_avg = 0;
+    if (!buffer_full_) {
+        num_samples_in_moving_avg = (chunk_length_ * (last_chunk_num_));
+    } else {
+        num_samples_in_moving_avg = (chunk_length_ * (num_chunks_ - 1));
+    }
+
+    return (moving_avg_ * num_samples_in_moving_avg
+            + chunks_[last_chunk_num_] * last_chunk_samples_)
+        / (num_samples_in_moving_avg + last_chunk_samples_);
 }
 
 } // roc

@@ -26,7 +26,7 @@ bool ProfilingReader::read(Frame& frame) {
     bool ret;
     const core::nanoseconds_t elapsed = read_(frame, ret);
 
-    if (!ret) {
+    if (ret) {
         profiler_.add_frame(frame.size(), elapsed);
     }
     return ret;

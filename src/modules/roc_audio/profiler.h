@@ -77,9 +77,7 @@ public:
     void add_frame(size_t frame_size, core::nanoseconds_t elapsed);
 
     //! For Testing Only
-    float get_moving_avg() {
-        return moving_avg_;
-    }
+    float get_moving_avg();
 
 private:
     void update_moving_avg_(size_t frame_size, core::nanoseconds_t elapsed);
@@ -101,6 +99,7 @@ private:
     const size_t num_channels_;
 
     bool valid_;
+    bool buffer_full_;
 };
 
 } // namespace audio

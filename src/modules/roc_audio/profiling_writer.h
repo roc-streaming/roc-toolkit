@@ -36,7 +36,7 @@ public:
     virtual void write(Frame& frame);
 
     //! Check if the profiler was succefully constructed.
-    virtual bool valid() const;
+    bool valid() const;
 
 private:
     core::nanoseconds_t write_(Frame& frame);
