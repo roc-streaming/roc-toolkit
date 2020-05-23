@@ -173,8 +173,8 @@ sndio::ISource& Receiver::source() {
 }
 
 void Receiver::schedule_task_processing(pipeline::TaskPipeline&,
-                                        core::nanoseconds_t delay) {
-    context_.control_loop().reschedule_after(process_pipeline_tasks_, delay);
+                                        core::nanoseconds_t deadline) {
+    context_.control_loop().reschedule_at(process_pipeline_tasks_, deadline);
 }
 
 void Receiver::cancel_task_processing(pipeline::TaskPipeline&) {

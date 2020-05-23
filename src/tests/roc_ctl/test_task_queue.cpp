@@ -174,6 +174,10 @@ private:
     core::nanoseconds_t expect_after_;
 };
 
+core::nanoseconds_t now_plus_delay(core::nanoseconds_t delay) {
+    return core::timestamp() + delay;
+}
+
 } // namespace
 
 TEST_GROUP(task_queue) {};
@@ -388,7 +392,7 @@ TEST(task_queue, schedule_and_wait_many) {
     }
 }
 
-TEST(task_queue, schedule_after_one) {
+TEST(task_queue, schedule_at_one) {
     { // success
         TestTaskQueue tq;
         CHECK(tq.valid());
@@ -402,7 +406,7 @@ TEST(task_queue, schedule_after_one) {
 
         TestTaskQueue::Task task;
         tq.set_nth_result(0, true);
-        tq.schedule_after(task, core::Millisecond, &handler);
+        tq.schedule_at(task, now_plus_delay(core::Millisecond), &handler);
 
         CHECK(handler.wait_task() == &task);
 
@@ -425,7 +429,7 @@ TEST(task_queue, schedule_after_one) {
 
         TestTaskQueue::Task task;
         tq.set_nth_result(0, false);
-        tq.schedule_after(task, core::Millisecond, &handler);
+        tq.schedule_at(task, now_plus_delay(core::Millisecond), &handler);
 
         CHECK(handler.wait_task() == &task);
 
@@ -437,7 +441,7 @@ TEST(task_queue, schedule_after_one) {
     }
 }
 
-TEST(task_queue, schedule_after_one_no_handler) {
+TEST(task_queue, schedule_at_one_no_handler) {
     TestTaskQueue tq;
     CHECK(tq.valid());
 
@@ -449,7 +453,7 @@ TEST(task_queue, schedule_after_one_no_handler) {
     CHECK(!task.cancelled());
 
     tq.set_nth_result(0, true);
-    tq.schedule_after(task, core::Millisecond, NULL);
+    tq.schedule_at(task, now_plus_delay(core::Millisecond), NULL);
 
     while (!task.success()) {
         core::sleep_for(core::Microsecond * 100);
@@ -462,7 +466,7 @@ TEST(task_queue, schedule_after_one_no_handler) {
     CHECK(!task.cancelled());
 }
 
-TEST(task_queue, schedule_after_many) {
+TEST(task_queue, schedule_at_many) {
     enum { NumTasks = 20 };
 
     TestTaskQueue tq;
@@ -491,7 +495,7 @@ TEST(task_queue, schedule_after_many) {
         handlers[n].expect_after(delay);
 
         tq.set_nth_result(n, success);
-        tq.schedule_after(tasks[n], delay, &handlers[n]);
+        tq.schedule_at(tasks[n], now_plus_delay(delay), &handlers[n]);
     }
 
     for (size_t n = 0; n < NumTasks; n++) {
@@ -511,7 +515,7 @@ TEST(task_queue, schedule_after_many) {
     tq.check_all_unblocked();
 }
 
-TEST(task_queue, schedule_after_reversed) {
+TEST(task_queue, schedule_at_reversed) {
     enum { NumTasks = 20 };
 
     TestTaskQueue tq;
@@ -538,7 +542,7 @@ TEST(task_queue, schedule_after_reversed) {
         handlers[n].expect_after(delay);
 
         tq.set_nth_result(NumTasks - n, success);
-        tq.schedule_after(tasks[n], delay, &handlers[n]);
+        tq.schedule_at(tasks[n], now_plus_delay(delay), &handlers[n]);
     }
 
     tq.unblock_one();
@@ -565,7 +569,7 @@ TEST(task_queue, schedule_after_reversed) {
     tq.check_all_unblocked();
 }
 
-TEST(task_queue, schedule_after_shuffled) {
+TEST(task_queue, schedule_at_shuffled) {
     TestTaskQueue tq;
     CHECK(tq.valid());
 
@@ -583,10 +587,12 @@ TEST(task_queue, schedule_after_shuffled) {
 
     tq.block();
 
-    tq.schedule_after(tasks[0], core::Millisecond, &handler);
-    tq.schedule_after(tasks[1], core::Millisecond * 4, &handler);
-    tq.schedule_after(tasks[2], core::Millisecond * 2, &handler);
-    tq.schedule_after(tasks[3], core::Millisecond * 5, &handler);
+    const core::nanoseconds_t now = core::timestamp();
+
+    tq.schedule_at(tasks[0], now + core::Millisecond, &handler);
+    tq.schedule_at(tasks[1], now + core::Millisecond * 4, &handler);
+    tq.schedule_at(tasks[2], now + core::Millisecond * 2, &handler);
+    tq.schedule_at(tasks[3], now + core::Millisecond * 5, &handler);
 
     tq.unblock_one();
     CHECK(handler.wait_task() == &tasks[0]);
@@ -612,7 +618,7 @@ TEST(task_queue, schedule_after_shuffled) {
     tq.check_all_unblocked();
 }
 
-TEST(task_queue, schedule_after_same_deadline) {
+TEST(task_queue, schedule_at_same_deadline) {
     TestTaskQueue tq;
     CHECK(tq.valid());
 
@@ -630,10 +636,12 @@ TEST(task_queue, schedule_after_same_deadline) {
 
     tq.block();
 
-    tq.schedule_after(tasks[0], core::Millisecond, &handler);
-    tq.schedule_after(tasks[1], core::Millisecond * 4, &handler);
-    tq.schedule_after(tasks[2], core::Millisecond * 4, &handler);
-    tq.schedule_after(tasks[3], core::Millisecond * 2, &handler);
+    const core::nanoseconds_t now = core::timestamp();
+
+    tq.schedule_at(tasks[0], now + core::Millisecond, &handler);
+    tq.schedule_at(tasks[1], now + core::Millisecond * 4, &handler);
+    tq.schedule_at(tasks[2], now + core::Millisecond * 4, &handler);
+    tq.schedule_at(tasks[3], now + core::Millisecond * 2, &handler);
 
     tq.unblock_one();
     CHECK(handler.wait_task() == &tasks[0]);
@@ -659,7 +667,7 @@ TEST(task_queue, schedule_after_same_deadline) {
     tq.check_all_unblocked();
 }
 
-TEST(task_queue, schedule_after_and_schedule) {
+TEST(task_queue, schedule_at_and_schedule) {
     TestTaskQueue tq;
     CHECK(tq.valid());
 
@@ -676,11 +684,13 @@ TEST(task_queue, schedule_after_and_schedule) {
     tq.set_nth_result(3, true);
 
     tq.block();
+
+    const core::nanoseconds_t now = core::timestamp();
 
     tq.schedule(tasks[0], &handler);
-    tq.schedule_after(tasks[1], core::Millisecond * 3, &handler);
+    tq.schedule_at(tasks[1], now + core::Millisecond * 3, &handler);
     tq.schedule(tasks[2], &handler);
-    tq.schedule_after(tasks[3], core::Millisecond * 1, &handler);
+    tq.schedule_at(tasks[3], now + core::Millisecond * 1, &handler);
 
     tq.unblock_one();
     CHECK(handler.wait_task() == &tasks[0]);
@@ -771,7 +781,7 @@ TEST(task_queue, schedule_and_async_cancel) {
     tq.check_all_unblocked();
 }
 
-TEST(task_queue, schedule_after_and_async_cancel) {
+TEST(task_queue, schedule_at_and_async_cancel) {
     TestTaskQueue tq;
     CHECK(tq.valid());
 
@@ -800,10 +810,12 @@ TEST(task_queue, schedule_after_and_async_cancel) {
 
     tq.block();
 
-    tq.schedule_after(tasks[0], core::Millisecond, &handlers[0]);
-    tq.schedule_after(tasks[1], core::Millisecond * 4, &handlers[1]);
-    tq.schedule_after(tasks[2], core::Millisecond * 2, &handlers[2]);
-    tq.schedule_after(tasks[3], core::Millisecond * 5, &handlers[3]);
+    const core::nanoseconds_t now = core::timestamp();
+
+    tq.schedule_at(tasks[0], now + core::Millisecond, &handlers[0]);
+    tq.schedule_at(tasks[1], now + core::Millisecond * 4, &handlers[1]);
+    tq.schedule_at(tasks[2], now + core::Millisecond * 2, &handlers[2]);
+    tq.schedule_at(tasks[3], now + core::Millisecond * 5, &handlers[3]);
 
     tq.wait_blocked();
 
@@ -849,7 +861,7 @@ TEST(task_queue, cancel_and_wait) {
     TestTaskQueue::Task task;
     tq.set_nth_result(0, true);
 
-    tq.schedule_after(task, core::Second * 999, &handler);
+    tq.schedule_at(task, now_plus_delay(core::Second * 999), &handler);
     tq.async_cancel(task);
     tq.wait(task);
 
@@ -912,7 +924,7 @@ TEST(task_queue, schedule_already_finished) {
     CHECK(!task.cancelled());
 }
 
-TEST(task_queue, schedule_after_cancel) {
+TEST(task_queue, schedule_at_cancel) {
     TestTaskQueue tq;
     CHECK(tq.valid());
 
@@ -970,7 +982,7 @@ TEST(task_queue, reschedule_new) {
 
     TestTaskQueue::Task task;
     tq.set_nth_result(0, true);
-    tq.reschedule_after(task, core::Microsecond * 10);
+    tq.reschedule_at(task, now_plus_delay(core::Microsecond * 10));
 
     while (!task.success()) {
         core::sleep_for(core::Microsecond * 100);
@@ -1007,7 +1019,7 @@ TEST(task_queue, reschedule_pending) {
 
     tq.wait_blocked();
 
-    tq.reschedule_after(task2, core::Millisecond);
+    tq.reschedule_at(task2, now_plus_delay(core::Millisecond));
 
     handler.expect_success(true);
     handler.expect_cancelled(false);
@@ -1058,7 +1070,7 @@ TEST(task_queue, reschedule_processing) {
 
     tq.wait_blocked();
 
-    tq.reschedule_after(task, core::Millisecond);
+    tq.reschedule_at(task, now_plus_delay(core::Millisecond));
 
     handler.expect_success(true);
     handler.expect_cancelled(false);
@@ -1108,7 +1120,7 @@ TEST(task_queue, reschedule_succeeded) {
     handler.expect_after(core::Millisecond);
 
     tq.set_nth_result(1, true);
-    tq.reschedule_after(task, core::Millisecond);
+    tq.reschedule_at(task, now_plus_delay(core::Millisecond));
 
     CHECK(handler.wait_task() == &task);
 
@@ -1144,7 +1156,7 @@ TEST(task_queue, reschedule_failed) {
     handler.expect_after(core::Millisecond);
 
     tq.set_nth_result(1, true);
-    tq.reschedule_after(task, core::Millisecond);
+    tq.reschedule_at(task, now_plus_delay(core::Millisecond));
 
     CHECK(handler.wait_task() == &task);
 
@@ -1168,7 +1180,7 @@ TEST(task_queue, reschedule_cancelled) {
     handler.expect_cancelled(true);
 
     tq.set_nth_result(0, true);
-    tq.schedule_after(task, core::Second * 999, &handler);
+    tq.schedule_at(task, now_plus_delay(core::Second * 999), &handler);
 
     tq.async_cancel(task);
     tq.wait(task);
@@ -1183,7 +1195,7 @@ TEST(task_queue, reschedule_cancelled) {
     handler.expect_after(core::Millisecond);
 
     tq.set_nth_result(1, true);
-    tq.reschedule_after(task, core::Millisecond);
+    tq.reschedule_at(task, now_plus_delay(core::Millisecond));
 
     CHECK(handler.wait_task() == &task);
 
