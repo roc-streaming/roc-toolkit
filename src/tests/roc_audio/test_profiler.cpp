@@ -27,6 +27,7 @@ struct TestFrame {
 
 const int SampleRate = 5000; // 50 samples / chunk
 const int NumChannels = 1;
+const double EpsilionThreshold = 0.001;
 core::HeapAllocator allocator;
 ProfilerConfig profiler_config(50 * core::Millisecond, 10 * core::Millisecond);
 
@@ -113,7 +114,7 @@ TEST(profiler, test_moving_average) {
 
     for (size_t i = 0; i < ROC_ARRAY_SIZE(frames); ++i) {
         profiler.add_frame(frames[i].size, frames[i].time);
-        LONGS_EQUAL(expected_average[i], profiler.get_moving_avg());
+        DOUBLES_EQUAL(expected_average[i], profiler.get_moving_avg(), EpsilionThreshold);
     }
 }
 
