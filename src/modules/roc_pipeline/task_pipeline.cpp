@@ -300,21 +300,21 @@ void TaskPipeline::schedule_async_task_processing_() {
     }
 
     if (processing_state_.load_relaxed() == ProcNotScheduled) {
-        core::nanoseconds_t delay = 0;
+        core::nanoseconds_t deadline = 0;
 
         if (config_.enable_precise_task_scheduling) {
             const core::nanoseconds_t now = timestamp_imp();
 
             if (now < (next_frame_deadline - no_task_proc_half_interval_)) {
-                delay = 0;
+                deadline = 0;
             } else if (now < (next_frame_deadline + no_task_proc_half_interval_)) {
-                delay = (next_frame_deadline + no_task_proc_half_interval_ - now);
+                deadline = (next_frame_deadline + no_task_proc_half_interval_);
             } else {
-                delay = 0;
+                deadline = 0;
             }
         }
 
-        scheduler_.schedule_task_processing(*this, delay);
+        scheduler_.schedule_task_processing(*this, deadline);
         stats_.scheduler_calls++;
 
         processing_state_.store_relaxed(ProcScheduled);
