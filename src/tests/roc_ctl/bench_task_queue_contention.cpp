@@ -77,7 +77,7 @@ BENCHMARK_REGISTER_F(BM_QueueContention, Schedule)
     ->Iterations(NumScheduleIterations)
     ->Unit(benchmark::kMicrosecond);
 
-BENCHMARK_DEFINE_F(BM_QueueContention, ScheduleAfter)(benchmark::State& state) {
+BENCHMARK_DEFINE_F(BM_QueueContention, ScheduleAt)(benchmark::State& state) {
     NoopQueue::Task* tasks = new NoopQueue::Task[NumScheduleAfterIterations];
     size_t n_task = 0;
 
@@ -88,7 +88,8 @@ BENCHMARK_DEFINE_F(BM_QueueContention, ScheduleAfter)(benchmark::State& state) {
 
     while (state.KeepRunningBatch(BatchSize)) {
         for (int n = 0; n < BatchSize; n++) {
-            queue.schedule_after(tasks[n_task], delays[n_task], &handler);
+            queue.schedule_at(tasks[n_task], core::timestamp() + delays[n_task],
+                              &handler);
             n_task++;
         }
     }
@@ -101,7 +102,7 @@ BENCHMARK_DEFINE_F(BM_QueueContention, ScheduleAfter)(benchmark::State& state) {
     delete[] delays;
 }
 
-BENCHMARK_REGISTER_F(BM_QueueContention, ScheduleAfter)
+BENCHMARK_REGISTER_F(BM_QueueContention, ScheduleAt)
     ->ThreadRange(1, NumThreads)
     ->Iterations(NumScheduleAfterIterations)
     ->Unit(benchmark::kMicrosecond);

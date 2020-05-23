@@ -220,15 +220,18 @@ private:
     }
 
     virtual void schedule_task_processing(TaskPipeline& pipeline,
-                                          core::nanoseconds_t delay) {
+                                          core::nanoseconds_t deadline) {
         core::Mutex::Lock lock(mutex_);
         roc_panic_if(&pipeline != this);
-        if (time_ + delay != exp_sched_deadline_) {
+        core::nanoseconds_t expected_deadline = exp_sched_deadline_;
+        if (expected_deadline == time_) {
+            expected_deadline = 0;
+        }
+        if (deadline != expected_deadline) {
             roc_panic("unexpected delay:"
-                      " time=%llu expected_deadline=%llu"
-                      " actual_deadline=%llu actual_delay=%llu",
-                      (unsigned long long)time_, (unsigned long long)exp_sched_deadline_,
-                      (unsigned long long)(time_ + delay), (unsigned long long)delay);
+                      " time=%llu expected_deadline=%llu actual_deadline=%llu",
+                      (unsigned long long)time_, (unsigned long long)expected_deadline,
+                      (unsigned long long)deadline);
         }
         n_sched_calls_++;
     }

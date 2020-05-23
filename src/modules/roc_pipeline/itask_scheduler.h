@@ -31,12 +31,12 @@ public:
     //! @p pipeline calls this when it wants to invoke TaskPipeline::process_tasks()
     //! asynchronously.
     //!
-    //! @p delay is a hint when it's better to invoke the method. It's a relative
-    //! delay in nanoseconds from the same clock domain as in core::timestamp().
+    //! @p deadline is a hint when it's better to invoke the method. It's an absolute
+    //! timestamp in nanoseconds from the same clock domain as core::timestamp().
     //!
-    //! Zero delay means invoke as soon as possible.
+    //! Zero deadline means invoke as soon as possible.
     virtual void schedule_task_processing(TaskPipeline& pipeline,
-                                          core::nanoseconds_t delay) = 0;
+                                          core::nanoseconds_t deadline) = 0;
 
     //! Cancel previously scheduled asynchronous work.
     virtual void cancel_task_processing(TaskPipeline& pipeline) = 0;
