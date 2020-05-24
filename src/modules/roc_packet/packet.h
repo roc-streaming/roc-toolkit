@@ -99,6 +99,12 @@ public:
     //!  be always zero.
     timestamp_t end() const;
 
+    //! Get the arrived timestamp of the packet.
+    core::nanoseconds_t arrived_time() const;
+
+    //! Set the arrived timestamp of the packet.
+    void set_arrived_time(core::nanoseconds_t ts);
+
     //! Determine packet order.
     //! @returns
     //!  * -1 if this packet precedes @p other packet
@@ -130,6 +136,8 @@ private:
     FEC fec_;
 
     core::Slice<uint8_t> data_;
+
+    core::nanoseconds_t arrived_time_;
 };
 
 } // namespace packet

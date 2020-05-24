@@ -108,6 +108,14 @@ timestamp_t Packet::end() const {
     return 0;
 }
 
+core::nanoseconds_t Packet::arrived_time() const {
+    return arrived_time_;
+}
+
+void Packet::set_arrived_time(core::nanoseconds_t ts) {
+    arrived_time_ = ts;
+}
+
 int Packet::compare(const Packet& other) const {
     if (const RTP* ra = rtp()) {
         if (const RTP* rb = other.rtp()) {

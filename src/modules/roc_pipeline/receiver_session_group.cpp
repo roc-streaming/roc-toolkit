@@ -127,11 +127,22 @@ void ReceiverSessionGroup::remove_session_(ReceiverSession& sess) {
 }
 
 void ReceiverSessionGroup::save_dropped_packets_(const packet::PacketPtr& packet) {
-    // TODO: remove old packets.
+    const ReceiverSessionConfig sess_config = make_session_config_(packet);
+    packet::PacketPtr saved_packet, saved_packet_next;
+    for (saved_packet = dropped_packets_.front(); saved_packet;
+         saved_packet = saved_packet_next) {
+        saved_packet_next = dropped_packets_.nextof(*saved_packet);
+        if (core::timestamp() - saved_packet->arrived_time()
+            < 1.5 * sess_config.latency_monitor.max_latency) {
+            break;
+        }
+        dropped_packets_.remove(*saved_packet);
+    }
     dropped_packets_.push_back(*packet);
 }
 
-void ReceiverSessionGroup::fetch_dropped_packets_(const core::SharedPtr<ReceiverSession> &sess) {
+void ReceiverSessionGroup::fetch_dropped_packets_(
+    const core::SharedPtr<ReceiverSession>& sess) {
     packet::PacketPtr saved_packet, saved_packet_next;
     for (saved_packet = dropped_packets_.front(); saved_packet;
          saved_packet = saved_packet_next) {

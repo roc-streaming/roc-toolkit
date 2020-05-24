@@ -283,6 +283,8 @@ void UdpReceiverPort::recv_cb_(uv_udp_t* handle,
 
     pp->set_data(core::Slice<uint8_t>(*bp, 0, (size_t)nread));
 
+    pp->set_arrived_time(core::timestamp());
+
     self.writer_.write(pp);
 }
 
