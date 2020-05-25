@@ -228,7 +228,7 @@ bool SenderEndpointSet::create_pipeline_() {
         resampler_.reset(audio::ResamplerMap::instance().new_resampler(
                              config_.resampler_backend, allocator_, config_.resampler,
                              config_.internal_frame_length, config_.input_sample_rate,
-                             config_.input_channels),
+                             config_.input_channels, config_.resampler_quality),
                          allocator_);
 
         if (!resampler_) {
@@ -244,8 +244,8 @@ bool SenderEndpointSet::create_pipeline_() {
         if (!resampler_writer_ || !resampler_writer_->valid()) {
             return false;
         }
-        if (!resampler_writer_->set_scaling(float(config_.input_sample_rate)
-                                            / format->sample_rate)) {
+        if (!resampler_writer_->set_scaling(config_.input_sample_rate,
+                                            format->sample_rate)) {
             return false;
         }
         awriter = resampler_writer_.get();

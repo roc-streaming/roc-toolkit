@@ -36,7 +36,7 @@ ConverterSource::ConverterSource(const ConverterConfig& config,
         resampler_.reset(audio::ResamplerMap::instance().new_resampler(
                              config.resampler_backend, allocator, config.resampler,
                              config.internal_frame_length, config.input_sample_rate,
-                             config.input_channels),
+                             config.input_channels, config.resampler_quality),
                          allocator);
 
         if (!resampler_) {
@@ -52,8 +52,8 @@ ConverterSource::ConverterSource(const ConverterConfig& config,
         if (!resampler_reader_ || !resampler_reader_->valid()) {
             return;
         }
-        if (!resampler_reader_->set_scaling(float(config.input_sample_rate)
-                                            / config.output_sample_rate)) {
+        if (!resampler_reader_->set_scaling(config.input_sample_rate,
+                                            config.output_sample_rate)) {
             return;
         }
         areader = resampler_reader_.get();

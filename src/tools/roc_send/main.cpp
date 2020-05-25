@@ -184,13 +184,13 @@ int main(int argc, char** argv) {
         sender_config.resampler_backend = audio::ResamplerBackend_Builtin;
         break;
     case resampler_backend_arg_speex:
-        config.resampler_backend = audio::ResamplerBackend_Speex;
+        sender_config.resampler_backend = audio::ResamplerBackend_Speex;
         break;
     default:
         break;
     }
 
-    config.resampler_quality =
+    sender_config.resampler_quality =
         args.resampler_quality_given ? args.resampler_quality_arg : 0;
 
     switch ((unsigned)args.resampler_profile_arg) {

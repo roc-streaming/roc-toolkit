@@ -19,7 +19,6 @@ SpeexResampler::SpeexResampler(core::IAllocator& allocator,
                                size_t frame_size,
                                int quality)
     : sr_buffer_pool(allocator, frame_size * 3, false)
-    , allocator(allocator)
     , channel_mask_(channels)
     , channels_num_(packet::num_channels(channel_mask_))
     , speex_state(NULL)
@@ -28,10 +27,9 @@ SpeexResampler::SpeexResampler(core::IAllocator& allocator,
     , next_frame_(NULL)
     , out_frame_pos_(0)
     , in_offset(0)
-    , scaling_(1.0)
     , frame_size_(frame_size)
     , frame_size_ch_(channels_num_ ? frame_size / channels_num_ : 0)
-    , quality(quality)
+    , quality_(quality)
     , valid_(false) {
     if (!check_config_()) {
         return;
@@ -63,10 +61,11 @@ bool SpeexResampler::refresh_state() {
         speex_resampler_destroy(speex_state);
     }
 
-    speex_state = speex_resampler_init(1, input_sample_rate_ * sample_rate_multiplier_,
-                                       output_sample_rate_, quality, &err_init);
+    speex_state = speex_resampler_init(
+        1, spx_uint32_t(input_sample_rate_ * sample_rate_multiplier_),
+        spx_uint32_t(output_sample_rate_), quality_, &err_init);
     return err_init == 0;
-};
+}
 
 bool SpeexResampler::set_scaling(float input_sample_rate,
                                  float output_sample_rate,
@@ -86,8 +85,8 @@ bool SpeexResampler::resample_buff(Frame& out) {
     sample_t* out_data = out.data();
     sample_t* in_data = mix_frame.data() + frame_size_;
 
-    spx_uint32_t in_len_val = frame_size_;
-    spx_uint32_t out_len_val = out.size() - out_frame_pos_;
+    spx_uint32_t in_len_val = spx_uint32_t(frame_size_);
+    spx_uint32_t out_len_val = spx_uint32_t(out.size() - out_frame_pos_);
 
     spx_uint32_t remaining_in = in_len_val;
     spx_uint32_t remaining_out = out_len_val;
@@ -103,8 +102,9 @@ bool SpeexResampler::resample_buff(Frame& out) {
         in_offset += remaining_in;
         out_frame_pos_ += remaining_out;
 
-        remaining_in = in_len_val > in_offset ? in_len_val - in_offset : 0;
-        remaining_out = out_len_val > out_frame_pos_ ? out_len_val - out_frame_pos_ : 0;
+        remaining_in = in_len_val > in_offset ? spx_uint32_t(in_len_val - in_offset) : 0;
+        remaining_out =
+            out_len_val > out_frame_pos_ ? spx_uint32_t(out_len_val - out_frame_pos_) : 0;
 
         if (remaining_in == 0) {
             in_offset = 0;
@@ -159,7 +159,7 @@ bool SpeexResampler::check_config_() const {
         return false;
     }
 
-    if (quality < 0 || quality > 10) {
+    if (quality_ < 0 || quality_ > 10) {
         return false;
     }
 

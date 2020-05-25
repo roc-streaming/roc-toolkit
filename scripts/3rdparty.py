@@ -510,7 +510,7 @@ for e in envlist:
     k, v = e.split('=', 1)
     env[k] = v
 
-m = re.match('^(.*?)-([0-9][0-9.-]+)$', fullname)
+m = re.match('^(.*?)-([0-9][a-z0-9.-]+)$', fullname)
 if not m:
     print("error: can't determine version of '%s'" % fullname, file=sys.stderr)
     exit(1)

@@ -33,7 +33,9 @@ IResampler* ResamplerMap::new_resampler(ResamplerBackend resampler_backend,
                                         size_t sample_rate,
                                         packet::channel_mask_t channels,
                                         int quality) {
-    switch (resampler_backend) {
+    core::ScopedPtr<IResampler> resampler;
+
+    switch ((int)resampler_backend) {
     case ResamplerBackend_Builtin:
         resampler.reset(new (allocator) BuiltinResampler(allocator, config, frame_length,
                                                          sample_rate, channels),
@@ -41,8 +43,10 @@ IResampler* ResamplerMap::new_resampler(ResamplerBackend resampler_backend,
         break;
 
     case ResamplerBackend_Speex:
-        resampler.reset(new (allocator)
-                            SpeexResampler(allocator, channels, frame_size, quality),
+        resampler.reset(new (allocator) SpeexResampler(
+                            allocator, channels,
+                            packet::ns_to_size(frame_length, sample_rate, channels),
+                            quality),
                         allocator);
         break;
 

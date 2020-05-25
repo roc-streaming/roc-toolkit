@@ -279,10 +279,11 @@ TEST(resampler, two_tones_sep_channels) {
         ResamplerBackend backend = ResamplerMap::instance().nth_backend(n_back);
 
         test::MockReader reader;
-        core::ScopedPtr<IResampler> resampler(ResamplerMap::instance().new_resampler(
-            backend, allocator, config, FrameDuration, InSamples, ChMask,
-            ResamplerQuality);
-                                              allocator);
+        core::ScopedPtr<IResampler> resampler(
+            ResamplerMap::instance().new_resampler(backend, allocator, config,
+                                                   FrameDuration, InSamples, ChMask,
+                                                   ResamplerQuality),
+            allocator);
         CHECK(resampler);
         ResamplerReader rr(reader, *resampler, buffer_pool, FrameDuration, InSamples,
                            ChMask);

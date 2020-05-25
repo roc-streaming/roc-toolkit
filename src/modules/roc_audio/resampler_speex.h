@@ -27,11 +27,12 @@
 
 namespace roc {
 namespace audio {
+
 namespace {
 const uint32_t FRACT_BIT_COUNT = 20;
 typedef int32_t signed_fixedpoint_t;
 typedef uint32_t fixedpoint_t;
-};
+}
 
 //! Resamples audio stream using speex resampler.
 class SpeexResampler : public IResampler, public core::NonCopyable<> {
@@ -59,7 +60,6 @@ public:
 
 private:
     core::BufferPool<sample_t> sr_buffer_pool;
-    const core::IAllocator& allocator;
     const packet::channel_mask_t channel_mask_;
     const size_t channels_num_;
 
@@ -76,8 +76,6 @@ private:
     size_t out_frame_pos_;
     size_t in_offset;
 
-    float scaling_;
-
     const size_t frame_size_;
     const size_t frame_size_ch_;
 
@@ -85,7 +83,7 @@ private:
     float output_sample_rate_;
     float sample_rate_multiplier_;
 
-    int quality;
+    int quality_;
 
     bool valid_;
 
