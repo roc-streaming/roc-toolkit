@@ -8,5 +8,5 @@ scons -Q \
       --enable-tests \
       --enable-benchmarks \
       --enable-examples \
-      --build-3rdparty=libuv,openfec,cpputest \
+      --build-3rdparty=libuv,openfec,speex,cpputest \
       test

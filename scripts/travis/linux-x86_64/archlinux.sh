@@ -8,5 +8,5 @@ scons -Q \
       --enable-tests \
       --enable-benchmarks \
       --enable-examples \
-      --build-3rdparty=openfec,cpputest,google-benchmark \
+      --build-3rdparty=openfec,speex,cpputest,google-benchmark \
       test
