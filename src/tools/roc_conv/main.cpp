@@ -174,6 +174,7 @@ int main(int argc, char** argv) {
 
     converter_config.resampling = !args.no_resampling_flag;
     converter_config.poisoning = args.poisoning_flag;
+    converter_config.profiling = args.profiling_flag;
 
     audio::IWriter* output_writer = NULL;
 

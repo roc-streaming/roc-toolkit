@@ -62,14 +62,6 @@ ConverterSink::ConverterSink(const ConverterConfig& config,
         awriter = resampler_writer_.get();
     }
 
-    profiler_.reset(new (allocator) audio::ProfilingWriter(
-                        *awriter, config.input_channels, config.input_sample_rate),
-                    allocator);
-    if (!profiler_) {
-        return;
-    }
-    awriter = profiler_.get();
-
     if (config.poisoning) {
         pipeline_poisoner_.reset(new (allocator) audio::PoisonWriter(*awriter),
                                  allocator);
@@ -77,6 +69,17 @@ ConverterSink::ConverterSink(const ConverterConfig& config,
             return;
         }
         awriter = pipeline_poisoner_.get();
+    }
+
+    if (config.profiling) {
+        profiler_.reset(new (allocator) audio::ProfilingWriter(
+                            *awriter, allocator, config.input_channels,
+                            config.input_sample_rate, config.profiler_config),
+                        allocator);
+        if (!profiler_ || !profiler_->valid()) {
+            return;
+        }
+        awriter = profiler_.get();
     }
 
     audio_writer_ = awriter;
