@@ -12,8 +12,6 @@
 #ifndef ROC_AUDIO_RESAMPLER_PROFILE_H_
 #define ROC_AUDIO_RESAMPLER_PROFILE_H_
 
-#include "roc_audio/resampler_config.h"
-
 namespace roc {
 namespace audio {
 
@@ -28,9 +26,6 @@ enum ResamplerProfile {
     //! Hight quality, low speed.
     ResamplerProfile_High
 };
-
-//! Get parameters for given resampler profile.
-ResamplerConfig resampler_profile(ResamplerProfile profile);
 
 } // namespace audio
 } // namespace roc

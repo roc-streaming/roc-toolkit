@@ -70,10 +70,40 @@ inline size_t calc_bits(size_t n) {
     return c;
 }
 
+inline size_t get_window_size(ResamplerProfile profile) {
+    switch (profile) {
+    case ResamplerProfile_Low:
+        return 16;
+
+    case ResamplerProfile_Medium:
+        return 32;
+
+    case ResamplerProfile_High:
+        return 64;
+    }
+
+    roc_panic("resampler: unexpected profile");
+}
+
+inline size_t get_window_interp(ResamplerProfile profile) {
+    switch (profile) {
+    case ResamplerProfile_Low:
+        return 64;
+
+    case ResamplerProfile_Medium:
+        return 128;
+
+    case ResamplerProfile_High:
+        return 512;
+    }
+
+    roc_panic("resampler: unexpected profile");
+}
+
 } // namespace
 
 BuiltinResampler::BuiltinResampler(core::IAllocator& allocator,
-                                   const ResamplerConfig& config,
+                                   ResamplerProfile profile,
                                    core::nanoseconds_t frame_length,
                                    size_t sample_rate,
                                    packet::channel_mask_t channels)
@@ -86,10 +116,10 @@ BuiltinResampler::BuiltinResampler(core::IAllocator& allocator,
     , scaling_(1.0)
     , frame_size_(packet::ns_to_size(frame_length, sample_rate, channels))
     , frame_size_ch_(channels_num_ ? frame_size_ / channels_num_ : 0)
-    , window_size_(config.window_size)
+    , window_size_(get_window_size(profile))
     , qt_half_sinc_window_size_(float_to_fixedpoint(window_size_))
-    , window_interp_(config.window_interp)
-    , window_interp_bits_(calc_bits(config.window_interp))
+    , window_interp_(get_window_interp(profile))
+    , window_interp_bits_(calc_bits(window_interp_))
     , sinc_table_(allocator)
     , sinc_table_ptr_(NULL)
     , qt_half_window_size_(float_to_fixedpoint((float)window_size_ / scaling_))
