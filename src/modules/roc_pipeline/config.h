@@ -14,6 +14,7 @@
 
 #include "roc_address/protocol.h"
 #include "roc_audio/latency_monitor.h"
+#include "roc_audio/profiler.h"
 #include "roc_audio/resampler_config.h"
 #include "roc_audio/watchdog.h"
 #include "roc_core/stddefs.h"
@@ -137,6 +138,12 @@ struct SenderConfig {
     //! Fill unitialized data with large values to make them more noticable.
     bool poisoning;
 
+    //! Profile moving average of frames being written.
+    bool profiling;
+
+    //! Profiler configuration.
+    audio::ProfilerConfig profiler_config;
+
     SenderConfig()
         : resampler_backend(audio::ResamplerBackend_Builtin)
         , input_sample_rate(DefaultSampleRate)
@@ -147,7 +154,8 @@ struct SenderConfig {
         , resampling(false)
         , interleaving(false)
         , timing(false)
-        , poisoning(false) {
+        , poisoning(false)
+        , profiling(false) {
     }
 };
 
@@ -217,6 +225,12 @@ struct ReceiverCommonConfig {
     //! Fill uninitialized data with large values to make them more noticeable.
     bool poisoning;
 
+    //! Profile moving average of frames being written.
+    bool profiling;
+
+    //! Profiler configuration.
+    audio::ProfilerConfig profiler_config;
+
     //! Insert weird beeps instead of silence on packet loss.
     bool beeping;
 
@@ -227,6 +241,7 @@ struct ReceiverCommonConfig {
         , resampling(false)
         , timing(false)
         , poisoning(false)
+        , profiling(false)
         , beeping(false) {
     }
 };
@@ -272,6 +287,12 @@ struct ConverterConfig {
     //! Fill unitialized data with large values to make them more noticable.
     bool poisoning;
 
+    //! Profile moving average of frames being written.
+    bool profiling;
+
+    //! Profiler configuration.
+    audio::ProfilerConfig profiler_config;
+
     ConverterConfig()
         : resampler_backend(audio::ResamplerBackend_Builtin)
         , input_sample_rate(DefaultSampleRate)
@@ -280,7 +301,8 @@ struct ConverterConfig {
         , output_channels(DefaultChannelMask)
         , internal_frame_length(DefaultInternalFrameLength)
         , resampling(false)
-        , poisoning(false) {
+        , poisoning(false)
+        , profiling(false) {
     }
 };
 

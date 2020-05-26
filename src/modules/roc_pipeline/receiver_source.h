@@ -15,6 +15,7 @@
 #include "roc_audio/ireader.h"
 #include "roc_audio/mixer.h"
 #include "roc_audio/poison_reader.h"
+#include "roc_audio/profiling_reader.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/mutex.h"
@@ -163,6 +164,7 @@ private:
 
     core::ScopedPtr<audio::Mixer> mixer_;
     core::ScopedPtr<audio::PoisonReader> poisoner_;
+    core::ScopedPtr<audio::ProfilingReader> profiler_;
 
     audio::IReader* audio_reader_;
 
