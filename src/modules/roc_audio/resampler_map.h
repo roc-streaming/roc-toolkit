@@ -13,7 +13,8 @@
 #define ROC_AUDIO_RESAMPLER_MAP_H_
 
 #include "roc_audio/iresampler.h"
-#include "roc_audio/resampler_config.h"
+#include "roc_audio/resampler_backend.h"
+#include "roc_audio/resampler_profile.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/scoped_ptr.h"
@@ -23,6 +24,7 @@
 
 namespace roc {
 namespace audio {
+
 //! Factory class for IResampler objects, according to the ResamplerBackend input
 class ResamplerMap : public core::NonCopyable<> {
 public:
@@ -40,7 +42,7 @@ public:
     //! Method to instantiate and return a pointer to a IResampler object
     IResampler* new_resampler(ResamplerBackend resampler_backend,
                               core::IAllocator& allocator,
-                              const ResamplerConfig& config,
+                              ResamplerProfile profile,
                               core::nanoseconds_t frame_length,
                               size_t sample_rate,
                               packet::channel_mask_t channels);

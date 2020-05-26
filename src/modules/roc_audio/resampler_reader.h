@@ -42,6 +42,7 @@ public:
                     core::nanoseconds_t frame_length,
                     size_t sample_rate,
                     roc::packet::channel_mask_t ch_mask);
+
     //! Check if object is successfully constructed.
     bool valid() const;
 

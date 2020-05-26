@@ -198,40 +198,20 @@ int main(int argc, char** argv) {
 
     switch ((unsigned)args.resampler_profile_arg) {
     case resampler_profile_arg_low:
-        receiver_config.default_session.resampler =
-            audio::resampler_profile(audio::ResamplerProfile_Low);
+        receiver_config.default_session.resampler_profile = audio::ResamplerProfile_Low;
         break;
 
     case resampler_profile_arg_medium:
-        receiver_config.default_session.resampler =
-            audio::resampler_profile(audio::ResamplerProfile_Medium);
+        receiver_config.default_session.resampler_profile =
+            audio::ResamplerProfile_Medium;
         break;
 
     case resampler_profile_arg_high:
-        receiver_config.default_session.resampler =
-            audio::resampler_profile(audio::ResamplerProfile_High);
+        receiver_config.default_session.resampler_profile = audio::ResamplerProfile_High;
         break;
 
     default:
         break;
-    }
-
-    if (args.resampler_interp_given) {
-        if (args.resampler_interp_arg <= 0) {
-            roc_log(LogError, "invalid --resampler-interp: should be > 0");
-            return 1;
-        }
-        receiver_config.default_session.resampler.window_interp =
-            (size_t)args.resampler_interp_arg;
-    }
-
-    if (args.resampler_window_given) {
-        if (args.resampler_window_arg <= 0) {
-            roc_log(LogError, "invalid --resampler-window: should be > 0");
-            return 1;
-        }
-        receiver_config.default_session.resampler.window_size =
-            (size_t)args.resampler_window_arg;
     }
 
     receiver_config.common.poisoning = args.poisoning_flag;
@@ -341,9 +321,10 @@ int main(int argc, char** argv) {
 
         pipeline::ConverterConfig converter_config;
 
-        converter_config.resampler = receiver_config.default_session.resampler;
         converter_config.resampler_backend =
             receiver_config.default_session.resampler_backend;
+        converter_config.resampler_profile =
+            receiver_config.default_session.resampler_profile;
 
         converter_config.input_sample_rate = backup_source->sample_rate();
         converter_config.output_sample_rate = receiver_config.common.output_sample_rate;
