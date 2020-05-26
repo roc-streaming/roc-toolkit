@@ -105,12 +105,14 @@ TEST(profiler, test_moving_average) {
         / 5;
 
     // 2nd and 3rd chunk overwritten 4th partially populated
-    expected_average[8] = ((((0.8 * frame_speeds[5] + 0.2 * frame_speeds[6])
-                             + frame_speeds[6] + frame_speeds[7] + frame_speeds[8] * 2)
-                            / 5)
-                               * samples_in_moving_avg
-                           + frame_speeds[8] * (frames[8].size - 100))
-        / (samples_in_moving_avg + (frames[8].size - 100));
+    expected_average[8] =
+        ((((0.8 * frame_speeds[5] + 0.2 * frame_speeds[6]) + frame_speeds[6]
+           + frame_speeds[7] + frame_speeds[8] * 2)
+          / 5)
+             * samples_in_moving_avg
+         - (0.8 * frame_speeds[5] + 0.2 * frame_speeds[6]) * (frames[8].size - 100)
+         + frame_speeds[8] * (frames[8].size - 100))
+        / samples_in_moving_avg;
 
     for (size_t i = 0; i < ROC_ARRAY_SIZE(frames); ++i) {
         profiler.add_frame(frames[i].size, frames[i].time);

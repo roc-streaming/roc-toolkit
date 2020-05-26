@@ -112,16 +112,20 @@ void Profiler::add_frame(size_t frame_size, core::nanoseconds_t elapsed) {
 }
 
 float Profiler::get_moving_avg() {
-    size_t num_samples_in_moving_avg = 0;
     if (!buffer_full_) {
-        num_samples_in_moving_avg = (chunk_length_ * (last_chunk_num_));
-    } else {
-        num_samples_in_moving_avg = (chunk_length_ * (num_chunks_ - 1));
-    }
+        const size_t num_samples_in_moving_avg = (chunk_length_ * last_chunk_num_);
 
-    return (moving_avg_ * num_samples_in_moving_avg
-            + chunks_[last_chunk_num_] * last_chunk_samples_)
-        / (num_samples_in_moving_avg + last_chunk_samples_);
+        return (moving_avg_ * num_samples_in_moving_avg
+                + chunks_[last_chunk_num_] * last_chunk_samples_)
+            / (num_samples_in_moving_avg + last_chunk_samples_);
+    } else {
+        const size_t num_samples_in_moving_avg = (chunk_length_ * (num_chunks_ - 1));
+
+        return (moving_avg_ * num_samples_in_moving_avg
+                - chunks_[first_chunk_num_] * last_chunk_samples_
+                + chunks_[last_chunk_num_] * last_chunk_samples_)
+            / num_samples_in_moving_avg;
+    }
 }
 
 } // roc
