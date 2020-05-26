@@ -15,7 +15,8 @@
 #include "roc_address/protocol.h"
 #include "roc_audio/latency_monitor.h"
 #include "roc_audio/profiler.h"
-#include "roc_audio/resampler_config.h"
+#include "roc_audio/resampler_backend.h"
+#include "roc_audio/resampler_profile.h"
 #include "roc_audio/watchdog.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/time.h"
@@ -99,11 +100,11 @@ struct SenderConfig {
     //! Task processing parameters.
     TaskConfig tasks;
 
-    //! Resampler parameters.
-    audio::ResamplerConfig resampler;
-
     //! To specify which resampling backend will be used.
     audio::ResamplerBackend resampler_backend;
+
+    //! Resampler profile.
+    audio::ResamplerProfile resampler_profile;
 
     //! FEC writer parameters.
     fec::WriterConfig fec_writer;
@@ -146,6 +147,7 @@ struct SenderConfig {
 
     SenderConfig()
         : resampler_backend(audio::ResamplerBackend_Builtin)
+        , resampler_profile(audio::ResamplerProfile_Medium)
         , input_sample_rate(DefaultSampleRate)
         , input_channels(DefaultChannelMask)
         , internal_frame_length(DefaultInternalFrameLength)
@@ -187,17 +189,18 @@ struct ReceiverSessionConfig {
     //! Watchdog parameters.
     audio::WatchdogConfig watchdog;
 
-    //! Resampler parameters.
-    audio::ResamplerConfig resampler;
-
     //! To specify which resampling backend will be used.
     audio::ResamplerBackend resampler_backend;
+
+    //! Resampler profile.
+    audio::ResamplerProfile resampler_profile;
 
     ReceiverSessionConfig()
         : target_latency(DefaultLatency)
         , channels(DefaultChannelMask)
         , payload_type(0)
-        , resampler_backend(audio::ResamplerBackend_Builtin) {
+        , resampler_backend(audio::ResamplerBackend_Builtin)
+        , resampler_profile(audio::ResamplerProfile_Medium) {
         latency_monitor.min_latency = target_latency * DefaultMinLatencyFactor;
         latency_monitor.max_latency = target_latency * DefaultMaxLatencyFactor;
     }
@@ -260,11 +263,11 @@ struct ReceiverConfig {
 
 //! Converter parameters.
 struct ConverterConfig {
-    //! Resampler parameters.
-    audio::ResamplerConfig resampler;
-
     //! To specify which resampling backend will be used.
     audio::ResamplerBackend resampler_backend;
+
+    //! Resampler profile.
+    audio::ResamplerProfile resampler_profile;
 
     //! Number of samples per second per channel.
     size_t input_sample_rate;
@@ -295,6 +298,7 @@ struct ConverterConfig {
 
     ConverterConfig()
         : resampler_backend(audio::ResamplerBackend_Builtin)
+        , resampler_profile(audio::ResamplerProfile_Medium)
         , input_sample_rate(DefaultSampleRate)
         , output_sample_rate(DefaultSampleRate)
         , input_channels(DefaultChannelMask)

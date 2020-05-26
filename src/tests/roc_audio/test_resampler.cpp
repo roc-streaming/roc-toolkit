@@ -42,11 +42,10 @@ core::BufferPool<sample_t> buffer_pool(allocator, MaxSize, true);
 } // namespace
 
 TEST_GROUP(resampler) {
-    ResamplerConfig config;
+    ResamplerProfile profile;
 
     void setup() {
-        config.window_interp = 512;
-        config.window_size = ResamplerFIRLen;
+        profile = ResamplerProfile_High;
     }
 
     core::Slice<sample_t> new_buffer(size_t sz) {
@@ -109,7 +108,7 @@ TEST(resampler, invalid_scaling) {
 
         test::MockReader reader;
         core::ScopedPtr<IResampler> resampler(
-            ResamplerMap::instance().new_resampler(backend, allocator, config,
+            ResamplerMap::instance().new_resampler(backend, allocator, profile,
                                                    FrameDuration, InSamples, ChMask),
             allocator);
         CHECK(resampler);
@@ -133,7 +132,7 @@ TEST(resampler, upscaling_twice_single) {
 
         test::MockReader reader;
         core::ScopedPtr<IResampler> resampler(
-            ResamplerMap::instance().new_resampler(backend, allocator, config,
+            ResamplerMap::instance().new_resampler(backend, allocator, profile,
                                                    FrameDuration, InSamples, ChMask),
             allocator);
         CHECK(resampler);
@@ -177,7 +176,7 @@ TEST(resampler, upscaling_twice_awgn) {
 
         test::MockReader reader;
         core::ScopedPtr<IResampler> resampler(
-            ResamplerMap::instance().new_resampler(backend, allocator, config,
+            ResamplerMap::instance().new_resampler(backend, allocator, profile,
                                                    FrameDuration, InSamples, ChMask),
             allocator);
         CHECK(resampler);
@@ -231,7 +230,7 @@ TEST(resampler, downsample) {
 
         test::MockReader reader;
         core::ScopedPtr<IResampler> resampler(
-            ResamplerMap::instance().new_resampler(backend, allocator, config,
+            ResamplerMap::instance().new_resampler(backend, allocator, profile,
                                                    FrameDuration, InSamples, ChMask),
             allocator);
         CHECK(resampler);
@@ -274,7 +273,7 @@ TEST(resampler, two_tones_sep_channels) {
 
         test::MockReader reader;
         core::ScopedPtr<IResampler> resampler(
-            ResamplerMap::instance().new_resampler(backend, allocator, config,
+            ResamplerMap::instance().new_resampler(backend, allocator, profile,
                                                    FrameDuration, InSamples, ChMask),
             allocator);
         CHECK(resampler);

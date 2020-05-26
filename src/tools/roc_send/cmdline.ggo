@@ -45,12 +45,6 @@ section "Options"
     option "resampler-profile" - "Resampler profile"
         values="low","medium","high" default="medium" enum optional
 
-    option "resampler-interp" - "Resampler sinc table precision"
-        int optional
-
-    option "resampler-window" - "Number of samples per resampler window"
-        int optional
-
     option "interleaving" - "Enable packet interleaving" flag off
 
     option "poisoning" - "Enable uninitialized memory poisoning"
