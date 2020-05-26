@@ -17,6 +17,7 @@
 #include "roc_audio/iresampler.h"
 #include "roc_audio/packetizer.h"
 #include "roc_audio/poison_writer.h"
+#include "roc_audio/profiling_writer.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/noncopyable.h"
@@ -170,6 +171,8 @@ private:
     audio::Fanout fanout_;
 
     core::ScopedPtr<audio::PoisonWriter> pipeline_poisoner_;
+
+    core::ScopedPtr<audio::ProfilingWriter> profiler_;
 
     core::ScopedPtr<core::Ticker> ticker_;
 

@@ -173,6 +173,7 @@ TEST_GROUP(sender_sink) {
         config.interleaving = false;
         config.timing = false;
         config.poisoning = true;
+        config.profiling = true;
 
         source_proto = address::Proto_RTP;
         dst_addr = test::new_address(123);
