@@ -224,6 +224,7 @@ int main(int argc, char** argv) {
 
     sender_config.interleaving = args.interleaving_flag;
     sender_config.poisoning = args.poisoning_flag;
+    sender_config.profiling = args.profiling_flag;
 
     sndio::Config io_config;
     io_config.channels = sender_config.input_channels;

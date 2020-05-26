@@ -37,6 +37,8 @@ section "Options"
     option "poisoning" - "Enable uninitialized memory poisoning"
         flag off
 
+    option "profiling" - "Enable self profiling" flag off
+
     option "color" - "Set colored logging mode for stderr output"
         values="auto","always","never" default="auto" enum optional
 

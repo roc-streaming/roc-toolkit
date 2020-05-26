@@ -53,6 +53,7 @@ TEST_GROUP(converter_source) {
 
         config.resampling = false;
         config.poisoning = true;
+        config.profiling = true;
     }
 };
 
