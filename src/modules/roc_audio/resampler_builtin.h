@@ -15,7 +15,7 @@
 #include "roc_audio/frame.h"
 #include "roc_audio/ireader.h"
 #include "roc_audio/iresampler.h"
-#include "roc_audio/resampler_config.h"
+#include "roc_audio/resampler_profile.h"
 #include "roc_audio/units.h"
 #include "roc_core/array.h"
 #include "roc_core/noncopyable.h"
@@ -31,7 +31,7 @@ class BuiltinResampler : public IResampler, public core::NonCopyable<> {
 public:
     //! Initialize.
     BuiltinResampler(core::IAllocator& allocator,
-                     const ResamplerConfig& config,
+                     ResamplerProfile profile,
                      core::nanoseconds_t frame_length,
                      size_t sample_rate,
                      packet::channel_mask_t channels);
