@@ -14,6 +14,7 @@
 
 #include "roc_audio/iresampler.h"
 #include "roc_audio/poison_reader.h"
+#include "roc_audio/profiling_reader.h"
 #include "roc_audio/resampler_map.h"
 #include "roc_audio/resampler_profile.h"
 #include "roc_audio/resampler_reader.h"
@@ -70,6 +71,7 @@ private:
     core::ScopedPtr<audio::IResampler> resampler_;
 
     core::ScopedPtr<audio::PoisonReader> pipeline_poisoner_;
+    core::ScopedPtr<audio::ProfilingReader> profiler_;
 
     sndio::ISource& input_source_;
     audio::IReader* audio_reader_;

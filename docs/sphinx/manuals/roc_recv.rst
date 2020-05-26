@@ -43,6 +43,7 @@ Options
 --resampler-window=INT       Number of samples per resampler window
 -1, --oneshot                Exit when last connected client disconnects (default=off)
 --poisoning                  Enable uninitialized memory poisoning (default=off)
+--profiling                  Enable self profiling (default=off)
 --beeping                    Enable beeping on packet loss  (default=off)
 --color=ENUM                 Set colored logging mode for stderr output (possible values="auto", "always", "never" default=`auto')
 

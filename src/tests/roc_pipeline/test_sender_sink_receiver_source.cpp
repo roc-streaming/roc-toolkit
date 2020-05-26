@@ -294,6 +294,7 @@ TEST_GROUP(sender_sink_receiver_source) {
         config.interleaving = (flags & FlagInterleaving);
         config.timing = false;
         config.poisoning = true;
+        config.profiling = true;
 
         return config;
     }
