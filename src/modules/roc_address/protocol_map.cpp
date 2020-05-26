@@ -13,7 +13,6 @@ namespace roc {
 namespace address {
 
 ProtocolMap::ProtocolMap() {
-    memset(protos_, 0, sizeof(protos_));
     {
         ProtocolAttrs attrs;
         attrs.protocol = Proto_RTP;
