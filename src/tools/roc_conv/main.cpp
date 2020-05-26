@@ -147,29 +147,19 @@ int main(int argc, char** argv) {
 
     switch ((unsigned)args.resampler_profile_arg) {
     case resampler_profile_arg_low:
-        converter_config.resampler =
-            audio::resampler_profile(audio::ResamplerProfile_Low);
+        converter_config.resampler_profile = audio::ResamplerProfile_Low;
         break;
 
     case resampler_profile_arg_medium:
-        converter_config.resampler =
-            audio::resampler_profile(audio::ResamplerProfile_Medium);
+        converter_config.resampler_profile = audio::ResamplerProfile_Medium;
         break;
 
     case resampler_profile_arg_high:
-        converter_config.resampler =
-            audio::resampler_profile(audio::ResamplerProfile_High);
+        converter_config.resampler_profile = audio::ResamplerProfile_High;
         break;
 
     default:
         break;
-    }
-
-    if (args.resampler_interp_given) {
-        converter_config.resampler.window_interp = (size_t)args.resampler_interp_arg;
-    }
-    if (args.resampler_window_given) {
-        converter_config.resampler.window_size = (size_t)args.resampler_window_arg;
     }
 
     converter_config.resampling = !args.no_resampling_flag;

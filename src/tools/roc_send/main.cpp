@@ -190,36 +190,19 @@ int main(int argc, char** argv) {
 
     switch ((unsigned)args.resampler_profile_arg) {
     case resampler_profile_arg_low:
-        sender_config.resampler = audio::resampler_profile(audio::ResamplerProfile_Low);
+        sender_config.resampler_profile = audio::ResamplerProfile_Low;
         break;
 
     case resampler_profile_arg_medium:
-        sender_config.resampler =
-            audio::resampler_profile(audio::ResamplerProfile_Medium);
+        sender_config.resampler_profile = audio::ResamplerProfile_Medium;
         break;
 
     case resampler_profile_arg_high:
-        sender_config.resampler = audio::resampler_profile(audio::ResamplerProfile_High);
+        sender_config.resampler_profile = audio::ResamplerProfile_High;
         break;
 
     default:
         roc_panic("unexpected resampler profile");
-    }
-
-    if (args.resampler_interp_given) {
-        if (args.resampler_interp_arg <= 0) {
-            roc_log(LogError, "invalid --resampler-interp: should be > 0");
-            return 1;
-        }
-        sender_config.resampler.window_interp = (size_t)args.resampler_interp_arg;
-    }
-
-    if (args.resampler_window_given) {
-        if (args.resampler_window_arg <= 0) {
-            roc_log(LogError, "invalid --resampler-window: should be > 0");
-            return 1;
-        }
-        sender_config.resampler.window_size = (size_t)args.resampler_window_arg;
     }
 
     sender_config.interleaving = args.interleaving_flag;

@@ -27,8 +27,6 @@ Options
 --no-resampling              Disable resampling  (default=off)
 --resampler-backend=ENUM     Resampler backend  (possible values="builtin" default=`builtin')
 --resampler-profile=ENUM     Resampler profile  (possible values="low", "medium", "high" default=`medium')
---resampler-interp=INT       Resampler sinc table precision
---resampler-window=INT       Number of samples per resampler window
 --poisoning                  Enable uninitialized memory poisoning (default=off)
 --profiling                  Enable self profiling (default=off)
 --color=ENUM                 Set colored logging mode for stderr output (possible values="auto", "always", "never" default=`auto')
