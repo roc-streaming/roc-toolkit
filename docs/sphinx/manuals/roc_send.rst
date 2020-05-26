@@ -37,6 +37,7 @@ Options
 --resampler-window=INT      Number of samples per resampler window
 --interleaving              Enable packet interleaving  (default=off)
 --poisoning                 Enable uninitialized memory poisoning (default=off)
+--profiling                 Enable self profiling (default=off)
 --color=ENUM                Set colored logging mode for stderr output (possible values="auto", "always", "never" default=`auto')
 
 Endpoint URI

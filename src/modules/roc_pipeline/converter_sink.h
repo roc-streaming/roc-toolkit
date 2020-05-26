@@ -61,9 +61,9 @@ private:
     core::ScopedPtr<audio::ResamplerWriter> resampler_writer_;
     core::ScopedPtr<audio::IResampler> resampler_;
 
-    core::ScopedPtr<audio::ProfilingWriter> profiler_;
-
     core::ScopedPtr<audio::PoisonWriter> pipeline_poisoner_;
+
+    core::ScopedPtr<audio::ProfilingWriter> profiler_;
 
     audio::IWriter* audio_writer_;
 
