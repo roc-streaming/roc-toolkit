@@ -15,7 +15,6 @@
 #include "roc_audio/frame.h"
 #include "roc_audio/iresampler.h"
 #include "roc_audio/iwriter.h"
-#include "roc_audio/resampler_config.h"
 #include "roc_audio/units.h"
 #include "roc_core/array.h"
 #include "roc_core/noncopyable.h"
