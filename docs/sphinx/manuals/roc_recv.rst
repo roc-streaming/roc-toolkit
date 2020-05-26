@@ -39,8 +39,6 @@ Options
 --no-resampling              Disable resampling  (default=off)
 --resampler-backend=ENUM     Resampler backend  (possible values="builtin" default=`builtin')
 --resampler-profile=ENUM     Resampler profile  (possible values="low", "medium", "high" default=`medium')
---resampler-interp=INT       Resampler sinc table precision
---resampler-window=INT       Number of samples per resampler window
 -1, --oneshot                Exit when last connected client disconnects (default=off)
 --poisoning                  Enable uninitialized memory poisoning (default=off)
 --profiling                  Enable self profiling (default=off)

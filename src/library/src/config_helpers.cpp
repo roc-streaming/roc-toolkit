@@ -74,14 +74,14 @@ bool sender_config_from_user(pipeline::SenderConfig& out, const roc_sender_confi
     case ROC_RESAMPLER_DISABLE:
         break;
     case ROC_RESAMPLER_LOW:
-        out.resampler = audio::resampler_profile(audio::ResamplerProfile_Low);
+        out.resampler_profile = audio::ResamplerProfile_Low;
         break;
     case ROC_RESAMPLER_DEFAULT:
     case ROC_RESAMPLER_MEDIUM:
-        out.resampler = audio::resampler_profile(audio::ResamplerProfile_Medium);
+        out.resampler_profile = audio::ResamplerProfile_Medium;
         break;
     case ROC_RESAMPLER_HIGH:
-        out.resampler = audio::resampler_profile(audio::ResamplerProfile_High);
+        out.resampler_profile = audio::ResamplerProfile_High;
         break;
     default:
         roc_log(LogError, "bad configuration: invalid resampler_profile");
@@ -138,17 +138,14 @@ bool receiver_config_from_user(pipeline::ReceiverConfig& out,
     case ROC_RESAMPLER_DISABLE:
         break;
     case ROC_RESAMPLER_LOW:
-        out.default_session.resampler =
-            audio::resampler_profile(audio::ResamplerProfile_Low);
+        out.default_session.resampler_profile = audio::ResamplerProfile_Low;
         break;
     case ROC_RESAMPLER_DEFAULT:
     case ROC_RESAMPLER_MEDIUM:
-        out.default_session.resampler =
-            audio::resampler_profile(audio::ResamplerProfile_Medium);
+        out.default_session.resampler_profile = audio::ResamplerProfile_Medium;
         break;
     case ROC_RESAMPLER_HIGH:
-        out.default_session.resampler =
-            audio::resampler_profile(audio::ResamplerProfile_High);
+        out.default_session.resampler_profile = audio::ResamplerProfile_High;
         break;
     default:
         roc_log(LogError, "bad configuration: invalid resampler_profile");

@@ -65,12 +65,6 @@ section "Options"
     option "resampler-profile" - "Resampler profile"
         values="low","medium","high" default="medium" enum optional
 
-    option "resampler-interp" - "Resampler sinc table precision"
-        int optional
-
-    option "resampler-window" - "Number of samples per resampler window"
-        int optional
-
     option "oneshot" 1 "Exit when last connected client disconnects"
         flag off
 
