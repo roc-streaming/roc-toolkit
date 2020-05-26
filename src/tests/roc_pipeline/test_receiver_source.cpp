@@ -175,6 +175,7 @@ TEST_GROUP(receiver_source) {
         config.common.resampling = false;
         config.common.timing = false;
         config.common.poisoning = true;
+        config.common.profiling = true;
 
         config.default_session.channels = ChMask;
 

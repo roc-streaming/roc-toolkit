@@ -52,6 +52,7 @@ TEST_GROUP(converter_sink) {
 
         config.resampling = false;
         config.poisoning = true;
+        config.profiling = true;
     }
 };
 
