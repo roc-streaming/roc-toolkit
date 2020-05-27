@@ -20,26 +20,33 @@ ResamplerWriter::ResamplerWriter(IWriter& writer,
                                  core::BufferPool<sample_t>& buffer_pool,
                                  core::nanoseconds_t frame_length,
                                  size_t sample_rate,
-                                 roc::packet::channel_mask_t ch_mask)
+                                 packet::channel_mask_t channels)
     : resampler_(resampler)
     , writer_(writer)
-    , frame_size_(packet::ns_to_size(frame_length, sample_rate, ch_mask))
-    , frame_pos_(0)
+    , input_pos_(0)
+    , output_pos_(0)
     , valid_(false) {
     if (!resampler_.valid()) {
         return;
     }
-    if (frame_size_ == 0) {
+
+    const size_t frame_size = packet::ns_to_size(frame_length, sample_rate, channels);
+    if (frame_size == 0) {
+        roc_log(LogError, "resampler writer: frame size can't be zero");
         return;
     }
-    if (!init_(buffer_pool)) {
+
+    if (!(output_ = new (buffer_pool) core::Buffer<sample_t>(buffer_pool))) {
+        roc_log(LogError, "resampler writer: can't allocate buffer for output frame");
         return;
     }
+    output_.resize(frame_size);
+
     valid_ = true;
 }
 
 bool ResamplerWriter::valid() const {
-    return valid_;
+    return resampler_.valid();
 }
 
 bool ResamplerWriter::set_scaling(size_t input_sample_rate,
@@ -50,72 +57,50 @@ bool ResamplerWriter::set_scaling(size_t input_sample_rate,
     return resampler_.set_scaling(input_sample_rate, output_sample_rate, multiplier);
 }
 
-void ResamplerWriter::write(Frame& input) {
+void ResamplerWriter::write(Frame& frame) {
     roc_panic_if_not(valid());
 
-    const sample_t* input_data = input.data();
-    const size_t input_size = input.size();
-    size_t input_pos = 0;
+    size_t frame_pos = 0;
 
-    sample_t* frame0_data = frames_[0].data();
-    for (; frame_pos_ < frame_size_ && input_pos < input_size;
-         ++frame_pos_, ++input_pos) {
-        frame0_data[frame_pos_] = input_data[input_pos];
-    }
+    while (frame_pos < frame.size()) {
+        Frame out_part(output_.data() + output_pos_, output_.size() - output_pos_);
 
-    sample_t* frame1_data = frames_[1].data();
-    for (; frame_pos_ < frame_size_ * 2 && input_pos < input_size;
-         ++frame_pos_, ++input_pos) {
-        frame1_data[frame_pos_ - frame_size_] = input_data[input_pos];
-    }
+        const size_t num_popped = resampler_.pop_output(out_part);
 
-    while (input_pos < input_size) {
-        sample_t* frame2_data = frames_[2].data();
-        for (; frame_pos_ < frame_size_ * 3 && input_pos < input_size;
-             ++frame_pos_, ++input_pos) {
-            frame2_data[frame_pos_ - frame_size_ * 2] = input_data[input_pos];
+        if (num_popped < out_part.size()) {
+            frame_pos += push_input_(frame, frame_pos);
         }
 
-        // All three slices are full, resampling frame_size_ samples.
-        if (frame_pos_ >= frame_size_ * 3) {
-            resampler_.renew_buffers(frames_[0], frames_[1], frames_[2]);
+        output_pos_ += num_popped;
+
+        if (output_pos_ == output_.size()) {
+            output_pos_ = 0;
 
             Frame out_frame(output_.data(), output_.size());
-            while (resampler_.resample_buff(out_frame)) {
-                writer_.write(out_frame);
-            }
-
-            frame_pos_ -= frames_[0].size();
-            core::Slice<sample_t> temp = frames_[0];
-            frames_[0] = frames_[1];
-            frames_[1] = frames_[2];
-            frames_[2] = temp;
+            writer_.write(out_frame);
         }
     }
 }
 
-bool ResamplerWriter::init_(core::BufferPool<sample_t>& buffer_pool) {
-    for (size_t n = 0; n < ROC_ARRAY_SIZE(frames_); n++) {
-        frames_[n] = new (buffer_pool) core::Buffer<sample_t>(buffer_pool);
-
-        if (!frames_[n]) {
-            roc_log(LogError, "resampler writer: can't allocate buffer");
-            return false;
-        }
-
-        frames_[n].resize(frame_size_);
+size_t ResamplerWriter::push_input_(Frame& frame, size_t frame_pos) {
+    if (input_pos_ == 0) {
+        input_ = resampler_.begin_push_input();
     }
 
-    output_ = new (buffer_pool) core::Buffer<sample_t>(buffer_pool);
+    const size_t num_copy =
+        std::min(frame.size() - frame_pos, input_.size() - input_pos_);
 
-    if (!output_) {
-        roc_log(LogError, "resampler writer: can't allocate buffer");
-        return false;
+    memcpy(input_.data() + input_pos_, frame.data() + frame_pos,
+           num_copy * sizeof(sample_t));
+
+    input_pos_ += num_copy;
+
+    if (input_pos_ == input_.size()) {
+        input_pos_ = 0;
+        resampler_.end_push_input();
     }
 
-    output_.resize(frame_size_);
-
-    return true;
+    return num_copy;
 }
 
 } // namespace audio
