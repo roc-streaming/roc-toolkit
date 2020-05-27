@@ -25,47 +25,37 @@
 namespace roc {
 namespace audio {
 
-//! Resamples audio stream with non-integer dynamically changing factor.
-//! @remarks
-//!  Typicaly being used with factor close to 1 ( 0.9 < factor < 1.1 ).
+//! Resampler element for writing pipeline.
 class ResamplerWriter : public IWriter, public core::NonCopyable<> {
 public:
     //! Initialize.
-    //!
-    //! @b Parameters
-    //!  - @p writer specifies output audio stream used in write()
-    //!  - @p resampler interface that hides which resampler algorithm will be used
-    //!  - @p frame_size is number of samples per resampler frame per audio channel
     ResamplerWriter(IWriter& writer,
                     IResampler& resampler,
                     core::BufferPool<sample_t>& buffer_pool,
                     core::nanoseconds_t frame_length,
                     size_t sample_rate,
-                    roc::packet::channel_mask_t ch_mask);
+                    packet::channel_mask_t channels);
 
     //! Check if object is successfully constructed.
     bool valid() const;
 
+    //! Set new resample factor.
+    bool set_scaling(size_t input_rate, size_t output_rate, float multiplier);
+
     //! Read audio frame.
-    //! @remarks
-    //!  Calculates everything during this call so it may take time.
     virtual void write(Frame&);
 
-    //! Set new resample factor.
-    bool
-    set_scaling(size_t input_sample_rate, size_t output_sample_rate, float multiplier);
-
 private:
-    bool init_(core::BufferPool<sample_t>&);
+    size_t push_input_(Frame& frame, size_t frame_pos);
 
     IResampler& resampler_;
     IWriter& writer_;
 
-    core::Slice<sample_t> output_;
+    size_t input_pos_;
+    size_t output_pos_;
 
-    core::Slice<sample_t> frames_[3];
-    const size_t frame_size_;
-    size_t frame_pos_;
+    core::Slice<sample_t> input_;
+    core::Slice<sample_t> output_;
 
     bool valid_;
 };

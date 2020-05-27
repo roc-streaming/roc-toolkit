@@ -111,7 +111,6 @@ void resample_reader(IResampler& resampler,
                      size_t num_samples,
                      packet::channel_mask_t channels,
                      size_t sample_rate,
-                     core::nanoseconds_t frame_duration,
                      float scaling) {
     test::MockReader input_reader;
     for (size_t n = 0; n < num_samples; n++) {
@@ -119,8 +118,7 @@ void resample_reader(IResampler& resampler,
     }
     input_reader.pad_zeros();
 
-    ResamplerReader rr(input_reader, resampler, buffer_pool, frame_duration, sample_rate,
-                       channels);
+    ResamplerReader rr(input_reader, resampler);
     CHECK(rr.valid());
     CHECK(rr.set_scaling(sample_rate, sample_rate, scaling));
 
@@ -176,15 +174,15 @@ void resample(ResamplerBackend backend,
         InFrameSize * packet::num_channels(channels), sample_rate, channels);
 
     core::ScopedPtr<IResampler> resampler(
-        ResamplerMap::instance().new_resampler(backend, allocator, ResamplerProfile_High,
-                                               frame_duration, sample_rate, channels),
+        ResamplerMap::instance().new_resampler(backend, allocator, buffer_pool,
+                                               ResamplerProfile_High, frame_duration,
+                                               sample_rate, channels),
         allocator);
     CHECK(resampler);
     CHECK(resampler->valid());
 
     if (method == Reader) {
-        resample_reader(*resampler, in, out, num_samples, channels, sample_rate,
-                        frame_duration, scaling);
+        resample_reader(*resampler, in, out, num_samples, channels, sample_rate, scaling);
     } else {
         resample_writer(*resampler, in, out, num_samples, channels, sample_rate,
                         frame_duration, scaling);
@@ -213,8 +211,9 @@ TEST(resampler, supported_scalings) {
                         for (size_t sn = 0; sn < ROC_ARRAY_SIZE(scalings); sn++) {
                             core::ScopedPtr<IResampler> resampler(
                                 ResamplerMap::instance().new_resampler(
-                                    backend, allocator, profiles[pn],
-                                    packet::size_to_ns(frame_sizes[fn], rates[irate], ChMask),
+                                    backend, allocator, buffer_pool, profiles[pn],
+                                    packet::size_to_ns(frame_sizes[fn], rates[irate],
+                                                       ChMask),
                                     rates[irate], ChMask),
                                 allocator);
                             CHECK(resampler);
@@ -223,10 +222,7 @@ TEST(resampler, supported_scalings) {
                             test::MockReader input_reader;
                             input_reader.pad_zeros();
 
-                            ResamplerReader rr(
-                                input_reader, *resampler, buffer_pool,
-                                packet::size_to_ns(frame_sizes[fn], rates[irate], ChMask),
-                                rates[irate], ChMask);
+                            ResamplerReader rr(input_reader, *resampler);
                             CHECK(rr.valid());
 
                             for (int iter = 0; iter < NumIters; iter++) {
@@ -260,7 +256,7 @@ TEST(resampler, invalid_scalings) {
 
         core::ScopedPtr<IResampler> resampler(
             ResamplerMap::instance().new_resampler(
-                backend, allocator, ResamplerProfile_High,
+                backend, allocator, buffer_pool, ResamplerProfile_High,
                 packet::size_to_ns(InFrameSize, SampleRate, ChMask), SampleRate, ChMask),
             allocator);
         CHECK(resampler);
@@ -318,13 +314,23 @@ TEST(resampler, upscale_downscale_mono) {
             normalize(upscaled, NumSamples);
             normalize(downscaled, NumSamples);
 
-            if (!compare(input, downscaled, NumSamples, Threshold)||1) {
+            if (compare(input, upscaled, NumSamples, Threshold)) {
                 // for plot_resampler_test_dump.py
-                dump(input, downscaled, NumSamples);
+                dump(input, upscaled, NumSamples);
+
+                roc_panic(
+                    "compare with upscaled unexpectedly succeeded: backend=%d method=%d",
+                    (int)backend, (int)method);
             }
 
-            CHECK(!compare(input, upscaled, NumSamples, Threshold));
-            CHECK(compare(input, downscaled, NumSamples, Threshold));
+            if (!compare(input, downscaled, NumSamples, Threshold)) {
+                // for plot_resampler_test_dump.py
+                dump(input, downscaled, NumSamples);
+
+                roc_panic(
+                    "compare with downscaled unexpectedly failed: backend=%d method=%d",
+                    (int)backend, (int)method);
+            }
         }
     }
 }
@@ -382,13 +388,23 @@ TEST(resampler, upscale_downscale_stereo) {
                 normalize(upscaled_ch, NumSamples);
                 normalize(downscaled_ch, NumSamples);
 
-                if (!compare(input_ch[ch], downscaled, NumSamples, Threshold)) {
+                if (compare(input_ch[ch], upscaled_ch, NumSamples, Threshold)) {
                     // for plot_resampler_test_dump.py
-                    dump(input_ch[ch], downscaled_ch, NumSamples);
+                    dump(input_ch[ch], upscaled_ch, NumSamples);
+
+                    roc_panic("compare with upscaled unexpectedly succeeded:"
+                              " backend=%d method=%d",
+                              (int)backend, (int)method);
                 }
 
-                CHECK(!compare(input_ch[ch], upscaled_ch, NumSamples, Threshold));
-                CHECK(compare(input_ch[ch], downscaled_ch, NumSamples, Threshold));
+                if (!compare(input_ch[ch], downscaled_ch, NumSamples, Threshold)) {
+                    // for plot_resampler_test_dump.py
+                    dump(input_ch[ch], downscaled_ch, NumSamples);
+
+                    roc_panic("compare with downscaled unexpectedly failed:"
+                              " backend=%d method=%d",
+                              (int)backend, (int)method);
+                }
             }
         }
     }

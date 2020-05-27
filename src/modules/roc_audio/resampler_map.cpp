@@ -23,11 +23,13 @@ namespace {
 
 template <class T>
 IResampler* resampler_ctor(core::IAllocator& allocator,
+                           core::BufferPool<sample_t>& buffer_pool,
                            ResamplerProfile profile,
                            core::nanoseconds_t frame_length,
                            size_t sample_rate,
                            packet::channel_mask_t channels) {
-    return new (allocator) T(allocator, profile, frame_length, sample_rate, channels);
+    return new (allocator)
+        T(allocator, buffer_pool, profile, frame_length, sample_rate, channels);
 }
 
 } // namespace
@@ -67,6 +69,7 @@ void ResamplerMap::add_backend_(const Backend& backend) {
 const ResamplerMap::Backend*
 ResamplerMap::find_backend_(ResamplerBackend backend_id) const {
     if (backend_id == ResamplerBackend_Default) {
+        roc_panic_if(n_backends_ == 0);
         return &backends_[0];
     }
     for (size_t n = 0; n < n_backends_; n++) {
@@ -79,6 +82,7 @@ ResamplerMap::find_backend_(ResamplerBackend backend_id) const {
 
 IResampler* ResamplerMap::new_resampler(ResamplerBackend backend_id,
                                         core::IAllocator& allocator,
+                                        core::BufferPool<sample_t>& buffer_pool,
                                         ResamplerProfile profile,
                                         core::nanoseconds_t frame_length,
                                         size_t sample_rate,
@@ -90,9 +94,10 @@ IResampler* ResamplerMap::new_resampler(ResamplerBackend backend_id,
         return NULL;
     }
 
-    core::ScopedPtr<IResampler> resampler(
-        backend->ctor(allocator, profile, frame_length, sample_rate, channels),
-        allocator);
+    core::ScopedPtr<IResampler> resampler(backend->ctor(allocator, buffer_pool, profile,
+                                                        frame_length, sample_rate,
+                                                        channels),
+                                          allocator);
 
     if (!resampler || !resampler->valid()) {
         return NULL;
