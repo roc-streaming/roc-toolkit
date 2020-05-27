@@ -8,16 +8,16 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "test_helpers/awgn.h"
-#include "test_helpers/fft.h"
-#include "test_helpers/median.h"
 #include "test_helpers/mock_reader.h"
+#include "test_helpers/mock_writer.h"
 
 #include "roc_audio/iresampler.h"
 #include "roc_audio/resampler_map.h"
 #include "roc_audio/resampler_reader.h"
+#include "roc_audio/resampler_writer.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/heap_allocator.h"
+#include "roc_core/log.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_core/stddefs.h"
 
@@ -26,280 +26,370 @@ namespace audio {
 
 namespace {
 
-enum {
-    MaxSize = 4000,
+enum { InFrameSize = 128, OutFrameSize = 200, MaxFrameSize = 4000 };
 
-    ResamplerFIRLen = 200,
-    FrameSize = 512,
+enum ResamplerMethod { Reader, Writer };
 
-    OutSamples = FrameSize * 100 + 1,
-    InSamples = OutSamples + (FrameSize * 3)
-};
+const ResamplerMethod resampler_methods[] = { Reader, Writer };
 
 core::HeapAllocator allocator;
-core::BufferPool<sample_t> buffer_pool(allocator, MaxSize, true);
+core::BufferPool<sample_t> buffer_pool(allocator, MaxFrameSize, true);
+
+void generate_sine(sample_t* out, size_t num_samples, size_t num_padding) {
+    for (size_t n = 0; n < num_samples; n++) {
+        out[n] = n < num_padding
+            ? 0.0f
+            : (sample_t)std::sin(M_PI / 10 * double(n - num_padding)) * 0.8f;
+    }
+}
+
+void mix_stereo(sample_t* out,
+                const sample_t* left,
+                const sample_t* right,
+                size_t num_samples) {
+    for (size_t n = 0; n < num_samples; n++) {
+        *out++ = left[n];
+        *out++ = right[n];
+    }
+}
+
+void extract_channel(
+    sample_t* out, const sample_t* in, int in_ch, int ch_idx, size_t num_samples) {
+    for (size_t n = 0; n < num_samples; n++) {
+        *out++ = in[ch_idx];
+        in += in_ch;
+    }
+}
+
+void trim_leading_zeros(sample_t* sig, size_t num_samples, float threshold) {
+    size_t n = 0;
+    for (; n < num_samples - 1; n++) {
+        if (std::abs(sig[n + 2]) >= threshold) {
+            break;
+        }
+    }
+    memmove(sig, sig + n, sizeof(sample_t) * (num_samples - n));
+}
+
+void truncate(sample_t* sig, size_t num_samples, size_t num_padding) {
+    for (size_t n = num_samples - num_padding; n < num_samples; n++) {
+        sig[n] = 0.0f;
+    }
+}
+
+void normalize(sample_t* sig, size_t num_samples) {
+    sample_t m = 0;
+    for (size_t n = 0; n < num_samples; n++) {
+        m = std::max(m, sig[n]);
+    }
+    for (size_t n = 0; n < num_samples; n++) {
+        sig[n] /= m;
+    }
+}
+
+bool compare(const sample_t* in,
+             const sample_t* out,
+             size_t num_samples,
+             float threshold) {
+    for (size_t n = 0; n < num_samples; n++) {
+        if (std::abs(in[n] - out[n]) >= threshold) {
+            return false;
+        }
+    }
+    return true;
+}
+
+void dump(const sample_t* sig1, const sample_t* sig2, size_t num_samples) {
+    for (size_t n = 0; n < num_samples; n++) {
+        roc_log(LogDebug, "dump %f %f", (double)sig1[n], (double)sig2[n]);
+    }
+}
+
+void resample_reader(IResampler& resampler,
+                     sample_t* in,
+                     sample_t* out,
+                     size_t num_samples,
+                     packet::channel_mask_t channels,
+                     size_t sample_rate,
+                     core::nanoseconds_t frame_duration,
+                     float scaling) {
+    test::MockReader input_reader;
+    for (size_t n = 0; n < num_samples; n++) {
+        input_reader.add(1, in[n]);
+    }
+    input_reader.pad_zeros();
+
+    ResamplerReader rr(input_reader, resampler, buffer_pool, frame_duration, sample_rate,
+                       channels);
+    CHECK(rr.valid());
+    CHECK(rr.set_scaling(sample_rate, sample_rate, scaling));
+
+    for (size_t pos = 0; pos < num_samples;) {
+        Frame frame(out + pos,
+                    std::min(num_samples - pos,
+                             (size_t)OutFrameSize * packet::num_channels(channels)));
+        CHECK(rr.read(frame));
+        pos += frame.size();
+    }
+}
+
+void resample_writer(IResampler& resampler,
+                     sample_t* in,
+                     sample_t* out,
+                     size_t num_samples,
+                     packet::channel_mask_t channels,
+                     size_t sample_rate,
+                     core::nanoseconds_t frame_duration,
+                     float scaling) {
+    test::MockWriter output_writer;
+
+    ResamplerWriter rw(output_writer, resampler, buffer_pool, frame_duration, sample_rate,
+                       channels);
+    CHECK(rw.valid());
+    CHECK(rw.set_scaling(sample_rate, sample_rate, scaling));
+
+    for (size_t pos = 0; pos < num_samples;) {
+        Frame frame(in + pos,
+                    std::min(num_samples - pos,
+                             (size_t)OutFrameSize * packet::num_channels(channels)));
+        rw.write(frame);
+        pos += frame.size();
+    }
+
+    for (size_t n = 0; n < num_samples; n++) {
+        if (output_writer.num_unread() == 0) {
+            break;
+        }
+        out[n] = output_writer.get();
+    }
+}
+
+void resample(ResamplerBackend backend,
+              ResamplerMethod method,
+              sample_t* in,
+              sample_t* out,
+              size_t num_samples,
+              packet::channel_mask_t channels,
+              size_t sample_rate,
+              float scaling) {
+    const core::nanoseconds_t frame_duration = packet::size_to_ns(
+        InFrameSize * packet::num_channels(channels), sample_rate, channels);
+
+    core::ScopedPtr<IResampler> resampler(
+        ResamplerMap::instance().new_resampler(backend, allocator, ResamplerProfile_High,
+                                               frame_duration, sample_rate, channels),
+        allocator);
+    CHECK(resampler);
+    CHECK(resampler->valid());
+
+    if (method == Reader) {
+        resample_reader(*resampler, in, out, num_samples, channels, sample_rate,
+                        frame_duration, scaling);
+    } else {
+        resample_writer(*resampler, in, out, num_samples, channels, sample_rate,
+                        frame_duration, scaling);
+    }
+}
 
 } // namespace
 
-TEST_GROUP(resampler) {
-    ResamplerProfile profile;
+TEST_GROUP(resampler) {};
 
-    void setup() {
-        profile = ResamplerProfile_High;
-    }
+TEST(resampler, supported_scalings) {
+    enum { ChMask = 0x1, NumIters = 2 };
 
-    core::Slice<sample_t> new_buffer(size_t sz) {
-        core::Slice<sample_t> buf = new (buffer_pool) core::Buffer<sample_t>(buffer_pool);
-        buf.resize(sz);
-        return buf;
-    }
-
-    // Reads signal from the resampler and puts its spectrum into @p spectrum.
-    // Spectrum must have twice bigger space than the length of the input signal.
-    void get_sample_spectrum1(IReader & reader, double* spectrum, const size_t sig_len) {
-        core::Slice<sample_t> buf = new_buffer(sig_len);
-
-        Frame frame(buf.data(), buf.size());
-        CHECK(reader.read(frame));
-
-        for (size_t i = 0; i < sig_len; ++i) {
-            spectrum[i * 2] = (double)frame.data()[i];
-            spectrum[i * 2 + 1] = 0; // imaginary part
-        }
-
-        test::freq_spectrum(spectrum, sig_len);
-    }
-
-    // Reads signal from the resampler and puts its spectrum into @p spectrum.
-    // Spectrum must have twice bigger space than the length of the input signal.
-    void get_sample_spectrum2(IReader & reader, double* spectrum1, double* spectrum2,
-                              size_t sig_len) {
-        enum { nChannels = 2 };
-
-        core::Slice<sample_t> buf = new_buffer(sig_len);
-
-        Frame frame(buf.data(), buf.size());
-        CHECK(reader.read(frame));
-
-        size_t i = 0;
-        for (; i < sig_len / nChannels; ++i) {
-            spectrum1[i * 2] = (double)frame.data()[i * nChannels];
-            spectrum1[i * 2 + 1] = 0; // imaginary part
-            spectrum2[i * 2] = (double)frame.data()[i * nChannels + 1];
-            spectrum2[i * 2 + 1] = 0; // imaginary part
-        }
-
-        memset(&spectrum1[i * 2], 0, (sig_len * 2 - i * 2) * sizeof(double));
-        memset(&spectrum2[i * 2], 0, (sig_len * 2 - i * 2) * sizeof(double));
-
-        test::freq_spectrum(spectrum1, sig_len / nChannels);
-        test::freq_spectrum(spectrum2, sig_len / nChannels);
-    }
-};
-
-TEST(resampler, builtin_resampler_invalid_scaling) {
-    enum { SampleRate = 44100, ChMask = 0x1, InvalidScaling = FrameSize };
-
-    const core::nanoseconds_t FrameDuration =
-        FrameSize * core::Second / (InSamples * packet::num_channels(ChMask));
-
-    test::MockReader reader;
-    core::ScopedPtr<IResampler> resampler(
-        ResamplerMap::instance().new_resampler(ResamplerBackend_Builtin, allocator,
-                                               profile, FrameDuration, InSamples,
-                                               ChMask),
-        allocator);
-    CHECK(resampler);
-    ResamplerReader rr(reader, *resampler, buffer_pool, FrameDuration, InSamples,
-                       ChMask);
-    CHECK(rr.valid());
-
-    CHECK(!rr.set_scaling(SampleRate, SampleRate, InvalidScaling));
-}
-
-// Check the quality of upsampled sine-wave.
-IGNORE_TEST(resampler, upscaling_twice_single) {
-    enum { SampleRate = 44100, ChMask = 0x1 };
+    ResamplerProfile profiles[] = { ResamplerProfile_Low, ResamplerProfile_Medium,
+                                    ResamplerProfile_High };
+    size_t frame_sizes[] = { 128, 256, 512 };
+    size_t rates[] = { 44100, 48000 };
+    float scalings[] = { 0.95f, 0.99f, 1.00f, 1.01f, 1.05f };
 
     for (size_t n_back = 0; n_back < ResamplerMap::instance().num_backends(); n_back++) {
         ResamplerBackend backend = ResamplerMap::instance().nth_backend(n_back);
+        for (size_t pn = 0; pn < ROC_ARRAY_SIZE(profiles); pn++) {
+            for (size_t fn = 0; fn < ROC_ARRAY_SIZE(frame_sizes); fn++) {
+                for (size_t irate = 0; irate < ROC_ARRAY_SIZE(rates); irate++) {
+                    for (size_t orate = 0; orate < ROC_ARRAY_SIZE(rates); orate++) {
+                        for (size_t sn = 0; sn < ROC_ARRAY_SIZE(scalings); sn++) {
+                            core::ScopedPtr<IResampler> resampler(
+                                ResamplerMap::instance().new_resampler(
+                                    backend, allocator, profiles[pn],
+                                    packet::size_to_ns(frame_sizes[fn], rates[irate], ChMask),
+                                    rates[irate], ChMask),
+                                allocator);
+                            CHECK(resampler);
+                            CHECK(resampler->valid());
 
-        const core::nanoseconds_t FrameDuration =
-            FrameSize * core::Second / (InSamples * packet::num_channels(ChMask));
+                            test::MockReader input_reader;
+                            input_reader.pad_zeros();
 
-        test::MockReader reader;
-        core::ScopedPtr<IResampler> resampler(
-            ResamplerMap::instance().new_resampler(backend, allocator, profile,
-                                                   FrameDuration, InSamples, ChMask),
-            allocator);
-        CHECK(resampler);
-        ResamplerReader rr(reader, *resampler, buffer_pool, FrameDuration, InSamples,
-                           ChMask);
+                            ResamplerReader rr(
+                                input_reader, *resampler, buffer_pool,
+                                packet::size_to_ns(frame_sizes[fn], rates[irate], ChMask),
+                                rates[irate], ChMask);
+                            CHECK(rr.valid());
 
-        CHECK(rr.valid());
+                            for (int iter = 0; iter < NumIters; iter++) {
+                                if (!rr.set_scaling(rates[irate], rates[orate],
+                                                    scalings[sn])) {
+                                    roc_panic("set_scaling() failed:"
+                                              " irate=%d orate=%d scaling=%f frame=%d"
+                                              " profile=%d backend=%d iteration=%d",
+                                              (int)rates[irate], (int)rates[orate],
+                                              (double)scalings[sn], (int)frame_sizes[fn],
+                                              (int)profiles[pn], (int)backend, iter);
+                                }
 
-        CHECK(rr.set_scaling(SampleRate, SampleRate, 0.5f));
-
-        const size_t sig_len = 2048;
-        double buff[sig_len * 2];
-
-        for (size_t n = 0; n < InSamples; n++) {
-            const sample_t s = (sample_t)std::sin(M_PI / 4 * double(n));
-            reader.add(1, s);
-        }
-
-        // Put the spectrum of the resampled signal into buff.
-        // Odd elements are magnitudes in dB, even elements are phases in radians.
-        get_sample_spectrum1(rr, buff, sig_len);
-
-        const size_t main_freq_index = sig_len / 8;
-        for (size_t n = 0; n < sig_len / 2; n += 2) {
-            // The main sinewave frequency decreased twice as we've upsampled.
-            // So here SNR is checked.
-            CHECK((buff[n] - buff[main_freq_index]) <= -110 || n == main_freq_index);
-        }
-    }
-}
-
-// Check upsampling quality and the cut-off band with white noise.
-IGNORE_TEST(resampler, upscaling_twice_awgn) {
-    enum { SampleRate = 44100, ChMask = 0x1 };
-
-    const core::nanoseconds_t FrameDuration =
-        FrameSize * core::Second / (InSamples * packet::num_channels(ChMask));
-
-    for (size_t n_back = 0; n_back < ResamplerMap::instance().num_backends(); n_back++) {
-        ResamplerBackend backend = ResamplerMap::instance().nth_backend(n_back);
-
-        test::MockReader reader;
-        core::ScopedPtr<IResampler> resampler(
-            ResamplerMap::instance().new_resampler(backend, allocator, profile,
-                                                   FrameDuration, InSamples, ChMask),
-            allocator);
-        CHECK(resampler);
-        ResamplerReader rr(reader, *resampler, buffer_pool, FrameDuration, InSamples,
-                           ChMask);
-
-        CHECK(rr.valid());
-        CHECK(rr.set_scaling(SampleRate, SampleRate, 0.5f));
-
-        // Generate white noise.
-        for (size_t n = 0; n < InSamples; n++) {
-            const sample_t s = (sample_t)test::generate_awgn();
-            reader.add(1, s);
-        }
-
-        // Put the spectrum of the resampled signal into buff.
-        // Odd elements are magnitudes in dB, even elements are phases in radians.
-        const size_t sig_len = 2048;
-        double buff[sig_len * 2];
-        get_sample_spectrum1(rr, buff, sig_len);
-
-        // Get dB part.
-        const size_t db_len = sig_len / 2;
-        double db[db_len];
-        for (size_t i = 0; i < sig_len; i += 2) {
-            db[i / 2] = buff[i];
-        }
-
-        // Remove spikes using median filter.
-        double filtered_db[db_len];
-        test::median_filter(db, filtered_db, db_len);
-
-        for (size_t i = 0; i < db_len; i++) {
-            if (i <= db_len * 0.4) {
-                CHECK(filtered_db[i] >= -50);
-            } else if (i >= db_len * 0.8) {
-                CHECK(filtered_db[i] <= -50);
+                                sample_t samples[32];
+                                Frame frame(samples, ROC_ARRAY_SIZE(samples));
+                                CHECK(rr.read(frame));
+                            }
+                        }
+                    }
+                }
             }
         }
     }
 }
 
-IGNORE_TEST(resampler, downsample) {
+TEST(resampler, invalid_scalings) {
     enum { SampleRate = 44100, ChMask = 0x1 };
-
-    const core::nanoseconds_t FrameDuration =
-        FrameSize * core::Second / (InSamples * packet::num_channels(ChMask));
 
     for (size_t n_back = 0; n_back < ResamplerMap::instance().num_backends(); n_back++) {
         ResamplerBackend backend = ResamplerMap::instance().nth_backend(n_back);
 
-        test::MockReader reader;
         core::ScopedPtr<IResampler> resampler(
-            ResamplerMap::instance().new_resampler(backend, allocator, profile,
-                                                   FrameDuration, InSamples, ChMask),
+            ResamplerMap::instance().new_resampler(
+                backend, allocator, ResamplerProfile_High,
+                packet::size_to_ns(InFrameSize, SampleRate, ChMask), SampleRate, ChMask),
             allocator);
         CHECK(resampler);
-        ResamplerReader rr(reader, *resampler, buffer_pool, FrameDuration, InSamples,
-                           ChMask);
+        CHECK(resampler->valid());
 
-        CHECK(rr.valid());
-        CHECK(rr.set_scaling(SampleRate, SampleRate, 1.5f));
+        CHECK(!resampler->set_scaling(0, SampleRate, 1.0f));
+        CHECK(!resampler->set_scaling(SampleRate, 0, 1.0f));
 
-        const size_t sig_len = 2048;
-        double buff[sig_len * 2];
+        CHECK(!resampler->set_scaling(SampleRate, SampleRate, 0.0f));
+        CHECK(!resampler->set_scaling(SampleRate, SampleRate, -0.001f));
+        CHECK(!resampler->set_scaling(SampleRate, SampleRate, 10000000000.0f));
 
-        for (size_t n = 0; n < InSamples; n++) {
-            const sample_t s = (sample_t)std::sin(M_PI / 4 * double(n));
-            reader.add(1, s);
-        }
+        CHECK(resampler->set_scaling(SampleRate, SampleRate, 1.0f));
+    }
+}
 
-        // Put the spectrum of the resampled signal into buff.
-        // Odd elements are magnitudes in dB, even elements are phases in radians.
-        get_sample_spectrum1(rr, buff, sig_len);
+TEST(resampler, upscale_downscale_mono) {
+    enum {
+        SampleRate = 44100,
+        ChMask = 0x1,
+        NumPad = 2 * OutFrameSize,
+        NumTruncate = 8 * OutFrameSize,
+        NumSamples = 50 * OutFrameSize
+    };
 
-        const size_t main_freq_index = (size_t)round(sig_len / 4 * 1.5);
-        for (size_t n = 0; n < sig_len / 2; n += 2) {
-            // The main sinewave frequency increased by 1.5 as we've downsampled.
-            // So here SNR is checked.
-            CHECK((buff[n] - buff[main_freq_index]) <= -110 || buff[n] < -200
-                  || n == main_freq_index);
+    const float Scaling = 0.97f;
+    const float Threshold = 0.06f;
+
+    for (size_t n_back = 0; n_back < ResamplerMap::instance().num_backends(); n_back++) {
+        ResamplerBackend backend = ResamplerMap::instance().nth_backend(n_back);
+
+        for (size_t n_meth = 0; n_meth < ROC_ARRAY_SIZE(resampler_methods); n_meth++) {
+            ResamplerMethod method = resampler_methods[n_meth];
+
+            sample_t input[NumSamples];
+            generate_sine(input, NumSamples, NumPad);
+
+            sample_t upscaled[NumSamples] = {};
+            resample(backend, method, input, upscaled, NumSamples, ChMask, SampleRate,
+                     Scaling);
+
+            sample_t downscaled[NumSamples] = {};
+            resample(backend, method, upscaled, downscaled, NumSamples, ChMask,
+                     SampleRate, 1.0f / Scaling);
+
+            trim_leading_zeros(input, NumSamples, Threshold);
+            trim_leading_zeros(upscaled, NumSamples, Threshold);
+            trim_leading_zeros(downscaled, NumSamples, Threshold);
+
+            truncate(input, NumSamples, NumTruncate);
+            truncate(upscaled, NumSamples, NumTruncate);
+            truncate(downscaled, NumSamples, NumTruncate);
+
+            normalize(input, NumSamples);
+            normalize(upscaled, NumSamples);
+            normalize(downscaled, NumSamples);
+
+            if (!compare(input, downscaled, NumSamples, Threshold)||1) {
+                // for plot_resampler_test_dump.py
+                dump(input, downscaled, NumSamples);
+            }
+
+            CHECK(!compare(input, upscaled, NumSamples, Threshold));
+            CHECK(compare(input, downscaled, NumSamples, Threshold));
         }
     }
 }
 
-IGNORE_TEST(resampler, two_tones_sep_channels) {
-    enum { SampleRate = 44100, ChMask = 0x3, nChannels = 2 };
+TEST(resampler, upscale_downscale_stereo) {
+    enum {
+        SampleRate = 44100,
+        NumCh = 2,
+        ChMask = 0x3,
+        NumPad = 2 * OutFrameSize,
+        NumTruncate = 8 * OutFrameSize,
+        NumSamples = 50 * OutFrameSize
+    };
 
-    const core::nanoseconds_t FrameDuration =
-        FrameSize * core::Second / (InSamples * packet::num_channels(ChMask));
+    const float Scaling = 0.97f;
+    const float Threshold = 0.06f;
 
     for (size_t n_back = 0; n_back < ResamplerMap::instance().num_backends(); n_back++) {
         ResamplerBackend backend = ResamplerMap::instance().nth_backend(n_back);
 
-        test::MockReader reader;
-        core::ScopedPtr<IResampler> resampler(
-            ResamplerMap::instance().new_resampler(backend, allocator, profile,
-                                                   FrameDuration, InSamples, ChMask),
-            allocator);
-        CHECK(resampler);
-        ResamplerReader rr(reader, *resampler, buffer_pool, FrameDuration, InSamples,
-                           ChMask);
-        CHECK(rr.valid());
-        CHECK(rr.set_scaling(SampleRate, SampleRate, 0.5f));
+        for (size_t n_meth = 0; n_meth < ROC_ARRAY_SIZE(resampler_methods); n_meth++) {
+            ResamplerMethod method = resampler_methods[n_meth];
 
-        const size_t sig_len = 2048;
-        double buff1[sig_len * 2];
-        double buff2[sig_len * 2];
-        size_t i;
+            sample_t input_ch[NumCh][NumSamples];
+            generate_sine(input_ch[0], NumSamples, NumPad);
+            generate_sine(input_ch[1], NumSamples, NumPad);
 
-        for (size_t n = 0; n < InSamples / nChannels; n++) {
-            const sample_t s1 = (sample_t)std::sin(M_PI / 4 * double(n));
-            const sample_t s2 = (sample_t)std::sin(M_PI / 8 * double(n));
-            reader.add(1, s1);
-            reader.add(1, s2);
-        }
+            sample_t input[NumSamples * NumCh];
+            mix_stereo(input, input_ch[0], input_ch[1], NumSamples);
 
-        // Put the spectrum of the resampled signal into buff.
-        // Odd elements are magnitudes in dB, even elements are phases in radians.
-        get_sample_spectrum2(rr, buff1, buff2, sig_len);
+            sample_t upscaled[NumSamples * NumCh] = {};
+            resample(backend, method, input, upscaled, NumSamples * NumCh, ChMask,
+                     SampleRate, Scaling);
 
-        const size_t main_freq_index1 = sig_len / 8 / nChannels;
-        const size_t main_freq_index2 = sig_len / 16 / nChannels;
-        for (i = 0; i < sig_len / 2; i += 2) {
-            CHECK((buff1[i] - buff1[main_freq_index1]) <= -75 || i == main_freq_index1);
-            CHECK((buff2[i] - buff2[main_freq_index2]) <= -75 || i == main_freq_index2);
+            sample_t downscaled[NumSamples * NumCh] = {};
+            resample(backend, method, upscaled, downscaled, NumSamples * NumCh, ChMask,
+                     SampleRate, 1.0f / Scaling);
+
+            for (int ch = 0; ch < NumCh; ch++) {
+                sample_t upscaled_ch[NumSamples] = {};
+                extract_channel(upscaled_ch, upscaled, NumCh, ch, NumSamples);
+
+                sample_t downscaled_ch[NumSamples] = {};
+                extract_channel(downscaled_ch, downscaled, NumCh, ch, NumSamples);
+
+                trim_leading_zeros(input_ch[ch], NumSamples, Threshold);
+                trim_leading_zeros(upscaled_ch, NumSamples, Threshold);
+                trim_leading_zeros(downscaled_ch, NumSamples, Threshold);
+
+                truncate(input_ch[ch], NumSamples, NumTruncate);
+                truncate(upscaled_ch, NumSamples, NumTruncate);
+                truncate(downscaled_ch, NumSamples, NumTruncate);
+
+                normalize(input_ch[ch], NumSamples);
+                normalize(upscaled_ch, NumSamples);
+                normalize(downscaled_ch, NumSamples);
+
+                if (!compare(input_ch[ch], downscaled, NumSamples, Threshold)) {
+                    // for plot_resampler_test_dump.py
+                    dump(input_ch[ch], downscaled_ch, NumSamples);
+                }
+
+                CHECK(!compare(input_ch[ch], upscaled_ch, NumSamples, Threshold));
+                CHECK(compare(input_ch[ch], downscaled_ch, NumSamples, Threshold));
+            }
         }
     }
 }

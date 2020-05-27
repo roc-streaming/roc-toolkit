@@ -42,6 +42,12 @@ public:
         }
     }
 
+    void pad_zeros() {
+        while (size_ < MaxSz) {
+            samples_[size_++] = 0;
+        }
+    }
+
     size_t num_unread() const {
         return size_ - pos_;
     }
