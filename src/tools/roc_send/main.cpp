@@ -180,6 +180,9 @@ int main(int argc, char** argv) {
     sender_config.resampling = !args.no_resampling_flag;
 
     switch ((unsigned)args.resampler_backend_arg) {
+    case resampler_backend_arg_default:
+        sender_config.resampler_backend = audio::ResamplerBackend_Default;
+        break;
     case resampler_backend_arg_builtin:
         sender_config.resampler_backend = audio::ResamplerBackend_Builtin;
         break;
