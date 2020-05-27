@@ -17,7 +17,6 @@
 #include "roc_audio/resampler_profile.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/noncopyable.h"
-#include "roc_core/scoped_ptr.h"
 #include "roc_core/singleton.h"
 #include "roc_core/stddefs.h"
 #include "roc_packet/units.h"
@@ -50,7 +49,29 @@ public:
 private:
     friend class core::Singleton<ResamplerMap>;
 
+    enum { MaxBackends = 2 };
+
+    struct Backend {
+        Backend()
+            : id()
+            , ctor(NULL) {
+        }
+
+        ResamplerBackend id;
+        IResampler* (*ctor)(core::IAllocator& allocator,
+                            ResamplerProfile profile,
+                            core::nanoseconds_t frame_length,
+                            size_t sample_rate,
+                            packet::channel_mask_t channels);
+    };
+
     ResamplerMap();
+
+    void add_backend_(const Backend& backend);
+    const Backend* find_backend_(ResamplerBackend) const;
+
+    Backend backends_[MaxBackends];
+    size_t n_backends_;
 };
 
 } // namespace audio

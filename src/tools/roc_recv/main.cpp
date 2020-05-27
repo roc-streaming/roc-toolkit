@@ -187,6 +187,10 @@ int main(int argc, char** argv) {
     receiver_config.common.resampling = !args.no_resampling_flag;
 
     switch ((unsigned)args.resampler_backend_arg) {
+    case resampler_backend_arg_default:
+        receiver_config.default_session.resampler_backend =
+            audio::ResamplerBackend_Default;
+        break;
     case resampler_backend_arg_builtin:
         receiver_config.default_session.resampler_backend =
             audio::ResamplerBackend_Builtin;

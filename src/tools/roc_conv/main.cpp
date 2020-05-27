@@ -137,6 +137,9 @@ int main(int argc, char** argv) {
     }
 
     switch ((unsigned)args.resampler_backend_arg) {
+    case resampler_backend_arg_default:
+        converter_config.resampler_backend = audio::ResamplerBackend_Default;
+        break;
     case resampler_backend_arg_builtin:
         converter_config.resampler_backend = audio::ResamplerBackend_Builtin;
         break;

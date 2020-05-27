@@ -17,15 +17,18 @@ namespace audio {
 
 //! Resampler backends.
 enum ResamplerBackend {
+    //! Default backend.
+    ResamplerBackend_Default,
+
     //! Roc built-in resampler.
-    ResamplerBackend_Builtin = 0,
+    ResamplerBackend_Builtin,
 
     //! SpeexDSP resampler.
-    ResamplerBackend_Speex = 1,
-
-    //! Number of backends.
-    NumResamplerBackends
+    ResamplerBackend_Speex
 };
+
+//! Get string name of resampler backend.
+const char* resampler_backend_to_str(ResamplerBackend);
 
 } // namespace audio
 } // namespace roc
