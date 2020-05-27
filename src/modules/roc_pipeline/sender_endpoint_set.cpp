@@ -226,7 +226,7 @@ bool SenderEndpointSet::create_pipeline_() {
         }
 
         resampler_.reset(audio::ResamplerMap::instance().new_resampler(
-                             config_.resampler_backend, allocator_,
+                             config_.resampler_backend, allocator_, sample_buffer_pool_,
                              config_.resampler_profile, config_.internal_frame_length,
                              config_.input_sample_rate, config_.input_channels),
                          allocator_);

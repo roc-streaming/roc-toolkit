@@ -34,7 +34,7 @@ ConverterSource::ConverterSource(const ConverterConfig& config,
         }
 
         resampler_.reset(audio::ResamplerMap::instance().new_resampler(
-                             config.resampler_backend, allocator,
+                             config.resampler_backend, allocator, pool,
                              config.resampler_profile, config.internal_frame_length,
                              config.input_sample_rate, config.input_channels),
                          allocator);
@@ -43,11 +43,8 @@ ConverterSource::ConverterSource(const ConverterConfig& config,
             return;
         }
 
-        resampler_reader_.reset(new (allocator) audio::ResamplerReader(
-                                    *areader, *resampler_, pool,
-                                    config.internal_frame_length,
-                                    config.input_sample_rate, config.input_channels),
-                                allocator);
+        resampler_reader_.reset(
+            new (allocator) audio::ResamplerReader(*areader, *resampler_), allocator);
 
         if (!resampler_reader_ || !resampler_reader_->valid()) {
             return;

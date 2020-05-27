@@ -41,16 +41,15 @@ inline int get_quality(ResamplerProfile profile) {
 } // namespace
 
 SpeexResampler::SpeexResampler(core::IAllocator&,
+                               core::BufferPool<sample_t>& buffer_pool,
                                ResamplerProfile profile,
                                core::nanoseconds_t frame_length,
                                size_t sample_rate,
                                packet::channel_mask_t channels)
     : speex_state_(NULL)
-    , out_frame_pos_(0)
-    , in_frame_pos_(0)
     , in_frame_size_(
           (spx_uint32_t)packet::ns_to_size(frame_length, sample_rate, channels))
-    , in_frame_data_(NULL)
+    , in_frame_pos_(in_frame_size_)
     , num_ch_((spx_uint32_t)packet::num_channels(channels))
     , valid_(false) {
     if (num_ch_ == 0 || in_frame_size_ == 0) {
@@ -63,6 +62,12 @@ SpeexResampler::SpeexResampler(core::IAllocator&,
             "speex resampler: initializing: "
             "quality=%d frame_size=%lu channels_num=%lu",
             quality, (unsigned long)in_frame_size_, (unsigned long)num_ch_);
+
+    if (!(in_frame_ = new (buffer_pool) core::Buffer<sample_t>(buffer_pool))) {
+        roc_log(LogError, "speex resampler: can't allocate frame buffer");
+        return;
+    }
+    in_frame_.resize(in_frame_size_);
 
     int err = 0;
     speex_state_ = speex_resampler_init(num_ch_, (spx_uint32_t)sample_rate,
@@ -126,19 +131,33 @@ bool SpeexResampler::set_scaling(size_t input_rate, size_t output_rate, float mu
     return true;
 }
 
-bool SpeexResampler::resample_buff(Frame& out) {
-    roc_panic_if(!in_frame_data_);
+const core::Slice<sample_t>& SpeexResampler::begin_push_input() {
+    roc_panic_if_not(in_frame_pos_ == in_frame_size_);
 
+    return in_frame_;
+}
+
+void SpeexResampler::end_push_input() {
+    in_frame_pos_ = 0;
+}
+
+size_t SpeexResampler::pop_output(Frame& out) {
     const spx_uint32_t out_frame_size = spx_uint32_t(out.size());
     sample_t* out_frame_data = out.data();
+    spx_uint32_t out_frame_pos = 0;
 
-    while (out_frame_pos_ < out_frame_size) {
-        spx_uint32_t remaining_out = (out_frame_size - out_frame_pos_) / num_ch_;
+    sample_t* in_frame_data = in_frame_.data();
+
+    roc_panic_if(!out_frame_data);
+    roc_panic_if(!in_frame_data);
+
+    while (in_frame_pos_ != in_frame_size_ && out_frame_pos != out_frame_size) {
+        spx_uint32_t remaining_out = (out_frame_size - out_frame_pos) / num_ch_;
         spx_uint32_t remaining_in = (in_frame_size_ - in_frame_pos_) / num_ch_;
 
         const int err = speex_resampler_process_interleaved_float(
-            speex_state_, in_frame_data_ + in_frame_pos_, &remaining_in,
-            out_frame_data + out_frame_pos_, &remaining_out);
+            speex_state_, in_frame_data + in_frame_pos_, &remaining_in,
+            out_frame_data + out_frame_pos, &remaining_out);
 
         if (err != RESAMPLER_ERR_SUCCESS) {
             roc_panic(
@@ -147,26 +166,13 @@ bool SpeexResampler::resample_buff(Frame& out) {
         }
 
         in_frame_pos_ += remaining_in * num_ch_;
-        out_frame_pos_ += remaining_out * num_ch_;
+        out_frame_pos += remaining_out * num_ch_;
 
         roc_panic_if(in_frame_pos_ > in_frame_size_);
-        roc_panic_if(out_frame_pos_ > out_frame_size);
-
-        if (in_frame_pos_ == in_frame_size_) {
-            in_frame_pos_ = 0;
-            return false;
-        }
+        roc_panic_if(out_frame_pos > out_frame_size);
     }
 
-    out_frame_pos_ = 0;
-    return true;
-}
-
-void SpeexResampler::renew_buffers(core::Slice<sample_t>& frame,
-                                   core::Slice<sample_t>&,
-                                   core::Slice<sample_t>&) {
-    roc_panic_if(frame.size() != in_frame_size_);
-    in_frame_data_ = frame.data();
+    return (size_t)out_frame_pos;
 }
 
 } // namespace audio
