@@ -146,7 +146,7 @@ struct SenderConfig {
     audio::ProfilerConfig profiler_config;
 
     SenderConfig()
-        : resampler_backend(audio::ResamplerBackend_Builtin)
+        : resampler_backend(audio::ResamplerBackend_Default)
         , resampler_profile(audio::ResamplerProfile_Medium)
         , input_sample_rate(DefaultSampleRate)
         , input_channels(DefaultChannelMask)
@@ -199,7 +199,7 @@ struct ReceiverSessionConfig {
         : target_latency(DefaultLatency)
         , channels(DefaultChannelMask)
         , payload_type(0)
-        , resampler_backend(audio::ResamplerBackend_Builtin)
+        , resampler_backend(audio::ResamplerBackend_Default)
         , resampler_profile(audio::ResamplerProfile_Medium) {
         latency_monitor.min_latency = target_latency * DefaultMinLatencyFactor;
         latency_monitor.max_latency = target_latency * DefaultMaxLatencyFactor;
@@ -297,7 +297,7 @@ struct ConverterConfig {
     audio::ProfilerConfig profiler_config;
 
     ConverterConfig()
-        : resampler_backend(audio::ResamplerBackend_Builtin)
+        : resampler_backend(audio::ResamplerBackend_Default)
         , resampler_profile(audio::ResamplerProfile_Medium)
         , input_sample_rate(DefaultSampleRate)
         , output_sample_rate(DefaultSampleRate)

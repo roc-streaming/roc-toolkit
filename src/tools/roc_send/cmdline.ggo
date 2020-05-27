@@ -40,7 +40,7 @@ section "Options"
     option "no-resampling" - "Disable resampling" flag off
 
     option "resampler-backend" - "Resampler backend"
-        values="builtin","speex" default="builtin" enum optional
+        values="default","builtin","speex" default="default" enum optional
 
     option "resampler-profile" - "Resampler profile"
         values="low","medium","high" default="medium" enum optional
