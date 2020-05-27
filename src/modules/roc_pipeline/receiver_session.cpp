@@ -148,7 +148,7 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
 
         resampler_.reset(audio::ResamplerMap::instance().new_resampler(
                              session_config.resampler_backend, allocator,
-                             session_config.resampler_profile,
+                             sample_buffer_pool, session_config.resampler_profile,
                              common_config.internal_frame_length, format->sample_rate,
                              session_config.channels),
                          allocator);
@@ -157,11 +157,8 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
             return;
         }
 
-        resampler_reader.reset(new (allocator) audio::ResamplerReader(
-                                   *areader, *resampler_, sample_buffer_pool,
-                                   common_config.internal_frame_length,
-                                   format->sample_rate, session_config.channels),
-                               allocator);
+        resampler_reader.reset(
+            new (allocator) audio::ResamplerReader(*areader, *resampler_), allocator);
 
         if (!resampler_reader || !resampler_reader->valid()) {
             return;

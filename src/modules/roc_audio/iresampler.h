@@ -28,15 +28,27 @@ public:
     virtual bool valid() const = 0;
 
     //! Set new resample factor.
+    //! @remarks
+    //!  Returns false if the scaling is invalid or out of bounds.
     virtual bool set_scaling(size_t input_rate, size_t output_rate, float multiplier) = 0;
 
-    //! Resamples the whole output frame.
-    virtual bool resample_buff(Frame& out) = 0;
+    //! Get buffer to be filled with input data.
+    //! @remarks
+    //!  After this call, the caller should fill returned buffer with input
+    //!  data and invoke end_push_input().
+    virtual const core::Slice<sample_t>& begin_push_input() = 0;
 
-    //! Push new buffer on the front of the internal FIFO, which comprisesthree window_.
-    virtual void renew_buffers(core::Slice<sample_t>& prev,
-                               core::Slice<sample_t>& cur,
-                               core::Slice<sample_t>& next) = 0;
+    //! Commit buffer with input data.
+    //! @remarks
+    //!  Should be called after begin_push_input() to commit the push operation.
+    virtual void end_push_input() = 0;
+
+    //! Read samples from input buffer and fill output frame.
+    //! @remarks
+    //!  May return lesser samples than requested if there are no more samples in
+    //!  the input ring buffer. In this case the caller should provide resampler
+    //!  with more input samples using begin_push_input() and end_push_input().
+    virtual size_t pop_output(Frame& out) = 0;
 };
 
 } // namespace audio
