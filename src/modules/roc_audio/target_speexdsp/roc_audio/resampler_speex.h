@@ -6,13 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_audio/resampler_speex.h
+//! @file roc_audio/target_speexdsp/roc_audio/resampler_speex.h
 //! @brief Resampler Speex.
 
 #ifndef ROC_AUDIO_RESAMPLER_SPEEX_H_
 #define ROC_AUDIO_RESAMPLER_SPEEX_H_
-
-#include <speex/speex_resampler.h>
 
 #include "roc_audio/frame.h"
 #include "roc_audio/ireader.h"
@@ -24,6 +22,8 @@
 #include "roc_core/slice.h"
 #include "roc_core/stddefs.h"
 #include "roc_packet/units.h"
+
+#include <speex/speex_resampler.h>
 
 namespace roc {
 namespace audio {
@@ -59,22 +59,13 @@ private:
 
     SpeexResamplerState* speex_state_;
 
-    sample_t* prev_frame_;
-    sample_t* curr_frame_;
-    sample_t* next_frame_;
-
-    core::Array<sample_t> mix_frame_;
-
     spx_uint32_t out_frame_pos_;
-    spx_uint32_t in_offset_;
 
-    const spx_uint32_t frame_size_;
+    spx_uint32_t in_frame_pos_;
+    const spx_uint32_t in_frame_size_;
+    sample_t* in_frame_data_;
 
-    spx_uint32_t input_sample_rate_;
-    spx_uint32_t output_sample_rate_;
-    float sample_rate_multiplier_;
-
-    int quality_;
+    const spx_uint32_t num_ch_;
 
     bool valid_;
 };
