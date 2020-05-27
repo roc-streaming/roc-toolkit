@@ -103,16 +103,17 @@ inline size_t get_window_interp(ResamplerProfile profile) {
 } // namespace
 
 BuiltinResampler::BuiltinResampler(core::IAllocator& allocator,
+                                   core::BufferPool<sample_t>& buffer_pool,
                                    ResamplerProfile profile,
                                    core::nanoseconds_t frame_length,
                                    size_t sample_rate,
                                    packet::channel_mask_t channels)
     : channel_mask_(channels)
     , channels_num_(packet::num_channels(channel_mask_))
+    , n_ready_frames_(0)
     , prev_frame_(NULL)
     , curr_frame_(NULL)
     , next_frame_(NULL)
-    , out_frame_pos_(0)
     , scaling_(1.0)
     , frame_size_(packet::ns_to_size(frame_length, sample_rate, channels))
     , frame_size_ch_(channels_num_ ? frame_size_ / channels_num_ : 0)
@@ -132,7 +133,12 @@ BuiltinResampler::BuiltinResampler(core::IAllocator& allocator,
     if (!check_config_()) {
         return;
     }
+
     if (!fill_sinc_()) {
+        return;
+    }
+
+    if (!alloc_frames_(buffer_pool)) {
         return;
     }
 
@@ -214,14 +220,47 @@ bool BuiltinResampler::set_scaling(size_t input_sample_rate,
     return true;
 }
 
-bool BuiltinResampler::resample_buff(Frame& out) {
-    roc_panic_if(!prev_frame_);
-    roc_panic_if(!curr_frame_);
-    roc_panic_if(!next_frame_);
+const core::Slice<sample_t>& BuiltinResampler::begin_push_input() {
+    if (n_ready_frames_ < 3) {
+        return frames_[n_ready_frames_];
+    }
 
-    for (; out_frame_pos_ < out.size(); out_frame_pos_ += channels_num_) {
+    core::Slice<sample_t> new_last_frame = frames_[0];
+    frames_[0] = frames_[1];
+    frames_[1] = frames_[2];
+    frames_[2] = new_last_frame;
+
+    return frames_[2];
+}
+
+void BuiltinResampler::end_push_input() {
+    prev_frame_ = frames_[0].data();
+    curr_frame_ = frames_[1].data();
+    next_frame_ = frames_[2].data();
+
+    if (n_ready_frames_ < 3) {
+        n_ready_frames_++;
+    }
+
+    if (qt_sample_ >= qt_frame_size_) {
+        qt_sample_ -= qt_frame_size_;
+    }
+
+    // scaling_ may change every frame so it have to be smooth
+    qt_dt_ = float_to_fixedpoint(scaling_);
+}
+
+size_t BuiltinResampler::pop_output(Frame& out) {
+    if (n_ready_frames_ < 3) {
+        return 0;
+    }
+
+    sample_t* out_data = out.data();
+    size_t out_pos = 0;
+
+    for (; out_pos < out.size(); out_pos += channels_num_) {
         if (qt_sample_ >= qt_frame_size_) {
-            return false;
+            break;
         }
 
         if ((qt_sample_ & FRACT_PART_MASK) < qt_epsilon_) {
@@ -231,13 +270,27 @@ bool BuiltinResampler::resample_buff(Frame& out) {
             qt_sample_ += qt_one;
         }
 
-        sample_t* out_data = out.data();
         for (size_t channel = 0; channel < channels_num_; ++channel) {
-            out_data[out_frame_pos_ + channel] = resample_(channel);
+            out_data[out_pos + channel] = resample_(channel);
         }
         qt_sample_ += qt_dt_;
     }
-    out_frame_pos_ = 0;
+
+    return out_pos;
+}
+
+bool BuiltinResampler::alloc_frames_(core::BufferPool<sample_t>& buffer_pool) {
+    for (size_t n = 0; n < ROC_ARRAY_SIZE(frames_); n++) {
+        frames_[n] = new (buffer_pool) core::Buffer<sample_t>(buffer_pool);
+
+        if (!frames_[n]) {
+            roc_log(LogError, "resampler: can't allocate frame buffer");
+            return false;
+        }
+
+        frames_[n].resize(frame_size_);
+    }
+
     return true;
 }
 
@@ -275,27 +328,6 @@ bool BuiltinResampler::check_config_() const {
     }
 
     return true;
-}
-
-void BuiltinResampler::renew_buffers(core::Slice<sample_t>& prev,
-                                     core::Slice<sample_t>& cur,
-                                     core::Slice<sample_t>& next) {
-    roc_panic_if(window_size_ * scaling_ >= frame_size_ch_);
-
-    roc_panic_if(prev.size() != frame_size_);
-    roc_panic_if(cur.size() != frame_size_);
-    roc_panic_if(next.size() != frame_size_);
-
-    if (qt_sample_ >= qt_frame_size_) {
-        qt_sample_ -= qt_frame_size_;
-    }
-
-    // scaling_ may change every frame so it have to be smooth
-    qt_dt_ = float_to_fixedpoint(scaling_);
-
-    prev_frame_ = prev.data();
-    curr_frame_ = cur.data();
-    next_frame_ = next.data();
 }
 
 bool BuiltinResampler::fill_sinc_() {
