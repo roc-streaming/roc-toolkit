@@ -25,48 +25,26 @@
 namespace roc {
 namespace audio {
 
-//! Resamples audio stream with non-integer dynamically changing factor.
-//! @remarks
-//!  Typicaly being used with factor close to 1 ( 0.9 < factor < 1.1 ).
+//! Resampler element for reading pipeline.
 class ResamplerReader : public IReader, public core::NonCopyable<> {
 public:
     //! Initialize.
-    //!
-    //! @b Parameters
-    //!  - @p reader specifies input audio stream used in read()
-    //!  - @p resampler interface that hides which resampler algorithm will be used
-    //!  - @p frame_size is number of samples per resampler frame per audio channel
-    ResamplerReader(IReader& reader,
-                    IResampler& resampler,
-                    core::BufferPool<sample_t>& buffer_pool,
-                    core::nanoseconds_t frame_length,
-                    size_t sample_rate,
-                    roc::packet::channel_mask_t ch_mask);
+    ResamplerReader(IReader& reader, IResampler& resampler);
 
     //! Check if object is successfully constructed.
     bool valid() const;
 
+    //! Set new resample factor.
+    bool set_scaling(size_t input_rate, size_t output_rate, float multiplier);
+
     //! Read audio frame.
-    //! @remarks
-    //!  Calculates everything during this call so it may take time.
     virtual bool read(Frame&);
 
-    //! Set new resample factor.
-    bool
-    set_scaling(size_t input_sample_rate, size_t output_sample_rate, float multiplier);
-
 private:
-    bool init_frames_(core::BufferPool<sample_t>&);
-    bool renew_frames_();
+    bool push_input_();
 
     IResampler& resampler_;
     IReader& reader_;
-
-    core::Slice<sample_t> frames_[3];
-    const size_t frame_size_;
-    bool frames_empty_;
-
-    bool valid_;
 };
 
 } // namespace audio
