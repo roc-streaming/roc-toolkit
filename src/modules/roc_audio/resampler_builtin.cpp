@@ -155,11 +155,22 @@ bool BuiltinResampler::valid() const {
 bool BuiltinResampler::set_scaling(size_t input_sample_rate,
                                    size_t output_sample_rate,
                                    float multiplier) {
+    if (input_sample_rate == 0 || output_sample_rate == 0) {
+        roc_log(LogError, "builtin resampler: invalid rate");
+        return false;
+    }
+
     const float new_scaling = float(input_sample_rate) / output_sample_rate * multiplier;
+
+    // Filter out obviously invalid values.
+    if (new_scaling <= 0) {
+        roc_log(LogError, "resampler: invalid scaling");
+        return false;
+    }
 
     // Window's size changes according to scaling. If new window size
     // doesn't fit to the frames size -- deny changes.
-    if (window_size_ * new_scaling >= frame_size_ch_) {
+    if (window_size_ * new_scaling > frame_size_ch_ - 1) {
         roc_log(LogError,
                 "resampler: scaling does not fit frame size:"
                 " window_size=%lu frame_size=%lu scaling=%.5f",
