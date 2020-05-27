@@ -18,6 +18,7 @@
 #include "roc_audio/resampler_profile.h"
 #include "roc_audio/units.h"
 #include "roc_core/array.h"
+#include "roc_core/buffer_pool.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/slice.h"
 #include "roc_core/stddefs.h"
@@ -32,10 +33,8 @@ namespace audio {
 class SpeexResampler : public IResampler, public core::NonCopyable<> {
 public:
     //! Initialize.
-    //! @remarks
-    //! quality is an integer in the range 0-10 inclusive,
-    //! where 10 is the best quality and 0 is the worst quality
     SpeexResampler(core::IAllocator& allocator,
+                   core::BufferPool<sample_t>& buffer_pool,
                    ResamplerProfile profile,
                    core::nanoseconds_t frame_length,
                    size_t sample_rate,
@@ -43,27 +42,29 @@ public:
 
     ~SpeexResampler();
 
-    bool valid() const;
+    //! Check if object is successfully constructed.
+    virtual bool valid() const;
 
-    bool
-    set_scaling(size_t input_sample_rate, size_t output_sample_rate, float multiplier);
+    //! Set new resample factor.
+    virtual bool set_scaling(size_t input_rate, size_t output_rate, float multiplier);
 
-    bool resample_buff(Frame& out);
+    //! Get buffer to be filled with input data.
+    virtual const core::Slice<sample_t>& begin_push_input();
 
-    void renew_buffers(core::Slice<sample_t>& prev,
-                       core::Slice<sample_t>& cur,
-                       core::Slice<sample_t>& next);
+    //! Commit buffer with input data.
+    virtual void end_push_input();
+
+    //! Read samples from input frame and fill output frame.
+    virtual size_t pop_output(Frame& out);
 
 private:
     bool refresh_state_();
 
     SpeexResamplerState* speex_state_;
 
-    spx_uint32_t out_frame_pos_;
-
-    spx_uint32_t in_frame_pos_;
+    core::Slice<sample_t> in_frame_;
     const spx_uint32_t in_frame_size_;
-    sample_t* in_frame_data_;
+    spx_uint32_t in_frame_pos_;
 
     const spx_uint32_t num_ch_;
 

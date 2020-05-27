@@ -18,6 +18,7 @@
 #include "roc_audio/resampler_profile.h"
 #include "roc_audio/units.h"
 #include "roc_core/array.h"
+#include "roc_core/buffer_pool.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/slice.h"
 #include "roc_core/stddefs.h"
@@ -31,13 +32,16 @@ class BuiltinResampler : public IResampler, public core::NonCopyable<> {
 public:
     //! Initialize.
     BuiltinResampler(core::IAllocator& allocator,
+                     core::BufferPool<sample_t>& buffer_pool,
                      ResamplerProfile profile,
                      core::nanoseconds_t frame_length,
                      size_t sample_rate,
                      packet::channel_mask_t channels);
 
+    ~BuiltinResampler();
+
     //! Check if object is successfully constructed.
-    bool valid() const;
+    virtual bool valid() const;
 
     //! Set new resample factor.
     //! @remarks
@@ -46,18 +50,16 @@ public:
     //!  depends on current resampling factor. So we choose length of input buffers to let
     //!  it handle maximum length of input. If new scaling factor breaks equation this
     //!  function returns false.
-    virtual bool
-    set_scaling(size_t input_sample_rate, size_t output_sample_rate, float multiplier);
+    virtual bool set_scaling(size_t input_rate, size_t output_rate, float multiplier);
 
-    //! Resamples the whole output frame.
-    virtual bool resample_buff(Frame& out);
+    //! Get buffer to be filled with input data.
+    virtual const core::Slice<sample_t>& begin_push_input();
 
-    //! Push new buffer on the front of the internal FIFO, which comprisesthree window_.
-    virtual void renew_buffers(core::Slice<sample_t>& prev,
-                               core::Slice<sample_t>& cur,
-                               core::Slice<sample_t>& next);
+    //! Commit buffer with input data.
+    virtual void end_push_input();
 
-    ~BuiltinResampler();
+    //! Read samples from input frame and fill output frame.
+    virtual size_t pop_output(Frame& out);
 
 private:
     typedef uint32_t fixedpoint_t;
@@ -72,22 +74,24 @@ private:
         return i * channels_num_ + ch_offset;
     }
 
-    //! Computes single sample of the particular audio channel.
-    //!
-    //! @param channel_offset a serial number of the channel
-    //!  (e.g. left -- 0, right -- 1, etc.).
-    sample_t resample_(size_t channel_offset);
+    bool alloc_frames_(core::BufferPool<sample_t>&);
 
     bool check_config_() const;
 
     bool fill_sinc_();
     sample_t sinc_(fixedpoint_t x, float fract_x);
 
-    sample_t* prev_frame_;
-    sample_t* curr_frame_;
-    sample_t* next_frame_;
+    // Computes single sample of the particular audio channel.
+    // channel_offset a serial number of the channel
+    //  (e.g. left -- 0, right -- 1, etc.).
+    sample_t resample_(size_t channel_offset);
 
-    size_t out_frame_pos_;
+    core::Slice<sample_t> frames_[3];
+    size_t n_ready_frames_;
+
+    const sample_t* prev_frame_;
+    const sample_t* curr_frame_;
+    const sample_t* next_frame_;
 
     float scaling_;
 
