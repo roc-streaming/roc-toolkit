@@ -71,9 +71,9 @@ jobs:
         - docker pull rocproject/travis-checks
       script:
         - scripts/travis/docker.sh rocproject/travis-minimal scripts/travis/linux-build-checks/optional-features.sh
-        - scripts/travis/docker.sh rocproject/travis-minimal scripts/travis/linux-build-checks/debug-features.sh
-        - scripts/travis/docker.sh rocproject/travis-minimal scripts/travis/linux-build-checks/pulseaudio-support.sh
-        - scripts/travis/docker.sh rocproject/travis-checks scripts/travis/linux-build-checks/check-fmt.sh
+        - scripts/travis/docker.sh rocproject/travis-minimal scripts/travis/linux-build-checks/optional-backends.sh
+        - scripts/travis/docker.sh rocproject/travis-minimal scripts/travis/linux-build-checks/debug-build.sh
+        - scripts/travis/docker.sh rocproject/travis-checks scripts/travis/linux-build-checks/check-formatting.sh
 
     - name: "Linux runtime checks"
       stage: Build
