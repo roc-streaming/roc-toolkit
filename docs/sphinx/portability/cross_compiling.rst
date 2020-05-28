@@ -166,28 +166,6 @@ Alternatively, you can install the toolchain manually:
 
 .. _aarch64-linux-android:
 
-Android NDK arm64 toolchain
-===========================
-
-`Android NDK <https://developer.android.com/ndk>`_ provides a way to build toolchains for various architectures and Android versions.
-
-The ``aarch64-linux-android`` is an arm64 Android toolchain. There are versions for different Android API levels.
-
-Here is how you can build Roc with this toolchain using `rocproject/cross-aarch64-linux-android <https://hub.docker.com/r/rocproject/cross-aarch64-linux-android/>`_ Docker image:
-
-.. code::
-
-    $ cd /path/to/roc
-    $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
-        rocproject/cross-aarch64-linux-android:api28 \
-          scons \
-            --compiler=clang \
-            --host=aarch64-linux-android \
-            --disable-tools \
-            --build-3rdparty=all
-
-Alternatively, you can download Android NDK and build the toolchain manually by following `these instructions <https://developer.android.com/ndk/guides/standalone_toolchain>`_.
-
 Debian and Ubuntu toolchains
 ============================
 
@@ -223,6 +201,67 @@ Here is how you can build Roc with this toolchain on Ubuntu:
     # build Roc
     $ cd /path/to/roc
     $ scons --host=arm-linux-gnueabihf --build-3rdparty=all
+
+Android NDK toolchains
+======================
+
+`Android NDK <https://developer.android.com/ndk>`_ provides two ways to build native code for Android:
+
+* use one of the prebuilt toolchains from Android NDK directly;
+* or prepare `a standalone toolchain <https://developer.android.com/ndk/guides/standalone_toolchain>`_ in a separate directory; the second approach is declared obsolete.
+
+For convenience, Roc supports both ways.
+
+To build Roc for Android using a prebuilt toolchain from Android NDK, you can use `rocproject/cross-linux-android <https://hub.docker.com/r/rocproject/cross-linux-android/>`_ Docker image:
+
+.. code::
+
+    $ cd /path/to/roc
+    $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
+        rocproject/cross-linux-android \
+          scons -Q \
+            --disable-tools \
+            --compiler=clang \
+            --host=aarch64-linux-android28 \
+            --build-3rdparty=libuv,openfec,speexdsp
+
+Alternatively, you can install Android NDK manually and run:
+
+.. code::
+
+    # for Roc
+    $ apt-get install g++ scons ragel gengetopt
+
+    # for 3rd-parties
+    $ apt-get install libtool autoconf automake make cmake
+
+    # setup path
+    $ export PATH="/PATH_TO_NDK/toolchains/llvm/prebuilt/linux-x86_64/bin:${PATH}"
+
+    # build Roc
+    $ cd /path/to/roc
+    $ scons -Q \
+        --disable-tools \
+        --compiler=clang \
+        --host=aarch64-linux-android28 \
+        --build-3rdparty=libuv,openfec,speexdsp
+
+Supported ``--host`` values are:
+
+* ``aarch64-linux-android<API>`` (64-bit ARM)
+* ``armv7a-linux-androideabi<API>`` (32-bit ARM)
+* ``x86_64-linux-android<API>`` (64-bit Intel)
+* ``i686-linux-android<API>`` (32-bit Intel)
+
+Here ``<API>`` stands for the Android API level, e.g. 28. Reach Android NDK version supports its own set of the API levels.
+
+Building Roc with a standalone toolchain is similar to cross-compiling with any other toolchain:
+
+* prepare a toolchain for desired ABI (target architecture) and API level, e.g. ``aarch64-linux-android``
+* add tolchain to ``PATH``
+* pass toolchain to scons using ``--host`` option, e.g. ``--host=aarch64-linux-android``
+
+Since standaloen toolchains are obsolete, Roc doesn't provide prebuilt Docker images for them.
 
 Running cross-compiled binaries on target
 =========================================
