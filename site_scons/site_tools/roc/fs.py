@@ -71,6 +71,9 @@ def which(env, prog, mode, searchpath):
     return result
 
 def Which(env, prog, prepend_path=[]):
+    if os.access(prog, os.X_OK):
+        return [prog]
+
     searchpath = getenv(env, 'PATH', os.defpath)
     if prepend_path:
         searchpath = os.pathsep.join(prepend_path) + os.pathsep + searchpath
