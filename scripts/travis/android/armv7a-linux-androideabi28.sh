@@ -1,8 +1,6 @@
 #! /bin/bash
 set -euxo pipefail
 
-TOOLCHAIN="aarch64-linux-android"
-
 scons -Q clean
 
 scons -Q \
@@ -10,6 +8,6 @@ scons -Q \
     --disable-tools \
     --enable-tests \
     --enable-benchmarks \
-    --build-3rdparty=libuv,openfec,cpputest,google-benchmark \
+    --build-3rdparty=libuv,openfec,speexdsp,cpputest,google-benchmark \
     --compiler=clang \
-    --host=${TOOLCHAIN}
+    --host=armv7a-linux-androideabi28
