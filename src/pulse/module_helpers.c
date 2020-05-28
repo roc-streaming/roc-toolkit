@@ -120,19 +120,19 @@ int rocpa_parse_resampler_profile(roc_resampler_profile* out,
     const char* str = pa_modargs_get_value(args, arg_name, "");
 
     if (!str || !*str) {
-        *out = ROC_RESAMPLER_DEFAULT;
+        *out = ROC_RESAMPLER_PROFILE_DEFAULT;
         return 0;
     } else if (strcmp(str, "disable") == 0) {
-        *out = ROC_RESAMPLER_DISABLE;
+        *out = ROC_RESAMPLER_PROFILE_DISABLE;
         return 0;
     } else if (strcmp(str, "high") == 0) {
-        *out = ROC_RESAMPLER_HIGH;
+        *out = ROC_RESAMPLER_PROFILE_HIGH;
         return 0;
     } else if (strcmp(str, "medium") == 0) {
-        *out = ROC_RESAMPLER_MEDIUM;
+        *out = ROC_RESAMPLER_PROFILE_MEDIUM;
         return 0;
     } else if (strcmp(str, "low") == 0) {
-        *out = ROC_RESAMPLER_LOW;
+        *out = ROC_RESAMPLER_PROFILE_LOW;
         return 0;
     } else {
         pa_log("invalid %s: %s", arg_name, str);

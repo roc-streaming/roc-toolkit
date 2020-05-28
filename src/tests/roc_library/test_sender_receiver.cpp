@@ -45,7 +45,7 @@ TEST_GROUP(sender_receiver) {
         sender_conf.frame_channels = ROC_CHANNEL_SET_STEREO;
         sender_conf.frame_encoding = ROC_FRAME_ENCODING_PCM_FLOAT;
         sender_conf.clock_source = ROC_CLOCK_INTERNAL;
-        sender_conf.resampler_profile = ROC_RESAMPLER_DISABLE;
+        sender_conf.resampler_profile = ROC_RESAMPLER_PROFILE_DISABLE;
         sender_conf.packet_length =
             test::PacketSamples * 1000000000ul / (test::SampleRate * test::NumChans);
         if (flags & test::FlagRS8M) {
@@ -65,7 +65,7 @@ TEST_GROUP(sender_receiver) {
         receiver_conf.frame_channels = ROC_CHANNEL_SET_STEREO;
         receiver_conf.frame_encoding = ROC_FRAME_ENCODING_PCM_FLOAT;
         receiver_conf.clock_source = ROC_CLOCK_INTERNAL;
-        receiver_conf.resampler_profile = ROC_RESAMPLER_DISABLE;
+        receiver_conf.resampler_profile = ROC_RESAMPLER_PROFILE_DISABLE;
         receiver_conf.target_latency = test::Latency * 1000000000ul / test::SampleRate;
         receiver_conf.no_playback_timeout =
             test::Timeout * 1000000000ul / test::SampleRate;
