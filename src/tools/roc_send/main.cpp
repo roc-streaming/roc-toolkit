@@ -216,7 +216,6 @@ int main(int argc, char** argv) {
 
     sndio::Config io_config;
     io_config.channels = sender_config.input_channels;
-    io_config.sample_rate = sender_config.input_sample_rate;
     io_config.frame_length = sender_config.internal_frame_length;
 
     if (args.rate_given) {
