@@ -226,7 +226,6 @@ int main(int argc, char** argv) {
 
     sndio::Config io_config;
     io_config.frame_length = receiver_config.common.internal_frame_length;
-    io_config.sample_rate = receiver_config.common.output_sample_rate;
     io_config.channels = receiver_config.common.output_channels;
 
     if (args.io_latency_given) {
