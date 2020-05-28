@@ -12,7 +12,7 @@ scons -Q \
     --enable-pulseaudio-modules \
     --enable-tests \
     --enable-examples \
-    --build-3rdparty=libuv,libunwind,openfec,alsa,pulseaudio:8.0,sox,cpputest \
+    --build-3rdparty=libuv,libunwind,openfec,alsa,pulseaudio:8.0,speexdsp,sox,cpputest \
     --host=${TOOLCHAIN}
 
 find bin/${TOOLCHAIN} -name 'roc-test-*' \
