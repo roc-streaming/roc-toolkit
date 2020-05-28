@@ -17,9 +17,10 @@ Runtime dependencies
 ====================
 
 * `libuv <http://libuv.org>`_ >= 1.5.0, recommended >= 1.35.0
-* `libatomic_ops <https://github.com/ivmai/libatomic_ops/>`_ >= 7.6.0 (required on non-C11 compilers)
+* `libatomic_ops <https://github.com/ivmai/libatomic_ops/>`_ >= 7.6.0 (needed only on non-C11 compilers)
 * `libunwind <https://www.nongnu.org/libunwind/>`_ >= 1.2.1 (optional, install if you want backtraces on a panic or a crash)
 * `OpenFEC <http://openfec.org>`_ >= 1.4.2 (optional but recommended, install if you want to enable FEC support)
+* `SpeexDSP <https://github.com/xiph/speexdsp>`_ >= 1.2beta3 (optional but recommended, install if you want to employ fast Speex resampler)
 * `SoX <http://sox.sourceforge.net>`_ >= 14.4.0 (optional, install if you want SoX backend in tools)
 * `PulseAudio <https://www.freedesktop.org/wiki/Software/PulseAudio/>`_ >= 5.0 (optional, install if you want PulseAudio backend in tools or PulseAudio modules)
 
@@ -30,6 +31,10 @@ Runtime dependencies
 .. warning::
 
    If you want to install OpenFEC, it's highly recommended to use `our fork <https://github.com/roc-project/openfec>`_ or manually apply patches from it. The fork is automatically used when using ``--build-3rdparty=openfec`` option. It contains several bug-fixes (including leaks and segfaults) and improvements that are not available in the upstream.
+
+.. note::
+
+   SpeexDSP (libspeexdsp) below 1.2rc3 was part of Speex (libspeex) package.
 
 Development dependencies
 ========================

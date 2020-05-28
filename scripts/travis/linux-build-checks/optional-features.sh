@@ -10,17 +10,19 @@ scons -Q --enable-werror --build-3rdparty=all \
       --disable-c11 \
       --disable-libunwind \
       --disable-openfec \
+      --disable-speex \
       --disable-sox \
       --disable-pulseaudio
 
 scons -Q --enable-werror --build-3rdparty=all \
+      --enable-tests \
+      --enable-benchmarks \
+      --enable-examples \
+      --disable-libunwind \
       --disable-openfec \
+      --disable-speex \
       --disable-sox \
       --disable-pulseaudio \
-      test
-
-scons -Q --enable-werror --build-3rdparty=all \
-      --disable-sox \
       test
 
 scons -Q --enable-werror --build-3rdparty=all \
