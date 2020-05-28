@@ -90,7 +90,7 @@ jobs:
         - scripts/travis/docker.sh rocproject/travis-checks scripts/travis/linux-runtime-checks/valgrind-debug.sh
         - scripts/travis/docker.sh rocproject/travis-checks scripts/travis/linux-runtime-checks/valgrind-release.sh
 
-    - name: "Android ARM"
+    - name: "Android"
       stage: Build
       os: linux
       dist: trusty
@@ -98,9 +98,12 @@ jobs:
       services:
         - docker
       before_install:
-        - docker pull rocproject/cross-aarch64-linux-android:api28
+        - docker pull rocproject/cross-linux-android:ndk21
       script:
-        - scripts/travis/docker.sh rocproject/cross-aarch64-linux-android:api28 scripts/travis/android/aarch64-linux-android.sh
+        - scripts/travis/docker.sh rocproject/cross-linux-android:ndk21 scripts/travis/android/aarch64-linux-android28.sh
+        - scripts/travis/docker.sh rocproject/cross-linux-android:ndk21 scripts/travis/android/armv7a-linux-androideabi28.sh
+        - scripts/travis/docker.sh rocproject/cross-linux-android:ndk21 scripts/travis/android/x86_64-linux-android28.sh
+        - scripts/travis/docker.sh rocproject/cross-linux-android:ndk21 scripts/travis/android/i686-linux-android28.sh
         - cat build.status
 
     - name: "macOS Xcode 9.1"
