@@ -298,6 +298,9 @@ cleanbuild = [
     env.DeleteDir('#bin'),
     env.DeleteDir('#build'),
     env.DeleteFile('#compile_commands.json'),
+    env.DeleteFile('#config.log'),
+    env.DeleteDir('#.sconf_temp'),
+    env.DeleteFile('#.sconsign.dblite'),
 ]
 
 cleandocs = [
@@ -308,9 +311,6 @@ cleandocs = [
 
 cleanall = cleanbuild + cleandocs + [
     env.DeleteDir('#3rdparty'),
-    env.DeleteFile('#config.log'),
-    env.DeleteDir('#.sconf_temp'),
-    env.DeleteFile('#.sconsign.dblite'),
 ]
 
 env.AlwaysBuild(env.Alias('clean', [], cleanall))
@@ -325,7 +325,8 @@ if set(COMMAND_LINE_TARGETS).intersection(['clean', 'cleanbuild', 'cleandocs']) 
         env.Execute(cleanall)
     Return()
 
-for var in ['CXX', 'CC', 'AR', 'RANLIB', 'RAGEL', 'GENGETOPT', 'PKG_CONFIG', 'PKG_CONFIG_PATH', 'CONFIG_GUESS']:
+for var in ['CXX', 'CC', 'AR', 'RANLIB', 'RAGEL', 'GENGETOPT',
+                'PKG_CONFIG', 'PKG_CONFIG_PATH', 'CONFIG_GUESS']:
     env.OverrideFromArg(var)
 
 env.OverrideFromArg('CXXLD', names=['CXXLD', 'CXX'])
@@ -450,6 +451,14 @@ non_build_targets = ['fmt', 'docs', 'shpinx', 'doxygen']
 if set(COMMAND_LINE_TARGETS) \
   and set(COMMAND_LINE_TARGETS).intersection(non_build_targets) == set(COMMAND_LINE_TARGETS):
     Return()
+
+if [s for s in COMMAND_LINE_TARGETS if s == 'test' or s.startswith('test/')]:
+    if not GetOption('enable_tests'):
+        env.Die("can't use 'test*' target(s) without `--enable-tests' option")
+
+if [s for s in COMMAND_LINE_TARGETS if s == 'bench' or s.startswith('bench/')]:
+    if not GetOption('enable_benchmarks'):
+        env.Die("can't use 'bench*' target(s) without `--enable-benchmarks' option")
 
 build = GetOption('build') or ''
 host = GetOption('host') or ''
@@ -789,12 +798,13 @@ system_dependencies = all_dependencies - download_dependencies
 if 'libuv' in system_dependencies:
     conf = Configure(env, custom_tests=env.CustomTests)
 
-    conf.AddPkgConfigDependency('libuv', '--cflags --libs')
+    if not conf.AddPkgConfigDependency('libuv', '--cflags --libs'):
+        conf.env.AddPkgConfigLibs(['uv'])
 
     if not crosscompile:
         if not conf.CheckLibWithHeaderExt(
-            'uv', 'uv.h', 'C', expr='UV_VERSION_MAJOR >= 1 && UV_VERSION_MINOR >= 4'):
-            env.Die("libuv >= 1.4 not found (see 'config.log' for details)")
+            'uv', 'uv.h', 'C', expr='UV_VERSION_MAJOR >= 1 && UV_VERSION_MINOR >= 5'):
+            env.Die("libuv >= 1.5 not found (see 'config.log' for details)")
     else:
         if not conf.CheckLibWithHeaderExt('uv', 'uv.h', 'C', run=False):
             env.Die("libuv not found (see 'config.log' for details)")
@@ -804,7 +814,8 @@ if 'libuv' in system_dependencies:
 if 'libunwind' in system_dependencies:
     conf = Configure(env, custom_tests=env.CustomTests)
 
-    conf.AddPkgConfigDependency('libunwind', '--cflags --libs')
+    if not conf.AddPkgConfigDependency('libunwind', '--cflags --libs'):
+        conf.env.AddPkgConfigLibs(['unwind'])
 
     if not conf.CheckLibWithHeaderExt('unwind', 'libunwind.h', 'C', run=not crosscompile):
         env.Die("libunwind not found (see 'config.log' for details)")
@@ -814,7 +825,8 @@ if 'libunwind' in system_dependencies:
 if 'libatomic_ops' in system_dependencies:
     conf = Configure(env, custom_tests=env.CustomTests)
 
-    conf.AddPkgConfigDependency('atomic_ops', '--cflags --libs')
+    if not conf.AddPkgConfigDependency('atomic_ops', '--cflags --libs'):
+        conf.env.AddPkgConfigLibs(['atomic_ops'])
 
     if not conf.CheckLibWithHeaderExt('atomic_ops', 'atomic_ops.h', 'C', run=not crosscompile):
         env.Die("libatomic_ops not found (see 'config.log' for details)")
@@ -824,27 +836,28 @@ if 'libatomic_ops' in system_dependencies:
 if 'openfec' in system_dependencies:
     conf = Configure(env, custom_tests=env.CustomTests)
 
-    if conf.AddPkgConfigDependency('openfec', '--silence-errors --cflags --libs'):
-        pass
-    elif GetOption('with_openfec_includes'):
-        openfec_includes = GetOption('with_openfec_includes')
-        env.Append(CPPPATH=[
-            openfec_includes,
-            '%s/lib_common' % openfec_includes,
-            '%s/lib_stable' % openfec_includes,
-        ])
-    elif not crosscompile:
-       for prefix in ['/usr/local', '/usr']:
-           if os.path.exists('%s/include/openfec' % prefix):
-               env.Append(CPPPATH=[
-                   '%s/include/openfec' % prefix,
-                   '%s/include/openfec/lib_common' % prefix,
-                   '%s/include/openfec/lib_stable' % prefix,
-               ])
-               env.Append(LIBPATH=[
-                   '%s/lib' % prefix,
-               ])
-               break
+    if not conf.AddPkgConfigDependency('openfec', '--silence-errors --cflags --libs'):
+        conf.env.AddPkgConfigLibs(['openfec'])
+
+        if GetOption('with_openfec_includes'):
+            openfec_includes = GetOption('with_openfec_includes')
+            conf.env.Append(CPPPATH=[
+                openfec_includes,
+                '%s/lib_common' % openfec_includes,
+                '%s/lib_stable' % openfec_includes,
+            ])
+        elif not crosscompile:
+           for prefix in ['/usr/local', '/usr']:
+               if os.path.exists('%s/include/openfec' % prefix):
+                   conf.env.Append(CPPPATH=[
+                       '%s/include/openfec' % prefix,
+                       '%s/include/openfec/lib_common' % prefix,
+                       '%s/include/openfec/lib_stable' % prefix,
+                   ])
+                   conf.env.Append(LIBPATH=[
+                       '%s/lib' % prefix,
+                   ])
+                   break
 
     if not conf.CheckLibWithHeaderExt(
             'openfec', 'of_openfec_api.h', 'C', run=not crosscompile):
@@ -866,7 +879,8 @@ if 'openfec' in system_dependencies:
 if 'speexdsp' in system_dependencies:
     conf = Configure(env, custom_tests=env.CustomTests)
 
-    conf.AddPkgConfigDependency('speexdsp', '--cflags --libs')
+    if not conf.AddPkgConfigDependency('speexdsp', '--cflags --libs'):
+        conf.env.AddPkgConfigLibs(['speexdsp'])
 
     if not conf.CheckLibWithHeaderExt('speexdsp', 'speex/speex_resampler.h', 'C',
                                           run=not crosscompile):
@@ -877,7 +891,8 @@ if 'speexdsp' in system_dependencies:
 if 'pulseaudio' in system_dependencies:
     conf = Configure(tool_env, custom_tests=env.CustomTests)
 
-    conf.AddPkgConfigDependency('libpulse', '--cflags --libs')
+    if not conf.AddPkgConfigDependency('libpulse', '--cflags --libs'):
+        conf.env.AddPkgConfigLibs(['pulse'])
 
     if not conf.CheckLibWithHeaderExt(
             'pulse', 'pulse/pulseaudio.h', 'C', run=not crosscompile):
@@ -888,7 +903,8 @@ if 'pulseaudio' in system_dependencies:
     if GetOption('enable_examples'):
         conf = Configure(example_env, custom_tests=env.CustomTests)
 
-        conf.AddPkgConfigDependency('libpulse-simple', '--cflags --libs')
+        if not conf.AddPkgConfigDependency('libpulse-simple', '--cflags --libs'):
+            conf.env.AddPkgConfigLibs(['pulse-simple'])
 
         if not conf.CheckLibWithHeaderExt(
                 'pulse-simple', 'pulse/simple.h', 'C', run=not crosscompile):
@@ -938,7 +954,8 @@ if 'pulseaudio' in system_dependencies:
 if 'sox' in system_dependencies:
     conf = Configure(tool_env, custom_tests=env.CustomTests)
 
-    conf.AddPkgConfigDependency('sox', '--cflags --libs')
+    if not conf.AddPkgConfigDependency('sox', '--cflags --libs'):
+        conf.env.AddPkgConfigLibs(['sox'])
 
     if not crosscompile:
         if not conf.CheckLibWithHeaderExt(
@@ -980,7 +997,8 @@ if 'gengetopt' in system_dependencies:
 if 'cpputest' in system_dependencies:
     conf = Configure(test_env, custom_tests=env.CustomTests)
 
-    conf.AddPkgConfigDependency('cpputest', '--cflags --libs')
+    if not conf.AddPkgConfigDependency('cpputest', '--cflags --libs'):
+        conf.env.AddPkgConfigLibs(['CppUTest'])
 
     if not conf.CheckLibWithHeaderExt(
             'CppUTest', 'CppUTest/TestHarness.h', 'CXX', run=not crosscompile):
@@ -991,8 +1009,8 @@ if 'cpputest' in system_dependencies:
 if 'google-benchmark' in system_dependencies:
     conf = Configure(test_env, custom_tests=env.CustomTests)
 
-    if not conf.AddPkgConfigDependency('benchmark', '--cflags --libs'):
-        test_env.AddPkgConfigLibs(['benchmark'])
+    if not conf.AddPkgConfigDependency('benchmark', '--silence-errors --cflags --libs'):
+        conf.env.AddPkgConfigLibs(['benchmark'])
 
     if not conf.CheckLibWithHeaderExt(
             'benchmark', 'benchmark/benchmark.h', 'CXX', run=not crosscompile):
@@ -1245,9 +1263,6 @@ if compiler in ['gcc', 'clang']:
             env.Append(**{var: [
                 '-fno-strict-aliasing',
             ]})
-
-else:
-    env.Die("CXXFLAGS setup not implemented for compiler '%s'", compiler)
 
 if compiler in ['gcc', 'clang']:
     if GetOption('enable_werror'):
