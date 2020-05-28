@@ -16,6 +16,8 @@ namespace audio {
 
 namespace {
 
+const core::nanoseconds_t LogReportInterval = 20 * core::Second;
+
 inline const char* get_error_msg(int err) {
     if (err == 5) {
         return "Ratio overflow.";
@@ -51,6 +53,7 @@ SpeexResampler::SpeexResampler(core::IAllocator&,
           (spx_uint32_t)packet::ns_to_size(frame_length, sample_rate, channels))
     , in_frame_pos_(in_frame_size_)
     , num_ch_((spx_uint32_t)packet::num_channels(channels))
+    , rate_limiter_(LogReportInterval)
     , valid_(false) {
     if (num_ch_ == 0 || in_frame_size_ == 0) {
         return;
@@ -172,7 +175,37 @@ size_t SpeexResampler::pop_output(Frame& out) {
         roc_panic_if(out_frame_pos > out_frame_size);
     }
 
+    report_stats_();
+
     return (size_t)out_frame_pos;
+}
+
+void SpeexResampler::report_stats_() {
+    if (!speex_state_) {
+        return;
+    }
+
+    if (!rate_limiter_.allow()) {
+        return;
+    }
+
+    spx_uint32_t ratio_num = 0;
+    spx_uint32_t ratio_den = 0;
+    speex_resampler_get_ratio(speex_state_, &ratio_num, &ratio_den);
+
+    spx_uint32_t in_rate = 0;
+    spx_uint32_t out_rate = 0;
+    speex_resampler_get_rate(speex_state_, &in_rate, &out_rate);
+
+    const int in_latency = speex_resampler_get_input_latency(speex_state_);
+    const int out_latency = speex_resampler_get_output_latency(speex_state_);
+
+    roc_log(
+        LogDebug,
+        "speex resampler:"
+        " ratio_num=%u ratio_den=%u in_rate=%u out_rate=%u in_latency=%d out_latency=%d",
+        (unsigned int)ratio_num, (unsigned int)ratio_den, (unsigned int)in_rate,
+        (unsigned int)out_rate, (int)in_latency, (int)out_latency);
 }
 
 } // namespace audio
