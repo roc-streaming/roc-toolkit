@@ -14,7 +14,7 @@ Operating systems:
 
 * GNU/Linux
 * macOS
-* Android *(work in progress)*
+* Android
 
 Compilers:
 
@@ -40,9 +40,16 @@ macOS versions:
 
 * macOS 10.15 (Catalina)
 
+Android versions:
+
+* NDK versions: 21
+* API levels: 28 (Android 9)
+* all ABIs: armeabi-v7a, arm64-v8a, x86, x86_64
+
 Hardware architectures:
 
 * x86_64
+* i686
 * ARMv6
 * ARMv7 (Cortex-A 32-bit)
 * ARMv8 (Cortex-A 64-bit)

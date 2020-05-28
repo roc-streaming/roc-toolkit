@@ -363,16 +363,58 @@ macOS 10.11 and later
 Android
 =======
 
-.. warning::
-
-   Android support is still work in progress and was not properly tested yet.
-
 .. seealso::
 
+   * `Java bindings for Roc <https://github.com/roc-project/roc-java>`_
    * :doc:`/portability/cross_compiling`
 
-Termux packages
----------------
+Building library
+----------------
+
+.. code::
+
+    # clone repo
+    $ git clone https://github.com/roc-project/roc.git
+    $ cd roc
+
+    # build libroc.so for 64-bit ARM, API level 28
+    $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
+        rocproject/cross-linux-android \
+          scons -Q \
+            --disable-tools \
+            --compiler=clang \
+            --host=aarch64-linux-android28 \
+            --build-3rdparty=libuv,openfec,speexdsp
+
+    # build libroc.so for 32-bit ARM, API level 28
+    $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
+        rocproject/cross-linux-android \
+          scons -Q \
+            --disable-tools \
+            --compiler=clang \
+            --host=armv7a-linux-androideabi28 \
+            --build-3rdparty=libuv,openfec,speexdsp
+
+    # build libroc.so for 64-bit Intel, API level 28
+    $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
+        rocproject/cross-linux-android \
+          scons -Q \
+            --disable-tools \
+            --compiler=clang \
+            --host=x86_64-linux-android28 \
+            --build-3rdparty=libuv,openfec,speexdsp
+
+    # build libroc.so for 32-bit Intel, API level 28
+    $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
+        rocproject/cross-linux-android \
+          scons -Q \
+            --disable-tools \
+            --compiler=clang \
+            --host=i686-linux-android28 \
+            --build-3rdparty=libuv,openfec,speexdsp
+
+Using Termux packages
+---------------------
 
 .. warning::
 
