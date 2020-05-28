@@ -20,6 +20,7 @@
 #include "roc_core/array.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/noncopyable.h"
+#include "roc_core/rate_limiter.h"
 #include "roc_core/slice.h"
 #include "roc_core/stddefs.h"
 #include "roc_packet/units.h"
@@ -58,7 +59,7 @@ public:
     virtual size_t pop_output(Frame& out);
 
 private:
-    bool refresh_state_();
+    void report_stats_();
 
     SpeexResamplerState* speex_state_;
 
@@ -67,6 +68,8 @@ private:
     spx_uint32_t in_frame_pos_;
 
     const spx_uint32_t num_ch_;
+
+    core::RateLimiter rate_limiter_;
 
     bool valid_;
 };
