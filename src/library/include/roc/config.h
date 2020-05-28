@@ -227,24 +227,51 @@ typedef enum roc_channel_set {
     ROC_CHANNEL_SET_STEREO = 2
 } roc_channel_set;
 
-/** Resampler profile. */
+/** Resampler backend.
+ * Affects speed and quality.
+ * Some backends may be disabled at build time.
+ */
+typedef enum roc_resampler_backend {
+    /** Default backend.
+     * Depends on what was enabled at build time.
+     */
+    ROC_RESAMPLER_BACKEND_DEFAULT = 0,
+
+    /** Slow built-in resampler.
+     * Always available.
+     */
+    ROC_RESAMPLER_BACKEND_BUILTIN = 1,
+
+    /** Fast good-quality resampler from SpeexDSP.
+     * May be disabled at build time.
+     */
+    ROC_RESAMPLER_BACKEND_SPEEX = 2
+} roc_resampler_backend;
+
+/** Resampler profile.
+ * Affects speed and quality.
+ * Each resampler backend treats profile in its own way.
+ */
 typedef enum roc_resampler_profile {
-    /** No resampling. */
-    ROC_RESAMPLER_DISABLE = -1,
+    /** Do not perform resampling.
+     * Clock drift compensation will be disabled in this case.
+     * If in doubt, do not disable resampling.
+     */
+    ROC_RESAMPLER_PROFILE_DISABLE = -1,
 
     /** Default profile.
-     * Current default is \c ROC_RESAMPLER_MEDIUM.
+     * Current default is \c ROC_RESAMPLER_PROFILE_MEDIUM.
      */
-    ROC_RESAMPLER_DEFAULT = 0,
+    ROC_RESAMPLER_PROFILE_DEFAULT = 0,
 
     /** High quality, low speed. */
-    ROC_RESAMPLER_HIGH = 1,
+    ROC_RESAMPLER_PROFILE_HIGH = 1,
 
     /** Medium quality, medium speed. */
-    ROC_RESAMPLER_MEDIUM = 2,
+    ROC_RESAMPLER_PROFILE_MEDIUM = 2,
 
     /** Low quality, high speed. */
-    ROC_RESAMPLER_LOW = 3
+    ROC_RESAMPLER_PROFILE_LOW = 3
 } roc_resampler_profile;
 
 /** Clock source for sender or receiver. */
@@ -348,6 +375,10 @@ typedef struct roc_sender_config {
      */
     roc_clock_source clock_source;
 
+    /** Resampler backend to use.
+     */
+    roc_resampler_backend resampler_backend;
+
     /** Resampler profile to use.
      * If non-zero, the sender employs resampler if the frame sample rate differs
      * from the packet sample rate.
@@ -405,6 +436,10 @@ typedef struct roc_receiver_config {
      * If zero, default value is used.
      */
     roc_clock_source clock_source;
+
+    /** Resampler backend to use.
+     */
+    roc_resampler_backend resampler_backend;
 
     /** Resampler profile to use.
      * If non-zero, the receiver employs resampler for two purposes:

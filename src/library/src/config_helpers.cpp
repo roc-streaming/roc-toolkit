@@ -68,19 +68,34 @@ bool sender_config_from_user(pipeline::SenderConfig& out, const roc_sender_confi
     out.interleaving = in.packet_interleaving;
     out.timing = (in.clock_source == ROC_CLOCK_INTERNAL);
 
-    out.resampling = (in.resampler_profile != ROC_RESAMPLER_DISABLE);
+    out.resampling = (in.resampler_profile != ROC_RESAMPLER_PROFILE_DISABLE);
+
+    switch ((int)in.resampler_backend) {
+    case ROC_RESAMPLER_BACKEND_DEFAULT:
+        out.resampler_backend = audio::ResamplerBackend_Default;
+        break;
+    case ROC_RESAMPLER_BACKEND_BUILTIN:
+        out.resampler_backend = audio::ResamplerBackend_Builtin;
+        break;
+    case ROC_RESAMPLER_BACKEND_SPEEX:
+        out.resampler_backend = audio::ResamplerBackend_Speex;
+        break;
+    default:
+        roc_log(LogError, "bad configuration: invalid resampler_backend");
+        return false;
+    }
 
     switch ((int)in.resampler_profile) {
-    case ROC_RESAMPLER_DISABLE:
+    case ROC_RESAMPLER_PROFILE_DISABLE:
         break;
-    case ROC_RESAMPLER_LOW:
+    case ROC_RESAMPLER_PROFILE_LOW:
         out.resampler_profile = audio::ResamplerProfile_Low;
         break;
-    case ROC_RESAMPLER_DEFAULT:
-    case ROC_RESAMPLER_MEDIUM:
+    case ROC_RESAMPLER_PROFILE_DEFAULT:
+    case ROC_RESAMPLER_PROFILE_MEDIUM:
         out.resampler_profile = audio::ResamplerProfile_Medium;
         break;
-    case ROC_RESAMPLER_HIGH:
+    case ROC_RESAMPLER_PROFILE_HIGH:
         out.resampler_profile = audio::ResamplerProfile_High;
         break;
     default:
@@ -132,19 +147,34 @@ bool receiver_config_from_user(pipeline::ReceiverConfig& out,
     }
 
     out.common.timing = (in.clock_source == ROC_CLOCK_INTERNAL);
-    out.common.resampling = (in.resampler_profile != ROC_RESAMPLER_DISABLE);
+    out.common.resampling = (in.resampler_profile != ROC_RESAMPLER_PROFILE_DISABLE);
+
+    switch ((int)in.resampler_backend) {
+    case ROC_RESAMPLER_BACKEND_DEFAULT:
+        out.default_session.resampler_backend = audio::ResamplerBackend_Default;
+        break;
+    case ROC_RESAMPLER_BACKEND_BUILTIN:
+        out.default_session.resampler_backend = audio::ResamplerBackend_Builtin;
+        break;
+    case ROC_RESAMPLER_BACKEND_SPEEX:
+        out.default_session.resampler_backend = audio::ResamplerBackend_Speex;
+        break;
+    default:
+        roc_log(LogError, "bad configuration: invalid resampler_backend");
+        return false;
+    }
 
     switch ((int)in.resampler_profile) {
-    case ROC_RESAMPLER_DISABLE:
+    case ROC_RESAMPLER_PROFILE_DISABLE:
         break;
-    case ROC_RESAMPLER_LOW:
+    case ROC_RESAMPLER_PROFILE_LOW:
         out.default_session.resampler_profile = audio::ResamplerProfile_Low;
         break;
-    case ROC_RESAMPLER_DEFAULT:
-    case ROC_RESAMPLER_MEDIUM:
+    case ROC_RESAMPLER_PROFILE_DEFAULT:
+    case ROC_RESAMPLER_PROFILE_MEDIUM:
         out.default_session.resampler_profile = audio::ResamplerProfile_Medium;
         break;
-    case ROC_RESAMPLER_HIGH:
+    case ROC_RESAMPLER_PROFILE_HIGH:
         out.default_session.resampler_profile = audio::ResamplerProfile_High;
         break;
     default:
