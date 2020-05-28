@@ -82,7 +82,7 @@ inline size_t get_window_size(ResamplerProfile profile) {
         return 64;
     }
 
-    roc_panic("resampler: unexpected profile");
+    roc_panic("builtin resampler: unexpected profile");
 }
 
 inline size_t get_window_interp(ResamplerProfile profile) {
@@ -97,7 +97,7 @@ inline size_t get_window_interp(ResamplerProfile profile) {
         return 512;
     }
 
-    roc_panic("resampler: unexpected profile");
+    roc_panic("builtin resampler: unexpected profile");
 }
 
 } // namespace
@@ -143,7 +143,7 @@ BuiltinResampler::BuiltinResampler(core::IAllocator& allocator,
     }
 
     roc_log(LogDebug,
-            "resampler: initializing: "
+            "builtin resampler: initializing: "
             "window_interp=%lu window_size=%lu frame_size=%lu channels_num=%lu",
             (unsigned long)window_interp_, (unsigned long)window_size_,
             (unsigned long)frame_size_, (unsigned long)channels_num_);
@@ -170,7 +170,7 @@ bool BuiltinResampler::set_scaling(size_t input_sample_rate,
 
     // Filter out obviously invalid values.
     if (new_scaling <= 0) {
-        roc_log(LogError, "resampler: invalid scaling");
+        roc_log(LogError, "builtin resampler: invalid scaling");
         return false;
     }
 
@@ -178,7 +178,7 @@ bool BuiltinResampler::set_scaling(size_t input_sample_rate,
     // doesn't fit to the frames size -- deny changes.
     if (window_size_ * new_scaling > frame_size_ch_ - 1) {
         roc_log(LogError,
-                "resampler: scaling does not fit frame size:"
+                "builtin resampler: scaling does not fit frame size:"
                 " window_size=%lu frame_size=%lu scaling=%.5f",
                 (unsigned long)window_size_, (unsigned long)frame_size_,
                 (double)new_scaling);
@@ -201,7 +201,7 @@ bool BuiltinResampler::set_scaling(size_t input_sample_rate,
 
         if (out_of_bounds) {
             roc_log(LogError,
-                    "resampler: scaling does not fit window size:"
+                    "builtin resampler: scaling does not fit window size:"
                     " window_size=%lu frame_size=%lu scaling=%.5f",
                     (unsigned long)window_size_, (unsigned long)frame_size_,
                     (double)new_scaling);
@@ -284,7 +284,7 @@ bool BuiltinResampler::alloc_frames_(core::BufferPool<sample_t>& buffer_pool) {
         frames_[n] = new (buffer_pool) core::Buffer<sample_t>(buffer_pool);
 
         if (!frames_[n]) {
-            roc_log(LogError, "resampler: can't allocate frame buffer");
+            roc_log(LogError, "builtin resampler: can't allocate frame buffer");
             return false;
         }
 
@@ -296,14 +296,14 @@ bool BuiltinResampler::alloc_frames_(core::BufferPool<sample_t>& buffer_pool) {
 
 bool BuiltinResampler::check_config_() const {
     if (channels_num_ < 1) {
-        roc_log(LogError, "resampler: invalid num_channels: num_channels=%lu",
+        roc_log(LogError, "builtin resampler: invalid num_channels: num_channels=%lu",
                 (unsigned long)channels_num_);
         return false;
     }
 
     if (frame_size_ != frame_size_ch_ * channels_num_) {
         roc_log(LogError,
-                "resampler: frame_size is not multiple of num_channels:"
+                "builtin resampler: frame_size is not multiple of num_channels:"
                 " frame_size=%lu num_channels=%lu",
                 (unsigned long)frame_size_, (unsigned long)channels_num_);
         return false;
@@ -313,7 +313,7 @@ bool BuiltinResampler::check_config_() const {
         (((fixedpoint_t)(signed_fixedpoint_t)-1 >> FRACT_BIT_COUNT) + 1) * channels_num_;
     if (frame_size_ > max_frame_size) {
         roc_log(LogError,
-                "resampler: frame_size is too much: "
+                "builtin resampler: frame_size is too much: "
                 "max_frame_size=%lu frame_size=%lu num_channels=%lu",
                 (unsigned long)max_frame_size, (unsigned long)frame_size_,
                 (unsigned long)channels_num_);
@@ -322,7 +322,7 @@ bool BuiltinResampler::check_config_() const {
 
     if ((size_t)1 << window_interp_bits_ != window_interp_) {
         roc_log(LogError,
-                "resampler: window_interp is not power of two: window_interp=%lu",
+                "builtin resampler: window_interp is not power of two: window_interp=%lu",
                 (unsigned long)window_interp_);
         return false;
     }
@@ -332,7 +332,7 @@ bool BuiltinResampler::check_config_() const {
 
 bool BuiltinResampler::fill_sinc_() {
     if (!sinc_table_.resize(window_size_ * window_interp_ + 2)) {
-        roc_log(LogError, "resampler: can't allocate sinc table");
+        roc_log(LogError, "builtin resampler: can't allocate sinc table");
         return false;
     }
 
