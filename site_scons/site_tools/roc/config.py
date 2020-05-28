@@ -321,7 +321,7 @@ def FindPkgConfig(context, toolchain):
         return True
 
     # https://autotools.io/pkgconfig/cross-compiling.html
-    # https://stackoverflow.com/questions/9221236/pkg-config-fails-to-find-package-under-sysroot-directory
+    # http://tiny.cc/lh6upz
     if toolchain:
         if env.Which(toolchain + '-pkg-config'):
             env['PKG_CONFIG'] = toolchain + '-pkg-config'
@@ -361,7 +361,8 @@ def FindPkgConfigPath(context):
 
     pkg_config = env.get('PKG_CONFIG', None)
     if pkg_config:
-        pkg_config_paths = env.CommandOutput('%s --variable pc_path pkg-config' % quote(pkg_config))
+        pkg_config_paths = env.CommandOutput(
+            '%s --variable pc_path pkg-config' % quote(pkg_config))
         try:
             for path in pkg_config_paths.split(':'):
                 if os.path.isdir(path):
@@ -382,12 +383,15 @@ def AddPkgConfigDependency(context, package, flags):
     if not pkg_config:
         return False
 
+    cmd = '%s %s %s' % (quote(pkg_config), package, flags)
     try:
-        env.ParseConfig('%s %s %s' % (quote(pkg_config), package, flags))
-        env.AppendUnique(PKG_CONFIG_DEPS=[package])
-        return True
+        if env.ParseConfig(cmd):
+            env.AppendUnique(PKG_CONFIG_DEPS=[package])
+            return True
     except:
-        return False
+        pass
+
+    return False
 
 def init(env):
     env.CustomTests = {
