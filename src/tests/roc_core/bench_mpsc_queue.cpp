@@ -51,7 +51,7 @@ public:
     virtual void TearDown(const benchmark::State&) {
         Mutex::Lock lock(mutex_);
 
-        while (queue_.pop_front()) {
+        while (queue_.pop_front_exclusive()) {
         }
 
         for (int n = 0; n < NumThreads; n++) {
@@ -125,7 +125,7 @@ BENCHMARK_DEFINE_F(BM_MpscQueue, TryPopFront)(benchmark::State& state) {
 
     while (state.KeepRunningBatch(BatchSize)) {
         for (int n = 0; n < BatchSize; n++) {
-            queue.try_pop_front();
+            queue.try_pop_front_exclusive();
         }
     }
 
@@ -159,7 +159,7 @@ BENCHMARK_DEFINE_F(BM_MpscQueue, PopFront)(benchmark::State& state) {
 
     while (state.KeepRunningBatch(BatchSize)) {
         for (int n = 0; n < BatchSize; n++) {
-            queue.pop_front();
+            queue.pop_front_exclusive();
         }
     }
 

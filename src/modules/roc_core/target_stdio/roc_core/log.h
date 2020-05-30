@@ -12,7 +12,7 @@
 #ifndef ROC_CORE_LOG_H_
 #define ROC_CORE_LOG_H_
 
-#include "roc_core/atomic.h"
+#include "roc_core/atomic_ops.h"
 #include "roc_core/attributes.h"
 #include "roc_core/mutex.h"
 #include "roc_core/noncopyable.h"
@@ -76,7 +76,7 @@ public:
 
     //! Get current maximum log level.
     LogLevel get_level() {
-        return (LogLevel)level_.load_relaxed();
+        return (LogLevel)AtomicOps::load_relaxed(level_);
     }
 
     //! Set maximum log level.
@@ -106,7 +106,7 @@ private:
 
     void default_print_(LogLevel level, const char* module, const char* message);
 
-    Atomic<int> level_;
+    int level_;
 
     Mutex mutex_;
 

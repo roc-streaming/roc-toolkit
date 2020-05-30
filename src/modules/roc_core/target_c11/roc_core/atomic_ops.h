@@ -16,20 +16,21 @@ namespace roc {
 namespace core {
 
 //! Atomic operations.
+//! This wrapper exists because on non-C11 compilers we use another implementation.
 class AtomicOps {
 public:
     //! Acquire memory barrier.
-    static inline void barrier_acquire() {
+    static inline void fence_acquire() {
         __atomic_thread_fence(__ATOMIC_ACQUIRE);
     }
 
     //! Release memory barrier.
-    static inline void barrier_release() {
+    static inline void fence_release() {
         __atomic_thread_fence(__ATOMIC_RELEASE);
     }
 
     //! Full memory barrier.
-    static inline void barrier_seq_cst() {
+    static inline void fence_seq_cst() {
         __atomic_thread_fence(__ATOMIC_SEQ_CST);
     }
 
@@ -83,6 +84,11 @@ public:
         return __atomic_exchange_n(&var, val, __ATOMIC_ACQ_REL);
     }
 
+    //! Atomic exchange (full barrier).
+    template <class T1, class T2> static inline T1 exchange_seq_cst(T1& var, T2 val) {
+        return __atomic_exchange_n(&var, val, __ATOMIC_SEQ_CST);
+    }
+
     //! Atomic compare-and-swap (no barrier).
     template <class T1, class T2, class T3>
     static inline bool compare_exchange_relaxed(T1& var, T2& exp, T3 des) {
@@ -109,6 +115,13 @@ public:
     static inline bool compare_exchange_acq_rel(T1& var, T2& exp, T3 des) {
         return __atomic_compare_exchange_n(&var, &exp, des, 0, __ATOMIC_ACQ_REL,
                                            __ATOMIC_ACQUIRE);
+    }
+
+    //! Atomic compare-and-swap (full barrier).
+    template <class T1, class T2, class T3>
+    static inline bool compare_exchange_seq_cst(T1& var, T2& exp, T3 des) {
+        return __atomic_compare_exchange_n(&var, &exp, des, 0, __ATOMIC_SEQ_CST,
+                                           __ATOMIC_SEQ_CST);
     }
 
     //! Atomic add-and-fetch (no barrier).
