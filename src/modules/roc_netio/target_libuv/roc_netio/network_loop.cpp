@@ -268,12 +268,12 @@ void NetworkLoop::stop_sem_cb_(uv_async_t* handle) {
 }
 
 void NetworkLoop::process_pending_tasks_() {
-    // Using try_pop_front() makes this method lock-free and wait-free.
-    // try_pop_front() may return NULL if the queue is not empty, but push_back()
-    // is currently in progress. In this case we can exit before processing all
-    // tasks, but schedule() always calls uv_async_send() after push_back(), so
-    // we'll wake up soon and process the rest tasks.
-    while (Task* task = pending_tasks_.try_pop_front()) {
+    // Using try_pop_front_exclusive() makes this method lock-free and wait-free.
+    // try_pop_front_exclusive() may return NULL if the queue is not empty, but
+    // push_back() is currently in progress. In this case we can exit the loop
+    // before processing all tasks, but schedule() always calls uv_async_send()
+    // after push_back(), so we'll wake up soon and process the rest tasks.
+    while (Task* task = pending_tasks_.try_pop_front_exclusive()) {
         (this->*(task->func_))(*task);
 
         if (task->state_ == Task::Finishing) {

@@ -31,7 +31,7 @@ bool Timer::try_set_deadline(nanoseconds_t new_deadline) {
     }
 
     if (next_wakeup < 0 || (new_deadline >= 0 && new_deadline < next_wakeup)) {
-        if (sem_post_flag_.compare_exchange_acq_rel(false, true)) {
+        if (sem_post_flag_.compare_exchange(false, true)) {
             sem_.post();
         }
     }

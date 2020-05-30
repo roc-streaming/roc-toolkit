@@ -24,6 +24,8 @@ Logger::Logger()
 }
 
 void Logger::set_level(LogLevel level) {
+    Mutex::Lock lock(mutex_);
+
     if ((int)level < LogNone) {
         level = LogNone;
     }
@@ -32,7 +34,7 @@ void Logger::set_level(LogLevel level) {
         level = LogTrace;
     }
 
-    level_ = level;
+    AtomicOps::store_relaxed(level_, level);
 }
 
 void Logger::set_handler(LogHandler handler) {
@@ -50,7 +52,7 @@ void Logger::set_colors(ColorsMode colors) {
 void Logger::print(const char* module, LogLevel level, const char* format, ...) {
     Mutex::Lock lock(mutex_);
 
-    if (level > get_level() || level == LogNone) {
+    if (level > level_ || level == LogNone) {
         return;
     }
 

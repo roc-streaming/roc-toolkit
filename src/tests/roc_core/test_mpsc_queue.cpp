@@ -29,8 +29,8 @@ TEST_GROUP(mpsc_queue) {};
 TEST(mpsc_queue, empty) {
     MpscQueue<Object, NoOwnership> queue;
 
-    POINTERS_EQUAL(NULL, queue.try_pop_front());
-    POINTERS_EQUAL(NULL, queue.pop_front());
+    POINTERS_EQUAL(NULL, queue.try_pop_front_exclusive());
+    POINTERS_EQUAL(NULL, queue.pop_front_exclusive());
 }
 
 TEST(mpsc_queue, push_pop) {
@@ -45,8 +45,8 @@ TEST(mpsc_queue, push_pop) {
 
             POINTERS_EQUAL(&queue, obj.mpsc_queue_data()->queue);
 
-            POINTERS_EQUAL(&obj, queue.try_pop_front());
-            POINTERS_EQUAL(NULL, queue.try_pop_front());
+            POINTERS_EQUAL(&obj, queue.try_pop_front_exclusive());
+            POINTERS_EQUAL(NULL, queue.try_pop_front_exclusive());
 
             POINTERS_EQUAL(NULL, obj.mpsc_queue_data()->queue);
         }
@@ -62,8 +62,8 @@ TEST(mpsc_queue, push_pop) {
 
             POINTERS_EQUAL(&queue, obj.mpsc_queue_data()->queue);
 
-            POINTERS_EQUAL(&obj, queue.pop_front());
-            POINTERS_EQUAL(NULL, queue.pop_front());
+            POINTERS_EQUAL(&obj, queue.pop_front_exclusive());
+            POINTERS_EQUAL(NULL, queue.pop_front_exclusive());
 
             POINTERS_EQUAL(NULL, obj.mpsc_queue_data()->queue);
         }
@@ -83,10 +83,10 @@ TEST(mpsc_queue, push_pop_many) {
             }
 
             for (int n = 0; n < NumObjs; n++) {
-                POINTERS_EQUAL(&objs[n], queue.try_pop_front());
+                POINTERS_EQUAL(&objs[n], queue.try_pop_front_exclusive());
             }
 
-            POINTERS_EQUAL(NULL, queue.try_pop_front());
+            POINTERS_EQUAL(NULL, queue.try_pop_front_exclusive());
         }
     }
 
@@ -100,10 +100,10 @@ TEST(mpsc_queue, push_pop_many) {
             }
 
             for (int n = 0; n < NumObjs; n++) {
-                POINTERS_EQUAL(&objs[n], queue.pop_front());
+                POINTERS_EQUAL(&objs[n], queue.pop_front_exclusive());
             }
 
-            POINTERS_EQUAL(NULL, queue.pop_front());
+            POINTERS_EQUAL(NULL, queue.pop_front_exclusive());
         }
     }
 }
@@ -124,8 +124,8 @@ TEST(mpsc_queue, ownership) {
     UNSIGNED_LONGS_EQUAL(1, obj2.getref());
 
     {
-        SharedPtr<Object> ptr1 = queue.pop_front();
-        SharedPtr<Object> ptr2 = queue.try_pop_front();
+        SharedPtr<Object> ptr1 = queue.pop_front_exclusive();
+        SharedPtr<Object> ptr2 = queue.try_pop_front_exclusive();
 
         POINTERS_EQUAL(&obj1, ptr1.get());
         POINTERS_EQUAL(&obj2, ptr2.get());

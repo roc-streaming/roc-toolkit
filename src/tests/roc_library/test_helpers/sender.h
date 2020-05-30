@@ -36,7 +36,8 @@ public:
            unsigned flags)
         : sndr_(NULL)
         , sample_step_(sample_step)
-        , frame_size_(frame_size) {
+        , frame_size_(frame_size)
+        , stopped_(false) {
         CHECK(roc_sender_open(context.get(), &config, &sndr_) == 0);
         CHECK(sndr_);
 
@@ -59,7 +60,7 @@ public:
     }
 
     void stop() {
-        stopped_ = 1;
+        stopped_ = true;
     }
 
 private:

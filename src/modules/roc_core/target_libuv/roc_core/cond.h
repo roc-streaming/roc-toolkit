@@ -29,7 +29,8 @@ class Cond : public NonCopyable<> {
 public:
     //! Initialize.
     Cond(const Mutex& mutex)
-        : mutex_(mutex.mutex_) {
+        : guard_(0)
+        , mutex_(mutex.mutex_) {
         if (int err = uv_cond_init(&cond_)) {
             roc_panic("cond: uv_cond_init(): [%s] %s", uv_err_name(err),
                       uv_strerror(err));
