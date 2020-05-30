@@ -87,11 +87,14 @@ public:
     public:
         ~Task();
 
-        //! Latest cancellation status.
-        bool cancelled() const;
+        //! True if the task is not finished yet.
+        bool pending() const;
 
-        //! Latest execution result.
+        //! True if the latest execution succeeded.
         bool success() const;
+
+        //! True if the latest execution was cancelled.
+        bool cancelled() const;
 
     protected:
         Task();
