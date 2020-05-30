@@ -21,7 +21,8 @@ namespace {
 class TestThread : public core::Thread {
 public:
     TestThread(Timer& t)
-        : t_(t) {
+        : t_(t)
+        , r_(0) {
     }
 
     bool running() const {

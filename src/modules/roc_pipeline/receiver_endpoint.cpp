@@ -110,12 +110,11 @@ void ReceiverEndpoint::write(const packet::PacketPtr& packet) {
 void ReceiverEndpoint::flush_packets() {
     roc_panic_if(!valid());
 
-    // Using try_pop_front() makes this method lock-free and wait-free. If there is only
-    // one producer (writer), which is true in this case, try_pop_front() may fail only
-    // if the queue is empty or we're trying to read the very last packet being added
-    // currently. It's okay to consider such a packet late, and leave it for next flush,
-    // so using try_pop_front() is okay here.
-    while (packet::PacketPtr packet = queue_.try_pop_front()) {
+    // Using try_pop_front_exclusive() makes this method lock-free and wait-free.
+    // It may return NULL either if the queue is empty or if the packets in the
+    // queue were added in a very short time or are being added currently. It's
+    // acceptable to consider such packets late for this flush and fetch next time.
+    while (packet::PacketPtr packet = queue_.try_pop_front_exclusive()) {
         if (!parser_->parse(*packet, packet->data())) {
             roc_log(LogDebug, "receiver endpoint: can't parse packet");
             continue;
