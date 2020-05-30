@@ -65,7 +65,7 @@ size_t ReceiverSessionGroup::num_sessions() const {
 bool ReceiverSessionGroup::can_create_session_(const packet::PacketPtr& packet) {
     if (packet->flags() & packet::Packet::FlagRepair) {
         save_dropped_packets_(packet);
-        roc_log(LogDebug, "session group: ignoring repair packet for unknown session");
+        roc_log(LogDebug, "session group: save repair packet for unknown session");
         return false;
     }
 
@@ -103,13 +103,13 @@ void ReceiverSessionGroup::create_session_(const packet::PacketPtr& packet) {
         return;
     }
 
+    fetch_dropped_packets_(sess);
+
     if (!sess->handle(packet)) {
         roc_log(LogError,
                 "session group: can't create session, can't handle first packet");
         return;
     }
-
-    fetch_dropped_packets_(sess);
 
     mixer_.add_input(sess->reader());
     sessions_.push_back(*sess);
@@ -148,6 +148,7 @@ void ReceiverSessionGroup::fetch_dropped_packets_(
          saved_packet = saved_packet_next) {
         saved_packet_next = dropped_packets_.nextof(*saved_packet);
         if (sess->handle(saved_packet)) {
+            roc_log(LogDebug, "session group: fetch saved repair packet for new session");
             dropped_packets_.remove(*saved_packet);
         }
     }
