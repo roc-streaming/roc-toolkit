@@ -49,12 +49,11 @@ public:
     }
 
     ~NoopPipeline() {
-        stop_and_wait();
+        loop_.wait(process_tasks_);
     }
 
     void stop_and_wait() {
         loop_.async_cancel(process_tasks_);
-        loop_.wait(process_tasks_);
 
         while (num_pending_tasks() != 0) {
             process_tasks();
