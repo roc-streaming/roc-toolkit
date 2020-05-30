@@ -31,12 +31,16 @@ TaskQueue::Task::~Task() {
     }
 }
 
-bool TaskQueue::Task::cancelled() const {
-    return result_ == TaskCancelled;
+bool TaskQueue::Task::pending() const {
+    return state_ != StateFinished;
 }
 
 bool TaskQueue::Task::success() const {
     return result_ == TaskSucceeded;
+}
+
+bool TaskQueue::Task::cancelled() const {
+    return result_ == TaskCancelled;
 }
 
 TaskQueue::ICompletionHandler::~ICompletionHandler() {

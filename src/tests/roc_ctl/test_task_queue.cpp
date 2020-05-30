@@ -126,7 +126,20 @@ public:
         , task_(NULL)
         , expect_success_(false)
         , expect_cancelled_(false)
-        , expect_after_(0) {
+        , expect_after_(0)
+        , expect_n_calls_(0)
+        , actual_calls_(0) {
+    }
+
+    ~TestHandler() {
+        core::Mutex::Lock lock(mutex_);
+        if (actual_calls_ != expect_n_calls_) {
+            roc_panic("handler: not enough calls: expected %d call(s), got %d call(s)",
+                      (int)expect_n_calls_, (int)actual_calls_);
+        }
+        if (task_) {
+            roc_panic("handler: forgot to invoke wait_called()");
+        }
     }
 
     void expect_success(bool success) {
@@ -144,16 +157,12 @@ public:
         expect_after_ = core::timestamp() + delay;
     }
 
-    virtual void control_task_finished(TaskQueue::Task& task) {
+    void expect_n_calls(size_t n) {
         core::Mutex::Lock lock(mutex_);
-        roc_panic_if_not(task.success() == expect_success_);
-        roc_panic_if_not(task.cancelled() == expect_cancelled_);
-        roc_panic_if_not(core::timestamp() >= expect_after_);
-        task_ = &task;
-        cond_.broadcast();
+        expect_n_calls_ += n;
     }
 
-    TestTaskQueue::Task* wait_task() {
+    TestTaskQueue::Task* wait_called() {
         core::Mutex::Lock lock(mutex_);
         while (!task_) {
             cond_.wait();
@@ -161,6 +170,29 @@ public:
         TestTaskQueue::Task* ret = (TestTaskQueue::Task*)task_;
         task_ = NULL;
         return ret;
+    }
+
+    virtual void control_task_finished(TaskQueue::Task& task) {
+        core::Mutex::Lock lock(mutex_);
+        if (actual_calls_ == expect_n_calls_) {
+            roc_panic("handler: unexpected call: expected only %d call(s)",
+                      (int)expect_n_calls_);
+        }
+        actual_calls_++;
+        if (task.success() != expect_success_) {
+            roc_panic("handler: unexpected task success status: expected=%d actual=%d",
+                      (int)expect_success_, (int)task.success());
+        }
+        if (task.cancelled() != expect_cancelled_) {
+            roc_panic(
+                "handler: unexpected task cancellation status: expected=%d actual=%d",
+                (int)expect_cancelled_, (int)task.cancelled());
+        }
+        if (core::timestamp() < expect_after_) {
+            roc_panic("handler: task was executed too early");
+        }
+        task_ = &task;
+        cond_.broadcast();
     }
 
 private:
@@ -172,6 +204,9 @@ private:
     bool expect_success_;
     bool expect_cancelled_;
     core::nanoseconds_t expect_after_;
+
+    size_t expect_n_calls_;
+    size_t actual_calls_;
 };
 
 core::nanoseconds_t now_plus_delay(core::nanoseconds_t delay) {
@@ -197,12 +232,13 @@ TEST(task_queue, schedule_one) {
         TestHandler handler;
         handler.expect_success(true);
         handler.expect_cancelled(false);
+        handler.expect_n_calls(1);
 
         TestTaskQueue::Task task;
         tq.set_nth_result(0, true);
         tq.schedule(task, &handler);
 
-        CHECK(handler.wait_task() == &task);
+        CHECK(handler.wait_called() == &task);
 
         UNSIGNED_LONGS_EQUAL(1, tq.num_tasks());
         CHECK(tq.nth_task(0) == &task);
@@ -219,12 +255,13 @@ TEST(task_queue, schedule_one) {
         TestHandler handler;
         handler.expect_success(false);
         handler.expect_cancelled(false);
+        handler.expect_n_calls(1);
 
         TestTaskQueue::Task task;
         tq.set_nth_result(0, false);
         tq.schedule(task, &handler);
 
-        CHECK(handler.wait_task() == &task);
+        CHECK(handler.wait_called() == &task);
 
         UNSIGNED_LONGS_EQUAL(1, tq.num_tasks());
         CHECK(tq.nth_task(0) == &task);
@@ -248,7 +285,7 @@ TEST(task_queue, schedule_one_no_handler) {
     tq.set_nth_result(0, true);
     tq.schedule(task, NULL);
 
-    while (!task.success()) {
+    while (task.pending()) {
         core::sleep_for(core::Microsecond * 100);
     }
 
@@ -273,12 +310,13 @@ TEST(task_queue, schedule_many_sequantial) {
         TestHandler handler;
         handler.expect_success(success);
         handler.expect_cancelled(false);
+        handler.expect_n_calls(1);
 
         TestTaskQueue::Task task;
         tq.set_nth_result(n, success);
         tq.schedule(task, &handler);
 
-        CHECK(handler.wait_task() == &task);
+        CHECK(handler.wait_called() == &task);
 
         UNSIGNED_LONGS_EQUAL(n + 1, tq.num_tasks());
         CHECK(tq.nth_task(n) == &task);
@@ -297,6 +335,10 @@ TEST(task_queue, schedule_many_batched) {
     TestTaskQueue::Task tasks[NumTasks];
     TestHandler handlers[NumTasks];
 
+    handlers[0].expect_success(false);
+    handlers[0].expect_cancelled(false);
+    handlers[0].expect_n_calls(1);
+
     tq.block();
 
     tq.set_nth_result(0, false);
@@ -309,6 +351,7 @@ TEST(task_queue, schedule_many_batched) {
 
         handlers[n].expect_success(success);
         handlers[n].expect_cancelled(false);
+        handlers[n].expect_n_calls(1);
 
         tq.set_nth_result(n, success);
         tq.schedule(tasks[n], &handlers[n]);
@@ -319,7 +362,7 @@ TEST(task_queue, schedule_many_batched) {
 
         const bool success = (n % 3 != 0);
 
-        CHECK(handlers[n].wait_task() == &tasks[n]);
+        CHECK(handlers[n].wait_called() == &tasks[n]);
 
         UNSIGNED_LONGS_EQUAL(n + 1, tq.num_tasks());
         CHECK(tq.nth_task(n) == &tasks[n]);
@@ -403,12 +446,13 @@ TEST(task_queue, schedule_at_one) {
         handler.expect_success(true);
         handler.expect_cancelled(false);
         handler.expect_after(core::Millisecond);
+        handler.expect_n_calls(1);
 
         TestTaskQueue::Task task;
         tq.set_nth_result(0, true);
         tq.schedule_at(task, now_plus_delay(core::Millisecond), &handler);
 
-        CHECK(handler.wait_task() == &task);
+        CHECK(handler.wait_called() == &task);
 
         UNSIGNED_LONGS_EQUAL(1, tq.num_tasks());
         CHECK(tq.nth_task(0) == &task);
@@ -426,12 +470,13 @@ TEST(task_queue, schedule_at_one) {
         handler.expect_success(false);
         handler.expect_cancelled(false);
         handler.expect_after(core::Millisecond);
+        handler.expect_n_calls(1);
 
         TestTaskQueue::Task task;
         tq.set_nth_result(0, false);
         tq.schedule_at(task, now_plus_delay(core::Millisecond), &handler);
 
-        CHECK(handler.wait_task() == &task);
+        CHECK(handler.wait_called() == &task);
 
         UNSIGNED_LONGS_EQUAL(1, tq.num_tasks());
         CHECK(tq.nth_task(0) == &task);
@@ -455,7 +500,7 @@ TEST(task_queue, schedule_at_one_no_handler) {
     tq.set_nth_result(0, true);
     tq.schedule_at(task, now_plus_delay(core::Millisecond), NULL);
 
-    while (!task.success()) {
+    while (task.pending()) {
         core::sleep_for(core::Microsecond * 100);
     }
 
@@ -475,6 +520,10 @@ TEST(task_queue, schedule_at_many) {
     TestTaskQueue::Task tasks[NumTasks];
     TestHandler handlers[NumTasks];
 
+    handlers[0].expect_success(false);
+    handlers[0].expect_cancelled(false);
+    handlers[0].expect_n_calls(1);
+
     tq.block();
 
     tq.set_nth_result(0, false);
@@ -493,6 +542,7 @@ TEST(task_queue, schedule_at_many) {
         handlers[n].expect_success(success);
         handlers[n].expect_cancelled(false);
         handlers[n].expect_after(delay);
+        handlers[n].expect_n_calls(1);
 
         tq.set_nth_result(n, success);
         tq.schedule_at(tasks[n], now_plus_delay(delay), &handlers[n]);
@@ -503,7 +553,7 @@ TEST(task_queue, schedule_at_many) {
 
         const bool success = (n % 3 != 0);
 
-        CHECK(handlers[n].wait_task() == &tasks[n]);
+        CHECK(handlers[n].wait_called() == &tasks[n]);
 
         UNSIGNED_LONGS_EQUAL(n + 1, tq.num_tasks());
         CHECK(tq.nth_task(n) == &tasks[n]);
@@ -524,12 +574,18 @@ TEST(task_queue, schedule_at_reversed) {
     TestTaskQueue::Task tasks[NumTasks];
     TestHandler handlers[NumTasks];
 
+    handlers[0].expect_success(false);
+    handlers[0].expect_cancelled(false);
+    handlers[0].expect_n_calls(1);
+
     tq.block();
 
     tq.set_nth_result(0, false);
     tq.schedule(tasks[0], &handlers[0]);
 
     tq.wait_blocked();
+
+    const core::nanoseconds_t now = core::timestamp();
 
     for (size_t n = 1; n < NumTasks; n++) {
         const bool success = (n % 3 != 0);
@@ -539,15 +595,15 @@ TEST(task_queue, schedule_at_reversed) {
 
         handlers[n].expect_success(success);
         handlers[n].expect_cancelled(false);
-        handlers[n].expect_after(delay);
+        handlers[n].expect_n_calls(1);
 
         tq.set_nth_result(NumTasks - n, success);
-        tq.schedule_at(tasks[n], now_plus_delay(delay), &handlers[n]);
+        tq.schedule_at(tasks[n], now + delay, &handlers[n]);
     }
 
     tq.unblock_one();
 
-    CHECK(handlers[0].wait_task() == &tasks[0]);
+    CHECK(handlers[0].wait_called() == &tasks[0]);
     UNSIGNED_LONGS_EQUAL(1, tq.num_tasks());
 
     for (size_t n = 1; n < NumTasks; n++) {
@@ -557,7 +613,7 @@ TEST(task_queue, schedule_at_reversed) {
 
         const bool success = (idx % 3 != 0);
 
-        CHECK(handlers[idx].wait_task() == &tasks[idx]);
+        CHECK(handlers[idx].wait_called() == &tasks[idx]);
 
         UNSIGNED_LONGS_EQUAL(n + 1, tq.num_tasks());
         CHECK(tq.nth_task(n) == &tasks[idx]);
@@ -577,6 +633,7 @@ TEST(task_queue, schedule_at_shuffled) {
 
     TestHandler handler;
     handler.expect_success(true);
+    handler.expect_n_calls(4);
 
     TestTaskQueue::Task tasks[4];
 
@@ -595,19 +652,19 @@ TEST(task_queue, schedule_at_shuffled) {
     tq.schedule_at(tasks[3], now + core::Millisecond * 5, &handler);
 
     tq.unblock_one();
-    CHECK(handler.wait_task() == &tasks[0]);
+    CHECK(handler.wait_called() == &tasks[0]);
     UNSIGNED_LONGS_EQUAL(1, tq.num_tasks());
 
     tq.unblock_one();
-    CHECK(handler.wait_task() == &tasks[2]);
+    CHECK(handler.wait_called() == &tasks[2]);
     UNSIGNED_LONGS_EQUAL(2, tq.num_tasks());
 
     tq.unblock_one();
-    CHECK(handler.wait_task() == &tasks[1]);
+    CHECK(handler.wait_called() == &tasks[1]);
     UNSIGNED_LONGS_EQUAL(3, tq.num_tasks());
 
     tq.unblock_one();
-    CHECK(handler.wait_task() == &tasks[3]);
+    CHECK(handler.wait_called() == &tasks[3]);
     UNSIGNED_LONGS_EQUAL(4, tq.num_tasks());
 
     CHECK(tasks[0].success());
@@ -626,6 +683,7 @@ TEST(task_queue, schedule_at_same_deadline) {
 
     TestHandler handler;
     handler.expect_success(true);
+    handler.expect_n_calls(4);
 
     TestTaskQueue::Task tasks[4];
 
@@ -644,19 +702,19 @@ TEST(task_queue, schedule_at_same_deadline) {
     tq.schedule_at(tasks[3], now + core::Millisecond * 2, &handler);
 
     tq.unblock_one();
-    CHECK(handler.wait_task() == &tasks[0]);
+    CHECK(handler.wait_called() == &tasks[0]);
     UNSIGNED_LONGS_EQUAL(1, tq.num_tasks());
 
     tq.unblock_one();
-    CHECK(handler.wait_task() == &tasks[3]);
+    CHECK(handler.wait_called() == &tasks[3]);
     UNSIGNED_LONGS_EQUAL(2, tq.num_tasks());
 
     tq.unblock_one();
-    CHECK(handler.wait_task() == &tasks[1]);
+    CHECK(handler.wait_called() == &tasks[1]);
     UNSIGNED_LONGS_EQUAL(3, tq.num_tasks());
 
     tq.unblock_one();
-    CHECK(handler.wait_task() == &tasks[2]);
+    CHECK(handler.wait_called() == &tasks[2]);
     UNSIGNED_LONGS_EQUAL(4, tq.num_tasks());
 
     CHECK(tasks[0].success());
@@ -675,6 +733,7 @@ TEST(task_queue, schedule_at_and_schedule) {
 
     TestHandler handler;
     handler.expect_success(true);
+    handler.expect_n_calls(4);
 
     TestTaskQueue::Task tasks[4];
 
@@ -693,19 +752,19 @@ TEST(task_queue, schedule_at_and_schedule) {
     tq.schedule_at(tasks[3], now + core::Millisecond * 1, &handler);
 
     tq.unblock_one();
-    CHECK(handler.wait_task() == &tasks[0]);
+    CHECK(handler.wait_called() == &tasks[0]);
     UNSIGNED_LONGS_EQUAL(1, tq.num_tasks());
 
     tq.unblock_one();
-    CHECK(handler.wait_task() == &tasks[2]);
+    CHECK(handler.wait_called() == &tasks[2]);
     UNSIGNED_LONGS_EQUAL(2, tq.num_tasks());
 
     tq.unblock_one();
-    CHECK(handler.wait_task() == &tasks[3]);
+    CHECK(handler.wait_called() == &tasks[3]);
     UNSIGNED_LONGS_EQUAL(3, tq.num_tasks());
 
     tq.unblock_one();
-    CHECK(handler.wait_task() == &tasks[1]);
+    CHECK(handler.wait_called() == &tasks[1]);
     UNSIGNED_LONGS_EQUAL(4, tq.num_tasks());
 
     CHECK(tasks[0].success());
@@ -733,15 +792,19 @@ TEST(task_queue, schedule_and_async_cancel) {
 
     handlers[0].expect_success(true);
     handlers[0].expect_cancelled(false);
+    handlers[0].expect_n_calls(1);
 
     handlers[1].expect_success(true);
-    handlers[2].expect_cancelled(false);
+    handlers[1].expect_cancelled(false);
+    handlers[1].expect_n_calls(1);
 
     handlers[2].expect_success(false);
     handlers[2].expect_cancelled(true);
+    handlers[2].expect_n_calls(1);
 
     handlers[3].expect_success(true);
     handlers[3].expect_cancelled(false);
+    handlers[3].expect_n_calls(1);
 
     tq.block();
 
@@ -756,24 +819,24 @@ TEST(task_queue, schedule_and_async_cancel) {
     tq.async_cancel(tasks[2]);
 
     tq.unblock_one();
-    CHECK(handlers[0].wait_task() == &tasks[0]);
+    CHECK(handlers[0].wait_called() == &tasks[0]);
     UNSIGNED_LONGS_EQUAL(1, tq.num_tasks());
     CHECK(tasks[0].success());
     CHECK(!tasks[0].cancelled());
 
     tq.unblock_one();
-    CHECK(handlers[1].wait_task() == &tasks[1]);
+    CHECK(handlers[1].wait_called() == &tasks[1]);
     UNSIGNED_LONGS_EQUAL(2, tq.num_tasks());
     CHECK(tasks[1].success());
     CHECK(!tasks[1].cancelled());
 
-    CHECK(handlers[2].wait_task() == &tasks[2]);
+    CHECK(handlers[2].wait_called() == &tasks[2]);
     UNSIGNED_LONGS_EQUAL(2, tq.num_tasks());
     CHECK(!tasks[2].success());
     CHECK(tasks[2].cancelled());
 
     tq.unblock_one();
-    CHECK(handlers[3].wait_task() == &tasks[3]);
+    CHECK(handlers[3].wait_called() == &tasks[3]);
     UNSIGNED_LONGS_EQUAL(3, tq.num_tasks());
     CHECK(tasks[3].success());
     CHECK(!tasks[3].cancelled());
@@ -798,15 +861,19 @@ TEST(task_queue, schedule_at_and_async_cancel) {
 
     handlers[0].expect_success(true);
     handlers[0].expect_cancelled(false);
+    handlers[0].expect_n_calls(1);
 
     handlers[1].expect_success(true);
-    handlers[2].expect_cancelled(false);
+    handlers[1].expect_cancelled(false);
+    handlers[1].expect_n_calls(1);
 
     handlers[2].expect_success(false);
     handlers[2].expect_cancelled(true);
+    handlers[2].expect_n_calls(1);
 
     handlers[3].expect_success(true);
     handlers[3].expect_cancelled(false);
+    handlers[3].expect_n_calls(1);
 
     tq.block();
 
@@ -823,24 +890,24 @@ TEST(task_queue, schedule_at_and_async_cancel) {
     tq.async_cancel(tasks[2]);
 
     tq.unblock_one();
-    CHECK(handlers[0].wait_task() == &tasks[0]);
+    CHECK(handlers[0].wait_called() == &tasks[0]);
     UNSIGNED_LONGS_EQUAL(1, tq.num_tasks());
     CHECK(tasks[0].success());
     CHECK(!tasks[0].cancelled());
 
-    CHECK(handlers[2].wait_task() == &tasks[2]);
+    CHECK(handlers[2].wait_called() == &tasks[2]);
     UNSIGNED_LONGS_EQUAL(1, tq.num_tasks());
     CHECK(!tasks[2].success());
     CHECK(tasks[2].cancelled());
 
     tq.unblock_one();
-    CHECK(handlers[1].wait_task() == &tasks[1]);
+    CHECK(handlers[1].wait_called() == &tasks[1]);
     UNSIGNED_LONGS_EQUAL(2, tq.num_tasks());
     CHECK(tasks[1].success());
     CHECK(!tasks[1].cancelled());
 
     tq.unblock_one();
-    CHECK(handlers[3].wait_task() == &tasks[3]);
+    CHECK(handlers[3].wait_called() == &tasks[3]);
     UNSIGNED_LONGS_EQUAL(3, tq.num_tasks());
     CHECK(tasks[3].success());
     CHECK(!tasks[3].cancelled());
@@ -857,6 +924,7 @@ TEST(task_queue, cancel_and_wait) {
     TestHandler handler;
     handler.expect_success(false);
     handler.expect_cancelled(true);
+    handler.expect_n_calls(1);
 
     TestTaskQueue::Task task;
     tq.set_nth_result(0, true);
@@ -868,7 +936,7 @@ TEST(task_queue, cancel_and_wait) {
     CHECK(!task.success());
     CHECK(task.cancelled());
 
-    CHECK(handler.wait_task() == &task);
+    CHECK(handler.wait_called() == &task);
 
     UNSIGNED_LONGS_EQUAL(0, tq.num_tasks());
 }
@@ -882,11 +950,12 @@ TEST(task_queue, cancel_already_finished) {
     TestHandler handler;
     handler.expect_success(true);
     handler.expect_cancelled(false);
+    handler.expect_n_calls(1);
 
     TestTaskQueue::Task task;
 
     tq.schedule(task, &handler);
-    CHECK(handler.wait_task() == &task);
+    CHECK(handler.wait_called() == &task);
 
     tq.async_cancel(task);
 
@@ -907,14 +976,15 @@ TEST(task_queue, schedule_already_finished) {
     TestHandler handler;
     handler.expect_success(true);
     handler.expect_cancelled(false);
+    handler.expect_n_calls(2);
 
     TestTaskQueue::Task task;
 
     tq.schedule(task, &handler);
-    CHECK(handler.wait_task() == &task);
+    CHECK(handler.wait_called() == &task);
 
     tq.schedule(task, &handler);
-    CHECK(handler.wait_task() == &task);
+    CHECK(handler.wait_called() == &task);
 
     UNSIGNED_LONGS_EQUAL(2, tq.num_tasks());
     CHECK(tq.nth_task(0) == &task);
@@ -941,17 +1011,19 @@ TEST(task_queue, schedule_at_cancel) {
 
     handler1.expect_success(true);
     handler1.expect_cancelled(false);
+    handler1.expect_n_calls(1);
 
     handler2.expect_success(false);
     handler2.expect_cancelled(true);
+    handler2.expect_n_calls(1);
 
     tq.schedule(task1, &handler1);
     tq.schedule(task2, &handler2);
     tq.async_cancel(task2);
 
     tq.unblock_one();
-    CHECK(handler1.wait_task() == &task1);
-    CHECK(handler2.wait_task() == &task2);
+    CHECK(handler1.wait_called() == &task1);
+    CHECK(handler2.wait_called() == &task2);
 
     UNSIGNED_LONGS_EQUAL(1, tq.num_tasks());
 
@@ -960,11 +1032,12 @@ TEST(task_queue, schedule_at_cancel) {
 
     handler2.expect_success(true);
     handler2.expect_cancelled(false);
+    handler2.expect_n_calls(1);
 
     tq.schedule(task2, &handler2);
 
     tq.unblock_one();
-    CHECK(handler2.wait_task() == &task2);
+    CHECK(handler2.wait_called() == &task2);
 
     UNSIGNED_LONGS_EQUAL(2, tq.num_tasks());
 
@@ -984,7 +1057,7 @@ TEST(task_queue, reschedule_new) {
     tq.set_nth_result(0, true);
     tq.reschedule_at(task, now_plus_delay(core::Microsecond * 10));
 
-    while (!task.success()) {
+    while (task.pending()) {
         core::sleep_for(core::Microsecond * 100);
     }
 
@@ -1023,24 +1096,27 @@ TEST(task_queue, reschedule_pending) {
 
     handler.expect_success(true);
     handler.expect_cancelled(false);
+    handler.expect_n_calls(1);
 
     tq.unblock_one();
 
-    CHECK(handler.wait_task() == &task1);
+    CHECK(handler.wait_called() == &task1);
 
     handler.expect_success(true);
     handler.expect_cancelled(false);
+    handler.expect_n_calls(1);
 
     tq.unblock_one();
 
-    CHECK(handler.wait_task() == &task3);
+    CHECK(handler.wait_called() == &task3);
 
     handler.expect_success(true);
     handler.expect_cancelled(false);
+    handler.expect_n_calls(1);
 
     tq.unblock_one();
 
-    CHECK(handler.wait_task() == &task2);
+    CHECK(handler.wait_called() == &task2);
 
     UNSIGNED_LONGS_EQUAL(3, tq.num_tasks());
 
@@ -1074,17 +1150,19 @@ TEST(task_queue, reschedule_processing) {
 
     handler.expect_success(true);
     handler.expect_cancelled(false);
+    handler.expect_n_calls(1);
 
     tq.unblock_one();
 
-    CHECK(handler.wait_task() == &task);
+    CHECK(handler.wait_called() == &task);
 
     handler.expect_success(true);
     handler.expect_cancelled(false);
+    handler.expect_n_calls(1);
 
     tq.unblock_one();
 
-    CHECK(handler.wait_task() == &task);
+    CHECK(handler.wait_called() == &task);
 
     CHECK(task.success());
     CHECK(!task.cancelled());
@@ -1106,11 +1184,12 @@ TEST(task_queue, reschedule_succeeded) {
 
     handler.expect_success(true);
     handler.expect_cancelled(false);
+    handler.expect_n_calls(1);
 
     tq.set_nth_result(0, true);
     tq.schedule(task, &handler);
 
-    CHECK(handler.wait_task() == &task);
+    CHECK(handler.wait_called() == &task);
 
     CHECK(task.success());
     CHECK(!task.cancelled());
@@ -1118,11 +1197,12 @@ TEST(task_queue, reschedule_succeeded) {
     handler.expect_success(true);
     handler.expect_cancelled(false);
     handler.expect_after(core::Millisecond);
+    handler.expect_n_calls(1);
 
     tq.set_nth_result(1, true);
     tq.reschedule_at(task, now_plus_delay(core::Millisecond));
 
-    CHECK(handler.wait_task() == &task);
+    CHECK(handler.wait_called() == &task);
 
     CHECK(task.success());
     CHECK(!task.cancelled());
@@ -1142,11 +1222,12 @@ TEST(task_queue, reschedule_failed) {
 
     handler.expect_success(false);
     handler.expect_cancelled(false);
+    handler.expect_n_calls(1);
 
     tq.set_nth_result(0, false);
     tq.schedule(task, &handler);
 
-    CHECK(handler.wait_task() == &task);
+    CHECK(handler.wait_called() == &task);
 
     CHECK(!task.success());
     CHECK(!task.cancelled());
@@ -1154,11 +1235,12 @@ TEST(task_queue, reschedule_failed) {
     handler.expect_success(true);
     handler.expect_cancelled(false);
     handler.expect_after(core::Millisecond);
+    handler.expect_n_calls(1);
 
     tq.set_nth_result(1, true);
     tq.reschedule_at(task, now_plus_delay(core::Millisecond));
 
-    CHECK(handler.wait_task() == &task);
+    CHECK(handler.wait_called() == &task);
 
     CHECK(task.success());
     CHECK(!task.cancelled());
@@ -1178,6 +1260,7 @@ TEST(task_queue, reschedule_cancelled) {
 
     handler.expect_success(false);
     handler.expect_cancelled(true);
+    handler.expect_n_calls(1);
 
     tq.set_nth_result(0, true);
     tq.schedule_at(task, now_plus_delay(core::Second * 999), &handler);
@@ -1185,7 +1268,7 @@ TEST(task_queue, reschedule_cancelled) {
     tq.async_cancel(task);
     tq.wait(task);
 
-    CHECK(handler.wait_task() == &task);
+    CHECK(handler.wait_called() == &task);
 
     CHECK(!task.success());
     CHECK(task.cancelled());
@@ -1193,12 +1276,14 @@ TEST(task_queue, reschedule_cancelled) {
     handler.expect_success(true);
     handler.expect_cancelled(false);
     handler.expect_after(core::Millisecond);
+    handler.expect_n_calls(1);
 
     tq.set_nth_result(1, true);
     tq.reschedule_at(task, now_plus_delay(core::Millisecond));
 
-    CHECK(handler.wait_task() == &task);
+    CHECK(handler.wait_called() == &task);
 
+    roc_panic_if(!task.success());
     CHECK(task.success());
     CHECK(!task.cancelled());
 
