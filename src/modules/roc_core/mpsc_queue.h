@@ -12,7 +12,7 @@
 #ifndef ROC_CORE_MPSC_QUEUE_H_
 #define ROC_CORE_MPSC_QUEUE_H_
 
-#include "roc_core/atomic.h"
+#include "roc_core/atomic_ops.h"
 #include "roc_core/cpu_ops.h"
 #include "roc_core/mpsc_queue_node.h"
 #include "roc_core/noncopyable.h"
@@ -23,6 +23,8 @@ namespace roc {
 namespace core {
 
 //! Thread-safe lock-free node-based intrusive multi-producer single-consumer queue.
+//!
+//! Provides sequential consistency.
 //!
 //! Based on Dmitry Vyukov algorithm:
 //!  - http://tiny.cc/3d3moz
@@ -49,13 +51,16 @@ public:
 
     ~MpscQueue() {
         // release ownership of all objects
-        while (pop_front()) {
+        while (pop_front_exclusive()) {
         }
     }
 
     //! Add object to the end of the queue.
     //! Can be called concurrently.
     //! Acquires ownership of @p obj.
+    //! After this call returns, any thread calling pop_front_exclusive() or
+    //! try_pop_front_exclusive() is guaranteed to see a non-empty queue. But note
+    //! that the latter can still fail if called concurrently with push_back().
     //! @note
     //!  - On CPUs with atomic exchange, e.g. x86, this operation is both lock-free
     //!    and wait-free, i.e. it never waits for sleeping threads and never spins.
@@ -78,17 +83,18 @@ public:
         push_node_(node);
     }
 
-    //! Remove object from the beginning of the queue (non-blocking version).
+    //! Try to remove object from the beginning of the queue (non-blocking version).
     //! Should NOT be called concurrently.
     //! Releases ownership of the returned object.
     //! @remarks
     //!  - Returns NULL if the queue is empty.
-    //!  - May return NULL if a concurrent push_back() call is running, even if the
-    //!    queue is not empty.
+    //!  - May return NULL even if the queue is actially non-empty, in particular if
+    //!    concurrent push_back() call is running, or if the push_back() results were
+    //!    not fully published yet.
     //! @note
     //!  - This operation is both lock-free and wait-free on all architectures, i.e. it
     //!    never waits for sleeping threads and never spins indefinitely.
-    Pointer try_pop_front() {
+    Pointer try_pop_front_exclusive() {
         MpscQueueNode::MpscQueueData* node = pop_node_<false>();
         if (!node) {
             return NULL;
@@ -113,7 +119,7 @@ public:
     //!    concurrent push_back() calls are finished.
     //!  - On the "fast-path", however, this operation does not wait for any
     //!    threads and just performs a few atomic reads and writes.
-    Pointer pop_front() {
+    Pointer pop_front_exclusive() {
         MpscQueueNode::MpscQueueData* node = pop_node_<true>();
         if (!node) {
             return NULL;
@@ -131,20 +137,20 @@ private:
     typedef MpscQueueNode::MpscQueueData MpscQueueData;
 
     void push_node_(MpscQueueData* node) {
-        node->next.store_relaxed(NULL);
+        AtomicOps::store_relaxed(node->next, (MpscQueueData*)NULL);
 
-        MpscQueueData* prev = tail_.exchange_acq_rel(node);
+        MpscQueueData* prev = AtomicOps::exchange_seq_cst(tail_, node);
 
-        prev->next.store_release(node);
+        AtomicOps::store_release(prev->next, node);
     }
 
     template <bool CanSpin> MpscQueueData* pop_node_() {
-        MpscQueueData* head = head_.load_relaxed();
-        MpscQueueData* next = head->next.load_acquire();
+        MpscQueueData* head = AtomicOps::load_relaxed(head_);
+        MpscQueueData* next = AtomicOps::load_acquire(head->next);
 
         if (head == &stub_) {
             if (!next) {
-                if (tail_.load_acquire() == head) {
+                if (AtomicOps::load_seq_cst(tail_) == head) {
                     // queue is empty
                     return NULL;
                 } else {
@@ -157,15 +163,15 @@ private:
                 }
             }
             // remove stub from the beginning of the list
-            head_.store_relaxed(next);
+            AtomicOps::store_relaxed(head_, next);
             head = next;
-            next = next->next.load_acquire();
+            next = AtomicOps::load_acquire(next->next);
         }
 
         if (!next) {
             // head is not stub and head->next == NULL
 
-            if (tail_.load_acquire() == head) {
+            if (AtomicOps::load_seq_cst(tail_) == head) {
                 // queue is empty
                 // add stub to the end of the list to ensure that we always
                 // have head->next when removing head and head wont become NULL
@@ -180,7 +186,7 @@ private:
         }
 
         // move list head to the next node
-        head_.store_relaxed(next);
+        AtomicOps::store_relaxed(head_, next);
 
         return head;
     }
@@ -192,8 +198,11 @@ private:
     // next, and is now sleeping. In this rare case, this method will wait until the
     // push_node_() thread is resumed and completed.
     MpscQueueData* wait_next_(MpscQueueData* node) {
+        if (MpscQueueData* next = try_wait_next_(node)) {
+            return next;
+        }
         for (;;) {
-            if (MpscQueueData* next = node->next.load_acquire()) {
+            if (MpscQueueData* next = AtomicOps::load_seq_cst(node->next)) {
                 return next;
             }
             cpu_relax();
@@ -206,20 +215,20 @@ private:
     // wait_next_() blocks.
     MpscQueueData* try_wait_next_(MpscQueueData* node) {
         MpscQueueData* next;
-        if ((next = node->next.load_acquire())) {
+        if ((next = AtomicOps::load_acquire(node->next))) {
             return next;
         }
-        if ((next = node->next.load_acquire())) {
+        if ((next = AtomicOps::load_acquire(node->next))) {
             return next;
         }
-        if ((next = node->next.load_acquire())) {
+        if ((next = AtomicOps::load_acquire(node->next))) {
             return next;
         }
         return NULL;
     }
 
-    Atomic<MpscQueueData*> tail_;
-    Atomic<MpscQueueData*> head_;
+    MpscQueueData* tail_;
+    MpscQueueData* head_;
 
     MpscQueueData stub_;
 };

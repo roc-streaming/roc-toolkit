@@ -17,12 +17,16 @@ namespace core {
 int HeapAllocator::panic_on_leak_;
 
 void HeapAllocator::enable_panic_on_leak() {
-    AtomicOps::store_release(panic_on_leak_, true);
+    AtomicOps::store_seq_cst(panic_on_leak_, true);
+}
+
+HeapAllocator::HeapAllocator()
+    : num_allocations_(0) {
 }
 
 HeapAllocator::~HeapAllocator() {
     if (num_allocations_ != 0) {
-        if (AtomicOps::load_acquire(panic_on_leak_)) {
+        if (AtomicOps::load_seq_cst(panic_on_leak_)) {
             roc_panic("heap allocator: detected leak(s): %d objects was not freed",
                       (int)num_allocations_);
         } else {
