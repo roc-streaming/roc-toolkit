@@ -335,7 +335,8 @@ private:
 class TaskThread : public core::Thread, private TaskPipeline::ICompletionHandler {
 public:
     TaskThread(TestPipeline& pipeline)
-        : pipeline_(pipeline) {
+        : pipeline_(pipeline)
+        , stop_(false) {
     }
 
     void stop() {

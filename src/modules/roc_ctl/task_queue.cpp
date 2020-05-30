@@ -44,7 +44,8 @@ TaskQueue::ICompletionHandler::~ICompletionHandler() {
 
 TaskQueue::TaskQueue()
     : started_(false)
-    , stop_(false) {
+    , stop_(false)
+    , ready_queue_size_(0) {
     started_ = Thread::start();
 }
 
@@ -172,7 +173,7 @@ bool TaskQueue::process_tasks_() {
 }
 
 void TaskQueue::initialize_task_(Task& task, ICompletionHandler* handler) {
-    if (!task.state_.compare_exchange_acq_rel(StateFinished, StateInitializing)) {
+    if (!task.state_.compare_exchange(StateFinished, StateInitializing)) {
         roc_panic("task queue: attempt to schedule task again before it finished");
     }
 
@@ -187,11 +188,11 @@ void TaskQueue::renew_task_(Task& task, core::nanoseconds_t deadline) {
     // In addition, if async_cancel() sees that the task is not in StatePending, it also
     // does nothing, since the task will be anyway executed or cancelled very soon.
     if (deadline < 0) {
-        if (!task.state_.compare_exchange_acq_rel(StatePending, StateRenewing)) {
+        if (!task.state_.compare_exchange(StatePending, StateRenewing)) {
             return;
         }
     } else {
-        if (task.state_.exchange_acq_rel(StateRenewing) == StateRenewing) {
+        if (task.state_.exchange(StateRenewing) == StateRenewing) {
             return;
         }
     }
@@ -214,7 +215,7 @@ void TaskQueue::renew_task_(Task& task, core::nanoseconds_t deadline) {
 
     // If the task is not in the ready_queue_ queue already, add it.
     // fetch_ready_task_() will handle the task soon.
-    if (task.in_ready_queue_.compare_exchange_acq_rel(false, true)) {
+    if (task.in_ready_queue_.compare_exchange(false, true)) {
         roc_log(LogTrace,
                 "task queue: enqueueing ready task: ptr=%p renewed_deadline=%lld",
                 (void*)&task, (long long)deadline);
@@ -297,7 +298,7 @@ void TaskQueue::cancel_task_(Task& task) {
 }
 
 void TaskQueue::process_task_(Task& task) {
-    if (!task.state_.compare_exchange_acq_rel(StatePending, StateProcessing)) {
+    if (!task.state_.compare_exchange(StatePending, StateProcessing)) {
         return;
     }
 
@@ -311,11 +312,11 @@ void TaskQueue::process_task_(Task& task) {
 void TaskQueue::finish_task_(Task& task, TaskState from_state) {
     ICompletionHandler* handler = task.handler_;
 
-    task.state_.compare_exchange_acq_rel(from_state, StateFinishing);
+    task.state_.compare_exchange(from_state, StateFinishing);
 
-    core::Semaphore* sem = task.sem_.exchange_acq_rel(NULL);
+    core::Semaphore* sem = task.sem_.exchange(NULL);
 
-    if (!task.state_.compare_exchange_acq_rel(StateFinishing, StateFinished)) {
+    if (!task.state_.compare_exchange(StateFinishing, StateFinished)) {
         // Task was re-scheduled while we were processing it.
         // We wont mark it finished and thus wont post the semaphore this time.
         if (sem) {
@@ -348,7 +349,7 @@ void TaskQueue::wait_task_(Task& task) {
     }
 
     // Protection from concurrent waits.
-    if (!task.wait_in_progress_.compare_exchange_acq_rel(false, true)) {
+    if (!task.wait_in_progress_.compare_exchange(false, true)) {
         roc_panic("task queue: can't call wait() concurrently for the same task");
     }
 
@@ -416,10 +417,10 @@ TaskQueue::Task* TaskQueue::fetch_ready_task_() {
 
 TaskQueue::Task*
 TaskQueue::fetch_ready_or_renewed_task_(core::nanoseconds_t& renewed_deadline) {
-    // try_pop_front() returns NULL if queue is empty or push_back() is
-    // in progress; in the later case ready_queue_size_ is guaranteed
-    // to be non-zero and process_tasks_() will call us again soon.
-    Task* task = ready_queue_.try_pop_front();
+    // try_pop_front_exclusive() returns NULL if queue is empty or push_back() is
+    // in progress; in the later case ready_queue_size_ is guaranteed to be
+    // non-zero and process_tasks_() will call us again soon.
+    Task* task = ready_queue_.try_pop_front_exclusive();
     if (!task) {
         roc_log(LogTrace, "task queue: ready task queue is empty or being pushed");
         return NULL;
@@ -447,7 +448,7 @@ TaskQueue::fetch_ready_or_renewed_task_(core::nanoseconds_t& renewed_deadline) {
         roc_log(LogTrace, "task queue: re-adding task to ready queue: ptr=%p",
                 (void*)task);
 
-        if (task->in_ready_queue_.compare_exchange_acq_rel(false, true)) {
+        if (task->in_ready_queue_.compare_exchange(false, true)) {
             ready_queue_.push_back(*task);
         } else {
             --ready_queue_size_;

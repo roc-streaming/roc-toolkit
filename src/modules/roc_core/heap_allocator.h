@@ -29,6 +29,7 @@ public:
     //! Enable panic on leak in destructor, for all instances.
     static void enable_panic_on_leak();
 
+    HeapAllocator();
     ~HeapAllocator();
 
     //! Get number of allocated blocks.

@@ -29,9 +29,8 @@ namespace {
 
 pthread_once_t steady_factor_once = PTHREAD_ONCE_INIT;
 
-int steady_factor_init_done = 0;
-
-double steady_factor = 0;
+double steady_factor_val = 0;
+const double* steady_factor_ptr = NULL;
 
 // mach_absolute_time() returns a Mach Time unit - clock ticks. The
 // length of a tick is a CPU dependent. On most Intel CPUs it probably
@@ -46,11 +45,23 @@ void steady_factor_init() {
         roc_panic("time: mach_timebase_info(): %s", mach_error_string(ret));
     }
 
-    steady_factor = (double)info.numer / info.denom;
+    steady_factor_val = (double)info.numer / info.denom;
 
-    AtomicOps::barrier_release();
+    AtomicOps::store_release(steady_factor_ptr, &steady_factor_val);
+}
 
-    steady_factor_init_done = 1;
+double get_steady_factor() {
+    const double* steady_factor = AtomicOps::load_relaxed(steady_factor_ptr);
+
+    if (!steady_factor) {
+        if (int err = pthread_once(&steady_factor_once, steady_factor_init)) {
+            roc_panic("time: pthread_once(): %s", errno_to_str(err).c_str());
+        }
+        steady_factor = AtomicOps::load_relaxed(steady_factor_ptr);
+    }
+
+    roc_panic_if_not(steady_factor);
+    return *steady_factor;
 }
 
 } // namespace
@@ -67,12 +78,7 @@ void steady_factor_init() {
 //
 // See "Mach Overview" at developer.apple.com (http://tiny.cc/0vlj3y)
 nanoseconds_t timestamp() {
-    if (!steady_factor_init_done) {
-        if (int err = pthread_once(&steady_factor_once, steady_factor_init)) {
-            roc_panic("time: pthread_once(): %s", errno_to_str(err).c_str());
-        }
-    }
-    return nanoseconds_t(mach_absolute_time() * steady_factor);
+    return nanoseconds_t(mach_absolute_time() * get_steady_factor());
 }
 
 void sleep_until(nanoseconds_t ns) {

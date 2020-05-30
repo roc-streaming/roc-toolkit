@@ -26,7 +26,7 @@ public:
     //! List node data.
     struct MpscQueueData {
         //! Next list element.
-        Atomic<MpscQueueData*> next;
+        MpscQueueData* next;
 
         //! Pointer to the containing queue.
         void* queue;

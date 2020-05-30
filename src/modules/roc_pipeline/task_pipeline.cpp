@@ -51,6 +51,8 @@ TaskPipeline::TaskPipeline(ITaskScheduler& scheduler,
           packet::ns_to_size(config.max_frame_length_between_tasks, sample_rate, ch_mask))
     , no_task_proc_half_interval_(config.task_processing_prohibited_interval / 2)
     , scheduler_(scheduler)
+    , pending_tasks_(0)
+    , pending_frames_(0)
     , processing_state_(ProcNotScheduled)
     , next_frame_deadline_(0)
     , subframe_tasks_deadline_(0)
@@ -160,7 +162,7 @@ bool TaskPipeline::schedule_and_maybe_process_task_(Task& task) {
 void TaskPipeline::process_tasks() {
     const bool need_reschedule = maybe_process_tasks_();
 
-    processing_state_.store_relaxed(ProcNotScheduled);
+    processing_state_ = ProcNotScheduled;
 
     if (need_reschedule) {
         schedule_async_task_processing_();
@@ -177,7 +179,7 @@ bool TaskPipeline::maybe_process_tasks_() {
         return false;
     }
 
-    processing_state_.store_relaxed(ProcRunning);
+    processing_state_ = ProcRunning;
 
     int n_pending_frames = 0;
 
@@ -190,7 +192,7 @@ bool TaskPipeline::maybe_process_tasks_() {
             break;
         }
 
-        Task* task = task_queue_.try_pop_front();
+        Task* task = task_queue_.try_pop_front_exclusive();
         if (!task) {
             break;
         }
@@ -260,7 +262,7 @@ bool TaskPipeline::process_frame_and_tasks_precise_(audio::Frame& frame) {
         }
 
         if (start_subframe_task_processing_()) {
-            while (Task* task = task_queue_.try_pop_front()) {
+            while (Task* task = task_queue_.try_pop_front_exclusive()) {
                 process_task_(*task, true);
                 --pending_tasks_;
 
@@ -299,7 +301,7 @@ void TaskPipeline::schedule_async_task_processing_() {
         return;
     }
 
-    if (processing_state_.load_relaxed() == ProcNotScheduled) {
+    if (processing_state_ == ProcNotScheduled) {
         core::nanoseconds_t deadline = 0;
 
         if (config_.enable_precise_task_scheduling) {
@@ -317,7 +319,7 @@ void TaskPipeline::schedule_async_task_processing_() {
         scheduler_.schedule_task_processing(*this, deadline);
         stats_.scheduler_calls++;
 
-        processing_state_.store_relaxed(ProcScheduled);
+        processing_state_ = ProcScheduled;
     }
 
     scheduler_mutex_.unlock();
@@ -332,11 +334,11 @@ void TaskPipeline::cancel_async_task_processing_() {
         return;
     }
 
-    if (processing_state_.load_relaxed() == ProcScheduled) {
+    if (processing_state_ == ProcScheduled) {
         scheduler_.cancel_task_processing(*this);
         stats_.scheduler_cancellations++;
 
-        processing_state_.store_relaxed(ProcNotScheduled);
+        processing_state_ = ProcNotScheduled;
     }
 
     scheduler_mutex_.unlock();

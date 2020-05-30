@@ -12,7 +12,6 @@
 #ifndef ROC_CORE_SEQLOCK_H_
 #define ROC_CORE_SEQLOCK_H_
 
-#include "roc_core/atomic.h"
 #include "roc_core/atomic_ops.h"
 #include "roc_core/cpu_ops.h"
 #include "roc_core/cpu_traits.h"
@@ -24,8 +23,9 @@ namespace core {
 //! Seqlock.
 //!
 //! Provides safe concurrent access to a single value.
-//! Supports single writer and multiple readers.
-//! Writes are lock-free and take priority over reades.
+//! Provides sequential consistency.
+//! Optimized for infrequent writes and frequent reads.
+//! Writes are lock-free and take priority over reads.
 //!
 //! See details on the barriers here:
 //!  https://elixir.bootlin.com/linux/latest/source/include/linux/seqlock.h
@@ -33,29 +33,33 @@ namespace core {
 template <class T> class Seqlock : public NonCopyable<> {
 public:
     //! Initialize with given value.
-    explicit Seqlock(T value = T())
-        : val_(value) {
+    explicit Seqlock(T value)
+        : seq_(0)
+        , val_(value) {
     }
 
     //! Store value.
     //! Can be called concurrently, but only one concurrent call will succeed.
     //! Is both lock-free and wait-free, i.e. it never waits for sleeping threads
     //! and never spins.
+    //! After this call returns, any thread calling wait_load() is guaranteed to
+    //! get the updated value, and try_load() is guaranteed either return the
+    //! updated value or fail (if changes are not fully published yet).
     bool try_store(const T& value) {
-        const int seq0 = seq_.load_relaxed();
+        unsigned seq0 = AtomicOps::load_relaxed(seq_);
         if (seq0 & 1) {
             return false;
         }
 
-        if (!seq_.compare_exchange_relaxed(seq0, seq0 + 1)) {
+        if (!AtomicOps::compare_exchange_relaxed(seq_, seq0, seq0 + 1)) {
             return false;
         }
-        AtomicOps::barrier_release();
+        AtomicOps::fence_release();
 
         val_ = value;
-        AtomicOps::barrier_release();
+        AtomicOps::fence_seq_cst();
 
-        seq_.store_relaxed(seq0 + 2);
+        AtomicOps::store_relaxed(seq_, seq0 + 2);
         return true;
     }
 
@@ -63,15 +67,18 @@ public:
     //! Can NOT be called concurrently, assumes that writes are srialized.
     //! Is both lock-free and wait-free, i.e. it never waits for sleeping threads
     //! and never spins.
+    //! After this call returns, any thread calling wait_load() is guaranteed to
+    //! get the updated value, and try_load() is guaranteed either return the
+    //! updated value or fail (if changes are not fully published yet).
     void exclusive_store(const T& value) {
-        const int seq0 = seq_.load_relaxed();
-        seq_.store_relaxed(seq0 + 1);
-        AtomicOps::barrier_release();
+        const unsigned seq0 = AtomicOps::load_relaxed(seq_);
+        AtomicOps::store_relaxed(seq_, seq0 + 1);
+        AtomicOps::fence_release();
 
         val_ = value;
-        AtomicOps::barrier_release();
+        AtomicOps::fence_seq_cst();
 
-        seq_.store_relaxed(seq0 + 2);
+        AtomicOps::store_relaxed(seq_, seq0 + 2);
     }
 
     //! Try to load value.
@@ -109,22 +116,17 @@ public:
 
 private:
     bool try_load_(T& ret) const {
-        const int seq0 = seq_.load_relaxed();
-        AtomicOps::barrier_acquire();
-
-        if (seq0 & 1) {
-            return false;
-        }
+        const unsigned seq0 = AtomicOps::load_relaxed(seq_);
+        AtomicOps::fence_seq_cst();
 
         ret = val_;
-        AtomicOps::barrier_acquire();
+        AtomicOps::fence_acquire();
 
-        const int seq1 = seq_.load_relaxed();
-
-        return (seq0 == seq1);
+        const unsigned seq1 = AtomicOps::load_relaxed(seq_);
+        return ((seq0 & 1) == 0 && seq0 == seq1);
     }
 
-    Atomic<int> seq_;
+    unsigned seq_;
     T val_;
 };
 
@@ -147,24 +149,24 @@ public:
 
     //! Store value.
     bool try_store(const T& value) {
-        AtomicOps::store_release(val_, value);
+        AtomicOps::store_seq_cst(val_, value);
         return true;
     }
 
     //! Store value.
     void exclusive_store(const T& value) {
-        AtomicOps::store_release(val_, value);
+        AtomicOps::store_seq_cst(val_, value);
     }
 
     //! Try to load value.
     bool try_load(T& ret) const {
-        ret = AtomicOps::load_acquire(val_);
+        ret = AtomicOps::load_seq_cst(val_);
         return true;
     }
 
     //! Load value.
     T wait_load() const {
-        return AtomicOps::load_acquire(val_);
+        return AtomicOps::load_seq_cst(val_);
     }
 
 private:
