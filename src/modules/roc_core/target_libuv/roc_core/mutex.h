@@ -31,7 +31,8 @@ public:
     //! RAII lock.
     typedef ScopedLock<Mutex> Lock;
 
-    Mutex() {
+    Mutex()
+        : guard_(0) {
         if (int err = uv_mutex_init(&mutex_)) {
             roc_panic("mutex: uv_mutex_init(): [%s] %s", uv_err_name(err),
                       uv_strerror(err));

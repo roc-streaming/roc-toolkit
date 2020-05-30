@@ -32,6 +32,9 @@ UdpSenderPort::UdpSenderPort(const UdpSenderConfig& config,
     , loop_(event_loop)
     , write_sem_initialized_(false)
     , handle_initialized_(false)
+    , pending_packets_(0)
+    , sent_packets_(0)
+    , sent_packets_blk_(0)
     , stopped_(true)
     , closed_(false)
     , fd_()
@@ -213,12 +216,12 @@ void UdpSenderPort::write_sem_cb_(uv_async_t* handle) {
 
     UdpSenderPort& self = *(UdpSenderPort*)handle->data;
 
-    // Using try_pop_front() makes this method lock-free and wait-free.
-    // try_pop_front() may return NULL if the queue is not empty, but push_back()
-    // is currently in progress. In this case we can exit before processing all
-    // packets, but write() always calls uv_async_send() after push_back(), so
-    // we'll wake up soon and process the rest packets.
-    while (packet::PacketPtr pp = self.queue_.try_pop_front()) {
+    // Using try_pop_front_exclusive() makes this method lock-free and wait-free.
+    // try_pop_front_exclusive() may return NULL if the queue is not empty, but
+    // push_back() is currently in progress. In this case we can exit the loop
+    // before processing all packets, but write() always calls uv_async_send()
+    // after push_back(), so we'll wake up soon and process the rest packets.
+    while (packet::PacketPtr pp = self.queue_.try_pop_front_exclusive()) {
         packet::UDP& udp = *pp->udp();
 
         const int packet_num = ++self.sent_packets_;

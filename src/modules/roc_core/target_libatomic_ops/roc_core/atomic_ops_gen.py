@@ -21,21 +21,21 @@ class AtomicOps {
 public:
     #ifdef AO_HAVE_nop_read
     //! Acquire memory barrier.
-    static inline void barrier_acquire() {
+    static inline void fence_acquire() {
         AO_nop_read();
     }
     #endif // AO_HAVE_nop_read
 
     #ifdef AO_HAVE_nop_write
     //! Release memory barrier.
-    static inline void barrier_release() {
+    static inline void fence_release() {
         AO_nop_write();
     }
     #endif // AO_HAVE_nop_write
 
     #ifdef AO_HAVE_nop_full
     //! Full memory barrier.
-    static inline void barrier_seq_cst() {
+    static inline void fence_seq_cst() {
         AO_nop_full();
     }
     #endif // AO_HAVE_nop_full
@@ -43,35 +43,35 @@ public:
 
 def print_load(keys):
     print('''
-    #ifdef AO_HAVE{family}_load{barrier_impl}
-    //! Atomic load ({barrier_name} barrier).
-    {qualifier} {type_func} load_{barrier_func}({type_func} const& var) {{
+    #ifdef AO_HAVE{family}_load{fence_impl}
+    //! Atomic load ({fence_name} barrier).
+    {qualifier} {type_func} load_{fence_func}({type_func} const& var) {{
         struct type_check {{
             int f : sizeof({type_func}) == sizeof({type_impl}) ? 1 : -1;
         }};
-        return ({type_func})AO{family}_load{barrier_impl}(({type_impl} const*)&var);
+        return ({type_func})AO{family}_load{fence_impl}(({type_impl} const*)&var);
     }}
-    #endif // AO_HAVE{family}_load{barrier_impl}
+    #endif // AO_HAVE{family}_load{fence_impl}
 '''.rstrip().format(**keys))
 
 def print_store(keys):
     print('''
-    #ifdef AO_HAVE{family}_store{barrier_impl}
-    //! Atomic store ({barrier_name} barrier).
-    {qualifier} void store_{barrier_func}({type_func}& var, {type_func} val) {{
+    #ifdef AO_HAVE{family}_store{fence_impl}
+    //! Atomic store ({fence_name} barrier).
+    {qualifier} void store_{fence_func}({type_func}& var, {type_func} val) {{
         struct type_check {{
             int f : sizeof({type_func}) == sizeof({type_impl}) ? 1 : -1;
         }};
-        AO{family}_store{barrier_impl}(({type_impl}*)&var, ({type_impl})val);
+        AO{family}_store{fence_impl}(({type_impl}*)&var, ({type_impl})val);
     }}
-    #endif // AO_HAVE{family}_store{barrier_impl}
+    #endif // AO_HAVE{family}_store{fence_impl}
 '''.rstrip().format(**keys))
 
 def print_exchange(keys):
     print('''
-    #ifdef AO_HAVE{family}_fetch_compare_and_swap{barrier_impl}
-    //! Atomic exchange ({barrier_name} barrier).
-    {qualifier} {type_func} exchange_{barrier_func}({type_func}& var, {type_func} val) {{
+    #ifdef AO_HAVE{family}_fetch_compare_and_swap{fence_impl}
+    //! Atomic exchange ({fence_name} barrier).
+    {qualifier} {type_func} exchange_{fence_func}({type_func}& var, {type_func} val) {{
         struct type_check {{
             int f : sizeof({type_func}) == sizeof({type_impl}) ? 1 : -1;
         }};
@@ -79,60 +79,104 @@ def print_exchange(keys):
         {type_impl} prev;
         do {{
             prev = curr;
-            curr = AO{family}_fetch_compare_and_swap{barrier_impl}(({type_impl}*)&var, prev,
+            curr = AO{family}_fetch_compare_and_swap{fence_impl}(({type_impl}*)&var, prev,
                                                          ({type_impl})val);
         }} while (curr != prev);
         return ({type_func})curr;
     }}
-    #endif // AO_HAVE{family}_fetch_compare_and_swap{barrier_impl}
+    #endif // AO_HAVE{family}_fetch_compare_and_swap{fence_impl}
+'''.rstrip().format(**keys))
+
+def print_exchange_manual_fence(keys):
+    print('''
+    #ifdef AO_HAVE{family}_fetch_compare_and_swap
+    //! Atomic exchange ({fence_name} barrier).
+    {qualifier} {type_func} exchange_{fence_func}({type_func}& var, {type_func} val) {{
+        struct type_check {{
+            int f : sizeof({type_func}) == sizeof({type_impl}) ? 1 : -1;
+        }};
+        AO_nop{fence_impl}();
+        {type_impl} curr = AO{family}_load(({type_impl}*)&var);
+        {type_impl} prev;
+        do {{
+            prev = curr;
+            curr = AO{family}_fetch_compare_and_swap(({type_impl}*)&var, prev,
+                                                         ({type_impl})val);
+            AO_nop{fence_impl}();
+        }} while (curr != prev);
+        return ({type_func})curr;
+    }}
+    #endif // AO_HAVE{family}_fetch_compare_and_swap
 '''.rstrip().format(**keys))
 
 def print_compare_exchange(keys):
     print('''
-    #ifdef AO_HAVE{family}_fetch_compare_and_swap{barrier_impl}
-    //! Atomic compare-and-swap ({barrier_name} barrier).
-    {qualifier} bool compare_exchange_{barrier_func}(
+    #ifdef AO_HAVE{family}_fetch_compare_and_swap{fence_impl}
+    //! Atomic compare-and-swap ({fence_name} barrier).
+    {qualifier} bool compare_exchange_{fence_func}(
           {type_func}& var, {type_func}& exp, {type_func} des) {{
         struct type_check {{
             int f : sizeof({type_func}) == sizeof({type_impl}) ? 1 : -1;
         }};
-        {type_impl} old = AO{family}_fetch_compare_and_swap{barrier_impl}(
+        {type_impl} old = AO{family}_fetch_compare_and_swap{fence_impl}(
           ({type_impl}*)&var, ({type_impl})exp, ({type_impl})des);
         const bool ret = (({type_impl})exp == old);
         exp = ({type_func})old;
         return ret;
     }}
-    #endif // AO_HAVE{family}_fetch_compare_and_swap{barrier_impl}
+    #endif // AO_HAVE{family}_fetch_compare_and_swap{fence_impl}
+'''.rstrip().format(**keys))
+
+def print_compare_exchange_manual_fence(keys):
+    print('''
+    #ifdef AO_HAVE{family}_fetch_compare_and_swap
+    //! Atomic compare-and-swap ({fence_name} barrier).
+    {qualifier} bool compare_exchange_{fence_func}(
+          {type_func}& var, {type_func}& exp, {type_func} des) {{
+        struct type_check {{
+            int f : sizeof({type_func}) == sizeof({type_impl}) ? 1 : -1;
+        }};
+        AO_nop{fence_impl}();
+        {type_impl} old = AO{family}_fetch_compare_and_swap(
+          ({type_impl}*)&var, ({type_impl})exp, ({type_impl})des);
+        const bool ret = (({type_impl})exp == old);
+        if (ret) {{
+            AO_nop{fence_impl}();
+        }}
+        exp = ({type_func})old;
+        return ret;
+    }}
+    #endif // AO_HAVE{family}_fetch_compare_and_swap
 '''.rstrip().format(**keys))
 
 def print_add_fetch(keys):
     print('''
-    #ifdef AO_HAVE{family}_fetch_and_add{barrier_impl}
-    //! Atomic add-and-fetch ({barrier_name} barrier).
-    {qualifier} {type_func} add_fetch_{barrier_func}({type_func}& var, {type_arg} val) {{
+    #ifdef AO_HAVE{family}_fetch_and_add{fence_impl}
+    //! Atomic add-and-fetch ({fence_name} barrier).
+    {qualifier} {type_func} add_fetch_{fence_func}({type_func}& var, {type_arg} val) {{
         struct type_check {{
             int f : sizeof({type_func}) == sizeof({type_impl}) ? 1 : -1;
         }};
         return ({type_func})(
-            AO{family}_fetch_and_add{barrier_impl}(({type_impl}*)&var, ({type_impl})val)
+            AO{family}_fetch_and_add{fence_impl}(({type_impl}*)&var, ({type_impl})val)
               + ({type_impl})val);
     }}
-    #endif // AO_HAVE{family}_fetch_and_add{barrier_impl}
+    #endif // AO_HAVE{family}_fetch_and_add{fence_impl}
 '''.rstrip().format(**keys))
 
 def print_sub_fetch(keys):
     print('''
-    #ifdef AO_HAVE{family}_fetch_and_add{barrier_impl}
-    //! Atomic sub-and-fetch ({barrier_name} barrier).
-    {qualifier} {type_func} sub_fetch_{barrier_func}({type_func}& var, {type_arg} val) {{
+    #ifdef AO_HAVE{family}_fetch_and_add{fence_impl}
+    //! Atomic sub-and-fetch ({fence_name} barrier).
+    {qualifier} {type_func} sub_fetch_{fence_func}({type_func}& var, {type_arg} val) {{
         struct type_check {{
             int f : sizeof({type_func}) == sizeof({type_impl}) ? 1 : -1;
         }};
         return ({type_func})(
-            AO{family}_fetch_and_add{barrier_impl}(({type_impl}*)&var, ({type_impl})-val)
+            AO{family}_fetch_and_add{fence_impl}(({type_impl}*)&var, ({type_impl})-val)
               - ({type_impl})val);
     }}
-    #endif // AO_HAVE{family}_fetch_and_add{barrier_impl}
+    #endif // AO_HAVE{family}_fetch_and_add{fence_impl}
 '''.rstrip().format(**keys))
 
 def print_methods(**kw):
@@ -140,9 +184,9 @@ def print_methods(**kw):
     // overloads for {type_func}
 '''.rstrip().format(**kw))
 
-    kw['barrier_name'] = 'no'
-    kw['barrier_func'] = 'relaxed'
-    kw['barrier_impl'] = ''
+    kw['fence_name'] = 'no'
+    kw['fence_func'] = 'relaxed'
+    kw['fence_impl'] = ''
     print_load(kw)
     print_store(kw)
     print_exchange(kw)
@@ -150,35 +194,37 @@ def print_methods(**kw):
     print_add_fetch(kw)
     print_sub_fetch(kw)
 
-    kw['barrier_name'] = 'acquire'
-    kw['barrier_func'] = 'acquire'
-    kw['barrier_impl'] = '_acquire'
+    kw['fence_name'] = 'acquire'
+    kw['fence_func'] = 'acquire'
+    kw['fence_impl'] = '_acquire'
     print_load(kw)
     print_exchange(kw)
     print_compare_exchange(kw)
     print_add_fetch(kw)
     print_sub_fetch(kw)
 
-    kw['barrier_name'] = 'release'
-    kw['barrier_func'] = 'release'
-    kw['barrier_impl'] = '_release'
+    kw['fence_name'] = 'release'
+    kw['fence_func'] = 'release'
+    kw['fence_impl'] = '_release'
     print_store(kw)
     print_exchange(kw)
     print_compare_exchange(kw)
     print_add_fetch(kw)
     print_sub_fetch(kw)
 
-    kw['barrier_name'] = 'acquire-release'
-    kw['barrier_func'] = 'acq_rel'
-    kw['barrier_impl'] = '_full'
+    kw['fence_name'] = 'acquire-release'
+    kw['fence_func'] = 'acq_rel'
+    kw['fence_impl'] = '_full'
     print_exchange(kw)
     print_compare_exchange(kw)
 
-    kw['barrier_name'] = 'full'
-    kw['barrier_func'] = 'seq_cst'
-    kw['barrier_impl'] = '_full'
+    kw['fence_name'] = 'full'
+    kw['fence_func'] = 'seq_cst'
+    kw['fence_impl'] = '_full'
     print_load(kw)
     print_store(kw)
+    print_exchange_manual_fence(kw)
+    print_compare_exchange_manual_fence(kw)
     print_add_fetch(kw)
     print_sub_fetch(kw)
 

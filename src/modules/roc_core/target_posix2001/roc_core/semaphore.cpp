@@ -17,7 +17,8 @@
 namespace roc {
 namespace core {
 
-Semaphore::Semaphore(unsigned counter) {
+Semaphore::Semaphore(unsigned counter)
+    : guard_(0) {
     if (sem_init(&sem_, 0, counter) != 0) {
         roc_panic("semaphore: sem_init(): %s", errno_to_str().c_str());
     }
