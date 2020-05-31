@@ -108,7 +108,7 @@ public:
         core::nanoseconds_t deadline_;
         core::Seqlock<core::nanoseconds_t> renewed_deadline_;
 
-        core::Atomic<int> in_ready_queue_;
+        core::Atomic<int> renew_in_progress_;
         core::Atomic<int> wait_in_progress_;
 
         ICompletionHandler* handler_;
@@ -204,8 +204,8 @@ private:
     // Task states.
     enum TaskState {
         StateInitializing,
-        StateRenewing,
-        StatePending,
+        StateReady,
+        StateSleeping,
         StateCancelling,
         StateProcessing,
         StateFinishing,
@@ -218,9 +218,12 @@ private:
 
     void initialize_task_(Task& task, ICompletionHandler* handler);
     void renew_task_(Task& task, core::nanoseconds_t deadline);
+    void enqueue_renewed_task_(Task& task, core::nanoseconds_t deadline);
 
     bool try_renew_deadline_inplace_(Task& task, core::nanoseconds_t deadline);
-    void renew_deadline_(Task& task, core::nanoseconds_t deadline);
+
+    TaskState apply_renewed_state_(Task& task, core::nanoseconds_t deadline);
+    void apply_renewed_deadline_(Task& task, core::nanoseconds_t deadline);
 
     void reschedule_task_(Task& task, core::nanoseconds_t deadline);
     void cancel_task_(Task& task);
