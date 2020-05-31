@@ -75,10 +75,7 @@ public:
 
         MpscQueueNode::MpscQueueData* node = obj.mpsc_queue_data();
 
-        if (node->queue) {
-            roc_panic("mpsc queue: attempt to push back node more than once");
-        }
-        node->queue = this;
+        change_owner_(node, NULL, this);
 
         push_node_(node);
     }
@@ -100,7 +97,7 @@ public:
             return NULL;
         }
 
-        node->queue = NULL;
+        change_owner_(node, this, NULL);
 
         Pointer obj = static_cast<T*>(node->container_of());
         Ownership<T>::release(*obj);
@@ -125,7 +122,7 @@ public:
             return NULL;
         }
 
-        node->queue = NULL;
+        change_owner_(node, this, NULL);
 
         Pointer obj = static_cast<T*>(node->container_of());
         Ownership<T>::release(*obj);
@@ -135,6 +132,14 @@ public:
 
 private:
     typedef MpscQueueNode::MpscQueueData MpscQueueData;
+
+    void change_owner_(MpscQueueData* node, void* from, void* to) {
+        void* exp = from;
+        if (!AtomicOps::compare_exchange_relaxed(node->queue, exp, to)) {
+            roc_panic("mpsc queue: unexpected node owner: from=%p to=%p cur=%p", from, to,
+                      exp);
+        }
+    }
 
     void push_node_(MpscQueueData* node) {
         AtomicOps::store_relaxed(node->next, (MpscQueueData*)NULL);
