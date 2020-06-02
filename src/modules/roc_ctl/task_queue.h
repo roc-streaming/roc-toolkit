@@ -34,7 +34,7 @@ namespace ctl {
 //! of tasks for immediate or delayed execution on the background thread, as well
 //! as lock-free task cancellation and re-scheduling (changing deadline).
 //!
-//! Note that those operations are lock-free only if core::Timer::set_deadline()
+//! Note that those operations are lock-free only if core::Timer::try_set_deadline()
 //! is so, which however is true on modern platforms.
 //!
 //! In the current implementation, priority is given to fast scheduling and cancellation
@@ -77,6 +77,45 @@ namespace ctl {
 //!    sleep), and return, leaving the completion of the operarion to the background
 //!    thread. The background will fetch the task from ready_queue_ soon and complete
 //!    the operation by manipulating the sleeping_queue_.
+//!
+//! The current task state is defined by its atomic field "state_". Various task queue
+//! operations move task from one state to another. The move is always performed using
+//! atomic CAS or exchange to handle concurrent lock-free updates correctly.
+//!
+//! Here are some typical flows of the task states:
+//! @code
+//!    schedule():
+//!      StateFinished -> StateInitializing -> StateReady
+//!        -> StateProcessing -> StateFinishing -> StateFinished
+//!
+//!    schedule_at():
+//!      StateFinished -> StateInitializing -> StateReady
+//!        -> StateSleeping
+//!        -> StateProcessing -> StateFinishing -> StateFinished
+//!
+//!    reschedule_at():
+//!      [any state] -> StateReady
+//!        -> StateSleeping
+//!        -> StateProcessing -> StateFinishing -> StateFinished
+//!
+//!    async_cancel():
+//!      StateSleeping -> StateReady
+//!        -> StateCancelling -> StateFinishing -> StateFinished
+//! @endcode
+//!
+//! The meaning of the states is the following:
+//!  - StateInitializing: task is being initialized by schedule() or schedule_at()
+//!  - StateReady: task is added to the ready queue for execution or renewal,
+//!                or probably is currently being renewed in-place
+//!  - StateSleeping: task renewal is complete and the task was put into the sleeping
+//!                   queue because it was put to ready queue for re-scheduling
+//!  - StateCancelling: task renewal is complete and the task is being cancelled
+//!                     because it was put to ready queue for cancallation
+//!  - StateProcessing: task is being processed after fetching it either from ready
+//!                     queue (if it was put there for execution) or sleeping queue
+//!  - StateFinishing: task processing is complete and the task is being finished
+//!  - StateFinished: task is finished and is not used anywhere; it may be safely
+//!                   destroyed; this is also the initial task state
 class TaskQueue : private core::Thread {
 public:
     class ICompletionHandler;
