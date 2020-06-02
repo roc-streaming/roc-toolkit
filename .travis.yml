@@ -137,11 +137,3 @@ jobs:
       stage: Docs
       script:
         - scripts/travis/trigger.sh roc-project%2Froc-project.github.io travis
-
-notifications:
-  webhooks:
-    urls:
-      - "https://scalar.vector.im/api/neb/services/hooks/dHJhdmlzLWNpLyU0MGdhdnYlM0FtYXRyaXgub3JnLyUyMWN3WHpNdm9kbVRWWklGVnNwWCUzQW1hdHJpeC5vcmc"
-    on_start: never
-    on_success: always
-    on_failure: always
