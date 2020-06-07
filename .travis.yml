@@ -13,6 +13,25 @@ stages:
 
 jobs:
   include:
+    - name: "Linux Ubuntu x86_64"
+      stage: Build
+      os: linux
+      dist: trusty
+      sudo: required
+      services:
+        - docker
+      before_install:
+        - docker pull rocstreaming/env-ubuntu:20.04
+        - docker pull rocstreaming/env-ubuntu:18.04
+        - docker pull rocstreaming/env-ubuntu:16.04
+        - docker pull rocstreaming/env-ubuntu:14.04
+      script:
+        - scripts/travis/docker.sh rocstreaming/env-ubuntu:20.04 scripts/travis/linux-x86_64/ubuntu-20.04.sh
+        - scripts/travis/docker.sh rocstreaming/env-ubuntu:18.04 scripts/travis/linux-x86_64/ubuntu-18.04.sh
+        - scripts/travis/docker.sh rocstreaming/env-ubuntu:16.04 scripts/travis/linux-x86_64/ubuntu-16.04.sh
+        - scripts/travis/docker.sh rocstreaming/env-ubuntu:14.04 scripts/travis/linux-x86_64/ubuntu-14.04.sh
+        - cat build.status
+
     - name: "Linux x84_64"
       stage: Build
       os: linux
@@ -34,25 +53,6 @@ jobs:
         - scripts/travis/docker.sh rocstreaming/env-opensuse scripts/travis/linux-x86_64/opensuse.sh
         - scripts/travis/docker.sh rocstreaming/env-archlinux scripts/travis/linux-x86_64/archlinux.sh
         - scripts/travis/docker.sh rocstreaming/env-alpine scripts/travis/linux-x86_64/alpine.sh
-        - cat build.status
-
-    - name: "Linux Ubuntu x86_64"
-      stage: Build
-      os: linux
-      dist: trusty
-      sudo: required
-      services:
-        - docker
-      before_install:
-        - docker pull rocproject/travis-ubuntu:20.04
-        - docker pull rocproject/travis-ubuntu:18.04
-        - docker pull rocproject/travis-ubuntu:16.04
-        - docker pull rocproject/travis-ubuntu:14.04
-      script:
-        - scripts/travis/docker.sh rocproject/travis-ubuntu:20.04 scripts/travis/linux-x86_64/ubuntu-20.04.sh
-        - scripts/travis/docker.sh rocproject/travis-ubuntu:18.04 scripts/travis/linux-x86_64/ubuntu-18.04.sh
-        - scripts/travis/docker.sh rocproject/travis-ubuntu:16.04 scripts/travis/linux-x86_64/ubuntu-16.04.sh
-        - scripts/travis/docker.sh rocproject/travis-ubuntu:14.04 scripts/travis/linux-x86_64/ubuntu-14.04.sh
         - cat build.status
 
     - name: "Linux ARM"

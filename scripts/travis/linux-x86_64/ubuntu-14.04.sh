@@ -3,7 +3,7 @@ set -euxo pipefail
 
 scons -Q clean
 
-for c in gcc-4.4 gcc-4.6 clang-3.4
+for c in gcc-4.4 clang-3.4
 do
     scons -Q \
           --enable-werror \
