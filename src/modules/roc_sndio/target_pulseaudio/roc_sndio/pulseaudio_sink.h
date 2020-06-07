@@ -64,8 +64,6 @@ private:
 
     bool write_frame_(audio::Frame& frame);
 
-    bool check_params_() const;
-
     void ensure_started_() const;
     void ensure_opened_() const;
 
@@ -83,6 +81,7 @@ private:
     void cancel_sink_info_op_();
 
     void init_stream_params_(const pa_sink_info& info);
+    bool check_stream_params_() const;
     bool open_stream_();
     void close_stream_();
     ssize_t write_stream_(const audio::sample_t* data, size_t size);
@@ -92,9 +91,10 @@ private:
     bool stop_timer_();
 
     const char* device_;
-    size_t sample_rate_;
+
+    Config config_;
     const size_t num_channels_;
-    const size_t frame_size_;
+    size_t frame_size_;
 
     core::nanoseconds_t latency_;
     core::nanoseconds_t timeout_;
