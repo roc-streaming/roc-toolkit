@@ -197,6 +197,12 @@ AddOption('--disable-doc',
           action='store_true',
           help='disable Doxygen and Sphinx documentation generation')
 
+AddOption('--disable-soversion',
+          dest='disable_soversion',
+          action='store_true',
+          help="don't write version into the shared library"+
+              " and don't create version symlinks")
+
 AddOption('--disable-openfec',
           dest='disable_openfec',
           action='store_true',
@@ -1076,10 +1082,11 @@ if compiler in ['gcc', 'clang']:
     if platform in ['linux', 'android']:
         test_env['RPATH'] = test_env.Literal('\\$$ORIGIN')
 
-        lib_env['SHLIBSUFFIX'] = '%s.%s' % (lib_env['SHLIBSUFFIX'], abi_version)
-        lib_env.Append(LINKFLAGS=[
-            '-Wl,-soname,libroc%s' % lib_env['SHLIBSUFFIX'],
-        ])
+        if not GetOption('disable_soversion'):
+            lib_env['SHLIBSUFFIX'] = '%s.%s' % (lib_env['SHLIBSUFFIX'], abi_version)
+            lib_env.Append(LINKFLAGS=[
+                '-Wl,-soname,libroc%s' % lib_env['SHLIBSUFFIX'],
+            ])
 
         if variant == 'release':
             lib_env.Append(LINKFLAGS=[
@@ -1087,13 +1094,14 @@ if compiler in ['gcc', 'clang']:
             ])
 
     if platform in ['darwin']:
-        lib_env['SHLIBSUFFIX'] = '.%s%s' % (abi_version, lib_env['SHLIBSUFFIX'])
-        lib_env.Append(LINKFLAGS=[
-            '-Wl,-compatibility_version,%s' % abi_version,
-            '-Wl,-current_version,%s' % env['ROC_VERSION'],
-            '-Wl,-install_name,%s/libroc%s' % (
-                env.Dir(env['ROC_BINDIR']).abspath, lib_env['SHLIBSUFFIX']),
-        ])
+        if not GetOption('disable_soversion'):
+            lib_env['SHLIBSUFFIX'] = '.%s%s' % (abi_version, lib_env['SHLIBSUFFIX'])
+            lib_env.Append(LINKFLAGS=[
+                '-Wl,-compatibility_version,%s' % abi_version,
+                '-Wl,-current_version,%s' % env['ROC_VERSION'],
+                '-Wl,-install_name,%s/libroc%s' % (
+                    env.Dir(env['ROC_BINDIR']).abspath, lib_env['SHLIBSUFFIX']),
+            ])
 
     if not(compiler == 'clang' and variant == 'debug'):
         env.Append(CXXFLAGS=[

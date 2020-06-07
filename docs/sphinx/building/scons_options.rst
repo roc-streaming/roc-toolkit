@@ -58,6 +58,7 @@ Options
 --disable-tests                                        disable tests building
 --disable-examples                                     disable examples building
 --disable-doc                                          disable Doxygen and Sphinx documentation generation
+--disable-soversion                                    don't write version into the shared library and don't create version symlinks
 --disable-openfec                                      disable OpenFEC support required for FEC codes
 --disable-libunwind                                    disable libunwind support required for printing backtrace
 --disable-sox                                          disable SoX support in tools
