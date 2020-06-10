@@ -1084,9 +1084,10 @@ if compiler in ['gcc', 'clang']:
 
         if not GetOption('disable_soversion'):
             lib_env['SHLIBSUFFIX'] = '%s.%s' % (lib_env['SHLIBSUFFIX'], abi_version)
-            lib_env.Append(LINKFLAGS=[
-                '-Wl,-soname,libroc%s' % lib_env['SHLIBSUFFIX'],
-            ])
+
+        lib_env.Append(LINKFLAGS=[
+            '-Wl,-soname,libroc%s' % lib_env['SHLIBSUFFIX'],
+        ])
 
         if variant == 'release':
             lib_env.Append(LINKFLAGS=[
@@ -1099,9 +1100,12 @@ if compiler in ['gcc', 'clang']:
             lib_env.Append(LINKFLAGS=[
                 '-Wl,-compatibility_version,%s' % abi_version,
                 '-Wl,-current_version,%s' % env['ROC_VERSION'],
-                '-Wl,-install_name,%s/libroc%s' % (
-                    env.Dir(env['ROC_BINDIR']).abspath, lib_env['SHLIBSUFFIX']),
             ])
+
+        lib_env.Append(LINKFLAGS=[
+            '-Wl,-install_name,%s/libroc%s' % (
+                env.Dir(env['ROC_BINDIR']).abspath, lib_env['SHLIBSUFFIX']),
+        ])
 
     if not(compiler == 'clang' and variant == 'debug'):
         env.Append(CXXFLAGS=[
