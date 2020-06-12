@@ -8,8 +8,7 @@ def AddPkgConfigLibs(env, libs):
     env.AppendUnique(PKG_CONFIG_LIBS=libs)
 
 def GeneratePkgConfig(env, build_dir, filename, prefix, libdir, name, desc, url, version):
-    output_dir = env.Dir(build_dir).path
-    target = os.path.join(output_dir, filename)
+    target = os.path.join(build_dir, filename)
     dependencies = env.get('PKG_CONFIG_DEPS', [])
     libs = env.get('PKG_CONFIG_LIBS', [])
 
@@ -24,7 +23,7 @@ Version: %(version)s
 Description: %(desc)s
 URL: %(url)s
 
-Libs: -L${libdir} %(libs)s
+Libs: -L${libdir} -lroc %(libs)s
 Cflags: -I${includedir}
 """ % { 'prefix': prefix,
         'libdir': libdir,
@@ -35,11 +34,15 @@ Cflags: -I${includedir}
         'desc': desc,
         'url': url }
 
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-    f = open(target, 'w')
-    f.write(src)
-    f.close()
+    def write_file(target, source, env):
+        f = open(target[0].path, 'w')
+        f.write(src)
+        f.close()
+
+    env.Command(target, [], [
+        env.Action(write_file, env.PrettyCommand('GEN', env.File(target).path, 'purple')),
+        ])
+
     return env.File(target)
 
 def init(env):
