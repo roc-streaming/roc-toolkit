@@ -1,0 +1,79 @@
+Import('doc_env')
+
+if 'doxygen' in COMMAND_LINE_TARGETS:
+    if not GetOption('enable_doxygen'):
+        doc_env.Die("'doxygen' target requires --enable-doxygen")
+
+if 'sphinx' in COMMAND_LINE_TARGETS:
+    if not GetOption('enable_sphinx'):
+        doc_env.Die("'sphinx' target requires --enable-sphinx")
+
+if 'docs' in COMMAND_LINE_TARGETS:
+    if not GetOption('enable_doxygen') or not GetOption('enable_sphinx'):
+        doc_env.Die("'doxygen' target requires --enable-doxygen and --enable-sphinx")
+
+if GetOption('enable_doxygen'):
+    doxygen_version = doc_env.ParseCompilerVersion(doc_env['DOXYGEN'])
+    have_doxygen = doxygen_version and doxygen_version[:2] >= (1, 6)
+
+    if not have_doxygen:
+        doc_env.Die("doxygen >= 1.6 not found")
+
+    doxygen_targets = [
+        doc_env.Doxygen(
+            html_dir='#html/doxygen',
+            build_dir='docs/modules',
+            config='#src/modules/Doxyfile',
+            sources=(doc_env.GlobRecursive('#src/modules', ['*.h', '*.dox']) +
+                doc_env.GlobRecursive('#docs/images', ['*'])),
+            werror=GetOption('enable_werror')),
+        doc_env.Doxygen(
+            build_dir='docs/lib',
+            config='#src/library/Doxyfile',
+            sources=doc_env.GlobRecursive('#src/library/include', ['*.h', '*.dox']),
+            werror=GetOption('enable_werror')),
+    ]
+
+    doc_env.AlwaysBuild(
+        doc_env.Alias('doxygen', doxygen_targets))
+
+if GetOption('enable_sphinx'):
+    if not GetOption('enable_sphinx'):
+        doc_env.Die("--enable-sphinx also requires --enable-doxygen")
+
+    have_sphinx = doc_env.HasArg('SPHINX_BUILD') or doc_env.Which(doc_env['SPHINX_BUILD'])
+    have_breathe = doc_env.HasArg('BREATHE_APIDOC') or doc_env.Which(doc_env['BREATHE_APIDOC'])
+
+    if not have_sphinx:
+        doc_env.Die("sphinx-build not found")
+
+    if not have_breathe:
+        doc_env.Die("breathe-apidoc not found")
+
+    sphinx_targets = [
+        doc_env.Sphinx(
+            build_dir='docs/sphinx-html',
+            output_type='html',
+            output_dir='#html/docs',
+            source_dir='#docs/sphinx',
+            sources=(doc_env.GlobRecursive('#docs/sphinx', ['*']) +
+                doc_env.GlobRecursive('#docs/images', ['*']) +
+                doc_env.GlobRecursive('#src/library/include', ['*.h', '*.dox']) +
+                doxygen_targets),
+            werror=GetOption('enable_werror')),
+        doc_env.Sphinx(
+            build_dir='docs/sphinx-man',
+            output_type='man',
+            output_dir='#man',
+            source_dir='#docs/sphinx',
+            sources=doc_env.GlobRecursive('#docs/sphinx', ['*']),
+            werror=GetOption('enable_werror')),
+    ]
+
+    doc_env.AlwaysBuild(doc_env.Alias('sphinx', sphinx_targets))
+
+doc_env.AlwaysBuild(doc_env.Alias('docs', ['doxygen', 'sphinx']))
+
+for manpage in doc_env.GlobFiles('#docs/sphinx/manuals/*.rst'):
+    doc_env.AddDistFile(GetOption('mandir'), '#man/%s.1' %
+                        manpage.srcnode().name.replace('.rst', '').replace('_', '-'))

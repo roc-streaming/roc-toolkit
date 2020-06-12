@@ -58,7 +58,8 @@ Options
 --enable-tests                                         enable tests building and running (requires CppUTest)
 --enable-benchmarks                                    enable bechmarks building and running (requires Google Benchmark)
 --enable-examples                                      enable examples building
---disable-doc                                          disable Doxygen and Sphinx documentation generation
+--enable-doxygen                                       enable Doxygen documentation generation
+--enable-sphinx                                        enable Sphinx documentation generation
 --disable-soversion                                    don't write version into the shared library and don't create version symlinks
 --disable-openfec                                      disable OpenFEC support required for FEC codes
 --disable-sox                                          disable SoX support in tools
@@ -136,7 +137,7 @@ Targets
     build doxygen documentation (requires doxygen and graphviz)
 
 ``sphinx``
-    build sphinx documentation (requires doxygen, sphinx-build, and breathe)
+    build sphinx documentation (requires doxygen, sphinx-build, and breathe-apidoc)
 
 ``{module}``
     build specific module, e.g. ``roc_pipeline``
