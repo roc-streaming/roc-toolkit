@@ -38,7 +38,7 @@ def ClangDBWriter(env, tool, build_dir):
         tool)
 
 def Doxygen(env, build_dir='', html_dir=None, config='', sources=[], werror=False):
-    target = os.path.join(env.Dir(build_dir).path, '.done')
+    target = os.path.join(build_dir, '.done')
 
     dirs = [env.Dir(build_dir).path]
     if html_dir:
@@ -50,32 +50,32 @@ def Doxygen(env, build_dir='', html_dir=None, config='', sources=[], werror=Fals
             env.Dir('#').path,
             env.Dir(os.path.dirname(config)).path,
             ':'.join(dirs),
-            target,
+            env.File(target).path,
             int(werror or 0),
             env['DOXYGEN'],
             env.File(config).name),
-        cmdstr = env.PrettyCommand('DOXYGEN', build_dir, 'purple')))
+        cmdstr = env.PrettyCommand('DOXYGEN', env.Dir(build_dir).path, 'purple')))
 
     return target
 
 def Sphinx(env, output_type, build_dir, output_dir, source_dir, sources, werror=False):
-    target = os.path.join(env.Dir(build_dir).path, source_dir, '.done.'+output_type)
+    target = os.path.join(build_dir, '.done')
 
     env.Command(target, sources, SCons.Action.CommandAction(
         '%s scripts/wrappers/doc.py %s %s %s %s %s %s -j %d -q -b %s -d %s %s %s' % (
             env.PythonExecutable(),
             env.Dir('#').path,
             env.Dir('#').path,
-            output_dir,
-            target,
+            env.Dir(output_dir).path,
+            env.File(target).path,
             int(werror or 0),
             env['SPHINX_BUILD'],
             SCons.Script.GetOption('num_jobs'),
             output_type,
-            env.Dir(os.path.join(build_dir, source_dir)).path,
+            env.Dir(build_dir).path,
             env.Dir(source_dir).path,
             env.Dir(output_dir).path),
-        cmdstr = env.PrettyCommand('SPHINX', output_dir, 'purple')))
+        cmdstr = env.PrettyCommand('SPHINX', env.Dir(output_dir).path, 'purple')))
 
     return env.File(target)
 

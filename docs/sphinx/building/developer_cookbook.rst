@@ -13,7 +13,20 @@ Developer build:
 .. code::
 
     $ scons -Q --build-3rdparty=... \
-      --enable-werror --enable-debug --enable-tests --enable-benchmarks --enable-examples test bench
+      --enable-werror --enable-debug --enable-tests --enable-benchmarks --enable-examples --enable-doxygen test bench
+
+Explanation:
+
+* ``-Q`` enables compact colored build output
+* ``--build-3rdparty`` specifies the list of dependencies to be downloaded and built automatically
+* ``--enable-werror`` turns compiler and Doxygen warnings into error
+* ``--enable-debug`` enables debug build
+* ``--enable-tests`` enables building of unit tests
+* ``--enable-benchmarks`` enables building of micro benchmarks
+* ``--enable-examples`` enables building of API usage examples
+* ``--enable-doxygen`` enables running Doxygen and producing warnings for undocumented members
+* ``test`` is the target to run unit tests
+* ``bench`` is the target to run micro benchmarks
 
 For ``--build-3rdparty`` option, see :doc:`/building/user_cookbook`.
 
@@ -23,7 +36,7 @@ For developer build, you may also want to automatically download and build CppUT
 
     $ scons -Q --build-3rdparty=...,cpputest,google-benchmark ...
 
-Enable GCC/Clang sanitizers:
+Additionally, you can enable GCC/Clang sanitizers:
 
 .. code::
 
@@ -34,13 +47,13 @@ Minimal build (don't build library and tools):
 
 .. code::
 
-    $ scons -Q --build-3rdparty=... --disable-lib --disable-tools --disable-doc
+    $ scons -Q --build-3rdparty=... --disable-lib --disable-tools
 
-Disable specific libraries (and features they provide):
+Disable specific dependencies (and features they provide):
 
 .. code::
 
-    $ scons -Q --build-3rdparty=... --disable-libunwind --disable-openfec --disable-sox --disable-pulseaudio
+    $ scons -Q --build-3rdparty=... --disable-libunwind --disable-openfec --disable-speexdsp --disable-sox --disable-pulseaudio
 
 Compiler options
 ================
@@ -173,18 +186,18 @@ Run linter. Requires clang-tidy. This takes time and may produce some false posi
 Building documentation
 ======================
 
-Build all documentation. Requires doxygen, sphinx, and breathe.
+Build all documentation. Requires doxygen, sphinx-build, and breathe-apidoc.
 
 .. code::
 
-   $ scons -Q docs
+   $ scons -Q --enable-werror --enable-doxygen --enable-sphinx docs
 
-Build specific parts of documentation:
+Or build specific parts of documentation:
 
 .. code::
 
-   $ scons -Q doxygen
-   $ scons -Q sphinx
+   $ scons -Q --enable-werror --enable-doxygen --enable-sphinx doxygen
+   $ scons -Q --enable-werror --enable-doxygen --enable-sphinx sphinx
 
 Remove generated documentation:
 
@@ -207,7 +220,7 @@ Run doxygen manually:
 Cleaning build results
 ======================
 
-Clean all:
+Clean everything:
 
 .. code::
 
@@ -219,9 +232,14 @@ or:
 
    $ scons -Q clean
 
-Clean partially:
+Clean build results except third-parties and documentation:
 
 .. code::
 
    $ scons -Q cleanbuild
+
+Clean only built documentation:
+
+.. code::
+
    $ scons -Q cleandocs
