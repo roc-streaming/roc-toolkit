@@ -15,26 +15,8 @@ scons -Q clean
 
 scons -Q \
       --enable-werror \
-      --enable-debug \
-      --enable-tests \
-      --enable-benchmarks \
-      --enable-examples \
-      --sanitizers=all \
-      --build-3rdparty=openfec,cpputest \
-      test
-
-scons -Q \
-      --enable-werror \
       --enable-tests \
       --enable-benchmarks \
       --enable-examples \
       --build-3rdparty=openfec,cpputest \
-      test
-
-scons -Q \
-      --enable-werror \
-      --enable-tests \
-      --enable-benchmarks \
-      --enable-examples \
-      --build-3rdparty=all \
       test
