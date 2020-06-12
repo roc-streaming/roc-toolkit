@@ -3,7 +3,6 @@ bin
 build
 3rdparty
 html
-man
 
 # scons
 .sconsign.dblite

@@ -11,6 +11,7 @@ do
           --enable-tests \
           --enable-benchmarks \
           --enable-examples \
+          --enable-doxygen \
           --build-3rdparty=openfec,pulseaudio,google-benchmark \
           --compiler=$c \
           test

@@ -1,0 +1,464 @@
+.\" Man page generated from reStructuredText.
+.
+.TH "ROC-RECV" "1" "Jun 12, 2020" "Roc 0.1" "Roc"
+.SH NAME
+roc-recv \- receive real-time audio
+.
+.nr rst2man-indent-level 0
+.
+.de1 rstReportMargin
+\\$1 \\n[an-margin]
+level \\n[rst2man-indent-level]
+level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
+-
+\\n[rst2man-indent0]
+\\n[rst2man-indent1]
+\\n[rst2man-indent2]
+..
+.de1 INDENT
+.\" .rstReportMargin pre:
+. RS \\$1
+. nr rst2man-indent\\n[rst2man-indent-level] \\n[an-margin]
+. nr rst2man-indent-level +1
+.\" .rstReportMargin post:
+..
+.de UNINDENT
+. RE
+.\" indent \\n[an-margin]
+.\" old: \\n[rst2man-indent\\n[rst2man-indent-level]]
+.nr rst2man-indent-level -1
+.\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
+.in \\n[rst2man-indent\\n[rst2man-indent-level]]u
+..
+.SH SYNOPSIS
+.sp
+\fBroc\-recv\fP \fIOPTIONS\fP
+.SH DESCRIPTION
+.sp
+Receive audio streams from remote senders and write them to an audio device or file.
+.SS Options
+.INDENT 0.0
+.TP
+.B \-h\fP,\fB  \-\-help
+Print help and exit
+.TP
+.B \-V\fP,\fB  \-\-version
+Print version and exit
+.TP
+.B \-v\fP,\fB  \-\-verbose
+Increase verbosity level (may be used multiple times)
+.TP
+.B \-L\fP,\fB  \-\-list\-supported
+list supported schemes and formats
+.TP
+.BI \-o\fP,\fB  \-\-output\fB= IO_URI
+Output file or device URI
+.TP
+.BI \-\-output\-format\fB= FILE_FORMAT
+Force output file format
+.TP
+.BI \-\-backup\fB= IO_URI
+Backup file or device URI (if set, used when there are no sessions)
+.TP
+.BI \-\-backup\-format\fB= FILE_FORMAT
+Force backup file format
+.TP
+.BI \-s\fP,\fB  \-\-source\fB= ENDPOINT_URI
+Local source endpoint
+.TP
+.BI \-r\fP,\fB  \-\-repair\fB= ENDPOINT_URI
+Local repair endpoint
+.TP
+.BI \-\-miface\fB= MIFACE
+IPv4 or IPv6 address of the network interface on which to join the multicast group
+.TP
+.BI \-\-sess\-latency\fB= STRING
+Session target latency, TIME units
+.TP
+.BI \-\-min\-latency\fB= STRING
+Session minimum latency, TIME units
+.TP
+.BI \-\-max\-latency\fB= STRING
+Session maximum latency, TIME units
+.TP
+.BI \-\-io\-latency\fB= STRING
+Playback target latency, TIME units
+.TP
+.BI \-\-np\-timeout\fB= STRING
+Session no playback timeout, TIME units
+.TP
+.BI \-\-bp\-timeout\fB= STRING
+Session broken playback timeout, TIME units
+.TP
+.BI \-\-bp\-window\fB= STRING
+Session breakage detection window, TIME units
+.TP
+.BI \-\-packet\-limit\fB= INT
+Maximum packet size, in bytes
+.TP
+.BI \-\-frame\-limit\fB= INT
+Maximum internal frame size, in bytes
+.TP
+.BI \-\-frame\-length\fB= TIME
+Duration of the internal frames, TIME units
+.TP
+.BI \-\-rate\fB= INT
+Override output sample rate, Hz
+.TP
+.B \-\-no\-resampling
+Disable resampling  (default=off)
+.TP
+.BI \-\-resampler\-backend\fB= ENUM
+Resampler backend  (possible values="builtin" default=\(gabuiltin\(aq)
+.TP
+.BI \-\-resampler\-profile\fB= ENUM
+Resampler profile  (possible values="low", "medium", "high" default=\(gamedium\(aq)
+.TP
+.B \-1\fP,\fB  \-\-oneshot
+Exit when last connected client disconnects (default=off)
+.TP
+.B \-\-poisoning
+Enable uninitialized memory poisoning (default=off)
+.TP
+.B \-\-profiling
+Enable self profiling (default=off)
+.TP
+.B \-\-beeping
+Enable beeping on packet loss  (default=off)
+.TP
+.BI \-\-color\fB= ENUM
+Set colored logging mode for stderr output (possible values="auto", "always", "never" default=\(gaauto\(aq)
+.UNINDENT
+.SS Endpoint URI
+.sp
+\fB\-\-source\fP and \fB\-\-repair\fP options define network endpoints on which to receive the traffic.
+.sp
+\fIENDPOINT_URI\fP should have the following form:
+.sp
+\fBprotocol://host[:port][/path][?query]\fP
+.sp
+Examples:
+.INDENT 0.0
+.IP \(bu 2
+\fBrtsp://localhost:123/path?query\fP
+.IP \(bu 2
+\fBrtp+rs8m://localhost:123\fP
+.IP \(bu 2
+\fBrtp://0.0.0.0:123\fP
+.IP \(bu 2
+\fBrtp://[::1]:123\fP
+.UNINDENT
+.sp
+The list of supported protocols can be retrieved using \fB\-\-list\-supported\fP option.
+.sp
+The host field should be either FQDN (domain name), or IPv4 address, or IPv6 address in square brackets. It may be \fB0.0.0.0\fP (for IPv4) or \fB[::]\fP (for IPv6) to bind endpoint to all network interfaces.
+.sp
+The port field can be omitted if the protocol defines standard port. Otherwise, it is mandatory. It may be set to zero to bind endpoint to a radomly chosen ephemeral port.
+.sp
+The path and query fields are allowed only for protocols that support them, e.g. for RTSP.
+.sp
+If FEC is enabled on sender, a pair of a source and repair endpoints should be provided. The two endpoints should use compatible protocols, e.g. \fBrtp+rs8m://\fP for source endpoint, and \fBrs8m://\fP for repair endpoint. If FEC is disabled, a single source endpoint should be provided.
+.sp
+Supported configurations:
+.INDENT 0.0
+.IP \(bu 2
+source \fBrtp://\fP, repair none (bare RTP without FEC)
+.IP \(bu 2
+source \fBrtp+rs8m://\fP, repair \fBrs8m://\fP (RTP with Reed\-Solomon FEC)
+.IP \(bu 2
+source \fBrtp+ldpc://\fP, repair \fBldpc://\fP (RTP with LDPC\-Staircase FEC)
+.UNINDENT
+.SS IO URI
+.sp
+\fB\-\-output\fP and \fB\-\-backup\fP options require a device or file URI in one of the following forms:
+.INDENT 0.0
+.IP \(bu 2
+\fBDEVICE_TYPE://DEVICE_NAME\fP \-\- audio device
+.IP \(bu 2
+\fBDEVICE_TYPE://default\fP \-\- default audio device for given device type
+.IP \(bu 2
+\fBfile:///ABS/PATH\fP \-\- absolute file path
+.IP \(bu 2
+\fBfile://localhost/ABS/PATH\fP \-\- absolute file path (alternative form; only "localhost" host is supported)
+.IP \(bu 2
+\fBfile:/ABS/PATH\fP \-\- absolute file path (alternative form)
+.IP \(bu 2
+\fBfile:REL/PATH\fP \-\- relative file path
+.IP \(bu 2
+\fBfile://\-\fP \-\- stdout
+.IP \(bu 2
+\fBfile:\-\fP \-\- stdout (alternative form)
+.UNINDENT
+.sp
+Examples:
+.INDENT 0.0
+.IP \(bu 2
+\fBpulse://default\fP
+.IP \(bu 2
+\fBpulse://alsa_output.pci\-0000_00_1f.3.analog\-stereo\fP
+.IP \(bu 2
+\fBalsa://hw:1,0\fP
+.IP \(bu 2
+\fBfile:///home/user/test.wav\fP
+.IP \(bu 2
+\fBfile://localhost/home/user/test.wav\fP
+.IP \(bu 2
+\fBfile:/home/user/test.wav\fP
+.IP \(bu 2
+\fBfile:./test.wav\fP
+.IP \(bu 2
+\fBfile:\-\fP
+.UNINDENT
+.sp
+The list of supported schemes and file formats can be retrieved using \fB\-\-list\-supported\fP option.
+.sp
+If the \fB\-\-output\fP is omitted, the default driver and device are selected.
+If the \fB\-\-backup\fP is omitted, no backup source is used.
+.sp
+The \fB\-\-output\-format\fP and \fB\-\-backup\-format\fP options can be used to force the output or backup file format. If the option is omitted, the file format is auto\-detected. The option is always required when the output or backup is stdout or stdin.
+.sp
+The path component of the provided URI is \fI\%percent\-decoded\fP\&. For convenience, unencoded characters are allowed as well, except that \fB%\fP should be always encoded as \fB%25\fP\&.
+.sp
+For example, the file named \fB/foo/bar%/[baz]\fP may be specified using either of the following URIs: \fBfile:///foo%2Fbar%25%2F%5Bbaz%5D\fP and \fBfile:///foo/bar%25/[baz]\fP\&.
+.SS Backup audio
+.sp
+If \fB\-\-backup\fP option is given, it defines input audio device or file which will be played when there are no connected sessions. If it\(aqs not given, silence is played instead.
+.sp
+Backup file is restarted from the beginning each time when the last session disconnect. The playback of of the backup file is automatically looped.
+.SS Multicast interface
+.sp
+If \fB\-\-miface\fP option is present, it defines an IP address of the network interface on which to join the multicast group. If not present, no multicast group should be joined.
+.sp
+It\(aqs not possible to receive multicast traffic without joining a multicast group. The user should either provide multicast interface, or join the group manually using foreign tools.
+.sp
+\fIMIFACE\fP should be an IP address of the network interface on which to join the multicast group. It may be \fB0.0.0.0\fP (for IPv4) or \fB::\fP (for IPv6) to join the multicast group on all available interfaces.
+.SS Time units
+.INDENT 0.0
+.TP
+.B \fITIME\fP should have one of the following forms:
+123ns, 123us, 123ms, 123s, 123m, 123h
+.UNINDENT
+.SH EXAMPLES
+.SS Endpoint examples
+.sp
+Bind one bare RTP endpoint on all IPv4 interfaces:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+$ roc\-recv \-vv \-s rtp://0.0.0.0:10001
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Bind two endpoints to all IPv4 interfaces (but not IPv6):
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+$ roc\-recv \-vv \-s rtp+rs8m://0.0.0.0:10001 \-r rs8m://0.0.0.0:10002
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Bind two endpoints to all IPv6 interfaces (but not IPv4):
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+$ roc\-recv \-vv \-s rtp+rs8m://[::]:10001 \-r rs8m://[::]:10002
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Bind two endpoints to a particular network interface:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+$ roc\-recv \-vv \-s rtp+rs8m://192.168.0.3:10001 \-r rs8m://192.168.0.3:10002
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Bind two endpoints to a particular multicast address and join to a multicast group on a particular network interface:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+$ roc\-recv \-vv \-s rtp+rs8m://225.1.2.3:10001 \-r rs8m://225.1.2.3:10002 \-\-miface 192.168.0.3
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.SS I/O examples
+.sp
+Output to the default ALSA device:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+$ roc\-recv \-vv \-s rtp://0.0.0.0:10001 \-o alsa://default
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Output to a specific PulseAudio device:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+$ roc\-recv \-vv \-s rtp://0.0.0.0:10001 \-o pulse://alsa_input.pci\-0000_00_1f.3.analog\-stereo
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Output to a file in WAV format (guess format by extension):
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+$ roc\-recv \-vv \-s rtp://0.0.0.0:10001 \-o file:./output.wav
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Output to a file in WAV format (specify format manually):
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+$ roc\-recv \-vv \-s rtp://0.0.0.0:10001 \-o file:./output \-\-output\-format wav
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Output to stdout in WAV format:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+$ roc\-recv \-vv \-s rtp://0.0.0.0:10001 \-o file:\- \-\-output\-format wav >./output.wav
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Output to a file in WAV format (absolute path):
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+$ roc\-recv \-vv \-s rtp://0.0.0.0:10001 \-o file:///home/user/output.wav
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Specify backup file:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+$ roc\-recv \-vv \-s rtp://0.0.0.0:10001 \-\-backup file:./backup.wav
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.SS Tuning examples
+.sp
+Force a specific rate on the output device:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+$ roc\-recv \-vv \-s rtp://0.0.0.0:10001 \-\-rate=44100
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Select the LDPC\-Staircase FEC scheme:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+$ roc\-recv \-vv \-s rtp+ldpc://0.0.0.0:10001 \-r ldpc://0.0.0.0:10002
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Select higher session latency and timeouts:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+$ roc\-recv \-vv \-s rtp://0.0.0.0:10001 \e
+    \-\-sess\-latency=5s \-\-min\-latency=\-1s \-\-max\-latency=10s \-\-np\-timeout=10s \-\-bp\-timeout=10s
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Select higher I/O latency:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+$ roc\-recv \-vv \-s rtp://0.0.0.0:10001 \e
+    \-\-io\-latency=200ms
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Select resampler profile:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+$ roc\-recv \-vv \-s rtp://0.0.0.0:10001 \e
+    \-\-resampler\-profile=high
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.SH SEE ALSO
+.sp
+\fBroc\-send(1)\fP, and the Roc web site at \fI\%https://roc\-project.github.io/\fP
+.SH BUGS
+.sp
+Please report any bugs found via GitHub (\fI\%https://github.com/roc\-project/roc/\fP).
+.SH AUTHORS
+.sp
+See \fI\%authors\fP page on the website for a list of maintainers and contributors.
+.SH COPYRIGHT
+2020, Roc authors
+.\" Generated by docutils manpage writer.
+.
