@@ -6,15 +6,16 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_core/timer.h
+//! @file roc_core/target_linux/roc_core/timer.h
 //! @brief Thread-safe timer.
 
 #ifndef ROC_CORE_TIMER_H_
 #define ROC_CORE_TIMER_H_
 
+#include <sys/timerfd.h>
+
 #include "roc_core/atomic.h"
 #include "roc_core/noncopyable.h"
-#include "roc_core/semaphore.h"
 #include "roc_core/seqlock.h"
 #include "roc_core/time.h"
 
@@ -25,6 +26,8 @@ namespace core {
 class Timer : public NonCopyable<> {
 public:
     Timer();
+
+    virtual ~Timer();
 
     //! Set timer deadline.
     //! Can be called concurrently, but only one concurrent call will succeed.
@@ -42,10 +45,13 @@ public:
     void wait_deadline();
 
 private:
-    Semaphore sem_;
-    Atomic<int> sem_post_flag_;
+    struct itimerspec convert_deadline();
+    struct itimerspec infinity_deadline();
+    struct itimerspec immediately_deadline();
+    struct itimerspec finity_deadline();
+
+    int timerfd_;
     Seqlock<nanoseconds_t> deadline_;
-    Seqlock<nanoseconds_t> next_wakeup_;
 };
 
 } // namespace core

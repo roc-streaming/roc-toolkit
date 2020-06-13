@@ -698,6 +698,7 @@ else:
         env.Append(ROC_TARGETS=[
             'target_darwin',
             'target_libunwind',
+            'target_notimers'
         ])
 
     is_glibc = not 'musl' in host
