@@ -67,7 +67,7 @@ void Timer::wait_deadline() {
 }
 
 struct itimerspec Timer::convert_deadline() {
-    nanoseconds_t deadline = deadline_.wait_load();
+    const nanoseconds_t deadline = deadline_.wait_load();
 
     if (deadline < 0) {
         return infinity_deadline();
@@ -93,7 +93,7 @@ struct itimerspec Timer::immediately_deadline() {
 }
 
 struct itimerspec Timer::finity_deadline() {
-    nanoseconds_t deadline = deadline_.wait_load();
+    const nanoseconds_t deadline = deadline_.wait_load();
 
     struct itimerspec new_value = {
         .it_interval = {
