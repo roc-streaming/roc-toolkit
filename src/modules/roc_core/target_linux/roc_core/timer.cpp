@@ -79,13 +79,20 @@ struct itimerspec Timer::convert_deadline() {
 }
 
 struct itimerspec Timer::infinity_deadline() {
-    struct itimerspec new_value = {};
+    struct itimerspec new_value;
+    new_value.it_interval.tv_sec = 0;
+    new_value.it_interval.tv_nsec = 0;
+    new_value.it_value.tv_sec = 0;
+    new_value.it_value.tv_nsec = 0;
 
     return new_value;
 }
 
 struct itimerspec Timer::immediately_deadline() {
-    struct itimerspec new_value = {};
+    struct itimerspec new_value;
+    new_value.it_interval.tv_sec = 0;
+    new_value.it_interval.tv_nsec = 0;
+    new_value.it_value.tv_sec = 0;
     new_value.it_value.tv_nsec = Nanosecond;
 
     return new_value;
@@ -94,8 +101,10 @@ struct itimerspec Timer::immediately_deadline() {
 struct itimerspec Timer::finity_deadline() {
     const nanoseconds_t deadline = deadline_.wait_load();
 
-    struct itimerspec new_value = {};
-    new_value.it_value.tv_sec = (time_t)(deadline / Second);
+    struct itimerspec new_value;
+    new_value.it_interval.tv_sec = 0;
+    new_value.it_interval.tv_nsec = 0;
+    new_value.it_value.tv_sec = deadline / Second;
     new_value.it_value.tv_nsec = deadline % Second;
 
     return new_value;
