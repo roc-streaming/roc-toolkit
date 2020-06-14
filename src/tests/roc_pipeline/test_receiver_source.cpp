@@ -9,6 +9,8 @@
 #include <CppUTest/TestHarness.h>
 
 #include "test_helpers/frame_reader.h"
+#include "test_helpers/frame_writer.h"
+#include "test_helpers/packet_reader.h"
 #include "test_helpers/packet_writer.h"
 #include "test_helpers/scheduler.h"
 
@@ -19,8 +21,11 @@
 #include "roc_core/time.h"
 #include "roc_fec/codec_map.h"
 #include "roc_packet/packet_pool.h"
+#include "roc_packet/queue.h"
+#include "roc_pipeline/sender_sink.h"
 #include "roc_pipeline/receiver_source.h"
 #include "roc_rtp/composer.h"
+#include "roc_rtp/parser.h"
 #include "roc_rtp/format_map.h"
 
 namespace roc {
@@ -45,6 +50,7 @@ enum {
     Timeout = Latency * 13,
 
     ManyPackets = Latency / SamplesPerPacket * 10,
+    ManyFrames = FramesPerPacket * 20,
 
     MaxSnJump = ManyPackets * 5,
     MaxTsJump = ManyPackets * 7 * SamplesPerPacket
@@ -60,6 +66,7 @@ packet::PacketPool packet_pool(allocator, true);
 
 rtp::FormatMap format_map;
 rtp::Composer rtp_composer(NULL);
+rtp::Parser rtp_parser(format_map, NULL);
 
 ReceiverSource::EndpointSetHandle add_endpoint_set(ReceiverSource& receiver) {
     ReceiverSource::Tasks::AddEndpointSet task;
@@ -82,6 +89,47 @@ packet::IWriter* add_endpoint(ReceiverSource& receiver,
     CHECK(task.get_writer());
 
     return task.get_writer();
+}
+
+SenderSink::EndpointSetHandle add_endpoint_set(SenderSink& sender) {
+    pipeline::SenderSink::Tasks::AddEndpointSet task;
+    CHECK(sender.schedule_and_wait(task));
+
+    CHECK(task.success());
+    CHECK(task.get_handle());
+
+    return task.get_handle();
+}
+
+SenderSink::EndpointHandle create_endpoint(SenderSink& sender,
+                                           SenderSink::EndpointSetHandle endpoint_set,
+                                           address::Interface iface,
+                                           address::Protocol proto) {
+    pipeline::SenderSink::Tasks::CreateEndpoint task(endpoint_set, iface, proto);
+    CHECK(sender.schedule_and_wait(task));
+
+    CHECK(task.success());
+    CHECK(task.get_handle());
+
+    return task.get_handle();
+}
+
+void set_endpoint_output_writer(SenderSink& sender,
+                                SenderSink::EndpointHandle endpoint,
+                                packet::IWriter& writer) {
+    pipeline::SenderSink::Tasks::SetEndpointOutputWriter task(endpoint, writer);
+    CHECK(sender.schedule_and_wait(task));
+
+    CHECK(task.success());
+}
+
+void set_endpoint_destination_udp_address(SenderSink& sender,
+                                          SenderSink::EndpointHandle endpoint,
+                                          const address::SocketAddr& addr) {
+    pipeline::SenderSink::Tasks::SetEndpointDestinationUdpAddress task(endpoint, addr);
+    CHECK(sender.schedule_and_wait(task));
+
+    CHECK(task.success());
 }
 
 class TaskIssuer : public TaskPipeline::ICompletionHandler {
@@ -157,15 +205,18 @@ TEST_GROUP(receiver_source) {
     test::Scheduler scheduler;
 
     ReceiverConfig config;
+    SenderConfig sender_config;
 
     address::SocketAddr src1;
     address::SocketAddr src2;
 
     address::SocketAddr dst1;
     address::SocketAddr dst2;
+    address::SocketAddr dst_addr;
 
     address::Protocol proto1;
     address::Protocol proto2;
+    address::Protocol source_proto;
 
     void setup() {
         config.common.output_sample_rate = SampleRate;
@@ -193,6 +244,15 @@ TEST_GROUP(receiver_source) {
         config.default_session.rtp_validator.max_ts_jump =
             MaxTsJump * core::Second / SampleRate;
 
+        sender_config.input_channels = ChMask;
+        sender_config.packet_length = SamplesPerPacket * core::Second / SampleRate;
+        sender_config.internal_frame_length = MaxBufDuration;
+
+        sender_config.interleaving = false;
+        sender_config.timing = false;
+        sender_config.poisoning = true;
+        sender_config.profiling = true;
+
         src1 = test::new_address(1);
         src2 = test::new_address(2);
 
@@ -201,6 +261,8 @@ TEST_GROUP(receiver_source) {
 
         proto1 = address::Proto_RTP;
         proto2 = address::Proto_RTP;
+        source_proto = address::Proto_RTP;
+        dst_addr = test::new_address(123);
     }
 };
 
@@ -1426,6 +1488,43 @@ TEST(receiver_source, status) {
 
         if (receiver.state() == sndio::ISource::Idle) {
             break;
+        }
+    }
+}
+
+TEST(receiver_source, fetch_saved_repair_packets) {
+    packet::Queue queue;
+
+    SenderSink sender(scheduler, sender_config, format_map, packet_pool, byte_buffer_pool,
+                      sample_buffer_pool, allocator);
+    CHECK(sender.valid());
+
+    SenderSink::EndpointSetHandle endpoint_set = add_endpoint_set(sender);
+    CHECK(endpoint_set);
+
+    SenderSink::EndpointHandle source_endpoint =
+        create_endpoint(sender, endpoint_set, address::Iface_AudioSource, source_proto);
+    CHECK(source_endpoint);
+
+    set_endpoint_output_writer(sender, source_endpoint, queue);
+    set_endpoint_destination_udp_address(sender, source_endpoint, dst_addr);
+
+    test::FrameWriter frame_writer(sender, sample_buffer_pool);
+
+    for (size_t nf = 0; nf < ManyFrames; nf++) {
+        frame_writer.write_samples(SamplesPerFrame * NumCh);
+    }
+
+    ReceiverSource receiver(scheduler, config, format_map, packet_pool, byte_buffer_pool,
+                            sample_buffer_pool, allocator);
+    CHECK(receiver.valid());
+    test::FrameReader frame_reader(receiver, sample_buffer_pool);
+
+    for (size_t np = 0; np < ManyPackets; np++) {
+        for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            frame_reader.read_samples(SamplesPerFrame * NumCh, 1);
+
+            UNSIGNED_LONGS_EQUAL(1, receiver.num_sessions());
         }
     }
 }

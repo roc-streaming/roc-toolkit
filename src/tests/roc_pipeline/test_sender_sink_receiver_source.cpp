@@ -231,51 +231,6 @@ TEST_GROUP(sender_sink_receiver_source) {
         }
     }
 
-    void fetch_saved_repair_packets(int flags, size_t num_sessions) {
-        test::Scheduler scheduler;
-
-        packet::Queue queue;
-
-        SenderSink sender(scheduler, sender_config(flags), format_map, packet_pool,
-                          byte_buffer_pool, sample_buffer_pool, allocator);
-
-        CHECK(sender.valid());
-
-        ReceiverSource receiver(scheduler, receiver_config(), format_map, packet_pool,
-                                byte_buffer_pool, sample_buffer_pool, allocator);
-
-        CHECK(receiver.valid());
-
-        packet::IWriter* receiver_source_endpoint_writer = NULL;
-        packet::IWriter* receiver_repair_endpoint_writer = NULL;
-
-        test::FrameWriter frame_writer(sender, sample_buffer_pool);
-
-        for (size_t nf = 0; nf < ManyFrames; nf++) {
-            frame_writer.write_samples(SamplesPerFrame * NumCh);
-        }
-
-        test::PacketSender packet_sender(packet_pool, receiver_source_endpoint_writer,
-                                   receiver_repair_endpoint_writer);
-
-        filter_repair_source_packets(queue, packet_sender);
-
-        test::FrameReader frame_reader(receiver, sample_buffer_pool);
-
-        packet_sender.deliver(Latency / SamplesPerPacket);
-
-        for (size_t np = 0; np < ManyFrames / FramesPerPacket; np++) {
-            for (size_t nf = 0; nf < FramesPerPacket; nf++) {
-                frame_reader.read_samples(SamplesPerFrame * NumCh, num_sessions);
-
-                UNSIGNED_LONGS_EQUAL(num_sessions, receiver.num_sessions());
-            }
-
-            packet_sender.deliver(1);
-        }
-
-    }
-
     void filter_packets(int flags, packet::IReader& reader, packet::IWriter& writer) {
         size_t counter = 0;
 
@@ -295,21 +250,6 @@ TEST_GROUP(sender_sink_receiver_source) {
             }
 
             writer.write(pp);
-        }
-    }
-
-    void filter_repair_source_packets(packet::IReader& reader, packet::IWriter& writer) {
-        packet::Queue queue;
-        while (packet::PacketPtr pp = reader.read()) {
-            if (pp->flags() & packet::Packet::FlagRepair) {
-                writer.write(pp);
-            } else {
-                queue.write(pp);
-            }
-        }
-        // drop one source packets
-        for (size_t np = 0; np < queue.size() - 1; np++) {
-            writer.write(queue.read());
         }
     }
 
@@ -421,12 +361,6 @@ TEST(sender_sink_receiver_source, fec_drop_source) {
 TEST(sender_sink_receiver_source, fec_drop_repair) {
     if (is_fec_supported(FlagReedSolomon)) {
         send_receive(FlagReedSolomon | FlagDropRepair, 1);
-    }
-}
-
-TEST(sender_sink_receiver_source, fec_ldpc_ring_buffer) {
-    if (is_fec_supported(FlagLDPC)) {
-        fetch_saved_repair_packets(FlagLDPC, 1);
     }
 }
 
