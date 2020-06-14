@@ -104,7 +104,7 @@ struct itimerspec Timer::finity_deadline() {
     struct itimerspec new_value;
     new_value.it_interval.tv_sec = 0;
     new_value.it_interval.tv_nsec = 0;
-    new_value.it_value.tv_sec = deadline / Second;
+    new_value.it_value.tv_sec = (time_t)(deadline / Second);
     new_value.it_value.tv_nsec = deadline % Second;
 
     return new_value;
