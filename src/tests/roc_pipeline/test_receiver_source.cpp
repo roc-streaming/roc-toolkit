@@ -46,6 +46,9 @@ enum {
     SamplesPerPacket = 100,
     FramesPerPacket = SamplesPerPacket / SamplesPerFrame,
 
+    SourcePackets = 20,
+    RepairPackets = 10,
+
     Latency = SamplesPerPacket * 8,
     Timeout = Latency * 13,
 
@@ -212,11 +215,13 @@ TEST_GROUP(receiver_source) {
 
     address::SocketAddr dst1;
     address::SocketAddr dst2;
-    address::SocketAddr dst_addr;
+    address::SocketAddr source_dst_addr;
+    address::SocketAddr repair_dst_addr;
 
     address::Protocol proto1;
     address::Protocol proto2;
     address::Protocol source_proto;
+    address::Protocol repair_proto;
 
     void setup() {
         config.common.output_sample_rate = SampleRate;
@@ -248,6 +253,10 @@ TEST_GROUP(receiver_source) {
         sender_config.packet_length = SamplesPerPacket * core::Second / SampleRate;
         sender_config.internal_frame_length = MaxBufDuration;
 
+        sender_config.fec_encoder.scheme = packet::FEC_ReedSolomon_M8;
+        sender_config.fec_writer.n_source_packets = SourcePackets;
+        sender_config.fec_writer.n_repair_packets = RepairPackets;
+
         sender_config.interleaving = false;
         sender_config.timing = false;
         sender_config.poisoning = true;
@@ -261,8 +270,10 @@ TEST_GROUP(receiver_source) {
 
         proto1 = address::Proto_RTP;
         proto2 = address::Proto_RTP;
-        source_proto = address::Proto_RTP;
-        dst_addr = test::new_address(123);
+        source_proto = address::Proto_RTP_RS8M_Source;
+        repair_proto = address::Proto_RS8M_Repair;
+        source_dst_addr = test::new_address(123);
+        repair_dst_addr = test::new_address(456);
     }
 };
 
@@ -1506,8 +1517,15 @@ TEST(receiver_source, fetch_saved_repair_packets) {
         create_endpoint(sender, endpoint_set, address::Iface_AudioSource, source_proto);
     CHECK(source_endpoint);
 
+    SenderSink::EndpointHandle repair_endpoint =
+        create_endpoint(sender, endpoint_set, address::Iface_AudioRepair, repair_proto);
+    CHECK(repair_endpoint);
+
     set_endpoint_output_writer(sender, source_endpoint, queue);
-    set_endpoint_destination_udp_address(sender, source_endpoint, dst_addr);
+    set_endpoint_destination_udp_address(sender, source_endpoint, source_dst_addr);
+
+    set_endpoint_output_writer(sender, repair_endpoint, queue);
+    set_endpoint_destination_udp_address(sender, repair_endpoint, repair_dst_addr);
 
     test::FrameWriter frame_writer(sender, sample_buffer_pool);
 
@@ -1515,12 +1533,41 @@ TEST(receiver_source, fetch_saved_repair_packets) {
         frame_writer.write_samples(SamplesPerFrame * NumCh);
     }
 
+    packet::Queue source_queue;
+    packet::Queue repair_queue;
+    while (packet::PacketPtr pp = queue.read()) {
+        if (pp->flags() & packet::Packet::FlagRepair) {
+            repair_queue.write(pp);
+        } else {
+            source_queue.write(pp);
+        }
+    }
+
     ReceiverSource receiver(scheduler, config, format_map, packet_pool, byte_buffer_pool,
                             sample_buffer_pool, allocator);
     CHECK(receiver.valid());
+
+    ReceiverSource::EndpointSetHandle receiver_endpoint_set = add_endpoint_set(receiver);
+    CHECK(receiver_endpoint_set);
+
+    packet::IWriter* source_endpoint_writer =
+        add_endpoint(receiver, receiver_endpoint_set, address::Iface_AudioSource, source_proto);
+    CHECK(source_endpoint_writer);
+
+    packet::IWriter* repair_endpoint_writer =
+        add_endpoint(receiver, receiver_endpoint_set, address::Iface_AudioRepair, repair_proto);
+    CHECK(repair_endpoint_writer);
+
+    while (packet::PacketPtr pp = repair_queue.read()) {
+        repair_endpoint_writer->write(pp);
+    }
+    while (packet::PacketPtr pp = source_queue.read()) {
+        source_endpoint_writer->write(pp);
+    }
+
     test::FrameReader frame_reader(receiver, sample_buffer_pool);
 
-    for (size_t np = 0; np < ManyPackets; np++) {
+    for (size_t np = 0; np < ManyFrames / FramesPerPacket; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
             frame_reader.read_samples(SamplesPerFrame * NumCh, 1);
 
