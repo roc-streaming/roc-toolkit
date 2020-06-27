@@ -1,5 +1,5 @@
-PROJECT_NAME            = "Roc internal modules"
-PROJECT_BRIEF           = "Roc: real-time audio streaming over the network"
+PROJECT_NAME            = "Roc Toolkit internal modules"
+PROJECT_BRIEF           = "Roc Toolkit: real-time audio streaming"
 PROJECT_LOGO            = ../../docs/images/icon80.png
 HTML_HEADER             = ../../docs/doxygen/header.html
 

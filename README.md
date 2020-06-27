@@ -1,14 +1,14 @@
 ![](docs/images/logo.png)
 
-# Roc: real-time audio streaming over the network
+# Roc Toolkit: real-time audio streaming
 
 Roc is a toolkit for real-time audio streaming over the network.
 
 You can read about the project here:
 
-* [Overview](https://roc-project.github.io/roc/docs/about_project/overview.html)
-* [Features](https://roc-project.github.io/roc/docs/about_project/features.html)
-* [Usage](https://roc-project.github.io/roc/docs/about_project/usage.html)
+* [Overview](https://roc-streaming.org/toolkit/docs/about_project/overview.html)
+* [Features](https://roc-streaming.org/toolkit/docs/about_project/features.html)
+* [Usage](https://roc-streaming.org/toolkit/docs/about_project/usage.html)
 
 Summary
 -------
@@ -32,65 +32,65 @@ Key features:
 Documentation
 -------------
 
-Documentation for the latest release is available [here](https://roc-project.github.io/roc/docs/).
+Documentation for the latest release is available [here](https://roc-streaming.org/toolkit/docs/).
 
-Additionally, there is also Doxygen-generated documentation for [internal modules](https://roc-project.github.io/roc/doxygen/).
+Additionally, there is also Doxygen-generated documentation for [internal modules](https://roc-streaming.org/toolkit/doxygen/).
 
 Build status
 ------------
 
-See details on continuous integration [here](https://roc-project.github.io/roc/docs/development/continuous_integration.html).
+See details on continuous integration [here](https://roc-streaming.org/toolkit/docs/development/continuous_integration.html).
 
 Branch    | Status
 --------- | ------
-`master`  | [![](https://travis-ci.org/roc-project/roc.svg?branch=master)](https://travis-ci.org/roc-project/roc)
-`develop` | [![](https://travis-ci.org/roc-project/roc.svg?branch=develop)](https://travis-ci.org/roc-project/roc)
+`master`  | [![](https://travis-ci.org/roc-streaming/roc-toolkit.svg?branch=master)](https://travis-ci.org/roc-streaming/roc-toolkit)
+`develop` | [![](https://travis-ci.org/roc-streaming/roc-toolkit.svg?branch=develop)](https://travis-ci.org/roc-streaming/roc-toolkit)
 
 Versioning
 ----------
 
 See details here:
 
-* [GitHub releases](https://github.com/roc-project/roc/releases)
-* [Changelog](https://roc-project.github.io/roc/docs/development/changelog.html)
-* [Version control](https://roc-project.github.io/roc/docs/development/version_control.html)
+* [GitHub releases](https://github.com/roc-streaming/roc-toolkit/releases)
+* [Changelog](https://roc-streaming.org/toolkit/docs/development/changelog.html)
+* [Version control](https://roc-streaming.org/toolkit/docs/development/version_control.html)
 
 Platforms
 ---------
 
-See details [here](https://roc-project.github.io/roc/docs/portability.html).
+See details [here](https://roc-streaming.org/toolkit/docs/portability.html).
 
 If you want to run Roc on an embedded system or a single-board computer, see:
 
-* [Cross-compiling](https://roc-project.github.io/roc/docs/portability/cross_compiling.html)
-* [Tested boards](https://roc-project.github.io/roc/docs/portability/tested_boards.html)
+* [Cross-compiling](https://roc-streaming.org/toolkit/docs/portability/cross_compiling.html)
+* [Tested boards](https://roc-streaming.org/toolkit/docs/portability/tested_boards.html)
 
 Plans
 -----
 
 See here:
 
-* [Project board](https://github.com/roc-project/roc/projects/2)
-* [Roadmap](https://roc-project.github.io/roc/docs/development/roadmap.html)
+* [Project board](https://github.com/roc-streaming/roc-toolkit/projects/2)
+* [Roadmap](https://roc-streaming.org/toolkit/docs/development/roadmap.html)
 
 Community
 ---------
 
-We have a mailing list and an IRC channel. See details [here](https://roc-project.github.io/roc/docs/about_project/contacts.html).
+We have a mailing list and an IRC channel. See details [here](https://roc-streaming.org/toolkit/docs/about_project/contacts.html).
 
 Contributing
 ------------
 
-Contributions in any form are always welcome! See [contribution guidelines](https://roc-project.github.io/roc/docs/development/contribution_guidelines.html).
+Contributions in any form are always welcome! See [contribution guidelines](https://roc-streaming.org/toolkit/docs/development/contribution_guidelines.html).
 
-Tasks needing help are [listed here](https://github.com/roc-project/roc/labels/help%20wanted).
+Tasks needing help are [listed here](https://github.com/roc-streaming/roc-toolkit/labels/help%20wanted).
 
 Licensing
 ---------
 
-See details on licenses [here](https://roc-project.github.io/roc/docs/about_project/licensing.html).
+See details on licenses [here](https://roc-streaming.org/toolkit/docs/about_project/licensing.html).
 
 Authors
 -------
 
-See a list of maintainers and contributors [here](https://roc-project.github.io/roc/docs/about_project/authors.html).
+See a list of maintainers and contributors [here](https://roc-streaming.org/toolkit/docs/about_project/authors.html).

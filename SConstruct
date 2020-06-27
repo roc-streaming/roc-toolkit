@@ -194,16 +194,34 @@ AddOption('--enable-benchmarks',
           dest='enable_benchmarks',
           action='store_true',
           help='enable bechmarks building and running (requires Google Benchmark)')
+<<<<<<< HEAD
+
+AddOption('--enable-examples',
+          dest='enable_examples',
+          action='store_true',
+          help='enable examples building')
+=======
+>>>>>>> d8f74d5d3fb22f41808e9a1d19ad46742ca33476
 
 AddOption('--enable-examples',
           dest='enable_examples',
           action='store_true',
           help='enable examples building')
 
-AddOption('--disable-doc',
-          dest='disable_doc',
+AddOption('--enable-doxygen',
+          dest='enable_doxygen',
           action='store_true',
-          help='disable Doxygen and Sphinx documentation generation')
+          help='enable Doxygen documentation generation')
+
+AddOption('--enable-sphinx',
+          dest='enable_sphinx',
+          action='store_true',
+          help='enable Sphinx documentation generation')
+
+AddOption('--disable-c11',
+          dest='disable_c11',
+          action='store_true',
+          help='disable C11 support')
 
 AddOption('--disable-c11',
           dest='disable_c11',
@@ -306,7 +324,6 @@ cleanbuild = [
 
 cleandocs = [
     env.DeleteDir('#html'),
-    env.DeleteDir('#man'),
     env.DeleteDir('#build/docs'),
 ]
 
@@ -339,6 +356,7 @@ env.OverrideFromArg('DOXYGEN', default='doxygen')
 env.OverrideFromArg('SPHINX_BUILD', default='sphinx-build')
 env.OverrideFromArg('BREATHE_APIDOC', default='breathe-apidoc')
 
+<<<<<<< HEAD
 if set(COMMAND_LINE_TARGETS).intersection(['doxygen', 'docs']):
     enable_doxygen = True
 elif GetOption('disable_doc') or set(COMMAND_LINE_TARGETS).intersection(['tidy', 'fmt']):
@@ -396,9 +414,13 @@ if enable_doxygen and enable_sphinx:
     env.AlwaysBuild(env.Alias('sphinx', sphinx_targets))
     for man in ['roc-send', 'roc-recv', 'roc-conv']:
         env.AddDistFile(GetOption('mandir'), '#man/%s.1' % man)
+=======
+doc_env = env.Clone()
+Export('doc_env')
+>>>>>>> d8f74d5d3fb22f41808e9a1d19ad46742ca33476
 
-if (enable_doxygen and enable_sphinx) or 'docs' in COMMAND_LINE_TARGETS:
-    env.AlwaysBuild(env.Alias('docs', ['doxygen', 'sphinx']))
+doc_env.SConscript('docs/SConscript',
+                       variant_dir='#build', duplicate=0)
 
 fmt = []
 

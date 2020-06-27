@@ -41,7 +41,7 @@ For example, the sender can be configured to add 5 repair packets to every 10 so
 
 FECFRAME doesn't define protocols and codecs by itself but instead allows different FEC schemes. An FEC scheme defines source and repair packet formats, FEC encoding (building the redundancy data), and decoding (repairing lost data).
 
-Roc implements the FECFRAME specification with several FEC schemes. The packet level is implemented in Roc itself, and the codec level is implemented in `OpenFEC library <http://openfec.org>`_. Currently, it's highly recommended to use `our fork <https://github.com/roc-project/openfec>`_ instead of the upstream version since it provides several bug fixes and minor improvements that are not available in the upstream yet.
+Roc implements the FECFRAME specification with several FEC schemes. The packet level is implemented in Roc itself, and the codec level is implemented in `OpenFEC library <http://openfec.org>`_. Currently, it's highly recommended to use `our fork <https://github.com/roc-streaming/openfec>`_ instead of the upstream version since it provides several bug fixes and minor improvements that are not available in the upstream yet.
 
 Roc currently supports the following FEC schemes:
 

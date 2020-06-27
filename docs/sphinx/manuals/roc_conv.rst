@@ -85,14 +85,14 @@ Input from stdin, output to stdout:
 SEE ALSO
 ========
 
-:manpage:`roc-recv(1)`, :manpage:`roc-send(1)`, the Roc web site at https://roc-project.github.io/
+:manpage:`roc-recv(1)`, :manpage:`roc-send(1)`, the Roc web site at https://roc-streaming.org/
 
 BUGS
 ====
 
-Please report any bugs found via GitHub (https://github.com/roc-project/roc/).
+Please report any bugs found via GitHub (https://github.com/roc-streaming/roc-toolkit/).
 
 AUTHORS
 =======
 
-See `authors <https://roc-project.github.io/roc/docs/about_project/authors.html>`_ page on the website for a list of maintainers and contributors.
+See `authors <https://roc-streaming.org/toolkit/docs/about_project/authors.html>`_ page on the website for a list of maintainers and contributors.

@@ -16,6 +16,7 @@ scons -Q clean
 
 scons -Q \
       --enable-werror \
+<<<<<<< HEAD
       --enable-debug \
       --enable-tests \
       --enable-benchmarks \
@@ -39,3 +40,10 @@ scons -Q \
       --enable-examples \
       --build-3rdparty=all \
       test
+=======
+      --enable-tests \
+      --enable-benchmarks \
+      --enable-examples \
+      --build-3rdparty=openfec \
+      test
+>>>>>>> d8f74d5d3fb22f41808e9a1d19ad46742ca33476

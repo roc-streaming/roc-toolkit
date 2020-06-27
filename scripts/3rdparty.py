@@ -611,7 +611,7 @@ elif name == 'openfec':
     else:
         dist = 'bin/Release'
     download(
-      'https://github.com/roc-project/openfec/archive/v%s.tar.gz' % ver,
+      'https://github.com/roc-streaming/openfec/archive/v%s.tar.gz' % ver,
       'openfec_v%s.tar.gz' % ver,
         logfile,
         vendordir)
