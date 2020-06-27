@@ -12,8 +12,6 @@
 #ifndef ROC_CORE_TIMER_H_
 #define ROC_CORE_TIMER_H_
 
-#include <sys/timerfd.h>
-
 #include "roc_core/atomic.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/seqlock.h"
@@ -27,12 +25,11 @@ class Timer : public NonCopyable<> {
 public:
     Timer();
 
-    virtual ~Timer();
+    ~Timer();
 
     //! Set timer deadline.
     //! Can be called concurrently, but only one concurrent call will succeed.
     //! Returns false if the call failed because of another concurrent call.
-    //! Is lock-free if Semaphore::post() is so (which is true of modern plarforms).
     //! Current or future wait_deadline() call will unblock when deadline expires.
     //! Zero deadline means wake up immediately.
     //! Nagative deadline means never wake up, until deadline is changed again.
@@ -45,13 +42,12 @@ public:
     void wait_deadline();
 
 private:
-    struct itimerspec convert_deadline();
-    struct itimerspec infinity_deadline();
-    struct itimerspec immediately_deadline();
-    struct itimerspec finity_deadline();
+    void syscall_set(nanoseconds_t deadline);
+    void syscall_wait();
 
     int timerfd_;
     Seqlock<nanoseconds_t> deadline_;
+    bool is_waiting_;
 };
 
 } // namespace core

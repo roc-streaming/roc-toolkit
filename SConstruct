@@ -641,6 +641,7 @@ else:
     if platform in ['android']:
         env.Append(ROC_TARGETS=[
             'target_bionic',
+            'target_linux',
         ])
 
     if platform in ['darwin']:
