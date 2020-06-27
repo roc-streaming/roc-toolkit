@@ -2,9 +2,9 @@
 
 ## Get involved
 
-If you would like to help, please take a look at our [contribution guidelines](https://roc-project.github.io/roc/docs/development/contribution_guidelines.html).
+If you would like to help, please take a look at our [contribution guidelines](https://roc-streaming.org/toolkit/docs/development/contribution_guidelines.html).
 
-Tasks needing help are [listed here](https://github.com/roc-project/roc/labels/help%20wanted).
+Tasks needing help are [listed here](https://github.com/roc-streaming/roc-toolkit/labels/help%20wanted).
 
 If you want to start working on a task, please leave a comment there, so that we can assign you.
 

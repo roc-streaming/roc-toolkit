@@ -21,7 +21,7 @@ Ubuntu 16.04 and later
     $ sudo apt-get install libtool intltool autoconf automake make cmake
 
     # clone repo
-    $ git clone https://github.com/roc-project/roc.git
+    $ git clone https://github.com/roc-streaming/roc-toolkit.git
     $ cd roc
 
     # build libraries and tools
@@ -48,7 +48,7 @@ Ubuntu 14.04 and later, Debian Jessie and later
     $ sudo apt-get install libtool intltool autoconf automake make cmake
 
     # clone repo
-    $ git clone https://github.com/roc-project/roc.git
+    $ git clone https://github.com/roc-streaming/roc-toolkit.git
     $ cd roc
 
     # build libraries and tools
@@ -76,7 +76,7 @@ Fedora 22 and later
     $ sudo dnf install libtool intltool autoconf automake make cmake
 
     # clone repo
-    $ git clone https://github.com/roc-project/roc.git
+    $ git clone https://github.com/roc-streaming/roc-toolkit.git
     $ cd roc
 
     # build libraries and tools
@@ -106,7 +106,7 @@ Centos 7 and later
     $ sudo yum install libtool intltool autoconf automake make cmake
 
     # clone repo
-    $ git clone https://github.com/roc-project/roc.git
+    $ git clone https://github.com/roc-streaming/roc-toolkit.git
     $ cd roc
 
     # build libraries and tools
@@ -134,7 +134,7 @@ openSUSE Leap and later
     $ sudo zypper install pkg-config intltool libtool autoconf automake make cmake
 
     # clone repo
-    $ git clone https://github.com/roc-project/roc.git
+    $ git clone https://github.com/roc-streaming/roc-toolkit.git
     $ cd roc
 
     # build libraries and tools
@@ -161,7 +161,7 @@ Arch Linux
     $ sudo pacman -S grep gawk libtool intltool autoconf automake make cmake
 
     # clone repo
-    $ git clone https://github.com/roc-project/roc.git
+    $ git clone https://github.com/roc-streaming/roc-toolkit.git
     $ cd roc
 
     # build libraries and tools
@@ -188,7 +188,7 @@ Alpine Linux
     $ sudo apk add libtool autoconf automake make cmake
 
     # clone repo
-    $ git clone https://github.com/roc-project/roc.git
+    $ git clone https://github.com/roc-streaming/roc-toolkit.git
     $ cd roc
 
     # build libraries and tools
@@ -217,7 +217,7 @@ Raspberry Pi 2 and 3
 .. code::
 
     # clone repo
-    $ git clone https://github.com/roc-project/roc.git
+    $ git clone https://github.com/roc-streaming/roc-toolkit.git
     $ cd roc
 
     # build libraries, tools, and PulseAudio modules
@@ -242,7 +242,7 @@ Raspberry Pi 1 and Zero
 .. code::
 
     # clone repo
-    $ git clone https://github.com/roc-project/roc.git
+    $ git clone https://github.com/roc-streaming/roc-toolkit.git
     $ cd roc
 
     # build libraries, tools, and PulseAudio modules
@@ -268,7 +268,7 @@ Orange Pi 64-bit models
 .. code::
 
     # clone repo
-    $ git clone https://github.com/roc-project/roc.git
+    $ git clone https://github.com/roc-streaming/roc-toolkit.git
     $ cd roc
 
     # build libraries, tools, and PulseAudio modules
@@ -293,7 +293,7 @@ Orange Pi 32-bit models
 .. code::
 
     # clone repo
-    $ git clone https://github.com/roc-project/roc.git
+    $ git clone https://github.com/roc-streaming/roc-toolkit.git
     $ cd roc
 
     # build libraries, tools, and PulseAudio modules
@@ -327,7 +327,7 @@ macOS 10.12 and later
     $ brew install libtool autoconf automake make cmake
 
     # clone repo
-    $ git clone https://github.com/roc-project/roc.git
+    $ git clone https://github.com/roc-streaming/roc-toolkit.git
     $ cd roc
 
     # build libraries and tools
@@ -348,7 +348,7 @@ macOS 10.11 and later
     $ brew install libtool autoconf automake make cmake
 
     # clone repo
-    $ git clone https://github.com/roc-project/roc.git
+    $ git clone https://github.com/roc-streaming/roc-toolkit.git
     $ cd roc
 
     # build libraries and tools

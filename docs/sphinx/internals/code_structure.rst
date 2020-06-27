@@ -12,7 +12,7 @@ Roc consists of the following high-level components:
 
 * **Modules**
 
-  Internal C++ libraries. Other components are based on them. See `Doxygen documentation <https://roc-project.github.io/roc/doxygen/>`_ for details.
+  Internal C++ libraries. Other components are based on them. See `Doxygen documentation <https://roc-streaming.org/toolkit/doxygen/>`_ for details.
 
 * **Library**
 
@@ -35,7 +35,7 @@ Modules
 
 Essentially, a module is just a C++ library providing a set of related classes. Every module has its own namespace, include path, and a set of unit tests. Modules may be built separately.
 
-See `Doxygen documentation <https://roc-project.github.io/roc/doxygen/>`_ for details.
+See `Doxygen documentation <https://roc-streaming.org/toolkit/doxygen/>`_ for details.
 
 Modules can be grouped into several layers:
 

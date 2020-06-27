@@ -15,7 +15,7 @@ The following branches are used:
 Releases
 ========
 
-See `Releases <https://github.com/roc-project/roc/releases>`_ and :doc:`/development/changelog` pages for the list of releases and their detailed description.
+See `Releases <https://github.com/roc-streaming/roc-toolkit/releases>`_ and :doc:`/development/changelog` pages for the list of releases and their detailed description.
 
 Releases are tagged from the master branch and named according to the `semantic versioning <https://semver.org/>`_ rules:
 

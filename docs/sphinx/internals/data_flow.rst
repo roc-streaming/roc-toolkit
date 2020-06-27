@@ -77,7 +77,7 @@ In general terms, the flow is the following:
 * in the port pipeline, packet headers and payload are composed, depending on the port protocol;
 * the packets are written to the network thread queue.
 
-The specific functions of the individual pipeline elements are documented in `Doxygen <https://roc-project.github.io/roc/doxygen/>`_.
+The specific functions of the individual pipeline elements are documented in `Doxygen <https://roc-streaming.org/toolkit/doxygen/>`_.
 
 .. image:: ../_images/sender_pipeline.png
     :align: center
@@ -110,7 +110,7 @@ The flow of the read part is the following:
 * the packets are requested through several packet readers;
 * the packets are fetched from the queues where they were stored by the write part.
 
-The specific functions of the individual pipeline elements are documented in `Doxygen <https://roc-project.github.io/roc/doxygen/>`_.
+The specific functions of the individual pipeline elements are documented in `Doxygen <https://roc-streaming.org/toolkit/doxygen/>`_.
 
 .. image:: ../_images/receiver_pipeline.png
     :align: center

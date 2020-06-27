@@ -53,7 +53,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'Roc'
+project = u'Roc Toolkit'
 copyright = u'%s, Roc authors' % datetime.datetime.now().year
 author = u'Roc authors'
 
@@ -62,7 +62,7 @@ author = u'Roc authors'
 # built documents.
 ver = open(os.path.join(os.path.dirname(__file__), '../../.version')).read().strip().split('.')
 # The short X.Y version.
-version = 'Roc %s' % '.'.join(ver[:2])
+version = 'Roc Toolkit %s' % '.'.join(ver[:2])
 # The full version, including alpha/beta/rc tags.
 release = '%s' % '.'.join(ver)
 
@@ -183,7 +183,7 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'roc', u'Roc documentation',
+    (master_doc, 'roc', u'Roc Toolkit documentation',
      author, 'roc', 'Real-time audio streaming over the network.',
      'Miscellaneous'),
 ]

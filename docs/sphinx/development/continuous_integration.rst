@@ -15,10 +15,10 @@ Travis builds Roc for Linux and macOS. Linux worker uses Docker to run builds on
 Docker images for continuous integration and cross-compilation are prepared using Docker Hub automated builds. They are based on official upstream images, adding pre-installed packages required for build. Dockerfiles for images are hosted in a separate GitHub repository. When a Dockerfile or an upstream image changes, Docker Hub automatically triggers rebuild.
 
 Links:
- * `Travis project <https://travis-ci.org/roc-project/roc>`_
- * `Travis configuration <https://github.com/roc-project/roc/blob/master/.travis.yml>`_
+ * `Travis project <https://travis-ci.org/roc-streaming/roc-toolkit>`_
+ * `Travis configuration <https://github.com/roc-streaming/roc-toolkit/blob/master/.travis.yml>`_
  * `Docker Hub organization <https://hub.docker.com/u/rocproject/>`_
- * `Dockerfiles repo <https://github.com/roc-project/dockerfiles>`_
+ * `Dockerfiles repo <https://github.com/roc-streaming/dockerfiles>`_
 
 Docker images
 =============

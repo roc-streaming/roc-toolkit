@@ -67,4 +67,4 @@ TIME is an integer number with a suffix, e.g.:
   123ns; 123us; 123ms; 123s; 123m; 123h;
 
 See further details in roc-send(1) manual page locally or online:
-https://roc-project.github.io/roc/docs/manuals/roc_send.html"
+https://roc-streaming.org/toolkit/docs/manuals/roc_send.html"
