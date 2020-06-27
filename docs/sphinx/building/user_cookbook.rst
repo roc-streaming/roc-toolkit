@@ -22,7 +22,7 @@ Ubuntu 16.04 and later
 
     # clone repo
     $ git clone https://github.com/roc-streaming/roc-toolkit.git
-    $ cd roc
+    $ cd roc-toolkit
 
     # build libraries and tools
     $ scons -Q --build-3rdparty=openfec
@@ -49,7 +49,7 @@ Ubuntu 14.04 and later, Debian Jessie and later
 
     # clone repo
     $ git clone https://github.com/roc-streaming/roc-toolkit.git
-    $ cd roc
+    $ cd roc-toolkit
 
     # build libraries and tools
     $ scons -Q --build-3rdparty=libuv,openfec,cpputest
@@ -77,7 +77,7 @@ Fedora 22 and later
 
     # clone repo
     $ git clone https://github.com/roc-streaming/roc-toolkit.git
-    $ cd roc
+    $ cd roc-toolkit
 
     # build libraries and tools
     $ scons -Q --build-3rdparty=openfec,cpputest
@@ -107,7 +107,7 @@ Centos 7 and later
 
     # clone repo
     $ git clone https://github.com/roc-streaming/roc-toolkit.git
-    $ cd roc
+    $ cd roc-toolkit
 
     # build libraries and tools
     $ scons -Q --build-3rdparty=libuv,openfec,cpputest
@@ -135,7 +135,7 @@ openSUSE Leap and later
 
     # clone repo
     $ git clone https://github.com/roc-streaming/roc-toolkit.git
-    $ cd roc
+    $ cd roc-toolkit
 
     # build libraries and tools
     $ scons -Q --build-3rdparty=openfec,cpputest
@@ -162,7 +162,7 @@ Arch Linux
 
     # clone repo
     $ git clone https://github.com/roc-streaming/roc-toolkit.git
-    $ cd roc
+    $ cd roc-toolkit
 
     # build libraries and tools
     $ scons -Q --build-3rdparty=openfec,cpputest
@@ -189,7 +189,7 @@ Alpine Linux
 
     # clone repo
     $ git clone https://github.com/roc-streaming/roc-toolkit.git
-    $ cd roc
+    $ cd roc-toolkit
 
     # build libraries and tools
     $ scons -Q --build-3rdparty=openfec
@@ -218,7 +218,7 @@ Raspberry Pi 2 and 3
 
     # clone repo
     $ git clone https://github.com/roc-streaming/roc-toolkit.git
-    $ cd roc
+    $ cd roc-toolkit
 
     # build libraries, tools, and PulseAudio modules
     $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
@@ -243,7 +243,7 @@ Raspberry Pi 1 and Zero
 
     # clone repo
     $ git clone https://github.com/roc-streaming/roc-toolkit.git
-    $ cd roc
+    $ cd roc-toolkit
 
     # build libraries, tools, and PulseAudio modules
     $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
@@ -269,7 +269,7 @@ Orange Pi 64-bit models
 
     # clone repo
     $ git clone https://github.com/roc-streaming/roc-toolkit.git
-    $ cd roc
+    $ cd roc-toolkit
 
     # build libraries, tools, and PulseAudio modules
     $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
@@ -294,7 +294,7 @@ Orange Pi 32-bit models
 
     # clone repo
     $ git clone https://github.com/roc-streaming/roc-toolkit.git
-    $ cd roc
+    $ cd roc-toolkit
 
     # build libraries, tools, and PulseAudio modules
     $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
@@ -328,7 +328,7 @@ macOS 10.12 and later
 
     # clone repo
     $ git clone https://github.com/roc-streaming/roc-toolkit.git
-    $ cd roc
+    $ cd roc-toolkit
 
     # build libraries and tools
     $ scons -Q --build-3rdparty=openfec
@@ -349,7 +349,7 @@ macOS 10.11 and later
 
     # clone repo
     $ git clone https://github.com/roc-streaming/roc-toolkit.git
-    $ cd roc
+    $ cd roc-toolkit
 
     # build libraries and tools
     $ scons -Q --build-3rdparty=libuv,openfec,sox
