@@ -96,4 +96,4 @@ Use --list-supported option to print the list of the supported
 URI schemes and file formats.
 
 See further details in roc-recv(1) manual page locally or online:
-https://roc-project.github.io/roc/docs/manuals/roc_recv.html"
+https://roc-streaming.org/toolkit/docs/manuals/roc_recv.html"

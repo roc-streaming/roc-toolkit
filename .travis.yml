@@ -133,7 +133,11 @@ jobs:
       after_failure:
         - cat config.log
 
-    - name: "roc-project.github.io"
+    - name: "roc-streaming.github.io"
       stage: Docs
       script:
+<<<<<<< HEAD
         - scripts/travis/trigger.sh roc-project%2Froc-project.github.io travis
+=======
+        - scripts/travis/trigger.sh roc-streaming%2Froc-streaming.github.io travis
+>>>>>>> d8f74d5d3fb22f41808e9a1d19ad46742ca33476

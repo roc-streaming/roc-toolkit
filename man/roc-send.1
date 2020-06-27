@@ -1,0 +1,384 @@
+.\" Man page generated from reStructuredText.
+.
+.TH "ROC-SEND" "1" "Jun 12, 2020" "Roc 0.1" "Roc"
+.SH NAME
+roc-send \- send real-time audio
+.
+.nr rst2man-indent-level 0
+.
+.de1 rstReportMargin
+\\$1 \\n[an-margin]
+level \\n[rst2man-indent-level]
+level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
+-
+\\n[rst2man-indent0]
+\\n[rst2man-indent1]
+\\n[rst2man-indent2]
+..
+.de1 INDENT
+.\" .rstReportMargin pre:
+. RS \\$1
+. nr rst2man-indent\\n[rst2man-indent-level] \\n[an-margin]
+. nr rst2man-indent-level +1
+.\" .rstReportMargin post:
+..
+.de UNINDENT
+. RE
+.\" indent \\n[an-margin]
+.\" old: \\n[rst2man-indent\\n[rst2man-indent-level]]
+.nr rst2man-indent-level -1
+.\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
+.in \\n[rst2man-indent\\n[rst2man-indent-level]]u
+..
+.SH SYNOPSIS
+.sp
+\fBroc\-send\fP \fIOPTIONS\fP
+.SH DESCRIPTION
+.sp
+Read audio stream from an audio device or file and send it to remote receiver.
+.SS Options
+.INDENT 0.0
+.TP
+.B \-h\fP,\fB  \-\-help
+Print help and exit
+.TP
+.B \-V\fP,\fB  \-\-version
+Print version and exit
+.TP
+.B \-v\fP,\fB  \-\-verbose
+Increase verbosity level (may be used multiple times)
+.TP
+.B \-L\fP,\fB  \-\-list\-supported
+list supported schemes and formats
+.TP
+.BI \-i\fP,\fB  \-\-input\fB= IO_URI
+Input file or device URI
+.TP
+.BI \-\-input\-format\fB= FILE_FORMAT
+Force input file format
+.TP
+.BI \-s\fP,\fB  \-\-source\fB= ENDPOINT_URI
+Remote source endpoint
+.TP
+.BI \-r\fP,\fB  \-\-repair\fB= ENDPOINT_URI
+Remote repair endpoint
+.TP
+.B \-\-broadcast
+Allow broadcast destination port addresses (default=off)
+.TP
+.BI \-\-nbsrc\fB= INT
+Number of source packets in FEC block
+.TP
+.BI \-\-nbrpr\fB= INT
+Number of repair packets in FEC block
+.TP
+.BI \-\-packet\-length\fB= STRING
+Outgoing packet length, TIME units
+.TP
+.BI \-\-packet\-limit\fB= INT
+Maximum packet size, in bytes
+.TP
+.BI \-\-frame\-limit\fB= INT
+Maximum internal frame size, in bytes
+.TP
+.BI \-\-frame\-length\fB= TIME
+Duration of the internal frames, TIME units
+.TP
+.BI \-\-rate\fB= INT
+Override input sample rate, Hz
+.TP
+.B \-\-no\-resampling
+Disable resampling  (default=off)
+.TP
+.BI \-\-resampler\-backend\fB= ENUM
+Resampler backend  (possible values="builtin" default=\(gabuiltin\(aq)
+.TP
+.BI \-\-resampler\-profile\fB= ENUM
+Resampler profile  (possible values="low", "medium", "high" default=\(gamedium\(aq)
+.TP
+.B \-\-interleaving
+Enable packet interleaving  (default=off)
+.TP
+.B \-\-poisoning
+Enable uninitialized memory poisoning (default=off)
+.TP
+.B \-\-profiling
+Enable self profiling (default=off)
+.TP
+.BI \-\-color\fB= ENUM
+Set colored logging mode for stderr output (possible values="auto", "always", "never" default=\(gaauto\(aq)
+.UNINDENT
+.SS Endpoint URI
+.sp
+\fB\-\-source\fP and \fB\-\-repair\fP options define network endpoints to which to send the traffic.
+.sp
+\fIENDPOINT_URI\fP should have the following form:
+.sp
+\fBprotocol://host[:port][/path][?query]\fP
+.sp
+Examples:
+.INDENT 0.0
+.IP \(bu 2
+\fBrtsp://localhost:123/path?query\fP
+.IP \(bu 2
+\fBrtp+rs8m://localhost:123\fP
+.IP \(bu 2
+\fBrtp://127.0.0.1:123\fP
+.IP \(bu 2
+\fBrtp://[::1]:123\fP
+.UNINDENT
+.sp
+The list of supported protocols can be retrieved using \fB\-\-list\-supported\fP option.
+.sp
+The host field should be either FQDN (domain name), or IPv4 address, or IPv6 address in square brackets.
+.sp
+The port field can be omitted if the protocol defines standard port. Otherwise, it is mandatory.
+.sp
+The path and query fields are allowed only for protocols that support them, e.g. for RTSP.
+.sp
+If FEC is enabled, a pair of a source and repair endpoints should be provided. The two endpoints should use compatible protocols, e.g. \fBrtp+rs8m://\fP for source endpoint, and \fBrs8m://\fP for repair endpoint. If FEC is disabled, a single source endpoint should be provided.
+.sp
+Supported configurations:
+.INDENT 0.0
+.IP \(bu 2
+source \fBrtp://\fP, repair none (bare RTP without FEC)
+.IP \(bu 2
+source \fBrtp+rs8m://\fP, repair \fBrs8m://\fP (RTP with Reed\-Solomon FEC)
+.IP \(bu 2
+source \fBrtp+ldpc://\fP, repair \fBldpc://\fP (RTP with LDPC\-Staircase FEC)
+.UNINDENT
+.SS IO URI
+.sp
+\fB\-\-input\fP option requires a device or file URI in one of the following forms:
+.INDENT 0.0
+.IP \(bu 2
+\fBDEVICE_TYPE://DEVICE_NAME\fP \-\- audio device
+.IP \(bu 2
+\fBDEVICE_TYPE://default\fP \-\- default audio device for given device type
+.IP \(bu 2
+\fBfile:///ABS/PATH\fP \-\- absolute file path
+.IP \(bu 2
+\fBfile://localhost/ABS/PATH\fP \-\- absolute file path (alternative form; only "localhost" host is supported)
+.IP \(bu 2
+\fBfile:/ABS/PATH\fP \-\- absolute file path (alternative form)
+.IP \(bu 2
+\fBfile:REL/PATH\fP \-\- relative file path
+.IP \(bu 2
+\fBfile://\-\fP \-\- stdin
+.IP \(bu 2
+\fBfile:\-\fP \-\- stdin (alternative form)
+.UNINDENT
+.sp
+Examples:
+.INDENT 0.0
+.IP \(bu 2
+\fBpulse://default\fP
+.IP \(bu 2
+\fBpulse://alsa_input.pci\-0000_00_1f.3.analog\-stereo\fP
+.IP \(bu 2
+\fBalsa://hw:1,0\fP
+.IP \(bu 2
+\fBfile:///home/user/test.wav\fP
+.IP \(bu 2
+\fBfile://localhost/home/user/test.wav\fP
+.IP \(bu 2
+\fBfile:/home/user/test.wav\fP
+.IP \(bu 2
+\fBfile:./test.wav\fP
+.IP \(bu 2
+\fBfile:\-\fP
+.UNINDENT
+.sp
+The list of supported schemes and file formats can be retrieved using \fB\-\-list\-supported\fP option.
+.sp
+If the \fB\-\-input\fP is omitted, the default driver and device are selected.
+.sp
+The \fB\-\-input\-format\fP option can be used to force the input file format. If it is omitted, the file format is auto\-detected. This option is always required when the input is stdin.
+.sp
+The path component of the provided URI is \fI\%percent\-decoded\fP\&. For convenience, unencoded characters are allowed as well, except that \fB%\fP should be always encoded as \fB%25\fP\&.
+.sp
+For example, the file named \fB/foo/bar%/[baz]\fP may be specified using either of the following URIs: \fBfile:///foo%2Fbar%25%2F%5Bbaz%5D\fP and \fBfile:///foo/bar%25/[baz]\fP\&.
+.SS Broadcast address
+.sp
+This tool follows the common convention is to forbid traffic to broadcast addresses unless allowed excplicitly, to prevent accidental flood. To allow sending packets to broadcast source or repair endpoints, use \fB\-\-broadcast\fP option.
+.SS Time units
+.INDENT 0.0
+.TP
+.B \fITIME\fP should have one of the following forms:
+123ns, 123us, 123ms, 123s, 123m, 123h
+.UNINDENT
+.SH EXAMPLES
+.SS Endpoint examples
+.sp
+Send file to one bare RTP endpoint:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+$ roc\-send \-vv \-i file:./input.wav \-s rtp://192.168.0.3:10001
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Send file to two IPv4 source and repair endpoints:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+$ roc\-send \-vv \-i file:./input.wav \-s rtp+rs8m://192.168.0.3:10001 \-r rs8m://192.168.0.3:10002
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Send file to two IPv6 source and repair endpoints:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+$ roc\-send \-vv \-i file:./input.wav \-s rtp+rs8m://[2001:db8::]:10001 \-r rs8m://[2001:db8::]:10002
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Send file to two broadcast endpoints:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+$ roc\-send \-vv \-i file:./input.wav \-s rtp+rs8m://192.168.0.3:10001 \-r rs8m://192.168.0.3:10002 \-\-broadcast
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.SS I/O examples
+.sp
+Capture sound from the default device (omit \fB\-i\fP):
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+$ roc\-send \-vv \-s rtp://192.168.0.3:10001
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Capture sound from the default ALSA device:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+$ roc\-send \-vv \-s rtp://192.168.0.3:10001 \-i alsa://default
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Capture sound from a specific PulseAudio device:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+$ roc\-send \-vv \-s rtp://192.168.0.3:10001 \-i pulse://alsa_input.pci\-0000_00_1f.3.analog\-stereo
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Send WAV file, specify format manually:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+$ roc\-send \-vv \-s rtp://192.168.0.3:10001 \-i file:./input \-\-input\-format wav
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Send WAV from stdin:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+$ roc\-send \-vv \-s rtp://192.168.0.3:10001 \-i file:\- \-\-input\-format wav <./input.wav
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Send WAV file, specify full URI:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+$ roc\-send \-vv \-s rtp://192.168.0.3:10001 \-i file:///home/user/input.wav
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.SS Tuning examples
+.sp
+Force a specific rate on the input device:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+$ roc\-send \-vv \-s rtp://192.168.0.3:10001 \-\-rate=44100
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Select the LDPC\-Staircase FEC scheme and a larger block size:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+$ roc\-send \-vv \-i file:./input.wav \e
+    \-s rtp+ldpc://192.168.0.3:10001 \-r ldpc://192.168.0.3:10002 \e
+    \-\-nbsrc=1000 \-\-nbrpr=500
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Select resampler profile:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+$ roc\-send \-vv \-s rtp://192.168.0.3:10001 \-\-resampler\-profile=high
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.SH SEE ALSO
+.sp
+\fBroc\-recv(1)\fP, and the Roc web site at \fI\%https://roc\-project.github.io/\fP
+.SH BUGS
+.sp
+Please report any bugs found via GitHub (\fI\%https://github.com/roc\-project/roc/\fP).
+.SH AUTHORS
+.sp
+See \fI\%authors\fP page on the website for a list of maintainers and contributors.
+.SH COPYRIGHT
+2020, Roc authors
+.\" Generated by docutils manpage writer.
+.

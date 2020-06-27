@@ -13,8 +13,26 @@ Developer build:
 .. code::
 
     $ scons -Q --build-3rdparty=... \
+<<<<<<< HEAD
       --enable-werror --enable-debug --enable-tests --enable-benchmarks --enable-examples test bench
 
+=======
+      --enable-werror --enable-debug --enable-tests --enable-benchmarks --enable-examples --enable-doxygen test bench
+
+Explanation:
+
+* ``-Q`` enables compact colored build output
+* ``--build-3rdparty`` specifies the list of dependencies to be downloaded and built automatically
+* ``--enable-werror`` turns compiler and Doxygen warnings into error
+* ``--enable-debug`` enables debug build
+* ``--enable-tests`` enables building of unit tests
+* ``--enable-benchmarks`` enables building of micro benchmarks
+* ``--enable-examples`` enables building of API usage examples
+* ``--enable-doxygen`` enables running Doxygen and producing warnings for undocumented members
+* ``test`` is the target to run unit tests
+* ``bench`` is the target to run micro benchmarks
+
+>>>>>>> d8f74d5d3fb22f41808e9a1d19ad46742ca33476
 For ``--build-3rdparty`` option, see :doc:`/building/user_cookbook`.
 
 For developer build, you may also want to automatically download and build CppUTest (for unut tests) and Google Benchmark (for micro behcmarks):
@@ -23,10 +41,17 @@ For developer build, you may also want to automatically download and build CppUT
 
     $ scons -Q --build-3rdparty=...,cpputest,google-benchmark ...
 
+<<<<<<< HEAD
 Enable GCC/Clang sanitizers:
 
 .. code::
 
+=======
+Additionally, you can enable GCC/Clang sanitizers:
+
+.. code::
+
+>>>>>>> d8f74d5d3fb22f41808e9a1d19ad46742ca33476
     $ scons -Q --sanitizers=undefined,address ...
     $ scons -Q --sanitizers=all ...
 
@@ -34,6 +59,7 @@ Minimal build (don't build library and tools):
 
 .. code::
 
+<<<<<<< HEAD
     $ scons -Q --build-3rdparty=... --disable-lib --disable-tools --disable-doc
 
 Disable specific libraries (and features they provide):
@@ -45,6 +71,19 @@ Disable specific libraries (and features they provide):
 Compiler options
 ================
 
+=======
+    $ scons -Q --build-3rdparty=... --disable-lib --disable-tools
+
+Disable specific dependencies (and features they provide):
+
+.. code::
+
+    $ scons -Q --build-3rdparty=... --disable-libunwind --disable-openfec --disable-speexdsp --disable-sox --disable-pulseaudio
+
+Compiler options
+================
+
+>>>>>>> d8f74d5d3fb22f41808e9a1d19ad46742ca33476
 Select specific compiler:
 
 .. code::
@@ -54,6 +93,7 @@ Select specific compiler:
     $ scons -Q --compiler=gcc-4.8.5 ...
 
 Select toolchain for cross-compiling:
+<<<<<<< HEAD
 
 .. code::
 
@@ -107,6 +147,61 @@ Download and build all dependencies, then build everything:
 Per-module targets
 ==================
 
+=======
+
+.. code::
+
+    # arm-linux-gnueabihf-g++ should be in PATH
+    $ scons -Q --host=arm-linux-gnueabihf ...
+
+Select both compiler and toolchain:
+
+.. code::
+
+    # arm-linux-gnueabihf-clang++ should be in PATH
+    $ scons -Q --compiler=clang --host=arm-linux-gnueabihf ...
+
+Specify search paths manually:
+
+.. code::
+
+    $ scons -Q --with-openfec-includes=... --with-includes=... --with-libraries=...
+
+Specify tools and flags manually:
+
+.. code::
+
+    $ scons -Q CXX="..." CXXFLAGS="..." ...
+
+or:
+
+.. code::
+
+    $ export CXX="..."
+    $ export CXXFLAGS="..."
+    $ scons -Q ...
+
+The full list of the available options and variables is documented in :doc:`/building/scons_options`.
+
+Building dependencies
+=====================
+
+Download and build selected dependencies, then build everything:
+
+.. code::
+
+    $ scons -Q --build-3rdparty=libuv:1.4.2,libunwind,openfec,cpputest ...
+
+Download and build all dependencies, then build everything:
+
+.. code::
+
+    $ scons -Q --build-3rdparty=all
+
+Per-module targets
+==================
+
+>>>>>>> d8f74d5d3fb22f41808e9a1d19ad46742ca33476
 Build one module:
 
 .. code::
@@ -145,6 +240,36 @@ Run a single test:
 .. code::
 
    $ ./bin/x86_64-pc-linux-gnu/roc-test-pipeline -v -g receiver_source -n one_session_long_run
+<<<<<<< HEAD
+
+Run behcnmarks for the module manually:
+
+.. code::
+
+   $ ./bin/x86_64-pc-linux-gnu/roc-bench-pipeline
+
+Formatting code
+===============
+
+Format code. Requires clang-format >= 3.6.
+
+.. code::
+
+   $ scons -Q fmt
+
+Running linter
+==============
+
+Run linter. Requires clang-tidy. This takes time and may produce some false positives.
+
+.. code::
+
+   $ scons -Q tidy
+
+Building documentation
+======================
+=======
+>>>>>>> d8f74d5d3fb22f41808e9a1d19ad46742ca33476
 
 Run behcnmarks for the module manually:
 
@@ -173,18 +298,18 @@ Run linter. Requires clang-tidy. This takes time and may produce some false posi
 Building documentation
 ======================
 
-Build all documentation. Requires doxygen, sphinx, and breathe.
+Build all documentation. Requires doxygen, sphinx-build, and breathe-apidoc.
 
 .. code::
 
-   $ scons -Q docs
+   $ scons -Q --enable-werror --enable-doxygen --enable-sphinx docs
 
-Build specific parts of documentation:
+Or build specific parts of documentation:
 
 .. code::
 
-   $ scons -Q doxygen
-   $ scons -Q sphinx
+   $ scons -Q --enable-werror --enable-doxygen --enable-sphinx doxygen
+   $ scons -Q --enable-werror --enable-doxygen --enable-sphinx sphinx
 
 Remove generated documentation:
 
@@ -207,21 +332,42 @@ Run doxygen manually:
 Cleaning build results
 ======================
 
+<<<<<<< HEAD
 Clean all:
+=======
+Clean everything:
+>>>>>>> d8f74d5d3fb22f41808e9a1d19ad46742ca33476
 
 .. code::
 
    $ scons -Q -c
 
 or:
+<<<<<<< HEAD
 
 .. code::
 
    $ scons -Q clean
 
 Clean partially:
+=======
+
+.. code::
+
+   $ scons -Q clean
+
+Clean build results except third-parties and documentation:
+>>>>>>> d8f74d5d3fb22f41808e9a1d19ad46742ca33476
 
 .. code::
 
    $ scons -Q cleanbuild
+<<<<<<< HEAD
+=======
+
+Clean only built documentation:
+
+.. code::
+
+>>>>>>> d8f74d5d3fb22f41808e9a1d19ad46742ca33476
    $ scons -Q cleandocs

@@ -37,15 +37,15 @@ Want to contribute code? Great! Here is how you can choose a task.
 
 * **"help wanted" tag**
 
-  Look for issues marked with the `"help wanted" <https://github.com/roc-project/roc/labels/help%20wanted>`_ tag. This tag means that this is an important and awaited task but we have no human resources for it yet, and it is still in the backlog.
+  Look for issues marked with the `"help wanted" <https://github.com/roc-streaming/roc-toolkit/labels/help%20wanted>`_ tag. This tag means that this is an important and awaited task but we have no human resources for it yet, and it is still in the backlog.
 
 * **"easy hacks" tag**
 
-  Look for issues that are additionally marked with the `"easy hacks" <https://github.com/roc-project/roc/labels/easy%20hacks>`_ tag. This tag means that the solution is expected to be straightforward even if you are new to the project.
+  Look for issues that are additionally marked with the `"easy hacks" <https://github.com/roc-streaming/roc-toolkit/labels/easy%20hacks>`_ tag. This tag means that the solution is expected to be straightforward even if you are new to the project.
 
 * **backlog column**
 
-  Look for issues in the "Backlog" column in the `project board <https://github.com/roc-project/roc/projects/2>`_. Issues that are *not* marked as "help wanted" are probably not very good for you if you're new to the project, but you can take your chances if you would like to.
+  Look for issues in the "Backlog" column in the `project board <https://github.com/roc-streaming/roc-toolkit/projects/2>`_. Issues that are *not* marked as "help wanted" are probably not very good for you if you're new to the project, but you can take your chances if you would like to.
 
 * **project roadmap**
 
@@ -64,7 +64,7 @@ If you have chosen a task and are ready to work on it, the following documentati
 
   See :doc:`/internals` section for a high-level overview.
 
-  See also more low-level `Doxygen-generated documentation <https://roc-project.github.io/roc/doxygen/>`_.
+  See also more low-level `Doxygen-generated documentation <https://roc-streaming.org/toolkit/doxygen/>`_.
 
 * **coding guidelines**
 

@@ -21,8 +21,8 @@ Ubuntu 16.04 and later
     $ sudo apt-get install libtool intltool autoconf automake make cmake
 
     # clone repo
-    $ git clone https://github.com/roc-project/roc.git
-    $ cd roc
+    $ git clone https://github.com/roc-streaming/roc-toolkit.git
+    $ cd roc-toolkit
 
     # build libraries and tools
     $ scons -Q --build-3rdparty=openfec
@@ -49,8 +49,8 @@ Ubuntu 14.04 and later, Debian Jessie and later
     $ sudo apt-get install libtool intltool autoconf automake make cmake
 
     # clone repo
-    $ git clone https://github.com/roc-project/roc.git
-    $ cd roc
+    $ git clone https://github.com/roc-streaming/roc-toolkit.git
+    $ cd roc-toolkit
 
     # build libraries and tools
     $ scons -Q --build-3rdparty=libuv,libatomic_ops,openfec
@@ -77,8 +77,8 @@ Fedora 22 and later
     $ sudo dnf install libtool intltool autoconf automake make cmake
 
     # clone repo
-    $ git clone https://github.com/roc-project/roc.git
-    $ cd roc
+    $ git clone https://github.com/roc-streaming/roc-toolkit.git
+    $ cd roc-toolkit
 
     # build libraries and tools
     $ scons -Q --build-3rdparty=openfec
@@ -108,8 +108,8 @@ Centos 7 and later
     $ sudo yum install libtool intltool autoconf automake make cmake
 
     # clone repo
-    $ git clone https://github.com/roc-project/roc.git
-    $ cd roc
+    $ git clone https://github.com/roc-streaming/roc-toolkit.git
+    $ cd roc-toolkit
 
     # build libraries and tools
     $ scons -Q --build-3rdparty=libuv,libatomic_ops,openfec
@@ -136,8 +136,8 @@ openSUSE Leap and later
     $ sudo zypper install pkg-config intltool libtool autoconf automake make cmake
 
     # clone repo
-    $ git clone https://github.com/roc-project/roc.git
-    $ cd roc
+    $ git clone https://github.com/roc-streaming/roc-toolkit.git
+    $ cd roc-toolkit
 
     # build libraries and tools
     $ scons -Q --build-3rdparty=openfec
@@ -163,8 +163,8 @@ Arch Linux
     $ sudo pacman -S grep gawk libtool intltool autoconf automake make cmake
 
     # clone repo
-    $ git clone https://github.com/roc-project/roc.git
-    $ cd roc
+    $ git clone https://github.com/roc-streaming/roc-toolkit.git
+    $ cd roc-toolkit
 
     # build libraries and tools
     $ scons -Q --build-3rdparty=openfec
@@ -191,8 +191,8 @@ Alpine Linux
     $ sudo apk add libtool autoconf automake make cmake
 
     # clone repo
-    $ git clone https://github.com/roc-project/roc.git
-    $ cd roc
+    $ git clone https://github.com/roc-streaming/roc-toolkit.git
+    $ cd roc-toolkit
 
     # build libraries and tools
     $ scons -Q --build-3rdparty=openfec
@@ -220,8 +220,8 @@ Raspberry Pi 2 and 3
 .. code::
 
     # clone repo
-    $ git clone https://github.com/roc-project/roc.git
-    $ cd roc
+    $ git clone https://github.com/roc-streaming/roc-toolkit.git
+    $ cd roc-toolkit
 
     # build libraries, tools, and PulseAudio modules
     $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
@@ -245,8 +245,8 @@ Raspberry Pi 1 and Zero
 .. code::
 
     # clone repo
-    $ git clone https://github.com/roc-project/roc.git
-    $ cd roc
+    $ git clone https://github.com/roc-streaming/roc-toolkit.git
+    $ cd roc-toolkit
 
     # build libraries, tools, and PulseAudio modules
     $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
@@ -271,8 +271,8 @@ Orange Pi 64-bit models
 .. code::
 
     # clone repo
-    $ git clone https://github.com/roc-project/roc.git
-    $ cd roc
+    $ git clone https://github.com/roc-streaming/roc-toolkit.git
+    $ cd roc-toolkit
 
     # build libraries, tools, and PulseAudio modules
     $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
@@ -296,8 +296,8 @@ Orange Pi 32-bit models
 .. code::
 
     # clone repo
-    $ git clone https://github.com/roc-project/roc.git
-    $ cd roc
+    $ git clone https://github.com/roc-streaming/roc-toolkit.git
+    $ cd roc-toolkit
 
     # build libraries, tools, and PulseAudio modules
     $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
@@ -330,8 +330,8 @@ macOS 10.12 and later
     $ brew install libtool autoconf automake make cmake
 
     # clone repo
-    $ git clone https://github.com/roc-project/roc.git
-    $ cd roc
+    $ git clone https://github.com/roc-streaming/roc-toolkit.git
+    $ cd roc-toolkit
 
     # build libraries and tools
     $ scons -Q --build-3rdparty=openfec
@@ -351,8 +351,8 @@ macOS 10.11 and later
     $ brew install libtool autoconf automake make cmake
 
     # clone repo
-    $ git clone https://github.com/roc-project/roc.git
-    $ cd roc
+    $ git clone https://github.com/roc-streaming/roc-toolkit.git
+    $ cd roc-toolkit
 
     # build libraries and tools
     $ scons -Q --build-3rdparty=libuv,openfec,sox
@@ -365,7 +365,11 @@ Android
 
 .. seealso::
 
+<<<<<<< HEAD
    * `Java bindings for Roc <https://github.com/roc-project/roc-java>`_
+=======
+   * `Java bindings for Roc <https://github.com/roc-streaming/roc-java>`_
+>>>>>>> d8f74d5d3fb22f41808e9a1d19ad46742ca33476
    * :doc:`/portability/cross_compiling`
 
 Building library
@@ -374,8 +378,13 @@ Building library
 .. code::
 
     # clone repo
+<<<<<<< HEAD
     $ git clone https://github.com/roc-project/roc.git
     $ cd roc
+=======
+    $ git clone https://github.com/roc-streaming/roc-toolkit.git
+    $ cd roc-toolkit
+>>>>>>> d8f74d5d3fb22f41808e9a1d19ad46742ca33476
 
     # build libroc.so for 64-bit ARM, API level 28
     $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
