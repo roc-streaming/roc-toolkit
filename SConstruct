@@ -215,11 +215,6 @@ AddOption('--disable-c11',
           action='store_true',
           help='disable C11 support')
 
-AddOption('--disable-c11',
-          dest='disable_c11',
-          action='store_true',
-          help='disable C11 support')
-
 AddOption('--disable-soversion',
           dest='disable_soversion',
           action='store_true',
