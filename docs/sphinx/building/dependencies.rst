@@ -30,11 +30,7 @@ Runtime dependencies
 
 .. warning::
 
-<<<<<<< HEAD
-   If you want to install OpenFEC, it's highly recommended to use `our fork <https://github.com/roc-project/openfec>`_ or manually apply patches from it. The fork is automatically used when using ``--build-3rdparty=openfec`` option. It contains several bug-fixes (including leaks and segfaults) and improvements that are not available in the upstream.
-=======
    If you want to install OpenFEC, it's highly recommended to use `our fork <https://github.com/roc-streaming/openfec>`_ or manually apply patches from it. The fork is automatically used when using ``--build-3rdparty=openfec`` option. It contains several bug-fixes (including leaks and segfaults) and improvements that are not available in the upstream.
->>>>>>> d8f74d5d3fb22f41808e9a1d19ad46742ca33476
 
 .. note::
 

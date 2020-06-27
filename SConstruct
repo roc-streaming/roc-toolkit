@@ -194,14 +194,6 @@ AddOption('--enable-benchmarks',
           dest='enable_benchmarks',
           action='store_true',
           help='enable bechmarks building and running (requires Google Benchmark)')
-<<<<<<< HEAD
-
-AddOption('--enable-examples',
-          dest='enable_examples',
-          action='store_true',
-          help='enable examples building')
-=======
->>>>>>> d8f74d5d3fb22f41808e9a1d19ad46742ca33476
 
 AddOption('--enable-examples',
           dest='enable_examples',
@@ -356,68 +348,8 @@ env.OverrideFromArg('DOXYGEN', default='doxygen')
 env.OverrideFromArg('SPHINX_BUILD', default='sphinx-build')
 env.OverrideFromArg('BREATHE_APIDOC', default='breathe-apidoc')
 
-<<<<<<< HEAD
-if set(COMMAND_LINE_TARGETS).intersection(['doxygen', 'docs']):
-    enable_doxygen = True
-elif GetOption('disable_doc') or set(COMMAND_LINE_TARGETS).intersection(['tidy', 'fmt']):
-    enable_doxygen = False
-else:
-    doxygen_version = env.ParseCompilerVersion(env['DOXYGEN'])
-    enable_doxygen = doxygen_version and doxygen_version[:2] >= (1, 6)
-
-if enable_doxygen:
-    doxygen_targets = [
-        env.Doxygen(
-            html_dir='html/doxygen',
-            build_dir='build/docs/modules',
-            config='src/modules/Doxyfile',
-            sources=(env.GlobRecursive('#src/modules', ['*.h', '*.dox']) +
-                env.GlobRecursive('#docs/images', ['*'])),
-            werror=GetOption('enable_werror')),
-        env.Doxygen(
-            build_dir='build/docs/lib',
-            config='src/library/Doxyfile',
-            sources=env.GlobRecursive('#src/library/include', ['*.h', '*.dox']),
-            werror=GetOption('enable_werror')),
-    ]
-    env.AlwaysBuild(env.Alias('doxygen', doxygen_targets))
-
-if set(COMMAND_LINE_TARGETS).intersection(['sphinx', 'docs']):
-    enable_sphinx = True
-elif GetOption('disable_doc') or set(COMMAND_LINE_TARGETS).intersection(['tidy', 'fmt']):
-    enable_sphinx = False
-elif env.HasArg('SPHINX_BUILD') and env.HasArg('BREATHE_APIDOC'):
-    enable_sphinx = True
-else:
-    enable_sphinx = env.Which(env['SPHINX_BUILD']) and env.Which(env['BREATHE_APIDOC'])
-
-if enable_doxygen and enable_sphinx:
-    sphinx_targets = [
-        env.Sphinx(
-            build_dir='build',
-            output_type='html',
-            output_dir='html/docs',
-            source_dir='docs/sphinx',
-            sources=(env.GlobRecursive('docs/sphinx', ['*']) +
-                env.GlobRecursive('docs/images', ['*']) +
-                env.GlobRecursive('#src/library/include', ['*.h', '*.dox']) +
-                doxygen_targets),
-            werror=GetOption('enable_werror')),
-        env.Sphinx(
-            build_dir='build',
-            output_type='man',
-            output_dir='man',
-            source_dir='docs/sphinx',
-            sources=env.GlobRecursive('docs/sphinx', ['*']),
-            werror=GetOption('enable_werror')),
-    ]
-    env.AlwaysBuild(env.Alias('sphinx', sphinx_targets))
-    for man in ['roc-send', 'roc-recv', 'roc-conv']:
-        env.AddDistFile(GetOption('mandir'), '#man/%s.1' % man)
-=======
 doc_env = env.Clone()
 Export('doc_env')
->>>>>>> d8f74d5d3fb22f41808e9a1d19ad46742ca33476
 
 doc_env.SConscript('docs/SConscript',
                        variant_dir='#build', duplicate=0)

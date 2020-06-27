@@ -365,11 +365,7 @@ Android
 
 .. seealso::
 
-<<<<<<< HEAD
-   * `Java bindings for Roc <https://github.com/roc-project/roc-java>`_
-=======
    * `Java bindings for Roc <https://github.com/roc-streaming/roc-java>`_
->>>>>>> d8f74d5d3fb22f41808e9a1d19ad46742ca33476
    * :doc:`/portability/cross_compiling`
 
 Building library
@@ -378,13 +374,8 @@ Building library
 .. code::
 
     # clone repo
-<<<<<<< HEAD
-    $ git clone https://github.com/roc-project/roc.git
-    $ cd roc
-=======
     $ git clone https://github.com/roc-streaming/roc-toolkit.git
     $ cd roc-toolkit
->>>>>>> d8f74d5d3fb22f41808e9a1d19ad46742ca33476
 
     # build libroc.so for 64-bit ARM, API level 28
     $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \

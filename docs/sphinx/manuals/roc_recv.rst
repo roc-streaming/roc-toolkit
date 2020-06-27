@@ -255,11 +255,7 @@ Select resampler profile:
 SEE ALSO
 ========
 
-<<<<<<< HEAD
-:manpage:`roc-send(1)`, and the Roc web site at https://roc-project.github.io/
-=======
 :manpage:`roc-send(1)`, and the Roc web site at https://roc-streaming.org/
->>>>>>> d8f74d5d3fb22f41808e9a1d19ad46742ca33476
 
 BUGS
 ====
