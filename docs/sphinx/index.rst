@@ -1,7 +1,7 @@
-Roc documentation
-*****************
+Roc Toolkit documentation
+*************************
 
-Welcome to `Roc <https://roc-streaming.org/>`_ documentation!
+Welcome to `Roc Toolkit <https://roc-streaming.org/>`_ documentation!
 
 .. toctree::
    :caption: Table of Contents:
