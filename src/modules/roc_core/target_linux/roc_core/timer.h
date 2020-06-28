@@ -47,7 +47,7 @@ private:
 
     int timerfd_;
     Seqlock<nanoseconds_t> deadline_;
-    Seqlock<bool> is_waiting_;
+    Atomic<int> waiting_flag_;
 };
 
 } // namespace core

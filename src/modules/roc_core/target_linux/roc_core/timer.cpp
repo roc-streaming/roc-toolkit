@@ -64,7 +64,7 @@ namespace core {
 Timer::Timer()
     : timerfd_(timerfd_create(CLOCK_MONOTONIC, 0))
     , deadline_(0)
-    , is_waiting_(false) {
+    , waiting_flag_(false) {
     if (timerfd_ == -1) {
         roc_panic("timer: timerfd_create(): %s", errno_to_str().c_str());
     }
@@ -82,7 +82,7 @@ bool Timer::try_set_deadline(nanoseconds_t new_deadline) {
         return false;
     }
 
-    if (is_waiting_.wait_load()) {
+    if (waiting_flag_) {
         syscall_set(new_deadline);
     }
 
@@ -90,9 +90,9 @@ bool Timer::try_set_deadline(nanoseconds_t new_deadline) {
 }
 
 void Timer::wait_deadline() {
-    /*if (is_waiting_.wait_load()) {
+    if (waiting_flag_) {
         return;
-    }*/
+    }
 
     const nanoseconds_t deadline = deadline_.wait_load();
 
@@ -100,10 +100,10 @@ void Timer::wait_deadline() {
         return;
     }
 
-    is_waiting_.try_store(true);
+    waiting_flag_ = true;
     syscall_set(deadline);
     syscall_wait();
-    is_waiting_.try_store(false);
+    waiting_flag_ = false;
 }
 
 void Timer::syscall_set(nanoseconds_t deadline) {
