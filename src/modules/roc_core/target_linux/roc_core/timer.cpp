@@ -7,8 +7,8 @@
  */
 
 #include <errno.h>
-#include <unistd.h>
 #include <sys/timerfd.h>
+#include <unistd.h>
 
 #include "roc_core/errno_to_str.h"
 #include "roc_core/panic.h"
@@ -56,7 +56,7 @@ struct itimerspec convert_deadline(roc::core::nanoseconds_t deadline) {
     }
 }
 
-} // namespace anonymous 
+} // namespace anonymous
 
 namespace roc {
 namespace core {
@@ -82,7 +82,7 @@ bool Timer::try_set_deadline(nanoseconds_t new_deadline) {
         return false;
     }
 
-    if (is_waiting_) {
+    if (is_waiting_.wait_load()) {
         syscall_set(new_deadline);
     }
 
@@ -90,9 +90,9 @@ bool Timer::try_set_deadline(nanoseconds_t new_deadline) {
 }
 
 void Timer::wait_deadline() {
-    if (is_waiting_) {
+    /*if (is_waiting_.wait_load()) {
         return;
-    }
+    }*/
 
     const nanoseconds_t deadline = deadline_.wait_load();
 
@@ -100,14 +100,13 @@ void Timer::wait_deadline() {
         return;
     }
 
-    is_waiting_ = true;
+    is_waiting_.try_store(true);
     syscall_set(deadline);
     syscall_wait();
-    is_waiting_ = false;
+    is_waiting_.try_store(false);
 }
 
-void Timer::syscall_set(nanoseconds_t deadline)
-{
+void Timer::syscall_set(nanoseconds_t deadline) {
     struct itimerspec new_value = convert_deadline(deadline);
 
     int res = timerfd_settime(timerfd_, TFD_TIMER_ABSTIME, &new_value, NULL);
@@ -116,8 +115,7 @@ void Timer::syscall_set(nanoseconds_t deadline)
     }
 }
 
-void Timer::syscall_wait()
-{
+void Timer::syscall_wait() {
     uint64_t ticks = 0;
     ssize_t readed = -1;
 
