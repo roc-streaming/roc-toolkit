@@ -8,6 +8,7 @@
 
 #include <CppUTest/CommandLineArguments.h>
 #include <CppUTest/CommandLineTestRunner.h>
+#include <string.h>
 
 #include "roc_core/colors.h"
 #include "roc_core/crash.h"
@@ -22,12 +23,31 @@ int main(int argc, const char** argv) {
 
     core::CrashHandler crash_handler;
 
-    CommandLineArguments args(argc, argv);
+    /* Check wether "-vv" option is set.
+     * If yes then change it to "-v" and remember this in "moreVerbose" variable.
+    */
+    
+    /*
+     * Reason of changing "-vv" to "-v" is that we also want to instruct 
+     * CppUTest to give more verbose output
+    */
+    
+    bool moreVerbose = false;
+    for(int i=0; i<argc; i++){
+        if(strcmp(argv[i], "-vv")==0){
+            moreVerbose = true;
+            argv[i][2] = '\0';
+        }
+    }
 
-    if (args.parse(NULL) && args.isVerbose()) {
-        core::Logger::instance().set_level(LogDebug);
+    CommandLineArguments args(argc, (const char**) argv);
+    
+    if(moreVerbose){
+        roc::core::Logger::instance().set_level(roc::LogTrace);
+    } else if (args.parse(NULL) && args.isVerbose()) {
+        roc::core::Logger::instance().set_level(roc::LogDebug);
     } else {
-        core::Logger::instance().set_level(LogNone);
+        roc::core::Logger::instance().set_level(roc::LogNone);
     }
 
     core::Logger::instance().set_colors(core::colors_available() ? core::ColorsEnabled
