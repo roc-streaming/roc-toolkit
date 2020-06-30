@@ -24,7 +24,7 @@ struct Object : RefCnt<Object>, MpscQueueNode {
 
 } // namespace
 
-TEST_GROUP(mpsc_queue) {};
+TEST_GROUP(mpsc_queue){};
 
 TEST(mpsc_queue, empty) {
     MpscQueue<Object, NoOwnership> queue;

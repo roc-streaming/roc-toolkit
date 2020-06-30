@@ -282,9 +282,8 @@ int main(int argc, char** argv) {
     receiver_config.common.output_sample_rate = output_sink->sample_rate();
 
     if (receiver_config.common.output_sample_rate == 0) {
-        roc_log(LogError,
-                "can't detect output sample rate, try to set it "
-                "explicitly with --rate option");
+        roc_log(LogError, "can't detect output sample rate, try to set it "
+                          "explicitly with --rate option");
         return 1;
     }
 

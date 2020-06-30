@@ -14,7 +14,7 @@
 namespace roc {
 namespace core {
 
-TEST_GROUP(parse_duration) {};
+TEST_GROUP(parse_duration){};
 
 TEST(parse_duration, error) {
     nanoseconds_t result = 0;

@@ -172,9 +172,8 @@ bool SoxSink::open_(const char* driver, const char* output) {
         return false;
     }
 
-    roc_log(LogInfo,
-            "sox sink:"
-            " bits=%lu out_rate=%lu in_rate=%lu ch=%lu is_file=%d",
+    roc_log(LogInfo, "sox sink:"
+                     " bits=%lu out_rate=%lu in_rate=%lu ch=%lu is_file=%d",
             (unsigned long)output_->encoding.bits_per_sample, out_rate, in_rate,
             (unsigned long)output_->signal.channels, (int)is_file_);
 

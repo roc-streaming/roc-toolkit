@@ -104,9 +104,8 @@ bool Composer::pad(packet::Packet& packet, size_t padding_size) {
     const size_t payload_size = rtp->payload.size();
 
     if (payload_size < padding_size) {
-        roc_log(LogDebug,
-                "rtp composer: padding is larger than payload size:"
-                " payload_size=%lu padding_size=%lu",
+        roc_log(LogDebug, "rtp composer: padding is larger than payload size:"
+                          " payload_size=%lu padding_size=%lu",
                 (unsigned long)rtp->payload.size(), (unsigned long)padding_size);
         return false;
     }
@@ -144,9 +143,8 @@ bool Composer::compose(packet::Packet& packet) {
         size_t padding_size = rtp->padding.size();
 
         if (padding_size > (uint8_t)-1) {
-            roc_log(LogDebug,
-                    "rtp composer: padding is larger than supported by rtp:"
-                    " pad_size=%lu max_size=%lu",
+            roc_log(LogDebug, "rtp composer: padding is larger than supported by rtp:"
+                              " pad_size=%lu max_size=%lu",
                     (unsigned long)padding_size, (unsigned long)(uint8_t)-1);
             return false;
         }

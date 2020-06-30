@@ -215,7 +215,7 @@ core::nanoseconds_t now_plus_delay(core::nanoseconds_t delay) {
 
 } // namespace
 
-TEST_GROUP(task_queue) {};
+TEST_GROUP(task_queue){};
 
 TEST(task_queue, noop) {
     TestTaskQueue tq;

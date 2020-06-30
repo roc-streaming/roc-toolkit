@@ -54,7 +54,7 @@ inline void set_deadline(Timer& t, nanoseconds_t delay) {
 
 } // namespace
 
-TEST_GROUP(timer) {};
+TEST_GROUP(timer){};
 
 TEST(timer, sync) {
     { // default

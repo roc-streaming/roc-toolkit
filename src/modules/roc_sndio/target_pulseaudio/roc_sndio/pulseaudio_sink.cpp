@@ -486,9 +486,8 @@ ssize_t PulseaudioSink::wait_stream_() {
                 if (timeout_ > MaxTimeout) {
                     timeout_ = MaxTimeout;
                 }
-                roc_log(LogDebug,
-                        "pulseaudio sink: stream timeout increased: "
-                        "latency=%ld timeout=%ld",
+                roc_log(LogDebug, "pulseaudio sink: stream timeout increased: "
+                                  "latency=%ld timeout=%ld",
                         (long)packet::timestamp_from_ns(latency_, config_.sample_rate),
                         (long)packet::timestamp_from_ns(timeout_, config_.sample_rate));
             }

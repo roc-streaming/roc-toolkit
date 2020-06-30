@@ -110,8 +110,8 @@ sample_t* Depacketizer::read_samples_(sample_t* buff_ptr, sample_t* buff_end) {
 
             const size_t max_samples = (size_t)(buff_end - buff_ptr);
 
-            buff_ptr = read_missing_samples_(
-                buff_ptr, buff_ptr + std::min(mis_samples, max_samples));
+            buff_ptr = read_missing_samples_(buff_ptr, buff_ptr
+                                                 + std::min(mis_samples, max_samples));
         }
 
         if (buff_ptr < buff_end) {

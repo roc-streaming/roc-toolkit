@@ -322,19 +322,17 @@ bool SoxSource::open_() {
 
     is_file_ = !(input_->handler.flags & SOX_FILE_DEVICE);
 
-    roc_log(LogInfo,
-            "sox source:"
-            " in_bits=%lu out_bits=%lu in_rate=%lu out_rate=%lu"
-            " in_ch=%lu out_ch=%lu is_file=%d",
+    roc_log(LogInfo, "sox source:"
+                     " in_bits=%lu out_bits=%lu in_rate=%lu out_rate=%lu"
+                     " in_ch=%lu out_ch=%lu is_file=%d",
             (unsigned long)input_->encoding.bits_per_sample,
             (unsigned long)in_signal_.precision, (unsigned long)input_->signal.rate,
             (unsigned long)in_signal_.rate, (unsigned long)input_->signal.channels,
             (unsigned long)in_signal_.channels, (int)is_file_);
 
     if (input_->signal.channels != n_channels_) {
-        roc_log(LogError,
-                "sox source: can't open: unsupported # of channels: "
-                "expected=%lu actual=%lu",
+        roc_log(LogError, "sox source: can't open: unsupported # of channels: "
+                          "expected=%lu actual=%lu",
                 (unsigned long)n_channels_, (unsigned long)input_->signal.channels);
         return false;
     }

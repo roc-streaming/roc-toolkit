@@ -129,7 +129,7 @@ private:
 
 } // namespace
 
-TEST_GROUP(tasks) {};
+TEST_GROUP(tasks){};
 
 TEST(tasks, synchronous_add) {
     NetworkLoop net_loop(packet_pool, buffer_pool, allocator);

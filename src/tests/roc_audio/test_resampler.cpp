@@ -123,9 +123,8 @@ void resample_reader(IResampler& resampler,
     CHECK(rr.set_scaling(sample_rate, sample_rate, scaling));
 
     for (size_t pos = 0; pos < num_samples;) {
-        Frame frame(out + pos,
-                    std::min(num_samples - pos,
-                             (size_t)OutFrameSize * packet::num_channels(channels)));
+        Frame frame(out + pos, std::min(num_samples - pos, (size_t)OutFrameSize
+                                            * packet::num_channels(channels)));
         CHECK(rr.read(frame));
         pos += frame.size();
     }
@@ -147,9 +146,8 @@ void resample_writer(IResampler& resampler,
     CHECK(rw.set_scaling(sample_rate, sample_rate, scaling));
 
     for (size_t pos = 0; pos < num_samples;) {
-        Frame frame(in + pos,
-                    std::min(num_samples - pos,
-                             (size_t)OutFrameSize * packet::num_channels(channels)));
+        Frame frame(in + pos, std::min(num_samples - pos, (size_t)OutFrameSize
+                                           * packet::num_channels(channels)));
         rw.write(frame);
         pos += frame.size();
     }
@@ -191,7 +189,7 @@ void resample(ResamplerBackend backend,
 
 } // namespace
 
-TEST_GROUP(resampler) {};
+TEST_GROUP(resampler){};
 
 TEST(resampler, supported_scalings) {
     enum { ChMask = 0x1, NumIters = 2 };

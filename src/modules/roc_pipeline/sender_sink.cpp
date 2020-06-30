@@ -92,7 +92,7 @@ SenderSink::SenderSink(ITaskScheduler& scheduler,
                        core::BufferPool<audio::sample_t>& sample_buffer_pool,
                        core::IAllocator& allocator)
     : TaskPipeline(
-        scheduler, config.tasks, config.input_sample_rate, config.input_channels)
+          scheduler, config.tasks, config.input_sample_rate, config.input_channels)
     , config_(config)
     , format_map_(format_map)
     , packet_pool_(packet_pool)

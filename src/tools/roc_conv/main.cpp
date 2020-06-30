@@ -91,10 +91,9 @@ int main(int argc, char** argv) {
         converter_config.input_channels);
 
     core::BufferPool<audio::sample_t> pool(
-        allocator,
-        packet::ns_to_size(converter_config.internal_frame_length,
-                           converter_config.input_sample_rate,
-                           converter_config.input_channels),
+        allocator, packet::ns_to_size(converter_config.internal_frame_length,
+                                      converter_config.input_sample_rate,
+                                      converter_config.input_channels),
         args.poisoning_flag);
 
     sndio::Config source_config;

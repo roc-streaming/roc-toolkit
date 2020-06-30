@@ -75,18 +75,16 @@ bool Writer::resize(size_t sblen, size_t rblen) {
     const size_t new_blen = sblen + rblen;
 
     if (new_blen > encoder_.max_block_length()) {
-        roc_log(LogDebug,
-                "fec writer: can't update block length, maximum value exceeded:"
-                " cur_sbl=%lu cur_rbl=%lu new_sbl=%lu new_rbl=%lu max_blen=%lu",
+        roc_log(LogDebug, "fec writer: can't update block length, maximum value exceeded:"
+                          " cur_sbl=%lu cur_rbl=%lu new_sbl=%lu new_rbl=%lu max_blen=%lu",
                 (unsigned long)cur_sblen_, (unsigned long)cur_rblen_,
                 (unsigned long)sblen, (unsigned long)rblen,
                 (unsigned long)encoder_.max_block_length());
         return false;
     }
 
-    roc_log(LogDebug,
-            "fec writer: update block size:"
-            " cur_sbl=%lu cur_rbl=%lu new_sbl=%lu new_rbl=%lu",
+    roc_log(LogDebug, "fec writer: update block size:"
+                      " cur_sbl=%lu cur_rbl=%lu new_sbl=%lu new_rbl=%lu",
             (unsigned long)cur_sblen_, (unsigned long)cur_rblen_, (unsigned long)sblen,
             (unsigned long)rblen);
 
@@ -141,9 +139,8 @@ bool Writer::begin_block_(const packet::PacketPtr& pp) {
             (unsigned long)cur_payload_size_);
 
     if (!encoder_.begin(cur_sblen_, cur_rblen_, cur_payload_size_)) {
-        roc_log(LogError,
-                "fec writer: can't begin encoder block, shutting down:"
-                " sblen=%lu rblen=%lu",
+        roc_log(LogError, "fec writer: can't begin encoder block, shutting down:"
+                          " sblen=%lu rblen=%lu",
                 (unsigned long)cur_sblen_, (unsigned long)cur_rblen_);
         return (alive_ = false);
     }

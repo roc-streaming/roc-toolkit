@@ -21,7 +21,7 @@ core::HeapAllocator allocator;
 
 } // namespace
 
-TEST_GROUP(endpoint_uri) {};
+TEST_GROUP(endpoint_uri){};
 
 TEST(endpoint_uri, empty) {
     EndpointURI u(allocator);

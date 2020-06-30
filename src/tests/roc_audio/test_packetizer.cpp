@@ -156,7 +156,7 @@ private:
 
 } // namespace
 
-TEST_GROUP(packetizer) {};
+TEST_GROUP(packetizer){};
 
 TEST(packetizer, one_buffer_one_packet) {
     enum { NumFrames = 10 };

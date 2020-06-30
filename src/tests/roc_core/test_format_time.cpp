@@ -23,7 +23,7 @@ enum {
 
 } // namespace
 
-TEST_GROUP(format_time) {};
+TEST_GROUP(format_time){};
 
 TEST(format_time, buffer_size) {
     char buf[64];

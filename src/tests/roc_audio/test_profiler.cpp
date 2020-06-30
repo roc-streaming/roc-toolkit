@@ -33,7 +33,7 @@ ProfilerConfig profiler_config(50 * core::Millisecond, 10 * core::Millisecond);
 
 } // namespace
 
-TEST_GROUP(profiler) {};
+TEST_GROUP(profiler){};
 
 TEST(profiler, test_moving_average) {
     Profiler profiler(allocator, NumChannels, SampleRate, profiler_config);

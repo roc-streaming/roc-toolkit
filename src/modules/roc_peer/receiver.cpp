@@ -72,10 +72,9 @@ bool Receiver::set_multicast_group(address::Interface iface, const char* ip) {
     roc_panic_if(iface >= (int)ROC_ARRAY_SIZE(ports_));
 
     if (ports_[iface].handle) {
-        roc_log(LogError,
-                "receiver peer:"
-                " can't set multicast group for %s interface:"
-                " interface is already bound",
+        roc_log(LogError, "receiver peer:"
+                          " can't set multicast group for %s interface:"
+                          " interface is already bound",
                 address::interface_to_str(iface));
         return false;
     }
@@ -84,10 +83,9 @@ bool Receiver::set_multicast_group(address::Interface iface, const char* ip) {
         // validation
         address::SocketAddr addr;
         if (!addr.set_host_port_auto(ip, 0)) {
-            roc_log(LogError,
-                    "receiver peer:"
-                    " can't set multicast group for %s interface to '%s':"
-                    " invalid IPv4 or IPv6 address",
+            roc_log(LogError, "receiver peer:"
+                              " can't set multicast group for %s interface to '%s':"
+                              " invalid IPv4 or IPv6 address",
                     address::interface_to_str(iface), ip);
             return false;
         }
@@ -97,10 +95,9 @@ bool Receiver::set_multicast_group(address::Interface iface, const char* ip) {
                           sizeof(ports_[iface].config.multicast_interface));
 
     if (!b.set_str(ip)) {
-        roc_log(LogError,
-                "receiver peer:"
-                " can't set multicast group for %s interface to '%s':"
-                " invalid IPv4 or IPv6 address",
+        roc_log(LogError, "receiver peer:"
+                          " can't set multicast group for %s interface to '%s':"
+                          " invalid IPv4 or IPv6 address",
                 address::interface_to_str(iface), ip);
         return false;
     }

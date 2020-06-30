@@ -71,7 +71,7 @@ void remove_port(NetworkLoop& net_loop, NetworkLoop::PortHandle handle) {
 
 } // namespace
 
-TEST_GROUP(ports) {};
+TEST_GROUP(ports){};
 
 TEST(ports, init) {
     NetworkLoop net_loop(packet_pool, buffer_pool, allocator);

@@ -113,9 +113,8 @@ int roc_sender_set_broadcast_enabled(roc_sender* sender,
     }
 
     if (enabled != 0 && enabled != 1) {
-        roc_log(LogError,
-                "roc_sender_set_broadcast_enabled:"
-                " invalid arguments: invalid flag: should be 0 or 1");
+        roc_log(LogError, "roc_sender_set_broadcast_enabled:"
+                          " invalid arguments: invalid flag: should be 0 or 1");
         return -1;
     }
 
@@ -146,9 +145,8 @@ int roc_sender_set_squashing_enabled(roc_sender* sender,
     }
 
     if (enabled != 0 && enabled != 1) {
-        roc_log(LogError,
-                "roc_sender_set_squashing_enabled:"
-                " invalid arguments: invalid flag: should be 0 or 1");
+        roc_log(LogError, "roc_sender_set_squashing_enabled:"
+                          " invalid arguments: invalid flag: should be 0 or 1");
         return -1;
     }
 
@@ -213,9 +211,8 @@ int roc_sender_write(roc_sender* sender, const roc_frame* frame) {
     const size_t factor = imp_sink.num_channels() * sizeof(float);
 
     if (frame->samples_size % factor != 0) {
-        roc_log(LogError,
-                "roc_sender_write: invalid arguments: # of samples should be "
-                "multiple of # of %u",
+        roc_log(LogError, "roc_sender_write: invalid arguments: # of samples should be "
+                          "multiple of # of %u",
                 (unsigned)factor);
         return -1;
     }

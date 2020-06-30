@@ -14,7 +14,7 @@
 namespace roc {
 namespace address {
 
-TEST_GROUP(socket_addr) {};
+TEST_GROUP(socket_addr){};
 
 TEST(socket_addr, empty) {
     SocketAddr addr;

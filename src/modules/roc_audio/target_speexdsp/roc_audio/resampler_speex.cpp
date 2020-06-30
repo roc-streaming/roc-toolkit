@@ -61,9 +61,8 @@ SpeexResampler::SpeexResampler(core::IAllocator&,
 
     const int quality = get_quality(profile);
 
-    roc_log(LogDebug,
-            "speex resampler: initializing: "
-            "quality=%d frame_size=%lu channels_num=%lu",
+    roc_log(LogDebug, "speex resampler: initializing: "
+                      "quality=%d frame_size=%lu channels_num=%lu",
             quality, (unsigned long)in_frame_size_, (unsigned long)num_ch_);
 
     if (!(in_frame_ = new (buffer_pool) core::Buffer<sample_t>(buffer_pool))) {

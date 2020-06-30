@@ -73,20 +73,18 @@ bool Sender::set_outgoing_address(address::Interface iface, const char* ip) {
     roc_panic_if(!ip);
 
     if (ports_[iface].handle) {
-        roc_log(LogError,
-                "sender peer:"
-                " can't set outgoing address for %s interface:"
-                " interface is already bound",
+        roc_log(LogError, "sender peer:"
+                          " can't set outgoing address for %s interface:"
+                          " interface is already bound",
                 address::interface_to_str(iface));
         return false;
     }
 
     if (!ports_[iface].config.bind_address.set_host_port_auto(
             ip, ports_[iface].config.bind_address.port())) {
-        roc_log(LogError,
-                "sender peer:"
-                " can't set outgoing address for %s interface to '%s':"
-                " invalid IPv4 or IPv6 address",
+        roc_log(LogError, "sender peer:"
+                          " can't set outgoing address for %s interface to '%s':"
+                          " invalid IPv4 or IPv6 address",
                 address::interface_to_str(iface), ip);
         return false;
     }
@@ -106,10 +104,9 @@ bool Sender::set_broadcast_enabled(address::Interface iface, bool enabled) {
     roc_panic_if(iface >= (int)ROC_ARRAY_SIZE(ports_));
 
     if (ports_[iface].handle) {
-        roc_log(LogError,
-                "sender peer:"
-                " can't set broadcast flag for %s interface:"
-                " interface is already bound",
+        roc_log(LogError, "sender peer:"
+                          " can't set broadcast flag for %s interface:"
+                          " interface is already bound",
                 address::interface_to_str(iface));
         return false;
     }
@@ -131,10 +128,9 @@ bool Sender::set_squashing_enabled(address::Interface iface, bool enabled) {
     roc_panic_if(iface >= (int)ROC_ARRAY_SIZE(ports_));
 
     if (ports_[iface].handle) {
-        roc_log(LogError,
-                "sender peer:"
-                " can't set squashing flag for %s interface:"
-                " interface is already bound",
+        roc_log(LogError, "sender peer:"
+                          " can't set squashing flag for %s interface:"
+                          " interface is already bound",
                 address::interface_to_str(iface));
         return false;
     }
@@ -265,10 +261,9 @@ bool Sender::setup_outgoing_port_(InterfacePort& port,
                                   address::AddrFamily family) {
     if (port.config.bind_address.has_host_port()) {
         if (port.config.bind_address.family() != family) {
-            roc_log(LogError,
-                    "sender peer:"
-                    " %s interface is configured to use %s,"
-                    " but tried to be connected to %s address",
+            roc_log(LogError, "sender peer:"
+                              " %s interface is configured to use %s,"
+                              " but tried to be connected to %s address",
                     address::interface_to_str(iface),
                     address::addr_family_to_str(port.config.bind_address.family()),
                     address::addr_family_to_str(family));

@@ -35,9 +35,7 @@ const char* default_driver_priorities[] = {
 };
 
 const char* driver_renames[][2] = {
-    { "waveaudio", "wave" },
-    { "coreaudio", "core" },
-    { "pulseaudio", "pulse" },
+    { "waveaudio", "wave" }, { "coreaudio", "core" }, { "pulseaudio", "pulse" },
 };
 
 const char* hidden_drivers[] = {
@@ -45,20 +43,7 @@ const char* hidden_drivers[] = {
     // use its explicit variants like f32, s32, etc
     "raw",
     // deprecated aliases
-    "f4",
-    "f8",
-    "s1",
-    "s2",
-    "s3",
-    "s4",
-    "u1",
-    "u2",
-    "u3",
-    "u4",
-    "sb",
-    "sw",
-    "sl",
-    "ub",
+    "f4", "f8", "s1", "s2", "s3", "s4", "u1", "u2", "u3", "u4", "sb", "sw", "sl", "ub",
     "uw",
     // pseudo-formats
     "sndfile",
@@ -305,9 +290,8 @@ bool SoxBackend::get_drivers(core::StringList& list, int filter_flags) {
         }
 
         if (filter_flags & FilterDevice) {
-            match = match
-                || ((handler->flags & SOX_FILE_DEVICE)
-                    && !(handler->flags & SOX_FILE_PHONY));
+            match = match || ((handler->flags & SOX_FILE_DEVICE)
+                              && !(handler->flags & SOX_FILE_PHONY));
         }
 
         if (match) {

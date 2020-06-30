@@ -34,10 +34,9 @@ bool validate_endpoint(address::Interface iface, address::Protocol proto) {
 
     if (proto_attrs->fec_scheme != packet::FEC_None
         && !fec::CodecMap::instance().is_supported(proto_attrs->fec_scheme)) {
-        roc_log(LogError,
-                "bad endpoints configuration:"
-                " %s endpoint protocol '%s' implies fec scheme '%s',"
-                " but it is disabled at compile time",
+        roc_log(LogError, "bad endpoints configuration:"
+                          " %s endpoint protocol '%s' implies fec scheme '%s',"
+                          " but it is disabled at compile time",
                 address::interface_to_str(iface), address::proto_to_str(proto),
                 packet::fec_scheme_to_str(proto_attrs->fec_scheme));
         return false;
@@ -59,18 +58,16 @@ bool validate_endpoint_and_pipeline_consistency(packet::FecScheme pipeline_fec_s
 
     if (iface == address::Iface_AudioRepair && proto != address::Proto_None
         && pipeline_fec_scheme == packet::FEC_None) {
-        roc_log(LogError,
-                "bad endpoints configuration:"
-                " repair endpoint is provided,"
-                " but pipeline is not configured to use any fec scheme");
+        roc_log(LogError, "bad endpoints configuration:"
+                          " repair endpoint is provided,"
+                          " but pipeline is not configured to use any fec scheme");
         return false;
     }
 
     if (proto_attrs->fec_scheme != pipeline_fec_scheme) {
-        roc_log(LogError,
-                "bad endpoints configuration:"
-                " %s endpoint protocol '%s' implies fec scheme '%s',"
-                " but pipeline is configured to use fec scheme '%s'",
+        roc_log(LogError, "bad endpoints configuration:"
+                          " %s endpoint protocol '%s' implies fec scheme '%s',"
+                          " but pipeline is configured to use fec scheme '%s'",
                 address::interface_to_str(iface), address::proto_to_str(proto),
                 packet::fec_scheme_to_str(proto_attrs->fec_scheme),
                 packet::fec_scheme_to_str(pipeline_fec_scheme));

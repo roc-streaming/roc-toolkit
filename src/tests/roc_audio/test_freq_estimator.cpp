@@ -21,7 +21,7 @@ const double Epsilon = 0.0001;
 
 } // namespace
 
-TEST_GROUP(freq_estimator) {};
+TEST_GROUP(freq_estimator){};
 
 TEST(freq_estimator, initial) {
     FreqEstimator fe(Target);

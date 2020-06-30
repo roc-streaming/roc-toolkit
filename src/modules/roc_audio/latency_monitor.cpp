@@ -57,9 +57,8 @@ LatencyMonitor::LatencyMonitor(const packet::SortedQueue& queue,
 
     if (target_latency < config.min_latency || target_latency > config.max_latency
         || target_latency <= 0) {
-        roc_log(LogError,
-                "latency monitor: invalid_config: "
-                "target_latency=%ld min_latency=%ld max_latency=%ld",
+        roc_log(LogError, "latency monitor: invalid_config: "
+                          "target_latency=%ld min_latency=%ld max_latency=%ld",
                 (long)target_latency, (long)config.min_latency, (long)config.max_latency);
         return;
     }

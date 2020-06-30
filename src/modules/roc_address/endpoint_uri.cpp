@@ -48,20 +48,18 @@ bool EndpointURI::check(Subset subset) const {
     }
 
     if (port_ < 0 && proto_attrs->default_port < 0) {
-        roc_log(LogError,
-                "invalid endpoint uri:"
-                " protocol '%s' requires a port to be specified explicitly,"
-                " but it is omitted in the uri",
+        roc_log(LogError, "invalid endpoint uri:"
+                          " protocol '%s' requires a port to be specified explicitly,"
+                          " but it is omitted in the uri",
                 proto_to_str(proto_));
         return false;
     }
 
     if (!proto_attrs->path_supported) {
         if (!path_.is_empty() || !query_.is_empty()) {
-            roc_log(LogError,
-                    "invalid endpoint uri:"
-                    " protocol '%s' forbids using a path and query,"
-                    " but they are present in the uri",
+            roc_log(LogError, "invalid endpoint uri:"
+                              " protocol '%s' forbids using a path and query,"
+                              " but they are present in the uri",
                     proto_to_str(proto_));
             return false;
         }

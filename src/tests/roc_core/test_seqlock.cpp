@@ -13,7 +13,7 @@
 namespace roc {
 namespace core {
 
-TEST_GROUP(seqlock) {};
+TEST_GROUP(seqlock){};
 
 TEST(seqlock, int32) {
     Seqlock<int32_t> sl(345);

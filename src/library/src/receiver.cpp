@@ -147,9 +147,8 @@ int roc_receiver_read(roc_receiver* receiver, roc_frame* frame) {
     const size_t factor = imp_source.num_channels() * sizeof(float);
 
     if (frame->samples_size % factor != 0) {
-        roc_log(LogError,
-                "roc_receiver_read: invalid arguments: # of samples should be "
-                "multiple of # of %u",
+        roc_log(LogError, "roc_receiver_read: invalid arguments: # of samples should be "
+                          "multiple of # of %u",
                 (unsigned)factor);
         return -1;
     }

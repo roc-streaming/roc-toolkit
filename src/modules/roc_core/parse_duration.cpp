@@ -74,9 +74,8 @@ bool parse_duration(const char* str, nanoseconds_t& result) {
     long number = strtol(str, &number_end, 10);
 
     if (number == LONG_MAX || number == LONG_MIN || !number_end || number_end != suffix) {
-        roc_log(LogError,
-                "parse duration: invalid format, can't parse number, expected "
-                "<number><suffix>");
+        roc_log(LogError, "parse duration: invalid format, can't parse number, expected "
+                          "<number><suffix>");
         return false;
     }
 

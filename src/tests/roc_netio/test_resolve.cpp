@@ -41,7 +41,7 @@ bool resolve_endpoint_address(NetworkLoop& net_loop,
 
 } // namespace
 
-TEST_GROUP(resolve) {};
+TEST_GROUP(resolve){};
 
 TEST(resolve, ipv4) {
     NetworkLoop net_loop(packet_pool, buffer_pool, allocator);

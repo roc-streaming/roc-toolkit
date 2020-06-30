@@ -13,7 +13,7 @@
 namespace roc {
 namespace address {
 
-TEST_GROUP(socket_addr_parse) {};
+TEST_GROUP(socket_addr_parse){};
 
 TEST(socket_addr_parse, host_port_ipv4) {
     SocketAddr addr;

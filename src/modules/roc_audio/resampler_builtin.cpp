@@ -142,9 +142,8 @@ BuiltinResampler::BuiltinResampler(core::IAllocator& allocator,
         return;
     }
 
-    roc_log(LogDebug,
-            "builtin resampler: initializing: "
-            "window_interp=%lu window_size=%lu frame_size=%lu channels_num=%lu",
+    roc_log(LogDebug, "builtin resampler: initializing: "
+                      "window_interp=%lu window_size=%lu frame_size=%lu channels_num=%lu",
             (unsigned long)window_interp_, (unsigned long)window_size_,
             (unsigned long)frame_size_, (unsigned long)channels_num_);
 
@@ -177,9 +176,8 @@ bool BuiltinResampler::set_scaling(size_t input_sample_rate,
     // Window's size changes according to scaling. If new window size
     // doesn't fit to the frames size -- deny changes.
     if (window_size_ * new_scaling > frame_size_ch_ - 1) {
-        roc_log(LogError,
-                "builtin resampler: scaling does not fit frame size:"
-                " window_size=%lu frame_size=%lu scaling=%.5f",
+        roc_log(LogError, "builtin resampler: scaling does not fit frame size:"
+                          " window_size=%lu frame_size=%lu scaling=%.5f",
                 (unsigned long)window_size_, (unsigned long)frame_size_,
                 (double)new_scaling);
         return false;
@@ -200,9 +198,8 @@ bool BuiltinResampler::set_scaling(size_t input_sample_rate,
             || fixedpoint_to_size(qfloor(new_qt_half_window_len)) + 1 > frame_size_ch_;
 
         if (out_of_bounds) {
-            roc_log(LogError,
-                    "builtin resampler: scaling does not fit window size:"
-                    " window_size=%lu frame_size=%lu scaling=%.5f",
+            roc_log(LogError, "builtin resampler: scaling does not fit window size:"
+                              " window_size=%lu frame_size=%lu scaling=%.5f",
                     (unsigned long)window_size_, (unsigned long)frame_size_,
                     (double)new_scaling);
             return false;
@@ -302,9 +299,8 @@ bool BuiltinResampler::check_config_() const {
     }
 
     if (frame_size_ != frame_size_ch_ * channels_num_) {
-        roc_log(LogError,
-                "builtin resampler: frame_size is not multiple of num_channels:"
-                " frame_size=%lu num_channels=%lu",
+        roc_log(LogError, "builtin resampler: frame_size is not multiple of num_channels:"
+                          " frame_size=%lu num_channels=%lu",
                 (unsigned long)frame_size_, (unsigned long)channels_num_);
         return false;
     }
@@ -312,9 +308,8 @@ bool BuiltinResampler::check_config_() const {
     const size_t max_frame_size =
         (((fixedpoint_t)(signed_fixedpoint_t)-1 >> FRACT_BIT_COUNT) + 1) * channels_num_;
     if (frame_size_ > max_frame_size) {
-        roc_log(LogError,
-                "builtin resampler: frame_size is too much: "
-                "max_frame_size=%lu frame_size=%lu num_channels=%lu",
+        roc_log(LogError, "builtin resampler: frame_size is too much: "
+                          "max_frame_size=%lu frame_size=%lu num_channels=%lu",
                 (unsigned long)max_frame_size, (unsigned long)frame_size_,
                 (unsigned long)channels_num_);
         return false;

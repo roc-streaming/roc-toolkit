@@ -168,11 +168,11 @@ bool SenderEndpointSet::create_pipeline_() {
         }
 
         if (config_.interleaving) {
-            interleaver_.reset(new (allocator_) packet::Interleaver(
-                                   *pwriter, allocator_,
-                                   config_.fec_writer.n_source_packets
-                                       + config_.fec_writer.n_repair_packets),
-                               allocator_);
+            interleaver_.reset(
+                new (allocator_) packet::Interleaver(
+                    *pwriter, allocator_, config_.fec_writer.n_source_packets
+                        + config_.fec_writer.n_repair_packets),
+                allocator_);
             if (!interleaver_ || !interleaver_->valid()) {
                 return false;
             }

@@ -21,7 +21,7 @@ core::HeapAllocator allocator;
 
 } // namespace
 
-TEST_GROUP(io_uri) {};
+TEST_GROUP(io_uri){};
 
 TEST(io_uri, empty) {
     IoURI u(allocator);

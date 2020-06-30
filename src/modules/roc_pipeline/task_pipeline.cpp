@@ -448,8 +448,7 @@ void TaskPipeline::report_stats_() {
         roc_log(LogDebug,
                 "task pipeline:"
                 " tasks=%lu in_place=%.2f in_frame=%.2f preempts=%lu sched=%lu/%lu",
-                (unsigned long)stats_.task_processed_total,
-                stats_.task_processed_total
+                (unsigned long)stats_.task_processed_total, stats_.task_processed_total
                     ? double(stats_.task_processed_in_place) / stats_.task_processed_total
                     : 0.,
                 stats_.task_processed_total

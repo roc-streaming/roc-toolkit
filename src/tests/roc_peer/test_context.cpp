@@ -22,7 +22,7 @@ core::HeapAllocator allocator;
 
 } // namespace
 
-TEST_GROUP(context) {};
+TEST_GROUP(context){};
 
 TEST(context, reference_counting) {
     ContextConfig context_config;

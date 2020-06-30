@@ -81,9 +81,8 @@ packet::PacketPtr Reader::read_() {
             return source_queue_.read();
         }
 
-        roc_log(LogDebug,
-                "fec reader: got first packet in a block, start decoding:"
-                " n_packets_before=%u sbn=%lu",
+        roc_log(LogDebug, "fec reader: got first packet in a block, start decoding:"
+                          " n_packets_before=%u sbn=%lu",
                 n_packets_, (unsigned long)cur_sbn_);
 
         started_ = true;
@@ -101,9 +100,8 @@ packet::PacketPtr Reader::get_first_packet_() {
     const packet::FEC& fec = *pp->fec();
 
     if (!process_source_packet_(pp)) {
-        roc_log(LogTrace,
-                "fec reader: dropping leading source packet:"
-                " esi=%lu sblen=%lu blen=%lu payload_size=%lu",
+        roc_log(LogTrace, "fec reader: dropping leading source packet:"
+                          " esi=%lu sblen=%lu blen=%lu payload_size=%lu",
                 (unsigned long)fec.encoding_symbol_id,
                 (unsigned long)fec.source_block_length, (unsigned long)fec.block_length,
                 (unsigned long)fec.payload.size());
@@ -190,9 +188,8 @@ void Reader::try_repair_() {
     }
 
     if (!decoder_.begin(source_block_.size(), repair_block_.size(), payload_size_)) {
-        roc_log(LogDebug,
-                "fec reader: can't begin decoder block, shutting down:"
-                " sbl=%lu rbl=%lu payload_size=%lu",
+        roc_log(LogDebug, "fec reader: can't begin decoder block, shutting down:"
+                          " sbl=%lu rbl=%lu payload_size=%lu",
                 (unsigned long)source_block_.size(), (unsigned long)repair_block_.size(),
                 (unsigned long)payload_size_);
         alive_ = false;
@@ -305,9 +302,8 @@ void Reader::fill_source_block_() {
         n_fetched++;
 
         if (packet::blknum_lt(fec.source_block_number, cur_sbn_)) {
-            roc_log(LogTrace,
-                    "fec reader: dropping source packet from previous block:"
-                    " cur_sbn=%lu pkt_sbn=%lu pkt_esi=%lu",
+            roc_log(LogTrace, "fec reader: dropping source packet from previous block:"
+                              " cur_sbn=%lu pkt_sbn=%lu pkt_esi=%lu",
                     (unsigned long)cur_sbn_, (unsigned long)fec.source_block_number,
                     (unsigned long)fec.encoding_symbol_id);
             n_dropped++;
@@ -318,9 +314,8 @@ void Reader::fill_source_block_() {
         roc_panic_if_not(fec.source_block_number == cur_sbn_);
 
         if (!process_source_packet_(pp)) {
-            roc_log(LogTrace,
-                    "fec reader: dropping source packet from current block:"
-                    " esi=%lu sblen=%lu blen=%lu payload_size=%lu",
+            roc_log(LogTrace, "fec reader: dropping source packet from current block:"
+                              " esi=%lu sblen=%lu blen=%lu payload_size=%lu",
                     (unsigned long)fec.encoding_symbol_id,
                     (unsigned long)fec.source_block_length,
                     (unsigned long)fec.block_length, (unsigned long)fec.payload.size());
@@ -370,9 +365,8 @@ void Reader::fill_repair_block_() {
         n_fetched++;
 
         if (packet::blknum_lt(fec.source_block_number, cur_sbn_)) {
-            roc_log(LogTrace,
-                    "fec reader: dropping repair packet from previous block:"
-                    " cur_sbn=%lu pkt_sbn=%lu",
+            roc_log(LogTrace, "fec reader: dropping repair packet from previous block:"
+                              " cur_sbn=%lu pkt_sbn=%lu",
                     (unsigned long)cur_sbn_, (unsigned long)fec.source_block_number);
             n_dropped++;
             continue;
@@ -382,9 +376,8 @@ void Reader::fill_repair_block_() {
         roc_panic_if(fec.source_block_number != cur_sbn_);
 
         if (!process_repair_packet_(pp)) {
-            roc_log(LogTrace,
-                    "fec reader: dropping repair packet from current block:"
-                    " esi=%lu sblen=%lu blen=%lu payload_size=%lu",
+            roc_log(LogTrace, "fec reader: dropping repair packet from current block:"
+                              " esi=%lu sblen=%lu blen=%lu payload_size=%lu",
                     (unsigned long)fec.encoding_symbol_id,
                     (unsigned long)fec.source_block_length,
                     (unsigned long)fec.block_length, (unsigned long)fec.payload.size());
@@ -481,9 +474,8 @@ bool Reader::validate_fec_packet_(const packet::PacketPtr& pp) {
     }
 
     if (fec->fec_scheme != fec_scheme_) {
-        roc_log(LogDebug,
-                "fec reader: unexpected packet fec scheme, shutting down:"
-                " packet_scheme=%s session_scheme=%s",
+        roc_log(LogDebug, "fec reader: unexpected packet fec scheme, shutting down:"
+                          " packet_scheme=%s session_scheme=%s",
                 packet::fec_scheme_to_str(fec->fec_scheme),
                 packet::fec_scheme_to_str(fec_scheme_));
         return (alive_ = false);
@@ -503,9 +495,8 @@ bool Reader::validate_sbn_sequence_(const packet::PacketPtr& pp) {
     }
 
     if ((size_t)blk_dist > max_sbn_jump_) {
-        roc_log(LogDebug,
-                "fec reader: too long source block number jump, shutting down:"
-                " cur_sbn=%lu pkt_sbn=%lu dist=%lu max=%lu",
+        roc_log(LogDebug, "fec reader: too long source block number jump, shutting down:"
+                          " cur_sbn=%lu pkt_sbn=%lu dist=%lu max=%lu",
                 (unsigned long)cur_sbn_, (unsigned long)fec.source_block_number,
                 (unsigned long)blk_dist, (unsigned long)max_sbn_jump_);
         return (alive_ = false);
@@ -637,16 +628,14 @@ bool Reader::update_source_block_size_(size_t new_sblen) {
     }
 
     if (!source_block_.resize(new_sblen)) {
-        roc_log(LogDebug,
-                "fec reader: can't allocate source block memory, shutting down:"
-                " cur_sblen=%lu new_sblen=%lu",
+        roc_log(LogDebug, "fec reader: can't allocate source block memory, shutting down:"
+                          " cur_sblen=%lu new_sblen=%lu",
                 (unsigned long)cur_sblen, (unsigned long)new_sblen);
         return (alive_ = false);
     }
 
-    roc_log(LogDebug,
-            "fec reader: update source block size:"
-            " cur_sblen=%lu cur_rblen=%lu new_sblen=%lu",
+    roc_log(LogDebug, "fec reader: update source block size:"
+                      " cur_sblen=%lu cur_rblen=%lu new_sblen=%lu",
             (unsigned long)cur_sblen, (unsigned long)repair_block_.size(),
             (unsigned long)new_sblen);
 
@@ -700,16 +689,14 @@ bool Reader::update_repair_block_size_(size_t new_blen) {
     const size_t new_rblen = new_blen - cur_sblen;
 
     if (!repair_block_.resize(new_rblen)) {
-        roc_log(LogDebug,
-                "fec reader: can't allocate repair block memory, shutting down:"
-                " cur_rblen=%lu new_rblen=%lu",
+        roc_log(LogDebug, "fec reader: can't allocate repair block memory, shutting down:"
+                          " cur_rblen=%lu new_rblen=%lu",
                 (unsigned long)cur_rblen, (unsigned long)new_rblen);
         return (alive_ = false);
     }
 
-    roc_log(LogDebug,
-            "fec reader: update repair block size:"
-            " cur_sblen=%lu cur_rblen=%lu new_rblen=%lu",
+    roc_log(LogDebug, "fec reader: update repair block size:"
+                      " cur_sblen=%lu cur_rblen=%lu new_rblen=%lu",
             (unsigned long)cur_sblen, (unsigned long)cur_rblen, (unsigned long)new_rblen);
 
     repair_block_resized_ = true;
@@ -732,9 +719,8 @@ void Reader::drop_repair_packets_from_prev_blocks_() {
             break;
         }
 
-        roc_log(LogTrace,
-                "fec reader: dropping repair packet from previous blocks,"
-                " decoding not started: cur_sbn=%lu pkt_sbn=%lu",
+        roc_log(LogTrace, "fec reader: dropping repair packet from previous blocks,"
+                          " decoding not started: cur_sbn=%lu pkt_sbn=%lu",
                 (unsigned long)cur_sbn_, (unsigned long)fec.source_block_number);
 
         (void)repair_queue_.read();

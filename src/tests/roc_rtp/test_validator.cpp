@@ -107,8 +107,7 @@ TEST(validator, source_id_jump) {
 
 TEST(validator, seqnum_no_jump) {
     const packet::seqnum_t sns[] = {
-        1,
-        packet::seqnum_t(-1) - MaxSnJump / 2,
+        1, packet::seqnum_t(-1) - MaxSnJump / 2,
     };
     for (size_t i = 0; i < 2; i++) {
         const packet::seqnum_t sn1 = sns[i];
@@ -131,8 +130,7 @@ TEST(validator, seqnum_no_jump) {
 
 TEST(validator, seqnum_jump_up) {
     const packet::seqnum_t sns[] = {
-        1,
-        packet::seqnum_t(-1) - MaxSnJump / 2,
+        1, packet::seqnum_t(-1) - MaxSnJump / 2,
     };
     for (size_t i = 0; i < 2; i++) {
         const packet::seqnum_t sn1 = sns[i];
@@ -155,8 +153,7 @@ TEST(validator, seqnum_jump_up) {
 
 TEST(validator, seqnum_jump_down) {
     const packet::seqnum_t sns[] = {
-        1,
-        packet::seqnum_t(-1) - MaxSnJump / 2,
+        1, packet::seqnum_t(-1) - MaxSnJump / 2,
     };
     for (size_t i = 0; i < 2; i++) {
         const packet::seqnum_t sn1 = sns[i];
@@ -202,8 +199,7 @@ TEST(validator, seqnum_late) {
 
 TEST(validator, timestamp_no_jump) {
     const packet::timestamp_t tss[] = {
-        1,
-        packet::timestamp_t(-1) - MaxTsJump / 2,
+        1, packet::timestamp_t(-1) - MaxTsJump / 2,
     };
     for (size_t i = 0; i < 2; i++) {
         const packet::timestamp_t ts1 = tss[i];
@@ -226,8 +222,7 @@ TEST(validator, timestamp_no_jump) {
 
 TEST(validator, timestamp_jump_up) {
     const packet::timestamp_t tss[] = {
-        1,
-        packet::timestamp_t(-1) - MaxTsJump / 2,
+        1, packet::timestamp_t(-1) - MaxTsJump / 2,
     };
     for (size_t i = 0; i < 2; i++) {
         const packet::timestamp_t ts1 = tss[i];
@@ -250,8 +245,7 @@ TEST(validator, timestamp_jump_up) {
 
 TEST(validator, timestamp_jump_down) {
     const packet::timestamp_t tss[] = {
-        1,
-        packet::timestamp_t(-1) - MaxTsJump / 2,
+        1, packet::timestamp_t(-1) - MaxTsJump / 2,
     };
     for (size_t i = 0; i < 2; i++) {
         const packet::timestamp_t ts1 = tss[i];

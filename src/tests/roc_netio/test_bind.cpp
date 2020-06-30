@@ -73,7 +73,7 @@ void remove_port(NetworkLoop& net_loop, NetworkLoop::PortHandle handle) {
 
 } // namespace
 
-TEST_GROUP(bind) {};
+TEST_GROUP(bind){};
 
 TEST(bind, any) {
     packet::ConcurrentQueue queue;

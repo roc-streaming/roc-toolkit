@@ -14,7 +14,7 @@
 
 namespace roc {
 
-TEST_GROUP(endpoint) {};
+TEST_GROUP(endpoint){};
 
 TEST(endpoint, alloc_dealloc) {
     roc_endpoint* endp = NULL;
@@ -958,12 +958,11 @@ TEST(endpoint, percent_encoding) {
         CHECK(roc_endpoint_allocate(&endp) == 0);
 
         // set uri
-        CHECK(roc_endpoint_set_uri(endp,
-                                   "rtsp://"
-                                   "foo-bar"
-                                   ":123"
-                                   "/foo%21bar%40baz%2Fqux%3Fwee"
-                                   "?foo%21bar")
+        CHECK(roc_endpoint_set_uri(endp, "rtsp://"
+                                         "foo-bar"
+                                         ":123"
+                                         "/foo%21bar%40baz%2Fqux%3Fwee"
+                                         "?foo%21bar")
               == 0);
 
         // get uri
@@ -995,9 +994,8 @@ TEST(endpoint, percent_encoding) {
         CHECK(roc_endpoint_allocate(&endp) == 0);
 
         // set resource
-        CHECK(roc_endpoint_set_resource(endp,
-                                        "/foo%21bar%40baz%2Fqux%3Fwee"
-                                        "?foo%21bar")
+        CHECK(roc_endpoint_set_resource(endp, "/foo%21bar%40baz%2Fqux%3Fwee"
+                                              "?foo%21bar")
               == 0);
 
         // get resource
