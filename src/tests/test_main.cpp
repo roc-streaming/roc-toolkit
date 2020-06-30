@@ -40,7 +40,7 @@ int main(int argc, char** argv) {
         }
     }
 
-    CommandLineArguments args(argc, (const char**) argv);
+    CommandLineArguments args(argc, const_cast<const char **>(argv));
     
     if(moreVerbose){
         roc::core::Logger::instance().set_level(roc::LogTrace);
