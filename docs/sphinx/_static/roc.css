@@ -62,11 +62,19 @@ li > p:last-child {
     margin-bottom: 1.5em;
 }
 
+p.topic-title {
+    margin-top: 0px;
+}
+
 pre {
     font-size: 98%;
     box-shadow: none;
     -webkit-box-shadow: none;
     -moz-box-shadow: none;
+}
+
+table.align-default {
+    margin-left: 0;
 }
 
 table.align-center {
