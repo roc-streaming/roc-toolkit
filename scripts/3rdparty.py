@@ -55,13 +55,15 @@ def rm_emptydir(path):
         pass
 
 def download_vendordir(url, path, log, vendordir):
-    distfile = os.path.join(vendordir, os.path.basename(path))
-    if not os.path.exists(distfile):
-        raise
-    print('[found vendored] %s' % os.path.basename(distfile))
-    with open(distfile, 'rb') as rp:
-        with open(path, 'wb') as wp:
-            wp.write(rp.read())
+    for subdir, _, _ in os.walk(vendordir):
+        distfile = os.path.join(subdir, os.path.basename(path))
+        if os.path.exists(distfile):
+            print('[found vendored] %s' % os.path.basename(distfile))
+            with open(distfile, 'rb') as rp:
+                with open(path, 'wb') as wp:
+                    wp.write(rp.read())
+                    return
+    raise
 
 def download_urlopen(url, path, log, vendordir):
     rp = urlopen(url)

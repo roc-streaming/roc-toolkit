@@ -101,12 +101,12 @@ jobs:
         - scripts/travis/docker.sh rocproject/cross-aarch64-linux-android:api28 scripts/travis/android/aarch64-linux-android.sh
         - cat build.status
 
-    - name: "macOS Xcode 9.1"
+    - name: "macOS Xcode 9.4"
       stage: Build
       os: osx
-      osx_image: xcode9.1
+      osx_image: xcode9.4
       script:
-        - scripts/travis/macos/xcode-9.1.sh
+        - scripts/travis/macos/xcode-9.4.sh
       after_failure:
         - cat config.log
 
@@ -119,12 +119,12 @@ jobs:
       after_failure:
         - cat config.log
 
-    - name: "macOS Xcode 11.3"
+    - name: "macOS Xcode 11.6"
       stage: Build
       os: osx
-      osx_image: xcode11.3
+      osx_image: xcode11.6
       script:
-        - scripts/travis/macos/xcode-11.3.sh
+        - scripts/travis/macos/xcode-11.6.sh
       after_failure:
         - cat config.log
 

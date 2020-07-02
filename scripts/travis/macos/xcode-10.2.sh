@@ -1,6 +1,8 @@
 #! /bin/bash
 set -euxo pipefail
 
+tar -C "$(brew --cache)" -xvf vendor/bottles/macos-10.14.tar
+
 brew update
 
 brew install "scons"

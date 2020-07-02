@@ -1236,6 +1236,13 @@ if compiler == 'clang':
                     '-Wno-atomic-implicit-seq-cst',
                     '-Wno-extra-semi-stmt',
                 ]})
+        if compiler_ver[:2] >= (10, 0):
+            for var in ['CXXFLAGS', 'CFLAGS']:
+                env.Append(**{var: [
+                    '-Wno-anon-enum-enum-conversion',
+                    '-Wno-implicit-int-float-conversion',
+                    '-Wno-enum-float-conversion',
+                ]})
 
     if platform == 'darwin':
         if compiler_ver[:2] >= (10, 0):
