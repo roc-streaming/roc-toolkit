@@ -341,7 +341,7 @@ if set(COMMAND_LINE_TARGETS).intersection(['clean', 'cleanbuild', 'cleandocs']) 
     Return()
 
 for var in ['CXX', 'CC', 'AR', 'RANLIB', 'RAGEL', 'GENGETOPT',
-                'PKG_CONFIG', 'PKG_CONFIG_PATH', 'CONFIG_GUESS']:
+                'PKG_CONFIG', 'PKG_CONFIG_PATH', 'CONFIG_GUESS', 'CLANG_FORMAT']:
     env.OverrideFromArg(var)
 
 env.OverrideFromArg('CXXLD', names=['CXXLD', 'CXX'])
@@ -359,53 +359,22 @@ Export('doc_env')
 doc_env.SConscript('docs/SConscript',
                        variant_dir='#build', duplicate=0)
 
-fmt = []
+if 'fmt' in COMMAND_LINE_TARGETS:
+    conf = Configure(env, custom_tests=env.CustomTests)
+    conf.FindClangFormat()
+    env = conf.Finish()
 
-clang_format_tools = ['clang-format']
-for n in range(6, 10):
-    clang_format_tools += ['clang-format-3.%s' % n]
+    fmt_actions = []
 
-clang_format = None
-for tool in clang_format_tools:
-    if env.Which(tool):
-        clang_format = tool
-        break
+    fmt_actions.append(env.ClangFormat('#src'))
 
-if clang_format and env.ParseCompilerVersion(clang_format) >= (3, 6):
-    fmt += [
-        env.Action(
-            '%s -i %s' % (clang_format, ' '.join(map(str,
-                env.GlobRecursive(
-                    '#src', ['*.h', '*.cpp'],
-                    exclude=open(env.File('#.fmtignore').path).read().split())
-            ))),
-            env.PrettyCommand('FMT', 'src', 'yellow')
-        ),
-    ]
-elif 'fmt' in COMMAND_LINE_TARGETS:
-    print("warning: clang-format >= 3.6 not found")
+    fmt_actions.append(env.HeaderFormat('src/modules'))
+    fmt_actions.append(env.HeaderFormat('src/tests'))
+    fmt_actions.append(env.HeaderFormat('src/tools'))
+    fmt_actions.append(env.HeaderFormat('src/library/src'))
 
-fmt += [
-    env.Action(
-        '%s scripts/format.py src/modules' % env.PythonExecutable(),
-        env.PrettyCommand('FMT', 'src/modules', 'yellow')
-    ),
-    env.Action(
-        '%s scripts/format.py src/tests' % env.PythonExecutable(),
-        env.PrettyCommand('FMT', 'src/tests', 'yellow')
-    ),
-    env.Action(
-        '%s scripts/format.py src/tools' % env.PythonExecutable(),
-        env.PrettyCommand('FMT', 'src/tools', 'yellow')
-    ),
-    env.Action(
-        '%s scripts/format.py src/library/src' % env.PythonExecutable(),
-        env.PrettyCommand('FMT', 'src/library/src', 'yellow')
-    ),
-]
-
-env.AlwaysBuild(
-    env.Alias('fmt', [], fmt))
+    env.AlwaysBuild(
+        env.Alias('fmt', [], fmt_actions))
 
 non_build_targets = ['fmt', 'docs', 'shpinx', 'doxygen']
 if set(COMMAND_LINE_TARGETS) \
