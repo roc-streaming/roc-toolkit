@@ -168,7 +168,7 @@ Run behcnmarks for the module manually:
 Formatting code
 ===============
 
-Format code. Requires clang-format >= 3.6.
+Format code. Requires clang-format:
 
 .. code::
 
