@@ -17,7 +17,7 @@ Docker images for continuous integration and cross-compilation are prepared usin
 Links:
  * `Travis project <https://travis-ci.org/roc-streaming/roc-toolkit>`_
  * `Travis configuration <https://github.com/roc-streaming/roc-toolkit/blob/master/.travis.yml>`_
- * `Docker Hub organization <https://hub.docker.com/u/rocproject/>`_
+ * `Docker Hub organization <https://hub.docker.com/u/rocstreaming/>`_
  * `Dockerfiles repo <https://github.com/roc-streaming/dockerfiles>`_
 
 Docker images
@@ -31,37 +31,28 @@ Linux native
 =================================== ===================== ============= ===========================
 Image                               Base image            Architecture  Compilers
 =================================== ===================== ============= ===========================
-rocproject/travis-ubuntu:18.04      ubuntu:18.04          x86_64        gcc-6, clang-6
-rocproject/travis-ubuntu:16.04      ubuntu:16.04          x86_64        gcc-4.8, gcc-5, clang-3.7
-rocproject/travis-ubuntu:14.04      ubuntu:14.04          x86_64        gcc-4.4, gcc-4.6, clang-3.4
-rocproject/travis-debian            debian:stable         x86_64        distro default
-rocproject/travis-fedora            fedora:latest         x86_64        distro default
-rocproject/travis-centos            centos:latest         x86_64        distro default
-rocproject/travis-opensuse          opensuse/leap:latest  x86_64        distro default
-rocproject/travis-archlinux         archlinux/base:latest x86_64        distro default
-rocproject/travis-alpine            alpine:latest         x86_64        distro default
+rocstreaming/env-ubuntu:18.04       ubuntu:18.04          x86_64        gcc-6, clang-6
+rocstreaming/env-ubuntu:16.04       ubuntu:16.04          x86_64        gcc-4.8, gcc-5, clang-3.7
+rocstreaming/env-ubuntu:14.04       ubuntu:14.04          x86_64        gcc-4.4, gcc-4.6, clang-3.4
+rocstreaming/env-ubuntu-minimal     ubuntu:latest         x86_64        distro default
+rocstreaming/env-debian             debian:stable         x86_64        distro default
+rocstreaming/env-fedora             fedora:latest         x86_64        distro default
+rocstreaming/env-centos             centos:latest         x86_64        distro default
+rocstreaming/env-opensuse           opensuse/leap:latest  x86_64        distro default
+rocstreaming/env-archlinux          archlinux/base:latest x86_64        distro default
+rocstreaming/env-alpine             alpine:latest         x86_64        distro default
 =================================== ===================== ============= ===========================
-
-Linux misc.
------------
-
-=================================== ===================== =======================================
-Image                               Base image            Comment
-=================================== ===================== =======================================
-rocproject/travis-minimal           ubuntu:latest         minimal build environment
-rocproject/travis-checks            ubuntu:19.04          sanitizers and valgrind
-=================================== ===================== =======================================
 
 Linux cross-compilation
 -----------------------
 
-======================================================== ============= =========
-Image                                                    Architecture  Compilers
-======================================================== ============= =========
-rocproject/cross-arm-bcm2708hardfp-linux-gnueabi:gcc-4.7 armv6         gcc-4.7
-rocproject/cross-arm-linux-gnueabihf:gcc-4.9             armv7         gcc-4.9
-rocproject/cross-aarch64-linux-gnu:gcc-7.4               armv8         gcc-7.4
-======================================================== ============= =========
+============================================================== ============= =========
+Image                                                          Architecture  Compilers
+============================================================== ============= =========
+rocstreaming/toolchain-arm-bcm2708hardfp-linux-gnueabi:gcc-4.7 armv6         gcc-4.7
+rocstreaming/toolchain-arm-linux-gnueabihf:gcc-4.9             armv7         gcc-4.9
+rocstreaming/toolchain-aarch64-linux-gnu:gcc-7.4               armv8         gcc-7.4
+============================================================== ============= =========
 
 Android cross-compilation
 -------------------------
@@ -81,14 +72,14 @@ For example, this will run Fedora build:
 
 .. code::
 
-   $ scripts/travis/docker.sh rocproject/travis-fedora scripts/travis/linux-x86_64/fedora.sh
+   $ scripts/travis/docker.sh rocstreaming/env-fedora scripts/travis/linux-x86_64/fedora.sh
 
 You can also invoke Docker manually:
 
 .. code::
 
     $ docker run -t --rm --cap-add SYS_PTRACE -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
-        rocproject/travis-fedora \
+        rocstreaming/env-fedora \
           scons --build-3rdparty=openfec,cpputest --enable-debug test
 
 Explanation:
