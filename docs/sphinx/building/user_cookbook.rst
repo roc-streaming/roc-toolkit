@@ -225,7 +225,7 @@ Raspberry Pi 2 and 3
 
     # build libraries, tools, and PulseAudio modules
     $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
-        rocproject/cross-arm-linux-gnueabihf \
+        rocstreaming/toolchain-arm-linux-gnueabihf \
           scons -Q \
             --enable-pulseaudio-modules \
             --host=arm-linux-gnueabihf \
@@ -250,7 +250,7 @@ Raspberry Pi 1 and Zero
 
     # build libraries, tools, and PulseAudio modules
     $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
-        rocproject/cross-arm-bcm2708hardfp-linux-gnueabi \
+        rocstreaming/toolchain-arm-bcm2708hardfp-linux-gnueabi \
           scons -Q \
             --enable-pulseaudio-modules \
             --host=arm-bcm2708hardfp-linux-gnueabi \
@@ -276,7 +276,7 @@ Orange Pi 64-bit models
 
     # build libraries, tools, and PulseAudio modules
     $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
-        rocproject/cross-aarch64-linux-gnu \
+        rocstreaming/toolchain-aarch64-linux-gnu \
           scons -Q \
             --enable-pulseaudio-modules \
             --host=aarch64-linux-gnu \
@@ -301,7 +301,7 @@ Orange Pi 32-bit models
 
     # build libraries, tools, and PulseAudio modules
     $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
-        rocproject/cross-arm-linux-gnueabihf \
+        rocstreaming/toolchain-arm-linux-gnueabihf \
           scons -Q \
             --enable-pulseaudio-modules \
             --host=arm-linux-gnueabihf \

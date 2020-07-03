@@ -21,25 +21,25 @@ jobs:
       services:
         - docker
       before_install:
-        - docker pull rocproject/travis-ubuntu:18.04
-        - docker pull rocproject/travis-ubuntu:16.04
-        - docker pull rocproject/travis-ubuntu:14.04
-        - docker pull rocproject/travis-debian
-        - docker pull rocproject/travis-fedora
-        - docker pull rocproject/travis-centos
-        - docker pull rocproject/travis-opensuse
-        - docker pull rocproject/travis-archlinux
-        - docker pull rocproject/travis-alpine
+        - docker pull rocstreaming/env-ubuntu:18.04
+        - docker pull rocstreaming/env-ubuntu:16.04
+        - docker pull rocstreaming/env-ubuntu:14.04
+        - docker pull rocstreaming/env-debian
+        - docker pull rocstreaming/env-fedora
+        - docker pull rocstreaming/env-centos
+        - docker pull rocstreaming/env-opensuse
+        - docker pull rocstreaming/env-archlinux
+        - docker pull rocstreaming/env-alpine
       script:
-        - scripts/travis/docker.sh rocproject/travis-ubuntu:18.04 scripts/travis/linux-x86_64/ubuntu-18.04.sh
-        - scripts/travis/docker.sh rocproject/travis-ubuntu:16.04 scripts/travis/linux-x86_64/ubuntu-16.04.sh
-        - scripts/travis/docker.sh rocproject/travis-ubuntu:14.04 scripts/travis/linux-x86_64/ubuntu-14.04.sh
-        - scripts/travis/docker.sh rocproject/travis-debian scripts/travis/linux-x86_64/debian.sh
-        - scripts/travis/docker.sh rocproject/travis-fedora scripts/travis/linux-x86_64/fedora.sh
-        - scripts/travis/docker.sh rocproject/travis-centos scripts/travis/linux-x86_64/centos.sh
-        - scripts/travis/docker.sh rocproject/travis-opensuse scripts/travis/linux-x86_64/opensuse.sh
-        - scripts/travis/docker.sh rocproject/travis-archlinux scripts/travis/linux-x86_64/archlinux.sh
-        - scripts/travis/docker.sh rocproject/travis-alpine scripts/travis/linux-x86_64/alpine.sh
+        - scripts/travis/docker.sh rocstreaming/env-ubuntu:18.04 scripts/travis/linux-x86_64/ubuntu-18.04.sh
+        - scripts/travis/docker.sh rocstreaming/env-ubuntu:16.04 scripts/travis/linux-x86_64/ubuntu-16.04.sh
+        - scripts/travis/docker.sh rocstreaming/env-ubuntu:14.04 scripts/travis/linux-x86_64/ubuntu-14.04.sh
+        - scripts/travis/docker.sh rocstreaming/env-debian scripts/travis/linux-x86_64/debian.sh
+        - scripts/travis/docker.sh rocstreaming/env-fedora scripts/travis/linux-x86_64/fedora.sh
+        - scripts/travis/docker.sh rocstreaming/env-centos scripts/travis/linux-x86_64/centos.sh
+        - scripts/travis/docker.sh rocstreaming/env-opensuse scripts/travis/linux-x86_64/opensuse.sh
+        - scripts/travis/docker.sh rocstreaming/env-archlinux scripts/travis/linux-x86_64/archlinux.sh
+        - scripts/travis/docker.sh rocstreaming/env-alpine scripts/travis/linux-x86_64/alpine.sh
         - cat build.status
 
     - name: "Linux ARM"
@@ -50,13 +50,13 @@ jobs:
       services:
         - docker
       before_install:
-        - docker pull rocproject/cross-arm-bcm2708hardfp-linux-gnueabi:gcc-4.7
-        - docker pull rocproject/cross-arm-linux-gnueabihf:gcc-4.9
-        - docker pull rocproject/cross-aarch64-linux-gnu:gcc-7.4
+        - docker pull rocstreaming/toolchain-arm-bcm2708hardfp-linux-gnueabi:gcc-4.7
+        - docker pull rocstreaming/toolchain-arm-linux-gnueabihf:gcc-4.9
+        - docker pull rocstreaming/toolchain-aarch64-linux-gnu:gcc-7.4
       script:
-        - scripts/travis/docker.sh rocproject/cross-arm-bcm2708hardfp-linux-gnueabi:gcc-4.7 scripts/travis/linux-arm/arm-bcm2708hardfp-linux-gnueabi.sh
-        - scripts/travis/docker.sh rocproject/cross-arm-linux-gnueabihf:gcc-4.9 scripts/travis/linux-arm/arm-linux-gnueabihf.sh
-        - scripts/travis/docker.sh rocproject/cross-aarch64-linux-gnu:gcc-7.4 scripts/travis/linux-arm/aarch64-linux-gnu.sh
+        - scripts/travis/docker.sh rocstreaming/toolchain-arm-bcm2708hardfp-linux-gnueabi:gcc-4.7 scripts/travis/linux-arm/arm-bcm2708hardfp-linux-gnueabi.sh
+        - scripts/travis/docker.sh rocstreaming/toolchain-arm-linux-gnueabihf:gcc-4.9 scripts/travis/linux-arm/arm-linux-gnueabihf.sh
+        - scripts/travis/docker.sh rocstreaming/toolchain-aarch64-linux-gnu:gcc-7.4 scripts/travis/linux-arm/aarch64-linux-gnu.sh
         - cat build.status
 
     - name: "Linux build checks"
@@ -67,13 +67,13 @@ jobs:
       services:
         - docker
       before_install:
-        - docker pull rocproject/travis-minimal
-        - docker pull rocproject/travis-checks
+        - docker pull rocstreaming/env-ubuntu-minimal
+        - docker pull rocstreaming/env-ubuntu
       script:
-        - scripts/travis/docker.sh rocproject/travis-minimal scripts/travis/linux-build-checks/optional-features.sh
-        - scripts/travis/docker.sh rocproject/travis-minimal scripts/travis/linux-build-checks/optional-backends.sh
-        - scripts/travis/docker.sh rocproject/travis-minimal scripts/travis/linux-build-checks/debug-build.sh
-        - scripts/travis/docker.sh rocproject/travis-checks scripts/travis/linux-build-checks/check-formatting.sh
+        - scripts/travis/docker.sh rocstreaming/env-ubuntu-minimal scripts/travis/linux-build-checks/optional-features.sh
+        - scripts/travis/docker.sh rocstreaming/env-ubuntu-minimal scripts/travis/linux-build-checks/optional-backends.sh
+        - scripts/travis/docker.sh rocstreaming/env-ubuntu-minimal scripts/travis/linux-build-checks/debug-build.sh
+        - scripts/travis/docker.sh rocstreaming/env-ubuntu scripts/travis/linux-build-checks/check-formatting.sh
 
     - name: "Linux runtime checks"
       stage: Build
@@ -83,12 +83,12 @@ jobs:
       services:
         - docker
       before_install:
-        - docker pull rocproject/travis-checks
+        - docker pull rocstreaming/env-ubuntu
       script:
-        - scripts/travis/docker.sh rocproject/travis-checks scripts/travis/linux-runtime-checks/sanitizers-clang.sh
-        - scripts/travis/docker.sh rocproject/travis-checks scripts/travis/linux-runtime-checks/sanitizers-gcc.sh
-        - scripts/travis/docker.sh rocproject/travis-checks scripts/travis/linux-runtime-checks/valgrind-debug.sh
-        - scripts/travis/docker.sh rocproject/travis-checks scripts/travis/linux-runtime-checks/valgrind-release.sh
+        - scripts/travis/docker.sh rocstreaming/env-ubuntu scripts/travis/linux-runtime-checks/sanitizers-clang.sh
+        - scripts/travis/docker.sh rocstreaming/env-ubuntu scripts/travis/linux-runtime-checks/sanitizers-gcc.sh
+        - scripts/travis/docker.sh rocstreaming/env-ubuntu scripts/travis/linux-runtime-checks/valgrind-debug.sh
+        - scripts/travis/docker.sh rocstreaming/env-ubuntu scripts/travis/linux-runtime-checks/valgrind-release.sh
 
     - name: "Android"
       stage: Build
