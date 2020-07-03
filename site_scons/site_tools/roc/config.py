@@ -177,10 +177,63 @@ def FindTool(context, var, toolchain, version, commands, prepend_path=[]):
     context.Result(message)
     return True
 
+def FindClangFormat(context):
+    env = context.env
+
+    context.Message("Searching for clang-format... ")
+
+    if env.HasArg('CLANG_FORMAT'):
+        context.Result(env['CLANG_FORMAT'])
+        return True
+
+    min_ver = 8
+    max_ver = 9
+
+    def checkver(exe):
+        ver_str = env.ParseToolVersion('%s --version' % exe)
+        try:
+            ver = tuple(map(int, ver_str.split('.')))
+            return (min_ver, 0, 0) <= ver <= (max_ver, 99, 99)
+        except:
+            return False
+
+    clang_format = env.Which('clang-format')
+    if clang_format and checkver(clang_format[0]):
+        env['CLANG_FORMAT'] = clang_format[0]
+        context.Result(env['CLANG_FORMAT'])
+        return True
+
+    for ver in range(min_ver,max_ver+1):
+        clang_format = env.Which('clang-format-%d' % ver)
+        if clang_format and checkver(clang_format[0]):
+            env['CLANG_FORMAT'] = clang_format[0]
+            context.Result(env['CLANG_FORMAT'])
+            return True
+
+        llvmdir = _llvmdir((ver,))
+        if llvmdir:
+            clang_format = os.path.join(llvmdir, 'clang-format')
+            if checkver(clang_format):
+                env['CLANG_FORMAT'] = clang_format
+                context.Result(env['CLANG_FORMAT'])
+                return True
+
+    env.Die("can't find clang-format >= %s and <= %s" % (min_ver, max_ver))
+
 def FindLLVMDir(context, version):
     context.Message(
         "Searching PATH for llvm %s... " % '.'.join(map(str, version)))
 
+    llvmdir = _llvmdir(version)
+    if llvmdir:
+        context.env['ENV']['PATH'] += ':' + llvmdir
+        context.Result(llvmdir)
+        return True
+
+    context.Result('not found')
+    return True
+
+def _llvmdir(version):
     def macos_dirs():
         return [
         '/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin',
@@ -203,12 +256,7 @@ def FindLLVMDir(context, version):
 
     for llvmdir in macos_dirs() + linux_dirs():
         if os.path.isdir(llvmdir):
-            context.env['ENV']['PATH'] += ':' + llvmdir
-            context.Result(llvmdir)
-            return True
-
-    context.Result('not found')
-    return True
+            return llvmdir
 
 def _libdirs(host):
     dirs = ['lib/' + host]
@@ -399,6 +447,7 @@ def init(env):
         'CheckProg': CheckProg,
         'CheckCanRunProgs': CheckCanRunProgs,
         'FindTool': FindTool,
+        'FindClangFormat': FindClangFormat,
         'FindLLVMDir': FindLLVMDir,
         'FindLibDir': FindLibDir,
         'FindPulseDir': FindPulseDir,

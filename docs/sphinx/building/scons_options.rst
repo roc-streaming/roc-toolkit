@@ -96,6 +96,7 @@ Variables
 - PKG_CONFIG
 - PKG_CONFIG_PATH
 - CONFIG_GUESS
+- CLANG_FORMAT
 
 Targets
 =======

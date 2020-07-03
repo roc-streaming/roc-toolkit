@@ -37,6 +37,22 @@ def ClangDBWriter(env, tool, build_dir):
         env.Dir(build_dir).path,
         tool)
 
+def ClangFormat(env, srcdir):
+    return env.Action(
+        '%s -i %s' % (env['CLANG_FORMAT'], ' '.join(map(str,
+            env.GlobRecursive(
+                srcdir, ['*.h', '*.cpp'],
+                exclude=open(env.File('#.fmtignore').path).read().split())
+        ))),
+        env.PrettyCommand('FMT', env.Dir(srcdir).path, 'yellow')
+    )
+
+def HeaderFormat(env, srcdir):
+    return env.Action(
+        '%s scripts/format.py %s' % (env.PythonExecutable(), srcdir),
+        env.PrettyCommand('FMT', srcdir, 'yellow')
+    )
+
 def Doxygen(env, build_dir='', html_dir=None, config='', sources=[], werror=False):
     target = os.path.join(build_dir, '.done')
 
@@ -230,6 +246,8 @@ def init(env):
     env.AddMethod(CommandOutput, 'CommandOutput')
     env.AddMethod(PythonExecutable, 'PythonExecutable')
     env.AddMethod(ClangDBWriter, 'ClangDBWriter')
+    env.AddMethod(ClangFormat, 'ClangFormat')
+    env.AddMethod(HeaderFormat, 'HeaderFormat')
     env.AddMethod(Doxygen, 'Doxygen')
     env.AddMethod(Sphinx, 'Sphinx')
     env.AddMethod(Ragel, 'Ragel')

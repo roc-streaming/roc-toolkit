@@ -11,14 +11,16 @@ ColumnLimit: 90
 MaxEmptyLinesToKeep: 1
 PenaltyBreakComment: 0
 
-ConstructorInitializerAllOnOneLineOrOnePerLine: false
-AllowShortFunctionsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: None
+#AllowShortBlocksOnASingleLine: Never
 
-KeepEmptyLinesAtTheStartOfBlocks: false
 NamespaceIndentation: None
 
 BreakBeforeBinaryOperators: NonAssignment
 BreakBeforeBraces: Attach
+
+ConstructorInitializerAllOnOneLineOrOnePerLine: false
+KeepEmptyLinesAtTheStartOfBlocks: false
 
 BinPackArguments: true
 BinPackParameters: false
@@ -26,4 +28,4 @@ BinPackParameters: false
 AlignAfterOpenBracket: true
 AlignTrailingComments: true
 
-AllowShortFunctionsOnASingleLine: None
+#SpaceInEmptyBlock: false
