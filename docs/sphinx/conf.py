@@ -29,6 +29,8 @@ version_tuple = open(os.path.join(
 version = 'Roc Toolkit %s' % '.'.join(version_tuple[:2])
 release = '%s' % '.'.join(version_tuple)
 
+today_fmt = '%Y'
+
 pygments_style = 'sphinx'
 
 todo_include_todos = False
