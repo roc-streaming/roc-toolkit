@@ -98,12 +98,12 @@ jobs:
       services:
         - docker
       before_install:
-        - docker pull rocproject/cross-linux-android:ndk21
+        - docker pull rocstreaming/env-android
       script:
-        - scripts/travis/docker.sh rocproject/cross-linux-android:ndk21 scripts/travis/android/aarch64-linux-android28.sh
-        - scripts/travis/docker.sh rocproject/cross-linux-android:ndk21 scripts/travis/android/armv7a-linux-androideabi28.sh
-        - scripts/travis/docker.sh rocproject/cross-linux-android:ndk21 scripts/travis/android/x86_64-linux-android28.sh
-        - scripts/travis/docker.sh rocproject/cross-linux-android:ndk21 scripts/travis/android/i686-linux-android28.sh
+        - scripts/travis/android.sh ANDROID_API=28 ANDROID_NDK_VERSION=21.1.6352462 scripts/travis/android/aarch64-linux-android28.sh
+        - scripts/travis/android.sh ANDROID_API=28 ANDROID_NDK_VERSION=21.1.6352462 scripts/travis/android/armv7a-linux-androideabi28.sh
+        - scripts/travis/android.sh ANDROID_API=28 ANDROID_NDK_VERSION=21.1.6352462 scripts/travis/android/x86_64-linux-android28.sh
+        - scripts/travis/android.sh ANDROID_API=28 ANDROID_NDK_VERSION=21.1.6352462 scripts/travis/android/i686-linux-android28.sh
         - cat build.status
 
     - name: "macOS Xcode 9.4"
