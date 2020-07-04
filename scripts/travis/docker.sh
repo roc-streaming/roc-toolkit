@@ -8,8 +8,8 @@
 error=$?
 if [ $error = 0 ]
 then
-  printf '%-60s \e[1;32m%s\e[m\n' "$1" "OK" >> build.status
+  printf '%-90s \e[1;32m%s\e[m\n' "$1" "OK" >> build.status
 else
-  printf '%-60s \e[1;31m%s\e[m\n' "$1" "FAILED" >> build.status
+  printf '%-90s \e[1;31m%s\e[m\n' "$1" "FAILED" >> build.status
 fi
 exit $error
