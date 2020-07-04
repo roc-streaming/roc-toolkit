@@ -379,7 +379,7 @@ Building library
 
     # build libroc.so for 64-bit ARM, API level 28
     $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
-        rocproject/cross-linux-android \
+        rocstreaming/toolchain-linux-android \
           scons -Q \
             --disable-tools \
             --compiler=clang \
@@ -388,7 +388,7 @@ Building library
 
     # build libroc.so for 32-bit ARM, API level 28
     $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
-        rocproject/cross-linux-android \
+        rocstreaming/toolchain-linux-android \
           scons -Q \
             --disable-tools \
             --compiler=clang \
@@ -397,7 +397,7 @@ Building library
 
     # build libroc.so for 64-bit Intel, API level 28
     $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
-        rocproject/cross-linux-android \
+        rocstreaming/toolchain-linux-android \
           scons -Q \
             --disable-tools \
             --compiler=clang \
@@ -406,7 +406,7 @@ Building library
 
     # build libroc.so for 32-bit Intel, API level 28
     $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
-        rocproject/cross-linux-android \
+        rocstreaming/toolchain-linux-android \
           scons -Q \
             --disable-tools \
             --compiler=clang \
