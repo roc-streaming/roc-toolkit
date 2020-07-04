@@ -212,13 +212,13 @@ Android NDK toolchains
 
 For convenience, Roc supports both ways.
 
-To build Roc for Android using a prebuilt toolchain from Android NDK, you can use `rocproject/cross-linux-android <https://hub.docker.com/r/rocproject/cross-linux-android/>`_ Docker image:
+To build Roc for Android using a prebuilt toolchain from Android NDK, you can use `rocstreaming/toolchain-linux-android <https://hub.docker.com/r/rocstreaming/toolchain-linux-android/>`_ Docker image:
 
 .. code::
 
     $ cd /path/to/roc
     $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
-        rocproject/cross-linux-android \
+        rocstreaming/toolchain-linux-android \
           scons -Q \
             --disable-tools \
             --compiler=clang \
