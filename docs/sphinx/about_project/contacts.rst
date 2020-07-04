@@ -24,4 +24,4 @@ We also have an IRC channel for more interactive discussion. Point your client t
 
 .. note::
 
-   If you want to be able to see messages sent to the channel when you were offline, you can use Matrix.org IRC bridge. You can `connect to the channel <https://riot.im/app/#/room/#freenode_#rocproject:matrix.org>`_ using Riot web client or other `Matrix clients <https://matrix.org/clients/>`_. You'll need to setup a Matrix account and enter the room.
+   If you want to be able to see messages sent to the channel when you **were offline**, you can use Matrix.org IRC bridge. You can `connect to the channel <https://riot.im/app/#/room/#freenode_#rocproject:matrix.org>`_ using Riot web client or other `Matrix clients <https://matrix.org/clients/>`_. You'll need to setup a Matrix account and enter the room.
