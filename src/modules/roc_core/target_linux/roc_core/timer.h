@@ -14,6 +14,7 @@
 
 #include "roc_core/atomic.h"
 #include "roc_core/noncopyable.h"
+#include "roc_core/semaphore.h"
 #include "roc_core/seqlock.h"
 #include "roc_core/time.h"
 
@@ -48,6 +49,7 @@ private:
     int timerfd_;
     Seqlock<nanoseconds_t> deadline_;
     Atomic<int> waiting_flag_;
+    Semaphore sem_;
 };
 
 } // namespace core
