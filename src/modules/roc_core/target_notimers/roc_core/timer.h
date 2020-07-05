@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_core/timer.h
+//! @file roc_core/target_notimers/roc_core/timer.h
 //! @brief Thread-safe timer.
 
 #ifndef ROC_CORE_TIMER_H_
