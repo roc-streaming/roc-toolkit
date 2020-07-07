@@ -5,6 +5,10 @@ tar -C "$(brew --cache)" -xvf vendor/bottles/macos-10.14.tar
 
 brew update
 
+brew list |\
+    grep -vE 'pkg-config|automake|libtool|cmake|xz|readline|openssl|sqlite' |\
+    xargs brew pin
+
 brew install "scons"
 brew install "ragel"
 brew install "gengetopt"
