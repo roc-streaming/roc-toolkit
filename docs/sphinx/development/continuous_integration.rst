@@ -28,12 +28,13 @@ The following Docker images are used on our CI builds.
 Linux native
 ------------
 
-=================================== ===================== ============= ===========================
+=================================== ===================== ============= ================================
 Image                               Base image            Architecture  Compilers
-=================================== ===================== ============= ===========================
+=================================== ===================== ============= ================================
+rocstreaming/env-ubuntu:20.04       ubuntu:20.04          x86_64        gcc-8, gcc-10, clang-8, clang-10
 rocstreaming/env-ubuntu:18.04       ubuntu:18.04          x86_64        gcc-6, clang-6
-rocstreaming/env-ubuntu:16.04       ubuntu:16.04          x86_64        gcc-4.8, gcc-5, clang-3.7
-rocstreaming/env-ubuntu:14.04       ubuntu:14.04          x86_64        gcc-4.4, gcc-4.6, clang-3.4
+rocstreaming/env-ubuntu:16.04       ubuntu:16.04          x86_64        gcc-4.8, clang-3.7
+rocstreaming/env-ubuntu:14.04       ubuntu:14.04          x86_64        gcc-4.4, clang-3.4
 rocstreaming/env-ubuntu-minimal     ubuntu:latest         x86_64        distro default
 rocstreaming/env-debian             debian:stable         x86_64        distro default
 rocstreaming/env-fedora             fedora:latest         x86_64        distro default
@@ -41,7 +42,7 @@ rocstreaming/env-centos             centos:latest         x86_64        distro d
 rocstreaming/env-opensuse           opensuse/leap:latest  x86_64        distro default
 rocstreaming/env-archlinux          archlinux/base:latest x86_64        distro default
 rocstreaming/env-alpine             alpine:latest         x86_64        distro default
-=================================== ===================== ============= ===========================
+=================================== ===================== ============= ================================
 
 Linux cross-compilation
 -----------------------

@@ -28,7 +28,7 @@ The following specific platform configurations are tested on a regular basis.
 
 Linux distributions:
 
-* Ubuntu (18.04, 16.04, 14.04)
+* Ubuntu (20.04, 18.04, 16.04, 14.04)
 * Debian (stable)
 * Fedora (latest)
 * CentOS (latest)
