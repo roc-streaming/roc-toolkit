@@ -5,8 +5,9 @@ tar -C "$(brew --cache)" -xvf vendor/bottles/macos-10.15.tar
 
 brew update
 
+brew unlink python@2
 brew list |\
-    grep -vE 'pkg-config|automake|libtool|cmake|xz|readline|openssl|sqlite' |\
+    grep -vE 'pkg-config|automake|libtool|cmake|xz|readline|openssl|sqlite|python' |\
     xargs brew pin
 
 brew install "scons"
