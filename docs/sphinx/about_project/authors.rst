@@ -44,3 +44,5 @@ Contributors
 * Ivan <miklecivan3@gmail.com>
 * Suiyi Fu <fusuiyi123@gmail.com>
 * Vladimir Panov <quest201114@yandex.ru>
+* Diego Coladas Mato <dcoladasmato@gmail.com>
+* Miguel Victoria <miguelvicvil@gmail.com>
