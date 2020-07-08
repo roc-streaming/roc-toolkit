@@ -13,7 +13,8 @@ Developer build:
 .. code::
 
     $ scons -Q --build-3rdparty=... \
-      --enable-werror --enable-debug --enable-tests --enable-benchmarks --enable-examples --enable-doxygen test bench
+      --enable-werror --enable-debug --enable-tests --enable-benchmarks \
+      --enable-examples --enable-doxygen test bench
 
 Explanation:
 
@@ -53,7 +54,8 @@ Disable specific dependencies (and features they provide):
 
 .. code::
 
-    $ scons -Q --build-3rdparty=... --disable-libunwind --disable-openfec --disable-speexdsp --disable-sox --disable-pulseaudio
+    $ scons -Q --build-3rdparty=... --disable-libunwind --disable-openfec \
+      --disable-speexdsp --disable-sox --disable-pulseaudio
 
 Compiler options
 ================
