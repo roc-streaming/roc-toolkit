@@ -23,7 +23,7 @@ int main(int argc, const char** argv) {
 
     core::CrashHandler crash_handler;
 
-    /* Check wether "-t" option is set.
+    /* Check whether "-t" option is set.
      * If yes then change it to "-v" and remember this in "more_verbose" variable.
      *
      * Reason of changing "-t" to "-v" is that we also want to instruct
