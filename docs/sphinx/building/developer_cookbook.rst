@@ -160,8 +160,14 @@ Run a single test:
 .. code::
 
    $ ./bin/x86_64-pc-linux-gnu/roc-test-pipeline -v -g receiver_source -n one_session_long_run
+   
+Enable trace logging:
 
-Run behcnmarks for the module manually:
+.. code::
+
+   $ ./bin/x86_64-pc-linux-gnu/roc-test-core -t
+
+Run benchmarks for the module manually:
 
 .. code::
 
