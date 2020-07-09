@@ -14,6 +14,7 @@
 #include "roc_core/exit.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_core/log.h"
+#include "roc_core/stddefs.h"
 
 using namespace roc;
 
@@ -22,9 +23,28 @@ int main(int argc, const char** argv) {
 
     core::CrashHandler crash_handler;
 
+    /* Check wether "-t" option is set.
+     * If yes then change it to "-v" and remember this in "more_verbose" variable.
+     *
+     * Reason of changing "-t" to "-v" is that we also want to instruct
+     * CppUTest to give more verbose output
+     */
+
+    bool more_verbose = false;
+
+    for (int i = 0; i < argc; i++) {
+        if (strcmp(argv[i], "-t") == 0) {
+            argv[i] = "-v";
+            more_verbose = true;
+            break;
+        }
+    }
+
     CommandLineArguments args(argc, argv);
 
-    if (args.parse(NULL) && args.isVerbose()) {
+    if (more_verbose) {
+        core::Logger::instance().set_level(LogTrace);
+    } else if (args.parse(NULL) && args.isVerbose()) {
         core::Logger::instance().set_level(LogDebug);
     } else {
         core::Logger::instance().set_level(LogNone);
