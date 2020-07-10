@@ -51,7 +51,7 @@ Mixer::Mixer(core::BufferPool<sample_t>& pool,
         roc_log(LogError, "mixer: allocated buffer is too small");
         return;
     }
-    temp_buf_.resize(frame_size);
+    temp_buf_.reslice(0, frame_size);
 
     valid_ = true;
 }

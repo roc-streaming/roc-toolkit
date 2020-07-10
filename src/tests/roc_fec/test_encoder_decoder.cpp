@@ -84,7 +84,7 @@ public:
 private:
     core::Slice<uint8_t> make_buffer_(size_t p_size) {
         core::Slice<uint8_t> buf = new (buffer_pool) core::Buffer<uint8_t>(buffer_pool);
-        buf.resize(p_size);
+        buf.reslice(0, p_size);
         for (size_t j = 0; j < buf.size(); ++j) {
             buf.data()[j] = (uint8_t)core::fast_random(0, 0xff);
         }

@@ -55,9 +55,7 @@ public:
                 return false;
             }
 
-            buffer.resize(padding);
-            buffer = buffer.range(buffer.size(), buffer.size());
-
+            buffer.reslice(padding, padding);
             return true;
         } else {
             return inner_composer_->align(buffer, header_size, payload_alignment);
@@ -67,7 +65,7 @@ public:
     //! Prepare buffer for composing a packet.
     virtual bool
     prepare(packet::Packet& packet, core::Slice<uint8_t>& buffer, size_t payload_size) {
-        core::Slice<uint8_t> payload_id = buffer.range(0, 0);
+        core::Slice<uint8_t> payload_id = buffer.subslice(0, 0);
 
         if (Pos == Header) {
             if (payload_id.capacity() < sizeof(PayloadID)) {
@@ -77,22 +75,22 @@ public:
                         (unsigned long)payload_id.capacity());
                 return false;
             }
-            payload_id.resize(sizeof(PayloadID));
+            payload_id.reslice(0, sizeof(PayloadID));
         }
 
         core::Slice<uint8_t> payload =
-            payload_id.range(payload_id.size(), payload_id.size());
+            payload_id.subslice(payload_id.size(), payload_id.size());
 
         if (inner_composer_) {
             if (!inner_composer_->prepare(packet, payload, payload_size)) {
                 return false;
             }
         } else {
-            payload.resize(payload_size);
+            payload.reslice(0, payload_size);
         }
 
         if (Pos == Footer) {
-            payload_id = payload.range(payload.size(), payload.size());
+            payload_id = payload.subslice(payload.size(), payload.size());
 
             if (payload_id.capacity() < sizeof(PayloadID)) {
                 roc_log(LogDebug,
@@ -101,7 +99,7 @@ public:
                         (unsigned long)payload_id.capacity());
                 return false;
             }
-            payload_id.resize(sizeof(PayloadID));
+            payload_id.reslice(0, sizeof(PayloadID));
         }
 
         if (Type == Repair) {
@@ -116,7 +114,7 @@ public:
         fec.payload_id = payload_id;
         fec.payload = payload;
 
-        buffer.resize(payload_id.size() + payload.size());
+        buffer.reslice(0, payload_id.size() + payload.size());
 
         return true;
     }

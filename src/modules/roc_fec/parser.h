@@ -63,9 +63,9 @@ public:
         fec.block_length = payload_id->n();
 
         if (Pos == Header) {
-            fec.payload = buffer.range(sizeof(PayloadID), buffer.size());
+            fec.payload = buffer.subslice(sizeof(PayloadID), buffer.size());
         } else {
-            fec.payload = buffer.range(0, buffer.size() - sizeof(PayloadID));
+            fec.payload = buffer.subslice(0, buffer.size() - sizeof(PayloadID));
         }
 
         if (inner_parser_) {
