@@ -64,7 +64,7 @@ TEST_GROUP(udp) {
     core::Slice<uint8_t> new_buffer(int value) {
         core::Slice<uint8_t> buf = new (buffer_pool) core::Buffer<uint8_t>(buffer_pool);
         CHECK(buf);
-        buf.resize(BufferSize);
+        buf.reslice(0, BufferSize);
         for (int n = 0; n < BufferSize; n++) {
             buf.data()[n] = uint8_t((value + n) & 0xff);
         }

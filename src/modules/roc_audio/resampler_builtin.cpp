@@ -288,7 +288,7 @@ bool BuiltinResampler::alloc_frames_(core::BufferPool<sample_t>& buffer_pool) {
             return false;
         }
 
-        frames_[n].resize(frame_size_);
+        frames_[n].reslice(0, frame_size_);
     }
 
     return true;

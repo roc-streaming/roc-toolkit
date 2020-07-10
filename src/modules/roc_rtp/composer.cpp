@@ -37,9 +37,7 @@ bool Composer::align(core::Slice<uint8_t>& buffer,
             return false;
         }
 
-        buffer.resize(padding);
-        buffer = buffer.range(buffer.size(), buffer.size());
-
+        buffer.reslice(padding, padding);
         return true;
     } else {
         return inner_composer_->align(buffer, header_size, payload_alignment);
@@ -49,7 +47,7 @@ bool Composer::align(core::Slice<uint8_t>& buffer,
 bool Composer::prepare(packet::Packet& packet,
                        core::Slice<uint8_t>& buffer,
                        size_t payload_size) {
-    core::Slice<uint8_t> header = buffer.range(0, 0);
+    core::Slice<uint8_t> header = buffer.subslice(0, 0);
 
     if (header.capacity() < sizeof(Header)) {
         roc_log(LogDebug,
@@ -57,9 +55,9 @@ bool Composer::prepare(packet::Packet& packet,
                 (unsigned long)sizeof(Header), (unsigned long)header.capacity());
         return false;
     }
-    header.resize(sizeof(Header));
+    header.reslice(0, sizeof(Header));
 
-    core::Slice<uint8_t> payload = header.range(header.size(), header.size());
+    core::Slice<uint8_t> payload = header.subslice(header.size(), header.size());
 
     if (inner_composer_ == NULL) {
         if (payload.capacity() < payload_size) {
@@ -68,7 +66,7 @@ bool Composer::prepare(packet::Packet& packet,
                     (unsigned long)payload_size, (unsigned long)payload.capacity());
             return false;
         }
-        payload.resize(payload_size);
+        payload.reslice(0, payload_size);
     } else {
         if (!inner_composer_->prepare(packet, payload, payload_size)) {
             return false;
@@ -82,7 +80,7 @@ bool Composer::prepare(packet::Packet& packet,
     rtp.header = header;
     rtp.payload = payload;
 
-    buffer.resize(header.size() + payload.size());
+    buffer.reslice(0, header.size() + payload.size());
 
     return true;
 }
@@ -111,8 +109,8 @@ bool Composer::pad(packet::Packet& packet, size_t padding_size) {
         return false;
     }
 
-    rtp->padding = rtp->payload.range(payload_size - padding_size, payload_size);
-    rtp->payload = rtp->payload.range(0, payload_size - padding_size);
+    rtp->padding = rtp->payload.subslice(payload_size - padding_size, payload_size);
+    rtp->payload = rtp->payload.subslice(0, payload_size - padding_size);
 
     return true;
 }

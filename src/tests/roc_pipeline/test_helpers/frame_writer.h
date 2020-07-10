@@ -34,7 +34,7 @@ public:
         core::Slice<audio::sample_t> samples(new (pool_)
                                                  core::Buffer<audio::sample_t>(pool_));
         CHECK(samples);
-        samples.resize(num_samples);
+        samples.reslice(0, num_samples);
 
         for (size_t n = 0; n < num_samples; n++) {
             samples.data()[n] = nth_sample(offset_);

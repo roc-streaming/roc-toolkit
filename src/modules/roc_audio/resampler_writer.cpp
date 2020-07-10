@@ -40,7 +40,7 @@ ResamplerWriter::ResamplerWriter(IWriter& writer,
         roc_log(LogError, "resampler writer: can't allocate buffer for output frame");
         return;
     }
-    output_.resize(frame_size);
+    output_.reslice(0, frame_size);
 
     valid_ = true;
 }

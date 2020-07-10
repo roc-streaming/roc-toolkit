@@ -70,7 +70,7 @@ SpeexResampler::SpeexResampler(core::IAllocator&,
         roc_log(LogError, "speex resampler: can't allocate frame buffer");
         return;
     }
-    in_frame_.resize(in_frame_size_);
+    in_frame_.reslice(0, in_frame_size_);
 
     int err = 0;
     speex_state_ = speex_resampler_init(num_ch_, (spx_uint32_t)sample_rate,

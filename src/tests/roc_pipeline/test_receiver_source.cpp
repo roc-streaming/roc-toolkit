@@ -1402,7 +1402,7 @@ TEST(receiver_source, status) {
         new (sample_buffer_pool) core::Buffer<audio::sample_t>(sample_buffer_pool));
 
     CHECK(samples);
-    samples.resize(FramesPerPacket * NumCh);
+    samples.reslice(0, FramesPerPacket * NumCh);
 
     CHECK(receiver.state() == sndio::ISource::Idle);
 

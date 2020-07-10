@@ -97,11 +97,11 @@ bool Parser::parse(packet::Packet& packet, const core::Slice<uint8_t>& buffer) {
     rtp.timestamp = header.timestamp();
     rtp.marker = header.marker();
     rtp.payload_type = header.payload_type();
-    rtp.header = buffer.range(0, header_size);
-    rtp.payload = buffer.range(payload_begin, payload_end);
+    rtp.header = buffer.subslice(0, header_size);
+    rtp.payload = buffer.subslice(payload_begin, payload_end);
 
     if (pad_size) {
-        rtp.padding = buffer.range(payload_end, payload_end + pad_size);
+        rtp.padding = buffer.subslice(payload_end, payload_end + pad_size);
     }
 
     if (const Format* format = format_map_.format(header.payload_type())) {

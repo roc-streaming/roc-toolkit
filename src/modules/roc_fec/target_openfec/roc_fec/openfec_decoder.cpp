@@ -397,7 +397,7 @@ void* OpenfecDecoder::make_buffer_(size_t index) {
         return NULL;
     }
 
-    buffer.resize(payload_size_);
+    buffer.reslice(0, payload_size_);
     buff_tab_[index] = buffer;
 
     return buffer.data();

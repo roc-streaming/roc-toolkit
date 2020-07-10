@@ -187,7 +187,7 @@ void test_parse(const PacketTest& test) {
     core::Slice<uint8_t> buffer = new (buffer_pool) core::Buffer<uint8_t>(buffer_pool);
     CHECK(buffer);
 
-    buffer.resize(test.reference_size);
+    buffer.reslice(0, test.reference_size);
     for (size_t i = 0; i < test.reference_size; i++) {
         buffer.data()[i] = test.reference[i];
     }

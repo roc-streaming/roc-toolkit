@@ -67,7 +67,7 @@ TEST_GROUP(watchdog) {
     core::Slice<sample_t> new_buffer(size_t sz) {
         core::Slice<sample_t> buf =
             new (sample_buffer_pool) core::Buffer<sample_t>(sample_buffer_pool);
-        buf.resize(sz * NumCh);
+        buf.reslice(0, sz * NumCh);
         return buf;
     }
 
