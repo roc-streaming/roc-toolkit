@@ -14,6 +14,8 @@ GitHub Actions build Roc for Linux and macOS. Linux worker uses Docker to run bu
 
 Docker images for continuous integration and cross-compilation are prepared using Docker Hub automated builds. They are based on official upstream images, adding pre-installed packages required for build. Dockerfiles for images are hosted in a separate GitHub repository. When a Dockerfile or an upstream image changes, Docker Hub automatically triggers rebuild.
 
+If images build have to be customized with build arguments it can be accomplished by using :ref:`build hooks`.
+
 Links:
  * `GitHub Actions page <https://github.com/roc-streaming/roc-toolkit/actions>`_
  * `GitHub Actions configuration <https://github.com/roc-streaming/roc-toolkit/blob/master/.github/workflows/build.yml>`_
@@ -44,8 +46,8 @@ rocstreaming/env-archlinux          archlinux/base:latest x86_64        distro d
 rocstreaming/env-alpine             alpine:latest         x86_64        distro default
 =================================== ===================== ============= ================================
 
-Linux cross-compilation
------------------------
+Linux toolchains
+----------------
 
 ============================================================== ============= =========
 Image                                                          Architecture  Compilers
@@ -55,19 +57,27 @@ rocstreaming/toolchain-arm-linux-gnueabihf:gcc-4.9             armv7         gcc
 rocstreaming/toolchain-aarch64-linux-gnu:gcc-7.4               armv8         gcc-7.4
 ============================================================== ============= =========
 
-Android cross-compilation
--------------------------
+Android toolchains
+------------------
 
 ========================================== =========== =================================== =============
 Image                                      APIs        ABIs                                Compilers
 ========================================== =========== =================================== =============
 rocstreaming/toolchain-linux-android:ndk21 21-29       armeabi-v7a, arm64-v8a, x86, x86_64 clang-9.0.8
-rocstreaming/env-android:jdk8              21-29       armeabi-v7a, arm64-v8a, x86, x86_64 clang-9.0.8
-rocstreaming/env-android:jdk11             21-29       armeabi-v7a, arm64-v8a, x86, x86_64 clang-9.0.8
 ========================================== =========== =================================== =============
 
-Run locally
-===========
+Full Android environment
+-------------------------
+
+========================================== ===============================
+Image                                      JDK
+========================================== ===============================
+rocstreaming/env-android:jdk8              openjdk:8u252-jdk-slim-buster
+rocstreaming/env-android:jdk11             openjdk:11.0.7-jdk-slim-buster
+========================================== ===============================
+
+Run builds locally
+==================
 
 It is possible to run Docker-based builds locally, in the same environment as they are run on CI.
 
@@ -120,7 +130,7 @@ Example:
 
 .. code::
 
-    $ docker run -t --rm -v "${PWD}:${PWD}" -w "${PWD}" --env API=28 \
+    $ docker run -t --rm -v "${PWD}:${PWD}" -w "${PWD}" -v android-sdk:/sdk --env API=28 \
       --env NDK_VERSION=21.1.6352462 --env BUILD_TOOLS_VERSION=29.0.3 \
         rocstreaming/env-android:jdk8 \
           scons -Q --compiler=clang --host=aarch64-linux-android28 \
@@ -230,3 +240,40 @@ The ``env-android`` image provides an helper script named ``device`` that takes 
   .. code::
 
       $ device start --name=<AVD-NAME>
+
+.._build hooks:
+
+Docker Hub build hooks
+======================
+
+The `Docker Hub build hooks <https://docs.docker.com/docker-hub/builds/advanced/#custom-build-phase-hooks>`_ allow to provide extra instructions to the autobuild process.
+
+They can be used for example if ARGs have to be passed during image build process.
+
+The ``hooks`` folder in the root location of `Dockerfiles repo <https://github.com/roc-streaming/dockerfiles>`_ provides two hooks for override building and publishing docker images;
+the following steps are needed in order to use them:
+
+* inside ``images`` folder create a subfolder named ``images/<image-name>/hooks``
+
+* ``cd`` into the hooks subfolder and create a symbolic link to build and push hooks
+
+  .. code::
+
+      $ cd images/<image-name>/hooks
+      $ ln -s ../../../hooks/build build
+      $ ln -s ../../../hooks/push push
+
+* create a csv file at ``images/<image-name>/hooks/images.csv`` location; the first line of the file must be header:
+
+    .. code::
+
+        DOCKERFILE;ARGS (comma-separated list);TAG
+
+  Each row of the csv file declares a new image to build and publish.
+
+  In particular the first column specifies the Dockerfile path related to ``images/<image-name>`` location;
+  it can be left empty if the Dockerfile is in the default location.
+
+  The second column is a comma-separated list of ARGs to pass for building docker image.
+
+  The last column is the tag for the docker image. If the Dockerfile location is a subfolder of the default location then the subfolder path is used as the image tag (for example if the Dockerfile is located at ``images/<image-name>/tag1/Dockerfile`` the resulting image would have the tag ``tag1``).
