@@ -45,7 +45,7 @@ Pump::Pump(core::BufferPool<audio::sample_t>& buffer_pool,
         return;
     }
 
-    frame_buffer_.resize(frame_size);
+    frame_buffer_.reslice(0, frame_size);
 }
 
 bool Pump::valid() const {

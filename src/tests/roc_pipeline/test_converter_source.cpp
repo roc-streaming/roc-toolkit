@@ -124,7 +124,7 @@ TEST(converter_source, eof) {
 
     core::Slice<audio::sample_t> samples(
         new (sample_buffer_pool) core::Buffer<audio::sample_t>(sample_buffer_pool));
-    samples.resize(SamplesPerFrame * NumCh);
+    samples.reslice(0, SamplesPerFrame * NumCh);
 
     audio::Frame frame(samples.data(), samples.size());
 

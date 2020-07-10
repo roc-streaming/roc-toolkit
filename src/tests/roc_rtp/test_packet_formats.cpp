@@ -41,7 +41,7 @@ TEST_GROUP(packet_formats) {
     core::Slice<uint8_t> new_buffer(const uint8_t* data, size_t datasz) {
         core::Slice<uint8_t> buf = new (buffer_pool) core::Buffer<uint8_t>(buffer_pool);
         if (data) {
-            buf.resize(datasz);
+            buf.reslice(0, datasz);
             memcpy(buf.data(), data, datasz);
         }
         return buf;

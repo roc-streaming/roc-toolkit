@@ -36,7 +36,7 @@ TEST_GROUP(mixer) {
     core::Slice<sample_t> new_buffer(size_t sz) {
         core::Slice<sample_t> buf =
             new (large_buffer_pool) core::Buffer<sample_t>(large_buffer_pool);
-        buf.resize(sz);
+        buf.reslice(0, sz);
         return buf;
     }
 

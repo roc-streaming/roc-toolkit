@@ -76,7 +76,7 @@ TEST_GROUP(depacketizer) {
         core::Slice<sample_t> buffer =
             new (sample_buffer_pool) core::Buffer<sample_t>(sample_buffer_pool);
         CHECK(buffer);
-        buffer.resize(n_samples * NumCh);
+        buffer.reslice(0, n_samples * NumCh);
         return buffer;
     }
 

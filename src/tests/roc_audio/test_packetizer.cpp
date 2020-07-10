@@ -137,7 +137,7 @@ public:
             new (sample_buffer_pool) core::Buffer<sample_t>(sample_buffer_pool);
         CHECK(buf);
 
-        buf.resize(num_samples * NumCh);
+        buf.reslice(0, num_samples * NumCh);
 
         for (size_t n = 0; n < num_samples; n++) {
             for (size_t c = 0; c < NumCh; c++) {

@@ -81,7 +81,7 @@ TEST_GROUP(encoder_decoder) {
             new (byte_buffer_pool) core::Buffer<uint8_t>(byte_buffer_pool);
         CHECK(bp);
 
-        bp.resize(buffer_size);
+        bp.reslice(0, buffer_size);
 
         return bp;
     }
@@ -267,7 +267,7 @@ TEST(encoder_decoder, incomplete_frames) {
 
             encoder->end();
 
-            bp.resize(encoder->encoded_size(ActualSamplesPerFrame));
+            bp.reslice(0, encoder->encoded_size(ActualSamplesPerFrame));
 
             decoder->begin(ts, bp.data(), bp.size());
 

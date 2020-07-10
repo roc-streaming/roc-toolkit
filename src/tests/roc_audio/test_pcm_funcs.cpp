@@ -41,7 +41,7 @@ TEST_GROUP(pcm_funcs) {
         core::Slice<uint8_t> bp = new (buffer_pool) core::Buffer<uint8_t>(buffer_pool);
         CHECK(bp);
 
-        bp.resize(funcs->payload_size_from_samples(num_samples));
+        bp.reslice(0, funcs->payload_size_from_samples(num_samples));
 
         for (size_t n = 0; n < bp.size(); n++) {
             bp.data()[n] = 0;

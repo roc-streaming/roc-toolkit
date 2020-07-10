@@ -1483,20 +1483,20 @@ TEST(writer_reader, invalid_payload_size) {
                 if (i == 5) {
                     // violates: psize can't change in the middle of a block (source
                     // packet)
-                    p->fec()->payload.resize(FECPayloadSize - 1);
+                    p->fec()->payload.reslice(0, FECPayloadSize - 1);
                 }
                 if (i == NumSourcePackets + 3) {
                     // violates: psize can't change in the middle of a block (repair
                     // packet)
-                    p->fec()->payload.resize(FECPayloadSize - 1);
+                    p->fec()->payload.reslice(0, FECPayloadSize - 1);
                 }
                 if (n_block == 3 && i == 0) {
                     // violates: psize can't be zero (source packet)
-                    p->fec()->payload.resize(0);
+                    p->fec()->payload.reslice(0, 0);
                 }
                 if (n_block == 4 && i == NumSourcePackets) {
                     // violates: psize can't be zero (repair packet)
-                    p->fec()->payload.resize(0);
+                    p->fec()->payload.reslice(0, 0);
                 }
 
                 if (p->flags() & packet::Packet::FlagRepair) {
@@ -1740,7 +1740,7 @@ TEST(writer_reader, zero_payload_size) {
 
                 // two blocks with invalid zero-payload packets
                 if (n_block == 2 || n_block == 4) {
-                    p->fec()->payload.resize(0);
+                    p->fec()->payload.reslice(0, 0);
                 }
 
                 if (p->flags() & packet::Packet::FlagRepair) {

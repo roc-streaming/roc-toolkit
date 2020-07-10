@@ -34,7 +34,7 @@ public:
         core::Slice<audio::sample_t> samples(new (pool_)
                                                  core::Buffer<audio::sample_t>(pool_));
         CHECK(samples);
-        samples.resize(num_samples);
+        samples.reslice(0, num_samples);
 
         audio::Frame frame(samples.data(), samples.size());
         CHECK(source_.read(frame));
@@ -51,7 +51,7 @@ public:
                                                  core::Buffer<audio::sample_t>(pool_));
         CHECK(samples);
 
-        samples.resize(num_samples);
+        samples.reslice(0, num_samples);
         memset(samples.data(), 0, samples.size() * sizeof(audio::sample_t));
 
         audio::Frame frame(samples.data(), samples.size());
