@@ -16,7 +16,7 @@ namespace core {
 
 namespace {
 
-enum { NumObjects = 10, NumEmbed = 5 };
+enum { NumObjects = 10, EmbeddedCap = 5 };
 
 struct Object {
     static long n_objects;
@@ -47,82 +47,82 @@ TEST_GROUP(array) {
 };
 
 TEST(array, empty) {
-    Array<Object, NumEmbed> array(allocator);
+    Array<Object, EmbeddedCap> array(allocator);
 
-    LONGS_EQUAL(0, array.max_size());
+    LONGS_EQUAL(0, array.capacity());
     LONGS_EQUAL(0, array.size());
     LONGS_EQUAL(0, Object::n_objects);
 }
 
 TEST(array, grow) {
-    Array<Object, NumEmbed> array(allocator);
+    Array<Object, EmbeddedCap> array(allocator);
 
     CHECK(array.grow(3));
 
-    LONGS_EQUAL(3, array.max_size());
+    LONGS_EQUAL(3, array.capacity());
     LONGS_EQUAL(0, array.size());
     LONGS_EQUAL(0, Object::n_objects);
 
     CHECK(array.grow(1));
 
-    LONGS_EQUAL(3, array.max_size());
+    LONGS_EQUAL(3, array.capacity());
     LONGS_EQUAL(0, array.size());
     LONGS_EQUAL(0, Object::n_objects);
 }
 
 TEST(array, grow_exp) {
-    Array<Object, NumEmbed> array(allocator);
+    Array<Object, EmbeddedCap> array(allocator);
 
     CHECK(array.grow_exp(3));
 
-    LONGS_EQUAL(4, array.max_size());
+    LONGS_EQUAL(4, array.capacity());
     LONGS_EQUAL(0, array.size());
     LONGS_EQUAL(0, Object::n_objects);
 
     CHECK(array.grow_exp(1));
 
-    LONGS_EQUAL(4, array.max_size());
+    LONGS_EQUAL(4, array.capacity());
     LONGS_EQUAL(0, array.size());
     LONGS_EQUAL(0, Object::n_objects);
 
     CHECK(array.grow_exp(4));
 
-    LONGS_EQUAL(4, array.max_size());
+    LONGS_EQUAL(4, array.capacity());
     LONGS_EQUAL(0, array.size());
     LONGS_EQUAL(0, Object::n_objects);
 
     CHECK(array.grow_exp(5));
 
-    LONGS_EQUAL(8, array.max_size());
+    LONGS_EQUAL(8, array.capacity());
     LONGS_EQUAL(0, array.size());
     LONGS_EQUAL(0, Object::n_objects);
 }
 
 TEST(array, resize) {
-    Array<Object, NumEmbed> array(allocator);
+    Array<Object, EmbeddedCap> array(allocator);
 
     CHECK(array.resize(3));
 
-    LONGS_EQUAL(3, array.max_size());
+    LONGS_EQUAL(3, array.capacity());
     LONGS_EQUAL(3, array.size());
     LONGS_EQUAL(3, Object::n_objects);
 
-    array.resize(1);
+    CHECK(array.resize(1));
 
-    LONGS_EQUAL(3, array.max_size());
+    LONGS_EQUAL(3, array.capacity());
     LONGS_EQUAL(1, array.size());
     LONGS_EQUAL(1, Object::n_objects);
 }
 
 TEST(array, push_back) {
-    Array<Object, NumEmbed> array(allocator);
+    Array<Object, EmbeddedCap> array(allocator);
 
     CHECK(array.grow(NumObjects));
 
     for (size_t n = 0; n < NumObjects; n++) {
         array.push_back(Object(n));
 
-        LONGS_EQUAL(NumObjects, array.max_size());
+        LONGS_EQUAL(NumObjects, array.capacity());
         LONGS_EQUAL(n + 1, array.size());
         LONGS_EQUAL(n + 1, Object::n_objects);
     }
@@ -132,24 +132,8 @@ TEST(array, push_back) {
     }
 }
 
-TEST(array, front_back) {
-    Array<Object, NumEmbed> array(allocator);
-
-    CHECK(array.grow(NumObjects));
-
-    for (size_t n = 0; n < NumObjects; n++) {
-        array.push_back(Object(n));
-
-        LONGS_EQUAL(0, array.front().value);
-        LONGS_EQUAL(n, array.back().value);
-
-        POINTERS_EQUAL(&array[0], &array.front());
-        POINTERS_EQUAL(&array[n], &array.back());
-    }
-}
-
 TEST(array, data) {
-    Array<Object, NumEmbed> array(allocator);
+    Array<Object, EmbeddedCap> array(allocator);
 
     CHECK(array.data() == NULL);
 
@@ -163,22 +147,22 @@ TEST(array, data) {
 }
 
 TEST(array, embedding) {
-    Array<Object, NumEmbed> array(allocator);
+    Array<Object, EmbeddedCap> array(allocator);
 
-    CHECK(array.resize(NumEmbed));
+    CHECK(array.resize(EmbeddedCap));
 
     LONGS_EQUAL(0, allocator.num_allocations());
 
     // data is inside of the array
     CHECK((char*)array.data() >= (char*)&array
-          && (char*)(array.data() + NumEmbed) <= (char*)&array + sizeof(array));
+          && (char*)(array.data() + EmbeddedCap) <= (char*)&array + sizeof(array));
 
     CHECK(array.resize(NumObjects));
 
     LONGS_EQUAL(1, allocator.num_allocations());
 
     // data is outside of the array
-    CHECK((char*)(array.data() + NumEmbed) < (char*)&array
+    CHECK((char*)(array.data() + EmbeddedCap) < (char*)&array
           || (char*)array.data() > (char*)&array + sizeof(array));
 }
 
@@ -186,7 +170,7 @@ TEST(array, constructor_destructor) {
     LONGS_EQUAL(0, allocator.num_allocations());
 
     {
-        Array<Object, NumEmbed> array(allocator);
+        Array<Object, EmbeddedCap> array(allocator);
 
         CHECK(array.grow(3));
 

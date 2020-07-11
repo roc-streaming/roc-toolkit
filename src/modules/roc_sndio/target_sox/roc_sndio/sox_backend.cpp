@@ -319,7 +319,7 @@ bool SoxBackend::get_drivers(core::StringList& list, int filter_flags) {
                     continue;
                 }
 
-                if (!list.push_back_uniq(driver)) {
+                if (!list.push_back_unique(driver)) {
                     return false;
                 }
             }

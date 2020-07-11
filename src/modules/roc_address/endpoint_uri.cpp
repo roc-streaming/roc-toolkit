@@ -284,7 +284,7 @@ bool EndpointURI::set_encoded_path(const char* str, size_t str_len) {
         return false;
     }
 
-    core::StringBuilder b(path_.raw_buf());
+    core::StringBuilder b(path_.char_array());
 
     if (!pct_decode(b, str, str_len)) {
         set_invalid_(PartPath);

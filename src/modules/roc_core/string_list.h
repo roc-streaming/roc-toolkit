@@ -54,7 +54,7 @@ public:
     //!  Reallocates memory if necessary.
     //! @returns
     //!  false if allocation failed.
-    bool push_back_uniq(const char* str);
+    bool push_back_unique(const char* str);
 
     //! Clear the list.
     void clear();
