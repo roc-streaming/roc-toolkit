@@ -25,8 +25,8 @@ TEST(string_buffer, init) {
     UNSIGNED_LONGS_EQUAL(0, sb.len());
     STRCMP_EQUAL("", sb.c_str());
 
-    UNSIGNED_LONGS_EQUAL(1, sb.raw_buf().size());
-    UNSIGNED_LONGS_EQUAL(1, sb.raw_buf().max_size());
+    UNSIGNED_LONGS_EQUAL(1, sb.char_array().size());
+    UNSIGNED_LONGS_EQUAL(1, sb.char_array().capacity());
 }
 
 TEST(string_buffer, set_str) {
@@ -38,8 +38,8 @@ TEST(string_buffer, set_str) {
     UNSIGNED_LONGS_EQUAL(5, sb.len());
     STRCMP_EQUAL("12345", sb.c_str());
 
-    UNSIGNED_LONGS_EQUAL(6, sb.raw_buf().size());
-    UNSIGNED_LONGS_EQUAL(6, sb.raw_buf().max_size());
+    UNSIGNED_LONGS_EQUAL(6, sb.char_array().size());
+    UNSIGNED_LONGS_EQUAL(6, sb.char_array().capacity());
 }
 
 TEST(string_buffer, set_buf) {
@@ -51,8 +51,8 @@ TEST(string_buffer, set_buf) {
     UNSIGNED_LONGS_EQUAL(5, sb.len());
     STRCMP_EQUAL("12345", sb.c_str());
 
-    UNSIGNED_LONGS_EQUAL(6, sb.raw_buf().size());
-    UNSIGNED_LONGS_EQUAL(6, sb.raw_buf().max_size());
+    UNSIGNED_LONGS_EQUAL(6, sb.char_array().size());
+    UNSIGNED_LONGS_EQUAL(6, sb.char_array().capacity());
 }
 
 TEST(string_buffer, set_empty) {
@@ -65,8 +65,8 @@ TEST(string_buffer, set_empty) {
     UNSIGNED_LONGS_EQUAL(0, sb.len());
     STRCMP_EQUAL("", sb.c_str());
 
-    UNSIGNED_LONGS_EQUAL(1, sb.raw_buf().size());
-    UNSIGNED_LONGS_EQUAL(6, sb.raw_buf().max_size());
+    UNSIGNED_LONGS_EQUAL(1, sb.char_array().size());
+    UNSIGNED_LONGS_EQUAL(6, sb.char_array().capacity());
 }
 
 TEST(string_buffer, clear) {
@@ -79,8 +79,8 @@ TEST(string_buffer, clear) {
     UNSIGNED_LONGS_EQUAL(0, sb.len());
     STRCMP_EQUAL("", sb.c_str());
 
-    UNSIGNED_LONGS_EQUAL(1, sb.raw_buf().size());
-    UNSIGNED_LONGS_EQUAL(6, sb.raw_buf().max_size());
+    UNSIGNED_LONGS_EQUAL(1, sb.char_array().size());
+    UNSIGNED_LONGS_EQUAL(6, sb.char_array().capacity());
 }
 
 TEST(string_buffer, overwrite) {
@@ -93,8 +93,8 @@ TEST(string_buffer, overwrite) {
     UNSIGNED_LONGS_EQUAL(5, sb.len());
     STRCMP_EQUAL("12345", sb.c_str());
 
-    UNSIGNED_LONGS_EQUAL(6, sb.raw_buf().size());
-    UNSIGNED_LONGS_EQUAL(9, sb.raw_buf().max_size());
+    UNSIGNED_LONGS_EQUAL(6, sb.char_array().size());
+    UNSIGNED_LONGS_EQUAL(9, sb.char_array().capacity());
 }
 
 TEST(string_buffer, grow) {
@@ -107,8 +107,8 @@ TEST(string_buffer, grow) {
     UNSIGNED_LONGS_EQUAL(5, sb.len());
     STRCMP_EQUAL("12345", sb.c_str());
 
-    UNSIGNED_LONGS_EQUAL(6, sb.raw_buf().size());
-    UNSIGNED_LONGS_EQUAL(10, sb.raw_buf().max_size());
+    UNSIGNED_LONGS_EQUAL(6, sb.char_array().size());
+    UNSIGNED_LONGS_EQUAL(10, sb.char_array().capacity());
 }
 
 } // namespace core

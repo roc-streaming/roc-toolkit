@@ -436,7 +436,7 @@ TEST(string_builder, resize_array) {
         UNSIGNED_LONGS_EQUAL(1, b.needed_size());
         UNSIGNED_LONGS_EQUAL(1, b.actual_size());
 
-        UNSIGNED_LONGS_EQUAL(1, array.max_size());
+        UNSIGNED_LONGS_EQUAL(1, array.capacity());
         UNSIGNED_LONGS_EQUAL(1, array.size());
         STRCMP_EQUAL("", array.data());
 
@@ -446,7 +446,7 @@ TEST(string_builder, resize_array) {
         UNSIGNED_LONGS_EQUAL(5, b.needed_size());
         UNSIGNED_LONGS_EQUAL(5, b.actual_size());
 
-        UNSIGNED_LONGS_EQUAL(5, array.max_size());
+        UNSIGNED_LONGS_EQUAL(5, array.capacity());
         UNSIGNED_LONGS_EQUAL(5, array.size());
         STRCMP_EQUAL("1234", array.data());
 
@@ -456,7 +456,7 @@ TEST(string_builder, resize_array) {
         UNSIGNED_LONGS_EQUAL(9, b.needed_size());
         UNSIGNED_LONGS_EQUAL(9, b.actual_size());
 
-        UNSIGNED_LONGS_EQUAL(9, array.max_size());
+        UNSIGNED_LONGS_EQUAL(9, array.capacity());
         UNSIGNED_LONGS_EQUAL(9, array.size());
         STRCMP_EQUAL("1234abcd", array.data());
     }
@@ -467,7 +467,7 @@ TEST(string_builder, resize_array) {
         UNSIGNED_LONGS_EQUAL(1, b.needed_size());
         UNSIGNED_LONGS_EQUAL(1, b.actual_size());
 
-        UNSIGNED_LONGS_EQUAL(1, array.max_size());
+        UNSIGNED_LONGS_EQUAL(1, array.capacity());
         UNSIGNED_LONGS_EQUAL(1, array.size());
         STRCMP_EQUAL("", array.data());
 
@@ -477,7 +477,7 @@ TEST(string_builder, resize_array) {
         UNSIGNED_LONGS_EQUAL(5, b.needed_size());
         UNSIGNED_LONGS_EQUAL(5, b.actual_size());
 
-        UNSIGNED_LONGS_EQUAL(8, array.max_size());
+        UNSIGNED_LONGS_EQUAL(8, array.capacity());
         UNSIGNED_LONGS_EQUAL(5, array.size());
         STRCMP_EQUAL("1234", array.data());
 
@@ -487,7 +487,7 @@ TEST(string_builder, resize_array) {
         UNSIGNED_LONGS_EQUAL(9, b.needed_size());
         UNSIGNED_LONGS_EQUAL(9, b.actual_size());
 
-        UNSIGNED_LONGS_EQUAL(16, array.max_size());
+        UNSIGNED_LONGS_EQUAL(16, array.capacity());
         UNSIGNED_LONGS_EQUAL(9, array.size());
         STRCMP_EQUAL("1234abcd", array.data());
     }

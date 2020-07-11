@@ -59,7 +59,7 @@ ISource* PulseaudioBackend::open_source(core::IAllocator&,
 
 bool PulseaudioBackend::get_drivers(core::StringList& list, int filter_flags) {
     if (filter_flags & FilterDevice) {
-        return list.push_back_uniq("pulse");
+        return list.push_back_unique("pulse");
     }
     return true;
 }

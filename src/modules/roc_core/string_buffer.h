@@ -25,8 +25,8 @@ namespace core {
 //! Dynamic array storing zero-terminated string. Works on top of Array,
 //! but guarantees that the string is always zero-terminated.
 //!
-//! @tparam EmbedSize is the same as for Array.
-template <size_t EmbedSize = 0> class StringBuffer : public NonCopyable<> {
+//! @tparam EmbeddedCapacity is the same as for Array.
+template <size_t EmbeddedCapacity = 0> class StringBuffer : public NonCopyable<> {
 public:
     //! Initialize empty buffer.
     explicit StringBuffer(IAllocator& allocator)
@@ -35,14 +35,7 @@ public:
     }
 
     //! Underlying array type.
-    typedef Array<char, EmbedSize ? EmbedSize : 1> ArrayType;
-
-    //! Get reference to underlying array.
-    //! The user is responsible to keep array of the exact size
-    //! as the containing string plus terminating zero byte.
-    ArrayType& raw_buf() {
-        return array_;
-    }
+    typedef Array<char, EmbeddedCapacity ? EmbeddedCapacity : 1> ArrayType;
 
     //! Check if buffer is empty.
     bool is_empty() const {
@@ -57,6 +50,13 @@ public:
     //! Get zero-terminated string.
     const char* c_str() const {
         return array_.data();
+    }
+
+    //! Get reference to underlying array.
+    //! The user is responsible to keep array of the exact size
+    //! as the containing string plus terminating zero byte.
+    ArrayType& char_array() {
+        return array_;
     }
 
     //! Set buffer to empty string.

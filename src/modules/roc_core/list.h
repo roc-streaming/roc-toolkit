@@ -23,6 +23,9 @@ namespace core {
 
 //! Intrusive doubly-linked list.
 //!
+//! Does not perform allocations.
+//! Provides O(1) size check, membership check, insertion, and removal.
+//!
 //! @tparam T defines object type, it should inherit ListNode.
 //!
 //! @tparam Ownership defines ownership policy which is used to acquire an element
@@ -67,6 +70,12 @@ public:
         return size_;
     }
 
+    //! Check if element belongs to list.
+    bool contains(const T& element) {
+        const ListNode::ListNodeData* data = element.list_node_data();
+        return (data->list == this);
+    }
+
     //! Get first list element.
     //! @returns
     //!  first element or NULL if list is empty.
@@ -85,12 +94,6 @@ public:
             return NULL;
         }
         return container_of_(head_.prev);
-    }
-
-    //! Check if element belongs to list.
-    bool contains(const T& element) {
-        const ListNode::ListNodeData* data = element.list_node_data();
-        return (data->list == this);
     }
 
     //! Get list element next to given one.
