@@ -10,4 +10,4 @@ scons -Q \
     --enable-benchmarks \
     --build-3rdparty=libuv,openfec,speexdsp,cpputest,google-benchmark \
     --compiler=clang \
-    --host=aarch64-linux-android28
+    --host=x86_64-linux-android$ANDROID_API
