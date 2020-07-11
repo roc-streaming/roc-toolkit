@@ -121,8 +121,8 @@ TEST(string_list, uniq) {
 
     LONGS_EQUAL(3, sl.size());
 
-    CHECK(sl.push_back_uniq("bar"));
-    CHECK(sl.push_back_uniq("qux"));
+    CHECK(sl.push_back_unique("bar"));
+    CHECK(sl.push_back_unique("qux"));
 
     LONGS_EQUAL(4, sl.size());
 

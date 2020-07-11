@@ -77,7 +77,7 @@ bool StringList::push_back(const char* str) {
     return true;
 }
 
-bool StringList::push_back_uniq(const char* str) {
+bool StringList::push_back_unique(const char* str) {
     for (const char* s = front(); s; s = nextof(s)) {
         if (strcmp(s, str) == 0) {
             return true;

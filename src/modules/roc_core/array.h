@@ -12,6 +12,7 @@
 #ifndef ROC_CORE_ARRAY_H_
 #define ROC_CORE_ARRAY_H_
 
+#include "roc_core/alignment.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/log.h"
 #include "roc_core/noncopyable.h"
@@ -23,14 +24,18 @@ namespace core {
 
 //! Dynamic array.
 //!
-//! @b Parameters
+//! Elements are stored continuously in a memory chunk allocated using IAllocator.
+//! Small chunks can be stored directly in Array object, without extra allocation.
+//! Array can be resized only by explicitly calling resize(), grow(), or grow_exp().
+//! Elements are copied during resize and old copies are destroyed.
 //!
-//!  - @tparam T defines array element type.
+//! @tparam T defines array element type. It should have copy constructor and
+//! destructor.
 //!
-//!  - @tparam EmbedSize defines the size of the fixed-size array embedded
-//!    directly into Array object; it is used instead of dynamic memory if
-//!    the array size is small enough.
-template <class T, size_t EmbedSize = 0> class Array : public NonCopyable<> {
+//! @tparam EmbeddedCapacity defines the size of the fixed-size array embedded
+//! directly into Array object; it is used instead of dynamic memory if
+//! the array size is small enough.
+template <class T, size_t EmbeddedCapacity = 0> class Array : public NonCopyable<> {
 public:
     //! Initialize empty array.
     explicit Array(IAllocator& allocator)
@@ -49,7 +54,7 @@ public:
     }
 
     //! Get maximum number of elements.
-    size_t max_size() const {
+    size_t capacity() const {
         return max_size_;
     }
 
@@ -98,46 +103,6 @@ public:
         return data_[index];
     }
 
-    //! Get first element.
-    //! @pre
-    //!  Array should be non-empty.
-    T& front() {
-        if (size_ == 0) {
-            roc_panic("array: attempting to call front() on empty array");
-        }
-        return data_[0];
-    }
-
-    //! Get first element.
-    //! @pre
-    //!  Array should be non-empty.
-    const T& front() const {
-        if (size_ == 0) {
-            roc_panic("array: attempting to call front() on empty array");
-        }
-        return data_[0];
-    }
-
-    //! Get last element.
-    //! @pre
-    //!  Array should be non-empty.
-    T& back() {
-        if (size_ == 0) {
-            roc_panic("array: attempting to call back() on empty array");
-        }
-        return data_[size_ - 1];
-    }
-
-    //! Get last element.
-    //! @pre
-    //!  Array should be non-empty.
-    const T& back() const {
-        if (size_ == 0) {
-            roc_panic("array: attempting to call back() on empty array");
-        }
-        return data_[size_ - 1];
-    }
-
     //! Append element to array.
     //! @pre
     //!  Array size() should be less than max_size().
@@ -176,7 +141,7 @@ public:
         return true;
     }
 
-    //! Increase array maximum size.
+    //! Increase array capacity.
     //! @remarks
     //!  If @p max_sz is greater than the current maximum size, a larger memory
     //!  region is allocated and the array elements are copied there.
@@ -217,7 +182,7 @@ public:
         return true;
     }
 
-    //! Increase exponentially array maximum size.
+    //! Increase array capacity exponentially.
     //! @remarks
     //!  If @p min_size is greater than the current maximum size, a larger memory
     //!  region is allocated and the array elements are copied there.
@@ -248,11 +213,11 @@ public:
 private:
     union Storage {
         MaxAlign align;
-        char mem[EmbedSize ? EmbedSize * sizeof(T) : 1];
+        char mem[EmbeddedCapacity ? EmbeddedCapacity * sizeof(T) : 1];
     };
 
     T* allocate_(size_t n_elems) {
-        if (n_elems <= EmbedSize) {
+        if (n_elems <= EmbeddedCapacity) {
             return (T*)&emb_data_;
         } else {
             return (T*)allocator_.allocate(n_elems * sizeof(T));
