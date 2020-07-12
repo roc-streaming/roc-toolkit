@@ -45,7 +45,7 @@ Xcode versions:
 Android versions:
 
 * NDK versions: 21
-* API levels: 29 (Android 10), 28 (Android 9), 26 (Android 8), 24 (Android 7)
+* API levels: 29 (Android 10), 28 (Android 9), 24 (Android 7)
 * all ABIs: armeabi-v7a, arm64-v8a, x86, x86_64
 
 Hardware architectures:

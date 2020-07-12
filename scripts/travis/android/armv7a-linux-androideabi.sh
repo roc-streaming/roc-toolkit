@@ -10,4 +10,4 @@ scons -Q \
     --enable-benchmarks \
     --build-3rdparty=libuv,openfec,speexdsp,cpputest,google-benchmark \
     --compiler=clang \
-    --host=armv7a-linux-androideabi$ANDROID_API
+    --host=armv7a-linux-androideabi$API
