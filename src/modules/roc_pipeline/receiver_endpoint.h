@@ -18,6 +18,7 @@
 #include "roc_core/mpsc_queue.h"
 #include "roc_core/refcnt.h"
 #include "roc_core/scoped_ptr.h"
+#include "roc_core/optional.h"
 #include "roc_packet/iparser.h"
 #include "roc_packet/iwriter.h"
 #include "roc_pipeline/config.h"
@@ -72,7 +73,7 @@ private:
 
     packet::IParser* parser_;
 
-    core::ScopedPtr<rtp::Parser> rtp_parser_;
+    core::Optional<rtp::Parser> rtp_parser_;
     core::ScopedPtr<packet::IParser> fec_parser_;
 
     core::MpscQueue<packet::Packet> queue_;

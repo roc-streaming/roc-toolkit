@@ -152,7 +152,7 @@ bool SenderEndpointSet::create_pipeline_() {
         return false;
     }
 
-    router_.reset(new (allocator_) packet::Router(allocator_), allocator_);
+    router_.reset(new (router_) packet::Router(allocator_));
     if (!router_) {
         return false;
     }
@@ -168,11 +168,10 @@ bool SenderEndpointSet::create_pipeline_() {
         }
 
         if (config_.interleaving) {
-            interleaver_.reset(new (allocator_) packet::Interleaver(
+            interleaver_.reset(new (interleaver_) packet::Interleaver(
                                    *pwriter, allocator_,
                                    config_.fec_writer.n_source_packets
-                                       + config_.fec_writer.n_repair_packets),
-                               allocator_);
+                                       + config_.fec_writer.n_repair_packets));
             if (!interleaver_ || !interleaver_->valid()) {
                 return false;
             }
@@ -186,12 +185,11 @@ bool SenderEndpointSet::create_pipeline_() {
             return false;
         }
 
-        fec_writer_.reset(new (allocator_) fec::Writer(
+        fec_writer_.reset(new (fec_writer_) fec::Writer(
                               config_.fec_writer, config_.fec_encoder.scheme,
                               *fec_encoder_, *pwriter, source_endpoint_->composer(),
                               repair_endpoint_->composer(), packet_pool_,
-                              byte_buffer_pool_, allocator_),
-                          allocator_);
+                              byte_buffer_pool_, allocator_));
         if (!fec_writer_ || !fec_writer_->valid()) {
             return false;
         }
@@ -203,12 +201,11 @@ bool SenderEndpointSet::create_pipeline_() {
         return false;
     }
 
-    packetizer_.reset(new (allocator_) audio::Packetizer(
+    packetizer_.reset(new (packetizer_) audio::Packetizer(
                           *pwriter, source_endpoint_->composer(), *payload_encoder_,
                           packet_pool_, byte_buffer_pool_, config_.input_channels,
                           config_.packet_length, format->sample_rate,
-                          config_.payload_type),
-                      allocator_);
+                          config_.payload_type));
     if (!packetizer_ || !packetizer_->valid()) {
         return false;
     }
@@ -217,8 +214,7 @@ bool SenderEndpointSet::create_pipeline_() {
 
     if (config_.resampling && config_.input_sample_rate != format->sample_rate) {
         if (config_.poisoning) {
-            resampler_poisoner_.reset(new (allocator_) audio::PoisonWriter(*awriter),
-                                      allocator_);
+            resampler_poisoner_.reset(new (resampler_poisoner_) audio::PoisonWriter(*awriter));
             if (!resampler_poisoner_) {
                 return false;
             }
@@ -235,11 +231,10 @@ bool SenderEndpointSet::create_pipeline_() {
             return false;
         }
 
-        resampler_writer_.reset(new (allocator_) audio::ResamplerWriter(
+        resampler_writer_.reset(new (resampler_writer_) audio::ResamplerWriter(
                                     *awriter, *resampler_, sample_buffer_pool_,
                                     config_.internal_frame_length,
-                                    config_.input_sample_rate, config_.input_channels),
-                                allocator_);
+                                    config_.input_sample_rate, config_.input_channels));
 
         if (!resampler_writer_ || !resampler_writer_->valid()) {
             return false;

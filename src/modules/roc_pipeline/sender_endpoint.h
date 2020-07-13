@@ -16,6 +16,7 @@
 #include "roc_core/mutex.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/scoped_ptr.h"
+#include "roc_core/optional.h"
 #include "roc_packet/icomposer.h"
 #include "roc_packet/iwriter.h"
 #include "roc_pipeline/config.h"
@@ -69,7 +70,7 @@ private:
     packet::IWriter* writer_;
     packet::IComposer* composer_;
 
-    core::ScopedPtr<rtp::Composer> rtp_composer_;
+    core::Optional<rtp::Composer> rtp_composer_;
     core::ScopedPtr<packet::IComposer> fec_composer_;
 };
 
