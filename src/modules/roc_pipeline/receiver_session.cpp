@@ -31,12 +31,12 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
         return;
     }
 
-    queue_router_.reset(new (allocator_) packet::Router(allocator_), allocator_);
+    queue_router_.reset(new (queue_router_) packet::Router(allocator_));
     if (!queue_router_) {
         return;
     }
 
-    source_queue_.reset(new (allocator_) packet::SortedQueue(0), allocator_);
+    source_queue_.reset(new (source_queue_) packet::SortedQueue(0));
     if (!source_queue_) {
         return;
     }
@@ -50,24 +50,22 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
     packet::IReader* preader = source_queue_.get();
 
     delayed_reader_.reset(
-        new (allocator_) packet::DelayedReader(*preader, session_config.target_latency,
-                                               format->sample_rate),
-        allocator_);
+        new (delayed_reader_) packet::DelayedReader(*preader, session_config.target_latency,
+                                               format->sample_rate));
     if (!delayed_reader_) {
         return;
     }
     preader = delayed_reader_.get();
 
-    validator_.reset(new (allocator_) rtp::Validator(
-                         *preader, session_config.rtp_validator, format->sample_rate),
-                     allocator_);
+    validator_.reset(new (validator_) rtp::Validator(
+                         *preader, session_config.rtp_validator, format->sample_rate));
     if (!validator_) {
         return;
     }
     preader = validator_.get();
 
     if (session_config.fec_decoder.scheme != packet::FEC_None) {
-        repair_queue_.reset(new (allocator_) packet::SortedQueue(0), allocator_);
+        repair_queue_.reset(new (repair_queue_) packet::SortedQueue(0));
         if (!repair_queue_) {
             return;
         }
@@ -82,40 +80,37 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
             return;
         }
 
-        fec_parser_.reset(new (allocator_) rtp::Parser(format_map, NULL), allocator_);
+        fec_parser_.reset(new (fec_parser_) rtp::Parser(format_map, NULL));
         if (!fec_parser_) {
             return;
         }
 
-        fec_reader_.reset(new (allocator_) fec::Reader(
+        fec_reader_.reset(new (fec_reader_) fec::Reader(
                               session_config.fec_reader,
                               session_config.fec_decoder.scheme, *fec_decoder_, *preader,
-                              *repair_queue_, *fec_parser_, packet_pool, allocator_),
-                          allocator_);
+                              *repair_queue_, *fec_parser_, packet_pool, allocator_));
         if (!fec_reader_ || !fec_reader_->valid()) {
             return;
         }
         preader = fec_reader_.get();
 
-        fec_validator_.reset(new (allocator_)
+        fec_validator_.reset(new (fec_validator_)
                                  rtp::Validator(*preader, session_config.rtp_validator,
-                                                format->sample_rate),
-                             allocator_);
+                                                format->sample_rate));
         if (!fec_validator_) {
             return;
         }
         preader = fec_validator_.get();
     }
 
-    payload_decoder_.reset(format->new_decoder(allocator_), allocator_);
+payload_decoder_.reset(format->new_decoder(allocator_), allocator_);
     if (!payload_decoder_) {
         return;
     }
 
-    depacketizer_.reset(new (allocator_) audio::Depacketizer(*preader, *payload_decoder_,
+    depacketizer_.reset(new (depacketizer_) audio::Depacketizer(*preader, *payload_decoder_,
                                                              session_config.channels,
-                                                             common_config.beeping),
-                        allocator_);
+                                                             common_config.beeping));
     if (!depacketizer_) {
         return;
     }
@@ -125,11 +120,10 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
     if (session_config.watchdog.no_playback_timeout != 0
         || session_config.watchdog.broken_playback_timeout != 0
         || session_config.watchdog.frame_status_window != 0) {
-        watchdog_.reset(new (allocator_) audio::Watchdog(
+        watchdog_.reset(new (watchdog_) audio::Watchdog(
                             *areader, packet::num_channels(session_config.channels),
                             session_config.watchdog, common_config.output_sample_rate,
-                            allocator_),
-                        allocator_);
+                            allocator_));
         if (!watchdog_ || !watchdog_->valid()) {
             return;
         }
@@ -138,8 +132,7 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
 
     if (common_config.resampling) {
         if (common_config.poisoning) {
-            resampler_poisoner_.reset(new (allocator_) audio::PoisonReader(*areader),
-                                      allocator_);
+            resampler_poisoner_.reset(new (resampler_poisoner_) audio::PoisonReader(*areader));
             if (!resampler_poisoner_) {
                 return;
             }
@@ -158,7 +151,7 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
         }
 
         resampler_reader.reset(
-            new (allocator) audio::ResamplerReader(*areader, *resampler_), allocator);
+            new (resampler_reader) audio::ResamplerReader(*areader, *resampler_));
 
         if (!resampler_reader || !resampler_reader->valid()) {
             return;
@@ -167,20 +160,18 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
     }
 
     if (common_config.poisoning) {
-        session_poisoner_.reset(new (allocator_) audio::PoisonReader(*areader),
-                                allocator_);
+        session_poisoner_.reset(new (session_poisoner_) audio::PoisonReader(*areader));
         if (!session_poisoner_) {
             return;
         }
         areader = session_poisoner_.get();
     }
 
-    latency_monitor_.reset(new (allocator_) audio::LatencyMonitor(
+    latency_monitor_.reset(new (latency_monitor_) audio::LatencyMonitor(
                                *source_queue_, *depacketizer_, resampler_reader.get(),
                                session_config.latency_monitor,
                                session_config.target_latency, format->sample_rate,
-                               common_config.output_sample_rate),
-                           allocator_);
+                               common_config.output_sample_rate));
     if (!latency_monitor_ || !latency_monitor_->valid()) {
         return;
     }

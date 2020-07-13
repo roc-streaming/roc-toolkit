@@ -86,17 +86,16 @@ ReceiverSource::ReceiverSource(ITaskScheduler& scheduler,
     , config_(config)
     , timestamp_(0)
     , num_channels_(packet::num_channels(config.common.output_channels)) {
-    mixer_.reset(new (allocator_) audio::Mixer(
+    mixer_.reset(new (mixer_) audio::Mixer(
                      sample_buffer_pool, config.common.internal_frame_length,
-                     config.common.output_sample_rate, config.common.output_channels),
-                 allocator_);
+                     config.common.output_sample_rate, config.common.output_channels));
     if (!mixer_ || !mixer_->valid()) {
         return;
     }
     audio::IReader* areader = mixer_.get();
 
     if (config.common.poisoning) {
-        poisoner_.reset(new (allocator_) audio::PoisonReader(*areader), allocator_);
+        poisoner_.reset(new (poisoner_) audio::PoisonReader(*areader));
         if (!poisoner_) {
             return;
         }
@@ -104,11 +103,10 @@ ReceiverSource::ReceiverSource(ITaskScheduler& scheduler,
     }
 
     if (config.common.profiling) {
-        profiler_.reset(new (allocator) audio::ProfilingReader(
+        profiler_.reset(new (profiler_) audio::ProfilingReader(
                             *areader, allocator, config.common.output_channels,
                             config.common.output_sample_rate,
-                            config.common.profiler_config),
-                        allocator);
+                            config.common.profiler_config));
         if (!profiler_ || !profiler_->valid()) {
             return;
         }

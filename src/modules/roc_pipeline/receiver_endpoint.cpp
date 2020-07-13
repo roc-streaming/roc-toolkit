@@ -32,7 +32,7 @@ ReceiverEndpoint::ReceiverEndpoint(address::Protocol proto,
     case address::Proto_RTP:
     case address::Proto_RTP_LDPC_Source:
     case address::Proto_RTP_RS8M_Source:
-        rtp_parser_.reset(new (allocator) rtp::Parser(format_map, NULL), allocator);
+        rtp_parser_.reset(new (rtp_parser_) rtp::Parser(format_map, NULL));
         if (!rtp_parser_) {
             return;
         }

@@ -20,6 +20,7 @@
 #include "roc_audio/resampler_reader.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/scoped_ptr.h"
+#include "roc_core/optional.h"
 #include "roc_pipeline/config.h"
 #include "roc_sndio/isource.h"
 
@@ -66,12 +67,12 @@ public:
     virtual bool read(audio::Frame&);
 
 private:
-    core::ScopedPtr<audio::PoisonReader> resampler_poisoner_;
-    core::ScopedPtr<audio::ResamplerReader> resampler_reader_;
+    core::Optional<audio::PoisonReader> resampler_poisoner_;
+    core::Optional<audio::ResamplerReader> resampler_reader_;
     core::ScopedPtr<audio::IResampler> resampler_;
 
-    core::ScopedPtr<audio::PoisonReader> pipeline_poisoner_;
-    core::ScopedPtr<audio::ProfilingReader> profiler_;
+    core::Optional<audio::PoisonReader> pipeline_poisoner_;
+    core::Optional<audio::ProfilingReader> profiler_;
 
     sndio::ISource& input_source_;
     audio::IReader* audio_reader_;
