@@ -26,6 +26,7 @@
 #include "roc_core/list_node.h"
 #include "roc_core/refcnt.h"
 #include "roc_core/scoped_ptr.h"
+#include "roc_core/optional.h"
 #include "roc_fec/iblock_decoder.h"
 #include "roc_fec/reader.h"
 #include "roc_packet/delayed_reader.h"
@@ -85,30 +86,30 @@ private:
 
     audio::IReader* audio_reader_;
 
-    core::ScopedPtr<packet::Router> queue_router_;
+    core::Optional<packet::Router> queue_router_;
 
-    core::ScopedPtr<packet::SortedQueue> source_queue_;
-    core::ScopedPtr<packet::SortedQueue> repair_queue_;
+    core::Optional<packet::SortedQueue> source_queue_;
+    core::Optional<packet::SortedQueue> repair_queue_;
 
-    core::ScopedPtr<packet::DelayedReader> delayed_reader_;
-    core::ScopedPtr<rtp::Validator> validator_;
-    core::ScopedPtr<audio::Watchdog> watchdog_;
+    core::Optional<packet::DelayedReader> delayed_reader_;
+    core::Optional<rtp::Validator> validator_;
+    core::Optional<audio::Watchdog> watchdog_;
 
-    core::ScopedPtr<rtp::Parser> fec_parser_;
+    core::Optional<rtp::Parser> fec_parser_;
     core::ScopedPtr<fec::IBlockDecoder> fec_decoder_;
-    core::ScopedPtr<fec::Reader> fec_reader_;
-    core::ScopedPtr<rtp::Validator> fec_validator_;
+    core::Optional<fec::Reader> fec_reader_;
+    core::Optional<rtp::Validator> fec_validator_;
 
     core::ScopedPtr<audio::IFrameDecoder> payload_decoder_;
-    core::ScopedPtr<audio::Depacketizer> depacketizer_;
+    core::Optional<audio::Depacketizer> depacketizer_;
 
-    core::ScopedPtr<audio::PoisonReader> resampler_poisoner_;
-    core::ScopedPtr<audio::ResamplerReader> resampler_reader;
+    core::Optional<audio::PoisonReader> resampler_poisoner_;
+    core::Optional<audio::ResamplerReader> resampler_reader;
     core::ScopedPtr<audio::IResampler> resampler_;
 
-    core::ScopedPtr<audio::PoisonReader> session_poisoner_;
+    core::Optional<audio::PoisonReader> session_poisoner_;
 
-    core::ScopedPtr<audio::LatencyMonitor> latency_monitor_;
+    core::Optional<audio::LatencyMonitor> latency_monitor_;
 };
 
 } // namespace pipeline

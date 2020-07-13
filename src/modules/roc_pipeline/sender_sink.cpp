@@ -103,8 +103,7 @@ SenderSink::SenderSink(ITaskScheduler& scheduler,
     , timestamp_(0)
     , num_channels_(packet::num_channels(config_.input_channels)) {
     if (config_.timing) {
-        ticker_.reset(new (allocator_) core::Ticker(config_.input_sample_rate),
-                      allocator_);
+        ticker_.reset(new (ticker_) core::Ticker(config_.input_sample_rate));
         if (!ticker_) {
             return;
         }
@@ -113,8 +112,7 @@ SenderSink::SenderSink(ITaskScheduler& scheduler,
     audio::IWriter* awriter = &fanout_;
 
     if (config_.poisoning) {
-        pipeline_poisoner_.reset(new (allocator) audio::PoisonWriter(*awriter),
-                                 allocator);
+        pipeline_poisoner_.reset(new (pipeline_poisoner_) audio::PoisonWriter(*awriter));
         if (!pipeline_poisoner_) {
             return;
         }
@@ -122,10 +120,9 @@ SenderSink::SenderSink(ITaskScheduler& scheduler,
     }
 
     if (config.profiling) {
-        profiler_.reset(new (allocator) audio::ProfilingWriter(
+        profiler_.reset(new (profiler_) audio::ProfilingWriter(
                             *awriter, allocator, config.input_channels,
-                            config.input_sample_rate, config.profiler_config),
-                        allocator);
+                            config.input_sample_rate, config.profiler_config));
         if (!profiler_ || !profiler_->valid()) {
             return;
         }

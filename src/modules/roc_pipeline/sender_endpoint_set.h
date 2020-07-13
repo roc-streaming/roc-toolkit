@@ -25,6 +25,7 @@
 #include "roc_core/noncopyable.h"
 #include "roc_core/refcnt.h"
 #include "roc_core/scoped_ptr.h"
+#include "roc_core/optional.h"
 #include "roc_fec/iblock_encoder.h"
 #include "roc_fec/writer.h"
 #include "roc_packet/interleaver.h"
@@ -84,18 +85,18 @@ private:
     core::ScopedPtr<SenderEndpoint> source_endpoint_;
     core::ScopedPtr<SenderEndpoint> repair_endpoint_;
 
-    core::ScopedPtr<packet::Router> router_;
+    core::Optional<packet::Router> router_;
 
-    core::ScopedPtr<packet::Interleaver> interleaver_;
+    core::Optional<packet::Interleaver> interleaver_;
 
     core::ScopedPtr<fec::IBlockEncoder> fec_encoder_;
-    core::ScopedPtr<fec::Writer> fec_writer_;
+    core::Optional<fec::Writer> fec_writer_;
 
     core::ScopedPtr<audio::IFrameEncoder> payload_encoder_;
-    core::ScopedPtr<audio::Packetizer> packetizer_;
+    core::Optional<audio::Packetizer> packetizer_;
 
-    core::ScopedPtr<audio::PoisonWriter> resampler_poisoner_;
-    core::ScopedPtr<audio::ResamplerWriter> resampler_writer_;
+    core::Optional<audio::PoisonWriter> resampler_poisoner_;
+    core::Optional<audio::ResamplerWriter> resampler_writer_;
     core::ScopedPtr<audio::IResampler> resampler_;
 
     audio::IWriter* audio_writer_;

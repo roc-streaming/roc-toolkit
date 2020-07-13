@@ -25,7 +25,7 @@ SenderEndpoint::SenderEndpoint(address::Protocol proto, core::IAllocator& alloca
     case address::Proto_RTP:
     case address::Proto_RTP_LDPC_Source:
     case address::Proto_RTP_RS8M_Source:
-        rtp_composer_.reset(new (allocator) rtp::Composer(NULL), allocator);
+        rtp_composer_.reset(new (rtp_composer_) rtp::Composer(NULL));
         if (!rtp_composer_) {
             return;
         }
