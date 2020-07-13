@@ -21,7 +21,7 @@
 #include "roc_core/buffer_pool.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/noncopyable.h"
-#include "roc_core/scoped_ptr.h"
+#include "roc_core/optional.h"
 #include "roc_core/ticker.h"
 #include "roc_fec/iblock_encoder.h"
 #include "roc_fec/writer.h"
@@ -170,11 +170,11 @@ private:
 
     audio::Fanout fanout_;
 
-    core::ScopedPtr<audio::PoisonWriter> pipeline_poisoner_;
+    core::Optional<audio::PoisonWriter> pipeline_poisoner_;
 
-    core::ScopedPtr<audio::ProfilingWriter> profiler_;
+    core::Optional<audio::ProfilingWriter> profiler_;
 
-    core::ScopedPtr<core::Ticker> ticker_;
+    core::Optional<core::Ticker> ticker_;
 
     audio::IWriter* audio_writer_;
 

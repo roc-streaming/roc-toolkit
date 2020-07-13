@@ -19,7 +19,7 @@
 #include "roc_core/buffer_pool.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/mutex.h"
-#include "roc_core/scoped_ptr.h"
+#include "roc_core/optional.h"
 #include "roc_core/stddefs.h"
 #include "roc_packet/ireader.h"
 #include "roc_packet/iwriter.h"
@@ -162,9 +162,9 @@ private:
 
     core::Ticker ticker_;
 
-    core::ScopedPtr<audio::Mixer> mixer_;
-    core::ScopedPtr<audio::PoisonReader> poisoner_;
-    core::ScopedPtr<audio::ProfilingReader> profiler_;
+    core::Optional<audio::Mixer> mixer_;
+    core::Optional<audio::PoisonReader> poisoner_;
+    core::Optional<audio::ProfilingReader> profiler_;
 
     audio::IReader* audio_reader_;
 

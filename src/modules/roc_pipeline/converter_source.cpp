@@ -25,8 +25,7 @@ ConverterSource::ConverterSource(const ConverterConfig& config,
 
     if (config.resampling && config.output_sample_rate != config.input_sample_rate) {
         if (config.poisoning) {
-            resampler_poisoner_.reset(new (allocator) audio::PoisonReader(*areader),
-                                      allocator);
+            resampler_poisoner_.reset(new (resampler_poisoner_) audio::PoisonReader(*areader));
             if (!resampler_poisoner_) {
                 return;
             }
@@ -44,7 +43,7 @@ ConverterSource::ConverterSource(const ConverterConfig& config,
         }
 
         resampler_reader_.reset(
-            new (allocator) audio::ResamplerReader(*areader, *resampler_), allocator);
+            new (resampler_reader_) audio::ResamplerReader(*areader, *resampler_));
 
         if (!resampler_reader_ || !resampler_reader_->valid()) {
             return;
@@ -57,8 +56,7 @@ ConverterSource::ConverterSource(const ConverterConfig& config,
     }
 
     if (config.poisoning) {
-        pipeline_poisoner_.reset(new (allocator) audio::PoisonReader(*areader),
-                                 allocator);
+        pipeline_poisoner_.reset(new (pipeline_poisoner_) audio::PoisonReader(*areader));
         if (!pipeline_poisoner_) {
             return;
         }
@@ -66,10 +64,9 @@ ConverterSource::ConverterSource(const ConverterConfig& config,
     }
 
     if (config.profiling) {
-        profiler_.reset(new (allocator) audio::ProfilingReader(
+        profiler_.reset(new (profiler_) audio::ProfilingReader(
                             *areader, allocator, config.output_channels,
-                            config.output_sample_rate, config.profiler_config),
-                        allocator);
+                            config.output_sample_rate, config.profiler_config));
         if (!profiler_ || !profiler_->valid()) {
             return;
         }
