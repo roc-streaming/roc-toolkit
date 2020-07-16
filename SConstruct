@@ -1334,8 +1334,7 @@ if sanitizers:
         env.Die("sanitizers are not supported for compiler '%s'" % compiler)
 
     for name in sanitizers:
-        flags = ['-fsanitize=%s' % name]
-
+        flags = ['-fsanitize=%s' % name, '-fno-sanitize-recover=%s' % name]
         env.AppendUnique(CFLAGS=flags)
         env.AppendUnique(CXXFLAGS=flags)
         env.AppendUnique(LINKFLAGS=flags)

@@ -9,6 +9,7 @@
 #include "config_helpers.h"
 
 #include "roc_audio/resampler_profile.h"
+#include "roc_core/attributes.h"
 #include "roc_core/log.h"
 
 namespace roc {
@@ -236,7 +237,8 @@ bool receiver_config_from_user(pipeline::ReceiverConfig& out,
     return true;
 }
 
-bool interface_from_user(address::Interface& out, roc_interface in) {
+ROC_ATTR_NO_SANITIZE_UB
+bool interface_from_user(address::Interface& out, const roc_interface& in) {
     switch ((int)in) {
     case ROC_INTERFACE_AUDIO_SOURCE:
         out = address::Iface_AudioSource;
@@ -254,7 +256,8 @@ bool interface_from_user(address::Interface& out, roc_interface in) {
     return false;
 }
 
-bool proto_from_user(address::Protocol& out, roc_protocol in) {
+ROC_ATTR_NO_SANITIZE_UB
+bool proto_from_user(address::Protocol& out, const roc_protocol& in) {
     switch ((int)in) {
     case ROC_PROTO_RTSP:
         out = address::Proto_RTSP;
