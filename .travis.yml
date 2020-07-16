@@ -160,4 +160,4 @@ jobs:
         - scripts/travis/trigger.sh roc-streaming%2Froc-streaming.github.io travis
 
 notifications:
-    webhooks: https://www.travisbuddy.com/?insertMode=update
+    webhooks: https://www.travisbuddy.com/
