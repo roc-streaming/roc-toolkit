@@ -1,0 +1,16 @@
+name: "Set issue column by label"
+
+on:
+  issues:
+    types: [labeled]
+
+jobs:
+  main:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: konradpabjan/move-labeled-or-milestoned-issue@v2.0
+      with:
+        action-token: "${{ secrets.REPO_MANAGEMENT }}"
+        project-url: "https://github.com/roc-streaming/roc-toolkit/projects/2"
+        column-name: "Help wanted"
+        label-name: "help wanted"
