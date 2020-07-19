@@ -28,7 +28,8 @@ ConverterSink::ConverterSink(const ConverterConfig& config,
 
     if (config.resampling) {
         if (config.poisoning) {
-            resampler_poisoner_.reset(new (resampler_poisoner_) audio::PoisonWriter(*awriter));
+            resampler_poisoner_.reset(new (resampler_poisoner_)
+                                          audio::PoisonWriter(*awriter));
             if (!resampler_poisoner_) {
                 return;
             }
@@ -46,9 +47,8 @@ ConverterSink::ConverterSink(const ConverterConfig& config,
         }
 
         resampler_writer_.reset(new (resampler_writer_) audio::ResamplerWriter(
-                                    *awriter, *resampler_, pool,
-                                    config.internal_frame_length,
-                                    config.input_sample_rate, config.input_channels));
+            *awriter, *resampler_, pool, config.internal_frame_length,
+            config.input_sample_rate, config.input_channels));
 
         if (!resampler_writer_ || !resampler_writer_->valid()) {
             return;
@@ -70,8 +70,8 @@ ConverterSink::ConverterSink(const ConverterConfig& config,
 
     if (config.profiling) {
         profiler_.reset(new (profiler_) audio::ProfilingWriter(
-                            *awriter, allocator, config.input_channels,
-                            config.input_sample_rate, config.profiler_config));
+            *awriter, allocator, config.input_channels, config.input_sample_rate,
+            config.profiler_config));
         if (!profiler_ || !profiler_->valid()) {
             return;
         }
