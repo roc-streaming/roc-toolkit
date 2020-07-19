@@ -33,14 +33,14 @@ public:
         }
     }
 
-    //! Set pointer to the newly created object.
+    //! Set pointer to the newly created object, destroy old pointed object if set.
     //! @pre
     //!  @p ptr should be returned by associated placement new.
     void reset(T* ptr) {
         if (ptr_) {
-            roc_panic("optional: attempt to reset more than once");
+            ptr_->~T();
         }
-        if ((void*)ptr != storage_.mem) {
+        if (ptr && (void*)ptr != storage_.mem) {
             roc_panic("optional: attempt to set incorrect object");
         }
         ptr_ = ptr;

@@ -66,11 +66,11 @@ void ReceiverEndpointSet::delete_endpoint(address::Interface iface) {
 
     switch ((int)iface) {
     case address::Iface_AudioSource:
-        source_endpoint_.reset();
+        source_endpoint_.reset(NULL);
         return;
 
     case address::Iface_AudioRepair:
-        repair_endpoint_.reset();
+        repair_endpoint_.reset(NULL);
         return;
 
     default:
@@ -110,14 +110,12 @@ ReceiverEndpoint* ReceiverEndpointSet::create_source_endpoint_(address::Protocol
         }
     }
 
-    source_endpoint_.reset(new (allocator_)
-                               ReceiverEndpoint(proto, receiver_state_, session_group_,
-                                                format_map_, allocator_),
-                           allocator_);
+    source_endpoint_.reset(new (source_endpoint_) ReceiverEndpoint(
+        proto, receiver_state_, session_group_, format_map_, allocator_));
 
     if (!source_endpoint_ || !source_endpoint_->valid()) {
         roc_log(LogError, "receiver endpoint set: can't create source endpoint");
-        source_endpoint_.reset();
+        source_endpoint_.reset(NULL);
         return NULL;
     }
 
@@ -140,14 +138,12 @@ ReceiverEndpoint* ReceiverEndpointSet::create_repair_endpoint_(address::Protocol
         }
     }
 
-    repair_endpoint_.reset(new (allocator_)
-                               ReceiverEndpoint(proto, receiver_state_, session_group_,
-                                                format_map_, allocator_),
-                           allocator_);
+    repair_endpoint_.reset(new (repair_endpoint_) ReceiverEndpoint(
+        proto, receiver_state_, session_group_, format_map_, allocator_));
 
     if (!repair_endpoint_ || !repair_endpoint_->valid()) {
         roc_log(LogError, "receiver endpoint set: can't create repair endpoint");
-        repair_endpoint_.reset();
+        repair_endpoint_.reset(NULL);
         return NULL;
     }
 

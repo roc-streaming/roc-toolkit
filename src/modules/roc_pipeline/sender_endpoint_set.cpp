@@ -100,11 +100,10 @@ SenderEndpoint* SenderEndpointSet::create_source_endpoint_(address::Protocol pro
         return NULL;
     }
 
-    source_endpoint_.reset(new (allocator_) SenderEndpoint(proto, allocator_),
-                           allocator_);
+    source_endpoint_.reset(new (source_endpoint_) SenderEndpoint(proto, allocator_));
     if (!source_endpoint_ || !source_endpoint_->valid()) {
         roc_log(LogError, "sender endpoint set: can't create source endpoint");
-        source_endpoint_.reset();
+        source_endpoint_.reset(NULL);
         return NULL;
     }
 
@@ -132,11 +131,10 @@ SenderEndpoint* SenderEndpointSet::create_repair_endpoint_(address::Protocol pro
         return NULL;
     }
 
-    repair_endpoint_.reset(new (allocator_) SenderEndpoint(proto, allocator_),
-                           allocator_);
+    repair_endpoint_.reset(new (repair_endpoint_) SenderEndpoint(proto, allocator_));
     if (!repair_endpoint_ || !repair_endpoint_->valid()) {
         roc_log(LogError, "sender endpoint set: can't create repair endpoint");
-        repair_endpoint_.reset();
+        repair_endpoint_.reset(NULL);
         return NULL;
     }
 
@@ -169,9 +167,9 @@ bool SenderEndpointSet::create_pipeline_() {
 
         if (config_.interleaving) {
             interleaver_.reset(new (interleaver_) packet::Interleaver(
-                                   *pwriter, allocator_,
-                                   config_.fec_writer.n_source_packets
-                                       + config_.fec_writer.n_repair_packets));
+                *pwriter, allocator_,
+                config_.fec_writer.n_source_packets
+                    + config_.fec_writer.n_repair_packets));
             if (!interleaver_ || !interleaver_->valid()) {
                 return false;
             }
@@ -186,10 +184,9 @@ bool SenderEndpointSet::create_pipeline_() {
         }
 
         fec_writer_.reset(new (fec_writer_) fec::Writer(
-                              config_.fec_writer, config_.fec_encoder.scheme,
-                              *fec_encoder_, *pwriter, source_endpoint_->composer(),
-                              repair_endpoint_->composer(), packet_pool_,
-                              byte_buffer_pool_, allocator_));
+            config_.fec_writer, config_.fec_encoder.scheme, *fec_encoder_, *pwriter,
+            source_endpoint_->composer(), repair_endpoint_->composer(), packet_pool_,
+            byte_buffer_pool_, allocator_));
         if (!fec_writer_ || !fec_writer_->valid()) {
             return false;
         }
@@ -202,10 +199,9 @@ bool SenderEndpointSet::create_pipeline_() {
     }
 
     packetizer_.reset(new (packetizer_) audio::Packetizer(
-                          *pwriter, source_endpoint_->composer(), *payload_encoder_,
-                          packet_pool_, byte_buffer_pool_, config_.input_channels,
-                          config_.packet_length, format->sample_rate,
-                          config_.payload_type));
+        *pwriter, source_endpoint_->composer(), *payload_encoder_, packet_pool_,
+        byte_buffer_pool_, config_.input_channels, config_.packet_length,
+        format->sample_rate, config_.payload_type));
     if (!packetizer_ || !packetizer_->valid()) {
         return false;
     }
@@ -214,7 +210,8 @@ bool SenderEndpointSet::create_pipeline_() {
 
     if (config_.resampling && config_.input_sample_rate != format->sample_rate) {
         if (config_.poisoning) {
-            resampler_poisoner_.reset(new (resampler_poisoner_) audio::PoisonWriter(*awriter));
+            resampler_poisoner_.reset(new (resampler_poisoner_)
+                                          audio::PoisonWriter(*awriter));
             if (!resampler_poisoner_) {
                 return false;
             }
@@ -232,9 +229,8 @@ bool SenderEndpointSet::create_pipeline_() {
         }
 
         resampler_writer_.reset(new (resampler_writer_) audio::ResamplerWriter(
-                                    *awriter, *resampler_, sample_buffer_pool_,
-                                    config_.internal_frame_length,
-                                    config_.input_sample_rate, config_.input_channels));
+            *awriter, *resampler_, sample_buffer_pool_, config_.internal_frame_length,
+            config_.input_sample_rate, config_.input_channels));
 
         if (!resampler_writer_ || !resampler_writer_->valid()) {
             return false;
