@@ -71,8 +71,8 @@ private:
     ReceiverState& receiver_state_;
     ReceiverSessionGroup session_group_;
 
-    core::ScopedPtr<ReceiverEndpoint> source_endpoint_;
-    core::ScopedPtr<ReceiverEndpoint> repair_endpoint_;
+    core::Optional<ReceiverEndpoint> source_endpoint_;
+    core::Optional<ReceiverEndpoint> repair_endpoint_;
 };
 
 } // namespace pipeline
