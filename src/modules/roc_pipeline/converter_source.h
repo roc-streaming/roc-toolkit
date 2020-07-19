@@ -19,8 +19,8 @@
 #include "roc_audio/resampler_profile.h"
 #include "roc_audio/resampler_reader.h"
 #include "roc_core/buffer_pool.h"
-#include "roc_core/scoped_ptr.h"
 #include "roc_core/optional.h"
+#include "roc_core/scoped_ptr.h"
 #include "roc_pipeline/config.h"
 #include "roc_sndio/isource.h"
 

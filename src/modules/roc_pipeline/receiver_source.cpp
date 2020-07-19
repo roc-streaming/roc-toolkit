@@ -87,8 +87,8 @@ ReceiverSource::ReceiverSource(ITaskScheduler& scheduler,
     , timestamp_(0)
     , num_channels_(packet::num_channels(config.common.output_channels)) {
     mixer_.reset(new (mixer_) audio::Mixer(
-                     sample_buffer_pool, config.common.internal_frame_length,
-                     config.common.output_sample_rate, config.common.output_channels));
+        sample_buffer_pool, config.common.internal_frame_length,
+        config.common.output_sample_rate, config.common.output_channels));
     if (!mixer_ || !mixer_->valid()) {
         return;
     }
@@ -104,9 +104,8 @@ ReceiverSource::ReceiverSource(ITaskScheduler& scheduler,
 
     if (config.common.profiling) {
         profiler_.reset(new (profiler_) audio::ProfilingReader(
-                            *areader, allocator, config.common.output_channels,
-                            config.common.output_sample_rate,
-                            config.common.profiler_config));
+            *areader, allocator, config.common.output_channels,
+            config.common.output_sample_rate, config.common.profiler_config));
         if (!profiler_ || !profiler_->valid()) {
             return;
         }

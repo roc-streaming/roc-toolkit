@@ -23,9 +23,9 @@
 #include "roc_core/buffer_pool.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/noncopyable.h"
+#include "roc_core/optional.h"
 #include "roc_core/refcnt.h"
 #include "roc_core/scoped_ptr.h"
-#include "roc_core/optional.h"
 #include "roc_fec/iblock_encoder.h"
 #include "roc_fec/writer.h"
 #include "roc_packet/interleaver.h"
@@ -82,8 +82,8 @@ private:
 
     core::IAllocator& allocator_;
 
-    core::ScopedPtr<SenderEndpoint> source_endpoint_;
-    core::ScopedPtr<SenderEndpoint> repair_endpoint_;
+    core::Optional<SenderEndpoint> source_endpoint_;
+    core::Optional<SenderEndpoint> repair_endpoint_;
 
     core::Optional<packet::Router> router_;
 
