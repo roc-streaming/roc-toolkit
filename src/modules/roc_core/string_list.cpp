@@ -64,6 +64,10 @@ bool StringList::push_back(const char* str) {
 }
 
 bool StringList::push_back_unique(const char* str) {
+    if (str == NULL) {
+        roc_panic("stringlist: string is null");
+    }
+
     for (const char* s = front(); s; s = nextof(s)) {
         if (strcmp(s, str) == 0) {
             return true;
@@ -74,7 +78,7 @@ bool StringList::push_back_unique(const char* str) {
 
 bool StringList::push_back_range(const char* begin, const char* end) {
     if (begin == NULL || end == NULL || begin > end) {
-        roc_panic("stringlist: string is null");
+        roc_panic("stringlist: invalid range");
     }
 
     const size_t cur_sz = data_.size();
