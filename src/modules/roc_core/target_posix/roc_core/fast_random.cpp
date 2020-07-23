@@ -18,14 +18,28 @@ namespace roc {
 namespace core {
 
 namespace {
+pthread_key_t rand_key;
 
-pthread_mutex_t rand_mutex = PTHREAD_MUTEX_INITIALIZER;
-
-bool rand_init = false;
+pthread_once_t rand_key_once = PTHREAD_ONCE_INIT;
 
 unsigned short rand_seed[3] = {};
 
 } // namespace
+
+void do_init();
+
+// Thread initiliazer routine
+void do_init() {
+    pthread_key_create(&rand_key, NULL);
+    if (int err = pthread_key_create(&rand_key, NULL)) {
+        roc_panic("fast random: pthread_key_create(): %s", errno_to_str(err).c_str());
+    }
+    const nanoseconds_t seed_48 = timestamp();
+    rand_seed[0] = (seed_48 & 0xffff);
+    rand_seed[1] = ((seed_48 >> 16) & 0xffff);
+    rand_seed[2] = ((seed_48 >> 32) & 0xffff);
+    return;
+}
 
 // The implementation is based on "Debiased Modulo (Once) — Java's Method" algorithm
 // from https://www.pcg-random.org/posts/bounded-rands.html
@@ -42,26 +56,18 @@ uint32_t fast_random(uint32_t from, uint32_t to) {
 
     uint64_t x, r;
 
-    if (int err = pthread_mutex_lock(&rand_mutex)) {
-        roc_panic("fast random: pthread_mutex_lock(): %s", errno_to_str(err).c_str());
-    }
+    pthread_once(&rand_key_once, do_init);
 
-    if (!rand_init) {
-        rand_init = true;
-        const nanoseconds_t seed_48 = timestamp();
-        rand_seed[0] = (seed_48 & 0xffff);
-        rand_seed[1] = ((seed_48 >> 16) & 0xffff);
-        rand_seed[2] = ((seed_48 >> 32) & 0xffff);
+    unsigned short *val = (unsigned short *) pthread_getspecific(rand_key);
+    if (val == NULL) {
+        val = rand_seed;
+        pthread_setspecific(rand_key, &rand_seed);
     }
 
     do {
-        x = (uint64_t)nrand48(rand_seed);
+        x = (uint64_t)nrand48(val);
         r = x % range;
     } while (x - r > (-range));
-
-    if (int err = pthread_mutex_unlock(&rand_mutex)) {
-        roc_panic("fast random: pthread_mutex_unlock(): %s", errno_to_str(err).c_str());
-    }
 
     const uint32_t ret = from + (uint32_t)r;
 
