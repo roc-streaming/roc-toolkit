@@ -18,6 +18,7 @@ done
          -v android-sdk:/sdk \
          -v "${TRAVIS_BUILD_DIR:-`pwd`}":/opt/roc \
          -w /opt/roc \
+         --privileged \
          "${env[@]}" \
          rocstreaming/env-android \
          "$@" )
