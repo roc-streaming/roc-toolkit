@@ -49,7 +49,6 @@ env = Environment(ENV=os.environ, tools=[
 # performance tuning
 env.Decider('MD5-timestamp')
 env.SetOption('implicit_cache', 1)
-env.SourceCode('.', None)
 
 # provide absolute path to force single sconsign file
 # per-directory sconsign files seems to be buggy with generated sources
