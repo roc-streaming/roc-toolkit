@@ -58,7 +58,7 @@ uint32_t fast_random(uint32_t from, uint32_t to) {
 
     pthread_once(&rand_key_once, do_init);
 
-    unsigned short *val = (unsigned short *) pthread_getspecific(rand_key);
+    unsigned short* val = (unsigned short*)pthread_getspecific(rand_key);
     if (val == NULL) {
         val = rand_seed;
         pthread_setspecific(rand_key, &rand_seed);
