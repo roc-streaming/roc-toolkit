@@ -106,12 +106,16 @@ jobs:
     - name: "Android x86"
       stage: Build
       os: linux
-      dist: trusty
+      dist: bionic
       sudo: required
       services:
         - docker
       before_install:
         - docker pull rocstreaming/env-android
+        - sudo apt-get update
+        - sudo apt-get install -y qemu-kvm libvirt-bin bridge-utils virtinst virt-manager
+        - sudo adduser $USER libvirt
+        - sudo adduser $USER kvm
       script:
         - scripts/travis/android.sh API=24 NDK_VERSION=21.1.6352462 ABI=x86_64 scripts/travis/android/linux-android.sh
         - scripts/travis/android.sh API=24 NDK_VERSION=21.1.6352462 ABI=i686 scripts/travis/android/linux-android.sh
