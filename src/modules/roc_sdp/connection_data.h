@@ -35,6 +35,9 @@ public:
     bool
     set_connection_address(address::AddrFamily addrtype, const char* str, size_t str_len);
 
+    //! The SocketAddr of the ConnectionData.
+    const address::SocketAddr& connection_address() const;
+
 private:
     address::SocketAddr connection_address_;
 };

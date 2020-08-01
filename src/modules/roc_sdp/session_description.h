@@ -62,11 +62,31 @@ public:
                                      const char* str,
                                      size_t str_len);
 
+    //! Get reference to the connection data of the session.
+    const ConnectionData& session_connection_data();
+
     //! Create and add a new empty media description.
     bool add_media_description();
 
     //! Get a shared pointer to the last added media description.
     const core::SharedPtr<MediaDescription> last_media_description() const;
+
+    //! Get a shared pointer to the first added media description.
+    const core::SharedPtr<MediaDescription> first_media_description() const;
+
+    //! Get a const reference to the list of media descriptions.
+    const core::List<MediaDescription> get_media_descriptions() const;
+
+    //! Get list media description next to given one.
+    //!
+    //! @returns
+    //!  list media description following @p element if @p element is not
+    //!  last, or NULL otherwise.
+    //!
+    //! @pre
+    //!  @p element should be member of the list of media descriptions.
+    const core::SharedPtr<MediaDescription>
+    nextof_media_description(core::SharedPtr<MediaDescription> element) const;
 
 private:
     core::StringBuffer<> guid_;
