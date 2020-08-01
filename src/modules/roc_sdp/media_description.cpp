@@ -24,7 +24,7 @@ void MediaDescription::clear() {
     type_ = MediaType_None;
     port_ = 0;
     nb_ports_ = 0;
-    proto_ = MediaTransport_None;
+    transport_ = MediaTransport_None;
 }
 
 MediaType MediaDescription::type() const {
@@ -39,8 +39,8 @@ int MediaDescription::nb_ports() const {
     return nb_ports_;
 }
 
-MediaTransport MediaDescription::proto() const {
-    return proto_;
+MediaTransport MediaDescription::transport() const {
+    return transport_;
 }
 
 unsigned MediaDescription::default_payload_id() const {
@@ -49,7 +49,23 @@ unsigned MediaDescription::default_payload_id() const {
             "media description: MediaDescription should have at least one payload id.");
     }
 
-    return payload_ids_.front();
+    return *payload_ids_.data();
+}
+
+size_t MediaDescription::nb_payload_ids() const {
+    return payload_ids_.size();
+}
+
+unsigned MediaDescription::payload_id(size_t i) const {
+    return payload_ids_[i];
+}
+
+size_t MediaDescription::nb_connection_data() const {
+    return connection_data_.size();
+}
+
+const ConnectionData& MediaDescription::connection_data(size_t i) const {
+    return connection_data_[i];
 }
 
 bool MediaDescription::set_type(MediaType type) {
@@ -57,8 +73,8 @@ bool MediaDescription::set_type(MediaType type) {
     return true;
 }
 
-bool MediaDescription::set_proto(MediaTransport proto) {
-    proto_ = proto;
+bool MediaDescription::set_transport(MediaTransport transport) {
+    transport_ = transport;
     return true;
 }
 

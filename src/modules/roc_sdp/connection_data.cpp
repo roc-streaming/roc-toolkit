@@ -37,5 +37,9 @@ bool ConnectionData::set_connection_address(address::AddrFamily addrtype,
     return true;
 }
 
+const address::SocketAddr& ConnectionData::connection_address() const {
+    return connection_address_;
+}
+
 } // namespace roc
 } // namespace sdp
