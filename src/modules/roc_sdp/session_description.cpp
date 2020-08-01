@@ -44,7 +44,7 @@ bool SessionDescription::set_guid(const char* start_p_origin_username,
                                   const char* end_p_origin_nettype,
                                   const char* start_p_origin_addr,
                                   const char* end_p_origin_addr) {
-    core::StringBuilder b(guid_.raw_buf());
+    core::StringBuilder b(guid_.char_array());
 
     if (!b.append_str_range(start_p_origin_username, end_p_origin_username)) {
         return false;
@@ -96,12 +96,6 @@ bool SessionDescription::set_origin_unicast_address(address::AddrFamily addrtype
     return true;
 }
 
-bool SessionDescription::set_session_connection_data(address::AddrFamily addrtype,
-                                                     const char* str,
-                                                     size_t str_len) {
-    return session_connection_data_.set_connection_address(addrtype, str, str_len);
-}
-
 bool SessionDescription::add_media_description() {
     core::SharedPtr<MediaDescription> media =
         new (allocator_) MediaDescription(allocator_);
@@ -118,6 +112,26 @@ bool SessionDescription::add_media_description() {
 const core::SharedPtr<MediaDescription>
 SessionDescription::last_media_description() const {
     return media_descriptions_.back();
+}
+
+const core::SharedPtr<MediaDescription>
+SessionDescription::first_media_description() const {
+    return media_descriptions_.front();
+}
+
+const core::SharedPtr<MediaDescription> SessionDescription::nextof_media_description(
+    core::SharedPtr<MediaDescription> element) const {
+    return media_descriptions_.nextof(*element.get());
+}
+
+bool SessionDescription::set_session_connection_data(address::AddrFamily addrtype,
+                                                     const char* str,
+                                                     size_t str_len) {
+    return session_connection_data_.set_connection_address(addrtype, str, str_len);
+}
+
+const ConnectionData& SessionDescription::session_connection_data() {
+    return session_connection_data_;
 }
 
 } // namespace roc

@@ -241,7 +241,7 @@ namespace {
                 
             
             # Typically "RTP/AVP".
-            media_proto = "RTP/AVP"  %{ result.last_media_description()->set_proto(sdp::MediaTransport_RTP_AVP); };
+            media_transport = "RTP/AVP"  %{ result.last_media_description()->set_transport(sdp::MediaTransport_RTP_AVP); };
 
             media_port = digit+ >start_token %set_media_port;
             
@@ -250,10 +250,10 @@ namespace {
             # Typically an RTP payload id for audio and video media
             media_fmt = token >start_token %add_media_payload_id;
 
-            media_description = (media_type SP media_port ('/' media_nb_ports)? SP media_proto (SP media_fmt)+)
+            media_description = (media_type SP media_port ('/' media_nb_ports)? SP media_transport (SP media_fmt)+)
                 >add_media;
             
-            media_field = 'm='i media_description;
+            media_field = 'm=' media_description;
 
             # In media-level: c=<nettype> <addrtype> <connection-address>
             media_connection_nettype = "IN";
@@ -272,13 +272,13 @@ namespace {
             media_connection_data = media_connection_nettype SP 
                 media_connection_with_addrtype;
 
-            media_connection_field = 'c='i media_connection_data;
+            media_connection_field = 'c=' media_connection_data;
 
             media_fields = (CRLF media_field (CRLF media_connection_field)*)*;
 
-            sdp_description = 'v='i version
-            CRLF 'o='i origin
-            (CRLF 'c='i session_connection_data)?
+            sdp_description = 'v=' version
+            CRLF 'o=' origin
+            (CRLF 'c=' session_connection_data)?
             media_fields;
 
             main := sdp_description
