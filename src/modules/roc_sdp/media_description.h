@@ -48,16 +48,29 @@ public:
     int nb_ports() const;
 
     //! Transport protocol.
-    MediaTransport proto() const;
+    MediaTransport transport() const;
 
-    //! Default media payload id for the session.
+    //! Default media payload id.
     unsigned default_payload_id() const;
+
+    //! Number of payload ids.
+    size_t nb_payload_ids() const;
+
+    //! Get the payload id that was listed at the i position in the media description.
+    unsigned payload_id(size_t i) const;
+
+    //! Number of connection data.
+    size_t nb_connection_data() const;
+
+    //! Get the reference of the i-th connection data that was listed just after the media
+    //! description.
+    const ConnectionData& connection_data(size_t i) const;
 
     //! Set media type.
     bool set_type(MediaType type);
 
     //! Set proto.
-    bool set_proto(MediaTransport proto);
+    bool set_transport(MediaTransport transport);
 
     //! Set transport port.
     bool set_port(long port);
@@ -80,7 +93,7 @@ private:
     MediaType type_;
     int port_;
     int nb_ports_;
-    MediaTransport proto_;
+    MediaTransport transport_;
     core::Array<unsigned, 2> payload_ids_;
 
     core::Array<ConnectionData, 1> connection_data_;
