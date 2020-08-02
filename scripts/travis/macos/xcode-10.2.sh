@@ -7,7 +7,7 @@ brew update
 
 brew unlink python@2
 brew list |\
-    grep -vE 'pkg-config|automake|libtool|cmake|xz|readline|openssl|sqlite|python' |\
+    grep -vE 'pkg-config|automake|libtool|cmake|xz|readline|openssl|sqlite|python|gdbm' |\
     xargs brew pin
 
 brew install "scons"
