@@ -45,11 +45,11 @@ public:
     //!
     //! @b Parameters
     //!  - @p driver is input driver name;
-    //!  - @p input is input file or device name, "-" for stdin.
+    //!  - @p path is input file or device name, "-" for stdin.
     //!
     //! @remarks
-    //!  If @p driver or @p input are NULL, defaults are used.
-    bool open(const char* driver, const char* input);
+    //!  If @p driver or @p path are NULL, defaults are used.
+    bool open(const char* driver, const char* path);
 
     //! Get sample rate of an input file or a device.
     virtual size_t sample_rate() const;
@@ -76,7 +76,7 @@ public:
     virtual bool read(audio::Frame&);
 
 private:
-    bool setup_names_(const char* driver, const char* input);
+    bool setup_names_(const char* driver, const char* path);
     bool setup_buffer_();
 
     bool open_();

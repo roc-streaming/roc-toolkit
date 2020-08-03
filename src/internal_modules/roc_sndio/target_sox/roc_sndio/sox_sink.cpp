@@ -56,16 +56,16 @@ bool SoxSink::valid() const {
     return valid_;
 }
 
-bool SoxSink::open(const char* driver, const char* output) {
+bool SoxSink::open(const char* driver, const char* path) {
     roc_panic_if(!valid_);
 
-    roc_log(LogInfo, "sox sink: opening: driver=%s output=%s", driver, output);
+    roc_log(LogDebug, "sox sink: opening: driver=%s path=%s", driver, path);
 
     if (buffer_.size() != 0 || output_) {
         roc_panic("sox sink: can't call open() more than once");
     }
 
-    if (!open_(driver, output)) {
+    if (!open_(driver, path)) {
         return false;
     }
 
@@ -149,11 +149,10 @@ bool SoxSink::setup_buffer_() {
     return true;
 }
 
-bool SoxSink::open_(const char* driver, const char* output) {
-    output_ = sox_open_write(output, &out_signal_, NULL, driver, NULL, NULL);
+bool SoxSink::open_(const char* driver, const char* path) {
+    output_ = sox_open_write(path, &out_signal_, NULL, driver, NULL, NULL);
     if (!output_) {
-        roc_log(LogError, "sox sink: can't open writer: driver=%s output=%s", driver,
-                output);
+        roc_log(LogDebug, "sox sink: can't open: driver=%s path=%s", driver, path);
         return false;
     }
 
@@ -163,11 +162,11 @@ bool SoxSink::open_(const char* driver, const char* output) {
     unsigned long out_rate = (unsigned long)output_->signal.rate;
 
     if (in_rate != 0 && in_rate != out_rate) {
-        roc_log(
-            LogError,
-            "sox sink: can't open output file or device with the required sample rate: "
-            "required_by_output=%lu requested_by_user=%lu",
-            out_rate, in_rate);
+        roc_log(LogError,
+                "sox sink:"
+                " can't open output file or device with the required sample rate:"
+                " required_by_output=%lu requested_by_user=%lu",
+                out_rate, in_rate);
         return false;
     }
 
@@ -175,7 +174,7 @@ bool SoxSink::open_(const char* driver, const char* output) {
 
     roc_log(LogInfo,
             "sox sink:"
-            " bits=%lu out_rate=%lu in_rate=%lu ch=%lu is_file=%d",
+            " opened: bits=%lu out_rate=%lu in_rate=%lu ch=%lu is_file=%d",
             (unsigned long)output_->encoding.bits_per_sample, out_rate, in_rate,
             (unsigned long)output_->signal.channels, (int)is_file_);
 
@@ -195,7 +194,7 @@ void SoxSink::close_() {
         return;
     }
 
-    roc_log(LogInfo, "sox sink: closing output");
+    roc_log(LogDebug, "sox sink: closing output");
 
     int err = sox_close(output_);
     if (err != SOX_SUCCESS) {

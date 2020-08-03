@@ -53,7 +53,7 @@ PulseaudioSink::PulseaudioSink(const Config& config)
 }
 
 PulseaudioSink::~PulseaudioSink() {
-    roc_log(LogInfo, "pulseaudio sink: closing sink");
+    roc_log(LogDebug, "pulseaudio sink: closing sink");
 
     close_();
     stop_mainloop_();
@@ -235,7 +235,7 @@ void PulseaudioSink::set_opened_(bool opened) {
     if (opened) {
         roc_log(LogTrace, "pulseaudio sink: successfully opened sink");
     } else {
-        roc_log(LogError, "pulseaudio sink: failed to open sink");
+        roc_log(LogDebug, "pulseaudio sink: failed to open sink");
     }
 
     open_done_ = true;
@@ -256,7 +256,7 @@ bool PulseaudioSink::open_context_() {
     pa_context_set_state_callback(context_, context_state_cb_, this);
 
     if (int err = pa_context_connect(context_, NULL, PA_CONTEXT_NOFLAGS, NULL)) {
-        roc_log(LogError, "pulseaudio sink: pa_context_connect(): %s", pa_strerror(err));
+        roc_log(LogDebug, "pulseaudio sink: pa_context_connect(): %s", pa_strerror(err));
         return false;
     }
 
@@ -299,7 +299,7 @@ void PulseaudioSink::context_state_cb_(pa_context* context, void* userdata) {
 
     case PA_CONTEXT_FAILED:
     case PA_CONTEXT_TERMINATED:
-        roc_log(LogError, "pulseaudio sink: failed to open context");
+        roc_log(LogDebug, "pulseaudio sink: failed to open context");
 
         self.set_opened_(false);
         break;
@@ -341,7 +341,7 @@ void PulseaudioSink::sink_info_cb_(pa_context*,
     self.cancel_sink_info_op_();
 
     if (!info) {
-        roc_log(LogError, "pulseaudio sink: failed to retrieve sink info");
+        roc_log(LogDebug, "pulseaudio sink: failed to retrieve sink info");
         self.set_opened_(false);
         return;
     }

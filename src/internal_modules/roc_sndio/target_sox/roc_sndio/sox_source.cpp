@@ -59,16 +59,16 @@ bool SoxSource::valid() const {
     return valid_;
 }
 
-bool SoxSource::open(const char* driver, const char* input) {
+bool SoxSource::open(const char* driver, const char* path) {
     roc_panic_if(!valid_);
 
-    roc_log(LogInfo, "sox source: opening: driver=%s input=%s", driver, input);
+    roc_log(LogInfo, "sox source: opening: driver=%s path=%s", driver, path);
 
     if (buffer_.size() != 0 || input_) {
         roc_panic("sox source: can't call open() more than once");
     }
 
-    if (!setup_names_(driver, input)) {
+    if (!setup_names_(driver, path)) {
         return false;
     }
 
@@ -273,7 +273,7 @@ bool SoxSource::seek_(uint64_t offset) {
     return true;
 }
 
-bool SoxSource::setup_names_(const char* driver, const char* input) {
+bool SoxSource::setup_names_(const char* driver, const char* path) {
     if (driver) {
         if (!driver_name_.set_str(driver)) {
             roc_log(LogError, "sox source: can't allocate string");
@@ -281,8 +281,8 @@ bool SoxSource::setup_names_(const char* driver, const char* input) {
         }
     }
 
-    if (input) {
-        if (!input_name_.set_str(input)) {
+    if (path) {
+        if (!input_name_.set_str(path)) {
             roc_log(LogError, "sox source: can't allocate string");
             return false;
         }
@@ -314,7 +314,7 @@ bool SoxSource::open_() {
         sox_open_read(input_name_.is_empty() ? NULL : input_name_.c_str(), &in_signal_,
                       NULL, driver_name_.is_empty() ? NULL : driver_name_.c_str());
     if (!input_) {
-        roc_log(LogError, "sox source: can't open: driver=%s input=%s",
+        roc_log(LogInfo, "sox source: can't open: driver=%s input=%s",
                 driver_name_.c_str(), input_name_.c_str());
         return false;
     }

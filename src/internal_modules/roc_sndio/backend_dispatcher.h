@@ -19,6 +19,7 @@
 #include "roc_core/shared_ptr.h"
 #include "roc_core/singleton.h"
 #include "roc_core/string_list.h"
+#include "roc_sndio/driver.h"
 #include "roc_sndio/ibackend.h"
 #include "roc_sndio/isink.h"
 #include "roc_sndio/isource.h"
@@ -29,24 +30,25 @@ namespace sndio {
 //! Backend dispatcher.
 class BackendDispatcher : public core::NonCopyable<> {
 public:
-    //! Get instance.
-    static BackendDispatcher& instance() {
-        return core::Singleton<BackendDispatcher>::instance();
-    }
+    //! Initialize.
+    BackendDispatcher(core::IAllocator& allocator);
 
     //! Set internal buffer size for all backends that need it.
     void set_frame_size(core::nanoseconds_t frame_length,
                         const audio::SampleSpec& sample_spec);
 
+    //! Create and open default sink.
+    ISink* open_default_sink(const Config& config);
+
+    //! Create and open default source.
+    ISource* open_default_source(const Config& config);
+
     //! Create and open a sink.
-    ISink* open_sink(core::IAllocator& allocator,
-                     const address::IoURI& uri,
-                     const char* force_format,
-                     const Config& config);
+    ISink*
+    open_sink(const address::IoURI& uri, const char* force_format, const Config& config);
 
     //! Create and open a source.
-    ISource* open_source(core::IAllocator& allocator,
-                         const address::IoURI& uri,
+    ISource* open_source(const address::IoURI& uri,
                          const char* force_format,
                          const Config& config);
 
@@ -57,17 +59,26 @@ public:
     bool get_supported_formats(core::StringList&);
 
 private:
-    friend class core::Singleton<BackendDispatcher>;
+    enum { MaxBackends = 8, MaxDrivers = 128 };
 
-    BackendDispatcher();
+    ITerminal* open_default_terminal_(TerminalType terminal_type, const Config& config);
 
-    IBackend* find_backend_(const char* driver, const char* inout, int flags);
+    ITerminal* open_terminal_(TerminalType terminal_type,
+                              DriverType driver_type,
+                              const char* driver_name,
+                              const char* path,
+                              const Config& config);
+
+    void register_backends_();
     void register_backend_(IBackend& backend);
+    void discover_drivers_();
 
-    enum { MaxBackends = 8 };
+    core::IAllocator& allocator_;
 
     IBackend* backends_[MaxBackends];
     size_t n_backends_;
+
+    core::Array<DriverInfo> drivers_;
 };
 
 } // namespace sndio

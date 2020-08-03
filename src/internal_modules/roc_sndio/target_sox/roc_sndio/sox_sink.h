@@ -44,11 +44,11 @@ public:
     //!
     //! @b Parameters
     //!  - @p driver is output driver name;
-    //!  - @p output is output file or device name, "-" for stdout.
+    //!  - @p path is output file or device name, "-" for stdout.
     //!
     //! @remarks
-    //!  If @p driver or @p output are NULL, defaults are used.
-    bool open(const char* driver, const char* output);
+    //!  If @p driver or @p path are NULL, defaults are used.
+    bool open(const char* driver, const char* path);
 
     //! Get sample rate of the sink.
     virtual size_t sample_rate() const;
@@ -64,7 +64,7 @@ public:
 
 private:
     bool setup_buffer_();
-    bool open_(const char* driver, const char* output);
+    bool open_(const char* driver, const char* path);
     void write_(const sox_sample_t* samples, size_t n_samples);
     void close_();
 

@@ -13,23 +13,15 @@
 #define ROC_SNDIO_ISINK_H_
 
 #include "roc_audio/iwriter.h"
+#include "roc_sndio/terminal.h"
 
 namespace roc {
 namespace sndio {
 
 //! Sink interface.
-class ISink : public audio::IWriter {
+class ISink : public ITerminal, public audio::IWriter {
 public:
     virtual ~ISink();
-
-    //! Get sample rate of the sink.
-    virtual size_t sample_rate() const = 0;
-
-    //! Get number of channels for the sink.
-    virtual size_t num_channels() const = 0;
-
-    //! Check if the sink has own clock.
-    virtual bool has_clock() const = 0;
 };
 
 } // namespace sndio

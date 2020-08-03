@@ -12,7 +12,6 @@
 #ifndef ROC_SNDIO_PULSEAUDIO_BACKEND_H_
 #define ROC_SNDIO_PULSEAUDIO_BACKEND_H_
 
-#include "roc_core/array.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/singleton.h"
 #include "roc_sndio/ibackend.h"
@@ -28,23 +27,16 @@ public:
         return core::Singleton<PulseaudioBackend>::instance();
     }
 
-    //! Check whether the backend can handle given input or output.
-    virtual bool probe(const char* driver, const char* inout, int filter_flags);
-
-    //! Create and open a sink.
-    virtual ISink* open_sink(core::IAllocator& allocator,
-                             const char* driver,
-                             const char* output,
-                             const Config& config);
-
-    //! Create and open a source.
-    virtual ISource* open_source(core::IAllocator& allocator,
-                                 const char* driver,
-                                 const char* input,
-                                 const Config& config);
+    //! Create and open a sink or source.
+    virtual ITerminal* open_terminal(core::IAllocator& allocator,
+                                     TerminalType terminal_type,
+                                     DriverType driver_type,
+                                     const char* driver,
+                                     const char* path,
+                                     const Config& config);
 
     //! Append supported drivers to the list.
-    virtual bool get_drivers(core::StringList&, int filter_flags);
+    virtual bool get_drivers(core::Array<DriverInfo>& driver_list);
 
 private:
     friend class core::Singleton<PulseaudioBackend>;

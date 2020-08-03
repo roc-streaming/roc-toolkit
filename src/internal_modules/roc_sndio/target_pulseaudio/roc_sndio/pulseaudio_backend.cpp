@@ -18,49 +18,60 @@ namespace roc {
 namespace sndio {
 
 PulseaudioBackend::PulseaudioBackend() {
-    roc_log(LogDebug, "initializing pulseaudio backend");
+    roc_log(LogDebug, "pulseaudio backend: initializing");
 }
 
-bool PulseaudioBackend::probe(const char* driver, const char*, int filter_flags) {
-    if ((filter_flags & FilterDevice) == 0) {
-        return false;
-    }
-
-    if ((filter_flags & FilterSink) == 0) {
-        return false;
-    }
-
-    return !driver || strcmp(driver, "pulse") == 0;
-}
-
-ISink* PulseaudioBackend::open_sink(core::IAllocator& allocator,
-                                    const char*,
-                                    const char* output,
-                                    const Config& config) {
-    core::ScopedPtr<PulseaudioSink> sink(new (allocator) PulseaudioSink(config),
-                                         allocator);
-    if (!sink) {
+ITerminal* PulseaudioBackend::open_terminal(core::IAllocator& allocator,
+                                            TerminalType terminal_type,
+                                            DriverType driver_type,
+                                            const char* driver,
+                                            const char* path,
+                                            const Config& config) {
+    if (driver_type != DriverType_Device) {
         return NULL;
     }
 
-    if (!sink->open(output)) {
+    if (driver && strcmp(driver, "pulse") != 0) {
         return NULL;
     }
 
-    return sink.release();
-}
+    switch (terminal_type) {
+    case Terminal_Sink: {
+        core::ScopedPtr<PulseaudioSink> sink(new (allocator) PulseaudioSink(config),
+                                             allocator);
+        if (!sink) {
+            roc_log(LogDebug, "pulseaudio backend: can't construct sink: path=%s", path);
+            return NULL;
+        }
 
-ISource* PulseaudioBackend::open_source(core::IAllocator&,
-                                        const char*,
-                                        const char*,
-                                        const Config&) {
-    return NULL;
-}
+        if (!sink->open(path)) {
+            roc_log(LogDebug, "pulseaudio backend: can't open sink: path=%s", path);
+            return NULL;
+        }
 
-bool PulseaudioBackend::get_drivers(core::StringList& list, int filter_flags) {
-    if (filter_flags & FilterDevice) {
-        return list.push_back_unique("pulse");
+        return sink.release();
+    } break;
+
+    case Terminal_Source: {
+        return NULL;
+    } break;
+
+    default:
+        break;
     }
+
+    roc_panic("pulseaudio backend: invalid terminal type");
+}
+
+bool PulseaudioBackend::get_drivers(core::Array<DriverInfo>& driver_list) {
+    if (!driver_list.grow_exp(driver_list.size() + 1)) {
+        return false;
+    }
+
+    driver_list.push_back(DriverInfo("pulse", DriverType_Device,
+                                     DriverFlag_IsDefault | DriverFlag_SupportsSink,
+                                     this));
+
     return true;
 }
 
