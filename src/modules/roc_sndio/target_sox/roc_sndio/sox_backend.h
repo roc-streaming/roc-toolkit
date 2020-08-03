@@ -37,20 +37,19 @@ public:
                         size_t sample_rate,
                         packet::channel_mask_t channels);
 
-    //! Check whether the backend can handle given input or output.
-    virtual bool probe(const char* driver, const char* inout, int flags);
-
     //! Create and open a sink.
     virtual ISink* open_sink(core::IAllocator& allocator,
                              const char* driver,
                              const char* output,
-                             const Config& config);
+                             const Config& config,
+                             int filter_flags);
 
     //! Create and open a source.
     virtual ISource* open_source(core::IAllocator& allocator,
                                  const char* driver,
                                  const char* input,
-                                 const Config& config);
+                                 const Config& config,
+                                 int filter_flags);
 
     //! Append supported drivers to the list.
     virtual bool get_drivers(core::StringList&, int filter_flags);

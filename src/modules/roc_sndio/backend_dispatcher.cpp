@@ -89,13 +89,14 @@ ISink* BackendDispatcher::open_sink(core::IAllocator& allocator,
 
     const char* driver = select_driver_name(uri, force_format);
     const char* output = select_input_output(uri);
-
-    IBackend* backend = find_backend_(driver, output, flags);
-    if (!backend) {
-        return NULL;
+    ISink* sink;
+    for (size_t n = 0; n < n_backends_; n++) {
+        sink = backends_[n]->open_sink(allocator, driver, output, config, flags);
+        if (sink) {
+            return sink;
+        }
     }
-
-    return backend->open_sink(allocator, driver, output, config);
+    return NULL;
 }
 
 ISource* BackendDispatcher::open_source(core::IAllocator& allocator,
@@ -106,13 +107,14 @@ ISource* BackendDispatcher::open_source(core::IAllocator& allocator,
 
     const char* driver = select_driver_name(uri, force_format);
     const char* input = select_input_output(uri);
-
-    IBackend* backend = find_backend_(driver, input, flags);
-    if (!backend) {
-        return NULL;
+    ISource* source;
+    for (size_t n = 0; n < n_backends_; n++) {
+        source = backends_[n]->open_source(allocator, driver, input, config, flags);
+        if (source) {
+            return source;
+        }
     }
-
-    return backend->open_source(allocator, driver, input, config);
+    return NULL;
 }
 
 bool BackendDispatcher::get_supported_schemes(core::StringList& list) {
@@ -143,16 +145,6 @@ bool BackendDispatcher::get_supported_formats(core::StringList& list) {
     }
 
     return true;
-}
-
-IBackend*
-BackendDispatcher::find_backend_(const char* driver, const char* inout, int flags) {
-    for (size_t n = 0; n < n_backends_; n++) {
-        if (backends_[n]->probe(driver, inout, flags)) {
-            return backends_[n];
-        }
-    }
-    return NULL;
 }
 
 void BackendDispatcher::register_backend_(IBackend& backend) {

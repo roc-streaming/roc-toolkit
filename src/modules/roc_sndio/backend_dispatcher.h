@@ -60,8 +60,6 @@ private:
     friend class core::Singleton<BackendDispatcher>;
 
     BackendDispatcher();
-
-    IBackend* find_backend_(const char* driver, const char* inout, int flags);
     void register_backend_(IBackend& backend);
 
     enum { MaxBackends = 8 };

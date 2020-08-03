@@ -21,24 +21,26 @@ PulseaudioBackend::PulseaudioBackend() {
     roc_log(LogDebug, "initializing pulseaudio backend");
 }
 
-bool PulseaudioBackend::probe(const char* driver, const char*, int filter_flags) {
+ISink* PulseaudioBackend::open_sink(core::IAllocator& allocator,
+                                    const char* driver,
+                                    const char* output,
+                                    const Config& config,
+                                    int filter_flags) {
+    core::ScopedPtr<PulseaudioSink> sink(new (allocator) PulseaudioSink(config),
+                                         allocator);
+
     if ((filter_flags & FilterDevice) == 0) {
-        return false;
+        return NULL;
     }
 
     if ((filter_flags & FilterSink) == 0) {
-        return false;
+        return NULL;
     }
 
-    return !driver || strcmp(driver, "pulse") == 0;
-}
+    if (driver && strcmp(driver, "pulse")) {
+        return NULL;
+    }
 
-ISink* PulseaudioBackend::open_sink(core::IAllocator& allocator,
-                                    const char*,
-                                    const char* output,
-                                    const Config& config) {
-    core::ScopedPtr<PulseaudioSink> sink(new (allocator) PulseaudioSink(config),
-                                         allocator);
     if (!sink) {
         return NULL;
     }
@@ -50,10 +52,8 @@ ISink* PulseaudioBackend::open_sink(core::IAllocator& allocator,
     return sink.release();
 }
 
-ISource* PulseaudioBackend::open_source(core::IAllocator&,
-                                        const char*,
-                                        const char*,
-                                        const Config&) {
+ISource* PulseaudioBackend::open_source(
+    core::IAllocator&, const char*, const char*, const Config&, int) {
     return NULL;
 }
 

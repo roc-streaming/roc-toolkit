@@ -140,6 +140,41 @@ bool is_driver_hidden(const char* driver) {
     return false;
 }
 
+bool is_fmt_handler_valid(const char* inout, const char* driver, int filter_flags) {
+    const sox_format_handler_t* handler = sox_write_handler(inout, driver, NULL);
+    if (!handler) {
+        return false;
+    }
+
+    if (handler->flags & SOX_FILE_DEVICE) {
+        if ((filter_flags & IBackend::FilterDevice) == 0) {
+            return false;
+        }
+    } else {
+        if ((filter_flags & IBackend::FilterFile) == 0) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+const char* get_fallback_driver(const char* driver) {
+    // get next available driver
+    for (size_t n = 0; n < ROC_ARRAY_SIZE(default_driver_priorities) - 1; n++) {
+        if (strcmp(driver, default_driver_priorities[n]) == 0) {
+            while (n < ROC_ARRAY_SIZE(default_driver_priorities) - 1) {
+                driver = default_driver_priorities[n + 1];
+                if (sox_find_format(driver, sox_false)) {
+                    return driver;
+                }
+                n++;
+            }
+        }
+    }
+    return NULL;
+}
+
 void log_handler(unsigned sox_level,
                  const char* filename,
                  const char* format,
@@ -202,46 +237,16 @@ void SoxBackend::set_frame_size(core::nanoseconds_t frame_length,
     sox_get_globals()->bufsiz = size * sizeof(sox_sample_t);
 }
 
-bool SoxBackend::probe(const char* driver, const char* inout, int filter_flags) {
-    core::Mutex::Lock lock(mutex_);
-
-    driver = map_to_sox_driver(driver);
-
-    if (!select_defaults(driver, inout)) {
-        return false;
-    }
-
-    const sox_format_handler_t* handler = sox_write_handler(inout, driver, NULL);
-    if (!handler) {
-        return false;
-    }
-
-    if (handler->flags & SOX_FILE_DEVICE) {
-        if ((filter_flags & FilterDevice) == 0) {
-            return false;
-        }
-    } else {
-        if ((filter_flags & FilterFile) == 0) {
-            return false;
-        }
-    }
-
-    return true;
-}
-
 ISink* SoxBackend::open_sink(core::IAllocator& allocator,
                              const char* driver,
                              const char* output,
-                             const Config& config) {
+                             const Config& config,
+                             int filter_flags) {
     core::Mutex::Lock lock(mutex_);
-
     first_created_ = true;
 
     driver = map_to_sox_driver(driver);
-
-    if (!select_defaults(driver, output)) {
-        return NULL;
-    }
+    const bool trigger_auto_detect = (driver == NULL && output == NULL);
 
     core::ScopedPtr<SoxSink> sink(new (allocator) SoxSink(allocator, config), allocator);
     if (!sink) {
@@ -252,9 +257,36 @@ ISink* SoxBackend::open_sink(core::IAllocator& allocator,
         return NULL;
     }
 
-    if (!sink->open(driver, output)) {
-        return NULL;
+    if (!trigger_auto_detect) {
+        if (!is_fmt_handler_valid(output, driver, filter_flags)) {
+            return NULL;
+        }
+
+        if (!sink->open(driver, output)) {
+            return NULL;
+        }
+        return sink.release();
     }
+
+    do {
+        if (!driver) {
+            if (!select_defaults(driver, output)) {
+                return NULL;
+            }
+
+            if (!is_fmt_handler_valid(output, driver, filter_flags)) {
+                return NULL;
+            }
+        } else {
+            roc_log(LogInfo,
+                    "failed to open sink=(%s) using driver=(%s), trying next driver",
+                    output, driver);
+            driver = get_fallback_driver(driver);
+            if (!driver) {
+                return NULL;
+            }
+        }
+    } while (!sink->open(driver, output));
 
     return sink.release();
 }
@@ -262,16 +294,14 @@ ISink* SoxBackend::open_sink(core::IAllocator& allocator,
 ISource* SoxBackend::open_source(core::IAllocator& allocator,
                                  const char* driver,
                                  const char* input,
-                                 const Config& config) {
+                                 const Config& config,
+                                 int filter_flags) {
     core::Mutex::Lock lock(mutex_);
 
     first_created_ = true;
 
     driver = map_to_sox_driver(driver);
-
-    if (!select_defaults(driver, input)) {
-        return NULL;
-    }
+    const bool trigger_auto_detect = (driver == NULL && input == NULL);
 
     core::ScopedPtr<SoxSource> source(new (allocator) SoxSource(allocator, config),
                                       allocator);
@@ -283,9 +313,36 @@ ISource* SoxBackend::open_source(core::IAllocator& allocator,
         return NULL;
     }
 
-    if (!source->open(driver, input)) {
-        return NULL;
+    if (!trigger_auto_detect) {
+        if (!is_fmt_handler_valid(input, driver, filter_flags)) {
+            return NULL;
+        }
+
+        if (!source->open(driver, input)) {
+            return NULL;
+        }
+        return source.release();
     }
+
+    do {
+        if (!driver) {
+            if (!select_defaults(driver, input)) {
+                return NULL;
+            }
+
+            if (!is_fmt_handler_valid(input, driver, filter_flags)) {
+                return NULL;
+            }
+        } else {
+            roc_log(LogInfo,
+                    "failed to open source=(%s) using driver=(%s), trying next driver",
+                    input, driver);
+            driver = get_fallback_driver(driver);
+            if (!driver) {
+                return NULL;
+            }
+        }
+    } while (!source->open(driver, input));
 
     return source.release();
 }
