@@ -117,6 +117,10 @@ if GetOption('enable_tests') or GetOption('enable_benchmarks'):
     cenv.MergeVars(test_env)
     cenv.Append(CPPDEFINES=('ROC_MODULE', 'roc_test'))
 
+    sanitizer_opt_obj = []
+    if GetOption('sanitizers'):
+        sanitizer_opt_obj = cenv.Object('sanitizer_options.cpp')
+
     if GetOption('enable_tests'):
         test_main = cenv.Object('tests/test_main.cpp')
 
@@ -162,7 +166,7 @@ if GetOption('enable_tests') or GetOption('enable_benchmarks'):
 
             exename = 'roc-' + kind + '-' + testname.replace('roc_', '')
             target = env.Install(env['ROC_BINDIR'],
-                ccenv.Program(exename, sources + main,
+                ccenv.Program(exename, sources + main + sanitizer_opt_obj,
                     RPATH=(ccenv['RPATH'] if 'RPATH' in ccenv.Dictionary() else None)))
 
             exefile = '%s/%s' % (env['ROC_BINDIR'], exename)
@@ -173,6 +177,9 @@ if GetOption('enable_tests') or GetOption('enable_benchmarks'):
                 env.AddBench(testname, exefile)
 
 if not GetOption('disable_tools'):
+    sanitizer_opt_obj = []
+    if GetOption('sanitizers'):
+        sanitizer_opt_obj = cenv.Object('sanitizer_options.cpp')
     for tooldir in env.GlobDirs('tools/*'):
         cenv = env.Clone()
         cenv.MergeVars(tool_env)
@@ -189,7 +196,7 @@ if not GetOption('disable_tools'):
 
         exename = tooldir.name.replace('roc_', 'roc-')
         target = env.Install(env['ROC_BINDIR'],
-                    cenv.Program(exename, sources+objects))
+                    cenv.Program(exename, sources+objects+sanitizer_opt_obj))
 
         env.Alias(exename, [target], env.Action(''))
         env.AlwaysBuild(exename)
