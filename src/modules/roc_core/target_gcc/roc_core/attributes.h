@@ -31,16 +31,17 @@
 #ifdef __has_attribute
 #if __has_attribute(no_sanitize)
 #define ROC_ATTR_NO_SANITIZE_UB __attribute__((no_sanitize("undefined")))
-
 #elif __has_attribute(no_sanitize_undefined)
 #define ROC_ATTR_NO_SANITIZE_UB __attribute__((no_sanitize_undefined))
-
 #endif //__has_attribute(no_sanitize)
 #endif //__has_attribute
 
 #ifndef ROC_ATTR_NO_SANITIZE_UB
-//! Used to suppress undefined behavior sanitizer for a particular function.
+//! Suppress undefined behavior sanitizer for a particular function.
 #define ROC_ATTR_NO_SANITIZE_UB
 #endif
+
+//! Explicitly specify a default visibility for a specific symbol.
+#define ROC_ATTR_EXPORT __attribute__((visibility("default")))
 
 #endif // ROC_CORE_ATTRIBUTES_H_
