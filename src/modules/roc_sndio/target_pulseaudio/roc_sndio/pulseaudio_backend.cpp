@@ -26,20 +26,15 @@ ISink* PulseaudioBackend::open_sink(core::IAllocator& allocator,
                                     const char* output,
                                     const Config& config,
                                     int filter_flags) {
-    core::ScopedPtr<PulseaudioSink> sink(new (allocator) PulseaudioSink(config),
-                                         allocator);
-
     if ((filter_flags & FilterDevice) == 0) {
-        return NULL;
-    }
-
-    if ((filter_flags & FilterSink) == 0) {
         return NULL;
     }
 
     if (driver && strcmp(driver, "pulse")) {
         return NULL;
     }
+
+    core::ScopedPtr<PulseaudioSink> sink(new (allocator) PulseaudioSink(config), allocator);
 
     if (!sink) {
         return NULL;

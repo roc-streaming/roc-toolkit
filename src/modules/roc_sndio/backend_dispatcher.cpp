@@ -85,13 +85,12 @@ ISink* BackendDispatcher::open_sink(core::IAllocator& allocator,
                                     const address::IoURI& uri,
                                     const char* force_format,
                                     const Config& config) {
-    const int flags = select_driver_type(uri) | IBackend::FilterSink;
+    const int flags = select_driver_type(uri);
 
     const char* driver = select_driver_name(uri, force_format);
     const char* output = select_input_output(uri);
-    ISink* sink;
     for (size_t n = 0; n < n_backends_; n++) {
-        sink = backends_[n]->open_sink(allocator, driver, output, config, flags);
+        ISink* sink = backends_[n]->open_sink(allocator, driver, output, config, flags);
         if (sink) {
             return sink;
         }
@@ -103,13 +102,13 @@ ISource* BackendDispatcher::open_source(core::IAllocator& allocator,
                                         const address::IoURI& uri,
                                         const char* force_format,
                                         const Config& config) {
-    const int flags = select_driver_type(uri) | IBackend::FilterSource;
+    const int flags = select_driver_type(uri);
 
     const char* driver = select_driver_name(uri, force_format);
     const char* input = select_input_output(uri);
-    ISource* source;
+
     for (size_t n = 0; n < n_backends_; n++) {
-        source = backends_[n]->open_source(allocator, driver, input, config, flags);
+        ISource* source = backends_[n]->open_source(allocator, driver, input, config, flags);
         if (source) {
             return source;
         }

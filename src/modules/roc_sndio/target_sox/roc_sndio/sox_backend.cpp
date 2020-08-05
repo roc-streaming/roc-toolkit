@@ -21,8 +21,8 @@ namespace sndio {
 
 namespace {
 
-const char* default_driver_priorities[] = {
-    //
+const char* default_drivers[] = {
+    //sorted in order of priority
     "waveaudio",  // windows
     "coreaudio",  // macos
     "pulseaudio", // linux
@@ -31,7 +31,6 @@ const char* default_driver_priorities[] = {
     "sunau",      // solaris
     "oss",        // unix
     "ao",         // cross-platform fallback, no capture
-    "null"        //
 };
 
 const char* driver_renames[][2] = {
@@ -63,45 +62,6 @@ const char* hidden_drivers[] = {
     // pseudo-formats
     "sndfile",
 };
-
-const char* select_default_driver() {
-    for (size_t n = 0; n < ROC_ARRAY_SIZE(default_driver_priorities); n++) {
-        const char* driver = default_driver_priorities[n];
-
-        if (sox_find_format(driver, sox_false)) {
-            return driver;
-        }
-    }
-
-    return NULL;
-}
-
-const char* select_default_device(const char* driver) {
-    const sox_format_handler_t* format = sox_find_format(driver, sox_false);
-    if (!format) {
-        return NULL;
-    }
-
-    if (format->flags & SOX_FILE_DEVICE) {
-        return "default";
-    }
-
-    return "-";
-}
-
-bool select_defaults(const char*& driver, const char*& device) {
-    if (!device) {
-        if (!driver) {
-            if (!(driver = select_default_driver())) {
-                return false;
-            }
-        }
-        if (!(device = select_default_device(driver))) {
-            return false;
-        }
-    }
-    return true;
-}
 
 const char* map_to_sox_driver(const char* driver) {
     if (!driver) {
@@ -140,13 +100,16 @@ bool is_driver_hidden(const char* driver) {
     return false;
 }
 
-bool is_fmt_handler_valid(const char* inout, const char* driver, int filter_flags) {
-    const sox_format_handler_t* handler = sox_write_handler(inout, driver, NULL);
+bool check_handler_flags(const sox_format_handler_t*& handler, int filter_flags) {
     if (!handler) {
         return false;
     }
 
     if (handler->flags & SOX_FILE_DEVICE) {
+        if (handler->flags & SOX_FILE_PHONY) {
+            return false;
+        }
+
         if ((filter_flags & IBackend::FilterDevice) == 0) {
             return false;
         }
@@ -157,22 +120,6 @@ bool is_fmt_handler_valid(const char* inout, const char* driver, int filter_flag
     }
 
     return true;
-}
-
-const char* get_fallback_driver(const char* driver) {
-    // get next available driver
-    for (size_t n = 0; n < ROC_ARRAY_SIZE(default_driver_priorities) - 1; n++) {
-        if (strcmp(driver, default_driver_priorities[n]) == 0) {
-            while (n < ROC_ARRAY_SIZE(default_driver_priorities) - 1) {
-                driver = default_driver_priorities[n + 1];
-                if (sox_find_format(driver, sox_false)) {
-                    return driver;
-                }
-                n++;
-            }
-        }
-    }
-    return NULL;
 }
 
 void log_handler(unsigned sox_level,
@@ -246,8 +193,6 @@ ISink* SoxBackend::open_sink(core::IAllocator& allocator,
     first_created_ = true;
 
     driver = map_to_sox_driver(driver);
-    const bool trigger_auto_detect = (driver == NULL && output == NULL);
-
     core::ScopedPtr<SoxSink> sink(new (allocator) SoxSink(allocator, config), allocator);
     if (!sink) {
         return NULL;
@@ -257,8 +202,14 @@ ISink* SoxBackend::open_sink(core::IAllocator& allocator,
         return NULL;
     }
 
-    if (!trigger_auto_detect) {
-        if (!is_fmt_handler_valid(output, driver, filter_flags)) {
+    if (driver) {
+
+        if (is_driver_hidden(driver)){
+            return NULL;
+        }
+
+        const sox_format_handler_t* handler = sox_write_handler(output, driver, NULL);
+        if (!check_handler_flags(handler, filter_flags)){
             return NULL;
         }
 
@@ -268,27 +219,25 @@ ISink* SoxBackend::open_sink(core::IAllocator& allocator,
         return sink.release();
     }
 
-    do {
-        if (!driver) {
-            if (!select_defaults(driver, output)) {
-                return NULL;
-            }
+    else {
+        for (size_t n = 0; n < ROC_ARRAY_SIZE(default_drivers); n++) {
+            
+            if (sox_find_format(default_drivers[n], sox_false)) {
+                const sox_format_handler_t* handler = sox_write_handler("default", default_drivers[n], NULL);
+                if (!check_handler_flags(handler, filter_flags)){
+                    return NULL;
+                }
 
-            if (!is_fmt_handler_valid(output, driver, filter_flags)) {
-                return NULL;
-            }
-        } else {
-            roc_log(LogInfo,
-                    "failed to open sink=(%s) using driver=(%s), trying next driver",
-                    output, driver);
-            driver = get_fallback_driver(driver);
-            if (!driver) {
-                return NULL;
+                if (sink->open(default_drivers[n], output)){
+                    return sink.release();
+                }
+
+                roc_log(LogInfo, "failed to open sink=(%s) using driver=(%s), trying next driver", output, default_drivers[n]);
             }
         }
-    } while (!sink->open(driver, output));
+    }
 
-    return sink.release();
+    return NULL;
 }
 
 ISource* SoxBackend::open_source(core::IAllocator& allocator,
@@ -301,7 +250,6 @@ ISource* SoxBackend::open_source(core::IAllocator& allocator,
     first_created_ = true;
 
     driver = map_to_sox_driver(driver);
-    const bool trigger_auto_detect = (driver == NULL && input == NULL);
 
     core::ScopedPtr<SoxSource> source(new (allocator) SoxSource(allocator, config),
                                       allocator);
@@ -313,8 +261,13 @@ ISource* SoxBackend::open_source(core::IAllocator& allocator,
         return NULL;
     }
 
-    if (!trigger_auto_detect) {
-        if (!is_fmt_handler_valid(input, driver, filter_flags)) {
+    if (driver || input) {
+
+        if (driver && is_driver_hidden(driver)) {
+            return NULL;
+        }
+        const sox_format_handler_t* handler = sox_write_handler(input, driver, NULL);
+        if (!check_handler_flags(handler, filter_flags)){
             return NULL;
         }
 
@@ -324,27 +277,25 @@ ISource* SoxBackend::open_source(core::IAllocator& allocator,
         return source.release();
     }
 
-    do {
-        if (!driver) {
-            if (!select_defaults(driver, input)) {
-                return NULL;
-            }
+    else {
+        roc_log(LogDebug, "auto-detecting appropriate backend");
+        input = "default";
+        for (size_t n = 0; n < ROC_ARRAY_SIZE(default_drivers); n++) {
+            driver = default_drivers[n];
+            if (sox_find_format(driver, sox_false)) {
+                const sox_format_handler_t* handler = sox_write_handler(input, driver, NULL);
+                if (!check_handler_flags(handler, filter_flags)){
+                    return NULL;
+                }
+                if (source->open(driver, input)){
+                    return source.release();
+                }
 
-            if (!is_fmt_handler_valid(input, driver, filter_flags)) {
-                return NULL;
-            }
-        } else {
-            roc_log(LogInfo,
-                    "failed to open source=(%s) using driver=(%s), trying next driver",
-                    input, driver);
-            driver = get_fallback_driver(driver);
-            if (!driver) {
-                return NULL;
+                roc_log(LogInfo, "failed to open source=(%s) using driver=(%s), trying next driver", input, default_drivers[n]);
             }
         }
-    } while (!source->open(driver, input));
-
-    return source.release();
+    }
+    return NULL;
 }
 
 bool SoxBackend::get_drivers(core::StringList& list, int filter_flags) {
@@ -355,19 +306,7 @@ bool SoxBackend::get_drivers(core::StringList& list, int filter_flags) {
     for (size_t n = 0; formats[n].fn; n++) {
         sox_format_handler_t const* handler = formats[n].fn();
 
-        bool match = false;
-
-        if (filter_flags & FilterFile) {
-            match = match || !(handler->flags & SOX_FILE_DEVICE);
-        }
-
-        if (filter_flags & FilterDevice) {
-            match = match
-                || ((handler->flags & SOX_FILE_DEVICE)
-                    && !(handler->flags & SOX_FILE_PHONY));
-        }
-
-        if (match) {
+        if (check_handler_flags(handler, filter_flags)) {
             char const* const* format_names;
             for (format_names = handler->names; *format_names; ++format_names) {
                 const char* driver = map_from_sox_driver(*format_names);

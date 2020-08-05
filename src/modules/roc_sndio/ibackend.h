@@ -29,11 +29,6 @@ public:
 
     //! Probing flags.
     enum FilterFlags {
-        //! Input or output may be a sink.
-        FilterSink = (1 << 0),
-
-        //! Input or output may be a source.
-        FilterSource = (1 << 1),
 
         //! Input or output may be a file.
         FilterFile = (1 << 2),
