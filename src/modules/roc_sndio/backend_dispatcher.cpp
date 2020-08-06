@@ -108,7 +108,8 @@ ISource* BackendDispatcher::open_source(core::IAllocator& allocator,
     const char* input = select_input_output(uri);
 
     for (size_t n = 0; n < n_backends_; n++) {
-        ISource* source = backends_[n]->open_source(allocator, driver, input, config, flags);
+        ISource* source =
+            backends_[n]->open_source(allocator, driver, input, config, flags);
         if (source) {
             return source;
         }

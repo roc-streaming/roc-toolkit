@@ -34,7 +34,8 @@ ISink* PulseaudioBackend::open_sink(core::IAllocator& allocator,
         return NULL;
     }
 
-    core::ScopedPtr<PulseaudioSink> sink(new (allocator) PulseaudioSink(config), allocator);
+    core::ScopedPtr<PulseaudioSink> sink(new (allocator) PulseaudioSink(config),
+                                         allocator);
 
     if (!sink) {
         return NULL;

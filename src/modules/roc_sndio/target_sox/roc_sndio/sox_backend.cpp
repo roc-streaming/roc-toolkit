@@ -22,7 +22,7 @@ namespace sndio {
 namespace {
 
 const char* default_drivers[] = {
-    //sorted in order of priority
+    // sorted in order of priority
     "waveaudio",  // windows
     "coreaudio",  // macos
     "pulseaudio", // linux
@@ -203,13 +203,12 @@ ISink* SoxBackend::open_sink(core::IAllocator& allocator,
     }
 
     if (driver) {
-
-        if (is_driver_hidden(driver)){
+        if (is_driver_hidden(driver)) {
             return NULL;
         }
 
         const sox_format_handler_t* handler = sox_write_handler(output, driver, NULL);
-        if (!check_handler_flags(handler, filter_flags)){
+        if (!check_handler_flags(handler, filter_flags)) {
             return NULL;
         }
 
@@ -221,18 +220,20 @@ ISink* SoxBackend::open_sink(core::IAllocator& allocator,
 
     else {
         for (size_t n = 0; n < ROC_ARRAY_SIZE(default_drivers); n++) {
-            
             if (sox_find_format(default_drivers[n], sox_false)) {
-                const sox_format_handler_t* handler = sox_write_handler("default", default_drivers[n], NULL);
-                if (!check_handler_flags(handler, filter_flags)){
+                const sox_format_handler_t* handler =
+                    sox_write_handler("default", default_drivers[n], NULL);
+                if (!check_handler_flags(handler, filter_flags)) {
                     return NULL;
                 }
 
-                if (sink->open(default_drivers[n], output)){
+                if (sink->open(default_drivers[n], output)) {
                     return sink.release();
                 }
 
-                roc_log(LogInfo, "failed to open sink=(%s) using driver=(%s), trying next driver", output, default_drivers[n]);
+                roc_log(LogInfo,
+                        "failed to open sink=(%s) using driver=(%s), trying next driver",
+                        output, default_drivers[n]);
             }
         }
     }
@@ -262,12 +263,11 @@ ISource* SoxBackend::open_source(core::IAllocator& allocator,
     }
 
     if (driver || input) {
-
         if (driver && is_driver_hidden(driver)) {
             return NULL;
         }
         const sox_format_handler_t* handler = sox_write_handler(input, driver, NULL);
-        if (!check_handler_flags(handler, filter_flags)){
+        if (!check_handler_flags(handler, filter_flags)) {
             return NULL;
         }
 
@@ -283,15 +283,19 @@ ISource* SoxBackend::open_source(core::IAllocator& allocator,
         for (size_t n = 0; n < ROC_ARRAY_SIZE(default_drivers); n++) {
             driver = default_drivers[n];
             if (sox_find_format(driver, sox_false)) {
-                const sox_format_handler_t* handler = sox_write_handler(input, driver, NULL);
-                if (!check_handler_flags(handler, filter_flags)){
+                const sox_format_handler_t* handler =
+                    sox_write_handler(input, driver, NULL);
+                if (!check_handler_flags(handler, filter_flags)) {
                     return NULL;
                 }
-                if (source->open(driver, input)){
+                if (source->open(driver, input)) {
                     return source.release();
                 }
 
-                roc_log(LogInfo, "failed to open source=(%s) using driver=(%s), trying next driver", input, default_drivers[n]);
+                roc_log(
+                    LogInfo,
+                    "failed to open source=(%s) using driver=(%s), trying next driver",
+                    input, default_drivers[n]);
             }
         }
     }
