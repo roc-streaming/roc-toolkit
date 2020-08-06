@@ -202,8 +202,8 @@ ISink* SoxBackend::open_sink(core::IAllocator& allocator,
         return NULL;
     }
 
-    if (driver) {
-        if (is_driver_hidden(driver)) {
+    if (output) {
+        if (driver && is_driver_hidden(driver)) {
             return NULL;
         }
 
@@ -219,6 +219,7 @@ ISink* SoxBackend::open_sink(core::IAllocator& allocator,
     }
 
     else {
+        roc_panic_if_not(driver == NULL);
         for (size_t n = 0; n < ROC_ARRAY_SIZE(default_drivers); n++) {
             if (sox_find_format(default_drivers[n], sox_false)) {
                 const sox_format_handler_t* handler =
@@ -262,7 +263,7 @@ ISource* SoxBackend::open_source(core::IAllocator& allocator,
         return NULL;
     }
 
-    if (driver || input) {
+    if (input) {
         if (driver && is_driver_hidden(driver)) {
             return NULL;
         }
@@ -278,6 +279,7 @@ ISource* SoxBackend::open_source(core::IAllocator& allocator,
     }
 
     else {
+        roc_panic_if_not(driver == NULL);
         roc_log(LogDebug, "auto-detecting appropriate backend");
         input = "default";
         for (size_t n = 0; n < ROC_ARRAY_SIZE(default_drivers); n++) {

@@ -23,6 +23,15 @@ namespace roc {
 namespace sndio {
 
 //! Backend interface.
+
+/*!
+ * Allows three cases of driver and device combinations.
+ * When driver is NULL and device is NULL, loop through default driver list occurs and we
+ * use "default" device to call open. When driver is NULL and device is not NULL, open is
+ * performed for given driver and output. When driver is not NULL and device is not NULL,
+ * open is performed for given driver and output. A fourth case is not meaningful, hence
+ * it is not supported and is forbidden by command-line.
+ */
 class IBackend {
 public:
     virtual ~IBackend();
