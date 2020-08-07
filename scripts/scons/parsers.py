@@ -1,4 +1,5 @@
 import re
+import os.path
 
 def ParseGitHead(env):
     try:
@@ -96,6 +97,23 @@ def ParseCompilerDirectory(env, compiler):
 
     return None
 
+def ParseLinkDirs(env, linker):
+    text = env.CommandOutput('%s -print-search-dirs' % linker)
+    if not text:
+        return []
+
+    for line in text.splitlines():
+        m = re.search('^\s*libraries:\s*=(.*)$', line)
+        if m:
+            ret = []
+            for libdir in m.group(1).split(':'):
+                libdir = os.path.abspath(libdir)
+                if os.path.isdir(libdir):
+                    ret.append(libdir)
+            return ret
+
+    return []
+
 def ParseConfigGuess(env, cmd):
     text = env.CommandOutput(cmd)
     if not text:
@@ -127,5 +145,6 @@ def init(env):
     env.AddMethod(ParseCompilerVersion, 'ParseCompilerVersion')
     env.AddMethod(ParseCompilerTarget, 'ParseCompilerTarget')
     env.AddMethod(ParseCompilerDirectory, 'ParseCompilerDirectory')
+    env.AddMethod(ParseLinkDirs, 'ParseLinkDirs')
     env.AddMethod(ParseConfigGuess, 'ParseConfigGuess')
     env.AddMethod(ParseList, 'ParseList')

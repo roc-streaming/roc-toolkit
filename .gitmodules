@@ -1,3 +1,3 @@
-[submodule "vendor"]
-	path = vendor
+[submodule "3rdparty/distfiles"]
+	path = 3rdparty/distfiles
 	url = https://github.com/roc-streaming/vendor.git

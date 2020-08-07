@@ -1,4 +1,3 @@
-#! /usr/bin/python2
 import os
 import re
 import sys

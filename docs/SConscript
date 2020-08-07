@@ -21,14 +21,14 @@ if GetOption('enable_doxygen'):
 
     doxygen_targets = [
         doc_env.Doxygen(
-            html_dir='#html/doxygen',
+            html_dir='#docs/html/doxygen',
             build_dir='docs/modules',
             config='#src/modules/Doxyfile',
             sources=(doc_env.GlobRecursive('#src/modules', ['*.h', '*.dox']) +
                 doc_env.GlobRecursive('#docs/images', ['*'])),
             werror=GetOption('enable_werror')),
         doc_env.Doxygen(
-            build_dir='docs/lib',
+            build_dir='docs/library',
             config='#src/library/Doxyfile',
             sources=doc_env.GlobRecursive('#src/library/include', ['*.h', '*.dox']),
             werror=GetOption('enable_werror')),
@@ -54,7 +54,7 @@ if GetOption('enable_sphinx'):
         doc_env.Sphinx(
             build_dir='docs/sphinx-html',
             output_type='html',
-            output_dir='#html/docs',
+            output_dir='#docs/html/docs',
             source_dir='#docs/sphinx',
             sources=(doc_env.GlobRecursive('#docs/sphinx', ['*']) +
                 doc_env.GlobRecursive('#docs/images', ['*']) +
@@ -64,7 +64,7 @@ if GetOption('enable_sphinx'):
         doc_env.Sphinx(
             build_dir='docs/sphinx-man',
             output_type='man',
-            output_dir='#man',
+            output_dir='#docs/man',
             source_dir='#docs/sphinx',
             sources=doc_env.GlobRecursive('#docs/sphinx', ['*']),
             werror=GetOption('enable_werror')),
@@ -75,5 +75,5 @@ if GetOption('enable_sphinx'):
 doc_env.AlwaysBuild(doc_env.Alias('docs', ['doxygen', 'sphinx']))
 
 for manpage in doc_env.GlobFiles('#docs/sphinx/manuals/*.rst'):
-    doc_env.AddDistFile(GetOption('mandir'), '#man/%s.1' %
+    doc_env.AddDistFile(GetOption('mandir'), '#docs/man/%s.1' %
                         manpage.srcnode().name.replace('.rst', '').replace('_', '-'))

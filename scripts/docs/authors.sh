@@ -89,7 +89,7 @@ function add_contributors() {
     done
 }
 
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../.."
 
 file="docs/sphinx/about_project/authors.rst"
 temp="$(mktemp)"
@@ -102,7 +102,7 @@ add_contributors "${temp}" "roc-java"
 add_contributors "${temp}" "rt-tests"
 add_contributors "${temp}" "openfec"
 add_contributors "${temp}" "dockerfiles"
-add_contributors "${temp}" "roc-toolkit/vendor"
+add_contributors "${temp}" "roc-toolkit/3rdparty/distfiles"
 
 cat "$temp" > "$file"
 rm "$temp"
