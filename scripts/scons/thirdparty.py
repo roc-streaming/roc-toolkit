@@ -44,21 +44,22 @@ def ThirdParty(
     ]
 
     if not os.path.exists(os.path.join(
-        '3rdparty', hostdir, compilerdir, 'build', vname, 'commit')):
+        'build', '3rdparty', hostdir, compilerdir, 'build', vname, 'commit')):
         if env.Execute(
             SCons.Action.CommandAction(
-                '%s scripts/3rdparty.py %s vendor %s %s %s %s %s' % (
+                '%s scripts/build/3rdparty.py %s 3rdparty/distfiles %s %s %s %s %s' % (
                     quote(env.PythonExecutable()),
-                    quote(os.path.join("3rdparty", hostdir, compilerdir)),
+                    quote(os.path.join("build", "3rdparty", hostdir, compilerdir)),
                     quote(toolchain),
                     quote(variant),
                     quote(vname),
                     quote(':'.join(vdeps)),
                     ' '.join(envvars)),
                 cmdstr = env.PrettyCommand(
-                    'GET', '3rdparty/%s/%s/build/%s' % (
+                    'GET', 'build/3rdparty/%s/%s/build/%s' % (
                         hostdir, compilerdir, vname), 'yellow'))):
-            env.Die("can't make '%s', see '3rdparty/%s/%s/build/%s/build.log' for details" % (
+            env.Die(
+                "can't make '%s', see 'build/3rdparty/%s/%s/build/%s/build.log' for details" % (
                 vname, hostdir, compilerdir, vname))
 
     env.ImportThridParty(
@@ -79,15 +80,15 @@ def ImportThridParty(env, hostdir, compilerdir, toolchain, versions, name,
 
     for s in includes:
         env.Prepend(CPPPATH=[
-            '#3rdparty/%s/%s/build/%s/include/%s' % (hostdir, compilerdir, vname, s)
+            '#build/3rdparty/%s/%s/build/%s/include/%s' % (hostdir, compilerdir, vname, s)
         ])
 
-    libdir = '#3rdparty/%s/%s/build/%s/lib' % (hostdir, compilerdir, vname)
+    libdir = '#build/3rdparty/%s/%s/build/%s/lib' % (hostdir, compilerdir, vname)
 
     if os.path.isdir(env.Dir(libdir).abspath):
         env.Prepend(LIBPATH=[libdir])
 
-        for lib in env.GlobRecursive(libdir, 'lib*'):
+        for lib in env.GlobRecursive(env.Dir(libdir).abspath, 'lib*'):
             if needlib(lib.path):
                 env.Prepend(LIBS=[env.File(lib)])
 

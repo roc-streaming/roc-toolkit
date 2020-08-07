@@ -1,8 +1,7 @@
 # build results
 bin
 build
-3rdparty
-html
+doc/html
 
 # scons
 .sconsign.dblite
@@ -36,7 +35,3 @@ __pycache__
 
 # ack
 .ackrc
-
-# doc
-.copyright
-*.vpp~*

@@ -31,7 +31,7 @@ def PythonExecutable(env):
         return sys.executable
 
 def ClangDBWriter(env, tool, build_dir):
-    return '%s scripts/wrappers/clangdb.py "%s" "%s" "%s"' % (
+    return '%s scripts/build/clangdb.py "%s" "%s" "%s"' % (
         env.PythonExecutable(),
         env.Dir('#').path,
         env.Dir(build_dir).path,
@@ -42,15 +42,17 @@ def ClangFormat(env, srcdir):
         '%s -i %s' % (env['CLANG_FORMAT'], ' '.join(map(str,
             env.GlobRecursive(
                 srcdir, ['*.h', '*.cpp'],
-                exclude=open(env.File('#.fmtignore').path).read().split())
+                exclude=[
+                    os.path.relpath(env.File('#'+s).srcnode().abspath)
+                      for s in open(env.File('#.fmtignore').abspath).read().split()])
         ))),
         env.PrettyCommand('FMT', env.Dir(srcdir).path, 'yellow')
     )
 
 def HeaderFormat(env, srcdir):
     return env.Action(
-        '%s scripts/format.py %s' % (env.PythonExecutable(), srcdir),
-        env.PrettyCommand('FMT', srcdir, 'yellow')
+        '%s scripts/build/format.py %s' % (env.PythonExecutable(), env.Dir(srcdir).path),
+        env.PrettyCommand('FMT', env.Dir(srcdir).path, 'yellow')
     )
 
 def Doxygen(env, build_dir='', html_dir=None, config='', sources=[], werror=False):
@@ -61,7 +63,7 @@ def Doxygen(env, build_dir='', html_dir=None, config='', sources=[], werror=Fals
         dirs += [env.Dir(html_dir).path]
 
     env.Command(target, sources + [config], SCons.Action.CommandAction(
-        '%s scripts/wrappers/doc.py %s %s %s %s %s %s %s' % (
+        '%s scripts/build/docfilt.py %s %s %s %s %s %s %s' % (
             env.PythonExecutable(),
             env.Dir('#').path,
             env.Dir(os.path.dirname(config)).path,
@@ -78,7 +80,7 @@ def Sphinx(env, output_type, build_dir, output_dir, source_dir, sources, werror=
     target = os.path.join(build_dir, '.done')
 
     env.Command(target, sources, SCons.Action.CommandAction(
-        '%s scripts/wrappers/doc.py %s %s %s %s %s %s -j %d -q -b %s -d %s %s %s' % (
+        '%s scripts/build/docfilt.py %s %s %s %s %s %s -j %d -q -b %s -d %s %s %s' % (
             env.PythonExecutable(),
             env.Dir('#').path,
             env.Dir('#').path,

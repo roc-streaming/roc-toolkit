@@ -2,6 +2,14 @@ import os.path
 
 Import('env', 'lib_env', 'example_env', 'gen_env', 'tool_env', 'test_env', 'pulse_env')
 
+if [s for s in COMMAND_LINE_TARGETS if s == 'test' or s.startswith('test/')]:
+    if not GetOption('enable_tests'):
+        env.Die("can't use 'test*' target(s) without `--enable-tests' option")
+
+if [s for s in COMMAND_LINE_TARGETS if s == 'bench' or s.startswith('bench/')]:
+    if not GetOption('enable_benchmarks'):
+        env.Die("can't use 'bench*' target(s) without `--enable-benchmarks' option")
+
 env.Append(CPPPATH=['#src/modules'])
 
 for targetdir in env.GlobRecursive('modules', 'target_*'):

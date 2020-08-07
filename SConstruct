@@ -292,7 +292,7 @@ env = Environment(
     platform=scons_platform,
     tools=[
         'default',
-        'roc',
+        'scons',
         ])
 
 # performance tuning
@@ -307,12 +307,26 @@ env.SConsignFile(os.path.join(env.Dir('#').abspath, '.sconsign.dblite'))
 # libraries are no different
 env['STATIC_AND_SHARED_OBJECTS_ARE_THE_SAME'] = 1
 
+for var in ['CXX', 'CC', 'AR', 'RANLIB', 'RAGEL', 'GENGETOPT',
+                'PKG_CONFIG', 'PKG_CONFIG_PATH', 'CONFIG_GUESS', 'CLANG_FORMAT']:
+    env.OverrideFromArg(var)
+
+env.OverrideFromArg('CXXLD', names=['CXXLD', 'CXX'])
+env.OverrideFromArg('CCLD', names=['CCLD', 'LD', 'CC'])
+
+env.OverrideFromArg('STRIP', default='strip')
+
+env.OverrideFromArg('DOXYGEN', default='doxygen')
+env.OverrideFromArg('SPHINX_BUILD', default='sphinx-build')
+env.OverrideFromArg('BREATHE_APIDOC', default='breathe-apidoc')
+>>>>>>> 5a613b36 (Refine file layout)
+
 if GetOption('help'):
     Return()
 
 cleanbuild = [
     env.DeleteDir('#bin'),
-    env.DeleteDir('#build'),
+    env.DeleteDir('#build/src'),
     env.DeleteFile('#compile_commands.json'),
     env.DeleteFile('#config.log'),
     env.DeleteDir('#.sconf_temp'),
@@ -320,12 +334,12 @@ cleanbuild = [
 ]
 
 cleandocs = [
-    env.DeleteDir('#html'),
+    env.DeleteDir('#docs/html'),
     env.DeleteDir('#build/docs'),
 ]
 
 cleanall = cleanbuild + cleandocs + [
-    env.DeleteDir('#3rdparty'),
+    env.DeleteDir('#build/3rdparty'),
 ]
 
 env.AlwaysBuild(env.Alias('clean', [], cleanall))
@@ -340,25 +354,6 @@ if set(COMMAND_LINE_TARGETS).intersection(['clean', 'cleanbuild', 'cleandocs']) 
         env.Execute(cleanall)
     Return()
 
-for var in ['CXX', 'CC', 'AR', 'RANLIB', 'RAGEL', 'GENGETOPT',
-                'PKG_CONFIG', 'PKG_CONFIG_PATH', 'CONFIG_GUESS', 'CLANG_FORMAT']:
-    env.OverrideFromArg(var)
-
-env.OverrideFromArg('CXXLD', names=['CXXLD', 'CXX'])
-env.OverrideFromArg('CCLD', names=['CCLD', 'LD', 'CC'])
-
-env.OverrideFromArg('STRIP', default='strip')
-
-env.OverrideFromArg('DOXYGEN', default='doxygen')
-env.OverrideFromArg('SPHINX_BUILD', default='sphinx-build')
-env.OverrideFromArg('BREATHE_APIDOC', default='breathe-apidoc')
-
-doc_env = env.Clone()
-Export('doc_env')
-
-doc_env.SConscript('docs/SConscript',
-                       variant_dir='#build', duplicate=0)
-
 if 'fmt' in COMMAND_LINE_TARGETS:
     conf = Configure(env, custom_tests=env.CustomTests)
     conf.FindClangFormat()
@@ -368,26 +363,24 @@ if 'fmt' in COMMAND_LINE_TARGETS:
 
     fmt_actions.append(env.ClangFormat('#src'))
 
-    fmt_actions.append(env.HeaderFormat('src/modules'))
-    fmt_actions.append(env.HeaderFormat('src/tests'))
-    fmt_actions.append(env.HeaderFormat('src/tools'))
-    fmt_actions.append(env.HeaderFormat('src/library/src'))
+    fmt_actions.append(env.HeaderFormat('#src/modules'))
+    fmt_actions.append(env.HeaderFormat('#src/tests'))
+    fmt_actions.append(env.HeaderFormat('#src/tools'))
+    fmt_actions.append(env.HeaderFormat('#src/library/src'))
 
     env.AlwaysBuild(
         env.Alias('fmt', [], fmt_actions))
+
+doc_env = env.Clone()
+Export('doc_env')
+
+doc_env.SConscript('docs/SConscript',
+                       variant_dir='#build', duplicate=0)
 
 non_build_targets = ['fmt', 'docs', 'shpinx', 'doxygen']
 if set(COMMAND_LINE_TARGETS) \
   and set(COMMAND_LINE_TARGETS).intersection(non_build_targets) == set(COMMAND_LINE_TARGETS):
     Return()
-
-if [s for s in COMMAND_LINE_TARGETS if s == 'test' or s.startswith('test/')]:
-    if not GetOption('enable_tests'):
-        env.Die("can't use 'test*' target(s) without `--enable-tests' option")
-
-if [s for s in COMMAND_LINE_TARGETS if s == 'bench' or s.startswith('bench/')]:
-    if not GetOption('enable_benchmarks'):
-        env.Die("can't use 'bench*' target(s) without `--enable-benchmarks' option")
 
 build = GetOption('build') or ''
 host = GetOption('host') or ''
@@ -536,7 +529,7 @@ compiler_spec = '-'.join(
 thirdparty_compiler_spec = '-'.join(
     [s for s in [compiler, '.'.join(map(str, compiler_ver)), thirdparty_variant] if s])
 
-build_dir = 'build/%s/%s' % (
+build_dir = 'build/src/%s/%s' % (
     host,
     compiler_spec)
 
@@ -1067,7 +1060,7 @@ if 'ragel' in download_dependencies:
                    thirdparty_variant, thirdparty_versions, 'ragel')
 
     gen_env['RAGEL'] = env.File(
-        '#3rdparty/%s/%s/build/ragel-%s/bin/ragel' % (
+        '#build/3rdparty/%s/%s/build/ragel-%s/bin/ragel' % (
             build + env['PROGSUFFIX'], thirdparty_compiler_spec,
             thirdparty_versions['ragel']))
 
@@ -1076,7 +1069,7 @@ if 'gengetopt' in download_dependencies:
                    thirdparty_variant, thirdparty_versions, 'gengetopt')
 
     gen_env['GENGETOPT'] = env.File(
-        '#3rdparty/%s/%s/build/gengetopt-%s/bin/gengetopt' % (
+        '#build/3rdparty/%s/%s/build/gengetopt-%s/bin/gengetopt' % (
             build + env['PROGSUFFIX'], thirdparty_compiler_spec,
             thirdparty_versions['gengetopt']))
 
@@ -1373,7 +1366,7 @@ else:
 
 if platform in ['linux']:
     tool_env.Append(LINKFLAGS=[
-        '-Wl,-rpath-link,%s' % env.Dir('#3rdparty/%s/%s/rpath' % (
+        '-Wl,-rpath-link,%s' % env.Dir('#build/3rdparty/%s/%s/rpath' % (
             host, thirdparty_compiler_spec)).abspath,
     ])
 
@@ -1404,20 +1397,6 @@ if compiler == 'gcc':
 if not env['STRIPFLAGS']:
     if platform in ['darwin']:
         env.Append(STRIPFLAGS=['-x'])
-
-env.AlwaysBuild(
-    env.Alias('tidy', [env.Dir('#')],
-        env.Action(
-            "clang-tidy -p %s -checks='%s' -header-filter='src/.*' %s" % (
-                build_dir,
-                ','.join(open(env.File('#.clang-checks').path).read().split()),
-                ' '.join(map(str, (env.GlobRecursive('#src/modules', '*.cpp') +
-                                   env.GlobRecursive('#src/lib', '*.cpp') +
-                                   env.GlobRecursive('#src/tools', '*.cpp'))
-                ))
-            ),
-            env.PrettyCommand('TIDY', 'src', 'yellow')
-        )))
 
 Export('env', 'lib_env', 'example_env', 'gen_env', 'tool_env', 'test_env', 'pulse_env')
 
