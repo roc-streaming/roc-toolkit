@@ -37,7 +37,7 @@ todo_include_todos = False
 
 # -- Options for Breathe ----------------------------------------------
 
-breathe_projects = { 'roc': '../../build/docs/lib/xml' }
+breathe_projects = { 'roc': '../../build/docs/library/xml' }
 
 breathe_default_project = 'roc'
 breathe_domain_by_extension = {'h': 'c'}

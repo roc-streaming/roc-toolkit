@@ -17,7 +17,9 @@ def GlobRecursive(env, dirs, patterns, exclude=[]):
 
     for pattern in patterns:
         for root in dirs:
-            for root, dirnames, filenames in os.walk(env.Dir(root).srcnode().abspath):
+            if type(root) is not str or not os.path.isabs(root):
+                root = env.Dir(root).srcnode().abspath
+            for root, dirnames, filenames in os.walk(root):
                 for names in [dirnames, filenames]:
                     for name in fnmatch.filter(names, pattern):
                         cwd = env.Dir('.').srcnode().abspath
