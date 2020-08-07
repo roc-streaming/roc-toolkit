@@ -128,5 +128,5 @@ float Profiler::get_moving_avg() {
     }
 }
 
-} // roc
-} // audio
+} // namespace roc
+} // namespace audio

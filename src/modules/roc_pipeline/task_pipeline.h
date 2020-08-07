@@ -233,7 +233,6 @@ public:
         virtual void pipeline_task_finished(Task&) = 0;
     };
 
-public:
     //! Enqueue a task for asynchronous execution.
     void schedule(Task& task, ICompletionHandler& handler);
 

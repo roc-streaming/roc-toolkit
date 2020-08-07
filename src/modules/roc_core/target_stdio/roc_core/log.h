@@ -75,7 +75,7 @@ public:
         ROC_ATTR_PRINTF(4, 5);
 
     //! Get current maximum log level.
-    LogLevel get_level() {
+    LogLevel get_level() const {
         return (LogLevel)AtomicOps::load_relaxed(level_);
     }
 
