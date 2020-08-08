@@ -1332,6 +1332,10 @@ if compiler in ['gcc', 'clang']:
 
             e.Prepend(**{var: dirs})
 
+        # workaround for "skipping incompatible" linker warning
+        if '/usr/lib64' in e.ParseLinkDirs(e['CXXLD']):
+            e.Prepend(LINKFLAGS=['-L/usr/lib64'])
+
     for var in ['CC', 'CXX']:
         env[var] = env.ClangDBWriter(env[var], build_dir)
 
