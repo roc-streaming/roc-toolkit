@@ -46,3 +46,4 @@ Contributors
 * Vladimir Panov <quest201114@yandex.ru>
 * Diego Coladas Mato <dcoladasmato@gmail.com>
 * Miguel Victoria <miguelvicvil@gmail.com>
+* Vimal Patel <pvimal816@gmail.com>
