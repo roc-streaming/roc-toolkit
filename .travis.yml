@@ -158,6 +158,3 @@ jobs:
       stage: Docs
       script:
         - scripts/travis/trigger.sh roc-streaming%2Froc-streaming.github.io travis
-
-notifications:
-    webhooks: https://www.travisbuddy.com/
