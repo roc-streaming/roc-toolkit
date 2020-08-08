@@ -42,7 +42,7 @@ function add_if_new() {
     fi
 
     local github_login="$(find_login "${commit_email}")"
-    if [ -z "${login}" ]
+    if [ -z "${github_login}" ]
     then
         github_login="$(find_login "${commit_name}")"
     fi
@@ -52,6 +52,7 @@ function add_if_new() {
     then
         print_name="${commit_name}"
     fi
+    print_name="$(echo "${print_name}" | sed -re 's/\S+/\u&/g')"
 
     local print_email=""
     if echo "${commit_email}" | grep -q users.noreply.github.com
@@ -96,13 +97,13 @@ temp="$(mktemp)"
 
 cat "$file" > "$temp"
 
-add_contributors "${temp}" "roc-toolkit"
+add_contributors "${temp}" "$(basename "$(pwd)")"
+add_contributors "${temp}" "$(basename "$(pwd)")/3rdparty/distfiles"
 add_contributors "${temp}" "roc-go"
 add_contributors "${temp}" "roc-java"
 add_contributors "${temp}" "rt-tests"
 add_contributors "${temp}" "openfec"
 add_contributors "${temp}" "dockerfiles"
-add_contributors "${temp}" "roc-toolkit/3rdparty/distfiles"
 
 cat "$temp" > "$file"
 rm "$temp"
