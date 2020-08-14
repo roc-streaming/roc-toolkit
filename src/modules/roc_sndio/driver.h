@@ -44,7 +44,7 @@ typedef struct DriverInfo {
 
     //! Initialize.
     DriverInfo()
-        : name("\0")
+        : name("")
         , backend(NULL)
         , flags(0) {
     }
