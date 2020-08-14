@@ -53,9 +53,11 @@ ISource* PulseaudioBackend::open_source(
     return NULL;
 }
 
-bool PulseaudioBackend::get_drivers(core::StringList& list, int filter_flags) {
+bool PulseaudioBackend::get_drivers(core::Array<DriverInfo>& list, int filter_flags) {
     if (filter_flags & FilterDevice) {
-        return list.push_back_unique("pulse");
+        DriverInfo driver_info;
+        driver_info.set("pulse", this, DriverDevice | DriverDefault | DriverSink);
+        list.push_back(driver_info);
     }
     return true;
 }

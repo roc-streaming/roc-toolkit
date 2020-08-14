@@ -12,10 +12,12 @@
 #ifndef ROC_SNDIO_IBACKEND_H_
 #define ROC_SNDIO_IBACKEND_H_
 
+#include "roc_core/array.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/shared_ptr.h"
 #include "roc_core/string_list.h"
 #include "roc_sndio/config.h"
+#include "roc_sndio/driver.h"
 #include "roc_sndio/isink.h"
 #include "roc_sndio/isource.h"
 
@@ -24,26 +26,24 @@ namespace sndio {
 
 //! Backend interface.
 
-/*!
- * Allows three cases of driver and device combinations.
- * When driver is NULL and device is NULL, loop through default driver list occurs and we
- * use "default" device to call open. When driver is NULL and device is not NULL, open is
- * performed for given driver and output. When driver is not NULL and device is not NULL,
- * open is performed for given driver and output. A fourth case is not meaningful, hence
- * it is not supported and is forbidden by command-line.
- */
+//! Allows three cases of driver and device combinations.
+//! [1. Driver is NULL and device is NULL, iterate through default drivers and perform 
+//! open_sink()/open_source() with appropriate backend until successful.
+//! 2. Driver is NULL and device is not NULL, open_sink()/open_source is called
+//! with appropriate backend. 
+//! 3. When driver is not NULL and device is not NULL, open_sink()/open_source()
+//! is performed with appropriate backend for given driver and device.]
 class IBackend {
 public:
     virtual ~IBackend();
 
-    //! Probing flags.
+    //! Flags to filter by device type.
     enum FilterFlags {
 
         //! Input or output may be a file.
-        FilterFile = (1 << 2),
-
+        FilterFile = (1 << 0),
         //! Input or output may be a device.
-        FilterDevice = (1 << 3)
+        FilterDevice = (1 << 1)
     };
 
     //! Create and open a sink.
@@ -61,7 +61,7 @@ public:
                                  int filter_flags) = 0;
 
     //! Append supported drivers to the list.
-    virtual bool get_drivers(core::StringList&, int filter_flags) = 0;
+    virtual bool get_drivers(core::Array<DriverInfo>&, int filter_flags) = 0;
 };
 
 } // namespace sndio

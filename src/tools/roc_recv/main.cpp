@@ -94,8 +94,10 @@ int main(int argc, char** argv) {
         return 1;
     }
 
+    sndio::BackendDispatcher backend_dispatcher(context.allocator());
+
     if (args.list_supported_given) {
-        if (!sndio::print_supported(context.allocator())) {
+        if (!sndio::print_supported(context.allocator(), backend_dispatcher)) {
             return 1;
         }
         return 0;
@@ -118,10 +120,9 @@ int main(int argc, char** argv) {
         }
     }
 
-    sndio::BackendDispatcher::instance().set_frame_size(
-        receiver_config.common.internal_frame_length,
-        receiver_config.common.output_sample_rate,
-        receiver_config.common.output_channels);
+    backend_dispatcher.set_frame_size(receiver_config.common.internal_frame_length,
+                                      receiver_config.common.output_sample_rate,
+                                      receiver_config.common.output_channels);
 
     if (args.sess_latency_given) {
         if (!core::parse_duration(args.sess_latency_arg,
@@ -269,8 +270,7 @@ int main(int argc, char** argv) {
     }
 
     core::ScopedPtr<sndio::ISink> output_sink(
-        sndio::BackendDispatcher::instance().open_sink(context.allocator(), output_uri,
-                                                       args.output_format_arg, io_config),
+        backend_dispatcher.open_sink(output_uri, args.output_format_arg, io_config),
         context.allocator());
     if (!output_sink) {
         roc_log(LogError, "can't open output file or device: uri=%s format=%s",
@@ -314,8 +314,7 @@ int main(int argc, char** argv) {
         }
 
         backup_source.reset(
-            sndio::BackendDispatcher::instance().open_source(
-                context.allocator(), backup_uri, args.backup_format_arg, io_config),
+            backend_dispatcher.open_source(backup_uri, args.backup_format_arg, io_config),
             context.allocator());
 
         if (!backup_source) {

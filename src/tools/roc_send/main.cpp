@@ -94,8 +94,9 @@ int main(int argc, char** argv) {
         return 1;
     }
 
+    sndio::BackendDispatcher backend_dispatcher(context.allocator());
     if (args.list_supported_given) {
-        if (!sndio::print_supported(context.allocator())) {
+        if (!sndio::print_supported(context.allocator(), backend_dispatcher)) {
             return 1;
         }
         return 0;
@@ -125,9 +126,9 @@ int main(int argc, char** argv) {
         }
     }
 
-    sndio::BackendDispatcher::instance().set_frame_size(
-        sender_config.internal_frame_length, sender_config.input_sample_rate,
-        sender_config.input_channels);
+    backend_dispatcher.set_frame_size(sender_config.internal_frame_length,
+                                      sender_config.input_sample_rate,
+                                      sender_config.input_channels);
 
     address::EndpointURI source_endpoint(context.allocator());
     if (args.source_given) {
@@ -252,8 +253,7 @@ int main(int argc, char** argv) {
     }
 
     core::ScopedPtr<sndio::ISource> input_source(
-        sndio::BackendDispatcher::instance().open_source(
-            context.allocator(), input_uri, args.input_format_arg, io_config),
+        backend_dispatcher.open_source(input_uri, args.input_format_arg, io_config),
         context.allocator());
     if (!input_source) {
         roc_log(LogError, "can't open input file or device: uri=%s format=%s",

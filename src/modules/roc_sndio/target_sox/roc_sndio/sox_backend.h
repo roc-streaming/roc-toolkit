@@ -51,8 +51,8 @@ public:
                                  const Config& config,
                                  int filter_flags);
 
-    //! Append supported drivers to the list.
-    virtual bool get_drivers(core::StringList&, int filter_flags);
+    //! Append supported drivers to the array.
+    virtual bool get_drivers(core::Array<DriverInfo>&, int filter_flags);
 
 private:
     friend class core::Singleton<SoxBackend>;

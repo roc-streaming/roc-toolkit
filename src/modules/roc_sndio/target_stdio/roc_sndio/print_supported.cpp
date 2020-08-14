@@ -46,10 +46,10 @@ void print_string_list(const core::StringList& list,
 
 } // namespace
 
-bool print_supported(core::IAllocator& allocator) {
+bool print_supported(core::IAllocator& allocator, BackendDispatcher& backend_dispatcher) {
     core::StringList list(allocator);
 
-    if (!BackendDispatcher::instance().get_supported_schemes(list)) {
+    if (!backend_dispatcher.get_supported_schemes(list)) {
         roc_log(LogError, "can't retrieve driver list");
         return false;
     }
@@ -57,7 +57,7 @@ bool print_supported(core::IAllocator& allocator) {
     printf("supported schemes for audio devices and files:\n");
     print_string_list(list, "", "://");
 
-    if (!BackendDispatcher::instance().get_supported_formats(list)) {
+    if (!backend_dispatcher.get_supported_formats(list)) {
         roc_log(LogError, "can't retrieve format list");
         return false;
     }

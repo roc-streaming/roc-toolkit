@@ -18,7 +18,7 @@ namespace roc {
 namespace sndio {
 
 //! Print supported schemes and formats.
-bool print_supported(core::IAllocator& allocator);
+bool print_supported(core::IAllocator& allocator, BackendDispatcher& backend_dispatcher);
 
 } // namespace sndio
 } // namespace roc

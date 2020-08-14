@@ -61,9 +61,10 @@ int main(int argc, char** argv) {
     }
 
     core::HeapAllocator allocator;
+    sndio::BackendDispatcher backend_dispatcher(allocator);
 
     if (args.list_supported_given) {
-        if (!sndio::print_supported(allocator)) {
+        if (!sndio::print_supported(allocator, backend_dispatcher)) {
             return 1;
         }
         return 0;
@@ -86,9 +87,9 @@ int main(int argc, char** argv) {
         }
     }
 
-    sndio::BackendDispatcher::instance().set_frame_size(
-        converter_config.internal_frame_length, converter_config.input_sample_rate,
-        converter_config.input_channels);
+    backend_dispatcher.set_frame_size(converter_config.internal_frame_length,
+                                      converter_config.input_sample_rate,
+                                      converter_config.input_channels);
 
     core::BufferPool<audio::sample_t> pool(
         allocator,
@@ -116,8 +117,7 @@ int main(int argc, char** argv) {
     }
 
     core::ScopedPtr<sndio::ISource> input_source(
-        sndio::BackendDispatcher::instance().open_source(
-            allocator, input_uri, args.input_format_arg, source_config),
+        backend_dispatcher.open_source(input_uri, args.input_format_arg, source_config),
         allocator);
     if (!input_source) {
         roc_log(LogError, "can't open input: %s", args.input_arg);
@@ -194,9 +194,9 @@ int main(int argc, char** argv) {
 
     core::ScopedPtr<sndio::ISink> output_sink;
     if (args.output_given) {
-        output_sink.reset(sndio::BackendDispatcher::instance().open_sink(
-                              allocator, output_uri, args.output_format_arg, sink_config),
-                          allocator);
+        output_sink.reset(
+            backend_dispatcher.open_sink(output_uri, args.output_format_arg, sink_config),
+            allocator);
         if (!output_sink) {
             roc_log(LogError, "can't open output: %s", args.output_arg);
             return 1;

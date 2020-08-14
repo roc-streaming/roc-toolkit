@@ -12,7 +12,6 @@
 #ifndef ROC_SNDIO_PULSEAUDIO_BACKEND_H_
 #define ROC_SNDIO_PULSEAUDIO_BACKEND_H_
 
-#include "roc_core/array.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/singleton.h"
 #include "roc_sndio/ibackend.h"
@@ -43,7 +42,7 @@ public:
                                  int filter_flags);
 
     //! Append supported drivers to the list.
-    virtual bool get_drivers(core::StringList&, int filter_flags);
+    virtual bool get_drivers(core::Array<DriverInfo>&, int filter_flags);
 
 private:
     friend class core::Singleton<PulseaudioBackend>;

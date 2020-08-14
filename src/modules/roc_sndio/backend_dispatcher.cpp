@@ -58,16 +58,30 @@ const char* select_input_output(const address::IoURI& uri) {
     }
 }
 
+bool check_opened(core::StringList& list, const char* driver) {
+    const char* tried_driver = list.front();
+    while (tried_driver) {
+        if (strcmp(tried_driver, driver) == 0) {
+            return true;
+        }
+        tried_driver = list.nextof(tried_driver);
+    }
+    return false;
+}
+
 } // namespace
 
-BackendDispatcher::BackendDispatcher()
-    : n_backends_(0) {
+BackendDispatcher::BackendDispatcher(core::IAllocator& allocator)
+    : allocator_(allocator)
+    , driver_info_list_(allocator_)
+    , n_backends_(0) {
 #ifdef ROC_TARGET_PULSEAUDIO
     register_backend_(PulseaudioBackend::instance());
 #endif // ROC_TARGET_PULSEAUDIO
 #ifdef ROC_TARGET_SOX
     register_backend_(SoxBackend::instance());
 #endif // ROC_TARGET_SOX
+    init_driver_info_();
 }
 
 void BackendDispatcher::set_frame_size(core::nanoseconds_t frame_length,
@@ -81,25 +95,53 @@ void BackendDispatcher::set_frame_size(core::nanoseconds_t frame_length,
     (void)channels;
 }
 
-ISink* BackendDispatcher::open_sink(core::IAllocator& allocator,
-                                    const address::IoURI& uri,
+ISink* BackendDispatcher::open_sink(const address::IoURI& uri,
                                     const char* force_format,
                                     const Config& config) {
     const int flags = select_driver_type(uri);
 
     const char* driver = select_driver_name(uri, force_format);
     const char* output = select_input_output(uri);
-    for (size_t n = 0; n < n_backends_; n++) {
-        ISink* sink = backends_[n]->open_sink(allocator, driver, output, config, flags);
+
+    if (!driver && !output) {
+        core::StringList tried_open(allocator_);
+        for (size_t n = 0; n < driver_info_list_.size(); n++) {
+            driver = driver_info_list_[n].name;
+            IBackend* backend = driver_info_list_[n].backend;
+            unsigned int driver_flags = driver_info_list_[n].flags;
+
+            if (check_opened(tried_open, driver)) {
+                continue;
+            }
+
+            if ((driver_flags & DriverDefault) && (driver_flags & DriverSink)) {
+                ISink* sink =
+                    backend->open_sink(allocator_, driver, "default", config, flags);
+                tried_open.push_back_unique(driver);
+                if (sink) {
+                    return sink;
+                }
+            }
+        }
+    } else {
+        if (!output) {
+            roc_panic("invalid driver and device combination");
+        }
+        IBackend* backend = get_backend_(driver, DriverSink);
+        if (!backend) {
+            roc_log(LogError, "driver not supported by available backends");
+            return NULL;
+        }
+        ISink* sink = backend->open_sink(allocator_, driver, output, config, flags);
         if (sink) {
             return sink;
         }
+        roc_log(LogError, "BackendDispatcher: open_sink() failed for driver=(%s) and output=(%s)", driver, output);
     }
     return NULL;
 }
 
-ISource* BackendDispatcher::open_source(core::IAllocator& allocator,
-                                        const address::IoURI& uri,
+ISource* BackendDispatcher::open_source(const address::IoURI& uri,
                                         const char* force_format,
                                         const Config& config) {
     const int flags = select_driver_type(uri);
@@ -107,12 +149,41 @@ ISource* BackendDispatcher::open_source(core::IAllocator& allocator,
     const char* driver = select_driver_name(uri, force_format);
     const char* input = select_input_output(uri);
 
-    for (size_t n = 0; n < n_backends_; n++) {
-        ISource* source =
-            backends_[n]->open_source(allocator, driver, input, config, flags);
+    if (!driver && !input) {
+        core::StringList tried_open(allocator_);
+        for (size_t n = 0; n < driver_info_list_.size(); n++) {
+            driver = driver_info_list_[n].name;
+            IBackend* backend = driver_info_list_[n].backend;
+            unsigned int driver_flags = driver_info_list_[n].flags;
+
+            if (check_opened(tried_open, driver)) {
+                continue;
+            }
+
+            if ((driver_flags & DriverDefault) && (driver_flags & DriverSource)) {
+                roc_log(LogDebug, "Trying driver: (%s)", driver);
+                ISource* source =
+                    backend->open_source(allocator_, driver, "default", config, flags);
+                tried_open.push_back_unique(driver);
+                if (source) {
+                    return source;
+                }
+            }
+        }
+    } else {
+        if (!input) {
+            roc_panic("invalid driver and device combination");
+        }
+        IBackend* backend = get_backend_(driver, DriverSource);
+        if (!backend) {
+            roc_log(LogError, "driver not supported by available backends");
+            return NULL;
+        } 
+        ISource* source = backend->open_source(allocator_, driver, input, config, flags);
         if (source) {
             return source;
         }
+        roc_log(LogError, "BackendDispatcher: open_sink() failed for driver=(%s) and output=(%s)", driver, input); 
     }
     return NULL;
 }
@@ -120,10 +191,12 @@ ISource* BackendDispatcher::open_source(core::IAllocator& allocator,
 bool BackendDispatcher::get_supported_schemes(core::StringList& list) {
     list.clear();
 
-    for (size_t n = 0; n < n_backends_; n++) {
+    for (size_t n = 0; n < driver_info_list_.size(); n++) {
         // every device driver has its own scheme
-        if (!backends_[n]->get_drivers(list, IBackend::FilterDevice)) {
-            return false;
+        if (driver_info_list_[n].flags & DriverDevice) {
+            if (!list.push_back_unique(driver_info_list_[n].name)) {
+                return false;
+            }
         }
     }
 
@@ -131,25 +204,53 @@ bool BackendDispatcher::get_supported_schemes(core::StringList& list) {
     if (!list.push_back("file")) {
         return false;
     }
-
     return true;
 }
 
 bool BackendDispatcher::get_supported_formats(core::StringList& list) {
     list.clear();
 
-    for (size_t n = 0; n < n_backends_; n++) {
-        if (!backends_[n]->get_drivers(list, IBackend::FilterFile)) {
-            return false;
+    for (size_t n = 0; n < driver_info_list_.size(); n++) {
+        if (driver_info_list_[n].flags & DriverFile) {
+            if (!list.push_back_unique(driver_info_list_[n].name)) {
+                return false;
+            }
         }
     }
-
     return true;
 }
 
 void BackendDispatcher::register_backend_(IBackend& backend) {
     roc_panic_if(n_backends_ == MaxBackends);
     backends_[n_backends_++] = &backend;
+}
+
+void BackendDispatcher::init_driver_info_() {
+    if (!driver_info_list_.grow(MaxDrivers)){
+        roc_panic("BackendDispatcher: driver_info_list_ could not grow");
+    }
+    for (size_t n = 0; n < n_backends_; n++) {
+        backends_[n]->get_drivers(driver_info_list_,
+                                  IBackend::FilterDevice | IBackend::FilterFile);
+    }
+    roc_log(LogDebug, "initialized driver_info_list_ size=(%lu)", driver_info_list_.size());
+}
+
+IBackend* BackendDispatcher::get_backend_(const char* driver, unsigned int driver_flags) {
+    if (!driver) {
+        #ifdef ROC_TARGET_SOX
+        return &SoxBackend::instance();
+        #endif // ROC_TARGET_SOX
+        return NULL;
+    }
+    for (size_t n = 0; n < driver_info_list_.size(); n++) {
+        if (driver_flags & driver_info_list_[n].flags) {
+            if (strcmp(driver, driver_info_list_[n].name) == 0) {
+                return driver_info_list_[n].backend;
+            }
+        }
+    }
+    return NULL;
 }
 
 } // namespace sndio

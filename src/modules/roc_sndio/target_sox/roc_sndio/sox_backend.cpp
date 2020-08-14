@@ -63,6 +63,15 @@ const char* hidden_drivers[] = {
     "sndfile",
 };
 
+bool is_default(const char* driver) {
+    for (size_t n = 0; n < ROC_ARRAY_SIZE(default_drivers); n++) {
+        if (strcmp(driver, default_drivers[n]) == 0) {
+            return true;
+        }
+    }
+
+    return false;
+}
 const char* map_to_sox_driver(const char* driver) {
     if (!driver) {
         return NULL;
@@ -157,6 +166,49 @@ void log_handler(unsigned sox_level,
     roc_log(level, "sox: %s: %s", filename, message);
 }
 
+void add_driver_mapping(core::Array<DriverInfo>& list,
+                        const char* driver,
+                        IBackend* backend,
+                        unsigned int driver_flags) {
+    for (size_t n = 0; n < list.size(); n++) {
+        if (strcmp(list[n].name, driver) == 0 && list[n].backend == backend) {
+            return;
+        }
+    }
+    DriverInfo driver_info;
+    driver_info.set(driver, backend, driver_flags);
+    list.push_back(driver_info);
+}
+
+template <class T>
+bool check_and_open(const char* driver, const char* inout, int filter_flags, const core::ScopedPtr<T>& sinksource) {
+
+    if (driver && is_driver_hidden(driver)) {
+        roc_log(LogDebug, "driver is not supported");
+        return false;
+    }
+
+    const sox_format_handler_t* handler = sox_write_handler(inout, driver, NULL);
+    if (!check_handler_flags(handler, filter_flags)) {
+        return false;
+    }
+
+    if (!sinksource) {
+        return false;
+    }
+
+    if (!sinksource->valid()) {
+        return false;
+    }
+
+    if (!sinksource->open(driver, inout)) {
+        roc_log(LogDebug, "sox: driver open failed");
+        return false;
+    }
+
+    return true;
+}
+
 } // namespace
 
 SoxBackend::SoxBackend()
@@ -194,53 +246,9 @@ ISink* SoxBackend::open_sink(core::IAllocator& allocator,
 
     driver = map_to_sox_driver(driver);
     core::ScopedPtr<SoxSink> sink(new (allocator) SoxSink(allocator, config), allocator);
-    if (!sink) {
-        return NULL;
-    }
-
-    if (!sink->valid()) {
-        return NULL;
-    }
-
-    if (output) {
-        if (driver && is_driver_hidden(driver)) {
-            return NULL;
-        }
-
-        const sox_format_handler_t* handler = sox_write_handler(output, driver, NULL);
-        if (!check_handler_flags(handler, filter_flags)) {
-            return NULL;
-        }
-
-        if (!sink->open(driver, output)) {
-            return NULL;
-        }
+    if (check_and_open(driver, output, filter_flags, sink)) { 
         return sink.release();
     }
-
-    else {
-        roc_panic_if_not(driver == NULL);
-        roc_log(LogInfo, "auto-detecting appropriate backend");
-        output = "default";
-        for (size_t n = 0; n < ROC_ARRAY_SIZE(default_drivers); n++) {
-            if (sox_find_format(default_drivers[n], sox_false)) {
-                const sox_format_handler_t* handler =
-                    sox_write_handler("default", default_drivers[n], NULL);
-                if (!check_handler_flags(handler, filter_flags)) {
-                    return NULL;
-                }
-
-                if (sink->open(default_drivers[n], output)) {
-                    return sink.release();
-                }
-
-                roc_log(LogInfo,
-                        "failed to open sink=(%s) using driver=(%s), trying next driver",
-                        output, default_drivers[n]);
-            }
-        }
-    }
-
     return NULL;
 }
 
@@ -254,60 +262,22 @@ ISource* SoxBackend::open_source(core::IAllocator& allocator,
     first_created_ = true;
 
     driver = map_to_sox_driver(driver);
-
     core::ScopedPtr<SoxSource> source(new (allocator) SoxSource(allocator, config),
                                       allocator);
-    if (!source) {
-        return NULL;
-    }
-
-    if (!source->valid()) {
-        return NULL;
-    }
-
-    if (input) {
-        if (driver && is_driver_hidden(driver)) {
-            return NULL;
-        }
-        const sox_format_handler_t* handler = sox_write_handler(input, driver, NULL);
-        if (!check_handler_flags(handler, filter_flags)) {
-            return NULL;
-        }
-
-        if (!source->open(driver, input)) {
-            return NULL;
-        }
+    if (check_and_open(driver, input, filter_flags, source)) {
         return source.release();
     }
 
-    else {
-        roc_panic_if_not(driver == NULL);
-        roc_log(LogInfo, "auto-detecting appropriate backend");
-        input = "default";
-        for (size_t n = 0; n < ROC_ARRAY_SIZE(default_drivers); n++) {
-            driver = default_drivers[n];
-            if (sox_find_format(driver, sox_false)) {
-                const sox_format_handler_t* handler =
-                    sox_write_handler(input, driver, NULL);
-                if (!check_handler_flags(handler, filter_flags)) {
-                    return NULL;
-                }
-                if (source->open(driver, input)) {
-                    return source.release();
-                }
-
-                roc_log(
-                    LogInfo,
-                    "failed to open source=(%s) using driver=(%s), trying next driver",
-                    input, default_drivers[n]);
-            }
-        }
-    }
     return NULL;
 }
 
-bool SoxBackend::get_drivers(core::StringList& list, int filter_flags) {
+bool SoxBackend::get_drivers(core::Array<DriverInfo>& list, int filter_flags) {
     core::Mutex::Lock lock(mutex_);
+
+    for (size_t n = 0; n < ROC_ARRAY_SIZE(default_drivers); n++) {
+        const char* driver = map_from_sox_driver(default_drivers[n]);
+        add_driver_mapping(list, driver, this, DriverDevice|DriverDefault|DriverSource|DriverSink);
+    }
 
     const sox_format_tab_t* formats = sox_get_format_fns();
 
@@ -319,13 +289,18 @@ bool SoxBackend::get_drivers(core::StringList& list, int filter_flags) {
             for (format_names = handler->names; *format_names; ++format_names) {
                 const char* driver = map_from_sox_driver(*format_names);
 
-                if (is_driver_hidden(driver)) {
+                if (is_driver_hidden(driver) || is_default(driver)) {
                     continue;
                 }
 
-                if (!list.push_back_unique(driver)) {
-                    return false;
+                unsigned int driver_flags = DriverSource | DriverSink;
+                if (handler->flags == SOX_FILE_DEVICE) {
+                    driver_flags |= DriverFile;
+
+                } else {
+                    driver_flags |= DriverDevice;
                 }
+                add_driver_mapping(list, driver, this, driver_flags);
             }
         }
     }

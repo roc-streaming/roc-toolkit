@@ -18,6 +18,7 @@
 #include "roc_core/shared_ptr.h"
 #include "roc_core/singleton.h"
 #include "roc_core/string_list.h"
+#include "roc_sndio/driver.h"
 #include "roc_sndio/ibackend.h"
 #include "roc_sndio/isink.h"
 #include "roc_sndio/isource.h"
@@ -28,10 +29,8 @@ namespace sndio {
 //! Backend dispatcher.
 class BackendDispatcher : public core::NonCopyable<> {
 public:
-    //! Get instance.
-    static BackendDispatcher& instance() {
-        return core::Singleton<BackendDispatcher>::instance();
-    }
+    //! Initialize.
+    BackendDispatcher(core::IAllocator& allocator);
 
     //! Set internal buffer size for all backends that need it.
     void set_frame_size(core::nanoseconds_t frame_length,
@@ -39,14 +38,11 @@ public:
                         packet::channel_mask_t channels);
 
     //! Create and open a sink.
-    ISink* open_sink(core::IAllocator& allocator,
-                     const address::IoURI& uri,
-                     const char* force_format,
-                     const Config& config);
+    ISink*
+    open_sink(const address::IoURI& uri, const char* force_format, const Config& config);
 
     //! Create and open a source.
-    ISource* open_source(core::IAllocator& allocator,
-                         const address::IoURI& uri,
+    ISource* open_source(const address::IoURI& uri,
                          const char* force_format,
                          const Config& config);
 
@@ -57,14 +53,14 @@ public:
     bool get_supported_formats(core::StringList&);
 
 private:
-    friend class core::Singleton<BackendDispatcher>;
-
-    BackendDispatcher();
     void register_backend_(IBackend& backend);
+    void init_driver_info_();
+    IBackend* get_backend_(const char* driver, unsigned int driver_flags);
 
-    enum { MaxBackends = 8 };
-
+    enum { MaxBackends = 8 , MaxDrivers = 75};
     IBackend* backends_[MaxBackends];
+    core::IAllocator& allocator_;
+    core::Array<DriverInfo> driver_info_list_;
     size_t n_backends_;
 };
 
