@@ -297,7 +297,7 @@ bool SoxBackend::get_drivers(core::Array<DriverInfo>& list, int filter_flags) {
                 }
 
                 unsigned int driver_flags = DriverSource | DriverSink;
-                if (handler->flags == SOX_FILE_DEVICE) {
+                if (!(handler->flags & SOX_FILE_DEVICE)) {
                     driver_flags |= DriverFile;
 
                 } else {
