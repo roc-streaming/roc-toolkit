@@ -57,7 +57,7 @@ private:
     void init_driver_info_();
     IBackend* get_backend_(const char* driver, unsigned int driver_flags);
 
-    enum { MaxBackends = 8 , MaxDrivers = 75};
+    enum { MaxBackends = 8, MaxDrivers = 75 };
     IBackend* backends_[MaxBackends];
     core::IAllocator& allocator_;
     core::Array<DriverInfo> driver_info_list_;

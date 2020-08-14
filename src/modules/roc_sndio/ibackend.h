@@ -27,10 +27,10 @@ namespace sndio {
 //! Backend interface.
 
 //! Allows three cases of driver and device combinations.
-//! [1. Driver is NULL and device is NULL, iterate through default drivers and perform 
+//! [1. Driver is NULL and device is NULL, iterate through default drivers and perform
 //! open_sink()/open_source() with appropriate backend until successful.
 //! 2. Driver is NULL and device is not NULL, open_sink()/open_source is called
-//! with appropriate backend. 
+//! with appropriate backend.
 //! 3. When driver is not NULL and device is not NULL, open_sink()/open_source()
 //! is performed with appropriate backend for given driver and device.]
 class IBackend {

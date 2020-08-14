@@ -136,7 +136,9 @@ ISink* BackendDispatcher::open_sink(const address::IoURI& uri,
         if (sink) {
             return sink;
         }
-        roc_log(LogError, "BackendDispatcher: open_sink() failed for driver=(%s) and output=(%s)", driver, output);
+        roc_log(LogError,
+                "BackendDispatcher: open_sink() failed for driver=(%s) and output=(%s)",
+                driver, output);
     }
     return NULL;
 }
@@ -178,12 +180,14 @@ ISource* BackendDispatcher::open_source(const address::IoURI& uri,
         if (!backend) {
             roc_log(LogError, "driver not supported by available backends");
             return NULL;
-        } 
+        }
         ISource* source = backend->open_source(allocator_, driver, input, config, flags);
         if (source) {
             return source;
         }
-        roc_log(LogError, "BackendDispatcher: open_sink() failed for driver=(%s) and output=(%s)", driver, input); 
+        roc_log(LogError,
+                "BackendDispatcher: open_sink() failed for driver=(%s) and output=(%s)",
+                driver, input);
     }
     return NULL;
 }
@@ -226,21 +230,22 @@ void BackendDispatcher::register_backend_(IBackend& backend) {
 }
 
 void BackendDispatcher::init_driver_info_() {
-    if (!driver_info_list_.grow(MaxDrivers)){
+    if (!driver_info_list_.grow(MaxDrivers)) {
         roc_panic("BackendDispatcher: driver_info_list_ could not grow");
     }
     for (size_t n = 0; n < n_backends_; n++) {
         backends_[n]->get_drivers(driver_info_list_,
                                   IBackend::FilterDevice | IBackend::FilterFile);
     }
-    roc_log(LogDebug, "initialized driver_info_list_ size=(%zu)", driver_info_list_.size());
+    roc_log(LogDebug, "initialized driver_info_list_ size=(%zu)",
+            driver_info_list_.size());
 }
 
 IBackend* BackendDispatcher::get_backend_(const char* driver, unsigned int driver_flags) {
     if (!driver) {
-        #ifdef ROC_TARGET_SOX
+#ifdef ROC_TARGET_SOX
         return &SoxBackend::instance();
-        #endif // ROC_TARGET_SOX
+#endif // ROC_TARGET_SOX
         return NULL;
     }
     for (size_t n = 0; n < driver_info_list_.size(); n++) {

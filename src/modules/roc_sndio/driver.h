@@ -20,10 +20,10 @@ class IBackend;
 //! Driver flags
 enum DriverFlags {
     //! Default driver.
-    DriverDefault = (1 << 0), 
+    DriverDefault = (1 << 0),
     //! File driver.
     DriverFile = (1 << 1),
-    //! Device driver. 
+    //! Device driver.
     DriverDevice = (1 << 2),
     //! Driver supports sources.
     DriverSource = (1 << 3),

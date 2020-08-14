@@ -181,8 +181,10 @@ void add_driver_mapping(core::Array<DriverInfo>& list,
 }
 
 template <class T>
-bool check_and_open(const char* driver, const char* inout, int filter_flags, const core::ScopedPtr<T>& sinksource) {
-
+bool check_and_open(const char* driver,
+                    const char* inout,
+                    int filter_flags,
+                    const core::ScopedPtr<T>& sinksource) {
     if (driver && is_driver_hidden(driver)) {
         roc_log(LogDebug, "driver is not supported");
         return false;
@@ -246,7 +248,7 @@ ISink* SoxBackend::open_sink(core::IAllocator& allocator,
 
     driver = map_to_sox_driver(driver);
     core::ScopedPtr<SoxSink> sink(new (allocator) SoxSink(allocator, config), allocator);
-    if (check_and_open(driver, output, filter_flags, sink)) { 
+    if (check_and_open(driver, output, filter_flags, sink)) {
         return sink.release();
     }
     return NULL;
@@ -276,7 +278,8 @@ bool SoxBackend::get_drivers(core::Array<DriverInfo>& list, int filter_flags) {
 
     for (size_t n = 0; n < ROC_ARRAY_SIZE(default_drivers); n++) {
         const char* driver = map_from_sox_driver(default_drivers[n]);
-        add_driver_mapping(list, driver, this, DriverDevice|DriverDefault|DriverSource|DriverSink);
+        add_driver_mapping(list, driver, this,
+                           DriverDevice | DriverDefault | DriverSource | DriverSink);
     }
 
     const sox_format_tab_t* formats = sox_get_format_fns();
