@@ -233,7 +233,7 @@ void BackendDispatcher::init_driver_info_() {
         backends_[n]->get_drivers(driver_info_list_,
                                   IBackend::FilterDevice | IBackend::FilterFile);
     }
-    roc_log(LogDebug, "initialized driver_info_list_ size=(%lu)", driver_info_list_.size());
+    roc_log(LogDebug, "initialized driver_info_list_ size=(%zu)", driver_info_list_.size());
 }
 
 IBackend* BackendDispatcher::get_backend_(const char* driver, unsigned int driver_flags) {
