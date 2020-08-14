@@ -44,9 +44,9 @@ typedef struct DriverInfo {
 
     //! Initialize.
     DriverInfo()
-        : name("")
-        , backend(NULL)
+        : backend(NULL)
         , flags(0) {
+        strcpy(name, "");
     }
     //! Setter method.
     void set(const char* driver, IBackend* d_backend, unsigned int d_flags) {
