@@ -60,7 +60,7 @@ for t in "${tests[@]}"; do
     [ "$filename" = "roc-test-netio" ] && args="-v" || args=""
 
     adb push $t $target_prefix/$filename 1> /dev/null
-    python2 scripts/wrappers/timeout.py 300 \
+    python2 scripts/build/timeout.py 300 \
         adb shell "LD_LIBRARY_PATH=${target_prefix}/lib" \
             "${target_prefix}/${filename} ${args}"
 done
