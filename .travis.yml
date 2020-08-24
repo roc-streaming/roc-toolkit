@@ -103,7 +103,22 @@ jobs:
         - scripts/travis/docker.sh rocstreaming/env-ubuntu scripts/travis/linux-runtime-checks/valgrind-debug.sh
         - scripts/travis/docker.sh rocstreaming/env-ubuntu scripts/travis/linux-runtime-checks/valgrind-release.sh
 
-    - name: "Android x86"
+    - name: "Android i686"
+      stage: Build
+      os: linux
+      dist: bionic
+      sudo: required
+      services:
+        - docker
+      before_install:
+        - docker pull rocstreaming/env-android
+      script:
+        - scripts/travis/android.sh API=24 NDK_VERSION=21.1.6352462 ABI=i686 scripts/travis/android/linux-android.sh
+        - scripts/travis/android.sh API=28 NDK_VERSION=21.1.6352462 ABI=i686 scripts/travis/android/linux-android.sh
+        - scripts/travis/android.sh API=29 NDK_VERSION=21.1.6352462 ABI=i686 scripts/travis/android/linux-android.sh
+        - cat build.status
+
+    - name: "Android x86_64"
       stage: Build
       os: linux
       dist: bionic
@@ -114,11 +129,8 @@ jobs:
         - docker pull rocstreaming/env-android
       script:
         - scripts/travis/android.sh API=24 NDK_VERSION=21.1.6352462 ABI=x86_64 scripts/travis/android/linux-android.sh
-        - scripts/travis/android.sh API=24 NDK_VERSION=21.1.6352462 ABI=i686 scripts/travis/android/linux-android.sh
         - scripts/travis/android.sh API=28 NDK_VERSION=21.1.6352462 ABI=x86_64 scripts/travis/android/linux-android.sh
-        - scripts/travis/android.sh API=28 NDK_VERSION=21.1.6352462 ABI=i686 scripts/travis/android/linux-android.sh
         - scripts/travis/android.sh API=29 NDK_VERSION=21.1.6352462 ABI=x86_64 scripts/travis/android/linux-android.sh
-        - scripts/travis/android.sh API=29 NDK_VERSION=21.1.6352462 ABI=i686 scripts/travis/android/linux-android.sh
         - cat build.status
 
     - name: "Android ARM"
