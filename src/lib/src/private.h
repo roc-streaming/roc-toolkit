@@ -13,6 +13,7 @@
 #include "roc/context.h"
 #include "roc/receiver.h"
 #include "roc/sender.h"
+#include "roc/version.h"
 
 #include "roc_audio/units.h"
 #include "roc_core/atomic.h"
