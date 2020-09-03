@@ -27,8 +27,15 @@ def ParseGitHead(env):
         return None
 
 def ParseProjectVersion(env):
-    with open('.version') as fp:
-        return fp.read().strip()
+    with open('src/library/include/roc/version.h') as fp:
+        data = fp.read()
+        m = re.search(r"""^#define ROC_VERSION_MAJOR (\d+)$""", data, re.MULTILINE)
+        major = int(m.group(1))
+        m = re.search(r"""^#define ROC_VERSION_MINOR (\d+)$""", data, re.MULTILINE)
+        minor = int(m.group(1))
+        m = re.search(r"""^#define ROC_VERSION_PATCH (\d+)$""", data, re.MULTILINE)
+        patch = int(m.group(1))
+        return '%d.%d.%d' % (major, minor, patch)
 
 def ParseToolVersion(env, command):
     text = env.CommandOutput(command)

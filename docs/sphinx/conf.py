@@ -2,6 +2,18 @@
 
 import datetime
 import os
+import re
+
+def get_version():
+    with open('../../src/library/include/roc/version.h') as fp:
+        data = fp.read()
+        m = re.search(r"""^#define ROC_VERSION_MAJOR (\d+)$""", data, re.MULTILINE)
+        major = m.group(1)
+        m = re.search(r"""^#define ROC_VERSION_MINOR (\d+)$""", data, re.MULTILINE)
+        minor = m.group(1)
+        m = re.search(r"""^#define ROC_VERSION_PATCH (\d+)$""", data, re.MULTILINE)
+        patch = m.group(1)
+        return (major, minor, patch)
 
 # -- General configuration ------------------------------------------------
 
@@ -23,8 +35,7 @@ project = u'Roc Toolkit'
 copyright = u'%s, Roc authors' % datetime.datetime.now().year
 author = u'Roc authors'
 
-version_tuple = open(os.path.join(
-    os.path.dirname(__file__), '../../.version')).read().strip().split('.')
+version_tuple = get_version()
 
 version = 'Roc Toolkit %s' % '.'.join(version_tuple[:2])
 release = '%s' % '.'.join(version_tuple)

@@ -187,3 +187,24 @@ roc_log
 .. doxygenfunction:: roc_log_set_level
 
 .. doxygenfunction:: roc_log_set_handler
+
+roc_version
+===========
+
+.. code-block:: c
+
+   #include <roc/version.h>
+
+.. doxygendefine:: ROC_VERSION_MAJOR
+
+.. doxygendefine:: ROC_VERSION_MINOR
+
+.. doxygendefine:: ROC_VERSION_PATCH
+
+.. doxygentypedef:: roc_version
+   :outline:
+
+.. doxygenstruct:: roc_version
+   :members:
+
+.. doxygenfunction:: roc_get_version
