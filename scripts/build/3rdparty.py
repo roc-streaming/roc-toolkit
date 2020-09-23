@@ -334,6 +334,18 @@ def traverse_parents(path, search_file):
         if os.path.exists(child_path):
             return child_path
 
+def read_stdout(proc):
+    out = proc.stdout.read()
+    try:
+        out = out.decode()
+    except:
+        pass
+    try:
+        out = str(out)
+    except:
+        pass
+    return out
+
 def getvar(env, var, toolchain, default):
     if var in env:
         return env[var]
@@ -349,7 +361,7 @@ def getsysroot(toolchain, compiler):
     try:
         cmd = [compiler, '-print-sysroot']
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=devnull)
-        sysroot = proc.stdout.read().strip()
+        sysroot = read_stdout(proc).strip()
         if os.path.isdir(sysroot):
             return sysroot
     except:
@@ -391,7 +403,7 @@ def detect_android_api(compiler):
     try:
         cmd = [compiler, '-dM', '-E', '-']
         proc = subprocess.Popen(cmd, stdin=devnull, stdout=subprocess.PIPE, stderr=devnull)
-        for line in proc.stdout.read().splitlines():
+        for line in read_stdout(proc).splitlines():
             m = re.search(r'__ANDROID_API__\s+(\d+)', line)
             if m:
                 return m.group(1)
@@ -410,7 +422,7 @@ def checkfamily(env, toolchain, family):
         try:
             proc = subprocess.Popen([tool, '-v'],
                                         stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            out = str(proc.stdout.read().strip())
+            out = str(read_stdout(proc).strip())
             for k in keys:
                 if k in out:
                     return True
@@ -528,7 +540,7 @@ mkpath(os.path.join(builddir, 'src'))
 os.chdir(os.path.join(builddir))
 
 if name == 'libuv':
-    download('http://dist.libuv.org/dist/v%s/libuv-v%s.tar.gz' % (ver, ver),
+    download('https://dist.libuv.org/dist/v%s/libuv-v%s.tar.gz' % (ver, ver),
              'libuv-v%s.tar.gz' % ver,
              logfile,
              vendordir)
