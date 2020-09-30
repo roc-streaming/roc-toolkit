@@ -2,7 +2,7 @@
 
 # Roc Toolkit: real-time audio streaming
 
-Roc is a toolkit for real-time audio streaming over the network.
+**Roc is a toolkit for real-time audio streaming over the network.**
 
 You can read about the project here:
 
@@ -15,19 +15,19 @@ Summary
 
 The toolkit consists of:
 
-* a C library;
-* a set of command-line tools;
-* a set of PulseAudio modules.
+* **a C library;**
+* **a set of command-line tools;**
+* **a set of PulseAudio modules.**
 
 Key features:
 
-* real-time streaming with guaranteed latency;
-* restoring lost packets using Forward Erasure Correction codes;
-* converting between the sender and receiver clock domains;
-* CD-quality audio;
-* multiple profiles for different CPU and latency requirements;
-* portability;
-* relying on open, standard protocols.
+* **real-time streaming with guaranteed latency;**
+* **restoring lost packets using Forward Erasure Correction codes;**
+* **converting between the sender and receiver clock domains;**
+* **CD-quality audio;**
+* **multiple profiles for different CPU and latency requirements;**
+* **portability;**
+* **relying on open, standard protocols.**
 
 Documentation
 -------------
