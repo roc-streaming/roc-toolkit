@@ -1,7 +1,9 @@
 #! /bin/bash
 set -euxo pipefail
 
-brew update
+brew cask uninstall --force java
+
+brew update || true
 
 brew unlink python@2
 brew list |\

@@ -1,7 +1,7 @@
 #! /bin/bash
 set -euxo pipefail
 
-brew update
+brew update || true
 
 brew unlink python@2
 brew list |\
