@@ -40,15 +40,11 @@ TaskPipeline::ICompletionHandler::~ICompletionHandler() {
 
 TaskPipeline::TaskPipeline(ITaskScheduler& scheduler,
                            const TaskConfig& config,
-                           size_t sample_rate,
-                           packet::channel_mask_t ch_mask)
+                           audio::SampleSpec sample_spec)
     : config_(config)
-    , sample_rate_(sample_rate)
-    , ch_mask_(ch_mask)
-    , min_samples_between_tasks_(
-          packet::ns_to_size(config.min_frame_length_between_tasks, sample_rate, ch_mask))
-    , max_samples_between_tasks_(
-          packet::ns_to_size(config.max_frame_length_between_tasks, sample_rate, ch_mask))
+    , sample_spec_(sample_spec)
+    , min_samples_between_tasks_(sample_spec_.ns_to_size(config.min_frame_length_between_tasks))
+    , max_samples_between_tasks_(sample_spec.ns_to_size(config_.max_frame_length_between_tasks))
     , no_task_proc_half_interval_(config.task_processing_prohibited_interval / 2)
     , scheduler_(scheduler)
     , pending_tasks_(0)
@@ -413,8 +409,7 @@ bool TaskPipeline::subframe_task_processing_allowed_(
 core::nanoseconds_t
 TaskPipeline::update_next_frame_deadline_(core::nanoseconds_t frame_start_time,
                                           size_t frame_size) {
-    const core::nanoseconds_t frame_duration =
-        packet::size_to_ns(frame_size, sample_rate_, ch_mask_);
+    const core::nanoseconds_t frame_duration = sample_spec_.size_to_ns(frame_size);
 
     const core::nanoseconds_t next_frame_deadline = frame_start_time + frame_duration;
 

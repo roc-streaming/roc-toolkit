@@ -62,8 +62,8 @@ TEST_GROUP(packet_formats) {
     void check_format_info(const Format& format, const test::PacketInfo& pi) {
         UNSIGNED_LONGS_EQUAL(packet::Packet::FlagAudio, format.flags);
         UNSIGNED_LONGS_EQUAL(pi.pt, format.payload_type);
-        UNSIGNED_LONGS_EQUAL(pi.samplerate, format.sample_rate);
-        UNSIGNED_LONGS_EQUAL(pi.num_channels, packet::num_channels(format.channel_mask));
+        UNSIGNED_LONGS_EQUAL(pi.samplerate, format.sample_spec.getSampleRate());
+        UNSIGNED_LONGS_EQUAL(pi.num_channels, format.sample_spec.num_channels());
         UNSIGNED_LONGS_EQUAL(pi.num_samples, format.get_num_samples(pi.payload_size));
     }
 
@@ -128,11 +128,14 @@ TEST_GROUP(packet_formats) {
 
         decoder.begin(packet.rtp()->timestamp, packet.rtp()->payload.data(),
                       packet.rtp()->payload.size());
-
+        
+        audio::channel_mask_t channels = (1 << pi.num_channels) - 1;
+        audio::SampleSpec sample_spec = audio::SampleSpec();
+        sample_spec.setChannels(channels);
         UNSIGNED_LONGS_EQUAL(
             pi.num_samples,
-            decoder.read(samples, pi.num_samples,
-                         packet::channel_mask_t(1 << pi.num_channels) - 1));
+            decoder.read(samples, pi.num_samples, sample_spec)
+        );
 
         decoder.end();
 
@@ -166,10 +169,12 @@ TEST_GROUP(packet_formats) {
 
         encoder.begin(packet.rtp()->payload.data(), packet.rtp()->payload.size());
 
+        audio::SampleSpec sample_spec = audio::SampleSpec();
+        sample_spec.setChannels(audio::channel_mask_t (1 << pi.num_channels) - 1);
         UNSIGNED_LONGS_EQUAL(
             pi.num_samples,
             encoder.write(samples, pi.num_samples,
-                          packet::channel_mask_t(1 << pi.num_channels) - 1));
+                          sample_spec));
 
         encoder.end();
     }

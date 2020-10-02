@@ -49,7 +49,7 @@ TEST(receiver, source) {
     CHECK(receiver.valid());
 
     UNSIGNED_LONGS_EQUAL(receiver.source().sample_rate(),
-                         receiver_config.common.output_sample_rate);
+                         receiver_config.common.output_sample_spec.getSampleRate());
 }
 
 TEST(receiver, bind) {

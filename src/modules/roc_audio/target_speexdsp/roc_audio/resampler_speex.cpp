@@ -46,13 +46,12 @@ SpeexResampler::SpeexResampler(core::IAllocator&,
                                core::BufferPool<sample_t>& buffer_pool,
                                ResamplerProfile profile,
                                core::nanoseconds_t frame_length,
-                               size_t sample_rate,
-                               packet::channel_mask_t channels)
+                               SampleSpec& sample_spec)
     : speex_state_(NULL)
     , in_frame_size_(
-          (spx_uint32_t)packet::ns_to_size(frame_length, sample_rate, channels))
+          (spx_uint32_t)sample_spec.ns_to_size(frame_length))
     , in_frame_pos_(in_frame_size_)
-    , num_ch_((spx_uint32_t)packet::num_channels(channels))
+    , num_ch_((spx_uint32_t)sample_spec.num_channels())
     , rate_limiter_(LogReportInterval)
     , valid_(false) {
     if (num_ch_ == 0 || in_frame_size_ == 0) {
@@ -73,8 +72,8 @@ SpeexResampler::SpeexResampler(core::IAllocator&,
     in_frame_.reslice(0, in_frame_size_);
 
     int err = 0;
-    speex_state_ = speex_resampler_init(num_ch_, (spx_uint32_t)sample_rate,
-                                        (spx_uint32_t)sample_rate, quality, &err);
+    speex_state_ = speex_resampler_init(num_ch_, (spx_uint32_t)sample_spec.getSampleRate(),
+                                        (spx_uint32_t)sample_spec.getSampleRate(), quality, &err);
     if (err != RESAMPLER_ERR_SUCCESS || !speex_state_) {
         roc_log(LogError, "speex resampler: speex_resampler_init(): [%d] %s", err,
                 get_error_msg(err));

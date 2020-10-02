@@ -198,17 +198,21 @@ bool SenderEndpointSet::create_pipeline_() {
         return false;
     }
 
+    audio::SampleSpec sample_spec = audio::SampleSpec(
+        format->sample_spec.getSampleRate(),
+        config_.input_sample_spec.getChannels()
+    );
     packetizer_.reset(new (packetizer_) audio::Packetizer(
         *pwriter, source_endpoint_->composer(), *payload_encoder_, packet_pool_,
-        byte_buffer_pool_, config_.input_channels, config_.packet_length,
-        format->sample_rate, config_.payload_type));
+        byte_buffer_pool_, config_.packet_length,
+        sample_spec, config_.payload_type));
     if (!packetizer_ || !packetizer_->valid()) {
         return false;
     }
 
     audio::IWriter* awriter = packetizer_.get();
 
-    if (config_.resampling && config_.input_sample_rate != format->sample_rate) {
+    if (config_.resampling && config_.input_sample_spec.getSampleRate() != format->sample_spec.getSampleRate()) {
         if (config_.poisoning) {
             resampler_poisoner_.reset(new (resampler_poisoner_)
                                           audio::PoisonWriter(*awriter));
@@ -221,7 +225,7 @@ bool SenderEndpointSet::create_pipeline_() {
         resampler_.reset(audio::ResamplerMap::instance().new_resampler(
                              config_.resampler_backend, allocator_, sample_buffer_pool_,
                              config_.resampler_profile, config_.internal_frame_length,
-                             config_.input_sample_rate, config_.input_channels),
+                             config_.input_sample_spec),
                          allocator_);
 
         if (!resampler_) {
@@ -230,13 +234,13 @@ bool SenderEndpointSet::create_pipeline_() {
 
         resampler_writer_.reset(new (resampler_writer_) audio::ResamplerWriter(
             *awriter, *resampler_, sample_buffer_pool_, config_.internal_frame_length,
-            config_.input_sample_rate, config_.input_channels));
+            config_.input_sample_spec));
 
         if (!resampler_writer_ || !resampler_writer_->valid()) {
             return false;
         }
-        if (!resampler_writer_->set_scaling(config_.input_sample_rate,
-                                            format->sample_rate, 1.0f)) {
+        if (!resampler_writer_->set_scaling(config_.input_sample_spec.getChannels(),
+                                            format->sample_spec.getSampleRate(), 1.0f)) {
             return false;
         }
         awriter = resampler_writer_.get();

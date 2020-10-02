@@ -9,6 +9,7 @@
 #include "roc_address/endpoint_uri.h"
 #include "roc_address/io_uri.h"
 #include "roc_audio/resampler_profile.h"
+#include "roc_audio/sample_spec.h"
 #include "roc_core/array.h"
 #include "roc_core/colors.h"
 #include "roc_core/crash.h"
@@ -109,9 +110,7 @@ int main(int argc, char** argv) {
             roc_log(LogError, "invalid --frame-length: bad format");
             return 1;
         }
-        if (packet::ns_to_size(receiver_config.common.internal_frame_length,
-                               receiver_config.common.output_sample_rate,
-                               receiver_config.common.output_channels)
+        if (receiver_config.common.output_sample_spec.ns_to_size(receiver_config.common.internal_frame_length)
             <= 0) {
             roc_log(LogError, "invalid --frame-length: should be > 0");
             return 1;
@@ -120,8 +119,7 @@ int main(int argc, char** argv) {
 
     sndio::BackendDispatcher::instance().set_frame_size(
         receiver_config.common.internal_frame_length,
-        receiver_config.common.output_sample_rate,
-        receiver_config.common.output_channels);
+        receiver_config.common.output_sample_spec);
 
     if (args.sess_latency_given) {
         if (!core::parse_duration(args.sess_latency_arg,
@@ -226,7 +224,7 @@ int main(int argc, char** argv) {
 
     sndio::Config io_config;
     io_config.frame_length = receiver_config.common.internal_frame_length;
-    io_config.channels = receiver_config.common.output_channels;
+    io_config.sample_spec.setChannels(receiver_config.common.output_sample_spec.getChannels());
 
     if (args.io_latency_given) {
         if (!core::parse_duration(args.io_latency_arg, io_config.latency)) {
@@ -240,10 +238,10 @@ int main(int argc, char** argv) {
             roc_log(LogError, "invalid --rate: should be > 0");
             return 1;
         }
-        io_config.sample_rate = (size_t)args.rate_arg;
+        io_config.sample_spec.setSampleRate((size_t)args.rate_arg);
     } else {
         if (!receiver_config.common.resampling) {
-            io_config.sample_rate = pipeline::DefaultSampleRate;
+            io_config.sample_spec.setSampleRate(audio::DefaultSampleRate);
         }
     }
 
@@ -279,9 +277,9 @@ int main(int argc, char** argv) {
     }
 
     receiver_config.common.timing = !output_sink->has_clock();
-    receiver_config.common.output_sample_rate = output_sink->sample_rate();
+    receiver_config.common.output_sample_spec.setSampleRate(output_sink->sample_rate());
 
-    if (receiver_config.common.output_sample_rate == 0) {
+    if (receiver_config.common.output_sample_spec.getSampleRate() == 0) {
         roc_log(LogError,
                 "can't detect output sample rate, try to set it "
                 "explicitly with --rate option");
@@ -331,11 +329,8 @@ int main(int argc, char** argv) {
         converter_config.resampler_profile =
             receiver_config.default_session.resampler_profile;
 
-        converter_config.input_sample_rate = backup_source->sample_rate();
-        converter_config.output_sample_rate = receiver_config.common.output_sample_rate;
-
-        converter_config.input_channels = receiver_config.common.output_channels;
-        converter_config.output_channels = receiver_config.common.output_channels;
+        converter_config.input_sample_spec = audio::SampleSpec(backup_source->sample_rate(), receiver_config.common.output_sample_spec.getChannels());
+        converter_config.output_sample_spec = audio::SampleSpec(receiver_config.common.output_sample_spec.getSampleRate(), receiver_config.common.output_sample_spec.getChannels());
 
         converter_config.internal_frame_length =
             receiver_config.common.internal_frame_length;
@@ -411,7 +406,7 @@ int main(int argc, char** argv) {
     sndio::Pump pump(
         context.sample_buffer_pool(), receiver.source(), backup_pipeline.get(),
         *output_sink, receiver_config.common.internal_frame_length,
-        receiver_config.common.output_sample_rate, receiver_config.common.output_channels,
+        receiver_config.common.output_sample_spec,
         args.oneshot_flag ? sndio::Pump::ModeOneshot : sndio::Pump::ModePermanent);
     if (!pump.valid()) {
         roc_log(LogError, "can't create pump");

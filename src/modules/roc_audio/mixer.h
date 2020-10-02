@@ -13,6 +13,7 @@
 #define ROC_AUDIO_MIXER_H_
 
 #include "roc_audio/ireader.h"
+#include "roc_audio/sample_spec.h"
 #include "roc_audio/units.h"
 #include "roc_core/list.h"
 #include "roc_core/noncopyable.h"
@@ -50,8 +51,7 @@ public:
     //!    attached readers
     explicit Mixer(core::BufferPool<sample_t>& pool,
                    core::nanoseconds_t frame_length,
-                   size_t sample_rate,
-                   packet::channel_mask_t ch_mask);
+                   audio::SampleSpec sample_spec);
 
     //! Check if the mixer was succefully constructed.
     bool valid() const;

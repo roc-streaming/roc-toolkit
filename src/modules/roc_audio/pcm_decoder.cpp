@@ -47,7 +47,7 @@ void PcmDecoder::begin(packet::timestamp_t frame_position,
 
 size_t PcmDecoder::read(audio::sample_t* samples,
                         size_t n_samples,
-                        packet::channel_mask_t channels) {
+                        SampleSpec& sample_spec) {
     if (!frame_data_) {
         roc_panic("pcm decoder: read should be called only between begin/end");
     }
@@ -57,7 +57,7 @@ size_t PcmDecoder::read(audio::sample_t* samples,
     }
 
     const size_t rd_samples = funcs_.decode_samples(frame_data_, frame_size_, frame_pos_,
-                                                    samples, n_samples, channels);
+                                                    samples, n_samples, sample_spec);
 
     (void)shift(rd_samples);
 

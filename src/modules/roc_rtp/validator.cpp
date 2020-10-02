@@ -14,10 +14,10 @@ namespace rtp {
 
 Validator::Validator(packet::IReader& reader,
                      const ValidatorConfig& config,
-                     size_t sample_rate)
+                     const audio::SampleSpec& sample_spec)
     : reader_(reader)
     , config_(config)
-    , sample_rate_(sample_rate) {
+    , sample_spec_(sample_spec) {
 }
 
 packet::PacketPtr Validator::read() {
@@ -80,7 +80,7 @@ bool Validator::check_(const packet::RTP& prev, const packet::RTP& next) const {
         ts_dist = -ts_dist;
     }
 
-    const core::nanoseconds_t ts_dist_ns = packet::timestamp_to_ns(ts_dist, sample_rate_);
+    const core::nanoseconds_t ts_dist_ns = sample_spec_.timestamp_to_ns(ts_dist);
 
     if (ts_dist_ns > config_.max_ts_jump) {
         roc_log(LogDebug,

@@ -20,7 +20,7 @@ ConverterSink::ConverterSink(const ConverterConfig& config,
                              core::IAllocator& allocator)
     : audio_writer_(NULL)
     , config_(config)
-    , num_channels_(packet::num_channels(config.output_channels)) {
+    , num_channels_(config.output_sample_spec.num_channels()) {
     audio::IWriter* awriter = output_writer;
     if (!awriter) {
         awriter = &null_writer_;
@@ -39,7 +39,7 @@ ConverterSink::ConverterSink(const ConverterConfig& config,
         resampler_.reset(audio::ResamplerMap::instance().new_resampler(
                              config.resampler_backend, allocator, pool,
                              config.resampler_profile, config.internal_frame_length,
-                             config.input_sample_rate, config.input_channels),
+                             config.input_sample_spec),
                          allocator);
 
         if (!resampler_) {
@@ -48,13 +48,13 @@ ConverterSink::ConverterSink(const ConverterConfig& config,
 
         resampler_writer_.reset(new (resampler_writer_) audio::ResamplerWriter(
             *awriter, *resampler_, pool, config.internal_frame_length,
-            config.input_sample_rate, config.input_channels));
+            config.input_sample_spec));
 
         if (!resampler_writer_ || !resampler_writer_->valid()) {
             return;
         }
-        if (!resampler_writer_->set_scaling(config.input_sample_rate,
-                                            config.output_sample_rate, 1.0f)) {
+        if (!resampler_writer_->set_scaling(config.input_sample_spec.getSampleRate(),
+                                            config.output_sample_spec.getSampleRate(), 1.0f)) {
             return;
         }
         awriter = resampler_writer_.get();
@@ -70,7 +70,7 @@ ConverterSink::ConverterSink(const ConverterConfig& config,
 
     if (config.profiling) {
         profiler_.reset(new (profiler_) audio::ProfilingWriter(
-            *awriter, allocator, config.input_channels, config.input_sample_rate,
+            *awriter, allocator, config.input_sample_spec, 
             config.profiler_config));
         if (!profiler_ || !profiler_->valid()) {
             return;
@@ -86,7 +86,7 @@ bool ConverterSink::valid() {
 }
 
 size_t ConverterSink::sample_rate() const {
-    return config_.output_sample_rate;
+    return config_.output_sample_spec.getSampleRate();
 }
 
 size_t ConverterSink::num_channels() const {

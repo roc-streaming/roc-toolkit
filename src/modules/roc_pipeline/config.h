@@ -17,6 +17,7 @@
 #include "roc_audio/profiler.h"
 #include "roc_audio/resampler_backend.h"
 #include "roc_audio/resampler_profile.h"
+#include "roc_audio/sample_spec.h"
 #include "roc_audio/watchdog.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/time.h"
@@ -29,12 +30,6 @@
 
 namespace roc {
 namespace pipeline {
-
-//! Default sample rate, number of samples per second.
-const size_t DefaultSampleRate = 44100;
-
-//! Default channel mask.
-const packet::channel_mask_t DefaultChannelMask = 0x3;
 
 //! Default packet length.
 const core::nanoseconds_t DefaultPacketLength = 7 * core::Millisecond;
@@ -112,12 +107,9 @@ struct SenderConfig {
     //! FEC encoder parameters.
     fec::CodecConfig fec_encoder;
 
-    //! Number of samples per second per channel.
-    size_t input_sample_rate;
-
-    //! Channel mask.
-    packet::channel_mask_t input_channels;
-
+    //! Sample spec
+    audio::SampleSpec input_sample_spec;
+    
     //! Duration of the internal frames, in nanoseconds.
     core::nanoseconds_t internal_frame_length;
 
@@ -148,8 +140,7 @@ struct SenderConfig {
     SenderConfig()
         : resampler_backend(audio::ResamplerBackend_Default)
         , resampler_profile(audio::ResamplerProfile_Medium)
-        , input_sample_rate(DefaultSampleRate)
-        , input_channels(DefaultChannelMask)
+        , input_sample_spec()
         , internal_frame_length(DefaultInternalFrameLength)
         , packet_length(DefaultPacketLength)
         , payload_type(rtp::PayloadType_L16_Stereo)
@@ -168,8 +159,8 @@ struct ReceiverSessionConfig {
     //! Target latency, nanoseconds.
     core::nanoseconds_t target_latency;
 
-    //! Channel mask.
-    packet::channel_mask_t channels;
+    //! Sample spec
+    audio::SampleSpec sample_spec;
 
     //! Packet payload type.
     unsigned int payload_type;
@@ -197,7 +188,7 @@ struct ReceiverSessionConfig {
 
     ReceiverSessionConfig()
         : target_latency(DefaultLatency)
-        , channels(DefaultChannelMask)
+        , sample_spec()
         , payload_type(0)
         , resampler_backend(audio::ResamplerBackend_Default)
         , resampler_profile(audio::ResamplerProfile_Medium) {
@@ -210,11 +201,8 @@ struct ReceiverSessionConfig {
 //! @remarks
 //!  Defines receiver parameters common for all sessions.
 struct ReceiverCommonConfig {
-    //! Number of samples per second per channel.
-    size_t output_sample_rate;
-
-    //! Channel mask.
-    packet::channel_mask_t output_channels;
+    //! Sample spec
+    audio::SampleSpec output_sample_spec;
 
     //! Duration of the internal frames, in nanoseconds.
     core::nanoseconds_t internal_frame_length;
@@ -238,8 +226,7 @@ struct ReceiverCommonConfig {
     bool beeping;
 
     ReceiverCommonConfig()
-        : output_sample_rate(DefaultSampleRate)
-        , output_channels(DefaultChannelMask)
+        : output_sample_spec()
         , internal_frame_length(DefaultInternalFrameLength)
         , resampling(false)
         , timing(false)
@@ -269,18 +256,12 @@ struct ConverterConfig {
     //! Resampler profile.
     audio::ResamplerProfile resampler_profile;
 
-    //! Number of samples per second per channel.
-    size_t input_sample_rate;
+    //! Input sample spec.
+    audio::SampleSpec input_sample_spec;
 
-    //! Number of samples per second per channel.
-    size_t output_sample_rate;
-
-    //! Input channel mask.
-    packet::channel_mask_t input_channels;
-
-    //! Output channel mask.
-    packet::channel_mask_t output_channels;
-
+    //! Output Sample spec.
+    audio::SampleSpec output_sample_spec;
+    
     //! Duration of the internal frames, in nanoseconds.
     core::nanoseconds_t internal_frame_length;
 
@@ -299,10 +280,8 @@ struct ConverterConfig {
     ConverterConfig()
         : resampler_backend(audio::ResamplerBackend_Default)
         , resampler_profile(audio::ResamplerProfile_Medium)
-        , input_sample_rate(DefaultSampleRate)
-        , output_sample_rate(DefaultSampleRate)
-        , input_channels(DefaultChannelMask)
-        , output_channels(DefaultChannelMask)
+        , input_sample_spec()
+        , output_sample_spec()
         , internal_frame_length(DefaultInternalFrameLength)
         , resampling(false)
         , poisoning(false)

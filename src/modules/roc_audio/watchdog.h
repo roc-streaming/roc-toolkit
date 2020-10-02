@@ -13,6 +13,7 @@
 #define ROC_AUDIO_WATCHDOG_H_
 
 #include "roc_audio/ireader.h"
+#include "roc_audio/sample_spec.h"
 #include "roc_core/array.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/noncopyable.h"
@@ -66,9 +67,8 @@ class Watchdog : public IReader, public core::NonCopyable<> {
 public:
     //! Initialize.
     Watchdog(IReader& reader,
-             size_t num_channels,
              const WatchdogConfig& config,
-             size_t sample_rate,
+             SampleSpec& sample_spec,
              core::IAllocator& allocator);
 
     //! Check if object is successfully constructed.

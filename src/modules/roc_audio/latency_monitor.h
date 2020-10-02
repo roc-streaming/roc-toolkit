@@ -15,6 +15,7 @@
 #include "roc_audio/depacketizer.h"
 #include "roc_audio/freq_estimator.h"
 #include "roc_audio/resampler_reader.h"
+#include "roc_audio/sample_spec.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/rate_limiter.h"
 #include "roc_core/time.h"
@@ -73,8 +74,8 @@ public:
                    ResamplerReader* resampler,
                    const LatencyMonitorConfig& config,
                    core::nanoseconds_t target_latency,
-                   size_t input_sample_rate,
-                   size_t output_sample_rate);
+                   const SampleSpec& input_sample_spec,
+                   const SampleSpec& output_sample_spec);
 
     //! Check if the object was initialized successfully.
     bool valid() const;
@@ -112,8 +113,8 @@ private:
 
     const float max_scaling_delta_;
 
-    size_t input_sample_rate_;
-    size_t output_sample_rate_;
+    SampleSpec input_sample_spec_;
+    SampleSpec output_sample_spec_;
 
     bool valid_;
 };

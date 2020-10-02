@@ -50,17 +50,17 @@ TEST_GROUP(pcm_funcs) {
         return bp;
     }
 
-    void encode(const core::Slice<uint8_t>& bp, const sample_t* samples, size_t offset,
-                size_t num_samples, packet::channel_mask_t channels) {
+    void encode(const core::Slice<uint8_t>& bp, const audio::sample_t* samples,
+                size_t offset, size_t num_samples, SampleSpec sample_spec) {
         CHECK(funcs);
 
         UNSIGNED_LONGS_EQUAL(num_samples,
                              funcs->encode_samples(bp.data(), bp.size(), offset, samples,
-                                                   num_samples, channels));
+                                                   num_samples, sample_spec));
     }
 
     void decode(const core::Slice<uint8_t>& bp, size_t offset, size_t num_samples,
-                packet::channel_mask_t channels) {
+                SampleSpec sample_spec) {
         CHECK(funcs);
 
         for (size_t i = 0; i < MaxSamples; i++) {
@@ -69,14 +69,14 @@ TEST_GROUP(pcm_funcs) {
 
         UNSIGNED_LONGS_EQUAL(num_samples,
                              funcs->decode_samples(bp.data(), bp.size(), offset, output,
-                                                   num_samples, channels));
+                                                   num_samples, sample_spec));
     }
 
-    void check(const sample_t* samples, size_t num_samples,
-               packet::channel_mask_t channels) {
+    void check(const audio::sample_t* samples, size_t num_samples,
+               SampleSpec& sample_spec) {
         size_t n = 0;
 
-        for (; n < num_samples * packet::num_channels(channels); n++) {
+        for (; n < num_samples * sample_spec.num_channels(); n++) {
             DOUBLES_EQUAL((double)samples[n], (double)output[n], Epsilon);
         }
 
@@ -119,10 +119,12 @@ TEST(pcm_funcs, encode_decode_1ch) {
         0.5f, //
     };
 
-    encode(bp, samples, 0, NumSamples, 0x1);
-    decode(bp, 0, NumSamples, 0x1);
+    SampleSpec sample_spec = SampleSpec();
+    sample_spec.setChannels(0x1);
+    encode(bp, samples, 0, NumSamples, sample_spec);
+    decode(bp, 0, NumSamples, sample_spec);
 
-    check(samples, NumSamples, 0x1);
+    check(samples, NumSamples, sample_spec);
 }
 
 TEST(pcm_funcs, encode_decode_2ch) {
@@ -140,10 +142,12 @@ TEST(pcm_funcs, encode_decode_2ch) {
         -0.5f, 0.5f, //
     };
 
-    encode(bp, samples, 0, NumSamples, 0x3);
-    decode(bp, 0, NumSamples, 0x3);
+    SampleSpec sample_spec = SampleSpec();
+    sample_spec.setChannels(0x3);
+    encode(bp, samples, 0, NumSamples, sample_spec);
+    decode(bp, 0, NumSamples, sample_spec);
 
-    check(samples, NumSamples, 0x3);
+    check(samples, NumSamples, sample_spec);
 }
 
 TEST(pcm_funcs, encode_mask_subset) {
@@ -161,8 +165,12 @@ TEST(pcm_funcs, encode_mask_subset) {
         0.5f, //
     };
 
-    encode(bp, input, 0, NumSamples, 0x2);
-    decode(bp, 0, NumSamples, 0x3);
+    SampleSpec sample_spec = SampleSpec();
+    sample_spec.setChannels(0x2);
+    encode(bp, input, 0, NumSamples, sample_spec);
+
+    sample_spec.setChannels(0x3);
+    decode(bp, 0, NumSamples, sample_spec);
 
     const sample_t output[NumSamples * 2] = {
         0.0f, 0.1f, //
@@ -172,7 +180,7 @@ TEST(pcm_funcs, encode_mask_subset) {
         0.0f, 0.5f, //
     };
 
-    check(output, NumSamples, 0x3);
+    check(output, NumSamples, sample_spec);
 }
 
 TEST(pcm_funcs, encode_mask_superset) {
@@ -190,8 +198,12 @@ TEST(pcm_funcs, encode_mask_superset) {
         -0.5f, 0.5f, 0.8f, //
     };
 
-    encode(bp, input, 0, NumSamples, 0x7);
-    decode(bp, 0, NumSamples, 0x3);
+    SampleSpec sample_spec = SampleSpec();
+    sample_spec.setChannels(0x7);
+    encode(bp, input, 0, NumSamples, sample_spec);
+
+    sample_spec.setChannels(0x3);
+    decode(bp, 0, NumSamples, sample_spec);;
 
     const sample_t output[NumSamples * 2] = {
         -0.1f, 0.1f, //
@@ -201,7 +213,7 @@ TEST(pcm_funcs, encode_mask_superset) {
         -0.5f, 0.5f, //
     };
 
-    check(output, NumSamples, 0x3);
+    check(output, NumSamples, sample_spec);
 }
 
 TEST(pcm_funcs, encode_mask_overlap) {
@@ -219,8 +231,12 @@ TEST(pcm_funcs, encode_mask_overlap) {
         -0.5f, 0.8f, //
     };
 
-    encode(bp, input, 0, NumSamples, 0x5);
-    decode(bp, 0, NumSamples, 0x3);
+    SampleSpec sample_spec = SampleSpec();
+    sample_spec.setChannels(0x5);
+    encode(bp, input, 0, NumSamples, sample_spec);
+
+    sample_spec.setChannels(0x3); 
+    decode(bp, 0, NumSamples, sample_spec);
 
     const sample_t output[NumSamples * 2] = {
         -0.1f, 0.0f, //
@@ -230,7 +246,7 @@ TEST(pcm_funcs, encode_mask_overlap) {
         -0.5f, 0.0f, //
     };
 
-    check(output, NumSamples, 0x3);
+    check(output, NumSamples, sample_spec);
 }
 
 TEST(pcm_funcs, decode_mask_subset) {
@@ -248,8 +264,12 @@ TEST(pcm_funcs, decode_mask_subset) {
         -0.5f, 0.5f, //
     };
 
-    encode(bp, input, 0, NumSamples, 0x3);
-    decode(bp, 0, NumSamples, 0x2);
+    SampleSpec sample_spec = SampleSpec();
+    sample_spec.setChannels(0x3);
+    encode(bp, input, 0, NumSamples, sample_spec);
+
+    sample_spec.setChannels(0x2);
+    decode(bp, 0, NumSamples, sample_spec);
 
     const sample_t output[NumSamples] = {
         0.1f, //
@@ -259,7 +279,7 @@ TEST(pcm_funcs, decode_mask_subset) {
         0.5f, //
     };
 
-    check(output, NumSamples, 0x2);
+    check(output, NumSamples, sample_spec);
 }
 
 TEST(pcm_funcs, decode_mask_superset) {
@@ -277,8 +297,12 @@ TEST(pcm_funcs, decode_mask_superset) {
         -0.5f, 0.5f, //
     };
 
-    encode(bp, input, 0, NumSamples, 0x3);
-    decode(bp, 0, NumSamples, 0x7);
+    SampleSpec sample_spec = SampleSpec();
+    sample_spec.setChannels(0x3);
+    encode(bp, input, 0, NumSamples, sample_spec);
+    
+    sample_spec.setChannels(0x7);
+    decode(bp, 0, NumSamples, sample_spec);
 
     const sample_t output[NumSamples * 3] = {
         -0.1f, 0.1f, 0.0f, //
@@ -288,7 +312,7 @@ TEST(pcm_funcs, decode_mask_superset) {
         -0.5f, 0.5f, 0.0f, //
     };
 
-    check(output, NumSamples, 0x7);
+    check(output, NumSamples, sample_spec);
 }
 
 TEST(pcm_funcs, decode_mask_overlap) {
@@ -306,8 +330,12 @@ TEST(pcm_funcs, decode_mask_overlap) {
         -0.5f, 0.5f, //
     };
 
-    encode(bp, input, 0, NumSamples, 0x3);
-    decode(bp, 0, NumSamples, 0x6);
+    SampleSpec sample_spec = SampleSpec();
+    sample_spec.setChannels(0x3);
+    encode(bp, input, 0, NumSamples, sample_spec);
+
+    sample_spec.setChannels(0x6); 
+    decode(bp, 0, NumSamples, sample_spec);
 
     const sample_t output[NumSamples * 2] = {
         0.1f, 0.0f, //
@@ -317,7 +345,7 @@ TEST(pcm_funcs, decode_mask_overlap) {
         0.5f, 0.0f, //
     };
 
-    check(output, NumSamples, 0x6);
+    check(output, NumSamples, sample_spec);
 }
 
 TEST(pcm_funcs, encode_incremental) {
@@ -332,15 +360,18 @@ TEST(pcm_funcs, encode_incremental) {
         -0.4f, 0.4f, //
         -0.5f, 0.5f, //
     };
-
-    encode(bp, input1, Off, NumSamples - Off, 0x3);
+ 
+    SampleSpec sample_spec = SampleSpec();
+    sample_spec.setChannels(0x3);
+    encode(bp, input1, Off, NumSamples - Off, sample_spec);
 
     const sample_t input2[Off] = {
         -0.1f, //
         -0.2f, //
     };
 
-    encode(bp, input2, 0, Off, 0x1);
+    sample_spec.setChannels(0x1);
+    encode(bp, input2, 0, Off, sample_spec);
 
     const sample_t output[NumSamples * 2] = {
         -0.1f, 0.0f, //
@@ -350,9 +381,10 @@ TEST(pcm_funcs, encode_incremental) {
         -0.5f, 0.5f, //
     };
 
-    decode(bp, 0, NumSamples, 0x3);
+    sample_spec.setChannels(0x3);
+    decode(bp, 0, NumSamples, sample_spec);
 
-    check(output, NumSamples, 0x3);
+    check(output, NumSamples, sample_spec);
 }
 
 TEST(pcm_funcs, decode_incremenal) {
@@ -369,19 +401,22 @@ TEST(pcm_funcs, decode_incremenal) {
         -0.4f, 0.4f, //
         -0.5f, 0.5f, //
     };
+ 
+    SampleSpec sample_spec = SampleSpec();
+    sample_spec.setChannels(0x3);
+    encode(bp, input, 0, NumSamples, sample_spec);
 
-    encode(bp, input, 0, NumSamples, 0x3);
-
-    decode(bp, 0, Off, 0x3);
+    decode(bp, 0, Off, sample_spec);
 
     const sample_t output1[NumSamples * 2] = {
         -0.1f, 0.1f, //
         -0.2f, 0.2f, //
     };
 
-    check(output1, Off, 0x3);
+    check(output1, Off, sample_spec);
 
-    decode(bp, Off, NumSamples - Off, 0x1);
+    sample_spec.setChannels(0x1);
+    decode(bp, Off, NumSamples - Off, sample_spec);
 
     const sample_t output2[NumSamples] = {
         -0.3f, //
@@ -389,9 +424,10 @@ TEST(pcm_funcs, decode_incremenal) {
         -0.5f, //
     };
 
-    check(output2, NumSamples - Off, 0x1);
+    check(output2, NumSamples - Off, sample_spec);
 
-    decode(bp, Off, NumSamples - Off, 0x2);
+    sample_spec.setChannels(0x2);
+    decode(bp, Off, NumSamples - Off, sample_spec);
 
     const sample_t output3[NumSamples] = {
         0.3f, //
@@ -399,7 +435,7 @@ TEST(pcm_funcs, decode_incremenal) {
         0.5f, //
     };
 
-    check(output3, NumSamples - Off, 0x2);
+    check(output3, NumSamples - Off, sample_spec);
 }
 
 TEST(pcm_funcs, encode_truncate) {
@@ -417,12 +453,15 @@ TEST(pcm_funcs, encode_truncate) {
         -0.5f, 0.5f, //
     };
 
-    UNSIGNED_LONGS_EQUAL(
-        NumSamples - Off,
-        funcs->encode_samples(bp.data(), bp.size(), Off, input, NumSamples, 0x3));
+    SampleSpec sample_spec = SampleSpec();
+    sample_spec.setChannels(0x3);
 
     UNSIGNED_LONGS_EQUAL(
-        0, funcs->encode_samples(bp.data(), bp.size(), 123, input, NumSamples, 0x3));
+        NumSamples - Off,
+        funcs->encode_samples(bp.data(), bp.size(), Off, input, NumSamples, sample_spec));
+
+    UNSIGNED_LONGS_EQUAL(
+        0, funcs->encode_samples(bp.data(), bp.size(), 123, input, NumSamples, sample_spec));
 
     const sample_t output[NumSamples * 2] = {
         0.0f,  0.0f, //
@@ -432,9 +471,9 @@ TEST(pcm_funcs, encode_truncate) {
         -0.3f, 0.3f, //
     };
 
-    decode(bp, 0, NumSamples, 0x3);
+    decode(bp, 0, NumSamples, sample_spec);
 
-    check(output, NumSamples, 0x3);
+    check(output, NumSamples, sample_spec);
 }
 
 TEST(pcm_funcs, decode_truncate) {
@@ -452,14 +491,16 @@ TEST(pcm_funcs, decode_truncate) {
         -0.5f, 0.5f, //
     };
 
-    encode(bp, input, 0, NumSamples, 0x3);
+    SampleSpec sample_spec = SampleSpec();
+    sample_spec.setChannels(0x3);
+    encode(bp, input, 0, NumSamples, sample_spec);
 
     UNSIGNED_LONGS_EQUAL(
         NumSamples - Off,
-        funcs->decode_samples(bp.data(), bp.size(), Off, output, NumSamples, 0x3));
+        funcs->decode_samples(bp.data(), bp.size(), Off, output, NumSamples, sample_spec));
 
     UNSIGNED_LONGS_EQUAL(
-        0, funcs->decode_samples(bp.data(), bp.size(), 123, output, NumSamples, 0x3));
+        0, funcs->decode_samples(bp.data(), bp.size(), 123, output, NumSamples, sample_spec));
 
     const sample_t output[NumSamples * 2] = {
         -0.3f, 0.3f, //
@@ -469,7 +510,8 @@ TEST(pcm_funcs, decode_truncate) {
         0.0f,  0.0f, //
     };
 
-    check(output, NumSamples, 0x3);
+
+    check(output, NumSamples, sample_spec);
 }
 
 } // namespace audio

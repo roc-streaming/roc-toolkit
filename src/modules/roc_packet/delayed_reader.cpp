@@ -15,10 +15,10 @@ namespace packet {
 
 DelayedReader::DelayedReader(IReader& reader,
                              core::nanoseconds_t delay,
-                             size_t sample_rate)
+                             const audio::SampleSpec& sample_spec)
     : reader_(reader)
     , queue_(0)
-    , delay_((timestamp_t)timestamp_from_ns(delay, sample_rate))
+    , delay_((timestamp_t)sample_spec.timestamp_from_ns(delay))
     , started_(false) {
     roc_log(LogDebug, "delayed reader: initializing: delay=%lu", (unsigned long)delay_);
 }

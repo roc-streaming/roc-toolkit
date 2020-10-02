@@ -14,6 +14,7 @@
 
 #include "roc_audio/iframe_decoder.h"
 #include "roc_audio/iframe_encoder.h"
+#include "roc_audio/sample_spec.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/time.h"
 #include "roc_packet/rtp.h"
@@ -31,11 +32,8 @@ struct Format {
     //! Packet flags.
     unsigned flags;
 
-    //! Sample rate.
-    size_t sample_rate;
-
-    //! Channel mask.
-    packet::channel_mask_t channel_mask;
+    //! Sample Spec.
+    audio::SampleSpec sample_spec;
 
     //! Get number of samples for given payload size.
     size_t (*get_num_samples)(size_t payload_size);

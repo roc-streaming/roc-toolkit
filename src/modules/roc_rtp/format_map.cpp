@@ -33,8 +33,7 @@ FormatMap::FormatMap()
         Format fmt;
         fmt.payload_type = PayloadType_L16_Mono;
         fmt.flags = packet::Packet::FlagAudio;
-        fmt.sample_rate = 44100;
-        fmt.channel_mask = 0x1;
+        fmt.sample_spec = audio::SampleSpec(44100, 0x1);
         fmt.get_num_samples = audio::PCM_int16_1ch.samples_from_payload_size;
         fmt.new_encoder =
             new_codec_pcm_int16_1ch<audio::IFrameEncoder, audio::PcmEncoder>;
@@ -46,8 +45,7 @@ FormatMap::FormatMap()
         Format fmt;
         fmt.payload_type = PayloadType_L16_Stereo;
         fmt.flags = packet::Packet::FlagAudio;
-        fmt.sample_rate = 44100;
-        fmt.channel_mask = 0x3;
+        fmt.sample_spec = audio::SampleSpec(44100, 0x3); 
         fmt.get_num_samples = audio::PCM_int16_2ch.samples_from_payload_size;
         fmt.new_encoder =
             new_codec_pcm_int16_2ch<audio::IFrameEncoder, audio::PcmEncoder>;

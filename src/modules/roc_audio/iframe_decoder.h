@@ -12,6 +12,7 @@
 #ifndef ROC_AUDIO_IFRAME_DECODER_H_
 #define ROC_AUDIO_IFRAME_DECODER_H_
 
+#include "roc_audio/sample_spec.h"
 #include "roc_audio/units.h"
 #include "roc_core/stddefs.h"
 #include "roc_packet/packet.h"
@@ -87,7 +88,7 @@ public:
     //!  extra channels, they are ignored. If it doesn't have some channels, these
     //!  channels are filled with zeros.
     virtual size_t
-    read(sample_t* samples, size_t n_samples, packet::channel_mask_t channels) = 0;
+    read(sample_t* samples, size_t n_samples, SampleSpec& sample_spec) = 0;
 
     //! Shift samples from current frame.
     //!

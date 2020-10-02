@@ -27,6 +27,7 @@ struct TestFrame {
 
 const int SampleRate = 5000; // 50 samples / chunk
 const int NumChannels = 1;
+const SampleSpec sample_spec = SampleSpec(SampleRate, NumChannels);
 const double EpsilionThreshold = 0.001;
 core::HeapAllocator allocator;
 ProfilerConfig profiler_config(50 * core::Millisecond, 10 * core::Millisecond);
@@ -36,7 +37,7 @@ ProfilerConfig profiler_config(50 * core::Millisecond, 10 * core::Millisecond);
 TEST_GROUP(profiler) {};
 
 TEST(profiler, test_moving_average) {
-    Profiler profiler(allocator, NumChannels, SampleRate, profiler_config);
+    Profiler profiler(allocator, sample_spec, profiler_config);
 
     TestFrame frames[] = {
         TestFrame(50, 50 * core::Second),      TestFrame(25, 25 * core::Second),

@@ -14,6 +14,7 @@
 
 #include "roc_audio/iframe_encoder.h"
 #include "roc_audio/pcm_funcs.h"
+#include "roc_audio/sample_spec.h"
 #include "roc_core/noncopyable.h"
 
 namespace roc {
@@ -33,7 +34,7 @@ public:
 
     //! Encode samples.
     virtual size_t
-    write(const sample_t* samples, size_t n_samples, packet::channel_mask_t channels);
+    write(const sample_t* samples, size_t n_samples, SampleSpec sample_spec);
 
     //! Finish encoding frame.
     virtual void end();

@@ -63,43 +63,7 @@ inline bool timestamp_le(timestamp_t a, timestamp_t b) {
     return timestamp_diff(a, b) <= 0;
 }
 
-//! Convert nanoseconds to number of samples.
-inline timestamp_diff_t timestamp_from_ns(core::nanoseconds_t ns, size_t sample_rate) {
-    return timestamp_diff_t(roundf(float(ns) / core::Second * sample_rate));
-}
 
-//! Convert number of samples to nanoseconds.
-inline core::nanoseconds_t timestamp_to_ns(timestamp_diff_t ts, size_t sample_rate) {
-    return core::nanoseconds_t(roundf(float(ts) / sample_rate * core::Second));
-}
-
-//! Bitmask of channels present in audio packet.
-typedef uint32_t channel_mask_t;
-
-//! Get number of channels in mask.
-static inline size_t num_channels(channel_mask_t ch_mask) {
-    size_t n_ch = 0;
-    for (; ch_mask != 0; ch_mask >>= 1) {
-        if (ch_mask & 1) {
-            n_ch++;
-        }
-    }
-    return n_ch;
-}
-
-//! Convert frame duration to frame size.
-inline size_t ns_to_size(core::nanoseconds_t frame_length,
-                         size_t sample_rate,
-                         packet::channel_mask_t ch_mask) {
-    return (size_t)timestamp_from_ns(frame_length, sample_rate) * num_channels(ch_mask);
-}
-
-//! Convert frame size to frame duration.
-inline core::nanoseconds_t
-size_to_ns(size_t frame_size, size_t sample_rate, packet::channel_mask_t ch_mask) {
-    return timestamp_to_ns(timestamp_diff_t(frame_size / num_channels(ch_mask)),
-                           sample_rate);
-}
 
 //! FEC block number in a packet stream.
 typedef uint16_t blknum_t;

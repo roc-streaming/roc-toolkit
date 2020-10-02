@@ -23,7 +23,7 @@ ConverterSource::ConverterSource(const ConverterConfig& config,
     , config_(config) {
     audio::IReader* areader = &input_source_;
 
-    if (config.resampling && config.output_sample_rate != config.input_sample_rate) {
+    if (config.resampling && config.output_sample_spec.getSampleRate() != config.input_sample_spec.getSampleRate()) {
         if (config.poisoning) {
             resampler_poisoner_.reset(new (resampler_poisoner_)
                                           audio::PoisonReader(*areader));
@@ -36,7 +36,7 @@ ConverterSource::ConverterSource(const ConverterConfig& config,
         resampler_.reset(audio::ResamplerMap::instance().new_resampler(
                              config.resampler_backend, allocator, pool,
                              config.resampler_profile, config.internal_frame_length,
-                             config.input_sample_rate, config.input_channels),
+                             config.input_sample_spec),
                          allocator);
 
         if (!resampler_) {
@@ -49,8 +49,8 @@ ConverterSource::ConverterSource(const ConverterConfig& config,
         if (!resampler_reader_ || !resampler_reader_->valid()) {
             return;
         }
-        if (!resampler_reader_->set_scaling(config.input_sample_rate,
-                                            config.output_sample_rate, 1.0f)) {
+        if (!resampler_reader_->set_scaling(config.input_sample_spec.getSampleRate(),
+                                            config.output_sample_spec.getSampleRate(), 1.0f)) {
             return;
         }
         areader = resampler_reader_.get();
@@ -66,7 +66,7 @@ ConverterSource::ConverterSource(const ConverterConfig& config,
 
     if (config.profiling) {
         profiler_.reset(new (profiler_) audio::ProfilingReader(
-            *areader, allocator, config.output_channels, config.output_sample_rate,
+            *areader, allocator, config.output_sample_spec,
             config.profiler_config));
         if (!profiler_ || !profiler_->valid()) {
             return;
@@ -82,7 +82,7 @@ bool ConverterSource::valid() {
 }
 
 size_t ConverterSource::sample_rate() const {
-    return config_.output_sample_rate;
+    return config_.output_sample_spec.getSampleRate();
 }
 
 size_t ConverterSource::num_channels() const {

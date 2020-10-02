@@ -14,6 +14,7 @@
 
 #include "roc_audio/iframe_decoder.h"
 #include "roc_audio/pcm_funcs.h"
+#include "roc_audio/sample_spec.h"
 #include "roc_core/noncopyable.h"
 
 namespace roc {
@@ -37,7 +38,7 @@ public:
 
     //! Read samples from current frame.
     virtual size_t
-    read(sample_t* samples, size_t n_samples, packet::channel_mask_t channels);
+    read(sample_t* samples, size_t n_samples, SampleSpec& sample_spec);
 
     //! Shift samples from current frame.
     virtual size_t shift(size_t n_samples);

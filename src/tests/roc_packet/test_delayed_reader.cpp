@@ -28,6 +28,8 @@ PacketPool pool(allocator, true);
 } // namespace
 
 TEST_GROUP(delayed_reader) {
+    audio::SampleSpec sample_spec = audio::SampleSpec(SampleRate, NumSamples);
+
     PacketPtr new_packet(seqnum_t sn) {
         PacketPtr packet = new(pool) Packet(pool);
         CHECK(packet);
@@ -42,7 +44,7 @@ TEST_GROUP(delayed_reader) {
 
 TEST(delayed_reader, no_delay) {
     Queue queue;
-    DelayedReader dr(queue, 0, SampleRate);
+    DelayedReader dr(queue, 0, sample_spec);
 
     CHECK(!dr.read());
 
@@ -55,7 +57,7 @@ TEST(delayed_reader, no_delay) {
 
 TEST(delayed_reader, delay) {
     Queue queue;
-    DelayedReader dr(queue, NumSamples * (NumPackets - 1) * NsPerSample, SampleRate);
+    DelayedReader dr(queue, NumSamples * (NumPackets - 1) * NsPerSample, sample_spec);
 
     PacketPtr packets[NumPackets];
 
@@ -82,7 +84,7 @@ TEST(delayed_reader, delay) {
 
 TEST(delayed_reader, instant) {
     Queue queue;
-    DelayedReader dr(queue, NumSamples * (NumPackets - 1) * NsPerSample, SampleRate);
+    DelayedReader dr(queue, NumSamples * (NumPackets - 1) * NsPerSample, sample_spec);
 
     PacketPtr packets[NumPackets];
 
@@ -100,7 +102,7 @@ TEST(delayed_reader, instant) {
 
 TEST(delayed_reader, trim) {
     Queue queue;
-    DelayedReader dr(queue, NumSamples * (NumPackets - 1) * NsPerSample, SampleRate);
+    DelayedReader dr(queue, NumSamples * (NumPackets - 1) * NsPerSample, sample_spec);
 
     PacketPtr packets[NumPackets * 2];
 
@@ -118,7 +120,7 @@ TEST(delayed_reader, trim) {
 
 TEST(delayed_reader, late_duplicates) {
     Queue queue;
-    DelayedReader dr(queue, NumSamples * (NumPackets - 1) * NsPerSample, SampleRate);
+    DelayedReader dr(queue, NumSamples * (NumPackets - 1) * NsPerSample, sample_spec);
 
     PacketPtr packets[NumPackets];
 

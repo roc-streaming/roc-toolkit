@@ -15,6 +15,7 @@
 #include "roc_audio/frame.h"
 #include "roc_audio/iresampler.h"
 #include "roc_audio/iwriter.h"
+#include "roc_audio/sample_spec.h"
 #include "roc_audio/units.h"
 #include "roc_core/array.h"
 #include "roc_core/noncopyable.h"
@@ -33,8 +34,7 @@ public:
                     IResampler& resampler,
                     core::BufferPool<sample_t>& buffer_pool,
                     core::nanoseconds_t frame_length,
-                    size_t sample_rate,
-                    packet::channel_mask_t channels);
+                    SampleSpec sample_spec);
 
     //! Check if object is successfully constructed.
     bool valid() const;

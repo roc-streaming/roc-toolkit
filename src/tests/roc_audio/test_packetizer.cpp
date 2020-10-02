@@ -28,19 +28,19 @@ namespace {
 const double Epsilon = 0.00001;
 
 enum {
-    SamplesPerPacket = 200,
+    
     SampleRate = 1000,
 
     MaxPackets = 100,
     MaxBufSize = 4000,
 
-    NumCh = 2,
     ChMask = 0x3,
 
-    PayloadType = 123
+
 };
 
-const core::nanoseconds_t PacketDuration = SamplesPerPacket * core::Second / SampleRate;
+
+
 
 core::HeapAllocator allocator;
 core::BufferPool<sample_t> sample_buffer_pool(allocator, MaxBufSize, true);
@@ -66,7 +66,8 @@ public:
         , value_(0) {
     }
 
-    void read(packet::IReader& reader, size_t n_samples) {
+    void read(packet::IReader& reader, size_t n_samples, SampleSpec& sample_spec, 
+              unsigned int PayloadType, unsigned int SamplesPerPacket) {
         packet::PacketPtr pp = reader.read();
         CHECK(pp);
 
@@ -92,18 +93,18 @@ public:
         payload_decoder_.begin(pp->rtp()->timestamp, pp->rtp()->payload.data(),
                                pp->rtp()->payload.size());
 
-        sample_t samples[SamplesPerPacket * NumCh] = {};
+        sample_t samples[400] = {};
 
         UNSIGNED_LONGS_EQUAL(n_samples,
-                             payload_decoder_.read(samples, SamplesPerPacket, ChMask));
+                             payload_decoder_.read(samples, SamplesPerPacket, sample_spec));
 
         payload_decoder_.end();
 
         size_t n = 0;
 
         for (; n < n_samples; n++) {
-            for (size_t c = 0; c < NumCh; c++) {
-                DOUBLES_EQUAL((double)nth_sample(value_), (double)samples[n * NumCh + c],
+            for (size_t c = 0; c < sample_spec.num_channels(); c++) {
+                DOUBLES_EQUAL((double)nth_sample(value_), (double)samples[n * sample_spec.num_channels() + c],
                               Epsilon);
                 value_++;
             }
@@ -132,16 +133,16 @@ public:
         : value_(0) {
     }
 
-    void write(IWriter& writer, size_t num_samples) {
+    void write(IWriter& writer, size_t num_samples, SampleSpec sample_spec) {
         core::Slice<sample_t> buf =
             new (sample_buffer_pool) core::Buffer<sample_t>(sample_buffer_pool);
         CHECK(buf);
 
-        buf.reslice(0, num_samples * NumCh);
+        buf.reslice(0, num_samples * sample_spec.num_channels());
 
         for (size_t n = 0; n < num_samples; n++) {
-            for (size_t c = 0; c < NumCh; c++) {
-                buf.data()[n * NumCh + c] = nth_sample(value_);
+            for (size_t c = 0; c < sample_spec.num_channels(); c++) {
+                buf.data()[n * sample_spec.num_channels() + c] = nth_sample(value_);
                 value_++;
             }
         }
@@ -156,7 +157,12 @@ private:
 
 } // namespace
 
-TEST_GROUP(packetizer) {};
+TEST_GROUP(packetizer) {
+    unsigned int PayloadType = 123;
+    unsigned int SamplesPerPacket = 200;
+    SampleSpec sample_spec = SampleSpec(SampleRate, ChMask);
+    const core::nanoseconds_t PacketDuration = SamplesPerPacket * core::Second / SampleRate;
+};
 
 TEST(packetizer, one_buffer_one_packet) {
     enum { NumFrames = 10 };
@@ -167,7 +173,7 @@ TEST(packetizer, one_buffer_one_packet) {
     packet::Queue packet_queue;
 
     Packetizer packetizer(packet_queue, rtp_composer, encoder, packet_pool,
-                          byte_buffer_pool, ChMask, PacketDuration, SampleRate,
+                          byte_buffer_pool, PacketDuration, sample_spec,
                           PayloadType);
 
     FrameMaker frame_maker;
@@ -176,11 +182,11 @@ TEST(packetizer, one_buffer_one_packet) {
     for (size_t fn = 0; fn < NumFrames; fn++) {
         UNSIGNED_LONGS_EQUAL(0, packet_queue.size());
 
-        frame_maker.write(packetizer, SamplesPerPacket);
+        frame_maker.write(packetizer, SamplesPerPacket, sample_spec);
 
         UNSIGNED_LONGS_EQUAL(1, packet_queue.size());
 
-        packet_checker.read(packet_queue, SamplesPerPacket);
+        packet_checker.read(packet_queue, SamplesPerPacket, sample_spec, PayloadType, SamplesPerPacket);
     }
 }
 
@@ -193,16 +199,16 @@ TEST(packetizer, one_buffer_multiple_packets) {
     packet::Queue packet_queue;
 
     Packetizer packetizer(packet_queue, rtp_composer, encoder, packet_pool,
-                          byte_buffer_pool, ChMask, PacketDuration, SampleRate,
+                          byte_buffer_pool, PacketDuration, sample_spec,
                           PayloadType);
 
     FrameMaker frame_maker;
     PacketChecker packet_checker(decoder);
 
-    frame_maker.write(packetizer, SamplesPerPacket * NumPackets);
+    frame_maker.write(packetizer, SamplesPerPacket * NumPackets, sample_spec);
 
     for (size_t pn = 0; pn < NumPackets; pn++) {
-        packet_checker.read(packet_queue, SamplesPerPacket);
+        packet_checker.read(packet_queue, SamplesPerPacket, sample_spec, PayloadType, SamplesPerPacket);
     }
 
     UNSIGNED_LONGS_EQUAL(0, packet_queue.size());
@@ -219,7 +225,7 @@ TEST(packetizer, multiple_buffers_one_packet) {
     packet::Queue packet_queue;
 
     Packetizer packetizer(packet_queue, rtp_composer, encoder, packet_pool,
-                          byte_buffer_pool, ChMask, PacketDuration, SampleRate,
+                          byte_buffer_pool, PacketDuration, sample_spec,
                           PayloadType);
 
     FrameMaker frame_maker;
@@ -229,21 +235,21 @@ TEST(packetizer, multiple_buffers_one_packet) {
         for (size_t fn = 0; fn < FramesPerPacket; fn++) {
             UNSIGNED_LONGS_EQUAL(0, packet_queue.size());
 
-            frame_maker.write(packetizer, SamplesPerPacket / FramesPerPacket);
+            frame_maker.write(packetizer, SamplesPerPacket / FramesPerPacket, sample_spec);
         }
 
         UNSIGNED_LONGS_EQUAL(1, packet_queue.size());
 
-        packet_checker.read(packet_queue, SamplesPerPacket);
+        packet_checker.read(packet_queue, SamplesPerPacket, sample_spec, PayloadType, SamplesPerPacket);
     }
 }
 
 TEST(packetizer, multiple_buffers_multiple_packets) {
-    enum {
-        NumFrames = 10,
-        NumSamples = (SamplesPerPacket - 1),
-        NumPackets = (NumSamples * NumFrames / SamplesPerPacket)
-    };
+    
+    unsigned int NumFrames = 10;
+    unsigned int NumSamples = (SamplesPerPacket - 1);
+    unsigned int NumPackets = (NumSamples * NumFrames / SamplesPerPacket);
+    
 
     PcmEncoder encoder(pcm_funcs);
     PcmDecoder decoder(pcm_funcs);
@@ -251,18 +257,18 @@ TEST(packetizer, multiple_buffers_multiple_packets) {
     packet::Queue packet_queue;
 
     Packetizer packetizer(packet_queue, rtp_composer, encoder, packet_pool,
-                          byte_buffer_pool, ChMask, PacketDuration, SampleRate,
+                          byte_buffer_pool, PacketDuration, sample_spec,
                           PayloadType);
 
     FrameMaker frame_maker;
     PacketChecker packet_checker(decoder);
 
     for (size_t fn = 0; fn < NumFrames; fn++) {
-        frame_maker.write(packetizer, NumSamples);
+        frame_maker.write(packetizer, NumSamples, sample_spec);
     }
 
     for (size_t pn = 0; pn < NumPackets; pn++) {
-        packet_checker.read(packet_queue, SamplesPerPacket);
+        packet_checker.read(packet_queue, SamplesPerPacket, sample_spec, PayloadType, SamplesPerPacket);
     }
 
     UNSIGNED_LONGS_EQUAL(0, packet_queue.size());
@@ -277,25 +283,25 @@ TEST(packetizer, flush) {
     packet::Queue packet_queue;
 
     Packetizer packetizer(packet_queue, rtp_composer, encoder, packet_pool,
-                          byte_buffer_pool, ChMask, PacketDuration, SampleRate,
+                          byte_buffer_pool, PacketDuration, sample_spec,
                           PayloadType);
 
     FrameMaker frame_maker;
     PacketChecker packet_checker(decoder);
 
     for (size_t n = 0; n < NumIterations; n++) {
-        frame_maker.write(packetizer, SamplesPerPacket);
-        frame_maker.write(packetizer, SamplesPerPacket);
-        frame_maker.write(packetizer, SamplesPerPacket - Missing);
+        frame_maker.write(packetizer, SamplesPerPacket, sample_spec);
+        frame_maker.write(packetizer, SamplesPerPacket, sample_spec);
+        frame_maker.write(packetizer, SamplesPerPacket - Missing, sample_spec);
 
         UNSIGNED_LONGS_EQUAL(2, packet_queue.size());
 
-        packet_checker.read(packet_queue, SamplesPerPacket);
-        packet_checker.read(packet_queue, SamplesPerPacket);
+        packet_checker.read(packet_queue, SamplesPerPacket, sample_spec, PayloadType, SamplesPerPacket);
+        packet_checker.read(packet_queue, SamplesPerPacket, sample_spec, PayloadType, SamplesPerPacket);
 
         packetizer.flush();
 
-        packet_checker.read(packet_queue, SamplesPerPacket - Missing);
+        packet_checker.read(packet_queue, SamplesPerPacket - Missing, sample_spec, PayloadType, SamplesPerPacket);
 
         UNSIGNED_LONGS_EQUAL(0, packet_queue.size());
     }

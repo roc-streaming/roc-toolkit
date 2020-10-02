@@ -36,13 +36,13 @@ void PcmEncoder::begin(void* frame_data, size_t frame_size) {
 
 size_t PcmEncoder::write(const audio::sample_t* samples,
                          size_t n_samples,
-                         packet::channel_mask_t channels) {
+                         SampleSpec sample_spec) {
     if (!frame_data_) {
         roc_panic("pcm encoder: write should be called only between begin/end");
     }
 
     const size_t wr_samples = funcs_.encode_samples(frame_data_, frame_size_, frame_pos_,
-                                                    samples, n_samples, channels);
+                                                    samples, n_samples, sample_spec);
 
     frame_pos_ += wr_samples;
     return wr_samples;

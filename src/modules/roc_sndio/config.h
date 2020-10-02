@@ -12,6 +12,7 @@
 #ifndef ROC_SNDIO_CONFIG_H_
 #define ROC_SNDIO_CONFIG_H_
 
+#include "roc_audio/sample_spec.h"
 #include "roc_core/stddefs.h"
 #include "roc_packet/units.h"
 
@@ -20,11 +21,8 @@ namespace sndio {
 
 //! Sink and source config.
 struct Config {
-    //! Channel mask.
-    packet::channel_mask_t channels;
-
-    //! Number of samples per channel per seconds.
-    size_t sample_rate;
+    //! Sample Spec
+    audio::SampleSpec sample_spec;
 
     //! Duration of the internal frames, in nanoseconds.
     core::nanoseconds_t frame_length;
@@ -34,8 +32,7 @@ struct Config {
 
     //! Initialize.
     Config()
-        : channels(0)
-        , sample_rate(0)
+        : sample_spec(0, 0)
         , frame_length(0)
         , latency(0) {
     }

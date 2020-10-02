@@ -48,7 +48,7 @@ public:
         , first_(true) {
     }
 
-    void read_packet(size_t samples_per_packet, packet::channel_mask_t channels) {
+    void read_packet(size_t samples_per_packet, audio::SampleSpec sample_spec) {
         packet::PacketPtr pp = reader_.read();
         CHECK(pp);
 
@@ -56,7 +56,7 @@ public:
         CHECK(pp->udp()->dst_addr == dst_addr_);
 
         CHECK(pp->flags() & packet::Packet::FlagComposed);
-        check_buffer_(pp->data(), samples_per_packet, channels);
+        check_buffer_(pp->data(), samples_per_packet, sample_spec);
     }
 
 private:
@@ -64,7 +64,7 @@ private:
 
     void check_buffer_(const core::Slice<uint8_t> bp,
                        size_t samples_per_packet,
-                       packet::channel_mask_t channels) {
+                       audio::SampleSpec sample_spec) {
         packet::PacketPtr pp = new (packet_pool_) packet::Packet(packet_pool_);
         CHECK(pp);
 
@@ -94,11 +94,11 @@ private:
         audio::sample_t samples[MaxSamples] = {};
         UNSIGNED_LONGS_EQUAL(
             samples_per_packet,
-            payload_decoder_->read(samples, samples_per_packet, channels));
+            payload_decoder_->read(samples, samples_per_packet, sample_spec));
 
         payload_decoder_->end();
 
-        for (size_t n = 0; n < samples_per_packet * packet::num_channels(channels); n++) {
+        for (size_t n = 0; n < samples_per_packet * sample_spec.num_channels(); n++) {
             DOUBLES_EQUAL((double)nth_sample(offset_), (double)samples[n], Epsilon);
             offset_++;
         }

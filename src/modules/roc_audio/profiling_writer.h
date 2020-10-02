@@ -14,6 +14,7 @@
 
 #include "roc_audio/iwriter.h"
 #include "roc_audio/profiler.h"
+#include "roc_audio/sample_spec.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/rate_limiter.h"
 #include "roc_core/time.h"
@@ -28,8 +29,7 @@ public:
     //! Initialization.
     ProfilingWriter(IWriter& writer,
                     core::IAllocator& allocator,
-                    packet::channel_mask_t channels,
-                    size_t sample_rate,
+                    SampleSpec sample_spec,
                     ProfilerConfig profiler_config);
 
     //! Write audio frame.

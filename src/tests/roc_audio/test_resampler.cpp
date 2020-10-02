@@ -109,8 +109,7 @@ void resample_reader(IResampler& resampler,
                      sample_t* in,
                      sample_t* out,
                      size_t num_samples,
-                     packet::channel_mask_t channels,
-                     size_t sample_rate,
+                     SampleSpec& sample_spec,
                      float scaling) {
     test::MockReader input_reader;
     for (size_t n = 0; n < num_samples; n++) {
@@ -120,12 +119,12 @@ void resample_reader(IResampler& resampler,
 
     ResamplerReader rr(input_reader, resampler);
     CHECK(rr.valid());
-    CHECK(rr.set_scaling(sample_rate, sample_rate, scaling));
+    CHECK(rr.set_scaling(sample_spec.getSampleRate(), sample_spec.getSampleRate(), scaling));
 
     for (size_t pos = 0; pos < num_samples;) {
         Frame frame(out + pos,
                     std::min(num_samples - pos,
-                             (size_t)OutFrameSize * packet::num_channels(channels)));
+                             (size_t)OutFrameSize * sample_spec.num_channels()));
         CHECK(rr.read(frame));
         pos += frame.size();
     }
@@ -135,21 +134,19 @@ void resample_writer(IResampler& resampler,
                      sample_t* in,
                      sample_t* out,
                      size_t num_samples,
-                     packet::channel_mask_t channels,
-                     size_t sample_rate,
+                     SampleSpec& sample_spec,
                      core::nanoseconds_t frame_duration,
                      float scaling) {
     test::MockWriter output_writer;
 
-    ResamplerWriter rw(output_writer, resampler, buffer_pool, frame_duration, sample_rate,
-                       channels);
+    ResamplerWriter rw(output_writer, resampler, buffer_pool, frame_duration, sample_spec);
     CHECK(rw.valid());
-    CHECK(rw.set_scaling(sample_rate, sample_rate, scaling));
+    CHECK(rw.set_scaling(sample_spec.getSampleRate(), sample_spec.getSampleRate(), scaling));
 
     for (size_t pos = 0; pos < num_samples;) {
         Frame frame(in + pos,
                     std::min(num_samples - pos,
-                             (size_t)OutFrameSize * packet::num_channels(channels)));
+                             (size_t)OutFrameSize * sample_spec.num_channels()));
         rw.write(frame);
         pos += frame.size();
     }
@@ -167,24 +164,22 @@ void resample(ResamplerBackend backend,
               sample_t* in,
               sample_t* out,
               size_t num_samples,
-              packet::channel_mask_t channels,
-              size_t sample_rate,
+              SampleSpec& sample_spec,
               float scaling) {
-    const core::nanoseconds_t frame_duration = packet::size_to_ns(
-        InFrameSize * packet::num_channels(channels), sample_rate, channels);
+    const core::nanoseconds_t frame_duration = sample_spec.size_to_ns(InFrameSize* sample_spec.num_channels());
 
     core::ScopedPtr<IResampler> resampler(
         ResamplerMap::instance().new_resampler(backend, allocator, buffer_pool,
                                                ResamplerProfile_High, frame_duration,
-                                               sample_rate, channels),
+                                               sample_spec),
         allocator);
     CHECK(resampler);
     CHECK(resampler->valid());
 
     if (method == Reader) {
-        resample_reader(*resampler, in, out, num_samples, channels, sample_rate, scaling);
+        resample_reader(*resampler, in, out, num_samples, sample_spec, scaling);
     } else {
-        resample_writer(*resampler, in, out, num_samples, channels, sample_rate,
+        resample_writer(*resampler, in, out, num_samples, sample_spec,
                         frame_duration, scaling);
     }
 }
@@ -207,14 +202,14 @@ TEST(resampler, supported_scalings) {
         for (size_t pn = 0; pn < ROC_ARRAY_SIZE(profiles); pn++) {
             for (size_t fn = 0; fn < ROC_ARRAY_SIZE(frame_sizes); fn++) {
                 for (size_t irate = 0; irate < ROC_ARRAY_SIZE(rates); irate++) {
+                    SampleSpec sample_spec = SampleSpec(rates[irate], ChMask);
                     for (size_t orate = 0; orate < ROC_ARRAY_SIZE(rates); orate++) {
                         for (size_t sn = 0; sn < ROC_ARRAY_SIZE(scalings); sn++) {
                             core::ScopedPtr<IResampler> resampler(
                                 ResamplerMap::instance().new_resampler(
                                     backend, allocator, buffer_pool, profiles[pn],
-                                    packet::size_to_ns(frame_sizes[fn], rates[irate],
-                                                       ChMask),
-                                    rates[irate], ChMask),
+                                    sample_spec.size_to_ns(frame_sizes[fn]),
+                                    sample_spec),
                                 allocator);
                             CHECK(resampler);
                             CHECK(resampler->valid());
@@ -254,10 +249,11 @@ TEST(resampler, invalid_scalings) {
     for (size_t n_back = 0; n_back < ResamplerMap::instance().num_backends(); n_back++) {
         ResamplerBackend backend = ResamplerMap::instance().nth_backend(n_back);
 
+        SampleSpec sample_spec = SampleSpec(SampleRate, ChMask);
         core::ScopedPtr<IResampler> resampler(
             ResamplerMap::instance().new_resampler(
                 backend, allocator, buffer_pool, ResamplerProfile_High,
-                packet::size_to_ns(InFrameSize, SampleRate, ChMask), SampleRate, ChMask),
+                sample_spec.size_to_ns(InFrameSize), sample_spec),
             allocator);
         CHECK(resampler);
         CHECK(resampler->valid());
@@ -288,6 +284,7 @@ TEST(resampler, upscale_downscale_mono) {
     for (size_t n_back = 0; n_back < ResamplerMap::instance().num_backends(); n_back++) {
         ResamplerBackend backend = ResamplerMap::instance().nth_backend(n_back);
 
+        SampleSpec sample_spec = SampleSpec(SampleRate, ChMask);
         for (size_t n_meth = 0; n_meth < ROC_ARRAY_SIZE(resampler_methods); n_meth++) {
             ResamplerMethod method = resampler_methods[n_meth];
 
@@ -295,12 +292,10 @@ TEST(resampler, upscale_downscale_mono) {
             generate_sine(input, NumSamples, NumPad);
 
             sample_t upscaled[NumSamples] = {};
-            resample(backend, method, input, upscaled, NumSamples, ChMask, SampleRate,
-                     Scaling);
+            resample(backend, method, input, upscaled, NumSamples, sample_spec, Scaling);
 
             sample_t downscaled[NumSamples] = {};
-            resample(backend, method, upscaled, downscaled, NumSamples, ChMask,
-                     SampleRate, 1.0f / Scaling);
+            resample(backend, method, upscaled, downscaled, NumSamples, sample_spec, 1.0f / Scaling);
 
             trim_leading_zeros(input, NumSamples, Threshold);
             trim_leading_zeros(upscaled, NumSamples, Threshold);
@@ -351,6 +346,7 @@ TEST(resampler, upscale_downscale_stereo) {
     for (size_t n_back = 0; n_back < ResamplerMap::instance().num_backends(); n_back++) {
         ResamplerBackend backend = ResamplerMap::instance().nth_backend(n_back);
 
+        SampleSpec sample_spec = SampleSpec(SampleRate, ChMask);
         for (size_t n_meth = 0; n_meth < ROC_ARRAY_SIZE(resampler_methods); n_meth++) {
             ResamplerMethod method = resampler_methods[n_meth];
 
@@ -362,12 +358,10 @@ TEST(resampler, upscale_downscale_stereo) {
             mix_stereo(input, input_ch[0], input_ch[1], NumSamples);
 
             sample_t upscaled[NumSamples * NumCh] = {};
-            resample(backend, method, input, upscaled, NumSamples * NumCh, ChMask,
-                     SampleRate, Scaling);
+            resample(backend, method, input, upscaled, NumSamples * NumCh, sample_spec, Scaling);
 
             sample_t downscaled[NumSamples * NumCh] = {};
-            resample(backend, method, upscaled, downscaled, NumSamples * NumCh, ChMask,
-                     SampleRate, 1.0f / Scaling);
+            resample(backend, method, upscaled, downscaled, NumSamples * NumCh, sample_spec, 1.0f / Scaling);
 
             for (int ch = 0; ch < NumCh; ch++) {
                 sample_t upscaled_ch[NumSamples] = {};

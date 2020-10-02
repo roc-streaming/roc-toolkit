@@ -16,6 +16,7 @@
 #include "roc_audio/ireader.h"
 #include "roc_audio/iresampler.h"
 #include "roc_audio/resampler_profile.h"
+#include "roc_audio/sample_spec.h"
 #include "roc_audio/units.h"
 #include "roc_core/array.h"
 #include "roc_core/buffer_pool.h"
@@ -35,8 +36,7 @@ public:
                      core::BufferPool<sample_t>& buffer_pool,
                      ResamplerProfile profile,
                      core::nanoseconds_t frame_length,
-                     size_t sample_rate,
-                     packet::channel_mask_t channels);
+                     const SampleSpec& sample_spec);
 
     ~BuiltinResampler();
 
@@ -67,7 +67,6 @@ private:
     typedef int32_t signed_fixedpoint_t;
     typedef int64_t signed_long_fixedpoint_t;
 
-    const packet::channel_mask_t channel_mask_;
     const size_t channels_num_;
 
     inline size_t channelize_index(const size_t i, const size_t ch_offset) const {

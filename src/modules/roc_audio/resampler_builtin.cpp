@@ -106,16 +106,14 @@ BuiltinResampler::BuiltinResampler(core::IAllocator& allocator,
                                    core::BufferPool<sample_t>& buffer_pool,
                                    ResamplerProfile profile,
                                    core::nanoseconds_t frame_length,
-                                   size_t sample_rate,
-                                   packet::channel_mask_t channels)
-    : channel_mask_(channels)
-    , channels_num_(packet::num_channels(channel_mask_))
+                                   const SampleSpec& sample_spec)
+    : channels_num_(sample_spec.num_channels())
     , n_ready_frames_(0)
     , prev_frame_(NULL)
     , curr_frame_(NULL)
     , next_frame_(NULL)
     , scaling_(1.0)
-    , frame_size_(packet::ns_to_size(frame_length, sample_rate, channels))
+    , frame_size_(sample_spec.ns_to_size(frame_length))
     , frame_size_ch_(channels_num_ ? frame_size_ / channels_num_ : 0)
     , window_size_(get_window_size(profile))
     , qt_half_sinc_window_size_(float_to_fixedpoint(window_size_))

@@ -26,8 +26,7 @@ SoxSource::SoxSource(core::IAllocator& allocator, const Config& config)
     , valid_(false) {
     SoxBackend::instance();
 
-    n_channels_ = packet::num_channels(config.channels);
-    if (n_channels_ == 0) {
+    if (config.sample_spec.num_channels() == 0) {
         roc_log(LogError, "sox source: # of channels is zero");
         return;
     }
@@ -38,7 +37,7 @@ SoxSource::SoxSource(core::IAllocator& allocator, const Config& config)
     }
 
     frame_length_ = config.frame_length;
-    channels_ = config.channels;
+    sample_spec_ = config.sample_spec;
 
     if (frame_length_ == 0) {
         roc_log(LogError, "sox source: frame length is zero");
@@ -46,7 +45,8 @@ SoxSource::SoxSource(core::IAllocator& allocator, const Config& config)
     }
 
     memset(&in_signal_, 0, sizeof(in_signal_));
-    in_signal_.rate = config.sample_rate;
+
+    in_signal_.rate = config.sample_spec.getSampleRate();
     in_signal_.precision = SOX_SAMPLE_PRECISION;
 
     valid_ = true;
@@ -101,7 +101,7 @@ size_t SoxSource::num_channels() const {
         roc_panic("sox source: sample_rate: non-open input file or device");
     }
 
-    return n_channels_;
+    return sample_spec_.num_channels();
 }
 
 bool SoxSource::has_clock() const {
@@ -293,7 +293,8 @@ bool SoxSource::setup_names_(const char* driver, const char* input) {
 }
 
 bool SoxSource::setup_buffer_() {
-    buffer_size_ = packet::ns_to_size(frame_length_, sample_rate(), channels_);
+    audio::SampleSpec ss = audio::SampleSpec(sample_rate(), sample_spec_.getChannels());
+    buffer_size_ = ss.ns_to_size(frame_length_);
     if (buffer_size_ == 0) {
         roc_log(LogError, "sox source: buffer size is zero");
         return false;
@@ -331,11 +332,11 @@ bool SoxSource::open_() {
             (unsigned long)in_signal_.rate, (unsigned long)input_->signal.channels,
             (unsigned long)in_signal_.channels, (int)is_file_);
 
-    if (input_->signal.channels != n_channels_) {
+    if (input_->signal.channels != sample_spec_.num_channels()) {
         roc_log(LogError,
                 "sox source: can't open: unsupported # of channels: "
                 "expected=%lu actual=%lu",
-                (unsigned long)n_channels_, (unsigned long)input_->signal.channels);
+                (unsigned long)sample_spec_.num_channels(), (unsigned long)input_->signal.channels);
         return false;
     }
 

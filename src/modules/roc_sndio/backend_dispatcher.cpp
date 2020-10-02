@@ -71,14 +71,12 @@ BackendDispatcher::BackendDispatcher()
 }
 
 void BackendDispatcher::set_frame_size(core::nanoseconds_t frame_length,
-                                       size_t sample_rate,
-                                       packet::channel_mask_t channels) {
+                                       audio::SampleSpec sample_spec) {
 #ifdef ROC_TARGET_SOX
-    SoxBackend::instance().set_frame_size(frame_length, sample_rate, channels);
+    SoxBackend::instance().set_frame_size(frame_length, sample_spec);
 #endif // ROC_TARGET_SOX
     (void)frame_length;
-    (void)sample_rate;
-    (void)channels;
+    (void)sample_spec;
 }
 
 ISink* BackendDispatcher::open_sink(core::IAllocator& allocator,

@@ -12,6 +12,7 @@
 #ifndef ROC_RTP_VALIDATOR_H_
 #define ROC_RTP_VALIDATOR_H_
 
+#include "roc_audio/sample_spec.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/time.h"
 #include "roc_packet/ireader.h"
@@ -42,7 +43,7 @@ public:
     //!  - @p reader is input packet reader
     //!  - @p config defines validator parameters
     //!  - @p sample_rate defines session sample rate
-    Validator(packet::IReader& reader, const ValidatorConfig& config, size_t sample_rate);
+    Validator(packet::IReader& reader, const ValidatorConfig& config, const audio::SampleSpec& sample_spec);
 
     //! Read next packet.
     //! @remarks
@@ -57,7 +58,7 @@ private:
     packet::PacketPtr prev_packet_;
 
     const ValidatorConfig config_;
-    const size_t sample_rate_;
+    const audio::SampleSpec& sample_spec_;
 };
 
 } // namespace rtp

@@ -13,6 +13,7 @@
 #define ROC_SNDIO_BACKEND_DISPATCHER_H_
 
 #include "roc_address/io_uri.h"
+#include "roc_audio/sample_spec.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/shared_ptr.h"
@@ -35,8 +36,7 @@ public:
 
     //! Set internal buffer size for all backends that need it.
     void set_frame_size(core::nanoseconds_t frame_length,
-                        size_t sample_rate,
-                        packet::channel_mask_t channels);
+                        audio::SampleSpec sample_spec);
 
     //! Create and open a sink.
     ISink* open_sink(core::IAllocator& allocator,

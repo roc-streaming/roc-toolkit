@@ -15,10 +15,9 @@ namespace audio {
 
 ProfilingReader::ProfilingReader(IReader& reader,
                                  core::IAllocator& allocator,
-                                 packet::channel_mask_t channels,
-                                 size_t sample_rate,
+                                 SampleSpec sample_spec,
                                  ProfilerConfig profiler_config)
-    : profiler_(allocator, channels, sample_rate, profiler_config)
+    : profiler_(allocator, sample_spec, profiler_config)
     , reader_(reader) {
 }
 
