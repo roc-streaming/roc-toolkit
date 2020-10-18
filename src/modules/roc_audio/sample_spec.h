@@ -30,20 +30,20 @@ public:
     SampleSpec();
     SampleSpec(size_t sample_rate, channel_mask_t channels);
 
-    virtual ~SampleSpec();
+    ~SampleSpec();
 
-    virtual size_t getSampleRate() const;
-    virtual void setSampleRate(size_t sample_rate);
-    virtual channel_mask_t getChannels() const;
-    virtual void setChannels(channel_mask_t channels);
-    virtual size_t num_channels() const;
-    virtual packet::timestamp_diff_t timestamp_from_ns(core::nanoseconds_t ns) const;
-    virtual core::nanoseconds_t timestamp_to_ns(packet::timestamp_diff_t ts) const;
-    virtual size_t ns_to_size(core::nanoseconds_t frame_length) const;
-    virtual core::nanoseconds_t size_to_ns(size_t frame_size) const;
+    size_t getSampleRate() const;
+    void setSampleRate(size_t sample_rate);
+    channel_mask_t getChannels() const;
+    void setChannels(channel_mask_t channels);
+    size_t num_channels() const;
+    packet::timestamp_diff_t timestamp_from_ns(core::nanoseconds_t ns) const;
+    core::nanoseconds_t timestamp_to_ns(packet::timestamp_diff_t ts) const;
+    size_t ns_to_size(core::nanoseconds_t frame_length) const;
+    core::nanoseconds_t size_to_ns(size_t frame_size) const;
 
 private:
-    virtual size_t calc_num_channels();
+    size_t calc_num_channels();
 
     size_t sample_rate_;
     channel_mask_t channels_;

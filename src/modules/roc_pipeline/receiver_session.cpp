@@ -105,8 +105,6 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
         return;
     }
 
-    audio::SampleSpec sample_spec = audio::SampleSpec(session_config.sample_spec.getSampleRate(),
-                                                    session_config.sample_spec.getChannels());
     depacketizer_.reset(new (depacketizer_) audio::Depacketizer(
         *preader, *payload_decoder_, session_config.sample_spec, common_config.beeping));
     if (!depacketizer_) {
