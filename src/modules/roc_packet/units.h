@@ -77,7 +77,7 @@ inline core::nanoseconds_t timestamp_to_ns(timestamp_diff_t ts, size_t sample_ra
 typedef uint32_t channel_mask_t;
 
 //! Get number of channels in mask.
-static inline size_t num_channels(channel_mask_t ch_mask) {
+inline size_t num_channels(channel_mask_t ch_mask) {
     size_t n_ch = 0;
     for (; ch_mask != 0; ch_mask >>= 1) {
         if (ch_mask & 1) {
