@@ -140,7 +140,7 @@ bool PulseaudioSink::write_frame_(audio::Frame& frame) {
 }
 
 bool PulseaudioSink::check_stream_params_() const {
-    if (num_channels_ == 0) {
+    if (config_.sample_spec.num_channels() == 0) {
         roc_log(LogError, "pulseaudio sink: # of channels is zero");
         return false;
     }
@@ -393,7 +393,7 @@ bool PulseaudioSink::open_stream_() {
 
     roc_log(LogInfo,
             "pulseaudio sink: opening stream: device=%s n_channels=%lu sample_rate=%lu",
-            device_, (unsigned long)num_channels_, (unsigned long)config_.sample_rate);
+            device_, (unsigned long)config_.sample_spec.num_channels(), (unsigned long)config_.sample_spec.getSampleRate());
 
     stream_ = pa_stream_new(context_, "Roc", &sample_spec_, NULL);
     if (!stream_) {
