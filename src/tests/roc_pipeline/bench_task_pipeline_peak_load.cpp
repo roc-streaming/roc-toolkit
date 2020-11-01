@@ -8,6 +8,7 @@
 
 #include <benchmark/benchmark.h>
 
+#include "roc_audio/sample_spec.h"
 #include "roc_core/atomic.h"
 #include "roc_core/fast_random.h"
 #include "roc_core/stddefs.h"
@@ -262,7 +263,7 @@ public:
     };
 
     TestPipeline(const TaskConfig& config, ctl::ControlLoop& loop, DelayStats& stats)
-        : TaskPipeline(*this, config, SampleRate, Chans)
+        : TaskPipeline(*this, config, audio::SampleSpec(SampleRate, Chans))
         , loop_(loop)
         , stats_(stats)
         , process_tasks_(*this) {

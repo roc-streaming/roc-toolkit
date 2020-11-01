@@ -30,8 +30,6 @@ public:
     SampleSpec();
     SampleSpec(size_t sample_rate, channel_mask_t channels);
 
-    ~SampleSpec();
-
     size_t getSampleRate() const;
     void setSampleRate(size_t sample_rate);
     channel_mask_t getChannels() const;

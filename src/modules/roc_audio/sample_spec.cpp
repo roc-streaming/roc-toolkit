@@ -26,9 +26,6 @@ SampleSpec::SampleSpec(size_t sample_rate,
     num_channels_ = calc_num_channels();
 }
 
-SampleSpec::~SampleSpec() {
-}
-
 size_t SampleSpec::getSampleRate() const {
     return sample_rate_;
 }
@@ -59,7 +56,7 @@ core::nanoseconds_t SampleSpec::timestamp_to_ns(packet::timestamp_diff_t ts) con
 }
 
 size_t SampleSpec::ns_to_size(core::nanoseconds_t frame_length) const {
-    return timestamp_from_ns(frame_length) * num_channels_;
+    return (size_t)timestamp_from_ns(frame_length) * num_channels_;
 }
 
 core::nanoseconds_t SampleSpec::size_to_ns(size_t frame_size) const {

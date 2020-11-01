@@ -8,6 +8,7 @@
 
 #include <benchmark/benchmark.h>
 
+#include "roc_audio/sample_spec.h"
 #include "roc_core/fast_random.h"
 #include "roc_ctl/control_loop.h"
 #include "roc_pipeline/task_pipeline.h"
@@ -43,7 +44,7 @@ public:
     };
 
     NoopPipeline(const TaskConfig& config, ctl::ControlLoop& loop)
-        : TaskPipeline(*this, config, SampleRate, Chans)
+        : TaskPipeline(*this, config, audio::SampleSpec(SampleRate, Chans))
         , loop_(loop)
         , process_tasks_(*this) {
     }

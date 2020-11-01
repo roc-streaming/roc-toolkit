@@ -565,7 +565,7 @@ void PulseaudioSink::stream_latency_cb_(pa_stream* stream, void* userdata) {
     }
 
     ssize_t latency = (ssize_t)(pa_usec_to_bytes(latency_us, &self.sample_spec_)
-                                / sizeof(audio::sample_t) / self.num_channels_);
+                                / sizeof(audio::sample_t) / self.num_channels());
 
     if (negative) {
         latency = -latency;
