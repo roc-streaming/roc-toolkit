@@ -1318,7 +1318,7 @@ TEST(task_queue, no_starvation) {
             tq.schedule_at(tasks[i], now + WaitTime * i, &handler);
         }
         tq.set_nth_result(i, true);
-        printf("task i: %zu, ptr: %p\n", i, (void*)&task[i]);
+        printf("task i: %zu, ptr: %p\n", i, (void*)&tasks[i]);
     }
 
     // wait for sleeping task to sync
