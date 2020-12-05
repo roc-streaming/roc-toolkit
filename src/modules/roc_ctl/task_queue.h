@@ -282,6 +282,7 @@ private:
 
     bool started_;
     core::Atomic<int> stop_;
+    core::Atomic<int> fetch_ready_;
 
     core::Atomic<int> ready_queue_size_;
     core::MpscQueue<Task, core::NoOwnership> ready_queue_;
