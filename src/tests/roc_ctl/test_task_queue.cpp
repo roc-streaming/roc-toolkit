@@ -1310,7 +1310,6 @@ TEST(task_queue, no_starvation) {
     const core::nanoseconds_t WaitTime = core::Millisecond;
 
     // schedule tasks in alternating queues
-    tq.set_nth_result(0, true);
     for (size_t i = 0; i < NumTasks; i++) {
         if (i % 2 == 0) {
             tq.schedule(tasks[i], &handler);
@@ -1322,7 +1321,7 @@ TEST(task_queue, no_starvation) {
     }
 
     // wait for sleeping task to sync
-    core::sleep_for(WaitTime);
+    core::sleep_for(WaitTime * 2);
 
     // check that the tasks are fetched from alternating queues
     // in sequential order
@@ -1330,7 +1329,7 @@ TEST(task_queue, no_starvation) {
     for (size_t i = 0; i < NumTasks; i++) {
         tq.unblock_one();
         temp = handler.wait_called();
-        printf("fetching %p", (void*)temp);
+        printf("fetching %p\n", (void*)temp);
         // CHECK(handler.wait_called() == &tasks[i]);
         UNSIGNED_LONGS_EQUAL(i + 1, tq.num_tasks());
         CHECK(tasks[i].success());
