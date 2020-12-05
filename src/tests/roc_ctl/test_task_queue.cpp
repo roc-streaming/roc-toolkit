@@ -1315,14 +1315,14 @@ TEST(task_queue, no_starvation) {
         if (i % 2 == 0) {
             tq.schedule(tasks[i], &handler);
         } else {
-            tq.schedule_at(tasks[i], now + WaitTime * i, &handler);
+            tq.schedule_at(tasks[i], now + WaitTime, &handler);
         }
         tq.set_nth_result(i, true);
         printf("task i: %zu, ptr: %p\n", i, (void*)&tasks[i]);
     }
 
     // wait for sleeping task to sync
-    core::sleep_for(WaitTime * (NumTasks - 1));
+    core::sleep_for(WaitTime);
 
     // check that the tasks are fetched from alternating queues
     // in sequential order
