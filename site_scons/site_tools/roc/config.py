@@ -13,7 +13,13 @@ def _run_prog(context, src, suffix):
     # RunProg may incorrectly use cached results from a previous run saved for
     # different file contents but the same invocation number. To prevent this, we
     # monkey patch its global counter with a hashsum of the file contents.
-    SCons.SConf._ac_build_counter = int(hashlib.md5(src.encode()).hexdigest(), 16)
+    # The workaround is needed only for older versions of SCons, where
+    # _ac_build_counter was an integer.
+    try:
+        if type(SCons.SConf._ac_build_counter) is int:
+            SCons.SConf._ac_build_counter = int(hashlib.md5(src.encode()).hexdigest(), 16)
+    except:
+        pass
     return context.RunProg(src, suffix)
 
 def CheckLibWithHeaderExt(context, libs, headers, language, expr='1', run=True):
