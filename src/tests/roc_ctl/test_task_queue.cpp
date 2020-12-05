@@ -1294,7 +1294,7 @@ TEST(task_queue, no_starvation) {
     TestTaskQueue tq;
     CHECK(tq.valid());
 
-    enum { NumTasks = 20 };
+    enum { NumTasks = 10 };
 
     UNSIGNED_LONGS_EQUAL(0, tq.num_tasks());
 
@@ -1302,40 +1302,37 @@ TEST(task_queue, no_starvation) {
     handler.expect_success(true);
     handler.expect_n_calls(NumTasks);
 
-    TestTaskQueue::Task* tasks = new TestTaskQueue::Task[NumTasks];
+    TestTaskQueue::Task tasks[NumTasks];
 
     tq.block();
 
     const core::nanoseconds_t now = core::timestamp();
     const core::nanoseconds_t WaitTime = core::Millisecond;
 
-    tq.schedule_at(tasks[0], now + WaitTime, &handler);
+    // schedule tasks in alternating queues
     tq.set_nth_result(0, true);
-    for (size_t i = 1; i < NumTasks; i++) {
+    for (size_t i = 0; i < NumTasks; i++) {
+        if (i % 2 == 0) {
+            tq.schedule(tasks[i], &handler);
+        } else {
+            tq.schedule_at(tasks[i], now + WaitTime * i, &handler);
+        }
         tq.set_nth_result(i, true);
-        tq.schedule(tasks[i], &handler);
     }
 
     // wait for sleeping task to sync
-    core::sleep_for(WaitTime);
+    core::sleep_for(WaitTime * (NumTasks - 1));
 
-    TestTaskQueue::Task* temp = NULL;
+    // check that the tasks are fetched from alternating queues
+    // in sequential order
     for (size_t i = 0; i < NumTasks; i++) {
         tq.unblock_one();
-        temp = handler.wait_called();
+        CHECK(handler.wait_called() == &tasks[i]);
         UNSIGNED_LONGS_EQUAL(i + 1, tq.num_tasks());
-    }
-
-    // check that the sleeping task wasn't last to get processed
-    CHECK(temp != &tasks[0]);
-
-    for (size_t i = 0; i < NumTasks; i++) {
         CHECK(tasks[i].success());
     }
 
     tq.check_all_unblocked();
-
-    delete[] tasks;
 }
 
 } // namespace ctl

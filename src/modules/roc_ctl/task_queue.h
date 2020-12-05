@@ -281,6 +281,7 @@ private:
     core::nanoseconds_t update_wakeup_timer_();
 
     bool started_;
+    bool fetch_ready;
     core::Atomic<int> stop_;
 
     core::Atomic<int> ready_queue_size_;

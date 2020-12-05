@@ -49,6 +49,7 @@ TaskQueue::ICompletionHandler::~ICompletionHandler() {
 TaskQueue::TaskQueue()
     : started_(false)
     , stop_(false)
+    , fetch_ready_(true)
     , ready_queue_size_(0) {
     started_ = Thread::start();
 }
@@ -157,7 +158,6 @@ void TaskQueue::stop_and_wait() {
 
 bool TaskQueue::process_tasks_() {
     core::Mutex::Lock lock(task_mutex_);
-    bool fetch_ready_ = true;
 
     for (;;) {
         Task* task = NULL;
@@ -166,15 +166,17 @@ bool TaskQueue::process_tasks_() {
             task = fetch_ready_task_();
             if (!task) {
                 task = fetch_sleeping_task_();
+            } else {
+                fetch_ready_ = !fetch_ready_;
             }
         } else {
             task = fetch_sleeping_task_();
             if (!task) {
                 task = fetch_ready_task_();
+            } else {
+                fetch_ready_ = !fetch_ready_;
             }
         }
-
-        fetch_ready_ = !fetch_ready_;
 
         if (!task) {
             if (update_wakeup_timer_() == 0) {
