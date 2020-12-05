@@ -159,11 +159,21 @@ bool TaskQueue::process_tasks_() {
     core::Mutex::Lock lock(task_mutex_);
 
     for (;;) {
-        Task* task = fetch_ready_task_();
+        Task* task = NULL;
 
-        if (!task) {
+        if (fetch_ready_) {
+            task = fetch_ready_task_();
+            if (!task) {
+                task = fetch_sleeping_task_();
+            }
+        } else {
             task = fetch_sleeping_task_();
+            if (!task) {
+                task = fetch_ready_task_();
+            }
         }
+
+        fetch_ready_ = !fetch_ready_;
 
         if (!task) {
             if (update_wakeup_timer_() == 0) {
