@@ -1284,6 +1284,12 @@ if compiler == 'clang':
                     '-Wno-implicit-int-float-conversion',
                     '-Wno-enum-float-conversion',
                 ]})
+        if compiler_ver[:2] >= (11, 0):
+            for var in ['CXXFLAGS', 'CFLAGS']:
+                env.Append(**{var: [
+                    '-Wno-suggest-override',
+                    '-Wno-suggest-destructor-override',
+                ]})
 
     if platform == 'darwin':
         if compiler_ver[:2] >= (10, 0):
