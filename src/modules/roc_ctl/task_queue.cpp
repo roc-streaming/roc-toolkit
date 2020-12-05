@@ -49,6 +49,7 @@ TaskQueue::ICompletionHandler::~ICompletionHandler() {
 TaskQueue::TaskQueue()
     : started_(false)
     , stop_(false)
+    , fetch_ready_(true)
     , ready_queue_size_(0) {
     started_ = Thread::start();
 }
