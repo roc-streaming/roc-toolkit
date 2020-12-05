@@ -49,7 +49,6 @@ TaskQueue::ICompletionHandler::~ICompletionHandler() {
 TaskQueue::TaskQueue()
     : started_(false)
     , stop_(false)
-    , fetch_ready_(true)
     , ready_queue_size_(0) {
     started_ = Thread::start();
 }
@@ -158,6 +157,7 @@ void TaskQueue::stop_and_wait() {
 
 bool TaskQueue::process_tasks_() {
     core::Mutex::Lock lock(task_mutex_);
+    bool fetch_ready_ = true;
 
     for (;;) {
         Task* task = NULL;
