@@ -1291,10 +1291,11 @@ TEST(task_queue, reschedule_cancelled) {
 }
 
 TEST(task_queue, no_starvation) {
+    printf("-----------START-STARVATION-TEST-----------\n");
     TestTaskQueue tq;
     CHECK(tq.valid());
 
-    enum { NumTasks = 10 };
+    enum { NumTasks = 6 };
 
     UNSIGNED_LONGS_EQUAL(0, tq.num_tasks());
 
@@ -1309,76 +1310,53 @@ TEST(task_queue, no_starvation) {
     const core::nanoseconds_t now = core::timestamp();
     const core::nanoseconds_t WaitTime = core::Millisecond;
 
-    // tq.schedule_at(tasks[0], now + WaitTime, &handler);
-    // tq.schedule_at(tasks[1], now + WaitTime * 2, &handler);
-    // tq.schedule_at(tasks[2], now + WaitTime * 3, &handler);
-    // tq.schedule(tasks[3], &handler);
-    // tq.schedule(tasks[4], &handler);
-    // tq.schedule(tasks[5], &handler);
+    tq.schedule_at(tasks[0], now + WaitTime, &handler);
+    tq.schedule_at(tasks[1], now + WaitTime * 2, &handler);
+    tq.schedule_at(tasks[2], now + WaitTime * 3, &handler);
+    tq.schedule(tasks[3], &handler);
+    tq.schedule(tasks[4], &handler);
+    tq.schedule(tasks[5], &handler);
 
-
-    printf("-----------START-STARVATION-TEST-----------\n");
-    // for (size_t i = 0; i < NumTasks; i++) {
-    //     tq.set_nth_result(i, true);
-    //     printf("task %zu, ptr: %p\n", i, (void*)&tasks[i]);
-    // }
-
-
-    // schedule tasks in alternating queues
-    // for (size_t i = 0; i < NumTasks; i++) {
-    //     if (i % 2 == 0) {
-    //         tq.schedule(tasks[i], &handler);
-    //     } else {
-    //         tq.schedule_at(tasks[i], now + WaitTime, &handler);
-    //     }
-    //     tq.set_nth_result(i, true);
-    //     printf("task: %zu, ptr: %p\n", i, (void*)&tasks[i]);
-    // }
-
-
-    // schedule tasks in alternating queues
-    tq.set_nth_result(0, true);
     for (size_t i = 0; i < NumTasks; i++) {
-        if (i % 2 == 0) {
-            tq.schedule(tasks[i], &handler);
-        } else {
-            tq.schedule_at(tasks[i], now + WaitTime * i, &handler);
-        }
         tq.set_nth_result(i, true);
-        printf("task: %zu, ptr: %p\n", i, (void*)&tasks[i]);
     }
 
     // wait for sleeping task to sync
-    core::sleep_for(WaitTime * (NumTasks - 1));
+    core::sleep_for(WaitTime * (NumTasks / 2));
 
     // check that the tasks are fetched from alternating queues
-    // in sequential order
-    TestTaskQueue::Task* temp = NULL;
-    for (size_t i = 0; i < NumTasks; i++) {
-        tq.unblock_one();
-        temp = handler.wait_called();
-        printf("fetching %p\n", (void*)temp);
-        // CHECK(handler.wait_called() == &tasks[i]);
-        UNSIGNED_LONGS_EQUAL(i + 1, tq.num_tasks());
-    }
+    tq.unblock_one();
+    CHECK(handler.wait_called() == &tasks[3]);
+    UNSIGNED_LONGS_EQUAL(1, tq.num_tasks());
+    CHECK(tasks[3].success());
 
-    // // wait for sleeping task to sync
-    // core::sleep_for(WaitTime * 3);
+    tq.unblock_one();
+    CHECK(handler.wait_called() == &tasks[0]);
+    UNSIGNED_LONGS_EQUAL(2, tq.num_tasks());
+    CHECK(tasks[0].success());
 
-    // // check that the tasks are fetched from alternating queues
-    // // in sequential order
-    // TestTaskQueue::Task* temp = NULL;
-    // for (size_t i = 0; i < NumTasks; i++) {
-    //     tq.unblock_one();
-    //     temp = handler.wait_called();
-    //     printf("fetching %p\n", (void*)temp);
-    //     // CHECK(handler.wait_called() == &tasks[i]);
-    //     UNSIGNED_LONGS_EQUAL(i + 1, tq.num_tasks());
-    //     // CHECK(tasks[i].success());
-    // }
-    printf("------------END-STARVATION-TEST------------\n");
+    tq.unblock_one();
+    CHECK(handler.wait_called() == &tasks[4]);
+    UNSIGNED_LONGS_EQUAL(3, tq.num_tasks());
+    CHECK(tasks[4].success());
+
+    tq.unblock_one();
+    CHECK(handler.wait_called() == &tasks[1]);
+    UNSIGNED_LONGS_EQUAL(4, tq.num_tasks());
+    CHECK(tasks[1].success());
+
+    tq.unblock_one();
+    CHECK(handler.wait_called() == &tasks[5]);
+    UNSIGNED_LONGS_EQUAL(5, tq.num_tasks());
+    CHECK(tasks[5].success());
+
+    tq.unblock_one();
+    CHECK(handler.wait_called() == &tasks[2]);
+    UNSIGNED_LONGS_EQUAL(6, tq.num_tasks());
+    CHECK(tasks[2].success());
 
     tq.check_all_unblocked();
+    printf("------------END-STARVATION-TEST------------\n");
 }
 
 } // namespace ctl
