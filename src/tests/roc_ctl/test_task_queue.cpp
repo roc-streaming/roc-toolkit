@@ -1320,7 +1320,7 @@ TEST(task_queue, no_starvation) {
     printf("-----------START-STARVATION-TEST-----------");
     for (size_t i = 0; i < NumTasks; i++) {
         tq.set_nth_result(i, true);
-        printf("i: %zu, ptr: %p", i, (void)&tasks[i]);
+        printf("i: %zu, ptr: %p", i, (void*)&tasks[i]);
     }
 
 
