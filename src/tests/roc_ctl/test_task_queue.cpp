@@ -1310,8 +1310,8 @@ TEST(task_queue, no_starvation) {
     const core::nanoseconds_t WaitTime = core::Millisecond;
 
     tq.schedule_at(tasks[0], now + WaitTime, &handler);
-    tq.schedule_at(tasks[1], now + WaitTime, &handler);
-    tq.schedule_at(tasks[2], now + WaitTime, &handler);
+    tq.schedule_at(tasks[1], now + WaitTime * 2, &handler);
+    tq.schedule_at(tasks[2], now + WaitTime * 3, &handler);
     tq.schedule(tasks[3], &handler);
     tq.schedule(tasks[4], &handler);
     tq.schedule(tasks[5], &handler);
@@ -1333,7 +1333,7 @@ TEST(task_queue, no_starvation) {
     // }
 
     // wait for sleeping task to sync
-    core::sleep_for(WaitTime * 2);
+    core::sleep_for(WaitTime * 3);
 
     // check that the tasks are fetched from alternating queues
     // in sequential order
