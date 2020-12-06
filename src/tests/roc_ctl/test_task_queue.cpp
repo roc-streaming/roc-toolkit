@@ -1316,8 +1316,11 @@ TEST(task_queue, no_starvation) {
     tq.schedule(tasks[4], &handler);
     tq.schedule(tasks[5], &handler);
 
+
+    printf("-----------START-STARVATION-TEST-----------");
     for (size_t i = 0; i < NumTasks; i++) {
         tq.set_nth_result(i, true);
+        printf("i: %zu, ptr: %p", i, (void)&tasks[i]);
     }
 
 
@@ -1346,6 +1349,7 @@ TEST(task_queue, no_starvation) {
         UNSIGNED_LONGS_EQUAL(i + 1, tq.num_tasks());
         // CHECK(tasks[i].success());
     }
+    printf("------------END-STARVATION-TEST------------");
 
     tq.check_all_unblocked();
 }
