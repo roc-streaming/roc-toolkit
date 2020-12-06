@@ -1294,7 +1294,7 @@ TEST(task_queue, no_starvation) {
     TestTaskQueue tq;
     CHECK(tq.valid());
 
-    enum { NumTasks = 6 };
+    enum { NumTasks = 10 };
 
     UNSIGNED_LONGS_EQUAL(0, tq.num_tasks());
 
@@ -1309,19 +1309,19 @@ TEST(task_queue, no_starvation) {
     const core::nanoseconds_t now = core::timestamp();
     const core::nanoseconds_t WaitTime = core::Millisecond;
 
-    tq.schedule_at(tasks[0], now + WaitTime, &handler);
-    tq.schedule_at(tasks[1], now + WaitTime * 2, &handler);
-    tq.schedule_at(tasks[2], now + WaitTime * 3, &handler);
-    tq.schedule(tasks[3], &handler);
-    tq.schedule(tasks[4], &handler);
-    tq.schedule(tasks[5], &handler);
+    // tq.schedule_at(tasks[0], now + WaitTime, &handler);
+    // tq.schedule_at(tasks[1], now + WaitTime * 2, &handler);
+    // tq.schedule_at(tasks[2], now + WaitTime * 3, &handler);
+    // tq.schedule(tasks[3], &handler);
+    // tq.schedule(tasks[4], &handler);
+    // tq.schedule(tasks[5], &handler);
 
 
-    printf("-----------START-STARVATION-TEST-----------");
-    for (size_t i = 0; i < NumTasks; i++) {
-        tq.set_nth_result(i, true);
-        printf("task %zu, ptr: %p\n", i, (void*)&tasks[i]);
-    }
+    printf("-----------START-STARVATION-TEST-----------\n");
+    // for (size_t i = 0; i < NumTasks; i++) {
+    //     tq.set_nth_result(i, true);
+    //     printf("task %zu, ptr: %p\n", i, (void*)&tasks[i]);
+    // }
 
 
     // schedule tasks in alternating queues
@@ -1332,11 +1332,24 @@ TEST(task_queue, no_starvation) {
     //         tq.schedule_at(tasks[i], now + WaitTime, &handler);
     //     }
     //     tq.set_nth_result(i, true);
-    //     printf("task i: %zu, ptr: %p\n", i, (void*)&tasks[i]);
+    //     printf("task: %zu, ptr: %p\n", i, (void*)&tasks[i]);
     // }
 
+
+    // schedule tasks in alternating queues
+    tq.set_nth_result(0, true);
+    for (size_t i = 0; i < NumTasks; i++) {
+        if (i % 2 == 0) {
+            tq.schedule(tasks[i], &handler);
+        } else {
+            tq.schedule_at(tasks[i], now + WaitTime * i, &handler);
+        }
+        tq.set_nth_result(i, true);
+        printf("task: %zu, ptr: %p\n", i, (void*)&tasks[i]);
+    }
+
     // wait for sleeping task to sync
-    core::sleep_for(WaitTime * 3);
+    core::sleep_for(WaitTime * (NumTasks - 1));
 
     // check that the tasks are fetched from alternating queues
     // in sequential order
@@ -1347,9 +1360,23 @@ TEST(task_queue, no_starvation) {
         printf("fetching %p\n", (void*)temp);
         // CHECK(handler.wait_called() == &tasks[i]);
         UNSIGNED_LONGS_EQUAL(i + 1, tq.num_tasks());
-        // CHECK(tasks[i].success());
     }
-    printf("------------END-STARVATION-TEST------------");
+
+    // // wait for sleeping task to sync
+    // core::sleep_for(WaitTime * 3);
+
+    // // check that the tasks are fetched from alternating queues
+    // // in sequential order
+    // TestTaskQueue::Task* temp = NULL;
+    // for (size_t i = 0; i < NumTasks; i++) {
+    //     tq.unblock_one();
+    //     temp = handler.wait_called();
+    //     printf("fetching %p\n", (void*)temp);
+    //     // CHECK(handler.wait_called() == &tasks[i]);
+    //     UNSIGNED_LONGS_EQUAL(i + 1, tq.num_tasks());
+    //     // CHECK(tasks[i].success());
+    // }
+    printf("------------END-STARVATION-TEST------------\n");
 
     tq.check_all_unblocked();
 }
