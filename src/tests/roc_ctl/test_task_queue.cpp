@@ -1291,7 +1291,6 @@ TEST(task_queue, reschedule_cancelled) {
 }
 
 TEST(task_queue, no_starvation) {
-    printf("-----------START-STARVATION-TEST-----------\n");
     TestTaskQueue tq;
     CHECK(tq.valid());
 
@@ -1356,7 +1355,6 @@ TEST(task_queue, no_starvation) {
     CHECK(tasks[2].success());
 
     tq.check_all_unblocked();
-    printf("------------END-STARVATION-TEST------------\n");
 }
 
 } // namespace ctl
