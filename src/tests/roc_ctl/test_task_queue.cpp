@@ -1328,37 +1328,37 @@ TEST(task_queue, no_starvation) {
     TaskQueue::Task* temp = handler.wait_called();
     CHECK(temp == &tasks[0] || temp == &tasks[3]);
     UNSIGNED_LONGS_EQUAL(1, tq.num_tasks());
-    CHECK(tasks[3].success());
+    CHECK(tasks[0].success() || tasks[3].success());
 
     tq.unblock_one();
     temp = handler.wait_called();
     CHECK(temp == &tasks[0] || temp == &tasks[3]);
     UNSIGNED_LONGS_EQUAL(2, tq.num_tasks());
-    CHECK(tasks[0].success());
+    CHECK(tasks[0].success() && tasks[3].success());
 
     tq.unblock_one();
     temp = handler.wait_called();
     CHECK(temp == &tasks[1] || temp == &tasks[4]);
     UNSIGNED_LONGS_EQUAL(3, tq.num_tasks());
-    CHECK(tasks[4].success());
+    CHECK(tasks[1].success() || tasks[4].success());
 
     tq.unblock_one();
     temp = handler.wait_called();
     CHECK(temp == &tasks[1] || temp == &tasks[4]);
     UNSIGNED_LONGS_EQUAL(4, tq.num_tasks());
-    CHECK(tasks[1].success());
+    CHECK(tasks[1].success() && tasks[4].success());
 
     tq.unblock_one();
     temp = handler.wait_called();
     CHECK(temp == &tasks[2] || temp == &tasks[5]);
     UNSIGNED_LONGS_EQUAL(5, tq.num_tasks());
-    CHECK(tasks[5].success());
+    CHECK(tasks[2].success() || tasks[5].success());
 
     tq.unblock_one();
     temp = handler.wait_called();
     CHECK(temp == &tasks[2] || temp == &tasks[5]);
     UNSIGNED_LONGS_EQUAL(6, tq.num_tasks());
-    CHECK(tasks[2].success());
+    CHECK(tasks[2].success() && tasks[5].success());
 
     tq.check_all_unblocked();
 }
