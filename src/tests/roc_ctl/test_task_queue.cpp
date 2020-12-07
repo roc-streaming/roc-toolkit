@@ -747,9 +747,9 @@ TEST(task_queue, schedule_at_and_schedule) {
     const core::nanoseconds_t now = core::timestamp();
 
     tq.schedule(tasks[0], &handler);
-    tq.schedule_at(tasks[1], now + core::Millisecond * 3, &handler);
+    tq.schedule_at(tasks[1], now + core::Millisecond * 7, &handler);
     tq.schedule(tasks[2], &handler);
-    tq.schedule_at(tasks[3], now + core::Millisecond * 1, &handler);
+    tq.schedule_at(tasks[3], now + core::Millisecond * 5, &handler);
 
     tq.unblock_one();
     CHECK(handler.wait_called() == &tasks[0]);
@@ -1288,6 +1288,79 @@ TEST(task_queue, reschedule_cancelled) {
     CHECK(!task.cancelled());
 
     UNSIGNED_LONGS_EQUAL(1, tq.num_tasks());
+}
+
+TEST(task_queue, no_starvation) {
+    TestTaskQueue tq;
+    CHECK(tq.valid());
+
+    enum { NumTasks = 6 };
+
+    UNSIGNED_LONGS_EQUAL(0, tq.num_tasks());
+
+    TestHandler handler;
+    handler.expect_success(true);
+    handler.expect_n_calls(NumTasks);
+
+    TestTaskQueue::Task tasks[NumTasks];
+
+    tq.block();
+
+    const core::nanoseconds_t now = core::timestamp();
+    const core::nanoseconds_t WaitTime = core::Millisecond;
+
+    tq.schedule_at(tasks[0], now + WaitTime, &handler);
+    tq.schedule_at(tasks[1], now + WaitTime * 2, &handler);
+    tq.schedule_at(tasks[2], now + WaitTime * 3, &handler);
+    tq.schedule(tasks[3], &handler);
+    tq.schedule(tasks[4], &handler);
+    tq.schedule(tasks[5], &handler);
+
+    for (size_t i = 0; i < NumTasks; i++) {
+        tq.set_nth_result(i, true);
+    }
+
+    // wait for sleeping task to sync
+    core::sleep_for(WaitTime * (NumTasks / 2));
+
+    // check that the tasks are fetched from alternating queues
+    tq.unblock_one();
+    TaskQueue::Task* temp = handler.wait_called();
+    CHECK(temp == &tasks[0] || temp == &tasks[3]);
+    UNSIGNED_LONGS_EQUAL(1, tq.num_tasks());
+    CHECK(tasks[0].success() || tasks[3].success());
+
+    tq.unblock_one();
+    temp = handler.wait_called();
+    CHECK(temp == &tasks[0] || temp == &tasks[3]);
+    UNSIGNED_LONGS_EQUAL(2, tq.num_tasks());
+    CHECK(tasks[0].success() && tasks[3].success());
+
+    tq.unblock_one();
+    temp = handler.wait_called();
+    CHECK(temp == &tasks[1] || temp == &tasks[4]);
+    UNSIGNED_LONGS_EQUAL(3, tq.num_tasks());
+    CHECK(tasks[1].success() || tasks[4].success());
+
+    tq.unblock_one();
+    temp = handler.wait_called();
+    CHECK(temp == &tasks[1] || temp == &tasks[4]);
+    UNSIGNED_LONGS_EQUAL(4, tq.num_tasks());
+    CHECK(tasks[1].success() && tasks[4].success());
+
+    tq.unblock_one();
+    temp = handler.wait_called();
+    CHECK(temp == &tasks[2] || temp == &tasks[5]);
+    UNSIGNED_LONGS_EQUAL(5, tq.num_tasks());
+    CHECK(tasks[2].success() || tasks[5].success());
+
+    tq.unblock_one();
+    temp = handler.wait_called();
+    CHECK(temp == &tasks[2] || temp == &tasks[5]);
+    UNSIGNED_LONGS_EQUAL(6, tq.num_tasks());
+    CHECK(tasks[2].success() && tasks[5].success());
+
+    tq.check_all_unblocked();
 }
 
 } // namespace ctl
