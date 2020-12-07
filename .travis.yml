@@ -5,7 +5,6 @@ branches:
     - master
     - develop
     - /^feature\/.*/
-    - test
 
 stages:
   - name: Build
