@@ -747,9 +747,9 @@ TEST(task_queue, schedule_at_and_schedule) {
     const core::nanoseconds_t now = core::timestamp();
 
     tq.schedule(tasks[0], &handler);
-    tq.schedule_at(tasks[1], now + core::Millisecond * 3, &handler);
+    tq.schedule_at(tasks[1], now + core::Millisecond * 7, &handler);
     tq.schedule(tasks[2], &handler);
-    tq.schedule_at(tasks[3], now + core::Millisecond * 1, &handler);
+    tq.schedule_at(tasks[3], now + core::Millisecond * 5, &handler);
 
     tq.unblock_one();
     CHECK(handler.wait_called() == &tasks[0]);
