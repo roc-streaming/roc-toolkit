@@ -1325,32 +1325,38 @@ TEST(task_queue, no_starvation) {
 
     // check that the tasks are fetched from alternating queues
     tq.unblock_one();
-    CHECK(handler.wait_called() == &tasks[3]);
+    TaskQueue::Task* temp = handler.wait_called();
+    CHECK(temp == &tasks[0] || temp == &tasks[3]);
     UNSIGNED_LONGS_EQUAL(1, tq.num_tasks());
     CHECK(tasks[3].success());
 
     tq.unblock_one();
-    CHECK(handler.wait_called() == &tasks[0]);
+    temp = handler.wait_called();
+    CHECK(temp == &tasks[0] || temp == &tasks[3]);
     UNSIGNED_LONGS_EQUAL(2, tq.num_tasks());
     CHECK(tasks[0].success());
 
     tq.unblock_one();
-    CHECK(handler.wait_called() == &tasks[4]);
+    temp = handler.wait_called();
+    CHECK(temp == &tasks[1] || temp == &tasks[4]);
     UNSIGNED_LONGS_EQUAL(3, tq.num_tasks());
     CHECK(tasks[4].success());
 
     tq.unblock_one();
-    CHECK(handler.wait_called() == &tasks[1]);
+    temp = handler.wait_called();
+    CHECK(temp == &tasks[1] || temp == &tasks[4]);
     UNSIGNED_LONGS_EQUAL(4, tq.num_tasks());
     CHECK(tasks[1].success());
 
     tq.unblock_one();
-    CHECK(handler.wait_called() == &tasks[5]);
+    temp = handler.wait_called();
+    CHECK(temp == &tasks[2] || temp == &tasks[5]);
     UNSIGNED_LONGS_EQUAL(5, tq.num_tasks());
     CHECK(tasks[5].success());
 
     tq.unblock_one();
-    CHECK(handler.wait_called() == &tasks[2]);
+    temp = handler.wait_called();
+    CHECK(temp == &tasks[2] || temp == &tasks[5]);
     UNSIGNED_LONGS_EQUAL(6, tq.num_tasks());
     CHECK(tasks[2].success());
 
