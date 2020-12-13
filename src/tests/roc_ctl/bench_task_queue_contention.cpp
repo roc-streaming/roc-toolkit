@@ -19,10 +19,11 @@ enum {
     NumScheduleIterations = 2000000,
     NumScheduleAfterIterations = 20000,
     NumThreads = 8,
-    BatchSize = 1000
+    BatchSize = 1000,
 };
 
 const core::nanoseconds_t MaxDelay = 100 * core::Millisecond;
+//const core::nanoseconds_t StartTime = 1000 * core::Second;
 
 class NoopQueue : public TaskQueue {
 public:
@@ -36,18 +37,26 @@ public:
         stop_and_wait();
     }
 
+
     using TaskQueue::stop_and_wait;
 
 private:
     virtual TaskResult process_task_imp(TaskQueue::Task&) {
         return TaskSucceeded;
     }
+
+    // Dummy implementation of TaskQueue::timestamp_imp().
+    virtual core::nanoseconds_t timestamp_imp() const {
+        return 0;
+    }
+
 };
 
 class NoopHandler : public TaskQueue::ICompletionHandler {
 public:
     virtual void control_task_finished(TaskQueue::Task&) {
     }
+
 };
 
 struct BM_QueueContention : benchmark::Fixture {
