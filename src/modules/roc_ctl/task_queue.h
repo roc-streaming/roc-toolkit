@@ -238,6 +238,9 @@ protected:
     //! All tasks should be finished before calling stop().
     //! stop() should be called before calling destructor.
     void stop_and_wait();
+    
+    //! Get current time.
+    virtual core::nanoseconds_t timestamp_imp() const = 0;
 
 private:
     // Task states.

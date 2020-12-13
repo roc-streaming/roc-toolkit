@@ -264,6 +264,7 @@ void TaskQueue::enqueue_renewed_task_(Task& task, core::nanoseconds_t deadline) 
     // Add task to the ready queue.
     ready_queue_.push_back(task);
 
+
     // Wake up event loop thread.
     // This wakeup will either succeed or handled by concurrent call to
     // update_wakeup_timer_().
@@ -276,8 +277,8 @@ bool TaskQueue::try_renew_deadline_inplace_(Task& task, core::nanoseconds_t dead
     if (!task_mutex_.try_lock()) {
         return false;
     }
-
     apply_renewed_state_(task, deadline);
+    // Task %p goes to StateSleeping.
     apply_renewed_deadline_(task, deadline);
 
     --ready_queue_size_;
@@ -319,7 +320,6 @@ void TaskQueue::apply_renewed_deadline_(Task& task, core::nanoseconds_t deadline
 
 void TaskQueue::reschedule_task_(Task& task, core::nanoseconds_t deadline) {
     roc_panic_if_not(deadline >= 0);
-
     if (task.deadline_ == deadline) {
         return;
     }
@@ -535,9 +535,15 @@ TaskQueue::Task* TaskQueue::fetch_sleeping_task_() {
         return NULL;
     }
 
+    /*
     if (task->deadline_ > core::timestamp()) {
         return NULL;
     }
+    */
+    if (task->deadline_ > timestamp_imp()) {
+        return NULL;
+    }
+    
 
     roc_log(LogTrace, "task queue: fetching sleeping task: ptr=%p deadline=%lld",
             (void*)task, (long long)task->deadline_);
@@ -555,7 +561,6 @@ void TaskQueue::insert_sleeping_task_(Task& task) {
     roc_panic_if_not(task.deadline_ > 0);
 
     Task* pos = sleeping_queue_.front();
-
     for (; pos; pos = sleeping_queue_.nextof(*pos)) {
         if (pos->deadline_ > task.deadline_) {
             break;
@@ -577,7 +582,6 @@ void TaskQueue::remove_sleeping_task_(Task& task) {
 
 core::nanoseconds_t TaskQueue::update_wakeup_timer_() {
     core::nanoseconds_t deadline = 0;
-
     if (ready_queue_size_ == 0) {
         if (Task* task = sleeping_queue_.front()) {
             deadline = task->deadline_;

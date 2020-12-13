@@ -32,6 +32,11 @@ TaskQueue::TaskResult ControlLoop::process_task_imp(TaskQueue::Task& basic_task)
     return (this->*(task.func_))(task);
 }
 
+core::nanoseconds_t ControlLoop::timestamp_imp() const {
+    return core::timestamp();
+}
+
+
 TaskQueue::TaskResult ControlLoop::task_process_pipeline_tasks_(Task& basic_task) {
     Tasks::ProcessPipelineTasks& task = (Tasks::ProcessPipelineTasks&)basic_task;
 

@@ -53,7 +53,7 @@ public:
 
 private:
     virtual TaskResult process_task_imp(TaskQueue::Task&);
-
+    virtual core::nanoseconds_t timestamp_imp() const;
     TaskResult task_process_pipeline_tasks_(Task&);
 };
 
