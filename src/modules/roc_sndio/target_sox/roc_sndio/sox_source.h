@@ -72,7 +72,7 @@ public:
     virtual bool restart();
 
     //! Read frame.
-    virtual bool read(audio::Frame&);
+    virtual ssize_t read(audio::Frame&);
 
 private:
     bool setup_names_(const char* driver, const char* input);

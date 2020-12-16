@@ -9,6 +9,7 @@
 #include "roc_sndio/sox_source.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
+#include "roc_error/error_code.h"
 #include "roc_sndio/sox_backend.h"
 
 namespace roc {
@@ -199,11 +200,11 @@ bool SoxSource::restart() {
     return true;
 }
 
-bool SoxSource::read(audio::Frame& frame) {
+ssize_t SoxSource::read(audio::Frame& frame) {
     roc_panic_if(!valid_);
 
     if (paused_ || eof_) {
-        return false;
+        return roc::error::ErrUnknown;
     }
 
     if (!input_) {
@@ -241,14 +242,14 @@ bool SoxSource::read(audio::Frame& frame) {
     }
 
     if (frame_left == frame.size()) {
-        return false;
+        return roc::error::ErrUnknown;
     }
 
     if (frame_left != 0) {
         memset(frame_data, 0, frame_left * sizeof(audio::sample_t));
     }
 
-    return true;
+    return frame.size() - frame_left;
 }
 
 bool SoxSource::seek_(uint64_t offset) {

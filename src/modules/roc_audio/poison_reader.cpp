@@ -16,7 +16,7 @@ PoisonReader::PoisonReader(IReader& reader)
     : reader_(reader) {
 }
 
-bool PoisonReader::read(Frame& frame) {
+ssize_t PoisonReader::read(Frame& frame) {
     const size_t frame_size = frame.size();
     sample_t* frame_data = frame.data();
 

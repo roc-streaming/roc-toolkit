@@ -25,13 +25,13 @@ public:
         , size_(0) {
     }
 
-    virtual bool read(Frame& frame) {
+    virtual ssize_t read(Frame& frame) {
         CHECK(pos_ + frame.size() <= size_);
 
         memcpy(frame.data(), samples_ + pos_, frame.size() * sizeof(sample_t));
         pos_ += frame.size();
 
-        return true;
+        return frame.size();
     }
 
     void add(size_t size, sample_t value) {

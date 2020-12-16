@@ -234,7 +234,7 @@ bool TaskPipeline::process_frame_and_tasks_simple_(audio::Frame& frame) {
         schedule_async_task_processing_();
     }
 
-    return frame_res;
+    return frame_res ? frame.size() : 0;
 }
 
 bool TaskPipeline::process_frame_and_tasks_precise_(audio::Frame& frame) {

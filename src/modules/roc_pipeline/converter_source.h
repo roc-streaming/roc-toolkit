@@ -64,7 +64,7 @@ public:
     virtual bool restart();
 
     //! Read frame.
-    virtual bool read(audio::Frame&);
+    virtual ssize_t read(audio::Frame&);
 
 private:
     core::Optional<audio::PoisonReader> resampler_poisoner_;

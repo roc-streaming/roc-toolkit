@@ -33,7 +33,7 @@ public:
                     ProfilerConfig profiler_config);
 
     //! Read audio frame.
-    virtual bool read(Frame& frame);
+    virtual ssize_t read(Frame& frame);
 
     //! Check if the profiler was succefully constructed.
     bool valid() const;

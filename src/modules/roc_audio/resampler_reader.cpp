@@ -11,6 +11,7 @@
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_core/stddefs.h"
+#include "roc_error/error_code.h"
 
 namespace roc {
 namespace audio {
@@ -30,7 +31,7 @@ bool ResamplerReader::set_scaling(size_t input_rate, size_t output_rate, float m
     return resampler_.set_scaling(input_rate, output_rate, mult);
 }
 
-bool ResamplerReader::read(Frame& out) {
+ssize_t ResamplerReader::read(Frame& out) {
     roc_panic_if_not(valid());
 
     size_t out_pos = 0;
@@ -42,14 +43,14 @@ bool ResamplerReader::read(Frame& out) {
 
         if (num_popped < out_part.size()) {
             if (!push_input_()) {
-                return false;
+                return roc::error::ErrUnknown;
             }
         }
 
         out_pos += num_popped;
     }
 
-    return true;
+    return out.size();
 }
 
 bool ResamplerReader::push_input_() {

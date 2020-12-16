@@ -8,6 +8,7 @@
 
 #include "roc_audio/watchdog.h"
 #include "roc_core/log.h"
+#include "roc_error/error_code.h"
 
 namespace roc {
 namespace audio {
@@ -75,16 +76,17 @@ bool Watchdog::valid() const {
     return valid_;
 }
 
-bool Watchdog::read(Frame& frame) {
+ssize_t Watchdog::read(Frame& frame) {
     if (!alive_) {
         if (frame.size() != 0) {
             memset(frame.data(), 0, frame.size() * sizeof(sample_t));
         }
-        return true;
+        return 0;
     }
 
-    if (!reader_.read(frame)) {
-        return false;
+    ssize_t ret_val = reader_.read(frame);
+    if (ret_val <= 0) {
+        return ret_val;
     }
 
     const packet::timestamp_t next_read_pos =
@@ -101,7 +103,7 @@ bool Watchdog::read(Frame& frame) {
         alive_ = false;
     }
 
-    return true;
+    return ret_val;
 }
 
 bool Watchdog::update() {

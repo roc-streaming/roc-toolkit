@@ -58,7 +58,7 @@ public:
         return false;
     }
 
-    virtual bool read(audio::Frame& frame) {
+    virtual ssize_t read(audio::Frame& frame) {
         size_t ns = frame.size();
         if (ns > size_ - pos_) {
             ns = size_ - pos_;
@@ -73,7 +73,7 @@ public:
             memset(frame.data() + ns, 0, (frame.size() - ns) * sizeof(audio::sample_t));
         }
 
-        return true;
+        return ns;
     }
 
     void add(size_t sz) {

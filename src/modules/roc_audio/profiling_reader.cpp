@@ -22,7 +22,7 @@ ProfilingReader::ProfilingReader(IReader& reader,
     , reader_(reader) {
 }
 
-bool ProfilingReader::read(Frame& frame) {
+ssize_t ProfilingReader::read(Frame& frame) {
     bool ret;
     const core::nanoseconds_t elapsed = read_(frame, ret);
 

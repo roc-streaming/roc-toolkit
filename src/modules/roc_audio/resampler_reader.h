@@ -38,7 +38,7 @@ public:
     bool set_scaling(size_t input_rate, size_t output_rate, float multiplier);
 
     //! Read audio frame.
-    virtual bool read(Frame&);
+    virtual ssize_t read(Frame&);
 
 private:
     bool push_input_();

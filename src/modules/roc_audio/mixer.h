@@ -66,7 +66,7 @@ public:
     //! @remarks
     //!  Reads samples from every input reader, mixes them, and fills @p frame
     //!  with the result.
-    virtual bool read(Frame& frame);
+    virtual ssize_t read(Frame& frame);
 
 private:
     void read_(sample_t* out_data, size_t out_sz);

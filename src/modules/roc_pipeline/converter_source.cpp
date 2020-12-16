@@ -109,7 +109,7 @@ bool ConverterSource::restart() {
     return input_source_.restart();
 }
 
-bool ConverterSource::read(audio::Frame& frame) {
+ssize_t ConverterSource::read(audio::Frame& frame) {
     roc_panic_if(!valid());
 
     return audio_reader_->read(frame);

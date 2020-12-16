@@ -61,7 +61,7 @@ packet::timestamp_t Depacketizer::timestamp() const {
     return timestamp_;
 }
 
-bool Depacketizer::read(Frame& frame) {
+ssize_t Depacketizer::read(Frame& frame) {
     const size_t prev_dropped_packets = dropped_packets_;
     const packet::timestamp_t prev_packet_samples = packet_samples_;
 

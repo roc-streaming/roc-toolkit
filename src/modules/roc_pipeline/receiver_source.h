@@ -136,7 +136,7 @@ public:
 
     //! Read frame.
     //! May also process some tasks and invoke callbacks passed to enqueue().
-    virtual bool read(audio::Frame&);
+    virtual ssize_t read(audio::Frame&);
 
 private:
     virtual core::nanoseconds_t timestamp_imp() const;

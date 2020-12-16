@@ -119,7 +119,7 @@ bool ReceiverSource::valid() const {
     return audio_reader_;
 }
 
-bool ReceiverSource::read(audio::Frame& frame) {
+ssize_t ReceiverSource::read(audio::Frame& frame) {
     roc_panic_if(!valid());
 
     core::Mutex::Lock lock(read_mutex_);
@@ -128,7 +128,8 @@ bool ReceiverSource::read(audio::Frame& frame) {
         ticker_.wait(timestamp_);
     }
 
-    return process_frame_and_tasks(frame);
+    process_frame_and_tasks(frame);
+    return frame.size();
 }
 
 size_t ReceiverSource::num_sessions() const {

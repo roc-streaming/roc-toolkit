@@ -13,6 +13,7 @@
 
 #include "test_helpers/utils.h"
 
+#include "roc_error/error_code.h"
 #include "roc_sndio/isource.h"
 
 namespace roc {
@@ -61,9 +62,9 @@ public:
         return true;
     }
 
-    virtual bool read(audio::Frame& frame) {
+    virtual ssize_t read(audio::Frame& frame) {
         if (pos_ == size_) {
-            return false;
+            return roc::error::ErrUnknown;
         }
 
         size_t ns = frame.size();
@@ -80,7 +81,7 @@ public:
             memset(frame.data() + ns, 0, (frame.size() - ns) * sizeof(audio::sample_t));
         }
 
-        return true;
+        return ns;
     }
 
     void add(size_t sz) {
