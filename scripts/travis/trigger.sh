@@ -6,4 +6,4 @@ curl -s -X POST \
   -H "Travis-API-Version: 3" \
   -H "Authorization: token ${TRAVIS_TOKEN}" \
   -d '{"request":{"branch":"'"$2"'"}}' \
-  "https://api.travis-ci.org/repo/$1/requests"
+  "https://api.travis-ci.com/repo/$1/requests"
