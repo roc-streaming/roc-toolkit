@@ -7,10 +7,10 @@ brew update || true
 
 brew unlink python@2
 brew list |\
-    grep -vE 'pkg-config|automake|libtool|cmake|xz|readline|openssl|sqlite|python|gdbm' |\
+    grep -vE 'pkg-config|automake|libtool|cmake|xz|readline|openssl|sqlite|python|gdbm|xquartz' |\
     xargs brew pin
 
-brew install "scons"
+brew install --build-from-source "scons"
 brew install "ragel"
 brew install "gengetopt"
 brew install "libuv"
