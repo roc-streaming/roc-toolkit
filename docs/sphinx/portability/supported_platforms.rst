@@ -36,11 +36,9 @@ Linux distributions:
 * Arch Linux (latest)
 * Alpine Linux (latest)
 
-Xcode versions:
+macOS versions:
 
-* Xcode 11.6 (macOS 10.15+)
-* Xcode 10.2 (macOS 10.14+)
-* Xcode 9.4 (macOS 10.13+)
+* macOS 10.15 (Catalina)
 
 Hardware architectures:
 

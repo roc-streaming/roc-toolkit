@@ -43,8 +43,8 @@ See details on continuous integration [here](https://roc-streaming.org/toolkit/d
 
 Branch    | Status
 --------- | ------
-`master`  | [![](https://travis-ci.org/roc-streaming/roc-toolkit.svg?branch=master)](https://travis-ci.org/roc-streaming/roc-toolkit)
-`develop` | [![](https://travis-ci.org/roc-streaming/roc-toolkit.svg?branch=develop)](https://travis-ci.org/roc-streaming/roc-toolkit)
+`master`  | [![](https://github.com/roc-streaming/roc-toolkit/workflows/build/badge.svg?branch=master)](https://github.com/roc-streaming/roc-toolkit/actions)
+`develop` | [![](https://github.com/roc-streaming/roc-toolkit/workflows/build/badge.svg?branch=develop)](https://github.com/roc-streaming/roc-toolkit/actions)
 
 Versioning
 ----------

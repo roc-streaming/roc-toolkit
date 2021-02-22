@@ -1,13 +1,7 @@
 #! /bin/bash
 set -euxo pipefail
 
-brew update || true
-
-brew unlink python@2
-brew list |\
-    grep -vE 'pkg-config|automake|libtool|cmake|xz|readline|openssl|sqlite|python|gdbm' |\
-    xargs brew pin
-
+brew install "automake"
 brew install "scons"
 brew install "ragel"
 brew install "gengetopt"

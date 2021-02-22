@@ -1,0 +1,167 @@
+name: "Build"
+
+on:
+  push:
+    branches:
+      - master
+      - develop
+
+  pull_request:
+    branches:
+      - master
+      - develop
+
+  schedule:
+    - cron: '0 0 * * 1'
+
+jobs:
+
+  linux-x86_64:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - script: linux-x86_64/ubuntu-18.04
+            image: rocstreaming/env-ubuntu:18.04
+
+          - script: linux-x86_64/ubuntu-16.04
+            image: rocstreaming/env-ubuntu:16.04
+
+          - script: linux-x86_64/ubuntu-14.04
+            image: rocstreaming/env-ubuntu:14.04
+
+          - script: linux-x86_64/debian
+            image: rocstreaming/env-debian
+
+          - script: linux-x86_64/fedora
+            image: rocstreaming/env-fedora
+
+          - script: linux-x86_64/centos
+            image: rocstreaming/env-centos
+
+          - script: linux-x86_64/opensuse
+            image: rocstreaming/env-opensuse
+
+          - script: linux-x86_64/archlinux
+            image: rocstreaming/env-archlinux
+
+          - script: linux-x86_64/alpine
+            image: rocstreaming/env-alpine
+
+    name: ${{ matrix.script }}
+    steps:
+      - name: Pull
+        run: docker pull ${{ matrix.image }}
+
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Build
+        run: |
+          scripts/ci/docker-linux.sh ${{ matrix.image }} scripts/ci/${{ matrix.script }}.sh
+
+  linux-arm:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - script: linux-arm/aarch64-linux-gnu-gcc-7.4
+            image: rocstreaming/toolchain-aarch64-linux-gnu:gcc-7.4
+
+          - script: linux-arm/arm-linux-gnueabihf-gcc-4.9
+            image: rocstreaming/toolchain-arm-linux-gnueabihf:gcc-4.9
+
+          - script: linux-arm/arm-bcm2708hardfp-linux-gnueabi-gcc-4.7
+            image: rocstreaming/toolchain-arm-bcm2708hardfp-linux-gnueabi:gcc-4.7
+
+    name: ${{ matrix.script }}
+    steps:
+      - name: Pull
+        run: docker pull ${{ matrix.image }}
+
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Build
+        run: |
+          scripts/ci/docker-linux.sh ${{ matrix.image }} scripts/ci/${{ matrix.script }}.sh
+
+  linux-checks:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - script: linux-checks/optional-features
+            image: rocstreaming/env-ubuntu-minimal
+
+          - script: linux-checks/check-formatting
+            image: rocstreaming/env-ubuntu
+
+          - script: linux-checks/sanitizers-clang
+            image: rocstreaming/env-ubuntu
+
+          - script: linux-checks/sanitizers-gcc
+            image: rocstreaming/env-ubuntu
+
+          - script: linux-checks/valgrind-debug
+            image: rocstreaming/env-ubuntu
+
+          - script: linux-checks/valgrind-release
+            image: rocstreaming/env-ubuntu
+
+    name: ${{ matrix.script }}
+    steps:
+      - name: Pull
+        run: docker pull ${{ matrix.image }}
+
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Build
+        run: |
+          scripts/ci/docker-linux.sh ${{ matrix.image }} scripts/ci/${{ matrix.script }}.sh
+
+  macos-x86_64-10_15:
+    runs-on: macos-10.15
+
+    name: macos-x86_64/10.15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Build
+        run: |
+          scripts/ci/macos/macos.sh
+
+  triggers:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Trigger rt-tests
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+        run: |
+          scripts/ci/trigger.sh roc-streaming/rt-tests \
+            "${GITHUB_REF##*/}" "${{ secrets.REPO_TRIGGERING }}"
+
+      - name: Trigger roc-streaming.github.io
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+        run: |
+          scripts/ci/trigger.sh roc-streaming/roc-streaming.github.io \
+            "${GITHUB_REF##*/}" "${{ secrets.REPO_TRIGGERING }}"

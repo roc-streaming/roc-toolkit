@@ -8,22 +8,22 @@ Continuous integration
 Overview
 ========
 
-Travis is configured to build ``master`` and ``develop`` branches and pull requests.
+GitHub Actions are configured to build ``master`` and ``develop`` branches and pull requests.
 
-Travis builds Roc for Linux and macOS. Linux worker uses Docker to run builds on several Linux distros. Linux worker also uses QEMU to run cross-compiled tests.
+GitHub Actions build Roc for Linux and macOS. Linux worker uses Docker to run builds on several Linux distros. Linux worker also uses QEMU to run cross-compiled tests.
 
 Docker images for continuous integration and cross-compilation are prepared using Docker Hub automated builds. They are based on official upstream images, adding pre-installed packages required for build. Dockerfiles for images are hosted in a separate GitHub repository. When a Dockerfile or an upstream image changes, Docker Hub automatically triggers rebuild.
 
 Links:
- * `Travis project <https://travis-ci.org/roc-streaming/roc-toolkit>`_
- * `Travis configuration <https://github.com/roc-streaming/roc-toolkit/blob/master/.travis.yml>`_
- * `Docker Hub organization <https://hub.docker.com/u/rocproject/>`_
+ * `GitHub Actions page <https://github.com/roc-streaming/roc-toolkit/actions>`_
+ * `GitHub Actions configuration <https://github.com/roc-streaming/roc-toolkit/blob/master/.github/workflows/build.yml>`_
+ * `Docker Hub organization <https://hub.docker.com/u/rocstreaming/>`_
  * `Dockerfiles repo <https://github.com/roc-streaming/dockerfiles>`_
 
 Docker images
 =============
 
-The following Docker images are used on our Travis builds.
+The following Docker images are used on our CI builds.
 
 Linux native
 ------------
@@ -75,13 +75,13 @@ rocproject/cross-aarch64-linux-android:api28             28            armv8    
 Run locally
 ===========
 
-It is possible to run Docker-based builds locally, in the same environment as they are run on Travis.
+It is possible to run Docker-based builds locally, in the same environment as they are run on CI.
 
 For example, this will run Fedora build:
 
 .. code::
 
-   $ scripts/travis/docker.sh rocproject/travis-fedora scripts/travis/linux-x86_64/fedora.sh
+   $ scripts/ci/docker-linux.sh rocstreaming/env-fedora scripts/ci/linux-x86_64/fedora.sh
 
 You can also invoke Docker manually:
 
