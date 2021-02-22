@@ -179,7 +179,7 @@ For enabling hardware acceleration run the container in privileged mode, i.e. by
 
 .. warning::
 
-  Since Travis runs jobs already on a virtual environment, if the emulator need to be run on Travis the ``env-android`` image must be run with ``--privileged`` option for allowing virtualization nesting.
+  Since CI runs jobs already on a virtual environment, if the emulator need to be run on CI, the ``env-android`` image must be run with ``--privileged`` option for allowing virtualization nesting.
 
 To see if acceleration is available use:
 
@@ -218,7 +218,7 @@ To create an Android Virtual Device (AVD) and run the emulator:
 
       $ adb devices
       List of devices attached
-      emulator-xxxx	device
+      emulator-xxxx device
       # "device" indicates that boot is completed
       # "offline" indicates that boot is still going on
 
@@ -232,7 +232,7 @@ The ``env-android`` image provides an helper script named ``device`` that takes 
   .. code::
 
       $ device create --api=<API> --image=<IMAGE> --arch=<ARCH> --name=<AVD-NAME>
-  
+
   The string ``"system-images;android-<API>;<IMAGE>;<ARCH>"`` defines the emulator system image to be installed (it must be present in the list offered by ``sdkmanager --list``)
 
 * start device and wait until boot is completed
