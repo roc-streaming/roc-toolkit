@@ -1260,6 +1260,12 @@ if compiler == 'clang':
                 env.Append(**{var: [
                     '-Wno-atomic-implicit-seq-cst',
                 ]})
+        if compiler_ver[:2] >= (12, 0):
+            for var in ['CXXFLAGS', 'CFLAGS']:
+                env.Append(**{var: [
+                    '-Wno-poison-system-directories',
+                    '-Wno-anon-enum-enum-conversion',
+                ]})
 
     if platform == 'android':
         env.Append(CXXFLAGS=[
