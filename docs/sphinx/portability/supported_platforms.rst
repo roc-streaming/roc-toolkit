@@ -42,9 +42,9 @@ macOS versions:
 
 Android versions:
 
-* NDK versions: 21
-* API levels: 29 (Android 10), 28 (Android 9), 24 (Android 7)
-* all ABIs: armeabi-v7a, arm64-v8a, x86, x86_64
+* ABI: arm64-v8a (ARM 64-bit), armeabi-v7a (ARM 32-bit)
+* API: 29 (Android 10), 28 (Android 9), 24 (Android 7)
+* NDK: 21
 
 Hardware architectures:
 

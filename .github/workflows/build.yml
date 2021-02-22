@@ -25,6 +25,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - script: linux-x86_64/ubuntu-20.04
+            image: rocstreaming/env-ubuntu:20.04
+
           - script: linux-x86_64/ubuntu-18.04
             image: rocstreaming/env-ubuntu:18.04
 
@@ -106,6 +109,15 @@ jobs:
           - script: linux-checks/optional-features
             image: rocstreaming/env-ubuntu-minimal
 
+          - script: linux-checks/optional-backends
+            image: rocstreaming/env-ubuntu-minimal
+
+          - script: linux-checks/debug-build
+            image: rocstreaming/env-ubuntu-minimal
+
+          - script: linux-checks/check-formatting
+            image: rocstreaming/env-ubuntu
+
           - script: linux-checks/sanitizers-clang
             image: rocstreaming/env-ubuntu
 
@@ -131,6 +143,32 @@ jobs:
       - name: Build
         run: |
           scripts/ci/docker-linux.sh ${{ matrix.image }} scripts/ci/${{ matrix.script }}.sh
+
+  android:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        abi: [aarch64, armv7a]
+        api: [29, 28, 24]
+        ndk: [21.1.6352462]
+
+    name: android/${{ matrix.abi }}-api${{ matrix.api }}-ndk${{ matrix.ndk }}
+    steps:
+      - name: Pull
+        run: docker pull rocstreaming/env-android
+
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Build
+        run: |
+          scripts/ci/docker-android.sh \
+            ABI=${{ matrix.abi }} API=${{ matrix.api }} NDK_VERSION=${{ matrix.ndk }} \
+              scripts/ci/android/android.sh
 
   macos-x86_64-10_15:
     runs-on: macos-10.15
