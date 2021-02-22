@@ -1,4 +1,4 @@
-name: "Set issue column by label"
+name: "set dashboard columns"
 
 on:
   issues:
