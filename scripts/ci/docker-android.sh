@@ -19,6 +19,7 @@ docker run --rm -t \
        -v android-sdk:/sdk \
        -v "$(pwd)":/opt/roc \
        -w /opt/roc \
+       -e CI="${CI}" \
        --privileged \
        "${env[@]}" \
        rocstreaming/env-android \

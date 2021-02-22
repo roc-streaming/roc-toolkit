@@ -1,4 +1,5 @@
 import SCons.Script
+import os
 import os.path
 import fnmatch
 
@@ -58,9 +59,21 @@ def ThirdParty(
                 cmdstr = env.PrettyCommand(
                     'GET', 'build/3rdparty/%s/%s/build/%s' % (
                         hostdir, compilerdir, vname), 'yellow'))):
-            env.Die(
-                "can't make '%s', see 'build/3rdparty/%s/%s/build/%s/build.log' for details" % (
-                vname, hostdir, compilerdir, vname))
+
+            logfile = 'build/3rdparty/%s/%s/build/%s/build.log' % (
+                hostdir, compilerdir, vname)
+
+            message = "can't make '%s', see '%s' for details" % (
+                vname, logfile)
+
+            if os.environ.get('CI', ''):
+                try:
+                    with open(logfile) as fp:
+                        message += "\n\n" + fp.read()
+                except:
+                    pass
+
+            env.Die(message)
 
     env.ImportThridParty(
         hostdir, compilerdir, toolchain, versions, name, includes, libs)
