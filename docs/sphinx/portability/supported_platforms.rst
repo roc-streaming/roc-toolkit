@@ -36,15 +36,15 @@ Linux distributions:
 * Arch Linux (latest)
 * Alpine Linux (latest)
 
+Android versions:
+
+* ABI: arm64-v8a (ARM 64-bit), armeabi-v7a (ARM 32-bit), x86_64 (Intel 64-bit), x86 (Intel 32-bit)
+* API: 29 (Android 10), 24 (Android 7)
+* NDK: 21
+
 macOS versions:
 
 * macOS 10.15 (Catalina)
-
-Android versions:
-
-* ABI: arm64-v8a (ARM 64-bit), armeabi-v7a (ARM 32-bit)
-* API: 29 (Android 10), 28 (Android 9), 24 (Android 7)
-* NDK: 21
 
 Hardware architectures:
 

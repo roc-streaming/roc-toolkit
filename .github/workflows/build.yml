@@ -7,6 +7,8 @@ on:
     branches:
       - master
       - develop
+    tags:
+      - v*
 
   pull_request:
     branches:
@@ -57,7 +59,7 @@ jobs:
 
     name: ${{ matrix.script }}
     steps:
-      - name: Pull
+      - name: Pull docker image
         run: docker pull ${{ matrix.image }}
 
       - name: Checkout
@@ -65,9 +67,9 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Build
+      - name: Build and test
         run: |
-          scripts/ci/docker-linux.sh ${{ matrix.image }} scripts/ci/${{ matrix.script }}.sh
+          scripts/ci/docker.sh ${{ matrix.image }} scripts/ci/${{ matrix.script }}.sh
 
   linux-arm:
     runs-on: ubuntu-latest
@@ -87,7 +89,7 @@ jobs:
 
     name: ${{ matrix.script }}
     steps:
-      - name: Pull
+      - name: Pull docker image
         run: docker pull ${{ matrix.image }}
 
       - name: Checkout
@@ -95,9 +97,9 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Build
+      - name: Build and test
         run: |
-          scripts/ci/docker-linux.sh ${{ matrix.image }} scripts/ci/${{ matrix.script }}.sh
+          scripts/ci/docker.sh ${{ matrix.image }} scripts/ci/${{ matrix.script }}.sh
 
   linux-checks:
     runs-on: ubuntu-latest
@@ -132,7 +134,44 @@ jobs:
 
     name: ${{ matrix.script }}
     steps:
-      - name: Pull
+      - name: Pull docker image
+        run: docker pull ${{ matrix.image }}
+
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Build and test
+        run: |
+          scripts/ci/docker.sh ${{ matrix.image }} scripts/ci/${{ matrix.script }}.sh
+
+  android-linux:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: rocstreaming/toolchain-linux-android:ndk21
+            toolchain: aarch64-linux-android29
+            shortname: android29-aarch64
+
+          - image: rocstreaming/toolchain-linux-android:ndk21
+            toolchain: armv7a-linux-androideabi29
+            shortname: android29-armv7a
+
+          - image: rocstreaming/toolchain-linux-android:ndk21
+            toolchain: x86_64-linux-android29
+            shortname: android29-x86_64
+
+          - image: rocstreaming/toolchain-linux-android:ndk21
+            toolchain: i686-linux-android29
+            shortname: android29-i686
+
+    runs-on: ubuntu-latest
+
+    name: ${{ matrix.shortname }}/linux
+    steps:
+      - name: Pull docker image
         run: docker pull ${{ matrix.image }}
 
       - name: Checkout
@@ -142,49 +181,89 @@ jobs:
 
       - name: Build
         run: |
-          scripts/ci/docker-linux.sh ${{ matrix.image }} scripts/ci/${{ matrix.script }}.sh
+          scripts/ci/docker.sh ${{ matrix.image }} \
+            scripts/ci/android/linux.sh ${{ matrix.toolchain }}
 
-  android:
-    runs-on: ubuntu-latest
-
+  android-macos:
     strategy:
       fail-fast: false
       matrix:
-        abi: [aarch64, armv7a]
-        api: [29, 28, 24]
-        ndk: [21.1.6352462]
+        include:
+          - abi: x86_64
+            api: 24
+            ndk: 21.4.7075529
+            build_tools: 28.0.3
+            cmake: 3.10.2.4988404
+            avd_abi: x86_64
+            avd_tgt: default
 
-    name: android/${{ matrix.abi }}-api${{ matrix.api }}-ndk${{ matrix.ndk }}
+          - abi: i686
+            api: 24
+            ndk: 21.4.7075529
+            build_tools: 28.0.3
+            cmake: 3.10.2.4988404
+            avd_abi: x86
+            avd_tgt: default
+
+    runs-on: macos-latest
+
+    env:
+      CI_ABI: ${{ matrix.abi }}
+      CI_API: ${{ matrix.api }}
+      CI_NDK: ${{ matrix.ndk }}
+      CI_AVD: system-images;android-${{ matrix.api }};${{ matrix.avd_tgt }};${{ matrix.avd_abi }}
+
+    name: android${{ matrix.api }}-${{ matrix.abi }}/macos
     steps:
-      - name: Pull
-        run: docker pull rocstreaming/env-android
-
       - name: Checkout
         uses: actions/checkout@v2
         with:
           submodules: recursive
 
-      - name: Build
+      - name: Install Android components
+        uses: maxim-lobanov/setup-android-tools@v1
+        with:
+          cache: true
+          packages: |
+            platforms;android-${{ matrix.api }}
+            build-tools;${{ matrix.build_tools }}
+            ndk;${{ matrix.ndk }}
+            cmake;${{ matrix.cmake }}
+            system-images;android-${{ matrix.api }};${{ matrix.avd_tgt }};${{ matrix.avd_abi }}
+            emulator
+
+      - name: Install system dependencies
         run: |
-          scripts/ci/docker-android.sh \
-            ABI=${{ matrix.abi }} API=${{ matrix.api }} NDK_VERSION=${{ matrix.ndk }} \
-              scripts/ci/android/android.sh
+          scripts/ci/android/macos_deps.sh
 
-  macos-x86_64-10_15:
-    runs-on: macos-10.15
+      - name: Build and test
+        run: |
+          scripts/ci/android/macos_build.sh
 
-    name: macos-x86_64/10.15
+  macos:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            ver: 10.15
+
+    runs-on: macos-${{ matrix.ver }}
+
+    name: macos-${{ matrix.arch }}/${{ matrix.ver }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
         with:
           submodules: recursive
 
-      - name: Build
+      - name: Build and test
         run: |
           scripts/ci/macos/macos.sh
 
   triggers:
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+
     runs-on: ubuntu-latest
 
     steps:
@@ -192,13 +271,11 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Trigger rt-tests
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
         run: |
           scripts/ci/trigger.sh roc-streaming/rt-tests \
             "${GITHUB_REF##*/}" "${{ secrets.REPO_TRIGGERING }}"
 
       - name: Trigger roc-streaming.github.io
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
         run: |
           scripts/ci/trigger.sh roc-streaming/roc-streaming.github.io \
             "${GITHUB_REF##*/}" "${{ secrets.REPO_TRIGGERING }}"
