@@ -44,26 +44,6 @@ thirdparty_versions = {
 
 SCons.SConf.dryrun = 0 # configure even in dry run mode
 
-env = Environment(
-    ENV=os.environ,
-    toolpath=[os.path.join(Dir('#').abspath, 'scripts')],
-    tools=[
-        'default',
-        'scons',
-        ])
-
-# performance tuning
-env.Decider('MD5-timestamp')
-env.SetOption('implicit_cache', 1)
-
-# provide absolute path to force single sconsign file
-# per-directory sconsign files seems to be buggy with generated sources
-env.SConsignFile(os.path.join(env.Dir('#').abspath, '.sconsign.dblite'))
-
-# we always use -fPIC, so object files built for static and shared
-# libraries are no different
-env['STATIC_AND_SHARED_OBJECTS_ARE_THE_SAME'] = 1
-
 if platform.system() == 'Linux':
     # it would be better to use /usr/local on Linux too, but PulseAudio
     # is usually installed in /usr and does no search /usr/local for
@@ -299,6 +279,35 @@ AddOption('--override-targets',
                 "pass a comma-separated list of target names, "+
                 "e.g. 'glibc,stdio,posix,libuv,openfec,...'"))
 
+# when we cross-compile on macOS to Android using clang, we should use
+# GNU-like clang options, but SCons incorrectly sets up Apple-like
+# clang options; here we prevent this behavior by forcing 'posix' platform
+scons_platform = Environment(ENV=os.environ)['PLATFORM']
+for opt in ['host', 'platform']:
+    if 'android' in (GetOption(opt) or ''):
+        scons_platform = 'posix'
+
+env = Environment(
+    ENV=os.environ,
+    platform=scons_platform,
+    toolpath=[os.path.join(Dir('#').abspath, 'scripts')],
+    tools=[
+        'default',
+        'scons',
+        ])
+
+# performance tuning
+env.Decider('MD5-timestamp')
+env.SetOption('implicit_cache', 1)
+
+# provide absolute path to force single sconsign file
+# per-directory sconsign files seems to be buggy with generated sources
+env.SConsignFile(os.path.join(env.Dir('#').abspath, '.sconsign.dblite'))
+
+# we always use -fPIC, so object files built for static and shared
+# libraries are no different
+env['STATIC_AND_SHARED_OBJECTS_ARE_THE_SAME'] = 1
+
 for var in ['CXX', 'CC', 'AR', 'RANLIB', 'RAGEL', 'GENGETOPT',
                 'PKG_CONFIG', 'PKG_CONFIG_PATH', 'CONFIG_GUESS', 'CLANG_FORMAT']:
     env.OverrideFromArg(var)
@@ -468,6 +477,11 @@ if not platform:
     elif 'darwin' in host:
         platform = 'darwin'
 
+if not platform:
+    env.Die(("can't detect platform for host '%s', looked for one of: %s\nyou should "+
+             "provide either known '--platform' or '--override-targets' option"),
+                host, ', '.join(supported_platforms))
+
 if compiler == 'clang':
     conf.FindTool('CC', toolchain, compiler_ver, ['clang'])
     conf.FindTool('CXXLD', toolchain, compiler_ver, ['clang++'])
@@ -553,11 +567,6 @@ if GetOption('override_targets'):
     for t in GetOption('override_targets').split(','):
         env['ROC_TARGETS'] += ['target_%s' % t]
 else:
-    if not platform:
-        env.Die(("can't detect platform for host '%s', looked for one of: %s\nyou should "+
-                 "provide either known '--platform' or '--override-targets' option"),
-                    host, ', '.join(supported_platforms))
-
     has_c11 = False
 
     if not GetOption('disable_c11'):
