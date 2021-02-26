@@ -290,6 +290,7 @@ for opt in ['host', 'platform']:
 env = Environment(
     ENV=os.environ,
     platform=scons_platform,
+    toolpath=[os.path.join(Dir('#').abspath, 'scripts')],
     tools=[
         'default',
         'scons',
@@ -319,7 +320,6 @@ env.OverrideFromArg('STRIP', default='strip')
 env.OverrideFromArg('DOXYGEN', default='doxygen')
 env.OverrideFromArg('SPHINX_BUILD', default='sphinx-build')
 env.OverrideFromArg('BREATHE_APIDOC', default='breathe-apidoc')
->>>>>>> 5a613b36 (Refine file layout)
 
 if GetOption('help'):
     Return()
