@@ -11,8 +11,6 @@ brew install "sox"
 brew install "cpputest"
 brew install "google-benchmark"
 
-scons -Q clean
-
 scons -Q \
       --enable-werror \
       --enable-debug \

@@ -1,8 +1,6 @@
 #! /bin/bash
 set -euxo pipefail
 
-scons -Q clean
-
 for c in gcc-4.8 clang-3.7
 do
     scons -Q \

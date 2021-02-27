@@ -5,8 +5,6 @@ TOOLCHAIN="arm-bcm2708hardfp-linux-gnueabi"
 COMPILER="gcc-4.7.1-release"
 CPU="arm1176" # armv6
 
-scons -Q clean
-
 scons -Q \
     --enable-werror \
     --enable-pulseaudio-modules \
