@@ -32,8 +32,6 @@ export PATH="$ANDROID_HOME/tools/bin:${PATH}"
 export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:${PATH}"
 export PATH="$toolchain/bin:${PATH}"
 
-scons -Q clean
-
 scons -Q \
       --enable-werror \
       --disable-soversion \

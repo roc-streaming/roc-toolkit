@@ -5,8 +5,6 @@ TOOLCHAIN="aarch64-linux-gnu"
 COMPILER="gcc-7.4.1-release"
 CPU="cortex-a53" # armv8
 
-scons -Q clean
-
 scons -Q \
     --enable-werror \
     --enable-pulseaudio-modules \

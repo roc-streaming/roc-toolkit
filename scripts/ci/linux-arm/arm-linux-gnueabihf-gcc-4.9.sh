@@ -5,8 +5,6 @@ TOOLCHAIN="arm-linux-gnueabihf"
 COMPILER="gcc-4.9.4-release"
 CPU="cortex-a15" # armv7
 
-scons -Q clean
-
 scons -Q \
     --enable-werror \
     --enable-pulseaudio-modules \
