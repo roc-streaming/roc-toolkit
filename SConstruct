@@ -1320,6 +1320,7 @@ if compiler == 'clang':
 
     if platform == 'android':
         env.Append(CXXFLAGS=[
+            '-Wno-unknown-warning-option',
             '-Wno-c++98-compat-pedantic',
             '-Wno-deprecated-dynamic-exception-spec',
         ])
