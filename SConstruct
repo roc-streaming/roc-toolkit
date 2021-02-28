@@ -2,7 +2,7 @@ import re
 import os
 import os.path
 import platform
-import SCons.Script
+import SCons
 
 # supported platform names
 supported_platforms = [
@@ -391,172 +391,172 @@ if 'fmt' in COMMAND_LINE_TARGETS:
         env.Alias('fmt', [], fmt_actions))
 
 doc_env = env.Clone()
-Export('doc_env')
-
 doc_env.SConscript('docs/SConscript',
-                       variant_dir='#build', duplicate=0)
+                       variant_dir='#build', duplicate=0, exports='doc_env')
 
 non_build_targets = ['fmt', 'docs', 'shpinx', 'doxygen']
 if set(COMMAND_LINE_TARGETS) \
   and set(COMMAND_LINE_TARGETS).intersection(non_build_targets) == set(COMMAND_LINE_TARGETS):
     Return()
 
-build = GetOption('build') or ''
-host = GetOption('host') or ''
-platform = GetOption('platform') or ''
-compiler = GetOption('compiler') or ''
+# meta-information about the build, used to generate env parameters
+meta = type('meta', (), {
+    field: '' for field in
+        'build host toolchain platform variant compiler compiler_ver'.split()})
 
-if GetOption('enable_debug'):
-    variant = 'debug'
+# toolchain triple of the local system (where we're building), e.g. x86_64-pc-linux-gnu
+meta.build = GetOption('build')
+
+# toolchain triple of the target system (where we will run), e.g. aarch64-linux-gnu
+meta.host = GetOption('host') or ''
+
+# toolchain prefix for compiler, linker, and other tools, e.g. aarch64-linux-gnu
+meta.toolchain = GetOption('host') or ''
+
+# name of the target platform, e.g. 'linux'; see supported_platforms
+meta.platform = GetOption('platform') or ''
+
+# build variant, i.e. 'debug' or 'release'
+meta.variant = 'debug' if GetOption('enable_debug') else 'release'
+
+# compiler name, e.g. 'gcc', and version tuple, e.g. (4, 9)
+if GetOption('compiler'):
+    meta.compiler = GetOption('compiler')
+    if '-' in meta.compiler:
+        meta.compiler, meta.compiler_ver = meta.compiler.split('-')
+        meta.compiler_ver = tuple(map(int, meta.compiler_ver.split('.')))
 else:
-    variant = 'release'
-
-if GetOption('enable_debug_3rdparty'):
-    thirdparty_variant = 'debug'
-else:
-    thirdparty_variant = 'release'
-
-# toolchain prefix for compiler, linker, etc
-toolchain = host
-
-if not compiler:
     if env.HasArg('CXX'):
         if 'gcc' in env['CXX'] or 'g++' in env['CXX']:
-            compiler = 'gcc'
+            meta.compiler = 'gcc'
         elif 'clang' in env['CXX']:
-            compiler = 'clang'
+            meta.compiler = 'clang'
     else:
-        if not toolchain and env.Which('clang'):
-            compiler = 'clang'
+        if not meta.toolchain and env.Which('clang'):
+            meta.compiler = 'clang'
         else:
-            compiler = 'gcc'
+            meta.compiler = 'gcc'
 
-if '-' in compiler:
-    compiler, compiler_ver = compiler.split('-')
-    compiler_ver = tuple(map(int, compiler_ver.split('.')))
-else:
-    if toolchain:
-        compiler_ver = env.ParseCompilerVersion('%s-%s' % (toolchain, compiler))
-    else:
-        compiler_ver = env.ParseCompilerVersion(compiler)
+if not meta.compiler:
+    env.Die("can't detect compiler name, please specify '--compiler={name}' manually,"+
+            " e.g. '--compiler=gcc'")
 
-if not compiler in supported_compilers:
+if not meta.compiler in supported_compilers:
     env.Die("unknown compiler '%s', expected one of: %s",
-            compiler, ', '.join(supported_compilers))
+            meta.compiler, ', '.join(supported_compilers))
 
-if not compiler_ver:
+if not meta.compiler_ver:
+    if meta.toolchain:
+        meta.compiler_ver = env.ParseCompilerVersion('%s-%s' % (meta.toolchain, meta.compiler))
+    else:
+        meta.compiler_ver = env.ParseCompilerVersion(meta.compiler)
+
+if not meta.compiler_ver:
     env.Die("can't detect compiler version for compiler '%s'",
-            '-'.join([s for s in [toolchain, compiler] if s]))
+            '-'.join([s for s in [meta.toolchain, meta.compiler] if s]))
 
 conf = Configure(env, custom_tests=env.CustomTests)
 
-if compiler == 'clang':
-    conf.FindLLVMDir(compiler_ver)
+if meta.compiler == 'clang':
+    conf.FindLLVMDir(meta.compiler_ver)
 
-if compiler == 'clang':
-    conf.FindTool('CXX', toolchain, compiler_ver, ['clang++'])
-elif compiler == 'gcc':
-    conf.FindTool('CXX', toolchain, compiler_ver, ['g++'])
+if meta.compiler == 'clang':
+    conf.FindTool('CXX', meta.toolchain, meta.compiler_ver, ['clang++'])
+elif meta.compiler == 'gcc':
+    conf.FindTool('CXX', meta.toolchain, meta.compiler_ver, ['g++'])
 
 full_compiler_ver = env.ParseCompilerVersion(conf.env['CXX'])
 if full_compiler_ver:
-    compiler_ver = full_compiler_ver
+    meta.compiler_ver = full_compiler_ver
 
-if not build:
+if not meta.build:
     if conf.FindConfigGuess():
-        build = env.ParseConfigGuess(conf.env['CONFIG_GUESS'])
+        meta.build = env.ParseConfigGuess(conf.env['CONFIG_GUESS'])
 
-if not build and not host:
+if not meta.build and not meta.host:
     if conf.CheckCanRunProgs():
-        build = env.ParseCompilerTarget(conf.env['CXX'])
+        meta.build = env.ParseCompilerTarget(conf.env['CXX'])
 
-if not build:
-    for c in ['/usr/bin/gcc', '/usr/bin/clang']:
-        build = env.ParseCompilerTarget(c)
-        if build:
+if not meta.build:
+    for local_compiler in ['/usr/bin/gcc', '/usr/bin/clang']:
+        meta.build = env.ParseCompilerTarget(local_compiler)
+        if meta.build:
             break
 
-if not build:
+if not meta.build:
     env.Die(("can't detect system type, please specify '--build={type}' manually, "+
              "e.g. '--build=x86_64-pc-linux-gnu'"))
 
-if not host:
-    host = env.ParseCompilerTarget(conf.env['CXX'])
+if not meta.host:
+    meta.host = env.ParseCompilerTarget(conf.env['CXX'])
 
-if not host:
-    host = build
+if not meta.host:
+    meta.host = meta.build
 
-crosscompile = (host != build)
+if not meta.platform:
+    if 'android' in meta.host:
+        meta.platform = 'android'
+    elif 'linux' in meta.host:
+        meta.platform = 'linux'
+    elif 'darwin' in meta.host:
+        meta.platform = 'darwin'
 
-if not platform:
-    if 'android' in host:
-        platform = 'android'
-    elif 'linux' in host:
-        platform = 'linux'
-    elif 'darwin' in host:
-        platform = 'darwin'
-
-if not platform:
+if not meta.platform:
     env.Die(("can't detect platform for host '%s', looked for one of: %s\nyou should "+
              "provide either known '--platform' or '--override-targets' option"),
-                host, ', '.join(supported_platforms))
+                meta.host, ', '.join(supported_platforms))
 
-if compiler == 'clang':
-    conf.FindTool('CC', toolchain, compiler_ver, ['clang'])
-    conf.FindTool('CXXLD', toolchain, compiler_ver, ['clang++'])
-    conf.FindTool('CCLD', toolchain, compiler_ver, ['clang'])
+if meta.compiler == 'clang':
+    conf.FindTool('CC', meta.toolchain, meta.compiler_ver, ['clang'])
+    conf.FindTool('CXXLD', meta.toolchain, meta.compiler_ver, ['clang++'])
+    conf.FindTool('CCLD', meta.toolchain, meta.compiler_ver, ['clang'])
 
-    install_dir = env.ParseCompilerDirectory(conf.env['CXX'])
-    if install_dir:
-        prepend_path = [install_dir]
+    compiler_dir = env.ParseCompilerDirectory(conf.env['CXX'])
+    if compiler_dir:
+        prepend_path = [compiler_dir]
     else:
         prepend_path = []
 
-    conf.FindTool('AR', toolchain, None, ['llvm-ar', 'ar'],
+    conf.FindTool('AR', meta.toolchain, None, ['llvm-ar', 'ar'],
                   prepend_path=prepend_path)
 
-    conf.FindTool('RANLIB', toolchain, None, ['llvm-ranlib', 'ranlib'],
+    conf.FindTool('RANLIB', meta.toolchain, None, ['llvm-ranlib', 'ranlib'],
                   prepend_path=prepend_path)
 
-    conf.FindTool('STRIP', toolchain, None, ['llvm-strip', 'strip'],
+    conf.FindTool('STRIP', meta.toolchain, None, ['llvm-strip', 'strip'],
                   prepend_path=prepend_path)
 
-elif compiler == 'gcc':
-    conf.FindTool('CC', toolchain, compiler_ver, ['gcc'])
-    conf.FindTool('CXXLD', toolchain, compiler_ver, ['g++'])
-    conf.FindTool('CCLD', toolchain, compiler_ver, ['gcc'])
-    conf.FindTool('AR', toolchain, None, ['ar'])
-    conf.FindTool('RANLIB', toolchain, None, ['ranlib'])
-    conf.FindTool('STRIP', toolchain, None, ['strip'])
+elif meta.compiler == 'gcc':
+    conf.FindTool('CC', meta.toolchain, meta.compiler_ver, ['gcc'])
+    conf.FindTool('CXXLD', meta.toolchain, meta.compiler_ver, ['g++'])
+    conf.FindTool('CCLD', meta.toolchain, meta.compiler_ver, ['gcc'])
+    conf.FindTool('AR', meta.toolchain, None, ['ar'])
+    conf.FindTool('RANLIB', meta.toolchain, None, ['ranlib'])
+    conf.FindTool('STRIP', meta.toolchain, None, ['strip'])
 
-conf.FindPkgConfig(toolchain)
+conf.FindPkgConfig(meta.toolchain)
 
 conf.env['LINK'] = env['CXXLD']
 conf.env['SHLINK'] = env['CXXLD']
 
 env = conf.Finish()
 
-compiler_spec = '-'.join(
-    [s for s in [compiler, '.'.join(map(str, compiler_ver)), variant] if s])
+env['ROC_BINDIR'] = '#bin/%s' % meta.host
 
-thirdparty_compiler_spec = '-'.join(
-    [s for s in [compiler, '.'.join(map(str, compiler_ver)), thirdparty_variant] if s])
-
-build_dir = 'build/src/%s/%s' % (
-    host,
-    compiler_spec)
-
-env['ROC_BINDIR'] = '#bin/%s' % host
+env['ROC_BUILDDIR'] = 'build/src/%s/%s' % (
+    meta.host,
+    '-'.join(
+        [s for s in [
+            meta.compiler,
+            '.'.join(map(str, meta.compiler_ver)),
+            meta.variant
+        ] if s])
+    )
 
 env['ROC_VERSION'] = env.ParseProjectVersion()
-env['ROC_SHA'] = env.ParseGitHead()
+env['ROC_COMMIT'] = env.ParseGitHead()
 
-if env['ROC_SHA']:
-    env['ROC_VERSION_STR'] = '%s (%s)' % (env['ROC_VERSION'], env['ROC_SHA'])
-else:
-    env['ROC_VERSION_STR'] = env['ROC_VERSION']
-
-abi_version = '.'.join(env['ROC_VERSION'].split('.')[:2])
+env['ROC_SOVER'] = '.'.join(env['ROC_VERSION'].split('.')[:2])
 
 env['ROC_MODULES'] = [
     'roc_core',
@@ -583,20 +583,20 @@ else:
     has_c11 = False
 
     if not GetOption('disable_c11'):
-        if compiler == 'gcc':
-            has_c11 = compiler_ver[:2] >= (4, 9)
-        elif compiler == 'clang':
-            if platform == 'darwin':
-                has_c11 = compiler_ver[:2] >= (7, 0)
+        if meta.compiler == 'gcc':
+            has_c11 = meta.compiler_ver[:2] >= (4, 9)
+        elif meta.compiler == 'clang':
+            if meta.platform == 'darwin':
+                has_c11 = meta.compiler_ver[:2] >= (7, 0)
             else:
-                has_c11 = compiler_ver[:2] >= (3, 6)
+                has_c11 = meta.compiler_ver[:2] >= (3, 6)
 
     if has_c11:
         env.Append(ROC_TARGETS=[
             'target_c11',
         ])
 
-    if platform in ['linux', 'android', 'darwin']:
+    if meta.platform in ['linux', 'android', 'darwin']:
         env.Append(ROC_TARGETS=[
             'target_posix',
             'target_stdio',
@@ -608,13 +608,13 @@ else:
                 'target_libatomic_ops',
             ])
 
-    if platform in ['linux', 'android']:
+    if meta.platform in ['linux', 'android']:
         env.Append(ROC_TARGETS=[
             'target_posix2001',
             'target_linux',
         ])
 
-    if platform in ['linux']:
+    if meta.platform in ['linux']:
         if not GetOption('disable_libunwind'):
             env.Append(ROC_TARGETS=[
                 'target_libunwind',
@@ -624,18 +624,18 @@ else:
                 'target_nobacktrace',
             ])
 
-    if platform in ['android']:
+    if meta.platform in ['android']:
         env.Append(ROC_TARGETS=[
             'target_bionic',
         ])
 
-    if platform in ['darwin']:
+    if meta.platform in ['darwin']:
         env.Append(ROC_TARGETS=[
             'target_darwin',
             'target_libunwind',
         ])
 
-    is_glibc = not 'musl' in host
+    is_glibc = not 'musl' in meta.host
 
     if is_glibc:
         env.Append(ROC_TARGETS=[
@@ -661,23 +661,34 @@ else:
             env.Append(ROC_TARGETS=[
                 'target_sox',
             ])
-        if not GetOption('disable_pulseaudio') and platform in ['linux']:
+        if not GetOption('disable_pulseaudio') and meta.platform in ['linux']:
             env.Append(ROC_TARGETS=[
                 'target_pulseaudio',
             ])
 
-lib_env = env.Clone()
-example_env = env.Clone()
-gen_env = env.Clone()
-tool_env = env.Clone()
-test_env = env.Clone()
-pulse_env = env.Clone()
+# sub-environments for building specific parts of code
+subenvs = type('subenvs', (), {
+    field: env.Clone() for field in
+        'library examples generated_code tools tests pulse'.split()})
+
+is_crosscompiling = (meta.host != meta.build)
+
+# build variant for third-parties
+thirdparty_variant = 'debug' if GetOption('enable_debug_3rdparty') else 'release'
+
+# subdirectory for building 3rdparties
+thirdparty_compiler_dir = '-'.join(
+    [s for s in [
+        meta.compiler,
+        '.'.join(map(str, meta.compiler_ver)),
+        thirdparty_variant
+    ] if s])
 
 # all possible dependencies on this platform
 all_dependencies = set([t.replace('target_', '') for t in env['ROC_TARGETS']])
 
 # on macos libunwind is provided by the OS
-if platform in ['darwin']:
+if meta.platform in ['darwin']:
     all_dependencies.discard('libunwind')
 
 all_dependencies.add('ragel')
@@ -688,7 +699,7 @@ if not GetOption('disable_tools'):
 if GetOption('enable_pulseaudio_modules'):
     all_dependencies.add('pulseaudio')
 
-if 'pulseaudio' in all_dependencies and platform in ['linux']:
+if 'pulseaudio' in all_dependencies and meta.platform in ['linux']:
     all_dependencies.add('alsa')
 
 if GetOption('enable_tests'):
@@ -724,7 +735,7 @@ if 'libuv' in system_dependencies:
     if not conf.AddPkgConfigDependency('libuv', '--cflags --libs'):
         conf.env.AddPkgConfigLibs(['uv'])
 
-    if not crosscompile:
+    if not is_crosscompiling:
         if not conf.CheckLibWithHeaderExt(
             'uv', 'uv.h', 'C', expr='UV_VERSION_MAJOR >= 1 && UV_VERSION_MINOR >= 5'):
             env.Die("libuv >= 1.5 not found (see 'config.log' for details)")
@@ -740,7 +751,7 @@ if 'libunwind' in system_dependencies:
     if not conf.AddPkgConfigDependency('libunwind', '--cflags --libs'):
         conf.env.AddPkgConfigLibs(['unwind'])
 
-    if not conf.CheckLibWithHeaderExt('unwind', 'libunwind.h', 'C', run=not crosscompile):
+    if not conf.CheckLibWithHeaderExt('unwind', 'libunwind.h', 'C', run=not is_crosscompiling):
         env.Die("libunwind not found (see 'config.log' for details)")
 
     env = conf.Finish()
@@ -751,7 +762,8 @@ if 'libatomic_ops' in system_dependencies:
     if not conf.AddPkgConfigDependency('atomic_ops', '--cflags --libs'):
         conf.env.AddPkgConfigLibs(['atomic_ops'])
 
-    if not conf.CheckLibWithHeaderExt('atomic_ops', 'atomic_ops.h', 'C', run=not crosscompile):
+    if not conf.CheckLibWithHeaderExt('atomic_ops', 'atomic_ops.h', 'C',
+                                      run=not is_crosscompiling):
         env.Die("libatomic_ops not found (see 'config.log' for details)")
 
     env = conf.Finish()
@@ -769,7 +781,7 @@ if 'openfec' in system_dependencies:
                 '%s/lib_common' % openfec_includes,
                 '%s/lib_stable' % openfec_includes,
             ])
-        elif not crosscompile:
+        elif not is_crosscompiling:
            for prefix in ['/usr/local', '/usr']:
                if os.path.exists('%s/include/openfec' % prefix):
                    conf.env.Append(CPPPATH=[
@@ -783,7 +795,7 @@ if 'openfec' in system_dependencies:
                    break
 
     if not conf.CheckLibWithHeaderExt(
-            'openfec', 'of_openfec_api.h', 'C', run=not crosscompile):
+            'openfec', 'of_openfec_api.h', 'C', run=not is_crosscompiling):
         env.Die("openfec not found (see 'config.log' for details)")
 
     if not conf.CheckDeclaration('OF_USE_ENCODER', '#include <of_openfec_api.h>', 'c'):
@@ -806,42 +818,42 @@ if 'speexdsp' in system_dependencies:
         conf.env.AddPkgConfigLibs(['speexdsp'])
 
     if not conf.CheckLibWithHeaderExt('speexdsp', 'speex/speex_resampler.h', 'C',
-                                          run=not crosscompile):
+                                          run=not is_crosscompiling):
         env.Die("speexdsp not found (see 'config.log' for details)")
 
     env = conf.Finish()
 
 if 'pulseaudio' in system_dependencies:
-    conf = Configure(tool_env, custom_tests=env.CustomTests)
+    conf = Configure(subenvs.tools, custom_tests=env.CustomTests)
 
     if not conf.AddPkgConfigDependency('libpulse', '--cflags --libs'):
         conf.env.AddPkgConfigLibs(['pulse'])
 
     if not conf.CheckLibWithHeaderExt(
-            'pulse', 'pulse/pulseaudio.h', 'C', run=not crosscompile):
+            'pulse', 'pulse/pulseaudio.h', 'C', run=not is_crosscompiling):
         env.Die("libpulse not found (see 'config.log' for details)")
 
-    tool_env = conf.Finish()
+    subenvs.tools = conf.Finish()
 
     if GetOption('enable_examples'):
-        conf = Configure(example_env, custom_tests=env.CustomTests)
+        conf = Configure(subenvs.examples, custom_tests=env.CustomTests)
 
         if not conf.AddPkgConfigDependency('libpulse-simple', '--cflags --libs'):
             conf.env.AddPkgConfigLibs(['pulse-simple'])
 
         if not conf.CheckLibWithHeaderExt(
-                'pulse-simple', 'pulse/simple.h', 'C', run=not crosscompile):
+                'pulse-simple', 'pulse/simple.h', 'C', run=not is_crosscompiling):
             env.Die("libpulse-simple not found (see 'config.log' for details)")
 
-        example_env = conf.Finish()
+        subenvs.examples = conf.Finish()
 
     if GetOption('enable_pulseaudio_modules'):
-        conf = Configure(pulse_env, custom_tests=env.CustomTests)
+        conf = Configure(subenvs.pulse, custom_tests=env.CustomTests)
 
-        if not conf.CheckLibWithHeaderExt('ltdl', 'ltdl.h', 'C', run=not crosscompile):
+        if not conf.CheckLibWithHeaderExt('ltdl', 'ltdl.h', 'C', run=not is_crosscompiling):
             env.Die("ltdl not found (see 'config.log' for details)")
 
-        pulse_env = conf.Finish()
+        subenvs.pulse = conf.Finish()
 
         pa_src_dir = GetOption('with_pulseaudio')
         if not pa_src_dir:
@@ -852,7 +864,7 @@ if 'pulseaudio' in system_dependencies:
         if not pa_build_dir:
             pa_build_dir = pa_src_dir
 
-        pulse_env.Append(CPPPATH=[
+        subenvs.pulse.Append(CPPPATH=[
             pa_build_dir,
             pa_src_dir + '/src',
         ])
@@ -863,7 +875,7 @@ if 'pulseaudio' in system_dependencies:
             if not libs:
                 env.Die("can't find %s" % path)
 
-            pulse_env.AddPkgConfigLibs(libs)
+            subenvs.pulse.AddPkgConfigLibs(libs)
 
             m = re.search('-([0-9.]+).so$', libs[0].path)
             if m:
@@ -875,12 +887,12 @@ if 'pulseaudio' in system_dependencies:
         env['ROC_PULSE_VERSION'] = pa_ver
 
 if 'sox' in system_dependencies:
-    conf = Configure(tool_env, custom_tests=env.CustomTests)
+    conf = Configure(subenvs.tools, custom_tests=env.CustomTests)
 
     if not conf.AddPkgConfigDependency('sox', '--cflags --libs'):
         conf.env.AddPkgConfigLibs(['sox'])
 
-    if not crosscompile:
+    if not is_crosscompiling:
         if not conf.CheckLibWithHeaderExt(
                 'sox', 'sox.h', 'C',
                 expr='SOX_LIB_VERSION_CODE >= SOX_LIB_VERSION(14, 4, 0)'):
@@ -889,7 +901,7 @@ if 'sox' in system_dependencies:
         if not conf.CheckLibWithHeaderExt('sox', 'sox.h', 'C', run=False):
             env.Die("libsox not found (see 'config.log' for details)")
 
-    tool_env = conf.Finish()
+    subenvs.tools = conf.Finish()
 
 if 'ragel' in system_dependencies:
     conf = Configure(env, custom_tests=env.CustomTests)
@@ -918,45 +930,45 @@ if 'gengetopt' in system_dependencies:
     env = conf.Finish()
 
 if 'cpputest' in system_dependencies:
-    conf = Configure(test_env, custom_tests=env.CustomTests)
+    conf = Configure(subenvs.tests, custom_tests=env.CustomTests)
 
     if not conf.AddPkgConfigDependency('cpputest', '--cflags --libs'):
         conf.env.AddPkgConfigLibs(['CppUTest'])
 
     if not conf.CheckLibWithHeaderExt(
-            'CppUTest', 'CppUTest/TestHarness.h', 'CXX', run=not crosscompile):
-        test_env.Die("CppUTest not found (see 'config.log' for details)")
+            'CppUTest', 'CppUTest/TestHarness.h', 'CXX', run=not is_crosscompiling):
+        subenvs.tests.Die("CppUTest not found (see 'config.log' for details)")
 
-    test_env = conf.Finish()
+    subenvs.tests = conf.Finish()
 
 if 'google-benchmark' in system_dependencies:
-    conf = Configure(test_env, custom_tests=env.CustomTests)
+    conf = Configure(subenvs.tests, custom_tests=env.CustomTests)
 
     if not conf.AddPkgConfigDependency('benchmark', '--silence-errors --cflags --libs'):
         conf.env.AddPkgConfigLibs(['benchmark'])
 
     if not conf.CheckLibWithHeaderExt(
-            'benchmark', 'benchmark/benchmark.h', 'CXX', run=not crosscompile):
-        test_env.Die("Google Benchmark not found (see 'config.log' for details)")
+            'benchmark', 'benchmark/benchmark.h', 'CXX', run=not is_crosscompiling):
+        subenvs.tests.Die("Google Benchmark not found (see 'config.log' for details)")
 
-    test_env = conf.Finish()
+    subenvs.tests = conf.Finish()
 
 if 'libuv' in download_dependencies:
-    env.ThirdParty(host, thirdparty_compiler_spec, toolchain,
+    env.ThirdParty(meta.host, thirdparty_compiler_dir, meta.toolchain,
                    thirdparty_variant, thirdparty_versions, 'libuv')
 
 if 'libunwind' in download_dependencies:
-    env.ThirdParty(host, thirdparty_compiler_spec,
-                   toolchain, thirdparty_variant,
+    env.ThirdParty(meta.host, thirdparty_compiler_dir,
+                   meta.toolchain, thirdparty_variant,
                    thirdparty_versions, 'libunwind')
 
 if 'libatomic_ops' in download_dependencies:
-    env.ThirdParty(host, thirdparty_compiler_spec,
-                   toolchain, thirdparty_variant,
+    env.ThirdParty(meta.host, thirdparty_compiler_dir,
+                   meta.toolchain, thirdparty_variant,
                    thirdparty_versions, 'libatomic_ops')
 
 if 'openfec' in download_dependencies:
-    env.ThirdParty(host, thirdparty_compiler_spec, toolchain,
+    env.ThirdParty(meta.host, thirdparty_compiler_dir, meta.toolchain,
                    thirdparty_variant, thirdparty_versions,
                    'openfec', includes=[
                         'lib_common',
@@ -964,15 +976,15 @@ if 'openfec' in download_dependencies:
                         ])
 
 if 'speexdsp' in download_dependencies:
-    env.ThirdParty(build, thirdparty_compiler_spec, toolchain,
+    env.ThirdParty(meta.build, thirdparty_compiler_dir, meta.toolchain,
                 thirdparty_variant, thirdparty_versions, 'speexdsp')
 
 if 'alsa' in download_dependencies:
-    tool_env.ThirdParty(host, thirdparty_compiler_spec, toolchain,
+    subenvs.tools.ThirdParty(meta.host, thirdparty_compiler_dir, meta.toolchain,
                         thirdparty_variant, thirdparty_versions, 'alsa')
 
 if 'pulseaudio' in download_dependencies:
-    if not 'pulseaudio' in explicit_version and not crosscompile:
+    if not 'pulseaudio' in explicit_version and not is_crosscompiling:
         pa_ver = env.ParseToolVersion('pulseaudio --version')
         if pa_ver:
             thirdparty_versions['pulseaudio'] = pa_ver
@@ -988,27 +1000,27 @@ if 'pulseaudio' in download_dependencies:
 
     env['ROC_PULSE_VERSION'] = thirdparty_versions['pulseaudio']
 
-    tool_env.ThirdParty(host, thirdparty_compiler_spec, toolchain,
+    subenvs.tools.ThirdParty(meta.host, thirdparty_compiler_dir, meta.toolchain,
                         thirdparty_variant, thirdparty_versions, 'ltdl')
-    tool_env.ThirdParty(host, thirdparty_compiler_spec, toolchain,
+    subenvs.tools.ThirdParty(meta.host, thirdparty_compiler_dir, meta.toolchain,
                         thirdparty_variant, thirdparty_versions, 'json-c')
-    tool_env.ThirdParty(host, thirdparty_compiler_spec, toolchain,
+    subenvs.tools.ThirdParty(meta.host, thirdparty_compiler_dir, meta.toolchain,
                         thirdparty_variant, thirdparty_versions, 'sndfile')
-    tool_env.ThirdParty(host, thirdparty_compiler_spec, toolchain,
+    subenvs.tools.ThirdParty(meta.host, thirdparty_compiler_dir, meta.toolchain,
                         thirdparty_variant, thirdparty_versions,
                         'pulseaudio', deps=pa_deps, libs=['pulse', 'pulse-simple'])
 
-    example_env.ImportThridParty(host, thirdparty_compiler_spec, toolchain,
+    subenvs.examples.ImportThridParty(meta.host, thirdparty_compiler_dir, meta.toolchain,
                                  thirdparty_versions, 'ltdl')
-    example_env.ImportThridParty(host, thirdparty_compiler_spec, toolchain,
+    subenvs.examples.ImportThridParty(meta.host, thirdparty_compiler_dir, meta.toolchain,
                                  thirdparty_versions, 'pulseaudio',
                                  libs=['pulse', 'pulse-simple'])
 
     pa_ver_short = '.'.join(thirdparty_versions['pulseaudio'].split('.')[:2])
 
-    pulse_env.ImportThridParty(host, thirdparty_compiler_spec, toolchain,
+    subenvs.pulse.ImportThridParty(meta.host, thirdparty_compiler_dir, meta.toolchain,
                                thirdparty_versions, 'ltdl')
-    pulse_env.ImportThridParty(host, thirdparty_compiler_spec, toolchain,
+    subenvs.pulse.ImportThridParty(meta.host, thirdparty_compiler_dir, meta.toolchain,
                                thirdparty_versions, 'pulseaudio',
                                libs=[
                                    'pulsecore-%s' % pa_ver_short,
@@ -1024,10 +1036,10 @@ if 'sox' in download_dependencies:
     if 'pulseaudio' in download_dependencies:
         sox_deps += ['pulseaudio']
 
-    tool_env.ThirdParty(host, thirdparty_compiler_spec, toolchain,
+    subenvs.tools.ThirdParty(meta.host, thirdparty_compiler_dir, meta.toolchain,
                         thirdparty_variant, thirdparty_versions, 'sox', sox_deps)
 
-    conf = Configure(tool_env, custom_tests=env.CustomTests)
+    conf = Configure(subenvs.tools, custom_tests=env.CustomTests)
 
     for lib in [
             'z', 'magic',
@@ -1049,37 +1061,41 @@ if 'sox' in download_dependencies:
                 ]:
             conf.CheckLib(lib)
 
-    if platform in ['darwin']:
-        tool_env.Append(LINKFLAGS=[
+    if meta.platform in ['darwin']:
+        subenvs.tools.Append(LINKFLAGS=[
             '-Wl,-framework,CoreAudio'
         ])
 
-    tool_env = conf.Finish()
+    subenvs.tools = conf.Finish()
 
 if 'ragel' in download_dependencies:
-    env.ThirdParty(build, thirdparty_compiler_spec, "",
+    env.ThirdParty(meta.build, thirdparty_compiler_dir, "",
                    thirdparty_variant, thirdparty_versions, 'ragel')
 
-    gen_env['RAGEL'] = env.File(
-        '#build/3rdparty/%s/%s/build/ragel-%s/bin/ragel' % (
-            build + env['PROGSUFFIX'], thirdparty_compiler_spec,
-            thirdparty_versions['ragel']))
+    subenvs.generated_code['RAGEL'] = env.File(
+        '#build/3rdparty/%s/%s/build/ragel-%s/bin/ragel%s' % (
+            meta.build,
+            thirdparty_compiler_dir,
+            thirdparty_versions['ragel'],
+            env['PROGSUFFIX']))
 
 if 'gengetopt' in download_dependencies:
-    env.ThirdParty(build, thirdparty_compiler_spec, "",
+    env.ThirdParty(meta.build, thirdparty_compiler_dir, "",
                    thirdparty_variant, thirdparty_versions, 'gengetopt')
 
-    gen_env['GENGETOPT'] = env.File(
-        '#build/3rdparty/%s/%s/build/gengetopt-%s/bin/gengetopt' % (
-            build + env['PROGSUFFIX'], thirdparty_compiler_spec,
-            thirdparty_versions['gengetopt']))
+    subenvs.generated_code['GENGETOPT'] = env.File(
+        '#build/3rdparty/%s/%s/build/gengetopt-%s/bin/gengetopt%s' % (
+            meta.build,
+            thirdparty_compiler_dir,
+            thirdparty_versions['gengetopt'],
+            env['PROGSUFFIX']))
 
 if 'cpputest' in download_dependencies:
-    test_env.ThirdParty(host, thirdparty_compiler_spec, toolchain,
+    subenvs.tests.ThirdParty(meta.host, thirdparty_compiler_dir, meta.toolchain,
                         thirdparty_variant, thirdparty_versions, 'cpputest')
 
 if 'google-benchmark' in download_dependencies:
-    test_env.ThirdParty(host, thirdparty_compiler_spec, toolchain,
+    subenvs.tests.ThirdParty(meta.host, thirdparty_compiler_dir, meta.toolchain,
                         thirdparty_variant, thirdparty_versions, 'google-benchmark')
 
 conf = Configure(env, custom_tests=env.CustomTests)
@@ -1090,7 +1106,7 @@ conf.env['ROC_SYSTEM_INCDIR'] = GetOption('incdir')
 if GetOption('libdir'):
     conf.env['ROC_SYSTEM_LIBDIR'] = GetOption('libdir')
 else:
-    conf.FindLibDir(GetOption('prefix'), host)
+    conf.FindLibDir(GetOption('prefix'), meta.host)
 
 conf.FindPkgConfigPath()
 
@@ -1098,23 +1114,24 @@ if GetOption('enable_pulseaudio_modules'):
     if GetOption('pulseaudio_module_dir'):
         conf.env['ROC_PULSE_MODULEDIR'] = GetOption('pulseaudio_module_dir')
     else:
-        conf.FindPulseDir(GetOption('prefix'), build, host, env['ROC_PULSE_VERSION'])
+        conf.FindPulseDir(
+            GetOption('prefix'), meta.build, meta.host, env['ROC_PULSE_VERSION'])
 
 env = conf.Finish()
 
-if 'target_posix' in env['ROC_TARGETS'] and platform not in ['darwin']:
+if 'target_posix' in env['ROC_TARGETS'] and meta.platform not in ['darwin']:
     env.Append(CPPDEFINES=[('_POSIX_C_SOURCE', '200809')])
 
 for t in env['ROC_TARGETS']:
     env.Append(CPPDEFINES=['ROC_' + t.upper()])
 
-env.Append(LIBPATH=['#%s' % build_dir])
+env.Append(LIBPATH=['#%s' % env['ROC_BUILDDIR']])
 
-if platform in ['linux']:
+if meta.platform in ['linux']:
     env.AddPkgConfigLibs(['rt', 'dl', 'm'])
 
-if compiler in ['gcc', 'clang']:
-    if not platform in ['android']:
+if meta.compiler in ['gcc', 'clang']:
+    if not meta.platform in ['android']:
         env.Append(CXXFLAGS=[
             '-std=c++98',
         ])
@@ -1129,43 +1146,45 @@ if compiler in ['gcc', 'clang']:
             '-fPIC',
         ]})
 
-    if platform in ['linux', 'darwin']:
+    if meta.platform in ['linux', 'darwin']:
         env.AddPkgConfigLibs(['pthread'])
 
-    if platform in ['linux', 'android']:
-        test_env['RPATH'] = test_env.Literal('\\$$ORIGIN')
+    if meta.platform in ['linux', 'android']:
+        subenvs.tests['RPATH'] = subenvs.tests.Literal('\\$$ORIGIN')
 
         if not GetOption('disable_soversion'):
-            lib_env['SHLIBSUFFIX'] = '%s.%s' % (lib_env['SHLIBSUFFIX'], abi_version)
+            subenvs.library['SHLIBSUFFIX'] = '%s.%s' % (
+                subenvs.library['SHLIBSUFFIX'], env['ROC_SOVER'])
 
-        lib_env.Append(LINKFLAGS=[
-            '-Wl,-soname,libroc%s' % lib_env['SHLIBSUFFIX'],
+        subenvs.library.Append(LINKFLAGS=[
+            '-Wl,-soname,libroc%s' % subenvs.library['SHLIBSUFFIX'],
         ])
 
-        if variant == 'release':
-            lib_env.Append(LINKFLAGS=[
+        if meta.variant == 'release':
+            subenvs.library.Append(LINKFLAGS=[
                 '-Wl,--version-script=%s' % env.File('#src/library/roc.version').path
             ])
 
-    if platform in ['darwin']:
+    if meta.platform in ['darwin']:
         if not GetOption('disable_soversion'):
-            lib_env['SHLIBSUFFIX'] = '.%s%s' % (abi_version, lib_env['SHLIBSUFFIX'])
-            lib_env.Append(LINKFLAGS=[
-                '-Wl,-compatibility_version,%s' % abi_version,
+            subenvs.library['SHLIBSUFFIX'] = '.%s%s' % (
+                env['ROC_SOVER'], subenvs.library['SHLIBSUFFIX'])
+            subenvs.library.Append(LINKFLAGS=[
+                '-Wl,-compatibility_version,%s' % env['ROC_SOVER'],
                 '-Wl,-current_version,%s' % env['ROC_VERSION'],
             ])
 
-        lib_env.Append(LINKFLAGS=[
+        subenvs.library.Append(LINKFLAGS=[
             '-Wl,-install_name,%s/libroc%s' % (
-                env.Dir(env['ROC_BINDIR']).abspath, lib_env['SHLIBSUFFIX']),
+                env.Dir(env['ROC_BINDIR']).abspath, subenvs.library['SHLIBSUFFIX']),
         ])
 
-    if not(compiler == 'clang' and variant == 'debug'):
+    if not(meta.compiler == 'clang' and meta.variant == 'debug'):
         env.Append(CXXFLAGS=[
             '-fno-rtti',
         ])
 
-    if variant == 'debug':
+    if meta.variant == 'debug':
         for var in ['CXXFLAGS', 'CFLAGS']:
             env.Append(**{var: [
                 '-ggdb',
@@ -1181,20 +1200,20 @@ if compiler in ['gcc', 'clang']:
             '-O3',
         ])
 
-    if compiler == 'gcc' and compiler_ver[:2] < (4, 6):
+    if meta.compiler == 'gcc' and meta.compiler_ver[:2] < (4, 6):
         for var in ['CXXFLAGS', 'CFLAGS']:
             env.Append(**{var: [
                 '-fno-strict-aliasing',
             ]})
 
-if compiler in ['gcc', 'clang']:
+if meta.compiler in ['gcc', 'clang']:
     if GetOption('enable_werror'):
         for var in ['CXXFLAGS', 'CFLAGS']:
             env.Append(**{var: [
                 '-Werror',
             ]})
 
-if compiler == 'gcc':
+if meta.compiler == 'gcc':
     for var in ['CXXFLAGS', 'CFLAGS']:
         env.Append(**{var: [
             '-Wall',
@@ -1215,7 +1234,7 @@ if compiler == 'gcc':
         '-Wno-invalid-offsetof',
     ])
 
-    if compiler_ver[:2] >= (4, 4):
+    if meta.compiler_ver[:2] >= (4, 4):
         for var in ['CXXFLAGS', 'CFLAGS']:
             env.Append(**{var: [
                 '-Wlogical-op',
@@ -1225,20 +1244,20 @@ if compiler == 'gcc':
             '-Wmissing-declarations',
         ])
 
-    if compiler_ver[:2] >= (4, 8):
+    if meta.compiler_ver[:2] >= (4, 8):
         for var in ['CXXFLAGS', 'CFLAGS']:
             env.Append(**{var: [
                 '-Wdouble-promotion',
             ]})
 
-    if compiler_ver[:2] >= (8, 0):
+    if meta.compiler_ver[:2] >= (8, 0):
         for var in ['CXXFLAGS', 'CFLAGS']:
             env.Append(**{var: [
                 '-Wno-parentheses',
                 '-Wno-cast-function-type',
             ]})
 
-if compiler == 'clang':
+if meta.compiler == 'clang':
     for var in ['CXXFLAGS', 'CFLAGS']:
         env.Append(**{var: [
             '-Weverything',
@@ -1263,77 +1282,77 @@ if compiler == 'clang':
         '-Wno-missing-prototypes',
     ])
 
-    if platform in ['linux', 'android']:
-        if compiler_ver[:2] >= (3, 4) and compiler_ver[:2] < (3, 6):
+    if meta.platform in ['linux', 'android']:
+        if meta.compiler_ver[:2] >= (3, 4) and meta.compiler_ver[:2] < (3, 6):
             for var in ['CXXFLAGS', 'CFLAGS']:
                 env.Append(**{var: [
                     '-Wno-unreachable-code',
                 ]})
-        if compiler_ver[:2] >= (3, 6):
+        if meta.compiler_ver[:2] >= (3, 6):
             for var in ['CXXFLAGS', 'CFLAGS']:
                 env.Append(**{var: [
                     '-Wno-reserved-id-macro',
                 ]})
-        if compiler_ver[:2] >= (6, 0):
+        if meta.compiler_ver[:2] >= (6, 0):
             for var in ['CXXFLAGS', 'CFLAGS']:
                 env.Append(**{var: [
                     '-Wno-redundant-parens',
                     '-Wno-zero-as-null-pointer-constant',
                 ]})
-        if compiler_ver[:2] >= (8, 0):
+        if meta.compiler_ver[:2] >= (8, 0):
             for var in ['CXXFLAGS', 'CFLAGS']:
                 env.Append(**{var: [
                     '-Wno-atomic-implicit-seq-cst',
                     '-Wno-extra-semi-stmt',
                 ]})
-        if compiler_ver[:2] >= (10, 0):
+        if meta.compiler_ver[:2] >= (10, 0):
             for var in ['CXXFLAGS', 'CFLAGS']:
                 env.Append(**{var: [
                     '-Wno-anon-enum-enum-conversion',
                     '-Wno-implicit-int-float-conversion',
                     '-Wno-enum-float-conversion',
                 ]})
-        if compiler_ver[:2] >= (11, 0):
+        if meta.compiler_ver[:2] >= (11, 0):
             for var in ['CXXFLAGS', 'CFLAGS']:
                 env.Append(**{var: [
                     '-Wno-suggest-override',
                     '-Wno-suggest-destructor-override',
                 ]})
 
-    if platform == 'darwin':
-        if compiler_ver[:2] >= (10, 0):
+    if meta.platform == 'darwin':
+        if meta.compiler_ver[:2] >= (10, 0):
             for var in ['CXXFLAGS', 'CFLAGS']:
                 env.Append(**{var: [
                     '-Wno-redundant-parens',
                 ]})
-        if compiler_ver[:2] >= (11, 0):
+        if meta.compiler_ver[:2] >= (11, 0):
             for var in ['CXXFLAGS', 'CFLAGS']:
                 env.Append(**{var: [
                     '-Wno-atomic-implicit-seq-cst',
                 ]})
-        if compiler_ver[:2] >= (12, 0):
+        if meta.compiler_ver[:2] >= (12, 0):
             for var in ['CXXFLAGS', 'CFLAGS']:
                 env.Append(**{var: [
                     '-Wno-poison-system-directories',
                     '-Wno-anon-enum-enum-conversion',
                 ]})
 
-    if platform == 'android':
+    if meta.platform == 'android':
         env.Append(CXXFLAGS=[
             '-Wno-unknown-warning-option',
             '-Wno-c++98-compat-pedantic',
             '-Wno-deprecated-dynamic-exception-spec',
         ])
 
-if compiler in ['gcc', 'clang']:
-    for e in [env, lib_env, tool_env, test_env, pulse_env]:
+if meta.compiler in ['gcc', 'clang']:
+    for e in [env, subenvs.library, subenvs.tools, subenvs.tests, subenvs.pulse]:
         for var in ['CXXFLAGS', 'CFLAGS']:
             dirs = [('-isystem', env.Dir(path).path)
-                    for path in e['CPPPATH'] + ['%s/tools' % build_dir]]
+                    for path in e['CPPPATH'] + ['%s/tools' % env['ROC_BUILDDIR']]]
 
             # workaround to force our 3rdparty directories to be placed
             # before /usr/local/include on macos
-            if compiler == 'clang' and platform == 'darwin':
+            if meta.compiler == 'clang' and meta.platform == 'darwin':
                 dirs += [('-isystem', '/usr/local/include')]
 
             e.Prepend(**{var: dirs})
@@ -1343,17 +1362,17 @@ if compiler in ['gcc', 'clang']:
             e.Prepend(LINKFLAGS=['-L/usr/lib64'])
 
     for var in ['CC', 'CXX']:
-        env[var] = env.ClangDBWriter(env[var], build_dir)
+        env[var] = env.ClangDBWriter(env[var], env['ROC_BUILDDIR'])
 
-    compile_commands = '%s/compile_commands.json' % build_dir
+    compile_commands = '%s/compile_commands.json' % env['ROC_BUILDDIR']
 
     env.Artifact(compile_commands, '#src')
     env.Install('#', compile_commands)
 
 sanitizers = env.ParseList(GetOption('sanitizers'), supported_sanitizers)
 if sanitizers:
-    if not compiler in ['gcc', 'clang']:
-        env.Die("sanitizers are not supported for compiler '%s'" % compiler)
+    if not meta.compiler in ['gcc', 'clang']:
+        env.Die("sanitizers are not supported for compiler '%s'" % meta.compiler)
 
     for name in sanitizers:
         flags = ['-fsanitize=%s' % name, '-fno-sanitize-recover=%s' % name]
@@ -1361,22 +1380,22 @@ if sanitizers:
         env.AppendUnique(CXXFLAGS=flags)
         env.AppendUnique(LINKFLAGS=flags)
 else:
-    if platform in ['linux', 'android']:
+    if meta.platform in ['linux', 'android']:
         env.Append(LINKFLAGS=[
             '-Wl,--no-undefined',
         ])
 
-if platform in ['linux']:
-    tool_env.Append(LINKFLAGS=[
+if meta.platform in ['linux']:
+    subenvs.tools.Append(LINKFLAGS=[
         '-Wl,-rpath-link,%s' % env.Dir('#build/3rdparty/%s/%s/rpath' % (
-            host, thirdparty_compiler_spec)).abspath,
+            meta.host, thirdparty_compiler_dir)).abspath,
     ])
 
-test_env.Append(CPPDEFINES=('CPPUTEST_USE_MEM_LEAK_DETECTION', '0'))
+subenvs.tests.Append(CPPDEFINES=('CPPUTEST_USE_MEM_LEAK_DETECTION', '0'))
 
-if compiler == 'clang':
+if meta.compiler == 'clang':
     for var in ['CXXFLAGS', 'CFLAGS']:
-        gen_env.AppendUnique(**{var: [
+        subenvs.generated_code.AppendUnique(**{var: [
             '-Wno-sign-conversion',
             '-Wno-missing-variable-declarations',
             '-Wno-switch-enum',
@@ -1385,22 +1404,20 @@ if compiler == 'clang':
             '-Wno-documentation',
         ]})
 
-    test_env.AppendUnique(CXXFLAGS=[
+    subenvs.tests.AppendUnique(CXXFLAGS=[
         '-Wno-weak-vtables',
         '-Wno-unused-member-function',
     ])
 
-if compiler == 'gcc':
+if meta.compiler == 'gcc':
     for var in ['CXXFLAGS', 'CFLAGS']:
-        gen_env.AppendUnique(**{var: [
+        subenvs.generated_code.AppendUnique(**{var: [
             '-Wno-overlength-strings',
         ]})
 
 if not env['STRIPFLAGS']:
-    if platform in ['darwin']:
+    if meta.platform in ['darwin']:
         env.Append(STRIPFLAGS=['-x'])
 
-Export('env', 'lib_env', 'example_env', 'gen_env', 'tool_env', 'test_env', 'pulse_env')
-
 env.SConscript('src/SConscript',
-            variant_dir=build_dir, duplicate=0)
+            variant_dir=env['ROC_BUILDDIR'], duplicate=0, exports='env subenvs')
