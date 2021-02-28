@@ -1,5 +1,4 @@
 import SCons.Script
-import SCons.Util
 import os
 
 def _find_overridden(env, var):
@@ -46,24 +45,7 @@ def PrependFromArg(env, var, names=[], default=None):
             env.Prepend(**{var: v})
             break
 
-def MergeVars(env, src_env, exclude=[]):
-    for k, v in src_env.Dictionary().items():
-        if k in exclude:
-            continue
-
-        if not k in env.Dictionary():
-            env[k] = v
-            continue
-
-        if isinstance(v, SCons.Util.CLVar) or isinstance(v, list):
-            if k == 'LIBS':
-                env.AppendUnique(**{k: v})
-            else:
-                env.PrependUnique(**{k: v})
-            continue
-
 def init(env):
     env.AddMethod(HasArg, 'HasArg')
     env.AddMethod(OverrideFromArg, 'OverrideFromArg')
     env.AddMethod(PrependFromArg, 'PrependFromArg')
-    env.AddMethod(MergeVars, 'MergeVars')

@@ -54,14 +54,14 @@ def GlobDirs(env, pattern):
             ret.append(path)
     return ret
 
-def getenv(env, name, default):
+def _getenv(env, name, default):
     if name in env['ENV']:
         return env['ENV'][name]
     return os.environ.get(name, default)
 
-def which(env, prog, mode, searchpath):
+def _which(env, prog, mode, searchpath):
     result = []
-    exts = list(filter(None, getenv(env, 'PATHEXT', '').split(os.pathsep)))
+    exts = list(filter(None, _getenv(env, 'PATHEXT', '').split(os.pathsep)))
     for p in searchpath.split(os.pathsep):
         p = os.path.join(p, prog)
         if os.access(p, mode):
@@ -76,7 +76,7 @@ def Which(env, prog, prepend_path=[]):
     if os.access(prog, os.X_OK):
         return [prog]
 
-    searchpath = getenv(env, 'PATH', os.defpath)
+    searchpath = _getenv(env, 'PATH', os.defpath)
     if prepend_path:
         searchpath = os.pathsep.join(prepend_path) + os.pathsep + searchpath
 
@@ -86,7 +86,7 @@ def Which(env, prog, prepend_path=[]):
         if path:
             paths = [path]
     except:
-        paths = which(env, prog, os.X_OK, searchpath)
+        paths = _which(env, prog, os.X_OK, searchpath)
 
     return paths
 
