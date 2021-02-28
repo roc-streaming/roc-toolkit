@@ -1,6 +1,6 @@
 import os.path
 
-Import('env', 'lib_env', 'example_env', 'gen_env', 'tool_env', 'test_env', 'pulse_env')
+Import('env', 'subenvs')
 
 if [s for s in COMMAND_LINE_TARGETS if s == 'test' or s.startswith('test/')]:
     if not GetOption('enable_tests'):
@@ -20,10 +20,10 @@ for module in env['ROC_MODULES']:
     moduledir = 'modules/' + module
 
     cenv = env.Clone()
-    cenv.MergeVars(tool_env)
+    cenv.MergeVars(subenvs.tools)
     cenv.Append(CPPDEFINES=('ROC_MODULE', module))
 
-    genv = gen_env.Clone()
+    genv = subenvs.generated_code.Clone()
     genv.MergeVars(cenv)
 
     sources = []
@@ -52,14 +52,14 @@ libroc = None
 
 if not GetOption('disable_lib'):
     cenv = env.Clone()
-    cenv.MergeVars(lib_env)
+    cenv.MergeVars(subenvs.library)
     cenv.Append(CPPDEFINES=('ROC_MODULE', 'roc_api'))
     cenv.Append(CPPPATH=['library/include'])
 
     sources = env.GlobFiles('library/src/*.cpp')
 
     libroc = cenv.SharedLibrary(
-        'roc_unstripped', sources, SHLIBSUFFIX=lib_env['SHLIBSUFFIX'])
+        'roc_unstripped', sources, SHLIBSUFFIX=subenvs.library['SHLIBSUFFIX'])
 
     env.Depends(libroc, '#src/library/roc.version')
 
@@ -95,9 +95,9 @@ if not GetOption('disable_lib'):
 
 if GetOption('enable_examples'):
     cenv = env.Clone()
-    cenv.MergeVars(example_env)
-    cenv.MergeVars(tool_env)
-    cenv.MergeVars(test_env)
+    cenv.MergeVars(subenvs.examples)
+    cenv.MergeVars(subenvs.tools)
+    cenv.MergeVars(subenvs.tests)
     cenv.Append(CPPPATH=['library/include'])
     cenv.Append(LIBS=[libroc])
 
@@ -121,8 +121,8 @@ if GetOption('enable_examples'):
 
 if GetOption('enable_tests') or GetOption('enable_benchmarks'):
     cenv = env.Clone()
-    cenv.MergeVars(tool_env)
-    cenv.MergeVars(test_env)
+    cenv.MergeVars(subenvs.tools)
+    cenv.MergeVars(subenvs.tests)
     cenv.Append(CPPDEFINES=('ROC_MODULE', 'roc_test'))
 
     sanitizer_opt_obj = []
@@ -190,17 +190,21 @@ if not GetOption('disable_tools'):
         sanitizer_opt_obj = cenv.Object('sanitizer_options.cpp')
     for tooldir in env.GlobDirs('tools/*'):
         cenv = env.Clone()
-        cenv.MergeVars(tool_env)
+        cenv.MergeVars(subenvs.tools)
         cenv.Append(CPPDEFINES=('ROC_MODULE', tooldir.name))
         cenv.Append(CPPPATH=['tools', '#src/tools/%s' % tooldir.name])
 
-        genv = gen_env.Clone()
+        genv = subenvs.generated_code.Clone()
         genv.MergeVars(cenv)
 
         sources = env.GlobFiles('%s/*.cpp' % tooldir)
         objects = []
         for ggo in env.GlobFiles('%s/*.ggo' % tooldir):
-            objects += genv.GenGetOpt(ggo, env['ROC_VERSION_STR'])
+            if env['ROC_COMMIT']:
+                objects += genv.GenGetOpt(
+                    ggo, '%s (%s)' % (env['ROC_VERSION'], env['ROC_COMMIT']))
+            else:
+                objects += genv.GenGetOpt(ggo, env['ROC_VERSION'])
 
         exename = tooldir.name.replace('roc_', 'roc-')
         target = env.Install(env['ROC_BINDIR'],
@@ -213,7 +217,7 @@ if not GetOption('disable_tools'):
 
 if GetOption('enable_pulseaudio_modules'):
     cenv = env.Clone()
-    cenv.MergeVars(pulse_env)
+    cenv.MergeVars(subenvs.pulse)
     cenv.Append(CPPPATH=['library/include'])
     cenv.Append(LIBS=[libroc])
 
