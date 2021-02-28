@@ -321,6 +321,25 @@ env.OverrideFromArg('DOXYGEN', default='doxygen')
 env.OverrideFromArg('SPHINX_BUILD', default='sphinx-build')
 env.OverrideFromArg('BREATHE_APIDOC', default='breathe-apidoc')
 
+env.PrependFromArg('CPPFLAGS')
+env.PrependFromArg('CXXFLAGS')
+env.PrependFromArg('CFLAGS')
+env.PrependFromArg('LINKFLAGS', names=['LINKFLAGS', 'LDFLAGS'])
+env.PrependFromArg('STRIPFLAGS')
+
+env.Append(CXXFLAGS=[])
+env.Append(CPPDEFINES=[])
+env.Append(CPPPATH=[])
+env.Append(LIBPATH=[])
+env.Append(LIBS=[])
+env.Append(STRIPFLAGS=[])
+
+if GetOption('with_includes'):
+    env.Append(CPPPATH=GetOption('with_includes'))
+
+if GetOption('with_libraries'):
+    env.Append(LIBPATH=GetOption('with_libraries'))
+
 if GetOption('help'):
     Return()
 
@@ -512,14 +531,8 @@ elif compiler == 'gcc':
 
 conf.FindPkgConfig(toolchain)
 
-env['LINK'] = env['CXXLD']
-env['SHLINK'] = env['CXXLD']
-
-env.PrependFromArg('CPPFLAGS')
-env.PrependFromArg('CXXFLAGS')
-env.PrependFromArg('CFLAGS')
-env.PrependFromArg('LINKFLAGS', names=['LINKFLAGS', 'LDFLAGS'])
-env.PrependFromArg('STRIPFLAGS')
+conf.env['LINK'] = env['CXXLD']
+conf.env['SHLINK'] = env['CXXLD']
 
 env = conf.Finish()
 
@@ -652,19 +665,6 @@ else:
             env.Append(ROC_TARGETS=[
                 'target_pulseaudio',
             ])
-
-env.Append(CXXFLAGS=[])
-env.Append(CPPDEFINES=[])
-env.Append(CPPPATH=[])
-env.Append(LIBPATH=[])
-env.Append(LIBS=[])
-env.Append(STRIPFLAGS=[])
-
-if GetOption('with_includes'):
-    env.Append(CPPPATH=GetOption('with_includes'))
-
-if GetOption('with_libraries'):
-    env.Append(LIBPATH=GetOption('with_libraries'))
 
 lib_env = env.Clone()
 example_env = env.Clone()

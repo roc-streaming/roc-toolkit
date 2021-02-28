@@ -1,14 +1,15 @@
+import scons.arguments
 import scons.commands
 import scons.config
 import scons.distfiles
-import scons.fs
+import scons.filesystem
 import scons.parallel
 import scons.parsers
 import scons.pkgconfig
 import scons.pretty
 import scons.tests
 import scons.thirdparty
-import scons.vars
+import scons.variables
 
 # workaround for python3
 import SCons.Subst
@@ -19,17 +20,18 @@ except:
 
 def generate(env):
     modules = [
+        scons.arguments,
         scons.commands,
         scons.config,
         scons.distfiles,
-        scons.fs,
+        scons.filesystem,
         scons.parallel,
         scons.parsers,
         scons.pkgconfig,
         scons.pretty,
         scons.tests,
         scons.thirdparty,
-        scons.vars,
+        scons.variables,
     ]
     for m in modules:
         m.init(env)
