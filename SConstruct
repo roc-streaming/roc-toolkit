@@ -7,14 +7,16 @@ import SCons
 # supported platform names
 supported_platforms = [
     'linux',
+    'unix',
     'darwin',
     'android',
 ]
 
 # supported compiler names (without version)
 supported_compilers = [
-    'gcc',
     'clang',
+    'gcc',
+    'cc',
 ]
 
 # supported sanitizers
@@ -417,22 +419,33 @@ if GetOption('compiler'):
         meta.compiler_ver = tuple(map(int, meta.compiler_ver.split('.')))
 else:
     if env.HasArg('CXX'):
-        if 'gcc' in env['CXX'] or 'g++' in env['CXX']:
-            meta.compiler = 'gcc'
-        elif 'clang' in env['CXX']:
+        if 'clang' in env['CXX']:
             meta.compiler = 'clang'
+        elif 'gcc' in env['CXX'] or 'g++' in env['CXX']:
+            meta.compiler = 'gcc'
+        elif os.path.basename(env['CXX']) in ['cc', 'c++']:
+            meta.compiler = 'cc'
+    elif meta.toolchain:
+        if env.Which('%s-clang++' % meta.toolchain):
+            meta.compiler = 'clang'
+        elif env.Which('%s-g++' % meta.toolchain):
+            meta.compiler = 'gcc'
+        elif env.Which('%s-c++' % meta.toolchain):
+            meta.compiler = 'cc'
     else:
-        if not meta.toolchain and env.Which('clang'):
+        if env.Which('clang++'):
             meta.compiler = 'clang'
-        else:
+        elif env.Which('g++'):
             meta.compiler = 'gcc'
+        elif env.Which('c++'):
+            meta.compiler = 'cc'
 
 if not meta.compiler:
     env.Die("can't detect compiler name, please specify '--compiler={name}' manually,"+
-            " e.g. '--compiler=gcc'")
+            " should be one of: %s'" % ', '.join(supported_compilers))
 
 if not meta.compiler in supported_compilers:
-    env.Die("unknown compiler '%s', expected one of: %s",
+    env.Die("unknown --compiler '%s', expected one of: %s",
             meta.compiler, ', '.join(supported_compilers))
 
 if not meta.compiler_ver:
@@ -454,6 +467,8 @@ if meta.compiler == 'clang':
     conf.FindTool('CXX', meta.toolchain, meta.compiler_ver, ['clang++'])
 elif meta.compiler == 'gcc':
     conf.FindTool('CXX', meta.toolchain, meta.compiler_ver, ['g++'])
+elif meta.compiler == 'cc':
+    conf.FindTool('CXX', meta.toolchain, meta.compiler_ver, ['c++'])
 
 full_compiler_ver = env.ParseCompilerVersion(conf.env['CXX'])
 if full_compiler_ver:
@@ -491,10 +506,17 @@ if not meta.platform:
     elif 'darwin' in meta.host:
         meta.platform = 'darwin'
 
+if not meta.platform and meta.host == meta.build:
+    if os.name == 'posix':
+        meta.platform = 'unix'
+
 if not meta.platform:
-    env.Die(("can't detect platform for host '%s', looked for one of: %s\nyou should "+
-             "provide either known '--platform' or '--override-targets' option"),
-                meta.host, ', '.join(supported_platforms))
+    env.Die("can't detect platform name, please specify '--platform={name}' manually,"+
+            " should be one of: %s'" % ', '.join(supported_platforms))
+
+if meta.platform not in supported_platforms:
+    env.Die(("unknown --platform '%s', expected on of: %s"),
+                meta.platform, ', '.join(supported_platforms))
 
 if meta.compiler == 'clang':
     conf.FindTool('CC', meta.toolchain, meta.compiler_ver, ['clang'])
@@ -520,6 +542,14 @@ elif meta.compiler == 'gcc':
     conf.FindTool('CC', meta.toolchain, meta.compiler_ver, ['gcc'])
     conf.FindTool('CXXLD', meta.toolchain, meta.compiler_ver, ['g++'])
     conf.FindTool('CCLD', meta.toolchain, meta.compiler_ver, ['gcc'])
+    conf.FindTool('AR', meta.toolchain, None, ['ar'])
+    conf.FindTool('RANLIB', meta.toolchain, None, ['ranlib'])
+    conf.FindTool('STRIP', meta.toolchain, None, ['strip'])
+
+elif meta.compiler == 'cc':
+    conf.FindTool('CC', meta.toolchain, meta.compiler_ver, ['cc'])
+    conf.FindTool('CXXLD', meta.toolchain, meta.compiler_ver, ['c++'])
+    conf.FindTool('CCLD', meta.toolchain, meta.compiler_ver, ['cc'])
     conf.FindTool('AR', meta.toolchain, None, ['ar'])
     conf.FindTool('RANLIB', meta.toolchain, None, ['ranlib'])
     conf.FindTool('STRIP', meta.toolchain, None, ['strip'])
@@ -580,8 +610,12 @@ if GetOption('override_targets'):
     for t in GetOption('override_targets').split(','):
         env['ROC_TARGETS'] += ['target_%s' % t]
 else:
-    has_c11 = False
+    if meta.compiler in ['gcc', 'clang']:
+        env.Append(ROC_TARGETS=[
+            'target_gcc',
+        ])
 
+    has_c11 = False
     if not GetOption('disable_c11'):
         if meta.compiler == 'gcc':
             has_c11 = meta.compiler_ver[:2] >= (4, 9)
@@ -595,34 +629,24 @@ else:
         env.Append(ROC_TARGETS=[
             'target_c11',
         ])
+    else:
+        env.Append(ROC_TARGETS=[
+            'target_libatomic_ops',
+        ])
 
-    if meta.platform in ['linux', 'android', 'darwin']:
+    env.Append(ROC_TARGETS=[
+        'target_stdio',
+    ])
+
+    if meta.platform in ['linux', 'unix', 'android', 'darwin']:
         env.Append(ROC_TARGETS=[
             'target_posix',
-            'target_stdio',
-            'target_gcc',
-            'target_libuv',
         ])
-        if not has_c11:
-            env.Append(ROC_TARGETS=[
-                'target_libatomic_ops',
-            ])
 
-    if meta.platform in ['linux', 'android']:
+    if meta.platform in ['linux', 'unix', 'android']:
         env.Append(ROC_TARGETS=[
-            'target_posix2001',
-            'target_linux',
+            'target_posix_ext',
         ])
-
-    if meta.platform in ['linux']:
-        if not GetOption('disable_libunwind'):
-            env.Append(ROC_TARGETS=[
-                'target_libunwind',
-            ])
-        else:
-            env.Append(ROC_TARGETS=[
-                'target_nobacktrace',
-            ])
 
     if meta.platform in ['android']:
         env.Append(ROC_TARGETS=[
@@ -632,19 +656,37 @@ else:
     if meta.platform in ['darwin']:
         env.Append(ROC_TARGETS=[
             'target_darwin',
-            'target_libunwind',
         ])
 
-    is_glibc = not 'musl' in meta.host
-
-    if is_glibc:
+    if meta.platform in ['linux', 'unix', 'darwin'] and not GetOption('disable_libunwind'):
         env.Append(ROC_TARGETS=[
-            'target_glibc',
+            'target_libunwind',
+        ])
+    elif meta.platform in ['android']:
+        pass
+    else:
+        env.Append(ROC_TARGETS=[
+            'target_nobacktrace',
+        ])
+
+    is_gnulike_libc = False
+    if meta.platform in ['linux', 'unix']:
+        is_gnulike_libc = 'gnu' in meta.host
+    elif meta.platform in ['android', 'darwin']:
+        is_gnulike_libc = True
+
+    if is_gnulike_libc and not GetOption('disable_libunwind'):
+        env.Append(ROC_TARGETS=[
+            'target_cxxabi',
         ])
     else:
         env.Append(ROC_TARGETS=[
             'target_nodemangle',
         ])
+
+    env.Append(ROC_TARGETS=[
+        'target_libuv',
+    ])
 
     if not GetOption('disable_openfec'):
         env.Append(ROC_TARGETS=[
@@ -702,9 +744,10 @@ if 'target_posix' in env['ROC_TARGETS'] and meta.platform not in ['darwin']:
 for t in env['ROC_TARGETS']:
     env.Append(CPPDEFINES=['ROC_' + t.upper()])
 
-env.Append(LIBPATH=['#%s' % env['ROC_BUILDDIR']])
+env.Append(CPPPATH=['%s/tools' % env['ROC_BUILDDIR']])
+env.Append(LIBPATH=['%s' % env['ROC_BUILDDIR']])
 
-if meta.platform in ['linux']:
+if meta.platform in ['linux', 'unix']:
     env.AddPkgConfigLibs(['rt', 'dl', 'm'])
 
 if meta.compiler in ['gcc', 'clang']:
@@ -772,15 +815,30 @@ if meta.compiler in ['gcc', 'clang']:
             '-rdynamic'
         ])
     else:
-        env.Append(CXXFLAGS=[
-            '-fvisibility=hidden',
-            '-O3',
-        ])
+        for var in ['CXXFLAGS', 'CFLAGS']:
+            env.Append(**{var: [
+                '-fvisibility=hidden',
+                '-O3',
+            ]})
 
     if meta.compiler == 'gcc' and meta.compiler_ver[:2] < (4, 6):
         for var in ['CXXFLAGS', 'CFLAGS']:
             env.Append(**{var: [
                 '-fno-strict-aliasing',
+            ]})
+
+if meta.compiler in ['cc']:
+    env.AddPkgConfigLibs(['pthread'])
+
+    if meta.variant == 'debug':
+        for var in ['CXXFLAGS', 'CFLAGS']:
+            env.Append(**{var: [
+                '-g',
+            ]})
+    else:
+        for var in ['CXXFLAGS', 'CFLAGS']:
+            env.Append(**{var: [
+                '-O3',
             ]})
 
 if meta.compiler in ['gcc', 'clang']:
@@ -924,8 +982,7 @@ if meta.compiler == 'clang':
 if meta.compiler in ['gcc', 'clang']:
     for e in [env, subenvs.library, subenvs.tools, subenvs.tests, subenvs.pulse]:
         for var in ['CXXFLAGS', 'CFLAGS']:
-            dirs = [('-isystem', env.Dir(path).path)
-                    for path in e['CPPPATH'] + ['%s/tools' % env['ROC_BUILDDIR']]]
+            dirs = [('-isystem', env.Dir(path).path) for path in e['CPPPATH']]
 
             # workaround to force our 3rdparty directories to be placed
             # before /usr/local/include on macos

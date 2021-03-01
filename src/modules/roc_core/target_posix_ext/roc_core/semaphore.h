@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_core/target_posix2001/roc_core/semaphore.h
+//! @file roc_core/target_posix_ext/roc_core/semaphore.h
 //! @brief Semaphore.
 
 #ifndef ROC_CORE_SEMAPHORE_H_
