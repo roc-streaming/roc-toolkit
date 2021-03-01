@@ -1,4 +1,3 @@
-import SCons.Script
 import os
 import os.path
 import fnmatch
@@ -28,7 +27,7 @@ def ParseThirdParties(env, s):
     return ret.items()
 
 def ThirdParty(
-        env, hostdir, compilerdir, toolchain, variant, versions, name,
+        env, build_root, toolchain, variant, versions, name,
         deps=[], includes=[], libs=['*']):
     vname = _versioned_thirdparty(env, name, versions)
     vdeps = []
@@ -44,29 +43,31 @@ def ThirdParty(
         'RANLIB=%s' % quote(env['RANLIB']),
     ]
 
-    if not os.path.exists(os.path.join(
-        'build', '3rdparty', hostdir, compilerdir, 'build', vname, 'commit')):
+    project_root = env.Dir('#').srcnode().abspath
+    build_root = env.Dir(build_root).abspath
+    thirdparty_dir = os.path.join(build_root, 'build', vname)
+
+    if not os.path.exists(os.path.join(thirdparty_dir, 'commit')):
+        save_cwd = os.getcwd()
+        os.chdir(project_root)
+
         if env.Execute(
-            SCons.Action.CommandAction(
-                '%s scripts/build/3rdparty.py %s 3rdparty/distfiles %s %s %s %s %s' % (
-                    quote(env.PythonExecutable()),
-                    quote(os.path.join("build", "3rdparty", hostdir, compilerdir)),
-                    quote(toolchain),
-                    quote(variant),
-                    quote(vname),
-                    quote(':'.join(vdeps)),
-                    ' '.join(envvars)),
-                cmdstr = env.PrettyCommand(
-                    'GET', 'build/3rdparty/%s/%s/build/%s' % (
-                        hostdir, compilerdir, vname), 'yellow'))):
+            '%s scripts/build/3rdparty.py %s 3rdparty/distfiles %s %s %s %s %s' % (
+                quote(env.PythonExecutable()),
+                quote(os.path.relpath(build_root, project_root)),
+                quote(toolchain),
+                quote(variant),
+                quote(vname),
+                quote(':'.join(vdeps)),
+                ' '.join(envvars)),
+            cmdstr = env.PrettyCommand(
+                'GET', os.path.relpath(thirdparty_dir, project_root), 'yellow')):
 
-            logfile = 'build/3rdparty/%s/%s/build/%s/build.log' % (
-                hostdir, compilerdir, vname)
-
+            logfile = os.path.join(thirdparty_dir, 'build.log')
             message = "can't make '%s', see '%s' for details" % (
-                vname, logfile)
+                vname, os.path.relpath(logfile, project_root))
 
-            if os.environ.get('CI', ''):
+            if os.environ.get('CI', '') in ['1', 'true']:
                 try:
                     with open(logfile) as fp:
                         message += "\n\n" + fp.read()
@@ -75,10 +76,12 @@ def ThirdParty(
 
             env.Die(message)
 
-    env.ImportThridParty(
-        hostdir, compilerdir, toolchain, versions, name, includes, libs)
+        os.chdir(save_cwd)
 
-def ImportThridParty(env, hostdir, compilerdir, toolchain, versions, name,
+    env.ImportThridParty(
+        build_root, toolchain, versions, name, includes, libs)
+
+def ImportThridParty(env, build_root, toolchain, versions, name,
                      includes=[], libs=['*']):
     def needlib(lib):
         for name in libs:
@@ -93,10 +96,10 @@ def ImportThridParty(env, hostdir, compilerdir, toolchain, versions, name,
 
     for s in includes:
         env.Prepend(CPPPATH=[
-            '#build/3rdparty/%s/%s/build/%s/include/%s' % (hostdir, compilerdir, vname, s)
+            '%s/build/%s/include/%s' % (build_root, vname, s)
         ])
 
-    libdir = '#build/3rdparty/%s/%s/build/%s/lib' % (hostdir, compilerdir, vname)
+    libdir = '%s/build/%s/lib' % (build_root, vname)
 
     if os.path.isdir(env.Dir(libdir).abspath):
         env.Prepend(LIBPATH=[libdir])

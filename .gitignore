@@ -1,16 +1,13 @@
 # build results
-bin
-build
-doc/html
+/bin
+/build
+docs/html
 
 # scons
 .sconsign.dblite
 .sconf_temp
 config.log
 build.log
-
-# travis
-build.status
 
 # clang
 compile_commands.json
