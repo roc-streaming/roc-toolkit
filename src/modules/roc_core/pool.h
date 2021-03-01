@@ -101,8 +101,8 @@ public:
 private:
     enum { PoisonAllocated = 0x7a, PoisonDeallocated = 0x7d };
 
-    struct Chunk : ListNode {};
-    struct Elem : ListNode {};
+    struct Chunk : ListNode { };
+    struct Elem : ListNode { };
 
     Elem* get_elem_() {
         Mutex::Lock lock(mutex_);

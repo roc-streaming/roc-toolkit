@@ -1,4 +1,5 @@
 src/modules/roc_core/target_libatomic_ops/roc_core/atomic_ops.h
+src/modules/roc_audio/profiler.cpp
 src/modules/roc_fec/codec_map.cpp
 src/tests/roc_address/test_pct.cpp
 src/tests/roc_audio/test_depacketizer.cpp

@@ -164,7 +164,7 @@ public:
     //! Convert to bool.
     //! @returns
     //!  true if the slice is attached to buffer, even if it has zero length.
-    operator const struct unspecified_bool*() const {
+    operator const struct unspecified_bool *() const {
         return (const unspecified_bool*)data_;
     }
 

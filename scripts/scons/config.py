@@ -192,8 +192,8 @@ def FindClangFormat(context):
         context.Result(env['CLANG_FORMAT'])
         return True
 
-    min_ver = 8
-    max_ver = 9
+    min_ver = 10
+    max_ver = 99
 
     def checkver(exe):
         ver_str = env.ParseToolVersion('%s --version' % exe)

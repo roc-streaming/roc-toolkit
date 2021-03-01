@@ -20,8 +20,9 @@ Profiler::Profiler(core::IAllocator& allocator,
                    ProfilerConfig profiler_config)
     : rate_limiter_(profiler_config.profiling_interval)
     , interval_(profiler_config.profiling_interval)
-    , chunk_length_((size_t)(
-          sample_rate * ((float)profiler_config.chunk_duration / (float)core::Second)))
+    , chunk_length_(
+          (size_t)(sample_rate
+                   * ((float)profiler_config.chunk_duration / (float)core::Second)))
     , num_chunks_((size_t)((unsigned long)profiler_config.profiling_interval
                            / (unsigned long)(profiler_config.chunk_duration))
                   + 1)

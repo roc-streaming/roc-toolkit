@@ -17,7 +17,7 @@ namespace {
 
 enum { NumObjects = 5 };
 
-struct Object : ListNode {};
+struct Object : ListNode { };
 
 } // namespace
 
