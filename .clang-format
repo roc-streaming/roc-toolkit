@@ -12,7 +12,7 @@ MaxEmptyLinesToKeep: 1
 PenaltyBreakComment: 0
 
 AllowShortFunctionsOnASingleLine: None
-#AllowShortBlocksOnASingleLine: Never
+AllowShortBlocksOnASingleLine: Never
 
 NamespaceIndentation: None
 

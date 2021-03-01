@@ -18,7 +18,7 @@ namespace {
 
 enum { BatchSize = 10000, NumIterations = 5000000, NumThreads = 16 };
 
-struct Object : MpscQueueNode {};
+struct Object : MpscQueueNode { };
 
 class BM_MpscQueue : public benchmark::Fixture {
 public:
