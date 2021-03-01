@@ -1,4 +1,4 @@
-PROJECT_NAME            = "Roc API documentation"
+PROJECT_NAME            = "Roc Toolkit API documentation"
 
 QUIET                   = YES
 RECURSIVE               = YES
@@ -33,7 +33,7 @@ MACRO_EXPANSION         = YES
 EXPAND_ONLY_PREDEF      = YES
 PREDEFINED              = ROC_API= ROC_DOXYGEN=
 
-OUTPUT_DIRECTORY        = ../../build/docs/lib
+OUTPUT_DIRECTORY        = ../../build/docs/library
 HTML_OUTPUT             =
 
 GENERATE_XML            = YES
