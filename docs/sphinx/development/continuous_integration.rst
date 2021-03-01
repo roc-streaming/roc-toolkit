@@ -14,7 +14,7 @@ GitHub Actions build Roc for Linux and macOS. Linux worker uses Docker to run bu
 
 Docker images for continuous integration and cross-compilation are prepared using Docker Hub automated builds. They are based on official upstream images, adding pre-installed packages required for build. Dockerfiles for images are hosted in a separate GitHub repository. When a Dockerfile or an upstream image changes, Docker Hub automatically triggers rebuild.
 
-If images build have to be customized with build arguments it can be accomplished by using :ref:`build hooks`.
+If images build have to be customized with build arguments it can be accomplished by using :ref:`build hooks <build_hooks>`.
 
 Links:
  * `GitHub Actions page <https://github.com/roc-streaming/roc-toolkit/actions>`_
@@ -241,7 +241,7 @@ The ``env-android`` image provides an helper script named ``device`` that takes 
 
       $ device start --name=<AVD-NAME>
 
-.._build hooks:
+.. _build_hooks:
 
 Docker Hub build hooks
 ======================
