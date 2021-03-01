@@ -23,25 +23,6 @@ supported_sanitizers = [
     'address',
 ]
 
-# 3rdparty library default versions
-thirdparty_versions = {
-    'libuv':            '1.35.0',
-    'libatomic_ops':    '7.6.10',
-    'libunwind':        '1.2.1',
-    'openfec':          '1.4.2.4',
-    'speexdsp':         '1.2.0',
-    'sox':              '14.4.2',
-    'alsa':             '1.0.29',
-    'pulseaudio':       '5.0',
-    'json-c':           '0.12-20140410',
-    'ltdl':             '2.4.6',
-    'sndfile':          '1.0.28',
-    'ragel':            '6.10',
-    'gengetopt':        '2.22.6',
-    'cpputest':         '3.6',
-    'google-benchmark': '1.5.0',
-}
-
 SCons.SConf.dryrun = 0 # configure even in dry run mode
 
 if platform.system() == 'Linux':
@@ -343,23 +324,28 @@ if GetOption('with_libraries'):
 if GetOption('help'):
     Return()
 
-cleanbuild = [
-    env.DeleteDir('#bin'),
-    env.DeleteDir('#build/src'),
+cleanfiles = [
     env.DeleteFile('#compile_commands.json'),
     env.DeleteFile('#config.log'),
     env.DeleteDir('#.sconf_temp'),
     env.DeleteFile('#.sconsign.dblite'),
 ]
 
+cleanbuild = [
+    env.DeleteDir('#bin'),
+    env.DeleteDir('#build/src'),
+] + cleanfiles
+
 cleandocs = [
-    env.DeleteDir('#docs/html'),
     env.DeleteDir('#build/docs'),
+    env.DeleteDir('#docs/html'),
 ]
 
-cleanall = cleanbuild + cleandocs + [
-    env.DeleteDir('#build/3rdparty'),
-]
+cleanall = [
+    env.DeleteDir('#bin'),
+    env.DeleteDir('#build'),
+    env.DeleteDir('#docs/html'),
+] + cleanfiles
 
 env.AlwaysBuild(env.Alias('clean', [], cleanall))
 env.AlwaysBuild(env.Alias('cleanbuild', [], cleanbuild))
@@ -390,6 +376,7 @@ if 'fmt' in COMMAND_LINE_TARGETS:
     env.AlwaysBuild(
         env.Alias('fmt', [], fmt_actions))
 
+# build documentation
 doc_env = env.Clone()
 doc_env.SConscript('docs/SConscript',
                        variant_dir='#build', duplicate=0, exports='doc_env')
@@ -402,7 +389,7 @@ if set(COMMAND_LINE_TARGETS) \
 # meta-information about the build, used to generate env parameters
 meta = type('meta', (), {
     field: '' for field in
-        'build host toolchain platform variant compiler compiler_ver'.split()})
+        'build host toolchain platform variant thirdparty_variant compiler compiler_ver'.split()})
 
 # toolchain triple of the local system (where we're building), e.g. x86_64-pc-linux-gnu
 meta.build = GetOption('build')
@@ -418,6 +405,9 @@ meta.platform = GetOption('platform') or ''
 
 # build variant, i.e. 'debug' or 'release'
 meta.variant = 'debug' if GetOption('enable_debug') else 'release'
+
+# build variant for third-parties
+meta.thirdparty_variant = 'debug' if GetOption('enable_debug_3rdparty') else 'release'
 
 # compiler name, e.g. 'gcc', and version tuple, e.g. (4, 9)
 if GetOption('compiler'):
@@ -534,22 +524,32 @@ elif meta.compiler == 'gcc':
     conf.FindTool('RANLIB', meta.toolchain, None, ['ranlib'])
     conf.FindTool('STRIP', meta.toolchain, None, ['strip'])
 
-conf.FindPkgConfig(meta.toolchain)
-
 conf.env['LINK'] = env['CXXLD']
 conf.env['SHLINK'] = env['CXXLD']
+
+conf.FindPkgConfig(meta.toolchain)
 
 env = conf.Finish()
 
 env['ROC_BINDIR'] = '#bin/%s' % meta.host
 
-env['ROC_BUILDDIR'] = 'build/src/%s/%s' % (
+env['ROC_BUILDDIR'] = '#build/src/%s/%s' % (
     meta.host,
     '-'.join(
         [s for s in [
             meta.compiler,
             '.'.join(map(str, meta.compiler_ver)),
             meta.variant
+        ] if s])
+    )
+
+env['ROC_THIRDPARTY_BUILDDIR'] = '#build/3rdparty/%s/%s' % (
+    meta.host,
+    '-'.join(
+        [s for s in [
+            meta.compiler,
+            '.'.join(map(str, meta.compiler_ver)),
+            meta.thirdparty_variant
         ] if s])
     )
 
@@ -671,432 +671,9 @@ subenvs = type('subenvs', (), {
     field: env.Clone() for field in
         'library examples generated_code tools tests pulse'.split()})
 
-is_crosscompiling = (meta.host != meta.build)
-
-# build variant for third-parties
-thirdparty_variant = 'debug' if GetOption('enable_debug_3rdparty') else 'release'
-
-# subdirectory for building 3rdparties
-thirdparty_compiler_dir = '-'.join(
-    [s for s in [
-        meta.compiler,
-        '.'.join(map(str, meta.compiler_ver)),
-        thirdparty_variant
-    ] if s])
-
-# all possible dependencies on this platform
-all_dependencies = set([t.replace('target_', '') for t in env['ROC_TARGETS']])
-
-# on macos libunwind is provided by the OS
-if meta.platform in ['darwin']:
-    all_dependencies.discard('libunwind')
-
-all_dependencies.add('ragel')
-
-if not GetOption('disable_tools'):
-    all_dependencies.add('gengetopt')
-
-if GetOption('enable_pulseaudio_modules'):
-    all_dependencies.add('pulseaudio')
-
-if 'pulseaudio' in all_dependencies and meta.platform in ['linux']:
-    all_dependencies.add('alsa')
-
-if GetOption('enable_tests'):
-    all_dependencies.add('cpputest')
-
-if GetOption('enable_benchmarks'):
-    all_dependencies.add('google-benchmark')
-
-# dependencies that we should download and build manually
-download_dependencies = set()
-
-# dependencies that have explicitly provided version
-explicit_version = set()
-
-for name, version in env.ParseThirdParties(GetOption('build_3rdparty')):
-    if name != 'all' and not name in thirdparty_versions:
-        env.Die("unknown thirdparty name '%s' in '--build-3rdparty', expected any of: %s",
-                    name, ', '.join(['all'] + list(sorted(thirdparty_versions.keys()))))
-    download_dependencies.add(name)
-    if version:
-        thirdparty_versions[name] = version
-        explicit_version.add(name)
-
-if 'all' in download_dependencies:
-    download_dependencies = all_dependencies
-
-# dependencies that should be pre-installed on system
-system_dependencies = all_dependencies - download_dependencies
-
-if 'libuv' in system_dependencies:
-    conf = Configure(env, custom_tests=env.CustomTests)
-
-    if not conf.AddPkgConfigDependency('libuv', '--cflags --libs'):
-        conf.env.AddPkgConfigLibs(['uv'])
-
-    if not is_crosscompiling:
-        if not conf.CheckLibWithHeaderExt(
-            'uv', 'uv.h', 'C', expr='UV_VERSION_MAJOR >= 1 && UV_VERSION_MINOR >= 5'):
-            env.Die("libuv >= 1.5 not found (see 'config.log' for details)")
-    else:
-        if not conf.CheckLibWithHeaderExt('uv', 'uv.h', 'C', run=False):
-            env.Die("libuv not found (see 'config.log' for details)")
-
-    env = conf.Finish()
-
-if 'libunwind' in system_dependencies:
-    conf = Configure(env, custom_tests=env.CustomTests)
-
-    if not conf.AddPkgConfigDependency('libunwind', '--cflags --libs'):
-        conf.env.AddPkgConfigLibs(['unwind'])
-
-    if not conf.CheckLibWithHeaderExt('unwind', 'libunwind.h', 'C', run=not is_crosscompiling):
-        env.Die("libunwind not found (see 'config.log' for details)")
-
-    env = conf.Finish()
-
-if 'libatomic_ops' in system_dependencies:
-    conf = Configure(env, custom_tests=env.CustomTests)
-
-    if not conf.AddPkgConfigDependency('atomic_ops', '--cflags --libs'):
-        conf.env.AddPkgConfigLibs(['atomic_ops'])
-
-    if not conf.CheckLibWithHeaderExt('atomic_ops', 'atomic_ops.h', 'C',
-                                      run=not is_crosscompiling):
-        env.Die("libatomic_ops not found (see 'config.log' for details)")
-
-    env = conf.Finish()
-
-if 'openfec' in system_dependencies:
-    conf = Configure(env, custom_tests=env.CustomTests)
-
-    if not conf.AddPkgConfigDependency('openfec', '--silence-errors --cflags --libs'):
-        conf.env.AddPkgConfigLibs(['openfec'])
-
-        if GetOption('with_openfec_includes'):
-            openfec_includes = GetOption('with_openfec_includes')
-            conf.env.Append(CPPPATH=[
-                openfec_includes,
-                '%s/lib_common' % openfec_includes,
-                '%s/lib_stable' % openfec_includes,
-            ])
-        elif not is_crosscompiling:
-           for prefix in ['/usr/local', '/usr']:
-               if os.path.exists('%s/include/openfec' % prefix):
-                   conf.env.Append(CPPPATH=[
-                       '%s/include/openfec' % prefix,
-                       '%s/include/openfec/lib_common' % prefix,
-                       '%s/include/openfec/lib_stable' % prefix,
-                   ])
-                   conf.env.Append(LIBPATH=[
-                       '%s/lib' % prefix,
-                   ])
-                   break
-
-    if not conf.CheckLibWithHeaderExt(
-            'openfec', 'of_openfec_api.h', 'C', run=not is_crosscompiling):
-        env.Die("openfec not found (see 'config.log' for details)")
-
-    if not conf.CheckDeclaration('OF_USE_ENCODER', '#include <of_openfec_api.h>', 'c'):
-        env.Die("openfec has no encoder support (OF_USE_ENCODER)")
-
-    if not conf.CheckDeclaration('OF_USE_DECODER', '#include <of_openfec_api.h>', 'c'):
-        env.Die("openfec has no encoder support (OF_USE_DECODER)")
-
-    if not conf.CheckDeclaration('OF_USE_LDPC_STAIRCASE_CODEC',
-                                 '#include <of_openfec_api.h>', 'c'):
-        env.Die(
-            "openfec has no LDPC-Staircase codec support (OF_USE_LDPC_STAIRCASE_CODEC)")
-
-    env = conf.Finish()
-
-if 'speexdsp' in system_dependencies:
-    conf = Configure(env, custom_tests=env.CustomTests)
-
-    if not conf.AddPkgConfigDependency('speexdsp', '--cflags --libs'):
-        conf.env.AddPkgConfigLibs(['speexdsp'])
-
-    if not conf.CheckLibWithHeaderExt('speexdsp', 'speex/speex_resampler.h', 'C',
-                                          run=not is_crosscompiling):
-        env.Die("speexdsp not found (see 'config.log' for details)")
-
-    env = conf.Finish()
-
-if 'pulseaudio' in system_dependencies:
-    conf = Configure(subenvs.tools, custom_tests=env.CustomTests)
-
-    if not conf.AddPkgConfigDependency('libpulse', '--cflags --libs'):
-        conf.env.AddPkgConfigLibs(['pulse'])
-
-    if not conf.CheckLibWithHeaderExt(
-            'pulse', 'pulse/pulseaudio.h', 'C', run=not is_crosscompiling):
-        env.Die("libpulse not found (see 'config.log' for details)")
-
-    subenvs.tools = conf.Finish()
-
-    if GetOption('enable_examples'):
-        conf = Configure(subenvs.examples, custom_tests=env.CustomTests)
-
-        if not conf.AddPkgConfigDependency('libpulse-simple', '--cflags --libs'):
-            conf.env.AddPkgConfigLibs(['pulse-simple'])
-
-        if not conf.CheckLibWithHeaderExt(
-                'pulse-simple', 'pulse/simple.h', 'C', run=not is_crosscompiling):
-            env.Die("libpulse-simple not found (see 'config.log' for details)")
-
-        subenvs.examples = conf.Finish()
-
-    if GetOption('enable_pulseaudio_modules'):
-        conf = Configure(subenvs.pulse, custom_tests=env.CustomTests)
-
-        if not conf.CheckLibWithHeaderExt('ltdl', 'ltdl.h', 'C', run=not is_crosscompiling):
-            env.Die("ltdl not found (see 'config.log' for details)")
-
-        subenvs.pulse = conf.Finish()
-
-        pa_src_dir = GetOption('with_pulseaudio')
-        if not pa_src_dir:
-            env.Die('--enable-pulseaudio-modules requires either --with-pulseaudio'+
-                    ' or --build-3rdparty=pulseaudio')
-
-        pa_build_dir = GetOption('with_pulseaudio_build_dir')
-        if not pa_build_dir:
-            pa_build_dir = pa_src_dir
-
-        subenvs.pulse.Append(CPPPATH=[
-            pa_build_dir,
-            pa_src_dir + '/src',
-        ])
-
-        for lib in ['libpulsecore-*.so', 'libpulsecommon-*.so']:
-            path = '%s/src/.libs/%s' % (pa_build_dir, lib)
-            libs = env.Glob(path)
-            if not libs:
-                env.Die("can't find %s" % path)
-
-            subenvs.pulse.AddPkgConfigLibs(libs)
-
-            m = re.search('-([0-9.]+).so$', libs[0].path)
-            if m:
-                pa_ver = m.group(1)
-
-        if not pa_ver:
-            env.Die("can't determine pulseaudio version")
-
-        env['ROC_PULSE_VERSION'] = pa_ver
-
-if 'sox' in system_dependencies:
-    conf = Configure(subenvs.tools, custom_tests=env.CustomTests)
-
-    if not conf.AddPkgConfigDependency('sox', '--cflags --libs'):
-        conf.env.AddPkgConfigLibs(['sox'])
-
-    if not is_crosscompiling:
-        if not conf.CheckLibWithHeaderExt(
-                'sox', 'sox.h', 'C',
-                expr='SOX_LIB_VERSION_CODE >= SOX_LIB_VERSION(14, 4, 0)'):
-            env.Die("libsox >= 14.4.0 not found (see 'config.log' for details)")
-    else:
-        if not conf.CheckLibWithHeaderExt('sox', 'sox.h', 'C', run=False):
-            env.Die("libsox not found (see 'config.log' for details)")
-
-    subenvs.tools = conf.Finish()
-
-if 'ragel' in system_dependencies:
-    conf = Configure(env, custom_tests=env.CustomTests)
-
-    if 'RAGEL' in env.Dictionary():
-        ragel = env['RAGEL']
-    else:
-        ragel = 'ragel'
-
-    if not conf.CheckProg(ragel):
-        env.Die("ragel not found in PATH (looked for '%s')" % ragel)
-
-    env = conf.Finish()
-
-if 'gengetopt' in system_dependencies:
-    conf = Configure(env, custom_tests=env.CustomTests)
-
-    if 'GENGETOPT' in env.Dictionary():
-        gengetopt = env['GENGETOPT']
-    else:
-        gengetopt = 'gengetopt'
-
-    if not conf.CheckProg(gengetopt):
-        env.Die("gengetopt not found in PATH (looked for '%s')" % gengetopt)
-
-    env = conf.Finish()
-
-if 'cpputest' in system_dependencies:
-    conf = Configure(subenvs.tests, custom_tests=env.CustomTests)
-
-    if not conf.AddPkgConfigDependency('cpputest', '--cflags --libs'):
-        conf.env.AddPkgConfigLibs(['CppUTest'])
-
-    if not conf.CheckLibWithHeaderExt(
-            'CppUTest', 'CppUTest/TestHarness.h', 'CXX', run=not is_crosscompiling):
-        subenvs.tests.Die("CppUTest not found (see 'config.log' for details)")
-
-    subenvs.tests = conf.Finish()
-
-if 'google-benchmark' in system_dependencies:
-    conf = Configure(subenvs.tests, custom_tests=env.CustomTests)
-
-    if not conf.AddPkgConfigDependency('benchmark', '--silence-errors --cflags --libs'):
-        conf.env.AddPkgConfigLibs(['benchmark'])
-
-    if not conf.CheckLibWithHeaderExt(
-            'benchmark', 'benchmark/benchmark.h', 'CXX', run=not is_crosscompiling):
-        subenvs.tests.Die("Google Benchmark not found (see 'config.log' for details)")
-
-    subenvs.tests = conf.Finish()
-
-if 'libuv' in download_dependencies:
-    env.ThirdParty(meta.host, thirdparty_compiler_dir, meta.toolchain,
-                   thirdparty_variant, thirdparty_versions, 'libuv')
-
-if 'libunwind' in download_dependencies:
-    env.ThirdParty(meta.host, thirdparty_compiler_dir,
-                   meta.toolchain, thirdparty_variant,
-                   thirdparty_versions, 'libunwind')
-
-if 'libatomic_ops' in download_dependencies:
-    env.ThirdParty(meta.host, thirdparty_compiler_dir,
-                   meta.toolchain, thirdparty_variant,
-                   thirdparty_versions, 'libatomic_ops')
-
-if 'openfec' in download_dependencies:
-    env.ThirdParty(meta.host, thirdparty_compiler_dir, meta.toolchain,
-                   thirdparty_variant, thirdparty_versions,
-                   'openfec', includes=[
-                        'lib_common',
-                        'lib_stable',
-                        ])
-
-if 'speexdsp' in download_dependencies:
-    env.ThirdParty(meta.build, thirdparty_compiler_dir, meta.toolchain,
-                thirdparty_variant, thirdparty_versions, 'speexdsp')
-
-if 'alsa' in download_dependencies:
-    subenvs.tools.ThirdParty(meta.host, thirdparty_compiler_dir, meta.toolchain,
-                        thirdparty_variant, thirdparty_versions, 'alsa')
-
-if 'pulseaudio' in download_dependencies:
-    if not 'pulseaudio' in explicit_version and not is_crosscompiling:
-        pa_ver = env.ParseToolVersion('pulseaudio --version')
-        if pa_ver:
-            thirdparty_versions['pulseaudio'] = pa_ver
-
-    pa_deps = [
-        'ltdl',
-        'json-c',
-        'sndfile',
-        ]
-
-    if 'alsa' in download_dependencies:
-        pa_deps += ['alsa']
-
-    env['ROC_PULSE_VERSION'] = thirdparty_versions['pulseaudio']
-
-    subenvs.tools.ThirdParty(meta.host, thirdparty_compiler_dir, meta.toolchain,
-                        thirdparty_variant, thirdparty_versions, 'ltdl')
-    subenvs.tools.ThirdParty(meta.host, thirdparty_compiler_dir, meta.toolchain,
-                        thirdparty_variant, thirdparty_versions, 'json-c')
-    subenvs.tools.ThirdParty(meta.host, thirdparty_compiler_dir, meta.toolchain,
-                        thirdparty_variant, thirdparty_versions, 'sndfile')
-    subenvs.tools.ThirdParty(meta.host, thirdparty_compiler_dir, meta.toolchain,
-                        thirdparty_variant, thirdparty_versions,
-                        'pulseaudio', deps=pa_deps, libs=['pulse', 'pulse-simple'])
-
-    subenvs.examples.ImportThridParty(meta.host, thirdparty_compiler_dir, meta.toolchain,
-                                 thirdparty_versions, 'ltdl')
-    subenvs.examples.ImportThridParty(meta.host, thirdparty_compiler_dir, meta.toolchain,
-                                 thirdparty_versions, 'pulseaudio',
-                                 libs=['pulse', 'pulse-simple'])
-
-    pa_ver_short = '.'.join(thirdparty_versions['pulseaudio'].split('.')[:2])
-
-    subenvs.pulse.ImportThridParty(meta.host, thirdparty_compiler_dir, meta.toolchain,
-                               thirdparty_versions, 'ltdl')
-    subenvs.pulse.ImportThridParty(meta.host, thirdparty_compiler_dir, meta.toolchain,
-                               thirdparty_versions, 'pulseaudio',
-                               libs=[
-                                   'pulsecore-%s' % pa_ver_short,
-                                   'pulsecommon-%s' % pa_ver_short
-                                   ])
-
-if 'sox' in download_dependencies:
-    sox_deps = []
-
-    if 'alsa' in download_dependencies:
-        sox_deps += ['alsa']
-
-    if 'pulseaudio' in download_dependencies:
-        sox_deps += ['pulseaudio']
-
-    subenvs.tools.ThirdParty(meta.host, thirdparty_compiler_dir, meta.toolchain,
-                        thirdparty_variant, thirdparty_versions, 'sox', sox_deps)
-
-    conf = Configure(subenvs.tools, custom_tests=env.CustomTests)
-
-    for lib in [
-            'z', 'magic',
-            'gsm', 'FLAC',
-            'vorbis', 'vorbisenc', 'vorbisfile', 'ogg',
-            'mad', 'mp3lame']:
-        conf.CheckLib(lib)
-
-    if not 'alsa' in download_dependencies:
-        for lib in [
-                'asound',
-                ]:
-            conf.CheckLib(lib)
-
-    if not 'pulseaudio' in download_dependencies:
-        for lib in [
-                'sndfile',
-                'pulse', 'pulse-simple',
-                ]:
-            conf.CheckLib(lib)
-
-    if meta.platform in ['darwin']:
-        subenvs.tools.Append(LINKFLAGS=[
-            '-Wl,-framework,CoreAudio'
-        ])
-
-    subenvs.tools = conf.Finish()
-
-if 'ragel' in download_dependencies:
-    env.ThirdParty(meta.build, thirdparty_compiler_dir, "",
-                   thirdparty_variant, thirdparty_versions, 'ragel')
-
-    subenvs.generated_code['RAGEL'] = env.File(
-        '#build/3rdparty/%s/%s/build/ragel-%s/bin/ragel%s' % (
-            meta.build,
-            thirdparty_compiler_dir,
-            thirdparty_versions['ragel'],
-            env['PROGSUFFIX']))
-
-if 'gengetopt' in download_dependencies:
-    env.ThirdParty(meta.build, thirdparty_compiler_dir, "",
-                   thirdparty_variant, thirdparty_versions, 'gengetopt')
-
-    subenvs.generated_code['GENGETOPT'] = env.File(
-        '#build/3rdparty/%s/%s/build/gengetopt-%s/bin/gengetopt%s' % (
-            meta.build,
-            thirdparty_compiler_dir,
-            thirdparty_versions['gengetopt'],
-            env['PROGSUFFIX']))
-
-if 'cpputest' in download_dependencies:
-    subenvs.tests.ThirdParty(meta.host, thirdparty_compiler_dir, meta.toolchain,
-                        thirdparty_variant, thirdparty_versions, 'cpputest')
-
-if 'google-benchmark' in download_dependencies:
-    subenvs.tests.ThirdParty(meta.host, thirdparty_compiler_dir, meta.toolchain,
-                        thirdparty_variant, thirdparty_versions, 'google-benchmark')
+# find or build third-party dependencies
+env, subenvs = env.SConscript('3rdparty/SConscript',
+                       duplicate=0, exports='env subenvs meta')
 
 conf = Configure(env, custom_tests=env.CustomTests)
 
@@ -1387,8 +964,8 @@ else:
 
 if meta.platform in ['linux']:
     subenvs.tools.Append(LINKFLAGS=[
-        '-Wl,-rpath-link,%s' % env.Dir('#build/3rdparty/%s/%s/rpath' % (
-            meta.host, thirdparty_compiler_dir)).abspath,
+        '-Wl,-rpath-link,%s' % env.Dir(
+            os.path.join(env['ROC_THIRDPARTY_BUILDDIR'], 'rpath')).abspath,
     ])
 
 subenvs.tests.Append(CPPDEFINES=('CPPUTEST_USE_MEM_LEAK_DETECTION', '0'))
@@ -1419,5 +996,6 @@ if not env['STRIPFLAGS']:
     if meta.platform in ['darwin']:
         env.Append(STRIPFLAGS=['-x'])
 
+# finally build the project
 env.SConscript('src/SConscript',
             variant_dir=env['ROC_BUILDDIR'], duplicate=0, exports='env subenvs')
