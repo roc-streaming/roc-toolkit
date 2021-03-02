@@ -197,14 +197,6 @@ jobs:
             avd_abi: x86_64
             avd_tgt: default
 
-          - abi: i686
-            api: 24
-            ndk: 21.4.7075529
-            build_tools: 28.0.3
-            cmake: 3.10.2.4988404
-            avd_abi: x86
-            avd_tgt: default
-
     runs-on: macos-latest
 
     env:
