@@ -47,3 +47,5 @@ Contributors
 * Diego Coladas Mato <dcoladasmato@gmail.com>
 * Miguel Victoria <miguelvicvil@gmail.com>
 * Vimal Patel <pvimal816@gmail.com>
+* Steven Zhu <stevenzhu94@utexas.edu>
+* Jsomwaru <jacobsomwaru@gmail.com>

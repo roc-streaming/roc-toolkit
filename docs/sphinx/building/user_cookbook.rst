@@ -365,11 +365,29 @@ Android
 
 .. seealso::
 
-   * `Java bindings for Roc <https://github.com/roc-streaming/roc-java>`_
+   * `Roc Android app <https://github.com/roc-streaming/roc-droid>`_ (for end-users)
+   * `Roc Java bindings <https://github.com/roc-streaming/roc-java>`_ (for Java/Kotlin developers; shipped with precompiled C library)
    * :doc:`/portability/cross_compiling`
 
-Building library
-----------------
+Using Termux packages on Android
+--------------------------------
+
+.. warning::
+
+   Termux package for Roc may be outdated.
+
+Install `Termux <https://termux.com/>`_ on your Android device and enter these commands:
+
+.. code::
+
+    $ pkg install unstable-repo
+    $ pkg install roc
+    $ pkg install pulseaudio
+
+This will install binary packages for PulseAudio daemon and Roc PulseAudio modules on your device. Then you can configure PulseAudio to run Roc as described in :doc:`/running/pulseaudio_modules`.
+
+Building C library for Android on Linux
+---------------------------------------
 
 .. code::
 
@@ -413,19 +431,65 @@ Building library
             --host=i686-linux-android28 \
             --build-3rdparty=libuv,openfec,speexdsp
 
-Using Termux packages
----------------------
+Building C library for Android on macOS
+---------------------------------------
 
-.. warning::
+Prerequisites:
 
-   Termux package for Roc may be outdated.
+* Install `Android SDK command-line tools <https://github.com/codepath/android_guides/wiki/Installing-Android-SDK-Tools>`_, in particlar ``sdkmanager``.
 
-Install `Termux <https://termux.com/>`_ on your device and enter these commands:
+* Ensure that ``sdkmanager`` is in ``PATH`` and working.
+
+* Ensure that ``ANDROID_HOME`` is exported and points to the root directory of Android SDK.
+
+Then you can run the following commands:
 
 .. code::
 
-    $ pkg install unstable-repo
-    $ pkg install roc
-    $ pkg install pulseaudio
+    # install Android components (you can use higher versions)
+    $ sdkmanager 'platforms;android-24'
+    $ sdkmanager 'build-tools;28.0.3'
+    $ sdkmanager 'ndk;21.4.7075529'
+    $ sdkmanager 'cmake;3.10.2.4988404'
 
-This will install binary packages for PulseAudio daemon and Roc PulseAudio modules on your device. Then you can configure PulseAudio to run Roc as described in :doc:`/running/pulseaudio_modules`.
+    # install build tools
+    $ brew install scons ragel gengetopt
+
+    # add toolchains to PATH
+    $ export PATH="$ANDROID_HOME/ndk/21.4.7075529/toolchains/llvm/prebuilt/darwin-x86_64/bin:$PATH"
+
+    # clone repo
+    $ git clone https://github.com/roc-streaming/roc-toolkit.git
+    $ cd roc-toolkit
+
+    # build libroc.so for 64-bit ARM, API level 24
+    $ scons -Q \
+          --disable-soversion \
+          --disable-tools \
+          --build-3rdparty=libuv,openfec,speexdsp \
+          --compiler=clang \
+          --host=aarch64-linux-android24
+
+    # build libroc.so for 32-bit ARM, API level 24
+    $ scons -Q \
+          --disable-soversion \
+          --disable-tools \
+          --build-3rdparty=libuv,openfec,speexdsp \
+          --compiler=clang \
+          --host=armv7a-linux-androideabi24
+
+    # build libroc.so for 64-bit Intel, API level 24
+    $ scons -Q \
+          --disable-soversion \
+          --disable-tools \
+          --build-3rdparty=libuv,openfec,speexdsp \
+          --compiler=clang \
+          --host=x86_64-linux-android24
+
+    # build libroc.so for 32-bit Intel, API level 24
+    $ scons -Q \
+          --disable-soversion \
+          --disable-tools \
+          --build-3rdparty=libuv,openfec,speexdsp \
+          --compiler=clang \
+          --host=i686-linux-android24

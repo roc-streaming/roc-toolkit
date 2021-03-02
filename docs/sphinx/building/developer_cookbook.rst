@@ -182,15 +182,6 @@ Format code. Requires clang-format:
 
    $ scons -Q fmt
 
-Running linter
-==============
-
-Run linter. Requires clang-tidy. This takes time and may produce some false positives.
-
-.. code::
-
-   $ scons -Q tidy
-
 Building documentation
 ======================
 
