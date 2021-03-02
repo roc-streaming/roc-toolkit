@@ -128,9 +128,6 @@ Targets
 ``fmt``
     format source code (requires clang-format)
 
-``tidy``
-    run linter (requires clang-tidy)
-
 ``docs``
     build website (includes ``doxygen`` and ``sphinx`` targets)
 

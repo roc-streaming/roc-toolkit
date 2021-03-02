@@ -19,6 +19,7 @@ Runtime dependencies
 * `libuv <http://libuv.org>`_ >= 1.5.0, recommended >= 1.35.0
 * `libatomic_ops <https://github.com/ivmai/libatomic_ops/>`_ >= 7.6.0 (needed only on non-C11 compilers)
 * `libunwind <https://www.nongnu.org/libunwind/>`_ >= 1.2.1 (optional, install if you want backtraces on a panic or a crash)
+* `hedley <https://nemequ.github.io/hedley/>`_ >= 15 (single-header library, vendored in our repo)
 * `OpenFEC <http://openfec.org>`_ >= 1.4.2 (optional but recommended, install if you want to enable FEC support)
 * `SpeexDSP <https://github.com/xiph/speexdsp>`_ >= 1.2beta3 (optional but recommended, install if you want to employ fast Speex resampler)
 * `SoX <http://sox.sourceforge.net>`_ >= 14.4.0 (optional, install if you want SoX backend in tools)
@@ -41,8 +42,7 @@ Development dependencies
 
 * `CppUTest <http://cpputest.github.io>`_ >= 3.4 (optional, install if you want to build tests)
 * `Google Benchmark <https://github.com/google/benchmark>`_ >= 1.5.0 (optional, install if you want to build benchmarks)
-* `clang-format <https://clang.llvm.org/docs/ClangFormat.html>`_ 8 or 9 (optional, install if you want to format code)
-* `clang-tidy <http://clang.llvm.org/extra/clang-tidy/>`_ (optional, install if you want to run linter)
+* `clang-format <https://clang.llvm.org/docs/ClangFormat.html>`_ >= 10 (optional, install if you want to format code)
 * `doxygen <http://www.stack.nl/~dimitri/doxygen/>`_ >= 1.6, `graphviz <https://graphviz.gitlab.io/>`_ (optional, install if you want to build doxygen or sphinx documentation)
 * `sphinx <http://www.sphinx-doc.org/>`_, `breathe <https://github.com/michaeljones/breathe>`_ (optional, install if you want to build sphinx documentation)
 
