@@ -6,39 +6,49 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_core/target_gcc/roc_core/cpu_ops.h
+//! @file roc_core/target_posix/roc_core/cpu_instructions.h
 //! @brief CPU-specific instructions.
 
-#ifndef ROC_CORE_CPU_OPS_H_
-#define ROC_CORE_CPU_OPS_H_
+#ifndef ROC_CORE_CPU_INSTRUCTIONS_H_
+#define ROC_CORE_CPU_INSTRUCTIONS_H_
 
 namespace roc {
 namespace core {
 
+#ifdef __GNUC__
+
 #if defined(__i386__) || defined(__x86_64__)
 
-//! CPU pause instruction.
 inline void cpu_relax() {
     __asm__ __volatile__("pause" ::: "memory");
 }
 
 #elif defined(__aarch64__)
 
-//! CPU pause instruction.
 inline void cpu_relax() {
     __asm__ __volatile__("yield" ::: "memory");
 }
 
-#else
+#else // unknown arch
 
-//! CPU pause instruction.
 inline void cpu_relax() {
     __asm__ __volatile__("" ::: "memory");
 }
 
 #endif
 
+#else // !__GNUC__
+
+//! CPU pause instruction.
+//! @remarks
+//!  Doesn't include any memory barriers, so the caller is responsible to
+//!  insert them into the loop. Allowed to expand to nothing.
+inline void cpu_relax() {
+}
+
+#endif // __GNUC__
+
 } // namespace core
 } // namespace roc
 
-#endif // ROC_CORE_CPU_OPS_H_
+#endif // ROC_CORE_CPU_INSTRUCTIONS_H_

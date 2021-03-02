@@ -46,16 +46,14 @@ public:
 //! Placement new for core::IAllocator.
 //! @note
 //!  nothrow forces compiler to check for NULL return value before calling ctor.
-inline void* operator new(size_t size,
-                          roc::core::IAllocator& allocator) ROC_ATTR_NOTHROW {
+inline void* operator new(size_t size, roc::core::IAllocator& allocator) throw() {
     return allocator.allocate(size);
 }
 
 //! Placement new[] for core::IAllocator.
 //! @note
 //!  nothrow forces compiler to check for NULL return value before calling ctor.
-inline void* operator new[](size_t size,
-                            roc::core::IAllocator& allocator) ROC_ATTR_NOTHROW {
+inline void* operator new[](size_t size, roc::core::IAllocator& allocator) throw() {
     return allocator.allocate(size);
 }
 
@@ -63,7 +61,7 @@ inline void* operator new[](size_t size,
 //! @note
 //!  Compiler calls this if ctor throws in a placement new expression.
 template <class T>
-inline void operator delete(void* ptr, roc::core::IAllocator& allocator)ROC_ATTR_NOTHROW {
+inline void operator delete(void* ptr, roc::core::IAllocator& allocator) throw() {
     allocator.deallocate(ptr);
 }
 
@@ -71,8 +69,7 @@ inline void operator delete(void* ptr, roc::core::IAllocator& allocator)ROC_ATTR
 //! @note
 //!  Compiler calls this if ctor throws in a placement new[] expression.
 template <class T>
-inline void operator delete[](void* ptr,
-                              roc::core::IAllocator& allocator) ROC_ATTR_NOTHROW {
+inline void operator delete[](void* ptr, roc::core::IAllocator& allocator) throw() {
     allocator.deallocate(ptr);
 }
 

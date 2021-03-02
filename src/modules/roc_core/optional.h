@@ -97,15 +97,14 @@ private:
 //! @note
 //!  nothrow forces compiler to check for NULL return value before calling ctor.
 template <class T>
-inline void* operator new(size_t, roc::core::Optional<T>& opt) ROC_ATTR_NOTHROW {
+inline void* operator new(size_t, roc::core::Optional<T>& opt) throw() {
     return opt.storage();
 }
 
 //! Placement delete for core::Optional.
 //! @note
 //!  Compiler calls this if ctor throws in a placement new expression.
-template <class T>
-inline void operator delete(void*, roc::core::Optional<T>&)ROC_ATTR_NOTHROW {
+template <class T> inline void operator delete(void*, roc::core::Optional<T>&) throw() {
 }
 
 #endif // ROC_CORE_OPTIONAL_H_

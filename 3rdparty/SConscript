@@ -27,29 +27,32 @@ thirdparty_build_dir = env['ROC_THIRDPARTY_BUILDDIR']
 # check if local platform differs from target platform
 is_crosscompiling = (meta.build != meta.host)
 
-# all possible dependencies on this platform
-all_dependencies = set([t.replace('target_', '') for t in env['ROC_TARGETS']])
+# source code of these dependencies is included directly in our repo
+vendored_dependencies = ['hedley']
+
+# all dependencies that should be either installed system-wide or downloaded by us
+external_dependencies = set([t.replace('target_', '') for t in env['ROC_TARGETS']])
 
 # on macos libunwind is provided by the OS
 if meta.platform in ['darwin']:
-    all_dependencies.discard('libunwind')
+    external_dependencies.discard('libunwind')
 
-all_dependencies.add('ragel')
+external_dependencies.add('ragel')
 
 if not GetOption('disable_tools'):
-    all_dependencies.add('gengetopt')
+    external_dependencies.add('gengetopt')
 
 if GetOption('enable_pulseaudio_modules'):
-    all_dependencies.add('pulseaudio')
+    external_dependencies.add('pulseaudio')
 
-if 'pulseaudio' in all_dependencies and meta.platform in ['linux']:
-    all_dependencies.add('alsa')
+if 'pulseaudio' in external_dependencies and meta.platform in ['linux']:
+    external_dependencies.add('alsa')
 
 if GetOption('enable_tests'):
-    all_dependencies.add('cpputest')
+    external_dependencies.add('cpputest')
 
 if GetOption('enable_benchmarks'):
-    all_dependencies.add('google-benchmark')
+    external_dependencies.add('google-benchmark')
 
 # dependencies that we should download and build manually
 download_dependencies = set()
@@ -67,10 +70,13 @@ for name, version in env.ParseThirdParties(GetOption('build_3rdparty')):
         explicit_version.add(name)
 
 if 'all' in download_dependencies:
-    download_dependencies = all_dependencies
+    download_dependencies = external_dependencies
 
 # dependencies that should be pre-installed on system
-system_dependencies = all_dependencies - download_dependencies
+system_dependencies = external_dependencies - download_dependencies
+
+if 'hedley' in vendored_dependencies:
+    env.Append(CPPPATH=['#3rdparty/vendor/hedley'])
 
 if 'libuv' in system_dependencies:
     conf = Configure(env, custom_tests=env.CustomTests)

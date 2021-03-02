@@ -7,7 +7,7 @@
  */
 
 #include "roc_ctl/task_queue.h"
-#include "roc_core/cpu_ops.h"
+#include "roc_core/cpu_instructions.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 
