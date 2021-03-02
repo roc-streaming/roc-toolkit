@@ -200,7 +200,7 @@ def SymlinkLibrary(env, src):
         ret += [dst]
 
         env.Command(dst, src, env.Action(
-            symlink, env.PrettyCommand('LN', dst.path, 'yellow', 'ln(%s)' % dst.path)))
+            symlink, env.PrettyCommand('SYMLINK', dst.path, 'yellow', 'ln(%s)' % dst.path)))
 
     return ret
 

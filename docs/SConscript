@@ -22,13 +22,13 @@ if GetOption('enable_doxygen'):
     doxygen_targets = [
         doc_env.Doxygen(
             html_dir='#docs/html/doxygen',
-            build_dir='docs/modules',
+            build_dir='#build/docs/modules',
             config='#src/modules/Doxyfile',
             sources=(doc_env.GlobRecursive('#src/modules', ['*.h', '*.dox']) +
                 doc_env.GlobRecursive('#docs/images', ['*'])),
             werror=GetOption('enable_werror')),
         doc_env.Doxygen(
-            build_dir='docs/library',
+            build_dir='#build/docs/library',
             config='#src/library/Doxyfile',
             sources=doc_env.GlobRecursive('#src/library/include', ['*.h', '*.dox']),
             werror=GetOption('enable_werror')),
@@ -52,7 +52,7 @@ if GetOption('enable_sphinx'):
 
     sphinx_targets = [
         doc_env.Sphinx(
-            build_dir='docs/sphinx-html',
+            build_dir='#build/docs/sphinx.html',
             output_type='html',
             output_dir='#docs/html/docs',
             source_dir='#docs/sphinx',
@@ -62,7 +62,7 @@ if GetOption('enable_sphinx'):
                 doxygen_targets),
             werror=GetOption('enable_werror')),
         doc_env.Sphinx(
-            build_dir='docs/sphinx-man',
+            build_dir='#build/docs/sphinx.man',
             output_type='man',
             output_dir='#docs/man',
             source_dir='#docs/sphinx',
