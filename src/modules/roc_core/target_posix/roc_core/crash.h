@@ -21,7 +21,7 @@ namespace roc {
 namespace core {
 
 //! Report a crash and abort application.
-void crash(const char* message) ROC_ATTR_NORETURN;
+ROC_ATTR_NORETURN void crash(const char* message);
 
 //! Crash handler.
 class CrashHandler : public core::NonCopyable<> {

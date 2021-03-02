@@ -71,8 +71,8 @@ public:
     }
 
     //! Print message to log.
-    void print(const char* module, LogLevel level, const char* format, ...)
-        ROC_ATTR_PRINTF(4, 5);
+    ROC_ATTR_PRINTF(4, 5)
+    void print(const char* module, LogLevel level, const char* format, ...);
 
     //! Get current maximum log level.
     LogLevel get_level() const {

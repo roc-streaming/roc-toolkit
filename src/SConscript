@@ -16,6 +16,9 @@ for targetdir in env.GlobRecursive('modules', 'target_*'):
     if targetdir.name in env['ROC_TARGETS']:
         env.Append(CPPPATH=['#src/%s' % targetdir])
 
+for t in env['ROC_TARGETS']:
+    env.Append(CPPDEFINES=['ROC_' + t.upper()])
+
 for module in env['ROC_MODULES']:
     moduledir = 'modules/' + module
 
@@ -201,10 +204,10 @@ if not GetOption('disable_tools'):
         objects = []
         for ggo in env.GlobFiles('%s/*.ggo' % tooldir):
             if env['ROC_COMMIT']:
-                objects += genv.GenGetOpt(
-                    ggo, '%s (%s)' % (env['ROC_VERSION'], env['ROC_COMMIT']))
+                verstr = '%s (%s)' % (env['ROC_VERSION'], env['ROC_COMMIT'])
             else:
-                objects += genv.GenGetOpt(ggo, env['ROC_VERSION'])
+                verstr = env['ROC_VERSION']
+            objects += genv.GenGetOpt(ggo, verstr)
 
         exename = tooldir.name.replace('roc_', 'roc-')
         target = env.Install(env['ROC_BINDIR'],

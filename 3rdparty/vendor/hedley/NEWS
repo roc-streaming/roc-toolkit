@@ -1,0 +1,154 @@
+Version 15
+==========
+
+* Support for MCST LCC compiler.
+* New HEDLEY_DIAGNOSTIC_DISABLE_UNUSED_FUNCTION macro.
+* Assorted bug fixes and enhancements.
+
+Version 14
+==========
+
+* Support for icl compiler
+* Assorted bug fixes and enhancements
+
+Version 13
+==========
+
+* New macros:
+  * HEDLEY_CONCAT3
+* Assorted bug fixes and enhancements
+
+Version 12
+==========
+
+* New macros:
+  * HEDLEY_WARN_UNUSED_RESULT_MSG
+  * TI compilers:
+    * HEDLEY_TI_CL2000_VERSION and HEDLEY_TI_CL2000_VERSION_CHECK
+    * HEDLEY_TI_CL430_VERSION and HEDLEY_TI_CL430_VERSION_CHECK
+    * HEDLEY_TI_ARMCL_VERSION and HEDLEY_TI_ARMCL_VERSION_CHECK
+    * HEDLEY_TI_CL6X_VERSION and HEDLEY_TI_CL6X_VERSION_CHECK
+    * HEDLEY_TI_CL7X_VERSION and HEDLEY_TI_CL7X_VERSION_CHECK
+    * HEDLEY_TI_CLPRU_VERSION and HEDLEY_TI_CLPRU_VERSION_CHECK
+  * HEDLEY_TI_VERSION is now only set for MCU compilers after their
+    versions were harmonized.
+* Assorted bug fixes and enhancements
+
+Version 11
+==========
+
+* New macros:
+  * HEDLEY_HAS_CPP_ATTRIBUTE_NS
+  * HEDLEY_DIAGNOSTIC_DISABLE_UNKNOWN_CPP_ATTRIBUTE
+  * HEDLEY_NO_ESCAPE
+  * HEDLEY_NULL
+* Assorted bug fixes and enhancements
+
+Version 10
+==========
+
+* New macros:
+  * HEDLEY_EMPTY_BASES
+* Assorted bug fixes and enhancements
+
+Version 9
+=========
+
+* New macros:
+  * HEDLEY_PREDICT
+  * HEDLEY_PREDICT_TRUE
+  * HEDLEY_PREDICT_FALSE
+  * HEDLEY_UNPREDICTABLE
+  * HEDLEY_CONSTEXPR
+  * HEDLEY_ASSUME
+  * HEDLEY_FLAGS_CAST
+* Most tests now use HEDLEY_GCC_* instead of HEDLEY_GNUC_*
+* Intel C/C++ Compiler implementations now go down to version 13
+  instead of version 16.
+* New compiler support:
+  * CompCert
+  * Pelles C
+* Add SPDX identifier
+* Assorted bug fixes and enhancements
+
+Version 8
+=========
+
+* New macros:
+  * HEDLEY_REQUIRE
+  * HEDLEY_REQUIRE_MSG
+  * HEDLEY_CPP_CAST
+* Added PGI 18.4 support for HEDLEY_WARNING
+
+Version 7
+=========
+
+* New macros:
+  * HEDLEY_IS_CONSTANT
+  * HEDLEY_REQUIRE_CONSTEXPR
+* Assorted bug fixes and enhancements
+
+Version 6
+=========
+
+* New macros:
+  * HEDLEY_UNREACHABLE_RETURN
+* New compiler support:
+  * Tiny C Compiler
+  * Digital Mars C/C++ Compiler
+
+Version 5
+=========
+
+* New macros:
+  * HEDLEY_CONST_CAST
+  * HEDLEY_REINTERPRET_CAST
+  * HEDLEY_STATIC_CAST
+  * HEDLEY_DIAGNOSTIC_DISABLE_CAST_QUAL
+* New compiler support:
+  * IAR C/C++ Compiler
+* Add Makefiles for tests
+* Improved portability of test cases
+* Assorted bug fixes and enhancements
+
+Version 4
+=========
+
+* New macros
+  * HEDLEY_*_VERSION
+  * HEDLEY_STRINGIFY
+  * HEDLEY_CONCAT
+  * HEDLEY_GNUC_*
+  * HEDLEY_HAS_*
+  * HEDLEY_WARNING
+  * HEDLEY_MESSAGE
+  * HEDLEY_DIAGNOSTIC_DISABLE_UNKNOWN_PRAGMAS
+* Added test/ directory
+* Expanded coverage and increased accuracy for many existing macros
+
+Version 2
+=========
+
+* New compiler support
+  * PGI
+  * Oracle Developer Studio
+  * Emscripten
+  * ARM
+  * IBM XL
+* Improved C++ implementations
+* New macros
+  * HEDLEY_FALL_THROUGH
+  * HEDLEY_RETURNS_NON_NULL
+  * HEDLEY_PRAGMA
+  * HEDLEY_PGI_VERSION_CHECK
+  * HEDLEY_SUNPRO_VERSION_CHECK
+  * HEDLEY_EMSCRIPTEN_VERSION_CHECK
+  * HEDLEY_ARM_VERSION_CHECK
+  * HEDLEY_IBM_VERSION_CHECK
+* Improved implementations for many existing macros.
+* Assorted bug fixes and work-arounds for broken compilers.
+
+Version 1
+=========
+
+* Initial release.

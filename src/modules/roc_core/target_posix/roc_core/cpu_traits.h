@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_core/cpu_traits.h
+//! @file roc_core/target_posix/roc_core/cpu_traits.h
 //! @brief CPU traits.
 
 #ifndef ROC_CORE_CPU_TRAITS_H_

@@ -13,7 +13,7 @@
 #define ROC_CORE_SEQLOCK_H_
 
 #include "roc_core/atomic_ops.h"
-#include "roc_core/cpu_ops.h"
+#include "roc_core/cpu_instructions.h"
 #include "roc_core/cpu_traits.h"
 #include "roc_core/noncopyable.h"
 

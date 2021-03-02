@@ -15,7 +15,7 @@
 #include <uv.h>
 
 #include "roc_core/atomic.h"
-#include "roc_core/cpu_ops.h"
+#include "roc_core/cpu_instructions.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/panic.h"
 #include "roc_core/scoped_lock.h"

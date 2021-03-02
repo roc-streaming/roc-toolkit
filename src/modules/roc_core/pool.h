@@ -190,7 +190,7 @@ private:
 //! @note
 //!  nothrow forces compiler to check for NULL return value before calling ctor.
 template <class T>
-inline void* operator new(size_t size, roc::core::Pool<T>& pool) ROC_ATTR_NOTHROW {
+inline void* operator new(size_t size, roc::core::Pool<T>& pool) throw() {
     roc_panic_if(size != sizeof(T));
     return pool.allocate();
 }
@@ -199,7 +199,7 @@ inline void* operator new(size_t size, roc::core::Pool<T>& pool) ROC_ATTR_NOTHRO
 //! @note
 //!  Compiler calls this if ctor throws in a placement new expression.
 template <class T>
-inline void operator delete(void* ptr, roc::core::Pool<T>& pool)ROC_ATTR_NOTHROW {
+inline void operator delete(void* ptr, roc::core::Pool<T>& pool) throw() {
     pool.deallocate(ptr);
 }
 

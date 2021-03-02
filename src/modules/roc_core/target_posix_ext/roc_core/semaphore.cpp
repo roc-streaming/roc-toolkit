@@ -9,7 +9,7 @@
 #include <errno.h>
 #include <time.h>
 
-#include "roc_core/cpu_ops.h"
+#include "roc_core/cpu_instructions.h"
 #include "roc_core/errno_to_str.h"
 #include "roc_core/panic.h"
 #include "roc_core/semaphore.h"

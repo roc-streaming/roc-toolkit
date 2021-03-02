@@ -610,11 +610,6 @@ if GetOption('override_targets'):
     for t in GetOption('override_targets').split(','):
         env['ROC_TARGETS'] += ['target_%s' % t]
 else:
-    if meta.compiler in ['gcc', 'clang']:
-        env.Append(ROC_TARGETS=[
-            'target_gcc',
-        ])
-
     has_c11 = False
     if not GetOption('disable_c11'):
         if meta.compiler == 'gcc':
@@ -738,14 +733,11 @@ if GetOption('enable_pulseaudio_modules'):
 
 env = conf.Finish()
 
+env.Append(LIBPATH=['%s' % env['ROC_BUILDDIR']])
+env.Append(CPPPATH=['%s/tools' % env['ROC_BUILDDIR']])
+
 if 'target_posix' in env['ROC_TARGETS'] and meta.platform not in ['darwin']:
     env.Append(CPPDEFINES=[('_POSIX_C_SOURCE', '200809')])
-
-for t in env['ROC_TARGETS']:
-    env.Append(CPPDEFINES=['ROC_' + t.upper()])
-
-env.Append(CPPPATH=['%s/tools' % env['ROC_BUILDDIR']])
-env.Append(LIBPATH=['%s' % env['ROC_BUILDDIR']])
 
 if meta.platform in ['linux', 'unix']:
     env.AddPkgConfigLibs(['rt', 'dl', 'm'])

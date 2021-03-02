@@ -49,7 +49,7 @@ enum PayloadType {
 //!   |                             ....                              |
 //!   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //! @endcode
-class ROC_ATTR_PACKED Header {
+ROC_ATTR_PACKED_BEGIN class Header {
 private:
     enum {
         //! @name RTP protocol version.
@@ -215,7 +215,7 @@ public:
         roc_panic_if(index >= num_csrc());
         return core::ntoh32(ssrc_[index + 1]);
     }
-};
+} ROC_ATTR_PACKED_END;
 
 //! RTP extension header.
 //! @remarks
@@ -232,7 +232,7 @@ public:
 //!   |                             ....                              |
 //!   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //! @endcode
-class ROC_ATTR_PACKED ExtentionHeader {
+ROC_ATTR_PACKED_BEGIN class ExtentionHeader {
 private:
     //! Extenson type.
     uint16_t type_;
@@ -250,7 +250,7 @@ public:
     uint32_t data_size() const {
         return (uint32_t(core::ntoh16(len_)) << 2);
     }
-};
+} ROC_ATTR_PACKED_END;
 
 } // namespace rtp
 } // namespace roc
