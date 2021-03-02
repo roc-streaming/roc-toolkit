@@ -12,7 +12,7 @@
 
 #include "roc_core/colors.h"
 
-//! ANSI Color Codes.
+// ANSI Color Codes.
 #define COLOR_NONE ""
 #define COLOR_START "\033["
 #define COLOR_END "m"
@@ -30,17 +30,17 @@ namespace {
 char const* colors_to_levels(LogLevel level) {
     char const* color = COLOR_NONE;
     switch (level) {
-    case LogNone: //!< No color for Loglevel None.
+    case LogNone: // No color for Loglevel None.
         break;
-    case LogError: //!< Bold Red for Loglevel Error.
+    case LogError: // Bold Red for Loglevel Error.
         color = COLOR_START COLOR_BOLD COLOR_SEPARATOR COLOR_RED COLOR_END;
         break;
-    case LogInfo: //!< Bold Blue for Loglevel Info.
+    case LogInfo: // Bold Blue for Loglevel Info.
         color = COLOR_START COLOR_BOLD COLOR_SEPARATOR COLOR_BLUE COLOR_END;
         break;
-    case LogDebug: //!< No color for Loglevel Debug.
+    case LogDebug: // No color for Loglevel Debug.
         break;
-    case LogTrace: //!< No color for Loglevel Trace.
+    case LogTrace: // No color for Loglevel Trace.
         break;
     }
     return color;
