@@ -63,11 +63,6 @@ log_lines=800
 
 tests=( $(find bin/$host$CI_API -name 'roc-test-*') )
 
-# https://github.com/roc-streaming/roc-toolkit/issues/424
-if [ "$CI_ABI" = i686 ]; then
-    tests=( $(find bin/$host$CI_API -name 'roc-test-*' -not -name 'roc-test-library') )
-fi
-
 for t in "${tests[@]}"; do
     filename=$(basename "${t}")
 
