@@ -445,5 +445,16 @@ if 'google-benchmark' in download_dependencies:
     subenvs.tests.ThirdParty(thirdparty_build_dir, meta.toolchain,
                         meta.thirdparty_variant, thirdparty_versions, 'google-benchmark')
 
+conf = Configure(env, custom_tests=env.CustomTests)
+
+if GetOption('enable_pulseaudio_modules'):
+    if GetOption('pulseaudio_module_dir'):
+        conf.env['ROC_PULSE_MODULEDIR'] = GetOption('pulseaudio_module_dir')
+    else:
+        conf.FindPulseDir(
+            GetOption('prefix'), meta.build, meta.host, env['ROC_PULSE_VERSION'])
+
+env = conf.Finish()
+
 return_value = (env, subenvs)
 Return('return_value')

@@ -95,6 +95,28 @@ int main() {
         context.Result('no')
         return False
 
+def CheckCompilerOptionSupported(context, opt, language):
+    context.Message("Checking whether %s compiler supports %s... " % (language.upper(), opt))
+
+    ext = '.%s' % language.lower()
+    src = "int main() { return 0; }"
+
+    orig_env = context.env
+
+    context.env = orig_env.Clone()
+    context.env.Append(**{language.upper()+'FLAGS': [opt]})
+
+    err = context.CompileProg(src, ext)
+
+    context.env = orig_env
+
+    if not err:
+        context.Result('yes')
+        return True
+    else:
+        context.Result('no')
+        return False
+
 def FindTool(context, var, toolchain, version, commands, prepend_path=[]):
     env = context.env
 
@@ -457,6 +479,7 @@ def init(env):
         'CheckLibWithHeaderExt': CheckLibWithHeaderExt,
         'CheckProg': CheckProg,
         'CheckCanRunProgs': CheckCanRunProgs,
+        'CheckCompilerOptionSupported': CheckCompilerOptionSupported,
         'FindTool': FindTool,
         'FindClangFormat': FindClangFormat,
         'FindLLVMDir': FindLLVMDir,

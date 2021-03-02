@@ -25,8 +25,6 @@ supported_sanitizers = [
     'address',
 ]
 
-SCons.SConf.dryrun = 0 # configure even in dry run mode
-
 if platform.system() == 'Linux':
     # it would be better to use /usr/local on Linux too, but PulseAudio
     # is usually installed in /usr and does no search /usr/local for
@@ -262,6 +260,9 @@ AddOption('--override-targets',
                 "pass a comma-separated list of target names, "+
                 "e.g. 'glibc,stdio,posix,libuv,openfec,...'"))
 
+# configure even in dry run mode
+SCons.SConf.dryrun = 0
+
 # when we cross-compile on macOS to Android using clang, we should use
 # GNU-like clang options, but SCons incorrectly sets up Apple-like
 # clang options; here we prevent this behavior by forcing 'posix' platform
@@ -381,7 +382,7 @@ if 'fmt' in COMMAND_LINE_TARGETS:
 # build documentation
 doc_env = env.Clone()
 doc_env.SConscript('docs/SConscript',
-                       variant_dir='#build', duplicate=0, exports='doc_env')
+                       duplicate=0, exports='doc_env')
 
 non_build_targets = ['fmt', 'docs', 'shpinx', 'doxygen']
 if set(COMMAND_LINE_TARGETS) \
@@ -390,8 +391,8 @@ if set(COMMAND_LINE_TARGETS) \
 
 # meta-information about the build, used to generate env parameters
 meta = type('meta', (), {
-    field: '' for field in
-        'build host toolchain platform variant thirdparty_variant compiler compiler_ver'.split()})
+    field: '' for field in ('build host toolchain platform variant thirdparty_variant '+
+                            'compiler compiler_ver fpic_supporte').split()})
 
 # toolchain triple of the local system (where we're building), e.g. x86_64-pc-linux-gnu
 meta.build = GetOption('build')
@@ -455,8 +456,9 @@ if not meta.compiler_ver:
         meta.compiler_ver = env.ParseCompilerVersion(meta.compiler)
 
 if not meta.compiler_ver:
-    env.Die("can't detect compiler version for compiler '%s'",
-            '-'.join([s for s in [meta.toolchain, meta.compiler] if s]))
+    if meta.compiler not in ['cc']:
+        env.Die("can't detect compiler version for compiler '%s'",
+                '-'.join([s for s in [meta.toolchain, meta.compiler] if s]))
 
 conf = Configure(env, custom_tests=env.CustomTests)
 
@@ -557,7 +559,21 @@ elif meta.compiler == 'cc':
 conf.env['LINK'] = env['CXXLD']
 conf.env['SHLINK'] = env['CXXLD']
 
+if meta.compiler in ['gcc', 'clang']:
+    meta.fpic_supported = True
+else:
+    meta.fpic_supported = conf.CheckCompilerOptionSupported('-fPIC', 'cxx')
+
+conf.env['ROC_SYSTEM_BINDIR'] = GetOption('bindir')
+conf.env['ROC_SYSTEM_INCDIR'] = GetOption('incdir')
+
+if GetOption('libdir'):
+    conf.env['ROC_SYSTEM_LIBDIR'] = GetOption('libdir')
+else:
+    conf.FindLibDir(GetOption('prefix'), meta.host)
+
 conf.FindPkgConfig(meta.toolchain)
+conf.FindPkgConfigPath()
 
 env = conf.Finish()
 
@@ -568,7 +584,7 @@ env['ROC_BUILDDIR'] = '#build/src/%s/%s' % (
     '-'.join(
         [s for s in [
             meta.compiler,
-            '.'.join(map(str, meta.compiler_ver)),
+            '.'.join(map(str, meta.compiler_ver)) if meta.compiler_ver else '',
             meta.variant
         ] if s])
     )
@@ -578,7 +594,7 @@ env['ROC_THIRDPARTY_BUILDDIR'] = '#build/3rdparty/%s/%s' % (
     '-'.join(
         [s for s in [
             meta.compiler,
-            '.'.join(map(str, meta.compiler_ver)),
+            '.'.join(map(str, meta.compiler_ver)) if meta.compiler_ver else '',
             meta.thirdparty_variant
         ] if s])
     )
@@ -712,27 +728,6 @@ subenvs = type('subenvs', (), {
 env, subenvs = env.SConscript('3rdparty/SConscript',
                        duplicate=0, exports='env subenvs meta')
 
-conf = Configure(env, custom_tests=env.CustomTests)
-
-conf.env['ROC_SYSTEM_BINDIR'] = GetOption('bindir')
-conf.env['ROC_SYSTEM_INCDIR'] = GetOption('incdir')
-
-if GetOption('libdir'):
-    conf.env['ROC_SYSTEM_LIBDIR'] = GetOption('libdir')
-else:
-    conf.FindLibDir(GetOption('prefix'), meta.host)
-
-conf.FindPkgConfigPath()
-
-if GetOption('enable_pulseaudio_modules'):
-    if GetOption('pulseaudio_module_dir'):
-        conf.env['ROC_PULSE_MODULEDIR'] = GetOption('pulseaudio_module_dir')
-    else:
-        conf.FindPulseDir(
-            GetOption('prefix'), meta.build, meta.host, env['ROC_PULSE_VERSION'])
-
-env = conf.Finish()
-
 env.Append(LIBPATH=['%s' % env['ROC_BUILDDIR']])
 env.Append(CPPPATH=['%s/tools' % env['ROC_BUILDDIR']])
 
@@ -831,6 +826,12 @@ if meta.compiler in ['cc']:
         for var in ['CXXFLAGS', 'CFLAGS']:
             env.Append(**{var: [
                 '-O3',
+            ]})
+
+    if meta.fpic_supported:
+        for var in ['CXXFLAGS', 'CFLAGS']:
+            conf.env.Append(**{var: [
+                '-fPIC',
             ]})
 
 if meta.compiler in ['gcc', 'clang']:
