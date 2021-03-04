@@ -31,9 +31,9 @@ thirdparty_versions = {
     'sox':        '14.4.2',
     'alsa':       '1.0.29',
     'pulseaudio': '5.0',
-    'json':       '0.11-20130402',
+    'json-c':     '0.12-20140410',
     'ltdl':       '2.4.6',
-    'sndfile':    '1.0.20',
+    'sndfile':    '1.0.28',
     'ragel':      '6.10',
     'gengetopt':  '2.22.6',
     'cpputest':   '3.6',
@@ -935,7 +935,7 @@ if 'pulseaudio' in download_dependencies:
 
     pa_deps = [
         'ltdl',
-        'json',
+        'json-c',
         'sndfile',
         ]
 
@@ -947,7 +947,7 @@ if 'pulseaudio' in download_dependencies:
     tool_env.ThirdParty(host, thirdparty_compiler_spec, toolchain,
                         thirdparty_variant, thirdparty_versions, 'ltdl')
     tool_env.ThirdParty(host, thirdparty_compiler_spec, toolchain,
-                        thirdparty_variant, thirdparty_versions, 'json')
+                        thirdparty_variant, thirdparty_versions, 'json-c')
     tool_env.ThirdParty(host, thirdparty_compiler_spec, toolchain,
                         thirdparty_variant, thirdparty_versions, 'sndfile')
     tool_env.ThirdParty(host, thirdparty_compiler_spec, toolchain,
