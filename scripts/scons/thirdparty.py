@@ -74,7 +74,7 @@ def ThirdParty(
                 except:
                     pass
 
-            env.Die(message)
+            env.Die('%s', message)
 
         os.chdir(save_cwd)
 
