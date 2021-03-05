@@ -106,9 +106,6 @@ jobs:
           - script: linux-checks/optional-features
             image: rocstreaming/env-ubuntu-minimal
 
-          - script: linux-checks/check-formatting
-            image: rocstreaming/env-ubuntu
-
           - script: linux-checks/sanitizers-clang
             image: rocstreaming/env-ubuntu
 
