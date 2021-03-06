@@ -1,10 +1,10 @@
 # build results
 /bin
 /build
-docs/html
+/docs/html
 
 # scons
-.sconsign.dblite
+.sconsign*.dblite
 .sconf_temp
 config.log
 build.log

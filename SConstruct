@@ -1,8 +1,9 @@
-import re
+import SCons
 import os
 import os.path
 import platform
-import SCons
+import re
+import sys
 
 # supported platform names
 supported_platforms = [
@@ -286,7 +287,11 @@ env.SetOption('implicit_cache', 1)
 
 # provide absolute path to force single sconsign file
 # per-directory sconsign files seems to be buggy with generated sources
-env.SConsignFile(os.path.join(env.Dir('#').abspath, '.sconsign.dblite'))
+# create separate sconsign file for each python version, since different
+# python versions can use different pickle protocols and switching from
+# a higher version to a lower one would cause exception
+env.SConsignFile(os.path.join(
+    env.Dir('#').abspath, '.sconsign%s%s.dblite' % sys.version_info[0:2]))
 
 # we always use -fPIC, so object files built for static and shared
 # libraries are no different
@@ -331,8 +336,10 @@ cleanfiles = [
     env.DeleteFile('#compile_commands.json'),
     env.DeleteFile('#config.log'),
     env.DeleteDir('#.sconf_temp'),
-    env.DeleteFile('#.sconsign.dblite'),
 ]
+
+for f in env.Glob('.sconsign*.dblite'):
+    cleanfiles += [env.DeleteFile(f)]
 
 cleanbuild = [
     env.DeleteDir('#bin'),
