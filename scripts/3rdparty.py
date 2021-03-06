@@ -631,10 +631,10 @@ elif name == 'ltdl':
 elif name == 'json-c':
     download(
       'https://github.com/json-c/json-c/archive/json-c-%s.tar.gz' % ver,
-        'json-%s.tar.gz' % ver,
+        'json-c-%s.tar.gz' % ver,
         logfile,
         vendordir)
-    extract('json-%s.tar.gz' % ver,
+    extract('json-c-%s.tar.gz' % ver,
             'json-c-json-c-%s' % ver)
     os.chdir('src/json-c-json-c-%s' % ver)
     execute('%s --host=%s %s %s %s' % (
@@ -724,6 +724,7 @@ elif name == 'pulseaudio':
             '--disable-orc',
             '--disable-webrtc-aec',
             '--disable-openssl',
+            '--disable-neon-opt',
             '--without-caps',
         ])), logfile)
     execute_make(logfile)
