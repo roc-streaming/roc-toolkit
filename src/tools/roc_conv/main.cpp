@@ -216,8 +216,7 @@ int main(int argc, char** argv) {
 
     sndio::Pump pump(pool, *input_source, NULL, converter,
                      converter_config.internal_frame_length,
-                     converter_config.input_sample_spec.sample_rate(), 
-                     converter_config.input_sample_spec.channel_mask(),
+                     converter_config.input_sample_spec,
                      sndio::Pump::ModePermanent);
     if (!pump.valid()) {
         roc_log(LogError, "can't create audio pump");

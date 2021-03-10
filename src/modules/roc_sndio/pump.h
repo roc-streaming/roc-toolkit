@@ -13,6 +13,7 @@
 #define ROC_SNDIO_PUMP_H_
 
 #include "roc_audio/units.h"
+#include "roc_audio/sample_spec.h"
 #include "roc_core/atomic.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/noncopyable.h"
@@ -45,8 +46,7 @@ public:
          ISource* backup_source,
          ISink& sink,
          core::nanoseconds_t frame_length,
-         size_t sample_rate,
-         packet::channel_mask_t ch_mask,
+         const audio::SampleSpec& sample_spec,
          Mode mode);
 
     //! Check if the object was successfulyl constructed.

@@ -410,8 +410,7 @@ int main(int argc, char** argv) {
     sndio::Pump pump(
         context.sample_buffer_pool(), receiver.source(), backup_pipeline.get(),
         *output_sink, receiver_config.common.internal_frame_length,
-        receiver_config.common.output_sample_spec.sample_rate(), 
-        receiver_config.common.output_sample_spec.channel_mask(),
+        receiver_config.common.output_sample_spec,
         args.oneshot_flag ? sndio::Pump::ModeOneshot : sndio::Pump::ModePermanent);
     if (!pump.valid()) {
         roc_log(LogError, "can't create pump");
