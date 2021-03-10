@@ -22,7 +22,7 @@ SampleSpec::SampleSpec(size_t sample_rate,
     set_channel_mask(channel_mask);
 }
 
-size_t SampleSpec::get_sample_rate() const {
+size_t SampleSpec::sample_rate() const {
     return sample_rate_;
 }
 
@@ -30,7 +30,7 @@ void SampleSpec::set_sample_rate(size_t sample_rate) {
     sample_rate_ = sample_rate;
 }
 
-channel_mask_t SampleSpec::get_channel_mask() const {
+channel_mask_t SampleSpec::channel_mask() const {
     return channel_mask_;
 }
 

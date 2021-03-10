@@ -45,8 +45,8 @@ LatencyMonitor::LatencyMonitor(const packet::SortedQueue& queue,
     , valid_(false) {
     roc_log(LogDebug,
             "latency monitor: initializing: target_latency=%lu in_rate=%lu out_rate=%lu",
-            (unsigned long)target_latency_, (unsigned long)input_sample_spec_.get_sample_rate(),
-            (unsigned long)output_sample_spec_.get_sample_rate());
+            (unsigned long)target_latency_, (unsigned long)input_sample_spec_.sample_rate(),
+            (unsigned long)output_sample_spec_.sample_rate());
 
     if (config.fe_update_interval <= 0) {
         roc_log(LogError, "latency monitor: invalid config: fe_update_interval=%ld",
@@ -64,16 +64,16 @@ LatencyMonitor::LatencyMonitor(const packet::SortedQueue& queue,
     }
 
     if (resampler_) {
-        if (!init_resampler_(input_sample_spec.get_sample_rate(), output_sample_spec.get_sample_rate())) {
+        if (!init_resampler_(input_sample_spec.sample_rate(), output_sample_spec.sample_rate())) {
             return;
         }
     } else {
-        if (input_sample_spec.get_sample_rate() != output_sample_spec.get_sample_rate()) {
+        if (input_sample_spec.sample_rate() != output_sample_spec.sample_rate()) {
             roc_log(LogError,
                     "latency monitor: input and output sample rates must be equal"
                     " when resampling is disabled: in_rate=%lu, out_rate=%lu",
-                    (unsigned long)input_sample_spec.get_sample_rate(), 
-                    (unsigned long)output_sample_spec.get_sample_rate());
+                    (unsigned long)input_sample_spec.sample_rate(), 
+                    (unsigned long)output_sample_spec.sample_rate());
             return;
         }
     }
@@ -198,7 +198,7 @@ bool LatencyMonitor::update_resampler_(packet::timestamp_t pos,
                 (double)freq_coeff, (double)trimmed_coeff);
     }
 
-    if (!resampler_->set_scaling(input_sample_spec_.get_sample_rate(), output_sample_spec_.get_sample_rate(),
+    if (!resampler_->set_scaling(input_sample_spec_.sample_rate(), output_sample_spec_.sample_rate(),
                                  trimmed_coeff)) {
         roc_log(LogDebug,
                 "latency monitor: scaling factor out of bounds: fe=%.5f trim_fe=%.5f",

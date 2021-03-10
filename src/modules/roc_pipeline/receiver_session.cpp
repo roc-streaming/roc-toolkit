@@ -50,14 +50,14 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
     packet::IReader* preader = source_queue_.get();
 
     delayed_reader_.reset(new (delayed_reader_) packet::DelayedReader(
-        *preader, session_config.target_latency, format->sample_spec.get_sample_rate()));
+        *preader, session_config.target_latency, format->sample_spec.sample_rate()));
     if (!delayed_reader_) {
         return;
     }
     preader = delayed_reader_.get();
 
     validator_.reset(new (validator_) rtp::Validator(
-        *preader, session_config.rtp_validator, format->sample_spec.get_sample_rate()));
+        *preader, session_config.rtp_validator, format->sample_spec.sample_rate()));
     if (!validator_) {
         return;
     }
@@ -93,7 +93,7 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
         preader = fec_reader_.get();
 
         fec_validator_.reset(new (fec_validator_) rtp::Validator(
-            *preader, session_config.rtp_validator, format->sample_spec.get_sample_rate()));
+            *preader, session_config.rtp_validator, format->sample_spec.sample_rate()));
         if (!fec_validator_) {
             return;
         }
@@ -118,7 +118,7 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
         || session_config.watchdog.frame_status_window != 0) {
         watchdog_.reset(new (watchdog_) audio::Watchdog(
             *areader, session_config.sample_spec.num_channels(),
-            session_config.watchdog, common_config.output_sample_spec.get_sample_rate(), allocator_));
+            session_config.watchdog, common_config.output_sample_spec.sample_rate(), allocator_));
         if (!watchdog_ || !watchdog_->valid()) {
             return;
         }
@@ -138,8 +138,8 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
         resampler_.reset(audio::ResamplerMap::instance().new_resampler(
                              session_config.resampler_backend, allocator,
                              sample_buffer_pool, session_config.resampler_profile,
-                             common_config.internal_frame_length, format->sample_spec.get_sample_rate(),
-                             session_config.sample_spec.get_channel_mask()),
+                             common_config.internal_frame_length, format->sample_spec.sample_rate(),
+                             session_config.sample_spec.channel_mask()),
                          allocator);
 
         if (!resampler_) {
