@@ -87,7 +87,7 @@ ReceiverSource::ReceiverSource(ITaskScheduler& scheduler,
     , timestamp_(0) {
     mixer_.reset(new (mixer_) audio::Mixer(
         sample_buffer_pool, config.common.internal_frame_length,
-        config.common.output_sample_spec.sample_rate(), config.common.output_sample_spec.channel_mask()));
+        config.common.output_sample_spec));
     if (!mixer_ || !mixer_->valid()) {
         return;
     }

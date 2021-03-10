@@ -13,6 +13,7 @@
 #define ROC_AUDIO_MIXER_H_
 
 #include "roc_audio/ireader.h"
+#include "roc_audio/sample_spec.h"
 #include "roc_audio/units.h"
 #include "roc_core/list.h"
 #include "roc_core/noncopyable.h"
@@ -45,13 +46,10 @@ public:
     //!  - @p pool is used to allocate a temporary buffer of samples
     //!  - @p frame_length defines the temporary buffer length used to
     //!    read from, in nanoseconds
-    //!  - @p sample_rate defines the number of samples taken from the audio signal
-    //!  - @p ch_mask defines the bitmask of audio channels
-    //!    attached readers
+    //!  - @p sample_spec defines the sample spec taken from the audio signal
     explicit Mixer(core::BufferPool<sample_t>& pool,
                    core::nanoseconds_t frame_length,
-                   size_t sample_rate,
-                   packet::channel_mask_t ch_mask);
+                   const audio::SampleSpec& sample_spec);
 
     //! Check if the mixer was succefully constructed.
     bool valid() const;
