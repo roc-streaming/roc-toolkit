@@ -31,8 +31,10 @@ enum {
     ManyFrames = 30
 };
 
+const audio::SampleSpec sample_spec = audio::SampleSpec(SampleRate, ChMask);
+
 const core::nanoseconds_t MaxBufDuration =
-    MaxBufSize * core::Second / (SampleRate * packet::num_channels(ChMask));
+    MaxBufSize * core::Second / (sample_spec.get_sample_rate() * sample_spec.num_channels());
 
 core::HeapAllocator allocator;
 core::BufferPool<audio::sample_t> sample_buffer_pool(allocator, MaxBufSize, true);
@@ -43,11 +45,8 @@ TEST_GROUP(converter_source) {
     ConverterConfig config;
 
     void setup() {
-        config.input_channels = ChMask;
-        config.output_channels = ChMask;
-
-        config.input_sample_rate = SampleRate;
-        config.output_sample_rate = SampleRate;
+        config.input_sample_spec = audio::SampleSpec(SampleRate, ChMask);
+        config.output_sample_spec = audio::SampleSpec(SampleRate, ChMask);
 
         config.internal_frame_length = MaxBufDuration;
 

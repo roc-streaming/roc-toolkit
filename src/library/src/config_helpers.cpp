@@ -131,7 +131,7 @@ bool sender_config_from_user(pipeline::SenderConfig& out, const roc_sender_confi
 bool receiver_config_from_user(pipeline::ReceiverConfig& out,
                                const roc_receiver_config& in) {
     if (in.frame_sample_rate != 0) {
-        out.common.output_sample_rate = in.frame_sample_rate;
+        out.common.output_sample_spec.set_sample_rate(in.frame_sample_rate);
     } else {
         roc_log(LogError, "bad configuration: invalid frame_sample_rate");
         return false;

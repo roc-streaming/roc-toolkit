@@ -13,6 +13,8 @@
 #define ROC_SAMPLE_SPEC_H_
 
 #include "roc_audio/units.h"
+#include "roc_packet/units.h"
+#include "roc_core/time.h"
 
 namespace roc {
 namespace audio {
@@ -40,6 +42,9 @@ public:
     void set_channel_mask(channel_mask_t channel_mask);
 
     size_t num_channels() const;
+
+    packet::timestamp_diff_t timestamp_from_ns(core::nanoseconds_t ns) const;
+    core::nanoseconds_t timestamp_to_ns(packet::timestamp_diff_t ts) const;
 
 private:
     size_t calc_num_channels() const;

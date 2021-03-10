@@ -24,30 +24,29 @@ LatencyMonitor::LatencyMonitor(const packet::SortedQueue& queue,
                                ResamplerReader* resampler,
                                const LatencyMonitorConfig& config,
                                core::nanoseconds_t target_latency,
-                               size_t input_sample_rate,
-                               size_t output_sample_rate)
+                               const audio::SampleSpec& input_sample_spec,
+                               const audio::SampleSpec& output_sample_spec)
     : queue_(queue)
     , depacketizer_(depacketizer)
     , resampler_(resampler)
-    , fe_((packet::timestamp_t)packet::timestamp_from_ns(target_latency,
-                                                         input_sample_rate))
+    , fe_((packet::timestamp_t)input_sample_spec.timestamp_from_ns(target_latency))
     , rate_limiter_(LogInterval)
-    , update_interval_((packet::timestamp_t)packet::timestamp_from_ns(
-          config.fe_update_interval, input_sample_rate))
+    , update_interval_((packet::timestamp_t)input_sample_spec.timestamp_from_ns(
+                                                        config.fe_update_interval))
     , update_pos_(0)
     , has_update_pos_(false)
-    , target_latency_((packet::timestamp_t)packet::timestamp_from_ns(target_latency,
-                                                                     input_sample_rate))
-    , min_latency_(packet::timestamp_from_ns(config.min_latency, input_sample_rate))
-    , max_latency_(packet::timestamp_from_ns(config.max_latency, input_sample_rate))
+    , target_latency_((packet::timestamp_t)input_sample_spec.timestamp_from_ns(
+                                                        target_latency))
+    , min_latency_(input_sample_spec.timestamp_from_ns(config.min_latency))
+    , max_latency_(input_sample_spec.timestamp_from_ns(config.max_latency))
     , max_scaling_delta_(config.max_scaling_delta)
-    , input_sample_rate_(input_sample_rate)
-    , output_sample_rate_(output_sample_rate)
+    , input_sample_spec_(input_sample_spec)
+    , output_sample_spec_(output_sample_spec)
     , valid_(false) {
     roc_log(LogDebug,
             "latency monitor: initializing: target_latency=%lu in_rate=%lu out_rate=%lu",
-            (unsigned long)target_latency_, (unsigned long)input_sample_rate,
-            (unsigned long)output_sample_rate);
+            (unsigned long)target_latency_, (unsigned long)input_sample_spec_.get_sample_rate(),
+            (unsigned long)output_sample_spec_.get_sample_rate());
 
     if (config.fe_update_interval <= 0) {
         roc_log(LogError, "latency monitor: invalid config: fe_update_interval=%ld",
@@ -65,15 +64,16 @@ LatencyMonitor::LatencyMonitor(const packet::SortedQueue& queue,
     }
 
     if (resampler_) {
-        if (!init_resampler_(input_sample_rate, output_sample_rate)) {
+        if (!init_resampler_(input_sample_spec.get_sample_rate(), output_sample_spec.get_sample_rate())) {
             return;
         }
     } else {
-        if (input_sample_rate != output_sample_rate) {
+        if (input_sample_spec.get_sample_rate() != output_sample_spec.get_sample_rate()) {
             roc_log(LogError,
                     "latency monitor: input and output sample rates must be equal"
                     " when resampling is disabled: in_rate=%lu, out_rate=%lu",
-                    (unsigned long)input_sample_rate, (unsigned long)output_sample_rate);
+                    (unsigned long)input_sample_spec.get_sample_rate(), 
+                    (unsigned long)output_sample_spec.get_sample_rate());
             return;
         }
     }
@@ -198,7 +198,7 @@ bool LatencyMonitor::update_resampler_(packet::timestamp_t pos,
                 (double)freq_coeff, (double)trimmed_coeff);
     }
 
-    if (!resampler_->set_scaling(input_sample_rate_, output_sample_rate_,
+    if (!resampler_->set_scaling(input_sample_spec_.get_sample_rate(), output_sample_spec_.get_sample_rate(),
                                  trimmed_coeff)) {
         roc_log(LogDebug,
                 "latency monitor: scaling factor out of bounds: fe=%.5f trim_fe=%.5f",

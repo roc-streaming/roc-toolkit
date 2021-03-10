@@ -47,8 +47,10 @@ enum {
     ManyFrames = Latency / SamplesPerFrame * 10
 };
 
+const audio::SampleSpec sample_spec = audio::SampleSpec(SampleRate, ChMask);
+
 const core::nanoseconds_t MaxBufDuration =
-    MaxBufSize * core::Second / (SampleRate * packet::num_channels(ChMask));
+    MaxBufSize * core::Second / (sample_spec.get_sample_rate() * sample_spec.num_channels());
 
 enum {
     // default flags
@@ -302,8 +304,7 @@ TEST_GROUP(sender_sink_receiver_source) {
     ReceiverConfig receiver_config() {
         ReceiverConfig config;
 
-        config.common.output_sample_rate = SampleRate;
-        config.common.output_channels = ChMask;
+        config.common.output_sample_spec = audio::SampleSpec(SampleRate, ChMask);
         config.common.internal_frame_length = MaxBufDuration;
 
         config.common.resampling = false;

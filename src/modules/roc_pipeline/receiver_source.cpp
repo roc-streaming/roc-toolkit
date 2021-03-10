@@ -74,21 +74,20 @@ ReceiverSource::ReceiverSource(ITaskScheduler& scheduler,
                                core::IAllocator& allocator)
     : TaskPipeline(scheduler,
                    config.tasks,
-                   config.common.output_sample_rate,
-                   config.common.output_channels)
+                   config.common.output_sample_spec.get_sample_rate(),
+                   config.common.output_sample_spec.get_channel_mask())
     , format_map_(format_map)
     , packet_pool_(packet_pool)
     , byte_buffer_pool_(byte_buffer_pool)
     , sample_buffer_pool_(sample_buffer_pool)
     , allocator_(allocator)
-    , ticker_(config.common.output_sample_rate)
+    , ticker_(config.common.output_sample_spec.get_sample_rate())
     , audio_reader_(NULL)
     , config_(config)
-    , timestamp_(0)
-    , num_channels_(packet::num_channels(config.common.output_channels)) {
+    , timestamp_(0) {
     mixer_.reset(new (mixer_) audio::Mixer(
         sample_buffer_pool, config.common.internal_frame_length,
-        config.common.output_sample_rate, config.common.output_channels));
+        config.common.output_sample_spec.get_sample_rate(), config.common.output_sample_spec.get_channel_mask()));
     if (!mixer_ || !mixer_->valid()) {
         return;
     }
@@ -104,8 +103,8 @@ ReceiverSource::ReceiverSource(ITaskScheduler& scheduler,
 
     if (config.common.profiling) {
         profiler_.reset(new (profiler_) audio::ProfilingReader(
-            *areader, allocator, config.common.output_channels,
-            config.common.output_sample_rate, config.common.profiler_config));
+            *areader, allocator, config.common.output_sample_spec.get_channel_mask(),
+            config.common.output_sample_spec.get_sample_rate(), config.common.profiler_config));
         if (!profiler_ || !profiler_->valid()) {
             return;
         }
@@ -136,11 +135,11 @@ size_t ReceiverSource::num_sessions() const {
 }
 
 size_t ReceiverSource::sample_rate() const {
-    return config_.common.output_sample_rate;
+    return config_.common.output_sample_spec.get_sample_rate();
 }
 
 size_t ReceiverSource::num_channels() const {
-    return num_channels_;
+    return config_.common.output_sample_spec.num_channels();
 }
 
 bool ReceiverSource::has_clock() const {
@@ -190,7 +189,7 @@ bool ReceiverSource::process_frame_imp(audio::Frame& frame) {
         return false;
     }
 
-    timestamp_ += frame.size() / num_channels_;
+    timestamp_ += frame.size() / config_.common.output_sample_spec.num_channels();
 
     return true;
 }

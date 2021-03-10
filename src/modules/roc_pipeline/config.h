@@ -210,11 +210,8 @@ struct ReceiverSessionConfig {
 //! @remarks
 //!  Defines receiver parameters common for all sessions.
 struct ReceiverCommonConfig {
-    //! Number of samples per second per channel.
-    size_t output_sample_rate;
-
-    //! Channel mask.
-    packet::channel_mask_t output_channels;
+    //! Output sample spec
+    audio::SampleSpec output_sample_spec;
 
     //! Duration of the internal frames, in nanoseconds.
     core::nanoseconds_t internal_frame_length;
@@ -238,8 +235,7 @@ struct ReceiverCommonConfig {
     bool beeping;
 
     ReceiverCommonConfig()
-        : output_sample_rate(DefaultSampleRate)
-        , output_channels(DefaultChannelMask)
+        : output_sample_spec(DefaultSampleRate, DefaultChannelMask)
         , internal_frame_length(DefaultInternalFrameLength)
         , resampling(false)
         , timing(false)
@@ -269,17 +265,11 @@ struct ConverterConfig {
     //! Resampler profile.
     audio::ResamplerProfile resampler_profile;
 
-    //! Number of samples per second per channel.
-    size_t input_sample_rate;
+    //! Input sample spec
+    audio::SampleSpec input_sample_spec;
 
-    //! Number of samples per second per channel.
-    size_t output_sample_rate;
-
-    //! Input channel mask.
-    packet::channel_mask_t input_channels;
-
-    //! Output channel mask.
-    packet::channel_mask_t output_channels;
+    //! Output sample spec
+    audio::SampleSpec output_sample_spec;
 
     //! Duration of the internal frames, in nanoseconds.
     core::nanoseconds_t internal_frame_length;
@@ -299,10 +289,8 @@ struct ConverterConfig {
     ConverterConfig()
         : resampler_backend(audio::ResamplerBackend_Default)
         , resampler_profile(audio::ResamplerProfile_Medium)
-        , input_sample_rate(DefaultSampleRate)
-        , output_sample_rate(DefaultSampleRate)
-        , input_channels(DefaultChannelMask)
-        , output_channels(DefaultChannelMask)
+        , input_sample_spec(DefaultSampleRate, DefaultChannelMask)
+        , output_sample_spec(DefaultSampleRate, DefaultChannelMask)
         , internal_frame_length(DefaultInternalFrameLength)
         , resampling(false)
         , poisoning(false)

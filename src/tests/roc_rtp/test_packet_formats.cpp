@@ -62,8 +62,8 @@ TEST_GROUP(packet_formats) {
     void check_format_info(const Format& format, const test::PacketInfo& pi) {
         UNSIGNED_LONGS_EQUAL(packet::Packet::FlagAudio, format.flags);
         UNSIGNED_LONGS_EQUAL(pi.pt, format.payload_type);
-        UNSIGNED_LONGS_EQUAL(pi.samplerate, format.sample_rate);
-        UNSIGNED_LONGS_EQUAL(pi.num_channels, packet::num_channels(format.channel_mask));
+        UNSIGNED_LONGS_EQUAL(pi.samplerate, format.sample_spec.get_sample_rate());
+        UNSIGNED_LONGS_EQUAL(pi.num_channels, format.sample_spec.num_channels());
         UNSIGNED_LONGS_EQUAL(pi.num_samples, format.get_num_samples(pi.payload_size));
     }
 
