@@ -200,8 +200,8 @@ bool SenderEndpointSet::create_pipeline_() {
 
     packetizer_.reset(new (packetizer_) audio::Packetizer(
         *pwriter, source_endpoint_->composer(), *payload_encoder_, packet_pool_,
-        byte_buffer_pool_, config_.input_channels, config_.packet_length,
-        format->sample_spec.sample_rate(), config_.payload_type));
+        byte_buffer_pool_, config_.packet_length, format->sample_spec, 
+        config_.payload_type));
     if (!packetizer_ || !packetizer_->valid()) {
         return false;
     }

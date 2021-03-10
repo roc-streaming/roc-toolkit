@@ -19,19 +19,17 @@ Packetizer::Packetizer(packet::IWriter& writer,
                        IFrameEncoder& payload_encoder,
                        packet::PacketPool& packet_pool,
                        core::BufferPool<uint8_t>& buffer_pool,
-                       packet::channel_mask_t channels,
                        core::nanoseconds_t packet_length,
-                       size_t sample_rate,
+                       const audio::SampleSpec& sample_spec,
                        unsigned int payload_type)
     : writer_(writer)
     , composer_(composer)
     , payload_encoder_(payload_encoder)
     , packet_pool_(packet_pool)
     , buffer_pool_(buffer_pool)
-    , channels_(channels)
-    , num_channels_(packet::num_channels(channels))
+    , sample_spec_(sample_spec)
     , samples_per_packet_(
-          (packet::timestamp_t)packet::timestamp_from_ns(packet_length, sample_rate))
+          (packet::timestamp_t)sample_spec.timestamp_from_ns(packet_length))
     , payload_type_(payload_type)
     , payload_size_(payload_encoder.encoded_size(samples_per_packet_))
     , packet_pos_(0)
@@ -48,7 +46,7 @@ Packetizer::Packetizer(packet::IWriter& writer,
     timestamp_ = (packet::timestamp_t)rand_timestamp;
     valid_ = true;
     roc_log(LogDebug, "packetizer: initializing: n_channels=%lu samples_per_packet=%lu",
-            (unsigned long)num_channels_, (unsigned long)samples_per_packet_);
+            (unsigned long)sample_spec_.num_channels(), (unsigned long)samples_per_packet_);
 }
 
 bool Packetizer::valid() const {
@@ -56,12 +54,12 @@ bool Packetizer::valid() const {
 }
 
 void Packetizer::write(Frame& frame) {
-    if (frame.size() % num_channels_ != 0) {
+    if (frame.size() % sample_spec_.num_channels() != 0) {
         roc_panic("packetizer: unexpected frame size");
     }
 
     const sample_t* buffer_ptr = frame.data();
-    size_t buffer_samples = frame.size() / num_channels_;
+    size_t buffer_samples = frame.size() / sample_spec_.num_channels();
 
     while (buffer_samples != 0) {
         if (!packet_) {
@@ -75,10 +73,10 @@ void Packetizer::write(Frame& frame) {
             ns = (samples_per_packet_ - packet_pos_);
         }
 
-        const size_t actual_ns = payload_encoder_.write(buffer_ptr, ns, channels_);
+        const size_t actual_ns = payload_encoder_.write(buffer_ptr, ns, sample_spec_.channel_mask());
         roc_panic_if_not(actual_ns == ns);
 
-        buffer_ptr += actual_ns * num_channels_;
+        buffer_ptr += actual_ns * sample_spec_.num_channels();
         buffer_samples -= actual_ns;
 
         packet_pos_ += actual_ns;
