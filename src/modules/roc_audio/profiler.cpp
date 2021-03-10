@@ -34,7 +34,7 @@ Profiler::Profiler(core::IAllocator& allocator,
     , valid_(false)
     , buffer_full_(false) {
     if (sample_spec_.num_channels() == 0) {
-        roc_panic("profiler: n_channels is zero");
+        roc_panic("profiler: num_channels is zero");
     }
     if (sample_spec_.sample_rate() == 0) {
         roc_panic("profiler: sample_rate is zero");
