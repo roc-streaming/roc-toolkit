@@ -29,7 +29,7 @@ bool context_config_from_user(peer::ContextConfig& out, const roc_context_config
 
 bool sender_config_from_user(pipeline::SenderConfig& out, const roc_sender_config& in) {
     if (in.frame_sample_rate != 0) {
-        out.input_sample_rate = in.frame_sample_rate;
+        out.input_sample_spec.set_sample_rate(in.frame_sample_rate);
     } else {
         roc_log(LogError, "bad configuration: invalid frame_sample_rate");
         return false;

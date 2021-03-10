@@ -37,8 +37,7 @@ ConverterSource::ConverterSource(const ConverterConfig& config,
         resampler_.reset(audio::ResamplerMap::instance().new_resampler(
                              config.resampler_backend, allocator, pool,
                              config.resampler_profile, config.internal_frame_length,
-                             config.input_sample_spec.sample_rate(), 
-                             config.input_sample_spec.channel_mask()),
+                             config.input_sample_spec),
                          allocator);
 
         if (!resampler_) {
@@ -68,8 +67,7 @@ ConverterSource::ConverterSource(const ConverterConfig& config,
 
     if (config.profiling) {
         profiler_.reset(new (profiler_) audio::ProfilingReader(
-            *areader, allocator, config.output_sample_spec.channel_mask(), config.output_sample_spec.sample_rate(),
-            config.profiler_config));
+            *areader, allocator, config.output_sample_spec, config.profiler_config));
         if (!profiler_ || !profiler_->valid()) {
             return;
         }

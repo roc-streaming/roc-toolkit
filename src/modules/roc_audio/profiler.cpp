@@ -15,13 +15,12 @@ namespace roc {
 namespace audio {
 
 Profiler::Profiler(core::IAllocator& allocator,
-                   packet::channel_mask_t channels,
-                   size_t sample_rate,
+                   const audio::SampleSpec& sample_spec,
                    ProfilerConfig profiler_config)
     : rate_limiter_(profiler_config.profiling_interval)
     , interval_(profiler_config.profiling_interval)
     , chunk_length_(
-          (size_t)(sample_rate
+          (size_t)(sample_spec.sample_rate()
                    * ((float)profiler_config.chunk_duration / (float)core::Second)))
     , num_chunks_((size_t)((unsigned long)profiler_config.profiling_interval
                            / (unsigned long)(profiler_config.chunk_duration))
@@ -31,14 +30,13 @@ Profiler::Profiler(core::IAllocator& allocator,
     , last_chunk_num_(0)
     , last_chunk_samples_(0)
     , moving_avg_(0)
-    , sample_rate_(sample_rate)
-    , num_channels_(packet::num_channels(channels))
+    , sample_spec_(sample_spec)
     , valid_(false)
     , buffer_full_(false) {
-    if (num_channels_ == 0) {
+    if (sample_spec_.num_channels() == 0) {
         roc_panic("profiler: n_channels is zero");
     }
-    if (sample_rate_ == 0) {
+    if (sample_spec_.sample_rate() == 0) {
         roc_panic("profiler: sample_rate is zero");
     }
 
@@ -55,7 +53,7 @@ bool Profiler::valid() const {
 }
 
 void Profiler::update_moving_avg_(size_t frame_size, core::nanoseconds_t elapsed) {
-    const float frame_speed = float(frame_size * core::Second) / elapsed / num_channels_;
+    const float frame_speed = float(frame_size * core::Second) / elapsed / sample_spec_.num_channels();
 
     while (frame_size > 0) {
         size_t n_samples = std::min(frame_size, (chunk_length_ - last_chunk_samples_));
@@ -98,7 +96,7 @@ void Profiler::update_moving_avg_(size_t frame_size, core::nanoseconds_t elapsed
 void Profiler::add_frame(size_t frame_size, core::nanoseconds_t elapsed) {
     roc_panic_if(!valid_);
 
-    if (frame_size % num_channels_ != 0) {
+    if (frame_size % sample_spec_.num_channels() != 0) {
         roc_panic("profiler: unexpected frame size");
     }
 
@@ -108,7 +106,7 @@ void Profiler::add_frame(size_t frame_size, core::nanoseconds_t elapsed) {
         roc_log(LogDebug,
                 "profiler: avg for last %.1f sec: %lu sample/sec (%.2f sec/sec)",
                 (double)interval_ / core::Second, (unsigned long)get_moving_avg(),
-                (double)get_moving_avg() / sample_rate_);
+                (double)get_moving_avg() / sample_spec_.sample_rate());
     }
 }
 

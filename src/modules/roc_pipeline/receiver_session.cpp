@@ -138,8 +138,10 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
         resampler_.reset(audio::ResamplerMap::instance().new_resampler(
                              session_config.resampler_backend, allocator,
                              sample_buffer_pool, session_config.resampler_profile,
-                             common_config.internal_frame_length, format->sample_spec.sample_rate(),
-                             session_config.sample_spec.channel_mask()),
+                             common_config.internal_frame_length,
+                             audio::SampleSpec(
+                                format->sample_spec.sample_rate(),
+                                session_config.sample_spec.channel_mask())),
                          allocator);
 
         if (!resampler_) {

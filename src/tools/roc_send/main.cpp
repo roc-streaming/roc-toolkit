@@ -117,8 +117,8 @@ int main(int argc, char** argv) {
             return 1;
         }
         if (packet::ns_to_size(sender_config.internal_frame_length,
-                               sender_config.input_sample_rate,
-                               sender_config.input_channels)
+                               sender_config.input_sample_spec.sample_rate(),
+                               sender_config.input_sample_spec.channel_mask())
             <= 0) {
             roc_log(LogError, "invalid --frame-length: should be > 0");
             return 1;
@@ -126,8 +126,9 @@ int main(int argc, char** argv) {
     }
 
     sndio::BackendDispatcher::instance().set_frame_size(
-        sender_config.internal_frame_length, sender_config.input_sample_rate,
-        sender_config.input_channels);
+        sender_config.internal_frame_length, 
+        sender_config.input_sample_spec.sample_rate(),
+        sender_config.input_sample_spec.channel_mask());
 
     address::EndpointURI source_endpoint(context.allocator());
     if (args.source_given) {
@@ -215,7 +216,7 @@ int main(int argc, char** argv) {
     sender_config.profiling = args.profiling_flag;
 
     sndio::Config io_config;
-    io_config.channels = sender_config.input_channels;
+    io_config.channels = sender_config.input_sample_spec.channel_mask();
     io_config.frame_length = sender_config.internal_frame_length;
 
     if (args.rate_given) {
@@ -262,7 +263,7 @@ int main(int argc, char** argv) {
     }
 
     sender_config.timing = !input_source->has_clock();
-    sender_config.input_sample_rate = input_source->sample_rate();
+    sender_config.input_sample_spec.set_sample_rate(input_source->sample_rate());
 
     peer::Sender sender(context, sender_config);
     if (!sender.valid()) {
@@ -297,8 +298,10 @@ int main(int argc, char** argv) {
     }
 
     sndio::Pump pump(context.sample_buffer_pool(), *input_source, NULL, sender.sink(),
-                     sender_config.internal_frame_length, sender_config.input_sample_rate,
-                     sender_config.input_channels, sndio::Pump::ModePermanent);
+                     sender_config.internal_frame_length, 
+                     sender_config.input_sample_spec.sample_rate(),
+                     sender_config.input_sample_spec.channel_mask(), 
+                     sndio::Pump::ModePermanent);
     if (!pump.valid()) {
         roc_log(LogError, "can't create audio pump");
         return 1;

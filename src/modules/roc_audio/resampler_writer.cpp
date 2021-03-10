@@ -19,8 +19,7 @@ ResamplerWriter::ResamplerWriter(IWriter& writer,
                                  IResampler& resampler,
                                  core::BufferPool<sample_t>& buffer_pool,
                                  core::nanoseconds_t frame_length,
-                                 size_t sample_rate,
-                                 packet::channel_mask_t channels)
+                                 const audio::SampleSpec& sample_spec)
     : resampler_(resampler)
     , writer_(writer)
     , input_pos_(0)
@@ -30,7 +29,8 @@ ResamplerWriter::ResamplerWriter(IWriter& writer,
         return;
     }
 
-    const size_t frame_size = packet::ns_to_size(frame_length, sample_rate, channels);
+    const size_t frame_size = packet::ns_to_size(frame_length, 
+                                sample_spec.sample_rate(), sample_spec.channel_mask());
     if (frame_size == 0) {
         roc_log(LogError, "resampler writer: frame size can't be zero");
         return;

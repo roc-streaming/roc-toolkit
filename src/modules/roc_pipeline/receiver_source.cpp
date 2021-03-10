@@ -103,8 +103,7 @@ ReceiverSource::ReceiverSource(ITaskScheduler& scheduler,
 
     if (config.common.profiling) {
         profiler_.reset(new (profiler_) audio::ProfilingReader(
-            *areader, allocator, config.common.output_sample_spec.channel_mask(),
-            config.common.output_sample_spec.sample_rate(), config.common.profiler_config));
+            *areader, allocator, config.common.output_sample_spec, config.common.profiler_config));
         if (!profiler_ || !profiler_->valid()) {
             return;
         }

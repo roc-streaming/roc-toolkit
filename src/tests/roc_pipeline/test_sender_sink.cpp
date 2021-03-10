@@ -168,7 +168,7 @@ TEST_GROUP(sender_sink) {
     address::SocketAddr dst_addr;
 
     void setup() {
-        config.input_channels = ChMask;
+        config.input_sample_spec = audio::SampleSpec(SampleRate, ChMask);
         config.packet_length = SamplesPerPacket * core::Second / SampleRate;
         config.internal_frame_length = MaxBufDuration;
 

@@ -278,7 +278,7 @@ TEST_GROUP(sender_sink_receiver_source) {
     SenderConfig sender_config(int flags) {
         SenderConfig config;
 
-        config.input_channels = ChMask;
+        config.input_sample_spec = audio::SampleSpec(SampleRate, ChMask);
         config.packet_length = SamplesPerPacket * core::Second / SampleRate;
         config.internal_frame_length = MaxBufDuration;
 

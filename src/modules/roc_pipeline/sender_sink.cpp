@@ -92,7 +92,9 @@ SenderSink::SenderSink(ITaskScheduler& scheduler,
                        core::BufferPool<audio::sample_t>& sample_buffer_pool,
                        core::IAllocator& allocator)
     : TaskPipeline(
-        scheduler, config.tasks, config.input_sample_rate, config.input_channels)
+        scheduler, config.tasks, 
+        config.input_sample_spec.sample_rate(), 
+        config.input_sample_spec.channel_mask())
     , config_(config)
     , format_map_(format_map)
     , packet_pool_(packet_pool)
@@ -101,9 +103,9 @@ SenderSink::SenderSink(ITaskScheduler& scheduler,
     , allocator_(allocator)
     , audio_writer_(NULL)
     , timestamp_(0)
-    , num_channels_(packet::num_channels(config_.input_channels)) {
+    , num_channels_(config_.input_sample_spec.num_channels()) {
     if (config_.timing) {
-        ticker_.reset(new (ticker_) core::Ticker(config_.input_sample_rate));
+        ticker_.reset(new (ticker_) core::Ticker(config_.input_sample_spec.sample_rate()));
         if (!ticker_) {
             return;
         }
@@ -121,8 +123,7 @@ SenderSink::SenderSink(ITaskScheduler& scheduler,
 
     if (config.profiling) {
         profiler_.reset(new (profiler_) audio::ProfilingWriter(
-            *awriter, allocator, config.input_channels, config.input_sample_rate,
-            config.profiler_config));
+            *awriter, allocator, config.input_sample_spec, config.profiler_config));
         if (!profiler_ || !profiler_->valid()) {
             return;
         }
@@ -137,7 +138,7 @@ bool SenderSink::valid() const {
 }
 
 size_t SenderSink::sample_rate() const {
-    return config_.input_sample_rate;
+    return config_.input_sample_spec.sample_rate();
 }
 
 size_t SenderSink::num_channels() const {

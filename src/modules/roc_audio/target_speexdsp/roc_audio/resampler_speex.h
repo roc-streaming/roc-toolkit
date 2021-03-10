@@ -16,6 +16,7 @@
 #include "roc_audio/ireader.h"
 #include "roc_audio/iresampler.h"
 #include "roc_audio/resampler_profile.h"
+#include "roc_audio/sample_spec.h"
 #include "roc_audio/units.h"
 #include "roc_core/array.h"
 #include "roc_core/buffer_pool.h"
@@ -38,8 +39,7 @@ public:
                    core::BufferPool<sample_t>& buffer_pool,
                    ResamplerProfile profile,
                    core::nanoseconds_t frame_length,
-                   size_t sample_rate,
-                   packet::channel_mask_t channels);
+                   const audio::SampleSpec& sample_spec);
 
     ~SpeexResampler();
 

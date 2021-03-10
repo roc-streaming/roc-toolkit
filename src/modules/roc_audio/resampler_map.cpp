@@ -26,10 +26,9 @@ IResampler* resampler_ctor(core::IAllocator& allocator,
                            core::BufferPool<sample_t>& buffer_pool,
                            ResamplerProfile profile,
                            core::nanoseconds_t frame_length,
-                           size_t sample_rate,
-                           packet::channel_mask_t channels) {
+                           const audio::SampleSpec& sample_spec) {
     return new (allocator)
-        T(allocator, buffer_pool, profile, frame_length, sample_rate, channels);
+        T(allocator, buffer_pool, profile, frame_length, sample_spec);
 }
 
 } // namespace
@@ -85,8 +84,7 @@ IResampler* ResamplerMap::new_resampler(ResamplerBackend backend_id,
                                         core::BufferPool<sample_t>& buffer_pool,
                                         ResamplerProfile profile,
                                         core::nanoseconds_t frame_length,
-                                        size_t sample_rate,
-                                        packet::channel_mask_t channels) {
+                                        const audio::SampleSpec& sample_spec) {
     const Backend* backend = find_backend_(backend_id);
     if (!backend) {
         roc_log(LogError, "resampler map: unsupported resampler backend: [%d] %s",
@@ -95,8 +93,7 @@ IResampler* ResamplerMap::new_resampler(ResamplerBackend backend_id,
     }
 
     core::ScopedPtr<IResampler> resampler(backend->ctor(allocator, buffer_pool, profile,
-                                                        frame_length, sample_rate,
-                                                        channels),
+                                                        frame_length, sample_spec),
                                           allocator);
 
     if (!resampler || !resampler->valid()) {

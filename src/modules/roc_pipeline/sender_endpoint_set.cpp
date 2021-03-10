@@ -208,7 +208,7 @@ bool SenderEndpointSet::create_pipeline_() {
 
     audio::IWriter* awriter = packetizer_.get();
 
-    if (config_.resampling && config_.input_sample_rate != format->sample_spec.sample_rate()) {
+    if (config_.resampling && config_.input_sample_spec.sample_rate() != format->sample_spec.sample_rate()) {
         if (config_.poisoning) {
             resampler_poisoner_.reset(new (resampler_poisoner_)
                                           audio::PoisonWriter(*awriter));
@@ -221,7 +221,7 @@ bool SenderEndpointSet::create_pipeline_() {
         resampler_.reset(audio::ResamplerMap::instance().new_resampler(
                              config_.resampler_backend, allocator_, sample_buffer_pool_,
                              config_.resampler_profile, config_.internal_frame_length,
-                             config_.input_sample_rate, config_.input_channels),
+                             config_.input_sample_spec),
                          allocator_);
 
         if (!resampler_) {
@@ -230,12 +230,12 @@ bool SenderEndpointSet::create_pipeline_() {
 
         resampler_writer_.reset(new (resampler_writer_) audio::ResamplerWriter(
             *awriter, *resampler_, sample_buffer_pool_, config_.internal_frame_length,
-            config_.input_sample_rate, config_.input_channels));
+            config_.input_sample_spec));
 
         if (!resampler_writer_ || !resampler_writer_->valid()) {
             return false;
         }
-        if (!resampler_writer_->set_scaling(config_.input_sample_rate,
+        if (!resampler_writer_->set_scaling(config_.input_sample_spec.sample_rate(),
                                             format->sample_spec.sample_rate(), 1.0f)) {
             return false;
         }

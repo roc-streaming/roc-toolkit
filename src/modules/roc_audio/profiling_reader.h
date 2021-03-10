@@ -28,8 +28,7 @@ public:
     //! Initialization.
     ProfilingReader(IReader& reader,
                     core::IAllocator& allocator,
-                    packet::channel_mask_t channels,
-                    size_t sample_rate,
+                    const audio::SampleSpec& sample_spec,
                     ProfilerConfig profiler_config);
 
     //! Read audio frame.
