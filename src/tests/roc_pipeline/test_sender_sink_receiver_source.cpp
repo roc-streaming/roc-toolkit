@@ -47,10 +47,10 @@ enum {
     ManyFrames = Latency / SamplesPerFrame * 10
 };
 
-const audio::SampleSpec sample_spec = audio::SampleSpec(SampleRate, ChMask);
+const audio::SampleSpec SampleSpecs = audio::SampleSpec(SampleRate, ChMask);
 
 const core::nanoseconds_t MaxBufDuration =
-    MaxBufSize * core::Second / (sample_spec.sample_rate() * sample_spec.num_channels());
+    MaxBufSize * core::Second / (SampleSpecs.sample_rate() * SampleSpecs.num_channels());
 
 enum {
     // default flags

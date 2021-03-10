@@ -27,7 +27,7 @@ struct TestFrame {
 
 const int SampleRate = 5000; // 50 samples / chunk
 const int NumChannels = 1;
-const audio::SampleSpec sample_spec = SampleSpec(SampleRate, NumChannels);
+const audio::SampleSpec SampleSpecs = SampleSpec(SampleRate, NumChannels);
 const double EpsilionThreshold = 0.001;
 core::HeapAllocator allocator;
 ProfilerConfig profiler_config(50 * core::Millisecond, 10 * core::Millisecond);
@@ -37,7 +37,7 @@ ProfilerConfig profiler_config(50 * core::Millisecond, 10 * core::Millisecond);
 TEST_GROUP(profiler) {};
 
 TEST(profiler, test_moving_average) {
-    Profiler profiler(allocator, sample_spec, profiler_config);
+    Profiler profiler(allocator, SampleSpecs, profiler_config);
 
     TestFrame frames[] = {
         TestFrame(50, 50 * core::Second),      TestFrame(25, 25 * core::Second),
@@ -51,7 +51,7 @@ TEST(profiler, test_moving_average) {
     double frame_speeds[ROC_ARRAY_SIZE(frames)];
     for (size_t i = 0; i < ROC_ARRAY_SIZE(frames); ++i) {
         frame_speeds[i] =
-            double(frames[i].size * core::Second) / frames[i].time / sample_spec.channel_mask();
+            double(frames[i].size * core::Second) / frames[i].time / SampleSpecs.channel_mask();
     }
 
     size_t samples_in_moving_avg = 0;
