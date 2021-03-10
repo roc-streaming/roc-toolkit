@@ -32,12 +32,11 @@ inline void write_beep(sample_t* buf, size_t bufsz) {
 
 Depacketizer::Depacketizer(packet::IReader& reader,
                            IFrameDecoder& payload_decoder,
-                           packet::channel_mask_t channels,
+                           const audio::SampleSpec& sample_spec,
                            bool beep)
     : reader_(reader)
     , payload_decoder_(payload_decoder)
-    , channels_(channels)
-    , num_channels_(packet::num_channels(channels))
+    , sample_spec_(sample_spec)
     , timestamp_(0)
     , zero_samples_(0)
     , missing_samples_(0)
@@ -47,7 +46,7 @@ Depacketizer::Depacketizer(packet::IReader& reader,
     , beep_(beep)
     , dropped_packets_(0) {
     roc_log(LogDebug, "depacketizer: initializing: n_channels=%lu",
-            (unsigned long)num_channels_);
+            (unsigned long)sample_spec_.num_channels());
 }
 
 bool Depacketizer::started() const {
@@ -82,7 +81,7 @@ bool Depacketizer::read(Frame& frame) {
 }
 
 void Depacketizer::read_frame_(Frame& frame) {
-    if (frame.size() % num_channels_ != 0) {
+    if (frame.size() % sample_spec_.num_channels() != 0) {
         roc_panic("depacketizer: unexpected frame size");
     }
 
@@ -105,7 +104,7 @@ sample_t* Depacketizer::read_samples_(sample_t* buff_ptr, sample_t* buff_end) {
         if (timestamp_ != next_timestamp) {
             roc_panic_if_not(packet::timestamp_lt(timestamp_, next_timestamp));
 
-            const size_t mis_samples = num_channels_
+            const size_t mis_samples = sample_spec_.num_channels()
                 * (size_t)packet::timestamp_diff(next_timestamp, timestamp_);
 
             const size_t max_samples = (size_t)(buff_end - buff_ptr);
@@ -125,9 +124,9 @@ sample_t* Depacketizer::read_samples_(sample_t* buff_ptr, sample_t* buff_end) {
 }
 
 sample_t* Depacketizer::read_packet_samples_(sample_t* buff_ptr, sample_t* buff_end) {
-    const size_t max_samples = (size_t)(buff_end - buff_ptr) / num_channels_;
+    const size_t max_samples = (size_t)(buff_end - buff_ptr) / sample_spec_.num_channels();
 
-    const size_t num_samples = payload_decoder_.read(buff_ptr, max_samples, channels_);
+    const size_t num_samples = payload_decoder_.read(buff_ptr, max_samples, sample_spec_.get_channel_mask());
 
     timestamp_ += packet::timestamp_t(num_samples);
     packet_samples_ += num_samples;
@@ -137,16 +136,16 @@ sample_t* Depacketizer::read_packet_samples_(sample_t* buff_ptr, sample_t* buff_
         packet_ = NULL;
     }
 
-    return (buff_ptr + num_samples * num_channels_);
+    return (buff_ptr + num_samples * sample_spec_.num_channels());
 }
 
 sample_t* Depacketizer::read_missing_samples_(sample_t* buff_ptr, sample_t* buff_end) {
-    const size_t num_samples = (size_t)(buff_end - buff_ptr) / num_channels_;
+    const size_t num_samples = (size_t)(buff_end - buff_ptr) / sample_spec_.num_channels();
 
     if (beep_) {
-        write_beep(buff_ptr, num_samples * num_channels_);
+        write_beep(buff_ptr, num_samples * sample_spec_.num_channels());
     } else {
-        write_zeros(buff_ptr, num_samples * num_channels_);
+        write_zeros(buff_ptr, num_samples * sample_spec_.num_channels());
     }
 
     timestamp_ += packet::timestamp_t(num_samples);
@@ -157,7 +156,7 @@ sample_t* Depacketizer::read_missing_samples_(sample_t* buff_ptr, sample_t* buff
         missing_samples_ += num_samples;
     }
 
-    return (buff_ptr + num_samples * num_channels_);
+    return (buff_ptr + num_samples * sample_spec_.num_channels());
 }
 
 void Depacketizer::update_packet_() {
@@ -236,7 +235,7 @@ packet::PacketPtr Depacketizer::read_packet_() {
 void Depacketizer::set_frame_flags_(Frame& frame,
                                     const size_t prev_dropped_packets,
                                     const packet::timestamp_t prev_packet_samples) {
-    const size_t packet_samples = num_channels_
+    const size_t packet_samples = sample_spec_.num_channels()
         * (size_t)packet::timestamp_diff(packet_samples_, prev_packet_samples);
 
     unsigned flags = 0;

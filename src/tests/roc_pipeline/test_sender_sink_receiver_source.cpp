@@ -310,7 +310,7 @@ TEST_GROUP(sender_sink_receiver_source) {
         config.common.timing = false;
         config.common.poisoning = true;
 
-        config.default_session.channels = ChMask;
+        config.default_session.sample_spec.set_channel_mask(ChMask);
 
         config.default_session.target_latency = Latency * core::Second / SampleRate;
         config.default_session.watchdog.no_playback_timeout =

@@ -106,7 +106,7 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
     }
 
     depacketizer_.reset(new (depacketizer_) audio::Depacketizer(
-        *preader, *payload_decoder_, session_config.channels, common_config.beeping));
+        *preader, *payload_decoder_, session_config.sample_spec, common_config.beeping));
     if (!depacketizer_) {
         return;
     }
@@ -117,7 +117,7 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
         || session_config.watchdog.broken_playback_timeout != 0
         || session_config.watchdog.frame_status_window != 0) {
         watchdog_.reset(new (watchdog_) audio::Watchdog(
-            *areader, packet::num_channels(session_config.channels),
+            *areader, session_config.sample_spec.num_channels(),
             session_config.watchdog, common_config.output_sample_rate, allocator_));
         if (!watchdog_ || !watchdog_->valid()) {
             return;
@@ -139,7 +139,7 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
                              session_config.resampler_backend, allocator,
                              sample_buffer_pool, session_config.resampler_profile,
                              common_config.internal_frame_length, format->sample_rate,
-                             session_config.channels),
+                             session_config.sample_spec.get_channel_mask()),
                          allocator);
 
         if (!resampler_) {
