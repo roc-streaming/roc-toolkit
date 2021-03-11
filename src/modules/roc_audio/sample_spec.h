@@ -28,22 +28,34 @@ const size_t DefaultSampleRate = 44100;
 //! Default channel mask.
 const channel_mask_t DefaultChannelMask = 0x3;
 
+//! Sample spec.
 class SampleSpec {
 public:
+    //! Default constructor.
     SampleSpec();
+
+    //! Constructor with sample rate and channel mask.
     SampleSpec(size_t sample_rate, channel_mask_t channel_mask);
 
+    //! Get sample rate.
     size_t sample_rate() const;
     
+    //! Set sample rate.
     void set_sample_rate(size_t sample_rate);
 
+    //! Get channel mask.
     channel_mask_t channel_mask() const;
     
+    //! Set channel mask.
     void set_channel_mask(channel_mask_t channel_mask);
 
+    //! Get number of channels.
     size_t num_channels() const;
 
+    //! Convert nanoseconds to number of samples.
     packet::timestamp_diff_t timestamp_from_ns(core::nanoseconds_t ns) const;
+
+    //! Convert number of samples to nanoseconds.
     core::nanoseconds_t timestamp_to_ns(packet::timestamp_diff_t ts) const;
 
 private:

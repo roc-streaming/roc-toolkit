@@ -25,7 +25,8 @@ namespace audio {
 
 namespace {
 
-enum { MaxBufSize = 4000, SamplesPerPacket = 200, SampleRate=100, ChMask = 0x3 };
+enum { MaxBufSize = 4000, SamplesPerPacket = 200, SampleRate=100, ChMask = 0x3,
+       SamplesSize = 400 };
 
 core::HeapAllocator allocator;
 core::BufferPool<sample_t> sample_buffer_pool(allocator, MaxBufSize, true);
@@ -56,8 +57,8 @@ TEST_GROUP(depacketizer) {
         pp->rtp()->timestamp = ts;
         pp->rtp()->duration = SamplesPerPacket;
 
-        sample_t samples[SamplesPerPacket * SampleSpecs.num_channels()];
-        for (size_t n = 0; n < SamplesPerPacket * SampleSpecs.num_channels(); n++) {
+        sample_t samples[SamplesSize];
+        for (size_t n = 0; n < SamplesSize; n++) {
             samples[n] = value;
         }
 
