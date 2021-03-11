@@ -46,12 +46,10 @@ TEST_GROUP(sox_source) {
     Config source_config;
 
     void setup() {
-        sink_config.channels = ChMask;
-        sink_config.sample_rate = SampleRate;
+        sink_config.sample_spec = audio::SampleSpec(SampleRate, ChMask);
         sink_config.frame_length = FrameDuration;
 
-        source_config.channels = ChMask;
-        source_config.sample_rate = SampleRate;
+        source_config.sample_spec = audio::SampleSpec(SampleRate, ChMask);
         source_config.frame_length = FrameDuration;
     }
 };
@@ -104,7 +102,7 @@ TEST(sox_source, sample_rate_auto) {
         CHECK(pump.run());
     }
 
-    source_config.sample_rate = 0;
+    source_config.sample_spec.set_sample_rate(0);
     source_config.frame_length = FrameDuration;
     SoxSource sox_source(allocator, source_config);
 
@@ -128,7 +126,7 @@ TEST(sox_source, sample_rate_mismatch) {
         CHECK(pump.run());
     }
 
-    source_config.sample_rate = SampleRate * 2;
+    source_config.sample_spec.set_sample_rate(SampleRate * 2);
     SoxSource sox_source(allocator, source_config);
 
     CHECK(sox_source.open(NULL, file.path()));

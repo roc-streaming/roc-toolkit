@@ -40,8 +40,7 @@ TEST_GROUP(pump) {
     Config config;
 
     void setup() {
-        config.channels = ChMask;
-        config.sample_rate = SampleRate;
+        config.sample_spec = audio::SampleSpec(SampleRate, ChMask);
         config.frame_length = BufDuration;
     }
 };

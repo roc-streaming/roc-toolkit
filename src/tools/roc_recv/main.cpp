@@ -225,7 +225,8 @@ int main(int argc, char** argv) {
 
     sndio::Config io_config;
     io_config.frame_length = receiver_config.common.internal_frame_length;
-    io_config.channels = receiver_config.common.output_sample_spec.channel_mask();
+    io_config.sample_spec.set_channel_mask(
+                receiver_config.common.output_sample_spec.channel_mask());
 
     if (args.io_latency_given) {
         if (!core::parse_duration(args.io_latency_arg, io_config.latency)) {
@@ -239,10 +240,10 @@ int main(int argc, char** argv) {
             roc_log(LogError, "invalid --rate: should be > 0");
             return 1;
         }
-        io_config.sample_rate = (size_t)args.rate_arg;
+        io_config.sample_spec.set_sample_rate((size_t)args.rate_arg);
     } else {
         if (!receiver_config.common.resampling) {
-            io_config.sample_rate = pipeline::DefaultSampleRate;
+            io_config.sample_spec.set_sample_rate(pipeline::DefaultSampleRate);
         }
     }
 

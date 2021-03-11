@@ -98,8 +98,9 @@ int main(int argc, char** argv) {
         args.poisoning_flag);
 
     sndio::Config source_config;
-    source_config.channels = converter_config.input_sample_spec.channel_mask();
-    source_config.sample_rate = 0;
+    source_config.sample_spec.set_channel_mask(
+                        converter_config.input_sample_spec.channel_mask());
+    source_config.sample_spec.set_sample_rate(0);
     source_config.frame_length = converter_config.internal_frame_length;
 
     address::IoURI input_uri(allocator);
@@ -174,8 +175,7 @@ int main(int argc, char** argv) {
     audio::IWriter* output_writer = NULL;
 
     sndio::Config sink_config;
-    sink_config.channels = converter_config.output_sample_spec.channel_mask();
-    sink_config.sample_rate = converter_config.output_sample_spec.sample_rate();
+    sink_config.sample_spec = converter_config.output_sample_spec;
     sink_config.frame_length = converter_config.internal_frame_length;
 
     address::IoURI output_uri(allocator);

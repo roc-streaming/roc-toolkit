@@ -93,7 +93,6 @@ private:
     const char* device_;
 
     Config config_;
-    const size_t num_channels_;
     size_t frame_size_;
 
     core::nanoseconds_t latency_;

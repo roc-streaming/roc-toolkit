@@ -30,8 +30,7 @@ TEST_GROUP(sox_sink) {
     Config sink_config;
 
     void setup() {
-        sink_config.channels = ChMask;
-        sink_config.sample_rate = SampleRate;
+        sink_config.sample_spec = audio::SampleSpec(SampleRate, ChMask);
         sink_config.frame_length = FrameDuration;
     }
 };
@@ -55,7 +54,7 @@ TEST(sox_sink, has_clock) {
 }
 
 TEST(sox_sink, sample_rate_auto) {
-    sink_config.sample_rate = 0;
+    sink_config.sample_spec.set_sample_rate(0);
     sink_config.frame_length = FrameDuration;
     SoxSink sox_sink(allocator, sink_config);
 
@@ -65,7 +64,7 @@ TEST(sox_sink, sample_rate_auto) {
 }
 
 TEST(sox_sink, sample_rate_force) {
-    sink_config.sample_rate = SampleRate;
+    sink_config.sample_spec.set_sample_rate(SampleRate);
     SoxSink sox_sink(allocator, sink_config);
 
     core::TempFile file("test.wav");

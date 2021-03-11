@@ -215,7 +215,8 @@ int main(int argc, char** argv) {
     sender_config.profiling = args.profiling_flag;
 
     sndio::Config io_config;
-    io_config.channels = sender_config.input_sample_spec.channel_mask();
+    io_config.sample_spec.set_channel_mask(
+                    sender_config.input_sample_spec.channel_mask());
     io_config.frame_length = sender_config.internal_frame_length;
 
     if (args.rate_given) {
@@ -223,10 +224,10 @@ int main(int argc, char** argv) {
             roc_log(LogError, "invalid --rate: should be > 0");
             return 1;
         }
-        io_config.sample_rate = (size_t)args.rate_arg;
+        io_config.sample_spec.set_sample_rate((size_t)args.rate_arg);
     } else {
         if (!sender_config.resampling) {
-            io_config.sample_rate = pipeline::DefaultSampleRate;
+            io_config.sample_spec.set_sample_rate(pipeline::DefaultSampleRate);
         }
     }
 

@@ -22,7 +22,7 @@ SoxSink::SoxSink(core::IAllocator& allocator, const Config& config)
     , valid_(false) {
     SoxBackend::instance();
 
-    size_t n_channels = packet::num_channels(config.channels);
+    size_t n_channels = config.sample_spec.num_channels();
     if (n_channels == 0) {
         roc_log(LogError, "sox sink: # of channels is zero");
         return;
@@ -33,7 +33,7 @@ SoxSink::SoxSink(core::IAllocator& allocator, const Config& config)
         return;
     }
 
-    channels_ = config.channels;
+    channels_ = config.sample_spec.channel_mask();
     frame_length_ = config.frame_length;
 
     if (frame_length_ == 0) {
@@ -42,7 +42,7 @@ SoxSink::SoxSink(core::IAllocator& allocator, const Config& config)
     }
 
     memset(&out_signal_, 0, sizeof(out_signal_));
-    out_signal_.rate = config.sample_rate;
+    out_signal_.rate = config.sample_spec.sample_rate();
     out_signal_.channels = (unsigned)n_channels;
     out_signal_.precision = SOX_SAMPLE_PRECISION;
 
