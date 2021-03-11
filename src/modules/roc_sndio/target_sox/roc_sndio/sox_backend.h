@@ -13,7 +13,7 @@
 #define ROC_SNDIO_SOX_BACKEND_H_
 
 #include <sox.h>
-
+#include "roc_audio/sample_spec.h"
 #include "roc_core/mutex.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/singleton.h"
@@ -34,8 +34,7 @@ public:
     //! @remarks
     //!  Number of samples for all channels.
     void set_frame_size(core::nanoseconds_t frame_length,
-                        size_t sample_rate,
-                        packet::channel_mask_t channels);
+                        const audio::SampleSpec& sample_spec);
 
     //! Check whether the backend can handle given input or output.
     virtual bool probe(const char* driver, const char* inout, int flags);

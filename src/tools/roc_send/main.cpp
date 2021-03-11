@@ -127,8 +127,7 @@ int main(int argc, char** argv) {
 
     sndio::BackendDispatcher::instance().set_frame_size(
         sender_config.internal_frame_length, 
-        sender_config.input_sample_spec.sample_rate(),
-        sender_config.input_sample_spec.channel_mask());
+        sender_config.input_sample_spec);
 
     address::EndpointURI source_endpoint(context.allocator());
     if (args.source_given) {

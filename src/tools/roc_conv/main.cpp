@@ -87,8 +87,8 @@ int main(int argc, char** argv) {
     }
 
     sndio::BackendDispatcher::instance().set_frame_size(
-        converter_config.internal_frame_length, converter_config.input_sample_spec.sample_rate(),
-        converter_config.input_sample_spec.channel_mask());
+        converter_config.internal_frame_length, 
+        converter_config.input_sample_spec);
 
     core::BufferPool<audio::sample_t> pool(
         allocator,

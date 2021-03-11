@@ -120,8 +120,7 @@ int main(int argc, char** argv) {
 
     sndio::BackendDispatcher::instance().set_frame_size(
         receiver_config.common.internal_frame_length,
-        receiver_config.common.output_sample_spec.sample_rate(),
-        receiver_config.common.output_sample_spec.channel_mask());
+        receiver_config.common.output_sample_spec);
 
     if (args.sess_latency_given) {
         if (!core::parse_duration(args.sess_latency_arg,

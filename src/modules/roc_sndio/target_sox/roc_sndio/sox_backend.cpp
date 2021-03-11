@@ -188,11 +188,11 @@ SoxBackend::SoxBackend()
 }
 
 void SoxBackend::set_frame_size(core::nanoseconds_t frame_length,
-                                size_t sample_rate,
-                                packet::channel_mask_t channels) {
+                                const audio::SampleSpec& sample_spec) {
     core::Mutex::Lock lock(mutex_);
 
-    size_t size = packet::ns_to_size(frame_length, sample_rate, channels);
+    size_t size = packet::ns_to_size(frame_length, 
+                        sample_spec.sample_rate(), sample_spec.channel_mask());
 
     if (first_created_) {
         roc_panic("sox backend: set_frame_size() can be called only before creating "
