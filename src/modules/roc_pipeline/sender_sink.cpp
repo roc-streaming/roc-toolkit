@@ -93,8 +93,7 @@ SenderSink::SenderSink(ITaskScheduler& scheduler,
                        core::IAllocator& allocator)
     : TaskPipeline(
         scheduler, config.tasks, 
-        config.input_sample_spec.sample_rate(), 
-        config.input_sample_spec.channel_mask())
+        config.input_sample_spec)
     , config_(config)
     , format_map_(format_map)
     , packet_pool_(packet_pool)

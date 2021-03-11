@@ -25,8 +25,7 @@ Pump::Pump(core::BufferPool<audio::sample_t>& buffer_pool,
     , n_bufs_(0)
     , oneshot_(mode == ModeOneshot)
     , stop_(0) {
-    size_t frame_size = packet::ns_to_size(frame_length, 
-                    sample_spec.sample_rate(), sample_spec.channel_mask());
+    size_t frame_size = sample_spec.ns_to_size(frame_length);
     if (frame_size == 0) {
         roc_log(LogError, "pump: frame size cannot be 0");
         return;

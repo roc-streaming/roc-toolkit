@@ -13,6 +13,7 @@
 #define ROC_PIPELINE_TASK_PIPELINE_H_
 
 #include "roc_audio/frame.h"
+#include "roc_audio/sample_spec.h"
 #include "roc_core/atomic.h"
 #include "roc_core/mpsc_queue.h"
 #include "roc_core/mutex.h"
@@ -277,8 +278,7 @@ protected:
     //! Initialization.
     TaskPipeline(ITaskScheduler& scheduler,
                  const TaskConfig& config,
-                 size_t sample_rate,
-                 packet::channel_mask_t ch_mask);
+                 const audio::SampleSpec& sample_spec);
 
     virtual ~TaskPipeline();
 
@@ -332,8 +332,7 @@ private:
     // configuration
     const TaskConfig config_;
 
-    const size_t sample_rate_;
-    const packet::channel_mask_t ch_mask_;
+    const audio::SampleSpec sample_spec_;
 
     const size_t min_samples_between_tasks_;
     const size_t max_samples_between_tasks_;

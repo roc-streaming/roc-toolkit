@@ -293,7 +293,7 @@ bool SoxSource::setup_names_(const char* driver, const char* input) {
 }
 
 bool SoxSource::setup_buffer_() {
-    buffer_size_ = packet::ns_to_size(frame_length_, sample_rate(), channels_);
+    buffer_size_ = audio::SampleSpec(sample_rate(), channels_).ns_to_size(frame_length_);
     if (buffer_size_ == 0) {
         roc_log(LogError, "sox source: buffer size is zero");
         return false;

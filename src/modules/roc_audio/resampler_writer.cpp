@@ -29,8 +29,7 @@ ResamplerWriter::ResamplerWriter(IWriter& writer,
         return;
     }
 
-    const size_t frame_size = packet::ns_to_size(frame_length, 
-                                sample_spec.sample_rate(), sample_spec.channel_mask());
+    const size_t frame_size = sample_spec.ns_to_size(frame_length);
     if (frame_size == 0) {
         roc_log(LogError, "resampler writer: frame size can't be zero");
         return;

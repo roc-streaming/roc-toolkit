@@ -74,8 +74,7 @@ ReceiverSource::ReceiverSource(ITaskScheduler& scheduler,
                                core::IAllocator& allocator)
     : TaskPipeline(scheduler,
                    config.tasks,
-                   config.common.output_sample_spec.sample_rate(),
-                   config.common.output_sample_spec.channel_mask())
+                   config.common.output_sample_spec)
     , format_map_(format_map)
     , packet_pool_(packet_pool)
     , byte_buffer_pool_(byte_buffer_pool)

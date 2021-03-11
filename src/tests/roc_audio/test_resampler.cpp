@@ -166,9 +166,8 @@ void resample(ResamplerBackend backend,
               size_t num_samples,
               const audio::SampleSpec& sample_spec,
               float scaling) {
-    const core::nanoseconds_t frame_duration = packet::size_to_ns(
-        InFrameSize * sample_spec.num_channels(), sample_spec.sample_rate(), 
-        sample_spec.channel_mask());
+    const core::nanoseconds_t frame_duration = sample_spec.size_to_ns(
+                                            InFrameSize * sample_spec.num_channels());
 
     core::ScopedPtr<IResampler> resampler(
         ResamplerMap::instance().new_resampler(backend, allocator, buffer_pool,
@@ -210,8 +209,7 @@ TEST(resampler, supported_scalings) {
                             core::ScopedPtr<IResampler> resampler(
                                 ResamplerMap::instance().new_resampler(
                                     backend, allocator, buffer_pool, profiles[pn],
-                                    packet::size_to_ns(frame_sizes[fn], rates[irate],
-                                                       ChMask),
+                                    audio::SampleSpec(rates[irate], ChMask).size_to_ns(frame_sizes[fn]),
                                     SampleSpecs),
                                 allocator);
                             CHECK(resampler);
@@ -255,7 +253,7 @@ TEST(resampler, invalid_scalings) {
         core::ScopedPtr<IResampler> resampler(
             ResamplerMap::instance().new_resampler(
                 backend, allocator, buffer_pool, ResamplerProfile_High,
-                packet::size_to_ns(InFrameSize, SampleRate, ChMask), SampleSpecs),
+                SampleSpecs.size_to_ns(InFrameSize), SampleSpecs),
             allocator);
         CHECK(resampler);
         CHECK(resampler->valid());

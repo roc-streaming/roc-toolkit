@@ -367,9 +367,7 @@ void PulseaudioSink::init_stream_params_(const pa_sink_info& info) {
     }
 
     if (frame_size_ == 0) {
-        frame_size_ = packet::ns_to_size(config_.frame_length, 
-                                         config_.sample_spec.sample_rate(),
-                                         config_.sample_spec.channel_mask());
+        frame_size_ = config_.sample_spec.ns_to_size(config_.frame_length);
     }
 
     roc_panic_if(sizeof(audio::sample_t) != sizeof(float));
@@ -380,10 +378,7 @@ void PulseaudioSink::init_stream_params_(const pa_sink_info& info) {
 
     const size_t frame_size_bytes = frame_size_ * sizeof(audio::sample_t);
 
-    const size_t latency_bytes =
-        packet::ns_to_size(latency_, 
-                        config_.sample_spec.sample_rate(), 
-                        config_.sample_spec.channel_mask())
+    const size_t latency_bytes = config_.sample_spec.ns_to_size(latency_)
         * sizeof(audio::sample_t);
 
     buffer_attrs_.maxlength = (uint32_t)-1;
@@ -481,8 +476,8 @@ ssize_t PulseaudioSink::wait_stream_() {
         if (writable_size == 0 && timer_expired) {
             roc_log(LogInfo,
                     "pulseaudio sink: stream timeout expired: latency=%ld timeout=%ld",
-                    (long)packet::timestamp_from_ns(latency_, config_.sample_spec.sample_rate()),
-                    (long)packet::timestamp_from_ns(timeout_, config_.sample_spec.sample_rate()));
+                    (long)config_.sample_spec.timestamp_from_ns(latency_),
+                    (long)config_.sample_spec.timestamp_from_ns(timeout_));
 
             if (timeout_ < MaxTimeout) {
                 timeout_ *= 2;
@@ -492,8 +487,8 @@ ssize_t PulseaudioSink::wait_stream_() {
                 roc_log(LogDebug,
                         "pulseaudio sink: stream timeout increased: "
                         "latency=%ld timeout=%ld",
-                        (long)packet::timestamp_from_ns(latency_, config_.sample_spec.sample_rate()),
-                        (long)packet::timestamp_from_ns(timeout_, config_.sample_spec.sample_rate()));
+                        (long)config_.sample_spec.timestamp_from_ns(latency_),
+                        (long)config_.sample_spec.timestamp_from_ns(timeout_));
             }
 
             return -1;

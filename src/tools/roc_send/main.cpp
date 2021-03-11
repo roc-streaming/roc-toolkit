@@ -116,9 +116,8 @@ int main(int argc, char** argv) {
             roc_log(LogError, "invalid --frame-length: bad format");
             return 1;
         }
-        if (packet::ns_to_size(sender_config.internal_frame_length,
-                               sender_config.input_sample_spec.sample_rate(),
-                               sender_config.input_sample_spec.channel_mask())
+        if (sender_config.input_sample_spec.ns_to_size(
+                sender_config.internal_frame_length)
             <= 0) {
             roc_log(LogError, "invalid --frame-length: should be > 0");
             return 1;

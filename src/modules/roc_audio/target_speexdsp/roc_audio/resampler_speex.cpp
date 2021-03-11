@@ -49,8 +49,7 @@ SpeexResampler::SpeexResampler(core::IAllocator&,
                                const audio::SampleSpec& sample_spec)
     : speex_state_(NULL)
     , in_frame_size_(
-          (spx_uint32_t)packet::ns_to_size(frame_length, 
-                    sample_spec.sample_rate(), sample_spec.channel_mask()))
+          (spx_uint32_t)sample_spec.ns_to_size(frame_length))
     , in_frame_pos_(in_frame_size_)
     , num_ch_((spx_uint32_t)sample_spec.num_channels())
     , rate_limiter_(LogReportInterval)

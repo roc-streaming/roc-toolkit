@@ -32,8 +32,7 @@ Mixer::Mixer(core::BufferPool<sample_t>& pool,
              core::nanoseconds_t frame_length,
              const audio::SampleSpec& sample_spec)
     : valid_(false) {
-    size_t frame_size = packet::ns_to_size(frame_length, sample_spec.sample_rate(), 
-                                                         sample_spec.channel_mask());
+    size_t frame_size = sample_spec.ns_to_size(frame_length);
     roc_log(LogDebug, "mixer: initializing: frame_size=%lu", (unsigned long)frame_size);
 
     if (frame_size == 0) {

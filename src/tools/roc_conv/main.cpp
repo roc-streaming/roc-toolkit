@@ -77,9 +77,8 @@ int main(int argc, char** argv) {
             roc_log(LogError, "invalid --frame-length: bad format");
             return 1;
         }
-        if (packet::ns_to_size(converter_config.internal_frame_length,
-                               converter_config.input_sample_spec.sample_rate(),
-                               converter_config.input_sample_spec.channel_mask())
+        if (converter_config.input_sample_spec.ns_to_size(
+                converter_config.internal_frame_length)
             <= 0) {
             roc_log(LogError, "invalid --frame-length: should be > 0");
             return 1;
@@ -91,10 +90,8 @@ int main(int argc, char** argv) {
         converter_config.input_sample_spec);
 
     core::BufferPool<audio::sample_t> pool(
-        allocator,
-        packet::ns_to_size(converter_config.internal_frame_length,
-                           converter_config.input_sample_spec.sample_rate(),
-                           converter_config.input_sample_spec.channel_mask()),
+        allocator, 
+        converter_config.input_sample_spec.ns_to_size(converter_config.internal_frame_length),
         args.poisoning_flag);
 
     sndio::Config source_config;

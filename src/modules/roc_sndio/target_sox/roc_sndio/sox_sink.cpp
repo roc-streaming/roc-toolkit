@@ -22,8 +22,7 @@ SoxSink::SoxSink(core::IAllocator& allocator, const Config& config)
     , valid_(false) {
     SoxBackend::instance();
 
-    size_t n_channels = config.sample_spec.num_channels();
-    if (n_channels == 0) {
+    if (config.sample_spec.num_channels() == 0) {
         roc_log(LogError, "sox sink: # of channels is zero");
         return;
     }
@@ -43,7 +42,7 @@ SoxSink::SoxSink(core::IAllocator& allocator, const Config& config)
 
     memset(&out_signal_, 0, sizeof(out_signal_));
     out_signal_.rate = config.sample_spec.sample_rate();
-    out_signal_.channels = (unsigned)n_channels;
+    out_signal_.channels = (unsigned)config.sample_spec.num_channels();
     out_signal_.precision = SOX_SAMPLE_PRECISION;
 
     valid_ = true;
@@ -137,7 +136,7 @@ void SoxSink::write(audio::Frame& frame) {
 }
 
 bool SoxSink::setup_buffer_() {
-    buffer_size_ = packet::ns_to_size(frame_length_, sample_rate(), channels_);
+    buffer_size_ = audio::SampleSpec(sample_rate(), channels_).ns_to_size(frame_length_);
     if (buffer_size_ == 0) {
         roc_log(LogError, "sox sink: buffer size is zero");
         return false;
