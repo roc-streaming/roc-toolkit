@@ -117,8 +117,8 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
         || session_config.watchdog.broken_playback_timeout != 0
         || session_config.watchdog.frame_status_window != 0) {
         watchdog_.reset(new (watchdog_) audio::Watchdog(
-            *areader, session_config.sample_spec.num_channels(),
-            session_config.watchdog, common_config.output_sample_spec.sample_rate(), allocator_));
+            *areader, session_config.sample_spec,
+            session_config.watchdog, allocator_));
         if (!watchdog_ || !watchdog_->valid()) {
             return;
         }
