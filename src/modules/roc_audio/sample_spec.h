@@ -19,14 +19,11 @@
 namespace roc {
 namespace audio {
 
-//! Bitmask of channels present in audio packet.
-typedef uint32_t channel_mask_t;
-
 //! Default sample rate, number of samples per second.
 const size_t DefaultSampleRate = 44100;
 
 //! Default channel mask.
-const channel_mask_t DefaultChannelMask = 0x3;
+const packet::channel_mask_t DefaultChannelMask = 0x3;
 
 //! Sample spec.
 class SampleSpec {
@@ -35,7 +32,7 @@ public:
     SampleSpec();
 
     //! Constructor with sample rate and channel mask.
-    SampleSpec(size_t sample_rate, channel_mask_t channel_mask);
+    SampleSpec(size_t sample_rate, packet::channel_mask_t channel_mask);
 
     //! Get sample rate.
     size_t sample_rate() const;
@@ -44,10 +41,10 @@ public:
     void set_sample_rate(size_t sample_rate);
 
     //! Get channel mask.
-    channel_mask_t channel_mask() const;
+    packet::channel_mask_t channel_mask() const;
     
     //! Set channel mask.
-    void set_channel_mask(channel_mask_t channel_mask);
+    void set_channel_mask(packet::channel_mask_t channel_mask);
 
     //! Get number of channels.
     size_t num_channels() const;
@@ -68,7 +65,7 @@ private:
     size_t calc_num_channels() const;
 
     size_t sample_rate_;
-    channel_mask_t channel_mask_;
+    packet::channel_mask_t channel_mask_;
     size_t num_channels_;
 };
 

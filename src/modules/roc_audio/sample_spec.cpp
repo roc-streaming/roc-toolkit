@@ -17,7 +17,7 @@ SampleSpec::SampleSpec() {
 }
 
 SampleSpec::SampleSpec(size_t sample_rate, 
-                       channel_mask_t channel_mask)
+                       packet::channel_mask_t channel_mask)
     : sample_rate_(sample_rate) {
     set_channel_mask(channel_mask);
 }
@@ -30,11 +30,11 @@ void SampleSpec::set_sample_rate(size_t sample_rate) {
     sample_rate_ = sample_rate;
 }
 
-channel_mask_t SampleSpec::channel_mask() const {
+packet::channel_mask_t SampleSpec::channel_mask() const {
     return channel_mask_;
 }
 
-void SampleSpec::set_channel_mask(channel_mask_t channel_mask) {
+void SampleSpec::set_channel_mask(packet::channel_mask_t channel_mask) {
     channel_mask_ = channel_mask;
     num_channels_ = calc_num_channels();
 }
@@ -61,7 +61,7 @@ core::nanoseconds_t SampleSpec::size_to_ns(size_t frame_size) const {
 
 size_t SampleSpec::calc_num_channels() const {
     size_t n_ch = 0;
-    channel_mask_t ch_mask = channel_mask_;
+    packet::channel_mask_t ch_mask = channel_mask_;
     for (; ch_mask != 0; ch_mask >>= 1) {
         if (ch_mask & 1) {
             n_ch++;
