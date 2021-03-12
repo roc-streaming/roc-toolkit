@@ -14,6 +14,7 @@
 
 #include <sox.h>
 
+#include "roc_audio/sample_spec.h"
 #include "roc_core/array.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/noncopyable.h"
@@ -73,7 +74,7 @@ private:
     core::Array<sox_sample_t> buffer_;
     size_t buffer_size_;
     core::nanoseconds_t frame_length_;
-    packet::channel_mask_t channels_;
+    audio::SampleSpec sample_spec_;
 
     bool is_file_;
     bool valid_;

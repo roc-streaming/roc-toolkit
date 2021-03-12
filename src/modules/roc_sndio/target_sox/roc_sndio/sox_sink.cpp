@@ -32,8 +32,9 @@ SoxSink::SoxSink(core::IAllocator& allocator, const Config& config)
         return;
     }
 
-    channels_ = config.sample_spec.channel_mask();
     frame_length_ = config.frame_length;
+    sample_spec_ = audio::SampleSpec(config.sample_spec.sample_rate(),
+                                     config.sample_spec.channel_mask());
 
     if (frame_length_ == 0) {
         roc_log(LogError, "sox sink: frame length is zero");
@@ -136,7 +137,7 @@ void SoxSink::write(audio::Frame& frame) {
 }
 
 bool SoxSink::setup_buffer_() {
-    buffer_size_ = audio::SampleSpec(sample_rate(), channels_).ns_to_size(frame_length_);
+    buffer_size_ = sample_spec_.ns_to_size(frame_length_);
     if (buffer_size_ == 0) {
         roc_log(LogError, "sox sink: buffer size is zero");
         return false;
@@ -161,6 +162,7 @@ bool SoxSink::open_(const char* driver, const char* output) {
 
     unsigned long in_rate = (unsigned long)out_signal_.rate;
     unsigned long out_rate = (unsigned long)output_->signal.rate;
+    sample_spec_.set_sample_rate((unsigned long)output_->signal.rate);
 
     if (in_rate != 0 && in_rate != out_rate) {
         roc_log(

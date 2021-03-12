@@ -38,7 +38,8 @@ SoxSource::SoxSource(core::IAllocator& allocator, const Config& config)
     }
 
     frame_length_ = config.frame_length;
-    channels_ = config.sample_spec.channel_mask();
+    sample_spec_ = audio::SampleSpec(config.sample_spec.sample_rate(),
+                                     config.sample_spec.channel_mask());
 
     if (frame_length_ == 0) {
         roc_log(LogError, "sox source: frame length is zero");
@@ -293,7 +294,7 @@ bool SoxSource::setup_names_(const char* driver, const char* input) {
 }
 
 bool SoxSource::setup_buffer_() {
-    buffer_size_ = audio::SampleSpec(sample_rate(), channels_).ns_to_size(frame_length_);
+    buffer_size_ = sample_spec_.ns_to_size(frame_length_);
     if (buffer_size_ == 0) {
         roc_log(LogError, "sox source: buffer size is zero");
         return false;
@@ -321,6 +322,7 @@ bool SoxSource::open_() {
     }
 
     is_file_ = !(input_->handler.flags & SOX_FILE_DEVICE);
+    sample_spec_.set_sample_rate((unsigned long)input_->signal.rate);
 
     roc_log(LogInfo,
             "sox source:"
