@@ -378,8 +378,8 @@ void PulseaudioSink::init_stream_params_(const pa_sink_info& info) {
 
     const size_t frame_size_bytes = frame_size_ * sizeof(audio::sample_t);
 
-    const size_t latency_bytes = config_.sample_spec.ns_to_size(latency_)
-        * sizeof(audio::sample_t);
+    const size_t latency_bytes =
+        config_.sample_spec.ns_to_size(latency_) * sizeof(audio::sample_t);
 
     buffer_attrs_.maxlength = (uint32_t)-1;
     buffer_attrs_.tlength = (uint32_t)latency_bytes;
@@ -393,7 +393,7 @@ bool PulseaudioSink::open_stream_() {
 
     roc_log(LogInfo,
             "pulseaudio sink: opening stream: device=%s n_channels=%lu sample_rate=%lu",
-            device_, (unsigned long)config_.sample_spec.num_channels(), 
+            device_, (unsigned long)config_.sample_spec.num_channels(),
             (unsigned long)config_.sample_spec.sample_rate());
 
     stream_ = pa_stream_new(context_, "Roc", &sample_spec_, NULL);
@@ -565,8 +565,9 @@ void PulseaudioSink::stream_latency_cb_(pa_stream* stream, void* userdata) {
         return;
     }
 
-    ssize_t latency = (ssize_t)(pa_usec_to_bytes(latency_us, &self.sample_spec_)
-                                / sizeof(audio::sample_t) / self.config_.sample_spec.num_channels());
+    ssize_t latency =
+        (ssize_t)(pa_usec_to_bytes(latency_us, &self.sample_spec_)
+                  / sizeof(audio::sample_t) / self.config_.sample_spec.num_channels());
 
     if (negative) {
         latency = -latency;

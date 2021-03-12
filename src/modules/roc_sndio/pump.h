@@ -12,8 +12,8 @@
 #ifndef ROC_SNDIO_PUMP_H_
 #define ROC_SNDIO_PUMP_H_
 
-#include "roc_audio/units.h"
 #include "roc_audio/sample_spec.h"
+#include "roc_audio/units.h"
 #include "roc_core/atomic.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/noncopyable.h"

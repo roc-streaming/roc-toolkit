@@ -43,7 +43,8 @@ public:
     //!  - @p reader is input packet reader
     //!  - @p config defines validator parameters
     //!  - @p sample_spec defines session sample spec
-    Validator(packet::IReader& reader, const ValidatorConfig& config, 
+    Validator(packet::IReader& reader,
+              const ValidatorConfig& config,
               const audio::SampleSpec& sample_spec);
 
     //! Read next packet.

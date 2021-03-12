@@ -42,7 +42,8 @@ enum {
 
 const audio::SampleSpec SampleSpecs = SampleSpec(SampleRate, ChMask);
 
-const core::nanoseconds_t PacketDuration = SamplesPerPacket * core::Second / SampleSpecs.sample_rate();
+const core::nanoseconds_t PacketDuration =
+    SamplesPerPacket * core::Second / SampleSpecs.sample_rate();
 
 core::HeapAllocator allocator;
 core::BufferPool<sample_t> sample_buffer_pool(allocator, MaxBufSize, true);
@@ -169,8 +170,7 @@ TEST(packetizer, one_buffer_one_packet) {
     packet::Queue packet_queue;
 
     Packetizer packetizer(packet_queue, rtp_composer, encoder, packet_pool,
-                          byte_buffer_pool, PacketDuration, SampleSpecs,
-                          PayloadType);
+                          byte_buffer_pool, PacketDuration, SampleSpecs, PayloadType);
 
     FrameMaker frame_maker;
     PacketChecker packet_checker(decoder);
@@ -195,8 +195,7 @@ TEST(packetizer, one_buffer_multiple_packets) {
     packet::Queue packet_queue;
 
     Packetizer packetizer(packet_queue, rtp_composer, encoder, packet_pool,
-                          byte_buffer_pool, PacketDuration, SampleSpecs,
-                          PayloadType);
+                          byte_buffer_pool, PacketDuration, SampleSpecs, PayloadType);
 
     FrameMaker frame_maker;
     PacketChecker packet_checker(decoder);
@@ -221,8 +220,7 @@ TEST(packetizer, multiple_buffers_one_packet) {
     packet::Queue packet_queue;
 
     Packetizer packetizer(packet_queue, rtp_composer, encoder, packet_pool,
-                          byte_buffer_pool, PacketDuration, SampleSpecs,
-                          PayloadType);
+                          byte_buffer_pool, PacketDuration, SampleSpecs, PayloadType);
 
     FrameMaker frame_maker;
     PacketChecker packet_checker(decoder);
@@ -253,8 +251,7 @@ TEST(packetizer, multiple_buffers_multiple_packets) {
     packet::Queue packet_queue;
 
     Packetizer packetizer(packet_queue, rtp_composer, encoder, packet_pool,
-                          byte_buffer_pool, PacketDuration, SampleSpecs,
-                          PayloadType);
+                          byte_buffer_pool, PacketDuration, SampleSpecs, PayloadType);
 
     FrameMaker frame_maker;
     PacketChecker packet_checker(decoder);
@@ -279,8 +276,7 @@ TEST(packetizer, flush) {
     packet::Queue packet_queue;
 
     Packetizer packetizer(packet_queue, rtp_composer, encoder, packet_pool,
-                          byte_buffer_pool, PacketDuration, SampleSpecs,
-                          PayloadType);
+                          byte_buffer_pool, PacketDuration, SampleSpecs, PayloadType);
 
     FrameMaker frame_maker;
     PacketChecker packet_checker(decoder);

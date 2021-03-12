@@ -113,8 +113,7 @@ TEST_GROUP(watchdog) {
 
 TEST(watchdog, no_playback_timeout_no_frames) {
     Watchdog watchdog(test_reader, SampleSpecs,
-                      make_config(NoPlaybackTimeout, BrokenPlaybackTimeout),
-                      allocator);
+                      make_config(NoPlaybackTimeout, BrokenPlaybackTimeout), allocator);
     CHECK(watchdog.valid());
 
     CHECK(watchdog.update());
@@ -122,8 +121,7 @@ TEST(watchdog, no_playback_timeout_no_frames) {
 
 TEST(watchdog, no_playback_timeout_blank_frames) {
     Watchdog watchdog(test_reader, SampleSpecs,
-                      make_config(NoPlaybackTimeout, BrokenPlaybackTimeout),
-                      allocator);
+                      make_config(NoPlaybackTimeout, BrokenPlaybackTimeout), allocator);
     CHECK(watchdog.valid());
 
     for (packet::timestamp_t n = 0; n < NoPlaybackTimeout / SamplesPerFrame; n++) {
@@ -139,8 +137,7 @@ TEST(watchdog, no_playback_timeout_blank_and_non_blank_frames) {
     CHECK(NoPlaybackTimeout % SamplesPerFrame == 0);
 
     Watchdog watchdog(test_reader, SampleSpecs,
-                      make_config(NoPlaybackTimeout, BrokenPlaybackTimeout),
-                      allocator);
+                      make_config(NoPlaybackTimeout, BrokenPlaybackTimeout), allocator);
     CHECK(watchdog.valid());
 
     for (unsigned int i = 0; i < 2; i++) {
@@ -313,8 +310,7 @@ TEST(watchdog, broken_playback_timeout_mixed_frame_sizes) {
 
 TEST(watchdog, broken_playback_timeout_constant_drops) {
     Watchdog watchdog(test_reader, SampleSpecs,
-                      make_config(NoPlaybackTimeout, BrokenPlaybackTimeout),
-                      allocator);
+                      make_config(NoPlaybackTimeout, BrokenPlaybackTimeout), allocator);
     CHECK(watchdog.valid());
 
     for (packet::timestamp_t n = 0; n < BreakageWindowsPerTimeout; n++) {

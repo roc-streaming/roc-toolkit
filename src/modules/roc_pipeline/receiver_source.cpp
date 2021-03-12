@@ -72,9 +72,7 @@ ReceiverSource::ReceiverSource(ITaskScheduler& scheduler,
                                core::BufferPool<uint8_t>& byte_buffer_pool,
                                core::BufferPool<audio::sample_t>& sample_buffer_pool,
                                core::IAllocator& allocator)
-    : TaskPipeline(scheduler,
-                   config.tasks,
-                   config.common.output_sample_spec)
+    : TaskPipeline(scheduler, config.tasks, config.common.output_sample_spec)
     , format_map_(format_map)
     , packet_pool_(packet_pool)
     , byte_buffer_pool_(byte_buffer_pool)
@@ -84,9 +82,9 @@ ReceiverSource::ReceiverSource(ITaskScheduler& scheduler,
     , audio_reader_(NULL)
     , config_(config)
     , timestamp_(0) {
-    mixer_.reset(new (mixer_) audio::Mixer(
-        sample_buffer_pool, config.common.internal_frame_length,
-        config.common.output_sample_spec));
+    mixer_.reset(new (mixer_)
+                     audio::Mixer(sample_buffer_pool, config.common.internal_frame_length,
+                                  config.common.output_sample_spec));
     if (!mixer_ || !mixer_->valid()) {
         return;
     }
@@ -102,7 +100,8 @@ ReceiverSource::ReceiverSource(ITaskScheduler& scheduler,
 
     if (config.common.profiling) {
         profiler_.reset(new (profiler_) audio::ProfilingReader(
-            *areader, allocator, config.common.output_sample_spec, config.common.profiler_config));
+            *areader, allocator, config.common.output_sample_spec,
+            config.common.profiler_config));
         if (!profiler_ || !profiler_->valid()) {
             return;
         }

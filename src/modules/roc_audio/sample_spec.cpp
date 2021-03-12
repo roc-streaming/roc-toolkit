@@ -16,8 +16,7 @@ SampleSpec::SampleSpec() {
     set_channel_mask(DefaultChannelMask);
 }
 
-SampleSpec::SampleSpec(size_t sample_rate, 
-                       packet::channel_mask_t channel_mask)
+SampleSpec::SampleSpec(size_t sample_rate, packet::channel_mask_t channel_mask)
     : sample_rate_(sample_rate) {
     set_channel_mask(channel_mask);
 }

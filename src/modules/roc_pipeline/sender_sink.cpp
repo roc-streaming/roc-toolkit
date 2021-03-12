@@ -91,9 +91,7 @@ SenderSink::SenderSink(ITaskScheduler& scheduler,
                        core::BufferPool<uint8_t>& byte_buffer_pool,
                        core::BufferPool<audio::sample_t>& sample_buffer_pool,
                        core::IAllocator& allocator)
-    : TaskPipeline(
-        scheduler, config.tasks, 
-        config.input_sample_spec)
+    : TaskPipeline(scheduler, config.tasks, config.input_sample_spec)
     , config_(config)
     , format_map_(format_map)
     , packet_pool_(packet_pool)
@@ -104,7 +102,8 @@ SenderSink::SenderSink(ITaskScheduler& scheduler,
     , timestamp_(0)
     , num_channels_(config_.input_sample_spec.num_channels()) {
     if (config_.timing) {
-        ticker_.reset(new (ticker_) core::Ticker(config_.input_sample_spec.sample_rate()));
+        ticker_.reset(new (ticker_)
+                          core::Ticker(config_.input_sample_spec.sample_rate()));
         if (!ticker_) {
             return;
         }

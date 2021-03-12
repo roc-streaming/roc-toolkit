@@ -46,7 +46,8 @@ Packetizer::Packetizer(packet::IWriter& writer,
     timestamp_ = (packet::timestamp_t)rand_timestamp;
     valid_ = true;
     roc_log(LogDebug, "packetizer: initializing: n_channels=%lu samples_per_packet=%lu",
-            (unsigned long)sample_spec_.num_channels(), (unsigned long)samples_per_packet_);
+            (unsigned long)sample_spec_.num_channels(),
+            (unsigned long)samples_per_packet_);
 }
 
 bool Packetizer::valid() const {
@@ -73,7 +74,8 @@ void Packetizer::write(Frame& frame) {
             ns = (samples_per_packet_ - packet_pos_);
         }
 
-        const size_t actual_ns = payload_encoder_.write(buffer_ptr, ns, sample_spec_.channel_mask());
+        const size_t actual_ns =
+            payload_encoder_.write(buffer_ptr, ns, sample_spec_.channel_mask());
         roc_panic_if_not(actual_ns == ns);
 
         buffer_ptr += actual_ns * sample_spec_.num_channels();

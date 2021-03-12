@@ -7,14 +7,14 @@
  */
 
 //! @file roc_audio/sample_spec.h
-//! @brief Sample specifications
+//! @brief Sample specifications.
 
-#ifndef ROC_SAMPLE_SPEC_H_
-#define ROC_SAMPLE_SPEC_H_
+#ifndef ROC_AUDIO_SAMPLE_SPEC_H_
+#define ROC_AUDIO_SAMPLE_SPEC_H_
 
 #include "roc_audio/units.h"
-#include "roc_packet/units.h"
 #include "roc_core/time.h"
+#include "roc_packet/units.h"
 
 namespace roc {
 namespace audio {
@@ -36,13 +36,13 @@ public:
 
     //! Get sample rate.
     size_t sample_rate() const;
-    
+
     //! Set sample rate.
     void set_sample_rate(size_t sample_rate);
 
     //! Get channel mask.
     packet::channel_mask_t channel_mask() const;
-    
+
     //! Set channel mask.
     void set_channel_mask(packet::channel_mask_t channel_mask);
 
@@ -69,8 +69,7 @@ private:
     size_t num_channels_;
 };
 
-
 } // namespace audio
 } // namespace roc
 
-#endif // ROC_SAMPLE_SPEC_H_
+#endif // ROC_AUDIO_SAMPLE_SPEC_H_

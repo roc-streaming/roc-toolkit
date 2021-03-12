@@ -43,10 +43,10 @@ TaskPipeline::TaskPipeline(ITaskScheduler& scheduler,
                            const audio::SampleSpec& sample_spec)
     : config_(config)
     , sample_spec_(sample_spec)
-    , min_samples_between_tasks_(sample_spec.ns_to_size(
-        config.min_frame_length_between_tasks))
-    , max_samples_between_tasks_(sample_spec.ns_to_size(
-        config.max_frame_length_between_tasks))
+    , min_samples_between_tasks_(
+          sample_spec.ns_to_size(config.min_frame_length_between_tasks))
+    , max_samples_between_tasks_(
+          sample_spec.ns_to_size(config.max_frame_length_between_tasks))
     , no_task_proc_half_interval_(config.task_processing_prohibited_interval / 2)
     , scheduler_(scheduler)
     , pending_tasks_(0)

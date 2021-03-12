@@ -200,7 +200,7 @@ bool SenderEndpointSet::create_pipeline_() {
 
     packetizer_.reset(new (packetizer_) audio::Packetizer(
         *pwriter, source_endpoint_->composer(), *payload_encoder_, packet_pool_,
-        byte_buffer_pool_, config_.packet_length, format->sample_spec, 
+        byte_buffer_pool_, config_.packet_length, format->sample_spec,
         config_.payload_type));
     if (!packetizer_ || !packetizer_->valid()) {
         return false;
@@ -208,7 +208,8 @@ bool SenderEndpointSet::create_pipeline_() {
 
     audio::IWriter* awriter = packetizer_.get();
 
-    if (config_.resampling && config_.input_sample_spec.sample_rate() != format->sample_spec.sample_rate()) {
+    if (config_.resampling
+        && config_.input_sample_spec.sample_rate() != format->sample_spec.sample_rate()) {
         if (config_.poisoning) {
             resampler_poisoner_.reset(new (resampler_poisoner_)
                                           audio::PoisonWriter(*awriter));

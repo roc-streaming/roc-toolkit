@@ -48,8 +48,7 @@ SpeexResampler::SpeexResampler(core::IAllocator&,
                                core::nanoseconds_t frame_length,
                                const audio::SampleSpec& sample_spec)
     : speex_state_(NULL)
-    , in_frame_size_(
-          (spx_uint32_t)sample_spec.ns_to_size(frame_length))
+    , in_frame_size_((spx_uint32_t)sample_spec.ns_to_size(frame_length))
     , in_frame_pos_(in_frame_size_)
     , num_ch_((spx_uint32_t)sample_spec.num_channels())
     , rate_limiter_(LogReportInterval)
@@ -72,8 +71,9 @@ SpeexResampler::SpeexResampler(core::IAllocator&,
     in_frame_.reslice(0, in_frame_size_);
 
     int err = 0;
-    speex_state_ = speex_resampler_init(num_ch_, (spx_uint32_t)sample_spec.sample_rate(),
-                                        (spx_uint32_t)sample_spec.sample_rate(), quality, &err);
+    speex_state_ =
+        speex_resampler_init(num_ch_, (spx_uint32_t)sample_spec.sample_rate(),
+                             (spx_uint32_t)sample_spec.sample_rate(), quality, &err);
     if (err != RESAMPLER_ERR_SUCCESS || !speex_state_) {
         roc_log(LogError, "speex resampler: speex_resampler_init(): [%d] %s", err,
                 get_error_msg(err));

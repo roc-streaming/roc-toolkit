@@ -23,8 +23,9 @@ ConverterSource::ConverterSource(const ConverterConfig& config,
     , config_(config) {
     audio::IReader* areader = &input_source_;
 
-    if (config.resampling && config.output_sample_spec.sample_rate() 
-                          != config.input_sample_spec.sample_rate()) {
+    if (config.resampling
+        && config.output_sample_spec.sample_rate()
+            != config.input_sample_spec.sample_rate()) {
         if (config.poisoning) {
             resampler_poisoner_.reset(new (resampler_poisoner_)
                                           audio::PoisonReader(*areader));
@@ -51,7 +52,8 @@ ConverterSource::ConverterSource(const ConverterConfig& config,
             return;
         }
         if (!resampler_reader_->set_scaling(config.input_sample_spec.sample_rate(),
-                                            config.output_sample_spec.sample_rate(), 1.0f)) {
+                                            config.output_sample_spec.sample_rate(),
+                                            1.0f)) {
             return;
         }
         areader = resampler_reader_.get();

@@ -114,8 +114,8 @@ BuiltinResampler::BuiltinResampler(core::IAllocator& allocator,
     , next_frame_(NULL)
     , scaling_(1.0)
     , frame_size_(sample_spec.ns_to_size(frame_length))
-    , frame_size_ch_(sample_spec.num_channels() ? 
-                     frame_size_ / sample_spec.num_channels() : 0)
+    , frame_size_ch_(sample_spec.num_channels() ? frame_size_ / sample_spec.num_channels()
+                                                : 0)
     , window_size_(get_window_size(profile))
     , qt_half_sinc_window_size_(float_to_fixedpoint(window_size_))
     , window_interp_(get_window_interp(profile))
@@ -309,7 +309,8 @@ bool BuiltinResampler::check_config_() const {
     }
 
     const size_t max_frame_size =
-        (((fixedpoint_t)(signed_fixedpoint_t)-1 >> FRACT_BIT_COUNT) + 1) * sample_spec_.num_channels();
+        (((fixedpoint_t)(signed_fixedpoint_t)-1 >> FRACT_BIT_COUNT) + 1)
+        * sample_spec_.num_channels();
     if (frame_size_ > max_frame_size) {
         roc_log(LogError,
                 "builtin resampler: frame_size is too much: "

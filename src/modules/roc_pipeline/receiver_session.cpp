@@ -117,8 +117,7 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
         || session_config.watchdog.broken_playback_timeout != 0
         || session_config.watchdog.frame_status_window != 0) {
         watchdog_.reset(new (watchdog_) audio::Watchdog(
-            *areader, session_config.sample_spec,
-            session_config.watchdog, allocator_));
+            *areader, session_config.sample_spec, session_config.watchdog, allocator_));
         if (!watchdog_ || !watchdog_->valid()) {
             return;
         }
@@ -135,14 +134,13 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
             areader = resampler_poisoner_.get();
         }
 
-        resampler_.reset(audio::ResamplerMap::instance().new_resampler(
-                             session_config.resampler_backend, allocator,
-                             sample_buffer_pool, session_config.resampler_profile,
-                             common_config.internal_frame_length,
-                             audio::SampleSpec(
-                                format->sample_spec.sample_rate(),
-                                session_config.sample_spec.channel_mask())),
-                         allocator);
+        resampler_.reset(
+            audio::ResamplerMap::instance().new_resampler(
+                session_config.resampler_backend, allocator, sample_buffer_pool,
+                session_config.resampler_profile, common_config.internal_frame_length,
+                audio::SampleSpec(format->sample_spec.sample_rate(),
+                                  session_config.sample_spec.channel_mask())),
+            allocator);
 
         if (!resampler_) {
             return;

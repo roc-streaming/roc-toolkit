@@ -27,8 +27,7 @@ IResampler* resampler_ctor(core::IAllocator& allocator,
                            ResamplerProfile profile,
                            core::nanoseconds_t frame_length,
                            const audio::SampleSpec& sample_spec) {
-    return new (allocator)
-        T(allocator, buffer_pool, profile, frame_length, sample_spec);
+    return new (allocator) T(allocator, buffer_pool, profile, frame_length, sample_spec);
 }
 
 } // namespace
@@ -92,9 +91,9 @@ IResampler* ResamplerMap::new_resampler(ResamplerBackend backend_id,
         return NULL;
     }
 
-    core::ScopedPtr<IResampler> resampler(backend->ctor(allocator, buffer_pool, profile,
-                                                        frame_length, sample_spec),
-                                          allocator);
+    core::ScopedPtr<IResampler> resampler(
+        backend->ctor(allocator, buffer_pool, profile, frame_length, sample_spec),
+        allocator);
 
     if (!resampler || !resampler->valid()) {
         return NULL;

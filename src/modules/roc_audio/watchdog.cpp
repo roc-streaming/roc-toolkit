@@ -18,10 +18,10 @@ Watchdog::Watchdog(IReader& reader,
                    core::IAllocator& allocator)
     : reader_(reader)
     , sample_spec_(sample_spec)
-    , max_blank_duration_((packet::timestamp_t)sample_spec.timestamp_from_ns(
-        config.no_playback_timeout))
+    , max_blank_duration_(
+          (packet::timestamp_t)sample_spec.timestamp_from_ns(config.no_playback_timeout))
     , max_drops_duration_((packet::timestamp_t)sample_spec.timestamp_from_ns(
-        config.broken_playback_timeout))
+          config.broken_playback_timeout))
     , drop_detection_window_((packet::timestamp_t)sample_spec.timestamp_from_ns(
           config.breakage_detection_window))
     , curr_read_pos_(0)

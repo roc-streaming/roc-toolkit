@@ -124,9 +124,11 @@ sample_t* Depacketizer::read_samples_(sample_t* buff_ptr, sample_t* buff_end) {
 }
 
 sample_t* Depacketizer::read_packet_samples_(sample_t* buff_ptr, sample_t* buff_end) {
-    const size_t max_samples = (size_t)(buff_end - buff_ptr) / sample_spec_.num_channels();
+    const size_t max_samples =
+        (size_t)(buff_end - buff_ptr) / sample_spec_.num_channels();
 
-    const size_t num_samples = payload_decoder_.read(buff_ptr, max_samples, sample_spec_.channel_mask());
+    const size_t num_samples =
+        payload_decoder_.read(buff_ptr, max_samples, sample_spec_.channel_mask());
 
     timestamp_ += packet::timestamp_t(num_samples);
     packet_samples_ += num_samples;
@@ -140,7 +142,8 @@ sample_t* Depacketizer::read_packet_samples_(sample_t* buff_ptr, sample_t* buff_
 }
 
 sample_t* Depacketizer::read_missing_samples_(sample_t* buff_ptr, sample_t* buff_end) {
-    const size_t num_samples = (size_t)(buff_end - buff_ptr) / sample_spec_.num_channels();
+    const size_t num_samples =
+        (size_t)(buff_end - buff_ptr) / sample_spec_.num_channels();
 
     if (beep_) {
         write_beep(buff_ptr, num_samples * sample_spec_.num_channels());

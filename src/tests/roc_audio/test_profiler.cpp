@@ -50,8 +50,8 @@ TEST(profiler, test_moving_average) {
     // populate frame speeds
     double frame_speeds[ROC_ARRAY_SIZE(frames)];
     for (size_t i = 0; i < ROC_ARRAY_SIZE(frames); ++i) {
-        frame_speeds[i] =
-            double(frames[i].size * core::Second) / frames[i].time / SampleSpecs.channel_mask();
+        frame_speeds[i] = double(frames[i].size * core::Second) / frames[i].time
+            / SampleSpecs.channel_mask();
     }
 
     size_t samples_in_moving_avg = 0;

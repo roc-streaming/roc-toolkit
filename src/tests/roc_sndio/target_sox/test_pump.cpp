@@ -57,8 +57,8 @@ TEST(pump, write_read) {
         SoxSink sox_sink(allocator, config);
         CHECK(sox_sink.open(NULL, file.path()));
 
-        Pump pump(buffer_pool, mock_source, NULL, sox_sink, BufDuration,
-                  SampleSpecs, Pump::ModeOneshot);
+        Pump pump(buffer_pool, mock_source, NULL, sox_sink, BufDuration, SampleSpecs,
+                  Pump::ModeOneshot);
         CHECK(pump.valid());
         CHECK(pump.run());
 
@@ -70,8 +70,8 @@ TEST(pump, write_read) {
 
     test::MockSink mock_writer;
 
-    Pump pump(buffer_pool, sox_source, NULL, mock_writer, BufDuration,
-              SampleSpecs, Pump::ModePermanent);
+    Pump pump(buffer_pool, sox_source, NULL, mock_writer, BufDuration, SampleSpecs,
+              Pump::ModePermanent);
     CHECK(pump.valid());
     CHECK(pump.run());
 
@@ -90,8 +90,8 @@ TEST(pump, write_overwrite_read) {
         SoxSink sox_sink(allocator, config);
         CHECK(sox_sink.open(NULL, file.path()));
 
-        Pump pump(buffer_pool, mock_source, NULL, sox_sink, BufDuration,
-                  SampleSpecs, Pump::ModeOneshot);
+        Pump pump(buffer_pool, mock_source, NULL, sox_sink, BufDuration, SampleSpecs,
+                  Pump::ModeOneshot);
         CHECK(pump.valid());
         CHECK(pump.run());
     }
@@ -105,8 +105,8 @@ TEST(pump, write_overwrite_read) {
         SoxSink sox_sink(allocator, config);
         CHECK(sox_sink.open(NULL, file.path()));
 
-        Pump pump(buffer_pool, mock_source, NULL, sox_sink, BufDuration,
-                  SampleSpecs, Pump::ModeOneshot);
+        Pump pump(buffer_pool, mock_source, NULL, sox_sink, BufDuration, SampleSpecs,
+                  Pump::ModeOneshot);
         CHECK(pump.valid());
         CHECK(pump.run());
     }
@@ -119,8 +119,8 @@ TEST(pump, write_overwrite_read) {
 
     test::MockSink mock_writer;
 
-    Pump pump(buffer_pool, sox_source, NULL, mock_writer, BufDuration,
-              SampleSpecs, Pump::ModePermanent);
+    Pump pump(buffer_pool, sox_source, NULL, mock_writer, BufDuration, SampleSpecs,
+              Pump::ModePermanent);
     CHECK(pump.valid());
     CHECK(pump.run());
 

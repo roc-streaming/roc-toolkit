@@ -86,17 +86,16 @@ int main(int argc, char** argv) {
     }
 
     sndio::BackendDispatcher::instance().set_frame_size(
-        converter_config.internal_frame_length, 
-        converter_config.input_sample_spec);
+        converter_config.internal_frame_length, converter_config.input_sample_spec);
 
-    core::BufferPool<audio::sample_t> pool(
-        allocator, 
-        converter_config.input_sample_spec.ns_to_size(converter_config.internal_frame_length),
-        args.poisoning_flag);
+    core::BufferPool<audio::sample_t> pool(allocator,
+                                           converter_config.input_sample_spec.ns_to_size(
+                                               converter_config.internal_frame_length),
+                                           args.poisoning_flag);
 
     sndio::Config source_config;
     source_config.sample_spec.set_channel_mask(
-                        converter_config.input_sample_spec.channel_mask());
+        converter_config.input_sample_spec.channel_mask());
     source_config.sample_spec.set_sample_rate(0);
     source_config.frame_length = converter_config.internal_frame_length;
 
@@ -131,7 +130,8 @@ int main(int argc, char** argv) {
     if (args.rate_given) {
         converter_config.output_sample_spec.set_sample_rate((size_t)args.rate_arg);
     } else {
-        converter_config.output_sample_spec.set_sample_rate(converter_config.input_sample_spec.sample_rate());
+        converter_config.output_sample_spec.set_sample_rate(
+            converter_config.input_sample_spec.sample_rate());
     }
 
     switch ((unsigned)args.resampler_backend_arg) {
@@ -213,8 +213,7 @@ int main(int argc, char** argv) {
 
     sndio::Pump pump(pool, *input_source, NULL, converter,
                      converter_config.internal_frame_length,
-                     converter_config.input_sample_spec,
-                     sndio::Pump::ModePermanent);
+                     converter_config.input_sample_spec, sndio::Pump::ModePermanent);
     if (!pump.valid()) {
         roc_log(LogError, "can't create audio pump");
         return 1;
