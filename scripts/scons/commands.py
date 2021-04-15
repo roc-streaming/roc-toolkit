@@ -205,7 +205,7 @@ def SymlinkLibrary(env, src):
     return ret
 
 def FixupLibrary(env, path):
-    if not env.Which('install_name_tool'):
+    if not path.endswith('.dylib') or not env.Which('install_name_tool'):
         return []
 
     return [SCons.Action.CommandAction(
