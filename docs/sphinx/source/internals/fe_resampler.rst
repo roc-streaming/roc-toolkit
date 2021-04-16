@@ -16,9 +16,9 @@ Let's imagine an experiment. Assume two hosts, the first one sends sound via the
 
 Here is the result of a real experiment. Sender and receiver were running on two computers in one LAN. The sample rate was 44100 Hz and the initial queue size was 10000 samples. The receiver soundcard turned out to be a bit faster than the sender soundcard. After about 60 minutes playback the delay between receiver and sender reached 10000 samples and the playback had broken. This means that every hour the receiver timer outruns the sender timer by approximately 200 milliseconds and the clock difference is about 0.0055%.
 
-.. image:: ../_images/clock_difference.png
-    :align: center
-    :alt: Running without resampler
+##.. image:: ../_images/clock_difference.png
+##    :align: center
+##    :alt: Running without resampler
 
 We must mention that samples come in packets and incoming queue consists of the received packets. However, it doesn't change anything and we still have to care about underruns and overruns.
 
@@ -39,9 +39,9 @@ From the top view latency monitor talks to frequency estimator the current laten
 
 Here is the overall picture:
 
-.. image:: ../_images/fe_resampler.png
-    :align: center
-    :alt: Frequency estimator and resampler
+##.. image:: ../_images/fe_resampler.png
+##    :align: center
+##    :alt: Frequency estimator and resampler
 
 Frequency estimator
 ===================

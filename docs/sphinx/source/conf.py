@@ -10,6 +10,7 @@ extensions = [
     'sphinx.ext.coverage',
     'sphinx.ext.mathjax',
     'breathe',
+    'rst2pdf.pdfbuilder',
 ]
 
 templates_path = []
@@ -24,7 +25,7 @@ copyright = u'%s, Roc authors' % datetime.datetime.now().year
 author = u'Roc authors'
 
 version_tuple = open(os.path.join(
-    os.path.dirname(__file__), '../../.version')).read().strip().split('.')
+    os.path.dirname(__file__), '../../../.version')).read().strip().split('.')
 
 version = 'Roc Toolkit %s' % '.'.join(version_tuple[:2])
 release = '%s' % '.'.join(version_tuple)
@@ -33,9 +34,12 @@ pygments_style = 'sphinx'
 
 todo_include_todos = False
 
+pdf_filename = u'RocToolKit'
+
+pdf_documents = [(master_doc,pdf_filename,u'RocToolkit Documentation',author),]
 # -- Options for Breathe ----------------------------------------------
 
-breathe_projects = { 'roc': '../../build/docs/lib/xml' }
+breathe_projects = { 'roc': '../../../build/docs/lib/xml' }
 
 breathe_default_project = 'roc'
 breathe_domain_by_extension = {'h': 'c'}
@@ -46,7 +50,7 @@ html_title = '%s %s' % (project, release)
 
 html_theme = 'nature'
 
-html_logo = '../images/logo80.png'
+html_logo = '../../images/logo80.png'
 
 html_sidebars = {
    '**': ['globaltoc.html', 'searchbox.html'],

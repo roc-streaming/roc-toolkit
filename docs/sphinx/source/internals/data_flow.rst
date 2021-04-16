@@ -26,9 +26,9 @@ Threads typically don't share much state and mostly communicate via queues. The 
 
 The following diagram gives a conceptual view of both sender and receiver structure:
 
-.. image:: ../_images/threads.png
-    :align: center
-    :alt: Threads
+##.. image:: ../_images/threads.png
+##    :align: center
+##    :alt: Threads
 
 The difference is that on the receiver data is transferring from the network to the sound card and on the sender it is transferring from the sound card to the network.
 
@@ -79,10 +79,10 @@ In general terms, the flow is the following:
 
 The specific functions of the individual pipeline elements are documented in `Doxygen <https://roc-streaming.org/toolkit/doxygen/>`_.
 
-.. image:: ../_images/sender_pipeline.png
-    :align: center
-    :width: 520px
-    :alt: Sender pipeline
+##.. image:: ../_images/sender_pipeline.png
+##    :align: center
+##    :width: 520px
+##    :alt: Sender pipeline
 
 Receiver pipeline
 =================
@@ -112,10 +112,10 @@ The flow of the read part is the following:
 
 The specific functions of the individual pipeline elements are documented in `Doxygen <https://roc-streaming.org/toolkit/doxygen/>`_.
 
-.. image:: ../_images/receiver_pipeline.png
-    :align: center
-    :width: 620px
-    :alt: Receiver pipeline
+##.. image:: ../_images/receiver_pipeline.png
+##    :align: center
+##    :width: 620px
+##    :alt: Receiver pipeline
 
 Routing in receiver
 ===================
@@ -134,7 +134,7 @@ When a frame is requested by the sound card, the receiver requests a frame from 
 
 The diagram below illustrates this routing.
 
-.. image:: ../_images/receiver_routing.png
-    :align: center
-    :width: 835px
-    :alt: Receiver pipeline
+##.. image:: ../_images/receiver_routing.png
+##    :align: center
+##    :width: 835px
+##    :alt: Receiver pipeline
