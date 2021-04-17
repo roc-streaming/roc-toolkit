@@ -26,9 +26,9 @@ Roc consists of the following high-level components:
 
   PulseAudio integration. Implement Roc-based network connectivity for PulseAudio. See :doc:`/running/pulseaudio_modules` page.
 
-##.. image:: ../_images/components.png
-##    :align: center
-##    :alt: High-level components
+.. image:: ../_images/components.png
+    :align: center
+    :alt: High-level components
 
 Modules
 =======

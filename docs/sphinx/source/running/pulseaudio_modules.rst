@@ -117,8 +117,8 @@ You can then connect the Roc sink input to an audio device (i.e. a sink) via com
 
 Or via the ``pavucontrol`` graphical tool:
 
-##.. image:: ../_images/roc_pulse_receiver.png
-##    :width: 600px
+.. image:: ../_images/roc_pulse_receiver.png
+    :width: 600px
 
 Running sender
 ==============
@@ -158,8 +158,8 @@ You can then connect an audio stream (i.e. a sink input) to the Roc sink via com
 
 Or via the ``pavucontrol`` graphical tool:
 
-##.. image:: ../_images/roc_pulse_sender.png
-##    :width: 600px
+.. image:: ../_images/roc_pulse_sender.png
+    :width: 600px
 
 Naming
 ======

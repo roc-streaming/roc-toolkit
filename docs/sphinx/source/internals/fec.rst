@@ -65,10 +65,10 @@ Sender
 
 The diagram below shows a piece of the sender pipeline responsible for FEC.
 
-##.. image:: ../_images/fec_writer_overview.png
-##    :align: center
-##    :width: 800px
-##    :alt: Writer overview
+.. image:: ../_images/fec_writer_overview.png
+    :align: center
+    :width: 800px
+    :alt: Writer overview
 
 * writer works with the packets flow, cuts this flow into blocks;
 * writer passes contents of current block to encoder;
@@ -86,10 +86,10 @@ Receiver
 
 The diagram below shows a piece of the receiver pipeline responsible for FEC.
 
-##.. image:: ../_images/fec_reader_overview.png
-##    :align: center
-##    :width: 650px
-##    :alt: Reader overview
+.. image:: ../_images/fec_reader_overview.png
+    :align: center
+    :width: 650px
+    :alt: Reader overview
 
 * reader works with the packets flow, cuts this flow into blocks;
 * if there are lost packets in the current block:
