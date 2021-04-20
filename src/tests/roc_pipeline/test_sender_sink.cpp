@@ -247,7 +247,7 @@ TEST(sender_sink, write) {
                                      packet_pool, PayloadType, dst_addr);
 
     for (size_t np = 0; np < ManyFrames / FramesPerPacket; np++) {
-        packet_reader.read_packet(SamplesPerPacket, ChMask);
+        packet_reader.read_packet(SamplesPerPacket, SampleSpecs);
     }
 
     CHECK(!queue.read());
@@ -286,7 +286,7 @@ TEST(sender_sink, frame_size_small) {
                                      packet_pool, PayloadType, dst_addr);
 
     for (size_t np = 0; np < ManySmallFrames / SmallFramesPerPacket; np++) {
-        packet_reader.read_packet(SamplesPerPacket, ChMask);
+        packet_reader.read_packet(SamplesPerPacket, SampleSpecs);
     }
 
     CHECK(!queue.read());
@@ -325,7 +325,7 @@ TEST(sender_sink, frame_size_large) {
                                      packet_pool, PayloadType, dst_addr);
 
     for (size_t np = 0; np < ManyLargeFrames * PacketsPerLargeFrame; np++) {
-        packet_reader.read_packet(SamplesPerPacket, ChMask);
+        packet_reader.read_packet(SamplesPerPacket, SampleSpecs);
     }
 
     CHECK(!queue.read());

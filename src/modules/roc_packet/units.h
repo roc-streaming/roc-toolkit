@@ -66,17 +66,6 @@ inline bool timestamp_le(timestamp_t a, timestamp_t b) {
 //! Bitmask of channels present in audio packet.
 typedef uint32_t channel_mask_t;
 
-//! Get number of channels in mask.
-inline size_t num_channels(channel_mask_t ch_mask) {
-    size_t n_ch = 0;
-    for (; ch_mask != 0; ch_mask >>= 1) {
-        if (ch_mask & 1) {
-            n_ch++;
-        }
-    }
-    return n_ch;
-}
-
 //! FEC block number in a packet stream.
 typedef uint16_t blknum_t;
 

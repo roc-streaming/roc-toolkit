@@ -13,7 +13,17 @@
 namespace roc {
 namespace packet {
 
-TEST_GROUP(units) {};
+TEST_GROUP(units) {
+    inline size_t num_channels(packet::channel_mask_t ch_mask) {
+        size_t n_ch = 0;
+        for (; ch_mask != 0; ch_mask >>= 1) {
+            if (ch_mask & 1) {
+                n_ch++;
+            }
+        }
+        return n_ch;
+    }
+};
 
 TEST(units, seqnum_diff) {
     const seqnum_t v = 65535;
