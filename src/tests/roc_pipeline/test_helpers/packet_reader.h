@@ -92,9 +92,9 @@ private:
                                 pp->rtp()->payload.size());
 
         audio::sample_t samples[MaxSamples] = {};
-        UNSIGNED_LONGS_EQUAL(
-            samples_per_packet,
-            payload_decoder_->read(samples, samples_per_packet, sample_spec.channel_mask()));
+        UNSIGNED_LONGS_EQUAL(samples_per_packet,
+                             payload_decoder_->read(samples, samples_per_packet,
+                                                    sample_spec.channel_mask()));
 
         payload_decoder_->end();
 

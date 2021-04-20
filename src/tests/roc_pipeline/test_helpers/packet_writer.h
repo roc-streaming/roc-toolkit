@@ -67,8 +67,7 @@ public:
                   audio::SampleSpec sample_spec) {
         seqnum_ = packet::seqnum_t(num_packets);
         timestamp_ = packet::timestamp_t(num_packets * samples_per_packet);
-        offset_ =
-            uint8_t(num_packets * samples_per_packet * sample_spec.num_channels());
+        offset_ = uint8_t(num_packets * samples_per_packet * sample_spec.num_channels());
     }
 
     uint8_t offset() const {
@@ -151,9 +150,9 @@ private:
 
         payload_encoder_->begin(pp->rtp()->payload.data(), pp->rtp()->payload.size());
 
-        UNSIGNED_LONGS_EQUAL(
-            samples_per_packet,
-            payload_encoder_->write(samples, samples_per_packet, sample_spec.channel_mask()));
+        UNSIGNED_LONGS_EQUAL(samples_per_packet,
+                             payload_encoder_->write(samples, samples_per_packet,
+                                                     sample_spec.channel_mask()));
 
         payload_encoder_->end();
 

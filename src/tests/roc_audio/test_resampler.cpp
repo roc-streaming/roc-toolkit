@@ -211,8 +211,7 @@ TEST(resampler, supported_scalings) {
                             core::ScopedPtr<IResampler> resampler(
                                 ResamplerMap::instance().new_resampler(
                                     backend, allocator, buffer_pool, profiles[pn],
-                                    SampleSpecs.size_to_ns(frame_sizes[fn]),
-                                    SampleSpecs),
+                                    SampleSpecs.size_to_ns(frame_sizes[fn]), SampleSpecs),
                                 allocator);
                             CHECK(resampler);
                             CHECK(resampler->valid());

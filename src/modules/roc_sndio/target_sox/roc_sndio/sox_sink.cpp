@@ -170,7 +170,7 @@ bool SoxSink::open_(const char* driver, const char* output) {
             out_rate, in_rate);
         return false;
     }
-    
+
     sample_spec_.set_sample_rate((unsigned long)output_->signal.rate);
 
     roc_log(LogInfo,

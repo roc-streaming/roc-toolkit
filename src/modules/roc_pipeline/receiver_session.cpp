@@ -106,7 +106,8 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
     }
 
     depacketizer_.reset(new (depacketizer_) audio::Depacketizer(
-        *preader, *payload_decoder_, common_config.output_sample_spec, common_config.beeping));
+        *preader, *payload_decoder_, common_config.output_sample_spec,
+        common_config.beeping));
     if (!depacketizer_) {
         return;
     }
@@ -116,8 +117,9 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
     if (session_config.watchdog.no_playback_timeout != 0
         || session_config.watchdog.broken_playback_timeout != 0
         || session_config.watchdog.frame_status_window != 0) {
-        watchdog_.reset(new (watchdog_) audio::Watchdog(
-            *areader, common_config.output_sample_spec, session_config.watchdog, allocator_));
+        watchdog_.reset(new (watchdog_)
+                            audio::Watchdog(*areader, common_config.output_sample_spec,
+                                            session_config.watchdog, allocator_));
         if (!watchdog_ || !watchdog_->valid()) {
             return;
         }

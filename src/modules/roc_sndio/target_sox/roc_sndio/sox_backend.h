@@ -12,12 +12,12 @@
 #ifndef ROC_SNDIO_SOX_BACKEND_H_
 #define ROC_SNDIO_SOX_BACKEND_H_
 
-#include <sox.h>
 #include "roc_audio/sample_spec.h"
 #include "roc_core/mutex.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/singleton.h"
 #include "roc_sndio/ibackend.h"
+#include <sox.h>
 
 namespace roc {
 namespace sndio {

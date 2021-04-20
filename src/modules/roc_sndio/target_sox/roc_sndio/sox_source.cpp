@@ -323,7 +323,8 @@ bool SoxSource::open_() {
         roc_log(LogError,
                 "sox source: can't open: unsupported # of channels: "
                 "expected=%lu actual=%lu",
-                (unsigned long)sample_spec_.num_channels(), (unsigned long)input_->signal.channels);
+                (unsigned long)sample_spec_.num_channels(),
+                (unsigned long)input_->signal.channels);
         return false;
     }
 
