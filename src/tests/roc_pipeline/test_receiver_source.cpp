@@ -178,8 +178,6 @@ TEST_GROUP(receiver_source) {
         config.common.poisoning = true;
         config.common.profiling = true;
 
-        config.default_session.sample_spec.set_channel_mask(ChMask);
-
         config.default_session.target_latency = Latency * core::Second / SampleRate;
 
         config.default_session.latency_monitor.min_latency =

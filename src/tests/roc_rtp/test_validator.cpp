@@ -11,6 +11,7 @@
 #include "roc_core/heap_allocator.h"
 #include "roc_packet/packet_pool.h"
 #include "roc_packet/queue.h"
+#include "roc_pipeline/config.h"
 #include "roc_rtp/headers.h"
 #include "roc_rtp/validator.h"
 
@@ -25,7 +26,7 @@ const PayloadType Pt2 = PayloadType_L16_Mono;
 enum { Src1 = 55, Src2 = 77, SampleRate = 10000, MaxSnJump = 100, MaxTsJump = 1000 };
 
 const audio::SampleSpec SampleSpecs =
-    audio::SampleSpec(SampleRate, audio::DefaultChannelMask);
+    audio::SampleSpec(SampleRate, pipeline::DefaultChannelMask);
 
 core::HeapAllocator allocator;
 packet::PacketPool pool(allocator, true);

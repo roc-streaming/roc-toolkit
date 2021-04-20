@@ -211,8 +211,7 @@ TEST(resampler, supported_scalings) {
                             core::ScopedPtr<IResampler> resampler(
                                 ResamplerMap::instance().new_resampler(
                                     backend, allocator, buffer_pool, profiles[pn],
-                                    audio::SampleSpec(rates[irate], ChMask)
-                                        .size_to_ns(frame_sizes[fn]),
+                                    SampleSpecs.size_to_ns(frame_sizes[fn]),
                                     SampleSpecs),
                                 allocator);
                             CHECK(resampler);

@@ -12,6 +12,7 @@
 #include "roc_packet/delayed_reader.h"
 #include "roc_packet/packet_pool.h"
 #include "roc_packet/queue.h"
+#include "roc_pipeline/config.h"
 
 namespace roc {
 namespace packet {
@@ -21,7 +22,7 @@ namespace {
 enum { SampleRate = 1000, NumSamples = 100, NumPackets = 30 };
 
 const core::nanoseconds_t NsPerSample = core::Second / SampleRate;
-const audio::SampleSpec SampleSpecs = audio::SampleSpec(SampleRate, audio::DefaultChannelMask);
+const audio::SampleSpec SampleSpecs = audio::SampleSpec(SampleRate, pipeline::DefaultChannelMask);
 
 core::HeapAllocator allocator;
 PacketPool pool(allocator, true);

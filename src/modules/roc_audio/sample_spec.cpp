@@ -7,17 +7,20 @@
  */
 
 #include "roc_audio/sample_spec.h"
+#include "roc_core/panic.h"
 
 namespace roc {
 namespace audio {
 
 SampleSpec::SampleSpec() {
-    sample_rate_ = DefaultSampleRate;
-    set_channel_mask(DefaultChannelMask);
+    sample_rate_ = 0;
+    set_channel_mask(0);
 }
 
-SampleSpec::SampleSpec(size_t sample_rate, packet::channel_mask_t channel_mask)
-    : sample_rate_(sample_rate) {
+SampleSpec::SampleSpec(size_t sample_rate, packet::channel_mask_t channel_mask) {
+    roc_panic_if(sample_rate == 0);
+    roc_panic_if(channel_mask == 0);
+    sample_rate_ = sample_rate;
     set_channel_mask(channel_mask);
 }
 

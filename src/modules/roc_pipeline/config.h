@@ -165,9 +165,6 @@ struct ReceiverSessionConfig {
     //! Target latency, nanoseconds.
     core::nanoseconds_t target_latency;
 
-    //! Sample spec.
-    audio::SampleSpec sample_spec;
-
     //! Packet payload type.
     unsigned int payload_type;
 
@@ -194,7 +191,6 @@ struct ReceiverSessionConfig {
 
     ReceiverSessionConfig()
         : target_latency(DefaultLatency)
-        , sample_spec()
         , payload_type(0)
         , resampler_backend(audio::ResamplerBackend_Default)
         , resampler_profile(audio::ResamplerProfile_Medium) {

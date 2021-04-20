@@ -32,7 +32,7 @@ struct Config {
 
     //! Initialize.
     Config()
-        : sample_spec(0, 0)
+        : sample_spec()
         , frame_length(0)
         , latency(0) {
     }

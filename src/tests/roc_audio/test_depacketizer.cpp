@@ -25,8 +25,8 @@ namespace audio {
 
 namespace {
 
-enum { MaxBufSize = 4000, SamplesPerPacket = 200, SampleRate=100, ChMask = 0x3,
-       SamplesSize = 400 };
+enum { MaxBufSize = 4000, SamplesPerPacket = 200, SampleRate=100, 
+       ChMask = 0x3, NumCh=2, SamplesSize = SamplesPerPacket*NumCh };
 
 core::HeapAllocator allocator;
 core::BufferPool<sample_t> sample_buffer_pool(allocator, MaxBufSize, true);

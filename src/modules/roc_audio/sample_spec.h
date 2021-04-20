@@ -19,12 +19,6 @@
 namespace roc {
 namespace audio {
 
-//! Default sample rate, number of samples per second.
-const size_t DefaultSampleRate = 44100;
-
-//! Default channel mask.
-const packet::channel_mask_t DefaultChannelMask = 0x3;
-
 //! Sample spec.
 class SampleSpec {
 public:

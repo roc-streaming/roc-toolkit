@@ -94,7 +94,6 @@ private:
 
     sox_format_t* input_;
     sox_signalinfo_t in_signal_;
-    size_t n_channels_;
 
     bool is_file_;
     bool eof_;
