@@ -13,6 +13,7 @@ src/tests/roc_packet/test_delayed_reader.cpp
 src/tests/roc_packet/test_interleaver.cpp
 src/tests/roc_packet/test_router.cpp
 src/tests/roc_packet/test_sorted_queue.cpp
+src/tests/roc_packet/test_units.cpp
 src/tests/roc_packet/test_watchdog.cpp
 src/tests/roc_pipeline/test_sender_receiver.cpp
 src/tests/roc_pipeline/test_sender_sink_receiver_source.cpp

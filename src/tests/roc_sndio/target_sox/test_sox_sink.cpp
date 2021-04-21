@@ -30,7 +30,7 @@ TEST_GROUP(sox_sink) {
         sink_config.sample_spec = audio::SampleSpec(SampleRate, ChMask);
         sink_config.frame_length = FrameSize * core::Second
             / (sink_config.sample_spec.sample_rate()
-            * sink_config.sample_spec.num_channels());
+               * sink_config.sample_spec.num_channels());
     }
 };
 
