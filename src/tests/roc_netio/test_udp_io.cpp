@@ -39,8 +39,8 @@ UdpReceiverConfig make_receiver_config() {
 }
 
 NetworkLoop::PortHandle add_udp_receiver(NetworkLoop& net_loop,
-                                       UdpReceiverConfig& config,
-                                       packet::IWriter& writer) {
+                                         UdpReceiverConfig& config,
+                                         packet::IWriter& writer) {
     NetworkLoop::Tasks::AddUdpReceiverPort task(config, writer);
     CHECK(!task.success());
     CHECK(net_loop.schedule_and_wait(task));
@@ -58,55 +58,55 @@ add_udp_sender(NetworkLoop& net_loop, UdpSenderConfig& config, packet::IWriter**
     return task.get_handle();
 }
 
+core::Slice<uint8_t> new_buffer(int value) {
+    core::Slice<uint8_t> buf = new (buffer_pool) core::Buffer<uint8_t>(buffer_pool);
+    CHECK(buf);
+    buf.reslice(0, BufferSize);
+    for (int n = 0; n < BufferSize; n++) {
+        buf.data()[n] = uint8_t((value + n) & 0xff);
+    }
+    return buf;
+}
+
+packet::PacketPtr new_packet(const UdpSenderConfig& tx_config,
+                             const UdpReceiverConfig& rx_config,
+                             int value) {
+    packet::PacketPtr pp = new (packet_pool) packet::Packet(packet_pool);
+    CHECK(pp);
+
+    pp->add_flags(packet::Packet::FlagUDP);
+
+    pp->udp()->src_addr = tx_config.bind_address;
+    pp->udp()->dst_addr = rx_config.bind_address;
+
+    pp->set_data(new_buffer(value));
+
+    return pp;
+}
+
+void check_packet(const packet::PacketPtr& pp,
+                  const UdpSenderConfig& tx_config,
+                  const UdpReceiverConfig& rx_config,
+                  int value) {
+    CHECK(pp);
+
+    CHECK(pp->udp());
+    CHECK(pp->data());
+
+    CHECK(pp->udp()->src_addr == tx_config.bind_address);
+    CHECK(pp->udp()->dst_addr == rx_config.bind_address);
+
+    core::Slice<uint8_t> expected = new_buffer(value);
+
+    UNSIGNED_LONGS_EQUAL(expected.size(), pp->data().size());
+    CHECK(memcmp(pp->data().data(), expected.data(), expected.size()) == 0);
+}
+
 } // namespace
 
-TEST_GROUP(udp) {
-    core::Slice<uint8_t> new_buffer(int value) {
-        core::Slice<uint8_t> buf = new (buffer_pool) core::Buffer<uint8_t>(buffer_pool);
-        CHECK(buf);
-        buf.reslice(0, BufferSize);
-        for (int n = 0; n < BufferSize; n++) {
-            buf.data()[n] = uint8_t((value + n) & 0xff);
-        }
-        return buf;
-    }
+TEST_GROUP(udp_io) {};
 
-    packet::PacketPtr new_packet(const UdpSenderConfig& tx_config,
-                                 const UdpReceiverConfig& rx_config,
-                                 int value) {
-        packet::PacketPtr pp = new (packet_pool) packet::Packet(packet_pool);
-        CHECK(pp);
-
-        pp->add_flags(packet::Packet::FlagUDP);
-
-        pp->udp()->src_addr = tx_config.bind_address;
-        pp->udp()->dst_addr = rx_config.bind_address;
-
-        pp->set_data(new_buffer(value));
-
-        return pp;
-    }
-
-    void check_packet(const packet::PacketPtr& pp,
-                      const UdpSenderConfig& tx_config,
-                      const UdpReceiverConfig& rx_config,
-                      int value) {
-        CHECK(pp);
-
-        CHECK(pp->udp());
-        CHECK(pp->data());
-
-        CHECK(pp->udp()->src_addr == tx_config.bind_address);
-        CHECK(pp->udp()->dst_addr == rx_config.bind_address);
-
-        core::Slice<uint8_t> expected = new_buffer(value);
-
-        UNSIGNED_LONGS_EQUAL(expected.size(), pp->data().size());
-        CHECK(memcmp(pp->data().data(), expected.data(), expected.size()) == 0);
-    }
-};
-
-TEST(udp, one_sender_one_receiver_single_thread_non_blocking_disabled) {
+TEST(udp_io, one_sender_one_receiver_single_thread_non_blocking_disabled) {
     packet::ConcurrentQueue rx_queue;
 
     UdpSenderConfig tx_config = make_sender_config();
@@ -133,7 +133,7 @@ TEST(udp, one_sender_one_receiver_single_thread_non_blocking_disabled) {
     }
 }
 
-TEST(udp, one_sender_one_receiver_single_thread) {
+TEST(udp_io, one_sender_one_receiver_single_loop) {
     packet::ConcurrentQueue rx_queue;
 
     UdpSenderConfig tx_config = make_sender_config();
@@ -158,7 +158,7 @@ TEST(udp, one_sender_one_receiver_single_thread) {
     }
 }
 
-TEST(udp, one_sender_one_receiver_separate_threads) {
+TEST(udp_io, one_sender_one_receiver_separate_loops) {
     packet::ConcurrentQueue rx_queue;
 
     UdpSenderConfig tx_config = make_sender_config();
@@ -185,7 +185,7 @@ TEST(udp, one_sender_one_receiver_separate_threads) {
     }
 }
 
-TEST(udp, one_sender_multiple_receivers) {
+TEST(udp_io, one_sender_many_receivers) {
     packet::ConcurrentQueue rx_queue1;
     packet::ConcurrentQueue rx_queue2;
     packet::ConcurrentQueue rx_queue3;
@@ -226,7 +226,7 @@ TEST(udp, one_sender_multiple_receivers) {
     }
 }
 
-TEST(udp, multiple_senders_one_receiver) {
+TEST(udp_io, many_senders_one_receiver) {
     packet::ConcurrentQueue rx_queue;
 
     UdpSenderConfig tx_config1 = make_sender_config();
