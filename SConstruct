@@ -971,6 +971,12 @@ if meta.compiler == 'clang':
                     '-Wno-poison-system-directories',
                     '-Wno-anon-enum-enum-conversion',
                 ]})
+        if meta.compiler_ver[:3] >= (12, 0, 5):
+            for var in ['CXXFLAGS', 'CFLAGS']:
+                env.Append(**{var: [
+                    '-Wno-suggest-override',
+                    '-Wno-suggest-destructor-override',
+                ]})
 
     if meta.platform == 'android':
         env.Append(CXXFLAGS=[
