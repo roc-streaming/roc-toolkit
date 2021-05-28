@@ -6,18 +6,18 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_netio/target_libuv/roc_netio/resolver_request_handler.h
-//! @brief Resolver request result handler.
+//! @file roc_netio/target_libuv/roc_netio/iresolver_request_handler.h
+//! @brief Resolver request result handler interface.
 
-#ifndef ROC_NETIO_RESOLVER_REQUEST_HANDLER_H_
-#define ROC_NETIO_RESOLVER_REQUEST_HANDLER_H_
+#ifndef ROC_NETIO_IRESOLVER_REQUEST_HANDLER_H_
+#define ROC_NETIO_IRESOLVER_REQUEST_HANDLER_H_
 
 #include "roc_netio/resolver_request.h"
 
 namespace roc {
 namespace netio {
 
-//! Resolver request result handler.
+//! Resolver request result handler interface.
 class IResolverRequestHandler {
 public:
     virtual ~IResolverRequestHandler();
@@ -29,4 +29,4 @@ public:
 } // namespace netio
 } // namespace roc
 
-#endif // ROC_NETIO_RESOLVER_REQUEST_HANDLER_H_
+#endif // ROC_NETIO_IRESOLVER_REQUEST_HANDLER_H_
