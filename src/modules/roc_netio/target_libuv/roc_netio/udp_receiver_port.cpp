@@ -166,7 +166,7 @@ void UdpReceiverPort::close_cb_(uv_handle_t* handle) {
     roc_panic_if_not(self.close_handler_);
 
     self.closed_ = true;
-    self.close_handler_->handle_closed(self, self.close_handler_arg_);
+    self.close_handler_->handle_close_completed(self, self.close_handler_arg_);
 }
 
 void UdpReceiverPort::alloc_cb_(uv_handle_t* handle, size_t size, uv_buf_t* buf) {

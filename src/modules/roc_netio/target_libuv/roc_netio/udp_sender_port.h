@@ -37,7 +37,7 @@ struct UdpSenderConfig {
     bool broadcast_enabled;
 
     //! If true, allow non-blocking writes directly in write() method.
-    //! If non-blocking write can;t be performed, sender falls back to
+    //! If non-blocking write can't be performed, sender falls back to
     //! regular asynchronous write.
     bool non_blocking_enabled;
 

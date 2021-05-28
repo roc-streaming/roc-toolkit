@@ -9,222 +9,326 @@
 #include "roc_netio/tcp_server_port.h"
 #include "roc_address/socket_addr_to_str.h"
 #include "roc_core/log.h"
+#include "roc_core/panic.h"
 
 namespace roc {
 namespace netio {
 
-TCPServerPort::TCPServerPort(const address::SocketAddr& address,
-                             uv_loop_t& loop,
-                             ICloseHandler& close_handler,
+TcpServerPort::TcpServerPort(const TcpServerConfig& config,
                              IConnAcceptor& conn_acceptor,
+                             uv_loop_t& loop,
                              core::IAllocator& allocator)
     : BasicPort(allocator)
-    , close_handler_(close_handler)
+    , config_(config)
     , conn_acceptor_(conn_acceptor)
+    , close_handler_(NULL)
+    , close_handler_arg_(NULL)
     , loop_(loop)
-    , handle_initialized_(false)
-    , closed_(false)
-    , stopped_(true)
-    , address_(address) {
+    , socket_(SocketInvalid)
+    , poll_handle_initialized_(false)
+    , poll_handle_started_(false)
+    , want_close_(false)
+    , closed_(false) {
+    BasicPort::update_descriptor();
 }
 
-TCPServerPort::~TCPServerPort() {
-    roc_panic_if(open_ports_.size());
-    roc_panic_if(closing_ports_.size());
-    roc_panic_if(handle_initialized_);
+TcpServerPort::~TcpServerPort() {
+    if (open_conns_.size() != 0) {
+        roc_panic("tcp server: %s: server has %d open connection(s) in desructor",
+                  descriptor(), (int)open_conns_.size());
+    }
+
+    if (closing_conns_.size() != 0) {
+        roc_panic("tcp server: %s: server has %d closing connection(s) in desructor",
+                  descriptor(), (int)closing_conns_.size());
+    }
+
+    if (poll_handle_initialized_ || socket_ != SocketInvalid) {
+        roc_panic("tcp server: %s: server was not fully closed before calling destructor",
+                  descriptor());
+    }
 }
 
-const address::SocketAddr& TCPServerPort::address() const {
-    return address_;
+const address::SocketAddr& TcpServerPort::bind_address() const {
+    return config_.bind_address;
 }
 
-bool TCPServerPort::open() {
-    if (int err = uv_tcp_init(&loop_, &handle_)) {
-        roc_log(LogError, "tcp server: uv_tcp_init(): [%s] %s", uv_err_name(err),
-                uv_strerror(err));
-        return false;
-    }
-    handle_.data = this;
-    handle_initialized_ = true;
-
-    unsigned flags = 0;
-
-    int bind_err = UV_EINVAL;
-    if (address_.version() == 6) {
-        bind_err = uv_tcp_bind(&handle_, address_.saddr(), flags | UV_TCP_IPV6ONLY);
-    }
-    if (bind_err == UV_EINVAL || bind_err == UV_ENOTSUP) {
-        bind_err = uv_tcp_bind(&handle_, address_.saddr(), flags);
-    }
-    if (bind_err != 0) {
-        roc_log(LogError, "tcp server: uv_tcp_bind(): [%s] %s", uv_err_name(bind_err),
-                uv_strerror(bind_err));
+bool TcpServerPort::open() {
+    if (!socket_create(config_.bind_address.family(), SocketType_Tcp, socket_)) {
+        roc_log(LogError, "tcp server: %s: socket_create() failed", descriptor());
         return false;
     }
 
-    int addrlen = (int)address_.slen();
-    if (int err = uv_tcp_getsockname(&handle_, address_.saddr(), &addrlen)) {
-        roc_log(LogError, "tcp server: uv_tcp_getsockname(): [%s] %s", uv_err_name(err),
-                uv_strerror(err));
+    if (!socket_setup(socket_, config_.socket_options)) {
+        roc_log(LogError, "tcp server: %s: socket_setup() failed", descriptor());
         return false;
     }
 
-    if (addrlen != (int)address_.slen()) {
-        roc_log(LogError,
-                "tcp server: uv_tcp_getsockname(): unexpected len: got=%lu expected=%lu",
-                (unsigned long)addrlen, (unsigned long)address_.slen());
+    if (!socket_bind(socket_, config_.bind_address)) {
+        roc_log(LogError, "tcp server: %s: socket_bind() failed", descriptor());
         return false;
     }
 
-    if (int err = uv_listen((uv_stream_t*)&handle_, Backlog, listen_cb_)) {
-        roc_log(LogError, "tcp server: uv_listen(): [%s] %s", uv_err_name(err),
-                uv_strerror(err));
+    if (!socket_listen(socket_, config_.backlog_limit)) {
+        roc_log(LogError, "tcp server: %s: socket_listen() failed", descriptor());
         return false;
     }
 
-    roc_log(LogInfo, "tcp server: opened port %s",
-            address::socket_addr_to_str(address_).c_str());
+    poll_handle_.data = this;
+
+    if (int err = uv_poll_init_socket(&loop_, &poll_handle_, socket_)) {
+        roc_log(LogError, "tcp server: %s: uv_poll_init(): [%s] %s", descriptor(),
+                uv_err_name(err), uv_strerror(err));
+        return false;
+    }
+
+    poll_handle_initialized_ = true;
+
+    if (int err = uv_poll_start(&poll_handle_, UV_READABLE | UV_WRITABLE, poll_cb_)) {
+        roc_log(LogError, "tcp server: %s: uv_poll_start(): [%s] %s", descriptor(),
+                uv_err_name(err), uv_strerror(err));
+        return false;
+    }
+
+    poll_handle_started_ = true;
+
+    update_descriptor();
+
+    roc_log(LogDebug, "tcp server: %s: opened port", descriptor());
 
     return true;
 }
 
-void TCPServerPort::async_close() {
-    stopped_ = true;
-
-    if (num_ports_()) {
-        async_close_ports_();
-    } else {
-        close_();
-    }
-}
-
-void TCPServerPort::close_cb_(uv_handle_t* handle) {
-    roc_panic_if_not(handle);
-
-    TCPServerPort& self = *(TCPServerPort*)handle->data;
-
-    self.closed_ = true;
-    self.handle_initialized_ = false;
-
-    roc_log(LogInfo, "tcp server: closed port %s",
-            address::socket_addr_to_str(self.address_).c_str());
-
-    self.close_handler_.handle_closed(self);
-}
-
-void TCPServerPort::listen_cb_(uv_stream_t* stream, int status) {
-    if (status < 0) {
-        roc_log(LogError, "tcp server: failed to connect: [%s] %s", uv_err_name(status),
-                uv_strerror(status));
-
-        return;
+AsyncOperationStatus TcpServerPort::async_close(ICloseHandler& handler,
+                                                void* handler_arg) {
+    if (open_conns_.size() != 0) {
+        roc_panic("tcp server: %s: "
+                  "can't close tcp server port before terminating all connections",
+                  descriptor());
     }
 
-    roc_panic_if_not(stream);
-    roc_panic_if_not(stream->data);
-
-    TCPServerPort& self = *(TCPServerPort*)stream->data;
-
-    core::SharedPtr<TCPConn> cp = new (self.allocator_)
-        TCPConn(self.address_, "server", self.loop_, self, self.allocator_);
-    if (!cp) {
-        roc_log(LogError, "tcp server: can't allocate connection");
-
-        return;
+    if (close_handler_) {
+        roc_panic("tcp server: %s: can't call async_close() twice", descriptor());
     }
 
-    if (!cp->open()) {
-        roc_log(LogError, "tcp server: can't open connection");
+    close_handler_ = &handler;
+    close_handler_arg_ = handler_arg;
 
-        self.closing_ports_.push_back(*cp);
-        cp->async_close();
-
-        return;
-    }
-
-    IConnNotifier* conn_notifier = self.conn_acceptor_.accept(*cp);
-    if (!conn_notifier) {
-        roc_log(LogError, "tcp server: can't get connection notifier");
-
-        self.closing_ports_.push_back(*cp);
-        cp->async_close();
-
-        return;
-    }
-
-    if (!cp->accept(stream, *conn_notifier)) {
-        roc_log(LogError, "tcp server: can't accept connection");
-
-        self.closing_ports_.push_back(*cp);
-        cp->async_close();
-
-        return;
-    }
-
-    self.open_ports_.push_back(*cp);
-
-    roc_log(LogInfo, "tcp server: accepted: src=%s dst=%s",
-            address::socket_addr_to_str(cp->address()).c_str(),
-            address::socket_addr_to_str(cp->destination_address()).c_str());
-}
-
-void TCPServerPort::handle_closed(BasicPort& port) {
-    roc_panic_if_not(remove_closing_port_(port));
-
-    if (stopped_ && num_ports_() == 0) {
-        close_();
-    }
-}
-
-size_t TCPServerPort::num_ports_() const {
-    return open_ports_.size() + closing_ports_.size();
-}
-
-void TCPServerPort::close_() {
     if (closed_) {
-        return; // handle_closed() was already called
+        return AsyncOp_Completed;
     }
 
-    if (!handle_initialized_) {
-        closed_ = true;
-        close_handler_.handle_closed(*this);
+    want_close_ = true;
 
+    if (num_connections_() != 0) {
+        return AsyncOp_Started;
+    }
+
+    return async_close_server_();
+}
+
+void TcpServerPort::poll_cb_(uv_poll_t* handle, int status, int events) {
+    roc_panic_if_not(handle);
+    roc_panic_if_not(handle->data);
+
+    TcpServerPort& self = *(TcpServerPort*)handle->data;
+
+    if (status < 0) {
+        roc_log(LogError, "tcp server: %s: poll failed: [%s] %s", self.descriptor(),
+                uv_err_name(status), uv_strerror(status));
         return;
     }
 
-    roc_log(LogInfo, "tcp server: closing port %s",
-            address::socket_addr_to_str(address_).c_str());
+    if ((events & UV_READABLE) == 0) {
+        return;
+    }
 
-    if (!uv_is_closing((uv_handle_t*)&handle_)) {
-        uv_close((uv_handle_t*)&handle_, close_cb_);
+    roc_log(LogDebug, "tcp server: %s: trying to accept incoming connection",
+            self.descriptor());
+
+    core::SharedPtr<TcpConnectionPort> conn = new (self.allocator())
+        TcpConnectionPort(TcpConn_Server, self.loop_, self.allocator());
+    if (!conn) {
+        roc_log(LogError, "tcp server: %s: can't allocate connection", self.descriptor());
+        return;
+    }
+
+    if (!conn->open()) {
+        roc_log(LogError, "tcp server: %s: can't open connection", self.descriptor());
+
+        self.async_close_connection_(conn);
+        return;
+    }
+
+    if (!conn->accept(self.config_, self.config_.bind_address, self.socket_)) {
+        roc_log(LogError, "tcp server: %s: can't accept connection", self.descriptor());
+
+        self.async_terminate_connection_(conn);
+        return;
+    }
+
+    roc_log(LogDebug, "tcp server: %s: adding connection: %s", self.descriptor(),
+            conn->descriptor());
+
+    IConnHandler* conn_handler = self.conn_acceptor_.add_connection(*conn);
+    if (!conn_handler) {
+        roc_log(LogError, "tcp server: %s: can't obtain connection handler",
+                self.descriptor());
+
+        self.async_terminate_connection_(conn);
+        return;
+    }
+
+    // release_usage will be called in handle_terminate_completed()
+    conn_handler->acquire_usage();
+
+    self.open_conns_.push_back(*conn);
+
+    conn->attach_terminate_handler(self, conn_handler);
+    conn->attach_connection_handler(*conn_handler);
+}
+
+void TcpServerPort::close_cb_(uv_handle_t* handle) {
+    roc_panic_if_not(handle);
+    roc_panic_if_not(handle->data);
+
+    TcpServerPort& self = *(TcpServerPort*)handle->data;
+
+    if (self.closed_) {
+        return;
+    }
+
+    roc_log(LogDebug, "tcp server: %s: closed port", self.descriptor());
+
+    self.poll_handle_initialized_ = false;
+
+    self.finish_closing_server_();
+
+    roc_panic_if(!self.close_handler_);
+    self.closed_ = true;
+    self.close_handler_->handle_close_completed(self, self.close_handler_arg_);
+}
+
+void TcpServerPort::handle_terminate_completed(IConn& conn, void* arg) {
+    core::SharedPtr<TcpConnectionPort> tcp_conn(static_cast<TcpConnectionPort*>(&conn));
+
+    roc_log(LogDebug, "tcp server: %s: asynchronous terminate completed: %s",
+            descriptor(), tcp_conn->descriptor());
+
+    async_close_connection_(tcp_conn);
+
+    IConnHandler* conn_handler = (IConnHandler*)arg;
+    if (conn_handler) {
+        roc_log(LogDebug, "tcp server: %s: removing connection: %s", descriptor(),
+                tcp_conn->descriptor());
+
+        conn_handler->release_usage();
+        conn_acceptor_.remove_connection(*conn_handler);
     }
 }
 
-void TCPServerPort::async_close_ports_() {
-    while (core::SharedPtr<BasicPort> port = open_ports_.front()) {
-        open_ports_.remove(*port);
-        closing_ports_.push_back(*port);
+void TcpServerPort::handle_close_completed(BasicPort& port, void*) {
+    core::SharedPtr<TcpConnectionPort> tcp_conn(static_cast<TcpConnectionPort*>(&port));
 
-        port->async_close();
+    if (!closing_conns_.contains(*tcp_conn)) {
+        roc_panic("tcp server: %s: connection is not in closing list: %s", descriptor(),
+                  tcp_conn->descriptor());
+    }
+
+    roc_log(LogDebug, "tcp server: %s: asynchronous close completed: %s", descriptor(),
+            tcp_conn->descriptor());
+
+    finish_closing_connection_(tcp_conn);
+
+    if (want_close_ && num_connections_() == 0) {
+        async_close_server_();
     }
 }
 
-bool TCPServerPort::remove_closing_port_(BasicPort& port) {
-    for (core::SharedPtr<BasicPort> pp = closing_ports_.front(); pp;
-         pp = closing_ports_.nextof(*pp)) {
-        if (pp.get() != &port) {
-            continue;
+AsyncOperationStatus TcpServerPort::async_close_server_() {
+    if (closed_) {
+        return AsyncOp_Completed;
+    }
+
+    if (!poll_handle_initialized_) {
+        finish_closing_server_();
+        closed_ = true;
+
+        return AsyncOp_Completed;
+    }
+
+    roc_log(LogDebug, "tcp server: %s: initiating asynchronous close", descriptor());
+
+    if (poll_handle_initialized_ && !uv_is_closing((uv_handle_t*)&poll_handle_)) {
+        uv_close((uv_handle_t*)&poll_handle_, close_cb_);
+    }
+
+    return AsyncOp_Started;
+}
+
+void TcpServerPort::finish_closing_server_() {
+    if (socket_ != SocketInvalid) {
+        socket_close(socket_);
+        socket_ = SocketInvalid;
+    }
+}
+
+size_t TcpServerPort::num_connections_() const {
+    return open_conns_.size() + closing_conns_.size();
+}
+
+void TcpServerPort::async_terminate_connection_(
+    const core::SharedPtr<TcpConnectionPort>& conn) {
+    if (closing_conns_.contains(*conn)) {
+        roc_panic("tcp server: %s: connection is already in closing list: %s",
+                  descriptor(), conn->descriptor());
+    }
+
+    if (open_conns_.contains(*conn)) {
+        open_conns_.remove(*conn);
+    }
+
+    closing_conns_.push_back(*conn);
+
+    conn->attach_terminate_handler(*this, NULL);
+    conn->async_terminate(Term_Failure);
+}
+
+void TcpServerPort::async_close_connection_(
+    const core::SharedPtr<TcpConnectionPort>& conn) {
+    if (open_conns_.contains(*conn)) {
+        open_conns_.remove(*conn);
+    }
+
+    const AsyncOperationStatus status = conn->async_close(*this, NULL);
+
+    if (status == AsyncOp_Started) {
+        if (!closing_conns_.contains(*conn)) {
+            closing_conns_.push_back(*conn);
         }
+    }
+}
 
-        roc_log(LogDebug, "tcp server: remove connection: port %s",
-                address::socket_addr_to_str(port.address()).c_str());
-
-        closing_ports_.remove(*pp);
-
-        return true;
+void TcpServerPort::finish_closing_connection_(
+    const core::SharedPtr<TcpConnectionPort>& conn) {
+    if (!closing_conns_.contains(*conn)) {
+        roc_panic("tcp server: %s: connection is not in closing list: %s", descriptor(),
+                  conn->descriptor());
     }
 
-    return false;
+    closing_conns_.remove(*conn);
+}
+
+void TcpServerPort::format_descriptor(core::StringBuilder& b) {
+    b.append_str("<tcpserv");
+
+    b.append_str(" 0x");
+    b.append_uint((unsigned long)this, 16);
+
+    b.append_str(" bind=");
+    b.append_str(address::socket_addr_to_str(config_.bind_address).c_str());
+
+    b.append_str(">");
 }
 
 } // namespace netio

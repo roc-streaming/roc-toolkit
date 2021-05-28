@@ -7,35 +7,42 @@
  */
 
 //! @file roc_netio/target_libuv/roc_netio/iconn_acceptor.h
-//! @brief TCP connection acceptor interface.
+//! @brief Connection acceptor interface.
 
 #ifndef ROC_NETIO_ICONN_ACCEPTOR_H_
 #define ROC_NETIO_ICONN_ACCEPTOR_H_
 
-#include "roc_netio/iconn_notifier.h"
-#include "roc_netio/tcp_conn.h"
+#include "roc_netio/iconn.h"
+#include "roc_netio/iconn_handler.h"
 
 namespace roc {
 namespace netio {
 
-//! TCP connection acceptor interface.
+//! Connection acceptor interface.
+//! @remarks
+//!  - Methods are called from the network loop thread.
+//!  - Methods should not block.
 class IConnAcceptor {
 public:
-    //! Destroy.
     virtual ~IConnAcceptor();
 
-    //! accept() is called for every new incoming connection.
+    //! Called for every new incoming connection.
+    //!
+    //! @returns
+    //!  IConnHandler object that will be notified when the connection state
+    //!  changes and when it becomes readable and writeable.
     //!
     //! @remarks
-    //!  - Should be called from the event loop thread.
+    //!  It is the caller responsibility to ensure that the handler is not
+    //!  destroyed until remove_connection() call.
+    virtual IConnHandler* add_connection(IConn&) = 0;
+
+    //! Called after connection termination.
     //!
-    //!  - It is a user responsibility to ensure that lifetime of the returned
-    //!    object will be no less than lifetime of the provided TCP connection.
-    //!
-    //! @return
-    //!  IConnNotifier object that will be notified when the provided connection
-    //!  becomes readable or writeable.
-    virtual IConnNotifier* accept(TCPConn&) = 0;
+    //! @remarks
+    //!  At this point, connection is already terminated and can't be used.
+    //!  It's safe to destroy connection handler here.
+    virtual void remove_connection(IConnHandler&) = 0;
 };
 
 } // namespace netio

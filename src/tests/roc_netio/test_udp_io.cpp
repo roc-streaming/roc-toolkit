@@ -38,16 +38,6 @@ UdpReceiverConfig make_receiver_config() {
     return config;
 }
 
-NetworkLoop::PortHandle add_udp_receiver(NetworkLoop& net_loop,
-                                         UdpReceiverConfig& config,
-                                         packet::IWriter& writer) {
-    NetworkLoop::Tasks::AddUdpReceiverPort task(config, writer);
-    CHECK(!task.success());
-    CHECK(net_loop.schedule_and_wait(task));
-    CHECK(task.success());
-    return task.get_handle();
-}
-
 NetworkLoop::PortHandle
 add_udp_sender(NetworkLoop& net_loop, UdpSenderConfig& config, packet::IWriter** writer) {
     NetworkLoop::Tasks::AddUdpSenderPort task(config);
@@ -55,6 +45,16 @@ add_udp_sender(NetworkLoop& net_loop, UdpSenderConfig& config, packet::IWriter**
     CHECK(net_loop.schedule_and_wait(task));
     CHECK(task.success());
     *writer = task.get_writer();
+    return task.get_handle();
+}
+
+NetworkLoop::PortHandle add_udp_receiver(NetworkLoop& net_loop,
+                                         UdpReceiverConfig& config,
+                                         packet::IWriter& writer) {
+    NetworkLoop::Tasks::AddUdpReceiverPort task(config, writer);
+    CHECK(!task.success());
+    CHECK(net_loop.schedule_and_wait(task));
+    CHECK(task.success());
     return task.get_handle();
 }
 

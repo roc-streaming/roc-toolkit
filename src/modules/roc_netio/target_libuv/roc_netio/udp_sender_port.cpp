@@ -11,7 +11,7 @@
 #include "roc_core/helpers.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
-#include "roc_netio/sendto.h"
+#include "roc_netio/socket_ops.h"
 
 namespace roc {
 namespace netio {
@@ -212,7 +212,7 @@ void UdpSenderPort::close_cb_(uv_handle_t* handle) {
     roc_panic_if_not(self.close_handler_);
 
     self.closed_ = true;
-    self.close_handler_->handle_closed(self, self.close_handler_arg_);
+    self.close_handler_->handle_close_completed(self, self.close_handler_arg_);
 }
 
 void UdpSenderPort::write_sem_cb_(uv_async_t* handle) {
@@ -322,7 +322,7 @@ bool UdpSenderPort::try_nonblocking_send_(const packet::PacketPtr& pp) {
 
     const packet::UDP& udp = *pp->udp();
     const bool success =
-        sendto_nb(fd_, pp->data().data(), pp->data().size(), udp.dst_addr);
+        socket_try_send_to(fd_, pp->data().data(), pp->data().size(), udp.dst_addr);
 
     if (success) {
         const int packet_num = ++sent_packets_;
