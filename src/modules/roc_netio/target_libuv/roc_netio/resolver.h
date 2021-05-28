@@ -15,8 +15,8 @@
 #include <uv.h>
 
 #include "roc_core/noncopyable.h"
+#include "roc_netio/iresolver_request_handler.h"
 #include "roc_netio/resolver_request.h"
-#include "roc_netio/resolver_request_handler.h"
 
 namespace roc {
 namespace netio {

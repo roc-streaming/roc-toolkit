@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_netio/resolver_request_handler.h"
+#include "roc_netio/iresolver_request_handler.h"
 
 namespace roc {
 namespace netio {
