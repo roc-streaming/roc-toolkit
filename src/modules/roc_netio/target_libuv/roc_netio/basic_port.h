@@ -7,7 +7,7 @@
  */
 
 //! @file roc_netio/target_libuv/roc_netio/basic_port.h
-//! @brief Basic network port.
+//! @brief Base class for ports.
 
 #ifndef ROC_NETIO_BASIC_PORT_H_
 #define ROC_NETIO_BASIC_PORT_H_
@@ -23,7 +23,19 @@
 namespace roc {
 namespace netio {
 
-//! Basic port interface.
+//! Base class for ports.
+//!
+//! Port is a transport-level endpoint, sending or receiving data from remote
+//! peer, like UDP sender or receiver, TCP listening socket, or TCP connection.
+//!
+//! The following rules must be followed:
+//!
+//!  - if you called open(), you're responsible for calling async_close(),
+//!    even if open() failed
+//!  - if async_close() returned AsyncOp_Completed, the port was closed
+//!    immediately, and you can now destroy it
+//!  - if async_close() returned AsyncOp_Started, you should wait until
+//!    close handler callback is invoked before destroying port
 class BasicPort : public core::RefCounter<BasicPort>, public core::ListNode {
 public:
     //! Initialize.
@@ -32,7 +44,10 @@ public:
     //! Destroy.
     virtual ~BasicPort();
 
-    //! Get port name.
+    //! Get a human-readable port description.
+    //!
+    //! @note
+    //!  Port descriptor may change during initial configuration.
     const char* descriptor() const;
 
     //! Open port.
@@ -56,10 +71,10 @@ protected:
     //! Get memory allocator.
     core::IAllocator& allocator();
 
-    //! Format descriptor into internal buffer.
+    //! Format descriptor and store into internal buffer.
     void update_descriptor();
 
-    //! Format descriptor.
+    //! Implementation of descriptor formatting.
     virtual void format_descriptor(core::StringBuilder& b) = 0;
 
 private:
@@ -69,7 +84,7 @@ private:
 
     core::IAllocator& allocator_;
 
-    enum { MaxDescriptorLen = address::SocketAddr::MaxStrLen + 48 };
+    enum { MaxDescriptorLen = address::SocketAddr::MaxStrLen * 2 + 48 };
 
     char descriptor_[MaxDescriptorLen];
 };

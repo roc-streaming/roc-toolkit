@@ -7,7 +7,7 @@
  */
 
 //! @file roc_netio/target_libuv/roc_netio/iclose_handler.h
-//! @brief Close handler.
+//! @brief Close handler interface.
 
 #ifndef ROC_NETIO_ICLOSE_HANDLER_H_
 #define ROC_NETIO_ICLOSE_HANDLER_H_
@@ -22,11 +22,12 @@ class ICloseHandler {
 public:
     virtual ~ICloseHandler();
 
-    //! Handle completion of asynchronous closing.
+    //! Handle completion of asynchronous closing of given port.
     //! @remarks
-    //!  - After this call, the closed port should not be used.
-    //!  - This method os called from the network loop thread.
-    virtual void handle_closed(BasicPort& port, void* arg) = 0;
+    //!  After this call, the closed port should not be used.
+    //! @note
+    //!  This method os called from the network loop thread.
+    virtual void handle_close_completed(BasicPort& port, void* arg) = 0;
 };
 
 } // namespace netio

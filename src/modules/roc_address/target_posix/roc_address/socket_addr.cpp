@@ -90,6 +90,10 @@ socklen_t SocketAddr::slen() const {
     return saddr_size_(saddr_family_());
 }
 
+socklen_t SocketAddr::max_slen() const {
+    return saddr_size_(AF_INET6);
+}
+
 AddrFamily SocketAddr::family() const {
     switch (saddr_family_()) {
     case AF_INET:

@@ -40,10 +40,8 @@ UdpReceiverConfig make_receiver_config(const char* ip, int port) {
     return config;
 }
 
-NetworkLoop::PortHandle add_udp_receiver(NetworkLoop& net_loop,
-                                         UdpReceiverConfig& config,
-                                         packet::IWriter& writer) {
-    NetworkLoop::Tasks::AddUdpReceiverPort task(config, writer);
+NetworkLoop::PortHandle add_udp_sender(NetworkLoop& net_loop, UdpSenderConfig& config) {
+    NetworkLoop::Tasks::AddUdpSenderPort task(config);
     CHECK(!task.success());
     if (!net_loop.schedule_and_wait(task)) {
         CHECK(!task.success());
@@ -53,8 +51,10 @@ NetworkLoop::PortHandle add_udp_receiver(NetworkLoop& net_loop,
     return task.get_handle();
 }
 
-NetworkLoop::PortHandle add_udp_sender(NetworkLoop& net_loop, UdpSenderConfig& config) {
-    NetworkLoop::Tasks::AddUdpSenderPort task(config);
+NetworkLoop::PortHandle add_udp_receiver(NetworkLoop& net_loop,
+                                         UdpReceiverConfig& config,
+                                         packet::IWriter& writer) {
+    NetworkLoop::Tasks::AddUdpReceiverPort task(config, writer);
     CHECK(!task.success());
     if (!net_loop.schedule_and_wait(task)) {
         CHECK(!task.success());
@@ -282,49 +282,6 @@ TEST(udp_ports, add_remove_add) {
     tx_handle = add_udp_sender(net_loop, tx_config);
     CHECK(tx_handle);
     UNSIGNED_LONGS_EQUAL(1, net_loop.num_ports());
-}
-
-TEST(udp_ports, add_duplicate) {
-    packet::ConcurrentQueue queue;
-
-    NetworkLoop net_loop(packet_pool, buffer_pool, allocator);
-    CHECK(net_loop.valid());
-
-    UdpSenderConfig port1_tx = make_sender_config("0.0.0.0", 0);
-
-    NetworkLoop::PortHandle tx_handle = add_udp_sender(net_loop, port1_tx);
-    CHECK(tx_handle);
-    UNSIGNED_LONGS_EQUAL(1, net_loop.num_ports());
-
-    UdpReceiverConfig port1_rx =
-        make_receiver_config("0.0.0.0", port1_tx.bind_address.port());
-
-    CHECK(!add_udp_sender(net_loop, port1_tx));
-    UNSIGNED_LONGS_EQUAL(1, net_loop.num_ports());
-
-    CHECK(!add_udp_receiver(net_loop, port1_rx, queue));
-    UNSIGNED_LONGS_EQUAL(1, net_loop.num_ports());
-
-    UdpReceiverConfig port2_rx = make_receiver_config("0.0.0.0", 0);
-
-    NetworkLoop::PortHandle rx_handle = add_udp_receiver(net_loop, port2_rx, queue);
-    CHECK(rx_handle);
-    UNSIGNED_LONGS_EQUAL(2, net_loop.num_ports());
-
-    UdpSenderConfig port2_tx =
-        make_sender_config("0.0.0.0", port2_rx.bind_address.port());
-
-    CHECK(!add_udp_sender(net_loop, port2_tx));
-    UNSIGNED_LONGS_EQUAL(2, net_loop.num_ports());
-
-    CHECK(!add_udp_receiver(net_loop, port2_rx, queue));
-    UNSIGNED_LONGS_EQUAL(2, net_loop.num_ports());
-
-    remove_port(net_loop, tx_handle);
-    UNSIGNED_LONGS_EQUAL(1, net_loop.num_ports());
-
-    remove_port(net_loop, rx_handle);
-    UNSIGNED_LONGS_EQUAL(0, net_loop.num_ports());
 }
 
 } // namespace netio

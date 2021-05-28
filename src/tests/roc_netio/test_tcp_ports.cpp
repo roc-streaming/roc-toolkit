@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Roc authors
+ * Copyright (c) 2021 Roc authors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -8,171 +8,20 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "roc_address/socket_addr.h"
-#include "roc_core/atomic.h"
+#include "roc_address/socket_addr_to_str.h"
 #include "roc_core/buffer_pool.h"
-#include "roc_core/cond.h"
 #include "roc_core/heap_allocator.h"
-#include "roc_core/list_node.h"
-#include "roc_core/mutex.h"
-#include "roc_core/refcnt.h"
-#include "roc_core/shared_ptr.h"
-#include "roc_netio/iconn_acceptor.h"
-#include "roc_netio/iconn_notifier.h"
-#include "roc_netio/tcp_conn.h"
-#include "roc_netio/transceiver.h"
-#include "roc_packet/concurrent_queue.h"
+#include "roc_netio/network_loop.h"
 #include "roc_packet/packet_pool.h"
+
+#include "test_helpers/conn_expectation.h"
+#include "test_helpers/mock_conn_acceptor.h"
+#include "test_helpers/mock_conn_handler.h"
 
 namespace roc {
 namespace netio {
 
 namespace {
-
-address::SocketAddr make_address(const char* ip, int port) {
-    address::SocketAddr addr;
-    CHECK(addr.set_host_port_ipv4(ip, port));
-    return addr;
-}
-
-class TestConnNotifier : public IConnNotifier {
-public:
-    TestConnNotifier()
-        : cond_(mutex_)
-        , connected_(false)
-        , written_(false)
-        , readable_(false) {
-    }
-
-    virtual void notify_connected(bool connected) {
-        CHECK(connected);
-
-        core::Mutex::Lock lock(mutex_);
-
-        connected_ = true;
-        cond_.broadcast();
-    }
-
-    virtual void notify_readable() {
-        core::Mutex::Lock lock(mutex_);
-
-        readable_ = true;
-        cond_.broadcast();
-    }
-
-    virtual void notify_writable(bool written) {
-        CHECK(written);
-
-        core::Mutex::Lock lock(mutex_);
-
-        written_ = true;
-        cond_.broadcast();
-    }
-
-    void wait_connected() {
-        core::Mutex::Lock lock(mutex_);
-
-        while (!connected_) {
-            cond_.wait();
-        }
-    }
-
-    void wait_written() {
-        core::Mutex::Lock lock(mutex_);
-
-        while (!written_) {
-            cond_.wait();
-        }
-    }
-
-    void wait_readable() {
-        core::Mutex::Lock lock(mutex_);
-
-        while (!readable_) {
-            cond_.wait();
-        }
-    }
-
-private:
-    core::Mutex mutex_;
-    core::Cond cond_;
-
-    bool connected_;
-    bool written_;
-    bool readable_;
-};
-
-class TestConnAcceptor : public IConnAcceptor {
-public:
-    explicit TestConnAcceptor(core::IAllocator& a)
-        : allocator_(a) {
-    }
-
-    size_t num_connections() const {
-        core::Mutex::Lock lock(mutex_);
-
-        return holders_.size();
-    }
-
-    virtual IConnNotifier* accept(TCPConn& conn) {
-        core::Mutex::Lock lock(mutex_);
-
-        core::SharedPtr<TCPConnHolder> holder(new (allocator_)
-                                                  TCPConnHolder(conn, allocator_));
-        holders_.push_back(*holder);
-
-        return &holder->conn_notifier();
-    }
-
-    TCPConn* get_connection(const address::SocketAddr& serv_addr,
-                            const address::SocketAddr& client_addr) {
-        core::Mutex::Lock lock(mutex_);
-
-        core::SharedPtr<TCPConnHolder> holder;
-
-        for (holder = holders_.front(); holder; holder = holders_.nextof(*holder)) {
-            if (holder->connection().destination_address() == serv_addr
-                && holder->connection().address() == client_addr) {
-                return &holder->connection();
-            }
-        }
-
-        return NULL;
-    }
-
-private:
-    class TCPConnHolder : public core::RefCnt<TCPConnHolder>, public core::ListNode {
-    public:
-        TCPConnHolder(TCPConn& conn, core::IAllocator& allocator)
-            : conn_(conn)
-            , allocator_(allocator) {
-        }
-
-        TCPConn& connection() {
-            return conn_;
-        }
-
-        TestConnNotifier& conn_notifier() {
-            return conn_notifier_;
-        }
-
-    private:
-        friend class core::RefCnt<TCPConnHolder>;
-
-        void destroy() {
-            allocator_.destroy(*this);
-        }
-
-        TestConnNotifier conn_notifier_;
-
-        TCPConn& conn_;
-        core::IAllocator& allocator_;
-    };
-
-    core::Mutex mutex_;
-    core::IAllocator& allocator_;
-    core::List<TCPConnHolder> holders_;
-};
 
 enum { MaxBufSize = 500 };
 
@@ -180,186 +29,964 @@ core::HeapAllocator allocator;
 core::BufferPool<uint8_t> buffer_pool(allocator, MaxBufSize, true);
 packet::PacketPool packet_pool(allocator, true);
 
+address::SocketAddr make_address(const char* ip, int port) {
+    address::SocketAddr address;
+    CHECK(address.set_host_port(address::Family_IPv4, ip, port)
+          || address.set_host_port(address::Family_IPv6, ip, port));
+    return address;
+}
+
+TcpServerConfig make_server_config(const char* ip, int port) {
+    TcpServerConfig config;
+    CHECK(config.bind_address.set_host_port(address::Family_IPv4, ip, port)
+          || config.bind_address.set_host_port(address::Family_IPv6, ip, port));
+    return config;
+}
+
+TcpClientConfig make_client_config(const char* local_ip,
+                                   int local_port,
+                                   const char* remote_ip,
+                                   int remote_port) {
+    TcpClientConfig config;
+    CHECK(config.local_address.set_host_port(address::Family_IPv4, local_ip, local_port)
+          || config.local_address.set_host_port(address::Family_IPv6, local_ip,
+                                                local_port));
+    CHECK(
+        config.remote_address.set_host_port(address::Family_IPv4, remote_ip, remote_port)
+        || config.remote_address.set_host_port(address::Family_IPv6, remote_ip,
+                                               remote_port));
+    return config;
+}
+
+NetworkLoop::PortHandle add_tcp_server(NetworkLoop& net_loop,
+                                       TcpServerConfig& config,
+                                       IConnAcceptor& conn_acceptor) {
+    NetworkLoop::Tasks::AddTcpServerPort task(config, conn_acceptor);
+    CHECK(!task.success());
+    if (!net_loop.schedule_and_wait(task)) {
+        CHECK(!task.success());
+        return NULL;
+    }
+    CHECK(task.success());
+    return task.get_handle();
+}
+
+NetworkLoop::PortHandle add_tcp_client(NetworkLoop& net_loop,
+                                       TcpClientConfig& config,
+                                       IConnHandler& conn_handler) {
+    NetworkLoop::Tasks::AddTcpClientPort task(config, conn_handler);
+    CHECK(!task.success());
+    if (!net_loop.schedule_and_wait(task)) {
+        CHECK(!task.success());
+        return NULL;
+    }
+    CHECK(task.success());
+    return task.get_handle();
+}
+
+void remove_port(NetworkLoop& net_loop, NetworkLoop::PortHandle handle) {
+    NetworkLoop::Tasks::RemovePort task(handle);
+    CHECK(!task.success());
+    CHECK(net_loop.schedule_and_wait(task));
+    CHECK(task.success());
+}
+
+void expect_local_remote(IConn* conn,
+                         const address::SocketAddr& local_address,
+                         const address::SocketAddr& remote_address) {
+    CHECK(conn);
+
+    STRCMP_EQUAL(address::socket_addr_to_str(local_address).c_str(),
+                 address::socket_addr_to_str(conn->local_address()).c_str());
+
+    STRCMP_EQUAL(address::socket_addr_to_str(remote_address).c_str(),
+                 address::socket_addr_to_str(conn->remote_address()).c_str());
+}
+
+void wait_writable_readable(test::MockConnHandler& handler,
+                            IConn* conn,
+                            bool writable,
+                            bool readable) {
+    CHECK(conn);
+    if (writable) {
+        handler.wait_writable();
+        CHECK(conn->is_writable());
+    } else {
+        CHECK(!conn->is_writable());
+    }
+    if (readable) {
+        handler.wait_readable();
+        CHECK(conn->is_readable());
+    } else {
+        CHECK(!conn->is_readable());
+    }
+}
+
+void expect_write_error(IConn* conn, IOError err) {
+    CHECK(conn);
+    char buf[1] = {};
+    LONGS_EQUAL(err, conn->try_write(buf, sizeof(buf)));
+}
+
+void expect_read_error(IConn* conn, IOError err) {
+    CHECK(conn);
+    char buf[1] = {};
+    LONGS_EQUAL(err, conn->try_read(buf, sizeof(buf)));
+}
+
+void terminate_and_wait(test::MockConnHandler& handler,
+                        IConn* conn,
+                        test::ConnExpectation exp) {
+    CHECK(conn);
+
+    conn->async_terminate(Term_Normal);
+    handler.wait_terminated(exp);
+}
+
 } // namespace
 
 TEST_GROUP(tcp_ports) {};
 
 TEST(tcp_ports, no_ports) {
-    Transceiver trx(packet_pool, buffer_pool, allocator);
+    NetworkLoop net_loop(packet_pool, buffer_pool, allocator);
+    CHECK(net_loop.valid());
 
-    CHECK(trx.valid());
+    UNSIGNED_LONGS_EQUAL(0, net_loop.num_ports());
 }
 
-TEST(tcp_ports, tcp_add_server_no_remove) {
-    TestConnAcceptor conn_acceptor(allocator);
+TEST(tcp_ports, add_anyaddr) {
+    test::MockConnHandler client_conn_handler;
+    test::MockConnHandler server_conn_handler;
 
-    Transceiver trx(packet_pool, buffer_pool, allocator);
-    CHECK(trx.valid());
+    test::MockConnAcceptor acceptor;
+    acceptor.push_handler(server_conn_handler);
 
-    address::SocketAddr addr = make_address("0.0.0.0", 0);
+    NetworkLoop net_loop(packet_pool, buffer_pool, allocator);
+    CHECK(net_loop.valid());
 
-    CHECK(trx.add_tcp_server(addr, conn_acceptor));
+    TcpServerConfig server_config = make_server_config("0.0.0.0", 0);
+
+    UNSIGNED_LONGS_EQUAL(0, net_loop.num_ports());
+
+    NetworkLoop::PortHandle server_handle =
+        add_tcp_server(net_loop, server_config, acceptor);
+    CHECK(server_handle);
+    CHECK(server_config.bind_address.port() != 0);
+
+    UNSIGNED_LONGS_EQUAL(1, net_loop.num_ports());
+
+    TcpClientConfig client_config =
+        make_client_config("0.0.0.0", 0, "127.0.0.1", server_config.bind_address.port());
+
+    NetworkLoop::PortHandle client_handle =
+        add_tcp_client(net_loop, client_config, client_conn_handler);
+    CHECK(client_handle);
+    CHECK(client_config.local_address.port() != 0);
+
+    UNSIGNED_LONGS_EQUAL(2, net_loop.num_ports());
+
+    IConn* server_conn = server_conn_handler.wait_established();
+    expect_local_remote(server_conn, server_config.bind_address,
+                        make_address("127.0.0.1", client_config.local_address.port()));
+
+    IConn* client_conn = client_conn_handler.wait_established();
+    expect_local_remote(client_conn, client_config.local_address,
+                        client_config.remote_address);
+
+    POINTERS_EQUAL(server_conn, acceptor.wait_added());
+
+    terminate_and_wait(server_conn_handler, server_conn, test::ExpectNotFailed);
+    terminate_and_wait(client_conn_handler, client_conn, test::ExpectNotFailed);
+
+    POINTERS_EQUAL(&server_conn_handler, acceptor.wait_removed());
 }
 
-TEST(tcp_ports, tcp_add_remove_server) {
-    TestConnAcceptor conn_acceptor(allocator);
+TEST(tcp_ports, add_localhost) {
+    test::MockConnHandler client_conn_handler;
+    test::MockConnHandler server_conn_handler;
 
-    Transceiver trx(packet_pool, buffer_pool, allocator);
-    CHECK(trx.valid());
+    test::MockConnAcceptor acceptor;
+    acceptor.push_handler(server_conn_handler);
 
-    address::SocketAddr addr = make_address("0.0.0.0", 0);
+    NetworkLoop net_loop(packet_pool, buffer_pool, allocator);
+    CHECK(net_loop.valid());
 
-    CHECK(trx.add_tcp_server(addr, conn_acceptor));
-    trx.remove_port(addr);
+    TcpServerConfig server_config = make_server_config("127.0.0.1", 0);
+
+    UNSIGNED_LONGS_EQUAL(0, net_loop.num_ports());
+
+    NetworkLoop::PortHandle server_handle =
+        add_tcp_server(net_loop, server_config, acceptor);
+    CHECK(server_handle);
+    CHECK(server_config.bind_address.port() != 0);
+
+    UNSIGNED_LONGS_EQUAL(1, net_loop.num_ports());
+
+    TcpClientConfig client_config = make_client_config("127.0.0.1", 0, "127.0.0.1",
+                                                       server_config.bind_address.port());
+
+    NetworkLoop::PortHandle client_handle =
+        add_tcp_client(net_loop, client_config, client_conn_handler);
+    CHECK(client_handle);
+    CHECK(client_config.local_address.port() != 0);
+
+    UNSIGNED_LONGS_EQUAL(2, net_loop.num_ports());
+
+    IConn* server_conn = server_conn_handler.wait_established();
+    expect_local_remote(server_conn, server_config.bind_address,
+                        client_config.local_address);
+
+    IConn* client_conn = client_conn_handler.wait_established();
+    expect_local_remote(client_conn, client_config.local_address,
+                        client_config.remote_address);
+
+    POINTERS_EQUAL(server_conn, acceptor.wait_added());
+
+    terminate_and_wait(server_conn_handler, server_conn, test::ExpectNotFailed);
+    terminate_and_wait(client_conn_handler, client_conn, test::ExpectNotFailed);
+
+    POINTERS_EQUAL(&server_conn_handler, acceptor.wait_removed());
 }
 
-TEST(tcp_ports, tcp_add_client_server_no_remove) {
-    TestConnAcceptor conn_acceptor(allocator);
-    TestConnNotifier conn_notifier;
+TEST(tcp_ports, add_addrinuse) {
+    test::MockConnHandler client_conn_handler;
+    test::MockConnHandler server_conn_handler;
 
-    Transceiver trx(packet_pool, buffer_pool, allocator);
-    CHECK(trx.valid());
+    test::MockConnAcceptor acceptor;
+    acceptor.push_handler(server_conn_handler);
 
-    address::SocketAddr server_address = make_address("0.0.0.0", 0);
+    NetworkLoop net_loop1(packet_pool, buffer_pool, allocator);
+    CHECK(net_loop1.valid());
 
-    CHECK(trx.add_tcp_server(server_address, conn_acceptor));
+    TcpServerConfig server_config = make_server_config("127.0.0.1", 0);
 
-    CHECK(trx.add_tcp_client(server_address, conn_notifier));
-    conn_notifier.wait_connected();
+    UNSIGNED_LONGS_EQUAL(0, net_loop1.num_ports());
+
+    NetworkLoop::PortHandle server_handle =
+        add_tcp_server(net_loop1, server_config, acceptor);
+    CHECK(server_handle);
+    CHECK(server_config.bind_address.port() != 0);
+
+    UNSIGNED_LONGS_EQUAL(1, net_loop1.num_ports());
+
+    TcpClientConfig client_config = make_client_config("127.0.0.1", 0, "127.0.0.1",
+                                                       server_config.bind_address.port());
+
+    NetworkLoop::PortHandle client_handle =
+        add_tcp_client(net_loop1, client_config, client_conn_handler);
+    CHECK(client_handle);
+    CHECK(client_config.local_address.port() != 0);
+
+    UNSIGNED_LONGS_EQUAL(2, net_loop1.num_ports());
+
+    IConn* server_conn = server_conn_handler.wait_established();
+    IConn* client_conn = client_conn_handler.wait_established();
+
+    POINTERS_EQUAL(server_conn, acceptor.wait_added());
+
+    NetworkLoop net_loop2(packet_pool, buffer_pool, allocator);
+    CHECK(net_loop2.valid());
+
+    UNSIGNED_LONGS_EQUAL(0, net_loop2.num_ports());
+
+    CHECK(!add_tcp_server(net_loop2, server_config, acceptor));
+    CHECK(!add_tcp_client(net_loop2, client_config, client_conn_handler));
+
+    UNSIGNED_LONGS_EQUAL(0, net_loop2.num_ports());
+
+    terminate_and_wait(server_conn_handler, server_conn, test::ExpectNotFailed);
+    terminate_and_wait(client_conn_handler, client_conn, test::ExpectNotFailed);
+
+    POINTERS_EQUAL(&server_conn_handler, acceptor.wait_removed());
 }
 
-TEST(tcp_ports, tcp_remove_server) {
-    TestConnAcceptor conn_acceptor(allocator);
-    TestConnNotifier conn_notifier;
+TEST(tcp_ports, add_remove) {
+    test::MockConnHandler client_conn_handler;
+    test::MockConnHandler server_conn_handler;
 
-    Transceiver trx(packet_pool, buffer_pool, allocator);
-    CHECK(trx.valid());
+    test::MockConnAcceptor acceptor;
+    acceptor.push_handler(server_conn_handler);
 
-    address::SocketAddr server_address = make_address("0.0.0.0", 0);
+    NetworkLoop net_loop(packet_pool, buffer_pool, allocator);
+    CHECK(net_loop.valid());
 
-    CHECK(trx.add_tcp_server(server_address, conn_acceptor));
+    TcpServerConfig server_config = make_server_config("127.0.0.1", 0);
 
-    CHECK(trx.add_tcp_client(server_address, conn_notifier));
-    conn_notifier.wait_connected();
+    UNSIGNED_LONGS_EQUAL(0, net_loop.num_ports());
 
-    trx.remove_port(server_address);
+    NetworkLoop::PortHandle server_handle =
+        add_tcp_server(net_loop, server_config, acceptor);
+    CHECK(server_handle);
+    CHECK(server_config.bind_address.port() != 0);
+
+    UNSIGNED_LONGS_EQUAL(1, net_loop.num_ports());
+
+    TcpClientConfig client_config = make_client_config("127.0.0.1", 0, "127.0.0.1",
+                                                       server_config.bind_address.port());
+
+    NetworkLoop::PortHandle client_handle =
+        add_tcp_client(net_loop, client_config, client_conn_handler);
+    CHECK(client_handle);
+    CHECK(client_config.local_address.port() != 0);
+
+    UNSIGNED_LONGS_EQUAL(2, net_loop.num_ports());
+
+    IConn* server_conn = server_conn_handler.wait_established();
+    IConn* client_conn = client_conn_handler.wait_established();
+
+    POINTERS_EQUAL(server_conn, acceptor.wait_added());
+
+    terminate_and_wait(server_conn_handler, server_conn, test::ExpectNotFailed);
+    POINTERS_EQUAL(&server_conn_handler, acceptor.wait_removed());
+    UNSIGNED_LONGS_EQUAL(2, net_loop.num_ports());
+
+    remove_port(net_loop, server_handle);
+    UNSIGNED_LONGS_EQUAL(1, net_loop.num_ports());
+
+    terminate_and_wait(client_conn_handler, client_conn, test::ExpectNotFailed);
+    UNSIGNED_LONGS_EQUAL(1, net_loop.num_ports());
+
+    remove_port(net_loop, client_handle);
+    UNSIGNED_LONGS_EQUAL(0, net_loop.num_ports());
 }
 
-TEST(tcp_ports, tcp_remove_client) {
-    TestConnAcceptor conn_acceptor(allocator);
-    TestConnNotifier conn_notifier;
+TEST(tcp_ports, add_remove_add) {
+    test::MockConnAcceptor acceptor;
 
-    Transceiver trx(packet_pool, buffer_pool, allocator);
-    CHECK(trx.valid());
+    NetworkLoop net_loop(packet_pool, buffer_pool, allocator);
+    CHECK(net_loop.valid());
 
-    address::SocketAddr server_address = make_address("0.0.0.0", 0);
+    TcpServerConfig server_config = make_server_config("127.0.0.1", 0);
 
-    CHECK(trx.add_tcp_server(server_address, conn_acceptor));
+    UNSIGNED_LONGS_EQUAL(0, net_loop.num_ports());
 
-    TCPConn* conn = trx.add_tcp_client(server_address, conn_notifier);
-    CHECK(conn);
+    NetworkLoop::PortHandle server_handle =
+        add_tcp_server(net_loop, server_config, acceptor);
+    CHECK(server_handle);
+    CHECK(server_config.bind_address.port() != 0);
 
-    trx.remove_port(conn->address());
+    UNSIGNED_LONGS_EQUAL(1, net_loop.num_ports());
+
+    remove_port(net_loop, server_handle);
+    UNSIGNED_LONGS_EQUAL(0, net_loop.num_ports());
+
+    server_handle = add_tcp_server(net_loop, server_config, acceptor);
+    CHECK(server_handle);
+
+    UNSIGNED_LONGS_EQUAL(1, net_loop.num_ports());
 }
 
-TEST(tcp_ports, tcp_single_server_multiple_clients) {
-    TestConnAcceptor conn_acceptor(allocator);
+TEST(tcp_ports, connect_one_server_one_client) {
+    test::MockConnHandler client_conn_handler;
+    test::MockConnHandler server_conn_handler;
 
-    TestConnNotifier conn_notifier1;
-    TestConnNotifier conn_notifier2;
+    test::MockConnAcceptor acceptor;
+    acceptor.push_handler(server_conn_handler);
 
-    Transceiver trx(packet_pool, buffer_pool, allocator);
-    CHECK(trx.valid());
+    NetworkLoop net_loop(packet_pool, buffer_pool, allocator);
+    CHECK(net_loop.valid());
 
-    address::SocketAddr server_address = make_address("0.0.0.0", 0);
+    TcpServerConfig server_config = make_server_config("127.0.0.1", 0);
 
-    CHECK(trx.add_tcp_server(server_address, conn_acceptor));
+    CHECK(add_tcp_server(net_loop, server_config, acceptor));
 
-    CHECK(trx.add_tcp_client(server_address, conn_notifier1));
-    CHECK(trx.add_tcp_client(server_address, conn_notifier2));
+    TcpClientConfig client_config = make_client_config("127.0.0.1", 0, "127.0.0.1",
+                                                       server_config.bind_address.port());
 
-    conn_notifier1.wait_connected();
-    conn_notifier2.wait_connected();
+    CHECK(add_tcp_client(net_loop, client_config, client_conn_handler));
+
+    IConn* server_conn = server_conn_handler.wait_established();
+    IConn* client_conn = client_conn_handler.wait_established();
+
+    POINTERS_EQUAL(server_conn, acceptor.wait_added());
+
+    expect_local_remote(server_conn, server_config.bind_address,
+                        client_config.local_address);
+    expect_local_remote(client_conn, client_config.local_address,
+                        client_config.remote_address);
+
+    wait_writable_readable(server_conn_handler, server_conn, true, false);
+    wait_writable_readable(client_conn_handler, client_conn, true, false);
+
+    terminate_and_wait(server_conn_handler, server_conn, test::ExpectNotFailed);
+    terminate_and_wait(client_conn_handler, client_conn, test::ExpectNotFailed);
+
+    POINTERS_EQUAL(&server_conn_handler, acceptor.wait_removed());
 }
 
-TEST(tcp_ports, tcp_add_client_no_server) {
-    /* TestConnAcceptor conn_acceptor(allocator); */
-    /* TestConnNotifier conn_notifier; */
+TEST(tcp_ports, connect_one_server_many_clients) {
+    test::MockConnHandler client_conn_handler1;
+    test::MockConnHandler client_conn_handler2;
 
-    /* Transceiver trx(packet_pool, buffer_pool, allocator); */
-    /* CHECK(trx.valid()); */
+    test::MockConnHandler server_conn_handler1;
+    test::MockConnHandler server_conn_handler2;
 
-    /* address::SocketAddr server_address = make_address("0.0.0.0", 0); */
+    test::MockConnAcceptor acceptor;
+    acceptor.push_handler(server_conn_handler1);
+    acceptor.push_handler(server_conn_handler2);
 
-    /* CHECK(!trx.add_tcp_client(server_address, conn_notifier)); */
+    NetworkLoop net_loop(packet_pool, buffer_pool, allocator);
+    CHECK(net_loop.valid());
+
+    TcpServerConfig server_config = make_server_config("127.0.0.1", 0);
+
+    CHECK(add_tcp_server(net_loop, server_config, acceptor));
+
+    TcpClientConfig client_config1 = make_client_config(
+        "127.0.0.1", 0, "127.0.0.1", server_config.bind_address.port());
+
+    CHECK(add_tcp_client(net_loop, client_config1, client_conn_handler1));
+
+    IConn* server_conn1 = server_conn_handler1.wait_established();
+    IConn* client_conn1 = client_conn_handler1.wait_established();
+
+    POINTERS_EQUAL(server_conn1, acceptor.wait_added());
+
+    expect_local_remote(server_conn1, server_config.bind_address,
+                        client_config1.local_address);
+    expect_local_remote(client_conn1, client_config1.local_address,
+                        client_config1.remote_address);
+
+    wait_writable_readable(server_conn_handler1, server_conn1, true, false);
+    wait_writable_readable(client_conn_handler1, client_conn1, true, false);
+
+    TcpClientConfig client_config2 = make_client_config(
+        "127.0.0.1", 0, "127.0.0.1", server_config.bind_address.port());
+
+    CHECK(add_tcp_client(net_loop, client_config2, client_conn_handler2));
+
+    IConn* server_conn2 = server_conn_handler2.wait_established();
+    IConn* client_conn2 = client_conn_handler2.wait_established();
+
+    POINTERS_EQUAL(server_conn2, acceptor.wait_added());
+
+    expect_local_remote(server_conn2, server_config.bind_address,
+                        client_config2.local_address);
+    expect_local_remote(client_conn2, client_config2.local_address,
+                        client_config2.remote_address);
+
+    wait_writable_readable(server_conn_handler2, server_conn2, true, false);
+    wait_writable_readable(client_conn_handler2, client_conn2, true, false);
+
+    terminate_and_wait(server_conn_handler1, server_conn1, test::ExpectNotFailed);
+    terminate_and_wait(client_conn_handler1, client_conn1, test::ExpectNotFailed);
+
+    POINTERS_EQUAL(&server_conn_handler1, acceptor.wait_removed());
+
+    terminate_and_wait(server_conn_handler2, server_conn2, test::ExpectNotFailed);
+    terminate_and_wait(client_conn_handler2, client_conn2, test::ExpectNotFailed);
+
+    POINTERS_EQUAL(&server_conn_handler2, acceptor.wait_removed());
 }
 
-TEST(tcp_ports, tcp_failed_to_accept) {
-    /* TestConnAcceptor conn_acceptor(allocator); */
-    /* TestConnNotifier conn_notifier; */
+TEST(tcp_ports, connect_one_server_many_clients_many_loops) {
+    test::MockConnHandler client_conn_handler1;
+    test::MockConnHandler client_conn_handler2;
 
-    /* Transceiver trx(packet_pool, buffer_pool, allocator); */
-    /* CHECK(trx.valid()); */
+    test::MockConnHandler server_conn_handler1;
+    test::MockConnHandler server_conn_handler2;
 
-    /* address::SocketAddr server_address = make_address("0.0.0.0", 0); */
+    test::MockConnAcceptor acceptor;
+    acceptor.push_handler(server_conn_handler1);
+    acceptor.push_handler(server_conn_handler2);
 
-    /* conn_acceptor.disable(); */
+    NetworkLoop net_loop_client1(packet_pool, buffer_pool, allocator);
+    CHECK(net_loop_client1.valid());
 
-    /* CHECK(trx.add_tcp_server(server_address, conn_acceptor)); */
-    /* CHECK(trx.add_tcp_client(server_address, conn_notifier)); */
+    NetworkLoop net_loop_client2(packet_pool, buffer_pool, allocator);
+    CHECK(net_loop_client2.valid());
+
+    NetworkLoop net_loop_server(packet_pool, buffer_pool, allocator);
+    CHECK(net_loop_server.valid());
+
+    TcpServerConfig server_config = make_server_config("127.0.0.1", 0);
+
+    CHECK(add_tcp_server(net_loop_server, server_config, acceptor));
+
+    TcpClientConfig client_config1 = make_client_config(
+        "127.0.0.1", 0, "127.0.0.1", server_config.bind_address.port());
+
+    CHECK(add_tcp_client(net_loop_client1, client_config1, client_conn_handler1));
+
+    IConn* client_conn1 = client_conn_handler1.wait_established();
+    IConn* server_conn1 = server_conn_handler1.wait_established();
+
+    POINTERS_EQUAL(server_conn1, acceptor.wait_added());
+
+    expect_local_remote(server_conn1, server_config.bind_address,
+                        client_config1.local_address);
+    expect_local_remote(client_conn1, client_config1.local_address,
+                        client_config1.remote_address);
+
+    wait_writable_readable(server_conn_handler1, server_conn1, true, false);
+    wait_writable_readable(client_conn_handler1, client_conn1, true, false);
+
+    TcpClientConfig client_config2 = make_client_config(
+        "127.0.0.1", 0, "127.0.0.1", server_config.bind_address.port());
+
+    CHECK(add_tcp_client(net_loop_client2, client_config2, client_conn_handler2));
+
+    IConn* server_conn2 = server_conn_handler2.wait_established();
+    IConn* client_conn2 = client_conn_handler2.wait_established();
+
+    POINTERS_EQUAL(server_conn2, acceptor.wait_added());
+
+    expect_local_remote(server_conn2, server_config.bind_address,
+                        client_config2.local_address);
+    expect_local_remote(client_conn2, client_config2.local_address,
+                        client_config2.remote_address);
+
+    wait_writable_readable(server_conn_handler2, server_conn2, true, false);
+    wait_writable_readable(client_conn_handler2, client_conn2, true, false);
+
+    terminate_and_wait(server_conn_handler1, server_conn1, test::ExpectNotFailed);
+    terminate_and_wait(client_conn_handler1, client_conn1, test::ExpectNotFailed);
+
+    POINTERS_EQUAL(&server_conn_handler1, acceptor.wait_removed());
+
+    terminate_and_wait(server_conn_handler2, server_conn2, test::ExpectNotFailed);
+    terminate_and_wait(client_conn_handler2, client_conn2, test::ExpectNotFailed);
+
+    POINTERS_EQUAL(&server_conn_handler2, acceptor.wait_removed());
 }
 
-TEST(tcp_ports, tcp_add_client_wait_connected) {
-    TestConnAcceptor conn_acceptor(allocator);
-    TestConnNotifier conn_notifier;
+TEST(tcp_ports, connect_many_servers_many_clients) {
+    test::MockConnHandler client_conn_handler1;
+    test::MockConnHandler client_conn_handler2;
 
-    Transceiver trx(packet_pool, buffer_pool, allocator);
-    CHECK(trx.valid());
+    test::MockConnHandler server_conn_handler1;
+    test::MockConnHandler server_conn_handler2;
 
-    address::SocketAddr server_address = make_address("0.0.0.0", 0);
+    test::MockConnAcceptor acceptor1;
+    acceptor1.push_handler(server_conn_handler1);
 
-    CHECK(trx.add_tcp_server(server_address, conn_acceptor));
+    test::MockConnAcceptor acceptor2;
+    acceptor2.push_handler(server_conn_handler2);
 
-    TCPConn* conn = trx.add_tcp_client(server_address, conn_notifier);
-    CHECK(conn);
+    NetworkLoop net_loop(packet_pool, buffer_pool, allocator);
+    CHECK(net_loop.valid());
 
-    conn_notifier.wait_connected();
-    CHECK(conn_acceptor.num_connections() == 1);
+    TcpServerConfig server_config1 = make_server_config("127.0.0.1", 0);
+    CHECK(add_tcp_server(net_loop, server_config1, acceptor1));
 
-    CHECK(conn->connected());
-    CHECK(conn->address() != server_address);
-    CHECK(conn->destination_address() == server_address);
+    TcpServerConfig server_config2 = make_server_config("127.0.0.1", 0);
+    CHECK(add_tcp_server(net_loop, server_config2, acceptor2));
+
+    TcpClientConfig client_config1 = make_client_config(
+        "127.0.0.1", 0, "127.0.0.1", server_config1.bind_address.port());
+
+    CHECK(add_tcp_client(net_loop, client_config1, client_conn_handler1));
+
+    IConn* client_conn1 = client_conn_handler1.wait_established();
+    IConn* server_conn1 = server_conn_handler1.wait_established();
+
+    POINTERS_EQUAL(server_conn1, acceptor1.wait_added());
+
+    expect_local_remote(server_conn1, server_config1.bind_address,
+                        client_config1.local_address);
+    expect_local_remote(client_conn1, client_config1.local_address,
+                        client_config1.remote_address);
+
+    wait_writable_readable(server_conn_handler1, server_conn1, true, false);
+    wait_writable_readable(client_conn_handler1, client_conn1, true, false);
+
+    TcpClientConfig client_config2 = make_client_config(
+        "127.0.0.1", 0, "127.0.0.1", server_config2.bind_address.port());
+
+    CHECK(add_tcp_client(net_loop, client_config2, client_conn_handler2));
+
+    IConn* client_conn2 = client_conn_handler2.wait_established();
+    IConn* server_conn2 = server_conn_handler2.wait_established();
+
+    POINTERS_EQUAL(server_conn2, acceptor2.wait_added());
+
+    expect_local_remote(server_conn2, server_config2.bind_address,
+                        client_config2.local_address);
+    expect_local_remote(client_conn2, client_config2.local_address,
+                        client_config2.remote_address);
+
+    wait_writable_readable(server_conn_handler2, server_conn2, true, false);
+    wait_writable_readable(client_conn_handler2, client_conn2, true, false);
+
+    terminate_and_wait(server_conn_handler1, server_conn1, test::ExpectNotFailed);
+    terminate_and_wait(client_conn_handler1, client_conn1, test::ExpectNotFailed);
+
+    POINTERS_EQUAL(&server_conn_handler1, acceptor1.wait_removed());
+
+    terminate_and_wait(server_conn_handler2, server_conn2, test::ExpectNotFailed);
+    terminate_and_wait(client_conn_handler2, client_conn2, test::ExpectNotFailed);
+
+    POINTERS_EQUAL(&server_conn_handler2, acceptor2.wait_removed());
 }
 
-TEST(tcp_ports, tcp_write_data) {
-    TestConnAcceptor conn_acceptor(allocator);
-    TestConnNotifier conn_notifier;
+TEST(tcp_ports, connect_many_servers_many_clients_many_loops) {
+    test::MockConnHandler client_conn_handler1;
+    test::MockConnHandler client_conn_handler2;
 
-    Transceiver trx(packet_pool, buffer_pool, allocator);
-    CHECK(trx.valid());
+    test::MockConnHandler server_conn_handler1;
+    test::MockConnHandler server_conn_handler2;
 
-    address::SocketAddr server_address = make_address("0.0.0.0", 0);
+    test::MockConnAcceptor acceptor1;
+    acceptor1.push_handler(server_conn_handler1);
 
-    CHECK(trx.add_tcp_server(server_address, conn_acceptor));
+    test::MockConnAcceptor acceptor2;
+    acceptor2.push_handler(server_conn_handler2);
 
-    TCPConn* client_conn = trx.add_tcp_client(server_address, conn_notifier);
-    CHECK(client_conn);
+    NetworkLoop net_loop_client(packet_pool, buffer_pool, allocator);
+    CHECK(net_loop_client.valid());
 
-    conn_notifier.wait_connected();
+    NetworkLoop net_loop_server(packet_pool, buffer_pool, allocator);
+    CHECK(net_loop_server.valid());
 
-    CHECK(client_conn->write("foo", strlen("foo")));
-    conn_notifier.wait_written();
+    TcpServerConfig server_config1 = make_server_config("127.0.0.1", 0);
+    CHECK(add_tcp_server(net_loop_server, server_config1, acceptor1));
 
-    TCPConn* serv_conn = conn_acceptor.get_connection(client_conn->destination_address(),
-                                                      client_conn->address());
-    CHECK(serv_conn);
+    TcpServerConfig server_config2 = make_server_config("127.0.0.1", 0);
+    CHECK(add_tcp_server(net_loop_server, server_config2, acceptor2));
 
-    CHECK(serv_conn->write("bar", strlen("bar")));
-    conn_notifier.wait_readable();
+    TcpClientConfig client_config1 = make_client_config(
+        "127.0.0.1", 0, "127.0.0.1", server_config1.bind_address.port());
 
-    char recv_resp[strlen("bar")];
-    CHECK(client_conn->read(recv_resp, sizeof(recv_resp)) == sizeof(recv_resp));
-    CHECK(memcmp("bar", recv_resp, strlen("bar")) == 0);
+    CHECK(add_tcp_client(net_loop_client, client_config1, client_conn_handler1));
+
+    IConn* client_conn1 = client_conn_handler1.wait_established();
+    IConn* server_conn1 = server_conn_handler1.wait_established();
+
+    POINTERS_EQUAL(server_conn1, acceptor1.wait_added());
+
+    expect_local_remote(server_conn1, server_config1.bind_address,
+                        client_config1.local_address);
+    expect_local_remote(client_conn1, client_config1.local_address,
+                        client_config1.remote_address);
+
+    wait_writable_readable(server_conn_handler1, server_conn1, true, false);
+    wait_writable_readable(client_conn_handler1, client_conn1, true, false);
+
+    TcpClientConfig client_config2 = make_client_config(
+        "127.0.0.1", 0, "127.0.0.1", server_config2.bind_address.port());
+
+    CHECK(add_tcp_client(net_loop_client, client_config2, client_conn_handler2));
+
+    IConn* client_conn2 = client_conn_handler2.wait_established();
+    IConn* server_conn2 = server_conn_handler2.wait_established();
+
+    POINTERS_EQUAL(server_conn2, acceptor2.wait_added());
+
+    expect_local_remote(server_conn2, server_config2.bind_address,
+                        client_config2.local_address);
+    expect_local_remote(client_conn2, client_config2.local_address,
+                        client_config2.remote_address);
+
+    wait_writable_readable(server_conn_handler2, server_conn2, true, false);
+    wait_writable_readable(client_conn_handler2, client_conn2, true, false);
+
+    terminate_and_wait(server_conn_handler1, server_conn1, test::ExpectNotFailed);
+    terminate_and_wait(client_conn_handler1, client_conn1, test::ExpectNotFailed);
+
+    POINTERS_EQUAL(&server_conn_handler1, acceptor1.wait_removed());
+
+    terminate_and_wait(server_conn_handler2, server_conn2, test::ExpectNotFailed);
+    terminate_and_wait(client_conn_handler2, client_conn2, test::ExpectNotFailed);
+
+    POINTERS_EQUAL(&server_conn_handler2, acceptor2.wait_removed());
+}
+
+TEST(tcp_ports, connect_error) {
+    test::MockConnHandler client_conn_handler1;
+    test::MockConnHandler client_conn_handler2;
+    test::MockConnHandler server_conn_handler1;
+
+    test::MockConnAcceptor acceptor;
+    acceptor.push_handler(server_conn_handler1);
+
+    NetworkLoop net_loop(packet_pool, buffer_pool, allocator);
+    CHECK(net_loop.valid());
+
+    TcpServerConfig server_config = make_server_config("127.0.0.1", 0);
+    CHECK(add_tcp_server(net_loop, server_config, acceptor));
+
+    TcpClientConfig client_config1 = make_client_config(
+        "127.0.0.1", 0, "127.0.0.1", server_config.bind_address.port());
+
+    CHECK(add_tcp_client(net_loop, client_config1, client_conn_handler1));
+
+    IConn* client_conn1 = client_conn_handler1.wait_established();
+    IConn* server_conn1 = server_conn_handler1.wait_established();
+
+    POINTERS_EQUAL(server_conn1, acceptor.wait_added());
+
+    // try to connect to non-listening socket
+    TcpClientConfig client_config2 = make_client_config(
+        "127.0.0.1", 0, "127.0.0.1", client_config1.local_address.port());
+
+    CHECK(add_tcp_client(net_loop, client_config2, client_conn_handler2));
+
+    IConn* client_conn2 = client_conn_handler2.wait_refused();
+    expect_read_error(client_conn2, IOErr_Failure);
+
+    terminate_and_wait(server_conn_handler1, server_conn1, test::ExpectNotFailed);
+    terminate_and_wait(client_conn_handler1, client_conn1, test::ExpectNotFailed);
+
+    terminate_and_wait(client_conn_handler2, client_conn2, test::ExpectFailed);
+
+    POINTERS_EQUAL(&server_conn_handler1, acceptor.wait_removed());
+}
+
+TEST(tcp_ports, acceptor_error) {
+    test::MockConnHandler client_conn_handler1;
+    test::MockConnHandler client_conn_handler2;
+    test::MockConnHandler server_conn_handler2;
+
+    test::MockConnAcceptor acceptor;
+
+    NetworkLoop net_loop(packet_pool, buffer_pool, allocator);
+    CHECK(net_loop.valid());
+
+    TcpServerConfig server_config = make_server_config("127.0.0.1", 0);
+
+    CHECK(add_tcp_server(net_loop, server_config, acceptor));
+
+    TcpClientConfig client_config1 = make_client_config(
+        "127.0.0.1", 0, "127.0.0.1", server_config.bind_address.port());
+
+    acceptor.drop_next_connection();
+
+    CHECK(add_tcp_client(net_loop, client_config1, client_conn_handler1));
+
+    IConn* client_conn1 = client_conn_handler1.wait_established();
+
+    wait_writable_readable(client_conn_handler1, client_conn1, true, true);
+    expect_write_error(client_conn1, IOErr_Failure);
+    expect_read_error(client_conn1, IOErr_Failure);
+
+    CHECK(client_conn1->is_failed());
+
+    TcpClientConfig client_config2 = make_client_config(
+        "127.0.0.1", 0, "127.0.0.1", server_config.bind_address.port());
+
+    acceptor.push_handler(server_conn_handler2);
+
+    CHECK(add_tcp_client(net_loop, client_config2, client_conn_handler2));
+
+    IConn* server_conn2 = server_conn_handler2.wait_established();
+    IConn* client_conn2 = client_conn_handler2.wait_established();
+
+    POINTERS_EQUAL(server_conn2, acceptor.wait_added());
+
+    wait_writable_readable(client_conn_handler2, client_conn2, true, false);
+
+    terminate_and_wait(client_conn_handler1, client_conn1, test::ExpectFailed);
+
+    terminate_and_wait(client_conn_handler2, client_conn2, test::ExpectNotFailed);
+    terminate_and_wait(server_conn_handler2, server_conn2, test::ExpectNotFailed);
+
+    POINTERS_EQUAL(&server_conn_handler2, acceptor.wait_removed());
+}
+
+TEST(tcp_ports, terminate_client_connection_normal) {
+    test::MockConnHandler client_conn_handler;
+    test::MockConnHandler server_conn_handler;
+
+    test::MockConnAcceptor acceptor;
+    acceptor.push_handler(server_conn_handler);
+
+    NetworkLoop net_loop(packet_pool, buffer_pool, allocator);
+    CHECK(net_loop.valid());
+
+    TcpServerConfig server_config = make_server_config("127.0.0.1", 0);
+
+    NetworkLoop::PortHandle server_handle =
+        add_tcp_server(net_loop, server_config, acceptor);
+    CHECK(server_handle);
+
+    TcpClientConfig client_config = make_client_config("127.0.0.1", 0, "127.0.0.1",
+                                                       server_config.bind_address.port());
+
+    NetworkLoop::PortHandle client_handle =
+        add_tcp_client(net_loop, client_config, client_conn_handler);
+    CHECK(client_handle);
+
+    UNSIGNED_LONGS_EQUAL(2, net_loop.num_ports());
+
+    IConn* client_conn = client_conn_handler.wait_established();
+    IConn* server_conn = server_conn_handler.wait_established();
+
+    POINTERS_EQUAL(server_conn, acceptor.wait_added());
+
+    wait_writable_readable(server_conn_handler, server_conn, true, false);
+    wait_writable_readable(client_conn_handler, client_conn, true, false);
+
+    client_conn->async_terminate(Term_Normal);
+    client_conn_handler.wait_terminated(test::ExpectNotFailed);
+
+    wait_writable_readable(server_conn_handler, server_conn, true, true);
+    expect_read_error(server_conn, IOErr_StreamEnd);
+
+    CHECK(!server_conn->is_failed());
+
+    terminate_and_wait(server_conn_handler, server_conn, test::ExpectNotFailed);
+
+    POINTERS_EQUAL(&server_conn_handler, acceptor.wait_removed());
+
+    remove_port(net_loop, client_handle);
+    remove_port(net_loop, server_handle);
+
+    UNSIGNED_LONGS_EQUAL(0, net_loop.num_ports());
+}
+
+TEST(tcp_ports, terminate_client_connection_failure) {
+    test::MockConnHandler client_conn_handler;
+    test::MockConnHandler server_conn_handler;
+
+    test::MockConnAcceptor acceptor;
+    acceptor.push_handler(server_conn_handler);
+
+    NetworkLoop net_loop(packet_pool, buffer_pool, allocator);
+    CHECK(net_loop.valid());
+
+    TcpServerConfig server_config = make_server_config("127.0.0.1", 0);
+
+    NetworkLoop::PortHandle server_handle =
+        add_tcp_server(net_loop, server_config, acceptor);
+    CHECK(server_handle);
+
+    TcpClientConfig client_config = make_client_config("127.0.0.1", 0, "127.0.0.1",
+                                                       server_config.bind_address.port());
+
+    NetworkLoop::PortHandle client_handle =
+        add_tcp_client(net_loop, client_config, client_conn_handler);
+    CHECK(client_handle);
+
+    UNSIGNED_LONGS_EQUAL(2, net_loop.num_ports());
+
+    IConn* client_conn = client_conn_handler.wait_established();
+    IConn* server_conn = server_conn_handler.wait_established();
+
+    POINTERS_EQUAL(server_conn, acceptor.wait_added());
+
+    wait_writable_readable(server_conn_handler, server_conn, true, false);
+    wait_writable_readable(client_conn_handler, client_conn, true, false);
+
+    client_conn->async_terminate(Term_Failure);
+    client_conn_handler.wait_terminated(test::ExpectFailed);
+
+    wait_writable_readable(server_conn_handler, server_conn, true, true);
+    expect_write_error(server_conn, IOErr_Failure);
+    expect_read_error(server_conn, IOErr_Failure);
+
+    CHECK(server_conn->is_failed());
+
+    terminate_and_wait(server_conn_handler, server_conn, test::ExpectFailed);
+
+    POINTERS_EQUAL(&server_conn_handler, acceptor.wait_removed());
+
+    remove_port(net_loop, client_handle);
+    remove_port(net_loop, server_handle);
+
+    UNSIGNED_LONGS_EQUAL(0, net_loop.num_ports());
+}
+
+TEST(tcp_ports, terminate_server_connection_normal) {
+    test::MockConnHandler client_conn_handler;
+    test::MockConnHandler server_conn_handler;
+
+    test::MockConnAcceptor acceptor;
+    acceptor.push_handler(server_conn_handler);
+
+    NetworkLoop net_loop(packet_pool, buffer_pool, allocator);
+    CHECK(net_loop.valid());
+
+    TcpServerConfig server_config = make_server_config("127.0.0.1", 0);
+
+    NetworkLoop::PortHandle server_handle =
+        add_tcp_server(net_loop, server_config, acceptor);
+    CHECK(server_handle);
+
+    TcpClientConfig client_config = make_client_config("127.0.0.1", 0, "127.0.0.1",
+                                                       server_config.bind_address.port());
+
+    NetworkLoop::PortHandle client_handle =
+        add_tcp_client(net_loop, client_config, client_conn_handler);
+    CHECK(client_handle);
+
+    UNSIGNED_LONGS_EQUAL(2, net_loop.num_ports());
+
+    IConn* client_conn = client_conn_handler.wait_established();
+    IConn* server_conn = server_conn_handler.wait_established();
+
+    POINTERS_EQUAL(server_conn, acceptor.wait_added());
+
+    wait_writable_readable(server_conn_handler, server_conn, true, false);
+    wait_writable_readable(client_conn_handler, client_conn, true, false);
+
+    server_conn->async_terminate(Term_Normal);
+    server_conn_handler.wait_terminated(test::ExpectNotFailed);
+
+    POINTERS_EQUAL(&server_conn_handler, acceptor.wait_removed());
+
+    wait_writable_readable(client_conn_handler, client_conn, true, true);
+    expect_read_error(client_conn, IOErr_StreamEnd);
+
+    CHECK(!client_conn->is_failed());
+
+    terminate_and_wait(client_conn_handler, client_conn, test::ExpectNotFailed);
+
+    remove_port(net_loop, client_handle);
+    remove_port(net_loop, server_handle);
+
+    UNSIGNED_LONGS_EQUAL(0, net_loop.num_ports());
+}
+
+TEST(tcp_ports, terminate_server_connection_failure) {
+    test::MockConnHandler client_conn_handler;
+    test::MockConnHandler server_conn_handler;
+
+    test::MockConnAcceptor acceptor;
+    acceptor.push_handler(server_conn_handler);
+
+    NetworkLoop net_loop(packet_pool, buffer_pool, allocator);
+    CHECK(net_loop.valid());
+
+    TcpServerConfig server_config = make_server_config("127.0.0.1", 0);
+
+    NetworkLoop::PortHandle server_handle =
+        add_tcp_server(net_loop, server_config, acceptor);
+    CHECK(server_handle);
+
+    TcpClientConfig client_config = make_client_config("127.0.0.1", 0, "127.0.0.1",
+                                                       server_config.bind_address.port());
+
+    NetworkLoop::PortHandle client_handle =
+        add_tcp_client(net_loop, client_config, client_conn_handler);
+    CHECK(client_handle);
+
+    UNSIGNED_LONGS_EQUAL(2, net_loop.num_ports());
+
+    IConn* client_conn = client_conn_handler.wait_established();
+    IConn* server_conn = server_conn_handler.wait_established();
+
+    POINTERS_EQUAL(server_conn, acceptor.wait_added());
+
+    wait_writable_readable(server_conn_handler, server_conn, true, false);
+    wait_writable_readable(client_conn_handler, client_conn, true, false);
+
+    server_conn->async_terminate(Term_Failure);
+    server_conn_handler.wait_terminated(test::ExpectFailed);
+
+    POINTERS_EQUAL(&server_conn_handler, acceptor.wait_removed());
+
+    wait_writable_readable(client_conn_handler, client_conn, true, true);
+    expect_write_error(client_conn, IOErr_Failure);
+    expect_read_error(client_conn, IOErr_Failure);
+
+    CHECK(client_conn->is_failed());
+
+    terminate_and_wait(client_conn_handler, client_conn, test::ExpectFailed);
+
+    remove_port(net_loop, client_handle);
+    remove_port(net_loop, server_handle);
+
+    UNSIGNED_LONGS_EQUAL(0, net_loop.num_ports());
 }
 
 } // namespace netio

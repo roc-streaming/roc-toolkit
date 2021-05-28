@@ -17,72 +17,100 @@
 #include "roc_address/socket_addr.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/list.h"
-#include "roc_core/list_node.h"
 #include "roc_core/shared_ptr.h"
+#include "roc_core/stddefs.h"
 #include "roc_netio/basic_port.h"
 #include "roc_netio/iclose_handler.h"
 #include "roc_netio/iconn_acceptor.h"
+#include "roc_netio/iterminate_handler.h"
+#include "roc_netio/socket_ops.h"
+#include "roc_netio/tcp_connection_port.h"
 
 namespace roc {
 namespace netio {
 
+//! TCP server parameters.
+struct TcpServerConfig : TcpConnectionConfig {
+    //! Server will bind to this address.
+    //! If IP is zero, INADDR_ANY is used, i.e. the socket is bound to all network
+    //! interfaces. If port is zero, a random free port is selected.
+    address::SocketAddr bind_address;
+
+    //! Maximum length to which the queue of pending connections may grow.
+    size_t backlog_limit;
+
+    TcpServerConfig()
+        : backlog_limit(128) {
+    }
+};
+
 //! TCP server.
-class TCPServerPort : public BasicPort, private ICloseHandler {
+class TcpServerPort : public BasicPort, private ITerminateHandler, private ICloseHandler {
 public:
     //! Initialize.
-    TCPServerPort(const address::SocketAddr& address,
-                  uv_loop_t& loop,
-                  ICloseHandler& close_handler,
+    TcpServerPort(const TcpServerConfig& config,
                   IConnAcceptor& conn_acceptor,
+                  uv_loop_t& loop,
                   core::IAllocator& allocator);
 
     //! Destroy.
-    ~TCPServerPort();
+    virtual ~TcpServerPort();
 
     //! Get bind address.
-    virtual const address::SocketAddr& address() const;
+    const address::SocketAddr& bind_address() const;
 
     //! Open TCP server.
     //!
     //! @remarks
-    //!  Should be called from the event loop thread.
+    //!  Should be called from the network loop thread.
     virtual bool open();
 
     //! Asynchronously close TCP server.
     //!
     //! @remarks
-    //!  Should be called from the event loop thread.
-    virtual void async_close();
+    //!  Should be called from network loop thread.
+    virtual AsyncOperationStatus async_close(ICloseHandler& handler, void* handler_arg);
+
+protected:
+    //! Format descriptor.
+    virtual void format_descriptor(core::StringBuilder& b);
 
 private:
-    enum { Backlog = 32 };
-
+    static void poll_cb_(uv_poll_t* handle, int status, int events);
     static void close_cb_(uv_handle_t* handle);
-    static void listen_cb_(uv_stream_t* stream, int status);
 
-    virtual void handle_closed(BasicPort&);
+    virtual void handle_terminate_completed(IConn& conn, void* arg);
+    virtual void handle_close_completed(BasicPort& port, void* arg);
 
-    size_t num_ports_() const;
+    AsyncOperationStatus async_close_server_();
+    void finish_closing_server_();
 
-    void close_();
-    void async_close_ports_();
-    bool remove_closing_port_(BasicPort&);
+    size_t num_connections_() const;
+    void async_close_all_connections_();
+    void async_terminate_connection_(const core::SharedPtr<TcpConnectionPort>&);
+    void async_close_connection_(const core::SharedPtr<TcpConnectionPort>&);
+    void finish_closing_connection_(const core::SharedPtr<TcpConnectionPort>&);
 
-    ICloseHandler& close_handler_;
+    TcpServerConfig config_;
+
     IConnAcceptor& conn_acceptor_;
+
+    ICloseHandler* close_handler_;
+    void* close_handler_arg_;
 
     uv_loop_t& loop_;
 
-    uv_tcp_t handle_;
-    bool handle_initialized_;
+    SocketHandle socket_;
 
-    core::List<BasicPort> open_ports_;
-    core::List<BasicPort> closing_ports_;
+    uv_poll_t poll_handle_;
+    bool poll_handle_initialized_;
+    bool poll_handle_started_;
 
+    core::List<TcpConnectionPort> open_conns_;
+    core::List<TcpConnectionPort> closing_conns_;
+
+    bool want_close_;
     bool closed_;
-    bool stopped_;
-
-    address::SocketAddr address_;
 };
 
 } // namespace netio

@@ -26,7 +26,13 @@
 #include "roc_core/thread.h"
 #include "roc_netio/basic_port.h"
 #include "roc_netio/iclose_handler.h"
+#include "roc_netio/iconn.h"
+#include "roc_netio/iconn_acceptor.h"
+#include "roc_netio/iconn_handler.h"
+#include "roc_netio/iterminate_handler.h"
 #include "roc_netio/resolver.h"
+#include "roc_netio/tcp_connection_port.h"
+#include "roc_netio/tcp_server_port.h"
 #include "roc_netio/udp_receiver_port.h"
 #include "roc_netio/udp_sender_port.h"
 #include "roc_packet/iwriter.h"
@@ -36,7 +42,8 @@ namespace roc {
 namespace netio {
 
 //! Network event loop thread.
-class NetworkLoop : private ICloseHandler,
+class NetworkLoop : private ITerminateHandler,
+                    private ICloseHandler,
                     private IResolverRequestHandler,
                     private core::Thread {
 public:
@@ -74,17 +81,9 @@ public:
         core::Atomic<int> success_;
 
         core::SharedPtr<BasicPort> port_; //!< On which port the task operates.
+        PortHandle port_handle_;          //!< Port handle.
 
-        PortHandle port_handle_;       //!< Port handle.
-        packet::IWriter* port_writer_; //!< Port writer.
-
-        UdpSenderConfig* sender_config_;     //!< Sender port config.
-        UdpReceiverConfig* receiver_config_; //!< Receiver port config.
-
-        ResolverRequest resolve_req_; //!< For resolve tasks.
-
-        ICompletionHandler* handler_; //!< Completion handler.
-
+        ICompletionHandler* handler_;         //!< Completion handler.
         core::Optional<core::Semaphore> sem_; //!< Completion semaphore.
     };
 
@@ -105,6 +104,12 @@ public:
             //! @pre
             //!  Should be called only if success() is true.
             PortHandle get_handle() const;
+
+        private:
+            friend class NetworkLoop;
+
+            UdpReceiverConfig* config_;
+            packet::IWriter* writer_;
         };
 
         //! Add UDP datagram sender port.
@@ -127,6 +132,56 @@ public:
             //! @pre
             //!  Should be called only if success() is true.
             packet::IWriter* get_writer() const;
+
+        private:
+            friend class NetworkLoop;
+
+            UdpSenderConfig* config_;
+            packet::IWriter* writer_;
+        };
+
+        //! Add TCP server port.
+        class AddTcpServerPort : public Task {
+        public:
+            //! Set task parameters.
+            //! @remarks
+            //!  - Updates @p config with the actual bind address.
+            //!  - Listens for incoming connections and passes new connections
+            //!    to @p conn_acceptor. It should return handler that will be
+            //!    notified when connection state changes.
+            AddTcpServerPort(TcpServerConfig& config, IConnAcceptor& conn_acceptor);
+
+            //! Get created port handle.
+            //! @pre
+            //!  Should be called only if success() is true.
+            PortHandle get_handle() const;
+
+        private:
+            friend class NetworkLoop;
+
+            TcpServerConfig* config_;
+            IConnAcceptor* conn_acceptor_;
+        };
+
+        //! Add TCP client port.
+        class AddTcpClientPort : public Task {
+        public:
+            //! Set task parameters.
+            //! @remarks
+            //!  - Updates @p config with the actual bind address.
+            //!  - Notofies @p conn_handler when connection state changes.
+            AddTcpClientPort(TcpClientConfig& config, IConnHandler& conn_handler);
+
+            //! Get created port handle.
+            //! @pre
+            //!  Should be called only if success() is true.
+            PortHandle get_handle() const;
+
+        private:
+            friend class NetworkLoop;
+
+            TcpClientConfig* config_;
+            IConnHandler* conn_handler_;
         };
 
         //! Remove port.
@@ -134,6 +189,9 @@ public:
         public:
             //! Set task parameters.
             RemovePort(PortHandle handle);
+
+        private:
+            friend class NetworkLoop;
         };
 
         //! Resolve endpoint address.
@@ -149,6 +207,11 @@ public:
             //! @pre
             //!  Should be called only if success() is true.
             const address::SocketAddr& get_address() const;
+
+        private:
+            friend class NetworkLoop;
+
+            ResolverRequest resolve_req_;
         };
     };
 
@@ -197,7 +260,8 @@ private:
     static void task_sem_cb_(uv_async_t* handle);
     static void stop_sem_cb_(uv_async_t* handle);
 
-    virtual void handle_closed(BasicPort&, void*);
+    virtual void handle_terminate_completed(IConn&, void*);
+    virtual void handle_close_completed(BasicPort&, void*);
     virtual void handle_resolved(ResolverRequest& req);
 
     virtual void run();
@@ -205,7 +269,12 @@ private:
     void process_pending_tasks_();
     void finish_task_(Task&);
 
-    AsyncOperationStatus async_close_port_(BasicPort&, Task*);
+    void async_terminate_conn_port_(const core::SharedPtr<TcpConnectionPort>& port,
+                                    Task* task);
+    AsyncOperationStatus async_close_port_(const core::SharedPtr<BasicPort>& port,
+                                           Task* task);
+    void finish_closing_port_(const core::SharedPtr<BasicPort>& port, Task* task);
+
     void update_num_ports_();
 
     void close_all_sems_();
@@ -214,6 +283,8 @@ private:
     void task_add_udp_receiver_(Task&);
     void task_add_udp_sender_(Task&);
     void task_remove_port_(Task&);
+    void task_add_tcp_server_(Task&);
+    void task_add_tcp_client_(Task&);
     void task_resolve_endpoint_address_(Task&);
 
     packet::PacketPool& packet_pool_;
