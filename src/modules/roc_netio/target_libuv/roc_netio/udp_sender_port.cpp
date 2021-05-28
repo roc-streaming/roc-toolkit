@@ -39,26 +39,29 @@ UdpSenderPort::UdpSenderPort(const UdpSenderConfig& config,
     , closed_(false)
     , fd_()
     , rate_limiter_(PacketLogInterval) {
+    BasicPort::update_descriptor();
 }
 
 UdpSenderPort::~UdpSenderPort() {
     if (handle_initialized_ || write_sem_initialized_) {
-        roc_panic("udp sender: sender was not fully closed before calling destructor");
+        roc_panic("udp sender: %s: sender was not fully closed before calling destructor",
+                  descriptor());
     }
 
     if (pending_packets_) {
-        roc_panic("udp sender: packets weren't fully sent before calling destructor");
+        roc_panic("udp sender: %s: packets weren't fully sent before calling destructor",
+                  descriptor());
     }
 }
 
-const address::SocketAddr& UdpSenderPort::address() const {
+const address::SocketAddr& UdpSenderPort::bind_address() const {
     return config_.bind_address;
 }
 
 bool UdpSenderPort::open() {
     if (int err = uv_async_init(&loop_, &write_sem_, write_sem_cb_)) {
-        roc_log(LogError, "udp sender: uv_async_init(): [%s] %s", uv_err_name(err),
-                uv_strerror(err));
+        roc_log(LogError, "udp sender: %s: uv_async_init(): [%s] %s", descriptor(),
+                uv_err_name(err), uv_strerror(err));
         return false;
     }
 
@@ -66,8 +69,8 @@ bool UdpSenderPort::open() {
     write_sem_initialized_ = true;
 
     if (int err = uv_udp_init(&loop_, &handle_)) {
-        roc_log(LogError, "udp sender: uv_udp_init(): [%s] %s", uv_err_name(err),
-                uv_strerror(err));
+        roc_log(LogError, "udp sender: %s: uv_udp_init(): [%s] %s", descriptor(),
+                uv_err_name(err), uv_strerror(err));
         return false;
     }
 
@@ -82,53 +85,55 @@ bool UdpSenderPort::open() {
         bind_err = uv_udp_bind(&handle_, config_.bind_address.saddr(), 0);
     }
     if (bind_err != 0) {
-        roc_log(LogError, "udp sender: uv_udp_bind(): [%s] %s", uv_err_name(bind_err),
-                uv_strerror(bind_err));
+        roc_log(LogError, "udp sender: %s: uv_udp_bind(): [%s] %s", descriptor(),
+                uv_err_name(bind_err), uv_strerror(bind_err));
         return false;
     }
 
     if (config_.broadcast_enabled) {
-        roc_log(LogDebug, "udp sender: setting broadcast flag for port %s",
-                address::socket_addr_to_str(config_.bind_address).c_str());
+        roc_log(LogDebug, "udp sender: %s: setting broadcast flag", descriptor());
 
         if (int err = uv_udp_set_broadcast(&handle_, 1)) {
-            roc_log(LogError, "udp sender: uv_udp_set_broadcast(): [%s] %s",
-                    uv_err_name(err), uv_strerror(err));
+            roc_log(LogError, "udp sender: %s: uv_udp_set_broadcast(): [%s] %s",
+                    descriptor(), uv_err_name(err), uv_strerror(err));
             return false;
         }
     }
 
     int addrlen = (int)config_.bind_address.slen();
     if (int err = uv_udp_getsockname(&handle_, config_.bind_address.saddr(), &addrlen)) {
-        roc_log(LogError, "udp sender: uv_udp_getsockname(): [%s] %s", uv_err_name(err),
-                uv_strerror(err));
+        roc_log(LogError, "udp sender: %s: uv_udp_getsockname(): [%s] %s", descriptor(),
+                uv_err_name(err), uv_strerror(err));
         return false;
     }
 
     if (addrlen != (int)config_.bind_address.slen()) {
-        roc_log(LogError,
-                "udp sender: uv_udp_getsockname(): unexpected len: got=%lu expected=%lu",
-                (unsigned long)addrlen, (unsigned long)config_.bind_address.slen());
+        roc_log(
+            LogError,
+            "udp sender: %s: uv_udp_getsockname(): unexpected len: got=%lu expected=%lu",
+            descriptor(), (unsigned long)addrlen,
+            (unsigned long)config_.bind_address.slen());
         return false;
     }
 
     const int fd_err = uv_fileno((uv_handle_t*)&handle_, &fd_);
     if (fd_err != 0) {
-        roc_panic("udp sender: uv_fileno(): [%s] %s", uv_err_name(fd_err),
-                  uv_strerror(fd_err));
+        roc_panic("udp sender: %s: uv_fileno(): [%s] %s", descriptor(),
+                  uv_err_name(fd_err), uv_strerror(fd_err));
     }
 
-    roc_log(LogInfo, "udp sender: opened port %s",
-            address::socket_addr_to_str(config_.bind_address).c_str());
-
     stopped_ = false;
+    update_descriptor();
+
+    roc_log(LogDebug, "udp sender: %s: opened port", descriptor());
 
     return true;
 }
 
-bool UdpSenderPort::async_close(ICloseHandler& handler, void* handler_arg) {
+AsyncOperationStatus UdpSenderPort::async_close(ICloseHandler& handler,
+                                                void* handler_arg) {
     if (close_handler_) {
-        roc_panic("udp sender: can't call async_close() twice");
+        roc_panic("udp sender: %s: can't call async_close() twice", descriptor());
     }
 
     close_handler_ = &handler;
@@ -137,31 +142,31 @@ bool UdpSenderPort::async_close(ICloseHandler& handler, void* handler_arg) {
     stopped_ = true;
 
     if (fully_closed_()) {
-        return false;
+        return AsyncOp_Completed;
     }
 
     if (pending_packets_ == 0) {
         start_closing_();
     }
 
-    return true;
+    return AsyncOp_Started;
 }
 
 void UdpSenderPort::write(const packet::PacketPtr& pp) {
     if (!pp) {
-        roc_panic("udp sender: unexpected null packet");
+        roc_panic("udp sender: %s: unexpected null packet", descriptor());
     }
 
     if (!pp->udp()) {
-        roc_panic("udp sender: unexpected non-udp packet");
+        roc_panic("udp sender: %s: unexpected non-udp packet", descriptor());
     }
 
     if (!pp->data()) {
-        roc_panic("udp sender: unexpected packet w/o data");
+        roc_panic("udp sender: %s: unexpected packet w/o data", descriptor());
     }
 
     if (stopped_) {
-        roc_panic("udp sender: attempt to use stopped sender");
+        roc_panic("udp sender: %s: attempt to use stopped sender", descriptor());
     }
 
     write_(pp);
@@ -182,8 +187,8 @@ void UdpSenderPort::write_(const packet::PacketPtr& pp) {
     queue_.push_back(*pp);
 
     if (int err = uv_async_send(&write_sem_)) {
-        roc_panic("udp sender: uv_async_send(): [%s] %s", uv_err_name(err),
-                  uv_strerror(err));
+        roc_panic("udp sender: %s: uv_async_send(): [%s] %s", descriptor(),
+                  uv_err_name(err), uv_strerror(err));
     }
 }
 
@@ -202,8 +207,7 @@ void UdpSenderPort::close_cb_(uv_handle_t* handle) {
         return;
     }
 
-    roc_log(LogInfo, "udp sender: closed port %s",
-            address::socket_addr_to_str(self.config_.bind_address).c_str());
+    roc_log(LogDebug, "udp sender: %s: closed port", self.descriptor());
 
     roc_panic_if_not(self.close_handler_);
 
@@ -227,10 +231,11 @@ void UdpSenderPort::write_sem_cb_(uv_async_t* handle) {
         const int packet_num = ++self.sent_packets_;
         ++self.sent_packets_blk_;
 
-        roc_log(
-            LogTrace, "udp sender: sending packet: num=%d src=%s dst=%s sz=%ld",
-            packet_num, address::socket_addr_to_str(self.config_.bind_address).c_str(),
-            address::socket_addr_to_str(udp.dst_addr).c_str(), (long)pp->data().size());
+        roc_log(LogTrace, "udp sender: %s: sending packet: num=%d src=%s dst=%s sz=%ld",
+                self.descriptor(), packet_num,
+                address::socket_addr_to_str(self.config_.bind_address).c_str(),
+                address::socket_addr_to_str(udp.dst_addr).c_str(),
+                (long)pp->data().size());
 
         uv_buf_t buf;
         buf.base = (char*)pp->data().data();
@@ -240,8 +245,8 @@ void UdpSenderPort::write_sem_cb_(uv_async_t* handle) {
 
         if (int err = uv_udp_send(&udp.request, &self.handle_, &buf, 1,
                                   udp.dst_addr.saddr(), send_cb_)) {
-            roc_log(LogError, "udp sender: uv_udp_send(): [%s] %s", uv_err_name(err),
-                    uv_strerror(err));
+            roc_log(LogError, "udp sender: %s: uv_udp_send(): [%s] %s", self.descriptor(),
+                    uv_err_name(err), uv_strerror(err));
             continue;
         }
 
@@ -267,8 +272,9 @@ void UdpSenderPort::send_cb_(uv_udp_send_t* req, int status) {
 
     if (status < 0) {
         roc_log(LogError,
-                "udp sender:"
+                "udp sender: %s:"
                 " can't send packet: src=%s dst=%s sz=%ld: [%s] %s",
+                self.descriptor(),
                 address::socket_addr_to_str(self.config_.bind_address).c_str(),
                 address::socket_addr_to_str(pp->udp()->dst_addr).c_str(),
                 (long)pp->data().size(), uv_err_name(status), uv_strerror(status));
@@ -299,8 +305,7 @@ void UdpSenderPort::start_closing_() {
     }
 
     if (handle_initialized_ && !uv_is_closing((uv_handle_t*)&handle_)) {
-        roc_log(LogInfo, "udp sender: closing port %s",
-                address::socket_addr_to_str(config_.bind_address).c_str());
+        roc_log(LogDebug, "udp sender: %s: initiating asynchronous close", descriptor());
 
         uv_close((uv_handle_t*)&handle_, close_cb_);
     }
@@ -321,10 +326,12 @@ bool UdpSenderPort::try_nonblocking_send_(const packet::PacketPtr& pp) {
 
     if (success) {
         const int packet_num = ++sent_packets_;
-        roc_log(
-            LogTrace, "udp sender: sent packet non-blocking: num=%d src=%s dst=%s sz=%ld",
-            packet_num, address::socket_addr_to_str(config_.bind_address).c_str(),
-            address::socket_addr_to_str(udp.dst_addr).c_str(), (long)pp->data().size());
+        roc_log(LogTrace,
+                "udp sender: %s: sent packet non-blocking: num=%d src=%s dst=%s sz=%ld",
+                descriptor(), packet_num,
+                address::socket_addr_to_str(config_.bind_address).c_str(),
+                address::socket_addr_to_str(udp.dst_addr).c_str(),
+                (long)pp->data().size());
     }
 
     return success;
@@ -341,8 +348,20 @@ void UdpSenderPort::report_stats_() {
     const double nb_ratio =
         sent_packets_nb != 0 ? (double)sent_packets_ / sent_packets_nb : 0.;
 
-    roc_log(LogDebug, "udp sender: total=%u nb=%u nb_ratio=%.5f", sent_packets,
-            sent_packets_nb, nb_ratio);
+    roc_log(LogDebug, "udp sender: %s: total=%u nb=%u nb_ratio=%.5f", descriptor(),
+            sent_packets, sent_packets_nb, nb_ratio);
+}
+
+void UdpSenderPort::format_descriptor(core::StringBuilder& b) {
+    b.append_str("<udpsend");
+
+    b.append_str(" 0x");
+    b.append_uint((unsigned long)this, 16);
+
+    b.append_str(" bind=");
+    b.append_str(address::socket_addr_to_str(config_.bind_address).c_str());
+
+    b.append_str(">");
 }
 
 } // namespace netio

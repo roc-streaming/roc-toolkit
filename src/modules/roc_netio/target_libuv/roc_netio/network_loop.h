@@ -205,7 +205,7 @@ private:
     void process_pending_tasks_();
     void finish_task_(Task&);
 
-    bool async_close_port_(BasicPort&, Task*);
+    AsyncOperationStatus async_close_port_(BasicPort&, Task*);
     void update_num_ports_();
 
     void close_all_sems_();

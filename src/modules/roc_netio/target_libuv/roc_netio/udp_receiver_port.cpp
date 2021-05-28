@@ -11,6 +11,7 @@
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_core/shared_ptr.h"
+#include "roc_core/string_builder.h"
 
 namespace roc {
 namespace netio {
@@ -34,23 +35,25 @@ UdpReceiverPort::UdpReceiverPort(const UdpReceiverConfig& config,
     , packet_pool_(packet_pool)
     , buffer_pool_(buffer_pool)
     , packet_counter_(0) {
+    BasicPort::update_descriptor();
 }
 
 UdpReceiverPort::~UdpReceiverPort() {
     if (handle_initialized_) {
         roc_panic(
-            "udp receiver: receiver was not fully closed before calling destructor");
+            "udp receiver: %s: receiver was not fully closed before calling destructor",
+            descriptor());
     }
 }
 
-const address::SocketAddr& UdpReceiverPort::address() const {
+const address::SocketAddr& UdpReceiverPort::bind_address() const {
     return config_.bind_address;
 }
 
 bool UdpReceiverPort::open() {
     if (int err = uv_udp_init(&loop_, &handle_)) {
-        roc_log(LogError, "udp receiver: uv_udp_init(): [%s] %s", uv_err_name(err),
-                uv_strerror(err));
+        roc_log(LogError, "udp receiver: %s: uv_udp_init(): [%s] %s", descriptor(),
+                uv_err_name(err), uv_strerror(err));
         return false;
     }
 
@@ -72,23 +75,24 @@ bool UdpReceiverPort::open() {
     }
 
     if (bind_err != 0) {
-        roc_log(LogError, "udp receiver: uv_udp_bind(): [%s] %s", uv_err_name(bind_err),
-                uv_strerror(bind_err));
+        roc_log(LogError, "udp receiver: %s: uv_udp_bind(): [%s] %s", descriptor(),
+                uv_err_name(bind_err), uv_strerror(bind_err));
         return false;
     }
 
     int addrlen = (int)config_.bind_address.slen();
     if (int err = uv_udp_getsockname(&handle_, config_.bind_address.saddr(), &addrlen)) {
-        roc_log(LogError, "udp receiver: uv_udp_getsockname(): [%s] %s", uv_err_name(err),
-                uv_strerror(err));
+        roc_log(LogError, "udp receiver: %s: uv_udp_getsockname(): [%s] %s", descriptor(),
+                uv_err_name(err), uv_strerror(err));
         return false;
     }
 
     if (addrlen != (int)config_.bind_address.slen()) {
-        roc_log(
-            LogError,
-            "udp receiver: uv_udp_getsockname(): unexpected len: got=%lu expected=%lu",
-            (unsigned long)addrlen, (unsigned long)config_.bind_address.slen());
+        roc_log(LogError,
+                "udp receiver: %s:"
+                " uv_udp_getsockname(): unexpected len: got=%lu expected=%lu",
+                descriptor(), (unsigned long)addrlen,
+                (unsigned long)config_.bind_address.slen());
         return false;
     }
 
@@ -99,42 +103,42 @@ bool UdpReceiverPort::open() {
     }
 
     if (int err = uv_udp_recv_start(&handle_, alloc_cb_, recv_cb_)) {
-        roc_log(LogError, "udp receiver: uv_udp_recv_start(): [%s] %s", uv_err_name(err),
-                uv_strerror(err));
+        roc_log(LogError, "udp receiver: %s: uv_udp_recv_start(): [%s] %s", descriptor(),
+                uv_err_name(err), uv_strerror(err));
         return false;
     }
 
-    roc_log(LogInfo, "udp receiver: opened port %s",
-            address::socket_addr_to_str(config_.bind_address).c_str());
-
     recv_started_ = true;
+    update_descriptor();
+
+    roc_log(LogDebug, "udp receiver: %s: opened port", descriptor());
 
     return true;
 }
 
-bool UdpReceiverPort::async_close(ICloseHandler& handler, void* handler_arg) {
+AsyncOperationStatus UdpReceiverPort::async_close(ICloseHandler& handler,
+                                                  void* handler_arg) {
     if (close_handler_) {
-        roc_panic("udp receiver: can't call async_close() twice");
+        roc_panic("udp receiver: %s: can't call async_close() twice", descriptor());
     }
 
     close_handler_ = &handler;
     close_handler_arg_ = handler_arg;
 
     if (!handle_initialized_) {
-        return false;
+        return AsyncOp_Completed;
     }
 
     if (closed_) {
-        return false;
+        return AsyncOp_Completed;
     }
 
-    roc_log(LogInfo, "udp receiver: closing port %s",
-            address::socket_addr_to_str(config_.bind_address).c_str());
+    roc_log(LogDebug, "udp receiver: %s: initiating asynchronous close", descriptor());
 
     if (recv_started_) {
         if (int err = uv_udp_recv_stop(&handle_)) {
-            roc_log(LogError, "udp receiver: uv_udp_recv_stop(): [%s] %s",
-                    uv_err_name(err), uv_strerror(err));
+            roc_log(LogError, "udp receiver: %s: uv_udp_recv_stop(): [%s] %s",
+                    descriptor(), uv_err_name(err), uv_strerror(err));
         }
         recv_started_ = false;
     }
@@ -147,7 +151,7 @@ bool UdpReceiverPort::async_close(ICloseHandler& handler, void* handler_arg) {
         uv_close((uv_handle_t*)&handle_, close_cb_);
     }
 
-    return true;
+    return AsyncOp_Started;
 }
 
 void UdpReceiverPort::close_cb_(uv_handle_t* handle) {
@@ -157,8 +161,7 @@ void UdpReceiverPort::close_cb_(uv_handle_t* handle) {
 
     self.handle_initialized_ = false;
 
-    roc_log(LogInfo, "udp receiver: closed port %s",
-            address::socket_addr_to_str(self.config_.bind_address).c_str());
+    roc_log(LogDebug, "udp receiver: %s: closed port", self.descriptor());
 
     roc_panic_if_not(self.close_handler_);
 
@@ -176,7 +179,7 @@ void UdpReceiverPort::alloc_cb_(uv_handle_t* handle, size_t size, uv_buf_t* buf)
         new (self.buffer_pool_) core::Buffer<uint8_t>(self.buffer_pool_);
 
     if (!bp) {
-        roc_log(LogError, "udp receiver: can't allocate buffer");
+        roc_log(LogError, "udp receiver: %s: can't allocate buffer", self.descriptor());
 
         buf->base = NULL;
         buf->len = 0;
@@ -207,12 +210,12 @@ void UdpReceiverPort::recv_cb_(uv_udp_t* handle,
     address::SocketAddr src_addr;
     if (sockaddr) {
         if (!src_addr.set_host_port_saddr(sockaddr)) {
-            roc_log(
-                LogError,
-                "udp receiver: can't determine source address: num=%u dst=%s nread=%ld",
-                self.packet_counter_,
-                address::socket_addr_to_str(self.config_.bind_address).c_str(),
-                (long)nread);
+            roc_log(LogError,
+                    "udp receiver: %s:"
+                    " can't determine source address: num=%u dst=%s nread=%ld",
+                    self.descriptor(), self.packet_counter_,
+                    address::socket_addr_to_str(self.config_.bind_address).c_str(),
+                    (long)nread);
         }
     }
 
@@ -227,10 +230,11 @@ void UdpReceiverPort::recv_cb_(uv_udp_t* handle,
     bp->decref();
 
     if (nread < 0) {
-        roc_log(LogError, "udp receiver: network error: num=%u src=%s dst=%s nread=%ld",
-                self.packet_counter_, address::socket_addr_to_str(src_addr).c_str(),
-                address::socket_addr_to_str(self.config_.bind_address).c_str(),
-                (long)nread);
+        roc_log(
+            LogError, "udp receiver: %s: network error: num=%u src=%s dst=%s nread=%ld",
+            self.descriptor(), self.packet_counter_,
+            address::socket_addr_to_str(src_addr).c_str(),
+            address::socket_addr_to_str(self.config_.bind_address).c_str(), (long)nread);
         return;
     }
 
@@ -238,22 +242,24 @@ void UdpReceiverPort::recv_cb_(uv_udp_t* handle,
         if (!sockaddr) {
             // no more data for now
         } else {
-            roc_log(LogTrace, "udp receiver: empty packet: num=%u src=%s dst=%s",
-                    self.packet_counter_, address::socket_addr_to_str(src_addr).c_str(),
+            roc_log(LogTrace, "udp receiver: %s: empty packet: num=%u src=%s dst=%s",
+                    self.descriptor(), self.packet_counter_,
+                    address::socket_addr_to_str(src_addr).c_str(),
                     address::socket_addr_to_str(self.config_.bind_address).c_str());
         }
         return;
     }
 
     if (!sockaddr) {
-        roc_panic("udp receiver: unexpected null source address");
+        roc_panic("udp receiver: %s: unexpected null source address", self.descriptor());
     }
 
     if (flags & UV_UDP_PARTIAL) {
         roc_log(LogDebug,
-                "udp receiver:"
+                "udp receiver: %s:"
                 " ignoring partial read: num=%u src=%s dst=%s nread=%ld",
-                self.packet_counter_, address::socket_addr_to_str(src_addr).c_str(),
+                self.descriptor(), self.packet_counter_,
+                address::socket_addr_to_str(src_addr).c_str(),
                 address::socket_addr_to_str(self.config_.bind_address).c_str(),
                 (long)nread);
         return;
@@ -261,18 +267,19 @@ void UdpReceiverPort::recv_cb_(uv_udp_t* handle,
 
     self.packet_counter_++;
 
-    roc_log(LogTrace, "udp receiver: received packet: num=%u src=%s dst=%s nread=%ld",
-            self.packet_counter_, address::socket_addr_to_str(src_addr).c_str(),
+    roc_log(LogTrace, "udp receiver: %s: received packet: num=%u src=%s dst=%s nread=%ld",
+            self.descriptor(), self.packet_counter_,
+            address::socket_addr_to_str(src_addr).c_str(),
             address::socket_addr_to_str(self.config_.bind_address).c_str(), (long)nread);
 
     if ((size_t)nread > bp->size()) {
-        roc_panic("udp receiver: unexpected buffer size: got %ld, max %ld", (long)nread,
-                  (long)bp->size());
+        roc_panic("udp receiver: %s: unexpected buffer size: got %ld, max %ld",
+                  self.descriptor(), (long)nread, (long)bp->size());
     }
 
     packet::PacketPtr pp = new (self.packet_pool_) packet::Packet(self.packet_pool_);
     if (!pp) {
-        roc_log(LogError, "udp receiver: can't allocate packet");
+        roc_log(LogError, "udp receiver: %s: can't allocate packet", self.descriptor());
         return;
     }
 
@@ -289,25 +296,25 @@ void UdpReceiverPort::recv_cb_(uv_udp_t* handle,
 bool UdpReceiverPort::join_multicast_group_() {
     if (!config_.bind_address.multicast()) {
         roc_log(LogError,
-                "udp receiver: can't use multicast group for non-multicast address");
+                "udp receiver: %s: can't use multicast group for non-multicast address",
+                descriptor());
         return false;
     }
 
     char host[address::SocketAddr::MaxStrLen];
     if (!config_.bind_address.get_host(host, sizeof(host))) {
-        roc_log(LogError, "udp receiver: can't format address host");
+        roc_log(LogError, "udp receiver: %s: can't format address host", descriptor());
         return false;
     }
 
     if (int err = uv_udp_set_membership(&handle_, host, config_.multicast_interface,
                                         UV_JOIN_GROUP)) {
-        roc_log(LogError, "udp receiver: uv_udp_set_membership(): [%s] %s",
-                uv_err_name(err), uv_strerror(err));
+        roc_log(LogError, "udp receiver: %s: uv_udp_set_membership(): [%s] %s",
+                descriptor(), uv_err_name(err), uv_strerror(err));
         return false;
     }
 
-    roc_log(LogDebug, "udp receiver: joined multicast group for port %s",
-            address::socket_addr_to_str(config_.bind_address).c_str());
+    roc_log(LogDebug, "udp receiver: %s: joined multicast group", descriptor());
 
     return (multicast_group_joined_ = true);
 }
@@ -317,18 +324,29 @@ void UdpReceiverPort::leave_multicast_group_() {
 
     char host[address::SocketAddr::MaxStrLen];
     if (!config_.bind_address.get_host(host, sizeof(host))) {
-        roc_log(LogError, "udp receiver: can't format address host");
+        roc_log(LogError, "udp receiver: %s: can't format address host", descriptor());
         return;
     }
 
     if (int err = uv_udp_set_membership(&handle_, host, config_.multicast_interface,
                                         UV_LEAVE_GROUP)) {
-        roc_log(LogError, "udp receiver: uv_udp_set_membership(): [%s] %s",
-                uv_err_name(err), uv_strerror(err));
+        roc_log(LogError, "udp receiver: %s: uv_udp_set_membership(): [%s] %s",
+                descriptor(), uv_err_name(err), uv_strerror(err));
     }
 
-    roc_log(LogDebug, "udp receiver: left multicast group for port %s",
-            address::socket_addr_to_str(config_.bind_address).c_str());
+    roc_log(LogDebug, "udp receiver: %s: left multicast group", descriptor());
+}
+
+void UdpReceiverPort::format_descriptor(core::StringBuilder& b) {
+    b.append_str("<udprecv");
+
+    b.append_str(" 0x");
+    b.append_uint((unsigned long)this, 16);
+
+    b.append_str(" bind=");
+    b.append_str(address::socket_addr_to_str(config_.bind_address).c_str());
+
+    b.append_str(">");
 }
 
 } // namespace netio

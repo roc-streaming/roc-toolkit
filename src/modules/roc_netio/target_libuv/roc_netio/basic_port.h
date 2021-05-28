@@ -16,7 +16,9 @@
 #include "roc_core/iallocator.h"
 #include "roc_core/list_node.h"
 #include "roc_core/refcnt.h"
+#include "roc_core/string_builder.h"
 #include "roc_netio/iclose_handler.h"
+#include "roc_netio/operation_status.h"
 
 namespace roc {
 namespace netio {
@@ -30,8 +32,8 @@ public:
     //! Destroy.
     virtual ~BasicPort();
 
-    //! Get bind address.
-    virtual const address::SocketAddr& address() const = 0;
+    //! Get port name.
+    const char* descriptor() const;
 
     //! Open port.
     //!
@@ -45,9 +47,20 @@ public:
     //!  Should be called from the event loop thread.
     //!
     //! @returns
-    //!  true if asynchronous close was initiated or false if
-    //!  the port is already closed.
-    virtual bool async_close(ICloseHandler& handler, void* handler_arg) = 0;
+    //!  status code indicating whether operation was completed immediately or
+    //!  is scheduled for asynchronous execution
+    virtual AsyncOperationStatus async_close(ICloseHandler& handler,
+                                             void* handler_arg) = 0;
+
+protected:
+    //! Get memory allocator.
+    core::IAllocator& allocator();
+
+    //! Format descriptor into internal buffer.
+    void update_descriptor();
+
+    //! Format descriptor.
+    virtual void format_descriptor(core::StringBuilder& b) = 0;
 
 private:
     friend class core::RefCnt<BasicPort>;
@@ -55,6 +68,10 @@ private:
     void destroy();
 
     core::IAllocator& allocator_;
+
+    enum { MaxDescriptorLen = address::SocketAddr::MaxStrLen + 48 };
+
+    char descriptor_[MaxDescriptorLen];
 };
 
 } // namespace netio
