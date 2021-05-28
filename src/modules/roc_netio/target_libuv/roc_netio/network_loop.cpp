@@ -224,7 +224,7 @@ bool NetworkLoop::schedule_and_wait(Task& task) {
 
 void NetworkLoop::handle_closed(BasicPort& port, void* arg) {
     roc_log(LogDebug, "network loop: asynchronous close finished: port %s",
-            address::socket_addr_to_str(port.address()).c_str());
+            port.descriptor());
 
     closing_ports_.remove(port);
 
@@ -294,15 +294,16 @@ void NetworkLoop::finish_task_(Task& task) {
     }
 }
 
-bool NetworkLoop::async_close_port_(BasicPort& port, Task* task) {
-    // this implements ICloseHandler::handle_closed()
-    // task will be passed to handle_closed() as 'arg'
-    if (!port.async_close(*this, task)) {
-        return false;
+AsyncOperationStatus NetworkLoop::async_close_port_(BasicPort& port, Task* task) {
+    const AsyncOperationStatus status = port.async_close(*this, task);
+
+    if (status == AsyncOp_Started) {
+        // Asynchronous operation initiated. On its completion, handle_closed()
+        // will be called, with the task passed to it as argument.
+        closing_ports_.push_back(port);
     }
 
-    closing_ports_.push_back(port);
-    return true;
+    return status;
 }
 
 void NetworkLoop::update_num_ports_() {
@@ -330,7 +331,7 @@ void NetworkLoop::close_all_sems_() {
 }
 
 void NetworkLoop::task_add_udp_receiver_(Task& task) {
-    core::SharedPtr<BasicPort> rp =
+    core::SharedPtr<UdpReceiverPort> rp =
         new (allocator_) UdpReceiverPort(*task.receiver_config_, *task.port_writer_,
                                          loop_, packet_pool_, buffer_pool_, allocator_);
     if (!rp) {
@@ -347,10 +348,10 @@ void NetworkLoop::task_add_udp_receiver_(Task& task) {
         roc_log(LogError, "network loop: can't add port %s: can't start receiver",
                 address::socket_addr_to_str(task.receiver_config_->bind_address).c_str());
         task.success_ = false;
-        if (!async_close_port_(*rp, &task)) {
-            task.state_ = Task::Finishing;
-        } else {
+        if (async_close_port_(*rp, &task) == AsyncOp_Started) {
             task.state_ = Task::ClosingPort;
+        } else {
+            task.state_ = Task::Finishing;
         }
         return;
     }
@@ -358,7 +359,7 @@ void NetworkLoop::task_add_udp_receiver_(Task& task) {
     open_ports_.push_back(*rp);
     update_num_ports_();
 
-    task.receiver_config_->bind_address = rp->address();
+    task.receiver_config_->bind_address = rp->bind_address();
     task.port_handle_ = (PortHandle)rp.get();
 
     task.success_ = true;
@@ -382,10 +383,10 @@ void NetworkLoop::task_add_udp_sender_(Task& task) {
         roc_log(LogError, "network loop: can't add port %s: can't start sender",
                 address::socket_addr_to_str(task.sender_config_->bind_address).c_str());
         task.success_ = false;
-        if (!async_close_port_(*sp, &task)) {
-            task.state_ = Task::Finishing;
-        } else {
+        if (async_close_port_(*sp, &task) == AsyncOp_Started) {
             task.state_ = Task::ClosingPort;
+        } else {
+            task.state_ = Task::Finishing;
         }
         return;
     }
@@ -393,7 +394,7 @@ void NetworkLoop::task_add_udp_sender_(Task& task) {
     open_ports_.push_back(*sp);
     update_num_ports_();
 
-    task.sender_config_->bind_address = sp->address();
+    task.sender_config_->bind_address = sp->bind_address();
     task.port_handle_ = (PortHandle)sp.get();
     task.port_writer_ = sp.get();
 
@@ -402,17 +403,16 @@ void NetworkLoop::task_add_udp_sender_(Task& task) {
 }
 
 void NetworkLoop::task_remove_port_(Task& task) {
-    roc_log(LogDebug, "network loop: removing port %s",
-            address::socket_addr_to_str(task.port_->address()).c_str());
+    roc_log(LogDebug, "network loop: removing port %s", task.port_->descriptor());
 
     open_ports_.remove(*task.port_);
     update_num_ports_();
 
     task.success_ = true;
-    if (!async_close_port_(*task.port_, &task)) {
-        task.state_ = Task::Finishing;
-    } else {
+    if (async_close_port_(*task.port_, &task) == AsyncOp_Started) {
         task.state_ = Task::ClosingPort;
+    } else {
+        task.state_ = Task::Finishing;
     }
 }
 

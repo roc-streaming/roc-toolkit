@@ -22,11 +22,10 @@ class ICloseHandler {
 public:
     virtual ~ICloseHandler();
 
-    //! Handle asynchronously closed port.
-    //!
+    //! Handle completion of asynchronous closing.
     //! @remarks
-    //!  - After this call closed port should not be used.
-    //!  - Should be called from the event loop thread.
+    //!  - After this call, the closed port should not be used.
+    //!  - This method os called from the network loop thread.
     virtual void handle_closed(BasicPort& port, void* arg) = 0;
 };
 

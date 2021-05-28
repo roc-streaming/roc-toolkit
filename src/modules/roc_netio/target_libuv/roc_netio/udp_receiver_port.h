@@ -56,16 +56,20 @@ public:
                     core::IAllocator& allocator);
 
     //! Destroy.
-    ~UdpReceiverPort();
+    virtual ~UdpReceiverPort();
 
     //! Get bind address.
-    virtual const address::SocketAddr& address() const;
+    const address::SocketAddr& bind_address() const;
 
     //! Open receiver.
     virtual bool open();
 
     //! Asynchronously close receiver.
-    virtual bool async_close(ICloseHandler& handler, void* handler_arg);
+    virtual AsyncOperationStatus async_close(ICloseHandler& handler, void* handler_arg);
+
+protected:
+    //! Format descriptor.
+    virtual void format_descriptor(core::StringBuilder& b);
 
 private:
     static void close_cb_(uv_handle_t* handle);

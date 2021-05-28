@@ -67,18 +67,22 @@ public:
     ~UdpSenderPort();
 
     //! Get bind address.
-    virtual const address::SocketAddr& address() const;
+    const address::SocketAddr& bind_address() const;
 
     //! Open sender.
     virtual bool open();
 
     //! Asynchronously close sender.
-    virtual bool async_close(ICloseHandler& handler, void* handler_arg);
+    virtual AsyncOperationStatus async_close(ICloseHandler& handler, void* handler_arg);
 
     //! Write packet.
     //! @remarks
     //!  May be called from any thread.
     virtual void write(const packet::PacketPtr&);
+
+protected:
+    //! Format descriptor.
+    virtual void format_descriptor(core::StringBuilder& b);
 
 private:
     static void close_cb_(uv_handle_t* handle);
