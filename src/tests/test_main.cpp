@@ -50,6 +50,8 @@ int main(int argc, const char** argv) {
         core::Logger::instance().set_level(LogNone);
     }
 
+    core::Logger::instance().set_location(core::LocationEnabled);
+
     core::Logger::instance().set_colors(core::colors_available() ? core::ColorsEnabled
                                                                  : core::ColorsDisabled);
 
