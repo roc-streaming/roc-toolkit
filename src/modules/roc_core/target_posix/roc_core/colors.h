@@ -18,11 +18,24 @@
 namespace roc {
 namespace core {
 
+//! Color ID.
+enum Color {
+    Color_None,
+    Color_White,
+    Color_Gray,
+    Color_Red,
+    Color_Green,
+    Color_Yellow,
+    Color_Blue,
+    Color_Magenta,
+    Color_Cyan
+};
+
 //! Check if current stderr is connected to a tty.
 bool colors_available();
 
 //! Fill colored str into buf according to the log level.
-bool format_colored(LogLevel level, const char* str, char* buf, size_t bufsz);
+bool colors_format(Color color, const char* str, char* buf, size_t bufsz);
 
 } // namespace core
 } // namespace roc

@@ -30,7 +30,8 @@
     do {                                                                                 \
         ::roc::core::Logger& logger = ::roc::core::Logger::instance();                   \
         if ((level) <= logger.get_level()) {                                             \
-            logger.print(ROC_STRINGIZE(ROC_MODULE), (level), __VA_ARGS__);               \
+            logger.print((level), ROC_STRINGIZE(ROC_MODULE), __FILE__, __LINE__,         \
+                         __VA_ARGS__);                                                   \
         }                                                                                \
     } while (0)
 
@@ -59,8 +60,18 @@ enum ColorsMode {
 //! Default colors mode.
 const ColorsMode DefaultColorsMode = ColorsDisabled;
 
+//! Location mode.
+enum LocationMode {
+    LocationDisabled, //!< Do not show location.
+    LocationEnabled   //!< Show location.
+};
+
+//! Default location mode.
+const LocationMode DefaultLocationMode = LocationDisabled;
+
 //! Log handler.
-typedef void (*LogHandler)(LogLevel level, const char* module, const char* message);
+typedef void (*LogHandler)(
+    LogLevel level, const char* module, const char* file, int line, const char* message);
 
 //! Logger.
 class Logger : public NonCopyable<> {
@@ -71,13 +82,23 @@ public:
     }
 
     //! Print message to log.
-    ROC_ATTR_PRINTF(4, 5)
-    void print(const char* module, LogLevel level, const char* format, ...);
+    ROC_ATTR_PRINTF(6, 7)
+    void print(LogLevel level,
+               const char* module,
+               const char* file,
+               int line,
+               const char* format,
+               ...);
 
     //! Get current maximum log level.
     LogLevel get_level() const {
         return (LogLevel)AtomicOps::load_relaxed(level_);
     }
+
+    //! Set verbosity level.
+    //! @remarks
+    //!  Sets level and location according to requested verbosity level.
+    void set_verbosity(unsigned);
 
     //! Set maximum log level.
     //! @remarks
@@ -85,6 +106,16 @@ public:
     //! @note
     //!  Other threads are not guaranteed to see the change immediately.
     void set_level(LogLevel);
+
+    //! Set location mode.
+    //! @note
+    //!  Other threads will see the change immediately.
+    void set_location(LocationMode);
+
+    //! Set colors mode.
+    //! @note
+    //!  Other threads will see the change immediately.
+    void set_colors(ColorsMode);
 
     //! Set log handler.
     //! @remarks
@@ -94,17 +125,16 @@ public:
     //!  Other threads will see the change immediately.
     void set_handler(LogHandler handler);
 
-    //! Set colors mode.
-    //! @note
-    //!  Other threads will see the change immediately.
-    void set_colors(ColorsMode mode);
-
 private:
     friend class Singleton<Logger>;
 
     Logger();
 
-    void default_print_(LogLevel level, const char* module, const char* message);
+    void default_print_(LogLevel level,
+                        const char* module,
+                        const char* file,
+                        int line,
+                        const char* message);
 
     int level_;
 
@@ -112,6 +142,7 @@ private:
 
     LogHandler handler_;
     ColorsMode colors_;
+    LocationMode location_;
 };
 
 } // namespace core

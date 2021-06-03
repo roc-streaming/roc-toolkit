@@ -45,8 +45,7 @@ int main(int argc, char** argv) {
     core::ScopedDestructor<gengetopt_args_info*, cmdline_parser_free> args_destructor(
         &args);
 
-    core::Logger::instance().set_level(
-        LogLevel(core::DefaultLogLevel + args.verbose_given));
+    core::Logger::instance().set_verbosity(args.verbose_given);
 
     switch ((unsigned)args.color_arg) {
     case color_arg_auto:
