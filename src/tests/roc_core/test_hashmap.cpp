@@ -11,7 +11,7 @@
 #include "roc_core/hash.h"
 #include "roc_core/hashmap.h"
 #include "roc_core/heap_allocator.h"
-#include "roc_core/refcnt.h"
+#include "roc_core/ref_counter.h"
 #include "roc_core/shared_ptr.h"
 #include "roc_core/string_builder.h"
 
@@ -20,7 +20,7 @@ namespace core {
 
 namespace {
 
-class Object : public HashmapNode, public RefCnt<Object> {
+class Object : public HashmapNode, public RefCounter<Object> {
 public:
     Object(const char* k) {
         strcpy(key_, k);
@@ -48,7 +48,7 @@ public:
     }
 
 private:
-    friend class RefCnt<Object>;
+    friend class RefCounter<Object>;
 
     void destroy() {
         delete this;

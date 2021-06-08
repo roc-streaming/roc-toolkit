@@ -31,7 +31,7 @@ namespace core {
 //! @tparam Ownership defines ownership policy which is used to acquire an element
 //! ownership when it's added to the list and release ownership when it's removed
 //! from the list.
-template <class T, template <class TT> class Ownership = RefCntOwnership>
+template <class T, template <class TT> class Ownership = RefCounterOwnership>
 class List : public NonCopyable<> {
 public:
     //! Pointer type.

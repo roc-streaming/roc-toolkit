@@ -55,9 +55,19 @@ public:
         return AtomicOps::add_fetch_seq_cst(var_, 1);
     }
 
+    //! Atomic increment.
+    inline T operator++(int) {
+        return AtomicOps::add_fetch_seq_cst(var_, 1) - 1;
+    }
+
     //! Atomic decrement.
     inline T operator--() {
         return AtomicOps::sub_fetch_seq_cst(var_, 1);
+    }
+
+    //! Atomic decrement.
+    inline T operator--(int) {
+        return AtomicOps::sub_fetch_seq_cst(var_, 1) + 1;
     }
 
     //! Atomic addition.

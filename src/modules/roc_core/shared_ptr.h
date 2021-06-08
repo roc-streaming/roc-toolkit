@@ -24,7 +24,7 @@ namespace core {
 //! @tparam T defines pointee type. It may be const.
 //! @tparam Ownership defines methods to increase and decrease the reference counter
 //! embedded into object. If RefCntOwnership is used, T should inherit RefCnt.
-template <class T, template <class TT> class Ownership = RefCntOwnership>
+template <class T, template <class TT> class Ownership = RefCounterOwnership>
 class SharedPtr {
 public:
     //! Create empty shared pointer.

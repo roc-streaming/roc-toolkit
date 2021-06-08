@@ -15,7 +15,7 @@
 #include "roc_address/socket_addr.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/list_node.h"
-#include "roc_core/refcnt.h"
+#include "roc_core/ref_counter.h"
 #include "roc_core/string_builder.h"
 #include "roc_netio/iclose_handler.h"
 #include "roc_netio/operation_status.h"
@@ -24,7 +24,7 @@ namespace roc {
 namespace netio {
 
 //! Basic port interface.
-class BasicPort : public core::RefCnt<BasicPort>, public core::ListNode {
+class BasicPort : public core::RefCounter<BasicPort>, public core::ListNode {
 public:
     //! Initialize.
     explicit BasicPort(core::IAllocator&);
@@ -63,7 +63,7 @@ protected:
     virtual void format_descriptor(core::StringBuilder& b) = 0;
 
 private:
-    friend class core::RefCnt<BasicPort>;
+    friend class core::RefCounter<BasicPort>;
 
     void destroy();
 

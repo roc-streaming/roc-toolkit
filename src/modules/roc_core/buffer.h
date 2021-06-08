@@ -13,14 +13,14 @@
 #define ROC_CORE_BUFFER_H_
 
 #include "roc_core/buffer_pool.h"
-#include "roc_core/refcnt.h"
+#include "roc_core/ref_counter.h"
 #include "roc_core/stddefs.h"
 
 namespace roc {
 namespace core {
 
 //! Buffer.
-template <class T> class Buffer : public RefCnt<Buffer<T> > {
+template <class T> class Buffer : public RefCounter<Buffer<T> > {
 public:
     //! Initialize empty buffer.
     explicit Buffer(BufferPool<T>& pool)
@@ -44,7 +44,7 @@ public:
     }
 
 private:
-    friend class RefCnt<Buffer>;
+    friend class RefCounter<Buffer>;
 
     void destroy() {
         pool_.destroy(*this);

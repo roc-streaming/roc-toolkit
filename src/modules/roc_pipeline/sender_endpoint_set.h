@@ -24,7 +24,7 @@
 #include "roc_core/iallocator.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/optional.h"
-#include "roc_core/refcnt.h"
+#include "roc_core/ref_counter.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_fec/iblock_encoder.h"
 #include "roc_fec/writer.h"
@@ -42,7 +42,8 @@ namespace pipeline {
 //! @remarks
 //!  Contains one or seevral related endpoint pipelines and
 //!  the part of the sender pipeline shared by them.
-class SenderEndpointSet : public core::RefCnt<SenderEndpointSet>, public core::ListNode {
+class SenderEndpointSet : public core::RefCounter<SenderEndpointSet>,
+                          public core::ListNode {
 public:
     //! Initialize.
     SenderEndpointSet(const SenderConfig& config,
@@ -63,7 +64,7 @@ public:
     bool is_ready() const;
 
 private:
-    friend class core::RefCnt<SenderEndpointSet>;
+    friend class core::RefCounter<SenderEndpointSet>;
 
     void destroy();
 

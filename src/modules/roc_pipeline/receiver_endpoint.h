@@ -17,7 +17,7 @@
 #include "roc_core/iallocator.h"
 #include "roc_core/mpsc_queue.h"
 #include "roc_core/optional.h"
-#include "roc_core/refcnt.h"
+#include "roc_core/ref_counter.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_packet/iparser.h"
 #include "roc_packet/iwriter.h"
@@ -35,7 +35,7 @@ namespace pipeline {
 //!  Created for every transport endpoint. Belongs to endpoint set.
 //!  Passes packets to the session group of the endpoint set.
 class ReceiverEndpoint : public packet::IWriter,
-                         public core::RefCnt<ReceiverEndpoint>,
+                         public core::RefCounter<ReceiverEndpoint>,
                          public core::ListNode {
 public:
     //! Initialize.
@@ -60,7 +60,7 @@ public:
     void flush_packets();
 
 private:
-    friend class core::RefCnt<ReceiverEndpoint>;
+    friend class core::RefCounter<ReceiverEndpoint>;
 
     void destroy();
 
