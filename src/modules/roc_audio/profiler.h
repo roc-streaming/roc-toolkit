@@ -19,7 +19,6 @@
 #include "roc_core/list.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/rate_limiter.h"
-#include "roc_core/refcnt.h"
 #include "roc_core/time.h"
 #include "roc_packet/units.h"
 

@@ -9,7 +9,7 @@
 #include <CppUTest/TestHarness.h>
 
 #include "roc_core/list.h"
-#include "roc_core/refcnt.h"
+#include "roc_core/ref_counter.h"
 #include "roc_core/shared_ptr.h"
 
 namespace roc {
@@ -17,12 +17,12 @@ namespace core {
 
 namespace {
 
-struct Object : RefCnt<Object>, ListNode {
+struct Object : RefCounter<Object>, ListNode {
     void destroy() {
     }
 };
 
-typedef List<Object, RefCntOwnership> TestList;
+typedef List<Object, RefCounterOwnership> TestList;
 
 } // namespace
 

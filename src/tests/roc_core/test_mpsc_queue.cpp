@@ -9,7 +9,7 @@
 #include <CppUTest/TestHarness.h>
 
 #include "roc_core/mpsc_queue.h"
-#include "roc_core/refcnt.h"
+#include "roc_core/ref_counter.h"
 #include "roc_core/shared_ptr.h"
 
 namespace roc {
@@ -17,7 +17,7 @@ namespace core {
 
 namespace {
 
-struct Object : RefCnt<Object>, MpscQueueNode {
+struct Object : RefCounter<Object>, MpscQueueNode {
     void destroy() {
     }
 };
@@ -109,7 +109,7 @@ TEST(mpsc_queue, push_pop_many) {
 }
 
 TEST(mpsc_queue, ownership) {
-    MpscQueue<Object, RefCntOwnership> queue;
+    MpscQueue<Object, RefCounterOwnership> queue;
 
     Object obj1;
     Object obj2;

@@ -16,7 +16,7 @@
 #include "roc_core/list_node.h"
 #include "roc_core/mpsc_queue_node.h"
 #include "roc_core/pool.h"
-#include "roc_core/refcnt.h"
+#include "roc_core/ref_counter.h"
 #include "roc_core/shared_ptr.h"
 #include "roc_packet/fec.h"
 #include "roc_packet/print_packet.h"
@@ -33,7 +33,7 @@ class Packet;
 typedef core::SharedPtr<Packet> PacketPtr;
 
 //! Packet.
-class Packet : public core::RefCnt<Packet>,
+class Packet : public core::RefCounter<Packet>,
                public core::ListNode,
                public core::MpscQueueNode {
 public:
@@ -117,7 +117,7 @@ public:
     }
 
 private:
-    friend class core::RefCnt<Packet>;
+    friend class core::RefCounter<Packet>;
 
     void destroy();
 

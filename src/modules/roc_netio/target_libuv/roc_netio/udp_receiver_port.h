@@ -19,7 +19,6 @@
 #include "roc_core/iallocator.h"
 #include "roc_core/list.h"
 #include "roc_core/list_node.h"
-#include "roc_core/refcnt.h"
 #include "roc_netio/basic_port.h"
 #include "roc_netio/iclose_handler.h"
 #include "roc_packet/iwriter.h"

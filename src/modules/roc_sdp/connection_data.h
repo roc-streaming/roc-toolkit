@@ -15,7 +15,6 @@
 #include "roc_address/socket_addr.h"
 #include "roc_core/list_node.h"
 #include "roc_core/log.h"
-#include "roc_core/refcnt.h"
 #include "roc_core/string_buffer.h"
 #include "roc_core/string_builder.h"
 

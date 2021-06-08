@@ -18,12 +18,12 @@ namespace core {
 template <class T, template <class TT> class Ownership> class SharedPtr;
 
 //! Reference countable object ownership.
-template <class T> struct RefCntOwnership {
+template <class T> struct RefCounterOwnership {
     //! Pointer type returned from intrusive containers.
     //! @remarks
     //!  Container should return smart pointers instead of raw pointers since
     //!  it can call decref() on returned object later.
-    typedef SharedPtr<T, core::RefCntOwnership> Pointer;
+    typedef SharedPtr<T, core::RefCounterOwnership> Pointer;
 
     //! Acquire ownership.
     static void acquire(T& object) {

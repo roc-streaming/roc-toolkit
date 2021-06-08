@@ -18,7 +18,7 @@
 #include "roc_core/iallocator.h"
 #include "roc_core/list.h"
 #include "roc_core/list_node.h"
-#include "roc_core/refcnt.h"
+#include "roc_core/ref_counter.h"
 #include "roc_pipeline/receiver_endpoint.h"
 #include "roc_pipeline/receiver_session_group.h"
 #include "roc_pipeline/receiver_state.h"
@@ -31,7 +31,7 @@ namespace pipeline {
 //! @remarks
 //!  Contains one or seevral related endpoint pipelines and a
 //!  session group shared by them.
-class ReceiverEndpointSet : public core::RefCnt<ReceiverEndpointSet>,
+class ReceiverEndpointSet : public core::RefCounter<ReceiverEndpointSet>,
                             public core::ListNode {
 public:
     //! Initialize.
@@ -57,7 +57,7 @@ public:
     size_t num_sessions() const;
 
 private:
-    friend class core::RefCnt<ReceiverEndpointSet>;
+    friend class core::RefCounter<ReceiverEndpointSet>;
 
     void destroy();
 

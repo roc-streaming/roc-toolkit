@@ -74,7 +74,7 @@ namespace core {
 //! from the hashmap.
 template <class T,
           size_t EmbeddedCapacity = 0,
-          template <class TT> class Ownership = RefCntOwnership>
+          template <class TT> class Ownership = RefCounterOwnership>
 class Hashmap : public NonCopyable<> {
 public:
     //! Pointer type.

@@ -16,7 +16,7 @@
 #include "roc_core/list.h"
 #include "roc_core/list_node.h"
 #include "roc_core/log.h"
-#include "roc_core/refcnt.h"
+#include "roc_core/ref_counter.h"
 #include "roc_core/shared_ptr.h"
 #include "roc_core/string_buffer.h"
 #include "roc_core/string_builder.h"
@@ -30,7 +30,8 @@ namespace sdp {
 
 //! SDP media description.
 // m=<type> <port> <proto> <fmt>.
-class MediaDescription : public core::RefCnt<MediaDescription>, public core::ListNode {
+class MediaDescription : public core::RefCounter<MediaDescription>,
+                         public core::ListNode {
 public:
     //! Clear all fields.
     void clear();
@@ -86,7 +87,7 @@ public:
     add_connection_data(address::AddrFamily addrtype, const char* str, size_t str_len);
 
 private:
-    friend class core::RefCnt<MediaDescription>;
+    friend class core::RefCounter<MediaDescription>;
 
     void destroy();
 
