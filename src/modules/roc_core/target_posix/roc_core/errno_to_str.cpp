@@ -19,12 +19,16 @@ namespace roc {
 namespace core {
 
 errno_to_str::errno_to_str() {
-    errno_to_str(errno);
+    format_(errno);
 }
 
 errno_to_str::errno_to_str(int err) {
-    if (strerror_r(err, buffer_, sizeof(buffer_)) == -1) {
-        buffer_[0] = '\0';
+    format_(err);
+}
+
+void errno_to_str::format_(int err) {
+    if (strerror_r(err, buffer_, sizeof(buffer_)) != 0) {
+        strcpy(buffer_, "<truncated>");
     }
 }
 

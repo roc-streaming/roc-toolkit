@@ -34,6 +34,8 @@ public:
     }
 
 private:
+    void format_(int err);
+
     char buffer_[96];
 };
 
