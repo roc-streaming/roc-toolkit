@@ -584,7 +584,7 @@ elif name == 'libunwind':
     execute('./configure --host=%s %s %s %s' % (
         toolchain,
         makeenv(envlist),
-        makeflags(workdir, toolchain, env, deplist, cflags='-fPIC', variant=variant),
+        makeflags(workdir, toolchain, env, deplist, cflags='-fcommon -fPIC', variant=variant),
         ' '.join([
             '--enable-static',
             '--disable-shared',
