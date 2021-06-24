@@ -56,7 +56,7 @@ public:
     core::nanoseconds_t size_to_ns(size_t frame_size) const;
 
 private:
-    size_t calc_num_channels() const;
+    size_t calc_num_channels_() const;
 
     size_t sample_rate_;
     packet::channel_mask_t channel_mask_;
