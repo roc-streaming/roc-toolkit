@@ -14,6 +14,7 @@
 
 #include "roc_audio/iframe_encoder.h"
 #include "roc_audio/iwriter.h"
+#include "roc_audio/sample_spec.h"
 #include "roc_audio/units.h"
 #include "roc_core/buffer_pool.h"
 #include "roc_core/noncopyable.h"
@@ -40,18 +41,16 @@ public:
     //!  - @p payload_encoder is used to write samples to packets
     //!  - @p packet_pool is used to allocate packets
     //!  - @p buffer_pool is used to allocate buffers for packets
-    //!  - @p channels defines a set of channels in the input frames
     //!  - @p packet_length defines packet length in nanoseconds
-    //!  - @p sample_rate defines number of samples per channel per second
+    //!  - @p sample_spec defines the sample spec
     //!  - @p payload_type defines packet payload type
     Packetizer(packet::IWriter& writer,
                packet::IComposer& composer,
                IFrameEncoder& payload_encoder,
                packet::PacketPool& packet_pool,
                core::BufferPool<uint8_t>& buffer_pool,
-               packet::channel_mask_t channels,
                core::nanoseconds_t packet_length,
-               size_t sample_rate,
+               const audio::SampleSpec& sample_spec,
                unsigned int payload_type);
 
     //! Write audio frame.
@@ -80,8 +79,7 @@ private:
     packet::PacketPool& packet_pool_;
     core::BufferPool<uint8_t>& buffer_pool_;
 
-    const packet::channel_mask_t channels_;
-    const size_t num_channels_;
+    const audio::SampleSpec sample_spec_;
     const size_t samples_per_packet_;
     const unsigned int payload_type_;
     const size_t payload_size_;

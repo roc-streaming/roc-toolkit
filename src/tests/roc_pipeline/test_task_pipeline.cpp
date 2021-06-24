@@ -46,7 +46,7 @@ public:
     };
 
     TestPipeline(const TaskConfig& config)
-        : TaskPipeline(*this, config, SampleRate, Chans)
+        : TaskPipeline(*this, config, audio::SampleSpec(SampleRate, Chans))
         , blocked_cond_(mutex_)
         , unblocked_cond_(mutex_)
         , blocked_counter_(0)

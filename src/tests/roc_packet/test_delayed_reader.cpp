@@ -12,6 +12,7 @@
 #include "roc_packet/delayed_reader.h"
 #include "roc_packet/packet_pool.h"
 #include "roc_packet/queue.h"
+#include "roc_pipeline/config.h"
 
 namespace roc {
 namespace packet {
@@ -21,6 +22,7 @@ namespace {
 enum { SampleRate = 1000, NumSamples = 100, NumPackets = 30 };
 
 const core::nanoseconds_t NsPerSample = core::Second / SampleRate;
+const audio::SampleSpec SampleSpecs = audio::SampleSpec(SampleRate, pipeline::DefaultChannelMask);
 
 core::HeapAllocator allocator;
 PacketPool pool(allocator, true);
@@ -42,7 +44,7 @@ TEST_GROUP(delayed_reader) {
 
 TEST(delayed_reader, no_delay) {
     Queue queue;
-    DelayedReader dr(queue, 0, SampleRate);
+    DelayedReader dr(queue, 0, SampleSpecs);
 
     CHECK(!dr.read());
 
@@ -55,7 +57,7 @@ TEST(delayed_reader, no_delay) {
 
 TEST(delayed_reader, delay) {
     Queue queue;
-    DelayedReader dr(queue, NumSamples * (NumPackets - 1) * NsPerSample, SampleRate);
+    DelayedReader dr(queue, NumSamples * (NumPackets - 1) * NsPerSample, SampleSpecs);
 
     PacketPtr packets[NumPackets];
 
@@ -82,7 +84,7 @@ TEST(delayed_reader, delay) {
 
 TEST(delayed_reader, instant) {
     Queue queue;
-    DelayedReader dr(queue, NumSamples * (NumPackets - 1) * NsPerSample, SampleRate);
+    DelayedReader dr(queue, NumSamples * (NumPackets - 1) * NsPerSample, SampleSpecs);
 
     PacketPtr packets[NumPackets];
 
@@ -100,7 +102,7 @@ TEST(delayed_reader, instant) {
 
 TEST(delayed_reader, trim) {
     Queue queue;
-    DelayedReader dr(queue, NumSamples * (NumPackets - 1) * NsPerSample, SampleRate);
+    DelayedReader dr(queue, NumSamples * (NumPackets - 1) * NsPerSample, SampleSpecs);
 
     PacketPtr packets[NumPackets * 2];
 
@@ -118,7 +120,7 @@ TEST(delayed_reader, trim) {
 
 TEST(delayed_reader, late_duplicates) {
     Queue queue;
-    DelayedReader dr(queue, NumSamples * (NumPackets - 1) * NsPerSample, SampleRate);
+    DelayedReader dr(queue, NumSamples * (NumPackets - 1) * NsPerSample, SampleSpecs);
 
     PacketPtr packets[NumPackets];
 

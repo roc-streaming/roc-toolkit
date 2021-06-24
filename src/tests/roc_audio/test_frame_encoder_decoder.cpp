@@ -61,6 +61,16 @@ TEST_GROUP(encoder_decoder) {
         return NULL;
     }
 
+    inline size_t num_channels(packet::channel_mask_t ch_mask) {
+        size_t n_ch = 0;
+        for (; ch_mask != 0; ch_mask >>= 1) {
+            if (ch_mask & 1) {
+                n_ch++;
+            }
+        }
+        return n_ch;
+    }
+
     IFrameDecoder* new_decoder(size_t id) {
         switch (id) {
         case Codec_PCM_int16_1ch:
@@ -90,7 +100,7 @@ TEST_GROUP(encoder_decoder) {
                         size_t pos,
                         size_t n_samples,
                         packet::channel_mask_t ch_mask) {
-        const size_t n_chans = packet::num_channels(ch_mask);
+        const size_t n_chans = num_channels(ch_mask);
 
         for (size_t i = 0; i < n_samples; i++) {
             for (size_t j = 0; j < n_chans; j++) {
@@ -105,7 +115,7 @@ TEST_GROUP(encoder_decoder) {
                          size_t pos,
                          size_t n_samples,
                          packet::channel_mask_t ch_mask) {
-        const size_t n_chans = packet::num_channels(ch_mask);
+        const size_t n_chans = num_channels(ch_mask);
 
         for (size_t i = 0; i < n_samples; i++) {
             for (size_t j = 0; j < n_chans; j++) {
@@ -335,7 +345,7 @@ TEST(encoder_decoder, shifted_frames) {
             UNSIGNED_LONGS_EQUAL(ts + Shift, decoder->position());
             UNSIGNED_LONGS_EQUAL(SamplesPerFrame - Shift, decoder->available());
 
-            decoder_pos += Shift * packet::num_channels(Codec_channels[n_codec]);
+            decoder_pos += Shift * num_channels(Codec_channels[n_codec]);
 
             sample_t decoder_samples[SamplesPerFrame * MaxChans];
 
@@ -391,7 +401,7 @@ TEST(encoder_decoder, skipped_frames) {
             if (n % SkipEvery == 0) {
                 ts += SamplesPerFrame;
                 decoder_pos +=
-                    SamplesPerFrame * packet::num_channels(Codec_channels[n_codec]);
+                    SamplesPerFrame * num_channels(Codec_channels[n_codec]);
                 continue;
             }
 
@@ -451,7 +461,7 @@ TEST(encoder_decoder, write_incrementally) {
             SecondPart,
             encoder->write(encoder_samples
                                + FirstPart
-                                   * packet::num_channels(Codec_channels[n_codec]),
+                                   * num_channels(Codec_channels[n_codec]),
                            SecondPart, Codec_channels[n_codec]));
 
         encoder->end();
@@ -574,7 +584,7 @@ TEST(encoder_decoder, write_channel_mask) {
         size_t expected_pos = 0;
 
         for (size_t i = 0; i < FirstPart; i++) {
-            for (size_t j = 0; j < packet::num_channels(FirstPartChans); j++) {
+            for (size_t j = 0; j < num_channels(FirstPartChans); j++) {
                 if (Codec_channels[n_codec] & (1 << j)) {
                     sample_t actual = decoder_samples[actual_pos++];
                     sample_t expected = nth_sample(uint8_t(expected_pos));
@@ -587,7 +597,7 @@ TEST(encoder_decoder, write_channel_mask) {
         }
 
         for (size_t i = FirstPart; i < SamplesPerFrame; i++) {
-            for (size_t j = 0; j < packet::num_channels(Codec_channels[n_codec]);
+            for (size_t j = 0; j < num_channels(Codec_channels[n_codec]);
                  j++) {
                 sample_t actual = decoder_samples[actual_pos++];
                 sample_t expected = 0;
@@ -762,7 +772,7 @@ TEST(encoder_decoder, read_channel_mask) {
             size_t actual_pos = 0;
 
             for (size_t i = 0; i < FirstPart; i++) {
-                for (size_t j = 0; j < packet::num_channels(FirstPartChans); j++) {
+                for (size_t j = 0; j < num_channels(FirstPartChans); j++) {
                     sample_t actual = decoder_samples[actual_pos++];
                     sample_t expected = 0;
 
@@ -787,7 +797,7 @@ TEST(encoder_decoder, read_channel_mask) {
             size_t actual_pos = 0;
 
             for (size_t i = FirstPart; i < SamplesPerFrame; i++) {
-                for (size_t j = 0; j < packet::num_channels(Codec_channels[n_codec]);
+                for (size_t j = 0; j < num_channels(Codec_channels[n_codec]);
                      j++) {
                     if (SecondPartChans & (1 << j)) {
                         sample_t actual = decoder_samples[actual_pos++];
@@ -857,7 +867,7 @@ TEST(encoder_decoder, shift_incrementally) {
                                                Codec_channels[n_codec]));
 
             check_samples(decoder_samples,
-                          FirstPart * packet::num_channels(Codec_channels[n_codec]),
+                          FirstPart * num_channels(Codec_channels[n_codec]),
                           SecondPart, Codec_channels[n_codec]);
         }
 

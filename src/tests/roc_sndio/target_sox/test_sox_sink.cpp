@@ -19,9 +19,6 @@ namespace {
 
 enum { FrameSize = 500, SampleRate = 44100, ChMask = 0x3 };
 
-const core::nanoseconds_t FrameDuration =
-    FrameSize * core::Second / (SampleRate * packet::num_channels(ChMask));
-
 core::HeapAllocator allocator;
 
 } // namespace
@@ -30,9 +27,10 @@ TEST_GROUP(sox_sink) {
     Config sink_config;
 
     void setup() {
-        sink_config.channels = ChMask;
-        sink_config.sample_rate = SampleRate;
-        sink_config.frame_length = FrameDuration;
+        sink_config.sample_spec = audio::SampleSpec(SampleRate, ChMask);
+        sink_config.frame_length = FrameSize * core::Second
+            / (sink_config.sample_spec.sample_rate()
+               * sink_config.sample_spec.num_channels());
     }
 };
 
@@ -55,8 +53,7 @@ TEST(sox_sink, has_clock) {
 }
 
 TEST(sox_sink, sample_rate_auto) {
-    sink_config.sample_rate = 0;
-    sink_config.frame_length = FrameDuration;
+    sink_config.sample_spec.set_sample_rate(0);
     SoxSink sox_sink(allocator, sink_config);
 
     core::TempFile file("test.wav");
@@ -65,7 +62,7 @@ TEST(sox_sink, sample_rate_auto) {
 }
 
 TEST(sox_sink, sample_rate_force) {
-    sink_config.sample_rate = SampleRate;
+    sink_config.sample_spec.set_sample_rate(SampleRate);
     SoxSink sox_sink(allocator, sink_config);
 
     core::TempFile file("test.wav");

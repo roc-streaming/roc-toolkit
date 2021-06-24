@@ -43,7 +43,7 @@ public:
     };
 
     NoopPipeline(const TaskConfig& config, ctl::ControlLoop& loop)
-        : TaskPipeline(*this, config, SampleRate, Chans)
+        : TaskPipeline(*this, config, audio::SampleSpec(SampleRate, Chans))
         , loop_(loop)
         , process_tasks_(*this) {
     }
