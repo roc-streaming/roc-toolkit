@@ -12,6 +12,7 @@
 #ifndef ROC_PACKET_DELAYED_READER_H_
 #define ROC_PACKET_DELAYED_READER_H_
 
+#include "roc_audio/sample_spec.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/time.h"
 #include "roc_packet/ireader.h"
@@ -31,8 +32,10 @@ public:
     //! @b Parameters
     //!  - @p reader is used to read packets
     //!  - @p delay is the delay to insert before first packet
-    //!  - @p sample_rate is the number of samples per second in incoming packets
-    DelayedReader(IReader& reader, core::nanoseconds_t delay, size_t sample_rate);
+    //!  - @p sample_spec is the specifications of incoming packets
+    DelayedReader(IReader& reader,
+                  core::nanoseconds_t delay,
+                  const audio::SampleSpec& sample_spec);
 
     //! Read packet.
     virtual PacketPtr read();

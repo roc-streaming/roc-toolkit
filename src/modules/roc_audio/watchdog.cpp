@@ -13,18 +13,17 @@ namespace roc {
 namespace audio {
 
 Watchdog::Watchdog(IReader& reader,
-                   const size_t num_channels,
+                   const audio::SampleSpec& sample_spec,
                    const WatchdogConfig& config,
-                   size_t sample_rate,
                    core::IAllocator& allocator)
     : reader_(reader)
-    , num_channels_(num_channels)
-    , max_blank_duration_((packet::timestamp_t)packet::timestamp_from_ns(
-          config.no_playback_timeout, sample_rate))
-    , max_drops_duration_((packet::timestamp_t)packet::timestamp_from_ns(
-          config.broken_playback_timeout, sample_rate))
-    , drop_detection_window_((packet::timestamp_t)packet::timestamp_from_ns(
-          config.breakage_detection_window, sample_rate))
+    , sample_spec_(sample_spec)
+    , max_blank_duration_(
+          (packet::timestamp_t)sample_spec.timestamp_from_ns(config.no_playback_timeout))
+    , max_drops_duration_((packet::timestamp_t)sample_spec.timestamp_from_ns(
+          config.broken_playback_timeout))
+    , drop_detection_window_((packet::timestamp_t)sample_spec.timestamp_from_ns(
+          config.breakage_detection_window))
     , curr_read_pos_(0)
     , last_pos_before_blank_(0)
     , last_pos_before_drops_(0)
@@ -88,7 +87,7 @@ bool Watchdog::read(Frame& frame) {
     }
 
     const packet::timestamp_t next_read_pos =
-        packet::timestamp_t(curr_read_pos_ + frame.size() / num_channels_);
+        packet::timestamp_t(curr_read_pos_ + frame.size() / sample_spec_.num_channels());
 
     update_blank_timeout_(frame, next_read_pos);
     update_drops_timeout_(frame, next_read_pos);

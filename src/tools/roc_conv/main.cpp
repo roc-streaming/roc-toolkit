@@ -77,9 +77,8 @@ int main(int argc, char** argv) {
             roc_log(LogError, "invalid --frame-length: bad format");
             return 1;
         }
-        if (packet::ns_to_size(converter_config.internal_frame_length,
-                               converter_config.input_sample_rate,
-                               converter_config.input_channels)
+        if (converter_config.input_sample_spec.ns_to_size(
+                converter_config.internal_frame_length)
             <= 0) {
             roc_log(LogError, "invalid --frame-length: should be > 0");
             return 1;
@@ -87,19 +86,17 @@ int main(int argc, char** argv) {
     }
 
     sndio::BackendDispatcher::instance().set_frame_size(
-        converter_config.internal_frame_length, converter_config.input_sample_rate,
-        converter_config.input_channels);
+        converter_config.internal_frame_length, converter_config.input_sample_spec);
 
-    core::BufferPool<audio::sample_t> pool(
-        allocator,
-        packet::ns_to_size(converter_config.internal_frame_length,
-                           converter_config.input_sample_rate,
-                           converter_config.input_channels),
-        args.poisoning_flag);
+    core::BufferPool<audio::sample_t> pool(allocator,
+                                           converter_config.input_sample_spec.ns_to_size(
+                                               converter_config.internal_frame_length),
+                                           args.poisoning_flag);
 
     sndio::Config source_config;
-    source_config.channels = converter_config.input_channels;
-    source_config.sample_rate = 0;
+    source_config.sample_spec.set_channel_mask(
+        converter_config.input_sample_spec.channel_mask());
+    source_config.sample_spec.set_sample_rate(0);
     source_config.frame_length = converter_config.internal_frame_length;
 
     address::IoURI input_uri(allocator);
@@ -128,12 +125,13 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    converter_config.input_sample_rate = input_source->sample_rate();
+    converter_config.input_sample_spec.set_sample_rate(input_source->sample_rate());
 
     if (args.rate_given) {
-        converter_config.output_sample_rate = (size_t)args.rate_arg;
+        converter_config.output_sample_spec.set_sample_rate((size_t)args.rate_arg);
     } else {
-        converter_config.output_sample_rate = converter_config.input_sample_rate;
+        converter_config.output_sample_spec.set_sample_rate(
+            converter_config.input_sample_spec.sample_rate());
     }
 
     switch ((unsigned)args.resampler_backend_arg) {
@@ -174,8 +172,7 @@ int main(int argc, char** argv) {
     audio::IWriter* output_writer = NULL;
 
     sndio::Config sink_config;
-    sink_config.channels = converter_config.output_channels;
-    sink_config.sample_rate = converter_config.output_sample_rate;
+    sink_config.sample_spec = converter_config.output_sample_spec;
     sink_config.frame_length = converter_config.internal_frame_length;
 
     address::IoURI output_uri(allocator);
@@ -216,8 +213,7 @@ int main(int argc, char** argv) {
 
     sndio::Pump pump(pool, *input_source, NULL, converter,
                      converter_config.internal_frame_length,
-                     converter_config.input_sample_rate, converter_config.input_channels,
-                     sndio::Pump::ModePermanent);
+                     converter_config.input_sample_spec, sndio::Pump::ModePermanent);
     if (!pump.valid()) {
         roc_log(LogError, "can't create audio pump");
         return 1;

@@ -15,6 +15,7 @@
 #include "roc_audio/depacketizer.h"
 #include "roc_audio/freq_estimator.h"
 #include "roc_audio/resampler_reader.h"
+#include "roc_audio/sample_spec.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/rate_limiter.h"
 #include "roc_core/time.h"
@@ -66,15 +67,15 @@ public:
     //!  - @p resampler is used to set the scaling factor, may be null
     //!  - @p config defines various miscellaneous parameters
     //!  - @p target_latency defines FreqEstimator target latency, in samples
-    //!  - @p input_sample_rate is the sample rate of the input packets
-    //!  - @p output_sample_rate is the sample rate of the output frames
+    //!  - @p input_sample_spec is the sample spec of the input packets
+    //!  - @p output_sample_spec is the sample spec of the output frames
     LatencyMonitor(const packet::SortedQueue& queue,
                    const Depacketizer& depacketizer,
                    ResamplerReader* resampler,
                    const LatencyMonitorConfig& config,
                    core::nanoseconds_t target_latency,
-                   size_t input_sample_rate,
-                   size_t output_sample_rate);
+                   const audio::SampleSpec& input_sample_spec,
+                   const audio::SampleSpec& output_sample_spec);
 
     //! Check if the object was initialized successfully.
     bool valid() const;
@@ -112,8 +113,8 @@ private:
 
     const float max_scaling_delta_;
 
-    size_t input_sample_rate_;
-    size_t output_sample_rate_;
+    const audio::SampleSpec input_sample_spec_;
+    const audio::SampleSpec output_sample_spec_;
 
     bool valid_;
 };

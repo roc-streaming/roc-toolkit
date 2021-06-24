@@ -50,14 +50,14 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
     packet::IReader* preader = source_queue_.get();
 
     delayed_reader_.reset(new (delayed_reader_) packet::DelayedReader(
-        *preader, session_config.target_latency, format->sample_rate));
+        *preader, session_config.target_latency, format->sample_spec));
     if (!delayed_reader_) {
         return;
     }
     preader = delayed_reader_.get();
 
     validator_.reset(new (validator_) rtp::Validator(
-        *preader, session_config.rtp_validator, format->sample_rate));
+        *preader, session_config.rtp_validator, format->sample_spec));
     if (!validator_) {
         return;
     }
@@ -93,7 +93,7 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
         preader = fec_reader_.get();
 
         fec_validator_.reset(new (fec_validator_) rtp::Validator(
-            *preader, session_config.rtp_validator, format->sample_rate));
+            *preader, session_config.rtp_validator, format->sample_spec));
         if (!fec_validator_) {
             return;
         }
@@ -106,7 +106,8 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
     }
 
     depacketizer_.reset(new (depacketizer_) audio::Depacketizer(
-        *preader, *payload_decoder_, session_config.channels, common_config.beeping));
+        *preader, *payload_decoder_, common_config.output_sample_spec,
+        common_config.beeping));
     if (!depacketizer_) {
         return;
     }
@@ -116,9 +117,9 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
     if (session_config.watchdog.no_playback_timeout != 0
         || session_config.watchdog.broken_playback_timeout != 0
         || session_config.watchdog.frame_status_window != 0) {
-        watchdog_.reset(new (watchdog_) audio::Watchdog(
-            *areader, packet::num_channels(session_config.channels),
-            session_config.watchdog, common_config.output_sample_rate, allocator_));
+        watchdog_.reset(new (watchdog_)
+                            audio::Watchdog(*areader, common_config.output_sample_spec,
+                                            session_config.watchdog, allocator_));
         if (!watchdog_ || !watchdog_->valid()) {
             return;
         }
@@ -135,12 +136,13 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
             areader = resampler_poisoner_.get();
         }
 
-        resampler_.reset(audio::ResamplerMap::instance().new_resampler(
-                             session_config.resampler_backend, allocator,
-                             sample_buffer_pool, session_config.resampler_profile,
-                             common_config.internal_frame_length, format->sample_rate,
-                             session_config.channels),
-                         allocator);
+        resampler_.reset(
+            audio::ResamplerMap::instance().new_resampler(
+                session_config.resampler_backend, allocator, sample_buffer_pool,
+                session_config.resampler_profile, common_config.internal_frame_length,
+                audio::SampleSpec(format->sample_spec.sample_rate(),
+                                  common_config.output_sample_spec.channel_mask())),
+            allocator);
 
         if (!resampler_) {
             return;
@@ -166,7 +168,7 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
     latency_monitor_.reset(new (latency_monitor_) audio::LatencyMonitor(
         *source_queue_, *depacketizer_, resampler_reader.get(),
         session_config.latency_monitor, session_config.target_latency,
-        format->sample_rate, common_config.output_sample_rate));
+        format->sample_spec, common_config.output_sample_spec));
     if (!latency_monitor_ || !latency_monitor_->valid()) {
         return;
     }

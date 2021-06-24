@@ -50,8 +50,10 @@ enum {
     MaxTsJump = ManyPackets * 7 * SamplesPerPacket
 };
 
+const audio::SampleSpec SampleSpecs = audio::SampleSpec(SampleRate, ChMask);
+
 const core::nanoseconds_t MaxBufDuration =
-    MaxBufSize * core::Second / (SampleRate * packet::num_channels(ChMask));
+    MaxBufSize * core::Second / (SampleSpecs.sample_rate() * SampleSpecs.num_channels());
 
 core::HeapAllocator allocator;
 core::BufferPool<audio::sample_t> sample_buffer_pool(allocator, MaxBufSize, true);
@@ -168,16 +170,13 @@ TEST_GROUP(receiver_source) {
     address::Protocol proto2;
 
     void setup() {
-        config.common.output_sample_rate = SampleRate;
-        config.common.output_channels = ChMask;
+        config.common.output_sample_spec = audio::SampleSpec(SampleRate, ChMask);
         config.common.internal_frame_length = MaxBufDuration;
 
         config.common.resampling = false;
         config.common.timing = false;
         config.common.poisoning = true;
         config.common.profiling = true;
-
-        config.default_session.channels = ChMask;
 
         config.default_session.target_latency = Latency * core::Second / SampleRate;
 
@@ -285,7 +284,8 @@ TEST(receiver_source, one_session) {
                                      format_map, packet_pool, byte_buffer_pool,
                                      PayloadType, src1, dst1);
 
-    packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket, ChMask);
+    packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
+                                SampleSpecs);
 
     for (size_t np = 0; np < ManyPackets; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
@@ -294,7 +294,7 @@ TEST(receiver_source, one_session) {
             UNSIGNED_LONGS_EQUAL(1, receiver.num_sessions());
         }
 
-        packet_writer.write_packets(1, SamplesPerPacket, ChMask);
+        packet_writer.write_packets(1, SamplesPerPacket, SampleSpecs);
     }
 }
 
@@ -319,7 +319,8 @@ TEST(receiver_source, one_session_long_run) {
                                      format_map, packet_pool, byte_buffer_pool,
                                      PayloadType, src1, dst1);
 
-    packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket, ChMask);
+    packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
+                                SampleSpecs);
 
     for (size_t ni = 0; ni < NumIterations; ni++) {
         for (size_t np = 0; np < ManyPackets; np++) {
@@ -329,7 +330,7 @@ TEST(receiver_source, one_session_long_run) {
                 UNSIGNED_LONGS_EQUAL(1, receiver.num_sessions());
             }
 
-            packet_writer.write_packets(1, SamplesPerPacket, ChMask);
+            packet_writer.write_packets(1, SamplesPerPacket, SampleSpecs);
         }
     }
 }
@@ -354,7 +355,7 @@ TEST(receiver_source, initial_latency) {
                                      PayloadType, src1, dst1);
 
     for (size_t np = 0; np < Latency / SamplesPerPacket - 1; np++) {
-        packet_writer.write_packets(1, SamplesPerPacket, ChMask);
+        packet_writer.write_packets(1, SamplesPerPacket, SampleSpecs);
 
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
             frame_reader.skip_zeros(SamplesPerFrame * NumCh);
@@ -363,7 +364,7 @@ TEST(receiver_source, initial_latency) {
         UNSIGNED_LONGS_EQUAL(1, receiver.num_sessions());
     }
 
-    packet_writer.write_packets(1, SamplesPerPacket, ChMask);
+    packet_writer.write_packets(1, SamplesPerPacket, SampleSpecs);
 
     for (size_t np = 0; np < Latency / SamplesPerPacket; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
@@ -393,7 +394,7 @@ TEST(receiver_source, initial_latency_timeout) {
                                      format_map, packet_pool, byte_buffer_pool,
                                      PayloadType, src1, dst1);
 
-    packet_writer.write_packets(1, SamplesPerPacket, ChMask);
+    packet_writer.write_packets(1, SamplesPerPacket, SampleSpecs);
 
     for (size_t np = 0; np < Timeout / SamplesPerPacket; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
@@ -427,7 +428,8 @@ TEST(receiver_source, timeout) {
                                      format_map, packet_pool, byte_buffer_pool,
                                      PayloadType, src1, dst1);
 
-    packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket, ChMask);
+    packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
+                                SampleSpecs);
 
     for (size_t np = 0; np < Latency / SamplesPerPacket; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
@@ -461,7 +463,8 @@ TEST(receiver_source, initial_trim) {
                                      format_map, packet_pool, byte_buffer_pool,
                                      PayloadType, src1, dst1);
 
-    packet_writer.write_packets(Latency * 3 / SamplesPerPacket, SamplesPerPacket, ChMask);
+    packet_writer.write_packets(Latency * 3 / SamplesPerPacket, SamplesPerPacket,
+                                SampleSpecs);
 
     frame_reader.set_offset(Latency * 2 * NumCh);
 
@@ -472,7 +475,7 @@ TEST(receiver_source, initial_trim) {
             UNSIGNED_LONGS_EQUAL(1, receiver.num_sessions());
         }
 
-        packet_writer.write_packets(1, SamplesPerPacket, ChMask);
+        packet_writer.write_packets(1, SamplesPerPacket, SampleSpecs);
     }
 }
 
@@ -500,8 +503,8 @@ TEST(receiver_source, two_sessions_synchronous) {
                                       PayloadType, src2, dst1);
 
     for (size_t np = 0; np < Latency / SamplesPerPacket; np++) {
-        packet_writer1.write_packets(1, SamplesPerPacket, ChMask);
-        packet_writer2.write_packets(1, SamplesPerPacket, ChMask);
+        packet_writer1.write_packets(1, SamplesPerPacket, SampleSpecs);
+        packet_writer2.write_packets(1, SamplesPerPacket, SampleSpecs);
     }
 
     for (size_t np = 0; np < ManyPackets; np++) {
@@ -511,8 +514,8 @@ TEST(receiver_source, two_sessions_synchronous) {
             UNSIGNED_LONGS_EQUAL(2, receiver.num_sessions());
         }
 
-        packet_writer1.write_packets(1, SamplesPerPacket, ChMask);
-        packet_writer2.write_packets(1, SamplesPerPacket, ChMask);
+        packet_writer1.write_packets(1, SamplesPerPacket, SampleSpecs);
+        packet_writer2.write_packets(1, SamplesPerPacket, SampleSpecs);
     }
 }
 
@@ -535,7 +538,8 @@ TEST(receiver_source, two_sessions_overlapping) {
                                       format_map, packet_pool, byte_buffer_pool,
                                       PayloadType, src1, dst1);
 
-    packet_writer1.write_packets(Latency / SamplesPerPacket, SamplesPerPacket, ChMask);
+    packet_writer1.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
+                                 SampleSpecs);
 
     for (size_t np = 0; np < ManyPackets; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
@@ -544,7 +548,7 @@ TEST(receiver_source, two_sessions_overlapping) {
             UNSIGNED_LONGS_EQUAL(1, receiver.num_sessions());
         }
 
-        packet_writer1.write_packets(1, SamplesPerPacket, ChMask);
+        packet_writer1.write_packets(1, SamplesPerPacket, SampleSpecs);
     }
 
     test::PacketWriter packet_writer2(allocator, *endpoint1_writer, rtp_composer,
@@ -552,7 +556,8 @@ TEST(receiver_source, two_sessions_overlapping) {
                                       PayloadType, src2, dst1);
 
     packet_writer2.set_offset(packet_writer1.offset() - Latency * NumCh);
-    packet_writer2.write_packets(Latency / SamplesPerPacket, SamplesPerPacket, ChMask);
+    packet_writer2.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
+                                 SampleSpecs);
 
     for (size_t np = 0; np < ManyPackets; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
@@ -561,8 +566,8 @@ TEST(receiver_source, two_sessions_overlapping) {
             UNSIGNED_LONGS_EQUAL(2, receiver.num_sessions());
         }
 
-        packet_writer1.write_packets(1, SamplesPerPacket, ChMask);
-        packet_writer2.write_packets(1, SamplesPerPacket, ChMask);
+        packet_writer1.write_packets(1, SamplesPerPacket, SampleSpecs);
+        packet_writer2.write_packets(1, SamplesPerPacket, SampleSpecs);
     }
 }
 
@@ -597,8 +602,8 @@ TEST(receiver_source, two_sessions_two_endpoints) {
                                       PayloadType, src2, dst2);
 
     for (size_t np = 0; np < Latency / SamplesPerPacket; np++) {
-        packet_writer1.write_packets(1, SamplesPerPacket, ChMask);
-        packet_writer2.write_packets(1, SamplesPerPacket, ChMask);
+        packet_writer1.write_packets(1, SamplesPerPacket, SampleSpecs);
+        packet_writer2.write_packets(1, SamplesPerPacket, SampleSpecs);
     }
 
     for (size_t np = 0; np < ManyPackets; np++) {
@@ -608,8 +613,8 @@ TEST(receiver_source, two_sessions_two_endpoints) {
             UNSIGNED_LONGS_EQUAL(2, receiver.num_sessions());
         }
 
-        packet_writer1.write_packets(1, SamplesPerPacket, ChMask);
-        packet_writer2.write_packets(1, SamplesPerPacket, ChMask);
+        packet_writer1.write_packets(1, SamplesPerPacket, SampleSpecs);
+        packet_writer2.write_packets(1, SamplesPerPacket, SampleSpecs);
     }
 }
 
@@ -642,8 +647,8 @@ TEST(receiver_source, two_sessions_same_address_same_stream) {
     packet_writer2.set_offset(77);
 
     for (size_t np = 0; np < Latency / SamplesPerPacket; np++) {
-        packet_writer1.write_packets(1, SamplesPerPacket, ChMask);
-        packet_writer2.write_packets(1, SamplesPerPacket, ChMask);
+        packet_writer1.write_packets(1, SamplesPerPacket, SampleSpecs);
+        packet_writer2.write_packets(1, SamplesPerPacket, SampleSpecs);
     }
 
     for (size_t np = 0; np < ManyPackets; np++) {
@@ -653,8 +658,8 @@ TEST(receiver_source, two_sessions_same_address_same_stream) {
             UNSIGNED_LONGS_EQUAL(1, receiver.num_sessions());
         }
 
-        packet_writer1.write_packets(1, SamplesPerPacket, ChMask);
-        packet_writer2.write_packets(1, SamplesPerPacket, ChMask);
+        packet_writer1.write_packets(1, SamplesPerPacket, SampleSpecs);
+        packet_writer2.write_packets(1, SamplesPerPacket, SampleSpecs);
     }
 }
 
@@ -689,8 +694,8 @@ TEST(receiver_source, two_sessions_same_address_different_streams) {
     packet_writer2.set_timestamp(5 * SamplesPerPacket);
 
     for (size_t np = 0; np < Latency / SamplesPerPacket; np++) {
-        packet_writer1.write_packets(1, SamplesPerPacket, ChMask);
-        packet_writer2.write_packets(1, SamplesPerPacket, ChMask);
+        packet_writer1.write_packets(1, SamplesPerPacket, SampleSpecs);
+        packet_writer2.write_packets(1, SamplesPerPacket, SampleSpecs);
     }
 
     for (size_t np = 0; np < ManyPackets; np++) {
@@ -700,8 +705,8 @@ TEST(receiver_source, two_sessions_same_address_different_streams) {
             UNSIGNED_LONGS_EQUAL(1, receiver.num_sessions());
         }
 
-        packet_writer1.write_packets(1, SamplesPerPacket, ChMask);
-        packet_writer2.write_packets(1, SamplesPerPacket, ChMask);
+        packet_writer1.write_packets(1, SamplesPerPacket, SampleSpecs);
+        packet_writer2.write_packets(1, SamplesPerPacket, SampleSpecs);
     }
 }
 
@@ -725,13 +730,14 @@ TEST(receiver_source, seqnum_overflow) {
                                      PayloadType, src1, dst1);
 
     packet_writer.set_seqnum(packet::seqnum_t(-1) - ManyPackets / 2);
-    packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket, ChMask);
+    packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
+                                SampleSpecs);
 
     for (size_t np = 0; np < ManyPackets; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
             frame_reader.read_samples(SamplesPerFrame * NumCh, 1);
         }
-        packet_writer.write_packets(1, SamplesPerPacket, ChMask);
+        packet_writer.write_packets(1, SamplesPerPacket, SampleSpecs);
     }
 }
 
@@ -756,13 +762,14 @@ TEST(receiver_source, seqnum_small_jump) {
                                      format_map, packet_pool, byte_buffer_pool,
                                      PayloadType, src1, dst1);
 
-    packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket, ChMask);
+    packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
+                                SampleSpecs);
 
     for (size_t np = 0; np < ManyPackets; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
             frame_reader.read_samples(SamplesPerFrame * NumCh, 1);
         }
-        packet_writer.write_packets(1, SamplesPerPacket, ChMask);
+        packet_writer.write_packets(1, SamplesPerPacket, SampleSpecs);
     }
 
     packet_writer.set_seqnum(packet_writer.seqnum() + SmallJump);
@@ -771,7 +778,7 @@ TEST(receiver_source, seqnum_small_jump) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
             frame_reader.read_samples(SamplesPerFrame * NumCh, 1);
         }
-        packet_writer.write_packets(1, SamplesPerPacket, ChMask);
+        packet_writer.write_packets(1, SamplesPerPacket, SampleSpecs);
     }
 }
 
@@ -794,13 +801,14 @@ TEST(receiver_source, seqnum_large_jump) {
                                      format_map, packet_pool, byte_buffer_pool,
                                      PayloadType, src1, dst1);
 
-    packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket, ChMask);
+    packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
+                                SampleSpecs);
 
     for (size_t np = 0; np < ManyPackets; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
             frame_reader.read_samples(SamplesPerFrame * NumCh, 1);
         }
-        packet_writer.write_packets(1, SamplesPerPacket, ChMask);
+        packet_writer.write_packets(1, SamplesPerPacket, SampleSpecs);
     }
 
     packet_writer.set_seqnum(packet_writer.seqnum() + MaxSnJump);
@@ -809,7 +817,7 @@ TEST(receiver_source, seqnum_large_jump) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
             frame_reader.read_samples(SamplesPerFrame * NumCh, 1);
         }
-        packet_writer.write_packets(1, SamplesPerPacket, ChMask);
+        packet_writer.write_packets(1, SamplesPerPacket, SampleSpecs);
     }
 
     while (receiver.num_sessions() != 0) {
@@ -848,8 +856,8 @@ TEST(receiver_source, seqnum_reorder) {
         }
 
         for (ssize_t np = ReorderWindow - 1; np >= 0; np--) {
-            packet_writer.shift_to(pos + size_t(np), SamplesPerPacket, ChMask);
-            packet_writer.write_packets(1, SamplesPerPacket, ChMask);
+            packet_writer.shift_to(pos + size_t(np), SamplesPerPacket, SampleSpecs);
+            packet_writer.write_packets(1, SamplesPerPacket, SampleSpecs);
         }
 
         pos += ReorderWindow;
@@ -877,15 +885,16 @@ TEST(receiver_source, seqnum_late) {
                                      format_map, packet_pool, byte_buffer_pool,
                                      PayloadType, src1, dst1);
 
-    packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket, ChMask);
+    packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
+                                SampleSpecs);
     packet_writer.shift_to(Latency / SamplesPerPacket + DelayedPackets, SamplesPerPacket,
-                           ChMask);
+                           SampleSpecs);
 
     for (size_t np = 0; np < Latency / SamplesPerPacket; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
             frame_reader.read_samples(SamplesPerFrame * NumCh, 1);
         }
-        packet_writer.write_packets(1, SamplesPerPacket, ChMask);
+        packet_writer.write_packets(1, SamplesPerPacket, SampleSpecs);
     }
 
     for (size_t np = 0; np < DelayedPackets; np++) {
@@ -898,11 +907,11 @@ TEST(receiver_source, seqnum_late) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
             frame_reader.read_samples(SamplesPerFrame * NumCh, 1);
         }
-        packet_writer.write_packets(1, SamplesPerPacket, ChMask);
+        packet_writer.write_packets(1, SamplesPerPacket, SampleSpecs);
     }
 
-    packet_writer.shift_to(Latency / SamplesPerPacket, SamplesPerPacket, ChMask);
-    packet_writer.write_packets(DelayedPackets, SamplesPerPacket, ChMask);
+    packet_writer.shift_to(Latency / SamplesPerPacket, SamplesPerPacket, SampleSpecs);
+    packet_writer.write_packets(DelayedPackets, SamplesPerPacket, SampleSpecs);
 
     for (size_t np = 0; np < Latency / SamplesPerPacket; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
@@ -935,13 +944,14 @@ TEST(receiver_source, timestamp_overflow) {
     packet_writer.set_timestamp(packet::timestamp_t(-1)
                                 - ManyPackets * SamplesPerPacket / 2);
 
-    packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket, ChMask);
+    packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
+                                SampleSpecs);
 
     for (size_t np = 0; np < ManyPackets; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
             frame_reader.read_samples(SamplesPerFrame * NumCh, 1);
         }
-        packet_writer.write_packets(1, SamplesPerPacket, ChMask);
+        packet_writer.write_packets(1, SamplesPerPacket, SampleSpecs);
     }
 }
 
@@ -966,7 +976,8 @@ TEST(receiver_source, timestamp_small_jump) {
                                      format_map, packet_pool, byte_buffer_pool,
                                      PayloadType, src1, dst1);
 
-    packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket, ChMask);
+    packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
+                                SampleSpecs);
 
     packet_writer.set_timestamp(Latency + ShiftedPackets * SamplesPerPacket);
     packet_writer.set_offset((Latency + ShiftedPackets * SamplesPerPacket) * NumCh);
@@ -975,21 +986,21 @@ TEST(receiver_source, timestamp_small_jump) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
             frame_reader.read_samples(SamplesPerFrame * NumCh, 1);
         }
-        packet_writer.write_packets(1, SamplesPerPacket, ChMask);
+        packet_writer.write_packets(1, SamplesPerPacket, SampleSpecs);
     }
 
     for (size_t np = 0; np < ShiftedPackets; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
             frame_reader.read_samples(SamplesPerFrame * NumCh, 0);
         }
-        packet_writer.write_packets(1, SamplesPerPacket, ChMask);
+        packet_writer.write_packets(1, SamplesPerPacket, SampleSpecs);
     }
 
     for (size_t np = 0; np < ManyPackets; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
             frame_reader.read_samples(SamplesPerFrame * NumCh, 1);
         }
-        packet_writer.write_packets(1, SamplesPerPacket, ChMask);
+        packet_writer.write_packets(1, SamplesPerPacket, SampleSpecs);
     }
 }
 
@@ -1012,7 +1023,8 @@ TEST(receiver_source, timestamp_large_jump) {
                                      format_map, packet_pool, byte_buffer_pool,
                                      PayloadType, src1, dst1);
 
-    packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket, ChMask);
+    packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
+                                SampleSpecs);
 
     packet_writer.set_timestamp(Latency + MaxTsJump);
     packet_writer.set_offset((Latency + MaxTsJump) * NumCh);
@@ -1021,7 +1033,7 @@ TEST(receiver_source, timestamp_large_jump) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
             frame_reader.read_samples(SamplesPerFrame * NumCh, 1);
         }
-        packet_writer.write_packets(1, SamplesPerPacket, ChMask);
+        packet_writer.write_packets(1, SamplesPerPacket, SampleSpecs);
     }
 
     while (receiver.num_sessions() != 0) {
@@ -1050,7 +1062,8 @@ TEST(receiver_source, timestamp_overlap) {
                                      format_map, packet_pool, byte_buffer_pool,
                                      PayloadType, src1, dst1);
 
-    packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket, ChMask);
+    packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
+                                SampleSpecs);
 
     packet_writer.set_timestamp(Latency - OverlappedSamples);
     packet_writer.set_offset((Latency - OverlappedSamples) * NumCh);
@@ -1059,7 +1072,7 @@ TEST(receiver_source, timestamp_overlap) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
             frame_reader.read_samples(SamplesPerFrame * NumCh, 1);
         }
-        packet_writer.write_packets(1, SamplesPerPacket, ChMask);
+        packet_writer.write_packets(1, SamplesPerPacket, SampleSpecs);
     }
 }
 
@@ -1082,7 +1095,8 @@ TEST(receiver_source, timestamp_reorder) {
                                      format_map, packet_pool, byte_buffer_pool,
                                      PayloadType, src1, dst1);
 
-    packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket, ChMask);
+    packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
+                                SampleSpecs);
 
     for (ssize_t np = Latency / SamplesPerPacket - 1; np >= 0; np--) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
@@ -1094,7 +1108,7 @@ TEST(receiver_source, timestamp_reorder) {
         packet_writer.set_timestamp(
             packet::timestamp_t(Latency + size_t(np) * SamplesPerPacket));
 
-        packet_writer.write_packets(1, SamplesPerPacket, ChMask);
+        packet_writer.write_packets(1, SamplesPerPacket, SampleSpecs);
     }
 
     packet_writer.set_offset(Latency * 2 * NumCh);
@@ -1104,14 +1118,14 @@ TEST(receiver_source, timestamp_reorder) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
             frame_reader.read_samples(SamplesPerFrame * NumCh, 0);
         }
-        packet_writer.write_packets(1, SamplesPerPacket, ChMask);
+        packet_writer.write_packets(1, SamplesPerPacket, SampleSpecs);
     }
 
     for (size_t np = 0; np < ManyPackets; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
             frame_reader.read_samples(SamplesPerFrame * NumCh, 1);
         }
-        packet_writer.write_packets(1, SamplesPerPacket, ChMask);
+        packet_writer.write_packets(1, SamplesPerPacket, SampleSpecs);
     }
 }
 
@@ -1136,7 +1150,8 @@ TEST(receiver_source, timestamp_late) {
                                      format_map, packet_pool, byte_buffer_pool,
                                      PayloadType, src1, dst1);
 
-    packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket, ChMask);
+    packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
+                                SampleSpecs);
 
     packet_writer.set_timestamp(Latency + DelayedPackets * SamplesPerPacket);
     packet_writer.set_offset((Latency + DelayedPackets * SamplesPerPacket) * NumCh);
@@ -1145,7 +1160,7 @@ TEST(receiver_source, timestamp_late) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
             frame_reader.read_samples(SamplesPerFrame * NumCh, 1);
         }
-        packet_writer.write_packets(1, SamplesPerPacket, ChMask);
+        packet_writer.write_packets(1, SamplesPerPacket, SampleSpecs);
     }
 
     for (size_t np = 0; np < DelayedPackets; np++) {
@@ -1158,13 +1173,13 @@ TEST(receiver_source, timestamp_late) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
             frame_reader.read_samples(SamplesPerFrame * NumCh, 1);
         }
-        packet_writer.write_packets(1, SamplesPerPacket, ChMask);
+        packet_writer.write_packets(1, SamplesPerPacket, SampleSpecs);
     }
 
     packet_writer.set_timestamp(Latency);
     packet_writer.set_offset(Latency * NumCh);
 
-    packet_writer.write_packets(DelayedPackets, SamplesPerPacket, ChMask);
+    packet_writer.write_packets(DelayedPackets, SamplesPerPacket, SampleSpecs);
 
     for (size_t np = 0; np < Latency / SamplesPerPacket; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
@@ -1201,12 +1216,12 @@ TEST(receiver_source, packet_size_small) {
                                      PayloadType, src1, dst1);
 
     packet_writer.write_packets(Latency / SamplesPerSmallPacket, SamplesPerSmallPacket,
-                                ChMask);
+                                SampleSpecs);
 
     for (size_t nf = 0; nf < ManySmallPackets / SmallPacketsPerFrame; nf++) {
         frame_reader.read_samples(SamplesPerFrame * NumCh, 1);
         for (size_t np = 0; np < SmallPacketsPerFrame; np++) {
-            packet_writer.write_packets(1, SamplesPerSmallPacket, ChMask);
+            packet_writer.write_packets(1, SamplesPerSmallPacket, SampleSpecs);
         }
     }
 }
@@ -1237,13 +1252,13 @@ TEST(receiver_source, packet_size_large) {
                                      PayloadType, src1, dst1);
 
     packet_writer.write_packets(Latency / SamplesPerLargePacket, SamplesPerLargePacket,
-                                ChMask);
+                                SampleSpecs);
 
     for (size_t np = 0; np < ManyLargePackets; np++) {
         for (size_t nf = 0; nf < FramesPerLargePacket; nf++) {
             frame_reader.read_samples(SamplesPerFrame * NumCh, 1);
         }
-        packet_writer.write_packets(1, SamplesPerLargePacket, ChMask);
+        packet_writer.write_packets(1, SamplesPerLargePacket, SampleSpecs);
     }
 }
 
@@ -1285,8 +1300,8 @@ TEST(receiver_source, packet_size_variable) {
             frame_reader.read_samples(SamplesPerFrame * NumCh, 1);
         }
 
-        packet_writer.write_packets(1, SamplesPerSmallPacket, ChMask);
-        packet_writer.write_packets(1, SamplesPerLargePacket, ChMask);
+        packet_writer.write_packets(1, SamplesPerSmallPacket, SampleSpecs);
+        packet_writer.write_packets(1, SamplesPerLargePacket, SampleSpecs);
 
         available += SamplesPerTwoPackets;
     }
@@ -1313,7 +1328,8 @@ TEST(receiver_source, corrupted_packets_new_session) {
 
     packet_writer.set_corrupt(true);
 
-    packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket, ChMask);
+    packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
+                                SampleSpecs);
 
     for (size_t np = 0; np < ManyPackets; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
@@ -1322,7 +1338,7 @@ TEST(receiver_source, corrupted_packets_new_session) {
             UNSIGNED_LONGS_EQUAL(0, receiver.num_sessions());
         }
 
-        packet_writer.write_packets(1, SamplesPerPacket, ChMask);
+        packet_writer.write_packets(1, SamplesPerPacket, SampleSpecs);
     }
 }
 
@@ -1345,7 +1361,8 @@ TEST(receiver_source, corrupted_packets_existing_session) {
                                      format_map, packet_pool, byte_buffer_pool,
                                      PayloadType, src1, dst1);
 
-    packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket, ChMask);
+    packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
+                                SampleSpecs);
     packet_writer.set_corrupt(true);
 
     for (size_t np = 0; np < Latency / SamplesPerPacket; np++) {
@@ -1355,7 +1372,7 @@ TEST(receiver_source, corrupted_packets_existing_session) {
             UNSIGNED_LONGS_EQUAL(1, receiver.num_sessions());
         }
 
-        packet_writer.write_packets(1, SamplesPerPacket, ChMask);
+        packet_writer.write_packets(1, SamplesPerPacket, SampleSpecs);
     }
 
     packet_writer.set_corrupt(false);
@@ -1367,7 +1384,7 @@ TEST(receiver_source, corrupted_packets_existing_session) {
             UNSIGNED_LONGS_EQUAL(1, receiver.num_sessions());
         }
 
-        packet_writer.write_packets(1, SamplesPerPacket, ChMask);
+        packet_writer.write_packets(1, SamplesPerPacket, SampleSpecs);
     }
 
     for (size_t np = 0; np < Latency / SamplesPerPacket; np++) {
@@ -1377,7 +1394,7 @@ TEST(receiver_source, corrupted_packets_existing_session) {
             UNSIGNED_LONGS_EQUAL(1, receiver.num_sessions());
         }
 
-        packet_writer.write_packets(1, SamplesPerPacket, ChMask);
+        packet_writer.write_packets(1, SamplesPerPacket, SampleSpecs);
     }
 }
 
@@ -1411,7 +1428,8 @@ TEST(receiver_source, status) {
         receiver.read(frame);
     }
 
-    packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket, ChMask);
+    packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
+                                SampleSpecs);
 
     CHECK(receiver.state() == sndio::ISource::Playing);
 

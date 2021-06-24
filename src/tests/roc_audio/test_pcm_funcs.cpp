@@ -35,6 +35,16 @@ TEST_GROUP(pcm_funcs) {
         funcs = &f;
     }
 
+    inline size_t num_channels(packet::channel_mask_t ch_mask) {
+        size_t n_ch = 0;
+        for (; ch_mask != 0; ch_mask >>= 1) {
+            if (ch_mask & 1) {
+                n_ch++;
+            }
+        }
+        return n_ch;
+    }
+
     core::Slice<uint8_t> new_buffer(size_t num_samples) {
         CHECK(funcs);
 
@@ -76,7 +86,7 @@ TEST_GROUP(pcm_funcs) {
                packet::channel_mask_t channels) {
         size_t n = 0;
 
-        for (; n < num_samples * packet::num_channels(channels); n++) {
+        for (; n < num_samples * num_channels(channels); n++) {
             DOUBLES_EQUAL((double)samples[n], (double)output[n], Epsilon);
         }
 

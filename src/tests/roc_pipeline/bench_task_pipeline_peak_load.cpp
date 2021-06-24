@@ -262,7 +262,7 @@ public:
     };
 
     TestPipeline(const TaskConfig& config, ctl::ControlLoop& loop, DelayStats& stats)
-        : TaskPipeline(*this, config, SampleRate, Chans)
+        : TaskPipeline(*this, config, audio::SampleSpec(SampleRate, Chans))
         , loop_(loop)
         , stats_(stats)
         , process_tasks_(*this) {

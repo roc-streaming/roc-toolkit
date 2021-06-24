@@ -15,6 +15,7 @@
 #include "roc_audio/iresampler.h"
 #include "roc_audio/resampler_backend.h"
 #include "roc_audio/resampler_profile.h"
+#include "roc_audio/sample_spec.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/singleton.h"
@@ -44,8 +45,7 @@ public:
                               core::BufferPool<sample_t>& buffer_pool,
                               ResamplerProfile profile,
                               core::nanoseconds_t frame_length,
-                              size_t sample_rate,
-                              packet::channel_mask_t channels);
+                              const audio::SampleSpec& sample_spec);
 
 private:
     friend class core::Singleton<ResamplerMap>;
@@ -63,8 +63,7 @@ private:
                             core::BufferPool<sample_t>& buffer_pool,
                             ResamplerProfile profile,
                             core::nanoseconds_t frame_length,
-                            size_t sample_rate,
-                            packet::channel_mask_t channels);
+                            const audio::SampleSpec& sample_spec);
     };
 
     ResamplerMap();

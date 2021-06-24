@@ -171,7 +171,6 @@ private:
     ReceiverConfig config_;
 
     packet::timestamp_t timestamp_;
-    size_t num_channels_;
 };
 
 } // namespace pipeline

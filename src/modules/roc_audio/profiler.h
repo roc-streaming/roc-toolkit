@@ -13,6 +13,7 @@
 #define ROC_AUDIO_PROFILER_H_
 
 #include "roc_audio/frame.h"
+#include "roc_audio/sample_spec.h"
 #include "roc_core/array.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/list.h"
@@ -66,8 +67,7 @@ class Profiler : public core::NonCopyable<> {
 public:
     //! Initialization.
     Profiler(core::IAllocator& allocator,
-             packet::channel_mask_t channels,
-             size_t sample_rate,
+             const audio::SampleSpec& sample_spec,
              ProfilerConfig profiler_config);
 
     //! Check if the profiler was succefully constructed.
@@ -95,8 +95,7 @@ private:
 
     float moving_avg_;
 
-    const size_t sample_rate_;
-    const size_t num_channels_;
+    const audio::SampleSpec sample_spec_;
 
     bool valid_;
     bool buffer_full_;

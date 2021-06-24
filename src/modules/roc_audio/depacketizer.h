@@ -14,6 +14,7 @@
 
 #include "roc_audio/iframe_decoder.h"
 #include "roc_audio/ireader.h"
+#include "roc_audio/sample_spec.h"
 #include "roc_audio/units.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/rate_limiter.h"
@@ -33,11 +34,11 @@ public:
     //! @b Parameters
     //!  - @p reader is used to read packets
     //!  - @p payload_decoder is used to extract samples from packets
-    //!  - @p channels defines a set of channels in the output frames
+    //!  - @p sample_spec defines a set of channels in the output frames
     //!  - @p beep enables weird beeps instead of silence on packet loss
     Depacketizer(packet::IReader& reader,
                  IFrameDecoder& payload_decoder,
-                 packet::channel_mask_t channels,
+                 const audio::SampleSpec& sample_spec,
                  bool beep);
 
     //! Read audio frame.
@@ -69,8 +70,7 @@ private:
     packet::IReader& reader_;
     IFrameDecoder& payload_decoder_;
 
-    const packet::channel_mask_t channels_;
-    const size_t num_channels_;
+    const audio::SampleSpec sample_spec_;
 
     packet::PacketPtr packet_;
 
