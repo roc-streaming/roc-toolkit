@@ -45,9 +45,6 @@ jobs:
           - script: linux-x86_64/fedora
             image: rocstreaming/env-fedora
 
-          - script: linux-x86_64/centos
-            image: rocstreaming/env-centos
-
           - script: linux-x86_64/opensuse
             image: rocstreaming/env-opensuse
 
