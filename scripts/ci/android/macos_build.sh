@@ -44,12 +44,12 @@ scons -Q \
 echo no | avdmanager create avd --name roc --package "$CI_AVD"
 
 ( cd "$ANDROID_HOME/tools" &&
-      ./emulator -avd roc -no-audio -no-boot-anim -no-window -gpu off -accel on >/dev/null 2>&1 & )
+      ./emulator -avd roc -no-audio -no-boot-anim -no-window -gpu off -accel on & )
 
 boot_completed="0"
 while [ "$boot_completed" != "1" ]; do
-    boot_completed=$(adb wait-for-device shell getprop sys.boot_completed | tr -d '\r')
     sleep 5
+    boot_completed=$(adb wait-for-device shell getprop sys.boot_completed | tr -d '\r')
 done
 
 target_prefix="/data/local/tmp"
