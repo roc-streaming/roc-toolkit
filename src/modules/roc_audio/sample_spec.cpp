@@ -13,14 +13,14 @@ namespace roc {
 namespace audio {
 
 SampleSpec::SampleSpec() {
-    sample_rate_ = 0;
+    set_sample_rate(0);
     set_channel_mask(0);
 }
 
 SampleSpec::SampleSpec(size_t sample_rate, packet::channel_mask_t channel_mask) {
     roc_panic_if(sample_rate == 0);
     roc_panic_if(channel_mask == 0);
-    sample_rate_ = sample_rate;
+    set_sample_rate(sample_rate);
     set_channel_mask(channel_mask);
 }
 
@@ -38,7 +38,7 @@ packet::channel_mask_t SampleSpec::channel_mask() const {
 
 void SampleSpec::set_channel_mask(packet::channel_mask_t channel_mask) {
     channel_mask_ = channel_mask;
-    num_channels_ = calc_num_channels();
+    num_channels_ = calc_num_channels_();
 }
 
 size_t SampleSpec::num_channels() const {
@@ -61,7 +61,7 @@ core::nanoseconds_t SampleSpec::size_to_ns(size_t frame_size) const {
     return timestamp_to_ns(packet::timestamp_diff_t(frame_size / num_channels()));
 }
 
-size_t SampleSpec::calc_num_channels() const {
+size_t SampleSpec::calc_num_channels_() const {
     size_t n_ch = 0;
     packet::channel_mask_t ch_mask = channel_mask_;
     for (; ch_mask != 0; ch_mask >>= 1) {
