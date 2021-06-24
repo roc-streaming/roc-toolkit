@@ -43,7 +43,7 @@ scons -Q \
 
 echo no | avdmanager create avd --name roc --package "$CI_AVD"
 
-( cd "$ANDROID_HOME/tools" &&
+( cd "emulator" &&
       ./emulator -avd roc -no-audio -no-boot-anim -no-window -gpu off -accel on & )
 
 boot_completed="0"

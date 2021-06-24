@@ -221,6 +221,12 @@ jobs:
             system-images;android-${{ matrix.api }};${{ matrix.avd_tgt }};${{ matrix.avd_abi }}
             emulator
 
+      - name: Install Android emulator
+        run: |
+          wget -O emulator.zip \
+            https://dl.google.com/android/repository/emulator-darwin_x64-7140946.zip
+          unzip emulator.zip
+
       - name: Install system dependencies
         run: |
           scripts/ci/android/macos_deps.sh
