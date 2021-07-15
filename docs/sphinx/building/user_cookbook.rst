@@ -231,7 +231,7 @@ Raspberry Pi 2 and 3
     # install Roc binaries
     $ scp ./bin/arm-linux-gnueabihf/roc-{recv,send,conv} <address>:/usr/bin
     $ scp ./bin/arm-linux-gnueabihf/libroc.so.*.* <address>:/usr/lib
-    $ scp ./bin/arm-linux-gnueabihf/module-roc-{sink,sink-input} <address>:/usr/lib/pulse-12.2/modules
+    $ scp ./bin/arm-linux-gnueabihf/module-roc-{sink,sink-input}.so <address>:/usr/lib/pulse-12.2/modules
 
     # install Roc dependencies
     $ ssh <address> apt-get install libasound2 libpulse0 libltdl7
@@ -256,7 +256,7 @@ Raspberry Pi 1 and Zero
     # install Roc binaries
     $ scp ./bin/arm-bcm2708hardfp-linux-gnueabi/roc-{recv,send,conv} <address>:/usr/bin
     $ scp ./bin/arm-bcm2708hardfp-linux-gnueabi/libroc.so.*.* <address>:/usr/lib
-    $ scp ./bin/arm-bcm2708hardfp-linux-gnueabi/module-roc-{sink,sink-input} \
+    $ scp ./bin/arm-bcm2708hardfp-linux-gnueabi/module-roc-{sink,sink-input}.so \
         <address>:/usr/lib/pulse-5.0/modules
 
     # install Roc dependencies
@@ -282,7 +282,7 @@ Orange Pi 64-bit models
     # install Roc binaries
     $ scp ./bin/aarch64-linux-gnu/roc-{recv,send,conv} <address>:/usr/bin
     $ scp ./bin/aarch64-linux-gnu/libroc.so.*.* <address>:/usr/lib
-    $ scp ./bin/aarch64-linux-gnu/module-roc-{sink,sink-input} <address>:/usr/lib/pulse-8.0/modules
+    $ scp ./bin/aarch64-linux-gnu/module-roc-{sink,sink-input}.so <address>:/usr/lib/pulse-8.0/modules
 
     # install Roc dependencies
     $ ssh <address> apt-get install libasound2 libpulse0 libltdl7
@@ -307,7 +307,7 @@ Orange Pi 32-bit models
     # install Roc binaries
     $ scp ./bin/arm-linux-gnueabihf/roc-{recv,send,conv} <address>:/usr/bin
     $ scp ./bin/arm-linux-gnueabihf/libroc.so.*.* <address>:/usr/lib
-    $ scp ./bin/arm-linux-gnueabihf/module-roc-{sink,sink-input} <address>:/usr/lib/pulse-8.0/modules
+    $ scp ./bin/arm-linux-gnueabihf/module-roc-{sink,sink-input}.so <address>:/usr/lib/pulse-8.0/modules
 
     # install Roc dependencies
     $ ssh <address> apt-get install libasound2 libpulse0 libltdl7
