@@ -1,0 +1,2 @@
+#! /usr/bin/dh-exec
+bin/${DEB_HOST_MULTIARCH}/libroc.so* usr/lib

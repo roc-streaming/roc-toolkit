@@ -1,0 +1,26 @@
+--- a/src/modules/roc_netio/target_libuv/roc_netio/udp_receiver_port.cpp	2021-02-16 11:15:03.000000000 +0100
++++ b/src/modules/roc_netio/target_libuv/roc_netio/udp_receiver_port.cpp	2021-02-21 23:32:47.625655115 +0100
+@@ -58,9 +58,7 @@
+     handle_initialized_ = true;
+ 
+     unsigned flags = 0;
+-    if (address_.multicast() && address_.port() > 0) {
+-        flags |= UV_UDP_REUSEADDR;
+-    }
++    flags |= UV_UDP_REUSEADDR;
+ 
+     int bind_err = UV_EINVAL;
+     if (address_.version() == 6) {
+--- a/src/modules/roc_netio/target_libuv/roc_netio/udp_sender_port.cpp	2021-02-16 11:15:03.000000000 +0100
++++ b/src/modules/roc_netio/target_libuv/roc_netio/udp_sender_port.cpp	2021-02-21 23:31:19.546152296 +0100
+@@ -61,9 +61,7 @@ bool UDPSenderPort::open() {
+     handle_initialized_ = true;
+ 
+     unsigned flags = 0;
+-    if (address_.multicast() && address_.port() > 0) {
+-        flags |= UV_UDP_REUSEADDR;
+-    }
++    flags |= UV_UDP_REUSEADDR;
+ 
+     int bind_err = UV_EINVAL;
+     if (address_.version() == 6) {

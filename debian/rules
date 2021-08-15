@@ -1,0 +1,56 @@
+#!/usr/bin/make -f
+# See debhelper(7) (uncomment to enable)
+# output every command that modifies files on the build system.
+#export DH_VERBOSE = 1
+
+# see FEATURE AREAS in dpkg-buildflags(1)
+#export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+
+# see ENVIRONMENT in dpkg-buildflags(1)
+# package maintainers to append CFLAGS
+#export DEB_CFLAGS_MAINT_APPEND  = -Wall -pedantic
+# package maintainers to append LDFLAGS
+#export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
+export DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
+export DEB_BUILD_GNU_TYPE
+export DEB_BUILD_OPTIONS = nocheck
+export DEB_DH_SHLIBDEPS_ARGS_ALL = -- --ignore-missing-info -l/usr/lib/${DEB_BUILD_GNU_TYPE}/pulseaudio --warnings=5 -v
+
+export PA_VER = $(shell pulseaudio --version | egrep -o '[0-9.]*')
+export PA_URL = https://www.freedesktop.org/software/pulseaudio/releases/pulseaudio-${PA_VER}.tar.xz
+
+%:
+	dh $@
+
+override_dh_auto_build:
+	sed -i 's/PACKAGE_VERSION/"'${PA_VER}'"/g' src/pulse/module-roc-sink.c src/pulse/module-roc-sink-input.c 
+	mkdir -p 3rdparty
+	wget -vcP ../.. \
+		--content-disposition \
+		--trust-server-name ${PA_URL}
+	tar -C 3rdparty -xJvf ../../pulseaudio-${PA_VER}.tar.xz
+	sed -i '/#ifndef PACKAGE/,+2 d' 3rdparty/pulseaudio-${PA_VER}/src/pulsecore/*.h
+	sed -i '/#include <sys\/types.h>/,+a#include <sys/socket.h>' 3rdparty/pulseaudio-${PA_VER}/src/pulsecore/core-util.h
+	sed -i '/^env.SourceCode/d' SConstruct
+	(cd 3rdparty/pulseaudio-${PA_VER} && \
+	[ -f ./bootstrap.sh ] && \
+	VERSION=${PA_VER} GIT_DESCRIBE_FOR_BUILD=${PA_VER} ./bootstrap.sh --without-caps 2>/dev/null || \
+	meson build)
+	scons -Q --host=${DEB_HOST_MULTIARCH} \
+		 --with-includes=3rdparty/pulseaudio-${PA_VER}/build \
+		 --with-includes=3rdparty/pulseaudio-${PA_VER}/src \
+		 --with-openfec-includes=/usr/include/openfec \
+		 --with-pulseaudio=/usr/lib/${DEB_BUILD_GNU_TYPE}/pulseaudio \
+		 --enable-pulseaudio-modules \
+		 --disable-tests
+
+override_dh_shlibdeps:
+	dh_shlibdeps ${DEB_DH_SHLIBDEPS_ARGS_ALL}
+
+# Required due to dwz failing on libraries already stripped by dh-exec(?)
+override_dh_dwz:
+
+# dh_make generated override targets
+# This is example for Cmake (See https://bugs.debian.org/641051 )
+#override_dh_auto_configure:
+#	dh_auto_configure -- #	-DCMAKE_LIBRARY_PATH=$(DEB_HOST_MULTIARCH)

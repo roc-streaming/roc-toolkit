@@ -1,0 +1,11 @@
+--- a/SConstruct	2019-08-14 10:11:02.000000000 +0200
++++ b/SConstruct	2019-09-03 09:42:06.316987201 +0200
+@@ -769,7 +769,7 @@
+         ])
+ 
+         for lib in ['libpulsecore-*.so', 'libpulsecommon-*.so']:
+-            path = '%s/src/.libs/%s' % (pa_build_dir, lib)
++            path = '%s/%s' % (pa_build_dir, lib)
+             libs = env.Glob(path)
+             if not libs:
+                 env.Die("can't find %s" % path)

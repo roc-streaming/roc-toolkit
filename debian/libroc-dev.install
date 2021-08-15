@@ -1,0 +1,2 @@
+#! /usr/bin/dh-exec
+src/lib/include/roc usr/include

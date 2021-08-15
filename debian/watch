@@ -1,0 +1,4 @@
+version=4
+opts="mode=git, pgpmode=none, oversionmangle=s%^\d[\d.]*%0.1.6%" \
+  https://github.com/roc-streaming/roc-toolkit \
+  heads/master debian uupdate
