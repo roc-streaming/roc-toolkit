@@ -1,0 +1,25 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: roc-toolkit
+Upstream-Contact: victor@enise.org
+Source: https://github.com/roc-streaming/roc-toolkit
+Comment:
+ Roc Toolkit: real-time audio streaming
+ .
+ Roc is a toolkit for real-time audio streaming over the network.
+
+Files: *
+Copyright:
+  2015-2016, Andrew Petelin, <adrianopol@gmail.com>
+  2015-2018, Mikhail Baranov, <baranov.mv@gmail.com>
+  2015-2021, Victor Gaydov, <victor@enise.org>
+  2019, Dmitriy Shilin, <dshil@fastmail.com>
+  2019, Hrishikesh Suresh, <hrishikesh123s@gmail.com>
+  2019, JonathanS, <mail@strfry.org>
+  2019, kcy1019, <gkcy1019@gmail.com>
+  2019, Paul Malcolm, <paul.malcolm@l3t.com>
+  2019, Thomas Dwyer, <tdwyer1990@gmail.com>
+  2019, zenuo, <zenuo@protonmail.com>
+  2020, Gareth Marlow, <gareth@eqsystems.io>
+  2020, name213, <miklecivan3@gmail.com>
+  2021-2022, twojstaryzdomu, <twojstaryzdomu@users.noreply.github.com>
+License: MPL-2.0

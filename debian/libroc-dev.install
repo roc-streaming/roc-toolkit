@@ -1,0 +1,2 @@
+#! /usr/bin/dh-exec
+src/public_api/include/roc usr/include
