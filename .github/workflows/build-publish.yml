@@ -1,0 +1,122 @@
+name: Build & publish debs
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to build'
+        required: false
+        default: ''
+      create_changelog:
+        description: 'Create changelog based on git commit entries'
+        required: false
+        default: true
+      draft:
+        description: 'Draft flag on release'
+        required: false
+        default: false
+      prerelease:
+        description: 'Prerelease flag on release'
+        required: false
+        default: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - name: Set variables
+      run: |
+        CREATE_CHANGELOG=${{ github.event.inputs.create_changelog }}
+        PACKAGE=${GITHUB_REPOSITORY#*/}
+        PACKAGE=${PACKAGE//_/-}
+        VERSION=${{ github.event.inputs.version }}
+        for n in CREATE_CHANGELOG PACKAGE VERSION; do
+          typeset -n v=${n}
+          echo "${n}=${v}"
+        done | tee -a $GITHUB_ENV
+    - name: Build packages
+      uses: twojstaryzdomu/arm-runner-action@master
+      with:
+        image_additional_mb: 512
+        copy_artifact_path: "*.deb"
+        copy_artifact_dest: ${{ github.workspace }}
+        shell: bash
+        debug: true
+        import_github_env: true
+        export_github_env: true
+        commands: |
+          [ -n "${PACKAGE}" ]
+          apt-get update
+          apt-get install -y build-essential bzr-builddeb dh-exec
+          dpkg-checkbuilddeps 2>&1 \
+          | sed -E 's| \([^)]+\)||g' \
+          | grep -Po 'dependencies: \K.*' \
+          | xargs -r apt-get install -y
+          apt-get clean
+          case "${CREATE_CHANGELOG}" in
+          yes|true)
+            [ -d debian ] || mkdir debian
+            [ ! -f debian/changelog ] || rm debian/changelog
+            for ifs in \^ \~ \! \#; do
+              git log --format=%b:%B | grep -Fq "${ifs}" || break;
+            done
+            ver_date_sha=$(git log --format=tformat:%ad${ifs}%h${ifs}%aN${ifs}%aE${ifs}%f${ifs}%-aD${ifs}%D --date=format:%Y%m%d --reverse | while IFS=${ifs} read d s n e m t x; do
+              tag=$(grep -Po 'tag: [a-zA-Z]*\K[0-9a-f.]+' <<< "${x}"; :)
+              last_tag=${tag:-${last_tag:-0.0}}
+              dch_ver=${tag:-${last_tag}~git${d}.${s}}
+              if grep -q "(${dch_ver}})" debian/changelog 2>/dev/null; then
+                continue
+              else
+                NAME=${n} EMAIL=${e} dch ${first---create --package ${PACKAGE}} ${first+-b} -v ${dch_ver} "${m//-/ }"
+                sed -i '1s/UNRELEASED/unstable/g;0,/\(>  \).*/s//\1'"${t}"'/g' debian/changelog
+                first=''
+                [ -z "${VERSION}" ] || case "${dch_ver}" in
+                "${VERSION}")
+                  echo "${dch_ver}${ifs}${d}${ifs}${s}"
+                  break
+                ;;
+                esac
+              fi
+            done)
+            [ -z "${ver_date_sha}" ] || for var_name in DCH_VER GIT_DATE SHORT_SHA; do
+              typeset -n v=${var_name}
+              v=${ver_date_sha%%${ifs}*}
+              ver_date_sha=${ver_date_sha#${v}${ifs}}
+            done
+          ;;
+          esac
+          DCH_VER=${DCH_VER:-$(head -1 debian/changelog | grep -Po '(?:[a-z-]+\s)\(\K.*(?=\))')}
+          GIT_DATE=${GIT_DATE:-$(git log -1 --format=%ad --date=format:%Y%m%d)}
+          SHORT_SHA=${SHORT_SHA:-${GITHUB_SHA:0:7}}
+          TAG_NAME=${DCH_VER//\~/.}
+          for n in DCH_VER GIT_DATE SHORT_SHA TAG_NAME; do
+            typeset -n v=${n}
+            echo "${n}=${v}"
+          done | tee -a $GITHUB_ENV
+          cat debian/changelog
+          [ ! -f debian/watch ] || sed -Ei 's|(https?://github.com/)\S+|\1'${GITHUB_REPOSITORY}'|g' debian/watch
+          dpkg-buildpackage -b -rfakeroot -us -uc
+          debs=$(grep -Poz '(?s)(?:\nPackage:\s*\K\N+|\nArchitecture:\K\s\N+\n)' debian/control | while read p a; do
+            case "${a}" in any) a=${DEB_BUILD_ARCH:-$(dpkg-architecture -q DEB_BUILD_ARCH)};; esac
+            deb=${p}_${DCH_VER}_${a}.deb
+            echo "p = ${p}; a = ${a}; deb = ${deb}" 1>&2
+            [ -f ../${deb} ] && mv ../${deb} . && echo ${deb}
+          done)
+          [ -n "${debs}" ] && \
+          echo "DEBS<<EOL" >> $GITHUB_ENV && \
+          echo "${debs}" >> $GITHUB_ENV && \
+          echo EOL >> $GITHUB_ENV
+    - name: Release packages
+      uses: softprops/action-gh-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        files: ${{ env.DEBS }}
+        tag_name: ${{ env.TAG_NAME }}
+        name: ${{ env.PACKAGE }}_${{ env.DCH_VER }}
+        fail_on_unmatched_files: true
+        draft: ${{ github.event.inputs.draft }}
+        prerelease: ${{ github.event.inputs.prerelease }}
