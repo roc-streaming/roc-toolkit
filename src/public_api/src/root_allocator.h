@@ -6,8 +6,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#ifndef ROC_ROOT_ALLOCATOR_H_
-#define ROC_ROOT_ALLOCATOR_H_
+#ifndef ROC_PUBLIC_API_ROOT_ALLOCATOR_H_
+#define ROC_PUBLIC_API_ROOT_ALLOCATOR_H_
 
 #include "roc_core/heap_allocator.h"
 
@@ -19,4 +19,4 @@ extern core::HeapAllocator root_allocator;
 } // namespace api
 } // namespace roc
 
-#endif // ROC_ROOT_ALLOCATOR_H_
+#endif // ROC_PUBLIC_API_ROOT_ALLOCATOR_H_

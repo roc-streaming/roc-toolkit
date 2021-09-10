@@ -6,8 +6,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#ifndef ROC_LOG_HELPERS_H_
-#define ROC_LOG_HELPERS_H_
+#ifndef ROC_PUBLIC_API_LOG_HELPERS_H_
+#define ROC_PUBLIC_API_LOG_HELPERS_H_
 
 #include "roc/log.h"
 
@@ -21,4 +21,4 @@ LogLevel convert_log_level(roc_log_level level);
 } // namespace api
 } // namespace roc
 
-#endif // ROC_LOG_HELPERS_H_
+#endif // ROC_PUBLIC_API_LOG_HELPERS_H_
