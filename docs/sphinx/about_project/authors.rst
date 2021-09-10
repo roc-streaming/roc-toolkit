@@ -49,3 +49,8 @@ Contributors
 * Vimal Patel <pvimal816@gmail.com>
 * Steven Zhu <stevenzhu94@utexas.edu>
 * Jsomwaru <jacobsomwaru@gmail.com>
+* Sebastian Fuentes <sfuentes1127@gmail.com>
+* Swapnil Sunil Chaudhari <https://github.com/Swapnil-Gaur>
+* Nythoang <https://github.com/nythoang>
+* Alexandre Macabies <https://github.com/Zopieux>
+* Belching Jalapeno <belchingjalapeno@gmail.com>
