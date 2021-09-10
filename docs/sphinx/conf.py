@@ -3,17 +3,17 @@
 import datetime
 import os
 import re
+import subprocess
+import sys
 
 def get_version():
-    with open('../../src/public_api/include/roc/version.h') as fp:
-        data = fp.read()
-        m = re.search(r"""^#define ROC_VERSION_MAJOR (\d+)$""", data, re.MULTILINE)
-        major = m.group(1)
-        m = re.search(r"""^#define ROC_VERSION_MINOR (\d+)$""", data, re.MULTILINE)
-        minor = m.group(1)
-        m = re.search(r"""^#define ROC_VERSION_PATCH (\d+)$""", data, re.MULTILINE)
-        patch = m.group(1)
-        return (major, minor, patch)
+    proc = subprocess.Popen(
+        [sys.executable,
+         '%s/../../scripts/scons_helpers/parse-version.py' %
+         os.path.dirname(os.path.realpath(__file__))],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT)
+    return tuple(proc.stdout.read().decode().strip().split('.'))
 
 # -- General configuration ------------------------------------------------
 
