@@ -1,13 +1,17 @@
-PROJECT_NAME            = "Roc Toolkit API documentation"
+PROJECT_NAME            = "Roc Toolkit internal modules"
+PROJECT_BRIEF           = "Roc Toolkit: real-time audio streaming"
+PROJECT_LOGO            = ../../docs/images/icon80.png
+HTML_HEADER             = ../../docs/doxygen/header.html
 
 QUIET                   = YES
 RECURSIVE               = YES
 
-INPUT                   = include
-STRIP_FROM_PATH         = include
+INPUT                   = .
+STRIP_FROM_PATH         = .
 FILE_PATTERNS           = *.h *.dox
 
 FULL_PATH_NAMES         = YES
+SOURCE_BROWSER          = YES
 
 JAVADOC_AUTOBRIEF       = YES
 QT_AUTOBRIEF            = YES
@@ -31,14 +35,19 @@ WARN_NO_PARAMDOC        = NO
 ENABLE_PREPROCESSING    = YES
 MACRO_EXPANSION         = YES
 EXPAND_ONLY_PREDEF      = YES
-PREDEFINED              = ROC_API= ROC_DOXYGEN=
+PREDEFINED              = ROC_ATTR_NORETURN= ROC_ATTR_PRINTF(x,y)= \
+    ROC_ATTR_PACKED_BEGIN= ROC_ATTR_PACKED_END=
 
-OUTPUT_DIRECTORY        = ../../build/docs/library
-HTML_OUTPUT             =
+OUTPUT_DIRECTORY        = ../../build/docs/internal_modules
+HTML_OUTPUT             = ../../../docs/html/doxygen
 
-GENERATE_XML            = YES
-GENERATE_HTML           = NO
 GENERATE_LATEX          = NO
+DOT_GRAPH_MAX_NODES     = 1000
+
+HTML_DYNAMIC_SECTIONS   = NO
+DISABLE_INDEX           = NO
+GENERATE_TREEVIEW       = YES
+SEARCHENGINE            = YES
 
 OUTPUT_LANGUAGE         = English
 DOXYFILE_ENCODING       = UTF-8

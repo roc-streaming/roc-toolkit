@@ -26,8 +26,8 @@ def ParseGitHead(env):
     except:
         return None
 
-def ParseProjectVersion(env):
-    with open('src/library/include/roc/version.h') as fp:
+def ParseProjectVersion(env, path):
+    with open(path) as fp:
         data = fp.read()
         m = re.search(r"""^#define ROC_VERSION_MAJOR (\d+)$""", data, re.MULTILINE)
         major = int(m.group(1))

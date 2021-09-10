@@ -22,10 +22,3 @@ scons -Q --enable-werror --build-3rdparty=all \
       --enable-benchmarks \
       --enable-examples \
       test
-
-scons -Q --enable-werror --build-3rdparty=all \
-      --enable-pulseaudio-modules \
-      --enable-tests \
-      --enable-benchmarks \
-      --enable-examples \
-      test

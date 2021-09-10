@@ -10,9 +10,9 @@ if [s for s in COMMAND_LINE_TARGETS if s == 'bench' or s.startswith('bench/')]:
     if not GetOption('enable_benchmarks'):
         env.Die("can't use 'bench*' target(s) without `--enable-benchmarks' option")
 
-env.Append(CPPPATH=['#src/modules'])
+env.Append(CPPPATH=['#src/internal_modules'])
 
-for targetdir in env.GlobRecursive('modules', 'target_*'):
+for targetdir in env.GlobRecursive('internal_modules', 'target_*'):
     if targetdir.name in env['ROC_TARGETS']:
         env.Append(CPPPATH=['#src/%s' % targetdir])
 
@@ -20,7 +20,7 @@ for t in env['ROC_TARGETS']:
     env.Append(CPPDEFINES=['ROC_' + t.upper()])
 
 for module in env['ROC_MODULES']:
-    moduledir = 'modules/' + module
+    moduledir = 'internal_modules/' + module
 
     cenv = env.Clone()
     cenv.MergeVars(subenvs.tools)
@@ -55,16 +55,16 @@ libroc = None
 
 if not GetOption('disable_lib'):
     cenv = env.Clone()
-    cenv.MergeVars(subenvs.library)
-    cenv.Append(CPPDEFINES=('ROC_MODULE', 'roc_api'))
-    cenv.Append(CPPPATH=['library/include'])
+    cenv.MergeVars(subenvs.public_libs)
+    cenv.Append(CPPDEFINES=('ROC_MODULE', 'libroc'))
+    cenv.Append(CPPPATH=['public_api/include'])
 
-    sources = env.GlobFiles('library/src/*.cpp')
+    sources = env.GlobFiles('public_api/src/*.cpp')
 
     libroc = cenv.SharedLibrary(
-        'roc_unstripped', sources, SHLIBSUFFIX=subenvs.library['SHLIBSUFFIX'])
+        'roc_unstripped', sources, SHLIBSUFFIX=subenvs.public_libs['SHLIBSUFFIX'])
 
-    env.Depends(libroc, '#src/library/roc.version')
+    env.Depends(libroc, '#src/public_api/roc.version')
 
     libroc = cenv.MaybeStripLibrary(libroc[0].name.replace('_unstripped', ''),
         libroc, is_debug=GetOption('enable_debug'))
@@ -75,7 +75,7 @@ if not GetOption('disable_lib'):
     env.Alias('libroc', [target] + symlinks, env.Action(''))
     env.AlwaysBuild('libroc')
 
-    env.AddDistFile(env['ROC_SYSTEM_INCDIR'], '#src/library/include/roc')
+    env.AddDistFile(env['ROC_SYSTEM_INCDIR'], '#src/public_api/include/roc')
     env.AddDistFile(env['ROC_SYSTEM_LIBDIR'], target)
 
     env.AddDistAction(env.FixupLibrary(
@@ -101,12 +101,12 @@ if GetOption('enable_examples'):
     cenv.MergeVars(subenvs.examples)
     cenv.MergeVars(subenvs.tools)
     cenv.MergeVars(subenvs.tests)
-    cenv.Append(CPPPATH=['library/include'])
+    cenv.Append(CPPPATH=['public_api/include'])
     cenv.Append(LIBS=[libroc])
 
     targets = []
 
-    for source in env.GlobFiles('library/example/*.c'):
+    for source in env.GlobFiles('public_api/examples/*.c'):
         example = os.path.splitext(source.name)[0]
         exename = 'roc-example-' + example.replace('_', '-')
 
@@ -138,17 +138,17 @@ if GetOption('enable_tests') or GetOption('enable_benchmarks'):
     if GetOption('enable_benchmarks'):
         bench_main = cenv.Object('tests/bench_main.cpp')
 
-    for testname in env['ROC_MODULES'] + ['roc_library']:
+    for testname in env['ROC_MODULES'] + ['public_api']:
         testdir = 'tests/' + testname
 
         ccenv = cenv.Clone()
         ccenv.Append(CPPPATH=['#src/%s' % testdir])
 
-        if testname == 'roc_library':
+        if testname == 'public_api':
             if GetOption('disable_lib'):
                 continue
 
-            ccenv.Append(CPPPATH=['library/include'])
+            ccenv.Append(CPPPATH=['public_api/include'])
             ccenv.Prepend(LIBS=[libroc])
 
         for kind in ['test', 'bench']:
@@ -175,7 +175,7 @@ if GetOption('enable_tests') or GetOption('enable_benchmarks'):
 
             sources += env.GlobFiles('%s/test_helpers/*.cpp' % testdir)
 
-            exename = 'roc-' + kind + '-' + testname.replace('roc_', '')
+            exename = 'roc-' + kind + '-' + testname.replace('roc_', '').replace('_', '-')
             target = env.Install(env['ROC_BINDIR'],
                 ccenv.Program(exename, sources + main + sanitizer_opt_obj,
                     RPATH=(ccenv['RPATH'] if 'RPATH' in ccenv.Dictionary() else None)))
@@ -217,26 +217,3 @@ if not GetOption('disable_tools'):
         env.AlwaysBuild(exename)
 
         env.AddDistFile(env['ROC_SYSTEM_BINDIR'], target)
-
-if GetOption('enable_pulseaudio_modules'):
-    cenv = env.Clone()
-    cenv.MergeVars(subenvs.pulse)
-    cenv.Append(CPPPATH=['library/include'])
-    cenv.Append(LIBS=[libroc])
-
-    helpers = cenv.Object('pulse/module_helpers.c')
-    targets = []
-
-    for source in env.GlobFiles('pulse/module-*.c'):
-        module = os.path.splitext(source.name)[0]
-
-        modulelib = cenv.SharedLibrary(module, [source, helpers], LIBPREFIX='')
-        env.Depends(modulelib, libroc)
-
-        target = env.Install(env['ROC_BINDIR'], modulelib)
-        targets.append(target)
-
-        env.AddDistFile(env['ROC_PULSE_MODULEDIR'], target)
-
-    env.Alias('pulse', targets, env.Action(''))
-    env.AlwaysBuild('pulse')

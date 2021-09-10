@@ -312,42 +312,6 @@ def FindLibDir(context, prefix, host):
     context.Result(libdir)
     return True
 
-def FindPulseDir(context, prefix, build, host, version):
-    context.Message("Searching for PulseAudio modules directory... ")
-
-    if build == host:
-        pa_ver = context.env.CommandOutput('pulseaudio --version')
-        m = re.search(r'([0-9.]+)', pa_ver or '')
-        if m and m.group(1) == version:
-            pa_conf = context.env.CommandOutput('pulseaudio --dump-conf')
-            if pa_conf:
-                for line in pa_conf.splitlines():
-                    m = re.match(r'^\s*dl-search-path\s*=\s*(.*)$', line)
-                    if m:
-                        pa_dir = m.group(1)
-                        if _isprefix(prefix, pa_dir):
-                            context.env['ROC_PULSE_MODULEDIR'] = pa_dir
-                            context.Result(pa_dir)
-                            return True
-
-    for d in _libdirs(host):
-        pa_dir = os.path.join(prefix, d, 'pulse-'+version, 'modules')
-        if os.path.isdir(pa_dir):
-            context.env['ROC_PULSE_MODULEDIR'] = pa_dir
-            context.Result(pa_dir)
-            return True
-
-    for d in _libdirs(host):
-        libdir = os.path.join(prefix, d)
-        if os.path.isdir(libdir):
-            break
-
-    pa_dir = os.path.join(libdir, 'pulse-'+version, 'modules')
-
-    context.env['ROC_PULSE_MODULEDIR'] = pa_dir
-    context.Result(pa_dir)
-    return True
-
 def FindConfigGuess(context):
     context.Message('Searching CONFIG_GUESS script... ')
 
@@ -484,7 +448,6 @@ def init(env):
         'FindClangFormat': FindClangFormat,
         'FindLLVMDir': FindLLVMDir,
         'FindLibDir': FindLibDir,
-        'FindPulseDir': FindPulseDir,
         'FindConfigGuess': FindConfigGuess,
         'FindPkgConfig': FindPkgConfig,
         'FindPkgConfigPath': FindPkgConfigPath,

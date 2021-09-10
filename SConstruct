@@ -26,13 +26,8 @@ supported_sanitizers = [
     'address',
 ]
 
-if platform.system() == 'Linux':
-    # it would be better to use /usr/local on Linux too, but PulseAudio
-    # is usually installed in /usr and does no search /usr/local for
-    # dynamic libraries; so by default we also use /usr for consistency
-    default_prefix = '/usr'
-else:
-    default_prefix = '/usr/local'
+# default installation prefix
+default_prefix = '/usr/local'
 
 AddOption('--prefix',
           dest='prefix',
@@ -71,13 +66,6 @@ AddOption('--mandir',
           default=os.path.join(GetOption('prefix'), 'share/man/man1'),
           help=("path to the manuals installation directory (where to "+
                 "install Roc manual pages), '<prefix>/share/man/man1' by default"))
-
-AddOption('--pulseaudio-module-dir',
-          dest='pulseaudio_module_dir',
-          action='store',
-          type='string',
-          help=("path to the PulseAudio modules installation directory (where "+
-                "to install Roc PulseAudio modules), auto-detect if empty"))
 
 AddOption('--build',
           dest='build',
@@ -133,11 +121,6 @@ AddOption('--enable-werror',
           dest='enable_werror',
           action='store_true',
           help='treat warnings as errors')
-
-AddOption('--enable-pulseaudio-modules',
-          dest='enable_pulseaudio_modules',
-          action='store_true',
-          help='enable building of pulseaudio modules')
 
 AddOption('--disable-lib',
           dest='disable_lib',
@@ -210,22 +193,6 @@ AddOption('--disable-pulseaudio',
           action='store_true',
           help='disable PulseAudio support in tools')
 
-AddOption('--with-pulseaudio',
-          dest='with_pulseaudio',
-          action='store',
-          type='string',
-          help=("path to the PulseAudio source directory used when "+
-                "building PulseAudio modules"))
-
-AddOption('--with-pulseaudio-build-dir',
-          dest='with_pulseaudio_build_dir',
-          action='store',
-          type='string',
-          help=("path to the PulseAudio build directory used when "+
-                "building PulseAudio modules (needed in case you build "+
-                "PulseAudio out of source; if empty, the build directory is "+
-                "assumed to be the same as the source directory)"))
-
 AddOption('--with-openfec-includes',
           dest='with_openfec_includes',
           action='store',
@@ -237,13 +204,13 @@ AddOption('--with-includes',
           dest='with_includes',
           action='append',
           type='string',
-          help=("additional include directory, may be used multiple times"))
+          help=("additional include search path, may be used multiple times"))
 
 AddOption('--with-libraries',
           dest='with_libraries',
           action='append',
           type='string',
-          help=("additional library directory, may be used multiple times"))
+          help=("additional library search path, may be used multiple times"))
 
 AddOption('--build-3rdparty',
           dest='build_3rdparty',
@@ -251,7 +218,7 @@ AddOption('--build-3rdparty',
           type='string',
           help=("download and build specified 3rdparty libraries, "+
                 "pass a comma-separated list of library names and optional versions, "+
-                "e.g. 'uv:1.4.2,openfec'"))
+                "e.g. 'libuv:1.4.2,openfec'"))
 
 AddOption('--override-targets',
           dest='override_targets',
@@ -378,10 +345,10 @@ if 'fmt' in COMMAND_LINE_TARGETS:
 
     fmt_actions.append(env.ClangFormat('#src'))
 
-    fmt_actions.append(env.HeaderFormat('#src/modules'))
+    fmt_actions.append(env.HeaderFormat('#src/internal_modules'))
+    fmt_actions.append(env.HeaderFormat('#src/public_api/src'))
     fmt_actions.append(env.HeaderFormat('#src/tests'))
     fmt_actions.append(env.HeaderFormat('#src/tools'))
-    fmt_actions.append(env.HeaderFormat('#src/library/src'))
 
     env.AlwaysBuild(
         env.Alias('fmt', [], fmt_actions))
@@ -606,7 +573,7 @@ env['ROC_THIRDPARTY_BUILDDIR'] = '#build/3rdparty/%s/%s' % (
         ] if s])
     )
 
-env['ROC_VERSION'] = env.ParseProjectVersion()
+env['ROC_VERSION'] = env.ParseProjectVersion('src/public_api/include/roc/version.h')
 env['ROC_COMMIT'] = env.ParseGitHead()
 
 env['ROC_SOVER'] = '.'.join(env['ROC_VERSION'].split('.')[:2])
@@ -729,7 +696,7 @@ else:
 # sub-environments for building specific parts of code
 subenvs = type('subenvs', (), {
     field: env.Clone() for field in
-        'library examples generated_code tools tests pulse'.split()})
+        'public_libs examples generated_code tools tests'.split()})
 
 # find or build third-party dependencies
 env, subenvs = env.SConscript('3rdparty/SConscript',
@@ -767,30 +734,30 @@ if meta.compiler in ['gcc', 'clang']:
         subenvs.tests['RPATH'] = subenvs.tests.Literal('\\$$ORIGIN')
 
         if not GetOption('disable_soversion'):
-            subenvs.library['SHLIBSUFFIX'] = '%s.%s' % (
-                subenvs.library['SHLIBSUFFIX'], env['ROC_SOVER'])
+            subenvs.public_libs['SHLIBSUFFIX'] = '%s.%s' % (
+                subenvs.public_libs['SHLIBSUFFIX'], env['ROC_SOVER'])
 
-        subenvs.library.Append(LINKFLAGS=[
-            '-Wl,-soname,libroc%s' % subenvs.library['SHLIBSUFFIX'],
+        subenvs.public_libs.Append(LINKFLAGS=[
+            '-Wl,-soname,libroc%s' % subenvs.public_libs['SHLIBSUFFIX'],
         ])
 
         if meta.variant == 'release':
-            subenvs.library.Append(LINKFLAGS=[
-                '-Wl,--version-script=%s' % env.File('#src/library/roc.version').path
+            subenvs.public_libs.Append(LINKFLAGS=[
+                '-Wl,--version-script=%s' % env.File('#src/public_api/roc.version').path
             ])
 
     if meta.platform in ['darwin']:
         if not GetOption('disable_soversion'):
-            subenvs.library['SHLIBSUFFIX'] = '.%s%s' % (
-                env['ROC_SOVER'], subenvs.library['SHLIBSUFFIX'])
-            subenvs.library.Append(LINKFLAGS=[
+            subenvs.public_libs['SHLIBSUFFIX'] = '.%s%s' % (
+                env['ROC_SOVER'], subenvs.public_libs['SHLIBSUFFIX'])
+            subenvs.public_libs.Append(LINKFLAGS=[
                 '-Wl,-compatibility_version,%s' % env['ROC_SOVER'],
                 '-Wl,-current_version,%s' % env['ROC_VERSION'],
             ])
 
-        subenvs.library.Append(LINKFLAGS=[
+        subenvs.public_libs.Append(LINKFLAGS=[
             '-Wl,-install_name,%s/libroc%s' % (
-                env.Dir(env['ROC_BINDIR']).abspath, subenvs.library['SHLIBSUFFIX']),
+                env.Dir(env['ROC_BINDIR']).abspath, subenvs.public_libs['SHLIBSUFFIX']),
         ])
 
     if not(meta.compiler == 'clang' and meta.variant == 'debug'):
@@ -986,7 +953,7 @@ if meta.compiler == 'clang':
         ])
 
 if meta.compiler in ['gcc', 'clang']:
-    for e in [env, subenvs.library, subenvs.tools, subenvs.tests, subenvs.pulse]:
+    for e in [env, subenvs.public_libs, subenvs.tools, subenvs.tests]:
         for var in ['CXXFLAGS', 'CFLAGS']:
             dirs = [('-isystem', env.Dir(path).path) for path in e['CPPPATH']]
 
