@@ -98,7 +98,7 @@ temp="$(mktemp)"
 cat "$file" > "$temp"
 
 add_contributors "${temp}" "$(basename "$(pwd)")"
-add_contributors "${temp}" "$(basename "$(pwd)")/3rdparty/distfiles"
+add_contributors "${temp}" "$(basename "$(pwd)")/3rdparty/_distfiles"
 add_contributors "${temp}" "roc-go"
 add_contributors "${temp}" "roc-java"
 add_contributors "${temp}" "rt-tests"
