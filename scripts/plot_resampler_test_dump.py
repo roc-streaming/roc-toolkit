@@ -2,7 +2,7 @@
 #
 # usage:
 # roc-test-audio -v -g resampler -n upscale_downscale_mono |& \
-#  ./scripts/plots/plot_resampler_test_dump.py
+#  ./scripts/plot_resampler_test_dump.py
 #
 import pylab
 import numpy

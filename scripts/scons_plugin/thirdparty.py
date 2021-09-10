@@ -52,7 +52,7 @@ def ThirdParty(
         os.chdir(project_root)
 
         if env.Execute(
-            '%s scripts/build/3rdparty.py %s 3rdparty/_distfiles %s %s %s %s %s' % (
+            '%s scripts/scons_helpers/build-3rdparty.py %s 3rdparty/distfiles %s %s %s %s %s' % (
                 quote(env.PythonExecutable()),
                 quote(os.path.relpath(build_root, project_root)),
                 quote(toolchain),

@@ -66,7 +66,7 @@ jobs:
 
       - name: Build and test
         run: |
-          scripts/ci/docker.sh ${{ matrix.image }} scripts/ci/${{ matrix.script }}.sh
+          scripts/ci_checks/docker.sh ${{ matrix.image }} scripts/ci_checks/${{ matrix.script }}.sh
 
   linux-arm:
     runs-on: ubuntu-latest
@@ -96,7 +96,7 @@ jobs:
 
       - name: Build and test
         run: |
-          scripts/ci/docker.sh ${{ matrix.image }} scripts/ci/${{ matrix.script }}.sh
+          scripts/ci_checks/docker.sh ${{ matrix.image }} scripts/ci_checks/${{ matrix.script }}.sh
 
   linux-checks:
     runs-on: ubuntu-latest
@@ -141,7 +141,7 @@ jobs:
 
       - name: Build and test
         run: |
-          scripts/ci/docker.sh ${{ matrix.image }} scripts/ci/${{ matrix.script }}.sh
+          scripts/ci_checks/docker.sh ${{ matrix.image }} scripts/ci_checks/${{ matrix.script }}.sh
 
   android-linux:
     strategy:
@@ -178,8 +178,8 @@ jobs:
 
       - name: Build
         run: |
-          scripts/ci/docker.sh ${{ matrix.image }} \
-            scripts/ci/android/linux.sh ${{ matrix.toolchain }}
+          scripts/ci_checks/docker.sh ${{ matrix.image }} \
+            scripts/ci_checks/android/linux.sh ${{ matrix.toolchain }}
 
   android-macos:
     strategy:
@@ -229,11 +229,11 @@ jobs:
 
       - name: Install system dependencies
         run: |
-          scripts/ci/android/macos_deps.sh
+          scripts/ci_checks/android/macos_deps.sh
 
       - name: Build and test
         run: |
-          scripts/ci/android/macos_build.sh
+          scripts/ci_checks/android/macos_build.sh
 
   macos:
     strategy:
@@ -254,7 +254,7 @@ jobs:
 
       - name: Build and test
         run: |
-          scripts/ci/macos/macos.sh
+          scripts/ci_checks/macos/macos.sh
 
   triggers:
     if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
@@ -267,10 +267,10 @@ jobs:
 
       - name: Trigger rt-tests
         run: |
-          scripts/ci/trigger.sh roc-streaming/rt-tests \
+          scripts/ci_checks/trigger.sh roc-streaming/rt-tests \
             "${GITHUB_REF##*/}" "${{ secrets.REPO_TRIGGERING }}"
 
       - name: Trigger roc-streaming.github.io
         run: |
-          scripts/ci/trigger.sh roc-streaming/roc-streaming.github.io \
+          scripts/ci_checks/trigger.sh roc-streaming/roc-streaming.github.io \
             "${GITHUB_REF##*/}" "${{ secrets.REPO_TRIGGERING }}"

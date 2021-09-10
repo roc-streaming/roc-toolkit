@@ -1,15 +1,15 @@
 #! /bin/bash
 set -euxo pipefail
 
-TOOLCHAIN="aarch64-linux-gnu"
-COMPILER="gcc-7.4.1-release"
-CPU="cortex-a53" # armv8
+TOOLCHAIN="arm-bcm2708hardfp-linux-gnueabi"
+COMPILER="gcc-4.7.1-release"
+CPU="arm1176" # armv6
 
 scons -Q \
     --enable-werror \
     --enable-tests \
     --enable-examples \
-    --build-3rdparty=libuv,libunwind,openfec,alsa,pulseaudio:8.0,speexdsp,sox,cpputest \
+    --build-3rdparty=libuv,libunwind,libatomic_ops,openfec,alsa,pulseaudio:5.0,speexdsp,sox,cpputest \
     --host=${TOOLCHAIN}
 
 find bin/${TOOLCHAIN} -name 'roc-test-*' \
@@ -17,6 +17,6 @@ find bin/${TOOLCHAIN} -name 'roc-test-*' \
     while read t
     do
         LD_LIBRARY_PATH="/opt/sysroot/lib:${PWD}/build/3rdparty/${TOOLCHAIN}/${COMPILER}/rpath" \
-            python2 scripts/build/timeout.py 300 \
-            qemu-aarch64 -L "/opt/sysroot" -cpu ${CPU} $t
+            python2 scripts/scons_helpers/run-with-timeout.py 300 \
+            qemu-arm -L "/opt/sysroot" -cpu ${CPU} $t
     done

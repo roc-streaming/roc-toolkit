@@ -245,7 +245,7 @@ env = Environment(
     toolpath=[os.path.join(Dir('#').abspath, 'scripts')],
     tools=[
         'default',
-        'scons',
+        'scons_plugin', # our plugin in scripts/
         ])
 
 # performance tuning
