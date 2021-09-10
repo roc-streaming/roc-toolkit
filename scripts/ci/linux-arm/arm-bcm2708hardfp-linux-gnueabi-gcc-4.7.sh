@@ -7,7 +7,6 @@ CPU="arm1176" # armv6
 
 scons -Q \
     --enable-werror \
-    --enable-pulseaudio-modules \
     --enable-tests \
     --enable-examples \
     --build-3rdparty=libuv,libunwind,libatomic_ops,openfec,alsa,pulseaudio:5.0,speexdsp,sox,cpputest \

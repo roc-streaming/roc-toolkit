@@ -7,7 +7,6 @@ CPU="cortex-a15" # armv7
 
 scons -Q \
     --enable-werror \
-    --enable-pulseaudio-modules \
     --enable-tests \
     --enable-examples \
     --build-3rdparty=libuv,libunwind,openfec,alsa,pulseaudio:10.0,speexdsp,sox,cpputest \

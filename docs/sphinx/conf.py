@@ -5,7 +5,7 @@ import os
 import re
 
 def get_version():
-    with open('../../src/library/include/roc/version.h') as fp:
+    with open('../../src/public_api/include/roc/version.h') as fp:
         data = fp.read()
         m = re.search(r"""^#define ROC_VERSION_MAJOR (\d+)$""", data, re.MULTILINE)
         major = m.group(1)
@@ -48,7 +48,7 @@ todo_include_todos = False
 
 # -- Options for Breathe ----------------------------------------------
 
-breathe_projects = { 'roc': '../../build/docs/library/xml' }
+breathe_projects = { 'roc': '../../build/docs/public_api/xml' }
 
 breathe_default_project = 'roc'
 breathe_domain_by_extension = {'h': 'c'}

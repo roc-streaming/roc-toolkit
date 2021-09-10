@@ -11,7 +11,7 @@ thirdparty_versions = {
     'speexdsp':         '1.2.0',
     'sox':              '14.4.2',
     'alsa':             '1.0.29',
-    'pulseaudio':       '5.0',
+    'pulseaudio':       '12.2',
     'json-c':           '0.12-20140410',
     'ltdl':             '2.4.6',
     'sndfile':          '1.0.28',
@@ -41,9 +41,6 @@ external_dependencies.add('ragel')
 
 if not GetOption('disable_tools'):
     external_dependencies.add('gengetopt')
-
-if GetOption('enable_pulseaudio_modules'):
-    external_dependencies.add('pulseaudio')
 
 if 'pulseaudio' in external_dependencies and meta.platform in ['linux']:
     external_dependencies.add('alsa')
@@ -196,45 +193,6 @@ if 'pulseaudio' in system_dependencies:
 
         subenvs.examples = conf.Finish()
 
-    if GetOption('enable_pulseaudio_modules'):
-        conf = Configure(subenvs.pulse, custom_tests=env.CustomTests)
-
-        if not conf.CheckLibWithHeaderExt('ltdl', 'ltdl.h', 'C', run=not is_crosscompiling):
-            env.Die("ltdl not found (see 'config.log' for details)")
-
-        subenvs.pulse = conf.Finish()
-
-        pa_src_dir = GetOption('with_pulseaudio')
-        if not pa_src_dir:
-            env.Die('--enable-pulseaudio-modules requires either --with-pulseaudio'+
-                    ' or --build-3rdparty=pulseaudio')
-
-        pa_build_dir = GetOption('with_pulseaudio_build_dir')
-        if not pa_build_dir:
-            pa_build_dir = pa_src_dir
-
-        subenvs.pulse.Append(CPPPATH=[
-            pa_build_dir,
-            pa_src_dir + '/src',
-        ])
-
-        for lib in ['libpulsecore-*.so', 'libpulsecommon-*.so']:
-            path = '%s/src/.libs/%s' % (pa_build_dir, lib)
-            libs = env.Glob(path)
-            if not libs:
-                env.Die("can't find %s" % path)
-
-            subenvs.pulse.AddPkgConfigLibs(libs)
-
-            m = re.search('-([0-9.]+).so$', libs[0].path)
-            if m:
-                pa_ver = m.group(1)
-
-        if not pa_ver:
-            env.Die("can't determine pulseaudio version")
-
-        env['ROC_PULSE_VERSION'] = pa_ver
-
 if 'sox' in system_dependencies:
     conf = Configure(subenvs.tools, custom_tests=env.CustomTests)
 
@@ -347,34 +305,16 @@ if 'pulseaudio' in download_dependencies:
     if 'alsa' in download_dependencies:
         pa_deps += ['alsa']
 
-    env['ROC_PULSE_VERSION'] = thirdparty_versions['pulseaudio']
-
-    subenvs.tools.ThirdParty(thirdparty_build_dir, meta.toolchain,
-                        meta.thirdparty_variant, thirdparty_versions, 'ltdl')
-    subenvs.tools.ThirdParty(thirdparty_build_dir, meta.toolchain,
-                        meta.thirdparty_variant, thirdparty_versions, 'json-c')
-    subenvs.tools.ThirdParty(thirdparty_build_dir, meta.toolchain,
-                        meta.thirdparty_variant, thirdparty_versions, 'sndfile')
-    subenvs.tools.ThirdParty(thirdparty_build_dir, meta.toolchain,
-                        meta.thirdparty_variant, thirdparty_versions,
-                        'pulseaudio', deps=pa_deps, libs=['pulse', 'pulse-simple'])
-
-    subenvs.examples.ImportThridParty(thirdparty_build_dir, meta.toolchain,
-                                 thirdparty_versions, 'ltdl')
-    subenvs.examples.ImportThridParty(thirdparty_build_dir, meta.toolchain,
-                                 thirdparty_versions, 'pulseaudio',
-                                 libs=['pulse', 'pulse-simple'])
-
-    pa_ver_short = '.'.join(thirdparty_versions['pulseaudio'].split('.')[:2])
-
-    subenvs.pulse.ImportThridParty(thirdparty_build_dir, meta.toolchain,
-                               thirdparty_versions, 'ltdl')
-    subenvs.pulse.ImportThridParty(thirdparty_build_dir, meta.toolchain,
-                               thirdparty_versions, 'pulseaudio',
-                               libs=[
-                                   'pulsecore-%s' % pa_ver_short,
-                                   'pulsecommon-%s' % pa_ver_short
-                                   ])
+    for senv in [subenvs.tools, subenvs.examples]:
+        senv.ThirdParty(thirdparty_build_dir, meta.toolchain,
+                            meta.thirdparty_variant, thirdparty_versions, 'ltdl')
+        senv.ThirdParty(thirdparty_build_dir, meta.toolchain,
+                            meta.thirdparty_variant, thirdparty_versions, 'json-c')
+        senv.ThirdParty(thirdparty_build_dir, meta.toolchain,
+                            meta.thirdparty_variant, thirdparty_versions, 'sndfile')
+        senv.ThirdParty(thirdparty_build_dir, meta.toolchain,
+                            meta.thirdparty_variant, thirdparty_versions,
+                            'pulseaudio', deps=pa_deps, libs=['pulse', 'pulse-simple'])
 
 if 'sox' in download_dependencies:
     sox_deps = []
@@ -444,17 +384,6 @@ if 'cpputest' in download_dependencies:
 if 'google-benchmark' in download_dependencies:
     subenvs.tests.ThirdParty(thirdparty_build_dir, meta.toolchain,
                         meta.thirdparty_variant, thirdparty_versions, 'google-benchmark')
-
-conf = Configure(env, custom_tests=env.CustomTests)
-
-if GetOption('enable_pulseaudio_modules'):
-    if GetOption('pulseaudio_module_dir'):
-        conf.env['ROC_PULSE_MODULEDIR'] = GetOption('pulseaudio_module_dir')
-    else:
-        conf.FindPulseDir(
-            GetOption('prefix'), meta.build, meta.host, env['ROC_PULSE_VERSION'])
-
-env = conf.Finish()
 
 return_value = (env, subenvs)
 Return('return_value')

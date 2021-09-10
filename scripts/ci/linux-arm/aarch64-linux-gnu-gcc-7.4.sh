@@ -7,7 +7,6 @@ CPU="cortex-a53" # armv8
 
 scons -Q \
     --enable-werror \
-    --enable-pulseaudio-modules \
     --enable-tests \
     --enable-examples \
     --build-3rdparty=libuv,libunwind,openfec,alsa,pulseaudio:8.0,speexdsp,sox,cpputest \
