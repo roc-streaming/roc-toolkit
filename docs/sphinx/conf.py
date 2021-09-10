@@ -32,8 +32,8 @@ exclude_patterns = []
 master_doc = 'index'
 
 project = u'Roc Toolkit'
-copyright = u'%s, Roc authors' % datetime.datetime.now().year
-author = u'Roc authors'
+copyright = u'%s, Roc Streaming authors' % datetime.datetime.now().year
+author = u'Roc Streaming authors'
 
 version_tuple = get_version()
 
