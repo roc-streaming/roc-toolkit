@@ -17,14 +17,14 @@ def _get_non_test_targets(env):
     else:
         yield env.Dir('#')
 
-def _with_timeout(env, cmd, timeout):
+def _run_with_timeout(env, cmd, timeout):
     return '%s scripts/scons_helpers/run-with-timeout.py %s %s' % (
-        env.PythonExecutable(),
+        env.GetPythonExecutable(),
         timeout,
         cmd)
 
 def _add_test(env, kind, name, exe, cmd, timeout):
-    varname = '_ROC_%s_TARGETS' % kind.upper()
+    varname = '_%s_TARGETS' % kind.upper()
     testname = '%s/%s' % (kind, name)
 
     if not _is_test_enabled(kind, testname):
@@ -34,7 +34,7 @@ def _add_test(env, kind, name, exe, cmd, timeout):
         cmd = env.File(exe).path
 
     if timeout is not None:
-        cmd = _with_timeout(env, cmd, timeout)
+        cmd = _run_with_timeout(env, cmd, timeout)
 
     comstr = env.PrettyCommand(kind.upper(), name, 'green' if kind == 'test' else 'cyan')
     target = env.Alias(testname, [], env.Action(cmd, comstr))
@@ -55,10 +55,10 @@ def _add_test(env, kind, name, exe, cmd, timeout):
 
     # Benchmarks should be run after all tests.
     if kind == 'bench':
-        for t in env['_ROC_TEST_TARGETS']:
+        for t in env['_TEST_TARGETS']:
             env.Requires(target, t)
     else:
-        for t in env['_ROC_BENCH_TARGETS']:
+        for t in env['_BENCH_TARGETS']:
             env.Requires(t, target)
 
     # Add target to test list.
@@ -74,8 +74,8 @@ def AddBench(env, name, exe, cmd=None, timeout=None):
     _add_test(env, 'bench', name, exe, cmd, timeout)
 
 def init(env):
-    env['_ROC_TEST_TARGETS'] = []
-    env['_ROC_BENCH_TARGETS'] = []
+    env['_TEST_TARGETS'] = []
+    env['_BENCH_TARGETS'] = []
 
     env.AlwaysBuild(env.Alias('test', [], env.Action('')))
     env.AlwaysBuild(env.Alias('bench', [], env.Action('')))

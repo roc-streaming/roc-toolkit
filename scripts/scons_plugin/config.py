@@ -1,8 +1,8 @@
 import SCons.SConf
-import re
+import hashlib
 import os
 import os.path
-import hashlib
+import re
 
 try:
     from shlex import quote
@@ -26,6 +26,31 @@ def _run_prog(context, src, suffix):
     except:
         pass
     return context.RunProg(src, suffix)
+
+def _get_llvm_dir(version):
+    def macos_dirs():
+        return [
+        '/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin',
+        '/Library/Developer/CommandLineTools/usr/bin',
+        ]
+
+    def linux_dirs():
+        suffixes = []
+        for n in [3, 2, 1]:
+            v = '.'.join(map(str, version[:n]))
+            suffixes += [
+                '-' + v,
+                '/' + v,
+            ]
+        suffixes += ['']
+        ret = []
+        for s in suffixes:
+            ret.append('/usr/lib/llvm%s/bin' % s)
+        return ret
+
+    for llvmdir in macos_dirs() + linux_dirs():
+        if os.path.isdir(llvmdir):
+            return llvmdir
 
 def CheckLibWithHeaderExt(context, libs, headers, language, expr='1', run=True):
     if not isinstance(headers, list):
@@ -122,7 +147,7 @@ def FindTool(context, var, toolchain, version, commands, prepend_path=[]):
 
     context.Message("Searching %s executable... " % var)
 
-    if env.HasArg(var):
+    if env.HasArgument(var):
         context.Result(env[var])
         return True
 
@@ -210,7 +235,7 @@ def FindClangFormat(context):
 
     context.Message("Searching for clang-format... ")
 
-    if env.HasArg('CLANG_FORMAT'):
+    if env.HasArgument('CLANG_FORMAT'):
         context.Result(env['CLANG_FORMAT'])
         return True
 
@@ -238,7 +263,7 @@ def FindClangFormat(context):
             context.Result(env['CLANG_FORMAT'])
             return True
 
-        llvmdir = _llvmdir((ver,))
+        llvmdir = _get_llvm_dir((ver,))
         if llvmdir:
             clang_format = os.path.join(llvmdir, 'clang-format')
             if checkver(clang_format):
@@ -252,7 +277,7 @@ def FindLLVMDir(context, version):
     context.Message(
         "Searching PATH for llvm %s... " % '.'.join(map(str, version)))
 
-    llvmdir = _llvmdir(version)
+    llvmdir = _get_llvm_dir(version)
     if llvmdir:
         context.env['ENV']['PATH'] += ':' + llvmdir
         context.Result(llvmdir)
@@ -261,47 +286,17 @@ def FindLLVMDir(context, version):
     context.Result('not found')
     return True
 
-def _llvmdir(version):
-    def macos_dirs():
-        return [
-        '/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin',
-        '/Library/Developer/CommandLineTools/usr/bin',
-        ]
-
-    def linux_dirs():
-        suffixes = []
-        for n in [3, 2, 1]:
-            v = '.'.join(map(str, version[:n]))
-            suffixes += [
-                '-' + v,
-                '/' + v,
-            ]
-        suffixes += ['']
-        ret = []
-        for s in suffixes:
-            ret.append('/usr/lib/llvm%s/bin' % s)
-        return ret
-
-    for llvmdir in macos_dirs() + linux_dirs():
-        if os.path.isdir(llvmdir):
-            return llvmdir
-
-def _libdirs(host):
-    dirs = ['lib/' + host]
-    if 'x86_64-pc-linux-gnu' == host:
-        dirs += ['lib/x86_64-linux-gnu']
-    if 'x86_64' in host:
-        dirs += ['lib64']
-    dirs += ['lib']
-    return dirs
-
-def _isprefix(prefix, subdir):
-    prefix = os.path.abspath(prefix)
-    subdir = os.path.abspath(subdir)
-    return subdir.startswith(prefix + os.sep)
-
 def FindLibDir(context, prefix, host):
     context.Message("Searching for system library directory... ")
+
+    def _libdirs(host):
+        dirs = ['lib/' + host]
+        if 'x86_64-pc-linux-gnu' == host:
+            dirs += ['lib/x86_64-linux-gnu']
+        if 'x86_64' in host:
+            dirs += ['lib64']
+        dirs += ['lib']
+        return dirs
 
     for d in _libdirs(host):
         libdir = os.path.join(prefix, d)
@@ -315,7 +310,7 @@ def FindLibDir(context, prefix, host):
 def FindConfigGuess(context):
     context.Message('Searching CONFIG_GUESS script... ')
 
-    if context.env.HasArg('CONFIG_GUESS'):
+    if context.env.HasArgument('CONFIG_GUESS'):
         context.Result(context.env['CONFIG_GUESS'])
         return True
 
@@ -356,7 +351,7 @@ def FindPkgConfig(context, toolchain):
 
     context.Message('Searching PKG_CONFIG... ')
 
-    if env.HasArg('PKG_CONFIG'):
+    if env.HasArgument('PKG_CONFIG'):
         context.Result(env['PKG_CONFIG'])
         return True
 
@@ -392,7 +387,7 @@ def FindPkgConfigPath(context):
 
     context.Message("Searching PKG_CONFIG_PATH...")
 
-    if env.HasArg('PKG_CONFIG_PATH'):
+    if env.HasArgument('PKG_CONFIG_PATH'):
         context.Result(env['PKG_CONFIG_PATH'])
         return True
 
@@ -401,7 +396,7 @@ def FindPkgConfigPath(context):
 
     pkg_config = env.get('PKG_CONFIG', None)
     if pkg_config:
-        pkg_config_paths = env.CommandOutput(
+        pkg_config_paths = env.GetCommandOutput(
             '%s --variable pc_path pkg-config' % quote(pkg_config))
         try:
             for path in pkg_config_paths.split(':'):

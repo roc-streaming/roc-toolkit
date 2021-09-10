@@ -38,7 +38,7 @@ def ParseProjectVersion(env, path):
         return '%d.%d.%d' % (major, minor, patch)
 
 def ParseToolVersion(env, command):
-    text = env.CommandOutput(command)
+    text = env.GetCommandOutput(command)
     if not text:
         return None
 
@@ -56,7 +56,7 @@ def ParseCompilerVersion(env, compiler):
                 r'(\b[0-9]+\.[0-9]+\b)',
             ]
 
-            full_text = env.CommandOutput('%s --version' % compiler)
+            full_text = env.GetCommandOutput('%s --version' % compiler)
 
             for regex in version_formats:
                 m = re.search(r'(?:LLVM|clang)\s+version\s+'+regex, full_text)
@@ -65,7 +65,7 @@ def ParseCompilerVersion(env, compiler):
 
             trunc_text = re.sub(r'\([^)]+\)', '', full_text)
 
-            dump_text = env.CommandOutput('%s -dumpversion' % compiler)
+            dump_text = env.GetCommandOutput('%s -dumpversion' % compiler)
 
             for text in [dump_text, trunc_text, full_text]:
                 for regex in version_formats:
@@ -84,7 +84,7 @@ def ParseCompilerVersion(env, compiler):
         return None
 
 def ParseCompilerTarget(env, compiler):
-    text = env.CommandOutput('%s -v -E -' % compiler)
+    text = env.GetCommandOutput('%s -v -E -' % compiler)
     if not text:
         return None
 
@@ -98,7 +98,7 @@ def ParseCompilerTarget(env, compiler):
     return None
 
 def ParseCompilerDirectory(env, compiler):
-    text = env.CommandOutput('%s --version' % compiler)
+    text = env.GetCommandOutput('%s --version' % compiler)
     if not text:
         return None
 
@@ -110,7 +110,7 @@ def ParseCompilerDirectory(env, compiler):
     return None
 
 def ParseLinkDirs(env, linker):
-    text = env.CommandOutput('%s -print-search-dirs' % linker)
+    text = env.GetCommandOutput('%s -print-search-dirs' % linker)
     if not text:
         return []
 
@@ -127,7 +127,7 @@ def ParseLinkDirs(env, linker):
     return []
 
 def ParseConfigGuess(env, cmd):
-    text = env.CommandOutput(cmd)
+    text = env.GetCommandOutput(cmd)
     if not text:
         return None
 

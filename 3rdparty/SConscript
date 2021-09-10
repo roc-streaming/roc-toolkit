@@ -52,7 +52,7 @@ if GetOption('enable_benchmarks'):
     external_dependencies.add('google-benchmark')
 
 # dependencies that we should download and build manually
-download_dependencies = set()
+autobuild_dependencies = set()
 
 # dependencies that have explicitly provided version
 explicit_version = set()
@@ -61,16 +61,16 @@ for name, version in env.ParseThirdParties(GetOption('build_3rdparty')):
     if name != 'all' and not name in thirdparty_versions:
         env.Die("unknown thirdparty name '%s' in '--build-3rdparty', expected any of: %s",
                     name, ', '.join(['all'] + list(sorted(thirdparty_versions.keys()))))
-    download_dependencies.add(name)
+    autobuild_dependencies.add(name)
     if version:
         thirdparty_versions[name] = version
         explicit_version.add(name)
 
-if 'all' in download_dependencies:
-    download_dependencies = external_dependencies
+if 'all' in autobuild_dependencies:
+    autobuild_dependencies = external_dependencies
 
 # dependencies that should be pre-installed on system
-system_dependencies = external_dependencies - download_dependencies
+system_dependencies = external_dependencies - autobuild_dependencies
 
 if 'hedley' in vendored_dependencies:
     env.Append(CPPPATH=['#3rdparty/hedley'])
@@ -260,37 +260,37 @@ if 'google-benchmark' in system_dependencies:
 
     subenvs.tests = conf.Finish()
 
-if 'libuv' in download_dependencies:
-    env.ThirdParty(thirdparty_build_dir, meta.toolchain,
+if 'libuv' in autobuild_dependencies:
+    env.BuildThirdParty(thirdparty_build_dir, meta.toolchain,
                    meta.thirdparty_variant, thirdparty_versions, 'libuv')
 
-if 'libunwind' in download_dependencies:
-    env.ThirdParty(thirdparty_build_dir,
+if 'libunwind' in autobuild_dependencies:
+    env.BuildThirdParty(thirdparty_build_dir,
                    meta.toolchain, meta.thirdparty_variant,
                    thirdparty_versions, 'libunwind')
 
-if 'libatomic_ops' in download_dependencies:
-    env.ThirdParty(thirdparty_build_dir,
+if 'libatomic_ops' in autobuild_dependencies:
+    env.BuildThirdParty(thirdparty_build_dir,
                    meta.toolchain, meta.thirdparty_variant,
                    thirdparty_versions, 'libatomic_ops')
 
-if 'openfec' in download_dependencies:
-    env.ThirdParty(thirdparty_build_dir, meta.toolchain,
+if 'openfec' in autobuild_dependencies:
+    env.BuildThirdParty(thirdparty_build_dir, meta.toolchain,
                    meta.thirdparty_variant, thirdparty_versions,
                    'openfec', includes=[
                         'lib_common',
                         'lib_stable',
                         ])
 
-if 'speexdsp' in download_dependencies:
-    env.ThirdParty(thirdparty_build_dir, meta.toolchain,
+if 'speexdsp' in autobuild_dependencies:
+    env.BuildThirdParty(thirdparty_build_dir, meta.toolchain,
                 meta.thirdparty_variant, thirdparty_versions, 'speexdsp')
 
-if 'alsa' in download_dependencies:
-    subenvs.tools.ThirdParty(thirdparty_build_dir, meta.toolchain,
+if 'alsa' in autobuild_dependencies:
+    subenvs.tools.BuildThirdParty(thirdparty_build_dir, meta.toolchain,
                         meta.thirdparty_variant, thirdparty_versions, 'alsa')
 
-if 'pulseaudio' in download_dependencies:
+if 'pulseaudio' in autobuild_dependencies:
     if not 'pulseaudio' in explicit_version and not is_crosscompiling:
         pa_ver = env.ParseToolVersion('pulseaudio --version')
         if pa_ver:
@@ -302,30 +302,30 @@ if 'pulseaudio' in download_dependencies:
         'sndfile',
         ]
 
-    if 'alsa' in download_dependencies:
+    if 'alsa' in autobuild_dependencies:
         pa_deps += ['alsa']
 
     for senv in [subenvs.tools, subenvs.examples]:
-        senv.ThirdParty(thirdparty_build_dir, meta.toolchain,
+        senv.BuildThirdParty(thirdparty_build_dir, meta.toolchain,
                             meta.thirdparty_variant, thirdparty_versions, 'ltdl')
-        senv.ThirdParty(thirdparty_build_dir, meta.toolchain,
+        senv.BuildThirdParty(thirdparty_build_dir, meta.toolchain,
                             meta.thirdparty_variant, thirdparty_versions, 'json-c')
-        senv.ThirdParty(thirdparty_build_dir, meta.toolchain,
+        senv.BuildThirdParty(thirdparty_build_dir, meta.toolchain,
                             meta.thirdparty_variant, thirdparty_versions, 'sndfile')
-        senv.ThirdParty(thirdparty_build_dir, meta.toolchain,
+        senv.BuildThirdParty(thirdparty_build_dir, meta.toolchain,
                             meta.thirdparty_variant, thirdparty_versions,
                             'pulseaudio', deps=pa_deps, libs=['pulse', 'pulse-simple'])
 
-if 'sox' in download_dependencies:
+if 'sox' in autobuild_dependencies:
     sox_deps = []
 
-    if 'alsa' in download_dependencies:
+    if 'alsa' in autobuild_dependencies:
         sox_deps += ['alsa']
 
-    if 'pulseaudio' in download_dependencies:
+    if 'pulseaudio' in autobuild_dependencies:
         sox_deps += ['pulseaudio']
 
-    subenvs.tools.ThirdParty(thirdparty_build_dir, meta.toolchain,
+    subenvs.tools.BuildThirdParty(thirdparty_build_dir, meta.toolchain,
                         meta.thirdparty_variant, thirdparty_versions, 'sox', sox_deps)
 
     conf = Configure(subenvs.tools, custom_tests=env.CustomTests)
@@ -337,13 +337,13 @@ if 'sox' in download_dependencies:
             'mad', 'mp3lame']:
         conf.CheckLib(lib)
 
-    if not 'alsa' in download_dependencies:
+    if not 'alsa' in autobuild_dependencies:
         for lib in [
                 'asound',
                 ]:
             conf.CheckLib(lib)
 
-    if not 'pulseaudio' in download_dependencies:
+    if not 'pulseaudio' in autobuild_dependencies:
         for lib in [
                 'sndfile',
                 'pulse', 'pulse-simple',
@@ -357,8 +357,8 @@ if 'sox' in download_dependencies:
 
     subenvs.tools = conf.Finish()
 
-if 'ragel' in download_dependencies:
-    env.ThirdParty(thirdparty_build_dir, "",
+if 'ragel' in autobuild_dependencies:
+    env.BuildThirdParty(thirdparty_build_dir, "",
                    meta.thirdparty_variant, thirdparty_versions, 'ragel')
 
     subenvs.generated_code['RAGEL'] = env.File(
@@ -367,8 +367,8 @@ if 'ragel' in download_dependencies:
             thirdparty_versions['ragel'],
             env['PROGSUFFIX']))
 
-if 'gengetopt' in download_dependencies:
-    env.ThirdParty(thirdparty_build_dir, "",
+if 'gengetopt' in autobuild_dependencies:
+    env.BuildThirdParty(thirdparty_build_dir, "",
                    meta.thirdparty_variant, thirdparty_versions, 'gengetopt')
 
     subenvs.generated_code['GENGETOPT'] = env.File(
@@ -377,12 +377,12 @@ if 'gengetopt' in download_dependencies:
             thirdparty_versions['gengetopt'],
             env['PROGSUFFIX']))
 
-if 'cpputest' in download_dependencies:
-    subenvs.tests.ThirdParty(thirdparty_build_dir, meta.toolchain,
+if 'cpputest' in autobuild_dependencies:
+    subenvs.tests.BuildThirdParty(thirdparty_build_dir, meta.toolchain,
                         meta.thirdparty_variant, thirdparty_versions, 'cpputest')
 
-if 'google-benchmark' in download_dependencies:
-    subenvs.tests.ThirdParty(thirdparty_build_dir, meta.toolchain,
+if 'google-benchmark' in autobuild_dependencies:
+    subenvs.tests.BuildThirdParty(thirdparty_build_dir, meta.toolchain,
                         meta.thirdparty_variant, thirdparty_versions, 'google-benchmark')
 
 return_value = (env, subenvs)

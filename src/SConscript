@@ -23,11 +23,11 @@ for module in env['ROC_MODULES']:
     moduledir = 'internal_modules/' + module
 
     cenv = env.Clone()
-    cenv.MergeVars(subenvs.tools)
+    cenv.MergeEnvironment(subenvs.tools)
     cenv.Append(CPPDEFINES=('ROC_MODULE', module))
 
     genv = subenvs.generated_code.Clone()
-    genv.MergeVars(cenv)
+    genv.MergeEnvironment(cenv)
 
     sources = []
     objects = []
@@ -55,7 +55,7 @@ libroc = None
 
 if not GetOption('disable_lib'):
     cenv = env.Clone()
-    cenv.MergeVars(subenvs.public_libs)
+    cenv.MergeEnvironment(subenvs.public_libs)
     cenv.Append(CPPDEFINES=('ROC_MODULE', 'libroc'))
     cenv.Append(CPPPATH=['public_api/include'])
 
@@ -98,9 +98,9 @@ if not GetOption('disable_lib'):
 
 if GetOption('enable_examples'):
     cenv = env.Clone()
-    cenv.MergeVars(subenvs.examples)
-    cenv.MergeVars(subenvs.tools)
-    cenv.MergeVars(subenvs.tests)
+    cenv.MergeEnvironment(subenvs.examples)
+    cenv.MergeEnvironment(subenvs.tools)
+    cenv.MergeEnvironment(subenvs.tests)
     cenv.Append(CPPPATH=['public_api/include'])
     cenv.Append(LIBS=[libroc])
 
@@ -124,8 +124,8 @@ if GetOption('enable_examples'):
 
 if GetOption('enable_tests') or GetOption('enable_benchmarks'):
     cenv = env.Clone()
-    cenv.MergeVars(subenvs.tools)
-    cenv.MergeVars(subenvs.tests)
+    cenv.MergeEnvironment(subenvs.tools)
+    cenv.MergeEnvironment(subenvs.tests)
     cenv.Append(CPPDEFINES=('ROC_MODULE', 'roc_test'))
 
     sanitizer_opt_obj = []
@@ -193,12 +193,12 @@ if not GetOption('disable_tools'):
         sanitizer_opt_obj = cenv.Object('sanitizer_options.cpp')
     for tooldir in env.GlobDirs('tools/*'):
         cenv = env.Clone()
-        cenv.MergeVars(subenvs.tools)
+        cenv.MergeEnvironment(subenvs.tools)
         cenv.Append(CPPDEFINES=('ROC_MODULE', tooldir.name))
         cenv.Append(CPPPATH=['tools', '#src/tools/%s' % tooldir.name])
 
         genv = subenvs.generated_code.Clone()
-        genv.MergeVars(cenv)
+        genv.MergeEnvironment(cenv)
 
         sources = env.GlobFiles('%s/*.cpp' % tooldir)
         objects = []
