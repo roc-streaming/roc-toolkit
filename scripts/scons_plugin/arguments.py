@@ -1,51 +1,51 @@
 import SCons.Script
 import os
 
-def _find_overridden(env, var):
-    ret = SCons.Script.ARGUMENTS.get(var, None)
+def _find_argument(env, arg):
+    ret = SCons.Script.ARGUMENTS.get(arg, None)
     if ret is None:
-        if var in os.environ:
-            ret = os.environ[var]
+        if arg in os.environ:
+            ret = os.environ[arg]
     return ret
 
-def _mark_overridden(env, var):
-    env.AppendUnique(**{'_OVERRIDDEN_ARGS':var})
+def _mark_known_argument(env, arg):
+    env.AppendUnique(**{'_KNOWN_ARGS':arg})
 
-def _marked_overridden(env, var):
-    if '_OVERRIDDEN_ARGS' in env.Dictionary():
-        return var in env['_OVERRIDDEN_ARGS']
+def _is_known_argument(env, arg):
+    if '_KNOWN_ARGS' in env.Dictionary():
+        return arg in env['_KNOWN_ARGS']
     return False
 
-def HasArg(env, var):
-    return _marked_overridden(env, var) or _find_overridden(env, var) is not None
+def HasArgument(env, arg):
+    return _is_known_argument(env, arg) or _find_argument(env, arg) is not None
 
-def OverrideFromArg(env, var, names=[], default=None):
+def OverrideFromArgument(env, arg, names=[], default=None):
     if not names:
-        names = [var]
+        names = [arg]
     for name in names:
-        v = _find_overridden(env, name)
+        v = _find_argument(env, name)
         if v is not None:
-            _mark_overridden(env, var)
+            _mark_known_argument(env, arg)
         else:
             v = default
         if v is not None:
-            env[var] = v
+            env[arg] = v
             break
 
-def PrependFromArg(env, var, names=[], default=None):
+def PrependFromArgument(env, arg, names=[], default=None):
     if not names:
-        names = [var]
+        names = [arg]
     for name in names:
-        v = _find_overridden(env, name)
+        v = _find_argument(env, name)
         if v is not None:
-            _mark_overridden(env, var)
+            _mark_known_argument(env, arg)
         else:
             v = default
         if v is not None:
-            env.Prepend(**{var: v})
+            env.Prepend(**{arg: v})
             break
 
 def init(env):
-    env.AddMethod(HasArg, 'HasArg')
-    env.AddMethod(OverrideFromArg, 'OverrideFromArg')
-    env.AddMethod(PrependFromArg, 'PrependFromArg')
+    env.AddMethod(HasArgument, 'HasArgument')
+    env.AddMethod(OverrideFromArgument, 'OverrideFromArgument')
+    env.AddMethod(PrependFromArgument, 'PrependFromArgument')

@@ -1,7 +1,33 @@
+import fnmatch
 import os
 import os.path
 import shutil
-import fnmatch
+import subprocess
+import sys
+
+def GetPythonExecutable(env):
+    base = os.path.basename(sys.executable)
+    path = env.Which(base)
+    if path and path[0] == sys.executable:
+        return base
+    else:
+        return sys.executable
+
+def GetCommandOutput(env, command):
+    try:
+        with open(os.devnull, 'w') as null:
+            proc = subprocess.Popen(command,
+                                    shell=True,
+                                    stdin=null,
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.STDOUT,
+                                    env=env['ENV'])
+            lines = [s.decode() for s in proc.stdout.readlines()]
+            output = str(' '.join(lines).strip())
+            proc.terminate()
+            return output
+    except:
+        return None
 
 def GlobRecursive(env, dirs, patterns, exclude=[]):
     if not isinstance(dirs, list):
@@ -54,25 +80,25 @@ def GlobDirs(env, pattern):
             ret.append(path)
     return ret
 
-def _getenv(env, name, default):
-    if name in env['ENV']:
-        return env['ENV'][name]
-    return os.environ.get(name, default)
-
-def _which(env, prog, mode, searchpath):
-    result = []
-    exts = list(filter(None, _getenv(env, 'PATHEXT', '').split(os.pathsep)))
-    for p in searchpath.split(os.pathsep):
-        p = os.path.join(p, prog)
-        if os.access(p, mode):
-            result.append(p)
-        for e in exts:
-            pext = p + e
-            if os.access(pext, mode):
-                result.append(pext)
-    return result
-
 def Which(env, prog, prepend_path=[]):
+    def _getenv(env, name, default):
+        if name in env['ENV']:
+            return env['ENV'][name]
+        return os.environ.get(name, default)
+
+    def _which(env, prog, mode, searchpath):
+        result = []
+        exts = list(filter(None, _getenv(env, 'PATHEXT', '').split(os.pathsep)))
+        for p in searchpath.split(os.pathsep):
+            p = os.path.join(p, prog)
+            if os.access(p, mode):
+                result.append(p)
+            for e in exts:
+                pext = p + e
+                if os.access(pext, mode):
+                    result.append(pext)
+        return result
+
     if os.access(prog, os.X_OK):
         return [prog]
 
@@ -91,6 +117,8 @@ def Which(env, prog, prepend_path=[]):
     return paths
 
 def init(env):
+    env.AddMethod(GetPythonExecutable, 'GetPythonExecutable')
+    env.AddMethod(GetCommandOutput, 'GetCommandOutput')
     env.AddMethod(GlobRecursive, 'GlobRecursive')
     env.AddMethod(GlobFiles, 'GlobFiles')
     env.AddMethod(GlobDirs, 'GlobDirs')

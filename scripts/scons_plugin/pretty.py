@@ -1,4 +1,3 @@
-from __future__ import print_function
 import SCons.Script
 import sys
 import re
@@ -72,13 +71,8 @@ def PrettyCommand(env, command, args, color, cmdline=None):
     else:
         return '$CMDLINE'
 
-def Die(env, fmt, *args):
-    print('error: ' + (fmt % args).strip() + '\n', file=sys.stderr)
-    SCons.Script.Exit(1)
-
 def init(env):
     env.AddMethod(PrettyCommand, 'PrettyCommand')
-    env.AddMethod(Die, 'Die')
     _init_colors()
     _init_compact()
     _init_pretty(env)

@@ -1,6 +1,14 @@
+from __future__ import print_function
+import SCons.Script
 import SCons.Util
 
-def MergeVars(env, src_env, exclude=[]):
+import sys
+
+def Die(env, fmt, *args):
+    print('error: ' + (fmt % args).strip() + '\n', file=sys.stderr)
+    SCons.Script.Exit(1)
+
+def MergeEnvironment(env, src_env, exclude=[]):
     for k, v in src_env.Dictionary().items():
         if k in exclude:
             continue
@@ -17,4 +25,5 @@ def MergeVars(env, src_env, exclude=[]):
             continue
 
 def init(env):
-    env.AddMethod(MergeVars, 'MergeVars')
+    env.AddMethod(Die, 'Die')
+    env.AddMethod(MergeEnvironment, 'MergeEnvironment')

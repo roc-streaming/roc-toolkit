@@ -7,32 +7,16 @@ try:
 except:
     from pipes import quote
 
-def _versioned_thirdparty(env, name, versions):
+def _get_versioned_thirdparty(env, name, versions):
     if not name in versions:
         env.Die("unknown 3rdparty '%s'" % name)
     return name + '-' + versions[name]
 
-def ParseThirdParties(env, s):
-    ret = dict()
-    if s:
-        for t in s.split(','):
-            tokens = t.split(':', 1)
-
-            name = tokens[0]
-            ver = None
-            if name != 'all' and len(tokens) == 2:
-                ver = tokens[1]
-
-            ret[name] = ver
-    return ret.items()
-
-def ThirdParty(
-        env, build_root, toolchain, variant, versions, name,
-        deps=[], includes=[], libs=['*']):
-    vname = _versioned_thirdparty(env, name, versions)
+def _build_thirdparty(env, build_root, toolchain, variant, versions, name, deps, includes, libs):
+    vname = _get_versioned_thirdparty(env, name, versions)
     vdeps = []
     for dep in deps:
-        vdeps.append(_versioned_thirdparty(env, dep, versions))
+        vdeps.append(_get_versioned_thirdparty(env, dep, versions))
 
     envvars = [
         'CXX=%s'    % quote(env['CXX']),
@@ -53,7 +37,7 @@ def ThirdParty(
 
         if env.Execute(
             '%s scripts/scons_helpers/build-3rdparty.py %s 3rdparty/distfiles %s %s %s %s %s' % (
-                quote(env.PythonExecutable()),
+                quote(env.GetPythonExecutable()),
                 quote(os.path.relpath(build_root, project_root)),
                 quote(toolchain),
                 quote(variant),
@@ -78,18 +62,14 @@ def ThirdParty(
 
         os.chdir(save_cwd)
 
-    env.ImportThridParty(
-        build_root, toolchain, versions, name, includes, libs)
-
-def ImportThridParty(env, build_root, toolchain, versions, name,
-                     includes=[], libs=['*']):
+def _import_thridparty(env, build_root, toolchain, variant, versions, name, deps, includes, libs):
     def needlib(lib):
         for name in libs:
             if fnmatch.fnmatch(os.path.basename(lib), 'lib%s.*' % name):
                 return True
         return False
 
-    vname = _versioned_thirdparty(env, name, versions)
+    vname = _get_versioned_thirdparty(env, name, versions)
 
     if not includes:
         includes = ['']
@@ -108,7 +88,29 @@ def ImportThridParty(env, build_root, toolchain, versions, name,
             if needlib(lib.path):
                 env.Prepend(LIBS=[env.File(lib)])
 
+def ParseThirdParties(env, s):
+    ret = dict()
+    if s:
+        for t in s.split(','):
+            tokens = t.split(':', 1)
+
+            name = tokens[0]
+            ver = None
+            if name != 'all' and len(tokens) == 2:
+                ver = tokens[1]
+
+            ret[name] = ver
+    return ret.items()
+
+def BuildThirdParty(
+        env, build_root, toolchain, variant, versions, name,
+        deps=[], includes=[], libs=['*']):
+    _build_thirdparty(
+        env, build_root, toolchain, variant, versions, name, deps, includes, libs)
+
+    _import_thridparty(
+        env, build_root, toolchain, variant, versions, name, deps, includes, libs)
+
 def init(env):
     env.AddMethod(ParseThirdParties, 'ParseThirdParties')
-    env.AddMethod(ThirdParty, 'ThirdParty')
-    env.AddMethod(ImportThridParty, 'ImportThridParty')
+    env.AddMethod(BuildThirdParty, 'BuildThirdParty')

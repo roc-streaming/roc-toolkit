@@ -1,41 +1,9 @@
 import SCons.Script
-import sys
-import re
 import os
 import os.path
+import re
 import shutil
-import subprocess
-
-def CommandOutput(env, command):
-    try:
-        with open(os.devnull, 'w') as null:
-            proc = subprocess.Popen(command,
-                                    shell=True,
-                                    stdin=null,
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.STDOUT,
-                                    env=env['ENV'])
-            lines = [s.decode() for s in proc.stdout.readlines()]
-            output = str(' '.join(lines).strip())
-            proc.terminate()
-            return output
-    except:
-        return None
-
-def PythonExecutable(env):
-    base = os.path.basename(sys.executable)
-    path = env.Which(base)
-    if path and path[0] == sys.executable:
-        return base
-    else:
-        return sys.executable
-
-def ClangDBWriter(env, tool, build_dir):
-    return '%s scripts/scons_helpers/clangdb.py "%s" "%s" "%s"' % (
-        env.PythonExecutable(),
-        env.Dir('#').path,
-        env.Dir(build_dir).path,
-        tool)
+import sys
 
 def ClangFormat(env, srcdir):
     return env.Action(
@@ -52,7 +20,7 @@ def ClangFormat(env, srcdir):
 def HeaderFormat(env, srcdir):
     return env.Action(
         '%s scripts/scons_helpers/format-header.py %s' % (
-            env.PythonExecutable(),
+            env.GetPythonExecutable(),
             env.Dir(srcdir).path),
         env.PrettyCommand('FMT', env.Dir(srcdir).path, 'yellow')
     )
@@ -66,7 +34,7 @@ def Doxygen(env, build_dir='', html_dir=None, config='', sources=[], werror=Fals
 
     env.Command(target, sources + [config], SCons.Action.CommandAction(
         '%s scripts/scons_helpers/docfilt.py %s %s %s %s %s %s %s' % (
-            env.PythonExecutable(),
+            env.GetPythonExecutable(),
             env.Dir('#').path,
             env.Dir(os.path.dirname(config)).path,
             ':'.join(dirs),
@@ -83,7 +51,7 @@ def Sphinx(env, output_type, build_dir, output_dir, source_dir, sources, werror=
 
     env.Command(target, sources, SCons.Action.CommandAction(
         '%s scripts/scons_helpers/docfilt.py %s %s %s %s %s %s -j %d -q -b %s -d %s %s %s' % (
-            env.PythonExecutable(),
+            env.GetPythonExecutable(),
             env.Dir('#').path,
             env.Dir('#').path,
             env.Dir(output_dir).path,
@@ -247,9 +215,6 @@ def Artifact(env, dst, src):
     return target
 
 def init(env):
-    env.AddMethod(CommandOutput, 'CommandOutput')
-    env.AddMethod(PythonExecutable, 'PythonExecutable')
-    env.AddMethod(ClangDBWriter, 'ClangDBWriter')
     env.AddMethod(ClangFormat, 'ClangFormat')
     env.AddMethod(HeaderFormat, 'HeaderFormat')
     env.AddMethod(Doxygen, 'Doxygen')

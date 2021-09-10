@@ -266,22 +266,22 @@ env['STATIC_AND_SHARED_OBJECTS_ARE_THE_SAME'] = 1
 
 for var in ['CXX', 'CC', 'AR', 'RANLIB', 'RAGEL', 'GENGETOPT',
                 'PKG_CONFIG', 'PKG_CONFIG_PATH', 'CONFIG_GUESS', 'CLANG_FORMAT']:
-    env.OverrideFromArg(var)
+    env.OverrideFromArgument(var)
 
-env.OverrideFromArg('CXXLD', names=['CXXLD', 'CXX'])
-env.OverrideFromArg('CCLD', names=['CCLD', 'LD', 'CC'])
+env.OverrideFromArgument('CXXLD', names=['CXXLD', 'CXX'])
+env.OverrideFromArgument('CCLD', names=['CCLD', 'LD', 'CC'])
 
-env.OverrideFromArg('STRIP', default='strip')
+env.OverrideFromArgument('STRIP', default='strip')
 
-env.OverrideFromArg('DOXYGEN', default='doxygen')
-env.OverrideFromArg('SPHINX_BUILD', default='sphinx-build')
-env.OverrideFromArg('BREATHE_APIDOC', default='breathe-apidoc')
+env.OverrideFromArgument('DOXYGEN', default='doxygen')
+env.OverrideFromArgument('SPHINX_BUILD', default='sphinx-build')
+env.OverrideFromArgument('BREATHE_APIDOC', default='breathe-apidoc')
 
-env.PrependFromArg('CPPFLAGS')
-env.PrependFromArg('CXXFLAGS')
-env.PrependFromArg('CFLAGS')
-env.PrependFromArg('LINKFLAGS', names=['LINKFLAGS', 'LDFLAGS'])
-env.PrependFromArg('STRIPFLAGS')
+env.PrependFromArgument('CPPFLAGS')
+env.PrependFromArgument('CXXFLAGS')
+env.PrependFromArgument('CFLAGS')
+env.PrependFromArgument('LINKFLAGS', names=['LINKFLAGS', 'LDFLAGS'])
+env.PrependFromArgument('STRIPFLAGS')
 
 env.Append(CXXFLAGS=[])
 env.Append(CPPDEFINES=[])
@@ -393,7 +393,7 @@ if GetOption('compiler'):
         meta.compiler, meta.compiler_ver = meta.compiler.split('-')
         meta.compiler_ver = tuple(map(int, meta.compiler_ver.split('.')))
 else:
-    if env.HasArg('CXX'):
+    if env.HasArgument('CXX'):
         if 'clang' in env['CXX']:
             meta.compiler = 'clang'
         elif 'gcc' in env['CXX'] or 'g++' in env['CXX']:
@@ -969,7 +969,7 @@ if meta.compiler in ['gcc', 'clang']:
             e.Prepend(LINKFLAGS=['-L/usr/lib64'])
 
     for var in ['CC', 'CXX']:
-        env[var] = env.ClangDBWriter(env[var], env['ROC_BUILDDIR'])
+        env[var] = env.GetClangDbWriter(env[var], env['ROC_BUILDDIR'])
 
     compile_commands = '%s/compile_commands.json' % env['ROC_BUILDDIR']
 
