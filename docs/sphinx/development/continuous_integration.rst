@@ -85,7 +85,8 @@ For example, this will run Fedora build:
 
 .. code::
 
-   $ scripts/ci/docker.sh rocstreaming/env-fedora scripts/ci/linux-x86_64/fedora.sh
+   $ scripts/ci_checks/docker.sh rocstreaming/env-fedora \
+       scripts/ci_checks/linux-x86_64/fedora.sh
 
 You can also invoke Docker manually:
 

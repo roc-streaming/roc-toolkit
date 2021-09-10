@@ -31,7 +31,7 @@ def PythonExecutable(env):
         return sys.executable
 
 def ClangDBWriter(env, tool, build_dir):
-    return '%s scripts/build/clangdb.py "%s" "%s" "%s"' % (
+    return '%s scripts/scons_helpers/clangdb.py "%s" "%s" "%s"' % (
         env.PythonExecutable(),
         env.Dir('#').path,
         env.Dir(build_dir).path,
@@ -51,7 +51,9 @@ def ClangFormat(env, srcdir):
 
 def HeaderFormat(env, srcdir):
     return env.Action(
-        '%s scripts/build/format.py %s' % (env.PythonExecutable(), env.Dir(srcdir).path),
+        '%s scripts/scons_helpers/format-header.py %s' % (
+            env.PythonExecutable(),
+            env.Dir(srcdir).path),
         env.PrettyCommand('FMT', env.Dir(srcdir).path, 'yellow')
     )
 
@@ -63,7 +65,7 @@ def Doxygen(env, build_dir='', html_dir=None, config='', sources=[], werror=Fals
         dirs += [env.Dir(html_dir).path]
 
     env.Command(target, sources + [config], SCons.Action.CommandAction(
-        '%s scripts/build/docfilt.py %s %s %s %s %s %s %s' % (
+        '%s scripts/scons_helpers/docfilt.py %s %s %s %s %s %s %s' % (
             env.PythonExecutable(),
             env.Dir('#').path,
             env.Dir(os.path.dirname(config)).path,
@@ -80,7 +82,7 @@ def Sphinx(env, output_type, build_dir, output_dir, source_dir, sources, werror=
     target = os.path.join(build_dir, '.done')
 
     env.Command(target, sources, SCons.Action.CommandAction(
-        '%s scripts/build/docfilt.py %s %s %s %s %s %s -j %d -q -b %s -d %s %s %s' % (
+        '%s scripts/scons_helpers/docfilt.py %s %s %s %s %s %s -j %d -q -b %s -d %s %s %s' % (
             env.PythonExecutable(),
             env.Dir('#').path,
             env.Dir('#').path,
