@@ -98,7 +98,7 @@ Coding style
 
     <span></span>
 
-* Header and source files should contain the "Roc authors" copyright and license header. Running ``scons fmt`` will automatically insert them.
+* Header and source files should contain the "Roc Streaming authors" copyright and license header. Running ``scons fmt`` will automatically insert them.
 
 .. raw:: html
 
