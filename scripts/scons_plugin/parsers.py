@@ -27,15 +27,8 @@ def ParseGitHead(env):
         return None
 
 def ParseProjectVersion(env, path):
-    with open(path) as fp:
-        data = fp.read()
-        m = re.search(r"""^#define ROC_VERSION_MAJOR (\d+)$""", data, re.MULTILINE)
-        major = int(m.group(1))
-        m = re.search(r"""^#define ROC_VERSION_MINOR (\d+)$""", data, re.MULTILINE)
-        minor = int(m.group(1))
-        m = re.search(r"""^#define ROC_VERSION_PATCH (\d+)$""", data, re.MULTILINE)
-        patch = int(m.group(1))
-        return '%d.%d.%d' % (major, minor, patch)
+    return env.GetCommandOutput(
+        '%s scripts/scons_helpers/parse-version.py' % env.GetPythonExecutable())
 
 def ParseToolVersion(env, command):
     text = env.GetCommandOutput(command)
