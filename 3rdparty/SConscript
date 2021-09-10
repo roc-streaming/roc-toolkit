@@ -76,7 +76,7 @@ if 'all' in download_dependencies:
 system_dependencies = external_dependencies - download_dependencies
 
 if 'hedley' in vendored_dependencies:
-    env.Append(CPPPATH=['#3rdparty/vendor/hedley'])
+    env.Append(CPPPATH=['#3rdparty/hedley'])
 
 if 'libuv' in system_dependencies:
     conf = Configure(env, custom_tests=env.CustomTests)

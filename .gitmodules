@@ -1,3 +1,3 @@
-[submodule "3rdparty/distfiles"]
-	path = 3rdparty/distfiles
+[submodule "3rdparty/_distfiles"]
+	path = 3rdparty/_distfiles
 	url = https://github.com/roc-streaming/distfiles.git
