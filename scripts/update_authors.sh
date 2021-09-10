@@ -1,8 +1,13 @@
 #! /bin/bash
 
 function find_login() {
-    curl -s "https://api.github.com/search/users?q=$1" \
-        | jq -r '.items[0].login' 2>/dev/null
+    local github_login="$(curl -s "https://api.github.com/search/users?q=$1" \
+        | jq -r '.items[0].login' 2>/dev/null)"
+
+    if [[ "${github_login}" != "" ]] && [[ "${github_login}" != "null" ]]
+    then
+        echo "${github_login}"
+    fi
 }
 
 function find_name() {
@@ -20,6 +25,7 @@ function find_email() {
     local github_email="$(curl -s "https://api.github.com/users/$1/events/public" \
         | jq -r \
     '((.[].payload.commits | select(. != null))[].author | select(.name == "'$1'")).email' \
+    2>/dev/null \
         | sort -u \
         | grep -v users.noreply.github.com \
         | head -1)"
@@ -36,6 +42,8 @@ function add_if_new() {
     local commit_name="$2"
     local commit_email="$3"
 
+    local repo_name="$4"
+
     if grep -qiF "${commit_name}" "${file}" || grep -qiF "${commit_email}" "${file}"
     then
         return
@@ -46,6 +54,13 @@ function add_if_new() {
     then
         github_login="$(find_login "${commit_name}")"
     fi
+    if [[ -z "${github_login}" ]]
+    then
+        if echo "${commit_email}" | grep -q users.noreply.github.com
+        then
+            github_login="$(echo "${commit_email}" | sed -re 's,^([0-9]+\+)?([^@]+).*$,\2,')"
+        fi
+    fi
 
     local print_name="$(find_name "${github_login}")"
     if [ -z "${print_name}" ]
@@ -54,23 +69,35 @@ function add_if_new() {
     fi
     print_name="$(echo "${print_name}" | sed -re 's/\S+/\u&/g')"
 
-    local print_email=""
+    local print_addr=""
     if echo "${commit_email}" | grep -q users.noreply.github.com
     then
-        print_email="$(find_email "${github_login}")"
+        if [[ ! -z "${github_login}" ]]
+        then
+            print_addr="$(find_email "${github_login}")"
+        fi
+    else
+        print_addr="${commit_email}"
     fi
-    if [ -z "${print_email}" ]
+    if [[ -z "${print_addr}" && ! -z "${github_login}" ]]
     then
-        print_email="${commit_email}"
+        print_addr="https://github.com/${github_login}"
     fi
 
-    echo "adding ${print_name} <${print_email}>" 1>&2
-    echo "* ${print_name} <${print_email}>"
+    if [ -z "${print_addr}" ]
+    then
+        echo "[${repo_name}] adding ${print_name}" 1>&2
+        echo "* ${print_name}"
+    else
+        echo "[${repo_name}] adding ${print_name} <${print_addr}>" 1>&2
+        echo "* ${print_name} <${print_addr}>"
+    fi
 }
 
 function add_contributors() {
     out_file="$1"
     repo_dir="../$2"
+    repo_name="$(basename "$2")"
 
     if [ ! -d "${repo_dir}" ]
     then
@@ -86,7 +113,7 @@ function add_contributors() {
         name="$(echo "${line}" | cut -d, -f2)"
         email="$(echo "${line}" | cut -d, -f3)"
 
-        add_if_new "${out_file}" "${name}" "${email}" >> "${out_file}"
+        add_if_new "${out_file}" "${name}" "${email}" "${repo_name}" >> "${out_file}"
     done
 }
 
