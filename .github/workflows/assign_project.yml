@@ -1,0 +1,15 @@
+name: "assign project"
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  assign-project:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: alex-page/github-project-automation-plus@v0.8.1
+        with:
+          repo-token: "${{ secrets.REPO_MANAGEMENT }}"
+          project: "kanban board"
+          column: "Frontlog"
