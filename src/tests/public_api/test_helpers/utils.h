@@ -6,8 +6,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#ifndef ROC_LIBRARY_TEST_HELPERS_UTILS_H_
-#define ROC_LIBRARY_TEST_HELPERS_UTILS_H_
+#ifndef ROC_PUBLIC_API_TEST_HELPERS_UTILS_H_
+#define ROC_PUBLIC_API_TEST_HELPERS_UTILS_H_
 
 namespace roc {
 namespace library {
@@ -48,4 +48,4 @@ inline float increment_sample_value(float sample_value, float sample_step) {
 } // namespace library
 } // namespace roc
 
-#endif // ROC_LIBRARY_TEST_HELPERS_UTILS_H_
+#endif // ROC_PUBLIC_API_TEST_HELPERS_UTILS_H_

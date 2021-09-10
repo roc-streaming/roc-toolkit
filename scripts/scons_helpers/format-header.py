@@ -26,15 +26,21 @@ def is_test(path):
             return True
     return False
 
-def is_lib(path):
-    rootname = os.path.basename(os.path.dirname(os.path.dirname(os.path.abspath(path))))
-    return rootname == 'library'
+def is_public_api(path):
+    rootname = os.path.basename(
+        os.path.dirname(
+            os.path.dirname(
+                os.path.abspath(path))))
+    return rootname == 'public_api'
 
 def make_guard(path):
     dirpath, basename = os.path.split(path)
     dirname = os.path.basename(dirpath)
-    if is_lib(path):
-        arr = ['roc', basename]
+    if is_public_api(path):
+        if is_test(path):
+            arr = ['roc', 'public_api', dirname, basename]
+        else:
+            arr = ['roc', 'public_api', basename]
     else:
         arr = [dirname, basename]
     while not arr[0].startswith('roc_') and arr[0] != 'roc':
@@ -136,7 +142,7 @@ def format_file(output, path):
                 has_doxygen = True
                 continue
             else:
-                if is_lib(path) or is_test(path) or is_autogen:
+                if is_public_api(path) or is_test(path) or is_autogen:
                     section = 'guard' if is_header(path) else 'body'
                 else:
                     if not has_doxygen:

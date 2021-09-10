@@ -6,8 +6,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#ifndef ROC_CONFIG_HELPERS_H_
-#define ROC_CONFIG_HELPERS_H_
+#ifndef ROC_PUBLIC_API_CONFIG_HELPERS_H_
+#define ROC_PUBLIC_API_CONFIG_HELPERS_H_
 
 #include "roc/config.h"
 
@@ -32,4 +32,4 @@ bool proto_to_user(roc_protocol& out, address::Protocol in);
 } // namespace api
 } // namespace roc
 
-#endif // ROC_CONFIG_HELPERS_H_
+#endif // ROC_PUBLIC_API_CONFIG_HELPERS_H_
