@@ -1,6 +1,7 @@
 #! /bin/bash
 set -euxo pipefail
 
+# pulseaudio:no sox:no
 scons -Q --enable-werror --build-3rdparty=all \
       --disable-pulseaudio \
       --disable-sox \
@@ -9,6 +10,7 @@ scons -Q --enable-werror --build-3rdparty=all \
       --enable-examples \
       test
 
+# pulseaudio:no sox:yes
 scons -Q --enable-werror --build-3rdparty=all \
       --disable-pulseaudio \
       --enable-tests \
@@ -16,6 +18,7 @@ scons -Q --enable-werror --build-3rdparty=all \
       --enable-examples \
       test
 
+# pulseaudio:yes sox:no
 scons -Q --enable-werror --build-3rdparty=all \
       --disable-sox \
       --enable-tests \

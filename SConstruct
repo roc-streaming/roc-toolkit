@@ -122,10 +122,15 @@ AddOption('--enable-werror',
           action='store_true',
           help='treat warnings as errors')
 
-AddOption('--disable-lib',
-          dest='disable_lib',
+AddOption('--enable-static',
+          dest='enable_static',
           action='store_true',
-          help='disable libroc building')
+          help='enable building static library')
+
+AddOption('--disable-shared',
+          dest='disable_shared',
+          action='store_true',
+          help='disable building shared library')
 
 AddOption('--disable-tools',
           dest='disable_tools',
@@ -264,14 +269,17 @@ env.SConsignFile(os.path.join(
 # libraries are no different
 env['STATIC_AND_SHARED_OBJECTS_ARE_THE_SAME'] = 1
 
-for var in ['CXX', 'CC', 'AR', 'RANLIB', 'RAGEL', 'GENGETOPT',
-                'PKG_CONFIG', 'PKG_CONFIG_PATH', 'CONFIG_GUESS', 'CLANG_FORMAT']:
+for var in ['CXX', 'CC', 'LD', 'AR', 'RANLIB', 'INSTALL_NAME_TOOL',
+            'RAGEL', 'GENGETOPT',
+            'PKG_CONFIG', 'PKG_CONFIG_PATH', 'CONFIG_GUESS',
+            'CLANG_FORMAT']:
     env.OverrideFromArgument(var)
 
 env.OverrideFromArgument('CXXLD', names=['CXXLD', 'CXX'])
 env.OverrideFromArgument('CCLD', names=['CCLD', 'LD', 'CC'])
 
 env.OverrideFromArgument('STRIP', default='strip')
+env.OverrideFromArgument('OBJCOPY', default='objcopy')
 
 env.OverrideFromArgument('DOXYGEN', default='doxygen')
 env.OverrideFromArgument('SPHINX_BUILD', default='sphinx-build')
@@ -288,6 +296,7 @@ env.Append(CPPDEFINES=[])
 env.Append(CPPPATH=[])
 env.Append(LIBPATH=[])
 env.Append(LIBS=[])
+env.Append(RPATH_LINK_DIRS=[])
 env.Append(STRIPFLAGS=[])
 
 if GetOption('with_includes'):
@@ -440,11 +449,11 @@ if meta.compiler == 'clang':
     conf.FindLLVMDir(meta.compiler_ver)
 
 if meta.compiler == 'clang':
-    conf.FindTool('CXX', meta.toolchain, meta.compiler_ver, ['clang++'])
+    conf.FindTool('CXX', meta.toolchain, [('clang++', meta.compiler_ver)])
 elif meta.compiler == 'gcc':
-    conf.FindTool('CXX', meta.toolchain, meta.compiler_ver, ['g++'])
+    conf.FindTool('CXX', meta.toolchain, [('g++', meta.compiler_ver)])
 elif meta.compiler == 'cc':
-    conf.FindTool('CXX', meta.toolchain, meta.compiler_ver, ['c++'])
+    conf.FindTool('CXX', meta.toolchain, [('c++', meta.compiler_ver)])
 
 full_compiler_ver = env.ParseCompilerVersion(conf.env['CXX'])
 if full_compiler_ver:
@@ -495,9 +504,10 @@ if meta.platform not in supported_platforms:
                 meta.platform, ', '.join(supported_platforms))
 
 if meta.compiler == 'clang':
-    conf.FindTool('CC', meta.toolchain, meta.compiler_ver, ['clang'])
-    conf.FindTool('CXXLD', meta.toolchain, meta.compiler_ver, ['clang++'])
-    conf.FindTool('CCLD', meta.toolchain, meta.compiler_ver, ['clang'])
+    conf.FindTool('CC', meta.toolchain, [('clang', meta.compiler_ver)])
+    conf.FindTool('CXXLD', meta.toolchain, [('clang++', meta.compiler_ver)])
+    conf.FindTool('CCLD', meta.toolchain, [('clang', meta.compiler_ver)])
+    conf.FindTool('LD', meta.toolchain, [('ld', None)], required=False)
 
     compiler_dir = env.ParseCompilerDirectory(conf.env['CXX'])
     if compiler_dir:
@@ -505,33 +515,46 @@ if meta.compiler == 'clang':
     else:
         prepend_path = []
 
-    conf.FindTool('AR', meta.toolchain, None, ['llvm-ar', 'ar'],
+    conf.FindTool('AR', meta.toolchain,
+                  [('llvm-ar', meta.toolchain), ('llvm-ar', None), ('ar', None)],
                   prepend_path=prepend_path)
 
-    conf.FindTool('RANLIB', meta.toolchain, None, ['llvm-ranlib', 'ranlib'],
+    conf.FindTool('RANLIB', meta.toolchain,
+                  [('llvm-ranlib', meta.toolchain), ('llvm-ranlib', None), ('ranlib', None)],
                   prepend_path=prepend_path)
 
-    conf.FindTool('STRIP', meta.toolchain, None, ['llvm-strip', 'strip'],
+    conf.FindTool('STRIP', meta.toolchain,
+                  [('llvm-strip', meta.toolchain), ('llvm-strip', None), ('strip', None)],
                   prepend_path=prepend_path)
+
+    conf.FindTool('OBJCOPY', meta.toolchain,
+                  [('llvm-objcopy', meta.toolchain), ('llvm-objcopy', None), ('objcopy', None)],
+                  prepend_path=prepend_path,
+                  required=False)
 
 elif meta.compiler == 'gcc':
-    conf.FindTool('CC', meta.toolchain, meta.compiler_ver, ['gcc'])
-    conf.FindTool('CXXLD', meta.toolchain, meta.compiler_ver, ['g++'])
-    conf.FindTool('CCLD', meta.toolchain, meta.compiler_ver, ['gcc'])
-    conf.FindTool('AR', meta.toolchain, None, ['ar'])
-    conf.FindTool('RANLIB', meta.toolchain, None, ['ranlib'])
-    conf.FindTool('STRIP', meta.toolchain, None, ['strip'])
+    conf.FindTool('CC', meta.toolchain, [('gcc', meta.compiler_ver)])
+    conf.FindTool('CXXLD', meta.toolchain, [('g++', meta.compiler_ver)])
+    conf.FindTool('CCLD', meta.toolchain, [('gcc', meta.compiler_ver)])
+    conf.FindTool('LD', meta.toolchain, [('ld', None)], required=False)
+    conf.FindTool('AR', meta.toolchain, [('ar', None)])
+    conf.FindTool('RANLIB', meta.toolchain, [('ranlib', None)])
+    conf.FindTool('STRIP', meta.toolchain, [('strip', None)])
+    conf.FindTool('OBJCOPY', meta.toolchain, [('objcopy', None)], required=False)
 
 elif meta.compiler == 'cc':
-    conf.FindTool('CC', meta.toolchain, meta.compiler_ver, ['cc'])
-    conf.FindTool('CXXLD', meta.toolchain, meta.compiler_ver, ['c++'])
-    conf.FindTool('CCLD', meta.toolchain, meta.compiler_ver, ['cc'])
-    conf.FindTool('AR', meta.toolchain, None, ['ar'])
-    conf.FindTool('RANLIB', meta.toolchain, None, ['ranlib'])
-    conf.FindTool('STRIP', meta.toolchain, None, ['strip'])
+    conf.FindTool('CC', meta.toolchain, [('cc', meta.compiler_ver)])
+    conf.FindTool('CXXLD', meta.toolchain, [('c++', meta.compiler_ver)])
+    conf.FindTool('CCLD', meta.toolchain, [('cc', meta.compiler_ver)])
+    conf.FindTool('AR', meta.toolchain, [('ar', None)])
+    conf.FindTool('RANLIB', meta.toolchain, [('ranlib', None)])
+    conf.FindTool('STRIP', meta.toolchain, [('strip', None)])
 
 conf.env['LINK'] = env['CXXLD']
 conf.env['SHLINK'] = env['CXXLD']
+
+if meta.platform == 'darwin':
+    conf.FindTool('INSTALL_NAME_TOOL', None, [('install_name_tool', None)], required=False)
 
 if meta.compiler in ['gcc', 'clang']:
     meta.fpic_supported = True
@@ -693,17 +716,18 @@ else:
                 'target_pulseaudio',
             ])
 
-# sub-environments for building specific parts of code
-subenvs = type('subenvs', (), {
-    field: env.Clone() for field in
-        'public_libs examples generated_code tools tests'.split()})
+# env will hold settings common to all code
+# subenvs will hold settings specific to particular parts of code
+subenv_names = 'internal_modules public_libs examples tools tests generated_code'.split()
+
+subenv_attrs = {field: env.Clone() for field in subenv_names}
+subenv_attrs['all'] = list(subenv_attrs.values())
+
+subenvs = type('subenvs', (), subenv_attrs)
 
 # find or build third-party dependencies
 env, subenvs = env.SConscript('3rdparty/SConscript',
                        duplicate=0, exports='env subenvs meta')
-
-env.Append(LIBPATH=['%s' % env['ROC_BUILDDIR']])
-env.Append(CPPPATH=['%s/tools' % env['ROC_BUILDDIR']])
 
 if 'target_posix' in env['ROC_TARGETS'] and meta.platform not in ['darwin']:
     env.Append(CPPDEFINES=[('_POSIX_C_SOURCE', '200809')])
@@ -731,8 +755,6 @@ if meta.compiler in ['gcc', 'clang']:
         env.AddPkgConfigLibs(['pthread'])
 
     if meta.platform in ['linux', 'android']:
-        subenvs.tests['RPATH'] = subenvs.tests.Literal('\\$$ORIGIN')
-
         if not GetOption('disable_soversion'):
             subenvs.public_libs['SHLIBSUFFIX'] = '%s.%s' % (
                 subenvs.public_libs['SHLIBSUFFIX'], env['ROC_SOVER'])
@@ -750,6 +772,7 @@ if meta.compiler in ['gcc', 'clang']:
         if not GetOption('disable_soversion'):
             subenvs.public_libs['SHLIBSUFFIX'] = '.%s%s' % (
                 env['ROC_SOVER'], subenvs.public_libs['SHLIBSUFFIX'])
+
             subenvs.public_libs.Append(LINKFLAGS=[
                 '-Wl,-compatibility_version,%s' % env['ROC_SOVER'],
                 '-Wl,-current_version,%s' % env['ROC_VERSION'],
@@ -952,30 +975,6 @@ if meta.compiler == 'clang':
             '-Wno-deprecated-dynamic-exception-spec',
         ])
 
-if meta.compiler in ['gcc', 'clang']:
-    for e in [env, subenvs.public_libs, subenvs.tools, subenvs.tests]:
-        for var in ['CXXFLAGS', 'CFLAGS']:
-            dirs = [('-isystem', env.Dir(path).path) for path in e['CPPPATH']]
-
-            # workaround to force our 3rdparty directories to be placed
-            # before /usr/local/include on macos
-            if meta.compiler == 'clang' and meta.platform == 'darwin':
-                dirs += [('-isystem', '/usr/local/include')]
-
-            e.Prepend(**{var: dirs})
-
-        # workaround for "skipping incompatible" linker warning
-        if '/usr/lib64' in e.ParseLinkDirs(e['CXXLD']):
-            e.Prepend(LINKFLAGS=['-L/usr/lib64'])
-
-    for var in ['CC', 'CXX']:
-        env[var] = env.GetClangDbWriter(env[var], env['ROC_BUILDDIR'])
-
-    compile_commands = '%s/compile_commands.json' % env['ROC_BUILDDIR']
-
-    env.Artifact(compile_commands, '#src')
-    env.Install('#', compile_commands)
-
 sanitizers = env.ParseList(GetOption('sanitizers'), supported_sanitizers)
 if sanitizers:
     if not meta.compiler in ['gcc', 'clang']:
@@ -993,38 +992,67 @@ else:
         ])
 
 if meta.platform in ['linux']:
-    subenvs.tools.Append(LINKFLAGS=[
-        '-Wl,-rpath-link,%s' % env.Dir(
-            os.path.join(env['ROC_THIRDPARTY_BUILDDIR'], 'rpath')).abspath,
-    ])
+    for path in env['RPATH_LINK_DIRS']:
+        env.Append(LINKFLAGS=[
+            '-Wl,-rpath-link,%s' % env.Dir(path).path,
+        ])
 
-subenvs.tests.Append(CPPDEFINES=('CPPUTEST_USE_MEM_LEAK_DETECTION', '0'))
+subenvs.tests.Append(
+    CPPDEFINES=('CPPUTEST_USE_MEM_LEAK_DETECTION', '0')
+    )
 
 if meta.compiler == 'clang':
-    for var in ['CXXFLAGS', 'CFLAGS']:
-        subenvs.generated_code.AppendUnique(**{var: [
-            '-Wno-sign-conversion',
-            '-Wno-missing-variable-declarations',
-            '-Wno-switch-enum',
-            '-Wno-shorten-64-to-32',
-            '-Wno-unused-const-variable',
-            '-Wno-documentation',
-        ]})
-
     subenvs.tests.AppendUnique(CXXFLAGS=[
         '-Wno-weak-vtables',
         '-Wno-unused-member-function',
     ])
 
-if meta.compiler == 'gcc':
+if meta.compiler in ['gcc', 'clang']:
     for var in ['CXXFLAGS', 'CFLAGS']:
         subenvs.generated_code.AppendUnique(**{var: [
-            '-Wno-overlength-strings',
+            '-w',
         ]})
 
-if not env['STRIPFLAGS']:
-    if meta.platform in ['darwin']:
+if meta.platform in ['darwin']:
+    if not env['STRIPFLAGS']:
         env.Append(STRIPFLAGS=['-x'])
+
+env.Append(CPPPATH=['%s/tools' % env['ROC_BUILDDIR']])
+env.Append(LIBPATH=['%s' % env['ROC_BUILDDIR']])
+
+# both env and subenvs have been modified after subenvs were cloned from env
+# here we propagate modifications from env to all subenvs
+for senv in subenvs.all:
+    senv.AppendEnvUnique(env)
+
+# enable generation of compile_commands.json (a.k.a. clangdb)
+if meta.compiler in ['gcc', 'clang']:
+    for senv in subenvs.all:
+        for var in ['CC', 'CXX']:
+            senv[var] = env.GetClangDbWriter(senv[var], env['ROC_BUILDDIR'])
+
+    compile_commands = '%s/compile_commands.json' % env['ROC_BUILDDIR']
+
+    env.Artifact(compile_commands, '#src')
+    env.Install('#', compile_commands)
+
+# post-process paths after merging environments
+if meta.compiler in ['gcc', 'clang']:
+    for senv in subenvs.all:
+        for var in ['CXXFLAGS', 'CFLAGS']:
+            dirs = [('-isystem', senv.Dir(path).path) for path in senv['CPPPATH']]
+
+            # workaround to force our 3rdparty directories to be placed
+            # before /usr/local/include on macos: explicitly place it
+            # after previous -isystem options
+            if meta.compiler == 'clang' and meta.platform == 'darwin':
+                dirs += [('-isystem', '/usr/local/include')]
+
+            senv.Prepend(**{var: dirs})
+
+        # workaround for "skipping incompatible" linker warning
+        if '/usr/lib64' in senv.ParseLinkDirs(senv['CXXLD']):
+            senv.Prepend(LINKFLAGS=['-L/usr/lib64'])
 
 # finally build the project
 env.SConscript('src/SConscript',

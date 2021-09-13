@@ -57,7 +57,7 @@ autobuild_dependencies = set()
 # dependencies that have explicitly provided version
 explicit_version = set()
 
-for name, version in env.ParseThirdParties(GetOption('build_3rdparty')):
+for name, version in env.ParseThirdPartyList(GetOption('build_3rdparty')):
     if name != 'all' and not name in thirdparty_versions:
         env.Die("unknown thirdparty name '%s' in '--build-3rdparty', expected any of: %s",
                     name, ', '.join(['all'] + list(sorted(thirdparty_versions.keys()))))
@@ -75,7 +75,11 @@ system_dependencies = external_dependencies - autobuild_dependencies
 if 'hedley' in vendored_dependencies:
     env.Append(CPPPATH=['#3rdparty/hedley'])
 
-if 'libuv' in system_dependencies:
+if 'libuv' in autobuild_dependencies:
+    env.BuildThirdParty(thirdparty_build_dir, meta.toolchain,
+                   meta.thirdparty_variant, thirdparty_versions, 'libuv')
+
+elif 'libuv' in system_dependencies:
     conf = Configure(env, custom_tests=env.CustomTests)
 
     if not conf.AddPkgConfigDependency('libuv', '--cflags --libs'):
@@ -91,7 +95,12 @@ if 'libuv' in system_dependencies:
 
     env = conf.Finish()
 
-if 'libunwind' in system_dependencies:
+if 'libunwind' in autobuild_dependencies:
+    env.BuildThirdParty(thirdparty_build_dir,
+                   meta.toolchain, meta.thirdparty_variant,
+                   thirdparty_versions, 'libunwind')
+
+elif 'libunwind' in system_dependencies:
     conf = Configure(env, custom_tests=env.CustomTests)
 
     if not conf.AddPkgConfigDependency('libunwind', '--cflags --libs'):
@@ -102,7 +111,12 @@ if 'libunwind' in system_dependencies:
 
     env = conf.Finish()
 
-if 'libatomic_ops' in system_dependencies:
+if 'libatomic_ops' in autobuild_dependencies:
+    env.BuildThirdParty(thirdparty_build_dir,
+                   meta.toolchain, meta.thirdparty_variant,
+                   thirdparty_versions, 'libatomic_ops')
+
+elif 'libatomic_ops' in system_dependencies:
     conf = Configure(env, custom_tests=env.CustomTests)
 
     if not conf.AddPkgConfigDependency('atomic_ops', '--cflags --libs'):
@@ -114,7 +128,15 @@ if 'libatomic_ops' in system_dependencies:
 
     env = conf.Finish()
 
-if 'openfec' in system_dependencies:
+if 'openfec' in autobuild_dependencies:
+    env.BuildThirdParty(thirdparty_build_dir, meta.toolchain,
+                   meta.thirdparty_variant, thirdparty_versions,
+                   'openfec', includes=[
+                        'lib_common',
+                        'lib_stable',
+                        ])
+
+elif 'openfec' in system_dependencies:
     conf = Configure(env, custom_tests=env.CustomTests)
 
     if not conf.AddPkgConfigDependency('openfec', '--silence-errors --cflags --libs'):
@@ -157,7 +179,11 @@ if 'openfec' in system_dependencies:
 
     env = conf.Finish()
 
-if 'speexdsp' in system_dependencies:
+if 'speexdsp' in autobuild_dependencies:
+    env.BuildThirdParty(thirdparty_build_dir, meta.toolchain,
+                meta.thirdparty_variant, thirdparty_versions, 'speexdsp')
+
+elif 'speexdsp' in system_dependencies:
     conf = Configure(env, custom_tests=env.CustomTests)
 
     if not conf.AddPkgConfigDependency('speexdsp', '--cflags --libs'):
@@ -169,126 +195,9 @@ if 'speexdsp' in system_dependencies:
 
     env = conf.Finish()
 
-if 'pulseaudio' in system_dependencies:
-    conf = Configure(subenvs.tools, custom_tests=env.CustomTests)
-
-    if not conf.AddPkgConfigDependency('libpulse', '--cflags --libs'):
-        conf.env.AddPkgConfigLibs(['pulse'])
-
-    if not conf.CheckLibWithHeaderExt(
-            'pulse', 'pulse/pulseaudio.h', 'C', run=not is_crosscompiling):
-        env.Die("libpulse not found (see 'config.log' for details)")
-
-    subenvs.tools = conf.Finish()
-
-    if GetOption('enable_examples'):
-        conf = Configure(subenvs.examples, custom_tests=env.CustomTests)
-
-        if not conf.AddPkgConfigDependency('libpulse-simple', '--cflags --libs'):
-            conf.env.AddPkgConfigLibs(['pulse-simple'])
-
-        if not conf.CheckLibWithHeaderExt(
-                'pulse-simple', 'pulse/simple.h', 'C', run=not is_crosscompiling):
-            env.Die("libpulse-simple not found (see 'config.log' for details)")
-
-        subenvs.examples = conf.Finish()
-
-if 'sox' in system_dependencies:
-    conf = Configure(subenvs.tools, custom_tests=env.CustomTests)
-
-    if not conf.AddPkgConfigDependency('sox', '--cflags --libs'):
-        conf.env.AddPkgConfigLibs(['sox'])
-
-    if not is_crosscompiling:
-        if not conf.CheckLibWithHeaderExt(
-                'sox', 'sox.h', 'C',
-                expr='SOX_LIB_VERSION_CODE >= SOX_LIB_VERSION(14, 4, 0)'):
-            env.Die("libsox >= 14.4.0 not found (see 'config.log' for details)")
-    else:
-        if not conf.CheckLibWithHeaderExt('sox', 'sox.h', 'C', run=False):
-            env.Die("libsox not found (see 'config.log' for details)")
-
-    subenvs.tools = conf.Finish()
-
-if 'ragel' in system_dependencies:
-    conf = Configure(env, custom_tests=env.CustomTests)
-
-    if 'RAGEL' in env.Dictionary():
-        ragel = env['RAGEL']
-    else:
-        ragel = 'ragel'
-
-    if not conf.CheckProg(ragel):
-        env.Die("ragel not found in PATH (looked for '%s')" % ragel)
-
-    env = conf.Finish()
-
-if 'gengetopt' in system_dependencies:
-    conf = Configure(env, custom_tests=env.CustomTests)
-
-    if 'GENGETOPT' in env.Dictionary():
-        gengetopt = env['GENGETOPT']
-    else:
-        gengetopt = 'gengetopt'
-
-    if not conf.CheckProg(gengetopt):
-        env.Die("gengetopt not found in PATH (looked for '%s')" % gengetopt)
-
-    env = conf.Finish()
-
-if 'cpputest' in system_dependencies:
-    conf = Configure(subenvs.tests, custom_tests=env.CustomTests)
-
-    if not conf.AddPkgConfigDependency('cpputest', '--cflags --libs'):
-        conf.env.AddPkgConfigLibs(['CppUTest'])
-
-    if not conf.CheckLibWithHeaderExt(
-            'CppUTest', 'CppUTest/TestHarness.h', 'CXX', run=not is_crosscompiling):
-        subenvs.tests.Die("CppUTest not found (see 'config.log' for details)")
-
-    subenvs.tests = conf.Finish()
-
-if 'google-benchmark' in system_dependencies:
-    conf = Configure(subenvs.tests, custom_tests=env.CustomTests)
-
-    if not conf.AddPkgConfigDependency('benchmark', '--silence-errors --cflags --libs'):
-        conf.env.AddPkgConfigLibs(['benchmark'])
-
-    if not conf.CheckLibWithHeaderExt(
-            'benchmark', 'benchmark/benchmark.h', 'CXX', run=not is_crosscompiling):
-        subenvs.tests.Die("Google Benchmark not found (see 'config.log' for details)")
-
-    subenvs.tests = conf.Finish()
-
-if 'libuv' in autobuild_dependencies:
-    env.BuildThirdParty(thirdparty_build_dir, meta.toolchain,
-                   meta.thirdparty_variant, thirdparty_versions, 'libuv')
-
-if 'libunwind' in autobuild_dependencies:
-    env.BuildThirdParty(thirdparty_build_dir,
-                   meta.toolchain, meta.thirdparty_variant,
-                   thirdparty_versions, 'libunwind')
-
-if 'libatomic_ops' in autobuild_dependencies:
-    env.BuildThirdParty(thirdparty_build_dir,
-                   meta.toolchain, meta.thirdparty_variant,
-                   thirdparty_versions, 'libatomic_ops')
-
-if 'openfec' in autobuild_dependencies:
-    env.BuildThirdParty(thirdparty_build_dir, meta.toolchain,
-                   meta.thirdparty_variant, thirdparty_versions,
-                   'openfec', includes=[
-                        'lib_common',
-                        'lib_stable',
-                        ])
-
-if 'speexdsp' in autobuild_dependencies:
-    env.BuildThirdParty(thirdparty_build_dir, meta.toolchain,
-                meta.thirdparty_variant, thirdparty_versions, 'speexdsp')
-
 if 'alsa' in autobuild_dependencies:
-    subenvs.tools.BuildThirdParty(thirdparty_build_dir, meta.toolchain,
-                        meta.thirdparty_variant, thirdparty_versions, 'alsa')
+    env.BuildThirdParty(thirdparty_build_dir, meta.toolchain,
+                             meta.thirdparty_variant, thirdparty_versions, 'alsa')
 
 if 'pulseaudio' in autobuild_dependencies:
     if not 'pulseaudio' in explicit_version and not is_crosscompiling:
@@ -305,16 +214,39 @@ if 'pulseaudio' in autobuild_dependencies:
     if 'alsa' in autobuild_dependencies:
         pa_deps += ['alsa']
 
-    for senv in [subenvs.tools, subenvs.examples]:
-        senv.BuildThirdParty(thirdparty_build_dir, meta.toolchain,
-                            meta.thirdparty_variant, thirdparty_versions, 'ltdl')
-        senv.BuildThirdParty(thirdparty_build_dir, meta.toolchain,
-                            meta.thirdparty_variant, thirdparty_versions, 'json-c')
-        senv.BuildThirdParty(thirdparty_build_dir, meta.toolchain,
-                            meta.thirdparty_variant, thirdparty_versions, 'sndfile')
-        senv.BuildThirdParty(thirdparty_build_dir, meta.toolchain,
-                            meta.thirdparty_variant, thirdparty_versions,
-                            'pulseaudio', deps=pa_deps, libs=['pulse', 'pulse-simple'])
+    env.BuildThirdParty(thirdparty_build_dir, meta.toolchain,
+                        meta.thirdparty_variant, thirdparty_versions, 'ltdl')
+    env.BuildThirdParty(thirdparty_build_dir, meta.toolchain,
+                        meta.thirdparty_variant, thirdparty_versions, 'json-c')
+    env.BuildThirdParty(thirdparty_build_dir, meta.toolchain,
+                        meta.thirdparty_variant, thirdparty_versions, 'sndfile')
+    env.BuildThirdParty(thirdparty_build_dir, meta.toolchain,
+                        meta.thirdparty_variant, thirdparty_versions,
+                        'pulseaudio', deps=pa_deps, libs=['pulse', 'pulse-simple'])
+
+elif 'pulseaudio' in system_dependencies:
+    conf = Configure(env, custom_tests=env.CustomTests)
+
+    if not conf.AddPkgConfigDependency('libpulse', '--cflags --libs'):
+        conf.env.AddPkgConfigLibs(['pulse'])
+
+    if not conf.CheckLibWithHeaderExt(
+            'pulse', 'pulse/pulseaudio.h', 'C', run=not is_crosscompiling):
+        env.Die("libpulse not found (see 'config.log' for details)")
+
+    env = conf.Finish()
+
+    if GetOption('enable_examples'):
+        conf = Configure(subenvs.examples, custom_tests=env.CustomTests)
+
+        if not conf.AddPkgConfigDependency('libpulse-simple', '--cflags --libs'):
+            conf.env.AddPkgConfigLibs(['pulse-simple'])
+
+        if not conf.CheckLibWithHeaderExt(
+                'pulse-simple', 'pulse/simple.h', 'C', run=not is_crosscompiling):
+            env.Die("libpulse-simple not found (see 'config.log' for details)")
+
+        subenvs.examples = conf.Finish()
 
 if 'sox' in autobuild_dependencies:
     sox_deps = []
@@ -325,17 +257,10 @@ if 'sox' in autobuild_dependencies:
     if 'pulseaudio' in autobuild_dependencies:
         sox_deps += ['pulseaudio']
 
-    subenvs.tools.BuildThirdParty(thirdparty_build_dir, meta.toolchain,
+    env.BuildThirdParty(thirdparty_build_dir, meta.toolchain,
                         meta.thirdparty_variant, thirdparty_versions, 'sox', sox_deps)
 
-    conf = Configure(subenvs.tools, custom_tests=env.CustomTests)
-
-    for lib in [
-            'z', 'magic',
-            'gsm', 'FLAC',
-            'vorbis', 'vorbisenc', 'vorbisfile', 'ogg',
-            'mad', 'mp3lame']:
-        conf.CheckLib(lib)
+    conf = Configure(env, custom_tests=env.CustomTests)
 
     if not 'alsa' in autobuild_dependencies:
         for lib in [
@@ -343,47 +268,101 @@ if 'sox' in autobuild_dependencies:
                 ]:
             conf.CheckLib(lib)
 
-    if not 'pulseaudio' in autobuild_dependencies:
-        for lib in [
-                'sndfile',
-                'pulse', 'pulse-simple',
-                ]:
-            conf.CheckLib(lib)
-
     if meta.platform in ['darwin']:
-        subenvs.tools.Append(LINKFLAGS=[
+        env.Append(LINKFLAGS=[
             '-Wl,-framework,CoreAudio'
         ])
 
-    subenvs.tools = conf.Finish()
+    env = conf.Finish()
+
+elif 'sox' in system_dependencies:
+    conf = Configure(env, custom_tests=env.CustomTests)
+
+    if not conf.AddPkgConfigDependency('sox', '--cflags --libs'):
+        conf.env.AddPkgConfigLibs(['sox'])
+
+    if not is_crosscompiling:
+        if not conf.CheckLibWithHeaderExt(
+                'sox', 'sox.h', 'C',
+                expr='SOX_LIB_VERSION_CODE >= SOX_LIB_VERSION(14, 4, 0)'):
+            env.Die("libsox >= 14.4.0 not found (see 'config.log' for details)")
+    else:
+        if not conf.CheckLibWithHeaderExt('sox', 'sox.h', 'C', run=False):
+            env.Die("libsox not found (see 'config.log' for details)")
+
+    env = conf.Finish()
 
 if 'ragel' in autobuild_dependencies:
     env.BuildThirdParty(thirdparty_build_dir, "",
                    meta.thirdparty_variant, thirdparty_versions, 'ragel')
 
-    subenvs.generated_code['RAGEL'] = env.File(
-        '%s/build/ragel-%s/bin/ragel%s' % (
-            thirdparty_build_dir,
-            thirdparty_versions['ragel'],
-            env['PROGSUFFIX']))
+    env['RAGEL'] = env.GetThirdPartyExecutable(
+        thirdparty_build_dir, thirdparty_versions, 'ragel', exe_name='ragel')
+
+elif 'ragel' in system_dependencies:
+    conf = Configure(env, custom_tests=env.CustomTests)
+
+    if 'RAGEL' in env.Dictionary():
+        ragel = env['RAGEL']
+    else:
+        ragel = 'ragel'
+
+    if not conf.CheckProg(ragel):
+        env.Die("ragel not found in PATH (looked for '%s')" % ragel)
+
+    env = conf.Finish()
 
 if 'gengetopt' in autobuild_dependencies:
     env.BuildThirdParty(thirdparty_build_dir, "",
                    meta.thirdparty_variant, thirdparty_versions, 'gengetopt')
 
-    subenvs.generated_code['GENGETOPT'] = env.File(
-        '%s/build/gengetopt-%s/bin/gengetopt%s' % (
-            thirdparty_build_dir,
-            thirdparty_versions['gengetopt'],
-            env['PROGSUFFIX']))
+    env['GENGETOPT'] = env.GetThirdPartyExecutable(
+        thirdparty_build_dir, thirdparty_versions, 'gengetopt', exe_name='gengetopt')
+
+elif 'gengetopt' in system_dependencies:
+    conf = Configure(env, custom_tests=env.CustomTests)
+
+    if 'GENGETOPT' in env.Dictionary():
+        gengetopt = env['GENGETOPT']
+    else:
+        gengetopt = 'gengetopt'
+
+    if not conf.CheckProg(gengetopt):
+        env.Die("gengetopt not found in PATH (looked for '%s')" % gengetopt)
+
+    env = conf.Finish()
 
 if 'cpputest' in autobuild_dependencies:
     subenvs.tests.BuildThirdParty(thirdparty_build_dir, meta.toolchain,
                         meta.thirdparty_variant, thirdparty_versions, 'cpputest')
 
+elif 'cpputest' in system_dependencies:
+    conf = Configure(subenvs.tests, custom_tests=env.CustomTests)
+
+    if not conf.AddPkgConfigDependency('cpputest', '--cflags --libs'):
+        conf.env.AddPkgConfigLibs(['CppUTest'])
+
+    if not conf.CheckLibWithHeaderExt(
+            'CppUTest', 'CppUTest/TestHarness.h', 'CXX', run=not is_crosscompiling):
+        subenvs.tests.Die("CppUTest not found (see 'config.log' for details)")
+
+    subenvs.tests = conf.Finish()
+
 if 'google-benchmark' in autobuild_dependencies:
     subenvs.tests.BuildThirdParty(thirdparty_build_dir, meta.toolchain,
                         meta.thirdparty_variant, thirdparty_versions, 'google-benchmark')
+
+elif 'google-benchmark' in system_dependencies:
+    conf = Configure(subenvs.tests, custom_tests=env.CustomTests)
+
+    if not conf.AddPkgConfigDependency('benchmark', '--silence-errors --cflags --libs'):
+        conf.env.AddPkgConfigLibs(['benchmark'])
+
+    if not conf.CheckLibWithHeaderExt(
+            'benchmark', 'benchmark/benchmark.h', 'CXX', run=not is_crosscompiling):
+        subenvs.tests.Die("Google Benchmark not found (see 'config.log' for details)")
+
+    subenvs.tests = conf.Finish()
 
 return_value = (env, subenvs)
 Return('return_value')

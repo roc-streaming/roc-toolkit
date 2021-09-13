@@ -10,210 +10,253 @@ if [s for s in COMMAND_LINE_TARGETS if s == 'bench' or s.startswith('bench/')]:
     if not GetOption('enable_benchmarks'):
         env.Die("can't use 'bench*' target(s) without `--enable-benchmarks' option")
 
-env.Append(CPPPATH=['#src/internal_modules'])
+for senv in subenvs.all:
+    senv.Append(CPPPATH=['#src/internal_modules'])
 
-for targetdir in env.GlobRecursive('internal_modules', 'target_*'):
-    if targetdir.name in env['ROC_TARGETS']:
-        env.Append(CPPPATH=['#src/%s' % targetdir])
+    for target_dir in senv.GlobRecursive('internal_modules', 'target_*'):
+        if target_dir.name in senv['ROC_TARGETS']:
+            senv.Append(CPPPATH=['#src/%s' % target_dir])
 
-for t in env['ROC_TARGETS']:
-    env.Append(CPPDEFINES=['ROC_' + t.upper()])
+    for t in env['ROC_TARGETS']:
+        senv.Append(CPPDEFINES=['ROC_' + t.upper()])
 
-for module in env['ROC_MODULES']:
-    moduledir = 'internal_modules/' + module
+all_modules_libs = []
+all_modules_objects = []
 
-    cenv = env.Clone()
-    cenv.MergeEnvironment(subenvs.tools)
-    cenv.Append(CPPDEFINES=('ROC_MODULE', module))
+for module_name in env['ROC_MODULES']:
+    module_dir = 'internal_modules/' + module_name
 
-    genv = subenvs.generated_code.Clone()
-    genv.MergeEnvironment(cenv)
+    module_env = subenvs.internal_modules.Clone()
+    module_env.Append(CPPDEFINES=('ROC_MODULE', module_name))
 
-    sources = []
+    module_gen_env = subenvs.generated_code.Clone()
+    module_gen_env.Append(CPPDEFINES=('ROC_MODULE', module_name))
+
+    src_dirs = [module_dir]
+    for target_dir in env.GlobDirs('%s/target_*' % module_dir):
+        if target_dir.name in env['ROC_TARGETS']:
+            src_dirs.append('%s/%s/%s' % (module_dir, target_dir.name, module_name))
+
     objects = []
+    for src_dir in src_dirs:
+        for cpp in env.GlobFiles('%s/*.cpp' % src_dir):
+            objects += module_env.Object(cpp)
+        for rs in env.GlobFiles('%s/*.rl' % src_dir):
+            objects += module_gen_env.Ragel(rs)
 
-    sources += env.GlobFiles('%s/*.cpp' % moduledir)
-    for rs in env.GlobFiles('%s/*.rl' % moduledir):
-        objects += genv.Ragel(rs)
-
-    for targetdir in env.GlobRecursive(moduledir, 'target_*'):
-        if targetdir.name in env['ROC_TARGETS']:
-            sources += env.GlobRecursive(targetdir, '*.cpp')
-            for rs in env.GlobRecursive(targetdir, '*.rl'):
-                objects += genv.Ragel(rs)
-
-    if not sources and not objects:
+    if not objects:
         continue
 
-    lib = cenv.StaticLibrary(module, sources+objects)
-    env.Alias(module, [lib], env.Action(''))
-    env.AlwaysBuild(module)
+    lib = module_env.StaticLibrary('internal_modules/'+module_name, objects)
+    env.Alias(module_name, [lib], env.Action(''))
+    env.AlwaysBuild(module_name)
 
-    env.Prepend(LIBS=[lib])
+    all_modules_libs = [lib] + all_modules_libs
+    all_modules_objects = objects + all_modules_objects
 
-libroc = None
+env.Alias('internal_modules', all_modules_libs, env.Action(''))
+env.AlwaysBuild('internal_modules')
 
-if not GetOption('disable_lib'):
-    cenv = env.Clone()
-    cenv.MergeEnvironment(subenvs.public_libs)
-    cenv.Append(CPPDEFINES=('ROC_MODULE', 'libroc'))
-    cenv.Append(CPPPATH=['public_api/include'])
+if not GetOption('disable_shared') or GetOption('enable_static') or GetOption('enable_examples'):
+    libs_env = subenvs.public_libs.Clone()
+    libs_env.Append(CPPDEFINES=('ROC_MODULE', 'libroc'))
+    libs_env.Append(CPPPATH=['public_api/include'])
 
-    sources = env.GlobFiles('public_api/src/*.cpp')
+    public_api_objects = [libs_env.Object(s) for s in env.GlobFiles('public_api/src/*.cpp')]
+    public_api_targets = []
 
-    libroc = cenv.SharedLibrary(
-        'roc_unstripped', sources, SHLIBSUFFIX=subenvs.public_libs['SHLIBSUFFIX'])
+    if not GetOption('disable_shared'):
+        should_strip = GetOption('enable_debug') and libs_env.SupportsStripSharedLibrary()
 
-    env.Depends(libroc, '#src/public_api/roc.version')
+        libroc_shared = libs_env.SharedLibrary(
+            'roc_unstripped' if should_strip else 'roc',
+            public_api_objects,
+            LIBS=all_modules_libs+libs_env['LIBS'],
+            SHLIBSUFFIX=libs_env['SHLIBSUFFIX'])
 
-    libroc = cenv.MaybeStripLibrary(libroc[0].name.replace('_unstripped', ''),
-        libroc, is_debug=GetOption('enable_debug'))
+        env.Depends(libroc_shared, all_modules_libs)
+        env.Depends(libroc_shared, '#src/public_api/roc.version')
 
-    target = env.Install(env['ROC_BINDIR'], libroc)
-    symlinks = env.SymlinkLibrary(target[0])
+        if should_strip:
+            libroc_shared = libs_env.StripSharedLibrary(
+                libroc_shared[0].name.replace('_unstripped', ''),
+                libroc_shared)
 
-    env.Alias('libroc', [target] + symlinks, env.Action(''))
-    env.AlwaysBuild('libroc')
+        install_target = env.Install(env['ROC_BINDIR'], libroc_shared)
+        symlinks = env.SymlinkLibrary(install_target[0])
 
-    env.AddDistFile(env['ROC_SYSTEM_INCDIR'], '#src/public_api/include/roc')
-    env.AddDistFile(env['ROC_SYSTEM_LIBDIR'], target)
+        public_api_targets += [install_target]
+        public_api_targets += symlinks
 
-    env.AddDistAction(env.FixupLibrary(
-        os.path.join(env['ROC_SYSTEM_LIBDIR'], target[0].name)))
+        env.AddDistFile(env['ROC_SYSTEM_LIBDIR'], install_target)
 
-    for s in symlinks:
-        env.AddDistFile(env['ROC_SYSTEM_LIBDIR'], s)
+        if env.NeedsFixupSharedLibrary():
+            env.AddDistAction(env.FixupSharedLibrary(
+                os.path.join(env['ROC_SYSTEM_LIBDIR'], install_target[0].name)))
 
-    if 'PKG_CONFIG_PATH' in env.Dictionary():
-        pc_file = env.GeneratePkgConfig(
-            build_dir='.',
-            filename='roc.pc',
-            prefix=GetOption('prefix'),
-            libdir=env['ROC_SYSTEM_LIBDIR'],
-            name='roc',
-            desc='Real-time audio streaming over the network.',
-            url='https://roc-streaming.org',
-            version=env['ROC_VERSION'])
-        env.AddDistFile(env['PKG_CONFIG_PATH'], pc_file)
+        for lnk in symlinks:
+            env.AddDistFile(env['ROC_SYSTEM_LIBDIR'], lnk)
+
+    if GetOption('enable_static'):
+        thirdparty_libs = libs_env.GetThirdPartyStaticLibs()
+
+        if libs_env.SupportsRelocatableObject() and libs_env.SupportsLocalizedObject():
+            libroc_modules = libs_env.RelocatableObject(
+                'libroc_modules_unlocalized',
+                public_api_objects+all_modules_objects)
+
+            env.Depends(libroc_modules, all_modules_libs)
+
+            libroc_modules = libs_env.LocalizedObject('libroc_modules', libroc_modules)
+            libroc_static = libs_env.StaticLibrary(
+                'roc_modules' if thirdparty_libs else 'roc',
+                libroc_modules)
+        else:
+            libroc_static = libs_env.StaticLibrary(
+                'roc_modules' if thirdparty_libs else 'roc',
+                public_api_objects+all_modules_objects)
+
+        if thirdparty_libs:
+            libroc_static = libs_env.ComposeStaticLibraries(
+                'roc', libroc_static+thirdparty_libs)
+
+        install_target = env.Install(env['ROC_BINDIR'], libroc_static)
+        public_api_targets += [install_target]
+
+        env.AddDistFile(env['ROC_SYSTEM_LIBDIR'], install_target)
+
+    if not GetOption('disable_shared') or GetOption('enable_static'):
+        env.Alias('public_api', public_api_targets, env.Action(''))
+        env.AlwaysBuild('public_api')
+
+        env.AddDistFile(env['ROC_SYSTEM_INCDIR'], '#src/public_api/include/roc')
+
+        if 'PKG_CONFIG_PATH' in env.Dictionary():
+            pc_file = env.GeneratePkgConfig(
+                build_dir='.',
+                filename='roc.pc',
+                prefix=GetOption('prefix'),
+                libdir=env['ROC_SYSTEM_LIBDIR'],
+                name='roc',
+                desc='Real-time audio streaming over the network.',
+                url='https://roc-streaming.org',
+                version=env['ROC_VERSION'])
+            env.AddDistFile(env['PKG_CONFIG_PATH'], pc_file)
 
 if GetOption('enable_examples'):
-    cenv = env.Clone()
-    cenv.MergeEnvironment(subenvs.examples)
-    cenv.MergeEnvironment(subenvs.tools)
-    cenv.MergeEnvironment(subenvs.tests)
-    cenv.Append(CPPPATH=['public_api/include'])
-    cenv.Append(LIBS=[libroc])
+    examples_env = subenvs.examples.Clone()
+    examples_env.Append(CPPPATH=['public_api/include'])
+    examples_env.Prepend(LIBS=all_modules_libs)
 
-    targets = []
+    example_targets = []
 
-    for source in env.GlobFiles('public_api/examples/*.c'):
-        example = os.path.splitext(source.name)[0]
-        exename = 'roc-example-' + example.replace('_', '-')
+    for example_source in env.GlobFiles('public_api/examples/*.c'):
+        example_name = os.path.splitext(example_source.name)[0]
 
-        if 'pulseaudio' in example and not 'pulseaudio' in env['ROC_TARGETS']:
+        if 'pulseaudio' in example_name and not 'pulseaudio' in env['ROC_TARGETS']:
             continue
 
-        exe = cenv.Program(exename, [source],
-                    RPATH=(cenv['RPATH'] if 'RPATH' in cenv.Dictionary() else None))
+        exe_name = 'roc-example-' + example_name.replace('_', '-')
+        exe = examples_env.Program(
+            exe_name, [example_source]+public_api_objects)
 
-        env.Depends(exe, libroc)
-        targets.append(env.Install(env['ROC_BINDIR'], exe))
+        example_targets += [env.Install(env['ROC_BINDIR'], exe)]
 
-    env.Alias('examples', targets, env.Action(''))
+    env.Alias('examples', example_targets, env.Action(''))
     env.AlwaysBuild('examples')
 
-if GetOption('enable_tests') or GetOption('enable_benchmarks'):
-    cenv = env.Clone()
-    cenv.MergeEnvironment(subenvs.tools)
-    cenv.MergeEnvironment(subenvs.tests)
-    cenv.Append(CPPDEFINES=('ROC_MODULE', 'roc_test'))
-
-    sanitizer_opt_obj = []
+if not GetOption('disable_tools') \
+  or GetOption('enable_tests') or GetOption('enable_benchmarks'):
+    sanitizer_objects = []
     if GetOption('sanitizers'):
-        sanitizer_opt_obj = cenv.Object('sanitizer_options.cpp')
+        sanitizer_objects += subenvs.internal_modules.Object('sanitizer_options.cpp')
+
+if not GetOption('disable_tools'):
+    if env['ROC_COMMIT']:
+        verion_str = '%s (%s)' % (env['ROC_VERSION'], env['ROC_COMMIT'])
+    else:
+        verion_str = env['ROC_VERSION']
+
+    for tool_dir in env.GlobDirs('tools/*'):
+        tools_env = subenvs.tools.Clone()
+        tools_env.Prepend(LIBS=all_modules_libs)
+        tools_env.Append(CPPDEFINES=('ROC_MODULE', tool_dir.name))
+        tools_env.Append(CPPPATH=['tools', '#src/tools/%s' % tool_dir.name])
+
+        sources = env.GlobFiles('%s/*.cpp' % tool_dir)
+
+        objects = []
+        for ggo in env.GlobFiles('%s/*.ggo' % tool_dir):
+            objects += subenvs.generated_code.GenGetOpt(ggo, verion_str)
+
+        exe_name = tool_dir.name.replace('_', '-')
+
+        target = env.Install(env['ROC_BINDIR'],
+                    tools_env.Program(exe_name, sources+objects+sanitizer_objects))
+
+        env.Alias(exe_name, [target], env.Action(''))
+        env.AlwaysBuild(exe_name)
+
+        env.AddDistFile(env['ROC_SYSTEM_BINDIR'], target)
+
+if GetOption('enable_tests') or GetOption('enable_benchmarks'):
+    common_test_env = subenvs.tests.Clone()
+    common_test_env.Append(CPPDEFINES=('ROC_MODULE', 'roc_test'))
+    common_test_env.Prepend(LIBS=[all_modules_libs])
 
     if GetOption('enable_tests'):
-        test_main = cenv.Object('tests/test_main.cpp')
+        test_main_object = common_test_env.Object('tests/test_main.cpp')
 
     if GetOption('enable_benchmarks'):
-        bench_main = cenv.Object('tests/bench_main.cpp')
+        bench_main_object = common_test_env.Object('tests/bench_main.cpp')
 
-    for testname in env['ROC_MODULES'] + ['public_api']:
-        testdir = 'tests/' + testname
+    for test_name in env['ROC_MODULES'] + ['public_api']:
+        test_dir = 'tests/' + test_name
 
-        ccenv = cenv.Clone()
-        ccenv.Append(CPPPATH=['#src/%s' % testdir])
+        test_env = common_test_env.Clone()
+        test_env.Append(CPPPATH=['#src/%s' % test_dir])
 
-        if testname == 'public_api':
-            if GetOption('disable_lib'):
+        if test_name == 'public_api':
+            if GetOption('disable_shared') and not GetOption('enable_static'):
                 continue
-
-            ccenv.Append(CPPPATH=['public_api/include'])
-            ccenv.Prepend(LIBS=[libroc])
+            test_env.Append(CPPPATH=['public_api/include'])
 
         for kind in ['test', 'bench']:
             if kind == 'test':
                 if GetOption('enable_tests'):
-                    main = test_main
+                    main_object = test_main_object
                 else:
                     continue
             else:
                 if GetOption('enable_benchmarks'):
-                    main = bench_main
+                    main_object = bench_main_object
                 else:
                     continue
 
-            sources = env.GlobFiles('%s/%s_*.cpp' % (testdir, kind))
+            sources = []
 
-            for targetdir in env.GlobRecursive(testdir, 'target_*'):
-                if targetdir.name in env['ROC_TARGETS']:
-                    ccenv.Append(CPPPATH=['#src/%s' % targetdir])
-                    sources += env.GlobRecursive(targetdir, '%s_*.cpp' % kind)
+            sources += env.GlobFiles('%s/%s_*.cpp' % (test_dir, kind))
+            sources += env.GlobFiles('%s/test_helpers/*.cpp' % test_dir)
+
+            for target_dir in env.GlobRecursive(test_dir, 'target_*'):
+                if target_dir.name in env['ROC_TARGETS']:
+                    test_env.Append(CPPPATH=['#src/%s' % target_dir])
+                    sources += env.GlobRecursive(target_dir, '%s_*.cpp' % kind)
 
             if not sources:
                 continue
 
-            sources += env.GlobFiles('%s/test_helpers/*.cpp' % testdir)
+            sources_and_objects = sources + main_object + sanitizer_objects
+            if test_name == 'public_api':
+                sources_and_objects += public_api_objects
 
-            exename = 'roc-' + kind + '-' + testname.replace('roc_', '').replace('_', '-')
+            exe_name = 'roc-' + kind + '-' + test_name.replace('roc_', '').replace('_', '-')
+
             target = env.Install(env['ROC_BINDIR'],
-                ccenv.Program(exename, sources + main + sanitizer_opt_obj,
-                    RPATH=(ccenv['RPATH'] if 'RPATH' in ccenv.Dictionary() else None)))
+                test_env.Program(exe_name, sources_and_objects))
 
-            exefile = '%s/%s' % (env['ROC_BINDIR'], exename)
-
+            exe_file = '%s/%s' % (env['ROC_BINDIR'], exe_name)
             if kind == 'test':
-                env.AddTest(testname, exefile)
+                env.AddTest(test_name, exe_file)
             else:
-                env.AddBench(testname, exefile)
-
-if not GetOption('disable_tools'):
-    sanitizer_opt_obj = []
-    if GetOption('sanitizers'):
-        sanitizer_opt_obj = cenv.Object('sanitizer_options.cpp')
-    for tooldir in env.GlobDirs('tools/*'):
-        cenv = env.Clone()
-        cenv.MergeEnvironment(subenvs.tools)
-        cenv.Append(CPPDEFINES=('ROC_MODULE', tooldir.name))
-        cenv.Append(CPPPATH=['tools', '#src/tools/%s' % tooldir.name])
-
-        genv = subenvs.generated_code.Clone()
-        genv.MergeEnvironment(cenv)
-
-        sources = env.GlobFiles('%s/*.cpp' % tooldir)
-        objects = []
-        for ggo in env.GlobFiles('%s/*.ggo' % tooldir):
-            if env['ROC_COMMIT']:
-                verstr = '%s (%s)' % (env['ROC_VERSION'], env['ROC_COMMIT'])
-            else:
-                verstr = env['ROC_VERSION']
-            objects += genv.GenGetOpt(ggo, verstr)
-
-        exename = tooldir.name.replace('roc_', 'roc-')
-        target = env.Install(env['ROC_BINDIR'],
-                    cenv.Program(exename, sources+objects+sanitizer_opt_obj))
-
-        env.Alias(exename, [target], env.Action(''))
-        env.AlwaysBuild(exename)
-
-        env.AddDistFile(env['ROC_SYSTEM_BINDIR'], target)
+                env.AddBench(test_name, exe_file)

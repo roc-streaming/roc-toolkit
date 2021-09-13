@@ -110,15 +110,15 @@ def download(url, name, log, vendordir):
     print("error: can't download '%s': %s" % (url, error), file=sys.stderr)
     exit(1)
 
-def extract(filename, dirname):
+def unpack(filename, dirname):
     dirname_res = 'src/' + dirname
     dirname_tmp = 'tmp/' + dirname
 
     if os.path.exists(dirname_res):
-        print('[found extracted] %s' % dirname)
+        print('[found unpacked] %s' % dirname)
         return
 
-    print('[extract] %s' % filename)
+    print('[unpack] %s' % filename)
 
     rmpath(dirname_res)
     rmpath(dirname_tmp)
@@ -462,10 +462,12 @@ def checkfamily(env, toolchain, family):
 def makeflags(workdir, toolchain, env, deplist, cflags='', ldflags='', variant='', pthread=False):
     incdirs=[]
     libdirs=[]
+    rpathdirs=[]
 
     for dep in deplist:
-        incdirs += [os.path.join(workdir, 'build', dep, 'include')]
-        libdirs += [os.path.join(workdir, 'build', dep, 'lib')]
+        incdirs += [os.path.join(workdir, dep, 'include')]
+        libdirs += [os.path.join(workdir, dep, 'lib')]
+        rpathdirs += [os.path.join(workdir, dep, 'rpath')]
 
     cflags = ([cflags] if cflags else []) + ['-I%s' % path for path in incdirs]
     ldflags = ['-L%s' % path for path in libdirs] + ([ldflags] if ldflags else [])
@@ -491,7 +493,7 @@ def makeflags(workdir, toolchain, env, deplist, cflags='', ldflags='', variant='
             ldflags += ['-lpthread']
 
     if is_gnu:
-        ldflags += ['-Wl,-rpath-link=%s' % path for path in libdirs]
+        ldflags += ['-Wl,-rpath-link=%s' % path for path in rpathdirs]
 
     return ' '.join([
         'CXXFLAGS=%s' % quote(' '.join(cflags)),
@@ -529,10 +531,10 @@ if not m:
     exit(1)
 name, ver = m.group(1), m.group(2)
 
-builddir = os.path.join(workdir, 'build', fullname)
-rpathdir = os.path.join(workdir, 'rpath')
+builddir = os.path.join(workdir, fullname)
 
 logfile = os.path.join(builddir, 'build.log')
+rpathdir = os.path.join(builddir, 'rpath')
 
 rmpath(os.path.join(builddir, 'commit'))
 mkpath(os.path.join(builddir, 'src'))
@@ -544,7 +546,7 @@ if name == 'libuv':
              'libuv-v%s.tar.gz' % ver,
              logfile,
              vendordir)
-    extract('libuv-v%s.tar.gz' % ver,
+    unpack('libuv-v%s.tar.gz' % ver,
             'libuv-v%s' % ver)
     os.chdir('src/libuv-v%s' % ver)
     freplace('include/uv.h', '__attribute__((visibility("default")))', '')
@@ -578,7 +580,7 @@ elif name == 'libunwind':
         'libunwind-%s.tar.gz' % ver,
         logfile,
         vendordir)
-    extract('libunwind-%s.tar.gz' % ver,
+    unpack('libunwind-%s.tar.gz' % ver,
             'libunwind-%s' % ver)
     os.chdir('src/libunwind-%s' % ver)
     execute('./configure --host=%s %s %s %s' % (
@@ -603,7 +605,7 @@ elif name == 'libatomic_ops':
         'libatomic_ops-%s.tar.gz' % ver,
         logfile,
         vendordir)
-    extract('libatomic_ops-%s.tar.gz' % ver,
+    unpack('libatomic_ops-%s.tar.gz' % ver,
             'libatomic_ops-%s' % ver)
     os.chdir('src/libatomic_ops-%s' % ver)
     execute('./configure --host=%s %s %s %s' % (
@@ -628,7 +630,7 @@ elif name == 'openfec':
       'openfec_v%s.tar.gz' % ver,
         logfile,
         vendordir)
-    extract('openfec_v%s.tar.gz' % ver,
+    unpack('openfec_v%s.tar.gz' % ver,
             'openfec-%s' % ver)
     os.chdir('src/openfec-%s' % ver)
     mkpath('build')
@@ -651,7 +653,7 @@ elif name == 'speexdsp':
             '%s-%s.tar.gz' % (speex, ver),
             logfile,
             vendordir)
-    extract('%s-%s.tar.gz' % (speex, ver),
+    unpack('%s-%s.tar.gz' % (speex, ver),
             '%s-%s' % (speex, ver))
     os.chdir('src/%s-%s' % (speex, ver))
     execute('./configure --host=%s %s %s %s' % (
@@ -672,7 +674,7 @@ elif name == 'alsa':
         'alsa-lib-%s.tar.bz2' % ver,
         logfile,
         vendordir)
-    extract('alsa-lib-%s.tar.bz2' % ver,
+    unpack('alsa-lib-%s.tar.bz2' % ver,
             'alsa-lib-%s' % ver)
     os.chdir('src/alsa-lib-%s' % ver)
     execute('./configure --host=%s %s %s' % (
@@ -695,7 +697,7 @@ elif name == 'ltdl':
         'libtool-%s.tar.gz' % ver,
         logfile,
         vendordir)
-    extract('libtool-%s.tar.gz' % ver,
+    unpack('libtool-%s.tar.gz' % ver,
             'libtool-%s' % ver)
     os.chdir('src/libtool-%s' % ver)
     execute('./configure --host=%s %s %s' % (
@@ -716,7 +718,7 @@ elif name == 'json-c':
         'json-c-%s.tar.gz' % ver,
         logfile,
         vendordir)
-    extract('json-c-%s.tar.gz' % ver,
+    unpack('json-c-%s.tar.gz' % ver,
             'json-c-json-c-%s' % ver)
     os.chdir('src/json-c-json-c-%s' % ver)
     execute('%s --host=%s %s %s %s' % (
@@ -745,7 +747,7 @@ elif name == 'sndfile':
         'libsndfile-%s.tar.gz' % ver,
         logfile,
         vendordir)
-    extract('libsndfile-%s.tar.gz' % ver,
+    unpack('libsndfile-%s.tar.gz' % ver,
             'libsndfile-%s' % ver)
     os.chdir('src/libsndfile-%s' % ver)
     execute('%s --host=%s %s %s %s' % (
@@ -773,7 +775,7 @@ elif name == 'pulseaudio':
         'pulseaudio-%s.tar.gz' % ver,
         logfile,
         vendordir)
-    extract('pulseaudio-%s.tar.gz' % ver,
+    unpack('pulseaudio-%s.tar.gz' % ver,
             'pulseaudio-%s' % ver)
     pa_ver = tuple(map(int, ver.split('.')))
     if (8, 99, 1) <= pa_ver < (11, 99, 1):
@@ -829,7 +831,7 @@ elif name == 'sox':
       'sox-%s.tar.gz' % ver,
         logfile,
         vendordir)
-    extract('sox-%s.tar.gz' % ver,
+    unpack('sox-%s.tar.gz' % ver,
             'sox-%s' % ver)
     os.chdir('src/sox-%s' % ver)
     execute('./configure --host=%s %s %s %s' % (
@@ -840,10 +842,28 @@ elif name == 'sox':
             '--enable-static',
             '--disable-shared',
             '--disable-openmp',
-            '--without-id3tag',
+            '--without-libltdl',
+            '--without-magic',
             '--without-png',
+            '--without-ladspa',
+            '--without-mad',
+            '--without-id3tag',
+            '--without-lame',
+            '--without-twolame',
             '--without-ao',
             '--without-opus',
+            '--with-oggvorbis=no',
+            '--with-opus=no',
+            '--with-flac=no',
+            '--with-amrwb=no',
+            '--with-amrnb=no',
+            '--with-wavpack=no',
+            '--with-ao=no',
+            '--with-pulseaudio=no',
+            '--with-sndfile=no',
+            '--with-mp3=no',
+            '--with-gsm=no',
+            '--with-lpc10=no',
         ])), logfile)
     execute_make(logfile)
     install_files('src/sox.h', os.path.join(builddir, 'include'))
@@ -853,7 +873,7 @@ elif name == 'gengetopt':
              'gengetopt-%s.tar.gz' % ver,
              logfile,
              vendordir)
-    extract('gengetopt-%s.tar.gz' % ver,
+    unpack('gengetopt-%s.tar.gz' % ver,
             'gengetopt-%s' % ver)
     os.chdir('src/gengetopt-%s' % ver)
     execute('./configure', logfile, clear_env=True)
@@ -864,7 +884,7 @@ elif name == 'ragel':
              'ragel-%s.tar.gz' % ver,
              logfile,
              vendordir)
-    extract('ragel-%s.tar.gz' % ver,
+    unpack('ragel-%s.tar.gz' % ver,
             'ragel-%s' % ver)
     os.chdir('src/ragel-%s' % ver)
     execute('./configure', logfile, clear_env=True)
@@ -877,7 +897,7 @@ elif name == 'cpputest':
         'cpputest-%s.tar.gz' % ver,
         logfile,
         vendordir)
-    extract('cpputest-%s.tar.gz' % ver,
+    unpack('cpputest-%s.tar.gz' % ver,
             'cpputest-%s' % ver)
     os.chdir('src/cpputest-%s' % ver)
     execute('./configure --host=%s %s %s %s' % (
@@ -900,7 +920,7 @@ elif name == 'google-benchmark':
       'benchmark_v%s.tar.gz' % ver,
         logfile,
         vendordir)
-    extract('benchmark_v%s.tar.gz' % ver,
+    unpack('benchmark_v%s.tar.gz' % ver,
             'benchmark-%s' % ver)
     os.chdir('src/benchmark-%s' % ver)
     mkpath('build')

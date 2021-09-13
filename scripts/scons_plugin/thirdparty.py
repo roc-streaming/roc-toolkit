@@ -13,12 +13,13 @@ def _get_versioned_thirdparty(env, name, versions):
     return name + '-' + versions[name]
 
 def _build_thirdparty(env, build_root, toolchain, variant, versions, name, deps, includes, libs):
-    vname = _get_versioned_thirdparty(env, name, versions)
-    vdeps = []
-    for dep in deps:
-        vdeps.append(_get_versioned_thirdparty(env, dep, versions))
+    versioned_name = _get_versioned_thirdparty(env, name, versions)
 
-    envvars = [
+    versioned_deps = []
+    for dep in deps:
+        versioned_deps.append(_get_versioned_thirdparty(env, dep, versions))
+
+    env_vars = [
         'CXX=%s'    % quote(env['CXX']),
         'CXXLD=%s'  % quote(env['CXXLD']),
         'CC=%s'     % quote(env['CC']),
@@ -29,27 +30,27 @@ def _build_thirdparty(env, build_root, toolchain, variant, versions, name, deps,
 
     project_root = env.Dir('#').srcnode().abspath
     build_root = env.Dir(build_root).abspath
-    thirdparty_dir = os.path.join(build_root, 'build', vname)
+    thirdparty_dir = os.path.join(build_root, versioned_name)
 
     if not os.path.exists(os.path.join(thirdparty_dir, 'commit')):
-        save_cwd = os.getcwd()
+        saved_cwd = os.getcwd()
         os.chdir(project_root)
 
         if env.Execute(
-            '%s scripts/scons_helpers/build-3rdparty.py %s 3rdparty/distfiles %s %s %s %s %s' % (
+            '%s scripts/scons_helpers/build-3rdparty.py %s 3rdparty/_distfiles %s %s %s %s %s' % (
                 quote(env.GetPythonExecutable()),
                 quote(os.path.relpath(build_root, project_root)),
                 quote(toolchain),
                 quote(variant),
-                quote(vname),
-                quote(':'.join(vdeps)),
-                ' '.join(envvars)),
+                quote(versioned_name),
+                quote(':'.join(versioned_deps)),
+                ' '.join(env_vars)),
             cmdstr = env.PrettyCommand(
-                'GET', os.path.relpath(thirdparty_dir, project_root), 'yellow')):
+                'BUILD', os.path.relpath(thirdparty_dir, project_root), 'yellow')):
 
             logfile = os.path.join(thirdparty_dir, 'build.log')
             message = "can't make '%s', see '%s' for details" % (
-                vname, os.path.relpath(logfile, project_root))
+                versioned_name, os.path.relpath(logfile, project_root))
 
             if os.environ.get('CI', '') in ['1', 'true']:
                 try:
@@ -60,7 +61,7 @@ def _build_thirdparty(env, build_root, toolchain, variant, versions, name, deps,
 
             env.Die('%s', message)
 
-        os.chdir(save_cwd)
+        os.chdir(saved_cwd)
 
 def _import_thridparty(env, build_root, toolchain, variant, versions, name, deps, includes, libs):
     def needlib(lib):
@@ -69,26 +70,32 @@ def _import_thridparty(env, build_root, toolchain, variant, versions, name, deps
                 return True
         return False
 
-    vname = _get_versioned_thirdparty(env, name, versions)
+    versioned_name = _get_versioned_thirdparty(env, name, versions)
 
     if not includes:
         includes = ['']
 
     for s in includes:
-        env.Prepend(CPPPATH=[
-            '%s/build/%s/include/%s' % (build_root, vname, s)
-        ])
+        incdir  ='%s/%s/include' % (build_root, versioned_name)
+        if s:
+            incdir += '/' + s
 
-    libdir = '%s/build/%s/lib' % (build_root, vname)
+        if os.path.isdir(env.Dir(incdir).abspath):
+            env.Prepend(CPPPATH=[incdir])
+
+    libdir = '%s/%s/lib' % (build_root, versioned_name)
+    rpathdir = '%s/%s/rpath' % (build_root, versioned_name)
 
     if os.path.isdir(env.Dir(libdir).abspath):
         env.Prepend(LIBPATH=[libdir])
+        env.Append(RPATH_LINK_DIRS=[rpathdir])
 
         for lib in env.GlobRecursive(env.Dir(libdir).abspath, 'lib*'):
             if needlib(lib.path):
                 env.Prepend(LIBS=[env.File(lib)])
+                env.Append(_THIRDPARTY_LIBS=[lib.abspath])
 
-def ParseThirdParties(env, s):
+def ParseThirdPartyList(env, s):
     ret = dict()
     if s:
         for t in s.split(','):
@@ -111,6 +118,26 @@ def BuildThirdParty(
     _import_thridparty(
         env, build_root, toolchain, variant, versions, name, deps, includes, libs)
 
+def GetThirdPartyExecutable(env, build_root, versions, name, exe_name):
+    return env.File(
+        '%s/%s/bin/%s%s' % (
+            build_root,
+            _get_versioned_thirdparty(env, name, versions),
+            exe_name,
+            env['PROGSUFFIX']))
+
+def GetThirdPartyStaticLibs(env):
+    all_libs = env.get('_THIRDPARTY_LIBS', [])
+    static_libs = []
+
+    for lib in all_libs:
+        if lib.endswith(env['LIBSUFFIX']):
+            static_libs.append(lib)
+
+    return static_libs
+
 def init(env):
-    env.AddMethod(ParseThirdParties, 'ParseThirdParties')
+    env.AddMethod(ParseThirdPartyList, 'ParseThirdPartyList')
     env.AddMethod(BuildThirdParty, 'BuildThirdParty')
+    env.AddMethod(GetThirdPartyExecutable, 'GetThirdPartyExecutable')
+    env.AddMethod(GetThirdPartyStaticLibs, 'GetThirdPartyStaticLibs')
