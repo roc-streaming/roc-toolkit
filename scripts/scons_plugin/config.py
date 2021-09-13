@@ -382,7 +382,10 @@ def FindPkgConfig(context, toolchain):
     context.Result('not found')
     return False
 
-def FindPkgConfigPath(context):
+def FindPkgConfigPath(context, prefix):
+    if not prefix.endswith(os.sep):
+        prefix += os.sep
+
     env = context.env
 
     context.Message("Searching PKG_CONFIG_PATH...")
@@ -399,10 +402,18 @@ def FindPkgConfigPath(context):
         pkg_config_paths = env.GetCommandOutput(
             '%s --variable pc_path pkg-config' % quote(pkg_config))
         try:
-            for path in pkg_config_paths.split(':'):
-                if os.path.isdir(path):
-                    env['PKG_CONFIG_PATH'] = path
-                    break
+            path_list = pkg_config_paths.split(':')
+            def select_path():
+                for path in path_list:
+                    if path.startswith(prefix) and os.path.isdir(path):
+                        return path
+                for path in path_list:
+                    if path.startswith(prefix):
+                        return path
+
+            path = select_path()
+            if path:
+                env['PKG_CONFIG_PATH'] = path
         except:
             pass
 
