@@ -9,7 +9,9 @@ def _find_argument(env, arg):
     return ret
 
 def _mark_known_argument(env, arg):
-    env.AppendUnique(**{'_KNOWN_ARGS':arg})
+    if '_KNOWN_ARGS' not in env.Dictionary():
+        env['_KNOWN_ARGS'] = set()
+    env['_KNOWN_ARGS'].add(arg)
 
 def _is_known_argument(env, arg):
     if '_KNOWN_ARGS' in env.Dictionary():

@@ -142,7 +142,7 @@ def CheckCompilerOptionSupported(context, opt, language):
         context.Result('no')
         return False
 
-def FindTool(context, var, toolchain, version, commands, prepend_path=[]):
+def FindTool(context, var, toolchain, commands, prepend_path=[], required=True):
     env = context.env
 
     context.Message("Searching %s executable... " % var)
@@ -150,6 +150,9 @@ def FindTool(context, var, toolchain, version, commands, prepend_path=[]):
     if env.HasArgument(var):
         context.Result(env[var])
         return True
+
+    if not toolchain:
+        toolchain = ''
 
     toolchain_list = [toolchain]
 
@@ -162,7 +165,7 @@ def FindTool(context, var, toolchain, version, commands, prepend_path=[]):
     found = False
 
     for tool_prefix in toolchain_list:
-        for tool_cmd in commands:
+        for tool_cmd, tool_ver in commands:
             if isinstance(tool_cmd, list):
                 tool_name = tool_cmd[0]
                 tool_flags = tool_cmd[1:]
@@ -175,16 +178,16 @@ def FindTool(context, var, toolchain, version, commands, prepend_path=[]):
             else:
                 tool = '%s-%s' % (tool_prefix, tool_name)
 
-            if version:
+            if tool_ver:
                 search_versions = [
-                    version[:3],
-                    version[:2],
-                    version[:1],
+                    tool_ver[:3],
+                    tool_ver[:2],
+                    tool_ver[:1],
                 ]
 
                 default_ver = env.ParseCompilerVersion(tool)
 
-                if default_ver and default_ver[:len(version)] == version:
+                if default_ver and default_ver[:len(tool_ver)] == tool_ver:
                     search_versions += [default_ver]
 
                 for ver in reversed(sorted(set(search_versions))):
@@ -194,33 +197,42 @@ def FindTool(context, var, toolchain, version, commands, prepend_path=[]):
                         break
 
             tool_path = env.Which(tool, prepend_path)
-            if tool_path:
-                env[var] = tool_path[0]
-                if tool_flags:
-                    env['%sFLAGS' % var] = ' '.join(tool_flags)
-                found = True
-                break
+            if not tool_path:
+                continue
+
+            if tool_ver:
+                actual_ver = env.ParseCompilerVersion(tool_path[0])
+                if actual_ver:
+                    actual_ver = actual_ver[:len(tool_ver)]
+
+                if actual_ver != tool_ver:
+                    env.Die(
+                        ("problem detecting %s: "+
+                        "found '%s', which reports version %s, but expected version %s") % (
+                            var,
+                            tool_path[0],
+                            '.'.join(map(str, actual_ver)) if actual_ver else '<unknown>',
+                            '.'.join(map(str, tool_ver))))
+
+            env[var] = tool_path[0]
+            if tool_flags:
+                env['%sFLAGS' % var] = ' '.join(tool_flags)
+
+            found = True
+            break
 
         if found:
             break
 
     if not found:
+        if not required:
+            env[var] = None
+            context.Result('not found')
+            return False
+
         env.Die("can't detect %s: looked for any of: %s" % (
             var,
             ', '.join([' '.join(c) if isinstance(c, list) else c for c in commands])))
-
-    if version:
-        actual_ver = env.ParseCompilerVersion(env[var])
-        if actual_ver:
-            actual_ver = actual_ver[:len(version)]
-
-        if actual_ver != version:
-            env.Die(
-                "can't detect %s: '%s' not found in PATH, '%s' version is %s" % (
-                    var,
-                    '%s-%s' % (tool, '.'.join(map(str, version))),
-                    env[var],
-                    '.'.join(map(str, actual_ver))))
 
     message = env[var]
     realpath = os.path.realpath(env[var])

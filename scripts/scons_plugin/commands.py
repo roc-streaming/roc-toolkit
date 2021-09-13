@@ -5,6 +5,11 @@ import re
 import shutil
 import sys
 
+try:
+    from shlex import quote
+except:
+    from pipes import quote
+
 def ClangFormat(env, srcdir):
     return env.Action(
         '%s -i %s' % (env['CLANG_FORMAT'], ' '.join(map(str,
@@ -136,18 +141,55 @@ def GenGetOpt(env, source, ver):
 
     return ret
 
-def MaybeStripLibrary(env, dst, src, is_debug):
+def SupportsRelocatableObject(env):
+    if not env.get('LD', None):
+        return False
+
+    out = env.GetCommandOutput('%s -V' % env['LD'])
+    return 'GNU' in out
+
+def RelocatableObject(env, dst, src_list):
+    dst += env['OBJSUFFIX']
+
+    action = SCons.Action.CommandAction(
+        '$LD -r $SOURCES -o $TARGET',
+        cmdstr=env.PrettyCommand('LD', env.File(dst).path, 'red'))
+
+    return env.Command(dst, src_list, [action])
+
+def SupportsLocalizedObject(env):
+    if not env.get('OBJCOPY', None):
+        return False
+
+    out = env.GetCommandOutput('%s -V' % env['OBJCOPY'])
+    return 'GNU' in out
+
+def LocalizedObject(env, dst, src):
+    dst += env['OBJSUFFIX']
+
+    action = SCons.Action.CommandAction(
+        '$OBJCOPY --localize-hidden --strip-unneeded $SOURCE $TARGET',
+        cmdstr=env.PrettyCommand('OBJCOPY', env.File(dst).path, 'red'))
+
+    return env.Command(dst, src, [action])
+
+def SupportsStripSharedLibrary(env):
+    return env.get('STRIP', None) is not None
+
+def StripSharedLibrary(env, dst, src):
     def copy(target, source, env):
         shutil.copy(source[0].path, target[0].path)
 
     actions =  [
-        env.Action(copy, env.PrettyCommand('CP', src[0].path, 'yellow'))
+        env.Action(
+            copy,
+            env.PrettyCommand('CP', env.File(dst).path, 'yellow'),
+            ),
+        SCons.Action.CommandAction(
+            '$STRIP $STRIPFLAGS $TARGET',
+            cmdstr=env.PrettyCommand('STRIP', '$TARGET', 'red'),
+            ),
     ]
-    if 'STRIP' in env.Dictionary() and not is_debug:
-        actions += [
-            SCons.Action.CommandAction('$STRIP $STRIPFLAGS $TARGET',
-                cmdstr=env.PrettyCommand('STRIP', '$TARGET', 'red')),
-        ]
 
     return env.Command(dst, src, actions)
 
@@ -170,17 +212,32 @@ def SymlinkLibrary(env, src):
         ret += [dst]
 
         env.Command(dst, src, env.Action(
-            symlink, env.PrettyCommand('SYMLINK', dst.path, 'yellow', 'ln(%s)' % dst.path)))
+            symlink, env.PrettyCommand('LN', dst.path, 'yellow', 'ln(%s)' % dst.path)))
 
     return ret
 
-def FixupLibrary(env, path):
-    if not path.endswith('.dylib') or not env.Which('install_name_tool'):
-        return []
+def NeedsFixupSharedLibrary(env):
+    return env.get('INSTALL_NAME_TOOL', None) is not None
 
-    return [SCons.Action.CommandAction(
-        'install_name_tool -id "%s" "%s"' % (path, path),
-        cmdstr = env.PrettyCommand('FIXUP', path, 'yellow'))]
+def FixupSharedLibrary(env, path):
+    return [
+        SCons.Action.CommandAction(
+            '$INSTALL_NAME_TOOL -id "%s" "%s"' % (path, path),
+            cmdstr=env.PrettyCommand('FIXUP', path, 'yellow')),
+            ]
+
+def ComposeStaticLibraries(env, dst_lib, src_libs):
+    dst_lib = env['LIBPREFIX'] + dst_lib + env['LIBSUFFIX']
+
+    action = SCons.Action.CommandAction(
+        '%s scripts/scons_helpers/compose-libs.py %s %s AR=%s' % (
+            env.GetPythonExecutable(),
+            quote(env.File(dst_lib).path),
+            ' '.join([quote(env.File(lib).path) for lib in src_libs]),
+            quote(env['AR'])),
+        cmdstr=env.PrettyCommand('COMPOSE', env.File(dst_lib).path, 'red'))
+
+    return env.Command(dst_lib, [src_libs[0]], [action])
 
 def DeleteFile(env, path):
     path = env.File(path).path
@@ -207,7 +264,7 @@ def Artifact(env, dst, src):
     target = env.File(dst)
 
     env.Command(dst, src, env.Action(noop, env.PrettyCommand(
-            'CHECK', target.path, 'purple', 'art(%s)' % target.path)))
+            'ART', target.path, 'yellow', 'art(%s)' % target.path)))
 
     env.Precious(dst)
     env.Requires(dst, src)
@@ -221,9 +278,16 @@ def init(env):
     env.AddMethod(Sphinx, 'Sphinx')
     env.AddMethod(Ragel, 'Ragel')
     env.AddMethod(GenGetOpt, 'GenGetOpt')
-    env.AddMethod(MaybeStripLibrary, 'MaybeStripLibrary')
+    env.AddMethod(SupportsRelocatableObject, 'SupportsRelocatableObject')
+    env.AddMethod(RelocatableObject, 'RelocatableObject')
+    env.AddMethod(SupportsLocalizedObject, 'SupportsLocalizedObject')
+    env.AddMethod(LocalizedObject, 'LocalizedObject')
+    env.AddMethod(SupportsStripSharedLibrary, 'SupportsStripSharedLibrary')
+    env.AddMethod(StripSharedLibrary, 'StripSharedLibrary')
     env.AddMethod(SymlinkLibrary, 'SymlinkLibrary')
-    env.AddMethod(FixupLibrary, 'FixupLibrary')
+    env.AddMethod(NeedsFixupSharedLibrary, 'NeedsFixupSharedLibrary')
+    env.AddMethod(FixupSharedLibrary, 'FixupSharedLibrary')
+    env.AddMethod(ComposeStaticLibraries, 'ComposeStaticLibraries')
     env.AddMethod(DeleteFile, 'DeleteFile')
     env.AddMethod(DeleteDir, 'DeleteDir')
     env.AddMethod(Artifact, 'Artifact')

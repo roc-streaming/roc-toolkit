@@ -16,7 +16,8 @@ find bin/${TOOLCHAIN} -name 'roc-test-*' \
      -not -name 'roc-test-library' |\
     while read t
     do
-        LD_LIBRARY_PATH="/opt/sysroot/lib:${PWD}/build/3rdparty/${TOOLCHAIN}/${COMPILER}/rpath" \
+        LD_LIBRARY_PATH="/opt/sysroot/lib:$(echo \
+          "${PWD}"/build/3rdparty/${TOOLCHAIN}/${COMPILER}/*/rpath | tr ' ' ':')" \
             python2 scripts/scons_helpers/run-with-timeout.py 300 \
             qemu-aarch64 -L "/opt/sysroot" -cpu ${CPU} $t
     done
