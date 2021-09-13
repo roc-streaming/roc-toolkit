@@ -547,7 +547,7 @@ else:
     conf.FindLibDir(GetOption('prefix'), meta.host)
 
 conf.FindPkgConfig(meta.toolchain)
-conf.FindPkgConfigPath()
+conf.FindPkgConfigPath(GetOption('prefix'))
 
 env = conf.Finish()
 
