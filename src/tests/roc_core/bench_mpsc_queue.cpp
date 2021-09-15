@@ -18,6 +18,16 @@ namespace {
 
 enum { BatchSize = 10000, NumIterations = 5000000, NumThreads = 16 };
 
+#if defined(ROC_BENCHMARK_USE_ACCESSORS)
+inline int get_thread_index(const benchmark::State& state) {
+    return state.thread_index();
+}
+#else
+inline int get_thread_index(const benchmark::State& state) {
+    return state.thread_index;
+}
+#endif
+
 struct Object : MpscQueueNode { };
 
 class BM_MpscQueue : public benchmark::Fixture {
@@ -101,7 +111,7 @@ BENCHMARK_DEFINE_F(BM_MpscQueue, PushBack)(benchmark::State& state) {
 
     while (state.KeepRunningBatch(BatchSize)) {
         for (int n = 0; n < BatchSize; n++) {
-            queue.push_back(alloc_object(state.thread_index));
+            queue.push_back(alloc_object(get_thread_index(state)));
         }
     }
 }

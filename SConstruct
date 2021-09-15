@@ -975,6 +975,32 @@ if meta.compiler == 'clang':
             '-Wno-deprecated-dynamic-exception-spec',
         ])
 
+if meta.compiler == 'clang':
+    subenvs.tests.AppendUnique(CXXFLAGS=[
+        '-Wno-weak-vtables',
+        '-Wno-unused-member-function',
+    ])
+
+    if meta.platform in ['linux', 'android']:
+        if meta.compiler_ver[:2] >= (5, 0):
+            for var in ['CXXFLAGS', 'CFLAGS']:
+                subenvs.tests.AppendUnique(**{var: [
+                    '-Wno-unused-template',
+                ]})
+
+    if meta.platform == 'darwin':
+        if meta.compiler_ver[:2] >= (9, 1):
+            for var in ['CXXFLAGS', 'CFLAGS']:
+                subenvs.tests.AppendUnique(**{var: [
+                    '-Wno-unused-template',
+                ]})
+
+if meta.compiler in ['gcc', 'clang']:
+    for var in ['CXXFLAGS', 'CFLAGS']:
+        subenvs.generated_code.AppendUnique(**{var: [
+            '-w',
+        ]})
+
 sanitizers = env.ParseList(GetOption('sanitizers'), supported_sanitizers)
 if sanitizers:
     if not meta.compiler in ['gcc', 'clang']:
@@ -1000,18 +1026,6 @@ if meta.platform in ['linux']:
 subenvs.tests.Append(
     CPPDEFINES=('CPPUTEST_USE_MEM_LEAK_DETECTION', '0')
     )
-
-if meta.compiler == 'clang':
-    subenvs.tests.AppendUnique(CXXFLAGS=[
-        '-Wno-weak-vtables',
-        '-Wno-unused-member-function',
-    ])
-
-if meta.compiler in ['gcc', 'clang']:
-    for var in ['CXXFLAGS', 'CFLAGS']:
-        subenvs.generated_code.AppendUnique(**{var: [
-            '-w',
-        ]})
 
 if meta.platform in ['darwin']:
     if not env['STRIPFLAGS']:
