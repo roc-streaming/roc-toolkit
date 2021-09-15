@@ -352,6 +352,9 @@ if 'google-benchmark' in autobuild_dependencies:
     subenvs.tests.BuildThirdParty(thirdparty_build_dir, meta.toolchain,
                         meta.thirdparty_variant, thirdparty_versions, 'google-benchmark')
 
+    if tuple(map(int, thirdparty_versions['google-benchmark'].split('.'))) >= (1, 6, 0):
+        subenvs.tests.AppendUnique(CPPDEFINES=['ROC_BENCHMARK_USE_ACCESSORS'])
+
 elif 'google-benchmark' in system_dependencies:
     conf = Configure(subenvs.tests, custom_tests=env.CustomTests)
 
@@ -361,6 +364,12 @@ elif 'google-benchmark' in system_dependencies:
     if not conf.CheckLibWithHeaderExt(
             'benchmark', 'benchmark/benchmark.h', 'CXX', run=not is_crosscompiling):
         subenvs.tests.Die("Google Benchmark not found (see 'config.log' for details)")
+
+    if conf.CheckLibWithHeaderExt(
+        'benchmark', 'benchmark/benchmark.h', 'CXX',
+        expr='(bool)(int (benchmark::State::*)()const)&benchmark::State::thread_index',
+        run=False):
+        subenvs.tests.AppendUnique(CPPDEFINES=['ROC_BENCHMARK_USE_ACCESSORS'])
 
     subenvs.tests = conf.Finish()
 

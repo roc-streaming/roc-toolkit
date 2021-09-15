@@ -927,6 +927,7 @@ elif name == 'google-benchmark':
     os.chdir('build')
     execute_cmake('..', variant, toolchain, env, logfile, args=[
         '-DBENCHMARK_ENABLE_GTEST_TESTS=OFF',
+        '-DCMAKE_CXX_FLAGS=-w',
         ])
     execute_make(logfile)
     os.chdir('..')
