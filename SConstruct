@@ -449,29 +449,29 @@ if meta.compiler == 'clang':
     conf.FindLLVMDir(meta.compiler_ver)
 
 if meta.compiler == 'clang':
-    conf.FindTool('CXX', meta.toolchain, [('clang++', meta.compiler_ver)])
+    conf.FindTool('CXX', [meta.toolchain], [('clang++', meta.compiler_ver)])
 elif meta.compiler == 'gcc':
-    conf.FindTool('CXX', meta.toolchain, [('g++', meta.compiler_ver)])
+    conf.FindTool('CXX', [meta.toolchain], [('g++', meta.compiler_ver)])
 elif meta.compiler == 'cc':
-    conf.FindTool('CXX', meta.toolchain, [('c++', meta.compiler_ver)])
+    conf.FindTool('CXX', [meta.toolchain], [('c++', meta.compiler_ver)])
 
 full_compiler_ver = env.ParseCompilerVersion(conf.env['CXX'])
 if full_compiler_ver:
     meta.compiler_ver = full_compiler_ver
 
 if not meta.build:
-    if conf.FindConfigGuess():
-        meta.build = env.ParseConfigGuess(conf.env['CONFIG_GUESS'])
+    for local_compiler in ['/usr/bin/gcc', '/usr/bin/clang']:
+        meta.build = env.ParseCompilerTarget(local_compiler)
+        if meta.build:
+            break
 
 if not meta.build and not meta.host:
     if conf.CheckCanRunProgs():
         meta.build = env.ParseCompilerTarget(conf.env['CXX'])
 
 if not meta.build:
-    for local_compiler in ['/usr/bin/gcc', '/usr/bin/clang']:
-        meta.build = env.ParseCompilerTarget(local_compiler)
-        if meta.build:
-            break
+    if conf.FindConfigGuess():
+        meta.build = env.ParseConfigGuess(conf.env['CONFIG_GUESS'])
 
 if not meta.build:
     env.Die(("can't detect system type, please specify '--build={type}' manually, "+
@@ -482,6 +482,9 @@ if not meta.host:
 
 if not meta.host:
     meta.host = meta.build
+
+if not meta.toolchain and meta.build != meta.host:
+    meta.toolchain = meta.host
 
 if not meta.platform:
     if 'android' in meta.host:
@@ -503,11 +506,16 @@ if meta.platform not in supported_platforms:
     env.Die(("unknown --platform '%s', expected on of: %s"),
                 meta.platform, ', '.join(supported_platforms))
 
+allowed_toolchains = [meta.toolchain]
+if meta.toolchain != '' and meta.build == meta.host:
+    allowed_toolchains += ['']
+
 if meta.compiler == 'clang':
-    conf.FindTool('CC', meta.toolchain, [('clang', meta.compiler_ver)])
-    conf.FindTool('CXXLD', meta.toolchain, [('clang++', meta.compiler_ver)])
-    conf.FindTool('CCLD', meta.toolchain, [('clang', meta.compiler_ver)])
-    conf.FindTool('LD', meta.toolchain, [('ld', None)], required=False)
+    conf.FindTool('CXX', allowed_toolchains, [('clang++', meta.compiler_ver)])
+    conf.FindTool('CC', allowed_toolchains, [('clang', meta.compiler_ver)])
+    conf.FindTool('CXXLD', allowed_toolchains, [('clang++', meta.compiler_ver)])
+    conf.FindTool('CCLD', allowed_toolchains, [('clang', meta.compiler_ver)])
+    conf.FindTool('LD', allowed_toolchains, [('ld', None)], required=False)
 
     compiler_dir = env.ParseCompilerDirectory(conf.env['CXX'])
     if compiler_dir:
@@ -515,46 +523,50 @@ if meta.compiler == 'clang':
     else:
         prepend_path = []
 
-    conf.FindTool('AR', meta.toolchain,
-                  [('llvm-ar', meta.toolchain), ('llvm-ar', None), ('ar', None)],
+    conf.FindTool('AR', allowed_toolchains,
+                  [('llvm-ar', meta.compiler_ver), ('llvm-ar', None), ('ar', None)],
                   prepend_path=prepend_path)
 
-    conf.FindTool('RANLIB', meta.toolchain,
-                  [('llvm-ranlib', meta.toolchain), ('llvm-ranlib', None), ('ranlib', None)],
+    conf.FindTool('RANLIB', allowed_toolchains,
+                  [('llvm-ranlib', meta.compiler_ver), ('llvm-ranlib', None), ('ranlib', None)],
                   prepend_path=prepend_path)
 
-    conf.FindTool('STRIP', meta.toolchain,
-                  [('llvm-strip', meta.toolchain), ('llvm-strip', None), ('strip', None)],
+    conf.FindTool('STRIP', allowed_toolchains,
+                  [('llvm-strip', meta.compiler_ver), ('llvm-strip', None), ('strip', None)],
                   prepend_path=prepend_path)
 
-    conf.FindTool('OBJCOPY', meta.toolchain,
-                  [('llvm-objcopy', meta.toolchain), ('llvm-objcopy', None), ('objcopy', None)],
+    conf.FindTool('OBJCOPY', allowed_toolchains,
+                  [('llvm-objcopy', meta.compiler_ver),
+                   ('llvm-objcopy', None),
+                   ('objcopy', None)],
                   prepend_path=prepend_path,
                   required=False)
 
 elif meta.compiler == 'gcc':
-    conf.FindTool('CC', meta.toolchain, [('gcc', meta.compiler_ver)])
-    conf.FindTool('CXXLD', meta.toolchain, [('g++', meta.compiler_ver)])
-    conf.FindTool('CCLD', meta.toolchain, [('gcc', meta.compiler_ver)])
-    conf.FindTool('LD', meta.toolchain, [('ld', None)], required=False)
-    conf.FindTool('AR', meta.toolchain, [('ar', None)])
-    conf.FindTool('RANLIB', meta.toolchain, [('ranlib', None)])
-    conf.FindTool('STRIP', meta.toolchain, [('strip', None)])
-    conf.FindTool('OBJCOPY', meta.toolchain, [('objcopy', None)], required=False)
+    conf.FindTool('CXX', allowed_toolchains, [('g++', meta.compiler_ver)])
+    conf.FindTool('CC', allowed_toolchains, [('gcc', meta.compiler_ver)])
+    conf.FindTool('CXXLD', allowed_toolchains, [('g++', meta.compiler_ver)])
+    conf.FindTool('CCLD', allowed_toolchains, [('gcc', meta.compiler_ver)])
+    conf.FindTool('LD', allowed_toolchains, [('ld', None)], required=False)
+    conf.FindTool('AR', allowed_toolchains, [('ar', None)])
+    conf.FindTool('RANLIB', allowed_toolchains, [('ranlib', None)])
+    conf.FindTool('STRIP', allowed_toolchains, [('strip', None)])
+    conf.FindTool('OBJCOPY', allowed_toolchains, [('objcopy', None)], required=False)
 
 elif meta.compiler == 'cc':
-    conf.FindTool('CC', meta.toolchain, [('cc', meta.compiler_ver)])
-    conf.FindTool('CXXLD', meta.toolchain, [('c++', meta.compiler_ver)])
-    conf.FindTool('CCLD', meta.toolchain, [('cc', meta.compiler_ver)])
-    conf.FindTool('AR', meta.toolchain, [('ar', None)])
-    conf.FindTool('RANLIB', meta.toolchain, [('ranlib', None)])
-    conf.FindTool('STRIP', meta.toolchain, [('strip', None)])
+    conf.FindTool('CXX', allowed_toolchains, [('c++', meta.compiler_ver)])
+    conf.FindTool('CC', allowed_toolchains, [('cc', meta.compiler_ver)])
+    conf.FindTool('CXXLD', allowed_toolchains, [('c++', meta.compiler_ver)])
+    conf.FindTool('CCLD', allowed_toolchains, [('cc', meta.compiler_ver)])
+    conf.FindTool('AR', allowed_toolchains, [('ar', None)])
+    conf.FindTool('RANLIB', allowed_toolchains, [('ranlib', None)])
+    conf.FindTool('STRIP', allowed_toolchains, [('strip', None)])
 
 conf.env['LINK'] = env['CXXLD']
 conf.env['SHLINK'] = env['CXXLD']
 
 if meta.platform == 'darwin':
-    conf.FindTool('INSTALL_NAME_TOOL', None, [('install_name_tool', None)], required=False)
+    conf.FindTool('INSTALL_NAME_TOOL', [''], [('install_name_tool', None)], required=False)
 
 if meta.compiler in ['gcc', 'clang']:
     meta.fpic_supported = True

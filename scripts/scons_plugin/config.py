@@ -142,7 +142,7 @@ def CheckCompilerOptionSupported(context, opt, language):
         context.Result('no')
         return False
 
-def FindTool(context, var, toolchain, commands, prepend_path=[], required=True):
+def FindTool(context, var, toolchains, commands, prepend_path=[], required=True):
     env = context.env
 
     context.Message("Searching %s executable... " % var)
@@ -151,20 +151,26 @@ def FindTool(context, var, toolchain, commands, prepend_path=[], required=True):
         context.Result(env[var])
         return True
 
-    if not toolchain:
-        toolchain = ''
+    toolchains = list(toolchains)
 
-    toolchain_list = [toolchain]
+    for tc in list(toolchains):
+        if '-pc-' in tc:
+            toolchains += [tc.replace('-pc-', '-')]
 
-    if 'android' in toolchain:
-        m = re.search('((android(eabi)?)\d+)$', toolchain)
-        if m:
-            toolchain_list += [toolchain.replace(m.group(1), m.group(2))]
-        toolchain_list += [toolchain_list[-1].replace('armv7a', 'arm')]
+        if 'android' in tc:
+            m = re.search('((android(eabi)?)\d+)$', tc)
+            if m:
+                tc = tc.replace(m.group(1), m.group(2))
+                toolchains += [tc]
+            toolchains += [tc.replace('armv7a', 'arm')]
+
+    if '' in toolchains:
+        toolchains.remove('')
+        toolchains.append('')
 
     found = False
 
-    for tool_prefix in toolchain_list:
+    for tool_prefix in toolchains:
         for tool_cmd, tool_ver in commands:
             if isinstance(tool_cmd, list):
                 tool_name = tool_cmd[0]
@@ -225,14 +231,12 @@ def FindTool(context, var, toolchain, commands, prepend_path=[], required=True):
             break
 
     if not found:
-        if not required:
+        if required:
+            env.Die("can't find %s executable" % var)
+        else:
             env[var] = None
             context.Result('not found')
             return False
-
-        env.Die("can't detect %s: looked for any of: %s" % (
-            var,
-            ', '.join([' '.join(c) if isinstance(c, list) else c for c in commands])))
 
     message = env[var]
     realpath = os.path.realpath(env[var])
