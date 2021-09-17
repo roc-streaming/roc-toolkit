@@ -260,7 +260,7 @@ jobs:
           scripts/ci_checks/macos/macos.sh
 
   triggers:
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+    if: ${{ github.event_name == 'push' }}
 
     runs-on: ubuntu-latest
 
@@ -268,12 +268,32 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
+      - name: Trigger roc-go
+        if: ${{ github.ref == 'refs/heads/master' }}
+        run: |
+          scripts/ci_checks/trigger.sh roc-streaming/roc-go \
+            "master" "${{ secrets.REPO_TRIGGERING }}"
+
+      - name: Trigger roc-java
+        if: ${{ github.ref == 'refs/heads/master' }}
+        run: |
+          scripts/ci_checks/trigger.sh roc-streaming/roc-java \
+            "master" "${{ secrets.REPO_TRIGGERING }}"
+
+      - name: Trigger roc-pulse
+        if: ${{ github.ref == 'refs/heads/master' }}
+        run: |
+          scripts/ci_checks/trigger.sh roc-streaming/roc-pulse \
+            "main" "${{ secrets.REPO_TRIGGERING }}"
+
       - name: Trigger rt-tests
+        if: ${{ github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop' }}
         run: |
           scripts/ci_checks/trigger.sh roc-streaming/rt-tests \
             "${GITHUB_REF##*/}" "${{ secrets.REPO_TRIGGERING }}"
 
       - name: Trigger roc-streaming.github.io
+        if: ${{ github.ref == 'refs/heads/master' }}
         run: |
           scripts/ci_checks/trigger.sh roc-streaming/roc-streaming.github.io \
-            "${GITHUB_REF##*/}" "${{ secrets.REPO_TRIGGERING }}"
+            "source" "${{ secrets.REPO_TRIGGERING }}"
