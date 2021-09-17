@@ -53,7 +53,7 @@ def rm_emptydir(path):
     except:
         pass
 
-def download_vendordir(url, path, log, vendordir):
+def fetch_vendored(url, path, log, vendordir):
     for subdir, _, _ in os.walk(vendordir):
         distfile = os.path.join(subdir, os.path.basename(path))
         if os.path.exists(distfile):
@@ -64,23 +64,23 @@ def download_vendordir(url, path, log, vendordir):
                     return
     raise
 
-def download_urlopen(url, path, log, vendordir):
+def fetch_urlopen(url, path, log, vendordir):
     rp = urlopen(url)
     with open(path, 'wb') as wp:
         wp.write(rp.read())
 
-def download_tool(url, path, log, vendordir, tool, cmd):
+def fetch_tool(url, path, log, vendordir, tool, cmd):
     print('[trying %s] %s' % (tool, url))
     with open(log, 'a+') as fp:
         print('>>> %s' % cmd, file=fp)
     if os.system(cmd) != 0:
         raise
 
-def download_wget(url, path, log, vendordir):
-    download_tool(url, path, log, vendordir, 'wget', 'wget "%s" --quiet -O "%s"' % (url, path))
+def fetch_wget(url, path, log, vendordir):
+    fetch_tool(url, path, log, vendordir, 'wget', 'wget "%s" --quiet -O "%s"' % (url, path))
 
-def download_curl(url, path, log, vendordir):
-    download_tool(url, path, log, vendordir, 'curl', 'curl -Ls "%s" -o "%s"' % (url, path))
+def fetch_curl(url, path, log, vendordir):
+    fetch_tool(url, path, log, vendordir, 'curl', 'curl -Ls "%s" -o "%s"' % (url, path))
 
 def download(url, name, log, vendordir):
     path_res = 'src/' + name
@@ -95,16 +95,16 @@ def download(url, name, log, vendordir):
     mkpath('tmp')
 
     error = None
-    for fn in [download_vendordir, download_urlopen, download_curl, download_wget]:
+    for fn in [fetch_vendored, fetch_urlopen, fetch_curl, fetch_wget]:
         try:
             fn(url, path_tmp, log, vendordir)
             shutil.move(path_tmp, path_res)
             rm_emptydir('tmp')
             return
         except Exception as e:
-            if fn == download_vendordir:
+            if fn == fetch_vendored:
                 print('[download] %s' % url)
-            if fn == download_urlopen:
+            if fn == fetch_urlopen:
                 error = e
 
     print("error: can't download '%s': %s" % (url, error), file=sys.stderr)
@@ -130,6 +130,12 @@ def unpack(filename, dirname):
 
     shutil.move(dirname_tmp, dirname_res)
     rm_emptydir('tmp')
+
+def which(tool):
+    proc = subprocess.Popen(['which', tool], stdout=subprocess.PIPE, stderr=devnull)
+    out = read_stdout(proc).strip()
+    if out:
+        return out
 
 def try_execute(cmd):
     return subprocess.call(
@@ -291,12 +297,12 @@ def install_files(src, dst):
         mkpath(dst)
         shutil.copy(f, dst)
 
-def freplace(path, from_, to):
+def replace_files(path, from_, to):
     print('[patch] %s' % path)
     for line in fileinput.input(path, inplace=True):
         print(line.replace(from_, to), end='')
 
-def freplace_tree(dirpath, filepats, from_, to):
+def replace_tree(dirpath, filepats, from_, to):
     def match(path):
         try:
             with open(path) as fp:
@@ -311,7 +317,7 @@ def freplace_tree(dirpath, filepats, from_, to):
             for filename in fnmatch.filter(filenames, filepat):
                 filepath = os.path.join(root, filename)
                 if match(filepath):
-                    freplace(filepath, from_, to)
+                    replace_files(filepath, from_, to)
 
 def try_patch(dirname, patchurl, patchname, logfile, vendordir):
     if not try_execute('patch --version'):
@@ -370,19 +376,14 @@ def getsysroot(toolchain, compiler):
     return None
 
 def find_android_toolchain_file(compiler):
-    try:
-        from distutils.spawn import find_executable
-        return traverse_parents(
-            find_executable(compiler), 'build/cmake/android.toolchain.cmake')
-    except:
-        return None
+    compiler_exe = which(compiler)
+    if compiler_exe:
+        return traverse_parents(compiler_exe, 'build/cmake/android.toolchain.cmake')
 
 def find_android_sysroot(compiler):
-    try:
-        from distutils.spawn import find_executable
-        return traverse_parents(find_executable(compiler), 'sysroot')
-    except:
-        return None
+    compiler_exe = which(compiler)
+    if compiler_exe:
+        return traverse_parents(compiler_exe, 'sysroot')
 
 def detect_android_abi(toolchain):
     try:
@@ -549,7 +550,7 @@ if name == 'libuv':
     unpack('libuv-v%s.tar.gz' % ver,
             'libuv-v%s' % ver)
     os.chdir('src/libuv-v%s' % ver)
-    freplace('include/uv.h', '__attribute__((visibility("default")))', '')
+    replace_files('include/uv.h', '__attribute__((visibility("default")))', '')
     if 'android' in toolchain:
         mkpath('build')
         os.chdir('build')
@@ -786,10 +787,15 @@ elif name == 'pulseaudio':
             logfile,
             vendordir)
     if pa_ver < (12, 99, 1):
-        freplace_tree('src/pulseaudio-%s' % ver, ['*.h', '*.c'],
+        replace_tree('src/pulseaudio-%s' % ver, ['*.h', '*.c'],
                       '#include <asoundlib.h>',
                       '#include <alsa/asoundlib.h>')
     os.chdir('src/pulseaudio-%s' % ver)
+    # workaround for "missing acolocal-1.15" and "missing automake-1.15" errors
+    # on some systems; since we're not modifying any autotools stuff, it's safe
+    # to replace corresponding commands with "true" command
+    replace_files('Makefile.in', '@ACLOCAL@', 'true')
+    replace_files('Makefile.in', '@AUTOMAKE@', 'true')
     execute('./configure --host=%s %s %s %s %s' % (
         toolchain,
         makeenv(envlist),
