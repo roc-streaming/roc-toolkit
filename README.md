@@ -46,6 +46,10 @@ Branch    | Status
 `master`  | [![](https://github.com/roc-streaming/roc-toolkit/workflows/build/badge.svg?branch=master)](https://github.com/roc-streaming/roc-toolkit/actions/workflows/build.yml?query=branch%3Amaster)
 `develop` | [![](https://github.com/roc-streaming/roc-toolkit/workflows/build/badge.svg?branch=develop)](https://github.com/roc-streaming/roc-toolkit/actions/workflows/build.yml?query=branch%3Adevelop)
 
+RPM build status of the master branch on copr:
+
+[![Copr build status](https://copr.fedorainfracloud.org/coprs/mk9/roc-toolkit-dev/package/roc-toolkit/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/mk9/roc-toolkit-dev/package/roc-toolkit/)
+
 Versioning
 ----------
 
