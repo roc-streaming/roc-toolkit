@@ -741,7 +741,7 @@ subenvs = type('subenvs', (), subenv_attrs)
 env, subenvs = env.SConscript('3rdparty/SConscript',
                        duplicate=0, exports='env subenvs meta')
 
-if 'target_posix' in env['ROC_TARGETS'] and meta.platform not in ['darwin']:
+if 'target_posix' in env['ROC_TARGETS'] and meta.platform not in ['darwin', 'unix']:
     env.Append(CPPDEFINES=[('_POSIX_C_SOURCE', '200809')])
 
 if meta.platform in ['linux', 'unix']:
