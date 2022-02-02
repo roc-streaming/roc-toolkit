@@ -1,2 +1,0 @@
-#! /usr/bin/dh-exec
-bin/${DEB_HOST_MULTIARCH}/module-roc-sink*.so usr/lib/pulse-${PA_VER}/modules

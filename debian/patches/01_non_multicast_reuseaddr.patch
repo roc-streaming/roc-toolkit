@@ -1,26 +1,29 @@
---- a/src/modules/roc_netio/target_libuv/roc_netio/udp_receiver_port.cpp	2021-02-16 11:15:03.000000000 +0100
-+++ b/src/modules/roc_netio/target_libuv/roc_netio/udp_receiver_port.cpp	2021-02-21 23:32:47.625655115 +0100
-@@ -58,9 +58,7 @@
+diff --git a/src/internal_modules/roc_netio/target_libuv/roc_netio/udp_receiver_port.cpp b/src/internal_modules/roc_netio/target_libuv/roc_netio/udp_receiver_port.cpp
+index 0e151d6..a3963fd 100644
+--- a/src/internal_modules/roc_netio/target_libuv/roc_netio/udp_receiver_port.cpp
++++ b/src/internal_modules/roc_netio/target_libuv/roc_netio/udp_receiver_port.cpp
+@@ -61,9 +61,7 @@ bool UdpReceiverPort::open() {
      handle_initialized_ = true;
  
      unsigned flags = 0;
--    if (address_.multicast() && address_.port() > 0) {
+-    if (config_.bind_address.multicast() && config_.bind_address.port() > 0) {
 -        flags |= UV_UDP_REUSEADDR;
 -    }
 +    flags |= UV_UDP_REUSEADDR;
  
      int bind_err = UV_EINVAL;
-     if (address_.version() == 6) {
---- a/src/modules/roc_netio/target_libuv/roc_netio/udp_sender_port.cpp	2021-02-16 11:15:03.000000000 +0100
-+++ b/src/modules/roc_netio/target_libuv/roc_netio/udp_sender_port.cpp	2021-02-21 23:31:19.546152296 +0100
-@@ -61,9 +61,7 @@ bool UDPSenderPort::open() {
+     if (config_.bind_address.family() == address::Family_IPv6) {
+diff --git a/src/internal_modules/roc_netio/target_libuv/roc_netio/udp_sender_port.cpp b/src/internal_modules/roc_netio/target_libuv/roc_netio/udp_sender_port.cpp
+index b0cc461..3c8d466 100644
+--- a/src/internal_modules/roc_netio/target_libuv/roc_netio/udp_sender_port.cpp
++++ b/src/internal_modules/roc_netio/target_libuv/roc_netio/udp_sender_port.cpp
+@@ -77,6 +77,9 @@ bool UdpSenderPort::open() {
+     handle_.data = this;
      handle_initialized_ = true;
  
-     unsigned flags = 0;
--    if (address_.multicast() && address_.port() > 0) {
--        flags |= UV_UDP_REUSEADDR;
--    }
++    unsigned flags = 0;
 +    flags |= UV_UDP_REUSEADDR;
- 
++
      int bind_err = UV_EINVAL;
-     if (address_.version() == 6) {
+     if (address_.family() == address::Family_IPv6) {
+         bind_err = uv_udp_bind(&handle_, config_.bind_address.saddr(), UV_UDP_IPV6ONLY);

@@ -21,10 +21,5 @@ Copyright:
   2019, zenuo, <zenuo@protonmail.com>
   2020, Gareth Marlow, <gareth@eqsystems.io>
   2020, name213, <miklecivan3@gmail.com>
-  2021, twojstaryzdomu, <twojstaryzdomu@users.noreply.github.com>
+  2021-2022, twojstaryzdomu, <twojstaryzdomu@users.noreply.github.com>
 License: MPL-2.0
-
-Files: src/pulse/*
-Copyright:
-  2017-2019, Victor Gaydov, <victor@enise.org>
-License: LGPL-2.1+
