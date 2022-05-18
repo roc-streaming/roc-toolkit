@@ -15,7 +15,6 @@
 #include "roc_core/helpers.h"
 #include "roc_core/list_node.h"
 #include "roc_core/mpsc_queue_node.h"
-#include "roc_core/pool.h"
 #include "roc_core/ref_counter.h"
 #include "roc_core/shared_ptr.h"
 #include "roc_packet/fec.h"
@@ -26,7 +25,7 @@
 namespace roc {
 namespace packet {
 
-class PacketPool;
+class PacketFactory;
 class Packet;
 
 //! Packet smart pointer.
@@ -38,7 +37,7 @@ class Packet : public core::RefCounter<Packet>,
                public core::MpscQueueNode {
 public:
     //! Constructor.
-    explicit Packet(PacketPool&);
+    explicit Packet(PacketFactory&);
 
     //! Packet flags.
     enum {
@@ -121,7 +120,7 @@ private:
 
     void destroy();
 
-    PacketPool& pool_;
+    PacketFactory& factory_;
 
     unsigned flags_;
 

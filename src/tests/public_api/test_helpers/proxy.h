@@ -16,7 +16,7 @@
 #include "roc_address/socket_addr.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_netio/network_loop.h"
-#include "roc_packet/packet_pool.h"
+#include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
 
 #include "roc/endpoint.h"
@@ -32,9 +32,9 @@ public:
           size_t n_source_packets,
           size_t n_repair_packets,
           core::HeapAllocator& allocator,
-          packet::PacketPool& packet_pool,
-          core::BufferPool<uint8_t>& byte_buffer_pool)
-        : net_loop_(packet_pool, byte_buffer_pool, allocator)
+          packet::PacketFactory& packet_factory,
+          core::BufferFactory<uint8_t>& byte_buffer_factory)
+        : net_loop_(packet_factory, byte_buffer_factory, allocator)
         , n_source_packets_(n_source_packets)
         , n_repair_packets_(n_repair_packets)
         , pos_(0) {

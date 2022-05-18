@@ -11,7 +11,7 @@
 #include "test_helpers/mock_sink.h"
 #include "test_helpers/mock_source.h"
 
-#include "roc_core/buffer_pool.h"
+#include "roc_core/buffer_factory.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/temp_file.h"
@@ -32,7 +32,7 @@ const core::nanoseconds_t BufDuration =
     BufSize * core::Second / (SampleSpecs.sample_rate() * SampleSpecs.num_channels());
 
 core::HeapAllocator allocator;
-core::BufferPool<audio::sample_t> buffer_pool(allocator, BufSize, true);
+core::BufferFactory<audio::sample_t> buffer_factory(allocator, BufSize, true);
 
 } // namespace
 
@@ -57,7 +57,7 @@ TEST(pump, write_read) {
         SoxSink sox_sink(allocator, config);
         CHECK(sox_sink.open(NULL, file.path()));
 
-        Pump pump(buffer_pool, mock_source, NULL, sox_sink, BufDuration, SampleSpecs,
+        Pump pump(buffer_factory, mock_source, NULL, sox_sink, BufDuration, SampleSpecs,
                   Pump::ModeOneshot);
         CHECK(pump.valid());
         CHECK(pump.run());
@@ -70,7 +70,7 @@ TEST(pump, write_read) {
 
     test::MockSink mock_writer;
 
-    Pump pump(buffer_pool, sox_source, NULL, mock_writer, BufDuration, SampleSpecs,
+    Pump pump(buffer_factory, sox_source, NULL, mock_writer, BufDuration, SampleSpecs,
               Pump::ModePermanent);
     CHECK(pump.valid());
     CHECK(pump.run());
@@ -90,7 +90,7 @@ TEST(pump, write_overwrite_read) {
         SoxSink sox_sink(allocator, config);
         CHECK(sox_sink.open(NULL, file.path()));
 
-        Pump pump(buffer_pool, mock_source, NULL, sox_sink, BufDuration, SampleSpecs,
+        Pump pump(buffer_factory, mock_source, NULL, sox_sink, BufDuration, SampleSpecs,
                   Pump::ModeOneshot);
         CHECK(pump.valid());
         CHECK(pump.run());
@@ -105,7 +105,7 @@ TEST(pump, write_overwrite_read) {
         SoxSink sox_sink(allocator, config);
         CHECK(sox_sink.open(NULL, file.path()));
 
-        Pump pump(buffer_pool, mock_source, NULL, sox_sink, BufDuration, SampleSpecs,
+        Pump pump(buffer_factory, mock_source, NULL, sox_sink, BufDuration, SampleSpecs,
                   Pump::ModeOneshot);
         CHECK(pump.valid());
         CHECK(pump.run());
@@ -119,7 +119,7 @@ TEST(pump, write_overwrite_read) {
 
     test::MockSink mock_writer;
 
-    Pump pump(buffer_pool, sox_source, NULL, mock_writer, BufDuration, SampleSpecs,
+    Pump pump(buffer_factory, sox_source, NULL, mock_writer, BufDuration, SampleSpecs,
               Pump::ModePermanent);
     CHECK(pump.valid());
     CHECK(pump.run());

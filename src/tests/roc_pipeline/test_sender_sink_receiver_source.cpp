@@ -13,10 +13,10 @@
 #include "test_helpers/packet_sender.h"
 #include "test_helpers/scheduler.h"
 
-#include "roc_core/buffer_pool.h"
+#include "roc_core/buffer_factory.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_fec/codec_map.h"
-#include "roc_packet/packet_pool.h"
+#include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
 #include "roc_pipeline/receiver_source.h"
 #include "roc_pipeline/sender_sink.h"
@@ -76,9 +76,9 @@ enum {
 };
 
 core::HeapAllocator allocator;
-core::BufferPool<audio::sample_t> sample_buffer_pool(allocator, MaxBufSize, true);
-core::BufferPool<uint8_t> byte_buffer_pool(allocator, MaxBufSize, true);
-packet::PacketPool packet_pool(allocator, true);
+core::BufferFactory<audio::sample_t> sample_buffer_factory(allocator, MaxBufSize, true);
+core::BufferFactory<uint8_t> byte_buffer_factory(allocator, MaxBufSize, true);
+packet::PacketFactory packet_factory(allocator, true);
 rtp::FormatMap format_map;
 
 } // namespace
@@ -105,8 +105,8 @@ TEST_GROUP(sender_sink_receiver_source) {
         address::SocketAddr receiver_source_addr = test::new_address(11);
         address::SocketAddr receiver_repair_addr = test::new_address(22);
 
-        SenderSink sender(scheduler, sender_config(flags), format_map, packet_pool,
-                          byte_buffer_pool, sample_buffer_pool, allocator);
+        SenderSink sender(scheduler, sender_config(flags), format_map, packet_factory,
+                          byte_buffer_factory, sample_buffer_factory, allocator);
 
         CHECK(sender.valid());
 
@@ -171,8 +171,8 @@ TEST_GROUP(sender_sink_receiver_source) {
             }
         }
 
-        ReceiverSource receiver(scheduler, receiver_config(), format_map, packet_pool,
-                                byte_buffer_pool, sample_buffer_pool, allocator);
+        ReceiverSource receiver(scheduler, receiver_config(), format_map, packet_factory,
+                                byte_buffer_factory, sample_buffer_factory, allocator);
 
         CHECK(receiver.valid());
 
@@ -207,18 +207,18 @@ TEST_GROUP(sender_sink_receiver_source) {
             CHECK(receiver_repair_endpoint_writer);
         }
 
-        test::FrameWriter frame_writer(sender, sample_buffer_pool);
+        test::FrameWriter frame_writer(sender, sample_buffer_factory);
 
         for (size_t nf = 0; nf < ManyFrames; nf++) {
             frame_writer.write_samples(SamplesPerFrame * NumCh);
         }
 
-        test::PacketSender packet_sender(packet_pool, receiver_source_endpoint_writer,
+        test::PacketSender packet_sender(packet_factory, receiver_source_endpoint_writer,
                                    receiver_repair_endpoint_writer);
 
         filter_packets(flags, queue, packet_sender);
 
-        test::FrameReader frame_reader(receiver, sample_buffer_pool);
+        test::FrameReader frame_reader(receiver, sample_buffer_factory);
 
         packet_sender.deliver(Latency / SamplesPerPacket);
 

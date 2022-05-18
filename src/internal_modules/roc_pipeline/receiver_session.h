@@ -21,7 +21,7 @@
 #include "roc_audio/poison_reader.h"
 #include "roc_audio/resampler_reader.h"
 #include "roc_audio/watchdog.h"
-#include "roc_core/buffer_pool.h"
+#include "roc_core/buffer_factory.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/list_node.h"
 #include "roc_core/optional.h"
@@ -33,7 +33,7 @@
 #include "roc_packet/iparser.h"
 #include "roc_packet/ireader.h"
 #include "roc_packet/packet.h"
-#include "roc_packet/packet_pool.h"
+#include "roc_packet/packet_factory.h"
 #include "roc_packet/router.h"
 #include "roc_packet/sorted_queue.h"
 #include "roc_pipeline/config.h"
@@ -54,9 +54,9 @@ public:
                     const ReceiverCommonConfig& common_config,
                     const address::SocketAddr& src_address,
                     const rtp::FormatMap& format_map,
-                    packet::PacketPool& packet_pool,
-                    core::BufferPool<uint8_t>& byte_buffer_pool,
-                    core::BufferPool<audio::sample_t>& sample_buffer_pool,
+                    packet::PacketFactory& packet_factory,
+                    core::BufferFactory<uint8_t>& byte_buffer_factory,
+                    core::BufferFactory<audio::sample_t>& sample_buffer_factory,
                     core::IAllocator& allocator);
 
     //! Check if the session pipeline was succefully constructed.

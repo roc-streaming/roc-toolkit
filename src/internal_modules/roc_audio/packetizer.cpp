@@ -17,16 +17,16 @@ namespace audio {
 Packetizer::Packetizer(packet::IWriter& writer,
                        packet::IComposer& composer,
                        IFrameEncoder& payload_encoder,
-                       packet::PacketPool& packet_pool,
-                       core::BufferPool<uint8_t>& buffer_pool,
+                       packet::PacketFactory& packet_factory,
+                       core::BufferFactory<uint8_t>& buffer_factory,
                        core::nanoseconds_t packet_length,
                        const audio::SampleSpec& sample_spec,
                        unsigned int payload_type)
     : writer_(writer)
     , composer_(composer)
     , payload_encoder_(payload_encoder)
-    , packet_pool_(packet_pool)
-    , buffer_pool_(buffer_pool)
+    , packet_factory_(packet_factory)
+    , buffer_factory_(buffer_factory)
     , sample_spec_(sample_spec)
     , samples_per_packet_(
           (packet::timestamp_t)sample_spec.timestamp_from_ns(packet_length))
@@ -151,7 +151,7 @@ void Packetizer::pad_packet_() {
 }
 
 packet::PacketPtr Packetizer::create_packet_() {
-    packet::PacketPtr packet = new (packet_pool_) packet::Packet(packet_pool_);
+    packet::PacketPtr packet = packet_factory_.new_packet();
     if (!packet) {
         roc_log(LogError, "packetizer: can't allocate packet");
         return NULL;
@@ -159,7 +159,7 @@ packet::PacketPtr Packetizer::create_packet_() {
 
     packet->add_flags(packet::Packet::FlagAudio);
 
-    core::Slice<uint8_t> data = new (buffer_pool_) core::Buffer<uint8_t>(buffer_pool_);
+    core::Slice<uint8_t> data = buffer_factory_.new_buffer();
     if (!data) {
         roc_log(LogError, "packetizer: can't allocate buffer");
         return NULL;

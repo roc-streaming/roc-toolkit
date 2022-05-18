@@ -60,8 +60,8 @@ public:
         , size_(0) {
     }
 
-    //! Construct slice pointing to a buffer.
-    Slice(Buffer<T>* buffer) {
+    //! Construct slice pointing to the whole buffer.
+    Slice(const SharedPtr<Buffer<T> >& buffer) {
         buffer_ = buffer;
         if (buffer_) {
             data_ = buffer->data();

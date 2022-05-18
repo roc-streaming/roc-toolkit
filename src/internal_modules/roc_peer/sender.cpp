@@ -21,9 +21,9 @@ Sender::Sender(Context& context, const pipeline::SenderConfig& pipeline_config)
     , pipeline_(*this,
                 pipeline_config,
                 format_map_,
-                context_.packet_pool(),
-                context_.byte_buffer_pool(),
-                context_.sample_buffer_pool(),
+                context_.packet_factory(),
+                context_.byte_buffer_factory(),
+                context_.sample_buffer_factory(),
                 context_.allocator())
     , endpoint_set_(NULL)
     , source_endpoint_(NULL)

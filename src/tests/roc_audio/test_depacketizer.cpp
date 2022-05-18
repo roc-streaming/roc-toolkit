@@ -14,9 +14,9 @@
 #include "roc_audio/pcm_decoder.h"
 #include "roc_audio/pcm_encoder.h"
 #include "roc_audio/pcm_funcs.h"
-#include "roc_core/buffer_pool.h"
+#include "roc_core/buffer_factory.h"
 #include "roc_core/heap_allocator.h"
-#include "roc_packet/packet_pool.h"
+#include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
 #include "roc_rtp/composer.h"
 
@@ -29,9 +29,9 @@ enum { MaxBufSize = 4000, SamplesPerPacket = 200, SampleRate=100,
        ChMask = 0x3, NumCh=2, SamplesSize = SamplesPerPacket*NumCh };
 
 core::HeapAllocator allocator;
-core::BufferPool<sample_t> sample_buffer_pool(allocator, MaxBufSize, true);
-core::BufferPool<uint8_t> byte_buffer_pool(allocator, MaxBufSize, true);
-packet::PacketPool packet_pool(allocator, true);
+core::BufferFactory<sample_t> sample_buffer_factory(allocator, MaxBufSize, true);
+core::BufferFactory<uint8_t> byte_buffer_factory(allocator, MaxBufSize, true);
+packet::PacketFactory packet_factory(allocator, true);
 
 rtp::Composer rtp_composer(NULL);
 
@@ -43,11 +43,10 @@ const audio::SampleSpec SampleSpecs = audio::SampleSpec(SampleRate, ChMask);
 TEST_GROUP(depacketizer) {
     packet::PacketPtr new_packet(
         IFrameEncoder& encoder, packet::timestamp_t ts, sample_t value) {
-        packet::PacketPtr pp = new(packet_pool) packet::Packet(packet_pool);
+        packet::PacketPtr pp = packet_factory.new_packet();
         CHECK(pp);
 
-        core::Slice<uint8_t> bp =
-            new (byte_buffer_pool) core::Buffer<uint8_t>(byte_buffer_pool);
+        core::Slice<uint8_t> bp = byte_buffer_factory.new_buffer();
         CHECK(bp);
 
         CHECK(rtp_composer.prepare(*pp, bp, encoder.encoded_size(SamplesPerPacket)));
@@ -75,8 +74,7 @@ TEST_GROUP(depacketizer) {
     }
 
     core::Slice<sample_t> new_buffer(size_t n_samples) {
-        core::Slice<sample_t> buffer =
-            new (sample_buffer_pool) core::Buffer<sample_t>(sample_buffer_pool);
+        core::Slice<sample_t> buffer = sample_buffer_factory.new_buffer();
         CHECK(buffer);
         buffer.reslice(0, n_samples * SampleSpecs.num_channels());
         return buffer;

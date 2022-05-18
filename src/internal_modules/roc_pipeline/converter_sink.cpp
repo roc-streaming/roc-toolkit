@@ -16,7 +16,7 @@ namespace pipeline {
 
 ConverterSink::ConverterSink(const ConverterConfig& config,
                              audio::IWriter* output_writer,
-                             core::BufferPool<audio::sample_t>& pool,
+                             core::BufferFactory<audio::sample_t>& buffer_factory,
                              core::IAllocator& allocator)
     : audio_writer_(NULL)
     , config_(config)
@@ -37,7 +37,7 @@ ConverterSink::ConverterSink(const ConverterConfig& config,
         }
 
         resampler_.reset(audio::ResamplerMap::instance().new_resampler(
-                             config.resampler_backend, allocator, pool,
+                             config.resampler_backend, allocator, buffer_factory,
                              config.resampler_profile, config.internal_frame_length,
                              config.input_sample_spec),
                          allocator);
@@ -47,7 +47,7 @@ ConverterSink::ConverterSink(const ConverterConfig& config,
         }
 
         resampler_writer_.reset(new (resampler_writer_) audio::ResamplerWriter(
-            *awriter, *resampler_, pool, config.internal_frame_length,
+            *awriter, *resampler_, buffer_factory, config.internal_frame_length,
             config.input_sample_spec));
 
         if (!resampler_writer_ || !resampler_writer_->valid()) {

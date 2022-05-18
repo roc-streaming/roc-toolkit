@@ -9,7 +9,7 @@
 #include <CppUTest/TestHarness.h>
 
 #include "roc_core/array.h"
-#include "roc_core/buffer_pool.h"
+#include "roc_core/buffer_factory.h"
 #include "roc_core/fast_random.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_core/log.h"
@@ -24,16 +24,16 @@ namespace {
 const size_t MaxPayloadSize = 1024;
 
 core::HeapAllocator allocator;
-core::BufferPool<uint8_t> buffer_pool(allocator, MaxPayloadSize, true);
+core::BufferFactory<uint8_t> buffer_factory(allocator, MaxPayloadSize, true);
 
 } // namespace
 
 class Codec {
 public:
     Codec(const CodecConfig& config)
-        : encoder_(CodecMap::instance().new_encoder(config, buffer_pool, allocator),
+        : encoder_(CodecMap::instance().new_encoder(config, buffer_factory, allocator),
                    allocator)
-        , decoder_(CodecMap::instance().new_decoder(config, buffer_pool, allocator),
+        , decoder_(CodecMap::instance().new_decoder(config, buffer_factory, allocator),
                    allocator)
         , buffers_(allocator) {
         CHECK(encoder_);
@@ -83,7 +83,7 @@ public:
 
 private:
     core::Slice<uint8_t> make_buffer_(size_t p_size) {
-        core::Slice<uint8_t> buf = new (buffer_pool) core::Buffer<uint8_t>(buffer_pool);
+        core::Slice<uint8_t> buf = buffer_factory.new_buffer();
         buf.reslice(0, p_size);
         for (size_t j = 0; j < buf.size(); ++j) {
             buf.data()[j] = (uint8_t)core::fast_random(0, 0xff);

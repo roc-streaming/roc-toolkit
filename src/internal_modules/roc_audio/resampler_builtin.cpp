@@ -103,7 +103,7 @@ inline size_t get_window_interp(ResamplerProfile profile) {
 } // namespace
 
 BuiltinResampler::BuiltinResampler(core::IAllocator& allocator,
-                                   core::BufferPool<sample_t>& buffer_pool,
+                                   core::BufferFactory<sample_t>& buffer_factory,
                                    ResamplerProfile profile,
                                    core::nanoseconds_t frame_length,
                                    const audio::SampleSpec& sample_spec)
@@ -137,7 +137,7 @@ BuiltinResampler::BuiltinResampler(core::IAllocator& allocator,
         return;
     }
 
-    if (!alloc_frames_(buffer_pool)) {
+    if (!alloc_frames_(buffer_factory)) {
         return;
     }
 
@@ -278,9 +278,9 @@ size_t BuiltinResampler::pop_output(Frame& out) {
     return out_pos;
 }
 
-bool BuiltinResampler::alloc_frames_(core::BufferPool<sample_t>& buffer_pool) {
+bool BuiltinResampler::alloc_frames_(core::BufferFactory<sample_t>& buffer_factory) {
     for (size_t n = 0; n < ROC_ARRAY_SIZE(frames_); n++) {
-        frames_[n] = new (buffer_pool) core::Buffer<sample_t>(buffer_pool);
+        frames_[n] = buffer_factory.new_buffer();
 
         if (!frames_[n]) {
             roc_log(LogError, "builtin resampler: can't allocate frame buffer");

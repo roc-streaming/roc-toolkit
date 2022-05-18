@@ -28,7 +28,7 @@ sample_t clamp(const sample_t x) {
 
 } // namespace
 
-Mixer::Mixer(core::BufferPool<sample_t>& pool,
+Mixer::Mixer(core::BufferFactory<sample_t>& buffer_factory,
              core::nanoseconds_t frame_length,
              const audio::SampleSpec& sample_spec)
     : valid_(false) {
@@ -40,7 +40,7 @@ Mixer::Mixer(core::BufferPool<sample_t>& pool,
         return;
     }
 
-    temp_buf_ = new (pool) core::Buffer<sample_t>(pool);
+    temp_buf_ = buffer_factory.new_buffer();
     if (!temp_buf_) {
         roc_log(LogError, "mixer: can't allocate temporary buffer");
         return;

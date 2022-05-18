@@ -13,11 +13,11 @@
 #include "test_packets/rtp_l16_2ch_300s_80pad.h"
 #include "test_packets/rtp_l16_2ch_320s.h"
 
-#include "roc_core/buffer_pool.h"
+#include "roc_core/buffer_factory.h"
 #include "roc_core/heap_allocator.h"
-#include "roc_core/stddefs.h"
 #include "roc_core/scoped_ptr.h"
-#include "roc_packet/packet_pool.h"
+#include "roc_core/stddefs.h"
+#include "roc_packet/packet_factory.h"
 #include "roc_rtp/composer.h"
 #include "roc_rtp/format_map.h"
 #include "roc_rtp/parser.h"
@@ -32,23 +32,19 @@ enum { MaxBufSize = test::PacketInfo::MaxData };
 enum { CanParse = (1 << 0), CanCompose = (1 << 1) };
 
 core::HeapAllocator allocator;
-core::BufferPool<uint8_t> buffer_pool(allocator, MaxBufSize, true);
-packet::PacketPool packet_pool(allocator, true);
+core::BufferFactory<uint8_t> buffer_factory(allocator, MaxBufSize, true);
+packet::PacketFactory packet_factory(allocator, true);
 
 } // namespace
 
 TEST_GROUP(packet_formats) {
     core::Slice<uint8_t> new_buffer(const uint8_t* data, size_t datasz) {
-        core::Slice<uint8_t> buf = new (buffer_pool) core::Buffer<uint8_t>(buffer_pool);
+        core::Slice<uint8_t> buf = buffer_factory.new_buffer();
         if (data) {
             buf.reslice(0, datasz);
             memcpy(buf.data(), data, datasz);
         }
         return buf;
-    }
-
-    packet::PacketPtr new_packet() {
-        return new(packet_pool) packet::Packet(packet_pool);
     }
 
     void check_packet_info(const test::PacketInfo& pi) {
@@ -180,7 +176,7 @@ TEST_GROUP(packet_formats) {
         core::Slice<uint8_t> buffer = new_buffer(pi.raw_data, pi.packet_size);
         CHECK(buffer);
 
-        packet::PacketPtr packet = new_packet();
+        packet::PacketPtr packet = packet_factory.new_packet();
         CHECK(packet);
 
         packet->set_data(buffer);
@@ -208,7 +204,7 @@ TEST_GROUP(packet_formats) {
         core::Slice<uint8_t> buffer = new_buffer(NULL, 0);
         CHECK(buffer);
 
-        packet::PacketPtr packet = new_packet();
+        packet::PacketPtr packet = packet_factory.new_packet();
         CHECK(packet);
 
         packet->add_flags(packet::Packet::FlagAudio);

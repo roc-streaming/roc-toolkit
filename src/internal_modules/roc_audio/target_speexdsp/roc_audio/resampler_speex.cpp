@@ -43,7 +43,7 @@ inline int get_quality(ResamplerProfile profile) {
 } // namespace
 
 SpeexResampler::SpeexResampler(core::IAllocator&,
-                               core::BufferPool<sample_t>& buffer_pool,
+                               core::BufferFactory<sample_t>& buffer_factory,
                                ResamplerProfile profile,
                                core::nanoseconds_t frame_length,
                                const audio::SampleSpec& sample_spec)
@@ -64,7 +64,7 @@ SpeexResampler::SpeexResampler(core::IAllocator&,
             "quality=%d frame_size=%lu channels_num=%lu",
             quality, (unsigned long)in_frame_size_, (unsigned long)num_ch_);
 
-    if (!(in_frame_ = new (buffer_pool) core::Buffer<sample_t>(buffer_pool))) {
+    if (!(in_frame_ = buffer_factory.new_buffer())) {
         roc_log(LogError, "speex resampler: can't allocate frame buffer");
         return;
     }

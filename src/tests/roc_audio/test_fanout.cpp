@@ -11,7 +11,7 @@
 #include "test_helpers/mock_writer.h"
 
 #include "roc_audio/fanout.h"
-#include "roc_core/buffer_pool.h"
+#include "roc_core/buffer_factory.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_core/stddefs.h"
 
@@ -23,14 +23,13 @@ namespace {
 enum { BufSz = 100, MaxSz = 500 };
 
 core::HeapAllocator allocator;
-core::BufferPool<sample_t> buffer_pool(allocator, MaxSz, true);
+core::BufferFactory<sample_t> buffer_factory(allocator, MaxSz, true);
 
 } // namespace
 
 TEST_GROUP(fanout) {
     core::Slice<sample_t> new_buffer(size_t sz) {
-        core::Slice<sample_t> buf =
-            new (buffer_pool) core::Buffer<sample_t>(buffer_pool);
+        core::Slice<sample_t> buf = buffer_factory.new_buffer();
         buf.reslice(0, sz);
         return buf;
     }

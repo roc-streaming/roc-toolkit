@@ -14,11 +14,11 @@
 
 #include "roc_audio/units.h"
 #include "roc_core/atomic.h"
-#include "roc_core/buffer_pool.h"
+#include "roc_core/buffer_factory.h"
 #include "roc_core/iallocator.h"
 #include "roc_ctl/control_loop.h"
 #include "roc_netio/network_loop.h"
-#include "roc_packet/packet_pool.h"
+#include "roc_packet/packet_factory.h"
 
 namespace roc {
 namespace peer {
@@ -68,14 +68,14 @@ public:
     //! Get allocator.
     core::IAllocator& allocator();
 
-    //! Get packet pool.
-    packet::PacketPool& packet_pool();
+    //! Get packet factory.
+    packet::PacketFactory& packet_factory();
 
-    //! Byte byte buffer pool.
-    core::BufferPool<uint8_t>& byte_buffer_pool();
+    //! Get byte buffer factory.
+    core::BufferFactory<uint8_t>& byte_buffer_factory();
 
-    //! Byte sample buffer pool.
-    core::BufferPool<audio::sample_t>& sample_buffer_pool();
+    //! Get sample buffer factory.
+    core::BufferFactory<audio::sample_t>& sample_buffer_factory();
 
     //! Get network event loop.
     netio::NetworkLoop& network_loop();
@@ -86,9 +86,9 @@ public:
 private:
     core::IAllocator& allocator_;
 
-    packet::PacketPool packet_pool_;
-    core::BufferPool<uint8_t> byte_buffer_pool_;
-    core::BufferPool<audio::sample_t> sample_buffer_pool_;
+    packet::PacketFactory packet_factory_;
+    core::BufferFactory<uint8_t> byte_buffer_factory_;
+    core::BufferFactory<audio::sample_t> sample_buffer_factory_;
 
     netio::NetworkLoop network_loop_;
     ctl::ControlLoop control_loop_;

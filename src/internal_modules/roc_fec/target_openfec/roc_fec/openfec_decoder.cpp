@@ -20,7 +20,7 @@ namespace roc {
 namespace fec {
 
 OpenfecDecoder::OpenfecDecoder(const CodecConfig& config,
-                               core::BufferPool<uint8_t>& buffer_pool,
+                               core::BufferFactory<uint8_t>& buffer_factory,
                                core::IAllocator& allocator)
     : sblen_(0)
     , rblen_(0)
@@ -28,7 +28,7 @@ OpenfecDecoder::OpenfecDecoder(const CodecConfig& config,
     , max_index_(0)
     , of_sess_(NULL)
     , of_sess_params_(NULL)
-    , buffer_pool_(buffer_pool)
+    , buffer_factory_(buffer_factory)
     , buff_tab_(allocator)
     , data_tab_(allocator)
     , recv_tab_(allocator)
@@ -384,7 +384,7 @@ void OpenfecDecoder::fix_buffer_(size_t index) {
 }
 
 void* OpenfecDecoder::make_buffer_(size_t index) {
-    core::Slice<uint8_t> buffer = new (buffer_pool_) core::Buffer<uint8_t>(buffer_pool_);
+    core::Slice<uint8_t> buffer = buffer_factory_.new_buffer();
 
     if (!buffer) {
         roc_log(LogError, "openfec decoder: can't allocate buffer");

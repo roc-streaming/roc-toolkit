@@ -16,7 +16,7 @@ namespace pipeline {
 
 ConverterSource::ConverterSource(const ConverterConfig& config,
                                  sndio::ISource& input_source,
-                                 core::BufferPool<audio::sample_t>& pool,
+                                 core::BufferFactory<audio::sample_t>& buffer_factory,
                                  core::IAllocator& allocator)
     : input_source_(input_source)
     , audio_reader_(NULL)
@@ -36,7 +36,7 @@ ConverterSource::ConverterSource(const ConverterConfig& config,
         }
 
         resampler_.reset(audio::ResamplerMap::instance().new_resampler(
-                             config.resampler_backend, allocator, pool,
+                             config.resampler_backend, allocator, buffer_factory,
                              config.resampler_profile, config.internal_frame_length,
                              config.input_sample_spec),
                          allocator);

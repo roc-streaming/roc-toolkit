@@ -13,7 +13,6 @@
 
 #include "test_helpers/utils.h"
 
-#include "roc_core/buffer_pool.h"
 #include "roc_core/noncopyable.h"
 #include "roc_sndio/isink.h"
 

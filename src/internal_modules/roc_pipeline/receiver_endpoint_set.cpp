@@ -18,9 +18,9 @@ ReceiverEndpointSet::ReceiverEndpointSet(
     ReceiverState& receiver_state,
     audio::Mixer& mixer,
     const rtp::FormatMap& format_map,
-    packet::PacketPool& packet_pool,
-    core::BufferPool<uint8_t>& byte_buffer_pool,
-    core::BufferPool<audio::sample_t>& sample_buffer_pool,
+    packet::PacketFactory& packet_factory,
+    core::BufferFactory<uint8_t>& byte_buffer_factory,
+    core::BufferFactory<audio::sample_t>& sample_buffer_factory,
     core::IAllocator& allocator)
     : allocator_(allocator)
     , format_map_(format_map)
@@ -29,9 +29,9 @@ ReceiverEndpointSet::ReceiverEndpointSet(
                      receiver_state,
                      mixer,
                      format_map,
-                     packet_pool,
-                     byte_buffer_pool,
-                     sample_buffer_pool,
+                     packet_factory,
+                     byte_buffer_factory,
+                     sample_buffer_factory,
                      allocator) {
     roc_log(LogDebug, "receiver endpoint set: initializing");
 }

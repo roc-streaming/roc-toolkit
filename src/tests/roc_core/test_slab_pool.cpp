@@ -10,7 +10,7 @@
 
 #include "roc_core/heap_allocator.h"
 #include "roc_core/noncopyable.h"
-#include "roc_core/pool.h"
+#include "roc_core/slab_pool.h"
 
 namespace roc {
 namespace core {
@@ -35,12 +35,12 @@ long Object::n_objects = 0;
 
 } // namespace
 
-TEST_GROUP(pool) {
+TEST_GROUP(slab_pool) {
     HeapAllocator allocator;
 };
 
-TEST(pool, allocate_deallocate) {
-    Pool<Object> pool(allocator, sizeof(Object), true);
+TEST(slab_pool, allocate_deallocate) {
+    SlabPool pool(allocator, sizeof(Object), true);
 
     void* memory = pool.allocate();
     CHECK(memory);
@@ -54,21 +54,9 @@ TEST(pool, allocate_deallocate) {
     LONGS_EQUAL(1, Object::n_objects);
 }
 
-TEST(pool, new_destroy) {
-    Pool<Object> pool(allocator, sizeof(Object), true);
-
-    Object* object = new (pool) Object;
-
-    LONGS_EQUAL(1, Object::n_objects);
-
-    pool.destroy(*object);
-
-    LONGS_EQUAL(0, Object::n_objects);
-}
-
-TEST(pool, new_destroy_many) {
+TEST(slab_pool, allocate_deallocate_many) {
     {
-        Pool<Object> pool(allocator, sizeof(Object), true);
+        SlabPool pool(allocator, sizeof(Object), true);
 
         Object* objects[1 + 2 + 4] = {};
 
@@ -102,7 +90,8 @@ TEST(pool, new_destroy_many) {
         LONGS_EQUAL(1 + 2 + 4, Object::n_objects);
 
         for (size_t n = 0; n < n_objs; n++) {
-            pool.destroy(*objects[n]);
+            objects[n]->~Object();
+            pool.deallocate(objects[n]);
         }
 
         LONGS_EQUAL(3, allocator.num_allocations());

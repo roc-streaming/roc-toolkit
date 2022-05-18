@@ -300,7 +300,7 @@ int main(int argc, char** argv) {
         }
     }
 
-    sndio::Pump pump(context.sample_buffer_pool(), *input_source, NULL, sender.sink(),
+    sndio::Pump pump(context.sample_buffer_factory(), *input_source, NULL, sender.sink(),
                      sender_config.internal_frame_length, sender_config.input_sample_spec,
                      sndio::Pump::ModePermanent);
     if (!pump.valid()) {

@@ -10,7 +10,7 @@
 
 #include "roc_audio/pcm_decoder.h"
 #include "roc_audio/pcm_encoder.h"
-#include "roc_core/buffer_pool.h"
+#include "roc_core/buffer_factory.h"
 #include "roc_core/heap_allocator.h"
 
 namespace roc {
@@ -23,7 +23,7 @@ enum { MaxBufsz = 100, MaxSamples = 100 };
 const double Epsilon = 0.0001;
 
 core::HeapAllocator allocator;
-core::BufferPool<uint8_t> buffer_pool(allocator, MaxBufsz, true);
+core::BufferFactory<uint8_t> buffer_factory(allocator, MaxBufsz, true);
 
 } // namespace
 
@@ -48,7 +48,7 @@ TEST_GROUP(pcm_funcs) {
     core::Slice<uint8_t> new_buffer(size_t num_samples) {
         CHECK(funcs);
 
-        core::Slice<uint8_t> bp = new (buffer_pool) core::Buffer<uint8_t>(buffer_pool);
+        core::Slice<uint8_t> bp = buffer_factory.new_buffer();
         CHECK(bp);
 
         bp.reslice(0, funcs->payload_size_from_samples(num_samples));

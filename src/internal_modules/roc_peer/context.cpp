@@ -15,11 +15,11 @@ namespace peer {
 
 Context::Context(const ContextConfig& config, core::IAllocator& allocator)
     : allocator_(allocator)
-    , packet_pool_(allocator_, false)
-    , byte_buffer_pool_(allocator_, config.max_packet_size, config.poisoning)
-    , sample_buffer_pool_(
+    , packet_factory_(allocator_, false)
+    , byte_buffer_factory_(allocator_, config.max_packet_size, config.poisoning)
+    , sample_buffer_factory_(
           allocator_, config.max_frame_size / sizeof(audio::sample_t), config.poisoning)
-    , network_loop_(packet_pool_, byte_buffer_pool_, allocator_)
+    , network_loop_(packet_factory_, byte_buffer_factory_, allocator_)
     , ref_counter_(0) {
     roc_log(LogDebug, "context: initializing");
 }
@@ -63,16 +63,16 @@ core::IAllocator& Context::allocator() {
     return allocator_;
 }
 
-packet::PacketPool& Context::packet_pool() {
-    return packet_pool_;
+packet::PacketFactory& Context::packet_factory() {
+    return packet_factory_;
 }
 
-core::BufferPool<uint8_t>& Context::byte_buffer_pool() {
-    return byte_buffer_pool_;
+core::BufferFactory<uint8_t>& Context::byte_buffer_factory() {
+    return byte_buffer_factory_;
 }
 
-core::BufferPool<audio::sample_t>& Context::sample_buffer_pool() {
-    return sample_buffer_pool_;
+core::BufferFactory<audio::sample_t>& Context::sample_buffer_factory() {
+    return sample_buffer_factory_;
 }
 
 netio::NetworkLoop& Context::network_loop() {

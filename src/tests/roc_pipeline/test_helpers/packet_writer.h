@@ -14,12 +14,12 @@
 #include "test_helpers/utils.h"
 
 #include "roc_audio/iframe_encoder.h"
-#include "roc_core/buffer_pool.h"
+#include "roc_core/buffer_factory.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_packet/icomposer.h"
 #include "roc_packet/iwriter.h"
-#include "roc_packet/packet_pool.h"
+#include "roc_packet/packet_factory.h"
 #include "roc_rtp/format_map.h"
 
 namespace roc {
@@ -32,16 +32,16 @@ public:
                  packet::IWriter& writer,
                  packet::IComposer& composer,
                  rtp::FormatMap& format_map,
-                 packet::PacketPool& packet_pool,
-                 core::BufferPool<uint8_t>& buffer_pool,
+                 packet::PacketFactory& packet_factory,
+                 core::BufferFactory<uint8_t>& buffer_factory,
                  rtp::PayloadType pt,
                  const address::SocketAddr& src_addr,
                  const address::SocketAddr& dst_addr)
         : writer_(writer)
         , composer_(composer)
         , payload_encoder_(format_map.format(pt)->new_encoder(allocator), allocator)
-        , packet_pool_(packet_pool)
-        , buffer_pool_(buffer_pool)
+        , packet_factory_(packet_factory)
+        , buffer_factory_(buffer_factory)
         , src_addr_(src_addr)
         , dst_addr_(dst_addr)
         , source_(0)
@@ -103,7 +103,7 @@ private:
 
     packet::PacketPtr new_packet_(size_t samples_per_packet,
                                   audio::SampleSpec sample_spec) {
-        packet::PacketPtr pp = new (packet_pool_) packet::Packet(packet_pool_);
+        packet::PacketPtr pp = packet_factory_.new_packet();
         CHECK(pp);
 
         pp->add_flags(packet::Packet::FlagUDP);
@@ -124,10 +124,10 @@ private:
                                      audio::SampleSpec sample_spec) {
         CHECK(samples_per_packet * sample_spec.num_channels() < MaxSamples);
 
-        packet::PacketPtr pp = new (packet_pool_) packet::Packet(packet_pool_);
+        packet::PacketPtr pp = packet_factory_.new_packet();
         CHECK(pp);
 
-        core::Slice<uint8_t> bp = new (buffer_pool_) core::Buffer<uint8_t>(buffer_pool_);
+        core::Slice<uint8_t> bp = buffer_factory_.new_buffer();
         CHECK(bp);
 
         CHECK(composer_.prepare(*pp, bp,
@@ -166,8 +166,8 @@ private:
     packet::IComposer& composer_;
     core::ScopedPtr<audio::IFrameEncoder> payload_encoder_;
 
-    packet::PacketPool& packet_pool_;
-    core::BufferPool<uint8_t>& buffer_pool_;
+    packet::PacketFactory& packet_factory_;
+    core::BufferFactory<uint8_t>& buffer_factory_;
 
     address::SocketAddr src_addr_;
     address::SocketAddr dst_addr_;

@@ -13,7 +13,7 @@
 #define ROC_FEC_OPENFEC_ENCODER_H_
 
 #include "roc_core/array.h"
-#include "roc_core/buffer_pool.h"
+#include "roc_core/buffer_factory.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/slice.h"
@@ -41,7 +41,7 @@ class OpenfecEncoder : public IBlockEncoder, public core::NonCopyable<> {
 public:
     //! Initialize.
     explicit OpenfecEncoder(const CodecConfig& config,
-                            core::BufferPool<uint8_t>& buffer_pool,
+                            core::BufferFactory<uint8_t>& buffer_factory,
                             core::IAllocator& allocator);
 
     virtual ~OpenfecEncoder();

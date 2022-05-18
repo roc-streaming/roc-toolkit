@@ -8,10 +8,10 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "roc_core/buffer_pool.h"
+#include "roc_core/buffer_factory.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_fec/composer.h"
-#include "roc_packet/packet_pool.h"
+#include "roc_packet/packet_factory.h"
 #include "roc_rtp/composer.h"
 
 namespace roc {
@@ -23,9 +23,9 @@ TEST(composer, align_footer) {
     enum { BufferSize = 100, Alignment = 8 };
 
     core::HeapAllocator allocator;
-    core::BufferPool<uint8_t> buffer_pool(allocator, BufferSize, true);
+    core::BufferFactory<uint8_t> buffer_factory(allocator, BufferSize, true);
 
-    core::Buffer<uint8_t>* buffer = new (buffer_pool) core::Buffer<uint8_t>(buffer_pool);
+    core::SharedPtr<core::Buffer<uint8_t> > buffer = buffer_factory.new_buffer();
     CHECK(buffer);
     CHECK((unsigned long)buffer->data() % Alignment == 0);
 
@@ -48,9 +48,9 @@ TEST(composer, align_header) {
     enum { BufferSize = 100, Alignment = 8 };
 
     core::HeapAllocator allocator;
-    core::BufferPool<uint8_t> buffer_pool(allocator, BufferSize, true);
+    core::BufferFactory<uint8_t> buffer_factory(allocator, BufferSize, true);
 
-    core::Buffer<uint8_t>* buffer = new (buffer_pool) core::Buffer<uint8_t>(buffer_pool);
+    core::SharedPtr<core::Buffer<uint8_t> > buffer = buffer_factory.new_buffer();
     CHECK(buffer);
     CHECK((unsigned long)buffer->data() % Alignment == 0);
 
@@ -78,9 +78,9 @@ TEST(composer, align_outer_header) {
     enum { BufferSize = 100, Alignment = 8, OuterHeader = 5 };
 
     core::HeapAllocator allocator;
-    core::BufferPool<uint8_t> buffer_pool(allocator, BufferSize, true);
+    core::BufferFactory<uint8_t> buffer_factory(allocator, BufferSize, true);
 
-    core::Buffer<uint8_t>* buffer = new (buffer_pool) core::Buffer<uint8_t>(buffer_pool);
+    core::SharedPtr<core::Buffer<uint8_t> > buffer = buffer_factory.new_buffer();
     CHECK(buffer);
     CHECK((unsigned long)buffer->data() % Alignment == 0);
 
@@ -111,13 +111,13 @@ TEST(composer, packet_size) {
     enum { BufferSize = 100, Alignment = 8, PayloadSize = 10 };
 
     core::HeapAllocator allocator;
-    core::BufferPool<uint8_t> buffer_pool(allocator, BufferSize, true);
-    packet::PacketPool packet_pool(allocator, true);
+    core::BufferFactory<uint8_t> buffer_factory(allocator, BufferSize, true);
+    packet::PacketFactory packet_factory(allocator, true);
 
-    core::Slice<uint8_t> buffer = new (buffer_pool) core::Buffer<uint8_t>(buffer_pool);
+    core::Slice<uint8_t> buffer = buffer_factory.new_buffer();
     CHECK(buffer);
 
-    packet::PacketPtr packet = new (packet_pool) packet::Packet(packet_pool);
+    packet::PacketPtr packet = packet_factory.new_packet();
     CHECK(packet);
 
     Composer<RS8M_PayloadID, Source, Header> composer(NULL);

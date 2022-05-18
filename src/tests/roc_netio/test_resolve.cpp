@@ -9,10 +9,10 @@
 #include <CppUTest/TestHarness.h>
 
 #include "roc_address/socket_addr_to_str.h"
-#include "roc_core/buffer_pool.h"
+#include "roc_core/buffer_factory.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_netio/network_loop.h"
-#include "roc_packet/packet_pool.h"
+#include "roc_packet/packet_factory.h"
 
 namespace roc {
 namespace netio {
@@ -22,8 +22,8 @@ namespace {
 enum { MaxBufSize = 500 };
 
 core::HeapAllocator allocator;
-core::BufferPool<uint8_t> buffer_pool(allocator, MaxBufSize, true);
-packet::PacketPool packet_pool(allocator, true);
+core::BufferFactory<uint8_t> buffer_factory(allocator, MaxBufSize, true);
+packet::PacketFactory packet_factory(allocator, true);
 
 bool resolve_endpoint_address(NetworkLoop& net_loop,
                               const address::EndpointURI& endpoint_uri,
@@ -44,7 +44,7 @@ bool resolve_endpoint_address(NetworkLoop& net_loop,
 TEST_GROUP(resolve) {};
 
 TEST(resolve, ipv4) {
-    NetworkLoop net_loop(packet_pool, buffer_pool, allocator);
+    NetworkLoop net_loop(packet_factory, buffer_factory, allocator);
     CHECK(net_loop.valid());
 
     address::EndpointURI endpoint_uri(allocator);
@@ -59,7 +59,7 @@ TEST(resolve, ipv4) {
 }
 
 TEST(resolve, ipv6) {
-    NetworkLoop net_loop(packet_pool, buffer_pool, allocator);
+    NetworkLoop net_loop(packet_factory, buffer_factory, allocator);
     CHECK(net_loop.valid());
 
     address::EndpointURI endpoint_uri(allocator);
@@ -74,7 +74,7 @@ TEST(resolve, ipv6) {
 }
 
 TEST(resolve, hostname) {
-    NetworkLoop net_loop(packet_pool, buffer_pool, allocator);
+    NetworkLoop net_loop(packet_factory, buffer_factory, allocator);
     CHECK(net_loop.valid());
 
     address::EndpointURI endpoint_uri(allocator);
@@ -95,7 +95,7 @@ TEST(resolve, hostname) {
 }
 
 TEST(resolve, standard_port) {
-    NetworkLoop net_loop(packet_pool, buffer_pool, allocator);
+    NetworkLoop net_loop(packet_factory, buffer_factory, allocator);
     CHECK(net_loop.valid());
 
     address::EndpointURI endpoint_uri(allocator);
@@ -109,7 +109,7 @@ TEST(resolve, standard_port) {
 }
 
 TEST(resolve, bad_host) {
-    NetworkLoop net_loop(packet_pool, buffer_pool, allocator);
+    NetworkLoop net_loop(packet_factory, buffer_factory, allocator);
     CHECK(net_loop.valid());
 
     { // bad ipv4

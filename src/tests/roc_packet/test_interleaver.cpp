@@ -11,7 +11,7 @@
 #include "roc_core/array.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_packet/interleaver.h"
-#include "roc_packet/packet_pool.h"
+#include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
 
 namespace roc {
@@ -20,13 +20,13 @@ namespace packet {
 namespace {
 
 core::HeapAllocator allocator;
-PacketPool pool(allocator, true);
+PacketFactory packet_factory(allocator, true);
 
 } // namespace
 
 TEST_GROUP(interleaver) {
     PacketPtr new_packet(seqnum_t sn) {
-        PacketPtr packet = new(pool) Packet(pool);
+        PacketPtr packet = packet_factory.new_packet();
         CHECK(packet);
 
         packet->add_flags(Packet::FlagRTP);

@@ -9,7 +9,7 @@
 #include <CppUTest/TestHarness.h>
 
 #include "roc_audio/watchdog.h"
-#include "roc_core/buffer_pool.h"
+#include "roc_core/buffer_factory.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_core/slice.h"
 
@@ -35,7 +35,7 @@ enum {
 const audio::SampleSpec SampleSpecs = SampleSpec(SampleRate, ChMask);
 
 core::HeapAllocator allocator;
-core::BufferPool<sample_t> sample_buffer_pool(allocator, MaxBufSize, true);
+core::BufferFactory<sample_t> sample_buffer_factory(allocator, MaxBufSize, true);
 
 class TestFrameReader : public IReader, public core::NonCopyable<> {
 public:
@@ -67,8 +67,7 @@ TEST_GROUP(watchdog) {
     TestFrameReader test_reader;
 
     core::Slice<sample_t> new_buffer(size_t sz) {
-        core::Slice<sample_t> buf =
-            new (sample_buffer_pool) core::Buffer<sample_t>(sample_buffer_pool);
+        core::Slice<sample_t> buf = sample_buffer_factory.new_buffer();
         buf.reslice(0, sz * NumCh);
         return buf;
     }

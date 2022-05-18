@@ -30,9 +30,9 @@ public:
                          ReceiverState& receiver_state,
                          audio::Mixer& mixer,
                          const rtp::FormatMap& format_map,
-                         packet::PacketPool& packet_pool,
-                         core::BufferPool<uint8_t>& byte_buffer_pool,
-                         core::BufferPool<audio::sample_t>& sample_buffer_pool,
+                         packet::PacketFactory& packet_factory,
+                         core::BufferFactory<uint8_t>& byte_buffer_factory,
+                         core::BufferFactory<audio::sample_t>& sample_buffer_factory,
                          core::IAllocator& allocator);
 
     //! Route packet to session.
@@ -54,9 +54,9 @@ private:
 
     core::IAllocator& allocator_;
 
-    packet::PacketPool& packet_pool_;
-    core::BufferPool<uint8_t>& byte_buffer_pool_;
-    core::BufferPool<audio::sample_t>& sample_buffer_pool_;
+    packet::PacketFactory& packet_factory_;
+    core::BufferFactory<uint8_t>& byte_buffer_factory_;
+    core::BufferFactory<audio::sample_t>& sample_buffer_factory_;
 
     const rtp::FormatMap& format_map_;
 

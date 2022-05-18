@@ -88,10 +88,11 @@ int main(int argc, char** argv) {
     backend_dispatcher.set_frame_size(converter_config.internal_frame_length,
                                       converter_config.input_sample_spec);
 
-    core::BufferPool<audio::sample_t> pool(allocator,
-                                           converter_config.input_sample_spec.ns_to_size(
-                                               converter_config.internal_frame_length),
-                                           args.poisoning_flag);
+    core::BufferFactory<audio::sample_t> buffer_factory(
+        allocator,
+        converter_config.input_sample_spec.ns_to_size(
+            converter_config.internal_frame_length),
+        args.poisoning_flag);
 
     sndio::Config source_config;
     source_config.sample_spec.set_channel_mask(
@@ -215,13 +216,14 @@ int main(int argc, char** argv) {
         output_writer = output_sink.get();
     }
 
-    pipeline::ConverterSink converter(converter_config, output_writer, pool, allocator);
+    pipeline::ConverterSink converter(converter_config, output_writer, buffer_factory,
+                                      allocator);
     if (!converter.valid()) {
         roc_log(LogError, "can't create converter pipeline");
         return 1;
     }
 
-    sndio::Pump pump(pool, *input_source, NULL, converter,
+    sndio::Pump pump(buffer_factory, *input_source, NULL, converter,
                      converter_config.internal_frame_length,
                      converter_config.input_sample_spec, sndio::Pump::ModePermanent);
     if (!pump.valid()) {

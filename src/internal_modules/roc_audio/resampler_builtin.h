@@ -19,7 +19,7 @@
 #include "roc_audio/sample_spec.h"
 #include "roc_audio/units.h"
 #include "roc_core/array.h"
-#include "roc_core/buffer_pool.h"
+#include "roc_core/buffer_factory.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/slice.h"
 #include "roc_core/stddefs.h"
@@ -33,7 +33,7 @@ class BuiltinResampler : public IResampler, public core::NonCopyable<> {
 public:
     //! Initialize.
     BuiltinResampler(core::IAllocator& allocator,
-                     core::BufferPool<sample_t>& buffer_pool,
+                     core::BufferFactory<sample_t>& buffer_factory,
                      ResamplerProfile profile,
                      core::nanoseconds_t frame_length,
                      const audio::SampleSpec& sample_spec);
@@ -73,7 +73,7 @@ private:
         return i * sample_spec_.num_channels() + ch_offset;
     }
 
-    bool alloc_frames_(core::BufferPool<sample_t>&);
+    bool alloc_frames_(core::BufferFactory<sample_t>&);
 
     bool check_config_() const;
 

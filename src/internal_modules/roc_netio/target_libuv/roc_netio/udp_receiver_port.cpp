@@ -19,8 +19,8 @@ namespace netio {
 UdpReceiverPort::UdpReceiverPort(const UdpReceiverConfig& config,
                                  packet::IWriter& writer,
                                  uv_loop_t& event_loop,
-                                 packet::PacketPool& packet_pool,
-                                 core::BufferPool<uint8_t>& buffer_pool,
+                                 packet::PacketFactory& packet_factory,
+                                 core::BufferFactory<uint8_t>& buffer_factory,
                                  core::IAllocator& allocator)
     : BasicPort(allocator)
     , config_(config)
@@ -32,8 +32,8 @@ UdpReceiverPort::UdpReceiverPort(const UdpReceiverConfig& config,
     , multicast_group_joined_(false)
     , recv_started_(false)
     , closed_(false)
-    , packet_pool_(packet_pool)
-    , buffer_pool_(buffer_pool)
+    , packet_factory_(packet_factory)
+    , buffer_factory_(buffer_factory)
     , packet_counter_(0) {
     BasicPort::update_descriptor();
 }
@@ -175,9 +175,7 @@ void UdpReceiverPort::alloc_cb_(uv_handle_t* handle, size_t size, uv_buf_t* buf)
 
     UdpReceiverPort& self = *(UdpReceiverPort*)handle->data;
 
-    core::SharedPtr<core::Buffer<uint8_t> > bp =
-        new (self.buffer_pool_) core::Buffer<uint8_t>(self.buffer_pool_);
-
+    core::SharedPtr<core::Buffer<uint8_t> > bp = self.buffer_factory_.new_buffer();
     if (!bp) {
         roc_log(LogError, "udp receiver: %s: can't allocate buffer", self.descriptor());
 
@@ -277,7 +275,7 @@ void UdpReceiverPort::recv_cb_(uv_udp_t* handle,
                   self.descriptor(), (long)nread, (long)bp->size());
     }
 
-    packet::PacketPtr pp = new (self.packet_pool_) packet::Packet(self.packet_pool_);
+    packet::PacketPtr pp = self.packet_factory_.new_packet();
     if (!pp) {
         roc_log(LogError, "udp receiver: %s: can't allocate packet", self.descriptor());
         return;

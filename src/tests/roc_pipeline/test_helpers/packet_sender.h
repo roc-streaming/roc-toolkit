@@ -13,7 +13,7 @@
 
 #include "roc_core/noncopyable.h"
 #include "roc_packet/iwriter.h"
-#include "roc_packet/packet_pool.h"
+#include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
 
 namespace roc {
@@ -22,10 +22,10 @@ namespace test {
 
 class PacketSender : public packet::IWriter, core::NonCopyable<> {
 public:
-    PacketSender(packet::PacketPool& pool,
+    PacketSender(packet::PacketFactory& packet_factory,
                  packet::IWriter* source_writer,
                  packet::IWriter* repair_writer)
-        : pool_(pool)
+        : packet_factory_(packet_factory)
         , source_writer_(source_writer)
         , repair_writer_(repair_writer) {
     }
@@ -54,7 +54,7 @@ public:
 
 private:
     packet::PacketPtr copy_packet_(const packet::PacketPtr& pa) {
-        packet::PacketPtr pb = new (pool_) packet::Packet(pool_);
+        packet::PacketPtr pb = packet_factory_.new_packet();
         CHECK(pb);
 
         CHECK(pa->flags() & packet::Packet::FlagUDP);
@@ -66,7 +66,7 @@ private:
         return pb;
     }
 
-    packet::PacketPool& pool_;
+    packet::PacketFactory& packet_factory_;
     packet::IWriter* source_writer_;
     packet::IWriter* repair_writer_;
     packet::Queue queue_;

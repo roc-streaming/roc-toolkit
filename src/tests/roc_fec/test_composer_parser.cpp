@@ -8,11 +8,11 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "roc_core/buffer_pool.h"
+#include "roc_core/buffer_factory.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_fec/composer.h"
 #include "roc_fec/parser.h"
-#include "roc_packet/packet_pool.h"
+#include "roc_packet/packet_factory.h"
 #include "roc_rtp/composer.h"
 #include "roc_rtp/parser.h"
 
@@ -95,8 +95,8 @@ struct PacketTest {
 };
 
 core::HeapAllocator allocator;
-core::BufferPool<uint8_t> buffer_pool(allocator, 1000, true);
-packet::PacketPool packet_pool(allocator, true);
+core::BufferFactory<uint8_t> buffer_factory(allocator, 1000, true);
+packet::PacketFactory packet_factory(allocator, true);
 
 void fill_packet(packet::Packet& packet, bool is_rtp) {
     if (is_rtp) {
@@ -163,10 +163,10 @@ void check_packet(packet::Packet& packet,
 }
 
 void test_compose(const PacketTest& test) {
-    core::Slice<uint8_t> buffer = new (buffer_pool) core::Buffer<uint8_t>(buffer_pool);
+    core::Slice<uint8_t> buffer = buffer_factory.new_buffer();
     CHECK(buffer);
 
-    packet::PacketPtr packet = new (packet_pool) packet::Packet(packet_pool);
+    packet::PacketPtr packet = packet_factory.new_packet();
     CHECK(packet);
 
     CHECK(test.composer->prepare(*packet, buffer, Test_payload_size));
@@ -184,7 +184,7 @@ void test_compose(const PacketTest& test) {
 }
 
 void test_parse(const PacketTest& test) {
-    core::Slice<uint8_t> buffer = new (buffer_pool) core::Buffer<uint8_t>(buffer_pool);
+    core::Slice<uint8_t> buffer = buffer_factory.new_buffer();
     CHECK(buffer);
 
     buffer.reslice(0, test.reference_size);
@@ -192,7 +192,7 @@ void test_parse(const PacketTest& test) {
         buffer.data()[i] = test.reference[i];
     }
 
-    packet::PacketPtr packet = new (packet_pool) packet::Packet(packet_pool);
+    packet::PacketPtr packet = packet_factory.new_packet();
     CHECK(packet);
 
     packet->set_data(buffer);
@@ -203,10 +203,10 @@ void test_parse(const PacketTest& test) {
 }
 
 void test_compose_parse(const PacketTest& test) {
-    core::Slice<uint8_t> buffer = new (buffer_pool) core::Buffer<uint8_t>(buffer_pool);
+    core::Slice<uint8_t> buffer = buffer_factory.new_buffer();
     CHECK(buffer);
 
-    packet::PacketPtr packet1 = new (packet_pool) packet::Packet(packet_pool);
+    packet::PacketPtr packet1 = packet_factory.new_packet();
     CHECK(packet1);
 
     CHECK(test.composer->prepare(*packet1, buffer, Test_payload_size));
@@ -217,7 +217,7 @@ void test_compose_parse(const PacketTest& test) {
 
     CHECK(test.composer->compose(*packet1));
 
-    packet::PacketPtr packet2 = new (packet_pool) packet::Packet(packet_pool);
+    packet::PacketPtr packet2 = packet_factory.new_packet();
     CHECK(packet2);
 
     CHECK(test.parser->parse(*packet2, packet1->data()));

@@ -11,7 +11,7 @@
 #include "test_helpers/mock_allocator.h"
 #include "test_helpers/packet_dispatcher.h"
 
-#include "roc_core/buffer_pool.h"
+#include "roc_core/buffer_factory.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_fec/codec_map.h"
@@ -21,7 +21,7 @@
 #include "roc_fec/reader.h"
 #include "roc_fec/writer.h"
 #include "roc_packet/interleaver.h"
-#include "roc_packet/packet_pool.h"
+#include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
 #include "roc_rtp/composer.h"
 #include "roc_rtp/format_map.h"
@@ -44,8 +44,8 @@ const size_t FECPayloadSize = 193;
 const size_t MaxBuffSize = 500;
 
 core::HeapAllocator allocator;
-core::BufferPool<uint8_t> buffer_pool(allocator, MaxBuffSize, true);
-packet::PacketPool packet_pool(allocator, true);
+core::BufferFactory<uint8_t> buffer_factory(allocator, MaxBuffSize, true);
+packet::PacketFactory packet_factory(allocator, true);
 
 rtp::FormatMap format_map;
 rtp::Parser rtp_parser(format_map, NULL);
@@ -138,10 +138,10 @@ TEST_GROUP(writer_reader) {
         CHECK(fec_payload_size > sizeof(rtp::Header));
         const size_t rtp_payload_size = fec_payload_size - sizeof(rtp::Header);
 
-        packet::PacketPtr pp = new (packet_pool) packet::Packet(packet_pool);
+        packet::PacketPtr pp = packet_factory.new_packet();
         CHECK(pp);
 
-        core::Slice<uint8_t> bp = new (buffer_pool) core::Buffer<uint8_t>(buffer_pool);
+        core::Slice<uint8_t> bp = buffer_factory.new_buffer();
         CHECK(bp);
 
         if (!composer) {
@@ -211,26 +211,26 @@ TEST(writer_reader, no_losses) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_encoder(codec_config, buffer_factory, allocator),
             allocator);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_decoder(codec_config, buffer_factory, allocator),
             allocator);
 
         CHECK(encoder);
         CHECK(decoder);
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
                                           NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
+                      source_composer(), repair_composer(), packet_factory, buffer_factory,
                       allocator);
 
         Reader reader(reader_config, codec_config.scheme, *decoder,
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_pool, allocator);
+                      packet_factory, allocator);
 
         CHECK(writer.valid());
         CHECK(reader.valid());
@@ -259,26 +259,26 @@ TEST(writer_reader, 1_loss) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_encoder(codec_config, buffer_factory, allocator),
             allocator);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_decoder(codec_config, buffer_factory, allocator),
             allocator);
 
         CHECK(encoder);
         CHECK(decoder);
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
                                           NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
+                      source_composer(), repair_composer(), packet_factory, buffer_factory,
                       allocator);
 
         Reader reader(reader_config, codec_config.scheme, *decoder,
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_pool, allocator);
+                      packet_factory, allocator);
 
         CHECK(writer.valid());
         CHECK(reader.valid());
@@ -309,26 +309,26 @@ TEST(writer_reader, lost_first_packet_in_first_block) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_encoder(codec_config, buffer_factory, allocator),
             allocator);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_decoder(codec_config, buffer_factory, allocator),
             allocator);
 
         CHECK(encoder);
         CHECK(decoder);
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
                                           NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
+                      source_composer(), repair_composer(), packet_factory, buffer_factory,
                       allocator);
 
         Reader reader(reader_config, codec_config.scheme, *decoder,
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_pool, allocator);
+                      packet_factory, allocator);
 
         CHECK(writer.valid());
         CHECK(reader.valid());
@@ -368,26 +368,26 @@ TEST(writer_reader, lost_one_source_and_all_repair_packets) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_encoder(codec_config, buffer_factory, allocator),
             allocator);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_decoder(codec_config, buffer_factory, allocator),
             allocator);
 
         CHECK(encoder);
         CHECK(decoder);
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
                                           NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
+                      source_composer(), repair_composer(), packet_factory, buffer_factory,
                       allocator);
 
         Reader reader(reader_config, codec_config.scheme, *decoder,
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_pool, allocator);
+                      packet_factory, allocator);
 
         CHECK(writer.valid());
         CHECK(reader.valid());
@@ -440,26 +440,26 @@ TEST(writer_reader, multiple_blocks_1_loss) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_encoder(codec_config, buffer_factory, allocator),
             allocator);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_decoder(codec_config, buffer_factory, allocator),
             allocator);
 
         CHECK(encoder);
         CHECK(decoder);
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
                                           NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
+                      source_composer(), repair_composer(), packet_factory, buffer_factory,
                       allocator);
 
         Reader reader(reader_config, codec_config.scheme, *decoder,
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_pool, allocator);
+                      packet_factory, allocator);
 
         CHECK(writer.valid());
         CHECK(reader.valid());
@@ -515,26 +515,26 @@ TEST(writer_reader, multiple_blocks_in_queue) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_encoder(codec_config, buffer_factory, allocator),
             allocator);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_decoder(codec_config, buffer_factory, allocator),
             allocator);
 
         CHECK(encoder);
         CHECK(decoder);
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
                                           NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
+                      source_composer(), repair_composer(), packet_factory, buffer_factory,
                       allocator);
 
         Reader reader(reader_config, codec_config.scheme, *decoder,
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_pool, allocator);
+                      packet_factory, allocator);
 
         CHECK(writer.valid());
         CHECK(reader.valid());
@@ -571,17 +571,17 @@ TEST(writer_reader, interleaved_packets) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_encoder(codec_config, buffer_factory, allocator),
             allocator);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_decoder(codec_config, buffer_factory, allocator),
             allocator);
 
         CHECK(encoder);
         CHECK(decoder);
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
                                           NumSourcePackets, NumRepairPackets);
 
         packet::Interleaver intrlvr(dispatcher, allocator, 10);
@@ -589,12 +589,12 @@ TEST(writer_reader, interleaved_packets) {
         CHECK(intrlvr.valid());
 
         Writer writer(writer_config, codec_config.scheme, *encoder, intrlvr,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
+                      source_composer(), repair_composer(), packet_factory, buffer_factory,
                       allocator);
 
         Reader reader(reader_config, codec_config.scheme, *decoder,
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_pool, allocator);
+                      packet_factory, allocator);
 
         CHECK(writer.valid());
         CHECK(reader.valid());
@@ -628,26 +628,26 @@ TEST(writer_reader, delayed_packets) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_encoder(codec_config, buffer_factory, allocator),
             allocator);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_decoder(codec_config, buffer_factory, allocator),
             allocator);
 
         CHECK(encoder);
         CHECK(decoder);
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
                                           NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
+                      source_composer(), repair_composer(), packet_factory, buffer_factory,
                       allocator);
 
         Reader reader(reader_config, codec_config.scheme, *decoder,
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_pool, allocator);
+                      packet_factory, allocator);
 
         CHECK(writer.valid());
         CHECK(reader.valid());
@@ -700,26 +700,26 @@ TEST(writer_reader, late_out_of_order_packets) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_encoder(codec_config, buffer_factory, allocator),
             allocator);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_decoder(codec_config, buffer_factory, allocator),
             allocator);
 
         CHECK(encoder);
         CHECK(decoder);
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
                                           NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
+                      source_composer(), repair_composer(), packet_factory, buffer_factory,
                       allocator);
 
         Reader reader(reader_config, codec_config.scheme, *decoder,
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_pool, allocator);
+                      packet_factory, allocator);
 
         CHECK(writer.valid());
         CHECK(reader.valid());
@@ -780,27 +780,27 @@ TEST(writer_reader, repair_packets_before_source_packets) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_encoder(codec_config, buffer_factory, allocator),
             allocator);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_decoder(codec_config, buffer_factory, allocator),
             allocator);
 
         CHECK(encoder);
         CHECK(decoder);
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
                                           writer_config.n_source_packets,
                                           writer_config.n_repair_packets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
+                      source_composer(), repair_composer(), packet_factory, buffer_factory,
                       allocator);
 
         Reader reader(reader_config, codec_config.scheme, *decoder,
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_pool, allocator);
+                      packet_factory, allocator);
 
         CHECK(writer.valid());
         CHECK(reader.valid());
@@ -868,27 +868,27 @@ TEST(writer_reader, repair_packets_mixed_with_source_packets) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_encoder(codec_config, buffer_factory, allocator),
             allocator);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_decoder(codec_config, buffer_factory, allocator),
             allocator);
 
         CHECK(encoder);
         CHECK(decoder);
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
                                           writer_config.n_source_packets,
                                           writer_config.n_repair_packets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
+                      source_composer(), repair_composer(), packet_factory, buffer_factory,
                       allocator);
 
         Reader reader(reader_config, codec_config.scheme, *decoder,
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_pool, allocator);
+                      packet_factory, allocator);
 
         CHECK(writer.valid());
         CHECK(reader.valid());
@@ -968,26 +968,26 @@ TEST(writer_reader, multiple_repair_attempts) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_encoder(codec_config, buffer_factory, allocator),
             allocator);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_decoder(codec_config, buffer_factory, allocator),
             allocator);
 
         CHECK(encoder);
         CHECK(decoder);
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
                                           NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
+                      source_composer(), repair_composer(), packet_factory, buffer_factory,
                       allocator);
 
         Reader reader(reader_config, codec_config.scheme, *decoder,
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_pool, allocator);
+                      packet_factory, allocator);
 
         CHECK(writer.valid());
         CHECK(reader.valid());
@@ -1048,26 +1048,26 @@ TEST(writer_reader, drop_outdated_block) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_encoder(codec_config, buffer_factory, allocator),
             allocator);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_decoder(codec_config, buffer_factory, allocator),
             allocator);
 
         CHECK(encoder);
         CHECK(decoder);
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
                                           NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
+                      source_composer(), repair_composer(), packet_factory, buffer_factory,
                       allocator);
 
         Reader reader(reader_config, codec_config.scheme, *decoder,
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_pool, allocator);
+                      packet_factory, allocator);
 
         CHECK(writer.valid());
         CHECK(reader.valid());
@@ -1120,26 +1120,26 @@ TEST(writer_reader, repaired_block_numbering) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_encoder(codec_config, buffer_factory, allocator),
             allocator);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_decoder(codec_config, buffer_factory, allocator),
             allocator);
 
         CHECK(encoder);
         CHECK(decoder);
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
                                           NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
+                      source_composer(), repair_composer(), packet_factory, buffer_factory,
                       allocator);
 
         Reader reader(reader_config, codec_config.scheme, *decoder,
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_pool, allocator);
+                      packet_factory, allocator);
 
         CHECK(writer.valid());
         CHECK(reader.valid());
@@ -1207,11 +1207,11 @@ TEST(writer_reader, invalid_esi) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_encoder(codec_config, buffer_factory, allocator),
             allocator);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_decoder(codec_config, buffer_factory, allocator),
             allocator);
 
         CHECK(encoder);
@@ -1219,16 +1219,16 @@ TEST(writer_reader, invalid_esi) {
 
         packet::Queue queue;
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
                                           NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, queue,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
+                      source_composer(), repair_composer(), packet_factory, buffer_factory,
                       allocator);
 
         Reader reader(reader_config, codec_config.scheme, *decoder,
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_pool, allocator);
+                      packet_factory, allocator);
 
         CHECK(writer.valid());
         CHECK(reader.valid());
@@ -1289,11 +1289,11 @@ TEST(writer_reader, invalid_sbl) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_encoder(codec_config, buffer_factory, allocator),
             allocator);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_decoder(codec_config, buffer_factory, allocator),
             allocator);
 
         CHECK(encoder);
@@ -1301,16 +1301,16 @@ TEST(writer_reader, invalid_sbl) {
 
         packet::Queue queue;
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
                                           NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, queue,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
+                      source_composer(), repair_composer(), packet_factory, buffer_factory,
                       allocator);
 
         Reader reader(reader_config, codec_config.scheme, *decoder,
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_pool, allocator);
+                      packet_factory, allocator);
 
         CHECK(writer.valid());
         CHECK(reader.valid());
@@ -1366,11 +1366,11 @@ TEST(writer_reader, invalid_nes) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_encoder(codec_config, buffer_factory, allocator),
             allocator);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_decoder(codec_config, buffer_factory, allocator),
             allocator);
 
         CHECK(encoder);
@@ -1378,16 +1378,16 @@ TEST(writer_reader, invalid_nes) {
 
         packet::Queue queue;
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
                                           NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, queue,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
+                      source_composer(), repair_composer(), packet_factory, buffer_factory,
                       allocator);
 
         Reader reader(reader_config, codec_config.scheme, *decoder,
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_pool, allocator);
+                      packet_factory, allocator);
 
         CHECK(writer.valid());
         CHECK(reader.valid());
@@ -1442,11 +1442,11 @@ TEST(writer_reader, invalid_payload_size) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_encoder(codec_config, buffer_factory, allocator),
             allocator);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_decoder(codec_config, buffer_factory, allocator),
             allocator);
 
         CHECK(encoder);
@@ -1457,11 +1457,11 @@ TEST(writer_reader, invalid_payload_size) {
         packet::Queue repair_queue;
 
         Writer writer(writer_config, codec_config.scheme, *encoder, writer_queue,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
+                      source_composer(), repair_composer(), packet_factory, buffer_factory,
                       allocator);
 
         Reader reader(reader_config, codec_config.scheme, *decoder, source_queue,
-                      repair_queue, rtp_parser, packet_pool, allocator);
+                      repair_queue, rtp_parser, packet_factory, allocator);
 
         CHECK(writer.valid());
         CHECK(reader.valid());
@@ -1529,11 +1529,11 @@ TEST(writer_reader, zero_source_packets) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_encoder(codec_config, buffer_factory, allocator),
             allocator);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_decoder(codec_config, buffer_factory, allocator),
             allocator);
 
         CHECK(encoder);
@@ -1541,16 +1541,16 @@ TEST(writer_reader, zero_source_packets) {
 
         packet::Queue queue;
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
                                           NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, queue,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
+                      source_composer(), repair_composer(), packet_factory, buffer_factory,
                       allocator);
 
         Reader reader(reader_config, codec_config.scheme, *decoder,
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_pool, allocator);
+                      packet_factory, allocator);
 
         CHECK(writer.valid());
         CHECK(reader.valid());
@@ -1613,11 +1613,11 @@ TEST(writer_reader, zero_repair_packets) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_encoder(codec_config, buffer_factory, allocator),
             allocator);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_decoder(codec_config, buffer_factory, allocator),
             allocator);
 
         CHECK(encoder);
@@ -1626,16 +1626,16 @@ TEST(writer_reader, zero_repair_packets) {
         packet::Queue queue;
 
         test::PacketDispatcher dispatcher(ldpc_source_parser, ldpc_repair_parser,
-                                          packet_pool, NumSourcePackets,
+                                          packet_factory, NumSourcePackets,
                                           NumRepairPackets);
 
         Writer writer(writer_config, packet::FEC_LDPC_Staircase, *encoder, queue,
-                      ldpc_source_composer, ldpc_repair_composer, packet_pool,
-                      buffer_pool, allocator);
+                      ldpc_source_composer, ldpc_repair_composer, packet_factory,
+                      buffer_factory, allocator);
 
         Reader reader(reader_config, packet::FEC_LDPC_Staircase, *decoder,
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_pool, allocator);
+                      packet_factory, allocator);
 
         CHECK(writer.valid());
         CHECK(reader.valid());
@@ -1695,11 +1695,11 @@ TEST(writer_reader, zero_payload_size) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_encoder(codec_config, buffer_factory, allocator),
             allocator);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_decoder(codec_config, buffer_factory, allocator),
             allocator);
 
         CHECK(encoder);
@@ -1710,11 +1710,11 @@ TEST(writer_reader, zero_payload_size) {
         packet::Queue repair_queue;
 
         Writer writer(writer_config, codec_config.scheme, *encoder, writer_queue,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
+                      source_composer(), repair_composer(), packet_factory, buffer_factory,
                       allocator);
 
         Reader reader(reader_config, codec_config.scheme, *decoder, source_queue,
-                      repair_queue, rtp_parser, packet_pool, allocator);
+                      repair_queue, rtp_parser, packet_factory, allocator);
 
         CHECK(writer.valid());
         CHECK(reader.valid());
@@ -1782,11 +1782,11 @@ TEST(writer_reader, sbn_jump) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_encoder(codec_config, buffer_factory, allocator),
             allocator);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_decoder(codec_config, buffer_factory, allocator),
             allocator);
 
         CHECK(encoder);
@@ -1794,16 +1794,16 @@ TEST(writer_reader, sbn_jump) {
 
         packet::Queue queue;
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
                                           NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, queue,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
+                      source_composer(), repair_composer(), packet_factory, buffer_factory,
                       allocator);
 
         Reader reader(reader_config, codec_config.scheme, *decoder,
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_pool, allocator);
+                      packet_factory, allocator);
 
         CHECK(writer.valid());
         CHECK(reader.valid());
@@ -1896,17 +1896,17 @@ TEST(writer_reader, writer_encode_blocks) {
 
         for (size_t n = 0; n < 5; n++) {
             core::ScopedPtr<IBlockEncoder> encoder(
-                CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+                CodecMap::instance().new_encoder(codec_config, buffer_factory, allocator),
                 allocator);
 
             CHECK(encoder);
 
             test::PacketDispatcher dispatcher(source_parser(), repair_parser(),
-                                              packet_pool, NumSourcePackets,
+                                              packet_factory, NumSourcePackets,
                                               NumRepairPackets);
 
             Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                          source_composer(), repair_composer(), packet_pool, buffer_pool,
+                          source_composer(), repair_composer(), packet_factory, buffer_factory,
                           allocator);
 
             CHECK(writer.valid());
@@ -1983,15 +1983,15 @@ TEST(writer_reader, writer_resize_blocks) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_encoder(codec_config, buffer_factory, allocator),
             allocator);
         CHECK(encoder);
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
                                           NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
+                      source_composer(), repair_composer(), packet_factory, buffer_factory,
                       allocator);
 
         CHECK(writer.valid());
@@ -2043,25 +2043,25 @@ TEST(writer_reader, resize_block_begin) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_encoder(codec_config, buffer_factory, allocator),
             allocator);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_decoder(codec_config, buffer_factory, allocator),
             allocator);
 
         CHECK(decoder);
         CHECK(encoder);
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
                                           NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
+                      source_composer(), repair_composer(), packet_factory, buffer_factory,
                       allocator);
         Reader reader(reader_config, codec_config.scheme, *decoder,
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_pool, allocator);
+                      packet_factory, allocator);
 
         CHECK(reader.valid());
         CHECK(writer.valid());
@@ -2117,25 +2117,25 @@ TEST(writer_reader, resize_block_middle) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_encoder(codec_config, buffer_factory, allocator),
             allocator);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_decoder(codec_config, buffer_factory, allocator),
             allocator);
 
         CHECK(decoder);
         CHECK(encoder);
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
                                           NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
+                      source_composer(), repair_composer(), packet_factory, buffer_factory,
                       allocator);
         Reader reader(reader_config, codec_config.scheme, *decoder,
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_pool, allocator);
+                      packet_factory, allocator);
 
         CHECK(reader.valid());
         CHECK(writer.valid());
@@ -2212,25 +2212,25 @@ TEST(writer_reader, resize_block_losses) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_encoder(codec_config, buffer_factory, allocator),
             allocator);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_decoder(codec_config, buffer_factory, allocator),
             allocator);
 
         CHECK(decoder);
         CHECK(encoder);
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
                                           NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
+                      source_composer(), repair_composer(), packet_factory, buffer_factory,
                       allocator);
         Reader reader(reader_config, codec_config.scheme, *decoder,
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_pool, allocator);
+                      packet_factory, allocator);
 
         CHECK(reader.valid());
         CHECK(writer.valid());
@@ -2288,26 +2288,26 @@ TEST(writer_reader, resize_block_repair_first) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_encoder(codec_config, buffer_factory, allocator),
             allocator);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_decoder(codec_config, buffer_factory, allocator),
             allocator);
 
         CHECK(encoder);
         CHECK(decoder);
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
                                           NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
+                      source_composer(), repair_composer(), packet_factory, buffer_factory,
                       allocator);
 
         Reader reader(reader_config, codec_config.scheme, *decoder,
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_pool, allocator);
+                      packet_factory, allocator);
 
         CHECK(writer.valid());
         CHECK(reader.valid());
@@ -2378,17 +2378,17 @@ TEST(writer_reader, error_writer_resize_block) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_encoder(codec_config, buffer_factory, allocator),
             allocator);
         CHECK(encoder);
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
                                           NumSourcePackets, NumRepairPackets);
 
         test::MockAllocator mock_allocator;
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
+                      source_composer(), repair_composer(), packet_factory, buffer_factory,
                       mock_allocator);
 
         CHECK(writer.valid());
@@ -2431,15 +2431,15 @@ TEST(writer_reader, error_writer_encode_packet) {
         test::MockAllocator mock_allocator;
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, buffer_pool, mock_allocator),
+            CodecMap::instance().new_encoder(codec_config, buffer_factory, mock_allocator),
             mock_allocator);
         CHECK(encoder);
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
                                           NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
+                      source_composer(), repair_composer(), packet_factory, buffer_factory,
                       allocator);
 
         CHECK(writer.valid());
@@ -2476,28 +2476,28 @@ TEST(writer_reader, error_reader_resize_block) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_encoder(codec_config, buffer_factory, allocator),
             allocator);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_decoder(codec_config, buffer_factory, allocator),
             allocator);
 
         CHECK(encoder);
         CHECK(decoder);
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
                                           NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
+                      source_composer(), repair_composer(), packet_factory, buffer_factory,
                       allocator);
 
         test::MockAllocator mock_allocator;
 
         Reader reader(reader_config, codec_config.scheme, *decoder,
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_pool, mock_allocator);
+                      packet_factory, mock_allocator);
 
         CHECK(writer.valid());
         CHECK(reader.valid());
@@ -2547,27 +2547,27 @@ TEST(writer_reader, error_reader_decode_packet) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_encoder(codec_config, buffer_factory, allocator),
             allocator);
         CHECK(encoder);
 
         test::MockAllocator mock_allocator;
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, buffer_pool, mock_allocator),
+            CodecMap::instance().new_decoder(codec_config, buffer_factory, mock_allocator),
             mock_allocator);
         CHECK(decoder);
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
                                           NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
+                      source_composer(), repair_composer(), packet_factory, buffer_factory,
                       allocator);
 
         Reader reader(reader_config, codec_config.scheme, *decoder,
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_pool, allocator);
+                      packet_factory, allocator);
 
         CHECK(writer.valid());
         CHECK(reader.valid());
@@ -2627,11 +2627,11 @@ TEST(writer_reader, writer_oversized_block) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_encoder(codec_config, buffer_factory, allocator),
             allocator);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_decoder(codec_config, buffer_factory, allocator),
             allocator);
 
         CHECK(encoder);
@@ -2640,16 +2640,16 @@ TEST(writer_reader, writer_oversized_block) {
         CHECK(decoder->max_block_length() == encoder->max_block_length());
         CHECK(NumSourcePackets + NumRepairPackets <= encoder->max_block_length());
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
                                           NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
+                      source_composer(), repair_composer(), packet_factory, buffer_factory,
                       allocator);
 
         Reader reader(reader_config, codec_config.scheme, *decoder,
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_pool, allocator);
+                      packet_factory, allocator);
 
         CHECK(writer.valid());
         CHECK(reader.valid());
@@ -2695,11 +2695,11 @@ TEST(writer_reader, reader_oversized_source_block) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_encoder(codec_config, buffer_factory, allocator),
             allocator);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_decoder(codec_config, buffer_factory, allocator),
             allocator);
 
         CHECK(encoder);
@@ -2710,19 +2710,19 @@ TEST(writer_reader, reader_oversized_source_block) {
 
         packet::Queue queue;
         test::PacketDispatcher dispatcher(ldpc_source_parser, ldpc_repair_parser,
-                                          packet_pool, NumSourcePackets,
+                                          packet_factory, NumSourcePackets,
                                           NumRepairPackets);
 
         // We are going to spoil source_block_length field of a FEC packet,
         // but Reed-Solomon does not allow us to set this field above 255,
         // so LDPC composer is used for all schemes.
         Writer writer(writer_config, packet::FEC_LDPC_Staircase, *encoder, queue,
-                      ldpc_source_composer, ldpc_repair_composer, packet_pool,
-                      buffer_pool, allocator);
+                      ldpc_source_composer, ldpc_repair_composer, packet_factory,
+                      buffer_factory, allocator);
 
         Reader reader(reader_config, packet::FEC_LDPC_Staircase, *decoder,
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_pool, allocator);
+                      packet_factory, allocator);
 
         CHECK(writer.valid());
         CHECK(reader.valid());
@@ -2764,11 +2764,11 @@ TEST(writer_reader, reader_oversized_repair_block) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_encoder(codec_config, buffer_factory, allocator),
             allocator);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_decoder(codec_config, buffer_factory, allocator),
             allocator);
 
         CHECK(encoder);
@@ -2779,19 +2779,19 @@ TEST(writer_reader, reader_oversized_repair_block) {
 
         packet::Queue queue;
         test::PacketDispatcher dispatcher(ldpc_source_parser, ldpc_repair_parser,
-                                          packet_pool, NumSourcePackets,
+                                          packet_factory, NumSourcePackets,
                                           NumRepairPackets);
 
         // We are going to spoil source_block_length field of a FEC packet,
         // but Reed-Solomon does not allow us to set this field above 255,
         // so LDPC composer is used for all schemes.
         Writer writer(writer_config, packet::FEC_LDPC_Staircase, *encoder, queue,
-                      ldpc_source_composer, ldpc_repair_composer, packet_pool,
-                      buffer_pool, allocator);
+                      ldpc_source_composer, ldpc_repair_composer, packet_factory,
+                      buffer_factory, allocator);
 
         Reader reader(reader_config, packet::FEC_LDPC_Staircase, *decoder,
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_pool, allocator);
+                      packet_factory, allocator);
 
         CHECK(writer.valid());
         CHECK(reader.valid());
@@ -2833,15 +2833,15 @@ TEST(writer_reader, writer_invalid_payload_size_change) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_encoder(codec_config, buffer_factory, allocator),
             allocator);
         CHECK(encoder);
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_pool,
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
                                           NumSourcePackets, NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
+                      source_composer(), repair_composer(), packet_factory, buffer_factory,
                       allocator);
         CHECK(writer.valid());
 
@@ -2882,11 +2882,11 @@ TEST(writer_reader, reader_invalid_fec_scheme_source_packet) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_encoder(codec_config, buffer_factory, allocator),
             allocator);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_decoder(codec_config, buffer_factory, allocator),
             allocator);
 
         CHECK(encoder);
@@ -2897,11 +2897,11 @@ TEST(writer_reader, reader_invalid_fec_scheme_source_packet) {
         packet::Queue repair_queue;
 
         Writer writer(writer_config, codec_config.scheme, *encoder, writer_queue,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
+                      source_composer(), repair_composer(), packet_factory, buffer_factory,
                       allocator);
 
         Reader reader(reader_config, codec_config.scheme, *decoder, source_queue,
-                      repair_queue, rtp_parser, packet_pool, allocator);
+                      repair_queue, rtp_parser, packet_factory, allocator);
 
         CHECK(writer.valid());
         CHECK(reader.valid());
@@ -2951,11 +2951,11 @@ TEST(writer_reader, reader_invalid_fec_scheme_repair_packet) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_encoder(codec_config, buffer_factory, allocator),
             allocator);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, buffer_pool, allocator),
+            CodecMap::instance().new_decoder(codec_config, buffer_factory, allocator),
             allocator);
 
         CHECK(encoder);
@@ -2966,11 +2966,11 @@ TEST(writer_reader, reader_invalid_fec_scheme_repair_packet) {
         packet::Queue repair_queue;
 
         Writer writer(writer_config, codec_config.scheme, *encoder, writer_queue,
-                      source_composer(), repair_composer(), packet_pool, buffer_pool,
+                      source_composer(), repair_composer(), packet_factory, buffer_factory,
                       allocator);
 
         Reader reader(reader_config, codec_config.scheme, *decoder, source_queue,
-                      repair_queue, rtp_parser, packet_pool, allocator);
+                      repair_queue, rtp_parser, packet_factory, allocator);
 
         CHECK(writer.valid());
         CHECK(reader.valid());

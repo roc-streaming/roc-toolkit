@@ -13,7 +13,7 @@
 
 #include "test_helpers/utils.h"
 
-#include "roc_core/buffer_pool.h"
+#include "roc_core/buffer_factory.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/slice.h"
 #include "roc_sndio/isink.h"
@@ -24,15 +24,14 @@ namespace test {
 
 class FrameWriter : public core::NonCopyable<> {
 public:
-    FrameWriter(sndio::ISink& sink, core::BufferPool<audio::sample_t>& pool)
+    FrameWriter(sndio::ISink& sink, core::BufferFactory<audio::sample_t>& buffer_factory)
         : sink_(sink)
-        , pool_(pool)
+        , buffer_factory_(buffer_factory)
         , offset_(0) {
     }
 
     void write_samples(size_t num_samples) {
-        core::Slice<audio::sample_t> samples(new (pool_)
-                                                 core::Buffer<audio::sample_t>(pool_));
+        core::Slice<audio::sample_t> samples = buffer_factory_.new_buffer();
         CHECK(samples);
         samples.reslice(0, num_samples);
 
@@ -47,7 +46,7 @@ public:
 
 private:
     sndio::ISink& sink_;
-    core::BufferPool<audio::sample_t>& pool_;
+    core::BufferFactory<audio::sample_t>& buffer_factory_;
 
     uint8_t offset_;
 };

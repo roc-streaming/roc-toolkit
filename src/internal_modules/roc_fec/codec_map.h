@@ -12,7 +12,7 @@
 #ifndef ROC_FEC_CODEC_MAP_H_
 #define ROC_FEC_CODEC_MAP_H_
 
-#include "roc_core/buffer_pool.h"
+#include "roc_core/buffer_factory.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/singleton.h"
@@ -48,7 +48,7 @@ public:
     //! @returns
     //!  NULL if parameters are invalid or given codec support is not enabled.
     IBlockEncoder* new_encoder(const CodecConfig& config,
-                               core::BufferPool<uint8_t>& pool,
+                               core::BufferFactory<uint8_t>& buffer_factory,
                                core::IAllocator& allocator) const;
 
     //! Create a new block decoder.
@@ -59,7 +59,7 @@ public:
     //! @returns
     //!  NULL if parameters are invalid or given codec support is not enabled.
     IBlockDecoder* new_decoder(const CodecConfig& config,
-                               core::BufferPool<uint8_t>& pool,
+                               core::BufferFactory<uint8_t>& buffer_factory,
                                core::IAllocator& allocator) const;
 
 private:
@@ -71,11 +71,11 @@ private:
         packet::FecScheme scheme;
 
         IBlockEncoder* (*encoder_ctor)(const CodecConfig& config,
-                                       core::BufferPool<uint8_t>& pool,
+                                       core::BufferFactory<uint8_t>& buffer_factory,
                                        core::IAllocator& allocator);
 
         IBlockDecoder* (*decoder_ctor)(const CodecConfig& config,
-                                       core::BufferPool<uint8_t>& pool,
+                                       core::BufferFactory<uint8_t>& buffer_factory,
                                        core::IAllocator& allocator);
     };
 

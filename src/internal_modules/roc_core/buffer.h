@@ -12,7 +12,7 @@
 #ifndef ROC_CORE_BUFFER_H_
 #define ROC_CORE_BUFFER_H_
 
-#include "roc_core/buffer_pool.h"
+#include "roc_core/buffer_factory.h"
 #include "roc_core/ref_counter.h"
 #include "roc_core/stddefs.h"
 
@@ -23,19 +23,19 @@ namespace core {
 template <class T> class Buffer : public RefCounter<Buffer<T> > {
 public:
     //! Initialize empty buffer.
-    explicit Buffer(BufferPool<T>& pool)
-        : pool_(pool) {
+    explicit Buffer(BufferFactory<T>& factory)
+        : factory_(factory) {
         new (data()) T[size()];
+    }
+
+    //! Get maximum number of elements.
+    size_t size() const {
+        return factory_.buffer_size();
     }
 
     //! Get buffer data.
     T* data() {
         return (T*)(((char*)this) + sizeof(Buffer));
-    }
-
-    //! Get maximum number of elements.
-    size_t size() const {
-        return pool_.buffer_size();
     }
 
     //! Get pointer to buffer from the pointer to its data.
@@ -47,10 +47,10 @@ private:
     friend class RefCounter<Buffer>;
 
     void destroy() {
-        pool_.destroy(*this);
+        factory_.destroy_buffer(*this);
     }
 
-    BufferPool<T>& pool_;
+    BufferFactory<T>& factory_;
 };
 
 } // namespace core

@@ -14,9 +14,9 @@
 #include "roc_audio/pcm_decoder.h"
 #include "roc_audio/pcm_encoder.h"
 #include "roc_audio/pcm_funcs.h"
-#include "roc_core/buffer_pool.h"
+#include "roc_core/buffer_factory.h"
 #include "roc_core/heap_allocator.h"
-#include "roc_packet/packet_pool.h"
+#include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
 #include "roc_rtp/composer.h"
 
@@ -46,9 +46,9 @@ const core::nanoseconds_t PacketDuration =
     SamplesPerPacket * core::Second / SampleSpecs.sample_rate();
 
 core::HeapAllocator allocator;
-core::BufferPool<sample_t> sample_buffer_pool(allocator, MaxBufSize, true);
-core::BufferPool<uint8_t> byte_buffer_pool(allocator, MaxBufSize, true);
-packet::PacketPool packet_pool(allocator, true);
+core::BufferFactory<sample_t> sample_buffer_factory(allocator, MaxBufSize, true);
+core::BufferFactory<uint8_t> byte_buffer_factory(allocator, MaxBufSize, true);
+packet::PacketFactory packet_factory(allocator, true);
 
 rtp::Composer rtp_composer(NULL);
 
@@ -136,8 +136,7 @@ public:
     }
 
     void write(IWriter& writer, size_t num_samples) {
-        core::Slice<sample_t> buf =
-            new (sample_buffer_pool) core::Buffer<sample_t>(sample_buffer_pool);
+        core::Slice<sample_t> buf = sample_buffer_factory.new_buffer();
         CHECK(buf);
 
         buf.reslice(0, num_samples * NumCh);
@@ -169,8 +168,8 @@ TEST(packetizer, one_buffer_one_packet) {
 
     packet::Queue packet_queue;
 
-    Packetizer packetizer(packet_queue, rtp_composer, encoder, packet_pool,
-                          byte_buffer_pool, PacketDuration, SampleSpecs, PayloadType);
+    Packetizer packetizer(packet_queue, rtp_composer, encoder, packet_factory,
+                          byte_buffer_factory, PacketDuration, SampleSpecs, PayloadType);
 
     FrameMaker frame_maker;
     PacketChecker packet_checker(decoder);
@@ -194,8 +193,8 @@ TEST(packetizer, one_buffer_multiple_packets) {
 
     packet::Queue packet_queue;
 
-    Packetizer packetizer(packet_queue, rtp_composer, encoder, packet_pool,
-                          byte_buffer_pool, PacketDuration, SampleSpecs, PayloadType);
+    Packetizer packetizer(packet_queue, rtp_composer, encoder, packet_factory,
+                          byte_buffer_factory, PacketDuration, SampleSpecs, PayloadType);
 
     FrameMaker frame_maker;
     PacketChecker packet_checker(decoder);
@@ -219,8 +218,8 @@ TEST(packetizer, multiple_buffers_one_packet) {
 
     packet::Queue packet_queue;
 
-    Packetizer packetizer(packet_queue, rtp_composer, encoder, packet_pool,
-                          byte_buffer_pool, PacketDuration, SampleSpecs, PayloadType);
+    Packetizer packetizer(packet_queue, rtp_composer, encoder, packet_factory,
+                          byte_buffer_factory, PacketDuration, SampleSpecs, PayloadType);
 
     FrameMaker frame_maker;
     PacketChecker packet_checker(decoder);
@@ -250,8 +249,8 @@ TEST(packetizer, multiple_buffers_multiple_packets) {
 
     packet::Queue packet_queue;
 
-    Packetizer packetizer(packet_queue, rtp_composer, encoder, packet_pool,
-                          byte_buffer_pool, PacketDuration, SampleSpecs, PayloadType);
+    Packetizer packetizer(packet_queue, rtp_composer, encoder, packet_factory,
+                          byte_buffer_factory, PacketDuration, SampleSpecs, PayloadType);
 
     FrameMaker frame_maker;
     PacketChecker packet_checker(decoder);
@@ -275,8 +274,8 @@ TEST(packetizer, flush) {
 
     packet::Queue packet_queue;
 
-    Packetizer packetizer(packet_queue, rtp_composer, encoder, packet_pool,
-                          byte_buffer_pool, PacketDuration, SampleSpecs, PayloadType);
+    Packetizer packetizer(packet_queue, rtp_composer, encoder, packet_factory,
+                          byte_buffer_factory, PacketDuration, SampleSpecs, PayloadType);
 
     FrameMaker frame_maker;
     PacketChecker packet_checker(decoder);

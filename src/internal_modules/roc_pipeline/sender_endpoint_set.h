@@ -20,7 +20,7 @@
 #include "roc_audio/poison_writer.h"
 #include "roc_audio/resampler_map.h"
 #include "roc_audio/resampler_writer.h"
-#include "roc_core/buffer_pool.h"
+#include "roc_core/buffer_factory.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/optional.h"
@@ -29,7 +29,7 @@
 #include "roc_fec/iblock_encoder.h"
 #include "roc_fec/writer.h"
 #include "roc_packet/interleaver.h"
-#include "roc_packet/packet_pool.h"
+#include "roc_packet/packet_factory.h"
 #include "roc_packet/router.h"
 #include "roc_pipeline/config.h"
 #include "roc_pipeline/sender_endpoint.h"
@@ -48,9 +48,9 @@ public:
     //! Initialize.
     SenderEndpointSet(const SenderConfig& config,
                       const rtp::FormatMap& format_map,
-                      packet::PacketPool& packet_pool,
-                      core::BufferPool<uint8_t>& byte_buffer_pool,
-                      core::BufferPool<audio::sample_t>& sample_buffer_pool,
+                      packet::PacketFactory& packet_factory,
+                      core::BufferFactory<uint8_t>& byte_buffer_factory,
+                      core::BufferFactory<audio::sample_t>& sample_buffer_factory,
                       core::IAllocator& allocator);
 
     //! Add endpoint.
@@ -77,9 +77,9 @@ private:
 
     const rtp::FormatMap& format_map_;
 
-    packet::PacketPool& packet_pool_;
-    core::BufferPool<uint8_t>& byte_buffer_pool_;
-    core::BufferPool<audio::sample_t>& sample_buffer_pool_;
+    packet::PacketFactory& packet_factory_;
+    core::BufferFactory<uint8_t>& byte_buffer_factory_;
+    core::BufferFactory<audio::sample_t>& sample_buffer_factory_;
 
     core::IAllocator& allocator_;
 

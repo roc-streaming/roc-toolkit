@@ -65,26 +65,27 @@ ReceiverSource::Tasks::DeleteEndpoint::DeleteEndpoint(EndpointSetHandle endpoint
     iface_ = iface;
 }
 
-ReceiverSource::ReceiverSource(ITaskScheduler& scheduler,
-                               const ReceiverConfig& config,
-                               const rtp::FormatMap& format_map,
-                               packet::PacketPool& packet_pool,
-                               core::BufferPool<uint8_t>& byte_buffer_pool,
-                               core::BufferPool<audio::sample_t>& sample_buffer_pool,
-                               core::IAllocator& allocator)
+ReceiverSource::ReceiverSource(
+    ITaskScheduler& scheduler,
+    const ReceiverConfig& config,
+    const rtp::FormatMap& format_map,
+    packet::PacketFactory& packet_factory,
+    core::BufferFactory<uint8_t>& byte_buffer_factory,
+    core::BufferFactory<audio::sample_t>& sample_buffer_factory,
+    core::IAllocator& allocator)
     : TaskPipeline(scheduler, config.tasks, config.common.output_sample_spec)
     , format_map_(format_map)
-    , packet_pool_(packet_pool)
-    , byte_buffer_pool_(byte_buffer_pool)
-    , sample_buffer_pool_(sample_buffer_pool)
+    , packet_factory_(packet_factory)
+    , byte_buffer_factory_(byte_buffer_factory)
+    , sample_buffer_factory_(sample_buffer_factory)
     , allocator_(allocator)
     , ticker_(config.common.output_sample_spec.sample_rate())
     , audio_reader_(NULL)
     , config_(config)
     , timestamp_(0) {
-    mixer_.reset(new (mixer_)
-                     audio::Mixer(sample_buffer_pool, config.common.internal_frame_length,
-                                  config.common.output_sample_spec));
+    mixer_.reset(new (mixer_) audio::Mixer(sample_buffer_factory,
+                                           config.common.internal_frame_length,
+                                           config.common.output_sample_spec));
     if (!mixer_ || !mixer_->valid()) {
         return;
     }
@@ -201,8 +202,8 @@ bool ReceiverSource::process_task_imp(TaskPipeline::Task& basic_task) {
 
 bool ReceiverSource::task_add_endpoint_set_(Task& task) {
     core::SharedPtr<ReceiverEndpointSet> endpoint_set = new (allocator_)
-        ReceiverEndpointSet(config_, receiver_state_, *mixer_, format_map_, packet_pool_,
-                            byte_buffer_pool_, sample_buffer_pool_, allocator_);
+        ReceiverEndpointSet(config_, receiver_state_, *mixer_, format_map_, packet_factory_,
+                            byte_buffer_factory_, sample_buffer_factory_, allocator_);
     if (!endpoint_set) {
         return false;
     }

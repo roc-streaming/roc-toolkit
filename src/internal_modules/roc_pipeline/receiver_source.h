@@ -16,14 +16,14 @@
 #include "roc_audio/mixer.h"
 #include "roc_audio/poison_reader.h"
 #include "roc_audio/profiling_reader.h"
-#include "roc_core/buffer_pool.h"
+#include "roc_core/buffer_factory.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/mutex.h"
 #include "roc_core/optional.h"
 #include "roc_core/stddefs.h"
 #include "roc_packet/ireader.h"
 #include "roc_packet/iwriter.h"
-#include "roc_packet/packet_pool.h"
+#include "roc_packet/packet_factory.h"
 #include "roc_pipeline/config.h"
 #include "roc_pipeline/receiver_endpoint_set.h"
 #include "roc_pipeline/receiver_state.h"
@@ -102,9 +102,9 @@ public:
     ReceiverSource(ITaskScheduler& scheduler,
                    const ReceiverConfig& config,
                    const rtp::FormatMap& format_map,
-                   packet::PacketPool& packet_pool,
-                   core::BufferPool<uint8_t>& byte_buffer_pool,
-                   core::BufferPool<audio::sample_t>& sample_buffer_pool,
+                   packet::PacketFactory& packet_factory,
+                   core::BufferFactory<uint8_t>& byte_buffer_factory,
+                   core::BufferFactory<audio::sample_t>& sample_buffer_factory,
                    core::IAllocator& allocator);
 
     //! Check if the pipeline was successfully constructed.
@@ -152,9 +152,9 @@ private:
 
     const rtp::FormatMap& format_map_;
 
-    packet::PacketPool& packet_pool_;
-    core::BufferPool<uint8_t>& byte_buffer_pool_;
-    core::BufferPool<audio::sample_t>& sample_buffer_pool_;
+    packet::PacketFactory& packet_factory_;
+    core::BufferFactory<uint8_t>& byte_buffer_factory_;
+    core::BufferFactory<audio::sample_t>& sample_buffer_factory_;
     core::IAllocator& allocator_;
 
     ReceiverState receiver_state_;

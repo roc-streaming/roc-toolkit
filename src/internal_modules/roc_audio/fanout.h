@@ -16,7 +16,6 @@
 #include "roc_audio/units.h"
 #include "roc_core/list.h"
 #include "roc_core/noncopyable.h"
-#include "roc_core/pool.h"
 #include "roc_core/slice.h"
 
 namespace roc {

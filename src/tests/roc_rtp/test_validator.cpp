@@ -9,7 +9,7 @@
 #include <CppUTest/TestHarness.h>
 
 #include "roc_core/heap_allocator.h"
-#include "roc_packet/packet_pool.h"
+#include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
 #include "roc_pipeline/config.h"
 #include "roc_rtp/headers.h"
@@ -29,7 +29,7 @@ const audio::SampleSpec SampleSpecs =
     audio::SampleSpec(SampleRate, pipeline::DefaultChannelMask);
 
 core::HeapAllocator allocator;
-packet::PacketPool pool(allocator, true);
+packet::PacketFactory packet_factory(allocator, true);
 
 } // namespace
 
@@ -44,7 +44,7 @@ TEST_GROUP(validator) {
 
     packet::PacketPtr new_packet(PayloadType pt, packet::source_t src,
                                  packet::seqnum_t sn, packet::timestamp_t ts) {
-        packet::PacketPtr packet = new (pool) packet::Packet(pool);
+        packet::PacketPtr packet = packet_factory.new_packet();
         CHECK(packet);
 
         packet->add_flags(packet::Packet::FlagRTP);

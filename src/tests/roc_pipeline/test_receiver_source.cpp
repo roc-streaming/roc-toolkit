@@ -14,11 +14,11 @@
 
 #include "roc_audio/pcm_funcs.h"
 #include "roc_core/atomic.h"
-#include "roc_core/buffer_pool.h"
+#include "roc_core/buffer_factory.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_core/time.h"
 #include "roc_fec/codec_map.h"
-#include "roc_packet/packet_pool.h"
+#include "roc_packet/packet_factory.h"
 #include "roc_pipeline/receiver_source.h"
 #include "roc_rtp/composer.h"
 #include "roc_rtp/format_map.h"
@@ -56,9 +56,9 @@ const core::nanoseconds_t MaxBufDuration =
     MaxBufSize * core::Second / (SampleSpecs.sample_rate() * SampleSpecs.num_channels());
 
 core::HeapAllocator allocator;
-core::BufferPool<audio::sample_t> sample_buffer_pool(allocator, MaxBufSize, true);
-core::BufferPool<uint8_t> byte_buffer_pool(allocator, MaxBufSize, true);
-packet::PacketPool packet_pool(allocator, true);
+core::BufferFactory<audio::sample_t> sample_buffer_factory(allocator, MaxBufSize, true);
+core::BufferFactory<uint8_t> byte_buffer_factory(allocator, MaxBufSize, true);
+packet::PacketFactory packet_factory(allocator, true);
 
 rtp::FormatMap format_map;
 rtp::Composer rtp_composer(NULL);
@@ -204,8 +204,8 @@ TEST_GROUP(receiver_source) {
 };
 
 TEST(receiver_source, endpoints_sync) {
-    ReceiverSource receiver(scheduler, config, format_map, packet_pool, byte_buffer_pool,
-                            sample_buffer_pool, allocator);
+    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
+                            byte_buffer_factory, sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
@@ -237,8 +237,8 @@ TEST(receiver_source, endpoints_sync) {
 }
 
 TEST(receiver_source, endpoints_async) {
-    ReceiverSource receiver(scheduler, config, format_map, packet_pool, byte_buffer_pool,
-                            sample_buffer_pool, allocator);
+    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
+                            byte_buffer_factory, sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
@@ -251,12 +251,12 @@ TEST(receiver_source, endpoints_async) {
 }
 
 TEST(receiver_source, no_sessions) {
-    ReceiverSource receiver(scheduler, config, format_map, packet_pool, byte_buffer_pool,
-                            sample_buffer_pool, allocator);
+    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
+                            byte_buffer_factory, sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
-    test::FrameReader frame_reader(receiver, sample_buffer_pool);
+    test::FrameReader frame_reader(receiver, sample_buffer_factory);
 
     for (size_t nf = 0; nf < ManyPackets * FramesPerPacket; nf++) {
         frame_reader.skip_zeros(SamplesPerFrame * NumCh);
@@ -266,8 +266,8 @@ TEST(receiver_source, no_sessions) {
 }
 
 TEST(receiver_source, one_session) {
-    ReceiverSource receiver(scheduler, config, format_map, packet_pool, byte_buffer_pool,
-                            sample_buffer_pool, allocator);
+    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
+                            byte_buffer_factory, sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
@@ -278,10 +278,10 @@ TEST(receiver_source, one_session) {
         add_endpoint(receiver, endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_pool);
+    test::FrameReader frame_reader(receiver, sample_buffer_factory);
 
     test::PacketWriter packet_writer(allocator, *endpoint1_writer, rtp_composer,
-                                     format_map, packet_pool, byte_buffer_pool,
+                                     format_map, packet_factory, byte_buffer_factory,
                                      PayloadType, src1, dst1);
 
     packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
@@ -301,8 +301,8 @@ TEST(receiver_source, one_session) {
 TEST(receiver_source, one_session_long_run) {
     enum { NumIterations = 10 };
 
-    ReceiverSource receiver(scheduler, config, format_map, packet_pool, byte_buffer_pool,
-                            sample_buffer_pool, allocator);
+    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
+                            byte_buffer_factory, sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
@@ -313,10 +313,10 @@ TEST(receiver_source, one_session_long_run) {
         add_endpoint(receiver, endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_pool);
+    test::FrameReader frame_reader(receiver, sample_buffer_factory);
 
     test::PacketWriter packet_writer(allocator, *endpoint1_writer, rtp_composer,
-                                     format_map, packet_pool, byte_buffer_pool,
+                                     format_map, packet_factory, byte_buffer_factory,
                                      PayloadType, src1, dst1);
 
     packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
@@ -336,8 +336,8 @@ TEST(receiver_source, one_session_long_run) {
 }
 
 TEST(receiver_source, initial_latency) {
-    ReceiverSource receiver(scheduler, config, format_map, packet_pool, byte_buffer_pool,
-                            sample_buffer_pool, allocator);
+    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
+                            byte_buffer_factory, sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
@@ -348,10 +348,10 @@ TEST(receiver_source, initial_latency) {
         add_endpoint(receiver, endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_pool);
+    test::FrameReader frame_reader(receiver, sample_buffer_factory);
 
     test::PacketWriter packet_writer(allocator, *endpoint1_writer, rtp_composer,
-                                     format_map, packet_pool, byte_buffer_pool,
+                                     format_map, packet_factory, byte_buffer_factory,
                                      PayloadType, src1, dst1);
 
     for (size_t np = 0; np < Latency / SamplesPerPacket - 1; np++) {
@@ -376,8 +376,8 @@ TEST(receiver_source, initial_latency) {
 }
 
 TEST(receiver_source, initial_latency_timeout) {
-    ReceiverSource receiver(scheduler, config, format_map, packet_pool, byte_buffer_pool,
-                            sample_buffer_pool, allocator);
+    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
+                            byte_buffer_factory, sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
@@ -388,10 +388,10 @@ TEST(receiver_source, initial_latency_timeout) {
         add_endpoint(receiver, endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_pool);
+    test::FrameReader frame_reader(receiver, sample_buffer_factory);
 
     test::PacketWriter packet_writer(allocator, *endpoint1_writer, rtp_composer,
-                                     format_map, packet_pool, byte_buffer_pool,
+                                     format_map, packet_factory, byte_buffer_factory,
                                      PayloadType, src1, dst1);
 
     packet_writer.write_packets(1, SamplesPerPacket, SampleSpecs);
@@ -410,8 +410,8 @@ TEST(receiver_source, initial_latency_timeout) {
 }
 
 TEST(receiver_source, timeout) {
-    ReceiverSource receiver(scheduler, config, format_map, packet_pool, byte_buffer_pool,
-                            sample_buffer_pool, allocator);
+    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
+                            byte_buffer_factory, sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
@@ -422,10 +422,10 @@ TEST(receiver_source, timeout) {
         add_endpoint(receiver, endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_pool);
+    test::FrameReader frame_reader(receiver, sample_buffer_factory);
 
     test::PacketWriter packet_writer(allocator, *endpoint1_writer, rtp_composer,
-                                     format_map, packet_pool, byte_buffer_pool,
+                                     format_map, packet_factory, byte_buffer_factory,
                                      PayloadType, src1, dst1);
 
     packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
@@ -445,8 +445,8 @@ TEST(receiver_source, timeout) {
 }
 
 TEST(receiver_source, initial_trim) {
-    ReceiverSource receiver(scheduler, config, format_map, packet_pool, byte_buffer_pool,
-                            sample_buffer_pool, allocator);
+    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
+                            byte_buffer_factory, sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
@@ -457,10 +457,10 @@ TEST(receiver_source, initial_trim) {
         add_endpoint(receiver, endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_pool);
+    test::FrameReader frame_reader(receiver, sample_buffer_factory);
 
     test::PacketWriter packet_writer(allocator, *endpoint1_writer, rtp_composer,
-                                     format_map, packet_pool, byte_buffer_pool,
+                                     format_map, packet_factory, byte_buffer_factory,
                                      PayloadType, src1, dst1);
 
     packet_writer.write_packets(Latency * 3 / SamplesPerPacket, SamplesPerPacket,
@@ -480,8 +480,8 @@ TEST(receiver_source, initial_trim) {
 }
 
 TEST(receiver_source, two_sessions_synchronous) {
-    ReceiverSource receiver(scheduler, config, format_map, packet_pool, byte_buffer_pool,
-                            sample_buffer_pool, allocator);
+    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
+                            byte_buffer_factory, sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
@@ -492,14 +492,14 @@ TEST(receiver_source, two_sessions_synchronous) {
         add_endpoint(receiver, endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_pool);
+    test::FrameReader frame_reader(receiver, sample_buffer_factory);
 
     test::PacketWriter packet_writer1(allocator, *endpoint1_writer, rtp_composer,
-                                      format_map, packet_pool, byte_buffer_pool,
+                                      format_map, packet_factory, byte_buffer_factory,
                                       PayloadType, src1, dst1);
 
     test::PacketWriter packet_writer2(allocator, *endpoint1_writer, rtp_composer,
-                                      format_map, packet_pool, byte_buffer_pool,
+                                      format_map, packet_factory, byte_buffer_factory,
                                       PayloadType, src2, dst1);
 
     for (size_t np = 0; np < Latency / SamplesPerPacket; np++) {
@@ -520,8 +520,8 @@ TEST(receiver_source, two_sessions_synchronous) {
 }
 
 TEST(receiver_source, two_sessions_overlapping) {
-    ReceiverSource receiver(scheduler, config, format_map, packet_pool, byte_buffer_pool,
-                            sample_buffer_pool, allocator);
+    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
+                            byte_buffer_factory, sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
@@ -532,10 +532,10 @@ TEST(receiver_source, two_sessions_overlapping) {
         add_endpoint(receiver, endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_pool);
+    test::FrameReader frame_reader(receiver, sample_buffer_factory);
 
     test::PacketWriter packet_writer1(allocator, *endpoint1_writer, rtp_composer,
-                                      format_map, packet_pool, byte_buffer_pool,
+                                      format_map, packet_factory, byte_buffer_factory,
                                       PayloadType, src1, dst1);
 
     packet_writer1.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
@@ -552,7 +552,7 @@ TEST(receiver_source, two_sessions_overlapping) {
     }
 
     test::PacketWriter packet_writer2(allocator, *endpoint1_writer, rtp_composer,
-                                      format_map, packet_pool, byte_buffer_pool,
+                                      format_map, packet_factory, byte_buffer_factory,
                                       PayloadType, src2, dst1);
 
     packet_writer2.set_offset(packet_writer1.offset() - Latency * NumCh);
@@ -572,8 +572,8 @@ TEST(receiver_source, two_sessions_overlapping) {
 }
 
 TEST(receiver_source, two_sessions_two_endpoints) {
-    ReceiverSource receiver(scheduler, config, format_map, packet_pool, byte_buffer_pool,
-                            sample_buffer_pool, allocator);
+    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
+                            byte_buffer_factory, sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
@@ -591,14 +591,14 @@ TEST(receiver_source, two_sessions_two_endpoints) {
         add_endpoint(receiver, endpoint_set2, address::Iface_AudioSource, proto2);
     CHECK(endpoint2_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_pool);
+    test::FrameReader frame_reader(receiver, sample_buffer_factory);
 
     test::PacketWriter packet_writer1(allocator, *endpoint1_writer, rtp_composer,
-                                      format_map, packet_pool, byte_buffer_pool,
+                                      format_map, packet_factory, byte_buffer_factory,
                                       PayloadType, src1, dst1);
 
     test::PacketWriter packet_writer2(allocator, *endpoint2_writer, rtp_composer,
-                                      format_map, packet_pool, byte_buffer_pool,
+                                      format_map, packet_factory, byte_buffer_factory,
                                       PayloadType, src2, dst2);
 
     for (size_t np = 0; np < Latency / SamplesPerPacket; np++) {
@@ -619,8 +619,8 @@ TEST(receiver_source, two_sessions_two_endpoints) {
 }
 
 TEST(receiver_source, two_sessions_same_address_same_stream) {
-    ReceiverSource receiver(scheduler, config, format_map, packet_pool, byte_buffer_pool,
-                            sample_buffer_pool, allocator);
+    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
+                            byte_buffer_factory, sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
@@ -631,14 +631,14 @@ TEST(receiver_source, two_sessions_same_address_same_stream) {
         add_endpoint(receiver, endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_pool);
+    test::FrameReader frame_reader(receiver, sample_buffer_factory);
 
     test::PacketWriter packet_writer1(allocator, *endpoint_writer, rtp_composer,
-                                      format_map, packet_pool, byte_buffer_pool,
+                                      format_map, packet_factory, byte_buffer_factory,
                                       PayloadType, src1, dst1);
 
     test::PacketWriter packet_writer2(allocator, *endpoint_writer, rtp_composer,
-                                      format_map, packet_pool, byte_buffer_pool,
+                                      format_map, packet_factory, byte_buffer_factory,
                                       PayloadType, src1, dst2);
 
     packet_writer1.set_source(11);
@@ -664,8 +664,8 @@ TEST(receiver_source, two_sessions_same_address_same_stream) {
 }
 
 TEST(receiver_source, two_sessions_same_address_different_streams) {
-    ReceiverSource receiver(scheduler, config, format_map, packet_pool, byte_buffer_pool,
-                            sample_buffer_pool, allocator);
+    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
+                            byte_buffer_factory, sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
@@ -676,14 +676,14 @@ TEST(receiver_source, two_sessions_same_address_different_streams) {
         add_endpoint(receiver, endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_pool);
+    test::FrameReader frame_reader(receiver, sample_buffer_factory);
 
     test::PacketWriter packet_writer1(allocator, *endpoint_writer, rtp_composer,
-                                      format_map, packet_pool, byte_buffer_pool,
+                                      format_map, packet_factory, byte_buffer_factory,
                                       PayloadType, src1, dst1);
 
     test::PacketWriter packet_writer2(allocator, *endpoint_writer, rtp_composer,
-                                      format_map, packet_pool, byte_buffer_pool,
+                                      format_map, packet_factory, byte_buffer_factory,
                                       PayloadType, src1, dst2);
 
     packet_writer1.set_source(11);
@@ -711,8 +711,8 @@ TEST(receiver_source, two_sessions_same_address_different_streams) {
 }
 
 TEST(receiver_source, seqnum_overflow) {
-    ReceiverSource receiver(scheduler, config, format_map, packet_pool, byte_buffer_pool,
-                            sample_buffer_pool, allocator);
+    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
+                            byte_buffer_factory, sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
@@ -723,10 +723,10 @@ TEST(receiver_source, seqnum_overflow) {
         add_endpoint(receiver, endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_pool);
+    test::FrameReader frame_reader(receiver, sample_buffer_factory);
 
     test::PacketWriter packet_writer(allocator, *endpoint1_writer, rtp_composer,
-                                     format_map, packet_pool, byte_buffer_pool,
+                                     format_map, packet_factory, byte_buffer_factory,
                                      PayloadType, src1, dst1);
 
     packet_writer.set_seqnum(packet::seqnum_t(-1) - ManyPackets / 2);
@@ -744,8 +744,8 @@ TEST(receiver_source, seqnum_overflow) {
 TEST(receiver_source, seqnum_small_jump) {
     enum { SmallJump = 5 };
 
-    ReceiverSource receiver(scheduler, config, format_map, packet_pool, byte_buffer_pool,
-                            sample_buffer_pool, allocator);
+    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
+                            byte_buffer_factory, sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
@@ -756,10 +756,10 @@ TEST(receiver_source, seqnum_small_jump) {
         add_endpoint(receiver, endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_pool);
+    test::FrameReader frame_reader(receiver, sample_buffer_factory);
 
     test::PacketWriter packet_writer(allocator, *endpoint1_writer, rtp_composer,
-                                     format_map, packet_pool, byte_buffer_pool,
+                                     format_map, packet_factory, byte_buffer_factory,
                                      PayloadType, src1, dst1);
 
     packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
@@ -783,8 +783,8 @@ TEST(receiver_source, seqnum_small_jump) {
 }
 
 TEST(receiver_source, seqnum_large_jump) {
-    ReceiverSource receiver(scheduler, config, format_map, packet_pool, byte_buffer_pool,
-                            sample_buffer_pool, allocator);
+    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
+                            byte_buffer_factory, sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
@@ -795,10 +795,10 @@ TEST(receiver_source, seqnum_large_jump) {
         add_endpoint(receiver, endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_pool);
+    test::FrameReader frame_reader(receiver, sample_buffer_factory);
 
     test::PacketWriter packet_writer(allocator, *endpoint1_writer, rtp_composer,
-                                     format_map, packet_pool, byte_buffer_pool,
+                                     format_map, packet_factory, byte_buffer_factory,
                                      PayloadType, src1, dst1);
 
     packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
@@ -828,8 +828,8 @@ TEST(receiver_source, seqnum_large_jump) {
 TEST(receiver_source, seqnum_reorder) {
     enum { ReorderWindow = Latency / SamplesPerPacket };
 
-    ReceiverSource receiver(scheduler, config, format_map, packet_pool, byte_buffer_pool,
-                            sample_buffer_pool, allocator);
+    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
+                            byte_buffer_factory, sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
@@ -840,10 +840,10 @@ TEST(receiver_source, seqnum_reorder) {
         add_endpoint(receiver, endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_pool);
+    test::FrameReader frame_reader(receiver, sample_buffer_factory);
 
     test::PacketWriter packet_writer(allocator, *endpoint1_writer, rtp_composer,
-                                     format_map, packet_pool, byte_buffer_pool,
+                                     format_map, packet_factory, byte_buffer_factory,
                                      PayloadType, src1, dst1);
 
     size_t pos = 0;
@@ -867,8 +867,8 @@ TEST(receiver_source, seqnum_reorder) {
 TEST(receiver_source, seqnum_late) {
     enum { DelayedPackets = 5 };
 
-    ReceiverSource receiver(scheduler, config, format_map, packet_pool, byte_buffer_pool,
-                            sample_buffer_pool, allocator);
+    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
+                            byte_buffer_factory, sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
@@ -879,10 +879,10 @@ TEST(receiver_source, seqnum_late) {
         add_endpoint(receiver, endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_pool);
+    test::FrameReader frame_reader(receiver, sample_buffer_factory);
 
     test::PacketWriter packet_writer(allocator, *endpoint1_writer, rtp_composer,
-                                     format_map, packet_pool, byte_buffer_pool,
+                                     format_map, packet_factory, byte_buffer_factory,
                                      PayloadType, src1, dst1);
 
     packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
@@ -923,8 +923,8 @@ TEST(receiver_source, seqnum_late) {
 }
 
 TEST(receiver_source, timestamp_overflow) {
-    ReceiverSource receiver(scheduler, config, format_map, packet_pool, byte_buffer_pool,
-                            sample_buffer_pool, allocator);
+    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
+                            byte_buffer_factory, sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
@@ -935,10 +935,10 @@ TEST(receiver_source, timestamp_overflow) {
         add_endpoint(receiver, endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_pool);
+    test::FrameReader frame_reader(receiver, sample_buffer_factory);
 
     test::PacketWriter packet_writer(allocator, *endpoint1_writer, rtp_composer,
-                                     format_map, packet_pool, byte_buffer_pool,
+                                     format_map, packet_factory, byte_buffer_factory,
                                      PayloadType, src1, dst1);
 
     packet_writer.set_timestamp(packet::timestamp_t(-1)
@@ -958,8 +958,8 @@ TEST(receiver_source, timestamp_overflow) {
 TEST(receiver_source, timestamp_small_jump) {
     enum { ShiftedPackets = 5 };
 
-    ReceiverSource receiver(scheduler, config, format_map, packet_pool, byte_buffer_pool,
-                            sample_buffer_pool, allocator);
+    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
+                            byte_buffer_factory, sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
@@ -970,10 +970,10 @@ TEST(receiver_source, timestamp_small_jump) {
         add_endpoint(receiver, endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_pool);
+    test::FrameReader frame_reader(receiver, sample_buffer_factory);
 
     test::PacketWriter packet_writer(allocator, *endpoint1_writer, rtp_composer,
-                                     format_map, packet_pool, byte_buffer_pool,
+                                     format_map, packet_factory, byte_buffer_factory,
                                      PayloadType, src1, dst1);
 
     packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
@@ -1005,8 +1005,8 @@ TEST(receiver_source, timestamp_small_jump) {
 }
 
 TEST(receiver_source, timestamp_large_jump) {
-    ReceiverSource receiver(scheduler, config, format_map, packet_pool, byte_buffer_pool,
-                            sample_buffer_pool, allocator);
+    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
+                            byte_buffer_factory, sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
@@ -1017,10 +1017,10 @@ TEST(receiver_source, timestamp_large_jump) {
         add_endpoint(receiver, endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_pool);
+    test::FrameReader frame_reader(receiver, sample_buffer_factory);
 
     test::PacketWriter packet_writer(allocator, *endpoint1_writer, rtp_composer,
-                                     format_map, packet_pool, byte_buffer_pool,
+                                     format_map, packet_factory, byte_buffer_factory,
                                      PayloadType, src1, dst1);
 
     packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
@@ -1044,8 +1044,8 @@ TEST(receiver_source, timestamp_large_jump) {
 TEST(receiver_source, timestamp_overlap) {
     enum { OverlappedSamples = SamplesPerPacket / 2 };
 
-    ReceiverSource receiver(scheduler, config, format_map, packet_pool, byte_buffer_pool,
-                            sample_buffer_pool, allocator);
+    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
+                            byte_buffer_factory, sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
@@ -1056,10 +1056,10 @@ TEST(receiver_source, timestamp_overlap) {
         add_endpoint(receiver, endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_pool);
+    test::FrameReader frame_reader(receiver, sample_buffer_factory);
 
     test::PacketWriter packet_writer(allocator, *endpoint1_writer, rtp_composer,
-                                     format_map, packet_pool, byte_buffer_pool,
+                                     format_map, packet_factory, byte_buffer_factory,
                                      PayloadType, src1, dst1);
 
     packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
@@ -1077,8 +1077,8 @@ TEST(receiver_source, timestamp_overlap) {
 }
 
 TEST(receiver_source, timestamp_reorder) {
-    ReceiverSource receiver(scheduler, config, format_map, packet_pool, byte_buffer_pool,
-                            sample_buffer_pool, allocator);
+    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
+                            byte_buffer_factory, sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
@@ -1089,10 +1089,10 @@ TEST(receiver_source, timestamp_reorder) {
         add_endpoint(receiver, endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_pool);
+    test::FrameReader frame_reader(receiver, sample_buffer_factory);
 
     test::PacketWriter packet_writer(allocator, *endpoint1_writer, rtp_composer,
-                                     format_map, packet_pool, byte_buffer_pool,
+                                     format_map, packet_factory, byte_buffer_factory,
                                      PayloadType, src1, dst1);
 
     packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
@@ -1132,8 +1132,8 @@ TEST(receiver_source, timestamp_reorder) {
 TEST(receiver_source, timestamp_late) {
     enum { DelayedPackets = 5 };
 
-    ReceiverSource receiver(scheduler, config, format_map, packet_pool, byte_buffer_pool,
-                            sample_buffer_pool, allocator);
+    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
+                            byte_buffer_factory, sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
@@ -1144,10 +1144,10 @@ TEST(receiver_source, timestamp_late) {
         add_endpoint(receiver, endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_pool);
+    test::FrameReader frame_reader(receiver, sample_buffer_factory);
 
     test::PacketWriter packet_writer(allocator, *endpoint1_writer, rtp_composer,
-                                     format_map, packet_pool, byte_buffer_pool,
+                                     format_map, packet_factory, byte_buffer_factory,
                                      PayloadType, src1, dst1);
 
     packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
@@ -1197,8 +1197,8 @@ TEST(receiver_source, packet_size_small) {
         ManySmallPackets = Latency / SamplesPerSmallPacket * 10
     };
 
-    ReceiverSource receiver(scheduler, config, format_map, packet_pool, byte_buffer_pool,
-                            sample_buffer_pool, allocator);
+    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
+                            byte_buffer_factory, sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
@@ -1209,10 +1209,10 @@ TEST(receiver_source, packet_size_small) {
         add_endpoint(receiver, endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_pool);
+    test::FrameReader frame_reader(receiver, sample_buffer_factory);
 
     test::PacketWriter packet_writer(allocator, *endpoint1_writer, rtp_composer,
-                                     format_map, packet_pool, byte_buffer_pool,
+                                     format_map, packet_factory, byte_buffer_factory,
                                      PayloadType, src1, dst1);
 
     packet_writer.write_packets(Latency / SamplesPerSmallPacket, SamplesPerSmallPacket,
@@ -1233,8 +1233,8 @@ TEST(receiver_source, packet_size_large) {
         ManyLargePackets = Latency / SamplesPerLargePacket * 10
     };
 
-    ReceiverSource receiver(scheduler, config, format_map, packet_pool, byte_buffer_pool,
-                            sample_buffer_pool, allocator);
+    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
+                            byte_buffer_factory, sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
@@ -1245,10 +1245,10 @@ TEST(receiver_source, packet_size_large) {
         add_endpoint(receiver, endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_pool);
+    test::FrameReader frame_reader(receiver, sample_buffer_factory);
 
     test::PacketWriter packet_writer(allocator, *endpoint1_writer, rtp_composer,
-                                     format_map, packet_pool, byte_buffer_pool,
+                                     format_map, packet_factory, byte_buffer_factory,
                                      PayloadType, src1, dst1);
 
     packet_writer.write_packets(Latency / SamplesPerLargePacket, SamplesPerLargePacket,
@@ -1275,8 +1275,8 @@ TEST(receiver_source, packet_size_variable) {
         NumIterations = Latency / SamplesPerTwoPackets * 10
     };
 
-    ReceiverSource receiver(scheduler, config, format_map, packet_pool, byte_buffer_pool,
-                            sample_buffer_pool, allocator);
+    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
+                            byte_buffer_factory, sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
@@ -1287,10 +1287,10 @@ TEST(receiver_source, packet_size_variable) {
         add_endpoint(receiver, endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_pool);
+    test::FrameReader frame_reader(receiver, sample_buffer_factory);
 
     test::PacketWriter packet_writer(allocator, *endpoint1_writer, rtp_composer,
-                                     format_map, packet_pool, byte_buffer_pool,
+                                     format_map, packet_factory, byte_buffer_factory,
                                      PayloadType, src1, dst1);
 
     size_t available = 0;
@@ -1308,8 +1308,8 @@ TEST(receiver_source, packet_size_variable) {
 }
 
 TEST(receiver_source, corrupted_packets_new_session) {
-    ReceiverSource receiver(scheduler, config, format_map, packet_pool, byte_buffer_pool,
-                            sample_buffer_pool, allocator);
+    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
+                            byte_buffer_factory, sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
@@ -1320,10 +1320,10 @@ TEST(receiver_source, corrupted_packets_new_session) {
         add_endpoint(receiver, endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_pool);
+    test::FrameReader frame_reader(receiver, sample_buffer_factory);
 
     test::PacketWriter packet_writer(allocator, *endpoint1_writer, rtp_composer,
-                                     format_map, packet_pool, byte_buffer_pool,
+                                     format_map, packet_factory, byte_buffer_factory,
                                      PayloadType, src1, dst1);
 
     packet_writer.set_corrupt(true);
@@ -1343,8 +1343,8 @@ TEST(receiver_source, corrupted_packets_new_session) {
 }
 
 TEST(receiver_source, corrupted_packets_existing_session) {
-    ReceiverSource receiver(scheduler, config, format_map, packet_pool, byte_buffer_pool,
-                            sample_buffer_pool, allocator);
+    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
+                            byte_buffer_factory, sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
@@ -1355,10 +1355,10 @@ TEST(receiver_source, corrupted_packets_existing_session) {
         add_endpoint(receiver, endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_pool);
+    test::FrameReader frame_reader(receiver, sample_buffer_factory);
 
     test::PacketWriter packet_writer(allocator, *endpoint1_writer, rtp_composer,
-                                     format_map, packet_pool, byte_buffer_pool,
+                                     format_map, packet_factory, byte_buffer_factory,
                                      PayloadType, src1, dst1);
 
     packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
@@ -1399,8 +1399,8 @@ TEST(receiver_source, corrupted_packets_existing_session) {
 }
 
 TEST(receiver_source, status) {
-    ReceiverSource receiver(scheduler, config, format_map, packet_pool, byte_buffer_pool,
-                            sample_buffer_pool, allocator);
+    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
+                            byte_buffer_factory, sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
@@ -1412,12 +1412,10 @@ TEST(receiver_source, status) {
     CHECK(endpoint1_writer);
 
     test::PacketWriter packet_writer(allocator, *endpoint1_writer, rtp_composer,
-                                     format_map, packet_pool, byte_buffer_pool,
+                                     format_map, packet_factory, byte_buffer_factory,
                                      PayloadType, src1, dst1);
 
-    core::Slice<audio::sample_t> samples(
-        new (sample_buffer_pool) core::Buffer<audio::sample_t>(sample_buffer_pool));
-
+    core::Slice<audio::sample_t> samples = sample_buffer_factory.new_buffer();
     CHECK(samples);
     samples.reslice(0, FramesPerPacket * NumCh);
 

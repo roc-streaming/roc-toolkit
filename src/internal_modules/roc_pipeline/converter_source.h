@@ -18,7 +18,7 @@
 #include "roc_audio/resampler_map.h"
 #include "roc_audio/resampler_profile.h"
 #include "roc_audio/resampler_reader.h"
-#include "roc_core/buffer_pool.h"
+#include "roc_core/buffer_factory.h"
 #include "roc_core/optional.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_pipeline/config.h"
@@ -36,7 +36,7 @@ public:
     //! Initialize.
     ConverterSource(const ConverterConfig& config,
                     sndio::ISource& input_source,
-                    core::BufferPool<audio::sample_t>& pool,
+                    core::BufferFactory<audio::sample_t>& buffer_factory,
                     core::IAllocator& allocator);
 
     //! Check if the pipeline was successfully constructed.

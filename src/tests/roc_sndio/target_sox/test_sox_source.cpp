@@ -10,7 +10,7 @@
 
 #include "test_helpers/mock_source.h"
 
-#include "roc_core/buffer_pool.h"
+#include "roc_core/buffer_factory.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/temp_file.h"
@@ -37,7 +37,7 @@ const core::nanoseconds_t FrameDuration =
     FrameSize * core::Second / (SampleSpecs.sample_rate() * SampleSpecs.num_channels());
 
 core::HeapAllocator allocator;
-core::BufferPool<audio::sample_t> buffer_pool(allocator, MaxBufSize, true);
+core::BufferFactory<audio::sample_t> buffer_factory(allocator, MaxBufSize, true);
 
 } // namespace
 
@@ -74,7 +74,7 @@ TEST(sox_source, has_clock) {
         SoxSink sox_sink(allocator, sink_config);
         CHECK(sox_sink.open(NULL, file.path()));
 
-        Pump pump(buffer_pool, mock_source, NULL, sox_sink, FrameDuration, SampleSpecs,
+        Pump pump(buffer_factory, mock_source, NULL, sox_sink, FrameDuration, SampleSpecs,
                   Pump::ModeOneshot);
         CHECK(pump.valid());
         CHECK(pump.run());
@@ -96,7 +96,7 @@ TEST(sox_source, sample_rate_auto) {
         SoxSink sox_sink(allocator, sink_config);
         CHECK(sox_sink.open(NULL, file.path()));
 
-        Pump pump(buffer_pool, mock_source, NULL, sox_sink, FrameDuration, SampleSpecs,
+        Pump pump(buffer_factory, mock_source, NULL, sox_sink, FrameDuration, SampleSpecs,
                   Pump::ModeOneshot);
         CHECK(pump.valid());
         CHECK(pump.run());
@@ -120,7 +120,7 @@ TEST(sox_source, sample_rate_mismatch) {
         SoxSink sox_sink(allocator, sink_config);
         CHECK(sox_sink.open(NULL, file.path()));
 
-        Pump pump(buffer_pool, mock_source, NULL, sox_sink, FrameDuration, SampleSpecs,
+        Pump pump(buffer_factory, mock_source, NULL, sox_sink, FrameDuration, SampleSpecs,
                   Pump::ModeOneshot);
         CHECK(pump.valid());
         CHECK(pump.run());
@@ -143,7 +143,7 @@ TEST(sox_source, pause_resume) {
         SoxSink sox_sink(allocator, sink_config);
         CHECK(sox_sink.open(NULL, file.path()));
 
-        Pump pump(buffer_pool, mock_source, NULL, sox_sink, FrameDuration, SampleSpecs,
+        Pump pump(buffer_factory, mock_source, NULL, sox_sink, FrameDuration, SampleSpecs,
                   Pump::ModeOneshot);
         CHECK(pump.valid());
         CHECK(pump.run());
@@ -187,7 +187,7 @@ TEST(sox_source, pause_restart) {
         SoxSink sox_sink(allocator, sink_config);
         CHECK(sox_sink.open(NULL, file.path()));
 
-        Pump pump(buffer_pool, mock_source, NULL, sox_sink, FrameDuration, SampleSpecs,
+        Pump pump(buffer_factory, mock_source, NULL, sox_sink, FrameDuration, SampleSpecs,
                   Pump::ModeOneshot);
         CHECK(pump.valid());
         CHECK(pump.run());
@@ -231,7 +231,7 @@ TEST(sox_source, eof_restart) {
         SoxSink sox_sink(allocator, sink_config);
         CHECK(sox_sink.open(NULL, file.path()));
 
-        Pump pump(buffer_pool, mock_source, NULL, sox_sink, FrameDuration, SampleSpecs,
+        Pump pump(buffer_factory, mock_source, NULL, sox_sink, FrameDuration, SampleSpecs,
                   Pump::ModeOneshot);
         CHECK(pump.valid());
         CHECK(pump.run());

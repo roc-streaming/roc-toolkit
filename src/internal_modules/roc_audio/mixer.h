@@ -15,9 +15,9 @@
 #include "roc_audio/ireader.h"
 #include "roc_audio/sample_spec.h"
 #include "roc_audio/units.h"
+#include "roc_core/buffer_factory.h"
 #include "roc_core/list.h"
 #include "roc_core/noncopyable.h"
-#include "roc_core/pool.h"
 #include "roc_core/slice.h"
 #include "roc_core/time.h"
 #include "roc_packet/units.h"
@@ -43,11 +43,11 @@ public:
     //! Initialize.
     //!
     //! @b Parameters
-    //!  - @p pool is used to allocate a temporary buffer of samples
+    //!  - @p buffer_factory is used to allocate a temporary buffer of samples
     //!  - @p frame_length defines the temporary buffer length used to
     //!    read from, in nanoseconds
     //!  - @p sample_spec defines the sample spec taken from the audio signal
-    explicit Mixer(core::BufferPool<sample_t>& pool,
+    explicit Mixer(core::BufferFactory<sample_t>& buffer_factory,
                    core::nanoseconds_t frame_length,
                    const audio::SampleSpec& sample_spec);
 

@@ -13,7 +13,7 @@
 
 #include "test_helpers/utils.h"
 
-#include "roc_core/buffer_pool.h"
+#include "roc_core/buffer_factory.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/slice.h"
 #include "roc_sndio/isource.h"
@@ -24,15 +24,15 @@ namespace test {
 
 class FrameReader : public core::NonCopyable<> {
 public:
-    FrameReader(sndio::ISource& source, core::BufferPool<audio::sample_t>& pool)
+    FrameReader(sndio::ISource& source,
+                core::BufferFactory<audio::sample_t>& buffer_factory)
         : source_(source)
-        , pool_(pool)
+        , buffer_factory_(buffer_factory)
         , offset_(0) {
     }
 
     void read_samples(size_t num_samples, size_t num_sessions) {
-        core::Slice<audio::sample_t> samples(new (pool_)
-                                                 core::Buffer<audio::sample_t>(pool_));
+        core::Slice<audio::sample_t> samples = buffer_factory_.new_buffer();
         CHECK(samples);
         samples.reslice(0, num_samples);
 
@@ -47,8 +47,7 @@ public:
     }
 
     void skip_zeros(size_t num_samples) {
-        core::Slice<audio::sample_t> samples(new (pool_)
-                                                 core::Buffer<audio::sample_t>(pool_));
+        core::Slice<audio::sample_t> samples = buffer_factory_.new_buffer();
         CHECK(samples);
 
         samples.reslice(0, num_samples);
@@ -68,7 +67,7 @@ public:
 
 private:
     sndio::ISource& source_;
-    core::BufferPool<audio::sample_t>& pool_;
+    core::BufferFactory<audio::sample_t>& buffer_factory_;
 
     uint8_t offset_;
 };

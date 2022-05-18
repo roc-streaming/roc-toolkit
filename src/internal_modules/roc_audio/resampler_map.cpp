@@ -23,11 +23,12 @@ namespace {
 
 template <class T>
 IResampler* resampler_ctor(core::IAllocator& allocator,
-                           core::BufferPool<sample_t>& buffer_pool,
+                           core::BufferFactory<sample_t>& buffer_factory,
                            ResamplerProfile profile,
                            core::nanoseconds_t frame_length,
                            const audio::SampleSpec& sample_spec) {
-    return new (allocator) T(allocator, buffer_pool, profile, frame_length, sample_spec);
+    return new (allocator)
+        T(allocator, buffer_factory, profile, frame_length, sample_spec);
 }
 
 } // namespace
@@ -80,7 +81,7 @@ ResamplerMap::find_backend_(ResamplerBackend backend_id) const {
 
 IResampler* ResamplerMap::new_resampler(ResamplerBackend backend_id,
                                         core::IAllocator& allocator,
-                                        core::BufferPool<sample_t>& buffer_pool,
+                                        core::BufferFactory<sample_t>& buffer_factory,
                                         ResamplerProfile profile,
                                         core::nanoseconds_t frame_length,
                                         const audio::SampleSpec& sample_spec) {
@@ -92,7 +93,7 @@ IResampler* ResamplerMap::new_resampler(ResamplerBackend backend_id,
     }
 
     core::ScopedPtr<IResampler> resampler(
-        backend->ctor(allocator, buffer_pool, profile, frame_length, sample_spec),
+        backend->ctor(allocator, buffer_factory, profile, frame_length, sample_spec),
         allocator);
 
     if (!resampler || !resampler->valid()) {

@@ -19,6 +19,7 @@
 #include "roc_core/list.h"
 #include "roc_core/list_node.h"
 #include "roc_core/ref_counter.h"
+#include "roc_packet/packet_factory.h"
 #include "roc_pipeline/receiver_endpoint.h"
 #include "roc_pipeline/receiver_session_group.h"
 #include "roc_pipeline/receiver_state.h"
@@ -39,9 +40,9 @@ public:
                         ReceiverState& receiver_state,
                         audio::Mixer& mixer,
                         const rtp::FormatMap& format_map,
-                        packet::PacketPool& packet_pool,
-                        core::BufferPool<uint8_t>& byte_buffer_pool,
-                        core::BufferPool<audio::sample_t>& sample_buffer_pool,
+                        packet::PacketFactory& packet_factory,
+                        core::BufferFactory<uint8_t>& byte_buffer_factory,
+                        core::BufferFactory<audio::sample_t>& sample_buffer_factory,
                         core::IAllocator& allocator);
 
     //! Add endpoint.

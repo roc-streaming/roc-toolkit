@@ -7,13 +7,13 @@
  */
 
 #include "roc_packet/packet.h"
-#include "roc_packet/packet_pool.h"
+#include "roc_packet/packet_factory.h"
 
 namespace roc {
 namespace packet {
 
-Packet::Packet(PacketPool& pool)
-    : pool_(pool)
+Packet::Packet(PacketFactory& factory)
+    : factory_(factory)
     , flags_(0) {
 }
 
@@ -125,7 +125,7 @@ int Packet::compare(const Packet& other) const {
 }
 
 void Packet::destroy() {
-    pool_.destroy(*this);
+    factory_.destroy_packet(*this);
 }
 
 } // namespace packet

@@ -15,14 +15,15 @@
 namespace roc {
 namespace pipeline {
 
-ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
-                                 const ReceiverCommonConfig& common_config,
-                                 const address::SocketAddr& src_address,
-                                 const rtp::FormatMap& format_map,
-                                 packet::PacketPool& packet_pool,
-                                 core::BufferPool<uint8_t>& byte_buffer_pool,
-                                 core::BufferPool<audio::sample_t>& sample_buffer_pool,
-                                 core::IAllocator& allocator)
+ReceiverSession::ReceiverSession(
+    const ReceiverSessionConfig& session_config,
+    const ReceiverCommonConfig& common_config,
+    const address::SocketAddr& src_address,
+    const rtp::FormatMap& format_map,
+    packet::PacketFactory& packet_factory,
+    core::BufferFactory<uint8_t>& byte_buffer_factory,
+    core::BufferFactory<audio::sample_t>& sample_buffer_factory,
+    core::IAllocator& allocator)
     : src_address_(src_address)
     , allocator_(allocator)
     , audio_reader_(NULL) {
@@ -72,9 +73,10 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
             return;
         }
 
-        fec_decoder_.reset(fec::CodecMap::instance().new_decoder(
-                               session_config.fec_decoder, byte_buffer_pool, allocator_),
-                           allocator_);
+        fec_decoder_.reset(
+            fec::CodecMap::instance().new_decoder(session_config.fec_decoder,
+                                                  byte_buffer_factory, allocator_),
+            allocator_);
         if (!fec_decoder_) {
             return;
         }
@@ -86,7 +88,7 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
 
         fec_reader_.reset(new (fec_reader_) fec::Reader(
             session_config.fec_reader, session_config.fec_decoder.scheme, *fec_decoder_,
-            *preader, *repair_queue_, *fec_parser_, packet_pool, allocator_));
+            *preader, *repair_queue_, *fec_parser_, packet_factory, allocator_));
         if (!fec_reader_ || !fec_reader_->valid()) {
             return;
         }
@@ -142,7 +144,7 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
 
         resampler_.reset(
             audio::ResamplerMap::instance().new_resampler(
-                session_config.resampler_backend, allocator, sample_buffer_pool,
+                session_config.resampler_backend, allocator, sample_buffer_factory,
                 session_config.resampler_profile, common_config.internal_frame_length,
                 audio::SampleSpec(format->sample_spec.sample_rate(),
                                   common_config.output_sample_spec.channel_mask())),

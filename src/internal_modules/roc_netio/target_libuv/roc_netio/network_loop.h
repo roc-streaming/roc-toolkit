@@ -16,7 +16,7 @@
 
 #include "roc_address/socket_addr.h"
 #include "roc_core/atomic.h"
-#include "roc_core/buffer_pool.h"
+#include "roc_core/buffer_factory.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/list.h"
 #include "roc_core/mpsc_queue.h"
@@ -36,7 +36,7 @@
 #include "roc_netio/udp_receiver_port.h"
 #include "roc_netio/udp_sender_port.h"
 #include "roc_packet/iwriter.h"
-#include "roc_packet/packet_pool.h"
+#include "roc_packet/packet_factory.h"
 
 namespace roc {
 namespace netio {
@@ -227,8 +227,8 @@ public:
     //! Initialize.
     //! @remarks
     //!  Start background thread if the object was successfully constructed.
-    NetworkLoop(packet::PacketPool& packet_pool,
-                core::BufferPool<uint8_t>& buffer_pool,
+    NetworkLoop(packet::PacketFactory& packet_factory,
+                core::BufferFactory<uint8_t>& buffer_factory,
                 core::IAllocator& allocator);
 
     //! Destroy. Stop all receivers and senders.
@@ -287,8 +287,8 @@ private:
     void task_add_tcp_client_(Task&);
     void task_resolve_endpoint_address_(Task&);
 
-    packet::PacketPool& packet_pool_;
-    core::BufferPool<uint8_t>& buffer_pool_;
+    packet::PacketFactory& packet_factory_;
+    core::BufferFactory<uint8_t>& buffer_factory_;
     core::IAllocator& allocator_;
 
     bool started_;

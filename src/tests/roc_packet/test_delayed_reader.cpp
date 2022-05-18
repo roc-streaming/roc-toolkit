@@ -10,7 +10,7 @@
 
 #include "roc_core/heap_allocator.h"
 #include "roc_packet/delayed_reader.h"
-#include "roc_packet/packet_pool.h"
+#include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
 #include "roc_pipeline/config.h"
 
@@ -25,13 +25,13 @@ const core::nanoseconds_t NsPerSample = core::Second / SampleRate;
 const audio::SampleSpec SampleSpecs = audio::SampleSpec(SampleRate, pipeline::DefaultChannelMask);
 
 core::HeapAllocator allocator;
-PacketPool pool(allocator, true);
+PacketFactory packet_factory(allocator, true);
 
 } // namespace
 
 TEST_GROUP(delayed_reader) {
     PacketPtr new_packet(seqnum_t sn) {
-        PacketPtr packet = new(pool) Packet(pool);
+        PacketPtr packet = packet_factory.new_packet();
         CHECK(packet);
 
         packet->add_flags(Packet::FlagRTP);

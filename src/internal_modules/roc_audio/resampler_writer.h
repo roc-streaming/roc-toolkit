@@ -32,7 +32,7 @@ public:
     //! Initialize.
     ResamplerWriter(IWriter& writer,
                     IResampler& resampler,
-                    core::BufferPool<sample_t>& buffer_pool,
+                    core::BufferFactory<sample_t>& buffer_factory,
                     core::nanoseconds_t frame_length,
                     const audio::SampleSpec& sample_spec);
 

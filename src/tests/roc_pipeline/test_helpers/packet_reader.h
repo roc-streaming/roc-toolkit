@@ -14,12 +14,11 @@
 #include "test_helpers/utils.h"
 
 #include "roc_audio/iframe_decoder.h"
-#include "roc_core/buffer_pool.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_packet/iparser.h"
 #include "roc_packet/ireader.h"
-#include "roc_packet/packet_pool.h"
+#include "roc_packet/packet_factory.h"
 #include "roc_rtp/format_map.h"
 
 namespace roc {
@@ -32,13 +31,13 @@ public:
                  packet::IReader& reader,
                  packet::IParser& parser,
                  rtp::FormatMap& format_map,
-                 packet::PacketPool& packet_pool,
+                 packet::PacketFactory& packet_factory,
                  rtp::PayloadType pt,
                  const address::SocketAddr& dst_addr)
         : reader_(reader)
         , parser_(parser)
         , payload_decoder_(format_map.format(pt)->new_decoder(allocator), allocator)
-        , packet_pool_(packet_pool)
+        , packet_factory_(packet_factory)
         , dst_addr_(dst_addr)
         , source_(0)
         , seqnum_(0)
@@ -65,7 +64,7 @@ private:
     void check_buffer_(const core::Slice<uint8_t> bp,
                        size_t samples_per_packet,
                        audio::SampleSpec sample_spec) {
-        packet::PacketPtr pp = new (packet_pool_) packet::Packet(packet_pool_);
+        packet::PacketPtr pp = packet_factory_.new_packet();
         CHECK(pp);
 
         CHECK(parser_.parse(*pp, bp));
@@ -109,7 +108,7 @@ private:
     packet::IParser& parser_;
     core::ScopedPtr<audio::IFrameDecoder> payload_decoder_;
 
-    packet::PacketPool& packet_pool_;
+    packet::PacketFactory& packet_factory_;
 
     address::SocketAddr dst_addr_;
 

@@ -11,7 +11,7 @@
 #include "test_helpers/frame_checker.h"
 #include "test_helpers/frame_writer.h"
 
-#include "roc_core/buffer_pool.h"
+#include "roc_core/buffer_factory.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_pipeline/converter_sink.h"
 
@@ -37,7 +37,7 @@ const core::nanoseconds_t MaxBufDuration =
     MaxBufSize * core::Second / (SampleSpecs.sample_rate() * SampleSpecs.num_channels());
 
 core::HeapAllocator allocator;
-core::BufferPool<audio::sample_t> sample_buffer_pool(allocator, MaxBufSize, true);
+core::BufferFactory<audio::sample_t> sample_buffer_factory(allocator, MaxBufSize, true);
 
 } // namespace
 
@@ -57,10 +57,10 @@ TEST_GROUP(converter_sink) {
 };
 
 TEST(converter_sink, null) {
-    ConverterSink converter(config, NULL, sample_buffer_pool, allocator);
+    ConverterSink converter(config, NULL, sample_buffer_factory, allocator);
     CHECK(converter.valid());
 
-    test::FrameWriter frame_writer(converter, sample_buffer_pool);
+    test::FrameWriter frame_writer(converter, sample_buffer_factory);
 
     for (size_t nf = 0; nf < ManyFrames; nf++) {
         frame_writer.write_samples(SamplesPerFrame * NumCh);
@@ -70,10 +70,10 @@ TEST(converter_sink, null) {
 TEST(converter_sink, write) {
     test::FrameChecker frame_checker;
 
-    ConverterSink converter(config, &frame_checker, sample_buffer_pool, allocator);
+    ConverterSink converter(config, &frame_checker, sample_buffer_factory, allocator);
     CHECK(converter.valid());
 
-    test::FrameWriter frame_writer(converter, sample_buffer_pool);
+    test::FrameWriter frame_writer(converter, sample_buffer_factory);
 
     for (size_t nf = 0; nf < ManyFrames; nf++) {
         frame_writer.write_samples(SamplesPerFrame * NumCh);
@@ -88,10 +88,10 @@ TEST(converter_sink, frame_size_small) {
 
     test::FrameChecker frame_checker;
 
-    ConverterSink converter(config, &frame_checker, sample_buffer_pool, allocator);
+    ConverterSink converter(config, &frame_checker, sample_buffer_factory, allocator);
     CHECK(converter.valid());
 
-    test::FrameWriter frame_writer(converter, sample_buffer_pool);
+    test::FrameWriter frame_writer(converter, sample_buffer_factory);
 
     for (size_t nf = 0; nf < ManyFrames; nf++) {
         frame_writer.write_samples(SamplesPerSmallFrame * NumCh);
@@ -106,10 +106,10 @@ TEST(converter_sink, frame_size_large) {
 
     test::FrameChecker frame_checker;
 
-    ConverterSink converter(config, &frame_checker, sample_buffer_pool, allocator);
+    ConverterSink converter(config, &frame_checker, sample_buffer_factory, allocator);
     CHECK(converter.valid());
 
-    test::FrameWriter frame_writer(converter, sample_buffer_pool);
+    test::FrameWriter frame_writer(converter, sample_buffer_factory);
 
     for (size_t nf = 0; nf < ManyFrames; nf++) {
         frame_writer.write_samples(SamplesPerLargeFrame * NumCh);

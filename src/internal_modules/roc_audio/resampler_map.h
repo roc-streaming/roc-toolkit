@@ -42,7 +42,7 @@ public:
     //! Method to instantiate and return a pointer to a IResampler object
     IResampler* new_resampler(ResamplerBackend resampler_backend,
                               core::IAllocator& allocator,
-                              core::BufferPool<sample_t>& buffer_pool,
+                              core::BufferFactory<sample_t>& buffer_factory,
                               ResamplerProfile profile,
                               core::nanoseconds_t frame_length,
                               const audio::SampleSpec& sample_spec);
@@ -60,7 +60,7 @@ private:
 
         ResamplerBackend id;
         IResampler* (*ctor)(core::IAllocator& allocator,
-                            core::BufferPool<sample_t>& buffer_pool,
+                            core::BufferFactory<sample_t>& buffer_factory,
                             ResamplerProfile profile,
                             core::nanoseconds_t frame_length,
                             const audio::SampleSpec& sample_spec);

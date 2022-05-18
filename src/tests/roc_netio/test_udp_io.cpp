@@ -9,11 +9,11 @@
 #include <CppUTest/TestHarness.h>
 
 #include "roc_address/socket_addr.h"
-#include "roc_core/buffer_pool.h"
+#include "roc_core/buffer_factory.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_netio/network_loop.h"
 #include "roc_packet/concurrent_queue.h"
-#include "roc_packet/packet_pool.h"
+#include "roc_packet/packet_factory.h"
 
 namespace roc {
 namespace netio {
@@ -23,8 +23,8 @@ namespace {
 enum { NumIterations = 20, NumPackets = 10, BufferSize = 125 };
 
 core::HeapAllocator allocator;
-core::BufferPool<uint8_t> buffer_pool(allocator, BufferSize, true);
-packet::PacketPool packet_pool(allocator, true);
+core::BufferFactory<uint8_t> buffer_factory(allocator, BufferSize, true);
+packet::PacketFactory packet_factory(allocator, true);
 
 UdpSenderConfig make_sender_config() {
     UdpSenderConfig config;
@@ -59,7 +59,7 @@ NetworkLoop::PortHandle add_udp_receiver(NetworkLoop& net_loop,
 }
 
 core::Slice<uint8_t> new_buffer(int value) {
-    core::Slice<uint8_t> buf = new (buffer_pool) core::Buffer<uint8_t>(buffer_pool);
+    core::Slice<uint8_t> buf = buffer_factory.new_buffer();
     CHECK(buf);
     buf.reslice(0, BufferSize);
     for (int n = 0; n < BufferSize; n++) {
@@ -71,7 +71,7 @@ core::Slice<uint8_t> new_buffer(int value) {
 packet::PacketPtr new_packet(const UdpSenderConfig& tx_config,
                              const UdpReceiverConfig& rx_config,
                              int value) {
-    packet::PacketPtr pp = new (packet_pool) packet::Packet(packet_pool);
+    packet::PacketPtr pp = packet_factory.new_packet();
     CHECK(pp);
 
     pp->add_flags(packet::Packet::FlagUDP);
@@ -114,7 +114,7 @@ TEST(udp_io, one_sender_one_receiver_single_thread_non_blocking_disabled) {
 
     tx_config.non_blocking_enabled = false;
 
-    NetworkLoop net_loop(packet_pool, buffer_pool, allocator);
+    NetworkLoop net_loop(packet_factory, buffer_factory, allocator);
     CHECK(net_loop.valid());
 
     packet::IWriter* tx_writer = NULL;
@@ -139,7 +139,7 @@ TEST(udp_io, one_sender_one_receiver_single_loop) {
     UdpSenderConfig tx_config = make_sender_config();
     UdpReceiverConfig rx_config = make_receiver_config();
 
-    NetworkLoop net_loop(packet_pool, buffer_pool, allocator);
+    NetworkLoop net_loop(packet_factory, buffer_factory, allocator);
     CHECK(net_loop.valid());
 
     packet::IWriter* tx_writer = NULL;
@@ -164,14 +164,14 @@ TEST(udp_io, one_sender_one_receiver_separate_loops) {
     UdpSenderConfig tx_config = make_sender_config();
     UdpReceiverConfig rx_config = make_receiver_config();
 
-    NetworkLoop tx_loop(packet_pool, buffer_pool, allocator);
+    NetworkLoop tx_loop(packet_factory, buffer_factory, allocator);
     CHECK(tx_loop.valid());
 
     packet::IWriter* tx_writer = NULL;
     CHECK(add_udp_sender(tx_loop, tx_config, &tx_writer));
     CHECK(tx_writer);
 
-    NetworkLoop rx_loop(packet_pool, buffer_pool, allocator);
+    NetworkLoop rx_loop(packet_factory, buffer_factory, allocator);
     CHECK(rx_loop.valid());
     CHECK(add_udp_receiver(rx_loop, rx_config, rx_queue));
 
@@ -196,18 +196,18 @@ TEST(udp_io, one_sender_many_receivers) {
     UdpReceiverConfig rx_config2 = make_receiver_config();
     UdpReceiverConfig rx_config3 = make_receiver_config();
 
-    NetworkLoop tx_loop(packet_pool, buffer_pool, allocator);
+    NetworkLoop tx_loop(packet_factory, buffer_factory, allocator);
     CHECK(tx_loop.valid());
 
     packet::IWriter* tx_writer = NULL;
     CHECK(add_udp_sender(tx_loop, tx_config, &tx_writer));
     CHECK(tx_writer);
 
-    NetworkLoop rx1_loop(packet_pool, buffer_pool, allocator);
+    NetworkLoop rx1_loop(packet_factory, buffer_factory, allocator);
     CHECK(rx1_loop.valid());
     CHECK(add_udp_receiver(rx1_loop, rx_config1, rx_queue1));
 
-    NetworkLoop rx23_loop(packet_pool, buffer_pool, allocator);
+    NetworkLoop rx23_loop(packet_factory, buffer_factory, allocator);
     CHECK(rx23_loop.valid());
     CHECK(add_udp_receiver(rx23_loop, rx_config2, rx_queue2));
     CHECK(add_udp_receiver(rx23_loop, rx_config3, rx_queue3));
@@ -235,14 +235,14 @@ TEST(udp_io, many_senders_one_receiver) {
 
     UdpReceiverConfig rx_config = make_receiver_config();
 
-    NetworkLoop tx1_loop(packet_pool, buffer_pool, allocator);
+    NetworkLoop tx1_loop(packet_factory, buffer_factory, allocator);
     CHECK(tx1_loop.valid());
 
     packet::IWriter* tx_writer1 = NULL;
     CHECK(add_udp_sender(tx1_loop, tx_config1, &tx_writer1));
     CHECK(tx_writer1);
 
-    NetworkLoop tx23_loop(packet_pool, buffer_pool, allocator);
+    NetworkLoop tx23_loop(packet_factory, buffer_factory, allocator);
     CHECK(tx23_loop.valid());
 
     packet::IWriter* tx_writer2 = NULL;
@@ -253,7 +253,7 @@ TEST(udp_io, many_senders_one_receiver) {
     CHECK(add_udp_sender(tx23_loop, tx_config3, &tx_writer3));
     CHECK(tx_writer3);
 
-    NetworkLoop rx_loop(packet_pool, buffer_pool, allocator);
+    NetworkLoop rx_loop(packet_factory, buffer_factory, allocator);
     CHECK(rx_loop.valid());
     CHECK(add_udp_receiver(rx_loop, rx_config, rx_queue));
 

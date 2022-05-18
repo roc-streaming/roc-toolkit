@@ -11,7 +11,7 @@
 #include "roc_audio/pcm_decoder.h"
 #include "roc_audio/pcm_encoder.h"
 #include "roc_audio/pcm_funcs.h"
-#include "roc_core/buffer_pool.h"
+#include "roc_core/buffer_factory.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_core/scoped_ptr.h"
 
@@ -27,17 +27,14 @@ enum {
     NumCodecs
 };
 
-packet::channel_mask_t Codec_channels[NumCodecs] = {
-    0x1,
-    0x3
-};
+packet::channel_mask_t Codec_channels[NumCodecs] = { 0x1, 0x3 };
 
 enum { MaxChans = 8, MaxBufSize = 1000 };
 
 const double Epsilon = 0.00001;
 
 core::HeapAllocator allocator;
-core::BufferPool<uint8_t> byte_buffer_pool(allocator, MaxBufSize, true);
+core::BufferFactory<uint8_t> byte_buffer_factory(allocator, MaxBufSize, true);
 
 sample_t nth_sample(uint8_t n) {
     return sample_t(n) / sample_t(1 << 8);
@@ -46,99 +43,97 @@ sample_t nth_sample(uint8_t n) {
 } // namespace
 
 TEST_GROUP(encoder_decoder) {
-    IFrameEncoder* new_encoder(size_t id) {
-        switch (id) {
-        case Codec_PCM_int16_1ch:
-            return new (allocator) PcmEncoder(PCM_int16_1ch);
+    IFrameEncoder * new_encoder(size_t id) { switch (id) {
+        case Codec_PCM_int16_1ch : return new (allocator) PcmEncoder(PCM_int16_1ch);
 
-        case Codec_PCM_int16_2ch:
-            return new (allocator) PcmEncoder(PCM_int16_2ch);
+case Codec_PCM_int16_2ch:
+return new (allocator) PcmEncoder(PCM_int16_2ch);
 
-        default:
-            FAIL("bad codec id");
+default:
+FAIL("bad codec id");
+}
+
+return NULL;
+}
+
+inline size_t num_channels(packet::channel_mask_t ch_mask) {
+    size_t n_ch = 0;
+    for (; ch_mask != 0; ch_mask >>= 1) {
+        if (ch_mask & 1) {
+            n_ch++;
         }
+    }
+    return n_ch;
+}
 
-        return NULL;
+IFrameDecoder* new_decoder(size_t id) {
+    switch (id) {
+    case Codec_PCM_int16_1ch:
+        return new (allocator) PcmDecoder(PCM_int16_1ch);
+
+    case Codec_PCM_int16_2ch:
+        return new (allocator) PcmDecoder(PCM_int16_2ch);
+
+    default:
+        FAIL("bad codec id");
     }
 
-    inline size_t num_channels(packet::channel_mask_t ch_mask) {
-        size_t n_ch = 0;
-        for (; ch_mask != 0; ch_mask >>= 1) {
-            if (ch_mask & 1) {
-                n_ch++;
-            }
+    return NULL;
+}
+
+core::Slice<uint8_t> new_buffer(size_t buffer_size) {
+    core::Slice<uint8_t> bp = byte_buffer_factory.new_buffer();
+    CHECK(bp);
+
+    bp.reslice(0, buffer_size);
+
+    return bp;
+}
+
+size_t fill_samples(sample_t* samples,
+                    size_t pos,
+                    size_t n_samples,
+                    packet::channel_mask_t ch_mask) {
+    const size_t n_chans = num_channels(ch_mask);
+
+    for (size_t i = 0; i < n_samples; i++) {
+        for (size_t j = 0; j < n_chans; j++) {
+            *samples++ = nth_sample(uint8_t(pos++));
         }
-        return n_ch;
     }
 
-    IFrameDecoder* new_decoder(size_t id) {
-        switch (id) {
-        case Codec_PCM_int16_1ch:
-            return new (allocator) PcmDecoder(PCM_int16_1ch);
+    return pos;
+}
 
-        case Codec_PCM_int16_2ch:
-            return new (allocator) PcmDecoder(PCM_int16_2ch);
+size_t check_samples(const sample_t* samples,
+                     size_t pos,
+                     size_t n_samples,
+                     packet::channel_mask_t ch_mask) {
+    const size_t n_chans = num_channels(ch_mask);
 
-        default:
-            FAIL("bad codec id");
-        }
-
-        return NULL;
-    }
-
-    core::Slice<uint8_t> new_buffer(size_t buffer_size) {
-        core::Slice<uint8_t> bp =
-            new (byte_buffer_pool) core::Buffer<uint8_t>(byte_buffer_pool);
-        CHECK(bp);
-
-        bp.reslice(0, buffer_size);
-
-        return bp;
-    }
-
-    size_t fill_samples(sample_t* samples,
-                        size_t pos,
-                        size_t n_samples,
-                        packet::channel_mask_t ch_mask) {
-        const size_t n_chans = num_channels(ch_mask);
-
-        for (size_t i = 0; i < n_samples; i++) {
-            for (size_t j = 0; j < n_chans; j++) {
-                *samples++ = nth_sample(uint8_t(pos++));
-            }
-        }
-
-        return pos;
-    }
-
-    size_t check_samples(const sample_t* samples,
-                         size_t pos,
-                         size_t n_samples,
-                         packet::channel_mask_t ch_mask) {
-        const size_t n_chans = num_channels(ch_mask);
-
-        for (size_t i = 0; i < n_samples; i++) {
-            for (size_t j = 0; j < n_chans; j++) {
-                sample_t actual = *samples++;
-                sample_t expected = nth_sample(uint8_t(pos++));
-
-                DOUBLES_EQUAL(expected, actual, Epsilon);
-            }
-        }
-
-        return pos;
-    }
-
-    size_t check_zeros(const sample_t* samples, size_t pos, size_t n_samples) {
-        for (size_t i = 0; i < n_samples; i++) {
+    for (size_t i = 0; i < n_samples; i++) {
+        for (size_t j = 0; j < n_chans; j++) {
             sample_t actual = *samples++;
-            DOUBLES_EQUAL(0.0, actual, Epsilon);
-            pos++;
-        }
+            sample_t expected = nth_sample(uint8_t(pos++));
 
-        return pos;
+            DOUBLES_EQUAL(expected, actual, Epsilon);
+        }
     }
-};
+
+    return pos;
+}
+
+size_t check_zeros(const sample_t* samples, size_t pos, size_t n_samples) {
+    for (size_t i = 0; i < n_samples; i++) {
+        sample_t actual = *samples++;
+        DOUBLES_EQUAL(0.0, actual, Epsilon);
+        pos++;
+    }
+
+    return pos;
+}
+}
+;
 
 TEST(encoder_decoder, one_frame) {
     enum { Timestamp = 100500, SamplesPerFrame = 177 };
@@ -157,9 +152,9 @@ TEST(encoder_decoder, one_frame) {
         sample_t encoder_samples[SamplesPerFrame * MaxChans] = {};
         fill_samples(encoder_samples, 0, SamplesPerFrame, Codec_channels[n_codec]);
 
-        UNSIGNED_LONGS_EQUAL(SamplesPerFrame,
-                             encoder->write(encoder_samples, SamplesPerFrame,
-                                            Codec_channels[n_codec]));
+        UNSIGNED_LONGS_EQUAL(
+            SamplesPerFrame,
+            encoder->write(encoder_samples, SamplesPerFrame, Codec_channels[n_codec]));
 
         encoder->end();
 
@@ -170,9 +165,9 @@ TEST(encoder_decoder, one_frame) {
 
         sample_t decoder_samples[SamplesPerFrame * MaxChans];
 
-        UNSIGNED_LONGS_EQUAL(SamplesPerFrame,
-                             decoder->read(decoder_samples, SamplesPerFrame,
-                                           Codec_channels[n_codec]));
+        UNSIGNED_LONGS_EQUAL(
+            SamplesPerFrame,
+            decoder->read(decoder_samples, SamplesPerFrame, Codec_channels[n_codec]));
 
         check_samples(decoder_samples, 0, SamplesPerFrame, Codec_channels[n_codec]);
 
@@ -223,9 +218,9 @@ TEST(encoder_decoder, multiple_frames) {
 
             sample_t decoder_samples[SamplesPerFrame * MaxChans];
 
-            UNSIGNED_LONGS_EQUAL(SamplesPerFrame,
-                                 decoder->read(decoder_samples, SamplesPerFrame,
-                                               Codec_channels[n_codec]));
+            UNSIGNED_LONGS_EQUAL(
+                SamplesPerFrame,
+                decoder->read(decoder_samples, SamplesPerFrame, Codec_channels[n_codec]));
 
             UNSIGNED_LONGS_EQUAL(ts + SamplesPerFrame, decoder->position());
             UNSIGNED_LONGS_EQUAL(0, decoder->available());
@@ -243,11 +238,7 @@ TEST(encoder_decoder, multiple_frames) {
 }
 
 TEST(encoder_decoder, incomplete_frames) {
-    enum {
-        NumFrames = 20,
-        ExpectedSamplesPerFrame = 211,
-        ActualSamplesPerFrame = 177
-    };
+    enum { NumFrames = 20, ExpectedSamplesPerFrame = 211, ActualSamplesPerFrame = 177 };
 
     for (size_t n_codec = 0; n_codec < NumCodecs; n_codec++) {
         core::ScopedPtr<IFrameEncoder> encoder(new_encoder(n_codec), allocator);
@@ -295,8 +286,8 @@ TEST(encoder_decoder, incomplete_frames) {
 
             decoder->end();
 
-            decoder_pos = check_samples(decoder_samples, decoder_pos, ActualSamplesPerFrame,
-                                        Codec_channels[n_codec]);
+            decoder_pos = check_samples(decoder_samples, decoder_pos,
+                                        ActualSamplesPerFrame, Codec_channels[n_codec]);
 
             UNSIGNED_LONGS_EQUAL(encoder_pos, decoder_pos);
 
@@ -400,8 +391,7 @@ TEST(encoder_decoder, skipped_frames) {
 
             if (n % SkipEvery == 0) {
                 ts += SamplesPerFrame;
-                decoder_pos +=
-                    SamplesPerFrame * num_channels(Codec_channels[n_codec]);
+                decoder_pos += SamplesPerFrame * num_channels(Codec_channels[n_codec]);
                 continue;
             }
 
@@ -412,9 +402,9 @@ TEST(encoder_decoder, skipped_frames) {
 
             sample_t decoder_samples[SamplesPerFrame * MaxChans];
 
-            UNSIGNED_LONGS_EQUAL(SamplesPerFrame,
-                                 decoder->read(decoder_samples, SamplesPerFrame,
-                                               Codec_channels[n_codec]));
+            UNSIGNED_LONGS_EQUAL(
+                SamplesPerFrame,
+                decoder->read(decoder_samples, SamplesPerFrame, Codec_channels[n_codec]));
 
             UNSIGNED_LONGS_EQUAL(ts + SamplesPerFrame, decoder->position());
             UNSIGNED_LONGS_EQUAL(0, decoder->available());
@@ -460,8 +450,7 @@ TEST(encoder_decoder, write_incrementally) {
         UNSIGNED_LONGS_EQUAL(
             SecondPart,
             encoder->write(encoder_samples
-                               + FirstPart
-                                   * num_channels(Codec_channels[n_codec]),
+                               + FirstPart * num_channels(Codec_channels[n_codec]),
                            SecondPart, Codec_channels[n_codec]));
 
         encoder->end();
@@ -473,9 +462,9 @@ TEST(encoder_decoder, write_incrementally) {
 
         sample_t decoder_samples[SamplesPerFrame * MaxChans];
 
-        UNSIGNED_LONGS_EQUAL(SamplesPerFrame,
-                             decoder->read(decoder_samples, SamplesPerFrame,
-                                           Codec_channels[n_codec]));
+        UNSIGNED_LONGS_EQUAL(
+            SamplesPerFrame,
+            decoder->read(decoder_samples, SamplesPerFrame, Codec_channels[n_codec]));
 
         decoder->end();
 
@@ -498,8 +487,7 @@ TEST(encoder_decoder, write_too_much) {
         encoder->begin(bp.data(), bp.size());
 
         sample_t encoder_samples[(SamplesPerFrame + 20) * MaxChans] = {};
-        fill_samples(encoder_samples, 0, SamplesPerFrame + 20,
-                     Codec_channels[n_codec]);
+        fill_samples(encoder_samples, 0, SamplesPerFrame + 20, Codec_channels[n_codec]);
 
         UNSIGNED_LONGS_EQUAL(SamplesPerFrame,
                              encoder->write(encoder_samples, SamplesPerFrame + 20,
@@ -514,9 +502,9 @@ TEST(encoder_decoder, write_too_much) {
 
         sample_t decoder_samples[SamplesPerFrame * MaxChans];
 
-        UNSIGNED_LONGS_EQUAL(SamplesPerFrame,
-                             decoder->read(decoder_samples, SamplesPerFrame,
-                                           Codec_channels[n_codec]));
+        UNSIGNED_LONGS_EQUAL(
+            SamplesPerFrame,
+            decoder->read(decoder_samples, SamplesPerFrame, Codec_channels[n_codec]));
 
         decoder->end();
 
@@ -574,9 +562,9 @@ TEST(encoder_decoder, write_channel_mask) {
 
         sample_t decoder_samples[SamplesPerFrame * MaxChans];
 
-        UNSIGNED_LONGS_EQUAL(SamplesPerFrame,
-                             decoder->read(decoder_samples, SamplesPerFrame,
-                                           Codec_channels[n_codec]));
+        UNSIGNED_LONGS_EQUAL(
+            SamplesPerFrame,
+            decoder->read(decoder_samples, SamplesPerFrame, Codec_channels[n_codec]));
 
         decoder->end();
 
@@ -597,8 +585,7 @@ TEST(encoder_decoder, write_channel_mask) {
         }
 
         for (size_t i = FirstPart; i < SamplesPerFrame; i++) {
-            for (size_t j = 0; j < num_channels(Codec_channels[n_codec]);
-                 j++) {
+            for (size_t j = 0; j < num_channels(Codec_channels[n_codec]); j++) {
                 sample_t actual = decoder_samples[actual_pos++];
                 sample_t expected = 0;
 
@@ -632,12 +619,12 @@ TEST(encoder_decoder, read_incrementally) {
         encoder->begin(bp.data(), bp.size());
 
         sample_t encoder_samples[SamplesPerFrame * MaxChans] = {};
-        size_t encoder_pos = fill_samples(encoder_samples, 0, SamplesPerFrame,
-                                          Codec_channels[n_codec]);
+        size_t encoder_pos =
+            fill_samples(encoder_samples, 0, SamplesPerFrame, Codec_channels[n_codec]);
 
-        UNSIGNED_LONGS_EQUAL(SamplesPerFrame,
-                             encoder->write(encoder_samples, SamplesPerFrame,
-                                            Codec_channels[n_codec]));
+        UNSIGNED_LONGS_EQUAL(
+            SamplesPerFrame,
+            encoder->write(encoder_samples, SamplesPerFrame, Codec_channels[n_codec]));
 
         encoder->end();
 
@@ -651,9 +638,9 @@ TEST(encoder_decoder, read_incrementally) {
         {
             sample_t decoder_samples[FirstPart * MaxChans];
 
-            UNSIGNED_LONGS_EQUAL(FirstPart,
-                                 decoder->read(decoder_samples, FirstPart,
-                                               Codec_channels[n_codec]));
+            UNSIGNED_LONGS_EQUAL(
+                FirstPart,
+                decoder->read(decoder_samples, FirstPart, Codec_channels[n_codec]));
 
             decoder_pos = check_samples(decoder_samples, decoder_pos, FirstPart,
                                         Codec_channels[n_codec]);
@@ -665,9 +652,9 @@ TEST(encoder_decoder, read_incrementally) {
         {
             sample_t decoder_samples[SecondPart * MaxChans];
 
-            UNSIGNED_LONGS_EQUAL(SecondPart,
-                                 decoder->read(decoder_samples, SecondPart,
-                                               Codec_channels[n_codec]));
+            UNSIGNED_LONGS_EQUAL(
+                SecondPart,
+                decoder->read(decoder_samples, SecondPart, Codec_channels[n_codec]));
 
             decoder_pos = check_samples(decoder_samples, decoder_pos, SecondPart,
                                         Codec_channels[n_codec]);
@@ -699,9 +686,9 @@ TEST(encoder_decoder, read_too_much) {
         sample_t encoder_samples[SamplesPerFrame * MaxChans] = {};
         fill_samples(encoder_samples, 0, SamplesPerFrame, Codec_channels[n_codec]);
 
-        UNSIGNED_LONGS_EQUAL(SamplesPerFrame,
-                             encoder->write(encoder_samples, SamplesPerFrame,
-                                            Codec_channels[n_codec]));
+        UNSIGNED_LONGS_EQUAL(
+            SamplesPerFrame,
+            encoder->write(encoder_samples, SamplesPerFrame, Codec_channels[n_codec]));
 
         encoder->end();
 
@@ -747,12 +734,12 @@ TEST(encoder_decoder, read_channel_mask) {
         encoder->begin(bp.data(), bp.size());
 
         sample_t encoder_samples[SamplesPerFrame * MaxChans] = {};
-        size_t encoder_pos = fill_samples(encoder_samples, 0, SamplesPerFrame,
-                                          Codec_channels[n_codec]);
+        size_t encoder_pos =
+            fill_samples(encoder_samples, 0, SamplesPerFrame, Codec_channels[n_codec]);
 
-        UNSIGNED_LONGS_EQUAL(SamplesPerFrame,
-                             encoder->write(encoder_samples, SamplesPerFrame,
-                                            Codec_channels[n_codec]));
+        UNSIGNED_LONGS_EQUAL(
+            SamplesPerFrame,
+            encoder->write(encoder_samples, SamplesPerFrame, Codec_channels[n_codec]));
 
         encoder->end();
 
@@ -797,8 +784,7 @@ TEST(encoder_decoder, read_channel_mask) {
             size_t actual_pos = 0;
 
             for (size_t i = FirstPart; i < SamplesPerFrame; i++) {
-                for (size_t j = 0; j < num_channels(Codec_channels[n_codec]);
-                     j++) {
+                for (size_t j = 0; j < num_channels(Codec_channels[n_codec]); j++) {
                     if (SecondPartChans & (1 << j)) {
                         sample_t actual = decoder_samples[actual_pos++];
                         sample_t expected = nth_sample(uint8_t(decoder_pos));
@@ -843,9 +829,9 @@ TEST(encoder_decoder, shift_incrementally) {
         sample_t encoder_samples[SamplesPerFrame * MaxChans] = {};
         fill_samples(encoder_samples, 0, SamplesPerFrame, Codec_channels[n_codec]);
 
-        UNSIGNED_LONGS_EQUAL(SamplesPerFrame,
-                             encoder->write(encoder_samples, SamplesPerFrame,
-                                            Codec_channels[n_codec]));
+        UNSIGNED_LONGS_EQUAL(
+            SamplesPerFrame,
+            encoder->write(encoder_samples, SamplesPerFrame, Codec_channels[n_codec]));
 
         encoder->end();
 
@@ -862,13 +848,13 @@ TEST(encoder_decoder, shift_incrementally) {
         {
             sample_t decoder_samples[SecondPart * MaxChans];
 
-            UNSIGNED_LONGS_EQUAL(SecondPart,
-                                 decoder->read(decoder_samples, SecondPart,
-                                               Codec_channels[n_codec]));
+            UNSIGNED_LONGS_EQUAL(
+                SecondPart,
+                decoder->read(decoder_samples, SecondPart, Codec_channels[n_codec]));
 
             check_samples(decoder_samples,
-                          FirstPart * num_channels(Codec_channels[n_codec]),
-                          SecondPart, Codec_channels[n_codec]);
+                          FirstPart * num_channels(Codec_channels[n_codec]), SecondPart,
+                          Codec_channels[n_codec]);
         }
 
         UNSIGNED_LONGS_EQUAL(Timestamp + FirstPart + SecondPart, decoder->position());
@@ -883,9 +869,9 @@ TEST(encoder_decoder, shift_incrementally) {
         {
             sample_t decoder_samples[SamplesPerFrame * MaxChans];
 
-            UNSIGNED_LONGS_EQUAL(0,
-                                 decoder->read(decoder_samples, SamplesPerFrame,
-                                               Codec_channels[n_codec]));
+            UNSIGNED_LONGS_EQUAL(
+                0,
+                decoder->read(decoder_samples, SamplesPerFrame, Codec_channels[n_codec]));
         }
 
         UNSIGNED_LONGS_EQUAL(Timestamp + SamplesPerFrame, decoder->position());

@@ -20,13 +20,13 @@ Reader::Reader(const ReaderConfig& config,
                packet::IReader& source_reader,
                packet::IReader& repair_reader,
                packet::IParser& parser,
-               packet::PacketPool& packet_pool,
+               packet::PacketFactory& packet_factory,
                core::IAllocator& allocator)
     : decoder_(decoder)
     , source_reader_(source_reader)
     , repair_reader_(repair_reader)
     , parser_(parser)
-    , packet_pool_(packet_pool)
+    , packet_factory_(packet_factory)
     , source_queue_(0)
     , repair_queue_(0)
     , source_block_(allocator)
@@ -236,7 +236,7 @@ void Reader::try_repair_() {
 }
 
 packet::PacketPtr Reader::parse_repaired_packet_(const core::Slice<uint8_t>& buffer) {
-    packet::PacketPtr pp = new (packet_pool_) packet::Packet(packet_pool_);
+    packet::PacketPtr pp = packet_factory_.new_packet();
     if (!pp) {
         roc_log(LogError, "fec reader: can't allocate packet");
         return NULL;

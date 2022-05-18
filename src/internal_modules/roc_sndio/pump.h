@@ -15,7 +15,7 @@
 #include "roc_audio/sample_spec.h"
 #include "roc_audio/units.h"
 #include "roc_core/atomic.h"
-#include "roc_core/buffer_pool.h"
+#include "roc_core/buffer_factory.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/slice.h"
 #include "roc_core/stddefs.h"
@@ -41,7 +41,7 @@ public:
     };
 
     //! Initialize.
-    Pump(core::BufferPool<audio::sample_t>& buffer_pool,
+    Pump(core::BufferFactory<audio::sample_t>& buffer_factory,
          ISource& source,
          ISource* backup_source,
          ISink& sink,

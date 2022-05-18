@@ -18,15 +18,15 @@ namespace pipeline {
 SenderEndpointSet::SenderEndpointSet(
     const SenderConfig& config,
     const rtp::FormatMap& format_map,
-    packet::PacketPool& packet_pool,
-    core::BufferPool<uint8_t>& byte_buffer_pool,
-    core::BufferPool<audio::sample_t>& sample_buffer_pool,
+    packet::PacketFactory& packet_factory,
+    core::BufferFactory<uint8_t>& byte_buffer_factory,
+    core::BufferFactory<audio::sample_t>& sample_buffer_factory,
     core::IAllocator& allocator)
     : config_(config)
     , format_map_(format_map)
-    , packet_pool_(packet_pool)
-    , byte_buffer_pool_(byte_buffer_pool)
-    , sample_buffer_pool_(sample_buffer_pool)
+    , packet_factory_(packet_factory)
+    , byte_buffer_factory_(byte_buffer_factory)
+    , sample_buffer_factory_(sample_buffer_factory)
     , allocator_(allocator)
     , audio_writer_(NULL) {
 }
@@ -177,7 +177,7 @@ bool SenderEndpointSet::create_pipeline_() {
         }
 
         fec_encoder_.reset(fec::CodecMap::instance().new_encoder(
-                               config_.fec_encoder, byte_buffer_pool_, allocator_),
+                               config_.fec_encoder, byte_buffer_factory_, allocator_),
                            allocator_);
         if (!fec_encoder_) {
             return false;
@@ -185,8 +185,8 @@ bool SenderEndpointSet::create_pipeline_() {
 
         fec_writer_.reset(new (fec_writer_) fec::Writer(
             config_.fec_writer, config_.fec_encoder.scheme, *fec_encoder_, *pwriter,
-            source_endpoint_->composer(), repair_endpoint_->composer(), packet_pool_,
-            byte_buffer_pool_, allocator_));
+            source_endpoint_->composer(), repair_endpoint_->composer(), packet_factory_,
+            byte_buffer_factory_, allocator_));
         if (!fec_writer_ || !fec_writer_->valid()) {
             return false;
         }
@@ -199,8 +199,8 @@ bool SenderEndpointSet::create_pipeline_() {
     }
 
     packetizer_.reset(new (packetizer_) audio::Packetizer(
-        *pwriter, source_endpoint_->composer(), *payload_encoder_, packet_pool_,
-        byte_buffer_pool_, config_.packet_length,
+        *pwriter, source_endpoint_->composer(), *payload_encoder_, packet_factory_,
+        byte_buffer_factory_, config_.packet_length,
         audio::SampleSpec(format->sample_spec.sample_rate(),
                           config_.input_sample_spec.channel_mask()),
         config_.payload_type));
@@ -222,9 +222,9 @@ bool SenderEndpointSet::create_pipeline_() {
         }
 
         resampler_.reset(audio::ResamplerMap::instance().new_resampler(
-                             config_.resampler_backend, allocator_, sample_buffer_pool_,
-                             config_.resampler_profile, config_.internal_frame_length,
-                             config_.input_sample_spec),
+                             config_.resampler_backend, allocator_,
+                             sample_buffer_factory_, config_.resampler_profile,
+                             config_.internal_frame_length, config_.input_sample_spec),
                          allocator_);
 
         if (!resampler_) {
@@ -232,7 +232,7 @@ bool SenderEndpointSet::create_pipeline_() {
         }
 
         resampler_writer_.reset(new (resampler_writer_) audio::ResamplerWriter(
-            *awriter, *resampler_, sample_buffer_pool_, config_.internal_frame_length,
+            *awriter, *resampler_, sample_buffer_factory_, config_.internal_frame_length,
             config_.input_sample_spec));
 
         if (!resampler_writer_ || !resampler_writer_->valid()) {

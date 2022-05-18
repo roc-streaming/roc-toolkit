@@ -349,7 +349,7 @@ int main(int argc, char** argv) {
 
         backup_pipeline.reset(new (context.allocator()) pipeline::ConverterSource(
                                   converter_config, *backup_source,
-                                  context.sample_buffer_pool(), context.allocator()),
+                                  context.sample_buffer_factory(), context.allocator()),
                               context.allocator());
         if (!backup_pipeline) {
             roc_log(LogError, "can't create backup pipeline");
@@ -413,7 +413,7 @@ int main(int argc, char** argv) {
     }
 
     sndio::Pump pump(
-        context.sample_buffer_pool(), receiver.source(), backup_pipeline.get(),
+        context.sample_buffer_factory(), receiver.source(), backup_pipeline.get(),
         *output_sink, receiver_config.common.internal_frame_length,
         receiver_config.common.output_sample_spec,
         args.oneshot_flag ? sndio::Pump::ModeOneshot : sndio::Pump::ModePermanent);

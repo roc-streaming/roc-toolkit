@@ -14,7 +14,7 @@
 #include "roc_packet/iparser.h"
 #include "roc_packet/ireader.h"
 #include "roc_packet/iwriter.h"
-#include "roc_packet/packet_pool.h"
+#include "roc_packet/packet_factory.h"
 #include "roc_packet/sorted_queue.h"
 
 namespace roc {
@@ -27,12 +27,12 @@ class PacketDispatcher : public packet::IWriter {
 public:
     PacketDispatcher(packet::IParser& source_parser,
                      packet::IParser& repair_parser,
-                     packet::PacketPool& pool,
+                     packet::PacketFactory& packet_factory,
                      size_t num_source,
                      size_t num_repair)
         : source_parser_(source_parser)
         , repair_parser_(repair_parser)
-        , packet_pool_(pool)
+        , packet_factory_(packet_factory)
         , num_source_(num_source)
         , num_repair_(num_repair)
         , packet_num_(0)
@@ -193,7 +193,7 @@ private:
         CHECK(old_pp);
         CHECK(old_pp->flags() & packet::Packet::FlagComposed);
 
-        packet::PacketPtr pp = new (packet_pool_) packet::Packet(packet_pool_);
+        packet::PacketPtr pp = packet_factory_.new_packet();
         if (!pp) {
             FAIL("can't allocate packet");
         }
@@ -228,7 +228,7 @@ private:
 
     packet::IParser& source_parser_;
     packet::IParser& repair_parser_;
-    packet::PacketPool& packet_pool_;
+    packet::PacketFactory& packet_factory_;
 
     size_t num_source_;
     size_t num_repair_;

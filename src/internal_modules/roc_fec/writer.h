@@ -13,7 +13,7 @@
 #define ROC_FEC_WRITER_H_
 
 #include "roc_core/array.h"
-#include "roc_core/buffer_pool.h"
+#include "roc_core/buffer_factory.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/slice.h"
@@ -21,7 +21,7 @@
 #include "roc_packet/icomposer.h"
 #include "roc_packet/iwriter.h"
 #include "roc_packet/packet.h"
-#include "roc_packet/packet_pool.h"
+#include "roc_packet/packet_factory.h"
 
 namespace roc {
 namespace fec {
@@ -51,8 +51,8 @@ public:
     //!  - @p writer is used to write source and repair packets
     //!  - @p source_composer is used to format source packets
     //!  - @p repair_composer is used to format repair packets
-    //!  - @p packet_pool is used to allocate repair packets
-    //!  - @p buffer_pool is used to allocate buffers for repair packets
+    //!  - @p packet_factory is used to allocate repair packets
+    //!  - @p buffer_factory is used to allocate buffers for repair packets
     //!  - @p allocator is used to initialize a packet array
     Writer(const WriterConfig& config,
            packet::FecScheme fec_scheme,
@@ -60,8 +60,8 @@ public:
            packet::IWriter& writer,
            packet::IComposer& source_composer,
            packet::IComposer& repair_composer,
-           packet::PacketPool& packet_pool,
-           core::BufferPool<uint8_t>& buffer_pool,
+           packet::PacketFactory& packet_factory,
+           core::BufferFactory<uint8_t>& buffer_factory,
            core::IAllocator& allocator);
 
     //! Check if object is successfully constructed.
@@ -111,8 +111,8 @@ private:
     packet::IComposer& source_composer_;
     packet::IComposer& repair_composer_;
 
-    packet::PacketPool& packet_pool_;
-    core::BufferPool<uint8_t>& buffer_pool_;
+    packet::PacketFactory& packet_factory_;
+    core::BufferFactory<uint8_t>& buffer_factory_;
 
     core::Array<packet::PacketPtr> repair_block_;
 

@@ -21,8 +21,8 @@ Writer::Writer(const WriterConfig& config,
                packet::IWriter& writer,
                packet::IComposer& source_composer,
                packet::IComposer& repair_composer,
-               packet::PacketPool& packet_pool,
-               core::BufferPool<uint8_t>& buffer_pool,
+               packet::PacketFactory& packet_factory,
+               core::BufferFactory<uint8_t>& buffer_factory,
                core::IAllocator& allocator)
     : cur_sblen_(0)
     , next_sblen_(0)
@@ -33,8 +33,8 @@ Writer::Writer(const WriterConfig& config,
     , writer_(writer)
     , source_composer_(source_composer)
     , repair_composer_(repair_composer)
-    , packet_pool_(packet_pool)
-    , buffer_pool_(buffer_pool)
+    , packet_factory_(packet_factory)
+    , buffer_factory_(buffer_factory)
     , repair_block_(allocator)
     , first_packet_(true)
     , cur_packet_(0)
@@ -213,13 +213,13 @@ void Writer::make_repair_packets_() {
 }
 
 packet::PacketPtr Writer::make_repair_packet_(packet::seqnum_t pack_n) {
-    packet::PacketPtr packet = new (packet_pool_) packet::Packet(packet_pool_);
+    packet::PacketPtr packet = packet_factory_.new_packet();
     if (!packet) {
         roc_log(LogError, "fec writer: can't allocate packet");
         return NULL;
     }
 
-    core::Slice<uint8_t> data = new (buffer_pool_) core::Buffer<uint8_t>(buffer_pool_);
+    core::Slice<uint8_t> data = buffer_factory_.new_buffer();
     if (!data) {
         roc_log(LogError, "fec writer: can't allocate buffer");
         return NULL;

@@ -20,7 +20,7 @@
 #include "roc_packet/iparser.h"
 #include "roc_packet/ireader.h"
 #include "roc_packet/packet.h"
-#include "roc_packet/packet_pool.h"
+#include "roc_packet/packet_factory.h"
 #include "roc_packet/sorted_queue.h"
 
 namespace roc {
@@ -54,7 +54,7 @@ public:
            packet::IReader& source_reader,
            packet::IReader& repair_reader,
            packet::IParser& parser,
-           packet::PacketPool& packet_pool,
+           packet::PacketFactory& packet_factory,
            core::IAllocator& allocator);
 
     //! Check if object is successfully constructed.
@@ -112,7 +112,7 @@ private:
     packet::IReader& source_reader_;
     packet::IReader& repair_reader_;
     packet::IParser& parser_;
-    packet::PacketPool& packet_pool_;
+    packet::PacketFactory& packet_factory_;
 
     packet::SortedQueue source_queue_;
     packet::SortedQueue repair_queue_;

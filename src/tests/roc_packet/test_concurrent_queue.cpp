@@ -10,7 +10,7 @@
 
 #include "roc_core/heap_allocator.h"
 #include "roc_packet/concurrent_queue.h"
-#include "roc_packet/packet_pool.h"
+#include "roc_packet/packet_factory.h"
 
 namespace roc {
 namespace packet {
@@ -18,13 +18,13 @@ namespace packet {
 namespace {
 
 core::HeapAllocator allocator;
-PacketPool pool(allocator, true);
+PacketFactory packet_factory(allocator, true);
 
 } // namespace
 
 TEST_GROUP(concurrent_queue) {
     PacketPtr new_packet() {
-        PacketPtr packet = new(pool) Packet(pool);
+        PacketPtr packet = packet_factory.new_packet();
         CHECK(packet);
         return packet;
     }

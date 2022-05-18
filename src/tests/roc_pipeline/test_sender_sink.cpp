@@ -15,10 +15,10 @@
 #include "roc_audio/pcm_decoder.h"
 #include "roc_audio/pcm_funcs.h"
 #include "roc_core/atomic.h"
-#include "roc_core/buffer_pool.h"
+#include "roc_core/buffer_factory.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_core/time.h"
-#include "roc_packet/packet_pool.h"
+#include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
 #include "roc_pipeline/sender_sink.h"
 #include "roc_rtp/format_map.h"
@@ -51,9 +51,9 @@ const core::nanoseconds_t MaxBufDuration =
     MaxBufSize * core::Second / (SampleSpecs.sample_rate() * SampleSpecs.num_channels());
 
 core::HeapAllocator allocator;
-core::BufferPool<audio::sample_t> sample_buffer_pool(allocator, MaxBufSize, true);
-core::BufferPool<uint8_t> byte_buffer_pool(allocator, MaxBufSize, true);
-packet::PacketPool packet_pool(allocator, true);
+core::BufferFactory<audio::sample_t> sample_buffer_factory(allocator, MaxBufSize, true);
+core::BufferFactory<uint8_t> byte_buffer_factory(allocator, MaxBufSize, true);
+packet::PacketFactory packet_factory(allocator, true);
 
 rtp::FormatMap format_map;
 rtp::Parser rtp_parser(format_map, NULL);
@@ -183,8 +183,8 @@ TEST_GROUP(sender_sink) {
 };
 
 TEST(sender_sink, endpoints_sync) {
-    SenderSink sender(scheduler, config, format_map, packet_pool, byte_buffer_pool,
-                      sample_buffer_pool, allocator);
+    SenderSink sender(scheduler, config, format_map, packet_factory, byte_buffer_factory,
+                      sample_buffer_factory, allocator);
     CHECK(sender.valid());
 
     SenderSink::EndpointSetHandle endpoint_set = NULL;
@@ -208,8 +208,8 @@ TEST(sender_sink, endpoints_sync) {
 }
 
 TEST(sender_sink, endpoints_async) {
-    SenderSink sender(scheduler, config, format_map, packet_pool, byte_buffer_pool,
-                      sample_buffer_pool, allocator);
+    SenderSink sender(scheduler, config, format_map, packet_factory, byte_buffer_factory,
+                      sample_buffer_factory, allocator);
     CHECK(sender.valid());
 
     TaskIssuer ti(sender);
@@ -223,8 +223,8 @@ TEST(sender_sink, endpoints_async) {
 TEST(sender_sink, write) {
     packet::Queue queue;
 
-    SenderSink sender(scheduler, config, format_map, packet_pool, byte_buffer_pool,
-                      sample_buffer_pool, allocator);
+    SenderSink sender(scheduler, config, format_map, packet_factory, byte_buffer_factory,
+                      sample_buffer_factory, allocator);
     CHECK(sender.valid());
 
     SenderSink::EndpointSetHandle endpoint_set = add_endpoint_set(sender);
@@ -237,14 +237,14 @@ TEST(sender_sink, write) {
     set_endpoint_output_writer(sender, source_endpoint, queue);
     set_endpoint_destination_udp_address(sender, source_endpoint, dst_addr);
 
-    test::FrameWriter frame_writer(sender, sample_buffer_pool);
+    test::FrameWriter frame_writer(sender, sample_buffer_factory);
 
     for (size_t nf = 0; nf < ManyFrames; nf++) {
         frame_writer.write_samples(SamplesPerFrame * NumCh);
     }
 
     test::PacketReader packet_reader(allocator, queue, rtp_parser, format_map,
-                                     packet_pool, PayloadType, dst_addr);
+                                     packet_factory, PayloadType, dst_addr);
 
     for (size_t np = 0; np < ManyFrames / FramesPerPacket; np++) {
         packet_reader.read_packet(SamplesPerPacket, SampleSpecs);
@@ -262,8 +262,8 @@ TEST(sender_sink, frame_size_small) {
 
     packet::Queue queue;
 
-    SenderSink sender(scheduler, config, format_map, packet_pool, byte_buffer_pool,
-                      sample_buffer_pool, allocator);
+    SenderSink sender(scheduler, config, format_map, packet_factory, byte_buffer_factory,
+                      sample_buffer_factory, allocator);
     CHECK(sender.valid());
 
     SenderSink::EndpointSetHandle endpoint_set = add_endpoint_set(sender);
@@ -276,14 +276,14 @@ TEST(sender_sink, frame_size_small) {
     set_endpoint_output_writer(sender, source_endpoint, queue);
     set_endpoint_destination_udp_address(sender, source_endpoint, dst_addr);
 
-    test::FrameWriter frame_writer(sender, sample_buffer_pool);
+    test::FrameWriter frame_writer(sender, sample_buffer_factory);
 
     for (size_t nf = 0; nf < ManySmallFrames; nf++) {
         frame_writer.write_samples(SamplesPerSmallFrame * NumCh);
     }
 
     test::PacketReader packet_reader(allocator, queue, rtp_parser, format_map,
-                                     packet_pool, PayloadType, dst_addr);
+                                     packet_factory, PayloadType, dst_addr);
 
     for (size_t np = 0; np < ManySmallFrames / SmallFramesPerPacket; np++) {
         packet_reader.read_packet(SamplesPerPacket, SampleSpecs);
@@ -301,8 +301,8 @@ TEST(sender_sink, frame_size_large) {
 
     packet::Queue queue;
 
-    SenderSink sender(scheduler, config, format_map, packet_pool, byte_buffer_pool,
-                      sample_buffer_pool, allocator);
+    SenderSink sender(scheduler, config, format_map, packet_factory, byte_buffer_factory,
+                      sample_buffer_factory, allocator);
     CHECK(sender.valid());
 
     SenderSink::EndpointSetHandle endpoint_set = add_endpoint_set(sender);
@@ -315,14 +315,14 @@ TEST(sender_sink, frame_size_large) {
     set_endpoint_output_writer(sender, source_endpoint, queue);
     set_endpoint_destination_udp_address(sender, source_endpoint, dst_addr);
 
-    test::FrameWriter frame_writer(sender, sample_buffer_pool);
+    test::FrameWriter frame_writer(sender, sample_buffer_factory);
 
     for (size_t nf = 0; nf < ManyLargeFrames; nf++) {
         frame_writer.write_samples(SamplesPerLargeFrame * NumCh);
     }
 
     test::PacketReader packet_reader(allocator, queue, rtp_parser, format_map,
-                                     packet_pool, PayloadType, dst_addr);
+                                     packet_factory, PayloadType, dst_addr);
 
     for (size_t np = 0; np < ManyLargeFrames * PacketsPerLargeFrame; np++) {
         packet_reader.read_packet(SamplesPerPacket, SampleSpecs);

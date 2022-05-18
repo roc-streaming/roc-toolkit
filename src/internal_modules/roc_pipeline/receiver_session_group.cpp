@@ -18,14 +18,14 @@ ReceiverSessionGroup::ReceiverSessionGroup(
     ReceiverState& receiver_state,
     audio::Mixer& mixer,
     const rtp::FormatMap& format_map,
-    packet::PacketPool& packet_pool,
-    core::BufferPool<uint8_t>& byte_buffer_pool,
-    core::BufferPool<audio::sample_t>& sample_buffer_pool,
+    packet::PacketFactory& packet_factory,
+    core::BufferFactory<uint8_t>& byte_buffer_factory,
+    core::BufferFactory<audio::sample_t>& sample_buffer_factory,
     core::IAllocator& allocator)
     : allocator_(allocator)
-    , packet_pool_(packet_pool)
-    , byte_buffer_pool_(byte_buffer_pool)
-    , sample_buffer_pool_(sample_buffer_pool)
+    , packet_factory_(packet_factory)
+    , byte_buffer_factory_(byte_buffer_factory)
+    , sample_buffer_factory_(sample_buffer_factory)
     , format_map_(format_map)
     , mixer_(mixer)
     , receiver_state_(receiver_state)
@@ -93,9 +93,9 @@ void ReceiverSessionGroup::create_session_(const packet::PacketPtr& packet) {
             address::socket_addr_to_str(src_address).c_str(),
             address::socket_addr_to_str(dst_address).c_str());
 
-    core::SharedPtr<ReceiverSession> sess = new (allocator_)
-        ReceiverSession(sess_config, receiver_config_.common, src_address, format_map_,
-                        packet_pool_, byte_buffer_pool_, sample_buffer_pool_, allocator_);
+    core::SharedPtr<ReceiverSession> sess = new (allocator_) ReceiverSession(
+        sess_config, receiver_config_.common, src_address, format_map_, packet_factory_,
+        byte_buffer_factory_, sample_buffer_factory_, allocator_);
 
     if (!sess || !sess->valid()) {
         roc_log(LogError, "session group: can't create session, initialization failed");

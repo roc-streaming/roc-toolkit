@@ -123,11 +123,11 @@ NetworkLoop::Tasks::ResolveEndpointAddress::get_address() const {
 NetworkLoop::ICompletionHandler::~ICompletionHandler() {
 }
 
-NetworkLoop::NetworkLoop(packet::PacketPool& packet_pool,
-                         core::BufferPool<uint8_t>& buffer_pool,
+NetworkLoop::NetworkLoop(packet::PacketFactory& packet_factory,
+                         core::BufferFactory<uint8_t>& buffer_factory,
                          core::IAllocator& allocator)
-    : packet_pool_(packet_pool)
-    , buffer_pool_(buffer_pool)
+    : packet_factory_(packet_factory)
+    , buffer_factory_(buffer_factory)
     , allocator_(allocator)
     , started_(false)
     , loop_initialized_(false)
@@ -406,8 +406,9 @@ void NetworkLoop::close_all_sems_() {
 void NetworkLoop::task_add_udp_receiver_(Task& base_task) {
     Tasks::AddUdpReceiverPort& task = (Tasks::AddUdpReceiverPort&)base_task;
 
-    core::SharedPtr<UdpReceiverPort> port = new (allocator_) UdpReceiverPort(
-        *task.config_, *task.writer_, loop_, packet_pool_, buffer_pool_, allocator_);
+    core::SharedPtr<UdpReceiverPort> port =
+        new (allocator_) UdpReceiverPort(*task.config_, *task.writer_, loop_,
+                                         packet_factory_, buffer_factory_, allocator_);
     if (!port) {
         roc_log(
             LogError,

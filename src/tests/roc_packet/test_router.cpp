@@ -9,7 +9,7 @@
 #include <CppUTest/TestHarness.h>
 
 #include "roc_core/heap_allocator.h"
-#include "roc_packet/packet_pool.h"
+#include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
 #include "roc_packet/router.h"
 
@@ -19,13 +19,13 @@ namespace packet {
 namespace {
 
 core::HeapAllocator allocator;
-PacketPool pool(allocator, true);
+PacketFactory packet_factory(allocator, true);
 
 } // namespace
 
 TEST_GROUP(router) {
     PacketPtr new_packet(source_t source, unsigned flags) {
-        PacketPtr packet = new(pool) Packet(pool);
+        PacketPtr packet = packet_factory.new_packet();
         CHECK(packet);
         packet->add_flags(Packet::FlagRTP | flags);
         packet->rtp()->source = source;

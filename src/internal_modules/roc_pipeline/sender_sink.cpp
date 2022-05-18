@@ -87,16 +87,16 @@ SenderSink::Tasks::CheckEndpointSetIsReady::CheckEndpointSetIsReady(
 SenderSink::SenderSink(ITaskScheduler& scheduler,
                        const SenderConfig& config,
                        const rtp::FormatMap& format_map,
-                       packet::PacketPool& packet_pool,
-                       core::BufferPool<uint8_t>& byte_buffer_pool,
-                       core::BufferPool<audio::sample_t>& sample_buffer_pool,
+                       packet::PacketFactory& packet_factory,
+                       core::BufferFactory<uint8_t>& byte_buffer_factory,
+                       core::BufferFactory<audio::sample_t>& sample_buffer_factory,
                        core::IAllocator& allocator)
     : TaskPipeline(scheduler, config.tasks, config.input_sample_spec)
     , config_(config)
     , format_map_(format_map)
-    , packet_pool_(packet_pool)
-    , byte_buffer_pool_(byte_buffer_pool)
-    , sample_buffer_pool_(sample_buffer_pool)
+    , packet_factory_(packet_factory)
+    , byte_buffer_factory_(byte_buffer_factory)
+    , sample_buffer_factory_(sample_buffer_factory)
     , allocator_(allocator)
     , audio_writer_(NULL)
     , timestamp_(0)
@@ -183,8 +183,8 @@ bool SenderSink::task_add_endpoint_set_(Task& task) {
     roc_log(LogInfo, "sender sink: adding endpoint set");
 
     core::SharedPtr<SenderEndpointSet> endpoint_set = new (allocator_)
-        SenderEndpointSet(config_, format_map_, packet_pool_, byte_buffer_pool_,
-                          sample_buffer_pool_, allocator_);
+        SenderEndpointSet(config_, format_map_, packet_factory_, byte_buffer_factory_,
+                          sample_buffer_factory_, allocator_);
 
     if (!endpoint_set) {
         roc_log(LogError, "sender sink: can't allocate endpoint set");

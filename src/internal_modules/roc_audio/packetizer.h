@@ -16,12 +16,12 @@
 #include "roc_audio/iwriter.h"
 #include "roc_audio/sample_spec.h"
 #include "roc_audio/units.h"
-#include "roc_core/buffer_pool.h"
+#include "roc_core/buffer_factory.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/time.h"
 #include "roc_packet/icomposer.h"
 #include "roc_packet/iwriter.h"
-#include "roc_packet/packet_pool.h"
+#include "roc_packet/packet_factory.h"
 #include "roc_packet/units.h"
 
 namespace roc {
@@ -39,16 +39,16 @@ public:
     //!  - @p writer is used to write generated packets
     //!  - @p composer is used to initialize new packets
     //!  - @p payload_encoder is used to write samples to packets
-    //!  - @p packet_pool is used to allocate packets
-    //!  - @p buffer_pool is used to allocate buffers for packets
+    //!  - @p packet_factory is used to allocate packets
+    //!  - @p buffer_factory is used to allocate buffers for packets
     //!  - @p packet_length defines packet length in nanoseconds
     //!  - @p sample_spec defines the sample spec
     //!  - @p payload_type defines packet payload type
     Packetizer(packet::IWriter& writer,
                packet::IComposer& composer,
                IFrameEncoder& payload_encoder,
-               packet::PacketPool& packet_pool,
-               core::BufferPool<uint8_t>& buffer_pool,
+               packet::PacketFactory& packet_factory,
+               core::BufferFactory<uint8_t>& buffer_factory,
                core::nanoseconds_t packet_length,
                const audio::SampleSpec& sample_spec,
                unsigned int payload_type);
@@ -76,8 +76,8 @@ private:
     packet::IComposer& composer_;
     IFrameEncoder& payload_encoder_;
 
-    packet::PacketPool& packet_pool_;
-    core::BufferPool<uint8_t>& buffer_pool_;
+    packet::PacketFactory& packet_factory_;
+    core::BufferFactory<uint8_t>& buffer_factory_;
 
     const audio::SampleSpec sample_spec_;
     const size_t samples_per_packet_;

@@ -15,14 +15,14 @@
 #include <uv.h>
 
 #include "roc_address/socket_addr.h"
-#include "roc_core/buffer_pool.h"
+#include "roc_core/buffer_factory.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/list.h"
 #include "roc_core/list_node.h"
 #include "roc_netio/basic_port.h"
 #include "roc_netio/iclose_handler.h"
 #include "roc_packet/iwriter.h"
-#include "roc_packet/packet_pool.h"
+#include "roc_packet/packet_factory.h"
 
 namespace roc {
 namespace netio {
@@ -50,8 +50,8 @@ public:
     UdpReceiverPort(const UdpReceiverConfig& config,
                     packet::IWriter& writer,
                     uv_loop_t& event_loop,
-                    packet::PacketPool& packet_pool,
-                    core::BufferPool<uint8_t>& buffer_pool,
+                    packet::PacketFactory& packet_factory,
+                    core::BufferFactory<uint8_t>& buffer_factory,
                     core::IAllocator& allocator);
 
     //! Destroy.
@@ -97,8 +97,8 @@ private:
     bool recv_started_;
     bool closed_;
 
-    packet::PacketPool& packet_pool_;
-    core::BufferPool<uint8_t>& buffer_pool_;
+    packet::PacketFactory& packet_factory_;
+    core::BufferFactory<uint8_t>& buffer_factory_;
 
     unsigned packet_counter_;
 };

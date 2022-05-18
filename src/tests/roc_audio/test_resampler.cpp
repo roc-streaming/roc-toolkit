@@ -15,7 +15,7 @@
 #include "roc_audio/resampler_map.h"
 #include "roc_audio/resampler_reader.h"
 #include "roc_audio/resampler_writer.h"
-#include "roc_core/buffer_pool.h"
+#include "roc_core/buffer_factory.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_core/log.h"
 #include "roc_core/scoped_ptr.h"
@@ -33,7 +33,7 @@ enum ResamplerMethod { Reader, Writer };
 const ResamplerMethod resampler_methods[] = { Reader, Writer };
 
 core::HeapAllocator allocator;
-core::BufferPool<sample_t> buffer_pool(allocator, MaxFrameSize, true);
+core::BufferFactory<sample_t> buffer_factory(allocator, MaxFrameSize, true);
 
 void generate_sine(sample_t* out, size_t num_samples, size_t num_padding) {
     for (size_t n = 0; n < num_samples; n++) {
@@ -139,7 +139,7 @@ void resample_writer(IResampler& resampler,
                      float scaling) {
     test::MockWriter output_writer;
 
-    ResamplerWriter rw(output_writer, resampler, buffer_pool, frame_duration,
+    ResamplerWriter rw(output_writer, resampler, buffer_factory, frame_duration,
                        sample_spec);
     CHECK(rw.valid());
     CHECK(rw.set_scaling(sample_spec.sample_rate(), sample_spec.sample_rate(), scaling));
@@ -171,7 +171,7 @@ void resample(ResamplerBackend backend,
         sample_spec.size_to_ns(InFrameSize * sample_spec.num_channels());
 
     core::ScopedPtr<IResampler> resampler(
-        ResamplerMap::instance().new_resampler(backend, allocator, buffer_pool,
+        ResamplerMap::instance().new_resampler(backend, allocator, buffer_factory,
                                                ResamplerProfile_High, frame_duration,
                                                sample_spec),
         allocator);
@@ -210,7 +210,7 @@ TEST(resampler, supported_scalings) {
                         for (size_t sn = 0; sn < ROC_ARRAY_SIZE(scalings); sn++) {
                             core::ScopedPtr<IResampler> resampler(
                                 ResamplerMap::instance().new_resampler(
-                                    backend, allocator, buffer_pool, profiles[pn],
+                                    backend, allocator, buffer_factory, profiles[pn],
                                     SampleSpecs.size_to_ns(frame_sizes[fn]), SampleSpecs),
                                 allocator);
                             CHECK(resampler);
@@ -253,7 +253,7 @@ TEST(resampler, invalid_scalings) {
         ResamplerBackend backend = ResamplerMap::instance().nth_backend(n_back);
         core::ScopedPtr<IResampler> resampler(
             ResamplerMap::instance().new_resampler(
-                backend, allocator, buffer_pool, ResamplerProfile_High,
+                backend, allocator, buffer_factory, ResamplerProfile_High,
                 SampleSpecs.size_to_ns(InFrameSize), SampleSpecs),
             allocator);
         CHECK(resampler);

@@ -23,8 +23,8 @@ namespace library {
 namespace {
 
 core::HeapAllocator allocator;
-packet::PacketPool packet_pool(allocator, true);
-core::BufferPool<uint8_t> byte_buffer_pool(allocator, test::MaxBufSize, true);
+packet::PacketFactory packet_factory(allocator, true);
+core::BufferFactory<uint8_t> byte_buffer_factory(allocator, test::MaxBufSize, true);
 
 } // namespace
 
@@ -139,8 +139,8 @@ TEST(sender_receiver, rs8m_with_losses) {
                             Flags);
 
     test::Proxy proxy(receiver.source_endpoint(), receiver.repair_endpoint(),
-                      test::SourcePackets, test::RepairPackets, allocator, packet_pool,
-                      byte_buffer_pool);
+                      test::SourcePackets, test::RepairPackets, allocator, packet_factory,
+                      byte_buffer_factory);
 
     test::Sender sender(context, sender_conf, proxy.source_endpoint(),
                         proxy.repair_endpoint(), sample_step, test::FrameSamples, Flags);
@@ -190,8 +190,8 @@ TEST(sender_receiver, ldpc_with_losses) {
                             Flags);
 
     test::Proxy proxy(receiver.source_endpoint(), receiver.repair_endpoint(),
-                      test::SourcePackets, test::RepairPackets, allocator, packet_pool,
-                      byte_buffer_pool);
+                      test::SourcePackets, test::RepairPackets, allocator, packet_factory,
+                      byte_buffer_factory);
 
     test::Sender sender(context, sender_conf, proxy.source_endpoint(),
                         proxy.repair_endpoint(), sample_step, test::FrameSamples, Flags);
