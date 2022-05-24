@@ -17,17 +17,17 @@ const char* interface_to_str(Interface iface) {
     case Iface_Invalid:
         break;
 
-    case Iface_Aggregate:
-        return "aggregate";
+    case Iface_Signaling:
+        return "signaling";
 
     case Iface_AudioSource:
-        return "source";
+        return "audiosource";
 
     case Iface_AudioRepair:
-        return "repair";
+        return "audiorepair";
 
     case Iface_AudioControl:
-        return "control";
+        return "audiocontrol";
 
     case Iface_Max:
         break;

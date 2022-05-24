@@ -61,7 +61,7 @@ ProtocolMap::ProtocolMap() {
     {
         ProtocolAttrs attrs;
         attrs.protocol = Proto_RTSP;
-        attrs.iface = Iface_Aggregate;
+        attrs.iface = Iface_Signaling;
         attrs.fec_scheme = packet::FEC_None;
         attrs.default_port = 554;
         attrs.path_supported = true;

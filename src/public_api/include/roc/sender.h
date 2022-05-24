@@ -72,15 +72,15 @@ extern "C" {
  *
  * Supported interface configurations:
  *
- *   - Connect \c ROC_INTERFACE_AGGREGATE to a remote endpoint (e.g. be an RTSP client).
- *   - Bind \c ROC_INTERFACE_AGGREGATE to a local endpoint (e.g. be an RTSP server).
+ *   - Connect \c ROC_INTERFACE_SIGNALING to a remote endpoint (e.g. be an RTSP client).
+ *   - Bind \c ROC_INTERFACE_SIGNALING to a local endpoint (e.g. be an RTSP server).
  *   - Connect \c ROC_INTERFACE_AUDIO_SOURCE to a remote endpoint (e.g. be an RTP sender).
  *   - Connect \c ROC_INTERFACE_AUDIO_SOURCE and \c ROC_INTERFACE_AUDIO_REPAIR to a pair
  *     of remote endpoints (e.g. be an RTP + FECFRAME sender).
  *
  * **FEC scheme**
  *
- * If \c ROC_INTERFACE_AGGREGATE is used, it automatically creates all necessary transport
+ * If \c ROC_INTERFACE_SIGNALING is used, it automatically creates all necessary transport
  * interfaces and the user should not bother about them.
  *
  * Otherwise, the user should manually configure \c ROC_INTERFACE_AUDIO_SOURCE and

@@ -20,16 +20,16 @@ enum Interface {
     //! Invalid interface.
     Iface_Invalid,
 
-    //! Aggregate interface.
-    Iface_Aggregate,
+    //! Signaling interface (e.g. RTSP).
+    Iface_Signaling,
 
-    //! Source packets of audio stream.
+    //! Source packets of audio stream (e.g. RTP or RTP + RS8M).
     Iface_AudioSource,
 
-    //! Repair packets of audio stream.
+    //! Repair packets of audio stream (e.g. RS8M).
     Iface_AudioRepair,
 
-    //! Control packets of audio stream.
+    //! Control packets of audio stream (e.g. RTCP).
     Iface_AudioControl,
 
     //! Number of interfaces.

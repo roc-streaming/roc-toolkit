@@ -31,21 +31,22 @@ extern "C" {
  * The interface defines the type of the communication with the remote peer and the
  * set of protocols (URI schemes) that can be used with this particular interface.
  *
- * \c ROC_INTERFACE_AGGREGATE is a high-level interface, aggregating several lower-level
- * interfaces. When an aggragate connection is established, peers negotiate connection
- * parameters and automatically setup lower-level \c ROC_INTERFACE_AUDIO_SOURCE and
- * \c ROC_INTERFACE_AUDIO_REPAIR interfaces.
+ * \c ROC_INTERFACE_SIGNALING is a high-level interface that manages several lower-level
+ * interfaces. When a signaling connection is established, peers negotiate connection
+ * parameters and automatically setup lower-level \c ROC_INTERFACE_AUDIO_SOURCE,
+ * \c ROC_INTERFACE_AUDIO_REPAIR, and \c ROC_INTERFACE_AUDIO_CONTROL interfaces.
  *
  * \c ROC_INTERFACE_AUDIO_SOURCE and \c ROC_INTERFACE_AUDIO_REPAIR are lower-level
  * unidirectional transport-only interfaces. The first is used to transmit audio stream,
  * and the second is used to transmit redundant repair stream, if FEC is enabled.
  *
- * In most cases, the user needs only \c ROC_INTERFACE_AGGREGATE. The lower-level
+ * In most cases, the user needs only \c ROC_INTERFACE_SIGNALING. The lower-level
  * intarfaces may be useful if an external signaling mechanism is used or for
  * compatibility with third-party software.
  */
 typedef enum roc_interface {
-    /** Interface aggregating source, repair, and control data of an audio stream.
+    /** Interface for signaling (automatically manages source, repair and control
+     * interfaces).
      *
      * Allowed operations:
      *  - bind    (sender, receiver)
@@ -54,7 +55,7 @@ typedef enum roc_interface {
      * Allowed protocols:
      *  - \ref ROC_PROTO_RTSP
      */
-    ROC_INTERFACE_AGGREGATE = 1,
+    ROC_INTERFACE_SIGNALING = 1,
 
     /** Interface for audio stream source data.
      *
@@ -90,7 +91,7 @@ typedef enum roc_protocol {
     /** RTSP 1.0 (RFC 2326) or RTSP 2.0 (RFC 7826).
      *
      * Interfaces:
-     *  - \ref ROC_INTERFACE_AGGREGATE
+     *  - \ref ROC_INTERFACE_SIGNALING
      *
      * Transports:
      *   - for signaling: TCP
