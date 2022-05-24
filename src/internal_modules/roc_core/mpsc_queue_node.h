@@ -13,7 +13,7 @@
 #define ROC_CORE_MPSC_QUEUE_NODE_H_
 
 #include "roc_core/atomic.h"
-#include "roc_core/helpers.h"
+#include "roc_core/macro_helpers.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/panic.h"
 

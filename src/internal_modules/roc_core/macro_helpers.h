@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_core/helpers.h
-//! @brief Compile time helpers.
+//! @file roc_core/macro_helpers.h
+//! @brief Helper macros.
 
-#ifndef ROC_CORE_HELPERS_H_
-#define ROC_CORE_HELPERS_H_
+#ifndef ROC_CORE_MACRO_HELPERS_H_
+#define ROC_CORE_MACRO_HELPERS_H_
 
 //! Get number of elements in a static array.
 #define ROC_ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
@@ -25,4 +25,4 @@
 //! Stringize macro.
 #define ROC_STRINGIZE(s) ROC_STRINGIZE_(s)
 
-#endif // ROC_CORE_HELPERS_H_
+#endif // ROC_CORE_MACRO_HELPERS_H_

@@ -10,8 +10,8 @@
 #include "roc_address/endpoint_uri_to_str.h"
 #include "roc_address/socket_addr.h"
 #include "roc_address/socket_addr_to_str.h"
-#include "roc_core/helpers.h"
 #include "roc_core/log.h"
+#include "roc_core/macro_helpers.h"
 #include "roc_core/panic.h"
 
 namespace roc {

@@ -9,7 +9,7 @@
 #include <CppUTest/TestHarness.h>
 
 #include "roc_core/heap_allocator.h"
-#include "roc_core/helpers.h"
+#include "roc_core/macro_helpers.h"
 #include "roc_core/string_list.h"
 
 namespace roc {

@@ -12,8 +12,8 @@
 #ifndef ROC_PACKET_PACKET_H_
 #define ROC_PACKET_PACKET_H_
 
-#include "roc_core/helpers.h"
 #include "roc_core/list_node.h"
+#include "roc_core/macro_helpers.h"
 #include "roc_core/mpsc_queue_node.h"
 #include "roc_core/ref_counter.h"
 #include "roc_core/shared_ptr.h"

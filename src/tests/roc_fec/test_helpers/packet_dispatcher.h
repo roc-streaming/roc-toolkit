@@ -9,7 +9,7 @@
 #ifndef ROC_FEC_TEST_HELPERS_PACKET_DISPATCHER_H_
 #define ROC_FEC_TEST_HELPERS_PACKET_DISPATCHER_H_
 
-#include "roc_core/helpers.h"
+#include "roc_core/macro_helpers.h"
 #include "roc_packet/fec.h"
 #include "roc_packet/iparser.h"
 #include "roc_packet/ireader.h"

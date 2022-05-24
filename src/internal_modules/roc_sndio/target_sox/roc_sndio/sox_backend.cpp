@@ -8,8 +8,8 @@
 
 #include <stdio.h>
 
-#include "roc_core/helpers.h"
 #include "roc_core/log.h"
+#include "roc_core/macro_helpers.h"
 #include "roc_core/scoped_lock.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_sndio/sox_backend.h"

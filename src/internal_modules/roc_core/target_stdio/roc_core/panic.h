@@ -13,7 +13,7 @@
 #define ROC_CORE_PANIC_H_
 
 #include "roc_core/attributes.h"
-#include "roc_core/helpers.h"
+#include "roc_core/macro_helpers.h"
 
 #ifndef ROC_MODULE
 #error "ROC_MODULE not defined"

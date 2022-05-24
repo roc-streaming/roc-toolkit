@@ -8,8 +8,8 @@
 
 #include "roc_netio/network_loop.h"
 #include "roc_address/socket_addr_to_str.h"
-#include "roc_core/helpers.h"
 #include "roc_core/log.h"
+#include "roc_core/macro_helpers.h"
 #include "roc_core/panic.h"
 #include "roc_core/shared_ptr.h"
 
