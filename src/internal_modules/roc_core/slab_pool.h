@@ -15,10 +15,8 @@
 #include "roc_core/alignment.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/list.h"
-#include "roc_core/log.h"
 #include "roc_core/mutex.h"
 #include "roc_core/noncopyable.h"
-#include "roc_core/panic.h"
 #include "roc_core/stddefs.h"
 
 namespace roc {
@@ -26,11 +24,14 @@ namespace core {
 
 //! Slab pool.
 //!
-//! Allocates large slabs of memory ("slabs") from given allocator suitable to hold
+//! Allocates large chunks of memory ("slabs") from given allocator suitable to hold
 //! multiple fixed-size objects ("slots").
 //!
 //! Keeps track of free slots and use them when possible. Automatically allocates new
-//! slabs when necessary.
+//! slabs when there are no free slots.
+//!
+//! Automatically grows size of new slabs exponentially. The user can also specify the
+//! minimum and maximum limits for the slab.
 //!
 //! The return memory is always maximum aligned. Thread-safe.
 class SlabPool : public NonCopyable<> {
@@ -39,15 +40,26 @@ public:
     //!
     //! @b Parameters
     //!  - @p allocator is used to allocate slabs
-    //!  - @p object_size defines object size in bytes
+    //!  - @p object_size defines size of single object in bytes
+    //!  - @p min_alloc_bytes defines minimum size in bytes per request to allocator
+    //!  - @p max_alloc_bytes defines maximum size in bytes per request to allocator
     //!  - @p poison enables memory poisoning for debugging
-    SlabPool(IAllocator& allocator, size_t object_size, bool poison);
+    SlabPool(IAllocator& allocator,
+             size_t object_size,
+             bool poison,
+             size_t min_alloc_bytes = 0,
+             size_t max_alloc_bytes = 0);
 
     //! Deinitialize.
     ~SlabPool();
 
     //! Get size of objects in pool.
     size_t object_size() const;
+
+    //! Reserve memory for given number of objects.
+    //! @returns
+    //!  false if allocation failed.
+    bool reserve(size_t n_objects);
 
     //! Allocate memory for an object.
     //! @returns
@@ -64,13 +76,16 @@ private:
     struct Slab : ListNode { };
     struct Slot : ListNode { };
 
+    bool reserve_slots_(size_t desired_slots);
     Slot* get_slot_();
     void put_slot_(Slot* slot);
 
-    void allocate_new_slab_();
+    void increase_slab_size_(size_t desired_n_slots);
+    bool allocate_new_slab_();
     void deallocate_everything_();
 
-    size_t slot_offset_(size_t n) const;
+    size_t slots_per_slab_(size_t slab_size, bool round_up) const;
+    size_t slot_offset_(size_t slot_index) const;
 
     Mutex mutex_;
 
@@ -80,9 +95,14 @@ private:
     List<Slot, NoOwnership> free_slots_;
     size_t n_used_slots_;
 
+    const size_t slab_min_bytes_;
+    const size_t slab_max_bytes_;
+
     const size_t slot_size_;
     const size_t slab_hdr_size_;
-    size_t slab_n_slots_;
+
+    size_t slab_cur_slots_;
+    const size_t slab_max_slots_;
 
     const size_t object_size_;
     const bool poison_;

@@ -17,88 +17,350 @@ namespace core {
 
 namespace {
 
-struct Object : NonCopyable<> {
-    static long n_objects;
+struct TestAllocator : public HeapAllocator {
+    size_t cumulative_allocated_bytes;
 
-    char padding[1000];
-
-    Object() {
-        n_objects++;
+    TestAllocator()
+        : cumulative_allocated_bytes(0) {
     }
 
-    ~Object() {
-        n_objects--;
+    virtual void* allocate(size_t size) {
+        void* ptr = HeapAllocator::allocate(size);
+        if (ptr) {
+            cumulative_allocated_bytes += size;
+        }
+
+        return ptr;
     }
 };
-
-long Object::n_objects = 0;
 
 } // namespace
 
 TEST_GROUP(slab_pool) {
-    HeapAllocator allocator;
+    enum { ObjectSize = 1000 };
+
+    TestAllocator allocator;
 };
 
+TEST(slab_pool, object_size) {
+    SlabPool pool(allocator, ObjectSize, true);
+
+    LONGS_EQUAL(ObjectSize, pool.object_size());
+}
+
 TEST(slab_pool, allocate_deallocate) {
-    SlabPool pool(allocator, sizeof(Object), true);
+    {
+        SlabPool pool(allocator, ObjectSize, true);
 
-    void* memory = pool.allocate();
-    CHECK(memory);
+        LONGS_EQUAL(0, allocator.num_allocations());
 
-    Object* object = new (memory) Object;
+        void* memory = pool.allocate();
+        CHECK(memory);
 
-    LONGS_EQUAL(1, Object::n_objects);
+        LONGS_EQUAL(1, allocator.num_allocations());
 
-    pool.deallocate(object);
+        pool.deallocate(memory);
 
-    LONGS_EQUAL(1, Object::n_objects);
+        LONGS_EQUAL(1, allocator.num_allocations());
+    }
+
+    LONGS_EQUAL(0, allocator.num_allocations());
 }
 
 TEST(slab_pool, allocate_deallocate_many) {
     {
-        SlabPool pool(allocator, sizeof(Object), true);
+        SlabPool pool(allocator, ObjectSize, true);
 
-        Object* objects[1 + 2 + 4] = {};
+        for (int i = 0; i < 10; i++) {
+            void* pointers[1 + 2 + 4] = {};
 
-        LONGS_EQUAL(0, allocator.num_allocations());
-        LONGS_EQUAL(0, Object::n_objects);
+            LONGS_EQUAL(i == 0 ? 0 : 3, allocator.num_allocations());
 
-        size_t n_objs = 0;
+            size_t n_pointers = 0;
 
-        for (; n_objs < 1; n_objs++) {
-            objects[n_objs] = new (pool) Object;
-            CHECK(objects[n_objs]);
+            for (; n_pointers < 1; n_pointers++) {
+                pointers[n_pointers] = pool.allocate();
+                CHECK(pointers[n_pointers]);
+            }
+
+            LONGS_EQUAL(i == 0 ? 1 : 3, allocator.num_allocations());
+
+            for (; n_pointers < 1 + 2; n_pointers++) {
+                pointers[n_pointers] = pool.allocate();
+                CHECK(pointers[n_pointers]);
+            }
+
+            LONGS_EQUAL(i == 0 ? 2 : 3, allocator.num_allocations());
+
+            for (; n_pointers < 1 + 2 + 4; n_pointers++) {
+                pointers[n_pointers] = pool.allocate();
+            }
+
+            LONGS_EQUAL(3, allocator.num_allocations());
+
+            for (size_t n = 0; n < n_pointers; n++) {
+                pool.deallocate(pointers[n]);
+            }
+
+            LONGS_EQUAL(3, allocator.num_allocations());
         }
-
-        LONGS_EQUAL(1, allocator.num_allocations());
-        LONGS_EQUAL(1, Object::n_objects);
-
-        for (; n_objs < 1 + 2; n_objs++) {
-            objects[n_objs] = new (pool) Object;
-            CHECK(objects[n_objs]);
-        }
-
-        LONGS_EQUAL(2, allocator.num_allocations());
-        LONGS_EQUAL(1 + 2, Object::n_objects);
-
-        for (; n_objs < 1 + 2 + 4; n_objs++) {
-            objects[n_objs] = new (pool) Object;
-            CHECK(objects[n_objs]);
-        }
-
-        LONGS_EQUAL(3, allocator.num_allocations());
-        LONGS_EQUAL(1 + 2 + 4, Object::n_objects);
-
-        for (size_t n = 0; n < n_objs; n++) {
-            objects[n]->~Object();
-            pool.deallocate(objects[n]);
-        }
-
-        LONGS_EQUAL(3, allocator.num_allocations());
-        LONGS_EQUAL(0, Object::n_objects);
     }
 
     LONGS_EQUAL(0, allocator.num_allocations());
+}
+
+TEST(slab_pool, reserve) {
+    {
+        SlabPool pool(allocator, ObjectSize, true);
+
+        LONGS_EQUAL(0, allocator.num_allocations());
+
+        CHECK(pool.reserve(1));
+
+        LONGS_EQUAL(1, allocator.num_allocations());
+
+        void* memory = pool.allocate();
+        CHECK(memory);
+
+        LONGS_EQUAL(1, allocator.num_allocations());
+
+        pool.deallocate(memory);
+
+        LONGS_EQUAL(1, allocator.num_allocations());
+    }
+
+    LONGS_EQUAL(0, allocator.num_allocations());
+}
+
+TEST(slab_pool, reserve_many) {
+    {
+        SlabPool pool(allocator, ObjectSize, true);
+
+        for (int i = 0; i < 10; i++) {
+            void* pointers[1 + 2 + 4] = {};
+
+            LONGS_EQUAL(i == 0 ? 0 : 3, allocator.num_allocations());
+
+            size_t n_pointers = 0;
+
+            CHECK(pool.reserve(1));
+
+            LONGS_EQUAL(i == 0 ? 1 : 3, allocator.num_allocations());
+
+            for (; n_pointers < 1; n_pointers++) {
+                pointers[n_pointers] = pool.allocate();
+                CHECK(pointers[n_pointers]);
+            }
+
+            LONGS_EQUAL(i == 0 ? 1 : 3, allocator.num_allocations());
+
+            CHECK(pool.reserve(2));
+
+            LONGS_EQUAL(i == 0 ? 2 : 3, allocator.num_allocations());
+
+            for (; n_pointers < 1 + 2; n_pointers++) {
+                pointers[n_pointers] = pool.allocate();
+                CHECK(pointers[n_pointers]);
+            }
+
+            LONGS_EQUAL(i == 0 ? 2 : 3, allocator.num_allocations());
+
+            CHECK(pool.reserve(4));
+
+            LONGS_EQUAL(3, allocator.num_allocations());
+
+            for (; n_pointers < 1 + 2 + 4; n_pointers++) {
+                pointers[n_pointers] = pool.allocate();
+            }
+
+            LONGS_EQUAL(3, allocator.num_allocations());
+
+            for (size_t n = 0; n < n_pointers; n++) {
+                pool.deallocate(pointers[n]);
+            }
+
+            LONGS_EQUAL(3, allocator.num_allocations());
+        }
+    }
+
+    LONGS_EQUAL(0, allocator.num_allocations());
+}
+
+TEST(slab_pool, min_size_allocate) {
+    // min_size=0
+    {
+        TestAllocator allocator;
+        SlabPool pool(allocator, ObjectSize, true, 0);
+
+        void* mem = pool.allocate();
+        CHECK(mem);
+        pool.deallocate(mem);
+
+        LONGS_EQUAL(1, allocator.num_allocations());
+
+        CHECK(allocator.cumulative_allocated_bytes > ObjectSize);
+        CHECK(allocator.cumulative_allocated_bytes < ObjectSize * 2);
+    }
+    // min_size=ObjectSize
+    {
+        TestAllocator allocator;
+        SlabPool pool(allocator, ObjectSize, true, ObjectSize);
+
+        void* mem = pool.allocate();
+        CHECK(mem);
+        pool.deallocate(mem);
+
+        LONGS_EQUAL(1, allocator.num_allocations());
+
+        CHECK(allocator.cumulative_allocated_bytes > ObjectSize);
+        CHECK(allocator.cumulative_allocated_bytes < ObjectSize * 2);
+    }
+    // min_size=ObjectSize*2
+    {
+        TestAllocator allocator;
+        SlabPool pool(allocator, ObjectSize, true, ObjectSize * 2);
+
+        void* mem = pool.allocate();
+        CHECK(mem);
+        pool.deallocate(mem);
+
+        LONGS_EQUAL(1, allocator.num_allocations());
+
+        CHECK(allocator.cumulative_allocated_bytes > ObjectSize * 2);
+        CHECK(allocator.cumulative_allocated_bytes < ObjectSize * 3);
+    }
+}
+
+TEST(slab_pool, min_size_reserve) {
+    // min_size=0
+    {
+        TestAllocator allocator;
+        SlabPool pool(allocator, ObjectSize, true, 0);
+
+        CHECK(pool.reserve(1));
+
+        LONGS_EQUAL(1, allocator.num_allocations());
+
+        CHECK(allocator.cumulative_allocated_bytes > ObjectSize);
+        CHECK(allocator.cumulative_allocated_bytes < ObjectSize * 2);
+    }
+    // min_size=ObjectSize
+    {
+        TestAllocator allocator;
+        SlabPool pool(allocator, ObjectSize, true, ObjectSize);
+
+        CHECK(pool.reserve(1));
+
+        LONGS_EQUAL(1, allocator.num_allocations());
+
+        CHECK(allocator.cumulative_allocated_bytes > ObjectSize);
+        CHECK(allocator.cumulative_allocated_bytes < ObjectSize * 2);
+    }
+    // min_size=ObjectSize*2
+    {
+        TestAllocator allocator;
+        SlabPool pool(allocator, ObjectSize, true, ObjectSize * 2);
+
+        CHECK(pool.reserve(1));
+
+        LONGS_EQUAL(1, allocator.num_allocations());
+
+        CHECK(allocator.cumulative_allocated_bytes > ObjectSize * 2);
+        CHECK(allocator.cumulative_allocated_bytes < ObjectSize * 3);
+    }
+}
+
+TEST(slab_pool, max_size_allocate) {
+    // max_size=0
+    {
+        TestAllocator allocator;
+        SlabPool pool(allocator, ObjectSize, true, 0, 0);
+
+        {
+            void* pointers[10] = {};
+
+            for (size_t i = 0; i < ROC_ARRAY_SIZE(pointers); i++) {
+                pointers[i] = pool.allocate();
+                CHECK(pointers[i]);
+            }
+
+            for (size_t i = 0; i < ROC_ARRAY_SIZE(pointers); i++) {
+                pool.deallocate(pointers[i]);
+            }
+        }
+
+        LONGS_EQUAL(4, allocator.num_allocations());
+    }
+    // max_size=ObjectSize*100
+    {
+        TestAllocator allocator;
+        SlabPool pool(allocator, ObjectSize, true, 0, ObjectSize * 100);
+
+        {
+            void* pointers[10] = {};
+
+            for (size_t i = 0; i < ROC_ARRAY_SIZE(pointers); i++) {
+                pointers[i] = pool.allocate();
+                CHECK(pointers[i]);
+            }
+
+            for (size_t i = 0; i < ROC_ARRAY_SIZE(pointers); i++) {
+                pool.deallocate(pointers[i]);
+            }
+        }
+
+        LONGS_EQUAL(4, allocator.num_allocations());
+    }
+    // max_size=ObjectSize*2
+    {
+        TestAllocator allocator;
+        SlabPool pool(allocator, ObjectSize, true, 0, ObjectSize * 2);
+
+        {
+            void* pointers[10] = {};
+
+            for (size_t i = 0; i < ROC_ARRAY_SIZE(pointers); i++) {
+                pointers[i] = pool.allocate();
+                CHECK(pointers[i]);
+            }
+
+            for (size_t i = 0; i < ROC_ARRAY_SIZE(pointers); i++) {
+                pool.deallocate(pointers[i]);
+            }
+        }
+
+        LONGS_EQUAL(10, allocator.num_allocations());
+    }
+}
+
+TEST(slab_pool, max_size_reserve) {
+    // max_size=0
+    {
+        TestAllocator allocator;
+        SlabPool pool(allocator, ObjectSize, true, 0, 0);
+
+        pool.reserve(10);
+
+        LONGS_EQUAL(1, allocator.num_allocations());
+    }
+    // max_size=ObjectSize*100
+    {
+        TestAllocator allocator;
+        SlabPool pool(allocator, ObjectSize, true, 0, ObjectSize * 100);
+
+        pool.reserve(10);
+
+        LONGS_EQUAL(1, allocator.num_allocations());
+    }
+    // max_size=ObjectSize*2
+    {
+        TestAllocator allocator;
+        SlabPool pool(allocator, ObjectSize, true, 0, ObjectSize * 2);
+
+        pool.reserve(10);
+
+        LONGS_EQUAL(10, allocator.num_allocations());
+    }
 }
 
 } // namespace core
