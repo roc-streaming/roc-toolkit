@@ -21,10 +21,10 @@ namespace roc {
 namespace address {
 
 //! Audio file or device URI.
-class IoURI : public core::NonCopyable<> {
+class IoUri : public core::NonCopyable<> {
 public:
     //! Initialize empty URI.
-    explicit IoURI(core::IAllocator&);
+    explicit IoUri(core::IAllocator&);
 
     //! Returns true if the URI has all required fields (scheme and path).
     bool is_valid() const;
@@ -64,7 +64,7 @@ private:
     core::StringBuffer<> path_;
 };
 
-//! Parse IoURI from string.
+//! Parse IoUri from string.
 //!
 //! The URI should be in one of the following forms:
 //!
@@ -111,9 +111,9 @@ private:
 //!
 //! This parser does not try to perform full URI validation. For example, it does not
 //! check that path contains only allowed symbols. If it can be parsed, it will be.
-bool parse_io_uri(const char* str, IoURI& result);
+bool parse_io_uri(const char* str, IoUri& result);
 
-//! Format IoURI to string.
+//! Format IoUri to string.
 //!
 //! Formats a normalized form of the URI.
 //!
@@ -124,7 +124,7 @@ bool parse_io_uri(const char* str, IoURI& result);
 //!
 //! @returns
 //!  true on success or false if the buffer is too small.
-bool format_io_uri(const IoURI& uri, core::StringBuilder& dst);
+bool format_io_uri(const IoUri& uri, core::StringBuilder& dst);
 
 } // namespace address
 } // namespace roc

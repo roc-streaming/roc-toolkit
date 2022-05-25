@@ -11,15 +11,15 @@
 namespace roc {
 namespace address {
 
-endpoint_uri_to_str::endpoint_uri_to_str(const EndpointURI& u) {
+endpoint_uri_to_str::endpoint_uri_to_str(const EndpointUri& u) {
     core::StringBuilder b(buf_, sizeof(buf_));
 
-    if (!u.check(EndpointURI::Subset_Full)) {
+    if (!u.check(EndpointUri::Subset_Full)) {
         b.set_str("<bad>");
         return;
     }
 
-    format_endpoint_uri(u, EndpointURI::Subset_Full, b);
+    format_endpoint_uri(u, EndpointUri::Subset_Full, b);
 }
 
 } // namespace address

@@ -18,7 +18,7 @@ namespace address {
     write data;
 }%%
 
-bool parse_endpoint_uri(const char* str, EndpointURI::Subset subset, EndpointURI& result) {
+bool parse_endpoint_uri(const char* str, EndpointUri::Subset subset, EndpointUri& result) {
     result.clear(subset);
 
     if (!str) {
@@ -48,7 +48,7 @@ bool parse_endpoint_uri(const char* str, EndpointURI::Subset subset, EndpointURI
         }
 
         action set_proto {
-            if (subset != EndpointURI::Subset_Full) {
+            if (subset != EndpointUri::Subset_Full) {
                 roc_log(LogError,
                         "parse endpoint uri: unexpected scheme when parsing resource");
                 return false;
@@ -60,7 +60,7 @@ bool parse_endpoint_uri(const char* str, EndpointURI::Subset subset, EndpointURI
         }
 
         action set_host {
-            if (subset != EndpointURI::Subset_Full) {
+            if (subset != EndpointUri::Subset_Full) {
                 roc_log(LogError,
                         "parse endpoint uri: unexpected host when parsing resource");
                 return false;
@@ -72,7 +72,7 @@ bool parse_endpoint_uri(const char* str, EndpointURI::Subset subset, EndpointURI
         }
 
         action set_port {
-            if (subset != EndpointURI::Subset_Full) {
+            if (subset != EndpointUri::Subset_Full) {
                 roc_log(LogError,
                         "parse endpoint uri: unexpected port when parsing resource");
                 return false;
@@ -135,7 +135,7 @@ bool parse_endpoint_uri(const char* str, EndpointURI::Subset subset, EndpointURI
     }%%
 
     if (!success) {
-        if (subset == EndpointURI::Subset_Full) {
+        if (subset == EndpointUri::Subset_Full) {
             roc_log(LogError,
                     "parse endpoint uri: expected"
                     " 'PROTO://HOST[:PORT][/PATH][?QUERY]',\n"

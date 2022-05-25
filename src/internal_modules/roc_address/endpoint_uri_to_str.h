@@ -7,7 +7,7 @@
  */
 
 //! @file roc_address/endpoint_uri_to_str.h
-//! @brief Format EndpointURI to string.
+//! @brief Format EndpointUri to string.
 
 #ifndef ROC_ADDRESS_ENDPOINT_URI_TO_STR_H_
 #define ROC_ADDRESS_ENDPOINT_URI_TO_STR_H_
@@ -18,11 +18,11 @@
 namespace roc {
 namespace address {
 
-//! Convert EndpointURI to string.
+//! Convert EndpointUri to string.
 class endpoint_uri_to_str : public core::NonCopyable<> {
 public:
     //! Construct.
-    explicit endpoint_uri_to_str(const EndpointURI&);
+    explicit endpoint_uri_to_str(const EndpointUri&);
 
     //! Get formatted string.
     const char* c_str() const {

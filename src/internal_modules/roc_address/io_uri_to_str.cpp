@@ -11,7 +11,7 @@
 namespace roc {
 namespace address {
 
-io_uri_to_str::io_uri_to_str(const IoURI& u) {
+io_uri_to_str::io_uri_to_str(const IoUri& u) {
     core::StringBuilder b(buf_, sizeof(buf_));
 
     if (!u.is_valid()) {

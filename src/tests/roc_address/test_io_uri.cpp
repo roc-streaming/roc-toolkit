@@ -24,7 +24,7 @@ core::HeapAllocator allocator;
 TEST_GROUP(io_uri) {};
 
 TEST(io_uri, empty) {
-    IoURI u(allocator);
+    IoUri u(allocator);
 
     CHECK(!u.is_valid());
     CHECK(!u.is_file());
@@ -37,7 +37,7 @@ TEST(io_uri, empty) {
 }
 
 TEST(io_uri, device) {
-    IoURI u(allocator);
+    IoUri u(allocator);
     CHECK(parse_io_uri("alsa://card0/subcard1", u));
 
     CHECK(u.is_valid());
@@ -51,7 +51,7 @@ TEST(io_uri, device) {
 }
 
 TEST(io_uri, file_localhost_abspath) {
-    IoURI u(allocator);
+    IoUri u(allocator);
     CHECK(parse_io_uri("file://localhost/home/user/test.mp3", u));
 
     CHECK(u.is_valid());
@@ -65,7 +65,7 @@ TEST(io_uri, file_localhost_abspath) {
 }
 
 TEST(io_uri, file_emptyhost_abspath) {
-    IoURI u(allocator);
+    IoUri u(allocator);
     CHECK(parse_io_uri("file:///home/user/test.mp3", u));
 
     CHECK(u.is_valid());
@@ -79,7 +79,7 @@ TEST(io_uri, file_emptyhost_abspath) {
 }
 
 TEST(io_uri, file_emptyhost_specialpath) {
-    IoURI u(allocator);
+    IoUri u(allocator);
     CHECK(parse_io_uri("file://-", u));
 
     CHECK(u.is_valid());
@@ -93,7 +93,7 @@ TEST(io_uri, file_emptyhost_specialpath) {
 }
 
 TEST(io_uri, file_compact_abspath) {
-    IoURI u(allocator);
+    IoUri u(allocator);
     CHECK(parse_io_uri("file:/home/user/test.mp3", u));
 
     CHECK(u.is_valid());
@@ -107,7 +107,7 @@ TEST(io_uri, file_compact_abspath) {
 }
 
 TEST(io_uri, file_compact_relpath1) {
-    IoURI u(allocator);
+    IoUri u(allocator);
     CHECK(parse_io_uri("file:./test.mp3", u));
 
     CHECK(u.is_valid());
@@ -121,7 +121,7 @@ TEST(io_uri, file_compact_relpath1) {
 }
 
 TEST(io_uri, file_compact_relpath2) {
-    IoURI u(allocator);
+    IoUri u(allocator);
     CHECK(parse_io_uri("file:test/test.mp3", u));
 
     CHECK(u.is_valid());
@@ -135,7 +135,7 @@ TEST(io_uri, file_compact_relpath2) {
 }
 
 TEST(io_uri, file_compact_specialpath) {
-    IoURI u(allocator);
+    IoUri u(allocator);
     CHECK(parse_io_uri("file:-", u));
 
     CHECK(u.is_valid());
@@ -150,7 +150,7 @@ TEST(io_uri, file_compact_specialpath) {
 
 TEST(io_uri, percent_encoding) {
     {
-        IoURI u(allocator);
+        IoUri u(allocator);
         CHECK(parse_io_uri("alsa://foo%21/bar!%2Fbaz%23", u));
 
         STRCMP_EQUAL("alsa", u.scheme());
@@ -160,7 +160,7 @@ TEST(io_uri, percent_encoding) {
     }
 
     {
-        IoURI u(allocator);
+        IoUri u(allocator);
         CHECK(parse_io_uri("file:///foo%21/bar!%2Fbaz%23", u));
 
         STRCMP_EQUAL("file", u.scheme());
@@ -170,7 +170,7 @@ TEST(io_uri, percent_encoding) {
     }
 
     {
-        IoURI u(allocator);
+        IoUri u(allocator);
         CHECK(parse_io_uri("file:foo%21/bar!%2Fbaz%23", u));
 
         STRCMP_EQUAL("file", u.scheme());
@@ -181,7 +181,7 @@ TEST(io_uri, percent_encoding) {
 }
 
 TEST(io_uri, small_buffer) {
-    IoURI u(allocator);
+    IoUri u(allocator);
     CHECK(parse_io_uri("abcdef://abcdef", u));
 
     char buf[16];
@@ -202,7 +202,7 @@ TEST(io_uri, small_buffer) {
 }
 
 TEST(io_uri, bad_syntax) {
-    IoURI u(allocator);
+    IoUri u(allocator);
 
     CHECK(!parse_io_uri("alsa://", u));
     CHECK(!parse_io_uri("file://", u));

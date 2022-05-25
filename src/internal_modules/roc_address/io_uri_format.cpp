@@ -13,7 +13,7 @@
 namespace roc {
 namespace address {
 
-bool format_io_uri(const IoURI& u, core::StringBuilder& dst) {
+bool format_io_uri(const IoUri& u, core::StringBuilder& dst) {
     if (!u.is_valid()) {
         return false;
     }

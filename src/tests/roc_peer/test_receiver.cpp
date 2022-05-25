@@ -20,8 +20,8 @@ namespace {
 
 core::HeapAllocator allocator;
 
-void parse_uri(address::EndpointURI& uri, const char* str) {
-    CHECK(address::parse_endpoint_uri(str, address::EndpointURI::Subset_Full, uri));
+void parse_uri(address::EndpointUri& uri, const char* str) {
+    CHECK(address::parse_endpoint_uri(str, address::EndpointUri::Subset_Full, uri));
 }
 
 } // namespace
@@ -62,7 +62,7 @@ TEST(receiver, bind) {
         Receiver receiver(context, receiver_config);
         CHECK(receiver.valid());
 
-        address::EndpointURI source_endp(allocator);
+        address::EndpointUri source_endp(allocator);
         parse_uri(source_endp, "rtp://127.0.0.1:0");
 
         CHECK(source_endp.port() == 0);
@@ -83,7 +83,7 @@ TEST(receiver, endpoints_no_fec) {
         Receiver receiver(context, receiver_config);
         CHECK(receiver.valid());
 
-        address::EndpointURI source_endp(allocator);
+        address::EndpointUri source_endp(allocator);
         parse_uri(source_endp, "rtp://127.0.0.1:0");
 
         CHECK(receiver.bind(address::Iface_AudioSource, source_endp));
@@ -98,13 +98,13 @@ TEST(receiver, endpoints_fec) {
         Receiver receiver(context, receiver_config);
         CHECK(receiver.valid());
 
-        address::EndpointURI source_endp(allocator);
+        address::EndpointUri source_endp(allocator);
         parse_uri(source_endp, "rtp+rs8m://127.0.0.1:0");
 
         // fec is not supported
         CHECK(!receiver.bind(address::Iface_AudioSource, source_endp));
 
-        address::EndpointURI repair_endp(allocator);
+        address::EndpointUri repair_endp(allocator);
         parse_uri(repair_endp, "rs8m://127.0.0.1:0");
 
         // fec is not supported
@@ -117,10 +117,10 @@ TEST(receiver, endpoints_fec) {
         Receiver receiver(context, receiver_config);
         CHECK(receiver.valid());
 
-        address::EndpointURI source_endp(allocator);
+        address::EndpointUri source_endp(allocator);
         parse_uri(source_endp, "rtp+rs8m://127.0.0.1:0");
 
-        address::EndpointURI repair_endp(allocator);
+        address::EndpointUri repair_endp(allocator);
         parse_uri(repair_endp, "rs8m://127.0.0.1:0");
 
         // everything is ok
@@ -132,10 +132,10 @@ TEST(receiver, endpoints_fec) {
         Receiver receiver(context, receiver_config);
         CHECK(receiver.valid());
 
-        address::EndpointURI source_endp(allocator);
+        address::EndpointUri source_endp(allocator);
         parse_uri(source_endp, "rtp+rs8m://127.0.0.1:0");
 
-        address::EndpointURI repair_endp(allocator);
+        address::EndpointUri repair_endp(allocator);
         parse_uri(repair_endp, "ldpc://127.0.0.1:0");
 
         // repair port fec scheme mismatch
@@ -147,10 +147,10 @@ TEST(receiver, endpoints_fec) {
         Receiver receiver(context, receiver_config);
         CHECK(receiver.valid());
 
-        address::EndpointURI repair_endp(allocator);
+        address::EndpointUri repair_endp(allocator);
         parse_uri(repair_endp, "rs8m://127.0.0.1:0");
 
-        address::EndpointURI source_endp(allocator);
+        address::EndpointUri source_endp(allocator);
         parse_uri(source_endp, "rtp+ldpc://127.0.0.1:0");
 
         // source port fec scheme mismatch
@@ -162,10 +162,10 @@ TEST(receiver, endpoints_fec) {
         Receiver receiver(context, receiver_config);
         CHECK(receiver.valid());
 
-        address::EndpointURI source_endp(allocator);
+        address::EndpointUri source_endp(allocator);
         parse_uri(source_endp, "rtp://127.0.0.1:0");
 
-        address::EndpointURI repair_endp(allocator);
+        address::EndpointUri repair_endp(allocator);
         parse_uri(repair_endp, "rs8m://127.0.0.1:0");
 
         // repair port provided when fec is disabled

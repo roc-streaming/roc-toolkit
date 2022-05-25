@@ -23,7 +23,7 @@ namespace roc {
 namespace address {
 
 //! Network endpoint URI.
-class EndpointURI : public core::NonCopyable<> {
+class EndpointUri : public core::NonCopyable<> {
 public:
     //! URI subset.
     enum Subset {
@@ -32,7 +32,7 @@ public:
     };
 
     //! Initialize empty URI.
-    explicit EndpointURI(core::IAllocator&);
+    explicit EndpointUri(core::IAllocator&);
 
     //! Check given subset of the URI.
     bool check(Subset subset) const;
@@ -133,7 +133,7 @@ private:
     core::StringBuffer<> query_;
 };
 
-//! Parse EndpointURI from string.
+//! Parse EndpointUri from string.
 //!
 //! The URI should be in the following form:
 //!  - PROTOCOL://HOST[:PORT][/PATH][?QUERY]
@@ -159,9 +159,9 @@ private:
 //!
 //! This parser does not try to perform full URI validation. For example, it does not
 //! check that path contains only allowed symbols. If it can be parsed, it will be.
-bool parse_endpoint_uri(const char* str, EndpointURI::Subset subset, EndpointURI& result);
+bool parse_endpoint_uri(const char* str, EndpointUri::Subset subset, EndpointUri& result);
 
-//! Format EndpointURI to string.
+//! Format EndpointUri to string.
 //!
 //! Formats a normalized form of the URI.
 //!
@@ -170,8 +170,8 @@ bool parse_endpoint_uri(const char* str, EndpointURI::Subset subset, EndpointURI
 //!
 //! @returns
 //!  true on success or false if the buffer is too small.
-bool format_endpoint_uri(const EndpointURI& uri,
-                         EndpointURI::Subset subset,
+bool format_endpoint_uri(const EndpointUri& uri,
+                         EndpointUri::Subset subset,
                          core::StringBuilder& dst);
 
 } // namespace address

@@ -201,7 +201,7 @@ public:
             //! @remarks
             //!  Gets endpoint hostname, resolves it, and writes the resolved IP address
             //!  and the port from the endpoint to the resulting SocketAddr.
-            ResolveEndpointAddress(const address::EndpointURI& endpoint_uri);
+            ResolveEndpointAddress(const address::EndpointUri& endpoint_uri);
 
             //! Get resolved address.
             //! @pre

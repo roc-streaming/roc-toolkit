@@ -246,7 +246,7 @@ int main(int argc, char** argv) {
         }
     }
 
-    address::IoURI output_uri(context.allocator());
+    address::IoUri output_uri(context.allocator());
     if (args.output_given) {
         if (!address::parse_io_uri(args.output_arg, output_uri)) {
             roc_log(LogError, "invalid --output file or device URI");
@@ -296,7 +296,7 @@ int main(int argc, char** argv) {
     core::ScopedPtr<pipeline::ConverterSource> backup_pipeline;
 
     if (args.backup_given) {
-        address::IoURI backup_uri(context.allocator());
+        address::IoUri backup_uri(context.allocator());
 
         if (!address::parse_io_uri(args.backup_arg, backup_uri)) {
             roc_log(LogError, "invalid --backup file or device URI");
@@ -369,10 +369,10 @@ int main(int argc, char** argv) {
     }
 
     if (args.source_given) {
-        address::EndpointURI endpoint(context.allocator());
+        address::EndpointUri endpoint(context.allocator());
 
         if (!address::parse_endpoint_uri(args.source_arg,
-                                         address::EndpointURI::Subset_Full, endpoint)) {
+                                         address::EndpointUri::Subset_Full, endpoint)) {
             roc_log(LogError, "can't parse source endpoint: %s", args.source_arg);
             return 1;
         }
@@ -391,10 +391,10 @@ int main(int argc, char** argv) {
     }
 
     if (args.repair_given) {
-        address::EndpointURI endpoint(context.allocator());
+        address::EndpointUri endpoint(context.allocator());
 
         if (!address::parse_endpoint_uri(args.repair_arg,
-                                         address::EndpointURI::Subset_Full, endpoint)) {
+                                         address::EndpointUri::Subset_Full, endpoint)) {
             roc_log(LogError, "can't parse repair endpoint: %s", args.source_arg);
             return 1;
         }

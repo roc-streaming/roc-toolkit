@@ -26,7 +26,7 @@ core::BufferFactory<uint8_t> buffer_factory(allocator, MaxBufSize, true);
 packet::PacketFactory packet_factory(allocator, true);
 
 bool resolve_endpoint_address(NetworkLoop& net_loop,
-                              const address::EndpointURI& endpoint_uri,
+                              const address::EndpointUri& endpoint_uri,
                               address::SocketAddr& result_address) {
     NetworkLoop::Tasks::ResolveEndpointAddress task(endpoint_uri);
     CHECK(!task.success());
@@ -47,9 +47,9 @@ TEST(resolve, ipv4) {
     NetworkLoop net_loop(packet_factory, buffer_factory, allocator);
     CHECK(net_loop.valid());
 
-    address::EndpointURI endpoint_uri(allocator);
+    address::EndpointUri endpoint_uri(allocator);
     CHECK(address::parse_endpoint_uri("rtp://127.0.0.1:123",
-                                      address::EndpointURI::Subset_Full, endpoint_uri));
+                                      address::EndpointUri::Subset_Full, endpoint_uri));
 
     address::SocketAddr address;
     CHECK(resolve_endpoint_address(net_loop, endpoint_uri, address));
@@ -62,9 +62,9 @@ TEST(resolve, ipv6) {
     NetworkLoop net_loop(packet_factory, buffer_factory, allocator);
     CHECK(net_loop.valid());
 
-    address::EndpointURI endpoint_uri(allocator);
+    address::EndpointUri endpoint_uri(allocator);
     CHECK(address::parse_endpoint_uri("rtp://[::1]:123",
-                                      address::EndpointURI::Subset_Full, endpoint_uri));
+                                      address::EndpointUri::Subset_Full, endpoint_uri));
 
     address::SocketAddr address;
     CHECK(resolve_endpoint_address(net_loop, endpoint_uri, address));
@@ -77,9 +77,9 @@ TEST(resolve, hostname) {
     NetworkLoop net_loop(packet_factory, buffer_factory, allocator);
     CHECK(net_loop.valid());
 
-    address::EndpointURI endpoint_uri(allocator);
+    address::EndpointUri endpoint_uri(allocator);
     CHECK(address::parse_endpoint_uri("rtp://localhost:123",
-                                      address::EndpointURI::Subset_Full, endpoint_uri));
+                                      address::EndpointUri::Subset_Full, endpoint_uri));
 
     address::SocketAddr address;
     CHECK(resolve_endpoint_address(net_loop, endpoint_uri, address));
@@ -98,9 +98,9 @@ TEST(resolve, standard_port) {
     NetworkLoop net_loop(packet_factory, buffer_factory, allocator);
     CHECK(net_loop.valid());
 
-    address::EndpointURI endpoint_uri(allocator);
+    address::EndpointUri endpoint_uri(allocator);
     CHECK(address::parse_endpoint_uri("rtsp://127.0.0.1",
-                                      address::EndpointURI::Subset_Full, endpoint_uri));
+                                      address::EndpointUri::Subset_Full, endpoint_uri));
 
     address::SocketAddr address;
     CHECK(resolve_endpoint_address(net_loop, endpoint_uri, address));
@@ -113,25 +113,25 @@ TEST(resolve, bad_host) {
     CHECK(net_loop.valid());
 
     { // bad ipv4
-        address::EndpointURI endpoint_uri(allocator);
+        address::EndpointUri endpoint_uri(allocator);
         CHECK(address::parse_endpoint_uri(
-            "rtp://300.0.0.1:123", address::EndpointURI::Subset_Full, endpoint_uri));
+            "rtp://300.0.0.1:123", address::EndpointUri::Subset_Full, endpoint_uri));
 
         address::SocketAddr address;
         CHECK(!resolve_endpoint_address(net_loop, endpoint_uri, address));
     }
     { // bad ipv6
-        address::EndpointURI endpoint_uri(allocator);
+        address::EndpointUri endpoint_uri(allocator);
         CHECK(address::parse_endpoint_uri(
-            "rtp://[11::22::]:123", address::EndpointURI::Subset_Full, endpoint_uri));
+            "rtp://[11::22::]:123", address::EndpointUri::Subset_Full, endpoint_uri));
 
         address::SocketAddr address;
         CHECK(!resolve_endpoint_address(net_loop, endpoint_uri, address));
     }
     { // bad hostname
-        address::EndpointURI endpoint_uri(allocator);
+        address::EndpointUri endpoint_uri(allocator);
         CHECK(address::parse_endpoint_uri(
-            "rtp://_:123", address::EndpointURI::Subset_Full, endpoint_uri));
+            "rtp://_:123", address::EndpointUri::Subset_Full, endpoint_uri));
 
         address::SocketAddr address;
         CHECK(!resolve_endpoint_address(net_loop, endpoint_uri, address));

@@ -12,43 +12,43 @@
 namespace roc {
 namespace address {
 
-IoURI::IoURI(core::IAllocator& allocator)
+IoUri::IoUri(core::IAllocator& allocator)
     : scheme_(allocator)
     , path_(allocator) {
 }
 
-bool IoURI::is_valid() const {
+bool IoUri::is_valid() const {
     return !scheme_.is_empty() && !path_.is_empty();
 }
 
-bool IoURI::is_file() const {
+bool IoUri::is_file() const {
     if (!is_valid()) {
         return false;
     }
     return strcmp(scheme_.c_str(), "file") == 0;
 }
 
-bool IoURI::is_special_file() const {
+bool IoUri::is_special_file() const {
     if (!is_valid()) {
         return false;
     }
     return strcmp(scheme_.c_str(), "file") == 0 && strcmp(path_.c_str(), "-") == 0;
 }
 
-void IoURI::clear() {
+void IoUri::clear() {
     scheme_.clear();
     path_.clear();
 }
 
-const char* IoURI::scheme() const {
+const char* IoUri::scheme() const {
     return scheme_.c_str();
 }
 
-const char* IoURI::path() const {
+const char* IoUri::path() const {
     return path_.c_str();
 }
 
-bool IoURI::set_scheme(const char* str, size_t str_len) {
+bool IoUri::set_scheme(const char* str, size_t str_len) {
     if (str_len < 1) {
         scheme_.clear();
         return false;
@@ -62,7 +62,7 @@ bool IoURI::set_scheme(const char* str, size_t str_len) {
     return true;
 }
 
-bool IoURI::set_encoded_path(const char* str, size_t str_len) {
+bool IoUri::set_encoded_path(const char* str, size_t str_len) {
     if (str_len < 1) {
         path_.clear();
         return false;
@@ -88,7 +88,7 @@ bool IoURI::set_encoded_path(const char* str, size_t str_len) {
     return true;
 }
 
-bool IoURI::format_encoded_path(core::StringBuilder& dst) const {
+bool IoUri::format_encoded_path(core::StringBuilder& dst) const {
     if (path_.is_empty()) {
         return false;
     }

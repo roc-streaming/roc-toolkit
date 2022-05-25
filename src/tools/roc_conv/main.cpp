@@ -100,7 +100,7 @@ int main(int argc, char** argv) {
     source_config.sample_spec.set_sample_rate(0);
     source_config.frame_length = converter_config.internal_frame_length;
 
-    address::IoURI input_uri(allocator);
+    address::IoUri input_uri(allocator);
     if (args.input_given) {
         if (!address::parse_io_uri(args.input_arg, input_uri) || !input_uri.is_file()) {
             roc_log(LogError, "invalid --input file URI");
@@ -181,7 +181,7 @@ int main(int argc, char** argv) {
     sink_config.sample_spec = converter_config.output_sample_spec;
     sink_config.frame_length = converter_config.internal_frame_length;
 
-    address::IoURI output_uri(allocator);
+    address::IoUri output_uri(allocator);
     if (args.output_given) {
         if (!address::parse_io_uri(args.output_arg, output_uri)
             || !output_uri.is_file()) {

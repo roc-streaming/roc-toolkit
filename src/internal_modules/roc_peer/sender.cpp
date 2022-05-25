@@ -147,12 +147,12 @@ bool Sender::set_squashing_enabled(address::Interface iface, bool enabled) {
     return true;
 }
 
-bool Sender::connect(address::Interface iface, const address::EndpointURI& uri) {
+bool Sender::connect(address::Interface iface, const address::EndpointUri& uri) {
     core::Mutex::Lock lock(mutex_);
 
     roc_panic_if_not(valid());
 
-    if (!uri.check(address::EndpointURI::Subset_Full)) {
+    if (!uri.check(address::EndpointUri::Subset_Full)) {
         roc_log(LogError, "sender peer: invalid uri");
         return false;
     }

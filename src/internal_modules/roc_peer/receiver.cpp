@@ -111,12 +111,12 @@ bool Receiver::set_multicast_group(address::Interface iface, const char* ip) {
     return true;
 }
 
-bool Receiver::bind(address::Interface iface, address::EndpointURI& uri) {
+bool Receiver::bind(address::Interface iface, address::EndpointUri& uri) {
     core::Mutex::Lock lock(mutex_);
 
     roc_panic_if_not(valid());
 
-    if (!uri.check(address::EndpointURI::Subset_Full)) {
+    if (!uri.check(address::EndpointUri::Subset_Full)) {
         roc_log(LogError, "receiver peer: invalid uri");
         return false;
     }

@@ -23,7 +23,7 @@ namespace sndio {
 
 namespace {
 
-DriverType select_driver_type(const address::IoURI& uri) {
+DriverType select_driver_type(const address::IoUri& uri) {
     if (uri.is_file()) {
         return DriverType_File;
     } else {
@@ -31,7 +31,7 @@ DriverType select_driver_type(const address::IoURI& uri) {
     }
 }
 
-const char* select_driver_name(const address::IoURI& uri, const char* force_format) {
+const char* select_driver_name(const address::IoUri& uri, const char* force_format) {
     if (uri.is_file()) {
         if (force_format && *force_format) {
             // use specific file driver
@@ -87,11 +87,12 @@ ISink* BackendDispatcher::open_default_sink(const Config& config) {
     return (ISink*)open_default_terminal_(Terminal_Sink, config);
 }
 
+
 ISource* BackendDispatcher::open_default_source(const Config& config) {
     return (ISource*)open_default_terminal_(Terminal_Sink, config);
 }
 
-ISink* BackendDispatcher::open_sink(const address::IoURI& uri,
+ISink* BackendDispatcher::open_sink(const address::IoUri& uri,
                                     const char* force_format,
                                     const Config& config) {
     if (!uri.is_valid()) {
@@ -105,7 +106,7 @@ ISink* BackendDispatcher::open_sink(const address::IoURI& uri,
                                   config);
 }
 
-ISource* BackendDispatcher::open_source(const address::IoURI& uri,
+ISource* BackendDispatcher::open_source(const address::IoUri& uri,
                                         const char* force_format,
                                         const Config& config) {
     if (!uri.is_valid()) {

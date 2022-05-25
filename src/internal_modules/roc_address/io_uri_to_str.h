@@ -7,7 +7,7 @@
  */
 
 //! @file roc_address/io_uri_to_str.h
-//! @brief Format IoURI to string.
+//! @brief Format IoUri to string.
 
 #ifndef ROC_ADDRESS_IO_URI_TO_STR_H_
 #define ROC_ADDRESS_IO_URI_TO_STR_H_
@@ -18,11 +18,11 @@
 namespace roc {
 namespace address {
 
-//! Convert IoURI to string.
+//! Convert IoUri to string.
 class io_uri_to_str : public core::NonCopyable<> {
 public:
     //! Construct.
-    explicit io_uri_to_str(const IoURI&);
+    explicit io_uri_to_str(const IoUri&);
 
     //! Get formatted string.
     const char* c_str() const {

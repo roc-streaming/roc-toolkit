@@ -20,8 +20,8 @@ namespace {
 
 core::HeapAllocator allocator;
 
-void parse_uri(address::EndpointURI& uri, const char* str) {
-    CHECK(address::parse_endpoint_uri(str, address::EndpointURI::Subset_Full, uri));
+void parse_uri(address::EndpointUri& uri, const char* str) {
+    CHECK(address::parse_endpoint_uri(str, address::EndpointUri::Subset_Full, uri));
 }
 
 } // namespace
@@ -52,7 +52,7 @@ TEST(sender, connect) {
         Sender sender(context, sender_config);
         CHECK(sender.valid());
 
-        address::EndpointURI source_endp(allocator);
+        address::EndpointUri source_endp(allocator);
         parse_uri(source_endp, "rtp://127.0.0.1:123");
 
         CHECK(sender.connect(address::Iface_AudioSource, source_endp));
@@ -73,7 +73,7 @@ TEST(sender, endpoints_no_fec) {
         Sender sender(context, sender_config);
         CHECK(sender.valid());
 
-        address::EndpointURI source_endp(allocator);
+        address::EndpointUri source_endp(allocator);
         parse_uri(source_endp, "rtp://127.0.0.1:123");
 
         // everything is ok
@@ -102,14 +102,14 @@ TEST(sender, endpoints_fec) {
         Sender sender(context, sender_config);
         CHECK(sender.valid());
 
-        address::EndpointURI source_endp(allocator);
+        address::EndpointUri source_endp(allocator);
         parse_uri(source_endp, "rtp+rs8m://127.0.0.1:123");
 
         // fec is not supported
         CHECK(!sender.connect(address::Iface_AudioSource, source_endp));
         CHECK(!sender.is_ready());
 
-        address::EndpointURI repair_endp(allocator);
+        address::EndpointUri repair_endp(allocator);
         parse_uri(repair_endp, "rs8m://127.0.0.1:123");
 
         // fec is not supported
@@ -125,10 +125,10 @@ TEST(sender, endpoints_fec) {
         Sender sender(context, sender_config);
         CHECK(sender.valid());
 
-        address::EndpointURI source_endp(allocator);
+        address::EndpointUri source_endp(allocator);
         parse_uri(source_endp, "rtp+rs8m://127.0.0.1:123");
 
-        address::EndpointURI repair_endp(allocator);
+        address::EndpointUri repair_endp(allocator);
         parse_uri(repair_endp, "rs8m://127.0.0.1:123");
 
         // everything is ok
@@ -143,7 +143,7 @@ TEST(sender, endpoints_fec) {
         Sender sender(context, sender_config);
         CHECK(sender.valid());
 
-        address::EndpointURI source_endp(allocator);
+        address::EndpointUri source_endp(allocator);
         parse_uri(source_endp, "rtp+ldpc://127.0.0.1:123");
 
         // source port fec scheme mismatch
@@ -157,7 +157,7 @@ TEST(sender, endpoints_fec) {
         Sender sender(context, sender_config);
         CHECK(sender.valid());
 
-        address::EndpointURI repair_endp(allocator);
+        address::EndpointUri repair_endp(allocator);
         parse_uri(repair_endp, "ldpc://127.0.0.1:123");
 
         // repair port fec scheme mismatch
@@ -171,7 +171,7 @@ TEST(sender, endpoints_fec) {
         Sender sender(context, sender_config);
         CHECK(sender.valid());
 
-        address::EndpointURI repair_endp(allocator);
+        address::EndpointUri repair_endp(allocator);
         parse_uri(repair_endp, "rs8m://127.0.0.1:123");
 
         // repair port provided when fec is disabled
@@ -185,7 +185,7 @@ TEST(sender, endpoints_fec) {
         Sender sender(context, sender_config);
         CHECK(sender.valid());
 
-        address::EndpointURI source_endp(allocator);
+        address::EndpointUri source_endp(allocator);
         parse_uri(source_endp, "rtp+rs8m://127.0.0.1:123");
 
         // repair port not provided when fec is enabled
@@ -199,7 +199,7 @@ TEST(sender, endpoints_fec) {
         Sender sender(context, sender_config);
         CHECK(sender.valid());
 
-        address::EndpointURI repair_endp(allocator);
+        address::EndpointUri repair_endp(allocator);
         parse_uri(repair_endp, "rs8m://127.0.0.1:123");
 
         // source port not provided when fec is enabled
@@ -224,10 +224,10 @@ TEST(sender, squashing) {
         Sender sender(context, sender_config);
         CHECK(sender.valid());
 
-        address::EndpointURI source_endp(allocator);
+        address::EndpointUri source_endp(allocator);
         parse_uri(source_endp, "rtp+rs8m://127.0.0.1:123");
 
-        address::EndpointURI repair_endp(allocator);
+        address::EndpointUri repair_endp(allocator);
         parse_uri(repair_endp, "rs8m://127.0.0.1:123");
 
         CHECK(sender.connect(address::Iface_AudioSource, source_endp));
@@ -239,10 +239,10 @@ TEST(sender, squashing) {
         Sender sender(context, sender_config);
         CHECK(sender.valid());
 
-        address::EndpointURI source_endp(allocator);
+        address::EndpointUri source_endp(allocator);
         parse_uri(source_endp, "rtp+rs8m://127.0.0.1:123");
 
-        address::EndpointURI repair_endp(allocator);
+        address::EndpointUri repair_endp(allocator);
         parse_uri(repair_endp, "rs8m://127.0.0.1:123");
 
         CHECK(sender.set_broadcast_enabled(address::Iface_AudioSource, true));
@@ -260,10 +260,10 @@ TEST(sender, squashing) {
         Sender sender(context, sender_config);
         CHECK(sender.valid());
 
-        address::EndpointURI source_endp(allocator);
+        address::EndpointUri source_endp(allocator);
         parse_uri(source_endp, "rtp+rs8m://127.0.0.1:123");
 
-        address::EndpointURI repair_endp(allocator);
+        address::EndpointUri repair_endp(allocator);
         parse_uri(repair_endp, "rs8m://127.0.0.1:123");
 
         CHECK(sender.set_squashing_enabled(address::Iface_AudioSource, false));
@@ -277,10 +277,10 @@ TEST(sender, squashing) {
         Sender sender(context, sender_config);
         CHECK(sender.valid());
 
-        address::EndpointURI source_endp(allocator);
+        address::EndpointUri source_endp(allocator);
         parse_uri(source_endp, "rtp+rs8m://127.0.0.1:123");
 
-        address::EndpointURI repair_endp(allocator);
+        address::EndpointUri repair_endp(allocator);
         parse_uri(repair_endp, "rs8m://127.0.0.1:123");
 
         CHECK(sender.set_squashing_enabled(address::Iface_AudioRepair, false));
@@ -294,10 +294,10 @@ TEST(sender, squashing) {
         Sender sender(context, sender_config);
         CHECK(sender.valid());
 
-        address::EndpointURI source_endp(allocator);
+        address::EndpointUri source_endp(allocator);
         parse_uri(source_endp, "rtp+rs8m://127.0.0.1:123");
 
-        address::EndpointURI repair_endp(allocator);
+        address::EndpointUri repair_endp(allocator);
         parse_uri(repair_endp, "rs8m://[::1]:123");
 
         CHECK(sender.connect(address::Iface_AudioSource, source_endp));
@@ -311,10 +311,10 @@ TEST(sender, squashing) {
         Sender sender(context, sender_config);
         CHECK(sender.valid());
 
-        address::EndpointURI source_endp(allocator);
+        address::EndpointUri source_endp(allocator);
         parse_uri(source_endp, "rtp+rs8m://127.0.0.1:123");
 
-        address::EndpointURI repair_endp(allocator);
+        address::EndpointUri repair_endp(allocator);
         parse_uri(repair_endp, "rs8m://127.0.0.1:123");
 
         CHECK(sender.set_outgoing_address(address::Iface_AudioSource, "127.0.0.1"));
@@ -331,10 +331,10 @@ TEST(sender, squashing) {
         Sender sender(context, sender_config);
         CHECK(sender.valid());
 
-        address::EndpointURI source_endp(allocator);
+        address::EndpointUri source_endp(allocator);
         parse_uri(source_endp, "rtp+rs8m://127.0.0.1:123");
 
-        address::EndpointURI repair_endp(allocator);
+        address::EndpointUri repair_endp(allocator);
         parse_uri(repair_endp, "rs8m://127.0.0.1:123");
 
         CHECK(sender.set_broadcast_enabled(address::Iface_AudioSource, true));

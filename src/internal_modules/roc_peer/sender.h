@@ -49,7 +49,7 @@ public:
     bool set_squashing_enabled(address::Interface iface, bool enabled);
 
     //! Connect peer to remote endpoint.
-    bool connect(address::Interface iface, const address::EndpointURI& uri);
+    bool connect(address::Interface iface, const address::EndpointUri& uri);
 
     //! Check if all necessary bind and connect calls were made.
     bool is_ready();

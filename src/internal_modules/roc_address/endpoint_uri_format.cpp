@@ -13,14 +13,14 @@
 namespace roc {
 namespace address {
 
-bool format_endpoint_uri(const EndpointURI& u,
-                         EndpointURI::Subset subset,
+bool format_endpoint_uri(const EndpointUri& u,
+                         EndpointUri::Subset subset,
                          core::StringBuilder& dst) {
     if (!u.check(subset)) {
         return false;
     }
 
-    if (subset == EndpointURI::Subset_Full) {
+    if (subset == EndpointUri::Subset_Full) {
         dst.append_str(proto_to_str(u.proto()));
         dst.append_str("://");
 
@@ -34,7 +34,7 @@ bool format_endpoint_uri(const EndpointURI& u,
         }
     }
 
-    if (subset == EndpointURI::Subset_Resource) {
+    if (subset == EndpointUri::Subset_Resource) {
         if (!u.path() && !u.encoded_query()) {
             return false;
         }

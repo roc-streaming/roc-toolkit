@@ -127,19 +127,19 @@ int main(int argc, char** argv) {
     backend_dispatcher.set_frame_size(sender_config.internal_frame_length,
                                       sender_config.input_sample_spec);
 
-    address::EndpointURI source_endpoint(context.allocator());
+    address::EndpointUri source_endpoint(context.allocator());
     if (args.source_given) {
         if (!address::parse_endpoint_uri(
-                args.source_arg, address::EndpointURI::Subset_Full, source_endpoint)) {
+                args.source_arg, address::EndpointUri::Subset_Full, source_endpoint)) {
             roc_log(LogError, "can't parse remote source endpoint: %s", args.source_arg);
             return 1;
         }
     }
 
-    address::EndpointURI repair_endpoint(context.allocator());
+    address::EndpointUri repair_endpoint(context.allocator());
     if (args.repair_given) {
         if (!address::parse_endpoint_uri(
-                args.repair_arg, address::EndpointURI::Subset_Full, repair_endpoint)) {
+                args.repair_arg, address::EndpointUri::Subset_Full, repair_endpoint)) {
             roc_log(LogError, "can't parse remote repair endpoint: %s", args.repair_arg);
             return 1;
         }
@@ -229,7 +229,7 @@ int main(int argc, char** argv) {
         }
     }
 
-    address::IoURI input_uri(context.allocator());
+    address::IoUri input_uri(context.allocator());
     if (args.input_given) {
         if (!address::parse_io_uri(args.input_arg, input_uri)) {
             roc_log(LogError, "invalid --input file or device URI");

@@ -13,7 +13,7 @@
 namespace roc {
 namespace address {
 
-EndpointURI::EndpointURI(core::IAllocator& allocator)
+EndpointUri::EndpointUri(core::IAllocator& allocator)
     : invalid_parts_(0)
     , host_(allocator)
     , path_(allocator)
@@ -21,7 +21,7 @@ EndpointURI::EndpointURI(core::IAllocator& allocator)
     clear(Subset_Full);
 }
 
-bool EndpointURI::check(Subset subset) const {
+bool EndpointUri::check(Subset subset) const {
     if (subset == Subset_Resource) {
         if ((invalid_parts_ & (PartPath | PartQuery)) != 0) {
             roc_log(LogError, "invalid endpoint uri: contains invalid parts");
@@ -70,7 +70,7 @@ bool EndpointURI::check(Subset subset) const {
     return true;
 }
 
-void EndpointURI::clear(Subset subset) {
+void EndpointUri::clear(Subset subset) {
     if (subset == Subset_Full) {
         invalid_parts_ |= PartProto;
         proto_ = Proto_None;
@@ -90,33 +90,33 @@ void EndpointURI::clear(Subset subset) {
     query_.clear();
 }
 
-void EndpointURI::invalidate(Subset subset) {
+void EndpointUri::invalidate(Subset subset) {
     if (subset == Subset_Full) {
         invalid_parts_ |= (PartProto | PartHost | PartPort);
     }
     invalid_parts_ |= (PartPath | PartQuery);
 }
 
-bool EndpointURI::part_is_valid_(Part part) const {
+bool EndpointUri::part_is_valid_(Part part) const {
     return (invalid_parts_ & part) == 0;
 }
 
-void EndpointURI::set_valid_(Part part) {
+void EndpointUri::set_valid_(Part part) {
     invalid_parts_ &= ~part;
 }
 
-void EndpointURI::set_invalid_(Part part) {
+void EndpointUri::set_invalid_(Part part) {
     invalid_parts_ |= part;
 }
 
-Protocol EndpointURI::proto() const {
+Protocol EndpointUri::proto() const {
     if (!part_is_valid_(PartProto)) {
         return Proto_None;
     }
     return proto_;
 }
 
-bool EndpointURI::set_proto(Protocol proto) {
+bool EndpointUri::set_proto(Protocol proto) {
     if (ProtocolMap::instance().find_proto(proto) == NULL) {
         set_invalid_(PartProto);
         return false;
@@ -136,7 +136,7 @@ bool EndpointURI::set_proto(Protocol proto) {
     return true;
 }
 
-bool EndpointURI::get_proto(Protocol& proto) const {
+bool EndpointUri::get_proto(Protocol& proto) const {
     if (!part_is_valid_(PartProto)) {
         return false;
     }
@@ -145,14 +145,14 @@ bool EndpointURI::get_proto(Protocol& proto) const {
     return true;
 }
 
-const char* EndpointURI::host() const {
+const char* EndpointUri::host() const {
     if (!part_is_valid_(PartHost)) {
         return "";
     }
     return host_.c_str();
 }
 
-bool EndpointURI::set_host(const char* str) {
+bool EndpointUri::set_host(const char* str) {
     if (!str) {
         set_invalid_(PartHost);
         return false;
@@ -167,7 +167,7 @@ bool EndpointURI::set_host(const char* str) {
     return true;
 }
 
-bool EndpointURI::set_host(const char* str, size_t str_len) {
+bool EndpointUri::set_host(const char* str, size_t str_len) {
     if (!str) {
         set_invalid_(PartHost);
         return false;
@@ -182,7 +182,7 @@ bool EndpointURI::set_host(const char* str, size_t str_len) {
     return true;
 }
 
-bool EndpointURI::format_host(core::StringBuilder& dst) const {
+bool EndpointUri::format_host(core::StringBuilder& dst) const {
     if (!part_is_valid_(PartHost)) {
         return false;
     }
@@ -190,14 +190,14 @@ bool EndpointURI::format_host(core::StringBuilder& dst) const {
     return true;
 }
 
-int EndpointURI::port() const {
+int EndpointUri::port() const {
     if (!part_is_valid_(PartPort)) {
         return -1;
     }
     return port_;
 }
 
-bool EndpointURI::set_port(int port) {
+bool EndpointUri::set_port(int port) {
     if (port == -1) {
         port_ = -1;
 
@@ -227,7 +227,7 @@ bool EndpointURI::set_port(int port) {
     return true;
 }
 
-bool EndpointURI::get_port(int& port) const {
+bool EndpointUri::get_port(int& port) const {
     if (!part_is_valid_(PartPort) || port_ == -1) {
         return false;
     }
@@ -236,14 +236,14 @@ bool EndpointURI::get_port(int& port) const {
     return true;
 }
 
-const char* EndpointURI::service() const {
+const char* EndpointUri::service() const {
     if (service_[0]) {
         return service_;
     }
     return NULL;
 }
 
-void EndpointURI::set_service_from_port_(int port) {
+void EndpointUri::set_service_from_port_(int port) {
     core::StringBuilder b(service_, sizeof(service_));
 
     if (!b.append_uint((uint64_t)port, 10)) {
@@ -251,7 +251,7 @@ void EndpointURI::set_service_from_port_(int port) {
     }
 }
 
-bool EndpointURI::set_service_from_proto_(Protocol proto) {
+bool EndpointUri::set_service_from_proto_(Protocol proto) {
     const ProtocolAttrs* attrs = ProtocolMap::instance().find_proto(proto);
     if (!attrs) {
         return false;
@@ -265,14 +265,14 @@ bool EndpointURI::set_service_from_proto_(Protocol proto) {
     return true;
 }
 
-const char* EndpointURI::path() const {
+const char* EndpointUri::path() const {
     if (!part_is_valid_(PartPath) || path_.is_empty()) {
         return NULL;
     }
     return path_.c_str();
 }
 
-bool EndpointURI::set_encoded_path(const char* str, size_t str_len) {
+bool EndpointUri::set_encoded_path(const char* str, size_t str_len) {
     if (!str || str_len < 1) {
         path_.clear();
         set_valid_(PartPath);
@@ -300,21 +300,21 @@ bool EndpointURI::set_encoded_path(const char* str, size_t str_len) {
     return true;
 }
 
-bool EndpointURI::format_encoded_path(core::StringBuilder& dst) const {
+bool EndpointUri::format_encoded_path(core::StringBuilder& dst) const {
     if (!part_is_valid_(PartPath) || path_.is_empty()) {
         return false;
     }
     return pct_encode(dst, path_.c_str(), path_.len(), PctNonPath);
 }
 
-const char* EndpointURI::encoded_query() const {
+const char* EndpointUri::encoded_query() const {
     if (!part_is_valid_(PartQuery) || query_.is_empty()) {
         return NULL;
     }
     return query_.c_str();
 }
 
-bool EndpointURI::set_encoded_query(const char* str, size_t str_len) {
+bool EndpointUri::set_encoded_query(const char* str, size_t str_len) {
     if (!str || str_len < 1) {
         query_.clear();
         set_valid_(PartQuery);
@@ -330,7 +330,7 @@ bool EndpointURI::set_encoded_query(const char* str, size_t str_len) {
     return true;
 }
 
-bool EndpointURI::format_encoded_query(core::StringBuilder& dst) const {
+bool EndpointUri::format_encoded_query(core::StringBuilder& dst) const {
     if (!part_is_valid_(PartQuery) || query_.is_empty()) {
         return false;
     }

@@ -18,7 +18,7 @@ namespace address {
     write data;
 }%%
 
-bool parse_io_uri(const char* str, IoURI& result) {
+bool parse_io_uri(const char* str, IoUri& result) {
     roc_panic_if(str == NULL);
 
     result.clear();

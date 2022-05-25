@@ -45,10 +45,10 @@ public:
 
     //! Create and open a sink.
     ISink*
-    open_sink(const address::IoURI& uri, const char* force_format, const Config& config);
+    open_sink(const address::IoUri& uri, const char* force_format, const Config& config);
 
     //! Create and open a source.
-    ISource* open_source(const address::IoURI& uri,
+    ISource* open_source(const address::IoUri& uri,
                          const char* force_format,
                          const Config& config);
 

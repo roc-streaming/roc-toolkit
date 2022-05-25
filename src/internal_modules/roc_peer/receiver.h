@@ -42,7 +42,7 @@ public:
     bool set_multicast_group(address::Interface iface, const char* ip);
 
     //! Bind peer to local endpoint.
-    bool bind(address::Interface iface, address::EndpointURI& uri);
+    bool bind(address::Interface iface, address::EndpointUri& uri);
 
     //! Get receiver source.
     sndio::ISource& source();
