@@ -32,3 +32,6 @@ __pycache__
 
 # ack
 .ackrc
+
+# clion
+.idea

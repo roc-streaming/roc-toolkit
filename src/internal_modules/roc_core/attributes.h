@@ -17,6 +17,9 @@
 //! Explicitly specify a default visibility for a specific symbol.
 #define ROC_ATTR_EXPORT HEDLEY_PUBLIC
 
+//! Declares that the return operator is not reachable.
+#define ROC_ATTR_UNREACHABLE_RETURN HEDLEY_UNREACHABLE_RETURN
+
 //! Function never returns.
 #define ROC_ATTR_NORETURN HEDLEY_NO_RETURN
 

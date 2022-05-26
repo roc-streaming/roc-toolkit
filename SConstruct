@@ -630,6 +630,7 @@ env['ROC_MODULES'] = [
     'roc_packet',
     'roc_audio',
     'roc_rtp',
+    'roc_rtcp',
     'roc_fec',
     'roc_netio',
     'roc_sndio',

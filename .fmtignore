@@ -20,3 +20,4 @@ src/tests/roc_rtp/test_packet_formats.cpp
 src/tests/roc_rtp/test_packets/*.h
 src/tests/roc_sndio/target_sox/test_player_recorder.cpp
 src/tests/roc_sndio/target_sox/test_writer_reader.cpp
+src/tests/roc_rtcp/test_rtcp.cpp

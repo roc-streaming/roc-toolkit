@@ -79,7 +79,7 @@ public:
                       (unsigned long)to);
         }
         if (to > buffer.size()) {
-            roc_panic("slice: out of bounds: available=[%lu,%lu), requested=[%lu,%lu)",
+            roc_panic("slice: out of bounds: available=[%lu,%lu) requested=[%lu,%lu)",
                       (unsigned long)0, (unsigned long)buffer.size(), (unsigned long)from,
                       (unsigned long)to);
         }
@@ -94,6 +94,14 @@ public:
             roc_panic("slice: null slice");
         }
         return data_;
+    }
+
+    //! Pointer to the next after the last element in slice.
+    T* data_end() const {
+        if (data_ == NULL) {
+            roc_panic("slice: null slice");
+        }
+        return data_ + size_;
     }
 
     //! Get number of elements in slice.
@@ -121,7 +129,7 @@ public:
                       (unsigned long)to);
         }
         if (to > cap) {
-            roc_panic("slice: out of bounds: available=[%lu,%lu), requested=[%lu,%lu)",
+            roc_panic("slice: out of bounds: available=[%lu,%lu) requested=[%lu,%lu)",
                       (unsigned long)0, (unsigned long)cap, (unsigned long)from,
                       (unsigned long)to);
         }
@@ -129,6 +137,21 @@ public:
             data_ = data_ + from;
             size_ = to - from;
         }
+    }
+
+    //! Increase size() by @p add_sz.
+    //! @returns
+    //!  Pointer to the first element of extended range.
+    T* extend(const size_t add_sz) {
+        if (data_ == NULL) {
+            roc_panic("slice: null slice");
+        }
+        if (add_sz == 0) {
+            roc_panic("slice: extend with zero size");
+        }
+        T* ret = data_ + size_;
+        reslice(0, size() + add_sz);
+        return ret;
     }
 
     //! Construct a slice pointing to a part of this slice.
@@ -141,7 +164,7 @@ public:
                       (unsigned long)to);
         }
         if (to > size_) {
-            roc_panic("slice: out of bounds: available=[%lu,%lu), requested=[%lu,%lu)",
+            roc_panic("slice: out of bounds: available=[%lu,%lu) requested=[%lu,%lu)",
                       (unsigned long)0, (unsigned long)size_, (unsigned long)from,
                       (unsigned long)to);
         }
@@ -159,6 +182,18 @@ public:
         } else {
             core::print_buffer_slice(data_, size_, NULL, 0);
         }
+    }
+
+    //! Access to an element of the Slice with an array style.
+    T& operator[](const size_t i) const {
+        if (data_ == NULL) {
+            roc_panic("slice: null slice");
+        }
+        if (i > size_) {
+            roc_panic("slice: out of bounds: available=[%lu,%lu) requested=%lu",
+                      (unsigned long)0, (unsigned long)size_, (unsigned long)i);
+        }
+        return data_[i];
     }
 
     //! Convert to bool.

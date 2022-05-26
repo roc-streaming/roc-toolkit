@@ -36,6 +36,14 @@
 //!  preferred way to panic.
 #define roc_panic_if_not(x) roc_panic_if(!(x))
 
+//! Panic if condition is true, printing custom message.
+#define roc_panic_if_msg(x, ...)                                                         \
+    do {                                                                                 \
+        if ((x)) {                                                                       \
+            roc_panic(__VA_ARGS__);                                                      \
+        }                                                                                \
+    } while (0)
+
 //! Print error message and terminate program gracefully.
 //! @remarks
 //!  Never returns and never throws.
