@@ -41,7 +41,7 @@ int main(int argc, char** argv) {
 
     core::Logger::instance().set_verbosity(args.verbose_given);
 
-    switch ((unsigned)args.color_arg) {
+    switch (args.color_arg) {
     case color_arg_auto:
         core::Logger::instance().set_colors(
             core::colors_available() ? core::ColorsEnabled : core::ColorsDisabled);
@@ -139,7 +139,7 @@ int main(int argc, char** argv) {
             converter_config.input_sample_spec.sample_rate());
     }
 
-    switch ((unsigned)args.resampler_backend_arg) {
+    switch (args.resampler_backend_arg) {
     case resampler_backend_arg_default:
         converter_config.resampler_backend = audio::ResamplerBackend_Default;
         break;
@@ -153,7 +153,7 @@ int main(int argc, char** argv) {
         break;
     }
 
-    switch ((unsigned)args.resampler_profile_arg) {
+    switch (args.resampler_profile_arg) {
     case resampler_profile_arg_low:
         converter_config.resampler_profile = audio::ResamplerProfile_Low;
         break;

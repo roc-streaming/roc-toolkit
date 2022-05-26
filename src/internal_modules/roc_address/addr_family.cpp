@@ -12,7 +12,7 @@ namespace roc {
 namespace address {
 
 const char* addr_family_to_str(AddrFamily family) {
-    switch ((int)family) {
+    switch (family) {
     case Family_IPv4:
         return "IPv4";
 

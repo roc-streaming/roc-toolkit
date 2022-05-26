@@ -21,7 +21,7 @@ SenderEndpoint::SenderEndpoint(address::Protocol proto, core::IAllocator& alloca
     , composer_(NULL) {
     packet::IComposer* composer = NULL;
 
-    switch ((int)proto) {
+    switch (proto) {
     case address::Proto_RTP:
     case address::Proto_RTP_LDPC_Source:
     case address::Proto_RTP_RS8M_Source:
@@ -31,9 +31,11 @@ SenderEndpoint::SenderEndpoint(address::Protocol proto, core::IAllocator& alloca
         }
         composer = rtp_composer_.get();
         break;
+    default:
+        break;
     }
 
-    switch ((int)proto) {
+    switch (proto) {
     case address::Proto_RTP_LDPC_Source:
         fec_composer_.reset(
             new (allocator)
@@ -75,6 +77,8 @@ SenderEndpoint::SenderEndpoint(address::Protocol proto, core::IAllocator& alloca
             return;
         }
         composer = fec_composer_.get();
+        break;
+    default:
         break;
     }
 

@@ -76,7 +76,7 @@ TEST_GROUP(writer_reader) {
     }
 
     packet::IParser& source_parser() {
-        switch ((size_t)codec_config.scheme) {
+        switch (codec_config.scheme) {
         case packet::FEC_ReedSolomon_M8:
             return rs8m_source_parser;
         case packet::FEC_LDPC_Staircase:
@@ -87,7 +87,7 @@ TEST_GROUP(writer_reader) {
     }
 
     packet::IParser& repair_parser() {
-        switch ((size_t)codec_config.scheme) {
+        switch (codec_config.scheme) {
         case packet::FEC_ReedSolomon_M8:
             return rs8m_repair_parser;
         case packet::FEC_LDPC_Staircase:
@@ -98,7 +98,7 @@ TEST_GROUP(writer_reader) {
     }
 
     packet::IComposer& source_composer() {
-        switch ((size_t)codec_config.scheme) {
+        switch (codec_config.scheme) {
         case packet::FEC_ReedSolomon_M8:
             return rs8m_source_composer;
         case packet::FEC_LDPC_Staircase:
@@ -109,7 +109,7 @@ TEST_GROUP(writer_reader) {
     }
 
     packet::IComposer& repair_composer() {
-        switch ((size_t)codec_config.scheme) {
+        switch (codec_config.scheme) {
         case packet::FEC_ReedSolomon_M8:
             return rs8m_repair_composer;
         case packet::FEC_LDPC_Staircase:

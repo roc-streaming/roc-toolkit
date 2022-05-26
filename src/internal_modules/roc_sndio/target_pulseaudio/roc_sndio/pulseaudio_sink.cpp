@@ -287,7 +287,7 @@ void PulseaudioSink::context_state_cb_(pa_context* context, void* userdata) {
 
     const pa_context_state_t state = pa_context_get_state(context);
 
-    switch ((unsigned)state) {
+    switch (state) {
     case PA_CONTEXT_READY:
         roc_log(LogTrace, "pulseaudio sink: successfully opened context");
 
@@ -517,7 +517,7 @@ void PulseaudioSink::stream_state_cb_(pa_stream* stream, void* userdata) {
 
     const pa_stream_state_t state = pa_stream_get_state(stream);
 
-    switch ((unsigned)state) {
+    switch (state) {
     case PA_STREAM_READY:
         roc_log(LogTrace, "pulseaudio sink: successfully opened stream");
 

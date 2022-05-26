@@ -71,7 +71,7 @@ bool sender_config_from_user(pipeline::SenderConfig& out, const roc_sender_confi
 
     out.resampling = (in.resampler_profile != ROC_RESAMPLER_PROFILE_DISABLE);
 
-    switch ((int)in.resampler_backend) {
+    switch (in.resampler_backend) {
     case ROC_RESAMPLER_BACKEND_DEFAULT:
         out.resampler_backend = audio::ResamplerBackend_Default;
         break;
@@ -86,7 +86,7 @@ bool sender_config_from_user(pipeline::SenderConfig& out, const roc_sender_confi
         return false;
     }
 
-    switch ((int)in.resampler_profile) {
+    switch (in.resampler_profile) {
     case ROC_RESAMPLER_PROFILE_DISABLE:
         break;
     case ROC_RESAMPLER_PROFILE_LOW:
@@ -104,7 +104,7 @@ bool sender_config_from_user(pipeline::SenderConfig& out, const roc_sender_confi
         return false;
     }
 
-    switch ((int)in.fec_code) {
+    switch (in.fec_code) {
     case ROC_FEC_DISABLE:
         out.fec_encoder.scheme = packet::FEC_None;
         break;
@@ -150,7 +150,7 @@ bool receiver_config_from_user(pipeline::ReceiverConfig& out,
     out.common.timing = (in.clock_source == ROC_CLOCK_INTERNAL);
     out.common.resampling = (in.resampler_profile != ROC_RESAMPLER_PROFILE_DISABLE);
 
-    switch ((int)in.resampler_backend) {
+    switch (in.resampler_backend) {
     case ROC_RESAMPLER_BACKEND_DEFAULT:
         out.default_session.resampler_backend = audio::ResamplerBackend_Default;
         break;
@@ -165,7 +165,7 @@ bool receiver_config_from_user(pipeline::ReceiverConfig& out,
         return false;
     }
 
-    switch ((int)in.resampler_profile) {
+    switch (in.resampler_profile) {
     case ROC_RESAMPLER_PROFILE_DISABLE:
         break;
     case ROC_RESAMPLER_PROFILE_LOW:
@@ -239,7 +239,7 @@ bool receiver_config_from_user(pipeline::ReceiverConfig& out,
 
 ROC_ATTR_NO_SANITIZE_UB
 bool interface_from_user(address::Interface& out, const roc_interface& in) {
-    switch ((int)in) {
+    switch (in) {
     case ROC_INTERFACE_AUDIO_SOURCE:
         out = address::Iface_AudioSource;
         return true;
@@ -258,7 +258,7 @@ bool interface_from_user(address::Interface& out, const roc_interface& in) {
 
 ROC_ATTR_NO_SANITIZE_UB
 bool proto_from_user(address::Protocol& out, const roc_protocol& in) {
-    switch ((int)in) {
+    switch (in) {
     case ROC_PROTO_RTSP:
         out = address::Proto_RTSP;
         return true;
@@ -292,7 +292,7 @@ bool proto_from_user(address::Protocol& out, const roc_protocol& in) {
 }
 
 bool proto_to_user(roc_protocol& out, address::Protocol in) {
-    switch ((int)in) {
+    switch (in) {
     case address::Proto_RTSP:
         out = ROC_PROTO_RTSP;
         return true;

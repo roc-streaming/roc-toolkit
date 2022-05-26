@@ -27,7 +27,7 @@ namespace netio {
 namespace {
 
 int to_domain(address::AddrFamily family) {
-    switch ((int)family) {
+    switch (family) {
     case address::Family_IPv4:
         return AF_INET;
 
@@ -42,7 +42,7 @@ int to_domain(address::AddrFamily family) {
 }
 
 int to_type(SocketType type) {
-    switch ((int)type) {
+    switch (type) {
     case SocketType_Tcp:
         return SOCK_STREAM;
 

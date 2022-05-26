@@ -47,7 +47,7 @@ int main(int argc, char** argv) {
 
     core::Logger::instance().set_verbosity(args.verbose_given);
 
-    switch ((unsigned)args.color_arg) {
+    switch (args.color_arg) {
     case color_arg_auto:
         core::Logger::instance().set_colors(
             core::colors_available() ? core::ColorsEnabled : core::ColorsDisabled);
@@ -184,7 +184,7 @@ int main(int argc, char** argv) {
 
     receiver_config.common.resampling = !args.no_resampling_flag;
 
-    switch ((unsigned)args.resampler_backend_arg) {
+    switch (args.resampler_backend_arg) {
     case resampler_backend_arg_default:
         receiver_config.default_session.resampler_backend =
             audio::ResamplerBackend_Default;
@@ -200,7 +200,7 @@ int main(int argc, char** argv) {
         break;
     }
 
-    switch ((unsigned)args.resampler_profile_arg) {
+    switch (args.resampler_profile_arg) {
     case resampler_profile_arg_low:
         receiver_config.default_session.resampler_profile = audio::ResamplerProfile_Low;
         break;

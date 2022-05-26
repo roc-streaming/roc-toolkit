@@ -45,7 +45,7 @@ packet::IWriter* ReceiverEndpointSet::create_endpoint(address::Interface iface,
     roc_log(LogDebug, "receiver endpoint set: adding %s endpoint %s",
             address::interface_to_str(iface), address::proto_to_str(proto));
 
-    switch ((int)iface) {
+    switch (iface) {
     case address::Iface_AudioSource:
         return create_source_endpoint_(proto);
 
@@ -64,7 +64,7 @@ void ReceiverEndpointSet::delete_endpoint(address::Interface iface) {
     roc_log(LogDebug, "receiver endpoint set: removing %s endpoint",
             address::interface_to_str(iface));
 
-    switch ((int)iface) {
+    switch (iface) {
     case address::Iface_AudioSource:
         source_endpoint_.reset(NULL);
         return;

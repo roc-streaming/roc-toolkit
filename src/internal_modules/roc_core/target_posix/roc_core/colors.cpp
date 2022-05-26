@@ -34,7 +34,7 @@ namespace core {
 namespace {
 
 const char* color_code(Color color) {
-    switch ((int)color) {
+    switch (color) {
     case Color_White:
         return COLOR_START COLOR_BOLD COLOR_SEPARATOR COLOR_WHITE COLOR_END;
     case Color_Gray:

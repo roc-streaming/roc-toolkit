@@ -42,7 +42,7 @@ SenderEndpoint* SenderEndpointSet::create_endpoint(address::Interface iface,
 
     SenderEndpoint* endpoint = NULL;
 
-    switch ((int)iface) {
+    switch (iface) {
     case address::Iface_AudioSource:
         if (!(endpoint = create_source_endpoint_(proto))) {
             return NULL;

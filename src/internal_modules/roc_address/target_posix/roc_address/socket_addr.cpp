@@ -42,7 +42,7 @@ bool SocketAddr::set_host_port_auto(const char* host, int port) {
 }
 
 bool SocketAddr::set_host_port(AddrFamily type, const char* ip_str, int port) {
-    switch ((unsigned)type) {
+    switch (type) {
     case Family_IPv4:
         return set_host_port_ipv4_(ip_str, port);
     case Family_IPv6:

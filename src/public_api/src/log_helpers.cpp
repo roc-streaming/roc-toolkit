@@ -12,7 +12,7 @@ namespace roc {
 namespace api {
 
 LogLevel convert_log_level(roc_log_level level) {
-    switch ((unsigned)level) {
+    switch (level) {
     case ROC_LOG_NONE:
         return LogNone;
 

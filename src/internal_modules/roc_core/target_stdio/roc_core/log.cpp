@@ -164,7 +164,7 @@ void Logger::default_print_(LogLevel level_num,
     if (colors_ == ColorsEnabled) {
         Color color = Color_None;
 
-        switch ((int)level_num) {
+        switch (level_num) {
         case LogError:
             color = Color_Red;
             break;

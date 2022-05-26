@@ -704,7 +704,7 @@ void TcpConnectionPort::report_state_(ConnectionState state) {
 
     roc_panic_if_not(conn_handler_->is_used());
 
-    switch ((int)state) {
+    switch (state) {
     case State_Refused:
         roc_log(LogTrace, "tcp conn: %s: invoking connection_refused() callback",
                 descriptor());
@@ -770,7 +770,7 @@ void TcpConnectionPort::check_usable_(ConnectionState conn_state) const {
 }
 
 void TcpConnectionPort::check_usable_for_io_(ConnectionState conn_state) const {
-    switch ((int)conn_state) {
+    switch (conn_state) {
     case State_Refused:
     case State_Established:
     case State_Broken:

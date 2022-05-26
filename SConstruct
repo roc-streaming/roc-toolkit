@@ -855,19 +855,25 @@ if meta.compiler == 'gcc':
         env.Append(**{var: [
             '-Wall',
             '-Wextra',
+        ]})
+        env.Append(**{var: [
             '-Wcast-qual',
             '-Wfloat-equal',
-            '-Wpointer-arith',
-            '-Wformat=2',
             '-Wformat-security',
-            '-Wno-system-headers',
+            '-Wformat=2',
+            '-Wpointer-arith',
+        ]})
+        env.Append(**{var: [
             '-Wno-psabi',
+            '-Wno-system-headers',
         ]})
 
     env.Append(CXXFLAGS=[
         '-Wctor-dtor-privacy',
         '-Wnon-virtual-dtor',
         '-Wstrict-null-sentinel',
+    ])
+    env.Append(CXXFLAGS=[
         '-Wno-invalid-offsetof',
     ])
 
@@ -890,29 +896,31 @@ if meta.compiler == 'gcc':
     if meta.compiler_ver[:2] >= (8, 0):
         for var in ['CXXFLAGS', 'CFLAGS']:
             env.Append(**{var: [
-                '-Wno-parentheses',
                 '-Wno-cast-function-type',
+                '-Wno-parentheses',
             ]})
 
 if meta.compiler == 'clang':
     for var in ['CXXFLAGS', 'CFLAGS']:
         env.Append(**{var: [
             '-Weverything',
-            '-Wno-system-headers',
-            '-Wno-old-style-cast',
-            '-Wno-padded',
-            '-Wno-packed',
-            '-Wno-cast-align',
-            '-Wno-global-constructors',
-            '-Wno-exit-time-destructors',
-            '-Wno-invalid-offsetof',
-            '-Wno-shift-sign-overflow',
-            '-Wno-used-but-marked-unused',
-            '-Wno-unused-macros',
-            '-Wno-format-nonliteral',
-            '-Wno-variadic-macros',
-            '-Wno-disabled-macro-expansion',
             '-Wno-c++11-long-long',
+            '-Wno-cast-align',
+            '-Wno-covered-switch-default',
+            '-Wno-disabled-macro-expansion',
+            '-Wno-exit-time-destructors',
+            '-Wno-format-nonliteral',
+            '-Wno-global-constructors',
+            '-Wno-invalid-offsetof',
+            '-Wno-old-style-cast',
+            '-Wno-packed',
+            '-Wno-padded',
+            '-Wno-shift-sign-overflow',
+            '-Wno-switch-enum',
+            '-Wno-system-headers',
+            '-Wno-unused-macros',
+            '-Wno-used-but-marked-unused',
+            '-Wno-variadic-macros',
         ]})
 
     env.Append(CFLAGS=[
@@ -947,14 +955,14 @@ if meta.compiler == 'clang':
             for var in ['CXXFLAGS', 'CFLAGS']:
                 env.Append(**{var: [
                     '-Wno-anon-enum-enum-conversion',
-                    '-Wno-implicit-int-float-conversion',
                     '-Wno-enum-float-conversion',
+                    '-Wno-implicit-int-float-conversion',
                 ]})
         if meta.compiler_ver[:2] >= (11, 0):
             for var in ['CXXFLAGS', 'CFLAGS']:
                 env.Append(**{var: [
-                    '-Wno-suggest-override',
                     '-Wno-suggest-destructor-override',
+                    '-Wno-suggest-override',
                 ]})
 
     if meta.platform == 'darwin':
@@ -971,8 +979,8 @@ if meta.compiler == 'clang':
         if meta.compiler_ver[:2] >= (12, 0):
             for var in ['CXXFLAGS', 'CFLAGS']:
                 env.Append(**{var: [
-                    '-Wno-poison-system-directories',
                     '-Wno-anon-enum-enum-conversion',
+                    '-Wno-poison-system-directories',
                 ]})
         if meta.compiler_ver[:3] >= (12, 0, 5):
             for var in ['CXXFLAGS', 'CFLAGS']:
@@ -983,15 +991,15 @@ if meta.compiler == 'clang':
 
     if meta.platform == 'android':
         env.Append(CXXFLAGS=[
-            '-Wno-unknown-warning-option',
             '-Wno-c++98-compat-pedantic',
             '-Wno-deprecated-dynamic-exception-spec',
+            '-Wno-unknown-warning-option',
         ])
 
 if meta.compiler == 'clang':
     subenvs.tests.AppendUnique(CXXFLAGS=[
-        '-Wno-weak-vtables',
         '-Wno-unused-member-function',
+        '-Wno-weak-vtables',
     ])
 
     if meta.platform in ['linux', 'android']:

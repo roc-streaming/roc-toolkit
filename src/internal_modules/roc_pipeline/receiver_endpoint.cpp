@@ -28,7 +28,7 @@ ReceiverEndpoint::ReceiverEndpoint(address::Protocol proto,
     , parser_(NULL) {
     packet::IParser* parser = NULL;
 
-    switch ((int)proto) {
+    switch (proto) {
     case address::Proto_RTP:
     case address::Proto_RTP_LDPC_Source:
     case address::Proto_RTP_RS8M_Source:
@@ -38,9 +38,11 @@ ReceiverEndpoint::ReceiverEndpoint(address::Protocol proto,
         }
         parser = rtp_parser_.get();
         break;
+    default:
+        break;
     }
 
-    switch ((int)proto) {
+    switch (proto) {
     case address::Proto_RTP_LDPC_Source:
         fec_parser_.reset(
             new (allocator)
@@ -80,6 +82,8 @@ ReceiverEndpoint::ReceiverEndpoint(address::Protocol proto,
             return;
         }
         parser = fec_parser_.get();
+        break;
+    default:
         break;
     }
 
