@@ -80,7 +80,18 @@ typedef enum roc_interface {
      *  - \ref ROC_PROTO_RS8M_REPAIR
      *  - \ref ROC_PROTO_LDPC_REPAIR
      */
-    ROC_INTERFACE_AUDIO_REPAIR = 12
+    ROC_INTERFACE_AUDIO_REPAIR = 12,
+
+    /** Interface for audio control messages.
+     *
+     * Allowed operations:
+     *  - bind    (sender, receiver)
+     *  - connect (sender, receiver)
+     *
+     * Allowed protocols:
+     *  - \ref ROC_PROTO_RTCP
+     */
+    ROC_INTERFACE_AUDIO_CONTROL = 13
 } roc_interface;
 
 /** Network protocol.
@@ -113,7 +124,7 @@ typedef enum roc_protocol {
      * FEC codes:
      *   - none
      */
-    ROC_PROTO_RTP = 30,
+    ROC_PROTO_RTP = 20,
 
     /** RTP source packet (RFC 3550) + FECFRAME Reed-Solomon footer (RFC 6865) with m=8.
      *
@@ -129,7 +140,7 @@ typedef enum roc_protocol {
      * FEC codes:
      *  - \ref ROC_FEC_RS8M
      */
-    ROC_PROTO_RTP_RS8M_SOURCE = 81,
+    ROC_PROTO_RTP_RS8M_SOURCE = 30,
 
     /** FEC repair packet + FECFRAME Reed-Solomon header (RFC 6865) with m=8.
      *
@@ -142,7 +153,7 @@ typedef enum roc_protocol {
      * FEC codes:
      *  - \ref ROC_FEC_RS8M
      */
-    ROC_PROTO_RS8M_REPAIR = 82,
+    ROC_PROTO_RS8M_REPAIR = 31,
 
     /** RTP source packet (RFC 3550) + FECFRAME LDPC-Staircase footer (RFC 6816).
      *
@@ -158,7 +169,7 @@ typedef enum roc_protocol {
      * FEC codes:
      *  - \ref ROC_FEC_LDPC_STAIRCASE
      */
-    ROC_PROTO_RTP_LDPC_SOURCE = 83,
+    ROC_PROTO_RTP_LDPC_SOURCE = 32,
 
     /** FEC repair packet + FECFRAME LDPC-Staircase header (RFC 6816).
      *
@@ -171,7 +182,17 @@ typedef enum roc_protocol {
      * FEC codes:
      *  - \ref ROC_FEC_LDPC_STAIRCASE
      */
-    ROC_PROTO_LDPC_REPAIR = 84
+    ROC_PROTO_LDPC_REPAIR = 33,
+
+    /** RTCP over UDP (RFC 3550).
+     *
+     * Interfaces:
+     *  - \ref ROC_INTERFACE_AUDIO_CONTROL
+     *
+     * Transports:
+     *  - UDP
+     */
+    ROC_PROTO_RTCP = 70
 } roc_protocol;
 
 /** Forward Error Correction code. */

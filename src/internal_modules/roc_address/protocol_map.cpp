@@ -73,6 +73,16 @@ ProtocolMap::ProtocolMap() {
         attrs.fec_scheme = packet::FEC_LDPC_Staircase;
         add_proto_(attrs);
     }
+    {
+        ProtocolAttrs attrs;
+        attrs.protocol = Proto_RTCP;
+        attrs.iface = Iface_AudioControl;
+        attrs.scheme_name = "rtcp";
+        attrs.path_supported = false;
+        attrs.default_port = -1;
+        attrs.fec_scheme = packet::FEC_None;
+        add_proto_(attrs);
+    }
 }
 
 const ProtocolAttrs* ProtocolMap::find_proto_by_id(Protocol proto) const {

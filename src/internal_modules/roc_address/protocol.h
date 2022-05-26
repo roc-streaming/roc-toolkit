@@ -12,8 +12,6 @@
 #ifndef ROC_ADDRESS_PROTOCOL_H_
 #define ROC_ADDRESS_PROTOCOL_H_
 
-#include "roc_packet/fec.h"
-
 namespace roc {
 namespace address {
 
@@ -38,7 +36,10 @@ enum Protocol {
     Proto_RTP_LDPC_Source,
 
     //! FEC repair packet + FECFRAME LDPC header.
-    Proto_LDPC_Repair
+    Proto_LDPC_Repair,
+
+    //! RTCP.
+    Proto_RTCP
 };
 
 //! Get string name of the protocol.

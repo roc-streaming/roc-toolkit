@@ -248,6 +248,10 @@ bool interface_from_user(address::Interface& out, const roc_interface& in) {
         out = address::Iface_AudioRepair;
         return true;
 
+    case ROC_INTERFACE_AUDIO_CONTROL:
+        out = address::Iface_AudioControl;
+        return true;
+
     default:
         break;
     }
@@ -283,6 +287,10 @@ bool proto_from_user(address::Protocol& out, const roc_protocol& in) {
         out = address::Proto_LDPC_Repair;
         return true;
 
+    case ROC_PROTO_RTCP:
+        out = address::Proto_RTCP;
+        return true;
+
     default:
         break;
     }
@@ -315,6 +323,10 @@ bool proto_to_user(roc_protocol& out, address::Protocol in) {
 
     case address::Proto_LDPC_Repair:
         out = ROC_PROTO_LDPC_REPAIR;
+        return true;
+
+    case address::Proto_RTCP:
+        out = ROC_PROTO_RTCP;
         return true;
 
     default:
