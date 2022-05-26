@@ -39,7 +39,7 @@ public:
     //! Get backend ID by number.
     ResamplerBackend nth_backend(size_t n) const;
 
-    //! Method to instantiate and return a pointer to a IResampler object
+    //! Method to instantiate and return a pointer to a IResampler object.
     IResampler* new_resampler(ResamplerBackend resampler_backend,
                               core::IAllocator& allocator,
                               core::BufferFactory<sample_t>& buffer_factory,

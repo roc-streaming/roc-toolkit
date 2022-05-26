@@ -9,6 +9,7 @@
 #include <benchmark/benchmark.h>
 
 #include "roc_core/fast_random.h"
+#include "roc_core/heap_allocator.h"
 #include "roc_ctl/control_loop.h"
 #include "roc_pipeline/task_pipeline.h"
 
@@ -33,6 +34,8 @@ enum {
     NumIterations = 1000000,
     BatchSize = 10000
 };
+
+core::HeapAllocator allocator;
 
 class NoopPipeline : public TaskPipeline, private ITaskScheduler {
 public:
@@ -100,7 +103,8 @@ struct BM_PipelineContention : benchmark::Fixture {
     NoopHandler handler;
 
     BM_PipelineContention()
-        : pipeline(config, ctl_loop) {
+        : ctl_loop(allocator)
+        , pipeline(config, ctl_loop) {
     }
 };
 

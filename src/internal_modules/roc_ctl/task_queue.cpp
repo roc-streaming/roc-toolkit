@@ -425,7 +425,7 @@ void TaskQueue::wait_task_(Task& task) {
     // When the task is in StateFinishing, finish_task_() reads the semaphore from
     // task.sem_. Ensure that we're either before or after this block to avoid race.
     // There are only a few instructions between StateFinishing and StateFinished,
-    // so this spin loop should very short and rare.
+    // so this spin loop should be very short and rare.
     while (task.state_ == StateFinishing) {
         core::cpu_relax();
     }

@@ -11,6 +11,7 @@
 
 #include <CppUTest/TestHarness.h>
 
+#include "roc_core/heap_allocator.h"
 #include "roc_core/mutex.h"
 #include "roc_ctl/control_loop.h"
 #include "roc_pipeline/itask_scheduler.h"
@@ -19,10 +20,17 @@ namespace roc {
 namespace pipeline {
 namespace test {
 
+namespace {
+
+core::HeapAllocator allocator;
+
+} // namespace
+
 class Scheduler : public pipeline::ITaskScheduler {
 public:
     Scheduler()
-        : task_(NULL) {
+        : loop_(allocator)
+        , task_(NULL) {
         CHECK(loop_.valid());
     }
 
