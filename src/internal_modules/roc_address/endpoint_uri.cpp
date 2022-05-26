@@ -41,7 +41,7 @@ bool EndpointUri::check(Subset subset) const {
         return false;
     }
 
-    const ProtocolAttrs* proto_attrs = ProtocolMap::instance().find_proto(proto_);
+    const ProtocolAttrs* proto_attrs = ProtocolMap::instance().find_proto_by_id(proto_);
     if (!proto_attrs) {
         roc_log(LogError, "invalid endpoint uri: unknown protocol");
         return false;
@@ -117,7 +117,7 @@ Protocol EndpointUri::proto() const {
 }
 
 bool EndpointUri::set_proto(Protocol proto) {
-    if (ProtocolMap::instance().find_proto(proto) == NULL) {
+    if (ProtocolMap::instance().find_proto_by_id(proto) == NULL) {
         set_invalid_(PartProto);
         return false;
     }
@@ -142,6 +142,20 @@ bool EndpointUri::get_proto(Protocol& proto) const {
     }
 
     proto = proto_;
+    return true;
+}
+
+bool EndpointUri::format_proto(core::StringBuilder& dst) const {
+    if (!part_is_valid_(PartProto)) {
+        return false;
+    }
+
+    const ProtocolAttrs* attrs = ProtocolMap::instance().find_proto_by_id(proto_);
+    if (!attrs) {
+        return false;
+    }
+
+    dst.append_str(attrs->scheme_name);
     return true;
 }
 
@@ -252,7 +266,7 @@ void EndpointUri::set_service_from_port_(int port) {
 }
 
 bool EndpointUri::set_service_from_proto_(Protocol proto) {
-    const ProtocolAttrs* attrs = ProtocolMap::instance().find_proto(proto);
+    const ProtocolAttrs* attrs = ProtocolMap::instance().find_proto_by_id(proto);
     if (!attrs) {
         return false;
     }

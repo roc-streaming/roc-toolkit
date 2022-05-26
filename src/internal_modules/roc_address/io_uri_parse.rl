@@ -18,8 +18,13 @@ namespace address {
     write data;
 }%%
 
-bool parse_io_uri(const char* str, IoUri& result) {
-    roc_panic_if(str == NULL);
+namespace {
+
+bool parse_io_uri_imp(const char* str, IoUri& result) {
+    if (!str) {
+        roc_log(LogError, "parse io uri: input string is null");
+        return false;
+    }
 
     result.clear();
 
@@ -103,10 +108,19 @@ bool parse_io_uri(const char* str, IoUri& result) {
                 " 'file:-',\n"
                 " got '%s'",
                 str);
-        result.clear();
         return false;
     }
 
+    return true;
+}
+
+} // namespace
+
+bool parse_io_uri(const char* str, IoUri& result) {
+    if (!parse_io_uri_imp(str, result)) {
+        result.clear();
+        return false;
+    }
     return true;
 }
 

@@ -15,61 +15,67 @@ namespace address {
 ProtocolMap::ProtocolMap() {
     {
         ProtocolAttrs attrs;
+        attrs.protocol = Proto_RTSP;
+        attrs.iface = Iface_Signaling;
+        attrs.scheme_name = "rtsp";
+        attrs.path_supported = true;
+        attrs.default_port = 554;
+        attrs.fec_scheme = packet::FEC_None;
+        add_proto_(attrs);
+    }
+    {
+        ProtocolAttrs attrs;
         attrs.protocol = Proto_RTP;
         attrs.iface = Iface_AudioSource;
-        attrs.fec_scheme = packet::FEC_None;
-        attrs.default_port = -1;
+        attrs.scheme_name = "rtp";
         attrs.path_supported = false;
+        attrs.default_port = -1;
+        attrs.fec_scheme = packet::FEC_None;
         add_proto_(attrs);
     }
     {
         ProtocolAttrs attrs;
         attrs.protocol = Proto_RTP_RS8M_Source;
         attrs.iface = Iface_AudioSource;
-        attrs.fec_scheme = packet::FEC_ReedSolomon_M8;
-        attrs.default_port = -1;
+        attrs.scheme_name = "rtp+rs8m";
         attrs.path_supported = false;
+        attrs.default_port = -1;
+        attrs.fec_scheme = packet::FEC_ReedSolomon_M8;
         add_proto_(attrs);
     }
     {
         ProtocolAttrs attrs;
         attrs.protocol = Proto_RS8M_Repair;
         attrs.iface = Iface_AudioRepair;
-        attrs.fec_scheme = packet::FEC_ReedSolomon_M8;
-        attrs.default_port = -1;
+        attrs.scheme_name = "rs8m";
         attrs.path_supported = false;
+        attrs.default_port = -1;
+        attrs.fec_scheme = packet::FEC_ReedSolomon_M8;
         add_proto_(attrs);
     }
     {
         ProtocolAttrs attrs;
         attrs.protocol = Proto_RTP_LDPC_Source;
         attrs.iface = Iface_AudioSource;
-        attrs.fec_scheme = packet::FEC_LDPC_Staircase;
-        attrs.default_port = -1;
+        attrs.scheme_name = "rtp+ldpc";
         attrs.path_supported = false;
+        attrs.default_port = -1;
+        attrs.fec_scheme = packet::FEC_LDPC_Staircase;
         add_proto_(attrs);
     }
     {
         ProtocolAttrs attrs;
         attrs.protocol = Proto_LDPC_Repair;
         attrs.iface = Iface_AudioRepair;
-        attrs.fec_scheme = packet::FEC_LDPC_Staircase;
-        attrs.default_port = -1;
+        attrs.scheme_name = "ldpc";
         attrs.path_supported = false;
-        add_proto_(attrs);
-    }
-    {
-        ProtocolAttrs attrs;
-        attrs.protocol = Proto_RTSP;
-        attrs.iface = Iface_Signaling;
-        attrs.fec_scheme = packet::FEC_None;
-        attrs.default_port = 554;
-        attrs.path_supported = true;
+        attrs.default_port = -1;
+        attrs.fec_scheme = packet::FEC_LDPC_Staircase;
         add_proto_(attrs);
     }
 }
 
-const ProtocolAttrs* ProtocolMap::find_proto(Protocol proto) const {
+const ProtocolAttrs* ProtocolMap::find_proto_by_id(Protocol proto) const {
     if ((int)proto < 0 || (int)proto >= MaxProtos) {
         return NULL;
     }
@@ -83,6 +89,26 @@ const ProtocolAttrs* ProtocolMap::find_proto(Protocol proto) const {
     }
 
     return &protos_[proto];
+}
+
+const ProtocolAttrs* ProtocolMap::find_proto_by_scheme(const char* scheme) const {
+    for (int proto = 0; proto < MaxProtos; proto++) {
+        if (protos_[proto].protocol == Proto_None) {
+            continue;
+        }
+
+        if (protos_[proto].scheme_name == NULL) {
+            continue;
+        }
+
+        if (strcmp(protos_[proto].scheme_name, scheme) != 0) {
+            continue;
+        }
+
+        return &protos_[proto];
+    }
+
+    return NULL;
 }
 
 void ProtocolMap::add_proto_(const ProtocolAttrs& proto) {

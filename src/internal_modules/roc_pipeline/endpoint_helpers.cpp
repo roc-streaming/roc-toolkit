@@ -17,7 +17,7 @@ namespace pipeline {
 
 bool validate_endpoint(address::Interface iface, address::Protocol proto) {
     const address::ProtocolAttrs* proto_attrs =
-        address::ProtocolMap::instance().find_proto(proto);
+        address::ProtocolMap::instance().find_proto_by_id(proto);
 
     if (!proto_attrs) {
         roc_log(LogError, "bad endpoints configuration: unknown protocol");
@@ -50,7 +50,7 @@ bool validate_endpoint_and_pipeline_consistency(packet::FecScheme pipeline_fec_s
                                                 address::Interface iface,
                                                 address::Protocol proto) {
     const address::ProtocolAttrs* proto_attrs =
-        address::ProtocolMap::instance().find_proto(proto);
+        address::ProtocolMap::instance().find_proto_by_id(proto);
 
     if (!proto_attrs) {
         roc_log(LogError, "bad endpoints configuration: unknown protocol");
@@ -91,7 +91,7 @@ bool validate_endpoint_pair_consistency(address::Protocol source_proto,
     }
 
     const address::ProtocolAttrs* source_attrs =
-        address::ProtocolMap::instance().find_proto(source_proto);
+        address::ProtocolMap::instance().find_proto_by_id(source_proto);
 
     if (!source_attrs) {
         roc_log(LogError, "bad endpoints configuration: unknown source protocol");
@@ -124,7 +124,7 @@ bool validate_endpoint_pair_consistency(address::Protocol source_proto,
 
     if (repair_proto != address::Proto_None) {
         const address::ProtocolAttrs* repair_attrs =
-            address::ProtocolMap::instance().find_proto(repair_proto);
+            address::ProtocolMap::instance().find_proto_by_id(repair_proto);
 
         if (!repair_attrs) {
             roc_log(LogError, "bad endpoints configuration: unknown repair protocol");

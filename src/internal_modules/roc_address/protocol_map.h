@@ -30,21 +30,25 @@ struct ProtocolAttrs {
     //! Endpoint type.
     Interface iface;
 
-    //! FEC scheme associated wit hthe protocol, if any.
-    packet::FecScheme fec_scheme;
-
-    //! Default port number of -1 if not specified.
-    int default_port;
+    //! Scheme name in URI.
+    const char* scheme_name;
 
     //! Whether path is supported in URI.
     bool path_supported;
 
+    //! Default port number of -1 if not specified.
+    int default_port;
+
+    //! FEC scheme associated wit the protocol, if any.
+    packet::FecScheme fec_scheme;
+
     ProtocolAttrs()
         : protocol(Proto_None)
         , iface(Iface_Invalid)
-        , fec_scheme(packet::FEC_None)
+        , scheme_name(NULL)
+        , path_supported(false)
         , default_port(-1)
-        , path_supported(false) {
+        , fec_scheme(packet::FEC_None) {
     }
 };
 
@@ -57,7 +61,10 @@ public:
     }
 
     //! Get protocol attributes by ID.
-    const ProtocolAttrs* find_proto(Protocol proto) const;
+    const ProtocolAttrs* find_proto_by_id(Protocol proto) const;
+
+    //! Get protocol attributes by scheme name.
+    const ProtocolAttrs* find_proto_by_scheme(const char* scheme) const;
 
 private:
     friend class core::Singleton<ProtocolMap>;

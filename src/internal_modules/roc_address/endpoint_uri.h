@@ -52,6 +52,9 @@ public:
     //! Get protocol ID (URI scheme).
     bool get_proto(Protocol& proto) const;
 
+    //! Get URI proto.
+    bool format_proto(core::StringBuilder& dst) const;
+
     //! Hostname or IP address.
     const char* host() const;
 

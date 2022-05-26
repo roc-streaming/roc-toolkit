@@ -21,7 +21,10 @@ bool format_endpoint_uri(const EndpointUri& u,
     }
 
     if (subset == EndpointUri::Subset_Full) {
-        dst.append_str(proto_to_str(u.proto()));
+        if (!u.format_proto(dst)) {
+            return false;
+        }
+
         dst.append_str("://");
 
         if (!u.format_host(dst)) {

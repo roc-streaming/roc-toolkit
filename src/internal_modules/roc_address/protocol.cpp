@@ -7,36 +7,19 @@
  */
 
 #include "roc_address/protocol.h"
+#include "roc_address/protocol_map.h"
 #include "roc_core/stddefs.h"
 
 namespace roc {
 namespace address {
 
 const char* proto_to_str(Protocol proto) {
-    switch (proto) {
-    case Proto_None:
-        break;
-
-    case Proto_RTSP:
-        return "rtsp";
-
-    case Proto_RTP:
-        return "rtp";
-
-    case Proto_RTP_RS8M_Source:
-        return "rtp+rs8m";
-
-    case Proto_RS8M_Repair:
-        return "rs8m";
-
-    case Proto_RTP_LDPC_Source:
-        return "rtp+ldpc";
-
-    case Proto_LDPC_Repair:
-        return "ldpc";
+    const ProtocolAttrs* attrs = ProtocolMap::instance().find_proto_by_id(proto);
+    if (!attrs) {
+        return NULL;
     }
 
-    return NULL;
+    return attrs->scheme_name;
 }
 
 } // namespace address

@@ -7,6 +7,7 @@
  */
 
 #include "roc_address/endpoint_uri.h"
+#include "roc_address/protocol_map.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 
@@ -18,15 +19,15 @@ namespace address {
     write data;
 }%%
 
-bool parse_endpoint_uri(const char* str, EndpointUri::Subset subset, EndpointUri& result) {
-    result.clear(subset);
+namespace {
 
+bool parse_endpoint_uri_imp(const char* str, EndpointUri::Subset subset, EndpointUri& result) {
     if (!str) {
         roc_log(LogError, "parse endpoint uri: input string is null");
-
-        result.invalidate(subset);
         return false;
     }
+
+    result.clear(subset);
 
     // for ragel
     const char* p = str;
@@ -48,12 +49,20 @@ bool parse_endpoint_uri(const char* str, EndpointUri::Subset subset, EndpointUri
         }
 
         action set_proto {
-            if (subset != EndpointUri::Subset_Full) {
-                roc_log(LogError,
-                        "parse endpoint uri: unexpected scheme when parsing resource");
+            char scheme[16] = {};
+            if (p - start_p >= sizeof(scheme)) {
+                roc_log(LogError, "parse endpoint uri: invalid protocol");
                 return false;
             }
-            if (!result.set_proto(proto)) {
+            strncpy(scheme, start_p, p - start_p);
+
+            const ProtocolAttrs* attrs = ProtocolMap::instance().find_proto_by_scheme(scheme);
+            if (!attrs) {
+                roc_log(LogError, "parse endpoint uri: invalid protocol");
+                return false;
+            }
+
+            if (!result.set_proto(attrs->protocol)) {
                 roc_log(LogError, "parse endpoint uri: invalid protocol");
                 return false;
             }
@@ -106,15 +115,7 @@ bool parse_endpoint_uri(const char* str, EndpointUri::Subset subset, EndpointUri
             }
         }
 
-        scheme = 'rtsp'      %{ proto = Proto_RTSP; }
-               | 'rtp'       %{ proto = Proto_RTP; }
-               | 'rtp+rs8m'  %{ proto = Proto_RTP_RS8M_Source; }
-               | 'rs8m'      %{ proto = Proto_RS8M_Repair; }
-               | 'rtp+ldpc'  %{ proto = Proto_RTP_LDPC_Source; }
-               | 'ldpc'      %{ proto = Proto_LDPC_Repair; }
-               ;
-
-        proto = scheme %set_proto;
+        proto = ( [a-z0-9+]+ ) >start_token %set_proto;
 
         host = ('[' [^/@\[\]]+ ']' | [^/:@\[\]]+) >start_token %set_host;
         port = (digit+) >start_token %set_port;
@@ -148,15 +149,24 @@ bool parse_endpoint_uri(const char* str, EndpointUri::Subset subset, EndpointUri
                     " got '%s'",
                     str);
         }
-        result.invalidate(subset);
         return false;
     }
 
     if (!result.check(subset)) {
-        result.invalidate(subset);
+        roc_log(LogError, "parse endpoint uri: invalud uri");
         return false;
     }
 
+    return true;
+}
+
+} // namespace
+
+bool parse_endpoint_uri(const char* str, EndpointUri::Subset subset, EndpointUri& result) {
+    if (!parse_endpoint_uri_imp(str, subset, result)) {
+        result.invalidate(subset);
+        return false;
+    }
     return true;
 }
 
