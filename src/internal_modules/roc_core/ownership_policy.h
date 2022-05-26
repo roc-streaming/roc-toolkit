@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_core/ownership.h
+//! @file roc_core/ownership_policy.h
 //! @brief Ownership policies.
 
 #ifndef ROC_CORE_OWNERSHIP_POLICY_H_

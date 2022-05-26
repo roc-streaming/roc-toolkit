@@ -221,12 +221,13 @@ TEST(writer_reader, no_losses) {
         CHECK(encoder);
         CHECK(decoder);
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
-                                          NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(),
+                                          packet_factory, NumSourcePackets,
+                                          NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_factory, buffer_factory,
-                      allocator);
+                      source_composer(), repair_composer(), packet_factory,
+                      buffer_factory, allocator);
 
         Reader reader(reader_config, codec_config.scheme, *decoder,
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
@@ -269,12 +270,13 @@ TEST(writer_reader, 1_loss) {
         CHECK(encoder);
         CHECK(decoder);
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
-                                          NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(),
+                                          packet_factory, NumSourcePackets,
+                                          NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_factory, buffer_factory,
-                      allocator);
+                      source_composer(), repair_composer(), packet_factory,
+                      buffer_factory, allocator);
 
         Reader reader(reader_config, codec_config.scheme, *decoder,
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
@@ -319,12 +321,13 @@ TEST(writer_reader, lost_first_packet_in_first_block) {
         CHECK(encoder);
         CHECK(decoder);
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
-                                          NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(),
+                                          packet_factory, NumSourcePackets,
+                                          NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_factory, buffer_factory,
-                      allocator);
+                      source_composer(), repair_composer(), packet_factory,
+                      buffer_factory, allocator);
 
         Reader reader(reader_config, codec_config.scheme, *decoder,
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
@@ -378,12 +381,13 @@ TEST(writer_reader, lost_one_source_and_all_repair_packets) {
         CHECK(encoder);
         CHECK(decoder);
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
-                                          NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(),
+                                          packet_factory, NumSourcePackets,
+                                          NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_factory, buffer_factory,
-                      allocator);
+                      source_composer(), repair_composer(), packet_factory,
+                      buffer_factory, allocator);
 
         Reader reader(reader_config, codec_config.scheme, *decoder,
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
@@ -450,12 +454,13 @@ TEST(writer_reader, multiple_blocks_1_loss) {
         CHECK(encoder);
         CHECK(decoder);
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
-                                          NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(),
+                                          packet_factory, NumSourcePackets,
+                                          NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_factory, buffer_factory,
-                      allocator);
+                      source_composer(), repair_composer(), packet_factory,
+                      buffer_factory, allocator);
 
         Reader reader(reader_config, codec_config.scheme, *decoder,
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
@@ -525,12 +530,13 @@ TEST(writer_reader, multiple_blocks_in_queue) {
         CHECK(encoder);
         CHECK(decoder);
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
-                                          NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(),
+                                          packet_factory, NumSourcePackets,
+                                          NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_factory, buffer_factory,
-                      allocator);
+                      source_composer(), repair_composer(), packet_factory,
+                      buffer_factory, allocator);
 
         Reader reader(reader_config, codec_config.scheme, *decoder,
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
@@ -581,16 +587,17 @@ TEST(writer_reader, interleaved_packets) {
         CHECK(encoder);
         CHECK(decoder);
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
-                                          NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(),
+                                          packet_factory, NumSourcePackets,
+                                          NumRepairPackets);
 
         packet::Interleaver intrlvr(dispatcher, allocator, 10);
 
         CHECK(intrlvr.valid());
 
         Writer writer(writer_config, codec_config.scheme, *encoder, intrlvr,
-                      source_composer(), repair_composer(), packet_factory, buffer_factory,
-                      allocator);
+                      source_composer(), repair_composer(), packet_factory,
+                      buffer_factory, allocator);
 
         Reader reader(reader_config, codec_config.scheme, *decoder,
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
@@ -638,12 +645,13 @@ TEST(writer_reader, delayed_packets) {
         CHECK(encoder);
         CHECK(decoder);
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
-                                          NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(),
+                                          packet_factory, NumSourcePackets,
+                                          NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_factory, buffer_factory,
-                      allocator);
+                      source_composer(), repair_composer(), packet_factory,
+                      buffer_factory, allocator);
 
         Reader reader(reader_config, codec_config.scheme, *decoder,
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
@@ -710,12 +718,13 @@ TEST(writer_reader, late_out_of_order_packets) {
         CHECK(encoder);
         CHECK(decoder);
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
-                                          NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(),
+                                          packet_factory, NumSourcePackets,
+                                          NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_factory, buffer_factory,
-                      allocator);
+                      source_composer(), repair_composer(), packet_factory,
+                      buffer_factory, allocator);
 
         Reader reader(reader_config, codec_config.scheme, *decoder,
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
@@ -790,13 +799,13 @@ TEST(writer_reader, repair_packets_before_source_packets) {
         CHECK(encoder);
         CHECK(decoder);
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
-                                          writer_config.n_source_packets,
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(),
+                                          packet_factory, writer_config.n_source_packets,
                                           writer_config.n_repair_packets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_factory, buffer_factory,
-                      allocator);
+                      source_composer(), repair_composer(), packet_factory,
+                      buffer_factory, allocator);
 
         Reader reader(reader_config, codec_config.scheme, *decoder,
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
@@ -878,13 +887,13 @@ TEST(writer_reader, repair_packets_mixed_with_source_packets) {
         CHECK(encoder);
         CHECK(decoder);
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
-                                          writer_config.n_source_packets,
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(),
+                                          packet_factory, writer_config.n_source_packets,
                                           writer_config.n_repair_packets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_factory, buffer_factory,
-                      allocator);
+                      source_composer(), repair_composer(), packet_factory,
+                      buffer_factory, allocator);
 
         Reader reader(reader_config, codec_config.scheme, *decoder,
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
@@ -978,12 +987,13 @@ TEST(writer_reader, multiple_repair_attempts) {
         CHECK(encoder);
         CHECK(decoder);
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
-                                          NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(),
+                                          packet_factory, NumSourcePackets,
+                                          NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_factory, buffer_factory,
-                      allocator);
+                      source_composer(), repair_composer(), packet_factory,
+                      buffer_factory, allocator);
 
         Reader reader(reader_config, codec_config.scheme, *decoder,
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
@@ -1058,12 +1068,13 @@ TEST(writer_reader, drop_outdated_block) {
         CHECK(encoder);
         CHECK(decoder);
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
-                                          NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(),
+                                          packet_factory, NumSourcePackets,
+                                          NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_factory, buffer_factory,
-                      allocator);
+                      source_composer(), repair_composer(), packet_factory,
+                      buffer_factory, allocator);
 
         Reader reader(reader_config, codec_config.scheme, *decoder,
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
@@ -1130,12 +1141,13 @@ TEST(writer_reader, repaired_block_numbering) {
         CHECK(encoder);
         CHECK(decoder);
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
-                                          NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(),
+                                          packet_factory, NumSourcePackets,
+                                          NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_factory, buffer_factory,
-                      allocator);
+                      source_composer(), repair_composer(), packet_factory,
+                      buffer_factory, allocator);
 
         Reader reader(reader_config, codec_config.scheme, *decoder,
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
@@ -1219,12 +1231,13 @@ TEST(writer_reader, invalid_esi) {
 
         packet::Queue queue;
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
-                                          NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(),
+                                          packet_factory, NumSourcePackets,
+                                          NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, queue,
-                      source_composer(), repair_composer(), packet_factory, buffer_factory,
-                      allocator);
+                      source_composer(), repair_composer(), packet_factory,
+                      buffer_factory, allocator);
 
         Reader reader(reader_config, codec_config.scheme, *decoder,
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
@@ -1301,12 +1314,13 @@ TEST(writer_reader, invalid_sbl) {
 
         packet::Queue queue;
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
-                                          NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(),
+                                          packet_factory, NumSourcePackets,
+                                          NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, queue,
-                      source_composer(), repair_composer(), packet_factory, buffer_factory,
-                      allocator);
+                      source_composer(), repair_composer(), packet_factory,
+                      buffer_factory, allocator);
 
         Reader reader(reader_config, codec_config.scheme, *decoder,
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
@@ -1378,12 +1392,13 @@ TEST(writer_reader, invalid_nes) {
 
         packet::Queue queue;
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
-                                          NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(),
+                                          packet_factory, NumSourcePackets,
+                                          NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, queue,
-                      source_composer(), repair_composer(), packet_factory, buffer_factory,
-                      allocator);
+                      source_composer(), repair_composer(), packet_factory,
+                      buffer_factory, allocator);
 
         Reader reader(reader_config, codec_config.scheme, *decoder,
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
@@ -1457,8 +1472,8 @@ TEST(writer_reader, invalid_payload_size) {
         packet::Queue repair_queue;
 
         Writer writer(writer_config, codec_config.scheme, *encoder, writer_queue,
-                      source_composer(), repair_composer(), packet_factory, buffer_factory,
-                      allocator);
+                      source_composer(), repair_composer(), packet_factory,
+                      buffer_factory, allocator);
 
         Reader reader(reader_config, codec_config.scheme, *decoder, source_queue,
                       repair_queue, rtp_parser, packet_factory, allocator);
@@ -1541,12 +1556,13 @@ TEST(writer_reader, zero_source_packets) {
 
         packet::Queue queue;
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
-                                          NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(),
+                                          packet_factory, NumSourcePackets,
+                                          NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, queue,
-                      source_composer(), repair_composer(), packet_factory, buffer_factory,
-                      allocator);
+                      source_composer(), repair_composer(), packet_factory,
+                      buffer_factory, allocator);
 
         Reader reader(reader_config, codec_config.scheme, *decoder,
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
@@ -1710,8 +1726,8 @@ TEST(writer_reader, zero_payload_size) {
         packet::Queue repair_queue;
 
         Writer writer(writer_config, codec_config.scheme, *encoder, writer_queue,
-                      source_composer(), repair_composer(), packet_factory, buffer_factory,
-                      allocator);
+                      source_composer(), repair_composer(), packet_factory,
+                      buffer_factory, allocator);
 
         Reader reader(reader_config, codec_config.scheme, *decoder, source_queue,
                       repair_queue, rtp_parser, packet_factory, allocator);
@@ -1794,12 +1810,13 @@ TEST(writer_reader, sbn_jump) {
 
         packet::Queue queue;
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
-                                          NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(),
+                                          packet_factory, NumSourcePackets,
+                                          NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, queue,
-                      source_composer(), repair_composer(), packet_factory, buffer_factory,
-                      allocator);
+                      source_composer(), repair_composer(), packet_factory,
+                      buffer_factory, allocator);
 
         Reader reader(reader_config, codec_config.scheme, *decoder,
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
@@ -1906,8 +1923,8 @@ TEST(writer_reader, writer_encode_blocks) {
                                               NumRepairPackets);
 
             Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                          source_composer(), repair_composer(), packet_factory, buffer_factory,
-                          allocator);
+                          source_composer(), repair_composer(), packet_factory,
+                          buffer_factory, allocator);
 
             CHECK(writer.valid());
 
@@ -1987,12 +2004,13 @@ TEST(writer_reader, writer_resize_blocks) {
             allocator);
         CHECK(encoder);
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
-                                          NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(),
+                                          packet_factory, NumSourcePackets,
+                                          NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_factory, buffer_factory,
-                      allocator);
+                      source_composer(), repair_composer(), packet_factory,
+                      buffer_factory, allocator);
 
         CHECK(writer.valid());
 
@@ -2053,12 +2071,13 @@ TEST(writer_reader, resize_block_begin) {
         CHECK(decoder);
         CHECK(encoder);
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
-                                          NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(),
+                                          packet_factory, NumSourcePackets,
+                                          NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_factory, buffer_factory,
-                      allocator);
+                      source_composer(), repair_composer(), packet_factory,
+                      buffer_factory, allocator);
         Reader reader(reader_config, codec_config.scheme, *decoder,
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, allocator);
@@ -2127,12 +2146,13 @@ TEST(writer_reader, resize_block_middle) {
         CHECK(decoder);
         CHECK(encoder);
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
-                                          NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(),
+                                          packet_factory, NumSourcePackets,
+                                          NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_factory, buffer_factory,
-                      allocator);
+                      source_composer(), repair_composer(), packet_factory,
+                      buffer_factory, allocator);
         Reader reader(reader_config, codec_config.scheme, *decoder,
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, allocator);
@@ -2222,12 +2242,13 @@ TEST(writer_reader, resize_block_losses) {
         CHECK(decoder);
         CHECK(encoder);
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
-                                          NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(),
+                                          packet_factory, NumSourcePackets,
+                                          NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_factory, buffer_factory,
-                      allocator);
+                      source_composer(), repair_composer(), packet_factory,
+                      buffer_factory, allocator);
         Reader reader(reader_config, codec_config.scheme, *decoder,
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, allocator);
@@ -2298,12 +2319,13 @@ TEST(writer_reader, resize_block_repair_first) {
         CHECK(encoder);
         CHECK(decoder);
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
-                                          NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(),
+                                          packet_factory, NumSourcePackets,
+                                          NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_factory, buffer_factory,
-                      allocator);
+                      source_composer(), repair_composer(), packet_factory,
+                      buffer_factory, allocator);
 
         Reader reader(reader_config, codec_config.scheme, *decoder,
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
@@ -2382,14 +2404,15 @@ TEST(writer_reader, error_writer_resize_block) {
             allocator);
         CHECK(encoder);
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
-                                          NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(),
+                                          packet_factory, NumSourcePackets,
+                                          NumRepairPackets);
 
         test::MockAllocator mock_allocator;
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_factory, buffer_factory,
-                      mock_allocator);
+                      source_composer(), repair_composer(), packet_factory,
+                      buffer_factory, mock_allocator);
 
         CHECK(writer.valid());
 
@@ -2431,16 +2454,18 @@ TEST(writer_reader, error_writer_encode_packet) {
         test::MockAllocator mock_allocator;
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, buffer_factory, mock_allocator),
+            CodecMap::instance().new_encoder(codec_config, buffer_factory,
+                                             mock_allocator),
             mock_allocator);
         CHECK(encoder);
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
-                                          NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(),
+                                          packet_factory, NumSourcePackets,
+                                          NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_factory, buffer_factory,
-                      allocator);
+                      source_composer(), repair_composer(), packet_factory,
+                      buffer_factory, allocator);
 
         CHECK(writer.valid());
 
@@ -2486,12 +2511,13 @@ TEST(writer_reader, error_reader_resize_block) {
         CHECK(encoder);
         CHECK(decoder);
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
-                                          NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(),
+                                          packet_factory, NumSourcePackets,
+                                          NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_factory, buffer_factory,
-                      allocator);
+                      source_composer(), repair_composer(), packet_factory,
+                      buffer_factory, allocator);
 
         test::MockAllocator mock_allocator;
 
@@ -2554,16 +2580,18 @@ TEST(writer_reader, error_reader_decode_packet) {
         test::MockAllocator mock_allocator;
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, buffer_factory, mock_allocator),
+            CodecMap::instance().new_decoder(codec_config, buffer_factory,
+                                             mock_allocator),
             mock_allocator);
         CHECK(decoder);
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
-                                          NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(),
+                                          packet_factory, NumSourcePackets,
+                                          NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_factory, buffer_factory,
-                      allocator);
+                      source_composer(), repair_composer(), packet_factory,
+                      buffer_factory, allocator);
 
         Reader reader(reader_config, codec_config.scheme, *decoder,
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
@@ -2640,12 +2668,13 @@ TEST(writer_reader, writer_oversized_block) {
         CHECK(decoder->max_block_length() == encoder->max_block_length());
         CHECK(NumSourcePackets + NumRepairPackets <= encoder->max_block_length());
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
-                                          NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(),
+                                          packet_factory, NumSourcePackets,
+                                          NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_factory, buffer_factory,
-                      allocator);
+                      source_composer(), repair_composer(), packet_factory,
+                      buffer_factory, allocator);
 
         Reader reader(reader_config, codec_config.scheme, *decoder,
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
@@ -2837,12 +2866,13 @@ TEST(writer_reader, writer_invalid_payload_size_change) {
             allocator);
         CHECK(encoder);
 
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
-                                          NumSourcePackets, NumRepairPackets);
+        test::PacketDispatcher dispatcher(source_parser(), repair_parser(),
+                                          packet_factory, NumSourcePackets,
+                                          NumRepairPackets);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_factory, buffer_factory,
-                      allocator);
+                      source_composer(), repair_composer(), packet_factory,
+                      buffer_factory, allocator);
         CHECK(writer.valid());
 
         size_t sn = 0;
@@ -2897,8 +2927,8 @@ TEST(writer_reader, reader_invalid_fec_scheme_source_packet) {
         packet::Queue repair_queue;
 
         Writer writer(writer_config, codec_config.scheme, *encoder, writer_queue,
-                      source_composer(), repair_composer(), packet_factory, buffer_factory,
-                      allocator);
+                      source_composer(), repair_composer(), packet_factory,
+                      buffer_factory, allocator);
 
         Reader reader(reader_config, codec_config.scheme, *decoder, source_queue,
                       repair_queue, rtp_parser, packet_factory, allocator);
@@ -2966,8 +2996,8 @@ TEST(writer_reader, reader_invalid_fec_scheme_repair_packet) {
         packet::Queue repair_queue;
 
         Writer writer(writer_config, codec_config.scheme, *encoder, writer_queue,
-                      source_composer(), repair_composer(), packet_factory, buffer_factory,
-                      allocator);
+                      source_composer(), repair_composer(), packet_factory,
+                      buffer_factory, allocator);
 
         Reader reader(reader_config, codec_config.scheme, *decoder, source_queue,
                       repair_queue, rtp_parser, packet_factory, allocator);

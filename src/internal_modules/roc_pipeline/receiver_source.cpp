@@ -202,8 +202,9 @@ bool ReceiverSource::process_task_imp(TaskPipeline::Task& basic_task) {
 
 bool ReceiverSource::task_add_endpoint_set_(Task& task) {
     core::SharedPtr<ReceiverEndpointSet> endpoint_set = new (allocator_)
-        ReceiverEndpointSet(config_, receiver_state_, *mixer_, format_map_, packet_factory_,
-                            byte_buffer_factory_, sample_buffer_factory_, allocator_);
+        ReceiverEndpointSet(config_, receiver_state_, *mixer_, format_map_,
+                            packet_factory_, byte_buffer_factory_, sample_buffer_factory_,
+                            allocator_);
     if (!endpoint_set) {
         return false;
     }
