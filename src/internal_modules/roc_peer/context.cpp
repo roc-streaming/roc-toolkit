@@ -55,10 +55,6 @@ bool Context::is_used() {
     return ref_counter_ != 0;
 }
 
-void Context::destroy() {
-    allocator_.destroy(*this);
-}
-
 core::IAllocator& Context::allocator() {
     return allocator_;
 }

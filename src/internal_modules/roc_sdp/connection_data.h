@@ -24,11 +24,11 @@ namespace sdp {
 //! SDP connection data field.
 class ConnectionData {
 public:
-    //! Clear all fields.
-    void clear();
-
     //! Initialize empty connection data.
     ConnectionData();
+
+    //! Clear all fields.
+    void clear();
 
     //! Check and set connection address from a string.
     bool

@@ -13,7 +13,7 @@ namespace roc {
 namespace netio {
 
 BasicPort::BasicPort(core::IAllocator& allocator)
-    : allocator_(allocator) {
+    : RefCounted(allocator) {
     descriptor_[0] = '\0';
 }
 
@@ -37,14 +37,6 @@ void BasicPort::update_descriptor() {
     if (!b.ok() || b.actual_size() == 0) {
         roc_panic("basic port: failed to format descriptor");
     }
-}
-
-core::IAllocator& BasicPort::allocator() {
-    return allocator_;
-}
-
-void BasicPort::destroy() {
-    allocator_.destroy(*this);
 }
 
 } // namespace netio

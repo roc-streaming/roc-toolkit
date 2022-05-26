@@ -16,7 +16,7 @@
 #include "roc_core/list.h"
 #include "roc_core/list_node.h"
 #include "roc_core/log.h"
-#include "roc_core/ref_counter.h"
+#include "roc_core/ref_counted.h"
 #include "roc_core/shared_ptr.h"
 #include "roc_core/string_buffer.h"
 #include "roc_core/string_builder.h"
@@ -29,15 +29,18 @@ namespace roc {
 namespace sdp {
 
 //! SDP media description.
-// m=<type> <port> <proto> <fmt>.
-class MediaDescription : public core::RefCounter<MediaDescription>,
-                         public core::ListNode {
+//! @code
+//!  m=<type> <port> <proto> <fmt>
+//! @endcode
+class MediaDescription
+    : public core::RefCounted<MediaDescription, core::StandardAllocation>,
+      public core::ListNode {
 public:
-    //! Clear all fields.
-    void clear();
-
     //! Initialize empty media description
     MediaDescription(core::IAllocator& allocator);
+
+    //! Clear all fields.
+    void clear();
 
     //! Media type.
     MediaType type() const;
@@ -87,10 +90,6 @@ public:
     add_connection_data(address::AddrFamily addrtype, const char* str, size_t str_len);
 
 private:
-    friend class core::RefCounter<MediaDescription>;
-
-    void destroy();
-
     MediaType type_;
     int port_;
     int nb_ports_;
@@ -98,8 +97,6 @@ private:
     core::Array<unsigned, 2> payload_ids_;
 
     core::Array<ConnectionData, 1> connection_data_;
-
-    core::IAllocator& allocator_;
 };
 
 } // namespace sdp

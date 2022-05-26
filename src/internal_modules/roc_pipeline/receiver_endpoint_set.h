@@ -18,7 +18,7 @@
 #include "roc_core/iallocator.h"
 #include "roc_core/list.h"
 #include "roc_core/list_node.h"
-#include "roc_core/ref_counter.h"
+#include "roc_core/ref_counted.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_pipeline/receiver_endpoint.h"
 #include "roc_pipeline/receiver_session_group.h"
@@ -32,8 +32,9 @@ namespace pipeline {
 //! @remarks
 //!  Contains one or seevral related endpoint pipelines and a
 //!  session group shared by them.
-class ReceiverEndpointSet : public core::RefCounter<ReceiverEndpointSet>,
-                            public core::ListNode {
+class ReceiverEndpointSet
+    : public core::RefCounted<ReceiverEndpointSet, core::StandardAllocation>,
+      public core::ListNode {
 public:
     //! Initialize.
     ReceiverEndpointSet(const ReceiverConfig& receiver_config,
@@ -58,14 +59,8 @@ public:
     size_t num_sessions() const;
 
 private:
-    friend class core::RefCounter<ReceiverEndpointSet>;
-
-    void destroy();
-
     ReceiverEndpoint* create_source_endpoint_(address::Protocol proto);
     ReceiverEndpoint* create_repair_endpoint_(address::Protocol proto);
-
-    core::IAllocator& allocator_;
 
     const rtp::FormatMap& format_map_;
 

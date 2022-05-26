@@ -22,7 +22,7 @@ ReceiverEndpointSet::ReceiverEndpointSet(
     core::BufferFactory<uint8_t>& byte_buffer_factory,
     core::BufferFactory<audio::sample_t>& sample_buffer_factory,
     core::IAllocator& allocator)
-    : allocator_(allocator)
+    : RefCounted(allocator)
     , format_map_(format_map)
     , receiver_state_(receiver_state)
     , session_group_(receiver_config,
@@ -34,10 +34,6 @@ ReceiverEndpointSet::ReceiverEndpointSet(
                      sample_buffer_factory,
                      allocator) {
     roc_log(LogDebug, "receiver endpoint set: initializing");
-}
-
-void ReceiverEndpointSet::destroy() {
-    allocator_.destroy(*this);
 }
 
 packet::IWriter* ReceiverEndpointSet::create_endpoint(address::Interface iface,
@@ -111,7 +107,7 @@ ReceiverEndpoint* ReceiverEndpointSet::create_source_endpoint_(address::Protocol
     }
 
     source_endpoint_.reset(new (source_endpoint_) ReceiverEndpoint(
-        proto, receiver_state_, session_group_, format_map_, allocator_));
+        proto, receiver_state_, session_group_, format_map_, allocator()));
 
     if (!source_endpoint_ || !source_endpoint_->valid()) {
         roc_log(LogError, "receiver endpoint set: can't create source endpoint");
@@ -139,7 +135,7 @@ ReceiverEndpoint* ReceiverEndpointSet::create_repair_endpoint_(address::Protocol
     }
 
     repair_endpoint_.reset(new (repair_endpoint_) ReceiverEndpoint(
-        proto, receiver_state_, session_group_, format_map_, allocator_));
+        proto, receiver_state_, session_group_, format_map_, allocator()));
 
     if (!repair_endpoint_ || !repair_endpoint_->valid()) {
         roc_log(LogError, "receiver endpoint set: can't create repair endpoint");

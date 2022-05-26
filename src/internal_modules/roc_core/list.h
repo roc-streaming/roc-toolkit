@@ -14,7 +14,7 @@
 
 #include "roc_core/list_node.h"
 #include "roc_core/noncopyable.h"
-#include "roc_core/ownership.h"
+#include "roc_core/ownership_policy.h"
 #include "roc_core/panic.h"
 #include "roc_core/stddefs.h"
 
@@ -28,16 +28,16 @@ namespace core {
 //!
 //! @tparam T defines object type, it should inherit ListNode.
 //!
-//! @tparam Ownership defines ownership policy which is used to acquire an element
-//! ownership when it's added to the list and release ownership when it's removed
-//! from the list.
-template <class T, template <class TT> class Ownership = RefCounterOwnership>
+//! @tparam OwnershipPolicy defines ownership policy which is used to acquire an
+//! element ownership when it's added to the list and release ownership when it's
+//! removed from the list.
+template <class T, template <class TT> class OwnershipPolicy = RefCountedOwnership>
 class List : public NonCopyable<> {
 public:
     //! Pointer type.
     //! @remarks
     //!  either raw or smart pointer depending on the ownership policy.
-    typedef typename Ownership<T>::Pointer Pointer;
+    typedef typename OwnershipPolicy<T>::Pointer Pointer;
 
     //! Initialize empty list.
     List()
@@ -59,7 +59,7 @@ public:
             next_data = data->next;
             data->list = NULL;
 
-            Ownership<T>::release(*container_of_(data));
+            OwnershipPolicy<T>::release(*container_of_(data));
         }
 
         head_.list = NULL;
@@ -174,7 +174,7 @@ public:
 
         size_--;
 
-        Ownership<T>::release(element);
+        OwnershipPolicy<T>::release(element);
     }
 
 private:
@@ -211,7 +211,7 @@ private:
 
         size_++;
 
-        Ownership<T>::acquire(element);
+        OwnershipPolicy<T>::acquire(element);
     }
 
     ListNode::ListNodeData head_;

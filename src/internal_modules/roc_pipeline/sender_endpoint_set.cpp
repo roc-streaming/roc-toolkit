@@ -22,17 +22,13 @@ SenderEndpointSet::SenderEndpointSet(
     core::BufferFactory<uint8_t>& byte_buffer_factory,
     core::BufferFactory<audio::sample_t>& sample_buffer_factory,
     core::IAllocator& allocator)
-    : config_(config)
+    : RefCounted(allocator)
+    , config_(config)
     , format_map_(format_map)
     , packet_factory_(packet_factory)
     , byte_buffer_factory_(byte_buffer_factory)
     , sample_buffer_factory_(sample_buffer_factory)
-    , allocator_(allocator)
     , audio_writer_(NULL) {
-}
-
-void SenderEndpointSet::destroy() {
-    allocator_.destroy(*this);
 }
 
 SenderEndpoint* SenderEndpointSet::create_endpoint(address::Interface iface,
@@ -100,7 +96,7 @@ SenderEndpoint* SenderEndpointSet::create_source_endpoint_(address::Protocol pro
         return NULL;
     }
 
-    source_endpoint_.reset(new (source_endpoint_) SenderEndpoint(proto, allocator_));
+    source_endpoint_.reset(new (source_endpoint_) SenderEndpoint(proto, allocator()));
     if (!source_endpoint_ || !source_endpoint_->valid()) {
         roc_log(LogError, "sender endpoint set: can't create source endpoint");
         source_endpoint_.reset(NULL);
@@ -131,7 +127,7 @@ SenderEndpoint* SenderEndpointSet::create_repair_endpoint_(address::Protocol pro
         return NULL;
     }
 
-    repair_endpoint_.reset(new (repair_endpoint_) SenderEndpoint(proto, allocator_));
+    repair_endpoint_.reset(new (repair_endpoint_) SenderEndpoint(proto, allocator()));
     if (!repair_endpoint_ || !repair_endpoint_->valid()) {
         roc_log(LogError, "sender endpoint set: can't create repair endpoint");
         repair_endpoint_.reset(NULL);
@@ -150,7 +146,7 @@ bool SenderEndpointSet::create_pipeline_() {
         return false;
     }
 
-    router_.reset(new (router_) packet::Router(allocator_));
+    router_.reset(new (router_) packet::Router(allocator()));
     if (!router_) {
         return false;
     }
@@ -167,7 +163,7 @@ bool SenderEndpointSet::create_pipeline_() {
 
         if (config_.interleaving) {
             interleaver_.reset(new (interleaver_) packet::Interleaver(
-                *pwriter, allocator_,
+                *pwriter, allocator(),
                 config_.fec_writer.n_source_packets
                     + config_.fec_writer.n_repair_packets));
             if (!interleaver_ || !interleaver_->valid()) {
@@ -177,8 +173,8 @@ bool SenderEndpointSet::create_pipeline_() {
         }
 
         fec_encoder_.reset(fec::CodecMap::instance().new_encoder(
-                               config_.fec_encoder, byte_buffer_factory_, allocator_),
-                           allocator_);
+                               config_.fec_encoder, byte_buffer_factory_, allocator()),
+                           allocator());
         if (!fec_encoder_) {
             return false;
         }
@@ -186,14 +182,14 @@ bool SenderEndpointSet::create_pipeline_() {
         fec_writer_.reset(new (fec_writer_) fec::Writer(
             config_.fec_writer, config_.fec_encoder.scheme, *fec_encoder_, *pwriter,
             source_endpoint_->composer(), repair_endpoint_->composer(), packet_factory_,
-            byte_buffer_factory_, allocator_));
+            byte_buffer_factory_, allocator()));
         if (!fec_writer_ || !fec_writer_->valid()) {
             return false;
         }
         pwriter = fec_writer_.get();
     }
 
-    payload_encoder_.reset(format->new_encoder(allocator_), allocator_);
+    payload_encoder_.reset(format->new_encoder(allocator()), allocator());
     if (!payload_encoder_) {
         return false;
     }
@@ -222,10 +218,10 @@ bool SenderEndpointSet::create_pipeline_() {
         }
 
         resampler_.reset(audio::ResamplerMap::instance().new_resampler(
-                             config_.resampler_backend, allocator_,
+                             config_.resampler_backend, allocator(),
                              sample_buffer_factory_, config_.resampler_profile,
                              config_.internal_frame_length, config_.input_sample_spec),
-                         allocator_);
+                         allocator());
 
         if (!resampler_) {
             return false;

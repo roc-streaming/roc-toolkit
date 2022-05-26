@@ -6,12 +6,13 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_core/ref_counter.h
-//! @brief Base class for reference countable object.
+//! @file roc_core/ref_counted.h
+//! @brief Base class for reference counted object.
 
-#ifndef ROC_CORE_REF_COUNTER_H_
-#define ROC_CORE_REF_COUNTER_H_
+#ifndef ROC_CORE_REF_COUNTED_H_
+#define ROC_CORE_REF_COUNTED_H_
 
+#include "roc_core/allocation_policy.h"
 #include "roc_core/atomic.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/panic.h"
@@ -19,25 +20,38 @@
 namespace roc {
 namespace core {
 
-//! Base class for reference countable object.
+//! Base class for reference counted object.
 //!
 //! Allows to increment and decrement reference counter. When the counter
-//! reaches zero, the object is automatically destroyed using destroy()
-//! method of the derived class.
+//! reaches zero, the object is automatically destroyed.
 //!
 //! @tparam T defines the derived class.
+//! @tparam AllocationPolicy defies destroy policy.
+//!
+//! When reference counter becomes zero, AllocationPolicy::destroy() is invoked
+//! by RefCounted to destroy itself.
+//!
+//! Inherits AllocationPolicy to make its methods available in the derived class.
 //!
 //! Thread-safe.
-template <class T> class RefCounter : public NonCopyable<RefCounter<T> > {
+template <class T, class AllocationPolicy>
+class RefCounted : public NonCopyable<RefCounted<T, AllocationPolicy> >,
+                   protected AllocationPolicy {
 public:
-    RefCounter()
-        : counter_(0) {
+    RefCounted()
+        : AllocationPolicy()
+        , counter_(0) {
     }
 
-    ~RefCounter() {
+    explicit RefCounted(const AllocationPolicy& policy)
+        : AllocationPolicy(policy)
+        , counter_(0) {
+    }
+
+    ~RefCounted() {
         if (!counter_.compare_exchange(0, -1)) {
             roc_panic("ref counter: attempt to destroy object that is still in use: "
-                      "ref_counter=%d",
+                      "counter=%d",
                       (int)counter_);
         }
     }
@@ -58,7 +72,7 @@ public:
 
     //! Decrement reference counter.
     //! @remarks
-    //!  Calls destroy() if reference counter becomes zero.
+    //!  Destroys itself if reference counter becomes zero.
     void decref() const {
         const int previous_counter = counter_--;
 
@@ -71,7 +85,8 @@ public:
         }
 
         if (previous_counter == 1) {
-            static_cast<T*>(const_cast<RefCounter*>(this))->destroy();
+            const_cast<RefCounted&>(*this).destroy(
+                static_cast<T&>(const_cast<RefCounted&>(*this)));
         }
     }
 
@@ -82,4 +97,4 @@ private:
 } // namespace core
 } // namespace roc
 
-#endif // ROC_CORE_REF_COUNTER_H_
+#endif // ROC_CORE_REF_COUNTED_H_

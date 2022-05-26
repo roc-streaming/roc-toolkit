@@ -15,7 +15,7 @@
 #include "roc_address/socket_addr.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/list_node.h"
-#include "roc_core/ref_counter.h"
+#include "roc_core/ref_counted.h"
 #include "roc_core/string_builder.h"
 #include "roc_netio/iclose_handler.h"
 #include "roc_netio/operation_status.h"
@@ -36,7 +36,8 @@ namespace netio {
 //!    immediately, and you can now destroy it
 //!  - if async_close() returned AsyncOp_Started, you should wait until
 //!    close handler callback is invoked before destroying port
-class BasicPort : public core::RefCounter<BasicPort>, public core::ListNode {
+class BasicPort : public core::RefCounted<BasicPort, core::StandardAllocation>,
+                  public core::ListNode {
 public:
     //! Initialize.
     explicit BasicPort(core::IAllocator&);
@@ -68,9 +69,6 @@ public:
                                              void* handler_arg) = 0;
 
 protected:
-    //! Get memory allocator.
-    core::IAllocator& allocator();
-
     //! Format descriptor and store into internal buffer.
     void update_descriptor();
 
@@ -78,12 +76,6 @@ protected:
     virtual void format_descriptor(core::StringBuilder& b) = 0;
 
 private:
-    friend class core::RefCounter<BasicPort>;
-
-    void destroy();
-
-    core::IAllocator& allocator_;
-
     enum { MaxDescriptorLen = address::SocketAddr::MaxStrLen * 2 + 48 };
 
     char descriptor_[MaxDescriptorLen];

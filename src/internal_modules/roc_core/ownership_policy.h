@@ -9,21 +9,18 @@
 //! @file roc_core/ownership.h
 //! @brief Ownership policies.
 
-#ifndef ROC_CORE_OWNERSHIP_H_
-#define ROC_CORE_OWNERSHIP_H_
+#ifndef ROC_CORE_OWNERSHIP_POLICY_H_
+#define ROC_CORE_OWNERSHIP_POLICY_H_
 
 namespace roc {
 namespace core {
 
 template <class T, template <class TT> class Ownership> class SharedPtr;
 
-//! Reference countable object ownership.
-template <class T> struct RefCounterOwnership {
-    //! Pointer type returned from intrusive containers.
-    //! @remarks
-    //!  Container should return smart pointers instead of raw pointers since
-    //!  it can call decref() on returned object later.
-    typedef SharedPtr<T, core::RefCounterOwnership> Pointer;
+//! Reference counted object ownership.
+template <class T> struct RefCountedOwnership {
+    //! Pointer type returned from containers.
+    typedef SharedPtr<T, core::RefCountedOwnership> Pointer;
 
     //! Acquire ownership.
     static void acquire(T& object) {
@@ -38,9 +35,7 @@ template <class T> struct RefCounterOwnership {
 
 //! No ownership.
 template <class T> struct NoOwnership {
-    //! Pointer type returned from intrusive containers.
-    //! @remarks
-    //!  It's safe to return raw pointer since container will never free objects.
+    //! Pointer type returned from containers.
     typedef T* Pointer;
 
     //! Acquire ownership.
@@ -55,4 +50,4 @@ template <class T> struct NoOwnership {
 } // namespace core
 } // namespace roc
 
-#endif // ROC_CORE_OWNERSHIP_H_
+#endif // ROC_CORE_OWNERSHIP_POLICY_H_

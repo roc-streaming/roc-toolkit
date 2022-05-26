@@ -12,6 +12,7 @@
 #ifndef ROC_CORE_BUFFER_FACTORY_H_
 #define ROC_CORE_BUFFER_FACTORY_H_
 
+#include "roc_core/allocation_policy.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/shared_ptr.h"
 #include "roc_core/slab_pool.h"
@@ -41,11 +42,10 @@ public:
     }
 
 private:
-    friend class Buffer<T>;
+    friend class FactoryAllocation<BufferFactory>;
 
-    void destroy_buffer(Buffer<T>& buffer) {
-        buffer.~Buffer<T>();
-        pool_.deallocate(&buffer);
+    void destroy(Buffer<T>& buffer) {
+        pool_.destroy_object(buffer);
     }
 
     SlabPool pool_;

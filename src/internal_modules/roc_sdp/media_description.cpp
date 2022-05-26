@@ -12,9 +12,9 @@ namespace roc {
 namespace sdp {
 
 MediaDescription::MediaDescription(core::IAllocator& allocator)
-    : payload_ids_(allocator)
-    , connection_data_(allocator)
-    , allocator_(allocator) {
+    : RefCounted(allocator)
+    , payload_ids_(allocator)
+    , connection_data_(allocator) {
     clear();
 }
 
@@ -120,10 +120,6 @@ bool MediaDescription::add_connection_data(address::AddrFamily addrtype,
 
     connection_data_.push_back(c);
     return true;
-}
-
-void MediaDescription::destroy() {
-    allocator_.destroy(*this);
 }
 
 } // namespace roc

@@ -21,10 +21,10 @@ Sender::Sender(Context& context, const pipeline::SenderConfig& pipeline_config)
     , pipeline_(*this,
                 pipeline_config,
                 format_map_,
-                context_.packet_factory(),
-                context_.byte_buffer_factory(),
-                context_.sample_buffer_factory(),
-                context_.allocator())
+                context.packet_factory(),
+                context.byte_buffer_factory(),
+                context.sample_buffer_factory(),
+                context.allocator())
     , endpoint_set_(NULL)
     , source_endpoint_(NULL)
     , repair_endpoint_(NULL)
@@ -50,7 +50,7 @@ Sender::~Sender() {
         if (ports_[i].handle) {
             netio::NetworkLoop::Tasks::RemovePort task(ports_[i].handle);
 
-            if (!context_.network_loop().schedule_and_wait(task)) {
+            if (!context().network_loop().schedule_and_wait(task)) {
                 roc_panic("receiver peer: can't remove port");
             }
         }
@@ -159,7 +159,7 @@ bool Sender::connect(address::Interface iface, const address::EndpointUri& uri) 
 
     netio::NetworkLoop::Tasks::ResolveEndpointAddress resolve_task(uri);
 
-    if (!context_.network_loop().schedule_and_wait(resolve_task)) {
+    if (!context().network_loop().schedule_and_wait(resolve_task)) {
         roc_log(LogError, "sender peer: can't resolve %s interface address",
                 address::interface_to_str(iface));
         return false;
@@ -290,7 +290,7 @@ bool Sender::setup_outgoing_port_(InterfacePort& port,
 
         netio::NetworkLoop::Tasks::AddUdpSenderPort port_task(port.config);
 
-        if (!context_.network_loop().schedule_and_wait(port_task)) {
+        if (!context().network_loop().schedule_and_wait(port_task)) {
             roc_log(LogError, "sender peer: can't bind %s interface to local port",
                     address::interface_to_str(iface));
             return false;
@@ -309,11 +309,11 @@ bool Sender::setup_outgoing_port_(InterfacePort& port,
 
 void Sender::schedule_task_processing(pipeline::TaskPipeline&,
                                       core::nanoseconds_t deadline) {
-    context_.control_loop().reschedule_at(process_pipeline_tasks_, deadline);
+    context().control_loop().reschedule_at(process_pipeline_tasks_, deadline);
 }
 
 void Sender::cancel_task_processing(pipeline::TaskPipeline&) {
-    context_.control_loop().async_cancel(process_pipeline_tasks_);
+    context().control_loop().async_cancel(process_pipeline_tasks_);
 }
 
 } // namespace peer

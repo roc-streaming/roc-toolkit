@@ -70,6 +70,12 @@ public:
     //! Return memory to pool.
     void deallocate(void* memory);
 
+    //! Destroy object and deallocate its memory.
+    template <class T> void destroy_object(T& object) {
+        object.~T();
+        deallocate(&object);
+    }
+
 private:
     enum { PoisonAllocated = 0x7a, PoisonDeallocated = 0x7d };
 

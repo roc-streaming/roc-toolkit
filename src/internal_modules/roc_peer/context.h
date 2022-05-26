@@ -62,9 +62,6 @@ public:
     //! Check if context is still in use.
     bool is_used();
 
-    //! Deinitialize and deallocate.
-    void destroy();
-
     //! Get allocator.
     core::IAllocator& allocator();
 

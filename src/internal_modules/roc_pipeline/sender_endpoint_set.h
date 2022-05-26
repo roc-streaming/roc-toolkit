@@ -24,7 +24,7 @@
 #include "roc_core/iallocator.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/optional.h"
-#include "roc_core/ref_counter.h"
+#include "roc_core/ref_counted.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_fec/iblock_encoder.h"
 #include "roc_fec/writer.h"
@@ -42,8 +42,9 @@ namespace pipeline {
 //! @remarks
 //!  Contains one or seevral related endpoint pipelines and
 //!  the part of the sender pipeline shared by them.
-class SenderEndpointSet : public core::RefCounter<SenderEndpointSet>,
-                          public core::ListNode {
+class SenderEndpointSet
+    : public core::RefCounted<SenderEndpointSet, core::StandardAllocation>,
+      public core::ListNode {
 public:
     //! Initialize.
     SenderEndpointSet(const SenderConfig& config,
@@ -64,10 +65,6 @@ public:
     bool is_ready() const;
 
 private:
-    friend class core::RefCounter<SenderEndpointSet>;
-
-    void destroy();
-
     SenderEndpoint* create_source_endpoint_(address::Protocol proto);
     SenderEndpoint* create_repair_endpoint_(address::Protocol proto);
 
@@ -80,8 +77,6 @@ private:
     packet::PacketFactory& packet_factory_;
     core::BufferFactory<uint8_t>& byte_buffer_factory_;
     core::BufferFactory<audio::sample_t>& sample_buffer_factory_;
-
-    core::IAllocator& allocator_;
 
     core::Optional<SenderEndpoint> source_endpoint_;
     core::Optional<SenderEndpoint> repair_endpoint_;

@@ -12,7 +12,7 @@
 #ifndef ROC_CORE_SHARED_PTR_H_
 #define ROC_CORE_SHARED_PTR_H_
 
-#include "roc_core/ownership.h"
+#include "roc_core/ownership_policy.h"
 #include "roc_core/panic.h"
 #include "roc_core/stddefs.h"
 
@@ -22,9 +22,13 @@ namespace core {
 //! Shared ownership intrusive pointer.
 //!
 //! @tparam T defines pointee type. It may be const.
-//! @tparam Ownership defines methods to increase and decrease the reference counter
-//! embedded into object. If RefCntOwnership is used, T should inherit RefCnt.
-template <class T, template <class TT> class Ownership = RefCounterOwnership>
+//!
+//! @tparam OwnershipPolicy defines ownwership policy. It provides methods to
+//! increase and decrease the reference counter embedded into object.
+//!
+//! If RefCountedOwnership is used, T should inherit RefCounted. A template
+//! parameter of RefCounted defines its (de)allocation policy.
+template <class T, template <class TT> class OwnershipPolicy = RefCountedOwnership>
 class SharedPtr {
 public:
     //! Create empty shared pointer.
@@ -55,7 +59,7 @@ public:
     //!  - This overload hits SharedPtr(SharedPtr<ConvertibleToT>).
     //!  - This doesn't work as a copy constructor since it's template.
     template <class TT>
-    SharedPtr(const SharedPtr<TT, Ownership>& other)
+    SharedPtr(const SharedPtr<TT, OwnershipPolicy>& other)
         : ptr_(other.get()) {
         acquire_();
     }
@@ -109,13 +113,13 @@ public:
 private:
     void acquire_() {
         if (ptr_ != NULL) {
-            Ownership<T>::acquire(*ptr_);
+            OwnershipPolicy<T>::acquire(*ptr_);
         }
     }
 
     void release_() {
         if (ptr_ != NULL) {
-            Ownership<T>::release(*ptr_);
+            OwnershipPolicy<T>::release(*ptr_);
         }
     }
 

@@ -16,7 +16,7 @@
 #include "roc_core/cpu_instructions.h"
 #include "roc_core/mpsc_queue_node.h"
 #include "roc_core/noncopyable.h"
-#include "roc_core/ownership.h"
+#include "roc_core/ownership_policy.h"
 #include "roc_core/panic.h"
 
 namespace roc {
@@ -33,16 +33,16 @@ namespace core {
 //!
 //! @tparam T defines object type, it should inherit MpscQueueNode.
 //!
-//! @tparam Ownership defines ownership policy which is used to acquire an element
-//! ownership when it's added to the queue and release ownership when it's removed
-//! from the queue.
-template <class T, template <class TT> class Ownership = RefCounterOwnership>
+//! @tparam OwnershipPolicy defines ownership policy which is used to acquire an
+//! element ownership when it's added to the queue and release ownership when it's
+//! removed from the queue.
+template <class T, template <class TT> class OwnershipPolicy = RefCountedOwnership>
 class MpscQueue : public NonCopyable<> {
 public:
     //! Pointer type.
     //! @remarks
     //!  either raw or smart pointer depending on the ownership policy.
-    typedef typename Ownership<T>::Pointer Pointer;
+    typedef typename OwnershipPolicy<T>::Pointer Pointer;
 
     MpscQueue()
         : tail_(&stub_)
@@ -71,7 +71,7 @@ public:
     //!  - Concurrent try_pop_front() and pop_front() does not affect this operation.
     //!    Only concurrent push_back() calls can make it spin.
     void push_back(T& obj) {
-        Ownership<T>::acquire(obj);
+        OwnershipPolicy<T>::acquire(obj);
 
         MpscQueueNode::MpscQueueData* node = obj.mpsc_queue_data();
 
@@ -100,7 +100,7 @@ public:
         change_owner_(node, this, NULL);
 
         Pointer obj = static_cast<T*>(node->container_of());
-        Ownership<T>::release(*obj);
+        OwnershipPolicy<T>::release(*obj);
 
         return obj;
     }
@@ -125,7 +125,7 @@ public:
         change_owner_(node, this, NULL);
 
         Pointer obj = static_cast<T*>(node->container_of());
-        Ownership<T>::release(*obj);
+        OwnershipPolicy<T>::release(*obj);
 
         return obj;
     }

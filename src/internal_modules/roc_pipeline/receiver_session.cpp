@@ -24,15 +24,15 @@ ReceiverSession::ReceiverSession(
     core::BufferFactory<uint8_t>& byte_buffer_factory,
     core::BufferFactory<audio::sample_t>& sample_buffer_factory,
     core::IAllocator& allocator)
-    : src_address_(src_address)
-    , allocator_(allocator)
+    : RefCounted(allocator)
+    , src_address_(src_address)
     , audio_reader_(NULL) {
     const rtp::Format* format = format_map.format(session_config.payload_type);
     if (!format) {
         return;
     }
 
-    queue_router_.reset(new (queue_router_) packet::Router(allocator_));
+    queue_router_.reset(new (queue_router_) packet::Router(allocator));
     if (!queue_router_) {
         return;
     }
@@ -75,8 +75,8 @@ ReceiverSession::ReceiverSession(
 
         fec_decoder_.reset(
             fec::CodecMap::instance().new_decoder(session_config.fec_decoder,
-                                                  byte_buffer_factory, allocator_),
-            allocator_);
+                                                  byte_buffer_factory, allocator),
+            allocator);
         if (!fec_decoder_) {
             return;
         }
@@ -88,7 +88,7 @@ ReceiverSession::ReceiverSession(
 
         fec_reader_.reset(new (fec_reader_) fec::Reader(
             session_config.fec_reader, session_config.fec_decoder.scheme, *fec_decoder_,
-            *preader, *repair_queue_, *fec_parser_, packet_factory, allocator_));
+            *preader, *repair_queue_, *fec_parser_, packet_factory, allocator));
         if (!fec_reader_ || !fec_reader_->valid()) {
             return;
         }
@@ -102,7 +102,7 @@ ReceiverSession::ReceiverSession(
         preader = fec_validator_.get();
     }
 
-    payload_decoder_.reset(format->new_decoder(allocator_), allocator_);
+    payload_decoder_.reset(format->new_decoder(allocator), allocator);
     if (!payload_decoder_) {
         return;
     }
@@ -125,7 +125,7 @@ ReceiverSession::ReceiverSession(
             *areader,
             audio::SampleSpec(format->sample_spec.sample_rate(),
                               common_config.output_sample_spec.channel_mask()),
-            session_config.watchdog, allocator_));
+            session_config.watchdog, allocator));
         if (!watchdog_ || !watchdog_->valid()) {
             return;
         }
@@ -180,10 +180,6 @@ ReceiverSession::ReceiverSession(
     }
 
     audio_reader_ = areader;
-}
-
-void ReceiverSession::destroy() {
-    allocator_.destroy(*this);
 }
 
 bool ReceiverSession::valid() const {

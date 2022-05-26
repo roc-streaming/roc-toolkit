@@ -67,7 +67,7 @@ int roc_context_close(roc_context* context) {
         return -1;
     }
 
-    imp_context->destroy();
+    api::root_allocator.destroy_object(*imp_context);
 
     roc_log(LogInfo, "roc_context_close: closed context");
 

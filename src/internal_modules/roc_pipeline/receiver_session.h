@@ -25,7 +25,7 @@
 #include "roc_core/iallocator.h"
 #include "roc_core/list_node.h"
 #include "roc_core/optional.h"
-#include "roc_core/ref_counter.h"
+#include "roc_core/ref_counted.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_fec/iblock_decoder.h"
 #include "roc_fec/reader.h"
@@ -47,7 +47,9 @@ namespace pipeline {
 //! Receiver session pipeline.
 //! @remarks
 //!  Created at the receiver side for every connected sender.
-class ReceiverSession : public core::RefCounter<ReceiverSession>, public core::ListNode {
+class ReceiverSession
+    : public core::RefCounted<ReceiverSession, core::StandardAllocation>,
+      public core::ListNode {
 public:
     //! Initialize.
     ReceiverSession(const ReceiverSessionConfig& session_config,
@@ -76,13 +78,7 @@ public:
     audio::IReader& reader();
 
 private:
-    friend class core::RefCounter<ReceiverSession>;
-
-    void destroy();
-
     const address::SocketAddr src_address_;
-
-    core::IAllocator& allocator_;
 
     audio::IReader* audio_reader_;
 

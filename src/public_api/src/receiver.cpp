@@ -176,8 +176,7 @@ int roc_receiver_close(roc_receiver* receiver) {
     }
 
     peer::Receiver* imp_receiver = (peer::Receiver*)receiver;
-
-    imp_receiver->destroy();
+    imp_receiver->context().allocator().destroy_object(*imp_receiver);
 
     roc_log(LogInfo, "roc_receiver_close: closed receiver");
 

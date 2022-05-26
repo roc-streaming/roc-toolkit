@@ -12,6 +12,7 @@
 #ifndef ROC_CORE_SCOPED_PTR_H_
 #define ROC_CORE_SCOPED_PTR_H_
 
+#include "roc_core/allocation_policy.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/panic.h"
@@ -23,19 +24,23 @@ namespace core {
 //! Unique ownrship pointer.
 //!
 //! @tparam T defines pointee type. It may be const.
-//! @tparam Destroyer is used to destroy the object.
-template <class T, class Destroyer = IAllocator> class ScopedPtr : public NonCopyable<> {
+//! @tparam AllocationPolicy defies (de)allocation policy.
+//!
+//! When ScopedPtr is destroyed or reset, it invokes AllocationPolicy::destroy()
+//! to destroy the owned object.
+template <class T, class AllocationPolicy = StandardAllocation>
+class ScopedPtr : public NonCopyable<> {
 public:
     //! Initialize null pointer.
     ScopedPtr()
         : ptr_(NULL)
-        , destroyer_() {
+        , policy_() {
     }
 
     //! Initialize from a raw pointer.
-    ScopedPtr(T* ptr, Destroyer& destroyer)
+    ScopedPtr(T* ptr, const AllocationPolicy& policy)
         : ptr_(ptr)
-        , destroyer_(&destroyer) {
+        , policy_(policy) {
     }
 
     //! Destroy object.
@@ -47,15 +52,14 @@ public:
     void reset() {
         destroy_();
         ptr_ = NULL;
-        destroyer_ = NULL;
     }
 
     //! Reset pointer to a new value.
-    void reset(T* new_ptr, Destroyer& new_destroyer) {
+    void reset(T* new_ptr, const AllocationPolicy& new_policy) {
         if (new_ptr != ptr_) {
             destroy_();
             ptr_ = new_ptr;
-            destroyer_ = &new_destroyer;
+            policy_ = new_policy;
         }
     }
 
@@ -66,7 +70,6 @@ public:
             roc_panic("uniqueptr: attempting to release a null pointer");
         }
         ptr_ = NULL;
-        destroyer_ = NULL;
         return ret;
     }
 
@@ -95,14 +98,13 @@ public:
 
 private:
     void destroy_() {
-        if (ptr_) {
-            roc_panic_if(destroyer_ == NULL);
-            destroyer_->destroy(*ptr_);
+        if (ptr_ != NULL) {
+            policy_.destroy(*ptr_);
         }
     }
 
     T* ptr_;
-    Destroyer* destroyer_;
+    AllocationPolicy policy_;
 };
 
 } // namespace core

@@ -13,7 +13,6 @@
 #include "roc_core/heap_allocator.h"
 #include "roc_core/log.h"
 #include "roc_core/parse_duration.h"
-#include "roc_core/scoped_destructor.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_pipeline/converter_sink.h"
 #include "roc_sndio/backend_dispatcher.h"
@@ -36,8 +35,8 @@ int main(int argc, char** argv) {
         return code;
     }
 
-    core::ScopedDestructor<gengetopt_args_info*, cmdline_parser_free> args_destructor(
-        &args);
+    core::ScopedPtr<gengetopt_args_info, core::CustomAllocation> args_holder(
+        &args, &cmdline_parser_free);
 
     core::Logger::instance().set_verbosity(args.verbose_given);
 

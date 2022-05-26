@@ -21,8 +21,8 @@ ReceiverEndpoint::ReceiverEndpoint(address::Protocol proto,
                                    ReceiverSessionGroup& session_group,
                                    const rtp::FormatMap& format_map,
                                    core::IAllocator& allocator)
-    : proto_(proto)
-    , allocator_(allocator)
+    : RefCounted(allocator)
+    , proto_(proto)
     , receiver_state_(receiver_state)
     , session_group_(session_group)
     , parser_(NULL) {
@@ -88,10 +88,6 @@ ReceiverEndpoint::ReceiverEndpoint(address::Protocol proto,
     }
 
     parser_ = parser;
-}
-
-void ReceiverEndpoint::destroy() {
-    allocator_.destroy(*this);
 }
 
 bool ReceiverEndpoint::valid() const {

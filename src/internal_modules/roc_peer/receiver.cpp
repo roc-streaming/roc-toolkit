@@ -22,10 +22,10 @@ Receiver::Receiver(Context& context, const pipeline::ReceiverConfig& pipeline_co
     , pipeline_(*this,
                 pipeline_config,
                 format_map_,
-                context_.packet_factory(),
-                context_.byte_buffer_factory(),
-                context_.sample_buffer_factory(),
-                context_.allocator())
+                context.packet_factory(),
+                context.byte_buffer_factory(),
+                context.sample_buffer_factory(),
+                context.allocator())
     , endpoint_set_(0)
     , process_pipeline_tasks_(pipeline_) {
     roc_log(LogDebug, "receiver peer: initializing");
@@ -45,13 +45,13 @@ Receiver::Receiver(Context& context, const pipeline::ReceiverConfig& pipeline_co
 Receiver::~Receiver() {
     roc_log(LogDebug, "receiver peer: deinitializing");
 
-    context_.control_loop().wait(process_pipeline_tasks_);
+    context().control_loop().wait(process_pipeline_tasks_);
 
     for (size_t i = 0; i < ROC_ARRAY_SIZE(ports_); i++) {
         if (ports_[i].handle) {
             netio::NetworkLoop::Tasks::RemovePort task(ports_[i].handle);
 
-            if (!context_.network_loop().schedule_and_wait(task)) {
+            if (!context().network_loop().schedule_and_wait(task)) {
                 roc_panic("receiver peer: can't remove port");
             }
         }
@@ -125,7 +125,7 @@ bool Receiver::bind(address::Interface iface, address::EndpointUri& uri) {
 
     netio::NetworkLoop::Tasks::ResolveEndpointAddress resolve_task(uri);
 
-    if (!context_.network_loop().schedule_and_wait(resolve_task)) {
+    if (!context().network_loop().schedule_and_wait(resolve_task)) {
         roc_log(LogError, "receiver peer: can't resolve %s interface address",
                 address::interface_to_str(iface));
         return false;
@@ -143,7 +143,7 @@ bool Receiver::bind(address::Interface iface, address::EndpointUri& uri) {
 
     netio::NetworkLoop::Tasks::AddUdpReceiverPort port_task(ports_[iface].config,
                                                             *endpoint_task.get_writer());
-    if (!context_.network_loop().schedule_and_wait(port_task)) {
+    if (!context().network_loop().schedule_and_wait(port_task)) {
         roc_log(LogError, "receiver peer: can't bind %s interface to local port",
                 address::interface_to_str(iface));
 
@@ -174,11 +174,11 @@ sndio::ISource& Receiver::source() {
 
 void Receiver::schedule_task_processing(pipeline::TaskPipeline&,
                                         core::nanoseconds_t deadline) {
-    context_.control_loop().reschedule_at(process_pipeline_tasks_, deadline);
+    context().control_loop().reschedule_at(process_pipeline_tasks_, deadline);
 }
 
 void Receiver::cancel_task_processing(pipeline::TaskPipeline&) {
-    context_.control_loop().async_cancel(process_pipeline_tasks_);
+    context().control_loop().async_cancel(process_pipeline_tasks_);
 }
 
 } // namespace peer

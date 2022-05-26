@@ -7,13 +7,12 @@
  */
 
 #include "roc_packet/packet.h"
-#include "roc_packet/packet_factory.h"
 
 namespace roc {
 namespace packet {
 
 Packet::Packet(PacketFactory& factory)
-    : factory_(factory)
+    : RefCounted(factory)
     , flags_(0) {
 }
 
@@ -122,10 +121,6 @@ int Packet::compare(const Packet& other) const {
     }
 
     return 0;
-}
-
-void Packet::destroy() {
-    factory_.destroy_packet(*this);
 }
 
 } // namespace packet

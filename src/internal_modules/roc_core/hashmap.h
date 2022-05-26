@@ -18,7 +18,7 @@
 #include "roc_core/iallocator.h"
 #include "roc_core/macro_helpers.h"
 #include "roc_core/noncopyable.h"
-#include "roc_core/ownership.h"
+#include "roc_core/ownership_policy.h"
 #include "roc_core/panic.h"
 #include "roc_core/stddefs.h"
 
@@ -69,18 +69,18 @@ namespace core {
 //! than this capacity. The actual object size occupied to provide the requested
 //! capacity is implementation defined.
 //!
-//! @tparam Ownership defines ownership policy which is used to acquire an element
+//! @tparam OwnershipPolicy defines ownership policy which is used to acquire an element
 //! ownership when it's added to the hashmap and release ownership when it's removed
 //! from the hashmap.
 template <class T,
           size_t EmbeddedCapacity = 0,
-          template <class TT> class Ownership = RefCounterOwnership>
+          template <class TT> class OwnershipPolicy = RefCountedOwnership>
 class Hashmap : public NonCopyable<> {
 public:
     //! Pointer type.
     //! @remarks
     //!  either raw or smart pointer depending on the ownership policy.
-    typedef typename Ownership<T>::Pointer Pointer;
+    typedef typename OwnershipPolicy<T>::Pointer Pointer;
 
     //! Initialize empty hashmap.
     Hashmap(IAllocator& allocator)
@@ -202,7 +202,7 @@ public:
 
         proceed_rehash_(true);
 
-        Ownership<T>::acquire(element);
+        OwnershipPolicy<T>::acquire(element);
     }
 
     //! Remove element from hashmap.
@@ -231,7 +231,7 @@ public:
 
         proceed_rehash_(false);
 
-        Ownership<T>::release(element);
+        OwnershipPolicy<T>::release(element);
     }
 
     //! Grow hashtable capacity.
@@ -369,7 +369,7 @@ private:
                     node = NULL;
                 }
 
-                Ownership<T>::release(*elem);
+                OwnershipPolicy<T>::release(*elem);
             }
         }
     }

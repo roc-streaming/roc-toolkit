@@ -287,7 +287,7 @@ int roc_endpoint_deallocate(roc_endpoint* endpoint) {
     }
 
     address::EndpointUri& imp_endpoint = *(address::EndpointUri*)endpoint;
-    api::root_allocator.destroy(imp_endpoint);
+    api::root_allocator.destroy_object(imp_endpoint);
 
     return 0;
 }

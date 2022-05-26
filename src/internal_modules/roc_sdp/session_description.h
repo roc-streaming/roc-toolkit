@@ -29,11 +29,11 @@ namespace sdp {
 //! SDP session description.
 class SessionDescription : public core::NonCopyable<> {
 public:
-    //! Clear all fields.
-    void clear();
-
     //! Initialize empty session description
     SessionDescription(core::IAllocator& allocator);
+
+    //! Clear all fields.
+    void clear();
 
     //! Globally Unique Identifier for the session.
     //! Built from a tuple of username, sess-id, nettype, addrtype, and unicast-address.

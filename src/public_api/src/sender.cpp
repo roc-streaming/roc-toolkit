@@ -239,8 +239,7 @@ int roc_sender_close(roc_sender* sender) {
     }
 
     peer::Sender* imp_sender = (peer::Sender*)sender;
-
-    imp_sender->destroy();
+    imp_sender->context().allocator().destroy_object(*imp_sender);
 
     roc_log(LogInfo, "roc_sender_close: closed sender");
 

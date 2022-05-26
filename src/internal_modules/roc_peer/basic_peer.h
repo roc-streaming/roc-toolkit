@@ -27,11 +27,10 @@ public:
     //! Deinitialize.
     virtual ~BasicPeer();
 
-    //! Deinitialize and deallocate peer.
-    void destroy();
-
-protected:
     //! Peer's context.
+    Context& context();
+
+private:
     Context& context_;
 };
 

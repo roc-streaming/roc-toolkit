@@ -15,9 +15,10 @@
 #include "roc_core/list_node.h"
 #include "roc_core/macro_helpers.h"
 #include "roc_core/mpsc_queue_node.h"
-#include "roc_core/ref_counter.h"
+#include "roc_core/ref_counted.h"
 #include "roc_core/shared_ptr.h"
 #include "roc_packet/fec.h"
+#include "roc_packet/packet_factory.h"
 #include "roc_packet/print_packet.h"
 #include "roc_packet/rtp.h"
 #include "roc_packet/udp.h"
@@ -25,14 +26,13 @@
 namespace roc {
 namespace packet {
 
-class PacketFactory;
 class Packet;
 
 //! Packet smart pointer.
 typedef core::SharedPtr<Packet> PacketPtr;
 
 //! Packet.
-class Packet : public core::RefCounter<Packet>,
+class Packet : public core::RefCounted<Packet, core::FactoryAllocation<PacketFactory> >,
                public core::ListNode,
                public core::MpscQueueNode {
 public:
@@ -116,12 +116,6 @@ public:
     }
 
 private:
-    friend class core::RefCounter<Packet>;
-
-    void destroy();
-
-    PacketFactory& factory_;
-
     unsigned flags_;
 
     UDP udp_;

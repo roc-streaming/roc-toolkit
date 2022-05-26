@@ -13,24 +13,27 @@
 #define ROC_CORE_BUFFER_H_
 
 #include "roc_core/buffer_factory.h"
-#include "roc_core/ref_counter.h"
+#include "roc_core/ref_counted.h"
 #include "roc_core/stddefs.h"
 
 namespace roc {
 namespace core {
 
 //! Buffer.
-template <class T> class Buffer : public RefCounter<Buffer<T> > {
+template <class T>
+class Buffer : public RefCounted<Buffer<T>, FactoryAllocation<BufferFactory<T> > > {
+    typedef RefCounted<Buffer<T>, FactoryAllocation<BufferFactory<T> > > Base;
+
 public:
     //! Initialize empty buffer.
     explicit Buffer(BufferFactory<T>& factory)
-        : factory_(factory) {
+        : Base(factory) {
         new (data()) T[size()];
     }
 
     //! Get maximum number of elements.
     size_t size() const {
-        return factory_.buffer_size();
+        return Base::factory().buffer_size();
     }
 
     //! Get buffer data.
@@ -42,15 +45,6 @@ public:
     static Buffer* container_of(void* data) {
         return (Buffer*)((char*)data - sizeof(Buffer));
     }
-
-private:
-    friend class RefCounter<Buffer>;
-
-    void destroy() {
-        factory_.destroy_buffer(*this);
-    }
-
-    BufferFactory<T>& factory_;
 };
 
 } // namespace core

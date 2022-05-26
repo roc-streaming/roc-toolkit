@@ -20,8 +20,8 @@ BasicPeer::~BasicPeer() {
     context_.decref();
 }
 
-void BasicPeer::destroy() {
-    context_.allocator().destroy(*this);
+Context& BasicPeer::context() {
+    return context_;
 }
 
 } // namespace peer
