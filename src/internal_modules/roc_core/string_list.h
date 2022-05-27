@@ -34,6 +34,11 @@ public:
     //!  the first string in the list or NULL if it is empty.
     const char* front() const;
 
+    //! Get last string.
+    //! @returns
+    //!  the last string in the list or NULL if it is empty.
+    const char* back() const;
+
     //! Get next string.
     //! @returns
     //!  the first string of the given string or NULL if it is the last string.
@@ -42,12 +47,22 @@ public:
     //!  pointers are invalidated by methods that modify the list.
     const char* nextof(const char* str) const;
 
+    //! Clear the list.
+    void clear();
+
     //! Append string to the list.
     //! @remarks
     //!  Reallocates memory if necessary.
     //! @returns
     //!  false if allocation failed.
     bool push_back(const char* str);
+
+    //! Append string from a range to the list.
+    //! @remarks
+    //!  Reallocates memory if necessary.
+    //! @returns
+    //!  false if allocation failed.
+    bool push_back_range(const char* str_begin, const char* str_end);
 
     //! Append string to the list if it's not in the list already.
     //! @remarks
@@ -56,15 +71,12 @@ public:
     //!  false if allocation failed.
     bool push_back_unique(const char* str);
 
-    //! Append string from a range to the list.
+    //! Append string from a range to the list if it's not in the list already.
     //! @remarks
     //!  Reallocates memory if necessary.
     //! @returns
     //!  false if allocation failed.
-    bool push_back_range(const char* begin, const char* end);
-
-    //! Clear the list.
-    void clear();
+    bool push_back_unique_range(const char* str_begin, const char* str_end);
 
 private:
     enum { MinCapacity = 128 };
@@ -72,6 +84,7 @@ private:
     bool grow_(size_t size);
 
     core::Array<char> data_;
+    const char* back_;
     size_t size_;
 };
 

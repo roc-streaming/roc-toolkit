@@ -14,6 +14,7 @@ namespace core {
 
 StringList::StringList(IAllocator& allocator)
     : data_(allocator)
+    , back_(NULL)
     , size_(0) {
 }
 
@@ -24,6 +25,14 @@ size_t StringList::size() const {
 const char* StringList::front() const {
     if (size_) {
         return &data_[0];
+    } else {
+        return NULL;
+    }
+}
+
+const char* StringList::back() const {
+    if (size_) {
+        return back_;
     } else {
         return NULL;
     }
@@ -55,25 +64,18 @@ const char* StringList::nextof(const char* str) const {
     return ptr;
 }
 
+void StringList::clear() {
+    data_.resize(0);
+    back_ = NULL;
+    size_ = 0;
+}
+
 bool StringList::push_back(const char* str) {
     if (str == NULL) {
         roc_panic("stringlist: string is null");
     }
 
     return push_back_range(str, str + strlen(str));
-}
-
-bool StringList::push_back_unique(const char* str) {
-    if (str == NULL) {
-        roc_panic("stringlist: string is null");
-    }
-
-    for (const char* s = front(); s; s = nextof(s)) {
-        if (strcmp(s, str) == 0) {
-            return true;
-        }
-    }
-    return push_back(str);
 }
 
 bool StringList::push_back_range(const char* begin, const char* end) {
@@ -92,6 +94,7 @@ bool StringList::push_back_range(const char* begin, const char* end) {
         return false;
     }
 
+    back_ = &data_[cur_sz];
     memcpy(&data_[cur_sz], begin, add_sz - 1);
     data_[cur_sz + add_sz - 1] = '\0';
     size_++;
@@ -99,9 +102,27 @@ bool StringList::push_back_range(const char* begin, const char* end) {
     return true;
 }
 
-void StringList::clear() {
-    data_.resize(0);
-    size_ = 0;
+bool StringList::push_back_unique(const char* str) {
+    if (str == NULL) {
+        roc_panic("stringlist: string is null");
+    }
+
+    return push_back_unique_range(str, str + strlen(str));
+}
+
+bool StringList::push_back_unique_range(const char* begin, const char* end) {
+    if (begin == NULL || end == NULL || begin > end) {
+        roc_panic("stringlist: invalid range");
+    }
+
+    for (const char* s = front(); s; s = nextof(s)) {
+        const size_t s_len = strlen(s);
+        if (s_len == size_t(end - begin) && memcmp(s, begin, s_len) == 0) {
+            return true;
+        }
+    }
+
+    return push_back_range(begin, end);
 }
 
 bool StringList::grow_(size_t new_size) {

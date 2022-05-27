@@ -12,58 +12,140 @@
 namespace roc {
 namespace core {
 
+StringBuilder::IBufferWriter::~IBufferWriter() {
+}
+
+StringBuilder::StaticBufferWriter::StaticBufferWriter(char* buf, size_t buf_size)
+    : buf_(buf)
+    , buf_max_size_(buf_size)
+    , buf_cur_size_(1)
+    , buf_wr_ptr_(NULL) {
+}
+
+bool StringBuilder::StaticBufferWriter::reset() {
+    if (buf_ && buf_max_size_ == 0) {
+        // error: buffer isn't null, but there is no space for zero terminator
+        return false;
+    }
+
+    buf_cur_size_ = 1;
+    buf_wr_ptr_ = NULL;
+
+    if (buf_) {
+        buf_[0] = '\0';
+    }
+
+    return true;
+}
+
+bool StringBuilder::StaticBufferWriter::is_noop() {
+    return buf_ == NULL;
+}
+
+bool StringBuilder::StaticBufferWriter::grow_by(size_t) {
+    // ignore
+    return true;
+}
+
+ssize_t StringBuilder::StaticBufferWriter::extend_by(size_t n_chars) {
+    if (buf_ && buf_max_size_ == 0) {
+        // error: buffer isn't null, but there is no space for zero terminator
+        return -1;
+    }
+
+    if (!buf_ && buf_max_size_ == 0) {
+        // special case: when buffer is null, zero buffer size means no limit
+        return (ssize_t)n_chars;
+    }
+
+    const size_t max_chars = buf_max_size_ - buf_cur_size_;
+    if (n_chars > max_chars) {
+        n_chars = max_chars;
+    }
+
+    if (buf_) {
+        buf_wr_ptr_ = buf_ + buf_cur_size_ - 1;
+    }
+
+    buf_cur_size_ += n_chars;
+
+    if (buf_) {
+        buf_[buf_cur_size_ - 1] = '\0';
+    }
+
+    return (ssize_t)n_chars;
+}
+
+char* StringBuilder::StaticBufferWriter::write_ptr() {
+    return buf_wr_ptr_;
+}
+
 size_t StringBuilder::needed_size() const {
-    return input_pos_ + 1;
+    return n_processed_ + 1;
 }
 
 size_t StringBuilder::actual_size() const {
-    if (!buf_ || buf_size_ == 0) {
+    if (writer_->is_noop() || write_error_) {
         return 0;
     }
 
-    return output_pos_ + 1;
+    return n_written_ + 1;
 }
 
 bool StringBuilder::ok() const {
-    return ok_;
+    return !truncation_error_ && !write_error_;
 }
 
-bool StringBuilder::set_str(const char* str) {
+bool StringBuilder::assign_str(const char* str) {
     roc_panic_if_not(str);
 
     reset_();
-    return append_imp_(str, strlen(str), false);
+    return append_(str, strlen(str), false);
 }
 
-bool StringBuilder::set_str_range(const char* str_begin, const char* str_end) {
+bool StringBuilder::assign_range(const char* str_begin, size_t str_size) {
+    roc_panic_if_not(str_begin);
+
+    reset_();
+    return append_(str_begin, str_size, false);
+}
+
+bool StringBuilder::assign_range(const char* str_begin, const char* str_end) {
     roc_panic_if_not(str_begin);
     roc_panic_if_not(str_begin <= str_end);
 
     reset_();
-    return append_imp_(str_begin, size_t(str_end - str_begin), false);
+    return append_(str_begin, size_t(str_end - str_begin), false);
 }
 
 bool StringBuilder::append_str(const char* str) {
     roc_panic_if_not(str);
 
-    return append_imp_(str, strlen(str), true);
+    return append_(str, strlen(str), true);
 }
 
-bool StringBuilder::append_str_range(const char* str_begin, const char* str_end) {
+bool StringBuilder::append_range(const char* str_begin, size_t str_size) {
+    roc_panic_if_not(str_begin);
+
+    return append_(str_begin, str_size, true);
+}
+
+bool StringBuilder::append_range(const char* str_begin, const char* str_end) {
     roc_panic_if_not(str_begin);
     roc_panic_if_not(str_begin <= str_end);
 
-    return append_imp_(str_begin, size_t(str_end - str_begin), true);
+    return append_(str_begin, size_t(str_end - str_begin), true);
 }
 
 bool StringBuilder::append_char(char ch) {
-    return append_imp_(&ch, 1, true);
+    return append_(&ch, 1, true);
 }
 
-// we can't use snprintf() because it's not signal-safe
-// we can't use itoa() because it's non-standard
 bool StringBuilder::append_uint(uint64_t number, unsigned int base) {
     roc_panic_if_not(base >= 2 && base <= 16);
+
+    // we can't use snprintf() because it's not signal-safe
+    // we can't use itoa() because it's non-standard
 
     char tmp[128]; // 128 is enough for any base in case of 64-bit ints
     size_t tmp_pos = sizeof(tmp) - 1;
@@ -73,65 +155,68 @@ bool StringBuilder::append_uint(uint64_t number, unsigned int base) {
         number = number / base;
     } while (number > 0);
 
-    return append_imp_(tmp + tmp_pos + 1, sizeof(tmp) - tmp_pos - 1, true);
+    return append_(tmp + tmp_pos + 1, sizeof(tmp) - tmp_pos - 1, true);
 }
 
-void StringBuilder::init_() {
-    ok_ = true;
+void StringBuilder::initialize_() {
+    n_processed_ = 0;
+    n_written_ = 0;
+
+    truncation_error_ = false;
+    write_error_ = false;
+
     reset_();
-    append_imp_("", 0, false);
 }
 
 void StringBuilder::reset_() {
-    if (buf_) {
-        ok_ = true;
-    }
+    n_processed_ = 0;
+    n_written_ = 0;
 
-    output_pos_ = 0;
-    input_pos_ = 0;
+    if (!write_error_) {
+        if (!writer_->reset()) {
+            write_error_ = true;
+            return;
+        }
 
-    if (array_) {
-        buf_ = array_resize_(array_, 0, false);
-        buf_size_ = 0;
+        truncation_error_ = false;
     }
 }
 
-bool StringBuilder::append_imp_(const char* str, size_t str_size, bool exp) {
-    const size_t copy_size = request_append_(str_size + 1, exp);
+bool StringBuilder::append_(const char* str, size_t str_size, bool grow) {
+    roc_panic_if_not(str);
 
-    if (copy_size > 0) {
-        if (copy_size > 1) {
-            memcpy(buf_ + output_pos_, str, copy_size - 1);
+    n_processed_ += str_size;
+
+    if (!write_error_) {
+        if (grow) {
+            if (!writer_->grow_by(str_size)) {
+                write_error_ = true;
+                return ok();
+            }
         }
-        buf_[output_pos_ + copy_size - 1] = '\0';
-        output_pos_ += copy_size - 1;
-    }
 
-    input_pos_ += str_size;
+        if (str_size != 0) {
+            const ssize_t write_size = writer_->extend_by(str_size);
 
-    return ok_;
-}
+            if (write_size < 0) {
+                write_error_ = true;
+                return ok();
+            }
 
-size_t StringBuilder::request_append_(size_t size, bool exp) {
-    if (array_) {
-        buf_ = array_resize_(array_, output_pos_ + size, exp);
-        buf_size_ = output_pos_ + size;
+            if (write_size > 0) {
+                if (char* write_ptr = writer_->write_ptr()) {
+                    memcpy(write_ptr, str, (size_t)write_size);
+                    n_written_ += (size_t)write_size;
+                }
+            }
 
-        if (!buf_) {
-            ok_ = false;
+            if ((size_t)write_size < str_size) {
+                truncation_error_ = true;
+            }
         }
     }
 
-    if (!buf_) {
-        return 0;
-    }
-
-    if (output_pos_ + size > buf_size_) {
-        ok_ = false;
-        return buf_size_ - output_pos_;
-    }
-
-    return size;
+    return ok();
 }
 
 } // namespace core

@@ -24,6 +24,7 @@ TEST(string_list, empty) {
 
     LONGS_EQUAL(0, sl.size());
     CHECK(sl.front() == NULL);
+    CHECK(sl.back() == NULL);
 }
 
 TEST(string_list, push_back) {
@@ -31,16 +32,19 @@ TEST(string_list, push_back) {
 
     LONGS_EQUAL(0, sl.size());
     CHECK(sl.front() == NULL);
+    CHECK(sl.back() == NULL);
 
     CHECK(sl.push_back("foo"));
 
     LONGS_EQUAL(1, sl.size());
     STRCMP_EQUAL("foo", sl.front());
+    STRCMP_EQUAL("foo", sl.back());
 
     CHECK(sl.push_back("bar"));
 
     LONGS_EQUAL(2, sl.size());
     STRCMP_EQUAL("foo", sl.front());
+    STRCMP_EQUAL("bar", sl.back());
 }
 
 TEST(string_list, nextof) {

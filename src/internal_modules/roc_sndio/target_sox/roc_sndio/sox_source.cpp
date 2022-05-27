@@ -275,14 +275,14 @@ bool SoxSource::seek_(uint64_t offset) {
 
 bool SoxSource::setup_names_(const char* driver, const char* path) {
     if (driver) {
-        if (!driver_name_.set_str(driver)) {
+        if (!driver_name_.assign(driver)) {
             roc_log(LogError, "sox source: can't allocate string");
             return false;
         }
     }
 
     if (path) {
-        if (!input_name_.set_str(path)) {
+        if (!input_name_.assign(path)) {
             roc_log(LogError, "sox source: can't allocate string");
             return false;
         }

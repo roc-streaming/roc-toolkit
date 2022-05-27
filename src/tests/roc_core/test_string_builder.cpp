@@ -10,6 +10,7 @@
 
 #include "roc_core/array.h"
 #include "roc_core/heap_allocator.h"
+#include "roc_core/string_buffer.h"
 #include "roc_core/string_builder.h"
 
 namespace roc {
@@ -20,8 +21,15 @@ TEST_GROUP(string_builder) {
 };
 
 TEST(string_builder, init) {
-    { // null buffer
+    { // null zero-size buffer
         StringBuilder b(NULL, 0);
+
+        CHECK(b.ok());
+        UNSIGNED_LONGS_EQUAL(1, b.needed_size());
+        UNSIGNED_LONGS_EQUAL(0, b.actual_size());
+    }
+    { // null one-byte buffer
+        StringBuilder b(NULL, 1);
 
         CHECK(b.ok());
         UNSIGNED_LONGS_EQUAL(1, b.needed_size());
@@ -47,33 +55,33 @@ TEST(string_builder, init) {
 
         CHECK(buf[0] == 0);
     }
-    { // zero-size array
-        Array<char> array(allocator);
-        StringBuilder b(array);
+    { // zero-size StringBuffer
+        StringBuffer<> buf(allocator);
+        StringBuilder b(buf);
 
         CHECK(b.ok());
         UNSIGNED_LONGS_EQUAL(1, b.needed_size());
         UNSIGNED_LONGS_EQUAL(1, b.actual_size());
-        UNSIGNED_LONGS_EQUAL(1, array.size());
+        UNSIGNED_LONGS_EQUAL(0, buf.len());
 
-        CHECK(array[0] == 0);
+        CHECK(*buf.c_str() == '\0');
     }
-    { // one-byte array
-        Array<char> array(allocator);
-        CHECK(array.grow(1));
-        array.push_back('x');
-        StringBuilder b(array);
+    { // one-byte StringBuffer
+        StringBuffer<> buf(allocator);
+        CHECK(buf.assign("x"));
+
+        StringBuilder b(buf);
 
         CHECK(b.ok());
         UNSIGNED_LONGS_EQUAL(1, b.needed_size());
         UNSIGNED_LONGS_EQUAL(1, b.actual_size());
-        UNSIGNED_LONGS_EQUAL(1, array.size());
+        UNSIGNED_LONGS_EQUAL(0, buf.len());
 
-        CHECK(array[0] == 0);
+        CHECK(*buf.c_str() == '\0');
     }
 }
 
-TEST(string_builder, set_str) {
+TEST(string_builder, assign) {
     { // copy exact size
         enum { Size = 9 };
 
@@ -83,7 +91,7 @@ TEST(string_builder, set_str) {
 
         StringBuilder b(dst, Size);
 
-        CHECK(b.set_str_range(src, src + strlen(src)));
+        CHECK(b.assign_range(src, src + strlen(src)));
         CHECK(b.ok());
 
         UNSIGNED_LONGS_EQUAL(Size, b.needed_size());
@@ -100,7 +108,7 @@ TEST(string_builder, set_str) {
 
         StringBuilder b(dst, Size);
 
-        CHECK(b.set_str_range(src, src + 4));
+        CHECK(b.assign_range(src, src + 4));
         CHECK(b.ok());
 
         UNSIGNED_LONGS_EQUAL(5, b.needed_size());
@@ -117,7 +125,7 @@ TEST(string_builder, set_str) {
 
         StringBuilder b(dst, Size);
 
-        CHECK(!b.set_str_range(src, src + strlen(src)));
+        CHECK(!b.assign_range(src, src + strlen(src)));
         CHECK(!b.ok());
 
         UNSIGNED_LONGS_EQUAL(strlen(src) + 1, b.needed_size());
@@ -134,7 +142,7 @@ TEST(string_builder, set_str) {
 
         StringBuilder b(dst, Size);
 
-        CHECK(!b.set_str_range(src, src + strlen(src)));
+        CHECK(!b.assign_range(src, src + strlen(src)));
         CHECK(!b.ok());
 
         UNSIGNED_LONGS_EQUAL(strlen(src) + 1, b.needed_size());
@@ -151,7 +159,7 @@ TEST(string_builder, set_str) {
 
         StringBuilder b(dst, Size);
 
-        CHECK(!b.set_str_range(src, src + strlen(src)));
+        CHECK(!b.assign_range(src, src + strlen(src)));
         CHECK(!b.ok());
 
         UNSIGNED_LONGS_EQUAL(strlen(src) + 1, b.needed_size());
@@ -170,7 +178,7 @@ TEST(string_builder, set_str) {
 
         STRCMP_EQUAL("123456", buf);
 
-        CHECK(b.set_str("abc"));
+        CHECK(b.assign_str("abc"));
         CHECK(b.ok());
 
         STRCMP_EQUAL("abc", buf);
@@ -180,12 +188,12 @@ TEST(string_builder, set_str) {
 
         StringBuilder b(buf, sizeof(buf));
 
-        CHECK(!b.set_str("1235678"));
+        CHECK(!b.assign_str("1235678"));
         CHECK(!b.ok());
 
         STRCMP_EQUAL("123", buf);
 
-        CHECK(b.set_str("abc"));
+        CHECK(b.assign_str("abc"));
         CHECK(b.ok());
 
         STRCMP_EQUAL("abc", buf);
@@ -206,7 +214,7 @@ TEST(string_builder, append_str) {
 
         StringBuilder b(dst, Size);
 
-        CHECK(b.append_str_range(src1, src1 + strlen(src1)));
+        CHECK(b.append_range(src1, src1 + strlen(src1)));
         CHECK(b.ok());
 
         UNSIGNED_LONGS_EQUAL(strlen(src1) + 1, b.needed_size());
@@ -214,7 +222,7 @@ TEST(string_builder, append_str) {
 
         CHECK(memcmp(dst, res1, sizeof(res1)) == 0);
 
-        CHECK(b.append_str_range(src2, src2 + strlen(src2)));
+        CHECK(b.append_range(src2, src2 + strlen(src2)));
         CHECK(b.ok());
 
         UNSIGNED_LONGS_EQUAL(Size, b.needed_size());
@@ -235,7 +243,7 @@ TEST(string_builder, append_str) {
 
         StringBuilder b(dst, Size);
 
-        CHECK(b.append_str_range(src1, src1 + strlen(src1)));
+        CHECK(b.append_range(src1, src1 + strlen(src1)));
         CHECK(b.ok());
 
         UNSIGNED_LONGS_EQUAL(strlen(src1) + 1, b.needed_size());
@@ -243,7 +251,7 @@ TEST(string_builder, append_str) {
 
         CHECK(memcmp(dst, res1, sizeof(res1)) == 0);
 
-        CHECK(b.append_str_range(src2, src2 + strlen(src2)));
+        CHECK(b.append_range(src2, src2 + strlen(src2)));
         CHECK(b.ok());
 
         UNSIGNED_LONGS_EQUAL(strlen(src1) + strlen(src2) + 1, b.needed_size());
@@ -264,7 +272,7 @@ TEST(string_builder, append_str) {
 
         StringBuilder b(dst, Size);
 
-        CHECK(b.append_str_range(src1, src1 + strlen(src1)));
+        CHECK(b.append_range(src1, src1 + strlen(src1)));
         CHECK(b.ok());
 
         UNSIGNED_LONGS_EQUAL(strlen(src1) + 1, b.needed_size());
@@ -272,7 +280,7 @@ TEST(string_builder, append_str) {
 
         CHECK(memcmp(dst, res1, sizeof(res1)) == 0);
 
-        CHECK(!b.append_str_range(src2, src2 + strlen(src2)));
+        CHECK(!b.append_range(src2, src2 + strlen(src2)));
         CHECK(!b.ok());
 
         UNSIGNED_LONGS_EQUAL(strlen(src1) + strlen(src2) + 1, b.needed_size());
@@ -293,7 +301,7 @@ TEST(string_builder, append_str) {
 
         StringBuilder b(dst, Size);
 
-        CHECK(b.append_str_range(src1, src1 + strlen(src1)));
+        CHECK(b.append_range(src1, src1 + strlen(src1)));
         CHECK(b.ok());
 
         UNSIGNED_LONGS_EQUAL(Size, b.needed_size());
@@ -301,7 +309,7 @@ TEST(string_builder, append_str) {
 
         CHECK(memcmp(dst, res1, sizeof(res1)) == 0);
 
-        CHECK(!b.append_str_range(src2, src2 + strlen(src2)));
+        CHECK(!b.append_range(src2, src2 + strlen(src2)));
         CHECK(!b.ok());
 
         UNSIGNED_LONGS_EQUAL(strlen(src1) + strlen(src2) + 1, b.needed_size());
@@ -428,48 +436,44 @@ TEST(string_builder, append_uint) {
     }
 }
 
-TEST(string_builder, resize_array) {
-    { // set
-        Array<char> array(allocator);
-        StringBuilder b(array);
+TEST(string_builder, resizing) {
+    { // assign
+        StringBuffer<> buf(allocator);
+        StringBuilder b(buf);
 
         UNSIGNED_LONGS_EQUAL(1, b.needed_size());
         UNSIGNED_LONGS_EQUAL(1, b.actual_size());
 
-        UNSIGNED_LONGS_EQUAL(1, array.capacity());
-        UNSIGNED_LONGS_EQUAL(1, array.size());
-        STRCMP_EQUAL("", array.data());
+        UNSIGNED_LONGS_EQUAL(0, buf.len());
+        STRCMP_EQUAL("", buf.c_str());
 
-        CHECK(b.set_str("1234"));
+        CHECK(b.assign_str("1234"));
         CHECK(b.ok());
 
         UNSIGNED_LONGS_EQUAL(5, b.needed_size());
         UNSIGNED_LONGS_EQUAL(5, b.actual_size());
 
-        UNSIGNED_LONGS_EQUAL(5, array.capacity());
-        UNSIGNED_LONGS_EQUAL(5, array.size());
-        STRCMP_EQUAL("1234", array.data());
+        UNSIGNED_LONGS_EQUAL(4, buf.len());
+        STRCMP_EQUAL("1234", buf.c_str());
 
-        CHECK(b.set_str("1234abcd"));
+        CHECK(b.assign_str("1234abcd"));
         CHECK(b.ok());
 
         UNSIGNED_LONGS_EQUAL(9, b.needed_size());
         UNSIGNED_LONGS_EQUAL(9, b.actual_size());
 
-        UNSIGNED_LONGS_EQUAL(9, array.capacity());
-        UNSIGNED_LONGS_EQUAL(9, array.size());
-        STRCMP_EQUAL("1234abcd", array.data());
+        UNSIGNED_LONGS_EQUAL(8, buf.len());
+        STRCMP_EQUAL("1234abcd", buf.c_str());
     }
     { // append
-        Array<char> array(allocator);
-        StringBuilder b(array);
+        StringBuffer<> buf(allocator);
+        StringBuilder b(buf);
 
         UNSIGNED_LONGS_EQUAL(1, b.needed_size());
         UNSIGNED_LONGS_EQUAL(1, b.actual_size());
 
-        UNSIGNED_LONGS_EQUAL(1, array.capacity());
-        UNSIGNED_LONGS_EQUAL(1, array.size());
-        STRCMP_EQUAL("", array.data());
+        UNSIGNED_LONGS_EQUAL(0, buf.len());
+        STRCMP_EQUAL("", buf.c_str());
 
         CHECK(b.append_str("1234"));
         CHECK(b.ok());
@@ -477,9 +481,8 @@ TEST(string_builder, resize_array) {
         UNSIGNED_LONGS_EQUAL(5, b.needed_size());
         UNSIGNED_LONGS_EQUAL(5, b.actual_size());
 
-        UNSIGNED_LONGS_EQUAL(8, array.capacity());
-        UNSIGNED_LONGS_EQUAL(5, array.size());
-        STRCMP_EQUAL("1234", array.data());
+        UNSIGNED_LONGS_EQUAL(4, buf.len());
+        STRCMP_EQUAL("1234", buf.c_str());
 
         CHECK(b.append_str("abcd"));
         CHECK(b.ok());
@@ -487,9 +490,8 @@ TEST(string_builder, resize_array) {
         UNSIGNED_LONGS_EQUAL(9, b.needed_size());
         UNSIGNED_LONGS_EQUAL(9, b.actual_size());
 
-        UNSIGNED_LONGS_EQUAL(16, array.capacity());
-        UNSIGNED_LONGS_EQUAL(9, array.size());
-        STRCMP_EQUAL("1234abcd", array.data());
+        UNSIGNED_LONGS_EQUAL(8, buf.len());
+        STRCMP_EQUAL("1234abcd", buf.c_str());
     }
 }
 

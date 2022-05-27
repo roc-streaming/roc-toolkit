@@ -12,8 +12,11 @@
 #ifndef ROC_CORE_STRING_BUILDER_H_
 #define ROC_CORE_STRING_BUILDER_H_
 
+#include "roc_core/macro_helpers.h"
 #include "roc_core/noncopyable.h"
+#include "roc_core/optional.h"
 #include "roc_core/stddefs.h"
+#include "roc_core/string_buffer.h"
 
 namespace roc {
 namespace core {
@@ -21,13 +24,13 @@ namespace core {
 //! String builder.
 //!
 //! Allows to incrementally build a string. Doesn't own the string itself, but
-//! insetead holds a reference to external fixed-size or dynamic array.
+//! insetead holds a reference to external fixed-size or dynamic buffer.
 //
 //! Supports "dry run" mode when no actual writing happens. This can be used
 //! to calculate the required buffer size before writing.
 //!
-//! When used with fixed-sized buffer, all methods are signal-safe and thus
-//! can be used from signal handler.
+//! When used with fixed-sized buffer, all methods are signal-safe and hence
+//! can be used from a signal handler.
 class StringBuilder : public NonCopyable<> {
 public:
     //! Construct string builder on top of fixed-size buffer.
@@ -39,26 +42,28 @@ public:
     //!
     //! @p buf may be NULL. In this case, nothing will be written, but
     //! needed_size() will be still calculated.
-    StringBuilder(char* buf, size_t bufsz)
-        : buf_(buf)
-        , buf_size_(bufsz)
-        , array_(NULL)
-        , array_resize_(NULL) {
-        init_();
+    //!
+    //! If @p buf is non-NULL, @p bufsz should be non-zero so that buffer
+    //! could hold at least zero terminator. Otherwise, error flag is raised
+    //! immediately in constructor.
+    //!
+    //! If @p buf is NULL, @p bufsz may be both zero and non-zero. Use
+    //! non-zero to get an error when buffer size is exceeded (like if it was
+    //! a real buffer); use zero to disable buffer size checking (there is
+    //! no buffer anyway).
+    StringBuilder(char* buf, size_t bufsz) {
+        writer_.reset(new (writer_) StaticBufferWriter(buf, bufsz));
+        initialize_();
     }
 
-    //! Construct string builder on top of dynamic array.
+    //! Construct string builder on top of dynamic buffer.
     //!
-    //! The builder will write output string into the given array. The array
+    //! The builder will write output string into the given buffer. The buffer
     //! will be resized accordingly to the output string size plus terminating
-    //! zero byte. The array will be always zero-terminated.
-    template <class Array>
-    StringBuilder(Array& array)
-        : buf_(array.data())
-        , buf_size_(array.size())
-        , array_(&array)
-        , array_resize_(&StringBuilder::array_resize_func_<Array>) {
-        init_();
+    //! zero byte. The buffer will be always zero-terminated.
+    template <size_t N> StringBuilder(StringBuffer<N>& buf) {
+        writer_.reset(new (writer_) DynamicBufferWriter<StringBuffer<N> >(buf));
+        initialize_();
     }
 
     //! Get number of bytes required to store the output string.
@@ -76,27 +81,35 @@ public:
     //! Check for errors.
     //!
     //! @remark
-    //!  Error flag is raised if any of the merhods fail, and is resetted
-    //!  if a set* method succeedes.
+    //!  Error flag is raised if any of the methods fail, and is resetted
+    //!  if an assign* method succeedes.
     bool ok() const;
 
-    //! Override result with given string.
+    //! Overwrite result with given string.
     //! If there is not enough space, truncates the string and returns false.
-    bool set_str(const char* str);
+    bool assign_str(const char* str);
 
-    //! Override result with given string.
+    //! Overwrite result with given range.
     //! If there is not enough space, truncates the string and returns false.
-    bool set_str_range(const char* str_begin, const char* str_end);
+    bool assign_range(const char* str_begin, size_t str_size);
+
+    //! Overwrite result with given range.
+    //! If there is not enough space, truncates the string and returns false.
+    bool assign_range(const char* str_begin, const char* str_end);
 
     //! Append to result given string.
     //! If there is not enough space, truncates the string and returns false.
     bool append_str(const char* str);
 
-    //! Append to result given string.
+    //! Append to result given range.
     //! If there is not enough space, truncates the string and returns false.
-    bool append_str_range(const char* str_begin, const char* str_end);
+    bool append_range(const char* str_begin, size_t str_size);
 
-    //! Append to result given character..
+    //! Append to result given range.
+    //! If there is not enough space, truncates the string and returns false.
+    bool append_range(const char* str_begin, const char* str_end);
+
+    //! Append to result given character.
     //! If there is not enough space, truncates the string and returns false.
     bool append_char(char ch);
 
@@ -105,37 +118,83 @@ public:
     bool append_uint(uint64_t number, unsigned int base);
 
 private:
-    typedef char* (*ResizeFunc)(void* array, size_t size, bool exp);
+    class IBufferWriter {
+    public:
+        virtual ~IBufferWriter();
 
-    template <class Array>
-    static char* array_resize_func_(void* array, size_t size, bool exp) {
-        if (exp) {
-            if (!static_cast<Array*>(array)->grow_exp(size)) {
-                return NULL;
-            }
-        }
-        if (!static_cast<Array*>(array)->resize(size)) {
-            return NULL;
-        }
-        return static_cast<Array*>(array)->data();
-    }
+        virtual bool is_noop() = 0;
+        virtual bool reset() = 0;
+        virtual bool grow_by(size_t n_chars) = 0;
+        virtual ssize_t extend_by(size_t n_chars) = 0;
+        virtual char* write_ptr() = 0;
+    };
 
-    void init_();
+    class StaticBufferWriter : public IBufferWriter {
+    public:
+        StaticBufferWriter(char* buf, size_t buf_size);
+
+        virtual bool is_noop();
+        virtual bool reset();
+        virtual bool grow_by(size_t n_chars);
+        virtual ssize_t extend_by(size_t n_chars);
+        virtual char* write_ptr();
+
+    private:
+        char* const buf_;
+        const size_t buf_max_size_;
+        size_t buf_cur_size_;
+        char* buf_wr_ptr_;
+    };
+
+    template <class Buffer = StringBuffer<> >
+    class DynamicBufferWriter : public IBufferWriter {
+    public:
+        DynamicBufferWriter(Buffer& buf)
+            : buf_(buf)
+            , buf_wr_ptr_(NULL) {
+        }
+
+        virtual bool is_noop() {
+            return false;
+        }
+
+        virtual bool reset() {
+            buf_.clear();
+            buf_wr_ptr_ = NULL;
+            return true;
+        }
+
+        virtual bool grow_by(size_t n_chars) {
+            return buf_.grow_exp(buf_.len() + n_chars);
+        }
+
+        virtual ssize_t extend_by(size_t n_chars) {
+            buf_wr_ptr_ = buf_.extend(n_chars);
+            return buf_wr_ptr_ ? (ssize_t)n_chars : -1;
+        }
+
+        virtual char* write_ptr() {
+            return buf_wr_ptr_;
+        }
+
+    private:
+        Buffer& buf_;
+        char* buf_wr_ptr_;
+    };
+
+    void initialize_();
     void reset_();
+    bool append_(const char* str, size_t str_size, bool grow);
 
-    bool append_imp_(const char* str, size_t str_size, bool exp);
-    size_t request_append_(size_t size, bool exp);
+    Optional<IBufferWriter,
+             ROC_MAX(sizeof(StaticBufferWriter), sizeof(DynamicBufferWriter<>))>
+        writer_;
 
-    char* buf_;
-    size_t buf_size_;
+    size_t n_processed_;
+    size_t n_written_;
 
-    size_t output_pos_;
-    size_t input_pos_;
-
-    bool ok_;
-
-    void* array_;
-    ResizeFunc array_resize_;
+    bool truncation_error_;
+    bool write_error_;
 };
 
 } // namespace core

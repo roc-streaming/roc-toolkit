@@ -15,13 +15,14 @@
 #include "roc_core/alignment.h"
 #include "roc_core/attributes.h"
 #include "roc_core/noncopyable.h"
+#include "roc_core/panic.h"
 #include "roc_core/stddefs.h"
 
 namespace roc {
 namespace core {
 
 //! Optionally constructed object.
-template <class T> class Optional : public NonCopyable<> {
+template <class T, size_t Size = sizeof(T)> class Optional : public NonCopyable<> {
 public:
     Optional()
         : ptr_(NULL) {
@@ -72,10 +73,12 @@ public:
         return (const unspecified_bool*)ptr_;
     }
 
-    //! Get storage for the object.
-    void* storage() {
+    //! Get object memory.
+    //! @pre
+    //!  Should be called before object is actually allocated.
+    void* unallocated_memory() {
         if (ptr_) {
-            roc_panic("optional: attempt to get storage after the object was created");
+            roc_panic("optional: attempt to get memory after the object was created");
         }
         return storage_.mem;
     }
@@ -83,7 +86,7 @@ public:
 private:
     union Storage {
         MaxAlign align;
-        char mem[sizeof(T)];
+        char mem[Size];
     };
 
     T* ptr_;
@@ -96,15 +99,17 @@ private:
 //! Placement new for core::Optional.
 //! @note
 //!  nothrow forces compiler to check for NULL return value before calling ctor.
-template <class T>
-inline void* operator new(size_t, roc::core::Optional<T>& opt) throw() {
-    return opt.storage();
+template <class T, size_t Size>
+inline void* operator new(size_t size, roc::core::Optional<T, Size>& opt) throw() {
+    roc_panic_if_not(size <= Size);
+    return opt.unallocated_memory();
 }
 
 //! Placement delete for core::Optional.
 //! @note
 //!  Compiler calls this if ctor throws in a placement new expression.
-template <class T> inline void operator delete(void*, roc::core::Optional<T>&) throw() {
+template <class T, size_t Size>
+inline void operator delete(void*, roc::core::Optional<T, Size>&) throw() {
 }
 
 #endif // ROC_CORE_OPTIONAL_H_

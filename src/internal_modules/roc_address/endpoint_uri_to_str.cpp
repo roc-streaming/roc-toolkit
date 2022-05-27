@@ -15,7 +15,7 @@ endpoint_uri_to_str::endpoint_uri_to_str(const EndpointUri& u) {
     core::StringBuilder b(buf_, sizeof(buf_));
 
     if (!u.check(EndpointUri::Subset_Full)) {
-        b.set_str("<bad>");
+        b.assign_str("<bad>");
         return;
     }
 

@@ -54,7 +54,7 @@ bool IoUri::set_scheme(const char* str, size_t str_len) {
         return false;
     }
 
-    if (!scheme_.set_buf(str, str_len)) {
+    if (!scheme_.assign_range(str, str_len)) {
         scheme_.clear();
         return false;
     }
@@ -73,7 +73,7 @@ bool IoUri::set_encoded_path(const char* str, size_t str_len) {
         return false;
     }
 
-    core::StringBuilder b(path_.char_array());
+    core::StringBuilder b(path_);
 
     if (!pct_decode(b, str, str_len)) {
         path_.clear();

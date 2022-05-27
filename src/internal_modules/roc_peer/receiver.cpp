@@ -96,7 +96,7 @@ bool Receiver::set_multicast_group(address::Interface iface, const char* ip) {
     core::StringBuilder b(ports_[iface].config.multicast_interface,
                           sizeof(ports_[iface].config.multicast_interface));
 
-    if (!b.set_str(ip)) {
+    if (!b.assign_str(ip)) {
         roc_log(LogError,
                 "receiver peer:"
                 " can't set multicast group for %s interface to '%s':"

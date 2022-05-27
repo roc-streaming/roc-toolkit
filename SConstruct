@@ -896,8 +896,11 @@ if meta.compiler == 'gcc':
     if meta.compiler_ver[:2] >= (8, 0):
         for var in ['CXXFLAGS', 'CFLAGS']:
             env.Append(**{var: [
+                '-Wno-array-bounds',
                 '-Wno-cast-function-type',
                 '-Wno-parentheses',
+                '-Wno-restrict',
+                '-Wno-stringop-overflow',
             ]})
 
 if meta.compiler == 'clang':

@@ -24,91 +24,87 @@ TEST(string_buffer, init) {
     CHECK(sb.is_empty());
     UNSIGNED_LONGS_EQUAL(0, sb.len());
     STRCMP_EQUAL("", sb.c_str());
-
-    UNSIGNED_LONGS_EQUAL(1, sb.char_array().size());
-    UNSIGNED_LONGS_EQUAL(1, sb.char_array().capacity());
 }
 
-TEST(string_buffer, set_str) {
+TEST(string_buffer, assign) {
     StringBuffer<> sb(allocator);
 
-    CHECK(sb.set_str("12345"));
+    CHECK(sb.assign("12345"));
 
     CHECK(!sb.is_empty());
     UNSIGNED_LONGS_EQUAL(5, sb.len());
     STRCMP_EQUAL("12345", sb.c_str());
-
-    UNSIGNED_LONGS_EQUAL(6, sb.char_array().size());
-    UNSIGNED_LONGS_EQUAL(6, sb.char_array().capacity());
 }
 
-TEST(string_buffer, set_buf) {
+TEST(string_buffer, assign_range) {
     StringBuffer<> sb(allocator);
 
-    CHECK(sb.set_buf("12345678", 5));
+    CHECK(sb.assign_range("12345678", 5));
 
     CHECK(!sb.is_empty());
     UNSIGNED_LONGS_EQUAL(5, sb.len());
     STRCMP_EQUAL("12345", sb.c_str());
-
-    UNSIGNED_LONGS_EQUAL(6, sb.char_array().size());
-    UNSIGNED_LONGS_EQUAL(6, sb.char_array().capacity());
 }
 
-TEST(string_buffer, set_empty) {
+TEST(string_buffer, assign_empty) {
     StringBuffer<> sb(allocator);
 
-    CHECK(sb.set_str("12345"));
-    CHECK(sb.set_str(""));
+    CHECK(sb.assign("12345"));
+    CHECK(sb.assign(""));
 
     CHECK(sb.is_empty());
     UNSIGNED_LONGS_EQUAL(0, sb.len());
     STRCMP_EQUAL("", sb.c_str());
+}
 
-    UNSIGNED_LONGS_EQUAL(1, sb.char_array().size());
-    UNSIGNED_LONGS_EQUAL(6, sb.char_array().capacity());
+TEST(string_buffer, assign_overwrite) {
+    StringBuffer<> sb(allocator);
+
+    CHECK(sb.assign("12345678"));
+    CHECK(sb.assign("12345"));
+
+    CHECK(!sb.is_empty());
+    UNSIGNED_LONGS_EQUAL(5, sb.len());
+    STRCMP_EQUAL("12345", sb.c_str());
 }
 
 TEST(string_buffer, clear) {
     StringBuffer<> sb(allocator);
 
-    CHECK(sb.set_str("12345"));
+    CHECK(sb.assign("12345"));
     sb.clear();
 
     CHECK(sb.is_empty());
     UNSIGNED_LONGS_EQUAL(0, sb.len());
     STRCMP_EQUAL("", sb.c_str());
-
-    UNSIGNED_LONGS_EQUAL(1, sb.char_array().size());
-    UNSIGNED_LONGS_EQUAL(6, sb.char_array().capacity());
 }
 
-TEST(string_buffer, overwrite) {
+TEST(string_buffer, extend) {
     StringBuffer<> sb(allocator);
 
-    CHECK(sb.set_str("12345678"));
-    CHECK(sb.set_str("12345"));
+    CHECK(sb.assign("1234"));
 
-    CHECK(!sb.is_empty());
-    UNSIGNED_LONGS_EQUAL(5, sb.len());
-    STRCMP_EQUAL("12345", sb.c_str());
+    UNSIGNED_LONGS_EQUAL(4, sb.len());
+    STRCMP_EQUAL("1234", sb.c_str());
 
-    UNSIGNED_LONGS_EQUAL(6, sb.char_array().size());
-    UNSIGNED_LONGS_EQUAL(9, sb.char_array().capacity());
+    char* ptr = sb.extend(4);
+    CHECK(ptr);
+    CHECK(!*ptr);
+    memcpy(ptr, "5678", 4);
+
+    UNSIGNED_LONGS_EQUAL(8, sb.len());
+    STRCMP_EQUAL("12345678", sb.c_str());
 }
 
 TEST(string_buffer, grow) {
     StringBuffer<> sb(allocator);
 
-    CHECK(sb.set_str("12345"));
+    CHECK(sb.assign("12345"));
     CHECK(sb.grow(10));
 
     CHECK(!sb.is_empty());
     UNSIGNED_LONGS_EQUAL(5, sb.len());
     STRCMP_EQUAL("12345", sb.c_str());
-
-    UNSIGNED_LONGS_EQUAL(6, sb.char_array().size());
-    UNSIGNED_LONGS_EQUAL(10, sb.char_array().capacity());
 }
 
 } // namespace core
