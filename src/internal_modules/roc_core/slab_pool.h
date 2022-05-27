@@ -12,7 +12,6 @@
 #ifndef ROC_CORE_SLAB_POOL_H_
 #define ROC_CORE_SLAB_POOL_H_
 
-#include "roc_core/alignment.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/list.h"
 #include "roc_core/mutex.h"

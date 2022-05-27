@@ -7,6 +7,7 @@
  */
 
 #include "roc_core/slab_pool.h"
+#include "roc_core/align_ops.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 
@@ -23,8 +24,8 @@ SlabPool::SlabPool(IAllocator& allocator,
     , slab_min_bytes_(min_alloc_bytes)
     , slab_max_bytes_(max_alloc_bytes == 0 ? 0
                                            : std::max(min_alloc_bytes, max_alloc_bytes))
-    , slot_size_(max_align(std::max(sizeof(Slot), object_size)))
-    , slab_hdr_size_(max_align(sizeof(Slab)))
+    , slot_size_(AlignOps::align_max(std::max(sizeof(Slot), object_size)))
+    , slab_hdr_size_(AlignOps::align_max(sizeof(Slab)))
     , slab_cur_slots_(slab_min_bytes_ == 0 ? 1 : slots_per_slab_(slab_min_bytes_, true))
     , slab_max_slots_(slab_max_bytes_ == 0 ? 0 : slots_per_slab_(slab_max_bytes_, false))
     , object_size_(object_size)

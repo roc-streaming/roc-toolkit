@@ -12,7 +12,7 @@
 #ifndef ROC_FEC_COMPOSER_H_
 #define ROC_FEC_COMPOSER_H_
 
-#include "roc_core/alignment.h"
+#include "roc_core/align_ops.h"
 #include "roc_core/log.h"
 #include "roc_core/noncopyable.h"
 #include "roc_fec/headers.h"
@@ -45,7 +45,7 @@ public:
         }
 
         if (inner_composer_ == NULL) {
-            const size_t padding = core::padding(header_size, payload_alignment);
+            const size_t padding = core::AlignOps::pad_as(header_size, payload_alignment);
 
             if (buffer.capacity() < padding) {
                 roc_log(

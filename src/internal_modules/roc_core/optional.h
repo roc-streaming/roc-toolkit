@@ -12,7 +12,7 @@
 #ifndef ROC_CORE_OPTIONAL_H_
 #define ROC_CORE_OPTIONAL_H_
 
-#include "roc_core/alignment.h"
+#include "roc_core/aligned_storage.h"
 #include "roc_core/attributes.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/panic.h"
@@ -41,7 +41,7 @@ public:
         if (ptr_) {
             ptr_->~T();
         }
-        if (ptr && (void*)ptr != storage_.mem) {
+        if (ptr && (void*)ptr != storage_.memory()) {
             roc_panic("optional: attempt to set incorrect object");
         }
         ptr_ = ptr;
@@ -80,17 +80,12 @@ public:
         if (ptr_) {
             roc_panic("optional: attempt to get memory after the object was created");
         }
-        return storage_.mem;
+        return storage_.memory();
     }
 
 private:
-    union Storage {
-        MaxAlign align;
-        char mem[Size];
-    };
-
     T* ptr_;
-    Storage storage_;
+    AlignedStorage<Size> storage_;
 };
 
 } // namespace core

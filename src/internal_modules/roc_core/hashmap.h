@@ -12,7 +12,7 @@
 #ifndef ROC_CORE_HASHMAP_H_
 #define ROC_CORE_HASHMAP_H_
 
-#include "roc_core/alignment.h"
+#include "roc_core/aligned_storage.h"
 #include "roc_core/hash.h"
 #include "roc_core/hashmap_node.h"
 #include "roc_core/iallocator.h"
@@ -286,11 +286,6 @@ private:
         HashmapNode::HashmapNodeData* head;
     };
 
-    union Storage {
-        MaxAlign align;
-        char mem[NumEmbeddedBuckets != 0 ? NumEmbeddedBuckets * sizeof(Bucket) : 1];
-    };
-
     bool realloc_buckets_(size_t n_buckets) {
         roc_panic_if_not(n_buckets > 0);
 
@@ -299,8 +294,8 @@ private:
 
         Bucket* buckets;
         if (n_buckets <= NumEmbeddedBuckets
-            && curr_buckets_ != (Bucket*)&embedded_buckets_) {
-            buckets = (Bucket*)&embedded_buckets_;
+            && curr_buckets_ != (Bucket*)embedded_buckets_.memory()) {
+            buckets = (Bucket*)embedded_buckets_.memory();
         } else {
             buckets = (Bucket*)allocator_.allocate(n_buckets * sizeof(Bucket));
             if (buckets == NULL) {
@@ -310,7 +305,7 @@ private:
 
         memset(buckets, 0, n_buckets * sizeof(Bucket));
 
-        if (prev_buckets_ && prev_buckets_ != (Bucket*)&embedded_buckets_) {
+        if (prev_buckets_ && prev_buckets_ != (Bucket*)embedded_buckets_.memory()) {
             allocator_.deallocate(prev_buckets_);
             prev_buckets_ = NULL;
         }
@@ -330,11 +325,11 @@ private:
     }
 
     void dealloc_buckets_() {
-        if (curr_buckets_ && curr_buckets_ != (Bucket*)&embedded_buckets_) {
+        if (curr_buckets_ && curr_buckets_ != (Bucket*)embedded_buckets_.memory()) {
             allocator_.deallocate(curr_buckets_);
         }
 
-        if (prev_buckets_ && prev_buckets_ != (Bucket*)&embedded_buckets_) {
+        if (prev_buckets_ && prev_buckets_ != (Bucket*)embedded_buckets_.memory()) {
             allocator_.deallocate(prev_buckets_);
         }
     }
@@ -537,8 +532,8 @@ private:
             }
         }
 
-        roc_panic_if(min * 2 < min);
-        return min * 2;
+        roc_panic_if(min * 3 < min);
+        return min * 3;
     }
 
     Bucket* curr_buckets_;
@@ -554,7 +549,7 @@ private:
 
     IAllocator& allocator_;
 
-    Storage embedded_buckets_;
+    AlignedStorage<NumEmbeddedBuckets * sizeof(Bucket)> embedded_buckets_;
 };
 
 } // namespace core

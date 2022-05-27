@@ -12,7 +12,7 @@
 #ifndef ROC_CORE_ARRAY_H_
 #define ROC_CORE_ARRAY_H_
 
-#include "roc_core/alignment.h"
+#include "roc_core/aligned_storage.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/log.h"
 #include "roc_core/noncopyable.h"
@@ -211,21 +211,16 @@ public:
     }
 
 private:
-    union Storage {
-        MaxAlign align;
-        char mem[EmbeddedCapacity ? EmbeddedCapacity * sizeof(T) : 1];
-    };
-
     T* allocate_(size_t n_elems) {
         if (n_elems <= EmbeddedCapacity) {
-            return (T*)&emb_data_;
+            return (T*)embedded_data_.memory();
         } else {
             return (T*)allocator_.allocate(n_elems * sizeof(T));
         }
     }
 
     void deallocate_(T* data) {
-        if ((void*)data != (void*)&emb_data_) {
+        if ((void*)data != (void*)embedded_data_.memory()) {
             allocator_.deallocate(data);
         }
     }
@@ -236,7 +231,7 @@ private:
 
     IAllocator& allocator_;
 
-    Storage emb_data_;
+    AlignedStorage<EmbeddedCapacity * sizeof(T)> embedded_data_;
 };
 
 } // namespace core

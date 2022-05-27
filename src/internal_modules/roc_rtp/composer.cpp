@@ -7,7 +7,7 @@
  */
 
 #include "roc_rtp/composer.h"
-#include "roc_core/alignment.h"
+#include "roc_core/align_ops.h"
 #include "roc_core/log.h"
 #include "roc_rtp/headers.h"
 
@@ -28,7 +28,7 @@ bool Composer::align(core::Slice<uint8_t>& buffer,
     header_size += sizeof(Header);
 
     if (inner_composer_ == NULL) {
-        const size_t padding = core::padding(header_size, payload_alignment);
+        const size_t padding = core::AlignOps::pad_as(header_size, payload_alignment);
 
         if (buffer.capacity() < padding) {
             roc_log(LogDebug,
