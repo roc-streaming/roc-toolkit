@@ -76,14 +76,21 @@ public:
     }
 
 private:
+    // Some good fillers for unused memory.
+    // If we fill memory with these values and interpret it as 16-bit or 32-bit
+    // integers, or as floats, the values will be rather high and will sound
+    // loudly when trying to play them on sound card.
     enum { PoisonAllocated = 0x7a, PoisonDeallocated = 0x7d };
 
     struct Slab : ListNode { };
     struct Slot : ListNode { };
 
+    void* give_slot_to_user_(Slot* slot);
+    Slot* take_slot_from_user_(void* memory);
+
+    Slot* acquire_slot_();
+    void release_slot_(Slot* slot);
     bool reserve_slots_(size_t desired_slots);
-    Slot* get_slot_();
-    void put_slot_(Slot* slot);
 
     void increase_slab_size_(size_t desired_n_slots);
     bool allocate_new_slab_();

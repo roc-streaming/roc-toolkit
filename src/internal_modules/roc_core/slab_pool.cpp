@@ -50,15 +50,42 @@ size_t SlabPool::object_size() const {
 }
 
 bool SlabPool::reserve(size_t n_objects) {
+    Mutex::Lock lock(mutex_);
+
     return reserve_slots_(n_objects);
 }
 
 void* SlabPool::allocate() {
-    Slot* slot = get_slot_();
+    Slot* slot;
+
+    {
+        Mutex::Lock lock(mutex_);
+
+        slot = acquire_slot_();
+    }
+
     if (slot == NULL) {
         return NULL;
     }
 
+    return give_slot_to_user_(slot);
+}
+
+void SlabPool::deallocate(void* memory) {
+    if (memory == NULL) {
+        roc_panic("slab pool: deallocating null pointer");
+    }
+
+    Slot* slot = take_slot_from_user_(memory);
+
+    {
+        Mutex::Lock lock(mutex_);
+
+        release_slot_(slot);
+    }
+}
+
+void* SlabPool::give_slot_to_user_(Slot* slot) {
     slot->~Slot();
 
     void* memory = slot;
@@ -72,38 +99,15 @@ void* SlabPool::allocate() {
     return memory;
 }
 
-void SlabPool::deallocate(void* memory) {
-    if (memory == NULL) {
-        roc_panic("slab pool: deallocating null pointer");
-    }
-
+SlabPool::Slot* SlabPool::take_slot_from_user_(void* memory) {
     if (poison_) {
         memset(memory, PoisonDeallocated, slot_size_);
     }
 
-    Slot* slot = new (memory) Slot;
-    put_slot_(slot);
+    return new (memory) Slot;
 }
 
-bool SlabPool::reserve_slots_(size_t desired_slots) {
-    Mutex::Lock lock(mutex_);
-
-    if (desired_slots > free_slots_.size()) {
-        increase_slab_size_(desired_slots - free_slots_.size());
-
-        do {
-            if (!allocate_new_slab_()) {
-                return false;
-            }
-        } while (desired_slots > free_slots_.size());
-    }
-
-    return true;
-}
-
-SlabPool::Slot* SlabPool::get_slot_() {
-    Mutex::Lock lock(mutex_);
-
+SlabPool::Slot* SlabPool::acquire_slot_() {
     if (free_slots_.size() == 0) {
         allocate_new_slab_();
     }
@@ -117,15 +121,27 @@ SlabPool::Slot* SlabPool::get_slot_() {
     return slot;
 }
 
-void SlabPool::put_slot_(Slot* slot) {
-    Mutex::Lock lock(mutex_);
-
+void SlabPool::release_slot_(Slot* slot) {
     if (n_used_slots_ == 0) {
         roc_panic("slab pool: unpaired deallocation");
     }
 
     n_used_slots_--;
     free_slots_.push_front(*slot);
+}
+
+bool SlabPool::reserve_slots_(size_t desired_slots) {
+    if (desired_slots > free_slots_.size()) {
+        increase_slab_size_(desired_slots - free_slots_.size());
+
+        do {
+            if (!allocate_new_slab_()) {
+                return false;
+            }
+        } while (desired_slots > free_slots_.size());
+    }
+
+    return true;
 }
 
 void SlabPool::increase_slab_size_(size_t desired_slots) {
