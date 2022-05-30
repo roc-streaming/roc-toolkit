@@ -14,20 +14,16 @@
 namespace roc {
 namespace ctl {
 
-ControlLoop::Task::Task(TaskResult (ControlLoop::*func)(Task&))
-    : func_(func)
-    , endpoint_(NULL) {
-}
-
 ControlLoop::Tasks::CreateEndpoint::CreateEndpoint(address::Interface iface,
                                                    address::Protocol proto)
-    : Task(&ControlLoop::task_create_endpoint_)
+    : ControlTask(&ControlLoop::task_create_endpoint_)
+    , endpoint_(NULL)
     , iface_(iface)
     , proto_(proto) {
 }
 
 ControlLoop::EndpointHandle ControlLoop::Tasks::CreateEndpoint::get_handle() const {
-    if (!success()) {
+    if (!succeeded()) {
         return NULL;
     }
     roc_panic_if_not(endpoint_);
@@ -35,13 +31,13 @@ ControlLoop::EndpointHandle ControlLoop::Tasks::CreateEndpoint::get_handle() con
 }
 
 ControlLoop::Tasks::DeleteEndpoint::DeleteEndpoint(ControlLoop::EndpointHandle endpoint)
-    : Task(&ControlLoop::task_delete_endpoint_) {
-    endpoint_ = (BasicControlEndpoint*)endpoint;
+    : ControlTask(&ControlLoop::task_delete_endpoint_)
+    , endpoint_((BasicControlEndpoint*)endpoint) {
 }
 
-ControlLoop::Tasks::ProcessPipelineTasks::ProcessPipelineTasks(
+ControlLoop::Tasks::PipelineProcessing::PipelineProcessing(
     pipeline::TaskPipeline& pipeline)
-    : Task(&ControlLoop::task_process_pipeline_tasks_)
+    : ControlTask(&ControlLoop::task_process_pipeline_tasks_)
     , pipeline_(pipeline) {
 }
 
@@ -50,16 +46,32 @@ ControlLoop::ControlLoop(core::IAllocator& allocator)
 }
 
 ControlLoop::~ControlLoop() {
-    stop_and_wait();
 }
 
-TaskQueue::TaskResult ControlLoop::process_task_imp(TaskQueue::Task& basic_task) {
-    Task& task = (Task&)basic_task;
-    return (this->*(task.func_))(task);
+bool ControlLoop::valid() const {
+    return task_queue_.valid();
 }
 
-TaskQueue::TaskResult ControlLoop::task_create_endpoint_(Task& basic_task) {
-    Tasks::CreateEndpoint& task = (Tasks::CreateEndpoint&)basic_task;
+void ControlLoop::schedule(ControlTask& task, IControlTaskCompleter* completer) {
+    task_queue_.schedule(task, *this, completer);
+}
+
+void ControlLoop::schedule_at(ControlTask& task,
+                              core::nanoseconds_t deadline,
+                              IControlTaskCompleter* completer) {
+    task_queue_.schedule_at(task, deadline, *this, completer);
+}
+
+void ControlLoop::async_cancel(ControlTask& task) {
+    task_queue_.async_cancel(task);
+}
+
+void ControlLoop::wait(ControlTask& task) {
+    task_queue_.wait(task);
+}
+
+ControlTaskResult ControlLoop::task_create_endpoint_(ControlTask& control_task) {
+    Tasks::CreateEndpoint& task = (Tasks::CreateEndpoint&)control_task;
 
     core::SharedPtr<BasicControlEndpoint> endpoint =
         ControlInterfaceMap::instance().new_endpoint(task.iface_, task.proto_,
@@ -67,35 +79,35 @@ TaskQueue::TaskResult ControlLoop::task_create_endpoint_(Task& basic_task) {
 
     if (!endpoint) {
         roc_log(LogError, "control loop: can't add endpoint: failed to create");
-        return TaskFailed;
+        return ControlTaskFailed;
     }
 
     endpoints_.push_back(*endpoint);
     task.endpoint_ = endpoint;
 
-    return TaskSucceeded;
+    return ControlTaskSucceeded;
 }
 
-TaskQueue::TaskResult ControlLoop::task_delete_endpoint_(Task& basic_task) {
-    Tasks::DeleteEndpoint& task = (Tasks::DeleteEndpoint&)basic_task;
+ControlTaskResult ControlLoop::task_delete_endpoint_(ControlTask& control_task) {
+    Tasks::DeleteEndpoint& task = (Tasks::DeleteEndpoint&)control_task;
 
     if (!endpoints_.contains(*task.endpoint_)) {
         roc_log(LogError, "control loop: can't delete endpoint: not added");
-        return TaskFailed;
+        return ControlTaskFailed;
     }
 
     task.endpoint_->close();
     endpoints_.remove(*task.endpoint_);
 
-    return TaskSucceeded;
+    return ControlTaskSucceeded;
 }
 
-TaskQueue::TaskResult ControlLoop::task_process_pipeline_tasks_(Task& basic_task) {
-    Tasks::ProcessPipelineTasks& task = (Tasks::ProcessPipelineTasks&)basic_task;
+ControlTaskResult ControlLoop::task_process_pipeline_tasks_(ControlTask& control_task) {
+    Tasks::PipelineProcessing& task = (Tasks::PipelineProcessing&)control_task;
 
     task.pipeline_.process_tasks();
 
-    return TaskSucceeded;
+    return ControlTaskSucceeded;
 }
 
 } // namespace ctl

@@ -268,7 +268,7 @@ public:
         : TaskPipeline(*this, config, audio::SampleSpec(SampleRate, Chans))
         , loop_(loop)
         , stats_(stats)
-        , process_tasks_(*this) {
+        , processing_task_(*this) {
     }
 
     ~TestPipeline() {
@@ -276,8 +276,8 @@ public:
     }
 
     void stop_and_wait() {
-        loop_.async_cancel(process_tasks_);
-        loop_.wait(process_tasks_);
+        loop_.async_cancel(processing_task_);
+        loop_.wait(processing_task_);
 
         while (num_pending_tasks() != 0) {
             process_tasks();
@@ -322,17 +322,17 @@ private:
     }
 
     virtual void schedule_task_processing(TaskPipeline&, core::nanoseconds_t deadline) {
-        loop_.reschedule_at(process_tasks_, deadline);
+        loop_.schedule_at(processing_task_, deadline, NULL);
     }
 
     virtual void cancel_task_processing(TaskPipeline&) {
-        loop_.async_cancel(process_tasks_);
+        loop_.async_cancel(processing_task_);
     }
 
     ctl::ControlLoop& loop_;
     DelayStats& stats_;
 
-    ctl::ControlLoop::Tasks::ProcessPipelineTasks process_tasks_;
+    ctl::ControlLoop::Tasks::PipelineProcessing processing_task_;
 };
 
 class TaskThread : public core::Thread, private TaskPipeline::ICompletionHandler {

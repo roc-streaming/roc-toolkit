@@ -94,7 +94,7 @@ private:
 
     InterfacePort ports_[address::Iface_Max];
 
-    ctl::ControlLoop::Tasks::ProcessPipelineTasks process_pipeline_tasks_;
+    ctl::ControlLoop::Tasks::PipelineProcessing processing_task_;
 };
 
 } // namespace peer

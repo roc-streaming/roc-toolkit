@@ -174,7 +174,7 @@ sndio::ISource& Receiver::source() {
 
 void Receiver::schedule_task_processing(pipeline::TaskPipeline&,
                                         core::nanoseconds_t deadline) {
-    context().control_loop().reschedule_at(process_pipeline_tasks_, deadline);
+    context().control_loop().schedule_at(process_pipeline_tasks_, deadline, NULL);
 }
 
 void Receiver::cancel_task_processing(pipeline::TaskPipeline&) {

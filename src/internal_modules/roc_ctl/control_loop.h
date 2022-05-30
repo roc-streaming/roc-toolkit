@@ -15,39 +15,29 @@
 #include "roc_address/interface.h"
 #include "roc_address/protocol.h"
 #include "roc_core/list.h"
+#include "roc_core/noncopyable.h"
 #include "roc_core/shared_ptr.h"
 #include "roc_ctl/basic_control_endpoint.h"
-#include "roc_ctl/task_queue.h"
+#include "roc_ctl/control_task_executor.h"
+#include "roc_ctl/control_task_queue.h"
 #include "roc_pipeline/task_pipeline.h"
 
 namespace roc {
 namespace ctl {
 
 //! Control loop thread.
-class ControlLoop : public TaskQueue {
+//! @remarks
+//!  This class is a task-based facade for the whole roc_ctl module.
+class ControlLoop : public ControlTaskExecutor<ControlLoop>, public core::NonCopyable<> {
 public:
     //! Opaque endpoint handle.
     typedef struct EndpointHandle* EndpointHandle;
-
-    //! Control loop task.
-    class Task : public TaskQueue::Task {
-    protected:
-        //! Initialize.
-        Task(TaskResult (ControlLoop::*func)(Task&));
-
-    private:
-        friend class ControlLoop;
-
-        TaskResult (ControlLoop::*func_)(Task&);
-
-        core::SharedPtr<BasicControlEndpoint> endpoint_;
-    };
 
     //! Subclasses for specific tasks.
     class Tasks {
     public:
         //! Create endpoint on given interface.
-        class CreateEndpoint : public Task {
+        class CreateEndpoint : public ControlTask {
         public:
             //! Set task parameters.
             CreateEndpoint(address::Interface iface, address::Protocol proto);
@@ -58,22 +48,28 @@ public:
         private:
             friend class ControlLoop;
 
+            core::SharedPtr<BasicControlEndpoint> endpoint_;
             address::Interface iface_;
             address::Protocol proto_;
         };
 
         //! Delete endpoint on given interface of the endpoint set, if it exists.
-        class DeleteEndpoint : public Task {
+        class DeleteEndpoint : public ControlTask {
         public:
             //! Set task parameters.
             DeleteEndpoint(EndpointHandle endpoint);
+
+        private:
+            friend class ControlLoop;
+
+            core::SharedPtr<BasicControlEndpoint> endpoint_;
         };
 
-        //! Process pending pipeline tasks.
-        class ProcessPipelineTasks : public Task {
+        //! Help pipeline to process its pending tasks.
+        class PipelineProcessing : public ControlTask {
         public:
             //! Set task parameters.
-            ProcessPipelineTasks(pipeline::TaskPipeline& pipeline);
+            PipelineProcessing(pipeline::TaskPipeline& pipeline);
 
         private:
             friend class ControlLoop;
@@ -87,14 +83,35 @@ public:
 
     virtual ~ControlLoop();
 
-private:
-    virtual TaskResult process_task_imp(TaskQueue::Task&);
+    //! Check if the object was successfully constructed.
+    bool valid() const;
 
-    TaskResult task_create_endpoint_(Task&);
-    TaskResult task_delete_endpoint_(Task&);
-    TaskResult task_process_pipeline_tasks_(Task&);
+    //! Enqueue a task for asynchronous execution in the nearest future.
+    //! @see ControlTaskQueue::schedule.
+    void schedule(ControlTask& task, IControlTaskCompleter* completer);
+
+    //! Enqueue a task for asynchronous execution at given point of time.
+    //! @see ControlTaskQueue::schedule_at.
+    void schedule_at(ControlTask& task,
+                     core::nanoseconds_t deadline,
+                     IControlTaskCompleter* completer);
+
+    //! Cancel scheduled task execution.
+    //! @see ControlTaskQueue::async_cancel.
+    void async_cancel(ControlTask& task);
+
+    //! Wait until the task is finished.
+    //! @see ControlTaskQueue::wait.
+    void wait(ControlTask& task);
+
+private:
+    ControlTaskResult task_create_endpoint_(ControlTask&);
+    ControlTaskResult task_delete_endpoint_(ControlTask&);
+    ControlTaskResult task_process_pipeline_tasks_(ControlTask&);
 
     core::IAllocator& allocator_;
+
+    ControlTaskQueue task_queue_;
 
     core::List<BasicControlEndpoint> endpoints_;
 };

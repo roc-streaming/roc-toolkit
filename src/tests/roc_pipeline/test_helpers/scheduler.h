@@ -41,7 +41,7 @@ public:
     }
 
     void wait_done() {
-        ctl::ControlLoop::Tasks::ProcessPipelineTasks* task = NULL;
+        ctl::ControlLoop::Tasks::PipelineProcessing* task = NULL;
 
         {
             core::Mutex::Lock lock(mutex_);
@@ -62,9 +62,9 @@ public:
                                           core::nanoseconds_t deadline) {
         core::Mutex::Lock lock(mutex_);
         if (!task_) {
-            task_ = new ctl::ControlLoop::Tasks::ProcessPipelineTasks(pipeline);
+            task_ = new ctl::ControlLoop::Tasks::PipelineProcessing(pipeline);
         }
-        loop_.reschedule_at(*task_, deadline);
+        loop_.schedule_at(*task_, deadline, NULL);
     }
 
     virtual void cancel_task_processing(pipeline::TaskPipeline&) {
@@ -77,7 +77,7 @@ public:
 private:
     core::Mutex mutex_;
     ctl::ControlLoop loop_;
-    ctl::ControlLoop::Tasks::ProcessPipelineTasks* task_;
+    ctl::ControlLoop::Tasks::PipelineProcessing* task_;
 };
 
 } // namespace test

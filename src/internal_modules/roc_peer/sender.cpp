@@ -28,7 +28,7 @@ Sender::Sender(Context& context, const pipeline::SenderConfig& pipeline_config)
     , endpoint_set_(NULL)
     , source_endpoint_(NULL)
     , repair_endpoint_(NULL)
-    , process_pipeline_tasks_(pipeline_) {
+    , processing_task_(pipeline_) {
     roc_log(LogDebug, "sender peer: initializing");
 
     if (!pipeline_.valid()) {
@@ -309,11 +309,11 @@ bool Sender::setup_outgoing_port_(InterfacePort& port,
 
 void Sender::schedule_task_processing(pipeline::TaskPipeline&,
                                       core::nanoseconds_t deadline) {
-    context().control_loop().reschedule_at(process_pipeline_tasks_, deadline);
+    context().control_loop().schedule_at(processing_task_, deadline, NULL);
 }
 
 void Sender::cancel_task_processing(pipeline::TaskPipeline&) {
-    context().control_loop().async_cancel(process_pipeline_tasks_);
+    context().control_loop().async_cancel(processing_task_);
 }
 
 } // namespace peer

@@ -11,22 +11,24 @@
 #include "roc_core/cond.h"
 #include "roc_core/mutex.h"
 #include "roc_core/panic.h"
-#include "roc_ctl/task_queue.h"
+#include "roc_ctl/control_task_executor.h"
+#include "roc_ctl/control_task_queue.h"
 
 namespace roc {
 namespace ctl {
 
 namespace {
 
-class TestTaskQueue : public TaskQueue {
+class TestExecutor : public ControlTaskExecutor<TestExecutor> {
 public:
-    class Task : public TaskQueue::Task {
+    class Task : public ControlTask {
     public:
-        Task() {
+        Task()
+            : ControlTask(&TestExecutor::do_task_) {
         }
     };
 
-    TestTaskQueue()
+    TestExecutor()
         : block_cond_(mutex_)
         , unblock_cond_(mutex_)
         , allow_counter_(MaxTasks)
@@ -38,13 +40,12 @@ public:
         }
     }
 
-    ~TestTaskQueue() {
+    ~TestExecutor() {
         {
             core::Mutex::Lock lock(mutex_);
             allow_counter_ = MaxTasks;
             unblock_cond_.signal();
         }
-        stop_and_wait();
     }
 
     size_t num_tasks() const {
@@ -62,7 +63,7 @@ public:
     void set_nth_result(size_t n, bool success) {
         core::Mutex::Lock lock(mutex_);
         roc_panic_if_not(n < MaxTasks);
-        results_[n] = (success ? TaskSucceeded : TaskFailed);
+        results_[n] = (success ? ControlTaskSucceeded : ControlTaskFailed);
     }
 
     void block() {
@@ -92,7 +93,7 @@ public:
 private:
     enum { MaxTasks = 100 };
 
-    virtual TaskResult process_task_imp(TaskQueue::Task& task) {
+    ControlTaskResult do_task_(ControlTask& task) {
         core::Mutex::Lock lock(mutex_);
         while (allow_counter_ == 0) {
             blocked_ = true;
@@ -105,7 +106,7 @@ private:
         size_t n = n_tasks_++;
         tasks_[n] = (Task*)&task;
         roc_panic_if(results_[n] == -1);
-        return (TaskResult)results_[n];
+        return (ControlTaskResult)results_[n];
     }
 
     core::Mutex mutex_;
@@ -115,13 +116,13 @@ private:
     bool blocked_;
 
     size_t n_tasks_;
-    Task* tasks_[MaxTasks];
+    ControlTask* tasks_[MaxTasks];
     int results_[MaxTasks];
 };
 
-class TestHandler : public TaskQueue::ICompletionHandler {
+class TestCompleter : public IControlTaskCompleter {
 public:
-    TestHandler()
+    TestCompleter()
         : cond_(mutex_)
         , task_(NULL)
         , expect_success_(false)
@@ -131,14 +132,14 @@ public:
         , actual_calls_(0) {
     }
 
-    ~TestHandler() {
+    ~TestCompleter() {
         core::Mutex::Lock lock(mutex_);
         if (actual_calls_ != expect_n_calls_) {
-            roc_panic("handler: not enough calls: expected %d call(s), got %d call(s)",
+            roc_panic("completer: not enough calls: expected %d call(s), got %d call(s)",
                       (int)expect_n_calls_, (int)actual_calls_);
         }
         if (task_) {
-            roc_panic("handler: forgot to invoke wait_called()");
+            roc_panic("completer: forgot to invoke wait_called()");
         }
     }
 
@@ -162,34 +163,34 @@ public:
         expect_n_calls_ += n;
     }
 
-    TestTaskQueue::Task* wait_called() {
+    TestExecutor::Task* wait_called() {
         core::Mutex::Lock lock(mutex_);
         while (!task_) {
             cond_.wait();
         }
-        TestTaskQueue::Task* ret = (TestTaskQueue::Task*)task_;
+        TestExecutor::Task* ret = (TestExecutor::Task*)task_;
         task_ = NULL;
         return ret;
     }
 
-    virtual void control_task_finished(TaskQueue::Task& task) {
+    virtual void control_task_completed(ControlTask& task) {
         core::Mutex::Lock lock(mutex_);
         if (actual_calls_ == expect_n_calls_) {
-            roc_panic("handler: unexpected call: expected only %d call(s)",
+            roc_panic("completer: unexpected call: expected only %d call(s)",
                       (int)expect_n_calls_);
         }
         actual_calls_++;
-        if (task.success() != expect_success_) {
-            roc_panic("handler: unexpected task success status: expected=%d actual=%d",
-                      (int)expect_success_, (int)task.success());
+        if (task.succeeded() != expect_success_) {
+            roc_panic("completer: unexpected task success status: expected=%d actual=%d",
+                      (int)expect_success_, (int)task.succeeded());
         }
         if (task.cancelled() != expect_cancelled_) {
             roc_panic(
-                "handler: unexpected task cancellation status: expected=%d actual=%d",
+                "completer: unexpected task cancellation status: expected=%d actual=%d",
                 (int)expect_cancelled_, (int)task.cancelled());
         }
         if (core::timestamp() < expect_after_) {
-            roc_panic("handler: task was executed too early");
+            roc_panic("completer: task was executed too early");
         }
         task_ = &task;
         cond_.broadcast();
@@ -199,7 +200,7 @@ private:
     core::Mutex mutex_;
     core::Cond cond_;
 
-    TaskQueue::Task* task_;
+    ControlTask* task_;
 
     bool expect_success_;
     bool expect_cancelled_;
@@ -218,110 +219,118 @@ core::nanoseconds_t now_plus_delay(core::nanoseconds_t delay) {
 TEST_GROUP(task_queue) {};
 
 TEST(task_queue, noop) {
-    TestTaskQueue tq;
-    CHECK(tq.valid());
+    ControlTaskQueue queue;
+    CHECK(queue.valid());
 }
 
 TEST(task_queue, schedule_one) {
     { // success
-        TestTaskQueue tq;
-        CHECK(tq.valid());
+        TestExecutor executor;
 
-        UNSIGNED_LONGS_EQUAL(0, tq.num_tasks());
+        ControlTaskQueue queue;
+        CHECK(queue.valid());
 
-        TestHandler handler;
-        handler.expect_success(true);
-        handler.expect_cancelled(false);
-        handler.expect_n_calls(1);
+        UNSIGNED_LONGS_EQUAL(0, executor.num_tasks());
 
-        TestTaskQueue::Task task;
-        tq.set_nth_result(0, true);
-        tq.schedule(task, &handler);
+        TestCompleter completer;
+        completer.expect_success(true);
+        completer.expect_cancelled(false);
+        completer.expect_n_calls(1);
 
-        CHECK(handler.wait_called() == &task);
+        TestExecutor::Task task;
+        executor.set_nth_result(0, true);
+        queue.schedule(task, executor, &completer);
 
-        UNSIGNED_LONGS_EQUAL(1, tq.num_tasks());
-        CHECK(tq.nth_task(0) == &task);
+        CHECK(completer.wait_called() == &task);
 
-        CHECK(task.success());
+        UNSIGNED_LONGS_EQUAL(1, executor.num_tasks());
+        CHECK(executor.nth_task(0) == &task);
+
+        CHECK(task.succeeded());
         CHECK(!task.cancelled());
     }
     { // failure
-        TestTaskQueue tq;
-        CHECK(tq.valid());
+        TestExecutor executor;
 
-        UNSIGNED_LONGS_EQUAL(0, tq.num_tasks());
+        ControlTaskQueue queue;
+        CHECK(queue.valid());
 
-        TestHandler handler;
-        handler.expect_success(false);
-        handler.expect_cancelled(false);
-        handler.expect_n_calls(1);
+        UNSIGNED_LONGS_EQUAL(0, executor.num_tasks());
 
-        TestTaskQueue::Task task;
-        tq.set_nth_result(0, false);
-        tq.schedule(task, &handler);
+        TestCompleter completer;
+        completer.expect_success(false);
+        completer.expect_cancelled(false);
+        completer.expect_n_calls(1);
 
-        CHECK(handler.wait_called() == &task);
+        TestExecutor::Task task;
+        executor.set_nth_result(0, false);
+        queue.schedule(task, executor, &completer);
 
-        UNSIGNED_LONGS_EQUAL(1, tq.num_tasks());
-        CHECK(tq.nth_task(0) == &task);
+        CHECK(completer.wait_called() == &task);
 
-        CHECK(!task.success());
+        UNSIGNED_LONGS_EQUAL(1, executor.num_tasks());
+        CHECK(executor.nth_task(0) == &task);
+
+        CHECK(!task.succeeded());
         CHECK(!task.cancelled());
     }
 }
 
-TEST(task_queue, schedule_one_no_handler) {
-    TestTaskQueue tq;
-    CHECK(tq.valid());
+TEST(task_queue, schedule_one_no_completer) {
+    TestExecutor executor;
 
-    UNSIGNED_LONGS_EQUAL(0, tq.num_tasks());
+    ControlTaskQueue queue;
+    CHECK(queue.valid());
 
-    TestTaskQueue::Task task;
+    UNSIGNED_LONGS_EQUAL(0, executor.num_tasks());
 
-    CHECK(!task.success());
+    TestExecutor::Task task;
+
+    CHECK(!task.succeeded());
     CHECK(!task.cancelled());
 
-    tq.set_nth_result(0, true);
-    tq.schedule(task, NULL);
+    executor.set_nth_result(0, true);
+    queue.schedule(task, executor, NULL);
 
-    while (task.pending()) {
+    while (!task.completed()) {
         core::sleep_for(core::Microsecond * 100);
     }
 
-    UNSIGNED_LONGS_EQUAL(1, tq.num_tasks());
-    CHECK(tq.nth_task(0) == &task);
+    UNSIGNED_LONGS_EQUAL(1, executor.num_tasks());
+    CHECK(executor.nth_task(0) == &task);
 
-    CHECK(task.success());
+    CHECK(task.succeeded());
     CHECK(!task.cancelled());
 }
 
 TEST(task_queue, schedule_many_sequantial) {
     enum { NumTasks = 20 };
 
-    TestTaskQueue tq;
-    CHECK(tq.valid());
+    TestExecutor executor;
+
+    ControlTaskQueue queue;
+    CHECK(queue.valid());
 
     for (size_t n = 0; n < NumTasks; n++) {
-        UNSIGNED_LONGS_EQUAL(n, tq.num_tasks());
+        UNSIGNED_LONGS_EQUAL(n, executor.num_tasks());
 
         const bool success = (n % 3 != 0);
 
-        TestHandler handler;
-        handler.expect_success(success);
-        handler.expect_cancelled(false);
-        handler.expect_n_calls(1);
+        TestCompleter completer;
+        completer.expect_success(success);
+        completer.expect_cancelled(false);
+        completer.expect_n_calls(1);
 
-        TestTaskQueue::Task task;
-        tq.set_nth_result(n, success);
-        tq.schedule(task, &handler);
+        TestExecutor::Task task;
+        executor.set_nth_result(n, success);
+        queue.schedule(task, executor, &completer);
 
-        CHECK(handler.wait_called() == &task);
+        CHECK(completer.wait_called() == &task);
 
-        UNSIGNED_LONGS_EQUAL(n + 1, tq.num_tasks());
-        CHECK(tq.nth_task(n) == &task);
+        UNSIGNED_LONGS_EQUAL(n + 1, executor.num_tasks());
+        CHECK(executor.nth_task(n) == &task);
 
-        CHECK(task.success() == success);
+        CHECK(task.succeeded() == success);
         CHECK(!task.cancelled());
     }
 }
@@ -329,84 +338,90 @@ TEST(task_queue, schedule_many_sequantial) {
 TEST(task_queue, schedule_many_batched) {
     enum { NumTasks = 20 };
 
-    TestTaskQueue tq;
-    CHECK(tq.valid());
+    TestExecutor executor;
 
-    TestTaskQueue::Task tasks[NumTasks];
-    TestHandler handlers[NumTasks];
+    ControlTaskQueue queue;
+    CHECK(queue.valid());
 
-    handlers[0].expect_success(false);
-    handlers[0].expect_cancelled(false);
-    handlers[0].expect_n_calls(1);
+    TestExecutor::Task tasks[NumTasks];
+    TestCompleter completers[NumTasks];
 
-    tq.block();
+    completers[0].expect_success(false);
+    completers[0].expect_cancelled(false);
+    completers[0].expect_n_calls(1);
 
-    tq.set_nth_result(0, false);
-    tq.schedule(tasks[0], &handlers[0]);
+    executor.block();
 
-    tq.wait_blocked();
+    executor.set_nth_result(0, false);
+    queue.schedule(tasks[0], executor, &completers[0]);
+
+    executor.wait_blocked();
 
     for (size_t n = 1; n < NumTasks; n++) {
         const bool success = (n % 3 != 0);
 
-        handlers[n].expect_success(success);
-        handlers[n].expect_cancelled(false);
-        handlers[n].expect_n_calls(1);
+        completers[n].expect_success(success);
+        completers[n].expect_cancelled(false);
+        completers[n].expect_n_calls(1);
 
-        tq.set_nth_result(n, success);
-        tq.schedule(tasks[n], &handlers[n]);
+        executor.set_nth_result(n, success);
+        queue.schedule(tasks[n], executor, &completers[n]);
     }
 
     for (size_t n = 0; n < NumTasks; n++) {
-        tq.unblock_one();
+        executor.unblock_one();
 
         const bool success = (n % 3 != 0);
 
-        CHECK(handlers[n].wait_called() == &tasks[n]);
+        CHECK(completers[n].wait_called() == &tasks[n]);
 
-        UNSIGNED_LONGS_EQUAL(n + 1, tq.num_tasks());
-        CHECK(tq.nth_task(n) == &tasks[n]);
+        UNSIGNED_LONGS_EQUAL(n + 1, executor.num_tasks());
+        CHECK(executor.nth_task(n) == &tasks[n]);
 
-        CHECK(tasks[n].success() == success);
+        CHECK(tasks[n].succeeded() == success);
         CHECK(!tasks[n].cancelled());
     }
 
-    tq.check_all_unblocked();
+    executor.check_all_unblocked();
 }
 
 TEST(task_queue, schedule_and_wait_one) {
     { // success
-        TestTaskQueue tq;
-        CHECK(tq.valid());
+        TestExecutor executor;
 
-        UNSIGNED_LONGS_EQUAL(0, tq.num_tasks());
+        ControlTaskQueue queue;
+        CHECK(queue.valid());
 
-        TestTaskQueue::Task task;
-        tq.set_nth_result(0, true);
-        tq.schedule(task, NULL);
-        tq.wait(task);
+        UNSIGNED_LONGS_EQUAL(0, executor.num_tasks());
 
-        UNSIGNED_LONGS_EQUAL(1, tq.num_tasks());
-        CHECK(tq.nth_task(0) == &task);
+        TestExecutor::Task task;
+        executor.set_nth_result(0, true);
+        queue.schedule(task, executor, NULL);
+        queue.wait(task);
 
-        CHECK(task.success());
+        UNSIGNED_LONGS_EQUAL(1, executor.num_tasks());
+        CHECK(executor.nth_task(0) == &task);
+
+        CHECK(task.succeeded());
         CHECK(!task.cancelled());
     }
     { // failure
-        TestTaskQueue tq;
-        CHECK(tq.valid());
+        TestExecutor executor;
 
-        UNSIGNED_LONGS_EQUAL(0, tq.num_tasks());
+        ControlTaskQueue queue;
+        CHECK(queue.valid());
 
-        TestTaskQueue::Task task;
-        tq.set_nth_result(0, false);
-        tq.schedule(task, NULL);
-        tq.wait(task);
+        UNSIGNED_LONGS_EQUAL(0, executor.num_tasks());
 
-        UNSIGNED_LONGS_EQUAL(1, tq.num_tasks());
-        CHECK(tq.nth_task(0) == &task);
+        TestExecutor::Task task;
+        executor.set_nth_result(0, false);
+        queue.schedule(task, executor, NULL);
+        queue.wait(task);
 
-        CHECK(!task.success());
+        UNSIGNED_LONGS_EQUAL(1, executor.num_tasks());
+        CHECK(executor.nth_task(0) == &task);
+
+        CHECK(!task.succeeded());
         CHECK(!task.cancelled());
     }
 }
@@ -414,122 +429,132 @@ TEST(task_queue, schedule_and_wait_one) {
 TEST(task_queue, schedule_and_wait_many) {
     enum { NumTasks = 20 };
 
-    TestTaskQueue tq;
-    CHECK(tq.valid());
+    TestExecutor executor;
+
+    ControlTaskQueue queue;
+    CHECK(queue.valid());
 
     for (size_t n = 0; n < NumTasks; n++) {
-        UNSIGNED_LONGS_EQUAL(n, tq.num_tasks());
+        UNSIGNED_LONGS_EQUAL(n, executor.num_tasks());
 
         const bool success = (n % 3 != 0);
 
-        TestTaskQueue::Task task;
-        tq.set_nth_result(n, success);
-        tq.schedule(task, NULL);
-        tq.wait(task);
+        TestExecutor::Task task;
+        executor.set_nth_result(n, success);
+        queue.schedule(task, executor, NULL);
+        queue.wait(task);
 
-        UNSIGNED_LONGS_EQUAL(n + 1, tq.num_tasks());
-        CHECK(tq.nth_task(n) == &task);
+        UNSIGNED_LONGS_EQUAL(n + 1, executor.num_tasks());
+        CHECK(executor.nth_task(n) == &task);
 
-        CHECK(task.success() == success);
+        CHECK(task.succeeded() == success);
         CHECK(!task.cancelled());
     }
 }
 
 TEST(task_queue, schedule_at_one) {
     { // success
-        TestTaskQueue tq;
-        CHECK(tq.valid());
+        TestExecutor executor;
 
-        UNSIGNED_LONGS_EQUAL(0, tq.num_tasks());
+        ControlTaskQueue queue;
+        CHECK(queue.valid());
 
-        TestHandler handler;
-        handler.expect_success(true);
-        handler.expect_cancelled(false);
-        handler.expect_after(core::Millisecond);
-        handler.expect_n_calls(1);
+        UNSIGNED_LONGS_EQUAL(0, executor.num_tasks());
 
-        TestTaskQueue::Task task;
-        tq.set_nth_result(0, true);
-        tq.schedule_at(task, now_plus_delay(core::Millisecond), &handler);
+        TestCompleter completer;
+        completer.expect_success(true);
+        completer.expect_cancelled(false);
+        completer.expect_after(core::Millisecond);
+        completer.expect_n_calls(1);
 
-        CHECK(handler.wait_called() == &task);
+        TestExecutor::Task task;
+        executor.set_nth_result(0, true);
+        queue.schedule_at(task, now_plus_delay(core::Millisecond), executor, &completer);
 
-        UNSIGNED_LONGS_EQUAL(1, tq.num_tasks());
-        CHECK(tq.nth_task(0) == &task);
+        CHECK(completer.wait_called() == &task);
 
-        CHECK(task.success());
+        UNSIGNED_LONGS_EQUAL(1, executor.num_tasks());
+        CHECK(executor.nth_task(0) == &task);
+
+        CHECK(task.succeeded());
         CHECK(!task.cancelled());
     }
     { // failure
-        TestTaskQueue tq;
-        CHECK(tq.valid());
+        TestExecutor executor;
 
-        UNSIGNED_LONGS_EQUAL(0, tq.num_tasks());
+        ControlTaskQueue queue;
+        CHECK(queue.valid());
 
-        TestHandler handler;
-        handler.expect_success(false);
-        handler.expect_cancelled(false);
-        handler.expect_after(core::Millisecond);
-        handler.expect_n_calls(1);
+        UNSIGNED_LONGS_EQUAL(0, executor.num_tasks());
 
-        TestTaskQueue::Task task;
-        tq.set_nth_result(0, false);
-        tq.schedule_at(task, now_plus_delay(core::Millisecond), &handler);
+        TestCompleter completer;
+        completer.expect_success(false);
+        completer.expect_cancelled(false);
+        completer.expect_after(core::Millisecond);
+        completer.expect_n_calls(1);
 
-        CHECK(handler.wait_called() == &task);
+        TestExecutor::Task task;
+        executor.set_nth_result(0, false);
+        queue.schedule_at(task, now_plus_delay(core::Millisecond), executor, &completer);
 
-        UNSIGNED_LONGS_EQUAL(1, tq.num_tasks());
-        CHECK(tq.nth_task(0) == &task);
+        CHECK(completer.wait_called() == &task);
 
-        CHECK(!task.success());
+        UNSIGNED_LONGS_EQUAL(1, executor.num_tasks());
+        CHECK(executor.nth_task(0) == &task);
+
+        CHECK(!task.succeeded());
         CHECK(!task.cancelled());
     }
 }
 
-TEST(task_queue, schedule_at_one_no_handler) {
-    TestTaskQueue tq;
-    CHECK(tq.valid());
+TEST(task_queue, schedule_at_one_no_completer) {
+    TestExecutor executor;
 
-    UNSIGNED_LONGS_EQUAL(0, tq.num_tasks());
+    ControlTaskQueue queue;
+    CHECK(queue.valid());
 
-    TestTaskQueue::Task task;
+    UNSIGNED_LONGS_EQUAL(0, executor.num_tasks());
 
-    CHECK(!task.success());
+    TestExecutor::Task task;
+
+    CHECK(!task.succeeded());
     CHECK(!task.cancelled());
 
-    tq.set_nth_result(0, true);
-    tq.schedule_at(task, now_plus_delay(core::Millisecond), NULL);
+    executor.set_nth_result(0, true);
+    queue.schedule_at(task, now_plus_delay(core::Millisecond), executor, NULL);
 
-    while (task.pending()) {
+    while (!task.completed()) {
         core::sleep_for(core::Microsecond * 100);
     }
 
-    UNSIGNED_LONGS_EQUAL(1, tq.num_tasks());
-    CHECK(tq.nth_task(0) == &task);
+    UNSIGNED_LONGS_EQUAL(1, executor.num_tasks());
+    CHECK(executor.nth_task(0) == &task);
 
-    CHECK(task.success());
+    CHECK(task.succeeded());
     CHECK(!task.cancelled());
 }
 
 TEST(task_queue, schedule_at_many) {
     enum { NumTasks = 20 };
 
-    TestTaskQueue tq;
-    CHECK(tq.valid());
+    TestExecutor executor;
 
-    TestTaskQueue::Task tasks[NumTasks];
-    TestHandler handlers[NumTasks];
+    ControlTaskQueue queue;
+    CHECK(queue.valid());
 
-    handlers[0].expect_success(false);
-    handlers[0].expect_cancelled(false);
-    handlers[0].expect_n_calls(1);
+    TestExecutor::Task tasks[NumTasks];
+    TestCompleter completers[NumTasks];
 
-    tq.block();
+    completers[0].expect_success(false);
+    completers[0].expect_cancelled(false);
+    completers[0].expect_n_calls(1);
 
-    tq.set_nth_result(0, false);
-    tq.schedule(tasks[0], &handlers[0]);
+    executor.block();
 
-    tq.wait_blocked();
+    executor.set_nth_result(0, false);
+    queue.schedule(tasks[0], executor, &completers[0]);
+
+    executor.wait_blocked();
 
     for (size_t n = 1; n < NumTasks; n++) {
         core::sleep_for(core::Microsecond);
@@ -539,51 +564,53 @@ TEST(task_queue, schedule_at_many) {
         const core::nanoseconds_t delay =
             core::Millisecond + core::Microsecond * core::nanoseconds_t(n);
 
-        handlers[n].expect_success(success);
-        handlers[n].expect_cancelled(false);
-        handlers[n].expect_after(delay);
-        handlers[n].expect_n_calls(1);
+        completers[n].expect_success(success);
+        completers[n].expect_cancelled(false);
+        completers[n].expect_after(delay);
+        completers[n].expect_n_calls(1);
 
-        tq.set_nth_result(n, success);
-        tq.schedule_at(tasks[n], now_plus_delay(delay), &handlers[n]);
+        executor.set_nth_result(n, success);
+        queue.schedule_at(tasks[n], now_plus_delay(delay), executor, &completers[n]);
     }
 
     for (size_t n = 0; n < NumTasks; n++) {
-        tq.unblock_one();
+        executor.unblock_one();
 
         const bool success = (n % 3 != 0);
 
-        CHECK(handlers[n].wait_called() == &tasks[n]);
+        CHECK(completers[n].wait_called() == &tasks[n]);
 
-        UNSIGNED_LONGS_EQUAL(n + 1, tq.num_tasks());
-        CHECK(tq.nth_task(n) == &tasks[n]);
+        UNSIGNED_LONGS_EQUAL(n + 1, executor.num_tasks());
+        CHECK(executor.nth_task(n) == &tasks[n]);
 
-        CHECK(tasks[n].success() == success);
+        CHECK(tasks[n].succeeded() == success);
         CHECK(!tasks[n].cancelled());
     }
 
-    tq.check_all_unblocked();
+    executor.check_all_unblocked();
 }
 
 TEST(task_queue, schedule_at_reversed) {
     enum { NumTasks = 20 };
 
-    TestTaskQueue tq;
-    CHECK(tq.valid());
+    TestExecutor executor;
 
-    TestTaskQueue::Task tasks[NumTasks];
-    TestHandler handlers[NumTasks];
+    ControlTaskQueue queue;
+    CHECK(queue.valid());
 
-    handlers[0].expect_success(false);
-    handlers[0].expect_cancelled(false);
-    handlers[0].expect_n_calls(1);
+    TestExecutor::Task tasks[NumTasks];
+    TestCompleter completers[NumTasks];
 
-    tq.block();
+    completers[0].expect_success(false);
+    completers[0].expect_cancelled(false);
+    completers[0].expect_n_calls(1);
 
-    tq.set_nth_result(0, false);
-    tq.schedule(tasks[0], &handlers[0]);
+    executor.block();
 
-    tq.wait_blocked();
+    executor.set_nth_result(0, false);
+    queue.schedule(tasks[0], executor, &completers[0]);
+
+    executor.wait_blocked();
 
     const core::nanoseconds_t now = core::timestamp();
 
@@ -593,774 +620,783 @@ TEST(task_queue, schedule_at_reversed) {
         const core::nanoseconds_t delay =
             core::Millisecond * core::nanoseconds_t(NumTasks - n);
 
-        handlers[n].expect_success(success);
-        handlers[n].expect_cancelled(false);
-        handlers[n].expect_n_calls(1);
+        completers[n].expect_success(success);
+        completers[n].expect_cancelled(false);
+        completers[n].expect_n_calls(1);
 
-        tq.set_nth_result(NumTasks - n, success);
-        tq.schedule_at(tasks[n], now + delay, &handlers[n]);
+        executor.set_nth_result(NumTasks - n, success);
+        queue.schedule_at(tasks[n], now + delay, executor, &completers[n]);
     }
 
-    tq.unblock_one();
+    executor.unblock_one();
 
-    CHECK(handlers[0].wait_called() == &tasks[0]);
-    UNSIGNED_LONGS_EQUAL(1, tq.num_tasks());
+    CHECK(completers[0].wait_called() == &tasks[0]);
+    UNSIGNED_LONGS_EQUAL(1, executor.num_tasks());
 
     for (size_t n = 1; n < NumTasks; n++) {
-        tq.unblock_one();
+        executor.unblock_one();
 
         const size_t idx = (NumTasks - n);
 
         const bool success = (idx % 3 != 0);
 
-        CHECK(handlers[idx].wait_called() == &tasks[idx]);
+        CHECK(completers[idx].wait_called() == &tasks[idx]);
 
-        UNSIGNED_LONGS_EQUAL(n + 1, tq.num_tasks());
-        CHECK(tq.nth_task(n) == &tasks[idx]);
+        UNSIGNED_LONGS_EQUAL(n + 1, executor.num_tasks());
+        CHECK(executor.nth_task(n) == &tasks[idx]);
 
-        CHECK(tasks[idx].success() == success);
+        CHECK(tasks[idx].succeeded() == success);
         CHECK(!tasks[idx].cancelled());
     }
 
-    tq.check_all_unblocked();
+    executor.check_all_unblocked();
 }
 
 TEST(task_queue, schedule_at_shuffled) {
-    TestTaskQueue tq;
-    CHECK(tq.valid());
+    TestExecutor executor;
 
-    UNSIGNED_LONGS_EQUAL(0, tq.num_tasks());
+    ControlTaskQueue queue;
+    CHECK(queue.valid());
 
-    TestHandler handler;
-    handler.expect_success(true);
-    handler.expect_n_calls(4);
+    UNSIGNED_LONGS_EQUAL(0, executor.num_tasks());
 
-    TestTaskQueue::Task tasks[4];
+    TestCompleter completer;
+    completer.expect_success(true);
+    completer.expect_n_calls(4);
 
-    tq.set_nth_result(0, true);
-    tq.set_nth_result(1, true);
-    tq.set_nth_result(2, true);
-    tq.set_nth_result(3, true);
+    TestExecutor::Task tasks[4];
 
-    tq.block();
+    executor.set_nth_result(0, true);
+    executor.set_nth_result(1, true);
+    executor.set_nth_result(2, true);
+    executor.set_nth_result(3, true);
+
+    executor.block();
 
     const core::nanoseconds_t now = core::timestamp();
 
-    tq.schedule_at(tasks[0], now + core::Millisecond, &handler);
-    tq.schedule_at(tasks[1], now + core::Millisecond * 4, &handler);
-    tq.schedule_at(tasks[2], now + core::Millisecond * 2, &handler);
-    tq.schedule_at(tasks[3], now + core::Millisecond * 5, &handler);
+    queue.schedule_at(tasks[0], now + core::Millisecond, executor, &completer);
+    queue.schedule_at(tasks[1], now + core::Millisecond * 4, executor, &completer);
+    queue.schedule_at(tasks[2], now + core::Millisecond * 2, executor, &completer);
+    queue.schedule_at(tasks[3], now + core::Millisecond * 5, executor, &completer);
 
-    tq.unblock_one();
-    CHECK(handler.wait_called() == &tasks[0]);
-    UNSIGNED_LONGS_EQUAL(1, tq.num_tasks());
+    executor.unblock_one();
+    CHECK(completer.wait_called() == &tasks[0]);
+    UNSIGNED_LONGS_EQUAL(1, executor.num_tasks());
 
-    tq.unblock_one();
-    CHECK(handler.wait_called() == &tasks[2]);
-    UNSIGNED_LONGS_EQUAL(2, tq.num_tasks());
+    executor.unblock_one();
+    CHECK(completer.wait_called() == &tasks[2]);
+    UNSIGNED_LONGS_EQUAL(2, executor.num_tasks());
 
-    tq.unblock_one();
-    CHECK(handler.wait_called() == &tasks[1]);
-    UNSIGNED_LONGS_EQUAL(3, tq.num_tasks());
+    executor.unblock_one();
+    CHECK(completer.wait_called() == &tasks[1]);
+    UNSIGNED_LONGS_EQUAL(3, executor.num_tasks());
 
-    tq.unblock_one();
-    CHECK(handler.wait_called() == &tasks[3]);
-    UNSIGNED_LONGS_EQUAL(4, tq.num_tasks());
+    executor.unblock_one();
+    CHECK(completer.wait_called() == &tasks[3]);
+    UNSIGNED_LONGS_EQUAL(4, executor.num_tasks());
 
-    CHECK(tasks[0].success());
-    CHECK(tasks[1].success());
-    CHECK(tasks[2].success());
-    CHECK(tasks[3].success());
+    CHECK(tasks[0].succeeded());
+    CHECK(tasks[1].succeeded());
+    CHECK(tasks[2].succeeded());
+    CHECK(tasks[3].succeeded());
 
-    tq.check_all_unblocked();
+    executor.check_all_unblocked();
 }
 
 TEST(task_queue, schedule_at_same_deadline) {
-    TestTaskQueue tq;
-    CHECK(tq.valid());
+    TestExecutor executor;
 
-    UNSIGNED_LONGS_EQUAL(0, tq.num_tasks());
+    ControlTaskQueue queue;
+    CHECK(queue.valid());
 
-    TestHandler handler;
-    handler.expect_success(true);
-    handler.expect_n_calls(4);
+    UNSIGNED_LONGS_EQUAL(0, executor.num_tasks());
 
-    TestTaskQueue::Task tasks[4];
+    TestCompleter completer;
+    completer.expect_success(true);
+    completer.expect_n_calls(4);
 
-    tq.set_nth_result(0, true);
-    tq.set_nth_result(1, true);
-    tq.set_nth_result(2, true);
-    tq.set_nth_result(3, true);
+    TestExecutor::Task tasks[4];
 
-    tq.block();
+    executor.set_nth_result(0, true);
+    executor.set_nth_result(1, true);
+    executor.set_nth_result(2, true);
+    executor.set_nth_result(3, true);
+
+    executor.block();
 
     const core::nanoseconds_t now = core::timestamp();
 
-    tq.schedule_at(tasks[0], now + core::Millisecond, &handler);
-    tq.schedule_at(tasks[1], now + core::Millisecond * 4, &handler);
-    tq.schedule_at(tasks[2], now + core::Millisecond * 4, &handler);
-    tq.schedule_at(tasks[3], now + core::Millisecond * 2, &handler);
+    queue.schedule_at(tasks[0], now + core::Millisecond, executor, &completer);
+    queue.schedule_at(tasks[1], now + core::Millisecond * 4, executor, &completer);
+    queue.schedule_at(tasks[2], now + core::Millisecond * 4, executor, &completer);
+    queue.schedule_at(tasks[3], now + core::Millisecond * 2, executor, &completer);
 
-    tq.unblock_one();
-    CHECK(handler.wait_called() == &tasks[0]);
-    UNSIGNED_LONGS_EQUAL(1, tq.num_tasks());
+    executor.unblock_one();
+    CHECK(completer.wait_called() == &tasks[0]);
+    UNSIGNED_LONGS_EQUAL(1, executor.num_tasks());
 
-    tq.unblock_one();
-    CHECK(handler.wait_called() == &tasks[3]);
-    UNSIGNED_LONGS_EQUAL(2, tq.num_tasks());
+    executor.unblock_one();
+    CHECK(completer.wait_called() == &tasks[3]);
+    UNSIGNED_LONGS_EQUAL(2, executor.num_tasks());
 
-    tq.unblock_one();
-    CHECK(handler.wait_called() == &tasks[1]);
-    UNSIGNED_LONGS_EQUAL(3, tq.num_tasks());
+    executor.unblock_one();
+    CHECK(completer.wait_called() == &tasks[1]);
+    UNSIGNED_LONGS_EQUAL(3, executor.num_tasks());
 
-    tq.unblock_one();
-    CHECK(handler.wait_called() == &tasks[2]);
-    UNSIGNED_LONGS_EQUAL(4, tq.num_tasks());
+    executor.unblock_one();
+    CHECK(completer.wait_called() == &tasks[2]);
+    UNSIGNED_LONGS_EQUAL(4, executor.num_tasks());
 
-    CHECK(tasks[0].success());
-    CHECK(tasks[1].success());
-    CHECK(tasks[2].success());
-    CHECK(tasks[3].success());
+    CHECK(tasks[0].succeeded());
+    CHECK(tasks[1].succeeded());
+    CHECK(tasks[2].succeeded());
+    CHECK(tasks[3].succeeded());
 
-    tq.check_all_unblocked();
+    executor.check_all_unblocked();
 }
 
 TEST(task_queue, schedule_at_and_schedule) {
-    TestTaskQueue tq;
-    CHECK(tq.valid());
+    TestExecutor executor;
 
-    UNSIGNED_LONGS_EQUAL(0, tq.num_tasks());
+    ControlTaskQueue queue;
+    CHECK(queue.valid());
 
-    TestHandler handler;
-    handler.expect_success(true);
-    handler.expect_n_calls(4);
+    UNSIGNED_LONGS_EQUAL(0, executor.num_tasks());
 
-    TestTaskQueue::Task tasks[4];
+    TestCompleter completer;
+    completer.expect_success(true);
+    completer.expect_n_calls(4);
 
-    tq.set_nth_result(0, true);
-    tq.set_nth_result(1, true);
-    tq.set_nth_result(2, true);
-    tq.set_nth_result(3, true);
+    TestExecutor::Task tasks[4];
 
-    tq.block();
+    executor.set_nth_result(0, true);
+    executor.set_nth_result(1, true);
+    executor.set_nth_result(2, true);
+    executor.set_nth_result(3, true);
+
+    executor.block();
 
     const core::nanoseconds_t now = core::timestamp();
 
-    tq.schedule(tasks[0], &handler);
-    tq.schedule_at(tasks[1], now + core::Millisecond * 7, &handler);
-    tq.schedule(tasks[2], &handler);
-    tq.schedule_at(tasks[3], now + core::Millisecond * 5, &handler);
+    queue.schedule(tasks[0], executor, &completer);
+    queue.schedule_at(tasks[1], now + core::Millisecond * 7, executor, &completer);
+    queue.schedule(tasks[2], executor, &completer);
+    queue.schedule_at(tasks[3], now + core::Millisecond * 5, executor, &completer);
 
-    tq.unblock_one();
-    CHECK(handler.wait_called() == &tasks[0]);
-    UNSIGNED_LONGS_EQUAL(1, tq.num_tasks());
+    executor.unblock_one();
+    CHECK(completer.wait_called() == &tasks[0]);
+    UNSIGNED_LONGS_EQUAL(1, executor.num_tasks());
 
-    tq.unblock_one();
-    CHECK(handler.wait_called() == &tasks[2]);
-    UNSIGNED_LONGS_EQUAL(2, tq.num_tasks());
+    executor.unblock_one();
+    CHECK(completer.wait_called() == &tasks[2]);
+    UNSIGNED_LONGS_EQUAL(2, executor.num_tasks());
 
-    tq.unblock_one();
-    CHECK(handler.wait_called() == &tasks[3]);
-    UNSIGNED_LONGS_EQUAL(3, tq.num_tasks());
+    executor.unblock_one();
+    CHECK(completer.wait_called() == &tasks[3]);
+    UNSIGNED_LONGS_EQUAL(3, executor.num_tasks());
 
-    tq.unblock_one();
-    CHECK(handler.wait_called() == &tasks[1]);
-    UNSIGNED_LONGS_EQUAL(4, tq.num_tasks());
+    executor.unblock_one();
+    CHECK(completer.wait_called() == &tasks[1]);
+    UNSIGNED_LONGS_EQUAL(4, executor.num_tasks());
 
-    CHECK(tasks[0].success());
-    CHECK(tasks[1].success());
-    CHECK(tasks[2].success());
-    CHECK(tasks[3].success());
+    CHECK(tasks[0].succeeded());
+    CHECK(tasks[1].succeeded());
+    CHECK(tasks[2].succeeded());
+    CHECK(tasks[3].succeeded());
 
-    tq.check_all_unblocked();
+    executor.check_all_unblocked();
 }
 
 TEST(task_queue, schedule_and_async_cancel) {
-    TestTaskQueue tq;
-    CHECK(tq.valid());
+    TestExecutor executor;
 
-    UNSIGNED_LONGS_EQUAL(0, tq.num_tasks());
+    ControlTaskQueue queue;
+    CHECK(queue.valid());
 
-    TestHandler handlers[4];
+    UNSIGNED_LONGS_EQUAL(0, executor.num_tasks());
 
-    TestTaskQueue::Task tasks[4];
+    TestCompleter completers[4];
 
-    tq.set_nth_result(0, true);
-    tq.set_nth_result(1, true);
-    tq.set_nth_result(2, true);
-    tq.set_nth_result(3, true);
+    TestExecutor::Task tasks[4];
 
-    handlers[0].expect_success(true);
-    handlers[0].expect_cancelled(false);
-    handlers[0].expect_n_calls(1);
+    executor.set_nth_result(0, true);
+    executor.set_nth_result(1, true);
+    executor.set_nth_result(2, true);
+    executor.set_nth_result(3, true);
 
-    handlers[1].expect_success(true);
-    handlers[1].expect_cancelled(false);
-    handlers[1].expect_n_calls(1);
+    completers[0].expect_success(true);
+    completers[0].expect_cancelled(false);
+    completers[0].expect_n_calls(1);
 
-    handlers[2].expect_success(false);
-    handlers[2].expect_cancelled(true);
-    handlers[2].expect_n_calls(1);
+    completers[1].expect_success(true);
+    completers[1].expect_cancelled(false);
+    completers[1].expect_n_calls(1);
 
-    handlers[3].expect_success(true);
-    handlers[3].expect_cancelled(false);
-    handlers[3].expect_n_calls(1);
+    completers[2].expect_success(false);
+    completers[2].expect_cancelled(true);
+    completers[2].expect_n_calls(1);
 
-    tq.block();
+    completers[3].expect_success(true);
+    completers[3].expect_cancelled(false);
+    completers[3].expect_n_calls(1);
 
-    tq.schedule(tasks[0], &handlers[0]);
-    tq.schedule(tasks[1], &handlers[1]);
-    tq.schedule(tasks[2], &handlers[2]);
-    tq.schedule(tasks[3], &handlers[3]);
+    executor.block();
 
-    tq.wait_blocked();
+    queue.schedule(tasks[0], executor, &completers[0]);
+    queue.schedule(tasks[1], executor, &completers[1]);
+    queue.schedule(tasks[2], executor, &completers[2]);
+    queue.schedule(tasks[3], executor, &completers[3]);
 
-    tq.async_cancel(tasks[0]);
-    tq.async_cancel(tasks[2]);
+    executor.wait_blocked();
 
-    tq.unblock_one();
-    CHECK(handlers[0].wait_called() == &tasks[0]);
-    UNSIGNED_LONGS_EQUAL(1, tq.num_tasks());
-    CHECK(tasks[0].success());
+    queue.async_cancel(tasks[0]);
+    queue.async_cancel(tasks[2]);
+
+    executor.unblock_one();
+    CHECK(completers[0].wait_called() == &tasks[0]);
+    UNSIGNED_LONGS_EQUAL(1, executor.num_tasks());
+    CHECK(tasks[0].succeeded());
     CHECK(!tasks[0].cancelled());
 
-    tq.unblock_one();
-    CHECK(handlers[1].wait_called() == &tasks[1]);
-    UNSIGNED_LONGS_EQUAL(2, tq.num_tasks());
-    CHECK(tasks[1].success());
+    executor.unblock_one();
+    CHECK(completers[1].wait_called() == &tasks[1]);
+    UNSIGNED_LONGS_EQUAL(2, executor.num_tasks());
+    CHECK(tasks[1].succeeded());
     CHECK(!tasks[1].cancelled());
 
-    CHECK(handlers[2].wait_called() == &tasks[2]);
-    UNSIGNED_LONGS_EQUAL(2, tq.num_tasks());
-    CHECK(!tasks[2].success());
+    CHECK(completers[2].wait_called() == &tasks[2]);
+    UNSIGNED_LONGS_EQUAL(2, executor.num_tasks());
+    CHECK(!tasks[2].succeeded());
     CHECK(tasks[2].cancelled());
 
-    tq.unblock_one();
-    CHECK(handlers[3].wait_called() == &tasks[3]);
-    UNSIGNED_LONGS_EQUAL(3, tq.num_tasks());
-    CHECK(tasks[3].success());
+    executor.unblock_one();
+    CHECK(completers[3].wait_called() == &tasks[3]);
+    UNSIGNED_LONGS_EQUAL(3, executor.num_tasks());
+    CHECK(tasks[3].succeeded());
     CHECK(!tasks[3].cancelled());
 
-    tq.check_all_unblocked();
+    executor.check_all_unblocked();
 }
 
 TEST(task_queue, schedule_at_and_async_cancel) {
-    TestTaskQueue tq;
-    CHECK(tq.valid());
+    TestExecutor executor;
 
-    UNSIGNED_LONGS_EQUAL(0, tq.num_tasks());
+    ControlTaskQueue queue;
+    CHECK(queue.valid());
 
-    TestHandler handlers[4];
+    UNSIGNED_LONGS_EQUAL(0, executor.num_tasks());
 
-    TestTaskQueue::Task tasks[4];
+    TestCompleter completers[4];
 
-    tq.set_nth_result(0, true);
-    tq.set_nth_result(1, true);
-    tq.set_nth_result(2, true);
-    tq.set_nth_result(3, true);
+    TestExecutor::Task tasks[4];
 
-    handlers[0].expect_success(true);
-    handlers[0].expect_cancelled(false);
-    handlers[0].expect_n_calls(1);
+    executor.set_nth_result(0, true);
+    executor.set_nth_result(1, true);
+    executor.set_nth_result(2, true);
+    executor.set_nth_result(3, true);
 
-    handlers[1].expect_success(true);
-    handlers[1].expect_cancelled(false);
-    handlers[1].expect_n_calls(1);
+    completers[0].expect_success(true);
+    completers[0].expect_cancelled(false);
+    completers[0].expect_n_calls(1);
 
-    handlers[2].expect_success(false);
-    handlers[2].expect_cancelled(true);
-    handlers[2].expect_n_calls(1);
+    completers[1].expect_success(true);
+    completers[1].expect_cancelled(false);
+    completers[1].expect_n_calls(1);
 
-    handlers[3].expect_success(true);
-    handlers[3].expect_cancelled(false);
-    handlers[3].expect_n_calls(1);
+    completers[2].expect_success(false);
+    completers[2].expect_cancelled(true);
+    completers[2].expect_n_calls(1);
 
-    tq.block();
+    completers[3].expect_success(true);
+    completers[3].expect_cancelled(false);
+    completers[3].expect_n_calls(1);
+
+    executor.block();
 
     const core::nanoseconds_t now = core::timestamp();
 
-    tq.schedule_at(tasks[0], now + core::Millisecond, &handlers[0]);
-    tq.schedule_at(tasks[1], now + core::Millisecond * 4, &handlers[1]);
-    tq.schedule_at(tasks[2], now + core::Millisecond * 2, &handlers[2]);
-    tq.schedule_at(tasks[3], now + core::Millisecond * 5, &handlers[3]);
+    queue.schedule_at(tasks[0], now + core::Millisecond, executor, &completers[0]);
+    queue.schedule_at(tasks[1], now + core::Millisecond * 4, executor, &completers[1]);
+    queue.schedule_at(tasks[2], now + core::Millisecond * 2, executor, &completers[2]);
+    queue.schedule_at(tasks[3], now + core::Millisecond * 5, executor, &completers[3]);
 
-    tq.wait_blocked();
+    executor.wait_blocked();
 
-    tq.async_cancel(tasks[0]);
-    tq.async_cancel(tasks[2]);
+    queue.async_cancel(tasks[0]);
+    queue.async_cancel(tasks[2]);
 
-    tq.unblock_one();
-    CHECK(handlers[0].wait_called() == &tasks[0]);
-    UNSIGNED_LONGS_EQUAL(1, tq.num_tasks());
-    CHECK(tasks[0].success());
+    executor.unblock_one();
+    CHECK(completers[0].wait_called() == &tasks[0]);
+    UNSIGNED_LONGS_EQUAL(1, executor.num_tasks());
+    CHECK(tasks[0].succeeded());
     CHECK(!tasks[0].cancelled());
 
-    CHECK(handlers[2].wait_called() == &tasks[2]);
-    UNSIGNED_LONGS_EQUAL(1, tq.num_tasks());
-    CHECK(!tasks[2].success());
+    CHECK(completers[2].wait_called() == &tasks[2]);
+    UNSIGNED_LONGS_EQUAL(1, executor.num_tasks());
+    CHECK(!tasks[2].succeeded());
     CHECK(tasks[2].cancelled());
 
-    tq.unblock_one();
-    CHECK(handlers[1].wait_called() == &tasks[1]);
-    UNSIGNED_LONGS_EQUAL(2, tq.num_tasks());
-    CHECK(tasks[1].success());
+    executor.unblock_one();
+    CHECK(completers[1].wait_called() == &tasks[1]);
+    UNSIGNED_LONGS_EQUAL(2, executor.num_tasks());
+    CHECK(tasks[1].succeeded());
     CHECK(!tasks[1].cancelled());
 
-    tq.unblock_one();
-    CHECK(handlers[3].wait_called() == &tasks[3]);
-    UNSIGNED_LONGS_EQUAL(3, tq.num_tasks());
-    CHECK(tasks[3].success());
+    executor.unblock_one();
+    CHECK(completers[3].wait_called() == &tasks[3]);
+    UNSIGNED_LONGS_EQUAL(3, executor.num_tasks());
+    CHECK(tasks[3].succeeded());
     CHECK(!tasks[3].cancelled());
 
-    tq.check_all_unblocked();
+    executor.check_all_unblocked();
 }
 
 TEST(task_queue, cancel_and_wait) {
-    TestTaskQueue tq;
-    CHECK(tq.valid());
+    TestExecutor executor;
 
-    UNSIGNED_LONGS_EQUAL(0, tq.num_tasks());
+    ControlTaskQueue queue;
+    CHECK(queue.valid());
 
-    TestHandler handler;
-    handler.expect_success(false);
-    handler.expect_cancelled(true);
-    handler.expect_n_calls(1);
+    UNSIGNED_LONGS_EQUAL(0, executor.num_tasks());
 
-    TestTaskQueue::Task task;
-    tq.set_nth_result(0, true);
+    TestCompleter completer;
+    completer.expect_success(false);
+    completer.expect_cancelled(true);
+    completer.expect_n_calls(1);
 
-    tq.schedule_at(task, now_plus_delay(core::Second * 999), &handler);
-    tq.async_cancel(task);
-    tq.wait(task);
+    TestExecutor::Task task;
+    executor.set_nth_result(0, true);
 
-    CHECK(!task.success());
+    queue.schedule_at(task, now_plus_delay(core::Second * 999), executor, &completer);
+    queue.async_cancel(task);
+    queue.wait(task);
+
+    CHECK(!task.succeeded());
     CHECK(task.cancelled());
 
-    CHECK(handler.wait_called() == &task);
+    CHECK(completer.wait_called() == &task);
 
-    UNSIGNED_LONGS_EQUAL(0, tq.num_tasks());
+    UNSIGNED_LONGS_EQUAL(0, executor.num_tasks());
 }
 
 TEST(task_queue, cancel_already_finished) {
-    TestTaskQueue tq;
-    CHECK(tq.valid());
+    TestExecutor executor;
 
-    tq.set_nth_result(0, true);
+    ControlTaskQueue queue;
+    CHECK(queue.valid());
 
-    TestHandler handler;
-    handler.expect_success(true);
-    handler.expect_cancelled(false);
-    handler.expect_n_calls(1);
+    executor.set_nth_result(0, true);
 
-    TestTaskQueue::Task task;
+    TestCompleter completer;
+    completer.expect_success(true);
+    completer.expect_cancelled(false);
+    completer.expect_n_calls(1);
 
-    tq.schedule(task, &handler);
-    CHECK(handler.wait_called() == &task);
+    TestExecutor::Task task;
 
-    tq.async_cancel(task);
+    queue.schedule(task, executor, &completer);
+    CHECK(completer.wait_called() == &task);
 
-    UNSIGNED_LONGS_EQUAL(1, tq.num_tasks());
-    CHECK(tq.nth_task(0) == &task);
+    queue.async_cancel(task);
 
-    CHECK(task.success());
+    UNSIGNED_LONGS_EQUAL(1, executor.num_tasks());
+    CHECK(executor.nth_task(0) == &task);
+
+    CHECK(task.succeeded());
     CHECK(!task.cancelled());
 }
 
 TEST(task_queue, schedule_already_finished) {
-    TestTaskQueue tq;
-    CHECK(tq.valid());
+    TestExecutor executor;
 
-    tq.set_nth_result(0, true);
-    tq.set_nth_result(1, true);
+    ControlTaskQueue queue;
+    CHECK(queue.valid());
 
-    TestHandler handler;
-    handler.expect_success(true);
-    handler.expect_cancelled(false);
-    handler.expect_n_calls(2);
+    executor.set_nth_result(0, true);
+    executor.set_nth_result(1, true);
 
-    TestTaskQueue::Task task;
+    TestCompleter completer;
+    completer.expect_success(true);
+    completer.expect_cancelled(false);
+    completer.expect_n_calls(2);
 
-    tq.schedule(task, &handler);
-    CHECK(handler.wait_called() == &task);
+    TestExecutor::Task task;
 
-    tq.schedule(task, &handler);
-    CHECK(handler.wait_called() == &task);
+    queue.schedule(task, executor, &completer);
+    CHECK(completer.wait_called() == &task);
 
-    UNSIGNED_LONGS_EQUAL(2, tq.num_tasks());
-    CHECK(tq.nth_task(0) == &task);
-    CHECK(tq.nth_task(1) == &task);
+    queue.schedule(task, executor, &completer);
+    CHECK(completer.wait_called() == &task);
 
-    CHECK(task.success());
+    UNSIGNED_LONGS_EQUAL(2, executor.num_tasks());
+    CHECK(executor.nth_task(0) == &task);
+    CHECK(executor.nth_task(1) == &task);
+
+    CHECK(task.succeeded());
     CHECK(!task.cancelled());
 }
 
 TEST(task_queue, schedule_at_cancel) {
-    TestTaskQueue tq;
-    CHECK(tq.valid());
+    TestExecutor executor;
 
-    tq.set_nth_result(0, true);
-    tq.set_nth_result(1, true);
+    ControlTaskQueue queue;
+    CHECK(queue.valid());
 
-    TestHandler handler1;
-    TestHandler handler2;
+    executor.set_nth_result(0, true);
+    executor.set_nth_result(1, true);
 
-    TestTaskQueue::Task task1;
-    TestTaskQueue::Task task2;
+    TestCompleter completer1;
+    TestCompleter completer2;
 
-    tq.block();
+    TestExecutor::Task task1;
+    TestExecutor::Task task2;
 
-    handler1.expect_success(true);
-    handler1.expect_cancelled(false);
-    handler1.expect_n_calls(1);
+    executor.block();
 
-    handler2.expect_success(false);
-    handler2.expect_cancelled(true);
-    handler2.expect_n_calls(1);
+    completer1.expect_success(true);
+    completer1.expect_cancelled(false);
+    completer1.expect_n_calls(1);
 
-    tq.schedule(task1, &handler1);
-    tq.schedule(task2, &handler2);
-    tq.async_cancel(task2);
+    completer2.expect_success(false);
+    completer2.expect_cancelled(true);
+    completer2.expect_n_calls(1);
 
-    tq.unblock_one();
-    CHECK(handler1.wait_called() == &task1);
-    CHECK(handler2.wait_called() == &task2);
+    queue.schedule(task1, executor, &completer1);
+    queue.schedule(task2, executor, &completer2);
+    queue.async_cancel(task2);
 
-    UNSIGNED_LONGS_EQUAL(1, tq.num_tasks());
+    executor.unblock_one();
+    CHECK(completer1.wait_called() == &task1);
+    CHECK(completer2.wait_called() == &task2);
 
-    CHECK(!task2.success());
+    UNSIGNED_LONGS_EQUAL(1, executor.num_tasks());
+
+    CHECK(!task2.succeeded());
     CHECK(task2.cancelled());
 
-    handler2.expect_success(true);
-    handler2.expect_cancelled(false);
-    handler2.expect_n_calls(1);
+    completer2.expect_success(true);
+    completer2.expect_cancelled(false);
+    completer2.expect_n_calls(1);
 
-    tq.schedule(task2, &handler2);
+    queue.schedule(task2, executor, &completer2);
 
-    tq.unblock_one();
-    CHECK(handler2.wait_called() == &task2);
+    executor.unblock_one();
+    CHECK(completer2.wait_called() == &task2);
 
-    UNSIGNED_LONGS_EQUAL(2, tq.num_tasks());
+    UNSIGNED_LONGS_EQUAL(2, executor.num_tasks());
 
-    CHECK(task2.success());
+    CHECK(task2.succeeded());
     CHECK(!task2.cancelled());
 
-    tq.check_all_unblocked();
-}
-
-TEST(task_queue, reschedule_new) {
-    TestTaskQueue tq;
-    CHECK(tq.valid());
-
-    UNSIGNED_LONGS_EQUAL(0, tq.num_tasks());
-
-    TestTaskQueue::Task task;
-    tq.set_nth_result(0, true);
-    tq.reschedule_at(task, now_plus_delay(core::Microsecond * 10));
-
-    while (task.pending()) {
-        core::sleep_for(core::Microsecond * 100);
-    }
-
-    UNSIGNED_LONGS_EQUAL(1, tq.num_tasks());
-    CHECK(tq.nth_task(0) == &task);
-
-    CHECK(task.success());
-    CHECK(!task.cancelled());
+    executor.check_all_unblocked();
 }
 
 TEST(task_queue, reschedule_pending) {
-    TestTaskQueue tq;
-    CHECK(tq.valid());
+    TestExecutor executor;
 
-    UNSIGNED_LONGS_EQUAL(0, tq.num_tasks());
+    ControlTaskQueue queue;
+    CHECK(queue.valid());
 
-    TestHandler handler;
+    UNSIGNED_LONGS_EQUAL(0, executor.num_tasks());
 
-    TestTaskQueue::Task task1;
-    TestTaskQueue::Task task2;
-    TestTaskQueue::Task task3;
+    TestCompleter completer;
 
-    tq.block();
+    TestExecutor::Task task1;
+    TestExecutor::Task task2;
+    TestExecutor::Task task3;
 
-    tq.set_nth_result(0, true);
-    tq.set_nth_result(1, true);
-    tq.set_nth_result(2, true);
+    executor.block();
 
-    tq.schedule(task1, &handler);
-    tq.schedule(task2, &handler);
-    tq.schedule(task3, &handler);
+    executor.set_nth_result(0, true);
+    executor.set_nth_result(1, true);
+    executor.set_nth_result(2, true);
 
-    tq.wait_blocked();
+    queue.schedule(task1, executor, &completer);
+    queue.schedule(task2, executor, &completer);
+    queue.schedule(task3, executor, &completer);
 
-    tq.reschedule_at(task2, now_plus_delay(core::Millisecond));
+    executor.wait_blocked();
 
-    handler.expect_success(true);
-    handler.expect_cancelled(false);
-    handler.expect_n_calls(1);
+    queue.schedule_at(task2, now_plus_delay(core::Millisecond), executor, &completer);
 
-    tq.unblock_one();
+    completer.expect_success(true);
+    completer.expect_cancelled(false);
+    completer.expect_n_calls(1);
 
-    CHECK(handler.wait_called() == &task1);
+    executor.unblock_one();
 
-    handler.expect_success(true);
-    handler.expect_cancelled(false);
-    handler.expect_n_calls(1);
+    CHECK(completer.wait_called() == &task1);
 
-    tq.unblock_one();
+    completer.expect_success(true);
+    completer.expect_cancelled(false);
+    completer.expect_n_calls(1);
 
-    CHECK(handler.wait_called() == &task3);
+    executor.unblock_one();
 
-    handler.expect_success(true);
-    handler.expect_cancelled(false);
-    handler.expect_n_calls(1);
+    CHECK(completer.wait_called() == &task3);
 
-    tq.unblock_one();
+    completer.expect_success(true);
+    completer.expect_cancelled(false);
+    completer.expect_n_calls(1);
 
-    CHECK(handler.wait_called() == &task2);
+    executor.unblock_one();
 
-    UNSIGNED_LONGS_EQUAL(3, tq.num_tasks());
+    CHECK(completer.wait_called() == &task2);
 
-    CHECK(task1.success());
-    CHECK(task2.success());
-    CHECK(task3.success());
+    UNSIGNED_LONGS_EQUAL(3, executor.num_tasks());
 
-    tq.check_all_unblocked();
+    CHECK(task1.succeeded());
+    CHECK(task2.succeeded());
+    CHECK(task3.succeeded());
+
+    executor.check_all_unblocked();
 }
 
 TEST(task_queue, reschedule_processing) {
-    TestTaskQueue tq;
-    CHECK(tq.valid());
+    TestExecutor executor;
 
-    UNSIGNED_LONGS_EQUAL(0, tq.num_tasks());
+    ControlTaskQueue queue;
+    CHECK(queue.valid());
 
-    TestHandler handler;
+    UNSIGNED_LONGS_EQUAL(0, executor.num_tasks());
 
-    TestTaskQueue::Task task;
+    TestCompleter completer;
 
-    tq.block();
+    TestExecutor::Task task;
 
-    tq.set_nth_result(0, true);
-    tq.set_nth_result(1, true);
+    executor.block();
 
-    tq.schedule(task, &handler);
+    executor.set_nth_result(0, true);
+    executor.set_nth_result(1, true);
 
-    tq.wait_blocked();
+    queue.schedule(task, executor, &completer);
 
-    tq.reschedule_at(task, now_plus_delay(core::Millisecond));
+    executor.wait_blocked();
 
-    handler.expect_success(true);
-    handler.expect_cancelled(false);
-    handler.expect_n_calls(1);
+    queue.schedule_at(task, now_plus_delay(core::Millisecond), executor, &completer);
 
-    tq.unblock_one();
+    completer.expect_success(true);
+    completer.expect_cancelled(false);
+    completer.expect_n_calls(1);
 
-    CHECK(handler.wait_called() == &task);
+    executor.unblock_one();
 
-    handler.expect_success(true);
-    handler.expect_cancelled(false);
-    handler.expect_n_calls(1);
+    CHECK(completer.wait_called() == &task);
 
-    tq.unblock_one();
+    completer.expect_success(true);
+    completer.expect_cancelled(false);
+    completer.expect_n_calls(1);
 
-    CHECK(handler.wait_called() == &task);
+    executor.unblock_one();
 
-    CHECK(task.success());
+    CHECK(completer.wait_called() == &task);
+
+    CHECK(task.succeeded());
     CHECK(!task.cancelled());
 
-    UNSIGNED_LONGS_EQUAL(2, tq.num_tasks());
+    UNSIGNED_LONGS_EQUAL(2, executor.num_tasks());
 
-    tq.check_all_unblocked();
+    executor.check_all_unblocked();
 }
 
 TEST(task_queue, reschedule_succeeded) {
-    TestTaskQueue tq;
-    CHECK(tq.valid());
+    TestExecutor executor;
 
-    UNSIGNED_LONGS_EQUAL(0, tq.num_tasks());
+    ControlTaskQueue queue;
+    CHECK(queue.valid());
 
-    TestHandler handler;
+    UNSIGNED_LONGS_EQUAL(0, executor.num_tasks());
 
-    TestTaskQueue::Task task;
+    TestCompleter completer;
 
-    handler.expect_success(true);
-    handler.expect_cancelled(false);
-    handler.expect_n_calls(1);
+    TestExecutor::Task task;
 
-    tq.set_nth_result(0, true);
-    tq.schedule(task, &handler);
+    completer.expect_success(true);
+    completer.expect_cancelled(false);
+    completer.expect_n_calls(1);
 
-    CHECK(handler.wait_called() == &task);
+    executor.set_nth_result(0, true);
+    queue.schedule(task, executor, &completer);
 
-    CHECK(task.success());
+    CHECK(completer.wait_called() == &task);
+
+    CHECK(task.succeeded());
     CHECK(!task.cancelled());
 
-    handler.expect_success(true);
-    handler.expect_cancelled(false);
-    handler.expect_after(core::Millisecond);
-    handler.expect_n_calls(1);
+    completer.expect_success(true);
+    completer.expect_cancelled(false);
+    completer.expect_after(core::Millisecond);
+    completer.expect_n_calls(1);
 
-    tq.set_nth_result(1, true);
-    tq.reschedule_at(task, now_plus_delay(core::Millisecond));
+    executor.set_nth_result(1, true);
+    queue.schedule_at(task, now_plus_delay(core::Millisecond), executor, &completer);
 
-    CHECK(handler.wait_called() == &task);
+    CHECK(completer.wait_called() == &task);
 
-    CHECK(task.success());
+    CHECK(task.succeeded());
     CHECK(!task.cancelled());
 
-    UNSIGNED_LONGS_EQUAL(2, tq.num_tasks());
+    UNSIGNED_LONGS_EQUAL(2, executor.num_tasks());
 }
 
 TEST(task_queue, reschedule_failed) {
-    TestTaskQueue tq;
-    CHECK(tq.valid());
+    TestExecutor executor;
 
-    UNSIGNED_LONGS_EQUAL(0, tq.num_tasks());
+    ControlTaskQueue queue;
+    CHECK(queue.valid());
 
-    TestHandler handler;
+    UNSIGNED_LONGS_EQUAL(0, executor.num_tasks());
 
-    TestTaskQueue::Task task;
+    TestCompleter completer;
 
-    handler.expect_success(false);
-    handler.expect_cancelled(false);
-    handler.expect_n_calls(1);
+    TestExecutor::Task task;
 
-    tq.set_nth_result(0, false);
-    tq.schedule(task, &handler);
+    completer.expect_success(false);
+    completer.expect_cancelled(false);
+    completer.expect_n_calls(1);
 
-    CHECK(handler.wait_called() == &task);
+    executor.set_nth_result(0, false);
+    queue.schedule(task, executor, &completer);
 
-    CHECK(!task.success());
+    CHECK(completer.wait_called() == &task);
+
+    CHECK(!task.succeeded());
     CHECK(!task.cancelled());
 
-    handler.expect_success(true);
-    handler.expect_cancelled(false);
-    handler.expect_after(core::Millisecond);
-    handler.expect_n_calls(1);
+    completer.expect_success(true);
+    completer.expect_cancelled(false);
+    completer.expect_after(core::Millisecond);
+    completer.expect_n_calls(1);
 
-    tq.set_nth_result(1, true);
-    tq.reschedule_at(task, now_plus_delay(core::Millisecond));
+    executor.set_nth_result(1, true);
+    queue.schedule_at(task, now_plus_delay(core::Millisecond), executor, &completer);
 
-    CHECK(handler.wait_called() == &task);
+    CHECK(completer.wait_called() == &task);
 
-    CHECK(task.success());
+    CHECK(task.succeeded());
     CHECK(!task.cancelled());
 
-    UNSIGNED_LONGS_EQUAL(2, tq.num_tasks());
+    UNSIGNED_LONGS_EQUAL(2, executor.num_tasks());
 }
 
 TEST(task_queue, reschedule_cancelled) {
-    TestTaskQueue tq;
-    CHECK(tq.valid());
+    TestExecutor executor;
 
-    UNSIGNED_LONGS_EQUAL(0, tq.num_tasks());
+    ControlTaskQueue queue;
+    CHECK(queue.valid());
 
-    TestHandler handler;
+    UNSIGNED_LONGS_EQUAL(0, executor.num_tasks());
 
-    TestTaskQueue::Task task;
+    TestCompleter completer;
 
-    handler.expect_success(false);
-    handler.expect_cancelled(true);
-    handler.expect_n_calls(1);
+    TestExecutor::Task task;
 
-    tq.set_nth_result(0, true);
-    tq.schedule_at(task, now_plus_delay(core::Second * 999), &handler);
+    completer.expect_success(false);
+    completer.expect_cancelled(true);
+    completer.expect_n_calls(1);
 
-    tq.async_cancel(task);
-    tq.wait(task);
+    executor.set_nth_result(0, true);
+    queue.schedule_at(task, now_plus_delay(core::Second * 999), executor, &completer);
 
-    CHECK(handler.wait_called() == &task);
+    queue.async_cancel(task);
+    queue.wait(task);
 
-    CHECK(!task.success());
+    CHECK(completer.wait_called() == &task);
+
+    CHECK(!task.succeeded());
     CHECK(task.cancelled());
 
-    handler.expect_success(true);
-    handler.expect_cancelled(false);
-    handler.expect_after(core::Millisecond);
-    handler.expect_n_calls(1);
+    completer.expect_success(true);
+    completer.expect_cancelled(false);
+    completer.expect_after(core::Millisecond);
+    completer.expect_n_calls(1);
 
-    tq.set_nth_result(1, true);
-    tq.reschedule_at(task, now_plus_delay(core::Millisecond));
+    executor.set_nth_result(1, true);
+    queue.schedule_at(task, now_plus_delay(core::Millisecond), executor, &completer);
 
-    CHECK(handler.wait_called() == &task);
+    CHECK(completer.wait_called() == &task);
 
-    roc_panic_if(!task.success());
-    CHECK(task.success());
+    roc_panic_if(!task.succeeded());
+    CHECK(task.succeeded());
     CHECK(!task.cancelled());
 
-    UNSIGNED_LONGS_EQUAL(1, tq.num_tasks());
+    UNSIGNED_LONGS_EQUAL(1, executor.num_tasks());
 }
 
 TEST(task_queue, no_starvation) {
-    TestTaskQueue tq;
-    CHECK(tq.valid());
+    TestExecutor executor;
+
+    ControlTaskQueue queue;
+    CHECK(queue.valid());
 
     enum { NumTasks = 6 };
 
-    UNSIGNED_LONGS_EQUAL(0, tq.num_tasks());
+    UNSIGNED_LONGS_EQUAL(0, executor.num_tasks());
 
-    TestHandler handler;
-    handler.expect_success(true);
-    handler.expect_n_calls(NumTasks);
+    TestCompleter completer;
+    completer.expect_success(true);
+    completer.expect_n_calls(NumTasks);
 
-    TestTaskQueue::Task tasks[NumTasks];
+    TestExecutor::Task tasks[NumTasks];
 
-    tq.block();
+    executor.block();
 
     const core::nanoseconds_t now = core::timestamp();
     const core::nanoseconds_t WaitTime = core::Millisecond;
 
-    tq.schedule_at(tasks[0], now + WaitTime, &handler);
-    tq.schedule_at(tasks[1], now + WaitTime * 2, &handler);
-    tq.schedule_at(tasks[2], now + WaitTime * 3, &handler);
-    tq.schedule(tasks[3], &handler);
-    tq.schedule(tasks[4], &handler);
-    tq.schedule(tasks[5], &handler);
+    queue.schedule_at(tasks[0], now + WaitTime, executor, &completer);
+    queue.schedule_at(tasks[1], now + WaitTime * 2, executor, &completer);
+    queue.schedule_at(tasks[2], now + WaitTime * 3, executor, &completer);
+    queue.schedule(tasks[3], executor, &completer);
+    queue.schedule(tasks[4], executor, &completer);
+    queue.schedule(tasks[5], executor, &completer);
 
     for (size_t i = 0; i < NumTasks; i++) {
-        tq.set_nth_result(i, true);
+        executor.set_nth_result(i, true);
     }
 
     // wait for sleeping task to sync
     core::sleep_for(WaitTime * (NumTasks / 2));
 
     // check that the tasks are fetched from alternating queues
-    tq.unblock_one();
-    TaskQueue::Task* temp = handler.wait_called();
+    executor.unblock_one();
+    ControlTask* temp = completer.wait_called();
     CHECK(temp == &tasks[0] || temp == &tasks[3]);
-    UNSIGNED_LONGS_EQUAL(1, tq.num_tasks());
-    CHECK(tasks[0].success() || tasks[3].success());
+    UNSIGNED_LONGS_EQUAL(1, executor.num_tasks());
+    CHECK(tasks[0].succeeded() || tasks[3].succeeded());
 
-    tq.unblock_one();
-    temp = handler.wait_called();
+    executor.unblock_one();
+    temp = completer.wait_called();
     CHECK(temp == &tasks[0] || temp == &tasks[3]);
-    UNSIGNED_LONGS_EQUAL(2, tq.num_tasks());
-    CHECK(tasks[0].success() && tasks[3].success());
+    UNSIGNED_LONGS_EQUAL(2, executor.num_tasks());
+    CHECK(tasks[0].succeeded() && tasks[3].succeeded());
 
-    tq.unblock_one();
-    temp = handler.wait_called();
+    executor.unblock_one();
+    temp = completer.wait_called();
     CHECK(temp == &tasks[1] || temp == &tasks[4]);
-    UNSIGNED_LONGS_EQUAL(3, tq.num_tasks());
-    CHECK(tasks[1].success() || tasks[4].success());
+    UNSIGNED_LONGS_EQUAL(3, executor.num_tasks());
+    CHECK(tasks[1].succeeded() || tasks[4].succeeded());
 
-    tq.unblock_one();
-    temp = handler.wait_called();
+    executor.unblock_one();
+    temp = completer.wait_called();
     CHECK(temp == &tasks[1] || temp == &tasks[4]);
-    UNSIGNED_LONGS_EQUAL(4, tq.num_tasks());
-    CHECK(tasks[1].success() && tasks[4].success());
+    UNSIGNED_LONGS_EQUAL(4, executor.num_tasks());
+    CHECK(tasks[1].succeeded() && tasks[4].succeeded());
 
-    tq.unblock_one();
-    temp = handler.wait_called();
+    executor.unblock_one();
+    temp = completer.wait_called();
     CHECK(temp == &tasks[2] || temp == &tasks[5]);
-    UNSIGNED_LONGS_EQUAL(5, tq.num_tasks());
-    CHECK(tasks[2].success() || tasks[5].success());
+    UNSIGNED_LONGS_EQUAL(5, executor.num_tasks());
+    CHECK(tasks[2].succeeded() || tasks[5].succeeded());
 
-    tq.unblock_one();
-    temp = handler.wait_called();
+    executor.unblock_one();
+    temp = completer.wait_called();
     CHECK(temp == &tasks[2] || temp == &tasks[5]);
-    UNSIGNED_LONGS_EQUAL(6, tq.num_tasks());
-    CHECK(tasks[2].success() && tasks[5].success());
+    UNSIGNED_LONGS_EQUAL(6, executor.num_tasks());
+    CHECK(tasks[2].succeeded() && tasks[5].succeeded());
 
-    tq.check_all_unblocked();
+    executor.check_all_unblocked();
 }
 
 } // namespace ctl

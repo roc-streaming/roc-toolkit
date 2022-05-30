@@ -9,7 +9,8 @@
 #include <benchmark/benchmark.h>
 
 #include "roc_core/fast_random.h"
-#include "roc_ctl/task_queue.h"
+#include "roc_ctl/control_task_executor.h"
+#include "roc_ctl/control_task_queue.h"
 
 namespace roc {
 namespace ctl {
@@ -24,44 +25,40 @@ enum {
 
 const core::nanoseconds_t MaxDelay = 100 * core::Millisecond;
 
-class NoopQueue : public TaskQueue {
+class NoopExecutor : public ControlTaskExecutor<NoopExecutor> {
 public:
-    class Task : public TaskQueue::Task {
+    class Task : public ControlTask {
     public:
-        Task() {
+        Task()
+            : ControlTask(&NoopExecutor::do_task_) {
         }
     };
 
-    ~NoopQueue() {
-        stop_and_wait();
-    }
-
-    using TaskQueue::stop_and_wait;
-
 private:
-    virtual TaskResult process_task_imp(TaskQueue::Task&) {
-        return TaskSucceeded;
+    ControlTaskResult do_task_(ControlTask&) {
+        return ControlTaskSucceeded;
     }
 };
 
-class NoopHandler : public TaskQueue::ICompletionHandler {
+class NoopCompleter : public IControlTaskCompleter {
 public:
-    virtual void control_task_finished(TaskQueue::Task&) {
+    virtual void control_task_completed(ControlTask&) {
     }
 };
 
 struct BM_QueueContention : benchmark::Fixture {
-    NoopQueue queue;
-    NoopHandler handler;
+    ControlTaskQueue queue;
+    NoopExecutor executor;
+    NoopCompleter completer;
 };
 
 BENCHMARK_DEFINE_F(BM_QueueContention, Schedule)(benchmark::State& state) {
-    NoopQueue::Task* tasks = new NoopQueue::Task[NumScheduleIterations];
+    NoopExecutor::Task* tasks = new NoopExecutor::Task[NumScheduleIterations];
     size_t n_task = 0;
 
     while (state.KeepRunningBatch(BatchSize)) {
         for (int n = 0; n < BatchSize; n++) {
-            queue.schedule(tasks[n_task++], &handler);
+            queue.schedule(tasks[n_task++], executor, &completer);
         }
     }
 
@@ -78,7 +75,7 @@ BENCHMARK_REGISTER_F(BM_QueueContention, Schedule)
     ->Unit(benchmark::kMicrosecond);
 
 BENCHMARK_DEFINE_F(BM_QueueContention, ScheduleAt)(benchmark::State& state) {
-    NoopQueue::Task* tasks = new NoopQueue::Task[NumScheduleAfterIterations];
+    NoopExecutor::Task* tasks = new NoopExecutor::Task[NumScheduleAfterIterations];
     size_t n_task = 0;
 
     core::nanoseconds_t* delays = new core::nanoseconds_t[NumScheduleAfterIterations];
@@ -88,8 +85,8 @@ BENCHMARK_DEFINE_F(BM_QueueContention, ScheduleAt)(benchmark::State& state) {
 
     while (state.KeepRunningBatch(BatchSize)) {
         for (int n = 0; n < BatchSize; n++) {
-            queue.schedule_at(tasks[n_task], core::timestamp() + delays[n_task],
-                              &handler);
+            queue.schedule_at(tasks[n_task], core::timestamp() + delays[n_task], executor,
+                              &completer);
             n_task++;
         }
     }
