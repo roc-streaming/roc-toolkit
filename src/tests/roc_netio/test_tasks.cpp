@@ -34,20 +34,20 @@ UdpReceiverConfig make_receiver_config(const char* ip, int port) {
     return config;
 }
 
-class RecordingHandler : public NetworkLoop::ICompletionHandler {
+class RecordingCompleter : public INetworkTaskCompleter {
 public:
-    RecordingHandler()
+    RecordingCompleter()
         : cond_(mutex_)
         , task_(NULL) {
     }
 
-    virtual void network_task_finished(NetworkLoop::Task& task) {
+    virtual void network_task_completed(NetworkTask& task) {
         core::Mutex::Lock lock(mutex_);
         task_ = &task;
         cond_.broadcast();
     }
 
-    NetworkLoop::Task* wait_task() {
+    NetworkTask* wait_task() {
         core::Mutex::Lock lock(mutex_);
         while (!task_) {
             cond_.wait();
@@ -58,19 +58,19 @@ public:
 private:
     core::Mutex mutex_;
     core::Cond cond_;
-    NetworkLoop::Task* task_;
+    NetworkTask* task_;
 };
 
-class AddRemoveHandler : public NetworkLoop::ICompletionHandler {
+class AddRemoveCompleter : public INetworkTaskCompleter {
 public:
-    AddRemoveHandler(NetworkLoop& net_loop)
+    AddRemoveCompleter(NetworkLoop& net_loop)
         : net_loop_(net_loop)
         , cond_(mutex_)
         , add_task_(NULL)
         , remove_task_(NULL) {
     }
 
-    ~AddRemoveHandler() {
+    ~AddRemoveCompleter() {
         delete add_task_;
         delete remove_task_;
     }
@@ -90,7 +90,7 @@ public:
         }
     }
 
-    virtual void network_task_finished(NetworkLoop::Task& task) {
+    virtual void network_task_completed(NetworkTask& task) {
         core::Mutex::Lock lock(mutex_);
 
         if (&task == add_task_) {
@@ -161,11 +161,11 @@ TEST(tasks, asynchronous_add) {
     CHECK(!task.success());
     CHECK(!task.get_handle());
 
-    RecordingHandler handler;
+    RecordingCompleter completer;
 
-    net_loop.schedule(task, handler);
+    net_loop.schedule(task, completer);
 
-    CHECK(handler.wait_task() == &task);
+    CHECK(completer.wait_task() == &task);
 
     CHECK(task.success());
     CHECK(task.get_handle());
@@ -178,12 +178,12 @@ TEST(tasks, asynchronous_add_remove) {
     UdpReceiverConfig config = make_receiver_config("127.0.0.1", 0);
     packet::ConcurrentQueue queue;
 
-    AddRemoveHandler handler(net_loop);
+    AddRemoveCompleter completer(net_loop);
 
     UNSIGNED_LONGS_EQUAL(0, net_loop.num_ports());
 
-    handler.start(config, queue);
-    handler.wait();
+    completer.start(config, queue);
+    completer.wait();
 
     UNSIGNED_LONGS_EQUAL(0, net_loop.num_ports());
 }

@@ -16,24 +16,6 @@
 namespace roc {
 namespace netio {
 
-NetworkLoop::Task::Task()
-    : func_(NULL)
-    , state_(Initialized)
-    , success_(false)
-    , port_handle_(NULL)
-    , handler_(NULL) {
-}
-
-NetworkLoop::Task::~Task() {
-    if (state_ != Finished) {
-        roc_panic("network loop: attemp to destroy task before it's finished");
-    }
-}
-
-bool NetworkLoop::Task::success() const {
-    return state_ == Finished && success_;
-}
-
 NetworkLoop::Tasks::AddUdpReceiverPort::AddUdpReceiverPort(UdpReceiverConfig& config,
                                                            packet::IWriter& writer) {
     func_ = &NetworkLoop::task_add_udp_receiver_;
@@ -46,7 +28,7 @@ NetworkLoop::PortHandle NetworkLoop::Tasks::AddUdpReceiverPort::get_handle() con
         return NULL;
     }
     roc_panic_if_not(port_handle_);
-    return port_handle_;
+    return (PortHandle)port_handle_;
 }
 
 NetworkLoop::Tasks::AddUdpSenderPort::AddUdpSenderPort(UdpSenderConfig& config) {
@@ -60,7 +42,7 @@ NetworkLoop::PortHandle NetworkLoop::Tasks::AddUdpSenderPort::get_handle() const
         return NULL;
     }
     roc_panic_if_not(port_handle_);
-    return port_handle_;
+    return (PortHandle)port_handle_;
 }
 
 packet::IWriter* NetworkLoop::Tasks::AddUdpSenderPort::get_writer() const {
@@ -83,7 +65,7 @@ NetworkLoop::PortHandle NetworkLoop::Tasks::AddTcpServerPort::get_handle() const
         return NULL;
     }
     roc_panic_if_not(port_handle_);
-    return port_handle_;
+    return (PortHandle)port_handle_;
 }
 
 NetworkLoop::Tasks::AddTcpClientPort::AddTcpClientPort(TcpClientConfig& config,
@@ -98,7 +80,7 @@ NetworkLoop::PortHandle NetworkLoop::Tasks::AddTcpClientPort::get_handle() const
         return NULL;
     }
     roc_panic_if_not(port_handle_);
-    return port_handle_;
+    return (PortHandle)port_handle_;
 }
 
 NetworkLoop::Tasks::RemovePort::RemovePort(PortHandle handle) {
@@ -118,9 +100,6 @@ NetworkLoop::Tasks::ResolveEndpointAddress::ResolveEndpointAddress(
 const address::SocketAddr&
 NetworkLoop::Tasks::ResolveEndpointAddress::get_address() const {
     return resolve_req_.resolved_address;
-}
-
-NetworkLoop::ICompletionHandler::~ICompletionHandler() {
 }
 
 NetworkLoop::NetworkLoop(packet::PacketFactory& packet_factory,
@@ -202,17 +181,17 @@ size_t NetworkLoop::num_ports() const {
     return (size_t)num_open_ports_;
 }
 
-void NetworkLoop::schedule(Task& task, ICompletionHandler& handler) {
+void NetworkLoop::schedule(NetworkTask& task, INetworkTaskCompleter& completer) {
     if (!valid()) {
         roc_panic("network loop: can't use invalid loop");
     }
 
-    if (task.state_ != Task::Initialized) {
+    if (task.state_ != NetworkTask::StateInitialized) {
         roc_panic("network loop: can't use the same task multiple times");
     }
 
-    task.handler_ = &handler;
-    task.state_ = Task::Pending;
+    task.completer_ = &completer;
+    task.state_ = NetworkTask::StatePending;
 
     pending_tasks_.push_back(task);
 
@@ -222,12 +201,12 @@ void NetworkLoop::schedule(Task& task, ICompletionHandler& handler) {
     }
 }
 
-bool NetworkLoop::schedule_and_wait(Task& task) {
+bool NetworkLoop::schedule_and_wait(NetworkTask& task) {
     if (!valid()) {
         roc_panic("network loop: can't use invalid loop");
     }
 
-    if (task.state_ != Task::Initialized) {
+    if (task.state_ != NetworkTask::StateInitialized) {
         roc_panic("network loop: can't use the same task multiple times");
     }
 
@@ -235,8 +214,8 @@ bool NetworkLoop::schedule_and_wait(Task& task) {
         task.sem_.reset(new (task.sem_) core::Semaphore);
     }
 
-    task.handler_ = NULL;
-    task.state_ = Task::Pending;
+    task.completer_ = NULL;
+    task.state_ = NetworkTask::StatePending;
 
     pending_tasks_.push_back(task);
 
@@ -261,7 +240,7 @@ void NetworkLoop::handle_terminate_completed(IConn& conn, void* arg) {
     roc_log(LogDebug, "network loop: asynchronous terminate finished: port %s",
             port->descriptor());
 
-    Task* task = (Task*)arg;
+    NetworkTask* task = (NetworkTask*)arg;
 
     if (async_close_port_(port, task) == AsyncOp_Started) {
         roc_log(LogDebug, "network loop: initiated asynchronous close: port %s",
@@ -284,7 +263,7 @@ void NetworkLoop::handle_close_completed(BasicPort& port_ref, void* arg) {
     roc_log(LogDebug, "network loop: asynchronous close finished: port %s",
             port->descriptor());
 
-    finish_closing_port_(port, (Task*)arg);
+    finish_closing_port_(port, (NetworkTask*)arg);
 }
 
 void NetworkLoop::handle_resolved(ResolverRequest& req) {
@@ -328,29 +307,29 @@ void NetworkLoop::process_pending_tasks_() {
     // push_back() is currently in progress. In this case we can exit the loop
     // before processing all tasks, but schedule() always calls uv_async_send()
     // after push_back(), so we'll wake up soon and process the rest tasks.
-    while (Task* task = pending_tasks_.try_pop_front_exclusive()) {
+    while (NetworkTask* task = pending_tasks_.try_pop_front_exclusive()) {
         (this->*(task->func_))(*task);
 
-        if (task->state_ == Task::Finishing) {
+        if (task->state_ == NetworkTask::StateFinishing) {
             finish_task_(*task);
         }
     }
 }
 
-void NetworkLoop::finish_task_(Task& task) {
-    ICompletionHandler* handler = task.handler_;
+void NetworkLoop::finish_task_(NetworkTask& task) {
+    INetworkTaskCompleter* completer = task.completer_;
 
-    task.state_ = Task::Finished;
+    task.state_ = NetworkTask::StateFinished;
 
-    if (handler) {
-        handler->network_task_finished(task);
+    if (completer) {
+        completer->network_task_completed(task);
     } else {
         task.sem_->post();
     }
 }
 
 void NetworkLoop::async_terminate_conn_port_(
-    const core::SharedPtr<TcpConnectionPort>& port, Task* task) {
+    const core::SharedPtr<TcpConnectionPort>& port, NetworkTask* task) {
     closing_ports_.push_back(*port);
 
     port->attach_terminate_handler(*this, task);
@@ -358,7 +337,8 @@ void NetworkLoop::async_terminate_conn_port_(
 }
 
 AsyncOperationStatus
-NetworkLoop::async_close_port_(const core::SharedPtr<BasicPort>& port, Task* task) {
+NetworkLoop::async_close_port_(const core::SharedPtr<BasicPort>& port,
+                               NetworkTask* task) {
     const AsyncOperationStatus status = port->async_close(*this, task);
 
     if (status == AsyncOp_Started) {
@@ -371,7 +351,7 @@ NetworkLoop::async_close_port_(const core::SharedPtr<BasicPort>& port, Task* tas
 }
 
 void NetworkLoop::finish_closing_port_(const core::SharedPtr<BasicPort>& port,
-                                       Task* task) {
+                                       NetworkTask* task) {
     closing_ports_.remove(*port);
 
     if (task) {
@@ -403,7 +383,7 @@ void NetworkLoop::close_all_sems_() {
     }
 }
 
-void NetworkLoop::task_add_udp_receiver_(Task& base_task) {
+void NetworkLoop::task_add_udp_receiver_(NetworkTask& base_task) {
     Tasks::AddUdpReceiverPort& task = (Tasks::AddUdpReceiverPort&)base_task;
 
     core::SharedPtr<UdpReceiverPort> port =
@@ -415,7 +395,7 @@ void NetworkLoop::task_add_udp_receiver_(Task& base_task) {
             "network loop: can't add udp receiver port %s: can't allocate udp receiver",
             address::socket_addr_to_str(task.config_->bind_address).c_str());
         task.success_ = false;
-        task.state_ = Task::Finishing;
+        task.state_ = NetworkTask::StateFinishing;
         return;
     }
 
@@ -427,9 +407,9 @@ void NetworkLoop::task_add_udp_receiver_(Task& base_task) {
                 address::socket_addr_to_str(task.config_->bind_address).c_str());
         task.success_ = false;
         if (async_close_port_(port, &task) == AsyncOp_Started) {
-            task.state_ = Task::ClosingPort;
+            task.state_ = NetworkTask::StateClosingPort;
         } else {
-            task.state_ = Task::Finishing;
+            task.state_ = NetworkTask::StateFinishing;
         }
         return;
     }
@@ -438,13 +418,13 @@ void NetworkLoop::task_add_udp_receiver_(Task& base_task) {
     update_num_ports_();
 
     task.config_->bind_address = port->bind_address();
-    task.port_handle_ = (PortHandle)port.get();
+    task.port_handle_ = port.get();
 
     task.success_ = true;
-    task.state_ = Task::Finishing;
+    task.state_ = NetworkTask::StateFinishing;
 }
 
-void NetworkLoop::task_add_udp_sender_(Task& base_task) {
+void NetworkLoop::task_add_udp_sender_(NetworkTask& base_task) {
     Tasks::AddUdpSenderPort& task = (Tasks::AddUdpSenderPort&)base_task;
 
     core::SharedPtr<UdpSenderPort> port =
@@ -454,7 +434,7 @@ void NetworkLoop::task_add_udp_sender_(Task& base_task) {
                 "network loop: can't add udp sender port %s: can't allocate udp sender",
                 address::socket_addr_to_str(task.config_->bind_address).c_str());
         task.success_ = false;
-        task.state_ = Task::Finishing;
+        task.state_ = NetworkTask::StateFinishing;
         return;
     }
 
@@ -466,9 +446,9 @@ void NetworkLoop::task_add_udp_sender_(Task& base_task) {
                 address::socket_addr_to_str(task.config_->bind_address).c_str());
         task.success_ = false;
         if (async_close_port_(port, &task) == AsyncOp_Started) {
-            task.state_ = Task::ClosingPort;
+            task.state_ = NetworkTask::StateClosingPort;
         } else {
-            task.state_ = Task::Finishing;
+            task.state_ = NetworkTask::StateFinishing;
         }
         return;
     }
@@ -477,14 +457,14 @@ void NetworkLoop::task_add_udp_sender_(Task& base_task) {
     update_num_ports_();
 
     task.config_->bind_address = port->bind_address();
-    task.port_handle_ = (PortHandle)port.get();
+    task.port_handle_ = port.get();
     task.writer_ = port.get();
 
     task.success_ = true;
-    task.state_ = Task::Finishing;
+    task.state_ = NetworkTask::StateFinishing;
 }
 
-void NetworkLoop::task_add_tcp_server_(Task& base_task) {
+void NetworkLoop::task_add_tcp_server_(NetworkTask& base_task) {
     Tasks::AddTcpServerPort& task = (Tasks::AddTcpServerPort&)base_task;
 
     core::SharedPtr<TcpServerPort> port = new (allocator_)
@@ -494,7 +474,7 @@ void NetworkLoop::task_add_tcp_server_(Task& base_task) {
                 "network loop: can't add tcp server port %s: can't allocate tcp server",
                 address::socket_addr_to_str(task.config_->bind_address).c_str());
         task.success_ = false;
-        task.state_ = Task::Finishing;
+        task.state_ = NetworkTask::StateFinishing;
         return;
     }
 
@@ -506,9 +486,9 @@ void NetworkLoop::task_add_tcp_server_(Task& base_task) {
                 address::socket_addr_to_str(task.config_->bind_address).c_str());
         task.success_ = false;
         if (async_close_port_(port, &task) == AsyncOp_Started) {
-            task.state_ = Task::ClosingPort;
+            task.state_ = NetworkTask::StateClosingPort;
         } else {
-            task.state_ = Task::Finishing;
+            task.state_ = NetworkTask::StateFinishing;
         }
         return;
     }
@@ -517,13 +497,13 @@ void NetworkLoop::task_add_tcp_server_(Task& base_task) {
     update_num_ports_();
 
     task.config_->bind_address = port->bind_address();
-    task.port_handle_ = (PortHandle)port.get();
+    task.port_handle_ = port.get();
 
     task.success_ = true;
-    task.state_ = Task::Finishing;
+    task.state_ = NetworkTask::StateFinishing;
 }
 
-void NetworkLoop::task_add_tcp_client_(Task& base_task) {
+void NetworkLoop::task_add_tcp_client_(NetworkTask& base_task) {
     Tasks::AddTcpClientPort& task = (Tasks::AddTcpClientPort&)base_task;
 
     core::SharedPtr<TcpConnectionPort> port =
@@ -533,7 +513,7 @@ void NetworkLoop::task_add_tcp_client_(Task& base_task) {
                 "network loop: can't add tcp client port %s: can't allocate tcp client",
                 address::socket_addr_to_str(task.config_->remote_address).c_str());
         task.success_ = false;
-        task.state_ = Task::Finishing;
+        task.state_ = NetworkTask::StateFinishing;
         return;
     }
 
@@ -545,9 +525,9 @@ void NetworkLoop::task_add_tcp_client_(Task& base_task) {
                 address::socket_addr_to_str(task.config_->remote_address).c_str());
         task.success_ = false;
         if (async_close_port_(port, &task) == AsyncOp_Started) {
-            task.state_ = Task::ClosingPort;
+            task.state_ = NetworkTask::StateClosingPort;
         } else {
-            task.state_ = Task::Finishing;
+            task.state_ = NetworkTask::StateFinishing;
         }
         return;
     }
@@ -557,7 +537,7 @@ void NetworkLoop::task_add_tcp_client_(Task& base_task) {
                 "network loop: can't add tcp client port %s: can't start tcp client",
                 address::socket_addr_to_str(task.config_->remote_address).c_str());
         task.success_ = false;
-        task.state_ = Task::ClosingPort;
+        task.state_ = NetworkTask::StateClosingPort;
         async_terminate_conn_port_(port, &task);
         return;
     }
@@ -568,13 +548,13 @@ void NetworkLoop::task_add_tcp_client_(Task& base_task) {
     update_num_ports_();
 
     task.config_->local_address = port->local_address();
-    task.port_handle_ = (PortHandle)port.get();
+    task.port_handle_ = port.get();
 
     task.success_ = true;
-    task.state_ = Task::Finishing;
+    task.state_ = NetworkTask::StateFinishing;
 }
 
-void NetworkLoop::task_remove_port_(Task& base_task) {
+void NetworkLoop::task_remove_port_(NetworkTask& base_task) {
     Tasks::RemovePort& task = (Tasks::RemovePort&)base_task;
 
     roc_log(LogDebug, "network loop: removing port %s", task.port_->descriptor());
@@ -584,22 +564,22 @@ void NetworkLoop::task_remove_port_(Task& base_task) {
 
     task.success_ = true;
     if (async_close_port_(task.port_, &task) == AsyncOp_Started) {
-        task.state_ = Task::ClosingPort;
+        task.state_ = NetworkTask::StateClosingPort;
     } else {
-        task.state_ = Task::Finishing;
+        task.state_ = NetworkTask::StateFinishing;
     }
 }
 
-void NetworkLoop::task_resolve_endpoint_address_(Task& base_task) {
+void NetworkLoop::task_resolve_endpoint_address_(NetworkTask& base_task) {
     Tasks::ResolveEndpointAddress& task = (Tasks::ResolveEndpointAddress&)base_task;
 
     if (!resolver_.async_resolve(task.resolve_req_)) {
         task.success_ = task.resolve_req_.success;
-        task.state_ = Task::Finishing;
+        task.state_ = NetworkTask::StateFinishing;
         return;
     }
 
-    task.state_ = Task::Pending;
+    task.state_ = NetworkTask::StatePending;
 }
 
 } // namespace netio

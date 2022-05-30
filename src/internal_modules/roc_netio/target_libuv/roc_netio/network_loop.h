@@ -29,7 +29,9 @@
 #include "roc_netio/iconn.h"
 #include "roc_netio/iconn_acceptor.h"
 #include "roc_netio/iconn_handler.h"
+#include "roc_netio/inetwork_task_completer.h"
 #include "roc_netio/iterminate_handler.h"
+#include "roc_netio/network_task.h"
 #include "roc_netio/resolver.h"
 #include "roc_netio/tcp_connection_port.h"
 #include "roc_netio/tcp_server_port.h"
@@ -42,56 +44,21 @@ namespace roc {
 namespace netio {
 
 //! Network event loop thread.
+//! @remarks
+//!  This class is a task-based facade for the whole roc_netio module.
 class NetworkLoop : private ITerminateHandler,
                     private ICloseHandler,
                     private IResolverRequestHandler,
                     private core::Thread {
 public:
-    class ICompletionHandler;
-
     //! Opaque port handle.
     typedef struct PortHandle* PortHandle;
-
-    //! Base task class.
-    //! The user is responsible for allocating and deallocating the task.
-    class Task : public core::MpscQueueNode {
-    public:
-        ~Task();
-
-        //! Check that the task finished and succeeded.
-        bool success() const;
-
-    protected:
-        friend class NetworkLoop;
-
-        Task();
-
-        //! Task state.
-        enum State { Initialized, Pending, ClosingPort, Finishing, Finished };
-
-        void (NetworkLoop::*func_)(Task&); //!< Task implementation method.
-
-        //! Task state, defines whether task is finished already.
-        //! The task becomes immutable after setting state to Finished.
-        core::Atomic<int> state_;
-
-        //! Task result, defines wether finished task succeeded or failed.
-        //! Makes sense only after setting state_ to Finished.
-        //! This atomic should be assigned before setting state_ to Finished.
-        core::Atomic<int> success_;
-
-        core::SharedPtr<BasicPort> port_; //!< On which port the task operates.
-        PortHandle port_handle_;          //!< Port handle.
-
-        ICompletionHandler* handler_;         //!< Completion handler.
-        core::Optional<core::Semaphore> sem_; //!< Completion semaphore.
-    };
 
     //! Subclasses for specific tasks.
     class Tasks {
     public:
         //! Add UDP datagram receiver port.
-        class AddUdpReceiverPort : public Task {
+        class AddUdpReceiverPort : public NetworkTask {
         public:
             //! Set task parameters.
             //! @remarks
@@ -113,7 +80,7 @@ public:
         };
 
         //! Add UDP datagram sender port.
-        class AddUdpSenderPort : public Task {
+        class AddUdpSenderPort : public NetworkTask {
         public:
             //! Set task parameters.
             //! @remarks
@@ -141,7 +108,7 @@ public:
         };
 
         //! Add TCP server port.
-        class AddTcpServerPort : public Task {
+        class AddTcpServerPort : public NetworkTask {
         public:
             //! Set task parameters.
             //! @remarks
@@ -164,7 +131,7 @@ public:
         };
 
         //! Add TCP client port.
-        class AddTcpClientPort : public Task {
+        class AddTcpClientPort : public NetworkTask {
         public:
             //! Set task parameters.
             //! @remarks
@@ -185,7 +152,7 @@ public:
         };
 
         //! Remove port.
-        class RemovePort : public Task {
+        class RemovePort : public NetworkTask {
         public:
             //! Set task parameters.
             RemovePort(PortHandle handle);
@@ -195,7 +162,7 @@ public:
         };
 
         //! Resolve endpoint address.
-        class ResolveEndpointAddress : public Task {
+        class ResolveEndpointAddress : public NetworkTask {
         public:
             //! Set task parameters.
             //! @remarks
@@ -213,15 +180,6 @@ public:
 
             ResolverRequest resolve_req_;
         };
-    };
-
-    //! Task completion handler.
-    class ICompletionHandler {
-    public:
-        virtual ~ICompletionHandler();
-
-        //! Called when a task is finished.
-        virtual void network_task_finished(Task&) = 0;
     };
 
     //! Initialize.
@@ -244,17 +202,16 @@ public:
 
     //! Enqueue a task for asynchronous execution and return.
     //! The task should not be destroyed until the callback is called.
-    //! The @p callback will be invoked on event loop thread after the
-    //! task completes. The given @p cb_arg is passed to the callback.
-    //! The callback should not block the caller.
-    void schedule(Task& task, ICompletionHandler& handler);
+    //! The @p completer will be invoked on event loop thread after the
+    //! task completes.
+    void schedule(NetworkTask& task, INetworkTaskCompleter& completer);
 
     //! Enqueue a task for asynchronous execution and wait for its completion.
     //! The task should not be destroyed until this method returns.
     //! Should not be called from schedule() callback.
     //! @returns
     //!  true if the task succeeded or false if it failed.
-    bool schedule_and_wait(Task& task);
+    bool schedule_and_wait(NetworkTask& task);
 
 private:
     static void task_sem_cb_(uv_async_t* handle);
@@ -267,25 +224,25 @@ private:
     virtual void run();
 
     void process_pending_tasks_();
-    void finish_task_(Task&);
+    void finish_task_(NetworkTask&);
 
     void async_terminate_conn_port_(const core::SharedPtr<TcpConnectionPort>& port,
-                                    Task* task);
+                                    NetworkTask* task);
     AsyncOperationStatus async_close_port_(const core::SharedPtr<BasicPort>& port,
-                                           Task* task);
-    void finish_closing_port_(const core::SharedPtr<BasicPort>& port, Task* task);
+                                           NetworkTask* task);
+    void finish_closing_port_(const core::SharedPtr<BasicPort>& port, NetworkTask* task);
 
     void update_num_ports_();
 
     void close_all_sems_();
     void close_all_ports_();
 
-    void task_add_udp_receiver_(Task&);
-    void task_add_udp_sender_(Task&);
-    void task_remove_port_(Task&);
-    void task_add_tcp_server_(Task&);
-    void task_add_tcp_client_(Task&);
-    void task_resolve_endpoint_address_(Task&);
+    void task_add_udp_receiver_(NetworkTask&);
+    void task_add_udp_sender_(NetworkTask&);
+    void task_remove_port_(NetworkTask&);
+    void task_add_tcp_server_(NetworkTask&);
+    void task_add_tcp_client_(NetworkTask&);
+    void task_resolve_endpoint_address_(NetworkTask&);
 
     packet::PacketFactory& packet_factory_;
     core::BufferFactory<uint8_t>& buffer_factory_;
@@ -302,7 +259,7 @@ private:
     uv_async_t task_sem_;
     bool task_sem_initialized_;
 
-    core::MpscQueue<Task, core::NoOwnership> pending_tasks_;
+    core::MpscQueue<NetworkTask, core::NoOwnership> pending_tasks_;
 
     Resolver resolver_;
 
