@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_pipeline/task_pipeline.h"
+#include "roc_pipeline/pipeline_loop.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 
@@ -19,26 +19,7 @@ const core::nanoseconds_t StatsReportInterval = core::Minute;
 
 } // namespace
 
-TaskPipeline::Task::Task()
-    : state_(StateNew)
-    , success_(false)
-    , handler_(NULL) {
-}
-
-TaskPipeline::Task::~Task() {
-    if (state_ == StateScheduled) {
-        roc_panic("task pipeline: attempt to destroy task before it's finished");
-    }
-}
-
-bool TaskPipeline::Task::success() const {
-    return state_ == StateFinished && success_;
-}
-
-TaskPipeline::ICompletionHandler::~ICompletionHandler() {
-}
-
-TaskPipeline::TaskPipeline(ITaskScheduler& scheduler,
+PipelineLoop::PipelineLoop(IPipelineTaskScheduler& scheduler,
                            const TaskConfig& config,
                            const audio::SampleSpec& sample_spec)
     : config_(config)
@@ -59,41 +40,41 @@ TaskPipeline::TaskPipeline(ITaskScheduler& scheduler,
     , rate_limiter_(StatsReportInterval) {
 }
 
-TaskPipeline::~TaskPipeline() {
+PipelineLoop::~PipelineLoop() {
     if (pending_tasks_ != 0) {
         roc_panic(
-            "task pipeline: attempt to destroy pipeline before finishing all tasks");
+            "pipeline loop: attempt to destroy pipeline before finishing all tasks");
     }
 }
 
-const TaskPipeline::Stats& TaskPipeline::get_stats_ref() const {
+const PipelineLoop::Stats& PipelineLoop::get_stats_ref() const {
     return stats_;
 }
 
-size_t TaskPipeline::num_pending_tasks() const {
+size_t PipelineLoop::num_pending_tasks() const {
     return (size_t)pending_tasks_;
 }
 
-size_t TaskPipeline::num_pending_frames() const {
+size_t PipelineLoop::num_pending_frames() const {
     return (size_t)pending_frames_;
 }
 
-void TaskPipeline::schedule(Task& task, ICompletionHandler& handler) {
-    if (task.state_ != Task::StateNew) {
-        roc_panic("task pipeline: attempt to schedule task more than once");
+void PipelineLoop::schedule(PipelineTask& task, IPipelineTaskCompleter& completer) {
+    if (task.state_ != PipelineTask::StateNew) {
+        roc_panic("pipeline loop: attempt to schedule task more than once");
     }
 
-    task.handler_ = &handler;
+    task.completer_ = &completer;
 
     schedule_and_maybe_process_task_(task);
 }
 
-bool TaskPipeline::schedule_and_wait(Task& task) {
-    if (task.state_ != Task::StateNew) {
-        roc_panic("task pipeline: attempt to schedule task more than once");
+bool PipelineLoop::schedule_and_wait(PipelineTask& task) {
+    if (task.state_ != PipelineTask::StateNew) {
+        roc_panic("pipeline loop: attempt to schedule task more than once");
     }
 
-    task.handler_ = NULL;
+    task.completer_ = NULL;
 
     if (!task.sem_) {
         task.sem_.reset(new (task.sem_) core::Semaphore);
@@ -108,8 +89,8 @@ bool TaskPipeline::schedule_and_wait(Task& task) {
     return task.success_;
 }
 
-bool TaskPipeline::schedule_and_maybe_process_task_(Task& task) {
-    task.state_ = Task::StateScheduled;
+bool PipelineLoop::schedule_and_maybe_process_task_(PipelineTask& task) {
+    task.state_ = PipelineTask::StateScheduled;
 
     if (++pending_tasks_ != 1) {
         task_queue_.push_back(task);
@@ -157,7 +138,7 @@ bool TaskPipeline::schedule_and_maybe_process_task_(Task& task) {
     return true;
 }
 
-void TaskPipeline::process_tasks() {
+void PipelineLoop::process_tasks() {
     const bool need_reschedule = maybe_process_tasks_();
 
     processing_state_ = ProcNotScheduled;
@@ -167,7 +148,7 @@ void TaskPipeline::process_tasks() {
     }
 }
 
-bool TaskPipeline::maybe_process_tasks_() {
+bool PipelineLoop::maybe_process_tasks_() {
     core::nanoseconds_t next_frame_deadline;
     if (!next_frame_deadline_.try_load(next_frame_deadline)) {
         return false;
@@ -190,7 +171,7 @@ bool TaskPipeline::maybe_process_tasks_() {
             break;
         }
 
-        Task* task = task_queue_.try_pop_front_exclusive();
+        PipelineTask* task = task_queue_.try_pop_front_exclusive();
         if (!task) {
             break;
         }
@@ -210,21 +191,21 @@ bool TaskPipeline::maybe_process_tasks_() {
     return (n_pending_frames == 0 && pending_tasks_ != 0);
 }
 
-bool TaskPipeline::process_frame_and_tasks(audio::Frame& frame) {
+bool PipelineLoop::process_subframes_and_tasks(audio::Frame& frame) {
     if (config_.enable_precise_task_scheduling) {
-        return process_frame_and_tasks_precise_(frame);
+        return process_subframes_and_tasks_precise_(frame);
     }
-    return process_frame_and_tasks_simple_(frame);
+    return process_subframes_and_tasks_simple_(frame);
 }
 
-bool TaskPipeline::process_frame_and_tasks_simple_(audio::Frame& frame) {
+bool PipelineLoop::process_subframes_and_tasks_simple_(audio::Frame& frame) {
     ++pending_frames_;
 
     cancel_async_task_processing_();
 
     pipeline_mutex_.lock();
 
-    const bool frame_res = process_frame_imp(frame);
+    const bool frame_res = process_subframe_imp(frame);
 
     pipeline_mutex_.unlock();
 
@@ -235,7 +216,7 @@ bool TaskPipeline::process_frame_and_tasks_simple_(audio::Frame& frame) {
     return frame_res;
 }
 
-bool TaskPipeline::process_frame_and_tasks_precise_(audio::Frame& frame) {
+bool PipelineLoop::process_subframes_and_tasks_precise_(audio::Frame& frame) {
     ++pending_frames_;
 
     const core::nanoseconds_t frame_start_time = timestamp_imp();
@@ -260,7 +241,7 @@ bool TaskPipeline::process_frame_and_tasks_precise_(audio::Frame& frame) {
         }
 
         if (start_subframe_task_processing_()) {
-            while (Task* task = task_queue_.try_pop_front_exclusive()) {
+            while (PipelineTask* task = task_queue_.try_pop_front_exclusive()) {
                 process_task_(*task, true);
                 --pending_tasks_;
 
@@ -289,7 +270,7 @@ bool TaskPipeline::process_frame_and_tasks_precise_(audio::Frame& frame) {
     return frame_res;
 }
 
-void TaskPipeline::schedule_async_task_processing_() {
+void PipelineLoop::schedule_async_task_processing_() {
     core::nanoseconds_t next_frame_deadline;
     if (!next_frame_deadline_.try_load(next_frame_deadline)) {
         return;
@@ -327,7 +308,7 @@ void TaskPipeline::schedule_async_task_processing_() {
     }
 }
 
-void TaskPipeline::cancel_async_task_processing_() {
+void PipelineLoop::cancel_async_task_processing_() {
     if (!scheduler_mutex_.try_lock()) {
         return;
     }
@@ -342,27 +323,27 @@ void TaskPipeline::cancel_async_task_processing_() {
     scheduler_mutex_.unlock();
 }
 
-void TaskPipeline::process_task_(Task& task, bool notify) {
-    ICompletionHandler* handler = task.handler_;
+void PipelineLoop::process_task_(PipelineTask& task, bool notify) {
+    IPipelineTaskCompleter* completer = task.completer_;
 
     task.success_ = process_task_imp(task);
-    task.state_ = Task::StateFinished;
+    task.state_ = PipelineTask::StateFinished;
 
-    if (handler) {
-        handler->pipeline_task_finished(task);
+    if (completer) {
+        completer->pipeline_task_completed(task);
     } else if (notify) {
         task.sem_->post();
     }
 }
 
-bool TaskPipeline::process_next_subframe_(audio::Frame& frame, size_t* frame_pos) {
+bool PipelineLoop::process_next_subframe_(audio::Frame& frame, size_t* frame_pos) {
     const size_t subframe_size = max_samples_between_tasks_
         ? std::min(frame.size() - *frame_pos, max_samples_between_tasks_)
         : frame.size();
 
     audio::Frame sub_frame(frame.data() + *frame_pos, subframe_size);
 
-    const bool ret = process_frame_imp(sub_frame);
+    const bool ret = process_subframe_imp(sub_frame);
 
     subframe_tasks_deadline_ = timestamp_imp() + config_.max_inframe_task_processing;
 
@@ -378,7 +359,7 @@ bool TaskPipeline::process_next_subframe_(audio::Frame& frame, size_t* frame_pos
     return ret;
 }
 
-bool TaskPipeline::start_subframe_task_processing_() {
+bool PipelineLoop::start_subframe_task_processing_() {
     if (pending_tasks_ == 0) {
         return false;
     }
@@ -393,7 +374,7 @@ bool TaskPipeline::start_subframe_task_processing_() {
     return true;
 }
 
-bool TaskPipeline::subframe_task_processing_allowed_(
+bool PipelineLoop::subframe_task_processing_allowed_(
     core::nanoseconds_t next_frame_deadline) const {
     const core::nanoseconds_t now = timestamp_imp();
 
@@ -409,7 +390,7 @@ bool TaskPipeline::subframe_task_processing_allowed_(
 }
 
 core::nanoseconds_t
-TaskPipeline::update_next_frame_deadline_(core::nanoseconds_t frame_start_time,
+PipelineLoop::update_next_frame_deadline_(core::nanoseconds_t frame_start_time,
                                           size_t frame_size) {
     const core::nanoseconds_t frame_duration = sample_spec_.size_to_ns(frame_size);
 
@@ -420,7 +401,7 @@ TaskPipeline::update_next_frame_deadline_(core::nanoseconds_t frame_start_time,
     return next_frame_deadline;
 }
 
-bool TaskPipeline::interframe_task_processing_allowed_(
+bool PipelineLoop::interframe_task_processing_allowed_(
     core::nanoseconds_t next_frame_deadline) const {
     if (!config_.enable_precise_task_scheduling) {
         return true;
@@ -432,7 +413,7 @@ bool TaskPipeline::interframe_task_processing_allowed_(
         || now >= (next_frame_deadline + no_task_proc_half_interval_);
 }
 
-void TaskPipeline::report_stats_() {
+void PipelineLoop::report_stats_() {
     if (!rate_limiter_.would_allow()) {
         return;
     }
@@ -443,7 +424,7 @@ void TaskPipeline::report_stats_() {
 
     if (rate_limiter_.allow()) {
         roc_log(LogDebug,
-                "task pipeline:"
+                "pipeline loop:"
                 " tasks=%lu in_place=%.2f in_frame=%.2f preempts=%lu sched=%lu/%lu",
                 (unsigned long)stats_.task_processed_total,
                 stats_.task_processed_total

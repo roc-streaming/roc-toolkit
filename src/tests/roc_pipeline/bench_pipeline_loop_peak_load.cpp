@@ -16,7 +16,7 @@
 #include "roc_core/ticker.h"
 #include "roc_core/time.h"
 #include "roc_ctl/control_loop.h"
-#include "roc_pipeline/task_pipeline.h"
+#include "roc_pipeline/pipeline_loop.h"
 
 namespace roc {
 namespace pipeline {
@@ -74,24 +74,24 @@ namespace {
 // CPU         -  one frame CPU time
 // Iterations  -  number of frames
 //
-// fb_avg      -  average delay between process_frame_and_tasks() and process_frame_imp()
-//                calls (i.e. delay before frame processing)
+// fb_avg      -  average delay between process_subframes_and_tasks() and
+//                process_subframe_imp() calls (i.e. delay before frame processing)
 // fb_p95      -  95% percentile of the above
 //
-// fa_avg      -  average delay between return from process_frame_imp() and return from
-//                process_frame_and_tasks() (i.e. delay after frame processing)
+// fa_avg      -  average delay between return from process_subframe_imp() and return from
+//                process_subframes_and_tasks() (i.e. delay after frame processing)
 // fa_p95      -  95% percentile of the above
 //
 // t_avg       -  average delay between schedule() and process_task_imp() calls
 //                (i.e. task processing delay)
 // t_p95       -  95% percentile of the above
 //
-// tp_frm      -  percentage (0..1) of tasks processed withing process_frame_and_tasks()
-//                call
-// tp_plc      -  percentage (0..1) of tasks processed in-place withing schedule() call
+// tp_frm      -  percentage (0..1) of tasks processed within
+//                process_subframes_and_tasks() call
+// tp_plc      -  percentage (0..1) of tasks processed in-place within schedule() call
 //
 // pr          -  number of times when schedule() or process_tasks() was preempted by
-//                concurrent process_frame_and_tasks() call
+//                concurrent process_subframes_and_tasks() call
 //
 // ss          -  number of time when schedule_task_processing() was called
 // sc          -  number of time when cancek_task_processing() was called
@@ -244,9 +244,9 @@ private:
     Counter frame_delay_after_processing_;
 };
 
-class TestPipeline : public TaskPipeline, private ITaskScheduler {
+class TestPipeline : public PipelineLoop, private IPipelineTaskScheduler {
 public:
-    class Task : public TaskPipeline::Task {
+    class Task : public PipelineTask {
     public:
         Task()
             : start_time_(0) {
@@ -265,7 +265,7 @@ public:
     };
 
     TestPipeline(const TaskConfig& config, ctl::ControlLoop& loop, DelayStats& stats)
-        : TaskPipeline(*this, config, audio::SampleSpec(SampleRate, Chans))
+        : PipelineLoop(*this, config, audio::SampleSpec(SampleRate, Chans))
         , loop_(loop)
         , stats_(stats)
         , processing_task_(*this) {
@@ -285,7 +285,7 @@ public:
     }
 
     void export_counters(benchmark::State& state) {
-        TaskPipeline::Stats st = get_stats_ref();
+        PipelineLoop::Stats st = get_stats_ref();
 
         state.counters["tp_plc"] =
             round_digits(double(st.task_processed_in_place) / st.task_processed_total, 3);
@@ -299,21 +299,21 @@ public:
         state.counters["sc"] = st.scheduler_cancellations;
     }
 
-    using TaskPipeline::process_frame_and_tasks;
+    using PipelineLoop::process_subframes_and_tasks;
 
 private:
     virtual core::nanoseconds_t timestamp_imp() const {
         return core::timestamp();
     }
 
-    virtual bool process_frame_imp(audio::Frame&) {
+    virtual bool process_subframe_imp(audio::Frame&) {
         stats_.frame_processing_started();
         busy_wait(FrameProcessingDuration);
         stats_.frame_processing_finished();
         return true;
     }
 
-    virtual bool process_task_imp(TaskPipeline::Task& basic_task) {
+    virtual bool process_task_imp(PipelineTask& basic_task) {
         Task& task = (Task&)basic_task;
         stats_.task_processing_started(task.elapsed_time());
         busy_wait(
@@ -321,11 +321,11 @@ private:
         return true;
     }
 
-    virtual void schedule_task_processing(TaskPipeline&, core::nanoseconds_t deadline) {
+    virtual void schedule_task_processing(PipelineLoop&, core::nanoseconds_t deadline) {
         loop_.schedule_at(processing_task_, deadline, NULL);
     }
 
-    virtual void cancel_task_processing(TaskPipeline&) {
+    virtual void cancel_task_processing(PipelineLoop&) {
         loop_.async_cancel(processing_task_);
     }
 
@@ -335,7 +335,7 @@ private:
     ctl::ControlLoop::Tasks::PipelineProcessing processing_task_;
 };
 
-class TaskThread : public core::Thread, private TaskPipeline::ICompletionHandler {
+class TaskThread : public core::Thread, private IPipelineTaskCompleter {
 public:
     TaskThread(TestPipeline& pipeline)
         : pipeline_(pipeline)
@@ -363,7 +363,7 @@ private:
         }
     }
 
-    virtual void pipeline_task_finished(TaskPipeline::Task& basic_task) {
+    virtual void pipeline_task_completed(PipelineTask& basic_task) {
         TestPipeline::Task& task = (TestPipeline::Task&)basic_task;
         delete &task;
     }
@@ -394,7 +394,7 @@ public:
 
             stats_.frame_started();
 
-            pipeline_.process_frame_and_tasks(frame);
+            pipeline_.process_subframes_and_tasks(frame);
 
             stats_.frame_finished();
 

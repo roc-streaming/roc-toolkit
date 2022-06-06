@@ -36,7 +36,7 @@ ControlLoop::Tasks::DeleteEndpoint::DeleteEndpoint(ControlLoop::EndpointHandle e
 }
 
 ControlLoop::Tasks::PipelineProcessing::PipelineProcessing(
-    pipeline::TaskPipeline& pipeline)
+    pipeline::PipelineLoop& pipeline)
     : ControlTask(&ControlLoop::task_process_pipeline_tasks_)
     , pipeline_(pipeline) {
 }

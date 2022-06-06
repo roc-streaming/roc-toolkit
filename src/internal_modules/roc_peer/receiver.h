@@ -19,15 +19,15 @@
 #include "roc_ctl/control_loop.h"
 #include "roc_peer/basic_peer.h"
 #include "roc_peer/context.h"
-#include "roc_pipeline/itask_scheduler.h"
-#include "roc_pipeline/receiver_source.h"
+#include "roc_pipeline/ipipeline_task_scheduler.h"
+#include "roc_pipeline/receiver_loop.h"
 #include "roc_rtp/format_map.h"
 
 namespace roc {
 namespace peer {
 
 //! Receiver peer.
-class Receiver : public BasicPeer, private pipeline::ITaskScheduler {
+class Receiver : public BasicPeer, private pipeline::IPipelineTaskScheduler {
 public:
     //! Initialize.
     Receiver(Context& context, const pipeline::ReceiverConfig& pipeline_config);
@@ -57,21 +57,21 @@ private:
         }
     };
 
-    virtual void schedule_task_processing(pipeline::TaskPipeline&,
+    virtual void schedule_task_processing(pipeline::PipelineLoop&,
                                           core::nanoseconds_t delay);
 
-    virtual void cancel_task_processing(pipeline::TaskPipeline&);
+    virtual void cancel_task_processing(pipeline::PipelineLoop&);
 
     core::Mutex mutex_;
 
     rtp::FormatMap format_map_;
 
-    pipeline::ReceiverSource pipeline_;
-    pipeline::ReceiverSource::EndpointSetHandle endpoint_set_;
+    pipeline::ReceiverLoop pipeline_;
+    pipeline::ReceiverLoop::EndpointSetHandle endpoint_set_;
 
     InterfacePort ports_[address::Iface_Max];
 
-    ctl::ControlLoop::Tasks::PipelineProcessing process_pipeline_tasks_;
+    ctl::ControlLoop::Tasks::PipelineProcessing processing_task_;
 };
 
 } // namespace peer

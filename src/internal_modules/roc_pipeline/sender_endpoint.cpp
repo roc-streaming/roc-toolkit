@@ -17,7 +17,7 @@ namespace pipeline {
 
 SenderEndpoint::SenderEndpoint(address::Protocol proto, core::IAllocator& allocator)
     : proto_(proto)
-    , writer_(NULL)
+    , dst_writer_(NULL)
     , composer_(NULL) {
     packet::IComposer* composer = NULL;
 
@@ -101,42 +101,48 @@ packet::IComposer& SenderEndpoint::composer() {
     return *composer_;
 }
 
-bool SenderEndpoint::has_writer() const {
-    core::Mutex::Lock lock(mutex_);
+packet::IWriter& SenderEndpoint::writer() {
+    roc_panic_if(!valid());
 
-    return writer_;
+    return *this;
 }
 
-void SenderEndpoint::set_output_writer(packet::IWriter& writer) {
-    core::Mutex::Lock lock(mutex_);
-
+bool SenderEndpoint::has_destination_writer() const {
     roc_panic_if(!valid());
-    roc_panic_if(writer_);
 
-    writer_ = &writer;
+    return dst_writer_;
 }
 
-void SenderEndpoint::set_destination_udp_address(const address::SocketAddr& addr) {
-    core::Mutex::Lock lock(mutex_);
-
+void SenderEndpoint::set_destination_writer(packet::IWriter& writer) {
     roc_panic_if(!valid());
-    roc_panic_if(udp_address_.has_host_port());
 
-    udp_address_ = addr;
+    if (dst_writer_) {
+        roc_panic("sender endpoint: attempt to set destination writer twice");
+    }
+
+    dst_writer_ = &writer;
+}
+
+void SenderEndpoint::set_destination_address(const address::SocketAddr& addr) {
+    roc_panic_if(!valid());
+
+    if (dst_address_.has_host_port()) {
+        roc_panic("sender endpoint: attempt to set destination address twice");
+    }
+
+    dst_address_ = addr;
 }
 
 void SenderEndpoint::write(const packet::PacketPtr& packet) {
-    core::Mutex::Lock lock(mutex_);
-
     roc_panic_if(!valid());
 
-    if (!writer_) {
+    if (!dst_writer_) {
         return;
     }
 
-    if (udp_address_.has_host_port()) {
+    if (dst_address_.has_host_port()) {
         packet->add_flags(packet::Packet::FlagUDP);
-        packet->udp()->dst_addr = udp_address_;
+        packet->udp()->dst_addr = dst_address_;
     }
 
     if ((packet->flags() & packet::Packet::FlagComposed) == 0) {
@@ -146,7 +152,7 @@ void SenderEndpoint::write(const packet::PacketPtr& packet) {
         packet->add_flags(packet::Packet::FlagComposed);
     }
 
-    writer_->write(packet);
+    dst_writer_->write(packet);
 }
 
 } // namespace pipeline

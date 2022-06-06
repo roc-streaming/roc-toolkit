@@ -12,7 +12,7 @@
 #include "roc_core/mutex.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/thread.h"
-#include "roc_pipeline/task_pipeline.h"
+#include "roc_pipeline/pipeline_loop.h"
 
 namespace roc {
 namespace pipeline {
@@ -37,16 +37,16 @@ const core::nanoseconds_t FrameProcessingTime = 50 * core::Microsecond;
 
 const float Epsilon = 1e6f;
 
-class TestPipeline : public TaskPipeline, private ITaskScheduler {
+class TestPipeline : public PipelineLoop, private IPipelineTaskScheduler {
 public:
-    class Task : public TaskPipeline::Task {
+    class Task : public PipelineTask {
     public:
         Task() {
         }
     };
 
     TestPipeline(const TaskConfig& config)
-        : TaskPipeline(*this, config, audio::SampleSpec(SampleRate, Chans))
+        : PipelineLoop(*this, config, audio::SampleSpec(SampleRate, Chans))
         , blocked_cond_(mutex_)
         , unblocked_cond_(mutex_)
         , blocked_counter_(0)
@@ -174,9 +174,9 @@ public:
         exp_sched_deadline_ = d;
     }
 
-    using TaskPipeline::num_pending_frames;
-    using TaskPipeline::num_pending_tasks;
-    using TaskPipeline::process_frame_and_tasks;
+    using PipelineLoop::num_pending_frames;
+    using PipelineLoop::num_pending_tasks;
+    using PipelineLoop::process_subframes_and_tasks;
 
 private:
     virtual core::nanoseconds_t timestamp_imp() const {
@@ -184,7 +184,7 @@ private:
         return time_;
     }
 
-    virtual bool process_frame_imp(audio::Frame& frame) {
+    virtual bool process_subframe_imp(audio::Frame& frame) {
         core::Mutex::Lock lock(mutex_);
         bool first_iter = true;
         while (frame_allow_counter_ == 0) {
@@ -204,7 +204,7 @@ private:
         return true;
     }
 
-    virtual bool process_task_imp(TaskPipeline::Task&) {
+    virtual bool process_task_imp(PipelineTask&) {
         core::Mutex::Lock lock(mutex_);
         bool first_iter = true;
         while (task_allow_counter_ == 0) {
@@ -220,7 +220,7 @@ private:
         return true;
     }
 
-    virtual void schedule_task_processing(TaskPipeline& pipeline,
+    virtual void schedule_task_processing(PipelineLoop& pipeline,
                                           core::nanoseconds_t deadline) {
         core::Mutex::Lock lock(mutex_);
         roc_panic_if(&pipeline != this);
@@ -237,7 +237,7 @@ private:
         n_sched_calls_++;
     }
 
-    virtual void cancel_task_processing(TaskPipeline& pipeline) {
+    virtual void cancel_task_processing(PipelineLoop& pipeline) {
         core::Mutex::Lock lock(mutex_);
         roc_panic_if(&pipeline != this);
         n_sched_cancellations_++;
@@ -267,22 +267,22 @@ private:
     size_t n_sched_cancellations_;
 };
 
-class TestHandler : public TaskPipeline::ICompletionHandler {
+class TestCompleter : public IPipelineTaskCompleter {
 public:
-    TestHandler(TestPipeline& pipeline)
+    TestCompleter(TestPipeline& pipeline)
         : pipeline_(pipeline)
         , cond_(mutex_)
         , task_(NULL)
         , next_task_(NULL) {
     }
 
-    ~TestHandler() {
+    ~TestCompleter() {
         roc_panic_if(task_);
         roc_panic_if(next_task_);
     }
 
-    virtual void pipeline_task_finished(TaskPipeline::Task& task) {
-        TaskPipeline::Task* next_task = NULL;
+    virtual void pipeline_task_completed(PipelineTask& task) {
+        PipelineTask* next_task = NULL;
 
         {
             core::Mutex::Lock lock(mutex_);
@@ -328,24 +328,24 @@ private:
     core::Mutex mutex_;
     core::Cond cond_;
 
-    TaskPipeline::Task* task_;
-    TaskPipeline::Task* next_task_;
+    PipelineTask* task_;
+    PipelineTask* next_task_;
 };
 
 class AsyncTaskScheduler : public core::Thread {
 public:
     AsyncTaskScheduler(TestPipeline& pipeline,
                        TestPipeline::Task& task,
-                       TestHandler* handler)
+                       TestCompleter* completer)
         : pipeline_(pipeline)
         , task_(task)
-        , handler_(handler) {
+        , completer_(completer) {
     }
 
 private:
     virtual void run() {
-        if (handler_) {
-            pipeline_.schedule(task_, *handler_);
+        if (completer_) {
+            pipeline_.schedule(task_, *completer_);
         } else {
             pipeline_.schedule_and_wait(task_);
         }
@@ -353,7 +353,7 @@ private:
 
     TestPipeline& pipeline_;
     TestPipeline::Task& task_;
-    TestHandler* handler_;
+    TestCompleter* completer_;
 };
 
 class AsyncTaskProcessor : public core::Thread {
@@ -379,7 +379,7 @@ public:
 
 private:
     virtual void run() {
-        pipeline_.process_frame_and_tasks(frame_);
+        pipeline_.process_subframes_and_tasks(frame_);
     }
 
     TestPipeline& pipeline_;
@@ -438,17 +438,17 @@ TEST(task_pipeline, schedule_and_wait_right_after_creation) {
 TEST(task_pipeline, schedule_right_after_creation) {
     TestPipeline pipeline(config);
 
-    TestHandler handler(pipeline);
+    TestCompleter completer(pipeline);
     TestPipeline::Task task;
 
     CHECK(!task.success());
 
     // schedule() should process task in-place
-    pipeline.schedule(task, handler);
+    pipeline.schedule(task, completer);
 
     CHECK(task.success());
 
-    CHECK(handler.get_task() == &task);
+    CHECK(completer.get_task() == &task);
 
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_pending_tasks());
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_processed_tasks());
@@ -472,13 +472,13 @@ TEST(task_pipeline, schedule_when_can_process_tasks) {
 
     pipeline.set_time(StartTime);
 
-    // process_frame_and_tasks() should allow task processing
+    // process_subframes_and_tasks() should allow task processing
     // until (StartTime + FrameSize * core::Microsecond - NoTaskProcessingGap / 2)
-    CHECK(pipeline.process_frame_and_tasks(frame));
+    CHECK(pipeline.process_subframes_and_tasks(frame));
 
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_processed_frames());
 
-    TestHandler handler(pipeline);
+    TestCompleter completer(pipeline);
     TestPipeline::Task task;
 
     // deadline not expired yet (because of "-1")
@@ -486,9 +486,9 @@ TEST(task_pipeline, schedule_when_can_process_tasks) {
                       - 1);
 
     // schedule() should process task in-place
-    pipeline.schedule(task, handler);
+    pipeline.schedule(task, completer);
 
-    POINTERS_EQUAL(&task, handler.get_task());
+    POINTERS_EQUAL(&task, completer.get_task());
 
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_pending_tasks());
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_processed_tasks());
@@ -512,13 +512,13 @@ TEST(task_pipeline, schedule_when_cant_process_tasks_then_process_frame) {
 
     pipeline.set_time(StartTime);
 
-    // process_frame_and_tasks() should allow task processing
+    // process_subframes_and_tasks() should allow task processing
     // until (StartTime + FrameSize * core::Microsecond - NoTaskProcessingGap / 2)
-    CHECK(pipeline.process_frame_and_tasks(frame1));
+    CHECK(pipeline.process_subframes_and_tasks(frame1));
 
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_processed_frames());
 
-    TestHandler handler(pipeline);
+    TestCompleter completer(pipeline);
     TestPipeline::Task task;
 
     // deadline expired
@@ -526,7 +526,7 @@ TEST(task_pipeline, schedule_when_cant_process_tasks_then_process_frame) {
                       - NoTaskProcessingGap / 2);
 
     // this deadline will be passed to schedule_task_processing()
-    // if this deadline expires, it means that process_frame_and_tasks() was not
+    // if this deadline expires, it means that process_subframes_and_tasks() was not
     // called for some reason and didn't process our tasks, so we should call
     // process_tasks()
     pipeline.expect_sched_deadline(StartTime + FrameSize * core::Microsecond
@@ -534,9 +534,9 @@ TEST(task_pipeline, schedule_when_cant_process_tasks_then_process_frame) {
 
     // schedule() should see that deadline expired and add this task to the queue and
     // call schedule_task_processing() to process tasks later
-    pipeline.schedule(task, handler);
+    pipeline.schedule(task, completer);
 
-    POINTERS_EQUAL(NULL, handler.get_task());
+    POINTERS_EQUAL(NULL, completer.get_task());
 
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_pending_tasks());
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_processed_tasks());
@@ -550,13 +550,13 @@ TEST(task_pipeline, schedule_when_cant_process_tasks_then_process_frame) {
 
     pipeline.set_time(StartTime + FrameSize * core::Microsecond);
 
-    // process_frame_and_tasks() should call cancel_task_processing() and
+    // process_subframes_and_tasks() should call cancel_task_processing() and
     // process the task from the queue
-    CHECK(pipeline.process_frame_and_tasks(frame2));
+    CHECK(pipeline.process_subframes_and_tasks(frame2));
 
     UNSIGNED_LONGS_EQUAL(2, pipeline.num_processed_frames());
 
-    POINTERS_EQUAL(&task, handler.get_task());
+    POINTERS_EQUAL(&task, completer.get_task());
 
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_pending_tasks());
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_processed_tasks());
@@ -580,13 +580,13 @@ TEST(task_pipeline, schedule_when_cant_process_tasks_then_process_tasks) {
 
     pipeline.set_time(StartTime);
 
-    // process_frame_and_tasks() should allow task processing
+    // process_subframes_and_tasks() should allow task processing
     // until (StartTime + FrameSize * core::Microsecond - NoTaskProcessingGap / 2)
-    CHECK(pipeline.process_frame_and_tasks(frame1));
+    CHECK(pipeline.process_subframes_and_tasks(frame1));
 
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_processed_frames());
 
-    TestHandler handler(pipeline);
+    TestCompleter completer(pipeline);
     TestPipeline::Task task;
 
     // current frame deadline expired
@@ -594,7 +594,7 @@ TEST(task_pipeline, schedule_when_cant_process_tasks_then_process_tasks) {
                       - NoTaskProcessingGap / 2);
 
     // this deadline will be passed to schedule_task_processing()
-    // if this deadline expires, it means that process_frame_and_tasks() was not
+    // if this deadline expires, it means that process_subframes_and_tasks() was not
     // called for some reason and didn't process our tasks, so we should call
     // process_tasks()
     pipeline.expect_sched_deadline(StartTime + FrameSize * core::Microsecond
@@ -602,9 +602,9 @@ TEST(task_pipeline, schedule_when_cant_process_tasks_then_process_tasks) {
 
     // schedule() should see that deadline expired and add this task to the queue and
     // call schedule_task_processing() to process tasks later
-    pipeline.schedule(task, handler);
+    pipeline.schedule(task, completer);
 
-    POINTERS_EQUAL(NULL, handler.get_task());
+    POINTERS_EQUAL(NULL, completer.get_task());
 
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_pending_tasks());
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_processed_tasks());
@@ -617,10 +617,10 @@ TEST(task_pipeline, schedule_when_cant_process_tasks_then_process_tasks) {
                       - 1);
 
     // will not process any tasks because deadline not expired yet
-    // and we're still waiting for process_frame_and_tasks() call
+    // and we're still waiting for process_subframes_and_tasks() call
     pipeline.process_tasks();
 
-    POINTERS_EQUAL(NULL, handler.get_task());
+    POINTERS_EQUAL(NULL, completer.get_task());
 
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_pending_tasks());
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_processed_tasks());
@@ -632,12 +632,12 @@ TEST(task_pipeline, schedule_when_cant_process_tasks_then_process_tasks) {
     pipeline.set_time(StartTime + FrameSize * core::Microsecond
                       + NoTaskProcessingGap / 2);
 
-    // process_frame_and_tasks() was not called before next frame deadline
+    // process_subframes_and_tasks() was not called before next frame deadline
     // we start processing tasks again
     // process_tasks() should process our task
     pipeline.process_tasks();
 
-    POINTERS_EQUAL(&task, handler.get_task());
+    POINTERS_EQUAL(&task, completer.get_task());
 
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_pending_tasks());
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_processed_tasks());
@@ -654,7 +654,7 @@ TEST(task_pipeline, schedule_when_cant_process_tasks_then_process_tasks) {
 
 TEST(task_pipeline, schedule_when_another_schedule_is_running_then_process_tasks) {
     TestPipeline pipeline(config);
-    TestHandler handler(pipeline);
+    TestCompleter completer(pipeline);
 
     pipeline.set_time(StartTime);
 
@@ -665,13 +665,13 @@ TEST(task_pipeline, schedule_when_another_schedule_is_running_then_process_tasks
 
     // AsyncTaskScheduler will call schedule() from another thread
     // it will call process_task_imp() and block
-    AsyncTaskScheduler ts(pipeline, task1, &handler);
+    AsyncTaskScheduler ts(pipeline, task1, &completer);
     ts.start();
 
     // wait until background schedule() is blocked
     pipeline.wait_blocked();
 
-    POINTERS_EQUAL(NULL, handler.get_task());
+    POINTERS_EQUAL(NULL, completer.get_task());
 
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_pending_tasks());
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_processed_tasks());
@@ -680,7 +680,7 @@ TEST(task_pipeline, schedule_when_another_schedule_is_running_then_process_tasks
 
     // this schedule() should see that the pipeline is busy (because it's
     // locked by process_task_imp()), add task to queue, and return
-    pipeline.schedule(task2, handler);
+    pipeline.schedule(task2, completer);
 
     UNSIGNED_LONGS_EQUAL(2, pipeline.num_pending_tasks());
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_processed_tasks());
@@ -704,7 +704,7 @@ TEST(task_pipeline, schedule_when_another_schedule_is_running_then_process_tasks
     // call schedule_processing_tasks(), and return
     ts.join();
 
-    POINTERS_EQUAL(&task1, handler.wait_task());
+    POINTERS_EQUAL(&task1, completer.wait_task());
 
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_pending_tasks());
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_processed_tasks());
@@ -719,7 +719,7 @@ TEST(task_pipeline, schedule_when_another_schedule_is_running_then_process_tasks
     // process_tasks() should process the second task that is still in queue
     pipeline.process_tasks();
 
-    POINTERS_EQUAL(&task2, handler.wait_task());
+    POINTERS_EQUAL(&task2, completer.wait_task());
 
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_pending_tasks());
     UNSIGNED_LONGS_EQUAL(2, pipeline.num_processed_tasks());
@@ -742,28 +742,28 @@ TEST(task_pipeline, schedule_when_process_tasks_is_running) {
     // next process_task_imp() call will block
     pipeline.block_tasks();
 
-    TestHandler handler1(pipeline);
+    TestCompleter completer1(pipeline);
     TestPipeline::Task task1;
 
     // AsyncTaskScheduler will call schedule() from another thread
     // it will call process_task_imp() and block
-    AsyncTaskScheduler ts(pipeline, task1, &handler1);
+    AsyncTaskScheduler ts(pipeline, task1, &completer1);
     ts.start();
 
     // wait until background schedule() is blocked
     pipeline.wait_blocked();
 
-    POINTERS_EQUAL(NULL, handler1.get_task());
+    POINTERS_EQUAL(NULL, completer1.get_task());
 
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_pending_tasks());
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_processed_tasks());
 
-    TestHandler handler2(pipeline);
+    TestCompleter completer2(pipeline);
     TestPipeline::Task task2;
 
     // this schedule() should see that the pipeline is busy (because it's
     // locked by process_task_imp()), add task to queue, and return
-    pipeline.schedule(task2, handler2);
+    pipeline.schedule(task2, completer2);
 
     UNSIGNED_LONGS_EQUAL(2, pipeline.num_pending_tasks());
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_processed_tasks());
@@ -783,7 +783,7 @@ TEST(task_pipeline, schedule_when_process_tasks_is_running) {
     // call schedule_processing_tasks(), and return
     ts.join();
 
-    POINTERS_EQUAL(&task1, handler1.wait_task());
+    POINTERS_EQUAL(&task1, completer1.wait_task());
 
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_pending_tasks());
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_processed_tasks());
@@ -802,15 +802,15 @@ TEST(task_pipeline, schedule_when_process_tasks_is_running) {
     // wait until background process_tasks() is blocked
     pipeline.wait_blocked();
 
-    TestHandler handler3(pipeline);
+    TestCompleter completer3(pipeline);
     TestPipeline::Task task3;
 
     // this schedule() should see that the pipeline is busy (because it's
     // locked by process_task_imp()), add task to queue, and return
-    pipeline.schedule(task3, handler3);
+    pipeline.schedule(task3, completer3);
 
-    POINTERS_EQUAL(NULL, handler2.get_task());
-    POINTERS_EQUAL(NULL, handler3.get_task());
+    POINTERS_EQUAL(NULL, completer2.get_task());
+    POINTERS_EQUAL(NULL, completer3.get_task());
 
     UNSIGNED_LONGS_EQUAL(2, pipeline.num_pending_tasks());
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_processed_tasks());
@@ -826,8 +826,8 @@ TEST(task_pipeline, schedule_when_process_tasks_is_running) {
     // and process it as well
     tp.join();
 
-    POINTERS_EQUAL(&task2, handler2.get_task());
-    POINTERS_EQUAL(&task3, handler3.get_task());
+    POINTERS_EQUAL(&task2, completer2.get_task());
+    POINTERS_EQUAL(&task3, completer3.get_task());
 
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_pending_tasks());
     UNSIGNED_LONGS_EQUAL(3, pipeline.num_processed_tasks());
@@ -849,24 +849,24 @@ TEST(task_pipeline, schedule_when_processing_frame) {
     fill_frame(frame, 0.1f, 0, FrameSize);
     pipeline.expect_frame(0.1f, FrameSize);
 
-    // next process_frame_imp() call will block
+    // next process_subframe_imp() call will block
     pipeline.block_frames();
 
-    // AsyncFrameWriter will call process_frame_and_tasks() from background thread
+    // AsyncFrameWriter will call process_subframes_and_tasks() from background thread
     AsyncFrameWriter fw(pipeline, frame);
     fw.start();
 
-    // wait until background process_frame_and_tasks() is blocked
+    // wait until background process_subframes_and_tasks() is blocked
     pipeline.wait_blocked();
 
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_processed_frames());
 
-    TestHandler handler(pipeline);
+    TestCompleter completer(pipeline);
     TestPipeline::Task task;
 
-    // schedule() should see that pipeline is busy (locked by process_frame_and_tasks),
-    // add the task to queue, and return
-    pipeline.schedule(task, handler);
+    // schedule() should see that pipeline is busy (locked by
+    // process_subframes_and_tasks), add the task to queue, and return
+    pipeline.schedule(task, completer);
 
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_pending_tasks());
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_processed_tasks());
@@ -878,16 +878,16 @@ TEST(task_pipeline, schedule_when_processing_frame) {
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_sched_calls());
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_sched_cancellations());
 
-    // unblock background process_frame_and_tasks()
+    // unblock background process_subframes_and_tasks()
     pipeline.unblock_one_frame();
 
-    // wait until process_frame_and_tasks() is finished
+    // wait until process_subframes_and_tasks() is finished
     // it should process the enqueued task
     fw.join();
 
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_processed_frames());
 
-    POINTERS_EQUAL(&task, handler.get_task());
+    POINTERS_EQUAL(&task, completer.get_task());
 
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_pending_tasks());
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_processed_tasks());
@@ -908,18 +908,18 @@ TEST(task_pipeline, process_tasks_when_schedule_is_running) {
     // next process_task_imp() call will block
     pipeline.block_tasks();
 
-    TestHandler handler(pipeline);
+    TestCompleter completer(pipeline);
     TestPipeline::Task task;
 
     // AsyncTaskScheduler will call schedule() from another thread
     // it will call process_task_imp() and block
-    AsyncTaskScheduler ts(pipeline, task, &handler);
+    AsyncTaskScheduler ts(pipeline, task, &completer);
     ts.start();
 
     // wait until background schedule() is blocked
     pipeline.wait_blocked();
 
-    POINTERS_EQUAL(NULL, handler.get_task());
+    POINTERS_EQUAL(NULL, completer.get_task());
 
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_pending_tasks());
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_processed_tasks());
@@ -937,7 +937,7 @@ TEST(task_pipeline, process_tasks_when_schedule_is_running) {
     // wait until background schedule() finishes
     ts.join();
 
-    POINTERS_EQUAL(&task, handler.get_task());
+    POINTERS_EQUAL(&task, completer.get_task());
 
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_pending_tasks());
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_processed_tasks());
@@ -960,28 +960,28 @@ TEST(task_pipeline, process_tasks_when_another_process_tasks_is_running) {
     // next process_task_imp() call will block
     pipeline.block_tasks();
 
-    TestHandler handler1(pipeline);
+    TestCompleter completer1(pipeline);
     TestPipeline::Task task1;
 
     // AsyncTaskScheduler will call schedule() from another thread
     // it will call process_task_imp() and block
-    AsyncTaskScheduler ts(pipeline, task1, &handler1);
+    AsyncTaskScheduler ts(pipeline, task1, &completer1);
     ts.start();
 
     // wait until background schedule() is blocked
     pipeline.wait_blocked();
 
-    POINTERS_EQUAL(NULL, handler1.get_task());
+    POINTERS_EQUAL(NULL, completer1.get_task());
 
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_pending_tasks());
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_processed_tasks());
 
-    TestHandler handler2(pipeline);
+    TestCompleter completer2(pipeline);
     TestPipeline::Task task2;
 
     // this schedule() should see that the pipeline is busy (because it's
     // locked by process_task_imp()), add task to queue, and return
-    pipeline.schedule(task2, handler2);
+    pipeline.schedule(task2, completer2);
 
     UNSIGNED_LONGS_EQUAL(2, pipeline.num_pending_tasks());
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_processed_tasks());
@@ -1001,7 +1001,7 @@ TEST(task_pipeline, process_tasks_when_another_process_tasks_is_running) {
     // call schedule_processing_tasks(), and return
     ts.join();
 
-    POINTERS_EQUAL(&task1, handler1.wait_task());
+    POINTERS_EQUAL(&task1, completer1.wait_task());
 
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_pending_tasks());
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_processed_tasks());
@@ -1024,7 +1024,7 @@ TEST(task_pipeline, process_tasks_when_another_process_tasks_is_running) {
     // locked by process_task_imp()) and return
     pipeline.process_tasks();
 
-    POINTERS_EQUAL(NULL, handler2.get_task());
+    POINTERS_EQUAL(NULL, completer2.get_task());
 
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_pending_tasks());
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_processed_tasks());
@@ -1039,7 +1039,7 @@ TEST(task_pipeline, process_tasks_when_another_process_tasks_is_running) {
     // it should process task
     tp.join();
 
-    POINTERS_EQUAL(&task2, handler2.get_task());
+    POINTERS_EQUAL(&task2, completer2.get_task());
 
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_pending_tasks());
     UNSIGNED_LONGS_EQUAL(2, pipeline.num_processed_tasks());
@@ -1061,24 +1061,24 @@ TEST(task_pipeline, process_tasks_when_processing_frame) {
     fill_frame(frame, 0.1f, 0, FrameSize);
     pipeline.expect_frame(0.1f, FrameSize);
 
-    // next process_frame_imp() call will block
+    // next process_subframe_imp() call will block
     pipeline.block_frames();
 
-    // AsyncFrameWriter will call process_frame_and_tasks() from background thread
+    // AsyncFrameWriter will call process_subframes_and_tasks() from background thread
     AsyncFrameWriter fw(pipeline, frame);
     fw.start();
 
-    // wait until background process_frame_and_tasks() is blocked
+    // wait until background process_subframes_and_tasks() is blocked
     pipeline.wait_blocked();
 
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_processed_frames());
 
-    TestHandler handler(pipeline);
+    TestCompleter completer(pipeline);
     TestPipeline::Task task;
 
-    // schedule() should see that pipeline is busy (locked by process_frame_and_tasks),
-    // add the task to queue, and return
-    pipeline.schedule(task, handler);
+    // schedule() should see that pipeline is busy (locked by
+    // process_subframes_and_tasks), add the task to queue, and return
+    pipeline.schedule(task, completer);
 
     // this process_tasks() should see that pipeline is busy and just return
     pipeline.process_tasks();
@@ -1093,16 +1093,16 @@ TEST(task_pipeline, process_tasks_when_processing_frame) {
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_sched_calls());
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_sched_cancellations());
 
-    // unblock background process_frame_and_tasks()
+    // unblock background process_subframes_and_tasks()
     pipeline.unblock_one_frame();
 
-    // wait until process_frame_and_tasks() is finished
+    // wait until process_subframes_and_tasks() is finished
     // it should process the enqueued task
     fw.join();
 
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_processed_frames());
 
-    POINTERS_EQUAL(&task, handler.get_task());
+    POINTERS_EQUAL(&task, completer.get_task());
 
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_pending_tasks());
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_processed_tasks());
@@ -1127,39 +1127,39 @@ TEST(task_pipeline, process_tasks_interframe_deadline) {
     pipeline.expect_frame(0.1f, FrameSize);
 
     // process frame and set inter-frame task processing deadline
-    CHECK(pipeline.process_frame_and_tasks(frame));
+    CHECK(pipeline.process_subframes_and_tasks(frame));
 
     // next process_task_imp() call will block
     pipeline.block_tasks();
 
-    TestHandler handler1(pipeline);
+    TestCompleter completer1(pipeline);
     TestPipeline::Task task1;
 
     // AsyncTaskScheduler will call schedule() from another thread
     // it will call process_task_imp() and block
-    AsyncTaskScheduler ts(pipeline, task1, &handler1);
+    AsyncTaskScheduler ts(pipeline, task1, &completer1);
     ts.start();
 
     // wait until background schedule() is blocked
     pipeline.wait_blocked();
 
-    POINTERS_EQUAL(NULL, handler1.get_task());
+    POINTERS_EQUAL(NULL, completer1.get_task());
 
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_pending_tasks());
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_processed_tasks());
 
-    TestHandler handler2a(pipeline);
+    TestCompleter completer2a(pipeline);
     TestPipeline::Task task2a;
-    TestHandler handler2b(pipeline);
+    TestCompleter completer2b(pipeline);
     TestPipeline::Task task2b;
 
-    TestHandler handler3(pipeline);
+    TestCompleter completer3(pipeline);
     TestPipeline::Task task3;
 
     // add tasks to the queue
-    pipeline.schedule(task2a, handler2a);
-    pipeline.schedule(task2b, handler2b);
-    pipeline.schedule(task3, handler3);
+    pipeline.schedule(task2a, completer2a);
+    pipeline.schedule(task2b, completer2b);
+    pipeline.schedule(task3, completer3);
 
     UNSIGNED_LONGS_EQUAL(4, pipeline.num_pending_tasks());
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_processed_tasks());
@@ -1179,7 +1179,7 @@ TEST(task_pipeline, process_tasks_interframe_deadline) {
     // call schedule_processing_tasks(), and return
     ts.join();
 
-    POINTERS_EQUAL(&task1, handler1.wait_task());
+    POINTERS_EQUAL(&task1, completer1.wait_task());
 
     UNSIGNED_LONGS_EQUAL(3, pipeline.num_pending_tasks());
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_processed_tasks());
@@ -1210,7 +1210,7 @@ TEST(task_pipeline, process_tasks_interframe_deadline) {
                       - NoTaskProcessingGap / 2);
 
     // this deadline will be passed to schedule_task_processing()
-    // if this deadline expires, it means that process_frame_and_tasks() was not
+    // if this deadline expires, it means that process_subframes_and_tasks() was not
     // called for some reason and didn't process our tasks, so we should call
     // process_tasks()
     pipeline.expect_sched_deadline(StartTime + FrameSize * core::Microsecond
@@ -1264,15 +1264,15 @@ TEST(task_pipeline, process_tasks_interframe_deadline) {
 
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_preemptions());
 
-    POINTERS_EQUAL(&task2a, handler2a.get_task());
-    POINTERS_EQUAL(&task2b, handler2b.get_task());
+    POINTERS_EQUAL(&task2a, completer2a.get_task());
+    POINTERS_EQUAL(&task2b, completer2b.get_task());
 
-    POINTERS_EQUAL(&task3, handler3.get_task());
+    POINTERS_EQUAL(&task3, completer3.get_task());
 }
 
 TEST(task_pipeline, process_frame_when_schedule_is_running) {
     TestPipeline pipeline(config);
-    TestHandler handler(pipeline);
+    TestCompleter completer(pipeline);
 
     // next process_task_imp() call will block
     pipeline.block_tasks();
@@ -1281,13 +1281,13 @@ TEST(task_pipeline, process_frame_when_schedule_is_running) {
 
     // AsyncTaskScheduler will call schedule() from another thread
     // it will call process_task_imp() and block
-    AsyncTaskScheduler ts(pipeline, task1, &handler);
+    AsyncTaskScheduler ts(pipeline, task1, &completer);
     ts.start();
 
     // wait until background schedule() is blocked
     pipeline.wait_blocked();
 
-    POINTERS_EQUAL(NULL, handler.get_task());
+    POINTERS_EQUAL(NULL, completer.get_task());
 
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_pending_tasks());
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_processed_tasks());
@@ -1296,7 +1296,7 @@ TEST(task_pipeline, process_frame_when_schedule_is_running) {
 
     // this schedule() should see that the pipeline is busy (because it's
     // locked by another schedule), add task to queue, and return
-    pipeline.schedule(task2, handler);
+    pipeline.schedule(task2, completer);
 
     UNSIGNED_LONGS_EQUAL(2, pipeline.num_pending_tasks());
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_processed_tasks());
@@ -1314,15 +1314,15 @@ TEST(task_pipeline, process_frame_when_schedule_is_running) {
     fill_frame(frame, 0.1f, 0, FrameSize);
     pipeline.expect_frame(0.1f, FrameSize);
 
-    // next process_frame_imp() call will block
+    // next process_subframe_imp() call will block
     pipeline.block_frames();
 
-    // AsyncFrameWriter will call process_frame_and_tasks() from background thread
+    // AsyncFrameWriter will call process_subframes_and_tasks() from background thread
     // it will be blocked until process_task_imp() and schedule() return
     AsyncFrameWriter fw(pipeline, frame);
     fw.start();
 
-    // wait until background process_frame_and_tasks() marks that a frame is pending
+    // wait until background process_subframes_and_tasks() marks that a frame is pending
     while (pipeline.num_pending_frames() == 0) {
         core::sleep_for(core::Microsecond * 10);
     }
@@ -1332,11 +1332,11 @@ TEST(task_pipeline, process_frame_when_schedule_is_running) {
 
     // wait until background schedule() finishes
     // it should process the first task, see that a new task was added, then see that
-    // there is pending process_frame_and_tasks() call and thus don't call
+    // there is pending process_subframes_and_tasks() call and thus don't call
     // schedule_processing_tasks() and just return
     ts.join();
 
-    POINTERS_EQUAL(&task1, handler.wait_task());
+    POINTERS_EQUAL(&task1, completer.wait_task());
 
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_pending_tasks());
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_processed_tasks());
@@ -1350,21 +1350,21 @@ TEST(task_pipeline, process_frame_when_schedule_is_running) {
 
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_preemptions());
 
-    // wait until background process_frame_and_tasks() calls process_frame_imp()
+    // wait until background process_subframes_and_tasks() calls process_subframe_imp()
     // and blocks
     pipeline.wait_blocked();
 
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_pending_tasks());
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_processed_tasks());
 
-    // wake up process_frame_imp()
+    // wake up process_subframe_imp()
     pipeline.unblock_one_frame();
 
-    // wait until background process_frame_and_tasks() finished
+    // wait until background process_subframes_and_tasks() finished
     // it should process the second task
     fw.join();
 
-    POINTERS_EQUAL(&task2, handler.get_task());
+    POINTERS_EQUAL(&task2, completer.get_task());
 
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_pending_tasks());
     UNSIGNED_LONGS_EQUAL(2, pipeline.num_processed_tasks());
@@ -1387,28 +1387,28 @@ TEST(task_pipeline, process_frame_when_process_tasks_is_running) {
     // next process_task_imp() call will block
     pipeline.block_tasks();
 
-    TestHandler handler1(pipeline);
+    TestCompleter completer1(pipeline);
     TestPipeline::Task task1;
 
     // AsyncTaskScheduler will call schedule() from another thread
     // it will call process_task_imp() and block
-    AsyncTaskScheduler ts(pipeline, task1, &handler1);
+    AsyncTaskScheduler ts(pipeline, task1, &completer1);
     ts.start();
 
     // wait until background schedule() is blocked
     pipeline.wait_blocked();
 
-    POINTERS_EQUAL(NULL, handler1.get_task());
+    POINTERS_EQUAL(NULL, completer1.get_task());
 
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_pending_tasks());
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_processed_tasks());
 
-    TestHandler handler2(pipeline);
+    TestCompleter completer2(pipeline);
     TestPipeline::Task task2;
 
     // this schedule() should see that the pipeline is busy (because it's
     // locked by process_task_imp()), add task to queue, and return
-    pipeline.schedule(task2, handler2);
+    pipeline.schedule(task2, completer2);
 
     UNSIGNED_LONGS_EQUAL(2, pipeline.num_pending_tasks());
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_processed_tasks());
@@ -1428,7 +1428,7 @@ TEST(task_pipeline, process_frame_when_process_tasks_is_running) {
     // call schedule_processing_tasks(), and return
     ts.join();
 
-    POINTERS_EQUAL(&task1, handler1.wait_task());
+    POINTERS_EQUAL(&task1, completer1.wait_task());
 
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_pending_tasks());
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_processed_tasks());
@@ -1447,15 +1447,15 @@ TEST(task_pipeline, process_frame_when_process_tasks_is_running) {
     // wait until background process_tasks() is blocked
     pipeline.wait_blocked();
 
-    TestHandler handler3(pipeline);
+    TestCompleter completer3(pipeline);
     TestPipeline::Task task3;
 
     // this schedule() should see that the pipeline is busy (because it's
     // locked by process_task_imp()), add task to queue, and return
-    pipeline.schedule(task3, handler3);
+    pipeline.schedule(task3, completer3);
 
-    POINTERS_EQUAL(NULL, handler2.get_task());
-    POINTERS_EQUAL(NULL, handler3.get_task());
+    POINTERS_EQUAL(NULL, completer2.get_task());
+    POINTERS_EQUAL(NULL, completer3.get_task());
 
     UNSIGNED_LONGS_EQUAL(2, pipeline.num_pending_tasks());
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_processed_tasks());
@@ -1463,18 +1463,18 @@ TEST(task_pipeline, process_frame_when_process_tasks_is_running) {
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_sched_calls());
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_sched_cancellations());
 
-    // next process_frame_imp() call will block
+    // next process_subframe_imp() call will block
     pipeline.block_frames();
 
     audio::Frame frame(samples, FrameSize);
     fill_frame(frame, 0.1f, 0, FrameSize);
     pipeline.expect_frame(0.1f, FrameSize);
 
-    // AsyncFrameWriter will call process_frame_and_tasks() from background thread
+    // AsyncFrameWriter will call process_subframes_and_tasks() from background thread
     AsyncFrameWriter fw(pipeline, frame);
     fw.start();
 
-    // wait until background process_frame_and_tasks() marks that a frame is pending
+    // wait until background process_subframes_and_tasks() marks that a frame is pending
     while (pipeline.num_pending_frames() == 0) {
         core::sleep_for(core::Microsecond * 10);
     }
@@ -1487,11 +1487,11 @@ TEST(task_pipeline, process_frame_when_process_tasks_is_running) {
     // exit without processing the third task
     tp.join();
 
-    // wait until process_frame_and_tasks() calls process_frame_imp() and blocks
+    // wait until process_subframes_and_tasks() calls process_subframe_imp() and blocks
     pipeline.wait_blocked();
 
-    POINTERS_EQUAL(&task2, handler2.get_task());
-    POINTERS_EQUAL(NULL, handler3.get_task());
+    POINTERS_EQUAL(&task2, completer2.get_task());
+    POINTERS_EQUAL(NULL, completer3.get_task());
 
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_pending_tasks());
     UNSIGNED_LONGS_EQUAL(2, pipeline.num_processed_tasks());
@@ -1505,14 +1505,14 @@ TEST(task_pipeline, process_frame_when_process_tasks_is_running) {
 
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_preemptions());
 
-    // unblock blocked process_frame_imp()
+    // unblock blocked process_subframe_imp()
     pipeline.unblock_one_frame();
 
-    // wait until background process_frame_and_tasks() finished
+    // wait until background process_subframes_and_tasks() finished
     // it should process the third task
     fw.join();
 
-    POINTERS_EQUAL(&task3, handler3.get_task());
+    POINTERS_EQUAL(&task3, completer3.get_task());
 
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_pending_tasks());
     UNSIGNED_LONGS_EQUAL(3, pipeline.num_processed_tasks());
@@ -1539,35 +1539,35 @@ TEST(task_pipeline, process_frame_max_samples_between_frames) {
     // first sub-frame
     pipeline.expect_frame(0.1f, MaxFrameSize);
 
-    // next process_frame_imp() call will block
+    // next process_subframe_imp() call will block
     pipeline.block_frames();
 
-    // AsyncFrameWriter will call process_frame_and_tasks() from background thread
+    // AsyncFrameWriter will call process_subframes_and_tasks() from background thread
     AsyncFrameWriter fw(pipeline, frame);
     fw.start();
 
-    // wait until background process_frame_and_tasks() is blocked
+    // wait until background process_subframes_and_tasks() is blocked
     pipeline.wait_blocked();
 
-    TestHandler handler1a(pipeline);
+    TestCompleter completer1a(pipeline);
     TestPipeline::Task task1a;
-    TestHandler handler1b(pipeline);
+    TestCompleter completer1b(pipeline);
     TestPipeline::Task task1b;
 
-    TestHandler handler2a(pipeline);
+    TestCompleter completer2a(pipeline);
     TestPipeline::Task task2a;
-    TestHandler handler2b(pipeline);
+    TestCompleter completer2b(pipeline);
     TestPipeline::Task task2b;
 
-    TestHandler handler3(pipeline);
+    TestCompleter completer3(pipeline);
     TestPipeline::Task task3;
 
     // schedule() should add task to the queue and exit
-    pipeline.schedule(task1a, handler1a);
-    pipeline.schedule(task1b, handler1b);
-    pipeline.schedule(task2a, handler2a);
-    pipeline.schedule(task2b, handler2b);
-    pipeline.schedule(task3, handler3);
+    pipeline.schedule(task1a, completer1a);
+    pipeline.schedule(task1b, completer1b);
+    pipeline.schedule(task2a, completer2a);
+    pipeline.schedule(task2b, completer2b);
+    pipeline.schedule(task3, completer3);
 
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_processed_frames());
 
@@ -1587,7 +1587,7 @@ TEST(task_pipeline, process_frame_max_samples_between_frames) {
     // second sub-frame
     pipeline.expect_frame(0.2f, MaxFrameSize);
 
-    // unblock one process_frame_imp()
+    // unblock one process_subframe_imp()
     pipeline.unblock_one_frame();
 
     // wait we're blocked while processing task1a
@@ -1622,7 +1622,7 @@ TEST(task_pipeline, process_frame_max_samples_between_frames) {
     // emulate frame processing
     pipeline.set_time(StartTime + FrameProcessingTime);
 
-    // unblock one process_frame_imp()
+    // unblock one process_subframe_imp()
     pipeline.unblock_one_frame();
 
     // wait we're blocked while processing task2a
@@ -1642,10 +1642,10 @@ TEST(task_pipeline, process_frame_max_samples_between_frames) {
     pipeline.expect_sched_deadline(StartTime + FrameProcessingTime
                                    + MaxInframeProcessing);
 
-    // unblock one process_frame_imp()
+    // unblock one process_subframe_imp()
     pipeline.unblock_one_task();
 
-    // wait background process_frame_and_tasks() finises
+    // wait background process_subframes_and_tasks() finises
     fw.join();
 
     // two sub-frames
@@ -1661,7 +1661,7 @@ TEST(task_pipeline, process_frame_max_samples_between_frames) {
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_sched_calls());
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_sched_cancellations());
 
-    // unblock one process_frame_imp()
+    // unblock one process_subframe_imp()
     pipeline.unblock_one_task();
 
     // this should process the last task
@@ -1681,13 +1681,13 @@ TEST(task_pipeline, process_frame_max_samples_between_frames) {
 
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_preemptions());
 
-    POINTERS_EQUAL(&task1a, handler1a.get_task());
-    POINTERS_EQUAL(&task1b, handler1b.get_task());
+    POINTERS_EQUAL(&task1a, completer1a.get_task());
+    POINTERS_EQUAL(&task1b, completer1b.get_task());
 
-    POINTERS_EQUAL(&task2a, handler2a.get_task());
-    POINTERS_EQUAL(&task2b, handler2b.get_task());
+    POINTERS_EQUAL(&task2a, completer2a.get_task());
+    POINTERS_EQUAL(&task2b, completer2b.get_task());
 
-    POINTERS_EQUAL(&task3, handler3.get_task());
+    POINTERS_EQUAL(&task3, completer3.get_task());
 }
 
 TEST(task_pipeline, process_frame_min_samples_between_frames) {
@@ -1695,7 +1695,7 @@ TEST(task_pipeline, process_frame_min_samples_between_frames) {
 
     pipeline.set_time(StartTime);
 
-    // process_frame_imp() call will block
+    // process_subframe_imp() call will block
     pipeline.block_frames();
 
     // first frame
@@ -1703,23 +1703,23 @@ TEST(task_pipeline, process_frame_min_samples_between_frames) {
     fill_frame(frame1, 0.1f, 0, MinFrameSize / 2);
     pipeline.expect_frame(0.1f, MinFrameSize / 2);
 
-    // call process_frame_and_tasks(frame1) from background thread
+    // call process_subframes_and_tasks(frame1) from background thread
     AsyncFrameWriter fw(pipeline, frame1);
     fw.start();
 
-    // wait until background process_frame_and_tasks() is blocked
+    // wait until background process_subframes_and_tasks() is blocked
     pipeline.wait_blocked();
 
-    TestHandler handler1(pipeline);
+    TestCompleter completer1(pipeline);
     TestPipeline::Task task1;
-    TestHandler handler2(pipeline);
+    TestCompleter completer2(pipeline);
     TestPipeline::Task task2;
 
     // schedule() should add task to the queue and exit
-    pipeline.schedule(task1, handler1);
-    pipeline.schedule(task2, handler2);
+    pipeline.schedule(task1, completer1);
+    pipeline.schedule(task2, completer2);
 
-    // unblock process_frame_and_tasks() and wait it finishes
+    // unblock process_subframes_and_tasks() and wait it finishes
     // it should not process any tasks because the frame is too small and tasks
     // should not be processed in-frame until at least MinFrameSize samples
     // is processed
@@ -1747,13 +1747,13 @@ TEST(task_pipeline, process_frame_min_samples_between_frames) {
 
     // now we have processed MinFrameSize samples, pipeline should call
     // cancel_task_processing() and process pending task1 and task2
-    pipeline.process_frame_and_tasks(frame2);
+    pipeline.process_subframes_and_tasks(frame2);
 
     CHECK(task1.success());
     CHECK(task2.success());
 
-    POINTERS_EQUAL(&task1, handler1.get_task());
-    POINTERS_EQUAL(&task2, handler2.get_task());
+    POINTERS_EQUAL(&task1, completer1.get_task());
+    POINTERS_EQUAL(&task2, completer2.get_task());
 
     UNSIGNED_LONGS_EQUAL(2, pipeline.num_processed_frames());
 
@@ -1768,28 +1768,28 @@ TEST(task_pipeline, process_frame_min_samples_between_frames) {
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_sched_cancellations());
 }
 
-TEST(task_pipeline, schedule_from_completion_handler_called_in_place) {
+TEST(task_pipeline, schedule_from_completion_completer_called_in_place) {
     TestPipeline pipeline(config);
 
     TestPipeline::Task task1;
     TestPipeline::Task task2;
 
-    TestHandler handler(pipeline);
+    TestCompleter completer(pipeline);
 
     // schedule_task_processing() should be called with zero delay, i.e.
     // "process tasks immediately"
     pipeline.set_time(StartTime);
     pipeline.expect_sched_deadline(StartTime);
 
-    // completion handler will schedule() task2
-    handler.set_next_task(task2);
+    // completion completer will schedule() task2
+    completer.set_next_task(task2);
 
-    // schedule() should process task1 in-place and call completion handler
+    // schedule() should process task1 in-place and call completion completer
     // task2 shoyld be added to queue and not processed
     // schedule_task_processing() should be called to process task2 asynchronously
-    pipeline.schedule(task1, handler);
+    pipeline.schedule(task1, completer);
 
-    CHECK(handler.get_task() == &task1);
+    CHECK(completer.get_task() == &task1);
 
     CHECK(task1.success());
     CHECK(!task2.success());
@@ -1809,7 +1809,7 @@ TEST(task_pipeline, schedule_from_completion_handler_called_in_place) {
     // should process task2
     pipeline.process_tasks();
 
-    CHECK(handler.get_task() == &task2);
+    CHECK(completer.get_task() == &task2);
 
     CHECK(task1.success());
     CHECK(task2.success());
@@ -1827,7 +1827,7 @@ TEST(task_pipeline, schedule_from_completion_handler_called_in_place) {
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_preemptions());
 }
 
-TEST(task_pipeline, schedule_from_completion_handler_called_from_process_tasks) {
+TEST(task_pipeline, schedule_from_completion_completer_called_from_process_tasks) {
     TestPipeline pipeline(config);
 
     pipeline.set_time(StartTime);
@@ -1835,28 +1835,28 @@ TEST(task_pipeline, schedule_from_completion_handler_called_from_process_tasks) 
     // next process_task_imp() call will block
     pipeline.block_tasks();
 
-    TestHandler handler1(pipeline);
+    TestCompleter completer1(pipeline);
     TestPipeline::Task task1;
 
     // AsyncTaskScheduler will call schedule() from another thread
     // it will call process_task_imp() and block
-    AsyncTaskScheduler ts(pipeline, task1, &handler1);
+    AsyncTaskScheduler ts(pipeline, task1, &completer1);
     ts.start();
 
     // wait until background schedule() is blocked
     pipeline.wait_blocked();
 
-    POINTERS_EQUAL(NULL, handler1.get_task());
+    POINTERS_EQUAL(NULL, completer1.get_task());
 
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_pending_tasks());
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_processed_tasks());
 
-    TestHandler handler2(pipeline);
+    TestCompleter completer2(pipeline);
     TestPipeline::Task task2;
 
     // this schedule() should see that the pipeline is busy (because it's
     // locked by process_task_imp()), add task to queue, and return
-    pipeline.schedule(task2, handler2);
+    pipeline.schedule(task2, completer2);
 
     // unblock blocked schedule() and wait it finishes
     // it should call schedule_task_processing()
@@ -1864,7 +1864,7 @@ TEST(task_pipeline, schedule_from_completion_handler_called_from_process_tasks) 
     pipeline.unblock_all_tasks();
     ts.join();
 
-    POINTERS_EQUAL(&task1, handler1.get_task());
+    POINTERS_EQUAL(&task1, completer1.get_task());
 
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_pending_tasks());
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_processed_tasks());
@@ -1876,18 +1876,18 @@ TEST(task_pipeline, schedule_from_completion_handler_called_from_process_tasks) 
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_sched_calls());
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_sched_cancellations());
 
-    // task2 completion handler will schedule task3
+    // task2 completion completer will schedule task3
     TestPipeline::Task task3;
-    handler2.set_next_task(task3);
+    completer2.set_next_task(task3);
 
-    // this should execute task2 and its completion handler
+    // this should execute task2 and its completion completer
     // task3 should be added to the queue and then immediately processed
     pipeline.process_tasks();
 
     CHECK(task2.success());
     CHECK(task3.success());
 
-    POINTERS_EQUAL(&task3, handler2.get_task());
+    POINTERS_EQUAL(&task3, completer2.get_task());
 
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_pending_tasks());
     UNSIGNED_LONGS_EQUAL(3, pipeline.num_processed_tasks());
@@ -1900,7 +1900,7 @@ TEST(task_pipeline, schedule_from_completion_handler_called_from_process_tasks) 
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_sched_cancellations());
 }
 
-TEST(task_pipeline, schedule_from_completion_handler_called_from_process_frame) {
+TEST(task_pipeline, schedule_from_completion_completer_called_from_process_frame) {
     TestPipeline pipeline(config);
 
     pipeline.set_time(StartTime);
@@ -1908,28 +1908,28 @@ TEST(task_pipeline, schedule_from_completion_handler_called_from_process_frame) 
     // next process_task_imp() call will block
     pipeline.block_tasks();
 
-    TestHandler handler1(pipeline);
+    TestCompleter completer1(pipeline);
     TestPipeline::Task task1;
 
     // AsyncTaskScheduler will call schedule() from another thread
     // it will call process_task_imp() and block
-    AsyncTaskScheduler ts(pipeline, task1, &handler1);
+    AsyncTaskScheduler ts(pipeline, task1, &completer1);
     ts.start();
 
     // wait until background schedule() is blocked
     pipeline.wait_blocked();
 
-    POINTERS_EQUAL(NULL, handler1.get_task());
+    POINTERS_EQUAL(NULL, completer1.get_task());
 
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_pending_tasks());
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_processed_tasks());
 
-    TestHandler handler2(pipeline);
+    TestCompleter completer2(pipeline);
     TestPipeline::Task task2;
 
     // this schedule() should see that the pipeline is busy (because it's
     // locked by process_task_imp()), add task to queue, and return
-    pipeline.schedule(task2, handler2);
+    pipeline.schedule(task2, completer2);
 
     // unblock blocked schedule() and wait it finishes
     // it should call schedule_task_processing()
@@ -1937,7 +1937,7 @@ TEST(task_pipeline, schedule_from_completion_handler_called_from_process_frame) 
     pipeline.unblock_all_tasks();
     ts.join();
 
-    POINTERS_EQUAL(&task1, handler1.get_task());
+    POINTERS_EQUAL(&task1, completer1.get_task());
 
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_pending_tasks());
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_processed_tasks());
@@ -1949,23 +1949,23 @@ TEST(task_pipeline, schedule_from_completion_handler_called_from_process_frame) 
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_sched_calls());
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_sched_cancellations());
 
-    // task2 completion handler will schedule task3
+    // task2 completion completer will schedule task3
     TestPipeline::Task task3;
-    handler2.set_next_task(task3);
+    completer2.set_next_task(task3);
 
     audio::Frame frame(samples, FrameSize);
     fill_frame(frame, 0.1f, 0, FrameSize);
     pipeline.expect_frame(0.1f, FrameSize);
 
     // this should call cancel_task_processing() and then execute task2 and
-    // its completion handler
+    // its completion completer
     // task3 should be added to the queue and then immediately processed
-    CHECK(pipeline.process_frame_and_tasks(frame));
+    CHECK(pipeline.process_subframes_and_tasks(frame));
 
     CHECK(task2.success());
     CHECK(task3.success());
 
-    POINTERS_EQUAL(&task3, handler2.get_task());
+    POINTERS_EQUAL(&task3, completer2.get_task());
 
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_pending_tasks());
     UNSIGNED_LONGS_EQUAL(3, pipeline.num_processed_tasks());
@@ -1980,7 +1980,7 @@ TEST(task_pipeline, schedule_from_completion_handler_called_from_process_frame) 
 
 TEST(task_pipeline, schedule_and_wait_until_process_tasks_called) {
     TestPipeline pipeline(config);
-    TestHandler handler(pipeline);
+    TestCompleter completer(pipeline);
 
     pipeline.set_time(StartTime);
 
@@ -1991,13 +1991,13 @@ TEST(task_pipeline, schedule_and_wait_until_process_tasks_called) {
 
     // AsyncTaskScheduler will call schedule() from another thread
     // it will call process_task_imp() and block
-    AsyncTaskScheduler ts1(pipeline, task1, &handler);
+    AsyncTaskScheduler ts1(pipeline, task1, &completer);
     ts1.start();
 
     // wait until background schedule() is blocked
     pipeline.wait_blocked();
 
-    POINTERS_EQUAL(NULL, handler.get_task());
+    POINTERS_EQUAL(NULL, completer.get_task());
 
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_pending_tasks());
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_processed_tasks());
@@ -2006,7 +2006,7 @@ TEST(task_pipeline, schedule_and_wait_until_process_tasks_called) {
 
     // this schedule() should see that the pipeline is busy (because it's
     // locked by process_task_imp()), add task to queue, and return
-    pipeline.schedule(task2, handler);
+    pipeline.schedule(task2, completer);
 
     UNSIGNED_LONGS_EQUAL(2, pipeline.num_pending_tasks());
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_processed_tasks());
@@ -2024,7 +2024,7 @@ TEST(task_pipeline, schedule_and_wait_until_process_tasks_called) {
     pipeline.unblock_all_tasks();
     ts1.join();
 
-    POINTERS_EQUAL(&task1, handler.get_task());
+    POINTERS_EQUAL(&task1, completer.get_task());
 
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_pending_tasks());
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_processed_tasks());
@@ -2070,7 +2070,7 @@ TEST(task_pipeline, schedule_and_wait_until_process_tasks_called) {
     ts3a.join();
     ts3b.join();
 
-    POINTERS_EQUAL(&task2, handler.get_task());
+    POINTERS_EQUAL(&task2, completer.get_task());
 
     CHECK(task3a.success());
     CHECK(task3b.success());
@@ -2088,7 +2088,7 @@ TEST(task_pipeline, schedule_and_wait_until_process_tasks_called) {
 
 TEST(task_pipeline, schedule_and_wait_until_process_frame_called) {
     TestPipeline pipeline(config);
-    TestHandler handler(pipeline);
+    TestCompleter completer(pipeline);
 
     pipeline.set_time(StartTime);
 
@@ -2099,13 +2099,13 @@ TEST(task_pipeline, schedule_and_wait_until_process_frame_called) {
 
     // AsyncTaskScheduler will call schedule() from another thread
     // it will call process_task_imp() and block
-    AsyncTaskScheduler ts1(pipeline, task1, &handler);
+    AsyncTaskScheduler ts1(pipeline, task1, &completer);
     ts1.start();
 
     // wait until background schedule() is blocked
     pipeline.wait_blocked();
 
-    POINTERS_EQUAL(NULL, handler.get_task());
+    POINTERS_EQUAL(NULL, completer.get_task());
 
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_pending_tasks());
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_processed_tasks());
@@ -2114,7 +2114,7 @@ TEST(task_pipeline, schedule_and_wait_until_process_frame_called) {
 
     // this schedule() should see that the pipeline is busy (because it's
     // locked by process_task_imp()), add task to queue, and return
-    pipeline.schedule(task2, handler);
+    pipeline.schedule(task2, completer);
 
     UNSIGNED_LONGS_EQUAL(2, pipeline.num_pending_tasks());
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_processed_tasks());
@@ -2132,7 +2132,7 @@ TEST(task_pipeline, schedule_and_wait_until_process_frame_called) {
     pipeline.unblock_all_tasks();
     ts1.join();
 
-    POINTERS_EQUAL(&task1, handler.get_task());
+    POINTERS_EQUAL(&task1, completer.get_task());
 
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_pending_tasks());
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_processed_tasks());
@@ -2176,13 +2176,13 @@ TEST(task_pipeline, schedule_and_wait_until_process_frame_called) {
 
     // this should call cancel_task_scheduling() and process task2 and task3
     // both background schedule_and_wait() calls should finish
-    CHECK(pipeline.process_frame_and_tasks(frame));
+    CHECK(pipeline.process_subframes_and_tasks(frame));
 
     // wait schedule_and_wait() finished
     ts3a.join();
     ts3b.join();
 
-    POINTERS_EQUAL(&task2, handler.get_task());
+    POINTERS_EQUAL(&task2, completer.get_task());
 
     CHECK(task3a.success());
     CHECK(task3b.success());

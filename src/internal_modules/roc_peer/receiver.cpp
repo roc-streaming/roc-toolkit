@@ -27,14 +27,14 @@ Receiver::Receiver(Context& context, const pipeline::ReceiverConfig& pipeline_co
                 context.sample_buffer_factory(),
                 context.allocator())
     , endpoint_set_(0)
-    , process_pipeline_tasks_(pipeline_) {
+    , processing_task_(pipeline_) {
     roc_log(LogDebug, "receiver peer: initializing");
 
     if (!pipeline_.valid()) {
         return;
     }
 
-    pipeline::ReceiverSource::Tasks::AddEndpointSet task;
+    pipeline::ReceiverLoop::Tasks::CreateEndpointSet task;
     if (!pipeline_.schedule_and_wait(task)) {
         return;
     }
@@ -45,7 +45,7 @@ Receiver::Receiver(Context& context, const pipeline::ReceiverConfig& pipeline_co
 Receiver::~Receiver() {
     roc_log(LogDebug, "receiver peer: deinitializing");
 
-    context().control_loop().wait(process_pipeline_tasks_);
+    context().control_loop().wait(processing_task_);
 
     for (size_t i = 0; i < ROC_ARRAY_SIZE(ports_); i++) {
         if (ports_[i].handle) {
@@ -131,8 +131,8 @@ bool Receiver::bind(address::Interface iface, address::EndpointUri& uri) {
         return false;
     }
 
-    pipeline::ReceiverSource::Tasks::CreateEndpoint endpoint_task(endpoint_set_, iface,
-                                                                  uri.proto());
+    pipeline::ReceiverLoop::Tasks::CreateEndpoint endpoint_task(endpoint_set_, iface,
+                                                                uri.proto());
     if (!pipeline_.schedule_and_wait(endpoint_task)) {
         roc_log(LogError, "receiver peer: can't add %s endpoint to pipeline",
                 address::interface_to_str(iface));
@@ -147,8 +147,8 @@ bool Receiver::bind(address::Interface iface, address::EndpointUri& uri) {
         roc_log(LogError, "receiver peer: can't bind %s interface to local port",
                 address::interface_to_str(iface));
 
-        pipeline::ReceiverSource::Tasks::DeleteEndpoint delete_endpoint_task(
-            endpoint_set_, iface);
+        pipeline::ReceiverLoop::Tasks::DeleteEndpoint delete_endpoint_task(endpoint_set_,
+                                                                           iface);
         if (!pipeline_.schedule_and_wait(delete_endpoint_task)) {
             roc_panic("receiver peer: can't remove newly created endpoint");
         }
@@ -169,16 +169,16 @@ bool Receiver::bind(address::Interface iface, address::EndpointUri& uri) {
 }
 
 sndio::ISource& Receiver::source() {
-    return pipeline_;
+    return pipeline_.source();
 }
 
-void Receiver::schedule_task_processing(pipeline::TaskPipeline&,
+void Receiver::schedule_task_processing(pipeline::PipelineLoop&,
                                         core::nanoseconds_t deadline) {
-    context().control_loop().schedule_at(process_pipeline_tasks_, deadline, NULL);
+    context().control_loop().schedule_at(processing_task_, deadline, NULL);
 }
 
-void Receiver::cancel_task_processing(pipeline::TaskPipeline&) {
-    context().control_loop().async_cancel(process_pipeline_tasks_);
+void Receiver::cancel_task_processing(pipeline::PipelineLoop&) {
+    context().control_loop().async_cancel(processing_task_);
 }
 
 } // namespace peer

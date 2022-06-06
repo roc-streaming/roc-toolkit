@@ -14,72 +14,18 @@
 namespace roc {
 namespace pipeline {
 
-ReceiverSource::Task::Task()
-    : func_(NULL)
-    , endpoint_set_(NULL)
-    , iface_(address::Iface_Invalid)
-    , proto_(address::Proto_None)
-    , writer_(NULL) {
-}
-
-ReceiverSource::Tasks::AddEndpointSet::AddEndpointSet() {
-    func_ = &ReceiverSource::task_add_endpoint_set_;
-}
-
-ReceiverSource::EndpointSetHandle
-ReceiverSource::Tasks::AddEndpointSet::get_handle() const {
-    if (!success()) {
-        return NULL;
-    }
-    roc_panic_if_not(endpoint_set_);
-    return (EndpointSetHandle)endpoint_set_;
-}
-
-ReceiverSource::Tasks::CreateEndpoint::CreateEndpoint(EndpointSetHandle endpoint_set,
-                                                      address::Interface iface,
-                                                      address::Protocol proto) {
-    func_ = &ReceiverSource::task_create_endpoint_;
-    if (!endpoint_set) {
-        roc_panic("receiver source: endpoint set handle is null");
-    }
-    endpoint_set_ = (ReceiverEndpointSet*)endpoint_set;
-    iface_ = iface;
-    proto_ = proto;
-}
-
-packet::IWriter* ReceiverSource::Tasks::CreateEndpoint::get_writer() const {
-    if (!success()) {
-        return NULL;
-    }
-    roc_panic_if_not(writer_);
-    return writer_;
-}
-
-ReceiverSource::Tasks::DeleteEndpoint::DeleteEndpoint(EndpointSetHandle endpoint_set,
-                                                      address::Interface iface) {
-    func_ = &ReceiverSource::task_delete_endpoint_;
-    if (!endpoint_set) {
-        roc_panic("receiver source: endpoint set handle is null");
-    }
-    endpoint_set_ = (ReceiverEndpointSet*)endpoint_set;
-    iface_ = iface;
-}
-
 ReceiverSource::ReceiverSource(
-    ITaskScheduler& scheduler,
     const ReceiverConfig& config,
     const rtp::FormatMap& format_map,
     packet::PacketFactory& packet_factory,
     core::BufferFactory<uint8_t>& byte_buffer_factory,
     core::BufferFactory<audio::sample_t>& sample_buffer_factory,
     core::IAllocator& allocator)
-    : TaskPipeline(scheduler, config.tasks, config.common.output_sample_spec)
-    , format_map_(format_map)
+    : format_map_(format_map)
     , packet_factory_(packet_factory)
     , byte_buffer_factory_(byte_buffer_factory)
     , sample_buffer_factory_(sample_buffer_factory)
     , allocator_(allocator)
-    , ticker_(config.common.output_sample_spec.sample_rate())
     , audio_reader_(NULL)
     , config_(config)
     , timestamp_(0) {
@@ -116,16 +62,17 @@ bool ReceiverSource::valid() const {
     return audio_reader_;
 }
 
-bool ReceiverSource::read(audio::Frame& frame) {
-    roc_panic_if(!valid());
-
-    core::Mutex::Lock lock(read_mutex_);
-
-    if (config_.common.timing) {
-        ticker_.wait(timestamp_);
+ReceiverEndpointSet* ReceiverSource::create_endpoint_set() {
+    core::SharedPtr<ReceiverEndpointSet> endpoint_set = new (allocator_)
+        ReceiverEndpointSet(config_, receiver_state_, *mixer_, format_map_,
+                            packet_factory_, byte_buffer_factory_, sample_buffer_factory_,
+                            allocator_);
+    if (!endpoint_set) {
+        return NULL;
     }
 
-    return process_frame_and_tasks(frame);
+    endpoint_sets_.push_back(*endpoint_set);
+    return endpoint_set.get();
 }
 
 size_t ReceiverSource::num_sessions() const {
@@ -173,11 +120,9 @@ bool ReceiverSource::restart() {
     return true;
 }
 
-core::nanoseconds_t ReceiverSource::timestamp_imp() const {
-    return core::timestamp();
-}
+bool ReceiverSource::read(audio::Frame& frame) {
+    roc_panic_if(!valid());
 
-bool ReceiverSource::process_frame_imp(audio::Frame& frame) {
     for (core::SharedPtr<ReceiverEndpointSet> endpoint_set = endpoint_sets_.front();
          endpoint_set; endpoint_set = endpoint_sets_.nextof(*endpoint_set)) {
         endpoint_set->update(timestamp_);
@@ -189,44 +134,6 @@ bool ReceiverSource::process_frame_imp(audio::Frame& frame) {
 
     timestamp_ += frame.size() / config_.common.output_sample_spec.num_channels();
 
-    return true;
-}
-
-bool ReceiverSource::process_task_imp(TaskPipeline::Task& basic_task) {
-    Task& task = (Task&)basic_task;
-
-    roc_panic_if_not(task.func_);
-
-    return (this->*(task.func_))(task);
-}
-
-bool ReceiverSource::task_add_endpoint_set_(Task& task) {
-    core::SharedPtr<ReceiverEndpointSet> endpoint_set = new (allocator_)
-        ReceiverEndpointSet(config_, receiver_state_, *mixer_, format_map_,
-                            packet_factory_, byte_buffer_factory_, sample_buffer_factory_,
-                            allocator_);
-    if (!endpoint_set) {
-        return false;
-    }
-
-    endpoint_sets_.push_back(*endpoint_set);
-    task.endpoint_set_ = endpoint_set.get();
-
-    return true;
-}
-
-bool ReceiverSource::task_create_endpoint_(Task& task) {
-    packet::IWriter* writer =
-        task.endpoint_set_->create_endpoint(task.iface_, task.proto_);
-    if (!writer) {
-        return false;
-    }
-    task.writer_ = writer;
-    return true;
-}
-
-bool ReceiverSource::task_delete_endpoint_(Task& task) {
-    task.endpoint_set_->delete_endpoint(task.iface_);
     return true;
 }
 

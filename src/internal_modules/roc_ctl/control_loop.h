@@ -20,7 +20,7 @@
 #include "roc_ctl/basic_control_endpoint.h"
 #include "roc_ctl/control_task_executor.h"
 #include "roc_ctl/control_task_queue.h"
-#include "roc_pipeline/task_pipeline.h"
+#include "roc_pipeline/pipeline_loop.h"
 
 namespace roc {
 namespace ctl {
@@ -69,12 +69,12 @@ public:
         class PipelineProcessing : public ControlTask {
         public:
             //! Set task parameters.
-            PipelineProcessing(pipeline::TaskPipeline& pipeline);
+            PipelineProcessing(pipeline::PipelineLoop& pipeline);
 
         private:
             friend class ControlLoop;
 
-            pipeline::TaskPipeline& pipeline_;
+            pipeline::PipelineLoop& pipeline_;
         };
     };
 

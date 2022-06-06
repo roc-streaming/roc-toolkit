@@ -10,7 +10,6 @@
 
 #include "test_helpers/frame_reader.h"
 #include "test_helpers/packet_writer.h"
-#include "test_helpers/scheduler.h"
 
 #include "roc_audio/pcm_funcs.h"
 #include "roc_core/atomic.h"
@@ -63,101 +62,24 @@ packet::PacketFactory packet_factory(allocator, true);
 rtp::FormatMap format_map;
 rtp::Composer rtp_composer(NULL);
 
-ReceiverSource::EndpointSetHandle add_endpoint_set(ReceiverSource& receiver) {
-    ReceiverSource::Tasks::AddEndpointSet task;
-    CHECK(receiver.schedule_and_wait(task));
-
-    CHECK(task.success());
-    CHECK(task.get_handle());
-
-    return task.get_handle();
+ReceiverEndpointSet* create_endpoint_set(ReceiverSource& source) {
+    ReceiverEndpointSet* endpoint_set = source.create_endpoint_set();
+    CHECK(endpoint_set);
+    return endpoint_set;
 }
 
-packet::IWriter* add_endpoint(ReceiverSource& receiver,
-                              ReceiverSource::EndpointSetHandle endpoint_set,
-                              address::Interface iface,
-                              address::Protocol proto) {
-    ReceiverSource::Tasks::CreateEndpoint task(endpoint_set, iface, proto);
-    CHECK(receiver.schedule_and_wait(task));
-
-    CHECK(task.success());
-    CHECK(task.get_writer());
-
-    return task.get_writer();
+packet::IWriter* create_endpoint(ReceiverEndpointSet* endpoint_set,
+                                 address::Interface iface,
+                                 address::Protocol proto) {
+    CHECK(endpoint_set);
+    ReceiverEndpoint* endpoint = endpoint_set->create_endpoint(iface, proto);
+    CHECK(endpoint);
+    return &endpoint->writer();
 }
-
-class TaskIssuer : public TaskPipeline::ICompletionHandler {
-public:
-    TaskIssuer(TaskPipeline& pipeline)
-        : pipeline_(pipeline)
-        , endpoint_set_(NULL)
-        , task_add_endpoint_set_(NULL)
-        , task_create_endpoint_(NULL)
-        , task_delete_endpoint_(NULL)
-        , done_(false) {
-    }
-
-    ~TaskIssuer() {
-        delete task_add_endpoint_set_;
-        delete task_create_endpoint_;
-        delete task_delete_endpoint_;
-    }
-
-    void start() {
-        task_add_endpoint_set_ = new ReceiverSource::Tasks::AddEndpointSet();
-        pipeline_.schedule(*task_add_endpoint_set_, *this);
-    }
-
-    void wait_done() const {
-        while (!done_) {
-            core::sleep_for(core::Microsecond * 10);
-        }
-    }
-
-    virtual void pipeline_task_finished(TaskPipeline::Task& task) {
-        roc_panic_if_not(task.success());
-
-        if (&task == task_add_endpoint_set_) {
-            endpoint_set_ = task_add_endpoint_set_->get_handle();
-            roc_panic_if_not(endpoint_set_);
-            task_create_endpoint_ = new ReceiverSource::Tasks::CreateEndpoint(
-                endpoint_set_, address::Iface_AudioSource, address::Proto_RTP);
-            pipeline_.schedule(*task_create_endpoint_, *this);
-            return;
-        }
-
-        if (&task == task_create_endpoint_) {
-            task_delete_endpoint_ = new ReceiverSource::Tasks::DeleteEndpoint(
-                endpoint_set_, address::Iface_AudioSource);
-            pipeline_.schedule(*task_delete_endpoint_, *this);
-            return;
-        }
-
-        if (&task == task_delete_endpoint_) {
-            done_ = true;
-            return;
-        }
-
-        roc_panic("unexpected task");
-    }
-
-private:
-    TaskPipeline& pipeline_;
-
-    ReceiverSource::EndpointSetHandle endpoint_set_;
-
-    ReceiverSource::Tasks::AddEndpointSet* task_add_endpoint_set_;
-    ReceiverSource::Tasks::CreateEndpoint* task_create_endpoint_;
-    ReceiverSource::Tasks::DeleteEndpoint* task_delete_endpoint_;
-
-    core::Atomic<int> done_;
-};
 
 } // namespace
 
 TEST_GROUP(receiver_source) {
-    test::Scheduler scheduler;
-
     ReceiverConfig config;
 
     address::SocketAddr src1;
@@ -203,56 +125,9 @@ TEST_GROUP(receiver_source) {
     }
 };
 
-TEST(receiver_source, endpoints_sync) {
-    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, allocator);
-
-    CHECK(receiver.valid());
-
-    ReceiverSource::EndpointSetHandle endpoint_set = NULL;
-
-    {
-        ReceiverSource::Tasks::AddEndpointSet task;
-        CHECK(receiver.schedule_and_wait(task));
-        CHECK(task.success());
-        CHECK(task.get_handle());
-
-        endpoint_set = task.get_handle();
-    }
-
-    {
-        ReceiverSource::Tasks::CreateEndpoint task(
-            endpoint_set, address::Iface_AudioSource, address::Proto_RTP);
-        CHECK(receiver.schedule_and_wait(task));
-        CHECK(task.success());
-        CHECK(task.get_writer());
-    }
-
-    {
-        ReceiverSource::Tasks::DeleteEndpoint task(endpoint_set,
-                                                   address::Iface_AudioSource);
-        CHECK(receiver.schedule_and_wait(task));
-        CHECK(task.success());
-    }
-}
-
-TEST(receiver_source, endpoints_async) {
-    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, allocator);
-
-    CHECK(receiver.valid());
-
-    TaskIssuer ti(receiver);
-
-    ti.start();
-    ti.wait_done();
-
-    scheduler.wait_done();
-}
-
 TEST(receiver_source, no_sessions) {
-    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, allocator);
+    ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
+                            sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
@@ -266,16 +141,16 @@ TEST(receiver_source, no_sessions) {
 }
 
 TEST(receiver_source, one_session) {
-    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, allocator);
+    ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
+                            sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
-    ReceiverSource::EndpointSetHandle endpoint_set = add_endpoint_set(receiver);
+    ReceiverEndpointSet* endpoint_set = create_endpoint_set(receiver);
     CHECK(endpoint_set);
 
     packet::IWriter* endpoint1_writer =
-        add_endpoint(receiver, endpoint_set, address::Iface_AudioSource, proto1);
+        create_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -301,16 +176,16 @@ TEST(receiver_source, one_session) {
 TEST(receiver_source, one_session_long_run) {
     enum { NumIterations = 10 };
 
-    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, allocator);
+    ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
+                            sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
-    ReceiverSource::EndpointSetHandle endpoint_set = add_endpoint_set(receiver);
+    ReceiverEndpointSet* endpoint_set = create_endpoint_set(receiver);
     CHECK(endpoint_set);
 
     packet::IWriter* endpoint1_writer =
-        add_endpoint(receiver, endpoint_set, address::Iface_AudioSource, proto1);
+        create_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -336,16 +211,16 @@ TEST(receiver_source, one_session_long_run) {
 }
 
 TEST(receiver_source, initial_latency) {
-    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, allocator);
+    ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
+                            sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
-    ReceiverSource::EndpointSetHandle endpoint_set = add_endpoint_set(receiver);
+    ReceiverEndpointSet* endpoint_set = create_endpoint_set(receiver);
     CHECK(endpoint_set);
 
     packet::IWriter* endpoint1_writer =
-        add_endpoint(receiver, endpoint_set, address::Iface_AudioSource, proto1);
+        create_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -376,16 +251,16 @@ TEST(receiver_source, initial_latency) {
 }
 
 TEST(receiver_source, initial_latency_timeout) {
-    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, allocator);
+    ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
+                            sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
-    ReceiverSource::EndpointSetHandle endpoint_set = add_endpoint_set(receiver);
+    ReceiverEndpointSet* endpoint_set = create_endpoint_set(receiver);
     CHECK(endpoint_set);
 
     packet::IWriter* endpoint1_writer =
-        add_endpoint(receiver, endpoint_set, address::Iface_AudioSource, proto1);
+        create_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -410,16 +285,16 @@ TEST(receiver_source, initial_latency_timeout) {
 }
 
 TEST(receiver_source, timeout) {
-    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, allocator);
+    ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
+                            sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
-    ReceiverSource::EndpointSetHandle endpoint_set = add_endpoint_set(receiver);
+    ReceiverEndpointSet* endpoint_set = create_endpoint_set(receiver);
     CHECK(endpoint_set);
 
     packet::IWriter* endpoint1_writer =
-        add_endpoint(receiver, endpoint_set, address::Iface_AudioSource, proto1);
+        create_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -445,16 +320,16 @@ TEST(receiver_source, timeout) {
 }
 
 TEST(receiver_source, initial_trim) {
-    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, allocator);
+    ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
+                            sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
-    ReceiverSource::EndpointSetHandle endpoint_set = add_endpoint_set(receiver);
+    ReceiverEndpointSet* endpoint_set = create_endpoint_set(receiver);
     CHECK(endpoint_set);
 
     packet::IWriter* endpoint1_writer =
-        add_endpoint(receiver, endpoint_set, address::Iface_AudioSource, proto1);
+        create_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -480,16 +355,16 @@ TEST(receiver_source, initial_trim) {
 }
 
 TEST(receiver_source, two_sessions_synchronous) {
-    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, allocator);
+    ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
+                            sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
-    ReceiverSource::EndpointSetHandle endpoint_set = add_endpoint_set(receiver);
+    ReceiverEndpointSet* endpoint_set = create_endpoint_set(receiver);
     CHECK(endpoint_set);
 
     packet::IWriter* endpoint1_writer =
-        add_endpoint(receiver, endpoint_set, address::Iface_AudioSource, proto1);
+        create_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -520,16 +395,16 @@ TEST(receiver_source, two_sessions_synchronous) {
 }
 
 TEST(receiver_source, two_sessions_overlapping) {
-    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, allocator);
+    ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
+                            sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
-    ReceiverSource::EndpointSetHandle endpoint_set = add_endpoint_set(receiver);
+    ReceiverEndpointSet* endpoint_set = create_endpoint_set(receiver);
     CHECK(endpoint_set);
 
     packet::IWriter* endpoint1_writer =
-        add_endpoint(receiver, endpoint_set, address::Iface_AudioSource, proto1);
+        create_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -572,23 +447,23 @@ TEST(receiver_source, two_sessions_overlapping) {
 }
 
 TEST(receiver_source, two_sessions_two_endpoints) {
-    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, allocator);
+    ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
+                            sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
-    ReceiverSource::EndpointSetHandle endpoint_set1 = add_endpoint_set(receiver);
+    ReceiverEndpointSet* endpoint_set1 = create_endpoint_set(receiver);
     CHECK(endpoint_set1);
 
     packet::IWriter* endpoint1_writer =
-        add_endpoint(receiver, endpoint_set1, address::Iface_AudioSource, proto1);
+        create_endpoint(endpoint_set1, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
-    ReceiverSource::EndpointSetHandle endpoint_set2 = add_endpoint_set(receiver);
+    ReceiverEndpointSet* endpoint_set2 = create_endpoint_set(receiver);
     CHECK(endpoint_set2);
 
     packet::IWriter* endpoint2_writer =
-        add_endpoint(receiver, endpoint_set2, address::Iface_AudioSource, proto2);
+        create_endpoint(endpoint_set2, address::Iface_AudioSource, proto2);
     CHECK(endpoint2_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -619,16 +494,16 @@ TEST(receiver_source, two_sessions_two_endpoints) {
 }
 
 TEST(receiver_source, two_sessions_same_address_same_stream) {
-    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, allocator);
+    ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
+                            sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
-    ReceiverSource::EndpointSetHandle endpoint_set = add_endpoint_set(receiver);
+    ReceiverEndpointSet* endpoint_set = create_endpoint_set(receiver);
     CHECK(endpoint_set);
 
     packet::IWriter* endpoint_writer =
-        add_endpoint(receiver, endpoint_set, address::Iface_AudioSource, proto1);
+        create_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -664,16 +539,16 @@ TEST(receiver_source, two_sessions_same_address_same_stream) {
 }
 
 TEST(receiver_source, two_sessions_same_address_different_streams) {
-    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, allocator);
+    ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
+                            sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
-    ReceiverSource::EndpointSetHandle endpoint_set = add_endpoint_set(receiver);
+    ReceiverEndpointSet* endpoint_set = create_endpoint_set(receiver);
     CHECK(endpoint_set);
 
     packet::IWriter* endpoint_writer =
-        add_endpoint(receiver, endpoint_set, address::Iface_AudioSource, proto1);
+        create_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -711,16 +586,16 @@ TEST(receiver_source, two_sessions_same_address_different_streams) {
 }
 
 TEST(receiver_source, seqnum_overflow) {
-    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, allocator);
+    ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
+                            sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
-    ReceiverSource::EndpointSetHandle endpoint_set = add_endpoint_set(receiver);
+    ReceiverEndpointSet* endpoint_set = create_endpoint_set(receiver);
     CHECK(endpoint_set);
 
     packet::IWriter* endpoint1_writer =
-        add_endpoint(receiver, endpoint_set, address::Iface_AudioSource, proto1);
+        create_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -744,16 +619,16 @@ TEST(receiver_source, seqnum_overflow) {
 TEST(receiver_source, seqnum_small_jump) {
     enum { SmallJump = 5 };
 
-    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, allocator);
+    ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
+                            sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
-    ReceiverSource::EndpointSetHandle endpoint_set = add_endpoint_set(receiver);
+    ReceiverEndpointSet* endpoint_set = create_endpoint_set(receiver);
     CHECK(endpoint_set);
 
     packet::IWriter* endpoint1_writer =
-        add_endpoint(receiver, endpoint_set, address::Iface_AudioSource, proto1);
+        create_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -783,16 +658,16 @@ TEST(receiver_source, seqnum_small_jump) {
 }
 
 TEST(receiver_source, seqnum_large_jump) {
-    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, allocator);
+    ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
+                            sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
-    ReceiverSource::EndpointSetHandle endpoint_set = add_endpoint_set(receiver);
+    ReceiverEndpointSet* endpoint_set = create_endpoint_set(receiver);
     CHECK(endpoint_set);
 
     packet::IWriter* endpoint1_writer =
-        add_endpoint(receiver, endpoint_set, address::Iface_AudioSource, proto1);
+        create_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -828,16 +703,16 @@ TEST(receiver_source, seqnum_large_jump) {
 TEST(receiver_source, seqnum_reorder) {
     enum { ReorderWindow = Latency / SamplesPerPacket };
 
-    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, allocator);
+    ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
+                            sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
-    ReceiverSource::EndpointSetHandle endpoint_set = add_endpoint_set(receiver);
+    ReceiverEndpointSet* endpoint_set = create_endpoint_set(receiver);
     CHECK(endpoint_set);
 
     packet::IWriter* endpoint1_writer =
-        add_endpoint(receiver, endpoint_set, address::Iface_AudioSource, proto1);
+        create_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -867,16 +742,16 @@ TEST(receiver_source, seqnum_reorder) {
 TEST(receiver_source, seqnum_late) {
     enum { DelayedPackets = 5 };
 
-    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, allocator);
+    ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
+                            sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
-    ReceiverSource::EndpointSetHandle endpoint_set = add_endpoint_set(receiver);
+    ReceiverEndpointSet* endpoint_set = create_endpoint_set(receiver);
     CHECK(endpoint_set);
 
     packet::IWriter* endpoint1_writer =
-        add_endpoint(receiver, endpoint_set, address::Iface_AudioSource, proto1);
+        create_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -923,16 +798,16 @@ TEST(receiver_source, seqnum_late) {
 }
 
 TEST(receiver_source, timestamp_overflow) {
-    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, allocator);
+    ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
+                            sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
-    ReceiverSource::EndpointSetHandle endpoint_set = add_endpoint_set(receiver);
+    ReceiverEndpointSet* endpoint_set = create_endpoint_set(receiver);
     CHECK(endpoint_set);
 
     packet::IWriter* endpoint1_writer =
-        add_endpoint(receiver, endpoint_set, address::Iface_AudioSource, proto1);
+        create_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -958,16 +833,16 @@ TEST(receiver_source, timestamp_overflow) {
 TEST(receiver_source, timestamp_small_jump) {
     enum { ShiftedPackets = 5 };
 
-    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, allocator);
+    ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
+                            sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
-    ReceiverSource::EndpointSetHandle endpoint_set = add_endpoint_set(receiver);
+    ReceiverEndpointSet* endpoint_set = create_endpoint_set(receiver);
     CHECK(endpoint_set);
 
     packet::IWriter* endpoint1_writer =
-        add_endpoint(receiver, endpoint_set, address::Iface_AudioSource, proto1);
+        create_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -1005,16 +880,16 @@ TEST(receiver_source, timestamp_small_jump) {
 }
 
 TEST(receiver_source, timestamp_large_jump) {
-    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, allocator);
+    ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
+                            sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
-    ReceiverSource::EndpointSetHandle endpoint_set = add_endpoint_set(receiver);
+    ReceiverEndpointSet* endpoint_set = create_endpoint_set(receiver);
     CHECK(endpoint_set);
 
     packet::IWriter* endpoint1_writer =
-        add_endpoint(receiver, endpoint_set, address::Iface_AudioSource, proto1);
+        create_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -1044,16 +919,16 @@ TEST(receiver_source, timestamp_large_jump) {
 TEST(receiver_source, timestamp_overlap) {
     enum { OverlappedSamples = SamplesPerPacket / 2 };
 
-    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, allocator);
+    ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
+                            sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
-    ReceiverSource::EndpointSetHandle endpoint_set = add_endpoint_set(receiver);
+    ReceiverEndpointSet* endpoint_set = create_endpoint_set(receiver);
     CHECK(endpoint_set);
 
     packet::IWriter* endpoint1_writer =
-        add_endpoint(receiver, endpoint_set, address::Iface_AudioSource, proto1);
+        create_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -1077,16 +952,16 @@ TEST(receiver_source, timestamp_overlap) {
 }
 
 TEST(receiver_source, timestamp_reorder) {
-    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, allocator);
+    ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
+                            sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
-    ReceiverSource::EndpointSetHandle endpoint_set = add_endpoint_set(receiver);
+    ReceiverEndpointSet* endpoint_set = create_endpoint_set(receiver);
     CHECK(endpoint_set);
 
     packet::IWriter* endpoint1_writer =
-        add_endpoint(receiver, endpoint_set, address::Iface_AudioSource, proto1);
+        create_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -1132,16 +1007,16 @@ TEST(receiver_source, timestamp_reorder) {
 TEST(receiver_source, timestamp_late) {
     enum { DelayedPackets = 5 };
 
-    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, allocator);
+    ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
+                            sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
-    ReceiverSource::EndpointSetHandle endpoint_set = add_endpoint_set(receiver);
+    ReceiverEndpointSet* endpoint_set = create_endpoint_set(receiver);
     CHECK(endpoint_set);
 
     packet::IWriter* endpoint1_writer =
-        add_endpoint(receiver, endpoint_set, address::Iface_AudioSource, proto1);
+        create_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -1197,16 +1072,16 @@ TEST(receiver_source, packet_size_small) {
         ManySmallPackets = Latency / SamplesPerSmallPacket * 10
     };
 
-    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, allocator);
+    ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
+                            sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
-    ReceiverSource::EndpointSetHandle endpoint_set = add_endpoint_set(receiver);
+    ReceiverEndpointSet* endpoint_set = create_endpoint_set(receiver);
     CHECK(endpoint_set);
 
     packet::IWriter* endpoint1_writer =
-        add_endpoint(receiver, endpoint_set, address::Iface_AudioSource, proto1);
+        create_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -1233,16 +1108,16 @@ TEST(receiver_source, packet_size_large) {
         ManyLargePackets = Latency / SamplesPerLargePacket * 10
     };
 
-    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, allocator);
+    ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
+                            sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
-    ReceiverSource::EndpointSetHandle endpoint_set = add_endpoint_set(receiver);
+    ReceiverEndpointSet* endpoint_set = create_endpoint_set(receiver);
     CHECK(endpoint_set);
 
     packet::IWriter* endpoint1_writer =
-        add_endpoint(receiver, endpoint_set, address::Iface_AudioSource, proto1);
+        create_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -1275,16 +1150,16 @@ TEST(receiver_source, packet_size_variable) {
         NumIterations = Latency / SamplesPerTwoPackets * 10
     };
 
-    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, allocator);
+    ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
+                            sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
-    ReceiverSource::EndpointSetHandle endpoint_set = add_endpoint_set(receiver);
+    ReceiverEndpointSet* endpoint_set = create_endpoint_set(receiver);
     CHECK(endpoint_set);
 
     packet::IWriter* endpoint1_writer =
-        add_endpoint(receiver, endpoint_set, address::Iface_AudioSource, proto1);
+        create_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -1308,16 +1183,16 @@ TEST(receiver_source, packet_size_variable) {
 }
 
 TEST(receiver_source, corrupted_packets_new_session) {
-    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, allocator);
+    ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
+                            sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
-    ReceiverSource::EndpointSetHandle endpoint_set = add_endpoint_set(receiver);
+    ReceiverEndpointSet* endpoint_set = create_endpoint_set(receiver);
     CHECK(endpoint_set);
 
     packet::IWriter* endpoint1_writer =
-        add_endpoint(receiver, endpoint_set, address::Iface_AudioSource, proto1);
+        create_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -1343,16 +1218,16 @@ TEST(receiver_source, corrupted_packets_new_session) {
 }
 
 TEST(receiver_source, corrupted_packets_existing_session) {
-    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, allocator);
+    ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
+                            sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
-    ReceiverSource::EndpointSetHandle endpoint_set = add_endpoint_set(receiver);
+    ReceiverEndpointSet* endpoint_set = create_endpoint_set(receiver);
     CHECK(endpoint_set);
 
     packet::IWriter* endpoint1_writer =
-        add_endpoint(receiver, endpoint_set, address::Iface_AudioSource, proto1);
+        create_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -1399,16 +1274,16 @@ TEST(receiver_source, corrupted_packets_existing_session) {
 }
 
 TEST(receiver_source, status) {
-    ReceiverSource receiver(scheduler, config, format_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, allocator);
+    ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
+                            sample_buffer_factory, allocator);
 
     CHECK(receiver.valid());
 
-    ReceiverSource::EndpointSetHandle endpoint_set = add_endpoint_set(receiver);
+    ReceiverEndpointSet* endpoint_set = create_endpoint_set(receiver);
     CHECK(endpoint_set);
 
     packet::IWriter* endpoint1_writer =
-        add_endpoint(receiver, endpoint_set, address::Iface_AudioSource, proto1);
+        create_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     test::PacketWriter packet_writer(allocator, *endpoint1_writer, rtp_composer,

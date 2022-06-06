@@ -14,6 +14,7 @@
 
 #include "roc_address/interface.h"
 #include "roc_address/protocol.h"
+#include "roc_audio/fanout.h"
 #include "roc_audio/iframe_encoder.h"
 #include "roc_audio/iresampler.h"
 #include "roc_audio/packetizer.h"
@@ -49,6 +50,7 @@ public:
     //! Initialize.
     SenderEndpointSet(const SenderConfig& config,
                       const rtp::FormatMap& format_map,
+                      audio::Fanout& fanout,
                       packet::PacketFactory& packet_factory,
                       core::BufferFactory<uint8_t>& byte_buffer_factory,
                       core::BufferFactory<audio::sample_t>& sample_buffer_factory,
@@ -73,6 +75,7 @@ private:
     const SenderConfig& config_;
 
     const rtp::FormatMap& format_map_;
+    audio::Fanout& fanout_;
 
     packet::PacketFactory& packet_factory_;
     core::BufferFactory<uint8_t>& byte_buffer_factory_;

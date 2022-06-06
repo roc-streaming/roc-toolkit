@@ -36,8 +36,8 @@ ReceiverEndpointSet::ReceiverEndpointSet(
     roc_log(LogDebug, "receiver endpoint set: initializing");
 }
 
-packet::IWriter* ReceiverEndpointSet::create_endpoint(address::Interface iface,
-                                                      address::Protocol proto) {
+ReceiverEndpoint* ReceiverEndpointSet::create_endpoint(address::Interface iface,
+                                                       address::Protocol proto) {
     roc_log(LogDebug, "receiver endpoint set: adding %s endpoint %s",
             address::interface_to_str(iface), address::proto_to_str(proto));
 
@@ -76,11 +76,11 @@ void ReceiverEndpointSet::delete_endpoint(address::Interface iface) {
 
 void ReceiverEndpointSet::update(packet::timestamp_t timestamp) {
     if (source_endpoint_) {
-        source_endpoint_->flush_packets();
+        source_endpoint_->pull_packets();
     }
 
     if (repair_endpoint_) {
-        repair_endpoint_->flush_packets();
+        repair_endpoint_->pull_packets();
     }
 
     session_group_.update_sessions(timestamp);

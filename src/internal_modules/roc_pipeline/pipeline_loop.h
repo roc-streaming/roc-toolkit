@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_pipeline/task_pipeline.h
+//! @file roc_pipeline/pipeline_loop.h
 //! @brief Base class for pipelines.
 
-#ifndef ROC_PIPELINE_TASK_PIPELINE_H_
-#define ROC_PIPELINE_TASK_PIPELINE_H_
+#ifndef ROC_PIPELINE_PIPELINE_LOOP_H_
+#define ROC_PIPELINE_PIPELINE_LOOP_H_
 
 #include "roc_audio/frame.h"
 #include "roc_audio/sample_spec.h"
@@ -20,12 +20,13 @@
 #include "roc_core/noncopyable.h"
 #include "roc_core/optional.h"
 #include "roc_core/rate_limiter.h"
-#include "roc_core/semaphore.h"
 #include "roc_core/seqlock.h"
 #include "roc_core/time.h"
 #include "roc_packet/units.h"
 #include "roc_pipeline/config.h"
-#include "roc_pipeline/itask_scheduler.h"
+#include "roc_pipeline/ipipeline_task_completer.h"
+#include "roc_pipeline/ipipeline_task_scheduler.h"
+#include "roc_pipeline/pipeline_task.h"
 
 namespace roc {
 namespace pipeline {
@@ -47,13 +48,13 @@ namespace pipeline {
 //! Precise task scheduling
 //! -----------------------
 //!
-//! This class implements precise task scheduling feature, which tries to schedule task
+//! This class implements "precise task scheduling" feature, which tries to schedule task
 //! processing intervals smartly, to prevent time collisions with frame processing and
 //! keep frame processing timings unaffected.
 //!
 //! Precise task scheduling is enabled by default, but can be disabled via config. When
 //! disabled, no special scheduling is performed and frame and task processing compete
-//! each other for the exclusive access to pipeline.
+//! each other for the exclusive access to the pipeline.
 //!
 //! The sections below describe various aspects of the implementation.
 //!
@@ -91,15 +92,16 @@ namespace pipeline {
 //! ----------------------------
 //!
 //! Since pipeline does not have its own thread, it can't schedule process_tasks()
-//! invocation by its own. Instead, it relies on the user-provided ITaskScheduler object.
+//! invocation by its own. Instead, it relies on the user-provided IPipelineTaskScheduler
+//! object.
 //!
 //! When the pipeline wants to schedule asychronous process_tasks() invocation, it
-//! calls ITaskScheduler::schedule_task_processing(). It's up to the user when and on
-//! which thread to invoke process_tasks(), but pipeline gives a hint with the ideal
+//! calls IPipelineTaskScheduler::schedule_task_processing(). It's up to the user when and
+//! on which thread to invoke process_tasks(), but pipeline gives a hint with the ideal
 //! invocation time.
 //!
 //! The pipeline may also cancel the scheduled task processing by invoking
-//! ITaskScheduler::cancel_task_processing().
+//! IPipelineTaskScheduler::cancel_task_processing().
 //!
 //! In-place task processing
 //! ------------------------
@@ -140,7 +142,7 @@ namespace pipeline {
 //! pipeline_mutex_ protects the internal pipeline state. It should be acquired to
 //! process a frame or a task.
 //!
-//! scheduler_mutex_ protects ITaskScheduler invocations. It should be acquired to
+//! scheduler_mutex_ protects IPipelineTaskScheduler invocations. It should be acquired to
 //! schedule or cancel asycnrhonous task processing.
 //!
 //! If pipeline_mutex_ is locked, it's guaranteed that the thread locking it will
@@ -158,7 +160,7 @@ namespace pipeline {
 //! wait-free or "mostly" wait-free (i.e. on the fast path), depending on the hardware
 //! architecture (see comments for core::MpscQueue).
 //!
-//! In practice it means that when running concurrently with other TaskPipeline method
+//! In practice it means that when running concurrently with other PipelineLoop method
 //! invocations, they never block waiting for other threads, and usually even don't spin.
 //!
 //! This is archived by using a lock-free queue for tasks, atomics for 32-bit counters,
@@ -180,66 +182,22 @@ namespace pipeline {
 //! Benchmarks
 //! ----------
 //!
-//! TaskPipeline is covered with to groups of benchmarks:
-//!  - bench_task_pipeline_delays.cpp measures frame and task processing delays with
+//! PipelineLoop is covered with two groups of benchmarks:
+//!  - bench_pipeline_loop_peak_load.cpp measures frame and task processing delays with
 //!    or without task load and with or without precise task scheduling feature;
-//!  - bench_task_pipeline_contention.cpp measures scheduling times under different
+//!  - bench_pipeline_loop_contention.cpp measures scheduling times under different
 //!    contention levels.
 //!
 //! You can run them using "roc-bench-pipeline" command. For further details, see
 //! comments in the source code of the benchmarks.
-class TaskPipeline : public core::NonCopyable<> {
+class PipelineLoop : public core::NonCopyable<> {
 public:
-    class ICompletionHandler;
-
-    //! Base task class.
-    //! The user is responsible for allocating and deallocating the task.
-    class Task : public core::MpscQueueNode {
-    public:
-        ~Task();
-
-        //! Check that the task finished and succeeded.
-        bool success() const;
-
-    protected:
-        Task();
-
-    private:
-        friend class TaskPipeline;
-
-        enum { StateNew, StateScheduled, StateFinished };
-
-        // Task state, defines whether task is finished already.
-        // The task becomes immutable after setting state_ to StateFinished;
-        core::Atomic<int> state_;
-
-        // Task result, defines wether finished task succeeded or failed.
-        // Makes sense only after setting state_ to StateFinished.
-        // This atomic should be assigned before setting state_ to StateFinished.
-        core::Atomic<int> success_;
-
-        // Completion handler;
-        ICompletionHandler* handler_;
-
-        // Completion semaphore.
-        core::Optional<core::Semaphore> sem_;
-    };
-
-    //! Task completion handler.
-    class ICompletionHandler {
-    public:
-        virtual ~ICompletionHandler();
-
-        //! Called when a task is finished.
-        virtual void pipeline_task_finished(Task&) = 0;
-    };
-
     //! Enqueue a task for asynchronous execution.
-    void schedule(Task& task, ICompletionHandler& handler);
+    void schedule(PipelineTask& task, IPipelineTaskCompleter& completer);
 
     //! Enqueue a task for asynchronous execution and wait until it finishes.
     //! @returns false if the task fails.
-    bool schedule_and_wait(Task& task);
+    bool schedule_and_wait(PipelineTask& task);
 
     //! Process some of the enqueued tasks, if any.
     void process_tasks();
@@ -276,11 +234,11 @@ protected:
     };
 
     //! Initialization.
-    TaskPipeline(ITaskScheduler& scheduler,
+    PipelineLoop(IPipelineTaskScheduler& scheduler,
                  const TaskConfig& config,
                  const audio::SampleSpec& sample_spec);
 
-    virtual ~TaskPipeline();
+    virtual ~PipelineLoop();
 
     //! How much pending tasks are there.
     size_t num_pending_tasks() const;
@@ -292,31 +250,31 @@ protected:
     //! Returned object can't be accessed concurrently with other methods.
     const Stats& get_stats_ref() const;
 
-    //! Process frame and some of the enqueued tasks, if any.
-    bool process_frame_and_tasks(audio::Frame& frame);
+    //! Split frame and process subframes and some of the enqueued tasks.
+    bool process_subframes_and_tasks(audio::Frame& frame);
 
     //! Get current time.
     virtual core::nanoseconds_t timestamp_imp() const = 0;
 
-    //! Process frame implementation.
-    virtual bool process_frame_imp(audio::Frame& frame) = 0;
+    //! Process subframe.
+    virtual bool process_subframe_imp(audio::Frame& frame) = 0;
 
-    //! Process task implementation.
-    virtual bool process_task_imp(Task& task) = 0;
+    //! Process task.
+    virtual bool process_task_imp(PipelineTask& task) = 0;
 
 private:
     enum ProcState { ProcNotScheduled, ProcScheduled, ProcRunning };
 
-    bool process_frame_and_tasks_simple_(audio::Frame& frame);
-    bool process_frame_and_tasks_precise_(audio::Frame& frame);
+    bool process_subframes_and_tasks_simple_(audio::Frame& frame);
+    bool process_subframes_and_tasks_precise_(audio::Frame& frame);
 
-    bool schedule_and_maybe_process_task_(Task& task);
+    bool schedule_and_maybe_process_task_(PipelineTask& task);
     bool maybe_process_tasks_();
 
     void schedule_async_task_processing_();
     void cancel_async_task_processing_();
 
-    void process_task_(Task& task, bool notify);
+    void process_task_(PipelineTask& task, bool notify);
     bool process_next_subframe_(audio::Frame& frame, size_t* frame_pos);
 
     bool start_subframe_task_processing_();
@@ -340,16 +298,16 @@ private:
     const core::nanoseconds_t no_task_proc_half_interval_;
 
     // used to schedule asynchronous work
-    ITaskScheduler& scheduler_;
+    IPipelineTaskScheduler& scheduler_;
 
     // protects pipeline state
     core::Mutex pipeline_mutex_;
 
-    // protects ITaskScheduler
+    // protects IPipelineTaskScheduler
     core::Mutex scheduler_mutex_;
 
     // lock-free queue of pending tasks
-    core::MpscQueue<Task, core::NoOwnership> task_queue_;
+    core::MpscQueue<PipelineTask, core::NoOwnership> task_queue_;
 
     // counter of pending tasks
     core::Atomic<int> pending_tasks_;
@@ -380,4 +338,4 @@ private:
 } // namespace pipeline
 } // namespace roc
 
-#endif // ROC_PIPELINE_TASK_PIPELINE_H_
+#endif // ROC_PIPELINE_PIPELINE_LOOP_H_

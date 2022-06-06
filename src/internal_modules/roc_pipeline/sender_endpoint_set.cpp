@@ -18,6 +18,7 @@ namespace pipeline {
 SenderEndpointSet::SenderEndpointSet(
     const SenderConfig& config,
     const rtp::FormatMap& format_map,
+    audio::Fanout& fanout,
     packet::PacketFactory& packet_factory,
     core::BufferFactory<uint8_t>& byte_buffer_factory,
     core::BufferFactory<audio::sample_t>& sample_buffer_factory,
@@ -25,6 +26,7 @@ SenderEndpointSet::SenderEndpointSet(
     : RefCounted(allocator)
     , config_(config)
     , format_map_(format_map)
+    , fanout_(fanout)
     , packet_factory_(packet_factory)
     , byte_buffer_factory_(byte_buffer_factory)
     , sample_buffer_factory_(sample_buffer_factory)
@@ -63,6 +65,12 @@ SenderEndpoint* SenderEndpointSet::create_endpoint(address::Interface iface,
         }
     }
 
+    if (audio_writer_) {
+        if (!fanout_.has_output(*audio_writer_)) {
+            fanout_.add_output(*audio_writer_);
+        }
+    }
+
     return endpoint;
 }
 
@@ -71,8 +79,8 @@ audio::IWriter* SenderEndpointSet::writer() {
 }
 
 bool SenderEndpointSet::is_ready() const {
-    return audio_writer_ && source_endpoint_->has_writer()
-        && (!repair_endpoint_ || repair_endpoint_->has_writer());
+    return audio_writer_ && source_endpoint_->has_destination_writer()
+        && (!repair_endpoint_ || repair_endpoint_->has_destination_writer());
 }
 
 SenderEndpoint* SenderEndpointSet::create_source_endpoint_(address::Protocol proto) {
@@ -152,12 +160,12 @@ bool SenderEndpointSet::create_pipeline_() {
     }
     packet::IWriter* pwriter = router_.get();
 
-    if (!router_->add_route(*source_endpoint_, packet::Packet::FlagAudio)) {
+    if (!router_->add_route(source_endpoint_->writer(), packet::Packet::FlagAudio)) {
         return false;
     }
 
     if (repair_endpoint_) {
-        if (!router_->add_route(*repair_endpoint_, packet::Packet::FlagRepair)) {
+        if (!router_->add_route(repair_endpoint_->writer(), packet::Packet::FlagRepair)) {
             return false;
         }
 

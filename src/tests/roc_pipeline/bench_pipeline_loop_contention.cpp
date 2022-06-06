@@ -11,7 +11,7 @@
 #include "roc_core/fast_random.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_ctl/control_loop.h"
-#include "roc_pipeline/task_pipeline.h"
+#include "roc_pipeline/pipeline_loop.h"
 
 namespace roc {
 namespace pipeline {
@@ -37,16 +37,16 @@ enum {
 
 core::HeapAllocator allocator;
 
-class NoopPipeline : public TaskPipeline, private ITaskScheduler {
+class NoopPipeline : public PipelineLoop, private IPipelineTaskScheduler {
 public:
-    class Task : public TaskPipeline::Task {
+    class Task : public PipelineTask {
     public:
         Task() {
         }
     };
 
     NoopPipeline(const TaskConfig& config, ctl::ControlLoop& loop)
-        : TaskPipeline(*this, config, audio::SampleSpec(SampleRate, Chans))
+        : PipelineLoop(*this, config, audio::SampleSpec(SampleRate, Chans))
         , loop_(loop)
         , processing_task_(*this) {
     }
@@ -68,19 +68,19 @@ private:
         return core::timestamp();
     }
 
-    virtual bool process_frame_imp(audio::Frame&) {
+    virtual bool process_subframe_imp(audio::Frame&) {
         return true;
     }
 
-    virtual bool process_task_imp(TaskPipeline::Task&) {
+    virtual bool process_task_imp(PipelineTask&) {
         return true;
     }
 
-    virtual void schedule_task_processing(TaskPipeline&, core::nanoseconds_t deadline) {
+    virtual void schedule_task_processing(PipelineLoop&, core::nanoseconds_t deadline) {
         loop_.schedule_at(processing_task_, deadline, NULL);
     }
 
-    virtual void cancel_task_processing(TaskPipeline&) {
+    virtual void cancel_task_processing(PipelineLoop&) {
         loop_.async_cancel(processing_task_);
     }
 
@@ -88,9 +88,9 @@ private:
     ctl::ControlLoop::Tasks::PipelineProcessing processing_task_;
 };
 
-class NoopHandler : public TaskPipeline::ICompletionHandler {
+class NoopCompleter : public IPipelineTaskCompleter {
 public:
-    virtual void pipeline_task_finished(TaskPipeline::Task&) {
+    virtual void pipeline_task_completed(PipelineTask&) {
     }
 };
 
@@ -100,7 +100,7 @@ struct BM_PipelineContention : benchmark::Fixture {
     TaskConfig config;
 
     NoopPipeline pipeline;
-    NoopHandler handler;
+    NoopCompleter completer;
 
     BM_PipelineContention()
         : ctl_loop(allocator)
@@ -114,7 +114,7 @@ BENCHMARK_DEFINE_F(BM_PipelineContention, Schedule)(benchmark::State& state) {
 
     while (state.KeepRunningBatch(BatchSize)) {
         for (int n = 0; n < BatchSize; n++) {
-            pipeline.schedule(tasks[n_task++], handler);
+            pipeline.schedule(tasks[n_task++], completer);
         }
     }
 

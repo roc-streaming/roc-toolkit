@@ -14,7 +14,7 @@
 #include "roc_core/heap_allocator.h"
 #include "roc_core/mutex.h"
 #include "roc_ctl/control_loop.h"
-#include "roc_pipeline/itask_scheduler.h"
+#include "roc_pipeline/ipipeline_task_scheduler.h"
 
 namespace roc {
 namespace pipeline {
@@ -26,7 +26,7 @@ core::HeapAllocator allocator;
 
 } // namespace
 
-class Scheduler : public pipeline::ITaskScheduler {
+class Scheduler : public pipeline::IPipelineTaskScheduler {
 public:
     Scheduler()
         : loop_(allocator)
@@ -58,7 +58,7 @@ public:
         }
     }
 
-    virtual void schedule_task_processing(pipeline::TaskPipeline& pipeline,
+    virtual void schedule_task_processing(pipeline::PipelineLoop& pipeline,
                                           core::nanoseconds_t deadline) {
         core::Mutex::Lock lock(mutex_);
         if (!task_) {
@@ -67,7 +67,7 @@ public:
         loop_.schedule_at(*task_, deadline, NULL);
     }
 
-    virtual void cancel_task_processing(pipeline::TaskPipeline&) {
+    virtual void cancel_task_processing(pipeline::PipelineLoop&) {
         core::Mutex::Lock lock(mutex_);
         if (task_) {
             loop_.async_cancel(*task_);

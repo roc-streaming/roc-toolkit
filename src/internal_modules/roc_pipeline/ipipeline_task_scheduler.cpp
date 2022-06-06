@@ -6,12 +6,12 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_pipeline/itask_scheduler.h"
+#include "roc_pipeline/ipipeline_task_scheduler.h"
 
 namespace roc {
 namespace pipeline {
 
-ITaskScheduler::~ITaskScheduler() {
+IPipelineTaskScheduler::~IPipelineTaskScheduler() {
 }
 
 } // namespace pipeline

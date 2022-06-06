@@ -95,25 +95,24 @@ bool ReceiverEndpoint::valid() const {
 }
 
 address::Protocol ReceiverEndpoint::proto() const {
+    roc_panic_if(!valid());
+
     return proto_;
 }
 
-void ReceiverEndpoint::write(const packet::PacketPtr& packet) {
+packet::IWriter& ReceiverEndpoint::writer() {
     roc_panic_if(!valid());
-    roc_panic_if(!packet);
 
-    receiver_state_.add_pending_packets(+1);
-
-    queue_.push_back(*packet);
+    return *this;
 }
 
-void ReceiverEndpoint::flush_packets() {
+void ReceiverEndpoint::pull_packets() {
     roc_panic_if(!valid());
 
     // Using try_pop_front_exclusive() makes this method lock-free and wait-free.
     // It may return NULL either if the queue is empty or if the packets in the
     // queue were added in a very short time or are being added currently. It's
-    // acceptable to consider such packets late for this flush and fetch next time.
+    // acceptable to consider such packets late and to be pulled next time.
     while (packet::PacketPtr packet = queue_.try_pop_front_exclusive()) {
         if (!parser_->parse(*packet, packet->data())) {
             roc_log(LogDebug, "receiver endpoint: can't parse packet");
@@ -124,6 +123,18 @@ void ReceiverEndpoint::flush_packets() {
 
         receiver_state_.add_pending_packets(-1);
     }
+}
+
+void ReceiverEndpoint::write(const packet::PacketPtr& packet) {
+    roc_panic_if(!valid());
+
+    if (!packet) {
+        roc_panic("receiver endpoint: packet is null");
+    }
+
+    receiver_state_.add_pending_packets(+1);
+
+    queue_.push_back(*packet);
 }
 
 } // namespace pipeline

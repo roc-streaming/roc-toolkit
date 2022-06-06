@@ -46,10 +46,10 @@ public:
                         core::BufferFactory<audio::sample_t>& sample_buffer_factory,
                         core::IAllocator& allocator);
 
-    //! Add endpoint.
-    packet::IWriter* create_endpoint(address::Interface iface, address::Protocol proto);
+    //! Create endpoint.
+    ReceiverEndpoint* create_endpoint(address::Interface iface, address::Protocol proto);
 
-    //! Remove endpoint.
+    //! Delete endpoint.
     void delete_endpoint(address::Interface iface);
 
     //! Update packet queues and sessions.

@@ -35,9 +35,9 @@ namespace pipeline {
 //!  Created for every transport endpoint. Belongs to endpoint set.
 //!  Passes packets to the session group of the endpoint set.
 class ReceiverEndpoint
-    : public packet::IWriter,
-      public core::RefCounted<ReceiverEndpoint, core::StandardAllocation>,
-      public core::ListNode {
+    : public core::RefCounted<ReceiverEndpoint, core::StandardAllocation>,
+      public core::ListNode,
+      private packet::IWriter {
 public:
     //! Initialize.
     ReceiverEndpoint(address::Protocol proto,
@@ -52,15 +52,19 @@ public:
     //! Get protocol.
     address::Protocol proto() const;
 
-    //! Handle packet.
-    //! Called outside of pipeline from any thread, typically from netio thread.
-    virtual void write(const packet::PacketPtr& packet);
+    //! Get endpoint writer.
+    //! @remarks
+    //!  Packets passed to this writer will be pulled by endpoint pipeline.
+    //!  This writer is thread-safe and lock-free.
+    //!  The writer is passed to netio thread.
+    packet::IWriter& writer();
 
-    //! Flush queued packets.
-    //! Called from pipeline thread.
-    void flush_packets();
+    //! Pull packets writter to endpoint writer.
+    void pull_packets();
 
 private:
+    virtual void write(const packet::PacketPtr& packet);
+
     const address::Protocol proto_;
 
     ReceiverState& receiver_state_;

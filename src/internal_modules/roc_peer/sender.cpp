@@ -35,7 +35,7 @@ Sender::Sender(Context& context, const pipeline::SenderConfig& pipeline_config)
         return;
     }
 
-    pipeline::SenderSink::Tasks::AddEndpointSet task;
+    pipeline::SenderLoop::Tasks::CreateEndpointSet task;
     if (!pipeline_.schedule_and_wait(task)) {
         return;
     }
@@ -175,7 +175,7 @@ bool Sender::connect(address::Interface iface, const address::EndpointUri& uri) 
         return false;
     }
 
-    pipeline::SenderSink::Tasks::CreateEndpoint endpoint_task(endpoint_set_, iface,
+    pipeline::SenderLoop::Tasks::CreateEndpoint endpoint_task(endpoint_set_, iface,
                                                               uri.proto());
     if (!pipeline_.schedule_and_wait(endpoint_task)) {
         roc_log(LogError, "sender peer: can't add %s endpoint to pipeline",
@@ -183,20 +183,20 @@ bool Sender::connect(address::Interface iface, const address::EndpointUri& uri) 
         return false;
     }
 
-    pipeline::SenderSink::Tasks::SetEndpointDestinationUdpAddress addr_task(
+    pipeline::SenderLoop::Tasks::SetEndpointDestinationAddress address_task(
         endpoint_task.get_handle(), address);
 
-    if (!pipeline_.schedule_and_wait(addr_task)) {
+    if (!pipeline_.schedule_and_wait(address_task)) {
         roc_log(LogError, "sender peer: can't set %s endpoint destination address",
                 address::interface_to_str(iface));
         return false;
     }
 
-    pipeline::SenderSink::Tasks::SetEndpointOutputWriter writer_task(
+    pipeline::SenderLoop::Tasks::SetEndpointDestinationWriter writer_task(
         endpoint_task.get_handle(), *port.writer);
 
     if (!pipeline_.schedule_and_wait(writer_task)) {
-        roc_log(LogError, "sender peer: can't set %s endpoint output writer",
+        roc_log(LogError, "sender peer: can't set %s endpoint destination writer",
                 address::interface_to_str(iface));
         return false;
     }
@@ -218,7 +218,7 @@ bool Sender::is_ready() {
 
     roc_panic_if_not(valid());
 
-    pipeline::SenderSink::Tasks::CheckEndpointSetIsReady task(endpoint_set_);
+    pipeline::SenderLoop::Tasks::CheckEndpointSetIsReady task(endpoint_set_);
 
     return pipeline_.schedule_and_wait(task);
 }
@@ -226,7 +226,7 @@ bool Sender::is_ready() {
 sndio::ISink& Sender::sink() {
     roc_panic_if_not(valid());
 
-    return pipeline_;
+    return pipeline_.sink();
 }
 
 Sender::InterfacePort& Sender::select_outgoing_port_(address::Interface iface,
@@ -307,12 +307,12 @@ bool Sender::setup_outgoing_port_(InterfacePort& port,
     return true;
 }
 
-void Sender::schedule_task_processing(pipeline::TaskPipeline&,
+void Sender::schedule_task_processing(pipeline::PipelineLoop&,
                                       core::nanoseconds_t deadline) {
     context().control_loop().schedule_at(processing_task_, deadline, NULL);
 }
 
-void Sender::cancel_task_processing(pipeline::TaskPipeline&) {
+void Sender::cancel_task_processing(pipeline::PipelineLoop&) {
     context().control_loop().async_cancel(processing_task_);
 }
 

@@ -20,15 +20,15 @@
 #include "roc_packet/iwriter.h"
 #include "roc_peer/basic_peer.h"
 #include "roc_peer/context.h"
-#include "roc_pipeline/itask_scheduler.h"
-#include "roc_pipeline/sender_sink.h"
+#include "roc_pipeline/ipipeline_task_scheduler.h"
+#include "roc_pipeline/sender_loop.h"
 #include "roc_rtp/format_map.h"
 
 namespace roc {
 namespace peer {
 
 //! Sender peer.
-class Sender : public BasicPeer, private pipeline::ITaskScheduler {
+class Sender : public BasicPeer, private pipeline::IPipelineTaskScheduler {
 public:
     //! Initialize.
     Sender(Context& context, const pipeline::SenderConfig& pipeline_config);
@@ -72,10 +72,10 @@ private:
         }
     };
 
-    virtual void schedule_task_processing(pipeline::TaskPipeline&,
+    virtual void schedule_task_processing(pipeline::PipelineLoop&,
                                           core::nanoseconds_t delay);
 
-    virtual void cancel_task_processing(pipeline::TaskPipeline&);
+    virtual void cancel_task_processing(pipeline::PipelineLoop&);
 
     InterfacePort& select_outgoing_port_(address::Interface, address::AddrFamily family);
     bool setup_outgoing_port_(InterfacePort& port,
@@ -86,11 +86,11 @@ private:
 
     rtp::FormatMap format_map_;
 
-    pipeline::SenderSink pipeline_;
-    pipeline::SenderSink::EndpointSetHandle endpoint_set_;
+    pipeline::SenderLoop pipeline_;
+    pipeline::SenderLoop::EndpointSetHandle endpoint_set_;
 
-    pipeline::SenderSink::EndpointHandle source_endpoint_;
-    pipeline::SenderSink::EndpointHandle repair_endpoint_;
+    pipeline::SenderLoop::EndpointHandle source_endpoint_;
+    pipeline::SenderLoop::EndpointHandle repair_endpoint_;
 
     InterfacePort ports_[address::Iface_Max];
 

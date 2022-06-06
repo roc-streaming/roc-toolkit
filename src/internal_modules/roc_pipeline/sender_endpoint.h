@@ -29,7 +29,7 @@ namespace pipeline {
 //! @remarks
 //!  Created for every transport endpoint. Belongs to endpoint set.
 //!  Passes packets to outside writer (e.g. netio).
-class SenderEndpoint : public packet::IWriter, public core::NonCopyable<> {
+class SenderEndpoint : public core::NonCopyable<>, private packet::IWriter {
 public:
     //! Initialize.
     SenderEndpoint(address::Protocol proto, core::IAllocator& allocator);
@@ -41,33 +41,40 @@ public:
     address::Protocol proto() const;
 
     //! Get packet composer.
+    //! @remarks
+    //!  This composer will creates packets according to endpoint protocol.
     packet::IComposer& composer();
 
-    //! Check if writer is set.
-    bool has_writer() const;
-
-    //! Set output writer.
+    //! Get packet writer.
     //! @remarks
-    //!  Called outside of roc_pipeline from any thread.
-    void set_output_writer(packet::IWriter& writer);
+    //!  This writer will pass packets to the endpoint pipeline.
+    packet::IWriter& writer();
 
-    //! Set destination UDP address.
+    //! Check if destination writer was set.
     //! @remarks
-    //!  Called outside of roc_pipeline from any thread.
-    void set_destination_udp_address(const address::SocketAddr&);
+    //!  True if set_destination_writer() was called.
+    bool has_destination_writer() const;
 
-    //! Write packet.
+    //! Set destination writer.
     //! @remarks
-    //!  Called from pipeline thread.
-    virtual void write(const packet::PacketPtr& packet);
+    //!  When packets are written to the endpoint pipeline, in the end they
+    //!  go to the destination writer.
+    void set_destination_writer(packet::IWriter& writer);
+
+    //! Set destination address.
+    //! @remarks
+    //!  When packets are written to the endpoint pipeline, they are assigned
+    //!  the specified destination address.
+    void set_destination_address(const address::SocketAddr&);
 
 private:
-    core::Mutex mutex_;
+    virtual void write(const packet::PacketPtr& packet);
 
     const address::Protocol proto_;
-    address::SocketAddr udp_address_;
 
-    packet::IWriter* writer_;
+    packet::IWriter* dst_writer_;
+    address::SocketAddr dst_address_;
+
     packet::IComposer* composer_;
 
     core::Optional<rtp::Composer> rtp_composer_;

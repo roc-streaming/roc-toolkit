@@ -11,7 +11,6 @@
 #include "test_helpers/frame_reader.h"
 #include "test_helpers/frame_writer.h"
 #include "test_helpers/packet_sender.h"
-#include "test_helpers/scheduler.h"
 
 #include "roc_core/buffer_factory.h"
 #include "roc_core/heap_allocator.h"
@@ -84,240 +83,189 @@ rtp::FormatMap format_map;
 } // namespace
 
 TEST_GROUP(sender_sink_receiver_source) {
-    bool is_fec_supported(int flags) {
-        if (flags & FlagReedSolomon) {
-            return fec::CodecMap::instance().is_supported(packet::FEC_ReedSolomon_M8);
-        }
-        if (flags & FlagLDPC) {
-            return fec::CodecMap::instance().is_supported(packet::FEC_LDPC_Staircase);
-        }
-        return true;
+    bool is_fec_supported(int flags) { if (flags & FlagReedSolomon) {
+        return fec::CodecMap::instance().is_supported(packet::FEC_ReedSolomon_M8);
+}
+if (flags & FlagLDPC) {
+    return fec::CodecMap::instance().is_supported(packet::FEC_LDPC_Staircase);
+}
+return true;
+}
+
+void send_receive(int flags, size_t num_sessions) {
+    packet::Queue queue;
+
+    address::Protocol source_proto = select_source_proto(flags);
+    address::Protocol repair_proto = select_repair_proto(flags);
+
+    address::SocketAddr receiver_source_addr = test::new_address(11);
+    address::SocketAddr receiver_repair_addr = test::new_address(22);
+
+    SenderSink sender(sender_config(flags), format_map, packet_factory,
+                      byte_buffer_factory, sample_buffer_factory, allocator);
+
+    CHECK(sender.valid());
+
+    SenderEndpointSet* sender_endpoint_set = sender.create_endpoint_set();
+    CHECK(sender_endpoint_set);
+
+    SenderEndpoint* sender_source_endpoint = NULL;
+    SenderEndpoint* sender_repair_endpoint = NULL;
+
+    sender_source_endpoint =
+        sender_endpoint_set->create_endpoint(address::Iface_AudioSource, source_proto);
+    CHECK(sender_source_endpoint);
+
+    sender_source_endpoint->set_destination_writer(queue);
+    sender_source_endpoint->set_destination_address(receiver_source_addr);
+
+    if (repair_proto != address::Proto_None) {
+        sender_repair_endpoint = sender_endpoint_set->create_endpoint(
+            address::Iface_AudioRepair, repair_proto);
+        CHECK(sender_repair_endpoint);
+
+        sender_repair_endpoint->set_destination_writer(queue);
+        sender_repair_endpoint->set_destination_address(receiver_repair_addr);
     }
 
-    void send_receive(int flags, size_t num_sessions) {
-        test::Scheduler scheduler;
+    ReceiverSource receiver(receiver_config(), format_map, packet_factory,
+                            byte_buffer_factory, sample_buffer_factory, allocator);
 
-        packet::Queue queue;
+    CHECK(receiver.valid());
 
-        address::Protocol source_proto = select_source_proto(flags);
-        address::Protocol repair_proto = select_repair_proto(flags);
+    ReceiverEndpointSet* receiver_endpoint_set = receiver.create_endpoint_set();
+    CHECK(receiver_endpoint_set);
 
-        address::SocketAddr receiver_source_addr = test::new_address(11);
-        address::SocketAddr receiver_repair_addr = test::new_address(22);
+    ReceiverEndpoint* receiver_source_endpoint = NULL;
+    ReceiverEndpoint* receiver_repair_endpoint = NULL;
 
-        SenderSink sender(scheduler, sender_config(flags), format_map, packet_factory,
-                          byte_buffer_factory, sample_buffer_factory, allocator);
+    packet::IWriter* receiver_source_endpoint_writer = NULL;
+    packet::IWriter* receiver_repair_endpoint_writer = NULL;
 
-        CHECK(sender.valid());
+    receiver_source_endpoint =
+        receiver_endpoint_set->create_endpoint(address::Iface_AudioSource, source_proto);
+    CHECK(receiver_source_endpoint);
+    receiver_source_endpoint_writer = &receiver_source_endpoint->writer();
 
-        SenderSink::EndpointSetHandle sender_endpoint_set = NULL;
-
-        {
-            pipeline::SenderSink::Tasks::AddEndpointSet task;
-            CHECK(sender.schedule_and_wait(task));
-            CHECK(task.success());
-            sender_endpoint_set = task.get_handle();
-            CHECK(sender_endpoint_set);
-        }
-
-        SenderSink::EndpointHandle sender_source_endpoint = NULL;
-        SenderSink::EndpointHandle sender_repair_endpoint = NULL;
-
-        {
-            pipeline::SenderSink::Tasks::CreateEndpoint task(
-                sender_endpoint_set, address::Iface_AudioSource, source_proto);
-            CHECK(sender.schedule_and_wait(task));
-            CHECK(task.success());
-            sender_source_endpoint = task.get_handle();
-            CHECK(sender_source_endpoint);
-        }
-
-        {
-            pipeline::SenderSink::Tasks::SetEndpointOutputWriter task(
-                sender_source_endpoint, queue);
-            CHECK(sender.schedule_and_wait(task));
-            CHECK(task.success());
-        }
-
-        {
-            pipeline::SenderSink::Tasks::SetEndpointDestinationUdpAddress task(
-                sender_source_endpoint, receiver_source_addr);
-            CHECK(sender.schedule_and_wait(task));
-            CHECK(task.success());
-        }
-
-        if (repair_proto != address::Proto_None) {
-            {
-                pipeline::SenderSink::Tasks::CreateEndpoint task(
-                    sender_endpoint_set, address::Iface_AudioRepair, repair_proto);
-                CHECK(sender.schedule_and_wait(task));
-                CHECK(task.success());
-                sender_repair_endpoint = task.get_handle();
-                CHECK(sender_repair_endpoint);
-            }
-
-            {
-                pipeline::SenderSink::Tasks::SetEndpointOutputWriter task(
-                    sender_repair_endpoint, queue);
-                CHECK(sender.schedule_and_wait(task));
-                CHECK(task.success());
-            }
-
-            {
-                pipeline::SenderSink::Tasks::SetEndpointDestinationUdpAddress task(
-                    sender_repair_endpoint, receiver_repair_addr);
-                CHECK(sender.schedule_and_wait(task));
-                CHECK(task.success());
-            }
-        }
-
-        ReceiverSource receiver(scheduler, receiver_config(), format_map, packet_factory,
-                                byte_buffer_factory, sample_buffer_factory, allocator);
-
-        CHECK(receiver.valid());
-
-        ReceiverSource::EndpointSetHandle receiver_endpoint_set = NULL;
-
-        {
-            pipeline::ReceiverSource::Tasks::AddEndpointSet task;
-            CHECK(receiver.schedule_and_wait(task));
-            CHECK(task.success());
-            receiver_endpoint_set = task.get_handle();
-            CHECK(receiver_endpoint_set);
-        }
-
-        packet::IWriter* receiver_source_endpoint_writer = NULL;
-        packet::IWriter* receiver_repair_endpoint_writer = NULL;
-
-        {
-            pipeline::ReceiverSource::Tasks::CreateEndpoint task(
-                receiver_endpoint_set, address::Iface_AudioSource, source_proto);
-            CHECK(receiver.schedule_and_wait(task));
-            CHECK(task.success());
-            receiver_source_endpoint_writer = task.get_writer();
-            CHECK(receiver_source_endpoint_writer);
-        }
-
-        if (repair_proto != address::Proto_None) {
-            pipeline::ReceiverSource::Tasks::CreateEndpoint task(
-                receiver_endpoint_set, address::Iface_AudioRepair, repair_proto);
-            CHECK(receiver.schedule_and_wait(task));
-            CHECK(task.success());
-            receiver_repair_endpoint_writer = task.get_writer();
-            CHECK(receiver_repair_endpoint_writer);
-        }
-
-        test::FrameWriter frame_writer(sender, sample_buffer_factory);
-
-        for (size_t nf = 0; nf < ManyFrames; nf++) {
-            frame_writer.write_samples(SamplesPerFrame * NumCh);
-        }
-
-        test::PacketSender packet_sender(packet_factory, receiver_source_endpoint_writer,
-                                   receiver_repair_endpoint_writer);
-
-        filter_packets(flags, queue, packet_sender);
-
-        test::FrameReader frame_reader(receiver, sample_buffer_factory);
-
-        packet_sender.deliver(Latency / SamplesPerPacket);
-
-        for (size_t np = 0; np < ManyFrames / FramesPerPacket; np++) {
-            for (size_t nf = 0; nf < FramesPerPacket; nf++) {
-                frame_reader.read_samples(SamplesPerFrame * NumCh, num_sessions);
-
-                UNSIGNED_LONGS_EQUAL(num_sessions, receiver.num_sessions());
-            }
-
-            packet_sender.deliver(1);
-        }
+    if (repair_proto != address::Proto_None) {
+        receiver_repair_endpoint = receiver_endpoint_set->create_endpoint(
+            address::Iface_AudioRepair, repair_proto);
+        CHECK(receiver_repair_endpoint);
+        receiver_repair_endpoint_writer = &receiver_repair_endpoint->writer();
     }
 
-    void filter_packets(int flags, packet::IReader& reader, packet::IWriter& writer) {
-        size_t counter = 0;
+    test::FrameWriter frame_writer(sender, sample_buffer_factory);
 
-        while (packet::PacketPtr pp = reader.read()) {
-            if ((flags & FlagLosses) && counter++ % (SourcePackets + RepairPackets) == 1) {
+    for (size_t nf = 0; nf < ManyFrames; nf++) {
+        frame_writer.write_samples(SamplesPerFrame * NumCh);
+    }
+
+    test::PacketSender packet_sender(packet_factory, receiver_source_endpoint_writer,
+                                     receiver_repair_endpoint_writer);
+
+    filter_packets(flags, queue, packet_sender);
+
+    test::FrameReader frame_reader(receiver, sample_buffer_factory);
+
+    packet_sender.deliver(Latency / SamplesPerPacket);
+
+    for (size_t np = 0; np < ManyFrames / FramesPerPacket; np++) {
+        for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            frame_reader.read_samples(SamplesPerFrame * NumCh, num_sessions);
+
+            UNSIGNED_LONGS_EQUAL(num_sessions, receiver.num_sessions());
+        }
+
+        packet_sender.deliver(1);
+    }
+}
+
+void filter_packets(int flags, packet::IReader& reader, packet::IWriter& writer) {
+    size_t counter = 0;
+
+    while (packet::PacketPtr pp = reader.read()) {
+        if ((flags & FlagLosses) && counter++ % (SourcePackets + RepairPackets) == 1) {
+            continue;
+        }
+
+        if (pp->flags() & packet::Packet::FlagRepair) {
+            if (flags & FlagDropRepair) {
                 continue;
             }
-
-            if (pp->flags() & packet::Packet::FlagRepair) {
-                if (flags & FlagDropRepair) {
-                    continue;
-                }
-            } else {
-                if (flags & FlagDropSource) {
-                    continue;
-                }
+        } else {
+            if (flags & FlagDropSource) {
+                continue;
             }
-
-            writer.write(pp);
         }
+
+        writer.write(pp);
+    }
+}
+
+address::Protocol select_source_proto(int flags) {
+    if (flags & FlagReedSolomon) {
+        return address::Proto_RTP_RS8M_Source;
+    }
+    if (flags & FlagLDPC) {
+        return address::Proto_RTP_LDPC_Source;
+    }
+    return address::Proto_RTP;
+}
+
+address::Protocol select_repair_proto(int flags) {
+    if (flags & FlagReedSolomon) {
+        return address::Proto_RS8M_Repair;
+    }
+    if (flags & FlagLDPC) {
+        return address::Proto_LDPC_Repair;
+    }
+    return address::Proto_None;
+}
+
+SenderConfig sender_config(int flags) {
+    SenderConfig config;
+
+    config.input_sample_spec = audio::SampleSpec(SampleRate, ChMask);
+    config.packet_length = SamplesPerPacket * core::Second / SampleRate;
+    config.internal_frame_length = MaxBufDuration;
+
+    if (flags & FlagReedSolomon) {
+        config.fec_encoder.scheme = packet::FEC_ReedSolomon_M8;
     }
 
-    address::Protocol select_source_proto(int flags) {
-        if (flags & FlagReedSolomon) {
-            return address::Proto_RTP_RS8M_Source;
-        }
-        if (flags & FlagLDPC) {
-            return address::Proto_RTP_LDPC_Source;
-        }
-        return address::Proto_RTP;
+    if (flags & FlagLDPC) {
+        config.fec_encoder.scheme = packet::FEC_LDPC_Staircase;
     }
 
-    address::Protocol select_repair_proto(int flags) {
-        if (flags & FlagReedSolomon) {
-            return address::Proto_RS8M_Repair;
-        }
-        if (flags & FlagLDPC) {
-            return address::Proto_LDPC_Repair;
-        }
-        return address::Proto_None;
-    }
+    config.fec_writer.n_source_packets = SourcePackets;
+    config.fec_writer.n_repair_packets = RepairPackets;
 
-    SenderConfig sender_config(int flags) {
-        SenderConfig config;
+    config.interleaving = (flags & FlagInterleaving);
+    config.timing = false;
+    config.poisoning = true;
+    config.profiling = true;
 
-        config.input_sample_spec = audio::SampleSpec(SampleRate, ChMask);
-        config.packet_length = SamplesPerPacket * core::Second / SampleRate;
-        config.internal_frame_length = MaxBufDuration;
+    return config;
+}
 
-        if (flags & FlagReedSolomon) {
-            config.fec_encoder.scheme = packet::FEC_ReedSolomon_M8;
-        }
+ReceiverConfig receiver_config() {
+    ReceiverConfig config;
 
-        if (flags & FlagLDPC) {
-            config.fec_encoder.scheme = packet::FEC_LDPC_Staircase;
-        }
+    config.common.output_sample_spec = audio::SampleSpec(SampleRate, ChMask);
+    config.common.internal_frame_length = MaxBufDuration;
 
-        config.fec_writer.n_source_packets = SourcePackets;
-        config.fec_writer.n_repair_packets = RepairPackets;
+    config.common.resampling = false;
+    config.common.timing = false;
+    config.common.poisoning = true;
 
-        config.interleaving = (flags & FlagInterleaving);
-        config.timing = false;
-        config.poisoning = true;
-        config.profiling = true;
+    config.default_session.target_latency = Latency * core::Second / SampleRate;
+    config.default_session.watchdog.no_playback_timeout =
+        Timeout * core::Second / SampleRate;
 
-        return config;
-    }
-
-    ReceiverConfig receiver_config() {
-        ReceiverConfig config;
-
-        config.common.output_sample_spec = audio::SampleSpec(SampleRate, ChMask);
-        config.common.internal_frame_length = MaxBufDuration;
-
-        config.common.resampling = false;
-        config.common.timing = false;
-        config.common.poisoning = true;
-
-        config.default_session.target_latency = Latency * core::Second / SampleRate;
-        config.default_session.watchdog.no_playback_timeout =
-            Timeout * core::Second / SampleRate;
-
-        return config;
-    }
-};
+    return config;
+}
+}
+;
 
 TEST(sender_sink_receiver_source, bare) {
     send_receive(FlagNone, 1);

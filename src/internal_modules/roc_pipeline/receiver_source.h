@@ -25,9 +25,9 @@
 #include "roc_packet/iwriter.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_pipeline/config.h"
+#include "roc_pipeline/receiver_endpoint.h"
 #include "roc_pipeline/receiver_endpoint_set.h"
 #include "roc_pipeline/receiver_state.h"
-#include "roc_pipeline/task_pipeline.h"
 #include "roc_rtp/format_map.h"
 #include "roc_sndio/isource.h"
 
@@ -35,72 +35,13 @@ namespace roc {
 namespace pipeline {
 
 //! Receiver source pipeline.
-//! Thread-safe.
 //! @remarks
 //!  - input: packets
 //!  - output: frames
-class ReceiverSource : public sndio::ISource, public TaskPipeline {
+class ReceiverSource : public sndio::ISource, public core::NonCopyable<> {
 public:
-    //! Opaque endpoint set handle.
-    typedef struct EndpointSetHandle* EndpointSetHandle;
-
-    //! Base task class.
-    //! The user is responsible for allocating and deallocating the task.
-    class Task : public TaskPipeline::Task {
-    protected:
-        friend class ReceiverSource;
-
-        Task();
-
-        bool (ReceiverSource::*func_)(Task&); //!< Task implementation method.
-
-        ReceiverEndpointSet* endpoint_set_; //!< Endpoint set.
-        address::Interface iface_;          //!< Interface.
-        address::Protocol proto_;           //!< Protocol.
-        packet::IWriter* writer_;           //!< Packet writer.
-    };
-
-    //! Subclasses for specific tasks.
-    class Tasks {
-    public:
-        //! Add new endpoint set.
-        class AddEndpointSet : public Task {
-        public:
-            //! Set task parameters.
-            AddEndpointSet();
-
-            //! Get created endpoint set handle.
-            EndpointSetHandle get_handle() const;
-        };
-
-        //! Create endpoint on given interface of the endpoint set.
-        class CreateEndpoint : public Task {
-        public:
-            //! Set task parameters.
-            //! @remarks
-            //!  Each endpoint set can have one source and zero or one repair endpoint.
-            //!  The protocols of endpoints in one set should be compatible.
-            CreateEndpoint(EndpointSetHandle endpoint_set,
-                           address::Interface iface,
-                           address::Protocol proto);
-
-            //! Get packet writer for the endpoint.
-            //! @remarks
-            //!  The returned writer may be used from any thread.
-            packet::IWriter* get_writer() const;
-        };
-
-        //! Delete endpoint on given interface of the endpoint set, if it exists.
-        class DeleteEndpoint : public Task {
-        public:
-            //! Set task parameters.
-            DeleteEndpoint(EndpointSetHandle endpoint_set, address::Interface iface);
-        };
-    };
-
     //! Initialize.
-    ReceiverSource(ITaskScheduler& scheduler,
-                   const ReceiverConfig& config,
+    ReceiverSource(const ReceiverConfig& config,
                    const rtp::FormatMap& format_map,
                    packet::PacketFactory& packet_factory,
                    core::BufferFactory<uint8_t>& byte_buffer_factory,
@@ -109,6 +50,9 @@ public:
 
     //! Check if the pipeline was successfully constructed.
     bool valid() const;
+
+    //! Create endpoint set.
+    ReceiverEndpointSet* create_endpoint_set();
 
     //! Get number of connected sessions.
     size_t num_sessions() const;
@@ -134,22 +78,10 @@ public:
     //! Restart reading from the beginning.
     virtual bool restart();
 
-    //! Read frame.
-    //! May also process some tasks and invoke callbacks passed to enqueue().
+    //! Read audio frame.
     virtual bool read(audio::Frame&);
 
 private:
-    virtual core::nanoseconds_t timestamp_imp() const;
-
-    virtual bool process_frame_imp(audio::Frame& frame);
-    virtual bool process_task_imp(TaskPipeline::Task& task);
-
-    bool task_add_endpoint_set_(Task& task);
-    bool task_create_endpoint_(Task& task);
-    bool task_delete_endpoint_(Task& task);
-
-    core::Mutex read_mutex_;
-
     const rtp::FormatMap& format_map_;
 
     packet::PacketFactory& packet_factory_;
@@ -159,8 +91,6 @@ private:
 
     ReceiverState receiver_state_;
     core::List<ReceiverEndpointSet> endpoint_sets_;
-
-    core::Ticker ticker_;
 
     core::Optional<audio::Mixer> mixer_;
     core::Optional<audio::PoisonReader> poisoner_;
