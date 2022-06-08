@@ -38,11 +38,13 @@ template <class T, class AllocationPolicy>
 class RefCounted : public NonCopyable<RefCounted<T, AllocationPolicy> >,
                    protected AllocationPolicy {
 public:
+    //! Initialization with default allocation policy.
     RefCounted()
         : AllocationPolicy()
         , counter_(0) {
     }
 
+    //! Initialization with arbitrary allocation policy.
     explicit RefCounted(const AllocationPolicy& policy)
         : AllocationPolicy(policy)
         , counter_(0) {

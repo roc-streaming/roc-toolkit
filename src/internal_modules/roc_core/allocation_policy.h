@@ -21,10 +21,14 @@ namespace core {
 //! Allocation policy for objects (de)allocated using IAllocator.
 class StandardAllocation {
 public:
+    //! Initialize in invalid state.
+    //! Such instance wont be usable.
     StandardAllocation()
         : allocator_(NULL) {
     }
 
+    //! Initialize with given allocator.
+    //! Such instance will use allocator to destroy objects.
     StandardAllocation(IAllocator& allocator)
         : allocator_(&allocator) {
     }
@@ -53,10 +57,14 @@ private:
 //! Allocation policy for objects (de)allocated using speciailized factory.
 template <class Factory> class FactoryAllocation {
 public:
+    //! Initialize in invalid state.
+    //! Such instance wont be usable.
     FactoryAllocation()
         : factory_(NULL) {
     }
 
+    //! Initialize with given factory.
+    //! Such instance will use factory to destroy objects.
     FactoryAllocation(Factory& factory)
         : factory_(&factory) {
     }
@@ -87,10 +95,14 @@ class CustomAllocation {
     typedef void (*DestroyFunc)(void*);
 
 public:
+    //! Initialize in invalid state.
+    //! Such instance wont be usable.
     CustomAllocation()
         : destroy_func_(NULL) {
     }
 
+    //! Initialize with given function.
+    //! Such instance will use function to destroy objects.
     template <class T>
     CustomAllocation(void (*destroy_func)(T*))
         : destroy_func_((DestroyFunc)destroy_func) {
