@@ -15,8 +15,9 @@
 #include "roc_address/endpoint_uri.h"
 #include "roc_core/list_node.h"
 #include "roc_core/ref_counted.h"
-#include "roc_pipeline/receiver_source.h"
-#include "roc_pipeline/sender_sink.h"
+#include "roc_ctl/control_task.h"
+#include "roc_pipeline/receiver_loop.h"
+#include "roc_pipeline/sender_loop.h"
 
 namespace roc {
 namespace ctl {
@@ -26,34 +27,49 @@ class BasicControlEndpoint
     : public core::RefCounted<BasicControlEndpoint, core::StandardAllocation>,
       public core::ListNode {
 public:
+    //! Initialization.
     BasicControlEndpoint(core::IAllocator&);
 
     virtual ~BasicControlEndpoint();
 
-    //! Bind endpoint to local address.
-    virtual bool bind(const address::EndpointUri& uri) = 0;
+    //! Check if endpoint is successfully bound to local URI.
+    virtual bool is_bound() const = 0;
 
-    //! Bind endpoint to remote address.
-    virtual bool connect(const address::EndpointUri& uri) = 0;
+    //! Check if endpoint is successfully connected to remote URI.
+    virtual bool is_connected() const = 0;
 
-    //! Close endpoint.
-    virtual void close() = 0;
+    //! Initiate asynchronous binding to local URI.
+    //! On completion, resumes @p notify_task.
+    virtual bool async_bind(const address::EndpointUri& uri,
+                            ControlTask& notify_task) = 0;
 
-#if 0
-    //! Attach sink pipeline to endpoint.
+    //! Initiate asynchronous connecting to remote URI.
+    //! Should be called after successfull bind.
+    //! On completion, resumes @p notify_task.
+    virtual bool async_connect(const address::EndpointUri& uri,
+                               ControlTask& notify_task) = 0;
+
+    //! Initiate asynchronous closing of endpoint.
+    //! On completion, resumes @p notify_task.
+    virtual void async_close(ControlTask& notify_task) = 0;
+
+    //! Add sink pipeline controlled by this endpoint.
+    //! Should be called after successfull bind.
     virtual bool attach_sink(const address::EndpointUri& uri,
-                             pipeline::SenderSink& sink) = 0;
+                             pipeline::SenderLoop& sink) = 0;
 
-    //! Detach sink pipeline from endpoint.
-    virtual bool detach_sink(pipeline::SenderSink& sink) = 0;
+    //! Remove sink pipeline.
+    //! Should be called for earlier attached sink.
+    virtual bool detach_sink(pipeline::SenderLoop& sink) = 0;
 
-    //! Attach source pipeline to endpoint.
+    //! Add source pipeline controlled by this endpoint.
+    //! Should be called after successfull bind.
     virtual bool attach_source(const address::EndpointUri& uri,
-                               pipeline::ReceiverSource& source) = 0;
+                               pipeline::ReceiverLoop& source) = 0;
 
-    //! Detach source pipeline from endpoint.
-    virtual bool detach_source(pipeline::ReceiverSource& source) = 0;
-#endif
+    //! Remove source pipeline.
+    //! Should be called for earlier attached source.
+    virtual bool detach_source(pipeline::ReceiverLoop& source) = 0;
 };
 
 } // namespace ctl

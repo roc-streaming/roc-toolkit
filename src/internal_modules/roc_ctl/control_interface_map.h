@@ -14,9 +14,12 @@
 
 #include "roc_address/interface.h"
 #include "roc_address/protocol.h"
+#include "roc_core/iallocator.h"
 #include "roc_core/shared_ptr.h"
 #include "roc_core/singleton.h"
 #include "roc_ctl/basic_control_endpoint.h"
+#include "roc_ctl/control_task_queue.h"
+#include "roc_netio/network_loop.h"
 
 namespace roc {
 namespace ctl {
@@ -32,6 +35,8 @@ public:
     //! Create control endpoint for given interface and protocol.
     core::SharedPtr<BasicControlEndpoint> new_endpoint(address::Interface iface,
                                                        address::Protocol proto,
+                                                       ControlTaskQueue& task_queue,
+                                                       netio::NetworkLoop& network_loop,
                                                        core::IAllocator& allocator);
 
 private:

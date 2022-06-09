@@ -8,7 +8,6 @@
 
 #include "roc_ctl/control_interface_map.h"
 #include "roc_core/log.h"
-#include "roc_ctl/rtcp_endpoint.h"
 
 namespace roc {
 namespace ctl {
@@ -16,24 +15,22 @@ namespace ctl {
 ControlInterfaceMap::ControlInterfaceMap() {
 }
 
-core::SharedPtr<BasicControlEndpoint> ControlInterfaceMap::new_endpoint(
-    address::Interface iface, address::Protocol proto, core::IAllocator& allocator) {
+core::SharedPtr<BasicControlEndpoint>
+ControlInterfaceMap::new_endpoint(address::Interface iface,
+                                  address::Protocol proto,
+                                  ControlTaskQueue& task_queue,
+                                  netio::NetworkLoop& network_loop,
+                                  core::IAllocator& allocator) {
     switch (iface) {
     case address::Iface_AudioControl:
         switch (proto) {
-        case address::Proto_RTCP: {
-            core::SharedPtr<BasicControlEndpoint> endpoint =
-                new (allocator) RtcpEndpoint(allocator);
-            if (!endpoint) {
-                roc_log(LogError, "control endpoint map: can't allocate endpoint");
-                return NULL;
-            }
-            return endpoint;
-        }
-
         default:
             break;
         }
+
+        (void)task_queue;
+        (void)network_loop;
+        (void)allocator;
 
         roc_log(LogError,
                 "control endpoint map: unsupported protocol %s for interface %s",

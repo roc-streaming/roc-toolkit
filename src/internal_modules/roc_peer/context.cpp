@@ -20,7 +20,7 @@ Context::Context(const ContextConfig& config, core::IAllocator& allocator)
     , sample_buffer_factory_(
           allocator_, config.max_frame_size / sizeof(audio::sample_t), config.poisoning)
     , network_loop_(packet_factory_, byte_buffer_factory_, allocator_)
-    , control_loop_(allocator_)
+    , control_loop_(network_loop_, allocator_)
     , ref_counter_(0) {
     roc_log(LogDebug, "context: initializing");
 }

@@ -37,7 +37,7 @@ public:
     //! Set pointer to the newly created object, destroy old pointed object if set.
     //! @pre
     //!  @p ptr should be returned by associated placement new.
-    void reset(T* ptr) {
+    void reset(T* ptr = NULL) {
         if (ptr_) {
             ptr_->~T();
         }
