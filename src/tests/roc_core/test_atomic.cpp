@@ -129,6 +129,33 @@ TEST(atomic, add_sub) {
     }
 }
 
+TEST(atomic, bit_ops) {
+    { // operators
+        Atomic<int> a(0x000);
+
+        CHECK((a |= 0x011) == 0x011);
+        CHECK(a == 0x011);
+
+        CHECK((a &= 0x110) == 0x010);
+        CHECK(a == 0x010);
+
+        CHECK((a ^= 0x100) == 0x110);
+        CHECK(a == 0x110);
+    }
+    { // methods
+        Atomic<int> a(0x000);
+
+        CHECK(a.fetch_or(0x011) == 0x000);
+        CHECK(a == 0x011);
+
+        CHECK(a.fetch_and(0x110) == 0x011);
+        CHECK(a == 0x010);
+
+        CHECK(a.fetch_xor(0x100) == 0x010);
+        CHECK(a == 0x110);
+    }
+}
+
 TEST(atomic, wrapping) {
     { // int
         const unsigned int max_uint = (unsigned int)-1L;
@@ -149,6 +176,12 @@ TEST(atomic, wrapping) {
 }
 
 TEST(atomic, exchange) {
+    { // int
+        Atomic<int> a(123);
+
+        CHECK(a.exchange(456) == 123);
+        CHECK(a == 456);
+    }
     { // ptr
         Atomic<int*> a((int*)123);
 
@@ -158,6 +191,15 @@ TEST(atomic, exchange) {
 }
 
 TEST(atomic, compare_exchange) {
+    { // int
+        Atomic<int> a(123);
+
+        CHECK(!a.compare_exchange(456, 789));
+        CHECK(a == 123);
+
+        CHECK(a.compare_exchange(123, 789));
+        CHECK(a == 789);
+    }
     { // ptr
         Atomic<int*> a((int*)123);
 

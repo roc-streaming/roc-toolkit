@@ -15,60 +15,49 @@ namespace core {
 
 TEST_GROUP(seqlock) {};
 
-TEST(seqlock, int32) {
-    Seqlock<int32_t> sl(345);
+TEST(seqlock, load_store) {
+    Seqlock<int> sl(345);
     LONGS_EQUAL(345, sl.wait_load());
 
     sl.exclusive_store(123);
     LONGS_EQUAL(123, sl.wait_load());
 
-    int32_t v1 = 0;
+    int v1 = 0;
     CHECK(sl.try_load(v1));
     LONGS_EQUAL(123, v1);
 
     CHECK(sl.try_store(456));
     LONGS_EQUAL(456, sl.wait_load());
 
-    int32_t v2 = 0;
+    int v2 = 0;
     CHECK(sl.try_load(v2));
     LONGS_EQUAL(456, v2);
 }
 
-TEST(seqlock, int64) {
-    Seqlock<int64_t> sl(345);
-    LONGS_EQUAL(345, sl.wait_load());
+TEST(seqlock, version) {
+    Seqlock<int> sl(0);
+    seqlock_version_t v0 = sl.version();
 
-    sl.exclusive_store(123);
-    LONGS_EQUAL(123, sl.wait_load());
+    seqlock_version_t v1 = 0;
+    CHECK(sl.try_store_ver(1, v1));
+    CHECK(v1 == sl.version());
+    CHECK(v1 != v0);
 
-    int64_t v1 = 0;
-    CHECK(sl.try_load(v1));
-    LONGS_EQUAL(123, v1);
+    seqlock_version_t v2 = 0;
+    sl.exclusive_store_ver(2, v2);
+    CHECK(v2 == sl.version());
+    CHECK(v2 != v1);
+    CHECK(v2 != v0);
 
-    CHECK(sl.try_store(456));
-    LONGS_EQUAL(456, sl.wait_load());
+    seqlock_version_t v2r1 = 0;
+    int val1 = 0;
+    CHECK(sl.try_load_ver(val1, v2r1));
+    CHECK(v2r1 == v2);
 
-    int64_t v2 = 0;
-    CHECK(sl.try_load(v2));
-    LONGS_EQUAL(456, v2);
-}
-
-TEST(seqlock, 64bit_atomics) {
-    if (ROC_CPU_64BIT) {
-        // we have 8-byte pointers
-        CHECK(sizeof(void*) == 8);
-
-        // Seqlock<uint64_t> and Seqlock<int64_t> are optimized to atomics
-        CHECK(sizeof(Seqlock<uint64_t>) == sizeof(AtomicSeqlock<uint64_t>));
-        CHECK(sizeof(Seqlock<int64_t>) == sizeof(AtomicSeqlock<int64_t>));
-    } else {
-        // we have smaller pointers
-        CHECK(sizeof(void*) < 8);
-
-        // Seqlock<uint64_t> and Seqlock<int64_t> are not optimized to atomics
-        CHECK(sizeof(Seqlock<uint64_t>) != sizeof(AtomicSeqlock<uint64_t>));
-        CHECK(sizeof(Seqlock<int64_t>) != sizeof(AtomicSeqlock<int64_t>));
-    }
+    seqlock_version_t v2r2 = 0;
+    int val2 = 0;
+    sl.wait_load_ver(val2, v2r2);
+    CHECK(v2r2 == v2);
 }
 
 } // namespace core
