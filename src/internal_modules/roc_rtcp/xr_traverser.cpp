@@ -15,8 +15,8 @@ XrTraverser::XrTraverser(const core::Slice<uint8_t>& data)
     : data_(data)
     , parsed_(false)
     , packet_len_(0)
-    , blocks_count_(0)
-    , ssrc_(0) {
+    , blocks_count_(0) {
+    roc_panic_if_msg(!data, "xr traverser: slice is null");
 }
 
 bool XrTraverser::parse() {
@@ -37,8 +37,6 @@ bool XrTraverser::parse() {
         return false;
     }
 
-    ssrc_ = xr->ssrc();
-
     Iterator iter(*this);
     while (iter.next() != Iterator::END) {
         blocks_count_++;
@@ -53,7 +51,7 @@ XrTraverser::Iterator XrTraverser::iter() const {
                      "xr traverser:"
                      " iter() called before parse() or parse() returned false");
 
-    XrTraverser::Iterator iter(*this);
+    Iterator iter(*this);
     return iter;
 }
 
@@ -65,12 +63,12 @@ size_t XrTraverser::blocks_count() const {
     return blocks_count_;
 }
 
-packet::source_t XrTraverser::ssrc() const {
+const header::XrPacket& XrTraverser::packet() const {
     roc_panic_if_msg(!parsed_,
                      "xr traverser:"
-                     " ssrc() called before parse() or parse() returned false");
+                     " packet() called before parse() or parse() returned false");
 
-    return ssrc_;
+    return *(const header::XrPacket*)data_.data();
 }
 
 XrTraverser::Iterator::Iterator(const XrTraverser& traverser)
@@ -129,18 +127,18 @@ XrTraverser::Iterator::State XrTraverser::Iterator::next() {
     return state_;
 }
 
-const header::XrRrtrBlock* XrTraverser::Iterator::get_rrtr() const {
+const header::XrRrtrBlock& XrTraverser::Iterator::get_rrtr() const {
     roc_panic_if_msg(state_ != RRTR_BLOCK,
                      "xt traverser:"
                      " attempt to access block with wrong type or at wrong state");
-    return (header::XrRrtrBlock*)pcur_;
+    return *(header::XrRrtrBlock*)pcur_;
 }
 
-const header::XrDlrrBlock* XrTraverser::Iterator::get_dlrr() const {
+const header::XrDlrrBlock& XrTraverser::Iterator::get_dlrr() const {
     roc_panic_if_msg(state_ != DRLL_BLOCK,
                      "xt traverser:"
                      " attempt to access block with wrong type or at wrong state");
-    return (header::XrDlrrBlock*)pcur_;
+    return *(header::XrDlrrBlock*)pcur_;
 }
 
 } // namespace rtcp

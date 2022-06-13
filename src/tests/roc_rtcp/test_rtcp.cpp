@@ -47,7 +47,7 @@ TEST(rtcp, loopback_sr_sdes) {
 
     header::SenderReportPacket sr;
     sr.set_ssrc(1);
-    sr.set_ntp(2);
+    sr.set_ntp_timestamp(2);
     sr.set_rtp_timestamp(3);
     sr.set_packet_count(4);
     sr.set_byte_count(5);
@@ -97,29 +97,29 @@ TEST(rtcp, loopback_sr_sdes) {
 
     Traverser::Iterator it = parser.iter();
     CHECK_EQUAL(Traverser::Iterator::SR, it.next());
-    CHECK_EQUAL(sr.ssrc(), it.get_sr()->ssrc());
-    CHECK_EQUAL(sr.ntp(), it.get_sr()->ntp());
-    CHECK_EQUAL(sr.rtp_timestamp(), it.get_sr()->rtp_timestamp());
-    CHECK_EQUAL(sr.packet_count(), it.get_sr()->packet_count());
-    CHECK_EQUAL(sr.byte_count(), it.get_sr()->byte_count());
-    CHECK_EQUAL(sender_report1.ssrc(), it.get_sr()->get_block(0).ssrc());
-    DOUBLES_EQUAL(sender_report1.fract_loss(), it.get_sr()->get_block(0).fract_loss(),
+    CHECK_EQUAL(sr.ssrc(), it.get_sr().ssrc());
+    CHECK_EQUAL(sr.ntp_timestamp(), it.get_sr().ntp_timestamp());
+    CHECK_EQUAL(sr.rtp_timestamp(), it.get_sr().rtp_timestamp());
+    CHECK_EQUAL(sr.packet_count(), it.get_sr().packet_count());
+    CHECK_EQUAL(sr.byte_count(), it.get_sr().byte_count());
+    CHECK_EQUAL(sender_report1.ssrc(), it.get_sr().get_block(0).ssrc());
+    DOUBLES_EQUAL(sender_report1.fract_loss(), it.get_sr().get_block(0).fract_loss(),
                   1e-8);
-    CHECK_EQUAL(sender_report1.cumloss(), it.get_sr()->get_block(0).cumloss());
-    CHECK_EQUAL(sender_report1.last_seqnum(), it.get_sr()->get_block(0).last_seqnum());
-    CHECK_EQUAL(sender_report1.jitter(), it.get_sr()->get_block(0).jitter());
-    CHECK_EQUAL(sender_report1.last_sr(), it.get_sr()->get_block(0).last_sr());
+    CHECK_EQUAL(sender_report1.cumloss(), it.get_sr().get_block(0).cumloss());
+    CHECK_EQUAL(sender_report1.last_seqnum(), it.get_sr().get_block(0).last_seqnum());
+    CHECK_EQUAL(sender_report1.jitter(), it.get_sr().get_block(0).jitter());
+    CHECK_EQUAL(sender_report1.last_sr(), it.get_sr().get_block(0).last_sr());
     CHECK_EQUAL(sender_report1.delay_last_sr(),
-                it.get_sr()->get_block(0).delay_last_sr());
-    CHECK_EQUAL(sender_report2.ssrc(), it.get_sr()->get_block(1).ssrc());
-    DOUBLES_EQUAL(sender_report2.fract_loss(), it.get_sr()->get_block(1).fract_loss(),
+                it.get_sr().get_block(0).delay_last_sr());
+    CHECK_EQUAL(sender_report2.ssrc(), it.get_sr().get_block(1).ssrc());
+    DOUBLES_EQUAL(sender_report2.fract_loss(), it.get_sr().get_block(1).fract_loss(),
                   1e-8);
-    CHECK_EQUAL(sender_report2.cumloss(), it.get_sr()->get_block(1).cumloss());
-    CHECK_EQUAL(sender_report2.last_seqnum(), it.get_sr()->get_block(1).last_seqnum());
-    CHECK_EQUAL(sender_report2.jitter(), it.get_sr()->get_block(1).jitter());
-    CHECK_EQUAL(sender_report2.last_sr(), it.get_sr()->get_block(1).last_sr());
+    CHECK_EQUAL(sender_report2.cumloss(), it.get_sr().get_block(1).cumloss());
+    CHECK_EQUAL(sender_report2.last_seqnum(), it.get_sr().get_block(1).last_seqnum());
+    CHECK_EQUAL(sender_report2.jitter(), it.get_sr().get_block(1).jitter());
+    CHECK_EQUAL(sender_report2.last_sr(), it.get_sr().get_block(1).last_sr());
     CHECK_EQUAL(sender_report2.delay_last_sr(),
-                it.get_sr()->get_block(1).delay_last_sr());
+                it.get_sr().get_block(1).delay_last_sr());
 
     CHECK_EQUAL(Traverser::Iterator::SDES, it.next());
     SdesTraverser sdes = it.get_sdes();
@@ -198,27 +198,27 @@ TEST(rtcp, loopback_rr_sdes) {
 
     Traverser::Iterator it = parser.iter();
     CHECK_EQUAL(Traverser::Iterator::RR, it.next());
-    CHECK_EQUAL(rr.ssrc(), it.get_rr()->ssrc());
+    CHECK_EQUAL(rr.ssrc(), it.get_rr().ssrc());
 
-    CHECK_EQUAL(receiver_report_1.ssrc(), it.get_rr()->get_block(0).ssrc());
-    DOUBLES_EQUAL(receiver_report_1.fract_loss(), it.get_rr()->get_block(0).fract_loss(),
+    CHECK_EQUAL(receiver_report_1.ssrc(), it.get_rr().get_block(0).ssrc());
+    DOUBLES_EQUAL(receiver_report_1.fract_loss(), it.get_rr().get_block(0).fract_loss(),
                   1e-8);
-    CHECK_EQUAL(receiver_report_1.cumloss(), it.get_rr()->get_block(0).cumloss());
-    CHECK_EQUAL(receiver_report_1.last_seqnum(), it.get_rr()->get_block(0).last_seqnum());
-    CHECK_EQUAL(receiver_report_1.jitter(), it.get_rr()->get_block(0).jitter());
-    CHECK_EQUAL(receiver_report_1.last_sr(), it.get_rr()->get_block(0).last_sr());
+    CHECK_EQUAL(receiver_report_1.cumloss(), it.get_rr().get_block(0).cumloss());
+    CHECK_EQUAL(receiver_report_1.last_seqnum(), it.get_rr().get_block(0).last_seqnum());
+    CHECK_EQUAL(receiver_report_1.jitter(), it.get_rr().get_block(0).jitter());
+    CHECK_EQUAL(receiver_report_1.last_sr(), it.get_rr().get_block(0).last_sr());
     CHECK_EQUAL(receiver_report_1.delay_last_sr(),
-                it.get_rr()->get_block(0).delay_last_sr());
+                it.get_rr().get_block(0).delay_last_sr());
 
-    CHECK_EQUAL(receiver_report_2.ssrc(), it.get_rr()->get_block(1).ssrc());
-    DOUBLES_EQUAL(receiver_report_2.fract_loss(), it.get_rr()->get_block(1).fract_loss(),
+    CHECK_EQUAL(receiver_report_2.ssrc(), it.get_rr().get_block(1).ssrc());
+    DOUBLES_EQUAL(receiver_report_2.fract_loss(), it.get_rr().get_block(1).fract_loss(),
                   1e-8);
-    CHECK_EQUAL(receiver_report_2.cumloss(), it.get_rr()->get_block(1).cumloss());
-    CHECK_EQUAL(receiver_report_2.last_seqnum(), it.get_rr()->get_block(1).last_seqnum());
-    CHECK_EQUAL(receiver_report_2.jitter(), it.get_rr()->get_block(1).jitter());
-    CHECK_EQUAL(receiver_report_2.last_sr(), it.get_rr()->get_block(1).last_sr());
+    CHECK_EQUAL(receiver_report_2.cumloss(), it.get_rr().get_block(1).cumloss());
+    CHECK_EQUAL(receiver_report_2.last_seqnum(), it.get_rr().get_block(1).last_seqnum());
+    CHECK_EQUAL(receiver_report_2.jitter(), it.get_rr().get_block(1).jitter());
+    CHECK_EQUAL(receiver_report_2.last_sr(), it.get_rr().get_block(1).last_sr());
     CHECK_EQUAL(receiver_report_2.delay_last_sr(),
-                it.get_rr()->get_block(1).delay_last_sr());
+                it.get_rr().get_block(1).delay_last_sr());
 
     CHECK_EQUAL(Traverser::Iterator::SDES, it.next());
     SdesTraverser sdes = it.get_sdes();
@@ -275,7 +275,7 @@ TEST(rtcp, loopback_rr_sdes_xr) {
     header::XrPacket xr;
     xr.set_ssrc(111);
     header::XrRrtrBlock ref_time;
-    ref_time.set_ntp(0xFFFFFFFFFFFFFFFF);
+    ref_time.set_ntp_timestamp(0xFFFFFFFFFFFFFFFF);
     header::XrDlrrBlock dlrr;
     header::XrDlrrSubblock dlrr_repblock_1;
     dlrr_repblock_1.set_ssrc(222);
@@ -328,26 +328,26 @@ TEST(rtcp, loopback_rr_sdes_xr) {
 
     Traverser::Iterator it = parser.iter();
     CHECK_EQUAL(Traverser::Iterator::RR, it.next());
-    CHECK_EQUAL(rr.ssrc(), it.get_rr()->ssrc());
+    CHECK_EQUAL(rr.ssrc(), it.get_rr().ssrc());
 
-    CHECK_EQUAL(receiver_report_1.ssrc(), it.get_rr()->get_block(0).ssrc());
-    DOUBLES_EQUAL(receiver_report_1.fract_loss(), it.get_rr()->get_block(0).fract_loss(),
+    CHECK_EQUAL(receiver_report_1.ssrc(), it.get_rr().get_block(0).ssrc());
+    DOUBLES_EQUAL(receiver_report_1.fract_loss(), it.get_rr().get_block(0).fract_loss(),
                   1e-8);
-    CHECK_EQUAL(receiver_report_1.cumloss(), it.get_rr()->get_block(0).cumloss());
-    CHECK_EQUAL(receiver_report_1.last_seqnum(), it.get_rr()->get_block(0).last_seqnum());
-    CHECK_EQUAL(receiver_report_1.jitter(), it.get_rr()->get_block(0).jitter());
-    CHECK_EQUAL(receiver_report_1.last_sr(), it.get_rr()->get_block(0).last_sr());
+    CHECK_EQUAL(receiver_report_1.cumloss(), it.get_rr().get_block(0).cumloss());
+    CHECK_EQUAL(receiver_report_1.last_seqnum(), it.get_rr().get_block(0).last_seqnum());
+    CHECK_EQUAL(receiver_report_1.jitter(), it.get_rr().get_block(0).jitter());
+    CHECK_EQUAL(receiver_report_1.last_sr(), it.get_rr().get_block(0).last_sr());
     CHECK_EQUAL(receiver_report_1.delay_last_sr(),
-                it.get_rr()->get_block(0).delay_last_sr());
-    CHECK_EQUAL(receiver_report_2.ssrc(), it.get_rr()->get_block(1).ssrc());
-    DOUBLES_EQUAL(receiver_report_2.fract_loss(), it.get_rr()->get_block(1).fract_loss(),
+                it.get_rr().get_block(0).delay_last_sr());
+    CHECK_EQUAL(receiver_report_2.ssrc(), it.get_rr().get_block(1).ssrc());
+    DOUBLES_EQUAL(receiver_report_2.fract_loss(), it.get_rr().get_block(1).fract_loss(),
                   1e-8);
-    CHECK_EQUAL(receiver_report_2.cumloss(), it.get_rr()->get_block(1).cumloss());
-    CHECK_EQUAL(receiver_report_2.last_seqnum(), it.get_rr()->get_block(1).last_seqnum());
-    CHECK_EQUAL(receiver_report_2.jitter(), it.get_rr()->get_block(1).jitter());
-    CHECK_EQUAL(receiver_report_2.last_sr(), it.get_rr()->get_block(1).last_sr());
+    CHECK_EQUAL(receiver_report_2.cumloss(), it.get_rr().get_block(1).cumloss());
+    CHECK_EQUAL(receiver_report_2.last_seqnum(), it.get_rr().get_block(1).last_seqnum());
+    CHECK_EQUAL(receiver_report_2.jitter(), it.get_rr().get_block(1).jitter());
+    CHECK_EQUAL(receiver_report_2.last_sr(), it.get_rr().get_block(1).last_sr());
     CHECK_EQUAL(receiver_report_2.delay_last_sr(),
-                it.get_rr()->get_block(1).delay_last_sr());
+                it.get_rr().get_block(1).delay_last_sr());
 
     CHECK_EQUAL(Traverser::Iterator::SDES, it.next());
     SdesTraverser sdes = it.get_sdes();
@@ -380,17 +380,17 @@ TEST(rtcp, loopback_rr_sdes_xr) {
     UNSIGNED_LONGS_EQUAL(xr_tr.ssrc(), 111);
     XrTraverser::Iterator xr_it = xr_tr.iter();
     CHECK_EQUAL(XrTraverser::Iterator::RRTR_BLOCK, xr_it.next());
-    CHECK_EQUAL(ref_time.ntp(), xr_it.get_rrtr()->ntp());
+    CHECK_EQUAL(ref_time.ntp_timestamp(), xr_it.get_rrtr().ntp_timestamp());
     CHECK_EQUAL(XrTraverser::Iterator::DRLL_BLOCK, xr_it.next());
-    const header::XrDlrrBlock* pdlrr = xr_it.get_dlrr();
+    const header::XrDlrrBlock& pdlrr = xr_it.get_dlrr();
 
-    CHECK_EQUAL(2, pdlrr->num_subblocks());
-    CHECK_EQUAL(dlrr_repblock_1.ssrc(), pdlrr->get_subblock(0).ssrc());
-    CHECK_EQUAL(dlrr_repblock_1.delay_last_rr(), pdlrr->get_subblock(0).delay_last_rr());
-    CHECK_EQUAL(dlrr_repblock_1.last_rr(), pdlrr->get_subblock(0).last_rr());
-    CHECK_EQUAL(dlrr_repblock_2.ssrc(), pdlrr->get_subblock(1).ssrc());
-    CHECK_EQUAL(dlrr_repblock_2.delay_last_rr(), pdlrr->get_subblock(1).delay_last_rr());
-    CHECK_EQUAL(dlrr_repblock_2.last_rr(), pdlrr->get_subblock(1).last_rr());
+    CHECK_EQUAL(2, pdlrr.num_subblocks());
+    CHECK_EQUAL(dlrr_repblock_1.ssrc(), pdlrr.get_subblock(0).ssrc());
+    CHECK_EQUAL(dlrr_repblock_1.delay_last_rr(), pdlrr.get_subblock(0).delay_last_rr());
+    CHECK_EQUAL(dlrr_repblock_1.last_rr(), pdlrr.get_subblock(0).last_rr());
+    CHECK_EQUAL(dlrr_repblock_2.ssrc(), pdlrr.get_subblock(1).ssrc());
+    CHECK_EQUAL(dlrr_repblock_2.delay_last_rr(), pdlrr.get_subblock(1).delay_last_rr());
+    CHECK_EQUAL(dlrr_repblock_2.last_rr(), pdlrr.get_subblock(1).last_rr());
     CHECK_EQUAL(XrTraverser::Iterator::END, xr_it.next());
     CHECK_EQUAL(Traverser::Iterator::END, it.next());
 }

@@ -18,6 +18,7 @@ SdesTraverser::SdesTraverser(const core::Slice<uint8_t>& data)
     , parsed_(false)
     , packet_len_(0)
     , chunks_count_(0) {
+    roc_panic_if_msg(!data, "traverser: slice is null");
 }
 
 bool SdesTraverser::parse() {
@@ -54,7 +55,7 @@ SdesTraverser::Iterator SdesTraverser::iter() const {
                      "sdes traverser:"
                      " iter() called before parse() or parse() returned false");
 
-    SdesTraverser::Iterator iterator(*this);
+    Iterator iterator(*this);
     return iterator;
 }
 
@@ -78,7 +79,7 @@ SdesTraverser::Iterator::Iterator(const SdesTraverser& traverser)
 }
 
 SdesTraverser::Iterator::State SdesTraverser::Iterator::next() {
-    if (state_ == INVALID || state_ == END) {
+    if (state_ == END) {
         return state_;
     }
 
@@ -86,7 +87,7 @@ SdesTraverser::Iterator::State SdesTraverser::Iterator::next() {
         if (cur_chunk_ == traverser_.chunks_count_) {
             state_ = END;
         } else if ((pcur_ + sizeof(header::SdesChunkHeader)) >= data_.data_end()) {
-            state_ = INVALID;
+            state_ = END;
         } else {
             state_ = CHUNK;
             parse_chunk_();
@@ -100,7 +101,7 @@ SdesTraverser::Iterator::State SdesTraverser::Iterator::next() {
             header::SdesItemHeader* p = (header::SdesItemHeader*)pcur_;
             if ((pcur_ + sizeof(header::SdesItemHeader) + p->text_len())
                 >= data_.data_end()) {
-                state_ = INVALID;
+                state_ = END;
                 pcur_ = data_.data_end();
             } else {
                 pcur_ += sizeof(header::SdesItemHeader) + p->text_len();
@@ -117,14 +118,14 @@ SdesTraverser::Iterator::State SdesTraverser::Iterator::next() {
                 state_ = END;
             } else if (((pcur_ - data_.data()) & 0x03) != 0
                        || pcur_ >= data_.data_end()) {
-                state_ = INVALID;
+                state_ = END;
             } else {
                 cur_chunk_++;
                 if (cur_chunk_ == traverser_.chunks_count_) {
                     state_ = END;
                 } else if ((pcur_ + sizeof(header::SdesChunkHeader))
                            >= data_.data_end()) {
-                    state_ = INVALID;
+                    state_ = END;
                 } else {
                     state_ = CHUNK;
                     parse_chunk_();
@@ -132,7 +133,7 @@ SdesTraverser::Iterator::State SdesTraverser::Iterator::next() {
             }
         } else if (pcur_ >= data_.data_end()
                    || (pcur_ - data_.data()) >= (ptrdiff_t)traverser_.packet_len_) {
-            state_ = INVALID;
+            state_ = END;
         } else {
             state_ = ITEM;
             parse_item_();

@@ -75,7 +75,7 @@ public:
 
     //! Construct iterator.
     //! @pre Can be used if parse() returned true.
-    Iterator iter();
+    Iterator iter() const;
 
     //! Get number of SSRC elements in packet.
     size_t ssrc_count() const;

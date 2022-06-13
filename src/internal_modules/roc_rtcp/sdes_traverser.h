@@ -25,15 +25,14 @@ namespace rtcp {
 class SdesTraverser {
 public:
     //! Packet iterator.
-    struct Iterator {
+    class Iterator {
     public:
         //! Iterator state.
         enum State {
-            BEGIN,   //!< Iterator created.
-            CHUNK,   //!< SDES chunk.
-            ITEM,    //!< SDES item.
-            INVALID, //!< Parse failure.
-            END      //!< Parsed whole packet.
+            BEGIN, //!< Iterator created.
+            CHUNK, //!< SDES chunk.
+            ITEM,  //!< SDES item.
+            END    //!< Parsed whole packet.
         };
 
         //! Advance iterator.

@@ -193,21 +193,18 @@ public:
     }
 
     //! Get number of blocks/chunks following.
-    uint8_t counter() const {
+    size_t counter() const {
         return (count_ >> Flag_CounterShift) & Flag_CounterMask;
     }
 
     //! Set number of blocks/chunks.
-    bool set_counter(const size_t c) {
-        if (c > PacketMaxBlocks) {
-            return false;
-        }
+    void set_counter(const size_t c) {
+        roc_panic_if(c > PacketMaxBlocks);
         set_bitfield<uint8_t>(count_, (uint8_t)c, Flag_CounterShift, Flag_CounterMask);
-        return true;
     }
 
     //! Increment packet counter,
-    bool inc_counter() {
+    void inc_counter() {
         return set_counter(counter() + 1);
     }
 
@@ -272,7 +269,7 @@ public:
 //!  0                   1                   2                   3
 //!  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 //! +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
-//! |                   SSRC (SSRC of first source)                 |
+//! |                             SSRC                              |
 //! +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //! | fraction lost |       cumulative number of packets lost       |
 //! +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -321,6 +318,15 @@ private:
     uint32_t dlsr_;
 
 public:
+    ReceptionReportBlock() {
+        reset();
+    }
+
+    //! Reset to initial state (all zeros).
+    void reset() {
+        ssrc_ = losses_ = last_seq_ = jitter_ = lsr_ = dlsr_ = 0;
+    }
+
     //! Get SSRC.
     uint32_t ssrc() const {
         return core::ntoh32(ssrc_);
@@ -563,7 +569,6 @@ ROC_ATTR_PACKED_BEGIN class SenderReportPacket {
 private:
     PacketHeader header_;
 
-    //! Data source being reported.
     uint32_t ssrc_;
     NtpTimestamp ntp_;
 
@@ -607,22 +612,22 @@ public:
     }
 
     //! Get NTP timestamp.
-    packet::ntp_timestamp_t ntp() const {
+    packet::ntp_timestamp_t ntp_timestamp() const {
         return ntp_.value();
     }
 
     //! Set NTP timestamp.
-    void set_ntp(const packet::ntp_timestamp_t t) {
+    void set_ntp_timestamp(const packet::ntp_timestamp_t t) {
         ntp_.set_value(t);
     }
 
     //! Get RTP timestamp.
-    packet::timestamp_t rtp_timestamp() const {
+    uint32_t rtp_timestamp() const {
         return core::ntoh32(rtp_timestamp_);
     }
 
     //! Get RTP timestamp.
-    void set_rtp_timestamp(const packet::timestamp_t& t) {
+    void set_rtp_timestamp(const uint32_t& t) {
         rtp_timestamp_ = core::hton32(t);
     }
 
@@ -975,7 +980,7 @@ public:
 ROC_ATTR_PACKED_BEGIN class XrPacket {
 private:
     PacketHeader header_;
-    packet::source_t ssrc_;
+    uint32_t ssrc_;
 
 public:
     XrPacket() {
@@ -999,12 +1004,12 @@ public:
     }
 
     //! Get SSRC of packet originator.
-    packet::source_t ssrc() const {
+    uint32_t ssrc() const {
         return core::ntoh32(ssrc_);
     }
 
     //! Set SSRC of packet originator.
-    void set_ssrc(const packet::source_t ssrc) {
+    void set_ssrc(const uint32_t ssrc) {
         ssrc_ = core::hton32(ssrc);
     }
 } ROC_ATTR_PACKED_END;
@@ -1133,12 +1138,12 @@ public:
     }
 
     //! Get NTP timestamp.
-    packet::ntp_timestamp_t ntp() const {
+    packet::ntp_timestamp_t ntp_timestamp() const {
         return ntp_.value();
     }
 
     //! Set NTP timestamp.
-    void set_ntp(const packet::ntp_timestamp_t t) {
+    void set_ntp_timestamp(const packet::ntp_timestamp_t t) {
         ntp_.set_value(t);
     }
 } ROC_ATTR_PACKED_END;
@@ -1160,39 +1165,48 @@ public:
 //! @endcode
 ROC_ATTR_PACKED_BEGIN class XrDlrrSubblock {
 private:
-    packet::source_t ssrc_;
-    packet::timestamp_t last_rr_;
-    packet::timestamp_t delay_last_rr_;
+    uint32_t ssrc_;
+    uint32_t last_rr_;
+    uint32_t delay_last_rr_;
 
 public:
+    XrDlrrSubblock() {
+        reset();
+    }
+
+    //! Reset to initial state (all zeros).
+    void reset() {
+        ssrc_ = last_rr_ = delay_last_rr_;
+    }
+
     //! Get SSRC of receiver.
-    packet::source_t ssrc() const {
+    uint32_t ssrc() const {
         return core::ntoh32(ssrc_);
     }
 
     //! Set SSRC of receiver.
-    void set_ssrc(packet::source_t ssrc) {
+    void set_ssrc(const uint32_t ssrc) {
         ssrc_ = core::hton32(ssrc);
     }
 
     //! Get LRR.
-    packet::timestamp_t last_rr() const {
+    uint32_t last_rr() const {
         return core::ntoh32(last_rr_);
     }
 
     //! Set LRR.
-    void set_last_rr(packet::timestamp_t lastRr) {
-        last_rr_ = core::hton32(lastRr);
+    void set_last_rr(const uint32_t lrr) {
+        last_rr_ = core::hton32(lrr);
     }
 
     //! Get DLRR.
-    packet::timestamp_t delay_last_rr() const {
+    uint32_t delay_last_rr() const {
         return core::ntoh32(delay_last_rr_);
     }
 
     //! Set DLRR.
-    void set_delay_last_rr(packet::timestamp_t delayLastRr) {
-        delay_last_rr_ = core::hton32(delayLastRr);
+    void set_delay_last_rr(const uint32_t dlrr) {
+        delay_last_rr_ = core::hton32(dlrr);
     }
 } ROC_ATTR_PACKED_END;
 

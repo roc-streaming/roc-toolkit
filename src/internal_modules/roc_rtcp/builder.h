@@ -7,11 +7,12 @@
  */
 
 //! @file roc_rtcp/builder.h
-//! @brief RTCP Builder.
+//! @brief RTCP packet builder.
 
 #ifndef ROC_RTCP_BUILDER_H_
 #define ROC_RTCP_BUILDER_H_
 
+#include "roc_core/noncopyable.h"
 #include "roc_core/stddefs.h"
 #include "roc_packet/units.h"
 #include "roc_rtcp/bye_traverser.h"
@@ -22,7 +23,7 @@ namespace roc {
 namespace rtcp {
 
 //! RTCP compound packet builder.
-class Builder {
+class Builder : public core::NonCopyable<> {
 public:
     //! Initialize builder.
     //! It will write data to the given slice.
@@ -53,6 +54,29 @@ public:
 
     //! Finish RR packet.
     void end_rr();
+
+    //! @}
+
+    //! @defgroup XR
+    //! @{
+
+    //! Start XR packet inside compound RTCP packet.
+    void begin_xr(const header::XrPacket& xr);
+
+    //! Add RRTR block to current XR packet.
+    void add_xr_rrtr(const header::XrRrtrBlock& rrtr);
+
+    //! Start DLRR block inside current XR packet.
+    void begin_xr_dlrr(const header::XrDlrrBlock& dlrr);
+
+    //! Add DLRR report to current DLRR block.
+    void add_xr_dlrr_report(const header::XrDlrrSubblock& report);
+
+    //! Finish current DLRR block.
+    void end_xr_dlrr();
+
+    //! Finish current XR packet.
+    void end_xr();
 
     //! @}
 
@@ -93,47 +117,24 @@ public:
 
     //! @}
 
-    //! @defgroup XR
-    //! @{
-
-    //! Start XR packet inside compound RTCP packet.
-    void begin_xr(const header::XrPacket& xr);
-
-    //! Add RRTR block to current XR packet.
-    void add_xr_rrtr(const header::XrRrtrBlock& rrtr);
-
-    //! Start DLRR block inside current XR packet.
-    void begin_xr_dlrr(const header::XrDlrrBlock& dlrr);
-
-    //! Add DLRR report to current DLRR block.
-    void add_xr_dlrr_report(const header::XrDlrrSubblock& report);
-
-    //! Finish current DLRR block.
-    void end_xr_dlrr();
-
-    //! Finish current XR packet.
-    void end_xr();
-
-    //! @}
-
 private:
     void add_report_(const header::ReceptionReportBlock& report);
     void end_packet_();
 
     enum State {
-        SDES_HEAD,
-        SDES_CHUNK,
+        NONE,
         SR_HEAD,
         SR_REPORT,
         RR_HEAD,
         RR_REPORT,
+        XR_HEAD,
+        XR_DLRR_HEAD,
+        XR_DLRR_REPORT,
+        SDES_HEAD,
+        SDES_CHUNK,
         BYE_HEAD,
         BYE_SSRC,
-        BYE_REASON,
-        XR_BEGIN,
-        DLRR_HEAD,
-        DLRR_REPORT,
-        NONE
+        BYE_REASON
     };
 
     State state_;

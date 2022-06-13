@@ -38,11 +38,11 @@ public:
 
         //! Get RRTR block (receiver reference time).
         //! @pre Can be used if next() returned RRTR_BLOCK.
-        const header::XrRrtrBlock* get_rrtr() const;
+        const header::XrRrtrBlock& get_rrtr() const;
 
         //! Get DLRR block (delay since last receiver report).
         //! @pre Can be used if next() returned DLRR_BLOCK.
-        const header::XrDlrrBlock* get_dlrr() const;
+        const header::XrDlrrBlock& get_dlrr() const;
 
     private:
         friend class XrTraverser;
@@ -68,15 +68,14 @@ public:
     //! Get number of XR blocks in packet.
     size_t blocks_count() const;
 
-    //! Get XR packet source.
-    packet::source_t ssrc() const;
+    //! Get XR packet.
+    const header::XrPacket& packet() const;
 
 private:
     const core::Slice<uint8_t> data_;
     bool parsed_;
     size_t packet_len_;
     size_t blocks_count_;
-    packet::source_t ssrc_;
 };
 
 } // namespace rtcp

@@ -7,62 +7,93 @@
  */
 
 #include "roc_rtcp/traverser.h"
+#include "roc_core/log.h"
 #include "roc_rtcp/headers.h"
 
 namespace roc {
 namespace rtcp {
 
-namespace {
-
-// Check validness of all packets inside this compound packet.
-//
-// RFC3550, Page 82:
-// o  RTP version field must equal 2.
-//
-// o  The payload type field of the first RTCP packet in a compound
-//    packet must be equal to SR or RR.
-//
-// o  The padding bit (P) should be zero for the first packet of a
-//    compound RTCP packet because padding should only be applied, if it
-//    is needed, to the last packet.
-//
-// o  The length fields of the individual RTCP packets must add up to
-//    the overall length of the compound RTCP packet as received.  This
-//    is a fairly strong check.
-bool validate(const core::Slice<uint8_t>& data) {
-    bool res = true;
-    for (size_t i = 0; res && i < data.size();) {
-        const header::PacketHeader& header = *(header::PacketHeader*)&data[i];
-        res = header.version() == header::V2;
-        res = res
-            && (header.type() == header::RTCP_SDES || header.type() == header::RTCP_SR
-                || header.type() == header::RTCP_RR || header.type() == header::RTCP_BYE
-                || header.type() == header::RTCP_APP || header.type() == header::RTCP_XR);
-
-        const size_t packet_sz = header.len_bytes();
-        if ((i + packet_sz) > data.size()) {
-            res = false;
-            break;
-        } else {
-            i += packet_sz;
-        }
-        // Check alignment.
-        res = res && (i & 0x03) == 0;
-    }
-    return res;
+Traverser::Traverser(const core::Slice<uint8_t>& data)
+    : data_(data)
+    , parsed_(false) {
+    roc_panic_if_msg(!data, "traverser: slice is null");
 }
 
-} // namespace
+bool Traverser::validate() const {
+    // RFC 3550, Page 82:
+    //
+    // o  RTP version field must equal 2.
+    //
+    // o  The payload type field of the first RTCP packet in a compound
+    //    packet must be equal to SR or RR.
+    //
+    // o  The padding bit (P) should be zero for the first packet of a
+    //    compound RTCP packet because padding should only be applied, if it
+    //    is needed, to the last packet.
+    //
+    // o  The length fields of the individual RTCP packets must add up to
+    //    the overall length of the compound RTCP packet as received. This
+    //    is a fairly strong check.
 
-Traverser::Traverser(const core::Slice<uint8_t>& buffer)
-    : data_(buffer)
-    , parsed_(false) {
+    if (data_.size() < sizeof(header::PacketHeader)) {
+        roc_log(LogDebug, "rtcp traverser: bad packet: size<%d (rtcp header)",
+                (int)sizeof(header::PacketHeader));
+        return false;
+    }
+
+    size_t offset = 0;
+    size_t pkt_index = 0;
+
+    while (offset < data_.size()) {
+        const header::PacketHeader& header = *(const header::PacketHeader*)&data_[offset];
+
+        if (header.version() != header::V2) {
+            roc_log(LogDebug, "rtcp traverser: bad version: get=%d expected=%d",
+                    (int)header.version(), (int)header::V2);
+            return false;
+        }
+
+        if (pkt_index == 0) {
+            if (header.type() != header::RTCP_SR && header.type() != header::RTCP_RR) {
+                roc_log(LogDebug,
+                        "rtcp traverser:"
+                        " bad packet: first subpacket should be sr or rr");
+                return false;
+            }
+            if (header.has_padding()) {
+                roc_log(LogDebug,
+                        "rtcp traverser:"
+                        " bad packet: first subpacket should not have padding");
+                return false;
+            }
+        }
+
+        offset += header.len_bytes();
+
+        if (offset > data_.size()) {
+            roc_log(LogDebug,
+                    "rtcp traverser:"
+                    " bad packet: subpacket length out of bounds");
+            return false;
+        }
+
+        if (offset & 0x03) {
+            roc_log(LogDebug,
+                    "rtcp traverser:"
+                    " bad packet: subpacket is not aligned");
+            return false;
+        }
+
+        pkt_index++;
+    }
+
+    return true;
 }
 
 bool Traverser::parse() {
     parsed_ = false;
 
-    if (!validate(data_)) {
+    if (data_.size() < sizeof(header::PacketHeader)) {
         return false;
     }
 
@@ -70,12 +101,12 @@ bool Traverser::parse() {
     return true;
 }
 
-Traverser::Iterator Traverser::iter() {
+Traverser::Iterator Traverser::iter() const {
     roc_panic_if_msg(!parsed_,
                      "traverser:"
                      " iter() called before parse() or parse() returned false");
 
-    Traverser::Iterator res(data_);
+    Iterator res(*this);
     return res;
 }
 
@@ -102,8 +133,7 @@ void Traverser::Iterator::next_packet_() {
         skip_packet_();
     }
 
-    uint8_t* p = (uint8_t*)&data_[cur_i_];
-    cur_pkt_header_ = (header::PacketHeader*)p;
+    cur_pkt_header_ = (header::PacketHeader*)&data_[cur_i_];
     cur_pkt_len_ = cur_pkt_header_->len_bytes();
 
     if (cur_i_ + cur_pkt_len_ > data_.size()) {
@@ -114,7 +144,7 @@ void Traverser::Iterator::next_packet_() {
 
     cur_slice_ = data_.subslice(cur_i_, cur_i_ + cur_pkt_len_);
 
-    switch ((uint8_t)cur_pkt_header_->type()) {
+    switch (cur_pkt_header_->type()) {
     case header::RTCP_SR:
         state_ = SR;
         return;
@@ -144,16 +174,16 @@ void Traverser::Iterator::skip_packet_() {
     cur_i_ = (size_t)(cur_slice_.data_end() - data_.data());
 }
 
-const header::SenderReportPacket* Traverser::Iterator::get_sr() const {
+const header::SenderReportPacket& Traverser::Iterator::get_sr() const {
     roc_panic_if_not(state_ == SR);
     header::SenderReportPacket* sr = (header::SenderReportPacket*)cur_slice_.data();
-    return sr;
+    return *sr;
 }
 
-const header::ReceiverReportPacket* Traverser::Iterator::get_rr() const {
+const header::ReceiverReportPacket& Traverser::Iterator::get_rr() const {
     roc_panic_if_not(state_ == RR);
     header::ReceiverReportPacket* rr = (header::ReceiverReportPacket*)cur_slice_.data();
-    return rr;
+    return *rr;
 }
 
 XrTraverser Traverser::Iterator::get_xr() const {

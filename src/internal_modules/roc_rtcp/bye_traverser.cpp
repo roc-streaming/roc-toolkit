@@ -20,6 +20,7 @@ ByeTraverser::ByeTraverser(const core::Slice<uint8_t>& data)
     , parsed_(false)
     , packet_len_(0)
     , ssrc_count_(0) {
+    roc_panic_if_msg(!data, "bye traverser: slice is null");
 }
 
 bool ByeTraverser::parse() {
@@ -51,7 +52,7 @@ bool ByeTraverser::parse() {
     return true;
 }
 
-ByeTraverser::Iterator ByeTraverser::iter() {
+ByeTraverser::Iterator ByeTraverser::iter() const {
     roc_panic_if_msg(!parsed_,
                      "bye traverser:"
                      " iter() called before parse() or parse() returned false");

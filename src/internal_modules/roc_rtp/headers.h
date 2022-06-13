@@ -211,7 +211,7 @@ public:
     }
 
     //! Get CSRC.
-    uint32_t csrc(size_t index) const {
+    uint32_t get_csrc(size_t index) const {
         roc_panic_if(index >= num_csrc());
         return core::ntoh32(ssrc_[index + 1]);
     }
