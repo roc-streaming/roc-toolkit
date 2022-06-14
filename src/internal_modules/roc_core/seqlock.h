@@ -24,6 +24,11 @@ namespace core {
 //! May wrap.
 typedef uint32_t seqlock_version_t;
 
+//! Check if given seqlock version corresponds to dirty value.
+inline bool seqlock_version_is_dirty(seqlock_version_t ver) {
+    return (ver & 1) != 0;
+}
+
 //! Seqlock.
 //!
 //! Provides safe concurrent access to a single value.

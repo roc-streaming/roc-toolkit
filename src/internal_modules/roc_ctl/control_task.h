@@ -119,8 +119,17 @@ private:
         FlagResumed = (1 << 3),
 
         // task was cancelled
-        FlagCancelled = (1 << 4)
+        FlagCancelled = (1 << 4),
+
+        // task destructor was called
+        // seeing this flag indicates use-after-free bug
+        FlagDestroyed = (1 << 5)
     };
+
+    // validate task properties
+    static void validate_flags(unsigned task_flags);
+    static void validate_deadline(core::nanoseconds_t deadline,
+                                  core::seqlock_version_t version);
 
     // scheduling state of the task
     core::Atomic<uint8_t> state_;

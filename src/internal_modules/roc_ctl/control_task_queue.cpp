@@ -143,7 +143,12 @@ void ControlTaskQueue::setup_task_(ControlTask& task,
 void ControlTaskQueue::request_resume_(ControlTask& task) {
     // If the task is already being resumed, do nothing.
     // Otherwise, mark task as being resumed.
-    if (task.flags_.fetch_or(ControlTask::FlagResumed) & ControlTask::FlagResumed) {
+    const unsigned task_flags = task.flags_.fetch_or(ControlTask::FlagResumed);
+
+    // Catch bugs.
+    ControlTask::validate_flags(task_flags);
+
+    if (task_flags & ControlTask::FlagResumed) {
         return;
     }
 
@@ -192,6 +197,9 @@ void ControlTaskQueue::request_renew_guarded_(ControlTask& task,
     core::seqlock_version_t version = 0;
     task.renewed_deadline_.exclusive_store_ver(deadline, version);
 
+    // Catch bugs.
+    ControlTask::validate_deadline(deadline, version);
+
     if (deadline < 0) {
         // We want to cancel the task and it's not sleeping, thus we have nothing to do:
         // if it's not pausing, it will be anyway completed soon, if it's pausing, it
@@ -204,7 +212,12 @@ void ControlTaskQueue::request_renew_guarded_(ControlTask& task,
         // Do nothing if the task is paused.
         // After the task resumes and completes, it will found out that
         // FlagRescheduleRequested was set and handle the renewed deadline.
-        if (task.flags_ & ControlTask::FlagPaused) {
+        const unsigned task_flags = task.flags_;
+
+        // Catch bugs.
+        ControlTask::validate_flags(task_flags);
+
+        if (task_flags & ControlTask::FlagPaused) {
             return;
         }
 
@@ -306,7 +319,7 @@ ControlTask::State ControlTaskQueue::renew_state_(ControlTask& task,
     }
 
     if (!task.state_.compare_exchange(ControlTask::StateReady, state)) {
-        roc_panic("control task queue: unexpected non-ready task");
+        roc_panic("control task queue: unexpected non-ready task in renew");
     }
 
     return state;
@@ -316,6 +329,9 @@ bool ControlTaskQueue::renew_scheduling_(ControlTask& task,
                                          unsigned task_flags,
                                          core::nanoseconds_t deadline,
                                          core::seqlock_version_t version) {
+    // Catch bugs.
+    ControlTask::validate_deadline(deadline, version);
+
     bool is_ready = false;
 
     if (deadline >= 0) {
@@ -388,10 +404,8 @@ void ControlTaskQueue::cancel_task_(ControlTask& task, core::seqlock_version_t v
     // This should not happend. If the task was already cancelled, its completer was
     // already called and the task may be already destroyed. The upper code should
     // prevent cancelling a task twice even if the user calls async_cancel() twice.
-    if (task.effective_deadline_ == -1) {
-        roc_panic(
-            "control task queue: expected pending task, got already cancelled task");
-    }
+    roc_panic_if_msg(task.effective_deadline_ == -1,
+                     "control task queue: unexpected already cancelled task in cancel");
 
     if (paused_queue_.contains(task)) {
         paused_queue_.remove(task);
@@ -446,6 +460,9 @@ void ControlTaskQueue::complete_task_(ControlTask& task,
             !!(task_flags & ControlTask::FlagSucceeded),
             !!(task_flags & ControlTask::FlagCancelled), int(task.completer_ != NULL));
 
+    roc_panic_if_msg(task_flags & ControlTask::FlagPaused,
+                     "control task queue: unexpected paused task in complete");
+
     IControlTaskCompleter* completer = task.completer_;
 
     task.state_.compare_exchange(from_state, ControlTask::StateCompleting);
@@ -492,7 +509,8 @@ void ControlTaskQueue::wait_task_(ControlTask& task) {
 
     // Protection from concurrent waits.
     if (!task.wait_guard_.compare_exchange(false, true)) {
-        roc_panic("control task queue: can't call wait() concurrently for the same task");
+        roc_panic(
+            "control task queue: concurrent wait() for the same task not supported");
     }
 
     // Attach a semaphore to the task, if it's not attached yet.
@@ -540,14 +558,20 @@ void ControlTaskQueue::execute_task_(ControlTask& task) {
 
     roc_panic_if_not(task.effective_deadline_ >= 0);
 
-    roc_panic_if_not(task.executor_);
-    roc_panic_if_not(task.func_);
+    roc_panic_if_msg(!task.executor_, "control task queue: task executor is null");
+    roc_panic_if_msg(!task.func_, "control task queue: task function is null");
 
     // Clear resume flag because we ignore all resume requests issued before execution
     // and should track resume requests issues during or after execution. Also clear
     // success and cancellation flags.
-    task.flags_ &= uint8_t(~(ControlTask::FlagSucceeded | ControlTask::FlagCancelled
-                             | ControlTask::FlagResumed));
+    {
+        const unsigned task_flags =
+            (task.flags_ &=
+             uint8_t(~(ControlTask::FlagSucceeded | ControlTask::FlagCancelled
+                       | ControlTask::FlagResumed)));
+        // Catch bugs.
+        ControlTask::validate_flags(task_flags);
+    }
 
     // Actually execute the task.
     const ControlTaskResult result = task.executor_->execute_task(task, task.func_);
@@ -558,6 +582,9 @@ void ControlTaskQueue::execute_task_(ControlTask& task) {
         // Clear all flags, including pause flag, and probably set success flag.
         const unsigned task_flags = task.flags_ =
             (result == ControlTaskSuccess ? ControlTask::FlagSucceeded : 0);
+
+        // Catch bugs.
+        ControlTask::validate_flags(task_flags);
 
         // Check if the task was renewed since it was fetched from the queue.
         // It's important to do this only after clearing the pause flag above, because
@@ -583,7 +610,10 @@ void ControlTaskQueue::execute_task_(ControlTask& task) {
     case ControlTaskPause: {
         // Enable pause flag.
         // Since now request_renew_guarded_() wont add task to the ready queue.
-        task.flags_ |= ControlTask::FlagPaused;
+        const unsigned task_flags = (task.flags_ |= ControlTask::FlagPaused);
+
+        // Catch bugs.
+        ControlTask::validate_flags(task_flags);
 
         // Move task to sleeping state and add to pause queue.
         pause_task_(task, ControlTask::StateProcessing);
@@ -606,7 +636,10 @@ void ControlTaskQueue::execute_task_(ControlTask& task) {
 
     case ControlTaskContinue: {
         // Disable pause flag, so that the task can be scheduled normally.
-        task.flags_ &= uint8_t(~ControlTask::FlagPaused);
+        const unsigned task_flags = (task.flags_ &= uint8_t(~ControlTask::FlagPaused));
+
+        // Catch bugs.
+        ControlTask::validate_flags(task_flags);
 
         // The task wants to be executed again, so we just re-add it the ready queue.
         // We don't execute it immediately right here to give other tasks a chance to
@@ -675,6 +708,9 @@ ControlTask* ControlTaskQueue::fetch_ready_task_() {
         }
 
         const unsigned task_flags = task->flags_;
+
+        // Catch bugs.
+        ControlTask::validate_flags(task_flags);
 
         core::nanoseconds_t task_deadline = 0;
         core::seqlock_version_t task_version = 0;
