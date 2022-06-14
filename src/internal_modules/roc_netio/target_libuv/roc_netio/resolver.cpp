@@ -27,7 +27,7 @@ bool Resolver::async_resolve(ResolverRequest& req) {
 
     req.resolved_address.clear();
 
-    if (!req.endpoint_uri->check(address::EndpointUri::Subset_Full)) {
+    if (!req.endpoint_uri->verify(address::EndpointUri::Subset_Full)) {
         roc_log(LogError, "resolver: invalid endpoint");
         req.success = false;
         return false;

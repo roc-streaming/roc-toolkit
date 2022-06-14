@@ -34,8 +34,14 @@ public:
     //! Initialize empty URI.
     explicit EndpointUri(core::IAllocator&);
 
+    //! Check if URI is equivalent to another URI.
+    bool is_equal(const EndpointUri& other) const;
+
+    //! Copy data from another URI.
+    bool assign(const EndpointUri& other);
+
     //! Check given subset of the URI.
-    bool check(Subset subset) const;
+    bool verify(Subset subset) const;
 
     //! Clear given subset of the URI.
     void clear(Subset subset);
@@ -43,20 +49,17 @@ public:
     //! Invalidate given subset of the URI.
     void invalidate(Subset subset);
 
-    //! Protocol ID (URI scheme).
-    Protocol proto() const;
-
     //! Set protocol ID (URI scheme).
     bool set_proto(Protocol);
+
+    //! Protocol ID (URI scheme).
+    Protocol proto() const;
 
     //! Get protocol ID (URI scheme).
     bool get_proto(Protocol& proto) const;
 
     //! Get URI proto.
     bool format_proto(core::StringBuilder& dst) const;
-
-    //! Hostname or IP address.
-    const char* host() const;
 
     //! Set URI host.
     //! String should be zero-terminated.
@@ -66,14 +69,17 @@ public:
     //! String should not be zero-terminated.
     bool set_host(const char* str, size_t str_len);
 
+    //! Hostname or IP address.
+    const char* host() const;
+
     //! Get URI host.
     bool format_host(core::StringBuilder& dst) const;
 
-    //! TCP or UDP port.
-    int port() const;
-
     //! Set port.
     bool set_port(int);
+
+    //! TCP or UDP port.
+    int port() const;
 
     //! Get URI port.
     bool get_port(int& port) const;
@@ -84,25 +90,40 @@ public:
     //! @returns NULL if both port and default port are not set.
     const char* service() const;
 
-    //! Decoded path.
-    const char* path() const;
+    //! Set decoded URI path.
+    bool set_path(const char* str);
 
-    //! Set URI path.
+    //! Set decoded URI path.
+    //! String should not be zero-terminated.
+    bool set_path(const char* str, size_t str_len);
+
+    //! Set encoded URI path.
+    //! String should be percent-encoded.
+    bool set_encoded_path(const char* str);
+
+    //! Set encoded URI path.
     //! String should be percent-encoded.
     //! String should not be zero-terminated.
     bool set_encoded_path(const char* str, size_t str_len);
+
+    //! Decoded path.
+    const char* path() const;
 
     //! Get URI path.
     //! String will be percent-encoded.
     bool format_encoded_path(core::StringBuilder& dst) const;
 
-    //! Raw query.
-    const char* encoded_query() const;
+    //! Set query.
+    //! String should be percent-encoded.
+    bool set_encoded_query(const char* str);
 
     //! Set query.
     //! String should be percent-encoded.
     //! String should not be zero-terminated.
     bool set_encoded_query(const char* str, size_t str_len);
+
+    //! Raw query.
+    const char* encoded_query() const;
 
     //! Get URI query.
     //! String will be percent-encoded.

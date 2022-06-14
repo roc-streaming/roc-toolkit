@@ -152,7 +152,7 @@ bool Sender::connect(address::Interface iface, const address::EndpointUri& uri) 
 
     roc_panic_if_not(valid());
 
-    if (!uri.check(address::EndpointUri::Subset_Full)) {
+    if (!uri.verify(address::EndpointUri::Subset_Full)) {
         roc_log(LogError, "sender peer: invalid uri");
         return false;
     }

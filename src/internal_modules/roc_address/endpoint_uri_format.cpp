@@ -16,7 +16,7 @@ namespace address {
 bool format_endpoint_uri(const EndpointUri& u,
                          EndpointUri::Subset subset,
                          core::StringBuilder& dst) {
-    if (!u.check(subset)) {
+    if (!u.verify(subset)) {
         return false;
     }
 

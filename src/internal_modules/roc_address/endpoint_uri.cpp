@@ -9,9 +9,21 @@
 #include "roc_address/endpoint_uri.h"
 #include "roc_address/pct.h"
 #include "roc_address/protocol_map.h"
+#include "roc_core/stddefs.h"
 
 namespace roc {
 namespace address {
+
+namespace {
+
+bool safe_strcmp(const char* a, const char* b) {
+    if (a == NULL || b == NULL) {
+        return a == b;
+    }
+    return strcmp(a, b) == 0;
+}
+
+} // namespace
 
 EndpointUri::EndpointUri(core::IAllocator& allocator)
     : invalid_parts_(0)
@@ -21,7 +33,63 @@ EndpointUri::EndpointUri(core::IAllocator& allocator)
     clear(Subset_Full);
 }
 
-bool EndpointUri::check(Subset subset) const {
+bool EndpointUri::is_equal(const EndpointUri& other) const {
+    if (invalid_parts_ != 0 || other.invalid_parts_ != 0) {
+        return false;
+    }
+
+    if (proto() != other.proto()) {
+        return false;
+    }
+
+    if (!safe_strcmp(host(), other.host())) {
+        return false;
+    }
+
+    if (port() != other.port()) {
+        return false;
+    }
+
+    if (!safe_strcmp(path(), other.path())) {
+        return false;
+    }
+
+    if (!safe_strcmp(encoded_query(), other.encoded_query())) {
+        return false;
+    }
+
+    return true;
+}
+
+bool EndpointUri::assign(const EndpointUri& other) {
+    clear(Subset_Full);
+
+    invalidate(Subset_Full);
+
+    if (!set_proto(other.proto())) {
+        return false;
+    }
+
+    if (!set_host(other.host())) {
+        return false;
+    }
+
+    if (!set_port(other.port())) {
+        return false;
+    }
+
+    if (!set_path(other.path())) {
+        return false;
+    }
+
+    if (!set_encoded_query(other.encoded_query())) {
+        return false;
+    }
+
+    return true;
+}
+
+bool EndpointUri::verify(Subset subset) const {
     if (subset == Subset_Resource) {
         if ((invalid_parts_ & (PartPath | PartQuery)) != 0) {
             roc_log(LogError, "invalid endpoint uri: contains invalid parts");
@@ -97,25 +165,6 @@ void EndpointUri::invalidate(Subset subset) {
     invalid_parts_ |= (PartPath | PartQuery);
 }
 
-bool EndpointUri::part_is_valid_(Part part) const {
-    return (invalid_parts_ & part) == 0;
-}
-
-void EndpointUri::set_valid_(Part part) {
-    invalid_parts_ &= ~part;
-}
-
-void EndpointUri::set_invalid_(Part part) {
-    invalid_parts_ |= part;
-}
-
-Protocol EndpointUri::proto() const {
-    if (!part_is_valid_(PartProto)) {
-        return Proto_None;
-    }
-    return proto_;
-}
-
 bool EndpointUri::set_proto(Protocol proto) {
     if (ProtocolMap::instance().find_proto_by_id(proto) == NULL) {
         set_invalid_(PartProto);
@@ -134,6 +183,13 @@ bool EndpointUri::set_proto(Protocol proto) {
 
     set_valid_(PartProto);
     return true;
+}
+
+Protocol EndpointUri::proto() const {
+    if (!part_is_valid_(PartProto)) {
+        return Proto_None;
+    }
+    return proto_;
 }
 
 bool EndpointUri::get_proto(Protocol& proto) const {
@@ -159,26 +215,13 @@ bool EndpointUri::format_proto(core::StringBuilder& dst) const {
     return true;
 }
 
-const char* EndpointUri::host() const {
-    if (!part_is_valid_(PartHost)) {
-        return "";
-    }
-    return host_.c_str();
-}
-
 bool EndpointUri::set_host(const char* str) {
     if (!str) {
         set_invalid_(PartHost);
         return false;
     }
 
-    if (!host_.assign(str) || host_.is_empty()) {
-        set_invalid_(PartHost);
-        return false;
-    }
-
-    set_valid_(PartHost);
-    return true;
+    return set_host(str, strlen(str));
 }
 
 bool EndpointUri::set_host(const char* str, size_t str_len) {
@@ -196,19 +239,19 @@ bool EndpointUri::set_host(const char* str, size_t str_len) {
     return true;
 }
 
+const char* EndpointUri::host() const {
+    if (!part_is_valid_(PartHost)) {
+        return "";
+    }
+    return host_.c_str();
+}
+
 bool EndpointUri::format_host(core::StringBuilder& dst) const {
     if (!part_is_valid_(PartHost)) {
         return false;
     }
     dst.append_str(host_.c_str());
     return true;
-}
-
-int EndpointUri::port() const {
-    if (!part_is_valid_(PartPort)) {
-        return -1;
-    }
-    return port_;
 }
 
 bool EndpointUri::set_port(int port) {
@@ -241,6 +284,13 @@ bool EndpointUri::set_port(int port) {
     return true;
 }
 
+int EndpointUri::port() const {
+    if (!part_is_valid_(PartPort)) {
+        return -1;
+    }
+    return port_;
+}
+
 bool EndpointUri::get_port(int& port) const {
     if (!part_is_valid_(PartPort) || port_ == -1) {
         return false;
@@ -255,6 +305,125 @@ const char* EndpointUri::service() const {
         return service_;
     }
     return NULL;
+}
+
+bool EndpointUri::set_path(const char* str) {
+    if (!str) {
+        path_.clear();
+        set_valid_(PartPath);
+        return true;
+    }
+
+    return set_path(str, strlen(str));
+}
+
+bool EndpointUri::set_path(const char* str, size_t str_len) {
+    if (!str || str_len < 1) {
+        path_.clear();
+        set_valid_(PartPath);
+        return true;
+    }
+
+    if (!path_.assign_range(str, str_len)) {
+        set_invalid_(PartPath);
+        return false;
+    }
+
+    set_valid_(PartPath);
+    return true;
+}
+
+bool EndpointUri::set_encoded_path(const char* str) {
+    if (!str) {
+        path_.clear();
+        set_valid_(PartPath);
+        return true;
+    }
+
+    return set_encoded_path(str, strlen(str));
+}
+
+bool EndpointUri::set_encoded_path(const char* str, size_t str_len) {
+    if (!str || str_len < 1) {
+        path_.clear();
+        set_valid_(PartPath);
+        return true;
+    }
+
+    if (!path_.grow(str_len)) {
+        set_invalid_(PartPath);
+        return false;
+    }
+
+    core::StringBuilder b(path_);
+
+    if (!pct_decode(b, str, str_len)) {
+        set_invalid_(PartPath);
+        return false;
+    }
+
+    if (!b.ok()) {
+        set_invalid_(PartPath);
+        return false;
+    }
+
+    set_valid_(PartPath);
+    return true;
+}
+
+const char* EndpointUri::path() const {
+    if (!part_is_valid_(PartPath) || path_.is_empty()) {
+        return NULL;
+    }
+    return path_.c_str();
+}
+
+bool EndpointUri::format_encoded_path(core::StringBuilder& dst) const {
+    if (!part_is_valid_(PartPath) || path_.is_empty()) {
+        return false;
+    }
+    return pct_encode(dst, path_.c_str(), path_.len(), PctNonPath);
+}
+
+bool EndpointUri::set_encoded_query(const char* str) {
+    if (!str) {
+        query_.clear();
+        set_valid_(PartQuery);
+        return true;
+    }
+
+    return set_encoded_query(str, strlen(str));
+}
+
+bool EndpointUri::set_encoded_query(const char* str, size_t str_len) {
+    if (!str || str_len < 1) {
+        query_.clear();
+        set_valid_(PartQuery);
+        return true;
+    }
+
+    if (!query_.assign_range(str, str_len)) {
+        set_invalid_(PartQuery);
+        return false;
+    }
+
+    set_valid_(PartQuery);
+    return true;
+}
+
+const char* EndpointUri::encoded_query() const {
+    if (!part_is_valid_(PartQuery) || query_.is_empty()) {
+        return NULL;
+    }
+    return query_.c_str();
+}
+
+bool EndpointUri::format_encoded_query(core::StringBuilder& dst) const {
+    if (!part_is_valid_(PartQuery) || query_.is_empty()) {
+        return false;
+    }
+    dst.append_str(query_.c_str());
+    return true;
 }
 
 void EndpointUri::set_service_from_port_(int port) {
@@ -279,77 +448,16 @@ bool EndpointUri::set_service_from_proto_(Protocol proto) {
     return true;
 }
 
-const char* EndpointUri::path() const {
-    if (!part_is_valid_(PartPath) || path_.is_empty()) {
-        return NULL;
-    }
-    return path_.c_str();
+bool EndpointUri::part_is_valid_(Part part) const {
+    return (invalid_parts_ & part) == 0;
 }
 
-bool EndpointUri::set_encoded_path(const char* str, size_t str_len) {
-    if (!str || str_len < 1) {
-        path_.clear();
-        set_valid_(PartPath);
-        return true;
-    }
-
-    if (!path_.grow(str_len + 1)) {
-        set_invalid_(PartPath);
-        return false;
-    }
-
-    core::StringBuilder b(path_);
-
-    if (!pct_decode(b, str, str_len)) {
-        set_invalid_(PartPath);
-        return false;
-    }
-
-    if (!b.ok()) {
-        set_invalid_(PartPath);
-        return false;
-    }
-
-    set_valid_(PartPath);
-    return true;
+void EndpointUri::set_valid_(Part part) {
+    invalid_parts_ &= ~part;
 }
 
-bool EndpointUri::format_encoded_path(core::StringBuilder& dst) const {
-    if (!part_is_valid_(PartPath) || path_.is_empty()) {
-        return false;
-    }
-    return pct_encode(dst, path_.c_str(), path_.len(), PctNonPath);
-}
-
-const char* EndpointUri::encoded_query() const {
-    if (!part_is_valid_(PartQuery) || query_.is_empty()) {
-        return NULL;
-    }
-    return query_.c_str();
-}
-
-bool EndpointUri::set_encoded_query(const char* str, size_t str_len) {
-    if (!str || str_len < 1) {
-        query_.clear();
-        set_valid_(PartQuery);
-        return true;
-    }
-
-    if (!query_.assign_range(str, str_len)) {
-        set_invalid_(PartQuery);
-        return false;
-    }
-
-    set_valid_(PartQuery);
-    return true;
-}
-
-bool EndpointUri::format_encoded_query(core::StringBuilder& dst) const {
-    if (!part_is_valid_(PartQuery) || query_.is_empty()) {
-        return false;
-    }
-    dst.append_str(query_.c_str());
-    return true;
+void EndpointUri::set_invalid_(Part part) {
+    invalid_parts_ |= part;
 }
 
 } // namespace address

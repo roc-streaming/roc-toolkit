@@ -152,7 +152,7 @@ bool parse_endpoint_uri_imp(const char* str, EndpointUri::Subset subset, Endpoin
         return false;
     }
 
-    if (!result.check(subset)) {
+    if (!result.verify(subset)) {
         roc_log(LogError, "parse endpoint uri: invalud uri");
         return false;
     }
