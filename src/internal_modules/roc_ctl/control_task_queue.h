@@ -32,6 +32,8 @@ namespace ctl {
 //! of tasks for immediate or delayed execution on the background thread, as well
 //! as lock-free task cancellation and re-scheduling (changing deadline).
 //!
+//! It also supports tasks to be paused and resumed. Task resuming is lock-free too.
+//!
 //! Note that those operations are lock-free only if core::Timer::try_set_deadline()
 //! is so, which however is true on modern platforms.
 //!
@@ -45,17 +47,21 @@ namespace ctl {
 //! network and pipeline threads, which should never block and use the task queue to
 //! schedule low-priority delayed work.
 //!
-//! The implementation uses two queues internally:
+//! The implementation uses three queues internally:
 //!
 //!  - ready_queue_ - a lock-free queue of tasks of three kinds:
-//!    - tasks to be executed as soon as possible (i.e. with zero deadline)
+//!    - tasks to be resumed after pause (flags_ & FlagResumed != 0)
+//!    - tasks to be executed as soon as possible (renewed_deadline_ == 0)
 //!    - tasks to be re-scheduled with another deadline (renewed_deadline_ > 0)
 //!    - tasks to be cancelled                          (renewed_deadline_ < 0)
 //!
 //!  - sleeping_queue_ - a sorted queue of tasks with non-zero deadline, scheduled for
 //!    execution in future; the task at the head has the smallest (nearest) deadline;
 //!
-//! task_mutex_ should be acquired to process tasks and/or to access sleeping_queue_.
+//!  - pause_queue_ - an unsorted queue to keep track of all currently paused tasks.
+//!
+//! task_mutex_ should be acquired to process tasks and/or to access sleeping_queue_
+//! and pause_queue_, as well as non-atomic task fields.
 //!
 //! wakeup_timer_ (core::Timer) is used to set or wait for the next wakeup time of the
 //! background thread. This time is set to zero when ready_queue_ is non-empty, otherwise
@@ -68,17 +74,21 @@ namespace ctl {
 //!
 //!  - If the event loop thread is sleeping and the task_mutex_ is free, we can acquire
 //!    the mutex and complete the operation in-place by manipulating sleeping_queue_
-//!    under the mutex.
+//!    under the mutex, without bothering event loop thread. This can be done only if
+//!    we're changing task scheduling and not going to execute it right now.
 //!
 //!  - Otherwise, we push the task to ready_queue_ (which has lock-free push), set
-//!    the timer wakeup time to zero (to ensure that the background thread wont go to
-//!    sleep), and return, leaving the completion of the operarion to the background
-//!    thread. The background will fetch the task from ready_queue_ soon and complete
-//!    the operation by manipulating the sleeping_queue_.
+//!    the timer wakeup time to zero (to ensure that the event loop thread wont go to
+//!    sleep), and return, leaving the completion of the operarion to the event loop
+//!    thread. The event loop thread will fetch the task from ready_queue_ soon and
+//!    complete the operation by manipulating the sleeping_queue_.
 //!
 //! The current task state is defined by its atomic field "state_". Various task queue
 //! operations move task from one state to another. The move is always performed using
 //! atomic CAS or exchange to handle concurrent lock-free updates correctly.
+//!
+//! There is also "flags_" field that provides additional information about task that is
+//! preserved accross transitions between states; for example that task is being resumed.
 //!
 //! Here are some example flows of the task states:
 //! @code
@@ -91,6 +101,10 @@ namespace ctl {
 //!        -> StateSleeping
 //!        -> StateProcessing -> StateCompleting -> StateCompleted
 //!
+//!    resume():
+//!      StateSleeping -> StateReady
+//!        -> StateProcessing -> StateCompleting -> StateCompleted
+//!
 //!    async_cancel():
 //!      StateSleeping -> StateReady
 //!        -> StateCancelling -> StateCompleting -> StateCompleted
@@ -100,9 +114,9 @@ namespace ctl {
 //!  - StateReady: task is added to the ready queue for execution or renewal,
 //!                or probably is currently being renewed in-place
 //!  - StateSleeping: task renewal is complete and the task was put into the sleeping
-//!                   queue because it was put to ready queue for re-scheduling
+//!                   queue to wait its deadline, or to paused queue to wait resume
 //!  - StateCancelling: task renewal is complete and the task is being cancelled
-//!                     because it was put to ready queue for cancallation
+//!                     because it was put to ready queue for cancellation
 //!  - StateProcessing: task is being processed after fetching it either from ready
 //!                     queue (if it was put there for execution) or sleeping queue
 //!  - StateCompleting: task processing is complete and the task is being completed
@@ -125,57 +139,76 @@ public:
 
     //! Enqueue a task for asynchronous execution as soon as possible.
     //!
-    //! If the task is completed, it becomes pending.
-    //! If the task is already pending, its scheduled time is changed.
-    //! If the task is executing currently, it will be re-scheduled after it completes.
-    //!
-    //! The task should not be destroyed until the completer is called, if it's present.
-    //! The task will be executed asynchronously as soon as possible.
-    //!
-    //! The @p executor is used to execute the task method.
-    //! The @p completer is invoked on event loop thread after the task completes.
-    //! Completer should be non-blocking.
+    //! This is like schedule_at(), but the deadline is "as soon as possible".
     void schedule(ControlTask& task,
                   IControlTaskExecutor& executor,
                   IControlTaskCompleter* completer);
 
     //! Enqueue a task for asynchronous execution at given point of time.
     //!
-    //! If the task is completed, it becomes pending.
-    //! If the task is already pending, its scheduled time is changed.
-    //! If the task is executing currently, it will be re-scheduled after it completes.
-    //!
-    //! The task should not be destroyed until the completer is called, if it's present.
-    //! The task will be executed asynchronously after deadline expires.
+    //! - If the task is already completed, it's scheduled with given deadline.
+    //! - If the task is sleeping and waiting for deadline, it's deadline is updated.
+    //! - If the task is in processing, completion or cancellation phase, it's scheduled
+    //!   to be executed again after completion or cancellation finishes.
+    //! - If the task is paused, re-scheduling is postponed until task resumes.
     //!
     //! @p deadline should be in the same domain as core::timestamp().
     //! It can't be negative. Zero deadline means "execute as soon as possible".
     //!
-    //! The @p executor is used to execute the task method.
-    //! The @p completer is invoked on event loop thread after the task completes.
-    //! Completer should be non-blocking.
+    //! The @p executor is used to invoke the task function. It allows to implement
+    //! tasks in different classes. If a class T wants to implement tasks, it should
+    //! inherit ControlTaskExecutor<T>.
+    //!
+    //! If @p completer is present, the task should not be destroyed until completer is
+    //! invoked. The completer is invoked on event loop thread after once and only once,
+    //! after the task completes or is cancelled. Completer should never block.
+    //!
+    //! The event loop thread assumes that the task may be destroyed right after it is
+    //! completed and it's completer is called (if it's present), and don't touch task
+    //! after this, unless the user explicitly reschedules the task.
     void schedule_at(ControlTask& task,
                      core::nanoseconds_t deadline,
                      IControlTaskExecutor& executor,
                      IControlTaskCompleter* completer);
 
-    //! Cancel scheduled task execution.
+    //! Tesume task if it's paused.
     //!
-    //! If the task is executing currently or is already completed, do nothing.
-    //! If the task is pending, cancel scheduled execution.
-    //! If the task has completer, and it was not called yet, and the
-    //! task was cancelled, the completer will be invoked. In other words, no
-    //! matter whether the task was executed or cancelled, the completer is guaranteed
-    //! to be invoked once.
+    //! - If the task is paused, schedule it for execution.
+    //! - If the task is being processed right now (i.e. it's executing or will be
+    //!   executing very soon), then postpone decision until task execution ends. After
+    //!   the task execution, if the task asked to pause, then immediately resume it.
+    //! - Otherwise, do nothing.
+    //!
+    //! If resume is called one or multiple times before task execution, those calls
+    //! are ignored. Only calls made during or after task execution are honored, and
+    //! only if the task execution leaved task in paused state.
+    //!
+    //! Subsequent resume calls between task executions are collapsed into one; even if
+    //! resume was called multiple after task paused and before it's executed again,
+    //! next pause will need a new resume call.
+    void resume(ControlTask& task);
+
+    //! Try to cancel scheduled task execution, if it's not executed yet.
+    //!
+    //! - If the task is already completed or is being completed or cancelled, do nothing.
+    //! - If the task is sleeping or paused, cancel task execution.
+    //! - If the task is being processed right now (i.e. it's executing or will be
+    //!   executing very soon), then postpone decision until task execution ends. After
+    //!   the task execution, if the task asked to pause or continue, then cancellation
+    //!   request is fulfilled and the task is cancelled; otherwise cancellation request
+    //!   is ignored and the task is completed normally.
+    //!
+    //! When the task is being cancelled instead of completed, if it has completer, the
+    //! completer is invoked.
     void async_cancel(ControlTask& task);
 
     //! Wait until the task is completed.
     //!
-    //! Blocks until the task is executed or cancelled.
+    //! Blocks until the task is completed or cancelled.
     //! Does NOT wait until the task completer is called.
     //!
-    //! Can not be called concurrently for the same task.
-    //! Can not be called from the task completion handler.
+    //! Can not be called concurrently for the same task (will cause crash).
+    //! Can not be called from the task completion handler (will cause deadlock).
     //!
     //! If this method is called, the task should not be destroyed until this method
     //! returns (as well as until the completer is invoked, if it's present).
@@ -193,29 +226,42 @@ private:
     void start_thread_();
     void stop_thread_();
 
-    bool process_tasks_();
-
     void setup_task_(ControlTask& task,
                      IControlTaskExecutor& executor,
                      IControlTaskCompleter* completer);
-    void renew_task_(ControlTask& task, core::nanoseconds_t deadline);
-    void enqueue_renewed_task_(ControlTask& task, core::nanoseconds_t deadline);
 
-    bool try_renew_deadline_inplace_(ControlTask& task, core::nanoseconds_t deadline);
+    void request_resume_(ControlTask& task);
+    void request_renew_(ControlTask& task, core::nanoseconds_t deadline);
+    void request_renew_guarded_(ControlTask& task, core::nanoseconds_t deadline);
 
-    ControlTask::State apply_renewed_state_(ControlTask& task,
-                                            core::nanoseconds_t deadline);
-    void apply_renewed_deadline_(ControlTask& task, core::nanoseconds_t deadline);
+    bool try_renew_inplace_(ControlTask& task,
+                            core::nanoseconds_t deadline,
+                            core::seqlock_version_t version);
 
-    void reschedule_task_(ControlTask& task, core::nanoseconds_t deadline);
-    void cancel_task_(ControlTask& task);
+    ControlTask::State
+    renew_state_(ControlTask& task, unsigned task_flags, core::nanoseconds_t deadline);
+    bool renew_scheduling_(ControlTask& task,
+                           unsigned task_flags,
+                           core::nanoseconds_t deadline,
+                           core::seqlock_version_t version);
 
-    void execute_task_(ControlTask& task);
-    void complete_task_(ControlTask& task, ControlTask::State from_state);
+    bool reschedule_task_(ControlTask& task,
+                          core::nanoseconds_t deadline,
+                          core::seqlock_version_t version);
+    void cancel_task_(ControlTask& task, core::seqlock_version_t version);
+
+    void reborn_task_(ControlTask& task, ControlTask::State from_state);
+    void pause_task_(ControlTask& task, ControlTask::State from_state);
+    void
+    complete_task_(ControlTask& task, unsigned task_flags, ControlTask::State from_state);
     void wait_task_(ControlTask& task);
 
+    void execute_task_(ControlTask& task);
+
+    bool process_tasks_();
+
+    ControlTask* fetch_task_();
     ControlTask* fetch_ready_task_();
-    ControlTask* fetch_ready_or_renewed_task_(core::nanoseconds_t& renewed_deadline);
     ControlTask* fetch_sleeping_task_();
 
     void insert_sleeping_task_(ControlTask& task);
@@ -230,6 +276,7 @@ private:
     core::Atomic<int> ready_queue_size_;
     core::MpscQueue<ControlTask, core::NoOwnership> ready_queue_;
     core::List<ControlTask, core::NoOwnership> sleeping_queue_;
+    core::List<ControlTask, core::NoOwnership> paused_queue_;
 
     core::Timer wakeup_timer_;
     core::Mutex task_mutex_;

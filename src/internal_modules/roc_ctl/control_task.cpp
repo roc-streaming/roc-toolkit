@@ -24,11 +24,11 @@ bool ControlTask::completed() const {
 }
 
 bool ControlTask::succeeded() const {
-    return result_ == ControlTaskSucceeded;
+    return flags_ & FlagSucceeded;
 }
 
 bool ControlTask::cancelled() const {
-    return result_ == ControlTaskCancelled;
+    return flags_ & FlagCancelled;
 }
 
 } // namespace ctl

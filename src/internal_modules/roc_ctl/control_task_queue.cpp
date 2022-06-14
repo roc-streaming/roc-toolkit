@@ -43,7 +43,7 @@ void ControlTaskQueue::schedule(ControlTask& task,
 
     setup_task_(task, executor, completer);
 
-    renew_task_(task, 0);
+    request_renew_(task, 0);
 }
 
 void ControlTaskQueue::schedule_at(ControlTask& task,
@@ -64,7 +64,15 @@ void ControlTaskQueue::schedule_at(ControlTask& task,
 
     setup_task_(task, executor, completer);
 
-    renew_task_(task, deadline);
+    request_renew_(task, deadline);
+}
+
+void ControlTaskQueue::resume(ControlTask& task) {
+    if (!valid()) {
+        roc_panic("control task queue: attempt to use invalid queue");
+    }
+
+    request_resume_(task);
 }
 
 void ControlTaskQueue::async_cancel(ControlTask& task) {
@@ -72,7 +80,7 @@ void ControlTaskQueue::async_cancel(ControlTask& task) {
         roc_panic("control task queue: attempt to use invalid queue");
     }
 
-    renew_task_(task, -1);
+    request_renew_(task, -1);
 }
 
 void ControlTaskQueue::wait(ControlTask& task) {
@@ -112,98 +120,94 @@ void ControlTaskQueue::stop_thread_() {
     Thread::join();
 }
 
-bool ControlTaskQueue::process_tasks_() {
-    core::Mutex::Lock lock(task_mutex_);
-
-    for (;;) {
-        ControlTask* task = NULL;
-
-        if (fetch_ready_) {
-            task = fetch_ready_task_();
-            if (!task) {
-                task = fetch_sleeping_task_();
-            } else {
-                fetch_ready_ = !fetch_ready_;
-            }
-        } else {
-            task = fetch_sleeping_task_();
-            if (!task) {
-                task = fetch_ready_task_();
-            } else {
-                fetch_ready_ = !fetch_ready_;
-            }
-        }
-
-        if (!task) {
-            if (update_wakeup_timer_() == 0) {
-                continue;
-            }
-            return !stop_;
-        }
-
-        execute_task_(*task);
-    }
-}
-
 void ControlTaskQueue::setup_task_(ControlTask& task,
                                    IControlTaskExecutor& executor,
                                    IControlTaskCompleter* completer) {
-    IControlTaskExecutor* prev_executor = task.executor_.exchange(&executor);
-    IControlTaskCompleter* prev_completer = task.completer_.exchange(completer);
+    if (task.executor_ == NULL) {
+        roc_panic_if_not(task.completer_ == NULL);
 
-    if (prev_executor == NULL) {
-        // Should not happen.
-        roc_panic_if_not(prev_completer == NULL);
+        task.executor_ = &executor;
+        task.completer_ = completer;
     } else {
-        if (prev_executor != &executor) {
+        if (task.executor_ != &executor) {
             roc_panic("control task queue:"
                       " attempt to reschedule task with different executor");
         }
-        if (prev_completer != completer) {
+        if (task.completer_ != completer) {
             roc_panic("control task queue:"
                       " attempt to reschedule task with different completer");
         }
     }
 }
 
-void ControlTaskQueue::renew_task_(ControlTask& task, core::nanoseconds_t deadline) {
-    // Handle concurrent task updates.
-    // If there are concurrent reschedule_after() and/or async_cancel() calls, only one
-    // of them wins, and other give up and do nothing. This is okay, since if they were
-    // serialized, only one of them (the last one) would take effect.
-    // In addition, if async_cancel() sees that the task is not in StatePending, it also
-    // does nothing, since the task will be anyway executed or cancelled very soon.
-    if (!task.renew_in_progress_.compare_exchange(false, true)) {
+void ControlTaskQueue::request_resume_(ControlTask& task) {
+    // If the task is already being resumed, do nothing.
+    // Otherwise, mark task as being resumed.
+    if (task.flags_.fetch_or(ControlTask::FlagResumed) & ControlTask::FlagResumed) {
         return;
     }
 
+    // If the task is already in the ready queue, do nothing.
+    // Otherwise, place task to the ready queue.
+    if (task.state_.exchange(ControlTask::StateReady) == ControlTask::StateReady) {
+        return;
+    }
+
+    // First commit new queue size.
+    ++ready_queue_size_;
+
+    // Add task to the ready queue.
+    ready_queue_.push_back(task);
+
+    // Wake up event loop thread.
+    // This wakeup will either succeed or handled by concurrent call to
+    // update_wakeup_timer_().
+    wakeup_timer_.try_set_deadline(0);
+}
+
+void ControlTaskQueue::request_renew_(ControlTask& task, core::nanoseconds_t deadline) {
+    // Cut off concurrent task renewals. This simplifies implementation.
+    // If there are concurrent schedule and/or async_cancel calls, only one of them
+    // wins, and other give up and do nothing. This is okay, since if they were
+    // serialized, only one of them (the last one) would take effect.
+    if (!task.renew_guard_.compare_exchange(false, true)) {
+        return;
+    }
+
+    request_renew_guarded_(task, deadline);
+
+    // Finish operation.
+    task.renew_guard_ = false;
+}
+
+void ControlTaskQueue::request_renew_guarded_(ControlTask& task,
+                                              core::nanoseconds_t deadline) {
     // Set the new desired deadline.
     // Allowed deadline values are:
     //  positive - schedule task at the given point of time
     //  "0" - process task as soon as possible
     //  "-1" - cancel the task
-    // The new deadline will be applied either by try_renew_deadline_inplace_()
+    // The new deadline will be applied either by try_renew_inplace_()
     // in this thread, or by fetch_ready_task_() later in event loop thread.
-    task.renewed_deadline_.exclusive_store(deadline);
+    core::seqlock_version_t version = 0;
+    task.renewed_deadline_.exclusive_store_ver(deadline, version);
 
-    // Add task to the ready queue (if it's not there already), to be renewed
-    // later. Or maybe renew it in-place if possible.
-    enqueue_renewed_task_(task, deadline);
-
-    // Finish operation.
-    task.renew_in_progress_ = false;
-}
-
-void ControlTaskQueue::enqueue_renewed_task_(ControlTask& task,
-                                             core::nanoseconds_t deadline) {
     if (deadline < 0) {
-        // We want to cancel the task and it's not sleeping, thus
-        // we have nothing to do.
+        // We want to cancel the task and it's not sleeping, thus we have nothing to do:
+        // if it's not pausing, it will be anyway completed soon, if it's pausing, it
+        // will check renewed deadline before going to sleep.
         if (!task.state_.compare_exchange(ControlTask::StateSleeping,
                                           ControlTask::StateReady)) {
             return;
         }
     } else {
+        // Do nothing if the task is paused.
+        // After the task resumes and completes, it will found out that
+        // FlagRescheduleRequested was set and handle the renewed deadline.
+        if (task.flags_ & ControlTask::FlagPaused) {
+            return;
+        }
+
         // Do nothing if the task is already in the ready queue.
         if (task.state_.exchange(ControlTask::StateReady) == ControlTask::StateReady) {
             return;
@@ -229,7 +233,7 @@ void ControlTaskQueue::enqueue_renewed_task_(ControlTask& task,
     // ready for calling it in-place in async_cancel().
     if (++ready_queue_size_ == 1
         && (deadline > 0 || (deadline < 0 && !task.completer_))) {
-        if (try_renew_deadline_inplace_(task, deadline)) {
+        if (try_renew_inplace_(task, deadline, version)) {
             return;
         }
     }
@@ -243,36 +247,62 @@ void ControlTaskQueue::enqueue_renewed_task_(ControlTask& task,
     wakeup_timer_.try_set_deadline(0);
 }
 
-bool ControlTaskQueue::try_renew_deadline_inplace_(ControlTask& task,
-                                                   core::nanoseconds_t deadline) {
+bool ControlTaskQueue::try_renew_inplace_(ControlTask& task,
+                                          core::nanoseconds_t deadline,
+                                          core::seqlock_version_t version) {
     roc_panic_if(deadline == 0);
 
+    // Try to obtain lock.
+    // This succeedes if the event loop thread sleeps.
     if (!task_mutex_.try_lock()) {
         return false;
     }
 
-    apply_renewed_state_(task, deadline);
-    apply_renewed_deadline_(task, deadline);
+    // Read task flags after mutex is locked.
+    // During the lock is held, only resume flag may be set concurrently.
+    const unsigned task_flags = task.flags_;
 
-    --ready_queue_size_;
-    update_wakeup_timer_();
+    // Ensure that the task is either not paused, or we're going to cancel it. These are
+    // the only cases when it's legit to renew the task without waking up the even loop
+    // thread. This bool may evaluate to false only if the pause flag was set in a short
+    // period after we checked it in request_renew_guarded_() and before we locked mutex.
+    const bool can_renew_inplace =
+        !(task_flags & ControlTask::FlagPaused) || (deadline < 0 && !task.completer_);
+
+    if (can_renew_inplace) {
+        renew_state_(task, task_flags, deadline);
+        renew_scheduling_(task, task_flags, deadline, version);
+
+        --ready_queue_size_;
+        update_wakeup_timer_();
+    }
 
     task_mutex_.unlock();
 
-    return true;
+    return can_renew_inplace;
 }
 
-ControlTask::State ControlTaskQueue::apply_renewed_state_(ControlTask& task,
-                                                          core::nanoseconds_t deadline) {
+ControlTask::State ControlTaskQueue::renew_state_(ControlTask& task,
+                                                  unsigned task_flags,
+                                                  core::nanoseconds_t deadline) {
     ControlTask::State state;
 
-    if (deadline > 0) {
-        state = ControlTask::StateSleeping;
-    } else if (deadline == 0) {
-        state = ControlTask::StateProcessing;
+    if (task_flags & ControlTask::FlagPaused) {
+        if (deadline < 0) {
+            state = ControlTask::StateCancelling;
+        } else if (task_flags & ControlTask::FlagResumed) {
+            state = ControlTask::StateProcessing;
+        } else {
+            state = ControlTask::StateSleeping;
+        }
     } else {
-        roc_panic_if(deadline != -1);
-        state = ControlTask::StateCancelling;
+        if (deadline < 0) {
+            state = ControlTask::StateCancelling;
+        } else if (deadline == 0) {
+            state = ControlTask::StateProcessing;
+        } else {
+            state = ControlTask::StateSleeping;
+        }
     }
 
     if (!task.state_.compare_exchange(ControlTask::StateReady, state)) {
@@ -282,76 +312,139 @@ ControlTask::State ControlTaskQueue::apply_renewed_state_(ControlTask& task,
     return state;
 }
 
-void ControlTaskQueue::apply_renewed_deadline_(ControlTask& task,
-                                               core::nanoseconds_t deadline) {
+bool ControlTaskQueue::renew_scheduling_(ControlTask& task,
+                                         unsigned task_flags,
+                                         core::nanoseconds_t deadline,
+                                         core::seqlock_version_t version) {
+    bool is_ready = false;
+
     if (deadline >= 0) {
-        reschedule_task_(task, deadline);
+        if (task_flags & ControlTask::FlagPaused) {
+            // If the task is paused, we either resume it or keep it sleeping.
+            // We're not applying new scheduling until task completes.
+            if (task_flags & ControlTask::FlagResumed) {
+                roc_log(LogTrace, "control task queue: resuming task: ptr=%p",
+                        (void*)&task);
+                is_ready = true;
+            } else {
+                roc_log(
+                    LogTrace,
+                    "control task queue: ignoring renew request for paused task: ptr=%p",
+                    (void*)&task);
+                is_ready = false;
+            }
+        } else {
+            // Task is not paused, handling re-scheduling request.
+            is_ready = reschedule_task_(task, deadline, version);
+        }
     } else {
-        roc_panic_if_not(deadline == -1);
-        cancel_task_(task);
+        // Handling cancellation request (no matter if task is paused).
+        cancel_task_(task, version);
+        is_ready = false;
     }
+
+    return is_ready;
 }
 
-void ControlTaskQueue::reschedule_task_(ControlTask& task, core::nanoseconds_t deadline) {
+bool ControlTaskQueue::reschedule_task_(ControlTask& task,
+                                        core::nanoseconds_t deadline,
+                                        core::seqlock_version_t version) {
     roc_panic_if_not(deadline >= 0);
 
-    if (task.deadline_ == deadline) {
-        return;
-    }
-
     roc_log(LogTrace,
-            "control task queue: rescheduling task: ptr=%p old_deadline=%lld "
-            "new_deadline=%lld",
-            (void*)&task, (long long)task.deadline_, (long long)deadline);
+            "control task queue:"
+            " rescheduling task: ptr=%p deadline=%lld>%lld version=%llu>%llu",
+            (void*)&task, (long long)task.effective_deadline_, (long long)deadline,
+            (unsigned long long)task.effective_version_, (unsigned long long)version);
+
+    if (paused_queue_.contains(task)) {
+        paused_queue_.remove(task);
+    }
 
     if (sleeping_queue_.contains(task)) {
         remove_sleeping_task_(task);
     }
 
-    task.deadline_ = deadline;
+    task.effective_deadline_ = deadline;
+    task.effective_version_ = version;
 
-    if (deadline > 0) {
+    const bool is_ready = deadline == 0;
+
+    if (!is_ready) {
+        roc_log(LogTrace, "control task queue: moving task to sleeping queue: ptr=%p",
+                (void*)&task);
+
         insert_sleeping_task_(task);
     }
+
+    return is_ready;
 }
 
-void ControlTaskQueue::cancel_task_(ControlTask& task) {
-    roc_log(LogTrace, "control task queue: cancelling task: ptr=%p", (void*)&task);
+void ControlTaskQueue::cancel_task_(ControlTask& task, core::seqlock_version_t version) {
+    roc_log(LogTrace, "control task queue: cancelling task: ptr=%p version=%llu>%llu",
+            (void*)&task, (unsigned long long)task.effective_version_,
+            (unsigned long long)version);
 
     // This should not happend. If the task was already cancelled, its completer was
     // already called and the task may be already destroyed. The upper code should
     // prevent cancelling a task twice even if the user calls async_cancel() twice.
-    if (task.deadline_ == -1) {
+    if (task.effective_deadline_ == -1) {
         roc_panic(
             "control task queue: expected pending task, got already cancelled task");
+    }
+
+    if (paused_queue_.contains(task)) {
+        paused_queue_.remove(task);
     }
 
     if (sleeping_queue_.contains(task)) {
         remove_sleeping_task_(task);
     }
 
-    task.deadline_ = -1;
-    task.result_ = ControlTaskCancelled;
+    const unsigned task_flags = task.flags_ = ControlTask::FlagCancelled;
 
-    complete_task_(task, ControlTask::StateCancelling);
+    task.effective_deadline_ = -1;
+    task.effective_version_ = version;
+
+    complete_task_(task, task_flags, ControlTask::StateCancelling);
 }
 
-void ControlTaskQueue::execute_task_(ControlTask& task) {
-    roc_panic_if_not(task.deadline_ >= 0);
+void ControlTaskQueue::reborn_task_(ControlTask& task, ControlTask::State from_state) {
+    if (!task.state_.compare_exchange(from_state, ControlTask::StateReady)) {
+        // If the task is not in expected state, it means that it was already moved
+        // to ready queue from another thread.
+        return;
+    }
 
-    roc_panic_if_not(task.executor_);
-    roc_panic_if_not(task.func_);
+    roc_log(LogTrace, "control task queue: reboring task: ptr=%p", (void*)&task);
 
-    roc_log(LogTrace, "control task queue: executing task: ptr=%p", (void*)&task);
+    ++ready_queue_size_;
 
-    task.deadline_ = -1;
-    task.result_ = task.executor_->execute_task(task, task.func_);
-
-    complete_task_(task, ControlTask::StateProcessing);
+    ready_queue_.push_back(task);
 }
 
-void ControlTaskQueue::complete_task_(ControlTask& task, ControlTask::State from_state) {
-    roc_panic_if_not(task.deadline_ == -1);
+void ControlTaskQueue::pause_task_(ControlTask& task, ControlTask::State from_state) {
+    roc_log(LogTrace, "control task queue: pausing task: ptr=%p", (void*)&task);
+
+    // Move the task to sleeping state.
+    // This may fail if another thread didn't see yet that the task is paused and
+    // added it to the ready queue. In this rare case we will fetch the task from
+    // the ready queue, see that it's paused, and move to sleeping state again.
+    task.state_.compare_exchange(from_state, ControlTask::StateSleeping);
+
+    // Keep track of paused tasks.
+    paused_queue_.push_back(task);
+}
+
+void ControlTaskQueue::complete_task_(ControlTask& task,
+                                      unsigned task_flags,
+                                      ControlTask::State from_state) {
+    roc_log(LogTrace,
+            "control task queue: completing task:"
+            " ptr=%p version=%llu is_succeeded=%d is_cancelled=%d has_completer=%d",
+            (void*)&task, (unsigned long long)task.effective_version_,
+            !!(task_flags & ControlTask::FlagSucceeded),
+            !!(task_flags & ControlTask::FlagCancelled), int(task.completer_ != NULL));
 
     IControlTaskCompleter* completer = task.completer_;
 
@@ -361,6 +454,10 @@ void ControlTaskQueue::complete_task_(ControlTask& task, ControlTask::State from
 
     if (!task.state_.compare_exchange(ControlTask::StateCompleting,
                                       ControlTask::StateCompleted)) {
+        roc_log(LogTrace,
+                "control task queue: task rescheduled during processing: ptr=%p",
+                (void*)&task);
+
         // Task was re-scheduled while we were processing it.
         // We wont mark it finished and thus wont post the semaphore this time.
         if (sem) {
@@ -394,17 +491,17 @@ void ControlTaskQueue::wait_task_(ControlTask& task) {
     }
 
     // Protection from concurrent waits.
-    if (!task.wait_in_progress_.compare_exchange(false, true)) {
+    if (!task.wait_guard_.compare_exchange(false, true)) {
         roc_panic("control task queue: can't call wait() concurrently for the same task");
     }
 
     // Attach a semaphore to the task, if it's not attached yet.
-    if (!task.sem_obj_) {
-        task.sem_obj_.reset(new (task.sem_obj_) core::Semaphore);
+    if (!task.sem_holder_) {
+        task.sem_holder_.reset(new (task.sem_holder_) core::Semaphore);
     }
-    task.sem_ = task.sem_obj_.get();
+    task.sem_ = task.sem_holder_.get();
 
-    // When the task is in StateCompleting, finish_task_() reads the semaphore
+    // When the task is in StateCompleting, complete_task_() reads the semaphore
     // from task.sem_. Ensure that we're either before or after this block to avoid race.
     // There are only a few instructions between StateCompleting and
     // StateCompleted, so this spin loop should be very short and rare.
@@ -413,16 +510,16 @@ void ControlTaskQueue::wait_task_(ControlTask& task) {
     }
 
     // If the task is not in StateCompleted, it means that it's before
-    // StateCompleting (because of the spin loop above), and thus finish_task_
+    // StateCompleting (because of the spin loop above), and thus complete_task_
     // will guaranteedly see the semaphore and call post, so we can safely wait on the
     // semaphore.
     //
     // If the task is in StateCompleted, and task.sem_ is NULL, it means that
-    // finish_task_ successfully exchanged task.sem_ (which was non-NULL) with NULL, so it
-    // will call post, so we can safely wait on the semaphore.
+    // complete_task_ successfully exchanged task.sem_ (which was non-NULL) with NULL, so
+    // it will call post, so we can safely wait on the semaphore.
     //
     // Otherwise, i.e. if the task is in StateCompleted and task.sem_ is
-    // non-NULL, it means that finish_task_ didn't see the semaphore and so wont call
+    // non-NULL, it means that complete_task_ didn't see the semaphore and so wont call
     // post, so we should not and don't need to wait on it.
     //!
     //! This implementation is so tricky because we're attaching the semaphore only
@@ -431,88 +528,216 @@ void ControlTaskQueue::wait_task_(ControlTask& task) {
     //! which require such a syscall) for tasks for which wait() is never called or
     //! called only after they actually finish, which is the most common case.
     if (task.state_ != ControlTask::StateCompleted || task.sem_ == NULL) {
-        task.sem_obj_->wait();
+        task.sem_holder_->wait();
     }
 
     task.sem_ = NULL;
-    task.wait_in_progress_ = false;
+    task.wait_guard_ = false;
+}
+
+void ControlTaskQueue::execute_task_(ControlTask& task) {
+    roc_log(LogTrace, "control task queue: executing task: ptr=%p", (void*)&task);
+
+    roc_panic_if_not(task.effective_deadline_ >= 0);
+
+    roc_panic_if_not(task.executor_);
+    roc_panic_if_not(task.func_);
+
+    // Clear resume flag because we ignore all resume requests issued before execution
+    // and should track resume requests issues during or after execution. Also clear
+    // success and cancellation flags.
+    task.flags_ &= uint8_t(~(ControlTask::FlagSucceeded | ControlTask::FlagCancelled
+                             | ControlTask::FlagResumed));
+
+    // Actually execute the task.
+    const ControlTaskResult result = task.executor_->execute_task(task, task.func_);
+
+    switch (result) {
+    case ControlTaskSuccess:
+    case ControlTaskFailure: {
+        // Clear all flags, including pause flag, and probably set success flag.
+        const unsigned task_flags = task.flags_ =
+            (result == ControlTaskSuccess ? ControlTask::FlagSucceeded : 0);
+
+        // Check if the task was renewed since it was fetched from the queue.
+        // It's important to do this only after clearing the pause flag above, because
+        // while pause flag is set, request_renew_() may exit without adding
+        // the task to ready queue. It's also important to do this before completing
+        // the task because if the task was not renewed, complete_task_() may destroy it.
+        core::nanoseconds_t new_deadline = 0;
+        core::seqlock_version_t new_version = 0;
+        const bool task_renewed =
+            task.renewed_deadline_.try_load_ver(new_deadline, new_version)
+            && new_version != task.effective_version_ && new_deadline >= 0;
+
+        // Notify completer and semaphore that task is finished.
+        complete_task_(task, task_flags, ControlTask::StateProcessing);
+
+        // If the task was renewed during pause, the task may be not added to the
+        // ready queue. In this case we should do it now.
+        if (task_renewed) {
+            reborn_task_(task, ControlTask::StateCompleted);
+        }
+    } break;
+
+    case ControlTaskPause: {
+        // Enable pause flag.
+        // Since now request_renew_guarded_() wont add task to the ready queue.
+        task.flags_ |= ControlTask::FlagPaused;
+
+        // Move task to sleeping state and add to pause queue.
+        pause_task_(task, ControlTask::StateProcessing);
+
+        // Check if the task was cancelled since it was fetched from the queue.
+        // It's important to do this only after moving task to sleeping state, because
+        // while the task was not in sleeping state, request_renew_() may exit without
+        // adding the task to the ready queue.
+        core::nanoseconds_t new_deadline = 0;
+        const bool task_cancelled =
+            task.renewed_deadline_.try_load(new_deadline) && new_deadline < 0;
+
+        // If the task was cancelled during processing, the task may be not added to the
+        // ready queue. Usually it's okay because after processing the task completes.
+        // But if the task is pausing instead, we should proceed cancellation here.
+        if (task_cancelled) {
+            reborn_task_(task, ControlTask::StateProcessing);
+        }
+    } break;
+
+    case ControlTaskContinue: {
+        // Disable pause flag, so that the task can be scheduled normally.
+        task.flags_ &= uint8_t(~ControlTask::FlagPaused);
+
+        // The task wants to be executed again, so we just re-add it the ready queue.
+        // We don't execute it immediately right here to give other tasks a chance to
+        // be executed too and to provent one greedy task blocking the whole queue.
+        reborn_task_(task, ControlTask::StateProcessing);
+    } break;
+
+    default:
+        roc_panic("control task queue: invalid task result");
+    }
+}
+
+bool ControlTaskQueue::process_tasks_() {
+    core::Mutex::Lock lock(task_mutex_);
+
+    for (;;) {
+        ControlTask* task = fetch_task_();
+
+        if (!task) {
+            if (update_wakeup_timer_() == 0) {
+                continue;
+            }
+            return !stop_;
+        }
+
+        execute_task_(*task);
+    }
+}
+
+ControlTask* ControlTaskQueue::fetch_task_() {
+    ControlTask* task = NULL;
+
+    // Interleave ready and sleeping tasks to prevent starvation
+    // of one of the categories.
+    if (fetch_ready_) {
+        task = fetch_ready_task_();
+
+        if (!task) {
+            task = fetch_sleeping_task_();
+        } else {
+            fetch_ready_ = !fetch_ready_;
+        }
+    } else {
+        task = fetch_sleeping_task_();
+
+        if (!task) {
+            task = fetch_ready_task_();
+        } else {
+            fetch_ready_ = !fetch_ready_;
+        }
+    }
+
+    return task;
 }
 
 ControlTask* ControlTaskQueue::fetch_ready_task_() {
     for (;;) {
-        core::nanoseconds_t renewed_deadline;
-
-        ControlTask* task = fetch_ready_or_renewed_task_(renewed_deadline);
+        // try_pop_front_exclusive() returns NULL if queue is empty or push_back() is
+        // in progress; in the later case ready_queue_size_ is guaranteed to be
+        // non-zero and process_tasks_() will call us again soon.
+        ControlTask* task = ready_queue_.try_pop_front_exclusive();
         if (!task) {
+            roc_log(LogTrace,
+                    "control task queue: ready task queue is empty or being pushed");
             return NULL;
         }
 
-        apply_renewed_deadline_(*task, renewed_deadline);
+        const unsigned task_flags = task->flags_;
 
-        // This task should not be processed, it was added to ready queue
-        // just to update its deadline.
-        if (renewed_deadline != 0) {
+        core::nanoseconds_t task_deadline = 0;
+        core::seqlock_version_t task_version = 0;
+
+        if (!task->renewed_deadline_.try_load_ver(task_deadline, task_version)) {
+            // Renewed_deadline is being updated concurrently.
+            // Re-add task to the queue to try again later.
+            roc_log(LogTrace,
+                    "control task queue:"
+                    " re-adding task to ready queue after first read: ptr=%p",
+                    (void*)task);
+
+            ready_queue_.push_back(*task);
             continue;
         }
 
-        roc_panic_if_not(task->deadline_ == 0);
+        // Switch task state based on the renewed deadline.
+        const ControlTask::State new_state =
+            renew_state_(*task, task_flags, task_deadline);
+
+        // If request_renew_() or request_resume_() was called after we've read deadline
+        // and flags, but before we switched the task state, we should re-add the task
+        // to ready queue and proceed to next task. This provides a guarantee that if the
+        // task was in ready state after making changes to flags or deadline, then event
+        // loop thread will certainly see these changes.
+        if (task->renewed_deadline_.version() != task_version
+            || task->flags_ != task_flags) {
+            roc_log(LogTrace,
+                    "control task queue:"
+                    " re-adding task to ready queue after second read: ptr=%p",
+                    (void*)task);
+
+            if (task->state_.compare_exchange(new_state, ControlTask::StateReady)) {
+                ready_queue_.push_back(*task);
+            } else {
+                --ready_queue_size_;
+            }
+            continue;
+        }
+
+        // The task was removed from the queue, we can now handle it.
+        --ready_queue_size_;
+
+        // This will probably destroy the task (if deadline is negative).
+        const bool is_ready =
+            renew_scheduling_(*task, task_flags, task_deadline, task_version);
+
+        if (!is_ready) {
+            // This task should not be processed, it was added to ready queue
+            // just for renewal.
+            continue;
+        }
+
+        roc_log(LogTrace,
+                "control task queue: fetched ready task:"
+                " ptr=%p deadline=%llu version=%llu is_paused=%d is_resumed=%d",
+                (void*)task, (unsigned long long)task_deadline,
+                (unsigned long long)task_version,
+                !!(task_flags & ControlTask::FlagPaused),
+                !!(task_flags & ControlTask::FlagResumed));
+
         return task;
     }
-}
-
-ControlTask*
-ControlTaskQueue::fetch_ready_or_renewed_task_(core::nanoseconds_t& renewed_deadline) {
-    // try_pop_front_exclusive() returns NULL if queue is empty or push_back() is
-    // in progress; in the later case ready_queue_size_ is guaranteed to be
-    // non-zero and process_tasks_() will call us again soon.
-    ControlTask* task = ready_queue_.try_pop_front_exclusive();
-    if (!task) {
-        roc_log(LogTrace,
-                "control task queue: ready task queue is empty or being pushed");
-        return NULL;
-    }
-
-    // renewed_deadline is being updated concurrently.
-    // Re-add task to the queue to try again later.
-    if (!task->renewed_deadline_.try_load(renewed_deadline)) {
-        roc_log(
-            LogTrace,
-            "control task queue: re-adding task to ready queue after first read: ptr=%p",
-            (void*)task);
-
-        ready_queue_.push_back(*task);
-        return NULL;
-    }
-
-    // Switch task state based on the renewed deadline.
-    const ControlTask::State new_state = apply_renewed_state_(*task, renewed_deadline);
-
-    // Catch the rare situation where renewed_deadline was updated after we've
-    // read it above, but before we switched the task state above. In this case,
-    // renew_task_() will think that the task is already added to ready_queue_
-    // and will just return, so we should re-enqueue it by ourselves.
-    core::nanoseconds_t new_renewed_deadline;
-    if (!task->renewed_deadline_.try_load(new_renewed_deadline)
-        || renewed_deadline != new_renewed_deadline) {
-        roc_log(
-            LogTrace,
-            "control task queue: re-adding task to ready queue after second read: ptr=%p",
-            (void*)task);
-
-        if (task->state_.compare_exchange(new_state, ControlTask::StateReady)) {
-            ready_queue_.push_back(*task);
-        } else {
-            --ready_queue_size_;
-        }
-        return NULL;
-    }
-
-    // The task was removed and wasn't re-added.
-    --ready_queue_size_;
-
-    roc_log(LogTrace, "control task queue: fetching ready task: ptr=%p", (void*)task);
-
-    return task;
 }
 
 ControlTask* ControlTaskQueue::fetch_sleeping_task_() {
@@ -521,12 +746,9 @@ ControlTask* ControlTaskQueue::fetch_sleeping_task_() {
         return NULL;
     }
 
-    if (task->deadline_ > core::timestamp()) {
+    if (task->effective_deadline_ > core::timestamp()) {
         return NULL;
     }
-
-    roc_log(LogTrace, "control task queue: fetching sleeping task: ptr=%p deadline=%lld",
-            (void*)task, (long long)task->deadline_);
 
     remove_sleeping_task_(*task);
 
@@ -535,16 +757,19 @@ ControlTask* ControlTaskQueue::fetch_sleeping_task_() {
         return NULL;
     }
 
+    roc_log(LogTrace, "control task queue: fetched sleeping task: ptr=%p deadline=%lld",
+            (void*)task, (long long)task->effective_deadline_);
+
     return task;
 }
 
 void ControlTaskQueue::insert_sleeping_task_(ControlTask& task) {
-    roc_panic_if_not(task.deadline_ > 0);
+    roc_panic_if_not(task.effective_deadline_ > 0);
 
     ControlTask* pos = sleeping_queue_.front();
 
     for (; pos; pos = sleeping_queue_.nextof(*pos)) {
-        if (pos->deadline_ > task.deadline_) {
+        if (pos->effective_deadline_ > task.effective_deadline_) {
             break;
         }
     }
@@ -557,7 +782,7 @@ void ControlTaskQueue::insert_sleeping_task_(ControlTask& task) {
 }
 
 void ControlTaskQueue::remove_sleeping_task_(ControlTask& task) {
-    roc_panic_if_not(task.deadline_ > 0);
+    roc_panic_if_not(task.effective_deadline_ > 0);
 
     sleeping_queue_.remove(task);
 }
@@ -565,9 +790,10 @@ void ControlTaskQueue::remove_sleeping_task_(ControlTask& task) {
 core::nanoseconds_t ControlTaskQueue::update_wakeup_timer_() {
     core::nanoseconds_t deadline = 0;
 
+    // Sleep only if there are no tasks in ready queue.
     if (ready_queue_size_ == 0) {
         if (ControlTask* task = sleeping_queue_.front()) {
-            deadline = task->deadline_;
+            deadline = task->effective_deadline_;
         } else {
             deadline = -1;
         }
@@ -579,7 +805,7 @@ core::nanoseconds_t ControlTaskQueue::update_wakeup_timer_() {
     wakeup_timer_.try_set_deadline(deadline);
 
     // We should check whether new tasks were added while we were updating the timer.
-    // In this case, try_set_deadline(0) in renew_task_() was probably failed, and
+    // In this case, try_set_deadline(0) in request_renew_() was probably failed, and
     // we should call it by ourselves to wake up the event loop thread.
     if (deadline != 0 && ready_queue_size_ != 0) {
         deadline = 0;

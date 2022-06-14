@@ -63,7 +63,7 @@ public:
     void set_nth_result(size_t n, bool success) {
         core::Mutex::Lock lock(mutex_);
         roc_panic_if_not(n < MaxTasks);
-        results_[n] = (success ? ControlTaskSucceeded : ControlTaskFailed);
+        results_[n] = (success ? ControlTaskSuccess : ControlTaskFailure);
     }
 
     void block() {

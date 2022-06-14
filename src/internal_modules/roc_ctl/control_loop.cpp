@@ -79,13 +79,13 @@ ControlTaskResult ControlLoop::task_create_endpoint_(ControlTask& control_task) 
 
     if (!endpoint) {
         roc_log(LogError, "control loop: can't add endpoint: failed to create");
-        return ControlTaskFailed;
+        return ControlTaskFailure;
     }
 
     endpoints_.push_back(*endpoint);
     task.endpoint_ = endpoint;
 
-    return ControlTaskSucceeded;
+    return ControlTaskSuccess;
 }
 
 ControlTaskResult ControlLoop::task_delete_endpoint_(ControlTask& control_task) {
@@ -93,13 +93,13 @@ ControlTaskResult ControlLoop::task_delete_endpoint_(ControlTask& control_task) 
 
     if (!endpoints_.contains(*task.endpoint_)) {
         roc_log(LogError, "control loop: can't delete endpoint: not added");
-        return ControlTaskFailed;
+        return ControlTaskFailure;
     }
 
     task.endpoint_->close();
     endpoints_.remove(*task.endpoint_);
 
-    return ControlTaskSucceeded;
+    return ControlTaskSuccess;
 }
 
 ControlTaskResult ControlLoop::task_process_pipeline_tasks_(ControlTask& control_task) {
@@ -107,7 +107,7 @@ ControlTaskResult ControlLoop::task_process_pipeline_tasks_(ControlTask& control
 
     task.pipeline_.process_tasks();
 
-    return ControlTaskSucceeded;
+    return ControlTaskSuccess;
 }
 
 } // namespace ctl

@@ -10,7 +10,8 @@
 
 #include "roc_core/fast_random.h"
 #include "roc_core/heap_allocator.h"
-#include "roc_ctl/control_loop.h"
+#include "roc_ctl/control_task_executor.h"
+#include "roc_ctl/control_task_queue.h"
 #include "roc_pipeline/pipeline_loop.h"
 
 namespace roc {
@@ -37,26 +38,27 @@ enum {
 
 core::HeapAllocator allocator;
 
-class NoopPipeline : public PipelineLoop, private IPipelineTaskScheduler {
+class NoopPipeline : public PipelineLoop,
+                     private IPipelineTaskScheduler,
+                     public ctl::ControlTaskExecutor<NoopPipeline> {
 public:
-    class Task : public PipelineTask {
-    public:
+    struct Task : PipelineTask {
         Task() {
         }
     };
 
-    NoopPipeline(const TaskConfig& config, ctl::ControlLoop& loop)
+    NoopPipeline(const TaskConfig& config, ctl::ControlTaskQueue& control_queue)
         : PipelineLoop(*this, config, audio::SampleSpec(SampleRate, Chans))
-        , loop_(loop)
-        , processing_task_(*this) {
+        , control_queue_(control_queue)
+        , control_task_(*this) {
     }
 
     ~NoopPipeline() {
-        loop_.wait(processing_task_);
+        control_queue_.wait(control_task_);
     }
 
     void stop_and_wait() {
-        loop_.async_cancel(processing_task_);
+        control_queue_.async_cancel(control_task_);
 
         while (num_pending_tasks() != 0) {
             process_tasks();
@@ -64,6 +66,15 @@ public:
     }
 
 private:
+    struct BackgroundProcessingTask : ctl::ControlTask {
+        BackgroundProcessingTask(NoopPipeline& p)
+            : ControlTask(&NoopPipeline::do_processing_)
+            , pipeline(p) {
+        }
+
+        NoopPipeline& pipeline;
+    };
+
     virtual core::nanoseconds_t timestamp_imp() const {
         return core::timestamp();
     }
@@ -77,15 +88,20 @@ private:
     }
 
     virtual void schedule_task_processing(PipelineLoop&, core::nanoseconds_t deadline) {
-        loop_.schedule_at(processing_task_, deadline, NULL);
+        control_queue_.schedule_at(control_task_, deadline, *this, NULL);
     }
 
     virtual void cancel_task_processing(PipelineLoop&) {
-        loop_.async_cancel(processing_task_);
+        control_queue_.async_cancel(control_task_);
     }
 
-    ctl::ControlLoop& loop_;
-    ctl::ControlLoop::Tasks::PipelineProcessing processing_task_;
+    ctl::ControlTaskResult do_processing_(ctl::ControlTask& task) {
+        ((BackgroundProcessingTask&)task).pipeline.process_tasks();
+        return ctl::ControlTaskSuccess;
+    }
+
+    ctl::ControlTaskQueue& control_queue_;
+    BackgroundProcessingTask control_task_;
 };
 
 class NoopCompleter : public IPipelineTaskCompleter {
@@ -95,7 +111,7 @@ public:
 };
 
 struct BM_PipelineContention : benchmark::Fixture {
-    ctl::ControlLoop ctl_loop;
+    ctl::ControlTaskQueue control_queue;
 
     TaskConfig config;
 
@@ -103,8 +119,8 @@ struct BM_PipelineContention : benchmark::Fixture {
     NoopCompleter completer;
 
     BM_PipelineContention()
-        : ctl_loop(allocator)
-        , pipeline(config, ctl_loop) {
+        : control_queue()
+        , pipeline(config, control_queue) {
     }
 };
 

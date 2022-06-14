@@ -32,14 +32,17 @@ class IControlTaskCompleter;
 
 //! Control task execution result.
 enum ControlTaskResult {
-    //! Task completed successfully.
-    ControlTaskSucceeded,
+    //! Task completed with success.
+    ControlTaskSuccess,
 
-    //! Task failed.
-    ControlTaskFailed,
+    //! Task completed with failure.
+    ControlTaskFailure,
 
-    //! Task was cancelled before completion.
-    ControlTaskCancelled
+    //! Task wants to be re-executed again as soon as possible.
+    ControlTaskContinue,
+
+    //! Task wants to be paused until is explicitly resumed.
+    ControlTaskPause
 };
 
 //! Control task implementation function.
@@ -67,11 +70,12 @@ protected:
     template <class E>
     ControlTask(ControlTaskResult (E::*task_func)(ControlTask&))
         : state_(StateCompleted)
-        , result_(ControlTaskFailed)
-        , deadline_(0)
+        , flags_(0)
+        , renew_guard_(false)
+        , wait_guard_(false)
         , renewed_deadline_(0)
-        , renew_in_progress_(false)
-        , wait_in_progress_(false)
+        , effective_deadline_(0)
+        , effective_version_(0)
         , func_(reinterpret_cast<ControlTaskFunc>(task_func))
         , executor_(NULL)
         , completer_(NULL)
@@ -84,29 +88,76 @@ private:
     friend class ControlTaskQueue;
 
     enum State {
+        // task is in ready queue or being fetched from it; after it's
+        // fetched, it will be processed, cancelled, or rescheduled
         StateReady,
+
+        // task is in sleeping queue, waiting for its deadline
         StateSleeping,
+
+        // task cancellation is initiated
         StateCancelling,
+
+        // task is being processed, it's executing or will be executed soon
         StateProcessing,
+
+        // task completion is initiated
         StateCompleting,
+
+        // task is completed and is not used
         StateCompleted
     };
 
-    core::Atomic<int> state_;
-    core::Atomic<int> result_;
+    enum Flag {
+        // last execution succeeded
+        FlagSucceeded = (1 << 0),
 
-    core::nanoseconds_t deadline_;
+        // last execution paused
+        FlagPaused = (1 << 2),
+
+        // task resuming was requested
+        FlagResumed = (1 << 3),
+
+        // task was cancelled
+        FlagCancelled = (1 << 4)
+    };
+
+    // scheduling state of the task
+    core::Atomic<uint8_t> state_;
+
+    // additional details about current state
+    core::Atomic<uint8_t> flags_;
+
+    // guard to cut off concurrent task renewals (only one succeedes)
+    core::Atomic<uint8_t> renew_guard_;
+
+    // guard to cut off concurrent task waits (only one allowed)
+    core::Atomic<uint8_t> wait_guard_;
+
+    // new task deadline that is probably not yet taken into account
     core::Seqlock<core::nanoseconds_t> renewed_deadline_;
 
-    core::Atomic<int> renew_in_progress_;
-    core::Atomic<int> wait_in_progress_;
+    // currently active task deadline, defines when to execute task:
+    // > 0: absolute time of execution
+    // = 0: execute as soon as possible
+    // < 0: cancel task
+    core::nanoseconds_t effective_deadline_;
 
+    // version of currently active task deadline
+    core::seqlock_version_t effective_version_;
+
+    // function to be executed
     ControlTaskFunc func_;
-    core::Atomic<IControlTaskExecutor*> executor_;
-    core::Atomic<IControlTaskCompleter*> completer_;
 
-    core::Optional<core::Semaphore> sem_obj_;
+    // object that executes task function
+    IControlTaskExecutor* executor_;
+
+    // object that is notified when the task completes or cancels
+    IControlTaskCompleter* completer_;
+
+    // semaphore to wait for task completion
     core::Atomic<core::Semaphore*> sem_;
+    core::Optional<core::Semaphore> sem_holder_;
 };
 
 } // namespace ctl

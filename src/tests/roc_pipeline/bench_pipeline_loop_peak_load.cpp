@@ -15,7 +15,8 @@
 #include "roc_core/thread.h"
 #include "roc_core/ticker.h"
 #include "roc_core/time.h"
-#include "roc_ctl/control_loop.h"
+#include "roc_ctl/control_task_executor.h"
+#include "roc_ctl/control_task_queue.h"
 #include "roc_pipeline/pipeline_loop.h"
 
 namespace roc {
@@ -244,7 +245,9 @@ private:
     Counter frame_delay_after_processing_;
 };
 
-class TestPipeline : public PipelineLoop, private IPipelineTaskScheduler {
+class TestPipeline : public PipelineLoop,
+                     private IPipelineTaskScheduler,
+                     public ctl::ControlTaskExecutor<TestPipeline> {
 public:
     class Task : public PipelineTask {
     public:
@@ -264,11 +267,13 @@ public:
         core::nanoseconds_t start_time_;
     };
 
-    TestPipeline(const TaskConfig& config, ctl::ControlLoop& loop, DelayStats& stats)
+    TestPipeline(const TaskConfig& config,
+                 ctl::ControlTaskQueue& control_queue,
+                 DelayStats& stats)
         : PipelineLoop(*this, config, audio::SampleSpec(SampleRate, Chans))
-        , loop_(loop)
         , stats_(stats)
-        , processing_task_(*this) {
+        , control_queue_(control_queue)
+        , control_task_(*this) {
     }
 
     ~TestPipeline() {
@@ -276,8 +281,8 @@ public:
     }
 
     void stop_and_wait() {
-        loop_.async_cancel(processing_task_);
-        loop_.wait(processing_task_);
+        control_queue_.async_cancel(control_task_);
+        control_queue_.wait(control_task_);
 
         while (num_pending_tasks() != 0) {
             process_tasks();
@@ -302,6 +307,15 @@ public:
     using PipelineLoop::process_subframes_and_tasks;
 
 private:
+    struct BackgroundProcessingTask : ctl::ControlTask {
+        BackgroundProcessingTask(TestPipeline& p)
+            : ControlTask(&TestPipeline::do_processing_)
+            , pipeline(p) {
+        }
+
+        TestPipeline& pipeline;
+    };
+
     virtual core::nanoseconds_t timestamp_imp() const {
         return core::timestamp();
     }
@@ -322,17 +336,22 @@ private:
     }
 
     virtual void schedule_task_processing(PipelineLoop&, core::nanoseconds_t deadline) {
-        loop_.schedule_at(processing_task_, deadline, NULL);
+        control_queue_.schedule_at(control_task_, deadline, *this, NULL);
     }
 
     virtual void cancel_task_processing(PipelineLoop&) {
-        loop_.async_cancel(processing_task_);
+        control_queue_.async_cancel(control_task_);
     }
 
-    ctl::ControlLoop& loop_;
+    ctl::ControlTaskResult do_processing_(ctl::ControlTask& task) {
+        ((BackgroundProcessingTask&)task).pipeline.process_tasks();
+        return ctl::ControlTaskSuccess;
+    }
+
     DelayStats& stats_;
 
-    ctl::ControlLoop::Tasks::PipelineProcessing processing_task_;
+    ctl::ControlTaskQueue& control_queue_;
+    BackgroundProcessingTask control_task_;
 };
 
 class TaskThread : public core::Thread, private IPipelineTaskCompleter {
@@ -409,12 +428,12 @@ private:
 };
 
 void BM_PipelinePeakLoad_NoTasks(benchmark::State& state) {
-    ctl::ControlLoop ctl_loop(allocator);
+    ctl::ControlTaskQueue control_queue;
 
     DelayStats stats;
 
     TaskConfig config;
-    TestPipeline pipeline(config, ctl_loop, stats);
+    TestPipeline pipeline(config, control_queue, stats);
 
     FrameWriter frame_wr(pipeline, stats, state);
 
@@ -430,14 +449,14 @@ BENCHMARK(BM_PipelinePeakLoad_NoTasks)
     ->Unit(benchmark::kMicrosecond);
 
 void BM_PipelinePeakLoad_PreciseSchedOff(benchmark::State& state) {
-    ctl::ControlLoop ctl_loop(allocator);
+    ctl::ControlTaskQueue control_queue;
 
     DelayStats stats;
 
     TaskConfig config;
     config.enable_precise_task_scheduling = false;
 
-    TestPipeline pipeline(config, ctl_loop, stats);
+    TestPipeline pipeline(config, control_queue, stats);
 
     TaskThread task_thr(pipeline);
 
@@ -460,14 +479,14 @@ BENCHMARK(BM_PipelinePeakLoad_PreciseSchedOff)
     ->Unit(benchmark::kMicrosecond);
 
 void BM_PipelinePeakLoad_PreciseSchedOn(benchmark::State& state) {
-    ctl::ControlLoop ctl_loop(allocator);
+    ctl::ControlTaskQueue control_queue;
 
     DelayStats stats;
 
     TaskConfig config;
     config.enable_precise_task_scheduling = true;
 
-    TestPipeline pipeline(config, ctl_loop, stats);
+    TestPipeline pipeline(config, control_queue, stats);
 
     TaskThread task_thr(pipeline);
 

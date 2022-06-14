@@ -36,7 +36,7 @@ public:
 
 private:
     ControlTaskResult do_task_(ControlTask&) {
-        return ControlTaskSucceeded;
+        return ControlTaskSuccess;
     }
 };
 

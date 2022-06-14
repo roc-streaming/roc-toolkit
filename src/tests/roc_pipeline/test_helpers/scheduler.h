@@ -11,37 +11,45 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "roc_core/heap_allocator.h"
 #include "roc_core/mutex.h"
-#include "roc_ctl/control_loop.h"
+#include "roc_ctl/control_task_executor.h"
+#include "roc_ctl/control_task_queue.h"
 #include "roc_pipeline/ipipeline_task_scheduler.h"
+#include "roc_pipeline/pipeline_loop.h"
 
 namespace roc {
 namespace pipeline {
 namespace test {
 
-namespace {
+class Scheduler : public pipeline::IPipelineTaskScheduler,
+                  public ctl::ControlTaskExecutor<Scheduler> {
+    class ProcessingTask : public ctl::ControlTask {
+    public:
+        ProcessingTask(PipelineLoop& pipeline)
+            : ControlTask(&Scheduler::do_processing_)
+            , pipeline_(pipeline) {
+        }
 
-core::HeapAllocator allocator;
+    private:
+        friend class Scheduler;
 
-} // namespace
+        PipelineLoop& pipeline_;
+    };
 
-class Scheduler : public pipeline::IPipelineTaskScheduler {
 public:
     Scheduler()
-        : loop_(allocator)
-        , task_(NULL) {
-        CHECK(loop_.valid());
+        : task_(NULL) {
+        CHECK(queue_.valid());
     }
 
     ~Scheduler() {
         if (task_) {
-            FAIL("stop_and_wait() was not called before desctructor");
+            FAIL("wait_done() was not called before desctructor");
         }
     }
 
     void wait_done() {
-        ctl::ControlLoop::Tasks::PipelineProcessing* task = NULL;
+        ProcessingTask* task = NULL;
 
         {
             core::Mutex::Lock lock(mutex_);
@@ -49,7 +57,7 @@ public:
         }
 
         if (task) {
-            loop_.wait(*task);
+            queue_.wait(*task);
 
             core::Mutex::Lock lock(mutex_);
 
@@ -62,22 +70,27 @@ public:
                                           core::nanoseconds_t deadline) {
         core::Mutex::Lock lock(mutex_);
         if (!task_) {
-            task_ = new ctl::ControlLoop::Tasks::PipelineProcessing(pipeline);
+            task_ = new ProcessingTask(pipeline);
         }
-        loop_.schedule_at(*task_, deadline, NULL);
+        queue_.schedule_at(*task_, deadline, *this, NULL);
     }
 
     virtual void cancel_task_processing(pipeline::PipelineLoop&) {
         core::Mutex::Lock lock(mutex_);
         if (task_) {
-            loop_.async_cancel(*task_);
+            queue_.async_cancel(*task_);
         }
     }
 
 private:
+    ctl::ControlTaskResult do_processing_(ctl::ControlTask& task) {
+        ((ProcessingTask&)task).pipeline_.process_tasks();
+        return ctl::ControlTaskSuccess;
+    }
+
     core::Mutex mutex_;
-    ctl::ControlLoop loop_;
-    ctl::ControlLoop::Tasks::PipelineProcessing* task_;
+    ctl::ControlTaskQueue queue_;
+    ProcessingTask* task_;
 };
 
 } // namespace test
