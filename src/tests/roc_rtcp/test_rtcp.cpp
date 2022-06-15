@@ -377,7 +377,7 @@ TEST(rtcp, loopback_rr_sdes_xr) {
     XrTraverser xr_tr = it.get_xr();
     CHECK(xr_tr.parse());
     UNSIGNED_LONGS_EQUAL(xr_tr.blocks_count(), 2);
-    UNSIGNED_LONGS_EQUAL(xr_tr.ssrc(), 111);
+    UNSIGNED_LONGS_EQUAL(xr_tr.packet().ssrc(), 111);
     XrTraverser::Iterator xr_it = xr_tr.iter();
     CHECK_EQUAL(XrTraverser::Iterator::RRTR_BLOCK, xr_it.next());
     CHECK_EQUAL(ref_time.ntp_timestamp(), xr_it.get_rrtr().ntp_timestamp());

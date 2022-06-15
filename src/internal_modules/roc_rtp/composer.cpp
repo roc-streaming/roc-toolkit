@@ -9,6 +9,7 @@
 #include "roc_rtp/composer.h"
 #include "roc_core/align_ops.h"
 #include "roc_core/log.h"
+#include "roc_core/panic.h"
 #include "roc_rtp/headers.h"
 
 namespace roc {
