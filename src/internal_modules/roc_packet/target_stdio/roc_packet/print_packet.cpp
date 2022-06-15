@@ -51,6 +51,10 @@ void print_packet(const Packet& p, int flags) {
             core::print_buffer(p.fec()->payload.data(), p.fec()->payload.size());
         }
     }
+
+    if (p.rtcp()) {
+        fprintf(stderr, " rtcp: size=%lu\n", (unsigned long)p.rtcp()->data.size());
+    }
 }
 
 } // namespace packet

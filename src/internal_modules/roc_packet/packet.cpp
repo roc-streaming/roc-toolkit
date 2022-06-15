@@ -69,6 +69,20 @@ FEC* Packet::fec() {
     return NULL;
 }
 
+const RTCP* Packet::rtcp() const {
+    if (flags_ & FlagRTCP) {
+        return &rtcp_;
+    }
+    return NULL;
+}
+
+RTCP* Packet::rtcp() {
+    if (flags_ & FlagRTCP) {
+        return &rtcp_;
+    }
+    return NULL;
+}
+
 const core::Slice<uint8_t>& Packet::data() const {
     if (!data_) {
         roc_panic("packet: data is null");

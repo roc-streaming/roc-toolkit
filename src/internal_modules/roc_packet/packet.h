@@ -20,6 +20,7 @@
 #include "roc_packet/fec.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_packet/print_packet.h"
+#include "roc_packet/rtcp.h"
 #include "roc_packet/rtp.h"
 #include "roc_packet/udp.h"
 
@@ -44,10 +45,12 @@ public:
         FlagUDP = (1 << 0),      //!< Packet contains UDP header.
         FlagRTP = (1 << 1),      //!< Packet contains RTP header.
         FlagFEC = (1 << 2),      //!< Packet contains FEC header.
-        FlagAudio = (1 << 3),    //!< Packet contains audio samples.
-        FlagRepair = (1 << 4),   //!< Packet contains repair FEC symbols.
-        FlagComposed = (1 << 5), //!< Packet is already composed.
-        FlagRestored = (1 << 6)  //!< Packet was restored using FEC decoder.
+        FlagRTCP = (1 << 3),     //!< Packet contains RTCP compound packet.
+        FlagAudio = (1 << 4),    //!< Packet contains audio samples.
+        FlagRepair = (1 << 5),   //!< Packet contains repair FEC symbols.
+        FlagControl = (1 << 6),  //!< Packet contains control message.
+        FlagComposed = (1 << 7), //!< Packet is already composed.
+        FlagRestored = (1 << 8)  //!< Packet was restored using FEC decoder.
     };
 
     //! Add flags.
@@ -73,6 +76,12 @@ public:
 
     //! FEC packet.
     FEC* fec();
+
+    //! RTCP packet.
+    const RTCP* rtcp() const;
+
+    //! RTCP packet.
+    RTCP* rtcp();
 
     //! Get packet data.
     const core::Slice<uint8_t>& data() const;
@@ -121,6 +130,7 @@ private:
     UDP udp_;
     RTP rtp_;
     FEC fec_;
+    RTCP rtcp_;
 
     core::Slice<uint8_t> data_;
 };
