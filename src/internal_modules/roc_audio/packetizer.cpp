@@ -38,7 +38,7 @@ Packetizer::Packetizer(packet::IWriter& writer,
     if (!core::secure_random(0, packet::source_t(-1), rand_source)
         || !core::secure_random(0, packet::seqnum_t(-1), rand_seqnum)
         || !core::secure_random(0, packet::timestamp_t(-1), rand_timestamp)) {
-        roc_log(LogError, "packetizer: initializing fails");
+        roc_log(LogError, "packetizer: random generator failed");
         return;
     }
     source_ = (packet::source_t)rand_source;
