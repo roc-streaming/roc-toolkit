@@ -13,6 +13,7 @@ section "Options"
 
     option "source" s "Remote source endpoint" typestr="ENDPOINT_URI" string optional
     option "repair" r "Remote repair endpoint" typestr="ENDPOINT_URI" string optional
+    option "control" c "Remote control endpoint" typestr="ENDPOINT_URI" string optional
 
     option "broadcast" - "Allow broadcast destination port addresses" flag off
 

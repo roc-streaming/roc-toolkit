@@ -411,6 +411,21 @@ int main(int argc, char** argv) {
         }
     }
 
+    if (args.control_given) {
+        address::EndpointUri endpoint(context.allocator());
+
+        if (!address::parse_endpoint_uri(args.control_arg,
+                                         address::EndpointUri::Subset_Full, endpoint)) {
+            roc_log(LogError, "can't parse control endpoint: %s", args.control_arg);
+            return 1;
+        }
+
+        if (!receiver.bind(address::Iface_AudioControl, endpoint)) {
+            roc_log(LogError, "can't bind control endpoint: %s", args.control_arg);
+            return 1;
+        }
+    }
+
     sndio::Pump pump(
         context.sample_buffer_factory(), receiver.source(), backup_pipeline.get(),
         *output_sink, receiver_config.common.internal_frame_length,

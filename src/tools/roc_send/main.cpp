@@ -144,6 +144,16 @@ int main(int argc, char** argv) {
         }
     }
 
+    address::EndpointUri control_endpoint(context.allocator());
+    if (args.control_given) {
+        if (!address::parse_endpoint_uri(
+                args.control_arg, address::EndpointUri::Subset_Full, control_endpoint)) {
+            roc_log(LogError, "can't parse remote control endpoint: %s",
+                    args.control_arg);
+            return 1;
+        }
+    }
+
     const address::ProtocolAttrs* source_attrs =
         address::ProtocolMap::instance().find_proto_by_id(source_endpoint.proto());
     if (source_attrs) {
@@ -295,6 +305,17 @@ int main(int argc, char** argv) {
         }
         if (!sender.connect(address::Iface_AudioRepair, repair_endpoint)) {
             roc_log(LogError, "can't connect sender to repair endpoint");
+            return 1;
+        }
+    }
+
+    if (args.control_given) {
+        if (!sender.set_squashing_enabled(address::Iface_AudioControl, false)) {
+            roc_log(LogError, "can't configure sender");
+            return 1;
+        }
+        if (!sender.connect(address::Iface_AudioControl, control_endpoint)) {
+            roc_log(LogError, "can't connect sender to control endpoint");
             return 1;
         }
     }
