@@ -73,7 +73,7 @@ void print_buffer_slice_t(const T* inner,
                           size_t outer_size) {
     const size_t off = size_t(inner - outer);
 
-    fprintf(stderr, "slice: off=%lu size=%lu cap=%lu\n", (unsigned long)off,
+    fprintf(stderr, "@ slice: off=%lu size=%lu cap=%lu\n", (unsigned long)off,
             (unsigned long)inner_size, (unsigned long)outer_size - off);
 
     if (outer) {

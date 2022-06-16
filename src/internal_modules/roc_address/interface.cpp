@@ -21,13 +21,13 @@ const char* interface_to_str(Interface iface) {
         return "signaling";
 
     case Iface_AudioSource:
-        return "audiosource";
+        return "audiosrc";
 
     case Iface_AudioRepair:
-        return "audiorepair";
+        return "audiorpr";
 
     case Iface_AudioControl:
-        return "audiocontrol";
+        return "audioctl";
 
     case Iface_Max:
         break;

@@ -18,7 +18,7 @@ namespace roc {
 namespace packet {
 
 void print_packet(const Packet& p, int flags) {
-    fprintf(stderr, "packet [%p]\n", (const void*)&p);
+    fprintf(stderr, "@ packet [%p]\n", (const void*)&p);
 
     if (p.udp()) {
         fprintf(stderr, " udp: src=%s dst=%s\n",
