@@ -34,6 +34,8 @@
 #include "roc_packet/router.h"
 #include "roc_pipeline/config.h"
 #include "roc_pipeline/sender_endpoint.h"
+#include "roc_rtcp/composer.h"
+#include "roc_rtcp/session.h"
 #include "roc_rtp/format_map.h"
 
 namespace roc {
@@ -45,7 +47,8 @@ namespace pipeline {
 //!  the part of the sender pipeline shared by them.
 class SenderEndpointSet
     : public core::RefCounted<SenderEndpointSet, core::StandardAllocation>,
-      public core::ListNode {
+      public core::ListNode,
+      private rtcp::ISenderController {
 public:
     //! Initialize.
     SenderEndpointSet(const SenderConfig& config,
@@ -66,11 +69,25 @@ public:
     //! Check if endpoint set configuration is done.
     bool is_ready() const;
 
+    //! Get deadline when the pipeline should be updated.
+    core::nanoseconds_t get_update_deadline() const;
+
+    //! Update pipeline.
+    void update();
+
 private:
+    virtual size_t num_sending_sources();
+    virtual packet::source_t get_sending_source(size_t source_index);
+    virtual rtcp::SendingMetrics get_sending_metrics(packet::ntp_timestamp_t report_time);
+    virtual void add_reception_metrics(const rtcp::ReceptionMetrics& metrics);
+    virtual void add_link_metrics(const rtcp::LinkMetrics& metrics);
+
     SenderEndpoint* create_source_endpoint_(address::Protocol proto);
     SenderEndpoint* create_repair_endpoint_(address::Protocol proto);
+    SenderEndpoint* create_control_endpoint_(address::Protocol proto);
 
-    bool create_pipeline_();
+    bool create_transport_pipeline_();
+    bool create_control_pipeline_();
 
     const SenderConfig& config_;
 
@@ -83,6 +100,7 @@ private:
 
     core::Optional<SenderEndpoint> source_endpoint_;
     core::Optional<SenderEndpoint> repair_endpoint_;
+    core::Optional<SenderEndpoint> control_endpoint_;
 
     core::Optional<packet::Router> router_;
 
@@ -97,6 +115,9 @@ private:
     core::Optional<audio::PoisonWriter> resampler_poisoner_;
     core::Optional<audio::ResamplerWriter> resampler_writer_;
     core::ScopedPtr<audio::IResampler> resampler_;
+
+    core::Optional<rtcp::Composer> rtcp_composer_;
+    core::Optional<rtcp::Session> rtcp_session_;
 
     audio::IWriter* audio_writer_;
 };

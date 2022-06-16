@@ -10,6 +10,7 @@
 #include "roc_audio/resampler_map.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
+#include "roc_core/stddefs.h"
 
 namespace roc {
 namespace pipeline {
@@ -27,7 +28,9 @@ SenderSink::SenderSink(const SenderConfig& config,
     , sample_buffer_factory_(sample_buffer_factory)
     , allocator_(allocator)
     , audio_writer_(NULL)
-    , num_channels_(config_.input_sample_spec.num_channels()) {
+    , num_channels_(config_.input_sample_spec.num_channels())
+    , update_deadline_valid_(false)
+    , update_deadline_(0) {
     audio::IWriter* awriter = &fanout_;
 
     if (config_.poisoning) {
@@ -69,7 +72,29 @@ SenderEndpointSet* SenderSink::create_endpoint_set() {
     }
 
     endpoint_sets_.push_back(*endpoint_set);
+
+    invalidate_update_deadline_();
+
     return endpoint_set.get();
+}
+
+core::nanoseconds_t SenderSink::get_update_deadline() {
+    if (!update_deadline_valid_) {
+        compute_update_deadline_();
+    }
+
+    return update_deadline_;
+}
+
+void SenderSink::update() {
+    core::SharedPtr<SenderEndpointSet> endpoint_set;
+
+    for (endpoint_set = endpoint_sets_.front(); endpoint_set;
+         endpoint_set = endpoint_sets_.nextof(*endpoint_set)) {
+        endpoint_set->update();
+    }
+
+    invalidate_update_deadline_();
 }
 
 size_t SenderSink::sample_rate() const {
@@ -88,6 +113,33 @@ void SenderSink::write(audio::Frame& frame) {
     roc_panic_if(!valid());
 
     audio_writer_->write(frame);
+}
+
+void SenderSink::compute_update_deadline_() {
+    core::SharedPtr<SenderEndpointSet> endpoint_set;
+
+    update_deadline_ = 0;
+
+    for (endpoint_set = endpoint_sets_.front(); endpoint_set;
+         endpoint_set = endpoint_sets_.nextof(*endpoint_set)) {
+        const core::nanoseconds_t deadline = endpoint_set->get_update_deadline();
+        if (deadline == 0) {
+            continue;
+        }
+
+        if (update_deadline_ == 0) {
+            update_deadline_ = deadline;
+        } else {
+            update_deadline_ = std::min(update_deadline_, deadline);
+        }
+    }
+
+    update_deadline_valid_ = true;
+}
+
+void SenderSink::invalidate_update_deadline_() {
+    update_deadline_ = 0;
+    update_deadline_valid_ = false;
 }
 
 } // namespace pipeline

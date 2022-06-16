@@ -61,6 +61,7 @@ public:
 private:
     ReceiverEndpoint* create_source_endpoint_(address::Protocol proto);
     ReceiverEndpoint* create_repair_endpoint_(address::Protocol proto);
+    ReceiverEndpoint* create_control_endpoint_(address::Protocol proto);
 
     const rtp::FormatMap& format_map_;
 
@@ -69,6 +70,7 @@ private:
 
     core::Optional<ReceiverEndpoint> source_endpoint_;
     core::Optional<ReceiverEndpoint> repair_endpoint_;
+    core::Optional<ReceiverEndpoint> control_endpoint_;
 };
 
 } // namespace pipeline

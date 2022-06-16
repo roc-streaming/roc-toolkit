@@ -82,6 +82,18 @@ SenderEndpoint::SenderEndpoint(address::Protocol proto, core::IAllocator& alloca
         break;
     }
 
+    switch (proto) {
+    case address::Proto_RTCP:
+        rtcp_composer_.reset(new (rtcp_composer_) rtcp::Composer());
+        if (!rtcp_composer_) {
+            return;
+        }
+        composer = rtcp_composer_.get();
+        break;
+    default:
+        break;
+    }
+
     composer_ = composer;
 }
 

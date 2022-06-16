@@ -48,6 +48,9 @@ ReceiverEndpoint* ReceiverEndpointSet::create_endpoint(address::Interface iface,
     case address::Iface_AudioRepair:
         return create_repair_endpoint_(proto);
 
+    case address::Iface_AudioControl:
+        return create_control_endpoint_(proto);
+
     default:
         break;
     }
@@ -69,12 +72,20 @@ void ReceiverEndpointSet::delete_endpoint(address::Interface iface) {
         repair_endpoint_.reset(NULL);
         return;
 
+    case address::Iface_AudioControl:
+        control_endpoint_.reset(NULL);
+        return;
+
     default:
         return;
     }
 }
 
 void ReceiverEndpointSet::update(packet::timestamp_t timestamp) {
+    if (control_endpoint_) {
+        control_endpoint_->pull_packets();
+    }
+
     if (source_endpoint_) {
         source_endpoint_->pull_packets();
     }
@@ -144,6 +155,28 @@ ReceiverEndpoint* ReceiverEndpointSet::create_repair_endpoint_(address::Protocol
     }
 
     return repair_endpoint_.get();
+}
+
+ReceiverEndpoint* ReceiverEndpointSet::create_control_endpoint_(address::Protocol proto) {
+    if (control_endpoint_) {
+        roc_log(LogError, "receiver endpoint set: audio control endpoint is already set");
+        return NULL;
+    }
+
+    if (!validate_endpoint(address::Iface_AudioControl, proto)) {
+        return NULL;
+    }
+
+    control_endpoint_.reset(new (control_endpoint_) ReceiverEndpoint(
+        proto, receiver_state_, session_group_, format_map_, allocator()));
+
+    if (!control_endpoint_ || !control_endpoint_->valid()) {
+        roc_log(LogError, "receiver endpoint set: can't create control endpoint");
+        control_endpoint_.reset(NULL);
+        return NULL;
+    }
+
+    return control_endpoint_.get();
 }
 
 } // namespace pipeline

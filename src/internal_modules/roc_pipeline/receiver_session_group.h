@@ -18,12 +18,15 @@
 #include "roc_core/noncopyable.h"
 #include "roc_pipeline/receiver_session.h"
 #include "roc_pipeline/receiver_state.h"
+#include "roc_rtcp/composer.h"
+#include "roc_rtcp/session.h"
 
 namespace roc {
 namespace pipeline {
 
 //! Receiver session group.
-class ReceiverSessionGroup : public core::NonCopyable<> {
+class ReceiverSessionGroup : public core::NonCopyable<>,
+                             private rtcp::IReceiverController {
 public:
     //! Initialize.
     ReceiverSessionGroup(const ReceiverConfig& receiver_config,
@@ -45,6 +48,16 @@ public:
     size_t num_sessions() const;
 
 private:
+    virtual void update_source(packet::source_t ssrc, const char* cname);
+    virtual void remove_source(packet::source_t ssrc);
+    virtual size_t num_receipted_sources();
+    virtual rtcp::ReceptionMetrics get_reception_metrics(size_t source_index);
+    virtual void add_sending_metrics(const rtcp::SendingMetrics& metrics);
+    virtual void add_link_metrics(const rtcp::LinkMetrics& metrics);
+
+    void route_transport_packet_(const packet::PacketPtr& packet);
+    void route_control_packet_(const packet::PacketPtr& packet);
+
     bool can_create_session_(const packet::PacketPtr& packet);
 
     void create_session_(const packet::PacketPtr& packet);
@@ -64,6 +77,9 @@ private:
 
     ReceiverState& receiver_state_;
     const ReceiverConfig& receiver_config_;
+
+    core::Optional<rtcp::Composer> rtcp_composer_;
+    core::Optional<rtcp::Session> rtcp_session_;
 
     core::List<ReceiverSession> sessions_;
 };

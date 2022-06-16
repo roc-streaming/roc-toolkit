@@ -56,6 +56,12 @@ public:
     //! Create endpoint set.
     SenderEndpointSet* create_endpoint_set();
 
+    //! Get deadline when the pipeline should be updated.
+    core::nanoseconds_t get_update_deadline();
+
+    //! Update pipeline.
+    void update();
+
     //! Get sink sample rate.
     virtual size_t sample_rate() const;
 
@@ -69,6 +75,9 @@ public:
     virtual void write(audio::Frame& frame);
 
 private:
+    void compute_update_deadline_();
+    void invalidate_update_deadline_();
+
     const SenderConfig config_;
 
     const rtp::FormatMap& format_map_;
@@ -88,7 +97,10 @@ private:
 
     audio::IWriter* audio_writer_;
 
-    size_t num_channels_;
+    const size_t num_channels_;
+
+    bool update_deadline_valid_;
+    core::nanoseconds_t update_deadline_;
 };
 
 } // namespace pipeline

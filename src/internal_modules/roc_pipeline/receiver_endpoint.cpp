@@ -87,6 +87,18 @@ ReceiverEndpoint::ReceiverEndpoint(address::Protocol proto,
         break;
     }
 
+    switch (proto) {
+    case address::Proto_RTCP:
+        rtcp_parser_.reset(new (rtcp_parser_) rtcp::Parser());
+        if (!rtcp_parser_) {
+            return;
+        }
+        parser = rtcp_parser_.get();
+        break;
+    default:
+        break;
+    }
+
     parser_ = parser;
 }
 

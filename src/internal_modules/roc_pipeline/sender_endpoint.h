@@ -20,6 +20,7 @@
 #include "roc_packet/icomposer.h"
 #include "roc_packet/iwriter.h"
 #include "roc_pipeline/config.h"
+#include "roc_rtcp/composer.h"
 #include "roc_rtp/composer.h"
 
 namespace roc {
@@ -79,6 +80,7 @@ private:
 
     core::Optional<rtp::Composer> rtp_composer_;
     core::ScopedPtr<packet::IComposer> fec_composer_;
+    core::Optional<rtcp::Composer> rtcp_composer_;
 };
 
 } // namespace pipeline

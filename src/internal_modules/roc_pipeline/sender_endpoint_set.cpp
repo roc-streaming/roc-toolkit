@@ -53,22 +53,43 @@ SenderEndpoint* SenderEndpointSet::create_endpoint(address::Interface iface,
         }
         break;
 
+    case address::Iface_AudioControl:
+        if (!(endpoint = create_control_endpoint_(proto))) {
+            return NULL;
+        }
+        break;
+
     default:
         roc_log(LogError, "sender endpoint set: unsupported interface");
         return NULL;
     }
 
-    if (source_endpoint_
-        && (repair_endpoint_ || config_.fec_encoder.scheme == packet::FEC_None)) {
-        if (!create_pipeline_()) {
-            return NULL;
+    switch (iface) {
+    case address::Iface_AudioSource:
+    case address::Iface_AudioRepair:
+        if (source_endpoint_
+            && (repair_endpoint_ || config_.fec_encoder.scheme == packet::FEC_None)) {
+            if (!create_transport_pipeline_()) {
+                return NULL;
+            }
         }
-    }
+        if (audio_writer_) {
+            if (!fanout_.has_output(*audio_writer_)) {
+                fanout_.add_output(*audio_writer_);
+            }
+        }
+        break;
 
-    if (audio_writer_) {
-        if (!fanout_.has_output(*audio_writer_)) {
-            fanout_.add_output(*audio_writer_);
+    case address::Iface_AudioControl:
+        if (control_endpoint_) {
+            if (!create_control_pipeline_()) {
+                return NULL;
+            }
         }
+        break;
+
+    default:
+        break;
     }
 
     return endpoint;
@@ -81,6 +102,61 @@ audio::IWriter* SenderEndpointSet::writer() {
 bool SenderEndpointSet::is_ready() const {
     return audio_writer_ && source_endpoint_->has_destination_writer()
         && (!repair_endpoint_ || repair_endpoint_->has_destination_writer());
+}
+
+core::nanoseconds_t SenderEndpointSet::get_update_deadline() const {
+    if (rtcp_session_) {
+        return rtcp_session_->generation_deadline();
+    }
+
+    return 0;
+}
+
+void SenderEndpointSet::update() {
+    if (rtcp_session_) {
+        rtcp_session_->generate_packets();
+    }
+}
+
+size_t SenderEndpointSet::num_sending_sources() {
+    return !!source_endpoint_ + !!repair_endpoint_;
+}
+
+packet::source_t SenderEndpointSet::get_sending_source(size_t source_index) {
+    switch (source_index) {
+    case 0:
+        // TODO
+        return 123;
+
+    case 1:
+        // TODO
+        return 456;
+    }
+
+    roc_panic("sender endpoint set: source index out of bounds: source_index=%lu",
+              (unsigned long)source_index);
+}
+
+rtcp::SendingMetrics
+SenderEndpointSet::get_sending_metrics(packet::ntp_timestamp_t report_time) {
+    // TODO
+
+    rtcp::SendingMetrics metrics;
+    metrics.origin_ntp = report_time;
+
+    return metrics;
+}
+
+void SenderEndpointSet::add_reception_metrics(const rtcp::ReceptionMetrics& metrics) {
+    // TODO
+
+    (void)metrics;
+}
+
+void SenderEndpointSet::add_link_metrics(const rtcp::LinkMetrics& metrics) {
+    // TODO
+
+    (void)metrics;
 }
 
 SenderEndpoint* SenderEndpointSet::create_source_endpoint_(address::Protocol proto) {
@@ -145,7 +221,27 @@ SenderEndpoint* SenderEndpointSet::create_repair_endpoint_(address::Protocol pro
     return repair_endpoint_.get();
 }
 
-bool SenderEndpointSet::create_pipeline_() {
+SenderEndpoint* SenderEndpointSet::create_control_endpoint_(address::Protocol proto) {
+    if (control_endpoint_) {
+        roc_log(LogError, "sender endpoint set: audio control endpoint is already set");
+        return NULL;
+    }
+
+    if (!validate_endpoint(address::Iface_AudioControl, proto)) {
+        return NULL;
+    }
+
+    control_endpoint_.reset(new (control_endpoint_) SenderEndpoint(proto, allocator()));
+    if (!control_endpoint_ || !control_endpoint_->valid()) {
+        roc_log(LogError, "sender endpoint set: can't create control endpoint");
+        control_endpoint_.reset(NULL);
+        return NULL;
+    }
+
+    return control_endpoint_.get();
+}
+
+bool SenderEndpointSet::create_transport_pipeline_() {
     roc_panic_if(audio_writer_);
     roc_panic_if(!source_endpoint_);
 
@@ -250,6 +346,25 @@ bool SenderEndpointSet::create_pipeline_() {
     }
 
     audio_writer_ = awriter;
+
+    return true;
+}
+
+bool SenderEndpointSet::create_control_pipeline_() {
+    roc_panic_if(rtcp_session_);
+    roc_panic_if(!control_endpoint_);
+
+    rtcp_composer_.reset(new (rtcp_composer_) rtcp::Composer());
+    if (!rtcp_composer_) {
+        return false;
+    }
+
+    rtcp_session_.reset(new (rtcp_session_) rtcp::Session(
+        NULL, this, &control_endpoint_->writer(), *rtcp_composer_, packet_factory_,
+        byte_buffer_factory_));
+    if (!rtcp_session_ || !rtcp_session_->valid()) {
+        return false;
+    }
 
     return true;
 }

@@ -24,6 +24,7 @@
 #include "roc_pipeline/config.h"
 #include "roc_pipeline/receiver_session_group.h"
 #include "roc_pipeline/receiver_state.h"
+#include "roc_rtcp/parser.h"
 #include "roc_rtp/format_map.h"
 #include "roc_rtp/parser.h"
 
@@ -74,6 +75,7 @@ private:
 
     core::Optional<rtp::Parser> rtp_parser_;
     core::ScopedPtr<packet::IParser> fec_parser_;
+    core::Optional<rtcp::Parser> rtcp_parser_;
 
     core::MpscQueue<packet::Packet> queue_;
 };
