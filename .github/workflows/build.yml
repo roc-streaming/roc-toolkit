@@ -197,7 +197,8 @@ jobs:
             avd_abi: x86_64
             avd_tgt: default
 
-    runs-on: macos-latest
+    runs-on: macos-12
+    if: ${{ false }}
 
     env:
       CI_ABI: ${{ matrix.abi }}
