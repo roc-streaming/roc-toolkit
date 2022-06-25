@@ -970,6 +970,7 @@ if meta.compiler == 'clang':
             for var in ['CXXFLAGS', 'CFLAGS']:
                 env.Append(**{var: [
                     '-Wno-redundant-parens',
+                    '-Wno-unreachable-code-break',
                 ]})
         if meta.compiler_ver[:2] >= (11, 0):
             for var in ['CXXFLAGS', 'CFLAGS']:
