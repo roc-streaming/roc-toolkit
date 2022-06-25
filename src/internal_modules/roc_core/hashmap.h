@@ -13,8 +13,8 @@
 #define ROC_CORE_HASHMAP_H_
 
 #include "roc_core/aligned_storage.h"
-#include "roc_core/hash.h"
 #include "roc_core/hashmap_node.h"
+#include "roc_core/hashsum.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/macro_helpers.h"
 #include "roc_core/noncopyable.h"
@@ -51,7 +51,7 @@ namespace core {
 //!
 //! @code
 //!   // compute key hash
-//!   static core::hash_t key_hash(Key key);
+//!   static core::hashsum_t key_hash(Key key);
 //!
 //!   // compare two keys for equality
 //!   static bool key_equal(Key key1, Key key2);
@@ -149,7 +149,7 @@ public:
     //! @note
     //!  The worst case is achieved when the hash function produces many collisions.
     template <class Key> Pointer find(const Key& key) const {
-        const hash_t hash = T::key_hash(key);
+        const hashsum_t hash = T::key_hash(key);
 
         return find_node_(hash, key);
     }
@@ -189,7 +189,7 @@ public:
                 contains(element) ? "this" : "another");
         }
 
-        const hash_t hash = T::key_hash(element.key());
+        const hashsum_t hash = T::key_hash(element.key());
 
         if (find_node_(hash, element.key())) {
             roc_panic("hashmap: attempt to insert an element with duplicate key");
@@ -369,7 +369,7 @@ private:
         }
     }
 
-    template <class Key> T* find_node_(hash_t hash, const Key& key) const {
+    template <class Key> T* find_node_(hashsum_t hash, const Key& key) const {
         if (n_curr_buckets_ != 0) {
             T* elem = find_in_bucket_(curr_buckets_[hash % n_curr_buckets_], hash, key);
             if (elem) {
@@ -388,7 +388,7 @@ private:
     }
 
     template <class Key>
-    T* find_in_bucket_(const Bucket& bucket, hash_t hash, const Key& key) const {
+    T* find_in_bucket_(const Bucket& bucket, hashsum_t hash, const Key& key) const {
         HashmapNode::HashmapNodeData* node = bucket.head;
 
         if (node != NULL) {
@@ -412,7 +412,7 @@ private:
         return n_buckets * LoafFactorNum / LoafFactorDen;
     }
 
-    Bucket& select_bucket_(hash_t hash) const {
+    Bucket& select_bucket_(hashsum_t hash) const {
         roc_panic_if(n_curr_buckets_ == 0);
 
         return curr_buckets_[hash % n_curr_buckets_];

@@ -8,8 +8,8 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "roc_core/hash.h"
 #include "roc_core/hashmap.h"
+#include "roc_core/hashsum.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_core/ref_counted.h"
 #include "roc_core/shared_ptr.h"
@@ -33,8 +33,8 @@ public:
         visited_ = false;
     }
 
-    static hash_t key_hash(const char* key) {
-        return hash_str(key);
+    static hashsum_t key_hash(const char* key) {
+        return hashsum_str(key);
     }
 
     static bool key_equal(const char* key1, const char* key2) {

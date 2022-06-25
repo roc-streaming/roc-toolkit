@@ -12,7 +12,7 @@
 #ifndef ROC_CORE_HASHMAP_NODE_H_
 #define ROC_CORE_HASHMAP_NODE_H_
 
-#include "roc_core/hash.h"
+#include "roc_core/hashsum.h"
 #include "roc_core/macro_helpers.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/panic.h"
@@ -35,7 +35,7 @@ public:
         HashmapNodeData* next;
 
         //! Cached node hash.
-        hash_t hash;
+        hashsum_t hash;
 
         //! The bucket this node belongs to.
         //! @remarks

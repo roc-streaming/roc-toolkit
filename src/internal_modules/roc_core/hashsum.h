@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_core/hash.h
-//! @brief Hash.
+//! @file roc_core/hashsum.h
+//! @brief Hash sum.
 
-#ifndef ROC_CORE_HASH_H_
-#define ROC_CORE_HASH_H_
+#ifndef ROC_CORE_HASHSUM_H_
+#define ROC_CORE_HASHSUM_H_
 
 #include "roc_core/stddefs.h"
 
@@ -18,27 +18,33 @@ namespace roc {
 namespace core {
 
 //! Hash type.
-typedef size_t hash_t;
+typedef size_t hashsum_t;
+
+//! Compute hash for 16-bit integer.
+hashsum_t hashsum_int(int16_t);
+
+//! Compute hash for 16-bit integer.
+hashsum_t hashsum_int(uint16_t);
 
 //! Compute hash for 32-bit integer.
-hash_t hash_int(int32_t);
+hashsum_t hashsum_int(int32_t);
 
 //! Compute hash for 32-bit integer.
-hash_t hash_int(uint32_t);
+hashsum_t hashsum_int(uint32_t);
 
 //! Compute hash for 64-bit integer.
-hash_t hash_int(int64_t);
+hashsum_t hashsum_int(int64_t);
 
 //! Compute hash for 64-bit integer.
-hash_t hash_int(uint64_t);
+hashsum_t hashsum_int(uint64_t);
 
 //! Compute hash for zero-terminated string.
-hash_t hash_str(const char* str);
+hashsum_t hashsum_str(const char* str);
 
 //! Compute hash for byte range.
-hash_t hash_mem(const void* data, size_t size);
+hashsum_t hashsum_mem(const void* data, size_t size);
 
 } // namespace core
 } // namespace roc
 
-#endif // ROC_CORE_HASH_H_
+#endif // ROC_CORE_HASHSUM_H_
