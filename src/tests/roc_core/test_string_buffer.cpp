@@ -39,7 +39,8 @@ TEST(string_buffer, assign) {
 TEST(string_buffer, assign_range) {
     StringBuffer<> sb(allocator);
 
-    CHECK(sb.assign_range("12345678", 5));
+    const char* s = "12345678";
+    CHECK(sb.assign(s, s + 5));
 
     CHECK(!sb.is_empty());
     UNSIGNED_LONGS_EQUAL(5, sb.len());

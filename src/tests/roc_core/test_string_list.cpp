@@ -125,8 +125,8 @@ TEST(string_list, uniq) {
 
     LONGS_EQUAL(3, sl.size());
 
-    CHECK(sl.push_back_unique("bar"));
-    CHECK(sl.push_back_unique("qux"));
+    CHECK(sl.push_unique("bar"));
+    CHECK(sl.push_unique("qux"));
 
     LONGS_EQUAL(4, sl.size());
 
@@ -158,12 +158,12 @@ TEST(string_list, push_back_range) {
     const char* end_1 = str + 3;
     const char* end_2 = str + 6;
 
-    CHECK(sl.push_back_range(str, end_1));
+    CHECK(sl.push_back(str, end_1));
 
     LONGS_EQUAL(1, sl.size());
     STRCMP_EQUAL("foo", sl.front());
 
-    CHECK(sl.push_back_range(end_1, end_2));
+    CHECK(sl.push_back(end_1, end_2));
 
     LONGS_EQUAL(2, sl.size());
     STRCMP_EQUAL("bar", sl.nextof(sl.front()));

@@ -230,7 +230,7 @@ bool EndpointUri::set_host(const char* str, size_t str_len) {
         return false;
     }
 
-    if (!host_.assign_range(str, str_len) || host_.is_empty()) {
+    if (!host_.assign(str, str + str_len) || host_.is_empty()) {
         set_invalid_(PartHost);
         return false;
     }
@@ -324,7 +324,7 @@ bool EndpointUri::set_path(const char* str, size_t str_len) {
         return true;
     }
 
-    if (!path_.assign_range(str, str_len)) {
+    if (!path_.assign(str, str + str_len)) {
         set_invalid_(PartPath);
         return false;
     }
@@ -402,7 +402,7 @@ bool EndpointUri::set_encoded_query(const char* str, size_t str_len) {
         return true;
     }
 
-    if (!query_.assign_range(str, str_len)) {
+    if (!query_.assign(str, str + str_len)) {
         set_invalid_(PartQuery);
         return false;
     }

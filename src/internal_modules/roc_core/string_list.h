@@ -62,21 +62,21 @@ public:
     //!  Reallocates memory if necessary.
     //! @returns
     //!  false if allocation failed.
-    bool push_back_range(const char* str_begin, const char* str_end);
+    bool push_back(const char* str_begin, const char* str_end);
 
     //! Append string to the list if it's not in the list already.
     //! @remarks
     //!  Reallocates memory if necessary.
     //! @returns
     //!  false if allocation failed.
-    bool push_back_unique(const char* str);
+    bool push_unique(const char* str);
 
     //! Append string from a range to the list if it's not in the list already.
     //! @remarks
     //!  Reallocates memory if necessary.
     //! @returns
     //!  false if allocation failed.
-    bool push_back_unique_range(const char* str_begin, const char* str_end);
+    bool push_unique(const char* str_begin, const char* str_end);
 
 private:
     enum { MinCapacity = 128 };

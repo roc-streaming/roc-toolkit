@@ -75,10 +75,10 @@ bool StringList::push_back(const char* str) {
         roc_panic("stringlist: string is null");
     }
 
-    return push_back_range(str, str + strlen(str));
+    return push_back(str, str + strlen(str));
 }
 
-bool StringList::push_back_range(const char* begin, const char* end) {
+bool StringList::push_back(const char* begin, const char* end) {
     if (begin == NULL || end == NULL || begin > end) {
         roc_panic("stringlist: invalid range");
     }
@@ -102,15 +102,15 @@ bool StringList::push_back_range(const char* begin, const char* end) {
     return true;
 }
 
-bool StringList::push_back_unique(const char* str) {
+bool StringList::push_unique(const char* str) {
     if (str == NULL) {
         roc_panic("stringlist: string is null");
     }
 
-    return push_back_unique_range(str, str + strlen(str));
+    return push_unique(str, str + strlen(str));
 }
 
-bool StringList::push_back_unique_range(const char* begin, const char* end) {
+bool StringList::push_unique(const char* begin, const char* end) {
     if (begin == NULL || end == NULL || begin > end) {
         roc_panic("stringlist: invalid range");
     }
@@ -122,7 +122,7 @@ bool StringList::push_back_unique_range(const char* begin, const char* end) {
         }
     }
 
-    return push_back_range(begin, end);
+    return push_back(begin, end);
 }
 
 bool StringList::grow_(size_t new_size) {

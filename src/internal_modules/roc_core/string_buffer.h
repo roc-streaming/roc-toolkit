@@ -60,20 +60,12 @@ public:
     bool assign(const char* str) {
         roc_panic_if_not(str);
 
-        return assign_range(str, str + strlen(str));
+        return assign(str, str + strlen(str));
     }
 
     //! Copy given range into buffer.
     //! Buffer will be automatically zero-terminated.
-    bool assign_range(const char* str_begin, size_t str_size) {
-        roc_panic_if_not(str_begin);
-
-        return assign_range(str_begin, str_begin + str_size);
-    }
-
-    //! Copy given range into buffer.
-    //! Buffer will be automatically zero-terminated.
-    bool assign_range(const char* str_begin, const char* str_end) {
+    bool assign(const char* str_begin, const char* str_end) {
         roc_panic_if_not(str_begin);
         roc_panic_if_not(str_begin <= str_end);
 

@@ -54,7 +54,7 @@ bool IoUri::set_scheme(const char* str, size_t str_len) {
         return false;
     }
 
-    if (!scheme_.assign_range(str, str_len)) {
+    if (!scheme_.assign(str, str + str_len)) {
         scheme_.clear();
         return false;
     }

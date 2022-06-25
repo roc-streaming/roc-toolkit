@@ -110,7 +110,7 @@ bool BackendDispatcher::get_supported_schemes(core::StringList& list) {
 
         // every device driver has its own scheme
         if (driver_info.type == DriverType_Device) {
-            if (!list.push_back_unique(driver_info.name)) {
+            if (!list.push_unique(driver_info.name)) {
                 return false;
             }
         }
@@ -131,7 +131,7 @@ bool BackendDispatcher::get_supported_formats(core::StringList& list) {
         const DriverInfo& driver_info = BackendMap::instance().nth_driver(n);
 
         if (driver_info.type == DriverType_File) {
-            if (!list.push_back_unique(driver_info.name)) {
+            if (!list.push_unique(driver_info.name)) {
                 return false;
             }
         }

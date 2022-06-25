@@ -91,7 +91,7 @@ TEST(string_builder, assign) {
 
         StringBuilder b(dst, Size);
 
-        CHECK(b.assign_range(src, src + strlen(src)));
+        CHECK(b.assign_str(src, src + strlen(src)));
         CHECK(b.ok());
 
         UNSIGNED_LONGS_EQUAL(Size, b.needed_size());
@@ -108,7 +108,7 @@ TEST(string_builder, assign) {
 
         StringBuilder b(dst, Size);
 
-        CHECK(b.assign_range(src, src + 4));
+        CHECK(b.assign_str(src, src + 4));
         CHECK(b.ok());
 
         UNSIGNED_LONGS_EQUAL(5, b.needed_size());
@@ -125,7 +125,7 @@ TEST(string_builder, assign) {
 
         StringBuilder b(dst, Size);
 
-        CHECK(!b.assign_range(src, src + strlen(src)));
+        CHECK(!b.assign_str(src, src + strlen(src)));
         CHECK(!b.ok());
 
         UNSIGNED_LONGS_EQUAL(strlen(src) + 1, b.needed_size());
@@ -142,7 +142,7 @@ TEST(string_builder, assign) {
 
         StringBuilder b(dst, Size);
 
-        CHECK(!b.assign_range(src, src + strlen(src)));
+        CHECK(!b.assign_str(src, src + strlen(src)));
         CHECK(!b.ok());
 
         UNSIGNED_LONGS_EQUAL(strlen(src) + 1, b.needed_size());
@@ -159,7 +159,7 @@ TEST(string_builder, assign) {
 
         StringBuilder b(dst, Size);
 
-        CHECK(!b.assign_range(src, src + strlen(src)));
+        CHECK(!b.assign_str(src, src + strlen(src)));
         CHECK(!b.ok());
 
         UNSIGNED_LONGS_EQUAL(strlen(src) + 1, b.needed_size());
@@ -214,7 +214,7 @@ TEST(string_builder, append_str) {
 
         StringBuilder b(dst, Size);
 
-        CHECK(b.append_range(src1, src1 + strlen(src1)));
+        CHECK(b.append_str(src1, src1 + strlen(src1)));
         CHECK(b.ok());
 
         UNSIGNED_LONGS_EQUAL(strlen(src1) + 1, b.needed_size());
@@ -222,7 +222,7 @@ TEST(string_builder, append_str) {
 
         CHECK(memcmp(dst, res1, sizeof(res1)) == 0);
 
-        CHECK(b.append_range(src2, src2 + strlen(src2)));
+        CHECK(b.append_str(src2, src2 + strlen(src2)));
         CHECK(b.ok());
 
         UNSIGNED_LONGS_EQUAL(Size, b.needed_size());
@@ -243,7 +243,7 @@ TEST(string_builder, append_str) {
 
         StringBuilder b(dst, Size);
 
-        CHECK(b.append_range(src1, src1 + strlen(src1)));
+        CHECK(b.append_str(src1, src1 + strlen(src1)));
         CHECK(b.ok());
 
         UNSIGNED_LONGS_EQUAL(strlen(src1) + 1, b.needed_size());
@@ -251,7 +251,7 @@ TEST(string_builder, append_str) {
 
         CHECK(memcmp(dst, res1, sizeof(res1)) == 0);
 
-        CHECK(b.append_range(src2, src2 + strlen(src2)));
+        CHECK(b.append_str(src2, src2 + strlen(src2)));
         CHECK(b.ok());
 
         UNSIGNED_LONGS_EQUAL(strlen(src1) + strlen(src2) + 1, b.needed_size());
@@ -272,7 +272,7 @@ TEST(string_builder, append_str) {
 
         StringBuilder b(dst, Size);
 
-        CHECK(b.append_range(src1, src1 + strlen(src1)));
+        CHECK(b.append_str(src1, src1 + strlen(src1)));
         CHECK(b.ok());
 
         UNSIGNED_LONGS_EQUAL(strlen(src1) + 1, b.needed_size());
@@ -280,7 +280,7 @@ TEST(string_builder, append_str) {
 
         CHECK(memcmp(dst, res1, sizeof(res1)) == 0);
 
-        CHECK(!b.append_range(src2, src2 + strlen(src2)));
+        CHECK(!b.append_str(src2, src2 + strlen(src2)));
         CHECK(!b.ok());
 
         UNSIGNED_LONGS_EQUAL(strlen(src1) + strlen(src2) + 1, b.needed_size());
@@ -301,7 +301,7 @@ TEST(string_builder, append_str) {
 
         StringBuilder b(dst, Size);
 
-        CHECK(b.append_range(src1, src1 + strlen(src1)));
+        CHECK(b.append_str(src1, src1 + strlen(src1)));
         CHECK(b.ok());
 
         UNSIGNED_LONGS_EQUAL(Size, b.needed_size());
@@ -309,7 +309,7 @@ TEST(string_builder, append_str) {
 
         CHECK(memcmp(dst, res1, sizeof(res1)) == 0);
 
-        CHECK(!b.append_range(src2, src2 + strlen(src2)));
+        CHECK(!b.append_str(src2, src2 + strlen(src2)));
         CHECK(!b.ok());
 
         UNSIGNED_LONGS_EQUAL(strlen(src1) + strlen(src2) + 1, b.needed_size());

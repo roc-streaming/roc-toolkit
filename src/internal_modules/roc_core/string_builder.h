@@ -91,11 +91,7 @@ public:
 
     //! Overwrite result with given range.
     //! If there is not enough space, truncates the string and returns false.
-    bool assign_range(const char* str_begin, size_t str_size);
-
-    //! Overwrite result with given range.
-    //! If there is not enough space, truncates the string and returns false.
-    bool assign_range(const char* str_begin, const char* str_end);
+    bool assign_str(const char* str_begin, const char* str_end);
 
     //! Append to result given string.
     //! If there is not enough space, truncates the string and returns false.
@@ -103,11 +99,7 @@ public:
 
     //! Append to result given range.
     //! If there is not enough space, truncates the string and returns false.
-    bool append_range(const char* str_begin, size_t str_size);
-
-    //! Append to result given range.
-    //! If there is not enough space, truncates the string and returns false.
-    bool append_range(const char* str_begin, const char* str_end);
+    bool append_str(const char* str_begin, const char* str_end);
 
     //! Append to result given character.
     //! If there is not enough space, truncates the string and returns false.
