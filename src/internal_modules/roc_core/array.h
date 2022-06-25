@@ -37,12 +37,22 @@ namespace core {
 //! the array size is small enough.
 template <class T, size_t EmbeddedCapacity = 0> class Array : public NonCopyable<> {
 public:
+    //! Initialize empty array without allocator.
+    //! @remarks
+    //!  Array maximum size will be limited to the embedded capacity.
+    Array()
+        : data_(NULL)
+        , size_(0)
+        , max_size_(0)
+        , allocator_(NULL) {
+    }
+
     //! Initialize empty array.
     explicit Array(IAllocator& allocator)
         : data_(NULL)
         , size_(0)
         , max_size_(0)
-        , allocator_(allocator) {
+        , allocator_(&allocator) {
     }
 
     ~Array() {
@@ -54,6 +64,7 @@ public:
     }
 
     //! Get maximum number of elements.
+    //! If array has allocator, capacity can be grown.
     size_t capacity() const {
         return max_size_;
     }
@@ -214,14 +225,17 @@ private:
     T* allocate_(size_t n_elems) {
         if (n_elems <= EmbeddedCapacity) {
             return (T*)embedded_data_.memory();
+        } else if (allocator_) {
+            return (T*)allocator_->allocate(n_elems * sizeof(T));
         } else {
-            return (T*)allocator_.allocate(n_elems * sizeof(T));
+            return NULL;
         }
     }
 
     void deallocate_(T* data) {
         if ((void*)data != (void*)embedded_data_.memory()) {
-            allocator_.deallocate(data);
+            roc_panic_if(!allocator_);
+            allocator_->deallocate(data);
         }
     }
 
@@ -229,7 +243,7 @@ private:
     size_t size_;
     size_t max_size_;
 
-    IAllocator& allocator_;
+    IAllocator* allocator_;
 
     AlignedStorage<EmbeddedCapacity * sizeof(T)> embedded_data_;
 };
