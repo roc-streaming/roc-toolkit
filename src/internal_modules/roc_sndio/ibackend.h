@@ -23,21 +23,24 @@
 namespace roc {
 namespace sndio {
 
+//! Maximum number of backends.
+static const size_t MaxBackends = 8;
+
 //! Backend interface.
 class IBackend {
 public:
     virtual ~IBackend();
 
+    //! Append supported drivers to the list.
+    virtual void discover_drivers(core::Array<DriverInfo, MaxDrivers>& driver_list) = 0;
+
     //! Create and open a sink or source.
-    virtual ITerminal* open_terminal(core::IAllocator& allocator,
-                                     TerminalType terminal_type,
+    virtual ITerminal* open_terminal(TerminalType terminal_type,
                                      DriverType driver_type,
                                      const char* driver,
                                      const char* path,
-                                     const Config& config) = 0;
-
-    //! Append supported drivers to the list.
-    virtual bool get_drivers(core::Array<DriverInfo>& driver_list) = 0;
+                                     const Config& config,
+                                     core::IAllocator& allocator) = 0;
 };
 
 } // namespace sndio

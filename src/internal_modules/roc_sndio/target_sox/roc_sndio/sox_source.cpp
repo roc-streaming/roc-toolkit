@@ -9,7 +9,7 @@
 #include "roc_sndio/sox_source.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
-#include "roc_sndio/sox_backend.h"
+#include "roc_sndio/backend_map.h"
 
 namespace roc {
 namespace sndio {
@@ -24,7 +24,7 @@ SoxSource::SoxSource(core::IAllocator& allocator, const Config& config)
     , eof_(false)
     , paused_(false)
     , valid_(false) {
-    SoxBackend::instance();
+    BackendMap::instance();
 
     if (config.sample_spec.num_channels() == 0) {
         roc_log(LogError, "sox source: # of channels is zero");

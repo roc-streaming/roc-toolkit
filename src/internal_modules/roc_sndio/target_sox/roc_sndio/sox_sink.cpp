@@ -9,7 +9,7 @@
 #include "roc_sndio/sox_sink.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
-#include "roc_sndio/sox_backend.h"
+#include "roc_sndio/backend_map.h"
 
 namespace roc {
 namespace sndio {
@@ -20,7 +20,7 @@ SoxSink::SoxSink(core::IAllocator& allocator, const Config& config)
     , buffer_size_(0)
     , is_file_(false)
     , valid_(false) {
-    SoxBackend::instance();
+    BackendMap::instance();
 
     if (config.sample_spec.num_channels() == 0) {
         roc_log(LogError, "sox sink: # of channels is zero");

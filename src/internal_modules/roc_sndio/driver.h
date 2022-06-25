@@ -20,6 +20,9 @@ namespace sndio {
 
 class IBackend;
 
+//! Maximum number of drivers.
+static const size_t MaxDrivers = 128;
+
 //! Driver type.
 enum DriverType {
     //! Invalid type.

@@ -13,7 +13,6 @@
 #define ROC_SNDIO_PULSEAUDIO_BACKEND_H_
 
 #include "roc_core/noncopyable.h"
-#include "roc_core/singleton.h"
 #include "roc_sndio/ibackend.h"
 
 namespace roc {
@@ -22,26 +21,18 @@ namespace sndio {
 //! Pulseaudio backend.
 class PulseaudioBackend : public IBackend, core::NonCopyable<> {
 public:
-    //! Get instance.
-    static PulseaudioBackend& instance() {
-        return core::Singleton<PulseaudioBackend>::instance();
-    }
+    PulseaudioBackend();
+
+    //! Append supported drivers to the list.
+    virtual void discover_drivers(core::Array<DriverInfo, MaxDrivers>& driver_list);
 
     //! Create and open a sink or source.
-    virtual ITerminal* open_terminal(core::IAllocator& allocator,
-                                     TerminalType terminal_type,
+    virtual ITerminal* open_terminal(TerminalType terminal_type,
                                      DriverType driver_type,
                                      const char* driver,
                                      const char* path,
-                                     const Config& config);
-
-    //! Append supported drivers to the list.
-    virtual bool get_drivers(core::Array<DriverInfo>& driver_list);
-
-private:
-    friend class core::Singleton<PulseaudioBackend>;
-
-    PulseaudioBackend();
+                                     const Config& config,
+                                     core::IAllocator& allocator);
 };
 
 } // namespace sndio

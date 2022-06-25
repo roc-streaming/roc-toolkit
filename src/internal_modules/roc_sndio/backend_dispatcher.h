@@ -16,7 +16,6 @@
 #include "roc_audio/sample_spec.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/noncopyable.h"
-#include "roc_core/shared_ptr.h"
 #include "roc_core/singleton.h"
 #include "roc_core/string_list.h"
 #include "roc_sndio/driver.h"
@@ -31,26 +30,25 @@ namespace sndio {
 class BackendDispatcher : public core::NonCopyable<> {
 public:
     //! Initialize.
-    BackendDispatcher(core::IAllocator& allocator);
-
-    //! Set internal buffer size for all backends that need it.
-    void set_frame_size(core::nanoseconds_t frame_length,
-                        const audio::SampleSpec& sample_spec);
+    BackendDispatcher();
 
     //! Create and open default sink.
-    ISink* open_default_sink(const Config& config);
+    ISink* open_default_sink(const Config& config, core::IAllocator& allocator);
 
     //! Create and open default source.
-    ISource* open_default_source(const Config& config);
+    ISource* open_default_source(const Config& config, core::IAllocator& allocator);
 
     //! Create and open a sink.
-    ISink*
-    open_sink(const address::IoUri& uri, const char* force_format, const Config& config);
+    ISink* open_sink(const address::IoUri& uri,
+                     const char* force_format,
+                     const Config& config,
+                     core::IAllocator& allocator);
 
     //! Create and open a source.
     ISource* open_source(const address::IoUri& uri,
                          const char* force_format,
-                         const Config& config);
+                         const Config& config,
+                         core::IAllocator& allocator);
 
     //! Get all supported URI schemes.
     bool get_supported_schemes(core::StringList&);
@@ -59,26 +57,16 @@ public:
     bool get_supported_formats(core::StringList&);
 
 private:
-    enum { MaxBackends = 8, MaxDrivers = 128 };
-
-    ITerminal* open_default_terminal_(TerminalType terminal_type, const Config& config);
+    ITerminal* open_default_terminal_(TerminalType terminal_type,
+                                      const Config& config,
+                                      core::IAllocator& allocator);
 
     ITerminal* open_terminal_(TerminalType terminal_type,
                               DriverType driver_type,
                               const char* driver_name,
                               const char* path,
-                              const Config& config);
-
-    void register_backends_();
-    void register_backend_(IBackend& backend);
-    void discover_drivers_();
-
-    core::IAllocator& allocator_;
-
-    IBackend* backends_[MaxBackends];
-    size_t n_backends_;
-
-    core::Array<DriverInfo> drivers_;
+                              const Config& config,
+                              core::IAllocator& allocator);
 };
 
 } // namespace sndio

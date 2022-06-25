@@ -21,12 +21,23 @@ PulseaudioBackend::PulseaudioBackend() {
     roc_log(LogDebug, "pulseaudio backend: initializing");
 }
 
-ITerminal* PulseaudioBackend::open_terminal(core::IAllocator& allocator,
-                                            TerminalType terminal_type,
+void PulseaudioBackend::discover_drivers(
+    core::Array<DriverInfo, MaxDrivers>& driver_list) {
+    if (!driver_list.grow(driver_list.size() + 1)) {
+        roc_panic("pulseaudio backend: can't grow drivers array");
+    }
+
+    driver_list.push_back(DriverInfo("pulse", DriverType_Device,
+                                     DriverFlag_IsDefault | DriverFlag_SupportsSink,
+                                     this));
+}
+
+ITerminal* PulseaudioBackend::open_terminal(TerminalType terminal_type,
                                             DriverType driver_type,
                                             const char* driver,
                                             const char* path,
-                                            const Config& config) {
+                                            const Config& config,
+                                            core::IAllocator& allocator) {
     if (driver_type != DriverType_Device) {
         return NULL;
     }
@@ -61,18 +72,6 @@ ITerminal* PulseaudioBackend::open_terminal(core::IAllocator& allocator,
     }
 
     roc_panic("pulseaudio backend: invalid terminal type");
-}
-
-bool PulseaudioBackend::get_drivers(core::Array<DriverInfo>& driver_list) {
-    if (!driver_list.grow_exp(driver_list.size() + 1)) {
-        return false;
-    }
-
-    driver_list.push_back(DriverInfo("pulse", DriverType_Device,
-                                     DriverFlag_IsDefault | DriverFlag_SupportsSink,
-                                     this));
-
-    return true;
 }
 
 } // namespace sndio

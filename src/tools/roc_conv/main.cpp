@@ -16,6 +16,7 @@
 #include "roc_core/scoped_ptr.h"
 #include "roc_pipeline/converter_sink.h"
 #include "roc_sndio/backend_dispatcher.h"
+#include "roc_sndio/backend_map.h"
 #include "roc_sndio/print_supported.h"
 #include "roc_sndio/pump.h"
 
@@ -59,7 +60,7 @@ int main(int argc, char** argv) {
     }
 
     core::HeapAllocator allocator;
-    sndio::BackendDispatcher backend_dispatcher(allocator);
+    sndio::BackendDispatcher backend_dispatcher;
 
     if (args.list_supported_given) {
         if (!sndio::print_supported(backend_dispatcher, allocator)) {
@@ -84,8 +85,8 @@ int main(int argc, char** argv) {
         }
     }
 
-    backend_dispatcher.set_frame_size(converter_config.internal_frame_length,
-                                      converter_config.input_sample_spec);
+    sndio::BackendMap::instance().set_frame_size(converter_config.internal_frame_length,
+                                                 converter_config.input_sample_spec);
 
     core::BufferFactory<audio::sample_t> buffer_factory(
         allocator,
@@ -114,12 +115,13 @@ int main(int argc, char** argv) {
 
     core::ScopedPtr<sndio::ISource> input_source;
     if (input_uri.is_valid()) {
-        input_source.reset(backend_dispatcher.open_source(
-                               input_uri, args.input_format_arg, source_config),
+        input_source.reset(backend_dispatcher.open_source(input_uri,
+                                                          args.input_format_arg,
+                                                          source_config, allocator),
                            allocator);
     } else {
-        input_source.reset(backend_dispatcher.open_default_source(source_config),
-                           allocator);
+        input_source.reset(
+            backend_dispatcher.open_default_source(source_config, allocator), allocator);
     }
     if (!input_source) {
         roc_log(LogError, "can't open input: %s", args.input_arg);
@@ -197,12 +199,13 @@ int main(int argc, char** argv) {
     core::ScopedPtr<sndio::ISink> output_sink;
     if (args.output_given) {
         if (output_uri.is_valid()) {
-            output_sink.reset(backend_dispatcher.open_sink(
-                                  output_uri, args.output_format_arg, sink_config),
+            output_sink.reset(backend_dispatcher.open_sink(output_uri,
+                                                           args.output_format_arg,
+                                                           sink_config, allocator),
                               allocator);
         } else {
-            output_sink.reset(backend_dispatcher.open_default_sink(sink_config),
-                              allocator);
+            output_sink.reset(
+                backend_dispatcher.open_default_sink(sink_config, allocator), allocator);
         }
         if (!output_sink) {
             roc_log(LogError, "can't open output: %s", args.output_arg);

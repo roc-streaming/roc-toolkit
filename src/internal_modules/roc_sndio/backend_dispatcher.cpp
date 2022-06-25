@@ -9,14 +9,7 @@
 #include "roc_sndio/backend_dispatcher.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
-
-#ifdef ROC_TARGET_PULSEAUDIO
-#include "roc_sndio/pulseaudio_backend.h"
-#endif // ROC_TARGET_PULSEAUDIO
-
-#ifdef ROC_TARGET_SOX
-#include "roc_sndio/sox_backend.h"
-#endif // ROC_TARGET_SOX
+#include "roc_sndio/backend_map.h"
 
 namespace roc {
 namespace sndio {
@@ -66,35 +59,23 @@ bool match_driver(const DriverInfo& driver_info,
 
 } // namespace
 
-BackendDispatcher::BackendDispatcher(core::IAllocator& allocator)
-    : allocator_(allocator)
-    , n_backends_(0)
-    , drivers_(allocator_) {
-    register_backends_();
-    discover_drivers_();
+BackendDispatcher::BackendDispatcher() {
 }
 
-void BackendDispatcher::set_frame_size(core::nanoseconds_t frame_length,
-                                       const audio::SampleSpec& sample_spec) {
-#ifdef ROC_TARGET_SOX
-    SoxBackend::instance().set_frame_size(frame_length, sample_spec);
-#endif // ROC_TARGET_SOX
-    (void)frame_length;
-    (void)sample_spec;
+ISink* BackendDispatcher::open_default_sink(const Config& config,
+                                            core::IAllocator& allocator) {
+    return (ISink*)open_default_terminal_(Terminal_Sink, config, allocator);
 }
 
-ISink* BackendDispatcher::open_default_sink(const Config& config) {
-    return (ISink*)open_default_terminal_(Terminal_Sink, config);
-}
-
-
-ISource* BackendDispatcher::open_default_source(const Config& config) {
-    return (ISource*)open_default_terminal_(Terminal_Sink, config);
+ISource* BackendDispatcher::open_default_source(const Config& config,
+                                                core::IAllocator& allocator) {
+    return (ISource*)open_default_terminal_(Terminal_Sink, config, allocator);
 }
 
 ISink* BackendDispatcher::open_sink(const address::IoUri& uri,
                                     const char* force_format,
-                                    const Config& config) {
+                                    const Config& config,
+                                    core::IAllocator& allocator) {
     if (!uri.is_valid()) {
         roc_panic("backend dispatcher: invalid uri");
     }
@@ -103,12 +84,13 @@ ISink* BackendDispatcher::open_sink(const address::IoUri& uri,
     const char* driver_name = select_driver_name(uri, force_format);
 
     return (ISink*)open_terminal_(Terminal_Sink, driver_type, driver_name, uri.path(),
-                                  config);
+                                  config, allocator);
 }
 
 ISource* BackendDispatcher::open_source(const address::IoUri& uri,
                                         const char* force_format,
-                                        const Config& config) {
+                                        const Config& config,
+                                        core::IAllocator& allocator) {
     if (!uri.is_valid()) {
         roc_panic("backend dispatcher: invalid uri");
     }
@@ -117,16 +99,18 @@ ISource* BackendDispatcher::open_source(const address::IoUri& uri,
     const char* driver_name = select_driver_name(uri, force_format);
 
     return (ISource*)open_terminal_(Terminal_Source, driver_type, driver_name, uri.path(),
-                                    config);
+                                    config, allocator);
 }
 
 bool BackendDispatcher::get_supported_schemes(core::StringList& list) {
     list.clear();
 
-    for (size_t n = 0; n < drivers_.size(); n++) {
+    for (size_t n = 0; n < BackendMap::instance().num_drivers(); n++) {
+        const DriverInfo& driver_info = BackendMap::instance().nth_driver(n);
+
         // every device driver has its own scheme
-        if (drivers_[n].type == DriverType_Device) {
-            if (!list.push_back_unique(drivers_[n].name)) {
+        if (driver_info.type == DriverType_Device) {
+            if (!list.push_back_unique(driver_info.name)) {
                 return false;
             }
         }
@@ -143,9 +127,11 @@ bool BackendDispatcher::get_supported_schemes(core::StringList& list) {
 bool BackendDispatcher::get_supported_formats(core::StringList& list) {
     list.clear();
 
-    for (size_t n = 0; n < drivers_.size(); n++) {
-        if (drivers_[n].type == DriverType_File) {
-            if (!list.push_back_unique(drivers_[n].name)) {
+    for (size_t n = 0; n < BackendMap::instance().num_drivers(); n++) {
+        const DriverInfo& driver_info = BackendMap::instance().nth_driver(n);
+
+        if (driver_info.type == DriverType_File) {
+            if (!list.push_back_unique(driver_info.name)) {
                 return false;
             }
         }
@@ -155,19 +141,22 @@ bool BackendDispatcher::get_supported_formats(core::StringList& list) {
 }
 
 ITerminal* BackendDispatcher::open_default_terminal_(TerminalType terminal_type,
-                                                     const Config& config) {
+                                                     const Config& config,
+                                                     core::IAllocator& allocator) {
     const unsigned driver_flags = DriverFlag_IsDefault
         | (terminal_type == Terminal_Sink ? DriverFlag_SupportsSink
                                           : DriverFlag_SupportsSource);
 
-    for (size_t n = 0; n < drivers_.size(); n++) {
-        if (!match_driver(drivers_[n], NULL, DriverType_Device, driver_flags)) {
+    for (size_t n = 0; n < BackendMap::instance().num_drivers(); n++) {
+        const DriverInfo& driver_info = BackendMap::instance().nth_driver(n);
+
+        if (!match_driver(driver_info, NULL, DriverType_Device, driver_flags)) {
             continue;
         }
 
-        ITerminal* terminal = drivers_[n].backend->open_terminal(
-            allocator_, terminal_type, DriverType_Device, drivers_[n].name, "default",
-            config);
+        ITerminal* terminal = BackendMap::instance().nth_driver(n).backend->open_terminal(
+            terminal_type, DriverType_Device, BackendMap::instance().nth_driver(n).name,
+            "default", config, allocator);
         if (terminal) {
             return terminal;
         }
@@ -181,27 +170,33 @@ ITerminal* BackendDispatcher::open_terminal_(TerminalType terminal_type,
                                              DriverType driver_type,
                                              const char* driver_name,
                                              const char* path,
-                                             const Config& config) {
+                                             const Config& config,
+                                             core::IAllocator& allocator) {
     const unsigned driver_flags =
         (terminal_type == Terminal_Sink ? DriverFlag_SupportsSink
                                         : DriverFlag_SupportsSource);
 
     if (driver_name != NULL) {
-        for (size_t n = 0; n < drivers_.size(); n++) {
-            if (!match_driver(drivers_[n], driver_name, driver_type, driver_flags)) {
+        for (size_t n = 0; n < BackendMap::instance().num_drivers(); n++) {
+            const DriverInfo& driver_info = BackendMap::instance().nth_driver(n);
+
+            if (!match_driver(driver_info, driver_name, driver_type, driver_flags)) {
                 continue;
             }
 
-            ITerminal* terminal = drivers_[n].backend->open_terminal(
-                allocator_, terminal_type, driver_type, driver_name, path, config);
+            ITerminal* terminal =
+                BackendMap::instance().nth_driver(n).backend->open_terminal(
+                    terminal_type, driver_type, driver_name, path, config, allocator);
             if (terminal) {
                 return terminal;
             }
         }
     } else {
-        for (size_t n = 0; n < n_backends_; n++) {
-            ITerminal* terminal = backends_[n]->open_terminal(
-                allocator_, terminal_type, driver_type, NULL, path, config);
+        for (size_t n = 0; n < BackendMap::instance().num_backends(); n++) {
+            IBackend& backend = BackendMap::instance().nth_backend(n);
+
+            ITerminal* terminal = backend.open_terminal(terminal_type, driver_type, NULL,
+                                                        path, config, allocator);
             if (terminal) {
                 return terminal;
             }
@@ -213,33 +208,6 @@ ITerminal* BackendDispatcher::open_terminal_(TerminalType terminal_type,
             driver_name, path);
 
     return NULL;
-}
-
-void BackendDispatcher::register_backends_() {
-#ifdef ROC_TARGET_PULSEAUDIO
-    register_backend_(PulseaudioBackend::instance());
-#endif // ROC_TARGET_PULSEAUDIO
-#ifdef ROC_TARGET_SOX
-    register_backend_(SoxBackend::instance());
-#endif // ROC_TARGET_SOX
-}
-
-void BackendDispatcher::register_backend_(IBackend& backend) {
-    roc_panic_if(n_backends_ == MaxBackends);
-    backends_[n_backends_++] = &backend;
-}
-
-void BackendDispatcher::discover_drivers_() {
-    if (!drivers_.grow(MaxDrivers)) {
-        roc_panic("backend dispatcher: allocation failed");
-    }
-
-    for (size_t n = 0; n < n_backends_; n++) {
-        backends_[n]->get_drivers(drivers_);
-    }
-
-    roc_log(LogDebug, "backend dispatcher: initialized: n_backends=%d n_drivers=%d",
-            (int)n_backends_, (int)drivers_.size());
 }
 
 } // namespace sndio

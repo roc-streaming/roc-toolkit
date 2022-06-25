@@ -171,8 +171,6 @@ SoxBackend::SoxBackend()
 
 void SoxBackend::set_frame_size(core::nanoseconds_t frame_length,
                                 const audio::SampleSpec& sample_spec) {
-    core::Mutex::Lock lock(mutex_);
-
     size_t size = sample_spec.ns_to_size(frame_length);
 
     if (first_created_) {
@@ -184,14 +182,57 @@ void SoxBackend::set_frame_size(core::nanoseconds_t frame_length,
     sox_get_globals()->bufsiz = size * sizeof(sox_sample_t);
 }
 
-ITerminal* SoxBackend::open_terminal(core::IAllocator& allocator,
-                                     TerminalType terminal_type,
+void SoxBackend::discover_drivers(core::Array<DriverInfo, MaxDrivers>& driver_list) {
+    for (size_t n = 0; n < ROC_ARRAY_SIZE(default_drivers); n++) {
+        const sox_format_handler_t* handler =
+            sox_write_handler(NULL, default_drivers[n], NULL);
+        if (!handler) {
+            continue;
+        }
+
+        const char* driver = map_from_sox_driver(default_drivers[n]);
+
+        if (!driver_list.grow(driver_list.size() + 1)) {
+            roc_panic("sox backend: can't grow drivers array");
+        }
+
+        driver_list.push_back(DriverInfo(driver, DriverType_Device,
+                                         DriverFlag_IsDefault | DriverFlag_SupportsSource
+                                             | DriverFlag_SupportsSink,
+                                         this));
+    }
+
+    const sox_format_tab_t* formats = sox_get_format_fns();
+
+    for (size_t n = 0; formats[n].fn; n++) {
+        sox_format_handler_t const* handler = formats[n].fn();
+
+        char const* const* format_names;
+        for (format_names = handler->names; *format_names; ++format_names) {
+            const char* driver = map_from_sox_driver(*format_names);
+
+            if (is_driver_hidden(driver) || is_default_driver(driver)) {
+                continue;
+            }
+
+            if (!driver_list.grow(driver_list.size() + 1)) {
+                roc_panic("sox backend: can't grow drivers array");
+            }
+
+            driver_list.push_back(DriverInfo(
+                driver,
+                (handler->flags & SOX_FILE_DEVICE) ? DriverType_Device : DriverType_File,
+                DriverFlag_SupportsSource | DriverFlag_SupportsSink, this));
+        }
+    }
+}
+
+ITerminal* SoxBackend::open_terminal(TerminalType terminal_type,
                                      DriverType driver_type,
                                      const char* driver,
                                      const char* path,
-                                     const Config& config) {
-    core::Mutex::Lock lock(mutex_);
-
+                                     const Config& config,
+                                     core::IAllocator& allocator) {
     first_created_ = true;
 
     driver = map_to_sox_driver(driver);
@@ -257,55 +298,6 @@ ITerminal* SoxBackend::open_terminal(core::IAllocator& allocator,
     }
 
     roc_panic("sox backend: invalid terminal type");
-}
-
-bool SoxBackend::get_drivers(core::Array<DriverInfo>& driver_list) {
-    core::Mutex::Lock lock(mutex_);
-
-    for (size_t n = 0; n < ROC_ARRAY_SIZE(default_drivers); n++) {
-        const sox_format_handler_t* handler =
-            sox_write_handler(NULL, default_drivers[n], NULL);
-        if (!handler) {
-            continue;
-        }
-
-        const char* driver = map_from_sox_driver(default_drivers[n]);
-
-        if (!driver_list.grow_exp(driver_list.size() + 1)) {
-            return false;
-        }
-
-        driver_list.push_back(DriverInfo(driver, DriverType_Device,
-                                         DriverFlag_IsDefault | DriverFlag_SupportsSource
-                                             | DriverFlag_SupportsSink,
-                                         this));
-    }
-
-    const sox_format_tab_t* formats = sox_get_format_fns();
-
-    for (size_t n = 0; formats[n].fn; n++) {
-        sox_format_handler_t const* handler = formats[n].fn();
-
-        char const* const* format_names;
-        for (format_names = handler->names; *format_names; ++format_names) {
-            const char* driver = map_from_sox_driver(*format_names);
-
-            if (is_driver_hidden(driver) || is_default_driver(driver)) {
-                continue;
-            }
-
-            if (!driver_list.grow_exp(driver_list.size() + 1)) {
-                return false;
-            }
-
-            driver_list.push_back(DriverInfo(
-                driver,
-                (handler->flags & SOX_FILE_DEVICE) ? DriverType_Device : DriverType_File,
-                DriverFlag_SupportsSource | DriverFlag_SupportsSink, this));
-        }
-    }
-
-    return true;
 }
 
 } // namespace sndio

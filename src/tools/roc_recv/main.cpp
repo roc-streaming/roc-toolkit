@@ -22,6 +22,7 @@
 #include "roc_pipeline/converter_source.h"
 #include "roc_pipeline/receiver_source.h"
 #include "roc_sndio/backend_dispatcher.h"
+#include "roc_sndio/backend_map.h"
 #include "roc_sndio/print_supported.h"
 #include "roc_sndio/pump.h"
 
@@ -92,7 +93,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    sndio::BackendDispatcher backend_dispatcher(context.allocator());
+    sndio::BackendDispatcher backend_dispatcher;
 
     if (args.list_supported_given) {
         if (!sndio::print_supported(backend_dispatcher, context.allocator())) {
@@ -117,8 +118,9 @@ int main(int argc, char** argv) {
         }
     }
 
-    backend_dispatcher.set_frame_size(receiver_config.common.internal_frame_length,
-                                      receiver_config.common.output_sample_spec);
+    sndio::BackendMap::instance().set_frame_size(
+        receiver_config.common.internal_frame_length,
+        receiver_config.common.output_sample_spec);
 
     if (args.sess_latency_given) {
         if (!core::parse_duration(args.sess_latency_arg,
@@ -268,12 +270,13 @@ int main(int argc, char** argv) {
 
     core::ScopedPtr<sndio::ISink> output_sink;
     if (output_uri.is_valid()) {
-        output_sink.reset(
-            backend_dispatcher.open_sink(output_uri, args.output_format_arg, io_config),
-            context.allocator());
-    } else {
-        output_sink.reset(backend_dispatcher.open_default_sink(io_config),
+        output_sink.reset(backend_dispatcher.open_sink(output_uri, args.output_format_arg,
+                                                       io_config, context.allocator()),
                           context.allocator());
+    } else {
+        output_sink.reset(
+            backend_dispatcher.open_default_sink(io_config, context.allocator()),
+            context.allocator());
     }
     if (!output_sink) {
         roc_log(LogError, "can't open output file or device: uri=%s format=%s",
@@ -317,7 +320,8 @@ int main(int argc, char** argv) {
         }
 
         backup_source.reset(
-            backend_dispatcher.open_source(backup_uri, args.backup_format_arg, io_config),
+            backend_dispatcher.open_source(backup_uri, args.backup_format_arg, io_config,
+                                           context.allocator()),
             context.allocator());
 
         if (!backup_source) {

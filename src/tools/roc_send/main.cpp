@@ -22,6 +22,7 @@
 #include "roc_peer/sender.h"
 #include "roc_pipeline/sender_sink.h"
 #include "roc_sndio/backend_dispatcher.h"
+#include "roc_sndio/backend_map.h"
 #include "roc_sndio/print_supported.h"
 #include "roc_sndio/pump.h"
 
@@ -92,7 +93,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    sndio::BackendDispatcher backend_dispatcher(context.allocator());
+    sndio::BackendDispatcher backend_dispatcher;
     if (args.list_supported_given) {
         if (!sndio::print_supported(backend_dispatcher, context.allocator())) {
             return 1;
@@ -123,8 +124,8 @@ int main(int argc, char** argv) {
         }
     }
 
-    backend_dispatcher.set_frame_size(sender_config.internal_frame_length,
-                                      sender_config.input_sample_spec);
+    sndio::BackendMap::instance().set_frame_size(sender_config.internal_frame_length,
+                                                 sender_config.input_sample_spec);
 
     address::EndpointUri source_endpoint(context.allocator());
     if (args.source_given) {
@@ -261,12 +262,14 @@ int main(int argc, char** argv) {
 
     core::ScopedPtr<sndio::ISource> input_source;
     if (input_uri.is_valid()) {
-        input_source.reset(
-            backend_dispatcher.open_source(input_uri, args.input_format_arg, io_config),
-            context.allocator());
-    } else {
-        input_source.reset(backend_dispatcher.open_default_source(io_config),
+        input_source.reset(backend_dispatcher.open_source(input_uri,
+                                                          args.input_format_arg,
+                                                          io_config, context.allocator()),
                            context.allocator());
+    } else {
+        input_source.reset(
+            backend_dispatcher.open_default_source(io_config, context.allocator()),
+            context.allocator());
     }
     if (!input_source) {
         roc_log(LogError, "can't open input file or device: uri=%s format=%s",
