@@ -47,6 +47,11 @@
 #define ROC_ATTR_PACKED_END
 #endif
 
+#if HEDLEY_HAS_ATTRIBUTE(aligned)
+//! The filed should have given alignment.
+#define ROC_ATTR_ALIGNED(x) __attribute__((aligned(x)))
+#endif
+
 #if HEDLEY_HAS_ATTRIBUTE(no_sanitize)
 //! Suppress undefined behavior sanitizer for a particular function.
 #define ROC_ATTR_NO_SANITIZE_UB __attribute__((no_sanitize("undefined")))
