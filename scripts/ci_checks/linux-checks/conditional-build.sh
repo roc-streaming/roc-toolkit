@@ -1,7 +1,7 @@
 #! /bin/bash
 set -euxo pipefail
 
-# disable optional dependencies, don't build optional targets
+# optional dependencies: none, optional targets: none
 scons -Q --enable-werror --build-3rdparty=all \
       --disable-shared \
       --disable-tools \
@@ -12,8 +12,9 @@ scons -Q --enable-werror --build-3rdparty=all \
       --disable-sox \
       --disable-pulseaudio
 
-# disable optional dependencies, build all targets
+# optional dependencies: none, optional targets: all
 scons -Q --enable-werror --build-3rdparty=all \
+      --enable-static \
       --enable-tests \
       --enable-benchmarks \
       --enable-examples \
@@ -24,7 +25,7 @@ scons -Q --enable-werror --build-3rdparty=all \
       --disable-pulseaudio \
       test
 
-# enable optional dependencies, build all targets
+# optional dependencies: all, optional targets: all
 scons -Q --enable-werror --build-3rdparty=all \
       --enable-static \
       --enable-tests \

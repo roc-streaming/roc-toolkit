@@ -105,31 +105,22 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - script: linux-checks/optional-dependencies-and-targets
-            image: rocstreaming/env-ubuntu-minimal
-
-          - script: linux-checks/optional-backends
+          - script: linux-checks/conditional-build
             image: rocstreaming/env-ubuntu-minimal
 
           - script: linux-checks/static-shared
             image: rocstreaming/env-ubuntu-minimal
 
-          - script: linux-checks/full-debug-build
+          - script: linux-checks/debug-build
             image: rocstreaming/env-ubuntu-minimal
 
+          - script: linux-checks/sanitizers
+            image: rocstreaming/env-ubuntu
+
+          - script: linux-checks/valgrind
+            image: rocstreaming/env-ubuntu
+
           - script: linux-checks/check-formatting
-            image: rocstreaming/env-ubuntu
-
-          - script: linux-checks/sanitizers-clang
-            image: rocstreaming/env-ubuntu
-
-          - script: linux-checks/sanitizers-gcc
-            image: rocstreaming/env-ubuntu
-
-          - script: linux-checks/valgrind-debug
-            image: rocstreaming/env-ubuntu
-
-          - script: linux-checks/valgrind-release
             image: rocstreaming/env-ubuntu
 
     name: ${{ matrix.script }}

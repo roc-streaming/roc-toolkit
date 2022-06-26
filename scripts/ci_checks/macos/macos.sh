@@ -1,15 +1,10 @@
 #! /bin/bash
 set -euxo pipefail
 
-brew install "automake"
-brew install "scons"
-brew install "ragel"
-brew install "gengetopt"
-brew install "libuv"
-brew install "speexdsp"
-brew install "sox"
-brew install "cpputest"
-brew install "google-benchmark"
+brew install \
+     automake scons ragel gengetopt\
+     libuv speexdsp sox \
+     cpputest google-benchmark
 
 scons -Q \
       --enable-werror \
