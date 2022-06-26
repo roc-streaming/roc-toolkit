@@ -69,7 +69,9 @@ def format_file(output, path):
 
     section = 'copyright'
     brief = 'TODO'
-    pre = []
+
+    original_lines = []
+    body_start = True
 
     if is_header(path):
         while re.match(r'^\s*$', lines[-1]):
@@ -95,7 +97,7 @@ def format_file(output, path):
                 continue
 
         if section == 'copyright':
-            pre += [line]
+            original_lines += [line]
 
             if re.match(r'^\s*/?\*', line):
                 if re.match(r'^\s*/?\*.*AUTO-GENERATED.*', line):
@@ -106,7 +108,7 @@ def format_file(output, path):
 
                 if re.match(r'^\s*\*/', line):
                     if is_autogen or has_copyright:
-                        for p in pre:
+                        for p in original_lines:
                             fprint(p)
                         fprint('')
                     else:
@@ -114,16 +116,19 @@ def format_file(output, path):
                         fprint('')
 
                         if not has_copyright:
-                            for p in pre:
+                            for p in original_lines:
                                 fprint(p)
                         fprint('')
 
-                    section = 'doxygen'
+                    section = 'doxygen' if is_header(path) else 'body'
+                    continue
             else:
                 fprint(copyright_str.strip())
                 fprint('')
-                lines = pre + lines
-                section = 'doxygen'
+
+                lines = original_lines + lines
+                section = 'doxygen' if is_header(path) else 'body'
+
                 continue
 
         if section == 'doxygen':
@@ -170,6 +175,9 @@ def format_file(output, path):
                 section = 'body'
 
         if section == 'body':
+            if body_start and re.match(r'^\s*$', line):
+                continue
+            body_start = False
             fprint(line)
 
     if is_header(path):
