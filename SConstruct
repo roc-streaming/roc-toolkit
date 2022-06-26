@@ -375,7 +375,8 @@ if set(COMMAND_LINE_TARGETS) \
 # meta-information about the build, used to generate env parameters
 meta = type('meta', (), {
     field: '' for field in ('build host toolchain platform variant thirdparty_variant '+
-                            'compiler compiler_ver fpic_supporte').split()})
+                            'compiler compiler_ver '+
+                            'c11_support fpic_support').split()})
 
 # toolchain triple of the local system (where we're building), e.g. x86_64-pc-linux-gnu
 meta.build = GetOption('build')
@@ -569,9 +570,18 @@ if meta.platform == 'darwin':
     conf.FindTool('INSTALL_NAME_TOOL', [''], [('install_name_tool', None)], required=False)
 
 if meta.compiler in ['gcc', 'clang']:
-    meta.fpic_supported = True
+    meta.fpic_support = True
 else:
-    meta.fpic_supported = conf.CheckCompilerOptionSupported('-fPIC', 'cxx')
+    meta.fpic_support = conf.CheckCompilerOptionSupported('-fPIC', 'cxx')
+
+meta.c11_support = False
+if not GetOption('disable_c11'):
+    if meta.compiler == 'gcc':
+        meta.c11_support = meta.compiler_ver[:2] >= (4, 9)
+    elif meta.compiler == 'clang' and meta.platform == 'darwin':
+        meta.c11_support = meta.compiler_ver[:2] >= (7, 0)
+    elif meta.compiler == 'clang' and meta.platform != 'darwin':
+        meta.c11_support = meta.compiler_ver[:2] >= (3, 6)
 
 conf.env['ROC_SYSTEM_BINDIR'] = GetOption('bindir')
 conf.env['ROC_SYSTEM_INCDIR'] = GetOption('incdir')
@@ -635,17 +645,7 @@ if GetOption('override_targets'):
     for t in GetOption('override_targets').split(','):
         env['ROC_TARGETS'] += ['target_%s' % t]
 else:
-    has_c11 = False
-    if not GetOption('disable_c11'):
-        if meta.compiler == 'gcc':
-            has_c11 = meta.compiler_ver[:2] >= (4, 9)
-        elif meta.compiler == 'clang':
-            if meta.platform == 'darwin':
-                has_c11 = meta.compiler_ver[:2] >= (7, 0)
-            else:
-                has_c11 = meta.compiler_ver[:2] >= (3, 6)
-
-    if has_c11:
+    if meta.c11_support:
         env.Append(ROC_TARGETS=[
             'target_c11',
         ])
@@ -837,7 +837,7 @@ if meta.compiler in ['cc']:
                 '-O3',
             ]})
 
-    if meta.fpic_supported:
+    if meta.fpic_support:
         for var in ['CXXFLAGS', 'CFLAGS']:
             conf.env.Append(**{var: [
                 '-fPIC',
@@ -905,6 +905,7 @@ if meta.compiler == 'clang':
         env.Append(**{var: [
             '-Weverything',
             '-Wno-c++11-long-long',
+            '-Wno-c++98-compat-pedantic',
             '-Wno-cast-align',
             '-Wno-covered-switch-default',
             '-Wno-disabled-macro-expansion',
@@ -938,6 +939,11 @@ if meta.compiler == 'clang':
                 env.Append(**{var: [
                     '-Wno-reserved-id-macro',
                     '-Wno-unreachable-code-break',
+                ]})
+        if meta.compiler_ver[:2] >= (4, 0):
+            for var in ['CXXFLAGS', 'CFLAGS']:
+                env.Append(**{var: [
+                    '-Wno-deprecated-dynamic-exception-spec',
                 ]})
         if meta.compiler_ver[:2] >= (6, 0):
             for var in ['CXXFLAGS', 'CFLAGS']:
@@ -992,8 +998,6 @@ if meta.compiler == 'clang':
 
     if meta.platform == 'android':
         env.Append(CXXFLAGS=[
-            '-Wno-c++98-compat-pedantic',
-            '-Wno-deprecated-dynamic-exception-spec',
             '-Wno-unknown-warning-option',
         ])
 
