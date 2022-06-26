@@ -10,12 +10,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "roc_core/demangle.h"
+#include "roc_core/backtrace.h"
 
 namespace roc {
 namespace core {
 
-const char* demangle(const char* mangled, char*& demangled_buf, size_t& demangled_size) {
+const char*
+demangle_symbol(const char* mangled, char*& demangled_buf, size_t& demangled_size) {
     if (demangled_buf == NULL) {
         // Using heap is dangerous when handling a crash, since it may be corrupted.
         // We can't completely avoid using heap because __cxa_demangle() relies on it.

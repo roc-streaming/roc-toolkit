@@ -13,7 +13,6 @@
 #include <unwind.h>
 
 #include "roc_core/backtrace.h"
-#include "roc_core/demangle.h"
 
 namespace roc {
 namespace core {
@@ -67,7 +66,7 @@ void dump_backtrace(void** buffer, ssize_t count) {
             Dl_info info;
             if (dladdr(addr, &info) && info.dli_sname) {
                 symbol = info.dli_sname;
-                demangled_symbol = demangle(symbol, demangled_buf, demangled_size);
+                demangled_symbol = demangle_symbol(symbol, demangled_buf, demangled_size);
             }
 
             fprintf(stderr, "#%d: %p", (int)idx, addr);

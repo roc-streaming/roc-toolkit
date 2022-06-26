@@ -22,7 +22,6 @@
 #include <string.h>
 
 #include "roc_core/backtrace.h"
-#include "roc_core/demangle.h"
 #include "roc_core/string_builder.h"
 
 namespace roc {
@@ -125,7 +124,7 @@ void backtrace_symbols(bool enable_demangling) {
          */
         const char* symbol = NULL;
         if (enable_demangling) {
-            symbol = demangle(function_name, demangled_buf, demangled_size);
+            symbol = demangle_symbol(function_name, demangled_buf, demangled_size);
         }
         if (!symbol) {
             symbol = function_name;

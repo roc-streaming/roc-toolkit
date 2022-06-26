@@ -12,26 +12,43 @@
 #ifndef ROC_CORE_BACKTRACE_H_
 #define ROC_CORE_BACKTRACE_H_
 
+#include "roc_core/stddefs.h"
+
 namespace roc {
 namespace core {
 
 //! Print backtrace to stderr.
-//! @remarks
-//!  This function is not signal-safe.
-//!  It can use heap and stdio.
+//! @note
+//!  This function is NOT signal-safe.
+//!  It CAN use heap and stdio.
 void print_backtrace();
 
 //! Print backtrace to stderr (emergency mode).
-//! @remarks
+//! @note
 //!  This function is signal-safe.
-//!  It can't use heap and stdio.
+//!  It can NOT use heap and stdio.
 void print_emergency_backtrace();
 
 //! Print message to stderr (emergency mode).
-//! @remarks
+//! @note
 //!  This function is signal-safe.
-//!  It can't use heap and stdio.
+//!  It can NOT use heap and stdio.
 void print_emergency_message(const char* str);
+
+//! Demangle symbol name.
+//! @note
+//!  This function is NOT signal-safe.
+//!  It CAN use heap and stdio.
+//! @remarks
+//!  @p demangled_buf and @p demangled_size specify the buffer for demangled name.
+//!  When necessary, this function malloc()s or realloc()s @p demangled_buf and
+//!  updates @p demangled_size accordingly. The buffer may be NULL. The buffer may
+//!  be resused across several calls. The user should manually free() the buffer
+//!  when it's not needed anymore.
+//! @returns
+//!  demangled symbol or NULL if the symbol can't be demangled.
+const char*
+demangle_symbol(const char* mangled, char*& demangled_buf, size_t& demangled_size);
 
 } // namespace core
 } // namespace roc
