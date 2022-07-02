@@ -1,10 +1,9 @@
-#! /usr/bin/python2
-from __future__ import print_function
-import sys
-import os.path
-import re
+#! /usr/bin/env python3
 import glob
 import json
+import os.path
+import re
+import sys
 
 def print_comment(key, indent=1):
     print("%s/* %-16s */ " % (" " * indent * 2, key), end="")
@@ -37,7 +36,7 @@ def print_array(key, array, indent=1):
     print(ret)
 
 def print_blob(key, blob):
-    print_array(key, ["0x%02x" % ord(b) for b in blob[:]])
+    print_array(key, ["0x%02x" % (ord(b) if isinstance(b, str) else b) for b in blob[:]])
 
 if len(sys.argv) != 1:
     print("usage: generate_headers.py")
@@ -60,35 +59,30 @@ for in_json in glob.glob("*.json"):
 
     meta = json.loads(open(in_json).read())
 
-    with open(in_blob) as blob:
+    with open(in_blob, 'rb') as blob:
         raw_data = blob.read()
 
     with open(out_h, 'w') as sys.stdout:
-        print(("""
+        print(f"""
 /*
  * THIS FILE IS AUTO-GENERATED USING `generate_headers.py'
  *
  * Inputs:
- *  - %s
- *  - %s
+ *  - {in_json}
+ *  - {in_blob}
  */
 
-#ifndef %s
-#define %s
+#ifndef {guard}
+#define {guard}
 
 #include "test_packets/packet_info.h"
 
-namespace roc {
-namespace rtp {
-namespace test {
+namespace roc {{
+namespace rtp {{
+namespace test {{
 
-static PacketInfo %s = {
-        """ % (
-            in_json,
-            in_blob,
-            guard,
-            guard,
-            in_name)).strip())
+static PacketInfo {in_name} = {{
+        """.strip())
 
         print_blob("raw_data", raw_data)
 
@@ -133,12 +127,12 @@ static PacketInfo %s = {
             n_ch += 1
         print("  },")
 
-        print(("""
-};
+        print(f"""
+}};
 
-} // namespace test
-} // namespace rtp
-} // namespace roc
+}} // namespace test
+}} // namespace rtp
+}} // namespace roc
 
-#endif // %s
-        """ % (guard)).strip())
+#endif // {guard}
+        """.strip())
