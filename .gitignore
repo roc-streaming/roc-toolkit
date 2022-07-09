@@ -12,6 +12,9 @@ build.log
 # clang
 compile_commands.json
 
+# gdb
+.gdb_history
+
 # doxygen
 doxygen_*.db
 doxygen_*.tmp
