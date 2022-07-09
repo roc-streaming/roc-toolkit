@@ -158,20 +158,17 @@ TEST(atomic, bit_ops) {
 
 TEST(atomic, wrapping) {
     { // int
-        const unsigned int max_uint = (unsigned int)-1L;
+        const unsigned max_uint = (unsigned)-1L;
 
-        const int max_int = max_uint / 2;
-        const int min_int = -max_int - 1;
+        Atomic<unsigned> a(0);
 
-        Atomic<int> a(0);
+        a = 0;
+        CHECK(a == 0);
+        CHECK(--a == max_uint);
 
-        a = min_int;
-        CHECK(a == min_int);
-        CHECK(--a == max_int);
-
-        a = max_int;
-        CHECK(a == max_int);
-        CHECK(++a == min_int);
+        a = max_uint;
+        CHECK(a == max_uint);
+        CHECK(++a == 0);
     }
 }
 
