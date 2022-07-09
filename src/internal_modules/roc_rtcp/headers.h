@@ -1176,7 +1176,7 @@ public:
 
     //! Reset to initial state (all zeros).
     void reset() {
-        ssrc_ = last_rr_ = delay_last_rr_;
+        ssrc_ = last_rr_ = delay_last_rr_ = 0;
     }
 
     //! Get SSRC of receiver.
