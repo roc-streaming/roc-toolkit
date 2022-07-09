@@ -174,7 +174,8 @@ ReceiverSession::ReceiverSession(
     latency_monitor_.reset(new (latency_monitor_) audio::LatencyMonitor(
         *source_queue_, *depacketizer_, resampler_reader.get(),
         session_config.latency_monitor, session_config.target_latency,
-        format->sample_spec, common_config.output_sample_spec));
+        format->sample_spec, common_config.output_sample_spec,
+        session_config.freq_estimator_config));
     if (!latency_monitor_ || !latency_monitor_->valid()) {
         return;
     }

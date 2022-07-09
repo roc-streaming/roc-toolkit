@@ -13,6 +13,7 @@
 #define ROC_PIPELINE_CONFIG_H_
 
 #include "roc_address/protocol.h"
+#include "roc_audio/freq_estimator.h"
 #include "roc_audio/latency_monitor.h"
 #include "roc_audio/profiler.h"
 #include "roc_audio/resampler_backend.h"
@@ -177,6 +178,9 @@ struct ReceiverSessionConfig {
     //! RTP validator parameters.
     rtp::ValidatorConfig rtp_validator;
 
+    //! FreqEstimator config.
+    audio::FreqEstimatorConfig freq_estimator_config;
+
     //! LatencyMonitor parameters.
     audio::LatencyMonitorConfig latency_monitor;
 
@@ -192,6 +196,7 @@ struct ReceiverSessionConfig {
     ReceiverSessionConfig()
         : target_latency(DefaultLatency)
         , payload_type(0)
+        , freq_estimator_config()
         , resampler_backend(audio::ResamplerBackend_Default)
         , resampler_profile(audio::ResamplerProfile_Medium) {
         latency_monitor.min_latency = target_latency * DefaultMinLatencyFactor;

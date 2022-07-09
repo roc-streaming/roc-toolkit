@@ -18,8 +18,8 @@
 namespace roc {
 namespace audio {
 
-// Frequency estimator decimator factor.
-static const size_t fe_decim_factor = 10;
+// The max limit of frequency estimator decimator factor.
+static const size_t fe_decim_factor_max = 10;
 
 //! Length of decimation filter response length in frequency estimator.
 //! @remarks

@@ -79,8 +79,7 @@ bool Parser::parse(packet::Packet& packet, const core::Slice<uint8_t>& buffer) {
         }
 
         if (size_t(payload_end - payload_begin) < size_t(pad_size)) {
-            roc_log(LogDebug,
-                    "rtp parser: bad packet: padding_size>%d (payload size)",
+            roc_log(LogDebug, "rtp parser: bad packet: padding_size>%d (payload size)",
                     (int)(payload_end - payload_begin));
             return false;
         }

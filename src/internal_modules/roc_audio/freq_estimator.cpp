@@ -14,9 +14,6 @@ namespace audio {
 
 namespace {
 
-const float P = 100e-8f; // Proportional gain of PI-controller.
-const float I = 0.5e-8f; // Integral gain of PI-controller.
-
 // Calculates dot product of arrays IR of filter (@p coeff) and input array (@p samples).
 //
 // - @p coeff Filter impulse response.
@@ -40,13 +37,26 @@ float dot_prod(const float* coeff,
 
 } // namespace
 
-FreqEstimator::FreqEstimator(packet::timestamp_t target_latency)
-    : target_(target_latency)
+FreqEstimator::FreqEstimator(FreqEstimatorConfig config,
+                             packet::timestamp_t target_latency)
+    : config_(config)
+    , target_(target_latency)
     , dec1_ind_(0)
     , dec2_ind_(0)
     , samples_counter_(0)
     , accum_(0)
     , coeff_(1) {
+    memset(dec1_casc_buff_, 0, sizeof(dec1_casc_buff_));
+    memset(dec2_casc_buff_, 0, sizeof(dec2_casc_buff_));
+
+    roc_panic_if_msg(config_.decimation_factor1 == 0,
+                     "freq_estimator: decimation "
+                     "factor 1 must not be zero");
+    roc_panic_if_msg(config_.decimation_factor1 > fe_decim_factor_max
+                         || config_.decimation_factor2 > fe_decim_factor_max,
+                     "freq_estimator: decimation factor must be less or equal to %lu",
+                     fe_decim_factor_max);
+
     if (fe_decim_len % 2 != 0) {
         roc_panic("freq estimator: decim_len should be power of two");
     }
@@ -73,13 +83,19 @@ bool FreqEstimator::run_decimators_(packet::timestamp_t current, float& filtered
 
     dec1_casc_buff_[dec1_ind_] = (float)current;
 
-    if ((samples_counter_ % fe_decim_factor) == 0) {
+    if ((samples_counter_ % config_.decimation_factor1) == 0) {
         // Time to calculate first decimator's samples.
         dec2_casc_buff_[dec2_ind_] = dot_prod(fe_decim_h, dec1_casc_buff_, dec1_ind_,
                                               fe_decim_len, fe_decim_len_mask)
             / fe_decim_h_gain;
 
-        if (((samples_counter_ % (fe_decim_factor * fe_decim_factor)) == 0)) {
+        // If the second stage decimator is totally turned off
+        if (config_.decimation_factor2 == 0) {
+            filtered = dec2_casc_buff_[dec2_ind_];
+            return true;
+        } else if (((samples_counter_
+                     % (config_.decimation_factor1 * config_.decimation_factor2))
+                    == 0)) {
             samples_counter_ = 0;
 
             // Time to calculate second decimator (and freq estimator's) output.
@@ -102,7 +118,7 @@ float FreqEstimator::run_controller_(float current) {
     const float error = (current - target_);
 
     accum_ = accum_ + error;
-    return 1 + P * error + I * accum_;
+    return 1 + config_.P * error + config_.I * accum_;
 }
 
 } // namespace audio

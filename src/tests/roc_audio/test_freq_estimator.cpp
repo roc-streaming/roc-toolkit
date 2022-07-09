@@ -21,16 +21,17 @@ const double Epsilon = 0.0001;
 
 } // namespace
 
-TEST_GROUP(freq_estimator) {};
-
+TEST_GROUP(freq_estimator) {
+    FreqEstimatorConfig fe_config;
+};
 TEST(freq_estimator, initial) {
-    FreqEstimator fe(Target);
+    FreqEstimator fe(fe_config, Target);
 
     DOUBLES_EQUAL(1.0, (double)fe.freq_coeff(), Epsilon);
 }
 
 TEST(freq_estimator, aim_queue_size) {
-    FreqEstimator fe(Target);
+    FreqEstimator fe(fe_config, Target);
 
     for (size_t n = 0; n < 1000; n++) {
         fe.update(Target);
@@ -40,7 +41,7 @@ TEST(freq_estimator, aim_queue_size) {
 }
 
 TEST(freq_estimator, large_queue_size) {
-    FreqEstimator fe(Target);
+    FreqEstimator fe(fe_config, Target);
 
     do {
         fe.update(Target * 2);
@@ -48,7 +49,7 @@ TEST(freq_estimator, large_queue_size) {
 }
 
 TEST(freq_estimator, small_queue_size) {
-    FreqEstimator fe(Target);
+    FreqEstimator fe(fe_config, Target);
 
     do {
         fe.update(Target / 2);

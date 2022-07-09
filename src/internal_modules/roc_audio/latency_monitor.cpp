@@ -25,11 +25,13 @@ LatencyMonitor::LatencyMonitor(const packet::SortedQueue& queue,
                                const LatencyMonitorConfig& config,
                                core::nanoseconds_t target_latency,
                                const audio::SampleSpec& input_sample_spec,
-                               const audio::SampleSpec& output_sample_spec)
+                               const audio::SampleSpec& output_sample_spec,
+                               const FreqEstimatorConfig& fe_config)
     : queue_(queue)
     , depacketizer_(depacketizer)
     , resampler_(resampler)
-    , fe_((packet::timestamp_t)input_sample_spec.timestamp_from_ns(target_latency))
+    , fe_(fe_config,
+          (packet::timestamp_t)input_sample_spec.timestamp_from_ns(target_latency))
     , rate_limiter_(LogInterval)
     , update_interval_((packet::timestamp_t)input_sample_spec.timestamp_from_ns(
           config.fe_update_interval))

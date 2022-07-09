@@ -75,7 +75,8 @@ public:
                    const LatencyMonitorConfig& config,
                    core::nanoseconds_t target_latency,
                    const audio::SampleSpec& input_sample_spec,
-                   const audio::SampleSpec& output_sample_spec);
+                   const audio::SampleSpec& output_sample_spec,
+                   const FreqEstimatorConfig& fe_config);
 
     //! Check if the object was initialized successfully.
     bool valid() const;

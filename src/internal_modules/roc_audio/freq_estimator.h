@@ -20,6 +20,27 @@
 namespace roc {
 namespace audio {
 
+//! FreqEstimator tunable parameters.
+struct FreqEstimatorConfig {
+    float P; //!< Proportional gain of PI-controller.
+    float I; //!< Integral gain of PI-controller.
+
+    //! How much downsample input value (latency buffer size) on the first stage. Must be
+    //! less or equal to fe_decim_factor_max and must be greater than zero.
+    size_t decimation_factor1;
+    //! How much downsample input value on the second stage. Must be
+    //! less or equal to fe_decim_factor_max. Could be zero to disable the second
+    //! decimation stage.
+    size_t decimation_factor2;
+
+    FreqEstimatorConfig()
+        : P(100e-8f)
+        , I(0.5e-8f)
+        , decimation_factor1(fe_decim_factor_max)
+        , decimation_factor2(fe_decim_factor_max) {
+    }
+};
+
 //! Evaluates sender's frequency to receivers's frequency ratio.
 class FreqEstimator : public core::NonCopyable<> {
 public:
@@ -27,8 +48,8 @@ public:
     //!
     //! @b Parameters
     //!  - @p target_latency defines latency we want to archive.
-    explicit FreqEstimator(packet::timestamp_t target_latency);
-
+    explicit FreqEstimator(FreqEstimatorConfig config,
+                           packet::timestamp_t target_latency);
     //! Get current frequecy coefficient.
     float freq_coeff() const;
 
@@ -39,6 +60,7 @@ private:
     bool run_decimators_(packet::timestamp_t current, float& filtered);
     float run_controller_(float current);
 
+    const FreqEstimatorConfig config_;
     const float target_; // Target latency.
 
     float dec1_casc_buff_[fe_decim_len];
