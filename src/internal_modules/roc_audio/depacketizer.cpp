@@ -234,12 +234,12 @@ packet::PacketPtr Depacketizer::read_packet_() {
 void Depacketizer::set_frame_flags_(Frame& frame, const FrameInfo& info) {
     unsigned flags = 0;
 
-    if (info.n_decoded_samples != frame.size()) {
-        flags |= Frame::FlagIncomplete;
+    if (info.n_decoded_samples != 0) {
+        flags |= Frame::FlagNonblank;
     }
 
-    if (info.n_decoded_samples == 0) {
-        flags |= Frame::FlagBlank;
+    if (info.n_decoded_samples < frame.size()) {
+        flags |= Frame::FlagIncomplete;
     }
 
     if (info.n_dropped_packets != 0) {

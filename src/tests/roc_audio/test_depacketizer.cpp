@@ -412,14 +412,14 @@ TEST(depacketizer, frame_flags_incompltete_blank) {
     };
 
     unsigned frame_flags[] = {
-        0,
+        Frame::FlagNonblank,
+        Frame::FlagIncomplete | Frame::FlagNonblank,
+        Frame::FlagIncomplete | Frame::FlagNonblank,
+        Frame::FlagIncomplete | Frame::FlagNonblank,
+        Frame::FlagIncomplete | Frame::FlagNonblank,
         Frame::FlagIncomplete,
         Frame::FlagIncomplete,
-        Frame::FlagIncomplete,
-        Frame::FlagIncomplete,
-        Frame::FlagIncomplete | Frame::FlagBlank,
-        Frame::FlagIncomplete | Frame::FlagBlank,
-        0,
+        Frame::FlagNonblank,
     };
 
     CHECK(ROC_ARRAY_SIZE(packets) == ROC_ARRAY_SIZE(frame_flags));
@@ -453,11 +453,11 @@ TEST(depacketizer, frame_flags_drops) {
     };
 
     unsigned frame_flags[] = {
-        0,                //
-        Frame::FlagDrops, //
-        0,                //
-        Frame::FlagIncomplete | Frame::FlagBlank | Frame::FlagDrops,
-        0,
+        Frame::FlagNonblank,                      //
+        Frame::FlagNonblank | Frame::FlagDrops,   //
+        Frame::FlagNonblank,                      //
+        Frame::FlagIncomplete | Frame::FlagDrops, //
+        Frame::FlagNonblank,                      //
     };
 
     for (size_t n = 0; n < ROC_ARRAY_SIZE(packets); n++) {

@@ -123,11 +123,9 @@ void Watchdog::update_blank_timeout_(const Frame& frame,
         return;
     }
 
-    if (frame.flags() & Frame::FlagBlank) {
-        return;
+    if (frame.flags() & Frame::FlagNonblank) {
+        last_pos_before_blank_ = next_read_pos;
     }
-
-    last_pos_before_blank_ = next_read_pos;
 }
 
 bool Watchdog::check_blank_timeout_() const {
@@ -204,7 +202,7 @@ void Watchdog::update_status_(const Frame& frame) {
 
     char symbol = '.';
 
-    if (flags & Frame::FlagBlank) {
+    if (!(flags & Frame::FlagNonblank)) {
         if (flags & Frame::FlagDrops) {
             symbol = 'B';
         } else {
