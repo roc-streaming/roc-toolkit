@@ -82,7 +82,7 @@ void Session::generate_packets() {
     }
 
     do {
-        next_deadline_ += core::Second;
+        next_deadline_ += core::Millisecond * 200;
     } while (next_deadline_ <= core::timestamp());
 
     packet::PacketPtr packet = generate_packet_();

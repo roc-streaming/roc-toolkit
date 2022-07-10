@@ -58,16 +58,14 @@ size_t ReceiverSessionGroup::num_sessions() const {
 }
 
 void ReceiverSessionGroup::update_source(packet::source_t ssrc, const char* cname) {
-    roc_log(LogDebug, "session group: source updated: ssrc=%lu cname=%s",
-            (unsigned long)ssrc, cname);
-
     // TODO
+    (void)ssrc;
+    (void)cname;
 }
 
 void ReceiverSessionGroup::remove_source(packet::source_t ssrc) {
-    roc_log(LogDebug, "session group: source removed: ssrc=%lu", (unsigned long)ssrc);
-
     // TODO
+    (void)ssrc;
 }
 
 size_t ReceiverSessionGroup::num_receipted_sources() {
@@ -78,25 +76,25 @@ size_t ReceiverSessionGroup::num_receipted_sources() {
 
 rtcp::ReceptionMetrics ReceiverSessionGroup::get_reception_metrics(size_t source_index) {
     // TODO
-
     (void)source_index;
 
-    rtcp::ReceptionMetrics metrics;
-    return metrics;
+    return rtcp::ReceptionMetrics();
 }
 
 void ReceiverSessionGroup::add_sending_metrics(const rtcp::SendingMetrics& metrics) {
-    roc_log(LogDebug, "session group: sending metrics: ntp=%llu rtp=%llu",
-            (unsigned long long)metrics.origin_ntp,
-            (unsigned long long)metrics.origin_rtp);
+    core::SharedPtr<ReceiverSession> sess;
 
-    // TODO
+    for (sess = sessions_.front(); sess; sess = sessions_.nextof(*sess)) {
+        sess->add_sending_metrics(metrics);
+    }
 }
 
 void ReceiverSessionGroup::add_link_metrics(const rtcp::LinkMetrics& metrics) {
-    // TODO
+    core::SharedPtr<ReceiverSession> sess;
 
-    (void)metrics;
+    for (sess = sessions_.front(); sess; sess = sessions_.nextof(*sess)) {
+        sess->add_link_metrics(metrics);
+    }
 }
 
 void ReceiverSessionGroup::route_transport_packet_(const packet::PacketPtr& packet) {

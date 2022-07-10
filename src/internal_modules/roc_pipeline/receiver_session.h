@@ -37,6 +37,7 @@
 #include "roc_packet/router.h"
 #include "roc_packet/sorted_queue.h"
 #include "roc_pipeline/config.h"
+#include "roc_rtcp/metrics.h"
 #include "roc_rtp/format_map.h"
 #include "roc_rtp/parser.h"
 #include "roc_rtp/validator.h"
@@ -76,6 +77,12 @@ public:
 
     //! Get audio reader.
     audio::IReader& reader();
+
+    //! Handle metrics obtained from sender.
+    void add_sending_metrics(const rtcp::SendingMetrics& metrics);
+
+    //! Handle estimated link metrics.
+    void add_link_metrics(const rtcp::LinkMetrics& metrics);
 
 private:
     const address::SocketAddr src_address_;

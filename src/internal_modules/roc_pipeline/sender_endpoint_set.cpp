@@ -149,13 +149,11 @@ SenderEndpointSet::get_sending_metrics(packet::ntp_timestamp_t report_time) {
 
 void SenderEndpointSet::add_reception_metrics(const rtcp::ReceptionMetrics& metrics) {
     // TODO
-
     (void)metrics;
 }
 
 void SenderEndpointSet::add_link_metrics(const rtcp::LinkMetrics& metrics) {
     // TODO
-
     (void)metrics;
 }
 

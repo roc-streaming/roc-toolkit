@@ -229,5 +229,15 @@ audio::IReader& ReceiverSession::reader() {
     return *audio_reader_;
 }
 
+void ReceiverSession::add_sending_metrics(const rtcp::SendingMetrics& metrics) {
+    // TODO
+    (void)metrics;
+}
+
+void ReceiverSession::add_link_metrics(const rtcp::LinkMetrics& metrics) {
+    // TODO
+    (void)metrics;
+}
+
 } // namespace pipeline
 } // namespace roc
