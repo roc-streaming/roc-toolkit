@@ -19,10 +19,10 @@ Watchdog::Watchdog(IReader& reader,
     : reader_(reader)
     , sample_spec_(sample_spec)
     , max_blank_duration_(
-          (packet::timestamp_t)sample_spec.timestamp_from_ns(config.no_playback_timeout))
-    , max_drops_duration_((packet::timestamp_t)sample_spec.timestamp_from_ns(
+          (packet::timestamp_t)sample_spec.ns_2_rtp_timestamp(config.no_playback_timeout))
+    , max_drops_duration_((packet::timestamp_t)sample_spec.ns_2_rtp_timestamp(
           config.broken_playback_timeout))
-    , drop_detection_window_((packet::timestamp_t)sample_spec.timestamp_from_ns(
+    , drop_detection_window_((packet::timestamp_t)sample_spec.ns_2_rtp_timestamp(
           config.breakage_detection_window))
     , curr_read_pos_(0)
     , last_pos_before_blank_(0)

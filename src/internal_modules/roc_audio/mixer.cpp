@@ -32,7 +32,7 @@ Mixer::Mixer(core::BufferFactory<sample_t>& buffer_factory,
              core::nanoseconds_t frame_length,
              const audio::SampleSpec& sample_spec)
     : valid_(false) {
-    size_t frame_size = sample_spec.ns_to_soa(frame_length);
+    size_t frame_size = sample_spec.ns_2_samples_overall(frame_length);
     roc_log(LogDebug, "mixer: initializing: frame_size=%lu", (unsigned long)frame_size);
 
     if (frame_size == 0) {

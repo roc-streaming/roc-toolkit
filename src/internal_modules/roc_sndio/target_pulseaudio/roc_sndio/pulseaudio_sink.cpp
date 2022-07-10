@@ -367,7 +367,7 @@ void PulseaudioSink::init_stream_params_(const pa_sink_info& info) {
     }
 
     if (frame_size_ == 0) {
-        frame_size_ = config_.sample_spec.ns_to_soa(config_.frame_length);
+        frame_size_ = config_.sample_spec.ns_2_samples_overall(config_.frame_length);
     }
 
     roc_panic_if(sizeof(audio::sample_t) != sizeof(float));
@@ -379,7 +379,7 @@ void PulseaudioSink::init_stream_params_(const pa_sink_info& info) {
     const size_t frame_size_bytes = frame_size_ * sizeof(audio::sample_t);
 
     const size_t latency_bytes =
-        config_.sample_spec.ns_to_soa(latency_) * sizeof(audio::sample_t);
+        config_.sample_spec.ns_2_samples_overall(latency_) * sizeof(audio::sample_t);
 
     buffer_attrs_.maxlength = (uint32_t)-1;
     buffer_attrs_.tlength = (uint32_t)latency_bytes;
@@ -476,8 +476,8 @@ ssize_t PulseaudioSink::wait_stream_() {
         if (writable_size == 0 && timer_expired) {
             roc_log(LogInfo,
                     "pulseaudio sink: stream timeout expired: latency=%ld timeout=%ld",
-                    (long)config_.sample_spec.timestamp_from_ns(latency_),
-                    (long)config_.sample_spec.timestamp_from_ns(timeout_));
+                    (long)config_.sample_spec.ns_2_rtp_timestamp(latency_),
+                    (long)config_.sample_spec.ns_2_rtp_timestamp(timeout_));
 
             if (timeout_ < MaxTimeout) {
                 timeout_ *= 2;
@@ -487,8 +487,8 @@ ssize_t PulseaudioSink::wait_stream_() {
                 roc_log(LogDebug,
                         "pulseaudio sink: stream timeout increased: "
                         "latency=%ld timeout=%ld",
-                        (long)config_.sample_spec.timestamp_from_ns(latency_),
-                        (long)config_.sample_spec.timestamp_from_ns(timeout_));
+                        (long)config_.sample_spec.ns_2_rtp_timestamp(latency_),
+                        (long)config_.sample_spec.ns_2_rtp_timestamp(timeout_));
             }
 
             return -1;

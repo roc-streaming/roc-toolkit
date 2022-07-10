@@ -18,7 +18,7 @@ DelayedReader::DelayedReader(IReader& reader,
                              const audio::SampleSpec& sample_spec)
     : reader_(reader)
     , queue_(0)
-    , delay_((packet::timestamp_t)sample_spec.timestamp_from_ns(delay))
+    , delay_((packet::timestamp_t)sample_spec.ns_2_rtp_timestamp(delay))
     , started_(false) {
     roc_log(LogDebug, "delayed reader: initializing: delay=%lu", (unsigned long)delay_);
 }

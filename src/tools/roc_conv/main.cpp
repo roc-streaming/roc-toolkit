@@ -77,7 +77,7 @@ int main(int argc, char** argv) {
             roc_log(LogError, "invalid --frame-length: bad format");
             return 1;
         }
-        if (converter_config.input_sample_spec.ns_to_soa(
+        if (converter_config.input_sample_spec.ns_2_samples_overall(
                 converter_config.internal_frame_length)
             <= 0) {
             roc_log(LogError, "invalid --frame-length: should be > 0");
@@ -90,7 +90,7 @@ int main(int argc, char** argv) {
 
     core::BufferFactory<audio::sample_t> buffer_factory(
         allocator,
-        converter_config.input_sample_spec.ns_to_soa(
+        converter_config.input_sample_spec.ns_2_samples_overall(
             converter_config.internal_frame_length),
         args.poisoning_flag);
 

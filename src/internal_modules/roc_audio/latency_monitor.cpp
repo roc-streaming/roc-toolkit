@@ -31,16 +31,16 @@ LatencyMonitor::LatencyMonitor(const packet::SortedQueue& queue,
     , depacketizer_(depacketizer)
     , resampler_(resampler)
     , fe_(fe_config,
-          (packet::timestamp_t)input_sample_spec.timestamp_from_ns(target_latency))
+          (packet::timestamp_t)input_sample_spec.ns_2_rtp_timestamp(target_latency))
     , rate_limiter_(LogInterval)
-    , update_interval_((packet::timestamp_t)input_sample_spec.timestamp_from_ns(
+    , update_interval_((packet::timestamp_t)input_sample_spec.ns_2_rtp_timestamp(
           config.fe_update_interval))
     , update_pos_(0)
     , has_update_pos_(false)
     , target_latency_(
-          (packet::timestamp_t)input_sample_spec.timestamp_from_ns(target_latency))
-    , min_latency_(input_sample_spec.timestamp_from_ns(config.min_latency))
-    , max_latency_(input_sample_spec.timestamp_from_ns(config.max_latency))
+          (packet::timestamp_t)input_sample_spec.ns_2_rtp_timestamp(target_latency))
+    , min_latency_(input_sample_spec.ns_2_rtp_timestamp(config.min_latency))
+    , max_latency_(input_sample_spec.ns_2_rtp_timestamp(config.max_latency))
     , max_scaling_delta_(config.max_scaling_delta)
     , input_sample_spec_(input_sample_spec)
     , output_sample_spec_(output_sample_spec)

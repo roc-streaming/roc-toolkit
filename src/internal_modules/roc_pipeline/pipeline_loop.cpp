@@ -25,9 +25,9 @@ PipelineLoop::PipelineLoop(IPipelineTaskScheduler& scheduler,
     : config_(config)
     , sample_spec_(sample_spec)
     , min_samples_between_tasks_(
-          sample_spec.ns_to_soa(config.min_frame_length_between_tasks))
+          sample_spec.ns_2_samples_overall(config.min_frame_length_between_tasks))
     , max_samples_between_tasks_(
-          sample_spec.ns_to_soa(config.max_frame_length_between_tasks))
+          sample_spec.ns_2_samples_overall(config.max_frame_length_between_tasks))
     , no_task_proc_half_interval_(config.task_processing_prohibited_interval / 2)
     , scheduler_(scheduler)
     , pending_tasks_(0)
@@ -392,7 +392,8 @@ bool PipelineLoop::subframe_task_processing_allowed_(
 core::nanoseconds_t
 PipelineLoop::update_next_frame_deadline_(core::nanoseconds_t frame_start_time,
                                           size_t frame_size) {
-    const core::nanoseconds_t frame_duration = sample_spec_.soa_to_ns(frame_size);
+    const core::nanoseconds_t frame_duration =
+        sample_spec_.samples_overall_2_ns(frame_size);
 
     const core::nanoseconds_t next_frame_deadline = frame_start_time + frame_duration;
 

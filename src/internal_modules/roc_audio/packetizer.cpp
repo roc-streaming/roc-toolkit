@@ -29,7 +29,7 @@ Packetizer::Packetizer(packet::IWriter& writer,
     , buffer_factory_(buffer_factory)
     , sample_spec_(sample_spec)
     , samples_per_packet_(
-          (packet::timestamp_t)sample_spec.timestamp_from_ns(packet_length))
+          (packet::timestamp_t)sample_spec.ns_2_rtp_timestamp(packet_length))
     , payload_type_(payload_type)
     , payload_size_(payload_encoder.encoded_size(samples_per_packet_))
     , packet_pos_(0)

@@ -116,7 +116,8 @@ int main(int argc, char** argv) {
             roc_log(LogError, "invalid --frame-length: bad format");
             return 1;
         }
-        if (sender_config.input_sample_spec.ns_to_soa(sender_config.internal_frame_length)
+        if (sender_config.input_sample_spec.ns_2_samples_overall(
+                sender_config.internal_frame_length)
             <= 0) {
             roc_log(LogError, "invalid --frame-length: should be > 0");
             return 1;

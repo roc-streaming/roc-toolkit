@@ -80,7 +80,7 @@ bool Validator::check_(const packet::RTP& prev, const packet::RTP& next) const {
         ts_dist = -ts_dist;
     }
 
-    const core::nanoseconds_t ts_dist_ns = sample_spec_.timestamp_to_ns(ts_dist);
+    const core::nanoseconds_t ts_dist_ns = sample_spec_.rtp_timestamp_2_ns(ts_dist);
 
     if (ts_dist_ns > config_.max_ts_jump) {
         roc_log(LogDebug,

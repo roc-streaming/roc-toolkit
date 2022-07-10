@@ -111,7 +111,7 @@ void resample_reader(IResampler& resampler,
                      size_t num_samples,
                      const audio::SampleSpec& sample_spec,
                      float scaling) {
-    test::MockReader input_reader(sample_spec);
+    test::MockReader input_reader;
     for (size_t n = 0; n < num_samples; n++) {
         input_reader.add(1, in[n]);
     }
@@ -168,7 +168,7 @@ void resample(ResamplerBackend backend,
               const audio::SampleSpec& sample_spec,
               float scaling) {
     const core::nanoseconds_t frame_duration =
-        sample_spec.soa_to_ns(InFrameSize * sample_spec.num_channels());
+        sample_spec.samples_overall_2_ns(InFrameSize * sample_spec.num_channels());
 
     core::ScopedPtr<IResampler> resampler(
         ResamplerMap::instance().new_resampler(backend, allocator, buffer_factory,
@@ -213,13 +213,13 @@ TEST(resampler, supported_scalings) {
                             core::ScopedPtr<IResampler> resampler(
                                 ResamplerMap::instance().new_resampler(
                                     backend, allocator, buffer_factory, profiles[pn],
-                                    in_sample_specs.soa_to_ns(frame_sizes[fn]),
+                                    in_sample_specs.samples_overall_2_ns(frame_sizes[fn]),
                                     in_sample_specs),
                                 allocator);
                             CHECK(resampler);
                             CHECK(resampler->valid());
 
-                            test::MockReader input_reader(in_sample_specs);
+                            test::MockReader input_reader;
                             input_reader.pad_zeros();
 
                             ResamplerReader rr(input_reader, *resampler, in_sample_specs,
@@ -257,7 +257,7 @@ TEST(resampler, invalid_scalings) {
         core::ScopedPtr<IResampler> resampler(
             ResamplerMap::instance().new_resampler(
                 backend, allocator, buffer_factory, ResamplerProfile_High,
-                SampleSpecs.soa_to_ns(InFrameSize), SampleSpecs),
+                SampleSpecs.samples_overall_2_ns(InFrameSize), SampleSpecs),
             allocator);
         CHECK(resampler);
         CHECK(resampler->valid());

@@ -48,7 +48,7 @@ SpeexResampler::SpeexResampler(core::IAllocator&,
                                core::nanoseconds_t frame_length,
                                const audio::SampleSpec& sample_spec)
     : speex_state_(NULL)
-    , in_frame_size_((spx_uint32_t)sample_spec.ns_to_soa(frame_length))
+    , in_frame_size_((spx_uint32_t)sample_spec.ns_2_samples_overall(frame_length))
     , in_frame_pos_(in_frame_size_)
     , num_ch_((spx_uint32_t)sample_spec.num_channels())
     , rate_limiter_(LogReportInterval)

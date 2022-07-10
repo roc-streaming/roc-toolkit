@@ -19,7 +19,8 @@
 namespace roc {
 namespace audio {
 
-//! Sample spec.
+//! Sample stream specification.
+//! Defines sample rate and channel layout.
 class SampleSpec {
 public:
     //! Default constructor.
@@ -27,6 +28,9 @@ public:
 
     //! Constructor with sample rate and channel mask.
     SampleSpec(size_t sample_rate, packet::channel_mask_t channel_mask);
+
+    //! @defgroup Accessors
+    //! @{
 
     //! Get sample rate.
     size_t sample_rate() const;
@@ -43,17 +47,38 @@ public:
     //! Set channel mask.
     void set_channel_mask(packet::channel_mask_t channel_mask);
 
-    //! Convert nanoseconds to number of samples.
-    packet::timestamp_diff_t timestamp_from_ns(core::nanoseconds_t ns) const;
+    // @}
 
-    //! Convert number of samples to nanoseconds.
-    core::nanoseconds_t timestamp_to_ns(packet::timestamp_diff_t ts) const;
+    //! @defgroup Nanoseconds
+    //! @{
 
-    //! Convert frame duration to Samples OverAll.
-    size_t ns_to_soa(core::nanoseconds_t frame_length) const;
+    //! Convert nanoseconds duration to number of samples per channel.
+    size_t ns_2_samples_per_chan(core::nanoseconds_t ns_duration) const;
 
-    //! Convert Samples OverAll to frame duration.
-    core::nanoseconds_t soa_to_ns(size_t frame_length) const;
+    //! Convert number of samples per channel to nanoseconds duration.
+    core::nanoseconds_t samples_per_chan_2_ns(size_t n_samples) const;
+
+    //! Convert nanoseconds duration to number of samples for all channels.
+    size_t ns_2_samples_overall(core::nanoseconds_t ns_duration) const;
+
+    //! Convert number of samples for all channels to nanoseconds duration.
+    core::nanoseconds_t samples_overall_2_ns(size_t n_samples) const;
+
+    // @}
+    //! @defgroup RTP
+    //! @{
+
+    //! Convert nanoseconds delta to RTP timestamp delta.
+    //! @note
+    //!  Same as ns_2_samples_per_chan(), but supports negative deltas.
+    packet::timestamp_diff_t ns_2_rtp_timestamp(core::nanoseconds_t ns_delta) const;
+
+    //! Convert RTP timestamp delta to nanoseconds delta.
+    //! @note
+    //!  Same as samples_per_chan_2_ns(), but supports negative deltas.
+    core::nanoseconds_t rtp_timestamp_2_ns(packet::timestamp_diff_t rtp_delta) const;
+    size_t ntp_to_soa(const packet::ntp_timestamp_t ntp) const;
+    // @}
 
 private:
     size_t sample_rate_;
