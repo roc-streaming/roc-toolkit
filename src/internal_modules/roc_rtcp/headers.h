@@ -125,15 +125,15 @@ public:
     //! Get NTP timestamp value.
     packet::ntp_timestamp_t value() const {
         uint64_t tmp =
-            (((uint64_t)core::ntoh32(high_ntp_) << NTP_HIGH_shift) & NTP_HIGH_mask)
-            | (((uint64_t)core::ntoh32(low_ntp_) << NTP_LOW_shift) & NTP_LOW_mask);
+            (((uint64_t)core::ntoh32u(high_ntp_) << NTP_HIGH_shift) & NTP_HIGH_mask)
+            | (((uint64_t)core::ntoh32u(low_ntp_) << NTP_LOW_shift) & NTP_LOW_mask);
         return (packet::ntp_timestamp_t)tmp;
     }
 
     //! Set NTP timestamp value.
     void set_value(const packet::ntp_timestamp_t t) {
-        high_ntp_ = core::hton32((t >> NTP_HIGH_shift) & NTP_LOW_mask);
-        low_ntp_ = core::hton32((t >> NTP_LOW_shift) & NTP_LOW_mask);
+        high_ntp_ = core::hton32u((t >> NTP_HIGH_shift) & NTP_LOW_mask);
+        low_ntp_ = core::hton32u((t >> NTP_LOW_shift) & NTP_LOW_mask);
     }
 } ROC_ATTR_PACKED_END;
 
@@ -242,12 +242,12 @@ public:
 
     //! Get packet length, including the header, in 32-bit words minus one.
     uint16_t len_words() const {
-        return core::ntoh16(length_);
+        return core::ntoh16u(length_);
     }
 
     //! Set packet length in words.
     void set_len_words(const uint16_t ln) {
-        length_ = core::hton16(ln);
+        length_ = core::hton16u(ln);
     }
 
     //! Get packet length, including the header, in bytes.
@@ -329,17 +329,17 @@ public:
 
     //! Get SSRC.
     uint32_t ssrc() const {
-        return core::ntoh32(ssrc_);
+        return core::ntoh32u(ssrc_);
     }
 
     //! Set SSRC.
     void set_ssrc(const uint32_t s) {
-        ssrc_ = core::hton32(s);
+        ssrc_ = core::hton32u(s);
     }
 
     //! Get fraction lost.
     float fract_loss() const {
-        const uint32_t tmp = core::ntoh32(losses_);
+        const uint32_t tmp = core::ntoh32u(losses_);
         uint8_t losses8 = (tmp >> Losses_FractLost_shift) & Losses_FractLost_mask;
         float res = float(losses8) / float(1 << Losses_FractLost_shift);
 
@@ -360,16 +360,16 @@ public:
             l8 = (uint8_t)((uint32_t)(nlost << 8) / noverall);
         }
 
-        uint32_t losses = core::ntoh32(losses_);
+        uint32_t losses = core::ntoh32u(losses_);
         set_bitfield<uint32_t>(losses, l8, Losses_FractLost_shift, Losses_FractLost_mask);
-        losses_ = core::hton32(losses);
+        losses_ = core::hton32u(losses);
     }
 
     //! Get cumulative loss.
     //!
     //! May be negative in case of packet repeats.
     int32_t cumloss() const {
-        uint32_t res = core::ntoh32(losses_) & Losses_CumLoss_mask;
+        uint32_t res = core::ntoh32u(losses_) & Losses_CumLoss_mask;
         // If res is negative
         if (res & (1 << (Losses_CumLoss_shift - 1))) {
             // Make whole leftest byte filled with 1.
@@ -382,7 +382,7 @@ public:
     //!
     //! May be negative in case of packet repeats.
     void set_cumloss(int32_t l) {
-        uint32_t losses = core::ntoh32(losses_);
+        uint32_t losses = core::ntoh32u(losses_);
 
         if (l > Losses_CumLoss_mask) {
             l = Losses_CumLoss_mask;
@@ -393,47 +393,47 @@ public:
                                sizeof(losses_) * 8 - Losses_CumLoss_shift,
                                Losses_CumLoss_mask);
 
-        losses_ = core::hton32(losses);
+        losses_ = core::hton32u(losses);
     }
 
     //! Get last seqnum.
     uint32_t last_seqnum() const {
-        return core::ntoh32(last_seq_);
+        return core::ntoh32u(last_seq_);
     }
 
     //! Set last seqnum.
     void set_last_seqnum(const uint32_t x) {
-        last_seq_ = core::hton32(x);
+        last_seq_ = core::hton32u(x);
     }
 
     //! Get jitter.
     uint32_t jitter() const {
-        return core::ntoh32(jitter_);
+        return core::ntoh32u(jitter_);
     }
 
     //! Set jitter.
     void set_jitter(const uint32_t x) {
-        jitter_ = core::hton32(x);
+        jitter_ = core::hton32u(x);
     }
 
     //! Get LSR.
     uint32_t last_sr() const {
-        return core::ntoh32(lsr_);
+        return core::ntoh32u(lsr_);
     }
 
     //! Set LSR.
     void set_last_sr(const uint32_t x) {
-        lsr_ = core::hton32(x);
+        lsr_ = core::hton32u(x);
     }
 
     //! Get DLSR.
     uint32_t delay_last_sr() const {
-        return core::ntoh32(dlsr_);
+        return core::ntoh32u(dlsr_);
     }
 
     //! Set DLSR.
     void set_delay_last_sr(const uint32_t x) {
-        dlsr_ = core::hton32(x);
+        dlsr_ = core::hton32u(x);
     }
 } ROC_ATTR_PACKED_END;
 
@@ -498,12 +498,12 @@ public:
 
     //! Get SSRC of packet sender.
     uint32_t ssrc() const {
-        return core::ntoh32(ssrc_);
+        return core::ntoh32u(ssrc_);
     }
 
     //! Set SSRC of packet sender.
     void set_ssrc(const uint32_t s) {
-        ssrc_ = core::hton32(s);
+        ssrc_ = core::hton32u(s);
     }
 
     //! Get number of blocks.
@@ -603,12 +603,12 @@ public:
 
     //! Get SSRC of sender.
     uint32_t ssrc() const {
-        return core::ntoh32(ssrc_);
+        return core::ntoh32u(ssrc_);
     }
 
     //! Set SSRC of sender.
     void set_ssrc(const uint32_t s) {
-        ssrc_ = core::hton32(s);
+        ssrc_ = core::hton32u(s);
     }
 
     //! Get NTP timestamp.
@@ -623,32 +623,32 @@ public:
 
     //! Get RTP timestamp.
     uint32_t rtp_timestamp() const {
-        return core::ntoh32(rtp_timestamp_);
+        return core::ntoh32u(rtp_timestamp_);
     }
 
     //! Get RTP timestamp.
     void set_rtp_timestamp(const uint32_t& t) {
-        rtp_timestamp_ = core::hton32(t);
+        rtp_timestamp_ = core::hton32u(t);
     }
 
     //! Get packet count.
     size_t packet_count() const {
-        return core::ntoh32(packet_cnt_);
+        return core::ntoh32u(packet_cnt_);
     }
 
     //! Set packet count.
     void set_packet_count(const size_t cnt) {
-        packet_cnt_ = core::hton32((uint32_t)cnt);
+        packet_cnt_ = core::hton32u((uint32_t)cnt);
     }
 
     //! Get byte count.
     size_t byte_count() const {
-        return core::ntoh32(bytes_cnt_);
+        return core::ntoh32u(bytes_cnt_);
     }
 
     //! Set byte count.
     void set_byte_count(const size_t cnt) {
-        bytes_cnt_ = core::hton32((uint32_t)cnt);
+        bytes_cnt_ = core::hton32u((uint32_t)cnt);
     }
 
     //! Get number of blocks.
@@ -708,12 +708,12 @@ public:
 
     //! Get SSRC.
     uint32_t ssrc() const {
-        return core::ntoh32(ssrc_);
+        return core::ntoh32u(ssrc_);
     }
 
     //! Set SSRC.
     void set_ssrc(const uint32_t s) {
-        ssrc_ = core::hton32(s);
+        ssrc_ = core::hton32u(s);
     }
 } ROC_ATTR_PACKED_END;
 
@@ -859,12 +859,12 @@ public:
 
     //! Get SSRC.
     uint32_t ssrc() const {
-        return core::ntoh32(ssrc_);
+        return core::ntoh32u(ssrc_);
     }
 
     //! Set SSRC.
     void set_ssrc(const uint32_t s) {
-        ssrc_ = core::hton32(s);
+        ssrc_ = core::hton32u(s);
     }
 } ROC_ATTR_PACKED_END;
 
@@ -1005,12 +1005,12 @@ public:
 
     //! Get SSRC of packet originator.
     uint32_t ssrc() const {
-        return core::ntoh32(ssrc_);
+        return core::ntoh32u(ssrc_);
     }
 
     //! Set SSRC of packet originator.
     void set_ssrc(const uint32_t ssrc) {
-        ssrc_ = core::hton32(ssrc);
+        ssrc_ = core::hton32u(ssrc);
     }
 } ROC_ATTR_PACKED_END;
 
@@ -1077,12 +1077,12 @@ public:
 
     //! Get block length, including the header, in 32-bit words minus one.
     uint16_t len_words() const {
-        return core::ntoh16(length_);
+        return core::ntoh16u(length_);
     }
 
     //! Set block length in words.
     void set_len_words(const uint16_t ln) {
-        length_ = core::hton16(ln);
+        length_ = core::hton16u(ln);
     }
 
     //! Get block length, including the header, in bytes.
@@ -1181,32 +1181,32 @@ public:
 
     //! Get SSRC of receiver.
     uint32_t ssrc() const {
-        return core::ntoh32(ssrc_);
+        return core::ntoh32u(ssrc_);
     }
 
     //! Set SSRC of receiver.
     void set_ssrc(const uint32_t ssrc) {
-        ssrc_ = core::hton32(ssrc);
+        ssrc_ = core::hton32u(ssrc);
     }
 
     //! Get LRR.
     uint32_t last_rr() const {
-        return core::ntoh32(last_rr_);
+        return core::ntoh32u(last_rr_);
     }
 
     //! Set LRR.
     void set_last_rr(const uint32_t lrr) {
-        last_rr_ = core::hton32(lrr);
+        last_rr_ = core::hton32u(lrr);
     }
 
     //! Get DLRR.
     uint32_t delay_last_rr() const {
-        return core::ntoh32(delay_last_rr_);
+        return core::ntoh32u(delay_last_rr_);
     }
 
     //! Set DLRR.
     void set_delay_last_rr(const uint32_t dlrr) {
-        delay_last_rr_ = core::hton32(dlrr);
+        delay_last_rr_ = core::hton32u(dlrr);
     }
 } ROC_ATTR_PACKED_END;
 

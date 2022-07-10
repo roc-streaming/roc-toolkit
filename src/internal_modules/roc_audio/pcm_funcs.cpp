@@ -30,11 +30,11 @@ template <> int16_t inline pcm_encode_one_sample(float s) {
     s *= 32768.0f;
     s = std::min(s, +32767.0f);
     s = std::max(s, -32768.0f);
-    return (int16_t)core::hton16((uint16_t)(int16_t)s);
+    return (int16_t)core::hton16u((uint16_t)(int16_t)s);
 }
 
 inline float pcm_decode_one_sample(int16_t s) {
-    return float((int16_t)core::ntoh16((uint16_t)s)) / 32768.0f;
+    return float((int16_t)core::ntoh16u((uint16_t)s)) / 32768.0f;
 }
 
 template <class Sample, size_t NumCh>
