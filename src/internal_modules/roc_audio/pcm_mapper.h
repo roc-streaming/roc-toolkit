@@ -1,0 +1,62 @@
+/*
+ * Copyright (c) 2022 Roc Streaming authors
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+
+//! @file roc_audio/pcm_mapper.h
+//! @brief PCM format mapper.
+
+#ifndef ROC_AUDIO_PCM_MAPPER_H_
+#define ROC_AUDIO_PCM_MAPPER_H_
+
+#include "roc_audio/pcm_format.h"
+#include "roc_core/noncopyable.h"
+
+namespace roc {
+namespace audio {
+
+//! PCM format mapper.
+//! Convert between PCM formats.
+class PcmMapper : public core::NonCopyable<> {
+public:
+    //! Initialize.
+    explicit PcmMapper(const PcmFormat& input_fmt, const PcmFormat& output_fmt);
+
+    //! Get input format.
+    const PcmFormat& input_format() const;
+
+    //! Get output format.
+    const PcmFormat& output_format() const;
+
+    //! Get number of input samples per channel for given number of bytes.
+    size_t input_sample_count(size_t input_bytes) const;
+
+    //! Get number of input samples per channel for given number of bytes.
+    size_t output_sample_count(size_t output_bytes) const;
+
+    //! Get number of input bytes for given number of samples per channel.
+    size_t input_byte_count(size_t input_samples) const;
+
+    //! Get number of output bytes for given number of samples per channel.
+    size_t output_byte_count(size_t output_samples) const;
+
+    //! Map samples from input to output format.
+    void map(const void* input, void* output, size_t n_samples);
+
+private:
+    const PcmFormat input_fmt_;
+    const PcmFormat output_fmt_;
+
+    const size_t input_sample_bits_;
+    const size_t output_sample_bits_;
+
+    void (*const map_func_)(const void* in, void* out, size_t n_samples);
+};
+
+} // namespace audio
+} // namespace roc
+
+#endif // ROC_AUDIO_PCM_MAPPER_H_

@@ -949,6 +949,11 @@ if meta.compiler == 'clang':
                 env.Append(**{var: [
                     '-Wno-deprecated-dynamic-exception-spec',
                 ]})
+        if meta.compiler_ver[:2] >= (5, 0):
+            for var in ['CXXFLAGS', 'CFLAGS']:
+                env.Append(**{var: [
+                    '-Wno-unused-template',
+                ]})
         if meta.compiler_ver[:2] >= (6, 0):
             for var in ['CXXFLAGS', 'CFLAGS']:
                 env.Append(**{var: [
