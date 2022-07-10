@@ -37,11 +37,11 @@ public:
     //! Get channel mask.
     packet::channel_mask_t channel_mask() const;
 
-    //! Set channel mask.
-    void set_channel_mask(packet::channel_mask_t channel_mask);
-
     //! Get number of channels.
     size_t num_channels() const;
+
+    //! Set channel mask.
+    void set_channel_mask(packet::channel_mask_t channel_mask);
 
     //! Convert nanoseconds to number of samples.
     packet::timestamp_diff_t timestamp_from_ns(core::nanoseconds_t ns) const;
@@ -56,8 +56,6 @@ public:
     core::nanoseconds_t soa_to_ns(size_t frame_length) const;
 
 private:
-    size_t calc_num_channels_() const;
-
     size_t sample_rate_;
     packet::channel_mask_t channel_mask_;
     size_t num_channels_;

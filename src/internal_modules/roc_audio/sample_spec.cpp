@@ -37,13 +37,13 @@ packet::channel_mask_t SampleSpec::channel_mask() const {
     return channel_mask_;
 }
 
-void SampleSpec::set_channel_mask(packet::channel_mask_t channel_mask) {
-    channel_mask_ = channel_mask;
-    num_channels_ = calc_num_channels_();
-}
-
 size_t SampleSpec::num_channels() const {
     return num_channels_;
+}
+
+void SampleSpec::set_channel_mask(packet::channel_mask_t channel_mask) {
+    channel_mask_ = channel_mask;
+    num_channels_ = packet::num_channels(channel_mask);
 }
 
 packet::timestamp_diff_t SampleSpec::timestamp_from_ns(core::nanoseconds_t ns) const {
@@ -60,17 +60,6 @@ size_t SampleSpec::ns_to_soa(core::nanoseconds_t frame_length) const {
 
 core::nanoseconds_t SampleSpec::soa_to_ns(size_t frame_length) const {
     return timestamp_to_ns(packet::timestamp_diff_t(frame_length / num_channels()));
-}
-
-size_t SampleSpec::calc_num_channels_() const {
-    size_t n_ch = 0;
-    packet::channel_mask_t ch_mask = channel_mask_;
-    for (; ch_mask != 0; ch_mask >>= 1) {
-        if (ch_mask & 1) {
-            n_ch++;
-        }
-    }
-    return n_ch;
 }
 
 } // namespace audio

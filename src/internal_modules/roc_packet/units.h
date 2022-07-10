@@ -21,27 +21,6 @@ namespace packet {
 //! Packet source ID identifying packet stream.
 typedef uint32_t source_t;
 
-//! Packet sequence number in packet stream.
-typedef uint16_t seqnum_t;
-
-//! Packet sequence numbers difference.
-typedef int16_t seqnum_diff_t;
-
-//! Compute difference between two seqnums.
-inline seqnum_diff_t seqnum_diff(seqnum_t a, seqnum_t b) {
-    return seqnum_diff_t(a - b);
-}
-
-//! Check if a is before b taking possible wrap into account.
-inline bool seqnum_lt(seqnum_t a, seqnum_t b) {
-    return seqnum_diff(a, b) < 0;
-}
-
-//! Check if a is before or equal to b taking possible wrap into account.
-inline bool seqnum_le(seqnum_t a, seqnum_t b) {
-    return seqnum_diff(a, b) <= 0;
-}
-
 //! Audio packet timestamp.
 typedef uint32_t timestamp_t;
 
@@ -63,8 +42,26 @@ inline bool timestamp_le(timestamp_t a, timestamp_t b) {
     return timestamp_diff(a, b) <= 0;
 }
 
-//! Bitmask of channels present in audio packet.
-typedef uint32_t channel_mask_t;
+//! Packet sequence number in packet stream.
+typedef uint16_t seqnum_t;
+
+//! Packet sequence numbers difference.
+typedef int16_t seqnum_diff_t;
+
+//! Compute difference between two seqnums.
+inline seqnum_diff_t seqnum_diff(seqnum_t a, seqnum_t b) {
+    return seqnum_diff_t(a - b);
+}
+
+//! Check if a is before b taking possible wrap into account.
+inline bool seqnum_lt(seqnum_t a, seqnum_t b) {
+    return seqnum_diff(a, b) < 0;
+}
+
+//! Check if a is before or equal to b taking possible wrap into account.
+inline bool seqnum_le(seqnum_t a, seqnum_t b) {
+    return seqnum_diff(a, b) <= 0;
+}
 
 //! FEC block number in a packet stream.
 typedef uint16_t blknum_t;
@@ -92,6 +89,20 @@ inline bool blknum_le(blknum_t a, blknum_t b) {
 //!  Highest 32 bits - seconds since NTP epoch, lowest 32 bits - fractions of a second.
 //!  NTP epoch starts from January 1, 1900.
 typedef uint64_t ntp_timestamp_t;
+
+//! Bitmask of channels present in audio packet.
+typedef uint32_t channel_mask_t;
+
+//! Compute number of channels in mask.
+inline size_t num_channels(channel_mask_t ch_mask) {
+    size_t n_ch = 0;
+    for (; ch_mask != 0; ch_mask >>= 1) {
+        if (ch_mask & 1) {
+            n_ch++;
+        }
+    }
+    return n_ch;
+}
 
 } // namespace packet
 } // namespace roc
