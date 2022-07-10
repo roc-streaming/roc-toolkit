@@ -22,25 +22,26 @@ namespace {
 enum { SampleRate = 1000, NumSamples = 100, NumPackets = 30 };
 
 const core::nanoseconds_t NsPerSample = core::Second / SampleRate;
-const audio::SampleSpec SampleSpecs = audio::SampleSpec(SampleRate, pipeline::DefaultChannelMask);
+const audio::SampleSpec SampleSpecs =
+    audio::SampleSpec(SampleRate, pipeline::DefaultChannelMask);
 
 core::HeapAllocator allocator;
 PacketFactory packet_factory(allocator, true);
 
+PacketPtr new_packet(seqnum_t sn) {
+    PacketPtr packet = packet_factory.new_packet();
+    CHECK(packet);
+
+    packet->add_flags(Packet::FlagRTP);
+    packet->rtp()->seqnum = sn;
+    packet->rtp()->timestamp = timestamp_t(sn * NumSamples);
+
+    return packet;
+}
+
 } // namespace
 
-TEST_GROUP(delayed_reader) {
-    PacketPtr new_packet(seqnum_t sn) {
-        PacketPtr packet = packet_factory.new_packet();
-        CHECK(packet);
-
-        packet->add_flags(Packet::FlagRTP);
-        packet->rtp()->seqnum = sn;
-        packet->rtp()->timestamp = timestamp_t(sn * NumSamples);
-
-        return packet;
-    }
-};
+TEST_GROUP(delayed_reader) {};
 
 TEST(delayed_reader, no_delay) {
     Queue queue;

@@ -8,8 +8,6 @@
 
 #include "roc_audio/resampler_writer.h"
 #include "roc_core/log.h"
-#include "roc_core/macro_helpers.h"
-#include "roc_core/panic.h"
 #include "roc_core/stddefs.h"
 
 namespace roc {

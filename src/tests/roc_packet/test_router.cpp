@@ -21,17 +21,17 @@ namespace {
 core::HeapAllocator allocator;
 PacketFactory packet_factory(allocator, true);
 
+PacketPtr new_packet(source_t source, unsigned flags) {
+    PacketPtr packet = packet_factory.new_packet();
+    CHECK(packet);
+    packet->add_flags(Packet::FlagRTP | flags);
+    packet->rtp()->source = source;
+    return packet;
+}
+
 } // namespace
 
-TEST_GROUP(router) {
-    PacketPtr new_packet(source_t source, unsigned flags) {
-        PacketPtr packet = packet_factory.new_packet();
-        CHECK(packet);
-        packet->add_flags(Packet::FlagRTP | flags);
-        packet->rtp()->source = source;
-        return packet;
-    }
-};
+TEST_GROUP(router) {};
 
 TEST(router, no_routes) {
     Router router(allocator);

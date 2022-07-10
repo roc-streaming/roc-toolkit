@@ -22,19 +22,19 @@ namespace {
 core::HeapAllocator allocator;
 PacketFactory packet_factory(allocator, true);
 
+PacketPtr new_packet(seqnum_t sn) {
+    PacketPtr packet = packet_factory.new_packet();
+    CHECK(packet);
+
+    packet->add_flags(Packet::FlagRTP);
+    packet->rtp()->seqnum = sn;
+
+    return packet;
+}
+
 } // namespace
 
-TEST_GROUP(interleaver) {
-    PacketPtr new_packet(seqnum_t sn) {
-        PacketPtr packet = packet_factory.new_packet();
-        CHECK(packet);
-
-        packet->add_flags(Packet::FlagRTP);
-        packet->rtp()->seqnum = sn;
-
-        return packet;
-    }
-};
+TEST_GROUP(interleaver) {};
 
 // Fill Interleaver with multiple of its internal memory size.
 TEST(interleaver, read_write) {

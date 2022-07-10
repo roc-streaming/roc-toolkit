@@ -25,32 +25,32 @@ enum { BufSz = 100, MaxSz = 500 };
 core::HeapAllocator allocator;
 core::BufferFactory<sample_t> buffer_factory(allocator, MaxSz, true);
 
+core::Slice<sample_t> new_buffer(size_t sz) {
+    core::Slice<sample_t> buf = buffer_factory.new_buffer();
+    buf.reslice(0, sz);
+    return buf;
+}
+
+void write_frame(Fanout& fanout, size_t sz, sample_t value) {
+    core::Slice<sample_t> buf = new_buffer(sz);
+
+    Frame frame(buf.data(), buf.size());
+    for (size_t n = 0; n < sz; n++) {
+        frame.data()[n] = value;
+    }
+
+    fanout.write(frame);
+}
+
+void expect_written(test::MockWriter& mock_writer, size_t sz, sample_t value) {
+    for (size_t n = 0; n < sz; n++) {
+        DOUBLES_EQUAL((double)value, (double)mock_writer.get(), 0.0001);
+    }
+}
+
 } // namespace
 
-TEST_GROUP(fanout) {
-    core::Slice<sample_t> new_buffer(size_t sz) {
-        core::Slice<sample_t> buf = buffer_factory.new_buffer();
-        buf.reslice(0, sz);
-        return buf;
-    }
-
-    void write_frame(Fanout& fanout, size_t sz, sample_t value) {
-        core::Slice<sample_t> buf = new_buffer(sz);
-
-        Frame frame(buf.data(), buf.size());
-        for (size_t n = 0; n < sz; n++) {
-            frame.data()[n] = value;
-        }
-
-        fanout.write(frame);
-    }
-
-    void expect_written(test::MockWriter& mock_writer, size_t sz, sample_t value) {
-        for (size_t n = 0; n < sz; n++) {
-            DOUBLES_EQUAL((double)value, (double)mock_writer.get(), 0.0001);
-        }
-    }
-};
+TEST_GROUP(fanout) {};
 
 TEST(fanout, no_writers) {
     Fanout fanout;

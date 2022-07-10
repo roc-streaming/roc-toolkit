@@ -53,7 +53,8 @@ bool Profiler::valid() const {
 }
 
 void Profiler::update_moving_avg_(size_t frame_size, core::nanoseconds_t elapsed) {
-    const float frame_speed = float(frame_size * core::Second) / elapsed / sample_spec_.num_channels();
+    const float frame_speed =
+        float(frame_size * core::Second) / elapsed / sample_spec_.num_channels();
 
     while (frame_size > 0) {
         size_t n_samples = std::min(frame_size, (chunk_length_ - last_chunk_samples_));

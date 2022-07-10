@@ -46,12 +46,10 @@ FreqEstimator::FreqEstimator(FreqEstimatorConfig config,
     , samples_counter_(0)
     , accum_(0)
     , coeff_(1) {
-    memset(dec1_casc_buff_, 0, sizeof(dec1_casc_buff_));
-    memset(dec2_casc_buff_, 0, sizeof(dec2_casc_buff_));
-
     roc_panic_if_msg(config_.decimation_factor1 == 0,
                      "freq_estimator: decimation "
                      "factor 1 must not be zero");
+
     roc_panic_if_msg(config_.decimation_factor1 > fe_decim_factor_max
                          || config_.decimation_factor2 > fe_decim_factor_max,
                      "freq_estimator: decimation factor must be less or equal to %lu",
@@ -60,6 +58,10 @@ FreqEstimator::FreqEstimator(FreqEstimatorConfig config,
     if (fe_decim_len % 2 != 0) {
         roc_panic("freq estimator: decim_len should be power of two");
     }
+
+    memset(dec1_casc_buff_, 0, sizeof(dec1_casc_buff_));
+    memset(dec2_casc_buff_, 0, sizeof(dec2_casc_buff_));
+
     for (size_t i = 0; i < fe_decim_len; i++) {
         dec1_casc_buff_[i] = target_;
         dec2_casc_buff_[i] = target_;

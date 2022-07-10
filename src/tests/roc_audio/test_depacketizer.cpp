@@ -25,8 +25,14 @@ namespace audio {
 
 namespace {
 
-enum { MaxBufSize = 4000, SamplesPerPacket = 200, SampleRate=100, 
-       ChMask = 0x3, NumCh=2, SamplesSize = SamplesPerPacket*NumCh };
+enum {
+    MaxBufSize = 4000,
+    SamplesPerPacket = 200,
+    SampleRate = 100,
+    ChMask = 0x3,
+    NumCh = 2,
+    SamplesSize = SamplesPerPacket * NumCh
+};
 
 core::HeapAllocator allocator;
 core::BufferFactory<sample_t> sample_buffer_factory(allocator, MaxBufSize, true);
@@ -38,73 +44,73 @@ rtp::Composer rtp_composer(NULL);
 const PcmFuncs& pcm_funcs = PCM_int16_2ch;
 const audio::SampleSpec SampleSpecs = audio::SampleSpec(SampleRate, ChMask);
 
+packet::PacketPtr
+new_packet(IFrameEncoder& encoder, packet::timestamp_t ts, sample_t value) {
+    packet::PacketPtr pp = packet_factory.new_packet();
+    CHECK(pp);
+
+    core::Slice<uint8_t> bp = byte_buffer_factory.new_buffer();
+    CHECK(bp);
+
+    CHECK(rtp_composer.prepare(*pp, bp, encoder.encoded_size(SamplesPerPacket)));
+
+    pp->set_data(bp);
+
+    pp->rtp()->timestamp = ts;
+    pp->rtp()->duration = SamplesPerPacket;
+
+    sample_t samples[SamplesSize];
+    for (size_t n = 0; n < SamplesSize; n++) {
+        samples[n] = value;
+    }
+
+    encoder.begin(pp->rtp()->payload.data(), pp->rtp()->payload.size());
+
+    UNSIGNED_LONGS_EQUAL(SamplesPerPacket,
+                         encoder.write(samples, SamplesPerPacket, ChMask));
+
+    encoder.end();
+
+    CHECK(rtp_composer.compose(*pp));
+
+    return pp;
+}
+
+core::Slice<sample_t> new_buffer(size_t n_samples) {
+    core::Slice<sample_t> buffer = sample_buffer_factory.new_buffer();
+    CHECK(buffer);
+    buffer.reslice(0, n_samples * SampleSpecs.num_channels());
+    return buffer;
+}
+
+void expect_values(const sample_t* samples, size_t num_samples, sample_t value) {
+    for (size_t n = 0; n < num_samples; n++) {
+        DOUBLES_EQUAL((double)value, (double)samples[n], 0.0001);
+    }
+}
+
+void expect_output(Depacketizer& depacketizer, size_t sz, sample_t value) {
+    core::Slice<sample_t> buf = new_buffer(sz);
+
+    Frame frame(buf.data(), buf.size());
+    CHECK(depacketizer.read(frame));
+
+    UNSIGNED_LONGS_EQUAL(sz * SampleSpecs.num_channels(), frame.size());
+    expect_values(frame.data(), sz * SampleSpecs.num_channels(), value);
+}
+
+void expect_flags(Depacketizer& depacketizer, size_t sz, unsigned int flags) {
+    core::Slice<sample_t> buf = new_buffer(sz);
+
+    Frame frame(buf.data(), buf.size());
+    CHECK(depacketizer.read(frame));
+
+    UNSIGNED_LONGS_EQUAL(flags, frame.flags());
+}
+
 } // namespace
 
-TEST_GROUP(depacketizer) {
-    packet::PacketPtr new_packet(
-        IFrameEncoder& encoder, packet::timestamp_t ts, sample_t value) {
-        packet::PacketPtr pp = packet_factory.new_packet();
-        CHECK(pp);
-
-        core::Slice<uint8_t> bp = byte_buffer_factory.new_buffer();
-        CHECK(bp);
-
-        CHECK(rtp_composer.prepare(*pp, bp, encoder.encoded_size(SamplesPerPacket)));
-
-        pp->set_data(bp);
-
-        pp->rtp()->timestamp = ts;
-        pp->rtp()->duration = SamplesPerPacket;
-
-        sample_t samples[SamplesSize];
-        for (size_t n = 0; n < SamplesSize; n++) {
-            samples[n] = value;
-        }
-
-        encoder.begin(pp->rtp()->payload.data(), pp->rtp()->payload.size());
-
-        UNSIGNED_LONGS_EQUAL(SamplesPerPacket,
-                             encoder.write(samples, SamplesPerPacket, ChMask));
-
-        encoder.end();
-
-        CHECK(rtp_composer.compose(*pp));
-
-        return pp;
-    }
-
-    core::Slice<sample_t> new_buffer(size_t n_samples) {
-        core::Slice<sample_t> buffer = sample_buffer_factory.new_buffer();
-        CHECK(buffer);
-        buffer.reslice(0, n_samples * SampleSpecs.num_channels());
-        return buffer;
-    }
-
-    void expect_values(const sample_t* samples, size_t num_samples, sample_t value) {
-        for (size_t n = 0; n < num_samples; n++) {
-            DOUBLES_EQUAL((double)value, (double)samples[n], 0.0001);
-        }
-    }
-
-    void expect_output(Depacketizer& depacketizer, size_t sz, sample_t value) {
-        core::Slice<sample_t> buf = new_buffer(sz);
-
-        Frame frame(buf.data(), buf.size());
-        CHECK(depacketizer.read(frame));
-
-        UNSIGNED_LONGS_EQUAL(sz * SampleSpecs.num_channels(), frame.size());
-        expect_values(frame.data(), sz * SampleSpecs.num_channels(), value);
-    }
-
-    void expect_flags(Depacketizer& depacketizer, size_t sz, unsigned int flags) {
-        core::Slice<sample_t> buf = new_buffer(sz);
-
-        Frame frame(buf.data(), buf.size());
-        CHECK(depacketizer.read(frame));
-
-        UNSIGNED_LONGS_EQUAL(flags, frame.flags());
-    }
-};
+TEST_GROUP(depacketizer) {};
 
 TEST(depacketizer, one_packet_one_read) {
     PcmEncoder encoder(pcm_funcs);
@@ -151,7 +157,7 @@ TEST(depacketizer, multiple_packets_one_read) {
 TEST(depacketizer, multiple_packets_multiple_reads) {
     enum { FramesPerPacket = 10 };
 
-    CHECK(SamplesPerPacket % FramesPerPacket== 0);
+    CHECK(SamplesPerPacket % FramesPerPacket == 0);
 
     PcmEncoder encoder(pcm_funcs);
     PcmDecoder decoder(pcm_funcs);
@@ -313,8 +319,8 @@ TEST(depacketizer, zeros_after_packet) {
 
     expect_values(f1.data(), SamplesPerPacket / 2 * SampleSpecs.num_channels(), 0.11f);
     expect_values(f2.data(), SamplesPerPacket / 2 * SampleSpecs.num_channels(), 0.11f);
-    expect_values(f2.data() + SamplesPerPacket / 2 * SampleSpecs.num_channels(), SamplesPerPacket / 2 * SampleSpecs.num_channels(),
-                  0.00f);
+    expect_values(f2.data() + SamplesPerPacket / 2 * SampleSpecs.num_channels(),
+                  SamplesPerPacket / 2 * SampleSpecs.num_channels(), 0.00f);
 }
 
 TEST(depacketizer, packet_after_zeros) {
@@ -389,7 +395,9 @@ TEST(depacketizer, frame_flags_incompltete_blank) {
             NULL,
         },
         {
-            NULL, NULL, NULL,
+            NULL,
+            NULL,
+            NULL,
         },
         {
             new_packet(encoder, SamplesPerPacket * 22, 0.11f),
@@ -397,7 +405,9 @@ TEST(depacketizer, frame_flags_incompltete_blank) {
             new_packet(encoder, SamplesPerPacket * 24, 0.11f),
         },
         {
-            NULL, NULL, NULL,
+            NULL,
+            NULL,
+            NULL,
         },
     };
 
@@ -467,7 +477,7 @@ TEST(depacketizer, timestamp) {
         SamplesPerFrame = SamplesPerPacket / FramesPerPacket
     };
 
-    CHECK(SamplesPerPacket % FramesPerPacket== 0);
+    CHECK(SamplesPerPacket % FramesPerPacket == 0);
 
     PcmEncoder encoder(pcm_funcs);
     PcmDecoder decoder(pcm_funcs);
@@ -483,9 +493,8 @@ TEST(depacketizer, timestamp) {
     }
 
     for (size_t n = 0; n < NumPackets; n++) {
-        queue.write(new_packet(encoder,
-                               StartTimestamp + packet::timestamp_t(n * SamplesPerPacket),
-                               0.1f));
+        queue.write(new_packet(
+            encoder, StartTimestamp + packet::timestamp_t(n * SamplesPerPacket), 0.1f));
     }
 
     packet::timestamp_t ts = StartTimestamp;

@@ -20,8 +20,7 @@ namespace audio {
 
 namespace {
 
-enum { BufSz = 100, SampleRate = 44100,
-       ChannelMask = 0x1, MaxBufSz = 500 };
+enum { BufSz = 100, SampleRate = 44100, ChannelMask = 0x1, MaxBufSz = 500 };
 
 const audio::SampleSpec SampleSpecs = audio::SampleSpec(SampleRate, ChannelMask);
 
@@ -32,26 +31,26 @@ core::HeapAllocator allocator;
 core::BufferFactory<sample_t> buffer_factory(allocator, MaxBufSz, true);
 core::BufferFactory<sample_t> large_buffer_factory(allocator, MaxBufSz * 10, true);
 
+core::Slice<sample_t> new_buffer(size_t sz) {
+    core::Slice<sample_t> buf = large_buffer_factory.new_buffer();
+    buf.reslice(0, sz);
+    return buf;
+}
+
+void expect_output(Mixer& mixer, size_t sz, sample_t value) {
+    core::Slice<sample_t> buf = new_buffer(sz);
+
+    Frame frame(buf.data(), buf.size());
+    CHECK(mixer.read(frame));
+
+    for (size_t n = 0; n < sz; n++) {
+        DOUBLES_EQUAL((double)value, (double)frame.data()[n], 0.0001);
+    }
+}
+
 } // namespace
 
-TEST_GROUP(mixer) {
-    core::Slice<sample_t> new_buffer(size_t sz) {
-        core::Slice<sample_t> buf = large_buffer_factory.new_buffer();
-        buf.reslice(0, sz);
-        return buf;
-    }
-
-    void expect_output(Mixer& mixer, size_t sz, sample_t value) {
-        core::Slice<sample_t> buf = new_buffer(sz);
-
-        Frame frame(buf.data(), buf.size());
-        CHECK(mixer.read(frame));
-
-        for (size_t n = 0; n < sz; n++) {
-            DOUBLES_EQUAL((double)value, (double)frame.data()[n], 0.0001);
-        }
-    }
-};
+TEST_GROUP(mixer) {};
 
 TEST(mixer, no_readers) {
     Mixer mixer(buffer_factory, MaxBufDuration, SampleSpecs);

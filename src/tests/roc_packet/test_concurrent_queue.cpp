@@ -20,15 +20,15 @@ namespace {
 core::HeapAllocator allocator;
 PacketFactory packet_factory(allocator, true);
 
+PacketPtr new_packet() {
+    PacketPtr packet = packet_factory.new_packet();
+    CHECK(packet);
+    return packet;
+}
+
 } // namespace
 
-TEST_GROUP(concurrent_queue) {
-    PacketPtr new_packet() {
-        PacketPtr packet = packet_factory.new_packet();
-        CHECK(packet);
-        return packet;
-    }
-};
+TEST_GROUP(concurrent_queue) {};
 
 TEST(concurrent_queue, write_read) {
     ConcurrentQueue queue;

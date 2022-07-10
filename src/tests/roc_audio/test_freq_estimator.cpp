@@ -24,6 +24,7 @@ const double Epsilon = 0.0001;
 TEST_GROUP(freq_estimator) {
     FreqEstimatorConfig fe_config;
 };
+
 TEST(freq_estimator, initial) {
     FreqEstimator fe(fe_config, Target);
 

@@ -28,18 +28,18 @@ core::HeapAllocator allocator;
 core::BufferFactory<uint8_t> buffer_factory(allocator, MaxBufSize, true);
 packet::PacketFactory packet_factory(allocator, true);
 
+core::Slice<uint8_t> new_buffer(const uint8_t* data, size_t datasz) {
+    core::Slice<uint8_t> buf = buffer_factory.new_buffer();
+    if (data) {
+        buf.reslice(0, datasz);
+        memcpy(buf.data(), data, datasz);
+    }
+    return buf;
+}
+
 } // namespace
 
-TEST_GROUP(rtcp) {
-    core::Slice<uint8_t> new_buffer(const uint8_t* data, size_t datasz) {
-        core::Slice<uint8_t> buf = buffer_factory.new_buffer();
-        if (data) {
-            buf.reslice(0, datasz);
-            memcpy(buf.data(), data, datasz);
-        }
-        return buf;
-    }
-};
+TEST_GROUP(rtcp) {};
 
 TEST(rtcp, loopback_sr_sdes) {
     core::Slice<uint8_t> buff = new_buffer(NULL, 0).subslice(0, 0);
@@ -109,8 +109,7 @@ TEST(rtcp, loopback_sr_sdes) {
     CHECK_EQUAL(sender_report1.last_seqnum(), it.get_sr().get_block(0).last_seqnum());
     CHECK_EQUAL(sender_report1.jitter(), it.get_sr().get_block(0).jitter());
     CHECK_EQUAL(sender_report1.last_sr(), it.get_sr().get_block(0).last_sr());
-    CHECK_EQUAL(sender_report1.delay_last_sr(),
-                it.get_sr().get_block(0).delay_last_sr());
+    CHECK_EQUAL(sender_report1.delay_last_sr(), it.get_sr().get_block(0).delay_last_sr());
     CHECK_EQUAL(sender_report2.ssrc(), it.get_sr().get_block(1).ssrc());
     DOUBLES_EQUAL(sender_report2.fract_loss(), it.get_sr().get_block(1).fract_loss(),
                   1e-8);
@@ -118,8 +117,7 @@ TEST(rtcp, loopback_sr_sdes) {
     CHECK_EQUAL(sender_report2.last_seqnum(), it.get_sr().get_block(1).last_seqnum());
     CHECK_EQUAL(sender_report2.jitter(), it.get_sr().get_block(1).jitter());
     CHECK_EQUAL(sender_report2.last_sr(), it.get_sr().get_block(1).last_sr());
-    CHECK_EQUAL(sender_report2.delay_last_sr(),
-                it.get_sr().get_block(1).delay_last_sr());
+    CHECK_EQUAL(sender_report2.delay_last_sr(), it.get_sr().get_block(1).delay_last_sr());
 
     CHECK_EQUAL(Traverser::Iterator::SDES, it.next());
     SdesTraverser sdes = it.get_sdes();

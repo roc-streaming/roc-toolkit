@@ -14,35 +14,39 @@
 namespace roc {
 namespace address {
 
-TEST_GROUP(pct) {
-    ssize_t encode(char* dst, size_t dst_sz, const char* src, size_t src_sz, PctMode mode) {
-        core::StringBuilder b(dst, dst_sz);
+namespace {
 
-        if (!pct_encode(b, src, src_sz, mode)) {
-            return -1;
-        }
+ssize_t encode(char* dst, size_t dst_sz, const char* src, size_t src_sz, PctMode mode) {
+    core::StringBuilder b(dst, dst_sz);
 
-        if (!b.ok()){
-            return -1;
-        }
-
-        return (ssize_t)b.actual_size() - 1;
+    if (!pct_encode(b, src, src_sz, mode)) {
+        return -1;
     }
 
-    ssize_t decode(char* dst, size_t dst_sz, const char* src, size_t src_sz) {
-        core::StringBuilder b(dst, dst_sz);
-
-        if (!pct_decode(b, src, src_sz)) {
-            return -1;
-        }
-
-        if (!b.ok()){
-            return -1;
-        }
-
-        return (ssize_t)b.actual_size() - 1;
+    if (!b.ok()) {
+        return -1;
     }
-};
+
+    return (ssize_t)b.actual_size() - 1;
+}
+
+ssize_t decode(char* dst, size_t dst_sz, const char* src, size_t src_sz) {
+    core::StringBuilder b(dst, dst_sz);
+
+    if (!pct_decode(b, src, src_sz)) {
+        return -1;
+    }
+
+    if (!b.ok()) {
+        return -1;
+    }
+
+    return (ssize_t)b.actual_size() - 1;
+}
+
+} // namespace
+
+TEST_GROUP(pct) {};
 
 TEST(pct, unreserved_symbols) {
     const char* decoded =
