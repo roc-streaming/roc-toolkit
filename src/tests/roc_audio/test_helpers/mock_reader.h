@@ -29,22 +29,33 @@ public:
         CHECK(pos_ + frame.size() <= size_);
 
         memcpy(frame.data(), samples_ + pos_, frame.size() * sizeof(sample_t));
+
+        unsigned flags = 0;
+        for (size_t n = pos_; n < pos_ + frame.size(); n++) {
+            flags |= flags_[n];
+        }
+        frame.set_flags(flags);
+
         pos_ += frame.size();
 
         return true;
     }
 
-    void add(size_t size, sample_t value) {
+    void add(size_t size, sample_t value, unsigned flags = 0) {
         CHECK(size_ + size < MaxSz);
 
         for (size_t n = 0; n < size; n++) {
-            samples_[size_++] = value;
+            samples_[size_] = value;
+            flags_[size_] = flags;
+            size_++;
         }
     }
 
     void pad_zeros() {
         while (size_ < MaxSz) {
-            samples_[size_++] = 0;
+            samples_[size_] = 0;
+            flags_[size_] = 0;
+            size_++;
         }
     }
 
@@ -56,6 +67,7 @@ private:
     enum { MaxSz = 64 * 1024 };
 
     sample_t samples_[MaxSz];
+    unsigned flags_[MaxSz];
     size_t pos_;
     size_t size_;
 };

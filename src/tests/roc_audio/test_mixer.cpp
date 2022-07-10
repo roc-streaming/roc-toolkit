@@ -37,7 +37,7 @@ core::Slice<sample_t> new_buffer(size_t sz) {
     return buf;
 }
 
-void expect_output(Mixer& mixer, size_t sz, sample_t value) {
+void expect_output(Mixer& mixer, size_t sz, sample_t value, unsigned flags = 0) {
     core::Slice<sample_t> buf = new_buffer(sz);
 
     Frame frame(buf.data(), buf.size());
@@ -46,6 +46,8 @@ void expect_output(Mixer& mixer, size_t sz, sample_t value) {
     for (size_t n = 0; n < sz; n++) {
         DOUBLES_EQUAL((double)value, (double)frame.data()[n], 0.0001);
     }
+
+    UNSIGNED_LONGS_EQUAL(flags, frame.flags());
 }
 
 } // namespace
@@ -160,6 +162,35 @@ TEST(mixer, clamp) {
     reader2.add(BufSz, -0.81f);
 
     expect_output(mixer, BufSz, -1.0f);
+
+    CHECK(reader1.num_unread() == 0);
+    CHECK(reader2.num_unread() == 0);
+}
+
+TEST(mixer, flags) {
+    enum { BigBatch = MaxBufSz * 2 };
+
+    test::MockReader reader1(SampleSpecs);
+    test::MockReader reader2(SampleSpecs);
+
+    Mixer mixer(buffer_factory, MaxBufDuration, SampleSpecs);
+    CHECK(mixer.valid());
+
+    mixer.add_input(reader1);
+    mixer.add_input(reader2);
+
+    reader1.add(BigBatch, 0.1f, 0);
+    reader1.add(BigBatch, 0.1f, Frame::FlagNonblank);
+    reader1.add(BigBatch, 0.1f, 0);
+
+    reader2.add(BigBatch, 0.1f, Frame::FlagIncomplete);
+    reader2.add(BigBatch / 2, 0.1f, 0);
+    reader2.add(BigBatch / 2, 0.1f, Frame::FlagDrops);
+    reader2.add(BigBatch, 0.1f, 0);
+
+    expect_output(mixer, BigBatch, 0.2f, Frame::FlagIncomplete);
+    expect_output(mixer, BigBatch, 0.2f, Frame::FlagNonblank | Frame::FlagDrops);
+    expect_output(mixer, BigBatch, 0.2f, 0);
 
     CHECK(reader1.num_unread() == 0);
     CHECK(reader2.num_unread() == 0);

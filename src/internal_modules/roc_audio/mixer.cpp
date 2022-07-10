@@ -84,22 +84,26 @@ bool Mixer::read(Frame& frame) {
     sample_t* samples = frame.data();
     size_t n_samples = frame.size();
 
+    unsigned flags = 0;
+
     while (n_samples != 0) {
         size_t n_read = n_samples;
         if (n_read > max_read) {
             n_read = max_read;
         }
 
-        read_(samples, n_read);
+        read_(samples, n_read, flags);
 
         samples += n_read;
         n_samples -= n_read;
     }
 
+    frame.set_flags(flags);
+
     return true;
 }
 
-void Mixer::read_(sample_t* data, size_t size) {
+void Mixer::read_(sample_t* data, size_t size, unsigned& flags) {
     roc_panic_if(!data);
     roc_panic_if(size == 0);
 
@@ -116,6 +120,8 @@ void Mixer::read_(sample_t* data, size_t size) {
         for (size_t n = 0; n < size; n++) {
             data[n] = clamp(data[n] + temp_data[n]);
         }
+
+        flags |= temp_frame.flags();
     }
 }
 
