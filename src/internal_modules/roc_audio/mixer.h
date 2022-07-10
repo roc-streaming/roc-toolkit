@@ -47,9 +47,9 @@ public:
     //!  - @p frame_length defines the temporary buffer length used to
     //!    read from, in nanoseconds
     //!  - @p sample_spec defines the sample spec taken from the audio signal
-    explicit Mixer(core::BufferFactory<sample_t>& buffer_factory,
-                   core::nanoseconds_t frame_length,
-                   const audio::SampleSpec& sample_spec);
+    Mixer(core::BufferFactory<sample_t>& buffer_factory,
+          core::nanoseconds_t frame_length,
+          const audio::SampleSpec& sample_spec);
 
     //! Check if the mixer was succefully constructed.
     bool valid() const;
