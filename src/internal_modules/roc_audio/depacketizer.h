@@ -53,19 +53,32 @@ public:
     packet::timestamp_t timestamp() const;
 
 private:
+    struct FrameInfo {
+        // Number of samples decoded from packets into the frame.
+        size_t n_decoded_samples;
+
+        // Number of packets dropped during frame construction.
+        size_t n_dropped_packets;
+
+        FrameInfo()
+            : n_decoded_samples(0)
+            , n_dropped_packets(0) {
+        }
+    };
+
     void read_frame_(Frame& frame);
 
-    sample_t* read_samples_(sample_t* buff_ptr, sample_t* buff_end);
+    sample_t* read_samples_(sample_t* buff_ptr, sample_t* buff_end, FrameInfo& info);
 
     sample_t* read_packet_samples_(sample_t* buff_ptr, sample_t* buff_end);
     sample_t* read_missing_samples_(sample_t* buff_ptr, sample_t* buff_end);
 
-    void set_frame_flags_(Frame& frame,
-                          size_t prev_dropped_packets,
-                          packet::timestamp_t prev_packet_samples);
-
-    void update_packet_();
+    void update_packet_(FrameInfo& info);
     packet::PacketPtr read_packet_();
+
+    void set_frame_flags_(Frame& frame, const FrameInfo& info);
+
+    void report_stats_();
 
     packet::IReader& reader_;
     IFrameDecoder& payload_decoder_;
@@ -84,8 +97,6 @@ private:
 
     bool first_packet_;
     bool beep_;
-
-    size_t dropped_packets_;
 };
 
 } // namespace audio

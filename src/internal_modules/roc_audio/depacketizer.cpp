@@ -43,8 +43,7 @@ Depacketizer::Depacketizer(packet::IReader& reader,
     , packet_samples_(0)
     , rate_limiter_(LogInterval)
     , first_packet_(true)
-    , beep_(beep)
-    , dropped_packets_(0) {
+    , beep_(beep) {
     roc_log(LogDebug, "depacketizer: initializing: n_channels=%lu",
             (unsigned long)sample_spec_.num_channels());
 }
@@ -61,21 +60,9 @@ packet::timestamp_t Depacketizer::timestamp() const {
 }
 
 bool Depacketizer::read(Frame& frame) {
-    const size_t prev_dropped_packets = dropped_packets_;
-    const packet::timestamp_t prev_packet_samples = packet_samples_;
-
     read_frame_(frame);
 
-    set_frame_flags_(frame, prev_dropped_packets, prev_packet_samples);
-
-    if (rate_limiter_.allow()) {
-        const size_t total_samples = missing_samples_ + packet_samples_;
-        const double loss_ratio =
-            total_samples != 0 ? (double)missing_samples_ / total_samples : 0.;
-
-        roc_log(LogDebug, "depacketizer: ts=%lu loss_ratio=%.5lf",
-                (unsigned long)timestamp_, loss_ratio);
-    }
+    report_stats_();
 
     return true;
 }
@@ -88,15 +75,20 @@ void Depacketizer::read_frame_(Frame& frame) {
     sample_t* buff_ptr = frame.data();
     sample_t* buff_end = frame.data() + frame.size();
 
+    FrameInfo info;
+
     while (buff_ptr < buff_end) {
-        buff_ptr = read_samples_(buff_ptr, buff_end);
+        buff_ptr = read_samples_(buff_ptr, buff_end, info);
     }
 
     roc_panic_if(buff_ptr != buff_end);
+
+    set_frame_flags_(frame, info);
 }
 
-sample_t* Depacketizer::read_samples_(sample_t* buff_ptr, sample_t* buff_end) {
-    update_packet_();
+sample_t*
+Depacketizer::read_samples_(sample_t* buff_ptr, sample_t* buff_end, FrameInfo& info) {
+    update_packet_(info);
 
     if (packet_) {
         packet::timestamp_t next_timestamp = payload_decoder_.position();
@@ -114,7 +106,11 @@ sample_t* Depacketizer::read_samples_(sample_t* buff_ptr, sample_t* buff_end) {
         }
 
         if (buff_ptr < buff_end) {
-            buff_ptr = read_packet_samples_(buff_ptr, buff_end);
+            sample_t* new_buff_ptr = read_packet_samples_(buff_ptr, buff_end);
+
+            info.n_decoded_samples += size_t(new_buff_ptr - buff_ptr);
+
+            buff_ptr = new_buff_ptr;
         }
 
         return buff_ptr;
@@ -162,7 +158,7 @@ sample_t* Depacketizer::read_missing_samples_(sample_t* buff_ptr, sample_t* buff
     return (buff_ptr + num_samples * sample_spec_.num_channels());
 }
 
-void Depacketizer::update_packet_() {
+void Depacketizer::update_packet_(FrameInfo& info) {
     if (packet_) {
         return;
     }
@@ -198,7 +194,7 @@ void Depacketizer::update_packet_() {
         roc_log(LogDebug, "depacketizer: fetched=%d dropped=%u", (int)!!packet_,
                 n_dropped);
 
-        dropped_packets_ += n_dropped;
+        info.n_dropped_packets += n_dropped;
     }
 
     if (!packet_) {
@@ -235,27 +231,35 @@ packet::PacketPtr Depacketizer::read_packet_() {
     return pp;
 }
 
-void Depacketizer::set_frame_flags_(Frame& frame,
-                                    const size_t prev_dropped_packets,
-                                    const packet::timestamp_t prev_packet_samples) {
-    const size_t packet_samples = sample_spec_.num_channels()
-        * (size_t)packet::timestamp_diff(packet_samples_, prev_packet_samples);
-
+void Depacketizer::set_frame_flags_(Frame& frame, const FrameInfo& info) {
     unsigned flags = 0;
 
-    if (packet_samples != frame.size()) {
+    if (info.n_decoded_samples != frame.size()) {
         flags |= Frame::FlagIncomplete;
     }
 
-    if (packet_samples == 0) {
+    if (info.n_decoded_samples == 0) {
         flags |= Frame::FlagBlank;
     }
 
-    if (prev_dropped_packets != dropped_packets_) {
+    if (info.n_dropped_packets != 0) {
         flags |= Frame::FlagDrops;
     }
 
     frame.set_flags(flags);
+}
+
+void Depacketizer::report_stats_() {
+    if (!rate_limiter_.allow()) {
+        return;
+    }
+
+    const size_t total_samples = missing_samples_ + packet_samples_;
+    const double loss_ratio =
+        total_samples != 0 ? (double)missing_samples_ / total_samples : 0.;
+
+    roc_log(LogDebug, "depacketizer: ts=%lu loss_ratio=%.5lf", (unsigned long)timestamp_,
+            loss_ratio);
 }
 
 } // namespace audio
