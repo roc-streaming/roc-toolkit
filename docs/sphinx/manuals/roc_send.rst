@@ -22,7 +22,6 @@ Options
 --input-format=FILE_FORMAT  Force input file format
 -s, --source=ENDPOINT_URI   Remote source endpoint
 -r, --repair=ENDPOINT_URI   Remote repair endpoint
---broadcast                 Allow broadcast destination port addresses (default=off)
 --nbsrc=INT                 Number of source packets in FEC block
 --nbrpr=INT                 Number of repair packets in FEC block
 --packet-length=STRING      Outgoing packet length, TIME units
@@ -105,11 +104,6 @@ The path component of the provided URI is `percent-decoded <https://en.wikipedia
 
 For example, the file named ``/foo/bar%/[baz]`` may be specified using either of the following URIs: ``file:///foo%2Fbar%25%2F%5Bbaz%5D`` and ``file:///foo/bar%25/[baz]``.
 
-Broadcast address
------------------
-
-This tool follows the common convention is to forbid traffic to broadcast addresses unless allowed excplicitly, to prevent accidental flood. To allow sending packets to broadcast source or repair endpoints, use ``--broadcast`` option.
-
 Time units
 ----------
 
@@ -139,12 +133,6 @@ Send file to two IPv6 source and repair endpoints:
 .. code::
 
     $ roc-send -vv -i file:./input.wav -s rtp+rs8m://[2001:db8::]:10001 -r rs8m://[2001:db8::]:10002
-
-Send file to two broadcast endpoints:
-
-.. code::
-
-    $ roc-send -vv -i file:./input.wav -s rtp+rs8m://192.168.0.3:10001 -r rs8m://192.168.0.3:10002 --broadcast
 
 I/O examples
 ------------

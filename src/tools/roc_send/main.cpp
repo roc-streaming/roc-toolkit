@@ -127,38 +127,19 @@ int main(int argc, char** argv) {
     sndio::BackendMap::instance().set_frame_size(sender_config.internal_frame_length,
                                                  sender_config.input_sample_spec);
 
-    address::EndpointUri source_endpoint(context.allocator());
     if (args.source_given) {
+        address::EndpointUri source_endpoint(context.allocator());
         if (!address::parse_endpoint_uri(
-                args.source_arg, address::EndpointUri::Subset_Full, source_endpoint)) {
-            roc_log(LogError, "can't parse remote source endpoint: %s", args.source_arg);
+                args.source_arg[0], address::EndpointUri::Subset_Full, source_endpoint)) {
+            roc_log(LogError, "can't parse --source endpoint: %s", args.source_arg[0]);
             return 1;
         }
-    }
 
-    address::EndpointUri repair_endpoint(context.allocator());
-    if (args.repair_given) {
-        if (!address::parse_endpoint_uri(
-                args.repair_arg, address::EndpointUri::Subset_Full, repair_endpoint)) {
-            roc_log(LogError, "can't parse remote repair endpoint: %s", args.repair_arg);
-            return 1;
+        const address::ProtocolAttrs* source_attrs =
+            address::ProtocolMap::instance().find_proto_by_id(source_endpoint.proto());
+        if (source_attrs) {
+            sender_config.fec_encoder.scheme = source_attrs->fec_scheme;
         }
-    }
-
-    address::EndpointUri control_endpoint(context.allocator());
-    if (args.control_given) {
-        if (!address::parse_endpoint_uri(
-                args.control_arg, address::EndpointUri::Subset_Full, control_endpoint)) {
-            roc_log(LogError, "can't parse remote control endpoint: %s",
-                    args.control_arg);
-            return 1;
-        }
-    }
-
-    const address::ProtocolAttrs* source_attrs =
-        address::ProtocolMap::instance().find_proto_by_id(source_endpoint.proto());
-    if (source_attrs) {
-        sender_config.fec_encoder.scheme = source_attrs->fec_scheme;
     }
 
     if (args.nbsrc_given) {
@@ -286,38 +267,68 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    if (args.source_given) {
-        if (args.broadcast_given) {
-            if (!sender.set_broadcast_enabled(address::Iface_AudioSource, true)) {
-                roc_log(LogError, "can't enable broadcast");
-                return 1;
-            }
+    if (args.source_given == 0) {
+        roc_log(LogError, "at least one --source endpoint should be specified");
+        return 1;
+    }
+
+    if (args.repair_given != 0 && args.repair_given != args.source_given) {
+        roc_log(LogError,
+                "invalid number of --repair endpoints: expected either 0 or %d endpoints"
+                " (one per --source), got %d endpoints",
+                (int)args.source_given, (int)args.repair_given);
+        return 1;
+    }
+
+    if (args.control_given != 0 && args.control_given != args.source_given) {
+        roc_log(LogError,
+                "invalid number of --control endpoints: expected either 0 or %d endpoints"
+                " (one per --source), got %d endpoints",
+                (int)args.source_given, (int)args.control_given);
+        return 1;
+    }
+
+    for (size_t slot = 0; slot < (size_t)args.source_given; slot++) {
+        address::EndpointUri source_endpoint(context.allocator());
+        if (!address::parse_endpoint_uri(args.source_arg[slot],
+                                         address::EndpointUri::Subset_Full,
+                                         source_endpoint)) {
+            roc_log(LogError, "can't parse --source endpoint: %s", args.source_arg[slot]);
+            return 1;
         }
-        if (!sender.connect(address::Iface_AudioSource, source_endpoint)) {
+
+        if (!sender.connect(slot, address::Iface_AudioSource, source_endpoint)) {
             roc_log(LogError, "can't connect sender to source endpoint");
             return 1;
         }
     }
 
-    if (args.repair_given) {
-        if (args.broadcast_given) {
-            if (!sender.set_broadcast_enabled(address::Iface_AudioRepair, true)) {
-                roc_log(LogError, "can't enable broadcast");
-                return 1;
-            }
+    for (size_t slot = 0; slot < (size_t)args.repair_given; slot++) {
+        address::EndpointUri repair_endpoint(context.allocator());
+        if (!address::parse_endpoint_uri(args.repair_arg[slot],
+                                         address::EndpointUri::Subset_Full,
+                                         repair_endpoint)) {
+            roc_log(LogError, "can't parse --repair endpoint: %s", args.repair_arg[slot]);
+            return 1;
         }
-        if (!sender.connect(address::Iface_AudioRepair, repair_endpoint)) {
+
+        if (!sender.connect(slot, address::Iface_AudioRepair, repair_endpoint)) {
             roc_log(LogError, "can't connect sender to repair endpoint");
             return 1;
         }
     }
 
-    if (args.control_given) {
-        if (!sender.set_squashing_enabled(address::Iface_AudioControl, false)) {
-            roc_log(LogError, "can't configure sender");
+    for (size_t slot = 0; slot < (size_t)args.control_given; slot++) {
+        address::EndpointUri control_endpoint(context.allocator());
+        if (!address::parse_endpoint_uri(args.control_arg[slot],
+                                         address::EndpointUri::Subset_Full,
+                                         control_endpoint)) {
+            roc_log(LogError, "can't parse --control endpoint: %s",
+                    args.control_arg[slot]);
             return 1;
         }
-        if (!sender.connect(address::Iface_AudioControl, control_endpoint)) {
+
+        if (!sender.connect(slot, address::Iface_AudioControl, control_endpoint)) {
             roc_log(LogError, "can't connect sender to control endpoint");
             return 1;
         }

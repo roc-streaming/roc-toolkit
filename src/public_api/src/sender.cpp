@@ -63,6 +63,7 @@ int roc_sender_open(roc_context* context,
 }
 
 int roc_sender_set_outgoing_address(roc_sender* sender,
+                                    roc_slot slot,
                                     roc_interface iface,
                                     const char* ip) {
     if (!sender) {
@@ -86,7 +87,7 @@ int roc_sender_set_outgoing_address(roc_sender* sender,
         return -1;
     }
 
-    if (!imp_sender->set_outgoing_address(imp_iface, ip)) {
+    if (!imp_sender->set_outgoing_address(slot, imp_iface, ip)) {
         roc_log(LogError, "roc_sender_set_outgoing_address: operation failed");
         return -1;
     }
@@ -94,73 +95,8 @@ int roc_sender_set_outgoing_address(roc_sender* sender,
     return 0;
 }
 
-int roc_sender_set_broadcast_enabled(roc_sender* sender,
-                                     roc_interface iface,
-                                     int enabled) {
-    if (!sender) {
-        roc_log(LogError,
-                "roc_sender_set_broadcast_enabled: invalid arguments: sender is null");
-        return -1;
-    }
-
-    peer::Sender* imp_sender = (peer::Sender*)sender;
-
-    address::Interface imp_iface;
-    if (!api::interface_from_user(imp_iface, iface)) {
-        roc_log(LogError,
-                "roc_sender_set_broadcast_enabled: invalid arguments: bad interface");
-        return -1;
-    }
-
-    if (enabled != 0 && enabled != 1) {
-        roc_log(LogError,
-                "roc_sender_set_broadcast_enabled:"
-                " invalid arguments: invalid flag: should be 0 or 1");
-        return -1;
-    }
-
-    if (!imp_sender->set_broadcast_enabled(imp_iface, (bool)enabled)) {
-        roc_log(LogError, "roc_sender_set_broadcast_enabled: operation failed");
-        return -1;
-    }
-
-    return 0;
-}
-
-int roc_sender_set_squashing_enabled(roc_sender* sender,
-                                     roc_interface iface,
-                                     int enabled) {
-    if (!sender) {
-        roc_log(LogError,
-                "roc_sender_set_squashing_enabled: invalid arguments: sender is null");
-        return -1;
-    }
-
-    peer::Sender* imp_sender = (peer::Sender*)sender;
-
-    address::Interface imp_iface;
-    if (!api::interface_from_user(imp_iface, iface)) {
-        roc_log(LogError,
-                "roc_sender_set_squashing_enabled: invalid arguments: bad interface");
-        return -1;
-    }
-
-    if (enabled != 0 && enabled != 1) {
-        roc_log(LogError,
-                "roc_sender_set_squashing_enabled:"
-                " invalid arguments: invalid flag: should be 0 or 1");
-        return -1;
-    }
-
-    if (!imp_sender->set_squashing_enabled(imp_iface, (bool)enabled)) {
-        roc_log(LogError, "roc_sender_set_squashing_enabled: operation failed");
-        return -1;
-    }
-
-    return 0;
-}
-
 int roc_sender_connect(roc_sender* sender,
+                       roc_slot slot,
                        roc_interface iface,
                        const roc_endpoint* endpoint) {
     if (!sender) {
@@ -183,7 +119,7 @@ int roc_sender_connect(roc_sender* sender,
         return -1;
     }
 
-    if (!imp_sender->connect(imp_iface, imp_endpoint)) {
+    if (!imp_sender->connect(slot, imp_iface, imp_endpoint)) {
         roc_log(LogError, "roc_sender_connect: operation failed");
         return -1;
     }

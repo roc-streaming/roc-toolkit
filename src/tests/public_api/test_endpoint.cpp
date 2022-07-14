@@ -13,6 +13,7 @@
 #include "roc/endpoint.h"
 
 namespace roc {
+namespace api {
 
 TEST_GROUP(endpoint) {};
 
@@ -1133,4 +1134,5 @@ TEST(endpoint, bad_args_get) {
     CHECK(roc_endpoint_deallocate(endp) == 0);
 }
 
+} // namespace api
 } // namespace roc

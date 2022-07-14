@@ -40,16 +40,12 @@ public:
     bool valid() const;
 
     //! Set outgoing interface address.
-    bool set_outgoing_address(address::Interface iface, const char* ip);
-
-    //! Enable or disable traffic to broadcast addresses.
-    bool set_broadcast_enabled(address::Interface iface, bool enabled);
-
-    //! Enable or disable port squashing.
-    bool set_squashing_enabled(address::Interface iface, bool enabled);
+    bool
+    set_outgoing_address(size_t slot_index, address::Interface iface, const char* ip);
 
     //! Connect peer to remote endpoint.
-    bool connect(address::Interface iface, const address::EndpointUri& uri);
+    bool
+    connect(size_t slot_index, address::Interface iface, const address::EndpointUri& uri);
 
     //! Check if all necessary bind and connect calls were made.
     bool is_ready();
@@ -58,43 +54,54 @@ public:
     sndio::ISink& sink();
 
 private:
-    struct InterfacePort {
+    struct Port {
         netio::UdpSenderConfig config;
         netio::UdpSenderConfig orig_config;
         netio::NetworkLoop::PortHandle handle;
         packet::IWriter* writer;
-        bool squashing_enabled;
 
-        InterfacePort()
+        Port()
             : handle(NULL)
-            , writer(NULL)
-            , squashing_enabled(true) {
+            , writer(NULL) {
         }
     };
 
-    virtual void schedule_task_processing(pipeline::PipelineLoop&,
-                                          core::nanoseconds_t delay);
+    struct Slot {
+        pipeline::SenderLoop::EndpointSetHandle endpoint_set;
+        Port ports[address::Iface_Max];
 
-    virtual void cancel_task_processing(pipeline::PipelineLoop&);
+        Slot()
+            : endpoint_set(NULL) {
+        }
+    };
 
-    InterfacePort& select_outgoing_port_(address::Interface, address::AddrFamily family);
-    bool setup_outgoing_port_(InterfacePort& port,
+    bool check_compatibility_(address::Interface iface, const address::EndpointUri& uri);
+    void update_compatibility_(address::Interface iface, const address::EndpointUri& uri);
+
+    Slot* get_slot_(size_t slot_index);
+    Port&
+    select_outgoing_port_(Slot& slot, address::Interface, address::AddrFamily family);
+    bool setup_outgoing_port_(Port& port,
                               address::Interface iface,
                               address::AddrFamily family);
+
+    virtual void schedule_task_processing(pipeline::PipelineLoop&,
+                                          core::nanoseconds_t delay);
+    virtual void cancel_task_processing(pipeline::PipelineLoop&);
 
     core::Mutex mutex_;
 
     rtp::FormatMap format_map_;
 
     pipeline::SenderLoop pipeline_;
-    pipeline::SenderLoop::EndpointSetHandle endpoint_set_;
-
-    pipeline::SenderLoop::EndpointHandle source_endpoint_;
-    pipeline::SenderLoop::EndpointHandle repair_endpoint_;
-
-    InterfacePort ports_[address::Iface_Max];
-
     ctl::ControlLoop::Tasks::PipelineProcessing processing_task_;
+
+    core::Array<Slot, 8> slots_;
+
+    bool used_interfaces_[address::Iface_Max];
+    address::Protocol used_protocols_[address::Iface_Max];
+
+    bool valid_;
 };
 
 } // namespace peer

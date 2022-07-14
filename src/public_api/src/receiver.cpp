@@ -63,6 +63,7 @@ int roc_receiver_open(roc_context* context,
 }
 
 int roc_receiver_set_multicast_group(roc_receiver* receiver,
+                                     roc_slot slot,
                                      roc_interface iface,
                                      const char* ip) {
     if (!receiver) {
@@ -86,7 +87,7 @@ int roc_receiver_set_multicast_group(roc_receiver* receiver,
         return -1;
     }
 
-    if (!imp_receiver->set_multicast_group(imp_iface, ip)) {
+    if (!imp_receiver->set_multicast_group(slot, imp_iface, ip)) {
         roc_log(LogError, "roc_receiver_set_multicast_group: operation failed");
         return -1;
     }
@@ -95,6 +96,7 @@ int roc_receiver_set_multicast_group(roc_receiver* receiver,
 }
 
 int roc_receiver_bind(roc_receiver* receiver,
+                      roc_slot slot,
                       roc_interface iface,
                       roc_endpoint* endpoint) {
     if (!receiver) {
@@ -117,7 +119,7 @@ int roc_receiver_bind(roc_receiver* receiver,
         return -1;
     }
 
-    if (!imp_receiver->bind(imp_iface, imp_endpoint)) {
+    if (!imp_receiver->bind(slot, imp_iface, imp_endpoint)) {
         roc_log(LogError, "roc_receiver_bind: operation failed");
         return -1;
     }

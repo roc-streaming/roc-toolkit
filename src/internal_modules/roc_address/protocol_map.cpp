@@ -16,7 +16,7 @@ ProtocolMap::ProtocolMap() {
     {
         ProtocolAttrs attrs;
         attrs.protocol = Proto_RTSP;
-        attrs.iface = Iface_Signaling;
+        attrs.iface = Iface_Consolidated;
         attrs.scheme_name = "rtsp";
         attrs.path_supported = true;
         attrs.default_port = 554;

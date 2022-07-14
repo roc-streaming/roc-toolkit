@@ -18,7 +18,7 @@
 #include "roc/log.h"
 
 namespace roc {
-namespace library {
+namespace api {
 
 namespace {
 
@@ -49,15 +49,15 @@ TEST_GROUP(sender_receiver) {
         sender_conf.packet_length =
             test::PacketSamples * 1000000000ul / (test::SampleRate * test::NumChans);
         if (flags & test::FlagRS8M) {
-            sender_conf.fec_code = ROC_FEC_RS8M;
+            sender_conf.fec_encoding = ROC_FEC_ENCODING_RS8M;
             sender_conf.fec_block_source_packets = test::SourcePackets;
             sender_conf.fec_block_repair_packets = test::RepairPackets;
         } else if (flags & test::FlagLDPC) {
-            sender_conf.fec_code = ROC_FEC_LDPC_STAIRCASE;
+            sender_conf.fec_encoding = ROC_FEC_ENCODING_LDPC_STAIRCASE;
             sender_conf.fec_block_source_packets = test::SourcePackets;
             sender_conf.fec_block_repair_packets = test::RepairPackets;
         } else {
-            sender_conf.fec_code = ROC_FEC_DISABLE;
+            sender_conf.fec_encoding = ROC_FEC_ENCODING_DISABLE;
         }
 
         memset(&receiver_conf, 0, sizeof(receiver_conf));
@@ -87,15 +87,16 @@ TEST(sender_receiver, bare_rtp) {
 
     test::Context context;
 
-    test::Receiver receiver(context, receiver_conf, sample_step, test::FrameSamples,
-                            Flags);
+    test::Receiver receiver(context, receiver_conf, sample_step, test::FrameSamples);
 
-    test::Sender sender(context, sender_conf, receiver.source_endpoint(),
-                        receiver.repair_endpoint(), sample_step, test::FrameSamples,
-                        Flags);
+    receiver.bind(Flags);
+
+    test::Sender sender(context, sender_conf, sample_step, test::FrameSamples);
+
+    sender.connect(receiver.source_endpoint(), receiver.repair_endpoint(), Flags);
 
     sender.start();
-    receiver.run();
+    receiver.receive();
     sender.stop();
     sender.join();
 }
@@ -111,15 +112,16 @@ TEST(sender_receiver, rs8m_without_losses) {
 
     test::Context context;
 
-    test::Receiver receiver(context, receiver_conf, sample_step, test::FrameSamples,
-                            Flags);
+    test::Receiver receiver(context, receiver_conf, sample_step, test::FrameSamples);
 
-    test::Sender sender(context, sender_conf, receiver.source_endpoint(),
-                        receiver.repair_endpoint(), sample_step, test::FrameSamples,
-                        Flags);
+    receiver.bind(Flags);
+
+    test::Sender sender(context, sender_conf, sample_step, test::FrameSamples);
+
+    sender.connect(receiver.source_endpoint(), receiver.repair_endpoint(), Flags);
 
     sender.start();
-    receiver.run();
+    receiver.receive();
     sender.stop();
     sender.join();
 }
@@ -135,18 +137,20 @@ TEST(sender_receiver, rs8m_with_losses) {
 
     test::Context context;
 
-    test::Receiver receiver(context, receiver_conf, sample_step, test::FrameSamples,
-                            Flags);
+    test::Receiver receiver(context, receiver_conf, sample_step, test::FrameSamples);
+
+    receiver.bind(Flags);
 
     test::Proxy proxy(receiver.source_endpoint(), receiver.repair_endpoint(),
                       test::SourcePackets, test::RepairPackets, allocator, packet_factory,
                       byte_buffer_factory);
 
-    test::Sender sender(context, sender_conf, proxy.source_endpoint(),
-                        proxy.repair_endpoint(), sample_step, test::FrameSamples, Flags);
+    test::Sender sender(context, sender_conf, sample_step, test::FrameSamples);
+
+    sender.connect(proxy.source_endpoint(), proxy.repair_endpoint(), Flags);
 
     sender.start();
-    receiver.run();
+    receiver.receive();
     sender.stop();
     sender.join();
 }
@@ -162,15 +166,16 @@ TEST(sender_receiver, ldpc_without_losses) {
 
     test::Context context;
 
-    test::Receiver receiver(context, receiver_conf, sample_step, test::FrameSamples,
-                            Flags);
+    test::Receiver receiver(context, receiver_conf, sample_step, test::FrameSamples);
 
-    test::Sender sender(context, sender_conf, receiver.source_endpoint(),
-                        receiver.repair_endpoint(), sample_step, test::FrameSamples,
-                        Flags);
+    receiver.bind(Flags);
+
+    test::Sender sender(context, sender_conf, sample_step, test::FrameSamples);
+
+    sender.connect(receiver.source_endpoint(), receiver.repair_endpoint(), Flags);
 
     sender.start();
-    receiver.run();
+    receiver.receive();
     sender.stop();
     sender.join();
 }
@@ -186,18 +191,20 @@ TEST(sender_receiver, ldpc_with_losses) {
 
     test::Context context;
 
-    test::Receiver receiver(context, receiver_conf, sample_step, test::FrameSamples,
-                            Flags);
+    test::Receiver receiver(context, receiver_conf, sample_step, test::FrameSamples);
+
+    receiver.bind(Flags);
 
     test::Proxy proxy(receiver.source_endpoint(), receiver.repair_endpoint(),
                       test::SourcePackets, test::RepairPackets, allocator, packet_factory,
                       byte_buffer_factory);
 
-    test::Sender sender(context, sender_conf, proxy.source_endpoint(),
-                        proxy.repair_endpoint(), sample_step, test::FrameSamples, Flags);
+    test::Sender sender(context, sender_conf, sample_step, test::FrameSamples);
+
+    sender.connect(proxy.source_endpoint(), proxy.repair_endpoint(), Flags);
 
     sender.start();
-    receiver.run();
+    receiver.receive();
     sender.stop();
     sender.join();
 }
@@ -209,47 +216,115 @@ TEST(sender_receiver, separate_context) {
 
     test::Context recv_context, send_context;
 
-    test::Receiver receiver(recv_context, receiver_conf, sample_step, test::FrameSamples,
-                            Flags);
+    test::Receiver receiver(recv_context, receiver_conf, sample_step, test::FrameSamples);
 
-    test::Sender sender(send_context, sender_conf, receiver.source_endpoint(),
-                        receiver.repair_endpoint(), sample_step, test::FrameSamples,
-                        Flags);
+    receiver.bind(Flags);
+
+    test::Sender sender(send_context, sender_conf, sample_step, test::FrameSamples);
+
+    sender.connect(receiver.source_endpoint(), receiver.repair_endpoint(), Flags);
 
     sender.start();
-    receiver.run();
+    receiver.receive();
     sender.stop();
     sender.join();
 }
 
-IGNORE_TEST(sender_receiver, multiple_senders_one_receiver_sequential) {
+TEST(sender_receiver, multiple_senders_one_receiver_sequential) {
     enum { Flags = 0 };
 
     init_config(Flags);
 
     test::Context context;
 
-    test::Receiver receiver(context, receiver_conf, sample_step, test::FrameSamples,
-                            Flags);
+    test::Receiver receiver(context, receiver_conf, sample_step, test::FrameSamples);
 
-    test::Sender sender_1(context, sender_conf, receiver.source_endpoint(),
-                          receiver.repair_endpoint(), sample_step, test::FrameSamples,
-                          Flags);
+    receiver.bind(Flags);
+
+    test::Sender sender_1(context, sender_conf, sample_step, test::FrameSamples);
+
+    sender_1.connect(receiver.source_endpoint(), receiver.repair_endpoint(), Flags);
 
     sender_1.start();
-    receiver.run();
+    receiver.receive();
     sender_1.stop();
     sender_1.join();
 
-    test::Sender sender_2(context, sender_conf, receiver.source_endpoint(),
-                          receiver.repair_endpoint(), sample_step, test::FrameSamples,
-                          Flags);
+    receiver.wait_zeros(test::TotalSamples / 2);
+
+    test::Sender sender_2(context, sender_conf, sample_step, test::FrameSamples);
+
+    sender_2.connect(receiver.source_endpoint(), receiver.repair_endpoint(), Flags);
 
     sender_2.start();
-    receiver.run();
+    receiver.receive();
     sender_2.stop();
     sender_2.join();
 }
 
-} // namespace library
+TEST(sender_receiver, sender_slots) {
+    enum { Flags = 0 };
+
+    init_config(Flags);
+
+    test::Context context;
+
+    test::Receiver receiver_1(context, receiver_conf, sample_step, test::FrameSamples);
+
+    receiver_1.bind(Flags);
+
+    test::Receiver receiver_2(context, receiver_conf, sample_step, test::FrameSamples);
+
+    receiver_2.bind(Flags);
+
+    test::Sender sender(context, sender_conf, sample_step, test::FrameSamples);
+
+    sender.connect(receiver_1.source_endpoint(), receiver_1.repair_endpoint(), Flags, 0);
+    sender.connect(receiver_2.source_endpoint(), receiver_2.repair_endpoint(), Flags, 1);
+
+    sender.start();
+
+    receiver_1.start();
+    receiver_2.start();
+    receiver_2.join();
+    receiver_1.join();
+
+    sender.stop();
+    sender.join();
+}
+
+TEST(sender_receiver, receiver_slots_sequential) {
+    enum { Flags = 0 };
+
+    init_config(Flags);
+
+    test::Context context;
+
+    test::Receiver receiver(context, receiver_conf, sample_step, test::FrameSamples);
+
+    receiver.bind(Flags, 0);
+    receiver.bind(Flags, 1);
+
+    test::Sender sender_1(context, sender_conf, sample_step, test::FrameSamples);
+
+    sender_1.connect(receiver.source_endpoint(0), receiver.repair_endpoint(0), Flags);
+
+    sender_1.start();
+    receiver.receive();
+    sender_1.stop();
+    sender_1.join();
+
+    receiver.wait_zeros(test::TotalSamples / 2);
+
+    test::Sender sender_2(context, sender_conf, sample_step, test::FrameSamples);
+
+    sender_2.connect(receiver.source_endpoint(1), receiver.repair_endpoint(1), Flags);
+
+    sender_2.start();
+    receiver.receive();
+    sender_2.stop();
+    sender_2.join();
+}
+
+} // namespace api
 } // namespace roc

@@ -20,8 +20,8 @@ enum Interface {
     //! Invalid interface.
     Iface_Invalid,
 
-    //! Signaling interface (e.g. RTSP).
-    Iface_Signaling,
+    //! Interface that consolidated all types of streams (e.g. RTSP).
+    Iface_Consolidated,
 
     //! Source packets of audio stream (e.g. RTP or RTP + RS8M).
     Iface_AudioSource,

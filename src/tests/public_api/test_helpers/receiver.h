@@ -16,6 +16,7 @@
 #include "test_helpers/context.h"
 #include "test_helpers/utils.h"
 
+#include "roc_core/array.h"
 #include "roc_core/panic.h"
 #include "roc_core/stddefs.h"
 
@@ -23,76 +24,94 @@
 #include "roc/receiver.h"
 
 namespace roc {
-namespace library {
+namespace api {
 namespace test {
 
-class Receiver {
+class Receiver : public core::Thread {
 public:
     Receiver(Context& context,
              roc_receiver_config& config,
              float sample_step,
-             size_t frame_size,
-             unsigned flags)
+             size_t frame_size)
         : recv_(NULL)
-        , source_endp_(NULL)
-        , repair_endp_(NULL)
         , sample_step_(sample_step)
         , frame_size_(frame_size) {
         CHECK(roc_receiver_open(context.get(), &config, &recv_) == 0);
         CHECK(recv_);
-
-        if (flags & FlagRS8M) {
-            CHECK(roc_endpoint_allocate(&source_endp_) == 0);
-            CHECK(roc_endpoint_set_uri(source_endp_, "rtp+rs8m://127.0.0.1:0") == 0);
-
-            CHECK(roc_endpoint_allocate(&repair_endp_) == 0);
-            CHECK(roc_endpoint_set_uri(repair_endp_, "rs8m://127.0.0.1:0") == 0);
-
-            CHECK(roc_receiver_bind(recv_, ROC_INTERFACE_AUDIO_SOURCE, source_endp_)
-                  == 0);
-            CHECK(roc_receiver_bind(recv_, ROC_INTERFACE_AUDIO_REPAIR, repair_endp_)
-                  == 0);
-        } else if (flags & FlagLDPC) {
-            CHECK(roc_endpoint_allocate(&source_endp_) == 0);
-            CHECK(roc_endpoint_set_uri(source_endp_, "rtp+ldpc://127.0.0.1:0") == 0);
-
-            CHECK(roc_endpoint_allocate(&repair_endp_) == 0);
-            CHECK(roc_endpoint_set_uri(repair_endp_, "ldpc://127.0.0.1:0") == 0);
-
-            CHECK(roc_receiver_bind(recv_, ROC_INTERFACE_AUDIO_SOURCE, source_endp_)
-                  == 0);
-            CHECK(roc_receiver_bind(recv_, ROC_INTERFACE_AUDIO_REPAIR, repair_endp_)
-                  == 0);
-        } else {
-            CHECK(roc_endpoint_allocate(&source_endp_) == 0);
-            CHECK(roc_endpoint_set_uri(source_endp_, "rtp://127.0.0.1:0") == 0);
-
-            CHECK(roc_receiver_bind(recv_, ROC_INTERFACE_AUDIO_SOURCE, source_endp_)
-                  == 0);
-        }
     }
 
     ~Receiver() {
-        if (source_endp_) {
-            CHECK(roc_endpoint_deallocate(source_endp_) == 0);
+        for (size_t slot = 0; slot < source_endp_.size(); slot++) {
+            if (source_endp_[slot]) {
+                CHECK(roc_endpoint_deallocate(source_endp_[slot]) == 0);
+            }
         }
 
-        if (repair_endp_) {
-            CHECK(roc_endpoint_deallocate(repair_endp_) == 0);
+        for (size_t slot = 0; slot < repair_endp_.size(); slot++) {
+            if (repair_endp_[slot]) {
+                CHECK(roc_endpoint_deallocate(repair_endp_[slot]) == 0);
+            }
         }
 
         CHECK(roc_receiver_close(recv_) == 0);
     }
 
-    const roc_endpoint* source_endpoint() const {
-        return source_endp_;
+    void bind(unsigned flags, roc_slot slot = ROC_SLOT_DEFAULT) {
+        if (source_endp_.size() < slot + 1) {
+            source_endp_.resize(slot + 1);
+        }
+
+        if (repair_endp_.size() < slot + 1) {
+            repair_endp_.resize(slot + 1);
+        }
+
+        if (flags & FlagRS8M) {
+            CHECK(roc_endpoint_allocate(&source_endp_[slot]) == 0);
+            CHECK(roc_endpoint_set_uri(source_endp_[slot], "rtp+rs8m://127.0.0.1:0")
+                  == 0);
+
+            CHECK(roc_endpoint_allocate(&repair_endp_[slot]) == 0);
+            CHECK(roc_endpoint_set_uri(repair_endp_[slot], "rs8m://127.0.0.1:0") == 0);
+
+            CHECK(roc_receiver_bind(recv_, slot, ROC_INTERFACE_AUDIO_SOURCE,
+                                    source_endp_[slot])
+                  == 0);
+            CHECK(roc_receiver_bind(recv_, slot, ROC_INTERFACE_AUDIO_REPAIR,
+                                    repair_endp_[slot])
+                  == 0);
+        } else if (flags & FlagLDPC) {
+            CHECK(roc_endpoint_allocate(&source_endp_[slot]) == 0);
+            CHECK(roc_endpoint_set_uri(source_endp_[slot], "rtp+ldpc://127.0.0.1:0")
+                  == 0);
+
+            CHECK(roc_endpoint_allocate(&repair_endp_[slot]) == 0);
+            CHECK(roc_endpoint_set_uri(repair_endp_[slot], "ldpc://127.0.0.1:0") == 0);
+
+            CHECK(roc_receiver_bind(recv_, slot, ROC_INTERFACE_AUDIO_SOURCE,
+                                    source_endp_[slot])
+                  == 0);
+            CHECK(roc_receiver_bind(recv_, slot, ROC_INTERFACE_AUDIO_REPAIR,
+                                    repair_endp_[slot])
+                  == 0);
+        } else {
+            CHECK(roc_endpoint_allocate(&source_endp_[slot]) == 0);
+            CHECK(roc_endpoint_set_uri(source_endp_[slot], "rtp://127.0.0.1:0") == 0);
+
+            CHECK(roc_receiver_bind(recv_, slot, ROC_INTERFACE_AUDIO_SOURCE,
+                                    source_endp_[slot])
+                  == 0);
+        }
     }
 
-    const roc_endpoint* repair_endpoint() const {
-        return repair_endp_;
+    const roc_endpoint* source_endpoint(roc_slot slot = ROC_SLOT_DEFAULT) const {
+        return source_endp_[slot];
     }
 
-    void run() {
+    const roc_endpoint* repair_endpoint(roc_slot slot = ROC_SLOT_DEFAULT) const {
+        return repair_endp_[slot];
+    }
+
+    void receive() {
         float rx_buff[MaxBufSize];
 
         size_t sample_num = 0;
@@ -159,22 +178,57 @@ public:
         }
     }
 
+    void wait_zeros(size_t n_zeros) {
+        float rx_buff[MaxBufSize];
+
+        size_t received_zeros = 0;
+
+        while (received_zeros < n_zeros) {
+            roc_frame frame;
+            memset(&frame, 0, sizeof(frame));
+
+            frame.samples = rx_buff;
+            frame.samples_size = frame_size_ * sizeof(float);
+
+            roc_panic_if_not(roc_receiver_read(recv_, &frame) == 0);
+
+            bool has_non_zero = false;
+
+            for (size_t i = 0; i < frame_size_; i++) {
+                if (!is_zero_(rx_buff[i])) {
+                    has_non_zero = true;
+                    break;
+                }
+            }
+
+            if (has_non_zero) {
+                received_zeros = 0;
+            } else {
+                received_zeros += frame_size_;
+            }
+        }
+    }
+
 private:
+    virtual void run() {
+        receive();
+    }
+
     static inline bool is_zero_(float s) {
         return fabs(double(s)) < 1e-9;
     }
 
     roc_receiver* recv_;
 
-    roc_endpoint* source_endp_;
-    roc_endpoint* repair_endp_;
+    core::Array<roc_endpoint*, 16> source_endp_;
+    core::Array<roc_endpoint*, 16> repair_endp_;
 
     const float sample_step_;
     const size_t frame_size_;
 };
 
 } // namespace test
-} // namespace library
+} // namespace api
 } // namespace roc
 
 #endif // ROC_PUBLIC_API_TEST_HELPERS_RECEIVER_H_

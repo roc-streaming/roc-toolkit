@@ -22,41 +22,43 @@
 #include "roc/sender.h"
 
 namespace roc {
-namespace library {
+namespace api {
 namespace test {
 
 class Sender : public core::Thread {
 public:
     Sender(Context& context,
            roc_sender_config& config,
-           const roc_endpoint* receiver_source_endp,
-           const roc_endpoint* receiver_repair_endp,
            float sample_step,
-           size_t frame_size,
-           unsigned flags)
+           size_t frame_size)
         : sndr_(NULL)
         , sample_step_(sample_step)
         , frame_size_(frame_size)
         , stopped_(false) {
         CHECK(roc_sender_open(context.get(), &config, &sndr_) == 0);
         CHECK(sndr_);
-
-        if (flags & FlagRS8M || flags & FlagLDPC) {
-            CHECK(roc_sender_connect(sndr_, ROC_INTERFACE_AUDIO_SOURCE,
-                                     receiver_source_endp)
-                  == 0);
-            CHECK(roc_sender_connect(sndr_, ROC_INTERFACE_AUDIO_REPAIR,
-                                     receiver_repair_endp)
-                  == 0);
-        } else {
-            CHECK(roc_sender_connect(sndr_, ROC_INTERFACE_AUDIO_SOURCE,
-                                     receiver_source_endp)
-                  == 0);
-        }
     }
 
     ~Sender() {
         CHECK(roc_sender_close(sndr_) == 0);
+    }
+
+    void connect(const roc_endpoint* receiver_source_endp,
+                 const roc_endpoint* receiver_repair_endp,
+                 unsigned flags,
+                 roc_slot slot = ROC_SLOT_DEFAULT) {
+        if (flags & FlagRS8M || flags & FlagLDPC) {
+            CHECK(roc_sender_connect(sndr_, slot, ROC_INTERFACE_AUDIO_SOURCE,
+                                     receiver_source_endp)
+                  == 0);
+            CHECK(roc_sender_connect(sndr_, slot, ROC_INTERFACE_AUDIO_REPAIR,
+                                     receiver_repair_endp)
+                  == 0);
+        } else {
+            CHECK(roc_sender_connect(sndr_, slot, ROC_INTERFACE_AUDIO_SOURCE,
+                                     receiver_source_endp)
+                  == 0);
+        }
     }
 
     void stop() {
@@ -98,7 +100,7 @@ private:
 };
 
 } // namespace test
-} // namespace library
+} // namespace api
 } // namespace roc
 
 #endif // ROC_PUBLIC_API_TEST_HELPERS_SENDER_H_

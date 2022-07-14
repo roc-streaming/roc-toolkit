@@ -22,7 +22,7 @@
 #include "roc/endpoint.h"
 
 namespace roc {
-namespace library {
+namespace api {
 namespace test {
 
 class Proxy : private packet::IWriter {
@@ -181,7 +181,7 @@ private:
 };
 
 } // namespace test
-} // namespace library
+} // namespace api
 } // namespace roc
 
 #endif // ROC_PUBLIC_API_TEST_HELPERS_PROXY_H_

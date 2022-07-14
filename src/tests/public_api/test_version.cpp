@@ -11,7 +11,7 @@
 #include "roc/version.h"
 
 namespace roc {
-namespace library {
+namespace api {
 
 TEST_GROUP(version) {};
 
@@ -24,5 +24,5 @@ TEST(version, version_num) {
     UNSIGNED_LONGS_EQUAL(ROC_VERSION_PATCH, version.patch);
 }
 
-} // namespace library
+} // namespace api
 } // namespace roc

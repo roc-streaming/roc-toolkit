@@ -17,8 +17,8 @@ const char* interface_to_str(Interface iface) {
     case Iface_Invalid:
         break;
 
-    case Iface_Signaling:
-        return "signaling";
+    case Iface_Consolidated:
+        return "consolidated";
 
     case Iface_AudioSource:
         return "audiosrc";

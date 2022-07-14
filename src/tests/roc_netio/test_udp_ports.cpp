@@ -174,8 +174,6 @@ TEST(udp_ports, add_broadcast_sender) {
     UNSIGNED_LONGS_EQUAL(0, net_loop.num_ports());
 
     UdpSenderConfig tx_config = make_sender_config("127.0.0.1", 0);
-    tx_config.broadcast_enabled = true;
-
     NetworkLoop::PortHandle tx_handle = add_udp_sender(net_loop, tx_config);
     CHECK(tx_handle);
     CHECK(tx_config.bind_address.port() != 0);

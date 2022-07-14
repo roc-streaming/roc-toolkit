@@ -366,66 +366,94 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    if (!args.source_given) {
-        roc_log(LogError, "source port must be specified");
+    if (args.source_given == 0) {
+        roc_log(LogError, "at least one --source endpoint should be specified");
         return 1;
     }
 
-    if (args.source_given) {
+    if (args.repair_given != 0 && args.repair_given != args.source_given) {
+        roc_log(LogError,
+                "invalid number of --repair endpoints: expected either 0 or %d endpoints"
+                " (one per --source), got %d endpoints",
+                (int)args.source_given, (int)args.repair_given);
+        return 1;
+    }
+
+    if (args.control_given != 0 && args.control_given != args.source_given) {
+        roc_log(LogError,
+                "invalid number of --control endpoints: expected either 0 or %d endpoints"
+                " (one per --source), got %d endpoints",
+                (int)args.source_given, (int)args.control_given);
+        return 1;
+    }
+
+    if (args.miface_given != 0 && args.miface_given != args.source_given) {
+        roc_log(LogError,
+                "invalid number of --miface values: expected either 0 or %d values"
+                " (one per --source), got %d values",
+                (int)args.source_given, (int)args.miface_given);
+        return 1;
+    }
+
+    for (size_t slot = 0; slot < (size_t)args.source_given; slot++) {
         address::EndpointUri endpoint(context.allocator());
 
-        if (!address::parse_endpoint_uri(args.source_arg,
+        if (!address::parse_endpoint_uri(args.source_arg[slot],
                                          address::EndpointUri::Subset_Full, endpoint)) {
-            roc_log(LogError, "can't parse source endpoint: %s", args.source_arg);
+            roc_log(LogError, "can't parse --source endpoint: %s", args.source_arg[slot]);
             return 1;
         }
 
         if (args.miface_given) {
-            if (!receiver.set_multicast_group(address::Iface_AudioSource,
-                                              args.miface_arg)) {
-                roc_log(LogError, "can't set miface: %s", args.miface_arg);
+            if (!receiver.set_multicast_group(slot, address::Iface_AudioSource,
+                                              args.miface_arg[slot])) {
+                roc_log(LogError, "can't set multicast group: %s", args.miface_arg[slot]);
                 return 1;
             }
         }
-        if (!receiver.bind(address::Iface_AudioSource, endpoint)) {
-            roc_log(LogError, "can't bind source endpoint: %s", args.source_arg);
+
+        if (!receiver.bind(slot, address::Iface_AudioSource, endpoint)) {
+            roc_log(LogError, "can't bind --source endpoint: %s", args.source_arg[slot]);
             return 1;
         }
     }
 
-    if (args.repair_given) {
+    for (size_t slot = 0; slot < (size_t)args.repair_given; slot++) {
         address::EndpointUri endpoint(context.allocator());
 
-        if (!address::parse_endpoint_uri(args.repair_arg,
+        if (!address::parse_endpoint_uri(args.repair_arg[slot],
                                          address::EndpointUri::Subset_Full, endpoint)) {
-            roc_log(LogError, "can't parse repair endpoint: %s", args.source_arg);
+            roc_log(LogError, "can't parse --repair endpoint: %s", args.source_arg[slot]);
             return 1;
         }
 
         if (args.miface_given) {
-            if (!receiver.set_multicast_group(address::Iface_AudioRepair,
-                                              args.miface_arg)) {
-                roc_log(LogError, "can't set miface: %s", args.miface_arg);
+            if (!receiver.set_multicast_group(slot, address::Iface_AudioRepair,
+                                              args.miface_arg[slot])) {
+                roc_log(LogError, "can't set multicast group: %s", args.miface_arg[slot]);
                 return 1;
             }
         }
-        if (!receiver.bind(address::Iface_AudioRepair, endpoint)) {
-            roc_log(LogError, "can't bind repair port: %s", args.repair_arg);
+
+        if (!receiver.bind(slot, address::Iface_AudioRepair, endpoint)) {
+            roc_log(LogError, "can't bind --repair port: %s", args.repair_arg[slot]);
             return 1;
         }
     }
 
-    if (args.control_given) {
+    for (size_t slot = 0; slot < (size_t)args.control_given; slot++) {
         address::EndpointUri endpoint(context.allocator());
 
-        if (!address::parse_endpoint_uri(args.control_arg,
+        if (!address::parse_endpoint_uri(args.control_arg[slot],
                                          address::EndpointUri::Subset_Full, endpoint)) {
-            roc_log(LogError, "can't parse control endpoint: %s", args.control_arg);
+            roc_log(LogError, "can't parse --control endpoint: %s",
+                    args.control_arg[slot]);
             return 1;
         }
 
-        if (!receiver.bind(address::Iface_AudioControl, endpoint)) {
-            roc_log(LogError, "can't bind control endpoint: %s", args.control_arg);
+        if (!receiver.bind(slot, address::Iface_AudioControl, endpoint)) {
+            roc_log(LogError, "can't bind --control endpoint: %s",
+                    args.control_arg[slot]);
             return 1;
         }
     }

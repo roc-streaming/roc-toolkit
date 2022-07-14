@@ -442,7 +442,7 @@ void NetworkLoop::task_add_udp_sender_(NetworkTask& base_task) {
 
     if (!port->open()) {
         roc_log(LogError,
-                "network loop: can't add udp sebder port %s: can't start udp sender",
+                "network loop: can't add udp sender port %s: can't start udp sender",
                 address::socket_addr_to_str(task.config_->bind_address).c_str());
         task.success_ = false;
         if (async_close_port_(port, &task) == AsyncOp_Started) {

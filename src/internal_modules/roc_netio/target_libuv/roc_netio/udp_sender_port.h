@@ -33,23 +33,18 @@ struct UdpSenderConfig {
     //! interfaces. If port is zero, a random free port is selected.
     address::SocketAddr bind_address;
 
-    //! If true, sender is allowed to send packets to broadcast addresses.
-    bool broadcast_enabled;
-
     //! If true, allow non-blocking writes directly in write() method.
     //! If non-blocking write can't be performed, sender falls back to
     //! regular asynchronous write.
     bool non_blocking_enabled;
 
     UdpSenderConfig()
-        : broadcast_enabled(false)
-        , non_blocking_enabled(true) {
+        : non_blocking_enabled(true) {
     }
 
     //! Check two configs for equality.
     bool operator==(const UdpSenderConfig& other) const {
         return bind_address == other.bind_address
-            && broadcast_enabled == other.broadcast_enabled
             && non_blocking_enabled == other.non_blocking_enabled;
     }
 };

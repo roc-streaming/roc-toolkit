@@ -15,6 +15,7 @@
 #include "roc/sender.h"
 
 namespace roc {
+namespace api {
 
 TEST_GROUP(context) {};
 
@@ -88,4 +89,5 @@ TEST(context, reference_counting) {
     LONGS_EQUAL(0, roc_context_close(context));
 }
 
+} // namespace api
 } // namespace roc

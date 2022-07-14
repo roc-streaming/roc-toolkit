@@ -70,7 +70,9 @@ static void* receiver_loop(void* arg) {
     roc_endpoint_set_host(source_endp, MY_RECEIVER_IP);
     roc_endpoint_set_port(source_endp, MY_RECEIVER_SOURCE_PORT);
 
-    if (roc_receiver_bind(receiver, ROC_INTERFACE_AUDIO_SOURCE, source_endp) != 0) {
+    if (roc_receiver_bind(receiver, ROC_SLOT_DEFAULT, ROC_INTERFACE_AUDIO_SOURCE,
+                          source_endp)
+        != 0) {
         oops();
     }
 
@@ -127,7 +129,7 @@ static void* sender_loop(void* arg) {
     sender_config.frame_encoding = ROC_FRAME_ENCODING_PCM_FLOAT;
 
     /* Sender should not use any FEC scheme. */
-    sender_config.fec_code = ROC_FEC_DISABLE;
+    sender_config.fec_encoding = ROC_FEC_ENCODING_DISABLE;
 
     /* Sender should clock itself. */
     sender_config.clock_source = ROC_CLOCK_INTERNAL;
@@ -148,7 +150,9 @@ static void* sender_loop(void* arg) {
     roc_endpoint_set_host(source_endp, MY_RECEIVER_IP);
     roc_endpoint_set_port(source_endp, MY_RECEIVER_SOURCE_PORT);
 
-    if (roc_sender_connect(sender, ROC_INTERFACE_AUDIO_SOURCE, source_endp) != 0) {
+    if (roc_sender_connect(sender, ROC_SLOT_DEFAULT, ROC_INTERFACE_AUDIO_SOURCE,
+                           source_endp)
+        != 0) {
         oops();
     }
 

@@ -46,8 +46,7 @@ static void gensine(float* samples, size_t batch_num, size_t num_samples) {
     size_t i;
     for (i = 0; i < num_samples / 2; i++) {
         const float s =
-            (float)sin(2 * 3.14159265359 * MY_SINE_RATE / MY_SAMPLE_RATE * t)
-            * 0.1f;
+            (float)sin(2 * 3.14159265359 * MY_SINE_RATE / MY_SAMPLE_RATE * t) * 0.1f;
 
         /* Fill samples for left and right channels. */
         samples[i * 2] = s;
@@ -107,7 +106,9 @@ int main() {
     roc_endpoint_set_host(source_endp, MY_RECEIVER_IP);
     roc_endpoint_set_port(source_endp, MY_RECEIVER_SOURCE_PORT);
 
-    if (roc_sender_connect(sender, ROC_INTERFACE_AUDIO_SOURCE, source_endp) != 0) {
+    if (roc_sender_connect(sender, ROC_SLOT_DEFAULT, ROC_INTERFACE_AUDIO_SOURCE,
+                           source_endp)
+        != 0) {
         oops();
     }
 
@@ -127,7 +128,9 @@ int main() {
     roc_endpoint_set_host(repair_endp, MY_RECEIVER_IP);
     roc_endpoint_set_port(repair_endp, MY_RECEIVER_REPAIR_PORT);
 
-    if (roc_sender_connect(sender, ROC_INTERFACE_AUDIO_REPAIR, repair_endp) != 0) {
+    if (roc_sender_connect(sender, ROC_SLOT_DEFAULT, ROC_INTERFACE_AUDIO_REPAIR,
+                           repair_endp)
+        != 0) {
         oops();
     }
 

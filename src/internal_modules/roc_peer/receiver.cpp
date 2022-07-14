@@ -26,20 +26,17 @@ Receiver::Receiver(Context& context, const pipeline::ReceiverConfig& pipeline_co
                 context.byte_buffer_factory(),
                 context.sample_buffer_factory(),
                 context.allocator())
-    , endpoint_set_(0)
     , processing_task_(pipeline_) {
     roc_log(LogDebug, "receiver peer: initializing");
+
+    memset(used_interfaces_, 0, sizeof(used_interfaces_));
+    memset(used_protocols_, 0, sizeof(used_protocols_));
 
     if (!pipeline_.valid()) {
         return;
     }
 
-    pipeline::ReceiverLoop::Tasks::CreateEndpointSet task;
-    if (!pipeline_.schedule_and_wait(task)) {
-        return;
-    }
-
-    endpoint_set_ = task.get_handle();
+    valid_ = true;
 }
 
 Receiver::~Receiver() {
@@ -47,36 +44,59 @@ Receiver::~Receiver() {
 
     context().control_loop().wait(processing_task_);
 
-    for (size_t i = 0; i < ROC_ARRAY_SIZE(ports_); i++) {
-        if (ports_[i].handle) {
-            netio::NetworkLoop::Tasks::RemovePort task(ports_[i].handle);
+    for (size_t s = 0; s < slots_.size(); s++) {
+        if (!slots_[s].endpoint_set) {
+            continue;
+        }
 
+        for (size_t p = 0; p < address::Iface_Max; p++) {
+            if (!slots_[s].ports[p].handle) {
+                continue;
+            }
+
+            netio::NetworkLoop::Tasks::RemovePort task(slots_[s].ports[p].handle);
             if (!context().network_loop().schedule_and_wait(task)) {
-                roc_panic("receiver peer: can't remove port");
+                roc_panic("sender peer: can't remove port");
             }
         }
     }
 }
 
 bool Receiver::valid() {
-    return endpoint_set_;
+    return valid_;
 }
 
-bool Receiver::set_multicast_group(address::Interface iface, const char* ip) {
+bool Receiver::set_multicast_group(size_t slot_index,
+                                   address::Interface iface,
+                                   const char* ip) {
     core::Mutex::Lock lock(mutex_);
 
     roc_panic_if_not(valid());
 
     roc_panic_if(!ip);
     roc_panic_if(iface < 0);
-    roc_panic_if(iface >= (int)ROC_ARRAY_SIZE(ports_));
+    roc_panic_if(iface >= (int)address::Iface_Max);
 
-    if (ports_[iface].handle) {
+    roc_log(LogDebug,
+            "receiver peer: setting multicast group for %s interface of slot %lu to %s",
+            address::interface_to_str(iface), (unsigned long)slot_index, ip);
+
+    Slot* slot = get_slot_(slot_index);
+    if (!slot) {
         roc_log(LogError,
                 "receiver peer:"
-                " can't set multicast group for %s interface:"
+                " can't set multicast group for %s interface of slot %lu:"
+                " can't create slot",
+                address::interface_to_str(iface), (unsigned long)slot_index);
+        return false;
+    }
+
+    if (slot->ports[iface].handle) {
+        roc_log(LogError,
+                "receiver peer:"
+                " can't set multicast group for %s interface of slot %lu:"
                 " interface is already bound",
-                address::interface_to_str(iface));
+                address::interface_to_str(iface), (unsigned long)slot_index);
         return false;
     }
 
@@ -86,38 +106,67 @@ bool Receiver::set_multicast_group(address::Interface iface, const char* ip) {
         if (!addr.set_host_port_auto(ip, 0)) {
             roc_log(LogError,
                     "receiver peer:"
-                    " can't set multicast group for %s interface to '%s':"
+                    " can't set multicast group for %s interface of slot %lu:"
                     " invalid IPv4 or IPv6 address",
-                    address::interface_to_str(iface), ip);
+                    address::interface_to_str(iface), (unsigned long)slot_index);
             return false;
         }
     }
 
-    core::StringBuilder b(ports_[iface].config.multicast_interface,
-                          sizeof(ports_[iface].config.multicast_interface));
+    core::StringBuilder b(slot->ports[iface].config.multicast_interface,
+                          sizeof(slot->ports[iface].config.multicast_interface));
 
     if (!b.assign_str(ip)) {
         roc_log(LogError,
                 "receiver peer:"
-                " can't set multicast group for %s interface to '%s':"
+                " can't set multicast group for %s interface of slot %lu:"
                 " invalid IPv4 or IPv6 address",
-                address::interface_to_str(iface), ip);
+                address::interface_to_str(iface), (unsigned long)slot_index);
         return false;
     }
-
-    roc_log(LogDebug, "receiver peer: setting %s interface multicast group to %s",
-            address::interface_to_str(iface), ip);
 
     return true;
 }
 
-bool Receiver::bind(address::Interface iface, address::EndpointUri& uri) {
+bool Receiver::bind(size_t slot_index,
+                    address::Interface iface,
+                    address::EndpointUri& uri) {
     core::Mutex::Lock lock(mutex_);
 
     roc_panic_if_not(valid());
 
+    roc_panic_if(iface < 0);
+    roc_panic_if(iface >= (int)address::Iface_Max);
+
+    roc_log(LogInfo, "receiver peer: binding %s interface of slot %lu to %s",
+            address::interface_to_str(iface), (unsigned long)slot_index,
+            address::endpoint_uri_to_str(uri).c_str());
+
     if (!uri.verify(address::EndpointUri::Subset_Full)) {
-        roc_log(LogError, "receiver peer: invalid uri");
+        roc_log(LogError,
+                "receiver peer:"
+                " can't bind %s interface of slot %lu:"
+                " invalid uri",
+                address::interface_to_str(iface), (unsigned long)slot_index);
+        return false;
+    }
+
+    if (!check_compatibility_(iface, uri)) {
+        roc_log(LogError,
+                "receiver peer:"
+                " can't bind %s interface of slot %lu:"
+                " incompatible with other slots",
+                address::interface_to_str(iface), (unsigned long)slot_index);
+        return false;
+    }
+
+    Slot* slot = get_slot_(slot_index);
+    if (!slot) {
+        roc_log(LogError,
+                "receiver peer:"
+                " can't bind %s interface of slot %lu:"
+                " can't create slot",
+                address::interface_to_str(iface), (unsigned long)slot_index);
         return false;
     }
 
@@ -126,29 +175,38 @@ bool Receiver::bind(address::Interface iface, address::EndpointUri& uri) {
     netio::NetworkLoop::Tasks::ResolveEndpointAddress resolve_task(uri);
 
     if (!context().network_loop().schedule_and_wait(resolve_task)) {
-        roc_log(LogError, "receiver peer: can't resolve %s interface address",
-                address::interface_to_str(iface));
+        roc_log(LogError,
+                "receiver peer:"
+                " can't bind %s interface of slot %lu:"
+                " can't resolve endpoint address",
+                address::interface_to_str(iface), (unsigned long)slot_index);
         return false;
     }
 
-    pipeline::ReceiverLoop::Tasks::CreateEndpoint endpoint_task(endpoint_set_, iface,
+    pipeline::ReceiverLoop::Tasks::CreateEndpoint endpoint_task(slot->endpoint_set, iface,
                                                                 uri.proto());
     if (!pipeline_.schedule_and_wait(endpoint_task)) {
-        roc_log(LogError, "receiver peer: can't add %s endpoint to pipeline",
-                address::interface_to_str(iface));
+        roc_log(LogError,
+                "receiver peer:"
+                " can't bind %s interface of slot %lu:"
+                " can't add endpoint to pipeline",
+                address::interface_to_str(iface), (unsigned long)slot_index);
         return false;
     }
 
-    ports_[iface].config.bind_address = resolve_task.get_address();
+    slot->ports[iface].config.bind_address = resolve_task.get_address();
 
-    netio::NetworkLoop::Tasks::AddUdpReceiverPort port_task(ports_[iface].config,
+    netio::NetworkLoop::Tasks::AddUdpReceiverPort port_task(slot->ports[iface].config,
                                                             *endpoint_task.get_writer());
     if (!context().network_loop().schedule_and_wait(port_task)) {
-        roc_log(LogError, "receiver peer: can't bind %s interface to local port",
-                address::interface_to_str(iface));
+        roc_log(LogError,
+                "receiver peer:"
+                " can't bind %s interface of slot %lu:"
+                " can't bind interface to local port",
+                address::interface_to_str(iface), (unsigned long)slot_index);
 
-        pipeline::ReceiverLoop::Tasks::DeleteEndpoint delete_endpoint_task(endpoint_set_,
-                                                                           iface);
+        pipeline::ReceiverLoop::Tasks::DeleteEndpoint delete_endpoint_task(
+            slot->endpoint_set, iface);
         if (!pipeline_.schedule_and_wait(delete_endpoint_task)) {
             roc_panic("receiver peer: can't remove newly created endpoint");
         }
@@ -156,20 +214,60 @@ bool Receiver::bind(address::Interface iface, address::EndpointUri& uri) {
         return false;
     }
 
-    ports_[iface].handle = port_task.get_handle();
+    slot->ports[iface].handle = port_task.get_handle();
 
     if (uri.port() == 0) {
-        uri.set_port(ports_[iface].config.bind_address.port());
+        // Report back the port number we've selected.
+        uri.set_port(slot->ports[iface].config.bind_address.port());
     }
 
-    roc_log(LogInfo, "receiver peer: bound %s interface to %s",
-            address::interface_to_str(iface), address::endpoint_uri_to_str(uri).c_str());
+    update_compatibility_(iface, uri);
 
     return true;
 }
 
 sndio::ISource& Receiver::source() {
     return pipeline_.source();
+}
+
+bool Receiver::check_compatibility_(address::Interface iface,
+                                    const address::EndpointUri& uri) {
+    if (used_interfaces_[iface] && used_protocols_[iface] != uri.proto()) {
+        roc_log(LogError,
+                "receiver peer: same interface of all slots should use same protocols:"
+                " other slot uses %s, but this slot tries to use %s",
+                address::proto_to_str(used_protocols_[iface]),
+                address::proto_to_str(uri.proto()));
+        return false;
+    }
+
+    return true;
+}
+
+void Receiver::update_compatibility_(address::Interface iface,
+                                     const address::EndpointUri& uri) {
+    used_interfaces_[iface] = true;
+    used_protocols_[iface] = uri.proto();
+}
+
+Receiver::Slot* Receiver::get_slot_(size_t slot_index) {
+    if (slots_.size() <= slot_index) {
+        if (!slots_.resize(slot_index + 1)) {
+            roc_log(LogError, "receiver peer: failed to allocate slot");
+            return NULL;
+        }
+    }
+
+    if (!slots_[slot_index].endpoint_set) {
+        pipeline::ReceiverLoop::Tasks::CreateEndpointSet task;
+        if (!pipeline_.schedule_and_wait(task)) {
+            roc_log(LogError, "receiver peer: failed to create endpoint set");
+            return NULL;
+        }
+        slots_[slot_index].endpoint_set = task.get_handle();
+    }
+
+    return &slots_[slot_index];
 }
 
 void Receiver::schedule_task_processing(pipeline::PipelineLoop&,

@@ -25,161 +25,171 @@ Sender::Sender(Context& context, const pipeline::SenderConfig& pipeline_config)
                 context.byte_buffer_factory(),
                 context.sample_buffer_factory(),
                 context.allocator())
-    , endpoint_set_(NULL)
-    , source_endpoint_(NULL)
-    , repair_endpoint_(NULL)
-    , processing_task_(pipeline_) {
+    , processing_task_(pipeline_)
+    , slots_(context.allocator())
+    , valid_(false) {
     roc_log(LogDebug, "sender peer: initializing");
+
+    memset(used_interfaces_, 0, sizeof(used_interfaces_));
+    memset(used_protocols_, 0, sizeof(used_protocols_));
 
     if (!pipeline_.valid()) {
         return;
     }
 
-    pipeline::SenderLoop::Tasks::CreateEndpointSet task;
-    if (!pipeline_.schedule_and_wait(task)) {
-        return;
-    }
-
-    endpoint_set_ = task.get_handle();
+    valid_ = true;
 }
 
 Sender::~Sender() {
     roc_log(LogDebug, "sender peer: deinitializing");
 
-    for (size_t i = 0; i < ROC_ARRAY_SIZE(ports_); i++) {
-        if (ports_[i].handle) {
-            netio::NetworkLoop::Tasks::RemovePort task(ports_[i].handle);
+    context().control_loop().wait(processing_task_);
 
+    for (size_t s = 0; s < slots_.size(); s++) {
+        if (!slots_[s].endpoint_set) {
+            continue;
+        }
+
+        for (size_t p = 0; p < address::Iface_Max; p++) {
+            if (!slots_[s].ports[p].handle) {
+                continue;
+            }
+
+            netio::NetworkLoop::Tasks::RemovePort task(slots_[s].ports[p].handle);
             if (!context().network_loop().schedule_and_wait(task)) {
-                roc_panic("receiver peer: can't remove port");
+                roc_panic("sender peer: can't remove port");
             }
         }
     }
 }
 
 bool Sender::valid() const {
-    return endpoint_set_;
+    return valid_;
 }
 
-bool Sender::set_outgoing_address(address::Interface iface, const char* ip) {
+bool Sender::set_outgoing_address(size_t slot_index,
+                                  address::Interface iface,
+                                  const char* ip) {
     core::Mutex::Lock lock(mutex_);
 
     roc_panic_if_not(valid());
 
     roc_panic_if(!ip);
     roc_panic_if(iface < 0);
-    roc_panic_if(iface >= (int)ROC_ARRAY_SIZE(ports_));
+    roc_panic_if(iface >= (int)address::Iface_Max);
 
-    roc_panic_if(!ip);
+    roc_log(LogDebug,
+            "sender peer: setting outgoing address for %s interface of slot %lu to %s",
+            address::interface_to_str(iface), (unsigned long)slot_index, ip);
 
-    if (ports_[iface].handle) {
+    Slot* slot = get_slot_(slot_index);
+    if (!slot) {
         roc_log(LogError,
                 "sender peer:"
-                " can't set outgoing address for %s interface:"
-                " interface is already bound",
-                address::interface_to_str(iface));
+                " can't set outgoing address for %s interface of slot %lu:"
+                " can't create slot",
+                address::interface_to_str(iface), (unsigned long)slot_index);
         return false;
     }
 
-    if (!ports_[iface].config.bind_address.set_host_port_auto(
-            ip, ports_[iface].config.bind_address.port())) {
+    if (slot->ports[iface].handle) {
         roc_log(LogError,
                 "sender peer:"
-                " can't set outgoing address for %s interface to '%s':"
+                " can't set outgoing address for %s interface of slot %lu:"
+                " interface is already bound",
+                address::interface_to_str(iface), (unsigned long)slot_index);
+        return false;
+    }
+
+    int port = 0;
+    if (slot->ports[iface].config.bind_address.has_host_port()) {
+        port = slot->ports[iface].config.bind_address.port();
+    }
+
+    if (!slot->ports[iface].config.bind_address.set_host_port_auto(ip, port)) {
+        roc_log(LogError,
+                "sender peer:"
+                " can't set outgoing address for %s interface of slot %lu to '%s':"
                 " invalid IPv4 or IPv6 address",
-                address::interface_to_str(iface), ip);
+                address::interface_to_str(iface), (unsigned long)slot_index, ip);
         return false;
     }
-
-    roc_log(LogDebug, "sender peer: setting %s interface outgoing address to %s",
-            address::interface_to_str(iface), ip);
 
     return true;
 }
 
-bool Sender::set_broadcast_enabled(address::Interface iface, bool enabled) {
+bool Sender::connect(size_t slot_index,
+                     address::Interface iface,
+                     const address::EndpointUri& uri) {
     core::Mutex::Lock lock(mutex_);
 
     roc_panic_if_not(valid());
 
     roc_panic_if(iface < 0);
-    roc_panic_if(iface >= (int)ROC_ARRAY_SIZE(ports_));
+    roc_panic_if(iface >= (int)address::Iface_Max);
 
-    if (ports_[iface].handle) {
-        roc_log(LogError,
-                "sender peer:"
-                " can't set broadcast flag for %s interface:"
-                " interface is already bound",
-                address::interface_to_str(iface));
-        return false;
-    }
-
-    ports_[iface].config.broadcast_enabled = enabled;
-
-    roc_log(LogDebug, "sender peer: setting %s interface broadcast flag to %d",
-            address::interface_to_str(iface), (int)enabled);
-
-    return true;
-}
-
-bool Sender::set_squashing_enabled(address::Interface iface, bool enabled) {
-    core::Mutex::Lock lock(mutex_);
-
-    roc_panic_if_not(valid());
-
-    roc_panic_if(iface < 0);
-    roc_panic_if(iface >= (int)ROC_ARRAY_SIZE(ports_));
-
-    if (ports_[iface].handle) {
-        roc_log(LogError,
-                "sender peer:"
-                " can't set squashing flag for %s interface:"
-                " interface is already bound",
-                address::interface_to_str(iface));
-        return false;
-    }
-
-    ports_[iface].squashing_enabled = enabled;
-
-    roc_log(LogDebug, "sender peer: setting %s interface squashing flag to %d",
-            address::interface_to_str(iface), (int)enabled);
-
-    return true;
-}
-
-bool Sender::connect(address::Interface iface, const address::EndpointUri& uri) {
-    core::Mutex::Lock lock(mutex_);
-
-    roc_panic_if_not(valid());
+    roc_log(LogInfo, "sender peer: connecting %s interface of slot %lu to %s",
+            address::interface_to_str(iface), (unsigned long)slot_index,
+            address::endpoint_uri_to_str(uri).c_str());
 
     if (!uri.verify(address::EndpointUri::Subset_Full)) {
-        roc_log(LogError, "sender peer: invalid uri");
+        roc_log(LogError,
+                "sender peer: can't connect %s interface of slot %lu: invalid uri",
+                address::interface_to_str(iface), (unsigned long)slot_index);
+        return false;
+    }
+
+    if (!check_compatibility_(iface, uri)) {
+        roc_log(LogError,
+                "sender peer:"
+                " can't connect %s interface of slot %lu:"
+                " incompatible with other slots",
+                address::interface_to_str(iface), (unsigned long)slot_index);
+        return false;
+    }
+
+    Slot* slot = get_slot_(slot_index);
+    if (!slot) {
+        roc_log(LogError,
+                "sender peer:"
+                " can't connect %s interface of slot %lu:"
+                " can't create slot",
+                address::interface_to_str(iface), (unsigned long)slot_index);
         return false;
     }
 
     netio::NetworkLoop::Tasks::ResolveEndpointAddress resolve_task(uri);
 
     if (!context().network_loop().schedule_and_wait(resolve_task)) {
-        roc_log(LogError, "sender peer: can't resolve %s interface address",
-                address::interface_to_str(iface));
+        roc_log(LogError,
+                "sender peer:"
+                " can't connect %s interface of slot %lu:"
+                " can't resolve endpoint address",
+                address::interface_to_str(iface), (unsigned long)slot_index);
         return false;
     }
 
     const address::SocketAddr& address = resolve_task.get_address();
 
-    InterfacePort& port = select_outgoing_port_(iface, address.family());
+    Port& port = select_outgoing_port_(*slot, iface, address.family());
 
     if (!setup_outgoing_port_(port, iface, address.family())) {
-        roc_log(LogError, "sender peer: can't bind %s interface to local port",
-                address::interface_to_str(iface));
+        roc_log(LogError,
+                "sender peer:"
+                " can't connect %s interface of slot %lu:"
+                " can't bind to local port",
+                address::interface_to_str(iface), (unsigned long)slot_index);
         return false;
     }
 
-    pipeline::SenderLoop::Tasks::CreateEndpoint endpoint_task(endpoint_set_, iface,
+    pipeline::SenderLoop::Tasks::CreateEndpoint endpoint_task(slot->endpoint_set, iface,
                                                               uri.proto());
     if (!pipeline_.schedule_and_wait(endpoint_task)) {
-        roc_log(LogError, "sender peer: can't add %s endpoint to pipeline",
-                address::interface_to_str(iface));
+        roc_log(LogError,
+                "sender peer:"
+                " can't connect %s interface of slot %lu:"
+                " can't add endpoint to pipeline",
+                address::interface_to_str(iface), (unsigned long)slot_index);
         return false;
     }
 
@@ -187,8 +197,11 @@ bool Sender::connect(address::Interface iface, const address::EndpointUri& uri) 
         endpoint_task.get_handle(), address);
 
     if (!pipeline_.schedule_and_wait(address_task)) {
-        roc_log(LogError, "sender peer: can't set %s endpoint destination address",
-                address::interface_to_str(iface));
+        roc_log(LogError,
+                "sender peer:"
+                " can't connect %s interface of slot %lu:"
+                " can't set endpoint destination address",
+                address::interface_to_str(iface), (unsigned long)slot_index);
         return false;
     }
 
@@ -196,19 +209,15 @@ bool Sender::connect(address::Interface iface, const address::EndpointUri& uri) 
         endpoint_task.get_handle(), *port.writer);
 
     if (!pipeline_.schedule_and_wait(writer_task)) {
-        roc_log(LogError, "sender peer: can't set %s endpoint destination writer",
-                address::interface_to_str(iface));
+        roc_log(LogError,
+                "sender peer:"
+                " can't connect %s interface of slot %lu:"
+                " can't set endpoint destination writer",
+                address::interface_to_str(iface), (unsigned long)slot_index);
         return false;
     }
 
-    if (iface == address::Iface_AudioSource) {
-        source_endpoint_ = endpoint_task.get_handle();
-    } else {
-        repair_endpoint_ = endpoint_task.get_handle();
-    }
-
-    roc_log(LogInfo, "sender peer: connected %s interface to %s",
-            address::interface_to_str(iface), address::endpoint_uri_to_str(uri).c_str());
+    update_compatibility_(iface, uri);
 
     return true;
 }
@@ -218,9 +227,22 @@ bool Sender::is_ready() {
 
     roc_panic_if_not(valid());
 
-    pipeline::SenderLoop::Tasks::CheckEndpointSetIsReady task(endpoint_set_);
+    if (slots_.size() == 0) {
+        return false;
+    }
 
-    return pipeline_.schedule_and_wait(task);
+    for (size_t s = 0; s < slots_.size(); s++) {
+        if (!slots_[s].endpoint_set) {
+            continue;
+        }
+
+        pipeline::SenderLoop::Tasks::CheckEndpointSetIsReady task(slots_[s].endpoint_set);
+        if (!pipeline_.schedule_and_wait(task)) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 sndio::ISink& Sender::sink() {
@@ -229,38 +251,85 @@ sndio::ISink& Sender::sink() {
     return pipeline_.sink();
 }
 
-Sender::InterfacePort& Sender::select_outgoing_port_(address::Interface iface,
-                                                     address::AddrFamily family) {
-    if (!ports_[iface].handle && ports_[iface].squashing_enabled) {
-        for (size_t i = 0; i < ROC_ARRAY_SIZE(ports_); i++) {
-            if ((int)i == iface) {
-                continue;
-            }
-            if (!ports_[i].handle) {
-                continue;
-            }
-            if (!ports_[i].squashing_enabled) {
-                continue;
-            }
-            if (!(ports_[i].orig_config == ports_[iface].config)) {
-                continue;
-            }
-            if (!(ports_[i].config.bind_address.family() == family)) {
-                continue;
-            }
+bool Sender::check_compatibility_(address::Interface iface,
+                                  const address::EndpointUri& uri) {
+    if (used_interfaces_[iface] && used_protocols_[iface] != uri.proto()) {
+        roc_log(LogError,
+                "sender peer: same interface of all slots should use same protocols:"
+                " other slot uses %s, but this slot tries to use %s",
+                address::proto_to_str(used_protocols_[iface]),
+                address::proto_to_str(uri.proto()));
+        return false;
+    }
 
-            roc_log(LogInfo, "sender peer: reusing %s interface port for %s interface",
-                    address::interface_to_str(address::Interface(i)),
-                    address::interface_to_str(iface));
+    return true;
+}
 
-            return ports_[i];
+void Sender::update_compatibility_(address::Interface iface,
+                                   const address::EndpointUri& uri) {
+    used_interfaces_[iface] = true;
+    used_protocols_[iface] = uri.proto();
+}
+
+Sender::Slot* Sender::get_slot_(size_t slot_index) {
+    if (slots_.size() <= slot_index) {
+        if (!slots_.resize(slot_index + 1)) {
+            roc_log(LogError, "sender peer: failed to allocate slot");
+            return NULL;
         }
     }
 
-    return ports_[iface];
+    if (!slots_[slot_index].endpoint_set) {
+        pipeline::SenderLoop::Tasks::CreateEndpointSet task;
+        if (!pipeline_.schedule_and_wait(task)) {
+            roc_log(LogError, "sender peer: failed to create endpoint set");
+            return NULL;
+        }
+        slots_[slot_index].endpoint_set = task.get_handle();
+    }
+
+    return &slots_[slot_index];
 }
 
-bool Sender::setup_outgoing_port_(InterfacePort& port,
+Sender::Port& Sender::select_outgoing_port_(Slot& slot,
+                                            address::Interface iface,
+                                            address::AddrFamily family) {
+    // We try to share outgoing port for source and repair interfaces, if they have
+    // identical configuratrion. This should not harm, and it may help receiver to
+    // associate source and repair streams together, in case when no control and
+    // signaling protocol is used, by source addresses. This technique is neither
+    // standard nor universal, but in many cases it allows us to work even without
+    // protocols like RTCP or RTSP.
+    const bool share_interface_ports =
+        (iface == address::Iface_AudioSource || iface == address::Iface_AudioRepair);
+
+    if (share_interface_ports && !slot.ports[iface].handle) {
+        for (size_t i = 0; i < address::Iface_Max; i++) {
+            if ((int)i == iface) {
+                continue;
+            }
+            if (!slot.ports[i].handle) {
+                continue;
+            }
+            if (!(slot.ports[i].orig_config == slot.ports[iface].config)) {
+                continue;
+            }
+            if (!(slot.ports[i].config.bind_address.family() == family)) {
+                continue;
+            }
+
+            roc_log(LogDebug, "sender peer: sharing %s interface port with %s interface",
+                    address::interface_to_str(address::Interface(i)),
+                    address::interface_to_str(iface));
+
+            return slot.ports[i];
+        }
+    }
+
+    return slot.ports[iface];
+}
+
+bool Sender::setup_outgoing_port_(Port& port,
                                   address::Interface iface,
                                   address::AddrFamily family) {
     if (port.config.bind_address.has_host_port()) {

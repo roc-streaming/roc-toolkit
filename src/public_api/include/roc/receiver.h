@@ -54,11 +54,15 @@ extern "C" {
  *
  * - The receiver is destroyed using roc_receiver_close().
  *
- * **Interfaces and endpoints**
+ * **Slots, interfaces, and endpoints**
  *
- * Receiver has several *interfaces*, one per each type defined in \ref roc_interface. The
- * interface defines the type of the comminication with the remote peer and the set of
- * the protocols supported by it.
+ * Receiver has one or multiple **slots**, which may be independently bound or connected.
+ * Slots may be used to bind receiver to multiple addresses. Slots are numbered from
+ * zero and are created automatically. In simple cases just use \c ROC_SLOT_DEFAULT.
+ *
+ * Each slot has its own set of *interfaces*, one per each type defined in \ref
+ * roc_interface. The interface defines the type of the comminication with the remote peer
+ * and the set of the protocols supported by it.
  *
  * Supported actions with the interface:
  *
@@ -72,22 +76,24 @@ extern "C" {
  *
  * Supported interface configurations:
  *
- *   - Bind \c ROC_INTERFACE_SIGNALING to a local endpoint (e.g. be an RTSP server).
- *   - Connect \c ROC_INTERFACE_SIGNALING to a remote endpoint (e.g. be an RTSP client).
- *   - Bind \c ROC_INTERFACE_AUDIO_SOURCE to a local endpoint (e.g. be an RTP receiver).
- *   - Bind \c ROC_INTERFACE_AUDIO_SOURCE and \c ROC_INTERFACE_AUDIO_REPAIR to a pair
- *     of local endpoints (e.g. be an RTP + FECFRAME receiver).
+ *   - Bind \c ROC_INTERFACE_CONSOLIDATED to a local endpoint (e.g. be an RTSP server).
+ *   - Connect \c ROC_INTERFACE_CONSOLIDATED to a remote endpoint (e.g. be an RTSP
+ *     client).
+ *   - Bind \c ROC_INTERFACE_AUDIO_SOURCE, \c ROC_INTERFACE_AUDIO_REPAIR (optionally,
+ *     for FEC), and \c ROC_INTERFACE_AUDIO_CONTROL (optionally, for control messages)
+ *     to local endpoints (e.g. be an RTP/FECFRAME/RTCP receiver).
  *
  * **FEC scheme**
  *
- * If \c ROC_INTERFACE_SIGNALING is used, it automatically creates all necessary transport
- * interfaces and the user should not bother about them.
+ * If \c ROC_INTERFACE_CONSOLIDATED is used, it automatically creates all necessary
+ * transport interfaces and the user should not bother about them.
  *
  * Otherwise, the user should manually configure \c ROC_INTERFACE_AUDIO_SOURCE and
  * \c ROC_INTERFACE_AUDIO_REPAIR interfaces:
  *
- *  - If FEC is disabled (\ref ROC_FEC_DISABLE), only \c ROC_INTERFACE_AUDIO_SOURCE should
- *    be configured. It will be used to transmit audio packets.
+ *  - If FEC is disabled (\ref ROC_FEC_ENCODING_DISABLE), only
+ *    \c ROC_INTERFACE_AUDIO_SOURCE should be configured. It will be used to transmit audio
+ *    packets.
  *
  *  - If FEC is enabled, both \c ROC_INTERFACE_AUDIO_SOURCE and
  *    \c ROC_INTERFACE_AUDIO_REPAIR interfaces should be configured. The second interface
@@ -204,16 +210,20 @@ ROC_API int roc_receiver_open(roc_context* context,
  * to be able to receive multicast traffic from all available interfaces. However, this
  * may not be desirable for security reasons.
  *
- * Each interface can have only one multicast group. The function should be called before
- * calling roc_receiver_bind() for the interface. It should not be called when calling
- * roc_receiver_connect() for the interface.
+ * Each slot's interface can have only one multicast group. The function should be called
+ * before calling roc_receiver_bind() for the interface. It should not be called when
+ * calling roc_receiver_connect() for the interface.
+ *
+ * Automaticaly initializes slot with given index if it's used first time.
  *
  * **Parameters**
  *  - \p receiver should point to an opened receiver
+ *  - \p slot specifies the receiver slot
+ *  - \p iface specifies the receiver interface
  *  - \p ip should be IPv4 or IPv6 address
  *
  * **Returns**
- *  - returns zero if the broadcast flag was successfully set
+ *  - returns zero if the multicast group was successfully set
  *  - returns a negative value if the arguments are invalid
  *  - returns a negative value if an error occurred
  *
@@ -222,6 +232,7 @@ ROC_API int roc_receiver_open(roc_context* context,
  *    after the function returns
  */
 ROC_API int roc_receiver_set_multicast_group(roc_receiver* receiver,
+                                             roc_slot slot,
                                              roc_interface iface,
                                              const char* ip);
 
@@ -230,8 +241,10 @@ ROC_API int roc_receiver_set_multicast_group(roc_receiver* receiver,
  * Checks that the endpoint is valid and supported by the interface, allocates
  * a new ingoing port, and binds it to the local endpoint.
  *
- * Each interface can be bound or connected only once.
- * May be called multiple times for different interfaces.
+ * Each slot's interface can be bound or connected only once.
+ * May be called multiple times for different slots or interfaces.
+ *
+ * Automaticaly initializes slot with given index if it's used first time.
  *
  * If \p endpoint has explicitly set zero port, the receiver is bound to a randomly
  * chosen ephemeral port. If the function succeeds, the actual port to which the
@@ -239,6 +252,7 @@ ROC_API int roc_receiver_set_multicast_group(roc_receiver* receiver,
  *
  * **Parameters**
  *  - \p receiver should point to an opened receiver
+ *  - \p slot specifies the receiver slot
  *  - \p iface specifies the receiver interface
  *  - \p endpoint specifies the receiver endpoint
  *
@@ -252,8 +266,10 @@ ROC_API int roc_receiver_set_multicast_group(roc_receiver* receiver,
  *  - doesn't take or share the ownerhip of \p endpoint; it may be safely deallocated
  *    after the function returns
  */
-ROC_API int
-roc_receiver_bind(roc_receiver* receiver, roc_interface iface, roc_endpoint* endpoint);
+ROC_API int roc_receiver_bind(roc_receiver* receiver,
+                              roc_slot slot,
+                              roc_interface iface,
+                              roc_endpoint* endpoint);
 
 /** Read samples from the receiver.
  *

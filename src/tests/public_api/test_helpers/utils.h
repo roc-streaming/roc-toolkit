@@ -10,7 +10,7 @@
 #define ROC_PUBLIC_API_TEST_HELPERS_UTILS_H_
 
 namespace roc {
-namespace library {
+namespace api {
 namespace test {
 
 namespace {
@@ -45,7 +45,7 @@ inline float increment_sample_value(float sample_value, float sample_step) {
 } // namespace
 
 } // namespace test
-} // namespace library
+} // namespace api
 } // namespace roc
 
 #endif // ROC_PUBLIC_API_TEST_HELPERS_UTILS_H_

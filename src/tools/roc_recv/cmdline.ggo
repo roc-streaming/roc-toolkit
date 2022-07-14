@@ -17,13 +17,16 @@ section "Options"
     option "backup-format" - "Force backup file format"
         typestr="FILE_FORMAT" string optional
 
-    option "source" s "Local source endpoint" typestr="ENDPOINT_URI" string optional
-    option "repair" r "Local repair endpoint" typestr="ENDPOINT_URI" string optional
-    option "control" c "Local control endpoint" typestr="ENDPOINT_URI" string optional
+    option "source" s "Local source endpoint" typestr="ENDPOINT_URI"
+        string multiple optional
+    option "repair" r "Local repair endpoint" typestr="ENDPOINT_URI"
+        string multiple optional
+    option "control" c "Local control endpoint" typestr="ENDPOINT_URI"
+        string multiple optional
 
     option "miface" -
       "IPv4 or IPv6 address of the network interface on which to join the multicast group"
-      typestr="MIFACE" string optional
+      typestr="MIFACE" string multiple optional
 
     option "sess-latency" - "Session target latency, TIME units"
         string optional

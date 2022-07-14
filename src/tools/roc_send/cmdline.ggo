@@ -11,11 +11,12 @@ section "Options"
     option "input" i "Input file or device URI" typestr="IO_URI" string optional
     option "input-format" - "Force input file format" typestr="FILE_FORMAT" string optional
 
-    option "source" s "Remote source endpoint" typestr="ENDPOINT_URI" string optional
-    option "repair" r "Remote repair endpoint" typestr="ENDPOINT_URI" string optional
-    option "control" c "Remote control endpoint" typestr="ENDPOINT_URI" string optional
-
-    option "broadcast" - "Allow broadcast destination port addresses" flag off
+    option "source" s "Remote source endpoint" typestr="ENDPOINT_URI"
+        string multiple optional
+    option "repair" r "Remote repair endpoint" typestr="ENDPOINT_URI"
+        string multiple optional
+    option "control" c "Remote control endpoint" typestr="ENDPOINT_URI"
+        string multiple optional
 
     option "nbsrc" - "Number of source packets in FEC block"
         int optional

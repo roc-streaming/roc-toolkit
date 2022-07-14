@@ -54,11 +54,15 @@ extern "C" {
  *
  * - The sender is destroyed using roc_sender_close().
  *
- * **Interfaces and endpoints**
+ * **Slots, interfaces, and endpoints**
  *
- * Sender has several *interfaces*, one per each type defined in \ref roc_interface. The
- * interface defines the type of the comminication with the remote peer and the set of
- * the protocols supported by it.
+ * Sender has one or multiple **slots**, which may be independently bound or connected.
+ * Slots may be used to connect sender to multiple receivers. Slots are numbered from
+ * zero and are created automatically. In simple cases just use \c ROC_SLOT_DEFAULT.
+ *
+ * Each slot has its own set of *interfaces*, one per each type defined in \ref
+ * roc_interface. The interface defines the type of the comminication with the remote peer
+ * and the set of the protocols supported by it.
  *
  * Supported actions with the interface:
  *
@@ -72,22 +76,24 @@ extern "C" {
  *
  * Supported interface configurations:
  *
- *   - Connect \c ROC_INTERFACE_SIGNALING to a remote endpoint (e.g. be an RTSP client).
- *   - Bind \c ROC_INTERFACE_SIGNALING to a local endpoint (e.g. be an RTSP server).
- *   - Connect \c ROC_INTERFACE_AUDIO_SOURCE to a remote endpoint (e.g. be an RTP sender).
- *   - Connect \c ROC_INTERFACE_AUDIO_SOURCE and \c ROC_INTERFACE_AUDIO_REPAIR to a pair
- *     of remote endpoints (e.g. be an RTP + FECFRAME sender).
+ *   - Connect \c ROC_INTERFACE_CONSOLIDATED to a remote endpoint (e.g. be an RTSP
+ *     client).
+ *   - Bind \c ROC_INTERFACE_CONSOLIDATED to a local endpoint (e.g. be an RTSP server).
+ *   - Connect \c ROC_INTERFACE_AUDIO_SOURCE, \c ROC_INTERFACE_AUDIO_REPAIR (optionally,
+ *     for FEC), and \c ROC_INTERFACE_AUDIO_CONTROL (optionally, for control messages)
+ *     to remote endpoints (e.g. be an RTP/FECFRAME/RTCP sender).
  *
  * **FEC scheme**
  *
- * If \c ROC_INTERFACE_SIGNALING is used, it automatically creates all necessary transport
- * interfaces and the user should not bother about them.
+ * If \c ROC_INTERFACE_CONSOLIDATED is used, it automatically creates all necessary
+ * transport interfaces and the user should not bother about them.
  *
  * Otherwise, the user should manually configure \c ROC_INTERFACE_AUDIO_SOURCE and
  * \c ROC_INTERFACE_AUDIO_REPAIR interfaces:
  *
- *  - If FEC is disabled (\ref ROC_FEC_DISABLE), only \c ROC_INTERFACE_AUDIO_SOURCE should
- *    be configured. It will be used to transmit audio packets.
+ *  - If FEC is disabled (\ref ROC_FEC_ENCODING_DISABLE), only
+ *    \c ROC_INTERFACE_AUDIO_SOURCE should be configured. It will be used to transmit
+ *    audio packets.
  *
  *  - If FEC is enabled, both \c ROC_INTERFACE_AUDIO_SOURCE and
  *    \c ROC_INTERFACE_AUDIO_REPAIR interfaces should be configured. The second interface
@@ -171,12 +177,16 @@ ROC_API int roc_sender_open(roc_context* context,
  *
  * By default, the outgoing address is not set.
  *
- * Each interface can have only one outgoing address. The function should be called before
- * calling roc_sender_connect() for the interface. It should not be called when calling
- * roc_sender_bind() for the interface.
+ * Each slot's interface can have only one outgoing address. The function should be called
+ * before calling roc_sender_connect() for this slot and interface. It should not be
+ * called when calling roc_sender_bind() for the interface.
+ *
+ * Automaticaly initializes slot with given index if it's used first time.
  *
  * **Parameters**
  *  - \p sender should point to an opened sender
+ *  - \p slot specifies the sender slot
+ *  - \p iface specifies the sender interface
  *  - \p ip should be IPv4 or IPv6 address
  *
  * **Returns**
@@ -188,74 +198,24 @@ ROC_API int roc_sender_open(roc_context* context,
  *  - doesn't take or share the ownerhip of \p ip; it may be safely deallocated
  *    after the function returns
  */
-ROC_API int
-roc_sender_set_outgoing_address(roc_sender* sender, roc_interface iface, const char* ip);
-
-/** Set sender interface broadcast flag.
- *
- * Optional. Should be used only when connecting an interface to a remote endpoint.
- *
- * If set to true, the sender interface is allowed to send traffic to broadcast addresses.
- * Otherwise, only unicast and multicast traffic is allowed.
- *
- * By default, the broadcast flag is set to false, to prevent accidental flood.
- *
- * The function should be called before calling roc_sender_connect() for the interface.
- * It should not be called when calling roc_sender_bind() for the interface.
- *
- * **Parameters**
- *  - \p sender should point to an opened sender
- *  - \p enabled should be 0 (for false) or 1 (for true)
- *
- * **Returns**
- *  - returns zero if the broadcast flag was successfully set
- *  - returns a negative value if the arguments are invalid
- *  - returns a negative value if an error occurred
- */
-ROC_API int
-roc_sender_set_broadcast_enabled(roc_sender* sender, roc_interface iface, int enabled);
-
-/** Set sender interface squashing flag.
- *
- * Optional. Should be used only when connecting an interface to a remote endpoint.
- *
- * If set to true, the sender interface will share the same outgoing port with other
- * interfaces that have identical settings (e.g. outgoing address and broadcast flag)
- * and have also enabled the squashing flag. If set to false, the interface will have
- * its own outgoing port.
- *
- * This feature is useful when sending source and repair streams, but *not* using
- * control and signaling protocols, like RTCP and RTSP. In this case, reusing the
- * same port for source and repair streams is needed to help the receiver to associate
- * these streams with one session.
- *
- * By default, the squashing flag is set to true.
- *
- * The function should be called before calling roc_sender_connect() for the interface.
- * It should not be called when calling roc_sender_bind() for the interface.
- *
- * **Parameters**
- *  - \p sender should point to an opened sender
- *  - \p enabled should be 0 (for false) or 1 (for true)
- *
- * **Returns**
- *  - returns zero if the squashing flag was successfully set
- *  - returns a negative value if the arguments are invalid
- *  - returns a negative value if an error occurred
- */
-ROC_API int
-roc_sender_set_squashing_enabled(roc_sender* sender, roc_interface iface, int enabled);
+ROC_API int roc_sender_set_outgoing_address(roc_sender* sender,
+                                            roc_slot slot,
+                                            roc_interface iface,
+                                            const char* ip);
 
 /** Connect the sender interface to a remote receiver endpoint.
  *
  * Checks that the endpoint is valid and supported by the interface, allocates
  * a new outgoing port, and connects it to the remote endpoint.
  *
- * Each interface can be bound or connected only once.
- * May be called multiple times for different interfaces.
+ * Each slot's interface can be bound or connected only once.
+ * May be called multiple times for different slots or interfaces.
+ *
+ * Automaticaly initializes slot with given index if it's used first time.
  *
  * **Parameters**
  *  - \p sender should point to an opened sender
+ *  - \p slot specifies the sender slot
  *  - \p iface specifies the sender interface
  *  - \p endpoint specifies the receiver endpoint
  *
@@ -268,8 +228,10 @@ roc_sender_set_squashing_enabled(roc_sender* sender, roc_interface iface, int en
  *  - doesn't take or share the ownerhip of \p endpoint; it may be safely deallocated
  *    after the function returns
  */
-ROC_API int
-roc_sender_connect(roc_sender* sender, roc_interface iface, const roc_endpoint* endpoint);
+ROC_API int roc_sender_connect(roc_sender* sender,
+                               roc_slot slot,
+                               roc_interface iface,
+                               const roc_endpoint* endpoint);
 
 /** Encode samples to packets and transmit them to the receiver.
  *

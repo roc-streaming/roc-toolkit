@@ -18,12 +18,35 @@
 extern "C" {
 #endif
 
+/** Network slot.
+ *
+ * A peer (sender or receiver) may have multiple slots, which may be independently
+ * bound or connected. You can use multiple slots on sender to connect it to multiple
+ * receiver addresses, and you can use multiple slots on receiver to bind it to
+ * multiple receiver address.
+ *
+ * Slots are numbered from zero and are created implicitly. Just specify slot index
+ * when binding or connecting endpoint, and slot will be automatically created if it
+ * was not created yet.
+ *
+ * In simple cases, just use \c ROC_SLOT_DEFAULT.
+ *
+ * Each slot has its own set of interfaces, dedicated to different kinds of endpoints.
+ * See \ref roc_interface for details.
+ */
+typedef unsigned int roc_slot;
+
+/** Alias for the slot with index zero.
+ * \see roc_slot
+ */
+static const roc_slot ROC_SLOT_DEFAULT = 0;
+
 /** Network interface.
  *
- * Interface is a way to access the peer via network.
+ * Interface is a way to access the peer (sender or receiver) via network.
  *
- * A peer has multiple interfaces, one of each type. The user interconnects peers by
- * binding one of the first peer's interfaces to an URI and then connecting the
+ * Each peer slot has multiple interfaces, one of each type. The user interconnects
+ * peers by binding one of the first peer's interfaces to an URI and then connecting the
  * corresponding second peer's interface to that URI.
  *
  * A URI is represented by \ref roc_endpoint object.
@@ -31,22 +54,28 @@ extern "C" {
  * The interface defines the type of the communication with the remote peer and the
  * set of protocols (URI schemes) that can be used with this particular interface.
  *
- * \c ROC_INTERFACE_SIGNALING is a high-level interface that manages several lower-level
- * interfaces. When a signaling connection is established, peers negotiate connection
- * parameters and automatically setup lower-level \c ROC_INTERFACE_AUDIO_SOURCE,
- * \c ROC_INTERFACE_AUDIO_REPAIR, and \c ROC_INTERFACE_AUDIO_CONTROL interfaces.
+ * \c ROC_INTERFACE_CONSOLIDATED is an interface for high-level protocols which
+ * automatically manage all necessary communication: transport streams, control messages,
+ * parameter negotiation, etc. When a consolidated connection is established, peers may
+ * automatically setup lower-level interfaces like \c ROC_INTERFACE_AUDIO_SOURCE, \c
+ * ROC_INTERFACE_AUDIO_REPAIR, and \c ROC_INTERFACE_AUDIO_CONTROL.
+ *
+ * \c ROC_INTERFACE_CONSOLIDATED is mutually exclusive with lower-level interfaces.
+ * In most cases, the user needs only \c ROC_INTERFACE_CONSOLIDATED. However, the
+ * lower-level intarfaces may be useful if an external signaling mechanism is used or for
+ * compatibility with third-party software.
  *
  * \c ROC_INTERFACE_AUDIO_SOURCE and \c ROC_INTERFACE_AUDIO_REPAIR are lower-level
  * unidirectional transport-only interfaces. The first is used to transmit audio stream,
  * and the second is used to transmit redundant repair stream, if FEC is enabled.
  *
- * In most cases, the user needs only \c ROC_INTERFACE_SIGNALING. The lower-level
- * intarfaces may be useful if an external signaling mechanism is used or for
- * compatibility with third-party software.
+ * \c ROC_INTERFACE_AUDIO_CONTROL is a lower-level interface for control streams.
+ * If you use \c ROC_INTERFACE_AUDIO_SOURCE and \c ROC_INTERFACE_AUDIO_REPAIR, you
+ * usually also need to use \c ROC_INTERFACE_AUDIO_CONTROL to enable carrying additional
+ * non-transport information.
  */
 typedef enum roc_interface {
-    /** Interface for signaling (automatically manages source, repair and control
-     * interfaces).
+    /** Interface that consolidates all types of streams (source, repair, control).
      *
      * Allowed operations:
      *  - bind    (sender, receiver)
@@ -55,7 +84,7 @@ typedef enum roc_interface {
      * Allowed protocols:
      *  - \ref ROC_PROTO_RTSP
      */
-    ROC_INTERFACE_SIGNALING = 1,
+    ROC_INTERFACE_CONSOLIDATED = 1,
 
     /** Interface for audio stream source data.
      *
@@ -102,7 +131,7 @@ typedef enum roc_protocol {
     /** RTSP 1.0 (RFC 2326) or RTSP 2.0 (RFC 7826).
      *
      * Interfaces:
-     *  - \ref ROC_INTERFACE_SIGNALING
+     *  - \ref ROC_INTERFACE_CONSOLIDATED
      *
      * Transports:
      *   - for signaling: TCP
@@ -121,7 +150,7 @@ typedef enum roc_protocol {
      * Audio encodings:
      *   - \ref ROC_PACKET_ENCODING_AVP_L16
      *
-     * FEC codes:
+     * FEC encodings:
      *   - none
      */
     ROC_PROTO_RTP = 20,
@@ -137,8 +166,8 @@ typedef enum roc_protocol {
      * Audio encodings:
      *  - similar to \ref ROC_PROTO_RTP
      *
-     * FEC codes:
-     *  - \ref ROC_FEC_RS8M
+     * FEC encodings:
+     *  - \ref ROC_FEC_ENCODING_RS8M
      */
     ROC_PROTO_RTP_RS8M_SOURCE = 30,
 
@@ -150,8 +179,8 @@ typedef enum roc_protocol {
      * Transports:
      *  - UDP
      *
-     * FEC codes:
-     *  - \ref ROC_FEC_RS8M
+     * FEC encodings:
+     *  - \ref ROC_FEC_ENCODING_RS8M
      */
     ROC_PROTO_RS8M_REPAIR = 31,
 
@@ -166,8 +195,8 @@ typedef enum roc_protocol {
      * Audio encodings:
      *  - similar to \ref ROC_PROTO_RTP
      *
-     * FEC codes:
-     *  - \ref ROC_FEC_LDPC_STAIRCASE
+     * FEC encodings:
+     *  - \ref ROC_FEC_ENCODING_LDPC_STAIRCASE
      */
     ROC_PROTO_RTP_LDPC_SOURCE = 32,
 
@@ -179,8 +208,8 @@ typedef enum roc_protocol {
      * Transports:
      *  - UDP
      *
-     * FEC codes:
-     *  - \ref ROC_FEC_LDPC_STAIRCASE
+     * FEC encodings:
+     *  - \ref ROC_FEC_ENCODING_LDPC_STAIRCASE
      */
     ROC_PROTO_LDPC_REPAIR = 33,
 
@@ -195,32 +224,32 @@ typedef enum roc_protocol {
     ROC_PROTO_RTCP = 70
 } roc_protocol;
 
-/** Forward Error Correction code. */
-typedef enum roc_fec_code {
-    /** No FEC code.
+/** Forward Error Correction encoding. */
+typedef enum roc_fec_encoding {
+    /** No FEC encoding.
      * Compatible with \ref ROC_PROTO_RTP protocol.
      */
-    ROC_FEC_DISABLE = -1,
+    ROC_FEC_ENCODING_DISABLE = -1,
 
-    /** Default FEC code.
-     * Current default is \ref ROC_FEC_RS8M.
+    /** Default FEC encoding.
+     * Current default is \ref ROC_FEC_ENCODING_RS8M.
      */
-    ROC_FEC_DEFAULT = 0,
+    ROC_FEC_ENCODING_DEFAULT = 0,
 
-    /** Reed-Solomon FEC code (RFC 6865) with m=8.
+    /** Reed-Solomon FEC encoding (RFC 6865) with m=8.
      * Good for small block sizes (below 256 packets).
      * Compatible with \ref ROC_PROTO_RTP_RS8M_SOURCE and \ref ROC_PROTO_RS8M_REPAIR
      * protocols for source and repair endpoints.
      */
-    ROC_FEC_RS8M = 1,
+    ROC_FEC_ENCODING_RS8M = 1,
 
-    /** LDPC-Staircase FEC code (RFC 6816).
+    /** LDPC-Staircase FEC encoding (RFC 6816).
      * Good for large block sizes (above 1024 packets).
      * Compatible with \ref ROC_PROTO_RTP_LDPC_SOURCE and \ref ROC_PROTO_LDPC_REPAIR
      * protocols for source and repair endpoints.
      */
-    ROC_FEC_LDPC_STAIRCASE = 2
-} roc_fec_code;
+    ROC_FEC_ENCODING_LDPC_STAIRCASE = 2
+} roc_fec_encoding;
 
 /** Packet encoding. */
 typedef enum roc_packet_encoding {
@@ -246,7 +275,7 @@ typedef enum roc_channel_set {
     /** Stereo.
      * Two channels: left and right.
      */
-    ROC_CHANNEL_SET_STEREO = 2
+    ROC_CHANNEL_SET_STEREO = 0x3
 } roc_channel_set;
 
 /** Resampler backend.
@@ -407,22 +436,22 @@ typedef struct roc_sender_config {
      */
     roc_resampler_profile resampler_profile;
 
-    /** FEC code to use.
-     * If non-zero, the sender employs a FEC codec to generate redundant packets
+    /** FEC encoding to use.
+     * If non-zero, the sender employs a FEC encoding to generate redundant packets
      * which may be used on receiver to restore lost packets. This requires both
      * sender and receiver to use two separate source and repair endpoints.
      */
-    roc_fec_code fec_code;
+    roc_fec_encoding fec_encoding;
 
     /** Number of source packets per FEC block.
-     * Used if some FEC code is selected.
+     * Used if some FEC encoding is selected.
      * Larger number increases robustness but also increases latency.
      * If zero, default value is used.
      */
     unsigned int fec_block_source_packets;
 
     /** Number of repair packets per FEC block.
-     * Used if some FEC code is selected.
+     * Used if some FEC encoding is selected.
      * Larger number increases robustness but also increases traffic.
      * If zero, default value is used.
      */

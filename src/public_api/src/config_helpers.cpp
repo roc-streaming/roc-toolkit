@@ -104,15 +104,15 @@ bool sender_config_from_user(pipeline::SenderConfig& out, const roc_sender_confi
         return false;
     }
 
-    switch (in.fec_code) {
-    case ROC_FEC_DISABLE:
+    switch (in.fec_encoding) {
+    case ROC_FEC_ENCODING_DISABLE:
         out.fec_encoder.scheme = packet::FEC_None;
         break;
-    case ROC_FEC_DEFAULT:
-    case ROC_FEC_RS8M:
+    case ROC_FEC_ENCODING_DEFAULT:
+    case ROC_FEC_ENCODING_RS8M:
         out.fec_encoder.scheme = packet::FEC_ReedSolomon_M8;
         break;
-    case ROC_FEC_LDPC_STAIRCASE:
+    case ROC_FEC_ENCODING_LDPC_STAIRCASE:
         out.fec_encoder.scheme = packet::FEC_LDPC_Staircase;
         break;
     default:

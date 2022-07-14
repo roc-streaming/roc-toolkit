@@ -90,14 +90,10 @@ bool UdpSenderPort::open() {
         return false;
     }
 
-    if (config_.broadcast_enabled) {
-        roc_log(LogDebug, "udp sender: %s: setting broadcast flag", descriptor());
-
-        if (int err = uv_udp_set_broadcast(&handle_, 1)) {
-            roc_log(LogError, "udp sender: %s: uv_udp_set_broadcast(): [%s] %s",
-                    descriptor(), uv_err_name(err), uv_strerror(err));
-            return false;
-        }
+    if (int err = uv_udp_set_broadcast(&handle_, 1)) {
+        roc_log(LogError, "udp sender: %s: uv_udp_set_broadcast(): [%s] %s", descriptor(),
+                uv_err_name(err), uv_strerror(err));
+        return false;
     }
 
     int addrlen = (int)config_.bind_address.slen();

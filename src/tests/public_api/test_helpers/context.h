@@ -18,7 +18,7 @@
 #include "roc/context.h"
 
 namespace roc {
-namespace library {
+namespace api {
 namespace test {
 
 class Context : public core::NonCopyable<> {
@@ -45,7 +45,7 @@ private:
 };
 
 } // namespace test
-} // namespace library
+} // namespace api
 } // namespace roc
 
 #endif // ROC_PUBLIC_API_TEST_HELPERS_CONTEXT_H_

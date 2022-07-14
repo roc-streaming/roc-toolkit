@@ -39,27 +39,40 @@ public:
     bool valid();
 
     //! Set multicast interface address for given endpoint type.
-    bool set_multicast_group(address::Interface iface, const char* ip);
+    bool set_multicast_group(size_t slot_index, address::Interface iface, const char* ip);
 
     //! Bind peer to local endpoint.
-    bool bind(address::Interface iface, address::EndpointUri& uri);
+    bool bind(size_t slot_index, address::Interface iface, address::EndpointUri& uri);
 
     //! Get receiver source.
     sndio::ISource& source();
 
 private:
-    struct InterfacePort {
+    struct Port {
         netio::UdpReceiverConfig config;
         netio::NetworkLoop::PortHandle handle;
 
-        InterfacePort()
+        Port()
             : handle(NULL) {
         }
     };
 
+    struct Slot {
+        pipeline::ReceiverLoop::EndpointSetHandle endpoint_set;
+        Port ports[address::Iface_Max];
+
+        Slot()
+            : endpoint_set(NULL) {
+        }
+    };
+
+    bool check_compatibility_(address::Interface iface, const address::EndpointUri& uri);
+    void update_compatibility_(address::Interface iface, const address::EndpointUri& uri);
+
+    Slot* get_slot_(size_t slot_index);
+
     virtual void schedule_task_processing(pipeline::PipelineLoop&,
                                           core::nanoseconds_t delay);
-
     virtual void cancel_task_processing(pipeline::PipelineLoop&);
 
     core::Mutex mutex_;
@@ -67,11 +80,14 @@ private:
     rtp::FormatMap format_map_;
 
     pipeline::ReceiverLoop pipeline_;
-    pipeline::ReceiverLoop::EndpointSetHandle endpoint_set_;
-
-    InterfacePort ports_[address::Iface_Max];
-
     ctl::ControlLoop::Tasks::PipelineProcessing processing_task_;
+
+    core::Array<Slot, 8> slots_;
+
+    bool used_interfaces_[address::Iface_Max];
+    address::Protocol used_protocols_[address::Iface_Max];
+
+    bool valid_;
 };
 
 } // namespace peer
