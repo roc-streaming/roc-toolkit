@@ -80,16 +80,99 @@ core::BufferFactory<uint8_t> byte_buffer_factory(allocator, MaxBufSize, true);
 packet::PacketFactory packet_factory(allocator, true);
 rtp::FormatMap format_map;
 
-} // namespace
+SenderConfig sender_config(int flags) {
+    SenderConfig config;
 
-TEST_GROUP(sender_sink_receiver_source) {
-    bool is_fec_supported(int flags) { if (flags & FlagReedSolomon) {
+    config.input_sample_spec = audio::SampleSpec(SampleRate, ChMask);
+    config.packet_length = SamplesPerPacket * core::Second / SampleRate;
+    config.internal_frame_length = MaxBufDuration;
+
+    if (flags & FlagReedSolomon) {
+        config.fec_encoder.scheme = packet::FEC_ReedSolomon_M8;
+    }
+
+    if (flags & FlagLDPC) {
+        config.fec_encoder.scheme = packet::FEC_LDPC_Staircase;
+    }
+
+    config.fec_writer.n_source_packets = SourcePackets;
+    config.fec_writer.n_repair_packets = RepairPackets;
+
+    config.interleaving = (flags & FlagInterleaving);
+    config.timing = false;
+    config.poisoning = true;
+    config.profiling = true;
+
+    return config;
+}
+
+ReceiverConfig receiver_config() {
+    ReceiverConfig config;
+
+    config.common.output_sample_spec = audio::SampleSpec(SampleRate, ChMask);
+    config.common.internal_frame_length = MaxBufDuration;
+
+    config.common.resampling = false;
+    config.common.timing = false;
+    config.common.poisoning = true;
+
+    config.default_session.target_latency = Latency * core::Second / SampleRate;
+    config.default_session.watchdog.no_playback_timeout =
+        Timeout * core::Second / SampleRate;
+
+    return config;
+}
+
+address::Protocol select_source_proto(int flags) {
+    if (flags & FlagReedSolomon) {
+        return address::Proto_RTP_RS8M_Source;
+    }
+    if (flags & FlagLDPC) {
+        return address::Proto_RTP_LDPC_Source;
+    }
+    return address::Proto_RTP;
+}
+
+address::Protocol select_repair_proto(int flags) {
+    if (flags & FlagReedSolomon) {
+        return address::Proto_RS8M_Repair;
+    }
+    if (flags & FlagLDPC) {
+        return address::Proto_LDPC_Repair;
+    }
+    return address::Proto_None;
+}
+
+bool is_fec_supported(int flags) {
+    if (flags & FlagReedSolomon) {
         return fec::CodecMap::instance().is_supported(packet::FEC_ReedSolomon_M8);
+    }
+    if (flags & FlagLDPC) {
+        return fec::CodecMap::instance().is_supported(packet::FEC_LDPC_Staircase);
+    }
+    return true;
 }
-if (flags & FlagLDPC) {
-    return fec::CodecMap::instance().is_supported(packet::FEC_LDPC_Staircase);
-}
-return true;
+
+void filter_packets(int flags, packet::IReader& reader, packet::IWriter& writer) {
+    size_t counter = 0;
+
+    while (packet::PacketPtr pp = reader.read()) {
+        if ((flags & FlagLosses) && counter++ % (SourcePackets + RepairPackets) == 1) {
+            continue;
+        }
+
+        if (pp->flags() & packet::Packet::FlagRepair) {
+            if (flags & FlagDropRepair) {
+                continue;
+            }
+        } else {
+            if (flags & FlagDropSource) {
+                continue;
+            }
+        }
+
+        writer.write(pp);
+    }
 }
 
 void send_receive(int flags, size_t num_sessions) {
@@ -180,92 +263,9 @@ void send_receive(int flags, size_t num_sessions) {
     }
 }
 
-void filter_packets(int flags, packet::IReader& reader, packet::IWriter& writer) {
-    size_t counter = 0;
+} // namespace
 
-    while (packet::PacketPtr pp = reader.read()) {
-        if ((flags & FlagLosses) && counter++ % (SourcePackets + RepairPackets) == 1) {
-            continue;
-        }
-
-        if (pp->flags() & packet::Packet::FlagRepair) {
-            if (flags & FlagDropRepair) {
-                continue;
-            }
-        } else {
-            if (flags & FlagDropSource) {
-                continue;
-            }
-        }
-
-        writer.write(pp);
-    }
-}
-
-address::Protocol select_source_proto(int flags) {
-    if (flags & FlagReedSolomon) {
-        return address::Proto_RTP_RS8M_Source;
-    }
-    if (flags & FlagLDPC) {
-        return address::Proto_RTP_LDPC_Source;
-    }
-    return address::Proto_RTP;
-}
-
-address::Protocol select_repair_proto(int flags) {
-    if (flags & FlagReedSolomon) {
-        return address::Proto_RS8M_Repair;
-    }
-    if (flags & FlagLDPC) {
-        return address::Proto_LDPC_Repair;
-    }
-    return address::Proto_None;
-}
-
-SenderConfig sender_config(int flags) {
-    SenderConfig config;
-
-    config.input_sample_spec = audio::SampleSpec(SampleRate, ChMask);
-    config.packet_length = SamplesPerPacket * core::Second / SampleRate;
-    config.internal_frame_length = MaxBufDuration;
-
-    if (flags & FlagReedSolomon) {
-        config.fec_encoder.scheme = packet::FEC_ReedSolomon_M8;
-    }
-
-    if (flags & FlagLDPC) {
-        config.fec_encoder.scheme = packet::FEC_LDPC_Staircase;
-    }
-
-    config.fec_writer.n_source_packets = SourcePackets;
-    config.fec_writer.n_repair_packets = RepairPackets;
-
-    config.interleaving = (flags & FlagInterleaving);
-    config.timing = false;
-    config.poisoning = true;
-    config.profiling = true;
-
-    return config;
-}
-
-ReceiverConfig receiver_config() {
-    ReceiverConfig config;
-
-    config.common.output_sample_spec = audio::SampleSpec(SampleRate, ChMask);
-    config.common.internal_frame_length = MaxBufDuration;
-
-    config.common.resampling = false;
-    config.common.timing = false;
-    config.common.poisoning = true;
-
-    config.default_session.target_latency = Latency * core::Second / SampleRate;
-    config.default_session.watchdog.no_playback_timeout =
-        Timeout * core::Second / SampleRate;
-
-    return config;
-}
-}
-;
+TEST_GROUP(sender_sink_receiver_source) {};
 
 TEST(sender_sink_receiver_source, bare) {
     send_receive(FlagNone, 1);
