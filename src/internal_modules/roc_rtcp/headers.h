@@ -1260,6 +1260,7 @@ public:
         return (header_.len_bytes() - sizeof(header_)) / sizeof(XrDlrrSubblock);
     }
 
+    //! Get DLRR sub-block by index.
     const XrDlrrSubblock& get_subblock(const size_t i) const {
         return get_block_by_index<const XrDlrrSubblock>(this, i, num_subblocks(),
                                                         "rtcp xr_dlrr");

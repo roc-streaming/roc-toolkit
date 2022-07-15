@@ -29,7 +29,7 @@ public:
     //! Constructor with sample rate and channel mask.
     SampleSpec(size_t sample_rate, packet::channel_mask_t channel_mask);
 
-    //! @defgroup Accessors
+    //! @name Getters and setters
     //! @{
 
     //! Get sample rate.
@@ -49,7 +49,7 @@ public:
 
     // @}
 
-    //! @defgroup Nanoseconds
+    //! @name Nanosecond duration
     //! @{
 
     //! Convert nanoseconds duration to number of samples per channel.
@@ -65,7 +65,8 @@ public:
     core::nanoseconds_t samples_overall_2_ns(size_t n_samples) const;
 
     // @}
-    //! @defgroup RTP
+
+    //! @name RTP timestamp
     //! @{
 
     //! Convert nanoseconds delta to RTP timestamp delta.
@@ -78,6 +79,7 @@ public:
     //!  Same as samples_per_chan_2_ns(), but supports negative deltas.
     core::nanoseconds_t rtp_timestamp_2_ns(packet::timestamp_diff_t rtp_delta) const;
     size_t ntp_to_soa(const packet::ntp_timestamp_t ntp) const;
+
     // @}
 
 private:

@@ -39,14 +39,26 @@ namespace roc {
 
 namespace roc {
   //! @namespace roc::rtp
-  //! RTP and RTCP support.
+  //! RTP protocol support.
   namepsace rtp {}
+}
+
+namespace roc {
+  //! @namespace roc::rtcp
+  //! RTCP protocol support.
+  namepsace rtcp {}
 }
 
 namespace roc {
   //! @namespace roc::fec
   //! FEC support.
   namepsace fec {}
+}
+
+namespace roc {
+  //! @namespace roc::sdp
+  //! SDP protocol support.
+  namepsace sdp {}
 }
 
 namespace roc {

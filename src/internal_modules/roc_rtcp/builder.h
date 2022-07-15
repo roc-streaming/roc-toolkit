@@ -29,7 +29,7 @@ public:
     //! It will write data to the given slice.
     explicit Builder(core::Slice<uint8_t>& data);
 
-    //! @defgroup SR
+    //! @name Sender Report (SR)
     //! @{
 
     //! Start SR packet inside compound RTCP packet.
@@ -43,7 +43,7 @@ public:
 
     //! @}
 
-    //! @defgroup RR
+    //! @name Receiver Report (RR)
     //! @{
 
     //! Start RR packet inside compound RTCP packet.
@@ -57,7 +57,7 @@ public:
 
     //! @}
 
-    //! @defgroup XR
+    //! @name Extended Report (XR)
     //! @{
 
     //! Start XR packet inside compound RTCP packet.
@@ -80,7 +80,7 @@ public:
 
     //! @}
 
-    //! @defgroup SDES
+    //! @name Session Description (SDES)
     //! @{
 
     //! Start SDES packet inside compound RTCP packet.
@@ -100,7 +100,7 @@ public:
 
     //! @}
 
-    //! @defgroup BYE
+    //! @name Goodbye message (BYE)
     //! @{
 
     //! Start BYE packet inside compound RTCP packet.

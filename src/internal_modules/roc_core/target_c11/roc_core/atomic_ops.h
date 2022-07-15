@@ -19,7 +19,7 @@ namespace core {
 //! This wrapper exists because on non-C11 compilers we use another implementation.
 class AtomicOps {
 public:
-    //! @defgroup Fence
+    //! @name Memory fence
     //! @{
 
     //! Acquire memory barrier.
@@ -39,7 +39,7 @@ public:
 
     //! @}
 
-    //! @defgroup Load
+    //! @name Load
     //! @{
 
     //! Atomic load (no barrier).
@@ -59,7 +59,7 @@ public:
 
     //! @}
 
-    //! @defgroup Store
+    //! @name Store
     //! @{
 
     //! Atomic store (no barrier).
@@ -79,7 +79,7 @@ public:
 
     //! @}
 
-    //! @defgroup Exchange
+    //! @name Exchange
     //! @{
 
     //! Atomic exchange (no barrier).
@@ -109,7 +109,7 @@ public:
 
     //! @}
 
-    //! @defgroup CAS
+    //! @name CAS
     //! @{
 
     //! Atomic compare-and-swap (no barrier).
@@ -149,7 +149,7 @@ public:
 
     //! @}
 
-    //! @defgroup Addition
+    //! @name Addition
     //! @{
 
     //! Atomic fetch-add (no barrier).
@@ -174,7 +174,7 @@ public:
 
     //! @}
 
-    //! @defgroup Subtraction
+    //! @name Subtraction
     //! @{
 
     //! Atomic fetch-sub (no barrier).
@@ -199,7 +199,7 @@ public:
 
     //! @}
 
-    //! @defgroup And
+    //! @name Bitwise AND
     //! @{
 
     //! Atomic fetch-and (no barrier).
@@ -224,7 +224,7 @@ public:
 
     //! @}
 
-    //! @defgroup Or
+    //! @name Bitwise OR
     //! @{
 
     //! Atomic fetch-or (no barrier).
@@ -249,7 +249,7 @@ public:
 
     //! @}
 
-    //! @defgroup Xor
+    //! @name Bitwise XOR
     //! @{
 
     //! Atomic fetch-xor (no barrier).
