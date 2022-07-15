@@ -113,6 +113,10 @@ roc_config
 
    #include <roc/config.h>
 
+.. doxygentypedef:: roc_slot
+
+.. doxygenvariable:: ROC_SLOT_DEFAULT
+
 .. doxygentypedef:: roc_interface
    :outline:
 
@@ -123,10 +127,10 @@ roc_config
 
 .. doxygenenum:: roc_protocol
 
-.. doxygentypedef:: roc_fec_code
+.. doxygentypedef:: roc_fec_encoding
    :outline:
 
-.. doxygenenum:: roc_fec_code
+.. doxygenenum:: roc_fec_encoding
 
 .. doxygentypedef:: roc_packet_encoding
    :outline:

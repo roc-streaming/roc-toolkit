@@ -1,8 +1,5 @@
 .\" Man page generated from reStructuredText.
 .
-.TH "ROC-SEND" "1" "2021" "Roc Toolkit 0.1" "Roc Toolkit"
-.SH NAME
-roc-send \- send real-time audio
 .
 .nr rst2man-indent-level 0
 .
@@ -30,6 +27,9 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
+.TH "ROC-SEND" "1" "2022" "Roc Toolkit 0.1" "Roc Toolkit"
+.SH NAME
+roc-send \- send real-time audio
 .SH SYNOPSIS
 .sp
 \fBroc\-send\fP \fIOPTIONS\fP
@@ -39,16 +39,16 @@ Read audio stream from an audio device or file and send it to remote receiver.
 .SS Options
 .INDENT 0.0
 .TP
-.B \-h\fP,\fB  \-\-help
+.B  \-h\fP,\fB  \-\-help
 Print help and exit
 .TP
-.B \-V\fP,\fB  \-\-version
+.B  \-V\fP,\fB  \-\-version
 Print version and exit
 .TP
-.B \-v\fP,\fB  \-\-verbose
+.B  \-v\fP,\fB  \-\-verbose
 Increase verbosity level (may be used multiple times)
 .TP
-.B \-L\fP,\fB  \-\-list\-supported
+.B  \-L\fP,\fB  \-\-list\-supported
 list supported schemes and formats
 .TP
 .BI \-i\fP,\fB  \-\-input\fB= IO_URI
@@ -63,8 +63,8 @@ Remote source endpoint
 .BI \-r\fP,\fB  \-\-repair\fB= ENDPOINT_URI
 Remote repair endpoint
 .TP
-.B \-\-broadcast
-Allow broadcast destination port addresses (default=off)
+.BI \-c\fP,\fB  \-\-control\fB= ENDPOINT_URI
+Remote control endpoint
 .TP
 .BI \-\-nbsrc\fB= INT
 Number of source packets in FEC block
@@ -87,30 +87,30 @@ Duration of the internal frames, TIME units
 .BI \-\-rate\fB= INT
 Override input sample rate, Hz
 .TP
-.B \-\-no\-resampling
+.B  \-\-no\-resampling
 Disable resampling  (default=off)
 .TP
 .BI \-\-resampler\-backend\fB= ENUM
-Resampler backend  (possible values="builtin" default=\(gabuiltin\(aq)
+Resampler backend  (possible values="default", "builtin", "speex" default=\(gadefault\(aq)
 .TP
 .BI \-\-resampler\-profile\fB= ENUM
 Resampler profile  (possible values="low", "medium", "high" default=\(gamedium\(aq)
 .TP
-.B \-\-interleaving
+.B  \-\-interleaving
 Enable packet interleaving  (default=off)
 .TP
-.B \-\-poisoning
+.B  \-\-poisoning
 Enable uninitialized memory poisoning (default=off)
 .TP
-.B \-\-profiling
-Enable self profiling (default=off)
+.B  \-\-profiling
+Enable self profiling  (default=off)
 .TP
 .BI \-\-color\fB= ENUM
 Set colored logging mode for stderr output (possible values="auto", "always", "never" default=\(gaauto\(aq)
 .UNINDENT
 .SS Endpoint URI
 .sp
-\fB\-\-source\fP and \fB\-\-repair\fP options define network endpoints to which to send the traffic.
+\fB\-\-source\fP, \fB\-\-repair\fP, and \fB\-\-control\fP options define network endpoints to which to send the traffic.
 .sp
 \fIENDPOINT_URI\fP should have the following form:
 .sp
@@ -126,6 +126,8 @@ Examples:
 \fBrtp://127.0.0.1:123\fP
 .IP \(bu 2
 \fBrtp://[::1]:123\fP
+.IP \(bu 2
+\fBrtcp://10.9.8.3:123\fP
 .UNINDENT
 .sp
 The list of supported protocols can be retrieved using \fB\-\-list\-supported\fP option.
@@ -138,7 +140,7 @@ The path and query fields are allowed only for protocols that support them, e.g.
 .sp
 If FEC is enabled, a pair of a source and repair endpoints should be provided. The two endpoints should use compatible protocols, e.g. \fBrtp+rs8m://\fP for source endpoint, and \fBrs8m://\fP for repair endpoint. If FEC is disabled, a single source endpoint should be provided.
 .sp
-Supported configurations:
+Supported source and repair protocols:
 .INDENT 0.0
 .IP \(bu 2
 source \fBrtp://\fP, repair none (bare RTP without FEC)
@@ -146,6 +148,14 @@ source \fBrtp://\fP, repair none (bare RTP without FEC)
 source \fBrtp+rs8m://\fP, repair \fBrs8m://\fP (RTP with Reed\-Solomon FEC)
 .IP \(bu 2
 source \fBrtp+ldpc://\fP, repair \fBldpc://\fP (RTP with LDPC\-Staircase FEC)
+.UNINDENT
+.sp
+In addition, it is recommended to provide control endpoint. It is used to exchange non\-media information used to identify session, carry feedback, etc. If no control endpoint is provided, session operates in reduced fallback mode, which may be less robust and may not support all features.
+.sp
+Supported control protocols:
+.INDENT 0.0
+.IP \(bu 2
+\fBrtcp://\fP
 .UNINDENT
 .SS IO URI
 .sp
@@ -198,9 +208,11 @@ The \fB\-\-input\-format\fP option can be used to force the input file format. I
 The path component of the provided URI is \fI\%percent\-decoded\fP\&. For convenience, unencoded characters are allowed as well, except that \fB%\fP should be always encoded as \fB%25\fP\&.
 .sp
 For example, the file named \fB/foo/bar%/[baz]\fP may be specified using either of the following URIs: \fBfile:///foo%2Fbar%25%2F%5Bbaz%5D\fP and \fBfile:///foo/bar%25/[baz]\fP\&.
-.SS Broadcast address
+.SS Multiple slots
 .sp
-This tool follows the common convention is to forbid traffic to broadcast addresses unless allowed excplicitly, to prevent accidental flood. To allow sending packets to broadcast source or repair endpoints, use \fB\-\-broadcast\fP option.
+Multiple sets of endpoints can be specified to send media to multiple addresses.
+.sp
+Such endpoint sets are called slots. All slots should have the same set of endpoint types (source, repair, etc) and should use the same protocols for them.
 .SS Time units
 .INDENT 0.0
 .TP
@@ -210,7 +222,7 @@ This tool follows the common convention is to forbid traffic to broadcast addres
 .SH EXAMPLES
 .SS Endpoint examples
 .sp
-Send file to one bare RTP endpoint:
+Send file to receiver with one bare RTP endpoint:
 .INDENT 0.0
 .INDENT 3.5
 .sp
@@ -222,7 +234,7 @@ $ roc\-send \-vv \-i file:./input.wav \-s rtp://192.168.0.3:10001
 .UNINDENT
 .UNINDENT
 .sp
-Send file to two IPv4 source and repair endpoints:
+Send file to receiver with two IPv4 source and repair endpoints:
 .INDENT 0.0
 .INDENT 3.5
 .sp
@@ -234,7 +246,7 @@ $ roc\-send \-vv \-i file:./input.wav \-s rtp+rs8m://192.168.0.3:10001 \-r rs8m:
 .UNINDENT
 .UNINDENT
 .sp
-Send file to two IPv6 source and repair endpoints:
+Send file to receiver with two IPv6 source and repair endpoints:
 .INDENT 0.0
 .INDENT 3.5
 .sp
@@ -246,13 +258,29 @@ $ roc\-send \-vv \-i file:./input.wav \-s rtp+rs8m://[2001:db8::]:10001 \-r rs8m
 .UNINDENT
 .UNINDENT
 .sp
-Send file to two broadcast endpoints:
+Send file to receiver with three IPv4 source, repair, and control endpoints:
 .INDENT 0.0
 .INDENT 3.5
 .sp
 .nf
 .ft C
-$ roc\-send \-vv \-i file:./input.wav \-s rtp+rs8m://192.168.0.3:10001 \-r rs8m://192.168.0.3:10002 \-\-broadcast
+$ roc\-send \-vv \-i file:./input.wav \e
+    \-s rtp+rs8m://192.168.0.3:10001 \-r rs8m://192.168.0.3:10002 \-c rtcp://192.168.0.3:10003
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Send file to two receivers, each with three endpoints:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+$ roc\-send \-vv \e
+    \-i file:./input.wav \e
+    \-s rtp+rs8m://192.168.0.3:10001 \-r rs8m://192.168.0.3:10002 \-c rtcp://192.168.0.3:10003 \e
+    \-s rtp+rs8m://198.214.0.7:10001 \-r rs8m://198.214.0.7:10002 \-c rtcp://198.214.0.7:10003
 .ft P
 .fi
 .UNINDENT
@@ -379,6 +407,6 @@ Please report any bugs found via GitHub (\fI\%https://github.com/roc\-streaming/
 .sp
 See \fI\%authors\fP page on the website for a list of maintainers and contributors.
 .SH COPYRIGHT
-2021, Roc Streaming authors
+2022, Roc Streaming authors
 .\" Generated by docutils manpage writer.
 .

@@ -24,6 +24,7 @@ Options
 --backup-format=FILE_FORMAT  Force backup file format
 -s, --source=ENDPOINT_URI    Local source endpoint
 -r, --repair=ENDPOINT_URI    Local repair endpoint
+-c, --control=ENDPOINT_URI   Local control endpoint
 --miface=MIFACE              IPv4 or IPv6 address of the network interface on which to join the multicast group
 --sess-latency=STRING        Session target latency, TIME units
 --min-latency=STRING         Session minimum latency, TIME units
@@ -37,18 +38,18 @@ Options
 --frame-length=TIME          Duration of the internal frames, TIME units
 --rate=INT                   Override output sample rate, Hz
 --no-resampling              Disable resampling  (default=off)
---resampler-backend=ENUM     Resampler backend  (possible values="builtin" default=`builtin')
+--resampler-backend=ENUM     Resampler backend  (possible values="default", "builtin", "speex" default=`default')
 --resampler-profile=ENUM     Resampler profile  (possible values="low", "medium", "high" default=`medium')
 -1, --oneshot                Exit when last connected client disconnects (default=off)
 --poisoning                  Enable uninitialized memory poisoning (default=off)
---profiling                  Enable self profiling (default=off)
+--profiling                  Enable self profiling  (default=off)
 --beeping                    Enable beeping on packet loss  (default=off)
 --color=ENUM                 Set colored logging mode for stderr output (possible values="auto", "always", "never" default=`auto')
 
 Endpoint URI
 ------------
 
-``--source`` and ``--repair`` options define network endpoints on which to receive the traffic.
+``--source``, ``--repair``, and ``--control`` options define network endpoints on which to receive the traffic.
 
 *ENDPOINT_URI* should have the following form:
 
@@ -60,6 +61,7 @@ Examples:
 - ``rtp+rs8m://localhost:123``
 - ``rtp://0.0.0.0:123``
 - ``rtp://[::1]:123``
+- ``rtcp://0.0.0.0:123``
 
 The list of supported protocols can be retrieved using ``--list-supported`` option.
 
@@ -71,11 +73,17 @@ The path and query fields are allowed only for protocols that support them, e.g.
 
 If FEC is enabled on sender, a pair of a source and repair endpoints should be provided. The two endpoints should use compatible protocols, e.g. ``rtp+rs8m://`` for source endpoint, and ``rs8m://`` for repair endpoint. If FEC is disabled, a single source endpoint should be provided.
 
-Supported configurations:
+Supported source and repair protocols:
 
 - source ``rtp://``, repair none (bare RTP without FEC)
 - source ``rtp+rs8m://``, repair ``rs8m://`` (RTP with Reed-Solomon FEC)
 - source ``rtp+ldpc://``, repair ``ldpc://`` (RTP with LDPC-Staircase FEC)
+
+In addition, it is recommended to provide control endpoint. It is used to exchange non-media information used to identify session, carry feedback, etc. If no control endpoint is provided, session operates in reduced fallback mode, which may be less robust and may not support all features.
+
+Supported control protocols:
+
+- ``rtcp://``
 
 IO URI
 ------
@@ -113,13 +121,6 @@ The path component of the provided URI is `percent-decoded <https://en.wikipedia
 
 For example, the file named ``/foo/bar%/[baz]`` may be specified using either of the following URIs: ``file:///foo%2Fbar%25%2F%5Bbaz%5D`` and ``file:///foo/bar%25/[baz]``.
 
-Backup audio
-------------
-
-If ``--backup`` option is given, it defines input audio device or file which will be played when there are no connected sessions. If it's not given, silence is played instead.
-
-Backup file is restarted from the beginning each time when the last session disconnect. The playback of of the backup file is automatically looped.
-
 Multicast interface
 -------------------
 
@@ -128,6 +129,20 @@ If ``--miface`` option is present, it defines an IP address of the network inter
 It's not possible to receive multicast traffic without joining a multicast group. The user should either provide multicast interface, or join the group manually using foreign tools.
 
 *MIFACE* should be an IP address of the network interface on which to join the multicast group. It may be ``0.0.0.0`` (for IPv4) or ``::`` (for IPv6) to join the multicast group on all available interfaces.
+
+Multiple slots
+--------------
+
+Multiple sets of endpoints can be specified to retrieve media from multiple addresses.
+
+Such endpoint sets are called slots. All slots should have the same set of endpoint types (source, repair, etc) and should use the same protocols for them. All slots should also have their own multicast interface option, if it's used.
+
+Backup audio
+------------
+
+If ``--backup`` option is given, it defines input audio device or file which will be played when there are no connected sessions. If it's not given, silence is played instead.
+
+Backup file is restarted from the beginning each time when the last session disconnect. The playback of of the backup file is automatically looped.
 
 Time units
 ----------
@@ -147,29 +162,44 @@ Bind one bare RTP endpoint on all IPv4 interfaces:
 
     $ roc-recv -vv -s rtp://0.0.0.0:10001
 
-Bind two endpoints to all IPv4 interfaces (but not IPv6):
+Bind two source and repair endpoints to all IPv4 interfaces (but not IPv6):
 
 .. code::
 
     $ roc-recv -vv -s rtp+rs8m://0.0.0.0:10001 -r rs8m://0.0.0.0:10002
 
-Bind two endpoints to all IPv6 interfaces (but not IPv4):
+Bind two source and repair endpoints to all IPv6 interfaces (but not IPv4):
 
 .. code::
 
     $ roc-recv -vv -s rtp+rs8m://[::]:10001 -r rs8m://[::]:10002
 
-Bind two endpoints to a particular network interface:
+Bind two source and repair endpoints to a particular network interface:
 
 .. code::
 
     $ roc-recv -vv -s rtp+rs8m://192.168.0.3:10001 -r rs8m://192.168.0.3:10002
 
-Bind two endpoints to a particular multicast address and join to a multicast group on a particular network interface:
+Bind three source, repair, and control endpoints:
+
+.. code::
+
+    $ roc-recv -vv \
+        -s rtp+rs8m://192.168.0.3:10001 -r rs8m://192.168.0.3:10002 -c rtcp://192.168.0.3:10003
+
+Bind two source and repair endpoints to a particular multicast address and join to a multicast group on a particular network interface:
 
 .. code::
 
     $ roc-recv -vv -s rtp+rs8m://225.1.2.3:10001 -r rs8m://225.1.2.3:10002 --miface 192.168.0.3
+
+Bind two sets of source, repair, and control endpoints:
+
+.. code::
+
+    $ roc-recv -vv \
+        -s rtp+rs8m://192.168.0.3:10001 -r rs8m://192.168.0.3:10002 -c rtcp://192.168.0.3:10003 \
+        -s rtp+rs8m://198.214.0.7:10001 -r rs8m://198.214.0.7:10002 -c rtcp://198.214.0.7:10003
 
 I/O examples
 ------------

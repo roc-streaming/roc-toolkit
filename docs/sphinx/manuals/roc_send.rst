@@ -22,6 +22,7 @@ Options
 --input-format=FILE_FORMAT  Force input file format
 -s, --source=ENDPOINT_URI   Remote source endpoint
 -r, --repair=ENDPOINT_URI   Remote repair endpoint
+-c, --control=ENDPOINT_URI  Remote control endpoint
 --nbsrc=INT                 Number of source packets in FEC block
 --nbrpr=INT                 Number of repair packets in FEC block
 --packet-length=STRING      Outgoing packet length, TIME units
@@ -30,17 +31,17 @@ Options
 --frame-length=TIME         Duration of the internal frames, TIME units
 --rate=INT                  Override input sample rate, Hz
 --no-resampling             Disable resampling  (default=off)
---resampler-backend=ENUM    Resampler backend  (possible values="builtin" default=`builtin')
+--resampler-backend=ENUM    Resampler backend  (possible values="default", "builtin", "speex" default=`default')
 --resampler-profile=ENUM    Resampler profile  (possible values="low", "medium", "high" default=`medium')
 --interleaving              Enable packet interleaving  (default=off)
 --poisoning                 Enable uninitialized memory poisoning (default=off)
---profiling                 Enable self profiling (default=off)
+--profiling                 Enable self profiling  (default=off)
 --color=ENUM                Set colored logging mode for stderr output (possible values="auto", "always", "never" default=`auto')
 
 Endpoint URI
 ------------
 
-``--source`` and ``--repair`` options define network endpoints to which to send the traffic.
+``--source``, ``--repair``, and ``--control`` options define network endpoints to which to send the traffic.
 
 *ENDPOINT_URI* should have the following form:
 
@@ -52,6 +53,7 @@ Examples:
 - ``rtp+rs8m://localhost:123``
 - ``rtp://127.0.0.1:123``
 - ``rtp://[::1]:123``
+- ``rtcp://10.9.8.3:123``
 
 The list of supported protocols can be retrieved using ``--list-supported`` option.
 
@@ -63,11 +65,17 @@ The path and query fields are allowed only for protocols that support them, e.g.
 
 If FEC is enabled, a pair of a source and repair endpoints should be provided. The two endpoints should use compatible protocols, e.g. ``rtp+rs8m://`` for source endpoint, and ``rs8m://`` for repair endpoint. If FEC is disabled, a single source endpoint should be provided.
 
-Supported configurations:
+Supported source and repair protocols:
 
 - source ``rtp://``, repair none (bare RTP without FEC)
 - source ``rtp+rs8m://``, repair ``rs8m://`` (RTP with Reed-Solomon FEC)
 - source ``rtp+ldpc://``, repair ``ldpc://`` (RTP with LDPC-Staircase FEC)
+
+In addition, it is recommended to provide control endpoint. It is used to exchange non-media information used to identify session, carry feedback, etc. If no control endpoint is provided, session operates in reduced fallback mode, which may be less robust and may not support all features.
+
+Supported control protocols:
+
+- ``rtcp://``
 
 IO URI
 ------
@@ -104,6 +112,13 @@ The path component of the provided URI is `percent-decoded <https://en.wikipedia
 
 For example, the file named ``/foo/bar%/[baz]`` may be specified using either of the following URIs: ``file:///foo%2Fbar%25%2F%5Bbaz%5D`` and ``file:///foo/bar%25/[baz]``.
 
+Multiple slots
+--------------
+
+Multiple sets of endpoints can be specified to send media to multiple addresses.
+
+Such endpoint sets are called slots. All slots should have the same set of endpoint types (source, repair, etc) and should use the same protocols for them.
+
 Time units
 ----------
 
@@ -116,23 +131,39 @@ EXAMPLES
 Endpoint examples
 -----------------
 
-Send file to one bare RTP endpoint:
+Send file to receiver with one bare RTP endpoint:
 
 .. code::
 
     $ roc-send -vv -i file:./input.wav -s rtp://192.168.0.3:10001
 
-Send file to two IPv4 source and repair endpoints:
+Send file to receiver with two IPv4 source and repair endpoints:
 
 .. code::
 
     $ roc-send -vv -i file:./input.wav -s rtp+rs8m://192.168.0.3:10001 -r rs8m://192.168.0.3:10002
 
-Send file to two IPv6 source and repair endpoints:
+Send file to receiver with two IPv6 source and repair endpoints:
 
 .. code::
 
     $ roc-send -vv -i file:./input.wav -s rtp+rs8m://[2001:db8::]:10001 -r rs8m://[2001:db8::]:10002
+
+Send file to receiver with three IPv4 source, repair, and control endpoints:
+
+.. code::
+
+    $ roc-send -vv -i file:./input.wav \
+        -s rtp+rs8m://192.168.0.3:10001 -r rs8m://192.168.0.3:10002 -c rtcp://192.168.0.3:10003
+
+Send file to two receivers, each with three endpoints:
+
+.. code::
+
+    $ roc-send -vv \
+        -i file:./input.wav \
+        -s rtp+rs8m://192.168.0.3:10001 -r rs8m://192.168.0.3:10002 -c rtcp://192.168.0.3:10003 \
+        -s rtp+rs8m://198.214.0.7:10001 -r rs8m://198.214.0.7:10002 -c rtcp://198.214.0.7:10003
 
 I/O examples
 ------------
