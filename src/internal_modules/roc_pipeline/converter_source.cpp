@@ -109,6 +109,10 @@ bool ConverterSource::restart() {
     return input_source_.restart();
 }
 
+void ConverterSource::reclock(packet::ntp_timestamp_t timestamp) {
+    input_source_.reclock(timestamp);
+}
+
 bool ConverterSource::read(audio::Frame& frame) {
     roc_panic_if(!valid());
 

@@ -122,6 +122,7 @@ private:
     virtual void pause();
     virtual bool resume();
     virtual bool restart();
+    virtual void reclock(packet::ntp_timestamp_t timestamp);
     virtual bool read(audio::Frame&);
 
     virtual core::nanoseconds_t timestamp_imp() const;

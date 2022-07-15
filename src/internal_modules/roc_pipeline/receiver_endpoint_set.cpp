@@ -81,7 +81,7 @@ void ReceiverEndpointSet::delete_endpoint(address::Interface iface) {
     }
 }
 
-void ReceiverEndpointSet::update(packet::timestamp_t timestamp) {
+void ReceiverEndpointSet::advance(packet::timestamp_t timestamp) {
     if (control_endpoint_) {
         control_endpoint_->pull_packets();
     }
@@ -94,7 +94,11 @@ void ReceiverEndpointSet::update(packet::timestamp_t timestamp) {
         repair_endpoint_->pull_packets();
     }
 
-    session_group_.update_sessions(timestamp);
+    session_group_.advance_sessions(timestamp);
+}
+
+void ReceiverEndpointSet::reclock(packet::ntp_timestamp_t timestamp) {
+    session_group_.reclock_sessions(timestamp);
 }
 
 size_t ReceiverEndpointSet::num_sessions() const {

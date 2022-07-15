@@ -205,7 +205,7 @@ bool ReceiverSession::handle(const packet::PacketPtr& packet) {
     return true;
 }
 
-bool ReceiverSession::update(packet::timestamp_t time) {
+bool ReceiverSession::advance(packet::timestamp_t timestamp) {
     roc_panic_if(!valid());
 
     if (watchdog_) {
@@ -215,12 +215,18 @@ bool ReceiverSession::update(packet::timestamp_t time) {
     }
 
     if (latency_monitor_) {
-        if (!latency_monitor_->update(time)) {
+        if (!latency_monitor_->update(timestamp)) {
             return false;
         }
     }
 
     return true;
+}
+
+void ReceiverSession::reclock(packet::ntp_timestamp_t) {
+    roc_panic_if(!valid());
+
+    // no-op
 }
 
 audio::IReader& ReceiverSession::reader() {

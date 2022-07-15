@@ -52,8 +52,11 @@ public:
     //! Delete endpoint.
     void delete_endpoint(address::Interface iface);
 
-    //! Update packet queues and sessions.
-    void update(packet::timestamp_t timestamp);
+    //! Pull packets from queues and advance session timestamp.
+    void advance(packet::timestamp_t timestamp);
+
+    //! Adjust session clock to match consumer clock.
+    void reclock(packet::ntp_timestamp_t timestamp);
 
     //! Get number of alive sessions.
     size_t num_sessions() const;

@@ -63,6 +63,9 @@ public:
     //! Restart reading from the beginning.
     virtual bool restart();
 
+    //! Adjust source clock to match consumer clock.
+    virtual void reclock(packet::ntp_timestamp_t timestamp);
+
     //! Read frame.
     virtual bool read(audio::Frame&);
 

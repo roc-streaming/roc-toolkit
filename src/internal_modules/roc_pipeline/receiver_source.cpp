@@ -120,12 +120,21 @@ bool ReceiverSource::restart() {
     return true;
 }
 
+void ReceiverSource::reclock(packet::ntp_timestamp_t timestamp) {
+    roc_panic_if(!valid());
+
+    for (core::SharedPtr<ReceiverEndpointSet> endpoint_set = endpoint_sets_.front();
+         endpoint_set; endpoint_set = endpoint_sets_.nextof(*endpoint_set)) {
+        endpoint_set->reclock(timestamp);
+    }
+}
+
 bool ReceiverSource::read(audio::Frame& frame) {
     roc_panic_if(!valid());
 
     for (core::SharedPtr<ReceiverEndpointSet> endpoint_set = endpoint_sets_.front();
          endpoint_set; endpoint_set = endpoint_sets_.nextof(*endpoint_set)) {
-        endpoint_set->update(timestamp_);
+        endpoint_set->advance(timestamp_);
     }
 
     if (!audio_reader_->read(frame)) {

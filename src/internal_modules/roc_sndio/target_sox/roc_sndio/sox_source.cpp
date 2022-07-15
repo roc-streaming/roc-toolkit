@@ -198,6 +198,10 @@ bool SoxSource::restart() {
     return true;
 }
 
+void SoxSource::reclock(packet::ntp_timestamp_t) {
+    // no-op
+}
+
 bool SoxSource::read(audio::Frame& frame) {
     roc_panic_if(!valid_);
 

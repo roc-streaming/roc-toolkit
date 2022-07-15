@@ -70,10 +70,13 @@ public:
     //!  true if the packet is dedicated for this session
     bool handle(const packet::PacketPtr& packet);
 
-    //! Update session.
+    //! Advance session timestamp.
     //! @returns
-    //!  false if the session is terminated
-    bool update(packet::timestamp_t time);
+    //!  false if the session is ended
+    bool advance(packet::timestamp_t timestamp);
+
+    //! Adjust session clock to match consumer clock.
+    void reclock(packet::ntp_timestamp_t timestamp);
 
     //! Get audio reader.
     audio::IReader& reader();

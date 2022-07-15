@@ -148,6 +148,14 @@ bool ReceiverLoop::restart() {
     return source_.restart();
 }
 
+void ReceiverLoop::reclock(packet::ntp_timestamp_t timestamp) {
+    roc_panic_if(!valid());
+
+    core::Mutex::Lock lock(read_mutex_);
+
+    source_.reclock(timestamp);
+}
+
 bool ReceiverLoop::read(audio::Frame& frame) {
     roc_panic_if(!valid());
 

@@ -13,6 +13,7 @@
 #define ROC_SNDIO_ISOURCE_H_
 
 #include "roc_audio/ireader.h"
+#include "roc_packet/ntp.h"
 #include "roc_sndio/terminal.h"
 
 namespace roc {
@@ -55,6 +56,13 @@ public:
     //! @returns
     //!  false if an error occured.
     virtual bool restart() = 0;
+
+    //! Adjust source clock to match consumer clock.
+    //! @remarks
+    //!  Invoked regularly after reading every or a several frames.
+    //!  @p timestamp defines the time when the last sample of the last frame
+    //!  read from source was actually processed by consumer.
+    virtual void reclock(packet::ntp_timestamp_t timestamp) = 0;
 };
 
 } // namespace sndio

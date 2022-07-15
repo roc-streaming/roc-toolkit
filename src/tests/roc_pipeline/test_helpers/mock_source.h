@@ -61,6 +61,10 @@ public:
         return true;
     }
 
+    virtual void reclock(packet::ntp_timestamp_t) {
+        // no-op
+    }
+
     virtual bool read(audio::Frame& frame) {
         if (pos_ == size_) {
             return false;

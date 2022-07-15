@@ -58,6 +58,10 @@ public:
         return false;
     }
 
+    virtual void reclock(packet::ntp_timestamp_t) {
+        // no-op
+    }
+
     virtual bool read(audio::Frame& frame) {
         size_t ns = frame.size();
         if (ns > size_ - pos_) {
