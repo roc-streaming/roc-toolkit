@@ -6,12 +6,12 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_rtcp/isender_controller.h"
+#include "roc_rtcp/isender_hooks.h"
 
 namespace roc {
 namespace rtcp {
 
-ISenderController::~ISenderController() {
+ISenderHooks::~ISenderHooks() {
 }
 
 } // namespace rtcp

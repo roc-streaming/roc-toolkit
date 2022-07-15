@@ -25,8 +25,7 @@ namespace roc {
 namespace pipeline {
 
 //! Receiver session group.
-class ReceiverSessionGroup : public core::NonCopyable<>,
-                             private rtcp::IReceiverController {
+class ReceiverSessionGroup : public core::NonCopyable<>, private rtcp::IReceiverHooks {
 public:
     //! Initialize.
     ReceiverSessionGroup(const ReceiverConfig& receiver_config,
@@ -48,12 +47,14 @@ public:
     size_t num_sessions() const;
 
 private:
-    virtual void update_source(packet::source_t ssrc, const char* cname);
-    virtual void remove_source(packet::source_t ssrc);
-    virtual size_t num_receipted_sources();
-    virtual rtcp::ReceptionMetrics get_reception_metrics(size_t source_index);
-    virtual void add_sending_metrics(const rtcp::SendingMetrics& metrics);
-    virtual void add_link_metrics(const rtcp::LinkMetrics& metrics);
+    // Implementation of rtcp::IReceiverHooks interface.
+    // These methods are invoked by rtcp::Session.
+    virtual void on_update_source(packet::source_t ssrc, const char* cname);
+    virtual void on_remove_source(packet::source_t ssrc);
+    virtual size_t on_get_num_sources();
+    virtual rtcp::ReceptionMetrics on_get_reception_metrics(size_t source_index);
+    virtual void on_add_sending_metrics(const rtcp::SendingMetrics& metrics);
+    virtual void on_add_link_metrics(const rtcp::LinkMetrics& metrics);
 
     void route_transport_packet_(const packet::PacketPtr& packet);
     void route_control_packet_(const packet::PacketPtr& packet);

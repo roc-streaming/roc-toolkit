@@ -20,8 +20,8 @@
 #include "roc_packet/packet.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_rtcp/builder.h"
-#include "roc_rtcp/ireceiver_controller.h"
-#include "roc_rtcp/isender_controller.h"
+#include "roc_rtcp/ireceiver_hooks.h"
+#include "roc_rtcp/isender_hooks.h"
 #include "roc_rtcp/traverser.h"
 
 namespace roc {
@@ -32,8 +32,8 @@ namespace rtcp {
 class Session {
 public:
     //! Initialize.
-    Session(IReceiverController* recv_controller,
-            ISenderController* send_controller,
+    Session(IReceiverHooks* recv_hooks,
+            ISenderHooks* send_hooks,
             packet::IWriter* packet_writer,
             packet::IComposer& packet_composer,
             packet::PacketFactory& packet_factory,
@@ -43,7 +43,7 @@ public:
     bool valid() const;
 
     //! Parse and process incoming packet.
-    //! Invokes session controller methods during processing.
+    //! Invokes session hooks methods during processing.
     void process_packet(const packet::PacketPtr& packet);
 
     //! When we should generate packets next time.
@@ -79,8 +79,8 @@ private:
     packet::IWriter* packet_writer_;
     packet::IComposer& packet_composer_;
 
-    IReceiverController* recv_controller_;
-    ISenderController* send_controller_;
+    IReceiverHooks* recv_hooks_;
+    ISenderHooks* send_hooks_;
 
     core::nanoseconds_t next_deadline_;
 

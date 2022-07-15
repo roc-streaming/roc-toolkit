@@ -118,11 +118,11 @@ void SenderEndpointSet::update() {
     }
 }
 
-size_t SenderEndpointSet::num_sending_sources() {
+size_t SenderEndpointSet::on_get_num_sources() {
     return !!source_endpoint_ + !!repair_endpoint_;
 }
 
-packet::source_t SenderEndpointSet::get_sending_source(size_t source_index) {
+packet::source_t SenderEndpointSet::on_get_sending_source(size_t source_index) {
     switch (source_index) {
     case 0:
         // TODO
@@ -138,7 +138,7 @@ packet::source_t SenderEndpointSet::get_sending_source(size_t source_index) {
 }
 
 rtcp::SendingMetrics
-SenderEndpointSet::get_sending_metrics(packet::ntp_timestamp_t report_time) {
+SenderEndpointSet::on_get_sending_metrics(packet::ntp_timestamp_t report_time) {
     // TODO
 
     rtcp::SendingMetrics metrics;
@@ -147,12 +147,12 @@ SenderEndpointSet::get_sending_metrics(packet::ntp_timestamp_t report_time) {
     return metrics;
 }
 
-void SenderEndpointSet::add_reception_metrics(const rtcp::ReceptionMetrics& metrics) {
+void SenderEndpointSet::on_add_reception_metrics(const rtcp::ReceptionMetrics& metrics) {
     // TODO
     (void)metrics;
 }
 
-void SenderEndpointSet::add_link_metrics(const rtcp::LinkMetrics& metrics) {
+void SenderEndpointSet::on_add_link_metrics(const rtcp::LinkMetrics& metrics) {
     // TODO
     (void)metrics;
 }

@@ -57,31 +57,30 @@ size_t ReceiverSessionGroup::num_sessions() const {
     return sessions_.size();
 }
 
-void ReceiverSessionGroup::update_source(packet::source_t ssrc, const char* cname) {
+void ReceiverSessionGroup::on_update_source(packet::source_t ssrc, const char* cname) {
     // TODO
     (void)ssrc;
     (void)cname;
 }
 
-void ReceiverSessionGroup::remove_source(packet::source_t ssrc) {
+void ReceiverSessionGroup::on_remove_source(packet::source_t ssrc) {
     // TODO
     (void)ssrc;
 }
 
-size_t ReceiverSessionGroup::num_receipted_sources() {
+size_t ReceiverSessionGroup::on_get_num_sources() {
     // TODO
-
     return 0;
 }
 
-rtcp::ReceptionMetrics ReceiverSessionGroup::get_reception_metrics(size_t source_index) {
+rtcp::ReceptionMetrics
+ReceiverSessionGroup::on_get_reception_metrics(size_t source_index) {
     // TODO
     (void)source_index;
-
     return rtcp::ReceptionMetrics();
 }
 
-void ReceiverSessionGroup::add_sending_metrics(const rtcp::SendingMetrics& metrics) {
+void ReceiverSessionGroup::on_add_sending_metrics(const rtcp::SendingMetrics& metrics) {
     core::SharedPtr<ReceiverSession> sess;
 
     for (sess = sessions_.front(); sess; sess = sessions_.nextof(*sess)) {
@@ -89,7 +88,7 @@ void ReceiverSessionGroup::add_sending_metrics(const rtcp::SendingMetrics& metri
     }
 }
 
-void ReceiverSessionGroup::add_link_metrics(const rtcp::LinkMetrics& metrics) {
+void ReceiverSessionGroup::on_add_link_metrics(const rtcp::LinkMetrics& metrics) {
     core::SharedPtr<ReceiverSession> sess;
 
     for (sess = sessions_.front(); sess; sess = sessions_.nextof(*sess)) {

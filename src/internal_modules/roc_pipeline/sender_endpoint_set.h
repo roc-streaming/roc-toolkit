@@ -48,7 +48,7 @@ namespace pipeline {
 class SenderEndpointSet
     : public core::RefCounted<SenderEndpointSet, core::StandardAllocation>,
       public core::ListNode,
-      private rtcp::ISenderController {
+      private rtcp::ISenderHooks {
 public:
     //! Initialize.
     SenderEndpointSet(const SenderConfig& config,
@@ -76,11 +76,14 @@ public:
     void update();
 
 private:
-    virtual size_t num_sending_sources();
-    virtual packet::source_t get_sending_source(size_t source_index);
-    virtual rtcp::SendingMetrics get_sending_metrics(packet::ntp_timestamp_t report_time);
-    virtual void add_reception_metrics(const rtcp::ReceptionMetrics& metrics);
-    virtual void add_link_metrics(const rtcp::LinkMetrics& metrics);
+    // Implementation of rtcp::ISenderHooks interface.
+    // These methods are invoked by rtcp::Session.
+    virtual size_t on_get_num_sources();
+    virtual packet::source_t on_get_sending_source(size_t source_index);
+    virtual rtcp::SendingMetrics
+    on_get_sending_metrics(packet::ntp_timestamp_t report_time);
+    virtual void on_add_reception_metrics(const rtcp::ReceptionMetrics& metrics);
+    virtual void on_add_link_metrics(const rtcp::LinkMetrics& metrics);
 
     SenderEndpoint* create_source_endpoint_(address::Protocol proto);
     SenderEndpoint* create_repair_endpoint_(address::Protocol proto);

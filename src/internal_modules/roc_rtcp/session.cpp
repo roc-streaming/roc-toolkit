@@ -15,8 +15,8 @@
 namespace roc {
 namespace rtcp {
 
-Session::Session(IReceiverController* recv_controller,
-                 ISenderController* send_controller,
+Session::Session(IReceiverHooks* recv_hooks,
+                 ISenderHooks* send_hooks,
                  packet::IWriter* packet_writer,
                  packet::IComposer& packet_composer,
                  packet::PacketFactory& packet_factory,
@@ -25,8 +25,8 @@ Session::Session(IReceiverController* recv_controller,
     , buffer_factory_(buffer_factory)
     , packet_writer_(packet_writer)
     , packet_composer_(packet_composer)
-    , recv_controller_(recv_controller)
-    , send_controller_(send_controller)
+    , recv_hooks_(recv_hooks)
+    , send_hooks_(send_hooks)
     , next_deadline_(0)
     , ssrc_(0)
     , valid_(false) {
@@ -42,7 +42,7 @@ Session::Session(IReceiverController* recv_controller,
 
     roc_log(LogDebug,
             "rtcp session: initialized: is_sender=%d is_receiver=%d ssrc=%lu cname=%s",
-            !!(send_controller_ != NULL), !!(recv_controller_ != NULL),
+            !!(send_hooks_ != NULL), !!(recv_hooks_ != NULL),
             (unsigned long)ssrc_, cname_);
 
     valid_ = true;
@@ -160,8 +160,8 @@ void Session::parse_session_description_(const SdesTraverser& sdes) {
                 continue;
             }
 
-            if (recv_controller_) {
-                recv_controller_->update_source(chunk.ssrc, item.text);
+            if (recv_hooks_) {
+                recv_hooks_->on_update_source(chunk.ssrc, item.text);
             }
         } break;
 
@@ -178,8 +178,8 @@ void Session::parse_goodbye_(const ByeTraverser& bye) {
     while ((state = iter.next()) != ByeTraverser::Iterator::END) {
         switch (state) {
         case ByeTraverser::Iterator::SSRC:
-            if (recv_controller_) {
-                recv_controller_->remove_source(iter.ssrc());
+            if (recv_hooks_) {
+                recv_hooks_->on_remove_source(iter.ssrc());
             }
             break;
 
@@ -194,8 +194,8 @@ void Session::parse_sender_report_(const header::SenderReportPacket& sr) {
     metrics.origin_ntp = sr.ntp_timestamp();
     metrics.origin_rtp = sr.rtp_timestamp();
 
-    if (recv_controller_) {
-        recv_controller_->add_sending_metrics(metrics);
+    if (recv_hooks_) {
+        recv_hooks_->on_add_sending_metrics(metrics);
     }
 
     for (size_t n = 0; n < sr.num_blocks(); n++) {
@@ -214,8 +214,8 @@ void Session::parse_reception_block_(const header::ReceptionReportBlock& blk) {
     metrics.ssrc = blk.ssrc();
     metrics.fract_loss = blk.fract_loss();
 
-    if (send_controller_) {
-        send_controller_->add_reception_metrics(metrics);
+    if (send_hooks_) {
+        send_hooks_->on_add_reception_metrics(metrics);
     }
 }
 
@@ -284,7 +284,7 @@ bool Session::build_packet_(core::Slice<uint8_t>& data) {
 
     Builder bld(data);
 
-    if (send_controller_) {
+    if (send_hooks_) {
         // if we're sending and probably also receiving
         build_sender_report_(bld, report_time);
     } else {
@@ -298,9 +298,9 @@ bool Session::build_packet_(core::Slice<uint8_t>& data) {
 }
 
 void Session::build_sender_report_(Builder& bld, packet::ntp_timestamp_t report_time) {
-    roc_panic_if(!send_controller_);
+    roc_panic_if(!send_hooks_);
 
-    const SendingMetrics metrics = send_controller_->get_sending_metrics(report_time);
+    const SendingMetrics metrics = send_hooks_->on_get_sending_metrics(report_time);
 
     header::SenderReportPacket sr;
     sr.set_ssrc(ssrc_);
@@ -309,12 +309,12 @@ void Session::build_sender_report_(Builder& bld, packet::ntp_timestamp_t report_
 
     bld.begin_sr(sr);
 
-    if (recv_controller_) {
-        const size_t num_sources = recv_controller_->num_receipted_sources();
+    if (recv_hooks_) {
+        const size_t num_sources = recv_hooks_->on_get_num_sources();
 
         for (size_t n = 0; n < num_sources; n++) {
             bld.add_sr_report(
-                build_reception_block_(recv_controller_->get_reception_metrics(n)));
+                build_reception_block_(recv_hooks_->on_get_reception_metrics(n)));
         }
     }
 
@@ -327,12 +327,12 @@ void Session::build_receiver_report_(Builder& bld, packet::ntp_timestamp_t repor
 
     bld.begin_rr(rr);
 
-    if (recv_controller_) {
-        const size_t num_sources = recv_controller_->num_receipted_sources();
+    if (recv_hooks_) {
+        const size_t num_sources = recv_hooks_->on_get_num_sources();
 
         for (size_t n = 0; n < num_sources; n++) {
             bld.add_rr_report(
-                build_reception_block_(recv_controller_->get_reception_metrics(n)));
+                build_reception_block_(recv_hooks_->on_get_reception_metrics(n)));
         }
     }
 
@@ -367,11 +367,11 @@ void Session::build_session_description_(Builder& bld) {
 
     build_source_description_(bld, ssrc_);
 
-    if (send_controller_) {
-        const size_t num_sources = send_controller_->num_sending_sources();
+    if (send_hooks_) {
+        const size_t num_sources = send_hooks_->on_get_num_sources();
 
         for (size_t n = 0; n < num_sources; n++) {
-            build_source_description_(bld, send_controller_->get_sending_source(n));
+            build_source_description_(bld, send_hooks_->on_get_sending_source(n));
         }
     }
 
