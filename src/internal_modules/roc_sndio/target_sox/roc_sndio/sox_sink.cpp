@@ -80,7 +80,7 @@ size_t SoxSink::sample_rate() const {
     roc_panic_if(!valid_);
 
     if (!output_) {
-        roc_panic("sox sink: sample_rate: non-open output file or device");
+        roc_panic("sox sink: sample_rate(): non-open output file or device");
     }
 
     return size_t(output_->signal.rate);
@@ -90,17 +90,27 @@ size_t SoxSink::num_channels() const {
     roc_panic_if(!valid_);
 
     if (!output_) {
-        roc_panic("sox sink: num_channels: non-open output file or device");
+        roc_panic("sox sink: num_channels(): non-open output file or device");
     }
 
     return size_t(output_->signal.channels);
+}
+
+size_t SoxSink::latency() const {
+    roc_panic_if(!valid_);
+
+    if (!output_) {
+        roc_panic("sox sink: latency(): non-open output file or device");
+    }
+
+    return 0;
 }
 
 bool SoxSink::has_clock() const {
     roc_panic_if(!valid_);
 
     if (!output_) {
-        roc_panic("sox sink: has_clock: non-open output file or device");
+        roc_panic("sox sink: has_clock(): non-open output file or device");
     }
 
     return !is_file_;

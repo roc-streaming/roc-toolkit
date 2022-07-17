@@ -32,6 +32,10 @@ public:
         return 0;
     }
 
+    virtual size_t latency() const {
+        return 0;
+    }
+
     virtual bool has_clock() const {
         return false;
     }

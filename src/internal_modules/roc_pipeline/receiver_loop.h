@@ -115,8 +115,10 @@ public:
     sndio::ISource& source();
 
 private:
+    // Methods of sndio::ISource
     virtual size_t sample_rate() const;
     virtual size_t num_channels() const;
+    virtual size_t latency() const;
     virtual bool has_clock() const;
     virtual State state() const;
     virtual void pause();
@@ -125,10 +127,12 @@ private:
     virtual void reclock(packet::ntp_timestamp_t timestamp);
     virtual bool read(audio::Frame&);
 
+    // Methods of PipelineLoop
     virtual core::nanoseconds_t timestamp_imp() const;
     virtual bool process_subframe_imp(audio::Frame& frame);
     virtual bool process_task_imp(PipelineTask& task);
 
+    // Methods for tasks
     bool task_create_endpoint_set_(Task& task);
     bool task_create_endpoint_(Task& task);
     bool task_delete_endpoint_(Task& task);

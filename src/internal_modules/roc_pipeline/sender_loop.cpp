@@ -136,6 +136,12 @@ size_t SenderLoop::num_channels() const {
     return sink_.num_channels();
 }
 
+size_t SenderLoop::latency() const {
+    roc_panic_if_not(valid());
+
+    return sink_.latency();
+}
+
 bool SenderLoop::has_clock() const {
     roc_panic_if_not(valid());
 

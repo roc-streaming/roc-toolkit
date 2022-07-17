@@ -93,6 +93,10 @@ size_t ConverterSink::num_channels() const {
     return num_channels_;
 }
 
+size_t ConverterSink::latency() const {
+    return 0;
+}
+
 bool ConverterSink::has_clock() const {
     return false;
 }

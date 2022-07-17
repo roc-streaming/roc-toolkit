@@ -89,6 +89,10 @@ size_t ConverterSource::num_channels() const {
     return input_source_.num_channels();
 }
 
+size_t ConverterSource::latency() const {
+    return 0;
+}
+
 bool ConverterSource::has_clock() const {
     return input_source_.has_clock();
 }

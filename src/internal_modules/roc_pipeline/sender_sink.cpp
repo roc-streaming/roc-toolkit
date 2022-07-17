@@ -105,6 +105,10 @@ size_t SenderSink::num_channels() const {
     return num_channels_;
 }
 
+size_t SenderSink::latency() const {
+    return 0;
+}
+
 bool SenderSink::has_clock() const {
     return config_.timing;
 }

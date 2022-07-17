@@ -87,7 +87,7 @@ size_t SoxSource::sample_rate() const {
     roc_panic_if(!valid_);
 
     if (!input_) {
-        roc_panic("sox source: sample_rate: non-open input file or device");
+        roc_panic("sox source: sample_rate(): non-open input file or device");
     }
 
     return size_t(input_->signal.rate);
@@ -97,17 +97,27 @@ size_t SoxSource::num_channels() const {
     roc_panic_if(!valid_);
 
     if (!input_) {
-        roc_panic("sox source: sample_rate: non-open input file or device");
+        roc_panic("sox source: num_channels(): non-open input file or device");
     }
 
     return sample_spec_.num_channels();
+}
+
+size_t SoxSource::latency() const {
+    roc_panic_if(!valid_);
+
+    if (!input_) {
+        roc_panic("sox source: latency(): non-open input file or device");
+    }
+
+    return 0;
 }
 
 bool SoxSource::has_clock() const {
     roc_panic_if(!valid_);
 
     if (!input_) {
-        roc_panic("sox source: has_clock: non-open input file or device");
+        roc_panic("sox source: has_clock(): non-open input file or device");
     }
 
     return !is_file_;

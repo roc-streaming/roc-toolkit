@@ -34,6 +34,9 @@ public:
     //! Get number of channels for the terminal.
     virtual size_t num_channels() const = 0;
 
+    //! Get latency of the terminal, in number of samples per channel.
+    virtual size_t latency() const = 0;
+
     //! Check if the terminal has own clock.
     virtual bool has_clock() const = 0;
 };

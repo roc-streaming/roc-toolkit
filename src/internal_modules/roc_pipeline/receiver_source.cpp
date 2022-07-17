@@ -87,6 +87,10 @@ size_t ReceiverSource::num_channels() const {
     return config_.common.output_sample_spec.num_channels();
 }
 
+size_t ReceiverSource::latency() const {
+    return 0;
+}
+
 bool ReceiverSource::has_clock() const {
     return config_.common.timing;
 }

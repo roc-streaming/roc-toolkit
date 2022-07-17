@@ -118,6 +118,12 @@ size_t ReceiverLoop::num_channels() const {
     return source_.num_channels();
 }
 
+size_t ReceiverLoop::latency() const {
+    roc_panic_if(!valid());
+
+    return source_.latency();
+}
+
 bool ReceiverLoop::has_clock() const {
     roc_panic_if(!valid());
 

@@ -132,15 +132,19 @@ public:
     sndio::ISink& sink();
 
 private:
+    // Methods of sndio::ISink
     virtual size_t sample_rate() const;
     virtual size_t num_channels() const;
+    virtual size_t latency() const;
     virtual bool has_clock() const;
     virtual void write(audio::Frame& frame);
 
+    // Methods of PipelineLoop
     virtual core::nanoseconds_t timestamp_imp() const;
     virtual bool process_subframe_imp(audio::Frame&);
     virtual bool process_task_imp(PipelineTask&);
 
+    // Methods for tasks
     bool task_create_endpoint_set_(Task&);
     bool task_create_endpoint_(Task&);
     bool task_set_endpoint_destination_writer_(Task&);

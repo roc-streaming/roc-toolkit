@@ -48,6 +48,9 @@ public:
     //! Get number of channels for the source.
     virtual size_t num_channels() const;
 
+    //! Get latency of the source, in number of samples per channel.
+    virtual size_t latency() const;
+
     //! Check if the sink has own clock.
     virtual bool has_clock() const;
 

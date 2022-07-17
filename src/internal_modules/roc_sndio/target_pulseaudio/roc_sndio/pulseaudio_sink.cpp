@@ -99,6 +99,10 @@ size_t PulseaudioSink::num_channels() const {
     return config_.sample_spec.num_channels();
 }
 
+size_t PulseaudioSink::latency() const {
+    return config_.sample_spec.ns_2_samples_per_chan(latency_);
+}
+
 bool PulseaudioSink::has_clock() const {
     return true;
 }
