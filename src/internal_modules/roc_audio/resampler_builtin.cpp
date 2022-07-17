@@ -374,6 +374,8 @@ sample_t BuiltinResampler::sinc_(const fixedpoint_t x, const float fract_x) {
 }
 
 sample_t BuiltinResampler::resample_(const size_t channel_offset) {
+    roc_panic_if_msg(qt_sinc_step_ == 0, "builtin resampler: set scaling must be called "
+                                         "before any resampling could be done");
     // Index of first input sample in window.
     size_t ind_begin_prev;
 

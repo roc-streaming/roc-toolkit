@@ -24,6 +24,7 @@ ResamplerReader::ResamplerReader(IReader& reader,
     , in_sample_spec_(in_sample_spec)
     , out_sample_spec_(out_sample_spec)
     , scaling_(1.0f) {
+    set_scaling(1.0f);
 }
 
 bool ResamplerReader::valid() const {
