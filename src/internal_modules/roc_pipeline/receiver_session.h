@@ -76,7 +76,9 @@ public:
     bool advance(packet::timestamp_t timestamp);
 
     //! Adjust session clock to match consumer clock.
-    void reclock(packet::ntp_timestamp_t timestamp);
+    //! @returns
+    //!  false if the session is ended
+    bool reclock(packet::ntp_timestamp_t timestamp);
 
     //! Get audio reader.
     audio::IReader& reader();

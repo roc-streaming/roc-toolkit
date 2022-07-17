@@ -223,10 +223,11 @@ bool ReceiverSession::advance(packet::timestamp_t timestamp) {
     return true;
 }
 
-void ReceiverSession::reclock(packet::ntp_timestamp_t) {
+bool ReceiverSession::reclock(packet::ntp_timestamp_t) {
     roc_panic_if(!valid());
 
     // no-op
+    return true;
 }
 
 audio::IReader& ReceiverSession::reader() {

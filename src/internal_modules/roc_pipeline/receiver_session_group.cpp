@@ -55,10 +55,15 @@ void ReceiverSessionGroup::advance_sessions(packet::timestamp_t timestamp) {
 }
 
 void ReceiverSessionGroup::reclock_sessions(packet::ntp_timestamp_t timestamp) {
-    core::SharedPtr<ReceiverSession> sess;
+    core::SharedPtr<ReceiverSession> curr, next;
 
-    for (sess = sessions_.front(); sess; sess = sessions_.nextof(*sess)) {
-        sess->reclock(timestamp);
+    for (curr = sessions_.front(); curr; curr = next) {
+        next = sessions_.nextof(*curr);
+
+        if (!curr->reclock(timestamp)) {
+            // Session ended.
+            remove_session_(*curr);
+        }
     }
 }
 
