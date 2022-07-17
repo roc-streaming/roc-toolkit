@@ -68,6 +68,8 @@ private:
     ISource* backup_source_;
     ISink& sink_;
 
+    audio::SampleSpec sample_spec_;
+
     core::Slice<audio::sample_t> frame_buffer_;
 
     size_t n_bufs_;

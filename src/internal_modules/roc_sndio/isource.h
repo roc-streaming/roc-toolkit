@@ -60,8 +60,8 @@ public:
     //! Adjust source clock to match consumer clock.
     //! @remarks
     //!  Invoked regularly after reading every or a several frames.
-    //!  @p timestamp defines the time when the last sample of the last frame
-    //!  read from source was actually processed by consumer.
+    //!  @p timestamp defines the time in NTP domain when the last sample of the last
+    //!  frame read from source is going to be actually processed by consumer.
     virtual void reclock(packet::ntp_timestamp_t timestamp) = 0;
 };
 

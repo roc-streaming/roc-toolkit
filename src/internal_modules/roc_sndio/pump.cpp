@@ -22,10 +22,11 @@ Pump::Pump(core::BufferFactory<audio::sample_t>& buffer_factory,
     : main_source_(source)
     , backup_source_(backup_source)
     , sink_(sink)
+    , sample_spec_(sample_spec)
     , n_bufs_(0)
     , oneshot_(mode == ModeOneshot)
     , stop_(0) {
-    size_t frame_size = sample_spec.ns_2_samples_overall(frame_length);
+    size_t frame_size = sample_spec_.ns_2_samples_overall(frame_length);
     if (frame_size == 0) {
         roc_log(LogError, "pump: frame size cannot be 0");
         return;
@@ -100,7 +101,8 @@ bool Pump::run() {
 
         sink_.write(frame);
 
-        current_source->reclock(packet::ntp_timestamp());
+        current_source->reclock(packet::ntp_timestamp()
+                                + sample_spec_.samples_per_chan_2_ntp(sink_.latency()));
 
         if (current_source == &main_source_) {
             n_bufs_++;
