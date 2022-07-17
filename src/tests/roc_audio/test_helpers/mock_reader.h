@@ -20,13 +20,18 @@ namespace test {
 
 class MockReader : public IReader {
 public:
-    MockReader()
+    MockReader(bool fall_on_empty = true)
         : pos_(0)
-        , size_(0) {
+        , size_(0)
+        , fall_on_empty_(fall_on_empty) {
     }
 
     virtual bool read(Frame& frame) {
-        CHECK(pos_ + frame.size() <= size_);
+        if (fall_on_empty_) {
+            CHECK(pos_ + frame.size() <= size_);
+        } else if (pos_ + frame.size() > size_) {
+            return false;
+        }
 
         memcpy(frame.data(), samples_ + pos_, frame.size() * sizeof(sample_t));
 
@@ -70,6 +75,7 @@ private:
     unsigned flags_[MaxSz];
     size_t pos_;
     size_t size_;
+    const bool fall_on_empty_;
 };
 
 } // namespace test
