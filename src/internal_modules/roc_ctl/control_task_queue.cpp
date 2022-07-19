@@ -782,7 +782,7 @@ ControlTask* ControlTaskQueue::fetch_sleeping_task_() {
         return NULL;
     }
 
-    if (task->effective_deadline_ > core::timestamp()) {
+    if (task->effective_deadline_ > core::timestamp(core::ClockMonotonic)) {
         return NULL;
     }
 

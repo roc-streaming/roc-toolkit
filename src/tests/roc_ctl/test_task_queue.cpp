@@ -155,7 +155,7 @@ public:
 
     void expect_after(core::nanoseconds_t delay) {
         core::Mutex::Lock lock(mutex_);
-        expect_after_ = core::timestamp() + delay;
+        expect_after_ = core::timestamp(core::ClockMonotonic) + delay;
     }
 
     void expect_n_calls(size_t n) {
@@ -189,7 +189,7 @@ public:
                 "completer: unexpected task cancellation status: expected=%d actual=%d",
                 (int)expect_cancelled_, (int)task.cancelled());
         }
-        if (core::timestamp() < expect_after_) {
+        if (core::timestamp(core::ClockMonotonic) < expect_after_) {
             roc_panic("completer: task was executed too early");
         }
         task_ = &task;
@@ -211,7 +211,7 @@ private:
 };
 
 core::nanoseconds_t now_plus_delay(core::nanoseconds_t delay) {
-    return core::timestamp() + delay;
+    return core::timestamp(core::ClockMonotonic) + delay;
 }
 
 } // namespace
@@ -293,7 +293,7 @@ TEST(task_queue, schedule_one_no_completer) {
     queue.schedule(task, executor, NULL);
 
     while (!task.completed()) {
-        core::sleep_for(core::Microsecond * 100);
+        core::sleep_for(core::ClockMonotonic, core::Microsecond * 100);
     }
 
     UNSIGNED_LONGS_EQUAL(1, executor.num_tasks());
@@ -524,7 +524,7 @@ TEST(task_queue, schedule_at_one_no_completer) {
     queue.schedule_at(task, now_plus_delay(core::Millisecond), executor, NULL);
 
     while (!task.completed()) {
-        core::sleep_for(core::Microsecond * 100);
+        core::sleep_for(core::ClockMonotonic, core::Microsecond * 100);
     }
 
     UNSIGNED_LONGS_EQUAL(1, executor.num_tasks());
@@ -557,7 +557,7 @@ TEST(task_queue, schedule_at_many) {
     executor.wait_blocked();
 
     for (size_t n = 1; n < NumTasks; n++) {
-        core::sleep_for(core::Microsecond);
+        core::sleep_for(core::ClockMonotonic, core::Microsecond);
 
         const bool success = (n % 3 != 0);
 
@@ -612,7 +612,7 @@ TEST(task_queue, schedule_at_reversed) {
 
     executor.wait_blocked();
 
-    const core::nanoseconds_t now = core::timestamp();
+    const core::nanoseconds_t now = core::timestamp(core::ClockMonotonic);
 
     for (size_t n = 1; n < NumTasks; n++) {
         const bool success = (n % 3 != 0);
@@ -673,7 +673,7 @@ TEST(task_queue, schedule_at_shuffled) {
 
     executor.block();
 
-    const core::nanoseconds_t now = core::timestamp();
+    const core::nanoseconds_t now = core::timestamp(core::ClockMonotonic);
 
     queue.schedule_at(tasks[0], now + core::Millisecond, executor, &completer);
     queue.schedule_at(tasks[1], now + core::Millisecond * 4, executor, &completer);
@@ -725,7 +725,7 @@ TEST(task_queue, schedule_at_same_deadline) {
 
     executor.block();
 
-    const core::nanoseconds_t now = core::timestamp();
+    const core::nanoseconds_t now = core::timestamp(core::ClockMonotonic);
 
     queue.schedule_at(tasks[0], now + core::Millisecond, executor, &completer);
     queue.schedule_at(tasks[1], now + core::Millisecond * 4, executor, &completer);
@@ -777,7 +777,7 @@ TEST(task_queue, schedule_at_and_schedule) {
 
     executor.block();
 
-    const core::nanoseconds_t now = core::timestamp();
+    const core::nanoseconds_t now = core::timestamp(core::ClockMonotonic);
 
     queue.schedule(tasks[0], executor, &completer);
     queue.schedule_at(tasks[1], now + core::Millisecond * 7, executor, &completer);
@@ -914,7 +914,7 @@ TEST(task_queue, schedule_at_and_async_cancel) {
 
     executor.block();
 
-    const core::nanoseconds_t now = core::timestamp();
+    const core::nanoseconds_t now = core::timestamp(core::ClockMonotonic);
 
     queue.schedule_at(tasks[0], now + core::Millisecond, executor, &completers[0]);
     queue.schedule_at(tasks[1], now + core::Millisecond * 4, executor, &completers[1]);
@@ -1342,7 +1342,7 @@ TEST(task_queue, no_starvation) {
 
     executor.block();
 
-    const core::nanoseconds_t now = core::timestamp();
+    const core::nanoseconds_t now = core::timestamp(core::ClockMonotonic);
     const core::nanoseconds_t WaitTime = core::Millisecond;
 
     queue.schedule_at(tasks[0], now + WaitTime, executor, &completer);
@@ -1357,7 +1357,7 @@ TEST(task_queue, no_starvation) {
     }
 
     // wait for sleeping task to sync
-    core::sleep_for(WaitTime * (NumTasks / 2));
+    core::sleep_for(core::ClockMonotonic, WaitTime * (NumTasks / 2));
 
     // check that the tasks are fetched from alternating queues
     executor.unblock_one();

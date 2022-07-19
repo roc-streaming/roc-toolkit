@@ -76,7 +76,7 @@ private:
     };
 
     virtual core::nanoseconds_t timestamp_imp() const {
-        return core::timestamp();
+        return core::timestamp(core::ClockMonotonic);
     }
 
     virtual bool process_subframe_imp(audio::Frame&) {

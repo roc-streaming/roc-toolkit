@@ -17,6 +17,43 @@
 namespace roc {
 namespace core {
 
+//! Clock identifier.
+enum clock_t {
+    //! Virtual monotonic clock.
+    //!
+    //! @remarks
+    //!  Starts at unspecified point of time.
+    //!
+    //!  When platform supports it, uses the clock source that grows monotonically. It
+    //!  never jumps backwards and is not affected by system clock change.
+    //!
+    //!  This clock is still subject to clock rate adjustments applied by NTP daemon.
+    //!  When it performs synchronization, it may slightly speed up or slow down both
+    //!  unix and monotonic clocks for a while.
+    //!
+    //!  Usually this clock is reset after reboot.
+    //!  Usually this clock does not count time spent in suspended state.
+    //!
+    //! @note
+    //!  If platform does not have monotonic clock source, unix clock is used.
+    //!  Actual precision is platform-dependent.
+    ClockMonotonic,
+
+    //! Real-time unix-time clock.
+    //!
+    //! @remarks
+    //!  Starts at 1 Jan 1970 00:00:00.
+    //!
+    //!  May instantly jump forwards or backwards when system administrator sets time.
+    //!  May speed up or slow down when NTP daemon adjusts clock rate.
+    //!  May experience discontinuities when NTP daemon inserts leap seconds.
+    //!
+    //! @note
+    //!  Available on all platforms.
+    //!  Actual precision is platform-dependent.
+    ClockUnix
+};
+
 //! Nanoseconds.
 typedef int64_t nanoseconds_t;
 
@@ -39,17 +76,17 @@ const nanoseconds_t Minute = 60 * Second;
 const nanoseconds_t Hour = 60 * Minute;
 
 //! Get current timestamp in nanoseconds.
-nanoseconds_t timestamp();
+nanoseconds_t timestamp(clock_t clock);
 
 //! Sleep until the specified absolute time point has been reached.
 //! @remarks
 //!  @p timestamp specifies absolute time point in nanoseconds.
-void sleep_until(nanoseconds_t timestamp);
+void sleep_until(clock_t clock, nanoseconds_t timestamp);
 
 //! Sleep specified amount of time.
 //! @remarks
 //!  @p duration specifies number of nanoseconds to sleep.
-void sleep_for(nanoseconds_t duration);
+void sleep_for(clock_t clock, nanoseconds_t duration);
 
 } // namespace core
 } // namespace roc

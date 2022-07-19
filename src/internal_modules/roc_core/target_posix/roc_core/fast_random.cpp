@@ -48,7 +48,7 @@ uint32_t fast_random(uint32_t from, uint32_t to) {
 
     if (!rand_init) {
         rand_init = true;
-        const nanoseconds_t seed_48 = timestamp();
+        const nanoseconds_t seed_48 = timestamp(ClockMonotonic);
         rand_seed[0] = (seed_48 & 0xffff);
         rand_seed[1] = ((seed_48 >> 16) & 0xffff);
         rand_seed[2] = ((seed_48 >> 32) & 0xffff);

@@ -586,7 +586,8 @@ void PulseaudioSink::start_timer_(core::nanoseconds_t timeout) {
     const core::nanoseconds_t timeout_usec =
         (timeout + core::Microsecond - 1) / core::Microsecond;
 
-    timer_deadline_ = core::timestamp() + timeout_usec * core::Microsecond;
+    timer_deadline_ =
+        core::timestamp(core::ClockMonotonic) + timeout_usec * core::Microsecond;
 
     const pa_usec_t pa_deadline = pa_rtclock_now() + (pa_usec_t)timeout_usec;
 
@@ -607,7 +608,7 @@ bool PulseaudioSink::stop_timer_() {
 
     pa_context_rttime_restart(context_, timer_, PA_USEC_INVALID);
 
-    const bool expired = core::timestamp() >= timer_deadline_;
+    const bool expired = core::timestamp(core::ClockMonotonic) >= timer_deadline_;
 
     return expired;
 }

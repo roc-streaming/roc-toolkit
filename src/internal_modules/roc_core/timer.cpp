@@ -45,7 +45,7 @@ void Timer::wait_deadline() {
 
         const nanoseconds_t deadline = deadline_.wait_load();
 
-        if (deadline >= 0 && deadline <= timestamp()) {
+        if (deadline >= 0 && deadline <= timestamp(ClockMonotonic)) {
             break;
         }
 

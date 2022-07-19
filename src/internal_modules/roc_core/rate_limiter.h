@@ -25,7 +25,7 @@ public:
     //! @remarks
     //!  @p period is tick duration in nanoseconds.
     explicit RateLimiter(nanoseconds_t period)
-        : period_(Ticker::Ticks(period))
+        : period_(Ticker::ticks_t(period))
         , pos_(0)
         , ticker_(Second / Nanosecond) {
         if (period <= 0) {
@@ -40,7 +40,7 @@ public:
 
     //! Check whether an event is allowed to occur now, and if yes, mark it as occurred.
     bool allow() {
-        const Ticker::Ticks elapsed = ticker_.elapsed();
+        const Ticker::ticks_t elapsed = ticker_.elapsed();
         if (elapsed >= pos_) {
             pos_ = (elapsed / period_ + 1) * period_;
             return true;
@@ -50,8 +50,8 @@ public:
     }
 
 private:
-    const Ticker::Ticks period_;
-    Ticker::Ticks pos_;
+    const Ticker::ticks_t period_;
+    Ticker::ticks_t pos_;
     Ticker ticker_;
 };
 

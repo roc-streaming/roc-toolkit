@@ -29,11 +29,11 @@ void ProfilingWriter::write(Frame& frame) {
 }
 
 core::nanoseconds_t ProfilingWriter::write_(Frame& frame) {
-    const core::nanoseconds_t start = core::timestamp();
+    const core::nanoseconds_t start = core::timestamp(core::ClockMonotonic);
 
     writer_.write(frame);
 
-    return core::timestamp() - start;
+    return core::timestamp(core::ClockMonotonic) - start;
 }
 
 bool ProfilingWriter::valid() const {

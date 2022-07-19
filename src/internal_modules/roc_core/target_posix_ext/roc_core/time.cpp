@@ -15,74 +15,113 @@
 #include "roc_core/panic.h"
 #include "roc_core/time.h"
 
+#if defined(CLOCK_REALTIME)
+#define HAS_CLOCKS
+#endif
+
 namespace roc {
 namespace core {
 
+namespace {
+
+#if defined(HAS_CLOCKS)
+
+clockid_t map_clock(clock_t clock) {
 #if defined(CLOCK_MONOTONIC)
-nanoseconds_t timestamp() {
-    timespec ts;
-    if (clock_gettime(CLOCK_MONOTONIC, &ts) == -1) {
-        roc_panic("time: clock_gettime(CLOCK_MONOTONIC): %s", errno_to_str().c_str());
+    if (clock == ClockMonotonic) {
+        return CLOCK_MONOTONIC;
     }
+#else
+    (void)clock;
+#endif
+
+    return CLOCK_REALTIME;
+}
+
+#endif // defined(HAS_CLOCKS)
+
+} // namespace
+
+#if defined(HAS_CLOCKS)
+
+nanoseconds_t timestamp(clock_t clock) {
+    timespec ts;
+    if (clock_gettime(map_clock(clock), &ts) == -1) {
+        roc_panic("time: clock_gettime(): %s", errno_to_str().c_str());
+    }
+
     return nanoseconds_t(ts.tv_sec) * 1000000000 + nanoseconds_t(ts.tv_nsec);
 }
-#else  // !defined(CLOCK_MONOTONIC)
-nanoseconds_t timestamp() {
+
+#else // !defined(HAS_CLOCKS)
+
+nanoseconds_t timestamp(clock_t) {
     struct timeval tv;
     if (gettimeofday(&tv, NULL) == -1) {
         roc_panic("time: gettimeofday(): %s", errno_to_str().c_str());
     }
+
     return nanoseconds_t(tv.tv_sec) * 1000000000 + nanoseconds_t(tv.tv_usec) * 1000;
 }
-#endif // defined(CLOCK_MONOTONIC)
 
-#if defined(CLOCK_MONOTONIC)
-void sleep_for(nanoseconds_t ns) {
+#endif // defined(HAS_CLOCKS)
+
+#if defined(HAS_CLOCKS)
+
+void sleep_for(clock_t clock, nanoseconds_t ns) {
     timespec ts;
     ts.tv_sec = time_t(ns / 1000000000);
     ts.tv_nsec = long(ns % 1000000000);
+
     int err;
-    while ((err = clock_nanosleep(CLOCK_MONOTONIC, 0, &ts, &ts))) {
+    while ((err = clock_nanosleep(map_clock(clock), 0, &ts, &ts))) {
         if (err != EINTR) {
-            roc_panic("time: clock_nanosleep(CLOCK_MONOTONIC): %s",
-                      errno_to_str(err).c_str());
+            roc_panic("time: clock_nanosleep(): %s", errno_to_str(err).c_str());
         }
     }
 }
-#else  // !defined(CLOCK_MONOTONIC)
-void sleep_for(nanoseconds_t ns) {
+
+#else // !defined(HAS_CLOCKS)
+
+void sleep_for(clock_t, nanoseconds_t ns) {
     timespec ts;
     ts.tv_sec = time_t(ns / 1000000000);
     ts.tv_nsec = long(ns % 1000000000);
+
     while (nanosleep(&ts, &ts) == -1) {
         if (errno != EINTR) {
             roc_panic("time: nanosleep(): %s", errno_to_str().c_str());
         }
     }
 }
-#endif // defined(CLOCK_MONOTONIC)
 
-#if defined(CLOCK_MONOTONIC) && defined(TIMER_ABSTIME)
-void sleep_until(nanoseconds_t ns) {
+#endif // defined(HAS_CLOCKS)
+
+#if defined(HAS_CLOCKS) && defined(TIMER_ABSTIME)
+
+void sleep_until(clock_t clock, nanoseconds_t ns) {
     timespec ts;
     ts.tv_sec = time_t(ns / 1000000000);
     ts.tv_nsec = long(ns % 1000000000);
+
     int err;
-    while ((err = clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &ts, NULL))) {
+    while ((err = clock_nanosleep(map_clock(clock), TIMER_ABSTIME, &ts, NULL))) {
         if (err != EINTR) {
-            roc_panic("time: clock_nanosleep(CLOCK_MONOTONIC): %s",
-                      errno_to_str(err).c_str());
+            roc_panic("time: clock_nanosleep(): %s", errno_to_str(err).c_str());
         }
     }
 }
-#else  // !defined(CLOCK_MONOTONIC) || !defined(TIMER_ABSTIME)
-void sleep_until(nanoseconds_t ns) {
-    nanoseconds_t now = timestamp_ns();
+
+#else // !defined(HAS_CLOCKS) || !defined(TIMER_ABSTIME)
+
+void sleep_until(clock_t clock, nanoseconds_t ns) {
+    nanoseconds_t now = timestamp(clock);
     if (ns > now) {
         sleep_for(ns - now);
     }
 }
-#endif // defined(CLOCK_MONOTONIC) && defined(TIMER_ABSTIME)
+
+#endif // defined(HAS_CLOCKS) && defined(TIMER_ABSTIME)
 
 } // namespace core
 } // namespace roc

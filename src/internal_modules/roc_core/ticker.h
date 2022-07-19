@@ -23,12 +23,12 @@ namespace core {
 class Ticker : public NonCopyable<> {
 public:
     //! Number of ticks.
-    typedef uint64_t Ticks;
+    typedef uint64_t ticks_t;
 
     //! Initialize.
     //! @remarks
     //!  @p freq defines the number of ticks per second.
-    explicit Ticker(Ticks freq)
+    explicit Ticker(ticks_t freq)
         : ratio_(double(freq) / Second)
         , start_(0)
         , started_(false) {
@@ -39,28 +39,28 @@ public:
         if (started_) {
             roc_panic("ticker: can't start ticker twice");
         }
-        start_ = timestamp();
+        start_ = timestamp(ClockMonotonic);
         started_ = true;
     }
 
     //! Returns number of ticks elapsed since start.
     //! If ticker is not started yet, it is started automatically.
-    Ticks elapsed() {
+    ticks_t elapsed() {
         if (!started_) {
             start();
             return 0;
         } else {
-            return Ticks(double(timestamp() - start_) * ratio_);
+            return ticks_t(double(timestamp(ClockMonotonic) - start_) * ratio_);
         }
     }
 
     //! Wait until the given number of ticks elapses since start.
     //! If ticker is not started yet, it is started automatically.
-    void wait(Ticks ticks) {
+    void wait(ticks_t ticks) {
         if (!started_) {
             start();
         }
-        sleep_until(start_ + nanoseconds_t(ticks / ratio_));
+        sleep_until(ClockMonotonic, start_ + nanoseconds_t(ticks / ratio_));
     }
 
 private:

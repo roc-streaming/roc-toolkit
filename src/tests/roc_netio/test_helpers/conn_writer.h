@@ -46,7 +46,8 @@ private:
             while (num_written < total_bytes_) {
                 const core::nanoseconds_t delay = (core::nanoseconds_t)core::fast_random(
                     0, MaxDelayNs * core::Nanosecond);
-                core::sleep_for(delay);
+
+                core::sleep_for(core::ClockMonotonic, delay);
 
                 size_t bufsz = core::fast_random(1, MaxBatch);
                 if (bufsz > (total_bytes_ - num_written)) {

@@ -33,11 +33,11 @@ bool ProfilingReader::read(Frame& frame) {
 }
 
 core::nanoseconds_t ProfilingReader::read_(Frame& frame, bool& ret) {
-    const core::nanoseconds_t start = core::timestamp();
+    const core::nanoseconds_t start = core::timestamp(core::ClockMonotonic);
 
     ret = reader_.read(frame);
 
-    return core::timestamp() - start;
+    return core::timestamp(core::ClockMonotonic) - start;
 }
 
 bool ProfilingReader::valid() const {

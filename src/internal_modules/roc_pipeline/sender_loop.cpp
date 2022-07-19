@@ -166,13 +166,13 @@ void SenderLoop::write(audio::Frame& frame) {
 }
 
 core::nanoseconds_t SenderLoop::timestamp_imp() const {
-    return core::timestamp();
+    return core::timestamp(core::ClockMonotonic);
 }
 
 bool SenderLoop::process_subframe_imp(audio::Frame& frame) {
     sink_.write(frame);
 
-    if (sink_.get_update_deadline() <= core::timestamp()) {
+    if (sink_.get_update_deadline() <= core::timestamp(core::ClockMonotonic)) {
         sink_.update();
     }
 

@@ -8,35 +8,57 @@
 
 #include <CppUTest/TestHarness.h>
 
+#include "roc_core/macro_helpers.h"
 #include "roc_core/time.h"
 
 namespace roc {
 namespace core {
 
+namespace {
+
+const clock_t clock_list[] = {
+    core::ClockMonotonic,
+    core::ClockUnix,
+};
+
+} // namespace
+
 TEST_GROUP(time) {};
 
 TEST(time, timestamp) {
-    const nanoseconds_t ts = timestamp();
+    for (size_t i = 0; i < ROC_ARRAY_SIZE(clock_list); i++) {
+        const clock_t clock = clock_list[i];
 
-    while (ts == timestamp()) {
-        // wait one nanosecond
+        const nanoseconds_t ts = timestamp(clock);
+
+        while (ts == timestamp(clock)) {
+            // wait one nanosecond
+        }
     }
 }
 
 TEST(time, sleep_until) {
-    const nanoseconds_t ts = timestamp();
+    for (size_t i = 0; i < ROC_ARRAY_SIZE(clock_list); i++) {
+        const clock_t clock = clock_list[i];
 
-    sleep_until(ts + Millisecond);
+        const nanoseconds_t ts = timestamp(clock);
 
-    CHECK(timestamp() >= ts + Millisecond);
+        sleep_until(clock, ts + Millisecond);
+
+        CHECK(timestamp(clock) >= ts + Millisecond);
+    }
 }
 
 TEST(time, sleep_for) {
-    const nanoseconds_t ts = timestamp();
+    for (size_t i = 0; i < ROC_ARRAY_SIZE(clock_list); i++) {
+        const clock_t clock = clock_list[i];
 
-    sleep_for(Millisecond);
+        const nanoseconds_t ts = timestamp(clock);
 
-    CHECK(timestamp() >= ts + Millisecond);
+        sleep_for(clock, Millisecond);
+
+        CHECK(timestamp(clock) >= ts + Millisecond);
+    }
 }
 
 } // namespace core

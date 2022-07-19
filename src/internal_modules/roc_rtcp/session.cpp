@@ -68,7 +68,7 @@ void Session::process_packet(const packet::PacketPtr& packet) {
 
 core::nanoseconds_t Session::generation_deadline() {
     if (next_deadline_ == 0) {
-        next_deadline_ = core::timestamp();
+        next_deadline_ = core::timestamp(core::ClockMonotonic);
     }
 
     return next_deadline_;
@@ -78,12 +78,12 @@ void Session::generate_packets() {
     roc_panic_if_msg(!packet_writer_, "rtcp session: packet writer not set");
 
     if (next_deadline_ == 0) {
-        next_deadline_ = core::timestamp();
+        next_deadline_ = core::timestamp(core::ClockMonotonic);
     }
 
     do {
         next_deadline_ += core::Millisecond * 200;
-    } while (next_deadline_ <= core::timestamp());
+    } while (next_deadline_ <= core::timestamp(core::ClockMonotonic));
 
     packet::PacketPtr packet = generate_packet_();
 

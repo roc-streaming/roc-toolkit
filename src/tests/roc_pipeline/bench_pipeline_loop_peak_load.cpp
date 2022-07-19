@@ -128,9 +128,9 @@ double round_digits(double x, unsigned int digits) {
 }
 
 void busy_wait(core::nanoseconds_t delay) {
-    const core::nanoseconds_t deadline = core::timestamp() + delay;
+    const core::nanoseconds_t deadline = core::timestamp(core::ClockMonotonic) + delay;
     for (;;) {
-        if (core::timestamp() >= deadline) {
+        if (core::timestamp(core::ClockMonotonic) >= deadline) {
             return;
         }
     }
@@ -150,11 +150,11 @@ public:
     }
 
     void begin() {
-        last_ = core::timestamp();
+        last_ = core::timestamp(core::ClockMonotonic);
     }
 
     void end() {
-        add_time(core::timestamp() - last_);
+        add_time(core::timestamp(core::ClockMonotonic) - last_);
     }
 
     void add_time(core::nanoseconds_t t) {
@@ -256,11 +256,11 @@ public:
         }
 
         void start() {
-            start_time_ = core::timestamp();
+            start_time_ = core::timestamp(core::ClockMonotonic);
         }
 
         core::nanoseconds_t elapsed_time() const {
-            return core::timestamp() - start_time_;
+            return core::timestamp(core::ClockMonotonic) - start_time_;
         }
 
     private:
@@ -317,7 +317,7 @@ private:
     };
 
     virtual core::nanoseconds_t timestamp_imp() const {
-        return core::timestamp();
+        return core::timestamp(core::ClockMonotonic);
     }
 
     virtual bool process_subframe_imp(audio::Frame&) {
@@ -368,7 +368,8 @@ public:
 private:
     virtual void run() {
         while (!stop_) {
-            core::sleep_for(core::fast_random(MinTaskDelay, MaxTaskDelay));
+            core::sleep_for(core::ClockMonotonic,
+                            core::fast_random(MinTaskDelay, MaxTaskDelay));
 
             const size_t n_tasks = core::fast_random(MinTaskBurst, MaxTaskBurst);
 

@@ -85,8 +85,9 @@ BENCHMARK_DEFINE_F(BM_QueueContention, ScheduleAt)(benchmark::State& state) {
 
     while (state.KeepRunningBatch(BatchSize)) {
         for (int n = 0; n < BatchSize; n++) {
-            queue.schedule_at(tasks[n_task], core::timestamp() + delays[n_task], executor,
-                              &completer);
+            queue.schedule_at(tasks[n_task],
+                              core::timestamp(core::ClockMonotonic) + delays[n_task],
+                              executor, &completer);
             n_task++;
         }
     }

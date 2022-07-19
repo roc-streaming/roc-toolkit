@@ -182,7 +182,7 @@ bool ReceiverLoop::read(audio::Frame& frame) {
 }
 
 core::nanoseconds_t ReceiverLoop::timestamp_imp() const {
-    return core::timestamp();
+    return core::timestamp(core::ClockMonotonic);
 }
 
 bool ReceiverLoop::process_subframe_imp(audio::Frame& frame) {

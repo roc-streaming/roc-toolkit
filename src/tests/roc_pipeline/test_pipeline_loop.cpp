@@ -1324,7 +1324,7 @@ TEST(task_pipeline, process_frame_when_schedule_is_running) {
 
     // wait until background process_subframes_and_tasks() marks that a frame is pending
     while (pipeline.num_pending_frames() == 0) {
-        core::sleep_for(core::Microsecond * 10);
+        core::sleep_for(core::ClockMonotonic, core::Microsecond * 10);
     }
 
     // unblock blocked process_task_imp()
@@ -1476,7 +1476,7 @@ TEST(task_pipeline, process_frame_when_process_tasks_is_running) {
 
     // wait until background process_subframes_and_tasks() marks that a frame is pending
     while (pipeline.num_pending_frames() == 0) {
-        core::sleep_for(core::Microsecond * 10);
+        core::sleep_for(core::ClockMonotonic, core::Microsecond * 10);
     }
 
     // unblock blocked process_task_imp()
@@ -2049,7 +2049,7 @@ TEST(task_pipeline, schedule_and_wait_until_process_tasks_called) {
     ts3b.start();
 
     while (pipeline.num_pending_tasks() != 3) {
-        core::sleep_for(core::Microsecond * 10);
+        core::sleep_for(core::ClockMonotonic, core::Microsecond * 10);
     }
 
     UNSIGNED_LONGS_EQUAL(3, pipeline.num_pending_tasks());
@@ -2157,7 +2157,7 @@ TEST(task_pipeline, schedule_and_wait_until_process_frame_called) {
     ts3b.start();
 
     while (pipeline.num_pending_tasks() != 3) {
-        core::sleep_for(core::Microsecond * 10);
+        core::sleep_for(core::ClockMonotonic, core::Microsecond * 10);
     }
 
     UNSIGNED_LONGS_EQUAL(3, pipeline.num_pending_tasks());

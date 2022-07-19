@@ -57,7 +57,7 @@ public:
 
     void wait_done() const {
         while (!done_) {
-            core::sleep_for(core::Microsecond * 10);
+            core::sleep_for(core::ClockMonotonic, core::Microsecond * 10);
         }
     }
 

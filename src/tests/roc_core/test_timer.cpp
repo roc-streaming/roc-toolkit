@@ -18,7 +18,7 @@ namespace core {
 
 namespace {
 
-class TestThread : public core::Thread {
+class TestThread : public Thread {
 public:
     TestThread(Timer& t)
         : t_(t)
@@ -31,7 +31,7 @@ public:
 
     void wait_running() {
         while (!r_) {
-            sleep_for(core::Microsecond);
+            sleep_for(ClockMonotonic, Microsecond);
         }
     }
 
@@ -47,7 +47,7 @@ private:
 };
 
 inline void set_deadline(Timer& t, nanoseconds_t delay) {
-    if (!t.try_set_deadline(delay > 0 ? timestamp() + delay : delay)) {
+    if (!t.try_set_deadline(delay > 0 ? timestamp(ClockMonotonic) + delay : delay)) {
         FAIL("try_set_deadline");
     }
 }
@@ -63,7 +63,7 @@ TEST(timer, sync) {
     }
     { // explicit zero
         Timer t;
-        set_deadline(t, core::Second * 100);
+        set_deadline(t, Second * 100);
         set_deadline(t, 0);
         t.wait_deadline();
     }
@@ -75,7 +75,7 @@ TEST(timer, sync) {
     }
     { // non-zero
         Timer t;
-        set_deadline(t, core::Microsecond * 100);
+        set_deadline(t, Microsecond * 100);
         t.wait_deadline();
     }
 }
@@ -89,7 +89,7 @@ TEST(timer, async) {
         CHECK(thr.start());
 
         thr.wait_running();
-        sleep_for(core::Microsecond * 100);
+        sleep_for(ClockMonotonic, Microsecond * 100);
         CHECK(thr.running());
 
         set_deadline(t, 0);
@@ -97,54 +97,54 @@ TEST(timer, async) {
     }
     { // large -> small
         Timer t;
-        set_deadline(t, core::Second * 999);
+        set_deadline(t, Second * 999);
 
         TestThread thr(t);
         CHECK(thr.start());
 
         thr.wait_running();
-        sleep_for(core::Microsecond * 100);
+        sleep_for(ClockMonotonic, Microsecond * 100);
         CHECK(thr.running());
 
-        set_deadline(t, core::Microsecond * 10);
+        set_deadline(t, Microsecond * 10);
         thr.join();
     }
     { // large -> smaller -> small
         Timer t;
-        set_deadline(t, core::Second * 999);
+        set_deadline(t, Second * 999);
 
         TestThread thr(t);
         CHECK(thr.start());
 
         thr.wait_running();
-        sleep_for(core::Microsecond * 100);
+        sleep_for(ClockMonotonic, Microsecond * 100);
         CHECK(thr.running());
 
-        set_deadline(t, core::Second * 99);
+        set_deadline(t, Second * 99);
 
-        sleep_for(core::Microsecond * 100);
+        sleep_for(ClockMonotonic, Microsecond * 100);
         CHECK(thr.running());
 
-        set_deadline(t, core::Microsecond * 10);
+        set_deadline(t, Microsecond * 10);
         thr.join();
     }
     { // large -> larger -> small
         Timer t;
-        set_deadline(t, core::Second * 999);
+        set_deadline(t, Second * 999);
 
         TestThread thr(t);
         CHECK(thr.start());
 
         thr.wait_running();
-        sleep_for(core::Microsecond * 100);
+        sleep_for(ClockMonotonic, Microsecond * 100);
         CHECK(thr.running());
 
-        set_deadline(t, core::Second * 99999);
+        set_deadline(t, Second * 99999);
 
-        sleep_for(core::Microsecond * 100);
+        sleep_for(ClockMonotonic, Microsecond * 100);
         CHECK(thr.running());
 
-        set_deadline(t, core::Microsecond * 10);
+        set_deadline(t, Microsecond * 10);
         thr.join();
     }
     { // duplicate
@@ -155,14 +155,14 @@ TEST(timer, async) {
         CHECK(thr.start());
 
         thr.wait_running();
-        sleep_for(core::Microsecond * 100);
+        sleep_for(ClockMonotonic, Microsecond * 100);
         CHECK(thr.running());
 
         set_deadline(t, -1);
         set_deadline(t, -1);
         set_deadline(t, -1);
 
-        sleep_for(core::Microsecond * 100);
+        sleep_for(ClockMonotonic, Microsecond * 100);
         CHECK(thr.running());
 
         set_deadline(t, 0);
@@ -178,7 +178,7 @@ TEST(timer, async) {
             CHECK(thr.start());
 
             thr.wait_running();
-            sleep_for(core::Microsecond * 100);
+            sleep_for(ClockMonotonic, Microsecond * 100);
             CHECK(thr.running());
 
             set_deadline(t, 0);
