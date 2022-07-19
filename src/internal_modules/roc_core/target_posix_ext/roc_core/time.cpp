@@ -123,5 +123,26 @@ void sleep_until(clock_t clock, nanoseconds_t ns) {
 
 #endif // defined(HAS_CLOCKS) && defined(TIMER_ABSTIME)
 
+std::tm nanoseconds_2_tm(nanoseconds_t timestamp) {
+    const time_t sec = time_t(timestamp / Second);
+
+    std::tm tm;
+    if (localtime_r(&sec, &tm) == NULL) {
+        roc_panic("time: localtime_r(): %s", errno_to_str().c_str());
+    }
+
+    return tm;
+}
+
+nanoseconds_t tm_2_nanoseconds(std::tm tm) {
+    const time_t sec = mktime(&tm);
+
+    if (sec == (time_t)-1) {
+        roc_panic("time: mktime(): %s", errno_to_str().c_str());
+    }
+
+    return nanoseconds_t(sec) * Second;
+}
+
 } // namespace core
 } // namespace roc

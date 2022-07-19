@@ -10,9 +10,9 @@
 #include <stdio.h>
 
 #include "roc_core/color_print.h"
-#include "roc_core/format_time.h"
 #include "roc_core/log.h"
 #include "roc_core/thread.h"
+#include "roc_core/time.h"
 
 namespace roc {
 namespace core {
@@ -117,9 +117,19 @@ void Logger::default_print_(LogLevel level_num,
                             const char* file,
                             int line,
                             const char* message) {
-    char timestamp[64] = {};
-    if (!format_time(timestamp, sizeof(timestamp))) {
-        timestamp[0] = '\0';
+    const nanoseconds_t time = timestamp(ClockUnix);
+
+    const std::tm tm = nanoseconds_2_tm(time);
+    char timestamp_hi[64] = {};
+    if (strftime(timestamp_hi, sizeof(timestamp_hi), "%H:%M:%S", &tm) == 0) {
+        timestamp_hi[0] = '\0';
+    }
+
+    char timestamp_lo[32] = {};
+    if (snprintf(timestamp_lo, sizeof(timestamp_lo), "%03lu",
+                 (unsigned long)time % Second / Millisecond)
+        <= 0) {
+        timestamp_lo[0] = '\0';
     }
 
     char tid[32] = {};
@@ -185,8 +195,8 @@ void Logger::default_print_(LogLevel level_num,
         }
     }
 
-    fprintf(stderr, "%s [%s] [%s] %s: %s%s\n", timestamp, tid, level, module, location,
-            message);
+    fprintf(stderr, "%s.%s [%s] [%s] %s: %s%s\n", timestamp_hi, timestamp_lo, tid, level,
+            module, location, message);
 }
 
 } // namespace core

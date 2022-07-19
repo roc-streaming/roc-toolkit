@@ -88,6 +88,16 @@ void sleep_until(clock_t clock, nanoseconds_t timestamp);
 //!  @p duration specifies number of nanoseconds to sleep.
 void sleep_for(clock_t clock, nanoseconds_t duration);
 
+//! Convert timestamp in nanoseconds format to broken-down time.
+//! @note
+//!  std::tm has precision of one second.
+std::tm nanoseconds_2_tm(nanoseconds_t timestamp);
+
+//! Convert timestamp from broken-down time to nanoseconds format.
+//! @note
+//!  std::tm has precision of one second.
+nanoseconds_t tm_2_nanoseconds(std::tm tm);
+
 } // namespace core
 } // namespace roc
 

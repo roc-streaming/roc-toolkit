@@ -14,6 +14,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <ctime>
 #include <new>
 
 #include <ctype.h>
