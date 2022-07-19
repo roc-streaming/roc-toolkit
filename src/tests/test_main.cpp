@@ -9,7 +9,7 @@
 #include <CppUTest/CommandLineArguments.h>
 #include <CppUTest/CommandLineTestRunner.h>
 
-#include "roc_core/colors.h"
+#include "roc_core/color_print.h"
 #include "roc_core/crash_handler.h"
 #include "roc_core/die.h"
 #include "roc_core/heap_allocator.h"

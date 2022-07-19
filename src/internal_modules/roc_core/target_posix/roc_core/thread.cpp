@@ -37,9 +37,9 @@ bool Thread::start() {
         return false;
     }
 
-    if (int err = uv_thread_create(&thread_, thread_runner_, this)) {
-        roc_log(LogError, "thread: uv_thread_create(): [%s] %s", uv_err_name(err),
-                uv_strerror(err));
+    if (int err = pthread_create(&thread_, NULL, &Thread::thread_runner_, this)) {
+        roc_log(LogError, "thread: pthread_thread_create(): %s",
+                errno_to_str(err).c_str());
         return false;
     }
 
@@ -56,16 +56,16 @@ void Thread::join() {
         return;
     }
 
-    if (int err = uv_thread_join(&thread_)) {
-        roc_panic("thread: uv_thread_join(): [%s] %s", uv_err_name(err),
-                  uv_strerror(err));
+    if (int err = pthread_join(thread_, NULL)) {
+        roc_panic("thread: pthread_thread_join(): %s", errno_to_str(err).c_str());
     }
 
     joinable_ = 0;
 }
 
-void Thread::thread_runner_(void* ptr) {
+void* Thread::thread_runner_(void* ptr) {
     static_cast<Thread*>(ptr)->run();
+    return NULL;
 }
 
 } // namespace core

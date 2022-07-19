@@ -6,13 +6,13 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_core/target_libuv/roc_core/thread.h
+//! @file roc_core/target_posix/roc_core/thread.h
 //! @brief Thread.
 
 #ifndef ROC_CORE_THREAD_H_
 #define ROC_CORE_THREAD_H_
 
-#include <uv.h>
+#include <pthread.h>
 
 #include "roc_core/atomic.h"
 #include "roc_core/mutex.h"
@@ -48,9 +48,9 @@ protected:
     virtual void run() = 0;
 
 private:
-    static void thread_runner_(void* ptr);
+    static void* thread_runner_(void* ptr);
 
-    uv_thread_t thread_;
+    pthread_t thread_;
 
     int started_;
     Atomic<int> joinable_;

@@ -6,13 +6,13 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_core/target_libuv/roc_core/singleton.h
+//! @file roc_core/target_posix/roc_core/singleton.h
 //! @brief Singleton.
 
 #ifndef ROC_CORE_SINGLETON_H_
 #define ROC_CORE_SINGLETON_H_
 
-#include <uv.h>
+#include <pthread.h>
 
 #include "roc_core/aligned_storage.h"
 #include "roc_core/atomic_ops.h"
@@ -28,10 +28,12 @@ public:
     //! Get singleton instance.
     static T& instance() {
         T* inst = AtomicOps::load_relaxed(instance_);
+
         if (!inst) {
-            uv_once(&once_, create_);
+            pthread_once(&once_, create_);
             inst = AtomicOps::load_relaxed(instance_);
         }
+
         roc_panic_if_not(inst);
         return *inst;
     }
@@ -42,12 +44,12 @@ private:
         AtomicOps::store_release(instance_, inst);
     }
 
-    static uv_once_t once_;
+    static pthread_once_t once_;
     static AlignedStorage<sizeof(T)> storage_;
     static T* instance_;
 };
 
-template <class T> uv_once_t Singleton<T>::once_ = UV_ONCE_INIT;
+template <class T> pthread_once_t Singleton<T>::once_ = PTHREAD_ONCE_INIT;
 template <class T> AlignedStorage<sizeof(T)> Singleton<T>::storage_;
 template <class T> T* Singleton<T>::instance_;
 

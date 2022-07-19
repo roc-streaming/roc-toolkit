@@ -9,7 +9,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-#include "roc_core/colors.h"
+#include "roc_core/color_print.h"
 #include "roc_core/format_tid.h"
 #include "roc_core/format_time.h"
 #include "roc_core/log.h"

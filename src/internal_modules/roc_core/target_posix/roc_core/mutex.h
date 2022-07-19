@@ -6,16 +6,17 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_core/target_libuv/roc_core/mutex.h
+//! @file roc_core/target_posix/roc_core/mutex.h
 //! @brief Mutex.
 
 #ifndef ROC_CORE_MUTEX_H_
 #define ROC_CORE_MUTEX_H_
 
-#include <uv.h>
+#include <errno.h>
+#include <pthread.h>
 
 #include "roc_core/atomic.h"
-#include "roc_core/cpu_instructions.h"
+#include "roc_core/errno_to_str.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/panic.h"
 #include "roc_core/scoped_lock.h"
@@ -31,42 +32,45 @@ public:
     //! RAII lock.
     typedef ScopedLock<Mutex> Lock;
 
-    Mutex()
-        : guard_(0) {
-        if (int err = uv_mutex_init(&mutex_)) {
-            roc_panic("mutex: uv_mutex_init(): [%s] %s", uv_err_name(err),
-                      uv_strerror(err));
-        }
-    }
+    //! Initialize mutex.
+    Mutex();
 
-    ~Mutex() {
-        while (guard_) {
-            cpu_relax();
-        }
-        uv_mutex_destroy(&mutex_);
-    }
+    //! Destroy mutex.
+    ~Mutex();
 
     //! Try to lock the mutex.
-    bool try_lock() const {
-        return uv_mutex_trylock(&mutex_) == 0;
+    inline bool try_lock() const {
+        const int err = pthread_mutex_trylock(&mutex_);
+
+        if (err != 0 && err != EBUSY && err != EAGAIN) {
+            roc_panic("mutex: pthread_mutex_trylock(): %s", errno_to_str(err).c_str());
+        }
+
+        return (err == 0);
     }
 
     //! Lock mutex.
-    void lock() const {
-        uv_mutex_lock(&mutex_);
+    inline void lock() const {
+        if (int err = pthread_mutex_lock(&mutex_)) {
+            roc_panic("mutex: pthread_mutex_lock(): %s", errno_to_str(err).c_str());
+        }
     }
 
     //! Unlock mutex.
-    void unlock() const {
+    inline void unlock() const {
         ++guard_;
-        uv_mutex_unlock(&mutex_);
+
+        if (int err = pthread_mutex_unlock(&mutex_)) {
+            roc_panic("mutex: pthread_mutex_unlock(): %s", errno_to_str(err).c_str());
+        }
+
         --guard_;
     }
 
 private:
     friend class Cond;
 
-    mutable uv_mutex_t mutex_;
+    mutable pthread_mutex_t mutex_;
     mutable Atomic<int> guard_;
 };
 

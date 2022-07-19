@@ -10,7 +10,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "roc_core/colors.h"
+#include "roc_core/color_print.h"
 
 // ANSI Color Codes.
 #define COLOR_NONE ""

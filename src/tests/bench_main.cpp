@@ -8,7 +8,7 @@
 
 #include <benchmark/benchmark.h>
 
-#include "roc_core/colors.h"
+#include "roc_core/color_print.h"
 #include "roc_core/crash_handler.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_core/log.h"

@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_core/target_posix/roc_core/colors.h
+//! @file roc_core/target_posix/roc_core/color_print.h
 //! @brief Colorization functions.
 
-#ifndef ROC_CORE_COLORS_H_
-#define ROC_CORE_COLORS_H_
+#ifndef ROC_CORE_COLOR_PRINT_H_
+#define ROC_CORE_COLOR_PRINT_H_
 
 #include "roc_core/log.h"
 #include "roc_core/stddefs.h"
@@ -40,4 +40,4 @@ bool colors_format(Color color, const char* str, char* buf, size_t bufsz);
 } // namespace core
 } // namespace roc
 
-#endif // ROC_CORE_COLORS_H_
+#endif // ROC_CORE_COLOR_PRINT_H_

@@ -8,6 +8,8 @@
 
 #include <CppUTest/TestHarness.h>
 
+#include <stdio.h>
+
 #include "roc_audio/pcm_mapper.h"
 #include "roc_core/log.h"
 #include "roc_core/macro_helpers.h"
