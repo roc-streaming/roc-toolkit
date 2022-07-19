@@ -75,6 +75,9 @@ const nanoseconds_t Minute = 60 * Second;
 //! One hour represented in nanoseconds.
 const nanoseconds_t Hour = 60 * Minute;
 
+//! One day represented in nanoseconds.
+const nanoseconds_t Day = 24 * Hour;
+
 //! Get current timestamp in nanoseconds.
 nanoseconds_t timestamp(clock_t clock);
 
