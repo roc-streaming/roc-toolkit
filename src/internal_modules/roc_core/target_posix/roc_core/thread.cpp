@@ -6,13 +6,55 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_core/thread.h"
+#if defined(__linux__)
+#include <sys/syscall.h>
+#elif defined(__FreeBSD__) || defined(__OpenBSD__)
+#include <pthread_np.h>
+#elif defined(__NetBSD__)
+#include <lwp.h>
+#endif
+
+#include <unistd.h>
+
 #include "roc_core/errno_to_str.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
+#include "roc_core/thread.h"
 
 namespace roc {
 namespace core {
+
+uint64_t Thread::get_id() {
+#if defined(SYS_gettid)
+    return (uint64_t)(pid_t)syscall(SYS_gettid);
+#elif defined(__FreeBSD__)
+    return (uint64_t)pthread_getthreadid_np();
+#elif defined(__NetBSD__)
+    return (uint64_t)_lwp_self();
+#elif defined(__APPLE__)
+    uint64_t tid = 0;
+    pthread_threadid_np(NULL, &tid);
+    return tid;
+#elif defined(__ANDROID__)
+    return (uint64_t)gettid();
+#else
+    return (uint64_t)pthread_self();
+#endif
+}
+
+bool Thread::set_realtime() {
+    sched_param param = {};
+    param.sched_priority = sched_get_priority_max(SCHED_RR);
+
+    if (int err = pthread_setschedparam(pthread_self(), SCHED_RR, &param)) {
+        roc_log(LogDebug,
+                "thread: can't set realtime priority: pthread_setschedparam(): %s",
+                errno_to_str(err).c_str());
+        return false;
+    }
+
+    return true;
+}
 
 Thread::Thread()
     : started_(0)

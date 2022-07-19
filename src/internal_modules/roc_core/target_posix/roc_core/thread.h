@@ -17,6 +17,7 @@
 #include "roc_core/atomic.h"
 #include "roc_core/mutex.h"
 #include "roc_core/noncopyable.h"
+#include "roc_core/stddefs.h"
 
 namespace roc {
 namespace core {
@@ -24,6 +25,12 @@ namespace core {
 //! Base class for thread objects.
 class Thread : public NonCopyable<Thread> {
 public:
+    //! Get numeric identifier of current thread.
+    static uint64_t get_id();
+
+    //! Raise current thread priority to realtime.
+    static bool set_realtime();
+
     //! Check if thread was started and can be joined.
     //! @returns
     //!  true if start() was called and join() was not called yet.

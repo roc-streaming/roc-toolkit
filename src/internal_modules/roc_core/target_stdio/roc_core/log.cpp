@@ -10,9 +10,9 @@
 #include <stdio.h>
 
 #include "roc_core/color_print.h"
-#include "roc_core/format_tid.h"
 #include "roc_core/format_time.h"
 #include "roc_core/log.h"
+#include "roc_core/thread.h"
 
 namespace roc {
 namespace core {
@@ -123,7 +123,7 @@ void Logger::default_print_(LogLevel level_num,
     }
 
     char tid[32] = {};
-    if (!format_tid(tid, sizeof(tid))) {
+    if (snprintf(tid, sizeof(tid), "%llu", (unsigned long long)Thread::get_id()) <= 0) {
         tid[0] = '\0';
     }
 
