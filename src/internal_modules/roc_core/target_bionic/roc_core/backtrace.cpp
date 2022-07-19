@@ -83,12 +83,13 @@ void dump_backtrace(void** buffer, ssize_t count) {
 
 } // namespace
 
-void print_backtrace() {
+void print_backtrace_full() {
     void* buffer[MaxDepth];
     dump_backtrace(buffer, capture_backtrace(buffer, MaxDepth));
 }
 
-void print_emergency_backtrace() {
+void print_backtrace_safe() {
+    // not implemented
 }
 
 } // namespace core

@@ -19,21 +19,15 @@ namespace core {
 
 //! Print backtrace to stderr.
 //! @note
-//!  This function is NOT signal-safe.
+//!  This function is NOT signal-safe
 //!  It CAN use heap and stdio.
-void print_backtrace();
+void print_backtrace_full();
 
 //! Print backtrace to stderr (emergency mode).
 //! @note
-//!  This function is signal-safe.
+//!  This function IS signal-safe.
 //!  It can NOT use heap and stdio.
-void print_emergency_backtrace();
-
-//! Print message to stderr (emergency mode).
-//! @note
-//!  This function is signal-safe.
-//!  It can NOT use heap and stdio.
-void print_emergency_message(const char* str);
+void print_backtrace_safe();
 
 //! Demangle symbol name.
 //! @note

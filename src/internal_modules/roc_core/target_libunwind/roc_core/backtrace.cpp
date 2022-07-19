@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "roc_core/backtrace.h"
 #include "roc_core/string_builder.h"
@@ -30,6 +31,21 @@ namespace core {
 namespace {
 
 enum { MaxFunctionNameLen = 100, MaxLineLen = 200 };
+
+/* Write string to stderr.
+ * This must be signal safe.
+ */
+void backtrace_write_string(const char* str) {
+    size_t str_sz = strlen(str);
+    while (str_sz > 0) {
+        ssize_t ret = write(STDERR_FILENO, str, str_sz);
+        if (ret <= 0) {
+            return;
+        }
+        str += (size_t)ret;
+        str_sz -= (size_t)ret;
+    }
+}
 
 /* Checking if backtrace is empty or not.
  * This must be signal safe.
@@ -151,7 +167,7 @@ void backtrace_symbols(bool enable_demangling) {
 
         strcat(buffer, "\n");
 
-        print_emergency_message(buffer);
+        backtrace_write_string(buffer);
     }
 
     if (enable_demangling) {
@@ -161,16 +177,19 @@ void backtrace_symbols(bool enable_demangling) {
 
 } // namespace
 
-void print_backtrace() {
+void print_backtrace_full() {
     if (!is_backtrace_available()) {
         fprintf(stderr, "No backtrace available\n");
+        fflush(stderr);
     } else {
         fprintf(stderr, "Backtrace:\n");
+        fflush(stderr);
+
         backtrace_symbols(true);
     }
 }
 
-void print_emergency_backtrace() {
+void print_backtrace_safe() {
     if (is_backtrace_available()) {
         backtrace_symbols(false);
     }
