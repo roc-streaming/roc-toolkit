@@ -10,8 +10,8 @@
 #include <CppUTest/CommandLineTestRunner.h>
 
 #include "roc_core/colors.h"
-#include "roc_core/crash.h"
-#include "roc_core/exit.h"
+#include "roc_core/crash_handler.h"
+#include "roc_core/die.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_core/log.h"
 #include "roc_core/stddefs.h"
@@ -29,7 +29,6 @@ int main(int argc, const char** argv) {
      * Reason of changing "-t" to "-v" is that we also want to instruct
      * CppUTest to give more verbose output
      */
-
     bool more_verbose = false;
 
     for (int i = 0; i < argc; i++) {
@@ -59,7 +58,13 @@ int main(int argc, const char** argv) {
 
     const int code = CommandLineTestRunner::RunAllTests(argc, argv);
     if (code != 0) {
-        core::fast_exit(code);
+        /* Terminate without destructors and exit handlers.
+         * If a test was failed, chances are that there are leaks or other errors
+         * caused by incorrect deinitialization. We're going to report test failure
+         * and exit and we don't want various panics that we normally issue in
+         * destructors when they detect leaks and other errors.
+         */
+        core::die_fast(code);
     }
 
     return 0;

@@ -6,24 +6,20 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include <stdio.h>
+#include <signal.h>
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "roc_core/atomic_ops.h"
-#include "roc_core/backtrace.h"
-#include "roc_core/crash.h"
+#include "roc_core/crash_handler.h"
+#include "roc_core/die.h"
 #include "roc_core/errno_to_str.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
-#include "roc_core/stddefs.h"
 
 namespace roc {
 namespace core {
 
 namespace {
-
-int crash_in_progress = 0;
 
 const char* signal_string(int sig, siginfo_t* si) {
     switch (sig) {
@@ -69,45 +65,11 @@ const char* signal_string(int sig, siginfo_t* si) {
     return "caught unknown signal";
 }
 
-void signal_print(const char* str) {
-    size_t str_sz = strlen(str);
-    while (str_sz > 0) {
-        ssize_t ret = write(STDERR_FILENO, str, str_sz);
-        if (ret <= 0) {
-            return;
-        }
-        str += (size_t)ret;
-        str_sz -= (size_t)ret;
-    }
-}
-
-void signal_handler(int sig, siginfo_t* si, void*) {
-    int expected = 0;
-    if (AtomicOps::compare_exchange_seq_cst(crash_in_progress, expected, 1)) {
-        signal_print("\nERROR: ");
-        signal_print(signal_string(sig, si));
-        signal_print("\n\n");
-
-        print_backtrace_safe();
-    }
-
-    // this will finally kill us since we use SA_RESETHAND
-    raise(sig);
+ROC_ATTR_NORETURN void signal_handler(int sig, siginfo_t* si, void*) {
+    die_gracefully(signal_string(sig, si), false);
 }
 
 } // namespace
-
-void crash(const char* message) {
-    int expected = 0;
-    if (AtomicOps::compare_exchange_seq_cst(crash_in_progress, expected, 1)) {
-        fprintf(stderr, "\nERROR: %s\n\n", message);
-        fflush(stderr);
-
-        print_backtrace_full();
-    }
-
-    abort();
-}
 
 CrashHandler::CrashHandler()
     : restore_sz_(0) {
@@ -124,17 +86,13 @@ CrashHandler::CrashHandler()
 }
 
 CrashHandler::~CrashHandler() {
-    for (size_t n = 0; n < restore_sz_; n++) {
-        if (sigaction(sig_restore_[n], &sa_restore_[n], NULL) != 0) {
-            roc_log(LogError, "crash handler: sigaction(): %s", errno_to_str().c_str());
-        }
-    }
+    uninstall_();
 }
 
 void CrashHandler::install_(int sig) {
     roc_panic_if(restore_sz_ == MaxSigs);
 
-    struct sigaction sa;
+    struct sigaction sa = {};
     sa.sa_sigaction = signal_handler;
     sa.sa_flags = int(SA_SIGINFO | SA_RESETHAND);
 
@@ -148,6 +106,14 @@ void CrashHandler::install_(int sig) {
 
     sig_restore_[restore_sz_] = sig;
     restore_sz_++;
+}
+
+void CrashHandler::uninstall_() {
+    for (size_t n = 0; n < restore_sz_; n++) {
+        if (sigaction(sig_restore_[n], &sa_restore_[n], NULL) != 0) {
+            roc_log(LogError, "crash handler: sigaction(): %s", errno_to_str().c_str());
+        }
+    }
 }
 
 } // namespace core

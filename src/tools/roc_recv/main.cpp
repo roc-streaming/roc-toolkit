@@ -11,7 +11,7 @@
 #include "roc_audio/resampler_profile.h"
 #include "roc_core/array.h"
 #include "roc_core/colors.h"
-#include "roc_core/crash.h"
+#include "roc_core/crash_handler.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_core/log.h"
 #include "roc_core/parse_duration.h"

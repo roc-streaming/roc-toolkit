@@ -9,7 +9,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-#include "roc_core/crash.h"
+#include "roc_core/die.h"
 #include "roc_core/panic.h"
 
 namespace roc {
@@ -17,6 +17,7 @@ namespace core {
 
 void panic(const char* module, const char* file, int line, const char* format, ...) {
     fprintf(stderr, "\n%s:%d: error: roc_panic()\n", file, line);
+    fflush(stderr);
 
     char message[256] = {};
     size_t message_sz = sizeof(message) - 1;
@@ -31,7 +32,7 @@ void panic(const char* module, const char* file, int line, const char* format, .
     vsnprintf(message + off, message_sz, format, args);
     va_end(args);
 
-    crash(message);
+    die_gracefully(message, true);
 }
 
 } // namespace core

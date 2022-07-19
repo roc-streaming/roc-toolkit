@@ -14,14 +14,10 @@
 
 #include <signal.h>
 
-#include "roc_core/attributes.h"
 #include "roc_core/noncopyable.h"
 
 namespace roc {
 namespace core {
-
-//! Report a crash and abort application.
-ROC_ATTR_NORETURN void crash(const char* message);
 
 //! Crash handler.
 class CrashHandler : public core::NonCopyable<> {
@@ -34,6 +30,7 @@ public:
 
 private:
     void install_(int sig);
+    void uninstall_();
 
     enum { MaxSigs = 8 };
 
