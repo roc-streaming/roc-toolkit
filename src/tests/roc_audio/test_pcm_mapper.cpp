@@ -45,7 +45,16 @@ void map(const void* input,
     UNSIGNED_LONGS_EQUAL(n_samples, mapper.output_sample_count(out_bytes));
     UNSIGNED_LONGS_EQUAL(out_bytes, mapper.output_byte_count(n_samples));
 
-    mapper.map(input, output, n_samples);
+    size_t in_off = 0;
+    size_t out_off = 0;
+
+    const size_t actual_samples =
+        mapper.map(input, output, in_bytes, out_bytes, in_off, out_off, n_samples);
+
+    UNSIGNED_LONGS_EQUAL(n_samples, actual_samples);
+
+    UNSIGNED_LONGS_EQUAL(in_bytes * 8, in_off);
+    UNSIGNED_LONGS_EQUAL(out_bytes * 8, out_off);
 }
 
 template <class T> void compare(const T* expected, const T* actual, size_t n_samples) {

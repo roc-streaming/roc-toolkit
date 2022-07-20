@@ -591,48 +591,50 @@ template <> struct pcm_sample<{{ type }}> {
 
 {% endfor %}
 // Write octet at given byte-aligned bit offset
-inline void pcm_aligned_write(uint8_t* buffer, size_t& offset, uint8_t arg) {
-    buffer[offset >> 3] = arg;
-    offset += 8;
+inline void pcm_aligned_write(uint8_t* buffer, size_t& bit_offset, uint8_t arg) {
+    buffer[bit_offset >> 3] = arg;
+    bit_offset += 8;
 }
 
 // Read octet at given byte-aligned bit offset
-inline uint8_t pcm_aligned_read(const uint8_t* buffer, size_t& offset) {
-    uint8_t ret = buffer[offset >> 3];
-    offset += 8;
+inline uint8_t pcm_aligned_read(const uint8_t* buffer, size_t& bit_offset) {
+    uint8_t ret = buffer[bit_offset >> 3];
+    bit_offset += 8;
     return ret;
 }
 
 // Write value (at most 8 bits) at given unaligned bit offset
-inline void pcm_unaligned_write(uint8_t* buffer, size_t& offset, size_t length, uint8_t arg) {
-    size_t byte_offset = (offset >> 3);
-    size_t bit_offset = (offset & 0x7u);
+inline void
+pcm_unaligned_write(uint8_t* buffer, size_t& bit_offset, size_t bit_length, uint8_t arg) {
+    size_t byte_index = (bit_offset >> 3);
+    size_t bit_index = (bit_offset & 0x7u);
 
-    if (bit_offset == 0) {
-        buffer[byte_offset] = 0;
+    if (bit_index == 0) {
+        buffer[byte_index] = 0;
     }
 
-    buffer[byte_offset] |= uint8_t(arg << (8 - length) >> bit_offset);
+    buffer[byte_index] |= uint8_t(arg << (8 - bit_length) >> bit_index);
 
-    if (bit_offset + length > 8) {
-        buffer[byte_offset + 1] = uint8_t(arg << bit_offset);
+    if (bit_index + bit_length > 8) {
+        buffer[byte_index + 1] = uint8_t(arg << bit_index);
     }
 
-    offset += length;
+    bit_offset += bit_length;
 }
 
 // Read value (at most 8 bits) at given unaligned bit offset
-inline uint8_t pcm_unaligned_read(const uint8_t* buffer, size_t& offset, size_t length) {
-    size_t byte_offset = (offset >> 3);
-    size_t bit_offset = (offset & 0x7u);
+inline uint8_t
+pcm_unaligned_read(const uint8_t* buffer, size_t& bit_offset, size_t bit_length) {
+    size_t byte_index = (bit_offset >> 3);
+    size_t bit_index = (bit_offset & 0x7u);
 
-    uint8_t ret = uint8_t(buffer[byte_offset] << bit_offset >> (8 - length));
+    uint8_t ret = uint8_t(buffer[byte_index] << bit_index >> (8 - bit_length));
 
-    if (bit_offset + length > 8) {
-        ret |= uint8_t(buffer[byte_offset + 1] >> (8 - bit_offset) >> (8 - length));
+    if (bit_index + bit_length > 8) {
+        ret |= uint8_t(buffer[byte_index + 1] >> (8 - bit_index) >> (8 - bit_length));
     }
 
-    offset += length;
+    bit_offset += bit_length;
     return ret;
 }
 
@@ -644,7 +646,7 @@ template <PcmEncoding, PcmEndian> struct pcm_packer;
 // {{ enc.encoding }} {{ endian }}-Endian packer / unpacker
 template <> struct pcm_packer<PcmEncoding_{{ enc.encoding }}, PcmEndian_{{ endian }}> {
     // Pack next sample to buffer
-    static inline void pack(uint8_t* buffer, size_t& offset, {{ enc.type }} arg) {
+    static inline void pack(uint8_t* buffer, size_t& bit_offset, {{ enc.type }} arg) {
         // native-endian view of octets
         pcm_sample<{{ enc.type }}> p;
         p.value = arg;
@@ -660,16 +662,16 @@ template <> struct pcm_packer<PcmEncoding_{{ enc.encoding }}, PcmEndian_{{ endia
 {% set n = enc.packed_octets - n - 1 %}
 {% endif %}
 {% if enc.packed_width % 8 == 0 %}
-        pcm_aligned_write(buffer, offset, p.octets.octet{{ n }});
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet{{ n }});
 {% else %}
-        pcm_unaligned_write(buffer, offset, \
+        pcm_unaligned_write(buffer, bit_offset, \
 {{ enc.packed_width % 8 if n == enc.packed_octets-1 else 8 }}, p.octets.octet{{ n }});
 {% endif %}
 {% endfor %}
     }
 
     // Unpack next sample from buffer
-    static inline {{ enc.type }} unpack(const uint8_t* buffer, size_t& offset) {
+    static inline {{ enc.type }} unpack(const uint8_t* buffer, size_t& bit_offset) {
         // native-endian view of octets
         pcm_sample<{{ enc.type }}> p;
 
@@ -681,9 +683,9 @@ template <> struct pcm_packer<PcmEncoding_{{ enc.encoding }}, PcmEndian_{{ endia
 {% if n >= enc.packed_octets %}
         p.octets.octet{{ n }} = 0;
 {% elif enc.packed_width % 8 == 0 %}
-        p.octets.octet{{ n }} = pcm_aligned_read(buffer, offset);
+        p.octets.octet{{ n }} = pcm_aligned_read(buffer, bit_offset);
 {% else %}
-        p.octets.octet{{ n }} = pcm_unaligned_read(buffer, offset, \
+        p.octets.octet{{ n }} = pcm_unaligned_read(buffer, bit_offset, \
 {{ enc.packed_width % 8 if n == enc.packed_octets-1 else 8 }});
 {% endif %}
 {% endfor %}
@@ -691,9 +693,9 @@ template <> struct pcm_packer<PcmEncoding_{{ enc.encoding }}, PcmEndian_{{ endia
 {% if enc.width < enc.packed_width %}
         // zeroise padding bits
         p.value &= {{ enc.value_mask }};
+
 {% endif %}
 {% if enc.is_signed and enc.width < enc.unpacked_width %}
-
         if (p.value & {{ enc.sign_mask }}) {
             // sign extension
             p.value |= {{ enc.lsb_mask }};
@@ -709,23 +711,27 @@ template <> struct pcm_packer<PcmEncoding_{{ enc.encoding }}, PcmEndian_{{ endia
 // Map encoding and endian of samples
 template <PcmEncoding InEnc, PcmEncoding OutEnc, PcmEndian InEnd, PcmEndian OutEnd>
 struct pcm_mapper {
-    static inline void map(const void* in_data, void* out_data, size_t n_samples) {
-        const uint8_t* in = (const uint8_t*)in_data;
-        uint8_t* out = (uint8_t*)out_data;
-
-        size_t in_off = 0;
-        size_t out_off = 0;
-
+    static inline void map(const uint8_t* in_data,
+                           uint8_t* out_data,
+                           size_t& in_bit_off,
+                           size_t& out_bit_off,
+                           size_t n_samples) {
         for (size_t n = 0; n < n_samples; n++) {
-            pcm_packer<OutEnc, OutEnd>::pack(out, out_off,
+            pcm_packer<OutEnc, OutEnd>::pack(
+                out_data, out_bit_off,
                 pcm_encoding_converter<InEnc, OutEnc>::convert(
-                    pcm_packer<InEnc, InEnd>::unpack(in, in_off)));
+                    pcm_packer<InEnc, InEnd>::unpack(in_data, in_bit_off)));
         }
     }
 };
 
 // Sample mapping function
-typedef void (*pcm_mapper_func_t)(const void* in, void* out, size_t n_samples);
+typedef void (*pcm_mapper_func_t)(
+    const uint8_t* in_data,
+    uint8_t* out_data,
+    size_t& in_bit_off,
+    size_t& out_bit_off,
+    size_t n_samples);
 
 // Select mapper function
 template <PcmEncoding InEnc, PcmEncoding OutEnc, PcmEndian InEnd, PcmEndian OutEnd>

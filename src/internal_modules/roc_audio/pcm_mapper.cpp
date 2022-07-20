@@ -51,16 +51,31 @@ size_t PcmMapper::output_byte_count(size_t output_samples) const {
     return (output_samples * output_sample_bits_ + 7) / 8;
 }
 
-void PcmMapper::map(const void* input, void* output, size_t n_samples) {
-    if (!input) {
-        roc_panic("pcm mapper: input is null");
+size_t PcmMapper::map(const void* in_data,
+                      void* out_data,
+                      size_t in_byte_size,
+                      size_t out_byte_size,
+                      size_t& in_bit_off,
+                      size_t& out_bit_off,
+                      size_t n_samples) {
+    roc_panic_if_msg(!in_data, "pcm mapper: input is null");
+    roc_panic_if_msg(!out_data, "pcm mapper: output is null");
+
+    roc_panic_if_msg(in_bit_off > in_byte_size * 8,
+                     "pcm mapper: input offset out of bounds");
+    roc_panic_if_msg(out_bit_off > out_byte_size * 8,
+                     "pcm mapper: output offset out of bounds");
+
+    n_samples = std::min(n_samples, (in_byte_size * 8 - in_bit_off) / input_sample_bits_);
+    n_samples =
+        std::min(n_samples, (out_byte_size * 8 - out_bit_off) / output_sample_bits_);
+
+    if (n_samples != 0) {
+        map_func_((const uint8_t*)in_data, (uint8_t*)out_data, in_bit_off, out_bit_off,
+                  n_samples);
     }
 
-    if (!output) {
-        roc_panic("pcm mapper: output is null");
-    }
-
-    map_func_(input, output, n_samples);
+    return n_samples;
 }
 
 } // namespace audio

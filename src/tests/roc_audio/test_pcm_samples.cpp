@@ -76,8 +76,20 @@ TEST(pcm_samples, decode) {
 
         double decoded_samples[test::SampleInfo::MaxSamples] = {};
 
-        mapper.map(test_samples[idx]->bytes, decoded_samples,
-                   test_samples[idx]->num_samples);
+        const size_t in_bytes = test_samples[idx]->num_bytes;
+        const size_t out_bytes = test_samples[idx]->num_samples * sizeof(double);
+
+        size_t in_off = 0;
+        size_t out_off = 0;
+
+        const size_t actual_samples =
+            mapper.map(test_samples[idx]->bytes, decoded_samples, in_bytes, out_bytes,
+                       in_off, out_off, test_samples[idx]->num_samples);
+
+        UNSIGNED_LONGS_EQUAL(test_samples[idx]->num_samples, actual_samples);
+
+        UNSIGNED_LONGS_EQUAL(in_bytes * 8, in_off);
+        UNSIGNED_LONGS_EQUAL(out_bytes * 8, out_off);
 
         roc_log(LogDebug, "checking samples");
 
@@ -123,8 +135,20 @@ TEST(pcm_samples, recode) {
                     test_samples[idx2]->num_bytes,
                     mapper.output_byte_count(test_samples[idx2]->num_samples));
 
-                mapper.map(test_samples[idx1]->bytes, recoded_bytes,
-                           test_samples[idx1]->num_samples);
+                const size_t in_bytes = test_samples[idx1]->num_bytes;
+                const size_t out_bytes = test_samples[idx2]->num_bytes;
+
+                size_t in_off = 0;
+                size_t out_off = 0;
+
+                const size_t actual_samples = mapper.map(
+                    test_samples[idx1]->bytes, recoded_bytes, in_bytes, out_bytes, in_off,
+                    out_off, test_samples[idx1]->num_samples);
+
+                UNSIGNED_LONGS_EQUAL(test_samples[idx1]->num_samples, actual_samples);
+
+                UNSIGNED_LONGS_EQUAL(in_bytes * 8, in_off);
+                UNSIGNED_LONGS_EQUAL(out_bytes * 8, out_off);
             }
 
             {
@@ -148,8 +172,20 @@ TEST(pcm_samples, recode) {
                     test_samples[idx2]->num_bytes,
                     mapper.input_byte_count(test_samples[idx2]->num_samples));
 
-                mapper.map(recoded_bytes, decoded_samples,
-                           test_samples[idx2]->num_samples);
+                const size_t in_bytes = test_samples[idx2]->num_bytes;
+                const size_t out_bytes = test_samples[idx2]->num_samples * sizeof(double);
+
+                size_t in_off = 0;
+                size_t out_off = 0;
+
+                const size_t actual_samples =
+                    mapper.map(recoded_bytes, decoded_samples, in_bytes, out_bytes,
+                               in_off, out_off, test_samples[idx2]->num_samples);
+
+                UNSIGNED_LONGS_EQUAL(test_samples[idx2]->num_samples, actual_samples);
+
+                UNSIGNED_LONGS_EQUAL(in_bytes * 8, in_off);
+                UNSIGNED_LONGS_EQUAL(out_bytes * 8, out_off);
             }
 
             roc_log(LogDebug, "checking samples");

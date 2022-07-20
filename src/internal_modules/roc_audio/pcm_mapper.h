@@ -44,7 +44,26 @@ public:
     size_t output_byte_count(size_t output_samples) const;
 
     //! Map samples from input to output format.
-    void map(const void* input, void* output, size_t n_samples);
+    //! @remarks
+    //!  @p in_data is a pointer to input buffer
+    //!  @p in_byte_size is size of input buffer in bytes
+    //!  @p in_bit_off is an offset in input buffer in bits
+    //!  @p out_data is a pointer to output buffer
+    //!  @p out_byte_size is size of output buffer in bytes
+    //!  @p out_bit_off is an offset in output buffer in bits
+    //!  @p n_samples is number of input and output samples for all channels
+    //! @returns
+    //!  number of samples actually mapped, which may be truncated if
+    //!  input or output buffer is smaller than requested
+    //! @note
+    //!  updates @p in_bit_off and @p out_bit_off
+    size_t map(const void* in_data,
+               void* out_data,
+               size_t in_byte_size,
+               size_t out_byte_size,
+               size_t& in_bit_off,
+               size_t& out_bit_off,
+               size_t n_samples);
 
 private:
     const PcmFormat input_fmt_;
@@ -53,7 +72,11 @@ private:
     const size_t input_sample_bits_;
     const size_t output_sample_bits_;
 
-    void (*const map_func_)(const void* in, void* out, size_t n_samples);
+    void (*const map_func_)(const uint8_t* in_data,
+                            uint8_t* out_data,
+                            size_t& in_bit_off,
+                            size_t& out_bit_off,
+                            size_t n_samples);
 };
 
 } // namespace audio

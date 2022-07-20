@@ -10921,48 +10921,50 @@ template <> struct pcm_sample<double> {
 };
 
 // Write octet at given byte-aligned bit offset
-inline void pcm_aligned_write(uint8_t* buffer, size_t& offset, uint8_t arg) {
-    buffer[offset >> 3] = arg;
-    offset += 8;
+inline void pcm_aligned_write(uint8_t* buffer, size_t& bit_offset, uint8_t arg) {
+    buffer[bit_offset >> 3] = arg;
+    bit_offset += 8;
 }
 
 // Read octet at given byte-aligned bit offset
-inline uint8_t pcm_aligned_read(const uint8_t* buffer, size_t& offset) {
-    uint8_t ret = buffer[offset >> 3];
-    offset += 8;
+inline uint8_t pcm_aligned_read(const uint8_t* buffer, size_t& bit_offset) {
+    uint8_t ret = buffer[bit_offset >> 3];
+    bit_offset += 8;
     return ret;
 }
 
 // Write value (at most 8 bits) at given unaligned bit offset
-inline void pcm_unaligned_write(uint8_t* buffer, size_t& offset, size_t length, uint8_t arg) {
-    size_t byte_offset = (offset >> 3);
-    size_t bit_offset = (offset & 0x7u);
+inline void
+pcm_unaligned_write(uint8_t* buffer, size_t& bit_offset, size_t bit_length, uint8_t arg) {
+    size_t byte_index = (bit_offset >> 3);
+    size_t bit_index = (bit_offset & 0x7u);
 
-    if (bit_offset == 0) {
-        buffer[byte_offset] = 0;
+    if (bit_index == 0) {
+        buffer[byte_index] = 0;
     }
 
-    buffer[byte_offset] |= uint8_t(arg << (8 - length) >> bit_offset);
+    buffer[byte_index] |= uint8_t(arg << (8 - bit_length) >> bit_index);
 
-    if (bit_offset + length > 8) {
-        buffer[byte_offset + 1] = uint8_t(arg << bit_offset);
+    if (bit_index + bit_length > 8) {
+        buffer[byte_index + 1] = uint8_t(arg << bit_index);
     }
 
-    offset += length;
+    bit_offset += bit_length;
 }
 
 // Read value (at most 8 bits) at given unaligned bit offset
-inline uint8_t pcm_unaligned_read(const uint8_t* buffer, size_t& offset, size_t length) {
-    size_t byte_offset = (offset >> 3);
-    size_t bit_offset = (offset & 0x7u);
+inline uint8_t
+pcm_unaligned_read(const uint8_t* buffer, size_t& bit_offset, size_t bit_length) {
+    size_t byte_index = (bit_offset >> 3);
+    size_t bit_index = (bit_offset & 0x7u);
 
-    uint8_t ret = uint8_t(buffer[byte_offset] << bit_offset >> (8 - length));
+    uint8_t ret = uint8_t(buffer[byte_index] << bit_index >> (8 - bit_length));
 
-    if (bit_offset + length > 8) {
-        ret |= uint8_t(buffer[byte_offset + 1] >> (8 - bit_offset) >> (8 - length));
+    if (bit_index + bit_length > 8) {
+        ret |= uint8_t(buffer[byte_index + 1] >> (8 - bit_index) >> (8 - bit_length));
     }
 
-    offset += length;
+    bit_offset += bit_length;
     return ret;
 }
 
@@ -10972,22 +10974,22 @@ template <PcmEncoding, PcmEndian> struct pcm_packer;
 // SInt8 Big-Endian packer / unpacker
 template <> struct pcm_packer<PcmEncoding_SInt8, PcmEndian_Big> {
     // Pack next sample to buffer
-    static inline void pack(uint8_t* buffer, size_t& offset, int8_t arg) {
+    static inline void pack(uint8_t* buffer, size_t& bit_offset, int8_t arg) {
         // native-endian view of octets
         pcm_sample<int8_t> p;
         p.value = arg;
 
         // write in big-endian order
-        pcm_aligned_write(buffer, offset, p.octets.octet0);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet0);
     }
 
     // Unpack next sample from buffer
-    static inline int8_t unpack(const uint8_t* buffer, size_t& offset) {
+    static inline int8_t unpack(const uint8_t* buffer, size_t& bit_offset) {
         // native-endian view of octets
         pcm_sample<int8_t> p;
 
         // read in big-endian order
-        p.octets.octet0 = pcm_aligned_read(buffer, offset);
+        p.octets.octet0 = pcm_aligned_read(buffer, bit_offset);
 
         return p.value;
     }
@@ -10996,22 +10998,22 @@ template <> struct pcm_packer<PcmEncoding_SInt8, PcmEndian_Big> {
 // SInt8 Little-Endian packer / unpacker
 template <> struct pcm_packer<PcmEncoding_SInt8, PcmEndian_Little> {
     // Pack next sample to buffer
-    static inline void pack(uint8_t* buffer, size_t& offset, int8_t arg) {
+    static inline void pack(uint8_t* buffer, size_t& bit_offset, int8_t arg) {
         // native-endian view of octets
         pcm_sample<int8_t> p;
         p.value = arg;
 
         // write in little-endian order
-        pcm_aligned_write(buffer, offset, p.octets.octet0);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet0);
     }
 
     // Unpack next sample from buffer
-    static inline int8_t unpack(const uint8_t* buffer, size_t& offset) {
+    static inline int8_t unpack(const uint8_t* buffer, size_t& bit_offset) {
         // native-endian view of octets
         pcm_sample<int8_t> p;
 
         // read in little-endian order
-        p.octets.octet0 = pcm_aligned_read(buffer, offset);
+        p.octets.octet0 = pcm_aligned_read(buffer, bit_offset);
 
         return p.value;
     }
@@ -11020,22 +11022,22 @@ template <> struct pcm_packer<PcmEncoding_SInt8, PcmEndian_Little> {
 // UInt8 Big-Endian packer / unpacker
 template <> struct pcm_packer<PcmEncoding_UInt8, PcmEndian_Big> {
     // Pack next sample to buffer
-    static inline void pack(uint8_t* buffer, size_t& offset, uint8_t arg) {
+    static inline void pack(uint8_t* buffer, size_t& bit_offset, uint8_t arg) {
         // native-endian view of octets
         pcm_sample<uint8_t> p;
         p.value = arg;
 
         // write in big-endian order
-        pcm_aligned_write(buffer, offset, p.octets.octet0);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet0);
     }
 
     // Unpack next sample from buffer
-    static inline uint8_t unpack(const uint8_t* buffer, size_t& offset) {
+    static inline uint8_t unpack(const uint8_t* buffer, size_t& bit_offset) {
         // native-endian view of octets
         pcm_sample<uint8_t> p;
 
         // read in big-endian order
-        p.octets.octet0 = pcm_aligned_read(buffer, offset);
+        p.octets.octet0 = pcm_aligned_read(buffer, bit_offset);
 
         return p.value;
     }
@@ -11044,22 +11046,22 @@ template <> struct pcm_packer<PcmEncoding_UInt8, PcmEndian_Big> {
 // UInt8 Little-Endian packer / unpacker
 template <> struct pcm_packer<PcmEncoding_UInt8, PcmEndian_Little> {
     // Pack next sample to buffer
-    static inline void pack(uint8_t* buffer, size_t& offset, uint8_t arg) {
+    static inline void pack(uint8_t* buffer, size_t& bit_offset, uint8_t arg) {
         // native-endian view of octets
         pcm_sample<uint8_t> p;
         p.value = arg;
 
         // write in little-endian order
-        pcm_aligned_write(buffer, offset, p.octets.octet0);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet0);
     }
 
     // Unpack next sample from buffer
-    static inline uint8_t unpack(const uint8_t* buffer, size_t& offset) {
+    static inline uint8_t unpack(const uint8_t* buffer, size_t& bit_offset) {
         // native-endian view of octets
         pcm_sample<uint8_t> p;
 
         // read in little-endian order
-        p.octets.octet0 = pcm_aligned_read(buffer, offset);
+        p.octets.octet0 = pcm_aligned_read(buffer, bit_offset);
 
         return p.value;
     }
@@ -11068,24 +11070,24 @@ template <> struct pcm_packer<PcmEncoding_UInt8, PcmEndian_Little> {
 // SInt16 Big-Endian packer / unpacker
 template <> struct pcm_packer<PcmEncoding_SInt16, PcmEndian_Big> {
     // Pack next sample to buffer
-    static inline void pack(uint8_t* buffer, size_t& offset, int16_t arg) {
+    static inline void pack(uint8_t* buffer, size_t& bit_offset, int16_t arg) {
         // native-endian view of octets
         pcm_sample<int16_t> p;
         p.value = arg;
 
         // write in big-endian order
-        pcm_aligned_write(buffer, offset, p.octets.octet1);
-        pcm_aligned_write(buffer, offset, p.octets.octet0);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet1);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet0);
     }
 
     // Unpack next sample from buffer
-    static inline int16_t unpack(const uint8_t* buffer, size_t& offset) {
+    static inline int16_t unpack(const uint8_t* buffer, size_t& bit_offset) {
         // native-endian view of octets
         pcm_sample<int16_t> p;
 
         // read in big-endian order
-        p.octets.octet1 = pcm_aligned_read(buffer, offset);
-        p.octets.octet0 = pcm_aligned_read(buffer, offset);
+        p.octets.octet1 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet0 = pcm_aligned_read(buffer, bit_offset);
 
         return p.value;
     }
@@ -11094,24 +11096,24 @@ template <> struct pcm_packer<PcmEncoding_SInt16, PcmEndian_Big> {
 // SInt16 Little-Endian packer / unpacker
 template <> struct pcm_packer<PcmEncoding_SInt16, PcmEndian_Little> {
     // Pack next sample to buffer
-    static inline void pack(uint8_t* buffer, size_t& offset, int16_t arg) {
+    static inline void pack(uint8_t* buffer, size_t& bit_offset, int16_t arg) {
         // native-endian view of octets
         pcm_sample<int16_t> p;
         p.value = arg;
 
         // write in little-endian order
-        pcm_aligned_write(buffer, offset, p.octets.octet0);
-        pcm_aligned_write(buffer, offset, p.octets.octet1);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet0);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet1);
     }
 
     // Unpack next sample from buffer
-    static inline int16_t unpack(const uint8_t* buffer, size_t& offset) {
+    static inline int16_t unpack(const uint8_t* buffer, size_t& bit_offset) {
         // native-endian view of octets
         pcm_sample<int16_t> p;
 
         // read in little-endian order
-        p.octets.octet0 = pcm_aligned_read(buffer, offset);
-        p.octets.octet1 = pcm_aligned_read(buffer, offset);
+        p.octets.octet0 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet1 = pcm_aligned_read(buffer, bit_offset);
 
         return p.value;
     }
@@ -11120,24 +11122,24 @@ template <> struct pcm_packer<PcmEncoding_SInt16, PcmEndian_Little> {
 // UInt16 Big-Endian packer / unpacker
 template <> struct pcm_packer<PcmEncoding_UInt16, PcmEndian_Big> {
     // Pack next sample to buffer
-    static inline void pack(uint8_t* buffer, size_t& offset, uint16_t arg) {
+    static inline void pack(uint8_t* buffer, size_t& bit_offset, uint16_t arg) {
         // native-endian view of octets
         pcm_sample<uint16_t> p;
         p.value = arg;
 
         // write in big-endian order
-        pcm_aligned_write(buffer, offset, p.octets.octet1);
-        pcm_aligned_write(buffer, offset, p.octets.octet0);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet1);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet0);
     }
 
     // Unpack next sample from buffer
-    static inline uint16_t unpack(const uint8_t* buffer, size_t& offset) {
+    static inline uint16_t unpack(const uint8_t* buffer, size_t& bit_offset) {
         // native-endian view of octets
         pcm_sample<uint16_t> p;
 
         // read in big-endian order
-        p.octets.octet1 = pcm_aligned_read(buffer, offset);
-        p.octets.octet0 = pcm_aligned_read(buffer, offset);
+        p.octets.octet1 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet0 = pcm_aligned_read(buffer, bit_offset);
 
         return p.value;
     }
@@ -11146,24 +11148,24 @@ template <> struct pcm_packer<PcmEncoding_UInt16, PcmEndian_Big> {
 // UInt16 Little-Endian packer / unpacker
 template <> struct pcm_packer<PcmEncoding_UInt16, PcmEndian_Little> {
     // Pack next sample to buffer
-    static inline void pack(uint8_t* buffer, size_t& offset, uint16_t arg) {
+    static inline void pack(uint8_t* buffer, size_t& bit_offset, uint16_t arg) {
         // native-endian view of octets
         pcm_sample<uint16_t> p;
         p.value = arg;
 
         // write in little-endian order
-        pcm_aligned_write(buffer, offset, p.octets.octet0);
-        pcm_aligned_write(buffer, offset, p.octets.octet1);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet0);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet1);
     }
 
     // Unpack next sample from buffer
-    static inline uint16_t unpack(const uint8_t* buffer, size_t& offset) {
+    static inline uint16_t unpack(const uint8_t* buffer, size_t& bit_offset) {
         // native-endian view of octets
         pcm_sample<uint16_t> p;
 
         // read in little-endian order
-        p.octets.octet0 = pcm_aligned_read(buffer, offset);
-        p.octets.octet1 = pcm_aligned_read(buffer, offset);
+        p.octets.octet0 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet1 = pcm_aligned_read(buffer, bit_offset);
 
         return p.value;
     }
@@ -11172,28 +11174,27 @@ template <> struct pcm_packer<PcmEncoding_UInt16, PcmEndian_Little> {
 // SInt18 Big-Endian packer / unpacker
 template <> struct pcm_packer<PcmEncoding_SInt18, PcmEndian_Big> {
     // Pack next sample to buffer
-    static inline void pack(uint8_t* buffer, size_t& offset, int32_t arg) {
+    static inline void pack(uint8_t* buffer, size_t& bit_offset, int32_t arg) {
         // native-endian view of octets
         pcm_sample<int32_t> p;
         p.value = arg;
 
         // write in big-endian order
-        pcm_unaligned_write(buffer, offset, 2, p.octets.octet2);
-        pcm_unaligned_write(buffer, offset, 8, p.octets.octet1);
-        pcm_unaligned_write(buffer, offset, 8, p.octets.octet0);
+        pcm_unaligned_write(buffer, bit_offset, 2, p.octets.octet2);
+        pcm_unaligned_write(buffer, bit_offset, 8, p.octets.octet1);
+        pcm_unaligned_write(buffer, bit_offset, 8, p.octets.octet0);
     }
 
     // Unpack next sample from buffer
-    static inline int32_t unpack(const uint8_t* buffer, size_t& offset) {
+    static inline int32_t unpack(const uint8_t* buffer, size_t& bit_offset) {
         // native-endian view of octets
         pcm_sample<int32_t> p;
 
         // read in big-endian order
         p.octets.octet3 = 0;
-        p.octets.octet2 = pcm_unaligned_read(buffer, offset, 2);
-        p.octets.octet1 = pcm_unaligned_read(buffer, offset, 8);
-        p.octets.octet0 = pcm_unaligned_read(buffer, offset, 8);
-
+        p.octets.octet2 = pcm_unaligned_read(buffer, bit_offset, 2);
+        p.octets.octet1 = pcm_unaligned_read(buffer, bit_offset, 8);
+        p.octets.octet0 = pcm_unaligned_read(buffer, bit_offset, 8);
 
         if (p.value & 0x20000) {
             // sign extension
@@ -11207,28 +11208,27 @@ template <> struct pcm_packer<PcmEncoding_SInt18, PcmEndian_Big> {
 // SInt18 Little-Endian packer / unpacker
 template <> struct pcm_packer<PcmEncoding_SInt18, PcmEndian_Little> {
     // Pack next sample to buffer
-    static inline void pack(uint8_t* buffer, size_t& offset, int32_t arg) {
+    static inline void pack(uint8_t* buffer, size_t& bit_offset, int32_t arg) {
         // native-endian view of octets
         pcm_sample<int32_t> p;
         p.value = arg;
 
         // write in little-endian order
-        pcm_unaligned_write(buffer, offset, 8, p.octets.octet0);
-        pcm_unaligned_write(buffer, offset, 8, p.octets.octet1);
-        pcm_unaligned_write(buffer, offset, 2, p.octets.octet2);
+        pcm_unaligned_write(buffer, bit_offset, 8, p.octets.octet0);
+        pcm_unaligned_write(buffer, bit_offset, 8, p.octets.octet1);
+        pcm_unaligned_write(buffer, bit_offset, 2, p.octets.octet2);
     }
 
     // Unpack next sample from buffer
-    static inline int32_t unpack(const uint8_t* buffer, size_t& offset) {
+    static inline int32_t unpack(const uint8_t* buffer, size_t& bit_offset) {
         // native-endian view of octets
         pcm_sample<int32_t> p;
 
         // read in little-endian order
-        p.octets.octet0 = pcm_unaligned_read(buffer, offset, 8);
-        p.octets.octet1 = pcm_unaligned_read(buffer, offset, 8);
-        p.octets.octet2 = pcm_unaligned_read(buffer, offset, 2);
+        p.octets.octet0 = pcm_unaligned_read(buffer, bit_offset, 8);
+        p.octets.octet1 = pcm_unaligned_read(buffer, bit_offset, 8);
+        p.octets.octet2 = pcm_unaligned_read(buffer, bit_offset, 2);
         p.octets.octet3 = 0;
-
 
         if (p.value & 0x20000) {
             // sign extension
@@ -11242,27 +11242,27 @@ template <> struct pcm_packer<PcmEncoding_SInt18, PcmEndian_Little> {
 // UInt18 Big-Endian packer / unpacker
 template <> struct pcm_packer<PcmEncoding_UInt18, PcmEndian_Big> {
     // Pack next sample to buffer
-    static inline void pack(uint8_t* buffer, size_t& offset, uint32_t arg) {
+    static inline void pack(uint8_t* buffer, size_t& bit_offset, uint32_t arg) {
         // native-endian view of octets
         pcm_sample<uint32_t> p;
         p.value = arg;
 
         // write in big-endian order
-        pcm_unaligned_write(buffer, offset, 2, p.octets.octet2);
-        pcm_unaligned_write(buffer, offset, 8, p.octets.octet1);
-        pcm_unaligned_write(buffer, offset, 8, p.octets.octet0);
+        pcm_unaligned_write(buffer, bit_offset, 2, p.octets.octet2);
+        pcm_unaligned_write(buffer, bit_offset, 8, p.octets.octet1);
+        pcm_unaligned_write(buffer, bit_offset, 8, p.octets.octet0);
     }
 
     // Unpack next sample from buffer
-    static inline uint32_t unpack(const uint8_t* buffer, size_t& offset) {
+    static inline uint32_t unpack(const uint8_t* buffer, size_t& bit_offset) {
         // native-endian view of octets
         pcm_sample<uint32_t> p;
 
         // read in big-endian order
         p.octets.octet3 = 0;
-        p.octets.octet2 = pcm_unaligned_read(buffer, offset, 2);
-        p.octets.octet1 = pcm_unaligned_read(buffer, offset, 8);
-        p.octets.octet0 = pcm_unaligned_read(buffer, offset, 8);
+        p.octets.octet2 = pcm_unaligned_read(buffer, bit_offset, 2);
+        p.octets.octet1 = pcm_unaligned_read(buffer, bit_offset, 8);
+        p.octets.octet0 = pcm_unaligned_read(buffer, bit_offset, 8);
 
         return p.value;
     }
@@ -11271,26 +11271,26 @@ template <> struct pcm_packer<PcmEncoding_UInt18, PcmEndian_Big> {
 // UInt18 Little-Endian packer / unpacker
 template <> struct pcm_packer<PcmEncoding_UInt18, PcmEndian_Little> {
     // Pack next sample to buffer
-    static inline void pack(uint8_t* buffer, size_t& offset, uint32_t arg) {
+    static inline void pack(uint8_t* buffer, size_t& bit_offset, uint32_t arg) {
         // native-endian view of octets
         pcm_sample<uint32_t> p;
         p.value = arg;
 
         // write in little-endian order
-        pcm_unaligned_write(buffer, offset, 8, p.octets.octet0);
-        pcm_unaligned_write(buffer, offset, 8, p.octets.octet1);
-        pcm_unaligned_write(buffer, offset, 2, p.octets.octet2);
+        pcm_unaligned_write(buffer, bit_offset, 8, p.octets.octet0);
+        pcm_unaligned_write(buffer, bit_offset, 8, p.octets.octet1);
+        pcm_unaligned_write(buffer, bit_offset, 2, p.octets.octet2);
     }
 
     // Unpack next sample from buffer
-    static inline uint32_t unpack(const uint8_t* buffer, size_t& offset) {
+    static inline uint32_t unpack(const uint8_t* buffer, size_t& bit_offset) {
         // native-endian view of octets
         pcm_sample<uint32_t> p;
 
         // read in little-endian order
-        p.octets.octet0 = pcm_unaligned_read(buffer, offset, 8);
-        p.octets.octet1 = pcm_unaligned_read(buffer, offset, 8);
-        p.octets.octet2 = pcm_unaligned_read(buffer, offset, 2);
+        p.octets.octet0 = pcm_unaligned_read(buffer, bit_offset, 8);
+        p.octets.octet1 = pcm_unaligned_read(buffer, bit_offset, 8);
+        p.octets.octet2 = pcm_unaligned_read(buffer, bit_offset, 2);
         p.octets.octet3 = 0;
 
         return p.value;
@@ -11300,7 +11300,7 @@ template <> struct pcm_packer<PcmEncoding_UInt18, PcmEndian_Little> {
 // SInt18_3B Big-Endian packer / unpacker
 template <> struct pcm_packer<PcmEncoding_SInt18_3B, PcmEndian_Big> {
     // Pack next sample to buffer
-    static inline void pack(uint8_t* buffer, size_t& offset, int32_t arg) {
+    static inline void pack(uint8_t* buffer, size_t& bit_offset, int32_t arg) {
         // native-endian view of octets
         pcm_sample<int32_t> p;
         p.value = arg;
@@ -11309,21 +11309,21 @@ template <> struct pcm_packer<PcmEncoding_SInt18_3B, PcmEndian_Big> {
         p.value &= 0x3ffff;
 
         // write in big-endian order
-        pcm_aligned_write(buffer, offset, p.octets.octet2);
-        pcm_aligned_write(buffer, offset, p.octets.octet1);
-        pcm_aligned_write(buffer, offset, p.octets.octet0);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet2);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet1);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet0);
     }
 
     // Unpack next sample from buffer
-    static inline int32_t unpack(const uint8_t* buffer, size_t& offset) {
+    static inline int32_t unpack(const uint8_t* buffer, size_t& bit_offset) {
         // native-endian view of octets
         pcm_sample<int32_t> p;
 
         // read in big-endian order
         p.octets.octet3 = 0;
-        p.octets.octet2 = pcm_aligned_read(buffer, offset);
-        p.octets.octet1 = pcm_aligned_read(buffer, offset);
-        p.octets.octet0 = pcm_aligned_read(buffer, offset);
+        p.octets.octet2 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet1 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet0 = pcm_aligned_read(buffer, bit_offset);
 
         // zeroise padding bits
         p.value &= 0x3ffff;
@@ -11340,7 +11340,7 @@ template <> struct pcm_packer<PcmEncoding_SInt18_3B, PcmEndian_Big> {
 // SInt18_3B Little-Endian packer / unpacker
 template <> struct pcm_packer<PcmEncoding_SInt18_3B, PcmEndian_Little> {
     // Pack next sample to buffer
-    static inline void pack(uint8_t* buffer, size_t& offset, int32_t arg) {
+    static inline void pack(uint8_t* buffer, size_t& bit_offset, int32_t arg) {
         // native-endian view of octets
         pcm_sample<int32_t> p;
         p.value = arg;
@@ -11349,20 +11349,20 @@ template <> struct pcm_packer<PcmEncoding_SInt18_3B, PcmEndian_Little> {
         p.value &= 0x3ffff;
 
         // write in little-endian order
-        pcm_aligned_write(buffer, offset, p.octets.octet0);
-        pcm_aligned_write(buffer, offset, p.octets.octet1);
-        pcm_aligned_write(buffer, offset, p.octets.octet2);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet0);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet1);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet2);
     }
 
     // Unpack next sample from buffer
-    static inline int32_t unpack(const uint8_t* buffer, size_t& offset) {
+    static inline int32_t unpack(const uint8_t* buffer, size_t& bit_offset) {
         // native-endian view of octets
         pcm_sample<int32_t> p;
 
         // read in little-endian order
-        p.octets.octet0 = pcm_aligned_read(buffer, offset);
-        p.octets.octet1 = pcm_aligned_read(buffer, offset);
-        p.octets.octet2 = pcm_aligned_read(buffer, offset);
+        p.octets.octet0 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet1 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet2 = pcm_aligned_read(buffer, bit_offset);
         p.octets.octet3 = 0;
 
         // zeroise padding bits
@@ -11380,7 +11380,7 @@ template <> struct pcm_packer<PcmEncoding_SInt18_3B, PcmEndian_Little> {
 // UInt18_3B Big-Endian packer / unpacker
 template <> struct pcm_packer<PcmEncoding_UInt18_3B, PcmEndian_Big> {
     // Pack next sample to buffer
-    static inline void pack(uint8_t* buffer, size_t& offset, uint32_t arg) {
+    static inline void pack(uint8_t* buffer, size_t& bit_offset, uint32_t arg) {
         // native-endian view of octets
         pcm_sample<uint32_t> p;
         p.value = arg;
@@ -11389,24 +11389,25 @@ template <> struct pcm_packer<PcmEncoding_UInt18_3B, PcmEndian_Big> {
         p.value &= 0x3ffffu;
 
         // write in big-endian order
-        pcm_aligned_write(buffer, offset, p.octets.octet2);
-        pcm_aligned_write(buffer, offset, p.octets.octet1);
-        pcm_aligned_write(buffer, offset, p.octets.octet0);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet2);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet1);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet0);
     }
 
     // Unpack next sample from buffer
-    static inline uint32_t unpack(const uint8_t* buffer, size_t& offset) {
+    static inline uint32_t unpack(const uint8_t* buffer, size_t& bit_offset) {
         // native-endian view of octets
         pcm_sample<uint32_t> p;
 
         // read in big-endian order
         p.octets.octet3 = 0;
-        p.octets.octet2 = pcm_aligned_read(buffer, offset);
-        p.octets.octet1 = pcm_aligned_read(buffer, offset);
-        p.octets.octet0 = pcm_aligned_read(buffer, offset);
+        p.octets.octet2 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet1 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet0 = pcm_aligned_read(buffer, bit_offset);
 
         // zeroise padding bits
         p.value &= 0x3ffffu;
+
         return p.value;
     }
 };
@@ -11414,7 +11415,7 @@ template <> struct pcm_packer<PcmEncoding_UInt18_3B, PcmEndian_Big> {
 // UInt18_3B Little-Endian packer / unpacker
 template <> struct pcm_packer<PcmEncoding_UInt18_3B, PcmEndian_Little> {
     // Pack next sample to buffer
-    static inline void pack(uint8_t* buffer, size_t& offset, uint32_t arg) {
+    static inline void pack(uint8_t* buffer, size_t& bit_offset, uint32_t arg) {
         // native-endian view of octets
         pcm_sample<uint32_t> p;
         p.value = arg;
@@ -11423,24 +11424,25 @@ template <> struct pcm_packer<PcmEncoding_UInt18_3B, PcmEndian_Little> {
         p.value &= 0x3ffffu;
 
         // write in little-endian order
-        pcm_aligned_write(buffer, offset, p.octets.octet0);
-        pcm_aligned_write(buffer, offset, p.octets.octet1);
-        pcm_aligned_write(buffer, offset, p.octets.octet2);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet0);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet1);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet2);
     }
 
     // Unpack next sample from buffer
-    static inline uint32_t unpack(const uint8_t* buffer, size_t& offset) {
+    static inline uint32_t unpack(const uint8_t* buffer, size_t& bit_offset) {
         // native-endian view of octets
         pcm_sample<uint32_t> p;
 
         // read in little-endian order
-        p.octets.octet0 = pcm_aligned_read(buffer, offset);
-        p.octets.octet1 = pcm_aligned_read(buffer, offset);
-        p.octets.octet2 = pcm_aligned_read(buffer, offset);
+        p.octets.octet0 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet1 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet2 = pcm_aligned_read(buffer, bit_offset);
         p.octets.octet3 = 0;
 
         // zeroise padding bits
         p.value &= 0x3ffffu;
+
         return p.value;
     }
 };
@@ -11448,7 +11450,7 @@ template <> struct pcm_packer<PcmEncoding_UInt18_3B, PcmEndian_Little> {
 // SInt18_4B Big-Endian packer / unpacker
 template <> struct pcm_packer<PcmEncoding_SInt18_4B, PcmEndian_Big> {
     // Pack next sample to buffer
-    static inline void pack(uint8_t* buffer, size_t& offset, int32_t arg) {
+    static inline void pack(uint8_t* buffer, size_t& bit_offset, int32_t arg) {
         // native-endian view of octets
         pcm_sample<int32_t> p;
         p.value = arg;
@@ -11457,22 +11459,22 @@ template <> struct pcm_packer<PcmEncoding_SInt18_4B, PcmEndian_Big> {
         p.value &= 0x3ffff;
 
         // write in big-endian order
-        pcm_aligned_write(buffer, offset, p.octets.octet3);
-        pcm_aligned_write(buffer, offset, p.octets.octet2);
-        pcm_aligned_write(buffer, offset, p.octets.octet1);
-        pcm_aligned_write(buffer, offset, p.octets.octet0);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet3);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet2);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet1);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet0);
     }
 
     // Unpack next sample from buffer
-    static inline int32_t unpack(const uint8_t* buffer, size_t& offset) {
+    static inline int32_t unpack(const uint8_t* buffer, size_t& bit_offset) {
         // native-endian view of octets
         pcm_sample<int32_t> p;
 
         // read in big-endian order
-        p.octets.octet3 = pcm_aligned_read(buffer, offset);
-        p.octets.octet2 = pcm_aligned_read(buffer, offset);
-        p.octets.octet1 = pcm_aligned_read(buffer, offset);
-        p.octets.octet0 = pcm_aligned_read(buffer, offset);
+        p.octets.octet3 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet2 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet1 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet0 = pcm_aligned_read(buffer, bit_offset);
 
         // zeroise padding bits
         p.value &= 0x3ffff;
@@ -11489,7 +11491,7 @@ template <> struct pcm_packer<PcmEncoding_SInt18_4B, PcmEndian_Big> {
 // SInt18_4B Little-Endian packer / unpacker
 template <> struct pcm_packer<PcmEncoding_SInt18_4B, PcmEndian_Little> {
     // Pack next sample to buffer
-    static inline void pack(uint8_t* buffer, size_t& offset, int32_t arg) {
+    static inline void pack(uint8_t* buffer, size_t& bit_offset, int32_t arg) {
         // native-endian view of octets
         pcm_sample<int32_t> p;
         p.value = arg;
@@ -11498,22 +11500,22 @@ template <> struct pcm_packer<PcmEncoding_SInt18_4B, PcmEndian_Little> {
         p.value &= 0x3ffff;
 
         // write in little-endian order
-        pcm_aligned_write(buffer, offset, p.octets.octet0);
-        pcm_aligned_write(buffer, offset, p.octets.octet1);
-        pcm_aligned_write(buffer, offset, p.octets.octet2);
-        pcm_aligned_write(buffer, offset, p.octets.octet3);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet0);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet1);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet2);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet3);
     }
 
     // Unpack next sample from buffer
-    static inline int32_t unpack(const uint8_t* buffer, size_t& offset) {
+    static inline int32_t unpack(const uint8_t* buffer, size_t& bit_offset) {
         // native-endian view of octets
         pcm_sample<int32_t> p;
 
         // read in little-endian order
-        p.octets.octet0 = pcm_aligned_read(buffer, offset);
-        p.octets.octet1 = pcm_aligned_read(buffer, offset);
-        p.octets.octet2 = pcm_aligned_read(buffer, offset);
-        p.octets.octet3 = pcm_aligned_read(buffer, offset);
+        p.octets.octet0 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet1 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet2 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet3 = pcm_aligned_read(buffer, bit_offset);
 
         // zeroise padding bits
         p.value &= 0x3ffff;
@@ -11530,7 +11532,7 @@ template <> struct pcm_packer<PcmEncoding_SInt18_4B, PcmEndian_Little> {
 // UInt18_4B Big-Endian packer / unpacker
 template <> struct pcm_packer<PcmEncoding_UInt18_4B, PcmEndian_Big> {
     // Pack next sample to buffer
-    static inline void pack(uint8_t* buffer, size_t& offset, uint32_t arg) {
+    static inline void pack(uint8_t* buffer, size_t& bit_offset, uint32_t arg) {
         // native-endian view of octets
         pcm_sample<uint32_t> p;
         p.value = arg;
@@ -11539,25 +11541,26 @@ template <> struct pcm_packer<PcmEncoding_UInt18_4B, PcmEndian_Big> {
         p.value &= 0x3ffffu;
 
         // write in big-endian order
-        pcm_aligned_write(buffer, offset, p.octets.octet3);
-        pcm_aligned_write(buffer, offset, p.octets.octet2);
-        pcm_aligned_write(buffer, offset, p.octets.octet1);
-        pcm_aligned_write(buffer, offset, p.octets.octet0);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet3);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet2);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet1);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet0);
     }
 
     // Unpack next sample from buffer
-    static inline uint32_t unpack(const uint8_t* buffer, size_t& offset) {
+    static inline uint32_t unpack(const uint8_t* buffer, size_t& bit_offset) {
         // native-endian view of octets
         pcm_sample<uint32_t> p;
 
         // read in big-endian order
-        p.octets.octet3 = pcm_aligned_read(buffer, offset);
-        p.octets.octet2 = pcm_aligned_read(buffer, offset);
-        p.octets.octet1 = pcm_aligned_read(buffer, offset);
-        p.octets.octet0 = pcm_aligned_read(buffer, offset);
+        p.octets.octet3 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet2 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet1 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet0 = pcm_aligned_read(buffer, bit_offset);
 
         // zeroise padding bits
         p.value &= 0x3ffffu;
+
         return p.value;
     }
 };
@@ -11565,7 +11568,7 @@ template <> struct pcm_packer<PcmEncoding_UInt18_4B, PcmEndian_Big> {
 // UInt18_4B Little-Endian packer / unpacker
 template <> struct pcm_packer<PcmEncoding_UInt18_4B, PcmEndian_Little> {
     // Pack next sample to buffer
-    static inline void pack(uint8_t* buffer, size_t& offset, uint32_t arg) {
+    static inline void pack(uint8_t* buffer, size_t& bit_offset, uint32_t arg) {
         // native-endian view of octets
         pcm_sample<uint32_t> p;
         p.value = arg;
@@ -11574,25 +11577,26 @@ template <> struct pcm_packer<PcmEncoding_UInt18_4B, PcmEndian_Little> {
         p.value &= 0x3ffffu;
 
         // write in little-endian order
-        pcm_aligned_write(buffer, offset, p.octets.octet0);
-        pcm_aligned_write(buffer, offset, p.octets.octet1);
-        pcm_aligned_write(buffer, offset, p.octets.octet2);
-        pcm_aligned_write(buffer, offset, p.octets.octet3);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet0);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet1);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet2);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet3);
     }
 
     // Unpack next sample from buffer
-    static inline uint32_t unpack(const uint8_t* buffer, size_t& offset) {
+    static inline uint32_t unpack(const uint8_t* buffer, size_t& bit_offset) {
         // native-endian view of octets
         pcm_sample<uint32_t> p;
 
         // read in little-endian order
-        p.octets.octet0 = pcm_aligned_read(buffer, offset);
-        p.octets.octet1 = pcm_aligned_read(buffer, offset);
-        p.octets.octet2 = pcm_aligned_read(buffer, offset);
-        p.octets.octet3 = pcm_aligned_read(buffer, offset);
+        p.octets.octet0 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet1 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet2 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet3 = pcm_aligned_read(buffer, bit_offset);
 
         // zeroise padding bits
         p.value &= 0x3ffffu;
+
         return p.value;
     }
 };
@@ -11600,28 +11604,27 @@ template <> struct pcm_packer<PcmEncoding_UInt18_4B, PcmEndian_Little> {
 // SInt20 Big-Endian packer / unpacker
 template <> struct pcm_packer<PcmEncoding_SInt20, PcmEndian_Big> {
     // Pack next sample to buffer
-    static inline void pack(uint8_t* buffer, size_t& offset, int32_t arg) {
+    static inline void pack(uint8_t* buffer, size_t& bit_offset, int32_t arg) {
         // native-endian view of octets
         pcm_sample<int32_t> p;
         p.value = arg;
 
         // write in big-endian order
-        pcm_unaligned_write(buffer, offset, 4, p.octets.octet2);
-        pcm_unaligned_write(buffer, offset, 8, p.octets.octet1);
-        pcm_unaligned_write(buffer, offset, 8, p.octets.octet0);
+        pcm_unaligned_write(buffer, bit_offset, 4, p.octets.octet2);
+        pcm_unaligned_write(buffer, bit_offset, 8, p.octets.octet1);
+        pcm_unaligned_write(buffer, bit_offset, 8, p.octets.octet0);
     }
 
     // Unpack next sample from buffer
-    static inline int32_t unpack(const uint8_t* buffer, size_t& offset) {
+    static inline int32_t unpack(const uint8_t* buffer, size_t& bit_offset) {
         // native-endian view of octets
         pcm_sample<int32_t> p;
 
         // read in big-endian order
         p.octets.octet3 = 0;
-        p.octets.octet2 = pcm_unaligned_read(buffer, offset, 4);
-        p.octets.octet1 = pcm_unaligned_read(buffer, offset, 8);
-        p.octets.octet0 = pcm_unaligned_read(buffer, offset, 8);
-
+        p.octets.octet2 = pcm_unaligned_read(buffer, bit_offset, 4);
+        p.octets.octet1 = pcm_unaligned_read(buffer, bit_offset, 8);
+        p.octets.octet0 = pcm_unaligned_read(buffer, bit_offset, 8);
 
         if (p.value & 0x80000) {
             // sign extension
@@ -11635,28 +11638,27 @@ template <> struct pcm_packer<PcmEncoding_SInt20, PcmEndian_Big> {
 // SInt20 Little-Endian packer / unpacker
 template <> struct pcm_packer<PcmEncoding_SInt20, PcmEndian_Little> {
     // Pack next sample to buffer
-    static inline void pack(uint8_t* buffer, size_t& offset, int32_t arg) {
+    static inline void pack(uint8_t* buffer, size_t& bit_offset, int32_t arg) {
         // native-endian view of octets
         pcm_sample<int32_t> p;
         p.value = arg;
 
         // write in little-endian order
-        pcm_unaligned_write(buffer, offset, 8, p.octets.octet0);
-        pcm_unaligned_write(buffer, offset, 8, p.octets.octet1);
-        pcm_unaligned_write(buffer, offset, 4, p.octets.octet2);
+        pcm_unaligned_write(buffer, bit_offset, 8, p.octets.octet0);
+        pcm_unaligned_write(buffer, bit_offset, 8, p.octets.octet1);
+        pcm_unaligned_write(buffer, bit_offset, 4, p.octets.octet2);
     }
 
     // Unpack next sample from buffer
-    static inline int32_t unpack(const uint8_t* buffer, size_t& offset) {
+    static inline int32_t unpack(const uint8_t* buffer, size_t& bit_offset) {
         // native-endian view of octets
         pcm_sample<int32_t> p;
 
         // read in little-endian order
-        p.octets.octet0 = pcm_unaligned_read(buffer, offset, 8);
-        p.octets.octet1 = pcm_unaligned_read(buffer, offset, 8);
-        p.octets.octet2 = pcm_unaligned_read(buffer, offset, 4);
+        p.octets.octet0 = pcm_unaligned_read(buffer, bit_offset, 8);
+        p.octets.octet1 = pcm_unaligned_read(buffer, bit_offset, 8);
+        p.octets.octet2 = pcm_unaligned_read(buffer, bit_offset, 4);
         p.octets.octet3 = 0;
-
 
         if (p.value & 0x80000) {
             // sign extension
@@ -11670,27 +11672,27 @@ template <> struct pcm_packer<PcmEncoding_SInt20, PcmEndian_Little> {
 // UInt20 Big-Endian packer / unpacker
 template <> struct pcm_packer<PcmEncoding_UInt20, PcmEndian_Big> {
     // Pack next sample to buffer
-    static inline void pack(uint8_t* buffer, size_t& offset, uint32_t arg) {
+    static inline void pack(uint8_t* buffer, size_t& bit_offset, uint32_t arg) {
         // native-endian view of octets
         pcm_sample<uint32_t> p;
         p.value = arg;
 
         // write in big-endian order
-        pcm_unaligned_write(buffer, offset, 4, p.octets.octet2);
-        pcm_unaligned_write(buffer, offset, 8, p.octets.octet1);
-        pcm_unaligned_write(buffer, offset, 8, p.octets.octet0);
+        pcm_unaligned_write(buffer, bit_offset, 4, p.octets.octet2);
+        pcm_unaligned_write(buffer, bit_offset, 8, p.octets.octet1);
+        pcm_unaligned_write(buffer, bit_offset, 8, p.octets.octet0);
     }
 
     // Unpack next sample from buffer
-    static inline uint32_t unpack(const uint8_t* buffer, size_t& offset) {
+    static inline uint32_t unpack(const uint8_t* buffer, size_t& bit_offset) {
         // native-endian view of octets
         pcm_sample<uint32_t> p;
 
         // read in big-endian order
         p.octets.octet3 = 0;
-        p.octets.octet2 = pcm_unaligned_read(buffer, offset, 4);
-        p.octets.octet1 = pcm_unaligned_read(buffer, offset, 8);
-        p.octets.octet0 = pcm_unaligned_read(buffer, offset, 8);
+        p.octets.octet2 = pcm_unaligned_read(buffer, bit_offset, 4);
+        p.octets.octet1 = pcm_unaligned_read(buffer, bit_offset, 8);
+        p.octets.octet0 = pcm_unaligned_read(buffer, bit_offset, 8);
 
         return p.value;
     }
@@ -11699,26 +11701,26 @@ template <> struct pcm_packer<PcmEncoding_UInt20, PcmEndian_Big> {
 // UInt20 Little-Endian packer / unpacker
 template <> struct pcm_packer<PcmEncoding_UInt20, PcmEndian_Little> {
     // Pack next sample to buffer
-    static inline void pack(uint8_t* buffer, size_t& offset, uint32_t arg) {
+    static inline void pack(uint8_t* buffer, size_t& bit_offset, uint32_t arg) {
         // native-endian view of octets
         pcm_sample<uint32_t> p;
         p.value = arg;
 
         // write in little-endian order
-        pcm_unaligned_write(buffer, offset, 8, p.octets.octet0);
-        pcm_unaligned_write(buffer, offset, 8, p.octets.octet1);
-        pcm_unaligned_write(buffer, offset, 4, p.octets.octet2);
+        pcm_unaligned_write(buffer, bit_offset, 8, p.octets.octet0);
+        pcm_unaligned_write(buffer, bit_offset, 8, p.octets.octet1);
+        pcm_unaligned_write(buffer, bit_offset, 4, p.octets.octet2);
     }
 
     // Unpack next sample from buffer
-    static inline uint32_t unpack(const uint8_t* buffer, size_t& offset) {
+    static inline uint32_t unpack(const uint8_t* buffer, size_t& bit_offset) {
         // native-endian view of octets
         pcm_sample<uint32_t> p;
 
         // read in little-endian order
-        p.octets.octet0 = pcm_unaligned_read(buffer, offset, 8);
-        p.octets.octet1 = pcm_unaligned_read(buffer, offset, 8);
-        p.octets.octet2 = pcm_unaligned_read(buffer, offset, 4);
+        p.octets.octet0 = pcm_unaligned_read(buffer, bit_offset, 8);
+        p.octets.octet1 = pcm_unaligned_read(buffer, bit_offset, 8);
+        p.octets.octet2 = pcm_unaligned_read(buffer, bit_offset, 4);
         p.octets.octet3 = 0;
 
         return p.value;
@@ -11728,7 +11730,7 @@ template <> struct pcm_packer<PcmEncoding_UInt20, PcmEndian_Little> {
 // SInt20_3B Big-Endian packer / unpacker
 template <> struct pcm_packer<PcmEncoding_SInt20_3B, PcmEndian_Big> {
     // Pack next sample to buffer
-    static inline void pack(uint8_t* buffer, size_t& offset, int32_t arg) {
+    static inline void pack(uint8_t* buffer, size_t& bit_offset, int32_t arg) {
         // native-endian view of octets
         pcm_sample<int32_t> p;
         p.value = arg;
@@ -11737,21 +11739,21 @@ template <> struct pcm_packer<PcmEncoding_SInt20_3B, PcmEndian_Big> {
         p.value &= 0xfffff;
 
         // write in big-endian order
-        pcm_aligned_write(buffer, offset, p.octets.octet2);
-        pcm_aligned_write(buffer, offset, p.octets.octet1);
-        pcm_aligned_write(buffer, offset, p.octets.octet0);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet2);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet1);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet0);
     }
 
     // Unpack next sample from buffer
-    static inline int32_t unpack(const uint8_t* buffer, size_t& offset) {
+    static inline int32_t unpack(const uint8_t* buffer, size_t& bit_offset) {
         // native-endian view of octets
         pcm_sample<int32_t> p;
 
         // read in big-endian order
         p.octets.octet3 = 0;
-        p.octets.octet2 = pcm_aligned_read(buffer, offset);
-        p.octets.octet1 = pcm_aligned_read(buffer, offset);
-        p.octets.octet0 = pcm_aligned_read(buffer, offset);
+        p.octets.octet2 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet1 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet0 = pcm_aligned_read(buffer, bit_offset);
 
         // zeroise padding bits
         p.value &= 0xfffff;
@@ -11768,7 +11770,7 @@ template <> struct pcm_packer<PcmEncoding_SInt20_3B, PcmEndian_Big> {
 // SInt20_3B Little-Endian packer / unpacker
 template <> struct pcm_packer<PcmEncoding_SInt20_3B, PcmEndian_Little> {
     // Pack next sample to buffer
-    static inline void pack(uint8_t* buffer, size_t& offset, int32_t arg) {
+    static inline void pack(uint8_t* buffer, size_t& bit_offset, int32_t arg) {
         // native-endian view of octets
         pcm_sample<int32_t> p;
         p.value = arg;
@@ -11777,20 +11779,20 @@ template <> struct pcm_packer<PcmEncoding_SInt20_3B, PcmEndian_Little> {
         p.value &= 0xfffff;
 
         // write in little-endian order
-        pcm_aligned_write(buffer, offset, p.octets.octet0);
-        pcm_aligned_write(buffer, offset, p.octets.octet1);
-        pcm_aligned_write(buffer, offset, p.octets.octet2);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet0);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet1);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet2);
     }
 
     // Unpack next sample from buffer
-    static inline int32_t unpack(const uint8_t* buffer, size_t& offset) {
+    static inline int32_t unpack(const uint8_t* buffer, size_t& bit_offset) {
         // native-endian view of octets
         pcm_sample<int32_t> p;
 
         // read in little-endian order
-        p.octets.octet0 = pcm_aligned_read(buffer, offset);
-        p.octets.octet1 = pcm_aligned_read(buffer, offset);
-        p.octets.octet2 = pcm_aligned_read(buffer, offset);
+        p.octets.octet0 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet1 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet2 = pcm_aligned_read(buffer, bit_offset);
         p.octets.octet3 = 0;
 
         // zeroise padding bits
@@ -11808,7 +11810,7 @@ template <> struct pcm_packer<PcmEncoding_SInt20_3B, PcmEndian_Little> {
 // UInt20_3B Big-Endian packer / unpacker
 template <> struct pcm_packer<PcmEncoding_UInt20_3B, PcmEndian_Big> {
     // Pack next sample to buffer
-    static inline void pack(uint8_t* buffer, size_t& offset, uint32_t arg) {
+    static inline void pack(uint8_t* buffer, size_t& bit_offset, uint32_t arg) {
         // native-endian view of octets
         pcm_sample<uint32_t> p;
         p.value = arg;
@@ -11817,24 +11819,25 @@ template <> struct pcm_packer<PcmEncoding_UInt20_3B, PcmEndian_Big> {
         p.value &= 0xfffffu;
 
         // write in big-endian order
-        pcm_aligned_write(buffer, offset, p.octets.octet2);
-        pcm_aligned_write(buffer, offset, p.octets.octet1);
-        pcm_aligned_write(buffer, offset, p.octets.octet0);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet2);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet1);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet0);
     }
 
     // Unpack next sample from buffer
-    static inline uint32_t unpack(const uint8_t* buffer, size_t& offset) {
+    static inline uint32_t unpack(const uint8_t* buffer, size_t& bit_offset) {
         // native-endian view of octets
         pcm_sample<uint32_t> p;
 
         // read in big-endian order
         p.octets.octet3 = 0;
-        p.octets.octet2 = pcm_aligned_read(buffer, offset);
-        p.octets.octet1 = pcm_aligned_read(buffer, offset);
-        p.octets.octet0 = pcm_aligned_read(buffer, offset);
+        p.octets.octet2 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet1 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet0 = pcm_aligned_read(buffer, bit_offset);
 
         // zeroise padding bits
         p.value &= 0xfffffu;
+
         return p.value;
     }
 };
@@ -11842,7 +11845,7 @@ template <> struct pcm_packer<PcmEncoding_UInt20_3B, PcmEndian_Big> {
 // UInt20_3B Little-Endian packer / unpacker
 template <> struct pcm_packer<PcmEncoding_UInt20_3B, PcmEndian_Little> {
     // Pack next sample to buffer
-    static inline void pack(uint8_t* buffer, size_t& offset, uint32_t arg) {
+    static inline void pack(uint8_t* buffer, size_t& bit_offset, uint32_t arg) {
         // native-endian view of octets
         pcm_sample<uint32_t> p;
         p.value = arg;
@@ -11851,24 +11854,25 @@ template <> struct pcm_packer<PcmEncoding_UInt20_3B, PcmEndian_Little> {
         p.value &= 0xfffffu;
 
         // write in little-endian order
-        pcm_aligned_write(buffer, offset, p.octets.octet0);
-        pcm_aligned_write(buffer, offset, p.octets.octet1);
-        pcm_aligned_write(buffer, offset, p.octets.octet2);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet0);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet1);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet2);
     }
 
     // Unpack next sample from buffer
-    static inline uint32_t unpack(const uint8_t* buffer, size_t& offset) {
+    static inline uint32_t unpack(const uint8_t* buffer, size_t& bit_offset) {
         // native-endian view of octets
         pcm_sample<uint32_t> p;
 
         // read in little-endian order
-        p.octets.octet0 = pcm_aligned_read(buffer, offset);
-        p.octets.octet1 = pcm_aligned_read(buffer, offset);
-        p.octets.octet2 = pcm_aligned_read(buffer, offset);
+        p.octets.octet0 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet1 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet2 = pcm_aligned_read(buffer, bit_offset);
         p.octets.octet3 = 0;
 
         // zeroise padding bits
         p.value &= 0xfffffu;
+
         return p.value;
     }
 };
@@ -11876,7 +11880,7 @@ template <> struct pcm_packer<PcmEncoding_UInt20_3B, PcmEndian_Little> {
 // SInt20_4B Big-Endian packer / unpacker
 template <> struct pcm_packer<PcmEncoding_SInt20_4B, PcmEndian_Big> {
     // Pack next sample to buffer
-    static inline void pack(uint8_t* buffer, size_t& offset, int32_t arg) {
+    static inline void pack(uint8_t* buffer, size_t& bit_offset, int32_t arg) {
         // native-endian view of octets
         pcm_sample<int32_t> p;
         p.value = arg;
@@ -11885,22 +11889,22 @@ template <> struct pcm_packer<PcmEncoding_SInt20_4B, PcmEndian_Big> {
         p.value &= 0xfffff;
 
         // write in big-endian order
-        pcm_aligned_write(buffer, offset, p.octets.octet3);
-        pcm_aligned_write(buffer, offset, p.octets.octet2);
-        pcm_aligned_write(buffer, offset, p.octets.octet1);
-        pcm_aligned_write(buffer, offset, p.octets.octet0);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet3);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet2);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet1);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet0);
     }
 
     // Unpack next sample from buffer
-    static inline int32_t unpack(const uint8_t* buffer, size_t& offset) {
+    static inline int32_t unpack(const uint8_t* buffer, size_t& bit_offset) {
         // native-endian view of octets
         pcm_sample<int32_t> p;
 
         // read in big-endian order
-        p.octets.octet3 = pcm_aligned_read(buffer, offset);
-        p.octets.octet2 = pcm_aligned_read(buffer, offset);
-        p.octets.octet1 = pcm_aligned_read(buffer, offset);
-        p.octets.octet0 = pcm_aligned_read(buffer, offset);
+        p.octets.octet3 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet2 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet1 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet0 = pcm_aligned_read(buffer, bit_offset);
 
         // zeroise padding bits
         p.value &= 0xfffff;
@@ -11917,7 +11921,7 @@ template <> struct pcm_packer<PcmEncoding_SInt20_4B, PcmEndian_Big> {
 // SInt20_4B Little-Endian packer / unpacker
 template <> struct pcm_packer<PcmEncoding_SInt20_4B, PcmEndian_Little> {
     // Pack next sample to buffer
-    static inline void pack(uint8_t* buffer, size_t& offset, int32_t arg) {
+    static inline void pack(uint8_t* buffer, size_t& bit_offset, int32_t arg) {
         // native-endian view of octets
         pcm_sample<int32_t> p;
         p.value = arg;
@@ -11926,22 +11930,22 @@ template <> struct pcm_packer<PcmEncoding_SInt20_4B, PcmEndian_Little> {
         p.value &= 0xfffff;
 
         // write in little-endian order
-        pcm_aligned_write(buffer, offset, p.octets.octet0);
-        pcm_aligned_write(buffer, offset, p.octets.octet1);
-        pcm_aligned_write(buffer, offset, p.octets.octet2);
-        pcm_aligned_write(buffer, offset, p.octets.octet3);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet0);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet1);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet2);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet3);
     }
 
     // Unpack next sample from buffer
-    static inline int32_t unpack(const uint8_t* buffer, size_t& offset) {
+    static inline int32_t unpack(const uint8_t* buffer, size_t& bit_offset) {
         // native-endian view of octets
         pcm_sample<int32_t> p;
 
         // read in little-endian order
-        p.octets.octet0 = pcm_aligned_read(buffer, offset);
-        p.octets.octet1 = pcm_aligned_read(buffer, offset);
-        p.octets.octet2 = pcm_aligned_read(buffer, offset);
-        p.octets.octet3 = pcm_aligned_read(buffer, offset);
+        p.octets.octet0 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet1 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet2 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet3 = pcm_aligned_read(buffer, bit_offset);
 
         // zeroise padding bits
         p.value &= 0xfffff;
@@ -11958,7 +11962,7 @@ template <> struct pcm_packer<PcmEncoding_SInt20_4B, PcmEndian_Little> {
 // UInt20_4B Big-Endian packer / unpacker
 template <> struct pcm_packer<PcmEncoding_UInt20_4B, PcmEndian_Big> {
     // Pack next sample to buffer
-    static inline void pack(uint8_t* buffer, size_t& offset, uint32_t arg) {
+    static inline void pack(uint8_t* buffer, size_t& bit_offset, uint32_t arg) {
         // native-endian view of octets
         pcm_sample<uint32_t> p;
         p.value = arg;
@@ -11967,25 +11971,26 @@ template <> struct pcm_packer<PcmEncoding_UInt20_4B, PcmEndian_Big> {
         p.value &= 0xfffffu;
 
         // write in big-endian order
-        pcm_aligned_write(buffer, offset, p.octets.octet3);
-        pcm_aligned_write(buffer, offset, p.octets.octet2);
-        pcm_aligned_write(buffer, offset, p.octets.octet1);
-        pcm_aligned_write(buffer, offset, p.octets.octet0);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet3);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet2);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet1);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet0);
     }
 
     // Unpack next sample from buffer
-    static inline uint32_t unpack(const uint8_t* buffer, size_t& offset) {
+    static inline uint32_t unpack(const uint8_t* buffer, size_t& bit_offset) {
         // native-endian view of octets
         pcm_sample<uint32_t> p;
 
         // read in big-endian order
-        p.octets.octet3 = pcm_aligned_read(buffer, offset);
-        p.octets.octet2 = pcm_aligned_read(buffer, offset);
-        p.octets.octet1 = pcm_aligned_read(buffer, offset);
-        p.octets.octet0 = pcm_aligned_read(buffer, offset);
+        p.octets.octet3 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet2 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet1 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet0 = pcm_aligned_read(buffer, bit_offset);
 
         // zeroise padding bits
         p.value &= 0xfffffu;
+
         return p.value;
     }
 };
@@ -11993,7 +11998,7 @@ template <> struct pcm_packer<PcmEncoding_UInt20_4B, PcmEndian_Big> {
 // UInt20_4B Little-Endian packer / unpacker
 template <> struct pcm_packer<PcmEncoding_UInt20_4B, PcmEndian_Little> {
     // Pack next sample to buffer
-    static inline void pack(uint8_t* buffer, size_t& offset, uint32_t arg) {
+    static inline void pack(uint8_t* buffer, size_t& bit_offset, uint32_t arg) {
         // native-endian view of octets
         pcm_sample<uint32_t> p;
         p.value = arg;
@@ -12002,25 +12007,26 @@ template <> struct pcm_packer<PcmEncoding_UInt20_4B, PcmEndian_Little> {
         p.value &= 0xfffffu;
 
         // write in little-endian order
-        pcm_aligned_write(buffer, offset, p.octets.octet0);
-        pcm_aligned_write(buffer, offset, p.octets.octet1);
-        pcm_aligned_write(buffer, offset, p.octets.octet2);
-        pcm_aligned_write(buffer, offset, p.octets.octet3);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet0);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet1);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet2);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet3);
     }
 
     // Unpack next sample from buffer
-    static inline uint32_t unpack(const uint8_t* buffer, size_t& offset) {
+    static inline uint32_t unpack(const uint8_t* buffer, size_t& bit_offset) {
         // native-endian view of octets
         pcm_sample<uint32_t> p;
 
         // read in little-endian order
-        p.octets.octet0 = pcm_aligned_read(buffer, offset);
-        p.octets.octet1 = pcm_aligned_read(buffer, offset);
-        p.octets.octet2 = pcm_aligned_read(buffer, offset);
-        p.octets.octet3 = pcm_aligned_read(buffer, offset);
+        p.octets.octet0 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet1 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet2 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet3 = pcm_aligned_read(buffer, bit_offset);
 
         // zeroise padding bits
         p.value &= 0xfffffu;
+
         return p.value;
     }
 };
@@ -12028,28 +12034,27 @@ template <> struct pcm_packer<PcmEncoding_UInt20_4B, PcmEndian_Little> {
 // SInt24 Big-Endian packer / unpacker
 template <> struct pcm_packer<PcmEncoding_SInt24, PcmEndian_Big> {
     // Pack next sample to buffer
-    static inline void pack(uint8_t* buffer, size_t& offset, int32_t arg) {
+    static inline void pack(uint8_t* buffer, size_t& bit_offset, int32_t arg) {
         // native-endian view of octets
         pcm_sample<int32_t> p;
         p.value = arg;
 
         // write in big-endian order
-        pcm_aligned_write(buffer, offset, p.octets.octet2);
-        pcm_aligned_write(buffer, offset, p.octets.octet1);
-        pcm_aligned_write(buffer, offset, p.octets.octet0);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet2);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet1);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet0);
     }
 
     // Unpack next sample from buffer
-    static inline int32_t unpack(const uint8_t* buffer, size_t& offset) {
+    static inline int32_t unpack(const uint8_t* buffer, size_t& bit_offset) {
         // native-endian view of octets
         pcm_sample<int32_t> p;
 
         // read in big-endian order
         p.octets.octet3 = 0;
-        p.octets.octet2 = pcm_aligned_read(buffer, offset);
-        p.octets.octet1 = pcm_aligned_read(buffer, offset);
-        p.octets.octet0 = pcm_aligned_read(buffer, offset);
-
+        p.octets.octet2 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet1 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet0 = pcm_aligned_read(buffer, bit_offset);
 
         if (p.value & 0x800000) {
             // sign extension
@@ -12063,28 +12068,27 @@ template <> struct pcm_packer<PcmEncoding_SInt24, PcmEndian_Big> {
 // SInt24 Little-Endian packer / unpacker
 template <> struct pcm_packer<PcmEncoding_SInt24, PcmEndian_Little> {
     // Pack next sample to buffer
-    static inline void pack(uint8_t* buffer, size_t& offset, int32_t arg) {
+    static inline void pack(uint8_t* buffer, size_t& bit_offset, int32_t arg) {
         // native-endian view of octets
         pcm_sample<int32_t> p;
         p.value = arg;
 
         // write in little-endian order
-        pcm_aligned_write(buffer, offset, p.octets.octet0);
-        pcm_aligned_write(buffer, offset, p.octets.octet1);
-        pcm_aligned_write(buffer, offset, p.octets.octet2);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet0);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet1);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet2);
     }
 
     // Unpack next sample from buffer
-    static inline int32_t unpack(const uint8_t* buffer, size_t& offset) {
+    static inline int32_t unpack(const uint8_t* buffer, size_t& bit_offset) {
         // native-endian view of octets
         pcm_sample<int32_t> p;
 
         // read in little-endian order
-        p.octets.octet0 = pcm_aligned_read(buffer, offset);
-        p.octets.octet1 = pcm_aligned_read(buffer, offset);
-        p.octets.octet2 = pcm_aligned_read(buffer, offset);
+        p.octets.octet0 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet1 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet2 = pcm_aligned_read(buffer, bit_offset);
         p.octets.octet3 = 0;
-
 
         if (p.value & 0x800000) {
             // sign extension
@@ -12098,27 +12102,27 @@ template <> struct pcm_packer<PcmEncoding_SInt24, PcmEndian_Little> {
 // UInt24 Big-Endian packer / unpacker
 template <> struct pcm_packer<PcmEncoding_UInt24, PcmEndian_Big> {
     // Pack next sample to buffer
-    static inline void pack(uint8_t* buffer, size_t& offset, uint32_t arg) {
+    static inline void pack(uint8_t* buffer, size_t& bit_offset, uint32_t arg) {
         // native-endian view of octets
         pcm_sample<uint32_t> p;
         p.value = arg;
 
         // write in big-endian order
-        pcm_aligned_write(buffer, offset, p.octets.octet2);
-        pcm_aligned_write(buffer, offset, p.octets.octet1);
-        pcm_aligned_write(buffer, offset, p.octets.octet0);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet2);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet1);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet0);
     }
 
     // Unpack next sample from buffer
-    static inline uint32_t unpack(const uint8_t* buffer, size_t& offset) {
+    static inline uint32_t unpack(const uint8_t* buffer, size_t& bit_offset) {
         // native-endian view of octets
         pcm_sample<uint32_t> p;
 
         // read in big-endian order
         p.octets.octet3 = 0;
-        p.octets.octet2 = pcm_aligned_read(buffer, offset);
-        p.octets.octet1 = pcm_aligned_read(buffer, offset);
-        p.octets.octet0 = pcm_aligned_read(buffer, offset);
+        p.octets.octet2 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet1 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet0 = pcm_aligned_read(buffer, bit_offset);
 
         return p.value;
     }
@@ -12127,26 +12131,26 @@ template <> struct pcm_packer<PcmEncoding_UInt24, PcmEndian_Big> {
 // UInt24 Little-Endian packer / unpacker
 template <> struct pcm_packer<PcmEncoding_UInt24, PcmEndian_Little> {
     // Pack next sample to buffer
-    static inline void pack(uint8_t* buffer, size_t& offset, uint32_t arg) {
+    static inline void pack(uint8_t* buffer, size_t& bit_offset, uint32_t arg) {
         // native-endian view of octets
         pcm_sample<uint32_t> p;
         p.value = arg;
 
         // write in little-endian order
-        pcm_aligned_write(buffer, offset, p.octets.octet0);
-        pcm_aligned_write(buffer, offset, p.octets.octet1);
-        pcm_aligned_write(buffer, offset, p.octets.octet2);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet0);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet1);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet2);
     }
 
     // Unpack next sample from buffer
-    static inline uint32_t unpack(const uint8_t* buffer, size_t& offset) {
+    static inline uint32_t unpack(const uint8_t* buffer, size_t& bit_offset) {
         // native-endian view of octets
         pcm_sample<uint32_t> p;
 
         // read in little-endian order
-        p.octets.octet0 = pcm_aligned_read(buffer, offset);
-        p.octets.octet1 = pcm_aligned_read(buffer, offset);
-        p.octets.octet2 = pcm_aligned_read(buffer, offset);
+        p.octets.octet0 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet1 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet2 = pcm_aligned_read(buffer, bit_offset);
         p.octets.octet3 = 0;
 
         return p.value;
@@ -12156,7 +12160,7 @@ template <> struct pcm_packer<PcmEncoding_UInt24, PcmEndian_Little> {
 // SInt24_4B Big-Endian packer / unpacker
 template <> struct pcm_packer<PcmEncoding_SInt24_4B, PcmEndian_Big> {
     // Pack next sample to buffer
-    static inline void pack(uint8_t* buffer, size_t& offset, int32_t arg) {
+    static inline void pack(uint8_t* buffer, size_t& bit_offset, int32_t arg) {
         // native-endian view of octets
         pcm_sample<int32_t> p;
         p.value = arg;
@@ -12165,22 +12169,22 @@ template <> struct pcm_packer<PcmEncoding_SInt24_4B, PcmEndian_Big> {
         p.value &= 0xffffff;
 
         // write in big-endian order
-        pcm_aligned_write(buffer, offset, p.octets.octet3);
-        pcm_aligned_write(buffer, offset, p.octets.octet2);
-        pcm_aligned_write(buffer, offset, p.octets.octet1);
-        pcm_aligned_write(buffer, offset, p.octets.octet0);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet3);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet2);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet1);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet0);
     }
 
     // Unpack next sample from buffer
-    static inline int32_t unpack(const uint8_t* buffer, size_t& offset) {
+    static inline int32_t unpack(const uint8_t* buffer, size_t& bit_offset) {
         // native-endian view of octets
         pcm_sample<int32_t> p;
 
         // read in big-endian order
-        p.octets.octet3 = pcm_aligned_read(buffer, offset);
-        p.octets.octet2 = pcm_aligned_read(buffer, offset);
-        p.octets.octet1 = pcm_aligned_read(buffer, offset);
-        p.octets.octet0 = pcm_aligned_read(buffer, offset);
+        p.octets.octet3 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet2 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet1 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet0 = pcm_aligned_read(buffer, bit_offset);
 
         // zeroise padding bits
         p.value &= 0xffffff;
@@ -12197,7 +12201,7 @@ template <> struct pcm_packer<PcmEncoding_SInt24_4B, PcmEndian_Big> {
 // SInt24_4B Little-Endian packer / unpacker
 template <> struct pcm_packer<PcmEncoding_SInt24_4B, PcmEndian_Little> {
     // Pack next sample to buffer
-    static inline void pack(uint8_t* buffer, size_t& offset, int32_t arg) {
+    static inline void pack(uint8_t* buffer, size_t& bit_offset, int32_t arg) {
         // native-endian view of octets
         pcm_sample<int32_t> p;
         p.value = arg;
@@ -12206,22 +12210,22 @@ template <> struct pcm_packer<PcmEncoding_SInt24_4B, PcmEndian_Little> {
         p.value &= 0xffffff;
 
         // write in little-endian order
-        pcm_aligned_write(buffer, offset, p.octets.octet0);
-        pcm_aligned_write(buffer, offset, p.octets.octet1);
-        pcm_aligned_write(buffer, offset, p.octets.octet2);
-        pcm_aligned_write(buffer, offset, p.octets.octet3);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet0);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet1);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet2);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet3);
     }
 
     // Unpack next sample from buffer
-    static inline int32_t unpack(const uint8_t* buffer, size_t& offset) {
+    static inline int32_t unpack(const uint8_t* buffer, size_t& bit_offset) {
         // native-endian view of octets
         pcm_sample<int32_t> p;
 
         // read in little-endian order
-        p.octets.octet0 = pcm_aligned_read(buffer, offset);
-        p.octets.octet1 = pcm_aligned_read(buffer, offset);
-        p.octets.octet2 = pcm_aligned_read(buffer, offset);
-        p.octets.octet3 = pcm_aligned_read(buffer, offset);
+        p.octets.octet0 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet1 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet2 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet3 = pcm_aligned_read(buffer, bit_offset);
 
         // zeroise padding bits
         p.value &= 0xffffff;
@@ -12238,7 +12242,7 @@ template <> struct pcm_packer<PcmEncoding_SInt24_4B, PcmEndian_Little> {
 // UInt24_4B Big-Endian packer / unpacker
 template <> struct pcm_packer<PcmEncoding_UInt24_4B, PcmEndian_Big> {
     // Pack next sample to buffer
-    static inline void pack(uint8_t* buffer, size_t& offset, uint32_t arg) {
+    static inline void pack(uint8_t* buffer, size_t& bit_offset, uint32_t arg) {
         // native-endian view of octets
         pcm_sample<uint32_t> p;
         p.value = arg;
@@ -12247,25 +12251,26 @@ template <> struct pcm_packer<PcmEncoding_UInt24_4B, PcmEndian_Big> {
         p.value &= 0xffffffu;
 
         // write in big-endian order
-        pcm_aligned_write(buffer, offset, p.octets.octet3);
-        pcm_aligned_write(buffer, offset, p.octets.octet2);
-        pcm_aligned_write(buffer, offset, p.octets.octet1);
-        pcm_aligned_write(buffer, offset, p.octets.octet0);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet3);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet2);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet1);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet0);
     }
 
     // Unpack next sample from buffer
-    static inline uint32_t unpack(const uint8_t* buffer, size_t& offset) {
+    static inline uint32_t unpack(const uint8_t* buffer, size_t& bit_offset) {
         // native-endian view of octets
         pcm_sample<uint32_t> p;
 
         // read in big-endian order
-        p.octets.octet3 = pcm_aligned_read(buffer, offset);
-        p.octets.octet2 = pcm_aligned_read(buffer, offset);
-        p.octets.octet1 = pcm_aligned_read(buffer, offset);
-        p.octets.octet0 = pcm_aligned_read(buffer, offset);
+        p.octets.octet3 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet2 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet1 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet0 = pcm_aligned_read(buffer, bit_offset);
 
         // zeroise padding bits
         p.value &= 0xffffffu;
+
         return p.value;
     }
 };
@@ -12273,7 +12278,7 @@ template <> struct pcm_packer<PcmEncoding_UInt24_4B, PcmEndian_Big> {
 // UInt24_4B Little-Endian packer / unpacker
 template <> struct pcm_packer<PcmEncoding_UInt24_4B, PcmEndian_Little> {
     // Pack next sample to buffer
-    static inline void pack(uint8_t* buffer, size_t& offset, uint32_t arg) {
+    static inline void pack(uint8_t* buffer, size_t& bit_offset, uint32_t arg) {
         // native-endian view of octets
         pcm_sample<uint32_t> p;
         p.value = arg;
@@ -12282,25 +12287,26 @@ template <> struct pcm_packer<PcmEncoding_UInt24_4B, PcmEndian_Little> {
         p.value &= 0xffffffu;
 
         // write in little-endian order
-        pcm_aligned_write(buffer, offset, p.octets.octet0);
-        pcm_aligned_write(buffer, offset, p.octets.octet1);
-        pcm_aligned_write(buffer, offset, p.octets.octet2);
-        pcm_aligned_write(buffer, offset, p.octets.octet3);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet0);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet1);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet2);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet3);
     }
 
     // Unpack next sample from buffer
-    static inline uint32_t unpack(const uint8_t* buffer, size_t& offset) {
+    static inline uint32_t unpack(const uint8_t* buffer, size_t& bit_offset) {
         // native-endian view of octets
         pcm_sample<uint32_t> p;
 
         // read in little-endian order
-        p.octets.octet0 = pcm_aligned_read(buffer, offset);
-        p.octets.octet1 = pcm_aligned_read(buffer, offset);
-        p.octets.octet2 = pcm_aligned_read(buffer, offset);
-        p.octets.octet3 = pcm_aligned_read(buffer, offset);
+        p.octets.octet0 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet1 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet2 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet3 = pcm_aligned_read(buffer, bit_offset);
 
         // zeroise padding bits
         p.value &= 0xffffffu;
+
         return p.value;
     }
 };
@@ -12308,28 +12314,28 @@ template <> struct pcm_packer<PcmEncoding_UInt24_4B, PcmEndian_Little> {
 // SInt32 Big-Endian packer / unpacker
 template <> struct pcm_packer<PcmEncoding_SInt32, PcmEndian_Big> {
     // Pack next sample to buffer
-    static inline void pack(uint8_t* buffer, size_t& offset, int32_t arg) {
+    static inline void pack(uint8_t* buffer, size_t& bit_offset, int32_t arg) {
         // native-endian view of octets
         pcm_sample<int32_t> p;
         p.value = arg;
 
         // write in big-endian order
-        pcm_aligned_write(buffer, offset, p.octets.octet3);
-        pcm_aligned_write(buffer, offset, p.octets.octet2);
-        pcm_aligned_write(buffer, offset, p.octets.octet1);
-        pcm_aligned_write(buffer, offset, p.octets.octet0);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet3);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet2);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet1);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet0);
     }
 
     // Unpack next sample from buffer
-    static inline int32_t unpack(const uint8_t* buffer, size_t& offset) {
+    static inline int32_t unpack(const uint8_t* buffer, size_t& bit_offset) {
         // native-endian view of octets
         pcm_sample<int32_t> p;
 
         // read in big-endian order
-        p.octets.octet3 = pcm_aligned_read(buffer, offset);
-        p.octets.octet2 = pcm_aligned_read(buffer, offset);
-        p.octets.octet1 = pcm_aligned_read(buffer, offset);
-        p.octets.octet0 = pcm_aligned_read(buffer, offset);
+        p.octets.octet3 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet2 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet1 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet0 = pcm_aligned_read(buffer, bit_offset);
 
         return p.value;
     }
@@ -12338,28 +12344,28 @@ template <> struct pcm_packer<PcmEncoding_SInt32, PcmEndian_Big> {
 // SInt32 Little-Endian packer / unpacker
 template <> struct pcm_packer<PcmEncoding_SInt32, PcmEndian_Little> {
     // Pack next sample to buffer
-    static inline void pack(uint8_t* buffer, size_t& offset, int32_t arg) {
+    static inline void pack(uint8_t* buffer, size_t& bit_offset, int32_t arg) {
         // native-endian view of octets
         pcm_sample<int32_t> p;
         p.value = arg;
 
         // write in little-endian order
-        pcm_aligned_write(buffer, offset, p.octets.octet0);
-        pcm_aligned_write(buffer, offset, p.octets.octet1);
-        pcm_aligned_write(buffer, offset, p.octets.octet2);
-        pcm_aligned_write(buffer, offset, p.octets.octet3);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet0);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet1);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet2);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet3);
     }
 
     // Unpack next sample from buffer
-    static inline int32_t unpack(const uint8_t* buffer, size_t& offset) {
+    static inline int32_t unpack(const uint8_t* buffer, size_t& bit_offset) {
         // native-endian view of octets
         pcm_sample<int32_t> p;
 
         // read in little-endian order
-        p.octets.octet0 = pcm_aligned_read(buffer, offset);
-        p.octets.octet1 = pcm_aligned_read(buffer, offset);
-        p.octets.octet2 = pcm_aligned_read(buffer, offset);
-        p.octets.octet3 = pcm_aligned_read(buffer, offset);
+        p.octets.octet0 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet1 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet2 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet3 = pcm_aligned_read(buffer, bit_offset);
 
         return p.value;
     }
@@ -12368,28 +12374,28 @@ template <> struct pcm_packer<PcmEncoding_SInt32, PcmEndian_Little> {
 // UInt32 Big-Endian packer / unpacker
 template <> struct pcm_packer<PcmEncoding_UInt32, PcmEndian_Big> {
     // Pack next sample to buffer
-    static inline void pack(uint8_t* buffer, size_t& offset, uint32_t arg) {
+    static inline void pack(uint8_t* buffer, size_t& bit_offset, uint32_t arg) {
         // native-endian view of octets
         pcm_sample<uint32_t> p;
         p.value = arg;
 
         // write in big-endian order
-        pcm_aligned_write(buffer, offset, p.octets.octet3);
-        pcm_aligned_write(buffer, offset, p.octets.octet2);
-        pcm_aligned_write(buffer, offset, p.octets.octet1);
-        pcm_aligned_write(buffer, offset, p.octets.octet0);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet3);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet2);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet1);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet0);
     }
 
     // Unpack next sample from buffer
-    static inline uint32_t unpack(const uint8_t* buffer, size_t& offset) {
+    static inline uint32_t unpack(const uint8_t* buffer, size_t& bit_offset) {
         // native-endian view of octets
         pcm_sample<uint32_t> p;
 
         // read in big-endian order
-        p.octets.octet3 = pcm_aligned_read(buffer, offset);
-        p.octets.octet2 = pcm_aligned_read(buffer, offset);
-        p.octets.octet1 = pcm_aligned_read(buffer, offset);
-        p.octets.octet0 = pcm_aligned_read(buffer, offset);
+        p.octets.octet3 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet2 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet1 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet0 = pcm_aligned_read(buffer, bit_offset);
 
         return p.value;
     }
@@ -12398,28 +12404,28 @@ template <> struct pcm_packer<PcmEncoding_UInt32, PcmEndian_Big> {
 // UInt32 Little-Endian packer / unpacker
 template <> struct pcm_packer<PcmEncoding_UInt32, PcmEndian_Little> {
     // Pack next sample to buffer
-    static inline void pack(uint8_t* buffer, size_t& offset, uint32_t arg) {
+    static inline void pack(uint8_t* buffer, size_t& bit_offset, uint32_t arg) {
         // native-endian view of octets
         pcm_sample<uint32_t> p;
         p.value = arg;
 
         // write in little-endian order
-        pcm_aligned_write(buffer, offset, p.octets.octet0);
-        pcm_aligned_write(buffer, offset, p.octets.octet1);
-        pcm_aligned_write(buffer, offset, p.octets.octet2);
-        pcm_aligned_write(buffer, offset, p.octets.octet3);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet0);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet1);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet2);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet3);
     }
 
     // Unpack next sample from buffer
-    static inline uint32_t unpack(const uint8_t* buffer, size_t& offset) {
+    static inline uint32_t unpack(const uint8_t* buffer, size_t& bit_offset) {
         // native-endian view of octets
         pcm_sample<uint32_t> p;
 
         // read in little-endian order
-        p.octets.octet0 = pcm_aligned_read(buffer, offset);
-        p.octets.octet1 = pcm_aligned_read(buffer, offset);
-        p.octets.octet2 = pcm_aligned_read(buffer, offset);
-        p.octets.octet3 = pcm_aligned_read(buffer, offset);
+        p.octets.octet0 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet1 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet2 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet3 = pcm_aligned_read(buffer, bit_offset);
 
         return p.value;
     }
@@ -12428,36 +12434,36 @@ template <> struct pcm_packer<PcmEncoding_UInt32, PcmEndian_Little> {
 // SInt64 Big-Endian packer / unpacker
 template <> struct pcm_packer<PcmEncoding_SInt64, PcmEndian_Big> {
     // Pack next sample to buffer
-    static inline void pack(uint8_t* buffer, size_t& offset, int64_t arg) {
+    static inline void pack(uint8_t* buffer, size_t& bit_offset, int64_t arg) {
         // native-endian view of octets
         pcm_sample<int64_t> p;
         p.value = arg;
 
         // write in big-endian order
-        pcm_aligned_write(buffer, offset, p.octets.octet7);
-        pcm_aligned_write(buffer, offset, p.octets.octet6);
-        pcm_aligned_write(buffer, offset, p.octets.octet5);
-        pcm_aligned_write(buffer, offset, p.octets.octet4);
-        pcm_aligned_write(buffer, offset, p.octets.octet3);
-        pcm_aligned_write(buffer, offset, p.octets.octet2);
-        pcm_aligned_write(buffer, offset, p.octets.octet1);
-        pcm_aligned_write(buffer, offset, p.octets.octet0);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet7);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet6);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet5);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet4);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet3);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet2);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet1);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet0);
     }
 
     // Unpack next sample from buffer
-    static inline int64_t unpack(const uint8_t* buffer, size_t& offset) {
+    static inline int64_t unpack(const uint8_t* buffer, size_t& bit_offset) {
         // native-endian view of octets
         pcm_sample<int64_t> p;
 
         // read in big-endian order
-        p.octets.octet7 = pcm_aligned_read(buffer, offset);
-        p.octets.octet6 = pcm_aligned_read(buffer, offset);
-        p.octets.octet5 = pcm_aligned_read(buffer, offset);
-        p.octets.octet4 = pcm_aligned_read(buffer, offset);
-        p.octets.octet3 = pcm_aligned_read(buffer, offset);
-        p.octets.octet2 = pcm_aligned_read(buffer, offset);
-        p.octets.octet1 = pcm_aligned_read(buffer, offset);
-        p.octets.octet0 = pcm_aligned_read(buffer, offset);
+        p.octets.octet7 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet6 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet5 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet4 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet3 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet2 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet1 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet0 = pcm_aligned_read(buffer, bit_offset);
 
         return p.value;
     }
@@ -12466,36 +12472,36 @@ template <> struct pcm_packer<PcmEncoding_SInt64, PcmEndian_Big> {
 // SInt64 Little-Endian packer / unpacker
 template <> struct pcm_packer<PcmEncoding_SInt64, PcmEndian_Little> {
     // Pack next sample to buffer
-    static inline void pack(uint8_t* buffer, size_t& offset, int64_t arg) {
+    static inline void pack(uint8_t* buffer, size_t& bit_offset, int64_t arg) {
         // native-endian view of octets
         pcm_sample<int64_t> p;
         p.value = arg;
 
         // write in little-endian order
-        pcm_aligned_write(buffer, offset, p.octets.octet0);
-        pcm_aligned_write(buffer, offset, p.octets.octet1);
-        pcm_aligned_write(buffer, offset, p.octets.octet2);
-        pcm_aligned_write(buffer, offset, p.octets.octet3);
-        pcm_aligned_write(buffer, offset, p.octets.octet4);
-        pcm_aligned_write(buffer, offset, p.octets.octet5);
-        pcm_aligned_write(buffer, offset, p.octets.octet6);
-        pcm_aligned_write(buffer, offset, p.octets.octet7);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet0);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet1);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet2);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet3);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet4);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet5);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet6);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet7);
     }
 
     // Unpack next sample from buffer
-    static inline int64_t unpack(const uint8_t* buffer, size_t& offset) {
+    static inline int64_t unpack(const uint8_t* buffer, size_t& bit_offset) {
         // native-endian view of octets
         pcm_sample<int64_t> p;
 
         // read in little-endian order
-        p.octets.octet0 = pcm_aligned_read(buffer, offset);
-        p.octets.octet1 = pcm_aligned_read(buffer, offset);
-        p.octets.octet2 = pcm_aligned_read(buffer, offset);
-        p.octets.octet3 = pcm_aligned_read(buffer, offset);
-        p.octets.octet4 = pcm_aligned_read(buffer, offset);
-        p.octets.octet5 = pcm_aligned_read(buffer, offset);
-        p.octets.octet6 = pcm_aligned_read(buffer, offset);
-        p.octets.octet7 = pcm_aligned_read(buffer, offset);
+        p.octets.octet0 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet1 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet2 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet3 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet4 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet5 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet6 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet7 = pcm_aligned_read(buffer, bit_offset);
 
         return p.value;
     }
@@ -12504,36 +12510,36 @@ template <> struct pcm_packer<PcmEncoding_SInt64, PcmEndian_Little> {
 // UInt64 Big-Endian packer / unpacker
 template <> struct pcm_packer<PcmEncoding_UInt64, PcmEndian_Big> {
     // Pack next sample to buffer
-    static inline void pack(uint8_t* buffer, size_t& offset, uint64_t arg) {
+    static inline void pack(uint8_t* buffer, size_t& bit_offset, uint64_t arg) {
         // native-endian view of octets
         pcm_sample<uint64_t> p;
         p.value = arg;
 
         // write in big-endian order
-        pcm_aligned_write(buffer, offset, p.octets.octet7);
-        pcm_aligned_write(buffer, offset, p.octets.octet6);
-        pcm_aligned_write(buffer, offset, p.octets.octet5);
-        pcm_aligned_write(buffer, offset, p.octets.octet4);
-        pcm_aligned_write(buffer, offset, p.octets.octet3);
-        pcm_aligned_write(buffer, offset, p.octets.octet2);
-        pcm_aligned_write(buffer, offset, p.octets.octet1);
-        pcm_aligned_write(buffer, offset, p.octets.octet0);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet7);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet6);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet5);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet4);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet3);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet2);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet1);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet0);
     }
 
     // Unpack next sample from buffer
-    static inline uint64_t unpack(const uint8_t* buffer, size_t& offset) {
+    static inline uint64_t unpack(const uint8_t* buffer, size_t& bit_offset) {
         // native-endian view of octets
         pcm_sample<uint64_t> p;
 
         // read in big-endian order
-        p.octets.octet7 = pcm_aligned_read(buffer, offset);
-        p.octets.octet6 = pcm_aligned_read(buffer, offset);
-        p.octets.octet5 = pcm_aligned_read(buffer, offset);
-        p.octets.octet4 = pcm_aligned_read(buffer, offset);
-        p.octets.octet3 = pcm_aligned_read(buffer, offset);
-        p.octets.octet2 = pcm_aligned_read(buffer, offset);
-        p.octets.octet1 = pcm_aligned_read(buffer, offset);
-        p.octets.octet0 = pcm_aligned_read(buffer, offset);
+        p.octets.octet7 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet6 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet5 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet4 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet3 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet2 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet1 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet0 = pcm_aligned_read(buffer, bit_offset);
 
         return p.value;
     }
@@ -12542,36 +12548,36 @@ template <> struct pcm_packer<PcmEncoding_UInt64, PcmEndian_Big> {
 // UInt64 Little-Endian packer / unpacker
 template <> struct pcm_packer<PcmEncoding_UInt64, PcmEndian_Little> {
     // Pack next sample to buffer
-    static inline void pack(uint8_t* buffer, size_t& offset, uint64_t arg) {
+    static inline void pack(uint8_t* buffer, size_t& bit_offset, uint64_t arg) {
         // native-endian view of octets
         pcm_sample<uint64_t> p;
         p.value = arg;
 
         // write in little-endian order
-        pcm_aligned_write(buffer, offset, p.octets.octet0);
-        pcm_aligned_write(buffer, offset, p.octets.octet1);
-        pcm_aligned_write(buffer, offset, p.octets.octet2);
-        pcm_aligned_write(buffer, offset, p.octets.octet3);
-        pcm_aligned_write(buffer, offset, p.octets.octet4);
-        pcm_aligned_write(buffer, offset, p.octets.octet5);
-        pcm_aligned_write(buffer, offset, p.octets.octet6);
-        pcm_aligned_write(buffer, offset, p.octets.octet7);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet0);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet1);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet2);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet3);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet4);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet5);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet6);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet7);
     }
 
     // Unpack next sample from buffer
-    static inline uint64_t unpack(const uint8_t* buffer, size_t& offset) {
+    static inline uint64_t unpack(const uint8_t* buffer, size_t& bit_offset) {
         // native-endian view of octets
         pcm_sample<uint64_t> p;
 
         // read in little-endian order
-        p.octets.octet0 = pcm_aligned_read(buffer, offset);
-        p.octets.octet1 = pcm_aligned_read(buffer, offset);
-        p.octets.octet2 = pcm_aligned_read(buffer, offset);
-        p.octets.octet3 = pcm_aligned_read(buffer, offset);
-        p.octets.octet4 = pcm_aligned_read(buffer, offset);
-        p.octets.octet5 = pcm_aligned_read(buffer, offset);
-        p.octets.octet6 = pcm_aligned_read(buffer, offset);
-        p.octets.octet7 = pcm_aligned_read(buffer, offset);
+        p.octets.octet0 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet1 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet2 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet3 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet4 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet5 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet6 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet7 = pcm_aligned_read(buffer, bit_offset);
 
         return p.value;
     }
@@ -12580,28 +12586,28 @@ template <> struct pcm_packer<PcmEncoding_UInt64, PcmEndian_Little> {
 // Float32 Big-Endian packer / unpacker
 template <> struct pcm_packer<PcmEncoding_Float32, PcmEndian_Big> {
     // Pack next sample to buffer
-    static inline void pack(uint8_t* buffer, size_t& offset, float arg) {
+    static inline void pack(uint8_t* buffer, size_t& bit_offset, float arg) {
         // native-endian view of octets
         pcm_sample<float> p;
         p.value = arg;
 
         // write in big-endian order
-        pcm_aligned_write(buffer, offset, p.octets.octet3);
-        pcm_aligned_write(buffer, offset, p.octets.octet2);
-        pcm_aligned_write(buffer, offset, p.octets.octet1);
-        pcm_aligned_write(buffer, offset, p.octets.octet0);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet3);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet2);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet1);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet0);
     }
 
     // Unpack next sample from buffer
-    static inline float unpack(const uint8_t* buffer, size_t& offset) {
+    static inline float unpack(const uint8_t* buffer, size_t& bit_offset) {
         // native-endian view of octets
         pcm_sample<float> p;
 
         // read in big-endian order
-        p.octets.octet3 = pcm_aligned_read(buffer, offset);
-        p.octets.octet2 = pcm_aligned_read(buffer, offset);
-        p.octets.octet1 = pcm_aligned_read(buffer, offset);
-        p.octets.octet0 = pcm_aligned_read(buffer, offset);
+        p.octets.octet3 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet2 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet1 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet0 = pcm_aligned_read(buffer, bit_offset);
 
         return p.value;
     }
@@ -12610,28 +12616,28 @@ template <> struct pcm_packer<PcmEncoding_Float32, PcmEndian_Big> {
 // Float32 Little-Endian packer / unpacker
 template <> struct pcm_packer<PcmEncoding_Float32, PcmEndian_Little> {
     // Pack next sample to buffer
-    static inline void pack(uint8_t* buffer, size_t& offset, float arg) {
+    static inline void pack(uint8_t* buffer, size_t& bit_offset, float arg) {
         // native-endian view of octets
         pcm_sample<float> p;
         p.value = arg;
 
         // write in little-endian order
-        pcm_aligned_write(buffer, offset, p.octets.octet0);
-        pcm_aligned_write(buffer, offset, p.octets.octet1);
-        pcm_aligned_write(buffer, offset, p.octets.octet2);
-        pcm_aligned_write(buffer, offset, p.octets.octet3);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet0);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet1);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet2);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet3);
     }
 
     // Unpack next sample from buffer
-    static inline float unpack(const uint8_t* buffer, size_t& offset) {
+    static inline float unpack(const uint8_t* buffer, size_t& bit_offset) {
         // native-endian view of octets
         pcm_sample<float> p;
 
         // read in little-endian order
-        p.octets.octet0 = pcm_aligned_read(buffer, offset);
-        p.octets.octet1 = pcm_aligned_read(buffer, offset);
-        p.octets.octet2 = pcm_aligned_read(buffer, offset);
-        p.octets.octet3 = pcm_aligned_read(buffer, offset);
+        p.octets.octet0 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet1 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet2 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet3 = pcm_aligned_read(buffer, bit_offset);
 
         return p.value;
     }
@@ -12640,36 +12646,36 @@ template <> struct pcm_packer<PcmEncoding_Float32, PcmEndian_Little> {
 // Float64 Big-Endian packer / unpacker
 template <> struct pcm_packer<PcmEncoding_Float64, PcmEndian_Big> {
     // Pack next sample to buffer
-    static inline void pack(uint8_t* buffer, size_t& offset, double arg) {
+    static inline void pack(uint8_t* buffer, size_t& bit_offset, double arg) {
         // native-endian view of octets
         pcm_sample<double> p;
         p.value = arg;
 
         // write in big-endian order
-        pcm_aligned_write(buffer, offset, p.octets.octet7);
-        pcm_aligned_write(buffer, offset, p.octets.octet6);
-        pcm_aligned_write(buffer, offset, p.octets.octet5);
-        pcm_aligned_write(buffer, offset, p.octets.octet4);
-        pcm_aligned_write(buffer, offset, p.octets.octet3);
-        pcm_aligned_write(buffer, offset, p.octets.octet2);
-        pcm_aligned_write(buffer, offset, p.octets.octet1);
-        pcm_aligned_write(buffer, offset, p.octets.octet0);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet7);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet6);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet5);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet4);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet3);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet2);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet1);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet0);
     }
 
     // Unpack next sample from buffer
-    static inline double unpack(const uint8_t* buffer, size_t& offset) {
+    static inline double unpack(const uint8_t* buffer, size_t& bit_offset) {
         // native-endian view of octets
         pcm_sample<double> p;
 
         // read in big-endian order
-        p.octets.octet7 = pcm_aligned_read(buffer, offset);
-        p.octets.octet6 = pcm_aligned_read(buffer, offset);
-        p.octets.octet5 = pcm_aligned_read(buffer, offset);
-        p.octets.octet4 = pcm_aligned_read(buffer, offset);
-        p.octets.octet3 = pcm_aligned_read(buffer, offset);
-        p.octets.octet2 = pcm_aligned_read(buffer, offset);
-        p.octets.octet1 = pcm_aligned_read(buffer, offset);
-        p.octets.octet0 = pcm_aligned_read(buffer, offset);
+        p.octets.octet7 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet6 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet5 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet4 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet3 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet2 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet1 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet0 = pcm_aligned_read(buffer, bit_offset);
 
         return p.value;
     }
@@ -12678,36 +12684,36 @@ template <> struct pcm_packer<PcmEncoding_Float64, PcmEndian_Big> {
 // Float64 Little-Endian packer / unpacker
 template <> struct pcm_packer<PcmEncoding_Float64, PcmEndian_Little> {
     // Pack next sample to buffer
-    static inline void pack(uint8_t* buffer, size_t& offset, double arg) {
+    static inline void pack(uint8_t* buffer, size_t& bit_offset, double arg) {
         // native-endian view of octets
         pcm_sample<double> p;
         p.value = arg;
 
         // write in little-endian order
-        pcm_aligned_write(buffer, offset, p.octets.octet0);
-        pcm_aligned_write(buffer, offset, p.octets.octet1);
-        pcm_aligned_write(buffer, offset, p.octets.octet2);
-        pcm_aligned_write(buffer, offset, p.octets.octet3);
-        pcm_aligned_write(buffer, offset, p.octets.octet4);
-        pcm_aligned_write(buffer, offset, p.octets.octet5);
-        pcm_aligned_write(buffer, offset, p.octets.octet6);
-        pcm_aligned_write(buffer, offset, p.octets.octet7);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet0);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet1);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet2);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet3);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet4);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet5);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet6);
+        pcm_aligned_write(buffer, bit_offset, p.octets.octet7);
     }
 
     // Unpack next sample from buffer
-    static inline double unpack(const uint8_t* buffer, size_t& offset) {
+    static inline double unpack(const uint8_t* buffer, size_t& bit_offset) {
         // native-endian view of octets
         pcm_sample<double> p;
 
         // read in little-endian order
-        p.octets.octet0 = pcm_aligned_read(buffer, offset);
-        p.octets.octet1 = pcm_aligned_read(buffer, offset);
-        p.octets.octet2 = pcm_aligned_read(buffer, offset);
-        p.octets.octet3 = pcm_aligned_read(buffer, offset);
-        p.octets.octet4 = pcm_aligned_read(buffer, offset);
-        p.octets.octet5 = pcm_aligned_read(buffer, offset);
-        p.octets.octet6 = pcm_aligned_read(buffer, offset);
-        p.octets.octet7 = pcm_aligned_read(buffer, offset);
+        p.octets.octet0 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet1 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet2 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet3 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet4 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet5 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet6 = pcm_aligned_read(buffer, bit_offset);
+        p.octets.octet7 = pcm_aligned_read(buffer, bit_offset);
 
         return p.value;
     }
@@ -12716,23 +12722,27 @@ template <> struct pcm_packer<PcmEncoding_Float64, PcmEndian_Little> {
 // Map encoding and endian of samples
 template <PcmEncoding InEnc, PcmEncoding OutEnc, PcmEndian InEnd, PcmEndian OutEnd>
 struct pcm_mapper {
-    static inline void map(const void* in_data, void* out_data, size_t n_samples) {
-        const uint8_t* in = (const uint8_t*)in_data;
-        uint8_t* out = (uint8_t*)out_data;
-
-        size_t in_off = 0;
-        size_t out_off = 0;
-
+    static inline void map(const uint8_t* in_data,
+                           uint8_t* out_data,
+                           size_t& in_bit_off,
+                           size_t& out_bit_off,
+                           size_t n_samples) {
         for (size_t n = 0; n < n_samples; n++) {
-            pcm_packer<OutEnc, OutEnd>::pack(out, out_off,
+            pcm_packer<OutEnc, OutEnd>::pack(
+                out_data, out_bit_off,
                 pcm_encoding_converter<InEnc, OutEnc>::convert(
-                    pcm_packer<InEnc, InEnd>::unpack(in, in_off)));
+                    pcm_packer<InEnc, InEnd>::unpack(in_data, in_bit_off)));
         }
     }
 };
 
 // Sample mapping function
-typedef void (*pcm_mapper_func_t)(const void* in, void* out, size_t n_samples);
+typedef void (*pcm_mapper_func_t)(
+    const uint8_t* in_data,
+    uint8_t* out_data,
+    size_t& in_bit_off,
+    size_t& out_bit_off,
+    size_t n_samples);
 
 // Select mapper function
 template <PcmEncoding InEnc, PcmEncoding OutEnc, PcmEndian InEnd, PcmEndian OutEnd>
