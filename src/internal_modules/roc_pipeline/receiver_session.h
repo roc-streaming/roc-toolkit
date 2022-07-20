@@ -13,6 +13,7 @@
 #define ROC_PIPELINE_RECEIVER_SESSION_H_
 
 #include "roc_address/socket_addr.h"
+#include "roc_audio/channel_mapper_reader.h"
 #include "roc_audio/depacketizer.h"
 #include "roc_audio/iframe_decoder.h"
 #include "roc_audio/ireader.h"
@@ -110,6 +111,8 @@ private:
 
     core::ScopedPtr<audio::IFrameDecoder> payload_decoder_;
     core::Optional<audio::Depacketizer> depacketizer_;
+
+    core::Optional<audio::ChannelMapperReader> channel_mapper_reader_;
 
     core::Optional<audio::PoisonReader> resampler_poisoner_;
     core::Optional<audio::ResamplerReader> resampler_reader_;

@@ -12,6 +12,7 @@
 #ifndef ROC_PIPELINE_CONVERTER_SOURCE_H_
 #define ROC_PIPELINE_CONVERTER_SOURCE_H_
 
+#include "roc_audio/channel_mapper_reader.h"
 #include "roc_audio/iresampler.h"
 #include "roc_audio/poison_reader.h"
 #include "roc_audio/profiling_reader.h"
@@ -73,6 +74,8 @@ public:
     virtual bool read(audio::Frame&);
 
 private:
+    core::Optional<audio::ChannelMapperReader> channel_mapper_reader_;
+
     core::Optional<audio::PoisonReader> resampler_poisoner_;
     core::Optional<audio::ResamplerReader> resampler_reader_;
     core::ScopedPtr<audio::IResampler> resampler_;

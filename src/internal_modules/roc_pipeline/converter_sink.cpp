@@ -26,7 +26,23 @@ ConverterSink::ConverterSink(const ConverterConfig& config,
         awriter = &null_writer_;
     }
 
-    if (config.resampling) {
+    if (config.input_sample_spec.channel_mask()
+        != config.output_sample_spec.channel_mask()) {
+        channel_mapper_writer_.reset(
+            new (channel_mapper_writer_) audio::ChannelMapperWriter(
+                *awriter, buffer_factory, config.internal_frame_length,
+                audio::SampleSpec(config.output_sample_spec.sample_rate(),
+                                  config.input_sample_spec.channel_mask()),
+                config.output_sample_spec));
+        if (!channel_mapper_writer_ || !channel_mapper_writer_->valid()) {
+            return;
+        }
+        awriter = channel_mapper_writer_.get();
+    }
+
+    if (config.resampling
+        && config.input_sample_spec.sample_rate()
+            != config.output_sample_spec.sample_rate()) {
         if (config.poisoning) {
             resampler_poisoner_.reset(new (resampler_poisoner_)
                                           audio::PoisonWriter(*awriter));
@@ -48,7 +64,9 @@ ConverterSink::ConverterSink(const ConverterConfig& config,
 
         resampler_writer_.reset(new (resampler_writer_) audio::ResamplerWriter(
             *awriter, *resampler_, buffer_factory, config.internal_frame_length,
-            config.input_sample_spec, config.output_sample_spec));
+            config.input_sample_spec,
+            audio::SampleSpec(config.output_sample_spec.sample_rate(),
+                              config.input_sample_spec.channel_mask())));
 
         if (!resampler_writer_ || !resampler_writer_->valid()) {
             return;

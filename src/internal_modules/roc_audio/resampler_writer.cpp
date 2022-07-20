@@ -26,6 +26,10 @@ ResamplerWriter::ResamplerWriter(IWriter& writer,
     , input_pos_(0)
     , output_pos_(0)
     , valid_(false) {
+    if (in_sample_spec_.channel_mask() != out_sample_spec_.channel_mask()) {
+        roc_panic("resampler writer: input and output channel mask should be equal");
+    }
+
     if (!resampler_.valid()) {
         return;
     }

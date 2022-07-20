@@ -23,9 +23,23 @@ ConverterSource::ConverterSource(const ConverterConfig& config,
     , config_(config) {
     audio::IReader* areader = &input_source_;
 
+    if (config.input_sample_spec.channel_mask()
+        != config.output_sample_spec.channel_mask()) {
+        channel_mapper_reader_.reset(
+            new (channel_mapper_reader_) audio::ChannelMapperReader(
+                *areader, buffer_factory, config.internal_frame_length,
+                config.input_sample_spec,
+                audio::SampleSpec(config.input_sample_spec.sample_rate(),
+                                  config.output_sample_spec.channel_mask())));
+        if (!channel_mapper_reader_ || !channel_mapper_reader_->valid()) {
+            return;
+        }
+        areader = channel_mapper_reader_.get();
+    }
+
     if (config.resampling
-        && config.output_sample_spec.sample_rate()
-            != config.input_sample_spec.sample_rate()) {
+        && config.input_sample_spec.sample_rate()
+            != config.output_sample_spec.sample_rate()) {
         if (config.poisoning) {
             resampler_poisoner_.reset(new (resampler_poisoner_)
                                           audio::PoisonReader(*areader));
@@ -38,7 +52,8 @@ ConverterSource::ConverterSource(const ConverterConfig& config,
         resampler_.reset(audio::ResamplerMap::instance().new_resampler(
                              config.resampler_backend, allocator, buffer_factory,
                              config.resampler_profile, config.internal_frame_length,
-                             config.input_sample_spec),
+                             audio::SampleSpec(config.input_sample_spec.sample_rate(),
+                                               config.output_sample_spec.channel_mask())),
                          allocator);
 
         if (!resampler_) {
@@ -46,7 +61,10 @@ ConverterSource::ConverterSource(const ConverterConfig& config,
         }
 
         resampler_reader_.reset(new (resampler_reader_) audio::ResamplerReader(
-            *areader, *resampler_, config.input_sample_spec, config.output_sample_spec));
+            *areader, *resampler_,
+            audio::SampleSpec(config.input_sample_spec.sample_rate(),
+                              config.output_sample_spec.channel_mask()),
+            config.output_sample_spec));
 
         if (!resampler_reader_ || !resampler_reader_->valid()) {
             return;

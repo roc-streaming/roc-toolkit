@@ -25,6 +25,10 @@ ChannelMapperReader::ChannelMapperReader(IReader& reader,
     , in_spec_(in_spec)
     , out_spec_(out_spec)
     , valid_(false) {
+    if (in_spec_.sample_rate() != out_spec_.sample_rate()) {
+        roc_panic("channel mapper reader: input and output sample rate should be equal");
+    }
+
     if (mapper_enabled_) {
         const size_t frame_size = in_spec.ns_2_samples_overall(frame_length);
         roc_log(LogDebug,

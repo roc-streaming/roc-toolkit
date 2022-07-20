@@ -12,6 +12,7 @@
 #ifndef ROC_PIPELINE_CONVERTER_SINK_H_
 #define ROC_PIPELINE_CONVERTER_SINK_H_
 
+#include "roc_audio/channel_mapper_writer.h"
 #include "roc_audio/iresampler.h"
 #include "roc_audio/null_writer.h"
 #include "roc_audio/poison_writer.h"
@@ -60,6 +61,8 @@ public:
 
 private:
     audio::NullWriter null_writer_;
+
+    core::Optional<audio::ChannelMapperWriter> channel_mapper_writer_;
 
     core::Optional<audio::PoisonWriter> resampler_poisoner_;
     core::Optional<audio::ResamplerWriter> resampler_writer_;

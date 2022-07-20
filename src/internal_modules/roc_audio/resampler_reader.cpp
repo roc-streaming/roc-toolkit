@@ -25,6 +25,10 @@ ResamplerReader::ResamplerReader(IReader& reader,
     , out_sample_spec_(out_sample_spec)
     , scaling_(1.0f)
     , valid_(false) {
+    if (in_sample_spec_.channel_mask() != out_sample_spec_.channel_mask()) {
+        roc_panic("resampler reader: input and output channel mask should be equal");
+    }
+
     if (!resampler_.valid()) {
         return;
     }

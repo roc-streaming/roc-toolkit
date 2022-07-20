@@ -298,9 +298,7 @@ bool SenderEndpointSet::create_transport_pipeline_() {
 
     packetizer_.reset(new (packetizer_) audio::Packetizer(
         *pwriter, source_endpoint_->composer(), *payload_encoder_, packet_factory_,
-        byte_buffer_factory_, config_.packet_length,
-        audio::SampleSpec(format->sample_spec.sample_rate(),
-                          config_.input_sample_spec.channel_mask()),
+        byte_buffer_factory_, config_.packet_length, format->sample_spec,
         config_.payload_type));
     if (!packetizer_ || !packetizer_->valid()) {
         return false;
@@ -308,8 +306,21 @@ bool SenderEndpointSet::create_transport_pipeline_() {
 
     audio::IWriter* awriter = packetizer_.get();
 
+    if (format->sample_spec.channel_mask() != config_.input_sample_spec.channel_mask()) {
+        channel_mapper_writer_.reset(
+            new (channel_mapper_writer_) audio::ChannelMapperWriter(
+                *awriter, sample_buffer_factory_, config_.internal_frame_length,
+                audio::SampleSpec(format->sample_spec.sample_rate(),
+                                  config_.input_sample_spec.channel_mask()),
+                format->sample_spec));
+        if (!channel_mapper_writer_ || !channel_mapper_writer_->valid()) {
+            return false;
+        }
+        awriter = channel_mapper_writer_.get();
+    }
+
     if (config_.resampling
-        && config_.input_sample_spec.sample_rate() != format->sample_spec.sample_rate()) {
+        && format->sample_spec.sample_rate() != config_.input_sample_spec.sample_rate()) {
         if (config_.poisoning) {
             resampler_poisoner_.reset(new (resampler_poisoner_)
                                           audio::PoisonWriter(*awriter));
@@ -331,7 +342,9 @@ bool SenderEndpointSet::create_transport_pipeline_() {
 
         resampler_writer_.reset(new (resampler_writer_) audio::ResamplerWriter(
             *awriter, *resampler_, sample_buffer_factory_, config_.internal_frame_length,
-            config_.input_sample_spec, format->sample_spec));
+            config_.input_sample_spec,
+            audio::SampleSpec(format->sample_spec.sample_rate(),
+                              config_.input_sample_spec.channel_mask())));
 
         if (!resampler_writer_ || !resampler_writer_->valid()) {
             return false;

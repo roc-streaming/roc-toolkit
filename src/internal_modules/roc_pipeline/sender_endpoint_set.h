@@ -14,6 +14,7 @@
 
 #include "roc_address/interface.h"
 #include "roc_address/protocol.h"
+#include "roc_audio/channel_mapper_writer.h"
 #include "roc_audio/fanout.h"
 #include "roc_audio/iframe_encoder.h"
 #include "roc_audio/iresampler.h"
@@ -114,6 +115,8 @@ private:
 
     core::ScopedPtr<audio::IFrameEncoder> payload_encoder_;
     core::Optional<audio::Packetizer> packetizer_;
+
+    core::Optional<audio::ChannelMapperWriter> channel_mapper_writer_;
 
     core::Optional<audio::PoisonWriter> resampler_poisoner_;
     core::Optional<audio::ResamplerWriter> resampler_writer_;
