@@ -331,13 +331,9 @@ bool SenderEndpointSet::create_transport_pipeline_() {
 
         resampler_writer_.reset(new (resampler_writer_) audio::ResamplerWriter(
             *awriter, *resampler_, sample_buffer_factory_, config_.internal_frame_length,
-            config_.input_sample_spec));
+            config_.input_sample_spec, format->sample_spec));
 
         if (!resampler_writer_ || !resampler_writer_->valid()) {
-            return false;
-        }
-        if (!resampler_writer_->set_scaling(config_.input_sample_spec.sample_rate(),
-                                            format->sample_spec.sample_rate(), 1.0f)) {
             return false;
         }
         awriter = resampler_writer_.get();

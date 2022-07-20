@@ -32,8 +32,8 @@ public:
     //! Initialize.
     ResamplerReader(IReader& reader,
                     IResampler& resampler,
-                    const SampleSpec in_sample_spec,
-                    const SampleSpec out_sample_spec);
+                    const SampleSpec& in_sample_spec,
+                    const SampleSpec& out_sample_spec);
 
     //! Check if object is successfully constructed.
     bool valid() const;
@@ -54,6 +54,7 @@ private:
     const audio::SampleSpec out_sample_spec_;
 
     float scaling_;
+    bool valid_;
 };
 
 } // namespace audio

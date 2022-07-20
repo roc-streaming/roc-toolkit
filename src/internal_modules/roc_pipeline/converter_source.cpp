@@ -51,9 +51,6 @@ ConverterSource::ConverterSource(const ConverterConfig& config,
         if (!resampler_reader_ || !resampler_reader_->valid()) {
             return;
         }
-        if (!resampler_reader_->set_scaling(1.0f)) {
-            return;
-        }
         areader = resampler_reader_.get();
     }
 

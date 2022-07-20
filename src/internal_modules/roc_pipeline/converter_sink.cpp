@@ -48,14 +48,9 @@ ConverterSink::ConverterSink(const ConverterConfig& config,
 
         resampler_writer_.reset(new (resampler_writer_) audio::ResamplerWriter(
             *awriter, *resampler_, buffer_factory, config.internal_frame_length,
-            config.input_sample_spec));
+            config.input_sample_spec, config.output_sample_spec));
 
         if (!resampler_writer_ || !resampler_writer_->valid()) {
-            return;
-        }
-        if (!resampler_writer_->set_scaling(config.input_sample_spec.sample_rate(),
-                                            config.output_sample_spec.sample_rate(),
-                                            1.0f)) {
             return;
         }
         awriter = resampler_writer_.get();

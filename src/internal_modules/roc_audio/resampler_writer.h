@@ -34,13 +34,14 @@ public:
                     IResampler& resampler,
                     core::BufferFactory<sample_t>& buffer_factory,
                     core::nanoseconds_t frame_length,
-                    const audio::SampleSpec& sample_spec);
+                    const SampleSpec& in_sample_spec,
+                    const SampleSpec& out_sample_spec);
 
     //! Check if object is successfully constructed.
     bool valid() const;
 
     //! Set new resample factor.
-    bool set_scaling(size_t input_rate, size_t output_rate, float multiplier);
+    bool set_scaling(float multiplier);
 
     //! Read audio frame.
     virtual void write(Frame&);
@@ -50,6 +51,9 @@ private:
 
     IResampler& resampler_;
     IWriter& writer_;
+
+    const audio::SampleSpec in_sample_spec_;
+    const audio::SampleSpec out_sample_spec_;
 
     size_t input_pos_;
     size_t output_pos_;

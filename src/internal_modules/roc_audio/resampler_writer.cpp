@@ -17,9 +17,12 @@ ResamplerWriter::ResamplerWriter(IWriter& writer,
                                  IResampler& resampler,
                                  core::BufferFactory<sample_t>& buffer_factory,
                                  core::nanoseconds_t frame_length,
-                                 const audio::SampleSpec& sample_spec)
+                                 const SampleSpec& in_sample_spec,
+                                 const SampleSpec& out_sample_spec)
     : resampler_(resampler)
     , writer_(writer)
+    , in_sample_spec_(in_sample_spec)
+    , out_sample_spec_(out_sample_spec)
     , input_pos_(0)
     , output_pos_(0)
     , valid_(false) {
@@ -27,8 +30,13 @@ ResamplerWriter::ResamplerWriter(IWriter& writer,
         return;
     }
 
-    const size_t frame_size = sample_spec.ns_2_samples_overall(frame_length);
-    if (frame_size == 0) {
+    if (!resampler_.set_scaling(in_sample_spec_.sample_rate(),
+                                out_sample_spec_.sample_rate(), 1.0f)) {
+        return;
+    }
+
+    const size_t out_frame_size = out_sample_spec_.ns_2_samples_overall(frame_length);
+    if (out_frame_size == 0) {
         roc_log(LogError, "resampler writer: frame size can't be zero");
         return;
     }
@@ -37,21 +45,20 @@ ResamplerWriter::ResamplerWriter(IWriter& writer,
         roc_log(LogError, "resampler writer: can't allocate buffer for output frame");
         return;
     }
-    output_.reslice(0, frame_size);
+    output_.reslice(0, out_frame_size);
 
     valid_ = true;
 }
 
 bool ResamplerWriter::valid() const {
-    return resampler_.valid();
+    return valid_;
 }
 
-bool ResamplerWriter::set_scaling(size_t input_sample_rate,
-                                  size_t output_sample_rate,
-                                  float multiplier) {
+bool ResamplerWriter::set_scaling(float multiplier) {
     roc_panic_if_not(valid());
 
-    return resampler_.set_scaling(input_sample_rate, output_sample_rate, multiplier);
+    return resampler_.set_scaling(in_sample_spec_.sample_rate(),
+                                  out_sample_spec_.sample_rate(), multiplier);
 }
 
 void ResamplerWriter::write(Frame& frame) {

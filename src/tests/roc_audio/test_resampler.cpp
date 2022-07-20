@@ -140,9 +140,9 @@ void resample_writer(IResampler& resampler,
     test::MockWriter output_writer;
 
     ResamplerWriter rw(output_writer, resampler, buffer_factory, frame_duration,
-                       sample_spec);
+                       sample_spec, sample_spec);
     CHECK(rw.valid());
-    CHECK(rw.set_scaling(sample_spec.sample_rate(), sample_spec.sample_rate(), scaling));
+    CHECK(rw.set_scaling(scaling));
 
     for (size_t pos = 0; pos < num_samples;) {
         Frame frame(in + pos,

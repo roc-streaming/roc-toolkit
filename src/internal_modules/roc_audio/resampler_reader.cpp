@@ -17,27 +17,37 @@ namespace audio {
 
 ResamplerReader::ResamplerReader(IReader& reader,
                                  IResampler& resampler,
-                                 const SampleSpec in_sample_spec,
-                                 const SampleSpec out_sample_spec)
+                                 const SampleSpec& in_sample_spec,
+                                 const SampleSpec& out_sample_spec)
     : resampler_(resampler)
     , reader_(reader)
     , in_sample_spec_(in_sample_spec)
     , out_sample_spec_(out_sample_spec)
-    , scaling_(1.0f) {
-    set_scaling(1.0f);
+    , scaling_(1.0f)
+    , valid_(false) {
+    if (!resampler_.valid()) {
+        return;
+    }
+
+    if (!resampler_.set_scaling(in_sample_spec_.sample_rate(),
+                                out_sample_spec_.sample_rate(), 1.0f)) {
+        return;
+    }
+
+    valid_ = true;
 }
 
 bool ResamplerReader::valid() const {
-    return resampler_.valid();
+    return valid_;
 }
 
-bool ResamplerReader::set_scaling(float mult) {
+bool ResamplerReader::set_scaling(float multiplier) {
     roc_panic_if_not(valid());
 
-    scaling_ = mult;
+    scaling_ = multiplier;
 
     return resampler_.set_scaling(in_sample_spec_.sample_rate(),
-                                  out_sample_spec_.sample_rate(), mult);
+                                  out_sample_spec_.sample_rate(), multiplier);
 }
 
 bool ResamplerReader::read(Frame& out) {
