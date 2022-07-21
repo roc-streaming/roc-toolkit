@@ -33,7 +33,8 @@ public:
     //! Generate sending metrics.
     //! The obtained metrics will be sent to receiver(s).
     //! @p report_time defines time point relative to which metrics should be calculated.
-    virtual SendingMetrics on_get_sending_metrics(packet::ntp_timestamp_t report_time) = 0;
+    virtual SendingMetrics
+    on_get_sending_metrics(packet::ntp_timestamp_t report_time) = 0;
 
     //! Handle reception feedback metrics obtained from receiver.
     //! Called for each source.

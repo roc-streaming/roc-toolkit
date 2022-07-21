@@ -30,7 +30,8 @@ void ChannelMapper::map(const Frame& in_frame, Frame& out_frame) {
         roc_panic("channel mapper: unexpected output frame size");
     }
 
-    if (in_frame.num_samples() / in_chan_count_ != out_frame.num_samples() / out_chan_count_) {
+    if (in_frame.num_samples() / in_chan_count_
+        != out_frame.num_samples() / out_chan_count_) {
         roc_panic("channel mapper: mismatching frame sizes");
     }
 

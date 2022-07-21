@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_core/target_posix/roc_core/crash.h
+//! @file roc_core/target_posix/roc_core/crash_handler.h
 //! @brief Crash handling.
 
-#ifndef ROC_CORE_CRASH_H_
-#define ROC_CORE_CRASH_H_
+#ifndef ROC_CORE_CRASH_HANDLER_H_
+#define ROC_CORE_CRASH_HANDLER_H_
 
 #include <signal.h>
 
@@ -42,4 +42,4 @@ private:
 } // namespace core
 } // namespace roc
 
-#endif // ROC_CORE_CRASH_H_
+#endif // ROC_CORE_CRASH_HANDLER_H_

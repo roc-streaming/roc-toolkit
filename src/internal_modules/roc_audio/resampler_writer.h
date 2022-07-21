@@ -13,8 +13,8 @@
 #define ROC_AUDIO_RESAMPLER_WRITER_H_
 
 #include "roc_audio/frame.h"
-#include "roc_audio/iresampler.h"
 #include "roc_audio/iframe_writer.h"
+#include "roc_audio/iresampler.h"
 #include "roc_audio/sample_spec.h"
 #include "roc_audio/units.h"
 #include "roc_core/array.h"

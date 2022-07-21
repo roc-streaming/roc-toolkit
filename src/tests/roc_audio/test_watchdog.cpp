@@ -82,7 +82,8 @@ TEST_GROUP(watchdog) {
         return config;
     }
 
-    void check_read(IFrameReader & reader, bool is_read, size_t fsz, unsigned frame_flags) {
+    void check_read(IFrameReader & reader, bool is_read, size_t fsz,
+                    unsigned frame_flags) {
         core::Slice<sample_t> buf = new_buffer(fsz);
         memset(buf.data(), 0xff, buf.size() * sizeof(sample_t));
 

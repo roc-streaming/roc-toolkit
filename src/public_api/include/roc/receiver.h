@@ -92,8 +92,8 @@ extern "C" {
  * \c ROC_INTERFACE_AUDIO_REPAIR interfaces:
  *
  *  - If FEC is disabled (\ref ROC_FEC_ENCODING_DISABLE), only
- *    \c ROC_INTERFACE_AUDIO_SOURCE should be configured. It will be used to transmit audio
- *    packets.
+ *    \c ROC_INTERFACE_AUDIO_SOURCE should be configured. It will be used to transmit
+ *    audio packets.
  *
  *  - If FEC is enabled, both \c ROC_INTERFACE_AUDIO_SOURCE and
  *    \c ROC_INTERFACE_AUDIO_REPAIR interfaces should be configured. The second interface

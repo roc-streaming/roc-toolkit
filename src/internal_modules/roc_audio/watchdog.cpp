@@ -86,8 +86,8 @@ bool Watchdog::read(Frame& frame) {
         return false;
     }
 
-    const packet::timestamp_t next_read_pos =
-        packet::timestamp_t(curr_read_pos_ + frame.num_samples() / sample_spec_.num_channels());
+    const packet::timestamp_t next_read_pos = packet::timestamp_t(
+        curr_read_pos_ + frame.num_samples() / sample_spec_.num_channels());
 
     update_blank_timeout_(frame, next_read_pos);
     update_drops_timeout_(frame, next_read_pos);

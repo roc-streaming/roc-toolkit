@@ -42,7 +42,8 @@ public:
     virtual void write(audio::Frame& frame) {
         CHECK(pos_ + frame.num_samples() <= MaxSz);
 
-        memcpy(samples_ + pos_, frame.samples(), frame.num_samples() * sizeof(audio::sample_t));
+        memcpy(samples_ + pos_, frame.samples(),
+               frame.num_samples() * sizeof(audio::sample_t));
         pos_ += frame.num_samples();
     }
 

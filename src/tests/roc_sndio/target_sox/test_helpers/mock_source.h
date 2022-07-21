@@ -78,7 +78,8 @@ public:
         }
 
         if (ns < frame.num_samples()) {
-            memset(frame.samples() + ns, 0, (frame.num_samples() - ns) * sizeof(audio::sample_t));
+            memset(frame.samples() + ns, 0,
+                   (frame.num_samples() - ns) * sizeof(audio::sample_t));
         }
 
         return true;
