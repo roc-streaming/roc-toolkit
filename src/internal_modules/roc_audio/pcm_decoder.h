@@ -13,7 +13,8 @@
 #define ROC_AUDIO_PCM_DECODER_H_
 
 #include "roc_audio/iframe_decoder.h"
-#include "roc_audio/pcm_funcs.h"
+#include "roc_audio/pcm_mapper.h"
+#include "roc_audio/sample_spec.h"
 #include "roc_core/noncopyable.h"
 
 namespace roc {
@@ -23,7 +24,7 @@ namespace audio {
 class PcmDecoder : public IFrameDecoder, public core::NonCopyable<> {
 public:
     //! Initialize.
-    explicit PcmDecoder(const PcmFuncs& funcs);
+    explicit PcmDecoder(const PcmFormat& pcm_format, const SampleSpec& sample_spec);
 
     //! Get current stream position.
     virtual packet::timestamp_t position() const;
@@ -31,13 +32,15 @@ public:
     //! Get number of samples available for decoding.
     virtual packet::timestamp_t available() const;
 
+    //! Get number of samples per channel, that can be decoded from given frame.
+    virtual size_t decoded_sample_count(const void* frame_data, size_t frame_size) const;
+
     //! Start decoding a new frame.
     virtual void
     begin(packet::timestamp_t frame_position, const void* frame_data, size_t frame_size);
 
     //! Read samples from current frame.
-    virtual size_t
-    read(sample_t* samples, size_t n_samples, packet::channel_mask_t channels);
+    virtual size_t read(sample_t* samples, size_t n_samples);
 
     //! Shift samples from current frame.
     virtual size_t shift(size_t n_samples);
@@ -46,14 +49,15 @@ public:
     virtual void end();
 
 private:
-    const PcmFuncs& funcs_;
+    PcmMapper pcm_mapper_;
+    const size_t n_chans_;
 
     packet::timestamp_t stream_pos_;
     packet::timestamp_t stream_avail_;
 
     const void* frame_data_;
-    size_t frame_size_;
-    size_t frame_pos_;
+    size_t frame_byte_size_;
+    size_t frame_bit_off_;
 };
 
 } // namespace audio

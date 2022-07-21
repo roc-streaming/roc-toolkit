@@ -67,6 +67,12 @@ struct PcmFormat {
         : encoding()
         , endian() {
     }
+
+    //! Initialize.
+    PcmFormat(PcmEncoding enc, PcmEndian end)
+        : encoding(enc)
+        , endian(end) {
+    }
 };
 
 } // namespace audio

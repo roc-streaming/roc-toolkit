@@ -14,11 +14,9 @@
 
 #include "roc_audio/iframe_decoder.h"
 #include "roc_audio/iframe_encoder.h"
+#include "roc_audio/pcm_format.h"
 #include "roc_audio/sample_spec.h"
 #include "roc_core/iallocator.h"
-#include "roc_core/time.h"
-#include "roc_packet/rtp.h"
-#include "roc_packet/units.h"
 #include "roc_rtp/headers.h"
 
 namespace roc {
@@ -29,20 +27,28 @@ struct Format {
     //! Payload type.
     PayloadType payload_type;
 
-    //! Packet flags.
-    unsigned flags;
+    //! Sample encoding and endian.
+    audio::PcmFormat pcm_format;
 
-    //! Sample spec
+    //! Sample rate and channel mask.
     audio::SampleSpec sample_spec;
 
-    //! Get number of samples for given payload size.
-    size_t (*get_num_samples)(size_t payload_size);
+    //! Packet flags.
+    unsigned packet_flags;
 
-    //! Create encoder.
+    //! Create frame encoder.
     audio::IFrameEncoder* (*new_encoder)(core::IAllocator& allocator);
 
-    //! Create decoder.
+    //! Create frame decoder.
     audio::IFrameDecoder* (*new_decoder)(core::IAllocator& allocator);
+
+    //! Initialize.
+    Format()
+        : payload_type()
+        , packet_flags()
+        , new_encoder()
+        , new_decoder() {
+    }
 };
 
 } // namespace rtp

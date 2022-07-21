@@ -53,11 +53,10 @@ void check_packet_info(const test::PacketInfo& pi) {
 }
 
 void check_format_info(const Format& format, const test::PacketInfo& pi) {
-    UNSIGNED_LONGS_EQUAL(packet::Packet::FlagAudio, format.flags);
+    UNSIGNED_LONGS_EQUAL(packet::Packet::FlagAudio, format.packet_flags);
     UNSIGNED_LONGS_EQUAL(pi.pt, format.payload_type);
     UNSIGNED_LONGS_EQUAL(pi.samplerate, format.sample_spec.sample_rate());
     UNSIGNED_LONGS_EQUAL(pi.num_channels, format.sample_spec.num_channels());
-    UNSIGNED_LONGS_EQUAL(pi.num_samples, format.get_num_samples(pi.payload_size));
 }
 
 void check_packet_fields(const packet::Packet& packet, const test::PacketInfo& pi) {
@@ -82,7 +81,6 @@ void check_packet_fields(const packet::Packet& packet, const test::PacketInfo& p
     UNSIGNED_LONGS_EQUAL(pi.ts, packet.rtp()->timestamp);
     UNSIGNED_LONGS_EQUAL(pi.marker, packet.rtp()->marker);
     UNSIGNED_LONGS_EQUAL(pi.pt, packet.rtp()->payload_type);
-    UNSIGNED_LONGS_EQUAL(pi.num_samples, packet.rtp()->duration);
     UNSIGNED_LONGS_EQUAL(pi.padding, (packet.rtp()->padding.size() != 0));
 }
 
@@ -94,7 +92,6 @@ void set_packet_fields(packet::Packet& packet, const test::PacketInfo& pi) {
     packet.rtp()->timestamp = pi.ts;
     packet.rtp()->marker = pi.marker;
     packet.rtp()->payload_type = pi.pt;
-    packet.rtp()->duration = (packet::timestamp_t)pi.num_samples;
 }
 
 void check_packet_data(packet::Packet& packet, const test::PacketInfo& pi) {
@@ -121,9 +118,7 @@ void decode_samples(audio::IFrameDecoder& decoder,
     decoder.begin(packet.rtp()->timestamp, packet.rtp()->payload.data(),
                   packet.rtp()->payload.size());
 
-    UNSIGNED_LONGS_EQUAL(pi.num_samples,
-                         decoder.read(samples, pi.num_samples,
-                                      packet::channel_mask_t(1 << pi.num_channels) - 1));
+    UNSIGNED_LONGS_EQUAL(pi.num_samples, decoder.read(samples, pi.num_samples));
 
     decoder.end();
 
@@ -153,13 +148,11 @@ void encode_samples(audio::IFrameEncoder& encoder,
         }
     }
 
-    UNSIGNED_LONGS_EQUAL(pi.payload_size, encoder.encoded_size(pi.num_samples));
+    UNSIGNED_LONGS_EQUAL(pi.payload_size, encoder.encoded_byte_count(pi.num_samples));
 
     encoder.begin(packet.rtp()->payload.data(), packet.rtp()->payload.size());
 
-    UNSIGNED_LONGS_EQUAL(pi.num_samples,
-                         encoder.write(samples, pi.num_samples,
-                                       packet::channel_mask_t(1 << pi.num_channels) - 1));
+    UNSIGNED_LONGS_EQUAL(pi.num_samples, encoder.write(samples, pi.num_samples));
 
     encoder.end();
 }

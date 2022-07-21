@@ -12,15 +12,16 @@
 namespace roc {
 namespace audio {
 
-PcmEncoder::PcmEncoder(const PcmFuncs& funcs)
-    : funcs_(funcs)
+PcmEncoder::PcmEncoder(const PcmFormat& pcm_format, const SampleSpec& sample_spec)
+    : pcm_mapper_(PcmFormat(PcmEncoding_Float32, PcmEndian_Native), pcm_format)
+    , n_chans_(sample_spec.num_channels())
     , frame_data_(NULL)
-    , frame_size_(0)
-    , frame_pos_(0) {
+    , frame_byte_size_(0)
+    , frame_bit_off_(0) {
 }
 
-size_t PcmEncoder::encoded_size(size_t num_samples) const {
-    return funcs_.payload_size_from_samples(num_samples);
+size_t PcmEncoder::encoded_byte_count(size_t num_samples) const {
+    return pcm_mapper_.output_byte_count(num_samples * n_chans_);
 }
 
 void PcmEncoder::begin(void* frame_data, size_t frame_size) {
@@ -31,21 +32,26 @@ void PcmEncoder::begin(void* frame_data, size_t frame_size) {
     }
 
     frame_data_ = frame_data;
-    frame_size_ = frame_size;
+    frame_byte_size_ = frame_size;
 }
 
-size_t PcmEncoder::write(const audio::sample_t* samples,
-                         size_t n_samples,
-                         packet::channel_mask_t channels) {
+size_t PcmEncoder::write(const audio::sample_t* samples, size_t n_samples) {
     if (!frame_data_) {
         roc_panic("pcm encoder: write should be called only between begin/end");
     }
 
-    const size_t wr_samples = funcs_.encode_samples(frame_data_, frame_size_, frame_pos_,
-                                                    samples, n_samples, channels);
+    size_t samples_bit_off = 0;
 
-    frame_pos_ += wr_samples;
-    return wr_samples;
+    const size_t n_mapped_samples =
+        pcm_mapper_.map(samples, n_samples * n_chans_ * sizeof(sample_t), samples_bit_off,
+                        frame_data_, frame_byte_size_, frame_bit_off_,
+                        n_samples * n_chans_)
+        / n_chans_;
+
+    roc_panic_if_not(samples_bit_off % 8 == 0);
+    roc_panic_if_not(n_mapped_samples <= n_samples);
+
+    return n_mapped_samples;
 }
 
 void PcmEncoder::end() {
@@ -54,8 +60,8 @@ void PcmEncoder::end() {
     }
 
     frame_data_ = NULL;
-    frame_size_ = 0;
-    frame_pos_ = 0;
+    frame_byte_size_ = 0;
+    frame_bit_off_ = 0;
 }
 
 } // namespace audio

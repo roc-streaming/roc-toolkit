@@ -9,6 +9,7 @@
 #include "roc_audio/pcm_mapper.h"
 #include "roc_audio/pcm_mapper_func.h"
 #include "roc_core/panic.h"
+#include "roc_core/stddefs.h"
 
 namespace roc {
 namespace audio {
@@ -51,11 +52,19 @@ size_t PcmMapper::output_byte_count(size_t output_samples) const {
     return (output_samples * output_sample_bits_ + 7) / 8;
 }
 
+size_t PcmMapper::input_bit_count(size_t input_samples) const {
+    return input_samples * input_sample_bits_;
+}
+
+size_t PcmMapper::output_bit_count(size_t output_samples) const {
+    return output_samples * output_sample_bits_;
+}
+
 size_t PcmMapper::map(const void* in_data,
-                      void* out_data,
                       size_t in_byte_size,
-                      size_t out_byte_size,
                       size_t& in_bit_off,
+                      void* out_data,
+                      size_t out_byte_size,
                       size_t& out_bit_off,
                       size_t n_samples) {
     roc_panic_if_msg(!in_data, "pcm mapper: input is null");
@@ -71,7 +80,7 @@ size_t PcmMapper::map(const void* in_data,
         std::min(n_samples, (out_byte_size * 8 - out_bit_off) / output_sample_bits_);
 
     if (n_samples != 0) {
-        map_func_((const uint8_t*)in_data, (uint8_t*)out_data, in_bit_off, out_bit_off,
+        map_func_((const uint8_t*)in_data, in_bit_off, (uint8_t*)out_data, out_bit_off,
                   n_samples);
     }
 

@@ -12,13 +12,14 @@
 namespace roc {
 namespace audio {
 
-PcmDecoder::PcmDecoder(const PcmFuncs& funcs)
-    : funcs_(funcs)
+PcmDecoder::PcmDecoder(const PcmFormat& pcm_format, const SampleSpec& sample_spec)
+    : pcm_mapper_(pcm_format, PcmFormat(PcmEncoding_Float32, PcmEndian_Native))
+    , n_chans_(sample_spec.num_channels())
     , stream_pos_(0)
     , stream_avail_(0)
     , frame_data_(NULL)
-    , frame_size_(0)
-    , frame_pos_(0) {
+    , frame_byte_size_(0)
+    , frame_bit_off_(0) {
 }
 
 packet::timestamp_t PcmDecoder::position() const {
@@ -27,6 +28,12 @@ packet::timestamp_t PcmDecoder::position() const {
 
 packet::timestamp_t PcmDecoder::available() const {
     return stream_avail_;
+}
+
+size_t PcmDecoder::decoded_sample_count(const void* frame_data, size_t frame_size) const {
+    roc_panic_if_not(frame_data);
+
+    return pcm_mapper_.input_sample_count(frame_size) / n_chans_;
 }
 
 void PcmDecoder::begin(packet::timestamp_t frame_position,
@@ -38,16 +45,15 @@ void PcmDecoder::begin(packet::timestamp_t frame_position,
         roc_panic("pcm decoder: unpaired begin/end");
     }
 
-    stream_pos_ = frame_position;
-    stream_avail_ = (packet::timestamp_t)funcs_.samples_from_payload_size(frame_size);
-
     frame_data_ = frame_data;
-    frame_size_ = frame_size;
+    frame_byte_size_ = frame_size;
+
+    stream_pos_ = frame_position;
+    stream_avail_ =
+        (packet::timestamp_t)pcm_mapper_.input_sample_count(frame_size) / n_chans_;
 }
 
-size_t PcmDecoder::read(audio::sample_t* samples,
-                        size_t n_samples,
-                        packet::channel_mask_t channels) {
+size_t PcmDecoder::read(audio::sample_t* samples, size_t n_samples) {
     if (!frame_data_) {
         roc_panic("pcm decoder: read should be called only between begin/end");
     }
@@ -56,12 +62,21 @@ size_t PcmDecoder::read(audio::sample_t* samples,
         n_samples = (size_t)stream_avail_;
     }
 
-    const size_t rd_samples = funcs_.decode_samples(frame_data_, frame_size_, frame_pos_,
-                                                    samples, n_samples, channels);
+    size_t samples_bit_off = 0;
 
-    (void)shift(rd_samples);
+    const size_t n_mapped_samples =
+        pcm_mapper_.map(frame_data_, frame_byte_size_, frame_bit_off_, samples,
+                        n_samples * n_chans_ * sizeof(sample_t), samples_bit_off,
+                        n_samples * n_chans_)
+        / n_chans_;
 
-    return rd_samples;
+    roc_panic_if_not(samples_bit_off % 8 == 0);
+    roc_panic_if_not(n_mapped_samples <= n_samples);
+
+    stream_pos_ += (packet::timestamp_t)n_mapped_samples;
+    stream_avail_ -= (packet::timestamp_t)n_mapped_samples;
+
+    return n_mapped_samples;
 }
 
 size_t PcmDecoder::shift(size_t n_samples) {
@@ -73,10 +88,10 @@ size_t PcmDecoder::shift(size_t n_samples) {
         n_samples = (size_t)stream_avail_;
     }
 
+    frame_bit_off_ += pcm_mapper_.input_bit_count(n_samples * n_chans_);
+
     stream_pos_ += (packet::timestamp_t)n_samples;
     stream_avail_ -= (packet::timestamp_t)n_samples;
-
-    frame_pos_ += n_samples;
 
     return n_samples;
 }
@@ -89,8 +104,8 @@ void PcmDecoder::end() {
     stream_avail_ = 0;
 
     frame_data_ = NULL;
-    frame_size_ = 0;
-    frame_pos_ = 0;
+    frame_byte_size_ = 0;
+    frame_bit_off_ = 0;
 }
 
 } // namespace audio

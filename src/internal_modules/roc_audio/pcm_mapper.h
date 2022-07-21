@@ -43,6 +43,12 @@ public:
     //! Get number of output bytes for given number of samples per channel.
     size_t output_byte_count(size_t output_samples) const;
 
+    //! Get number of input bits for given number of samples per channel.
+    size_t input_bit_count(size_t input_samples) const;
+
+    //! Get number of output bits for given number of samples per channel.
+    size_t output_bit_count(size_t output_samples) const;
+
     //! Map samples from input to output format.
     //! @remarks
     //!  @p in_data is a pointer to input buffer
@@ -58,10 +64,10 @@ public:
     //! @note
     //!  updates @p in_bit_off and @p out_bit_off
     size_t map(const void* in_data,
-               void* out_data,
                size_t in_byte_size,
-               size_t out_byte_size,
                size_t& in_bit_off,
+               void* out_data,
+               size_t out_byte_size,
                size_t& out_bit_off,
                size_t n_samples);
 
@@ -73,8 +79,8 @@ private:
     const size_t output_sample_bits_;
 
     void (*const map_func_)(const uint8_t* in_data,
-                            uint8_t* out_data,
                             size_t& in_bit_off,
+                            uint8_t* out_data,
                             size_t& out_bit_off,
                             size_t n_samples);
 };

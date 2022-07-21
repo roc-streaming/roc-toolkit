@@ -13,7 +13,8 @@
 #define ROC_AUDIO_PCM_ENCODER_H_
 
 #include "roc_audio/iframe_encoder.h"
-#include "roc_audio/pcm_funcs.h"
+#include "roc_audio/pcm_mapper.h"
+#include "roc_audio/sample_spec.h"
 #include "roc_core/noncopyable.h"
 
 namespace roc {
@@ -23,27 +24,27 @@ namespace audio {
 class PcmEncoder : public IFrameEncoder, public core::NonCopyable<> {
 public:
     //! Initialize.
-    explicit PcmEncoder(const PcmFuncs& funcs);
+    PcmEncoder(const PcmFormat& pcm_format, const SampleSpec& sample_spec);
 
-    //! Calculate encoded frame size for given number of samples per channel.
-    virtual size_t encoded_size(size_t num_samples) const;
+    //! Get encoded frame size in bytes for given number of samples per channel.
+    virtual size_t encoded_byte_count(size_t num_samples) const;
 
     //! Start encoding a new frame.
     virtual void begin(void* frame, size_t frame_size);
 
     //! Encode samples.
-    virtual size_t
-    write(const sample_t* samples, size_t n_samples, packet::channel_mask_t channels);
+    virtual size_t write(const sample_t* samples, size_t n_samples);
 
     //! Finish encoding frame.
     virtual void end();
 
 private:
-    const PcmFuncs& funcs_;
+    PcmMapper pcm_mapper_;
+    const size_t n_chans_;
 
     void* frame_data_;
-    size_t frame_size_;
-    size_t frame_pos_;
+    size_t frame_byte_size_;
+    size_t frame_bit_off_;
 };
 
 } // namespace audio

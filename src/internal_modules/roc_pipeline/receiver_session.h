@@ -41,6 +41,7 @@
 #include "roc_rtcp/metrics.h"
 #include "roc_rtp/format_map.h"
 #include "roc_rtp/parser.h"
+#include "roc_rtp/populator.h"
 #include "roc_rtp/validator.h"
 
 namespace roc {
@@ -100,8 +101,11 @@ private:
     core::Optional<packet::SortedQueue> source_queue_;
     core::Optional<packet::SortedQueue> repair_queue_;
 
-    core::Optional<packet::DelayedReader> delayed_reader_;
+    core::ScopedPtr<audio::IFrameDecoder> payload_decoder_;
+
     core::Optional<rtp::Validator> validator_;
+    core::Optional<rtp::Populator> populator_;
+    core::Optional<packet::DelayedReader> delayed_reader_;
     core::Optional<audio::Watchdog> watchdog_;
 
     core::Optional<rtp::Parser> fec_parser_;
@@ -109,7 +113,6 @@ private:
     core::Optional<fec::Reader> fec_reader_;
     core::Optional<rtp::Validator> fec_validator_;
 
-    core::ScopedPtr<audio::IFrameDecoder> payload_decoder_;
     core::Optional<audio::Depacketizer> depacketizer_;
 
     core::Optional<audio::ChannelMapperReader> channel_mapper_reader_;

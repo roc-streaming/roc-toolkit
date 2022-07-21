@@ -120,21 +120,20 @@ Depacketizer::read_samples_(sample_t* buff_ptr, sample_t* buff_end, FrameInfo& i
 }
 
 sample_t* Depacketizer::read_packet_samples_(sample_t* buff_ptr, sample_t* buff_end) {
-    const size_t max_samples =
-        (size_t)(buff_end - buff_ptr) / sample_spec_.num_channels();
+    const size_t requested_samples =
+        size_t(buff_end - buff_ptr) / sample_spec_.num_channels();
 
-    const size_t num_samples =
-        payload_decoder_.read(buff_ptr, max_samples, sample_spec_.channel_mask());
+    const size_t decoded_samples = payload_decoder_.read(buff_ptr, requested_samples);
 
-    timestamp_ += packet::timestamp_t(num_samples);
-    packet_samples_ += num_samples;
+    timestamp_ += packet::timestamp_t(decoded_samples);
+    packet_samples_ += decoded_samples;
 
-    if (num_samples < max_samples) {
+    if (decoded_samples < requested_samples) {
         payload_decoder_.end();
         packet_ = NULL;
     }
 
-    return (buff_ptr + num_samples * sample_spec_.num_channels());
+    return (buff_ptr + decoded_samples * sample_spec_.num_channels());
 }
 
 sample_t* Depacketizer::read_missing_samples_(sample_t* buff_ptr, sample_t* buff_end) {
@@ -210,9 +209,10 @@ void Depacketizer::update_packet_(FrameInfo& info) {
     }
 
     if (packet::timestamp_lt(pkt_timestamp, timestamp_)) {
-        const size_t diff = (size_t)packet::timestamp_diff(timestamp_, pkt_timestamp);
+        const size_t diff_samples =
+            (size_t)packet::timestamp_diff(timestamp_, pkt_timestamp);
 
-        if (payload_decoder_.shift(diff) != diff) {
+        if (payload_decoder_.shift(diff_samples) != diff_samples) {
             roc_panic("depacketizer: can't shift packet");
         }
     }

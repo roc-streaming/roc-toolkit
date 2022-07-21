@@ -130,8 +130,8 @@ private:
         core::Slice<uint8_t> bp = buffer_factory_.new_buffer();
         CHECK(bp);
 
-        CHECK(composer_.prepare(*pp, bp,
-                                payload_encoder_->encoded_size(samples_per_packet)));
+        CHECK(composer_.prepare(
+            *pp, bp, payload_encoder_->encoded_byte_count(samples_per_packet)));
 
         pp->set_data(bp);
 
@@ -151,8 +151,7 @@ private:
         payload_encoder_->begin(pp->rtp()->payload.data(), pp->rtp()->payload.size());
 
         UNSIGNED_LONGS_EQUAL(samples_per_packet,
-                             payload_encoder_->write(samples, samples_per_packet,
-                                                     sample_spec.channel_mask()));
+                             payload_encoder_->write(samples, samples_per_packet));
 
         payload_encoder_->end();
 

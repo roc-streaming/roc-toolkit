@@ -83,8 +83,8 @@ TEST(pcm_samples, decode) {
         size_t out_off = 0;
 
         const size_t actual_samples =
-            mapper.map(test_samples[idx]->bytes, decoded_samples, in_bytes, out_bytes,
-                       in_off, out_off, test_samples[idx]->num_samples);
+            mapper.map(test_samples[idx]->bytes, in_bytes, in_off, decoded_samples,
+                       out_bytes, out_off, test_samples[idx]->num_samples);
 
         UNSIGNED_LONGS_EQUAL(test_samples[idx]->num_samples, actual_samples);
 
@@ -141,9 +141,9 @@ TEST(pcm_samples, recode) {
                 size_t in_off = 0;
                 size_t out_off = 0;
 
-                const size_t actual_samples = mapper.map(
-                    test_samples[idx1]->bytes, recoded_bytes, in_bytes, out_bytes, in_off,
-                    out_off, test_samples[idx1]->num_samples);
+                const size_t actual_samples =
+                    mapper.map(test_samples[idx1]->bytes, in_bytes, in_off, recoded_bytes,
+                               out_bytes, out_off, test_samples[idx1]->num_samples);
 
                 UNSIGNED_LONGS_EQUAL(test_samples[idx1]->num_samples, actual_samples);
 
@@ -179,8 +179,8 @@ TEST(pcm_samples, recode) {
                 size_t out_off = 0;
 
                 const size_t actual_samples =
-                    mapper.map(recoded_bytes, decoded_samples, in_bytes, out_bytes,
-                               in_off, out_off, test_samples[idx2]->num_samples);
+                    mapper.map(recoded_bytes, in_bytes, in_off, decoded_samples,
+                               out_bytes, out_off, test_samples[idx2]->num_samples);
 
                 UNSIGNED_LONGS_EQUAL(test_samples[idx2]->num_samples, actual_samples);
 

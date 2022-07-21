@@ -25,8 +25,8 @@ class IFrameEncoder {
 public:
     virtual ~IFrameEncoder();
 
-    //! Get encoded frame size for given number of samples per channel.
-    virtual size_t encoded_size(size_t num_samples) const = 0;
+    //! Get encoded frame size in bytes for given number of samples per channel.
+    virtual size_t encoded_byte_count(size_t num_samples) const = 0;
 
     //! Start encoding a new frame.
     //!
@@ -39,8 +39,7 @@ public:
     //!
     //! @b Parameters
     //!  - @p samples - samples to be encoded
-    //!  - @p n_samples - number of samples to be encoded per channel
-    //!  - @p channels - channel mask of the samples to be encoded
+    //!  - @p n_samples - number of samples to be encoded, for all channel
     //!
     //! @remarks
     //!  Encodes samples and writes to the current frame.
@@ -51,13 +50,7 @@ public:
     //!
     //! @pre
     //!  This method may be called only between begin() and end() calls.
-    //!
-    //! @note
-    //!  Encoded and decoded channel masks may differ. If the provided samples have
-    //!  extra channels, they are ignored. If they don't have some channels, these
-    //!  channels are filled with zeros.
-    virtual size_t
-    write(const sample_t* samples, size_t n_samples, packet::channel_mask_t channels) = 0;
+    virtual size_t write(const sample_t* samples, size_t n_samples) = 0;
 
     //! Finish encoding current frame.
     //!

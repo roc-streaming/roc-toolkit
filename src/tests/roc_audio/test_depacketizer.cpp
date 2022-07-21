@@ -13,7 +13,6 @@
 #include "roc_audio/iframe_encoder.h"
 #include "roc_audio/pcm_decoder.h"
 #include "roc_audio/pcm_encoder.h"
-#include "roc_audio/pcm_funcs.h"
 #include "roc_core/buffer_factory.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_packet/packet_factory.h"
@@ -34,15 +33,15 @@ enum {
     SamplesSize = SamplesPerPacket * NumCh
 };
 
+const audio::SampleSpec SampleSpecs(SampleRate, ChMask);
+const audio::PcmFormat PcmFmt(audio::PcmEncoding_SInt16, audio::PcmEndian_Big);
+
 core::HeapAllocator allocator;
 core::BufferFactory<sample_t> sample_buffer_factory(allocator, MaxBufSize, true);
 core::BufferFactory<uint8_t> byte_buffer_factory(allocator, MaxBufSize, true);
 packet::PacketFactory packet_factory(allocator, true);
 
 rtp::Composer rtp_composer(NULL);
-
-const PcmFuncs& pcm_funcs = PCM_int16_2ch;
-const audio::SampleSpec SampleSpecs = audio::SampleSpec(SampleRate, ChMask);
 
 packet::PacketPtr
 new_packet(IFrameEncoder& encoder, packet::timestamp_t ts, sample_t value) {
@@ -52,7 +51,7 @@ new_packet(IFrameEncoder& encoder, packet::timestamp_t ts, sample_t value) {
     core::Slice<uint8_t> bp = byte_buffer_factory.new_buffer();
     CHECK(bp);
 
-    CHECK(rtp_composer.prepare(*pp, bp, encoder.encoded_size(SamplesPerPacket)));
+    CHECK(rtp_composer.prepare(*pp, bp, encoder.encoded_byte_count(SamplesPerPacket)));
 
     pp->set_data(bp);
 
@@ -66,8 +65,7 @@ new_packet(IFrameEncoder& encoder, packet::timestamp_t ts, sample_t value) {
 
     encoder.begin(pp->rtp()->payload.data(), pp->rtp()->payload.size());
 
-    UNSIGNED_LONGS_EQUAL(SamplesPerPacket,
-                         encoder.write(samples, SamplesPerPacket, ChMask));
+    UNSIGNED_LONGS_EQUAL(SamplesPerPacket, encoder.write(samples, SamplesPerPacket));
 
     encoder.end();
 
@@ -113,8 +111,8 @@ void expect_flags(Depacketizer& depacketizer, size_t sz, unsigned int flags) {
 TEST_GROUP(depacketizer) {};
 
 TEST(depacketizer, one_packet_one_read) {
-    PcmEncoder encoder(pcm_funcs);
-    PcmDecoder decoder(pcm_funcs);
+    PcmEncoder encoder(PcmFmt, SampleSpecs);
+    PcmDecoder decoder(PcmFmt, SampleSpecs);
 
     packet::Queue queue;
     Depacketizer dp(queue, decoder, SampleSpecs, false);
@@ -125,8 +123,8 @@ TEST(depacketizer, one_packet_one_read) {
 }
 
 TEST(depacketizer, one_packet_multiple_reads) {
-    PcmEncoder encoder(pcm_funcs);
-    PcmDecoder decoder(pcm_funcs);
+    PcmEncoder encoder(PcmFmt, SampleSpecs);
+    PcmDecoder decoder(PcmFmt, SampleSpecs);
 
     packet::Queue queue;
     Depacketizer dp(queue, decoder, SampleSpecs, false);
@@ -141,8 +139,8 @@ TEST(depacketizer, one_packet_multiple_reads) {
 TEST(depacketizer, multiple_packets_one_read) {
     enum { NumPackets = 10 };
 
-    PcmEncoder encoder(pcm_funcs);
-    PcmDecoder decoder(pcm_funcs);
+    PcmEncoder encoder(PcmFmt, SampleSpecs);
+    PcmDecoder decoder(PcmFmt, SampleSpecs);
 
     packet::Queue queue;
     Depacketizer dp(queue, decoder, SampleSpecs, false);
@@ -159,8 +157,8 @@ TEST(depacketizer, multiple_packets_multiple_reads) {
 
     CHECK(SamplesPerPacket % FramesPerPacket == 0);
 
-    PcmEncoder encoder(pcm_funcs);
-    PcmDecoder decoder(pcm_funcs);
+    PcmEncoder encoder(PcmFmt, SampleSpecs);
+    PcmDecoder decoder(PcmFmt, SampleSpecs);
 
     packet::Queue queue;
     Depacketizer dp(queue, decoder, SampleSpecs, false);
@@ -183,8 +181,8 @@ TEST(depacketizer, multiple_packets_multiple_reads) {
 }
 
 TEST(depacketizer, timestamp_overflow) {
-    PcmEncoder encoder(pcm_funcs);
-    PcmDecoder decoder(pcm_funcs);
+    PcmEncoder encoder(PcmFmt, SampleSpecs);
+    PcmDecoder decoder(PcmFmt, SampleSpecs);
 
     packet::Queue queue;
     Depacketizer dp(queue, decoder, SampleSpecs, false);
@@ -203,8 +201,8 @@ TEST(depacketizer, timestamp_overflow) {
 }
 
 TEST(depacketizer, drop_late_packets) {
-    PcmEncoder encoder(pcm_funcs);
-    PcmDecoder decoder(pcm_funcs);
+    PcmEncoder encoder(PcmFmt, SampleSpecs);
+    PcmDecoder decoder(PcmFmt, SampleSpecs);
 
     packet::Queue queue;
     Depacketizer dp(queue, decoder, SampleSpecs, false);
@@ -222,8 +220,8 @@ TEST(depacketizer, drop_late_packets) {
 }
 
 TEST(depacketizer, drop_late_packets_timestamp_overflow) {
-    PcmEncoder encoder(pcm_funcs);
-    PcmDecoder decoder(pcm_funcs);
+    PcmEncoder encoder(PcmFmt, SampleSpecs);
+    PcmDecoder decoder(PcmFmt, SampleSpecs);
 
     packet::Queue queue;
     Depacketizer dp(queue, decoder, SampleSpecs, false);
@@ -241,8 +239,8 @@ TEST(depacketizer, drop_late_packets_timestamp_overflow) {
 }
 
 TEST(depacketizer, zeros_no_packets) {
-    PcmEncoder encoder(pcm_funcs);
-    PcmDecoder decoder(pcm_funcs);
+    PcmEncoder encoder(PcmFmt, SampleSpecs);
+    PcmDecoder decoder(PcmFmt, SampleSpecs);
 
     packet::Queue queue;
     Depacketizer dp(queue, decoder, SampleSpecs, false);
@@ -251,8 +249,8 @@ TEST(depacketizer, zeros_no_packets) {
 }
 
 TEST(depacketizer, zeros_no_next_packet) {
-    PcmEncoder encoder(pcm_funcs);
-    PcmDecoder decoder(pcm_funcs);
+    PcmEncoder encoder(PcmFmt, SampleSpecs);
+    PcmDecoder decoder(PcmFmt, SampleSpecs);
 
     packet::Queue queue;
     Depacketizer dp(queue, decoder, SampleSpecs, false);
@@ -264,8 +262,8 @@ TEST(depacketizer, zeros_no_next_packet) {
 }
 
 TEST(depacketizer, zeros_between_packets) {
-    PcmEncoder encoder(pcm_funcs);
-    PcmDecoder decoder(pcm_funcs);
+    PcmEncoder encoder(PcmFmt, SampleSpecs);
+    PcmDecoder decoder(PcmFmt, SampleSpecs);
 
     packet::Queue queue;
     Depacketizer dp(queue, decoder, SampleSpecs, false);
@@ -279,8 +277,8 @@ TEST(depacketizer, zeros_between_packets) {
 }
 
 TEST(depacketizer, zeros_between_packets_timestamp_overflow) {
-    PcmEncoder encoder(pcm_funcs);
-    PcmDecoder decoder(pcm_funcs);
+    PcmEncoder encoder(PcmFmt, SampleSpecs);
+    PcmDecoder decoder(PcmFmt, SampleSpecs);
 
     packet::Queue queue;
     Depacketizer dp(queue, decoder, SampleSpecs, false);
@@ -298,8 +296,8 @@ TEST(depacketizer, zeros_between_packets_timestamp_overflow) {
 }
 
 TEST(depacketizer, zeros_after_packet) {
-    PcmEncoder encoder(pcm_funcs);
-    PcmDecoder decoder(pcm_funcs);
+    PcmEncoder encoder(PcmFmt, SampleSpecs);
+    PcmDecoder decoder(PcmFmt, SampleSpecs);
 
     CHECK(SamplesPerPacket % 2 == 0);
 
@@ -324,8 +322,8 @@ TEST(depacketizer, zeros_after_packet) {
 }
 
 TEST(depacketizer, packet_after_zeros) {
-    PcmEncoder encoder(pcm_funcs);
-    PcmDecoder decoder(pcm_funcs);
+    PcmEncoder encoder(PcmFmt, SampleSpecs);
+    PcmDecoder decoder(PcmFmt, SampleSpecs);
 
     packet::Queue queue;
     Depacketizer dp(queue, decoder, SampleSpecs, false);
@@ -340,8 +338,8 @@ TEST(depacketizer, packet_after_zeros) {
 TEST(depacketizer, overlapping_packets) {
     CHECK(SamplesPerPacket % 2 == 0);
 
-    PcmEncoder encoder(pcm_funcs);
-    PcmDecoder decoder(pcm_funcs);
+    PcmEncoder encoder(PcmFmt, SampleSpecs);
+    PcmDecoder decoder(PcmFmt, SampleSpecs);
 
     packet::Queue queue;
     Depacketizer dp(queue, decoder, SampleSpecs, false);
@@ -362,8 +360,8 @@ TEST(depacketizer, overlapping_packets) {
 TEST(depacketizer, frame_flags_incompltete_blank) {
     enum { PacketsPerFrame = 3 };
 
-    PcmEncoder encoder(pcm_funcs);
-    PcmDecoder decoder(pcm_funcs);
+    PcmEncoder encoder(PcmFmt, SampleSpecs);
+    PcmDecoder decoder(PcmFmt, SampleSpecs);
 
     packet::Queue queue;
     Depacketizer dp(queue, decoder, SampleSpecs, false);
@@ -436,8 +434,8 @@ TEST(depacketizer, frame_flags_incompltete_blank) {
 }
 
 TEST(depacketizer, frame_flags_drops) {
-    PcmEncoder encoder(pcm_funcs);
-    PcmDecoder decoder(pcm_funcs);
+    PcmEncoder encoder(PcmFmt, SampleSpecs);
+    PcmDecoder decoder(PcmFmt, SampleSpecs);
 
     packet::Queue queue;
     Depacketizer dp(queue, decoder, SampleSpecs, false);
@@ -479,8 +477,8 @@ TEST(depacketizer, timestamp) {
 
     CHECK(SamplesPerPacket % FramesPerPacket == 0);
 
-    PcmEncoder encoder(pcm_funcs);
-    PcmDecoder decoder(pcm_funcs);
+    PcmEncoder encoder(PcmFmt, SampleSpecs);
+    PcmDecoder decoder(PcmFmt, SampleSpecs);
 
     packet::Queue queue;
     Depacketizer dp(queue, decoder, SampleSpecs, false);

@@ -13,7 +13,6 @@
 #include "roc_audio/packetizer.h"
 #include "roc_audio/pcm_decoder.h"
 #include "roc_audio/pcm_encoder.h"
-#include "roc_audio/pcm_funcs.h"
 #include "roc_core/buffer_factory.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_packet/packet_factory.h"
@@ -40,10 +39,10 @@ enum {
     PayloadType = 123
 };
 
-const audio::SampleSpec SampleSpecs = SampleSpec(SampleRate, ChMask);
+const core::nanoseconds_t PacketDuration = SamplesPerPacket * core::Second / SampleRate;
 
-const core::nanoseconds_t PacketDuration =
-    SamplesPerPacket * core::Second / SampleSpecs.sample_rate();
+const audio::SampleSpec SampleSpecs(SampleRate, ChMask);
+const audio::PcmFormat PcmFmt(audio::PcmEncoding_SInt16, audio::PcmEndian_Big);
 
 core::HeapAllocator allocator;
 core::BufferFactory<sample_t> sample_buffer_factory(allocator, MaxBufSize, true);
@@ -51,8 +50,6 @@ core::BufferFactory<uint8_t> byte_buffer_factory(allocator, MaxBufSize, true);
 packet::PacketFactory packet_factory(allocator, true);
 
 rtp::Composer rtp_composer(NULL);
-
-const PcmFuncs& pcm_funcs = PCM_int16_2ch;
 
 sample_t nth_sample(uint8_t n) {
     return sample_t(n) / sample_t(1 << 8);
@@ -97,8 +94,7 @@ public:
 
         sample_t samples[SamplesPerPacket * NumCh] = {};
 
-        UNSIGNED_LONGS_EQUAL(n_samples,
-                             payload_decoder_.read(samples, SamplesPerPacket, ChMask));
+        UNSIGNED_LONGS_EQUAL(n_samples, payload_decoder_.read(samples, SamplesPerPacket));
 
         payload_decoder_.end();
 
@@ -163,8 +159,8 @@ TEST_GROUP(packetizer) {};
 TEST(packetizer, one_buffer_one_packet) {
     enum { NumFrames = 10 };
 
-    PcmEncoder encoder(pcm_funcs);
-    PcmDecoder decoder(pcm_funcs);
+    PcmEncoder encoder(PcmFmt, SampleSpecs);
+    PcmDecoder decoder(PcmFmt, SampleSpecs);
 
     packet::Queue packet_queue;
 
@@ -188,8 +184,8 @@ TEST(packetizer, one_buffer_one_packet) {
 TEST(packetizer, one_buffer_multiple_packets) {
     enum { NumPackets = 10 };
 
-    PcmEncoder encoder(pcm_funcs);
-    PcmDecoder decoder(pcm_funcs);
+    PcmEncoder encoder(PcmFmt, SampleSpecs);
+    PcmDecoder decoder(PcmFmt, SampleSpecs);
 
     packet::Queue packet_queue;
 
@@ -213,8 +209,8 @@ TEST(packetizer, multiple_buffers_one_packet) {
 
     CHECK(SamplesPerPacket % FramesPerPacket == 0);
 
-    PcmEncoder encoder(pcm_funcs);
-    PcmDecoder decoder(pcm_funcs);
+    PcmEncoder encoder(PcmFmt, SampleSpecs);
+    PcmDecoder decoder(PcmFmt, SampleSpecs);
 
     packet::Queue packet_queue;
 
@@ -244,8 +240,8 @@ TEST(packetizer, multiple_buffers_multiple_packets) {
         NumPackets = (NumSamples * NumFrames / SamplesPerPacket)
     };
 
-    PcmEncoder encoder(pcm_funcs);
-    PcmDecoder decoder(pcm_funcs);
+    PcmEncoder encoder(PcmFmt, SampleSpecs);
+    PcmDecoder decoder(PcmFmt, SampleSpecs);
 
     packet::Queue packet_queue;
 
@@ -269,8 +265,8 @@ TEST(packetizer, multiple_buffers_multiple_packets) {
 TEST(packetizer, flush) {
     enum { NumIterations = 5, Missing = 10 };
 
-    PcmEncoder encoder(pcm_funcs);
-    PcmDecoder decoder(pcm_funcs);
+    PcmEncoder encoder(PcmFmt, SampleSpecs);
+    PcmDecoder decoder(PcmFmt, SampleSpecs);
 
     packet::Queue packet_queue;
 

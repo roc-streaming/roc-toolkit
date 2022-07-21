@@ -50,6 +50,10 @@ public:
     //!  read() and shift() decrease it by the number of samples they returned.
     virtual packet::timestamp_t available() const = 0;
 
+    //! Get number of samples per channel that can be decoded from given frame.
+    virtual size_t decoded_sample_count(const void* frame_data,
+                                        size_t frame_size) const = 0;
+
     //! Start decoding a new frame.
     //!
     //! @remarks
@@ -70,7 +74,6 @@ public:
     //! @b Parameters
     //!  - @p samples - buffer to write decoded samples to
     //!  - @p n_samples - number of samples to be decoded per channel
-    //!  - @p channels - channel mask of the samples to be decoded
     //!
     //! @remarks
     //!  Decodes samples from the current frame and writes them to the provided buffer.
@@ -81,13 +84,7 @@ public:
     //!
     //! @pre
     //!  This method may be called only between begin() and end() calls.
-    //!
-    //! @note
-    //!  Encoded and decoded channel masks may differ. If the decoded frame has
-    //!  extra channels, they are ignored. If it doesn't have some channels, these
-    //!  channels are filled with zeros.
-    virtual size_t
-    read(sample_t* samples, size_t n_samples, packet::channel_mask_t channels) = 0;
+    virtual size_t read(sample_t* samples, size_t n_samples) = 0;
 
     //! Shift samples from current frame.
     //!

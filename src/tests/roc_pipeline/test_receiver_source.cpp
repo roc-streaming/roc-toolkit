@@ -11,7 +11,6 @@
 #include "test_helpers/frame_reader.h"
 #include "test_helpers/packet_writer.h"
 
-#include "roc_audio/pcm_funcs.h"
 #include "roc_core/atomic.h"
 #include "roc_core/buffer_factory.h"
 #include "roc_core/heap_allocator.h"

@@ -12723,8 +12723,8 @@ template <> struct pcm_packer<PcmEncoding_Float64, PcmEndian_Little> {
 template <PcmEncoding InEnc, PcmEncoding OutEnc, PcmEndian InEnd, PcmEndian OutEnd>
 struct pcm_mapper {
     static inline void map(const uint8_t* in_data,
-                           uint8_t* out_data,
                            size_t& in_bit_off,
+                           uint8_t* out_data,
                            size_t& out_bit_off,
                            size_t n_samples) {
         for (size_t n = 0; n < n_samples; n++) {
@@ -12739,8 +12739,8 @@ struct pcm_mapper {
 // Sample mapping function
 typedef void (*pcm_mapper_func_t)(
     const uint8_t* in_data,
-    uint8_t* out_data,
     size_t& in_bit_off,
+    uint8_t* out_data,
     size_t& out_bit_off,
     size_t n_samples);
 

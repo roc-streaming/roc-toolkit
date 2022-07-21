@@ -31,7 +31,7 @@ Packetizer::Packetizer(packet::IWriter& writer,
     , samples_per_packet_(
           (packet::timestamp_t)sample_spec.ns_2_rtp_timestamp(packet_length))
     , payload_type_(payload_type)
-    , payload_size_(payload_encoder.encoded_size(samples_per_packet_))
+    , payload_size_(payload_encoder.encoded_byte_count(samples_per_packet_))
     , packet_pos_(0)
     , valid_(false) {
     uint32_t rand_source = 0, rand_seqnum = 0, rand_timestamp = 0;
@@ -69,19 +69,16 @@ void Packetizer::write(Frame& frame) {
             }
         }
 
-        size_t ns = buffer_samples;
-        if (ns > (samples_per_packet_ - packet_pos_)) {
-            ns = (samples_per_packet_ - packet_pos_);
-        }
+        const size_t n_requested =
+            std::min(buffer_samples, samples_per_packet_ - packet_pos_);
 
-        const size_t actual_ns =
-            payload_encoder_.write(buffer_ptr, ns, sample_spec_.channel_mask());
-        roc_panic_if_not(actual_ns == ns);
+        const size_t n_encoded = payload_encoder_.write(buffer_ptr, n_requested);
+        roc_panic_if_not(n_encoded == n_requested);
 
-        buffer_ptr += actual_ns * sample_spec_.num_channels();
-        buffer_samples -= actual_ns;
+        buffer_ptr += n_encoded * sample_spec_.num_channels();
+        buffer_samples -= n_encoded;
 
-        packet_pos_ += actual_ns;
+        packet_pos_ += n_encoded;
 
         if (packet_pos_ == samples_per_packet_) {
             end_packet_();
@@ -137,7 +134,7 @@ void Packetizer::end_packet_() {
 }
 
 void Packetizer::pad_packet_() {
-    const size_t actual_payload_size = payload_encoder_.encoded_size(packet_pos_);
+    const size_t actual_payload_size = payload_encoder_.encoded_byte_count(packet_pos_);
     roc_panic_if_not(actual_payload_size <= payload_size_);
 
     if (actual_payload_size == payload_size_) {

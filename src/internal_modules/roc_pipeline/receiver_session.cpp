@@ -50,12 +50,10 @@ ReceiverSession::ReceiverSession(
 
     packet::IReader* preader = source_queue_.get();
 
-    delayed_reader_.reset(new (delayed_reader_) packet::DelayedReader(
-        *preader, session_config.target_latency, format->sample_spec));
-    if (!delayed_reader_) {
+    payload_decoder_.reset(format->new_decoder(allocator), allocator);
+    if (!payload_decoder_) {
         return;
     }
-    preader = delayed_reader_.get();
 
     validator_.reset(new (validator_) rtp::Validator(
         *preader, session_config.rtp_validator, format->sample_spec));
@@ -63,6 +61,20 @@ ReceiverSession::ReceiverSession(
         return;
     }
     preader = validator_.get();
+
+    populator_.reset(new (populator_) rtp::Populator(*preader, *payload_decoder_,
+                                                     format->sample_spec));
+    if (!populator_) {
+        return;
+    }
+    preader = populator_.get();
+
+    delayed_reader_.reset(new (delayed_reader_) packet::DelayedReader(
+        *preader, session_config.target_latency, format->sample_spec));
+    if (!delayed_reader_) {
+        return;
+    }
+    preader = delayed_reader_.get();
 
     if (session_config.fec_decoder.scheme != packet::FEC_None) {
         repair_queue_.reset(new (repair_queue_) packet::SortedQueue(0));
@@ -100,11 +112,6 @@ ReceiverSession::ReceiverSession(
             return;
         }
         preader = fec_validator_.get();
-    }
-
-    payload_decoder_.reset(format->new_decoder(allocator), allocator);
-    if (!payload_decoder_) {
-        return;
     }
 
     depacketizer_.reset(new (depacketizer_) audio::Depacketizer(

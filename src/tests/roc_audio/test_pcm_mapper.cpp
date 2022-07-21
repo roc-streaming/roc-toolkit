@@ -49,7 +49,7 @@ void map(const void* input,
     size_t out_off = 0;
 
     const size_t actual_samples =
-        mapper.map(input, output, in_bytes, out_bytes, in_off, out_off, n_samples);
+        mapper.map(input, in_bytes, in_off, output, out_bytes, out_off, n_samples);
 
     UNSIGNED_LONGS_EQUAL(n_samples, actual_samples);
 
