@@ -11,10 +11,10 @@
 namespace roc {
 namespace core {
 
-void print_backtrace() {
+void print_backtrace_full() {
 }
 
-void print_emergency_backtrace() {
+void print_backtrace_safe() {
 }
 
 } // namespace core

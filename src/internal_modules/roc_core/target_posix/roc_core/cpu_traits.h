@@ -6,6 +6,12 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+//! @file roc_core/target_posix/roc_core/cpu_traits.h
+//! @brief CPU traits.
+
+#ifndef ROC_CORE_CPU_TRAITS_H_
+#define ROC_CORE_CPU_TRAITS_H_
+
 // On some environments, some standard macros like UINT_MAX or SIZE_MAX are
 // defined to expressions that can't be evaluated at preprocessing time and a
 // simple check like SIZE_MAX == 0xffffffffffffffff may not always work. Thus,
@@ -14,9 +20,6 @@
 // We avoid comparisons with other macros like SIZE_MAX == UINT_MAX, since if
 // both are defined to something that can not be evaluated by preprocessor,
 // both will be assumed to be zeros and the check may incorrectly pass.
-
-#ifndef ROC_CORE_CPU_TRAITS_H_
-#define ROC_CORE_CPU_TRAITS_H_
 
 #include "roc_core/stddefs.h"
 

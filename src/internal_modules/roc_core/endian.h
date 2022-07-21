@@ -9,11 +9,11 @@
 //! @file roc_core/endian.h
 //! @brief Endian conversion functions.
 
-//! This file provides explicitly-sized conveniently named short-hands
-//! for endian conversion functions.
-
 #ifndef ROC_CORE_ENDIAN_H_
 #define ROC_CORE_ENDIAN_H_
+
+// This file provides explicitly-sized conveniently named short-hands
+// for endian conversion functions.
 
 #include "roc_core/endian_ops.h"
 
