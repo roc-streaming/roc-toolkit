@@ -98,7 +98,7 @@ private:
     core::Optional<audio::PoisonWriter> pipeline_poisoner_;
     core::Optional<audio::ProfilingWriter> profiler_;
 
-    audio::IWriter* audio_writer_;
+    audio::IFrameWriter* audio_writer_;
 
     const size_t num_channels_;
 

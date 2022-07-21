@@ -44,7 +44,7 @@ void expect_output(Mixer& mixer, size_t sz, sample_t value, unsigned flags = 0) 
     CHECK(mixer.read(frame));
 
     for (size_t n = 0; n < sz; n++) {
-        DOUBLES_EQUAL((double)value, (double)frame.data()[n], 0.0001);
+        DOUBLES_EQUAL((double)value, (double)frame.samples()[n], 0.0001);
     }
 
     UNSIGNED_LONGS_EQUAL(flags, frame.flags());

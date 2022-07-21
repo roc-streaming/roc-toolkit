@@ -35,7 +35,7 @@ ReceiverSource::ReceiverSource(
     if (!mixer_ || !mixer_->valid()) {
         return;
     }
-    audio::IReader* areader = mixer_.get();
+    audio::IFrameReader* areader = mixer_.get();
 
     if (config.common.poisoning) {
         poisoner_.reset(new (poisoner_) audio::PoisonReader(*areader));
@@ -145,7 +145,7 @@ bool ReceiverSource::read(audio::Frame& frame) {
         return false;
     }
 
-    timestamp_ += frame.size() / config_.common.output_sample_spec.num_channels();
+    timestamp_ += frame.num_samples() / config_.common.output_sample_spec.num_channels();
 
     return true;
 }

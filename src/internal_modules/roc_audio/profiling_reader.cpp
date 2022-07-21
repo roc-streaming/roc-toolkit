@@ -14,7 +14,7 @@
 namespace roc {
 namespace audio {
 
-ProfilingReader::ProfilingReader(IReader& reader,
+ProfilingReader::ProfilingReader(IFrameReader& reader,
                                  core::IAllocator& allocator,
                                  const audio::SampleSpec& sample_spec,
                                  ProfilerConfig profiler_config)
@@ -27,7 +27,7 @@ bool ProfilingReader::read(Frame& frame) {
     const core::nanoseconds_t elapsed = read_(frame, ret);
 
     if (ret) {
-        profiler_.add_frame(frame.size(), elapsed);
+        profiler_.add_frame(frame.num_samples(), elapsed);
     }
     return ret;
 }

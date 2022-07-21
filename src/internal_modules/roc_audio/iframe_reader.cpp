@@ -6,12 +6,12 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_audio/ireader.h"
+#include "roc_audio/iframe_reader.h"
 
 namespace roc {
 namespace audio {
 
-IReader::~IReader() {
+IFrameReader::~IFrameReader() {
 }
 
 } // namespace audio

@@ -14,7 +14,7 @@
 namespace roc {
 namespace audio {
 
-ProfilingWriter::ProfilingWriter(IWriter& writer,
+ProfilingWriter::ProfilingWriter(IFrameWriter& writer,
                                  core::IAllocator& allocator,
                                  const audio::SampleSpec& sample_spec,
                                  ProfilerConfig profiler_config)
@@ -25,7 +25,7 @@ ProfilingWriter::ProfilingWriter(IWriter& writer,
 void ProfilingWriter::write(Frame& frame) {
     const core::nanoseconds_t elapsed = write_(frame);
 
-    profiler_.add_frame(frame.size(), elapsed);
+    profiler_.add_frame(frame.num_samples(), elapsed);
 }
 
 core::nanoseconds_t ProfilingWriter::write_(Frame& frame) {

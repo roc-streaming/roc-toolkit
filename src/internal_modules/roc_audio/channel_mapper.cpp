@@ -22,22 +22,22 @@ ChannelMapper::ChannelMapper(packet::channel_mask_t in_chans,
 }
 
 void ChannelMapper::map(const Frame& in_frame, Frame& out_frame) {
-    if (in_frame.size() % in_chan_count_ != 0) {
+    if (in_frame.num_samples() % in_chan_count_ != 0) {
         roc_panic("channel mapper: unexpected input frame size");
     }
 
-    if (out_frame.size() % out_chan_count_ != 0) {
+    if (out_frame.num_samples() % out_chan_count_ != 0) {
         roc_panic("channel mapper: unexpected output frame size");
     }
 
-    if (in_frame.size() / in_chan_count_ != out_frame.size() / out_chan_count_) {
+    if (in_frame.num_samples() / in_chan_count_ != out_frame.num_samples() / out_chan_count_) {
         roc_panic("channel mapper: mismatching frame sizes");
     }
 
-    const size_t n_samples = in_frame.size() / in_chan_count_;
+    const size_t n_samples = in_frame.num_samples() / in_chan_count_;
 
-    const sample_t* in_samples = in_frame.data();
-    sample_t* out_samples = out_frame.data();
+    const sample_t* in_samples = in_frame.samples();
+    sample_t* out_samples = out_frame.samples();
 
     for (size_t ns = 0; ns < n_samples; ns++) {
         for (packet::channel_mask_t ch = 1; ch <= inout_chan_mask_ && ch != 0; ch <<= 1) {

@@ -15,7 +15,7 @@
 namespace roc {
 namespace audio {
 
-ResamplerReader::ResamplerReader(IReader& reader,
+ResamplerReader::ResamplerReader(IFrameReader& reader,
                                  IResampler& resampler,
                                  const SampleSpec& in_sample_spec,
                                  const SampleSpec& out_sample_spec)
@@ -59,12 +59,12 @@ bool ResamplerReader::read(Frame& out) {
 
     size_t out_pos = 0;
 
-    while (out_pos < out.size()) {
-        Frame out_part(out.data() + out_pos, out.size() - out_pos);
+    while (out_pos < out.num_samples()) {
+        Frame out_part(out.samples() + out_pos, out.num_samples() - out_pos);
 
         const size_t num_popped = resampler_.pop_output(out_part);
 
-        if (num_popped < out_part.size()) {
+        if (num_popped < out_part.num_samples()) {
             if (!push_input_()) {
                 return false;
             }

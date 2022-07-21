@@ -68,12 +68,12 @@ bool Depacketizer::read(Frame& frame) {
 }
 
 void Depacketizer::read_frame_(Frame& frame) {
-    if (frame.size() % sample_spec_.num_channels() != 0) {
+    if (frame.num_samples() % sample_spec_.num_channels() != 0) {
         roc_panic("depacketizer: unexpected frame size");
     }
 
-    sample_t* buff_ptr = frame.data();
-    sample_t* buff_end = frame.data() + frame.size();
+    sample_t* buff_ptr = frame.samples();
+    sample_t* buff_end = frame.samples() + frame.num_samples();
 
     FrameInfo info;
 
@@ -238,7 +238,7 @@ void Depacketizer::set_frame_flags_(Frame& frame, const FrameInfo& info) {
         flags |= Frame::FlagNonblank;
     }
 
-    if (info.n_decoded_samples < frame.size()) {
+    if (info.n_decoded_samples < frame.num_samples()) {
         flags |= Frame::FlagIncomplete;
     }
 

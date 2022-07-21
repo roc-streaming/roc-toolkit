@@ -65,7 +65,7 @@ public:
 
     //! Get audio writer.
     //! @returns NULL if endpoint set is not ready.
-    audio::IWriter* writer();
+    audio::IFrameWriter* writer();
 
     //! Check if endpoint set configuration is done.
     bool is_ready() const;
@@ -125,7 +125,7 @@ private:
     core::Optional<rtcp::Composer> rtcp_composer_;
     core::Optional<rtcp::Session> rtcp_session_;
 
-    audio::IWriter* audio_writer_;
+    audio::IFrameWriter* audio_writer_;
 };
 
 } // namespace pipeline

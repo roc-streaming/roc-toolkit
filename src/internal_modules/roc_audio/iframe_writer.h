@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_audio/iwriter.h
-//! @brief Audio writer interface.
+//! @file roc_audio/iframe_writer.h
+//! @brief Frame writer interface.
 
-#ifndef ROC_AUDIO_IWRITER_H_
-#define ROC_AUDIO_IWRITER_H_
+#ifndef ROC_AUDIO_IFRAME_WRITER_H_
+#define ROC_AUDIO_IFRAME_WRITER_H_
 
 #include "roc_audio/frame.h"
 #include "roc_core/list_node.h"
@@ -18,10 +18,10 @@
 namespace roc {
 namespace audio {
 
-//! Audio writer interface.
-class IWriter : public core::ListNode {
+//! Frame writer interface.
+class IFrameWriter : public core::ListNode {
 public:
-    virtual ~IWriter();
+    virtual ~IFrameWriter();
 
     //! Write audio frame.
     virtual void write(Frame& frame) = 0;
@@ -30,4 +30,4 @@ public:
 } // namespace audio
 } // namespace roc
 
-#endif // ROC_AUDIO_IWRITER_H_
+#endif // ROC_AUDIO_IFRAME_WRITER_H_

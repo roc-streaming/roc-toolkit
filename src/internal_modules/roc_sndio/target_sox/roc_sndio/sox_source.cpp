@@ -223,8 +223,8 @@ bool SoxSource::read(audio::Frame& frame) {
         roc_panic("sox source: read: non-open input file or device");
     }
 
-    audio::sample_t* frame_data = frame.data();
-    size_t frame_left = frame.size();
+    audio::sample_t* frame_data = frame.samples();
+    size_t frame_left = frame.num_samples();
 
     sox_sample_t* buffer_data = buffer_.data();
 
@@ -253,7 +253,7 @@ bool SoxSource::read(audio::Frame& frame) {
         frame_left -= n_samples;
     }
 
-    if (frame_left == frame.size()) {
+    if (frame_left == frame.num_samples()) {
         return false;
     }
 

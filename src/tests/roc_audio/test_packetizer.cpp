@@ -131,7 +131,7 @@ public:
         : value_(0) {
     }
 
-    void write(IWriter& writer, size_t num_samples) {
+    void write(IFrameWriter& writer, size_t num_samples) {
         core::Slice<sample_t> buf = sample_buffer_factory.new_buffer();
         CHECK(buf);
 

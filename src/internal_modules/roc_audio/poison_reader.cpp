@@ -12,13 +12,13 @@
 namespace roc {
 namespace audio {
 
-PoisonReader::PoisonReader(IReader& reader)
+PoisonReader::PoisonReader(IFrameReader& reader)
     : reader_(reader) {
 }
 
 bool PoisonReader::read(Frame& frame) {
-    const size_t frame_size = frame.size();
-    sample_t* frame_data = frame.data();
+    const size_t frame_size = frame.num_samples();
+    sample_t* frame_data = frame.samples();
 
     for (size_t n = 0; n < frame_size; n++) {
         frame_data[n] = SampleMax;

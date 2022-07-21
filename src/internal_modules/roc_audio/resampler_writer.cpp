@@ -13,7 +13,7 @@
 namespace roc {
 namespace audio {
 
-ResamplerWriter::ResamplerWriter(IWriter& writer,
+ResamplerWriter::ResamplerWriter(IFrameWriter& writer,
                                  IResampler& resampler,
                                  core::BufferFactory<sample_t>& buffer_factory,
                                  core::nanoseconds_t frame_length,
@@ -70,12 +70,12 @@ void ResamplerWriter::write(Frame& frame) {
 
     size_t frame_pos = 0;
 
-    while (frame_pos < frame.size()) {
+    while (frame_pos < frame.num_samples()) {
         Frame out_part(output_.data() + output_pos_, output_.size() - output_pos_);
 
         const size_t num_popped = resampler_.pop_output(out_part);
 
-        if (num_popped < out_part.size()) {
+        if (num_popped < out_part.num_samples()) {
             frame_pos += push_input_(frame, frame_pos);
         }
 
@@ -96,9 +96,9 @@ size_t ResamplerWriter::push_input_(Frame& frame, size_t frame_pos) {
     }
 
     const size_t num_copy =
-        std::min(frame.size() - frame_pos, input_.size() - input_pos_);
+        std::min(frame.num_samples() - frame_pos, input_.size() - input_pos_);
 
-    memcpy(input_.data() + input_pos_, frame.data() + frame_pos,
+    memcpy(input_.data() + input_pos_, frame.samples() + frame_pos,
            num_copy * sizeof(sample_t));
 
     input_pos_ += num_copy;

@@ -13,12 +13,12 @@
 namespace roc {
 namespace audio {
 
-Frame::Frame(sample_t* data, size_t size)
-    : data_(data)
-    , size_(size)
+Frame::Frame(sample_t* samples, size_t num_samples)
+    : samples_(samples)
+    , num_samples_(num_samples)
     , flags_(0) {
-    if (!data) {
-        roc_panic("frame: can't create frame for null data");
+    if (!samples) {
+        roc_panic("frame: can't create frame with null samples");
     }
 }
 
@@ -33,16 +33,16 @@ unsigned Frame::flags() const {
     return flags_;
 }
 
-sample_t* Frame::data() const {
-    return data_;
+sample_t* Frame::samples() const {
+    return samples_;
 }
 
-size_t Frame::size() const {
-    return size_;
+size_t Frame::num_samples() const {
+    return num_samples_;
 }
 
 void Frame::print() const {
-    core::print_buffer(data_, size_);
+    core::print_buffer(samples_, num_samples_);
 }
 
 } // namespace audio

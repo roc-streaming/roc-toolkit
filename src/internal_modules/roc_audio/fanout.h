@@ -12,7 +12,7 @@
 #ifndef ROC_AUDIO_FANOUT_H_
 #define ROC_AUDIO_FANOUT_H_
 
-#include "roc_audio/iwriter.h"
+#include "roc_audio/iframe_writer.h"
 #include "roc_audio/units.h"
 #include "roc_core/list.h"
 #include "roc_core/noncopyable.h"
@@ -23,16 +23,16 @@ namespace audio {
 
 //! Fanout.
 //! Duplicates audio stream to multiple output writers.
-class Fanout : public IWriter, public core::NonCopyable<> {
+class Fanout : public IFrameWriter, public core::NonCopyable<> {
 public:
     //! Check if writer is already added.
-    bool has_output(IWriter&);
+    bool has_output(IFrameWriter&);
 
     //! Add output writer.
-    void add_output(IWriter&);
+    void add_output(IFrameWriter&);
 
     //! Remove output writer.
-    void remove_output(IWriter&);
+    void remove_output(IFrameWriter&);
 
     //! Write audio frame.
     //! @remarks
@@ -40,7 +40,7 @@ public:
     virtual void write(Frame& frame);
 
 private:
-    core::List<IWriter, core::NoOwnership> writers_;
+    core::List<IFrameWriter, core::NoOwnership> writers_;
 };
 
 } // namespace audio

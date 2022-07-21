@@ -12,7 +12,7 @@
 #ifndef ROC_AUDIO_MIXER_H_
 #define ROC_AUDIO_MIXER_H_
 
-#include "roc_audio/ireader.h"
+#include "roc_audio/iframe_reader.h"
 #include "roc_audio/sample_spec.h"
 #include "roc_audio/units.h"
 #include "roc_core/buffer_factory.h"
@@ -38,7 +38,7 @@ namespace audio {
 //! @code
 //!  5, 7, 9, ...
 //! @endcode
-class Mixer : public IReader, public core::NonCopyable<> {
+class Mixer : public IFrameReader, public core::NonCopyable<> {
 public:
     //! Initialize.
     //!
@@ -55,10 +55,10 @@ public:
     bool valid() const;
 
     //! Add input reader.
-    void add_input(IReader&);
+    void add_input(IFrameReader&);
 
     //! Remove input reader.
-    void remove_input(IReader&);
+    void remove_input(IFrameReader&);
 
     //! Read audio frame.
     //! @remarks
@@ -69,7 +69,7 @@ public:
 private:
     void read_(sample_t* out_data, size_t out_sz, unsigned& flags);
 
-    core::List<IReader, core::NoOwnership> readers_;
+    core::List<IFrameReader, core::NoOwnership> readers_;
     core::Slice<sample_t> temp_buf_;
 
     bool valid_;

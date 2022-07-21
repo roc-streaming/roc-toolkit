@@ -120,7 +120,7 @@ ReceiverSession::ReceiverSession(
         return;
     }
 
-    audio::IReader* areader = depacketizer_.get();
+    audio::IFrameReader* areader = depacketizer_.get();
 
     if (session_config.watchdog.no_playback_timeout != 0
         || session_config.watchdog.broken_playback_timeout != 0
@@ -246,7 +246,7 @@ bool ReceiverSession::reclock(packet::ntp_timestamp_t) {
     return true;
 }
 
-audio::IReader& ReceiverSession::reader() {
+audio::IFrameReader& ReceiverSession::reader() {
     roc_panic_if(!valid());
 
     return *audio_reader_;

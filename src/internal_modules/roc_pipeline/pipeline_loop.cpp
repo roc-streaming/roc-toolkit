@@ -237,7 +237,7 @@ bool PipelineLoop::process_subframes_and_tasks_precise_(audio::Frame& frame) {
 
         if (first_iteration) {
             next_frame_deadline =
-                update_next_frame_deadline_(frame_start_time, frame.size());
+                update_next_frame_deadline_(frame_start_time, frame.num_samples());
         }
 
         if (start_subframe_task_processing_()) {
@@ -254,7 +254,7 @@ bool PipelineLoop::process_subframes_and_tasks_precise_(audio::Frame& frame) {
             }
         }
 
-        if (!frame_res || frame_pos == frame.size()) {
+        if (!frame_res || frame_pos == frame.num_samples()) {
             break;
         }
     }
@@ -338,10 +338,10 @@ void PipelineLoop::process_task_(PipelineTask& task, bool notify) {
 
 bool PipelineLoop::process_next_subframe_(audio::Frame& frame, size_t* frame_pos) {
     const size_t subframe_size = max_samples_between_tasks_
-        ? std::min(frame.size() - *frame_pos, max_samples_between_tasks_)
-        : frame.size();
+        ? std::min(frame.num_samples() - *frame_pos, max_samples_between_tasks_)
+        : frame.num_samples();
 
-    audio::Frame sub_frame(frame.data() + *frame_pos, subframe_size);
+    audio::Frame sub_frame(frame.samples() + *frame_pos, subframe_size);
 
     const bool ret = process_subframe_imp(sub_frame);
 

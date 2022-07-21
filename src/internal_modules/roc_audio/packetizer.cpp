@@ -55,12 +55,12 @@ bool Packetizer::valid() const {
 }
 
 void Packetizer::write(Frame& frame) {
-    if (frame.size() % sample_spec_.num_channels() != 0) {
+    if (frame.num_samples() % sample_spec_.num_channels() != 0) {
         roc_panic("packetizer: unexpected frame size");
     }
 
-    const sample_t* buffer_ptr = frame.data();
-    size_t buffer_samples = frame.size() / sample_spec_.num_channels();
+    const sample_t* buffer_ptr = frame.samples();
+    size_t buffer_samples = frame.num_samples() / sample_spec_.num_channels();
 
     while (buffer_samples != 0) {
         if (!packet_) {

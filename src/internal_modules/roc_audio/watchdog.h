@@ -12,7 +12,7 @@
 #ifndef ROC_AUDIO_WATCHDOG_H_
 #define ROC_AUDIO_WATCHDOG_H_
 
-#include "roc_audio/ireader.h"
+#include "roc_audio/iframe_reader.h"
 #include "roc_audio/sample_spec.h"
 #include "roc_core/array.h"
 #include "roc_core/iallocator.h"
@@ -63,10 +63,10 @@ struct WatchdogConfig {
 //! Watchdog.
 //! @remarks
 //!  Terminates session if it is considered dead or corrupted.
-class Watchdog : public IReader, public core::NonCopyable<> {
+class Watchdog : public IFrameReader, public core::NonCopyable<> {
 public:
     //! Initialize.
-    Watchdog(IReader& reader,
+    Watchdog(IFrameReader& reader,
              const audio::SampleSpec& sample_spec,
              const WatchdogConfig& config,
              core::IAllocator& allocator);
@@ -96,7 +96,7 @@ private:
     void update_status_(const Frame& frame);
     void flush_status_();
 
-    IReader& reader_;
+    IFrameReader& reader_;
 
     const audio::SampleSpec sample_spec_;
 

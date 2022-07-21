@@ -13,23 +13,23 @@
 #define ROC_AUDIO_POISON_WRITER_H_
 
 #include "roc_audio/frame.h"
-#include "roc_audio/iwriter.h"
+#include "roc_audio/iframe_writer.h"
 #include "roc_core/noncopyable.h"
 
 namespace roc {
 namespace audio {
 
 //! Poisons audio frames after writing them.
-class PoisonWriter : public IWriter, public core::NonCopyable<> {
+class PoisonWriter : public IFrameWriter, public core::NonCopyable<> {
 public:
     //! Initialize.
-    explicit PoisonWriter(IWriter& writer);
+    explicit PoisonWriter(IFrameWriter& writer);
 
     //! Write audio frame.
     virtual void write(Frame&);
 
 private:
-    IWriter& writer_;
+    IFrameWriter& writer_;
 };
 
 } // namespace audio

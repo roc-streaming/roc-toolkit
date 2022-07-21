@@ -6,12 +6,12 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_audio/iwriter.h"
+#include "roc_audio/iframe_writer.h"
 
 namespace roc {
 namespace audio {
 
-IWriter::~IWriter() {
+IFrameWriter::~IFrameWriter() {
 }
 
 } // namespace audio

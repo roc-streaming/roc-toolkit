@@ -13,7 +13,7 @@
 namespace roc {
 namespace audio {
 
-ChannelMapperReader::ChannelMapperReader(IReader& reader,
+ChannelMapperReader::ChannelMapperReader(IFrameReader& reader,
                                          core::BufferFactory<sample_t>& buffer_factory,
                                          core::nanoseconds_t frame_length,
                                          const SampleSpec& in_spec,
@@ -65,7 +65,7 @@ bool ChannelMapperReader::valid() const {
 bool ChannelMapperReader::read(Frame& out_frame) {
     roc_panic_if(!valid_);
 
-    if (out_frame.size() % out_spec_.num_channels() != 0) {
+    if (out_frame.num_samples() % out_spec_.num_channels() != 0) {
         roc_panic("channel mapper reader: unexpected frame size");
     }
 
@@ -75,8 +75,8 @@ bool ChannelMapperReader::read(Frame& out_frame) {
 
     const size_t max_batch = input_buf_.size() / in_spec_.num_channels();
 
-    sample_t* out_samples = out_frame.data();
-    size_t n_samples = out_frame.size() / out_spec_.num_channels();
+    sample_t* out_samples = out_frame.samples();
+    size_t n_samples = out_frame.num_samples() / out_spec_.num_channels();
 
     unsigned flags = 0;
 

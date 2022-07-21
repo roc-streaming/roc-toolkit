@@ -254,10 +254,10 @@ size_t BuiltinResampler::pop_output(Frame& out) {
         return 0;
     }
 
-    sample_t* out_data = out.data();
+    sample_t* out_data = out.samples();
     size_t out_pos = 0;
 
-    for (; out_pos < out.size(); out_pos += sample_spec_.num_channels()) {
+    for (; out_pos < out.num_samples(); out_pos += sample_spec_.num_channels()) {
         if (qt_sample_ >= qt_frame_size_) {
             break;
         }

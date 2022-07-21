@@ -176,7 +176,7 @@ bool ReceiverLoop::read(audio::Frame& frame) {
         return false;
     }
 
-    timestamp_ += frame.size() / source_.num_channels();
+    timestamp_ += frame.num_samples() / source_.num_channels();
 
     return true;
 }

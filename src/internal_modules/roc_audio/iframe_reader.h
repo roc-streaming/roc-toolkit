@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_audio/ireader.h
-//! @brief Audio reader interface.
+//! @file roc_audio/iframe_reader.h
+//! @brief Frame reader interface.
 
-#ifndef ROC_AUDIO_IREADER_H_
-#define ROC_AUDIO_IREADER_H_
+#ifndef ROC_AUDIO_IFRAME_READER_H_
+#define ROC_AUDIO_IFRAME_READER_H_
 
 #include "roc_audio/frame.h"
 #include "roc_core/list_node.h"
@@ -18,10 +18,10 @@
 namespace roc {
 namespace audio {
 
-//! Audio reader interface.
-class IReader : public core::ListNode {
+//! Frame reader interface.
+class IFrameReader : public core::ListNode {
 public:
-    virtual ~IReader();
+    virtual ~IFrameReader();
 
     //! Read audio frame.
     //! @remarks
@@ -35,4 +35,4 @@ public:
 } // namespace audio
 } // namespace roc
 
-#endif // ROC_AUDIO_IREADER_H_
+#endif // ROC_AUDIO_IFRAME_READER_H_

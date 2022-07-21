@@ -126,7 +126,7 @@ void resample_reader(IResampler& resampler,
                     std::min(num_samples - pos,
                              (size_t)OutFrameSize * sample_spec.num_channels()));
         CHECK(rr.read(frame));
-        pos += frame.size();
+        pos += frame.num_samples();
     }
 }
 
@@ -149,7 +149,7 @@ void resample_writer(IResampler& resampler,
                     std::min(num_samples - pos,
                              (size_t)OutFrameSize * sample_spec.num_channels()));
         rw.write(frame);
-        pos += frame.size();
+        pos += frame.num_samples();
     }
 
     for (size_t n = 0; n < num_samples; n++) {

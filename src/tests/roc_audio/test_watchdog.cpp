@@ -37,7 +37,7 @@ const audio::SampleSpec SampleSpecs = SampleSpec(SampleRate, ChMask);
 core::HeapAllocator allocator;
 core::BufferFactory<sample_t> sample_buffer_factory(allocator, MaxBufSize, true);
 
-class TestFrameReader : public IReader, public core::NonCopyable<> {
+class TestFrameReader : public IFrameReader, public core::NonCopyable<> {
 public:
     TestFrameReader()
         : flags_(0) {
@@ -51,8 +51,8 @@ public:
         if (flags_) {
             frame.set_flags(flags_);
         }
-        for (size_t n = 0; n < frame.size(); n++) {
-            frame.data()[n] = 42;
+        for (size_t n = 0; n < frame.num_samples(); n++) {
+            frame.samples()[n] = 42;
         }
         return true;
     }
@@ -82,7 +82,7 @@ TEST_GROUP(watchdog) {
         return config;
     }
 
-    void check_read(IReader & reader, bool is_read, size_t fsz, unsigned frame_flags) {
+    void check_read(IFrameReader & reader, bool is_read, size_t fsz, unsigned frame_flags) {
         core::Slice<sample_t> buf = new_buffer(fsz);
         memset(buf.data(), 0xff, buf.size() * sizeof(sample_t));
 
@@ -92,17 +92,17 @@ TEST_GROUP(watchdog) {
         CHECK(reader.read(frame));
 
         if (is_read) {
-            for (size_t n = 0; n < frame.size(); n++) {
-                DOUBLES_EQUAL(42.0, (double)frame.data()[n], 0);
+            for (size_t n = 0; n < frame.num_samples(); n++) {
+                DOUBLES_EQUAL(42.0, (double)frame.samples()[n], 0);
             }
         } else {
-            for (size_t n = 0; n < frame.size(); n++) {
-                DOUBLES_EQUAL(0.0, (double)frame.data()[n], 0);
+            for (size_t n = 0; n < frame.num_samples(); n++) {
+                DOUBLES_EQUAL(0.0, (double)frame.samples()[n], 0);
             }
         }
     }
 
-    void check_n_reads(IReader & reader, bool is_read, size_t fsz, size_t it_num,
+    void check_n_reads(IFrameReader & reader, bool is_read, size_t fsz, size_t it_num,
                        unsigned frame_flags) {
         for (size_t n = 0; n < it_num; n++) {
             check_read(reader, is_read, fsz, frame_flags);

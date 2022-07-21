@@ -11,20 +11,20 @@
 namespace roc {
 namespace audio {
 
-bool Fanout::has_output(IWriter& writer) {
+bool Fanout::has_output(IFrameWriter& writer) {
     return writers_.contains(writer);
 }
 
-void Fanout::add_output(IWriter& writer) {
+void Fanout::add_output(IFrameWriter& writer) {
     writers_.push_back(writer);
 }
 
-void Fanout::remove_output(IWriter& writer) {
+void Fanout::remove_output(IFrameWriter& writer) {
     writers_.remove(writer);
 }
 
 void Fanout::write(Frame& frame) {
-    for (IWriter* wp = writers_.front(); wp; wp = writers_.nextof(*wp)) {
+    for (IFrameWriter* wp = writers_.front(); wp; wp = writers_.nextof(*wp)) {
         wp->write(frame);
     }
 }

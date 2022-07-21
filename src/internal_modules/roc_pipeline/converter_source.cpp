@@ -21,7 +21,7 @@ ConverterSource::ConverterSource(const ConverterConfig& config,
     : input_source_(input_source)
     , audio_reader_(NULL)
     , config_(config) {
-    audio::IReader* areader = &input_source_;
+    audio::IFrameReader* areader = &input_source_;
 
     if (config.input_sample_spec.channel_mask()
         != config.output_sample_spec.channel_mask()) {

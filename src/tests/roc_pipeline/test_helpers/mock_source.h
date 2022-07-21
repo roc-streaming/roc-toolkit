@@ -74,18 +74,18 @@ public:
             return false;
         }
 
-        size_t ns = frame.size();
+        size_t ns = frame.num_samples();
         if (ns > size_ - pos_) {
             ns = size_ - pos_;
         }
 
         if (ns > 0) {
-            memcpy(frame.data(), samples_ + pos_, ns * sizeof(audio::sample_t));
+            memcpy(frame.samples(), samples_ + pos_, ns * sizeof(audio::sample_t));
             pos_ += ns;
         }
 
-        if (ns < frame.size()) {
-            memset(frame.data() + ns, 0, (frame.size() - ns) * sizeof(audio::sample_t));
+        if (ns < frame.num_samples()) {
+            memset(frame.samples() + ns, 0, (frame.num_samples() - ns) * sizeof(audio::sample_t));
         }
 
         return true;

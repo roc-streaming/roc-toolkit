@@ -122,8 +122,8 @@ void PulseaudioSink::write(audio::Frame& frame) {
 }
 
 bool PulseaudioSink::write_frame_(audio::Frame& frame) {
-    const audio::sample_t* data = frame.data();
-    size_t size = frame.size();
+    const audio::sample_t* data = frame.samples();
+    size_t size = frame.num_samples();
 
     while (size > 0) {
         pa_threaded_mainloop_lock(mainloop_);

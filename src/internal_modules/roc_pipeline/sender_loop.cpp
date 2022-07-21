@@ -162,7 +162,7 @@ void SenderLoop::write(audio::Frame& frame) {
         return;
     }
 
-    timestamp_ += frame.size() / sink_.num_channels();
+    timestamp_ += frame.num_samples() / sink_.num_channels();
 }
 
 core::nanoseconds_t SenderLoop::timestamp_imp() const {

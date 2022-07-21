@@ -12,7 +12,7 @@
 #ifndef ROC_AUDIO_PROFILING_READER_H_
 #define ROC_AUDIO_PROFILING_READER_H_
 
-#include "roc_audio/ireader.h"
+#include "roc_audio/iframe_reader.h"
 #include "roc_audio/profiler.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/rate_limiter.h"
@@ -23,10 +23,10 @@ namespace roc {
 namespace audio {
 
 //! Profiling reader.
-class ProfilingReader : public IReader, public core::NonCopyable<> {
+class ProfilingReader : public IFrameReader, public core::NonCopyable<> {
 public:
     //! Initialization.
-    ProfilingReader(IReader& reader,
+    ProfilingReader(IFrameReader& reader,
                     core::IAllocator& allocator,
                     const audio::SampleSpec& sample_spec,
                     ProfilerConfig profiler_config);
@@ -41,7 +41,7 @@ private:
     core::nanoseconds_t read_(Frame& frame, bool& ret);
 
     Profiler profiler_;
-    IReader& reader_;
+    IFrameReader& reader_;
 };
 
 } // namespace audio

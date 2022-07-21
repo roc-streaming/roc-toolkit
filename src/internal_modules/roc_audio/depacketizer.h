@@ -13,7 +13,7 @@
 #define ROC_AUDIO_DEPACKETIZER_H_
 
 #include "roc_audio/iframe_decoder.h"
-#include "roc_audio/ireader.h"
+#include "roc_audio/iframe_reader.h"
 #include "roc_audio/sample_spec.h"
 #include "roc_audio/units.h"
 #include "roc_core/noncopyable.h"
@@ -27,7 +27,7 @@ namespace audio {
 //! @remarks
 //!  Reads packets from a packet reader, decodes samples from packets using a
 //!  decoder, and produces an audio stream.
-class Depacketizer : public IReader, public core::NonCopyable<> {
+class Depacketizer : public IFrameReader, public core::NonCopyable<> {
 public:
     //! Initialization.
     //!

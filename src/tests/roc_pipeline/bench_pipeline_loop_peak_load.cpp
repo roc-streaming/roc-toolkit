@@ -418,7 +418,7 @@ public:
 
             stats_.frame_finished();
 
-            ts += frame.size();
+            ts += frame.num_samples();
         }
     }
 

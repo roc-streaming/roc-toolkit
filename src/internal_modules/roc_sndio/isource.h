@@ -12,7 +12,7 @@
 #ifndef ROC_SNDIO_ISOURCE_H_
 #define ROC_SNDIO_ISOURCE_H_
 
-#include "roc_audio/ireader.h"
+#include "roc_audio/iframe_reader.h"
 #include "roc_packet/ntp.h"
 #include "roc_sndio/terminal.h"
 
@@ -20,7 +20,7 @@ namespace roc {
 namespace sndio {
 
 //! Source interface.
-class ISource : public ITerminal, public audio::IReader {
+class ISource : public ITerminal, public audio::IFrameReader {
 public:
     virtual ~ISource();
 

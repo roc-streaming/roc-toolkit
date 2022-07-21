@@ -13,7 +13,7 @@
 #define ROC_AUDIO_CHANNEL_MAPPER_WRITER_H_
 
 #include "roc_audio/channel_mapper.h"
-#include "roc_audio/iwriter.h"
+#include "roc_audio/iframe_writer.h"
 #include "roc_audio/sample_spec.h"
 #include "roc_core/buffer_factory.h"
 #include "roc_core/noncopyable.h"
@@ -25,10 +25,10 @@ namespace audio {
 
 //! Channel mapper writer.
 //! Reads frames from nested writer and maps them to another channel mask.
-class ChannelMapperWriter : public IWriter, public core::NonCopyable<> {
+class ChannelMapperWriter : public IFrameWriter, public core::NonCopyable<> {
 public:
     //! Initialize.
-    ChannelMapperWriter(IWriter& writer,
+    ChannelMapperWriter(IFrameWriter& writer,
                         core::BufferFactory<sample_t>& buffer_factory,
                         core::nanoseconds_t frame_length,
                         const SampleSpec& in_spec,
@@ -43,7 +43,7 @@ public:
 private:
     void write_(sample_t* in_samples, size_t n_samples, unsigned flags);
 
-    IWriter& output_writer_;
+    IFrameWriter& output_writer_;
     core::Slice<sample_t> output_buf_;
 
     ChannelMapper mapper_;

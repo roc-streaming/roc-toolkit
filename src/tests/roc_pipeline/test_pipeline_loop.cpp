@@ -196,9 +196,9 @@ private:
             unblocked_cond_.wait();
         }
         frame_allow_counter_--;
-        roc_panic_if(frame.size() != exp_frame_sz_);
+        roc_panic_if(frame.num_samples() != exp_frame_sz_);
         for (size_t n = 0; n < exp_frame_sz_; n++) {
-            roc_panic_if(std::abs(frame.data()[n] - exp_frame_val_) > Epsilon);
+            roc_panic_if(std::abs(frame.samples()[n] - exp_frame_val_) > Epsilon);
         }
         n_processed_frames_++;
         return true;
@@ -402,10 +402,10 @@ TEST_GROUP(task_pipeline) {
     }
 
     void fill_frame(audio::Frame & frame, float val, size_t from, size_t to) {
-        CHECK(from <= frame.size());
-        CHECK(to <= frame.size());
+        CHECK(from <= frame.num_samples());
+        CHECK(to <= frame.num_samples());
         for (size_t n = from; n < to; n++) {
-            frame.data()[n] = val;
+            frame.samples()[n] = val;
         }
     }
 };

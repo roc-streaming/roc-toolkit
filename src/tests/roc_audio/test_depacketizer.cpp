@@ -93,8 +93,8 @@ void expect_output(Depacketizer& depacketizer, size_t sz, sample_t value) {
     Frame frame(buf.data(), buf.size());
     CHECK(depacketizer.read(frame));
 
-    UNSIGNED_LONGS_EQUAL(sz * SampleSpecs.num_channels(), frame.size());
-    expect_values(frame.data(), sz * SampleSpecs.num_channels(), value);
+    UNSIGNED_LONGS_EQUAL(sz * SampleSpecs.num_channels(), frame.num_samples());
+    expect_values(frame.samples(), sz * SampleSpecs.num_channels(), value);
 }
 
 void expect_flags(Depacketizer& depacketizer, size_t sz, unsigned int flags) {
@@ -315,9 +315,9 @@ TEST(depacketizer, zeros_after_packet) {
     dp.read(f1);
     dp.read(f2);
 
-    expect_values(f1.data(), SamplesPerPacket / 2 * SampleSpecs.num_channels(), 0.11f);
-    expect_values(f2.data(), SamplesPerPacket / 2 * SampleSpecs.num_channels(), 0.11f);
-    expect_values(f2.data() + SamplesPerPacket / 2 * SampleSpecs.num_channels(),
+    expect_values(f1.samples(), SamplesPerPacket / 2 * SampleSpecs.num_channels(), 0.11f);
+    expect_values(f2.samples(), SamplesPerPacket / 2 * SampleSpecs.num_channels(), 0.11f);
+    expect_values(f2.samples() + SamplesPerPacket / 2 * SampleSpecs.num_channels(),
                   SamplesPerPacket / 2 * SampleSpecs.num_channels(), 0.00f);
 }
 

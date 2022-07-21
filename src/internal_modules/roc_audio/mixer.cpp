@@ -59,13 +59,13 @@ bool Mixer::valid() const {
     return valid_;
 }
 
-void Mixer::add_input(IReader& reader) {
+void Mixer::add_input(IFrameReader& reader) {
     roc_panic_if(!valid_);
 
     readers_.push_back(reader);
 }
 
-void Mixer::remove_input(IReader& reader) {
+void Mixer::remove_input(IFrameReader& reader) {
     roc_panic_if(!valid_);
 
     readers_.remove(reader);
@@ -81,8 +81,8 @@ bool Mixer::read(Frame& frame) {
 
     const size_t max_read = temp_buf_.size();
 
-    sample_t* samples = frame.data();
-    size_t n_samples = frame.size();
+    sample_t* samples = frame.samples();
+    size_t n_samples = frame.num_samples();
 
     unsigned flags = 0;
 
@@ -109,7 +109,7 @@ void Mixer::read_(sample_t* data, size_t size, unsigned& flags) {
 
     memset(data, 0, size * sizeof(sample_t));
 
-    for (IReader* rp = readers_.front(); rp; rp = readers_.nextof(*rp)) {
+    for (IFrameReader* rp = readers_.front(); rp; rp = readers_.nextof(*rp)) {
         sample_t* temp_data = temp_buf_.data();
 
         Frame temp_frame(temp_data, size);

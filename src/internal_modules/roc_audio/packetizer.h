@@ -13,7 +13,7 @@
 #define ROC_AUDIO_PACKETIZER_H_
 
 #include "roc_audio/iframe_encoder.h"
-#include "roc_audio/iwriter.h"
+#include "roc_audio/iframe_writer.h"
 #include "roc_audio/sample_spec.h"
 #include "roc_audio/units.h"
 #include "roc_core/buffer_factory.h"
@@ -31,7 +31,7 @@ namespace audio {
 //! @remarks
 //!  Gets an audio stream, encodes samples to packets using an encoder, and
 //!  writes packets to a packet writer.
-class Packetizer : public IWriter, public core::NonCopyable<> {
+class Packetizer : public IFrameWriter, public core::NonCopyable<> {
 public:
     //! Initialization.
     //!

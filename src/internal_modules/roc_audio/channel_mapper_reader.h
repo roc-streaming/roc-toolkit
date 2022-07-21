@@ -13,7 +13,7 @@
 #define ROC_AUDIO_CHANNEL_MAPPER_READER_H_
 
 #include "roc_audio/channel_mapper.h"
-#include "roc_audio/ireader.h"
+#include "roc_audio/iframe_reader.h"
 #include "roc_audio/sample_spec.h"
 #include "roc_core/buffer_factory.h"
 #include "roc_core/noncopyable.h"
@@ -25,10 +25,10 @@ namespace audio {
 
 //! Channel mapper reader.
 //! Reads frames from nested reader and maps them to another channel mask.
-class ChannelMapperReader : public IReader, public core::NonCopyable<> {
+class ChannelMapperReader : public IFrameReader, public core::NonCopyable<> {
 public:
     //! Initialize.
-    ChannelMapperReader(IReader& reader,
+    ChannelMapperReader(IFrameReader& reader,
                         core::BufferFactory<sample_t>& buffer_factory,
                         core::nanoseconds_t frame_length,
                         const SampleSpec& in_spec,
@@ -43,7 +43,7 @@ public:
 private:
     bool read_(sample_t* out_samples, size_t n_samples, unsigned& flags);
 
-    IReader& input_reader_;
+    IFrameReader& input_reader_;
     core::Slice<sample_t> input_buf_;
 
     ChannelMapper mapper_;

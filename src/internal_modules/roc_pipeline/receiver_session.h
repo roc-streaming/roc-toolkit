@@ -16,7 +16,7 @@
 #include "roc_audio/channel_mapper_reader.h"
 #include "roc_audio/depacketizer.h"
 #include "roc_audio/iframe_decoder.h"
-#include "roc_audio/ireader.h"
+#include "roc_audio/iframe_reader.h"
 #include "roc_audio/iresampler.h"
 #include "roc_audio/latency_monitor.h"
 #include "roc_audio/poison_reader.h"
@@ -83,7 +83,7 @@ public:
     bool reclock(packet::ntp_timestamp_t timestamp);
 
     //! Get audio reader.
-    audio::IReader& reader();
+    audio::IFrameReader& reader();
 
     //! Handle metrics obtained from sender.
     void add_sending_metrics(const rtcp::SendingMetrics& metrics);
@@ -94,7 +94,7 @@ public:
 private:
     const address::SocketAddr src_address_;
 
-    audio::IReader* audio_reader_;
+    audio::IFrameReader* audio_reader_;
 
     core::Optional<packet::Router> queue_router_;
 

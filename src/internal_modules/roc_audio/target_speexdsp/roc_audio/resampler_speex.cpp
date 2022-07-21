@@ -144,8 +144,8 @@ void SpeexResampler::end_push_input() {
 }
 
 size_t SpeexResampler::pop_output(Frame& out) {
-    const spx_uint32_t out_frame_size = spx_uint32_t(out.size());
-    sample_t* out_frame_data = out.data();
+    const spx_uint32_t out_frame_size = spx_uint32_t(out.num_samples());
+    sample_t* out_frame_data = out.samples();
     spx_uint32_t out_frame_pos = 0;
 
     sample_t* in_frame_data = in_frame_.data();

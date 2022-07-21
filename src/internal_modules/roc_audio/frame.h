@@ -24,7 +24,7 @@ public:
     //! Construct frame from samples.
     //! @remarks
     //!  The pointer is saved in the frame, no copying is performed.
-    Frame(sample_t* data, size_t size);
+    Frame(sample_t* samples, size_t num_samples);
 
     //! Frame flags.
     enum {
@@ -48,17 +48,17 @@ public:
     unsigned flags() const;
 
     //! Get frame data.
-    sample_t* data() const;
+    sample_t* samples() const;
 
     //! Get frame data size.
-    size_t size() const;
+    size_t num_samples() const;
 
     //! Print frame to stderr.
     void print() const;
 
 private:
-    sample_t* data_;
-    size_t size_;
+    sample_t* samples_;
+    size_t num_samples_;
     unsigned flags_;
 };
 

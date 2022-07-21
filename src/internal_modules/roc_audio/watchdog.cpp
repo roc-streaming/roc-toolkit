@@ -12,7 +12,7 @@
 namespace roc {
 namespace audio {
 
-Watchdog::Watchdog(IReader& reader,
+Watchdog::Watchdog(IFrameReader& reader,
                    const audio::SampleSpec& sample_spec,
                    const WatchdogConfig& config,
                    core::IAllocator& allocator)
@@ -76,8 +76,8 @@ bool Watchdog::valid() const {
 
 bool Watchdog::read(Frame& frame) {
     if (!alive_) {
-        if (frame.size() != 0) {
-            memset(frame.data(), 0, frame.size() * sizeof(sample_t));
+        if (frame.num_samples() != 0) {
+            memset(frame.samples(), 0, frame.num_samples() * sizeof(sample_t));
         }
         return true;
     }
@@ -87,7 +87,7 @@ bool Watchdog::read(Frame& frame) {
     }
 
     const packet::timestamp_t next_read_pos =
-        packet::timestamp_t(curr_read_pos_ + frame.size() / sample_spec_.num_channels());
+        packet::timestamp_t(curr_read_pos_ + frame.num_samples() / sample_spec_.num_channels());
 
     update_blank_timeout_(frame, next_read_pos);
     update_drops_timeout_(frame, next_read_pos);

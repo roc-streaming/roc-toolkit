@@ -95,7 +95,7 @@ SenderEndpoint* SenderEndpointSet::create_endpoint(address::Interface iface,
     return endpoint;
 }
 
-audio::IWriter* SenderEndpointSet::writer() {
+audio::IFrameWriter* SenderEndpointSet::writer() {
     return audio_writer_;
 }
 
@@ -304,7 +304,7 @@ bool SenderEndpointSet::create_transport_pipeline_() {
         return false;
     }
 
-    audio::IWriter* awriter = packetizer_.get();
+    audio::IFrameWriter* awriter = packetizer_.get();
 
     if (format->sample_spec.channel_mask() != config_.input_sample_spec.channel_mask()) {
         channel_mapper_writer_.reset(

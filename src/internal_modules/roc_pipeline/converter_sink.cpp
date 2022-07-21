@@ -15,13 +15,13 @@ namespace roc {
 namespace pipeline {
 
 ConverterSink::ConverterSink(const ConverterConfig& config,
-                             audio::IWriter* output_writer,
+                             audio::IFrameWriter* output_writer,
                              core::BufferFactory<audio::sample_t>& buffer_factory,
                              core::IAllocator& allocator)
     : audio_writer_(NULL)
     , config_(config)
     , num_channels_(config.output_sample_spec.num_channels()) {
-    audio::IWriter* awriter = output_writer;
+    audio::IFrameWriter* awriter = output_writer;
     if (!awriter) {
         awriter = &null_writer_;
     }

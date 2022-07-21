@@ -176,7 +176,7 @@ int main(int argc, char** argv) {
     converter_config.poisoning = args.poisoning_flag;
     converter_config.profiling = args.profiling_flag;
 
-    audio::IWriter* output_writer = NULL;
+    audio::IFrameWriter* output_writer = NULL;
 
     sndio::Config sink_config;
     sink_config.sample_spec = converter_config.output_sample_spec;

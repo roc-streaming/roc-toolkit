@@ -14,7 +14,7 @@
 
 #include "roc_audio/frame.h"
 #include "roc_audio/iresampler.h"
-#include "roc_audio/iwriter.h"
+#include "roc_audio/iframe_writer.h"
 #include "roc_audio/sample_spec.h"
 #include "roc_audio/units.h"
 #include "roc_core/array.h"
@@ -27,10 +27,10 @@ namespace roc {
 namespace audio {
 
 //! Resampler element for writing pipeline.
-class ResamplerWriter : public IWriter, public core::NonCopyable<> {
+class ResamplerWriter : public IFrameWriter, public core::NonCopyable<> {
 public:
     //! Initialize.
-    ResamplerWriter(IWriter& writer,
+    ResamplerWriter(IFrameWriter& writer,
                     IResampler& resampler,
                     core::BufferFactory<sample_t>& buffer_factory,
                     core::nanoseconds_t frame_length,
@@ -50,7 +50,7 @@ private:
     size_t push_input_(Frame& frame, size_t frame_pos);
 
     IResampler& resampler_;
-    IWriter& writer_;
+    IFrameWriter& writer_;
 
     const audio::SampleSpec in_sample_spec_;
     const audio::SampleSpec out_sample_spec_;

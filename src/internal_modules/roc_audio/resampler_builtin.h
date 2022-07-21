@@ -13,7 +13,7 @@
 #define ROC_AUDIO_RESAMPLER_BUILTIN_H_
 
 #include "roc_audio/frame.h"
-#include "roc_audio/ireader.h"
+#include "roc_audio/iframe_reader.h"
 #include "roc_audio/iresampler.h"
 #include "roc_audio/resampler_profile.h"
 #include "roc_audio/sample_spec.h"

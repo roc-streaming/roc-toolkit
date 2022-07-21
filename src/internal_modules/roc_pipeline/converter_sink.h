@@ -37,7 +37,7 @@ class ConverterSink : public sndio::ISink, public core::NonCopyable<> {
 public:
     //! Initialize.
     ConverterSink(const ConverterConfig& config,
-                  audio::IWriter* output_writer,
+                  audio::IFrameWriter* output_writer,
                   core::BufferFactory<audio::sample_t>& buffer_factory,
                   core::IAllocator& allocator);
 
@@ -72,7 +72,7 @@ private:
 
     core::Optional<audio::ProfilingWriter> profiler_;
 
-    audio::IWriter* audio_writer_;
+    audio::IFrameWriter* audio_writer_;
 
     const ConverterConfig config_;
     const size_t num_channels_;

@@ -12,7 +12,7 @@
 #ifndef ROC_AUDIO_PROFILING_WRITER_H_
 #define ROC_AUDIO_PROFILING_WRITER_H_
 
-#include "roc_audio/iwriter.h"
+#include "roc_audio/iframe_writer.h"
 #include "roc_audio/profiler.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/rate_limiter.h"
@@ -23,10 +23,10 @@ namespace roc {
 namespace audio {
 
 //! Profiling writer.
-class ProfilingWriter : public IWriter, public core::NonCopyable<> {
+class ProfilingWriter : public IFrameWriter, public core::NonCopyable<> {
 public:
     //! Initialization.
-    ProfilingWriter(IWriter& writer,
+    ProfilingWriter(IFrameWriter& writer,
                     core::IAllocator& allocator,
                     const audio::SampleSpec& sample_spec,
                     ProfilerConfig profiler_config);
@@ -41,7 +41,7 @@ private:
     core::nanoseconds_t write_(Frame& frame);
 
     Profiler profiler_;
-    IWriter& writer_;
+    IFrameWriter& writer_;
 };
 
 } // namespace audio

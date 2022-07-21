@@ -13,23 +13,23 @@
 #define ROC_AUDIO_POISON_READER_H_
 
 #include "roc_audio/frame.h"
-#include "roc_audio/ireader.h"
+#include "roc_audio/iframe_reader.h"
 #include "roc_core/noncopyable.h"
 
 namespace roc {
 namespace audio {
 
 //! Poisons audio frames before reading them.
-class PoisonReader : public IReader, public core::NonCopyable<> {
+class PoisonReader : public IFrameReader, public core::NonCopyable<> {
 public:
     //! Initialize.
-    PoisonReader(IReader& reader);
+    PoisonReader(IFrameReader& reader);
 
     //! Read audio frame.
     virtual bool read(Frame&);
 
 private:
-    IReader& reader_;
+    IFrameReader& reader_;
 };
 
 } // namespace audio

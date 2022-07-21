@@ -11,14 +11,14 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "roc_audio/iwriter.h"
+#include "roc_audio/iframe_writer.h"
 #include "roc_core/stddefs.h"
 
 namespace roc {
 namespace audio {
 namespace test {
 
-class MockWriter : public IWriter {
+class MockWriter : public IFrameWriter {
 public:
     MockWriter()
         : pos_(0)
@@ -26,10 +26,10 @@ public:
     }
 
     virtual void write(Frame& frame) {
-        CHECK(size_ + frame.size() <= MaxSz);
+        CHECK(size_ + frame.num_samples() <= MaxSz);
 
-        memcpy(samples_ + size_, frame.data(), frame.size() * sizeof(sample_t));
-        size_ += frame.size();
+        memcpy(samples_ + size_, frame.samples(), frame.num_samples() * sizeof(sample_t));
+        size_ += frame.num_samples();
     }
 
     sample_t get() {

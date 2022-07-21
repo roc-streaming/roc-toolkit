@@ -12,14 +12,14 @@
 #ifndef ROC_AUDIO_NULL_WRITER_H_
 #define ROC_AUDIO_NULL_WRITER_H_
 
-#include "roc_audio/iwriter.h"
+#include "roc_audio/iframe_writer.h"
 #include "roc_core/noncopyable.h"
 
 namespace roc {
 namespace audio {
 
 //! Null writer.
-class NullWriter : public IWriter, public core::NonCopyable<> {
+class NullWriter : public IFrameWriter, public core::NonCopyable<> {
 public:
     //! Write audio frame.
     virtual void write(Frame& frame);

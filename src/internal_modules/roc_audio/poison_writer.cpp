@@ -12,15 +12,15 @@
 namespace roc {
 namespace audio {
 
-PoisonWriter::PoisonWriter(IWriter& writer)
+PoisonWriter::PoisonWriter(IFrameWriter& writer)
     : writer_(writer) {
 }
 
 void PoisonWriter::write(Frame& frame) {
     writer_.write(frame);
 
-    const size_t frame_size = frame.size();
-    sample_t* frame_data = frame.data();
+    const size_t frame_size = frame.num_samples();
+    sample_t* frame_data = frame.samples();
 
     for (size_t n = 0; n < frame_size; n++) {
         frame_data[n] = SampleMax;

@@ -31,7 +31,7 @@ SenderSink::SenderSink(const SenderConfig& config,
     , num_channels_(config_.input_sample_spec.num_channels())
     , update_deadline_valid_(false)
     , update_deadline_(0) {
-    audio::IWriter* awriter = &fanout_;
+    audio::IFrameWriter* awriter = &fanout_;
 
     if (config_.poisoning) {
         pipeline_poisoner_.reset(new (pipeline_poisoner_) audio::PoisonWriter(*awriter));

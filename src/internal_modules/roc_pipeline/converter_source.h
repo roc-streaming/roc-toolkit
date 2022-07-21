@@ -84,7 +84,7 @@ private:
     core::Optional<audio::ProfilingReader> profiler_;
 
     sndio::ISource& input_source_;
-    audio::IReader* audio_reader_;
+    audio::IFrameReader* audio_reader_;
 
     ConverterConfig config_;
 };

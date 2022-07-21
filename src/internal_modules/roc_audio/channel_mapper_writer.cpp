@@ -13,7 +13,7 @@
 namespace roc {
 namespace audio {
 
-ChannelMapperWriter::ChannelMapperWriter(IWriter& writer,
+ChannelMapperWriter::ChannelMapperWriter(IFrameWriter& writer,
                                          core::BufferFactory<sample_t>& buffer_factory,
                                          core::nanoseconds_t frame_length,
                                          const SampleSpec& in_spec,
@@ -65,7 +65,7 @@ bool ChannelMapperWriter::valid() const {
 void ChannelMapperWriter::write(Frame& in_frame) {
     roc_panic_if(!valid_);
 
-    if (in_frame.size() % in_spec_.num_channels() != 0) {
+    if (in_frame.num_samples() % in_spec_.num_channels() != 0) {
         roc_panic("channel mapper writer: unexpected frame size");
     }
 
@@ -75,8 +75,8 @@ void ChannelMapperWriter::write(Frame& in_frame) {
 
     const size_t max_batch = output_buf_.size() / out_spec_.num_channels();
 
-    sample_t* in_samples = in_frame.data();
-    size_t n_samples = in_frame.size() / in_spec_.num_channels();
+    sample_t* in_samples = in_frame.samples();
+    size_t n_samples = in_frame.num_samples() / in_spec_.num_channels();
 
     const unsigned flags = in_frame.flags();
 

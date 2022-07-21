@@ -13,7 +13,7 @@
 #define ROC_AUDIO_RESAMPLER_READER_H_
 
 #include "roc_audio/frame.h"
-#include "roc_audio/ireader.h"
+#include "roc_audio/iframe_reader.h"
 #include "roc_audio/iresampler.h"
 #include "roc_audio/sample_spec.h"
 #include "roc_audio/units.h"
@@ -27,10 +27,10 @@ namespace roc {
 namespace audio {
 
 //! Resampler element for reading pipeline.
-class ResamplerReader : public IReader, public core::NonCopyable<> {
+class ResamplerReader : public IFrameReader, public core::NonCopyable<> {
 public:
     //! Initialize.
-    ResamplerReader(IReader& reader,
+    ResamplerReader(IFrameReader& reader,
                     IResampler& resampler,
                     const SampleSpec& in_sample_spec,
                     const SampleSpec& out_sample_spec);
@@ -48,7 +48,7 @@ private:
     bool push_input_();
 
     IResampler& resampler_;
-    IReader& reader_;
+    IFrameReader& reader_;
 
     const audio::SampleSpec in_sample_spec_;
     const audio::SampleSpec out_sample_spec_;

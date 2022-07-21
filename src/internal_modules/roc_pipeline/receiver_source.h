@@ -12,7 +12,7 @@
 #ifndef ROC_PIPELINE_RECEIVER_SOURCE_H_
 #define ROC_PIPELINE_RECEIVER_SOURCE_H_
 
-#include "roc_audio/ireader.h"
+#include "roc_audio/iframe_reader.h"
 #include "roc_audio/mixer.h"
 #include "roc_audio/poison_reader.h"
 #include "roc_audio/profiling_reader.h"
@@ -102,7 +102,7 @@ private:
     core::Optional<audio::PoisonReader> poisoner_;
     core::Optional<audio::ProfilingReader> profiler_;
 
-    audio::IReader* audio_reader_;
+    audio::IFrameReader* audio_reader_;
 
     ReceiverConfig config_;
 
