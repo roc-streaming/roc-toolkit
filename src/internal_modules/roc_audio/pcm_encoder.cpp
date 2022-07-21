@@ -13,7 +13,7 @@ namespace roc {
 namespace audio {
 
 PcmEncoder::PcmEncoder(const PcmFormat& pcm_format, const SampleSpec& sample_spec)
-    : pcm_mapper_(PcmFormat(PcmEncoding_Float32, PcmEndian_Native), pcm_format)
+    : pcm_mapper_(SampleFormat, pcm_format)
     , n_chans_(sample_spec.num_channels())
     , frame_data_(NULL)
     , frame_byte_size_(0)

@@ -13,7 +13,7 @@
 #define ROC_AUDIO_FANOUT_H_
 
 #include "roc_audio/iframe_writer.h"
-#include "roc_audio/units.h"
+#include "roc_audio/sample.h"
 #include "roc_core/list.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/slice.h"

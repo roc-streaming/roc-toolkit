@@ -12,7 +12,7 @@
 #ifndef ROC_AUDIO_FRAME_H_
 #define ROC_AUDIO_FRAME_H_
 
-#include "roc_audio/units.h"
+#include "roc_audio/sample.h"
 #include "roc_core/noncopyable.h"
 
 namespace roc {

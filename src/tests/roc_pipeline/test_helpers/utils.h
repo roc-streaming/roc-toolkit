@@ -12,7 +12,7 @@
 #include <CppUTest/TestHarness.h>
 
 #include "roc_address/socket_addr.h"
-#include "roc_audio/units.h"
+#include "roc_audio/sample.h"
 #include "roc_core/stddefs.h"
 
 namespace roc {

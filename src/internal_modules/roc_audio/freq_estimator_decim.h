@@ -12,7 +12,7 @@
 #ifndef ROC_AUDIO_FREQ_ESTIMATOR_DECIM_H_
 #define ROC_AUDIO_FREQ_ESTIMATOR_DECIM_H_
 
-#include "roc_audio/units.h"
+#include "roc_audio/sample.h"
 #include "roc_core/stddefs.h"
 
 namespace roc {

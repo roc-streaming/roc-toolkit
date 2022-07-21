@@ -15,7 +15,7 @@
 #include "roc_audio/iframe_decoder.h"
 #include "roc_audio/iframe_reader.h"
 #include "roc_audio/sample_spec.h"
-#include "roc_audio/units.h"
+#include "roc_audio/sample.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/rate_limiter.h"
 #include "roc_packet/ireader.h"

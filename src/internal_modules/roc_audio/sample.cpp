@@ -6,7 +6,10 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_audio/units.h"
+#include "roc_audio/sample.h"
 
-const roc::audio::sample_t roc::audio::SampleMax = 1;
+const roc::audio::PcmFormat roc::audio::SampleFormat(roc::audio::PcmEncoding_Float32,
+                                                     roc::audio::PcmEndian_Native);
+
 const roc::audio::sample_t roc::audio::SampleMin = -1;
+const roc::audio::sample_t roc::audio::SampleMax = 1;

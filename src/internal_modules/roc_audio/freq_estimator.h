@@ -13,7 +13,7 @@
 #define ROC_AUDIO_FREQ_ESTIMATOR_H_
 
 #include "roc_audio/freq_estimator_decim.h"
-#include "roc_audio/units.h"
+#include "roc_audio/sample.h"
 #include "roc_core/noncopyable.h"
 #include "roc_packet/units.h"
 

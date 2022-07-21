@@ -12,7 +12,7 @@
 #ifndef ROC_AUDIO_SAMPLE_SPEC_H_
 #define ROC_AUDIO_SAMPLE_SPEC_H_
 
-#include "roc_audio/units.h"
+#include "roc_audio/sample.h"
 #include "roc_core/time.h"
 #include "roc_packet/units.h"
 

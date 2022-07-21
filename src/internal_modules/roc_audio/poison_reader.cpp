@@ -7,7 +7,7 @@
  */
 
 #include "roc_audio/poison_reader.h"
-#include "roc_audio/units.h"
+#include "roc_audio/sample.h"
 
 namespace roc {
 namespace audio {
