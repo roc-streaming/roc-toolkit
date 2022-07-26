@@ -79,15 +79,11 @@ size_t ReceiverSource::num_sessions() const {
     return receiver_state_.num_sessions();
 }
 
-size_t ReceiverSource::sample_rate() const {
-    return config_.common.output_sample_spec.sample_rate();
+audio::SampleSpec ReceiverSource::sample_spec() const {
+    return config_.common.output_sample_spec;
 }
 
-size_t ReceiverSource::num_channels() const {
-    return config_.common.output_sample_spec.num_channels();
-}
-
-size_t ReceiverSource::latency() const {
+core::nanoseconds_t ReceiverSource::latency() const {
     return 0;
 }
 

@@ -40,7 +40,7 @@ TEST(receiver, source) {
     Receiver receiver(context, receiver_config);
     CHECK(receiver.valid());
 
-    UNSIGNED_LONGS_EQUAL(receiver.source().sample_rate(),
+    UNSIGNED_LONGS_EQUAL(receiver.source().sample_spec().sample_rate(),
                          receiver_config.common.output_sample_spec.sample_rate());
 }
 

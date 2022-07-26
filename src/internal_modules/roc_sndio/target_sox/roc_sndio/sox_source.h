@@ -51,14 +51,11 @@ public:
     //!  If @p driver or @p path are NULL, defaults are used.
     bool open(const char* driver, const char* path);
 
-    //! Get sample rate of an input file or a device.
-    virtual size_t sample_rate() const;
+    //! Get sample specification of the source.
+    virtual audio::SampleSpec sample_spec() const;
 
-    //! Get number of channels for the source.
-    virtual size_t num_channels() const;
-
-    //! Get latency of the source, in number of samples per channel.
-    virtual size_t latency() const;
+    //! Get latency of the source.
+    virtual core::nanoseconds_t latency() const;
 
     //! Check if the source has own clock.
     virtual bool has_clock() const;

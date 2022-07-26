@@ -106,20 +106,14 @@ sndio::ISource& ReceiverLoop::source() {
     return *this;
 }
 
-size_t ReceiverLoop::sample_rate() const {
-    roc_panic_if(!valid());
+audio::SampleSpec ReceiverLoop::sample_spec() const {
+    roc_panic_if_not(valid());
 
-    return source_.sample_rate();
+    return source_.sample_spec();
 }
 
-size_t ReceiverLoop::num_channels() const {
-    roc_panic_if(!valid());
-
-    return source_.num_channels();
-}
-
-size_t ReceiverLoop::latency() const {
-    roc_panic_if(!valid());
+core::nanoseconds_t ReceiverLoop::latency() const {
+    roc_panic_if_not(valid());
 
     return source_.latency();
 }
@@ -176,7 +170,7 @@ bool ReceiverLoop::read(audio::Frame& frame) {
         return false;
     }
 
-    timestamp_ += frame.num_samples() / source_.num_channels();
+    timestamp_ += frame.num_samples() / source_.sample_spec().num_channels();
 
     return true;
 }

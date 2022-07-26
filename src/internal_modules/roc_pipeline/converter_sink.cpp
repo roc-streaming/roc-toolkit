@@ -19,8 +19,7 @@ ConverterSink::ConverterSink(const ConverterConfig& config,
                              core::BufferFactory<audio::sample_t>& buffer_factory,
                              core::IAllocator& allocator)
     : audio_writer_(NULL)
-    , config_(config)
-    , num_channels_(config.output_sample_spec.num_channels()) {
+    , config_(config) {
     audio::IFrameWriter* awriter = output_writer;
     if (!awriter) {
         awriter = &null_writer_;
@@ -98,15 +97,11 @@ bool ConverterSink::valid() {
     return audio_writer_;
 }
 
-size_t ConverterSink::sample_rate() const {
-    return config_.output_sample_spec.sample_rate();
+audio::SampleSpec ConverterSink::sample_spec() const {
+    return config_.output_sample_spec;
 }
 
-size_t ConverterSink::num_channels() const {
-    return num_channels_;
-}
-
-size_t ConverterSink::latency() const {
+core::nanoseconds_t ConverterSink::latency() const {
     return 0;
 }
 

@@ -24,15 +24,11 @@ public:
         , size_(0) {
     }
 
-    virtual size_t sample_rate() const {
-        return 0;
+    virtual audio::SampleSpec sample_spec() const {
+        return audio::SampleSpec();
     }
 
-    virtual size_t num_channels() const {
-        return 0;
-    }
-
-    virtual size_t latency() const {
+    virtual core::nanoseconds_t latency() const {
         return 0;
     }
 

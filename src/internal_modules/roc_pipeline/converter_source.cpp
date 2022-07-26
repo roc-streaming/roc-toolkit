@@ -96,15 +96,11 @@ bool ConverterSource::valid() {
     return audio_reader_;
 }
 
-size_t ConverterSource::sample_rate() const {
-    return config_.output_sample_spec.sample_rate();
+audio::SampleSpec ConverterSource::sample_spec() const {
+    return config_.output_sample_spec;
 }
 
-size_t ConverterSource::num_channels() const {
-    return input_source_.num_channels();
-}
-
-size_t ConverterSource::latency() const {
+core::nanoseconds_t ConverterSource::latency() const {
     return 0;
 }
 

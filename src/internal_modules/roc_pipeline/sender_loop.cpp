@@ -124,19 +124,13 @@ sndio::ISink& SenderLoop::sink() {
     return *this;
 }
 
-size_t SenderLoop::sample_rate() const {
+audio::SampleSpec SenderLoop::sample_spec() const {
     roc_panic_if_not(valid());
 
-    return sink_.sample_rate();
+    return sink_.sample_spec();
 }
 
-size_t SenderLoop::num_channels() const {
-    roc_panic_if_not(valid());
-
-    return sink_.num_channels();
-}
-
-size_t SenderLoop::latency() const {
+core::nanoseconds_t SenderLoop::latency() const {
     roc_panic_if_not(valid());
 
     return sink_.latency();
@@ -162,7 +156,7 @@ void SenderLoop::write(audio::Frame& frame) {
         return;
     }
 
-    timestamp_ += frame.num_samples() / sink_.num_channels();
+    timestamp_ += frame.num_samples() / sink_.sample_spec().num_channels();
 }
 
 core::nanoseconds_t SenderLoop::timestamp_imp() const {

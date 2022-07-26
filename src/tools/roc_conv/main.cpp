@@ -132,7 +132,8 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    converter_config.input_sample_spec.set_sample_rate(input_source->sample_rate());
+    converter_config.input_sample_spec.set_sample_rate(
+        input_source->sample_spec().sample_rate());
 
     if (args.rate_given) {
         converter_config.output_sample_spec.set_sample_rate((size_t)args.rate_arg);

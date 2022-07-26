@@ -259,7 +259,8 @@ int main(int argc, char** argv) {
     }
 
     sender_config.timing = !input_source->has_clock();
-    sender_config.input_sample_spec.set_sample_rate(input_source->sample_rate());
+    sender_config.input_sample_spec.set_sample_rate(
+        input_source->sample_spec().sample_rate());
 
     peer::Sender sender(context, sender_config);
     if (!sender.valid()) {

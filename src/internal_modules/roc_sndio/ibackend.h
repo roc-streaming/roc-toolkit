@@ -16,9 +16,8 @@
 #include "roc_core/iallocator.h"
 #include "roc_sndio/config.h"
 #include "roc_sndio/driver.h"
-#include "roc_sndio/isink.h"
-#include "roc_sndio/isource.h"
-#include "roc_sndio/terminal.h"
+#include "roc_sndio/iterminal.h"
+#include "roc_sndio/terminal_type.h"
 
 namespace roc {
 namespace sndio {

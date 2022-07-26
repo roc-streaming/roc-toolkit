@@ -81,26 +81,32 @@ bool PulseaudioSink::open(const char* device) {
     return true;
 }
 
-size_t PulseaudioSink::sample_rate() const {
+audio::SampleSpec PulseaudioSink::sample_spec() const {
     ensure_started_();
 
     pa_threaded_mainloop_lock(mainloop_);
 
     ensure_opened_();
 
-    const size_t ret = config_.sample_spec.sample_rate();
+    const audio::SampleSpec sample_spec = config_.sample_spec;
 
     pa_threaded_mainloop_unlock(mainloop_);
 
-    return ret;
+    return sample_spec;
 }
 
-size_t PulseaudioSink::num_channels() const {
-    return config_.sample_spec.num_channels();
-}
+core::nanoseconds_t PulseaudioSink::latency() const {
+    ensure_started_();
 
-size_t PulseaudioSink::latency() const {
-    return config_.sample_spec.ns_2_samples_per_chan(latency_);
+    pa_threaded_mainloop_lock(mainloop_);
+
+    ensure_opened_();
+
+    const core::nanoseconds_t latency = config_.latency;
+
+    pa_threaded_mainloop_unlock(mainloop_);
+
+    return latency;
 }
 
 bool PulseaudioSink::has_clock() const {

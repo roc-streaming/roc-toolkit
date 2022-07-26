@@ -146,7 +146,7 @@ int roc_sender_write(roc_sender* sender, const roc_frame* frame) {
         return 0;
     }
 
-    const size_t factor = imp_sink.num_channels() * sizeof(float);
+    const size_t factor = imp_sink.sample_spec().num_channels() * sizeof(float);
 
     if (frame->samples_size % factor != 0) {
         roc_log(LogError,

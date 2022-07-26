@@ -14,7 +14,7 @@
 
 #include "roc_audio/iframe_reader.h"
 #include "roc_packet/ntp.h"
-#include "roc_sndio/terminal.h"
+#include "roc_sndio/iterminal.h"
 
 namespace roc {
 namespace sndio {

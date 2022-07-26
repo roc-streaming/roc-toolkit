@@ -40,7 +40,7 @@ TEST(sender, sink) {
     Sender sender(context, sender_config);
     CHECK(sender.valid());
 
-    UNSIGNED_LONGS_EQUAL(sender.sink().sample_rate(),
+    UNSIGNED_LONGS_EQUAL(sender.sink().sample_spec().sample_rate(),
                          sender_config.input_sample_spec.sample_rate());
 }
 

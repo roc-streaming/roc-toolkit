@@ -57,14 +57,11 @@ public:
     //! Get number of connected sessions.
     size_t num_sessions() const;
 
-    //! Get source sample rate.
-    virtual size_t sample_rate() const;
+    //! Get sample specification of the source.
+    virtual audio::SampleSpec sample_spec() const;
 
-    //! Get number of channels for the source.
-    virtual size_t num_channels() const;
-
-    //! Get latency of the source, in number of samples per channel.
-    virtual size_t latency() const;
+    //! Get latency of the source.
+    virtual core::nanoseconds_t latency() const;
 
     //! Check if the source has own clock.
     virtual bool has_clock() const;

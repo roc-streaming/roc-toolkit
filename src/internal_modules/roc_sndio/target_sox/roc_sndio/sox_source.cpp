@@ -83,31 +83,26 @@ bool SoxSource::open(const char* driver, const char* path) {
     return true;
 }
 
-size_t SoxSource::sample_rate() const {
+audio::SampleSpec SoxSource::sample_spec() const {
     roc_panic_if(!valid_);
 
     if (!input_) {
-        roc_panic("sox source: sample_rate(): non-open input file or device");
+        roc_panic("sox source: sample_rate(): non-open output file or device");
     }
 
-    return size_t(input_->signal.rate);
+    const size_t sample_rate = size_t(input_->signal.rate);
+
+    const packet::channel_mask_t chan_mask =
+        packet::channel_mask_t(1u << input_->signal.channels) - 1;
+
+    return audio::SampleSpec(sample_rate, chan_mask);
 }
 
-size_t SoxSource::num_channels() const {
+core::nanoseconds_t SoxSource::latency() const {
     roc_panic_if(!valid_);
 
     if (!input_) {
-        roc_panic("sox source: num_channels(): non-open input file or device");
-    }
-
-    return sample_spec_.num_channels();
-}
-
-size_t SoxSource::latency() const {
-    roc_panic_if(!valid_);
-
-    if (!input_) {
-        roc_panic("sox source: latency(): non-open input file or device");
+        roc_panic("sox source: latency(): non-open output file or device");
     }
 
     return 0;

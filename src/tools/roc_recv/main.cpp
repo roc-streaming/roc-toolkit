@@ -285,7 +285,8 @@ int main(int argc, char** argv) {
     }
 
     receiver_config.common.timing = !output_sink->has_clock();
-    receiver_config.common.output_sample_spec.set_sample_rate(output_sink->sample_rate());
+    receiver_config.common.output_sample_spec.set_sample_rate(
+        output_sink->sample_spec().sample_rate());
 
     if (receiver_config.common.output_sample_spec.sample_rate() == 0) {
         roc_log(LogError,
@@ -338,7 +339,7 @@ int main(int argc, char** argv) {
             receiver_config.default_session.resampler_profile;
 
         converter_config.input_sample_spec =
-            audio::SampleSpec(backup_source->sample_rate(),
+            audio::SampleSpec(backup_source->sample_spec().sample_rate(),
                               receiver_config.common.output_sample_spec.channel_mask());
         converter_config.output_sample_spec =
             audio::SampleSpec(receiver_config.common.output_sample_spec.sample_rate(),

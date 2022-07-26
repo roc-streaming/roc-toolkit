@@ -13,7 +13,7 @@
 #define ROC_SNDIO_ISINK_H_
 
 #include "roc_audio/iframe_writer.h"
-#include "roc_sndio/terminal.h"
+#include "roc_sndio/iterminal.h"
 
 namespace roc {
 namespace sndio {

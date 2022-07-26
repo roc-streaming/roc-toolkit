@@ -35,14 +35,11 @@ public:
     //! Open output device.
     bool open(const char* device);
 
-    //! Get sample rate of the sink.
-    virtual size_t sample_rate() const;
+    //! Get sample specification of the sink.
+    virtual audio::SampleSpec sample_spec() const;
 
-    //! Get number of channels for the sink.
-    virtual size_t num_channels() const;
-
-    //! Get latency of the sink, in number of samples per channel.
-    virtual size_t latency() const;
+    //! Get latency of the sink.
+    virtual core::nanoseconds_t latency() const;
 
     //! Check if the sink has own clock.
     virtual bool has_clock() const;

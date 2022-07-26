@@ -6,13 +6,10 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_sndio/terminal.h"
+#include "roc_sndio/terminal_type.h"
 
 namespace roc {
 namespace sndio {
-
-ITerminal::~ITerminal() {
-}
 
 const char* terminal_type_to_str(TerminalType type) {
     switch (type) {

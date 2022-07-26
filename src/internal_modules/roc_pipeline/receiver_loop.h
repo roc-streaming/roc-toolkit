@@ -116,9 +116,8 @@ public:
 
 private:
     // Methods of sndio::ISource
-    virtual size_t sample_rate() const;
-    virtual size_t num_channels() const;
-    virtual size_t latency() const;
+    virtual audio::SampleSpec sample_spec() const;
+    virtual core::nanoseconds_t latency() const;
     virtual bool has_clock() const;
     virtual State state() const;
     virtual void pause();

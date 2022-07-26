@@ -76,27 +76,22 @@ bool SoxSink::open(const char* driver, const char* path) {
     return true;
 }
 
-size_t SoxSink::sample_rate() const {
+audio::SampleSpec SoxSink::sample_spec() const {
     roc_panic_if(!valid_);
 
     if (!output_) {
         roc_panic("sox sink: sample_rate(): non-open output file or device");
     }
 
-    return size_t(output_->signal.rate);
+    const size_t sample_rate = size_t(output_->signal.rate);
+
+    const packet::channel_mask_t chan_mask =
+        packet::channel_mask_t(1u << output_->signal.channels) - 1;
+
+    return audio::SampleSpec(sample_rate, chan_mask);
 }
 
-size_t SoxSink::num_channels() const {
-    roc_panic_if(!valid_);
-
-    if (!output_) {
-        roc_panic("sox sink: num_channels(): non-open output file or device");
-    }
-
-    return size_t(output_->signal.channels);
-}
-
-size_t SoxSink::latency() const {
+core::nanoseconds_t SoxSink::latency() const {
     roc_panic_if(!valid_);
 
     if (!output_) {

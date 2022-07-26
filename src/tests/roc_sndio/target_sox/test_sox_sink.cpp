@@ -58,7 +58,7 @@ TEST(sox_sink, sample_rate_auto) {
 
     core::TempFile file("test.wav");
     CHECK(sox_sink.open(NULL, file.path()));
-    CHECK(sox_sink.sample_rate() != 0);
+    CHECK(sox_sink.sample_spec().sample_rate() != 0);
 }
 
 TEST(sox_sink, sample_rate_force) {
@@ -67,7 +67,7 @@ TEST(sox_sink, sample_rate_force) {
 
     core::TempFile file("test.wav");
     CHECK(sox_sink.open(NULL, file.path()));
-    CHECK(sox_sink.sample_rate() == SampleRate);
+    CHECK(sox_sink.sample_spec().sample_rate() == SampleRate);
 }
 
 } // namespace sndio

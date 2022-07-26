@@ -28,7 +28,6 @@ SenderSink::SenderSink(const SenderConfig& config,
     , sample_buffer_factory_(sample_buffer_factory)
     , allocator_(allocator)
     , audio_writer_(NULL)
-    , num_channels_(config_.input_sample_spec.num_channels())
     , update_deadline_valid_(false)
     , update_deadline_(0) {
     audio::IFrameWriter* awriter = &fanout_;
@@ -97,15 +96,11 @@ void SenderSink::update() {
     invalidate_update_deadline_();
 }
 
-size_t SenderSink::sample_rate() const {
-    return config_.input_sample_spec.sample_rate();
+audio::SampleSpec SenderSink::sample_spec() const {
+    return config_.input_sample_spec;
 }
 
-size_t SenderSink::num_channels() const {
-    return num_channels_;
-}
-
-size_t SenderSink::latency() const {
+core::nanoseconds_t SenderSink::latency() const {
     return 0;
 }
 

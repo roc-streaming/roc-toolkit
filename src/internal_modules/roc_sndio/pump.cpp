@@ -102,7 +102,7 @@ bool Pump::run() {
         sink_.write(frame);
 
         current_source->reclock(packet::ntp_timestamp()
-                                + sample_spec_.samples_per_chan_2_ntp(sink_.latency()));
+                                + packet::nanoseconds_2_ntp(sink_.latency()));
 
         if (current_source == &main_source_) {
             n_bufs_++;

@@ -22,6 +22,7 @@
 #include "roc_sndio/ibackend.h"
 #include "roc_sndio/isink.h"
 #include "roc_sndio/isource.h"
+#include "roc_sndio/terminal_type.h"
 
 namespace roc {
 namespace sndio {

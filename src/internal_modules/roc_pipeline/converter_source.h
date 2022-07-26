@@ -43,14 +43,11 @@ public:
     //! Check if the pipeline was successfully constructed.
     bool valid();
 
-    //! Get sink sample rate.
-    virtual size_t sample_rate() const;
+    //! Get sample specification of the source.
+    virtual audio::SampleSpec sample_spec() const;
 
-    //! Get number of channels for the source.
-    virtual size_t num_channels() const;
-
-    //! Get latency of the source, in number of samples per channel.
-    virtual size_t latency() const;
+    //! Get latency of the source.
+    virtual core::nanoseconds_t latency() const;
 
     //! Check if the sink has own clock.
     virtual bool has_clock() const;

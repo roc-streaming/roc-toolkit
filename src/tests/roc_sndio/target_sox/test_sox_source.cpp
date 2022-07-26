@@ -107,7 +107,7 @@ TEST(sox_source, sample_rate_auto) {
     SoxSource sox_source(allocator, source_config);
 
     CHECK(sox_source.open(NULL, file.path()));
-    CHECK(sox_source.sample_rate() == SampleRate);
+    CHECK(sox_source.sample_spec().sample_rate() == SampleRate);
 }
 
 TEST(sox_source, sample_rate_mismatch) {
@@ -130,7 +130,7 @@ TEST(sox_source, sample_rate_mismatch) {
     SoxSource sox_source(allocator, source_config);
 
     CHECK(sox_source.open(NULL, file.path()));
-    CHECK(sox_source.sample_rate() == SampleRate * 2);
+    CHECK(sox_source.sample_spec().sample_rate() == SampleRate * 2);
 }
 
 TEST(sox_source, pause_resume) {
