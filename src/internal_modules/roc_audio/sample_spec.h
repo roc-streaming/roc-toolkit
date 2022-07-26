@@ -29,6 +29,17 @@ public:
     //! Constructor with sample rate and channel mask.
     SampleSpec(size_t sample_rate, packet::channel_mask_t channel_mask);
 
+    //! @name Equality
+    //! @{
+
+    //! Check two specifications for equality.
+    bool operator==(const SampleSpec& other) const;
+
+    //! Check two specifications for equality.
+    bool operator!=(const SampleSpec& other) const;
+
+    // @}
+
     //! @name Getters and setters
     //! @{
 

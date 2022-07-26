@@ -26,6 +26,14 @@ SampleSpec::SampleSpec(const size_t sample_rate,
     set_channel_mask(channel_mask);
 }
 
+bool SampleSpec::operator==(const SampleSpec& other) const {
+    return sample_rate_ == other.sample_rate_ && channel_mask_ == other.channel_mask_;
+}
+
+bool SampleSpec::operator!=(const SampleSpec& other) const {
+    return !(*this == other);
+}
+
 size_t SampleSpec::sample_rate() const {
     return sample_rate_;
 }
