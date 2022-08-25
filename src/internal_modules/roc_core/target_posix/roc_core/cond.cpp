@@ -24,11 +24,11 @@ Cond::Cond(const Mutex& mutex)
         roc_panic("cond: pthread_condattr_init(): %s", errno_to_str(err).c_str());
     }
 
-#if defined(CLOCK_MONOTONIC)
+#if defined(CLOCK_MONOTONIC) && !defined(__APPLE__) && !defined(__MACH__)
     if (int err = pthread_condattr_setclock(&attr, CLOCK_MONOTONIC)) {
         roc_panic("cond: pthread_condattr_setclock(): %s", errno_to_str(err).c_str());
     }
-#endif // defined(CLOCK_MONOTONIC)
+#endif
 
     if (int err = pthread_cond_init(&cond_, &attr)) {
         roc_panic("cond: pthread_cond_init(): %s", errno_to_str(err).c_str());
@@ -46,11 +46,13 @@ Cond::~Cond() {
         cpu_relax();
     }
 
+    int err;
+
 #if defined(__APPLE__) && defined(__MACH__)
     /* Ensure that condvar is waited before destroying it.
      * https://codereview.chromium.org/1323293005
      */
-    if (int err = pthread_mutex_lock(&mutex_)) {
+    if ((err = pthread_mutex_lock(&mutex_))) {
         roc_panic("mutex: pthread_mutex_lock(): %s", errno_to_str(err).c_str());
     }
 
@@ -58,17 +60,18 @@ Cond::~Cond() {
     ts.tv_sec = 0;
     ts.tv_nsec = 1;
 
-    if (int err = pthread_cond_timedwait_relative_np(&cond_, &mutex, &ts)) {
+    err = pthread_cond_timedwait_relative_np(&cond_, &mutex_, &ts);
+    if (err != 0 && err != ETIMEDOUT) {
         roc_panic("mutex: pthread_cond_timedwait_relative_np(): %s",
                   errno_to_str(err).c_str());
     }
 
-    if (int err = pthread_mutex_unlock(&mutex_)) {
+    if ((err = pthread_mutex_unlock(&mutex_))) {
         roc_panic("mutex: pthread_mutex_unlock(): %s", errno_to_str(err).c_str());
     }
-#endif // defined(__APPLE__) && defined(__MACH__)
+#endif
 
-    if (int err = pthread_cond_destroy(&cond_)) {
+    if ((err = pthread_cond_destroy(&cond_))) {
         roc_panic("cond: pthread_cond_destroy(): %s", errno_to_str(err).c_str());
     }
 }
@@ -81,7 +84,7 @@ bool Cond::timed_wait(nanoseconds_t timeout) const {
     ts.tv_sec = time_t(timeout / Second);
     ts.tv_nsec = long(timeout % Second);
 
-    err = pthread_cond_timedwait_relative_np(cond, mutex, &ts);
+    err = pthread_cond_timedwait_relative_np(&cond_, &mutex_, &ts);
 #elif defined(CLOCK_MONOTONIC)
     if (clock_gettime(CLOCK_MONOTONIC, &ts) == -1) {
         roc_panic("cond: clock_gettime(): %s", errno_to_str().c_str());
@@ -93,7 +96,7 @@ bool Cond::timed_wait(nanoseconds_t timeout) const {
     ts.tv_nsec = long(timeout % Second);
 
     err = pthread_cond_timedwait(&cond_, &mutex_, &ts);
-#else  // !defined(__APPLE__) && !defined(__MACH__) && !defined(CLOCK_MONOTONIC)
+#else
     struct timeval tv;
     if (gettimeofday(&tv, NULL) == -1) {
         roc_panic("cond: clock_gettime(): %s", errno_to_str().c_str());
@@ -106,7 +109,7 @@ bool Cond::timed_wait(nanoseconds_t timeout) const {
     ts.tv_nsec = long(timeout % Second);
 
     err = pthread_cond_timedwait(&cond_, &mutex_, &ts);
-#endif // !defined(__APPLE__) && !defined(__MACH__) && !defined(CLOCK_MONOTONIC)
+#endif
 
     if (err != 0 && err != ETIMEDOUT) {
         roc_panic("cond: pthread_cond_timedwait(): %s", errno_to_str(err).c_str());

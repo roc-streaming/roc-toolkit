@@ -124,10 +124,9 @@ void Logger::default_print_(LogLevel level_num,
     if (strftime(timestamp_hi, sizeof(timestamp_hi), "%H:%M:%S", &tm) == 0) {
         timestamp_hi[0] = '\0';
     }
-
     char timestamp_lo[32] = {};
     if (snprintf(timestamp_lo, sizeof(timestamp_lo), "%03lu",
-                 (unsigned long)time % Second / Millisecond)
+                 (unsigned long)(time % Second / Millisecond))
         <= 0) {
         timestamp_lo[0] = '\0';
     }

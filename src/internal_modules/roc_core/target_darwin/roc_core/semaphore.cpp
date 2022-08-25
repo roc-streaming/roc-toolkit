@@ -38,7 +38,7 @@ bool Semaphore::timed_wait(nanoseconds_t deadline) {
     }
 
     for (;;) {
-        const nanoseconds_t timeout = deadline - timestamp();
+        const nanoseconds_t timeout = deadline - timestamp(ClockMonotonic);
         if (timeout <= 0) {
             return false;
         }

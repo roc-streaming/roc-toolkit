@@ -15,34 +15,30 @@
 #include "roc_core/panic.h"
 #include "roc_core/time.h"
 
-#if defined(CLOCK_REALTIME)
-#define HAS_CLOCKS
-#endif
-
 namespace roc {
 namespace core {
 
 namespace {
 
-#if defined(HAS_CLOCKS)
+#if defined(CLOCK_REALTIME)
 
 clockid_t map_clock(clock_t clock) {
+    (void)clock;
+
 #if defined(CLOCK_MONOTONIC)
     if (clock == ClockMonotonic) {
         return CLOCK_MONOTONIC;
     }
-#else
-    (void)clock;
 #endif
 
     return CLOCK_REALTIME;
 }
 
-#endif // defined(HAS_CLOCKS)
+#endif
 
 } // namespace
 
-#if defined(HAS_CLOCKS)
+#if defined(CLOCK_REALTIME)
 
 nanoseconds_t timestamp(clock_t clock) {
     timespec ts;
@@ -53,7 +49,7 @@ nanoseconds_t timestamp(clock_t clock) {
     return nanoseconds_t(ts.tv_sec) * 1000000000 + nanoseconds_t(ts.tv_nsec);
 }
 
-#else // !defined(HAS_CLOCKS)
+#else
 
 nanoseconds_t timestamp(clock_t) {
     struct timeval tv;
@@ -64,9 +60,9 @@ nanoseconds_t timestamp(clock_t) {
     return nanoseconds_t(tv.tv_sec) * 1000000000 + nanoseconds_t(tv.tv_usec) * 1000;
 }
 
-#endif // defined(HAS_CLOCKS)
+#endif
 
-#if defined(HAS_CLOCKS)
+#if defined(CLOCK_REALTIME) && !defined(__APPLE__) && !defined(__MACH__)
 
 void sleep_for(clock_t clock, nanoseconds_t ns) {
     timespec ts;
@@ -81,7 +77,7 @@ void sleep_for(clock_t clock, nanoseconds_t ns) {
     }
 }
 
-#else // !defined(HAS_CLOCKS)
+#else
 
 void sleep_for(clock_t, nanoseconds_t ns) {
     timespec ts;
@@ -95,9 +91,9 @@ void sleep_for(clock_t, nanoseconds_t ns) {
     }
 }
 
-#endif // defined(HAS_CLOCKS)
+#endif
 
-#if defined(HAS_CLOCKS) && defined(TIMER_ABSTIME)
+#if defined(CLOCK_REALTIME) && defined(TIMER_ABSTIME)
 
 void sleep_until(clock_t clock, nanoseconds_t ns) {
     timespec ts;
@@ -112,16 +108,16 @@ void sleep_until(clock_t clock, nanoseconds_t ns) {
     }
 }
 
-#else // !defined(HAS_CLOCKS) || !defined(TIMER_ABSTIME)
+#else
 
 void sleep_until(clock_t clock, nanoseconds_t ns) {
     nanoseconds_t now = timestamp(clock);
     if (ns > now) {
-        sleep_for(ns - now);
+        sleep_for(clock, ns - now);
     }
 }
 
-#endif // defined(HAS_CLOCKS) && defined(TIMER_ABSTIME)
+#endif
 
 std::tm nanoseconds_2_tm(nanoseconds_t timestamp) {
     const time_t sec = time_t(timestamp / Second);
