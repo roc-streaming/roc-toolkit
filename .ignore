@@ -1,0 +1,7 @@
+3rdparty/_distfiles
+3rdparty/hedley
+bin
+build
+docs/html
+docs/man
+compile_commands.json
