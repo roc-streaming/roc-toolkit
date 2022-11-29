@@ -27,6 +27,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - script: linux-x86_64/ubuntu-22.04
+            image: rocstreaming/env-ubuntu:22.04
+
           - script: linux-x86_64/ubuntu-20.04
             image: rocstreaming/env-ubuntu:20.04
 

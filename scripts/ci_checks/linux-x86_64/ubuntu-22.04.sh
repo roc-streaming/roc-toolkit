@@ -1,7 +1,7 @@
 #! /bin/bash
 set -euxo pipefail
 
-for c in gcc-8 gcc-10 clang-8 clang-10
+for c in gcc-11 gcc-12 clang-11 clang-14
 do
     scons -Q \
           --enable-werror \
