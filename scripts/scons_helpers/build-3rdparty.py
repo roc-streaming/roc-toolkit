@@ -794,8 +794,9 @@ elif name == 'pulseaudio':
     # workaround for "missing acolocal-1.15" and "missing automake-1.15" errors
     # on some systems; since we're not modifying any autotools stuff, it's safe
     # to replace corresponding commands with "true" command
-    replace_files('Makefile.in', '@ACLOCAL@', 'true')
-    replace_files('Makefile.in', '@AUTOMAKE@', 'true')
+    if os.path.exists('Makefile.in'):
+        replace_files('Makefile.in', '@ACLOCAL@', 'true')
+        replace_files('Makefile.in', '@AUTOMAKE@', 'true')
     execute('./configure --host=%s %s %s %s %s' % (
         toolchain,
         makeenv(envlist),
