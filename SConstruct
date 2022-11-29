@@ -856,37 +856,31 @@ if meta.compiler == 'gcc':
         env.Append(**{var: [
             '-Wall',
             '-Wextra',
-        ]})
-        env.Append(**{var: [
+
             '-Wcast-qual',
             '-Wfloat-equal',
             '-Wformat-security',
             '-Wformat=2',
             '-Wpointer-arith',
-        ]})
-        env.Append(**{var: [
+
             '-Wno-psabi',
             '-Wno-system-headers',
         ]})
 
     env.Append(CXXFLAGS=[
         '-Wctor-dtor-privacy',
+        '-Wno-invalid-offsetof',
         '-Wnon-virtual-dtor',
         '-Wstrict-null-sentinel',
-    ])
-    env.Append(CXXFLAGS=[
-        '-Wno-invalid-offsetof',
     ])
 
     if meta.compiler_ver[:2] >= (4, 4):
         for var in ['CXXFLAGS', 'CFLAGS']:
             env.Append(**{var: [
                 '-Wlogical-op',
+                '-Wmissing-declarations',
                 '-Woverlength-strings',
             ]})
-        env.Append(CXXFLAGS=[
-            '-Wmissing-declarations',
-        ])
 
     if meta.compiler_ver[:2] >= (4, 8):
         for var in ['CXXFLAGS', 'CFLAGS']:
@@ -907,128 +901,22 @@ if meta.compiler == 'gcc':
 if meta.compiler == 'clang':
     for var in ['CXXFLAGS', 'CFLAGS']:
         env.Append(**{var: [
-            '-Weverything',
-            '-Wno-c++11-long-long',
-            '-Wno-c++98-compat-pedantic',
-            '-Wno-cast-align',
-            '-Wno-covered-switch-default',
-            '-Wno-disabled-macro-expansion',
-            '-Wno-exit-time-destructors',
-            '-Wno-format-nonliteral',
-            '-Wno-global-constructors',
-            '-Wno-invalid-offsetof',
-            '-Wno-old-style-cast',
-            '-Wno-packed',
-            '-Wno-padded',
-            '-Wno-shift-sign-overflow',
-            '-Wno-switch-enum',
+            '-Wall',
+            '-Wextra',
+
+            '-Wcast-qual',
+            '-Wdouble-promotion',
+            '-Wfloat-equal',
+            '-Woverlength-strings',
+
+            '-Wno-psabi',
             '-Wno-system-headers',
-            '-Wno-unused-macros',
-            '-Wno-used-but-marked-unused',
-            '-Wno-variadic-macros',
         ]})
 
-    env.Append(CFLAGS=[
-        '-Wno-missing-prototypes',
+    env.Append(CXXFLAGS=[
+        '-Wno-invalid-offsetof',
+        '-Wnon-virtual-dtor',
     ])
-
-    if meta.platform in ['linux', 'android']:
-        if meta.compiler_ver[:2] >= (3, 4) and meta.compiler_ver[:2] < (3, 6):
-            for var in ['CXXFLAGS', 'CFLAGS']:
-                env.Append(**{var: [
-                    '-Wno-unreachable-code',
-                ]})
-        if meta.compiler_ver[:2] >= (3, 6):
-            for var in ['CXXFLAGS', 'CFLAGS']:
-                env.Append(**{var: [
-                    '-Wno-reserved-id-macro',
-                    '-Wno-unreachable-code-break',
-                ]})
-        if meta.compiler_ver[:2] >= (4, 0):
-            for var in ['CXXFLAGS', 'CFLAGS']:
-                env.Append(**{var: [
-                    '-Wno-deprecated-dynamic-exception-spec',
-                ]})
-        if meta.compiler_ver[:2] >= (5, 0):
-            for var in ['CXXFLAGS', 'CFLAGS']:
-                env.Append(**{var: [
-                    '-Wno-unused-template',
-                ]})
-        if meta.compiler_ver[:2] >= (6, 0):
-            for var in ['CXXFLAGS', 'CFLAGS']:
-                env.Append(**{var: [
-                    '-Wno-redundant-parens',
-                    '-Wno-zero-as-null-pointer-constant',
-                ]})
-        if meta.compiler_ver[:2] >= (8, 0):
-            for var in ['CXXFLAGS', 'CFLAGS']:
-                env.Append(**{var: [
-                    '-Wno-atomic-implicit-seq-cst',
-                    '-Wno-extra-semi-stmt',
-                ]})
-        if meta.compiler_ver[:2] >= (10, 0):
-            for var in ['CXXFLAGS', 'CFLAGS']:
-                env.Append(**{var: [
-                    '-Wno-anon-enum-enum-conversion',
-                    '-Wno-enum-float-conversion',
-                    '-Wno-implicit-int-float-conversion',
-                ]})
-        if meta.compiler_ver[:2] >= (11, 0):
-            for var in ['CXXFLAGS', 'CFLAGS']:
-                env.Append(**{var: [
-                    '-Wno-suggest-destructor-override',
-                    '-Wno-suggest-override',
-                ]})
-
-    if meta.platform == 'darwin':
-        if meta.compiler_ver[:2] >= (10, 0):
-            for var in ['CXXFLAGS', 'CFLAGS']:
-                env.Append(**{var: [
-                    '-Wno-redundant-parens',
-                    '-Wno-unreachable-code-break',
-                ]})
-        if meta.compiler_ver[:2] >= (11, 0):
-            for var in ['CXXFLAGS', 'CFLAGS']:
-                env.Append(**{var: [
-                    '-Wno-atomic-implicit-seq-cst',
-                ]})
-        if meta.compiler_ver[:2] >= (12, 0):
-            for var in ['CXXFLAGS', 'CFLAGS']:
-                env.Append(**{var: [
-                    '-Wno-anon-enum-enum-conversion',
-                    '-Wno-poison-system-directories',
-                ]})
-        if meta.compiler_ver[:3] >= (12, 0, 5):
-            for var in ['CXXFLAGS', 'CFLAGS']:
-                env.Append(**{var: [
-                    '-Wno-suggest-override',
-                    '-Wno-suggest-destructor-override',
-                ]})
-
-    if meta.platform == 'android':
-        env.Append(CXXFLAGS=[
-            '-Wno-unknown-warning-option',
-        ])
-
-if meta.compiler == 'clang':
-    subenvs.tests.AppendUnique(CXXFLAGS=[
-        '-Wno-unused-member-function',
-        '-Wno-weak-vtables',
-    ])
-
-    if meta.platform in ['linux', 'android']:
-        if meta.compiler_ver[:2] >= (5, 0):
-            for var in ['CXXFLAGS', 'CFLAGS']:
-                subenvs.tests.AppendUnique(**{var: [
-                    '-Wno-unused-template',
-                ]})
-
-    if meta.platform == 'darwin':
-        if meta.compiler_ver[:2] >= (9, 1):
-            for var in ['CXXFLAGS', 'CFLAGS']:
-                subenvs.tests.AppendUnique(**{var: [
-                    '-Wno-unused-template',
-                ]})
 
 if meta.compiler in ['gcc', 'clang']:
     for var in ['CXXFLAGS', 'CFLAGS']:
