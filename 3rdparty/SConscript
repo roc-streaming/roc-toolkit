@@ -18,7 +18,7 @@ thirdparty_versions = {
     'ragel':            '6.10',
     'gengetopt':        '2.22.6',
     'cpputest':         '3.6',
-    'google-benchmark': '1.5.0',
+    'google-benchmark': '1.6.1',
 }
 
 # root directory for building third-parties
