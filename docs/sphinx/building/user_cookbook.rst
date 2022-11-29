@@ -157,7 +157,7 @@ Arch Linux
 .. code::
 
     # for Roc
-    $ sudo pacman -S gcc pkgconf scons ragel gengetopt libuv libunwind speexdsp sox libpulse
+    $ sudo pacman -S gcc pkgconf scons ragel gengetopt libuv libunwind speexdsp sox gsm libpulse
 
     # for 3rd-parties
     $ sudo pacman -S grep gawk libtool intltool autoconf automake make cmake
