@@ -226,6 +226,7 @@ bool SoxSource::read(audio::Frame& frame) {
     SOX_SAMPLE_LOCALS;
 
     size_t clips = 0;
+    (void)clips;
 
     while (frame_left != 0) {
         size_t n_samples = frame_left;
