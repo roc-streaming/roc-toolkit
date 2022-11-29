@@ -511,14 +511,14 @@ pcm_sign_converter<PcmEncoding_{{ in.encoding }}>::to_signed(arg);
         out = {{ out.type }}(in);
 {% elif not out.is_integer and in.is_integer %}
         // integer to float
-        out = {{ out.type }}(in * (1.0 / ({{ in.signed_max }} + 1.0)));
+        out = {{ out.type }}(in * (1.0 / ((double){{ in.signed_max }} + 1.0)));
 {% elif out.is_integer and not in.is_integer %}
         // float to integer
-        const double d = double(in) * ({{ out.signed_max }} + 1.0);
+        const double d = double(in) * ((double){{ out.signed_max }} + 1.0);
         if (d < {{ out.signed_min }}) {
             // clip
             out = {{ out.signed_min }};
-        } else if (d >= {{ out.signed_max }} + 1.0) {
+        } else if (d >= (double){{ out.signed_max }} + 1.0) {
             // clip
             out = {{ out.signed_max }};
         } else {

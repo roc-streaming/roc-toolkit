@@ -1005,11 +1005,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_SInt8
 
         int8_t out;
         // float to integer
-        const double d = double(in) * (pcm_sint8_max + 1.0);
+        const double d = double(in) * ((double)pcm_sint8_max + 1.0);
         if (d < pcm_sint8_min) {
             // clip
             out = pcm_sint8_min;
-        } else if (d >= pcm_sint8_max + 1.0) {
+        } else if (d >= (double)pcm_sint8_max + 1.0) {
             // clip
             out = pcm_sint8_max;
         } else {
@@ -1027,11 +1027,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_SInt8
 
         int8_t out;
         // float to integer
-        const double d = double(in) * (pcm_sint8_max + 1.0);
+        const double d = double(in) * ((double)pcm_sint8_max + 1.0);
         if (d < pcm_sint8_min) {
             // clip
             out = pcm_sint8_min;
-        } else if (d >= pcm_sint8_max + 1.0) {
+        } else if (d >= (double)pcm_sint8_max + 1.0) {
             // clip
             out = pcm_sint8_max;
         } else {
@@ -1421,11 +1421,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_UInt8
 
         int8_t out;
         // float to integer
-        const double d = double(in) * (pcm_sint8_max + 1.0);
+        const double d = double(in) * ((double)pcm_sint8_max + 1.0);
         if (d < pcm_sint8_min) {
             // clip
             out = pcm_sint8_min;
-        } else if (d >= pcm_sint8_max + 1.0) {
+        } else if (d >= (double)pcm_sint8_max + 1.0) {
             // clip
             out = pcm_sint8_max;
         } else {
@@ -1444,11 +1444,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_UInt8
 
         int8_t out;
         // float to integer
-        const double d = double(in) * (pcm_sint8_max + 1.0);
+        const double d = double(in) * ((double)pcm_sint8_max + 1.0);
         if (d < pcm_sint8_min) {
             // clip
             out = pcm_sint8_min;
-        } else if (d >= pcm_sint8_max + 1.0) {
+        } else if (d >= (double)pcm_sint8_max + 1.0) {
             // clip
             out = pcm_sint8_max;
         } else {
@@ -1884,11 +1884,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_SInt1
 
         int16_t out;
         // float to integer
-        const double d = double(in) * (pcm_sint16_max + 1.0);
+        const double d = double(in) * ((double)pcm_sint16_max + 1.0);
         if (d < pcm_sint16_min) {
             // clip
             out = pcm_sint16_min;
-        } else if (d >= pcm_sint16_max + 1.0) {
+        } else if (d >= (double)pcm_sint16_max + 1.0) {
             // clip
             out = pcm_sint16_max;
         } else {
@@ -1906,11 +1906,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_SInt1
 
         int16_t out;
         // float to integer
-        const double d = double(in) * (pcm_sint16_max + 1.0);
+        const double d = double(in) * ((double)pcm_sint16_max + 1.0);
         if (d < pcm_sint16_min) {
             // clip
             out = pcm_sint16_min;
-        } else if (d >= pcm_sint16_max + 1.0) {
+        } else if (d >= (double)pcm_sint16_max + 1.0) {
             // clip
             out = pcm_sint16_max;
         } else {
@@ -2295,11 +2295,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_UInt1
 
         int16_t out;
         // float to integer
-        const double d = double(in) * (pcm_sint16_max + 1.0);
+        const double d = double(in) * ((double)pcm_sint16_max + 1.0);
         if (d < pcm_sint16_min) {
             // clip
             out = pcm_sint16_min;
-        } else if (d >= pcm_sint16_max + 1.0) {
+        } else if (d >= (double)pcm_sint16_max + 1.0) {
             // clip
             out = pcm_sint16_max;
         } else {
@@ -2318,11 +2318,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_UInt1
 
         int16_t out;
         // float to integer
-        const double d = double(in) * (pcm_sint16_max + 1.0);
+        const double d = double(in) * ((double)pcm_sint16_max + 1.0);
         if (d < pcm_sint16_min) {
             // clip
             out = pcm_sint16_min;
-        } else if (d >= pcm_sint16_max + 1.0) {
+        } else if (d >= (double)pcm_sint16_max + 1.0) {
             // clip
             out = pcm_sint16_max;
         } else {
@@ -2724,11 +2724,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_SInt1
 
         int32_t out;
         // float to integer
-        const double d = double(in) * (pcm_sint18_max + 1.0);
+        const double d = double(in) * ((double)pcm_sint18_max + 1.0);
         if (d < pcm_sint18_min) {
             // clip
             out = pcm_sint18_min;
-        } else if (d >= pcm_sint18_max + 1.0) {
+        } else if (d >= (double)pcm_sint18_max + 1.0) {
             // clip
             out = pcm_sint18_max;
         } else {
@@ -2746,11 +2746,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_SInt1
 
         int32_t out;
         // float to integer
-        const double d = double(in) * (pcm_sint18_max + 1.0);
+        const double d = double(in) * ((double)pcm_sint18_max + 1.0);
         if (d < pcm_sint18_min) {
             // clip
             out = pcm_sint18_min;
-        } else if (d >= pcm_sint18_max + 1.0) {
+        } else if (d >= (double)pcm_sint18_max + 1.0) {
             // clip
             out = pcm_sint18_max;
         } else {
@@ -3116,11 +3116,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_UInt1
 
         int32_t out;
         // float to integer
-        const double d = double(in) * (pcm_sint18_max + 1.0);
+        const double d = double(in) * ((double)pcm_sint18_max + 1.0);
         if (d < pcm_sint18_min) {
             // clip
             out = pcm_sint18_min;
-        } else if (d >= pcm_sint18_max + 1.0) {
+        } else if (d >= (double)pcm_sint18_max + 1.0) {
             // clip
             out = pcm_sint18_max;
         } else {
@@ -3139,11 +3139,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_UInt1
 
         int32_t out;
         // float to integer
-        const double d = double(in) * (pcm_sint18_max + 1.0);
+        const double d = double(in) * ((double)pcm_sint18_max + 1.0);
         if (d < pcm_sint18_min) {
             // clip
             out = pcm_sint18_min;
-        } else if (d >= pcm_sint18_max + 1.0) {
+        } else if (d >= (double)pcm_sint18_max + 1.0) {
             // clip
             out = pcm_sint18_max;
         } else {
@@ -3545,11 +3545,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_SInt1
 
         int32_t out;
         // float to integer
-        const double d = double(in) * (pcm_sint18_3b_max + 1.0);
+        const double d = double(in) * ((double)pcm_sint18_3b_max + 1.0);
         if (d < pcm_sint18_3b_min) {
             // clip
             out = pcm_sint18_3b_min;
-        } else if (d >= pcm_sint18_3b_max + 1.0) {
+        } else if (d >= (double)pcm_sint18_3b_max + 1.0) {
             // clip
             out = pcm_sint18_3b_max;
         } else {
@@ -3567,11 +3567,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_SInt1
 
         int32_t out;
         // float to integer
-        const double d = double(in) * (pcm_sint18_3b_max + 1.0);
+        const double d = double(in) * ((double)pcm_sint18_3b_max + 1.0);
         if (d < pcm_sint18_3b_min) {
             // clip
             out = pcm_sint18_3b_min;
-        } else if (d >= pcm_sint18_3b_max + 1.0) {
+        } else if (d >= (double)pcm_sint18_3b_max + 1.0) {
             // clip
             out = pcm_sint18_3b_max;
         } else {
@@ -3937,11 +3937,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_UInt1
 
         int32_t out;
         // float to integer
-        const double d = double(in) * (pcm_sint18_3b_max + 1.0);
+        const double d = double(in) * ((double)pcm_sint18_3b_max + 1.0);
         if (d < pcm_sint18_3b_min) {
             // clip
             out = pcm_sint18_3b_min;
-        } else if (d >= pcm_sint18_3b_max + 1.0) {
+        } else if (d >= (double)pcm_sint18_3b_max + 1.0) {
             // clip
             out = pcm_sint18_3b_max;
         } else {
@@ -3960,11 +3960,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_UInt1
 
         int32_t out;
         // float to integer
-        const double d = double(in) * (pcm_sint18_3b_max + 1.0);
+        const double d = double(in) * ((double)pcm_sint18_3b_max + 1.0);
         if (d < pcm_sint18_3b_min) {
             // clip
             out = pcm_sint18_3b_min;
-        } else if (d >= pcm_sint18_3b_max + 1.0) {
+        } else if (d >= (double)pcm_sint18_3b_max + 1.0) {
             // clip
             out = pcm_sint18_3b_max;
         } else {
@@ -4366,11 +4366,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_SInt1
 
         int32_t out;
         // float to integer
-        const double d = double(in) * (pcm_sint18_4b_max + 1.0);
+        const double d = double(in) * ((double)pcm_sint18_4b_max + 1.0);
         if (d < pcm_sint18_4b_min) {
             // clip
             out = pcm_sint18_4b_min;
-        } else if (d >= pcm_sint18_4b_max + 1.0) {
+        } else if (d >= (double)pcm_sint18_4b_max + 1.0) {
             // clip
             out = pcm_sint18_4b_max;
         } else {
@@ -4388,11 +4388,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_SInt1
 
         int32_t out;
         // float to integer
-        const double d = double(in) * (pcm_sint18_4b_max + 1.0);
+        const double d = double(in) * ((double)pcm_sint18_4b_max + 1.0);
         if (d < pcm_sint18_4b_min) {
             // clip
             out = pcm_sint18_4b_min;
-        } else if (d >= pcm_sint18_4b_max + 1.0) {
+        } else if (d >= (double)pcm_sint18_4b_max + 1.0) {
             // clip
             out = pcm_sint18_4b_max;
         } else {
@@ -4758,11 +4758,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_UInt1
 
         int32_t out;
         // float to integer
-        const double d = double(in) * (pcm_sint18_4b_max + 1.0);
+        const double d = double(in) * ((double)pcm_sint18_4b_max + 1.0);
         if (d < pcm_sint18_4b_min) {
             // clip
             out = pcm_sint18_4b_min;
-        } else if (d >= pcm_sint18_4b_max + 1.0) {
+        } else if (d >= (double)pcm_sint18_4b_max + 1.0) {
             // clip
             out = pcm_sint18_4b_max;
         } else {
@@ -4781,11 +4781,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_UInt1
 
         int32_t out;
         // float to integer
-        const double d = double(in) * (pcm_sint18_4b_max + 1.0);
+        const double d = double(in) * ((double)pcm_sint18_4b_max + 1.0);
         if (d < pcm_sint18_4b_min) {
             // clip
             out = pcm_sint18_4b_min;
-        } else if (d >= pcm_sint18_4b_max + 1.0) {
+        } else if (d >= (double)pcm_sint18_4b_max + 1.0) {
             // clip
             out = pcm_sint18_4b_max;
         } else {
@@ -5157,11 +5157,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_SInt2
 
         int32_t out;
         // float to integer
-        const double d = double(in) * (pcm_sint20_max + 1.0);
+        const double d = double(in) * ((double)pcm_sint20_max + 1.0);
         if (d < pcm_sint20_min) {
             // clip
             out = pcm_sint20_min;
-        } else if (d >= pcm_sint20_max + 1.0) {
+        } else if (d >= (double)pcm_sint20_max + 1.0) {
             // clip
             out = pcm_sint20_max;
         } else {
@@ -5179,11 +5179,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_SInt2
 
         int32_t out;
         // float to integer
-        const double d = double(in) * (pcm_sint20_max + 1.0);
+        const double d = double(in) * ((double)pcm_sint20_max + 1.0);
         if (d < pcm_sint20_min) {
             // clip
             out = pcm_sint20_min;
-        } else if (d >= pcm_sint20_max + 1.0) {
+        } else if (d >= (double)pcm_sint20_max + 1.0) {
             // clip
             out = pcm_sint20_max;
         } else {
@@ -5534,11 +5534,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_UInt2
 
         int32_t out;
         // float to integer
-        const double d = double(in) * (pcm_sint20_max + 1.0);
+        const double d = double(in) * ((double)pcm_sint20_max + 1.0);
         if (d < pcm_sint20_min) {
             // clip
             out = pcm_sint20_min;
-        } else if (d >= pcm_sint20_max + 1.0) {
+        } else if (d >= (double)pcm_sint20_max + 1.0) {
             // clip
             out = pcm_sint20_max;
         } else {
@@ -5557,11 +5557,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_UInt2
 
         int32_t out;
         // float to integer
-        const double d = double(in) * (pcm_sint20_max + 1.0);
+        const double d = double(in) * ((double)pcm_sint20_max + 1.0);
         if (d < pcm_sint20_min) {
             // clip
             out = pcm_sint20_min;
-        } else if (d >= pcm_sint20_max + 1.0) {
+        } else if (d >= (double)pcm_sint20_max + 1.0) {
             // clip
             out = pcm_sint20_max;
         } else {
@@ -5933,11 +5933,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_SInt2
 
         int32_t out;
         // float to integer
-        const double d = double(in) * (pcm_sint20_3b_max + 1.0);
+        const double d = double(in) * ((double)pcm_sint20_3b_max + 1.0);
         if (d < pcm_sint20_3b_min) {
             // clip
             out = pcm_sint20_3b_min;
-        } else if (d >= pcm_sint20_3b_max + 1.0) {
+        } else if (d >= (double)pcm_sint20_3b_max + 1.0) {
             // clip
             out = pcm_sint20_3b_max;
         } else {
@@ -5955,11 +5955,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_SInt2
 
         int32_t out;
         // float to integer
-        const double d = double(in) * (pcm_sint20_3b_max + 1.0);
+        const double d = double(in) * ((double)pcm_sint20_3b_max + 1.0);
         if (d < pcm_sint20_3b_min) {
             // clip
             out = pcm_sint20_3b_min;
-        } else if (d >= pcm_sint20_3b_max + 1.0) {
+        } else if (d >= (double)pcm_sint20_3b_max + 1.0) {
             // clip
             out = pcm_sint20_3b_max;
         } else {
@@ -6310,11 +6310,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_UInt2
 
         int32_t out;
         // float to integer
-        const double d = double(in) * (pcm_sint20_3b_max + 1.0);
+        const double d = double(in) * ((double)pcm_sint20_3b_max + 1.0);
         if (d < pcm_sint20_3b_min) {
             // clip
             out = pcm_sint20_3b_min;
-        } else if (d >= pcm_sint20_3b_max + 1.0) {
+        } else if (d >= (double)pcm_sint20_3b_max + 1.0) {
             // clip
             out = pcm_sint20_3b_max;
         } else {
@@ -6333,11 +6333,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_UInt2
 
         int32_t out;
         // float to integer
-        const double d = double(in) * (pcm_sint20_3b_max + 1.0);
+        const double d = double(in) * ((double)pcm_sint20_3b_max + 1.0);
         if (d < pcm_sint20_3b_min) {
             // clip
             out = pcm_sint20_3b_min;
-        } else if (d >= pcm_sint20_3b_max + 1.0) {
+        } else if (d >= (double)pcm_sint20_3b_max + 1.0) {
             // clip
             out = pcm_sint20_3b_max;
         } else {
@@ -6709,11 +6709,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_SInt2
 
         int32_t out;
         // float to integer
-        const double d = double(in) * (pcm_sint20_4b_max + 1.0);
+        const double d = double(in) * ((double)pcm_sint20_4b_max + 1.0);
         if (d < pcm_sint20_4b_min) {
             // clip
             out = pcm_sint20_4b_min;
-        } else if (d >= pcm_sint20_4b_max + 1.0) {
+        } else if (d >= (double)pcm_sint20_4b_max + 1.0) {
             // clip
             out = pcm_sint20_4b_max;
         } else {
@@ -6731,11 +6731,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_SInt2
 
         int32_t out;
         // float to integer
-        const double d = double(in) * (pcm_sint20_4b_max + 1.0);
+        const double d = double(in) * ((double)pcm_sint20_4b_max + 1.0);
         if (d < pcm_sint20_4b_min) {
             // clip
             out = pcm_sint20_4b_min;
-        } else if (d >= pcm_sint20_4b_max + 1.0) {
+        } else if (d >= (double)pcm_sint20_4b_max + 1.0) {
             // clip
             out = pcm_sint20_4b_max;
         } else {
@@ -7086,11 +7086,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_UInt2
 
         int32_t out;
         // float to integer
-        const double d = double(in) * (pcm_sint20_4b_max + 1.0);
+        const double d = double(in) * ((double)pcm_sint20_4b_max + 1.0);
         if (d < pcm_sint20_4b_min) {
             // clip
             out = pcm_sint20_4b_min;
-        } else if (d >= pcm_sint20_4b_max + 1.0) {
+        } else if (d >= (double)pcm_sint20_4b_max + 1.0) {
             // clip
             out = pcm_sint20_4b_max;
         } else {
@@ -7109,11 +7109,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_UInt2
 
         int32_t out;
         // float to integer
-        const double d = double(in) * (pcm_sint20_4b_max + 1.0);
+        const double d = double(in) * ((double)pcm_sint20_4b_max + 1.0);
         if (d < pcm_sint20_4b_min) {
             // clip
             out = pcm_sint20_4b_min;
-        } else if (d >= pcm_sint20_4b_max + 1.0) {
+        } else if (d >= (double)pcm_sint20_4b_max + 1.0) {
             // clip
             out = pcm_sint20_4b_max;
         } else {
@@ -7467,11 +7467,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_SInt2
 
         int32_t out;
         // float to integer
-        const double d = double(in) * (pcm_sint24_max + 1.0);
+        const double d = double(in) * ((double)pcm_sint24_max + 1.0);
         if (d < pcm_sint24_min) {
             // clip
             out = pcm_sint24_min;
-        } else if (d >= pcm_sint24_max + 1.0) {
+        } else if (d >= (double)pcm_sint24_max + 1.0) {
             // clip
             out = pcm_sint24_max;
         } else {
@@ -7489,11 +7489,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_SInt2
 
         int32_t out;
         // float to integer
-        const double d = double(in) * (pcm_sint24_max + 1.0);
+        const double d = double(in) * ((double)pcm_sint24_max + 1.0);
         if (d < pcm_sint24_min) {
             // clip
             out = pcm_sint24_min;
-        } else if (d >= pcm_sint24_max + 1.0) {
+        } else if (d >= (double)pcm_sint24_max + 1.0) {
             // clip
             out = pcm_sint24_max;
         } else {
@@ -7836,11 +7836,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_UInt2
 
         int32_t out;
         // float to integer
-        const double d = double(in) * (pcm_sint24_max + 1.0);
+        const double d = double(in) * ((double)pcm_sint24_max + 1.0);
         if (d < pcm_sint24_min) {
             // clip
             out = pcm_sint24_min;
-        } else if (d >= pcm_sint24_max + 1.0) {
+        } else if (d >= (double)pcm_sint24_max + 1.0) {
             // clip
             out = pcm_sint24_max;
         } else {
@@ -7859,11 +7859,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_UInt2
 
         int32_t out;
         // float to integer
-        const double d = double(in) * (pcm_sint24_max + 1.0);
+        const double d = double(in) * ((double)pcm_sint24_max + 1.0);
         if (d < pcm_sint24_min) {
             // clip
             out = pcm_sint24_min;
-        } else if (d >= pcm_sint24_max + 1.0) {
+        } else if (d >= (double)pcm_sint24_max + 1.0) {
             // clip
             out = pcm_sint24_max;
         } else {
@@ -8217,11 +8217,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_SInt2
 
         int32_t out;
         // float to integer
-        const double d = double(in) * (pcm_sint24_4b_max + 1.0);
+        const double d = double(in) * ((double)pcm_sint24_4b_max + 1.0);
         if (d < pcm_sint24_4b_min) {
             // clip
             out = pcm_sint24_4b_min;
-        } else if (d >= pcm_sint24_4b_max + 1.0) {
+        } else if (d >= (double)pcm_sint24_4b_max + 1.0) {
             // clip
             out = pcm_sint24_4b_max;
         } else {
@@ -8239,11 +8239,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_SInt2
 
         int32_t out;
         // float to integer
-        const double d = double(in) * (pcm_sint24_4b_max + 1.0);
+        const double d = double(in) * ((double)pcm_sint24_4b_max + 1.0);
         if (d < pcm_sint24_4b_min) {
             // clip
             out = pcm_sint24_4b_min;
-        } else if (d >= pcm_sint24_4b_max + 1.0) {
+        } else if (d >= (double)pcm_sint24_4b_max + 1.0) {
             // clip
             out = pcm_sint24_4b_max;
         } else {
@@ -8586,11 +8586,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_UInt2
 
         int32_t out;
         // float to integer
-        const double d = double(in) * (pcm_sint24_4b_max + 1.0);
+        const double d = double(in) * ((double)pcm_sint24_4b_max + 1.0);
         if (d < pcm_sint24_4b_min) {
             // clip
             out = pcm_sint24_4b_min;
-        } else if (d >= pcm_sint24_4b_max + 1.0) {
+        } else if (d >= (double)pcm_sint24_4b_max + 1.0) {
             // clip
             out = pcm_sint24_4b_max;
         } else {
@@ -8609,11 +8609,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_UInt2
 
         int32_t out;
         // float to integer
-        const double d = double(in) * (pcm_sint24_4b_max + 1.0);
+        const double d = double(in) * ((double)pcm_sint24_4b_max + 1.0);
         if (d < pcm_sint24_4b_min) {
             // clip
             out = pcm_sint24_4b_min;
-        } else if (d >= pcm_sint24_4b_max + 1.0) {
+        } else if (d >= (double)pcm_sint24_4b_max + 1.0) {
             // clip
             out = pcm_sint24_4b_max;
         } else {
@@ -8959,11 +8959,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_SInt3
 
         int32_t out;
         // float to integer
-        const double d = double(in) * (pcm_sint32_max + 1.0);
+        const double d = double(in) * ((double)pcm_sint32_max + 1.0);
         if (d < pcm_sint32_min) {
             // clip
             out = pcm_sint32_min;
-        } else if (d >= pcm_sint32_max + 1.0) {
+        } else if (d >= (double)pcm_sint32_max + 1.0) {
             // clip
             out = pcm_sint32_max;
         } else {
@@ -8981,11 +8981,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_SInt3
 
         int32_t out;
         // float to integer
-        const double d = double(in) * (pcm_sint32_max + 1.0);
+        const double d = double(in) * ((double)pcm_sint32_max + 1.0);
         if (d < pcm_sint32_min) {
             // clip
             out = pcm_sint32_min;
-        } else if (d >= pcm_sint32_max + 1.0) {
+        } else if (d >= (double)pcm_sint32_max + 1.0) {
             // clip
             out = pcm_sint32_max;
         } else {
@@ -9325,11 +9325,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_UInt3
 
         int32_t out;
         // float to integer
-        const double d = double(in) * (pcm_sint32_max + 1.0);
+        const double d = double(in) * ((double)pcm_sint32_max + 1.0);
         if (d < pcm_sint32_min) {
             // clip
             out = pcm_sint32_min;
-        } else if (d >= pcm_sint32_max + 1.0) {
+        } else if (d >= (double)pcm_sint32_max + 1.0) {
             // clip
             out = pcm_sint32_max;
         } else {
@@ -9348,11 +9348,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_UInt3
 
         int32_t out;
         // float to integer
-        const double d = double(in) * (pcm_sint32_max + 1.0);
+        const double d = double(in) * ((double)pcm_sint32_max + 1.0);
         if (d < pcm_sint32_min) {
             // clip
             out = pcm_sint32_min;
-        } else if (d >= pcm_sint32_max + 1.0) {
+        } else if (d >= (double)pcm_sint32_max + 1.0) {
             // clip
             out = pcm_sint32_max;
         } else {
@@ -9688,11 +9688,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_SInt6
 
         int64_t out;
         // float to integer
-        const double d = double(in) * (pcm_sint64_max + 1.0);
+        const double d = double(in) * ((double)pcm_sint64_max + 1.0);
         if (d < pcm_sint64_min) {
             // clip
             out = pcm_sint64_min;
-        } else if (d >= pcm_sint64_max + 1.0) {
+        } else if (d >= (double)pcm_sint64_max + 1.0) {
             // clip
             out = pcm_sint64_max;
         } else {
@@ -9710,11 +9710,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_SInt6
 
         int64_t out;
         // float to integer
-        const double d = double(in) * (pcm_sint64_max + 1.0);
+        const double d = double(in) * ((double)pcm_sint64_max + 1.0);
         if (d < pcm_sint64_min) {
             // clip
             out = pcm_sint64_min;
-        } else if (d >= pcm_sint64_max + 1.0) {
+        } else if (d >= (double)pcm_sint64_max + 1.0) {
             // clip
             out = pcm_sint64_max;
         } else {
@@ -10049,11 +10049,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_UInt6
 
         int64_t out;
         // float to integer
-        const double d = double(in) * (pcm_sint64_max + 1.0);
+        const double d = double(in) * ((double)pcm_sint64_max + 1.0);
         if (d < pcm_sint64_min) {
             // clip
             out = pcm_sint64_min;
-        } else if (d >= pcm_sint64_max + 1.0) {
+        } else if (d >= (double)pcm_sint64_max + 1.0) {
             // clip
             out = pcm_sint64_max;
         } else {
@@ -10072,11 +10072,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_UInt6
 
         int64_t out;
         // float to integer
-        const double d = double(in) * (pcm_sint64_max + 1.0);
+        const double d = double(in) * ((double)pcm_sint64_max + 1.0);
         if (d < pcm_sint64_min) {
             // clip
             out = pcm_sint64_min;
-        } else if (d >= pcm_sint64_max + 1.0) {
+        } else if (d >= (double)pcm_sint64_max + 1.0) {
             // clip
             out = pcm_sint64_max;
         } else {
@@ -10095,7 +10095,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt8, PcmEncoding_Float32
 
         float out;
         // integer to float
-        out = float(in * (1.0 / (pcm_sint8_max + 1.0)));
+        out = float(in * (1.0 / ((double)pcm_sint8_max + 1.0)));
 
         return out;
     }
@@ -10109,7 +10109,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt8, PcmEncoding_Float32
 
         float out;
         // integer to float
-        out = float(in * (1.0 / (pcm_sint8_max + 1.0)));
+        out = float(in * (1.0 / ((double)pcm_sint8_max + 1.0)));
 
         return out;
     }
@@ -10122,7 +10122,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt16, PcmEncoding_Float3
 
         float out;
         // integer to float
-        out = float(in * (1.0 / (pcm_sint16_max + 1.0)));
+        out = float(in * (1.0 / ((double)pcm_sint16_max + 1.0)));
 
         return out;
     }
@@ -10136,7 +10136,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt16, PcmEncoding_Float3
 
         float out;
         // integer to float
-        out = float(in * (1.0 / (pcm_sint16_max + 1.0)));
+        out = float(in * (1.0 / ((double)pcm_sint16_max + 1.0)));
 
         return out;
     }
@@ -10149,7 +10149,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18, PcmEncoding_Float3
 
         float out;
         // integer to float
-        out = float(in * (1.0 / (pcm_sint18_max + 1.0)));
+        out = float(in * (1.0 / ((double)pcm_sint18_max + 1.0)));
 
         return out;
     }
@@ -10163,7 +10163,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18, PcmEncoding_Float3
 
         float out;
         // integer to float
-        out = float(in * (1.0 / (pcm_sint18_max + 1.0)));
+        out = float(in * (1.0 / ((double)pcm_sint18_max + 1.0)));
 
         return out;
     }
@@ -10176,7 +10176,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18_3B, PcmEncoding_Flo
 
         float out;
         // integer to float
-        out = float(in * (1.0 / (pcm_sint18_3b_max + 1.0)));
+        out = float(in * (1.0 / ((double)pcm_sint18_3b_max + 1.0)));
 
         return out;
     }
@@ -10190,7 +10190,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18_3B, PcmEncoding_Flo
 
         float out;
         // integer to float
-        out = float(in * (1.0 / (pcm_sint18_3b_max + 1.0)));
+        out = float(in * (1.0 / ((double)pcm_sint18_3b_max + 1.0)));
 
         return out;
     }
@@ -10203,7 +10203,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18_4B, PcmEncoding_Flo
 
         float out;
         // integer to float
-        out = float(in * (1.0 / (pcm_sint18_4b_max + 1.0)));
+        out = float(in * (1.0 / ((double)pcm_sint18_4b_max + 1.0)));
 
         return out;
     }
@@ -10217,7 +10217,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18_4B, PcmEncoding_Flo
 
         float out;
         // integer to float
-        out = float(in * (1.0 / (pcm_sint18_4b_max + 1.0)));
+        out = float(in * (1.0 / ((double)pcm_sint18_4b_max + 1.0)));
 
         return out;
     }
@@ -10230,7 +10230,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20, PcmEncoding_Float3
 
         float out;
         // integer to float
-        out = float(in * (1.0 / (pcm_sint20_max + 1.0)));
+        out = float(in * (1.0 / ((double)pcm_sint20_max + 1.0)));
 
         return out;
     }
@@ -10244,7 +10244,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20, PcmEncoding_Float3
 
         float out;
         // integer to float
-        out = float(in * (1.0 / (pcm_sint20_max + 1.0)));
+        out = float(in * (1.0 / ((double)pcm_sint20_max + 1.0)));
 
         return out;
     }
@@ -10257,7 +10257,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20_3B, PcmEncoding_Flo
 
         float out;
         // integer to float
-        out = float(in * (1.0 / (pcm_sint20_3b_max + 1.0)));
+        out = float(in * (1.0 / ((double)pcm_sint20_3b_max + 1.0)));
 
         return out;
     }
@@ -10271,7 +10271,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20_3B, PcmEncoding_Flo
 
         float out;
         // integer to float
-        out = float(in * (1.0 / (pcm_sint20_3b_max + 1.0)));
+        out = float(in * (1.0 / ((double)pcm_sint20_3b_max + 1.0)));
 
         return out;
     }
@@ -10284,7 +10284,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20_4B, PcmEncoding_Flo
 
         float out;
         // integer to float
-        out = float(in * (1.0 / (pcm_sint20_4b_max + 1.0)));
+        out = float(in * (1.0 / ((double)pcm_sint20_4b_max + 1.0)));
 
         return out;
     }
@@ -10298,7 +10298,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20_4B, PcmEncoding_Flo
 
         float out;
         // integer to float
-        out = float(in * (1.0 / (pcm_sint20_4b_max + 1.0)));
+        out = float(in * (1.0 / ((double)pcm_sint20_4b_max + 1.0)));
 
         return out;
     }
@@ -10311,7 +10311,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_Float3
 
         float out;
         // integer to float
-        out = float(in * (1.0 / (pcm_sint24_max + 1.0)));
+        out = float(in * (1.0 / ((double)pcm_sint24_max + 1.0)));
 
         return out;
     }
@@ -10325,7 +10325,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt24, PcmEncoding_Float3
 
         float out;
         // integer to float
-        out = float(in * (1.0 / (pcm_sint24_max + 1.0)));
+        out = float(in * (1.0 / ((double)pcm_sint24_max + 1.0)));
 
         return out;
     }
@@ -10338,7 +10338,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt24_4B, PcmEncoding_Flo
 
         float out;
         // integer to float
-        out = float(in * (1.0 / (pcm_sint24_4b_max + 1.0)));
+        out = float(in * (1.0 / ((double)pcm_sint24_4b_max + 1.0)));
 
         return out;
     }
@@ -10352,7 +10352,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt24_4B, PcmEncoding_Flo
 
         float out;
         // integer to float
-        out = float(in * (1.0 / (pcm_sint24_4b_max + 1.0)));
+        out = float(in * (1.0 / ((double)pcm_sint24_4b_max + 1.0)));
 
         return out;
     }
@@ -10365,7 +10365,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_Float3
 
         float out;
         // integer to float
-        out = float(in * (1.0 / (pcm_sint32_max + 1.0)));
+        out = float(in * (1.0 / ((double)pcm_sint32_max + 1.0)));
 
         return out;
     }
@@ -10379,7 +10379,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt32, PcmEncoding_Float3
 
         float out;
         // integer to float
-        out = float(in * (1.0 / (pcm_sint32_max + 1.0)));
+        out = float(in * (1.0 / ((double)pcm_sint32_max + 1.0)));
 
         return out;
     }
@@ -10392,7 +10392,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_Float3
 
         float out;
         // integer to float
-        out = float(in * (1.0 / (pcm_sint64_max + 1.0)));
+        out = float(in * (1.0 / ((double)pcm_sint64_max + 1.0)));
 
         return out;
     }
@@ -10406,7 +10406,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt64, PcmEncoding_Float3
 
         float out;
         // integer to float
-        out = float(in * (1.0 / (pcm_sint64_max + 1.0)));
+        out = float(in * (1.0 / ((double)pcm_sint64_max + 1.0)));
 
         return out;
     }
@@ -10439,7 +10439,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt8, PcmEncoding_Float64
 
         double out;
         // integer to float
-        out = double(in * (1.0 / (pcm_sint8_max + 1.0)));
+        out = double(in * (1.0 / ((double)pcm_sint8_max + 1.0)));
 
         return out;
     }
@@ -10453,7 +10453,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt8, PcmEncoding_Float64
 
         double out;
         // integer to float
-        out = double(in * (1.0 / (pcm_sint8_max + 1.0)));
+        out = double(in * (1.0 / ((double)pcm_sint8_max + 1.0)));
 
         return out;
     }
@@ -10466,7 +10466,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt16, PcmEncoding_Float6
 
         double out;
         // integer to float
-        out = double(in * (1.0 / (pcm_sint16_max + 1.0)));
+        out = double(in * (1.0 / ((double)pcm_sint16_max + 1.0)));
 
         return out;
     }
@@ -10480,7 +10480,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt16, PcmEncoding_Float6
 
         double out;
         // integer to float
-        out = double(in * (1.0 / (pcm_sint16_max + 1.0)));
+        out = double(in * (1.0 / ((double)pcm_sint16_max + 1.0)));
 
         return out;
     }
@@ -10493,7 +10493,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18, PcmEncoding_Float6
 
         double out;
         // integer to float
-        out = double(in * (1.0 / (pcm_sint18_max + 1.0)));
+        out = double(in * (1.0 / ((double)pcm_sint18_max + 1.0)));
 
         return out;
     }
@@ -10507,7 +10507,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18, PcmEncoding_Float6
 
         double out;
         // integer to float
-        out = double(in * (1.0 / (pcm_sint18_max + 1.0)));
+        out = double(in * (1.0 / ((double)pcm_sint18_max + 1.0)));
 
         return out;
     }
@@ -10520,7 +10520,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18_3B, PcmEncoding_Flo
 
         double out;
         // integer to float
-        out = double(in * (1.0 / (pcm_sint18_3b_max + 1.0)));
+        out = double(in * (1.0 / ((double)pcm_sint18_3b_max + 1.0)));
 
         return out;
     }
@@ -10534,7 +10534,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18_3B, PcmEncoding_Flo
 
         double out;
         // integer to float
-        out = double(in * (1.0 / (pcm_sint18_3b_max + 1.0)));
+        out = double(in * (1.0 / ((double)pcm_sint18_3b_max + 1.0)));
 
         return out;
     }
@@ -10547,7 +10547,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18_4B, PcmEncoding_Flo
 
         double out;
         // integer to float
-        out = double(in * (1.0 / (pcm_sint18_4b_max + 1.0)));
+        out = double(in * (1.0 / ((double)pcm_sint18_4b_max + 1.0)));
 
         return out;
     }
@@ -10561,7 +10561,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18_4B, PcmEncoding_Flo
 
         double out;
         // integer to float
-        out = double(in * (1.0 / (pcm_sint18_4b_max + 1.0)));
+        out = double(in * (1.0 / ((double)pcm_sint18_4b_max + 1.0)));
 
         return out;
     }
@@ -10574,7 +10574,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20, PcmEncoding_Float6
 
         double out;
         // integer to float
-        out = double(in * (1.0 / (pcm_sint20_max + 1.0)));
+        out = double(in * (1.0 / ((double)pcm_sint20_max + 1.0)));
 
         return out;
     }
@@ -10588,7 +10588,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20, PcmEncoding_Float6
 
         double out;
         // integer to float
-        out = double(in * (1.0 / (pcm_sint20_max + 1.0)));
+        out = double(in * (1.0 / ((double)pcm_sint20_max + 1.0)));
 
         return out;
     }
@@ -10601,7 +10601,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20_3B, PcmEncoding_Flo
 
         double out;
         // integer to float
-        out = double(in * (1.0 / (pcm_sint20_3b_max + 1.0)));
+        out = double(in * (1.0 / ((double)pcm_sint20_3b_max + 1.0)));
 
         return out;
     }
@@ -10615,7 +10615,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20_3B, PcmEncoding_Flo
 
         double out;
         // integer to float
-        out = double(in * (1.0 / (pcm_sint20_3b_max + 1.0)));
+        out = double(in * (1.0 / ((double)pcm_sint20_3b_max + 1.0)));
 
         return out;
     }
@@ -10628,7 +10628,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20_4B, PcmEncoding_Flo
 
         double out;
         // integer to float
-        out = double(in * (1.0 / (pcm_sint20_4b_max + 1.0)));
+        out = double(in * (1.0 / ((double)pcm_sint20_4b_max + 1.0)));
 
         return out;
     }
@@ -10642,7 +10642,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20_4B, PcmEncoding_Flo
 
         double out;
         // integer to float
-        out = double(in * (1.0 / (pcm_sint20_4b_max + 1.0)));
+        out = double(in * (1.0 / ((double)pcm_sint20_4b_max + 1.0)));
 
         return out;
     }
@@ -10655,7 +10655,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_Float6
 
         double out;
         // integer to float
-        out = double(in * (1.0 / (pcm_sint24_max + 1.0)));
+        out = double(in * (1.0 / ((double)pcm_sint24_max + 1.0)));
 
         return out;
     }
@@ -10669,7 +10669,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt24, PcmEncoding_Float6
 
         double out;
         // integer to float
-        out = double(in * (1.0 / (pcm_sint24_max + 1.0)));
+        out = double(in * (1.0 / ((double)pcm_sint24_max + 1.0)));
 
         return out;
     }
@@ -10682,7 +10682,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt24_4B, PcmEncoding_Flo
 
         double out;
         // integer to float
-        out = double(in * (1.0 / (pcm_sint24_4b_max + 1.0)));
+        out = double(in * (1.0 / ((double)pcm_sint24_4b_max + 1.0)));
 
         return out;
     }
@@ -10696,7 +10696,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt24_4B, PcmEncoding_Flo
 
         double out;
         // integer to float
-        out = double(in * (1.0 / (pcm_sint24_4b_max + 1.0)));
+        out = double(in * (1.0 / ((double)pcm_sint24_4b_max + 1.0)));
 
         return out;
     }
@@ -10709,7 +10709,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_Float6
 
         double out;
         // integer to float
-        out = double(in * (1.0 / (pcm_sint32_max + 1.0)));
+        out = double(in * (1.0 / ((double)pcm_sint32_max + 1.0)));
 
         return out;
     }
@@ -10723,7 +10723,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt32, PcmEncoding_Float6
 
         double out;
         // integer to float
-        out = double(in * (1.0 / (pcm_sint32_max + 1.0)));
+        out = double(in * (1.0 / ((double)pcm_sint32_max + 1.0)));
 
         return out;
     }
@@ -10736,7 +10736,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_Float6
 
         double out;
         // integer to float
-        out = double(in * (1.0 / (pcm_sint64_max + 1.0)));
+        out = double(in * (1.0 / ((double)pcm_sint64_max + 1.0)));
 
         return out;
     }
@@ -10750,7 +10750,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt64, PcmEncoding_Float6
 
         double out;
         // integer to float
-        out = double(in * (1.0 / (pcm_sint64_max + 1.0)));
+        out = double(in * (1.0 / ((double)pcm_sint64_max + 1.0)));
 
         return out;
     }
