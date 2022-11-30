@@ -7,10 +7,7 @@
  */
 
 #include "roc_audio/resampler_reader.h"
-#include "roc_audio/sample_spec.h"
-#include "roc_core/macro_helpers.h"
 #include "roc_core/panic.h"
-#include "roc_core/stddefs.h"
 
 namespace roc {
 namespace audio {
