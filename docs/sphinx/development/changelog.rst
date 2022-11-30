@@ -5,11 +5,140 @@ Changelog
    :local:
    :depth: 1
 
+..
+    Features
+    C API
+    Bindings
+    Command-line tools
+    Applications
+    Bug fixes
+    Portability
+    Security
+    Internals
+    Build system
+    Tests
+    Documentation
+
+Version 0.2.0 (Dec X, 2022)
+===========================
+
+Features
+--------
+
+* support multicast
+* support broadcast
+* support speex resampler and make it default
+* support slots (connect sender to multiple receivers and vice versa)
+* initial support for RTCP
+
+C API
+-----
+
+* return error codes from ``roc_context_open``, ``roc_receiver_open``, ``roc_sender_open``
+* introduce ``roc_endpoint`` to identify endpoints using URI
+* rename ``roc_fec_code`` to ``roc_fec_encoding``
+* add ``roc_resampler_backend``
+* add ``roc_clock_source``
+* add ``roc_version`` and friends
+
+Bindings
+--------
+
+* add Go bindings (`roc-go <https://github.com/roc-streaming/roc-go/>`_)
+* add Java bindings (`roc-java <https://github.com/roc-streaming/roc-java/>`_)
+
+Command-line tools
+------------------
+
+* use URIs to identify audio devices and endpoints
+* add ``--backup`` option to ``roc-recv``
+* replace ``--frame-size`` with ``--frame-length`` and ``--frame-limit``
+* remove ``--resampler-interp`` and ``--resampler-window``
+
+Applications
+------------
+
+* move PulseAudio modules to `roc-pulse <https://github.com/roc-streaming/roc-pulse/>`_ repo
+* add `roc-droid <https://github.com/roc-streaming/roc-droid/>`_ Android app
+
+Bug fixes
+---------
+
+* fix race in PRNG
+* fix race in mutex and semaphore on macOS
+* fix potential deadlock in network code
+
+Portability
+-----------
+
+* Linux / aarch64 build fixes
+* Android build fixes
+* macOS build fixes
+* FreeBSD build fixes
+* support generic Unix target
+* continuous integration for more Linux distros
+* continuous integration for Android
+* testing on Raspberry Pi 4
+
+Security
+--------
+
+* use CSPRNG for initializing of RTP fields
+
+Internals
+---------
+
+* add ``roc_peer`` module
+* add ``roc_ctl`` module
+* support for asynchronous tasks in ``roc_pipeline``, ``roc_netio``, ``roc_ctl``
+* lock-free task queues
+* optimizations to avoid unnecessary context switches
+* improvements in memory pools
+* improvements in logger
+* self-profiling
+* start work on SDP support
+* preparations for RTSP support
+* rework project structure
+* lots of small improvements
+
+Build system
+------------
+
+* add ``--enable-static`` and ``--disable-shared``
+* add ``--disable-soversion`` option
+* compatibility with recent SCons versions
+* compatibility with different Python versions
+* improve toolchain detection
+* generate ``.pc`` file for pkg-config
+* fix build with recent PulseAudio
+* fix build with recent libunwind
+* fixes for building third-parties
+
+Tests
+-----
+
+* add benchmarks
+* lots of small updates
+
+Documentation
+-------------
+
+* document Android bulding and testing
+* lots of small updates
+
 Version 0.1.5 (Apr 5, 2020)
 ===========================
 
-Building
---------
+Portability
+-----------
+
+* fix building on Manjaro Linux
+* fix building on Yocto Linux
+* add openSUSE to continuous integration and user cookbook
+* drop Xcode 7.3 from continuous integration, add Xcode 11.3
+
+Build system
+------------
 
 * correctly handle arguments in environment variables like CXX/CC/LD/etc (for Yocto Linux)
 * correctly handle spaces in environment variables (for Yocto Linux)
@@ -23,14 +152,6 @@ Building
 * switch to libuv 1.35.0 by default in ``--build-3rdparty``
 * check for unknown names in ``--build-3rdparty``
 
-Portability
------------
-
-* fix building on Manjaro Linux
-* fix building on Yocto Linux
-* add openSUSE to continuous integration and user cookbook
-* drop Xcode 7.3 from continuous integration, add Xcode 11.3
-
 Version 0.1.4 (Feb 6, 2020)
 ===========================
 
@@ -39,8 +160,8 @@ Internals
 
 * fix logging
 
-Building
---------
+Build system
+------------
 
 * make ``/usr/local`` prefix default everywhere except Linux
 * make default compiler consistent with CXX var
@@ -58,8 +179,8 @@ Documentation
 Version 0.1.3 (Oct 21, 2019)
 ============================
 
-Tools
------
+Command-line tools
+------------------
 
 * add ``--list-drivers`` option
 * add git commit hash to version info
@@ -71,8 +192,8 @@ Internals
 * print backtrace on Android using bionic backtrace module
 * colored logging
 
-Building
---------
+Build system
+------------
 
 * add libunwind optional dependency (enabled by default)
 * add ragel required dependency
@@ -88,8 +209,8 @@ Building
 Version 0.1.2 (Aug 14, 2019)
 ============================
 
-Bugfixes
---------
+Bug fixes
+---------
 
 * fix handling of inconsistent port protocols / FEC schemes
 * fix IPv6 support
@@ -99,6 +220,12 @@ Bugfixes
 * fix packet flushing mechanism
 * fix backtrace printing on release builds
 
+Portability
+-----------
+
+* fix building on musl libc
+* continuous integration for Alpine Linux
+
 Internals
 ---------
 
@@ -106,14 +233,8 @@ Internals
 * minor refactoring in FEC support
 * improve logging
 
-Portability
------------
-
-* fix building on musl libc
-* continuous integration for Alpine Linux
-
-Building
---------
+Build system
+------------
 
 * allow to configure installation directories
 * auto-detect system library directory and PulseAudio module directory
@@ -128,8 +249,8 @@ Documentation
 Version 0.1.1 (Jun 18, 2019)
 ============================
 
-Bugfixes
---------
+Bug fixes
+---------
 
 * fix memory corruption in OpenFEC / LDPC-Staircase (fix available in our fork)
 * fix false positives in stream breakage detection
@@ -141,14 +262,8 @@ Portability
 * continuous integration for Android / arm64 (minimal build)
 * docker image for aarch64-linux-android toolchain
 
-Testing
--------
-
-* fix resampler AWGN tests
-* add travis job to run tests under valgrind
-
-Building
---------
+Build system
+------------
 
 * fix multiple build issues on macOS
 * fix multiple build issues with cross-compilation and Android build
@@ -159,6 +274,12 @@ Building
 * improve system type detection and system tools search
 * improve scripts portability
 * better handling of build environment variables
+
+Tests
+-----
+
+* fix resampler AWGN tests
+* add travis job to run tests under valgrind
 
 Version 0.1.0 (May 28, 2019)
 ============================
@@ -177,15 +298,19 @@ Features
 * interleaving packets to increase the chances of successful loss recovery
 * detecting and restarting broken streams
 
-API
----
+C API
+-----
 
 * initial version of transport API (roc_sender, roc_receiver)
 
-Tools
------
+Command-line tools
+------------------
 
 * initial version of command-line tools (roc-send, roc-recv, roc-conv)
+
+Applications
+------------
+
 * initial version of PulseAudio transport (module-roc-sink, module-roc-sink-input)
 
 Portability
