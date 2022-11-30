@@ -113,7 +113,7 @@ BuiltinResampler::BuiltinResampler(core::IAllocator& allocator,
     , curr_frame_(NULL)
     , next_frame_(NULL)
     , scaling_(1.0)
-    , frame_size_(sample_spec.ns_to_size(frame_length))
+    , frame_size_(sample_spec.ns_to_soa(frame_length))
     , frame_size_ch_(sample_spec.num_channels() ? frame_size_ / sample_spec.num_channels()
                                                 : 0)
     , window_size_(get_window_size(profile))

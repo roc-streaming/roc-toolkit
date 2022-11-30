@@ -8,6 +8,7 @@
 
 #include "roc_audio/sample_spec.h"
 #include "roc_core/panic.h"
+#include "roc_packet/units.h"
 
 namespace roc {
 namespace audio {
@@ -53,12 +54,12 @@ core::nanoseconds_t SampleSpec::timestamp_to_ns(packet::timestamp_diff_t ts) con
     return core::nanoseconds_t(roundf(float(ts) / sample_rate_ * core::Second));
 }
 
-size_t SampleSpec::ns_to_size(core::nanoseconds_t frame_length) const {
+size_t SampleSpec::ns_to_soa(core::nanoseconds_t frame_length) const {
     return (size_t)timestamp_from_ns(frame_length) * num_channels();
 }
 
-core::nanoseconds_t SampleSpec::size_to_ns(size_t frame_size) const {
-    return timestamp_to_ns(packet::timestamp_diff_t(frame_size / num_channels()));
+core::nanoseconds_t SampleSpec::soa_to_ns(size_t frame_length) const {
+    return timestamp_to_ns(packet::timestamp_diff_t(frame_length / num_channels()));
 }
 
 size_t SampleSpec::calc_num_channels_() const {

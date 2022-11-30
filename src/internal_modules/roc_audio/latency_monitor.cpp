@@ -171,7 +171,7 @@ bool LatencyMonitor::init_resampler_(size_t input_sample_rate,
         return false;
     }
 
-    if (!resampler_->set_scaling(input_sample_rate, output_sample_rate, 1.0f)) {
+    if (!resampler_->set_scaling(1.0f)) {
         roc_log(LogError,
                 "latency monitor: scaling factor out of bounds: input=%lu output=%lu",
                 (unsigned long)input_sample_rate, (unsigned long)output_sample_rate);
@@ -202,8 +202,7 @@ bool LatencyMonitor::update_resampler_(packet::timestamp_t pos,
                 (double)freq_coeff, (double)trimmed_coeff);
     }
 
-    if (!resampler_->set_scaling(input_sample_spec_.sample_rate(),
-                                 output_sample_spec_.sample_rate(), trimmed_coeff)) {
+    if (!resampler_->set_scaling(trimmed_coeff)) {
         roc_log(LogDebug,
                 "latency monitor: scaling factor out of bounds: fe=%.5f trim_fe=%.5f",
                 (double)freq_coeff, (double)trimmed_coeff);

@@ -45,15 +45,13 @@ ConverterSource::ConverterSource(const ConverterConfig& config,
             return;
         }
 
-        resampler_reader_.reset(new (resampler_reader_)
-                                    audio::ResamplerReader(*areader, *resampler_));
+        resampler_reader_.reset(new (resampler_reader_) audio::ResamplerReader(
+            *areader, *resampler_, config.input_sample_spec, config.output_sample_spec));
 
         if (!resampler_reader_ || !resampler_reader_->valid()) {
             return;
         }
-        if (!resampler_reader_->set_scaling(config.input_sample_spec.sample_rate(),
-                                            config.output_sample_spec.sample_rate(),
-                                            1.0f)) {
+        if (!resampler_reader_->set_scaling(1.0f)) {
             return;
         }
         areader = resampler_reader_.get();

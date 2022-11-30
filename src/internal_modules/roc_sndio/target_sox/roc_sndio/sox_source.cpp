@@ -292,7 +292,7 @@ bool SoxSource::setup_names_(const char* driver, const char* path) {
 }
 
 bool SoxSource::setup_buffer_() {
-    buffer_size_ = sample_spec_.ns_to_size(frame_length_);
+    buffer_size_ = sample_spec_.ns_to_soa(frame_length_);
     if (buffer_size_ == 0) {
         roc_log(LogError, "sox source: buffer size is zero");
         return false;

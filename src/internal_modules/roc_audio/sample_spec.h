@@ -49,11 +49,11 @@ public:
     //! Convert number of samples to nanoseconds.
     core::nanoseconds_t timestamp_to_ns(packet::timestamp_diff_t ts) const;
 
-    //! Convert frame duration to frame size.
-    size_t ns_to_size(core::nanoseconds_t frame_length) const;
+    //! Convert frame duration to Samples OverAll.
+    size_t ns_to_soa(core::nanoseconds_t frame_length) const;
 
-    //! Convert frame size to frame duration.
-    core::nanoseconds_t size_to_ns(size_t frame_size) const;
+    //! Convert Samples OverAll to frame duration.
+    core::nanoseconds_t soa_to_ns(size_t frame_length) const;
 
 private:
     size_t calc_num_channels_() const;

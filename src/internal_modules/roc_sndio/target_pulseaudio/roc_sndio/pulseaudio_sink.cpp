@@ -367,7 +367,7 @@ void PulseaudioSink::init_stream_params_(const pa_sink_info& info) {
     }
 
     if (frame_size_ == 0) {
-        frame_size_ = config_.sample_spec.ns_to_size(config_.frame_length);
+        frame_size_ = config_.sample_spec.ns_to_soa(config_.frame_length);
     }
 
     roc_panic_if(sizeof(audio::sample_t) != sizeof(float));
@@ -379,7 +379,7 @@ void PulseaudioSink::init_stream_params_(const pa_sink_info& info) {
     const size_t frame_size_bytes = frame_size_ * sizeof(audio::sample_t);
 
     const size_t latency_bytes =
-        config_.sample_spec.ns_to_size(latency_) * sizeof(audio::sample_t);
+        config_.sample_spec.ns_to_soa(latency_) * sizeof(audio::sample_t);
 
     buffer_attrs_.maxlength = (uint32_t)-1;
     buffer_attrs_.tlength = (uint32_t)latency_bytes;

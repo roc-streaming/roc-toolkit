@@ -61,7 +61,7 @@ TEST(mixer, no_readers) {
 }
 
 TEST(mixer, one_reader) {
-    test::MockReader reader;
+    test::MockReader reader(SampleSpecs);
 
     Mixer mixer(buffer_factory, MaxBufDuration, SampleSpecs);
     CHECK(mixer.valid());
@@ -75,7 +75,7 @@ TEST(mixer, one_reader) {
 }
 
 TEST(mixer, one_reader_large) {
-    test::MockReader reader;
+    test::MockReader reader(SampleSpecs);
 
     Mixer mixer(buffer_factory, MaxBufDuration, SampleSpecs);
     CHECK(mixer.valid());
@@ -89,8 +89,8 @@ TEST(mixer, one_reader_large) {
 }
 
 TEST(mixer, two_readers) {
-    test::MockReader reader1;
-    test::MockReader reader2;
+    test::MockReader reader1(SampleSpecs);
+    test::MockReader reader2(SampleSpecs);
 
     Mixer mixer(buffer_factory, MaxBufDuration, SampleSpecs);
     CHECK(mixer.valid());
@@ -108,8 +108,8 @@ TEST(mixer, two_readers) {
 }
 
 TEST(mixer, remove_reader) {
-    test::MockReader reader1;
-    test::MockReader reader2;
+    test::MockReader reader1(SampleSpecs);
+    test::MockReader reader2(SampleSpecs);
 
     Mixer mixer(buffer_factory, MaxBufDuration, SampleSpecs);
     CHECK(mixer.valid());
@@ -138,8 +138,8 @@ TEST(mixer, remove_reader) {
 }
 
 TEST(mixer, clamp) {
-    test::MockReader reader1;
-    test::MockReader reader2;
+    test::MockReader reader1(SampleSpecs);
+    test::MockReader reader2(SampleSpecs);
 
     Mixer mixer(buffer_factory, MaxBufDuration, SampleSpecs);
     CHECK(mixer.valid());

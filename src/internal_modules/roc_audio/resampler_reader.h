@@ -15,6 +15,7 @@
 #include "roc_audio/frame.h"
 #include "roc_audio/ireader.h"
 #include "roc_audio/iresampler.h"
+#include "roc_audio/sample_spec.h"
 #include "roc_audio/units.h"
 #include "roc_core/array.h"
 #include "roc_core/noncopyable.h"
@@ -29,13 +30,16 @@ namespace audio {
 class ResamplerReader : public IReader, public core::NonCopyable<> {
 public:
     //! Initialize.
-    ResamplerReader(IReader& reader, IResampler& resampler);
+    ResamplerReader(IReader& reader,
+                    IResampler& resampler,
+                    const SampleSpec in_sample_spec,
+                    const SampleSpec out_sample_spec);
 
     //! Check if object is successfully constructed.
     bool valid() const;
 
     //! Set new resample factor.
-    bool set_scaling(size_t input_rate, size_t output_rate, float multiplier);
+    bool set_scaling(float multiplier);
 
     //! Read audio frame.
     virtual bool read(Frame&);
@@ -45,6 +49,11 @@ private:
 
     IResampler& resampler_;
     IReader& reader_;
+
+    const audio::SampleSpec in_sample_spec_;
+    const audio::SampleSpec out_sample_spec_;
+
+    float scaling_;
 };
 
 } // namespace audio

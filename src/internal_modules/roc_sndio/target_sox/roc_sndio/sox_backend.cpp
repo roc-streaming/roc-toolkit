@@ -171,7 +171,7 @@ SoxBackend::SoxBackend()
 
 void SoxBackend::set_frame_size(core::nanoseconds_t frame_length,
                                 const audio::SampleSpec& sample_spec) {
-    size_t size = sample_spec.ns_to_size(frame_length);
+    size_t size = sample_spec.ns_to_soa(frame_length);
 
     if (first_created_) {
         roc_panic(

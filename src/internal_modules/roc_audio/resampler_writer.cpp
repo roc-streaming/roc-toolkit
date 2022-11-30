@@ -29,7 +29,7 @@ ResamplerWriter::ResamplerWriter(IWriter& writer,
         return;
     }
 
-    const size_t frame_size = sample_spec.ns_to_size(frame_length);
+    const size_t frame_size = sample_spec.ns_to_soa(frame_length);
     if (frame_size == 0) {
         roc_log(LogError, "resampler writer: frame size can't be zero");
         return;

@@ -7,7 +7,7 @@
  */
 
 #include "roc_audio/resampler_reader.h"
-#include "roc_core/log.h"
+#include "roc_audio/sample_spec.h"
 #include "roc_core/macro_helpers.h"
 #include "roc_core/panic.h"
 #include "roc_core/stddefs.h"
@@ -15,19 +15,28 @@
 namespace roc {
 namespace audio {
 
-ResamplerReader::ResamplerReader(IReader& reader, IResampler& resampler)
+ResamplerReader::ResamplerReader(IReader& reader,
+                                 IResampler& resampler,
+                                 const SampleSpec in_sample_spec,
+                                 const SampleSpec out_sample_spec)
     : resampler_(resampler)
-    , reader_(reader) {
+    , reader_(reader)
+    , in_sample_spec_(in_sample_spec)
+    , out_sample_spec_(out_sample_spec)
+    , scaling_(1.0f) {
 }
 
 bool ResamplerReader::valid() const {
     return resampler_.valid();
 }
 
-bool ResamplerReader::set_scaling(size_t input_rate, size_t output_rate, float mult) {
+bool ResamplerReader::set_scaling(float mult) {
     roc_panic_if_not(valid());
 
-    return resampler_.set_scaling(input_rate, output_rate, mult);
+    scaling_ = mult;
+
+    return resampler_.set_scaling(in_sample_spec_.sample_rate(),
+                                  out_sample_spec_.sample_rate(), mult);
 }
 
 bool ResamplerReader::read(Frame& out) {

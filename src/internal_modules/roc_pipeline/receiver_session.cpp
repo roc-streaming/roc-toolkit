@@ -142,25 +142,27 @@ ReceiverSession::ReceiverSession(
             areader = resampler_poisoner_.get();
         }
 
-        resampler_.reset(
-            audio::ResamplerMap::instance().new_resampler(
-                session_config.resampler_backend, allocator, sample_buffer_factory,
-                session_config.resampler_profile, common_config.internal_frame_length,
-                audio::SampleSpec(format->sample_spec.sample_rate(),
-                                  common_config.output_sample_spec.channel_mask())),
-            allocator);
+        const audio::SampleSpec input_sample_spec(
+            format->sample_spec.sample_rate(),
+            common_config.output_sample_spec.channel_mask());
+
+        resampler_.reset(audio::ResamplerMap::instance().new_resampler(
+                             session_config.resampler_backend, allocator,
+                             sample_buffer_factory, session_config.resampler_profile,
+                             common_config.internal_frame_length, input_sample_spec),
+                         allocator);
 
         if (!resampler_) {
             return;
         }
 
-        resampler_reader.reset(new (resampler_reader)
-                                   audio::ResamplerReader(*areader, *resampler_));
+        resampler_reader_.reset(new (resampler_reader_) audio::ResamplerReader(
+            *areader, *resampler_, input_sample_spec, common_config.output_sample_spec));
 
-        if (!resampler_reader || !resampler_reader->valid()) {
+        if (!resampler_reader_ || !resampler_reader_->valid()) {
             return;
         }
-        areader = resampler_reader.get();
+        areader = resampler_reader_.get();
     }
 
     if (common_config.poisoning) {
@@ -172,7 +174,7 @@ ReceiverSession::ReceiverSession(
     }
 
     latency_monitor_.reset(new (latency_monitor_) audio::LatencyMonitor(
-        *source_queue_, *depacketizer_, resampler_reader.get(),
+        *source_queue_, *depacketizer_, resampler_reader_.get(),
         session_config.latency_monitor, session_config.target_latency,
         format->sample_spec, common_config.output_sample_spec,
         session_config.freq_estimator_config));
