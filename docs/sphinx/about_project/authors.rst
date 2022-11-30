@@ -48,9 +48,17 @@ Contributors
 * Miguel Victoria <miguelvicvil@gmail.com>
 * Vimal Patel <pvimal816@gmail.com>
 * Steven Zhu <stevenzhu94@utexas.edu>
-* Jsomwaru <jacobsomwaru@gmail.com>
+* jsomwaru <jacobsomwaru@gmail.com>
 * Sebastian Fuentes <sfuentes1127@gmail.com>
 * Swapnil Sunil Chaudhari <https://github.com/Swapnil-Gaur>
-* Nythoang <https://github.com/nythoang>
+* nythoang <https://github.com/nythoang>
 * Alexandre Macabies <https://github.com/Zopieux>
 * Belching Jalapeno <belchingjalapeno@gmail.com>
+* Roshan Shyamsunder <roshansh@u.northwestern.edu>
+* Jan-willem De Bleser <jw@thescrapyard.org>
+* Maxime Borges <contact@maximeborg.es>
+* fallingcats <micraft.b@gmail.com>
+* twojstaryzdomu <twojstaryzdomu@github.com>
+* Victor Westerhuis <victor@westerhu.is>
+* Nick Black <dankamongmen@gmail.com>
+* Jaroslav Škarvada <jskarvad@redhat.com>
