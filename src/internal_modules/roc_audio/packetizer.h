@@ -14,8 +14,8 @@
 
 #include "roc_audio/iframe_encoder.h"
 #include "roc_audio/iframe_writer.h"
-#include "roc_audio/sample_spec.h"
 #include "roc_audio/sample.h"
+#include "roc_audio/sample_spec.h"
 #include "roc_core/buffer_factory.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/time.h"

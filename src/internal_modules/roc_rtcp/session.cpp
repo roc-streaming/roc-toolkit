@@ -42,8 +42,8 @@ Session::Session(IReceiverHooks* recv_hooks,
 
     roc_log(LogDebug,
             "rtcp session: initialized: is_sender=%d is_receiver=%d ssrc=%lu cname=%s",
-            !!(send_hooks_ != NULL), !!(recv_hooks_ != NULL),
-            (unsigned long)ssrc_, cname_);
+            !!(send_hooks_ != NULL), !!(recv_hooks_ != NULL), (unsigned long)ssrc_,
+            cname_);
 
     valid_ = true;
 }
