@@ -35,6 +35,8 @@ namespace sdp {
 class MediaDescription
     : public core::RefCounted<MediaDescription, core::StandardAllocation>,
       public core::ListNode {
+    typedef core::RefCounted<MediaDescription, core::StandardAllocation> RefCounted;
+
 public:
     //! Initialize empty media description
     MediaDescription(core::IAllocator& allocator);

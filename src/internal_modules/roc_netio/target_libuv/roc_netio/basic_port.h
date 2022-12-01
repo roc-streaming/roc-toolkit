@@ -38,6 +38,8 @@ namespace netio {
 //!    close handler callback is invoked before destroying port
 class BasicPort : public core::RefCounted<BasicPort, core::StandardAllocation>,
                   public core::ListNode {
+    typedef core::RefCounted<BasicPort, core::StandardAllocation> RefCounted;
+
 public:
     //! Initialize.
     explicit BasicPort(core::IAllocator&);

@@ -26,6 +26,8 @@ namespace ctl {
 class BasicControlEndpoint
     : public core::RefCounted<BasicControlEndpoint, core::StandardAllocation>,
       public core::ListNode {
+    typedef core::RefCounted<BasicControlEndpoint, core::StandardAllocation> RefCounted;
+
 public:
     //! Initialization.
     BasicControlEndpoint(core::IAllocator&);

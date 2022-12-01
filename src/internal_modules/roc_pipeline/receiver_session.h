@@ -53,6 +53,8 @@ namespace pipeline {
 class ReceiverSession
     : public core::RefCounted<ReceiverSession, core::StandardAllocation>,
       public core::ListNode {
+    typedef core::RefCounted<ReceiverSession, core::StandardAllocation> RefCounted;
+
 public:
     //! Initialize.
     ReceiverSession(const ReceiverSessionConfig& session_config,

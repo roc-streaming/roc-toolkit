@@ -35,6 +35,8 @@ namespace pipeline {
 class ReceiverEndpointSet
     : public core::RefCounted<ReceiverEndpointSet, core::StandardAllocation>,
       public core::ListNode {
+    typedef core::RefCounted<ReceiverEndpointSet, core::StandardAllocation> RefCounted;
+
 public:
     //! Initialize.
     ReceiverEndpointSet(const ReceiverConfig& receiver_config,

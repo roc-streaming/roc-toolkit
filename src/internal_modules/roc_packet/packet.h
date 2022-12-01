@@ -36,6 +36,8 @@ typedef core::SharedPtr<Packet> PacketPtr;
 class Packet : public core::RefCounted<Packet, core::FactoryAllocation<PacketFactory> >,
                public core::ListNode,
                public core::MpscQueueNode {
+    typedef core::RefCounted<Packet, core::FactoryAllocation<PacketFactory> > RefCounted;
+
 public:
     //! Constructor.
     explicit Packet(PacketFactory&);

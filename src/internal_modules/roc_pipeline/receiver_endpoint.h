@@ -39,6 +39,8 @@ class ReceiverEndpoint
     : public core::RefCounted<ReceiverEndpoint, core::StandardAllocation>,
       public core::ListNode,
       private packet::IWriter {
+    typedef core::RefCounted<ReceiverEndpoint, core::StandardAllocation> RefCounted;
+
 public:
     //! Initialize.
     ReceiverEndpoint(address::Protocol proto,

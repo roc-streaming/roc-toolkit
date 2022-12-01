@@ -92,7 +92,8 @@ CrashHandler::~CrashHandler() {
 void CrashHandler::install_(int sig) {
     roc_panic_if(restore_sz_ == MaxSigs);
 
-    struct sigaction sa = {};
+    struct sigaction sa;
+    memset(&sa, 0, sizeof(sa));
     sa.sa_sigaction = signal_handler;
     sa.sa_flags = int(SA_SIGINFO | SA_RESETHAND);
 

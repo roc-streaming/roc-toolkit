@@ -43,7 +43,8 @@ uint64_t Thread::get_id() {
 }
 
 bool Thread::set_realtime() {
-    sched_param param = {};
+    sched_param param;
+    memset(&param, 0, sizeof(param));
     param.sched_priority = sched_get_priority_max(SCHED_RR);
 
     if (int err = pthread_setschedparam(pthread_self(), SCHED_RR, &param)) {

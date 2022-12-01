@@ -50,6 +50,8 @@ class SenderEndpointSet
     : public core::RefCounted<SenderEndpointSet, core::StandardAllocation>,
       public core::ListNode,
       private rtcp::ISenderHooks {
+    typedef core::RefCounted<SenderEndpointSet, core::StandardAllocation> RefCounted;
+
 public:
     //! Initialize.
     SenderEndpointSet(const SenderConfig& config,
