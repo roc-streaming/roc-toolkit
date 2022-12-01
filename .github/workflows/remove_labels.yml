@@ -1,4 +1,4 @@
-name: remove_labels
+name: remove labels
 
 on:
   pull_request:
