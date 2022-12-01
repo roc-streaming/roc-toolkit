@@ -6,7 +6,6 @@ scons -Q \
       --enable-werror \
       --enable-debug \
       --enable-tests \
-      --enable-benchmarks \
       --enable-examples \
       --build-3rdparty=all \
       test
@@ -25,7 +24,6 @@ find bin/x86_64-pc-linux-gnu -name 'roc-test-*' |\
 scons -Q \
       --enable-werror \
       --enable-tests \
-      --enable-benchmarks \
       --enable-examples \
       --build-3rdparty=all \
       test
