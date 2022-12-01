@@ -40,8 +40,8 @@ Runtime dependencies
 Development dependencies
 ========================
 
-* `CppUTest <http://cpputest.github.io>`_ >= 3.4 (optional, install if you want to build tests)
-* `Google Benchmark <https://github.com/google/benchmark>`_ >= 1.5.0 (optional, install if you want to build benchmarks)
+* `CppUTest <http://cpputest.github.io>`_ >= 4.0 (optional, install if you want to build tests)
+* `Google Benchmark <https://github.com/google/benchmark>`_ >= 1.6.0 (optional, install if you want to build benchmarks)
 * `clang-format <https://clang.llvm.org/docs/ClangFormat.html>`_ >= 10 (optional, install if you want to format code)
 * `doxygen <http://www.stack.nl/~dimitri/doxygen/>`_ >= 1.6, `graphviz <https://graphviz.gitlab.io/>`_ (optional, install if you want to build doxygen or sphinx documentation)
 * `sphinx <http://www.sphinx-doc.org/>`_, `breathe <https://github.com/michaeljones/breathe>`_ (optional, install if you want to build sphinx documentation)
