@@ -154,7 +154,7 @@ TEST(pcm_mapper, int16_to_int32) {
         -32768, -10000, 0, 10000, 32767,
     };
     int32_t expected_output[] = {
-        -2147483648, -655360000, 0, 655360000, 2147418112,
+        -2147483648ll, -655360000, 0, 655360000, 2147418112,
     };
 
     enum { NumSamples = ROC_ARRAY_SIZE(input) };
@@ -169,17 +169,17 @@ TEST(pcm_mapper, int16_to_int32) {
 
 TEST(pcm_mapper, int32_to_int16) {
     int32_t input[] = {
-        -2147483648, //
-        -655360000,  //
-        0,           //
-        32767,       // 0
-        32768,       // 1
-        2147385343,  // 32766
-        2147385344,  // 32767
-        2147450879,  // last before clip
-        2147450880,  // clip
-        2147450881,  // also clip
-        2147483647   // also clip
+        -2147483648ll, //
+        -655360000,    //
+        0,             //
+        32767,         // 0
+        32768,         // 1
+        2147385343,    // 32766
+        2147385344,    // 32767
+        2147450879,    // last before clip
+        2147450880,    // clip
+        2147450881,    // also clip
+        2147483647     // also clip
     };
     int16_t expected_output[] = {
         -32768, -10000, 0, 0, 1, 32766, 32767, 32767, 32767, 32767, 32767,
@@ -285,13 +285,13 @@ TEST(pcm_mapper, float32_to_int16) {
 
 TEST(pcm_mapper, int32_to_float32) {
     int32_t input[] = {
-        -2147483648, // -1
-        -655360000,  // -0.305176
-        0,           // 0
-        32767,       // 0.000015
-        2147482559,  // last before clip
-        2147482560,  // clip
-        2147483647   // also clip
+        -2147483648ll, // -1
+        -655360000,    // -0.305176
+        0,             // 0
+        32767,         // 0.000015
+        2147482559,    // last before clip
+        2147482560,    // clip
+        2147483647     // also clip
     };
     float expected_output[] = {
         -1.0f,      //
@@ -323,12 +323,12 @@ TEST(pcm_mapper, float32_to_int32) {
         1.0f,       //
     };
     int32_t expected_output[] = {
-        -2147483648, //
-        -655360448,  //
-        0,           //
-        32212,       //
-        2147481472,  //
-        2147483647,  //
+        -2147483648ll, //
+        -655360448,    //
+        0,             //
+        32212,         //
+        2147481472,    //
+        2147483647,    //
     };
 
     enum { NumSamples = ROC_ARRAY_SIZE(input) };
@@ -343,13 +343,13 @@ TEST(pcm_mapper, float32_to_int32) {
 
 TEST(pcm_mapper, int32_to_float64) {
     int32_t input[] = {
-        -2147483648, // -1
-        -655360000,  // -0.305176
-        0,           // 0
-        32767,       // 0.000015
-        2147482559,  // last before clip
-        2147482560,  // clip
-        2147483647   // also clip
+        -2147483648ll, // -1
+        -655360000,    // -0.305176
+        0,             // 0
+        32767,         // 0.000015
+        2147482559,    // last before clip
+        2147482560,    // clip
+        2147483647     // also clip
     };
     double expected_output[] = {
         -1.0,      //
@@ -381,12 +381,12 @@ TEST(pcm_mapper, float64_to_int32) {
         1.0,       //
     };
     int32_t expected_output[] = {
-        -2147483648, //
-        -655360469,  //
-        0,           //
-        32212,       //
-        2147481500,  //
-        2147483647,  //
+        -2147483648ll, //
+        -655360469,    //
+        0,             //
+        32212,         //
+        2147481500,    //
+        2147483647,    //
     };
 
     enum { NumSamples = ROC_ARRAY_SIZE(input) };
@@ -408,7 +408,7 @@ TEST(pcm_mapper, uint16_to_uint32) {
     uint32_t expected_output[] = {
         0,
         655360000,
-        4294901760,
+        4294901760u,
     };
 
     enum { NumSamples = ROC_ARRAY_SIZE(input) };
@@ -425,8 +425,8 @@ TEST(pcm_mapper, uint32_to_uint16) {
     uint32_t input[] = {
         0,
         655360000,
-        4294901760,
-        4294967295,
+        4294901760u,
+        4294967295u,
     };
     uint16_t expected_output[] = {
         0,
@@ -452,7 +452,7 @@ TEST(pcm_mapper, uint16_to_int32) {
         65535,
     };
     int32_t expected_output[] = {
-        -2147483648,
+        -2147483648ll,
         -1492123648,
         2147418112,
     };
@@ -476,9 +476,9 @@ TEST(pcm_mapper, int16_to_uint32) {
     };
     uint32_t expected_output[] = {
         0,
-        2147483648,
-        2802843648,
-        4294901760,
+        2147483648u,
+        2802843648u,
+        4294901760u,
     };
 
     enum { NumSamples = ROC_ARRAY_SIZE(input) };
@@ -493,7 +493,7 @@ TEST(pcm_mapper, int16_to_uint32) {
 
 TEST(pcm_mapper, uint32_to_int16) {
     uint32_t input[] = {
-        0, 2147483648, 2802843648, 4294901760, 4294967295,
+        0u, 2147483648u, 2802843648u, 4294901760u, 4294967295u,
     };
     int16_t expected_output[] = {
         -32768, 0, 10000, 32767, 32767,
@@ -511,7 +511,7 @@ TEST(pcm_mapper, uint32_to_int16) {
 
 TEST(pcm_mapper, int32_to_uint16) {
     int32_t input[] = {
-        -2147483648,
+        -2147483648ll,
         -1492123648,
         2147418112,
         2147483647,

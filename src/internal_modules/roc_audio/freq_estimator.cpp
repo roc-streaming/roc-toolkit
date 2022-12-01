@@ -53,7 +53,7 @@ FreqEstimator::FreqEstimator(FreqEstimatorConfig config,
     roc_panic_if_msg(config_.decimation_factor1 > fe_decim_factor_max
                          || config_.decimation_factor2 > fe_decim_factor_max,
                      "freq_estimator: decimation factor must be less or equal to %lu",
-                     fe_decim_factor_max);
+                     (unsigned long)fe_decim_factor_max);
 
     if (fe_decim_len % 2 != 0) {
         roc_panic("freq estimator: decim_len should be power of two");
