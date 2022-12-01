@@ -70,7 +70,7 @@ for t in "${tests[@]}"; do
     adb push $t $target_prefix/$filename 1> /dev/null
     adb shell echo
 
-    python2 scripts/scons_helpers/run-with-timeout.py 300 \
+    python3 scripts/scons_helpers/run-with-timeout.py 300 \
         adb shell "LD_LIBRARY_PATH=${target_prefix}/lib" \
         "${target_prefix}/${filename} -v" >$logfile 2>/dev/null && \
         (tail -2 $logfile) || \

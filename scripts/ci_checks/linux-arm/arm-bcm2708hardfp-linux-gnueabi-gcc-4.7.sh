@@ -1,23 +1,23 @@
 #! /bin/bash
 set -euxo pipefail
 
-TOOLCHAIN="arm-bcm2708hardfp-linux-gnueabi"
-COMPILER="gcc-4.7.1-release"
-CPU="arm1176" # armv6
+toolchain="arm-bcm2708hardfp-linux-gnueabi"
+compiler="gcc-4.7.1-release"
+cpu="arm1176" # armv6
 
 scons -Q \
     --enable-werror \
     --enable-tests \
     --enable-examples \
     --build-3rdparty=libuv,libunwind,libatomic_ops,openfec,alsa,pulseaudio:5.0,speexdsp,sox,cpputest \
-    --host=${TOOLCHAIN}
+    --host=${toolchain}
 
-find bin/${TOOLCHAIN} -name 'roc-test-*' \
+find bin/${toolchain} -name 'roc-test-*' \
      -not -name 'roc-test-library' |\
     while read t
     do
         LD_LIBRARY_PATH="/opt/sysroot/lib:$(echo \
-          "${PWD}"/build/3rdparty/${TOOLCHAIN}/${COMPILER}/*/rpath | tr ' ' ':')" \
+          "${PWD}"/build/3rdparty/${toolchain}/${compiler}/*/rpath | tr ' ' ':')" \
             python3 scripts/scons_helpers/run-with-timeout.py 300 \
-            qemu-arm -L "/opt/sysroot" -cpu ${CPU} $t
+              qemu-arm -L "/opt/sysroot" -cpu ${cpu} $t
     done
