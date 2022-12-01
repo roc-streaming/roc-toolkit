@@ -791,47 +791,73 @@ elif name == 'pulseaudio':
                       '#include <asoundlib.h>',
                       '#include <alsa/asoundlib.h>')
     os.chdir('src/pulseaudio-%s' % ver)
-    # workaround for "missing acolocal-1.15" and "missing automake-1.15" errors
-    # on some systems; since we're not modifying any autotools stuff, it's safe
-    # to replace corresponding commands with "true" command
-    if os.path.exists('Makefile.in'):
-        replace_files('Makefile.in', '@ACLOCAL@', 'true')
-        replace_files('Makefile.in', '@AUTOMAKE@', 'true')
-    execute('./configure --host=%s %s %s %s %s' % (
-        toolchain,
-        makeenv(envlist),
-        makeflags(workdir, toolchain, env, deplist, cflags='-w -fomit-frame-pointer -O2'),
-        ' '.join([
-            'LIBJSON_CFLAGS=" "',
-            'LIBJSON_LIBS="-ljson-c"',
-            'LIBSNDFILE_CFLAGS=" "',
-            'LIBSNDFILE_LIBS="-lsndfile"',
-        ]),
-        ' '.join([
-            '--enable-shared',
-            '--disable-static',
-            '--disable-tests',
-            '--disable-manpages',
-            '--disable-orc',
-            '--disable-webrtc-aec',
-            '--disable-openssl',
-            '--disable-neon-opt',
-            '--without-caps',
-        ])), logfile)
-    execute_make(logfile)
-    install_files('config.h', os.path.join(builddir, 'include'))
-    install_tree('src/pulse', os.path.join(builddir, 'include', 'pulse'),
-                 match=['*.h'])
-    install_tree('src/pulsecore', os.path.join(builddir, 'include', 'pulsecore'),
-                 match=['*.h'])
-    install_files('src/.libs/libpulse.so', os.path.join(builddir, 'lib'))
-    install_files('src/.libs/libpulse.so.0', rpathdir)
-    install_files('src/.libs/libpulse-simple.so', os.path.join(builddir, 'lib'))
-    install_files('src/.libs/libpulse-simple.so.0', rpathdir)
-    install_files('src/.libs/libpulsecore-*.so', os.path.join(builddir, 'lib'))
-    install_files('src/.libs/libpulsecore-*.so', rpathdir)
-    install_files('src/.libs/libpulsecommon-*.so', os.path.join(builddir, 'lib'))
-    install_files('src/.libs/libpulsecommon-*.so', rpathdir)
+    if pa_ver < (14, 99, 1):
+        # workaround for "missing acolocal-1.15" and "missing automake-1.15" errors
+        # on some systems; since we're not modifying any autotools stuff, it's safe
+        # to replace corresponding commands with "true" command
+        if os.path.exists('Makefile.in'):
+            replace_files('Makefile.in', '@ACLOCAL@', 'true')
+            replace_files('Makefile.in', '@AUTOMAKE@', 'true')
+        execute('./configure --host=%s %s %s %s %s' % (
+            toolchain,
+            makeenv(envlist),
+            makeflags(workdir, toolchain, env, deplist, cflags='-w -fomit-frame-pointer -O2'),
+            ' '.join([
+                'LIBJSON_CFLAGS=" "',
+                'LIBJSON_LIBS="-ljson-c"',
+                'LIBSNDFILE_CFLAGS=" "',
+                'LIBSNDFILE_LIBS="-lsndfile"',
+            ]),
+            ' '.join([
+                '--enable-shared',
+                '--disable-static',
+                '--disable-tests',
+                '--disable-manpages',
+                '--disable-orc',
+                '--disable-webrtc-aec',
+                '--disable-openssl',
+                '--disable-neon-opt',
+                '--without-caps',
+            ])), logfile)
+        execute_make(logfile)
+        install_files('config.h', os.path.join(builddir, 'include'))
+        install_tree('src/pulse', os.path.join(builddir, 'include', 'pulse'),
+                     match=['*.h'])
+        install_files('src/.libs/libpulse.so', os.path.join(builddir, 'lib'))
+        install_files('src/.libs/libpulse.so.0', rpathdir)
+        install_files('src/.libs/libpulse-simple.so', os.path.join(builddir, 'lib'))
+        install_files('src/.libs/libpulse-simple.so.0', rpathdir)
+        install_files('src/.libs/libpulsecommon-*.so', os.path.join(builddir, 'lib'))
+        install_files('src/.libs/libpulsecommon-*.so', rpathdir)
+    else:
+        mkpath('builddir')
+        os.chdir('builddir')
+        execute('%s %s meson .. %s' % (
+            makeenv(envlist),
+            makeflags(workdir, toolchain, env, deplist),
+            ' '.join([
+                '-Ddoxygen=false',
+                '-Dman=false',
+                '-Dgcov=false',
+                '-Dtests=false',
+                '-Ddatabase=simple',
+                '-Dorc=disabled',
+                '-Dwebrtc-aec=disabled',
+                '-Dopenssl=disabled',
+            ])), logfile)
+        execute('ninja', logfile)
+        execute('DESTDIR=../instdir ninja install', logfile)
+        os.chdir('..')
+        install_tree('instdir/usr/local/include/pulse',
+                     os.path.join(builddir, 'include', 'pulse'),
+                     match=['*.h'])
+        install_files('builddir/src/pulse/libpulse.so', os.path.join(builddir, 'lib'))
+        install_files('builddir/src/pulse/libpulse.so.0', rpathdir)
+        install_files('builddir/src/pulse/libpulse-simple.so', os.path.join(builddir, 'lib'))
+        install_files('builddir/src/pulse/libpulse-simple.so.0', rpathdir)
+        install_files('builddir/src/libpulsecommon-*.so', os.path.join(builddir, 'lib'))
+        install_files('builddir/src/libpulsecommon-*.so', rpathdir)
+
 elif name == 'sox':
     download(
       'https://downloads.sourceforge.net/project/sox/sox/%s/sox-%s.tar.gz' % (ver, ver),
