@@ -17,7 +17,7 @@ thirdparty_versions = {
     'sndfile':          '1.0.28',
     'ragel':            '6.10',
     'gengetopt':        '2.22.6',
-    'cpputest':         '3.6',
+    'cpputest':         '4.0',
     'google-benchmark': '1.6.1',
 }
 

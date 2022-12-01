@@ -925,8 +925,8 @@ elif name == 'ragel':
     install_files('ragel/ragel', os.path.join(builddir, 'bin'))
 elif name == 'cpputest':
     download(
-        'https://raw.githubusercontent.com/cpputest/cpputest.github.io/' \
-        'master/releases/cpputest-%s.tar.gz' % ver,
+        'https://github.com/cpputest/cpputest/releases/download/v%s/cpputest-%s.tar.gz' % (
+            ver, ver),
         'cpputest-%s.tar.gz' % ver,
         logfile,
         vendordir)
