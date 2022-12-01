@@ -14,11 +14,14 @@
 #include "roc_core/log.h"
 #include "roc_core/macro_helpers.h"
 #include "roc_core/print_buffer.h"
+#include "roc_core/stddefs.h"
 
 namespace roc {
 namespace audio {
 
 namespace {
+
+const double Epsilon = 0.0001;
 
 void map(const void* input,
          void* output,
@@ -57,37 +60,43 @@ void map(const void* input,
     UNSIGNED_LONGS_EQUAL(out_bytes * 8, out_off);
 }
 
-template <class T> void compare(const T* expected, const T* actual, size_t n_samples) {
-    for (size_t n = 0; n < n_samples; n++) {
-        LONGS_EQUAL(expected[n], actual[n]);
-    }
+template <class T> void report(const T* expected, const T* actual, size_t n_items) {
+    printf("\n");
+
+    printf("expected:\n");
+    core::print_buffer(expected, n_items);
+
+    printf("actual:\n");
+    core::print_buffer(actual, n_items);
 }
 
-void compare(const uint8_t* expected, const uint8_t* actual, size_t n_bytes) {
-    for (size_t n = 0; n < n_bytes; n++) {
+template <class T> void compare(const T* expected, const T* actual, size_t n_items) {
+    for (size_t n = 0; n < n_items; n++) {
         if (expected[n] != actual[n]) {
-            printf("\n");
+            report(expected, actual, n_items);
 
-            printf("expected:\n");
-            core::print_buffer(expected, n_bytes);
-
-            printf("actual:\n");
-            core::print_buffer(actual, n_bytes);
-
-            UNSIGNED_LONGS_EQUAL(expected[n], actual[n]);
+            LONGS_EQUAL(expected[n], actual[n]);
         }
     }
 }
 
-void compare(const float* expected, const float* actual, size_t n_samples) {
-    for (size_t n = 0; n < n_samples; n++) {
-        DOUBLES_EQUAL(expected[n], actual[n], 0.000001);
+void compare(const float* expected, const float* actual, size_t n_items) {
+    for (size_t n = 0; n < n_items; n++) {
+        if ((double)std::abs(expected[n] - actual[n]) > Epsilon) {
+            report(expected, actual, n_items);
+
+            DOUBLES_EQUAL(expected[n], actual[n], Epsilon);
+        }
     }
 }
 
-void compare(const double* expected, const double* actual, size_t n_samples) {
-    for (size_t n = 0; n < n_samples; n++) {
-        DOUBLES_EQUAL(expected[n], actual[n], 0.000001);
+void compare(const double* expected, const double* actual, size_t n_items) {
+    for (size_t n = 0; n < n_items; n++) {
+        if (std::abs(expected[n] - actual[n]) > Epsilon) {
+            report(expected, actual, n_items);
+
+            DOUBLES_EQUAL(expected[n], actual[n], Epsilon);
+        }
     }
 }
 
