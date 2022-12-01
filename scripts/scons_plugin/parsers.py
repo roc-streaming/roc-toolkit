@@ -2,20 +2,21 @@ import re
 import os.path
 
 def _fix_target(s):
+    # on redhat and fedora, "system" and "os" parts are different
+    # convert it to common form
+    s = s.replace('-redhat-linux', '-linux-gnu')
     parts = s.split('-')
-    # "system" part defaults to "pc" on recent config.guess versions
-    # use the same newer format for all compilers
     if len(parts) == 3:
+        # on some distros "system" part is omitted
+        # convert it to common form
         parts = [parts[0]] + ['pc'] + parts[1:]
     elif len(parts) == 4:
+        # on older config.guess versions "system" part defaulted to
+        # "unknown" instead of "pc"; convert it to modern form
         if parts[1] == 'unknown':
             parts[1] = 'pc'
-    # "os" part on redhat and fedora is "redhat", in contrast to most
-    # other distros, where it's "gnu"; use same value everywhere
-    if len(parts) >= 2:
-        if parts[2] == 'redhat':
-            parts[2] = 'gnu'
-    return '-'.join(parts)
+    s =  '-'.join(parts)
+    return s
 
 def ParseGitHead(env):
     try:
