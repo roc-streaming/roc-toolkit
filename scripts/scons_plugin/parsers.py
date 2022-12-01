@@ -10,6 +10,11 @@ def _fix_target(s):
     elif len(parts) == 4:
         if parts[1] == 'unknown':
             parts[1] = 'pc'
+    # "os" part on redhat and fedora is "redhat", in contrast to most
+    # other distros, where it's "gnu"; use same value everywhere
+    if len(parts) >= 2:
+        if parts[2] == 'redhat':
+            parts[2] = 'gnu'
     return '-'.join(parts)
 
 def ParseGitHead(env):
