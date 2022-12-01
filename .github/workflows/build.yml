@@ -63,7 +63,7 @@ jobs:
         run: docker pull ${{ matrix.image }}
 
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           submodules: recursive
 
@@ -93,7 +93,7 @@ jobs:
         run: docker pull ${{ matrix.image }}
 
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           submodules: recursive
 
@@ -132,7 +132,7 @@ jobs:
         run: docker pull ${{ matrix.image }}
 
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           submodules: recursive
 
@@ -169,7 +169,7 @@ jobs:
         run: docker pull ${{ matrix.image }}
 
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           submodules: recursive
 
@@ -203,7 +203,7 @@ jobs:
     name: android${{ matrix.api }}-${{ matrix.abi }}/macos
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           submodules: recursive
 
@@ -252,7 +252,7 @@ jobs:
     name: macos-${{ matrix.arch }}/${{ matrix.ver }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           submodules: recursive
 
@@ -267,7 +267,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Trigger roc-go
         if: ${{ github.ref == 'refs/heads/master' }}
