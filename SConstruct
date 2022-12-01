@@ -905,7 +905,6 @@ if meta.compiler == 'clang':
             '-Wextra',
 
             '-Wcast-qual',
-            '-Wdouble-promotion',
             '-Wfloat-equal',
             '-Woverlength-strings',
 
@@ -917,6 +916,12 @@ if meta.compiler == 'clang':
         '-Wno-invalid-offsetof',
         '-Wnon-virtual-dtor',
     ])
+
+    if meta.platform in ['darwin', 'android'] or meta.compiler_ver[:2] < (8, 0):
+        for var in ['CXXFLAGS', 'CFLAGS']:
+            env.Append(**{var: [
+                '-Wno-unknown-warning-option',
+            ]})
 
 if meta.compiler in ['gcc', 'clang']:
     for var in ['CXXFLAGS', 'CFLAGS']:
