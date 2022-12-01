@@ -181,7 +181,7 @@ def print_fetch_bitop(**keys):
     print('''
     #ifdef AO_HAVE{family}_fetch_compare_and_swap{fence_impl}
     //! Atomic fetch-{bitop_name} ({fence_name} barrier).
-    {qualifier} bool fetch_{bitop_name}_{fence_func}({type_func}& var, {type_arg} val) {{
+    {qualifier} {type_func} fetch_{bitop_name}_{fence_func}({type_func}& var, {type_arg} val) {{
         struct TypeCheck {{
             int f : sizeof({type_func}) == sizeof({type_impl}) ? 1 : -1;
         }};
@@ -201,7 +201,7 @@ def print_fetch_bitop_explicit_fence(**keys):
     print('''
     #ifdef AO_HAVE{family}_fetch_compare_and_swap{fence_impl}
     //! Atomic fetch-{bitop_name} ({fence_name} barrier).
-    {qualifier} bool fetch_{bitop_name}_{fence_func}({type_func}& var, {type_arg} val) {{
+    {qualifier} {type_func} fetch_{bitop_name}_{fence_func}({type_func}& var, {type_arg} val) {{
         struct TypeCheck {{
             int f : sizeof({type_func}) == sizeof({type_impl}) ? 1 : -1;
         }};

@@ -114,7 +114,7 @@ public:
 
     #ifdef AO_HAVE_char_fetch_compare_and_swap
     //! Atomic fetch-and (no barrier).
-    static inline bool fetch_and_relaxed(unsigned char& var, unsigned char val) {
+    static inline unsigned char fetch_and_relaxed(unsigned char& var, unsigned char val) {
         struct TypeCheck {
             int f : sizeof(unsigned char) == sizeof(unsigned char) ? 1 : -1;
         };
@@ -131,7 +131,7 @@ public:
 
     #ifdef AO_HAVE_char_fetch_compare_and_swap
     //! Atomic fetch-or (no barrier).
-    static inline bool fetch_or_relaxed(unsigned char& var, unsigned char val) {
+    static inline unsigned char fetch_or_relaxed(unsigned char& var, unsigned char val) {
         struct TypeCheck {
             int f : sizeof(unsigned char) == sizeof(unsigned char) ? 1 : -1;
         };
@@ -148,7 +148,7 @@ public:
 
     #ifdef AO_HAVE_char_fetch_compare_and_swap
     //! Atomic fetch-xor (no barrier).
-    static inline bool fetch_xor_relaxed(unsigned char& var, unsigned char val) {
+    static inline unsigned char fetch_xor_relaxed(unsigned char& var, unsigned char val) {
         struct TypeCheck {
             int f : sizeof(unsigned char) == sizeof(unsigned char) ? 1 : -1;
         };
@@ -229,7 +229,7 @@ public:
 
     #ifdef AO_HAVE_char_fetch_compare_and_swap_acquire
     //! Atomic fetch-and (acquire barrier).
-    static inline bool fetch_and_acquire(unsigned char& var, unsigned char val) {
+    static inline unsigned char fetch_and_acquire(unsigned char& var, unsigned char val) {
         struct TypeCheck {
             int f : sizeof(unsigned char) == sizeof(unsigned char) ? 1 : -1;
         };
@@ -246,7 +246,7 @@ public:
 
     #ifdef AO_HAVE_char_fetch_compare_and_swap_acquire
     //! Atomic fetch-or (acquire barrier).
-    static inline bool fetch_or_acquire(unsigned char& var, unsigned char val) {
+    static inline unsigned char fetch_or_acquire(unsigned char& var, unsigned char val) {
         struct TypeCheck {
             int f : sizeof(unsigned char) == sizeof(unsigned char) ? 1 : -1;
         };
@@ -263,7 +263,7 @@ public:
 
     #ifdef AO_HAVE_char_fetch_compare_and_swap_acquire
     //! Atomic fetch-xor (acquire barrier).
-    static inline bool fetch_xor_acquire(unsigned char& var, unsigned char val) {
+    static inline unsigned char fetch_xor_acquire(unsigned char& var, unsigned char val) {
         struct TypeCheck {
             int f : sizeof(unsigned char) == sizeof(unsigned char) ? 1 : -1;
         };
@@ -344,7 +344,7 @@ public:
 
     #ifdef AO_HAVE_char_fetch_compare_and_swap_release
     //! Atomic fetch-and (release barrier).
-    static inline bool fetch_and_release(unsigned char& var, unsigned char val) {
+    static inline unsigned char fetch_and_release(unsigned char& var, unsigned char val) {
         struct TypeCheck {
             int f : sizeof(unsigned char) == sizeof(unsigned char) ? 1 : -1;
         };
@@ -361,7 +361,7 @@ public:
 
     #ifdef AO_HAVE_char_fetch_compare_and_swap_release
     //! Atomic fetch-or (release barrier).
-    static inline bool fetch_or_release(unsigned char& var, unsigned char val) {
+    static inline unsigned char fetch_or_release(unsigned char& var, unsigned char val) {
         struct TypeCheck {
             int f : sizeof(unsigned char) == sizeof(unsigned char) ? 1 : -1;
         };
@@ -378,7 +378,7 @@ public:
 
     #ifdef AO_HAVE_char_fetch_compare_and_swap_release
     //! Atomic fetch-xor (release barrier).
-    static inline bool fetch_xor_release(unsigned char& var, unsigned char val) {
+    static inline unsigned char fetch_xor_release(unsigned char& var, unsigned char val) {
         struct TypeCheck {
             int f : sizeof(unsigned char) == sizeof(unsigned char) ? 1 : -1;
         };
@@ -507,7 +507,7 @@ public:
 
     #ifdef AO_HAVE_char_fetch_compare_and_swap_full
     //! Atomic fetch-and (full barrier).
-    static inline bool fetch_and_seq_cst(unsigned char& var, unsigned char val) {
+    static inline unsigned char fetch_and_seq_cst(unsigned char& var, unsigned char val) {
         struct TypeCheck {
             int f : sizeof(unsigned char) == sizeof(unsigned char) ? 1 : -1;
         };
@@ -526,7 +526,7 @@ public:
 
     #ifdef AO_HAVE_char_fetch_compare_and_swap_full
     //! Atomic fetch-or (full barrier).
-    static inline bool fetch_or_seq_cst(unsigned char& var, unsigned char val) {
+    static inline unsigned char fetch_or_seq_cst(unsigned char& var, unsigned char val) {
         struct TypeCheck {
             int f : sizeof(unsigned char) == sizeof(unsigned char) ? 1 : -1;
         };
@@ -545,7 +545,7 @@ public:
 
     #ifdef AO_HAVE_char_fetch_compare_and_swap_full
     //! Atomic fetch-xor (full barrier).
-    static inline bool fetch_xor_seq_cst(unsigned char& var, unsigned char val) {
+    static inline unsigned char fetch_xor_seq_cst(unsigned char& var, unsigned char val) {
         struct TypeCheck {
             int f : sizeof(unsigned char) == sizeof(unsigned char) ? 1 : -1;
         };
@@ -640,7 +640,7 @@ public:
 
     #ifdef AO_HAVE_char_fetch_compare_and_swap
     //! Atomic fetch-and (no barrier).
-    static inline bool fetch_and_relaxed(char& var, char val) {
+    static inline char fetch_and_relaxed(char& var, char val) {
         struct TypeCheck {
             int f : sizeof(char) == sizeof(unsigned char) ? 1 : -1;
         };
@@ -657,7 +657,7 @@ public:
 
     #ifdef AO_HAVE_char_fetch_compare_and_swap
     //! Atomic fetch-or (no barrier).
-    static inline bool fetch_or_relaxed(char& var, char val) {
+    static inline char fetch_or_relaxed(char& var, char val) {
         struct TypeCheck {
             int f : sizeof(char) == sizeof(unsigned char) ? 1 : -1;
         };
@@ -674,7 +674,7 @@ public:
 
     #ifdef AO_HAVE_char_fetch_compare_and_swap
     //! Atomic fetch-xor (no barrier).
-    static inline bool fetch_xor_relaxed(char& var, char val) {
+    static inline char fetch_xor_relaxed(char& var, char val) {
         struct TypeCheck {
             int f : sizeof(char) == sizeof(unsigned char) ? 1 : -1;
         };
@@ -755,7 +755,7 @@ public:
 
     #ifdef AO_HAVE_char_fetch_compare_and_swap_acquire
     //! Atomic fetch-and (acquire barrier).
-    static inline bool fetch_and_acquire(char& var, char val) {
+    static inline char fetch_and_acquire(char& var, char val) {
         struct TypeCheck {
             int f : sizeof(char) == sizeof(unsigned char) ? 1 : -1;
         };
@@ -772,7 +772,7 @@ public:
 
     #ifdef AO_HAVE_char_fetch_compare_and_swap_acquire
     //! Atomic fetch-or (acquire barrier).
-    static inline bool fetch_or_acquire(char& var, char val) {
+    static inline char fetch_or_acquire(char& var, char val) {
         struct TypeCheck {
             int f : sizeof(char) == sizeof(unsigned char) ? 1 : -1;
         };
@@ -789,7 +789,7 @@ public:
 
     #ifdef AO_HAVE_char_fetch_compare_and_swap_acquire
     //! Atomic fetch-xor (acquire barrier).
-    static inline bool fetch_xor_acquire(char& var, char val) {
+    static inline char fetch_xor_acquire(char& var, char val) {
         struct TypeCheck {
             int f : sizeof(char) == sizeof(unsigned char) ? 1 : -1;
         };
@@ -870,7 +870,7 @@ public:
 
     #ifdef AO_HAVE_char_fetch_compare_and_swap_release
     //! Atomic fetch-and (release barrier).
-    static inline bool fetch_and_release(char& var, char val) {
+    static inline char fetch_and_release(char& var, char val) {
         struct TypeCheck {
             int f : sizeof(char) == sizeof(unsigned char) ? 1 : -1;
         };
@@ -887,7 +887,7 @@ public:
 
     #ifdef AO_HAVE_char_fetch_compare_and_swap_release
     //! Atomic fetch-or (release barrier).
-    static inline bool fetch_or_release(char& var, char val) {
+    static inline char fetch_or_release(char& var, char val) {
         struct TypeCheck {
             int f : sizeof(char) == sizeof(unsigned char) ? 1 : -1;
         };
@@ -904,7 +904,7 @@ public:
 
     #ifdef AO_HAVE_char_fetch_compare_and_swap_release
     //! Atomic fetch-xor (release barrier).
-    static inline bool fetch_xor_release(char& var, char val) {
+    static inline char fetch_xor_release(char& var, char val) {
         struct TypeCheck {
             int f : sizeof(char) == sizeof(unsigned char) ? 1 : -1;
         };
@@ -1033,7 +1033,7 @@ public:
 
     #ifdef AO_HAVE_char_fetch_compare_and_swap_full
     //! Atomic fetch-and (full barrier).
-    static inline bool fetch_and_seq_cst(char& var, char val) {
+    static inline char fetch_and_seq_cst(char& var, char val) {
         struct TypeCheck {
             int f : sizeof(char) == sizeof(unsigned char) ? 1 : -1;
         };
@@ -1052,7 +1052,7 @@ public:
 
     #ifdef AO_HAVE_char_fetch_compare_and_swap_full
     //! Atomic fetch-or (full barrier).
-    static inline bool fetch_or_seq_cst(char& var, char val) {
+    static inline char fetch_or_seq_cst(char& var, char val) {
         struct TypeCheck {
             int f : sizeof(char) == sizeof(unsigned char) ? 1 : -1;
         };
@@ -1071,7 +1071,7 @@ public:
 
     #ifdef AO_HAVE_char_fetch_compare_and_swap_full
     //! Atomic fetch-xor (full barrier).
-    static inline bool fetch_xor_seq_cst(char& var, char val) {
+    static inline char fetch_xor_seq_cst(char& var, char val) {
         struct TypeCheck {
             int f : sizeof(char) == sizeof(unsigned char) ? 1 : -1;
         };
@@ -1166,7 +1166,7 @@ public:
 
     #ifdef AO_HAVE_short_fetch_compare_and_swap
     //! Atomic fetch-and (no barrier).
-    static inline bool fetch_and_relaxed(unsigned short& var, unsigned short val) {
+    static inline unsigned short fetch_and_relaxed(unsigned short& var, unsigned short val) {
         struct TypeCheck {
             int f : sizeof(unsigned short) == sizeof(unsigned short) ? 1 : -1;
         };
@@ -1183,7 +1183,7 @@ public:
 
     #ifdef AO_HAVE_short_fetch_compare_and_swap
     //! Atomic fetch-or (no barrier).
-    static inline bool fetch_or_relaxed(unsigned short& var, unsigned short val) {
+    static inline unsigned short fetch_or_relaxed(unsigned short& var, unsigned short val) {
         struct TypeCheck {
             int f : sizeof(unsigned short) == sizeof(unsigned short) ? 1 : -1;
         };
@@ -1200,7 +1200,7 @@ public:
 
     #ifdef AO_HAVE_short_fetch_compare_and_swap
     //! Atomic fetch-xor (no barrier).
-    static inline bool fetch_xor_relaxed(unsigned short& var, unsigned short val) {
+    static inline unsigned short fetch_xor_relaxed(unsigned short& var, unsigned short val) {
         struct TypeCheck {
             int f : sizeof(unsigned short) == sizeof(unsigned short) ? 1 : -1;
         };
@@ -1281,7 +1281,7 @@ public:
 
     #ifdef AO_HAVE_short_fetch_compare_and_swap_acquire
     //! Atomic fetch-and (acquire barrier).
-    static inline bool fetch_and_acquire(unsigned short& var, unsigned short val) {
+    static inline unsigned short fetch_and_acquire(unsigned short& var, unsigned short val) {
         struct TypeCheck {
             int f : sizeof(unsigned short) == sizeof(unsigned short) ? 1 : -1;
         };
@@ -1298,7 +1298,7 @@ public:
 
     #ifdef AO_HAVE_short_fetch_compare_and_swap_acquire
     //! Atomic fetch-or (acquire barrier).
-    static inline bool fetch_or_acquire(unsigned short& var, unsigned short val) {
+    static inline unsigned short fetch_or_acquire(unsigned short& var, unsigned short val) {
         struct TypeCheck {
             int f : sizeof(unsigned short) == sizeof(unsigned short) ? 1 : -1;
         };
@@ -1315,7 +1315,7 @@ public:
 
     #ifdef AO_HAVE_short_fetch_compare_and_swap_acquire
     //! Atomic fetch-xor (acquire barrier).
-    static inline bool fetch_xor_acquire(unsigned short& var, unsigned short val) {
+    static inline unsigned short fetch_xor_acquire(unsigned short& var, unsigned short val) {
         struct TypeCheck {
             int f : sizeof(unsigned short) == sizeof(unsigned short) ? 1 : -1;
         };
@@ -1396,7 +1396,7 @@ public:
 
     #ifdef AO_HAVE_short_fetch_compare_and_swap_release
     //! Atomic fetch-and (release barrier).
-    static inline bool fetch_and_release(unsigned short& var, unsigned short val) {
+    static inline unsigned short fetch_and_release(unsigned short& var, unsigned short val) {
         struct TypeCheck {
             int f : sizeof(unsigned short) == sizeof(unsigned short) ? 1 : -1;
         };
@@ -1413,7 +1413,7 @@ public:
 
     #ifdef AO_HAVE_short_fetch_compare_and_swap_release
     //! Atomic fetch-or (release barrier).
-    static inline bool fetch_or_release(unsigned short& var, unsigned short val) {
+    static inline unsigned short fetch_or_release(unsigned short& var, unsigned short val) {
         struct TypeCheck {
             int f : sizeof(unsigned short) == sizeof(unsigned short) ? 1 : -1;
         };
@@ -1430,7 +1430,7 @@ public:
 
     #ifdef AO_HAVE_short_fetch_compare_and_swap_release
     //! Atomic fetch-xor (release barrier).
-    static inline bool fetch_xor_release(unsigned short& var, unsigned short val) {
+    static inline unsigned short fetch_xor_release(unsigned short& var, unsigned short val) {
         struct TypeCheck {
             int f : sizeof(unsigned short) == sizeof(unsigned short) ? 1 : -1;
         };
@@ -1559,7 +1559,7 @@ public:
 
     #ifdef AO_HAVE_short_fetch_compare_and_swap_full
     //! Atomic fetch-and (full barrier).
-    static inline bool fetch_and_seq_cst(unsigned short& var, unsigned short val) {
+    static inline unsigned short fetch_and_seq_cst(unsigned short& var, unsigned short val) {
         struct TypeCheck {
             int f : sizeof(unsigned short) == sizeof(unsigned short) ? 1 : -1;
         };
@@ -1578,7 +1578,7 @@ public:
 
     #ifdef AO_HAVE_short_fetch_compare_and_swap_full
     //! Atomic fetch-or (full barrier).
-    static inline bool fetch_or_seq_cst(unsigned short& var, unsigned short val) {
+    static inline unsigned short fetch_or_seq_cst(unsigned short& var, unsigned short val) {
         struct TypeCheck {
             int f : sizeof(unsigned short) == sizeof(unsigned short) ? 1 : -1;
         };
@@ -1597,7 +1597,7 @@ public:
 
     #ifdef AO_HAVE_short_fetch_compare_and_swap_full
     //! Atomic fetch-xor (full barrier).
-    static inline bool fetch_xor_seq_cst(unsigned short& var, unsigned short val) {
+    static inline unsigned short fetch_xor_seq_cst(unsigned short& var, unsigned short val) {
         struct TypeCheck {
             int f : sizeof(unsigned short) == sizeof(unsigned short) ? 1 : -1;
         };
@@ -1692,7 +1692,7 @@ public:
 
     #ifdef AO_HAVE_short_fetch_compare_and_swap
     //! Atomic fetch-and (no barrier).
-    static inline bool fetch_and_relaxed(short& var, short val) {
+    static inline short fetch_and_relaxed(short& var, short val) {
         struct TypeCheck {
             int f : sizeof(short) == sizeof(unsigned short) ? 1 : -1;
         };
@@ -1709,7 +1709,7 @@ public:
 
     #ifdef AO_HAVE_short_fetch_compare_and_swap
     //! Atomic fetch-or (no barrier).
-    static inline bool fetch_or_relaxed(short& var, short val) {
+    static inline short fetch_or_relaxed(short& var, short val) {
         struct TypeCheck {
             int f : sizeof(short) == sizeof(unsigned short) ? 1 : -1;
         };
@@ -1726,7 +1726,7 @@ public:
 
     #ifdef AO_HAVE_short_fetch_compare_and_swap
     //! Atomic fetch-xor (no barrier).
-    static inline bool fetch_xor_relaxed(short& var, short val) {
+    static inline short fetch_xor_relaxed(short& var, short val) {
         struct TypeCheck {
             int f : sizeof(short) == sizeof(unsigned short) ? 1 : -1;
         };
@@ -1807,7 +1807,7 @@ public:
 
     #ifdef AO_HAVE_short_fetch_compare_and_swap_acquire
     //! Atomic fetch-and (acquire barrier).
-    static inline bool fetch_and_acquire(short& var, short val) {
+    static inline short fetch_and_acquire(short& var, short val) {
         struct TypeCheck {
             int f : sizeof(short) == sizeof(unsigned short) ? 1 : -1;
         };
@@ -1824,7 +1824,7 @@ public:
 
     #ifdef AO_HAVE_short_fetch_compare_and_swap_acquire
     //! Atomic fetch-or (acquire barrier).
-    static inline bool fetch_or_acquire(short& var, short val) {
+    static inline short fetch_or_acquire(short& var, short val) {
         struct TypeCheck {
             int f : sizeof(short) == sizeof(unsigned short) ? 1 : -1;
         };
@@ -1841,7 +1841,7 @@ public:
 
     #ifdef AO_HAVE_short_fetch_compare_and_swap_acquire
     //! Atomic fetch-xor (acquire barrier).
-    static inline bool fetch_xor_acquire(short& var, short val) {
+    static inline short fetch_xor_acquire(short& var, short val) {
         struct TypeCheck {
             int f : sizeof(short) == sizeof(unsigned short) ? 1 : -1;
         };
@@ -1922,7 +1922,7 @@ public:
 
     #ifdef AO_HAVE_short_fetch_compare_and_swap_release
     //! Atomic fetch-and (release barrier).
-    static inline bool fetch_and_release(short& var, short val) {
+    static inline short fetch_and_release(short& var, short val) {
         struct TypeCheck {
             int f : sizeof(short) == sizeof(unsigned short) ? 1 : -1;
         };
@@ -1939,7 +1939,7 @@ public:
 
     #ifdef AO_HAVE_short_fetch_compare_and_swap_release
     //! Atomic fetch-or (release barrier).
-    static inline bool fetch_or_release(short& var, short val) {
+    static inline short fetch_or_release(short& var, short val) {
         struct TypeCheck {
             int f : sizeof(short) == sizeof(unsigned short) ? 1 : -1;
         };
@@ -1956,7 +1956,7 @@ public:
 
     #ifdef AO_HAVE_short_fetch_compare_and_swap_release
     //! Atomic fetch-xor (release barrier).
-    static inline bool fetch_xor_release(short& var, short val) {
+    static inline short fetch_xor_release(short& var, short val) {
         struct TypeCheck {
             int f : sizeof(short) == sizeof(unsigned short) ? 1 : -1;
         };
@@ -2085,7 +2085,7 @@ public:
 
     #ifdef AO_HAVE_short_fetch_compare_and_swap_full
     //! Atomic fetch-and (full barrier).
-    static inline bool fetch_and_seq_cst(short& var, short val) {
+    static inline short fetch_and_seq_cst(short& var, short val) {
         struct TypeCheck {
             int f : sizeof(short) == sizeof(unsigned short) ? 1 : -1;
         };
@@ -2104,7 +2104,7 @@ public:
 
     #ifdef AO_HAVE_short_fetch_compare_and_swap_full
     //! Atomic fetch-or (full barrier).
-    static inline bool fetch_or_seq_cst(short& var, short val) {
+    static inline short fetch_or_seq_cst(short& var, short val) {
         struct TypeCheck {
             int f : sizeof(short) == sizeof(unsigned short) ? 1 : -1;
         };
@@ -2123,7 +2123,7 @@ public:
 
     #ifdef AO_HAVE_short_fetch_compare_and_swap_full
     //! Atomic fetch-xor (full barrier).
-    static inline bool fetch_xor_seq_cst(short& var, short val) {
+    static inline short fetch_xor_seq_cst(short& var, short val) {
         struct TypeCheck {
             int f : sizeof(short) == sizeof(unsigned short) ? 1 : -1;
         };
@@ -2220,7 +2220,7 @@ public:
 
     #ifdef AO_HAVE_int_fetch_compare_and_swap
     //! Atomic fetch-and (no barrier).
-    static inline bool fetch_and_relaxed(unsigned int& var, unsigned int val) {
+    static inline unsigned int fetch_and_relaxed(unsigned int& var, unsigned int val) {
         struct TypeCheck {
             int f : sizeof(unsigned int) == sizeof(unsigned int) ? 1 : -1;
         };
@@ -2237,7 +2237,7 @@ public:
 
     #ifdef AO_HAVE_int_fetch_compare_and_swap
     //! Atomic fetch-or (no barrier).
-    static inline bool fetch_or_relaxed(unsigned int& var, unsigned int val) {
+    static inline unsigned int fetch_or_relaxed(unsigned int& var, unsigned int val) {
         struct TypeCheck {
             int f : sizeof(unsigned int) == sizeof(unsigned int) ? 1 : -1;
         };
@@ -2254,7 +2254,7 @@ public:
 
     #ifdef AO_HAVE_int_fetch_compare_and_swap
     //! Atomic fetch-xor (no barrier).
-    static inline bool fetch_xor_relaxed(unsigned int& var, unsigned int val) {
+    static inline unsigned int fetch_xor_relaxed(unsigned int& var, unsigned int val) {
         struct TypeCheck {
             int f : sizeof(unsigned int) == sizeof(unsigned int) ? 1 : -1;
         };
@@ -2335,7 +2335,7 @@ public:
 
     #ifdef AO_HAVE_int_fetch_compare_and_swap_acquire
     //! Atomic fetch-and (acquire barrier).
-    static inline bool fetch_and_acquire(unsigned int& var, unsigned int val) {
+    static inline unsigned int fetch_and_acquire(unsigned int& var, unsigned int val) {
         struct TypeCheck {
             int f : sizeof(unsigned int) == sizeof(unsigned int) ? 1 : -1;
         };
@@ -2352,7 +2352,7 @@ public:
 
     #ifdef AO_HAVE_int_fetch_compare_and_swap_acquire
     //! Atomic fetch-or (acquire barrier).
-    static inline bool fetch_or_acquire(unsigned int& var, unsigned int val) {
+    static inline unsigned int fetch_or_acquire(unsigned int& var, unsigned int val) {
         struct TypeCheck {
             int f : sizeof(unsigned int) == sizeof(unsigned int) ? 1 : -1;
         };
@@ -2369,7 +2369,7 @@ public:
 
     #ifdef AO_HAVE_int_fetch_compare_and_swap_acquire
     //! Atomic fetch-xor (acquire barrier).
-    static inline bool fetch_xor_acquire(unsigned int& var, unsigned int val) {
+    static inline unsigned int fetch_xor_acquire(unsigned int& var, unsigned int val) {
         struct TypeCheck {
             int f : sizeof(unsigned int) == sizeof(unsigned int) ? 1 : -1;
         };
@@ -2450,7 +2450,7 @@ public:
 
     #ifdef AO_HAVE_int_fetch_compare_and_swap_release
     //! Atomic fetch-and (release barrier).
-    static inline bool fetch_and_release(unsigned int& var, unsigned int val) {
+    static inline unsigned int fetch_and_release(unsigned int& var, unsigned int val) {
         struct TypeCheck {
             int f : sizeof(unsigned int) == sizeof(unsigned int) ? 1 : -1;
         };
@@ -2467,7 +2467,7 @@ public:
 
     #ifdef AO_HAVE_int_fetch_compare_and_swap_release
     //! Atomic fetch-or (release barrier).
-    static inline bool fetch_or_release(unsigned int& var, unsigned int val) {
+    static inline unsigned int fetch_or_release(unsigned int& var, unsigned int val) {
         struct TypeCheck {
             int f : sizeof(unsigned int) == sizeof(unsigned int) ? 1 : -1;
         };
@@ -2484,7 +2484,7 @@ public:
 
     #ifdef AO_HAVE_int_fetch_compare_and_swap_release
     //! Atomic fetch-xor (release barrier).
-    static inline bool fetch_xor_release(unsigned int& var, unsigned int val) {
+    static inline unsigned int fetch_xor_release(unsigned int& var, unsigned int val) {
         struct TypeCheck {
             int f : sizeof(unsigned int) == sizeof(unsigned int) ? 1 : -1;
         };
@@ -2613,7 +2613,7 @@ public:
 
     #ifdef AO_HAVE_int_fetch_compare_and_swap_full
     //! Atomic fetch-and (full barrier).
-    static inline bool fetch_and_seq_cst(unsigned int& var, unsigned int val) {
+    static inline unsigned int fetch_and_seq_cst(unsigned int& var, unsigned int val) {
         struct TypeCheck {
             int f : sizeof(unsigned int) == sizeof(unsigned int) ? 1 : -1;
         };
@@ -2632,7 +2632,7 @@ public:
 
     #ifdef AO_HAVE_int_fetch_compare_and_swap_full
     //! Atomic fetch-or (full barrier).
-    static inline bool fetch_or_seq_cst(unsigned int& var, unsigned int val) {
+    static inline unsigned int fetch_or_seq_cst(unsigned int& var, unsigned int val) {
         struct TypeCheck {
             int f : sizeof(unsigned int) == sizeof(unsigned int) ? 1 : -1;
         };
@@ -2651,7 +2651,7 @@ public:
 
     #ifdef AO_HAVE_int_fetch_compare_and_swap_full
     //! Atomic fetch-xor (full barrier).
-    static inline bool fetch_xor_seq_cst(unsigned int& var, unsigned int val) {
+    static inline unsigned int fetch_xor_seq_cst(unsigned int& var, unsigned int val) {
         struct TypeCheck {
             int f : sizeof(unsigned int) == sizeof(unsigned int) ? 1 : -1;
         };
@@ -2746,7 +2746,7 @@ public:
 
     #ifdef AO_HAVE_int_fetch_compare_and_swap
     //! Atomic fetch-and (no barrier).
-    static inline bool fetch_and_relaxed(int& var, int val) {
+    static inline int fetch_and_relaxed(int& var, int val) {
         struct TypeCheck {
             int f : sizeof(int) == sizeof(unsigned int) ? 1 : -1;
         };
@@ -2763,7 +2763,7 @@ public:
 
     #ifdef AO_HAVE_int_fetch_compare_and_swap
     //! Atomic fetch-or (no barrier).
-    static inline bool fetch_or_relaxed(int& var, int val) {
+    static inline int fetch_or_relaxed(int& var, int val) {
         struct TypeCheck {
             int f : sizeof(int) == sizeof(unsigned int) ? 1 : -1;
         };
@@ -2780,7 +2780,7 @@ public:
 
     #ifdef AO_HAVE_int_fetch_compare_and_swap
     //! Atomic fetch-xor (no barrier).
-    static inline bool fetch_xor_relaxed(int& var, int val) {
+    static inline int fetch_xor_relaxed(int& var, int val) {
         struct TypeCheck {
             int f : sizeof(int) == sizeof(unsigned int) ? 1 : -1;
         };
@@ -2861,7 +2861,7 @@ public:
 
     #ifdef AO_HAVE_int_fetch_compare_and_swap_acquire
     //! Atomic fetch-and (acquire barrier).
-    static inline bool fetch_and_acquire(int& var, int val) {
+    static inline int fetch_and_acquire(int& var, int val) {
         struct TypeCheck {
             int f : sizeof(int) == sizeof(unsigned int) ? 1 : -1;
         };
@@ -2878,7 +2878,7 @@ public:
 
     #ifdef AO_HAVE_int_fetch_compare_and_swap_acquire
     //! Atomic fetch-or (acquire barrier).
-    static inline bool fetch_or_acquire(int& var, int val) {
+    static inline int fetch_or_acquire(int& var, int val) {
         struct TypeCheck {
             int f : sizeof(int) == sizeof(unsigned int) ? 1 : -1;
         };
@@ -2895,7 +2895,7 @@ public:
 
     #ifdef AO_HAVE_int_fetch_compare_and_swap_acquire
     //! Atomic fetch-xor (acquire barrier).
-    static inline bool fetch_xor_acquire(int& var, int val) {
+    static inline int fetch_xor_acquire(int& var, int val) {
         struct TypeCheck {
             int f : sizeof(int) == sizeof(unsigned int) ? 1 : -1;
         };
@@ -2976,7 +2976,7 @@ public:
 
     #ifdef AO_HAVE_int_fetch_compare_and_swap_release
     //! Atomic fetch-and (release barrier).
-    static inline bool fetch_and_release(int& var, int val) {
+    static inline int fetch_and_release(int& var, int val) {
         struct TypeCheck {
             int f : sizeof(int) == sizeof(unsigned int) ? 1 : -1;
         };
@@ -2993,7 +2993,7 @@ public:
 
     #ifdef AO_HAVE_int_fetch_compare_and_swap_release
     //! Atomic fetch-or (release barrier).
-    static inline bool fetch_or_release(int& var, int val) {
+    static inline int fetch_or_release(int& var, int val) {
         struct TypeCheck {
             int f : sizeof(int) == sizeof(unsigned int) ? 1 : -1;
         };
@@ -3010,7 +3010,7 @@ public:
 
     #ifdef AO_HAVE_int_fetch_compare_and_swap_release
     //! Atomic fetch-xor (release barrier).
-    static inline bool fetch_xor_release(int& var, int val) {
+    static inline int fetch_xor_release(int& var, int val) {
         struct TypeCheck {
             int f : sizeof(int) == sizeof(unsigned int) ? 1 : -1;
         };
@@ -3139,7 +3139,7 @@ public:
 
     #ifdef AO_HAVE_int_fetch_compare_and_swap_full
     //! Atomic fetch-and (full barrier).
-    static inline bool fetch_and_seq_cst(int& var, int val) {
+    static inline int fetch_and_seq_cst(int& var, int val) {
         struct TypeCheck {
             int f : sizeof(int) == sizeof(unsigned int) ? 1 : -1;
         };
@@ -3158,7 +3158,7 @@ public:
 
     #ifdef AO_HAVE_int_fetch_compare_and_swap_full
     //! Atomic fetch-or (full barrier).
-    static inline bool fetch_or_seq_cst(int& var, int val) {
+    static inline int fetch_or_seq_cst(int& var, int val) {
         struct TypeCheck {
             int f : sizeof(int) == sizeof(unsigned int) ? 1 : -1;
         };
@@ -3177,7 +3177,7 @@ public:
 
     #ifdef AO_HAVE_int_fetch_compare_and_swap_full
     //! Atomic fetch-xor (full barrier).
-    static inline bool fetch_xor_seq_cst(int& var, int val) {
+    static inline int fetch_xor_seq_cst(int& var, int val) {
         struct TypeCheck {
             int f : sizeof(int) == sizeof(unsigned int) ? 1 : -1;
         };
@@ -3274,7 +3274,7 @@ public:
 
     #ifdef AO_HAVE_fetch_compare_and_swap
     //! Atomic fetch-and (no barrier).
-    static inline bool fetch_and_relaxed(size_t& var, size_t val) {
+    static inline size_t fetch_and_relaxed(size_t& var, size_t val) {
         struct TypeCheck {
             int f : sizeof(size_t) == sizeof(AO_t) ? 1 : -1;
         };
@@ -3291,7 +3291,7 @@ public:
 
     #ifdef AO_HAVE_fetch_compare_and_swap
     //! Atomic fetch-or (no barrier).
-    static inline bool fetch_or_relaxed(size_t& var, size_t val) {
+    static inline size_t fetch_or_relaxed(size_t& var, size_t val) {
         struct TypeCheck {
             int f : sizeof(size_t) == sizeof(AO_t) ? 1 : -1;
         };
@@ -3308,7 +3308,7 @@ public:
 
     #ifdef AO_HAVE_fetch_compare_and_swap
     //! Atomic fetch-xor (no barrier).
-    static inline bool fetch_xor_relaxed(size_t& var, size_t val) {
+    static inline size_t fetch_xor_relaxed(size_t& var, size_t val) {
         struct TypeCheck {
             int f : sizeof(size_t) == sizeof(AO_t) ? 1 : -1;
         };
@@ -3389,7 +3389,7 @@ public:
 
     #ifdef AO_HAVE_fetch_compare_and_swap_acquire
     //! Atomic fetch-and (acquire barrier).
-    static inline bool fetch_and_acquire(size_t& var, size_t val) {
+    static inline size_t fetch_and_acquire(size_t& var, size_t val) {
         struct TypeCheck {
             int f : sizeof(size_t) == sizeof(AO_t) ? 1 : -1;
         };
@@ -3406,7 +3406,7 @@ public:
 
     #ifdef AO_HAVE_fetch_compare_and_swap_acquire
     //! Atomic fetch-or (acquire barrier).
-    static inline bool fetch_or_acquire(size_t& var, size_t val) {
+    static inline size_t fetch_or_acquire(size_t& var, size_t val) {
         struct TypeCheck {
             int f : sizeof(size_t) == sizeof(AO_t) ? 1 : -1;
         };
@@ -3423,7 +3423,7 @@ public:
 
     #ifdef AO_HAVE_fetch_compare_and_swap_acquire
     //! Atomic fetch-xor (acquire barrier).
-    static inline bool fetch_xor_acquire(size_t& var, size_t val) {
+    static inline size_t fetch_xor_acquire(size_t& var, size_t val) {
         struct TypeCheck {
             int f : sizeof(size_t) == sizeof(AO_t) ? 1 : -1;
         };
@@ -3504,7 +3504,7 @@ public:
 
     #ifdef AO_HAVE_fetch_compare_and_swap_release
     //! Atomic fetch-and (release barrier).
-    static inline bool fetch_and_release(size_t& var, size_t val) {
+    static inline size_t fetch_and_release(size_t& var, size_t val) {
         struct TypeCheck {
             int f : sizeof(size_t) == sizeof(AO_t) ? 1 : -1;
         };
@@ -3521,7 +3521,7 @@ public:
 
     #ifdef AO_HAVE_fetch_compare_and_swap_release
     //! Atomic fetch-or (release barrier).
-    static inline bool fetch_or_release(size_t& var, size_t val) {
+    static inline size_t fetch_or_release(size_t& var, size_t val) {
         struct TypeCheck {
             int f : sizeof(size_t) == sizeof(AO_t) ? 1 : -1;
         };
@@ -3538,7 +3538,7 @@ public:
 
     #ifdef AO_HAVE_fetch_compare_and_swap_release
     //! Atomic fetch-xor (release barrier).
-    static inline bool fetch_xor_release(size_t& var, size_t val) {
+    static inline size_t fetch_xor_release(size_t& var, size_t val) {
         struct TypeCheck {
             int f : sizeof(size_t) == sizeof(AO_t) ? 1 : -1;
         };
@@ -3667,7 +3667,7 @@ public:
 
     #ifdef AO_HAVE_fetch_compare_and_swap_full
     //! Atomic fetch-and (full barrier).
-    static inline bool fetch_and_seq_cst(size_t& var, size_t val) {
+    static inline size_t fetch_and_seq_cst(size_t& var, size_t val) {
         struct TypeCheck {
             int f : sizeof(size_t) == sizeof(AO_t) ? 1 : -1;
         };
@@ -3686,7 +3686,7 @@ public:
 
     #ifdef AO_HAVE_fetch_compare_and_swap_full
     //! Atomic fetch-or (full barrier).
-    static inline bool fetch_or_seq_cst(size_t& var, size_t val) {
+    static inline size_t fetch_or_seq_cst(size_t& var, size_t val) {
         struct TypeCheck {
             int f : sizeof(size_t) == sizeof(AO_t) ? 1 : -1;
         };
@@ -3705,7 +3705,7 @@ public:
 
     #ifdef AO_HAVE_fetch_compare_and_swap_full
     //! Atomic fetch-xor (full barrier).
-    static inline bool fetch_xor_seq_cst(size_t& var, size_t val) {
+    static inline size_t fetch_xor_seq_cst(size_t& var, size_t val) {
         struct TypeCheck {
             int f : sizeof(size_t) == sizeof(AO_t) ? 1 : -1;
         };
@@ -3800,7 +3800,7 @@ public:
 
     #ifdef AO_HAVE_fetch_compare_and_swap
     //! Atomic fetch-and (no barrier).
-    static inline bool fetch_and_relaxed(ssize_t& var, ssize_t val) {
+    static inline ssize_t fetch_and_relaxed(ssize_t& var, ssize_t val) {
         struct TypeCheck {
             int f : sizeof(ssize_t) == sizeof(AO_t) ? 1 : -1;
         };
@@ -3817,7 +3817,7 @@ public:
 
     #ifdef AO_HAVE_fetch_compare_and_swap
     //! Atomic fetch-or (no barrier).
-    static inline bool fetch_or_relaxed(ssize_t& var, ssize_t val) {
+    static inline ssize_t fetch_or_relaxed(ssize_t& var, ssize_t val) {
         struct TypeCheck {
             int f : sizeof(ssize_t) == sizeof(AO_t) ? 1 : -1;
         };
@@ -3834,7 +3834,7 @@ public:
 
     #ifdef AO_HAVE_fetch_compare_and_swap
     //! Atomic fetch-xor (no barrier).
-    static inline bool fetch_xor_relaxed(ssize_t& var, ssize_t val) {
+    static inline ssize_t fetch_xor_relaxed(ssize_t& var, ssize_t val) {
         struct TypeCheck {
             int f : sizeof(ssize_t) == sizeof(AO_t) ? 1 : -1;
         };
@@ -3915,7 +3915,7 @@ public:
 
     #ifdef AO_HAVE_fetch_compare_and_swap_acquire
     //! Atomic fetch-and (acquire barrier).
-    static inline bool fetch_and_acquire(ssize_t& var, ssize_t val) {
+    static inline ssize_t fetch_and_acquire(ssize_t& var, ssize_t val) {
         struct TypeCheck {
             int f : sizeof(ssize_t) == sizeof(AO_t) ? 1 : -1;
         };
@@ -3932,7 +3932,7 @@ public:
 
     #ifdef AO_HAVE_fetch_compare_and_swap_acquire
     //! Atomic fetch-or (acquire barrier).
-    static inline bool fetch_or_acquire(ssize_t& var, ssize_t val) {
+    static inline ssize_t fetch_or_acquire(ssize_t& var, ssize_t val) {
         struct TypeCheck {
             int f : sizeof(ssize_t) == sizeof(AO_t) ? 1 : -1;
         };
@@ -3949,7 +3949,7 @@ public:
 
     #ifdef AO_HAVE_fetch_compare_and_swap_acquire
     //! Atomic fetch-xor (acquire barrier).
-    static inline bool fetch_xor_acquire(ssize_t& var, ssize_t val) {
+    static inline ssize_t fetch_xor_acquire(ssize_t& var, ssize_t val) {
         struct TypeCheck {
             int f : sizeof(ssize_t) == sizeof(AO_t) ? 1 : -1;
         };
@@ -4030,7 +4030,7 @@ public:
 
     #ifdef AO_HAVE_fetch_compare_and_swap_release
     //! Atomic fetch-and (release barrier).
-    static inline bool fetch_and_release(ssize_t& var, ssize_t val) {
+    static inline ssize_t fetch_and_release(ssize_t& var, ssize_t val) {
         struct TypeCheck {
             int f : sizeof(ssize_t) == sizeof(AO_t) ? 1 : -1;
         };
@@ -4047,7 +4047,7 @@ public:
 
     #ifdef AO_HAVE_fetch_compare_and_swap_release
     //! Atomic fetch-or (release barrier).
-    static inline bool fetch_or_release(ssize_t& var, ssize_t val) {
+    static inline ssize_t fetch_or_release(ssize_t& var, ssize_t val) {
         struct TypeCheck {
             int f : sizeof(ssize_t) == sizeof(AO_t) ? 1 : -1;
         };
@@ -4064,7 +4064,7 @@ public:
 
     #ifdef AO_HAVE_fetch_compare_and_swap_release
     //! Atomic fetch-xor (release barrier).
-    static inline bool fetch_xor_release(ssize_t& var, ssize_t val) {
+    static inline ssize_t fetch_xor_release(ssize_t& var, ssize_t val) {
         struct TypeCheck {
             int f : sizeof(ssize_t) == sizeof(AO_t) ? 1 : -1;
         };
@@ -4193,7 +4193,7 @@ public:
 
     #ifdef AO_HAVE_fetch_compare_and_swap_full
     //! Atomic fetch-and (full barrier).
-    static inline bool fetch_and_seq_cst(ssize_t& var, ssize_t val) {
+    static inline ssize_t fetch_and_seq_cst(ssize_t& var, ssize_t val) {
         struct TypeCheck {
             int f : sizeof(ssize_t) == sizeof(AO_t) ? 1 : -1;
         };
@@ -4212,7 +4212,7 @@ public:
 
     #ifdef AO_HAVE_fetch_compare_and_swap_full
     //! Atomic fetch-or (full barrier).
-    static inline bool fetch_or_seq_cst(ssize_t& var, ssize_t val) {
+    static inline ssize_t fetch_or_seq_cst(ssize_t& var, ssize_t val) {
         struct TypeCheck {
             int f : sizeof(ssize_t) == sizeof(AO_t) ? 1 : -1;
         };
@@ -4231,7 +4231,7 @@ public:
 
     #ifdef AO_HAVE_fetch_compare_and_swap_full
     //! Atomic fetch-xor (full barrier).
-    static inline bool fetch_xor_seq_cst(ssize_t& var, ssize_t val) {
+    static inline ssize_t fetch_xor_seq_cst(ssize_t& var, ssize_t val) {
         struct TypeCheck {
             int f : sizeof(ssize_t) == sizeof(AO_t) ? 1 : -1;
         };
@@ -4326,7 +4326,7 @@ public:
 
     #ifdef AO_HAVE_fetch_compare_and_swap
     //! Atomic fetch-and (no barrier).
-    template <class T> static inline bool fetch_and_relaxed(T*& var, ptrdiff_t val) {
+    template <class T> static inline T* fetch_and_relaxed(T*& var, ptrdiff_t val) {
         struct TypeCheck {
             int f : sizeof(T*) == sizeof(AO_t) ? 1 : -1;
         };
@@ -4343,7 +4343,7 @@ public:
 
     #ifdef AO_HAVE_fetch_compare_and_swap
     //! Atomic fetch-or (no barrier).
-    template <class T> static inline bool fetch_or_relaxed(T*& var, ptrdiff_t val) {
+    template <class T> static inline T* fetch_or_relaxed(T*& var, ptrdiff_t val) {
         struct TypeCheck {
             int f : sizeof(T*) == sizeof(AO_t) ? 1 : -1;
         };
@@ -4360,7 +4360,7 @@ public:
 
     #ifdef AO_HAVE_fetch_compare_and_swap
     //! Atomic fetch-xor (no barrier).
-    template <class T> static inline bool fetch_xor_relaxed(T*& var, ptrdiff_t val) {
+    template <class T> static inline T* fetch_xor_relaxed(T*& var, ptrdiff_t val) {
         struct TypeCheck {
             int f : sizeof(T*) == sizeof(AO_t) ? 1 : -1;
         };
@@ -4441,7 +4441,7 @@ public:
 
     #ifdef AO_HAVE_fetch_compare_and_swap_acquire
     //! Atomic fetch-and (acquire barrier).
-    template <class T> static inline bool fetch_and_acquire(T*& var, ptrdiff_t val) {
+    template <class T> static inline T* fetch_and_acquire(T*& var, ptrdiff_t val) {
         struct TypeCheck {
             int f : sizeof(T*) == sizeof(AO_t) ? 1 : -1;
         };
@@ -4458,7 +4458,7 @@ public:
 
     #ifdef AO_HAVE_fetch_compare_and_swap_acquire
     //! Atomic fetch-or (acquire barrier).
-    template <class T> static inline bool fetch_or_acquire(T*& var, ptrdiff_t val) {
+    template <class T> static inline T* fetch_or_acquire(T*& var, ptrdiff_t val) {
         struct TypeCheck {
             int f : sizeof(T*) == sizeof(AO_t) ? 1 : -1;
         };
@@ -4475,7 +4475,7 @@ public:
 
     #ifdef AO_HAVE_fetch_compare_and_swap_acquire
     //! Atomic fetch-xor (acquire barrier).
-    template <class T> static inline bool fetch_xor_acquire(T*& var, ptrdiff_t val) {
+    template <class T> static inline T* fetch_xor_acquire(T*& var, ptrdiff_t val) {
         struct TypeCheck {
             int f : sizeof(T*) == sizeof(AO_t) ? 1 : -1;
         };
@@ -4556,7 +4556,7 @@ public:
 
     #ifdef AO_HAVE_fetch_compare_and_swap_release
     //! Atomic fetch-and (release barrier).
-    template <class T> static inline bool fetch_and_release(T*& var, ptrdiff_t val) {
+    template <class T> static inline T* fetch_and_release(T*& var, ptrdiff_t val) {
         struct TypeCheck {
             int f : sizeof(T*) == sizeof(AO_t) ? 1 : -1;
         };
@@ -4573,7 +4573,7 @@ public:
 
     #ifdef AO_HAVE_fetch_compare_and_swap_release
     //! Atomic fetch-or (release barrier).
-    template <class T> static inline bool fetch_or_release(T*& var, ptrdiff_t val) {
+    template <class T> static inline T* fetch_or_release(T*& var, ptrdiff_t val) {
         struct TypeCheck {
             int f : sizeof(T*) == sizeof(AO_t) ? 1 : -1;
         };
@@ -4590,7 +4590,7 @@ public:
 
     #ifdef AO_HAVE_fetch_compare_and_swap_release
     //! Atomic fetch-xor (release barrier).
-    template <class T> static inline bool fetch_xor_release(T*& var, ptrdiff_t val) {
+    template <class T> static inline T* fetch_xor_release(T*& var, ptrdiff_t val) {
         struct TypeCheck {
             int f : sizeof(T*) == sizeof(AO_t) ? 1 : -1;
         };
@@ -4719,7 +4719,7 @@ public:
 
     #ifdef AO_HAVE_fetch_compare_and_swap_full
     //! Atomic fetch-and (full barrier).
-    template <class T> static inline bool fetch_and_seq_cst(T*& var, ptrdiff_t val) {
+    template <class T> static inline T* fetch_and_seq_cst(T*& var, ptrdiff_t val) {
         struct TypeCheck {
             int f : sizeof(T*) == sizeof(AO_t) ? 1 : -1;
         };
@@ -4738,7 +4738,7 @@ public:
 
     #ifdef AO_HAVE_fetch_compare_and_swap_full
     //! Atomic fetch-or (full barrier).
-    template <class T> static inline bool fetch_or_seq_cst(T*& var, ptrdiff_t val) {
+    template <class T> static inline T* fetch_or_seq_cst(T*& var, ptrdiff_t val) {
         struct TypeCheck {
             int f : sizeof(T*) == sizeof(AO_t) ? 1 : -1;
         };
@@ -4757,7 +4757,7 @@ public:
 
     #ifdef AO_HAVE_fetch_compare_and_swap_full
     //! Atomic fetch-xor (full barrier).
-    template <class T> static inline bool fetch_xor_seq_cst(T*& var, ptrdiff_t val) {
+    template <class T> static inline T* fetch_xor_seq_cst(T*& var, ptrdiff_t val) {
         struct TypeCheck {
             int f : sizeof(T*) == sizeof(AO_t) ? 1 : -1;
         };
