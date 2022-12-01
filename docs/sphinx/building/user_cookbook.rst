@@ -318,23 +318,6 @@ Android
    * `Roc Java bindings <https://github.com/roc-streaming/roc-java>`_ (for Java/Kotlin developers; shipped with precompiled C library)
    * :doc:`/portability/cross_compiling`
 
-Using Termux packages on Android
---------------------------------
-
-.. warning::
-
-   Termux package for Roc may be outdated.
-
-Install `Termux <https://termux.com/>`_ on your Android device and enter these commands:
-
-.. code::
-
-    $ pkg install unstable-repo
-    $ pkg install roc
-    $ pkg install pulseaudio
-
-This will install binary packages for PulseAudio daemon and Roc PulseAudio modules on your device. Then you can configure PulseAudio to run Roc as described in :doc:`/running/pulseaudio_modules`.
-
 Building C library for Android on Linux
 ---------------------------------------
 
