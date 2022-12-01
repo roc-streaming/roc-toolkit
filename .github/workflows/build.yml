@@ -192,6 +192,7 @@ jobs:
             avd_tgt: default
 
     runs-on: macos-12
+    if: false
 
     env:
       CI_ABI: ${{ matrix.abi }}
