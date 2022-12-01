@@ -132,16 +132,16 @@ private:
                                   core::seqlock_version_t version);
 
     // scheduling state of the task
-    core::Atomic<uint8_t> state_;
+    core::Atomic<uint32_t> state_;
 
     // additional details about current state
-    core::Atomic<uint8_t> flags_;
+    core::Atomic<uint32_t> flags_;
 
     // guard to cut off concurrent task renewals (only one succeedes)
-    core::Atomic<uint8_t> renew_guard_;
+    core::Atomic<uint32_t> renew_guard_;
 
     // guard to cut off concurrent task waits (only one allowed)
-    core::Atomic<uint8_t> wait_guard_;
+    core::Atomic<uint32_t> wait_guard_;
 
     // new task deadline that is probably not yet taken into account
     core::Seqlock<core::nanoseconds_t> renewed_deadline_;
