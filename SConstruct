@@ -917,7 +917,7 @@ if meta.compiler == 'clang':
         '-Wnon-virtual-dtor',
     ])
 
-    if meta.platform in ['darwin', 'android'] or meta.compiler_ver[:2] < (8, 0):
+    if meta.platform in ['darwin', 'android'] or meta.compiler_ver[:2] < (11, 0):
         for var in ['CXXFLAGS', 'CFLAGS']:
             env.Append(**{var: [
                 '-Wno-unknown-warning-option',
