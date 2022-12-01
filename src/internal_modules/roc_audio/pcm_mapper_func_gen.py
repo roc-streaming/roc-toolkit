@@ -473,7 +473,7 @@ template <> struct pcm_sign_converter<PcmEncoding_{{ enc.encoding }}> {
             return {{ enc.signed_type }}(arg \
 - {{ enc.unsigned_type }}({{ enc.signed_max }}) - 1);
         }
-        return {{ enc.signed_type }}(arg) - {{ enc.signed_max }} - 1;
+        return {{ enc.signed_type }}(arg - {{ enc.unsigned_type }}({{ enc.signed_max }}) - 1);
     }
 {% endif %}
 };

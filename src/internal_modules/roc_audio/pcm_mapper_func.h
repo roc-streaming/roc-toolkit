@@ -146,7 +146,7 @@ template <> struct pcm_sign_converter<PcmEncoding_UInt8> {
         if (arg >= uint8_t(pcm_sint8_max) + 1) {
             return int8_t(arg - uint8_t(pcm_sint8_max) - 1);
         }
-        return int8_t(arg) - pcm_sint8_max - 1;
+        return int8_t(arg - uint8_t(pcm_sint8_max) - 1);
     }
 };
 
@@ -184,7 +184,7 @@ template <> struct pcm_sign_converter<PcmEncoding_UInt16> {
         if (arg >= uint16_t(pcm_sint16_max) + 1) {
             return int16_t(arg - uint16_t(pcm_sint16_max) - 1);
         }
-        return int16_t(arg) - pcm_sint16_max - 1;
+        return int16_t(arg - uint16_t(pcm_sint16_max) - 1);
     }
 };
 
@@ -222,7 +222,7 @@ template <> struct pcm_sign_converter<PcmEncoding_UInt18> {
         if (arg >= uint32_t(pcm_sint18_max) + 1) {
             return int32_t(arg - uint32_t(pcm_sint18_max) - 1);
         }
-        return int32_t(arg) - pcm_sint18_max - 1;
+        return int32_t(arg - uint32_t(pcm_sint18_max) - 1);
     }
 };
 
@@ -260,7 +260,7 @@ template <> struct pcm_sign_converter<PcmEncoding_UInt18_3B> {
         if (arg >= uint32_t(pcm_sint18_3b_max) + 1) {
             return int32_t(arg - uint32_t(pcm_sint18_3b_max) - 1);
         }
-        return int32_t(arg) - pcm_sint18_3b_max - 1;
+        return int32_t(arg - uint32_t(pcm_sint18_3b_max) - 1);
     }
 };
 
@@ -298,7 +298,7 @@ template <> struct pcm_sign_converter<PcmEncoding_UInt18_4B> {
         if (arg >= uint32_t(pcm_sint18_4b_max) + 1) {
             return int32_t(arg - uint32_t(pcm_sint18_4b_max) - 1);
         }
-        return int32_t(arg) - pcm_sint18_4b_max - 1;
+        return int32_t(arg - uint32_t(pcm_sint18_4b_max) - 1);
     }
 };
 
@@ -336,7 +336,7 @@ template <> struct pcm_sign_converter<PcmEncoding_UInt20> {
         if (arg >= uint32_t(pcm_sint20_max) + 1) {
             return int32_t(arg - uint32_t(pcm_sint20_max) - 1);
         }
-        return int32_t(arg) - pcm_sint20_max - 1;
+        return int32_t(arg - uint32_t(pcm_sint20_max) - 1);
     }
 };
 
@@ -374,7 +374,7 @@ template <> struct pcm_sign_converter<PcmEncoding_UInt20_3B> {
         if (arg >= uint32_t(pcm_sint20_3b_max) + 1) {
             return int32_t(arg - uint32_t(pcm_sint20_3b_max) - 1);
         }
-        return int32_t(arg) - pcm_sint20_3b_max - 1;
+        return int32_t(arg - uint32_t(pcm_sint20_3b_max) - 1);
     }
 };
 
@@ -412,7 +412,7 @@ template <> struct pcm_sign_converter<PcmEncoding_UInt20_4B> {
         if (arg >= uint32_t(pcm_sint20_4b_max) + 1) {
             return int32_t(arg - uint32_t(pcm_sint20_4b_max) - 1);
         }
-        return int32_t(arg) - pcm_sint20_4b_max - 1;
+        return int32_t(arg - uint32_t(pcm_sint20_4b_max) - 1);
     }
 };
 
@@ -450,7 +450,7 @@ template <> struct pcm_sign_converter<PcmEncoding_UInt24> {
         if (arg >= uint32_t(pcm_sint24_max) + 1) {
             return int32_t(arg - uint32_t(pcm_sint24_max) - 1);
         }
-        return int32_t(arg) - pcm_sint24_max - 1;
+        return int32_t(arg - uint32_t(pcm_sint24_max) - 1);
     }
 };
 
@@ -488,7 +488,7 @@ template <> struct pcm_sign_converter<PcmEncoding_UInt24_4B> {
         if (arg >= uint32_t(pcm_sint24_4b_max) + 1) {
             return int32_t(arg - uint32_t(pcm_sint24_4b_max) - 1);
         }
-        return int32_t(arg) - pcm_sint24_4b_max - 1;
+        return int32_t(arg - uint32_t(pcm_sint24_4b_max) - 1);
     }
 };
 
@@ -526,7 +526,7 @@ template <> struct pcm_sign_converter<PcmEncoding_UInt32> {
         if (arg >= uint32_t(pcm_sint32_max) + 1) {
             return int32_t(arg - uint32_t(pcm_sint32_max) - 1);
         }
-        return int32_t(arg) - pcm_sint32_max - 1;
+        return int32_t(arg - uint32_t(pcm_sint32_max) - 1);
     }
 };
 
@@ -564,7 +564,7 @@ template <> struct pcm_sign_converter<PcmEncoding_UInt64> {
         if (arg >= uint64_t(pcm_sint64_max) + 1) {
             return int64_t(arg - uint64_t(pcm_sint64_max) - 1);
         }
-        return int64_t(arg) - pcm_sint64_max - 1;
+        return int64_t(arg - uint64_t(pcm_sint64_max) - 1);
     }
 };
 
