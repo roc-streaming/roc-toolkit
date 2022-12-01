@@ -36,12 +36,23 @@ except:
 
 proc = subprocess.Popen(command, cwd=working_dir, stderr=subprocess.PIPE)
 err = False
+was_warn = False
 
 for line in proc.stderr:
     line = line.decode('utf-8')
 
-    if 'RemovedInSphinx30Warning' in line:
+    if not line.strip() and was_warn:
         continue
+
+    if 'RemovedInSphinx30Warning' in line:
+        was_warn = True
+        continue
+
+    if 'warnings.warn' in line:
+        was_warn = True
+        continue
+
+    was_warn = False
 
     line = re.sub('WARNING:', 'warning:', line, flags=re.I)
     line = re.sub('ERROR:', 'error:', line, flags=re.I)
