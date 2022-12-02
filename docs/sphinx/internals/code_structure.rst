@@ -8,7 +8,7 @@ Code structure
 Overview
 ========
 
-Roc consists of the following high-level components:
+Roc Toolkit consists of the following high-level components:
 
 * **Modules**
 
@@ -20,11 +20,7 @@ Roc consists of the following high-level components:
 
 * **Tools**
 
-  Command-line tools. A command-line interface for running Roc network sender and receiver, plus performing sound I/O, plus setting some debugging options. See :doc:`/running/command_line_tools` page.
-
-* **PulseAudio modules**
-
-  PulseAudio integration. Implement Roc-based network connectivity for PulseAudio. See :doc:`/running/pulseaudio_modules` page.
+  Command-line tools. A command-line interface for running Roc network sender and receiver, plus performing sound I/O, plus setting some debugging options. See :doc:`/tools/command_line_tools` page.
 
 .. image:: ../_images/components.png
     :align: center

@@ -11,7 +11,7 @@ Build dependencies
 * gengetopt (optional, install if you want to build tools)
 * pkg-config (optional, install if you want installed dependencies to be auto-detected)
 * config.guess script (optional, used to auto-detect the system type; may be provided by autotools, automake, or libtool package)
-* libtool, intltool, autoconf, automake, make, cmake (optional, install if you want Roc to download and build dependencies automatically)
+* libtool, intltool, autoconf, automake, make, cmake, meson, ninja (optional, install if you want Roc to download and build dependencies automatically)
 
 Runtime dependencies
 ====================
@@ -45,10 +45,6 @@ Development dependencies
 * `clang-format <https://clang.llvm.org/docs/ClangFormat.html>`_ >= 10 (optional, install if you want to format code)
 * `doxygen <http://www.stack.nl/~dimitri/doxygen/>`_ >= 1.6, `graphviz <https://graphviz.gitlab.io/>`_ (optional, install if you want to build doxygen or sphinx documentation)
 * `sphinx <http://www.sphinx-doc.org/>`_, `breathe <https://github.com/michaeljones/breathe>`_ (optional, install if you want to build sphinx documentation)
-
-.. warning::
-
-   If you use CppUTest 3.4 or earlier, build it with ``--disable-memory-leak-detection`` option. This leak detection breaks our code. Note that we support building with clang sanitizers which include LeakSanitizer.
 
 .. warning::
 

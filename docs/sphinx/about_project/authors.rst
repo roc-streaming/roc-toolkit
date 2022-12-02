@@ -1,7 +1,7 @@
 Authors
 *******
 
-Thanks to all who have contributed to the project!
+Thanks to everybody who have contributed to the project!
 
 This page provides a (probably incomplete) list of people who have submitted changes to our repositories, ordered by the date of the first submission. If you did so, feel free to add yourself to the list manually or by running ``scripts/update_authors.sh``.
 

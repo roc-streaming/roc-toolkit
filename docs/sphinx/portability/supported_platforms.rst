@@ -28,7 +28,7 @@ The following specific platform configurations are tested on a regular basis.
 
 Linux distributions:
 
-* Ubuntu (20.04, 18.04, 16.04, 14.04)
+* Ubuntu (22.04, 20.04, 18.04, 16.04, 14.04)
 * Debian (stable)
 * Fedora (latest)
 * CentOS (latest)
@@ -44,6 +44,8 @@ Android versions:
 
 macOS versions:
 
+* macOS 12 (Monterey)
+* macOS 11 (Big Sur)
 * macOS 10.15 (Catalina)
 
 Hardware architectures:

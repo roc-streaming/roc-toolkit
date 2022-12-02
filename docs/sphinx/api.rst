@@ -6,3 +6,4 @@ API
 
    api/reference
    api/examples
+   api/bindings

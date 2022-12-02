@@ -10,8 +10,8 @@ Welcome to `Roc Toolkit <https://roc-streaming.org/>`_ documentation!
 
    about_project
    building
-   running
    api
+   tools
    manuals
    portability
    internals

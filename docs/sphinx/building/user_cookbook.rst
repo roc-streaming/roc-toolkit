@@ -18,7 +18,7 @@ Ubuntu 16.04 and later
         libuv1-dev libunwind-dev libspeexdsp-dev libsox-dev libpulse-dev
 
     # for 3rd-parties
-    $ sudo apt-get install libtool intltool autoconf automake make cmake
+    $ sudo apt-get install libtool intltool autoconf automake make cmake meson
 
     # clone repo
     $ git clone https://github.com/roc-streaming/roc-toolkit.git
@@ -314,8 +314,8 @@ Android
 
 .. seealso::
 
-   * `Roc Android app <https://github.com/roc-streaming/roc-droid>`_ (for end-users)
-   * `Roc Java bindings <https://github.com/roc-streaming/roc-java>`_ (for Java/Kotlin developers; shipped with precompiled C library)
+   * `Roc Droid <https://github.com/roc-streaming/roc-droid>`_ (android app)
+   * `Roc Java <https://github.com/roc-streaming/roc-java>`_ (JAR and AAR shipped with precompiled libroc)
    * :doc:`/portability/cross_compiling`
 
 Building C library for Android on Linux

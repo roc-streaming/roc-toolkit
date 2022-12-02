@@ -8,7 +8,7 @@ High-level features
 
 * streaming CD-quality audio using RTP
 
-* maintaining pre-configured target latency
+* maintaining pre-configured fixed latency
 
 * restoring lost packets using Forward Erasure Correction codes
 
@@ -19,12 +19,15 @@ High-level features
 
   * converting between the sender and receiver clock domains (on receiver)
   * converting between the network and input/output sample rates (on receiver and sender)
-  * configurable resampler profiles for different CPU and quality requirements
+  * configurable resampler backends and profiles for different CPU and quality requirements
 
 * multiplexing
 
   * mixing simultaneous streams from multiple senders on the receiver
   * binding receiver to multiple ports with different protocols
+  * connecting sender to multiple receivers with different protocols
+
+* support for unicast, multicast, and broadcast
 
 * interleaving packets to increase chances of successful loss recovery
 
@@ -42,6 +45,8 @@ Protocols and encodings
 
   * RTP AVP L16 encoding (lossless 44100Hz PCM 16-bit stereo)
 
+* RTCP
+
 * FECFRAME
 
   * Reed-Solomon (m=8) FEC scheme (lower latency, lower rates)
@@ -50,7 +55,7 @@ Protocols and encodings
 API and tools
 =============
 
-.. seealso:: :doc:`/api`, :doc:`/running/command_line_tools`, :doc:`/running/pulseaudio_modules`
+.. seealso:: :doc:`/api`, :doc:`/tools/command_line_tools`, :doc:`/tools/pulseaudio_modules`, :doc:`/tools/pipewire_modules`, :doc:`/tools/android_app`
 
 * transport API
 
@@ -68,6 +73,26 @@ API and tools
   * module-roc-sink --- send audio stream written to the sink to receiver
   * module-roc-sink-input --- receive and mix audio streams from senders and write to the connected sink
 
+* PipeWire modules
+
+  * roc-sink --- send audio stream written to the sink to receiver
+  * roc-source --- receive and mix audio streams from senders and write to the connected apps
+
+* Mobile apps
+
+  * Roc Droid -- Android app that connects your phone to other Roc senders and receivers
+
+Bindings
+========
+
+.. seealso:: :doc:`/api/bindings`
+
+* supported languages:
+
+  * C and C++
+  * Go
+  * Java
+
 Portability
 ===========
 
@@ -77,11 +102,12 @@ Portability
 
   * GNU/Linux
   * macOS
-  * Android *(work in progress)*
+  * Android
 
 * tested hardware architectures
 
   * x86_64
+  * i686
   * ARMv6
   * ARMv7 (Cortex-A 32-bit)
   * ARMv8 (Cortex-A 64-bit)
