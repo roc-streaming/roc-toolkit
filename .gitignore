@@ -23,7 +23,7 @@ doxygen_*.tmp
 *.dia~
 
 # python
-__pycache__
+__pycache__/
 *.pyc
 
 # emacs
@@ -31,10 +31,13 @@ __pycache__
 .dir-locals.el
 
 # vim
-*.sw[op]
+*.sw[nop]
 
 # clangd
 .cache
 
 # clion
-.idea
+.idea/
+
+# ctags
+/tags
