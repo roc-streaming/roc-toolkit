@@ -8,19 +8,33 @@ Code structure
 Overview
 ========
 
-Roc Toolkit consists of the following high-level components:
+`Roc Toolkit <https://github.com/roc-streaming/roc-toolkit>`_ consists of the following high-level components:
 
-* **Modules**
+* **Internal modules**
 
-  Internal C++ libraries. Other components are based on them. See `Doxygen documentation <https://roc-streaming.org/toolkit/doxygen/>`_ for details.
+  Internal C++ libraries, not part of public API. Basic building blocks for library and tools. See `Doxygen documentation <https://roc-streaming.org/toolkit/doxygen/>`_ for details.
 
-* **Library**
+* **C library**
 
-  Public C API (libroc). A stable (not yet) interface for running Roc network sender and receiver. See :doc:`/api` page.
+  Public C API (libroc) for C and C++ applications. See :doc:`/api` page.
 
-* **Tools**
+* **Command-line tools**
 
-  Command-line tools. A command-line interface for running Roc network sender and receiver, plus performing sound I/O, plus setting some debugging options. See :doc:`/tools/command_line_tools` page.
+  Command-line tools for developers and advanced users. See :doc:`/tools/command_line_tools` page.
+
+Besides toolkit, `Roc Streaming <https://github.com/roc-streaming>`_ project provides some software on top of it:
+
+* **Language bindings**
+
+  Library bindings for other programming languages. See :doc:`/api/bindings` page.
+
+* **Sound server modules**
+
+  Modules for OS-specific sound servers, like PulseAudio and PipeWire. See :doc:`/tools/sound_server_modules` page.
+
+* **Applications**
+
+  Desktop and mobile apps for end-users. See :doc:`/tools/applications` page.
 
 .. image:: ../_images/components.png
     :align: center

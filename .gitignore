@@ -19,8 +19,9 @@ compile_commands.json
 doxygen_*.db
 doxygen_*.tmp
 
-# dia
+# diagrams
 *.dia~
+.$*.bkp
 
 # python
 __pycache__/

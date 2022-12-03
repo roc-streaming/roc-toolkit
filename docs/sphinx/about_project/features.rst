@@ -55,7 +55,7 @@ Protocols and encodings
 API and tools
 =============
 
-.. seealso:: :doc:`/api`, :doc:`/tools/command_line_tools`, :doc:`/tools/pulseaudio_modules`, :doc:`/tools/pipewire_modules`, :doc:`/tools/android_app`
+.. seealso:: :doc:`/api`, :doc:`/tools/command_line_tools`, :doc:`/tools/sound_server_modules`, :doc:`/tools/applications`
 
 * transport API
 
