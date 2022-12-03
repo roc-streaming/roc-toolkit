@@ -227,12 +227,12 @@ def execute_cmake(srcdir, variant, toolchain, env, log, args=None):
     if need_tools:
         if not 'android' in toolchain:
             args += [
-                '-DCMAKE_C_COMPILER=%s' % quote(compiler),
+                '-DCMAKE_C_COMPILER=%s' % quote(getpath(compiler)),
             ]
         args += [
-            '-DCMAKE_LINKER=%s' % quote(getvar(env, 'CCLD', toolchain, 'gcc')),
-            '-DCMAKE_AR=%s'     % quote(getvar(env, 'AR', toolchain, 'ar')),
-            '-DCMAKE_RANLIB=%s' % quote(getvar(env, 'RANLIB', toolchain, 'ranlib')),
+            '-DCMAKE_LINKER=%s' % quote(getpath(getvar(env, 'CCLD', toolchain, 'gcc'))),
+            '-DCMAKE_AR=%s'     % quote(getpath(getvar(env, 'AR', toolchain, 'ar'))),
+            '-DCMAKE_RANLIB=%s' % quote(getpath(getvar(env, 'RANLIB', toolchain, 'ranlib'))),
         ]
 
     cc_flags = [
@@ -356,6 +356,14 @@ def getvar(env, var, toolchain, default):
     if var in env:
         return env[var]
     return '-'.join([s for s in [toolchain, default] if s])
+
+def getpath(tool):
+    if '/' in tool:
+        return tool
+    p = which(tool)
+    if not p:
+        return tool
+    return p
 
 def getsysroot(toolchain, compiler):
     if not toolchain:
