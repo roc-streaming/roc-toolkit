@@ -742,6 +742,11 @@ subenvs = type('subenvs', (), subenv_attrs)
 env, subenvs = env.SConscript('3rdparty/SConscript',
                        duplicate=0, exports='env subenvs meta')
 
+env.Append(CPPDEFINES=[
+    # for UINT32_MAX and others (https://bugzilla.mozilla.org/show_bug.cgi?id=673556):
+    ('__STDC_LIMIT_MACROS', '1'),
+])
+
 if 'target_posix' in env['ROC_TARGETS'] and meta.platform not in ['darwin', 'unix']:
     env.Append(CPPDEFINES=[('_POSIX_C_SOURCE', '200809')])
 
