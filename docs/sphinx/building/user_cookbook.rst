@@ -164,6 +164,25 @@ Alpine Linux
     # install libraries and tools
     $ sudo scons -Q --build-3rdparty=openfec install
 
+NixOS
+-----
+
+.. code::
+
+    # for Roc and 3rd-parties
+    $ nix-shell -p gcc autoconf automake cmake gengetopt gnumake intltool libpulseaudio \
+        libtool libunwind libuv meson pkg-config ragel scons sox speexdsp
+
+    # clone repo
+    $ git clone https://github.com/roc-streaming/roc-toolkit.git
+    $ cd roc-toolkit
+
+    # build libraries and tools
+    $ scons -Q --build-3rdparty=openfec
+
+    # install libraries and tools
+    $ sudo scons -Q --build-3rdparty=openfec install
+
 Linux (cross-compile)
 =====================
 
