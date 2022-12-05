@@ -41,5 +41,5 @@ const address::SocketAddr& ConnectionData::connection_address() const {
     return connection_address_;
 }
 
-} // namespace roc
 } // namespace sdp
+} // namespace roc

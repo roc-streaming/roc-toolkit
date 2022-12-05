@@ -44,7 +44,7 @@ struct SdesItem {
     const char* text;
 };
 
-} // namespace roc
 } // namespace rtcp
+} // namespace roc
 
 #endif // ROC_RTCP_SDES_H_

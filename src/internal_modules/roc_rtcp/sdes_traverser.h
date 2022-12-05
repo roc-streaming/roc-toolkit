@@ -87,7 +87,7 @@ private:
     size_t chunks_count_;
 };
 
-} // namespace roc
 } // namespace rtcp
+} // namespace roc
 
 #endif // ROC_RTCP_SDES_TRAVERSER_H_

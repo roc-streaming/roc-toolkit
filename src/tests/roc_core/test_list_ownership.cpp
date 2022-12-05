@@ -22,7 +22,7 @@ struct NoAllocation {
     }
 };
 
-struct Object : RefCounted<Object, NoAllocation>, ListNode { };
+struct Object : RefCounted<Object, NoAllocation>, ListNode {};
 
 typedef List<Object, RefCountedOwnership> TestList;
 

@@ -122,5 +122,5 @@ bool MediaDescription::add_connection_data(address::AddrFamily addrtype,
     return true;
 }
 
-} // namespace roc
 } // namespace sdp
+} // namespace roc

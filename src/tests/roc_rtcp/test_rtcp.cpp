@@ -443,5 +443,5 @@ TEST(rtcp, loopback_bye) {
 // Check unknown xr blocks.
 // Check unknown rtcp packet type.
 
-} // rtcp
-} // roc
+} // namespace rtcp
+} // namespace roc

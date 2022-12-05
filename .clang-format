@@ -21,6 +21,7 @@ BreakBeforeBraces: Attach
 
 ConstructorInitializerAllOnOneLineOrOnePerLine: false
 KeepEmptyLinesAtTheStartOfBlocks: false
+SpaceInEmptyBlock: false
 
 BinPackArguments: true
 BinPackParameters: false
@@ -28,4 +29,4 @@ BinPackParameters: false
 AlignAfterOpenBracket: true
 AlignTrailingComments: true
 
-#SpaceInEmptyBlock: false
+FixNamespaceComments: true

@@ -82,8 +82,8 @@ private:
     // loudly when trying to play them on sound card.
     enum { PoisonAllocated = 0x7a, PoisonDeallocated = 0x7d };
 
-    struct Slab : ListNode { };
-    struct Slot : ListNode { };
+    struct Slab : ListNode {};
+    struct Slot : ListNode {};
 
     void* give_slot_to_user_(Slot* slot);
     Slot* take_slot_from_user_(void* memory);

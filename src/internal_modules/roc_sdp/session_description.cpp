@@ -134,5 +134,5 @@ const ConnectionData& SessionDescription::session_connection_data() {
     return session_connection_data_;
 }
 
-} // namespace roc
 } // namespace sdp
+} // namespace roc
