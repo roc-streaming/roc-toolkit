@@ -4,19 +4,24 @@ Import('env', 'subenvs', 'meta')
 
 # default versions for downloaded third-party libraries
 thirdparty_versions = {
-    'libuv':            '1.35.0',
+    # lib
+    'alsa':             '1.0.29',
+    'json-c':           '0.12-20140410',
     'libatomic_ops':    '7.6.10',
     'libunwind':        '1.2.1',
-    'openfec':          '1.4.2.4',
-    'speexdsp':         '1.2.0',
-    'sox':              '14.4.2',
-    'alsa':             '1.0.29',
-    'pulseaudio':       '12.2',
-    'json-c':           '0.12-20140410',
+    'libuv':            '1.35.0',
     'ltdl':             '2.4.6',
+    'openfec':          '1.4.2.4',
+    'pulseaudio':       '12.2',
     'sndfile':          '1.0.28',
-    'ragel':            '6.10',
+    'sox':              '14.4.2',
+    'speexdsp':         '1.2.0',
+
+    # CLI tools
     'gengetopt':        '2.22.6',
+    'ragel':            '6.10',
+
+    # tests
     'cpputest':         '4.0',
     'google-benchmark': '1.6.1',
 }

@@ -180,9 +180,6 @@ NixOS
     # build libraries and tools
     $ scons -Q --build-3rdparty=openfec
 
-    # install libraries and tools
-    $ sudo scons -Q --build-3rdparty=openfec install
-
 Linux (cross-compile)
 =====================
 
