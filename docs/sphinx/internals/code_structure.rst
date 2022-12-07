@@ -47,21 +47,21 @@ Essentially, a module is just a C++ library providing a set of related classes. 
 
 See `Doxygen documentation <https://roc-streaming.org/toolkit/doxygen/>`_ for details.
 
-Modules can be grouped into several layers:
+Modules can be grouped into a few layers, as shown on the diagram above:
 
 * network I/O layer (roc_netio)
 
 * processing layer (roc_pipeline), with two sublayers:
 
- * packet processing sublayer (roc_packet, roc_rtp, roc_fec)
+ * packet processing sublayer (roc_packet, roc_rtp, roc_rtcp, roc_fec, and others)
 
- * stream processing sublayer (roc_audio)
+ * frame processing sublayer (roc_audio)
 
 * sound I/O layer (roc_sndio)
 
-On the receiver, data is transferring from the network layer to the sound layer. Accordingly, on the sender, data is transferring from the sound layer to the network layer.
+* control layer (roc_ctl, roc_perr)
 
-See :doc:`/internals/data_flow` page for details.
+On receiver media flows from network I/O layer, through processing layer, to sound I/O layer. Accordingly, on sender media flows from sound I/O layer, through processing layer, to network I/O layer. On both receiver and sender, there is also control layer that handles various supportive tasks.
 
 Here is the full list of available modules:
 
@@ -69,13 +69,18 @@ Here is the full list of available modules:
 module            description
 ================= =================================
 roc_core          General-purpose building blocks (containers, memory management, multithreading, etc)
+roc_address       Network URIs and addresses
 roc_packet        Network packets and packet processing
 roc_rtp           RTP support
+roc_rtp           RTCP support
 roc_fec           FEC support
+roc_sdp           SDP support
 roc_audio         Audio frames and audio processing
-roc_pipeline      High-level sender and receiver pipelines on top of other modules
-roc_netio         Network I/O
-roc_sndio         Sound I/O
+roc_pipeline      Pipeline loop that arranges packet and frame processors into a chain
+roc_ctl           Control loop that handles signaling protocols and housekeeping
+roc_netio         Network I/O loop
+roc_sndio         Sound I/O loop
+roc_peer          Top-level module that glues everything together
 ================= =================================
 
 .. _targets:
@@ -85,29 +90,33 @@ Targets
 
 Roc supports multiple platforms and compilers. The major part of the source code is platform-independent. However, there are also parts that depend on specific platform features or optional third-party libraries.
 
-The platform-dependent code is isolated inside "target" directories. Every target directory corresponds to a feature enabled at compile time. When SCons builds the project, it determines target directories to use, depending on the target platform, available third-party libraries, and command-line options.
+Such platform-dependent code is isolated inside "target" directories. Every target directory corresponds to platform or feature enabled at compile time. When SCons builds the project, it determines target directories to use, depending on the target platform, available third-party libraries, and command-line options.
 
 Every module can have its own target directories. Headers from enabled target directories are added to the include path, and source files from enabled target directories are added to the build.
 
 Currently supported targets are:
 
-=================== =================
-target              description
-=================== =================
-target_posix        Enabled for a POSIX OS
-target_posixtime    Enabled for a POSIX OS with time extensions
-target_gcc          Enabled for a GCC-compatible compiler
-target_glibc        Enabled for the GNU standard C library
-target_bionic       Enabled for the Bionic standard C library
-target_darwin       Enabled for macOS
-target_stdio        Enabled if stdio is available in the standard library
-target_libuv        Enabled if libuv is available
-target_libunwind    Enabled if libunwind is available
-target_openfec      Enabled if OpenFEC is available
-target_sox          Enabled if SoX is available
-target_nobacktrace  Enabled if no backtrace API is available
-target_nodemangle   Enabled if no demangling API is available
-=================== =================
+===================== ===============================================
+target                description
+===================== ===============================================
+target_posix          Enabled for a POSIX OS
+target_posix_ext      Enabled for a POSIX OS with POSIX extensions
+target_gnu            Enabled for GNU-like libc
+target_bionic         Enabled for Bionic libc
+target_darwin         Enabled for macOS
+target_android        Enabled for Android
+target_pc             Enabled for PC (desktop, server)
+target_c11            Enabled for C11 compiler
+target_libunwind      Enabled if libunwind is available
+target_libatomic_ops  Enabled if libatomic_ops is available
+target_libuv          Enabled if libuv is available
+target_openfec        Enabled if OpenFEC is available
+target_sox            Enabled if SoX is available
+target_pulseaudio     Enabled if PulseAudio is available
+target_speexdsp       Enabled if SpeexDSP is available
+target_nobacktrace    Enabled if no backtrace API is available
+target_nodemangle     Enabled if no demangling API is available
+===================== ===============================================
 
 Example directory structure employing targets:
 
@@ -117,9 +126,9 @@ Example directory structure employing targets:
     ├── target_posix
     │   └── roc_core
     │       ├── ...
-    │       ├── fast_random.cpp
-    │       └── fast_random.h
-    ├── target_posixtime
+    │       ├── mutex.cpp
+    │       └── mutex.h
+    ├── target_posix_ext
     │   └── roc_core
     │       ├── ...
     │       ├── time.cpp
