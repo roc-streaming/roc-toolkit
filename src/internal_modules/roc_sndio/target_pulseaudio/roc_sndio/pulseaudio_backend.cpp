@@ -6,12 +6,10 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include <stdio.h>
-
+#include "roc_sndio/pulseaudio_backend.h"
 #include "roc_core/log.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_core/stddefs.h"
-#include "roc_sndio/pulseaudio_backend.h"
 #include "roc_sndio/pulseaudio_sink.h"
 
 namespace roc {

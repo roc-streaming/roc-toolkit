@@ -13,6 +13,7 @@
 #define ROC_SNDIO_PRINT_SUPPORTED_H_
 
 #include "roc_core/iallocator.h"
+#include "roc_sndio/backend_dispatcher.h"
 
 namespace roc {
 namespace sndio {

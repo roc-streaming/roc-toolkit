@@ -6,9 +6,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include <stdio.h>
-
 #include "roc_rtcp/print_packet.h"
+#include "roc_core/printer.h"
 #include "roc_rtcp/traverser.h"
 
 namespace roc {
@@ -39,100 +38,99 @@ const char* item_type_to_str(header::SdesItemType t) {
     return "?";
 }
 
-void print_header(const header::PacketHeader& hdr) {
-    fprintf(stderr, "|- header:\n");
-    fprintf(stderr, "|-- version: %d\n", (int)hdr.version());
-    fprintf(stderr, "|-- padding: %d\n", (int)hdr.has_padding());
-    fprintf(stderr, "|-- counter: %d\n", (int)hdr.counter());
-    fprintf(stderr, "|-- type: %d\n", (int)hdr.type());
-    fprintf(stderr, "|-- length: %d bytes (%d words)\n", (int)hdr.len_bytes(),
-            (int)hdr.len_words());
+void print_header(core::Printer& p, const header::PacketHeader& hdr) {
+    p.writef("|- header:\n");
+    p.writef("|-- version: %d\n", (int)hdr.version());
+    p.writef("|-- padding: %d\n", (int)hdr.has_padding());
+    p.writef("|-- counter: %d\n", (int)hdr.counter());
+    p.writef("|-- type: %d\n", (int)hdr.type());
+    p.writef("|-- length: %d bytes (%d words)\n", (int)hdr.len_bytes(),
+             (int)hdr.len_words());
 }
 
-void print_reception_block(const header::ReceptionReportBlock& blk) {
-    fprintf(stderr, "|- block:\n");
-    fprintf(stderr, "|-- ssrc: %lu\n", (unsigned long)blk.ssrc());
-    fprintf(stderr, "|-- fract_loss: %f\n", (double)blk.fract_loss());
-    fprintf(stderr, "|-- cumloss: %d\n", (int)blk.cumloss());
-    fprintf(stderr, "|-- last_seqnum: %lu\n", (unsigned long)blk.last_seqnum());
-    fprintf(stderr, "|-- jitter: %lu\n", (unsigned long)blk.jitter());
-    fprintf(stderr, "|-- lsr: %lu\n", (unsigned long)blk.last_sr());
-    fprintf(stderr, "|-- dlsr: %lu\n", (unsigned long)blk.delay_last_sr());
+void print_reception_block(core::Printer& p, const header::ReceptionReportBlock& blk) {
+    p.writef("|- block:\n");
+    p.writef("|-- ssrc: %lu\n", (unsigned long)blk.ssrc());
+    p.writef("|-- fract_loss: %f\n", (double)blk.fract_loss());
+    p.writef("|-- cumloss: %d\n", (int)blk.cumloss());
+    p.writef("|-- last_seqnum: %lu\n", (unsigned long)blk.last_seqnum());
+    p.writef("|-- jitter: %lu\n", (unsigned long)blk.jitter());
+    p.writef("|-- lsr: %lu\n", (unsigned long)blk.last_sr());
+    p.writef("|-- dlsr: %lu\n", (unsigned long)blk.delay_last_sr());
 }
 
-void print_rr(const header::ReceiverReportPacket& rr) {
-    fprintf(stderr, "+ rr:\n");
+void print_rr(core::Printer& p, const header::ReceiverReportPacket& rr) {
+    p.writef("+ rr:\n");
 
-    print_header(rr.header());
+    print_header(p, rr.header());
 
-    fprintf(stderr, "|- body:\n");
-    fprintf(stderr, "|-- ssrc: %lu\n", (unsigned long)rr.ssrc());
+    p.writef("|- body:\n");
+    p.writef("|-- ssrc: %lu\n", (unsigned long)rr.ssrc());
 
     for (size_t n = 0; n < rr.num_blocks(); n++) {
-        print_reception_block(rr.get_block(n));
+        print_reception_block(p, rr.get_block(n));
     }
 }
 
-void print_sr(const header::SenderReportPacket& sr) {
-    fprintf(stderr, "+ sr:\n");
+void print_sr(core::Printer& p, const header::SenderReportPacket& sr) {
+    p.writef("+ sr:\n");
 
-    print_header(sr.header());
+    print_header(p, sr.header());
 
-    fprintf(stderr, "|- body:\n");
-    fprintf(stderr, "|-- ssrc: %lu\n", (unsigned long)sr.ssrc());
-    fprintf(stderr, "|-- ntp_timestamp: %llu (0x%llx)\n",
-            (unsigned long long)sr.ntp_timestamp(),
-            (unsigned long long)sr.ntp_timestamp());
-    fprintf(stderr, "|-- rtp_timestamp: %llu\n", (unsigned long long)sr.rtp_timestamp());
-    fprintf(stderr, "|-- packet_count: %d\n", (int)sr.packet_count());
-    fprintf(stderr, "|-- byte_count: %d\n", (int)sr.byte_count());
+    p.writef("|- body:\n");
+    p.writef("|-- ssrc: %lu\n", (unsigned long)sr.ssrc());
+    p.writef("|-- ntp_timestamp: %llu (0x%llx)\n", (unsigned long long)sr.ntp_timestamp(),
+             (unsigned long long)sr.ntp_timestamp());
+    p.writef("|-- rtp_timestamp: %llu\n", (unsigned long long)sr.rtp_timestamp());
+    p.writef("|-- packet_count: %d\n", (int)sr.packet_count());
+    p.writef("|-- byte_count: %d\n", (int)sr.byte_count());
 
     for (size_t n = 0; n < sr.num_blocks(); n++) {
-        print_reception_block(sr.get_block(n));
+        print_reception_block(p, sr.get_block(n));
     }
 }
 
-void print_xr_block_header(const header::XrBlockHeader& hdr) {
-    fprintf(stderr, "|-- block header:\n");
-    fprintf(stderr, "|--- type: %d\n", (int)hdr.block_type());
-    fprintf(stderr, "|--- type_specific: %d\n", (int)hdr.type_specific());
-    fprintf(stderr, "|--- length: %d bytes (%d words)\n", (int)hdr.len_bytes(),
-            (int)hdr.len_words());
+void print_xr_block_header(core::Printer& p, const header::XrBlockHeader& hdr) {
+    p.writef("|-- block header:\n");
+    p.writef("|--- type: %d\n", (int)hdr.block_type());
+    p.writef("|--- type_specific: %d\n", (int)hdr.type_specific());
+    p.writef("|--- length: %d bytes (%d words)\n", (int)hdr.len_bytes(),
+             (int)hdr.len_words());
 }
 
-void print_xr_rrtr(const header::XrRrtrBlock& blk) {
-    fprintf(stderr, "|- rrtr:\n");
+void print_xr_rrtr(core::Printer& p, const header::XrRrtrBlock& blk) {
+    p.writef("|- rrtr:\n");
 
-    print_xr_block_header(blk.header());
+    print_xr_block_header(p, blk.header());
 
-    fprintf(stderr, "|-- block body:\n");
-    fprintf(stderr, "|--- ntp_timestamp: %llu (0x%llx)\n",
-            (unsigned long long)blk.ntp_timestamp(),
-            (unsigned long long)blk.ntp_timestamp());
+    p.writef("|-- block body:\n");
+    p.writef("|--- ntp_timestamp: %llu (0x%llx)\n",
+             (unsigned long long)blk.ntp_timestamp(),
+             (unsigned long long)blk.ntp_timestamp());
 }
 
-void print_xr_dlrr(const header::XrDlrrBlock& blk) {
-    fprintf(stderr, "|- dlrr:\n");
+void print_xr_dlrr(core::Printer& p, const header::XrDlrrBlock& blk) {
+    p.writef("|- dlrr:\n");
 
-    print_xr_block_header(blk.header());
+    print_xr_block_header(p, blk.header());
 
     for (size_t n = 0; n < blk.num_subblocks(); n++) {
         const header::XrDlrrSubblock& sub_blk = blk.get_subblock(n);
 
-        fprintf(stderr, "|-- subblock:\n");
-        fprintf(stderr, "|--- ssrc: %lu\n", (unsigned long)sub_blk.ssrc());
-        fprintf(stderr, "|--- lrr: %lu\n", (unsigned long)sub_blk.last_rr());
-        fprintf(stderr, "|--- dlrr: %lu\n", (unsigned long)sub_blk.delay_last_rr());
+        p.writef("|-- subblock:\n");
+        p.writef("|--- ssrc: %lu\n", (unsigned long)sub_blk.ssrc());
+        p.writef("|--- lrr: %lu\n", (unsigned long)sub_blk.last_rr());
+        p.writef("|--- dlrr: %lu\n", (unsigned long)sub_blk.delay_last_rr());
     }
 }
 
-void print_xr(const XrTraverser& xr) {
-    fprintf(stderr, "+ xr:\n");
+void print_xr(core::Printer& p, const XrTraverser& xr) {
+    p.writef("+ xr:\n");
 
-    print_header(xr.packet().header());
+    print_header(p, xr.packet().header());
 
-    fprintf(stderr, "|- body:\n");
-    fprintf(stderr, "|-- ssrc: %lu\n", (unsigned long)xr.packet().ssrc());
+    p.writef("|- body:\n");
+    p.writef("|-- ssrc: %lu\n", (unsigned long)xr.packet().ssrc());
 
     XrTraverser::Iterator iter = xr.iter();
     XrTraverser::Iterator::State state;
@@ -144,18 +142,18 @@ void print_xr(const XrTraverser& xr) {
             break;
 
         case XrTraverser::Iterator::RRTR_BLOCK:
-            print_xr_rrtr(iter.get_rrtr());
+            print_xr_rrtr(p, iter.get_rrtr());
             break;
 
         case XrTraverser::Iterator::DRLL_BLOCK:
-            print_xr_dlrr(iter.get_dlrr());
+            print_xr_dlrr(p, iter.get_dlrr());
             break;
         }
     }
 }
 
-void print_sdes(const SdesTraverser& sdes) {
-    fprintf(stderr, "+ sdes:\n");
+void print_sdes(core::Printer& p, const SdesTraverser& sdes) {
+    p.writef("+ sdes:\n");
 
     SdesTraverser::Iterator iter = sdes.iter();
     SdesTraverser::Iterator::State state;
@@ -168,23 +166,22 @@ void print_sdes(const SdesTraverser& sdes) {
 
         case SdesTraverser::Iterator::CHUNK: {
             const SdesChunk chunk = iter.chunk();
-            fprintf(stderr, "|- chunk:\n");
-            fprintf(stderr, "|-- ssrc: %lu\n", (unsigned long)chunk.ssrc);
+            p.writef("|- chunk:\n");
+            p.writef("|-- ssrc: %lu\n", (unsigned long)chunk.ssrc);
         } break;
 
         case SdesTraverser::Iterator::ITEM: {
             const SdesItem item = iter.item();
-            fprintf(stderr, "|-- item:\n");
-            fprintf(stderr, "|--- type: %s (%d)\n", item_type_to_str(item.type),
-                    (int)item.type);
-            fprintf(stderr, "|--- text: %s\n", item.text);
+            p.writef("|-- item:\n");
+            p.writef("|--- type: %s (%d)\n", item_type_to_str(item.type), (int)item.type);
+            p.writef("|--- text: %s\n", item.text);
         } break;
         }
     }
 }
 
-void print_bye(const ByeTraverser& bye) {
-    fprintf(stderr, "+ bye:\n");
+void print_bye(core::Printer& p, const ByeTraverser& bye) {
+    p.writef("+ bye:\n");
 
     ByeTraverser::Iterator iter = bye.iter();
     ByeTraverser::Iterator::Iterator::State state;
@@ -196,11 +193,11 @@ void print_bye(const ByeTraverser& bye) {
             break;
 
         case ByeTraverser::Iterator::SSRC:
-            fprintf(stderr, "|- ssrc: %lu\n", (unsigned long)iter.ssrc());
+            p.writef("|- ssrc: %lu\n", (unsigned long)iter.ssrc());
             break;
 
         case ByeTraverser::Iterator::REASON:
-            fprintf(stderr, "|- reason: %s\n", iter.reason());
+            p.writef("|- reason: %s\n", iter.reason());
             break;
         }
     }
@@ -209,11 +206,13 @@ void print_bye(const ByeTraverser& bye) {
 } // namespace
 
 void print_packet(const core::Slice<uint8_t>& data) {
-    fprintf(stderr, "@ rtcp packet (%d bytes)\n", (int)data.size());
+    core::Printer p;
+
+    p.writef("@ rtcp packet (%d bytes)\n", (int)data.size());
 
     Traverser traverser(data);
     if (!traverser.parse()) {
-        fprintf(stderr, "+ <invalid>\n");
+        p.writef("+ <invalid>\n");
         return;
     }
 
@@ -227,38 +226,38 @@ void print_packet(const core::Slice<uint8_t>& data) {
             break;
 
         case Traverser::Iterator::RR: {
-            print_rr(iter.get_rr());
+            print_rr(p, iter.get_rr());
         } break;
 
         case Traverser::Iterator::SR: {
-            print_sr(iter.get_sr());
+            print_sr(p, iter.get_sr());
         } break;
 
         case Traverser::Iterator::XR: {
             XrTraverser xr = iter.get_xr();
             if (!xr.parse()) {
-                fprintf(stderr, "+ xr:\n|- <invalid>\n");
+                p.writef("+ xr:\n|- <invalid>\n");
                 break;
             }
-            print_xr(xr);
+            print_xr(p, xr);
         } break;
 
         case Traverser::Iterator::SDES: {
             SdesTraverser sdes = iter.get_sdes();
             if (!sdes.parse()) {
-                fprintf(stderr, "+ sdes:\n|- <invalid>\n");
+                p.writef("+ sdes:\n|- <invalid>\n");
                 break;
             }
-            print_sdes(sdes);
+            print_sdes(p, sdes);
         } break;
 
         case Traverser::Iterator::BYE:
             ByeTraverser bye = iter.get_bye();
             if (!bye.parse()) {
-                fprintf(stderr, "+ bye:\n|- <invalid>\n");
+                p.writef("+ bye:\n|- <invalid>\n");
                 break;
             }
-            print_bye(bye);
+            print_bye(p, bye);
         }
     }
 }

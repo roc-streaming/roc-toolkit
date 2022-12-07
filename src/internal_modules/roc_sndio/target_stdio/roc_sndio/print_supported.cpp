@@ -6,11 +6,10 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include <stdio.h>
-
-#include "roc_core/log.h"
-#include "roc_sndio/backend_dispatcher.h"
 #include "roc_sndio/print_supported.h"
+#include "roc_core/log.h"
+#include "roc_core/printer.h"
+#include "roc_sndio/backend_dispatcher.h"
 
 namespace roc {
 namespace sndio {
@@ -19,20 +18,18 @@ namespace {
 
 enum { ArraySize = 100, LineSize = 70 };
 
-void print_string_list(const core::StringList& list,
+void print_string_list(core::Printer& prn,
+                       const core::StringList& list,
                        const char* prefix,
                        const char* suffix) {
     const char* str = list.front();
 
     while (str != NULL) {
-        printf(" ");
+        prn.writef(" ");
 
         int size = 0;
         while (size < LineSize) {
-            int ret = printf(" %s%s%s", prefix, str, suffix);
-            if (ret > 0) {
-                size += ret;
-            }
+            size += prn.writef(" %s%s%s", prefix, str, suffix);
 
             str = list.nextof(str);
             if (!str) {
@@ -40,7 +37,7 @@ void print_string_list(const core::StringList& list,
             }
         }
 
-        printf("\n");
+        prn.writef("\n");
     }
 }
 
@@ -48,22 +45,23 @@ void print_string_list(const core::StringList& list,
 
 bool print_supported(BackendDispatcher& backend_dispatcher, core::IAllocator& allocator) {
     core::StringList list(allocator);
+    core::Printer prn;
 
     if (!backend_dispatcher.get_supported_schemes(list)) {
         roc_log(LogError, "can't retrieve driver list");
         return false;
     }
 
-    printf("supported schemes for audio devices and files:\n");
-    print_string_list(list, "", "://");
+    prn.writef("supported schemes for audio devices and files:\n");
+    print_string_list(prn, list, "", "://");
 
     if (!backend_dispatcher.get_supported_formats(list)) {
         roc_log(LogError, "can't retrieve format list");
         return false;
     }
 
-    printf("\nsupported formats for audio files:\n");
-    print_string_list(list, ".", "");
+    prn.writef("\nsupported formats for audio files:\n");
+    print_string_list(prn, list, ".", "");
 
     return true;
 }

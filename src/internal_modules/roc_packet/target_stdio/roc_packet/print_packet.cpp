@@ -6,54 +6,56 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include <stdio.h>
-
+#include "roc_packet/print_packet.h"
 #include "roc_address/socket_addr_to_str.h"
 #include "roc_core/print_buffer.h"
+#include "roc_core/printer.h"
 #include "roc_packet/fec_scheme_to_str.h"
 #include "roc_packet/packet.h"
-#include "roc_packet/print_packet.h"
 
 namespace roc {
 namespace packet {
 
-void print_packet(const Packet& p, int flags) {
-    fprintf(stderr, "@ packet [%p]\n", (const void*)&p);
+void print_packet(const Packet& pkt, int flags) {
+    core::Printer p;
 
-    if (p.udp()) {
-        fprintf(stderr, " udp: src=%s dst=%s\n",
-                address::socket_addr_to_str(p.udp()->src_addr).c_str(),
-                address::socket_addr_to_str(p.udp()->dst_addr).c_str());
+    p.writef("@ packet [%p]\n", (const void*)&pkt);
+
+    if (pkt.udp()) {
+        p.writef(" udp: src=%s dst=%s\n",
+                 address::socket_addr_to_str(pkt.udp()->src_addr).c_str(),
+                 address::socket_addr_to_str(pkt.udp()->dst_addr).c_str());
     }
 
-    if (p.rtp()) {
-        fprintf(stderr, " rtp: src=%lu m=%d sn=%lu ts=%lu dur=%lu pt=%u payload_sz=%lu\n",
-                (unsigned long)p.rtp()->source, (int)p.rtp()->marker,
-                (unsigned long)p.rtp()->seqnum, (unsigned long)p.rtp()->timestamp,
-                (unsigned long)p.rtp()->duration, (unsigned int)p.rtp()->payload_type,
-                (unsigned long)p.rtp()->payload.size());
+    if (pkt.rtp()) {
+        p.writef(" rtp: src=%lu m=%d sn=%lu ts=%lu dur=%lu pt=%u payload_sz=%lu\n",
+                 (unsigned long)pkt.rtp()->source, (int)pkt.rtp()->marker,
+                 (unsigned long)pkt.rtp()->seqnum, (unsigned long)pkt.rtp()->timestamp,
+                 (unsigned long)pkt.rtp()->duration,
+                 (unsigned int)pkt.rtp()->payload_type,
+                 (unsigned long)pkt.rtp()->payload.size());
 
-        if ((flags & PrintPayload) && p.rtp()->payload) {
-            core::print_buffer(p.rtp()->payload.data(), p.rtp()->payload.size());
+        if ((flags & PrintPayload) && pkt.rtp()->payload) {
+            core::print_buffer(pkt.rtp()->payload.data(), pkt.rtp()->payload.size());
         }
     }
 
-    if (p.fec()) {
-        fprintf(stderr, " fec: %s esi=%lu sbn=%lu sblen=%lu blen=%lu payload_sz=%lu\n",
-                fec_scheme_to_str(p.fec()->fec_scheme),
-                (unsigned long)p.fec()->encoding_symbol_id,
-                (unsigned long)p.fec()->source_block_number,
-                (unsigned long)p.fec()->source_block_length,
-                (unsigned long)p.fec()->block_length,
-                (unsigned long)p.fec()->payload.size());
+    if (pkt.fec()) {
+        p.writef(" fec: %s esi=%lu sbn=%lu sblen=%lu blen=%lu payload_sz=%lu\n",
+                 fec_scheme_to_str(pkt.fec()->fec_scheme),
+                 (unsigned long)pkt.fec()->encoding_symbol_id,
+                 (unsigned long)pkt.fec()->source_block_number,
+                 (unsigned long)pkt.fec()->source_block_length,
+                 (unsigned long)pkt.fec()->block_length,
+                 (unsigned long)pkt.fec()->payload.size());
 
-        if ((flags & PrintPayload) && p.fec()->payload) {
-            core::print_buffer(p.fec()->payload.data(), p.fec()->payload.size());
+        if ((flags & PrintPayload) && pkt.fec()->payload) {
+            core::print_buffer(pkt.fec()->payload.data(), pkt.fec()->payload.size());
         }
     }
 
-    if (p.rtcp()) {
-        fprintf(stderr, " rtcp: size=%lu\n", (unsigned long)p.rtcp()->data.size());
+    if (pkt.rtcp()) {
+        p.writef(" rtcp: size=%lu\n", (unsigned long)pkt.rtcp()->data.size());
     }
 }
 
