@@ -540,15 +540,20 @@ if not m:
     exit(1)
 name, ver = m.group(1), m.group(2)
 
-builddir = os.path.join(workdir, fullname)
+build_dir = os.path.join(workdir, fullname)
+src_dir = os.path.join(build_dir, 'src')
+bin_dir = os.path.join(build_dir, 'bin')
+lib_dir = os.path.join(build_dir, 'lib')
+inc_dir = os.path.join(build_dir, 'include')
+rpath_dir = os.path.join(build_dir, 'rpath')
 
-logfile = os.path.join(builddir, 'build.log')
-rpathdir = os.path.join(builddir, 'rpath')
+logfile = os.path.join(build_dir, 'build.log')
+commit_build_finished_file = os.path.join(build_dir, 'commit')
 
-rmpath(os.path.join(builddir, 'commit'))
-mkpath(os.path.join(builddir, 'src'))
+rmpath(commit_build_finished_file)
+mkpath(src_dir)
 
-os.chdir(os.path.join(builddir))
+os.chdir(build_dir)
 
 if name == 'libuv':
     download('https://dist.libuv.org/dist/v%s/libuv-v%s.tar.gz' % (ver, ver),
@@ -569,7 +574,7 @@ if name == 'libuv':
         execute_make(logfile)
         shutil.copy('libuv_a.a', 'libuv.a')
         os.chdir('..')
-        install_files('build/libuv.a', os.path.join(builddir, 'lib'))
+        install_files('build/libuv.a', lib_dir)
     else:
         execute('./autogen.sh', logfile)
         execute('./configure --host=%s %s %s %s' % (
@@ -581,8 +586,8 @@ if name == 'libuv':
                 '--enable-static',
             ])), logfile)
         execute_make(logfile)
-        install_files('.libs/libuv.a', os.path.join(builddir, 'lib'))
-    install_tree('include', os.path.join(builddir, 'include'))
+        install_files('.libs/libuv.a', lib_dir)
+    install_tree('include', inc_dir)
 elif name == 'libunwind':
     download(
         'http://download.savannah.nongnu.org/releases/libunwind/libunwind-%s.tar.gz' % ver,
@@ -605,8 +610,8 @@ elif name == 'libunwind':
             '--disable-minidebuginfo',
            ])), logfile)
     execute_make(logfile)
-    install_files('include/*.h', os.path.join(builddir, 'include'))
-    install_files('src/.libs/libunwind.a', os.path.join(builddir, 'lib'))
+    install_files('include/*.h', inc_dir)
+    install_files('src/.libs/libunwind.a', lib_dir)
 elif name == 'libatomic_ops':
     download(
         'https://github.com/ivmai/libatomic_ops/releases/download/v%s/libatomic_ops-%s.tar.gz' % (
@@ -627,8 +632,8 @@ elif name == 'libatomic_ops':
             '--disable-docs',
            ])), logfile)
     execute_make(logfile)
-    install_tree('src', os.path.join(builddir, 'include'), match=['*.h'])
-    install_files('src/.libs/libatomic_ops.a', os.path.join(builddir, 'lib'))
+    install_tree('src', inc_dir, match=['*.h'])
+    install_files('src/.libs/libatomic_ops.a', lib_dir)
 elif name == 'openfec':
     if variant == 'debug':
         dist = 'bin/Debug'
@@ -650,8 +655,8 @@ elif name == 'openfec':
         ])
     execute_make(logfile)
     os.chdir('..')
-    install_tree('src', os.path.join(builddir, 'include'), match=['*.h'])
-    install_files('%s/libopenfec.a' % dist, os.path.join(builddir, 'lib'))
+    install_tree('src', inc_dir, match=['*.h'])
+    install_files('%s/libopenfec.a' % dist, lib_dir)
 elif name == 'speexdsp':
     if ver.split('.', 1) > ['1', '2'] and (
             not re.match('^1.2[a-z]', ver) or ver == '1.2rc3'):
@@ -675,8 +680,8 @@ elif name == 'speexdsp':
             '--disable-examples',
            ])), logfile)
     execute_make(logfile)
-    install_tree('include', os.path.join(builddir, 'include'))
-    install_files('lib%s/.libs/libspeexdsp.a' % speex, os.path.join(builddir, 'lib'))
+    install_tree('include', inc_dir)
+    install_files('lib%s/.libs/libspeexdsp.a' % speex, lib_dir)
 elif name == 'alsa':
     download(
       'ftp://ftp.alsa-project.org/pub/lib/alsa-lib-%s.tar.bz2' % ver,
@@ -696,10 +701,10 @@ elif name == 'alsa':
         ])), logfile)
     execute_make(logfile)
     install_tree('include/alsa',
-            os.path.join(builddir, 'include', 'alsa'),
+            os.path.join(inc_dir, 'alsa'),
             ignore=['alsa'])
-    install_files('src/.libs/libasound.so', os.path.join(builddir, 'lib'))
-    install_files('src/.libs/libasound.so.*', rpathdir)
+    install_files('src/.libs/libasound.so', lib_dir)
+    install_files('src/.libs/libasound.so.*', rpath_dir)
 elif name == 'ltdl':
     download(
       'ftp://ftp.gnu.org/gnu/libtool/libtool-%s.tar.gz' % ver,
@@ -717,10 +722,10 @@ elif name == 'ltdl':
             '--disable-static',
         ])), logfile)
     execute_make(logfile)
-    install_files('libltdl/ltdl.h', os.path.join(builddir, 'include'))
-    install_tree('libltdl/libltdl', os.path.join(builddir, 'include', 'libltdl'))
-    install_files('libltdl/.libs/libltdl.so', os.path.join(builddir, 'lib'))
-    install_files('libltdl/.libs/libltdl.so.*', rpathdir)
+    install_files('libltdl/ltdl.h', inc_dir)
+    install_tree('libltdl/libltdl', os.path.join(inc_dir, 'libltdl'))
+    install_files('libltdl/.libs/libltdl.so', lib_dir)
+    install_files('libltdl/.libs/libltdl.so.*', rpath_dir)
 elif name == 'json-c':
     download(
       'https://github.com/json-c/json-c/archive/json-c-%s.tar.gz' % ver,
@@ -748,8 +753,8 @@ elif name == 'json-c':
             '--disable-shared',
         ])), logfile)
     execute_make(logfile, cpu_count=0) # -j is buggy for json-c
-    install_tree('.', os.path.join(builddir, 'include'), match=['*.h'])
-    install_files('.libs/libjson-c.a', os.path.join(builddir, 'lib'))
+    install_tree('.', inc_dir, match=['*.h'])
+    install_files('.libs/libjson-c.a', lib_dir)
 elif name == 'sndfile':
     download(
       'http://www.mega-nerd.com/libsndfile/files/libsndfile-%s.tar.gz' % ver,
@@ -776,8 +781,8 @@ elif name == 'sndfile':
             '--disable-external-libs',
         ])), logfile)
     execute_make(logfile)
-    install_files('src/sndfile.h', os.path.join(builddir, 'include'))
-    install_files('src/.libs/libsndfile.a', os.path.join(builddir, 'lib'))
+    install_files('src/sndfile.h', inc_dir)
+    install_files('src/.libs/libsndfile.a', lib_dir)
 elif name == 'pulseaudio':
     download(
       'https://freedesktop.org/software/pulseaudio/releases/pulseaudio-%s.tar.gz' % ver,
@@ -828,15 +833,15 @@ elif name == 'pulseaudio':
                 '--without-caps',
             ])), logfile)
         execute_make(logfile)
-        install_files('config.h', os.path.join(builddir, 'include'))
-        install_tree('src/pulse', os.path.join(builddir, 'include', 'pulse'),
+        install_files('config.h', inc_dir)
+        install_tree('src/pulse', os.path.join(inc_dir, 'pulse'),
                      match=['*.h'])
-        install_files('src/.libs/libpulse.so', os.path.join(builddir, 'lib'))
-        install_files('src/.libs/libpulse.so.0', rpathdir)
-        install_files('src/.libs/libpulse-simple.so', os.path.join(builddir, 'lib'))
-        install_files('src/.libs/libpulse-simple.so.0', rpathdir)
-        install_files('src/.libs/libpulsecommon-*.so', os.path.join(builddir, 'lib'))
-        install_files('src/.libs/libpulsecommon-*.so', rpathdir)
+        install_files('src/.libs/libpulse.so', lib_dir)
+        install_files('src/.libs/libpulse.so.0', rpath_dir)
+        install_files('src/.libs/libpulse-simple.so', lib_dir)
+        install_files('src/.libs/libpulse-simple.so.0', rpath_dir)
+        install_files('src/.libs/libpulsecommon-*.so', lib_dir)
+        install_files('src/.libs/libpulsecommon-*.so', rpath_dir)
     else:
         mkpath('builddir')
         os.chdir('builddir')
@@ -857,15 +862,14 @@ elif name == 'pulseaudio':
         execute('DESTDIR=../instdir ninja install', logfile)
         os.chdir('..')
         install_tree('instdir/usr/local/include/pulse',
-                     os.path.join(builddir, 'include', 'pulse'),
+                     os.path.join(inc_dir, 'pulse'),
                      match=['*.h'])
-        install_files('builddir/src/pulse/libpulse.so', os.path.join(builddir, 'lib'))
-        install_files('builddir/src/pulse/libpulse.so.0', rpathdir)
-        install_files('builddir/src/pulse/libpulse-simple.so', os.path.join(builddir, 'lib'))
-        install_files('builddir/src/pulse/libpulse-simple.so.0', rpathdir)
-        install_files('builddir/src/libpulsecommon-*.so', os.path.join(builddir, 'lib'))
-        install_files('builddir/src/libpulsecommon-*.so', rpathdir)
-
+        install_files('builddir/src/pulse/libpulse.so', lib_dir)
+        install_files('builddir/src/pulse/libpulse.so.0', rpath_dir)
+        install_files('builddir/src/pulse/libpulse-simple.so', lib_dir)
+        install_files('builddir/src/pulse/libpulse-simple.so.0', rpath_dir)
+        install_files('builddir/src/libpulsecommon-*.so', lib_dir)
+        install_files('builddir/src/libpulsecommon-*.so', rpath_dir)
 elif name == 'sox':
     download(
       'https://downloads.sourceforge.net/project/sox/sox/%s/sox-%s.tar.gz' % (ver, ver),
@@ -907,8 +911,8 @@ elif name == 'sox':
             '--with-lpc10=no',
         ])), logfile)
     execute_make(logfile)
-    install_files('src/sox.h', os.path.join(builddir, 'include'))
-    install_files('src/.libs/libsox.a', os.path.join(builddir, 'lib'))
+    install_files('src/sox.h', inc_dir)
+    install_files('src/.libs/libsox.a', lib_dir)
 elif name == 'gengetopt':
     download('ftp://ftp.gnu.org/gnu/gengetopt/gengetopt-%s.tar.gz' % ver,
              'gengetopt-%s.tar.gz' % ver,
@@ -919,7 +923,7 @@ elif name == 'gengetopt':
     os.chdir('src/gengetopt-%s' % ver)
     execute('./configure', logfile, clear_env=True)
     execute_make(logfile, cpu_count=0) # -j is buggy for gengetopt
-    install_files('src/gengetopt', os.path.join(builddir, 'bin'))
+    install_files('src/gengetopt', bin_dir)
 elif name == 'ragel':
     download('https://www.colm.net/files/ragel/ragel-%s.tar.gz' % ver,
              'ragel-%s.tar.gz' % ver,
@@ -930,7 +934,7 @@ elif name == 'ragel':
     os.chdir('src/ragel-%s' % ver)
     execute('./configure', logfile, clear_env=True)
     execute_make(logfile)
-    install_files('ragel/ragel', os.path.join(builddir, 'bin'))
+    install_files('ragel/ragel', bin_dir)
 elif name == 'cpputest':
     download(
         'https://github.com/cpputest/cpputest/releases/download/v%s/cpputest-%s.tar.gz' % (
@@ -953,12 +957,12 @@ elif name == 'cpputest':
                 '--disable-memory-leak-detection',
             ])), logfile)
     execute_make(logfile)
-    install_tree('include', os.path.join(builddir, 'include'))
-    install_files('lib/libCppUTest.a', os.path.join(builddir, 'lib'))
+    install_tree('include', inc_dir)
+    install_files('lib/libCppUTest.a', lib_dir)
 elif name == 'google-benchmark':
     download(
-      'https://github.com/google/benchmark/archive/v%s.tar.gz' % ver,
-      'benchmark_v%s.tar.gz' % ver,
+        'https://github.com/google/benchmark/archive/v%s.tar.gz' % ver,
+        'benchmark_v%s.tar.gz' % ver,
         logfile,
         vendordir)
     unpack('benchmark_v%s.tar.gz' % ver,
@@ -972,10 +976,11 @@ elif name == 'google-benchmark':
         ])
     execute_make(logfile)
     os.chdir('..')
-    install_tree('include', os.path.join(builddir, 'include'), match=['*.h'])
-    install_files('build/src/libbenchmark.a', os.path.join(builddir, 'lib'))
+    install_tree('include', inc_dir, match=['*.h'])
+    install_files('build/src/libbenchmark.a', lib_dir)
+# end of deps
 else:
     print("error: unknown 3rdparty '%s'" % fullname, file=sys.stderr)
     exit(1)
 
-touch(os.path.join(builddir, 'commit'))
+touch(commit_build_finished_file)
