@@ -692,6 +692,7 @@ else:
 
     env.Append(ROC_TARGETS=[
         'target_libuv',
+        'target_openssl',
     ])
 
     if not GetOption('disable_openfec'):

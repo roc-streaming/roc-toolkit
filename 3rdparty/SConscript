@@ -12,6 +12,7 @@ thirdparty_versions = {
     'libuv':            '1.35.0',
     'ltdl':             '2.4.6',
     'openfec':          '1.4.2.4',
+    'openssl':          '3.0.7',
     'pulseaudio':       '12.2',
     'sndfile':          '1.0.28',
     'sox':              '14.4.2',
@@ -77,9 +78,11 @@ if 'all' in autobuild_dependencies:
 # dependencies that should be pre-installed on system
 system_dependencies = external_dependencies - autobuild_dependencies
 
+# dep: hedley
 if 'hedley' in vendored_dependencies:
     env.Append(CPPPATH=['#3rdparty/hedley'])
 
+# dep: libuv
 if 'libuv' in autobuild_dependencies:
     env.BuildThirdParty(thirdparty_build_dir, meta.toolchain,
                    meta.thirdparty_variant, thirdparty_versions, 'libuv')
@@ -100,6 +103,7 @@ elif 'libuv' in system_dependencies:
 
     env = conf.Finish()
 
+# dep: libunwind
 if 'libunwind' in autobuild_dependencies:
     env.BuildThirdParty(thirdparty_build_dir,
                    meta.toolchain, meta.thirdparty_variant,
@@ -116,6 +120,7 @@ elif 'libunwind' in system_dependencies:
 
     env = conf.Finish()
 
+# dep: libatomic_ops
 if 'libatomic_ops' in autobuild_dependencies:
     env.BuildThirdParty(thirdparty_build_dir,
                    meta.toolchain, meta.thirdparty_variant,
@@ -133,6 +138,7 @@ elif 'libatomic_ops' in system_dependencies:
 
     env = conf.Finish()
 
+# dep: openfec
 if 'openfec' in autobuild_dependencies:
     env.BuildThirdParty(thirdparty_build_dir, meta.toolchain,
                    meta.thirdparty_variant, thirdparty_versions,
@@ -144,7 +150,7 @@ if 'openfec' in autobuild_dependencies:
 elif 'openfec' in system_dependencies:
     conf = Configure(env, custom_tests=env.CustomTests)
 
-    if not conf.AddPkgConfigDependency('openfec', '--silence-errors --cflags --libs'):
+    if not conf.AddPkgConfigDependency('openfec', '--cflags --libs'):
         conf.env.AddPkgConfigLibs(['openfec'])
 
         if GetOption('with_openfec_includes'):
@@ -184,6 +190,7 @@ elif 'openfec' in system_dependencies:
 
     env = conf.Finish()
 
+# dep: speexdsp
 if 'speexdsp' in autobuild_dependencies:
     env.BuildThirdParty(thirdparty_build_dir, meta.toolchain,
                 meta.thirdparty_variant, thirdparty_versions, 'speexdsp')
@@ -200,10 +207,12 @@ elif 'speexdsp' in system_dependencies:
 
     env = conf.Finish()
 
+# dep: alsa
 if 'alsa' in autobuild_dependencies:
     env.BuildThirdParty(thirdparty_build_dir, meta.toolchain,
                              meta.thirdparty_variant, thirdparty_versions, 'alsa')
 
+# dep: pulseaudio
 if 'pulseaudio' in autobuild_dependencies:
     if not 'pulseaudio' in explicit_version and not is_crosscompiling:
         pa_ver = env.ParseToolVersion('pulseaudio --version')
@@ -253,6 +262,7 @@ elif 'pulseaudio' in system_dependencies:
 
         subenvs.examples = conf.Finish()
 
+# dep: sox
 if 'sox' in autobuild_dependencies:
     sox_deps = []
 
@@ -297,6 +307,7 @@ elif 'sox' in system_dependencies:
 
     env = conf.Finish()
 
+# dep: ragel
 if 'ragel' in autobuild_dependencies:
     env.BuildThirdParty(thirdparty_build_dir, "",
                    meta.thirdparty_variant, thirdparty_versions, 'ragel')
@@ -317,6 +328,7 @@ elif 'ragel' in system_dependencies:
 
     env = conf.Finish()
 
+# dep: gengetopt
 if 'gengetopt' in autobuild_dependencies:
     env.BuildThirdParty(thirdparty_build_dir, "",
                    meta.thirdparty_variant, thirdparty_versions, 'gengetopt')
@@ -337,6 +349,7 @@ elif 'gengetopt' in system_dependencies:
 
     env = conf.Finish()
 
+# dep: cpputest
 if 'cpputest' in autobuild_dependencies:
     subenvs.tests.BuildThirdParty(thirdparty_build_dir, meta.toolchain,
                         meta.thirdparty_variant, thirdparty_versions, 'cpputest')
@@ -353,6 +366,7 @@ elif 'cpputest' in system_dependencies:
 
     subenvs.tests = conf.Finish()
 
+# dep: google-benchmark
 if 'google-benchmark' in autobuild_dependencies:
     subenvs.tests.BuildThirdParty(thirdparty_build_dir, meta.toolchain,
                         meta.thirdparty_variant, thirdparty_versions, 'google-benchmark')
@@ -363,7 +377,7 @@ if 'google-benchmark' in autobuild_dependencies:
 elif 'google-benchmark' in system_dependencies:
     conf = Configure(subenvs.tests, custom_tests=env.CustomTests)
 
-    if not conf.AddPkgConfigDependency('benchmark', '--silence-errors --cflags --libs'):
+    if not conf.AddPkgConfigDependency('benchmark', '--cflags --libs'):
         conf.env.AddPkgConfigLibs(['benchmark'])
 
     if not conf.CheckLibWithHeaderExt(
@@ -377,6 +391,24 @@ elif 'google-benchmark' in system_dependencies:
         subenvs.tests.AppendUnique(CPPDEFINES=['ROC_BENCHMARK_USE_ACCESSORS'])
 
     subenvs.tests = conf.Finish()
+
+# dep: openssl
+if 'openssl' in autobuild_dependencies:
+    subenvs.tests.BuildThirdParty(thirdparty_build_dir, meta.toolchain,
+        meta.thirdparty_variant, thirdparty_versions, 'openssl')
+elif 'openssl' in system_dependencies:
+    conf = Configure(subenvs.tests, custom_tests=env.CustomTests)
+
+    if not conf.AddPkgConfigDependency('libssl', '--cflags --libs'):
+        conf.env.AddPkgConfigLibs(['libssl'])
+
+    if not conf.CheckLibWithHeaderExt(
+            'ssl', 'openssl/rand.h', 'C', run=not is_crosscompiling):
+        subenvs.tests.Die("OpenSSL not found (see 'config.log' for details)")
+
+    subenvs.tests = conf.Finish()
+
+# end of deps
 
 return_value = (env, subenvs)
 Return('return_value')
