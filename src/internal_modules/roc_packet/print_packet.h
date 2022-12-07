@@ -6,8 +6,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_packet/target_stdio/roc_packet/print_packet.h
-//! @brief Print packet to stdout.
+//! @file roc_packet/print_packet.h
+//! @brief Print packet to console.
 
 #ifndef ROC_PACKET_PRINT_PACKET_H_
 #define ROC_PACKET_PRINT_PACKET_H_

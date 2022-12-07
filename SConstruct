@@ -231,7 +231,7 @@ AddOption('--override-targets',
           type='string',
           help=("override targets to use, "+
                 "pass a comma-separated list of target names, "+
-                "e.g. 'glibc,stdio,posix,libuv,openfec,...'"))
+                "e.g. 'pc,posix,posix_ext,gnu,libuv,openfec,...'"))
 
 # configure even in dry run mode
 SCons.SConf.dryrun = 0
@@ -646,17 +646,8 @@ if GetOption('override_targets'):
     for t in GetOption('override_targets').split(','):
         env['ROC_TARGETS'] += ['target_%s' % t]
 else:
-    if meta.c11_support:
-        env.Append(ROC_TARGETS=[
-            'target_c11',
-        ])
-    else:
-        env.Append(ROC_TARGETS=[
-            'target_libatomic_ops',
-        ])
-
     env.Append(ROC_TARGETS=[
-        'target_stdio',
+        'target_pc',
     ])
 
     if meta.platform in ['linux', 'unix', 'android', 'darwin']:
@@ -669,9 +660,10 @@ else:
             'target_posix_ext',
         ])
 
-    if meta.platform in ['android']:
+    if (meta.platform in ['linux', 'unix'] and 'gnu' in meta.host) or \
+      meta.platform in ['android', 'darwin']:
         env.Append(ROC_TARGETS=[
-            'target_bionic',
+            'target_gnu',
         ])
 
     if meta.platform in ['darwin']:
@@ -679,30 +671,23 @@ else:
             'target_darwin',
         ])
 
+    if meta.platform in ['android']:
+        env.Append(ROC_TARGETS=[
+            'target_bionic',
+        ])
+
+    if meta.c11_support:
+        env.Append(ROC_TARGETS=[
+            'target_c11',
+        ])
+    else:
+        env.Append(ROC_TARGETS=[
+            'target_libatomic_ops',
+        ])
+
     if meta.platform in ['linux', 'unix', 'darwin'] and not GetOption('disable_libunwind'):
         env.Append(ROC_TARGETS=[
             'target_libunwind',
-        ])
-    elif meta.platform in ['android']:
-        pass
-    else:
-        env.Append(ROC_TARGETS=[
-            'target_nobacktrace',
-        ])
-
-    is_gnulike_libc = False
-    if meta.platform in ['linux', 'unix']:
-        is_gnulike_libc = 'gnu' in meta.host
-    elif meta.platform in ['android', 'darwin']:
-        is_gnulike_libc = True
-
-    if is_gnulike_libc and not GetOption('disable_libunwind'):
-        env.Append(ROC_TARGETS=[
-            'target_cxxabi',
-        ])
-    else:
-        env.Append(ROC_TARGETS=[
-            'target_nodemangle',
         ])
 
     env.Append(ROC_TARGETS=[
@@ -728,6 +713,17 @@ else:
             env.Append(ROC_TARGETS=[
                 'target_pulseaudio',
             ])
+
+    if 'target_gnu' not in env['ROC_TARGETS']:
+        env.Append(ROC_TARGETS=[
+            'target_nodemangle',
+        ])
+
+    if 'target_libunwind' not in env['ROC_TARGETS'] and \
+      'target_android' not in env['ROC_TARGETS']:
+        env.Append(ROC_TARGETS=[
+            'target_nobacktrace',
+        ])
 
 # env will hold settings common to all code
 # subenvs will hold settings specific to particular parts of code

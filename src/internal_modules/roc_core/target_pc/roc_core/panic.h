@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_core/target_stdio/roc_core/panic.h
+//! @file roc_core/target_pc/roc_core/panic.h
 //! @brief Panic function.
 
 #ifndef ROC_CORE_PANIC_H_

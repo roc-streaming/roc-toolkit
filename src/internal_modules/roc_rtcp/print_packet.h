@@ -6,8 +6,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_rtcp/target_stdio/roc_rtcp/print_packet.h
-//! @brief RTCP packet printing.
+//! @file roc_rtcp/print_packet.h
+//! @brief Print RTCP packet to console.
 
 #ifndef ROC_RTCP_PRINT_PACKET_H_
 #define ROC_RTCP_PRINT_PACKET_H_

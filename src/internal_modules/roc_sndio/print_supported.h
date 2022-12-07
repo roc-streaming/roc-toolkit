@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_sndio/target_stdio/roc_sndio/print_supported.h
+//! @file roc_sndio/print_supported.h
 //! @brief Print supported schemes and formats.
 
 #ifndef ROC_SNDIO_PRINT_SUPPORTED_H_

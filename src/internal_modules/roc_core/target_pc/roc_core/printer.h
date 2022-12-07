@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_core/target_stdio/roc_core/printer.h
+//! @file roc_core/target_pc/roc_core/printer.h
 //! @brief Console printer.
 
 #ifndef ROC_CORE_PRINTER_H_

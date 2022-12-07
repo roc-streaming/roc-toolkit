@@ -211,7 +211,7 @@ TEST(printer, varying_size) {
         strcat(text, t);
         strcat(text, "\n");
 
-        UNSIGNED_LONGS_EQUAL(strlen(t)+1, p.writef("%s\n", t));
+        UNSIGNED_LONGS_EQUAL(strlen(t) + 1, p.writef("%s\n", t));
     }
 
     p.flush();

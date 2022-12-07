@@ -6,8 +6,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_core/target_stdio/roc_core/print_buffer.h
-//! @brief Print buffer to stdout.
+//! @file roc_core/print_buffer.h
+//! @brief Print buffer to console.
 
 #ifndef ROC_CORE_PRINT_BUFFER_H_
 #define ROC_CORE_PRINT_BUFFER_H_
