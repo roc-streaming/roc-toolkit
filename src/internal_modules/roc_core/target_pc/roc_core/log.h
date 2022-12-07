@@ -30,8 +30,8 @@
     do {                                                                                 \
         ::roc::core::Logger& logger = ::roc::core::Logger::instance();                   \
         if ((level) <= logger.get_level()) {                                             \
-            logger.print((level), ROC_STRINGIZE(ROC_MODULE), __FILE__, __LINE__,         \
-                         __VA_ARGS__);                                                   \
+            logger.writef((level), ROC_STRINGIZE(ROC_MODULE), __FILE__, __LINE__,        \
+                          __VA_ARGS__);                                                  \
         }                                                                                \
     } while (0)
 
@@ -48,26 +48,17 @@ enum LogLevel {
 
 namespace core {
 
-//! Default log level.
-const LogLevel DefaultLogLevel = LogError;
-
 //! Colors mode.
 enum ColorsMode {
     ColorsDisabled, //!< Do not use colored logs.
     ColorsEnabled   //!< Use colored logs.
 };
 
-//! Default colors mode.
-const ColorsMode DefaultColorsMode = ColorsDisabled;
-
 //! Location mode.
 enum LocationMode {
     LocationDisabled, //!< Do not show location.
     LocationEnabled   //!< Show location.
 };
-
-//! Default location mode.
-const LocationMode DefaultLocationMode = LocationDisabled;
 
 //! Log handler.
 typedef void (*LogHandler)(
@@ -83,12 +74,12 @@ public:
 
     //! Print message to log.
     ROC_ATTR_PRINTF(6, 7)
-    void print(LogLevel level,
-               const char* module,
-               const char* file,
-               int line,
-               const char* format,
-               ...);
+    void writef(LogLevel level,
+                const char* module,
+                const char* file,
+                int line,
+                const char* format,
+                ...);
 
     //! Get current maximum log level.
     LogLevel get_level() const {

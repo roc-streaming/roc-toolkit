@@ -18,10 +18,10 @@ namespace roc {
 namespace core {
 
 Logger::Logger()
-    : level_(DefaultLogLevel)
+    : level_(LogError)
     , handler_(NULL)
-    , colors_(DefaultColorsMode)
-    , location_(DefaultLocationMode) {
+    , colors_(ColorsDisabled)
+    , location_(LocationDisabled) {
 }
 
 void Logger::set_verbosity(unsigned verb) {
@@ -85,12 +85,12 @@ void Logger::set_handler(LogHandler handler) {
     handler_ = handler;
 }
 
-void Logger::print(LogLevel level,
-                   const char* module,
-                   const char* file,
-                   int line,
-                   const char* format,
-                   ...) {
+void Logger::writef(LogLevel level,
+                    const char* module,
+                    const char* file,
+                    int line,
+                    const char* format,
+                    ...) {
     Mutex::Lock lock(mutex_);
 
     if (level > level_ || level == LogNone) {

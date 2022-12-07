@@ -32,7 +32,7 @@ LogLevel convert_log_level(roc_log_level level) {
         break;
     }
 
-    return core::DefaultLogLevel;
+    return LogError;
 }
 
 } // namespace api
