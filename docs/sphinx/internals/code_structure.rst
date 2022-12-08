@@ -36,9 +36,9 @@ Besides toolkit, `Roc Streaming <https://github.com/roc-streaming>`_ project pro
 
   Desktop and mobile apps for end-users. See :doc:`/tools/applications` page.
 
-.. image:: ../_images/components.png
+.. image:: ../_images/code_structure.png
     :align: center
-    :alt: High-level components
+    :alt: Overview
 
 Modules
 =======
@@ -47,21 +47,23 @@ Essentially, a module is just a C++ library providing a set of related classes. 
 
 See `Doxygen documentation <https://roc-streaming.org/toolkit/doxygen/>`_ for details.
 
-Modules can be grouped into a few layers, as shown on the diagram above:
+Modules can be grouped into several layers, as shown on the diagram above:
 
 * network I/O layer (roc_netio)
 
-* processing layer (roc_pipeline), with two sublayers:
+* processing layer (roc_pipeline), with two sub-layers:
 
- * packet processing sublayer (roc_packet, roc_rtp, roc_rtcp, roc_fec, and others)
+ * packet processing sub-layer (roc_packet, roc_rtp, roc_rtcp, roc_fec, and others)
 
- * frame processing sublayer (roc_audio)
+ * frame processing sub-layer (roc_audio)
 
 * sound I/O layer (roc_sndio)
 
-* control layer (roc_ctl, roc_perr)
+* control layer (roc_ctl)
 
-On receiver media flows from network I/O layer, through processing layer, to sound I/O layer. Accordingly, on sender media flows from sound I/O layer, through processing layer, to network I/O layer. On both receiver and sender, there is also control layer that handles various supportive tasks.
+* peer layer (roc_peer)
+
+On receiver media flows from network I/O layer, through processing layer, to sound I/O layer. Accordingly, on sender media flows from sound I/O layer, through processing layer, to network I/O layer. On both receiver and sender, there is also control layer that handles various supportive tasks. Finally, peer layer is a top-level layer which glues everything together.
 
 Here is the full list of available modules:
 
@@ -72,12 +74,12 @@ roc_core          General-purpose building blocks (containers, memory management
 roc_address       Network URIs and addresses
 roc_packet        Network packets and packet processing
 roc_rtp           RTP support
-roc_rtp           RTCP support
+roc_rtcp          RTCP support
 roc_fec           FEC support
 roc_sdp           SDP support
 roc_audio         Audio frames and audio processing
 roc_pipeline      Pipeline loop that arranges packet and frame processors into a chain
-roc_ctl           Control loop that handles signaling protocols and housekeeping
+roc_ctl           Control loop that handles signaling protocols and background tasks
 roc_netio         Network I/O loop
 roc_sndio         Sound I/O loop
 roc_peer          Top-level module that glues everything together
@@ -101,19 +103,20 @@ target                description
 ===================== ===============================================
 target_posix          Enabled for a POSIX OS
 target_posix_ext      Enabled for a POSIX OS with POSIX extensions
+target_posix_tty      Enabled for a POSIX OS with ANSI terminals
 target_gnu            Enabled for GNU-like libc
 target_bionic         Enabled for Bionic libc
 target_darwin         Enabled for macOS
 target_android        Enabled for Android
-target_pc             Enabled for PC (desktop, server)
-target_c11            Enabled for C11 compiler
+target_pc             Enabled for PC, in broad sense (desktop, server, mobile)
+target_c11            Enabled for C11 compilers
 target_libunwind      Enabled if libunwind is available
 target_libatomic_ops  Enabled if libatomic_ops is available
 target_libuv          Enabled if libuv is available
 target_openfec        Enabled if OpenFEC is available
+target_speexdsp       Enabled if SpeexDSP is available
 target_sox            Enabled if SoX is available
 target_pulseaudio     Enabled if PulseAudio is available
-target_speexdsp       Enabled if SpeexDSP is available
 target_nobacktrace    Enabled if no backtrace API is available
 target_nodemangle     Enabled if no demangling API is available
 ===================== ===============================================

@@ -1,36 +1,19 @@
-Data flow
-*********
+Media pipelines
+***************
 
 .. contents:: Table of contents:
    :local:
    :depth: 1
 
-Execution threads
-=================
+Overview
+========
 
-Both Roc sender and receiver use threads of up to three types:
+*TODO*
 
-* network I/O thread running event loop, capable of sending and receiving packets via multiple sockets;
-
-* processing pipeline thread running sender or receiver pipeline, converting packet stream to audio stream or vice versa;
-
-* sound I/O thread running audio device reader or writer.
-
-Roc command-line tools create these three threads. The network I/O and the processing pipeline threads are managed by Roc itself (though the I/O part is done by libuv), and the sound I/O thread is managed by SoX library. The presence of the sound I/O thread is optional and depends on the selected SoX backend.
-
-Roc library, in contrast, creates only the network I/O thread. The processing pipeline is running in the caller context when the user reads or writes audio stream. The sound I/O is not performed at all and users should implement it by themselves using other available libraries dedicated for that purpose.
-
-It is also worth to mention that Roc library allows both creating individual network I/O threads for every sender or receiver, and sharing a single network I/O thread between multiple senders or receivers.
-
-Threads typically don't share much state and mostly communicate via queues. The network I/O and the processing pipeline threads communicate via packet queues for incoming and outgoing packets. The sound I/O and the processing pipeline threads communicate via a stream buffer which implementation is specific for the selected SoX backend.
-
-The following diagram gives a conceptual view of both sender and receiver structure:
-
-.. image:: ../_images/threads.png
+.. image:: ../_images/pipeline_overview.png
     :align: center
-    :alt: Threads
-
-The difference is that on the receiver data is transferring from the network to the sound card and on the sender it is transferring from the sound card to the network.
+    :width: 780px
+    :alt: Overview
 
 Pipeline structure
 ==================
@@ -44,7 +27,7 @@ Some elements may implement one interface but refer to an inner element of anoth
 Pipeline timing
 ===============
 
-The key feature of pipelines is that they are passive and are clocked by their users.
+The key feature of pipelines is that they are passive and are clocked by their user.
 
 When the user reads or writes packet or frame from the top-level pipeline element, the call is recursively propagated to inner elements. Every element tries to perform the amount of work required to advance the stream exactly by one packet or frame, or to be as close as possible to it.
 
@@ -60,6 +43,16 @@ Another important point is that the sender and receiver have different clock dom
 
 Sender pipeline
 ===============
+
+*TODO*
+
+.. image:: ../_images/sender_pipeline.png
+    :align: center
+    :width: 700px
+    :alt: Sender pipeline
+
+Sender session sub-pipeline
+===========================
 
 The diagram below shows an example of the sender pipeline.
 
@@ -79,13 +72,35 @@ In general terms, the flow is the following:
 
 The specific functions of the individual pipeline elements are documented in `Doxygen <https://roc-streaming.org/toolkit/doxygen/>`_.
 
-.. image:: ../_images/sender_pipeline.png
+.. image:: ../_images/sender_session_pipeline.png
     :align: center
     :width: 520px
-    :alt: Sender pipeline
+    :alt: Sender session pipeline
 
 Receiver pipeline
 =================
+
+The receiver can be bound to multiple network ports and serve multiple streams from multiple senders.
+
+For every network port bound, the receiver creates a receiver port pipeline. For every connected sender, the receiver creates a receiver session pipeline. For every stream inside the session, the receiver creates a separate packet queue.
+
+The mapping between ports and sessions is many-to-many, i.e. packets can be routed from one port to many sessions, as well as they can be routed to one session from many ports.
+
+A typical receiver session employs FEC and hence consists of two streams, one for source and another for repair packets. Respectively, such a session gets packets from two receiver ports, one for source and another for repair packets.
+
+When a packet is received from the network, it is routed to an appropriate port pipeline according to the packet destination address. After passing the port pipeline, the packet is routed to an appropriate session pipeline, according to the packet source address. If there is no session for that address, a new one is automatically created. Inside the session pipeline, the packet is routed to an appropriate queue, according to the packet stream identifier.
+
+When a frame is requested by the sound card, the receiver requests a frame from every existing session pipeline and then mixes all frames into one and returns the result.
+
+The diagram below illustrates this routing.
+
+.. image:: ../_images/receiver_pipeline.png
+    :align: center
+    :width: 700px
+    :alt: Receiver pipeline
+
+Receiver session sub-pipeline
+=============================
 
 The diagram below shows an example of the receiver pipeline.
 
@@ -112,29 +127,7 @@ The flow of the read part is the following:
 
 The specific functions of the individual pipeline elements are documented in `Doxygen <https://roc-streaming.org/toolkit/doxygen/>`_.
 
-.. image:: ../_images/receiver_pipeline.png
+.. image:: ../_images/receiver_session_pipeline.png
     :align: center
     :width: 620px
-    :alt: Receiver pipeline
-
-Routing in receiver
-===================
-
-The receiver can be bound to multiple network ports and serve multiple streams from multiple senders.
-
-For every network port bound, the receiver creates a receiver port pipeline. For every connected sender, the receiver creates a receiver session pipeline. For every stream inside the session, the receiver creates a separate packet queue.
-
-The mapping between ports and sessions is many-to-many, i.e. packets can be routed from one port to many sessions, as well as they can be routed to one session from many ports.
-
-A typical receiver session employs FEC and hence consists of two streams, one for source and another for repair packets. Respectively, such a session gets packets from two receiver ports, one for source and another for repair packets.
-
-When a packet is received from the network, it is routed to an appropriate port pipeline according to the packet destination address. After passing the port pipeline, the packet is routed to an appropriate session pipeline, according to the packet source address. If there is no session for that address, a new one is automatically created. Inside the session pipeline, the packet is routed to an appropriate queue, according to the packet stream identifier.
-
-When a frame is requested by the sound card, the receiver requests a frame from every existing session pipeline and then mixes all frames into one and returns the result.
-
-The diagram below illustrates this routing.
-
-.. image:: ../_images/receiver_routing.png
-    :align: center
-    :width: 835px
-    :alt: Receiver pipeline
+    :alt: Receiver session pipeline

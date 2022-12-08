@@ -6,7 +6,8 @@ Internals
 
    internals/glossary
    internals/code_structure
-   internals/data_flow
+   internals/threads
+   internals/pipelines
    internals/fec
    internals/fe_resampler
    internals/network_protocols
