@@ -41,7 +41,7 @@ scons -Q \
       --compiler=clang \
       --host=$host$CI_API
 
-echo no | avdmanager create avd --name roc --package "$CI_AVD"
+echo no | avdmanager -v create avd --name roc --package "$CI_AVD"
 
 ( cd "emulator" &&
       ./emulator -avd roc -no-audio -no-boot-anim -no-window -gpu off -accel on & )
