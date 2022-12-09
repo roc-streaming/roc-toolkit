@@ -8,21 +8,38 @@ Media pipelines
 Overview
 ========
 
-*TODO*
+Media pipelines are implemented in ``roc_pipeline`` module. There are two major pipeline types:
+
+* sender pipeline, implemented in ``SenderSink``
+* receiver pipeline, implemented in ``ReceiverSource``
+
+Essentially, pipeline class constructs chain of packet and frame processors from ``roc_packet``, ``roc_audio``, and other modules, forming a big composite processor. Sender pipeline can be seen as a processor that consumes audio frames and produces network packets. Receiver pipeline, accordingly, consumes packets and produces frames.
+
+Sender and receiver pipelines implement ``ISink`` and ``ISource`` interfaces, respectively. Sink interface allows to write audio frames to it (sender pipeline input), and source interface allows to read audio frames from it (receiver pipeline output).
+
+Except reading and writing frames, we need to be able to change pipeline configuration on fly. To achieve this, pipelines provide task-based interface for configuration operations. The foundation for task processing is implemented in ``PipelineLoop`` class, which allows to schedule tasks for execution in between frames. ``SenderLoop`` and ``ReceiverLoop`` inherit this class and provide a set of tasks suitable for configuration of corresponding pipelines.
+
+``SenderLoop`` and ``ReceiverLoop`` are used by ``roc_peer`` module. It is a top-level module that combines together ``roc_pipeline`` (processing), ``roc_netio`` (network I/O), and ``roc_sndio`` (sound I/O). It uses ``SenderLoop`` and ``ReceiverLoop`` to configure pipeline and to retrieve ``ISink`` or ``ISource`` (which under the hood is implemented by ``SenderSink`` or ``ReceiverSource``). The latter is then used to transform audio frames retrieved from ``roc_sndio`` into network packets passed to ``roc_netio``, or vice versa.
+
+The diagram below demonstrates this.
 
 .. image:: ../_images/pipeline_overview.png
     :align: center
     :width: 780px
     :alt: Overview
 
-Pipeline structure
-==================
+Pipeline tasks
+==============
 
-Pipelines used in sender and receiver are chains of consecutively connected elements. Each element has a reference to the inner element (or sometimes multiple elements) and adds some pre- or post-processing on top of it.
+Pipeline configuration is done via task-based interface. When you want to change pipeline layout or options, you create a task and ask pipeline to schedule it. The task will be then executed on pipeline thread after processing next frame.
 
-The element interface depends on the pipeline type, which may be packet or frame, and pipeline direction, which may be read or write. Therefore, there are four element interfaces: packet reader, packet writer, frame reader, frame writer.
+This approach have two important advantages:
 
-Some elements may implement one interface but refer to an inner element of another interface, or implement multiple interfaces. Such elements act as adapters between sub-pipelines of different types or directions.
+* frame processing is not interrupted or delayed by other threads; pipeline is free to decide when it's the best time to perform configuration
+
+* except task queue, no other pipeline elements should be thread-safe
+
+For further details, see :doc:`threads`.
 
 Pipeline timing
 ===============
@@ -41,20 +58,54 @@ Note that, however, if the sender or receiver works with a sound file instead of
 
 Another important point is that the sender and receiver have different clock domains as well. To deal with it, there is a resampler in the receiver pipeline, which dynamically converts the sender clock domain to the receiver clock domain by adjusting the sample rate. See :doc:`/internals/fe_resampler`.
 
+Pipeline structure
+==================
+
+Pipelines used in sender and receiver are chains of consecutively connected elements. Each element has a reference to the inner element (or sometimes multiple elements) and adds some pre- or post-processing on top of it.
+
+The element interface depends on the pipeline type, which may be packet or frame, and pipeline direction, which may be read or write. Therefore, there are four element interfaces: packet reader, packet writer, frame reader, frame writer.
+
+Some elements may implement one interface but refer to an inner element of another interface, or implement multiple interfaces. Such elements act as adapters between sub-pipelines of different types or directions.
+
+Sender and receiver slots
+=========================
+
+Both sender and receiver pipeline have support for slots. Slots allow single sender or receiver to have multiple groups of endpoints, even if those endpoints use different protocols.
+
+For example, on receiver you can create one slot with a single endpoint (RTP), and another slot with a pair of source and repair endpoints (RTP + Reed-Solomon FEC). Senders that support only RTP will send packets to the first slot, and senders that support FECFRAME will send packets to the second slot. A single receiver will be able to handle both types of sender.
+
+Another example is to create two sender slots, connected to different receivers (probably via different protocols). This way single sender will be able to forward traffic to multiple receivers.
+
+Each slot can have at most one endpoint of each type:
+
+* source endpoint (for media packets)
+* repair endpoint (for FEC packets)
+* control endpoint (for control packets)
+
 Sender pipeline
 ===============
 
-*TODO*
+The diagram below shows the structure of sender pipeline.
+
+Sender pipeline is composed from several classes:
+
+* ``SenderSink`` - top-level class, represents the whole sender pipeline; contains one or several slots, and a fanout
+
+* ``SenderSlot`` - represents one slot of the sender; contains a set of related endpoints (e.g. source, repair, and control) and one sender session
+
+* ``SenderEndpoint`` - represents endpoint sub-pipeline; implements packet processing specific to endpoint
+
+* ``SenderSession`` - represents session sub-pipeline; implements the main part of sender processing
 
 .. image:: ../_images/sender_pipeline.png
     :align: center
     :width: 700px
     :alt: Sender pipeline
 
-Sender session sub-pipeline
-===========================
+Sender sub-pipelines
+====================
 
-The diagram below shows an example of the sender pipeline.
+The diagram below shows an example of the sender session and endpoint sub-pipelines.
 
 Some of the elements shown can be removed from the pipeline or replaced with other elements depending on the sender configuration. For instance, resampling and FEC can be disabled completely, the specific RTP and FEC encoders can be changed, and the number and contents of the port pipelines depend on the network ports and protocols being used.
 
@@ -63,11 +114,12 @@ The sender pipeline is a writer pipeline. The sound card thread writes frames to
 In general terms, the flow is the following:
 
 * the sound card thread writes a frame to the pipeline;
+* the frame passes through fanout to session pipeline of each sender slot;
 * the frame passes through several frame writers;
 * the frame is split into packets;
 * the packets pass through several packet writers;
-* each packet is routed to a sender port pipeline, according to the packet stream identifier;
-* in the port pipeline, packet headers and payload are composed, depending on the port protocol;
+* each packet is routed to appropriate endpoint pipeline, according to the packet stream identifier;
+* in the endpoint pipeline, packet headers and payload are composed, depending on the endpoint protocol;
 * the packets are written to the network thread queue.
 
 The specific functions of the individual pipeline elements are documented in `Doxygen <https://roc-streaming.org/toolkit/doxygen/>`_.
@@ -80,29 +132,29 @@ The specific functions of the individual pipeline elements are documented in `Do
 Receiver pipeline
 =================
 
-The receiver can be bound to multiple network ports and serve multiple streams from multiple senders.
+The diagram below shows the structure of receiver pipeline.
 
-For every network port bound, the receiver creates a receiver port pipeline. For every connected sender, the receiver creates a receiver session pipeline. For every stream inside the session, the receiver creates a separate packet queue.
+Receiver pipeline is composed from several classes:
 
-The mapping between ports and sessions is many-to-many, i.e. packets can be routed from one port to many sessions, as well as they can be routed to one session from many ports.
+* ``ReceiverSource`` - top-level class, represents the whole receiver pipeline; contains one or several slots, and a mixer
 
-A typical receiver session employs FEC and hence consists of two streams, one for source and another for repair packets. Respectively, such a session gets packets from two receiver ports, one for source and another for repair packets.
+* ``ReceiverSlot`` - represents one slot of the receiver; contains a set of related endpoints (e.g. source, repair, and control) and a session group
 
-When a packet is received from the network, it is routed to an appropriate port pipeline according to the packet destination address. After passing the port pipeline, the packet is routed to an appropriate session pipeline, according to the packet source address. If there is no session for that address, a new one is automatically created. Inside the session pipeline, the packet is routed to an appropriate queue, according to the packet stream identifier.
+* ``ReceiverEndpoint`` - represents endpoint sub-pipeline; implements packet processing specific to endpoint
 
-When a frame is requested by the sound card, the receiver requests a frame from every existing session pipeline and then mixes all frames into one and returns the result.
+* ``ReceiverSessionGroup`` - represents a set of sessions belonging to one slot; implements routing of packets to sessions
 
-The diagram below illustrates this routing.
+* ``ReceiverSession`` - represents session sub-pipeline; created for every sender connected to receiver; implements processing specific to that session
 
 .. image:: ../_images/receiver_pipeline.png
     :align: center
     :width: 700px
     :alt: Receiver pipeline
 
-Receiver session sub-pipeline
-=============================
+Receiver sub-pipelines
+======================
 
-The diagram below shows an example of the receiver pipeline.
+The diagram below shows an example of the receiver session and endpoint sub-pipelines.
 
 Some of the elements shown can be removed from the pipeline or replaced with other elements depending on the receiver configuration. For instance, resampling and FEC can be disabled completely, the specific RTP and FEC decoders can be changed, and the number and contents of the port pipelines depend on the network ports and protocols being used.
 
@@ -110,16 +162,18 @@ The receiver pipeline is a combination of writer and reader pipelines. The netwo
 
 The flow of the write part is the following:
 
-* each packet received from the network is routed to a receiver port pipeline, according to the packet destination address;
-* in the port pipeline, packet headers and payload are parsed, according to the port protocol;
-* each packet is routed to a receiver session pipeline, according to the packet source address;
-* in the session pipeline, each packet is routed to a specific queue, according to the packet stream identifier;
+* packet received from the network is routed to appropriate endpoint pipeline, according to the packet destination address;
+* in the endpoint pipeline, packet headers and payload are parsed, according to the endpoint protocol;
+* packet is routed to session group of the receiver slot to which endpoint belongs;
+* packet is routed to appropriate session pipeline, according to the packet source;
+* in the session pipeline, packet is routed to a specific queue, according to the packet stream identifier;
 * the packet is stored in that queue.
 
 The flow of the read part is the following:
 
 * the sound card thread requests a frame from the receiver pipeline;
-* the receiver pipeline requests a frame from every receiver session pipeline;
+* the receiver pipeline requests a frame from mixer
+* mixer requests a frame from every session pipeline of every receiver slot;
 * the frame is requested through several frame readers;
 * the frame is being built from packets, for which the packets are requested from packet readers;
 * the packets are requested through several packet readers;
