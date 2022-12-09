@@ -9,7 +9,6 @@
 #include "roc_pipeline/sender_slot.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
-#include "roc_fec/codec_map.h"
 #include "roc_pipeline/endpoint_helpers.h"
 
 namespace roc {
@@ -24,12 +23,13 @@ SenderSlot::SenderSlot(const SenderConfig& config,
                        core::IAllocator& allocator)
     : RefCounted(allocator)
     , config_(config)
-    , format_map_(format_map)
     , fanout_(fanout)
-    , packet_factory_(packet_factory)
-    , byte_buffer_factory_(byte_buffer_factory)
-    , sample_buffer_factory_(sample_buffer_factory)
-    , audio_writer_(NULL) {
+    , session_(config,
+               format_map,
+               packet_factory,
+               byte_buffer_factory,
+               sample_buffer_factory,
+               allocator) {
 }
 
 SenderEndpoint* SenderSlot::create_endpoint(address::Interface iface,
@@ -68,20 +68,21 @@ SenderEndpoint* SenderSlot::create_endpoint(address::Interface iface,
     case address::Iface_AudioRepair:
         if (source_endpoint_
             && (repair_endpoint_ || config_.fec_encoder.scheme == packet::FEC_None)) {
-            if (!create_transport_pipeline_()) {
+            if (!session_.create_transport_pipeline(source_endpoint_.get(),
+                                                    repair_endpoint_.get())) {
                 return NULL;
             }
         }
-        if (audio_writer_) {
-            if (!fanout_.has_output(*audio_writer_)) {
-                fanout_.add_output(*audio_writer_);
+        if (session_.writer()) {
+            if (!fanout_.has_output(*session_.writer())) {
+                fanout_.add_output(*session_.writer());
             }
         }
         break;
 
     case address::Iface_AudioControl:
         if (control_endpoint_) {
-            if (!create_control_pipeline_()) {
+            if (!session_.create_control_pipeline(control_endpoint_.get())) {
                 return NULL;
             }
         }
@@ -95,65 +96,20 @@ SenderEndpoint* SenderSlot::create_endpoint(address::Interface iface,
 }
 
 audio::IFrameWriter* SenderSlot::writer() {
-    return audio_writer_;
+    return session_.writer();
 }
 
 bool SenderSlot::is_ready() const {
-    return audio_writer_ && source_endpoint_->has_destination_writer()
+    return session_.writer() && source_endpoint_->has_destination_writer()
         && (!repair_endpoint_ || repair_endpoint_->has_destination_writer());
 }
 
 core::nanoseconds_t SenderSlot::get_update_deadline() const {
-    if (rtcp_session_) {
-        return rtcp_session_->generation_deadline();
-    }
-
-    return 0;
+    return session_.get_update_deadline();
 }
 
 void SenderSlot::update() {
-    if (rtcp_session_) {
-        rtcp_session_->generate_packets();
-    }
-}
-
-size_t SenderSlot::on_get_num_sources() {
-    return !!source_endpoint_ + !!repair_endpoint_;
-}
-
-packet::source_t SenderSlot::on_get_sending_source(size_t source_index) {
-    switch (source_index) {
-    case 0:
-        // TODO
-        return 123;
-
-    case 1:
-        // TODO
-        return 456;
-    }
-
-    roc_panic("sender slot: source index out of bounds: source_index=%lu",
-              (unsigned long)source_index);
-}
-
-rtcp::SendingMetrics
-SenderSlot::on_get_sending_metrics(packet::ntp_timestamp_t report_time) {
-    // TODO
-
-    rtcp::SendingMetrics metrics;
-    metrics.origin_ntp = report_time;
-
-    return metrics;
-}
-
-void SenderSlot::on_add_reception_metrics(const rtcp::ReceptionMetrics& metrics) {
-    // TODO
-    (void)metrics;
-}
-
-void SenderSlot::on_add_link_metrics(const rtcp::LinkMetrics& metrics) {
-    // TODO
-    (void)metrics;
+    session_.update();
 }
 
 SenderEndpoint* SenderSlot::create_source_endpoint_(address::Protocol proto) {
@@ -236,143 +192,6 @@ SenderEndpoint* SenderSlot::create_control_endpoint_(address::Protocol proto) {
     }
 
     return control_endpoint_.get();
-}
-
-bool SenderSlot::create_transport_pipeline_() {
-    roc_panic_if(audio_writer_);
-    roc_panic_if(!source_endpoint_);
-
-    const rtp::Format* format = format_map_.format(config_.payload_type);
-    if (!format) {
-        return false;
-    }
-
-    router_.reset(new (router_) packet::Router(allocator()));
-    if (!router_) {
-        return false;
-    }
-    packet::IWriter* pwriter = router_.get();
-
-    if (!router_->add_route(source_endpoint_->writer(), packet::Packet::FlagAudio)) {
-        return false;
-    }
-
-    if (repair_endpoint_) {
-        if (!router_->add_route(repair_endpoint_->writer(), packet::Packet::FlagRepair)) {
-            return false;
-        }
-
-        if (config_.interleaving) {
-            interleaver_.reset(new (interleaver_) packet::Interleaver(
-                *pwriter, allocator(),
-                config_.fec_writer.n_source_packets
-                    + config_.fec_writer.n_repair_packets));
-            if (!interleaver_ || !interleaver_->valid()) {
-                return false;
-            }
-            pwriter = interleaver_.get();
-        }
-
-        fec_encoder_.reset(fec::CodecMap::instance().new_encoder(
-                               config_.fec_encoder, byte_buffer_factory_, allocator()),
-                           allocator());
-        if (!fec_encoder_) {
-            return false;
-        }
-
-        fec_writer_.reset(new (fec_writer_) fec::Writer(
-            config_.fec_writer, config_.fec_encoder.scheme, *fec_encoder_, *pwriter,
-            source_endpoint_->composer(), repair_endpoint_->composer(), packet_factory_,
-            byte_buffer_factory_, allocator()));
-        if (!fec_writer_ || !fec_writer_->valid()) {
-            return false;
-        }
-        pwriter = fec_writer_.get();
-    }
-
-    payload_encoder_.reset(format->new_encoder(allocator()), allocator());
-    if (!payload_encoder_) {
-        return false;
-    }
-
-    packetizer_.reset(new (packetizer_) audio::Packetizer(
-        *pwriter, source_endpoint_->composer(), *payload_encoder_, packet_factory_,
-        byte_buffer_factory_, config_.packet_length, format->sample_spec,
-        config_.payload_type));
-    if (!packetizer_ || !packetizer_->valid()) {
-        return false;
-    }
-
-    audio::IFrameWriter* awriter = packetizer_.get();
-
-    if (format->sample_spec.channel_mask() != config_.input_sample_spec.channel_mask()) {
-        channel_mapper_writer_.reset(
-            new (channel_mapper_writer_) audio::ChannelMapperWriter(
-                *awriter, sample_buffer_factory_, config_.internal_frame_length,
-                audio::SampleSpec(format->sample_spec.sample_rate(),
-                                  config_.input_sample_spec.channel_mask()),
-                format->sample_spec));
-        if (!channel_mapper_writer_ || !channel_mapper_writer_->valid()) {
-            return false;
-        }
-        awriter = channel_mapper_writer_.get();
-    }
-
-    if (config_.resampling
-        && format->sample_spec.sample_rate() != config_.input_sample_spec.sample_rate()) {
-        if (config_.poisoning) {
-            resampler_poisoner_.reset(new (resampler_poisoner_)
-                                          audio::PoisonWriter(*awriter));
-            if (!resampler_poisoner_) {
-                return false;
-            }
-            awriter = resampler_poisoner_.get();
-        }
-
-        resampler_.reset(audio::ResamplerMap::instance().new_resampler(
-                             config_.resampler_backend, allocator(),
-                             sample_buffer_factory_, config_.resampler_profile,
-                             config_.internal_frame_length, config_.input_sample_spec),
-                         allocator());
-
-        if (!resampler_) {
-            return false;
-        }
-
-        resampler_writer_.reset(new (resampler_writer_) audio::ResamplerWriter(
-            *awriter, *resampler_, sample_buffer_factory_, config_.internal_frame_length,
-            config_.input_sample_spec,
-            audio::SampleSpec(format->sample_spec.sample_rate(),
-                              config_.input_sample_spec.channel_mask())));
-
-        if (!resampler_writer_ || !resampler_writer_->valid()) {
-            return false;
-        }
-        awriter = resampler_writer_.get();
-    }
-
-    audio_writer_ = awriter;
-
-    return true;
-}
-
-bool SenderSlot::create_control_pipeline_() {
-    roc_panic_if(rtcp_session_);
-    roc_panic_if(!control_endpoint_);
-
-    rtcp_composer_.reset(new (rtcp_composer_) rtcp::Composer());
-    if (!rtcp_composer_) {
-        return false;
-    }
-
-    rtcp_session_.reset(new (rtcp_session_) rtcp::Session(
-        NULL, this, &control_endpoint_->writer(), *rtcp_composer_, packet_factory_,
-        byte_buffer_factory_));
-    if (!rtcp_session_ || !rtcp_session_->valid()) {
-        return false;
-    }
-
-    return true;
 }
 
 } // namespace pipeline
