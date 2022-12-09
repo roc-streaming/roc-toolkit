@@ -9,7 +9,6 @@
 #include <CppUTest/CommandLineArguments.h>
 #include <CppUTest/CommandLineTestRunner.h>
 
-#include "roc_core/color_print.h"
 #include "roc_core/crash_handler.h"
 #include "roc_core/die.h"
 #include "roc_core/heap_allocator.h"
@@ -50,9 +49,7 @@ int main(int argc, const char** argv) {
     }
 
     core::Logger::instance().set_location(core::LocationEnabled);
-
-    core::Logger::instance().set_colors(core::colors_available() ? core::ColorsEnabled
-                                                                 : core::ColorsDisabled);
+    core::Logger::instance().set_colors(core::ColorsAuto);
 
     MemoryLeakWarningPlugin::turnOffNewDeleteOverloads();
 

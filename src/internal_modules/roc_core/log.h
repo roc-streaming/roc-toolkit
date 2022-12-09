@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_core/target_pc/roc_core/log.h
+//! @file roc_core/log.h
 //! @brief Logging.
 
 #ifndef ROC_CORE_LOG_H_
@@ -14,9 +14,11 @@
 
 #include "roc_core/atomic_ops.h"
 #include "roc_core/attributes.h"
+#include "roc_core/log_backend.h"
 #include "roc_core/mutex.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/singleton.h"
+#include "roc_core/time.h"
 
 #ifndef ROC_MODULE
 #error "ROC_MODULE not defined"
@@ -50,19 +52,47 @@ namespace core {
 
 //! Colors mode.
 enum ColorsMode {
+    ColorsAuto,     //!< Automatically use colored logs if colors are supported.
+    ColorsEnabled,  //!< Use colored logs.
     ColorsDisabled, //!< Do not use colored logs.
-    ColorsEnabled   //!< Use colored logs.
 };
 
 //! Location mode.
 enum LocationMode {
-    LocationDisabled, //!< Do not show location.
-    LocationEnabled   //!< Show location.
+    LocationEnabled, //!< Show location.
+    LocationDisabled //!< Do not show location.
+};
+
+//! Log message.
+struct LogMessage {
+    LogLevel level; //!< Logging level.
+
+    const char* module; //!< Name of module that originated message.
+    const char* file;   //!< File path.
+    int line;           //!< Line number.
+
+    nanoseconds_t time; //!< Timestamp, nanoseconds since Unix epoch.
+    uint64_t pid;       //!< Plaform-specific process ID.
+    uint64_t tid;       //!< Plaform-specific thread ID.
+
+    const char* message;    //!< Message text.
+    ColorsMode colors_mode; //!< Whether to enable colors.
+
+    LogMessage()
+        : level(LogNone)
+        , module(NULL)
+        , file(NULL)
+        , line(0)
+        , time(0)
+        , pid(0)
+        , tid(0)
+        , message(NULL)
+        , colors_mode(ColorsDisabled) {
+    }
 };
 
 //! Log handler.
-typedef void (*LogHandler)(
-    LogLevel level, const char* module, const char* file, int line, const char* message);
+typedef void (*LogHandler)(const LogMessage& message, void** args);
 
 //! Logger.
 class Logger : public NonCopyable<> {
@@ -110,30 +140,30 @@ public:
 
     //! Set log handler.
     //! @remarks
-    //!  If @p handler is not NULL, log messages will be passed to @p handler.
-    //!  Otherwise, they're printed to stderr. Default log handler is NULL.
+    //!  If @p handler is not NULL, log messages and @p arg will be passed to
+    //!  @p handler. Otherwise, they're printed to stderr.
     //! @note
     //!  Other threads will see the change immediately.
-    void set_handler(LogHandler handler);
+    void set_handler(LogHandler handler, void** args, size_t n_args);
 
 private:
     friend class Singleton<Logger>;
 
-    Logger();
+    enum { MaxArgs = 8 };
 
-    void default_print_(LogLevel level,
-                        const char* module,
-                        const char* file,
-                        int line,
-                        const char* message);
+    Logger();
 
     int level_;
 
     Mutex mutex_;
 
     LogHandler handler_;
-    ColorsMode colors_;
-    LocationMode location_;
+    void* handler_args_[MaxArgs];
+
+    LogBackend backend_;
+
+    ColorsMode colors_mode_;
+    LocationMode location_mode_;
 };
 
 } // namespace core

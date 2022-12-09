@@ -8,7 +8,6 @@
 
 #include <benchmark/benchmark.h>
 
-#include "roc_core/color_print.h"
 #include "roc_core/crash_handler.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_core/log.h"
@@ -21,8 +20,7 @@ int main(int argc, char** argv) {
     core::CrashHandler crash_handler;
 
     core::Logger::instance().set_level(LogError);
-    core::Logger::instance().set_colors(core::colors_available() ? core::ColorsEnabled
-                                                                 : core::ColorsDisabled);
+    core::Logger::instance().set_colors(core::ColorsAuto);
 
     benchmark::Initialize(&argc, argv);
 

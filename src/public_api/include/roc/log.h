@@ -52,18 +52,53 @@ typedef enum roc_log_level {
     ROC_LOG_TRACE = 4
 } roc_log_level;
 
+/** Log message.
+ * \see roc_log_set_handler
+ */
+typedef struct roc_log_message {
+    /** Message log level.
+     */
+    roc_log_level level;
+
+    /** Name of the component that originated the message.
+     */
+    const char* component;
+
+    /** Name of the source code file.
+     * May be NULL.
+     */
+    const char* file;
+
+    /** Line number in the source code file.
+     */
+    int line;
+
+    /** Message timestamp, nanoseconds since Unix epoch.
+     */
+    unsigned long long time;
+
+    /** Platform-specific process ID.
+     */
+    unsigned long long pid;
+
+    /** Platform-specific thread ID.
+     */
+    unsigned long long tid;
+
+    /** Message text.
+     */
+    const char* message;
+} roc_log_message;
+
 /** Log handler.
  *
  * **Parameters**
- *  - \p level defines the message level
- *  - \p component defines the component that produces the message
- *  - \p message defines the message text
+ *  - \p message define message to be logged
+ *  - \p argument is the argument passed to roc_log_set_handler
  *
  * \see roc_log_set_handler
  */
-typedef void (*roc_log_handler)(roc_log_level level,
-                                const char* component,
-                                const char* message);
+typedef void (*roc_log_handler)(const roc_log_message* message, void* argument);
 
 /** Set maximum log level.
  *
@@ -89,7 +124,7 @@ ROC_API void roc_log_set_level(roc_log_level level);
  * Can be used concurrently. Handler calls are serialized, so the handler itself doesn't
  * need to be thread-safe.
  */
-ROC_API void roc_log_set_handler(roc_log_handler handler);
+ROC_API void roc_log_set_handler(roc_log_handler handler, void* argument);
 
 #ifdef __cplusplus
 } /* extern "C" */

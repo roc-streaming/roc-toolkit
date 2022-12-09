@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_core/target_pc/roc_core/printer.h
+//! @file roc_core/printer.h
 //! @brief Console printer.
 
 #ifndef ROC_CORE_PRINTER_H_
@@ -23,16 +23,15 @@ namespace core {
 class Printer : public NonCopyable<> {
 public:
     enum {
-        BufferSize = 2048,    //!< Maximum buffer size.
-        FlushThreshold = 1536 //!< Threshold after which buffer is flushed.
+        BufferSize = 1024, //!< Maximum buffer size.
     };
 
     //! Printing function.
-    typedef void (*PrintFunc)(const char* buf, size_t bufsz);
+    typedef void (*PrintlnFunc)(const char* buf, size_t bufsz);
 
     //! Initialize printer.
-    //! If @p print_func is NULL, prints text to console.
-    Printer(PrintFunc print_func = NULL);
+    //! If @p println_func is NULL, prints text to console.
+    Printer(PrintlnFunc println_func = NULL);
 
     //! Flush and destroy.
     ~Printer();
@@ -41,13 +40,10 @@ public:
     //! @returns size of formatted string (excluding terminating zero byte).
     ROC_ATTR_PRINTF(2, 3) size_t writef(const char* format, ...);
 
-    //! Flush buffered text to console.
-    void flush();
-
 private:
     void flush_(bool force);
 
-    PrintFunc print_;
+    PrintlnFunc println_;
 
     char buf_[BufferSize + 1];
     size_t bufsz_;

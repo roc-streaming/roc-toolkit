@@ -24,7 +24,11 @@
 namespace roc {
 namespace core {
 
-uint64_t Thread::get_id() {
+uint64_t Thread::get_pid() {
+    return (uint64_t)getpid();
+}
+
+uint64_t Thread::get_tid() {
 #if defined(SYS_gettid)
     return (uint64_t)(pid_t)syscall(SYS_gettid);
 #elif defined(__FreeBSD__)

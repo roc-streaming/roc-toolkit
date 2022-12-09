@@ -25,8 +25,11 @@ namespace core {
 //! Base class for thread objects.
 class Thread : public NonCopyable<Thread> {
 public:
+    //! Get numeric identifier of current process.
+    static uint64_t get_pid();
+
     //! Get numeric identifier of current thread.
-    static uint64_t get_id();
+    static uint64_t get_tid();
 
     //! Raise current thread priority to realtime.
     static bool set_realtime();

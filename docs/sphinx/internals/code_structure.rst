@@ -101,14 +101,13 @@ Currently supported targets are:
 ===================== ===============================================
 target                description
 ===================== ===============================================
+target_pc             Enabled for PC (like server, desktop, laptop)
 target_posix          Enabled for a POSIX OS
 target_posix_ext      Enabled for a POSIX OS with POSIX extensions
-target_posix_tty      Enabled for a POSIX OS with ANSI terminals
+target_posix_ext      Enabled for a POSIX OS on PC
 target_gnu            Enabled for GNU-like libc
-target_bionic         Enabled for Bionic libc
 target_darwin         Enabled for macOS
 target_android        Enabled for Android
-target_pc             Enabled for PC, in broad sense (desktop, server, mobile)
 target_c11            Enabled for C11 compilers
 target_libunwind      Enabled if libunwind is available
 target_libatomic_ops  Enabled if libatomic_ops is available

@@ -18,9 +18,13 @@ namespace {
 
 char buffer[Printer::BufferSize * 10];
 
-void buffer_print(const char* buf, size_t bufsz) {
+void buffer_println(const char* buf, size_t bufsz) {
     CHECK(strlen(buffer) + bufsz < sizeof(buffer));
-    memcpy(buffer + strlen(buffer), buf, bufsz);
+    size_t pos = strlen(buffer);
+    memcpy(buffer + pos, buf, bufsz);
+    pos += bufsz;
+    buffer[pos++] = '\n';
+    buffer[pos++] = '\0';
 }
 
 } // namespace
@@ -33,157 +37,22 @@ TEST_GROUP(printer) {
 };
 // clang-format on
 
-TEST(printer, write_flush) {
-    Printer p(&buffer_print);
+TEST(printer, one_line) {
+    Printer p(&buffer_println);
 
-    UNSIGNED_LONGS_EQUAL(5, p.writef("%s", "hello"));
-    STRCMP_EQUAL("", buffer);
-
-    p.flush();
-    STRCMP_EQUAL("hello", buffer);
+    UNSIGNED_LONGS_EQUAL(6, p.writef("%s", "hello\n"));
+    STRCMP_EQUAL("hello\n", buffer);
 }
 
-TEST(printer, write_destroy) {
-    {
-        Printer p(&buffer_print);
+TEST(printer, two_lines_in_one_write) {
+    Printer p(&buffer_println);
 
-        UNSIGNED_LONGS_EQUAL(5, p.writef("%s", "hello"));
-        STRCMP_EQUAL("", buffer);
-    }
-
-    STRCMP_EQUAL("hello", buffer);
-}
-
-TEST(printer, write_many) {
-    Printer p(&buffer_print);
-
-    for (int i = 0; i < Printer::FlushThreshold - 1; i++) {
-        UNSIGNED_LONGS_EQUAL(1, p.writef("x"));
-    }
-
-    STRCMP_EQUAL("", buffer);
-
-    UNSIGNED_LONGS_EQUAL(1, p.writef("x"));
-
-    char text[sizeof(buffer)] = {};
-    for (int i = 0; i < Printer::FlushThreshold; i++) {
-        strcat(text, "x");
-    }
-
-    STRCMP_EQUAL(text, buffer);
-}
-
-TEST(printer, write_big) {
-    Printer p(&buffer_print);
-
-    char text[sizeof(buffer)] = {};
-    for (int i = 0; i < Printer::FlushThreshold; i++) {
-        strcat(text, "x");
-    }
-
-    UNSIGNED_LONGS_EQUAL(strlen(text), p.writef("%s", text));
-
-    STRCMP_EQUAL(text, buffer);
-}
-
-TEST(printer, overflow) {
-    Printer p(&buffer_print);
-
-    char text_concat[sizeof(buffer)] = {};
-
-    char text1[sizeof(buffer)] = {};
-    for (int i = 0; i < Printer::FlushThreshold - 10; i++) {
-        strcat(text1, "x");
-        strcat(text_concat, "x");
-    }
-
-    UNSIGNED_LONGS_EQUAL(strlen(text1), p.writef("%s", text1));
-
-    STRCMP_EQUAL("", buffer);
-
-    char text2[sizeof(buffer)] = {};
-    for (int i = 0; i < Printer::FlushThreshold - 10; i++) {
-        strcat(text2, "y");
-        strcat(text_concat, "y");
-    }
-
-    UNSIGNED_LONGS_EQUAL(strlen(text2), p.writef("%s", text2));
-
-    STRCMP_EQUAL(text1, buffer);
-
-    p.flush();
-
-    STRCMP_EQUAL(text_concat, buffer);
-}
-
-TEST(printer, truncation) {
-    Printer p(&buffer_print);
-
-    char text_truncated[sizeof(buffer)] = {};
-
-    char text[sizeof(buffer)] = {};
-
-    for (int i = 0; i < Printer::BufferSize * 2; i++) {
-        strcat(text, "x");
-        if (i < Printer::BufferSize) {
-            strcat(text_truncated, "x");
-        }
-    }
-
-    UNSIGNED_LONGS_EQUAL(strlen(text_truncated), p.writef("%s", text));
-
-    STRCMP_EQUAL(text_truncated, buffer);
-
-    p.flush();
-
-    STRCMP_EQUAL(text_truncated, buffer);
-}
-
-TEST(printer, newline) {
-    Printer p(&buffer_print);
-
-    char text[sizeof(buffer)] = {};
-    for (int i = 0; i < Printer::FlushThreshold - 10; i++) {
-        strcat(text, "x");
-    }
-    strcat(text, "\n");
-
-    UNSIGNED_LONGS_EQUAL(strlen(text), p.writef("%s", text));
-
-    STRCMP_EQUAL("", buffer);
-
-    UNSIGNED_LONGS_EQUAL(9, p.writef("123456789"));
-
-    STRCMP_EQUAL(text, buffer);
-
-    p.flush();
-
-    strcat(text, "123456789");
-
-    STRCMP_EQUAL(text, buffer);
-}
-
-TEST(printer, newline_end) {
-    Printer p(&buffer_print);
-
-    char text[sizeof(buffer)] = {};
-    for (int i = 0; i < Printer::FlushThreshold - 1; i++) {
-        strcat(text, "x");
-    }
-
-    UNSIGNED_LONGS_EQUAL(strlen(text), p.writef("%s", text));
-
-    STRCMP_EQUAL("", buffer);
-
-    UNSIGNED_LONGS_EQUAL(1, p.writef("\n"));
-
-    strcat(text, "\n");
-
-    STRCMP_EQUAL(text, buffer);
+    UNSIGNED_LONGS_EQUAL(12, p.writef("%s", "hello\nworld\n"));
+    STRCMP_EQUAL("hello\nworld\n", buffer);
 }
 
 TEST(printer, many_lines) {
-    Printer p(&buffer_print);
+    Printer p(&buffer_println);
 
     char text[sizeof(buffer)] = {};
 
@@ -192,19 +61,17 @@ TEST(printer, many_lines) {
         UNSIGNED_LONGS_EQUAL(10, p.writef("%s\n", "123456789"));
     }
 
-    p.flush();
-
     STRCMP_EQUAL(text, buffer);
 }
 
-TEST(printer, varying_size) {
-    Printer p(&buffer_print);
+TEST(printer, many_lines_varying_size) {
+    Printer p(&buffer_println);
 
     char text[sizeof(buffer)] = {};
 
-    for (int i = 0; i < 200; i++) {
-        char t[100] = {};
-        for (int i = 0; i < 40; i++) {
+    for (int i = 0; i < 100; i++) {
+        char t[101] = {};
+        for (int j = 0; j < i; j++) {
             strcat(t, "x");
         }
 
@@ -214,12 +81,55 @@ TEST(printer, varying_size) {
         UNSIGNED_LONGS_EQUAL(strlen(t) + 1, p.writef("%s\n", t));
     }
 
-    p.flush();
-
     CHECK(strlen(text) > Printer::BufferSize * 3);
     CHECK(strlen(text) < sizeof(buffer));
 
     STRCMP_EQUAL(text, buffer);
+}
+
+TEST(printer, whole_buffer_many_writes) {
+    Printer p(&buffer_println);
+
+    for (int i = 0; i < Printer::BufferSize - 1; i++) {
+        UNSIGNED_LONGS_EQUAL(1, p.writef("x"));
+    }
+
+    STRCMP_EQUAL("", buffer);
+
+    UNSIGNED_LONGS_EQUAL(1, p.writef("\n"));
+
+    char text[sizeof(buffer)] = {};
+    for (int i = 0; i < Printer::BufferSize - 1; i++) {
+        strcat(text, "x");
+    }
+    strcat(text, "\n");
+
+    STRCMP_EQUAL(text, buffer);
+}
+
+TEST(printer, whole_buffer_one_write) {
+    Printer p(&buffer_println);
+
+    char text[sizeof(buffer)] = {};
+    for (int i = 0; i < Printer::BufferSize - 1; i++) {
+        strcat(text, "x");
+    }
+    strcat(text, "\n");
+
+    UNSIGNED_LONGS_EQUAL(strlen(text), p.writef("%s", text));
+
+    STRCMP_EQUAL(text, buffer);
+}
+
+TEST(printer, flush_on_destroy) {
+    {
+        Printer p(&buffer_println);
+
+        UNSIGNED_LONGS_EQUAL(5, p.writef("%s", "hello"));
+        STRCMP_EQUAL("", buffer);
+    }
+
+    STRCMP_EQUAL("hello\n", buffer);
 }
 
 } // namespace core

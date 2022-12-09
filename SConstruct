@@ -646,13 +646,19 @@ if GetOption('override_targets'):
     for t in GetOption('override_targets').split(','):
         env['ROC_TARGETS'] += ['target_%s' % t]
 else:
-    env.Append(ROC_TARGETS=[
-        'target_pc',
-    ])
+    if meta.platform in ['linux', 'unix', 'darwin']:
+        env.Append(ROC_TARGETS=[
+            'target_pc',
+        ])
 
-    if meta.platform in ['linux', 'unix', 'android', 'darwin']:
+    if meta.platform in ['linux', 'unix', 'darwin', 'android']:
         env.Append(ROC_TARGETS=[
             'target_posix',
+        ])
+
+    if meta.platform in ['linux', 'unix', 'darwin']:
+        env.Append(ROC_TARGETS=[
+            'target_posix_pc',
         ])
 
     if meta.platform in ['linux', 'unix', 'android']:
@@ -673,7 +679,7 @@ else:
 
     if meta.platform in ['android']:
         env.Append(ROC_TARGETS=[
-            'target_bionic',
+            'target_android',
         ])
 
     if meta.c11_support:
@@ -748,6 +754,9 @@ if 'target_posix' in env['ROC_TARGETS'] and meta.platform not in ['darwin', 'uni
 
 if meta.platform in ['linux', 'unix']:
     env.AddPkgConfigLibs(['rt', 'dl', 'm'])
+
+if meta.platform in ['android']:
+    env.AddPkgConfigLibs(['log', 'android'])
 
 if meta.compiler in ['gcc', 'clang']:
     if not meta.platform in ['android']:

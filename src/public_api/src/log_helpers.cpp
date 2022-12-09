@@ -11,7 +11,7 @@
 namespace roc {
 namespace api {
 
-LogLevel convert_log_level(roc_log_level level) {
+LogLevel log_level_from_user(roc_log_level level) {
     switch (level) {
     case ROC_LOG_NONE:
         return LogNone;
@@ -33,6 +33,41 @@ LogLevel convert_log_level(roc_log_level level) {
     }
 
     return LogError;
+}
+
+roc_log_level log_level_to_user(LogLevel level) {
+    switch (level) {
+    case LogNone:
+        return ROC_LOG_NONE;
+
+    case LogError:
+        return ROC_LOG_ERROR;
+
+    case LogInfo:
+        return ROC_LOG_INFO;
+
+    case LogDebug:
+        return ROC_LOG_DEBUG;
+
+    case LogTrace:
+        return ROC_LOG_TRACE;
+
+    default:
+        break;
+    }
+
+    return ROC_LOG_ERROR;
+}
+
+void log_message_to_user(const core::LogMessage& in, roc_log_message& out) {
+    out.level = log_level_to_user(in.level);
+    out.component = in.module;
+    out.file = in.file;
+    out.line = in.line;
+    out.time = (unsigned long long)in.time;
+    out.pid = (unsigned long long)in.pid;
+    out.tid = (unsigned long long)in.tid;
+    out.message = in.message;
 }
 
 } // namespace api

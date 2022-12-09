@@ -8,7 +8,6 @@
 
 #include "roc_address/io_uri.h"
 #include "roc_audio/resampler_profile.h"
-#include "roc_core/color_print.h"
 #include "roc_core/crash_handler.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_core/log.h"
@@ -43,16 +42,15 @@ int main(int argc, char** argv) {
 
     switch (args.color_arg) {
     case color_arg_auto:
-        core::Logger::instance().set_colors(
-            core::colors_available() ? core::ColorsEnabled : core::ColorsDisabled);
+        core::Logger::instance().set_colors(core::ColorsAuto);
         break;
 
     case color_arg_always:
-        core::Logger::instance().set_colors(core::ColorsMode(core::ColorsEnabled));
+        core::Logger::instance().set_colors(core::ColorsEnabled);
         break;
 
     case color_arg_never:
-        core::Logger::instance().set_colors(core::ColorsMode(core::ColorsDisabled));
+        core::Logger::instance().set_colors(core::ColorsDisabled);
         break;
 
     default:

@@ -6,18 +6,17 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include <stdarg.h>
-#include <stdio.h>
-
-#include "roc_core/die.h"
 #include "roc_core/panic.h"
+#include "roc_core/console.h"
+#include "roc_core/die.h"
+#include "roc_core/stddefs.h"
 
 namespace roc {
 namespace core {
 
 void panic(const char* module, const char* file, int line, const char* format, ...) {
-    fprintf(stderr, "\n%s:%d: error: roc_panic()\n", file, line);
-    fflush(stderr);
+    Console::instance().println(Color_None, "%s", "");
+    Console::instance().println(Color_None, "%s:%d: error: roc_panic()", file, line);
 
     char message[256] = {};
     size_t message_sz = sizeof(message) - 1;
@@ -25,6 +24,9 @@ void panic(const char* module, const char* file, int line, const char* format, .
     int off = snprintf(message, message_sz, "%s: ", module);
     if (off > 0) {
         message_sz -= (size_t)off;
+    } else {
+        message[0] = '\0';
+        off = 0;
     }
 
     va_list args;

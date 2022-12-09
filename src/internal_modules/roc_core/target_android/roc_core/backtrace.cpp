@@ -13,6 +13,7 @@
 #include <unwind.h>
 
 #include "roc_core/backtrace.h"
+#include "roc_core/console.h"
 
 namespace roc {
 namespace core {
@@ -50,35 +51,32 @@ ssize_t capture_backtrace(void** buffer, size_t max) {
 
 void dump_backtrace(void** buffer, ssize_t count) {
     if (count <= 0) {
-        fprintf(stderr, "No backtrace available\n");
-    } else {
-        fprintf(stderr, "Backtrace:\n");
+        Console::instance().println(Color_None, "No backtrace available\n");
+        return;
+    }
 
-        char* demangled_buf = NULL;
-        size_t demangled_size = 0;
+    Console::instance().println(Color_None, "Backtrace:\n");
 
-        for (ssize_t idx = 0; idx < count; ++idx) {
-            const void* addr = buffer[idx];
+    char* demangled_buf = NULL;
+    size_t demangled_size = 0;
 
-            const char* symbol = "";
-            const char* demangled_symbol = NULL;
+    for (ssize_t idx = 0; idx < count; ++idx) {
+        const void* addr = buffer[idx];
 
-            Dl_info info;
-            if (dladdr(addr, &info) && info.dli_sname) {
-                symbol = info.dli_sname;
-                demangled_symbol = demangle_symbol(symbol, demangled_buf, demangled_size);
-            }
+        const char* symbol = "";
+        const char* demangled_symbol = NULL;
 
-            fprintf(stderr, "#%d: %p", (int)idx, addr);
-            if (demangled_symbol) {
-                fprintf(stderr, " %s\n", demangled_symbol);
-            } else {
-                fprintf(stderr, " %s\n", symbol);
-            }
+        Dl_info info;
+        if (dladdr(addr, &info) && info.dli_sname) {
+            symbol = info.dli_sname;
+            demangled_symbol = demangle_symbol(symbol, demangled_buf, demangled_size);
         }
 
-        free(demangled_buf);
+        Console::instance().println(Color_None, "#%d: %p %s", (int)idx, addr,
+                                    demangled_symbol ? demangled_symbol : symbol);
     }
+
+    free(demangled_buf);
 }
 
 } // namespace

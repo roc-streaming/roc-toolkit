@@ -16,7 +16,10 @@
 namespace roc {
 namespace api {
 
-LogLevel convert_log_level(roc_log_level level);
+LogLevel log_level_from_user(roc_log_level level);
+roc_log_level log_level_to_user(LogLevel level);
+
+void log_message_to_user(const core::LogMessage& in, roc_log_message& out);
 
 } // namespace api
 } // namespace roc

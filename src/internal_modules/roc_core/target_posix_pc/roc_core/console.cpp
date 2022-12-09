@@ -6,11 +6,12 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+#include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 
-#include "roc_core/color_print.h"
+#include "roc_core/console.h"
 
 // ANSI Color Codes.
 #define COLOR_NONE ""
@@ -32,6 +33,15 @@ namespace roc {
 namespace core {
 
 namespace {
+
+bool detect_color_support() {
+    if (isatty(STDERR_FILENO)) {
+        const char* term = getenv("TERM");
+        return term && strncmp("dumb", term, 4) != 0;
+    } else {
+        return false;
+    }
+}
 
 const char* color_code(Color color) {
     switch (color) {
@@ -59,16 +69,32 @@ const char* color_code(Color color) {
 
 } // namespace
 
-bool colors_available() {
-    char* term = getenv("TERM");
-    return isatty(STDERR_FILENO) && term && strncmp("dumb", term, 4) != 0;
+Console::Console()
+    : colors_supported_(detect_color_support()) {
 }
 
-bool colors_format(Color color, const char* str, char* buf, size_t bufsz) {
-    roc_panic_if_not(str);
-    roc_panic_if_not(buf);
-    int printed = snprintf(buf, bufsz, "%s%s%s", color_code(color), str, COLOR_RESET);
-    return printed > 0 && (size_t)printed < bufsz;
+bool Console::colors_supported() {
+    return colors_supported_;
+}
+
+void Console::println(Color color, const char* format, ...) {
+    Mutex::Lock lock(mutex_);
+
+    if (colors_supported_ && color != Color_None) {
+        fprintf(stderr, "%s", color_code(color));
+    }
+
+    va_list args;
+    va_start(args, format);
+    vfprintf(stderr, format, args);
+    va_end(args);
+
+    if (colors_supported_ && color != Color_None) {
+        fprintf(stderr, "%s", COLOR_RESET);
+    }
+
+    fprintf(stderr, "\n");
+    fflush(stderr);
 }
 
 } // namespace core
