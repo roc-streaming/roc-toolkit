@@ -29,7 +29,7 @@
 #include "roc_packet/router.h"
 #include "roc_pipeline/config.h"
 #include "roc_pipeline/sender_endpoint.h"
-#include "roc_pipeline/sender_endpoint_set.h"
+#include "roc_pipeline/sender_slot.h"
 #include "roc_rtp/format_map.h"
 #include "roc_sndio/isink.h"
 
@@ -37,7 +37,12 @@ namespace roc {
 namespace pipeline {
 
 //! Sender sink pipeline.
-//! @remarks
+//!
+//! Contains:
+//!  - one or more sender slots
+//!  - fanout, to duplicate audio to all slots
+//!
+//! Pipeline:
 //!  - input: frames
 //!  - output: packets
 class SenderSink : public sndio::ISink, public core::NonCopyable<> {
@@ -53,8 +58,8 @@ public:
     //! Check if the pipeline was successfully constructed.
     bool valid() const;
 
-    //! Create endpoint set.
-    SenderEndpointSet* create_endpoint_set();
+    //! Create slot.
+    SenderSlot* create_slot();
 
     //! Get deadline when the pipeline should be updated.
     core::nanoseconds_t get_update_deadline();
@@ -88,7 +93,7 @@ private:
 
     core::IAllocator& allocator_;
 
-    core::List<SenderEndpointSet> endpoint_sets_;
+    core::List<SenderSlot> slots_;
 
     audio::Fanout fanout_;
 

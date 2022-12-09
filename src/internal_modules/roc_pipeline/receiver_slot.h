@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_pipeline/receiver_endpoint_set.h
-//! @brief Receiver endpoint set.
+//! @file roc_pipeline/receiver_slot.h
+//! @brief Receiver slot.
 
-#ifndef ROC_PIPELINE_RECEIVER_ENDPOINT_SET_H_
-#define ROC_PIPELINE_RECEIVER_ENDPOINT_SET_H_
+#ifndef ROC_PIPELINE_RECEIVER_SLOT_H_
+#define ROC_PIPELINE_RECEIVER_SLOT_H_
 
 #include "roc_address/interface.h"
 #include "roc_address/protocol.h"
@@ -28,25 +28,25 @@
 namespace roc {
 namespace pipeline {
 
-//! Receiver endpoint set.
-//! @remarks
-//!  Contains one or seevral related endpoint pipelines and a
-//!  session group shared by them.
-class ReceiverEndpointSet
-    : public core::RefCounted<ReceiverEndpointSet, core::StandardAllocation>,
-      public core::ListNode {
-    typedef core::RefCounted<ReceiverEndpointSet, core::StandardAllocation> RefCounted;
+//! Receiver slot.
+//!
+//! Contains:
+//!  - one or more related receiver endpoints
+//!  - one session group associated with those endpoints
+class ReceiverSlot : public core::RefCounted<ReceiverSlot, core::StandardAllocation>,
+                     public core::ListNode {
+    typedef core::RefCounted<ReceiverSlot, core::StandardAllocation> RefCounted;
 
 public:
     //! Initialize.
-    ReceiverEndpointSet(const ReceiverConfig& receiver_config,
-                        ReceiverState& receiver_state,
-                        audio::Mixer& mixer,
-                        const rtp::FormatMap& format_map,
-                        packet::PacketFactory& packet_factory,
-                        core::BufferFactory<uint8_t>& byte_buffer_factory,
-                        core::BufferFactory<audio::sample_t>& sample_buffer_factory,
-                        core::IAllocator& allocator);
+    ReceiverSlot(const ReceiverConfig& receiver_config,
+                 ReceiverState& receiver_state,
+                 audio::Mixer& mixer,
+                 const rtp::FormatMap& format_map,
+                 packet::PacketFactory& packet_factory,
+                 core::BufferFactory<uint8_t>& byte_buffer_factory,
+                 core::BufferFactory<audio::sample_t>& sample_buffer_factory,
+                 core::IAllocator& allocator);
 
     //! Create endpoint.
     ReceiverEndpoint* create_endpoint(address::Interface iface, address::Protocol proto);
@@ -81,4 +81,4 @@ private:
 } // namespace pipeline
 } // namespace roc
 
-#endif // ROC_PIPELINE_RECEIVER_ENDPOINT_SET_H_
+#endif // ROC_PIPELINE_RECEIVER_SLOT_H_

@@ -189,22 +189,22 @@ void send_receive(int flags, size_t num_sessions) {
 
     CHECK(sender.valid());
 
-    SenderEndpointSet* sender_endpoint_set = sender.create_endpoint_set();
-    CHECK(sender_endpoint_set);
+    SenderSlot* sender_slot = sender.create_slot();
+    CHECK(sender_slot);
 
     SenderEndpoint* sender_source_endpoint = NULL;
     SenderEndpoint* sender_repair_endpoint = NULL;
 
     sender_source_endpoint =
-        sender_endpoint_set->create_endpoint(address::Iface_AudioSource, source_proto);
+        sender_slot->create_endpoint(address::Iface_AudioSource, source_proto);
     CHECK(sender_source_endpoint);
 
     sender_source_endpoint->set_destination_writer(queue);
     sender_source_endpoint->set_destination_address(receiver_source_addr);
 
     if (repair_proto != address::Proto_None) {
-        sender_repair_endpoint = sender_endpoint_set->create_endpoint(
-            address::Iface_AudioRepair, repair_proto);
+        sender_repair_endpoint =
+            sender_slot->create_endpoint(address::Iface_AudioRepair, repair_proto);
         CHECK(sender_repair_endpoint);
 
         sender_repair_endpoint->set_destination_writer(queue);
@@ -216,8 +216,8 @@ void send_receive(int flags, size_t num_sessions) {
 
     CHECK(receiver.valid());
 
-    ReceiverEndpointSet* receiver_endpoint_set = receiver.create_endpoint_set();
-    CHECK(receiver_endpoint_set);
+    ReceiverSlot* receiver_slot = receiver.create_slot();
+    CHECK(receiver_slot);
 
     ReceiverEndpoint* receiver_source_endpoint = NULL;
     ReceiverEndpoint* receiver_repair_endpoint = NULL;
@@ -226,13 +226,13 @@ void send_receive(int flags, size_t num_sessions) {
     packet::IWriter* receiver_repair_endpoint_writer = NULL;
 
     receiver_source_endpoint =
-        receiver_endpoint_set->create_endpoint(address::Iface_AudioSource, source_proto);
+        receiver_slot->create_endpoint(address::Iface_AudioSource, source_proto);
     CHECK(receiver_source_endpoint);
     receiver_source_endpoint_writer = &receiver_source_endpoint->writer();
 
     if (repair_proto != address::Proto_None) {
-        receiver_repair_endpoint = receiver_endpoint_set->create_endpoint(
-            address::Iface_AudioRepair, repair_proto);
+        receiver_repair_endpoint =
+            receiver_slot->create_endpoint(address::Iface_AudioRepair, repair_proto);
         CHECK(receiver_repair_endpoint);
         receiver_repair_endpoint_writer = &receiver_repair_endpoint->writer();
     }

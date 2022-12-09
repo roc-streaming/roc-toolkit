@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_pipeline/sender_endpoint_set.h"
+#include "roc_pipeline/sender_slot.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_fec/codec_map.h"
@@ -15,14 +15,13 @@
 namespace roc {
 namespace pipeline {
 
-SenderEndpointSet::SenderEndpointSet(
-    const SenderConfig& config,
-    const rtp::FormatMap& format_map,
-    audio::Fanout& fanout,
-    packet::PacketFactory& packet_factory,
-    core::BufferFactory<uint8_t>& byte_buffer_factory,
-    core::BufferFactory<audio::sample_t>& sample_buffer_factory,
-    core::IAllocator& allocator)
+SenderSlot::SenderSlot(const SenderConfig& config,
+                       const rtp::FormatMap& format_map,
+                       audio::Fanout& fanout,
+                       packet::PacketFactory& packet_factory,
+                       core::BufferFactory<uint8_t>& byte_buffer_factory,
+                       core::BufferFactory<audio::sample_t>& sample_buffer_factory,
+                       core::IAllocator& allocator)
     : RefCounted(allocator)
     , config_(config)
     , format_map_(format_map)
@@ -33,9 +32,9 @@ SenderEndpointSet::SenderEndpointSet(
     , audio_writer_(NULL) {
 }
 
-SenderEndpoint* SenderEndpointSet::create_endpoint(address::Interface iface,
-                                                   address::Protocol proto) {
-    roc_log(LogDebug, "sender endpoint set: adding %s endpoint %s",
+SenderEndpoint* SenderSlot::create_endpoint(address::Interface iface,
+                                            address::Protocol proto) {
+    roc_log(LogDebug, "sender slot: adding %s endpoint %s",
             address::interface_to_str(iface), address::proto_to_str(proto));
 
     SenderEndpoint* endpoint = NULL;
@@ -60,7 +59,7 @@ SenderEndpoint* SenderEndpointSet::create_endpoint(address::Interface iface,
         break;
 
     default:
-        roc_log(LogError, "sender endpoint set: unsupported interface");
+        roc_log(LogError, "sender slot: unsupported interface");
         return NULL;
     }
 
@@ -95,16 +94,16 @@ SenderEndpoint* SenderEndpointSet::create_endpoint(address::Interface iface,
     return endpoint;
 }
 
-audio::IFrameWriter* SenderEndpointSet::writer() {
+audio::IFrameWriter* SenderSlot::writer() {
     return audio_writer_;
 }
 
-bool SenderEndpointSet::is_ready() const {
+bool SenderSlot::is_ready() const {
     return audio_writer_ && source_endpoint_->has_destination_writer()
         && (!repair_endpoint_ || repair_endpoint_->has_destination_writer());
 }
 
-core::nanoseconds_t SenderEndpointSet::get_update_deadline() const {
+core::nanoseconds_t SenderSlot::get_update_deadline() const {
     if (rtcp_session_) {
         return rtcp_session_->generation_deadline();
     }
@@ -112,17 +111,17 @@ core::nanoseconds_t SenderEndpointSet::get_update_deadline() const {
     return 0;
 }
 
-void SenderEndpointSet::update() {
+void SenderSlot::update() {
     if (rtcp_session_) {
         rtcp_session_->generate_packets();
     }
 }
 
-size_t SenderEndpointSet::on_get_num_sources() {
+size_t SenderSlot::on_get_num_sources() {
     return !!source_endpoint_ + !!repair_endpoint_;
 }
 
-packet::source_t SenderEndpointSet::on_get_sending_source(size_t source_index) {
+packet::source_t SenderSlot::on_get_sending_source(size_t source_index) {
     switch (source_index) {
     case 0:
         // TODO
@@ -133,12 +132,12 @@ packet::source_t SenderEndpointSet::on_get_sending_source(size_t source_index) {
         return 456;
     }
 
-    roc_panic("sender endpoint set: source index out of bounds: source_index=%lu",
+    roc_panic("sender slot: source index out of bounds: source_index=%lu",
               (unsigned long)source_index);
 }
 
 rtcp::SendingMetrics
-SenderEndpointSet::on_get_sending_metrics(packet::ntp_timestamp_t report_time) {
+SenderSlot::on_get_sending_metrics(packet::ntp_timestamp_t report_time) {
     // TODO
 
     rtcp::SendingMetrics metrics;
@@ -147,19 +146,19 @@ SenderEndpointSet::on_get_sending_metrics(packet::ntp_timestamp_t report_time) {
     return metrics;
 }
 
-void SenderEndpointSet::on_add_reception_metrics(const rtcp::ReceptionMetrics& metrics) {
+void SenderSlot::on_add_reception_metrics(const rtcp::ReceptionMetrics& metrics) {
     // TODO
     (void)metrics;
 }
 
-void SenderEndpointSet::on_add_link_metrics(const rtcp::LinkMetrics& metrics) {
+void SenderSlot::on_add_link_metrics(const rtcp::LinkMetrics& metrics) {
     // TODO
     (void)metrics;
 }
 
-SenderEndpoint* SenderEndpointSet::create_source_endpoint_(address::Protocol proto) {
+SenderEndpoint* SenderSlot::create_source_endpoint_(address::Protocol proto) {
     if (source_endpoint_) {
-        roc_log(LogError, "sender endpoint set: audio source endpoint is already set");
+        roc_log(LogError, "sender slot: audio source endpoint is already set");
         return NULL;
     }
 
@@ -180,7 +179,7 @@ SenderEndpoint* SenderEndpointSet::create_source_endpoint_(address::Protocol pro
 
     source_endpoint_.reset(new (source_endpoint_) SenderEndpoint(proto, allocator()));
     if (!source_endpoint_ || !source_endpoint_->valid()) {
-        roc_log(LogError, "sender endpoint set: can't create source endpoint");
+        roc_log(LogError, "sender slot: can't create source endpoint");
         source_endpoint_.reset(NULL);
         return NULL;
     }
@@ -188,9 +187,9 @@ SenderEndpoint* SenderEndpointSet::create_source_endpoint_(address::Protocol pro
     return source_endpoint_.get();
 }
 
-SenderEndpoint* SenderEndpointSet::create_repair_endpoint_(address::Protocol proto) {
+SenderEndpoint* SenderSlot::create_repair_endpoint_(address::Protocol proto) {
     if (repair_endpoint_) {
-        roc_log(LogError, "sender endpoint set: audio repair endpoint is already set");
+        roc_log(LogError, "sender slot: audio repair endpoint is already set");
         return NULL;
     }
 
@@ -211,7 +210,7 @@ SenderEndpoint* SenderEndpointSet::create_repair_endpoint_(address::Protocol pro
 
     repair_endpoint_.reset(new (repair_endpoint_) SenderEndpoint(proto, allocator()));
     if (!repair_endpoint_ || !repair_endpoint_->valid()) {
-        roc_log(LogError, "sender endpoint set: can't create repair endpoint");
+        roc_log(LogError, "sender slot: can't create repair endpoint");
         repair_endpoint_.reset(NULL);
         return NULL;
     }
@@ -219,9 +218,9 @@ SenderEndpoint* SenderEndpointSet::create_repair_endpoint_(address::Protocol pro
     return repair_endpoint_.get();
 }
 
-SenderEndpoint* SenderEndpointSet::create_control_endpoint_(address::Protocol proto) {
+SenderEndpoint* SenderSlot::create_control_endpoint_(address::Protocol proto) {
     if (control_endpoint_) {
-        roc_log(LogError, "sender endpoint set: audio control endpoint is already set");
+        roc_log(LogError, "sender slot: audio control endpoint is already set");
         return NULL;
     }
 
@@ -231,7 +230,7 @@ SenderEndpoint* SenderEndpointSet::create_control_endpoint_(address::Protocol pr
 
     control_endpoint_.reset(new (control_endpoint_) SenderEndpoint(proto, allocator()));
     if (!control_endpoint_ || !control_endpoint_->valid()) {
-        roc_log(LogError, "sender endpoint set: can't create control endpoint");
+        roc_log(LogError, "sender slot: can't create control endpoint");
         control_endpoint_.reset(NULL);
         return NULL;
     }
@@ -239,7 +238,7 @@ SenderEndpoint* SenderEndpointSet::create_control_endpoint_(address::Protocol pr
     return control_endpoint_.get();
 }
 
-bool SenderEndpointSet::create_transport_pipeline_() {
+bool SenderSlot::create_transport_pipeline_() {
     roc_panic_if(audio_writer_);
     roc_panic_if(!source_endpoint_);
 
@@ -357,7 +356,7 @@ bool SenderEndpointSet::create_transport_pipeline_() {
     return true;
 }
 
-bool SenderEndpointSet::create_control_pipeline_() {
+bool SenderSlot::create_control_pipeline_() {
     roc_panic_if(rtcp_session_);
     roc_panic_if(!control_endpoint_);
 

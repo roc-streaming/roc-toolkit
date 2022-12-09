@@ -34,20 +34,20 @@ class TaskIssuer : public IPipelineTaskCompleter {
 public:
     TaskIssuer(PipelineLoop& pipeline)
         : pipeline_(pipeline)
-        , endpoint_set_(NULL)
-        , task_create_endpoint_set_(NULL)
+        , slot_(NULL)
+        , task_create_slot_(NULL)
         , task_create_endpoint_(NULL)
         , done_(false) {
     }
 
     ~TaskIssuer() {
-        delete task_create_endpoint_set_;
+        delete task_create_slot_;
         delete task_create_endpoint_;
     }
 
     void start() {
-        task_create_endpoint_set_ = new SenderLoop::Tasks::CreateEndpointSet();
-        pipeline_.schedule(*task_create_endpoint_set_, *this);
+        task_create_slot_ = new SenderLoop::Tasks::CreateSlot();
+        pipeline_.schedule(*task_create_slot_, *this);
     }
 
     void wait_done() const {
@@ -59,11 +59,11 @@ public:
     virtual void pipeline_task_completed(PipelineTask& task) {
         roc_panic_if_not(task.success());
 
-        if (&task == task_create_endpoint_set_) {
-            endpoint_set_ = task_create_endpoint_set_->get_handle();
-            roc_panic_if_not(endpoint_set_);
+        if (&task == task_create_slot_) {
+            slot_ = task_create_slot_->get_handle();
+            roc_panic_if_not(slot_);
             task_create_endpoint_ = new SenderLoop::Tasks::CreateEndpoint(
-                endpoint_set_, address::Iface_AudioSource, address::Proto_RTP);
+                slot_, address::Iface_AudioSource, address::Proto_RTP);
             pipeline_.schedule(*task_create_endpoint_, *this);
             return;
         }
@@ -80,9 +80,9 @@ public:
 private:
     PipelineLoop& pipeline_;
 
-    SenderLoop::EndpointSetHandle endpoint_set_;
+    SenderLoop::SlotHandle slot_;
 
-    SenderLoop::Tasks::CreateEndpointSet* task_create_endpoint_set_;
+    SenderLoop::Tasks::CreateSlot* task_create_slot_;
     SenderLoop::Tasks::CreateEndpoint* task_create_endpoint_;
 
     core::Atomic<int> done_;
@@ -101,19 +101,19 @@ TEST(sender_loop, endpoints_sync) {
                       sample_buffer_factory, allocator);
     CHECK(sender.valid());
 
-    SenderLoop::EndpointSetHandle endpoint_set = NULL;
+    SenderLoop::SlotHandle slot = NULL;
 
     {
-        SenderLoop::Tasks::CreateEndpointSet task;
+        SenderLoop::Tasks::CreateSlot task;
         CHECK(sender.schedule_and_wait(task));
         CHECK(task.success());
         CHECK(task.get_handle());
 
-        endpoint_set = task.get_handle();
+        slot = task.get_handle();
     }
 
     {
-        SenderLoop::Tasks::CreateEndpoint task(endpoint_set, address::Iface_AudioSource,
+        SenderLoop::Tasks::CreateEndpoint task(slot, address::Iface_AudioSource,
                                                address::Proto_RTP);
         CHECK(sender.schedule_and_wait(task));
         CHECK(task.success());

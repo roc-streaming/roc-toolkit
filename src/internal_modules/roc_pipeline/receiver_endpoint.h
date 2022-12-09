@@ -31,10 +31,11 @@
 namespace roc {
 namespace pipeline {
 
-//! Receiver endpoint pipeline.
-//! @remarks
-//!  Created for every transport endpoint. Belongs to endpoint set.
-//!  Passes packets to the session group of the endpoint set.
+//! Receiver endpoint sub-pipeline.
+//!
+//! Contains:
+//!  - a pipeline for processing packets from single network endpoint
+//!  - a reference to session group to which packets are routed
 class ReceiverEndpoint
     : public core::RefCounted<ReceiverEndpoint, core::StandardAllocation>,
       public core::ListNode,

@@ -29,7 +29,7 @@ namespace pipeline {
 //! Receiver pipeline loop.
 //!
 //! This class acts as a task-based facade for the receiver pipeline subsystem
-//! of roc_pipeline module (ReceiverSource, ReceiverEndpointSet, ReceiverEndpoint,
+//! of roc_pipeline module (ReceiverSource, ReceiverSlot, ReceiverEndpoint,
 //! ReceiverSessionGroup, ReceiverSession).
 //!
 //! It provides two interfaces:
@@ -39,10 +39,14 @@ namespace pipeline {
 //!
 //!  - PipelineLoop - can be used to schedule tasks on the pipeline
 //!    (can be used from any thread)
+//!
+//! @note
+//!  Private inheritance from ISource is used to decorate actual implementation
+//!  of ISource - ReceiverSource, in order to integrate it with PipelineLoop.
 class ReceiverLoop : public PipelineLoop, private sndio::ISource {
 public:
-    //! Opaque endpoint set handle.
-    typedef struct EndpointSetHandle* EndpointSetHandle;
+    //! Opaque slot handle.
+    typedef struct SlotHandle* SlotHandle;
 
     //! Base task class.
     class Task : public PipelineTask {
@@ -53,33 +57,33 @@ public:
 
         bool (ReceiverLoop::*func_)(Task&); //!< Task implementation method.
 
-        ReceiverEndpointSet* endpoint_set_; //!< Endpoint set.
-        address::Interface iface_;          //!< Interface.
-        address::Protocol proto_;           //!< Protocol.
-        packet::IWriter* writer_;           //!< Packet writer.
+        ReceiverSlot* slot_;       //!< Slot.
+        address::Interface iface_; //!< Interface.
+        address::Protocol proto_;  //!< Protocol.
+        packet::IWriter* writer_;  //!< Packet writer.
     };
 
     //! Subclasses for specific tasks.
     class Tasks {
     public:
-        //! Add new endpoint set.
-        class CreateEndpointSet : public Task {
+        //! Add new slot.
+        class CreateSlot : public Task {
         public:
             //! Set task parameters.
-            CreateEndpointSet();
+            CreateSlot();
 
-            //! Get created endpoint set handle.
-            EndpointSetHandle get_handle() const;
+            //! Get created slot handle.
+            SlotHandle get_handle() const;
         };
 
-        //! Create endpoint on given interface of the endpoint set.
+        //! Create endpoint on given interface of the slot.
         class CreateEndpoint : public Task {
         public:
             //! Set task parameters.
             //! @remarks
-            //!  Each endpoint set can have one source and zero or one repair endpoint.
-            //!  The protocols of endpoints in one set should be compatible.
-            CreateEndpoint(EndpointSetHandle endpoint_set,
+            //!  Each slot can have one source and zero or one repair endpoint.
+            //!  The protocols of endpoints in one slot should be compatible.
+            CreateEndpoint(SlotHandle slot,
                            address::Interface iface,
                            address::Protocol proto);
 
@@ -89,11 +93,11 @@ public:
             packet::IWriter* get_writer() const;
         };
 
-        //! Delete endpoint on given interface of the endpoint set, if it exists.
+        //! Delete endpoint on given interface of the slot, if it exists.
         class DeleteEndpoint : public Task {
         public:
             //! Set task parameters.
-            DeleteEndpoint(EndpointSetHandle endpoint_set, address::Interface iface);
+            DeleteEndpoint(SlotHandle slot, address::Interface iface);
         };
     };
 
@@ -132,7 +136,7 @@ private:
     virtual bool process_task_imp(PipelineTask& task);
 
     // Methods for tasks
-    bool task_create_endpoint_set_(Task& task);
+    bool task_create_slot_(Task& task);
     bool task_create_endpoint_(Task& task);
     bool task_delete_endpoint_(Task& task);
 

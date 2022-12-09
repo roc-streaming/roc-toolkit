@@ -62,21 +62,20 @@ bool ReceiverSource::valid() const {
     return audio_reader_;
 }
 
-ReceiverEndpointSet* ReceiverSource::create_endpoint_set() {
-    core::SharedPtr<ReceiverEndpointSet> endpoint_set = new (allocator_)
-        ReceiverEndpointSet(config_, receiver_state_, *mixer_, format_map_,
-                            packet_factory_, byte_buffer_factory_, sample_buffer_factory_,
-                            allocator_);
-    if (!endpoint_set) {
+ReceiverSlot* ReceiverSource::create_slot() {
+    core::SharedPtr<ReceiverSlot> slot = new (allocator_)
+        ReceiverSlot(config_, state_, *mixer_, format_map_, packet_factory_,
+                     byte_buffer_factory_, sample_buffer_factory_, allocator_);
+    if (!slot) {
         return NULL;
     }
 
-    endpoint_sets_.push_back(*endpoint_set);
-    return endpoint_set.get();
+    slots_.push_back(*slot);
+    return slot.get();
 }
 
 size_t ReceiverSource::num_sessions() const {
-    return receiver_state_.num_sessions();
+    return state_.num_sessions();
 }
 
 audio::SampleSpec ReceiverSource::sample_spec() const {
@@ -94,12 +93,12 @@ bool ReceiverSource::has_clock() const {
 sndio::ISource::State ReceiverSource::state() const {
     roc_panic_if(!valid());
 
-    if (receiver_state_.num_sessions() != 0) {
+    if (state_.num_sessions() != 0) {
         // we have sessions and they're producing some sound
         return Playing;
     }
 
-    if (receiver_state_.has_pending_packets()) {
+    if (state_.has_pending_packets()) {
         // we don't have sessions, but we have packets that may create sessions
         return Playing;
     }
@@ -123,18 +122,18 @@ bool ReceiverSource::restart() {
 void ReceiverSource::reclock(packet::ntp_timestamp_t timestamp) {
     roc_panic_if(!valid());
 
-    for (core::SharedPtr<ReceiverEndpointSet> endpoint_set = endpoint_sets_.front();
-         endpoint_set; endpoint_set = endpoint_sets_.nextof(*endpoint_set)) {
-        endpoint_set->reclock(timestamp);
+    for (core::SharedPtr<ReceiverSlot> slot = slots_.front(); slot;
+         slot = slots_.nextof(*slot)) {
+        slot->reclock(timestamp);
     }
 }
 
 bool ReceiverSource::read(audio::Frame& frame) {
     roc_panic_if(!valid());
 
-    for (core::SharedPtr<ReceiverEndpointSet> endpoint_set = endpoint_sets_.front();
-         endpoint_set; endpoint_set = endpoint_sets_.nextof(*endpoint_set)) {
-        endpoint_set->advance(timestamp_);
+    for (core::SharedPtr<ReceiverSlot> slot = slots_.front(); slot;
+         slot = slots_.nextof(*slot)) {
+        slot->advance(timestamp_);
     }
 
     if (!audio_reader_->read(frame)) {

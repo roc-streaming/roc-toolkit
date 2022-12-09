@@ -47,9 +47,11 @@
 namespace roc {
 namespace pipeline {
 
-//! Receiver session pipeline.
-//! @remarks
-//!  Created at the receiver side for every connected sender.
+//! Receiver session sub-pipeline.
+//!
+//! Contains:
+//!  - a pipeline for processing packets from single sender and converting
+//!    them into audio frames
 class ReceiverSession
     : public core::RefCounted<ReceiverSession, core::StandardAllocation>,
       public core::ListNode {

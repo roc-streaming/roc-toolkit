@@ -26,8 +26,8 @@ namespace pipeline {
 
 //! Sender pipeline loop.
 //
-//! This class acts as a task-based facade for the sender pipeline subsystem
-//! of roc_pipeline module (SenderSink, SenderEndpointSet, SenderEndpoint).
+//! This class acts as a task-based facade for the sender pipeline subsystem of
+//! roc_pipeline module (SenderSink, SenderSlot, SenderEndpoint, SenderSession).
 //!
 //! It provides two interfaces:
 //!
@@ -36,10 +36,14 @@ namespace pipeline {
 //!
 //!  - PipelineLoop - can be used to schedule tasks on the pipeline
 //!    (can be used from any thread)
+//!
+//! @note
+//!  Private inheritance from ISink is used to decorate actual implementation
+//!  of ISink - SenderSource, in order to integrate it with PipelineLoop.
 class SenderLoop : public PipelineLoop, private sndio::ISink {
 public:
-    //! Opaque endpoint set handle.
-    typedef struct EndpointSetHandle* EndpointSetHandle;
+    //! Opaque slot handle.
+    typedef struct SlotHandle* SlotHandle;
 
     //! Opaque endpoint handle.
     typedef struct EndpointHandle* EndpointHandle;
@@ -53,35 +57,35 @@ public:
 
         bool (SenderLoop::*func_)(Task&); //!< Task implementation method.
 
-        SenderEndpointSet* endpoint_set_; //!< Endpoint set.
-        SenderEndpoint* endpoint_;        //!< Endpoint.
-        address::Interface iface_;        //!< Interface.
-        address::Protocol proto_;         //!< Protocol.
-        packet::IWriter* writer_;         //!< Packet writer.
-        address::SocketAddr addr_;        //!< Endpoint address.
+        SenderSlot* slot_;         //!< Slot.
+        SenderEndpoint* endpoint_; //!< Endpoint.
+        address::Interface iface_; //!< Interface.
+        address::Protocol proto_;  //!< Protocol.
+        packet::IWriter* writer_;  //!< Packet writer.
+        address::SocketAddr addr_; //!< Endpoint address.
     };
 
     //! Subclasses for specific tasks.
     class Tasks {
     public:
-        //! Add new endpoint set.
-        class CreateEndpointSet : public Task {
+        //! Add new slot.
+        class CreateSlot : public Task {
         public:
             //! Set task parameters.
-            CreateEndpointSet();
+            CreateSlot();
 
-            //! Get created endpoint set handle.
-            EndpointSetHandle get_handle() const;
+            //! Get created slot handle.
+            SlotHandle get_handle() const;
         };
 
-        //! Create endpoint on given interface of the endpoint set.
+        //! Create endpoint on given interface of the slot.
         class CreateEndpoint : public Task {
         public:
             //! Set task parameters.
             //! @remarks
-            //!  Each endpoint set can have one source and zero or one repair endpoint.
-            //!  The protocols of endpoints in one set should be compatible.
-            CreateEndpoint(EndpointSetHandle endpoint_set,
+            //!  Each slot can have one source and zero or one repair endpoint.
+            //!  The protocols of endpoints in one slot should be compatible.
+            CreateEndpoint(SlotHandle slot,
                            address::Interface iface,
                            address::Protocol proto);
 
@@ -105,12 +109,12 @@ public:
                                           const address::SocketAddr& addr);
         };
 
-        //! Check if the endpoint set configuration is done.
+        //! Check if the slot configuration is done.
         //! This is true when all necessary endpoints are added and configured.
-        class CheckEndpointSetIsReady : public Task {
+        class CheckSlotIsReady : public Task {
         public:
             //! Set task parameters.
-            CheckEndpointSetIsReady(EndpointSetHandle endpoint_set);
+            CheckSlotIsReady(SlotHandle slot);
         };
     };
 
@@ -144,11 +148,11 @@ private:
     virtual bool process_task_imp(PipelineTask&);
 
     // Methods for tasks
-    bool task_create_endpoint_set_(Task&);
+    bool task_create_slot_(Task&);
     bool task_create_endpoint_(Task&);
     bool task_set_endpoint_destination_writer_(Task&);
     bool task_set_endpoint_destination_address_(Task&);
-    bool task_check_endpoint_set_is_ready_(Task&);
+    bool task_check_slot_is_ready_(Task&);
 
     SenderSink sink_;
 

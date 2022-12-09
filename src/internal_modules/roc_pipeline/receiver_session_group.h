@@ -25,6 +25,9 @@ namespace roc {
 namespace pipeline {
 
 //! Receiver session group.
+//!
+//! Contains:
+//!  - a set of related receiver sessions
 class ReceiverSessionGroup : public core::NonCopyable<>, private rtcp::IReceiverHooks {
 public:
     //! Initialize.

@@ -67,11 +67,11 @@ private:
     };
 
     struct Slot {
-        pipeline::SenderLoop::EndpointSetHandle endpoint_set;
+        pipeline::SenderLoop::SlotHandle slot;
         Port ports[address::Iface_Max];
 
         Slot()
-            : endpoint_set(NULL) {
+            : slot(NULL) {
         }
     };
 

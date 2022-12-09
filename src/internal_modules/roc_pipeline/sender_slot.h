@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_pipeline/sender_endpoint_set.h
-//! @brief Sender endpoint set.
+//! @file roc_pipeline/sender_slot.h
+//! @brief Sender slot.
 
-#ifndef ROC_PIPELINE_SENDER_ENDPOINT_SET_H_
-#define ROC_PIPELINE_SENDER_ENDPOINT_SET_H_
+#ifndef ROC_PIPELINE_SENDER_SLOT_H_
+#define ROC_PIPELINE_SENDER_SLOT_H_
 
 #include "roc_address/interface.h"
 #include "roc_address/protocol.h"
@@ -42,34 +42,34 @@
 namespace roc {
 namespace pipeline {
 
-//! Sender endpoint set.
-//! @remarks
-//!  Contains one or seevral related endpoint pipelines and
-//!  the part of the sender pipeline shared by them.
-class SenderEndpointSet
-    : public core::RefCounted<SenderEndpointSet, core::StandardAllocation>,
-      public core::ListNode,
-      private rtcp::ISenderHooks {
-    typedef core::RefCounted<SenderEndpointSet, core::StandardAllocation> RefCounted;
+//! Sender slot.
+//!
+//! Contains:
+//!  - one or more related sender endpoints
+//!  - one session associated with those endpoints
+class SenderSlot : public core::RefCounted<SenderSlot, core::StandardAllocation>,
+                   public core::ListNode,
+                   private rtcp::ISenderHooks {
+    typedef core::RefCounted<SenderSlot, core::StandardAllocation> RefCounted;
 
 public:
     //! Initialize.
-    SenderEndpointSet(const SenderConfig& config,
-                      const rtp::FormatMap& format_map,
-                      audio::Fanout& fanout,
-                      packet::PacketFactory& packet_factory,
-                      core::BufferFactory<uint8_t>& byte_buffer_factory,
-                      core::BufferFactory<audio::sample_t>& sample_buffer_factory,
-                      core::IAllocator& allocator);
+    SenderSlot(const SenderConfig& config,
+               const rtp::FormatMap& format_map,
+               audio::Fanout& fanout,
+               packet::PacketFactory& packet_factory,
+               core::BufferFactory<uint8_t>& byte_buffer_factory,
+               core::BufferFactory<audio::sample_t>& sample_buffer_factory,
+               core::IAllocator& allocator);
 
     //! Add endpoint.
     SenderEndpoint* create_endpoint(address::Interface iface, address::Protocol proto);
 
     //! Get audio writer.
-    //! @returns NULL if endpoint set is not ready.
+    //! @returns NULL if slot is not ready.
     audio::IFrameWriter* writer();
 
-    //! Check if endpoint set configuration is done.
+    //! Check if slot configuration is done.
     bool is_ready() const;
 
     //! Get deadline when the pipeline should be updated.
@@ -133,4 +133,4 @@ private:
 } // namespace pipeline
 } // namespace roc
 
-#endif // ROC_PIPELINE_SENDER_ENDPOINT_SET_H_
+#endif // ROC_PIPELINE_SENDER_SLOT_H_

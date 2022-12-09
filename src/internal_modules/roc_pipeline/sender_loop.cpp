@@ -16,33 +16,33 @@ namespace pipeline {
 
 SenderLoop::Task::Task()
     : func_(NULL)
-    , endpoint_set_(NULL)
+    , slot_(NULL)
     , endpoint_(NULL)
     , iface_(address::Iface_Invalid)
     , proto_(address::Proto_None)
     , writer_(NULL) {
 }
 
-SenderLoop::Tasks::CreateEndpointSet::CreateEndpointSet() {
-    func_ = &SenderLoop::task_create_endpoint_set_;
+SenderLoop::Tasks::CreateSlot::CreateSlot() {
+    func_ = &SenderLoop::task_create_slot_;
 }
 
-SenderLoop::EndpointSetHandle SenderLoop::Tasks::CreateEndpointSet::get_handle() const {
+SenderLoop::SlotHandle SenderLoop::Tasks::CreateSlot::get_handle() const {
     if (!success()) {
         return NULL;
     }
-    roc_panic_if_not(endpoint_set_);
-    return (EndpointSetHandle)endpoint_set_;
+    roc_panic_if_not(slot_);
+    return (SlotHandle)slot_;
 }
 
-SenderLoop::Tasks::CreateEndpoint::CreateEndpoint(EndpointSetHandle endpoint_set,
+SenderLoop::Tasks::CreateEndpoint::CreateEndpoint(SlotHandle slot,
                                                   address::Interface iface,
                                                   address::Protocol proto) {
     func_ = &SenderLoop::task_create_endpoint_;
-    if (!endpoint_set) {
-        roc_panic("sender sink: endpoint set handle is null");
+    if (!slot) {
+        roc_panic("sender sink: slot handle is null");
     }
-    endpoint_set_ = (SenderEndpointSet*)endpoint_set;
+    slot_ = (SenderSlot*)slot;
     iface_ = iface;
     proto_ = proto;
 }
@@ -75,13 +75,12 @@ SenderLoop::Tasks::SetEndpointDestinationAddress::SetEndpointDestinationAddress(
     addr_ = addr;
 }
 
-SenderLoop::Tasks::CheckEndpointSetIsReady::CheckEndpointSetIsReady(
-    EndpointSetHandle endpoint_set) {
-    func_ = &SenderLoop::task_check_endpoint_set_is_ready_;
-    if (!endpoint_set) {
-        roc_panic("sender sink: endpoint set handle is null");
+SenderLoop::Tasks::CheckSlotIsReady::CheckSlotIsReady(SlotHandle slot) {
+    func_ = &SenderLoop::task_check_slot_is_ready_;
+    if (!slot) {
+        roc_panic("sender sink: slot handle is null");
     }
-    endpoint_set_ = (SenderEndpointSet*)endpoint_set;
+    slot_ = (SenderSlot*)slot;
 }
 
 SenderLoop::SenderLoop(IPipelineTaskScheduler& scheduler,
@@ -180,15 +179,15 @@ bool SenderLoop::process_task_imp(PipelineTask& basic_task) {
     return (this->*(task.func_))(task);
 }
 
-bool SenderLoop::task_create_endpoint_set_(Task& task) {
-    task.endpoint_set_ = sink_.create_endpoint_set();
-    return (bool)task.endpoint_set_;
+bool SenderLoop::task_create_slot_(Task& task) {
+    task.slot_ = sink_.create_slot();
+    return (bool)task.slot_;
 }
 
 bool SenderLoop::task_create_endpoint_(Task& task) {
-    roc_panic_if(!task.endpoint_set_);
+    roc_panic_if(!task.slot_);
 
-    task.endpoint_ = task.endpoint_set_->create_endpoint(task.iface_, task.proto_);
+    task.endpoint_ = task.slot_->create_endpoint(task.iface_, task.proto_);
     return (bool)task.endpoint_;
 }
 
@@ -207,10 +206,10 @@ bool SenderLoop::task_set_endpoint_destination_address_(Task& task) {
     return true;
 }
 
-bool SenderLoop::task_check_endpoint_set_is_ready_(Task& task) {
-    roc_panic_if(!task.endpoint_set_);
+bool SenderLoop::task_check_slot_is_ready_(Task& task) {
+    roc_panic_if(!task.slot_);
 
-    return task.endpoint_set_->is_ready();
+    return task.slot_->is_ready();
 }
 
 } // namespace pipeline

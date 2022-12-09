@@ -54,7 +54,7 @@ public:
             address::Protocol proto_;
         };
 
-        //! Delete endpoint on given interface of the endpoint set, if it exists.
+        //! Delete endpoint, if it exists.
         class DeleteEndpoint : public ControlTask {
         public:
             //! Set task parameters.

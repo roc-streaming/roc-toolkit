@@ -45,7 +45,7 @@ Receiver::~Receiver() {
     context().control_loop().wait(processing_task_);
 
     for (size_t s = 0; s < slots_.size(); s++) {
-        if (!slots_[s].endpoint_set) {
+        if (!slots_[s].slot) {
             continue;
         }
 
@@ -183,7 +183,7 @@ bool Receiver::bind(size_t slot_index,
         return false;
     }
 
-    pipeline::ReceiverLoop::Tasks::CreateEndpoint endpoint_task(slot->endpoint_set, iface,
+    pipeline::ReceiverLoop::Tasks::CreateEndpoint endpoint_task(slot->slot, iface,
                                                                 uri.proto());
     if (!pipeline_.schedule_and_wait(endpoint_task)) {
         roc_log(LogError,
@@ -205,8 +205,8 @@ bool Receiver::bind(size_t slot_index,
                 " can't bind interface to local port",
                 address::interface_to_str(iface), (unsigned long)slot_index);
 
-        pipeline::ReceiverLoop::Tasks::DeleteEndpoint delete_endpoint_task(
-            slot->endpoint_set, iface);
+        pipeline::ReceiverLoop::Tasks::DeleteEndpoint delete_endpoint_task(slot->slot,
+                                                                           iface);
         if (!pipeline_.schedule_and_wait(delete_endpoint_task)) {
             roc_panic("receiver peer: can't remove newly created endpoint");
         }
@@ -258,13 +258,13 @@ Receiver::Slot* Receiver::get_slot_(size_t slot_index) {
         }
     }
 
-    if (!slots_[slot_index].endpoint_set) {
-        pipeline::ReceiverLoop::Tasks::CreateEndpointSet task;
+    if (!slots_[slot_index].slot) {
+        pipeline::ReceiverLoop::Tasks::CreateSlot task;
         if (!pipeline_.schedule_and_wait(task)) {
-            roc_log(LogError, "receiver peer: failed to create endpoint set");
+            roc_log(LogError, "receiver peer: failed to create slot");
             return NULL;
         }
-        slots_[slot_index].endpoint_set = task.get_handle();
+        slots_[slot_index].slot = task.get_handle();
     }
 
     return &slots_[slot_index];

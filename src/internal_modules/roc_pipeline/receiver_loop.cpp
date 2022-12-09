@@ -16,33 +16,32 @@ namespace pipeline {
 
 ReceiverLoop::Task::Task()
     : func_(NULL)
-    , endpoint_set_(NULL)
+    , slot_(NULL)
     , iface_(address::Iface_Invalid)
     , proto_(address::Proto_None)
     , writer_(NULL) {
 }
 
-ReceiverLoop::Tasks::CreateEndpointSet::CreateEndpointSet() {
-    func_ = &ReceiverLoop::task_create_endpoint_set_;
+ReceiverLoop::Tasks::CreateSlot::CreateSlot() {
+    func_ = &ReceiverLoop::task_create_slot_;
 }
 
-ReceiverLoop::EndpointSetHandle
-ReceiverLoop::Tasks::CreateEndpointSet::get_handle() const {
+ReceiverLoop::SlotHandle ReceiverLoop::Tasks::CreateSlot::get_handle() const {
     if (!success()) {
         return NULL;
     }
-    roc_panic_if_not(endpoint_set_);
-    return (EndpointSetHandle)endpoint_set_;
+    roc_panic_if_not(slot_);
+    return (SlotHandle)slot_;
 }
 
-ReceiverLoop::Tasks::CreateEndpoint::CreateEndpoint(EndpointSetHandle endpoint_set,
+ReceiverLoop::Tasks::CreateEndpoint::CreateEndpoint(SlotHandle slot,
                                                     address::Interface iface,
                                                     address::Protocol proto) {
     func_ = &ReceiverLoop::task_create_endpoint_;
-    if (!endpoint_set) {
-        roc_panic("receiver source: endpoint set handle is null");
+    if (!slot) {
+        roc_panic("receiver source: slot handle is null");
     }
-    endpoint_set_ = (ReceiverEndpointSet*)endpoint_set;
+    slot_ = (ReceiverSlot*)slot;
     iface_ = iface;
     proto_ = proto;
 }
@@ -55,13 +54,13 @@ packet::IWriter* ReceiverLoop::Tasks::CreateEndpoint::get_writer() const {
     return writer_;
 }
 
-ReceiverLoop::Tasks::DeleteEndpoint::DeleteEndpoint(EndpointSetHandle endpoint_set,
+ReceiverLoop::Tasks::DeleteEndpoint::DeleteEndpoint(SlotHandle slot,
                                                     address::Interface iface) {
     func_ = &ReceiverLoop::task_delete_endpoint_;
-    if (!endpoint_set) {
-        roc_panic("receiver source: endpoint set handle is null");
+    if (!slot) {
+        roc_panic("receiver source: slot handle is null");
     }
-    endpoint_set_ = (ReceiverEndpointSet*)endpoint_set;
+    slot_ = (ReceiverSlot*)slot;
     iface_ = iface;
 }
 
@@ -190,14 +189,13 @@ bool ReceiverLoop::process_task_imp(PipelineTask& basic_task) {
     return (this->*(task.func_))(task);
 }
 
-bool ReceiverLoop::task_create_endpoint_set_(Task& task) {
-    task.endpoint_set_ = source_.create_endpoint_set();
-    return (bool)task.endpoint_set_;
+bool ReceiverLoop::task_create_slot_(Task& task) {
+    task.slot_ = source_.create_slot();
+    return (bool)task.slot_;
 }
 
 bool ReceiverLoop::task_create_endpoint_(Task& task) {
-    ReceiverEndpoint* endpoint =
-        task.endpoint_set_->create_endpoint(task.iface_, task.proto_);
+    ReceiverEndpoint* endpoint = task.slot_->create_endpoint(task.iface_, task.proto_);
     if (!endpoint) {
         return false;
     }
@@ -206,7 +204,7 @@ bool ReceiverLoop::task_create_endpoint_(Task& task) {
 }
 
 bool ReceiverLoop::task_delete_endpoint_(Task& task) {
-    task.endpoint_set_->delete_endpoint(task.iface_);
+    task.slot_->delete_endpoint(task.iface_);
     return true;
 }
 

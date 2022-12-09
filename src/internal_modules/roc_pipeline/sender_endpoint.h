@@ -26,10 +26,10 @@
 namespace roc {
 namespace pipeline {
 
-//! Sender endpoint pipeline.
-//! @remarks
-//!  Created for every transport endpoint. Belongs to endpoint set.
-//!  Passes packets to outside writer (e.g. netio).
+//! Sender endpoint sub-pipeline.
+//!
+//! Contains:
+//!  - a pipeline for processing packets for single network endpoint
 class SenderEndpoint : public core::NonCopyable<>, private packet::IWriter {
 public:
     //! Initialize.

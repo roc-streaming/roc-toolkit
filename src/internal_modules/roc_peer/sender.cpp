@@ -46,7 +46,7 @@ Sender::~Sender() {
     context().control_loop().wait(processing_task_);
 
     for (size_t s = 0; s < slots_.size(); s++) {
-        if (!slots_[s].endpoint_set) {
+        if (!slots_[s].slot) {
             continue;
         }
 
@@ -182,7 +182,7 @@ bool Sender::connect(size_t slot_index,
         return false;
     }
 
-    pipeline::SenderLoop::Tasks::CreateEndpoint endpoint_task(slot->endpoint_set, iface,
+    pipeline::SenderLoop::Tasks::CreateEndpoint endpoint_task(slot->slot, iface,
                                                               uri.proto());
     if (!pipeline_.schedule_and_wait(endpoint_task)) {
         roc_log(LogError,
@@ -232,11 +232,11 @@ bool Sender::is_ready() {
     }
 
     for (size_t s = 0; s < slots_.size(); s++) {
-        if (!slots_[s].endpoint_set) {
+        if (!slots_[s].slot) {
             continue;
         }
 
-        pipeline::SenderLoop::Tasks::CheckEndpointSetIsReady task(slots_[s].endpoint_set);
+        pipeline::SenderLoop::Tasks::CheckSlotIsReady task(slots_[s].slot);
         if (!pipeline_.schedule_and_wait(task)) {
             return false;
         }
@@ -279,13 +279,13 @@ Sender::Slot* Sender::get_slot_(size_t slot_index) {
         }
     }
 
-    if (!slots_[slot_index].endpoint_set) {
-        pipeline::SenderLoop::Tasks::CreateEndpointSet task;
+    if (!slots_[slot_index].slot) {
+        pipeline::SenderLoop::Tasks::CreateSlot task;
         if (!pipeline_.schedule_and_wait(task)) {
-            roc_log(LogError, "sender peer: failed to create endpoint set");
+            roc_log(LogError, "sender peer: failed to create slot");
             return NULL;
         }
-        slots_[slot_index].endpoint_set = task.get_handle();
+        slots_[slot_index].slot = task.get_handle();
     }
 
     return &slots_[slot_index];

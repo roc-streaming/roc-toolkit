@@ -42,12 +42,12 @@ Here is an example of starting the receiver that listens on all interfaces on tw
     15:23:09.148 [6449] [inf] roc_sndio: pulseaudio sink: opening stream: device=(null) n_channels=2 sample_rate=48000
     15:23:09.149 [6447] [dbg] roc_audio: mixer: initializing: frame_size=640
     15:23:09.149 [6447] [dbg] roc_peer: receiver peer: initializing
-    15:23:09.149 [6447] [dbg] roc_pipeline: receiver source: adding endpoint set
+    15:23:09.149 [6447] [dbg] roc_pipeline: receiver source: adding slot
     15:23:09.149 [6449] [dbg] roc_sndio: pulseaudio sink: stream_latency=0
-    15:23:09.149 [6447] [dbg] roc_pipeline: receiver endpoint set: adding source endpoint rtp+rs8m
+    15:23:09.149 [6447] [dbg] roc_pipeline: receiver slot: adding source endpoint rtp+rs8m
     15:23:09.149 [6448] [inf] roc_netio: udp receiver: opened port 0.0.0.0:10001
     15:23:09.149 [6447] [inf] roc_peer: receiver peer: bound source interface to rtp+rs8m://0.0.0.0:10001
-    15:23:09.149 [6447] [dbg] roc_pipeline: receiver endpoint set: adding repair endpoint rs8m
+    15:23:09.149 [6447] [dbg] roc_pipeline: receiver slot: adding repair endpoint rs8m
     15:23:09.149 [6448] [inf] roc_netio: udp receiver: opened port 0.0.0.0:10002
     15:23:09.149 [6447] [inf] roc_peer: receiver peer: bound repair interface to rs8m://0.0.0.0:10002
     15:23:09.149 [6447] [dbg] roc_sndio: pump: starting main loop
@@ -97,13 +97,13 @@ Here is an example of starting the sender reads audio stream from a WAV file and
     15:23:13.896 [6450] [dbg] roc_sndio: sox: formats.c: detected file format type `wav'
     15:23:13.896 [6450] [inf] roc_sndio: sox source: in_bits=16 out_bits=32 in_rate=44100 out_rate=0 in_ch=2 out_ch=0 is_file=1
     15:23:13.896 [6450] [dbg] roc_peer: sender peer: initializing
-    15:23:13.896 [6450] [inf] roc_pipeline: sender sink: adding endpoint set
+    15:23:13.896 [6450] [inf] roc_pipeline: sender sink: adding slot
     15:23:13.897 [6451] [inf] roc_netio: udp sender: opened port 0.0.0.0:44592
     15:23:13.897 [6450] [inf] roc_peer: sender peer: bound source interface to 0.0.0.0:44592
-    15:23:13.897 [6450] [dbg] roc_pipeline: sender endpoint set: adding source endpoint rtp+rs8m
+    15:23:13.897 [6450] [dbg] roc_pipeline: sender slot: adding source endpoint rtp+rs8m
     15:23:13.897 [6450] [inf] roc_peer: sender peer: connected source interface to rtp+rs8m://127.0.0.1:10001
     15:23:13.897 [6450] [inf] roc_peer: sender peer: reusing source interface port for repair interface
-    15:23:13.897 [6450] [dbg] roc_pipeline: sender endpoint set: adding repair endpoint rs8m
+    15:23:13.897 [6450] [dbg] roc_pipeline: sender slot: adding repair endpoint rs8m
     15:23:13.897 [6450] [dbg] roc_fec: openfec encoder: initializing: codec=rs m=8
     15:23:13.897 [6450] [dbg] roc_fec: fec writer: update block size: cur_sbl=0 cur_rbl=0 new_sbl=20 new_rbl=10
     15:23:13.897 [6450] [dbg] roc_audio: packetizer: initializing: n_channels=2 samples_per_packet=309

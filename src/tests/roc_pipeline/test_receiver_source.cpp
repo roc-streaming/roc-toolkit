@@ -61,17 +61,16 @@ packet::PacketFactory packet_factory(allocator, true);
 rtp::FormatMap format_map;
 rtp::Composer rtp_composer(NULL);
 
-ReceiverEndpointSet* create_endpoint_set(ReceiverSource& source) {
-    ReceiverEndpointSet* endpoint_set = source.create_endpoint_set();
-    CHECK(endpoint_set);
-    return endpoint_set;
+ReceiverSlot* create_slot(ReceiverSource& source) {
+    ReceiverSlot* slot = source.create_slot();
+    CHECK(slot);
+    return slot;
 }
 
-packet::IWriter* create_endpoint(ReceiverEndpointSet* endpoint_set,
-                                 address::Interface iface,
-                                 address::Protocol proto) {
-    CHECK(endpoint_set);
-    ReceiverEndpoint* endpoint = endpoint_set->create_endpoint(iface, proto);
+packet::IWriter*
+create_endpoint(ReceiverSlot* slot, address::Interface iface, address::Protocol proto) {
+    CHECK(slot);
+    ReceiverEndpoint* endpoint = slot->create_endpoint(iface, proto);
     CHECK(endpoint);
     return &endpoint->writer();
 }
@@ -145,11 +144,11 @@ TEST(receiver_source, one_session) {
 
     CHECK(receiver.valid());
 
-    ReceiverEndpointSet* endpoint_set = create_endpoint_set(receiver);
-    CHECK(endpoint_set);
+    ReceiverSlot* slot = create_slot(receiver);
+    CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
+        create_endpoint(slot, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -180,11 +179,11 @@ TEST(receiver_source, one_session_long_run) {
 
     CHECK(receiver.valid());
 
-    ReceiverEndpointSet* endpoint_set = create_endpoint_set(receiver);
-    CHECK(endpoint_set);
+    ReceiverSlot* slot = create_slot(receiver);
+    CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
+        create_endpoint(slot, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -215,11 +214,11 @@ TEST(receiver_source, initial_latency) {
 
     CHECK(receiver.valid());
 
-    ReceiverEndpointSet* endpoint_set = create_endpoint_set(receiver);
-    CHECK(endpoint_set);
+    ReceiverSlot* slot = create_slot(receiver);
+    CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
+        create_endpoint(slot, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -255,11 +254,11 @@ TEST(receiver_source, initial_latency_timeout) {
 
     CHECK(receiver.valid());
 
-    ReceiverEndpointSet* endpoint_set = create_endpoint_set(receiver);
-    CHECK(endpoint_set);
+    ReceiverSlot* slot = create_slot(receiver);
+    CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
+        create_endpoint(slot, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -289,11 +288,11 @@ TEST(receiver_source, timeout) {
 
     CHECK(receiver.valid());
 
-    ReceiverEndpointSet* endpoint_set = create_endpoint_set(receiver);
-    CHECK(endpoint_set);
+    ReceiverSlot* slot = create_slot(receiver);
+    CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
+        create_endpoint(slot, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -324,11 +323,11 @@ TEST(receiver_source, initial_trim) {
 
     CHECK(receiver.valid());
 
-    ReceiverEndpointSet* endpoint_set = create_endpoint_set(receiver);
-    CHECK(endpoint_set);
+    ReceiverSlot* slot = create_slot(receiver);
+    CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
+        create_endpoint(slot, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -359,11 +358,11 @@ TEST(receiver_source, two_sessions_synchronous) {
 
     CHECK(receiver.valid());
 
-    ReceiverEndpointSet* endpoint_set = create_endpoint_set(receiver);
-    CHECK(endpoint_set);
+    ReceiverSlot* slot = create_slot(receiver);
+    CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
+        create_endpoint(slot, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -399,11 +398,11 @@ TEST(receiver_source, two_sessions_overlapping) {
 
     CHECK(receiver.valid());
 
-    ReceiverEndpointSet* endpoint_set = create_endpoint_set(receiver);
-    CHECK(endpoint_set);
+    ReceiverSlot* slot = create_slot(receiver);
+    CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
+        create_endpoint(slot, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -451,18 +450,18 @@ TEST(receiver_source, two_sessions_two_endpoints) {
 
     CHECK(receiver.valid());
 
-    ReceiverEndpointSet* endpoint_set1 = create_endpoint_set(receiver);
-    CHECK(endpoint_set1);
+    ReceiverSlot* slot1 = create_slot(receiver);
+    CHECK(slot1);
 
     packet::IWriter* endpoint1_writer =
-        create_endpoint(endpoint_set1, address::Iface_AudioSource, proto1);
+        create_endpoint(slot1, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
-    ReceiverEndpointSet* endpoint_set2 = create_endpoint_set(receiver);
-    CHECK(endpoint_set2);
+    ReceiverSlot* slot2 = create_slot(receiver);
+    CHECK(slot2);
 
     packet::IWriter* endpoint2_writer =
-        create_endpoint(endpoint_set2, address::Iface_AudioSource, proto2);
+        create_endpoint(slot2, address::Iface_AudioSource, proto2);
     CHECK(endpoint2_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -498,11 +497,11 @@ TEST(receiver_source, two_sessions_same_address_same_stream) {
 
     CHECK(receiver.valid());
 
-    ReceiverEndpointSet* endpoint_set = create_endpoint_set(receiver);
-    CHECK(endpoint_set);
+    ReceiverSlot* slot = create_slot(receiver);
+    CHECK(slot);
 
     packet::IWriter* endpoint_writer =
-        create_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
+        create_endpoint(slot, address::Iface_AudioSource, proto1);
     CHECK(endpoint_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -543,11 +542,11 @@ TEST(receiver_source, two_sessions_same_address_different_streams) {
 
     CHECK(receiver.valid());
 
-    ReceiverEndpointSet* endpoint_set = create_endpoint_set(receiver);
-    CHECK(endpoint_set);
+    ReceiverSlot* slot = create_slot(receiver);
+    CHECK(slot);
 
     packet::IWriter* endpoint_writer =
-        create_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
+        create_endpoint(slot, address::Iface_AudioSource, proto1);
     CHECK(endpoint_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -590,11 +589,11 @@ TEST(receiver_source, seqnum_overflow) {
 
     CHECK(receiver.valid());
 
-    ReceiverEndpointSet* endpoint_set = create_endpoint_set(receiver);
-    CHECK(endpoint_set);
+    ReceiverSlot* slot = create_slot(receiver);
+    CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
+        create_endpoint(slot, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -623,11 +622,11 @@ TEST(receiver_source, seqnum_small_jump) {
 
     CHECK(receiver.valid());
 
-    ReceiverEndpointSet* endpoint_set = create_endpoint_set(receiver);
-    CHECK(endpoint_set);
+    ReceiverSlot* slot = create_slot(receiver);
+    CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
+        create_endpoint(slot, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -662,11 +661,11 @@ TEST(receiver_source, seqnum_large_jump) {
 
     CHECK(receiver.valid());
 
-    ReceiverEndpointSet* endpoint_set = create_endpoint_set(receiver);
-    CHECK(endpoint_set);
+    ReceiverSlot* slot = create_slot(receiver);
+    CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
+        create_endpoint(slot, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -707,11 +706,11 @@ TEST(receiver_source, seqnum_reorder) {
 
     CHECK(receiver.valid());
 
-    ReceiverEndpointSet* endpoint_set = create_endpoint_set(receiver);
-    CHECK(endpoint_set);
+    ReceiverSlot* slot = create_slot(receiver);
+    CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
+        create_endpoint(slot, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -746,11 +745,11 @@ TEST(receiver_source, seqnum_late) {
 
     CHECK(receiver.valid());
 
-    ReceiverEndpointSet* endpoint_set = create_endpoint_set(receiver);
-    CHECK(endpoint_set);
+    ReceiverSlot* slot = create_slot(receiver);
+    CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
+        create_endpoint(slot, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -802,11 +801,11 @@ TEST(receiver_source, timestamp_overflow) {
 
     CHECK(receiver.valid());
 
-    ReceiverEndpointSet* endpoint_set = create_endpoint_set(receiver);
-    CHECK(endpoint_set);
+    ReceiverSlot* slot = create_slot(receiver);
+    CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
+        create_endpoint(slot, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -837,11 +836,11 @@ TEST(receiver_source, timestamp_small_jump) {
 
     CHECK(receiver.valid());
 
-    ReceiverEndpointSet* endpoint_set = create_endpoint_set(receiver);
-    CHECK(endpoint_set);
+    ReceiverSlot* slot = create_slot(receiver);
+    CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
+        create_endpoint(slot, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -884,11 +883,11 @@ TEST(receiver_source, timestamp_large_jump) {
 
     CHECK(receiver.valid());
 
-    ReceiverEndpointSet* endpoint_set = create_endpoint_set(receiver);
-    CHECK(endpoint_set);
+    ReceiverSlot* slot = create_slot(receiver);
+    CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
+        create_endpoint(slot, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -923,11 +922,11 @@ TEST(receiver_source, timestamp_overlap) {
 
     CHECK(receiver.valid());
 
-    ReceiverEndpointSet* endpoint_set = create_endpoint_set(receiver);
-    CHECK(endpoint_set);
+    ReceiverSlot* slot = create_slot(receiver);
+    CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
+        create_endpoint(slot, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -956,11 +955,11 @@ TEST(receiver_source, timestamp_reorder) {
 
     CHECK(receiver.valid());
 
-    ReceiverEndpointSet* endpoint_set = create_endpoint_set(receiver);
-    CHECK(endpoint_set);
+    ReceiverSlot* slot = create_slot(receiver);
+    CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
+        create_endpoint(slot, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -1011,11 +1010,11 @@ TEST(receiver_source, timestamp_late) {
 
     CHECK(receiver.valid());
 
-    ReceiverEndpointSet* endpoint_set = create_endpoint_set(receiver);
-    CHECK(endpoint_set);
+    ReceiverSlot* slot = create_slot(receiver);
+    CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
+        create_endpoint(slot, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -1076,11 +1075,11 @@ TEST(receiver_source, packet_size_small) {
 
     CHECK(receiver.valid());
 
-    ReceiverEndpointSet* endpoint_set = create_endpoint_set(receiver);
-    CHECK(endpoint_set);
+    ReceiverSlot* slot = create_slot(receiver);
+    CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
+        create_endpoint(slot, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -1112,11 +1111,11 @@ TEST(receiver_source, packet_size_large) {
 
     CHECK(receiver.valid());
 
-    ReceiverEndpointSet* endpoint_set = create_endpoint_set(receiver);
-    CHECK(endpoint_set);
+    ReceiverSlot* slot = create_slot(receiver);
+    CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
+        create_endpoint(slot, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -1154,11 +1153,11 @@ TEST(receiver_source, packet_size_variable) {
 
     CHECK(receiver.valid());
 
-    ReceiverEndpointSet* endpoint_set = create_endpoint_set(receiver);
-    CHECK(endpoint_set);
+    ReceiverSlot* slot = create_slot(receiver);
+    CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
+        create_endpoint(slot, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -1187,11 +1186,11 @@ TEST(receiver_source, corrupted_packets_new_session) {
 
     CHECK(receiver.valid());
 
-    ReceiverEndpointSet* endpoint_set = create_endpoint_set(receiver);
-    CHECK(endpoint_set);
+    ReceiverSlot* slot = create_slot(receiver);
+    CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
+        create_endpoint(slot, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -1222,11 +1221,11 @@ TEST(receiver_source, corrupted_packets_existing_session) {
 
     CHECK(receiver.valid());
 
-    ReceiverEndpointSet* endpoint_set = create_endpoint_set(receiver);
-    CHECK(endpoint_set);
+    ReceiverSlot* slot = create_slot(receiver);
+    CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
+        create_endpoint(slot, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -1278,11 +1277,11 @@ TEST(receiver_source, status) {
 
     CHECK(receiver.valid());
 
-    ReceiverEndpointSet* endpoint_set = create_endpoint_set(receiver);
-    CHECK(endpoint_set);
+    ReceiverSlot* slot = create_slot(receiver);
+    CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_endpoint(endpoint_set, address::Iface_AudioSource, proto1);
+        create_endpoint(slot, address::Iface_AudioSource, proto1);
     CHECK(endpoint1_writer);
 
     test::PacketWriter packet_writer(allocator, *endpoint1_writer, rtp_composer,

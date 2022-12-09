@@ -86,11 +86,11 @@ TEST(sender_sink, write) {
                       sample_buffer_factory, allocator);
     CHECK(sender.valid());
 
-    SenderEndpointSet* endpoint_set = sender.create_endpoint_set();
-    CHECK(endpoint_set);
+    SenderSlot* slot = sender.create_slot();
+    CHECK(slot);
 
     SenderEndpoint* source_endpoint =
-        endpoint_set->create_endpoint(address::Iface_AudioSource, source_proto);
+        slot->create_endpoint(address::Iface_AudioSource, source_proto);
     CHECK(source_endpoint);
 
     source_endpoint->set_destination_writer(queue);
@@ -125,11 +125,11 @@ TEST(sender_sink, frame_size_small) {
                       sample_buffer_factory, allocator);
     CHECK(sender.valid());
 
-    SenderEndpointSet* endpoint_set = sender.create_endpoint_set();
-    CHECK(endpoint_set);
+    SenderSlot* slot = sender.create_slot();
+    CHECK(slot);
 
     SenderEndpoint* source_endpoint =
-        endpoint_set->create_endpoint(address::Iface_AudioSource, source_proto);
+        slot->create_endpoint(address::Iface_AudioSource, source_proto);
     CHECK(source_endpoint);
 
     source_endpoint->set_destination_writer(queue);
@@ -164,11 +164,11 @@ TEST(sender_sink, frame_size_large) {
                       sample_buffer_factory, allocator);
     CHECK(sender.valid());
 
-    SenderEndpointSet* endpoint_set = sender.create_endpoint_set();
-    CHECK(endpoint_set);
+    SenderSlot* slot = sender.create_slot();
+    CHECK(slot);
 
     SenderEndpoint* source_endpoint =
-        endpoint_set->create_endpoint(address::Iface_AudioSource, source_proto);
+        slot->create_endpoint(address::Iface_AudioSource, source_proto);
     CHECK(source_endpoint);
 
     source_endpoint->set_destination_writer(queue);

@@ -37,22 +37,22 @@ class TaskIssuer : public IPipelineTaskCompleter {
 public:
     TaskIssuer(PipelineLoop& pipeline)
         : pipeline_(pipeline)
-        , endpoint_set_(NULL)
-        , task_create_endpoint_set_(NULL)
+        , slot_(NULL)
+        , task_create_slot_(NULL)
         , task_create_endpoint_(NULL)
         , task_delete_endpoint_(NULL)
         , done_(false) {
     }
 
     ~TaskIssuer() {
-        delete task_create_endpoint_set_;
+        delete task_create_slot_;
         delete task_create_endpoint_;
         delete task_delete_endpoint_;
     }
 
     void start() {
-        task_create_endpoint_set_ = new ReceiverLoop::Tasks::CreateEndpointSet();
-        pipeline_.schedule(*task_create_endpoint_set_, *this);
+        task_create_slot_ = new ReceiverLoop::Tasks::CreateSlot();
+        pipeline_.schedule(*task_create_slot_, *this);
     }
 
     void wait_done() const {
@@ -64,18 +64,18 @@ public:
     virtual void pipeline_task_completed(PipelineTask& task) {
         roc_panic_if_not(task.success());
 
-        if (&task == task_create_endpoint_set_) {
-            endpoint_set_ = task_create_endpoint_set_->get_handle();
-            roc_panic_if_not(endpoint_set_);
+        if (&task == task_create_slot_) {
+            slot_ = task_create_slot_->get_handle();
+            roc_panic_if_not(slot_);
             task_create_endpoint_ = new ReceiverLoop::Tasks::CreateEndpoint(
-                endpoint_set_, address::Iface_AudioSource, address::Proto_RTP);
+                slot_, address::Iface_AudioSource, address::Proto_RTP);
             pipeline_.schedule(*task_create_endpoint_, *this);
             return;
         }
 
         if (&task == task_create_endpoint_) {
             task_delete_endpoint_ = new ReceiverLoop::Tasks::DeleteEndpoint(
-                endpoint_set_, address::Iface_AudioSource);
+                slot_, address::Iface_AudioSource);
             pipeline_.schedule(*task_delete_endpoint_, *this);
             return;
         }
@@ -91,9 +91,9 @@ public:
 private:
     PipelineLoop& pipeline_;
 
-    ReceiverLoop::EndpointSetHandle endpoint_set_;
+    ReceiverLoop::SlotHandle slot_;
 
-    ReceiverLoop::Tasks::CreateEndpointSet* task_create_endpoint_set_;
+    ReceiverLoop::Tasks::CreateSlot* task_create_slot_;
     ReceiverLoop::Tasks::CreateEndpoint* task_create_endpoint_;
     ReceiverLoop::Tasks::DeleteEndpoint* task_delete_endpoint_;
 
@@ -121,19 +121,19 @@ TEST(receiver_loop, endpoints_sync) {
 
     CHECK(receiver.valid());
 
-    ReceiverLoop::EndpointSetHandle endpoint_set = NULL;
+    ReceiverLoop::SlotHandle slot = NULL;
 
     {
-        ReceiverLoop::Tasks::CreateEndpointSet task;
+        ReceiverLoop::Tasks::CreateSlot task;
         CHECK(receiver.schedule_and_wait(task));
         CHECK(task.success());
         CHECK(task.get_handle());
 
-        endpoint_set = task.get_handle();
+        slot = task.get_handle();
     }
 
     {
-        ReceiverLoop::Tasks::CreateEndpoint task(endpoint_set, address::Iface_AudioSource,
+        ReceiverLoop::Tasks::CreateEndpoint task(slot, address::Iface_AudioSource,
                                                  address::Proto_RTP);
         CHECK(receiver.schedule_and_wait(task));
         CHECK(task.success());
@@ -141,8 +141,7 @@ TEST(receiver_loop, endpoints_sync) {
     }
 
     {
-        ReceiverLoop::Tasks::DeleteEndpoint task(endpoint_set,
-                                                 address::Iface_AudioSource);
+        ReceiverLoop::Tasks::DeleteEndpoint task(slot, address::Iface_AudioSource);
         CHECK(receiver.schedule_and_wait(task));
         CHECK(task.success());
     }

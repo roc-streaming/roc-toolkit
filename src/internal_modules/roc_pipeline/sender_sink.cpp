@@ -56,25 +56,25 @@ bool SenderSink::valid() const {
     return audio_writer_;
 }
 
-SenderEndpointSet* SenderSink::create_endpoint_set() {
+SenderSlot* SenderSink::create_slot() {
     roc_panic_if(!valid());
 
-    roc_log(LogInfo, "sender sink: adding endpoint set");
+    roc_log(LogInfo, "sender sink: adding slot");
 
-    core::SharedPtr<SenderEndpointSet> endpoint_set = new (allocator_)
-        SenderEndpointSet(config_, format_map_, fanout_, packet_factory_,
-                          byte_buffer_factory_, sample_buffer_factory_, allocator_);
+    core::SharedPtr<SenderSlot> slot = new (allocator_)
+        SenderSlot(config_, format_map_, fanout_, packet_factory_, byte_buffer_factory_,
+                   sample_buffer_factory_, allocator_);
 
-    if (!endpoint_set) {
-        roc_log(LogError, "sender sink: can't allocate endpoint set");
+    if (!slot) {
+        roc_log(LogError, "sender sink: can't allocate slot");
         return NULL;
     }
 
-    endpoint_sets_.push_back(*endpoint_set);
+    slots_.push_back(*slot);
 
     invalidate_update_deadline_();
 
-    return endpoint_set.get();
+    return slot.get();
 }
 
 core::nanoseconds_t SenderSink::get_update_deadline() {
@@ -86,11 +86,10 @@ core::nanoseconds_t SenderSink::get_update_deadline() {
 }
 
 void SenderSink::update() {
-    core::SharedPtr<SenderEndpointSet> endpoint_set;
+    core::SharedPtr<SenderSlot> slot;
 
-    for (endpoint_set = endpoint_sets_.front(); endpoint_set;
-         endpoint_set = endpoint_sets_.nextof(*endpoint_set)) {
-        endpoint_set->update();
+    for (slot = slots_.front(); slot; slot = slots_.nextof(*slot)) {
+        slot->update();
     }
 
     invalidate_update_deadline_();
@@ -115,13 +114,12 @@ void SenderSink::write(audio::Frame& frame) {
 }
 
 void SenderSink::compute_update_deadline_() {
-    core::SharedPtr<SenderEndpointSet> endpoint_set;
+    core::SharedPtr<SenderSlot> slot;
 
     update_deadline_ = 0;
 
-    for (endpoint_set = endpoint_sets_.front(); endpoint_set;
-         endpoint_set = endpoint_sets_.nextof(*endpoint_set)) {
-        const core::nanoseconds_t deadline = endpoint_set->get_update_deadline();
+    for (slot = slots_.front(); slot; slot = slots_.nextof(*slot)) {
+        const core::nanoseconds_t deadline = slot->get_update_deadline();
         if (deadline == 0) {
             continue;
         }

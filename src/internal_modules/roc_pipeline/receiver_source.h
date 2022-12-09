@@ -26,7 +26,7 @@
 #include "roc_packet/packet_factory.h"
 #include "roc_pipeline/config.h"
 #include "roc_pipeline/receiver_endpoint.h"
-#include "roc_pipeline/receiver_endpoint_set.h"
+#include "roc_pipeline/receiver_slot.h"
 #include "roc_pipeline/receiver_state.h"
 #include "roc_rtp/format_map.h"
 #include "roc_sndio/isource.h"
@@ -35,7 +35,12 @@ namespace roc {
 namespace pipeline {
 
 //! Receiver source pipeline.
-//! @remarks
+//!
+//! Contains:
+//!  - one or more receiver slots
+//!  - mixer, to mix audio from all slots
+//!
+//! Pipeline:
 //!  - input: packets
 //!  - output: frames
 class ReceiverSource : public sndio::ISource, public core::NonCopyable<> {
@@ -51,8 +56,8 @@ public:
     //! Check if the pipeline was successfully constructed.
     bool valid() const;
 
-    //! Create endpoint set.
-    ReceiverEndpointSet* create_endpoint_set();
+    //! Create slot.
+    ReceiverSlot* create_slot();
 
     //! Get number of connected sessions.
     size_t num_sessions() const;
@@ -92,8 +97,8 @@ private:
     core::BufferFactory<audio::sample_t>& sample_buffer_factory_;
     core::IAllocator& allocator_;
 
-    ReceiverState receiver_state_;
-    core::List<ReceiverEndpointSet> endpoint_sets_;
+    ReceiverState state_;
+    core::List<ReceiverSlot> slots_;
 
     core::Optional<audio::Mixer> mixer_;
     core::Optional<audio::PoisonReader> poisoner_;
