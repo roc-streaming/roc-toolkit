@@ -16,13 +16,14 @@ Build dependencies
 Runtime dependencies
 ====================
 
-* `libuv <http://libuv.org>`_ >= 1.5.0, recommended >= 1.35.0
+* `libuv <https://libuv.org>`_ >= 1.5.0, recommended >= 1.35.0
 * `libatomic_ops <https://github.com/ivmai/libatomic_ops/>`_ >= 7.6.0 (needed only on non-C11 compilers)
 * `libunwind <https://www.nongnu.org/libunwind/>`_ >= 1.2.1 (optional, install if you want backtraces on a panic or a crash)
 * `hedley <https://nemequ.github.io/hedley/>`_ >= 15 (single-header library, vendored in our repo)
 * `OpenFEC <http://openfec.org>`_ >= 1.4.2 (optional but recommended, install if you want to enable FEC support)
+* `OpenSSL <https://www.openssl.org/>`_ >= 1.1.1, recommended >= 3 (DTLS and SRTP support)
 * `SpeexDSP <https://github.com/xiph/speexdsp>`_ >= 1.2beta3 (optional but recommended, install if you want to employ fast Speex resampler)
-* `SoX <http://sox.sourceforge.net>`_ >= 14.4.0 (optional, install if you want SoX backend in tools)
+* `SoX <https://sox.sourceforge.net>`_ >= 14.4.0 (optional, install if you want SoX backend in tools)
 * `PulseAudio <https://www.freedesktop.org/wiki/Software/PulseAudio/>`_ >= 5.0 (optional, install if you want PulseAudio backend in tools or PulseAudio modules)
 
 .. warning::
@@ -43,8 +44,8 @@ Development dependencies
 * `CppUTest <http://cpputest.github.io>`_ >= 4.0 (optional, install if you want to build tests)
 * `Google Benchmark <https://github.com/google/benchmark>`_ >= 1.6.0 (optional, install if you want to build benchmarks)
 * `clang-format <https://clang.llvm.org/docs/ClangFormat.html>`_ >= 10 (optional, install if you want to format code)
-* `doxygen <http://www.stack.nl/~dimitri/doxygen/>`_ >= 1.6, `graphviz <https://graphviz.gitlab.io/>`_ (optional, install if you want to build doxygen or sphinx documentation)
-* `sphinx <http://www.sphinx-doc.org/>`_, `breathe <https://github.com/michaeljones/breathe>`_ (optional, install if you want to build sphinx documentation)
+* `doxygen <https://www.doxygen.nl/>`_ >= 1.6, `graphviz <https://graphviz.gitlab.io/>`_ (optional, install if you want to build doxygen or sphinx documentation)
+* `sphinx <https://www.sphinx-doc.org/>`_, `breathe <https://github.com/michaeljones/breathe>`_ (optional, install if you want to build sphinx documentation)
 
 .. warning::
 

@@ -10,7 +10,7 @@ do
           --enable-benchmarks \
           --enable-examples \
           --enable-doxygen \
-          --build-3rdparty=libatomic_ops,openfec,google-benchmark \
-          --compiler=$c \
+          --build-3rdparty=libatomic_ops,openfec,openssl,google-benchmark \
+          --compiler="$c" \
           test
 done
