@@ -3,9 +3,13 @@
 set -euxo pipefail
 
 brew install \
-     automake scons ragel gengetopt\
-     libuv speexdsp sox \
+     automake scons ragel gengetopt \
+     libuv speexdsp sox openssl@3 \
      cpputest google-benchmark
+
+# > openssl@3 is keg-only, which means it was not symlinked into /usr/local,
+# > because macOS provides LibreSSL.
+export PKG_CONFIG_PATH="/usr/local/opt/openssl@3/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
 
 scons -Q \
       --enable-werror \

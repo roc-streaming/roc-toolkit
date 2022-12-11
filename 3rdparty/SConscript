@@ -12,6 +12,7 @@ thirdparty_versions = {
     'libuv':            '1.35.0',
     'ltdl':             '2.4.6',
     'openfec':          '1.4.2.4',
+    'openssl':          '3.0.7',
     'pulseaudio':       '12.2',
     'sndfile':          '1.0.28',
     'sox':              '14.4.2',
@@ -305,6 +306,22 @@ elif 'sox' in system_dependencies:
             env.Die("libsox not found (see 'config.log' for details)")
 
     env = conf.Finish()
+
+# dep: openssl
+if 'openssl' in autobuild_dependencies:
+    env.BuildThirdParty(thirdparty_build_dir, meta.toolchain,
+        meta.thirdparty_variant, thirdparty_versions, 'openssl')
+elif 'openssl' in system_dependencies:
+    conf = Configure(env, custom_tests=env.CustomTests)
+
+    if not conf.AddPkgConfigDependency('libssl', '--cflags --libs'):
+        conf.env.AddPkgConfigLibs(['libssl'])
+
+    if not conf.CheckLibWithHeaderExt(
+            'ssl', 'openssl/rand.h', 'C', run=not is_crosscompiling):
+        env.Die("OpenSSL not found (see 'config.log' for details)")
+
+    env= conf.Finish()
 
 # dep: ragel
 if 'ragel' in autobuild_dependencies:

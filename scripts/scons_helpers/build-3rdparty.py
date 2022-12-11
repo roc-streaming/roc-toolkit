@@ -664,9 +664,146 @@ def splitenv(envlist):
         env[k] = v
     return env
 
+# Guess platform argument for OpenSSL's Configure script basing on toolchain string.
+# (see `./Configure LIST` for a list of all platforms and their format)
+# See also openssl/Configurations/10-main.conf
+def openssl_get_platform(toolchain):
+    """
+    >>> openssl_get_platform('x86_64-pc-linux-gnu')
+    'linux-x86_64'
+    >>> openssl_get_platform('aarch64-linux-gnu')
+    'linux-aarch64'
+    >>> openssl_get_platform('mips-openwrt-linux-uclibc')
+    'linux-mips32'
+    >>> openssl_get_platform('arm-linux-gnueabihf')
+    'linux-generic32'
+    >>> openssl_get_platform('arm-bcm2708hardfp-linux-gnueabi')
+    'linux-generic32'
+    >>> openssl_get_platform('mips64-linux-musl')
+    'linux64-mips64'
+    >>> openssl_get_platform('arm-linux-androideabi')
+    'android-arm'
+    >>> openssl_get_platform('aarch64-linux-android')
+    'android64-aarch64'
+    >>> openssl_get_platform('i686-linux-android')
+    'android-x86'
+    >>> openssl_get_platform('x86_64-linux-android')
+    'android64-x86_64'
+    >>> openssl_get_platform('i686-pc-linux-gnu')
+    'linux-x86'
+
+    # other edge cases
+    >>> openssl_get_platform('android64')
+    'android64'
+    >>> openssl_get_platform('')
+    'cc'
+    """
+
+    # we assume that:
+    # - 'android' has more priority than 'linux'
+    # - if toolchain contains '64' and 'android' => we have android64 on 64-bit CPU
+    # - if toolchain contains '64' and 'linux' => we have linux64 on 64-bit CPU
+
+    bitness = 64 if '64' in toolchain else 32
+
+    # normalize os: make toolchain to have at most 3 components
+    toolchain = toolchain.\
+        replace('bcm2708hardfp-linux', 'linux').\
+        replace('openwrt-linux', 'linux').\
+        replace('pc-linux', 'linux')
+    # normalize arch: no suffix means 32 bit
+    toolchain = toolchain.replace('mips-', 'mips32-')
+
+    ### corner cases
+
+    # 64 bit => explicitly prefer linux64 or android64 (concider libc and other libs
+    # to be 64 bit)
+    if bitness == 64:
+        if 'linux-' in toolchain:
+            toolchain = re.sub(r'\blinux\b', 'linux64', toolchain)
+        if 'android' in toolchain and 'android64' not in toolchain:
+            toolchain = re.sub(r'\bandroid\b', 'android64', toolchain)
+
+    # if android toolchain contains both 'arm and 'eabi' => 'arm' (32 bit)
+    # ('armeabi' doesn't work)
+    if 'android' in toolchain and 'arm' in toolchain and 'eabi' in toolchain:
+        return 'android-arm'
+    # 32 bit ARM => linux-generic32; 'linux-armv4' fails :(
+    if 'linux' in toolchain and 'arm' in toolchain and bitness == 32:
+        return 'linux-generic32'
+
+    # android*: 'i[0-9]86' -> 'x86'
+    if ('android' in toolchain or 'linux' in toolchain) \
+        and '86' in toolchain and bitness == 32:
+        toolchain = re.sub(r'i\d86', 'x86', toolchain)
+
+    ### generic detection
+
+    # XXX: this is a dirty parser based on very simple heuristics and verified on a
+    # limited set of platforms
+
+    # order is significant here as we search substrings in a whole toolchain string
+    platforms = [
+        # [(os,          [arch_compiler, ...]), ...]
+        ('BSD',          ['aarch64', 'generic32', 'generic64', 'ia64', 'riscv64',
+                          'sparc64', 'sparcv8', 'x86-elf', 'x86_64', 'x86']),
+        ('Cygwin',       ['i386', 'i486', 'i586', 'i686', 'x86_64', 'x86']),
+        ('UEFI',         ['x86_64', 'x86']),
+        ('UWIN',         []),
+        ('aix64',        ['gcc-as', 'gcc', 'cc']),
+        ('aix',          ['gcc', 'cc']),
+        ('android64',    ['aarch64', 'mips64', 'x86_64']),
+        ('android',      ['arm64', 'armeabi', 'arm', 'mips64', 'mips', 'x86_64', 'x86']),
+        ('darwin64',     ['arm64-cc', 'arm64', 'ppc-cc', 'ppc', 'x86_64-cc', 'x86_64']),
+        ('darwin',       ['i386-cc', 'i386', 'ppc-cc', 'ppc']),
+        ('iossimulator', ['cross', 'xcrun']),
+        ('ios64',        ['cross', 'xcrun']),
+        ('ios',          ['cross', 'xcrun']),
+        ('linux32',      ['s390x']),
+        ('linux64',      ['loongarch64', 'mips64', 'riscv64', 's390x', 'sparcv9']),
+        ('linux',        ['aarch64', 'alpha-gcc', 'aout', 'arm64ilp32', 'armv4', 'c64xplus',
+                          'elf', 'generic32', 'generic64', 'ia64', 'latomic', 'mips32',
+                          'mips64', 'ppc64le', 'ppc64', 'ppc', 'sparcv8', 'sparcv9',
+                          'x86_64-clang', 'x86_64', 'x86-clang', 'x86', 'x32']),
+        ('mingw64',      []),
+        ('mingw',        []),
+    ]
+
+    #~print('0: ', toolchain)
+    for os, archs_compilers in platforms:
+        if os in toolchain:
+            for ac in archs_compilers:
+                #~print('1: ', os, ac)
+                # corner case for BSD
+                if ac == 'x86-elf':
+                    return '-'.join([os, ac])
+                # general case: 'arch-compiler'
+                ac_arr = ac.split('-')
+                arch = ac_arr[0]
+                if arch not in toolchain:
+                    continue
+                if len(ac_arr) > 1:
+                    compiler = ac_arr[1]
+                    if compiler in toolchain:
+                        return '-'.join([os, arch, compiler])
+                #~print('2: ', os, arch)
+                return '-'.join([os, arch])
+            if os in ['mingw', 'mingw64', 'Cygwin', 'UEFI', 'UWIN', 'android64']:
+                return os
+    if 'gcc' in toolchain:
+        return 'gcc'
+    return 'cc'
+
 #
 # Main.
 #
+
+# for tests run `python scripts/scons_helpers/build-3rdparty.py run-tests`
+# (see docs for doctest module)
+if len(sys.argv) == 2 and sys.argv[1] == 'run-tests':
+    import doctest
+    doctest.testmod()
+    exit(0)
 
 if len(sys.argv) < 7:
     print("error: usage: 3rdparty.py workdir vendordir toolchain variant package deplist [env]",
@@ -675,7 +812,16 @@ if len(sys.argv) < 7:
 
 workdir = os.path.abspath(sys.argv[1])
 vendordir = os.path.abspath(sys.argv[2])
-toolchain = sys.argv[3]          # toolchain, e.g. 'x86_64-pc-linux-gnu'; may be empty string
+
+# Build toolchain, e.g. 'x86_64-pc-linux-gnu'; may be empty string.
+#
+# Our agreements for arch component:
+# - aarch64             -- ARM 64 bit
+# - arm*                -- ARM 32 bit
+# - mipsel              -- MIPS little endian
+# - mips (without 'el') -- MIPS big endian
+toolchain = sys.argv[3]
+
 variant = sys.argv[4]            # 'debug' or 'release' variant should be built
 fullname = sys.argv[5]           # package's name and version, e.g. 'openssl-3.0.7-rc1'
 deplist = sys.argv[6].split(':') # list of 3rdparty dependencies names, e.g. 'ltdl:json-c'
@@ -1065,6 +1211,79 @@ elif name == 'sox':
     execute_make(logfile)
     install_files('src/sox.h', inc_dir)
     install_files('src/.libs/libsox.a', lib_dir)
+elif name == 'openssl':
+    archive = 'openssl-{}.tar.gz'.format(ver)
+    dir = 'openssl-' + ver
+    url = 'https://www.openssl.org/source/' + archive
+
+    # options
+    # (see https://github.com/openssl/openssl/blob/master/INSTALL.md for more details)
+    opts = []
+    # platform (should be the first argument)
+    platform = openssl_get_platform(toolchain)
+    if platform:
+        opts.append(platform)
+    if variant == 'debug':
+        opts.append('--debug')
+    else:
+        opts.append('--release')
+    # --cross-compile-prefix is not needed as we already have CXX variable set
+    # lib-specific features:
+    opts += [
+        'no-afalgeng',
+        'no-ktls',
+        'no-asan',
+        'no-acvp-tests',
+        'no-buildtest-c++',
+        'no-cmp',
+        'no-cms',
+        'no-ct',
+        'no-deprecated',
+        'no-dgram',
+        'no-dso',
+        'no-devcryptoeng',
+        'no-dynamic-engine',
+        'no-ec',
+        'no-ec2m',
+        'no-ec_nistp_64_gcc_128',
+        'no-engine',
+        'no-external-tests',
+        'no-fips',
+        'no-fuzz-libfuzzer',
+        'no-fuzz-afl',
+        'no-gost',
+        'no-legacy',
+        'no-module',
+        'no-rfc3779',
+        'no-sctp',
+        'no-shared',
+        'no-sock',
+        'no-srp',
+        'no-srtp',
+        'no-ssl-trace',
+        'no-tests',
+        'no-ubsan',
+        'no-ui-console',
+        'no-unit-test',
+        'no-uplink',
+    ]
+
+    # build
+    download(url, archive, logfile, vendordir)
+    unpack(archive, dir)
+    os.chdir('src/' + dir)
+    # see https://github.com/openssl/openssl/blob/master/INSTALL.md#configuration-options
+    # for more options:
+    execute(
+        makeenv(envlist) +
+        ' ' + makeflags(workdir, toolchain, env, deplist, variant=variant) +
+        ' ./Configure ' +
+        ' '.join(opts),
+        logfile)
+    execute_make(logfile)
+    install_tree('include', inc_dir)
+    install_files('libssl.a', lib_dir)
+    install_files('libcrypto.a', lib_dir)
 elif name == 'gengetopt':
     download('ftp://ftp.gnu.org/gnu/gengetopt/gengetopt-%s.tar.gz' % ver,
              'gengetopt-%s.tar.gz' % ver,

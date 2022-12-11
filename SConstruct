@@ -191,6 +191,11 @@ AddOption('--disable-sox',
           action='store_true',
           help='disable SoX support in tools')
 
+AddOption('--disable-openssl',
+          dest='disable_openssl',
+          action='store_true',
+          help='disable OpenSSL support required for DTLS and SRTP')
+
 AddOption('--disable-libunwind',
           dest='disable_libunwind',
           action='store_true',
@@ -720,6 +725,11 @@ else:
     if not GetOption('disable_openfec'):
         env.Append(ROC_TARGETS=[
             'target_openfec',
+        ])
+
+    if not GetOption('disable_openssl'):
+        env.Append(ROC_TARGETS=[
+            'target_openssl',
         ])
 
     if not GetOption('disable_speexdsp'):
