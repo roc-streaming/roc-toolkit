@@ -1,4 +1,5 @@
 import SCons.SConf
+
 import hashlib
 import os
 import os.path
@@ -51,6 +52,23 @@ def _get_llvm_dir(version):
     for llvmdir in macos_dirs() + linux_dirs():
         if os.path.isdir(llvmdir):
             return llvmdir
+
+# Gets `PKG_CONFIG_PATH` from environment `env`, tries to append `add_prefix`/lib/pkgconfig, and
+# returns the result.
+# Tolerant to absense of any or both of those two components. If both are absent, returns an
+# empty string.
+# Doesn't perform quoting.
+def _compose_pkg_config_path(env, add_prefix):
+    pkg_config_path = env.get('PKG_CONFIG_PATH', '')
+    if add_prefix:
+        # set user-defined $(add_prefix)/lib/pkgconfig path for pkg-config if needed (lowest
+        # priority); otherwise use original PKG_CONFIG_PATH is propagated explicitly
+        add_pkg_config_path = os.path.join(add_prefix, 'lib', 'pkgconfig')
+        if os.path.isdir(add_pkg_config_path):
+            if len(pkg_config_path) > 0:
+                pkg_config_path += ':'
+            pkg_config_path += add_pkg_config_path
+    return pkg_config_path
 
 def CheckLibWithHeaderExt(context, libs, headers, language, expr='1', run=True):
     if not isinstance(headers, list):
@@ -445,8 +463,8 @@ def FindPkgConfigPath(context, prefix):
     context.Result(env['PKG_CONFIG_PATH'])
     return True
 
-def AddPkgConfigDependency(context, package, flags):
-    context.Message("Searching pkg-config package %s..." % package)
+def AddPkgConfigDependency(context, package, flags, add_prefix=None):
+    context.Message("Searching pkg-config package {} ...".format(package))
 
     env = context.env
     if 'PKG_CONFIG_DEPS' not in env.Dictionary():
@@ -457,17 +475,21 @@ def AddPkgConfigDependency(context, package, flags):
         context.Result('pkg-config not available')
         return False
 
-    cmd = '%s %s --silence-errors %s' % (quote(pkg_config), package, flags)
-    try:
-        if env.ParseConfig(cmd):
-            env.AppendUnique(PKG_CONFIG_DEPS=[package])
-            context.Result('yes')
-            return True
-    except:
-        pass
+    cmd = []
+    pkg_config_path = _compose_pkg_config_path(env, add_prefix)
+    if pkg_config_path:
+        cmd = ['env', 'PKG_CONFIG_PATH='+pkg_config_path]
 
-    context.Result('not found')
-    return False
+    cmd += [pkg_config, package, '--silence-errors'] + flags.split()
+    try:
+        env.ParseConfig(cmd)
+        env.AppendUnique(PKG_CONFIG_DEPS=[package])
+    except:
+        context.Result('not found')
+        return False
+
+    context.Result('yes')
+    return True
 
 def init(env):
     env.CustomTests = {

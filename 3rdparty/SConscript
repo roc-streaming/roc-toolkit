@@ -12,6 +12,7 @@ thirdparty_versions = {
     'libuv':            '1.35.0',
     'ltdl':             '2.4.6',
     'openfec':          '1.4.2.4',
+    'openssl':          '3.0.7',
     'pulseaudio':       '12.2',
     'sndfile':          '1.0.28',
     'sox':              '14.4.2',
@@ -303,6 +304,26 @@ elif 'sox' in system_dependencies:
     else:
         if not conf.CheckLibWithHeaderExt('sox', 'sox.h', 'C', run=False):
             env.Die("libsox not found (see 'config.log' for details)")
+
+    env = conf.Finish()
+
+# dep: openssl
+if 'openssl' in autobuild_dependencies:
+    env.BuildThirdParty(thirdparty_build_dir, meta.toolchain,
+        meta.thirdparty_variant, thirdparty_versions, 'openssl')
+elif 'openssl' in system_dependencies:
+    ossl_prefix = None
+    # macOS: fallback to use a brew-installed openssl (via PKG_CONFIG_PATH)
+    if meta.platform == 'darwin' and not is_crosscompiling:
+        ossl_prefix = env.FindBrewPackage('openssl')
+
+    conf = Configure(env, custom_tests=env.CustomTests)
+
+    if not conf.AddPkgConfigDependency('libssl', '--cflags --libs', add_prefix=ossl_prefix):
+        conf.env.AddPkgConfigLibs(['libssl'])
+
+    if not conf.CheckLibWithHeaderExt('ssl', 'openssl/rand.h', 'C', run=not is_crosscompiling):
+        env.Die("OpenSSL not found (see 'config.log' for details)")
 
     env = conf.Finish()
 

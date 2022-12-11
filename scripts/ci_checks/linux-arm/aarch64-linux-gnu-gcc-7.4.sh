@@ -12,16 +12,16 @@ do
         --enable-werror \
         --enable-tests \
         --enable-examples \
-        --build-3rdparty=libuv,libunwind,openfec,alsa,pulseaudio:$pulse,speexdsp,sox,cpputest \
-        --host=${toolchain}
+        --build-3rdparty=libuv,libunwind,openfec,alsa,pulseaudio:$pulse,speexdsp,sox,openssl,cpputest \
+        --host="${toolchain}"
 
     find bin/${toolchain} -name 'roc-test-*' \
-         -not -name 'roc-test-library' |\
+         -not -name 'roc-test-library' | \
         while read t
         do
             LD_LIBRARY_PATH="/opt/sysroot/lib:$(echo \
               "${PWD}"/build/3rdparty/${toolchain}/${compiler}/*/rpath | tr ' ' ':')" \
                 python3 scripts/scons_helpers/run-with-timeout.py 300 \
-                  qemu-aarch64 -L "/opt/sysroot" -cpu ${cpu} $t
+                  qemu-aarch64 -L "/opt/sysroot" -cpu "${cpu}" "$t"
         done
 done

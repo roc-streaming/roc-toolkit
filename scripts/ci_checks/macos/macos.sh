@@ -3,8 +3,8 @@
 set -euxo pipefail
 
 brew install \
-     automake scons ragel gengetopt\
-     libuv speexdsp sox \
+     automake scons ragel gengetopt \
+     libuv speexdsp sox openssl@3 \
      cpputest google-benchmark
 
 scons -Q \

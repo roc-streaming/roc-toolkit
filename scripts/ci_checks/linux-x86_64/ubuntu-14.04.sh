@@ -9,7 +9,7 @@ do
           --enable-tests \
           --enable-examples \
           --enable-doxygen \
-          --build-3rdparty=libuv,libatomic_ops,openfec,pulseaudio,cpputest \
-          --compiler=$c \
+          --build-3rdparty=libuv,libatomic_ops,openfec,openssl,pulseaudio,cpputest \
+          --compiler="$c" \
           test
 done

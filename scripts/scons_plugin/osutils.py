@@ -116,6 +116,23 @@ def Which(env, prog, prepend_path=[]):
 
     return paths
 
+# Find and return path to the package (its install prefix directory) of the latest version
+# of `pkg_name` package installed by brew. If not found, None is returned.
+def FindBrewPackage(env, pkg_name, required=True):
+    if not env.Which('brew'):
+        return None
+
+    brew_prefix = env.GetCommandOutput('brew --prefix')
+    if not brew_prefix:
+        return None
+
+    # $(brew --prefix)/opt/some_pkg should be a link to the latest version of some_pkg,
+    # e.g. ../Cellar/some_pkg@1.2/1.2.3/
+    prefix = os.path.join(brew_prefix, 'opt', pkg_name)
+    if not os.path.isdir(prefix):
+        return None
+    return prefix
+
 def init(env):
     env.AddMethod(GetPythonExecutable, 'GetPythonExecutable')
     env.AddMethod(GetCommandOutput, 'GetCommandOutput')
@@ -123,3 +140,4 @@ def init(env):
     env.AddMethod(GlobFiles, 'GlobFiles')
     env.AddMethod(GlobDirs, 'GlobDirs')
     env.AddMethod(Which, 'Which')
+    env.AddMethod(FindBrewPackage, 'FindBrewPackage')
