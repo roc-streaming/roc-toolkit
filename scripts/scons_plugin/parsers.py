@@ -72,9 +72,10 @@ def ParseCompilerVersion(env, compiler):
                     if m:
                         return m.group(1)
 
-            return None
-        except:
-            pass
+            raise Exception("Invalid compiler version.")
+        except Exception as e:
+            print(e)
+            raise e
 
     ver = getverstr()
     if ver:
