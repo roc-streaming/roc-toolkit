@@ -1,4 +1,4 @@
-#! /bin/bash
+#!/usr/bin/env bash
 
 function find_login() {
     local github_login="$(curl -s "https://api.github.com/search/users?q=$1" \

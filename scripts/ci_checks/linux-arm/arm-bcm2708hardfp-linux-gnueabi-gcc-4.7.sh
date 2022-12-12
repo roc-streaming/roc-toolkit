@@ -1,4 +1,5 @@
-#! /bin/bash
+#!/usr/bin/env bash
+
 set -euxo pipefail
 
 toolchain="arm-bcm2708hardfp-linux-gnueabi"
