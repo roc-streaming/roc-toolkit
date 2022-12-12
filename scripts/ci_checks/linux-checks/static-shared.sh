@@ -1,4 +1,5 @@
-#! /bin/bash
+#!/usr/bin/env bash
+
 set -euxo pipefail
 
 # shared: no, static: no, tests: no

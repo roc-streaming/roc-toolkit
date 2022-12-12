@@ -29,8 +29,16 @@ try:
 except:
     pass
 
+#
+# Variables for helpers.
+#
+
 printdir = os.path.abspath('.')
 devnull = open(os.devnull, 'w+')
+
+#
+# Helpers.
+#
 
 def mkpath(path):
     try:
@@ -516,6 +524,10 @@ def makeenv(envlist):
         ret.append(quote(e))
     return ' '.join(ret)
 
+#
+# Main.
+#
+
 if len(sys.argv) < 7:
     print("error: usage: 3rdparty.py workdir vendordir toolchain variant package deplist [env]",
           file=sys.stderr)
@@ -523,11 +535,15 @@ if len(sys.argv) < 7:
 
 workdir = os.path.abspath(sys.argv[1])
 vendordir = os.path.abspath(sys.argv[2])
-toolchain = sys.argv[3]
-variant = sys.argv[4]
-fullname = sys.argv[5]
-deplist = sys.argv[6].split(':')
-envlist = sys.argv[7:]
+toolchain = sys.argv[3]          # toolchain, e.g. 'x86_64-pc-linux-gnu'; may be empty string
+variant = sys.argv[4]            # 'debug' or 'release' variant should be built
+fullname = sys.argv[5]           # package's name and version, e.g. 'openssl-3.0.7-rc1'
+deplist = sys.argv[6].split(':') # list of 3rdparty dependencies names, e.g. 'ltdl:json-c'
+envlist = sys.argv[7:]           # build env variables, e.g. 'CC=gcc CXX=g++ LDFLAGS=...'
+
+if variant not in ['debug', 'release']:
+    print("error: argument 'variant' should be 'debug' or 'release'")
+    exit(1)
 
 env = dict()
 for e in envlist:
@@ -554,6 +570,10 @@ rmpath(commit_build_finished_file)
 mkpath(src_dir)
 
 os.chdir(build_dir)
+
+#
+# Recipes for particular targets.
+#
 
 if name == 'libuv':
     download('https://dist.libuv.org/dist/v%s/libuv-v%s.tar.gz' % (ver, ver),

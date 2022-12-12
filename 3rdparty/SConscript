@@ -4,7 +4,7 @@ Import('env', 'subenvs', 'meta')
 
 # default versions for downloaded third-party libraries
 thirdparty_versions = {
-    # lib
+    # libs
     'alsa':             '1.0.29',
     'json-c':           '0.12-20140410',
     'libatomic_ops':    '7.6.10',
@@ -390,6 +390,8 @@ elif 'google-benchmark' in system_dependencies:
         subenvs.tests.AppendUnique(CPPDEFINES=['ROC_BENCHMARK_USE_ACCESSORS'])
 
     subenvs.tests = conf.Finish()
+
+# end of deps
 
 return_value = (env, subenvs)
 Return('return_value')

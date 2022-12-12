@@ -1,4 +1,5 @@
-#! /bin/bash
+#!/usr/bin/env bash
+
 set -euxo pipefail
 
 for c in gcc-6 clang-6.0
