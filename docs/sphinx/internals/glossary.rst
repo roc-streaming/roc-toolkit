@@ -10,14 +10,23 @@ Participants
 
 .. glossary::
 
+*roc peer*
+    A sender or receiver (see below).
+
 *roc sender*
-    An entity that converts an audio stream to packets and sends them via the network to a receiver. The input audio stream is usually read from a file or a soundcard.
+    An entity that converts an audio stream to packets and sends them via the network to one or multiple receivers. The input audio stream is usually read from a file or a soundcard.
 
 *roc receiver*
     An entity that receives packets from multiple senders, converts them to audio streams and mixes the streams. The output audio stream is usually written to a file or a soundcard.
 
 *roc session*
-    An entity created on the receiver side for every connected sender, which receives packets from a single sender and converts them to an audio stream.
+    An entity that corresponds to one sender connected to one receiver.
+
+*roc sender session*
+    Represenation of roc session on sender side.
+
+*roc receiver session*
+    Represenation of roc session on receiver side.
 
 Audio
 =====

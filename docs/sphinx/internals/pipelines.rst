@@ -31,7 +31,7 @@ The diagram below demonstrates this.
 Pipeline tasks
 ==============
 
-Pipeline configuration is done via task-based interface. When you want to change pipeline layout or options, you create a task and ask pipeline to schedule it. The task will be then executed on pipeline thread after processing next frame.
+Pipeline configuration is done via task-based interface. When you want to change pipeline layout or options, you create a task and ask pipeline to schedule it. The task will be then executed on pipeline thread, usually before processing next frame.
 
 This approach have two important advantages:
 

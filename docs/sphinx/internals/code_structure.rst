@@ -104,8 +104,8 @@ target                description
 target_pc             Enabled for PC (like server, desktop, laptop)
 target_posix          Enabled for a POSIX OS
 target_posix_ext      Enabled for a POSIX OS with POSIX extensions
-target_posix_ext      Enabled for a POSIX OS on PC
-target_gnu            Enabled for GNU-like libc
+target_posix_pc       Enabled for a POSIX OS on PC
+target_gnu            Enabled for GNU-like libc and compiler
 target_darwin         Enabled for macOS
 target_android        Enabled for Android
 target_c11            Enabled for C11 compilers
