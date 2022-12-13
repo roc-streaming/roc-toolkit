@@ -61,13 +61,13 @@ roc_log_level log_level_to_user(LogLevel level) {
 
 void log_message_to_user(const core::LogMessage& in, roc_log_message& out) {
     out.level = log_level_to_user(in.level);
-    out.component = in.module;
+    out.module = in.module;
     out.file = in.file;
     out.line = in.line;
     out.time = (unsigned long long)in.time;
     out.pid = (unsigned long long)in.pid;
     out.tid = (unsigned long long)in.tid;
-    out.message = in.message;
+    out.text = in.message;
 }
 
 } // namespace api

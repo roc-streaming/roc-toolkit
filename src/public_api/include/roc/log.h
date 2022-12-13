@@ -60,12 +60,14 @@ typedef struct roc_log_message {
      */
     roc_log_level level;
 
-    /** Name of the component that originated the message.
+    /** Name of the module that originated the message.
+     * Pointer can be used only until roc_log_handler() returns.
      */
-    const char* component;
+    const char* module;
 
     /** Name of the source code file.
      * May be NULL.
+     * Pointer can be used only until roc_log_handler() returns.
      */
     const char* file;
 
@@ -86,8 +88,9 @@ typedef struct roc_log_message {
     unsigned long long tid;
 
     /** Message text.
+     * Pointer can be used only until roc_log_handler() returns.
      */
-    const char* message;
+    const char* text;
 } roc_log_message;
 
 /** Log handler.
