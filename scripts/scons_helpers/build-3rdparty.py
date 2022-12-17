@@ -524,6 +524,146 @@ def makeenv(envlist):
         ret.append(quote(e))
     return ' '.join(ret)
 
+# https://mesonbuild.com/Reference-tables.html
+def gen_crossfile(env, toolchain, pc_dir, cross_file):
+    print('[generate] %s' % cross_file)
+
+    def meson_string(s):
+        m = {
+            "\\": "\\\\",
+            "'":  "\\'",
+            "\a": "\\a",
+            "\b": "\\b",
+            "\f": "\\f",
+            "\n": "\\n",
+            "\r": "\\r",
+            "\t": "\\t",
+            "\v": "\\v",
+        }
+        for k, v in m.items():
+            s = s.replace(k, v)
+        return "'" + s + "'"
+
+    def meson_flags(flags):
+        return '[%s]' % ', '.join(map(meson_string, flags))
+
+    if toolchain:
+        system = 'linux'
+        cpu_family = 'x86_64'
+        cpu = 'x86_64'
+        endian = 'little'
+
+        system_list = ('android cygwin darwin dragonfly emscripten freebsd haiku netbsd'+
+                   ' openbsd windows sunos').split()
+
+        cpu_list = ('aarch64 alpha arc arm avr c2000 csky dspic e2k ft32 ia64'+
+                    ' loongarch64 m68k microblaze mips mips64 msp430 parisc pic24'+
+                    ' ppc ppc64 riscv32 riscv64 rl78 rx s390 s390x sh4 sparc sparc64'+
+                    ' wasm32 wasm64 x86 x86_64').split()
+
+        for s in reversed(sorted(system_list, key=len)):
+            if s in toolchain:
+                system = s
+                break
+
+        for s in reversed(sorted(cpu_list, key=len)):
+            if s in toolchain:
+                cpu_family = s
+
+                if s == 'aarch64':
+                    cpu = 'armv8'
+                elif s == 'arm':
+                    cpu = 'armv5'
+                elif s == 'x86':
+                    cpu = 'i686'
+                else:
+                    cpu = s
+
+                if s+'le' in toolchain or s+'el' in toolchain:
+                    endian = 'little'
+                elif s+'be' in toolchain or s+'eb' in toolchain:
+                    endian = 'big'
+                elif s in 'wasm32 wasm64 x86 x86_64'.split():
+                    endian = 'little'
+                else:
+                    endian = 'big'
+
+                break
+
+    cflags = []
+    ldflags = []
+
+    for dep in deplist:
+        cflags.append('-I%s' % os.path.join(workdir, dep, 'include'))
+        ldflags.append('-L%s' % os.path.join(workdir, dep, 'lib'))
+
+    pkg_config = None
+    if 'PKG_CONFIG' in env:
+        pkg_config = env['PKG_CONFIG']
+    elif which('pkg-config'):
+        pkg_config = 'pkg-config'
+
+    with open(cross_file, 'w') as fp:
+        fp.write("[binaries]\n")
+        fp.write("c = %s\n" % meson_string(env['CC']))
+        fp.write("cpp = %s\n" % meson_string(env['CXX']))
+        fp.write("ar = %s\n" % meson_string(env['AR']))
+        if pkg_config:
+            fp.write("pkgconfig = %s\n" % meson_string(pkg_config))
+        fp.write("\n")
+
+        if pc_dir:
+            fp.write("[built-in options]\n")
+            fp.write("pkg_config_path = %s\n" % meson_string(os.path.abspath(pc_dir)))
+            fp.write("\n")
+
+        if cflags or ldflags:
+            fp.write("[properties]\n")
+            fp.write("c_args = %s\n" % meson_flags(cflags))
+            fp.write("c_link_args = %s\n" % meson_flags(ldflags))
+            fp.write("cpp_args = %s\n" % meson_flags(cflags))
+            fp.write("cpp_link_args = %s\n" % meson_flags(ldflags))
+            fp.write("\n")
+
+        if toolchain:
+            fp.write("[host_machine]\n")
+            fp.write("system = %s\n" % meson_string(system))
+            fp.write("cpu_family = %s\n" % meson_string(cpu_family))
+            fp.write("cpu = %s\n" % meson_string(cpu))
+            fp.write("endian = %s\n" % meson_string(endian))
+            fp.write("\n")
+
+def gen_pcfile(dep, pc_dir):
+    name, ver = splitver(dep)
+    pc_file = os.path.join(pc_dir, name) + '.pc'
+    with open(pc_file, 'w') as fp:
+        print('[generate] %s' % pc_file)
+        fp.write('Name: %s\n' % name)
+        fp.write('Description: %s\n' % name)
+        fp.write('Version: %s\n' % ver)
+        fp.write('Cflags: -I%s\n' % os.path.join(workdir, dep, 'include'))
+        fp.write('Libs: -L%s' % os.path.join(workdir, dep, 'lib'))
+        for lib in glob.glob(os.path.join(workdir, dep, 'lib', 'lib*')):
+            lib = os.path.basename(lib)
+            lib = re.sub('^lib', '', lib)
+            lib = re.sub('\.[a-z]+$', '', lib)
+            fp.write(' -l%s' % lib)
+        fp.write('\n')
+
+def splitver(dep):
+    m = re.match('^(.*?)-([0-9][a-z0-9.-]+)$', dep)
+    if not m:
+        print("error: can't determine version of '%s'" % dep, file=sys.stderr)
+        exit(1)
+    return m.group(1), m.group(2)
+
+def splitenv(envlist):
+    env = dict()
+    for e in envlist:
+        k, v = e.split('=', 1)
+        env[k] = v
+    return env
+
 #
 # Main.
 #
@@ -545,16 +685,8 @@ if variant not in ['debug', 'release']:
     print("error: argument 'variant' should be 'debug' or 'release'")
     exit(1)
 
-env = dict()
-for e in envlist:
-    k, v = e.split('=', 1)
-    env[k] = v
-
-m = re.match('^(.*?)-([0-9][a-z0-9.-]+)$', fullname)
-if not m:
-    print("error: can't determine version of '%s'" % fullname, file=sys.stderr)
-    exit(1)
-name, ver = m.group(1), m.group(2)
+env = splitenv(envlist)
+name, ver = splitver(fullname)
 
 build_dir = os.path.join(workdir, fullname)
 src_dir = os.path.join(build_dir, 'src')
@@ -865,18 +997,18 @@ elif name == 'pulseaudio':
     else:
         mkpath('builddir')
         os.chdir('builddir')
-        execute('%s %s meson .. %s' % (
-            makeenv(envlist),
-            makeflags(workdir, toolchain, env, deplist),
+        mkpath('pc')
+        for dep in deplist:
+            gen_pcfile(dep, 'pc')
+        gen_crossfile(env, toolchain, 'pc', 'crossfile.txt')
+        execute('meson .. %s' % (
             ' '.join([
+                '--cross-file=crossfile.txt',
+                '-Ddaemon=false',
                 '-Ddoxygen=false',
                 '-Dman=false',
                 '-Dgcov=false',
                 '-Dtests=false',
-                '-Ddatabase=simple',
-                '-Dorc=disabled',
-                '-Dwebrtc-aec=disabled',
-                '-Dopenssl=disabled',
             ])), logfile)
         execute('ninja', logfile)
         execute('DESTDIR=../instdir ninja install', logfile)

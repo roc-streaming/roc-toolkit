@@ -28,6 +28,9 @@ def _build_thirdparty(env, build_root, toolchain, variant, versions, name, deps,
         'RANLIB=%s' % quote(env['RANLIB']),
     ]
 
+    if 'PKG_CONFIG' in env.Dictionary():
+        env_vars += ['PKG_CONFIG=%s' % quote(env['PKG_CONFIG'])]
+
     project_root = env.Dir('#').srcnode().abspath
     build_root = env.Dir(build_root).abspath
     thirdparty_dir = os.path.join(build_root, versioned_name)
@@ -88,7 +91,11 @@ def _import_thridparty(env, build_root, toolchain, variant, versions, name, deps
 
     if os.path.isdir(env.Dir(libdir).abspath):
         env.Prepend(LIBPATH=[libdir])
-        env.Append(RPATH_LINK_DIRS=[rpathdir])
+
+        if env['ROC_PLATFORM'] == 'linux':
+            env.Prepend(LINKFLAGS=[
+                '-Wl,-rpath-link,%s' % env.Dir(rpathdir).path,
+            ])
 
         for lib in env.GlobRecursive(env.Dir(libdir).abspath, 'lib*'):
             if needlib(lib.path):

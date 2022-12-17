@@ -296,7 +296,6 @@ env.Append(CPPDEFINES=[])
 env.Append(CPPPATH=[])
 env.Append(LIBPATH=[])
 env.Append(LIBS=[])
-env.Append(RPATH_LINK_DIRS=[])
 env.Append(STRIPFLAGS=[])
 
 if GetOption('with_includes'):
@@ -367,7 +366,7 @@ doc_env = env.Clone()
 doc_env.SConscript('docs/SConscript',
                        duplicate=0, exports='doc_env')
 
-non_build_targets = ['fmt', 'docs', 'shpinx', 'doxygen']
+non_build_targets = ['fmt', 'docs', 'sphinx', 'doxygen']
 if set(COMMAND_LINE_TARGETS) \
   and set(COMMAND_LINE_TARGETS).intersection(non_build_targets) == set(COMMAND_LINE_TARGETS):
     Return()
@@ -639,6 +638,8 @@ env['ROC_MODULES'] = [
     'roc_ctl',
     'roc_peer',
 ]
+
+env['ROC_PLATFORM'] = meta.platform
 
 env['ROC_TARGETS'] = []
 
@@ -953,12 +954,6 @@ else:
     if meta.platform in ['linux', 'android']:
         env.Append(LINKFLAGS=[
             '-Wl,--no-undefined',
-        ])
-
-if meta.platform in ['linux']:
-    for path in env['RPATH_LINK_DIRS']:
-        env.Append(LINKFLAGS=[
-            '-Wl,-rpath-link,%s' % env.Dir(path).path,
         ])
 
 subenvs.tests.Append(
