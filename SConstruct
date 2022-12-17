@@ -193,6 +193,11 @@ AddOption('--disable-libunwind',
           action='store_true',
           help='disable libunwind support required for printing backtrace')
 
+AddOption('--disable-alsa',
+          dest='disable_alsa',
+          action='store_true',
+          help='disable ALSA support in tools')
+
 AddOption('--disable-pulseaudio',
           dest='disable_pulseaudio',
           action='store_true',
@@ -715,6 +720,10 @@ else:
         if not GetOption('disable_sox'):
             env.Append(ROC_TARGETS=[
                 'target_sox',
+            ])
+        if not GetOption('disable_alsa') and meta.platform in ['linux']:
+            env.Append(ROC_TARGETS=[
+                'target_alsa',
             ])
         if not GetOption('disable_pulseaudio') and meta.platform in ['linux']:
             env.Append(ROC_TARGETS=[
