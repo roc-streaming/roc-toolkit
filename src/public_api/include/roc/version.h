@@ -26,11 +26,11 @@ extern "C" {
 
 /** Minor version component.
  */
-#define ROC_VERSION_MINOR 1
+#define ROC_VERSION_MINOR 2
 
 /** Patch version component.
  */
-#define ROC_VERSION_PATCH 5
+#define ROC_VERSION_PATCH 0
 
 /** Version components.
  */
