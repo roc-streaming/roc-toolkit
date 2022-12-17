@@ -130,6 +130,9 @@ jobs:
           - script: linux-checks/check-formatting
             image: rocstreaming/env-ubuntu
 
+          - script: linux-checks/pulseaudio-versions
+            image: rocstreaming/env-ubuntu
+
     name: ${{ matrix.script }}
     steps:
       - name: Pull docker image
