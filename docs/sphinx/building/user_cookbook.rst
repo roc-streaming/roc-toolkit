@@ -30,8 +30,8 @@ Ubuntu 16.04 and later
     # install libraries and tools
     $ sudo scons -Q --build-3rdparty=openfec install
 
-Ubuntu 14.04 and later, Debian Jessie and later
------------------------------------------------
+Ubuntu 14.04 and later / Debian Jessie and later
+------------------------------------------------
 
 .. code::
 
@@ -186,10 +186,34 @@ Linux (cross-compile)
 .. seealso::
 
    * :doc:`/portability/cross_compiling`
-   * :doc:`/portability/tested_boards`
+   * :doc:`/portability/tested_devices`
 
-Raspberry Pi 2 and 3
---------------------
+Raspberry Pi (64-bit)
+---------------------
+
+.. code::
+
+    # clone repo
+    $ git clone https://github.com/roc-streaming/roc-toolkit.git
+    $ cd roc-toolkit
+
+    # build libraries and tools
+    $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
+        rocstreaming/toolchain-aarch64-linux-gnu \
+          scons -Q \
+            --host=aarch64-linux-gnu \
+            --build-3rdparty=all \
+            --disable-pulseaudio
+
+    # install Roc binaries
+    $ scp ./bin/aarch64-linux-gnu/roc-{recv,send,conv} <address>:/usr/bin
+    $ scp ./bin/aarch64-linux-gnu/libroc.so.*.* <address>:/usr/lib
+
+    # install Roc dependencies
+    $ ssh <address> apt-get install libasound2 libpulse0 libltdl7
+
+Raspberry Pi 2 and later (32-bit)
+---------------------------------
 
 .. code::
 
@@ -202,7 +226,8 @@ Raspberry Pi 2 and 3
         rocstreaming/toolchain-arm-linux-gnueabihf \
           scons -Q \
             --host=arm-linux-gnueabihf \
-            --build-3rdparty=libuv,libunwind,openfec,alsa,pulseaudio:12.2,speexdsp,sox
+            --build-3rdparty=all \
+            --disable-pulseaudio
 
     # install Roc binaries
     $ scp ./bin/arm-linux-gnueabihf/roc-{recv,send,conv} <address>:/usr/bin
@@ -211,8 +236,8 @@ Raspberry Pi 2 and 3
     # install Roc dependencies
     $ ssh <address> apt-get install libasound2 libpulse0 libltdl7
 
-Raspberry Pi 1 and Zero
------------------------
+Raspberry Pi 1 and Zero (32-bit)
+--------------------------------
 
 .. code::
 
@@ -230,52 +255,6 @@ Raspberry Pi 1 and Zero
     # install Roc binaries
     $ scp ./bin/arm-bcm2708hardfp-linux-gnueabi/roc-{recv,send,conv} <address>:/usr/bin
     $ scp ./bin/arm-bcm2708hardfp-linux-gnueabi/libroc.so.*.* <address>:/usr/lib
-
-    # install Roc dependencies
-    $ ssh <address> apt-get install libasound2 libpulse0 libltdl7
-
-Orange Pi 64-bit models
------------------------
-
-.. code::
-
-    # clone repo
-    $ git clone https://github.com/roc-streaming/roc-toolkit.git
-    $ cd roc-toolkit
-
-    # build libraries and tools
-    $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
-        rocstreaming/toolchain-aarch64-linux-gnu \
-          scons -Q \
-            --host=aarch64-linux-gnu \
-            --build-3rdparty=libuv,libunwind,openfec,alsa,pulseaudio:8.0,speexdsp,sox
-
-    # install Roc binaries
-    $ scp ./bin/aarch64-linux-gnu/roc-{recv,send,conv} <address>:/usr/bin
-    $ scp ./bin/aarch64-linux-gnu/libroc.so.*.* <address>:/usr/lib
-
-    # install Roc dependencies
-    $ ssh <address> apt-get install libasound2 libpulse0 libltdl7
-
-Orange Pi 32-bit models
------------------------
-
-.. code::
-
-    # clone repo
-    $ git clone https://github.com/roc-streaming/roc-toolkit.git
-    $ cd roc-toolkit
-
-    # build libraries and tools
-    $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
-        rocstreaming/toolchain-arm-linux-gnueabihf \
-          scons -Q \
-            --host=arm-linux-gnueabihf \
-            --build-3rdparty=libuv,libunwind,openfec,alsa,pulseaudio:8.0,speexdsp,sox
-
-    # install Roc binaries
-    $ scp ./bin/arm-linux-gnueabihf/roc-{recv,send,conv} <address>:/usr/bin
-    $ scp ./bin/arm-linux-gnueabihf/libroc.so.*.* <address>:/usr/lib
 
     # install Roc dependencies
     $ ssh <address> apt-get install libasound2 libpulse0 libltdl7
@@ -334,8 +313,8 @@ Android
    * `Roc Java <https://github.com/roc-streaming/roc-java>`_ (JAR and AAR shipped with precompiled libroc)
    * :doc:`/portability/cross_compiling`
 
-Building C library for Android on Linux
----------------------------------------
+Building C library for Android using Docker
+-------------------------------------------
 
 .. code::
 
@@ -384,7 +363,7 @@ Building C library for Android on macOS
 
 Prerequisites:
 
-* Install `Android SDK command-line tools <https://github.com/codepath/android_guides/wiki/Installing-Android-SDK-Tools>`_, in particlar ``sdkmanager``.
+* Install `Android SDK command-line tools <https://github.com/codepath/android_guides/wiki/Installing-Android-SDK-Tools>`_, in particular ``sdkmanager``.
 
 * Ensure that ``sdkmanager`` is in ``PATH`` and working.
 

@@ -5,5 +5,5 @@ Portability
    :maxdepth: 1
 
    portability/supported_platforms
-   portability/tested_boards
+   portability/tested_devices
    portability/cross_compiling

@@ -30,9 +30,10 @@ The following Docker images are used on our CI builds.
 Linux native
 ------------
 
-=================================== ===================== ============= ================================
+=================================== ===================== ============= ==================================
 Image                               Base image            Architecture  Compilers
-=================================== ===================== ============= ================================
+=================================== ===================== ============= ==================================
+rocstreaming/env-ubuntu:22.04       ubuntu:22.04          x86_64        gcc-11, gcc-12, clang-11, clang-14
 rocstreaming/env-ubuntu:20.04       ubuntu:20.04          x86_64        gcc-8, gcc-10, clang-8, clang-10
 rocstreaming/env-ubuntu:18.04       ubuntu:18.04          x86_64        gcc-6, clang-6
 rocstreaming/env-ubuntu:16.04       ubuntu:16.04          x86_64        gcc-4.8, clang-3.7
@@ -44,7 +45,7 @@ rocstreaming/env-centos             centos:latest         x86_64        distro d
 rocstreaming/env-opensuse           opensuse/leap:latest  x86_64        distro default
 rocstreaming/env-archlinux          archlinux/base:latest x86_64        distro default
 rocstreaming/env-alpine             alpine:latest         x86_64        distro default
-=================================== ===================== ============= ================================
+=================================== ===================== ============= ==================================
 
 Linux toolchains
 ----------------
@@ -52,9 +53,9 @@ Linux toolchains
 ============================================================== ============= =========
 Image                                                          Architecture  Compilers
 ============================================================== ============= =========
-rocstreaming/toolchain-arm-bcm2708hardfp-linux-gnueabi:gcc-4.7 armv6         gcc-4.7
-rocstreaming/toolchain-arm-linux-gnueabihf:gcc-4.9             armv7         gcc-4.9
 rocstreaming/toolchain-aarch64-linux-gnu:gcc-7.4               armv8         gcc-7.4
+rocstreaming/toolchain-arm-linux-gnueabihf:gcc-4.9             armv7         gcc-4.9
+rocstreaming/toolchain-arm-bcm2708hardfp-linux-gnueabi:gcc-4.7 armv6         gcc-4.7
 ============================================================== ============= =========
 
 Android toolchains
@@ -67,17 +68,17 @@ rocstreaming/toolchain-linux-android:ndk21 21-29       armeabi-v7a, arm64-v8a, x
 ========================================== =========== =================================== =============
 
 Full Android environment
--------------------------
+------------------------
 
 ========================================== ===============================
 Image                                      JDK
 ========================================== ===============================
-rocstreaming/env-android:jdk8              openjdk:8u252-jdk-slim-buster
 rocstreaming/env-android:jdk11             openjdk:11.0.7-jdk-slim-buster
+rocstreaming/env-android:jdk8              openjdk:8u252-jdk-slim-buster
 ========================================== ===============================
 
-Run builds locally
-==================
+Running CI builds locally
+=========================
 
 It is possible to run Docker-based builds locally, in the same environment as they are run on CI.
 
@@ -104,6 +105,45 @@ Explanation:
 * ``-u "${UID}"`` changes the UID inside the container from root to the current user
 * ``-v "${PWD}:${PWD}"`` mounts the current directory into the container at the same path
 * ``-w "${PWD}"`` chdirs into that directory
+
+Working with Docker images
+==========================
+
+`Docker images <https://github.com/roc-streaming/dockerfiles>`_ are built using `GitHub actions <https://github.com/roc-streaming/dockerfiles/blob/main/.github/workflows/build.yml>`_ and then pushed to Docker Hub.
+
+Each image directory contains one or several dockerfiles and ``images.csv`` file in the following format:
+
+.. code::
+
+    DOCKERFILE;ARGS (comma-separated list);TAG
+
+This file defines what tags to build, path to dockerfile and build arguments for each tag. Build arguments are passed as ARGs to ``docker build``.
+
+If the value in the first column is left empty, it defaults to ``Dockerfile`` is in the same directory as ``images.csv``. If the value in the last column is omitted, it defaults to the name of the directory which contains Dockerfile, e.g. if Dockerfile path is ``14.04/Dockerfile``, then tag defaults to ``14.04``.
+
+Example:
+
+.. code::
+
+    DOCKERFILE;ARGS (comma-separated list);TAG
+    Dockerfile;MAJOR=4.9,MINOR=4,DATE=2017.01;gcc-4.9
+    Dockerfile;MAJOR=7.4,MINOR=1,DATE=2019.02;gcc-7.4
+    Dockerfile;MAJOR=7.4,MINOR=1,DATE=2019.02;latest
+
+This file defines three tags: ``gcc-4.9``, ``gcc-7.4``, and ``latest``. Each tag uses the same ``Dockerfile`` and different arguments ``MAJOR``, ``MINOR``, and ``DATE``.
+
+You can build all docker images locally using:
+
+.. code::
+
+   ./scripts/run_all.sh --build
+
+Or build specific image:
+
+.. code::
+
+    cd images/<image_name>
+    ../../scripts/build.sh
 
 Android environment
 ===================
@@ -243,38 +283,3 @@ The ``env-android`` image provides an helper script named ``device`` that takes 
       $ device start --name=<AVD-NAME>
 
 .. _build_hooks:
-
-Docker Hub build hooks
-======================
-
-The `Docker Hub build hooks <https://docs.docker.com/docker-hub/builds/advanced/#custom-build-phase-hooks>`_ allow to provide extra instructions to the autobuild process.
-
-They can be used for example if ARGs have to be passed during image build process.
-
-The ``hooks`` folder in the root location of `Dockerfiles repo <https://github.com/roc-streaming/dockerfiles>`_ provides two hooks for override building and publishing docker images;
-the following steps are needed in order to use them:
-
-* inside ``images`` folder create a subfolder named ``images/<image-name>/hooks``
-
-* ``cd`` into the hooks subfolder and create a symbolic link to build and push hooks
-
-  .. code::
-
-      $ cd images/<image-name>/hooks
-      $ ln -s ../../../hooks/build build
-      $ ln -s ../../../hooks/push push
-
-* create a csv file at ``images/<image-name>/hooks/images.csv`` location; the first line of the file must be header:
-
-    .. code::
-
-        DOCKERFILE;ARGS (comma-separated list);TAG
-
-  Each row of the csv file declares a new image to build and publish.
-
-  In particular the first column specifies the Dockerfile path related to ``images/<image-name>`` location;
-  it can be left empty if the Dockerfile is in the default location.
-
-  The second column is a comma-separated list of ARGs to pass for building docker image.
-
-  The last column is the tag for the docker image. If the Dockerfile location is a subfolder of the default location then the subfolder path is used as the image tag (for example if the Dockerfile is located at ``images/<image-name>/tag1/Dockerfile`` the resulting image would have the tag ``tag1``).

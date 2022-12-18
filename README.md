@@ -63,7 +63,7 @@ See details [here](https://roc-streaming.org/toolkit/docs/portability.html).
 If you want to run Roc on an embedded system or a single-board computer, see:
 
 * [Cross-compiling](https://roc-streaming.org/toolkit/docs/portability/cross_compiling.html)
-* [Tested boards](https://roc-streaming.org/toolkit/docs/portability/tested_boards.html)
+* [Tested devices](https://roc-streaming.org/toolkit/docs/portability/tested_devices.html)
 
 Plans
 -----

@@ -96,7 +96,7 @@ Bindings
 Portability
 ===========
 
-.. seealso:: :doc:`/portability/supported_platforms`, :doc:`/portability/tested_boards`
+.. seealso:: :doc:`/portability/supported_platforms`, :doc:`/portability/tested_devices`
 
 * supported operating systems
 

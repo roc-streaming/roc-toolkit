@@ -4,6 +4,7 @@ Supported platforms
 .. seealso::
 
    * :doc:`/development/continuous_integration`
+   * :doc:`/portability/tested_devices`
 
 What is supported
 -----------------
@@ -24,7 +25,7 @@ Compilers:
 What is tested
 --------------
 
-The following specific platform configurations are tested on a regular basis.
+The following specific platform configurations are tested on a regular basis, partly :doc:`on CI </development/continuous_integration>`, partly :doc:`on hardware </portability/tested_devices>`.
 
 Linux distributions:
 
@@ -35,6 +36,7 @@ Linux distributions:
 * openSUSE (Leap)
 * Arch Linux (latest)
 * Alpine Linux (latest)
+* Raspberry Pi OS (latest)
 
 Android versions:
 
@@ -54,4 +56,4 @@ Hardware architectures:
 * i686
 * ARMv6
 * ARMv7 (Cortex-A 32-bit)
-* ARMv8 (Cortex-A 64-bit)
+* ARMv8 (Cortex-A 64-bit, Apple M1)
