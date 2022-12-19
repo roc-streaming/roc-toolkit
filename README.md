@@ -2,6 +2,8 @@
 
 # Roc Toolkit: real-time audio streaming
 
+[![Build](https://github.com/roc-streaming/roc-toolkit/workflows/build/badge.svg?branch=master)](https://github.com/roc-streaming/roc-toolkit/actions/workflows/build.yml?query=branch%3Amaster) [![GitHub release](https://img.shields.io/github/release/roc-streaming/roc-toolkit.svg)](https://github.com/roc-streaming/roc-toolkit/releases) [![Matrix chat](https://matrix.to/img/matrix-badge.svg)](https://app.element.io/#/room/#roc-streaming:matrix.org)
+
 Roc is a toolkit for real-time audio streaming over the network.
 
 You can read about the project here:
@@ -13,11 +15,7 @@ You can read about the project here:
 Summary
 -------
 
-The toolkit consists of:
-
-* a C library;
-* a set of command-line tools;
-* a set of PulseAudio modules.
+The toolkit consists of a C library and a set of command-line tools.
 
 Key features:
 
@@ -28,6 +26,12 @@ Key features:
 * multiple profiles for different CPU and latency requirements;
 * portability;
 * relying on open, standard protocols.
+
+Besides toolkit, other repositories in this github org provide:
+
+* bindings for other programming languages
+* modules for sound servers
+* applications
 
 Documentation
 -------------
@@ -76,7 +80,7 @@ See here:
 Community
 ---------
 
-We have a mailing list and an IRC channel. See details [here](https://roc-streaming.org/toolkit/docs/about_project/contacts.html).
+We have a mailing list and an Matrix channel. See details [here](https://roc-streaming.org/toolkit/docs/about_project/contacts.html).
 
 Contributing
 ------------
