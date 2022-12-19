@@ -9,7 +9,6 @@
 #include <benchmark/benchmark.h>
 
 #include "roc_core/fast_random.h"
-#include "roc_core/secure_random.h"
 
 namespace roc {
 namespace core {
@@ -24,16 +23,6 @@ void BM_Random_Fast(benchmark::State& state) {
 }
 
 BENCHMARK(BM_Random_Fast);
-
-void BM_Random_Secure(benchmark::State& state) {
-    uint32_t r = 0;
-    while (state.KeepRunning()) {
-        secure_random(r, (uint32_t)-1, r);
-        benchmark::DoNotOptimize(r);
-    }
-}
-
-BENCHMARK(BM_Random_Secure);
 
 } // namespace
 } // namespace core

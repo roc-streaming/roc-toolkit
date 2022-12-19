@@ -7,9 +7,9 @@
  */
 
 #include "roc_rtcp/session.h"
+#include "roc_core/fast_random.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
-#include "roc_core/secure_random.h"
 #include "roc_packet/ntp.h"
 
 namespace roc {
@@ -30,12 +30,7 @@ Session::Session(IReceiverHooks* recv_hooks,
     , next_deadline_(0)
     , ssrc_(0)
     , valid_(false) {
-    uint32_t rand_ssrc = 0;
-    if (!core::secure_random(0, packet::source_t(-1), rand_ssrc)) {
-        roc_log(LogError, "rtcp session: random generator failed");
-        return;
-    }
-    ssrc_ = (packet::source_t)rand_ssrc;
+    ssrc_ = (packet::source_t)core::fast_random(0, packet::source_t(-1));
 
     // TODO
     strcpy(cname_, "TODO");

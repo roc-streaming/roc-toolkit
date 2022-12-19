@@ -7,9 +7,9 @@
  */
 
 #include "roc_fec/writer.h"
+#include "roc_core/fast_random.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
-#include "roc_core/secure_random.h"
 #include "roc_packet/fec_scheme_to_str.h"
 
 namespace roc {
@@ -41,13 +41,8 @@ Writer::Writer(const WriterConfig& config,
     , fec_scheme_(fec_scheme)
     , valid_(false)
     , alive_(true) {
-    uint32_t rand_cur_sbn = 0, rand_cur_block_repair_sn = 0;
-    if (!core::secure_random(0, packet::blknum_t(-1), rand_cur_sbn)
-        || !core::secure_random(0, packet::seqnum_t(-1), rand_cur_block_repair_sn)) {
-        return;
-    }
-    cur_sbn_ = (packet::blknum_t)rand_cur_sbn;
-    cur_block_repair_sn_ = (packet::seqnum_t)rand_cur_block_repair_sn;
+    cur_sbn_ = (packet::blknum_t)core::fast_random(0, packet::blknum_t(-1));
+    cur_block_repair_sn_ = (packet::seqnum_t)core::fast_random(0, packet::seqnum_t(-1));
     if (!resize(config.n_source_packets, config.n_repair_packets)) {
         return;
     }
