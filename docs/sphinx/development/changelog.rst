@@ -19,8 +19,8 @@ Changelog
     Tests
     Documentation
 
-Version 0.2.0 (Dec X, 2022)
-===========================
+Version 0.2.0 (Dec 19, 2022)
+============================
 
 Features
 --------
@@ -79,11 +79,6 @@ Portability
 * continuous integration for more Linux distros
 * continuous integration for Android
 * testing on Raspberry Pi 4
-
-Security
---------
-
-* use CSPRNG for initializing of RTP fields
 
 Internals
 ---------
