@@ -15,7 +15,7 @@ You can read about the project here:
 Summary
 -------
 
-The toolkit consists of a C library and a set of command-line tools.
+The toolkit consists of a [C library](https://roc-streaming.org/toolkit/docs/api.html) and a set of [command-line tools](https://roc-streaming.org/toolkit/docs/tools/command_line_tools.html).
 
 Key features:
 
@@ -27,11 +27,11 @@ Key features:
 * portability;
 * relying on open, standard protocols.
 
-Besides toolkit, other repositories in this github org provide:
+Besides toolkit, Roc Streaming provides:
 
-* bindings for other programming languages
-* modules for sound servers
-* applications
+* [bindings](https://roc-streaming.org/toolkit/docs/api/bindings.html) for other programming languages
+* [modules](https://roc-streaming.org/toolkit/docs/tools/sound_server_modules.html) for sound servers like PulseAudio and PipeWire
+* [applications](https://roc-streaming.org/toolkit/docs/tools/applications.html)
 
 Documentation
 -------------
