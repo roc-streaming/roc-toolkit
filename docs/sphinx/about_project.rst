@@ -11,3 +11,4 @@ About project
    about_project/licensing
    about_project/contacts
    about_project/authors
+   about_project/sponsors

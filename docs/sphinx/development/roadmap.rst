@@ -10,10 +10,12 @@ Basic features
 - ☑ Static sample rate conversion
 - ☑ Packet interleaving
 - ☑ Stream breakage detection
+- ☑ Multiple slots on sender and receiver
 - ☑ RTP support
 - ☑ FECFRAME support (Reed-Solomon and LDPC-Staircase FEC codes based on `OpenFEC <http://openfec.org/>`_)
 - ☐ RTCP support for receiver feedback
-- ☐ Session negotiation
+- ☐ RTCP XR support (extended reports)
+- ☐ Session negotiation using RTSP
 - ☐ Configurable network encodings
 - ☐ Opus support
 - ☐ Service discovery
@@ -27,11 +29,11 @@ Advanced features
 - ☐ Dynamic audio bitrate adjustment
 - ☐ Dynamic payload type switch
 - ☐ QoS support
-- ☐ Encryption (likely SRTP)
+- ☐ Encryption (SRTP and DTLS)
 - ☐ Packet loss concealment
 - ☐ Lip sync support
-- ☐ Multicast support
-- ☐ Multi-room support (requires some research)
+- ☑ Multicast support
+- ☐ Multi-room support (playback synchronization)
 - ☐ Surround sound
 - ☐ Congestion control
 - ☐ Retransmission (probably `RFC 4588 <https://tools.ietf.org/html/rfc4588>`_ and `RFC 4585 <https://tools.ietf.org/html/rfc4585>`_)
@@ -54,21 +56,23 @@ Tools
 
 - ☑ Sender
 - ☑ Receiver
-- ☑ Converter
 - ☐ Relay
 
 Integrations
 ============
 
 - ☑ Roc-based transport for PulseAudio
-- ☐ Roc-based service discovery for PulseAudio
-- ☐ Bindings for various languages
+- ☑ Roc-based transport for PipeWire
+- ☐ Virtual audio device for macOS
+- ☐ Virtual audio device for Windows
+- ☑ Library bindings for other languages
 
 Portability
 ===========
 
 - ☑ Linux, including Raspberry Pi and clones
-- ☐ Other \*nix systems
+- ☑ Other \*nix systems
 - ☑ macOS
-- ☐ Android
+- ☑ Android
+- ☐ iOS
 - ☐ Windows

@@ -80,7 +80,7 @@ See here:
 Community
 ---------
 
-We have a mailing list and an Matrix channel. See details [here](https://roc-streaming.org/toolkit/docs/about_project/contacts.html).
+We have a mailing list and an Matrix room. See details [here](https://roc-streaming.org/toolkit/docs/about_project/contacts.html).
 
 Contributing
 ------------

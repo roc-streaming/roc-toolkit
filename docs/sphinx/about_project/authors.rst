@@ -5,15 +5,18 @@ Thanks to everybody who have contributed to the project!
 
 This page provides a (probably incomplete) list of people who have submitted changes to `our repositories <https://github.com/roc-streaming>`_, ordered by the date of the first submission. If you did so and is not listed, feel free to send a pull request.
 
+.. _maintainers:
+
 Maintainers
 ===========
 
 Core team
 ~~~~~~~~~
 
-* Mikhail Baranov <baranov.mv@gmail.com>
 * Victor Gaydov <victor@enise.org>
+* Mikhail Baranov <baranov.mv@gmail.com>
 * Dmitriy Shilin <dshil@fastmail.com>
+* Andrew Petelin <adrianopol@gmail.com>
 
 Go team
 ~~~~~~~
@@ -29,7 +32,6 @@ Java team
 Contributors
 ============
 
-* Andrew Petelin <adrianopol@gmail.com>
 * zenuo <zenuo@protonmail.com>
 * Soul Trace <S-trace@list.ru>
 * Paul Malcolm <paul.malcolm@l3t.com>
