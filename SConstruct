@@ -27,7 +27,10 @@ supported_sanitizers = [
 ]
 
 # default installation prefix
-default_prefix = '/usr'
+if platform.system() == 'Darwin':
+    default_prefix = '/usr/local'
+else:
+    default_prefix = '/usr'
 
 AddOption('--prefix',
           dest='prefix',
