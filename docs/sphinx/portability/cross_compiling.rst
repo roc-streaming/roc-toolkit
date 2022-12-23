@@ -253,20 +253,20 @@ Supported ``--host`` values are:
 * ``x86_64-linux-android<API>`` (64-bit Intel)
 * ``i686-linux-android<API>`` (32-bit Intel)
 
-Here ``<API>`` stands for the Android API level, e.g. 28. Reach Android NDK version supports its own set of the API levels.
+Here ``<API>`` stands for the Android API level, e.g. 28. Each Android NDK version supports its own set of the API levels.
 
 Building Roc with a standalone toolchain is similar to cross-compiling with any other toolchain:
 
 * prepare a toolchain for desired ABI (target architecture) and API level, e.g. ``aarch64-linux-android``
-* add tolchain to ``PATH``
+* add toolchain to ``PATH``
 * pass toolchain to scons using ``--host`` option, e.g. ``--host=aarch64-linux-android``
 
-Since standaloen toolchains are obsolete, Roc doesn't provide prebuilt Docker images for them.
+Since standalone toolchains are obsolete, Roc doesn't provide prebuilt Docker images for them.
 
 Running cross-compiled binaries on target
 =========================================
 
-To run compiled binaries on the target system, you should install necessary runtime dependecies.
+To run compiled binaries on the target system, you should install necessary runtime dependencies.
 
 If you build Roc dependencies manually and install them into sysroot, you should also install them on the target system.
 
