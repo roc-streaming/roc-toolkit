@@ -38,7 +38,7 @@ Options
 -n                                             dry run
 -j N, --jobs=N                                 allow N parallel jobs at once
 
---prefix=PREFIX                                installation prefix, '/usr/local' by default
+--prefix=PREFIX                                installation prefix, '/usr' by default
 --bindir=BINDIR                                path to the binary installation directory (where to install Roc command-line tools), '<prefix>/bin' by default
 --libdir=LIBDIR                                path to the library installation directory (where to install Roc library), auto-detect if empty
 --incdir=INCDIR                                path to the headers installation directory (where to install Roc headers), '<prefix>/include' by default

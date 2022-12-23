@@ -27,7 +27,7 @@ supported_sanitizers = [
 ]
 
 # default installation prefix
-default_prefix = '/usr/local'
+default_prefix = '/usr'
 
 AddOption('--prefix',
           dest='prefix',
