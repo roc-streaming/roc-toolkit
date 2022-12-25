@@ -76,7 +76,7 @@ If you have chosen a task and are ready to work on it, the following documentati
 
 * **asking questions**
 
-  Feel free to ask questions on our mailing list or IRC channel. See :doc:`/about_project/contacts` page for details.
+  Feel free to ask questions on our mailing list or Matrix chat. See :doc:`/about_project/contacts` page for details.
 
 * **getting credits**
 

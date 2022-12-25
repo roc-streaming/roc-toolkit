@@ -16,7 +16,7 @@ Core team
 * Victor Gaydov <victor@enise.org>
 * Mikhail Baranov <baranov.mv@gmail.com>
 * Dmitriy Shilin <dshil@fastmail.com>
-* Andrew Petelin <adrianopol@gmail.com>
+* Andrew Petelin <adrianopol@rbox.me>
 
 Go team
 ~~~~~~~
