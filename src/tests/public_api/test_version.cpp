@@ -17,7 +17,7 @@ TEST_GROUP(version) {};
 
 TEST(version, version_num) {
     roc_version version = { 0, 0, 0 };
-    roc_get_version(&version);
+    roc_version_get(&version);
 
     UNSIGNED_LONGS_EQUAL(ROC_VERSION_MAJOR, version.major);
     UNSIGNED_LONGS_EQUAL(ROC_VERSION_MINOR, version.minor);

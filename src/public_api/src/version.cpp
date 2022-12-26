@@ -8,7 +8,7 @@
 
 #include "roc/version.h"
 
-void roc_get_version(roc_version* version) {
+void roc_version_get(roc_version* version) {
     if (version) {
         version->major = ROC_VERSION_MAJOR;
         version->minor = ROC_VERSION_MINOR;

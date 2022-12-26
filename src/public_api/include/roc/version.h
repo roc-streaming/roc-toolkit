@@ -50,10 +50,10 @@ typedef struct roc_version {
 
 /** Retrieve version numbers.
  *
- * Unlike \c ROC_VERSION_ macros, this function can be uses to
- * retrieve run-time version instead of compile-time one.
+ * This function can be used to retrieve actual run-time version of the library.
+ * It may be different from the compile-time version when using shared library.
  */
-ROC_API void roc_get_version(roc_version* version);
+ROC_API void roc_version_get(roc_version* version);
 
 #ifdef __cplusplus
 } /* extern "C" */
