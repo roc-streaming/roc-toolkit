@@ -19,6 +19,19 @@ Changelog
     Tests
     Documentation
 
+Version 0.2.1 (Dec 26, 2022)
+============================
+
+Build system
+------------
+
+* install to ``/usr`` by default (except macOS)
+
+Documentation
+-------------
+
+* minor updates
+
 Version 0.2.0 (Dec 19, 2022)
 ============================
 
