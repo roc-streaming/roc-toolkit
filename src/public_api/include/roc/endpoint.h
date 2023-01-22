@@ -60,7 +60,7 @@ extern "C" {
  * **Field invalidation**
  *
  * If some field is attempted to be set to an invalid value (for example, an invalid
- * port number), this specific field is marked as invalid until it is successully set
+ * port number), this specific field is marked as invalid until it is successfully set
  * to some valid value.
  *
  * Sender and receiver refuse to bind or connect an endpoint which has invalid fields
@@ -86,7 +86,7 @@ typedef struct roc_endpoint roc_endpoint;
  *  - returns a negative value on allocation failure
  *
  * **Ownership**
- *  - passes the owneship of \p result to the user; the user is responsible to call
+ *  - passes the ownership of \p result to the user; the user is responsible to call
  *    roc_endpoint_deallocate() to free it
  */
 ROC_API int roc_endpoint_allocate(roc_endpoint** result);
@@ -108,7 +108,7 @@ ROC_API int roc_endpoint_allocate(roc_endpoint** result);
  *  - returns a negative value on allocation failure
  *
  * **Ownership**
- *  - doesn't take or share the ownerhip of \p uri; it may be safely deallocated
+ *  - doesn't take or share the ownership of \p uri; it may be safely deallocated
  *    after the function returns
  */
 ROC_API int roc_endpoint_set_uri(roc_endpoint* endpoint, const char* uri);
@@ -144,7 +144,7 @@ ROC_API int roc_endpoint_set_protocol(roc_endpoint* endpoint, roc_protocol proto
  *  - returns a negative value on allocation failure
  *
  * **Ownership**
- *  - doesn't take or share the ownerhip of \p host; it may be safely deallocated
+ *  - doesn't take or share the ownership of \p host; it may be safely deallocated
  *    after the function returns
  */
 ROC_API int roc_endpoint_set_host(roc_endpoint* endpoint, const char* host);
@@ -188,7 +188,7 @@ ROC_API int roc_endpoint_set_port(roc_endpoint* endpoint, int port);
  *
  * **Parameters**
  *  - \p endpoint should point to initialized endpoint
- *  - \p encoded_resource specifies perecent-encoded path and query
+ *  - \p encoded_resource specifies percent-encoded path and query
  *
  * **Returns**
  *  - returns zero if resource was successfully set
@@ -196,7 +196,7 @@ ROC_API int roc_endpoint_set_port(roc_endpoint* endpoint, int port);
  *  - returns a negative value on allocation failure
  *
  * **Ownership**
- *  - doesn't take or share the ownerhip of \p encoded_resource; it may be safely
+ *  - doesn't take or share the ownership of \p encoded_resource; it may be safely
  *    deallocated after the function returns
  */
 ROC_API int roc_endpoint_set_resource(roc_endpoint* endpoint,
@@ -207,7 +207,7 @@ ROC_API int roc_endpoint_set_resource(roc_endpoint* endpoint,
  * Formats endpoint URI to user-provided buffer.
  *
  * If the function succeedes, the output string is zero-terminated. No matter whether
- * the functuion succeedes or fails, \p bufsz is updated with the actual output string
+ * the function succeedes or fails, \p bufsz is updated with the actual output string
  * length, including terminating zero byte. \p buf may be NULL; in this case nothing
  * is written, but \p bufsz is still updated. This can be used to determine the
  * proper buffer size in before.
@@ -243,7 +243,7 @@ ROC_API int roc_endpoint_get_protocol(const roc_endpoint* endpoint, roc_protocol
  * Formats endpoint URI host to user-provided buffer.
  *
  * If the function succeedes, the output string is zero-terminated. No matter whether
- * the functuion succeedes or fails, \p bufsz is updated with the actual output string
+ * the function succeedes or fails, \p bufsz is updated with the actual output string
  * length, including terminating zero byte. \p buf may be NULL; in this case nothing
  * is written, but \p bufsz is still updated. This can be used to determine the
  * proper buffer size in before.
@@ -277,10 +277,10 @@ ROC_API int roc_endpoint_get_port(const roc_endpoint* endpoint, int* port);
 /** Get endpoint resource (path and query).
  *
  * Formats endpoint URI resource to user-provided buffer. The written
- * resource is perecent-encoded.
+ * resource is percent-encoded.
  *
  * If the function succeedes, the output string is zero-terminated. No matter whether
- * the functuion succeedes or fails, \p bufsz is updated with the actual output string
+ * the function succeedes or fails, \p bufsz is updated with the actual output string
  * length, including terminating zero byte. \p buf may be NULL; in this case nothing
  * is written, but \p bufsz is still updated. This can be used to determine the
  * proper buffer size in before.

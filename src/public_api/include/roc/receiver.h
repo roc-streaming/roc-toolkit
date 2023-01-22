@@ -185,9 +185,9 @@ typedef struct roc_receiver roc_receiver;
  *  - returns a negative value on resource allocation failure
  *
  * **Ownership**
- *  - doesn't take or share the ownerhip of \p config; it may be safely deallocated
+ *  - doesn't take or share the ownership of \p config; it may be safely deallocated
  *    after the function returns
- *  - passes the owneship of \p result to the user; the user is responsible to call
+ *  - passes the ownership of \p result to the user; the user is responsible to call
  *    roc_receiver_close() to free it
  */
 ROC_API int roc_receiver_open(roc_context* context,
@@ -228,7 +228,7 @@ ROC_API int roc_receiver_open(roc_context* context,
  *  - returns a negative value if an error occurred
  *
  * **Ownership**
- *  - doesn't take or share the ownerhip of \p ip; it may be safely deallocated
+ *  - doesn't take or share the ownership of \p ip; it may be safely deallocated
  *    after the function returns
  */
 ROC_API int roc_receiver_set_multicast_group(roc_receiver* receiver,
@@ -263,7 +263,7 @@ ROC_API int roc_receiver_set_multicast_group(roc_receiver* receiver,
  *  - returns a negative value on resource allocation failure
  *
  * **Ownership**
- *  - doesn't take or share the ownerhip of \p endpoint; it may be safely deallocated
+ *  - doesn't take or share the ownership of \p endpoint; it may be safely deallocated
  *    after the function returns
  */
 ROC_API int roc_receiver_bind(roc_receiver* receiver,
@@ -294,7 +294,7 @@ ROC_API int roc_receiver_bind(roc_receiver* receiver,
  *  - returns a negative value on resource allocation failure
  *
  * **Ownership**
- *  - doesn't take or share the ownerhip of \p frame; it may be safely deallocated
+ *  - doesn't take or share the ownership of \p frame; it may be safely deallocated
  *    after the function returns
  */
 ROC_API int roc_receiver_read(roc_receiver* receiver, roc_frame* frame);

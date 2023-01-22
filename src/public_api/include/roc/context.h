@@ -57,7 +57,7 @@ typedef struct roc_context roc_context;
  *  - returns a negative value if there are not enough resources
  *
  * **Ownership**
- *  - passes the owneship of \p result to the user; the user is responsible to call
+ *  - passes the ownership of \p result to the user; the user is responsible to call
  *    roc_context_close() to free it
  */
 ROC_API int roc_context_open(const roc_context_config* config, roc_context** result);
