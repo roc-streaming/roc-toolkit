@@ -206,8 +206,8 @@ ROC_API int roc_endpoint_set_resource(roc_endpoint* endpoint,
  *
  * Formats endpoint URI to user-provided buffer.
  *
- * If the function succeedes, the output string is zero-terminated. No matter whether
- * the function succeedes or fails, \p bufsz is updated with the actual output string
+ * If the function succeeds, the output string is zero-terminated. No matter whether
+ * the function succeeds or fails, \p bufsz is updated with the actual output string
  * length, including terminating zero byte. \p buf may be NULL; in this case nothing
  * is written, but \p bufsz is still updated. This can be used to determine the
  * proper buffer size in before.
@@ -242,8 +242,8 @@ ROC_API int roc_endpoint_get_protocol(const roc_endpoint* endpoint, roc_protocol
  *
  * Formats endpoint URI host to user-provided buffer.
  *
- * If the function succeedes, the output string is zero-terminated. No matter whether
- * the function succeedes or fails, \p bufsz is updated with the actual output string
+ * If the function succeeds, the output string is zero-terminated. No matter whether
+ * the function succeeds or fails, \p bufsz is updated with the actual output string
  * length, including terminating zero byte. \p buf may be NULL; in this case nothing
  * is written, but \p bufsz is still updated. This can be used to determine the
  * proper buffer size in before.
@@ -279,8 +279,8 @@ ROC_API int roc_endpoint_get_port(const roc_endpoint* endpoint, int* port);
  * Formats endpoint URI resource to user-provided buffer. The written
  * resource is percent-encoded.
  *
- * If the function succeedes, the output string is zero-terminated. No matter whether
- * the function succeedes or fails, \p bufsz is updated with the actual output string
+ * If the function succeeds, the output string is zero-terminated. No matter whether
+ * the function succeeds or fails, \p bufsz is updated with the actual output string
  * length, including terminating zero byte. \p buf may be NULL; in this case nothing
  * is written, but \p bufsz is still updated. This can be used to determine the
  * proper buffer size in before.

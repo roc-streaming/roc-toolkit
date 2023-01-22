@@ -137,7 +137,7 @@ private:
     // additional details about current state
     core::Atomic<uint32_t> flags_;
 
-    // guard to cut off concurrent task renewals (only one succeedes)
+    // guard to cut off concurrent task renewals (only one succeeds)
     core::Atomic<uint32_t> renew_guard_;
 
     // guard to cut off concurrent task waits (only one allowed)
