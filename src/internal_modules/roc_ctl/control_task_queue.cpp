@@ -266,7 +266,7 @@ bool ControlTaskQueue::try_renew_inplace_(ControlTask& task,
     roc_panic_if(deadline == 0);
 
     // Try to obtain lock.
-    // This succeedes if the event loop thread sleeps.
+    // This succeeds if the event loop thread sleeps.
     if (!task_mutex_.try_lock()) {
         return false;
     }

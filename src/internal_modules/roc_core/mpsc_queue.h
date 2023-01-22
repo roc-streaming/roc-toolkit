@@ -216,7 +216,7 @@ private:
 
     // Wait until concurrent push_node_() completes and node->next becomes non-NULL.
     // This version is non-blocking and gives up after a few re-tries.
-    // Usually it succeedes. It can fail only in the same rare case when
+    // Usually it succeeds. It can fail only in the same rare case when
     // wait_next_() blocks.
     MpscQueueData* try_wait_next_(MpscQueueData* node) {
         MpscQueueData* next;

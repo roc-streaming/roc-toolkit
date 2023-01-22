@@ -82,7 +82,7 @@ public:
     //!
     //! @remark
     //!  Error flag is raised if any of the methods fail, and is resetted
-    //!  if an assign* method succeedes.
+    //!  if an assign* method succeeds.
     bool ok() const;
 
     //! Overwrite result with given string.
