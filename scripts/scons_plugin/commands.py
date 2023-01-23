@@ -122,24 +122,7 @@ def GenGetOpt(env, source, ver):
             ver),
         cmdstr = env.PrettyCommand('GGO', '$SOURCE', 'purple')))
 
-    ret = env.Object(target[0])
-
-    # Workaround to avoid rebuilding returned object file twice.
-    #
-    # What happens here:
-    #  1. When invoked first time, SCons generates .c from .ggo. When
-    #     SCons scans .c files for #includes, .c doesn't exist yet,
-    #     thus it's not scanned.
-    #  2. When invoked second time, SCons scans genarated .c file and
-    #     notes that is depends on generated .h file. Since it's new
-    #     dependency for this file, SCons rebuilds it.
-    #
-    # We force implicit dependency .c -> .h, so that it's present even
-    # if SCons didn't scan .c file yet, and no new dependencies will be
-    # introduced on next invocation.
-    ret[0].add_to_implicit([env.File(target[1])])
-
-    return ret
+    return env.Object(target[0])
 
 def SupportsRelocatableObject(env):
     if not env.get('LD', None):
