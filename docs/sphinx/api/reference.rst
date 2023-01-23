@@ -211,4 +211,4 @@ roc_version
 .. doxygenstruct:: roc_version
    :members:
 
-.. doxygenfunction:: roc_get_version
+.. doxygenfunction:: roc_version_get
