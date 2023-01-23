@@ -52,7 +52,7 @@ AddOption('--libdir',
           action='store',
           type='string',
           help=("path to the library installation directory (where to "+
-                "install Roc library), auto-detect if empty"))
+                "install Roc library), auto-detect by default"))
 
 AddOption('--incdir',
           dest='incdir',
@@ -597,6 +597,8 @@ if GetOption('libdir'):
     conf.env['ROC_SYSTEM_LIBDIR'] = GetOption('libdir')
 else:
     conf.FindLibDir(GetOption('prefix'), meta.host)
+
+conf.env['ROC_SYSTEM_PCDIR'] = os.path.join(env['ROC_SYSTEM_LIBDIR'], 'pkgconfig')
 
 conf.FindPkgConfig(meta.toolchain)
 conf.FindPkgConfigPath(GetOption('prefix'))
